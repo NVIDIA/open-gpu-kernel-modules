@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,6 +43,7 @@
 #include "published/turing/tu102/dev_riscv_pri.h"
 #include "published/turing/tu102/dev_fbif_v4.h"
 #include "published/turing/tu102/dev_falcon_v4.h"
+#include "published/turing/tu102/dev_fb.h"  // for NV_PFB_PRI_MMU_WPR2_ADDR_HI
 #include "published/turing/tu102/dev_fuse.h"
 #include "published/turing/tu102/dev_ram.h"
 #include "published/turing/tu102/dev_gc6_island.h"
@@ -108,6 +109,8 @@ kgspAllocBootArgs_TU102
     NvP64 pPriv = NvP64_NULL;
     NV_STATUS nvStatus = NV_OK;
     NvU64 flags = MEMDESC_FLAGS_NONE;
+
+    flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
 
     // Allocate WPR meta data
     NV_ASSERT_OK_OR_GOTO(nvStatus,
@@ -568,7 +571,7 @@ kgspCalculateFbLayout_TU102
     //
     pWprMeta->gspFwOffset = NV_ALIGN_DOWN64(pWprMeta->bootBinOffset - pWprMeta->sizeOfRadix3Elf, 0x10000);
 
-    const NvU64 wprHeapSize = kgspGetWprHeapSize(pGpu, pKernelGsp);
+    const NvU64 wprHeapSize = kgspGetFwHeapSize(pGpu, pKernelGsp, pWprMeta->fbSize - pWprMeta->gspFwOffset);
 
     // GSP-RM heap in WPR, align to 1MB
     pWprMeta->gspFwHeapOffset = NV_ALIGN_DOWN64(pWprMeta->gspFwOffset - wprHeapSize, 0x100000);
@@ -731,7 +734,20 @@ kgspResetHw_TU102
 )
 {
     GPU_FLD_WR_DRF_DEF(pGpu, _PGSP, _FALCON_ENGINE, _RESET, _TRUE);
+
+    // Reg read cycles needed for signal propagation.
+    for (NvU32 i = 0; i < FLCN_RESET_PROPAGATION_DELAY_COUNT; i++)
+    {
+        GPU_REG_RD32(pGpu, NV_PGSP_FALCON_ENGINE);
+    }
+
     GPU_FLD_WR_DRF_DEF(pGpu, _PGSP, _FALCON_ENGINE, _RESET, _FALSE);
+
+    // Reg read cycles needed for signal propagation.
+    for (NvU32 i = 0; i < FLCN_RESET_PROPAGATION_DELAY_COUNT; i++)
+    {
+        GPU_REG_RD32(pGpu, NV_PGSP_FALCON_ENGINE);
+    }
 
     return NV_OK;
 }
@@ -797,6 +813,7 @@ kgspService_TU102
     // Exit immediately if there is nothing to do
     if (intrStatus == 0)
     {
+        NV_ASSERT_FAILED("KGSP service called when no KGSP interrupt pending\n");
         return 0;
     }
 
@@ -860,7 +877,7 @@ _kgspIsProcessorSuspended
     // Check for LIBOS_INTERRUPT_PROCESSOR_SUSPENDED in mailbox
     mailbox = kflcnRegRead_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon),
                                NV_PFALCON_FALCON_MAILBOX0);
-    return (mailbox & 0x80000000) == 0x80000000;
+    return (mailbox == 0x80000000);
 }
 
 NV_STATUS
@@ -871,6 +888,18 @@ kgspWaitForProcessorSuspend_TU102
 )
 {
     return gpuTimeoutCondWait(pGpu, _kgspIsProcessorSuspended, pKernelGsp, NULL);
+}
+
+NvBool
+kgspIsWpr2Up_TU102
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    NvU32 data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
+    NvU32 wpr2HiVal = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
+    return (wpr2HiVal != 0);
 }
 
 #define FWSECLIC_PROG_START_TIMEOUT     50000    // 50ms
@@ -917,17 +946,20 @@ kgspWaitForGfwBootOk_TU102
         }
 
         status = gpuCheckTimeout(pGpu, &timeout);
-        if (status == NV_ERR_TIMEOUT)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Timeout waiting for GFW_BOOT to complete\n");
-        }
     }
+
+    // The wait failed if we reach here (as above loop returns upon success).
+    NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: 0x%x (progress 0x%x)\n",
+              status, GPU_REG_RD_DRF(pGpu,
+                        _PGC6,
+                        _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
+                        _PROGRESS));
+    NV_PRINTF(LEVEL_ERROR, "(the GPU may be in a bad state and may need to be reset)\n");
 
     return status;
 }
 
-void 
+void
 kgspFreeSuspendResumeData_TU102
 (
     OBJGPU    *pGpu,
@@ -969,7 +1001,7 @@ kgspSavePowerMgmtState_TU102
     gspfwSRMeta.revision                = GSP_FW_SR_META_REVISION;
     gspfwSRMeta.sizeOfSuspendResumeData = pKernelGsp->pWprMeta->gspFwWprEnd - pKernelGsp->pWprMeta->gspFwWprStart;
 
-    
+
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                          kgspCreateRadix3(pGpu,
                                           pKernelGsp,
@@ -1016,7 +1048,7 @@ kgspSavePowerMgmtState_TU102
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                          kgspExecuteBooterUnloadIfNeeded_HAL(pGpu,
-                                                             pKernelGsp, 
+                                                             pKernelGsp,
                                                              memdescGetPhysAddr(pKernelGsp->pSRMetaDescriptor,AT_GPU, 0)),
                          exit_fail_cleanup);
 
@@ -1035,6 +1067,8 @@ kgspRestorePowerMgmtState_TU102
 )
 {
     NV_STATUS nvStatus = NV_OK;
+
+    NV_ASSERT_TRUE_OR_GOTO(nvStatus, pKernelGsp->pSRMetaDescriptor != NULL, NV_ERR_INVALID_STATE, exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                          kgspExecuteBooterLoad_HAL(pGpu,

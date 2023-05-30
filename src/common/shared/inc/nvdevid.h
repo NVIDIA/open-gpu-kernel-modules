@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 200-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 200-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -145,6 +145,7 @@
 #define PCI_VENDOR_ID_CADENCE       0x17CD
 #define PCI_VENDOR_ID_ARM           0x13B5
 #define PCI_VENDOR_ID_HYGON         0x1D94
+#define PCI_VENDOR_ID_ALIBABA       0x1DED
 
 #define NV_PCI_DEVID_DEVICE                    31:16  /* RW--F */
 #define NV_PCI_SUBID_DEVICE                    31:16  /* RW--F */
@@ -445,6 +446,9 @@
 #define FOXCONN_EINSTEIN_64_DEVID           0xA1C1
 #define FOXCONN_EINSTEIN_64_SSDEVID         0x7270
 
+// Lenovo Tomcat Workstation
+#define LENOVO_TOMCAT_DEVID                 0x1B81
+#define LENOVO_TOMCAT_SSDEVID               0x104e
 
 // NVIDIA C51
 #define NVIDIA_C51_DEVICE_ID_MIN                        0x2F0
@@ -523,10 +527,6 @@
 //
 ///////////////////////////////////////////////////////////////////////////////////////////
 
-//
-// When adding a variable to the following enum, please
-// add it also to the following chipset_names[].
-//
 enum {
       CS_UNKNOWN      = 0x0000,
       CS_UNKNOWN_PCIE = 0x1000
@@ -605,6 +605,7 @@ enum {
 ,     CS_NVIDIA_T194
 ,     CS_NVIDIA_T234
 ,     CS_NVIDIA_T23x
+,     CS_NVIDIA_TH500
 ,     CS_MARVELL_THUNDERX2
 ,     CS_REDHAT_QEMU
 ,     CS_AMPERE_EMAG
@@ -620,6 +621,8 @@ enum {
 ,     CS_HYGON_C86
 ,     CS_PHYTIUM_S2500
 ,     CS_MELLANOX_BLUEFIELD2
+,     CS_MELLANOX_BLUEFIELD3
+,     CS_ALIBABA_YITIAN
 ,     CS_INTEL_1B81
 ,     CS_INTEL_18DC
 ,     CS_INTEL_7A04

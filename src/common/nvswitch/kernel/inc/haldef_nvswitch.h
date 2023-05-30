@@ -122,6 +122,8 @@
     _op(NvlStatus, nvswitch_init_soe, (nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_inforom_supported,   (nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_spi_supported,       (nvswitch_device *device), _arch)  \
+    _op(NvBool,    nvswitch_is_bios_supported,      (nvswitch_device *device), _arch)  \
+    _op(NvlStatus, nvswitch_get_bios_size,         (nvswitch_device *device, NvU32 *pSize),  _arch)  \
     _op(NvBool,    nvswitch_is_smbpbi_supported,   (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_post_init_device_setup, (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_post_init_blacklist_device_setup, (nvswitch_device *device), _arch)  \
@@ -229,6 +231,9 @@
     _op(NvlStatus, nvswitch_ctrl_get_board_part_number, (nvswitch_device *device, NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p), _arch) \
     _op(NvlStatus, nvswitch_ctrl_therm_read_voltage, (nvswitch_device *device, NVSWITCH_CTRL_GET_VOLTAGE_PARAMS *info), _arch) \
     _op(void,      nvswitch_soe_init_l2_state,       (nvswitch_device *device), _arch) \
+    _op(NvlStatus, nvswitch_ctrl_therm_read_power, (nvswitch_device *device, NVSWITCH_GET_POWER_PARAMS *info), _arch) \
+    _op(NvBool,    nvswitch_does_link_need_termination_enabled, (nvswitch_device *device, nvlink_link *link), _arch) \
+    _op(NvlStatus, nvswitch_link_termination_setup, (nvswitch_device *device, nvlink_link *link), _arch) \
 
 #define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \
     _op(NvlStatus, nvswitch_launch_ALI, (nvswitch_device *device), _arch) \

@@ -172,6 +172,7 @@
 #include "uvm_va_block.h"
 #include "uvm_test.h"
 #include "uvm_linux.h"
+#include "uvm_conf_computing.h"
 
 static int uvm_global_oversubscription = 1;
 module_param(uvm_global_oversubscription, int, S_IRUGO);
@@ -242,11 +243,13 @@ const char *uvm_pmm_gpu_memory_type_string(uvm_pmm_gpu_memory_type_t type)
 {
     switch (type) {
         UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_USER);
+        UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED);
         UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_KERNEL);
+        UVM_ENUM_STRING_CASE(UVM_PMM_GPU_MEMORY_TYPE_KERNEL_UNPROTECTED);
         UVM_ENUM_STRING_DEFAULT();
     }
 
-    BUILD_BUG_ON(UVM_PMM_GPU_MEMORY_TYPE_COUNT != 2);
+    BUILD_BUG_ON(UVM_PMM_GPU_MEMORY_TYPE_COUNT != 4);
 }
 
 const char *uvm_pmm_gpu_chunk_state_string(uvm_pmm_gpu_chunk_state_t state)
@@ -454,7 +457,19 @@ bool uvm_pmm_gpu_memory_type_is_user(uvm_pmm_gpu_memory_type_t type)
     UVM_ASSERT(type < UVM_PMM_GPU_MEMORY_TYPE_COUNT);
 
     switch (type) {
-        case UVM_PMM_GPU_MEMORY_TYPE_USER:
+        case UVM_PMM_GPU_MEMORY_TYPE_USER: // Alias UVM_PMM_GPU_MEMORY_TYPE_USER_PROTECTED
+        case UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED:
+            return true;
+        default:
+            return false;
+    }
+}
+
+static bool memory_type_is_protected(uvm_pmm_gpu_memory_type_t type)
+{
+    switch (type) {
+        case UVM_PMM_GPU_MEMORY_TYPE_USER: // Alias UVM_PMM_GPU_MEMORY_TYPE_USER_PROTECTED
+        case UVM_PMM_GPU_MEMORY_TYPE_KERNEL: // Alias UVM_PMM_GPU_MEMORY_TYPE_KERNEL_PROTECTED:
             return true;
         default:
             return false;
@@ -486,11 +501,11 @@ uvm_gpu_t *uvm_gpu_chunk_get_gpu(const uvm_gpu_chunk_t *chunk)
 struct page *uvm_gpu_chunk_to_page(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 {
     uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
-    NvU64 sys_addr = chunk->address + uvm_gpu_numa_info(gpu)->system_memory_window_start;
+    NvU64 sys_addr = chunk->address + gpu->parent->system_bus.memory_window_start;
     unsigned long pfn = sys_addr >> PAGE_SHIFT;
 
-    UVM_ASSERT(sys_addr + uvm_gpu_chunk_get_size(chunk) <= uvm_gpu_numa_info(gpu)->system_memory_window_end + 1);
-    UVM_ASSERT(gpu->parent->numa_info.enabled);
+    UVM_ASSERT(sys_addr + uvm_gpu_chunk_get_size(chunk) <= gpu->parent->system_bus.memory_window_end + 1);
+    UVM_ASSERT(gpu->mem_info.numa.enabled);
 
     return pfn_to_page(pfn);
 }
@@ -520,7 +535,16 @@ void uvm_pmm_gpu_sync(uvm_pmm_gpu_t *pmm)
 
 static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_parent_gpu_t *parent_gpu, uvm_pmm_gpu_memory_type_t type)
 {
-    return type;
+    if (uvm_conf_computing_mode_enabled_parent(parent_gpu))
+        return type;
+
+    // Enforce the contract that when the Confidential Computing feature is
+    // disabled, all user types are alike, as well as all kernel types,
+    // respectively. See uvm_pmm_gpu_memory_type_t.
+    if (uvm_pmm_gpu_memory_type_is_user(type))
+        return UVM_PMM_GPU_MEMORY_TYPE_USER;
+
+    return UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
 }
 
 NV_STATUS uvm_pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
@@ -620,18 +644,6 @@ static NV_STATUS pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
     }
 
     return NV_OK;
-}
-
-NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
-                                   size_t num_chunks,
-                                   uvm_chunk_size_t chunk_size,
-                                   uvm_pmm_alloc_flags_t flags,
-                                   uvm_gpu_chunk_t **chunks,
-                                   uvm_tracker_t *out_tracker)
-{
-    uvm_pmm_gpu_memory_type_t memory_type = UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
-
-    return pmm_gpu_alloc_kernel(pmm, num_chunks, chunk_size, memory_type, flags, chunks, out_tracker);
 }
 
 static void chunk_update_lists_locked(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
@@ -1535,7 +1547,7 @@ static bool root_chunk_has_elevated_page(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_
     uvm_gpu_chunk_t *chunk = &root_chunk->chunk;
     struct page *page;
 
-    if (!gpu->parent->numa_info.enabled)
+    if (!gpu->mem_info.numa.enabled)
         return false;
 
     page = uvm_gpu_chunk_to_page(pmm, chunk);
@@ -2155,7 +2167,7 @@ NV_STATUS alloc_root_chunk(uvm_pmm_gpu_t *pmm,
     // Also, user pages that are about to be overwritten, don't need to be
     // zeroed, either. Add an interface to uvm_pmm_gpu_alloc for callers to
     // specify when they don't need zeroed pages.
-    const bool skip_pma_scrubbing = gpu->parent->numa_info.enabled;
+    const bool skip_pma_scrubbing = gpu->mem_info.numa.enabled;
     UVM_ASSERT(uvm_pmm_gpu_memory_type_is_user(type) || uvm_pmm_gpu_memory_type_is_kernel(type));
 
     options.flags = UVM_PMA_ALLOCATE_DONT_EVICT;
@@ -2168,8 +2180,13 @@ NV_STATUS alloc_root_chunk(uvm_pmm_gpu_t *pmm,
 
     // TODO: Bug 200480500: Batching is currently disabled on P9. Re-enable
     // when the performance of best-effort allocations is verified.
-    if (gpu->parent->numa_info.enabled)
+    if (gpu->mem_info.numa.enabled)
         flags |= UVM_PMM_ALLOC_FLAGS_DONT_BATCH;
+
+    // When the confidential computing feature is enabled, allocate GPU memory
+    // in the protected region, unless specified otherwise.
+    if (uvm_conf_computing_mode_enabled(gpu) && memory_type_is_protected(type))
+        options.flags |= UVM_PMA_ALLOCATE_PROTECTED_REGION;
 
     if (!gpu->parent->rm_info.isSimulated &&
         !(options.flags & UVM_PMA_ALLOCATE_PINNED) &&
@@ -2423,6 +2440,12 @@ static bool check_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     UVM_ASSERT(IS_ALIGNED(chunk->address, chunk_size));
     UVM_ASSERT(uvm_global_id_equal(uvm_global_gpu_id_from_index(chunk->gpu_global_index), gpu->global_id));
 
+
+    // See pmm_squash_memory_type().
+    if (!uvm_conf_computing_mode_enabled(gpu)) {
+        UVM_ASSERT(chunk->type == UVM_PMM_GPU_MEMORY_TYPE_USER ||
+                   chunk->type == UVM_PMM_GPU_MEMORY_TYPE_KERNEL);
+    }
 
     if (chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT)
         UVM_ASSERT(chunk_size > uvm_chunk_find_first_size(chunk_sizes));
@@ -2756,6 +2779,11 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_pages(void *void_pmm,
     UVM_ASSERT(IS_ALIGNED(UVM_CHUNK_SIZE_MAX, page_size));
     UVM_ASSERT(UVM_CHUNK_SIZE_MAX >= page_size);
 
+    // Currently, when the Confidential Computing feature is enabled, the
+    // entirety of vidmem is protected.
+    if (uvm_conf_computing_mode_enabled(uvm_pmm_to_gpu(pmm)) && (mem_type != UVM_PMA_GPU_MEMORY_TYPE_PROTECTED))
+        return NV_ERR_INVALID_ARGUMENT;
+
     while (num_pages_left_to_evict > 0) {
         uvm_gpu_root_chunk_t *root_chunk;
         uvm_page_index_t page_index;
@@ -2856,7 +2884,7 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_pages_wrapper(void *void_pmm,
 }
 
 static NV_STATUS uvm_pmm_gpu_pma_evict_pages_wrapper_entry(void *void_pmm,
-                                                           NvU32 page_size,
+                                                           NvU64 page_size,
                                                            NvU64 *pages,
                                                            NvU32 num_pages_to_evict,
                                                            NvU64 phys_start,
@@ -3369,9 +3397,20 @@ static void evict_orphan_pages(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
         }
 
         if (subchunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED && subchunk->is_referenced) {
+            unsigned long pfn = uvm_pmm_gpu_devmem_get_pfn(pmm, subchunk);
+
+            // TODO: Bug 3368756: add support for large GPU pages.
+            UVM_ASSERT(uvm_gpu_chunk_get_size(subchunk) == PAGE_SIZE);
             uvm_spin_unlock(&pmm->list_lock);
 
-            uvm_hmm_pmm_gpu_evict_chunk(uvm_pmm_to_gpu(pmm), subchunk);
+            // The above check for subchunk state is racy because the
+            // chunk may be freed after the lock is dropped. It is
+            // still safe to proceed in that case because the struct
+            // page reference will have dropped to zero and cannot
+            // have been re-allocated as this is only called during
+            // GPU teardown. Therefore migrate_device_range() will
+            // simply fail.
+            uvm_hmm_pmm_gpu_evict_pfn(pfn);
             continue;
         }
 
@@ -3379,12 +3418,23 @@ static void evict_orphan_pages(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
     }
 }
 
-void uvm_pmm_gpu_free_orphan_pages(uvm_pmm_gpu_t *pmm)
+// Free any orphan pages.
+// This should be called as part of removing a GPU: after all work is stopped
+// and all va_blocks have been destroyed. There normally won't be any
+// device private struct page references left but there can be cases after
+// fork() where a child process still holds a reference. This function searches
+// for pages that still have a reference and migrates the page to the GPU in
+// order to release the reference in the CPU page table.
+static void uvm_pmm_gpu_free_orphan_pages(uvm_pmm_gpu_t *pmm)
 {
     size_t i;
 
     if (!pmm->initialized)
         return;
+
+    // This is only safe to call during GPU teardown where chunks
+    // cannot be re-allocated.
+    UVM_ASSERT(uvm_gpu_retained_count(uvm_pmm_to_gpu(pmm)) == 0);
 
     // Scan all the root chunks looking for subchunks which are still
     // referenced. This is slow, but we only do this when unregistering a GPU
@@ -3429,7 +3479,7 @@ static vm_fault_t devmem_fault(struct vm_fault *vmf)
 {
     uvm_va_space_t *va_space = vmf->page->zone_device_data;
 
-    if (!va_space)
+    if (!va_space || va_space->va_space_mm.mm != vmf->vma->vm_mm)
         return VM_FAULT_SIGBUS;
 
     return uvm_va_space_cpu_fault_hmm(va_space, vmf->vma, vmf);
@@ -3517,6 +3567,10 @@ static NV_STATUS devmem_init(uvm_pmm_gpu_t *pmm)
 static void devmem_deinit(uvm_pmm_gpu_t *pmm)
 {
 }
+
+static void uvm_pmm_gpu_free_orphan_pages(uvm_pmm_gpu_t *pmm)
+{
+}
 #endif // UVM_IS_CONFIG_HMM()
 
 static void process_lazy_free(uvm_pmm_gpu_t *pmm)
@@ -3551,8 +3605,11 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
     uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     const uvm_chunk_sizes_mask_t chunk_size_init[][UVM_PMM_GPU_MEMORY_TYPE_COUNT] =
     {
-        { gpu->parent->mmu_user_chunk_sizes, gpu->parent->mmu_kernel_chunk_sizes },
-        { 0, uvm_mem_kernel_chunk_sizes(gpu)},
+        { gpu->parent->mmu_user_chunk_sizes,
+          gpu->parent->mmu_user_chunk_sizes,
+          gpu->parent->mmu_kernel_chunk_sizes,
+          gpu->parent->mmu_kernel_chunk_sizes },
+        { 0, 0, uvm_mem_kernel_chunk_sizes(gpu), uvm_mem_kernel_chunk_sizes(gpu)},
     };
     NV_STATUS status = NV_OK;
     size_t i, j, k;
@@ -3597,13 +3654,13 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
         goto cleanup;
 
     // Assert that max physical address of the GPU is not unreasonably big for
-    // creating the flat array of root chunks. Currently the worst case is a
-    // Maxwell GPU that has 0.5 GB of its physical memory mapped at the 64GB
-    // physical address. 256GB should provide reasonable amount of
-    // future-proofing and results in 128K chunks which is still manageable.
-    UVM_ASSERT_MSG(gpu->mem_info.max_allocatable_address < 256ull * 1024 * 1024 * 1024,
-                   "Max physical address over 256GB: %llu\n",
-                   gpu->mem_info.max_allocatable_address);
+    // creating the flat array of root chunks. 256GB should provide a reasonable
+    // amount of future-proofing and results in 128K chunks which is still
+    // manageable.
+    UVM_ASSERT_MSG(gpu->mem_info.max_allocatable_address < UVM_GPU_MAX_PHYS_MEM,
+                   "Max physical address 0x%llx exceeds limit of 0x%llx\n",
+                   gpu->mem_info.max_allocatable_address,
+                   UVM_GPU_MAX_PHYS_MEM);
 
     // Align up the size to have a root chunk for the last part of the FB. PMM
     // won't be able to allocate it, if it doesn't fit a whole root chunk, but
@@ -3686,6 +3743,8 @@ void uvm_pmm_gpu_deinit(uvm_pmm_gpu_t *pmm)
         return;
 
     gpu = uvm_pmm_to_gpu(pmm);
+
+    uvm_pmm_gpu_free_orphan_pages(pmm);
     nv_kthread_q_flush(&gpu->parent->lazy_free_q);
     UVM_ASSERT(list_empty(&pmm->root_chunks.va_block_lazy_free));
     release_free_root_chunks(pmm);

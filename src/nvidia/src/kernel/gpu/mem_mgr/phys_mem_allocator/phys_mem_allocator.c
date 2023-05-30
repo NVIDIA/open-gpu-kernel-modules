@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,7 +45,7 @@ NV_STATUS pmaNumaAllocate
 (
     PMA                    *pPma,
     NvLength                allocationCount,
-    NvU32                   pageSize,
+    NvU64                   pageSize,
     PMA_ALLOCATION_OPTIONS *allocationOptions,
     NvU64                  *pPages
 )
@@ -70,7 +70,7 @@ void pmaNumaSetReclaimSkipThreshold(PMA *pPma, NvU32 data)
 }
 #endif
 
-typedef NV_STATUS (*scanFunc)(void *, NvU64, NvU64, NvU64, NvU64, NvU64*, NvU32, NvU64, NvU64*, NvBool, NvBool);
+typedef NV_STATUS (*scanFunc)(void *, NvU64, NvU64, NvU64, NvU64, NvU64*, NvU64, NvU64, NvU64*, NvBool, NvBool);
 
 static void
 _pmaRollback
@@ -79,14 +79,14 @@ _pmaRollback
     NvU64         *pPages,
     NvU32          failCount,
     NvU32          failFrame,
-    NvU32          pageSize,
+    NvU64          pageSize,
     PMA_PAGESTATUS oldState
 )
 {
     NvU32 framesPerPage, regId, i, j;
     NvU64 frameNum, addrBase;
 
-    framesPerPage = pageSize >> PMA_PAGE_SHIFT;
+    framesPerPage = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
     if (failCount != 0)
     {
         for(i = 0; i < failCount; i++)
@@ -239,6 +239,8 @@ pmaInitialize(PMA *pPma, NvU32 initFlags)
         }
         pPma->bNuma = !!(initFlags & PMA_INIT_NUMA);
 
+        pPma->bNumaAutoOnline = !!(initFlags & PMA_INIT_NUMA_AUTO_ONLINE);
+
         // If we want to run with address tree instead of regmap
         if (initFlags & PMA_INIT_ADDRTREE)
         {
@@ -264,6 +266,9 @@ pmaInitialize(PMA *pPma, NvU32 initFlags)
     pPma->pmaStats.numFreeFrames = 0;
     pPma->pmaStats.num2mbPages = 0;
     pPma->pmaStats.numFree2mbPages = 0;
+    pPma->pmaStats.numFreeFramesProtected = 0;
+    pPma->pmaStats.num2mbPagesProtected = 0;
+    pPma->pmaStats.numFree2mbPagesProtected = 0;
     pPma->regSize = 0;
     portAtomicSetSize(&pPma->initScrubbing, PMA_SCRUB_INITIALIZE);
 
@@ -552,7 +557,7 @@ pmaAllocatePages
 (
     PMA                    *pPma,
     NvLength                allocationCount,
-    NvU32                   pageSize,
+    NvU64                   pageSize,
     PMA_ALLOCATION_OPTIONS *allocationOptions,
     NvU64                  *pPages
 )
@@ -573,7 +578,7 @@ pmaAllocatePages
     scanFunc useFunc;
     PMA_PAGESTATUS pinOption;
     NvU64 alignment = pageSize;
-    NvU32 framesPerPage  = pageSize >> PMA_PAGE_SHIFT;
+    NvU32 framesPerPage  = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
 
     //
     // A boolean indicating if we should try to evict. We at most try eviction once per call
@@ -595,7 +600,7 @@ pmaAllocatePages
         if (allocationCount == 0)
             NV_PRINTF(LEVEL_ERROR, "count == 0\n");
         if (pageSize != _PMA_64KB && pageSize != _PMA_128KB && pageSize != _PMA_2MB && pageSize != _PMA_512MB)
-            NV_PRINTF(LEVEL_ERROR, "pageSize=0x%x (not 64K, 128K, 2M, or 512M)\n", pageSize);
+            NV_PRINTF(LEVEL_ERROR, "pageSize=0x%llx (not 64K, 128K, 2M, or 512M)\n", pageSize);
         if (allocationOptions == NULL)
             NV_PRINTF(LEVEL_ERROR, "NULL allocationOptions\n");
         return NV_ERR_INVALID_ARGUMENT;
@@ -655,7 +660,7 @@ pmaAllocatePages
           || !NV_IS_ALIGNED((allocationOptions->physEnd + 1), pageSize)))
     {
         NV_PRINTF(LEVEL_WARNING,
-                "base [0x%llx] or limit [0x%llx] not aligned to page size 0x%x\n",
+                "base [0x%llx] or limit [0x%llx] not aligned to page size 0x%llx\n",
                 allocationOptions->physBegin,
                 allocationOptions->physEnd + 1,
                 pageSize);
@@ -681,7 +686,7 @@ pmaAllocatePages
         if (!contigFlag && alignment > pageSize)
         {
             NV_PRINTF(LEVEL_WARNING,
-                "alignment [%llx] larger than the pageSize [%x] not supported for non-contiguous allocs\n",
+                "alignment [%llx] larger than the pageSize [%llx] not supported for non-contiguous allocs\n",
                 alignment, pageSize);
             return NV_ERR_INVALID_ARGUMENT;
         }
@@ -722,7 +727,7 @@ pmaAllocatePages_retry:
     // after checking the scrubber so any pages allocated so far are not guaranteed
     // to be there any more. Restart from scratch.
     //
-    NV_PRINTF(LEVEL_INFO, "Attempt %s allocation of 0x%llx pages of size 0x%x "
+    NV_PRINTF(LEVEL_INFO, "Attempt %s allocation of 0x%llx pages of size 0x%llx "
                           "(0x%x frames per page)\n",
                           contigFlag ? "contiguous" : "discontiguous",
                           (NvU64)allocationCount, pageSize, framesPerPage);
@@ -889,7 +894,7 @@ pmaAllocatePages_retry:
                 NvU64 evictStart  = *curPages;
                 NvU64 evictEnd    = *curPages + (numFramesToAllocateTotal << PMA_PAGE_SHIFT) - 1;
 
-                NV_PRINTF(LEVEL_INFO, "Attempt %s eviction of 0x%llx pages of size 0x%x, "
+                NV_PRINTF(LEVEL_INFO, "Attempt %s eviction of 0x%llx pages of size 0x%llx, "
                                       "(0x%x frames per page) in the frame range 0x%llx..0x%llx\n",
                                       contigFlag ? "contiguous" : "discontiguous",
                                       numPagesLeftToAllocate,
@@ -919,7 +924,7 @@ pmaAllocatePages_retry:
                     NV_ASSERT(evictPhysBegin <= evictPhysEnd);
                 }
 
-                NV_PRINTF(LEVEL_INFO, "Attempt %s eviction of 0x%llx pages of size 0x%x, "
+                NV_PRINTF(LEVEL_INFO, "Attempt %s eviction of 0x%llx pages of size 0x%llx, "
                                       "(0x%x frames per page), in the frame range 0x%llx..0x%llx\n",
                                       contigFlag ? "contiguous" : "discontiguous",
                                       numPagesLeftToAllocate,
@@ -1182,7 +1187,7 @@ pmaAllocatePagesBroadcast
     PMA                   **pPma,
     NvU32                   pmaCount,
     NvLength                allocationCount,
-    NvU32                   pageSize,
+    NvU64                   pageSize,
     PMA_ALLOCATION_OPTIONS *allocationOptions,
     NvU64                  *pPages
 )
@@ -1204,14 +1209,14 @@ pmaPinPages
     PMA      *pPma,
     NvU64    *pPages,
     NvLength  pageCount,
-    NvU32     pageSize
+    NvU64     pageSize
 )
 {
     NV_STATUS status = NV_OK;
     NvU32          framesPerPage, regId, i, j;
     NvU64          frameNum, addrBase;
     PMA_PAGESTATUS state;
-    framesPerPage  = pageSize >> PMA_PAGE_SHIFT;
+    framesPerPage  = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
 
     if (pPma == NULL || pageCount == 0 || pPages == NULL
         || (pageSize != _PMA_64KB && pageSize != _PMA_128KB && pageSize != _PMA_2MB && pageSize != _PMA_512MB))
@@ -1280,13 +1285,13 @@ pmaUnpinPages
     PMA      *pPma,
     NvU64    *pPages,
     NvLength  pageCount,
-    NvU32     pageSize
+    NvU64     pageSize
 )
 {
     NvU32          framesPerPage, regId, i, j;
     NvU64          frameNum, addrBase;
     PMA_PAGESTATUS state;
-    framesPerPage  = pageSize >> PMA_PAGE_SHIFT;
+    framesPerPage  = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
 
     if (pPma == NULL || pageCount == 0 || pPages == NULL
         || (pageSize != _PMA_64KB && pageSize != _PMA_128KB && pageSize != _PMA_2MB && pageSize != _PMA_512MB))
@@ -1310,8 +1315,8 @@ pmaUnpinPages
                 NV_PRINTF(LEVEL_ERROR, "Unpin failed at %dth page %dth frame\n",
                                         i, j);
                 _pmaRollback(pPma, pPages, i, j, pageSize, STATE_PIN);
+                portSyncSpinlockRelease(pPma->pPmaLock);
                 return NV_ERR_INVALID_STATE;
-
             }
             else
             {
@@ -1350,7 +1355,8 @@ pmaFreePages
     {
         NV_ASSERT((size == _PMA_64KB)  ||
                   (size == _PMA_128KB) ||
-                  (size == _PMA_2MB));
+                  (size == _PMA_2MB)   ||
+                  (size == _PMA_512MB));
     }
 
     // Fork out new code path for NUMA sub-allocation from OS
@@ -1800,7 +1806,7 @@ pmaGetClientBlacklistedPages
 (
     PMA   *pPma,
     NvU64 *pChunks,
-    NvU32 *pPageSize,
+    NvU64 *pPageSize,
     NvU32 *pNumChunks
 )
 {
@@ -1977,7 +1983,11 @@ pmaGetFreeProtectedMemory
     NvU64 *pBytesFree
 )
 {
-    *pBytesFree = 0;
+    portSyncSpinlockAcquire(pPma->pPmaLock);
+
+    *pBytesFree = (pPma->pmaStats.numFreeFramesProtected) << PMA_PAGE_SHIFT;
+
+    portSyncSpinlockRelease(pPma->pPmaLock);
 }
 
 void
@@ -1987,6 +1997,10 @@ pmaGetFreeUnprotectedMemory
     NvU64 *pBytesFree
 )
 {
-    // When memory protection is not enabled all memory is unprotected
-    pmaGetFreeMemory(pPma, pBytesFree);
+    portSyncSpinlockAcquire(pPma->pPmaLock);
+
+    *pBytesFree = (pPma->pmaStats.numFreeFrames -
+                   pPma->pmaStats.numFreeFramesProtected) << PMA_PAGE_SHIFT;
+
+    portSyncSpinlockRelease(pPma->pPmaLock);
 }

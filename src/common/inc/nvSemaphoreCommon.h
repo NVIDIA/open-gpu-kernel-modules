@@ -63,28 +63,35 @@ ct_assert(sizeof(NvReportSemaphore)   == 16);
  * the CPU or submitted to be written by the GPU, which is stashed in the
  * timestamp field of the semaphore by the CPU in both these cases.
  */
-static inline void NvTimeSemFermiSetMaxSubmitted(
-    NvReportSemaphore32 *report,
+static inline void NvTimeSemFermiSetMaxSubmittedVal(
+    volatile NvU64 *maxSubmittedPtr,
     const NvU64 value)
 {
     NvU64 oldValue =
-            (NvU64)__NVatomicCompareExchange64((volatile NvS64 *)&report->timer,
+            (NvU64)__NVatomicCompareExchange64((volatile NvS64 *)maxSubmittedPtr,
                                                0, 0);
 
     // Atomically set report->timer to max(value, report->time).
     while (oldValue < value) {
         const NvU64 prevValue =
-            (NvU64)__NVatomicCompareExchange64((volatile NvS64 *)&report->timer,
+            (NvU64)__NVatomicCompareExchange64((volatile NvS64 *)maxSubmittedPtr,
                                                (NvS64)value,
                                                (NvS64)oldValue);
         if (prevValue == oldValue) {
             // The specified value was set.  Done.
-            nvAssert(report->timer >= value);
+            nvAssert(*maxSubmittedPtr >= value);
             break;
         }
 
         oldValue = prevValue;
     }
+}
+
+static inline void NvTimeSemFermiSetMaxSubmitted(
+    NvReportSemaphore32 *report,
+    const NvU64 value)
+{
+    NvTimeSemFermiSetMaxSubmittedVal(&report->timer, value);
 }
 
 static inline NvU64 NvTimeSemFermiGetPayload(
@@ -150,7 +157,7 @@ static inline void NvTimeSemFermiSetPayload(
     const NvU64 payload)
 {
     // First save the actual value to the reserved/timer bits
-    NvTimeSemFermiSetMaxSubmitted(report, payload);
+    NvTimeSemFermiSetMaxSubmittedVal(&report->timer, payload);
 
     // Then write the low bits to the GPU-accessible semaphore value.
     report->payload = (NvU32)(payload & 0xFFFFFFFFULL);

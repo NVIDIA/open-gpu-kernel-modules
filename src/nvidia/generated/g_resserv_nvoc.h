@@ -231,7 +231,7 @@ typedef void *PUID_TOKEN;
 #define RS_LOCK_RELEASE_SESSION_LOCK           NVBIT(5)
 
 /// API enumerations used for locking knobs
-typedef enum 
+typedef enum
 {
     RS_LOCK_CLIENT      =0,
     RS_LOCK_TOP         =1,
@@ -239,7 +239,7 @@ typedef enum
     RS_LOCK_CUSTOM_3    =3,
 } RS_LOCK_ENUM;
 
-typedef enum 
+typedef enum
 {
     RS_API_ALLOC_CLIENT     = 0,
     RS_API_ALLOC_RESOURCE   = 1,
@@ -324,7 +324,7 @@ struct CALL_CONTEXT
     NvU32 serializedSize;           ///< Serialized size
     NvU32 deserializedSize;         ///< Deserialized size
     NvBool bReserialize;            ///< Reserialize before calling into GSP
-    NvBool bRestoreParams;          ///< Need to restore pParams
+    NvBool bLocalSerialization;     ///< Serialized internally
 };
 
 typedef enum {
@@ -403,7 +403,7 @@ struct ACCESS_CONTROL
 } while(0)
 
 #else
-#define RS_LOCK_VALIDATOR_INIT(lock, lockClass, inst)    
+#define RS_LOCK_VALIDATOR_INIT(lock, lockClass, inst)
 #define RS_RWLOCK_ACQUIRE_READ(lock, validator)                     do { portSyncRwLockAcquireRead((lock)); } while(0)
 #define RS_RWLOCK_ACQUIRE_WRITE(lock, validator)                    do { portSyncRwLockAcquireWrite((lock)); } while(0)
 #define RS_RWLOCK_RELEASE_READ_EXT(lock, validator, bOutOfOrder)    do { portSyncRwLockReleaseRead((lock)); } while(0)

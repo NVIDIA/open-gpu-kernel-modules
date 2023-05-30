@@ -43,10 +43,13 @@
 
 #include <ctrl/ctrl0000/ctrl0000gpu.h> /* NV0000_CTRL_CMD_GPU_GET_ID_INFO_V2 */
 #include <ctrl/ctrl0000/ctrl0000unix.h> /* NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_FROM_FD */
+#include <ctrl/ctrl0000/ctrl0000client.h> /* NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM */
 #include <ctrl/ctrl0080/ctrl0080gpu.h> /* NV0080_CTRL_CMD_GPU_GET_NUM_SUBDEVICES */
+#include <ctrl/ctrl0080/ctrl0080fb.h> /* NV0080_CTRL_CMD_FB_GET_CAPS_V2 */
 #include <ctrl/ctrl2080/ctrl2080unix.h> /* NV2080_CTRL_CMD_OS_UNIX_GC6_BLOCKER_REFCNT */
 
 #include "ctrl/ctrl003e.h" /* NV003E_CTRL_CMD_GET_SURFACE_PHYS_PAGES */
+#include "ctrl/ctrl0041.h" /* NV0041_CTRL_SURFACE_INFO */
 
 
 ct_assert(NVKMS_KAPI_LAYER_PRIMARY_IDX == NVKMS_MAIN_LAYER);
@@ -113,8 +116,10 @@ static NvBool RmAllocateDevice(struct NvKmsKapiDevice *device)
     NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS idInfoParams = { };
     NV2080_ALLOC_PARAMETERS subdevAllocParams = { 0 };
     NV0080_ALLOC_PARAMETERS allocParams = { };
+    NV0080_CTRL_FB_GET_CAPS_V2_PARAMS fbCapsParams = { 0 };
 
     NvU32 hRmDevice, hRmSubDevice;
+    NvBool supportsGenericPageKind;
     NvU32 ret;
 
     /* Allocate RM client */
@@ -227,6 +232,30 @@ static NvBool RmAllocateDevice(struct NvKmsKapiDevice *device)
     }
 
     device->hRmSubDevice = hRmSubDevice;
+
+    if (device->isSOC) {
+        /* NVKMS is only used on T23X and later chips,
+         * which all support generic memory. */
+        supportsGenericPageKind = NV_TRUE;
+    } else {
+        ret = nvRmApiControl(device->hRmClient,
+                             device->hRmDevice,
+                             NV0080_CTRL_CMD_FB_GET_CAPS_V2,
+                             &fbCapsParams,
+                             sizeof (fbCapsParams));
+        if (ret != NVOS_STATUS_SUCCESS) {
+            nvKmsKapiLogDeviceDebug(device, "Failed to query framebuffer capabilities");
+            goto failed;
+        }
+        supportsGenericPageKind =
+            NV0080_CTRL_FB_GET_CAP(fbCapsParams.capsTbl,
+                                   NV0080_CTRL_FB_CAPS_GENERIC_PAGE_KIND);
+    }
+
+    device->caps.genericPageKind = 
+        supportsGenericPageKind ?
+        0x06 /* NV_MMU_PTE_KIND_GENERIC_MEMORY */ :
+        0xfe /* NV_MMU_PTE_KIND_GENERIC_16BX2 */;
 
     return NV_TRUE;
 
@@ -352,8 +381,10 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     device->caps.maxWidthInPixels      = paramsAlloc->reply.maxWidthInPixels;
     device->caps.maxHeightInPixels     = paramsAlloc->reply.maxHeightInPixels;
     device->caps.maxCursorSizeInPixels = paramsAlloc->reply.maxCursorSize;
-    device->caps.genericPageKind       = paramsAlloc->reply.genericPageKind;
     device->caps.requiresVrrSemaphores = paramsAlloc->reply.requiresVrrSemaphores;
+    /* The generic page kind was determined during RM device allocation,
+     * but it should match what NVKMS reports */
+    nvAssert(device->caps.genericPageKind == paramsAlloc->reply.genericPageKind);
 
     /* XXX Add LUT support */
 
@@ -917,6 +948,7 @@ static NvBool GetDeviceResourcesInfo
     nvkms_memset(info, 0, sizeof(*info));
 
     info->caps.hasVideoMemory = !device->isSOC;
+    info->caps.genericPageKind = device->caps.genericPageKind;
 
     if (device->hKmsDevice == 0x0) {
         info->caps.pitchAlignment = 0x1;
@@ -984,7 +1016,6 @@ static NvBool GetDeviceResourcesInfo
     info->caps.maxWidthInPixels      = device->caps.maxWidthInPixels;
     info->caps.maxHeightInPixels     = device->caps.maxHeightInPixels;
     info->caps.maxCursorSizeInPixels = device->caps.maxCursorSizeInPixels;
-    info->caps.genericPageKind       = device->caps.genericPageKind;
 
     info->caps.pitchAlignment = NV_EVO_PITCH_ALIGNMENT;
 
@@ -1102,8 +1133,6 @@ static NvBool GetConnectorInfo
 
     info->physicalIndex = paramsConnector.reply.physicalIndex;
 
-    info->headMask = paramsConnector.reply.headMask;
-
     info->signalFormat = paramsConnector.reply.signalFormat;
 
     info->type = paramsConnector.reply.type;
@@ -1159,7 +1188,7 @@ static NvBool GetStaticDisplayInfo
     info->dpAddress[sizeof(paramsDpyStatic.reply.dpAddress) - 1] = '\0';
 
     info->internal = paramsDpyStatic.reply.mobileInternal;
-
+    info->headMask = paramsDpyStatic.reply.headMask;
 done:
 
     return status;
@@ -1795,6 +1824,57 @@ static NvBool GetMemoryPages
     *pNumPages = paramsGetPages.numPages;
 
     return NV_TRUE;
+}
+
+/*
+ * Check if the memory we are creating this framebuffer with is valid. We
+ * cannot scan out sysmem or compressed buffers.
+ *
+ * If we cannot use this memory for display it may be resident in sysmem
+ * or may belong to another GPU.
+ */
+static NvBool IsMemoryValidForDisplay
+(
+    const struct NvKmsKapiDevice *device,
+    const struct NvKmsKapiMemory *memory
+)
+{
+    NV_STATUS status;
+    NV0041_CTRL_SURFACE_INFO surfaceInfo = {};
+    NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParams = {};
+
+    if (device == NULL || memory == NULL) {
+        return NV_FALSE;
+    }
+
+    /*
+     * Don't do these checks on tegra. Tegra has different capabilities.
+     * Here we always say display is possible so we never fail framebuffer
+     * creation.
+     */
+    if (device->isSOC) {
+        return NV_TRUE;
+    }
+
+    /* Get the type of address space this memory is in, i.e. vidmem or sysmem */
+    surfaceInfo.index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
+
+    surfaceInfoParams.surfaceInfoListSize = 1;
+    surfaceInfoParams.surfaceInfoList = (NvP64)&surfaceInfo;
+
+    status = nvRmApiControl(device->hRmClient,
+                            memory->hRmHandle,
+                            NV0041_CTRL_CMD_GET_SURFACE_INFO,
+                            &surfaceInfoParams,
+                            sizeof(surfaceInfoParams));
+    if (status != NV_OK) {
+        nvKmsKapiLogDeviceDebug(device,
+                "Failed to get memory location of RM memory object 0x%x",
+                memory->hRmHandle);
+        return NV_FALSE;
+    }
+
+    return surfaceInfo.data == NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_VIDMEM;
 }
 
 static void FreeMemoryPages
@@ -3237,6 +3317,8 @@ NvBool nvKmsKapiGetFunctionsTableInternal
 
     funcsTable->getMemoryPages = GetMemoryPages;
     funcsTable->freeMemoryPages = FreeMemoryPages;
+
+    funcsTable->isMemoryValidForDisplay = IsMemoryValidForDisplay;
 
     return NV_TRUE;
 }

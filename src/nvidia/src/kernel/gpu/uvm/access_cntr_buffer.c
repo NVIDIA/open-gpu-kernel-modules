@@ -30,6 +30,8 @@
 #include "gpu/device/device.h"
 #include "kernel/rmapi/client.h"
 
+#include "alloc/alloc_access_counter_buffer.h"
+
 NV_STATUS
 accesscntrConstruct_IMPL
 (
@@ -38,7 +40,7 @@ accesscntrConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    NV_STATUS status;
+    NV_ACCESS_COUNTER_NOTIFY_BUFFER_ALLOC_PARAMS *pAllocParams = pParams->pAllocParams;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pAccessCounterBuffer);
     OBJUVM *pUvm = GPU_GET_UVM(pGpu);
 
@@ -58,17 +60,17 @@ accesscntrConstruct_IMPL
 
     NV_ASSERT_OR_RETURN(pUvm != NULL, NV_ERR_NOT_SUPPORTED);
 
-    status = uvmInitializeAccessCntrBuffer(pGpu, pUvm);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed to initialize UVM Access Counters (status=0x%08x).\n",
-                  status);
-        return status;
-    }
+    pAccessCounterBuffer->accessCounterIndex = (pAllocParams != NULL) ? pAllocParams->accessCounterIndex : 0;
 
-    pUvm->accessCntrBuffer.hAccessCntrBufferClient = pCallContext->pClient->hClient;
-    pUvm->accessCntrBuffer.hAccessCntrBufferObject = pCallContext->pResourceRef->hResource;
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        pAccessCounterBuffer->accessCounterIndex < pUvm->accessCounterBufferCount,
+        NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        pUvm->pAccessCounterBuffers[pAccessCounterBuffer->accessCounterIndex].pAccessCounterBuffer == NULL,
+        NV_ERR_INVALID_STATE);
+
+    NV_ASSERT_OK_OR_RETURN(uvmInitializeAccessCntrBuffer(pGpu, pUvm, pAccessCounterBuffer));
+    pUvm->pAccessCounterBuffers[pAccessCounterBuffer->accessCounterIndex].pAccessCounterBuffer = pAccessCounterBuffer;
 
     return NV_OK;
 }
@@ -82,7 +84,11 @@ accesscntrDestruct_IMPL
     OBJGPU *pGpu = GPU_RES_GET_GPU(pAccessCounterBuffer);
     OBJUVM *pUvm = GPU_GET_UVM(pGpu);
 
-    (void) uvmTerminateAccessCntrBuffer(pGpu, pUvm);
+    NV_ASSERT(pUvm->pAccessCounterBuffers[pAccessCounterBuffer->accessCounterIndex].pAccessCounterBuffer == pAccessCounterBuffer);
+
+    NV_ASSERT_OK(uvmTerminateAccessCntrBuffer(pGpu, pUvm, pAccessCounterBuffer));
+
+    pUvm->pAccessCounterBuffers[pAccessCounterBuffer->accessCounterIndex].pAccessCounterBuffer = NULL;
 }
 
 NV_STATUS
@@ -96,7 +102,6 @@ accesscntrMap_IMPL
 {
     RmClient               *pClient = dynamicCast(pCallContext->pClient, RmClient);
     OBJGPU                 *pGpu;
-    OBJUVM                 *pUvm;
     NV_STATUS               rmStatus = NV_OK;
     NvBool                  bBroadcast = NV_TRUE;
     NvBool                  bKernel;
@@ -104,7 +109,6 @@ accesscntrMap_IMPL
     pGpu = CliGetGpuFromContext(pCpuMapping->pContextRef, &bBroadcast);
     NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
     gpuSetThreadBcState(pGpu, bBroadcast);
-    pUvm = GPU_GET_UVM(pGpu);
 
     rmStatus = rmapiValidateKernelMapping(rmclientGetCachedPrivilege(pClient),
                                           pCpuMapping->flags,
@@ -114,14 +118,13 @@ accesscntrMap_IMPL
 
     pCpuMapping->processId = osGetCurrentProcess();
 
-    rmStatus = memdescMap(pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc,
+    rmStatus = memdescMap(pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc,
                           0,
-                          pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc->Size,
+                          pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc->Size,
                           bKernel,
                           pCpuMapping->pPrivate->protect,
                           &pCpuMapping->pLinearAddress,
                           &pCpuMapping->pPrivate->pPriv);
-    pUvm->accessCntrBuffer.hAccessCntrBufferCpuMapping = pCpuMapping->pPrivate->pPriv;
 
     return rmStatus;
 }
@@ -137,7 +140,6 @@ accesscntrUnmap_IMPL
     NV_STATUS               rmStatus;
     RmClient               *pClient = dynamicCast(pCallContext->pClient, RmClient);
     OBJGPU                 *pGpu;
-    OBJUVM                 *pUvm;
     NvBool                  bBroadcast = NV_TRUE;
     NvBool                  bKernel;
 
@@ -145,19 +147,17 @@ accesscntrUnmap_IMPL
     NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
     gpuSetThreadBcState(pGpu, bBroadcast);
 
-    pUvm = GPU_GET_UVM(pGpu);
-
     rmStatus = rmapiValidateKernelMapping(rmclientGetCachedPrivilege(pClient),
                                           pCpuMapping->flags,
                                           &bKernel);
     if (rmStatus != NV_OK)
         return rmStatus;
 
-    memdescUnmap(pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc,
+    memdescUnmap(pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc,
                  bKernel,
                  pCpuMapping->processId,
                  pCpuMapping->pLinearAddress,
-                 pUvm->accessCntrBuffer.hAccessCntrBufferCpuMapping);
+                 pCpuMapping->pPrivate->pPriv);
 
     return NV_OK;
 }
@@ -173,8 +173,7 @@ accesscntrGetMapAddrSpace_IMPL
 {
     NV_ADDRESS_SPACE addrSpace;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pAccessCounterBuffer);
-    OBJUVM *pUvm = GPU_GET_UVM(pGpu);
-    PMEMORY_DESCRIPTOR pMemDesc = pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc;
+    PMEMORY_DESCRIPTOR pMemDesc = pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc;
 
     if (pMemDesc == NULL)
         return NV_ERR_INVALID_OBJECT;

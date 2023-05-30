@@ -344,12 +344,13 @@ flamemConstruct_IMPL
         pAllocParams->base  = newBase;
         pAllocParams->limit = flaSize - 1;
         NV_RM_RPC_ALLOC_OBJECT(pGpu,
-                                pParams->hClient,
-                                pParams->hParent,
-                                pParams->hResource,
-                                pParams->externalClassId,
-                                pAllocParams,
-                                status);
+                               pParams->hClient,
+                               pParams->hParent,
+                               pParams->hResource,
+                               pParams->externalClassId,
+                               pAllocParams,
+                               sizeof(*pAllocParams),
+                               status);
 
         if (status != NV_OK)
         {

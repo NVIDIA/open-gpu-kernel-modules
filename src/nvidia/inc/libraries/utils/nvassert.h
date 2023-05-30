@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -822,6 +822,20 @@ void nvCheckOkFailedNoLog(NvU32 level, NvU32 status NV_ASSERT_FAILED_FUNC_COMMA_
  */
 #define NV_CHECK_OK_OR_GOTO(status, level, expr, label)                        \
     NV_CHECK_OK_OR_ELSE_STR(status, level, expr, #expr, goto label)
+
+/**
+ * Check that an expression evaluates to NV_TRUE or else goto a label.
+ *
+ * @param[in] status The NV_STATUS variable to capture the status
+ * @param[in] level  NV_PRINTF LEVEL to print at
+ * @param[in] expr   Expression that evaluates to either NV_TRUE or NV_FALSE.
+ * @param[in] error  Error to be reflected in @p status when @p expr evaluates
+                     to NV_FALSE.
+ * @param[in] label  Label to jump to when @p expr evaluates to NV_FALSE.
+*/
+#define NV_CHECK_TRUE_OR_GOTO(status, level, expr, error, label)       \
+    NV_CHECK_OK_OR_ELSE_STR(status, level, ((expr) ? NV_OK : (error)), \
+        #expr, goto label);
 
 /**
  * Check that an expression evaluates to NV_OK or return the status.

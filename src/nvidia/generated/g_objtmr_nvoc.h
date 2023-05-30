@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,16 +58,26 @@ extern "C" {
 
 // Callback scheduled without any explicit flags set.
 #define TMR_FLAGS_NONE              0x00000000
+//
 // Automatically reschedule the callback, so that it repeats.
 // Otherwise, callback is scheduled for one-shot execution.
+//
 #define TMR_FLAG_RECUR              NVBIT(0)
+//
 // Indicate that the implementation of the callback function will/can release
 // a GPU semaphore. This allows fifoIdleChannels to query this information,
 // and hence not bail out early if channels are blocked on semaphores that
 // will in fact be released.
- // !!NOTE: This is OBSOLETE, it should be moved directly to FIFO, where it's needed
+// !!NOTE: This is OBSOLETE, it should be moved directly to FIFO, where it's needed
+//
 #define TMR_FLAG_RELEASE_SEMAPHORE  NVBIT(1)
 #define TMR_FLAG_OS_TIMER_QUEUED    NVBIT(2)
+//
+// Normally, it should not be necessary to use the TMR_FLAG_USE_OS_TIMER flag,
+// because the OS timer is selected automatically by the default
+// PDB_PROP_TMR_USE_OS_TIMER_FOR_CALLBACKS setting.
+// Note that the OS timer is not supported in all environments (such as GSP-RM).
+//
 #define TMR_FLAG_USE_OS_TIMER       NVBIT(3)
 
 #define TMR_GET_GPU(p)   ENG_GET_GPU(p)
@@ -235,6 +245,7 @@ struct OBJTMR {
     NvBool bAlarmIntrEnabled;
     PENG_INFO_LINK_NODE infoList;
     struct OBJREFCNT *pGrTickFreqRefcnt;
+    NvU64 sysTimerOffsetNs;
 };
 
 #ifndef __NVOC_CLASS_OBJTMR_TYPEDEF__
@@ -676,19 +687,19 @@ static inline NV_STATUS tmrEventCreateOSTimer(struct OBJTMR *pTmr, PTMR_EVENT pE
 
 #define tmrEventCreateOSTimer_HAL(pTmr, pEvent) tmrEventCreateOSTimer(pTmr, pEvent)
 
-NV_STATUS tmrEventScheduleAbsOSTimer_OSTIMER(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeAbs);
+NV_STATUS tmrEventScheduleRelOSTimer_OSTIMER(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeRelNs);
 
 
 #ifdef __nvoc_objtmr_h_disabled
-static inline NV_STATUS tmrEventScheduleAbsOSTimer(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeAbs) {
+static inline NV_STATUS tmrEventScheduleRelOSTimer(struct OBJTMR *pTmr, PTMR_EVENT pEvent, NvU64 timeRelNs) {
     NV_ASSERT_FAILED_PRECOMP("OBJTMR was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_objtmr_h_disabled
-#define tmrEventScheduleAbsOSTimer(pTmr, pEvent, timeAbs) tmrEventScheduleAbsOSTimer_OSTIMER(pTmr, pEvent, timeAbs)
+#define tmrEventScheduleRelOSTimer(pTmr, pEvent, timeRelNs) tmrEventScheduleRelOSTimer_OSTIMER(pTmr, pEvent, timeRelNs)
 #endif //__nvoc_objtmr_h_disabled
 
-#define tmrEventScheduleAbsOSTimer_HAL(pTmr, pEvent, timeAbs) tmrEventScheduleAbsOSTimer(pTmr, pEvent, timeAbs)
+#define tmrEventScheduleRelOSTimer_HAL(pTmr, pEvent, timeRelNs) tmrEventScheduleRelOSTimer(pTmr, pEvent, timeRelNs)
 
 NV_STATUS tmrEventServiceOSTimerCallback_OSTIMER(OBJGPU *pGpu, struct OBJTMR *pTmr, PTMR_EVENT pEvent);
 
@@ -732,9 +743,9 @@ static inline NV_STATUS tmrEventDestroyOSTimer(struct OBJTMR *pTmr, PTMR_EVENT p
 
 #define tmrEventDestroyOSTimer_HAL(pTmr, pEvent) tmrEventDestroyOSTimer(pTmr, pEvent)
 
-void tmrRegisterIntrService_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[166]);
+void tmrRegisterIntrService_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[167]);
 
-static inline void tmrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[166]) {
+static inline void tmrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[167]) {
     pTmr->__tmrRegisterIntrService__(pGpu, pTmr, pRecords);
 }
 

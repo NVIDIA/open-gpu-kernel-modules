@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+// FIXME XXX
+#define NVOC_KERNEL_GRAPHICS_OBJECT_H_PRIVATE_ACCESS_ALLOWED
+
+#define NVOC_KERNEL_GRAPHICS_CONTEXT_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/gpu/gr/kernel_graphics_context.h"
 #include "kernel/gpu/gr/kernel_graphics_manager.h"
@@ -385,7 +390,7 @@ kgrctxFillCtxBufferInfo_IMPL
     NV2080_CTRL_GR_CTX_BUFFER_INFO *pCtxBufferInfo
 )
 {
-    NvU32 pageSize;
+    NvU64 pageSize;
     NV_STATUS status;
 
     MEMORY_DESCRIPTOR *pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
@@ -1364,7 +1369,7 @@ kgrctxAllocCtxBuffers_IMPL
     // Allocate Ctx Buffers that are local to this channel if required
     // and they have yet to be allocated.
     //
-    if ((pKernelGraphicsContextUnicast->bVprChannel 
+    if ((pKernelGraphicsContextUnicast->bVprChannel
         ) && !pKernelGraphicsContextUnicast->localCtxBuffer.bAllocated)
     {
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
@@ -1997,8 +2002,10 @@ kgrctxSetupDeferredPmBuffer_IMPL
     NV_STATUS status = NV_OK;
     Subdevice *pSubdevice;
 
-    pSubdevice = CliGetSubDeviceInfoFromGpu(RES_GET_CLIENT_HANDLE(pKernelChannel), pGpu);
-    NV_ASSERT_OR_RETURN(pSubdevice != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OK_OR_RETURN(
+            subdeviceGetByGpu(RES_GET_CLIENT(pKernelChannel), pGpu, &pSubdevice));
+
+    GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
     NV_ASSERT_OK_OR_RETURN(
         kgrctxGetUnicast(pGpu, pKernelGraphicsContext, &pKernelGraphicsContextUnicast));

@@ -130,3 +130,4 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += drm_modeset_lock_all_end
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_connector_lookup
 NV_CONFTEST_TYPE_COMPILE_TESTS += drm_connector_put
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
+NV_CONFTEST_TYPE_COMPILE_TESTS += drm_driver_has_dumb_destroy

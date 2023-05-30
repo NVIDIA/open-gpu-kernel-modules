@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080perf.finn
+// Source file:      ctrl/ctrl2080/ctrl2080perf.finn
 //
 
 #include "nvfixedtypes.h"
@@ -460,7 +460,7 @@ typedef NV2080_CTRL_GPUMON_SAMPLES NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMP
 #define NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL       72
 
 #define NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_BUFFER_SIZE           \
-    NV_SIZEOF32(NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE) *     \
+    sizeof(NV2080_CTRL_PERF_GPUMON_PERFMON_UTIL_SAMPLE) *          \
     NV2080_CTRL_PERF_GPUMON_SAMPLE_COUNT_PERFMON_UTIL
 
 /*!

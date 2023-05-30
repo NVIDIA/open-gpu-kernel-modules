@@ -21,6 +21,9 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+// FIXME XXX
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
+
 #include "core/core.h"
 #include "gpu/gpu.h"
 
@@ -30,6 +33,7 @@
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/device/device.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/bus/p2p_api.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "rmapi/rmapi.h"
@@ -74,7 +78,7 @@ kbusAllocateLegacyFlaVaspace_GA100
 
     //Allocate the client in RM which owns the FLAVASpace
     status = pRmApi->AllocWithHandle(pRmApi, NV01_NULL_OBJECT, NV01_NULL_OBJECT, NV01_NULL_OBJECT,
-                                     NV01_ROOT, &pKernelBus->flaInfo.hClient);
+                                     NV01_ROOT, &pKernelBus->flaInfo.hClient, sizeof(pKernelBus->flaInfo.hClient));
     NV_ASSERT_OR_RETURN(status == NV_OK, status);
 
     status = serverGetClientUnderLock(&g_resServ, pKernelBus->flaInfo.hClient, &pClient);
@@ -87,7 +91,7 @@ kbusAllocateLegacyFlaVaspace_GA100
     nv0080AllocParams.deviceId = gpuGetDeviceInstance(pGpu);
     status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient,
                                      pKernelBus->flaInfo.hDevice, NV01_DEVICE_0,
-                                     &nv0080AllocParams);
+                                     &nv0080AllocParams, sizeof(nv0080AllocParams));
 
     if (status != NV_OK)
     {
@@ -104,7 +108,7 @@ kbusAllocateLegacyFlaVaspace_GA100
 
     status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hDevice,
                                      pKernelBus->flaInfo.hSubDevice, NV20_SUBDEVICE_0,
-                                     &nv2080AllocParams);
+                                     &nv2080AllocParams, sizeof(nv2080AllocParams));
 
     if (status != NV_OK)
     {
@@ -138,7 +142,7 @@ kbusAllocateLegacyFlaVaspace_GA100
     // Allocate a FERMI_VASPACE_A object and associate it with hFlaVASpace
     status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hDevice,
                                      pKernelBus->flaInfo.hFlaVASpace, FERMI_VASPACE_A,
-                                     &vaParams);
+                                     &vaParams, sizeof(vaParams));
     if (bAcquireLock)
     {
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
@@ -325,7 +329,7 @@ kbusAllocateFlaVaspace_GA100
     if (pGpu->pFabricVAS != NULL)
     {
         NV_ASSERT_OK_OR_GOTO(status, fabricvaspaceInitUCRange(
-                                     dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE), pGpu, 
+                                     dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE), pGpu,
                                      base, size), free_instblk);
     }
 
@@ -516,7 +520,7 @@ kbusAllocateHostManagedFlaVaspace_GA100
     if (pGpu->pFabricVAS != NULL)
     {
         NV_ASSERT_OK_OR_GOTO(status, fabricvaspaceInitUCRange(
-                                     dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE), pGpu, 
+                                     dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE), pGpu,
                                      base, size), free_instblk);
     }
 
@@ -548,8 +552,8 @@ cleanup:
     return status;
 }
 
-/*! 
- * Top level function to check if the platform supports FLA, and initialize if 
+/*!
+ * Top level function to check if the platform supports FLA, and initialize if
  * supported. This function gets called in all the platforms where Nvlink is enabled.
  *
  * @param[in]  base       VASpace base
@@ -604,7 +608,7 @@ kbusCheckFlaSupportedAndInit_GA100
 }
 
 /*!
- * @brief Determine FLA Base and Size for NvSwitch Virtualization systems 
+ * @brief Determine FLA Base and Size for NvSwitch Virtualization systems
  *        from reading the scratch registers. This determines FLA base and size
  *        GA100 direct connected systems as well as skip allocation of FLA Vaspace
  *        for vgpu host.
@@ -1012,11 +1016,13 @@ kbusGetNvlinkP2PPeerId_GA100
     KernelBus *pKernelBus0,
     OBJGPU    *pGpu1,
     KernelBus *pKernelBus1,
-    NvU32     *nvlinkPeer
+    NvU32     *nvlinkPeer,
+    NvU32      attributes
 )
 {
     KernelNvlink *pKernelNvlink0 = GPU_GET_KERNEL_NVLINK(pGpu0);
     NV_STATUS     status         = NV_OK;
+    NvBool        bEgmPeer = FLD_TEST_DRF(_P2PAPI, _ATTRIBUTES, _REMOTE_EGM, _YES, attributes);
 
     if (nvlinkPeer == NULL)
     {
@@ -1035,8 +1041,8 @@ kbusGetNvlinkP2PPeerId_GA100
     // If NVLINK topology is forced and the forced configuration has peer links,
     // get the peer ID from the table
     //
-    if (knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
-        pKernelNvlink0->bRegistryLinkOverride)
+    if ((knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
+        pKernelNvlink0->bRegistryLinkOverride) && !bEgmPeer)
     {
         if (knvlinkGetPeersNvlinkMaskFromHshub(pGpu0, pKernelNvlink0) != 0)
         {
@@ -1064,7 +1070,15 @@ kbusGetNvlinkP2PPeerId_GA100
     }
 
     // Return if a peer ID is already allocated for P2P from pGpu0 to pGpu1
-    *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    if (bEgmPeer)
+    {
+        *nvlinkPeer = kbusGetEgmPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    }
+    else
+    {
+        *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    }
+
     if (*nvlinkPeer != BUS_INVALID_PEER)
     {
         return NV_OK;
@@ -1080,8 +1094,7 @@ kbusGetNvlinkP2PPeerId_GA100
     //     2. Mix of direct NVLink and NVSwitch connections is supported
     //   None of the above hold true currently
     //
-    if ((pGpu0 == pGpu1) ||
-        knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
+    if (((pGpu0 == pGpu1) && !bEgmPeer) || knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
     {
         *nvlinkPeer = 0;
 
@@ -1109,6 +1122,12 @@ kbusGetNvlinkP2PPeerId_end:
 
     // Reserve the peer ID for NVLink use
     status = kbusReserveP2PPeerIds_HAL(pGpu0, pKernelBus0, NVBIT(*nvlinkPeer));
+
+    if ((status == NV_OK) &&
+        !knvlinkIsGpuConnectedToNvswitch(pGpu0, pKernelNvlink0))
+    {
+        pKernelBus0->p2p.bEgmPeer[*nvlinkPeer] = bEgmPeer;
+    }
 
     return status;
 }
@@ -1374,4 +1393,37 @@ kbusGetFlaRange_GA100
     }
 
     return NV_OK;
+}
+
+/*!
+ * @brief Returns the Nvlink specific peer number from pGpu (Local) to pGpuPeer.
+ *        Used only by VF.
+ *
+ * @param[in] pGpu          Local
+ * @param[in] pKernelBus    Local
+ * @param[in] pGpuPeer      Remote
+ *
+ * @returns NvU32 bus peer number
+ */
+NvU32
+kbusGetNvlinkPeerId_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    OBJGPU    *pGpuPeer
+)
+{
+    NvU32 gpuPeerInst = gpuGetInstance(pGpuPeer);
+    NvU32 peerId = pKernelBus->p2p.busNvlinkPeerNumberMask[gpuPeerInst];
+
+    if (peerId == 0)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "NVLINK P2P not set up between GPU%u and GPU%u, checking for PCIe P2P...\n",
+                  gpuGetInstance(pGpu), gpuPeerInst);
+        return BUS_INVALID_PEER;
+    }
+
+    LOWESTBITIDX_32(peerId);
+    return peerId;
 }

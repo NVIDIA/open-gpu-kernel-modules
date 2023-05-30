@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -98,9 +98,6 @@ static int nv_acpi_notifier_call_chain_handler(
 )
 {
     struct acpi_bus_event *info = data;
-    nv_stack_t *sp = NULL;
-    nv_linux_state_t *nvl = container_of(nb, nv_linux_state_t, acpi_nb);
-    nv_state_t *nv = NV_STATE_PTR(nvl);
 
     /*
      * The ACPI_VIDEO_NOTIFY_PROBE will be sent for display hot-plug/unplug.
@@ -1062,7 +1059,10 @@ static NV_STATUS  nv_acpi_wmmx_method(
     union acpi_object mmx_params[3];
 
     if (!wmmx_handle)
+    {
+        *outDataSize = 0;
         return NV_ERR_NOT_SUPPORTED;
+    }
 
     if (!NV_MAY_SLEEP())
     {

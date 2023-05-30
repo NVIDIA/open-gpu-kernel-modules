@@ -51,24 +51,24 @@
     NV_STATUS subdeviceCtrlCmdRcSetCleanErrorHistory(Subdevice *pSubdevice);
 
     RMCTRL_EXPORT(NV2080_CTRL_CMD_RC_GET_WATCHDOG_INFO,
-                  RMCTRL_FLAGS(NON_PRIVILEGED))
+                  RMCTRL_FLAGS(NON_PRIVILEGED, GPU_LOCK_DEVICE_ONLY, API_LOCK_READONLY))
     NV_STATUS subdeviceCtrlCmdRcGetWatchdogInfo(Subdevice *pSubdevice,
         NV2080_CTRL_RC_GET_WATCHDOG_INFO_PARAMS *pWatchdogInfoParams);
 
     RMCTRL_EXPORT(NV2080_CTRL_CMD_RC_DISABLE_WATCHDOG,
-                  RMCTRL_FLAGS(NON_PRIVILEGED))
+                  RMCTRL_FLAGS(NON_PRIVILEGED, GPU_LOCK_DEVICE_ONLY))
     NV_STATUS subdeviceCtrlCmdRcDisableWatchdog(Subdevice *pSubdevice);
 
     RMCTRL_EXPORT(NV2080_CTRL_CMD_RC_SOFT_DISABLE_WATCHDOG,
-                  RMCTRL_FLAGS(NON_PRIVILEGED))
+                  RMCTRL_FLAGS(NON_PRIVILEGED, GPU_LOCK_DEVICE_ONLY))
     NV_STATUS subdeviceCtrlCmdRcSoftDisableWatchdog(Subdevice *pSubdevice);
 
     RMCTRL_EXPORT(NV2080_CTRL_CMD_RC_ENABLE_WATCHDOG,
-                  RMCTRL_FLAGS(NON_PRIVILEGED))
+                  RMCTRL_FLAGS(NON_PRIVILEGED, GPU_LOCK_DEVICE_ONLY))
     NV_STATUS subdeviceCtrlCmdRcEnableWatchdog(Subdevice *pSubdevice);
 
     RMCTRL_EXPORT(NV2080_CTRL_CMD_RC_RELEASE_WATCHDOG_REQUESTS,
-                  RMCTRL_FLAGS(NON_PRIVILEGED))
+                  RMCTRL_FLAGS(NON_PRIVILEGED, GPU_LOCK_DEVICE_ONLY))
     NV_STATUS subdeviceCtrlCmdRcReleaseWatchdogRequests(Subdevice *pSubdevice);
 
     RMCTRL_EXPORT(NV2080_CTRL_CMD_INTERNAL_RC_WATCHDOG_TIMEOUT,

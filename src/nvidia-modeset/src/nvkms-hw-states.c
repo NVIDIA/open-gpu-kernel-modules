@@ -245,6 +245,28 @@
  * change the pin here, prior to enabling flip lock.
  */
 
+NvBool nvEvoLockHWStateNoChange(NVDispEvoPtr pDispEvo, NVEvoSubDevPtr pEvoSubDev,
+                                const NvU32 *pHeads)
+{
+    return TRUE;
+}
+
+NvBool nvEvoLockHWStateMergeMode(NVDispEvoPtr pDispEvo, NVEvoSubDevPtr pEvoSubDev,
+                                 const NvU32 *pHeads)
+{
+    unsigned int i;
+
+    nvAssert(pHeads != NULL && pHeads[0] != NV_INVALID_HEAD);
+
+    for (i = 0; pHeads[i] != NV_INVALID_HEAD; i++) {
+        const int head = pHeads[i];
+        NVEvoHeadControlPtr pHC = &pEvoSubDev->headControlAssy[head];
+        pHC->mergeMode = TRUE;
+    }
+
+    return TRUE;
+}
+
 NvBool nvEvoLockHWStateNoLock(NVDispEvoPtr pDispEvo, NVEvoSubDevPtr pEvoSubDev,
                               const NvU32 *pHeads)
 {
@@ -262,6 +284,11 @@ NvBool nvEvoLockHWStateNoLock(NVDispEvoPtr pDispEvo, NVEvoSubDevPtr pEvoSubDev,
         pHC->clientLock = NV_EVO_NO_LOCK;
         pHC->clientLockPin = NV_EVO_LOCK_PIN_INTERNAL(0);
         pHC->clientLockoutWindow = 0;
+        pHC->mergeMode = FALSE;
+        pHC->setLockOffsetX = FALSE;
+        pHC->useStallLockPin = FALSE;
+        pHC->stallLockPin = NV_EVO_LOCK_PIN_INTERNAL(0);
+        pHC->crashLockUnstallMode = FALSE;
 
         /* Reset the flip lock pin to internal, if not needed for SLI */
         if (!HEAD_MASK_QUERY(pEvoSubDev->flipLockPinSetForSliHeadMask, head)) {

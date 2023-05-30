@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -174,7 +174,7 @@ void NV_API_CALL nv_create_nano_timer(
  *
  * @param[in] nv           Per gpu linux state
  * @param[in] nv_nstimer   Pointer to nv_nano_timer_t object
- * @param[in] timens       time in nano seconds
+ * @param[in] time_ns      Relative time in nano seconds
  */
 void NV_API_CALL nv_start_nano_timer(
     nv_state_t *nv,
@@ -213,7 +213,7 @@ void NV_API_CALL nv_cancel_nano_timer(
 #if NV_NANO_TIMER_USE_HRTIMER
     hrtimer_cancel(&nv_nstimer->hr_timer);
 #else
-    del_timer(&nv_nstimer->jiffy_timer);
+    del_timer_sync(&nv_nstimer->jiffy_timer);
 #endif
 
 }

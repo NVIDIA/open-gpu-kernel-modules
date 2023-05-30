@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_MIG_MANAGER_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mem_mgr/heap.h"
@@ -112,16 +114,16 @@ kmigmgrCreateGPUInstanceCheck_GA100
     // Make sure there are no channels alive on any of these engines
     if (kfifoEngineListHasChannel(pGpu, pKernelFifo, engines, engineCount))
         return NV_ERR_STATE_IN_USE;
-    
+
     //
-    // Check for any alive P2P references to this GPU. P2P objects must 
-    // be re-created after disabling MIG. If it is allowed for  MIG to 
-    // continue enablement without all P2P objects torn down, there is 
+    // Check for any alive P2P references to this GPU. P2P objects must
+    // be re-created after disabling MIG. If it is allowed for  MIG to
+    // continue enablement without all P2P objects torn down, there is
     // the possibility that P2P mappings and state will never be updated.
     //
     if (bMemoryPartitioningNeeded || !kmigmgrIsMIGNvlinkP2PSupportOverridden(pGpu, pKernelMIGManager))
     {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, 
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
             !kbusIsGpuP2pAlive(pGpu, GPU_GET_KERNEL_BUS(pGpu)),
             NV_ERR_STATE_IN_USE);
     }

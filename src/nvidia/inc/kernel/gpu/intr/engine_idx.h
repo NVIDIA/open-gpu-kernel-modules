@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -61,6 +61,7 @@
 #define MC_ENGINE_IDX_CE7                           22
 #define MC_ENGINE_IDX_CE8                           23
 #define MC_ENGINE_IDX_CE9                           24
+#define MC_ENGINE_IDX_CE_MAX                        MC_ENGINE_IDX_CE9
 #define MC_ENGINE_IDX_VIC                           35
 #define MC_ENGINE_IDX_ISOHUB                        36
 #define MC_ENGINE_IDX_VGPU                          37
@@ -136,7 +137,8 @@
 #define MC_ENGINE_IDX_DISP_GSP                      163
 #define MC_ENGINE_IDX_REPLAYABLE_FAULT_CPU          164
 #define MC_ENGINE_IDX_NON_REPLAYABLE_FAULT_CPU      165
-#define MC_ENGINE_IDX_MAX                           166 // This must be kept as the max bit if
+#define MC_ENGINE_IDX_PXUC                          166
+#define MC_ENGINE_IDX_MAX                           167 // This must be kept as the max bit if
                                                         // we need to add more engines
 #define MC_ENGINE_IDX_INVALID                0xFFFFFFFF
 
@@ -158,6 +160,9 @@
 
 // Index ESCHED reference
 #define MC_ENGINE_IDX_ESCHEDn(x)        (MC_ENGINE_IDX_ESCHED + (x))
+
+#define MC_ENGINE_IDX_IS_CE(x) \
+    ((MC_ENGINE_IDX_CE(0) <= (x)) && ((x) <= MC_ENGINE_IDX_CE_MAX))
 
 MAKE_BITVECTOR(MC_ENGINE_BITVECTOR, MC_ENGINE_IDX_MAX);
 typedef MC_ENGINE_BITVECTOR *PMC_ENGINE_BITVECTOR;

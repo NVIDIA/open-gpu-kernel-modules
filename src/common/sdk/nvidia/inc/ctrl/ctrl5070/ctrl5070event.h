@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl5070/ctrl5070event.finn
+// Source file:      ctrl/ctrl5070/ctrl5070event.finn
 //
 
 #include "ctrl/ctrl5070/ctrl5070base.h"

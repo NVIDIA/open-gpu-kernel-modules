@@ -114,9 +114,10 @@ static NV_STATUS _fbsrInitGsp
 
     params.fbsrType   = pFbsr->type;
     params.numRegions = pFbsr->numRegions;
-    params.hClient    = pMemoryManager->hClient; 
+    params.hClient    = pMemoryManager->hClient;
     params.hSysMem    = hSysMem;
     params.gspFbAllocsSysOffset = pFbsr->gspFbAllocsSysOffset;
+    params.bEnteringGcoffState  = pGpu->getProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERING);
 
     // Send S/R init information to GSP
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
@@ -160,7 +161,7 @@ static NV_STATUS _fbsrMemoryCopy
     portMemSet(&params, 0, sizeof(params));
 
     params.fbsrType  = pFbsr->type;
-    params.hClient   = pMemoryManager->hClient; 
+    params.hClient   = pMemoryManager->hClient;
     params.hVidMem   = hVidMem;
     params.vidOffset = srcOffset;
     params.sysOffset = dstOffset;
@@ -453,7 +454,7 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
 
                     if(bIommuEnabled)
                     {
-                        status = osSrPinSysmem(pGpu->pOsGpuInfo, 
+                        status = osSrPinSysmem(pGpu->pOsGpuInfo,
                                                     pFbsr->length,
                                                     &pFbsr->pagedBufferInfo.pMdl);
 

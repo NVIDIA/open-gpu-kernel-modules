@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1613,7 +1613,9 @@ NV_STATUS uvm_api_tools_init_event_tracker(UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS *
         goto fail;
     }
 
-    if (!uvm_fd_va_space(event_tracker->uvm_file)) {
+    // We don't use uvm_fd_va_space() here because tools can work
+    // without an associated va_space_mm.
+    if (!uvm_fd_get_type(event_tracker->uvm_file, UVM_FD_VA_SPACE)) {
         fput(event_tracker->uvm_file);
         event_tracker->uvm_file = NULL;
         status = NV_ERR_ILLEGAL_ACTION;
@@ -2045,17 +2047,23 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
 
         // The RM flavor of the lock is needed to perform ECC checks.
         uvm_va_space_down_read_rm(va_space);
-        status = uvm_va_block_find_create(va_space, UVM_ALIGN_DOWN(target_va_start, PAGE_SIZE), block_context, &block);
-        if (status != NV_OK) {
-            uvm_va_space_up_read_rm(va_space);
-            if (mm)
-                uvm_up_read_mmap_lock(mm);
-            goto exit;
-        }
+        status = uvm_va_block_find_create(va_space, UVM_PAGE_ALIGN_DOWN(target_va_start), block_context, &block);
+        if (status != NV_OK)
+            goto unlock_and_exit;
 
         uvm_va_space_global_gpus(va_space, global_gpus);
 
         for_each_global_gpu_in_mask(gpu, global_gpus) {
+
+            // When CC is enabled, the staging memory cannot be mapped on the
+            // GPU (it is protected sysmem), but it is still used to store the
+            // unencrypted version of the page contents when the page is
+            // resident on vidmem.
+            if (uvm_conf_computing_mode_enabled(gpu)) {
+                UVM_ASSERT(uvm_global_processor_mask_empty(retained_global_gpus));
+
+                break;
+            }
             if (uvm_global_processor_mask_test_and_set(retained_global_gpus, gpu->global_id))
                 continue;
 
@@ -2069,26 +2077,15 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
             // (even if those mappings may never be used) as tools read/write is
             // not on a performance critical path.
             status = uvm_mem_map_gpu_kernel(stage_mem, gpu);
-            if (status != NV_OK) {
-                uvm_va_space_up_read_rm(va_space);
-                if (mm)
-                    uvm_up_read_mmap_lock(mm);
-                goto exit;
-            }
+            if (status != NV_OK)
+                goto unlock_and_exit;
         }
 
         // Make sure a CPU resident page has an up to date struct page pointer.
         if (uvm_va_block_is_hmm(block)) {
-            status = uvm_hmm_va_block_update_residency_info(block,
-                                                            mm,
-                                                            UVM_ALIGN_DOWN(target_va_start, PAGE_SIZE),
-                                                            true);
-            if (status != NV_OK) {
-                uvm_va_space_up_read_rm(va_space);
-                if (mm)
-                    uvm_up_read_mmap_lock(mm);
-                goto exit;
-            }
+            status = uvm_hmm_va_block_update_residency_info(block, mm, UVM_PAGE_ALIGN_DOWN(target_va_start), true);
+            if (status != NV_OK)
+                goto unlock_and_exit;
         }
 
         status = tools_access_va_block(block, block_context, target_va_start, bytes_now, is_write, stage_mem);
@@ -2125,6 +2122,13 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
         }
 
         *bytes += bytes_now;
+    }
+
+unlock_and_exit:
+    if (status != NV_OK) {
+        uvm_va_space_up_read_rm(va_space);
+        if (mm)
+            uvm_up_read_mmap_lock(mm);
     }
 
 exit:

@@ -24,6 +24,7 @@
 #include "gpu/ce/kernel_ce_context.h"
 #include "gpu/ce/kernel_ce_private.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+#include "kernel/gpu/device/device.h"
 #include "os/os.h"
 #include "resserv/rs_client.h"
 
@@ -58,6 +59,16 @@ kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllo
 {
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
     NvU32 engineIndex = 0;
+    RsResourceRef *pDeviceRef;
+    NV_STATUS status = NV_OK;
+    Device *pDevice;
+
+    NV_ASSERT_OK_OR_ELSE(status,
+                         refFindAncestorOfType(pCallContext->pResourceRef,
+                                               classId(Device), &pDeviceRef),
+                         return ENG_INVALID; );
+
+    pDevice = dynamicCast(pDeviceRef->pResource, Device);
 
     NV_ASSERT(pAllocParams);
 
@@ -72,9 +83,8 @@ kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllo
             MIG_INSTANCE_REF ref;
 
             NV_ASSERT_OK(
-                kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                pCallContext->pClient->hClient,
-                                                &ref));
+                kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                pDevice, &ref));
 
             NV_ASSERT_OK(
                 kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
@@ -158,11 +168,13 @@ kceGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllo
         }
     }
 
-    NV_STATUS status = ceIndexFromType(pGpu, pCallContext->pClient->hClient,
-                                       RM_ENGINE_TYPE_COPY(engineIndex), &engineIndex);
+    status = ceIndexFromType(pGpu, pDevice,
+                             RM_ENGINE_TYPE_COPY(engineIndex), &engineIndex);
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "Class %d, CE%d\n", externalClassId, engineIndex);
+    // confirm that engine is valid
+        NV_ASSERT_OR_RETURN(GPU_GET_KCE(pGpu, engineIndex), ENG_INVALID);
         return ENG_CE(engineIndex);
     }
     else
@@ -179,20 +191,7 @@ kcectxConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    ChannelDescendant *pChannelDescendant = staticCast(pKCeContext, ChannelDescendant);
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pChannelDescendant);
-    NvU32 ceIdx = GET_CE_IDX(pChannelDescendant->resourceDesc.engDesc);
-
-    //
-    // Don't do anything for AMODEL
-    //
-    if (IsAMODEL(pGpu))
-    {
-        return NV_OK;
-    }
-
-    NV_ASSERT_OR_RETURN(GPU_GET_KCE(pGpu, ceIdx), NV_ERR_INVALID_PARAMETER);
-
+    // stub, initialization done in chandesConstruct
     return NV_OK;
 }
 

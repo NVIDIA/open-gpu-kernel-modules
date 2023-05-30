@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,7 @@
 
 PUSH_SEGMENTS
 
-// DMT table
+// DMT table 2-1
 // Macro to declare a TIMING initializer for given parameters without border
 #define DMT_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rr,pclk,id) \
 {hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',NVT_PROGRESSIVE,pclk,{0,rr,set_rrx1k(pclk,ht,vt),0,0x1,{0},{0},{0},{0},NVT_DEF_TIMING_STATUS(NVT_TYPE_DMT,id),"VESA DMT"}}
@@ -193,6 +193,43 @@ NVT_STATUS NvTiming_EnumDMT(NvU32 dmtId, NVT_TIMING *pT)
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
+NVT_STATUS NvTiming_EnumStdTwoBytesCode(NvU16 std2ByteCode, NVT_TIMING *pT)
+{    
+    NvU32 aspect, width, height, rr;
+
+    if ((pT == NULL) || (std2ByteCode == 0))
+    {
+        return NVT_STATUS_ERR;
+    }
+
+    // The value in the EDID = (Horizontal active pixels/8) - 31
+    width = (std2ByteCode & 0x0FF) + 31;
+    width <<= 3;
+    rr = ((std2ByteCode >> 8) & 0x3F) + 60; // bits 5->0
+
+    // get the height
+    aspect = ((std2ByteCode >> 8) & 0xC0); // aspect ratio at bit 7:6
+
+         if (aspect == 0x00)    height = width * 5 / 8;  // 16:10
+    else if (aspect == 0x40)    height = width * 3 / 4;  // 4:3
+    else if (aspect == 0x80)    height = width * 4 / 5;  // 5:4
+    else                        height = width * 9 / 16; // 16:9
+
+    // try to get the timing from DMT or DMT_RB
+    if (NvTiming_CalcDMT(width, height, rr, 0, pT) == NVT_STATUS_SUCCESS)
+    {
+        return NVT_STATUS_SUCCESS;
+    }
+    // try to get the timing from DMT_RB2
+    else if (NvTiming_CalcDMT_RB2(width, height, rr, 0, pT) == NVT_STATUS_SUCCESS)
+    {
+        return NVT_STATUS_SUCCESS;
+    }
+
+    return NVT_STATUS_ERR;
+}
+
+CODE_SEGMENT(PAGE_DD_CODE)
 NVT_STATUS NvTiming_CalcDMT(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT_TIMING *pT)
 {
     NVT_TIMING *p = (NVT_TIMING *)DMT;
@@ -259,6 +296,44 @@ NVT_STATUS NvTiming_CalcDMT_RB(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, 
                 *pT = *p;
                 pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
                 NVT_SNPRINTF((char *)pT->etc.name, 40, "DMT-RB:%dx%dx%dHz",width, height, rr);
+                pT->etc.name[39] = '\0';
+                pT->etc.rgb444.bpc.bpc8 = 1;
+                return NVT_STATUS_SUCCESS;
+            }
+        }
+        p ++;
+    }
+    return NVT_STATUS_ERR;
+}
+
+CODE_SEGMENT(PAGE_DD_CODE)
+NVT_STATUS NvTiming_CalcDMT_RB2(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT_TIMING *pT)
+{
+    NVT_TIMING *p = (NVT_TIMING *)DMT;
+
+    if (pT == NULL)
+        return NVT_STATUS_ERR;
+
+    if (width == 0 || height == 0 || rr == 0)
+        return NVT_STATUS_ERR;
+
+    // no interlaced DMT timing
+    if ((flag & NVT_PVT_INTERLACED_MASK) != 0)
+        return NVT_STATUS_ERR;
+
+    while (p->HVisible != 0 && p->VVisible != 0)
+    {
+        // select only reduced-bandwidth timing.
+        if (NVT_GET_TIMING_STATUS_TYPE(p->etc.status) == NVT_TYPE_DMT_RB_2)
+        {
+            if ((NvU32)p->HVisible == width &&
+                (NvU32)p->VVisible == height &&
+                (NvU32)p->etc.rr == rr)
+            {
+                NVMISC_MEMSET(pT, 0, sizeof(NVT_TIMING));
+                *pT = *p;
+                pT->etc.rrx1k = axb_div_c((NvU32)pT->pclk, (NvU32)10000*(NvU32)1000, (NvU32)pT->HTotal*(NvU32)pT->VTotal);
+                NVT_SNPRINTF((char *)pT->etc.name, 40, "DMT-RB2:%dx%dx%dHz",width, height, rr);
                 pT->etc.name[39] = '\0';
                 pT->etc.rgb444.bpc.bpc8 = 1;
                 return NVT_STATUS_SUCCESS;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,6 +104,7 @@ static void printCaps(OBJGPU *pGpu, KernelCE *pKCe, RM_ENGINE_TYPE rmEngineType,
     PRINT_CAP(_CE_SUPPORTS_NONPIPELINED_BL);
     PRINT_CAP(_CE_SUPPORTS_PIPELINED_BL);
 
+    PRINT_CAP(_CE_CC_SECURE);
 }
 
 void kceGetNvlinkCaps(OBJGPU *pGpu, KernelCE *pKCe, NvU8 *pKCeCaps)
@@ -335,7 +336,7 @@ NV_STATUS kceTopLevelPceLceMappingsUpdate_IMPL(OBJGPU *pGpu, KernelCE *pKCe)
     // Set bUpdateNvlinkPceLce to auto-config status
     bUpdateNvlinkPceLce = pKCe->bIsAutoConfigEnabled;
 
-    if (bUpdateNvlinkPceLce)
+    if (bUpdateNvlinkPceLce || IS_SILICON(pGpu))
     {
         status = kceGetNvlinkAutoConfigCeValues_HAL(pGpu, pKCe, pceLceMap,
                                                grceConfig, &exposeCeMask);

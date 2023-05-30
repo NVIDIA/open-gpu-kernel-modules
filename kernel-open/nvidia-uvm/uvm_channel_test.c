@@ -60,6 +60,11 @@ static NV_STATUS test_ordering(uvm_va_space_t *va_space)
     gpu = uvm_va_space_find_first_gpu(va_space);
     TEST_CHECK_RET(gpu != NULL);
 
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
     status = uvm_rm_mem_alloc_and_map_all(gpu, UVM_RM_MEM_TYPE_SYS, buffer_size, 0, &mem);
     TEST_CHECK_GOTO(status == NV_OK, done);
 
@@ -69,7 +74,7 @@ static NV_STATUS test_ordering(uvm_va_space_t *va_space)
     status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_TO_CPU, &push, "Initial memset");
     TEST_CHECK_GOTO(status == NV_OK, done);
 
-    gpu_va = uvm_rm_mem_get_gpu_va(mem, gpu, uvm_channel_is_proxy(push.channel));
+    gpu_va = uvm_rm_mem_get_gpu_va(mem, gpu, uvm_channel_is_proxy(push.channel)).address;
 
     // Semaphore release as part of uvm_push_end() will do the membar
     uvm_push_set_flag(&push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
@@ -104,7 +109,7 @@ static NV_STATUS test_ordering(uvm_va_space_t *va_space)
                                                 value + 1);
                 TEST_CHECK_GOTO(status == NV_OK, done);
 
-                gpu_va_base = uvm_rm_mem_get_gpu_va(mem, gpu, uvm_channel_is_proxy(push.channel));
+                gpu_va_base = uvm_rm_mem_get_gpu_va(mem, gpu, uvm_channel_is_proxy(push.channel)).address;
                 gpu_va_src = gpu_va_base + (value % values_count) * sizeof(NvU32);
                 gpu_va_dst = gpu_va_base + ((value + 1) % values_count) * sizeof(NvU32);
 
@@ -200,6 +205,9 @@ static NV_STATUS uvm_test_rc_for_gpu(uvm_gpu_t *gpu)
     uvm_for_each_pool(pool, manager) {
         uvm_channel_t *channel;
 
+            // Skip LCIC channels as those can't accept any pushes
+            if (uvm_channel_pool_is_lcic(pool))
+                continue;
         uvm_for_each_channel_in_pool(channel, pool) {
             NvU32 i;
             for (i = 0; i < 512; ++i) {
@@ -341,8 +349,8 @@ static void snapshot_counter(uvm_push_t *push,
         return;
 
     is_proxy_channel = uvm_channel_is_proxy(push->channel);
-    counter_gpu_va = uvm_rm_mem_get_gpu_va(counter_mem, gpu, is_proxy_channel);
-    snapshot_gpu_va = uvm_rm_mem_get_gpu_va(snapshot_mem, gpu, is_proxy_channel) + index * 2 * sizeof(NvU32);
+    counter_gpu_va = uvm_rm_mem_get_gpu_va(counter_mem, gpu, is_proxy_channel).address;
+    snapshot_gpu_va = uvm_rm_mem_get_gpu_va(snapshot_mem, gpu, is_proxy_channel).address + index * 2 * sizeof(NvU32);
 
     // Copy the last and first counter to a snapshot for later verification.
 
@@ -367,7 +375,7 @@ static void set_counter(uvm_push_t *push, uvm_rm_mem_t *counter_mem, NvU32 value
     bool is_proxy_channel;
 
     is_proxy_channel = uvm_channel_is_proxy(push->channel);
-    counter_gpu_va = uvm_rm_mem_get_gpu_va(counter_mem, gpu, is_proxy_channel);
+    counter_gpu_va = uvm_rm_mem_get_gpu_va(counter_mem, gpu, is_proxy_channel).address;
 
     gpu->parent->ce_hal->memset_v_4(push, counter_gpu_va, value, count * sizeof(NvU32));
 }
@@ -427,7 +435,7 @@ static void test_memset_rm_mem(uvm_push_t *push, uvm_rm_mem_t *rm_mem, NvU32 val
     UVM_ASSERT(rm_mem->size % 4 == 0);
 
     gpu = uvm_push_get_gpu(push);
-    gpu_va = uvm_rm_mem_get_gpu_va(rm_mem, gpu, uvm_channel_is_proxy(push->channel));
+    gpu_va = uvm_rm_mem_get_gpu_va(rm_mem, gpu, uvm_channel_is_proxy(push->channel)).address;
 
     gpu->parent->ce_hal->memset_v_4(push, gpu_va, value, rm_mem->size);
 }
@@ -672,6 +680,74 @@ done:
     return status;
 }
 
+// The following test is inspired by uvm_push_test.c:test_concurrent_pushes.
+// This test verifies that concurrent pushes using the same secure channel pool
+// select different channels.
+NV_STATUS test_secure_channel_selection(uvm_va_space_t *va_space)
+{
+    NV_STATUS status = NV_OK;
+    uvm_channel_pool_t *pool;
+    uvm_push_t *pushes;
+    uvm_gpu_t *gpu;
+    NvU32 i;
+    NvU32 num_pushes;
+
+    gpu = uvm_va_space_find_first_gpu(va_space);
+
+    if (!uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
+    uvm_thread_context_lock_disable_tracking();
+
+    for_each_va_space_gpu(gpu, va_space) {
+        uvm_channel_type_t channel_type;
+
+        for (channel_type = 0; channel_type < UVM_CHANNEL_TYPE_COUNT; channel_type++) {
+            if (!uvm_channel_type_requires_secure_pool(gpu, channel_type))
+                continue;
+
+            pool = gpu->channel_manager->pool_to_use.default_for_type[channel_type];
+            TEST_CHECK_RET(pool != NULL);
+
+            // Skip LCIC channels as those can't accept any pushes
+            if (uvm_channel_pool_is_lcic(pool))
+                continue;
+
+            if (pool->num_channels < 2)
+                continue;
+
+            num_pushes = min(pool->num_channels, (NvU32)UVM_PUSH_MAX_CONCURRENT_PUSHES);
+
+            pushes = uvm_kvmalloc_zero(sizeof(*pushes) * num_pushes);
+            TEST_CHECK_RET(pushes != NULL);
+
+            for (i = 0; i < num_pushes; i++) {
+                uvm_push_t *push = &pushes[i];
+                status = uvm_push_begin(gpu->channel_manager, channel_type, push, "concurrent push %u", i);
+                TEST_NV_CHECK_GOTO(status, error);
+                if (i > 0)
+                    TEST_CHECK_GOTO(pushes[i-1].channel != push->channel, error);
+            }
+            for (i = 0; i < num_pushes; i++) {
+                uvm_push_t *push = &pushes[i];
+                status = uvm_push_end_and_wait(push);
+                TEST_NV_CHECK_GOTO(status, error);
+            }
+
+            uvm_kvfree(pushes);
+        }
+    }
+
+    uvm_thread_context_lock_enable_tracking();
+
+    return status;
+error:
+    uvm_thread_context_lock_enable_tracking();
+    uvm_kvfree(pushes);
+
+    return status;
+}
+
 NV_STATUS test_write_ctrl_gpfifo_noop(uvm_va_space_t *va_space)
 {
     uvm_gpu_t *gpu;
@@ -683,6 +759,14 @@ NV_STATUS test_write_ctrl_gpfifo_noop(uvm_va_space_t *va_space)
         uvm_for_each_pool(pool, manager) {
             uvm_channel_t *channel;
 
+            // Skip LCIC channels as those can't accept any pushes
+            if (uvm_channel_pool_is_lcic(pool))
+                continue;
+
+            // Skip WLC channels as those can't accept ctrl gpfifos
+            // after their schedule is set up
+            if (uvm_channel_pool_is_wlc(pool))
+                continue;
             uvm_for_each_channel_in_pool(channel, pool) {
                 NvU32 i;
 
@@ -714,6 +798,14 @@ NV_STATUS test_write_ctrl_gpfifo_and_pushes(uvm_va_space_t *va_space)
         uvm_for_each_pool(pool, manager) {
             uvm_channel_t *channel;
 
+            // Skip LCIC channels as those can't accept any pushes
+            if (uvm_channel_pool_is_lcic(pool))
+                continue;
+
+            // Skip WLC channels as those can't accept ctrl gpfifos
+            // after their schedule is set up
+            if (uvm_channel_pool_is_wlc(pool))
+                continue;
             uvm_for_each_channel_in_pool(channel, pool) {
                 NvU32 i;
                 uvm_push_t push;
@@ -756,6 +848,11 @@ NV_STATUS test_write_ctrl_gpfifo_tight(uvm_va_space_t *va_space)
     uvm_push_t push;
 
     gpu = uvm_va_space_find_first_gpu(va_space);
+
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
 
     for_each_va_space_gpu(gpu, va_space) {
         uvm_channel_manager_t *manager = gpu->channel_manager;
@@ -850,6 +947,9 @@ static NV_STATUS test_channel_pushbuffer_extension_base(uvm_va_space_t *va_space
         uvm_for_each_pool(pool, manager) {
             uvm_channel_t *channel;
 
+            // Skip LCIC channels as those can't accept any pushes
+            if (uvm_channel_pool_is_lcic(pool))
+                continue;
             uvm_for_each_channel_in_pool(channel, pool) {
                 NvU32 i;
                 uvm_push_t push;
@@ -897,6 +997,10 @@ NV_STATUS uvm_test_channel_sanity(UVM_TEST_CHANNEL_SANITY_PARAMS *params, struct
     if (status != NV_OK)
         goto done;
 
+    status = test_secure_channel_selection(va_space);
+    if (status != NV_OK)
+        goto done;
+
     // The following tests have side effects, they reset the GPU's
     // channel_manager.
     status = test_channel_pushbuffer_extension_base(va_space);
@@ -937,12 +1041,18 @@ static NV_STATUS uvm_test_channel_stress_stream(uvm_va_space_t *va_space,
     uvm_mutex_lock(&g_uvm_global.global_lock);
     uvm_va_space_down_read_rm(va_space);
 
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (uvm_conf_computing_mode_enabled(uvm_va_space_find_first_gpu(va_space)))
+        goto done;
+
     status = stress_test_all_gpus_in_va(va_space,
                                         params->num_streams,
                                         params->iterations,
                                         params->seed,
                                         params->verbose);
 
+done:
     uvm_va_space_up_read_rm(va_space);
     uvm_mutex_unlock(&g_uvm_global.global_lock);
 

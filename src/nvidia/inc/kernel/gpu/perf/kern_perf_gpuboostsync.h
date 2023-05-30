@@ -50,7 +50,7 @@ struct KERNEL_PERF_GPU_BOOST_SYNC
      */
     NvBool  bHystersisEnable;
 
-    /*! 
+    /*!
      * SLI GPU Boost feature is enabled.
      */
     NvBool  bSliGpuBoostSyncEnable;

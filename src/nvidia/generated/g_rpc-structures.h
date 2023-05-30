@@ -233,6 +233,8 @@ typedef struct rpc_gsp_rm_alloc_v03_00
     NvU32      hClass;
     NvU32      status;
     NvU32      paramsSize;
+    NvU32      flags;
+    NvU8       reserved[4];
     NvU8       params[];
 } rpc_gsp_rm_alloc_v03_00;
 
@@ -245,9 +247,7 @@ typedef struct rpc_gsp_rm_control_v03_00
     NvU32      cmd;
     NvU32      status;
     NvU32      paramsSize;
-    NvBool     serialized;
-    NvBool     copyOutOnError;
-    NvU8       reserved[2];
+    NvU32      flags;
     NvU8       params[];
 } rpc_gsp_rm_control_v03_00;
 
@@ -282,6 +282,7 @@ typedef struct rpc_post_event_v17_00
     NvHandle   hEvent;
     NvU32      notifyIndex;
     NvU32      data;
+    NvU16      info16;
     NvU32      status;
     NvU32      eventDataSize;
     NvBool     bNotifyList;
@@ -513,6 +514,16 @@ typedef struct rpc_pfm_req_hndlr_state_sync_callback_v21_04
 
 typedef rpc_pfm_req_hndlr_state_sync_callback_v21_04 rpc_pfm_req_hndlr_state_sync_callback_v;
 
+typedef struct rpc_vgpu_gsp_mig_ci_config_v21_03
+{
+    NvU32      execPartCount;
+    NvU32      execPartId[NVC637_CTRL_MAX_EXEC_PARTITIONS];
+    NvU32      gfid;
+    NvBool     bDelete;
+} rpc_vgpu_gsp_mig_ci_config_v21_03;
+
+typedef rpc_vgpu_gsp_mig_ci_config_v21_03 rpc_vgpu_gsp_mig_ci_config_v;
+
 typedef struct rpc_gsp_lockdown_notice_v17_00
 {
     NvBool     bLockdownEngaging;
@@ -599,7 +610,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_guest_system_info_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_guest_system_info_v03_00 = {
     .name = "rpc_set_guest_system_info",
-    .header_length = NV_SIZEOF32(rpc_set_guest_system_info_v03_00),
+    .header_length = sizeof(rpc_set_guest_system_info_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_set_guest_system_info_v03_00
 };
 #endif
@@ -663,7 +674,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_memory_v13_01[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_memory_v13_01 = {
     .name = "rpc_alloc_memory",
-    .header_length = NV_SIZEOF32(rpc_alloc_memory_v13_01),
+    .header_length = sizeof(rpc_alloc_memory_v13_01),
     .fdesc = vmiopd_fdesc_t_rpc_alloc_memory_v13_01
 };
 #endif
@@ -682,7 +693,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_free_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_free_v03_00 = {
     .name = "rpc_free",
-    .header_length = NV_SIZEOF32(rpc_free_v03_00),
+    .header_length = sizeof(rpc_free_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_free_v03_00
 };
 #endif
@@ -701,7 +712,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_map_memory_dma_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_map_memory_dma_v03_00 = {
     .name = "rpc_map_memory_dma",
-    .header_length = NV_SIZEOF32(rpc_map_memory_dma_v03_00),
+    .header_length = sizeof(rpc_map_memory_dma_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_map_memory_dma_v03_00
 };
 #endif
@@ -720,7 +731,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unmap_memory_dma_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unmap_memory_dma_v03_00 = {
     .name = "rpc_unmap_memory_dma",
-    .header_length = NV_SIZEOF32(rpc_unmap_memory_dma_v03_00),
+    .header_length = sizeof(rpc_unmap_memory_dma_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_unmap_memory_dma_v03_00
 };
 #endif
@@ -739,7 +750,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dup_object_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_dup_object_v03_00 = {
     .name = "rpc_dup_object",
-    .header_length = NV_SIZEOF32(rpc_dup_object_v03_00),
+    .header_length = sizeof(rpc_dup_object_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_dup_object_v03_00
 };
 #endif
@@ -775,7 +786,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_idle_channels_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_idle_channels_v03_00 = {
     .name = "rpc_idle_channels",
-    .header_length = NV_SIZEOF32(rpc_idle_channels_v03_00),
+    .header_length = sizeof(rpc_idle_channels_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_idle_channels_v03_00
 };
 #endif
@@ -817,7 +828,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_driver_v1F_07[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_driver_v1F_07 = {
     .name = "rpc_unloading_guest_driver",
-    .header_length = NV_SIZEOF32(rpc_unloading_guest_driver_v1F_07),
+    .header_length = sizeof(rpc_unloading_guest_driver_v1F_07),
     .fdesc = vmiopd_fdesc_t_rpc_unloading_guest_driver_v1F_07
 };
 #endif
@@ -846,7 +857,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpu_exec_reg_ops_v12_01[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gpu_exec_reg_ops_v12_01 = {
     .name = "rpc_gpu_exec_reg_ops",
-    .header_length = NV_SIZEOF32(rpc_gpu_exec_reg_ops_v12_01),
+    .header_length = sizeof(rpc_gpu_exec_reg_ops_v12_01),
     .fdesc = vmiopd_fdesc_t_rpc_gpu_exec_reg_ops_v12_01
 };
 #endif
@@ -880,7 +891,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_page_directory_v1E_05[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_page_directory_v1E_05 = {
     .name = "rpc_set_page_directory",
-    .header_length = NV_SIZEOF32(rpc_set_page_directory_v1E_05),
+    .header_length = sizeof(rpc_set_page_directory_v1E_05),
     .fdesc = vmiopd_fdesc_t_rpc_set_page_directory_v1E_05
 };
 #endif
@@ -909,7 +920,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_page_directory_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_page_directory_v03_00 = {
     .name = "rpc_set_page_directory",
-    .header_length = NV_SIZEOF32(rpc_set_page_directory_v03_00),
+    .header_length = sizeof(rpc_set_page_directory_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_set_page_directory_v03_00
 };
 #endif
@@ -938,7 +949,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unset_page_directory_v1E_05[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unset_page_directory_v1E_05 = {
     .name = "rpc_unset_page_directory",
-    .header_length = NV_SIZEOF32(rpc_unset_page_directory_v1E_05),
+    .header_length = sizeof(rpc_unset_page_directory_v1E_05),
     .fdesc = vmiopd_fdesc_t_rpc_unset_page_directory_v1E_05
 };
 #endif
@@ -967,7 +978,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unset_page_directory_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unset_page_directory_v03_00 = {
     .name = "rpc_unset_page_directory",
-    .header_length = NV_SIZEOF32(rpc_unset_page_directory_v03_00),
+    .header_length = sizeof(rpc_unset_page_directory_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_unset_page_directory_v03_00
 };
 #endif
@@ -986,7 +997,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_get_gsp_static_info_v14_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_get_gsp_static_info_v14_00 = {
     .name = "rpc_get_gsp_static_info",
-    .header_length = NV_SIZEOF32(rpc_get_gsp_static_info_v14_00),
+    .header_length = sizeof(rpc_get_gsp_static_info_v14_00),
     .fdesc = vmiopd_fdesc_t_rpc_get_gsp_static_info_v14_00
 };
 #endif
@@ -1005,7 +1016,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_update_bar_pde_v15_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_update_bar_pde_v15_00 = {
     .name = "rpc_update_bar_pde",
-    .header_length = NV_SIZEOF32(rpc_update_bar_pde_v15_00),
+    .header_length = sizeof(rpc_update_bar_pde_v15_00),
     .fdesc = vmiopd_fdesc_t_rpc_update_bar_pde_v15_00
 };
 #endif
@@ -1034,7 +1045,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_pf_reg_read32_v15_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_pf_reg_read32_v15_00 = {
     .name = "rpc_vgpu_pf_reg_read32",
-    .header_length = NV_SIZEOF32(rpc_vgpu_pf_reg_read32_v15_00),
+    .header_length = sizeof(rpc_vgpu_pf_reg_read32_v15_00),
     .fdesc = vmiopd_fdesc_t_rpc_vgpu_pf_reg_read32_v15_00
 };
 #endif
@@ -1053,7 +1064,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02[] = 
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02 = {
     .name = "rpc_ctrl_subdevice_get_p2p_caps",
-    .header_length = NV_SIZEOF32(rpc_ctrl_subdevice_get_p2p_caps_v21_02),
+    .header_length = sizeof(rpc_ctrl_subdevice_get_p2p_caps_v21_02),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02
 };
 #endif
@@ -1082,7 +1093,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03 = {
     .name = "rpc_ctrl_bus_set_p2p_mapping",
-    .header_length = NV_SIZEOF32(rpc_ctrl_bus_set_p2p_mapping_v21_03),
+    .header_length = sizeof(rpc_ctrl_bus_set_p2p_mapping_v21_03),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03
 };
 #endif
@@ -1111,7 +1122,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03 = {
     .name = "rpc_ctrl_bus_unset_p2p_mapping",
-    .header_length = NV_SIZEOF32(rpc_ctrl_bus_unset_p2p_mapping_v21_03),
+    .header_length = sizeof(rpc_ctrl_bus_unset_p2p_mapping_v21_03),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03
 };
 #endif
@@ -1130,7 +1141,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_init_v15_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_init_v15_00 = {
     .name = "rpc_rmfs_init",
-    .header_length = NV_SIZEOF32(rpc_rmfs_init_v15_00),
+    .header_length = sizeof(rpc_rmfs_init_v15_00),
     .fdesc = vmiopd_fdesc_t_rpc_rmfs_init_v15_00
 };
 #endif
@@ -1190,7 +1201,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_test_v15_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_test_v15_00 = {
     .name = "rpc_rmfs_test",
-    .header_length = NV_SIZEOF32(rpc_rmfs_test_v15_00),
+    .header_length = sizeof(rpc_rmfs_test_v15_00),
     .fdesc = vmiopd_fdesc_t_rpc_rmfs_test_v15_00
 };
 #endif
@@ -1209,7 +1220,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_set_system_info_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_set_system_info_v17_00 = {
     .name = "rpc_gsp_set_system_info",
-    .header_length = NV_SIZEOF32(rpc_gsp_set_system_info_v17_00),
+    .header_length = sizeof(rpc_gsp_set_system_info_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_set_system_info_v17_00
 };
 #endif
@@ -1260,6 +1271,17 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_alloc_v03_00[] = {
         .name                 = "paramsSize"
     },
     {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, flags),
+        .name                 = "flags"
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, reserved),
+        .array_length         = 4,
+        .name                 = "reserved"
+    },
+    {
         .vtype                = vtype_NvU8_array,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, params),
         .array_length         = 0,
@@ -1272,7 +1294,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_alloc_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_rm_alloc_v03_00 = {
     .name = "rpc_gsp_rm_alloc",
-    .header_length = NV_SIZEOF32(rpc_gsp_rm_alloc_v03_00),
+    .header_length = sizeof(rpc_gsp_rm_alloc_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_rm_alloc_v03_00
 };
 #endif
@@ -1305,20 +1327,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_control_v03_00[] = {
         .name                 = "paramsSize"
     },
     {
-        .vtype                = vtype_NvBool,
-        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, serialized),
-        .name                 = "serialized"
-    },
-    {
-        .vtype                = vtype_NvBool,
-        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, copyOutOnError),
-        .name                 = "copyOutOnError"
-    },
-    {
-        .vtype                = vtype_NvU8_array,
-        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, reserved),
-        .array_length         = 2,
-        .name                 = "reserved"
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, flags),
+        .name                 = "flags"
     },
     {
         .vtype                = vtype_NvU8_array,
@@ -1333,7 +1344,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_control_v03_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_rm_control_v03_00 = {
     .name = "rpc_gsp_rm_control",
-    .header_length = NV_SIZEOF32(rpc_gsp_rm_control_v03_00),
+    .header_length = sizeof(rpc_gsp_rm_control_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_rm_control_v03_00
 };
 #endif
@@ -1383,7 +1394,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dump_protobuf_component_v18_12[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_dump_protobuf_component_v18_12 = {
     .name = "rpc_dump_protobuf_component",
-    .header_length = NV_SIZEOF32(rpc_dump_protobuf_component_v18_12),
+    .header_length = sizeof(rpc_dump_protobuf_component_v18_12),
     .fdesc = vmiopd_fdesc_t_rpc_dump_protobuf_component_v18_12
 };
 #endif
@@ -1419,7 +1430,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_run_cpu_sequencer_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_run_cpu_sequencer_v17_00 = {
     .name = "rpc_run_cpu_sequencer",
-    .header_length = NV_SIZEOF32(rpc_run_cpu_sequencer_v17_00),
+    .header_length = sizeof(rpc_run_cpu_sequencer_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_run_cpu_sequencer_v17_00
 };
 #endif
@@ -1445,6 +1456,11 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_post_event_v17_00[] = {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_post_event_v17_00, data),
         .name                 = "data"
+    },
+    {
+        .vtype                = vtype_NvU16,
+        .offset               = NV_OFFSETOF(rpc_post_event_v17_00, info16),
+        .name                 = "info16"
     },
     {
         .vtype                = vtype_NvU32,
@@ -1474,7 +1490,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_post_event_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_post_event_v17_00 = {
     .name = "rpc_post_event",
-    .header_length = NV_SIZEOF32(rpc_post_event_v17_00),
+    .header_length = sizeof(rpc_post_event_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_post_event_v17_00
 };
 #endif
@@ -1513,7 +1529,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rc_triggered_v17_02[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rc_triggered_v17_02 = {
     .name = "rpc_rc_triggered",
-    .header_length = NV_SIZEOF32(rpc_rc_triggered_v17_02),
+    .header_length = sizeof(rpc_rc_triggered_v17_02),
     .fdesc = vmiopd_fdesc_t_rpc_rc_triggered_v17_02
 };
 #endif
@@ -1548,7 +1564,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_os_error_log_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_os_error_log_v17_00 = {
     .name = "rpc_os_error_log",
-    .header_length = NV_SIZEOF32(rpc_os_error_log_v17_00),
+    .header_length = sizeof(rpc_os_error_log_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_os_error_log_v17_00
 };
 #endif
@@ -1572,7 +1588,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rg_line_intr_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rg_line_intr_v17_00 = {
     .name = "rpc_rg_line_intr",
-    .header_length = NV_SIZEOF32(rpc_rg_line_intr_v17_00),
+    .header_length = sizeof(rpc_rg_line_intr_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_rg_line_intr_v17_00
 };
 #endif
@@ -1601,7 +1617,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_display_modeset_v01_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_display_modeset_v01_00 = {
     .name = "rpc_display_modeset",
-    .header_length = NV_SIZEOF32(rpc_display_modeset_v01_00),
+    .header_length = sizeof(rpc_display_modeset_v01_00),
     .fdesc = vmiopd_fdesc_t_rpc_display_modeset_v01_00
 };
 #endif
@@ -1620,7 +1636,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00[] =
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00 = {
     .name = "rpc_gpuacct_perfmon_util_samples",
-    .header_length = NV_SIZEOF32(rpc_gpuacct_perfmon_util_samples_v17_00),
+    .header_length = sizeof(rpc_gpuacct_perfmon_util_samples_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00
 };
 #endif
@@ -1644,7 +1660,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_gsp_plugin_triggered_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_gsp_plugin_triggered_v17_00 = {
     .name = "rpc_vgpu_gsp_plugin_triggered",
-    .header_length = NV_SIZEOF32(rpc_vgpu_gsp_plugin_triggered_v17_00),
+    .header_length = sizeof(rpc_vgpu_gsp_plugin_triggered_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_vgpu_gsp_plugin_triggered_v17_00
 };
 #endif
@@ -1663,7 +1679,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_config_event_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_config_event_v17_00 = {
     .name = "rpc_vgpu_config_event",
-    .header_length = NV_SIZEOF32(rpc_vgpu_config_event_v17_00),
+    .header_length = sizeof(rpc_vgpu_config_event_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_vgpu_config_event_v17_00
 };
 #endif
@@ -1682,7 +1698,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dce_rm_init_v01_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_dce_rm_init_v01_00 = {
     .name = "rpc_dce_rm_init",
-    .header_length = NV_SIZEOF32(rpc_dce_rm_init_v01_00),
+    .header_length = sizeof(rpc_dce_rm_init_v01_00),
     .fdesc = vmiopd_fdesc_t_rpc_dce_rm_init_v01_00
 };
 #endif
@@ -1712,7 +1728,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_sim_read_v1E_01[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_sim_read_v1E_01 = {
     .name = "rpc_sim_read",
-    .header_length = NV_SIZEOF32(rpc_sim_read_v1E_01),
+    .header_length = sizeof(rpc_sim_read_v1E_01),
     .fdesc = vmiopd_fdesc_t_rpc_sim_read_v1E_01
 };
 #endif
@@ -1747,7 +1763,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_sim_write_v1E_01[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_sim_write_v1E_01 = {
     .name = "rpc_sim_write",
-    .header_length = NV_SIZEOF32(rpc_sim_write_v1E_01),
+    .header_length = sizeof(rpc_sim_write_v1E_01),
     .fdesc = vmiopd_fdesc_t_rpc_sim_write_v1E_01
 };
 #endif
@@ -1777,7 +1793,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ucode_libos_print_v1E_08[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ucode_libos_print_v1E_08 = {
     .name = "rpc_ucode_libos_print",
-    .header_length = NV_SIZEOF32(rpc_ucode_libos_print_v1E_08),
+    .header_length = sizeof(rpc_ucode_libos_print_v1E_08),
     .fdesc = vmiopd_fdesc_t_rpc_ucode_libos_print_v1E_08
 };
 #endif
@@ -1796,7 +1812,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_init_done_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_init_done_v17_00 = {
     .name = "rpc_init_done",
-    .header_length = NV_SIZEOF32(rpc_init_done_v17_00),
+    .header_length = sizeof(rpc_init_done_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_init_done_v17_00
 };
 #endif
@@ -1845,7 +1861,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_semaphore_schedule_callback_v17_00[] = 
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_semaphore_schedule_callback_v17_00 = {
     .name = "rpc_semaphore_schedule_callback",
-    .header_length = NV_SIZEOF32(rpc_semaphore_schedule_callback_v17_00),
+    .header_length = sizeof(rpc_semaphore_schedule_callback_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_semaphore_schedule_callback_v17_00
 };
 #endif
@@ -1889,7 +1905,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_timed_semaphore_release_v01_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_timed_semaphore_release_v01_00 = {
     .name = "rpc_timed_semaphore_release",
-    .header_length = NV_SIZEOF32(rpc_timed_semaphore_release_v01_00),
+    .header_length = sizeof(rpc_timed_semaphore_release_v01_00),
     .fdesc = vmiopd_fdesc_t_rpc_timed_semaphore_release_v01_00
 };
 #endif
@@ -1908,7 +1924,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_perf_gpu_boost_sync_limits_callback_v17
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_perf_gpu_boost_sync_limits_callback_v17_00 = {
     .name = "rpc_perf_gpu_boost_sync_limits_callback",
-    .header_length = NV_SIZEOF32(rpc_perf_gpu_boost_sync_limits_callback_v17_00),
+    .header_length = sizeof(rpc_perf_gpu_boost_sync_limits_callback_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_perf_gpu_boost_sync_limits_callback_v17_00
 };
 #endif
@@ -1927,7 +1943,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_perf_bridgeless_info_update_v17_00[] = 
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_perf_bridgeless_info_update_v17_00 = {
     .name = "rpc_perf_bridgeless_info_update",
-    .header_length = NV_SIZEOF32(rpc_perf_bridgeless_info_update_v17_00),
+    .header_length = sizeof(rpc_perf_bridgeless_info_update_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_perf_bridgeless_info_update_v17_00
 };
 #endif
@@ -1946,7 +1962,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_fault_up_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_fault_up_v17_00 = {
     .name = "rpc_nvlink_fault_up",
-    .header_length = NV_SIZEOF32(rpc_nvlink_fault_up_v17_00),
+    .header_length = sizeof(rpc_nvlink_fault_up_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_fault_up_v17_00
 };
 #endif
@@ -1965,7 +1981,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_256_v17_00[
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_256_v17_00 = {
     .name = "rpc_nvlink_inband_received_data_256",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_256_v17_00),
+    .header_length = sizeof(rpc_nvlink_inband_received_data_256_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_256_v17_00
 };
 #endif
@@ -1984,7 +2000,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_512_v17_00[
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_512_v17_00 = {
     .name = "rpc_nvlink_inband_received_data_512",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_512_v17_00),
+    .header_length = sizeof(rpc_nvlink_inband_received_data_512_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_512_v17_00
 };
 #endif
@@ -2003,7 +2019,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_1024_v17_00
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_1024_v17_00 = {
     .name = "rpc_nvlink_inband_received_data_1024",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_1024_v17_00),
+    .header_length = sizeof(rpc_nvlink_inband_received_data_1024_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_1024_v17_00
 };
 #endif
@@ -2022,7 +2038,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_2048_v17_00
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_2048_v17_00 = {
     .name = "rpc_nvlink_inband_received_data_2048",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_2048_v17_00),
+    .header_length = sizeof(rpc_nvlink_inband_received_data_2048_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_2048_v17_00
 };
 #endif
@@ -2041,7 +2057,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_4096_v17_00
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_4096_v17_00 = {
     .name = "rpc_nvlink_inband_received_data_4096",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_4096_v17_00),
+    .header_length = sizeof(rpc_nvlink_inband_received_data_4096_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_4096_v17_00
 };
 #endif
@@ -2060,7 +2076,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_is_gpu_degraded_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_is_gpu_degraded_v17_00 = {
     .name = "rpc_nvlink_is_gpu_degraded",
-    .header_length = NV_SIZEOF32(rpc_nvlink_is_gpu_degraded_v17_00),
+    .header_length = sizeof(rpc_nvlink_is_gpu_degraded_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_is_gpu_degraded_v17_00
 };
 #endif
@@ -2079,7 +2095,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_send_user_shared_data_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_send_user_shared_data_v17_00 = {
     .name = "rpc_gsp_send_user_shared_data",
-    .header_length = NV_SIZEOF32(rpc_gsp_send_user_shared_data_v17_00),
+    .header_length = sizeof(rpc_gsp_send_user_shared_data_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_send_user_shared_data_v17_00
 };
 #endif
@@ -2108,7 +2124,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 = {
     .name = "rpc_set_sysmem_dirty_page_tracking_buffer",
-    .header_length = NV_SIZEOF32(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00),
+    .header_length = sizeof(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00),
     .fdesc = vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 };
 #endif
@@ -2142,7 +2158,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_extdev_intr_service_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_extdev_intr_service_v17_00 = {
     .name = "rpc_extdev_intr_service",
-    .header_length = NV_SIZEOF32(rpc_extdev_intr_service_v17_00),
+    .header_length = sizeof(rpc_extdev_intr_service_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_extdev_intr_service_v17_00
 };
 #endif
@@ -2161,8 +2177,43 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_0
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_04 = {
     .name = "rpc_pfm_req_hndlr_state_sync_callback",
-    .header_length = NV_SIZEOF32(rpc_pfm_req_hndlr_state_sync_callback_v21_04),
+    .header_length = sizeof(rpc_pfm_req_hndlr_state_sync_callback_v21_04),
     .fdesc = vmiopd_fdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_04
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_vgpu_gsp_mig_ci_config_v21_03
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_gsp_mig_ci_config_v21_03[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_vgpu_gsp_mig_ci_config_v21_03, execPartCount),
+        .name                 = "execPartCount"
+    },
+    {
+        .vtype                = vtype_NvU32_array,
+        .offset               = NV_OFFSETOF(rpc_vgpu_gsp_mig_ci_config_v21_03, execPartId),
+        .array_length         = NVC637_CTRL_MAX_EXEC_PARTITIONS,
+        .name                 = "execPartId"
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_vgpu_gsp_mig_ci_config_v21_03, gfid),
+        .name                 = "gfid"
+    },
+    {
+        .vtype                = vtype_NvBool,
+        .offset               = NV_OFFSETOF(rpc_vgpu_gsp_mig_ci_config_v21_03, bDelete),
+        .name                 = "bDelete"
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_gsp_mig_ci_config_v21_03 = {
+    .name = "rpc_vgpu_gsp_mig_ci_config",
+    .header_length = sizeof(rpc_vgpu_gsp_mig_ci_config_v21_03),
+    .fdesc = vmiopd_fdesc_t_rpc_vgpu_gsp_mig_ci_config_v21_03
 };
 #endif
 
@@ -2180,7 +2231,7 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_lockdown_notice_v17_00[] = {
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_lockdown_notice_v17_00 = {
     .name = "rpc_gsp_lockdown_notice",
-    .header_length = NV_SIZEOF32(rpc_gsp_lockdown_notice_v17_00),
+    .header_length = sizeof(rpc_gsp_lockdown_notice_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_lockdown_notice_v17_00
 };
 #endif
@@ -2605,6 +2656,13 @@ vmiopd_mdesc_t *rpcdebugPfmReqHndlrStateSyncCallback_v21_04(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_vgpu_gsp_mig_ci_config_v21_03
+vmiopd_mdesc_t *rpcdebugVgpuGspMigCiConfig_v21_03(void)
+{
+    return &vmiopd_mdesc_t_rpc_vgpu_gsp_mig_ci_config_v21_03;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_gsp_lockdown_notice_v17_00
 vmiopd_mdesc_t *rpcdebugGspLockdownNotice_v17_00(void)
 {
@@ -2724,6 +2782,8 @@ typedef union rpc_generic_union {
     rpc_extdev_intr_service_v extdev_intr_service_v;
     rpc_pfm_req_hndlr_state_sync_callback_v21_04 pfm_req_hndlr_state_sync_callback_v21_04;
     rpc_pfm_req_hndlr_state_sync_callback_v pfm_req_hndlr_state_sync_callback_v;
+    rpc_vgpu_gsp_mig_ci_config_v21_03 vgpu_gsp_mig_ci_config_v21_03;
+    rpc_vgpu_gsp_mig_ci_config_v vgpu_gsp_mig_ci_config_v;
     rpc_gsp_lockdown_notice_v17_00 gsp_lockdown_notice_v17_00;
     rpc_gsp_lockdown_notice_v gsp_lockdown_notice_v;
 } rpc_generic_union;
@@ -2750,7 +2810,6 @@ static NV_STATUS get_array_length_rpc_idle_channels_v03_00_channel_list(void *ms
 
     if ((NvS32)(NV_OFFSETOF(rpc_idle_channels_v03_00, nchannels) + sizeof(param->nchannels)) > bytes_remaining)
         return NV_ERR_BUFFER_TOO_SMALL;
-
     *length = param->nchannels;
     return NV_OK;
 }

@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/clc637.finn
+// Source file:      class/clc637.finn
 //
 
 #define AMPERE_SMC_PARTITION_REF        (0xc637U) /* finn: Evaluated from "NVC637_ALLOCATION_PARAMETERS_MESSAGE_ID" */

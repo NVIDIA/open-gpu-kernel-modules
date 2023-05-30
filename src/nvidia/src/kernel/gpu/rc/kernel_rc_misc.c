@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,6 +43,7 @@ NV_STATUS krcReadVirtMem_IMPL
 )
 {
     VirtMemAllocator  *pDma = GPU_GET_DMA(pGpu);
+    MemoryManager     *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     MEMORY_DESCRIPTOR  memDesc;
 
     NvU32     pageStartOffset;
@@ -54,6 +55,7 @@ NV_STATUS krcReadVirtMem_IMPL
     NvU32     cursize;
     NvU32     cur4kPage;
     NV_STATUS status = NV_OK;
+    TRANSFER_SURFACE surf = {0};
 
     pageStartOffset = NvOffset_LO32(virtAddr) & RM_PAGE_MASK;
     start4kPage = (NvOffset_LO32(virtAddr) >> 12) & 0x1FFFF;
@@ -78,6 +80,10 @@ NV_STATUS krcReadVirtMem_IMPL
             pMem = (NvU8*) osMapKernelSpace(physaddr, RM_PAGE_SIZE,
                                             NV_MEMORY_UNCACHED,
                                             NV_PROTECT_READ_WRITE);
+            if (pMem == NULL)
+            {
+                return NV_ERR_INSUFFICIENT_RESOURCES;
+            }
         }
         else if (memtype == ADDR_FBMEM)
         {
@@ -88,11 +94,20 @@ NV_STATUS krcReadVirtMem_IMPL
                                   NV_MEMORY_UNCACHED,
                                   MEMDESC_FLAGS_NONE);
             memdescDescribe(&memDesc, ADDR_FBMEM, physaddr, RM_PAGE_SIZE);
-            pMem = kbusMapRmAperture_HAL(pGpu, &memDesc);
-        }
-        if (pMem == NULL)
-        {
-            return NV_ERR_INSUFFICIENT_RESOURCES;
+
+            surf.pMemDesc = &memDesc;
+            surf.offset = 0;
+
+            pMem = portMemAllocNonPaged(RM_PAGE_SIZE);
+            if (pMem == NULL)
+            {
+                return NV_ERR_INSUFFICIENT_RESOURCES;
+            }
+
+            NV_ASSERT_OK_OR_ELSE(status,
+                memmgrMemRead(pMemoryManager, &surf, pMem, RM_PAGE_SIZE,
+                              TRANSFER_FLAGS_NONE),
+                portMemFree(pMem); return status; );
         }
         if (cursize > bufSize)
         {
@@ -110,7 +125,7 @@ NV_STATUS krcReadVirtMem_IMPL
         }
         else if (memtype == ADDR_FBMEM)
         {
-            kbusUnmapRmAperture_HAL(pGpu, &memDesc, &pMem, NV_TRUE);
+            portMemFree(pMem);
             memdescDestroy(&memDesc);
         }
         pMem = NULL;

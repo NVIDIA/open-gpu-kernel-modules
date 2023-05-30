@@ -954,14 +954,15 @@ nvswitch_minion_get_ali_debug_registers_ls10
 )
 {
     NvU32 localLinkNumber = link->linkNumber % NVSWITCH_LINKS_PER_MINION_LS10;
-    if (!nvswitch_minion_get_dl_status(device, link->linkNumber,
-             NV_NVLSTAT_MN00, 0, &(params->dlstatMn00)) == NVL_SUCCESS)
+    if (nvswitch_minion_get_dl_status(device, link->linkNumber,
+             NV_NVLSTAT_MN00, 0, &(params->dlstatMn00)) != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, INFO,"%s : Failed to poll DLSTAT _MN00 register for (%s):(%d)\n",
                         __FUNCTION__, device->name, link->linkNumber);
     }
 
-    if (!nvswitch_minion_get_dl_status(device, link->linkNumber, NV_NVLSTAT_UC01, 0, &(params->dlstatUc01)))
+    if (nvswitch_minion_get_dl_status(device, link->linkNumber,
+             NV_NVLSTAT_UC01, 0, &(params->dlstatUc01)) != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, INFO,"%s : Failed to poll DLSTAT UC01 register for (%s):(%d)\n",
                         __FUNCTION__, device->name, link->linkNumber);

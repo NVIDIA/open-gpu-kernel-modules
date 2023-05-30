@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -75,6 +75,7 @@ struct MemoryFabric {
     NV_STATUS (*__memoryfabricCtrlDetachMem__)(struct MemoryFabric *, NV00F8_CTRL_DETACH_MEM_PARAMS *);
     NV_STATUS (*__memoryfabricCtrlGetNumAttachedMem__)(struct MemoryFabric *, NV00F8_CTRL_GET_NUM_ATTACHED_MEM_PARAMS *);
     NV_STATUS (*__memoryfabricCtrlGetAttachedMem__)(struct MemoryFabric *, NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *);
+    NV_STATUS (*__memoryfabricCtrlGetPageLevelInfo__)(struct MemoryFabric *, NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS *);
     NV_STATUS (*__memoryfabricCheckMemInterUnmap__)(struct MemoryFabric *, NvBool);
     NvBool (*__memoryfabricShareCallback__)(struct MemoryFabric *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__memoryfabricMapTo__)(struct MemoryFabric *, RS_RES_MAP_TO_PARAMS *);
@@ -92,7 +93,7 @@ struct MemoryFabric {
     NV_STATUS (*__memoryfabricControlFilter__)(struct MemoryFabric *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memoryfabricControlSerialization_Prologue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memoryfabricIsReady__)(struct MemoryFabric *, NvBool);
-    NV_STATUS (*__memoryfabricCheckCopyPermissions__)(struct MemoryFabric *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__memoryfabricCheckCopyPermissions__)(struct MemoryFabric *, struct OBJGPU *, struct Device *);
     void (*__memoryfabricPreDestruct__)(struct MemoryFabric *);
     NV_STATUS (*__memoryfabricIsDuplicate__)(struct MemoryFabric *, NvHandle, NvBool *);
     void (*__memoryfabricControlSerialization_Epilogue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -137,6 +138,7 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 #define memoryfabricCtrlDetachMem(pMemoryFabric, pParams) memoryfabricCtrlDetachMem_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCtrlGetNumAttachedMem(pMemoryFabric, pParams) memoryfabricCtrlGetNumAttachedMem_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCtrlGetAttachedMem(pMemoryFabric, pParams) memoryfabricCtrlGetAttachedMem_DISPATCH(pMemoryFabric, pParams)
+#define memoryfabricCtrlGetPageLevelInfo(pMemoryFabric, pParams) memoryfabricCtrlGetPageLevelInfo_DISPATCH(pMemoryFabric, pParams)
 #define memoryfabricCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) memoryfabricCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define memoryfabricShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memoryfabricShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define memoryfabricMapTo(pResource, pParams) memoryfabricMapTo_DISPATCH(pResource, pParams)
@@ -154,7 +156,7 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 #define memoryfabricControlFilter(pResource, pCallContext, pParams) memoryfabricControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define memoryfabricControlSerialization_Prologue(pResource, pCallContext, pParams) memoryfabricControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define memoryfabricIsReady(pMemory, bCopyConstructorContext) memoryfabricIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define memoryfabricCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) memoryfabricCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define memoryfabricCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) memoryfabricCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define memoryfabricPreDestruct(pResource) memoryfabricPreDestruct_DISPATCH(pResource)
 #define memoryfabricIsDuplicate(pMemory, hMemory, pDuplicate) memoryfabricIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define memoryfabricControlSerialization_Epilogue(pResource, pCallContext, pParams) memoryfabricControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -212,6 +214,12 @@ NV_STATUS memoryfabricCtrlGetAttachedMem_IMPL(struct MemoryFabric *pMemoryFabric
 
 static inline NV_STATUS memoryfabricCtrlGetAttachedMem_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_ATTACHED_MEM_PARAMS *pParams) {
     return pMemoryFabric->__memoryfabricCtrlGetAttachedMem__(pMemoryFabric, pParams);
+}
+
+NV_STATUS memoryfabricCtrlGetPageLevelInfo_IMPL(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS *pParams);
+
+static inline NV_STATUS memoryfabricCtrlGetPageLevelInfo_DISPATCH(struct MemoryFabric *pMemoryFabric, NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS *pParams) {
+    return pMemoryFabric->__memoryfabricCtrlGetPageLevelInfo__(pMemoryFabric, pParams);
 }
 
 static inline NV_STATUS memoryfabricCheckMemInterUnmap_DISPATCH(struct MemoryFabric *pMemory, NvBool bSubdeviceHandleProvided) {
@@ -282,8 +290,8 @@ static inline NV_STATUS memoryfabricIsReady_DISPATCH(struct MemoryFabric *pMemor
     return pMemory->__memoryfabricIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS memoryfabricCheckCopyPermissions_DISPATCH(struct MemoryFabric *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__memoryfabricCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS memoryfabricCheckCopyPermissions_DISPATCH(struct MemoryFabric *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__memoryfabricCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void memoryfabricPreDestruct_DISPATCH(struct MemoryFabric *pResource) {

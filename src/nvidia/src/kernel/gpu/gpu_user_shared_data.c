@@ -28,6 +28,7 @@
 #include "rmapi/client.h"
 #include "rmapi/rmapi.h"
 #include "class/cl00de.h"
+#include "class/cl003e.h" // NV01_MEMORY_SYSTEM
 
 NV_STATUS
 gpushareddataConstruct_IMPL
@@ -38,187 +39,56 @@ gpushareddataConstruct_IMPL
 )
 {
     NV_STATUS            status   = NV_OK;
-    OBJGPU              *pGpu     = GPU_RES_GET_GPU(pData);
-    MEMORY_DESCRIPTOR   *pMemDesc = NULL;
-    NV00DE_SHARED_DATA  *pSharedData;
+    Memory              *pMemory  = staticCast(pData, Memory);
 
-    if (pGpu->userSharedData.pMemDesc == NULL)
+    // pGpu is initialied in the Memory class constructor
+    OBJGPU              *pGpu     = pMemory->pGpu;
+    MEMORY_DESCRIPTOR   **ppMemDesc = &(pGpu->userSharedData.pMemDesc);
+
+    if (RS_IS_COPY_CTOR(pParams))
+    {
+        return NV_OK;
+    }
+
+    if (*ppMemDesc == NULL)
     {
         // Create a kernel-side mapping for writing the data if one is not already present
-        status = memdescCreate(&pMemDesc, pGpu, sizeof(NV00DE_SHARED_DATA), 0, NV_TRUE, ADDR_SYSMEM,
-                               NV_MEMORY_WRITECOMBINED, MEMDESC_FLAGS_USER_READ_ONLY);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "memdescCreate failed - status=0x%08x\n", status);
-            return NV_ERR_INSUFFICIENT_RESOURCES;
-        }
+        NV_ASSERT_OK_OR_RETURN(memdescCreate(ppMemDesc, pGpu, sizeof(NV00DE_SHARED_DATA), 0, NV_TRUE,
+                                    ADDR_SYSMEM, NV_MEMORY_CACHED, MEMDESC_FLAGS_USER_READ_ONLY));
 
-        status = memdescAlloc(pMemDesc);
-        if (status != NV_OK)
-        {
-            memdescDestroy(pMemDesc);
-            NV_PRINTF(LEVEL_ERROR, "memdescAlloc failed - status=0x%08x\n", status);
-            return status;
-        }
+        NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(*ppMemDesc), err);
 
-        status = memdescMap(pMemDesc, 0, pMemDesc->Size,
-                            NV_TRUE, NV_PROTECT_READ_WRITE,
-                            &pGpu->userSharedData.pMapBuffer,
-                            &pGpu->userSharedData.pMapBufferPriv);
-        if (status != NV_OK)
-        {
-            memdescFree(pMemDesc);
-            memdescDestroy(pMemDesc);
-            NV_PRINTF(LEVEL_ERROR, "memdescMap failed - status=0x%08x\n", status);
-            return status;
-        }
 
-        pGpu->userSharedData.pMemDesc = pMemDesc;
+        NV_ASSERT_OK_OR_GOTO(status,
+            memdescMap(*ppMemDesc, 0, (*ppMemDesc)->Size,
+                        NV_TRUE, NV_PROTECT_READ_WRITE,
+                        &pGpu->userSharedData.pMapBuffer,
+                        &pGpu->userSharedData.pMapBufferPriv),
+            err);
 
-        pSharedData = (NV00DE_SHARED_DATA*)(pGpu->userSharedData.pMapBuffer);
-        portMemSet(pSharedData, 0, sizeof(*pSharedData));
+        portMemSet(pGpu->userSharedData.pMapBuffer, 0, sizeof(NV00DE_SHARED_DATA));
 
         // Initial write from cached data
         gpuUpdateUserSharedData_KERNEL(pGpu);
     }
 
+    NV_ASSERT_OK_OR_RETURN(memConstructCommon(pMemory,
+                NV01_MEMORY_SYSTEM, 0, *ppMemDesc, 0, NULL, 0, 0, 0, 0,
+                NVOS32_MEM_TAG_NONE, NULL));
     memdescAddRef(pGpu->userSharedData.pMemDesc);
-
     return NV_OK;
-}
 
-void
-gpushareddataDestruct_IMPL
-(
-    GpuUserSharedData *pData
-)
-{
-    OBJGPU             *pGpu = GPU_RES_GET_GPU(pData);
-    MEMORY_DESCRIPTOR  *pMemDesc = pGpu->userSharedData.pMemDesc;
-
-    memdescRemoveRef(pMemDesc);
-
-    if (pMemDesc->RefCount == 1)
-    {
-        // Clean up kernel-side mapping if this is the last mapping for this GPU
-        memdescUnmap(pMemDesc,
-                     NV_TRUE,
-                     pGpu->userSharedData.processId,
-                     pGpu->userSharedData.pMapBuffer,
-                     pGpu->userSharedData.pMapBufferPriv);
-
-        memdescFree(pMemDesc);
-        memdescDestroy(pMemDesc);
-        pGpu->userSharedData.pMemDesc = NULL;
-        pGpu->userSharedData.pMapBuffer = NULL;
-        pGpu->userSharedData.pMapBufferPriv = NULL;
-    }
-}
-
-NV_STATUS
-gpushareddataMap_IMPL
-(
-    GpuUserSharedData *pData,
-    CALL_CONTEXT *pCallContext,
-    RS_CPU_MAP_PARAMS *pParams,
-    RsCpuMapping *pCpuMapping
-)
-{
-    NV_STATUS  status;
-    NvBool     bKernel;
-    RmClient  *pClient = dynamicCast(pCallContext->pClient, RmClient);
-    OBJGPU    *pGpu = GPU_RES_GET_GPU(pData);
-
-    status = rmapiValidateKernelMapping(rmclientGetCachedPrivilege(pClient),
-                                        pCpuMapping->flags,
-                                        &bKernel);
-    if (status != NV_OK)
-        return status;
-
-    // Only support read-only, fail early if flag is unset somehow
-    if (!(pGpu->userSharedData.pMemDesc->_flags & MEMDESC_FLAGS_USER_READ_ONLY))
-        return NV_ERR_INVALID_STATE;
-
-    pCpuMapping->processId = osGetCurrentProcess();
-
-    // Map entire buffer (no offsets supported)
-    status = memdescMap(pGpu->userSharedData.pMemDesc,
-                        0,
-                        pGpu->userSharedData.pMemDesc->Size,
-                        NV_FALSE,
-                        NV_PROTECT_READABLE,
-                        &pCpuMapping->pLinearAddress,
-                        &pCpuMapping->pPrivate->pPriv);
-
+err:
+    memdescFree(*ppMemDesc);
+    memdescDestroy(*ppMemDesc);
+    *ppMemDesc = NULL;
     return status;
 }
 
-NV_STATUS
-gpushareddataUnmap_IMPL
-(
-    GpuUserSharedData *pData,
-    CALL_CONTEXT *pCallContext,
-    RsCpuMapping *pCpuMapping
-)
+NvBool
+gpushareddataCanCopy_IMPL(GpuUserSharedData *pData)
 {
-    NV_STATUS  status;
-    NvBool     bKernel;
-    RmClient  *pClient = dynamicCast(pCallContext->pClient, RmClient);
-    OBJGPU    *pGpu = GPU_RES_GET_GPU(pData);
-
-    if (pGpu->userSharedData.pMemDesc == NULL)
-        return NV_ERR_INVALID_OBJECT;
-
-    status = rmapiValidateKernelMapping(rmclientGetCachedPrivilege(pClient),
-                                        pCpuMapping->flags,
-                                        &bKernel);
-    if (status != NV_OK)
-        return status;
-
-    memdescUnmap(pGpu->userSharedData.pMemDesc,
-                 bKernel,
-                 pCpuMapping->processId,
-                 pCpuMapping->pLinearAddress,
-                 pCpuMapping->pPrivate->pPriv);
-
-    return NV_OK;
-}
-
-NV_STATUS
-gpushareddataGetMapAddrSpace_IMPL
-(
-    GpuUserSharedData *pData,
-    CALL_CONTEXT *pCallContext,
-    NvU32 mapFlags,
-    NV_ADDRESS_SPACE *pAddrSpace
-)
-{
-    OBJGPU           *pGpu = GPU_RES_GET_GPU(pData);
-    NV_ADDRESS_SPACE  addrSpace;
-
-    if (pGpu->userSharedData.pMemDesc == NULL)
-        return NV_ERR_INVALID_OBJECT;
-
-    NV_ASSERT_OK_OR_RETURN(rmapiGetEffectiveAddrSpace(pGpu, pGpu->userSharedData.pMemDesc, mapFlags, &addrSpace));
-
-    if (pAddrSpace != NULL)
-        *pAddrSpace = addrSpace;
-
-    return NV_OK;
-}
-
-NV_STATUS
-gpushareddataGetMemoryMappingDescriptor_IMPL
-(
-    GpuUserSharedData *pData,
-    MEMORY_DESCRIPTOR **ppMemDesc
-)
-{
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pData);
-
-    *ppMemDesc = pGpu->userSharedData.pMemDesc;
-
-    return NV_OK;
+    return NV_TRUE;
 }
 
 NV00DE_SHARED_DATA * gpushareddataWriteStart(OBJGPU *pGpu)

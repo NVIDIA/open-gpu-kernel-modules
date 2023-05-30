@@ -32,6 +32,7 @@
 #include "uvm_gpu.h"
 #include "uvm_common.h"
 #include "uvm_linux.h"
+#include "uvm_conf_computing.h"
 
 // Print pushbuffer state into a seq_file if provided or with UVM_DBG_PRINT() if not.
 static void uvm_pushbuffer_print_common(uvm_pushbuffer_t *pushbuffer, struct seq_file *s);
@@ -119,6 +120,36 @@ NV_STATUS uvm_pushbuffer_create(uvm_channel_manager_t *channel_manager, uvm_push
                                           &pushbuffer->memory);
     if (status != NV_OK)
         goto error;
+
+    if (uvm_conf_computing_mode_enabled(gpu)) {
+        UVM_ASSERT(channel_manager->conf.pushbuffer_loc == UVM_BUFFER_LOCATION_SYS);
+
+        // Move the above allocation to unprotected_sysmem
+        pushbuffer->memory_unprotected_sysmem = pushbuffer->memory;
+        pushbuffer->memory = NULL;
+
+        // Make sure the base can be least 4KB aligned. Pushes can include inline buffers
+        // with specific alignment requirement. Different base between backing memory
+        // locations would change that.
+        pushbuffer->memory_protected_sysmem = uvm_kvmalloc_zero(UVM_PUSHBUFFER_SIZE + UVM_PAGE_SIZE_4K);
+        if (!pushbuffer->memory_protected_sysmem) {
+            status = NV_ERR_NO_MEMORY;
+            goto error;
+        }
+
+
+        status = uvm_rm_mem_alloc(gpu,
+                                  UVM_RM_MEM_TYPE_GPU,
+                                  UVM_PUSHBUFFER_SIZE,
+                                  pushbuffer_alignment,
+                                  &pushbuffer->memory);
+        if (status != NV_OK)
+            goto error;
+
+        status = uvm_rm_mem_map_gpu(pushbuffer->memory_unprotected_sysmem, gpu, pushbuffer_alignment);
+        if (status != NV_OK)
+            goto error;
+    }
 
     // Verify the GPU can access the pushbuffer.
     UVM_ASSERT((uvm_pushbuffer_get_gpu_va_base(pushbuffer) + UVM_PUSHBUFFER_SIZE - 1) < gpu->parent->max_host_va);
@@ -227,9 +258,24 @@ done:
     return chunk != NULL;
 }
 
+static char *get_base_cpu_va(uvm_pushbuffer_t *pushbuffer)
+{
+    // Confidential Computing pushes are assembled in protected sysmem
+    // and safely (through encrypt/decrypt) moved to protected vidmem.
+    // Or signed and moved to unprotected sysmem.
+    if (uvm_conf_computing_mode_enabled(pushbuffer->channel_manager->gpu)) {
+        // Align protected sysmem base to 4kB. This should be enough to give
+        // the same alignment behaviour for inline buffers as the other two
+        // backing memory locations.
+        return (char*)(UVM_ALIGN_UP((uintptr_t)pushbuffer->memory_protected_sysmem, UVM_PAGE_SIZE_4K));
+    }
+
+    return (char *)uvm_rm_mem_get_cpu_va(pushbuffer->memory);
+}
+
 static NvU32 *chunk_get_next_push_start_addr(uvm_pushbuffer_t *pushbuffer, uvm_pushbuffer_chunk_t *chunk)
 {
-    char *push_start = (char *)uvm_rm_mem_get_cpu_va(pushbuffer->memory);
+    char *push_start = get_base_cpu_va(pushbuffer);
     push_start += chunk_get_offset(pushbuffer, chunk);
     push_start += chunk->next_push_start;
 
@@ -266,6 +312,16 @@ NV_STATUS uvm_pushbuffer_begin_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *pu
 
     UVM_ASSERT(pushbuffer);
     UVM_ASSERT(push);
+    UVM_ASSERT(push->channel);
+
+    if (uvm_channel_is_wlc(push->channel)) {
+        // WLC pushes use static PB and don't count against max concurrent
+        // pushes.
+        push->begin = (void*)UVM_ALIGN_UP((uintptr_t)push->channel->conf_computing.static_pb_protected_sysmem,
+                                          UVM_PAGE_SIZE_4K);
+        push->next = push->begin;
+        return NV_OK;
+    }
 
     // Note that this semaphore is uvm_up()ed in end_push().
     uvm_down(&pushbuffer->concurrent_pushes_sema);
@@ -374,6 +430,8 @@ void uvm_pushbuffer_destroy(uvm_pushbuffer_t *pushbuffer)
 
     proc_remove(pushbuffer->procfs.info_file);
 
+    uvm_rm_mem_free(pushbuffer->memory_unprotected_sysmem);
+    uvm_kvfree(pushbuffer->memory_protected_sysmem);
     uvm_rm_mem_free(pushbuffer->memory);
     uvm_kvfree(pushbuffer);
 }
@@ -426,7 +484,17 @@ void uvm_pushbuffer_mark_completed(uvm_pushbuffer_t *pushbuffer, uvm_gpfifo_entr
 
 NvU32 uvm_pushbuffer_get_offset_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push)
 {
-    NvU32 offset = (char*)push->begin - (char *)uvm_rm_mem_get_cpu_va(pushbuffer->memory);
+    NvU32 offset;
+
+    if (uvm_channel_is_wlc(push->channel)) {
+        // WLC channels use private static PB and their gpfifo entries are not
+        // added to any chunk's list. This only needs to return legal offset.
+        // Completion cleanup will not find WLC gpfifo entries as either first
+        // or last entry of any chunk.
+        return 0;
+    }
+
+    offset = (char*)push->begin - get_base_cpu_va(pushbuffer);
 
     UVM_ASSERT(((NvU64)offset) % sizeof(NvU32) == 0);
 
@@ -439,14 +507,65 @@ NvU64 uvm_pushbuffer_get_gpu_va_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
     bool is_proxy_channel = uvm_channel_is_proxy(push->channel);
 
-    pushbuffer_base = uvm_rm_mem_get_gpu_va(pushbuffer->memory, gpu, is_proxy_channel);
+    pushbuffer_base = uvm_rm_mem_get_gpu_va(pushbuffer->memory, gpu, is_proxy_channel).address;
+
+    if (uvm_channel_is_wlc(push->channel) || uvm_channel_is_lcic(push->channel)) {
+        // We need to use the same static locations for PB as the fixed
+        // schedule because that's what the channels are initialized to use.
+        return uvm_rm_mem_get_gpu_uvm_va(push->channel->conf_computing.static_pb_protected_vidmem, gpu);
+    }
+    else if (uvm_channel_is_sec2(push->channel)) {
+        // SEC2 PBs are in unprotected sysmem
+        pushbuffer_base = uvm_pushbuffer_get_sec2_gpu_va_base(pushbuffer);
+    }
+
+    return pushbuffer_base + uvm_pushbuffer_get_offset_for_push(pushbuffer, push);
+}
+
+void *uvm_pushbuffer_get_unprotected_cpu_va_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push)
+{
+    char *pushbuffer_base;
+
+    if (uvm_channel_is_wlc(push->channel)) {
+        // Reuse existing WLC static pb for initialization
+        UVM_ASSERT(!uvm_channel_manager_is_wlc_ready(push->channel->pool->manager));
+        return push->channel->conf_computing.static_pb_unprotected_sysmem_cpu;
+    }
+
+    pushbuffer_base = uvm_rm_mem_get_cpu_va(pushbuffer->memory_unprotected_sysmem);
+
+    return pushbuffer_base + uvm_pushbuffer_get_offset_for_push(pushbuffer, push);
+}
+
+NvU64 uvm_pushbuffer_get_unprotected_gpu_va_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push)
+{
+    NvU64 pushbuffer_base;
+
+    if (uvm_channel_is_wlc(push->channel)) {
+        // Reuse existing WLC static pb for initialization
+        UVM_ASSERT(!uvm_channel_manager_is_wlc_ready(push->channel->pool->manager));
+        return uvm_rm_mem_get_gpu_uvm_va(push->channel->conf_computing.static_pb_unprotected_sysmem,
+                                         uvm_push_get_gpu(push));
+    }
+
+    pushbuffer_base = uvm_rm_mem_get_gpu_uvm_va(pushbuffer->memory_unprotected_sysmem, uvm_push_get_gpu(push));
 
     return pushbuffer_base + uvm_pushbuffer_get_offset_for_push(pushbuffer, push);
 }
 
 void uvm_pushbuffer_end_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push, uvm_gpfifo_entry_t *gpfifo)
 {
-    uvm_pushbuffer_chunk_t *chunk = gpfifo_to_chunk(pushbuffer, gpfifo);
+    uvm_pushbuffer_chunk_t *chunk;
+
+    if (uvm_channel_is_wlc(push->channel)) {
+        // WLC channels use static pushbuffer and don't count towards max
+        // concurrent pushes. Initializing the list as head makes sure the
+        // deletion in "uvm_pushbuffer_mark_completed" doesn't crash.
+        INIT_LIST_HEAD(&gpfifo->pending_list_node);
+        return;
+    }
+
+    chunk = gpfifo_to_chunk(pushbuffer, gpfifo);
 
     uvm_channel_pool_assert_locked(push->channel->pool);
 
@@ -512,4 +631,11 @@ void uvm_pushbuffer_print(uvm_pushbuffer_t *pushbuffer)
 NvU64 uvm_pushbuffer_get_gpu_va_base(uvm_pushbuffer_t *pushbuffer)
 {
     return uvm_rm_mem_get_gpu_uvm_va(pushbuffer->memory, pushbuffer->channel_manager->gpu);
+}
+
+NvU64 uvm_pushbuffer_get_sec2_gpu_va_base(uvm_pushbuffer_t *pushbuffer)
+{
+    UVM_ASSERT(uvm_conf_computing_mode_enabled(pushbuffer->channel_manager->gpu));
+
+    return uvm_rm_mem_get_gpu_uvm_va(pushbuffer->memory_unprotected_sysmem, pushbuffer->channel_manager->gpu);
 }

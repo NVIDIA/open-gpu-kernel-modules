@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
+
+// FIXME XXX
+#define NVOC_KERNEL_IOCTRL_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
@@ -193,7 +198,7 @@ knvlinkConstructEngine_IMPL
         return status;
     }
 
-    // 
+    //
     // When GSP inform about link error occurs on this GPU
     // it will updated to NV_TRUE
     //
@@ -1076,15 +1081,15 @@ knvlinkSetDegradedMode_IMPL
     if (!pKernelNvlink)
     {
         NV_PRINTF(LEVEL_ERROR,
-                "Failed to get Local Nvlink info for linkId %d to update Degraded GPU%d status\n", 
+                "Failed to get Local Nvlink info for linkId %d to update Degraded GPU%d status\n",
                 linkId, pGpu->gpuInstance);
-                
-        return; 
+
+        return;
     }
 
     if(pKernelNvlink->bIsGpuDegraded)
     {
-        return; 
+        return;
     }
 
     //Find the remote GPU/NVLink attached to this link, if any
@@ -1096,29 +1101,32 @@ knvlinkSetDegradedMode_IMPL
             break;
         }
     }
-    
+
     if (pRemoteGpu == NULL)
     {
         NV_PRINTF(LEVEL_ERROR,
-                "Failed to get Remote GPU info for linkId %d to update Degraded GPU%d status\n", 
+                "Failed to get Remote GPU info for linkId %d to update Degraded GPU%d status\n",
                 linkId, pGpu->gpuInstance);
-                
-        return; 
+
+        return;
     }
 
     pRemoteKernelNvlink = GPU_GET_KERNEL_NVLINK(pRemoteGpu);
     if (!pRemoteKernelNvlink)
     {
         NV_PRINTF(LEVEL_ERROR,
-                "Failed to get Remote Nvlink info for linkId %d to update Degraded GPU%d status\n", 
+                "Failed to get Remote Nvlink info for linkId %d to update Degraded GPU%d status\n",
                 linkId, pGpu->gpuInstance);
-                
-        return; 
+
+        return;
     }
 
     if (pRemoteKernelNvlink->bIsGpuDegraded == NV_FALSE)
     {
         pKernelNvlink->bIsGpuDegraded = NV_TRUE;
+        NV_PRINTF(LEVEL_ERROR,
+                "GPU%d marked Degraded for error on linkId %d \n",
+                pGpu->gpuInstance, linkId);
 
         // shutdown all the links on this GPU
         status = knvlinkCoreShutdownDeviceLinks(pGpu, pKernelNvlink, NV_TRUE);
@@ -1128,7 +1136,7 @@ knvlinkSetDegradedMode_IMPL
                      "failed to shutdown links on degraded GPU%d\n", pGpu->gpuInstance);
         }
     }
-    
+
     return;
 }
 
@@ -1144,7 +1152,7 @@ knvlinkDestruct_IMPL
 
     // Destroy the RM NVLink state
     _knvlinkPurgeState(pGpu, pKernelNvlink);
-  
+
     // Free Ioctrls
     for (ioctrlIdx = 0; ioctrlIdx < NVLINK_MAX_IOCTRLS_SW; ioctrlIdx++)
     {

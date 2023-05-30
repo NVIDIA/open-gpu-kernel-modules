@@ -114,9 +114,15 @@ RM_API *rmapiGetInterface(RMAPI_TYPE rmapiType);
 // Flags for RM_API::Alloc
 #define RMAPI_ALLOC_FLAGS_NONE                    0
 #define RMAPI_ALLOC_FLAGS_SKIP_RPC                NVBIT(0)
+#define RMAPI_ALLOC_FLAGS_SERIALIZED              NVBIT(1)
 
 // Flags for RM_API::Free
 #define RMAPI_FREE_FLAGS_NONE                     0
+
+// Flags for RM_API RPC's
+#define RMAPI_RPC_FLAGS_NONE                      0
+#define RMAPI_RPC_FLAGS_COPYOUT_ON_ERROR          NVBIT(0)
+#define RMAPI_RPC_FLAGS_SERIALIZED                NVBIT(1)
 
 /**
  * Interface for performing operations through the RM API exposed to client
@@ -129,16 +135,16 @@ struct _RM_API
 {
     // Allocate a resource with default security attributes and local pointers (no NvP64)
     NV_STATUS (*Alloc)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hParent,
-                       NvHandle *phObject, NvU32 hClass, void *pAllocParams);
+                       NvHandle *phObject, NvU32 hClass, void *pAllocParams, NvU32 paramsSize);
 
     // Allocate a resource with default security attributes and local pointers (no NvP64)
     // and client assigned handle
     NV_STATUS (*AllocWithHandle)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hParent,
-                                 NvHandle hObject, NvU32 hClass, void *pAllocParams);
+                                 NvHandle hObject, NvU32 hClass, void *pAllocParams, NvU32 paramsSize);
 
     // Allocate a resource
     NV_STATUS (*AllocWithSecInfo)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hParent,
-                                  NvHandle *phObject, NvU32 hClass, NvP64 pAllocParams,
+                                  NvHandle *phObject, NvU32 hClass, NvP64 pAllocParams, NvU32 paramsSize,
                                   NvU32 flags, NvP64 pRightsRequested, API_SECURITY_INFO *pSecInfo);
 
     // Free a resource with default security attributes
@@ -303,7 +309,7 @@ rmapiEpilogue
     RM_API_CONTEXT    *pContext
 );
 
-void 
+void
 rmapiInitLockInfo
 (
     RM_API            *pRmApi,
@@ -315,7 +321,7 @@ rmapiInitLockInfo
 // RM locking modules: 24-bit group bitmask, 8-bit subgroup id
 //
 // Lock acquires are tagged with a RM_LOCK_MODULE_* in order to partition
-// the acquires into groups, which allows read-only locks to be 
+// the acquires into groups, which allows read-only locks to be
 // enabled / disabled on a per-group basis (via apiLockMask and gpuLockMask
 // in OBJSYS.)
 //

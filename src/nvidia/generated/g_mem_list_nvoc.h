@@ -73,7 +73,7 @@ struct MemoryList {
     NV_STATUS (*__memlistControlFilter__)(struct MemoryList *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memlistControlSerialization_Prologue__)(struct MemoryList *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memlistIsReady__)(struct MemoryList *, NvBool);
-    NV_STATUS (*__memlistCheckCopyPermissions__)(struct MemoryList *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__memlistCheckCopyPermissions__)(struct MemoryList *, struct OBJGPU *, struct Device *);
     void (*__memlistPreDestruct__)(struct MemoryList *);
     NV_STATUS (*__memlistIsDuplicate__)(struct MemoryList *, NvHandle, NvBool *);
     void (*__memlistControlSerialization_Epilogue__)(struct MemoryList *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -128,7 +128,7 @@ NV_STATUS __nvoc_objCreate_MemoryList(MemoryList**, Dynamic*, NvU32, CALL_CONTEX
 #define memlistControlFilter(pResource, pCallContext, pParams) memlistControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define memlistControlSerialization_Prologue(pResource, pCallContext, pParams) memlistControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define memlistIsReady(pMemory, bCopyConstructorContext) memlistIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define memlistCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) memlistCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define memlistCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) memlistCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define memlistPreDestruct(pResource) memlistPreDestruct_DISPATCH(pResource)
 #define memlistIsDuplicate(pMemory, hMemory, pDuplicate) memlistIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define memlistControlSerialization_Epilogue(pResource, pCallContext, pParams) memlistControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -212,8 +212,8 @@ static inline NV_STATUS memlistIsReady_DISPATCH(struct MemoryList *pMemory, NvBo
     return pMemory->__memlistIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS memlistCheckCopyPermissions_DISPATCH(struct MemoryList *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__memlistCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS memlistCheckCopyPermissions_DISPATCH(struct MemoryList *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__memlistCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void memlistPreDestruct_DISPATCH(struct MemoryList *pResource) {

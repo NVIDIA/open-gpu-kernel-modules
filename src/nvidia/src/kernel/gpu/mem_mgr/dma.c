@@ -690,7 +690,7 @@ deviceCtrlCmdDmaFlush_IMPL
     if (FLD_TEST_DRF(0080, _CTRL_DMA_FLUSH_TARGET_UNIT, _FB, _ENABLE,
                      flushParams->targetUnit))
     {
-        status = kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY);
+        status = kbusSendSysmembar(pGpu, pKernelBus);
     }
 
     return status;

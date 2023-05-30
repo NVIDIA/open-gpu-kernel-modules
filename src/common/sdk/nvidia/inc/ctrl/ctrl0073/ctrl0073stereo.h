@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0073/ctrl0073stereo.finn
+// Source file:      ctrl/ctrl0073/ctrl0073stereo.finn
 //
 
 #include "ctrl/ctrl0073/ctrl0073base.h"

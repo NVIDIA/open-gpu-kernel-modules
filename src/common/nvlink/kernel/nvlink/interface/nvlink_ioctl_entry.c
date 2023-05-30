@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2020 NVidia Corporation
+    Copyright (c) 2017-2023 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -3614,15 +3614,12 @@ nvlink_lib_ctrl_get_device_link_states
 
     for (i = 0; i < numLinks; ++i)
     {
-        // Check RxDet status of the link and repopulate as necessary
-        nvlink_core_get_rx_detect(&links[i], 1, 0);
-
         // Get the endpoint states of the link
         nvlink_core_get_endpoint_state(links[i], &(params->endStates[i]));
 
         NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
-            "%s: link 0x%x -- rxDet status 0x%x, linkMode 0x%x,\n",
-            __FUNCTION__, i, links[i]->bRxDetected, params->endStates[i].linkMode));
+            "%s: link 0x%x -- linkMode 0x%x,\n",
+            __FUNCTION__, i, params->endStates[i].linkMode));
 
     }
 

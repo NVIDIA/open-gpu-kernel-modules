@@ -54,7 +54,7 @@
 #ifndef _UVM_H_
 #define _UVM_H_
 
-#define UVM_API_LATEST_REVISION 7
+#define UVM_API_LATEST_REVISION 8
 
 #if !defined(UVM_API_REVISION)
 #error "please define UVM_API_REVISION macro to a desired version number or UVM_API_LATEST_REVISION macro"
@@ -409,6 +409,12 @@ NV_STATUS UvmRegisterGpuSmc(const NvProcessorUuid *gpuUuid,
 // with a non-migratable range group and had this GPU as their preferred
 // location will have their range group association changed to
 // UVM_RANGE_GROUP_ID_NONE.
+//
+// If the Confidential Computing feature is enabled in the system, any VA
+// ranges allocated using UvmAllocSemaphorePool and owned by this GPU will be
+// unmapped from all GPUs and the CPU. UvmFree must still be called on those
+// ranges to reclaim the VA. See UvmAllocSemaphorePool to determine which GPU
+// is considered the owner.
 //
 // Arguments:
 //     gpuUuid: (INPUT)
@@ -1094,10 +1100,12 @@ NV_STATUS UvmAllowMigrationRangeGroups(const NvU64 *rangeGroupIds,
 // Creates a new mapping in the virtual address space of the process, populates
 // it at the specified preferred location, maps it on the provided list of
 // processors if feasible and associates the range with the given range group.
+// If the preferredLocationUuid is the UUID of the CPU, preferred location is
+// set to all CPU nodes allowed by the global and thread memory policies.
 //
 // This API is equivalent to the following code sequence:
 //     UvmMemMap(base, length);
-//     UvmSetPreferredLocation(base, length, preferredLocationUuid);
+//     UvmSetPreferredLocation(base, length, preferredLocationUuid, -1);
 //     for (i = 0; i < accessedByCount; i++) {
 //         UvmSetAccessedBy(base, length, &accessedByUuids[i]);
 //     }
@@ -1262,6 +1270,12 @@ NV_STATUS UvmCleanUpZombieResources(void);
 //
 // The VA range can be unmapped and freed via a call to UvmFree.
 //
+// If the Confidential Computing feature is enabled in the system, at least one
+// GPU must be provided in the perGpuAttribs array. The first GPU in the array
+// is considered the owning GPU. If the owning GPU is unregistered via
+// UvmUnregisterGpu, this allocation will no longer be usable.
+// See UvmUnregisterGpu.
+//
 // Arguments:
 //     base: (INPUT)
 //         Base address of the virtual address range.
@@ -1298,6 +1312,8 @@ NV_STATUS UvmCleanUpZombieResources(void);
 //     NV_ERR_INVALID_ARGUMENT:
 //         perGpuAttribs is NULL but gpuAttribsCount is non-zero or vice-versa,
 //         or caching is requested on more than one GPU.
+//         The Confidential Computing feature is enabled and the perGpuAttribs
+//         list is empty.
 //
 //     NV_ERR_NOT_SUPPORTED:
 //         The current process is not the one which called UvmInitialize, and
@@ -1444,7 +1460,7 @@ NV_STATUS UvmMigrate(void                  *base,
 NV_STATUS UvmMigrate(void                  *base,
                      NvLength               length,
                      const NvProcessorUuid *destinationUuid,
-                     NvU32                  preferredCpuMemoryNode);
+                     NvS32                  preferredCpuMemoryNode);
 #endif
 
 //------------------------------------------------------------------------------
@@ -1537,7 +1553,7 @@ NV_STATUS UvmMigrateAsync(void                  *base,
 NV_STATUS UvmMigrateAsync(void                  *base,
                           NvLength               length,
                           const NvProcessorUuid *destinationUuid,
-                          NvU32                  preferredCpuMemoryNode,
+                          NvS32                  preferredCpuMemoryNode,
                           void                  *semaphoreAddress,
                           NvU32                  semaphorePayload);
 #endif
@@ -2217,11 +2233,10 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 // supported by the specified processor.
 //
 // The virtual address range specified by (base, length) must have been
-// allocated via a call to either UvmAlloc or UvmMemMap, or be supported
-// system-allocated pageable memory. If the input range is pageable memory and
-// at least one GPU in the system supports transparent access to pageable
-// memory, the behavior described below does not take effect and the preferred
-// location of the pages in the given range does not change.
+// allocated via a call to either UvmAlloc or UvmMemMap (managed memory), or be
+// supported system-allocated pageable memory. If the input range corresponds to
+// a file backed shared mapping and least one GPU in the system supports
+// transparent access to pageable memory, the behavior below is not guaranteed.
 //
 // If any pages in the VA range are associated with a range group that was made
 // non-migratable via UvmPreventMigrationRangeGroups, then those pages are
@@ -2240,17 +2255,17 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 // not cause a migration if a mapping for that page from that processor can be
 // established without migrating the page.
 //
-// When a page migrates away from its preferred location, the mapping on the
-// preferred location's processor is cleared so that the next access from that
-// processor will cause a fault and migrate the page back to its preferred
-// location. In other words, a page is mapped on the preferred location's
-// processor only if the page is in its preferred location. Thus, when the
-// preferred location changes, mappings to pages in the given range are removed
-// from the new preferred location if the pages are resident in a different
-// processor. Note that if the preferred location's processor is a GPU, then a
-// mapping from that GPU to a page in the VA range is only created if a GPU VA
-// space has been registered for that GPU and the page is in its preferred
-// location.
+// When a page that was allocated via either UvmAlloc or UvmMemMap migrates away
+// from its preferred location, the mapping on the preferred location's
+// processor is cleared so that the next access from that processor will cause a
+// fault and migrate the page back to its preferred location. In other words, a
+// page is mapped on the preferred location's processor only if the page is in
+// its preferred location. Thus, when the preferred location changes, mappings
+// to pages in the given range are removed from the new preferred location if
+// the pages are resident in a different processor. Note that if the preferred
+// location's processor is a GPU, then a mapping from that GPU to a page in the
+// VA range is only created if a GPU VA space has been registered for that GPU
+// and the page is in its preferred location.
 //
 // If read duplication has been enabled for any pages in this VA range and
 // UvmPreventMigrationRangeGroups has not been called on the range group that
@@ -2263,7 +2278,7 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 //
 // If the preferred location processor is present in the accessed-by list of any
 // of the pages in this VA range, then the migration and mapping policies
-// associated with associated with the accessed-by list.
+// associated with this API override those associated with the accessed-by list.
 //
 // The state set by this API can be cleared either by calling
 // UvmUnsetPreferredLocation for the same VA range or by calling
@@ -2284,35 +2299,66 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 //     preferredLocationUuid: (INPUT)
 //         UUID of the preferred location.
 //
+//     preferredCpuNumaNode: (INPUT)
+//         Preferred CPU NUMA memory node used if preferredLocationUuid is the
+//         UUID of the CPU. -1 is a special value which indicates all CPU nodes
+//         allowed by the global and thread memory policies. This argument is
+//         ignored if preferredLocationUuid refers to a GPU or the given virtual
+//         address range corresponds to managed memory. If NUMA is not enabled,
+//         only 0 or -1 is allowed.
+//
 // Errors:
 //     NV_ERR_INVALID_ADDRESS:
-//         base and length are not properly aligned, or the range does not
-//         represent a valid UVM allocation, or the range is pageable memory and
-//         the system does not support accessing pageable memory, or the range
-//         does not represent a supported Operating System allocation.
+//         One of the following occurred:
+//         - base and length are not properly aligned.
+//         - The range does not represent a valid UVM allocation.
+//         - The range is pageable memory and the system does not support
+//           accessing pageable memory.
+//         - The range does not represent a supported Operating System
+//           allocation.
 //
 //     NV_ERR_OUT_OF_RANGE:
 //         The VA range exceeds the largest virtual address supported by the
 //         specified processor.
 //
 //     NV_ERR_INVALID_DEVICE:
-//         preferredLocationUuid is neither the UUID of the CPU nor the UUID of
-//         a GPU that was registered by this process. Or at least one page in
-//         VA range belongs to a non-migratable range group and the specified
-//         UUID represents a fault-capable GPU. Or preferredLocationUuid is the
-//         UUID of a non-fault-capable GPU and at least one page in the VA range
-//         belongs to a non-migratable range group and another non-fault-capable
-//         GPU is in the accessed-by list of the same page but P2P support
-//         between both GPUs has not been enabled.
+//         One of the following occurred:
+//         - preferredLocationUuid is neither the UUID of the CPU nor the UUID
+//           of a GPU that was registered by this process.
+//         - At least one page in VA range belongs to a non-migratable range
+//           group and the specified UUID represents a fault-capable GPU.
+//         - preferredLocationUuid is the UUID of a non-fault-capable GPU and at
+//           least one page in the VA range belongs to a non-migratable range
+//           group and another non-fault-capable GPU is in the accessed-by list
+//           of the same page but P2P support between both GPUs has not been
+//           enabled.
+//
+//      NV_ERR_INVALID_ARGUMENT:
+//         One of the following occured:
+//         - preferredLocationUuid is the UUID of a CPU and preferredCpuNumaNode
+//           refers to a registered GPU.
+//         - preferredCpuNumaNode is invalid and preferredLocationUuid is the
+//           UUID of the CPU.
+//
+//     NV_ERR_NOT_SUPPORTED:
+//         The UVM file descriptor is associated with another process and the
+//         input virtual range corresponds to system-allocated pageable memory.
 //
 //     NV_ERR_GENERIC:
 //         Unexpected error. We try hard to avoid returning this error code,
 //         because it is not very informative.
 //
 //------------------------------------------------------------------------------
+#if UVM_API_REV_IS_AT_MOST(7)
 NV_STATUS UvmSetPreferredLocation(void                  *base,
                                   NvLength               length,
                                   const NvProcessorUuid *preferredLocationUuid);
+#else
+NV_STATUS UvmSetPreferredLocation(void                  *base,
+                                  NvLength               length,
+                                  const NvProcessorUuid *preferredLocationUuid,
+                                  NvS32                  preferredCpuNumaNode);
+#endif
 
 //------------------------------------------------------------------------------
 // UvmUnsetPreferredLocation
@@ -2326,10 +2372,9 @@ NV_STATUS UvmSetPreferredLocation(void                  *base,
 //
 // The virtual address range specified by (base, length) must have been
 // allocated via a call to either UvmAlloc or UvmMemMap, or be supported
-// system-allocated pageable memory. If the input range is pageable memory and
-// at least one GPU in the system supports transparent access to pageable
-// memory, the behavior described below does not take effect and the preferred
-// location of the pages in the given range does not change.
+// system-allocated pageable memory. If the input range corresponds to a file
+// backed shared mapping and least one GPU in the system supports transparent
+// access to pageable memory, the behavior below is not guaranteed.
 //
 // If the VA range is associated with a non-migratable range group, then that
 // association is cleared. i.e. the pages in this VA range have their range
@@ -2348,10 +2393,18 @@ NV_STATUS UvmSetPreferredLocation(void                  *base,
 //
 // Errors:
 //     NV_ERR_INVALID_ADDRESS:
-//         base and length are not properly aligned or the range does not
-//         represent a valid UVM allocation, or the range is pageable memory and
-//         the system does not support accessing pageable memory, or the range
-//         does not represent a supported Operating System allocation.
+//         One of the following occured:
+//         - base and length are not properly aligned or the range does not
+//           represent a valid UVM allocation.
+//         - The range is pageable memory and the system does not support
+//           accessing pageable memory.
+//         - The range does not represent a supported Operating System
+//           allocation.
+//         - The range contains both managed and pageable memory allocations.
+//
+//     NV_ERR_NOT_SUPPORTED:
+//         The UVM file descriptor is associated with another process and the
+//         input virtual range corresponds to system-allocated pageable memory.
 //
 //     NV_ERR_GENERIC:
 //         Unexpected error. We try hard to avoid returning this error code,
@@ -2632,12 +2685,33 @@ NV_STATUS UvmDisableSystemWideAtomics(const NvProcessorUuid *gpuUuid);
 //     NV_ERR_INVALID_STATE:
 //         UVM was not initialized before calling this function.
 //
-//     NV_ERR_GENERIC:
-//         Unexpected error. We try hard to avoid returning this error code,
-//         because it is not very informative.
-//
 //------------------------------------------------------------------------------
 NV_STATUS UvmGetFileDescriptor(UvmFileDescriptor *returnedFd);
+
+//------------------------------------------------------------------------------
+// UvmGetMmFileDescriptor
+//
+// Returns the UVM file descriptor currently being used to keep the
+// memory management context valid. The data type of the returned file
+// descriptor is platform specific.
+//
+// If UvmInitialize has not yet been called, an error is returned.
+//
+// Arguments:
+//     returnedFd: (OUTPUT)
+//         A platform specific file descriptor.
+//
+// Error codes:
+//     NV_ERR_INVALID_ARGUMENT:
+//         returnedFd is NULL.
+//
+//     NV_ERR_INVALID_STATE:
+//         UVM was not initialized before calling this function.
+//
+//     NV_ERR_NOT_SUPPORTED:
+//         This file descriptor is not required on this platform.
+//------------------------------------------------------------------------------
+NV_STATUS UvmGetMmFileDescriptor(UvmFileDescriptor *returnedFd);
 
 //------------------------------------------------------------------------------
 // UvmIs8Supported
@@ -3760,7 +3834,6 @@ NV_STATUS UvmToolsDisableCounters(UvmToolsCountersHandle counters,
 //
 //     NV_ERR_INVALID_ARGUMENT:
 //         Read spans more than a single target process allocation.
-//
 //
 //------------------------------------------------------------------------------
 NV_STATUS UvmToolsReadProcessMemory(UvmToolsSessionHandle  session,

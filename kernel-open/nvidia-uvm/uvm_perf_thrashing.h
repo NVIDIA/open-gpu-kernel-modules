@@ -84,9 +84,6 @@ uvm_processor_mask_t *uvm_perf_thrashing_get_thrashing_processors(uvm_va_block_t
 
 const uvm_page_mask_t *uvm_perf_thrashing_get_thrashing_pages(uvm_va_block_t *va_block);
 
-// Returns true if any page in the block is thrashing, or false otherwise
-bool uvm_perf_thrashing_is_block_thrashing(uvm_va_block_t *va_block);
-
 // Global initialization/cleanup functions
 NV_STATUS uvm_perf_thrashing_init(void);
 void uvm_perf_thrashing_exit(void);

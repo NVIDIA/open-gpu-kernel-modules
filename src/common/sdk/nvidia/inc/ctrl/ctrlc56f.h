@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlc56f.finn
+// Source file:      ctrl/ctrlc56f.finn
 //
 
 
@@ -39,6 +39,8 @@
 #include "ctrl/ctrl906f.h"          /* C36F is partially derived from 906F */
 #include "ctrl/ctrla06f.h"          /* C36F is partially derived from a06F */
 #include "ctrl/ctrlc36f.h" // This control call interface is an ALIAS of C36F
+
+#include "cc_drv.h"
 
 
 
@@ -159,6 +161,50 @@ typedef NV906F_CTRL_GET_MMU_FAULT_INFO_PARAMS NVC56F_CTRL_GET_MMU_FAULT_INFO_PAR
 typedef struct NVC56F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS {
     NvU32 workSubmitToken;
 } NVC56F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS;
+
+/*
+ * NVC56F_CTRL_CMD_GET_KMB
+ *
+ *    This command returns the Key Material Bundle (KMB) for the current channel.
+ *
+ *    kmb [OUT]           The KMB for the channel.
+ *
+ *    Possible status values returned are:
+ *     NV_OK
+ *     NV_ERR_INVALID_OBJECT_HANDLE
+ *     NV_ERR_INVALID_ARGUMENT
+ *     NV_ERR_NOT_SUPPORTED
+ */
+#define NVC56F_CTRL_CMD_GET_KMB (0xc56f010b) /* finn: Evaluated from "(FINN_AMPERE_CHANNEL_GPFIFO_A_GPFIFO_INTERFACE_ID << 8) | NVC56F_CTRL_CMD_GET_KMB_PARAMS_MESSAGE_ID" */
+
+#define NVC56F_CTRL_CMD_GET_KMB_PARAMS_MESSAGE_ID (0xBU)
+
+typedef struct NVC56F_CTRL_CMD_GET_KMB_PARAMS {
+    CC_KMB kmb;
+} NVC56F_CTRL_CMD_GET_KMB_PARAMS;
+
+/*
+ * NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV
+ *
+ *    This command rotates the IVs for secure channels.
+ *
+ *    rotateIvType [IN]    Which IVs to rotate.
+ *    updatedKmb [OUT]     Updated KMB after the IV rotation.
+ *
+ *    Possible status values returned are:
+ *     NV_OK
+ *     NV_ERR_INVALID_OBJECT_HANDLE
+ *     NV_ERR_INVALID_ARGUMENT
+ *     NV_ERR_NOT_SUPPORTED
+ */
+#define NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV (0xc56f010c) /* finn: Evaluated from "(FINN_AMPERE_CHANNEL_GPFIFO_A_GPFIFO_INTERFACE_ID << 8) | NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS_MESSAGE_ID" */
+
+#define NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS_MESSAGE_ID (0xCU)
+
+typedef struct NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS {
+    ROTATE_IV_TYPE rotateIvType;
+    CC_KMB         updatedKmb;
+} NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS;
 
 
 

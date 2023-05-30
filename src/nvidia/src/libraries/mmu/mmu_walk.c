@@ -914,10 +914,10 @@ mmuWalkRootAcquire
     // Acquire root level instance memory.
     NV_ASSERT_OK_OR_RETURN(
         _mmuWalkLevelInstAcquire(pWalk, &pWalk->root, vaLo, vaHi,
-                                 NV_TRUE, NV_FALSE, bCommit, &bChanged, 
+                                 NV_TRUE, NV_FALSE, bCommit, &bChanged,
                                  &pLevelInst, NV_FALSE /*bInitNv4k*/));
 
-    // We check pLevelInst to catch the corner case, where Commit() is called before PDB allocation. 
+    // We check pLevelInst to catch the corner case, where Commit() is called before PDB allocation.
     if (bChanged || (bCommit && pLevelInst))
     {
         NvBool bDone;
@@ -1062,12 +1062,12 @@ mmuWalkSetEntryHybrid
 }
 
 /**
- * @brief      Calculate target entry indices that covers VA range for 
+ * @brief      Calculate target entry indices that covers VA range for
  *             source entries
- *             
- * @details    For example, entry 1 in 64K PT is aligned to 4K PT entry 0 to 
+ *
+ * @details    For example, entry 1 in 64K PT is aligned to 4K PT entry 0 to
  *             15. 4K PTE 1 to 18 will be covered by 64K PTE 0 to 1.
- *             
+ *
  *             It is introduced by NV4K encoding. Updating big page table
  *             according to small page table requires index transfering
  *
@@ -1084,7 +1084,7 @@ mmuFmtCalcAlignedEntryIndices
     const MMU_FMT_LEVEL *pPageFmtIn,
     const NvU32 indexLoIn,
     const NvU32 indexHiIn,
-    const MMU_FMT_LEVEL *pPageFmtOut, 
+    const MMU_FMT_LEVEL *pPageFmtOut,
     NvU32 *pIndexLoOut,
     NvU32 *pIndexHiOut
 )
@@ -1178,29 +1178,29 @@ _mmuWalkLevelDestroy
 
 /**
  * @brief      Resolve upcoming state conflicts before mmu walk operations
- * 
+ *
  * @example    Say we are to mmuWalkMap VA range [vaLo, vaHi] on small PT.
- * Assume we have 4K PT and 64K PT as our small PT and big PT, and [vaLo, vaHi] 
+ * Assume we have 4K PT and 64K PT as our small PT and big PT, and [vaLo, vaHi]
  * is a strict subset of VA range covered by BigPTE[1, 3] and SmallPTE[18, 61].
  * Let's say BigPTE[1, 3] are sparse right now.
- * 
+ *
  * To resolve the conflict, we need to preserve sparse state for part of the
  * VA range that is not going to be mapped. We need to move those states from
  * BigPT to SmallPT.
- * 
+ *
  * Before:
  *  BigPTE[1, 3]: sparse,   SmallPTE[16 - 63]: invalid
  *  (BigPTE[1, 3] and SmallPTE[16 - 63] are VA aligned)
  * After:
  *  BigPTE[1, 3]: invalid,  SmallPTE[16 - 17]: sparse
  *                          SmallPTE[18 - 61]: invalid, will later be mapped
- *                          SmallPTE[62 - 63]: sparse   
+ *                          SmallPTE[62 - 63]: sparse
  *
  * @example    If we are to mmuWalkMap on big PT instead of samll PT,
  * and sparse state was on small PT, we just need to invalidate the small PTEs.
- * 
+ *
  * Before:
- *  BigPTE[1, 3]:       invalid,  
+ *  BigPTE[1, 3]:       invalid,
  *  SmallPTE[16 - 63]:  sparse
  * After:
  *  BigPTE[1, 3]:       invalid, will later be mapped
@@ -1247,7 +1247,7 @@ _mmuWalkResolveSubLevelConflicts
     {
         entryIndexLo = mmuFmtVirtAddrToEntryIndex(pLevelFmtSmall, clippedVaLo);
         entryIndexHi = mmuFmtVirtAddrToEntryIndex(pLevelFmtSmall, clippedVaHi);
-        mmuFmtCalcAlignedEntryIndices(pLevelFmtSmall, entryIndexLo, 
+        mmuFmtCalcAlignedEntryIndices(pLevelFmtSmall, entryIndexLo,
             entryIndexHi, pLevelFmtBig, &indexLo_Big, &indexHi_Big);
         mmuFmtCalcAlignedEntryIndices(pLevelFmtBig, indexLo_Big, indexHi_Big,
             pLevelFmtSmall, &indexLo_Small, &indexHi_Small);
@@ -1425,11 +1425,11 @@ _mmuWalkLevelInstAcquire
         const NvU32 entryIndexHi = (pLevelInst->memSize / pLevel->pFmt->entrySize) - 1;
         NvU32       progress     = 0;
 
-        // 
+        //
         // default state for new entries
         // NV4K for big page table if ATS is enabled
-        // 
-        MMU_WALK_FILL_STATE newEntryState = bInitNv4k ? MMU_WALK_FILL_NV4K : 
+        //
+        MMU_WALK_FILL_STATE newEntryState = bInitNv4k ? MMU_WALK_FILL_NV4K :
                                                         MMU_WALK_FILL_INVALID;
 
         NV_ASSERT(NULL != pLevelInst->pMemDesc);
@@ -1571,10 +1571,10 @@ _mmuWalkPdeAcquire
         }
     }
 
-    // 
+    //
     // the loop was reversed for NV4K, if there are multiple sublevels
     // handling small PT first, then the big PT
-    // 
+    //
     for (i = numSubLevels; i > 0; --i)
     {
         NvBool bChanged = NV_FALSE;
@@ -1582,12 +1582,12 @@ _mmuWalkPdeAcquire
         NvBool bTarget = (subLevelIdx == subLevel);
         NvBool bInitNv4k = NV_FALSE;
 
-        // 
+        //
         // If NV4K is required (when ATS is enabled), acquire 64K PT
         // whenever the 4K PT has been acquired and 64K PT was not
         // there
-        // 
-        if (pWalk->flags.bAtsEnabled && subLevelIdx == 0 && 
+        //
+        if (pWalk->flags.bAtsEnabled && subLevelIdx == 0 &&
             numSubLevels > 1 && !pOpParams->bRelease)
         {
             if (pSubLevelInsts[1] != NULL)
@@ -1605,7 +1605,7 @@ _mmuWalkPdeAcquire
             _mmuWalkLevelInstAcquire(pWalk, pLevel->subLevels + subLevelIdx,
                                      vaLo, vaLimit, bTarget,
                                      pOpParams->bRelease, pOpParams->bCommit,
-                                     &bChanged, &pSubLevelInsts[subLevelIdx], 
+                                     &bChanged, &pSubLevelInsts[subLevelIdx],
                                      bInitNv4k));
         if (NULL == pSubLevelInsts[subLevelIdx])
         {
@@ -1692,7 +1692,7 @@ _mmuWalkPdeRelease
             {
                 if (pWalk->flags.bAtsEnabled)
                 {
-                    if (pSubLevelInsts[0]->numNv4k == 
+                    if (pSubLevelInsts[0]->numNv4k ==
                             mmuFmtLevelEntryCount(pLevel->subLevels[0].pFmt) &&
                         (0 == pSubLevelInsts[0]->numReserved) &&
                         (pSubMemDescs[1] == NULL || bChanged == NV_TRUE))
@@ -1700,7 +1700,7 @@ _mmuWalkPdeRelease
                         bChanged = NV_TRUE;
                         continue;
                     }
-                    else 
+                    else
                     {
                         state = MMU_ENTRY_STATE_IS_PDE;
                         pSubMemDescs[subLevel] = pSubLevelInst->pMemDesc;

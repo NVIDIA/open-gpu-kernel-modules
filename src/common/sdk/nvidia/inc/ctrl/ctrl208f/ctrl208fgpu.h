@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl208f/ctrl208fgpu.finn
+// Source file:      ctrl/ctrl208f/ctrl208fgpu.finn
 //
 
 #include "ctrl/ctrl2080/ctrl2080gr.h"        /* 208F is partially derivative of 2080 */

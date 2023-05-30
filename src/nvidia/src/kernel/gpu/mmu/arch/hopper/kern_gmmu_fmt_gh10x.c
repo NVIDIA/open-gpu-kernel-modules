@@ -58,7 +58,7 @@ void kgmmuFmtInitLevels_GH10X(KernelGmmu    *pKernelGmmu,
 {
     NV_ASSERT_OR_RETURN_VOID(version == GMMU_FMT_VERSION_3);
     NV_ASSERT_OR_RETURN_VOID(numLevels >= 7);
-    
+
     // Page directory 4 (root).
     pLevels[0].virtAddrBitHi  = 56;
     pLevels[0].virtAddrBitLo  = 56;

@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/clc574.finn
+// Source file:      class/clc574.finn
 //
 
 #define UVM_CHANNEL_RETAINER (0xc574U) /* finn: Evaluated from "NV_UVM_CHANNEL_RETAINER_ALLOC_PARAMS_MESSAGE_ID" */

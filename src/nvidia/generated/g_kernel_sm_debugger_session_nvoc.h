@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -158,6 +158,8 @@ struct KernelSMDebuggerSession {
     struct KernelSMDebuggerSession *__nvoc_pbase_KernelSMDebuggerSession;
     NV_STATUS (*__ksmdbgssnInternalControlForward__)(struct KernelSMDebuggerSession *, NvU32, void *, NvU32);
     NvHandle (*__ksmdbgssnGetInternalObjectHandle__)(struct KernelSMDebuggerSession *);
+    NV_STATUS (*__ksmdbgssnCtrlCmdSMDebugModeEnable__)(struct KernelSMDebuggerSession *);
+    NV_STATUS (*__ksmdbgssnCtrlCmdSMDebugModeDisable__)(struct KernelSMDebuggerSession *);
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetModeMMUDebug__)(struct KernelSMDebuggerSession *, NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS *);
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugGetModeMMUDebug__)(struct KernelSMDebuggerSession *, NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS *);
     NV_STATUS (*__ksmdbgssnCtrlCmdDebugSetModeErrbarDebug__)(struct KernelSMDebuggerSession *, NV83DE_CTRL_DEBUG_SET_MODE_ERRBAR_DEBUG_PARAMS *);
@@ -213,18 +215,18 @@ struct KernelSMDebuggerSession {
     struct NotifShare *(*__ksmdbgssnGetNotificationShare__)(struct KernelSMDebuggerSession *);
     NV_STATUS (*__ksmdbgssnMap__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__ksmdbgssnAccessCallback__)(struct KernelSMDebuggerSession *, struct RsClient *, void *, RsAccessRight);
-    struct RmDebuggerSession *pDebugSession;
-    struct KernelGraphicsObject *pObject;
-    NvHandle hDebugger;
-    NvHandle hDebuggerClient;
-    NvHandle hChannel;
-    NvHandle hChannelClient;
-    NvHandle hSubdevice;
-    NvHandle hInternalClient;
-    NvHandle hInternalDevice;
-    NvHandle hInternalSubdevice;
-    NvHandle hInternalSubscription;
-    NvHandle hInternalMemMapping;
+    struct RmDebuggerSession *PRIVATE_FIELD(pDebugSession);
+    struct KernelGraphicsObject *PRIVATE_FIELD(pObject);
+    NvHandle PRIVATE_FIELD(hDebugger);
+    NvHandle PRIVATE_FIELD(hDebuggerClient);
+    NvHandle PRIVATE_FIELD(hChannel);
+    NvHandle PRIVATE_FIELD(hChannelClient);
+    NvHandle PRIVATE_FIELD(hSubdevice);
+    NvHandle PRIVATE_FIELD(hInternalClient);
+    NvHandle PRIVATE_FIELD(hInternalDevice);
+    NvHandle PRIVATE_FIELD(hInternalSubdevice);
+    NvHandle PRIVATE_FIELD(hInternalSubscription);
+    NvHandle PRIVATE_FIELD(hInternalMemMapping);
 };
 
 #ifndef __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__
@@ -257,6 +259,8 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 
 #define ksmdbgssnInternalControlForward(arg0, command, pParams, size) ksmdbgssnInternalControlForward_DISPATCH(arg0, command, pParams, size)
 #define ksmdbgssnGetInternalObjectHandle(arg0) ksmdbgssnGetInternalObjectHandle_DISPATCH(arg0)
+#define ksmdbgssnCtrlCmdSMDebugModeEnable(pKernelSMDebuggerSession) ksmdbgssnCtrlCmdSMDebugModeEnable_DISPATCH(pKernelSMDebuggerSession)
+#define ksmdbgssnCtrlCmdSMDebugModeDisable(pKernelSMDebuggerSession) ksmdbgssnCtrlCmdSMDebugModeDisable_DISPATCH(pKernelSMDebuggerSession)
 #define ksmdbgssnCtrlCmdDebugSetModeMMUDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetModeMMUDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
 #define ksmdbgssnCtrlCmdDebugGetModeMMUDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugGetModeMMUDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
 #define ksmdbgssnCtrlCmdDebugSetModeErrbarDebug(pKernelSMDebuggerSession, pParams) ksmdbgssnCtrlCmdDebugSetModeErrbarDebug_DISPATCH(pKernelSMDebuggerSession, pParams)
@@ -322,6 +326,22 @@ NvHandle ksmdbgssnGetInternalObjectHandle_IMPL(struct KernelSMDebuggerSession *a
 
 static inline NvHandle ksmdbgssnGetInternalObjectHandle_DISPATCH(struct KernelSMDebuggerSession *arg0) {
     return arg0->__ksmdbgssnGetInternalObjectHandle__(arg0);
+}
+
+static inline NV_STATUS ksmdbgssnCtrlCmdSMDebugModeEnable_fcf1ac(struct KernelSMDebuggerSession *pKernelSMDebuggerSession) {
+    return ksmdbgssnInternalControlForward(pKernelSMDebuggerSession, (2212365313U), ((void *)0), 0);
+}
+
+static inline NV_STATUS ksmdbgssnCtrlCmdSMDebugModeEnable_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession) {
+    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdSMDebugModeEnable__(pKernelSMDebuggerSession);
+}
+
+static inline NV_STATUS ksmdbgssnCtrlCmdSMDebugModeDisable_fcf1ac(struct KernelSMDebuggerSession *pKernelSMDebuggerSession) {
+    return ksmdbgssnInternalControlForward(pKernelSMDebuggerSession, (2212365314U), ((void *)0), 0);
+}
+
+static inline NV_STATUS ksmdbgssnCtrlCmdSMDebugModeDisable_DISPATCH(struct KernelSMDebuggerSession *pKernelSMDebuggerSession) {
+    return pKernelSMDebuggerSession->__ksmdbgssnCtrlCmdSMDebugModeDisable__(pKernelSMDebuggerSession);
 }
 
 static inline NV_STATUS ksmdbgssnCtrlCmdDebugSetModeMMUDebug_fcf1ac(struct KernelSMDebuggerSession *pKernelSMDebuggerSession, NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS *pParams) {

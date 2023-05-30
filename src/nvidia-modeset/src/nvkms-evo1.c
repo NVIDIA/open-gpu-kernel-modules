@@ -543,8 +543,8 @@ NvBool nvEvo1IsChannelMethodPending(NVDevEvoPtr pDevEvo,
 
 void nvEvo1SetDscParams(const NVDispEvoRec *pDispEvo,
                         const NvU32 head,
-                        const NVHwModeTimingsEvo *pTimings,
+                        const NVDscInfoEvoRec *pDscInfo,
                         const enum nvKmsPixelDepth pixelDepth)
 {
-    nvAssert(!pTimings->dpDsc.enable);
+    nvAssert(pDscInfo->type == NV_DSC_INFO_EVO_TYPE_DISABLED);
 }

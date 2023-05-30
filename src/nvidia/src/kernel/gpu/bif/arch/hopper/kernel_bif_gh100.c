@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
 
 #include "nverror.h"
 #include "gpu/bif/kernel_bif.h"
+#include "gpu/fsp/kern_fsp.h"
 #include "platform/chipset/chipset.h"
 #include "ctrl/ctrl2080/ctrl2080bus.h"
 
@@ -660,7 +661,7 @@ kbifProbePcieReqAtomicCaps_GH100
  *
  * @param[in] pGpu       GPU object pointer
  * @param[in] pKernelBif Kernel BIF object pointer
- * 
+ *
  */
 void
 kbifEnablePcieAtomics_GH100

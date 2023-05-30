@@ -45,11 +45,11 @@ NvBool pmaStateCheck(PMA *pPma);
 NV_STATUS _pmaEvictContiguous(PMA *pPma, void *pMap, NvU64 evictStart, NvU64 evictEnd,
                               MEMORY_PROTECTION prot);
 NV_STATUS _pmaEvictPages(PMA *pPma, void *pMap, NvU64 *evictPages, NvU64 evictPageCount,
-                         NvU64 *allocPages, NvU64 allocPageCount, NvU32 pageSize,
+                         NvU64 *allocPages, NvU64 allocPageCount, NvU64 pageSize,
                          NvU64 physBegin, NvU64 physEnd, MEMORY_PROTECTION prot);
 void      _pmaClearScrubBit(PMA *pPma, SCRUB_NODE *pPmaScrubList, NvU64 count);
 NV_STATUS _pmaCheckScrubbedPages(PMA *pPma, NvU64 chunkSize, NvU64 *pPages, NvU32 pageCount);
-NV_STATUS _pmaPredictOutOfMemory(PMA *pPma, NvLength allocationCount, NvU32 pageSize,
+NV_STATUS _pmaPredictOutOfMemory(PMA *pPma, NvLength allocationCount, NvU64 pageSize,
                                  PMA_ALLOCATION_OPTIONS *allocationOptions);
 NV_STATUS pmaSelector(PMA *pPma, PMA_ALLOCATION_OPTIONS *allocationOptions, NvS32 *regionList);
 void      _pmaReallocBlacklistPages (PMA  *pPma, NvU32 regId, NvU64 rangeBegin, NvU64 rangeSize);

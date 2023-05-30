@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0041.finn
+// Source file:      ctrl/ctrl0041.finn
 //
 
 #include "nvos.h"
@@ -378,7 +378,7 @@ typedef struct NV0041_CTRL_SURFACE_FLUSH_GPU_CACHE_PARAMS {
 #define NV0041_CTRL_GET_MEM_PAGE_SIZE_PARAMS_MESSAGE_ID (0x18U)
 
 typedef struct NV0041_CTRL_GET_MEM_PAGE_SIZE_PARAMS {
-    NvU32 pageSize;             /* [out] - page size */
+    NV_DECLARE_ALIGNED(NvU64 pageSize, 8);             /* [out] - page size */
 } NV0041_CTRL_GET_MEM_PAGE_SIZE_PARAMS;
 
 /*

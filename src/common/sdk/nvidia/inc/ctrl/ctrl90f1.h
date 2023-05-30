@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl90f1.finn
+// Source file:      ctrl/ctrl90f1.finn
 //
 
 #include "ctrl/ctrlxxxx.h"
@@ -83,6 +83,34 @@ typedef struct NV90F1_CTRL_VASPACE_GET_GMMU_FORMAT_PARAMS {
  */
 #define NV90F1_CTRL_CMD_VASPACE_GET_PAGE_LEVEL_INFO (0x90f10102U) /* finn: Evaluated from "(FINN_FERMI_VASPACE_A_VASPACE_INTERFACE_ID << 8) | NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS_MESSAGE_ID" */
 
+typedef struct NV_CTRL_VASPACE_PAGE_LEVEL {
+    /*!
+        * Format of this level.
+        */
+    NV_DECLARE_ALIGNED(struct MMU_FMT_LEVEL *pFmt, 8);
+
+    /*!
+    * Level/Sublevel Formats flattened
+    */
+    NV_DECLARE_ALIGNED(MMU_FMT_LEVEL levelFmt, 8);
+    NV_DECLARE_ALIGNED(MMU_FMT_LEVEL sublevelFmt[MMU_FMT_MAX_SUB_LEVELS], 8);
+
+    /*!
+        * Physical address of this page level instance.
+        */
+    NV_DECLARE_ALIGNED(NvU64 physAddress, 8);
+
+    /*!
+        * Aperture in which this page level instance resides.
+        */
+    NvU32 aperture;
+
+    /*!
+        * Size in bytes allocated for this level instance.
+        */
+    NV_DECLARE_ALIGNED(NvU64 size, 8);
+} NV_CTRL_VASPACE_PAGE_LEVEL;
+
 #define NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS_MESSAGE_ID (0x2U)
 
 typedef struct NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS {
@@ -115,33 +143,7 @@ typedef struct NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS {
     /*!
      * [out] Per-level information.
      */
-    struct {
-        /*!
-         * Format of this level.
-         */
-        NV_DECLARE_ALIGNED(struct MMU_FMT_LEVEL *pFmt, 8);
-
-       /*!
-        * Level/Sublevel Formats flattened
-        */
-        NV_DECLARE_ALIGNED(MMU_FMT_LEVEL levelFmt, 8);
-        NV_DECLARE_ALIGNED(MMU_FMT_LEVEL sublevelFmt[MMU_FMT_MAX_SUB_LEVELS], 8);
-
-        /*!
-         * Physical address of this page level instance.
-         */
-        NV_DECLARE_ALIGNED(NvU64 physAddress, 8);
-
-        /*!
-         * Aperture in which this page level instance resides.
-         */
-        NvU32 aperture;
-
-        /*!
-         * Size in bytes allocated for this level instance.
-         */
-        NV_DECLARE_ALIGNED(NvU64 size, 8);
-    } levels[GMMU_FMT_MAX_LEVELS];
+    NV_DECLARE_ALIGNED(NV_CTRL_VASPACE_PAGE_LEVEL levels[GMMU_FMT_MAX_LEVELS], 8);
 } NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS;
 
 /*!

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -257,6 +257,8 @@ struct KernelChannel {
     NV_STATUS (*__kchannelCtrlCmdGpfifoUpdateFaultMethodBuffer__)(struct KernelChannel *, NVC36F_CTRL_GPFIFO_UPDATE_FAULT_METHOD_BUFFER_PARAMS *);
     NV_STATUS (*__kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex__)(struct KernelChannel *, NVC36F_CTRL_GPFIFO_SET_WORK_SUBMIT_TOKEN_NOTIF_INDEX_PARAMS *);
     NV_STATUS (*__kchannelCtrlCmdStopChannel__)(struct KernelChannel *, NVA06F_CTRL_STOP_CHANNEL_PARAMS *);
+    NV_STATUS (*__kchannelCtrlCmdGetKmb__)(struct KernelChannel *, NVC56F_CTRL_CMD_GET_KMB_PARAMS *);
+    NV_STATUS (*__kchannelCtrlRotateSecureChannelIv__)(struct KernelChannel *, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *);
     NV_STATUS (*__kchannelCtrlGetTpcPartitionMode__)(struct KernelChannel *, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);
     NV_STATUS (*__kchannelCtrlSetTpcPartitionMode__)(struct KernelChannel *, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *);
     NV_STATUS (*__kchannelCtrlGetMMUDebugMode__)(struct KernelChannel *, NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS *);
@@ -407,6 +409,8 @@ NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_
 #define kchannelCtrlCmdGpfifoUpdateFaultMethodBuffer(pKernelChannel, pFaultMthdBufferParams) kchannelCtrlCmdGpfifoUpdateFaultMethodBuffer_DISPATCH(pKernelChannel, pFaultMthdBufferParams)
 #define kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex(pKernelChannel, pParams) kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex_DISPATCH(pKernelChannel, pParams)
 #define kchannelCtrlCmdStopChannel(pKernelChannel, pStopChannelParams) kchannelCtrlCmdStopChannel_DISPATCH(pKernelChannel, pStopChannelParams)
+#define kchannelCtrlCmdGetKmb(pKernelChannel, pStopChannelParams) kchannelCtrlCmdGetKmb_DISPATCH(pKernelChannel, pStopChannelParams)
+#define kchannelCtrlRotateSecureChannelIv(pKernelChannel, pRotateIvParams) kchannelCtrlRotateSecureChannelIv_DISPATCH(pKernelChannel, pRotateIvParams)
 #define kchannelCtrlGetTpcPartitionMode(pKernelChannel, pParams) kchannelCtrlGetTpcPartitionMode_DISPATCH(pKernelChannel, pParams)
 #define kchannelCtrlSetTpcPartitionMode(pKernelChannel, pParams) kchannelCtrlSetTpcPartitionMode_DISPATCH(pKernelChannel, pParams)
 #define kchannelCtrlGetMMUDebugMode(pKernelChannel, pParams) kchannelCtrlGetMMUDebugMode_DISPATCH(pKernelChannel, pParams)
@@ -1063,6 +1067,18 @@ static inline NV_STATUS kchannelCtrlCmdStopChannel_DISPATCH(struct KernelChannel
     return pKernelChannel->__kchannelCtrlCmdStopChannel__(pKernelChannel, pStopChannelParams);
 }
 
+NV_STATUS kchannelCtrlCmdGetKmb_IMPL(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pStopChannelParams);
+
+static inline NV_STATUS kchannelCtrlCmdGetKmb_DISPATCH(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pStopChannelParams) {
+    return pKernelChannel->__kchannelCtrlCmdGetKmb__(pKernelChannel, pStopChannelParams);
+}
+
+NV_STATUS kchannelCtrlRotateSecureChannelIv_IMPL(struct KernelChannel *pKernelChannel, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams);
+
+static inline NV_STATUS kchannelCtrlRotateSecureChannelIv_DISPATCH(struct KernelChannel *pKernelChannel, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams) {
+    return pKernelChannel->__kchannelCtrlRotateSecureChannelIv__(pKernelChannel, pRotateIvParams);
+}
+
 static inline NV_STATUS kchannelCtrlGetTpcPartitionMode_a094e1(struct KernelChannel *pKernelChannel, NV0090_CTRL_TPC_PARTITION_MODE_PARAMS *pParams) {
     return kgrctxCtrlHandle(resservGetTlsCallContext(), pKernelChannel->hKernelGraphicsContext);
 }
@@ -1271,6 +1287,17 @@ static inline void kchannelNotifyGeneric(struct KernelChannel *pKernelChannel, N
 #define kchannelNotifyGeneric(pKernelChannel, notifyIndex, pNotifyParams, notifyParamsSize) kchannelNotifyGeneric_IMPL(pKernelChannel, notifyIndex, pNotifyParams, notifyParamsSize)
 #endif //__nvoc_kernel_channel_h_disabled
 
+NvBool kchannelCheckIsUserMode_IMPL(struct KernelChannel *pKernelChannel);
+
+#ifdef __nvoc_kernel_channel_h_disabled
+static inline NvBool kchannelCheckIsUserMode(struct KernelChannel *pKernelChannel) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_kernel_channel_h_disabled
+#define kchannelCheckIsUserMode(pKernelChannel) kchannelCheckIsUserMode_IMPL(pKernelChannel)
+#endif //__nvoc_kernel_channel_h_disabled
+
 NvBool kchannelCheckIsKernel_IMPL(struct KernelChannel *pKernelChannel);
 
 #ifdef __nvoc_kernel_channel_h_disabled
@@ -1391,10 +1418,10 @@ static inline void kchannelUnmapUserD(struct OBJGPU *pGpu, struct KernelChannel 
 #define kchannelUnmapUserD(pGpu, arg0, arg1, arg2, arg3) kchannelUnmapUserD_IMPL(pGpu, arg0, arg1, arg2, arg3)
 #endif //__nvoc_kernel_channel_h_disabled
 
-NV_STATUS kchannelGetFromDualHandle_IMPL(NvHandle arg0, NvHandle arg1, struct KernelChannel **arg2);
+NV_STATUS kchannelGetFromDualHandle_IMPL(struct RsClient *arg0, NvHandle arg1, struct KernelChannel **arg2);
 
 #define kchannelGetFromDualHandle(arg0, arg1, arg2) kchannelGetFromDualHandle_IMPL(arg0, arg1, arg2)
-NV_STATUS kchannelGetFromDualHandleRestricted_IMPL(NvHandle arg0, NvHandle arg1, struct KernelChannel **arg2);
+NV_STATUS kchannelGetFromDualHandleRestricted_IMPL(struct RsClient *arg0, NvHandle arg1, struct KernelChannel **arg2);
 
 #define kchannelGetFromDualHandleRestricted(arg0, arg1, arg2) kchannelGetFromDualHandleRestricted_IMPL(arg0, arg1, arg2)
 NvU32 kchannelGetGfid_IMPL(struct KernelChannel *pKernelChannel);
@@ -1420,13 +1447,13 @@ NV_STATUS kchannelGetNextKernelChannel(
     CHANNEL_ITERATOR *pIt,
     struct KernelChannel **ppKernelChannel);
 
-NV_STATUS CliGetKernelChannelWithDevice(NvHandle hClient,
-                                        NvHandle hParent,
-                                        NvHandle hKernelChannel,
+NV_STATUS CliGetKernelChannelWithDevice(struct RsClient       *pClient,
+                                        NvHandle        hParent,
+                                        NvHandle        hKernelChannel,
                                         struct KernelChannel **ppKernelChannel);
 
-NV_STATUS CliGetKernelChannel(NvHandle hClient,
-                              NvHandle hKernelChannel,
+NV_STATUS CliGetKernelChannel(struct RsClient       *pClient,
+                              NvHandle        hKernelChannel,
                               struct KernelChannel **ppKernelChannel);
 
 /*!

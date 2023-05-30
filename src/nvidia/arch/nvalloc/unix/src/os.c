@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -931,6 +931,20 @@ NV_STATUS osAllocPagesInternal(
         if (nv && (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_32BIT_ADDRESSABLE)))
             nv->force_dma32_alloc = NV_TRUE;
 
+        //
+        // If AMD SEV is enabled but APM(Ampere protected) or CC(Confidential
+        // Compute) mode is not enabled on the GPU, all RM and client
+        // allocations must be an unprotected sysmem.  If APM is enabled and RM
+        // is allocating sysmem for its internal use, then it has to be
+        // unprotected as protected sysmem is not accessible to GPU.
+        //
+        unencrypted = memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY);
+
+        if (pMemDesc->_addressSpace == ADDR_EGM)
+        {
+            nodeId = GPU_GET_MEMORY_MANAGER(pGpu)->localEgmNodeId;
+        }
+
         if (NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount) > NV_U32_MAX)
         {
             status = NV_ERR_INVALID_LIMIT;
@@ -1218,14 +1232,6 @@ void osUnmapGPU(
     {
         osUnmapPciMemoryUser(pOsGpuInfo, address, length, priv);
     }
-}
-
-NV_STATUS osDeviceClassToDeviceName(
-    NvU32 deviceInstance,
-    NvU8 *szName
-)
-{
-    return NV_ERR_GENERIC;
 }
 
 static void postEvent(
@@ -1818,12 +1824,25 @@ void osGetTimeoutParams(OBJGPU *pGpu, NvU32 *pTimeoutUs, NvU32 *pScale, NvU32 *p
 
     if (hypervisorIsVgxHyper())
     {
-        //
-        // 1.8 seconds is chosen because it is 90% of the overall hard limit of 2.0
-        // seconds, imposed by WDDM driver rules.
-        // Currently primary use case of VGX is Windows, so setting 1.8 as default
-        //
-        *pTimeoutUs = 1.8 * 1000000;
+        if (IS_GSP_CLIENT(pGpu) && pGpu->getProperty(pGpu, PDB_PROP_GPU_EXTENDED_GSP_RM_INITIALIZATION_TIMEOUT_FOR_VGX) &&
+            !pGpu->gspRmInitialized)
+        {
+            //
+            // For Hopper, 1.8 seconds is not enough to boot GSP-RM.
+            // To avoid this issue, 4 seconds timeout is set on initialization,
+            // and then it's going to be changed 1.8 seconds after GSP initialization.
+            //
+            *pTimeoutUs = 4 * 1000000;
+        }
+        else
+        {
+            //
+            // 1.8 seconds is chosen because it is 90% of the overall hard limit of 2.0
+            // seconds, imposed by WDDM driver rules.
+            // Currently primary use case of VGX is Windows, so setting 1.8 as default
+            //
+            *pTimeoutUs = 1.8 * 1000000;
+        }
     }
     else
     {
@@ -2527,6 +2546,26 @@ NV_STATUS osCallACPI_DSM
             pAcpiDsmGuid = (NvU8 *) &PCFG_DSM_GUID;
             acpiDsmRev  = PCFG_REVISION_ID;
             break;
+        case ACPI_DSM_FUNCTION_GPS_2X:
+            pAcpiDsmGuid = (NvU8 *) &GPS_DSM_GUID;
+            acpiDsmRev = GPS_2X_REVISION_ID;
+            acpiDsmInArgSize = (*pSize);
+            break;
+        case ACPI_DSM_FUNCTION_GPS:
+            if ((IsTU10X(pGpu)) ||
+                ((gpuIsACPIPatchRequiredForBug2473619_HAL(pGpu)) &&
+                 ((acpiDsmSubFunction == GPS_FUNC_SUPPORT) ||
+                  (acpiDsmSubFunction == GPS_FUNC_GETCALLBACKS))))
+            {
+                pAcpiDsmGuid = (NvU8 *) &GPS_DSM_GUID;
+                acpiDsmRev = GPS_REVISION_ID;
+                acpiDsmInArgSize = (*pSize);
+            }
+            else
+            {
+                return NV_ERR_NOT_SUPPORTED;
+            }
+            break;
         case ACPI_DSM_FUNCTION_PEX:
             pAcpiDsmGuid = (NvU8 *) &PEX_DSM_GUID;
             acpiDsmRev   = PEX_REVISION_ID;
@@ -3038,7 +3077,32 @@ osGC6PowerControl
     NvU32  *pOut
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    NV_STATUS status;
+    NvU32 inOut   = cmd;
+    NvU16 rtnSize = sizeof(inOut);
+
+    if (FLD_TEST_DRF(_JT_FUNC, _POWERCONTROL, _GPU_POWER_CONTROL, _GSS, inOut))
+    {
+        if (!pOut)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
+    }
+
+    status = osCallACPI_DSM(pGpu,
+                            ACPI_DSM_FUNCTION_JT,
+                            JT_FUNC_POWERCONTROL,
+                            &inOut,
+                            &rtnSize);
+
+    if ((status != NV_OK) || !pOut)
+    {
+        return status;
+    }
+
+    *pOut = inOut;
+
+    return NV_OK;
 }
 
 NvBool osTestPcieExtendedConfigAccess(void *handle, NvU32 offset)
@@ -3593,8 +3657,8 @@ osValidateClientTokens
     PTOKEN_USER  pClientTokenUser  = (PTOKEN_USER)pClientSecurityToken;
     PTOKEN_USER  pCurrentTokenUser = (PTOKEN_USER)pCurrentSecurityToken;
 
-    NV_ASSERT_OR_RETURN((pClientTokenUser != NULL), NV_ERR_INVALID_POINTER);
-    NV_ASSERT_OR_RETURN((pCurrentTokenUser != NULL), NV_ERR_INVALID_POINTER);
+    if (pClientTokenUser == NULL || pCurrentTokenUser == NULL)
+        return NV_ERR_INVALID_POINTER;
 
     if ((pClientTokenUser->euid != pCurrentTokenUser->euid) &&
         (pClientTokenUser->pid != pCurrentTokenUser->pid))
@@ -3911,7 +3975,7 @@ osGetSmbiosTable
     void *pMappedAddr = NULL;
     NvU64 basePAddr = 0;
 
-    if (!NVCPU_IS_X86_64)
+    if (!NVCPU_IS_X86_64 && !NVCPU_IS_AARCH64)
     {
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -4192,7 +4256,7 @@ osWaitForIbmnpuRsync
     nv_wait_for_ibmnpu_rsync(pOsGpuInfo);
 }
 
-NvU32
+NvU64
 osGetPageSize(void)
 {
     return os_page_size;
@@ -4784,6 +4848,8 @@ osRmCapInitDescriptor
  * @brief Generates random bytes which can be used as a universally unique
  *        identifier.
  *
+ * This function may sleep (interruptible).
+ *
  * @param[out] pBytes        Array of random bytes
  * @param[in]  numBytes      Size of the array
  */
@@ -4794,9 +4860,7 @@ osGetRandomBytes
     NvU16 numBytes
 )
 {
-    os_get_random_bytes(pBytes, numBytes);
-
-    return NV_OK;
+    return os_get_random_bytes(pBytes, numBytes);
 }
 
 /*
@@ -4874,6 +4938,46 @@ osReadPFPciConfigInVF
 (
     NvU32 addr,
     NvU32 *data
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+/*!
+ * @brief Sends an MRQ (message-request) to BPMP
+ *
+ * The request, response, and ret parameters of this function correspond to the
+ * components of the tegra_bpmp_message struct, which BPMP uses to receive
+ * MRQs.
+ *
+ * @param[in]  pOsGpuInfo         OS specific GPU information pointer
+ * @param[in]  mrq                MRQ_xxx ID specifying what is requested
+ * @param[in]  pRequestData       Pointer to request input data
+ * @param[in]  requestDataSize    Size of structure pointed to by pRequestData
+ * @param[out] pResponseData      Pointer to response output data
+ * @param[in]  responseDataSize   Size of structure pointed to by pResponseData
+ * @param[out] ret                MRQ return code (from "ret" element of
+ *                                  tegra_bpmp_message struct)
+ * @param[out] apiRet             Return code from tegra_bpmp_transfer call
+ *
+ * @returns NV_OK if successful,
+ *          NV_ERR_NOT_SUPPORTED if the functionality is not available,
+ *          NV_ERR_INVALID_POINTER if the tegra_bpmp struct pointer could not
+ *            be obtained from nv, or
+ *          NV_ERR_GENERIC if the tegra_bpmp_transfer call failed (see apiRet
+ *            for Linux error code).
+ */
+NV_STATUS
+osTegraSocBpmpSendMrq
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    NvU32        mrq,
+    const void  *pRequestData,
+    NvU32        requestDataSize,
+    void        *pResponseData,
+    NvU32        responseDataSize,
+    NvS32       *pRet,
+    NvS32       *pApiRet
 )
 {
     return NV_ERR_NOT_SUPPORTED;
@@ -4988,7 +5092,7 @@ osCreateNanoTimer
  *
  * @param[in] pOsGpuInfo     OS specific GPU information pointer
  * @param[in] pTimer         pointer to high resolution timer object
- * @param[in] timens         time in nano seconds
+ * @param[in] timeNs         Relative time in nano seconds
  */
 NV_STATUS
 osStartNanoTimer
@@ -5251,9 +5355,89 @@ osReleaseGpuOsInfo
     nv_put_file_private(pOsInfo);
 }
 
+/*!
+ * @brief Add GPU memory as a NUMA node.
+ *
+ * @param[in/out]  pOsGpuInfo   OS specific GPU information pointer
+ * @param[in]      offset       start offset of the partition within FB
+ * @param[in]      size         size of the partition
+ * @param[out]     pNumaNodeId  OS NUMA node id for the added memory.
+ *
+ * @returns NV_OK if all is okay.  Otherwise an error-specific value.
+ *
+ */
+NV_STATUS
+osNumaAddGpuMemory
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    NvU64       offset,
+    NvU64       size,
+    NvU32       *pNumaNodeId
+)
+{
+    nv_state_t *nv = pOsGpuInfo;
+
+    return os_numa_add_gpu_memory(nv->handle, offset, size, pNumaNodeId);
+}
+
+/*!
+ * @brief Remove a particular SMC partition's GPU memory from OS kernel.
+ *
+ * Remove GPU memory from the OS kernel that is earlier added as a NUMA node
+ * to the kernel in platforms where GPU is coherently connected to the CPU.
+ *
+ * @param[in/out]  pOsGpuInfo   OS_GPU_INFO OS specific GPU information pointer
+ * @param[in]      offset       start offset of the partition within FB
+ * @param[in]      size         size of the partition
+ * @param[in]      numaNodeId   OS NUMA node id of the memory to be removed.
+ *
+ */
+void
+osNumaRemoveGpuMemory
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    NvU64       offset,
+    NvU64       size,
+    NvU32       numaNodeId
+)
+{
+    nv_state_t *nv = pOsGpuInfo;
+
+    NV_STATUS status = os_numa_remove_gpu_memory(nv->handle, offset, size, numaNodeId);
+    NV_ASSERT(status == NV_OK);
+
+    return;
+}
+
 NvBool
 osDmabufIsSupported(void)
 {
     return os_dma_buf_enabled;
 }
 
+NV_STATUS
+osGetEgmInfo
+(
+    OBJGPU *pGpu,
+    NvU64  *pPhysAddr,
+    NvU64  *pSize,
+    NvS32  *pNodeId
+)
+{
+    return nv_get_egm_info(NV_GET_NV_STATE(pGpu), pPhysAddr, pSize, pNodeId);
+}
+
+/*!
+ * @brief Offline (i.e., blacklist) the page containing a given address from OS kernel.
+ *
+ * @param[in]      address   Address (SPA) of the page to be offlined
+ *
+ */
+NV_STATUS
+osOfflinePageAtAddress
+(
+    NvU64       address
+)
+{
+    return os_offline_page_at_address(address);
+}

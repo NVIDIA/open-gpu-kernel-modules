@@ -169,8 +169,8 @@ static NV_STATUS __nvoc_thunk_Memory_physmemIsReady(struct PhysicalMemory *pMemo
     return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), bCopyConstructorContext);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_physmemCheckCopyPermissions(struct PhysicalMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pDstGpu, hDstClientNvBool);
+static NV_STATUS __nvoc_thunk_Memory_physmemCheckCopyPermissions(struct PhysicalMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pDstGpu, pDstDevice);
 }
 
 static void __nvoc_thunk_RsResource_physmemPreDestruct(struct PhysicalMemory *pResource) {

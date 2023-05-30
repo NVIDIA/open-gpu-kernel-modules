@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -54,6 +54,42 @@
 #define NV_PB_PFM_REQ_HNDLR_PCTRL_BIT_31                           31:31
 #define NV_PB_PFM_REQ_HNDLR_PCTRL_BIT_31_ZERO                        (0)
 
+/*
+ * NV0000_CTRL_PFM_REQ_HNDLR_EDPP_LIMIT_INFO
+ *
+ * GPU EDPpeak Limit information for platform
+ *
+ *    ulVersion
+ *     (Major(16 bits):Minor(16 bits), current v1.0)
+ *     Little endian format 0x00, 0x00, 0x01, 0x00
+ *    limitLast
+ *     last requested platform limit
+ *    limitMin
+ *     Minimum allowed limit value on EDPp policy on both AC and DC
+ *    limitRated
+ *      Rated/default allowed limit value on EDPp policy on AC
+ *    limitMax
+ *     Maximum allowed limit value on EDPp policy on AC
+ *    limitCurr
+ *     Current resultant limit effective on EDPp policy on AC and DC
+ *    limitBattRated
+ *     Default/rated allowed limit on EDPp policy on DC
+ *    limitBattMax
+ *     Maximum allowed limit on EDPp policy on DC
+ *    rsvd
+ *      Reserved
+ */
+typedef struct NV0000_CTRL_PFM_REQ_HNDLR_EDPP_LIMIT_INFO_V1 {
+    NvU32 ulVersion;
+    NvU32 limitLast;
+    NvU32 limitMin;
+    NvU32 limitRated;
+    NvU32 limitMax;
+    NvU32 limitCurr;
+    NvU32 limitBattRated;
+    NvU32 limitBattMax;
+    NvU32 rsvd;
+} NV0000_CTRL_PFM_REQ_HNDLR_EDPP_LIMIT_INFO_V1, *PNV0000_CTRL_PFM_REQ_HNDLR_EDPP_LIMIT_INFO_V1;
 
 /*
  * NV0000_CTRL_PFM_REQ_HNDLR_PSHAREDATA
@@ -181,6 +217,8 @@ typedef struct _NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_PARAMS_EX
 #define NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_GETPPM                        (GPS_FUNC_GETPPM)
 #define NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_SETPPM                        (GPS_FUNC_SETPPM)
 #define NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_PSHAREPARAMS            (GPS_FUNC_PSHAREPARAMS)
+#define NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_SETEDPPLIMITINFO    (GPS_FUNC_SETEDPPLIMITINFO)
+#define NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_CMD_GETEDPPLIMIT            (GPS_FUNC_GETEDPPLIMIT)
 
 // PFM_REQ_HNDLR_SUPPORT output
 #define NV0000_CTRL_PFM_REQ_HNDLR_SUPPORTED_SUPPORT_AVAIL                                   0:0
@@ -193,6 +231,8 @@ typedef struct _NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_PARAMS_EX
 #define NV0000_CTRL_PFM_REQ_HNDLR_SUPPORTED_GETPPM_AVAIL                                  40:40
 #define NV0000_CTRL_PFM_REQ_HNDLR_SUPPORTED_SETPPM_AVAIL                                  41:41
 #define NV0000_CTRL_PFM_REQ_HNDLR_SUPPORTED_PSHAREPARAMS_AVAIL                            42:42
+#define NV0000_CTRL_PFM_REQ_HNDLR_SUPPORTED_INFOEDPPLIMIT_AVAIL                           43:43
+#define NV0000_CTRL_PFM_REQ_HNDLR_SUPPORTED_SETEDPPLIMIT_AVAIL                            44:44
 
 // PFM_REQ_HNDLR_PCONTROL
 #define NV0000_CTRL_PFM_REQ_HNDLR_PCONTROL_REQ_TYPE                                         3:0
@@ -221,7 +261,12 @@ typedef struct _NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_PARAMS_EX
 #define NV0000_CTRL_PFM_REQ_HNDLR_PSHARESTATUS_USER_CONFIG_TGP_MODE                       22:22    // output only
 #define NV0000_CTRL_PFM_REQ_HNDLR_PSHARESTATUS_USER_CONFIG_TGP_MODE_DISABLE                 (0)
 #define NV0000_CTRL_PFM_REQ_HNDLR_PSHARESTATUS_USER_CONFIG_TGP_MODE_ENABLE                  (1)
-
+#define NV0000_CTRL_PFM_REQ_HNDLR_PSHARESTATUS_PLATFORM_GETEDPPEAKLIMIT_SET               25:25    // output only
+#define NV0000_CTRL_PFM_REQ_HNDLR_PSHARESTATUS_PLATFORM_GETEDPPEAKLIMIT_SET_FALSE          (0U)
+#define NV0000_CTRL_PFM_REQ_HNDLR_PSHARESTATUS_PLATFORM_GETEDPPEAKLIMIT_SET_TRUE           (1U)
+#define NV0000_CTRL_PFM_REQ_HNDLR_PSHARESTATUS_PLATFORM_SETEDPPEAKLIMITINFO_SET           26:26    // output only
+#define NV0000_CTRL_PFM_REQ_HNDLR_PSHARESTATUS_PLATFORM_SETEDPPEAKLIMITINFO_SET_FALSE      (0U)
+#define NV0000_CTRL_PFM_REQ_HNDLR_PSHARESTATUS_PLATFORM_SETEDPPEAKLIMITINFO_SET_TRUE       (1U)
 
 // Shared by GETPPL, SETPPL
 #define NV0000_CTRL_PFM_REQ_HNDLR_PPL_ARGS_COUNT                                            (3)
@@ -249,6 +294,9 @@ typedef struct _NV0000_CTRL_PFM_REQ_HNDLR_CALL_ACPI_PARAMS_EX
 #define NV0000_CTRL_PFM_REQ_HNDLR_PPM_ARGS_IDX                                              (1)   // input & output
 #define NV0000_CTRL_PFM_REQ_HNDLR_PPM_ARGS_INDEX                                            7:0   // output
 #define NV0000_CTRL_PFM_REQ_HNDLR_PPM_ARGS_AVAILABLE_MASK                                  15:8   // output
+
+// Shared by INFOEDPPLIMIT and SETEDPPLIMIT
+#define NV0000_CTRL_PFM_REQ_HNDLR_EDPP_VERSION_V10                                   (0x10000U)   // input & output
 
 //
 // PFM_REQ_HNDLR_PSHARE_PARAMS

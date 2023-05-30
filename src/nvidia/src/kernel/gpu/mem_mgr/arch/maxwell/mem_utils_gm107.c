@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,6 +40,7 @@
 #include "gpu/subdevice/subdevice.h"
 #include "vgpu/rpc.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
+#include "platform/chipset/chipset.h"
 
 #include "class/clc0b5sw.h"
 #include "class/cla06fsubch.h" // NVA06F_SUBCHANNEL_COPY_ENGINE
@@ -64,7 +65,7 @@ static NV_STATUS _memUtilsAllocateChannel(OBJGPU *pGpu, MemoryManager *pMemoryMa
                                     NvHandle hDeviceId, NvHandle hChannelId, NvHandle hObjectError,
                                     NvHandle hObjectBuffer, OBJCHANNEL *pChannel);
 static NV_STATUS _memUtilsAllocCe_GM107(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJCHANNEL *pChannel,
-                                             NvHandle hClientId, NvHandle hChannelId, NvHandle hCopyObjectId);
+                                             NvHandle hClientId, NvHandle hDeviceId, NvHandle hChannelId, NvHandle hCopyObjectId);
 static NV_STATUS _memUtilsAllocateUserD(OBJGPU *pGpu, MemoryManager *pMemoryManager, NvHandle hClientId,
                                         NvHandle hDeviceId, OBJCHANNEL *pChannel);
 static NV_STATUS _memUtilsMapUserd_GM107(OBJGPU *pGpu, MemoryManager *pMemoryManager,
@@ -117,13 +118,23 @@ _memUtilsAllocateReductionSema
     memAllocParams.attr2     = NVOS32_ATTR2_NONE;
     memAllocParams.flags     = 0;
 
+    //
+    // When APM feature is enabled all RM internal sysmem allocations must
+    // be in unprotected memory
+    // When Hopper CC is enabled all RM internal sysmem allocations that
+    // are required to be accessed from GPU should be in unprotected memory
+    // but those sysmem allocations that are not required to be accessed from
+    // GPU should be in protected memory.
+    //
+
     NV_ASSERT_OK_OR_RETURN(
         pRmApi->AllocWithHandle(pRmApi,
                                 pChannel->hClient,
                                 pChannel->deviceId,
                                 pChannel->bitMapSemPhysId,
                                 NV01_MEMORY_SYSTEM,
-                                &memAllocParams));
+                                &memAllocParams,
+                                sizeof(memAllocParams)));
 
     // allocate virtual memory for a bit map semaphore
     portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
@@ -141,7 +152,8 @@ _memUtilsAllocateReductionSema
                                 pChannel->deviceId,
                                 pChannel->bitMapSemVirtId,
                                 NV50_MEMORY_VIRTUAL,
-                                &memAllocParams));
+                                &memAllocParams,
+                                sizeof(memAllocParams)));
 
     lockStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_MEM);
     if(lockStatus != NV_OK)
@@ -269,6 +281,14 @@ _memUtilsChannelAllocatePB_GM107
     memAllocParams.flags     = 0;
     memAllocParams.internalflags = NVOS32_ALLOC_INTERNAL_FLAGS_SKIP_SCRUB;
 
+    //
+    // When APM is enabled all RM internal allocations must to go to
+    // unprotected memory irrespective of vidmem or sysmem
+    // When Hopper CC is enabled all RM internal sysmem allocations that
+    // are required to be accessed from GPU should be in unprotected memory
+    // but all vidmem allocations must go to protected memory
+    //
+
     NV_CHECK_OK_OR_RETURN(
         LEVEL_ERROR,
         pRmApi->AllocWithHandle(pRmApi,
@@ -276,7 +296,8 @@ _memUtilsChannelAllocatePB_GM107
                                 hDevice,
                                 hPhysMem,
                                 hClass,
-                                &memAllocParams));
+                                &memAllocParams,
+                                sizeof(memAllocParams)));
 
     // allocate the Virtual memory
     portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
@@ -295,7 +316,8 @@ _memUtilsChannelAllocatePB_GM107
                                 hDevice,
                                 hVirtMem,
                                 NV50_MEMORY_VIRTUAL,
-                                &memAllocParams));
+                                &memAllocParams,
+                                sizeof(memAllocParams)));
 
     // allocate the physmem for the notifier
     portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
@@ -307,6 +329,14 @@ _memUtilsChannelAllocatePB_GM107
     memAllocParams.flags     = 0;
     memAllocParams.internalflags = NVOS32_ALLOC_INTERNAL_FLAGS_SKIP_SCRUB;
 
+    //
+    // When APM is enabled all RM internal allocations must to go to
+    // unprotected memory irrespective of vidmem or sysmem
+    // When Hopper CC is enabled all RM internal sysmem allocations that
+    // are required to be accessed from GPU should be in unprotected memory
+    // but all vidmem allocations must go to protected memory
+    //
+
     NV_CHECK_OK_OR_RETURN(
         LEVEL_ERROR,
         pRmApi->AllocWithHandle(pRmApi,
@@ -314,7 +344,8 @@ _memUtilsChannelAllocatePB_GM107
                                 hDevice,
                                 pChannel->errNotifierIdPhys,
                                 hClass,
-                                &memAllocParams));
+                                &memAllocParams,
+                                sizeof(memAllocParams)));
 
     // allocate Virtual Memory for the notifier
     portMemSet(&memAllocParams, 0, sizeof(memAllocParams));
@@ -333,7 +364,8 @@ _memUtilsChannelAllocatePB_GM107
                                 hDevice,
                                 pChannel->errNotifierIdVirt,
                                 NV50_MEMORY_VIRTUAL,
-                                &memAllocParams));
+                                &memAllocParams,
+                                sizeof(memAllocParams)));
 
     return rmStatus;
 }
@@ -348,6 +380,8 @@ memmgrMemUtilsChannelInitialize_GM107
 {
     NV_STATUS                      rmStatus;
     NV_STATUS                      lockStatus;
+    RsClient                      *pRsClient;
+    NvHandle                       hClient;
     NvHandle                       hDevice;                    // device handle
     NvHandle                       hPhysMem;                   // memory handle
     NvU64                          size;
@@ -355,15 +389,16 @@ memmgrMemUtilsChannelInitialize_GM107
     NvHandle                       hErrNotifierVirt;
     NvHandle                       hErrNotifierPhys;
     NvHandle                       hPushBuffer;
-    NvHandle                       hClient;
     RM_API                        *pRmApi              = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    RmClient                      *pClient;
     Heap                          *pHeap               = GPU_GET_HEAP(pGpu);
     NvBool                         bMIGInUse           = IS_MIG_IN_USE(pGpu);
-    NvU8                          *pErrNotifierCpuVA    = NULL;
+    NvU8                          *pErrNotifierCpuVA   = NULL;
     NV_ADDRESS_SPACE               userdAddrSpace;
     NV_ADDRESS_SPACE               pushBuffAddrSpace;
     NV_ADDRESS_SPACE               gpFifoAddrSpace;
+    OBJSYS                        *pSys                = SYS_GET_INSTANCE();
+    OBJCL                         *pCl                 = SYS_GET_CL(pSys);
+    NvU32                          cacheSnoopFlag      = 0 ;
 
     //
     // Heap alloc one chunk of memory to hold all of our alloc parameters to
@@ -385,27 +420,25 @@ memmgrMemUtilsChannelInitialize_GM107
     hErrNotifierPhys =  pChannel->errNotifierIdPhys;
     hPushBuffer      =  pChannel->pushBufferId;
 
+    if (pCl->getProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT))
+    {
+        cacheSnoopFlag = DRF_DEF(OS46, _FLAGS, _CACHE_SNOOP, _ENABLE);
+    }
+
     if (!pChannel->bClientAllocated)
     {
-        RsClient   *pRsClient;
-
         NV_CHECK_OK_OR_RETURN(
             LEVEL_ERROR,
             pRmApi->AllocWithHandle(pRmApi, NV01_NULL_OBJECT, NV01_NULL_OBJECT,
                                     NV01_NULL_OBJECT, NV01_ROOT,
-                                    &pChannel->hClient));
+                                    &pChannel->hClient, sizeof(pChannel->hClient)));
 
         NV_ASSERT_OK_OR_GOTO(
             rmStatus,
-            serverutilGetClientUnderLock(pChannel->hClient, &pClient),
+            serverGetClientUnderLock(&g_resServ, pChannel->hClient, &pRsClient),
             exit_free_client);
 
-        NV_ASSERT_OK_OR_GOTO(
-            rmStatus,
-            serverGetClientUnderLock(&g_resServ, pChannel->hClient, &pChannel->pRsClient),
-            exit_free_client);
-
-        pRsClient = staticCast(pClient, RsClient);
+        pChannel->pRsClient = pRsClient;
 
         if (IS_VIRTUAL(pGpu))
         {
@@ -423,8 +456,10 @@ memmgrMemUtilsChannelInitialize_GM107
                 exit_free_client);
         }
     }
+    else
+        pRsClient = pChannel->pRsClient;
 
-    hClient = pChannel->hClient;
+    hClient = pRsClient->hClient;
 
     pParams = portMemAllocNonPaged(sizeof(*pParams));
     if (pParams == NULL)
@@ -433,14 +468,13 @@ memmgrMemUtilsChannelInitialize_GM107
         goto exit_free_client;
     }
 
-    NV_ASSERT_OK_OR_GOTO(
-        rmStatus,
-        serverutilGenResourceHandle(hClient, &pChannel->deviceId),
-        exit_free_client);
-
-    hDevice = pChannel->deviceId;
-
+    if (pChannel->deviceId == NV01_NULL_OBJECT)
     {
+        NV_ASSERT_OK_OR_GOTO(
+            rmStatus,
+            clientGenResourceHandle(pRsClient, &pChannel->deviceId),
+            exit_free_client);
+
         NV0080_ALLOC_PARAMETERS *pNv0080 = &pParams->nv0080;
 
         portMemSet(pNv0080, 0, sizeof(*pNv0080));
@@ -451,18 +485,20 @@ memmgrMemUtilsChannelInitialize_GM107
         NV_CHECK_OK_OR_GOTO(
             rmStatus,
             LEVEL_ERROR,
-            pRmApi->AllocWithHandle(pRmApi, hClient, hClient, hDevice,
-                                    NV01_DEVICE_0, pNv0080),
+            pRmApi->AllocWithHandle(pRmApi, hClient, hClient, pChannel->deviceId,
+                                    NV01_DEVICE_0, pNv0080, sizeof(*pNv0080)),
             exit_free_client);
     }
-
-    NV_ASSERT_OK_OR_GOTO(
-        rmStatus,
-        serverutilGenResourceHandle(hClient, &pChannel->subdeviceId),
-        exit_free_client);
+    hDevice = pChannel->deviceId;
 
     // allocate a subdevice
+    if (pChannel->subdeviceId == NV01_NULL_OBJECT)
     {
+        NV_ASSERT_OK_OR_GOTO(
+            rmStatus,
+            clientGenResourceHandle(pRsClient, &pChannel->subdeviceId),
+            exit_free_client);
+
         NV2080_ALLOC_PARAMETERS *pNv2080 = &pParams->nv2080;
         portMemSet(pNv2080, 0, sizeof(*pNv2080));
         pNv2080->subDeviceId = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
@@ -470,10 +506,10 @@ memmgrMemUtilsChannelInitialize_GM107
         NV_CHECK_OK_OR_GOTO(
             rmStatus,
             LEVEL_ERROR,
-            pRmApi->AllocWithHandle(pRmApi, hClient, hDevice,
-                                    pChannel->subdeviceId,
+            pRmApi->AllocWithHandle(pRmApi, hClient, hDevice, pChannel->subdeviceId,
                                     NV20_SUBDEVICE_0,
-                                    pNv2080),
+                                    pNv2080,
+                                    sizeof(*pNv2080)),
             exit_free_client);
     }
 
@@ -484,8 +520,7 @@ memmgrMemUtilsChannelInitialize_GM107
 
         NV_ASSERT_OK_OR_GOTO(
             rmStatus,
-            serverutilGenResourceHandle(hClient,
-                                        &pChannel->hPartitionRef),
+            clientGenResourceHandle(pRsClient, &pChannel->hPartitionRef),
             exit_free_client);
 
         portMemSet(pNvC637, 0, sizeof(*pNvC637));
@@ -497,7 +532,8 @@ memmgrMemUtilsChannelInitialize_GM107
                                     pChannel->subdeviceId,
                                     pChannel->hPartitionRef,
                                     AMPERE_SMC_PARTITION_REF,
-                                    pNvC637),
+                                    pNvC637,
+                                    sizeof(*pNvC637)),
             exit_free_client);
 
         pHeap = pChannel->pKernelMIGGpuInstance->pMemoryPartitionHeap;
@@ -553,7 +589,7 @@ memmgrMemUtilsChannelInitialize_GM107
         if (pChannel->bUseVasForCeCopy)
         {
             NV_ASSERT_OK_OR_GOTO(rmStatus,
-                serverutilGenResourceHandle(pChannel->hClient, &pChannel->hFbAlias),
+                clientGenResourceHandle(pRsClient, &pChannel->hFbAlias),
                 exit_free_client);
 
             rmStatus = memmgrMemUtilsCreateMemoryAlias_HAL(pGpu, pMemoryManager, pChannel);
@@ -601,7 +637,7 @@ memmgrMemUtilsChannelInitialize_GM107
 
             rmStatus = pRmApi->AllocWithHandle(pRmApi, hClient, pChannel->deviceId,
                                                pChannel->hVASpaceId, FERMI_VASPACE_A,
-                                               pVa);
+                                               pVa, sizeof(*pVa));
         }
         if (bAcquireLock)
         {
@@ -617,10 +653,10 @@ memmgrMemUtilsChannelInitialize_GM107
             goto exit_free_client;
         }
 
-        rmStatus = vaspaceGetByHandleOrDeviceDefault(pChannel->pRsClient,
-                                                    pChannel->deviceId,
-                                                    pChannel->hVASpaceId,
-                                                    &pChannel->pVAS);
+        rmStatus = vaspaceGetByHandleOrDeviceDefault(pRsClient,
+                                                     pChannel->deviceId,
+                                                     pChannel->hVASpaceId,
+                                                     &pChannel->pVAS);
         if (rmStatus != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -643,7 +679,7 @@ memmgrMemUtilsChannelInitialize_GM107
             }
 
             NV_ASSERT_OK_OR_GOTO(rmStatus,
-                 serverutilGenResourceHandle(pChannel->hClient, &pChannel->hFbAliasVA), exit_free_client);
+                 clientGenResourceHandle(pRsClient, &pChannel->hFbAliasVA), exit_free_client);
         }
 
         if (gpuIsSplitVasManagementServerClientRmEnabled(pGpu))
@@ -679,11 +715,12 @@ memmgrMemUtilsChannelInitialize_GM107
             pMem->hVASpace = pChannel->hVASpaceId;
 
             rmStatus = pRmApi->AllocWithHandle(pRmApi,
-                                              pChannel->hClient,
-                                              pChannel->deviceId,
-                                              pChannel->hFbAliasVA,
-                                              NV50_MEMORY_VIRTUAL,
-                                              pMem);
+                                               hClient,
+                                               pChannel->deviceId,
+                                               pChannel->hFbAliasVA,
+                                               NV50_MEMORY_VIRTUAL,
+                                               pMem,
+                                               sizeof(*pMem));
         }
 
         if (bAcquireLock)
@@ -707,7 +744,7 @@ memmgrMemUtilsChannelInitialize_GM107
                 rmStatus,
                 LEVEL_ERROR,
                 pRmApi->Map(pRmApi,
-                            pChannel->hClient,
+                            hClient,
                             pChannel->deviceId,
                             pChannel->hFbAliasVA,
                             pChannel->hFbAlias,
@@ -792,7 +829,7 @@ memmgrMemUtilsChannelInitialize_GM107
                            hPhysMem, //hMemory,
                            0,
                            size,
-                           NV04_MAP_MEMORY_FLAGS_NONE,
+                           cacheSnoopFlag,
                            &pChannel->pbGpuVA);
     // map the error notifier
     rmStatus = pRmApi->Map(pRmApi, hClient, hDevice,
@@ -800,7 +837,7 @@ memmgrMemUtilsChannelInitialize_GM107
                            hErrNotifierPhys, //hMemory,
                            0,
                            pChannel->channelNotifierSize,
-                           DRF_DEF(OS46, _FLAGS, _KERNEL_MAPPING, _ENABLE),
+                           DRF_DEF(OS46, _FLAGS, _KERNEL_MAPPING, _ENABLE) | cacheSnoopFlag,
                            &pChannel->pbGpuNotifierVA);
 
     NV_CHECK_OK_OR_GOTO(
@@ -916,7 +953,8 @@ memmgrMemUtilsCreateMemoryAlias_GM107
                                     pChannel->deviceId,
                                     pChannel->hFbAlias,
                                     NV01_MEMORY_LOCAL_PHYSICAL,
-                                    &physMemParams);
+                                    &physMemParams,
+                                    sizeof(physMemParams));
     if (status != NV_OK)
     {
         NV_CHECK_OK_FAILED(LEVEL_WARNING, "Aliasing FbListMem", status);
@@ -945,16 +983,16 @@ memmgrMemUtilsScrubInitRegisterCallback
     NV2080_CTRL_EVENT_SET_NOTIFICATION_PARAMS nv2080EventNotificationParams;
     NV_STATUS rmStatus;
     NvHandle subDeviceHandle = 0;
+    Subdevice *pSubDevice;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
-    if (NV_OK != CliGetSubDeviceHandleFromGpu(pChannel->hClient,
-                pGpu,
-                &subDeviceHandle))
+    if (NV_OK != subdeviceGetByGpu(pChannel->pRsClient, pGpu, &pSubDevice))
     {
-        NV_PRINTF(LEVEL_WARNING, "Unable to get subdevice handle.\n");
-        //Allocate a sub device if we dont have it created before hand
         NV2080_ALLOC_PARAMETERS nv2080AllocParams;
 
+        NV_PRINTF(LEVEL_WARNING, "Unable to get subdevice handle. Allocating subdevice\n");
+
+        // Allocate a sub device if we dont have it created before hand
         portMemSet(&nv2080AllocParams, 0, sizeof(NV2080_ALLOC_PARAMETERS));
         nv2080AllocParams.subDeviceId = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
@@ -963,12 +1001,22 @@ memmgrMemUtilsScrubInitRegisterCallback
                                            pChannel->deviceId,
                                            pChannel->subdeviceId,
                                            NV20_SUBDEVICE_0,
-                                           &nv2080AllocParams);
+                                           &nv2080AllocParams,
+                                           sizeof(nv2080AllocParams));
         if (rmStatus != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Unable to allocate a subdevice.\n");
             return NV_ERR_GENERIC;
         }
+
+        // Set newly created subdevice's handle
+        subDeviceHandle = pChannel->subdeviceId;
+    }
+    else
+    {
+        GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
+
+        subDeviceHandle = RES_GET_HANDLE(pSubDevice);
     }
 
     // Register callback
@@ -983,7 +1031,8 @@ memmgrMemUtilsScrubInitRegisterCallback
                                        subDeviceHandle,
                                        pChannel->eventId,
                                        NV01_EVENT_KERNEL_CALLBACK_EX,
-                                       &nv0005AllocParams);
+                                       &nv0005AllocParams,
+                                       sizeof(nv0005AllocParams));
 
     if (rmStatus != NV_OK)
     {
@@ -1088,6 +1137,7 @@ memmgrMemUtilsCopyEngineInitialize_GM107
                                pMemoryManager,
                                pChannel,
                                pChannel->hClient,
+                               pChannel->deviceId,
                                pChannel->channelId,
                                pChannel->copyObjectId),
         exit_free);
@@ -1103,7 +1153,7 @@ memmgrMemUtilsCopyEngineInitialize_GM107
     NV_CHECK_OK_OR_GOTO(
         rmStatus,
         LEVEL_ERROR,
-        CliGetKernelChannelWithDevice(pChannel->hClient,
+        CliGetKernelChannelWithDevice(pChannel->pRsClient,
                                       pChannel->deviceId,
                                       pChannel->channelId,
                                       &pFifoKernelChannel),
@@ -1151,6 +1201,7 @@ static NV_STATUS _memUtilsGetCe_GM107
 (
     OBJGPU *pGpu,
     NvHandle hClient,
+    NvHandle hDevice,
     KernelCE **ppKCe
 )
 {
@@ -1163,7 +1214,16 @@ static NV_STATUS _memUtilsGetCe_GM107
 
     if (IS_MIG_IN_USE(pGpu))
     {
-        status = kmigmgrGetGPUInstanceScrubberCe(pGpu, GPU_GET_KERNEL_MIG_MANAGER(pGpu), hClient, &ceInst);
+        RsClient *pClient;
+        Device *pDevice;
+
+        NV_ASSERT_OK_OR_RETURN(
+            serverGetClientUnderLock(&g_resServ, hClient, &pClient));
+
+        NV_ASSERT_OK_OR_RETURN(
+            deviceGetByHandle(pClient, hDevice, &pDevice));
+
+        status = kmigmgrGetGPUInstanceScrubberCe(pGpu, GPU_GET_KERNEL_MIG_MANAGER(pGpu), pDevice, &ceInst);
     }
     else
     {
@@ -1193,6 +1253,7 @@ static NV_STATUS _memUtilsAllocCe_GM107
     MemoryManager *pMemoryManager,
     OBJCHANNEL    *pChannel,
     NvHandle       hClientId,
+    NvHandle       hDeviceId,
     NvHandle       hChannelId,
     NvHandle       hCopyObjectId
 
@@ -1204,7 +1265,7 @@ static NV_STATUS _memUtilsAllocCe_GM107
 
     createParams.version = NVC0B5_ALLOCATION_PARAMETERS_VERSION_1;
 
-    NV_ASSERT_OK_OR_RETURN(_memUtilsGetCe_GM107(pGpu, hClientId, &pKCe));
+    NV_ASSERT_OK_OR_RETURN(_memUtilsGetCe_GM107(pGpu, hClientId, hDeviceId, &pKCe));
     NV_ASSERT_OR_RETURN((pKCe != NULL), NV_ERR_INVALID_STATE);
 
     createParams.engineType = NV2080_ENGINE_TYPE_COPY(pKCe->publicID);
@@ -1224,9 +1285,10 @@ static NV_STATUS _memUtilsAllocCe_GM107
                                 hChannelId,
                                 hCopyObjectId,
                                 pChannel->hTdCopyClass,
-                                &createParams));
+                                &createParams,
+                                sizeof(createParams)));
 
-    pChannel->pKCe = pKCe;
+    pChannel->ceId = pKCe->publicID;
     return NV_OK;
 }
 
@@ -1303,10 +1365,19 @@ _memUtilsAllocateUserD
             break;
     }
 
+    //
+    // When APM is enabled all RM internal allocations must to go to
+    // unprotected memory irrespective of vidmem or sysmem
+    // When Hopper CC is enabled all RM internal sysmem allocations that
+    // are required to be accessed from GPU should be in unprotected memory
+    // but all vidmem allocations must go to protected memory
+    //
+
     NV_ASSERT_OK_OR_RETURN(pRmApi->AllocWithHandle(pRmApi, hClientId, hDeviceId,
                                                    pChannel->hUserD,
                                                    userdMemClass,
-                                                   &memAllocParams));
+                                                   &memAllocParams,
+                                                   sizeof(memAllocParams)));
 
     return rmStatus;
 }
@@ -1331,7 +1402,7 @@ _memUtilsAllocateChannel
     KernelCE                              *pKCe;
     NvBool                                 bMIGInUse = IS_MIG_IN_USE(pGpu);
 
-    NV_ASSERT_OK_OR_RETURN(_memUtilsGetCe_GM107(pGpu, hClientId, &pKCe));
+    NV_ASSERT_OK_OR_RETURN(_memUtilsGetCe_GM107(pGpu, hClientId, hDeviceId, &pKCe));
     NV_ASSERT_OR_RETURN((pKCe != NULL), NV_ERR_INVALID_STATE);
 
     portMemSet(&channelGPFIFOAllocParams, 0, sizeof(NV_CHANNEL_ALLOC_PARAMS));
@@ -1352,8 +1423,17 @@ _memUtilsAllocateChannel
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
         RM_ENGINE_TYPE localCe;
+        RsClient *pClient;
+        Device *pDevice;
+
         NV_ASSERT_OK_OR_RETURN(
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClientId, &ref));
+            serverGetClientUnderLock(&g_resServ, hClientId, &pClient));
+
+        NV_ASSERT_OK_OR_RETURN(
+            deviceGetByHandle(pClient, hDeviceId, &pDevice));
+
+        NV_ASSERT_OK_OR_RETURN(
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
         // Clear the Compute instance portion, if present
         ref = kmigmgrMakeGIReference(ref.pKernelMIGGpuInstance);
         NV_ASSERT_OK_OR_RETURN(
@@ -1401,7 +1481,8 @@ _memUtilsAllocateChannel
                                 hDeviceId,
                                 hChannelId,
                                 hClass,
-                                &channelGPFIFOAllocParams));
+                                &channelGPFIFOAllocParams,
+                                sizeof(channelGPFIFOAllocParams)));
 
 cleanup:
     NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(rmStatus,
@@ -1446,24 +1527,23 @@ memmgrMemUtilsMemSet_GM107
         // if progress is checked insert the semaphore with freeToken as payload
          pChannel->finishPayload = freeToken;
          _ceChannelScheduleWork_GM107(pGpu, pMemoryManager, pChannel,
-                                      0, 0, 0,             /*src parameters*/
-                                      base, ADDR_FBMEM, 0, /*dst parameters*/
+                                      0, 0, 0,             // src parameters
+                                      base, ADDR_FBMEM, 0, // dst parameters
                                       size,
-                                      NV_FALSE,
-                                      NV_TRUE,
-                                      NV_FALSE /*scrubbing*/);
-
+                                      NV_FALSE,            // blocking
+                                      NV_TRUE,             // insertFinishPayload
+                                      NV_FALSE);           // memcopy
     }
     else
     {
         // issue a standard async scrub
        blocksPushed = _ceChannelScheduleWork_GM107(pGpu, pMemoryManager, pChannel,
-                          0, 0, 0,             /*src parameters*/
-                          base, ADDR_FBMEM, 0, /*dst parameters*/
+                          0, 0, 0,             // src parameters
+                          base, ADDR_FBMEM, 0, // dst parameters
                           size,
-                          NV_FALSE,
-                          NV_FALSE,
-                          NV_FALSE /*scrubbing*/);
+                          NV_FALSE,            // blocking
+                          NV_FALSE,            // insertFinishPayload
+                          NV_FALSE);           // memcopy
     }
     *pNumBlocks = blocksPushed;
     return NV_OK;
@@ -1500,12 +1580,12 @@ memmgrMemUtilsMemSetBlocking_GM107
     }
 
     blocksPushed = _ceChannelScheduleWork_GM107(pGpu, pMemoryManager, pChannel,
-                       0, 0, 0,              /*src parameters*/
-                       base, ADDR_FBMEM, 0,  /*dst parameters*/
+                       0, 0, 0,              // src parameters
+                       base, ADDR_FBMEM, 0,  // dst parameters
                        size,
-                       NV_TRUE,
-                       NV_FALSE,
-                       NV_FALSE /*scrubbing*/);
+                       NV_TRUE,              // blocking
+                       NV_FALSE,             // insertFinishPayload
+                       NV_FALSE);            // memcopy
 
     if (blocksPushed > 0)
     {
@@ -1523,7 +1603,7 @@ memmgrMemUtilsMemSetBlocking_GM107
             if (timeoutStatus == NV_ERR_TIMEOUT)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Timed Out waiting for CE semaphore in blocking scrub!\n");
+                          "Timed Out waiting for CE semaphore\n");
 
                 NV_PRINTF(LEVEL_ERROR,
                           "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
@@ -1565,10 +1645,10 @@ memmgrMemUtilsMemSetBatched_GM107
     NvU32 blocksPushed = 0;
 
     blocksPushed = _ceChannelScheduleBatchWork_GM107(pGpu, pMemoryManager, pChannel,
-                       0, 0, 0,                          /*src parameters*/
-                       base, ADDR_FBMEM, 0,              /*dst parameters*/
+                       0, 0, 0,                          // src parameters
+                       base, ADDR_FBMEM, 0,              // dst parameters
                        size,
-                       NV_FALSE);                           /*scrubbing*/
+                       NV_FALSE);                        // memcopy
 
     if (blocksPushed > 0)
     {
@@ -1586,7 +1666,7 @@ memmgrMemUtilsMemSetBatched_GM107
             if (timeoutStatus == NV_ERR_TIMEOUT)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Timed Out waiting for CE semaphore in blocking scrub!\n");
+                          "Timed Out waiting for CE semaphore!\n");
 
                 NV_PRINTF(LEVEL_ERROR,
                           "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
@@ -1641,9 +1721,10 @@ memmgrMemUtilsMemCopyBatched_GM107
 )
 {
     NvU32 blocksPushed = _ceChannelScheduleBatchWork_GM107(pGpu, pMemoryManager, pChannel,
-                            src, srcAddressSpace, srcCpuCacheAttrib, /*src parameters*/
-                            dst, dstAddressSpace, dstCpuCacheAttrib, /*dst parameters*/
-                            size, NV_TRUE /*memcpy*/);
+                            src, srcAddressSpace, srcCpuCacheAttrib, // src parameters
+                            dst, dstAddressSpace, dstCpuCacheAttrib, // dst parameters
+                            size,
+                            NV_TRUE);                                // memcopy;
 
     if (blocksPushed > 0)
     {
@@ -1672,7 +1753,7 @@ memmgrMemUtilsMemCopyBatched_GM107
             if (timeoutStatus == NV_ERR_TIMEOUT)
             {
                 NV_PRINTF(LEVEL_ERROR,
-                          "Timed Out waiting for CE semaphore in blocking scrub!\n");
+                          "Timed Out waiting for CE semaphore\n");
 
                 NV_PRINTF(LEVEL_ERROR,
                           "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
@@ -1774,7 +1855,8 @@ memmgrMemUtilsAllocateEccAllocScrubber_GM107
                                 pEccSyncChannel->deviceId,
                                 pEccSyncChannel->bitMapSemVirtId,
                                 NV50_MEMORY_VIRTUAL,
-                                &memAllocParams));
+                                &memAllocParams,
+                                sizeof(memAllocParams)));
 
     lockStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_MEM);
 
@@ -1880,8 +1962,8 @@ _ceChannelScheduleBatchWork_GM107
         ptr = (NvU32 *)(pChannel->pbCpuVA + pChannel->channelPutOffset);
 
         bytesPushed = _ceChannelPushMethodsBlock_GM107(pGpu, pMemoryManager, pChannel,
-            src, srcAddressSpace, srcCpuCacheAttrib, /*src parameters*/
-            dst, dstAddressSpace, dstCpuCacheAttrib, /*dst parameters*/
+            src, srcAddressSpace, srcCpuCacheAttrib, // src parameters
+            dst, dstAddressSpace, dstCpuCacheAttrib, // dst parameters
             size, &ptr, NV_FALSE, NV_FALSE, NV_FALSE, bMemcopy);
         pChannel->finishPayload += NvU64_LO32(size);
         NV_ASSERT(NvU64_HI32(size) == 0);
@@ -1901,8 +1983,8 @@ _ceChannelScheduleBatchWork_GM107
         ptr = (NvU32 *)(pChannel->pbCpuVA + pChannel->channelPutOffset);
 
         bytesPushed = _ceChannelPushMethodsBlock_GM107(pGpu, pMemoryManager, pChannel,
-            0, 0, 0, /*src parameters*/
-            0, 0, 0, /*dst parameters*/
+            0, 0, 0, // src parameters
+            0, 0, 0, // dst parameters
             0, &ptr, NV_FALSE, NV_FALSE, NV_TRUE, bMemcopy);
 
          NV_ASSERT(bytesPushed != 0);
@@ -2025,8 +2107,8 @@ _ceChannelScheduleWork_GM107
             if(_checkSynchronization(pGpu, pMemoryManager, pChannel, BLOCK_INDEX_FROM_ADDR(dst, pChannel->blockShift)))
             {
                 bytesPushed = _ceChannelPushMethodsBlock_GM107(pGpu, pMemoryManager, pChannel,
-                    src, srcAddressSpace, srcCpuCacheAttrib, /*src parameters*/
-                    dst, dstAddressSpace, dstCpuCacheAttrib, /*dst parameters*/
+                    src, srcAddressSpace, srcCpuCacheAttrib, // src parameters
+                    dst, dstAddressSpace, dstCpuCacheAttrib, // dst parameters
                     blockSize, &ptr, NV_TRUE, (addNonStallIntr && !blocking),
                     addFinishPayload, bMemcopy);
                 spaceInPb = spaceInPb - bytesPushed;
@@ -2218,7 +2300,7 @@ _ceChannelUpdateGpFifo_GM107
     else
     {
         workSubmitToken = pChannel->workSubmitToken;
-        NV_ASSERT_OR_RETURN_VOID(CliGetKernelChannelWithDevice(pChannel->hClient,
+        NV_ASSERT_OR_RETURN_VOID(CliGetKernelChannelWithDevice(pChannel->pRsClient,
                                  pChannel->deviceId, pChannel->channelId,
                                  &pFifoKernelChannel) == NV_OK);
     }

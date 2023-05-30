@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+/* ------------------------ Includes ---------------------------------------- */
 #include "os/os.h"
 #include "gpu/bif/kernel_bif.h"
 
@@ -84,3 +85,4 @@ _kbifPreOsCheckErotGrantAllowed_AD102
 
     return FLD_TEST_DRF(_PBUS, _SW_GLOBAL_EROT_GRANT, _ALLOW, _YES, reg);
 }
+

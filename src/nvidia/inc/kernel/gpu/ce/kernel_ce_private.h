@@ -39,7 +39,7 @@
  * @return NV_OK if the conversion is successful.
  */
 static NV_INLINE
-NV_STATUS ceIndexFromType(OBJGPU *pGpu, NvHandle hClient, RM_ENGINE_TYPE rmEngineType, NvU32 *ceIdx)
+NV_STATUS ceIndexFromType(OBJGPU *pGpu, Device *pDevice, RM_ENGINE_TYPE rmEngineType, NvU32 *ceIdx)
 {
     NV_STATUS status = NV_OK;
     RM_ENGINE_TYPE localRmEngType = rmEngineType;
@@ -56,7 +56,7 @@ NV_STATUS ceIndexFromType(OBJGPU *pGpu, NvHandle hClient, RM_ENGINE_TYPE rmEngin
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
 
-        status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref);
+        status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref);
 
         if (status != NV_OK)
             return status;

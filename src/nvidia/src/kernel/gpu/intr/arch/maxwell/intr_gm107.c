@@ -46,6 +46,7 @@ intrGetPendingStall_GM107
     THREAD_STATE_NODE   *pThreadState
 )
 {
+    KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     NvU8 i;
 
     NV_ASSERT_OR_RETURN(pEngines != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -76,6 +77,12 @@ intrGetPendingStall_GM107
 
     if (IS_VIRTUAL(pGpu) && vgpuGetPendingEvent(pGpu, pThreadState))
         bitVectorSet(pEngines, MC_ENGINE_IDX_VGPU);
+
+    if (pKernelDisplay != NULL && kdispGetDeferredVblankHeadMask(pKernelDisplay))
+    {
+        // Deferred vblank is pending which we need to handle
+        bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
+    }
 
     if (pGpu->fecsCtxswLogConsumerCount > 0)
     {

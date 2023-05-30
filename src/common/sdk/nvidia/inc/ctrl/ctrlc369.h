@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlc369.finn
+// Source file:      ctrl/ctrlc369.finn
 //
 
 #include "ctrl/ctrlxxxx.h"
@@ -80,6 +80,7 @@
 typedef struct NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS {
     NV_DECLARE_ALIGNED(NvP64 pShadowBuffer, 8);
     NV_DECLARE_ALIGNED(NvP64 pShadowBufferContext, 8);
+    NV_DECLARE_ALIGNED(NvP64 pShadowBufferMetadata, 8);
     NvU32 bufferSize;
 } NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_NON_REPLAY_BUF_PARAMS;
 
@@ -127,6 +128,7 @@ typedef struct NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_NON_REPLAY_BUF_PARAMS {
 
 typedef struct NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS {
     NV_DECLARE_ALIGNED(NvP64 pShadowBuffer, 8);
+    NV_DECLARE_ALIGNED(NvP64 pShadowBufferMetadata, 8);
     NvU32 bufferSize;
 } NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS;
 

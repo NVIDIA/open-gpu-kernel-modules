@@ -83,6 +83,8 @@ nvGetDefaultDpyAttributeDigitalSignalValue(const NVConnectorEvoRec *pConnectorEv
 
 NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo);
 
+NvU32 nvDpyGetPossibleApiHeadsMask(const NVDpyEvoRec *pDpyEvo);
+
 #ifdef __cplusplus
 };
 #endif

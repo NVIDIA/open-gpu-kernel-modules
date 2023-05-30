@@ -24,19 +24,19 @@
 
 
 static NV_STATUS _rmapiAlloc_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hParent,
-                       NvHandle *phObject, NvU32 hClass, void *pAllocParams)
+                       NvHandle *phObject, NvU32 hClass, void *pAllocParams, NvU32 paramsSize)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
 static NV_STATUS _rmapiAllocWithHandle_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hParent,
-                                 NvHandle hObject, NvU32 hClass, void *pAllocParams)
+                                 NvHandle hObject, NvU32 hClass, void *pAllocParams, NvU32 paramsSize)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
 static NV_STATUS _rmapiAllocWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hParent,
-                                  NvHandle *phObject, NvU32 hClass, NvP64 pAllocParams,
+                                  NvHandle *phObject, NvU32 hClass, NvP64 pAllocParams, NvU32 paramsSize,
                                   NvU32 flags, NvP64 pRightsRequested, API_SECURITY_INFO *pSecInfo)
 {
     return NV_ERR_NOT_SUPPORTED;

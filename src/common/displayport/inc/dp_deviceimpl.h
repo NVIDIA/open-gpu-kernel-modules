@@ -39,6 +39,7 @@
 namespace DisplayPort
 {
     #define PREDEFINED_DSC_MST_BPPX16 160;
+    #define MAX_DSC_COMPRESSION_BPPX16 128;
     #define HDCP_BCAPS_DDC_OFFSET 0x40
     #define HDCP_BCAPS_DDC_EN_BIT 0x80
     #define HDCP_BCAPS_DP_EN_BIT  0x01

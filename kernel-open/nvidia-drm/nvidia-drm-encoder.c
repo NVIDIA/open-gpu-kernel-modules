@@ -205,7 +205,7 @@ nv_drm_add_encoder(struct drm_device *dev, NvKmsKapiDisplay hDisplay)
     encoder = nv_drm_encoder_new(dev,
                                  displayInfo->handle,
                                  connectorInfo->signalFormat,
-                                 get_crtc_mask(dev, connectorInfo->headMask));
+                                 get_crtc_mask(dev, displayInfo->headMask));
 
     if (IS_ERR(encoder)) {
         ret = PTR_ERR(encoder);

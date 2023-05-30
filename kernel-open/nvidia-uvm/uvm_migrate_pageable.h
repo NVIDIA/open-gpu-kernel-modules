@@ -58,11 +58,13 @@ typedef struct
 #ifdef UVM_MIGRATE_VMA_SUPPORTED
 #include <linux/migrate.h>
 
-// The calls to migrate_vma are capped at 32MB to set an upper bound on the
+// The calls to migrate_vma are capped at 512 pages to set an upper bound on the
 // amount of metadata that needs to be allocated for the operation. This number
-// was chosen because performance seems to plateau at this size.
-#define UVM_MIGRATE_VMA_MAX_SIZE (32UL * 1024 * 1024)
-#define UVM_MIGRATE_VMA_MAX_PAGES (UVM_MIGRATE_VMA_MAX_SIZE >> PAGE_SHIFT)
+// was chosen because performance seems to plateau at this size on 64K-pages
+// kernels. On kernels with PAGE_SIZE == 4K, 512 pages correspond to 2M VA block,
+// which is also a standard size for batch operations.
+#define UVM_MIGRATE_VMA_MAX_PAGES (512UL)
+#define UVM_MIGRATE_VMA_MAX_SIZE (UVM_MIGRATE_VMA_MAX_PAGES * PAGE_SIZE)
 
 typedef struct
 {

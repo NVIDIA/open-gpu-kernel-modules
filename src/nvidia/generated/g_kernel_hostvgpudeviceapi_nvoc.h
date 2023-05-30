@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -119,9 +119,8 @@ struct KernelHostVgpuDeviceApi {
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_BIND_FECS_EVTBUF_PARAMS *);
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_TRIGGER_PRIV_DOORBELL_PARAMS *);
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdEventSetNotification__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_EVENT_SET_NOTIFICATION_PARAMS *);
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetSriovState__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_SRIOV_STATE_PARAMS *);
-    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdSetGuestId__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_GUEST_ID_PARAMS *);
     NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__)(struct KernelHostVgpuDeviceApi *, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *);
+    NV_STATUS (*__kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition__)(struct KernelHostVgpuDeviceApi *);
     NvBool (*__kernelhostvgpudeviceapiShareCallback__)(struct KernelHostVgpuDeviceApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__kernelhostvgpudeviceapiCheckMemInterUnmap__)(struct KernelHostVgpuDeviceApi *, NvBool);
     NV_STATUS (*__kernelhostvgpudeviceapiGetOrAllocNotifShare__)(struct KernelHostVgpuDeviceApi *, NvHandle, NvHandle, struct NotifShare **);
@@ -191,9 +190,8 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi**, Dy
 #define kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdBindFecsEvtbuf_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
 #define kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdTriggerPrivDoorbell_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
 #define kernelhostvgpudeviceapiCtrlCmdEventSetNotification(pKernelHostVgpuDeviceApi, pSetEventParams) kernelhostvgpudeviceapiCtrlCmdEventSetNotification_DISPATCH(pKernelHostVgpuDeviceApi, pSetEventParams)
-#define kernelhostvgpudeviceapiCtrlCmdSetSriovState(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetSriovState_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
-#define kernelhostvgpudeviceapiCtrlCmdSetGuestId(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdSetGuestId_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
 #define kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges(pKernelHostVgpuDeviceApi, pParams) kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_DISPATCH(pKernelHostVgpuDeviceApi, pParams)
+#define kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition(pKernelHostVgpuDeviceApi) kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_DISPATCH(pKernelHostVgpuDeviceApi)
 #define kernelhostvgpudeviceapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) kernelhostvgpudeviceapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define kernelhostvgpudeviceapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) kernelhostvgpudeviceapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define kernelhostvgpudeviceapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) kernelhostvgpudeviceapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
@@ -271,22 +269,16 @@ static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdEventSetNotification_DISPA
     return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdEventSetNotification__(pKernelHostVgpuDeviceApi, pSetEventParams);
 }
 
-NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetSriovState_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_SRIOV_STATE_PARAMS *pParams);
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetSriovState_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_SRIOV_STATE_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetSriovState__(pKernelHostVgpuDeviceApi, pParams);
-}
-
-NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetGuestId_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_GUEST_ID_PARAMS *pParams);
-
-static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdSetGuestId_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_GUEST_ID_PARAMS *pParams) {
-    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdSetGuestId__(pKernelHostVgpuDeviceApi, pParams);
-}
-
 NV_STATUS kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *pParams);
 
 static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi, NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_GET_BAR_MAPPING_RANGES_PARAMS *pParams) {
     return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdGetBarMappingRanges__(pKernelHostVgpuDeviceApi, pParams);
+}
+
+NV_STATUS kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_IMPL(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi);
+
+static inline NV_STATUS kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_DISPATCH(struct KernelHostVgpuDeviceApi *pKernelHostVgpuDeviceApi) {
+    return pKernelHostVgpuDeviceApi->__kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition__(pKernelHostVgpuDeviceApi);
 }
 
 static inline NvBool kernelhostvgpudeviceapiShareCallback_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {

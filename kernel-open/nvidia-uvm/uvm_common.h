@@ -211,6 +211,11 @@ static inline NvBool uvm_uuid_is_cpu(const NvProcessorUuid *uuid)
 {
     return memcmp(uuid, &NV_PROCESSOR_UUID_CPU_DEFAULT, sizeof(*uuid)) == 0;
 }
+#define UVM_SIZE_1KB (1024ULL)
+#define UVM_SIZE_1MB (1024 * UVM_SIZE_1KB)
+#define UVM_SIZE_1GB (1024 * UVM_SIZE_1MB)
+#define UVM_SIZE_1TB (1024 * UVM_SIZE_1GB)
+#define UVM_SIZE_1PB (1024 * UVM_SIZE_1TB)
 
 #define UVM_ALIGN_DOWN(x, a) ({         \
         typeof(x) _a = a;               \
@@ -352,6 +357,7 @@ typedef enum
     UVM_FD_UNINITIALIZED,
     UVM_FD_INITIALIZING,
     UVM_FD_VA_SPACE,
+    UVM_FD_MM,
     UVM_FD_COUNT
 } uvm_fd_type_t;
 
@@ -388,6 +394,10 @@ bool uvm_file_is_nvidia_uvm(struct file *filp);
 // NULL returns the value of the pointer.
 uvm_fd_type_t uvm_fd_type(struct file *filp, void **ptr_val);
 
+// Returns the pointer stored in filp->private_data if the type
+// matches, otherwise returns NULL.
+void *uvm_fd_get_type(struct file *filp, uvm_fd_type_t type);
+
 // Reads the first word in the supplied struct page.
 static inline void uvm_touch_page(struct page *page)
 {
@@ -399,5 +409,8 @@ static inline void uvm_touch_page(struct page *page)
     (void)UVM_READ_ONCE(*mapping);
     kunmap(page);
 }
+
+// Return true if the VMA is one used by UVM managed allocations.
+bool uvm_vma_is_managed(struct vm_area_struct *vma);
 
 #endif /* _UVM_COMMON_H */

@@ -126,7 +126,7 @@ dispchnConstruct_IMPL
     if (pParams->pSecInfo->privLevel < RS_PRIV_LEVEL_USER_ROOT)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n", 
+                  "Failure allocating display class 0x%08x: Only root(admin)/kernel clients are allowed\n",
                   pParams->externalClassId);
 
         //
@@ -182,7 +182,7 @@ dispchnConstruct_IMPL
     {
         rmStatus = kdispSetPushBufferParamsToPhysical_HAL(pGpu,
                                             pKernelDisplay,
-                                            pDispChannel, 
+                                            pDispChannel,
                                             hObjectBuffer,
                                             pBufferContextDma,
                                             hClass,
@@ -301,7 +301,7 @@ dispchnGrabChannel_IMPL
     {
       rmStatus = kdispSetPushBufferParamsToPhysical_HAL(pGpu,
                                            pKernelDisplay,
-                                           pDispChannel, 
+                                           pDispChannel,
                                            hObjectBuffer,
                                            pBufferContextDma,
                                            hClass,

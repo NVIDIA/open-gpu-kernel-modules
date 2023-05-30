@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,6 +39,7 @@
 typedef struct gpuSession       *gpuSessionHandle;
 typedef struct gpuDevice        *gpuDeviceHandle;
 typedef struct gpuAddressSpace  *gpuAddressSpaceHandle;
+typedef struct gpuTsg           *gpuTsgHandle;
 typedef struct gpuChannel       *gpuChannelHandle;
 typedef struct gpuObject        *gpuObjectHandle;
 
@@ -97,13 +98,19 @@ NV_STATUS nvGpuOpsPmaUnpinPages(void *pPma,
                                 NvLength pageCount,
                                 NvU64 pageSize);
 
-NV_STATUS nvGpuOpsChannelAllocate(gpuAddressSpaceHandle vaSpace,
+NV_STATUS nvGpuOpsTsgAllocate(gpuAddressSpaceHandle vaSpace,
+                              const gpuTsgAllocParams *params,
+                              gpuTsgHandle *tsgHandle);
+
+NV_STATUS nvGpuOpsChannelAllocate(const gpuTsgHandle tsgHandle,
                                   const gpuChannelAllocParams *params,
                                   gpuChannelHandle *channelHandle,
                                   gpuChannelInfo *channelInfo);
 
 NV_STATUS nvGpuOpsMemoryReopen(struct gpuAddressSpace *vaSpace,
      NvHandle hSrcClient, NvHandle hSrcAllocation, NvLength length, NvU64 *gpuOffset);
+
+void nvGpuOpsTsgDestroy(struct gpuTsg *tsg);
 
 void nvGpuOpsChannelDestroy(struct gpuChannel *channel);
 
@@ -196,7 +203,7 @@ NV_STATUS nvGpuOpsGetPmaObject(struct gpuDevice *device,
                                void **pPma,
                                const UvmPmaStatistics **pPmaPubStats);
 
-NV_STATUS nvGpuOpsInitAccessCntrInfo(struct gpuDevice *device, gpuAccessCntrInfo *pAccessCntrInfo);
+NV_STATUS nvGpuOpsInitAccessCntrInfo(struct gpuDevice *device, gpuAccessCntrInfo *pAccessCntrInfo, NvU32 accessCntrIndex);
 
 NV_STATUS nvGpuOpsDestroyAccessCntrInfo(struct gpuDevice *device,
                                         gpuAccessCntrInfo *pAccessCntrInfo);
@@ -277,5 +284,41 @@ NV_STATUS nvGpuOpsPagingChannelPushStream(UvmGpuPagingChannel *channel,
                                           NvU32 methodStreamSize);
 
 NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(struct gpuDevice *device);
+
+// Interface used for CCSL
+
+NV_STATUS nvGpuOpsCcslContextInit(struct ccslContext_t **ctx,
+                                  gpuChannelHandle channel);
+NV_STATUS nvGpuOpsCcslContextClear(struct ccslContext_t *ctx);
+NV_STATUS nvGpuOpsCcslLogDeviceEncryption(struct ccslContext_t *ctx,
+                                          NvU8 *decryptIv);
+NV_STATUS nvGpuOpsCcslAcquireEncryptionIv(struct ccslContext_t *ctx,
+                                          NvU8 *encryptIv);
+NV_STATUS nvGpuOpsCcslRotateIv(struct ccslContext_t *ctx,
+                               NvU8 direction);
+NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,
+                              NvU32 bufferSize,
+                              NvU8 const *inputBuffer,
+                              NvU8 *outputBuffer,
+                              NvU8 *authTagBuffer);
+NV_STATUS nvGpuOpsCcslEncryptWithIv(struct ccslContext_t *ctx,
+                                    NvU32 bufferSize,
+                                    NvU8 const *inputBuffer,
+                                    NvU8 *encryptIv,
+                                    NvU8 *outputBuffer,
+                                    NvU8 *authTagBuffer);
+NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
+                              NvU32 bufferSize,
+                              NvU8 const *inputBuffer,
+                              NvU8 const *decryptIv,
+                              NvU8 *outputBuffer,
+                              NvU8 const *authTagBuffer);
+NV_STATUS nvGpuOpsCcslSign(struct ccslContext_t *ctx,
+                           NvU32 bufferSize,
+                           NvU8 const *inputBuffer,
+                           NvU8 *authTagBuffer);
+NV_STATUS nvGpuOpsQueryMessagePool(struct ccslContext_t *ctx,
+                                   NvU8 direction,
+                                   NvU64 *messageNum);
 
 #endif /* _NV_GPU_OPS_H_*/

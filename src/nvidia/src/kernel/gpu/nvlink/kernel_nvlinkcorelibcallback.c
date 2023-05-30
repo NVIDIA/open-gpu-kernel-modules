@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
+
+// FIXME XXX
+#define NVOC_KERNEL_IOCTRL_H_PRIVATE_ACCESS_ALLOWED
 
 #include "os/os.h"
 #include "core/hal.h"
@@ -493,7 +498,7 @@ knvlinkCoreSetDlLinkModeCallback
     OBJGPU           *pGpu          = NULL;
     KernelNvlink     *pKernelNvlink = NULL;
     KernelIoctrl     *pKernelIoctrl = NULL;
-    NV_STATUS         status        = NV_OK; 
+    NV_STATUS         status        = NV_OK;
     NvU8              linkIndex;
     NV2080_CTRL_NVLINK_CORE_CALLBACK_PARAMS params;
     NV2080_CTRL_NVLINK_CALLBACK_SET_DL_LINK_MODE_PARAMS

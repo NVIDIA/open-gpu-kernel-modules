@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,6 +45,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "nvdevid.h"
 #include "nvop.h"
+#include "jt.h"
 
 
 
@@ -254,8 +255,8 @@ rcdbConstruct_IMPL(Journal *pRcDB)
      pRcDB->rcErrorCounterArray[RC_ERROR_COUNTER_OTHER_INDEX].rcErrorType  = RC_ERROR_COUNTER_OTHER_TYPE;
 
      // clear the Nocat Queue descriptors & counters
-     portMemSet(&pRcDB->nocatJournalDescriptor, 0x00, NV_SIZEOF32(pRcDB->nocatJournalDescriptor));
-     portMemSet(pRcDB->nocatJournalDescriptor.lastRecordId, 0xff, NV_SIZEOF32(pRcDB->nocatJournalDescriptor.lastRecordId));
+     portMemSet(&pRcDB->nocatJournalDescriptor, 0x00, sizeof(pRcDB->nocatJournalDescriptor));
+     portMemSet(pRcDB->nocatJournalDescriptor.lastRecordId, 0xff, sizeof(pRcDB->nocatJournalDescriptor.lastRecordId));
      pRcDB->nocatJournalDescriptor.nocatLastRecordType = NV2080_NOCAT_JOURNAL_REC_TYPE_UNKNOWN;
      pRcDB->nocatJournalDescriptor.cacheFreshnessPeriodticks = NOCAT_CACHE_FRESHNESS_PERIOD_MS;
      pRcDB->nocatJournalDescriptor.cacheFreshnessPeriodticks *= osGetTimestampFreq();
@@ -529,7 +530,40 @@ NV_STATUS rcdbAddAssertJournalRec(void *pVoidGpu, void** ppRec, NvU8 jGroup, NvU
 // Populate stateMask with flags that represent the power state and other useful things.
 static NvU64 _getCommonJournalStateMask(OBJGPU *pGpu)
 {
-    return 0;
+    NvU64 stateMask = REF_NUM(NV_RM_JOURNAL_STATE_MASK_GC6_STATE,
+        pGpu->gc6State.currentState);
+
+    if (!gpuIsGpuFullPower(pGpu))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_NOT_FULL_POWER;
+
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_CONNECTED))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_NOT_CONNECTED;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_STANDBY))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_IN_STANDBY;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_HIBERNATE))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_IN_HIBERNATE;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_IN_PM_CODEPATH;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_GC6_RESET))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_IN_GC6_RESET;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_FULLCHIP_RESET))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_IN_FULLCHIP_RESET;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_SECONDARY_BUS_RESET))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_IN_SEC_BUS_RESET;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TIMEOUT_RECOVERY))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_IN_TIMEOUT_RECOVERY;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+        stateMask |= NV_RM_JOURNAL_STATE_MASK_IS_LOST;
+
+    return stateMask;
 }
 
 // Fill in the common portion of the journal structure.
@@ -1655,7 +1689,7 @@ rcdbDumpCommonAssertRecord
     if (pRec->count != 1)
         prbEncAddUInt32(pPrbEnc, JOURNAL_ASSERT_COUNT,            pRec->count);
 
-    for (i = 0; i < NV_ARRAY_ELEMENTS32(pRec->callStack); i++)
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pRec->callStack); i++)
     {
         if (pRec->callStack[i] == 0)
             break;
@@ -2301,7 +2335,7 @@ static void _rcdbDbgBreakEx(void *pGpu, NvU32 lineNum, NvU32 level, NvU64 ip)
         // Add assert to NvLog.  But skip when nvLog asserts to avoid stack overflow.
         if (portAtomicIncrementS32(&nvLogRecursion) == 1)
         {
-            NV_PRINTF(LEVEL_ERROR, "Breakpoint at 0x%llx.\n", ip);
+            NV_PRINTF(LEVEL_NOTICE, "Breakpoint at 0x%llx.\n", ip);
         }
         portAtomicDecrementS32(&nvLogRecursion);
 
@@ -3075,6 +3109,8 @@ _rcdbNocatCollectContext(OBJGPU *pGpu, Journal* pRcdb, NV2080_NOCAT_JOURNAL_GPU_
         pContextCache->subsystemId = (NvU16)(DRF_VAL(_PCI, _SUBID, _DEVICE, pGpu->idInfo.PCISubDeviceID));
         pContextCache->revision = pGpu->idInfo.PCIRevisionID;
         pContextCache->type = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_MOBILE);
+        pContextCache->bMsHybrid = FLD_TEST_DRF(_JT_FUNC, _CAPS, _MSHYB_ENABLED, _TRUE,
+            pGpu->acpiMethodData.jtMethodData.jtCaps);
 
         portStringCopy((char *)pContextCache->vbiosProject, NV2080_NOCAT_JOURNAL_MAX_STR_LEN,
             NOCAT_UNKNOWN_STR, portStringLength(NOCAT_UNKNOWN_STR) + 1);
@@ -3215,10 +3251,10 @@ RM_NOCAT_JOURNAL_ENTRY* _rcdbAllocNocatJournalRecord
     if (pCommon != NULL)
     {
         // advance the pointer past the common header.
-        pNocatEntry = (RM_NOCAT_JOURNAL_ENTRY*)(((NvU8*)pCommon) + NV_SIZEOF32(RmRCCommonJournal_RECORD));
+        pNocatEntry = (RM_NOCAT_JOURNAL_ENTRY*)(((NvU8*)pCommon) + sizeof(RmRCCommonJournal_RECORD));
 
         // clear the record & assign an id.
-        portMemSet(pNocatEntry, 0, NV_SIZEOF32(*pNocatEntry));
+        portMemSet(pNocatEntry, 0, sizeof(*pNocatEntry));
         pNocatEntry->id = pDesc->nextRecordId++;
         pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_ALLOCATED_IDX]++;
     }
@@ -3344,7 +3380,7 @@ _rcdbGetNocatJournalRecord
     pCommon = (RmRCCommonJournal_RECORD*)(((NvU8*)pRingBuffer->pBuffer) + (_rcdbGetOcaRecordSizeWithHeader(pRcdb, RmNocatReport) * idx));
 
     // get a pointer to the data that follows the common header, that is the record data.
-    pNocatEntry = (RM_NOCAT_JOURNAL_ENTRY*)(((NvU8*)pCommon) + NV_SIZEOF32(RmRCCommonJournal_RECORD));
+    pNocatEntry = (RM_NOCAT_JOURNAL_ENTRY*)(((NvU8*)pCommon) + sizeof(RmRCCommonJournal_RECORD));
 
     // pass the record along
     if (ppReturnedCommon != NULL)
@@ -3455,7 +3491,7 @@ rcdbReportNextNocatJournalEntry
         pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_BAD_PARAM_IDX]++;
         return NV_ERR_INVALID_ARGUMENT;
     }
-    portMemSet(pReturnedNocatEntry, 0, NV_SIZEOF32(*pReturnedNocatEntry));
+    portMemSet(pReturnedNocatEntry, 0, sizeof(*pReturnedNocatEntry));
 
     if (portAtomicIncrementS32(&concurrentRingBufferAccess) == 1)
     {
@@ -3835,7 +3871,7 @@ rcdbNocatInsertNocatError(
                         diagBufferLen = NV_ARRAY_ELEMENTS(pNocatEntry->nocatJournalEntry.diagBuffer);
                     }
                     portMemCopy(pNocatEntry->nocatJournalEntry.diagBuffer,
-                        NV_SIZEOF32(pNocatEntry->nocatJournalEntry.diagBuffer),
+                        sizeof(pNocatEntry->nocatJournalEntry.diagBuffer),
                         pNewEntry->pDiagBuffer, diagBufferLen);
                 }
                 pNocatEntry->nocatJournalEntry.diagBufferLen = diagBufferLen;
@@ -3849,7 +3885,7 @@ rcdbNocatInsertNocatError(
 
                 _rcdbSetTdrReason(pRcdb, pNewEntry->tdrReason,
                     (char*)pNocatEntry->nocatJournalEntry.tdrReason,
-                    NV_SIZEOF32(pNocatEntry->nocatJournalEntry.tdrReason));
+                    sizeof(pNocatEntry->nocatJournalEntry.tdrReason));
             }
             else
             {
@@ -4093,7 +4129,7 @@ _rcdbNocatReportAssert
     // put the line number in the upper 32 bits.
     newEntry.errorCode |= ((NvU64)pAssertRec->lineNum) << 32;
 
-    for (idx = 0; idx < NV_ARRAY_ELEMENTS32(pAssertRec->callStack); idx++)
+    for (idx = 0; idx < NV_ARRAY_ELEMENTS(pAssertRec->callStack); idx++)
     {
         diagBuffer.callStack[idx] =
             (NvU32)((pAssertRec->callStack[idx] - pRcdb->nocatJournalDescriptor.loadAddress)
@@ -4105,14 +4141,14 @@ _rcdbNocatReportAssert
     // setup the pointer to our diag buffer & its length
     newEntry.pDiagBuffer = (NvU8 *)&diagBuffer;
 
-    newEntry.diagBufferLen = NV_SIZEOF32(diagBuffer);
+    newEntry.diagBufferLen = sizeof(diagBuffer);
 
     // is the last thing we logged an assert, & is this the same assert?
     if ((pRcdb->nocatJournalDescriptor.lastRecordId[NV2080_NOCAT_JOURNAL_REC_TYPE_ASSERT]
         == pRcdb->nocatJournalDescriptor.lastRecordId[NV2080_NOCAT_JOURNAL_REC_TYPE_ANY])
         && (0 == portMemCmp(&pRcdb->nocatJournalDescriptor.lastAssertData,
             diagBuffer.callStack,                                       // same stack
-            NV_SIZEOF32(diagBuffer.callStack))))
+            sizeof(diagBuffer.callStack))))
     {
         // it is the same as the last assert we logged. so don't log it again.
         // but see if we can increment the counter in an unreported assert.
@@ -4145,8 +4181,8 @@ _rcdbNocatReportAssert
         // we are logging this assert, save off the stack so we can use it to
         // compare against future asserts.
         portMemCopy(&pRcdb->nocatJournalDescriptor.lastAssertData,
-            NV_SIZEOF32(pRcdb->nocatJournalDescriptor.lastAssertData),
-            &diagBuffer, NV_SIZEOF32(diagBuffer));
+            sizeof(pRcdb->nocatJournalDescriptor.lastAssertData),
+            &diagBuffer, sizeof(diagBuffer));
         rcdbNocatInsertNocatError(pGpu, &newEntry);
     }
 
@@ -4220,7 +4256,7 @@ NV_STATUS rcdbSetNocatTdrReason
             // there is, set the reason.
             _rcdbSetTdrReason(pRcdb, pReasonData->reasonCode,
                 (char *)pNocatEntry->nocatJournalEntry.tdrReason,
-                NV_SIZEOF32(pNocatEntry->nocatJournalEntry.tdrReason));
+                sizeof(pNocatEntry->nocatJournalEntry.tdrReason));
             pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_UPDATED_IDX]++;
         }
     }

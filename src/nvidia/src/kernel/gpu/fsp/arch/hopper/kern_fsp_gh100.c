@@ -32,6 +32,7 @@
 #include "gpu/gsp/kernel_gsp.h"
 
 #include "published/hopper/gh100/dev_fsp_pri.h"
+#include "published/hopper/gh100/dev_fsp_addendum.h"
 #include "fsp/fsp_nvdm_format.h"
 #include "published/hopper/gh100/dev_gc6_island_addendum.h"
 #include "published/hopper/gh100/dev_falcon_v4.h"
@@ -41,13 +42,7 @@
 #include "os/os.h"
 #include "nvRmReg.h"
 
-#if RMCFG_MODULE_ENABLED (FSP)
-#include "hopper/gh100/dev_gsp.h"
-#include "gpu/gsp/gsp.h"
-#include "gsp/memmap.h"
-#include "objfsp.h"
-#include "objflcnable.h"
-#endif
+#include "gpu/conf_compute/conf_compute.h"
 
 /*!
  * @brief Update command queue head and tail pointers
@@ -664,20 +659,35 @@ kfspGetGspUcodeArchive
 )
 {
     KernelGsp *pKernelGsp                 = GPU_GET_KERNEL_GSP(pGpu);
+    ConfidentialCompute *pCC              = GPU_GET_CONF_COMPUTE(pGpu);
+    NV_ASSERT(pCC != NULL);
 
     if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
     {
-        NV_PRINTF(LEVEL_ERROR, "Loading GSP-RM image using FSP.\n");
+        NV_PRINTF(LEVEL_NOTICE, "Loading GSP-RM image using FSP.\n");
 
         if (kgspIsDebugModeEnabled_HAL(pGpu, pKernelGsp))
         {
+            if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+            {
+                NV_PRINTF(LEVEL_ERROR, "GSP-RM image for CC not found\n");
+                return NULL;
+            }
+            else
             {
                 return kgspGetBinArchiveGspRmFmcGfwDebugSigned_HAL(pKernelGsp);
             }
         }
         else
         {
-            return kgspGetBinArchiveGspRmFmcGfwProdSigned_HAL(pKernelGsp);
+            if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+            {
+                return kgspGetBinArchiveGspRmCcFmcGfwProdSigned_HAL(pKernelGsp);
+            }
+            else
+            {
+                return kgspGetBinArchiveGspRmFmcGfwProdSigned_HAL(pKernelGsp);
+            }
         }
     }
 #if RMCFG_MODULE_ENABLED (GSP)
@@ -703,6 +713,15 @@ kfspGetGspUcodeArchive
                 //
                 NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
 
+                // For debug board if CC is enabled pick spdm profile of gspcc ucode
+                if (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED) == NV_TRUE)
+                {
+
+                    {
+                        return gspGetBinArchiveGspFmcSpdmGfwDebugSigned_HAL(pGsp);
+                    }
+                }
+                else
                 {
                     return gspGetBinArchiveGspFmcGfwDebugSigned_HAL(pGsp);
                 }
@@ -717,6 +736,11 @@ kfspGetGspUcodeArchive
             else
             {
                 NV_ASSERT_OR_RETURN(gspSetupRMProxyImage(pGpu, pGsp) == NV_OK, NULL);
+                if (pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENABLED) == NV_TRUE)
+                {
+                    return gspGetBinArchiveGspCcFmcGfwProdSigned_HAL(pGsp);
+                }
+                else
                 {
                     return gspGetBinArchiveGspFmcGfwProdSigned_HAL(pGsp);
                 }
@@ -741,6 +765,9 @@ kfspGetGspBootArgs
 )
 {
     NV_STATUS status         = NV_OK;
+
+    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+    NV_ASSERT(pCC != NULL);
 
     if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
     {
@@ -789,6 +816,7 @@ kfspSetupGspImages
     // On systems with SEV enabled, the GSP-FMC image has to be accessible
     // to FSP (an unit inside GPU) and hence placed in unprotected sysmem
     //
+    flags = MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
 
     // Detect the mode of operation for GSP and fetch the right image to boot
     pBinArchive = kfspGetGspUcodeArchive(pGpu, pKernelFsp);
@@ -913,93 +941,8 @@ _kfspCheckGspBootStatus
     KernelFsp *pKernelFsp
 )
 {
-#if RMCFG_MODULE_ENABLED (FSP)
-    NV_STATUS status = NV_OK;
-    RMTIMEOUT timeout;
-    Gsp *pGsp = GPU_GET_GSP(pGpu);
-    Falcon *pFlcn = ENG_GET_FLCN(pGsp);
-
-    pFlcn->bBootstrapped = NV_TRUE;
-
-    // In Inst_in_sys mode GSP-FMC will write status to NV_PGSP_MAILBOX(0).
-    if (kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp))
-    {
-        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
-        while(FLD_TEST_DRF_NUM(_PGSP, _MAILBOX, _DATA, GSP_INST_IN_SYS_COMPLETION_STATUS_IN_PROGRESS , GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0))))
-        {
-            status = gpuCheckTimeout(pGpu, &timeout);
-            if (status == NV_ERR_TIMEOUT)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Timed out waiting for GSP Inst_in_sys ucode to boot\n");
-                DBG_BREAKPOINT();
-                break;
-            }
-            osSpinLoop();
-         }
-         // Read GSP mailbox to check if it is booted successfully.
-         if (GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0)) != GSP_INST_IN_SYS_COMPLETION_STATUS_OK)
-         {
-                NV_PRINTF(LEVEL_ERROR, "GSP Inst_in_sys ucode boot failed with GSP status 0x%x\n", GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0)));
-                DBG_BREAKPOINT();
-         }
-         return status;
-     }
-
-    // Ensure that for GH100+ TM is released before polling for priv lockdown release
-    status = kfspWaitForGspTargetMaskReleased_HAL(pGpu, pKernelFsp);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Timed out waiting for GSP's target mask to be released.\n");
-        DBG_BREAKPOINT();
-        return status;
-    }
-
-    // Ensure priv lockdown is released before polling interrupts
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
-    do
-    {
-        if (flcnIsRiscvLockdownReleased_HAL(pGpu, pFlcn))
-        {
-            status = NV_OK;
-            break;
-        }
-
-        status = gpuCheckTimeout(pGpu, &timeout);
-        if (status == NV_ERR_TIMEOUT)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Timed out waiting for priv lockdown release.\n");
-            DBG_BREAKPOINT();
-            break;
-        }
-        osSpinLoop();
-    } while (1);
-
-    // Ensure GSP can send back init ack interrupt to CPU
-    do
-    {
-        gspServiceEarlyInterrupt_HAL(pGpu, pGsp);
-
-        if (pFlcn->bOSReady)
-        {
-            status = NV_OK;
-            break;
-        }
-
-        status = gpuCheckTimeout(pGpu, &timeout);
-        if (status == NV_ERR_TIMEOUT)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Timed out waiting for GSP ucode to boot.\n");
-            DBG_BREAKPOINT();
-            break;
-        }
-        osSpinLoop();
-    } while (1);
-
-    return status;
-#else
     // On GSP-RM, the kgsp code path will check for GSP boot status
     return NV_OK;
-#endif
 }
 
 /*!
@@ -1017,6 +960,18 @@ kfspDumpDebugState_GH100
     KernelFsp *pKernelFsp
 )
 {
+    //
+    // Older microcodes did not have the version populated in scratch.
+    // They will report a version of 0.
+    //
+    const NvU32 fspUcodeVersion = GPU_REG_RD_DRF(pGpu, _GFW, _FSP_UCODE_VERSION, _FULL);
+    if (fspUcodeVersion > 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "FSP microcode v%u.%u\n",
+                  DRF_VAL(_GFW, _FSP_UCODE_VERSION, _MAJOR, fspUcodeVersion),
+                  DRF_VAL(_GFW, _FSP_UCODE_VERSION, _MINOR, fspUcodeVersion));
+    }
+
     NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0) = 0x%x\n",
               GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)));
     NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1) = 0x%x\n",
@@ -1140,6 +1095,7 @@ kfspSendBootCommands_GH100
         // On systems with SEV enabled, the FRTS has to be accessible to
         // FSP (an unit inside GPU) and hence placed in unprotected sysmem
         //
+        flags = MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
         status = memdescCreate(&pKernelFsp->pSysmemFrtsMemdesc, pGpu, frtsSize,
                                0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED, flags);
         NV_ASSERT_OR_GOTO(status == NV_OK, failed);
@@ -1277,4 +1233,16 @@ kfspGetExtraReservedMemorySize_GH100
 {
     // Bug: 3763996
     return 4 * 1024;
+}
+
+NvBool
+kfspRequiresBug3957833WAR_GH100
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    const NvU32 FSP_BUG_3957833_FIX_VERSION = 0x44C;
+    const NvU32 fspUcodeVersion = GPU_REG_RD_DRF(pGpu, _GFW, _FSP_UCODE_VERSION, _FULL);
+    return fspUcodeVersion < FSP_BUG_3957833_FIX_VERSION;
 }

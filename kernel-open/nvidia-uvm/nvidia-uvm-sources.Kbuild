@@ -1,6 +1,11 @@
 NVIDIA_UVM_SOURCES ?=
 NVIDIA_UVM_SOURCES_CXX ?=
 
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_ats_sva.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_conf_computing.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_sec2_test.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_maxwell_sec2.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_hopper_sec2.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_common.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_linux.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_debug_optimized.c

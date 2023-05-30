@@ -84,7 +84,9 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += ioasid_get
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mm_pasid_set
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += migrate_vma_setup
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mmget_not_zero
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += mmgrab
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_sva_bind_device_has_drvdata_arg
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_fault_to_errno
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += backing_dev_info
 NV_CONFTEST_TYPE_COMPILE_TESTS += mm_context_t
@@ -104,5 +106,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += mm_has_mmap_lock
 NV_CONFTEST_TYPE_COMPILE_TESTS += migrate_vma_added_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += migrate_device_range
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
+NV_CONFTEST_TYPE_COMPILE_TESTS += handle_mm_fault_has_mm_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += handle_mm_fault_has_pt_regs_arg
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg

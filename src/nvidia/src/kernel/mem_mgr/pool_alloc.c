@@ -82,21 +82,23 @@
  */
 typedef enum
 {
-    RM_POOL_IDX_512M = 0,
-    RM_POOL_IDX_2M   = 1,
-    RM_POOL_IDX_256K = 2,
-    RM_POOL_IDX_128K = 3,
-    RM_POOL_IDX_64K  = 4,
-    RM_POOL_IDX_8K   = 5,
-    RM_POOL_IDX_4K   = 6,
-    RM_POOL_IDX_256B = 7,
+    RM_POOL_IDX_512M,
+    RM_POOL_IDX_2M,
+    RM_POOL_IDX_256K,
+    RM_POOL_IDX_128K,
+    RM_POOL_IDX_64K,
+    RM_POOL_IDX_8K,
+    RM_POOL_IDX_4K,
+    RM_POOL_IDX_256B,
     NUM_POOLS          // This should always be the last entry!
 }POOL_IDX;
 
 /*!
  * This array contains the alloction sizes (in bytes) of each pool.
  */
-static const NvU64 poolAllocSizes[] = {0x20000000, 0x200000, 0x40000, 0x20000, 0x10000, 0x2000, 0x1000, 0x100};
+static const NvU64 poolAllocSizes[] = {
+    0x20000000, 0x200000, 0x40000, 0x20000, 0x10000, 0x2000, 0x1000, 0x100
+};
 
 #define POOL_CONFIG_POOL_IDX       0
 #define POOL_CONFIG_CHUNKSIZE_IDX  1
@@ -178,7 +180,7 @@ struct RM_POOL_ALLOC_MEM_RESERVE_INFO
      */
     NvBool bTrimOnFree;
 
-    /*! 
+    /*!
      * Allocate pool in protected memory
      */
     NvBool bProtected;
@@ -227,11 +229,14 @@ allocUpstreamTopPool
     }
 
     status = pmaAllocatePages(pMemReserveInfo->pPma,
-                              (NvU32)(pMemReserveInfo->pmaChunkSize/PMA_CHUNK_SIZE_64K),
+                              pMemReserveInfo->pmaChunkSize/PMA_CHUNK_SIZE_64K,
                               PMA_CHUNK_SIZE_64K,
                               &allocOptions,
                               &pPage->address);
-    NV_ASSERT_OR_RETURN((NV_OK == status), status);
+    if (status != NV_OK)
+    {
+        return status;
+    }
 
     pPage->pMetadata = NULL;
 
@@ -693,8 +698,7 @@ rmMemPoolAllocate
         if (status != NV_OK)
         {
             listRemove(pPageHandleList, pPageHandle);
-            NV_ASSERT_OR_GOTO((NV_OK == status), done);
-            pPageHandle = NULL;
+            goto done;
         }
 
         memdescDescribe(pMemDesc, ADDR_FBMEM, pPageHandle->address, pMemDesc->Size);

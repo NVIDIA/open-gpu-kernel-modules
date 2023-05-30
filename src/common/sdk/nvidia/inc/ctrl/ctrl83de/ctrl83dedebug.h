@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl83de/ctrl83dedebug.finn
+// Source file:      ctrl/ctrl83de/ctrl83dedebug.finn
 //
 
 #include "ctrl/ctrl83de/ctrl83debase.h"
@@ -36,7 +36,48 @@
 
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 
+/*
+ * NV83DE_CTRL_CMD_SM_DEBUG_MODE_ENABLE
+ *
+ * The RmCtrl enables the debug mode for a given context.
+ * When enabled:
+ *  - The program execution on a SM stops at breakpoints.
+ *  - It allows the user to handle the RC recovery process and
+ *    exceptions.  (Yet to be supported)
+ *  - It allows the user to suspend, resume the context. (Yet to be supported)
+ *
+ * This command accepts no parameters.
+ *
+ *  Possible return values:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_OBJECT_HANDLE
+ *   NV_ERR_INVALID_CLIENT
+ *   NV_ERR_OBJECT_NOT_FOUND
+ *
+ */
+#define NV83DE_CTRL_CMD_SM_DEBUG_MODE_ENABLE     (0x83de0301) /* finn: Evaluated from "(FINN_GT200_DEBUGGER_DEBUG_INTERFACE_ID << 8) | 0x1" */
 
+/*
+ * NV83DE_CTRL_CMD_SM_DEBUG_MODE_DISABLE
+ *
+ * The RmCtrl disables the debug mode for a given context.
+ * When disabled:
+ *  - The program execution on a SM ignores the breakpoints.
+ *  - RC recovery process and exceptions are handled in the usual way.
+ *  - A request to suspend, resume the context will return error
+ *    NV_ERR_INVALID_COMMAND.
+ *
+ * This command accepts no parameters.
+ *
+ *  Possible return values:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_INVALID_OBJECT_HANDLE
+ *   NV_ERR_INVALID_CLIENT
+ *   NV_ERR_OBJECT_NOT_FOUND
+ */
+#define NV83DE_CTRL_CMD_SM_DEBUG_MODE_DISABLE    (0x83de0302) /* finn: Evaluated from "(FINN_GT200_DEBUGGER_DEBUG_INTERFACE_ID << 8) | 0x2" */
 
 /*
  * NV83DE_CTRL_CMD_DEBUG_SET_MODE_MMU_DEBUG

@@ -206,6 +206,7 @@ enum {
     X(RM, CTRL_GET_HS_CREDITS)                  // 197
     X(RM, CTRL_SET_HS_CREDITS)                  // 198
     X(RM, CTRL_PM_AREA_PC_SAMPLER)              // 199
+    X(RM, INVALIDATE_TLB)                       // 200
     X(RM, NUM_FUNCTIONS)                        //END
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };
@@ -249,6 +250,7 @@ enum {
     E(GSP_SEND_USER_SHARED_DATA)                 // 0x101b
     E(NVLINK_FAULT_UP)                           // 0x101c
     E(GSP_LOCKDOWN_NOTICE)                       // 0x101d
+    E(MIG_CI_CONFIG_UPDATE)                      // 0x101e
     E(NUM_EVENTS)                                // END
 #ifdef DEFINING_E_IN_RPC_GLOBAL_ENUMS_H
 };

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,7 +47,7 @@ extern "C" {
 
 /*!
  * KernelIoctrl is a logical abstraction of the GPU Ioctrl Engine. The
- * Public API of the Ioctrl Engine is exposed through this object, and 
+ * Public API of the Ioctrl Engine is exposed through this object, and
  * any interfaces which do not manage the underlying Ioctrl hardware
  * can be managed by this object.
  */
@@ -81,13 +81,13 @@ struct KernelIoctrl {
     NvBool PDB_PROP_KIOCTRL_MINION_AVAILABLE;
     NvBool PDB_PROP_KIOCTRL_MINION_FORCE_BOOT;
     NvBool PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS;
-    NvU32 PublicId;
-    NvU32 localDiscoveredLinks;
-    NvU32 localGlobalLinkOffset;
-    NvU32 ipVerIoctrl;
-    NvU32 ipVerMinion;
-    NvU32 ioctrlDiscoverySize;
-    NvU8 numDevices;
+    NvU32 PRIVATE_FIELD(PublicId);
+    NvU32 PRIVATE_FIELD(localDiscoveredLinks);
+    NvU32 PRIVATE_FIELD(localGlobalLinkOffset);
+    NvU32 PRIVATE_FIELD(ipVerIoctrl);
+    NvU32 PRIVATE_FIELD(ipVerMinion);
+    NvU32 PRIVATE_FIELD(ioctrlDiscoverySize);
+    NvU8 PRIVATE_FIELD(numDevices);
 };
 
 #ifndef __NVOC_CLASS_KernelIoctrl_TYPEDEF__

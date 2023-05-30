@@ -35,7 +35,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: nvdisptypes.finn
+// Source file:      nvdisptypes.finn
 //
 
 

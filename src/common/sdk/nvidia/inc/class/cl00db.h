@@ -28,7 +28,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/cl00db.finn
+// Source file:      class/cl00db.finn
 //
 
 #define NV40_DEBUG_BUFFER (0xdbU) /* finn: Evaluated from "NV00DB_ALLOCATION_PARAMETERS_MESSAGE_ID" */

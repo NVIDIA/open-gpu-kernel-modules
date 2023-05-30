@@ -34,7 +34,7 @@
 
 static void _kfifoPreConstructRegistryOverrides(OBJGPU *pGpu, KernelFifo *pKernelFifo);
 
-NV_STATUS 
+NV_STATUS
 kfifoConstructEngine_IMPL
 (
     OBJGPU        *pGpu,
@@ -144,13 +144,18 @@ kfifoStateInitLocked_IMPL
         }
     }
 
+    NV_ASSERT_OK_OR_RETURN(kfifoConstructUsermodeMemdescs_HAL(pGpu, pKernelFifo));
+
     NV_ASSERT_OK_OR_RETURN(kfifoChidMgrConstruct(pGpu, pKernelFifo));
 
     if (pKernelRc != NULL)
     {
         krcInitRegistryOverridesDelayed(pGpu, pKernelRc);
     }
-    
+
+    // Get maximum number of secure channels when APM/HCC is enabled
+    NV_ASSERT_OK_OR_RETURN(kfifoGetMaxSecureChannels(pGpu, pKernelFifo));
+
     return NV_OK;
 }
 
@@ -208,6 +213,11 @@ kfifoStateDestroy_IMPL
     // Free up allocated memory.
     //
     kfifoChidMgrDestruct(pKernelFifo);
+
+    // Destroy regardless of NULL, if pointers are null, is just a NOP
+    memdescDestroy(pKernelFifo->pRegVF);
+    memdescDestroy(pKernelFifo->pBar1VF);
+    memdescDestroy(pKernelFifo->pBar1PrivVF);
 
     return;
 }

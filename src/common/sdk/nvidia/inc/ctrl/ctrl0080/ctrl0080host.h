@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080host.finn
+// Source file:      ctrl/ctrl0080/ctrl0080host.finn
 //
 
 #include "ctrl/ctrl0080/ctrl0080base.h"

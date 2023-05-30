@@ -118,7 +118,7 @@ SetCursorImageOneHead(NVDispEvoPtr pDispEvo,
         }
 
         if (pSurfaceEvoOld) {
-            nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvoOld);
+            nvEvoDecrementSurfaceRefCnts(pSurfaceEvoOld);
         }
 
         pDevEvo->gpus[sd].headState[head].cursor.pSurfaceEvo = pSurfaceEvoNew;
@@ -285,20 +285,35 @@ void nvMoveCursor(NVDispEvoPtr pDispEvo, const NvU32 apiHead,
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     const NVDispApiHeadStateEvoRec *pApiHeadState =
         &pDispEvo->apiHeadState[apiHead];
-    NvU32 head;
+    NvU16 hwViewportInWidth;
+    NvU32 head, headCount;
 
     /* XXX NVKMS TODO: validate x,y against current viewport in? */
 
     nvAssert(apiHead != NV_INVALID_HEAD);
 
+    headCount = 0;
     FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+        const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+        const NVHwModeTimingsEvo *pTimings = &pHeadState->timings;
         const NvU32 sd = pDispEvo->displayOwner;
 
-        pDevEvo->gpus[sd].headState[head].cursor.x = pParams->x;
+        if (headCount == 0) {
+            hwViewportInWidth = pTimings->viewPort.in.width;
+        } else {
+            nvAssert(hwViewportInWidth == pTimings->viewPort.in.width);
+        }
+
+        pDevEvo->gpus[sd].headState[head].cursor.x =
+            pParams->x - (hwViewportInWidth * pHeadState->tilePosition);
         pDevEvo->gpus[sd].headState[head].cursor.y = pParams->y;
 
         nvEvoMoveCursorInternal(pDispEvo,
-                                head, pParams->x, pParams->y);
+                                head,
+                                pDevEvo->gpus[sd].headState[head].cursor.x,
+                                pDevEvo->gpus[sd].headState[head].cursor.y);
+
+        headCount++;
     }
 }
 

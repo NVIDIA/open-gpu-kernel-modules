@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -361,7 +361,7 @@ static NV_STATUS _gpuEngineEventNotificationListNotify
     //
     // Iterate through the pending notifications and call the OS to send them.
     // Note that osNotifyEvent may need to be preemptible, so this is done
-    // outside of the spinlock-protected critical section. 
+    // outside of the spinlock-protected critical section.
     //
     PendingEventNotifyListIter it = listIterAll(pPending);
     while (listIterNext(&it))
@@ -559,7 +559,7 @@ eventGetEngineTypeFromSubNotifyIndex
 NV_STATUS registerEventNotification
 (
     PEVENTNOTIFICATION *ppEventNotification,
-    NvHandle            hEventClient,
+    RsClient           *pEventClient,
     NvHandle            hNotifier,
     NvHandle            hEvent,
     NvU32               NotifyIndex,
@@ -568,13 +568,13 @@ NV_STATUS registerEventNotification
     NvBool              bUserOsEventHandle
 )
 {
+    NvHandle hEventClient = pEventClient->hClient;
     Subdevice *pSubDevice;
     PEVENTNOTIFICATION pTargetEvent = NULL;
     NV_STATUS rmStatus = NV_OK, rmTmpStatus = NV_OK;
     OBJGPU *pGpu;
     NvBool bNonStallIntrEvent = NV_FALSE;
     RM_ENGINE_TYPE rmEngineId;
-    NvHandle hDevice;
     RsResourceRef *pResourceRef;
     Memory *pSemMemory = NULL;
 
@@ -592,7 +592,7 @@ NV_STATUS registerEventNotification
         // For non-stall interrupt, the event parent type is NV20_SUBDEVICE, so we can locate
         // the correct OBJGPU and attach to its per-engine non-stall event list.
         //
-        if ((serverutilGetResourceRef(hEventClient, hNotifier, &pResourceRef) != NV_OK) ||
+        if ((clientGetResourceRef(pEventClient, hNotifier, &pResourceRef) != NV_OK) ||
             (!dynamicCast(pResourceRef->pResource, Subdevice)))
         {
             rmStatus = NV_ERR_INVALID_ARGUMENT;
@@ -600,13 +600,10 @@ NV_STATUS registerEventNotification
         }
 
         pSubDevice = dynamicCast(pResourceRef->pResource, Subdevice);
-        hDevice = RES_GET_PARENT_HANDLE(pSubDevice);
 
-        if (CliSetSubDeviceContext(hEventClient, RES_GET_HANDLE(pSubDevice), &hDevice, &pGpu) != NV_OK)
-        {
-            rmStatus = NV_ERR_INVALID_ARGUMENT;
-            goto free_entry;
-        }
+        pGpu = GPU_RES_GET_GPU(pSubDevice);
+
+        GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
 
         rmStatus = eventGetEngineTypeFromSubNotifyIndex(
                         DRF_VAL(0005, _NOTIFY_INDEX, _INDEX, NotifyIndex), &rmEngineId);
@@ -789,7 +786,6 @@ NV_STATUS unregisterEventNotificationWithData
     PEVENTNOTIFICATION      pTargetEvent    = NULL;
     Subdevice              *pSubDevice;
     RsResourceRef          *pResourceRef;
-    NvHandle                hDevice;
     RM_ENGINE_TYPE          rmEngineId;
     OBJGPU                 *pGpu;
 
@@ -813,13 +809,11 @@ NV_STATUS unregisterEventNotificationWithData
         }
 
         pSubDevice = dynamicCast(pResourceRef->pResource, Subdevice);
-        hDevice = RES_GET_PARENT_HANDLE(pSubDevice);
 
-        if (CliSetSubDeviceContext(hEventClient, RES_GET_HANDLE(pSubDevice), &hDevice, &pGpu) != NV_OK)
-        {
-            rmStatus = NV_ERR_INVALID_ARGUMENT;
-            goto free_entry;
-        }
+        // Fetch pGpu and hDevice, set the threadstate to the pGpu
+        pGpu = GPU_RES_GET_GPU(pSubDevice);
+
+        GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
 
         rmStatus = eventGetEngineTypeFromSubNotifyIndex(pTargetEvent->NotifyIndex, &rmEngineId);
 

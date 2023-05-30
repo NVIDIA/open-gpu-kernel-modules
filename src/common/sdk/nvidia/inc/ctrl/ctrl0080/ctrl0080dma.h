@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080dma.finn
+// Source file:      ctrl/ctrl0080/ctrl0080dma.finn
 //
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
@@ -160,7 +160,7 @@ typedef struct NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK {
 
 #define NV0080_CTRL_CMD_DMA_GET_PTE_INFO                                          (0x801801U) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS_MESSAGE_ID" */
 
-#define NV0080_CTRL_DMA_GET_PTE_INFO_PTE_BLOCKS                                   4U
+#define NV0080_CTRL_DMA_GET_PTE_INFO_PTE_BLOCKS                                   5U
 
 #define NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS_MESSAGE_ID (0x1U)
 
@@ -190,7 +190,7 @@ typedef struct NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS {
 
 #define NV0080_CTRL_CMD_DMA_SET_PTE_INFO        (0x80180aU) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS_MESSAGE_ID" */
 
-#define NV0080_CTRL_DMA_SET_PTE_INFO_PTE_BLOCKS 4U
+#define NV0080_CTRL_DMA_SET_PTE_INFO_PTE_BLOCKS 5U
 
 #define NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS_MESSAGE_ID (0xAU)
 
@@ -356,9 +356,8 @@ typedef struct NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS {
     NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PAGE_TABLE_FORMAT pageTable4KFormat[NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_MAX_NUM_PAGE_TABLE_FORMATS];
     NvHandle                                                hVASpace;
     NV_DECLARE_ALIGNED(NvU64 vaRangeLo, 8);
-    NvU32                                                   hugePageSize;
     NvU32                                                   vaSpaceId;
-    NvU32                                                   pageSize512MB;
+    NV_DECLARE_ALIGNED(NvU64 supportedPageSizeMask, 8);
 } NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS;
 
 /*
@@ -429,7 +428,7 @@ typedef struct NV0080_CTRL_DMA_PDE_INFO_PTE_BLOCK {
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PTE_ADDR_SPACE_SYSTEM_COHERENT_MEMORY     (0x00000001U)
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PTE_ADDR_SPACE_SYSTEM_NON_COHERENT_MEMORY (0x00000002U)
 
-#define NV0080_CTRL_DMA_PDE_INFO_PTE_BLOCKS                                           4U
+#define NV0080_CTRL_DMA_PDE_INFO_PTE_BLOCKS                                           5U
 
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_MESSAGE_ID (0x9U)
 
@@ -452,23 +451,6 @@ typedef struct NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS {
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PDE_SIZE_HALF                             2U
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PDE_SIZE_QUARTER                          3U
 #define NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS_PDE_SIZE_EIGHTH                           4U
-
-/*
- * NV0080_CTRL_CMD_DMA_INVALIDATE_PDB_TARGET
- *
- * This command invalidates PDB target setting in hardware.
- * After execeution of this command PDB target would be in undefined state.
- *
- * Returns error if the PDB target can not be invalidate.
- *
- * This call is only supported on chips fermi and later chips.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- */
-
-#define NV0080_CTRL_CMD_DMA_INVALIDATE_PDB_TARGET                                     (0x80180bU) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_DMA_INTERFACE_ID << 8) | 0xB" */
 
 /*
  * NV0080_CTRL_CMD_DMA_INVALIDATE_TLB

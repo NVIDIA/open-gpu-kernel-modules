@@ -360,6 +360,109 @@ static void InitNvKmsFlipWorkArea(const NVDevEvoRec *pDevEvo,
     }
 }
 
+static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
+                              const NvU32 apiHead,
+                              const struct NvKmsFlipWorkArea *pWorkArea,
+                              const NvBool allowFlipLock,
+                              NVEvoUpdateState *pUpdateState)
+{
+    NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    const NvU32 sd = pDispEvo->displayOwner;
+    NvU32 head;
+    const NVProposedFlipStateOneApiHead *pProposedApiHead =
+        &pWorkArea->disp[sd].apiHead[apiHead].proposedFlipState;
+    NVDispApiHeadStateEvoRec *pApiHeadState =
+        &pDispEvo->apiHeadState[apiHead];
+    NVDpyEvoRec *pDpyEvo =
+        nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
+    const NVT_EDID_INFO *pInfo = &pDpyEvo->parsedEdid.info;
+    const NVT_HDR_STATIC_METADATA *pHdrInfo =
+        &pInfo->hdr_static_metadata_info;
+
+    nvAssert(nvApiHeadIsActive(pDispEvo, apiHead));
+
+    FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+        nvFlipEvoOneHead(pDevEvo, sd, head, pHdrInfo,
+                         &pWorkArea->sd[sd].head[head].newState,
+                         allowFlipLock,
+                         pUpdateState);
+
+        if (pProposedApiHead->dirty.hdr) {
+            /* Update hardware's current colorSpace and colorRange */
+            nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
+                pDispEvo,
+                head,
+                pProposedApiHead->hdr.colorSpace,
+                pProposedApiHead->hdr.colorRange,
+                pUpdateState);
+        }
+    }
+
+    if (pProposedApiHead->dirty.hdr) {
+        pApiHeadState->attributes.colorSpace =
+            pProposedApiHead->hdr.colorSpace;
+        pApiHeadState->attributes.colorBpc =
+            pProposedApiHead->hdr.colorBpc;
+        pApiHeadState->attributes.colorRange =
+            pProposedApiHead->hdr.colorRange;
+
+        if (pProposedApiHead->hdr.tf == NVKMS_OUTPUT_TF_PQ) {
+            nvCancelSDRTransitionTimer(pApiHeadState);
+        } else if (pApiHeadState->tf == NVKMS_OUTPUT_TF_PQ) {
+            ScheduleSDRTransitionTimer(pDispEvo, apiHead);
+        }
+
+        pApiHeadState->tf = pProposedApiHead->hdr.tf;
+
+        nvUpdateInfoFrames(pDpyEvo);
+    }
+
+    if (pProposedApiHead->dirty.viewPortPointIn) {
+        pApiHeadState->viewPortPointIn =
+            pProposedApiHead->viewPortPointIn;
+    }
+}
+
+static NvU32 FlipEvo2Head1OrOneDisp(NVDispEvoRec *pDispEvo,
+                                    struct NvKmsFlipWorkArea *pWorkArea,
+                                    const NvBool skipUpdate)
+{
+    NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NvU32 flip2Heads1OrApiHeadsMask = 0x0;
+
+    for (NvU32 apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
+        NVDispApiHeadStateEvoRec *pApiHeadState =
+            &pDispEvo->apiHeadState[apiHead];
+        const NvBool b2Heads1Or =
+            (nvPopCount32(pApiHeadState->hwHeadsMask) >= 2);
+
+        if (!nvApiHeadIsActive(pDispEvo, apiHead) || !b2Heads1Or) {
+            continue;
+        }
+
+        nvkms_memset(&pWorkArea->updateState, 0,
+                     sizeof(pWorkArea->updateState));
+
+        FlipEvoOneApiHead(pDispEvo, apiHead, pWorkArea,
+                          TRUE /* allowFlipLock */, &pWorkArea->updateState);
+
+        /*
+         * If api-head is using 2Heads1OR mode then it can not be flip with
+         * other ap-heads in a single update; because each api-head, which is
+         * using 2Heads1OR mode, uses different fliplock group and kicking off
+         * multiple fliplock groups as part of a single update call is not
+         * supported yet.
+         */
+        pDevEvo->hal->Update(pDevEvo, &pWorkArea->updateState,
+                             TRUE /* releaseElv */);
+        nvAssert(!skipUpdate);
+
+        flip2Heads1OrApiHeadsMask |= NVBIT(apiHead);
+    }
+
+    return flip2Heads1OrApiHeadsMask;
+}
+
 /*!
  * Program a flip on all requested layers on all requested heads on
  * all requested disps in NvKmsFlipRequest.
@@ -491,7 +594,7 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
     nvPreFlip(pDevEvo, pWorkArea, applyAllowVrr, allowVrr, skipUpdate);
 
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-        NVEvoUpdateState updateState = { };
+        NvU32 flip2Heads1OrApiHeadsMask = 0x0;
 
         if (!pWorkArea->sd[sd].changed) {
             continue;
@@ -499,64 +602,25 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
 
         pDispEvo = pDevEvo->gpus[sd].pDispEvo;
 
+        flip2Heads1OrApiHeadsMask =
+            FlipEvo2Head1OrOneDisp(pDispEvo, pWorkArea, skipUpdate);
+
+        nvkms_memset(&pWorkArea->updateState, 0,
+                     sizeof(pWorkArea->updateState));
+
         for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
-            NvU32 head;
-            const NVProposedFlipStateOneApiHead *pProposedApiHead =
-                &pWorkArea->disp[sd].apiHead[apiHead].proposedFlipState;
-            NVDispApiHeadStateEvoRec *pApiHeadState =
-                &pDispEvo->apiHeadState[apiHead];
-            NVDpyEvoRec *pDpyEvo =
-                nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
-            const NVT_EDID_INFO *pInfo = &pDpyEvo->parsedEdid.info;
-            const NVT_HDR_STATIC_METADATA *pHdrInfo =
-                &pInfo->hdr_static_metadata_info;
-
-
-
-            FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
-                nvFlipEvoOneHead(pDevEvo, sd, head, pHdrInfo,
-                                 &pWorkArea->sd[sd].head[head].newState,
-                                 allowFlipLock,
-                                 &updateState);
-
-                if (pProposedApiHead->dirty.hdr) {
-                    /* Update hardware's current colorSpace and colorRange */
-                    nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
-                        pDispEvo,
-                        head,
-                        pProposedApiHead->hdr.colorSpace,
-                        pProposedApiHead->hdr.colorRange,
-                        &updateState);
-                }
+            if (!nvApiHeadIsActive(pDispEvo, apiHead) ||
+                    ((NVBIT(apiHead) & flip2Heads1OrApiHeadsMask) != 0x0)) {
+                continue;
             }
 
-            if (pProposedApiHead->dirty.hdr) {
-                pApiHeadState->attributes.colorSpace =
-                    pProposedApiHead->hdr.colorSpace;
-                pApiHeadState->attributes.colorBpc =
-                    pProposedApiHead->hdr.colorBpc;
-                pApiHeadState->attributes.colorRange =
-                    pProposedApiHead->hdr.colorRange;
-
-                if (pProposedApiHead->hdr.tf == NVKMS_OUTPUT_TF_PQ) {
-                    nvCancelSDRTransitionTimer(pApiHeadState);
-                } else if (pApiHeadState->tf == NVKMS_OUTPUT_TF_PQ) {
-                    ScheduleSDRTransitionTimer(pDispEvo, apiHead);
-                }
-
-                pApiHeadState->tf = pProposedApiHead->hdr.tf;
-
-                nvUpdateInfoFrames(pDpyEvo);
-            }
-
-            if (pProposedApiHead->dirty.viewPortPointIn) {
-                pApiHeadState->viewPortPointIn =
-                    pProposedApiHead->viewPortPointIn;
-            }
+            FlipEvoOneApiHead(pDispEvo, apiHead, pWorkArea, allowFlipLock,
+                              &pWorkArea->updateState);
         }
 
         if (!skipUpdate) {
-            pDevEvo->hal->Update(pDevEvo, &updateState, TRUE /* releaseElv */);
+            pDevEvo->hal->Update(pDevEvo, &pWorkArea->updateState,
+                                 TRUE /* releaseElv */);
         }
     }
 

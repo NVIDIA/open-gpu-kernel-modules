@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,28 +33,31 @@
 
 #define GPU_FABRIC_PROBE_DEFAULT_PROBE_SLOWDOWN_THRESHOLD 10
 
-typedef struct GPU_FABRIC_PROBE_INFO GPU_FABRIC_PROBE_INFO;
+typedef struct GPU_FABRIC_PROBE_INFO_KERNEL GPU_FABRIC_PROBE_INFO_KERNEL;
 
 NV_STATUS gpuFabricProbeStart(OBJGPU *pGpu,
-                              GPU_FABRIC_PROBE_INFO **ppGpuFabricProbeInfo);
-void gpuFabricProbeStop(GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo);
+                              GPU_FABRIC_PROBE_INFO_KERNEL **ppGpuFabricProbeInfoKernel);
+void gpuFabricProbeStop(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
 
-void gpuFabricProbeSuspend(GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo);
-NV_STATUS gpuFabricProbeResume(GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo);
+void gpuFabricProbeSuspend(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
+NV_STATUS gpuFabricProbeResume(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
 
-NV_STATUS gpuFabricProbeGetGpuFabricHandle(GPU_FABRIC_PROBE_INFO *pInfo, NvU64 *pHandle);
-NV_STATUS gpuFabricProbeGetGfId(GPU_FABRIC_PROBE_INFO *pInfo, NvU32 *pGfId);
-NV_STATUS gpuFabricProbeGetfmCaps(GPU_FABRIC_PROBE_INFO *pInfo, NvU64 *pFmCaps);
-NV_STATUS gpuFabricProbeGetClusterUuid(GPU_FABRIC_PROBE_INFO *pInfo, NvUuid *pClusterUuid);
-NV_STATUS gpuFabricProbeGetFabricPartitionId(GPU_FABRIC_PROBE_INFO *pInfo, NvU16 *pFabricPartitionId);
-NV_STATUS gpuFabricProbeGetGpaAddress(GPU_FABRIC_PROBE_INFO *pInfo, NvU64 *pGpaAddress);
-NV_STATUS gpuFabricProbeGetGpaAddressRange(GPU_FABRIC_PROBE_INFO *pInfo, NvU64 *pGpaAddressRange);
-NV_STATUS gpuFabricProbeGetFlaAddress(GPU_FABRIC_PROBE_INFO *pInfo, NvU64 *pFlaAddress);
-NV_STATUS gpuFabricProbeGetFlaAddressRange(GPU_FABRIC_PROBE_INFO *pInfo, NvU64 *pFlaAddressRange);
-NV_STATUS gpuFabricProbeGetNumProbeReqs(GPU_FABRIC_PROBE_INFO *pInfo, NvU64 *numProbes);
+NV_STATUS gpuFabricProbeGetGpuFabricHandle(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU64 *pHandle);
+NV_STATUS gpuFabricProbeGetGfId(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU32 *pGfId);
+NV_STATUS gpuFabricProbeGetfmCaps(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU64 *pFmCaps);
+NV_STATUS gpuFabricProbeGetClusterUuid(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvUuid *pClusterUuid);
+NV_STATUS gpuFabricProbeGetFabricPartitionId(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU16 *pFabricPartitionId);
+NV_STATUS gpuFabricProbeGetGpaAddress(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU64 *pGpaAddress);
+NV_STATUS gpuFabricProbeGetGpaAddressRange(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU64 *pGpaAddressRange);
+NV_STATUS gpuFabricProbeGetFlaAddress(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU64 *pFlaAddress);
+NV_STATUS gpuFabricProbeGetFlaAddressRange(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU64 *pFlaAddressRange);
+NV_STATUS gpuFabricProbeGetNumProbeReqs(GPU_FABRIC_PROBE_INFO_KERNEL *pInfo, NvU64 *numProbes);
 
-NvBool gpuFabricProbeIsReceived(GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo);
-NvBool gpuFabricProbeIsSuccess(GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo);
-NV_STATUS gpuFabricProbeGetFmStatus(GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo);
+NvBool gpuFabricProbeIsReceived(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
+NvBool gpuFabricProbeIsSuccess(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
+NV_STATUS gpuFabricProbeGetFmStatus(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel);
 NvBool gpuFabricProbeIsSupported(OBJGPU *pGpu);
+NV_STATUS gpuFabricProbeSetBwMode(NvU8 mode);
+NV_STATUS gpuFabricProbeGetlinkMaskToBeReduced(GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
+                                               NvU32 *linkMaskToBeReduced);
 #endif // GPU_FABRIC_PROBE_H

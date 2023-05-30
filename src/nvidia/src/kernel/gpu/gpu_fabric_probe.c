@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,54 +29,47 @@
 
 #include "gpu/gpu.h"
 #include "os/os.h"
-#include "objtmr.h"
 #include "utils/nvprintf.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
-#include "ctrl/ctrl2080/ctrl2080pmgr.h"
 #include "gpu/gpu_fabric_probe.h"
-#include "compute/fabric.h"
 #include "nvlink_inband_msg.h"
 #include "kernel/mem_mgr/fabric_vaspace.h"
+#include "ctrl/ctrl2080/ctrl2080internal.h"
 
 // Structure to hold gpu probe information
-typedef struct GPU_FABRIC_PROBE_INFO
+typedef struct GPU_FABRIC_PROBE_INFO_KERNEL
 {
-    NvU64 probeRetryDelay;
     NvBool bProbeRespRcvd;
-    NvU64 numProbes;
+    NvU8 bwMode;
 
     OBJGPU *pGpu;
 
-    TMR_EVENT *pTmrEvent;
-
-    NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS sendDataParams;
     nvlink_inband_gpu_probe_rsp_msg_t probeResponseMsg;
 
-} GPU_FABRIC_PROBE_INFO;
-
+} GPU_FABRIC_PROBE_INFO_KERNEL;
 
 static NV_STATUS
 _gpuFabricProbeFullSanityCheck
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel
 )
 {
-    if (pGpuFabricProbeInfo == NULL)
+    if (pGpuFabricProbeInfoKernel == NULL)
     {
         return NV_ERR_NOT_SUPPORTED;
     }
 
     LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(
-                           gpuGetInstance(pGpuFabricProbeInfo->pGpu)));
+                           gpuGetInstance(pGpuFabricProbeInfoKernel->pGpu)));
 
-    if (!gpuFabricProbeIsReceived(pGpuFabricProbeInfo))
+    if (!gpuFabricProbeIsReceived(pGpuFabricProbeInfoKernel))
     {
         return NV_ERR_NOT_READY;
     }
 
-    if (!gpuFabricProbeIsSuccess(pGpuFabricProbeInfo))
+    if (!gpuFabricProbeIsSuccess(pGpuFabricProbeInfoKernel))
     {
-        return pGpuFabricProbeInfo->probeResponseMsg.msgHdr.status;
+        return pGpuFabricProbeInfoKernel->probeResponseMsg.msgHdr.status;
     }
 
     return NV_OK;
@@ -85,17 +78,17 @@ _gpuFabricProbeFullSanityCheck
 NV_STATUS
 gpuFabricProbeGetGpuFabricHandle
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvU64 *pHandle
 )
 {
     NV_STATUS status;
 
-    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
 
-    *pHandle = pGpuFabricProbeInfo->probeResponseMsg.probeRsp.gpuHandle;
+    *pHandle = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.gpuHandle;
 
     return status;
 }
@@ -103,17 +96,17 @@ gpuFabricProbeGetGpuFabricHandle
 NV_STATUS
 gpuFabricProbeGetGfId
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvU32 *pGfId
 )
 {
     NV_STATUS status;
 
-    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
 
-    *pGfId = pGpuFabricProbeInfo->probeResponseMsg.probeRsp.gfId;
+    *pGfId = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.gfId;
 
     return status;
 }
@@ -121,17 +114,17 @@ gpuFabricProbeGetGfId
 NV_STATUS
 gpuFabricProbeGetfmCaps
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvU64 *pFmCaps
 )
 {
     NV_STATUS status;
 
-    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
 
-    *pFmCaps = pGpuFabricProbeInfo->probeResponseMsg.probeRsp.fmCaps;
+    *pFmCaps = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.fmCaps;
 
     return status;
 }
@@ -139,20 +132,20 @@ gpuFabricProbeGetfmCaps
 NV_STATUS
 gpuFabricProbeGetClusterUuid
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvUuid *pClusterUuid
 )
 {
     NV_STATUS status;
 
-    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
 
     portMemCopy(&pClusterUuid->uuid[0],
                 sizeof(pClusterUuid->uuid),
-                &pGpuFabricProbeInfo->probeResponseMsg.probeRsp.clusterUuid.uuid[0],
-                sizeof(pGpuFabricProbeInfo->probeResponseMsg.probeRsp.clusterUuid.uuid));
+                &pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.clusterUuid.uuid[0],
+                sizeof(pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.clusterUuid.uuid));
 
     return status;
 }
@@ -160,17 +153,17 @@ gpuFabricProbeGetClusterUuid
 NV_STATUS
 gpuFabricProbeGetFabricPartitionId
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvU16 *pFabricPartitionId
 )
 {
     NV_STATUS status;
 
-    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
 
-    *pFabricPartitionId = pGpuFabricProbeInfo->probeResponseMsg.probeRsp.fabricPartitionId;
+    *pFabricPartitionId = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.fabricPartitionId;
 
     return status;
 }
@@ -178,17 +171,17 @@ gpuFabricProbeGetFabricPartitionId
 NV_STATUS
 gpuFabricProbeGetGpaAddress
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvU64 *pGpaAddress
 )
 {
     NV_STATUS status;
 
-    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
 
-    *pGpaAddress = pGpuFabricProbeInfo->probeResponseMsg.probeRsp.gpaAddress;
+    *pGpaAddress = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.gpaAddress;
 
     return status;
 }
@@ -196,17 +189,17 @@ gpuFabricProbeGetGpaAddress
 NV_STATUS
 gpuFabricProbeGetGpaAddressRange
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvU64 *pGpaAddressRange
 )
 {
     NV_STATUS status;
 
-    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
 
-    *pGpaAddressRange = pGpuFabricProbeInfo->probeResponseMsg.probeRsp.gpaAddressRange;
+    *pGpaAddressRange = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.gpaAddressRange;
 
     return status;
 }
@@ -214,17 +207,17 @@ gpuFabricProbeGetGpaAddressRange
 NV_STATUS
 gpuFabricProbeGetFlaAddress
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvU64 *pFlaAddress
 )
 {
     NV_STATUS status;
 
-    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
 
-    *pFlaAddress = pGpuFabricProbeInfo->probeResponseMsg.probeRsp.flaAddress;
+    *pFlaAddress = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.flaAddress;
 
     return status;
 }
@@ -232,17 +225,17 @@ gpuFabricProbeGetFlaAddress
 NV_STATUS
 gpuFabricProbeGetFlaAddressRange
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvU64 *pFlaAddressRange
 )
 {
     NV_STATUS status;
 
-    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
 
-    *pFlaAddressRange = pGpuFabricProbeInfo->probeResponseMsg.probeRsp.flaAddressRange;
+    *pFlaAddressRange = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.flaAddressRange;
 
     return status;
 }
@@ -250,19 +243,34 @@ gpuFabricProbeGetFlaAddressRange
 NV_STATUS
 gpuFabricProbeGetNumProbeReqs
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
     NvU64 *numProbes
 )
 {
-    if (pGpuFabricProbeInfo == NULL)
+    NV2080_CTRL_CMD_INTERNAL_GET_GPU_FABRIC_PROBE_INFO_PARAMS params = { 0 };
+    RM_API *pRmApi;
+    OBJGPU *pGpu;
+
+    if (pGpuFabricProbeInfoKernel == NULL)
     {
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(
-                           gpuGetInstance(pGpuFabricProbeInfo->pGpu)));
+    pGpu = pGpuFabricProbeInfoKernel->pGpu;
+    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-    *numProbes = pGpuFabricProbeInfo->numProbes;
+    LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(
+                           gpuGetInstance(pGpuFabricProbeInfoKernel->pGpu)));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+          pRmApi->Control(pRmApi,
+                          pGpu->hInternalClient,
+                          pGpu->hInternalSubdevice,
+                          NV2080_CTRL_CMD_INTERNAL_GPU_GET_FABRIC_PROBE_INFO,
+                          &params,
+                          sizeof(params)));
+
+    *numProbes = params.numProbes;
 
     return NV_OK;
 }
@@ -270,40 +278,40 @@ gpuFabricProbeGetNumProbeReqs
 NvBool
 gpuFabricProbeIsReceived
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel
 )
 {
-    if (pGpuFabricProbeInfo == NULL)
+    if (pGpuFabricProbeInfoKernel == NULL)
     {
         return NV_FALSE;
     }
 
     LOCK_ASSERT_AND_RETURN_BOOL(rmDeviceGpuLockIsOwner(
-                                gpuGetInstance(pGpuFabricProbeInfo->pGpu)),
+                                gpuGetInstance(pGpuFabricProbeInfoKernel->pGpu)),
                                 NV_FALSE);
 
-    return pGpuFabricProbeInfo->bProbeRespRcvd;
+    return pGpuFabricProbeInfoKernel->bProbeRespRcvd;
 }
 
 NvBool
 gpuFabricProbeIsSuccess
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel
 )
 {
     nvlink_inband_gpu_probe_rsp_msg_t *pProbeResponseMsg;
     nvlink_inband_msg_header_t *pProbeRespMsgHdr;
 
-    if (pGpuFabricProbeInfo == NULL)
+    if (pGpuFabricProbeInfoKernel == NULL)
     {
         return NV_FALSE;
     }
 
     LOCK_ASSERT_AND_RETURN_BOOL(rmDeviceGpuLockIsOwner(gpuGetInstance(
-                                pGpuFabricProbeInfo->pGpu)),
+                                pGpuFabricProbeInfoKernel->pGpu)),
                                 NV_FALSE);
 
-    pProbeResponseMsg = &pGpuFabricProbeInfo->probeResponseMsg;
+    pProbeResponseMsg = &pGpuFabricProbeInfoKernel->probeResponseMsg;
     pProbeRespMsgHdr = &pProbeResponseMsg->msgHdr;
 
     return pProbeRespMsgHdr->status == NV_OK;
@@ -312,188 +320,25 @@ gpuFabricProbeIsSuccess
 NV_STATUS
 gpuFabricProbeGetFmStatus
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel
 )
 {
-    if (pGpuFabricProbeInfo == NULL)
+    if (pGpuFabricProbeInfoKernel == NULL)
     {
         return NV_ERR_NOT_SUPPORTED;
     }
 
     LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(
-                           gpuGetInstance(pGpuFabricProbeInfo->pGpu)));
+                           gpuGetInstance(pGpuFabricProbeInfoKernel->pGpu)));
 
-    return pGpuFabricProbeInfo->probeResponseMsg.msgHdr.status;
+    return pGpuFabricProbeInfoKernel->probeResponseMsg.msgHdr.status;
 }
-
-static void
-_gpuFabricProbeForceCompletionError
-(
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo,
-    NV_STATUS status
-)
-{
-    NV_ASSERT(!pGpuFabricProbeInfo->bProbeRespRcvd);
-    pGpuFabricProbeInfo->bProbeRespRcvd = NV_TRUE;
-    pGpuFabricProbeInfo->probeResponseMsg.msgHdr.status = status;
-}
-
-static NV_STATUS
-_gpuFabricProbeSchedule
-(
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo
-)
-{
-    NV_STATUS status;
-    OBJGPU *pGpu = pGpuFabricProbeInfo->pGpu;
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-
-    NV_ASSERT(pGpuFabricProbeInfo->pTmrEvent != NULL);
-
-    status = tmrEventScheduleRel(pTmr, pGpuFabricProbeInfo->pTmrEvent,
-                                 pGpuFabricProbeInfo->probeRetryDelay);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u tmrEventScheduleRel failed\n",
-                  gpuGetInstance(pGpu));
-        return status;
-    }
-
-    pGpuFabricProbeInfo->numProbes++;
-
-    if ((pGpuFabricProbeInfo->numProbes %
-        pGpu->fabricProbeSlowdownThreshold) == 0)
-    {
-        pGpuFabricProbeInfo->probeRetryDelay += pGpuFabricProbeInfo->probeRetryDelay;
-    }
-
-    NV_PRINTF(LEVEL_INFO, "GPU%u Num retried probes %lld \n",
-              gpuGetInstance(pGpu), pGpuFabricProbeInfo->numProbes);
-
-    return NV_OK;
-}
-
-static NV_STATUS
-_gpuFabricProbeConstructReq
-(
-    nvlink_inband_gpu_probe_req_t *pProbeReq,
-    OBJGPU *pGpu
-)
-{
-    NV_STATUS status;
-    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-    NvU8 *pUuid;
-    NvU32 uuidLength, flags = 0;
-
-    portMemSet(pProbeReq, 0, sizeof(*pProbeReq));
-
-    flags = FLD_SET_DRF_NUM(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE,
-                            NV2080_GPU_CMD_GPU_GET_GID_FLAGS_TYPE_SHA1, flags);
-    flags = FLD_SET_DRF_NUM(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT,
-                            NV2080_GPU_CMD_GPU_GET_GID_FLAGS_FORMAT_BINARY, flags);
-    status = gpuGetGidInfo(pGpu, &pUuid, &uuidLength, flags);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u Failed to update GPU UUID\n",
-                  gpuGetInstance(pGpu));
-        return status;
-    }
-    portMemCopy(&pProbeReq->gpuUuid.uuid[0], uuidLength, pUuid, uuidLength);
-    portMemFree(pUuid);
-
-    pProbeReq->pciInfo = gpuGetDBDF(pGpu);
-    pProbeReq->moduleId = pGpu->moduleId;
-    pProbeReq->discoveredLinkMask = pKernelNvlink->discoveredLinks;
-    pProbeReq->enabledLinkMask = pKernelNvlink->enabledLinks;
-    pProbeReq->gpuCapMask = (IS_VIRTUAL_WITH_SRIOV(pGpu)) ?
-                            NVLINK_INBAND_GPU_PROBE_CAPS_SRIOV_ENABLED : 0;
-    return status;
-}
-
-static void
-_gpuFabricProbeSend_WORKITEM
-(
-    NvU32 gpuInstance,
-    void *pArgs
-)
-{
-    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
-    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo = pGpu->pGpuFabricProbeInfo;
-    NV_STATUS status;
-
-    if (pKernelNvlink->bIsGpuDegraded ||
-        (pKernelNvlink->discoveredLinks == 0))
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "GPU%u Degraded. Not sending probe\n",
-                  gpuGetInstance(pGpu));
-        _gpuFabricProbeForceCompletionError(pGpuFabricProbeInfo, NV_ERR_NOT_SUPPORTED);
-        return;
-    }
-
-    if (pGpuFabricProbeInfo->bProbeRespRcvd)
-    {
-        NV_PRINTF(LEVEL_INFO,
-                  "GPU%u Probe Resp rcvd. Not sending probe\n",
-                  gpuGetInstance(pGpu));
-        return;
-    }
-
-    status = knvlinkSendInbandData(pGpu,
-                                  pKernelNvlink,
-                                  &pGpuFabricProbeInfo->sendDataParams);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u Send Inband data failed\n",
-                  gpuGetInstance(pGpu));
-        //
-        // Deliberately ignoring return value as we want probes to be
-        // retried until success
-        //
-    }
-
-    status = _gpuFabricProbeSchedule(pGpuFabricProbeInfo);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u Schedule Probe failed\n",
-                  gpuGetInstance(pGpu));
-        _gpuFabricProbeForceCompletionError(pGpuFabricProbeInfo, NV_ERR_OPERATING_SYSTEM);
-        return;
-    }
-}
-
-static NV_STATUS
-_gpuFabricProbeScheduleWq
-(
-    OBJGPU *pGpu,
-    OBJTMR *pTmr,
-    TMR_EVENT *pEvent
-)
-{
-    OBJOS *pOS = GPU_GET_OS(pGpu);
-    NV_STATUS status = NV_OK;
-
-    NV_ASSERT_OR_RETURN(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)), NV_ERR_INVALID_STATE);
-
-    status = pOS->osQueueWorkItemWithFlags(pGpu, _gpuFabricProbeSend_WORKITEM, NULL,
-                                           OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u OS Schedule Probe failed\n",
-                  gpuGetInstance(pGpu));
-         _gpuFabricProbeForceCompletionError(pGpu->pGpuFabricProbeInfo, NV_ERR_OPERATING_SYSTEM);
-    }
-
-    return status;
-}
-
 
 static void
 _gpuFabricProbeSetupGpaRange
 (
     OBJGPU                *pGpu,
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel
 )
 {
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
@@ -503,19 +348,17 @@ _gpuFabricProbeSetupGpaRange
         NvU64 gpaAddress;
         NvU64 gpaAddressSize;
 
-        NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, 
-                                gpuFabricProbeGetGpaAddress(pGpuFabricProbeInfo,
-                                                            &gpaAddress) == NV_OK);
+        NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
+                    gpuFabricProbeGetGpaAddress(pGpuFabricProbeInfoKernel,
+                                                &gpaAddress) == NV_OK);
 
         NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
-                                gpuFabricProbeGetGpaAddressRange(pGpuFabricProbeInfo,
-                                                                 &gpaAddressSize) == NV_OK);
+                    gpuFabricProbeGetGpaAddressRange(pGpuFabricProbeInfoKernel,
+                                                    &gpaAddressSize) == NV_OK);
 
-        //pKernelNvlink->fabricBaseAddr = gpaAddress;
-        NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, 
-                                knvlinkSetUniqueFabricBaseAddress_HAL(pGpu,
-                                                                      pKernelNvlink,
-                                                                      gpaAddress) == NV_OK);
+        NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
+                    knvlinkSetUniqueFabricBaseAddress_HAL(pGpu, pKernelNvlink,
+                                                        gpaAddress) == NV_OK);
     }
 }
 
@@ -523,7 +366,7 @@ static void
 _gpuFabricProbeSetupFlaRange
 (
     OBJGPU                  *pGpu,
-    GPU_FABRIC_PROBE_INFO   *pGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL   *pGpuFabricProbeInfoKernel
 )
 {
     if (pGpu->pFabricVAS != NULL)
@@ -532,19 +375,21 @@ _gpuFabricProbeSetupFlaRange
         NvU64 flaSize;
 
         NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
-                                gpuFabricProbeGetFlaAddress(pGpuFabricProbeInfo, &flaBaseAddress) == NV_OK);
+            gpuFabricProbeGetFlaAddress(pGpuFabricProbeInfoKernel,
+                                        &flaBaseAddress) == NV_OK);
 
         NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
-                                gpuFabricProbeGetFlaAddressRange(pGpuFabricProbeInfo, &flaSize) == NV_OK);
+            gpuFabricProbeGetFlaAddressRange(pGpuFabricProbeInfoKernel,
+                                             &flaSize) == NV_OK);
 
         NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
-                                fabricvaspaceInitUCRange(dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE),
-                                                         pGpu, flaBaseAddress, flaSize) == NV_OK);
+            fabricvaspaceInitUCRange(dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE),
+                                     pGpu, flaBaseAddress, flaSize) == NV_OK);
     }
 }
 
-void
-_gpuFabricProbeReceive
+static NV_STATUS
+_gpuFabricProbeReceiveKernel
 (
     NvU32 gpuInstance,
     NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pInbandRcvParams
@@ -553,43 +398,38 @@ _gpuFabricProbeReceive
     OBJGPU *pGpu;
     NvU32 gpuMaskUnused;
     nvlink_inband_gpu_probe_rsp_msg_t *pProbeRespMsg;
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo;
-    nvlink_inband_gpu_probe_req_msg_t *pProbeReqMsg = NULL;
-    NvU8 *pRsvd = NULL;
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel;
+    NV_STATUS status;
 
     if ((pGpu = gpumgrGetGpu(gpuInstance)) == NULL)
     {
         NV_ASSERT_FAILED("Invalid GPU instance");
-        return;
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
-    NV_ASSERT(rmGpuGroupLockIsOwner(gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMaskUnused));
+    //
+    // There is a scenario where _gpuFabricProbeStart fails in the GSP
+    // and returns failure to kernel ctrl call to start probe.
+    // This will set the pGpuFabricProbeInfoKernel to NULL.
+    // GSP also sends a probe response with failure error code.
+    // Handling this response causes kernel driver to crash since
+    // pGpuFabricProbeInfoKernel is already cleared in the kernel.
+    // This check is added to handle this scenario.
+    //
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu->pGpuFabricProbeInfoKernel != NULL, NV_OK);
+
+    NV_ASSERT(rmGpuGroupLockIsOwner(gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
+                                    &gpuMaskUnused));
 
     NV_ASSERT(pInbandRcvParams != NULL);
 
-    pGpuFabricProbeInfo = pGpu->pGpuFabricProbeInfo;
+    pGpuFabricProbeInfoKernel = pGpu->pGpuFabricProbeInfoKernel;
 
-    pProbeReqMsg = (nvlink_inband_gpu_probe_req_msg_t *)&pGpuFabricProbeInfo->
-                                                         sendDataParams.buffer[0];
-    pProbeRespMsg = (nvlink_inband_gpu_probe_rsp_msg_t *)&pInbandRcvParams->data[0];
+    pProbeRespMsg = \
+        (nvlink_inband_gpu_probe_rsp_msg_t *)&pInbandRcvParams->data[0];
 
-    if (pProbeRespMsg->msgHdr.requestId != pProbeReqMsg->msgHdr.requestId)
-    {
-        NV_PRINTF(LEVEL_INFO,
-                  "GPU%u Probe resp invalid reqId %lld respId %lld\n",
-                  gpuInstance,
-                  pProbeReqMsg->msgHdr.requestId,
-                  pProbeRespMsg->msgHdr.requestId);
-        return;
-    }
-
-    // Assert reserved in probeResponse are zero
-    pRsvd = &pProbeRespMsg->probeRsp.reserved[0];
-    NV_ASSERT((pRsvd[0] == 0) && portMemCmp(pRsvd, pRsvd + 1,
-              sizeof(pProbeRespMsg->probeRsp.reserved) - 1) == 0);
-
-    portMemCopy(&pGpuFabricProbeInfo->probeResponseMsg,
-                sizeof(pGpuFabricProbeInfo->probeResponseMsg),
+    portMemCopy(&pGpuFabricProbeInfoKernel->probeResponseMsg,
+                sizeof(pGpuFabricProbeInfoKernel->probeResponseMsg),
                 pProbeRespMsg,
                 sizeof(*pProbeRespMsg));
 
@@ -597,98 +437,92 @@ _gpuFabricProbeReceive
     // TODO - Add additional check with versioning to continue with the
     // timer and send lower version requests
     //
-    pGpuFabricProbeInfo->bProbeRespRcvd = NV_TRUE;
+    pGpuFabricProbeInfoKernel->bProbeRespRcvd = NV_TRUE;
 
-    NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
-                            _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfo) == NV_OK);
-    _gpuFabricProbeSetupGpaRange(pGpu, pGpuFabricProbeInfo);
-    _gpuFabricProbeSetupFlaRange(pGpu, pGpuFabricProbeInfo);
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
+
+    _gpuFabricProbeSetupGpaRange(pGpu, pGpuFabricProbeInfoKernel);
+    _gpuFabricProbeSetupFlaRange(pGpu, pGpuFabricProbeInfoKernel);
+
+    return NV_OK;
 }
 
 void
 gpuFabricProbeSuspend
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel
 )
 {
     OBJGPU *pGpu;
-    OBJTMR *pTmr;
+    RM_API *pRmApi;
+    NV_STATUS status;
 
-    if (pGpuFabricProbeInfo == NULL)
+    if (pGpuFabricProbeInfoKernel == NULL)
     {
         return;
     }
 
-    pGpu = pGpuFabricProbeInfo->pGpu;
+    pGpu = pGpuFabricProbeInfoKernel->pGpu;
+    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
-    pTmr = GPU_GET_TIMER(pGpu);
-
-    NV_ASSERT(pGpuFabricProbeInfo->pTmrEvent != NULL);
-
-    if (!gpuFabricProbeIsReceived(pGpuFabricProbeInfo))
-    {
-        tmrEventCancel(pTmr, pGpuFabricProbeInfo->pTmrEvent);
-    }
+    NV_CHECK_OK(status, LEVEL_ERROR,
+            pRmApi->Control(pRmApi,
+                            pGpu->hInternalClient,
+                            pGpu->hInternalSubdevice,
+                            NV2080_CTRL_CMD_INTERNAL_GPU_SUSPEND_FABRIC_PROBE,
+                            NULL, 0));
 }
 
 NV_STATUS
 gpuFabricProbeResume
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel
 )
 {
     OBJGPU *pGpu;
-    NV_STATUS status = NV_OK;
+    RM_API *pRmApi;
+    NV2080_CTRL_CMD_INTERNAL_RESUME_GPU_FABRIC_PROBE_INFO_PARAMS params = { 0 };
 
-    if (pGpuFabricProbeInfo == NULL)
+    if (pGpuFabricProbeInfoKernel == NULL)
     {
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    pGpu = pGpuFabricProbeInfo->pGpu;
+    pGpu = pGpuFabricProbeInfoKernel->pGpu;
+    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
-    NV_ASSERT(pGpuFabricProbeInfo->pTmrEvent != NULL);
+    params.bwMode = pGpuFabricProbeInfoKernel->bwMode;
 
-    if (!gpuFabricProbeIsReceived(pGpuFabricProbeInfo))
-    {
-        status = _gpuFabricProbeSchedule(pGpuFabricProbeInfo);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "GPU%u Resume and Sending probe request failed\n",
-                      gpuGetInstance(pGpu));
-        }
-    }
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+              pRmApi->Control(pRmApi,
+                              pGpu->hInternalClient,
+                              pGpu->hInternalSubdevice,
+                              NV2080_CTRL_CMD_INTERNAL_GPU_RESUME_FABRIC_PROBE,
+                              &params, sizeof(params)));
 
-    return status;
+    return NV_OK;
 }
 
 NV_STATUS
 gpuFabricProbeStart
 (
     OBJGPU *pGpu,
-    GPU_FABRIC_PROBE_INFO **ppGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL **ppGpuFabricProbeInfoKernel
 )
 {
     NV_STATUS status;
-    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
-    nvlink_inband_gpu_probe_req_msg_t *pProbeReqMsg = NULL;
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo;
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel;
     NVLINK_INBAND_MSG_CALLBACK inbandMsgCbParams;
     KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS params = { 0 };
 
     LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
-
-    //
-    // TODO - probe versioning
-    //        After retrying the latest version probe for a few times, if GPU
-    //        doesn't receive any response, GPU fallsback to the previous
-    //        version of probe request. This process continues until it
-    //        reaches the lowest possible probe request version
-    //
 
     // Check if NVSwitch based system. If not return without doing anything
     if (!gpuFabricProbeIsSupported(pGpu))
@@ -696,58 +530,20 @@ gpuFabricProbeStart
         return NV_OK;
     }
 
-    *ppGpuFabricProbeInfo = portMemAllocNonPaged(sizeof(*pGpuFabricProbeInfo));
-    NV_ASSERT_OR_RETURN(*ppGpuFabricProbeInfo != NULL, NV_ERR_NO_MEMORY);
+    *ppGpuFabricProbeInfoKernel = portMemAllocNonPaged(sizeof(*pGpuFabricProbeInfoKernel));
+    NV_ASSERT_OR_RETURN(*ppGpuFabricProbeInfoKernel != NULL, NV_ERR_NO_MEMORY);
 
-    pGpuFabricProbeInfo = *ppGpuFabricProbeInfo;
+    pGpuFabricProbeInfoKernel = *ppGpuFabricProbeInfoKernel;
 
-    portMemSet(pGpuFabricProbeInfo, 0, sizeof(*pGpuFabricProbeInfo));
+    portMemSet(pGpuFabricProbeInfoKernel, 0, sizeof(*pGpuFabricProbeInfoKernel));
 
-    pGpuFabricProbeInfo->pGpu = pGpu;
-
-    status = tmrEventCreate(pTmr, &pGpuFabricProbeInfo->pTmrEvent,
-                            _gpuFabricProbeScheduleWq, NULL, TMR_FLAGS_NONE);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u Timer create failure\n",
-                  gpuGetInstance(pGpu));
-        goto fail;
-    }
-
-    pGpuFabricProbeInfo->probeRetryDelay =
-        pGpu->fabricProbeRetryDelay * GPU_FABRIC_PROBE_SEC_TO_NS;
-
-    ct_assert(sizeof(nvlink_inband_gpu_probe_req_msg_t) <=
-              sizeof(pGpuFabricProbeInfo->sendDataParams.buffer));
-
-    pProbeReqMsg = (nvlink_inband_gpu_probe_req_msg_t *)&pGpuFabricProbeInfo->
-                                                         sendDataParams.buffer[0];
-
-    status = _gpuFabricProbeConstructReq(&pProbeReqMsg->probeReq, pGpu);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u Init Probe request failed\n",
-                  gpuGetInstance(pGpu));
-        goto fail;
-    }
-
-    status = fabricInitInbandMsgHdr(&pProbeReqMsg->msgHdr,
-                                    NVLINK_INBAND_MSG_TYPE_GPU_PROBE_REQ,
-                                    sizeof(pProbeReqMsg->probeReq));
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u Init of Inband msg hdr failed\n",
-                  gpuGetInstance(pGpu));
-        goto fail;
-    }
-
-    pGpuFabricProbeInfo->sendDataParams.dataSize = sizeof(*pProbeReqMsg);
+    pGpuFabricProbeInfoKernel->pGpu = pGpu;
 
     // Register the receive callback
     inbandMsgCbParams.messageType = NVLINK_INBAND_MSG_TYPE_GPU_PROBE_RSP;
-    inbandMsgCbParams.pCallback = _gpuFabricProbeReceive;
+    inbandMsgCbParams.pCallback = _gpuFabricProbeReceiveKernel;
     inbandMsgCbParams.wqItemFlags = (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
-                                     OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
+                            OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
     status = knvlinkRegisterInbandCallback(pGpu,
                                            pKernelNvlink,
                                            &inbandMsgCbParams);
@@ -758,30 +554,23 @@ gpuFabricProbeStart
         goto fail;
     }
 
-    //
-    // Queue the probe work item directly (without timer delay).
-    // A small timer delay is likely to fire and be unable to acquire the lock
-    // (because we'll still be holding it). The timer event will be used if the
-    // probe work item needs to be rescheduled with a delay.
-    //
-    status = _gpuFabricProbeScheduleWq(pGpu, pTmr, pGpuFabricProbeInfo->pTmrEvent);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u failed to schedule probe work item (status = 0x%x)\n",
-                  gpuGetInstance(pGpu), status);  
-        goto fail;
-    }
+    pGpuFabricProbeInfoKernel->bwMode = gpumgrGetGpuNvlinkBwMode();
+    params.bwMode = pGpuFabricProbeInfoKernel->bwMode;
+
+    // Send IOCTL to start probe
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            pRmApi->Control(pRmApi,
+                            pGpu->hInternalClient,
+                            pGpu->hInternalSubdevice,
+                            NV2080_CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE,
+                            &params, sizeof(params)),
+            fail);
 
     return NV_OK;
 
 fail:
-    if (pGpuFabricProbeInfo->pTmrEvent != NULL)
-    {
-        tmrEventDestroy(pTmr, pGpuFabricProbeInfo->pTmrEvent);
-    }
-
-    portMemFree(pGpuFabricProbeInfo);
-    pGpu->pGpuFabricProbeInfo = NULL;
+    portMemFree(pGpuFabricProbeInfoKernel);
+    pGpu->pGpuFabricProbeInfoKernel = NULL;
 
     return status;
 }
@@ -789,39 +578,39 @@ fail:
 void
 gpuFabricProbeStop
 (
-    GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel
 )
 {
     OBJGPU *pGpu;
-    OBJTMR *pTmr;
     KernelNvlink *pKernelNvlink;
+    RM_API *pRmApi;
 
-    if (pGpuFabricProbeInfo == NULL)
+    if (pGpuFabricProbeInfoKernel == NULL)
     {
         return;
     }
 
-    pGpu = pGpuFabricProbeInfo->pGpu;
+    pGpu = pGpuFabricProbeInfoKernel->pGpu;
 
     NV_ASSERT_OR_RETURN_VOID(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
-    pTmr = GPU_GET_TIMER(pGpu);
     pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-
     NV_ASSERT(pKernelNvlink != NULL);
 
     // Unregister the receive callback
     NV_ASSERT_OK(knvlinkUnregisterInbandCallback(pGpu, pKernelNvlink,
                  NVLINK_INBAND_MSG_TYPE_GPU_PROBE_RSP));
 
-    if (pGpuFabricProbeInfo->pTmrEvent != NULL)
-    {
-        tmrEventDestroy(pTmr, pGpuFabricProbeInfo->pTmrEvent);
-    }
+    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-    portMemFree(pGpuFabricProbeInfo);
+    NV_ASSERT_OK(pRmApi->Control(pRmApi,
+                                 pGpu->hInternalClient,
+                                 pGpu->hInternalSubdevice,
+                                 NV2080_CTRL_CMD_INTERNAL_GPU_STOP_FABRIC_PROBE,
+                                 NULL, 0));
 
-    pGpu->pGpuFabricProbeInfo = NULL;
+    portMemFree(pGpuFabricProbeInfoKernel);
+    pGpu->pGpuFabricProbeInfoKernel = NULL;
 }
 
 NvBool
@@ -843,4 +632,174 @@ gpuFabricProbeIsSupported
     }
 
     return NV_TRUE;
+}
+
+static void
+_gpuFabricProbeInvalidate
+(
+    OBJGPU *pGpu
+)
+{
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel =
+                                    pGpu->pGpuFabricProbeInfoKernel;
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+
+    pGpuFabricProbeInfoKernel->bProbeRespRcvd = NV_FALSE;
+
+    if (pKernelNvlink != NULL)
+        knvlinkClearUniqueFabricBaseAddress_HAL(pGpu, pKernelNvlink);
+
+    if (pFabricVAS != NULL)
+        fabricvaspaceClearUCRange(pFabricVAS);
+}
+
+#define GPU_FABRIC_CHECK_BW_MODE(fmCaps, mode)                    \
+    do                                                            \
+    {                                                             \
+        if ((fmCaps & NVLINK_INBAND_FM_CAPS_BW_MODE_##mode) == 0) \
+            return NV_ERR_NOT_SUPPORTED;                          \
+    } while (0)
+
+static NV_STATUS
+_gpuFabricProbeUpdateBwMode
+(
+    OBJGPU *pGpu,
+    NvU8 mode
+)
+{
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel =
+                                                pGpu->pGpuFabricProbeInfoKernel;
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+    pGpuFabricProbeInfoKernel->bwMode = mode;
+
+    gpuFabricProbeSuspend(pGpuFabricProbeInfoKernel);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+          pRmApi->Control(pRmApi,
+                          pGpu->hInternalClient,
+                          pGpu->hInternalSubdevice,
+                          NV2080_CTRL_CMD_INTERNAL_GPU_INVALIDATE_FABRIC_PROBE,
+                          NULL, 0));
+
+    _gpuFabricProbeInvalidate(pGpu);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, gpuFabricProbeResume(pGpuFabricProbeInfoKernel));
+
+    return NV_OK;
+}
+
+NV_STATUS
+gpuFabricProbeSetBwMode
+(
+    NvU8 mode
+)
+{
+    NvU32 attachedGpuCount;
+    NvU32 attachedGpuMask;
+    NV_STATUS status;
+    NvU32 gpuIndex;
+    OBJGPU *pGpu;
+
+    status = gpumgrGetGpuAttachInfo(&attachedGpuCount, &attachedGpuMask);
+    if (status != NV_OK)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    // Check if all GPUs belong to NvSwitch
+    gpuIndex = 0;
+    for(pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex);
+        pGpu != NULL;
+        pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex))
+    {
+        if (!gpuFabricProbeIsSupported(pGpu))
+        {
+            // For directed connected system
+            return NV_OK;
+        }
+    }
+
+    //
+    // Check if all GPUs received fabric probe and
+    //       if the mode is supported on all GPUs.
+    //
+    gpuIndex = 0;
+    for(pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex);
+        pGpu != NULL;
+        pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex))
+    {
+        if (!gpuFabricProbeIsReceived(pGpu->pGpuFabricProbeInfoKernel) ||
+            !gpuFabricProbeIsSuccess(pGpu->pGpuFabricProbeInfoKernel))
+        {
+            return NV_ERR_NOT_READY;
+        }
+
+        NvU64 fmCaps = pGpu->pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.fmCaps;
+        switch(mode)
+        {
+            case GPU_NVLINK_BW_MODE_MIN:
+                GPU_FABRIC_CHECK_BW_MODE(fmCaps, MIN);
+                break;
+            case GPU_NVLINK_BW_MODE_HALF:
+                GPU_FABRIC_CHECK_BW_MODE(fmCaps, HALF);
+                break;
+            case GPU_NVLINK_BW_MODE_3QUARTER:
+                GPU_FABRIC_CHECK_BW_MODE(fmCaps, 3QUARTER);
+                break;
+            case GPU_NVLINK_BW_MODE_OFF:
+                return NV_OK; // Don't need to ask FM
+            default:
+                break;
+        }
+    }
+
+    gpuIndex = 0;
+    for(pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex);
+        pGpu != NULL;
+        pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex))
+    {
+        FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS,
+                                                 FABRIC_VASPACE);
+        if (pFabricVAS == NULL)
+        {
+            continue;
+        }
+
+        if (fabricvaspaceIsInUse(pFabricVAS))
+        {
+            return NV_ERR_STATE_IN_USE;
+        }
+    }
+
+    gpuIndex = 0;
+    for(pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex);
+        pGpu != NULL;
+        pGpu = gpumgrGetNextGpu(attachedGpuMask, &gpuIndex))
+    {
+        status = _gpuFabricProbeUpdateBwMode(pGpu, mode);
+        if (status != NV_OK)
+        {
+            return status;
+        }
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+gpuFabricProbeGetlinkMaskToBeReduced
+(
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
+    NvU32 *linkMaskToBeReduced
+)
+{
+    NV_STATUS status;
+
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
+
+    *linkMaskToBeReduced = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.linkMaskToBeReduced;
+    return NV_OK;
 }

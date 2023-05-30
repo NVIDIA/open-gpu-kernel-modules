@@ -58,7 +58,6 @@ struct UserModeApi {
     struct RmResource *__nvoc_pbase_RmResource;
     struct Memory *__nvoc_pbase_Memory;
     struct UserModeApi *__nvoc_pbase_UserModeApi;
-    NV_STATUS (*__usrmodeConstructHal__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
     NvBool (*__usrmodeCanCopy__)(struct UserModeApi *);
     NV_STATUS (*__usrmodeCheckMemInterUnmap__)(struct UserModeApi *, NvBool);
     NvBool (*__usrmodeShareCallback__)(struct UserModeApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
@@ -78,7 +77,7 @@ struct UserModeApi {
     NV_STATUS (*__usrmodeControlFilter__)(struct UserModeApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__usrmodeControlSerialization_Prologue__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__usrmodeIsReady__)(struct UserModeApi *, NvBool);
-    NV_STATUS (*__usrmodeCheckCopyPermissions__)(struct UserModeApi *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__usrmodeCheckCopyPermissions__)(struct UserModeApi *, struct OBJGPU *, struct Device *);
     void (*__usrmodePreDestruct__)(struct UserModeApi *);
     NV_STATUS (*__usrmodeIsDuplicate__)(struct UserModeApi *, NvHandle, NvBool *);
     void (*__usrmodeControlSerialization_Epilogue__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -114,8 +113,6 @@ NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONT
 #define __objCreate_UserModeApi(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_UserModeApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
-#define usrmodeConstructHal(pUserModeApi, pCallContext, pParams) usrmodeConstructHal_DISPATCH(pUserModeApi, pCallContext, pParams)
-#define usrmodeConstructHal_HAL(pUserModeApi, pCallContext, pParams) usrmodeConstructHal_DISPATCH(pUserModeApi, pCallContext, pParams)
 #define usrmodeCanCopy(pUserModeApi) usrmodeCanCopy_DISPATCH(pUserModeApi)
 #define usrmodeCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) usrmodeCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define usrmodeShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) usrmodeShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
@@ -135,20 +132,12 @@ NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONT
 #define usrmodeControlFilter(pResource, pCallContext, pParams) usrmodeControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define usrmodeControlSerialization_Prologue(pResource, pCallContext, pParams) usrmodeControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define usrmodeIsReady(pMemory, bCopyConstructorContext) usrmodeIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define usrmodeCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) usrmodeCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define usrmodeCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) usrmodeCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define usrmodePreDestruct(pResource) usrmodePreDestruct_DISPATCH(pResource)
 #define usrmodeIsDuplicate(pMemory, hMemory, pDuplicate) usrmodeIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define usrmodeControlSerialization_Epilogue(pResource, pCallContext, pParams) usrmodeControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define usrmodeMap(pMemory, pCallContext, pParams, pCpuMapping) usrmodeMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
 #define usrmodeAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) usrmodeAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-NV_STATUS usrmodeConstructHal_GV100(struct UserModeApi *pUserModeApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
-NV_STATUS usrmodeConstructHal_GH100(struct UserModeApi *pUserModeApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
-static inline NV_STATUS usrmodeConstructHal_DISPATCH(struct UserModeApi *pUserModeApi, CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    return pUserModeApi->__usrmodeConstructHal__(pUserModeApi, pCallContext, pParams);
-}
-
 NvBool usrmodeCanCopy_IMPL(struct UserModeApi *pUserModeApi);
 
 static inline NvBool usrmodeCanCopy_DISPATCH(struct UserModeApi *pUserModeApi) {
@@ -227,8 +216,8 @@ static inline NV_STATUS usrmodeIsReady_DISPATCH(struct UserModeApi *pMemory, NvB
     return pMemory->__usrmodeIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS usrmodeCheckCopyPermissions_DISPATCH(struct UserModeApi *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__usrmodeCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS usrmodeCheckCopyPermissions_DISPATCH(struct UserModeApi *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__usrmodeCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void usrmodePreDestruct_DISPATCH(struct UserModeApi *pResource) {

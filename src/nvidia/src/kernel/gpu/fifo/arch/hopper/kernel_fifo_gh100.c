@@ -24,6 +24,7 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "kernel/gpu/mem_mgr/virt_mem_allocator.h"
+#include "gpu/mem_mgr/mem_mgr.h"
 
 /*!
  * Checks the USERD and GPFIFO/PushBuffer location attributes
@@ -77,38 +78,49 @@ kfifoGetCtxBufferMapFlags_GH100
     return;
 }
 
-/*!
- * @brief Get offset to create GMMU internal MMIO mapping with for access to VF Pages.
+/*
+ * Allocate Memory Descriptors for BAR1 VF pages
  *
- * @param[in]   pGpu              OBJGPU  pointer
- * @param[in]   pKernelFifo       KernelFifo pointer
- * @param[in]   bPriv             Whether PRIV offset or regular VF offset is desired
+ * @param[in]   pGpu               OBJGPU pointer
+ * @param[in]   pKernelFifo        KernelFifo pointer
  */
-NvU64
-kfifoGetMmioUsermodeOffset_GH100
+NV_STATUS
+kfifoConstructUsermodeMemdescs_GH100
 (
     OBJGPU     *pGpu,
-    KernelFifo *pKernelFifo,
-    NvBool      bPriv
+    KernelFifo *pKernelFifo
 )
 {
-    return bPriv ? DRF_BASE(NV_VIRTUAL_FUNCTION_PRIV) :  DRF_BASE(NV_VIRTUAL_FUNCTION);
-}
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    NvU32 attr                    = 0;
+    NvU32 attr2                   = 0;
+    NvU32 i                       = 0;
+    NV_STATUS status              = NV_OK;
 
-/*!
- * @brief Get size of either one of the VF pages, for use with GMMU internal MMIO mapping.
- *
- * @param[in]   pGpu              OBJGPU  pointer
- * @param[in]   pKernelFifo       KernelFifo pointer
- * @param[in]   bPriv             Whether PRIV size or regular VF size is desired
- */
-NvU64
-kfifoGetMmioUsermodeSize_GH100
-(
-    OBJGPU     *pGpu,
-    KernelFifo *pKernelFifo,
-    NvBool      bPriv
-)
-{
-    return bPriv ? DRF_SIZE(NV_VIRTUAL_FUNCTION_PRIV) : DRF_SIZE(NV_VIRTUAL_FUNCTION);
+    attr = FLD_SET_DRF(OS32, _ATTR,  _PHYSICALITY, _CONTIGUOUS, attr);
+    attr = FLD_SET_DRF(OS32, _ATTR,  _COHERENCY, _CACHED, attr);
+
+    attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO, attr2 );
+
+    for(i = 0; i < 2; i++)
+    {
+        NvBool bPriv = (i==0);
+        NvU64 offset = bPriv ? DRF_BASE(NV_VIRTUAL_FUNCTION_PRIV) :  DRF_BASE(NV_VIRTUAL_FUNCTION);
+        NvU64 size   = bPriv ? DRF_SIZE(NV_VIRTUAL_FUNCTION_PRIV) : DRF_SIZE(NV_VIRTUAL_FUNCTION);
+        MEMORY_DESCRIPTOR **ppMemDesc = bPriv ? &(pKernelFifo->pBar1PrivVF) : &(pKernelFifo->pBar1VF);
+        NV_ASSERT_OK_OR_GOTO(status,
+            memCreateMemDesc(pGpu, ppMemDesc, ADDR_SYSMEM, offset, size, attr, attr2),
+            err);
+        memdescSetPteKind(*ppMemDesc, memmgrGetMessageKind_HAL(pGpu, pMemoryManager));
+        memdescSetFlag(*ppMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1, NV_TRUE);
+    }
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        kfifoConstructUsermodeMemdescs_GV100(pGpu, pKernelFifo),
+        err);
+    return NV_OK;
+err:
+    memdescDestroy(pKernelFifo->pBar1VF);
+    memdescDestroy(pKernelFifo->pBar1PrivVF);
+    return status;
 }

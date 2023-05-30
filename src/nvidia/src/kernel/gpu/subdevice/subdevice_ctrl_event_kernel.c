@@ -192,7 +192,7 @@ subdeviceCtrlCmdEventSetMemoryNotifies_IMPL
     NV_CHECK_OK_OR_RETURN(LEVEL_SILENT,
         memGetByHandle(pClient, pSetMemoryNotifiesParams->hMemory, &pMemory));
 
-    if (pMemory->pMemDesc->Size < NV_SIZEOF32(NvNotification) * NV2080_NOTIFIERS_MAXCOUNT)
+    if (pMemory->pMemDesc->Size < sizeof(NvNotification) * NV2080_NOTIFIERS_MAXCOUNT)
     {
         return NV_ERR_INVALID_LIMIT;
     }

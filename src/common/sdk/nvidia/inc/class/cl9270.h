@@ -26,7 +26,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/cl9270.finn
+// Source file:      class/cl9270.finn
 //
 
 #define NV9270_DISPLAY (0x9270U) /* finn: Evaluated from "NV9270_ALLOCATION_PARAMETERS_MESSAGE_ID" */

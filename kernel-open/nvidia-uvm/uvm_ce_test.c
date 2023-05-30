@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -31,6 +31,7 @@
 #include "uvm_va_space.h"
 #include "uvm_rm_mem.h"
 #include "uvm_mem.h"
+#include "uvm_gpu.h"
 
 #define CE_TEST_MEM_SIZE (2 * 1024 * 1024)
 #define CE_TEST_MEM_END_SIZE 32
@@ -53,6 +54,11 @@ static NV_STATUS test_non_pipelined(uvm_gpu_t *gpu)
     uvm_push_t push;
     bool is_proxy;
 
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
     status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, CE_TEST_MEM_SIZE, 0, &host_mem);
     TEST_CHECK_GOTO(status == NV_OK, done);
     host_ptr = (NvU32 *)uvm_rm_mem_get_cpu_va(host_mem);
@@ -67,7 +73,7 @@ static NV_STATUS test_non_pipelined(uvm_gpu_t *gpu)
     TEST_CHECK_GOTO(status == NV_OK, done);
 
     is_proxy = uvm_channel_is_proxy(push.channel);
-    host_mem_gpu_va = uvm_rm_mem_get_gpu_va(host_mem, gpu, is_proxy);
+    host_mem_gpu_va = uvm_rm_mem_get_gpu_va(host_mem, gpu, is_proxy).address;
 
     // All of the following CE transfers are done from a single (L)CE and
     // disabling pipelining is enough to order them when needed. Only push_end
@@ -75,7 +81,7 @@ static NV_STATUS test_non_pipelined(uvm_gpu_t *gpu)
 
     // Initialize to a bad value
     for (i = 0; i < CE_TEST_MEM_COUNT; ++i) {
-        mem_gpu_va = uvm_rm_mem_get_gpu_va(mem[i], gpu, is_proxy);
+        mem_gpu_va = uvm_rm_mem_get_gpu_va(mem[i], gpu, is_proxy).address;
 
         uvm_push_set_flag(&push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
         uvm_push_set_flag(&push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
@@ -84,7 +90,7 @@ static NV_STATUS test_non_pipelined(uvm_gpu_t *gpu)
 
     // Set the first buffer to 1
     uvm_push_set_flag(&push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
-    mem_gpu_va = uvm_rm_mem_get_gpu_va(mem[0], gpu, is_proxy);
+    mem_gpu_va = uvm_rm_mem_get_gpu_va(mem[0], gpu, is_proxy).address;
     gpu->parent->ce_hal->memset_v_4(&push, mem_gpu_va, 1, CE_TEST_MEM_SIZE);
 
     for (i = 0; i < CE_TEST_MEM_COUNT; ++i) {
@@ -92,9 +98,9 @@ static NV_STATUS test_non_pipelined(uvm_gpu_t *gpu)
         if (dst == CE_TEST_MEM_COUNT)
             dst_va = host_mem_gpu_va;
         else
-            dst_va = uvm_rm_mem_get_gpu_va(mem[dst], gpu, is_proxy);
+            dst_va = uvm_rm_mem_get_gpu_va(mem[dst], gpu, is_proxy).address;
 
-        src_va = uvm_rm_mem_get_gpu_va(mem[i], gpu, is_proxy);
+        src_va = uvm_rm_mem_get_gpu_va(mem[i], gpu, is_proxy).address;
 
         // The first memcpy needs to be non-pipelined as otherwise the previous
         // memset/memcpy to the source may not be done yet.
@@ -168,6 +174,11 @@ static NV_STATUS test_membar(uvm_gpu_t *gpu)
     uvm_push_t push;
     NvU32 value;
 
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
     status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, sizeof(NvU32), 0, &host_mem);
     TEST_CHECK_GOTO(status == NV_OK, done);
     host_ptr = (NvU32 *)uvm_rm_mem_get_cpu_va(host_mem);
@@ -176,7 +187,7 @@ static NV_STATUS test_membar(uvm_gpu_t *gpu)
     status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_TO_CPU, &push, "Membar test");
     TEST_CHECK_GOTO(status == NV_OK, done);
 
-    host_mem_gpu_va = uvm_rm_mem_get_gpu_va(host_mem, gpu, uvm_channel_is_proxy(push.channel));
+    host_mem_gpu_va = uvm_rm_mem_get_gpu_va(host_mem, gpu, uvm_channel_is_proxy(push.channel)).address;
 
     for (i = 0; i < REDUCTIONS; ++i) {
         uvm_push_set_flag(&push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
@@ -327,12 +338,27 @@ static NV_STATUS test_memcpy_and_memset_inner(uvm_gpu_t *gpu,
         return NV_OK;
     }
 
+    if (!gpu->parent->ce_hal->memcopy_is_valid(&push, dst, src)) {
+        TEST_NV_CHECK_RET(uvm_push_end_and_wait(&push));
+        return NV_OK;
+    }
+
     // The input virtual addresses exist in UVM's internal address space, not
     // the proxy address space
     if (uvm_channel_is_proxy(push.channel)) {
         TEST_NV_CHECK_RET(uvm_push_end_and_wait(&push));
         return NV_ERR_INVALID_STATE;
     }
+
+    // If physical accesses aren't supported, silently convert to virtual to
+    // test the flat mapping.
+    TEST_CHECK_RET(gpu_verif_addr.is_virtual);
+
+    if (!src.is_virtual)
+        src = uvm_gpu_address_copy(gpu, uvm_gpu_phys_address(src.aperture, src.address));
+
+    if (!dst.is_virtual)
+        dst = uvm_gpu_address_copy(gpu, uvm_gpu_phys_address(dst.aperture, dst.address));
 
     // Memset src with the appropriate element size, then memcpy to dst and from
     // dst to the verif location (physical sysmem).
@@ -383,17 +409,17 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
     uvm_mem_t *gpu_uvm_mem = NULL;
     uvm_rm_mem_t *sys_rm_mem = NULL;
     uvm_rm_mem_t *gpu_rm_mem = NULL;
-    uvm_gpu_address_t gpu_addresses[4];
-    NvU64 gpu_va;
-    size_t size;
+    uvm_gpu_address_t gpu_addresses[4] = {0};
+    size_t size = gpu->big_page.internal_size;
     static const size_t element_sizes[] = {1, 4, 8};
     const size_t iterations = 4;
     size_t i, j, k, s;
     uvm_mem_alloc_params_t mem_params = {0};
 
-    size = gpu->big_page.internal_size;
-
-    TEST_NV_CHECK_GOTO(uvm_mem_alloc_sysmem_and_map_cpu_kernel(size, current->mm, &verif_mem), done);
+    if (uvm_conf_computing_mode_enabled(gpu))
+        TEST_NV_CHECK_GOTO(uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(size, gpu, current->mm, &verif_mem), done);
+    else
+        TEST_NV_CHECK_GOTO(uvm_mem_alloc_sysmem_and_map_cpu_kernel(size, current->mm, &verif_mem), done);
     TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(verif_mem, gpu), done);
 
     gpu_verif_addr = uvm_mem_gpu_address_virtual_kernel(verif_mem, gpu);
@@ -432,18 +458,27 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
     // Virtual address (in UVM's internal address space) backed by vidmem
     TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_GPU, size, 0, &gpu_rm_mem), done);
     is_proxy_va_space = false;
-    gpu_va = uvm_rm_mem_get_gpu_va(gpu_rm_mem, gpu, is_proxy_va_space);
-    gpu_addresses[2] = uvm_gpu_address_virtual(gpu_va);
+    gpu_addresses[2] = uvm_rm_mem_get_gpu_va(gpu_rm_mem, gpu, is_proxy_va_space);
 
     // Virtual address (in UVM's internal address space) backed by sysmem
     TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_SYS, size, 0, &sys_rm_mem), done);
-    gpu_va = uvm_rm_mem_get_gpu_va(sys_rm_mem, gpu, is_proxy_va_space);
-    gpu_addresses[3] = uvm_gpu_address_virtual(gpu_va);
+    gpu_addresses[3] = uvm_rm_mem_get_gpu_va(sys_rm_mem, gpu, is_proxy_va_space);
 
     for (i = 0; i < iterations; ++i) {
         for (j = 0; j < ARRAY_SIZE(gpu_addresses); ++j) {
             for (k = 0; k < ARRAY_SIZE(gpu_addresses); ++k) {
                 for (s = 0; s < ARRAY_SIZE(element_sizes); s++) {
+                  // Because gpu_verif_addr is in sysmem, when the Confidential
+                  // Computing feature is enabled, only the following cases are
+                  // valid.
+                  //
+                  // TODO: Bug 3839176: the test partially waived on
+                  // Confidential Computing because it assumes that GPU can
+                  // access system memory without using encryption.
+                  if (uvm_conf_computing_mode_enabled(gpu) &&
+                      !(gpu_addresses[k].is_unprotected && gpu_addresses[j].is_unprotected)) {
+                        continue;
+                  }
                     TEST_NV_CHECK_GOTO(test_memcpy_and_memset_inner(gpu,
                                                                     gpu_addresses[k],
                                                                     gpu_addresses[j],
@@ -514,6 +549,11 @@ static NV_STATUS test_semaphore_reduction_inc(uvm_gpu_t *gpu)
     // Semaphore reduction needs 1 word (4 bytes).
     const size_t size = sizeof(NvU32);
 
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
     status = test_semaphore_alloc_sem(gpu, size, &mem);
     TEST_CHECK_RET(status == NV_OK);
 
@@ -560,6 +600,11 @@ static NV_STATUS test_semaphore_release(uvm_gpu_t *gpu)
 
     // Semaphore release needs 1 word (4 bytes).
     const size_t size = sizeof(NvU32);
+
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
 
     status = test_semaphore_alloc_sem(gpu, size, &mem);
     TEST_CHECK_RET(status == NV_OK);
@@ -610,6 +655,11 @@ static NV_STATUS test_semaphore_timestamp(uvm_gpu_t *gpu)
     // The semaphore is 4 words long (16 bytes).
     const size_t size = 16;
 
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
     status = test_semaphore_alloc_sem(gpu, size, &mem);
     TEST_CHECK_RET(status == NV_OK);
 
@@ -646,6 +696,517 @@ done:
     return status;
 }
 
+static bool mem_match(uvm_mem_t *mem1, uvm_mem_t *mem2, size_t size)
+{
+    void *mem1_addr;
+    void *mem2_addr;
+
+    UVM_ASSERT(uvm_mem_is_sysmem(mem1));
+    UVM_ASSERT(uvm_mem_is_sysmem(mem2));
+    UVM_ASSERT(mem1->size >= size);
+    UVM_ASSERT(mem2->size >= size);
+
+    mem1_addr = uvm_mem_get_cpu_addr_kernel(mem1);
+    mem2_addr = uvm_mem_get_cpu_addr_kernel(mem2);
+
+    return !memcmp(mem1_addr, mem2_addr, size);
+}
+
+static NV_STATUS zero_vidmem(uvm_mem_t *mem)
+{
+    uvm_push_t push;
+    uvm_gpu_address_t gpu_address;
+    uvm_gpu_t *gpu = mem->backing_gpu;
+
+    UVM_ASSERT(uvm_mem_is_vidmem(mem));
+
+    TEST_NV_CHECK_RET(uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, &push, "zero vidmem"));
+
+    gpu_address = uvm_mem_gpu_address_virtual_kernel(mem, gpu);
+    gpu->parent->ce_hal->memset_1(&push, gpu_address, 0, mem->size);
+
+    TEST_NV_CHECK_RET(uvm_push_end_and_wait(&push));
+
+    return NV_OK;
+}
+
+static void write_range_cpu(uvm_mem_t *mem, NvU64 base_val)
+{
+    NvU64 *mem_cpu_va;
+    unsigned i;
+
+    UVM_ASSERT(uvm_mem_is_sysmem(mem));
+    UVM_ASSERT(IS_ALIGNED(mem->size, sizeof(*mem_cpu_va)));
+
+    mem_cpu_va = (NvU64 *) uvm_mem_get_cpu_addr_kernel(mem);
+
+    for (i = 0; i < (mem->size / sizeof(*mem_cpu_va)); i++)
+        mem_cpu_va[i] = base_val++;
+}
+
+static NV_STATUS alloc_vidmem_protected(uvm_gpu_t *gpu, uvm_mem_t **mem, size_t size)
+{
+    NV_STATUS status;
+
+    UVM_ASSERT(mem);
+
+    *mem = NULL;
+
+    TEST_NV_CHECK_RET(uvm_mem_alloc_vidmem_protected(size, gpu, mem));
+    TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(*mem, gpu), err);
+    TEST_NV_CHECK_GOTO(zero_vidmem(*mem), err);
+
+    return NV_OK;
+
+err:
+    uvm_mem_free(*mem);
+    return status;
+}
+
+static NV_STATUS alloc_sysmem_unprotected(uvm_gpu_t *gpu, uvm_mem_t **mem, size_t size)
+{
+    NV_STATUS status;
+
+    UVM_ASSERT(mem);
+
+    *mem = NULL;
+
+    TEST_NV_CHECK_RET(uvm_mem_alloc_sysmem_dma(size, gpu, NULL, mem));
+    TEST_NV_CHECK_GOTO(uvm_mem_map_cpu_kernel(*mem), err);
+    TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(*mem, gpu), err);
+
+    memset(uvm_mem_get_cpu_addr_kernel(*mem), 0, (*mem)->size);
+
+    return NV_OK;
+
+err:
+    uvm_mem_free(*mem);
+    return status;
+}
+
+static void cpu_encrypt(uvm_channel_t *channel,
+                        uvm_mem_t *dst_mem,
+                        uvm_mem_t *src_mem,
+                        uvm_mem_t *auth_tag_mem,
+                        size_t size,
+                        NvU32 copy_size)
+{
+    size_t offset = 0;
+    char *src_plain = (char *) uvm_mem_get_cpu_addr_kernel(src_mem);
+    char *dst_cipher = (char *) uvm_mem_get_cpu_addr_kernel(dst_mem);
+    char *auth_tag_buffer = (char *) uvm_mem_get_cpu_addr_kernel(auth_tag_mem);
+
+    while (offset < size) {
+        uvm_conf_computing_cpu_encrypt(channel, dst_cipher, src_plain, NULL, copy_size, auth_tag_buffer);
+
+        offset += copy_size;
+        dst_cipher += copy_size;
+        src_plain += copy_size;
+        auth_tag_buffer += UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+    }
+}
+
+static void cpu_acquire_encryption_ivs(uvm_channel_t *channel,
+                                       size_t size,
+                                       NvU32 copy_size,
+                                       UvmCslIv *ivs)
+{
+    size_t offset = 0;
+    int i = 0;
+
+    for (; offset < size; offset += copy_size)
+        uvm_conf_computing_acquire_encryption_iv(channel, &ivs[i++]);
+}
+
+static void cpu_encrypt_rev(uvm_channel_t *channel,
+                            uvm_mem_t *dst_mem,
+                            uvm_mem_t *src_mem,
+                            uvm_mem_t *auth_tag_mem,
+                            size_t size,
+                            NvU32 copy_size,
+                            UvmCslIv *encrypt_iv)
+{
+    char *src_plain = (char *) uvm_mem_get_cpu_addr_kernel(src_mem);
+    char *dst_cipher = (char *) uvm_mem_get_cpu_addr_kernel(dst_mem);
+    char *auth_tag_buffer = (char *) uvm_mem_get_cpu_addr_kernel(auth_tag_mem);
+    int i;
+
+    // CPU encrypt order is the opposite of the GPU decrypt order
+    for (i = (size / copy_size) - 1; i >= 0; i--) {
+        uvm_conf_computing_cpu_encrypt(channel,
+                                       dst_cipher + i * copy_size,
+                                       src_plain + i * copy_size,
+                                       encrypt_iv + i,
+                                       copy_size,
+                                       auth_tag_buffer + i * UVM_CONF_COMPUTING_AUTH_TAG_SIZE);
+    }
+}
+
+static NV_STATUS cpu_decrypt_in_order(uvm_channel_t *channel,
+                                      uvm_mem_t *dst_mem,
+                                      uvm_mem_t *src_mem,
+                                      const UvmCslIv *decrypt_iv,
+                                      uvm_mem_t *auth_tag_mem,
+                                      size_t size,
+                                      NvU32 copy_size)
+{
+    size_t i;
+    char *dst_plain = (char *) uvm_mem_get_cpu_addr_kernel(dst_mem);
+    char *src_cipher = (char *) uvm_mem_get_cpu_addr_kernel(src_mem);
+    char *auth_tag_buffer = (char *) uvm_mem_get_cpu_addr_kernel(auth_tag_mem);
+
+    for (i = 0; i < size / copy_size; i++) {
+        TEST_NV_CHECK_RET(uvm_conf_computing_cpu_decrypt(channel,
+                                                         dst_plain + i * copy_size,
+                                                         src_cipher + i * copy_size,
+                                                         decrypt_iv + i,
+                                                         copy_size,
+                                                         auth_tag_buffer + i * UVM_CONF_COMPUTING_AUTH_TAG_SIZE));
+    }
+
+    return NV_OK;
+}
+static NV_STATUS cpu_decrypt_out_of_order(uvm_channel_t *channel,
+                                          uvm_mem_t *dst_mem,
+                                          uvm_mem_t *src_mem,
+                                          const UvmCslIv *decrypt_iv,
+                                          uvm_mem_t *auth_tag_mem,
+                                          size_t size,
+                                          NvU32 copy_size)
+{
+    int i;
+    char *dst_plain = (char *) uvm_mem_get_cpu_addr_kernel(dst_mem);
+    char *src_cipher = (char *) uvm_mem_get_cpu_addr_kernel(src_mem);
+    char *auth_tag_buffer = (char *) uvm_mem_get_cpu_addr_kernel(auth_tag_mem);
+
+    UVM_ASSERT((size / copy_size) <= INT_MAX);
+
+    // CPU decrypt order is the opposite of the GPU decrypt order
+    for (i = (size / copy_size) - 1; i >= 0; i--) {
+        TEST_NV_CHECK_RET(uvm_conf_computing_cpu_decrypt(channel,
+                                                         dst_plain + i * copy_size,
+                                                         src_cipher + i * copy_size,
+                                                         decrypt_iv + i,
+                                                         copy_size,
+                                                         auth_tag_buffer + i * UVM_CONF_COMPUTING_AUTH_TAG_SIZE));
+    }
+
+    return NV_OK;
+}
+
+// GPU address to use as source or destination in CE decrypt/encrypt operations.
+// If the uvm_mem backing storage is contiguous in the [offset, offset + size)
+// interval, the physical address gets priority over the virtual counterpart.
+static uvm_gpu_address_t gpu_address(uvm_mem_t *mem, uvm_gpu_t *gpu, NvU64 offset, NvU32 size)
+{
+    uvm_gpu_address_t gpu_virtual_address;
+
+    if (uvm_mem_is_physically_contiguous(mem, offset, size))
+        return uvm_mem_gpu_address_physical(mem, gpu, offset, size);
+
+    gpu_virtual_address = uvm_mem_gpu_address_virtual_kernel(mem, gpu);
+    gpu_virtual_address.address += offset;
+
+    return gpu_virtual_address;
+}
+
+// Automatically get the correct address for the authentication tag. The
+// addressing mode of the tag should match that of the reference address
+// (destination pointer for GPU encrypt, source pointer for GPU encrypt)
+static uvm_gpu_address_t auth_tag_gpu_address(uvm_mem_t *auth_tag_mem,
+                                              uvm_gpu_t *gpu,
+                                              size_t offset,
+                                              uvm_gpu_address_t reference)
+{
+    uvm_gpu_address_t auth_tag_gpu_address;
+
+    if (!reference.is_virtual)
+        return uvm_mem_gpu_address_physical(auth_tag_mem, gpu, offset, UVM_CONF_COMPUTING_AUTH_TAG_SIZE);
+
+    auth_tag_gpu_address = uvm_mem_gpu_address_virtual_kernel(auth_tag_mem, gpu);
+    auth_tag_gpu_address.address += offset;
+
+    return auth_tag_gpu_address;
+}
+
+// Note: no membar is issued in any of the GPU transfers (encryptions)
+static void gpu_encrypt(uvm_push_t *push,
+                        uvm_mem_t *dst_mem,
+                        uvm_mem_t *src_mem,
+                        uvm_mem_t *auth_tag_mem,
+                        UvmCslIv *decrypt_iv,
+                        size_t size,
+                        NvU32 copy_size)
+{
+    size_t i;
+    size_t num_iterations = size / copy_size;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+
+    for (i = 0; i < num_iterations; i++) {
+        uvm_gpu_address_t dst_cipher = gpu_address(dst_mem, gpu, i * copy_size, copy_size);
+        uvm_gpu_address_t src_plain = gpu_address(src_mem, gpu, i * copy_size, copy_size);
+        uvm_gpu_address_t auth_tag = auth_tag_gpu_address(auth_tag_mem,
+                                                          gpu,
+                                                          i * UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                                          dst_cipher);
+
+        uvm_conf_computing_log_gpu_encryption(push->channel, decrypt_iv);
+
+        if (i > 0)
+            uvm_push_set_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
+
+        uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+
+        gpu->parent->ce_hal->encrypt(push, dst_cipher, src_plain, copy_size, auth_tag);
+        decrypt_iv++;
+    }
+}
+
+// Note: no membar is issued in any of the GPU transfers (decryptions)
+static void gpu_decrypt(uvm_push_t *push,
+                        uvm_mem_t *dst_mem,
+                        uvm_mem_t *src_mem,
+                        uvm_mem_t *auth_tag_mem,
+                        size_t size,
+                        NvU32 copy_size)
+{
+    size_t i;
+    size_t num_iterations = size / copy_size;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+
+    for (i = 0; i < num_iterations; i++) {
+        uvm_gpu_address_t dst_plain = gpu_address(dst_mem, gpu, i * copy_size, copy_size);
+        uvm_gpu_address_t src_cipher = gpu_address(src_mem, gpu, i * copy_size, copy_size);
+        uvm_gpu_address_t auth_tag = auth_tag_gpu_address(auth_tag_mem,
+                                                          gpu,
+                                                          i * UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                                          src_cipher);
+
+        if (i > 0)
+            uvm_push_set_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
+
+        uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+
+        gpu->parent->ce_hal->decrypt(push, dst_plain, src_cipher, copy_size, auth_tag);
+    }
+}
+
+static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu,
+                                           uvm_channel_type_t decrypt_channel_type,
+                                           uvm_channel_type_t encrypt_channel_type,
+                                           size_t size,
+                                           NvU32 copy_size,
+                                           bool decrypt_in_order,
+                                           bool encrypt_in_order)
+{
+    uvm_push_t push;
+    NvU64 init_value;
+    NV_STATUS status = NV_OK;
+    uvm_mem_t *src_plain = NULL;
+    uvm_mem_t *src_cipher = NULL;
+    uvm_mem_t *dst_cipher = NULL;
+    uvm_mem_t *dst_plain_gpu = NULL;
+    uvm_mem_t *dst_plain = NULL;
+    uvm_mem_t *auth_tag_mem = NULL;
+    size_t auth_tag_buffer_size = (size / copy_size) * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+    UvmCslIv *decrypt_iv = NULL;
+    UvmCslIv *encrypt_iv = NULL;
+    uvm_tracker_t tracker;
+    size_t src_plain_size;
+
+    TEST_CHECK_RET(copy_size <= size);
+    TEST_CHECK_RET(IS_ALIGNED(size, copy_size));
+
+    uvm_tracker_init(&tracker);
+
+    decrypt_iv = uvm_kvmalloc_zero((size / copy_size) * sizeof(UvmCslIv));
+    if (!decrypt_iv) {
+        status = NV_ERR_NO_MEMORY;
+        goto out;
+    }
+
+    encrypt_iv = uvm_kvmalloc_zero((size / copy_size) * sizeof(UvmCslIv));
+    if (!encrypt_iv) {
+        status = NV_ERR_NO_MEMORY;
+        goto out;
+    }
+
+    TEST_NV_CHECK_GOTO(alloc_sysmem_unprotected(gpu, &src_cipher, size), out);
+    TEST_NV_CHECK_GOTO(alloc_vidmem_protected(gpu, &dst_plain_gpu, size), out);
+    TEST_NV_CHECK_GOTO(alloc_sysmem_unprotected(gpu, &dst_cipher, size), out);
+    TEST_NV_CHECK_GOTO(alloc_sysmem_unprotected(gpu, &dst_plain, size), out);
+    TEST_NV_CHECK_GOTO(alloc_sysmem_unprotected(gpu, &auth_tag_mem, auth_tag_buffer_size), out);
+
+    // The plaintext CPU buffer size should fit the initialization value
+    src_plain_size = UVM_ALIGN_UP(size, sizeof(init_value));
+    TEST_NV_CHECK_GOTO(alloc_sysmem_unprotected(gpu, &src_plain, src_plain_size), out);
+
+    // Initialize the plaintext CPU buffer using a value that uniquely
+    // identifies the given inputs
+    TEST_CHECK_GOTO((((NvU64) size) < (1ULL << 63)), out);
+    init_value = ((NvU64) decrypt_in_order << 63) | ((NvU64) size) | ((NvU64) copy_size);
+    write_range_cpu(src_plain, init_value);
+
+    TEST_NV_CHECK_GOTO(uvm_push_begin(gpu->channel_manager,
+                                      decrypt_channel_type,
+                                      &push,
+                                      "CPU > GPU decrypt"),
+                       out);
+
+    // CPU (decrypted) > CPU (encrypted), using CPU, if in-order
+    // acquire IVs if not in-order
+    if (encrypt_in_order)
+        cpu_encrypt(push.channel, src_cipher, src_plain, auth_tag_mem, size, copy_size);
+    else
+        cpu_acquire_encryption_ivs(push.channel, size, copy_size, encrypt_iv);
+
+    // CPU (encrypted) > GPU (decrypted), using GPU
+    gpu_decrypt(&push, dst_plain_gpu, src_cipher, auth_tag_mem, size, copy_size);
+
+    // Use acquired IVs to encrypt in reverse order
+    if (!encrypt_in_order)
+        cpu_encrypt_rev(push.channel, src_cipher, src_plain, auth_tag_mem, size, copy_size, encrypt_iv);
+
+    uvm_push_end(&push);
+    TEST_NV_CHECK_GOTO(uvm_tracker_add_push(&tracker, &push), out);
+
+    // GPU (decrypted) > CPU (encrypted), using GPU
+    TEST_NV_CHECK_GOTO(uvm_push_begin_acquire(gpu->channel_manager,
+                                              encrypt_channel_type,
+                                              &tracker,
+                                              &push,
+                                              "GPU > CPU encrypt"),
+                       out);
+
+    gpu_encrypt(&push, dst_cipher, dst_plain_gpu, auth_tag_mem, decrypt_iv, size, copy_size);
+
+    TEST_NV_CHECK_GOTO(uvm_push_end_and_wait(&push), out);
+
+    TEST_CHECK_GOTO(!mem_match(src_plain, src_cipher, size), out);
+
+    TEST_CHECK_GOTO(!mem_match(dst_cipher, src_plain, size), out);
+
+    // CPU (encrypted) > CPU (decrypted), using CPU
+    if (decrypt_in_order) {
+        TEST_NV_CHECK_GOTO(cpu_decrypt_in_order(push.channel,
+                                                dst_plain,
+                                                dst_cipher,
+                                                decrypt_iv,
+                                                auth_tag_mem,
+                                                size,
+                                                copy_size),
+                           out);
+    }
+    else {
+        TEST_NV_CHECK_GOTO(cpu_decrypt_out_of_order(push.channel,
+                                                    dst_plain,
+                                                    dst_cipher,
+                                                    decrypt_iv,
+                                                    auth_tag_mem,
+                                                    size,
+                                                    copy_size),
+                           out);
+    }
+
+    TEST_CHECK_GOTO(mem_match(src_plain, dst_plain, size), out);
+
+out:
+    uvm_mem_free(auth_tag_mem);
+    uvm_mem_free(dst_plain);
+    uvm_mem_free(dst_plain_gpu);
+    uvm_mem_free(dst_cipher);
+    uvm_mem_free(src_cipher);
+    uvm_mem_free(src_plain);
+    uvm_tracker_deinit(&tracker);
+    uvm_kvfree(decrypt_iv);
+    uvm_kvfree(encrypt_iv);
+
+    return status;
+}
+
+static NV_STATUS test_encryption_decryption(uvm_gpu_t *gpu,
+                                            uvm_channel_type_t decrypt_channel_type,
+                                            uvm_channel_type_t encrypt_channel_type)
+{
+    bool cpu_decrypt_in_order = true;
+    bool cpu_encrypt_in_order = true;
+    size_t size[] = {UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_4K * 2, UVM_PAGE_SIZE_2M};
+    size_t copy_size[] = {UVM_PAGE_SIZE_4K, UVM_PAGE_SIZE_64K, UVM_PAGE_SIZE_2M};
+    unsigned i;
+
+    struct {
+        bool encrypt_in_order;
+        bool decrypt_in_order;
+    } orders[] = {{true, true}, {true, false}, {false, true}, {false, false}};
+
+    struct {
+        size_t size;
+        NvU32 copy_size;
+    } small_sizes[] = {{1, 1}, {3, 1}, {8, 1}, {2, 2}, {8, 4}, {UVM_PAGE_SIZE_4K - 8, 8}, {UVM_PAGE_SIZE_4K + 8, 8}};
+
+    // Only Confidential Computing uses CE encryption/decryption
+    if (!uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
+    // Use a size, and copy size, that are not a multiple of common page sizes.
+    for (i = 0; i < ARRAY_SIZE(small_sizes); ++i) {
+        // Skip tests that need large pushbuffer on WLC. Secure work launch
+        // needs to do at least one decrypt operation so tests that only need
+        // one operation work ok. Tests using more operations might overflow
+        // UVM_MAX_WLC_PUSH_SIZE.
+        if (encrypt_channel_type == UVM_CHANNEL_TYPE_WLC && (small_sizes[i].size / small_sizes[i].copy_size > 1))
+            continue;
+
+        TEST_NV_CHECK_RET(test_cpu_to_gpu_roundtrip(gpu,
+                                                    decrypt_channel_type,
+                                                    encrypt_channel_type,
+                                                    small_sizes[i].size,
+                                                    small_sizes[i].copy_size,
+                                                    cpu_decrypt_in_order,
+                                                    cpu_encrypt_in_order));
+    }
+
+    // Use sizes, and copy sizes, that are a multiple of common page sizes.
+    // This is the most typical usage of encrypt/decrypt in the UVM driver.
+    for (i = 0; i < ARRAY_SIZE(orders); ++i) {
+        unsigned j;
+
+        cpu_encrypt_in_order = orders[i].encrypt_in_order;
+        cpu_decrypt_in_order = orders[i].decrypt_in_order;
+
+        for (j = 0; j < ARRAY_SIZE(size); ++j) {
+            unsigned k;
+
+            for (k = 0; k < ARRAY_SIZE(copy_size); ++k) {
+                if (copy_size[k] > size[j])
+                    continue;
+
+                // Skip tests that need large pushbuffer on WLC. Secure work
+                // launch needs to do at least one decrypt operation so tests
+                // that only need one operation work ok. Tests using more
+                // operations might overflow UVM_MAX_WLC_PUSH_SIZE.
+                if (encrypt_channel_type == UVM_CHANNEL_TYPE_WLC && (size[j] / copy_size[k] > 1))
+                    continue;
+
+                // There is no difference between in-order and out-of-order
+                // decryption when encrypting once.
+                if ((copy_size[k] == size[j]) && !cpu_decrypt_in_order)
+                    continue;
+
+                TEST_NV_CHECK_RET(test_cpu_to_gpu_roundtrip(gpu,
+                                                            decrypt_channel_type,
+                                                            encrypt_channel_type,
+                                                            size[j],
+                                                            copy_size[k],
+                                                            cpu_decrypt_in_order,
+                                                            cpu_encrypt_in_order));
+            }
+        }
+    }
+
+    return NV_OK;
+}
+
 static NV_STATUS test_ce(uvm_va_space_t *va_space, bool skipTimestampTest)
 {
     uvm_gpu_t *gpu;
@@ -660,6 +1221,8 @@ static NV_STATUS test_ce(uvm_va_space_t *va_space, bool skipTimestampTest)
         if (!skipTimestampTest)
             TEST_NV_CHECK_RET(test_semaphore_timestamp(gpu));
 
+        TEST_NV_CHECK_RET(test_encryption_decryption(gpu, UVM_CHANNEL_TYPE_CPU_TO_GPU, UVM_CHANNEL_TYPE_GPU_TO_CPU));
+        TEST_NV_CHECK_RET(test_encryption_decryption(gpu, UVM_CHANNEL_TYPE_WLC, UVM_CHANNEL_TYPE_WLC));
    }
 
     return NV_OK;

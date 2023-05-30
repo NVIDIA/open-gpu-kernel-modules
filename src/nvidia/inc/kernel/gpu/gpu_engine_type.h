@@ -99,6 +99,7 @@ typedef enum
 #define RM_ENGINE_TYPE_NVENC_SIZE 3
 #define RM_ENGINE_TYPE_NVJPEG_SIZE 8
 #define RM_ENGINE_TYPE_NVDEC_SIZE 8
+#define RM_ENGINE_TYPE_OFA_SIZE 1
 #define RM_ENGINE_TYPE_GR_SIZE 8
 
 // Indexed engines
@@ -117,6 +118,15 @@ typedef enum
 #define RM_ENGINE_TYPE_NVJPEG(i)    (RM_ENGINE_TYPE_NVJPEG0+(i))
 #define RM_ENGINE_TYPE_IS_NVJPEG(i)  (((i) >= RM_ENGINE_TYPE_NVJPEG0) && ((i) < RM_ENGINE_TYPE_NVJPEG(RM_ENGINE_TYPE_NVJPEG_SIZE)))
 #define RM_ENGINE_TYPE_NVJPEG_IDX(i) ((i) - RM_ENGINE_TYPE_NVJPEG0)
+
+#define RM_ENGINE_TYPE_OFA(i)      (RM_ENGINE_TYPE_OFA+(i))
+#define RM_ENGINE_TYPE_IS_OFA(i)   (((i) >= RM_ENGINE_TYPE_OFA) && ((i) < RM_ENGINE_TYPE_OFA(RM_ENGINE_TYPE_OFA_SIZE)))
+#define RM_ENGINE_TYPE_OFA_IDX(i)  ((i) - RM_ENGINE_TYPE_OFA)
+
+#define RM_ENGINE_TYPE_IS_VIDEO(i) (RM_ENGINE_TYPE_IS_NVENC(i)  | \
+                                    RM_ENGINE_TYPE_IS_NVDEC(i)  | \
+                                    RM_ENGINE_TYPE_IS_NVJPEG(i) | \
+                                    RM_ENGINE_TYPE_IS_OFA(i))
 
 #define RM_ENGINE_TYPE_GR(i)       (RM_ENGINE_TYPE_GR0 + (i))
 #define RM_ENGINE_TYPE_IS_GR(i)    (((i) >= RM_ENGINE_TYPE_GR0) && ((i) < RM_ENGINE_TYPE_GR(RM_ENGINE_TYPE_GR_SIZE)))

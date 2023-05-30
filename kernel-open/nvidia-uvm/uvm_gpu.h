@@ -46,6 +46,7 @@
 #include "uvm_rb_tree.h"
 #include "uvm_perf_prefetch.h"
 #include "nv-kthread-q.h"
+#include "uvm_conf_computing.h"
 
 // Buffer length to store uvm gpu id, RM device name and gpu uuid.
 #define UVM_GPU_NICE_NAME_BUFFER_LENGTH (sizeof("ID 999: : ") + \
@@ -133,6 +134,12 @@ struct uvm_service_block_context_struct
 
         // This is set if the page migrated to/from the GPU and CPU.
         bool did_migrate;
+
+        // Sequence number used to start a mmu notifier read side critical
+        // section.
+        unsigned long notifier_seq;
+
+        struct vm_fault *vmf;
     } cpu_fault;
 
     //
@@ -168,6 +175,31 @@ struct uvm_service_block_context_struct
     uvm_perf_prefetch_bitmap_tree_t prefetch_bitmap_tree;
 };
 
+typedef struct
+{
+    // Mask of read faulted pages in a UVM_VA_BLOCK_SIZE aligned region of a SAM
+    // VMA. Used for batching ATS faults in a vma.
+    uvm_page_mask_t read_fault_mask;
+
+    // Mask of write faulted pages in a UVM_VA_BLOCK_SIZE aligned region of a
+    // SAM VMA. Used for batching ATS faults in a vma.
+    uvm_page_mask_t write_fault_mask;
+
+    // Mask of successfully serviced pages in a UVM_VA_BLOCK_SIZE aligned region
+    // of a SAM VMA. Used to return ATS fault status.
+    uvm_page_mask_t faults_serviced_mask;
+
+    // Mask of successfully serviced read faults on pages in write_fault_mask.
+    uvm_page_mask_t reads_serviced_mask;
+
+    // Temporary mask used for uvm_page_mask_or_equal. This is used since
+    // bitmap_or_equal() isn't present in all linux kernel versions.
+    uvm_page_mask_t tmp_mask;
+
+    // Client type of the service requestor.
+    uvm_fault_client_type_t client_type;
+} uvm_ats_fault_context_t;
+
 struct uvm_fault_service_batch_context_struct
 {
     // Array of elements fetched from the GPU fault buffer. The number of
@@ -199,6 +231,8 @@ struct uvm_fault_service_batch_context_struct
     NvU32 num_duplicate_faults;
 
     NvU32 num_replays;
+
+    uvm_ats_fault_context_t ats_context;
 
     // Unique id (per-GPU) generated for tools events recording
     NvU32 batch_id;
@@ -338,6 +372,9 @@ typedef struct
         // Unique id (per-GPU) generated for tools events recording
         NvU32 batch_id;
 
+        // Information required to service ATS faults.
+        uvm_ats_fault_context_t ats_context;
+
         // Information required to invalidate stale ATS PTEs from the GPU TLBs
         uvm_ats_fault_invalidate_t ats_invalidate;
     } non_replayable;
@@ -348,22 +385,6 @@ typedef struct
     // Timestamp when prefetch faults where disabled last time
     NvU64 disable_prefetch_faults_timestamp;
 } uvm_fault_buffer_info_t;
-
-typedef struct
-{
-    // True if the platform supports HW coherence (P9) and RM has exposed the
-    // GPU's memory as a NUMA node to the kernel.
-    bool enabled;
-
-    // Range in the system physical address space where the memory of this GPU
-    // is mapped
-    NvU64 system_memory_window_start;
-    NvU64 system_memory_window_end;
-
-    NvU64 memblock_size;
-
-    unsigned node_id;
-} uvm_numa_info_t;
 
 struct uvm_access_counter_service_batch_context_struct
 {
@@ -502,6 +523,10 @@ typedef struct
 
     // Page tables with the mapping.
     uvm_page_table_range_vec_t *range_vec;
+
+    // Used during init to indicate whether the mapping has been fully
+    // initialized.
+    bool ready;
 } uvm_gpu_identity_mapping_t;
 
 // Root chunk mapping
@@ -524,6 +549,7 @@ typedef enum
     UVM_GPU_LINK_NVLINK_2,
     UVM_GPU_LINK_NVLINK_3,
     UVM_GPU_LINK_NVLINK_4,
+    UVM_GPU_LINK_C2C,
     UVM_GPU_LINK_MAX
 } uvm_gpu_link_type_t;
 
@@ -581,6 +607,14 @@ struct uvm_gpu_struct
         // Max (inclusive) physical address of this GPU's memory that the driver
         // can allocate through PMM (PMA).
         NvU64 max_allocatable_address;
+
+        struct
+        {
+            // True if the platform supports HW coherence and the GPU's memory
+            // is exposed as a NUMA node to the kernel.
+            bool enabled;
+            unsigned int node_id;
+        } numa;
     } mem_info;
 
     struct
@@ -636,6 +670,8 @@ struct uvm_gpu_struct
     bool rm_address_space_moved_to_page_tree;
 
     uvm_gpu_semaphore_pool_t *semaphore_pool;
+
+    uvm_gpu_semaphore_pool_t *secure_semaphore_pool;
 
     uvm_channel_manager_t *channel_manager;
 
@@ -695,6 +731,25 @@ struct uvm_gpu_struct
     // different from that of sysmem_mappings, because it relates to user
     // mappings (instead of kernel), and it is used in most configurations.
     uvm_pmm_sysmem_mappings_t pmm_reverse_sysmem_mappings;
+
+    struct
+    {
+        uvm_conf_computing_dma_buffer_pool_t dma_buffer_pool;
+
+        // Dummy memory used to store the IV contents during CE encryption.
+        // This memory location is also only available after CE channels
+        // because we use them to write PTEs for allocations such as this one.
+        // This location is used when a physical addressing for the IV buffer
+        // is required. See uvm_hal_hopper_ce_encrypt().
+        uvm_mem_t *iv_mem;
+
+        // Dummy memory used to store the IV contents during CE encryption.
+        // Because of the limitations of `iv_mem', and the need to have such
+        // buffer at channel initialization, we use an RM allocation.
+        // This location is used when a virtual addressing for the IV buffer
+        // is required. See uvm_hal_hopper_ce_encrypt().
+        uvm_rm_mem_t *iv_rm_mem;
+    } conf_computing;
 
     // ECC handling
     // In order to trap ECC errors as soon as possible the driver has the hw
@@ -833,6 +888,10 @@ struct uvm_parent_gpu_struct
     uvm_arch_hal_t *arch_hal;
     uvm_fault_buffer_hal_t *fault_buffer_hal;
     uvm_access_counter_buffer_hal_t *access_counter_buffer_hal;
+    uvm_sec2_hal_t *sec2_hal;
+
+    // Whether CE supports physical addressing mode for writes to vidmem
+    bool ce_phys_vidmem_write_supported;
 
     uvm_gpu_peer_copy_mode_t peer_copy_mode;
 
@@ -954,9 +1013,6 @@ struct uvm_parent_gpu_struct
     // Fault buffer info. This is only valid if supports_replayable_faults is set to true
     uvm_fault_buffer_info_t fault_buffer_info;
 
-    // NUMA info, mainly for ATS
-    uvm_numa_info_t numa_info;
-
     // PMM lazy free processing queue.
     // TODO: Bug 3881835: revisit whether to use nv_kthread_q_t or workqueue.
     nv_kthread_q_t lazy_free_q;
@@ -1049,8 +1105,22 @@ struct uvm_parent_gpu_struct
         NvU64 fabric_memory_window_start;
     } nvswitch_info;
 
-    uvm_gpu_link_type_t sysmem_link;
-    NvU32 sysmem_link_rate_mbyte_per_s;
+    struct
+    {
+        // Note that this represents the link to system memory, not the link the
+        // system used to discover the GPU. There are some cases such as NVLINK2
+        // where the GPU is still on the PCIe bus, but it accesses memory over
+        // this link rather than PCIe.
+        uvm_gpu_link_type_t link;
+        NvU32 link_rate_mbyte_per_s;
+
+        // Range in the system physical address space where the memory of this
+        // GPU is exposed as coherent. memory_window_end is inclusive.
+        // memory_window_start == memory_window_end indicates that no window is
+        // present (coherence is not supported).
+        NvU64 memory_window_start;
+        NvU64 memory_window_end;
+    } system_bus;
 };
 
 static const char *uvm_gpu_name(uvm_gpu_t *gpu)
@@ -1146,23 +1216,20 @@ NV_STATUS uvm_gpu_init_va_space(uvm_va_space_t *va_space);
 
 void uvm_gpu_exit_va_space(uvm_va_space_t *va_space);
 
-static uvm_numa_info_t *uvm_gpu_numa_info(uvm_gpu_t *gpu)
+static unsigned int uvm_gpu_numa_node(uvm_gpu_t *gpu)
 {
-    UVM_ASSERT(gpu->parent->numa_info.enabled);
-
-    return &gpu->parent->numa_info;
+    UVM_ASSERT(gpu->mem_info.numa.enabled);
+    return gpu->mem_info.numa.node_id;
 }
 
 static uvm_gpu_phys_address_t uvm_gpu_page_to_phys_address(uvm_gpu_t *gpu, struct page *page)
 {
-    uvm_numa_info_t *numa_info = uvm_gpu_numa_info(gpu);
-
     unsigned long sys_addr = page_to_pfn(page) << PAGE_SHIFT;
-    unsigned long gpu_offset = sys_addr - numa_info->system_memory_window_start;
+    unsigned long gpu_offset = sys_addr - gpu->parent->system_bus.memory_window_start;
 
-    UVM_ASSERT(page_to_nid(page) == numa_info->node_id);
-    UVM_ASSERT(sys_addr >= numa_info->system_memory_window_start);
-    UVM_ASSERT(sys_addr + PAGE_SIZE - 1 <= numa_info->system_memory_window_end);
+    UVM_ASSERT(page_to_nid(page) == uvm_gpu_numa_node(gpu));
+    UVM_ASSERT(sys_addr >= gpu->parent->system_bus.memory_window_start);
+    UVM_ASSERT(sys_addr + PAGE_SIZE - 1 <= gpu->parent->system_bus.memory_window_end);
 
     return uvm_gpu_phys_address(UVM_APERTURE_VID, gpu_offset);
 }
@@ -1270,8 +1337,8 @@ static bool uvm_gpus_are_indirect_peers(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
     uvm_gpu_peer_t *peer_caps = uvm_gpu_peer_caps(gpu0, gpu1);
 
     if (peer_caps->link_type != UVM_GPU_LINK_INVALID && peer_caps->is_indirect_peer) {
-        UVM_ASSERT(gpu0->parent->numa_info.enabled);
-        UVM_ASSERT(gpu1->parent->numa_info.enabled);
+        UVM_ASSERT(gpu0->mem_info.numa.enabled);
+        UVM_ASSERT(gpu1->mem_info.numa.enabled);
         UVM_ASSERT(peer_caps->link_type != UVM_GPU_LINK_PCIE);
         UVM_ASSERT(!uvm_gpus_are_nvswitch_connected(gpu0, gpu1));
         return true;
@@ -1291,6 +1358,9 @@ static uvm_gpu_address_t uvm_gpu_address_virtual_from_vidmem_phys(uvm_gpu_t *gpu
     UVM_ASSERT(uvm_mmu_gpu_needs_static_vidmem_mapping(gpu) || uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu));
     UVM_ASSERT(pa <= gpu->mem_info.max_allocatable_address);
 
+    if (uvm_mmu_gpu_needs_static_vidmem_mapping(gpu))
+        UVM_ASSERT(gpu->static_flat_mapping.ready);
+
     return uvm_gpu_address_virtual(gpu->parent->flat_vidmem_va_base + pa);
 }
 
@@ -1306,6 +1376,23 @@ static uvm_gpu_address_t uvm_gpu_address_virtual_from_sysmem_phys(uvm_gpu_t *gpu
     UVM_ASSERT(pa <= (gpu->parent->dma_addressable_limit - gpu->parent->dma_addressable_start));
 
     return uvm_gpu_address_virtual(gpu->parent->flat_sysmem_va_base + pa);
+}
+
+// Given a GPU or CPU physical address (not peer), retrieve an address suitable
+// for CE access.
+static uvm_gpu_address_t uvm_gpu_address_copy(uvm_gpu_t *gpu, uvm_gpu_phys_address_t phys_addr)
+{
+    UVM_ASSERT(phys_addr.aperture == UVM_APERTURE_VID || phys_addr.aperture == UVM_APERTURE_SYS);
+
+    if (phys_addr.aperture == UVM_APERTURE_VID) {
+        if (uvm_mmu_gpu_needs_static_vidmem_mapping(gpu) || uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu))
+            return uvm_gpu_address_virtual_from_vidmem_phys(gpu, phys_addr.address);
+    }
+    else if (uvm_mmu_gpu_needs_dynamic_sysmem_mapping(gpu)) {
+        return uvm_gpu_address_virtual_from_sysmem_phys(gpu, phys_addr.address);
+    }
+
+    return uvm_gpu_address_from_phys(phys_addr);
 }
 
 static uvm_gpu_identity_mapping_t *uvm_gpu_get_peer_mapping(uvm_gpu_t *gpu, uvm_gpu_id_t peer_id)
@@ -1383,6 +1470,11 @@ bool uvm_gpu_can_address_kernel(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
 // addresses.
 NvU64 uvm_parent_gpu_canonical_address(uvm_parent_gpu_t *parent_gpu, NvU64 addr);
 
+static bool uvm_gpu_is_coherent(const uvm_parent_gpu_t *parent_gpu)
+{
+    return parent_gpu->system_bus.memory_window_end > parent_gpu->system_bus.memory_window_start;
+}
+
 static bool uvm_gpu_has_pushbuffer_segments(uvm_gpu_t *gpu)
 {
     return gpu->parent->max_host_va > (1ull << 40);
@@ -1446,6 +1538,7 @@ typedef enum
 {
     UVM_GPU_BUFFER_FLUSH_MODE_CACHED_PUT,
     UVM_GPU_BUFFER_FLUSH_MODE_UPDATE_PUT,
+    UVM_GPU_BUFFER_FLUSH_MODE_WAIT_UPDATE_PUT,
 } uvm_gpu_buffer_flush_mode_t;
 
 #endif // __UVM_GPU_H__

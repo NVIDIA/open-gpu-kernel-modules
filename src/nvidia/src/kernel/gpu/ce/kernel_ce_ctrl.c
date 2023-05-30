@@ -52,7 +52,7 @@ subdeviceCtrlCmdCeGetCaps_IMPL
     KernelCE    *pKCe;
     NvU32       ceNumber;
     NV_STATUS   status = NV_OK;
-    RM_ENGINE_TYPE rmEngineType; 
+    RM_ENGINE_TYPE rmEngineType;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
@@ -103,7 +103,8 @@ subdeviceCtrlCmdCeGetCaps_IMPL
         return status;
     }
 
-    NV_ASSERT_OK_OR_RETURN(ceIndexFromType(pGpu, RES_GET_CLIENT_HANDLE(pSubdevice), rmEngineType, &ceNumber));
+    NV_ASSERT_OK_OR_RETURN(ceIndexFromType(pGpu, GPU_RES_GET_DEVICE(pSubdevice),
+                                           rmEngineType, &ceNumber));
 
     pKCe = GPU_GET_KCE(pGpu, ceNumber);
 

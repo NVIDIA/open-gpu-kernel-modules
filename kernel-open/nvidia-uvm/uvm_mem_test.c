@@ -25,6 +25,7 @@
 #include "uvm_kvmalloc.h"
 #include "uvm_mem.h"
 #include "uvm_push.h"
+#include "uvm_conf_computing.h"
 #include "uvm_test.h"
 #include "uvm_test_ioctl.h"
 #include "uvm_va_space.h"
@@ -80,17 +81,14 @@ static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
     for (offset = 0; offset < verif_size; offset += mem->chunk_size) {
         uvm_gpu_address_t sys_mem_gpu_address, mem_gpu_address;
         size_t size_this_time = min((NvU64)mem->chunk_size, verif_size - offset);
-        bool should_use_pa;
 
         TEST_NV_CHECK_GOTO(uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_CPU_TO_GPU, &push, " "), done);
 
         sys_mem_gpu_address = uvm_mem_gpu_address_virtual_kernel(sys_mem, gpu);
         sys_mem_gpu_address.address += offset;
 
-        should_use_pa = uvm_channel_is_privileged(push.channel);
-
-        if (should_use_pa) {
-            mem_gpu_address = uvm_mem_gpu_address_physical(mem, gpu, offset, size_this_time);
+        if (uvm_channel_is_privileged(push.channel)) {
+            mem_gpu_address = uvm_mem_gpu_address_copy(mem, gpu, offset, size_this_time);
         }
         else {
             mem_gpu_address = uvm_mem_gpu_address_virtual_kernel(mem, gpu);
@@ -130,7 +128,7 @@ static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
         mem_gpu_address.address += offset;
 
         if (uvm_channel_is_privileged(push.channel)) {
-            sys_mem_gpu_address = uvm_mem_gpu_address_physical(sys_mem, gpu, offset, size_this_time);
+            sys_mem_gpu_address = uvm_mem_gpu_address_copy(sys_mem, gpu, offset, size_this_time);
         }
         else {
             sys_mem_gpu_address = uvm_mem_gpu_address_virtual_kernel(sys_mem, gpu);
@@ -212,7 +210,7 @@ static NV_STATUS test_map_cpu(uvm_mem_t *mem)
     char *cpu_addr;
 
     if (uvm_mem_is_vidmem(mem))
-        UVM_ASSERT(mem->backing_gpu->parent->numa_info.enabled);
+        UVM_ASSERT(mem->backing_gpu->mem_info.numa.enabled);
 
     // Map
     TEST_NV_CHECK_RET(uvm_mem_map_cpu_kernel(mem));
@@ -315,7 +313,7 @@ static NV_STATUS test_alloc_vidmem(uvm_gpu_t *gpu, NvU32 page_size, size_t size,
     TEST_CHECK_GOTO(status == NV_OK, error);
 
     if (page_size == UVM_PAGE_SIZE_DEFAULT) {
-        if (gpu->parent->numa_info.enabled)
+        if (gpu->mem_info.numa.enabled)
             TEST_CHECK_GOTO(mem->chunk_size >= PAGE_SIZE && mem->chunk_size <= max(size, (size_t)PAGE_SIZE), error);
         else
             TEST_CHECK_GOTO(mem->chunk_size == UVM_PAGE_SIZE_4K || mem->chunk_size <= size, error);
@@ -323,7 +321,7 @@ static NV_STATUS test_alloc_vidmem(uvm_gpu_t *gpu, NvU32 page_size, size_t size,
 
     TEST_NV_CHECK_GOTO(test_map_gpu(mem, gpu), error);
 
-    if (gpu->parent->numa_info.enabled && (page_size == UVM_PAGE_SIZE_DEFAULT || page_size >= PAGE_SIZE))
+    if (gpu->mem_info.numa.enabled && (page_size == UVM_PAGE_SIZE_DEFAULT || page_size >= PAGE_SIZE))
         TEST_CHECK_GOTO(test_map_cpu(mem) == NV_OK, error);
 
     *mem_out = mem;
@@ -370,6 +368,11 @@ static NV_STATUS test_all(uvm_va_space_t *va_space)
     static const int max_supported_page_sizes = 4 + 1;
     int i;
 
+
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (uvm_conf_computing_mode_enabled(uvm_va_space_find_first_gpu(va_space)))
+        return NV_OK;
 
     gpu_count = uvm_processor_mask_get_gpu_count(&va_space->registered_gpus);
 
@@ -469,7 +472,7 @@ static NV_STATUS test_basic_vidmem(uvm_gpu_t *gpu)
     page_sizes &= UVM_CHUNK_SIZES_MASK;
     for_each_page_size(page_size, page_sizes) {
         TEST_CHECK_GOTO(uvm_mem_alloc_vidmem(page_size - 1, gpu, &mem) == NV_OK, done);
-        if (gpu->parent->numa_info.enabled)
+        if (gpu->mem_info.numa.enabled)
             TEST_CHECK_GOTO(mem->chunk_size >= PAGE_SIZE && mem->chunk_size <= max(page_size, (NvU32)PAGE_SIZE), done);
         else
             TEST_CHECK_GOTO(mem->chunk_size < page_size || page_size == smallest_page_size, done);
@@ -477,7 +480,7 @@ static NV_STATUS test_basic_vidmem(uvm_gpu_t *gpu)
         mem = NULL;
 
         TEST_CHECK_GOTO(uvm_mem_alloc_vidmem(page_size, gpu, &mem) == NV_OK, done);
-        if (gpu->parent->numa_info.enabled)
+        if (gpu->mem_info.numa.enabled)
             TEST_CHECK_GOTO(mem->chunk_size == max(page_size, (NvU32)PAGE_SIZE), done);
         else
             TEST_CHECK_GOTO(mem->chunk_size == page_size, done);
@@ -489,6 +492,41 @@ static NV_STATUS test_basic_vidmem(uvm_gpu_t *gpu)
     TEST_CHECK_GOTO(mem->chunk_size == biggest_page_size, done);
 
 done:
+    uvm_mem_free(mem);
+    return status;
+}
+
+static NV_STATUS test_basic_vidmem_unprotected(uvm_gpu_t *gpu)
+{
+    NV_STATUS status = NV_OK;
+    uvm_mem_t *mem = NULL;
+
+    uvm_mem_alloc_params_t params = { 0 };
+    params.size = UVM_PAGE_SIZE_4K;
+    params.backing_gpu = gpu;
+    params.page_size = UVM_PAGE_SIZE_4K;
+
+    // If CC is enabled, the protection flag is observed. Because currently all
+    // vidmem is in the protected region, the allocation should succeed.
+    //
+    // If CC is disabled, the protection flag is ignored.
+    params.is_unprotected = false;
+    TEST_NV_CHECK_RET(uvm_mem_alloc(&params, &mem));
+
+    uvm_mem_free(mem);
+    mem = NULL;
+
+    // If CC is enabled, the allocation should fail because currently the
+    // unprotected region is empty.
+    //
+    // If CC is disabled, the behavior should be identical to that of a
+    // protected allocation.
+    params.is_unprotected = true;
+    if (uvm_conf_computing_mode_enabled(gpu))
+        TEST_CHECK_RET(uvm_mem_alloc(&params, &mem) == NV_ERR_NO_MEMORY);
+    else
+        TEST_NV_CHECK_RET(uvm_mem_alloc(&params, &mem));
+
     uvm_mem_free(mem);
     return status;
 }
@@ -531,15 +569,54 @@ done:
     return status;
 }
 
+static NV_STATUS test_basic_dma_pool(uvm_gpu_t *gpu)
+{
+    size_t i, j;
+    size_t num_buffers;
+    size_t status = NV_OK;
+    uvm_conf_computing_dma_buffer_t **dma_buffers;
+
+    // If the Confidential Computing feature is disabled, the DMA buffers
+    // pool is not initialized.
+    if (!uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
+    // We're going to reclaim one more chunks that the pool have. Triggerring
+    // one expansion.
+    num_buffers = gpu->conf_computing.dma_buffer_pool.num_dma_buffers + 1;
+    dma_buffers = uvm_kvmalloc_zero(sizeof(*dma_buffers) * num_buffers);
+    if (dma_buffers == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    for (i = 0; i < num_buffers; ++i) {
+        status = uvm_conf_computing_dma_buffer_alloc(&gpu->conf_computing.dma_buffer_pool, &dma_buffers[i], NULL);
+        if (status != NV_OK)
+            break;
+    }
+
+    TEST_CHECK_GOTO(gpu->conf_computing.dma_buffer_pool.num_dma_buffers >= num_buffers, done);
+    TEST_CHECK_GOTO(i == num_buffers, done);
+
+done:
+    j = i;
+    for (i = 0; i < j; ++i)
+        uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool, dma_buffers[i], NULL);
+
+    uvm_kvfree(dma_buffers);
+    return status;
+}
+
 static NV_STATUS test_basic(uvm_va_space_t *va_space)
 {
     uvm_gpu_t *gpu;
 
-    TEST_CHECK_RET(test_basic_sysmem() == NV_OK);
+    TEST_NV_CHECK_RET(test_basic_sysmem());
 
     for_each_va_space_gpu(gpu, va_space) {
-        TEST_CHECK_RET(test_basic_vidmem(gpu) == NV_OK);
-        TEST_CHECK_RET(test_basic_sysmem_dma(gpu) == NV_OK);
+        TEST_NV_CHECK_RET(test_basic_vidmem(gpu));
+        TEST_NV_CHECK_RET(test_basic_sysmem_dma(gpu));
+        TEST_NV_CHECK_RET(test_basic_vidmem_unprotected(gpu));
+        TEST_NV_CHECK_RET(test_basic_dma_pool(gpu));
     }
 
     return NV_OK;

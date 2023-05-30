@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-202 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,5 +57,10 @@
  * Default Falcon context buffer size
  */
 #define FLCN_CTX_ENG_BUFFER_SIZE_HW      4096
+
+/*!
+ * Number of register read needed for reset signal propagation
+ */
+#define FLCN_RESET_PROPAGATION_DELAY_COUNT    10
 
 #endif  // FALCON_COMMON_H

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -71,9 +71,10 @@ osCreateMemFromOsDescriptor
     NV_STATUS rmStatus;
     void *pPrivate;
 
+    pClient = serverutilGetClientUnderLock(hClient);
     if ((pDescriptor == NvP64_NULL) ||
         (*pLimit == 0) ||
-        (serverutilGetClientUnderLock(hClient, &pClient) != NV_OK))
+        (pClient == NULL))
     {
         return NV_ERR_INVALID_PARAM_STRUCT;
     }

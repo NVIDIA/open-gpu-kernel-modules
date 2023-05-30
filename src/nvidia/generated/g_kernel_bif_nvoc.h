@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -146,6 +146,7 @@ struct KernelBif {
     NvBool peerMappingOverride;
     NvBool EnteredRecoverySinceErrorsLastChecked;
     NvU32 osPcieAtomicsOpMask;
+    NvBool bMnocAvailable;
 };
 
 #ifndef __NVOC_CLASS_KernelBif_TYPEDEF__
@@ -326,33 +327,19 @@ static inline void kbifDisableP2PTransactions(struct OBJGPU *pGpu, struct Kernel
 
 #define kbifDisableP2PTransactions_HAL(pGpu, pKernelBif) kbifDisableP2PTransactions(pGpu, pKernelBif)
 
-NV_STATUS kbifGetNumVFSparseMmapRegions_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice, NvU32 *numAreas);
+NV_STATUS kbifGetVFSparseMmapRegions_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice, NvU64 osPageSize, NvU32 *pNumAreas, NvU64 *pOffsets, NvU64 *pSizes);
 
 
 #ifdef __nvoc_kernel_bif_h_disabled
-static inline NV_STATUS kbifGetNumVFSparseMmapRegions(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice, NvU32 *numAreas) {
+static inline NV_STATUS kbifGetVFSparseMmapRegions(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice, NvU64 osPageSize, NvU32 *pNumAreas, NvU64 *pOffsets, NvU64 *pSizes) {
     NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_bif_h_disabled
-#define kbifGetNumVFSparseMmapRegions(pGpu, pKernelBif, pKernelHostVgpuDevice, numAreas) kbifGetNumVFSparseMmapRegions_TU102(pGpu, pKernelBif, pKernelHostVgpuDevice, numAreas)
+#define kbifGetVFSparseMmapRegions(pGpu, pKernelBif, pKernelHostVgpuDevice, osPageSize, pNumAreas, pOffsets, pSizes) kbifGetVFSparseMmapRegions_TU102(pGpu, pKernelBif, pKernelHostVgpuDevice, osPageSize, pNumAreas, pOffsets, pSizes)
 #endif //__nvoc_kernel_bif_h_disabled
 
-#define kbifGetNumVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, numAreas) kbifGetNumVFSparseMmapRegions(pGpu, pKernelBif, pKernelHostVgpuDevice, numAreas)
-
-NV_STATUS kbifGetVFSparseMmapRegions_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice, NvU64 os_page_size, NvU64 *offsets, NvU64 *sizes);
-
-
-#ifdef __nvoc_kernel_bif_h_disabled
-static inline NV_STATUS kbifGetVFSparseMmapRegions(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice, NvU64 os_page_size, NvU64 *offsets, NvU64 *sizes) {
-    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_bif_h_disabled
-#define kbifGetVFSparseMmapRegions(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size, offsets, sizes) kbifGetVFSparseMmapRegions_TU102(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size, offsets, sizes)
-#endif //__nvoc_kernel_bif_h_disabled
-
-#define kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size, offsets, sizes) kbifGetVFSparseMmapRegions(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size, offsets, sizes)
+#define kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, osPageSize, pNumAreas, pOffsets, pSizes) kbifGetVFSparseMmapRegions(pGpu, pKernelBif, pKernelHostVgpuDevice, osPageSize, pNumAreas, pOffsets, pSizes)
 
 NV_STATUS kbifDisableSysmemAccess_GM107(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, NvBool bDisable);
 
@@ -367,6 +354,21 @@ static inline NV_STATUS kbifDisableSysmemAccess(struct OBJGPU *pGpu, struct Kern
 #endif //__nvoc_kernel_bif_h_disabled
 
 #define kbifDisableSysmemAccess_HAL(pGpu, pKernelBif, bDisable) kbifDisableSysmemAccess(pGpu, pKernelBif, bDisable)
+
+static inline void kbifIsMnocSupported_b3696a(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    return;
+}
+
+
+#ifdef __nvoc_kernel_bif_h_disabled
+static inline void kbifIsMnocSupported(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
+}
+#else //__nvoc_kernel_bif_h_disabled
+#define kbifIsMnocSupported(pGpu, pKernelBif) kbifIsMnocSupported_b3696a(pGpu, pKernelBif)
+#endif //__nvoc_kernel_bif_h_disabled
+
+#define kbifIsMnocSupported_HAL(pGpu, pKernelBif) kbifIsMnocSupported(pGpu, pKernelBif)
 
 NV_STATUS kbifConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, ENGDESCRIPTOR arg0);
 
@@ -702,6 +704,28 @@ static inline NV_STATUS kbifPollDeviceOnBus(struct OBJGPU *pGpu, struct KernelBi
 }
 #else //__nvoc_kernel_bif_h_disabled
 #define kbifPollDeviceOnBus(pGpu, pKernelBif) kbifPollDeviceOnBus_IMPL(pGpu, pKernelBif)
+#endif //__nvoc_kernel_bif_h_disabled
+
+NvU32 kbifGetGpuLinkCapabilities_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+#ifdef __nvoc_kernel_bif_h_disabled
+static inline NvU32 kbifGetGpuLinkCapabilities(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
+    return 0;
+}
+#else //__nvoc_kernel_bif_h_disabled
+#define kbifGetGpuLinkCapabilities(pGpu, pKernelBif) kbifGetGpuLinkCapabilities_IMPL(pGpu, pKernelBif)
+#endif //__nvoc_kernel_bif_h_disabled
+
+NvU32 kbifGetGpuLinkControlStatus_IMPL(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+#ifdef __nvoc_kernel_bif_h_disabled
+static inline NvU32 kbifGetGpuLinkControlStatus(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    NV_ASSERT_FAILED_PRECOMP("KernelBif was disabled!");
+    return 0;
+}
+#else //__nvoc_kernel_bif_h_disabled
+#define kbifGetGpuLinkControlStatus(pGpu, pKernelBif) kbifGetGpuLinkControlStatus_IMPL(pGpu, pKernelBif)
 #endif //__nvoc_kernel_bif_h_disabled
 
 NvBool kbifIsPciBusFamily_IMPL(struct KernelBif *pKernelBif);

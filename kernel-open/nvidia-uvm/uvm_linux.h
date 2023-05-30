@@ -540,12 +540,34 @@ typedef struct
     #endif // NV_IS_EXPORT_SYMBOL_PRESENT_int_active_memcg
 
 #if defined(NVCPU_X86) || defined(NVCPU_X86_64)
+  #include <asm/pgtable.h>
   #include <asm/pgtable_types.h>
 #endif
 
 #if !defined(PAGE_KERNEL_NOENC)
   #define PAGE_KERNEL_NOENC PAGE_KERNEL
 #endif
+
+// uvm_pgprot_decrypted is a GPL-aware version of pgprot_decrypted that returns
+// the given input when UVM cannot use GPL symbols, or pgprot_decrypted is not
+// defined. Otherwise, the function is equivalent to pgprot_decrypted. UVM only
+// depends on pgprot_decrypted when the driver is allowed to use GPL symbols:
+// both AMD's SEV and Intel's TDX are only supported in conjunction with OpenRM.
+//
+// It is safe to invoke uvm_pgprot_decrypted in KVM + AMD SEV-SNP guests, even
+// if the call is not required, because pgprot_decrypted(PAGE_KERNEL_NOENC) ==
+// PAGE_KERNEL_NOENC.
+//
+// pgprot_decrypted was added by commit 21729f81ce8a ("x86/mm: Provide general
+// kernel support for memory encryption") in v4.14 (2017-07-18)
+static inline pgprot_t uvm_pgprot_decrypted(pgprot_t prot)
+{
+#if defined(pgprot_decrypted)
+        return pgprot_decrypted(prot);
+#endif
+
+   return prot;
+}
 
 // Commit 1dff8083a024650c75a9c961c38082473ceae8cf (v4.7).
 //

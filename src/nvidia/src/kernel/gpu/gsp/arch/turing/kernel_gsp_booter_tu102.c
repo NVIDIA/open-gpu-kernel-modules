@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,6 @@
 #include "gpu/falcon/kernel_falcon.h"
 #include "gpu/sec2/kernel_sec2.h"
 
-#include "published/turing/tu102/dev_fb.h"  // for NV_PFB_PRI_MMU_WPR2_ADDR_HI
 #include "published/turing/tu102/dev_falcon_v4.h"
 
 
@@ -92,18 +91,21 @@ kgspExecuteBooterLoad_TU102
 )
 {
     NV_STATUS status;
-    NvU32 mailbox0, mailbox1;
+    NvU32 mailbox0 = 0, mailbox1 = 0;
 
     KernelSec2 *pKernelSec2 = GPU_GET_KERNEL_SEC2(pGpu);
 
     NV_ASSERT_OR_RETURN(pKernelGsp->pBooterLoadUcode != NULL, NV_ERR_INVALID_STATE);
 
-    //
-    // sysmemAddrOfData either represents the FW WPR MetaData or the FW SR Data as a physical address in SYSTEM 
-    // Provide that data in falcon SEC mailboxes 0 (low 32 bits) and 1 (high 32 bits)
-    //
-    mailbox0 = NvU64_LO32(sysmemAddrOfData);
-    mailbox1 = NvU64_HI32(sysmemAddrOfData);
+    if (sysmemAddrOfData != 0)
+    {
+        //
+        // sysmemAddrOfData either represents the FW WPR MetaData or the FW SR Data as a physical address in SYSTEM
+        // Provide that data in falcon SEC mailboxes 0 (low 32 bits) and 1 (high 32 bits)
+        //
+        mailbox0 = NvU64_LO32(sysmemAddrOfData);
+        mailbox1 = NvU64_HI32(sysmemAddrOfData);
+    }
 
     NV_PRINTF(LEVEL_INFO, "executing Booter Load, sysmemAddrOfData 0x%llx\n",
               sysmemAddrOfData);
@@ -135,12 +137,15 @@ kgspExecuteBooterUnloadIfNeeded_TU102
     KernelSec2 *pKernelSec2 = GPU_GET_KERNEL_SEC2(pGpu);
     NvU32 mailbox0 = 0xFF, mailbox1 = 0xFF;
 
-    // skip actually executing Booter Unload if WPR2 is not up
-    NvU32 data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
-    NvU32 wpr2HiVal = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
-    if (wpr2HiVal == 0)
+    if (IS_GPU_GC6_STATE_ENTERING(pGpu))
     {
-        NV_PRINTF(LEVEL_INFO, "skipping executing Booter Unload as WPR is not up\n");
+        mailbox0 = mailbox1 = 0xdeaddead;
+    }
+
+    // skip actually executing Booter Unload if WPR2 is not up
+    if (!kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
+    {
+        NV_PRINTF(LEVEL_INFO, "skipping executing Booter Unload as WPR2 is not up\n");
         return NV_OK;
     }
 
@@ -149,7 +154,7 @@ kgspExecuteBooterUnloadIfNeeded_TU102
 
     kflcnReset_HAL(pGpu, staticCast(pKernelSec2, KernelFalcon));
 
-    // SR code 
+    // SR code
     if (sysmemAddrOfSuspendResumeData != 0)
     {
         mailbox0 = NvU64_LO32(sysmemAddrOfSuspendResumeData);
@@ -165,12 +170,23 @@ kgspExecuteBooterUnloadIfNeeded_TU102
         return status;
     }
 
-    data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
-    wpr2HiVal = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
-    if (wpr2HiVal > 0)
+    if (IS_GPU_GC6_STATE_ENTERING(pGpu))
     {
-        NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Unload: WPR2 is still up\n");
-        return NV_ERR_GENERIC;
+        // For GC6 path, WPR2 should still be up (not torn down)
+        if (!kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Unload: WPR2 is cleared despite GC6\n");
+            return NV_ERR_GENERIC;
+        }
+    }
+    else
+    {
+        // For all other unloads (non-GC6), WPR2 should be torn down
+        if (kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Unload: WPR2 is still up\n");
+            return NV_ERR_GENERIC;
+        }
     }
 
     return status;

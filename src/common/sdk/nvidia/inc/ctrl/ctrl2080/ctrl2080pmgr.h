@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080pmgr.finn
+// Source file:      ctrl/ctrl2080/ctrl2080pmgr.finn
 //
 
 

@@ -310,6 +310,17 @@ typedef struct EventBuffer EventBuffer;
 #define __nvoc_class_id_EventBuffer 0x63502b
 #endif /* __nvoc_class_id_EventBuffer */
 
+struct SemaphoreSurface;
+
+#ifndef __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
+#define __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
+typedef struct SemaphoreSurface SemaphoreSurface;
+#endif /* __NVOC_CLASS_SemaphoreSurface_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_SemaphoreSurface
+#define __nvoc_class_id_SemaphoreSurface 0xeabc69
+#endif /* __nvoc_class_id_SemaphoreSurface */
+
 struct P2PApi;
 
 #ifndef __NVOC_CLASS_P2PApi_TYPEDEF__
@@ -507,6 +518,17 @@ typedef struct VideoMemory VideoMemory;
 #ifndef __nvoc_class_id_VideoMemory
 #define __nvoc_class_id_VideoMemory 0xed948f
 #endif /* __nvoc_class_id_VideoMemory */
+
+struct ExtendedGpuMemory;
+
+#ifndef __NVOC_CLASS_ExtendedGpuMemory_TYPEDEF__
+#define __NVOC_CLASS_ExtendedGpuMemory_TYPEDEF__
+typedef struct ExtendedGpuMemory ExtendedGpuMemory;
+#endif /* __NVOC_CLASS_ExtendedGpuMemory_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_ExtendedGpuMemory
+#define __nvoc_class_id_ExtendedGpuMemory 0xeffa5c
+#endif /* __nvoc_class_id_ExtendedGpuMemory */
 
 struct PhysicalMemory;
 
@@ -1036,6 +1058,17 @@ typedef struct MsencContext MsencContext;
 #define __nvoc_class_id_MsencContext 0x88c92a
 #endif /* __nvoc_class_id_MsencContext */
 
+struct Sec2Context;
+
+#ifndef __NVOC_CLASS_Sec2Context_TYPEDEF__
+#define __NVOC_CLASS_Sec2Context_TYPEDEF__
+typedef struct Sec2Context Sec2Context;
+#endif /* __NVOC_CLASS_Sec2Context_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_Sec2Context
+#define __nvoc_class_id_Sec2Context 0x4c3439
+#endif /* __nvoc_class_id_Sec2Context */
+
 struct KernelGraphicsObject;
 
 #ifndef __NVOC_CLASS_KernelGraphicsObject_TYPEDEF__
@@ -1069,6 +1102,17 @@ typedef struct Event Event;
 #define __nvoc_class_id_Event 0xa4ecfc
 #endif /* __nvoc_class_id_Event */
 
+struct ConfidentialComputeApi;
+
+#ifndef __NVOC_CLASS_ConfidentialComputeApi_TYPEDEF__
+#define __NVOC_CLASS_ConfidentialComputeApi_TYPEDEF__
+typedef struct ConfidentialComputeApi ConfidentialComputeApi;
+#endif /* __NVOC_CLASS_ConfidentialComputeApi_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_ConfidentialComputeApi
+#define __nvoc_class_id_ConfidentialComputeApi 0xea5cb0
+#endif /* __nvoc_class_id_ConfidentialComputeApi */
+
 struct KernelCcuApi;
 
 #ifndef __NVOC_CLASS_KernelCcuApi_TYPEDEF__
@@ -1091,6 +1135,7 @@ struct NVOCFwdDeclHack {
     struct FmSessionApi *PRIVATE_FIELD(FmSessionApi_FABRIC_MANAGER_SESSION);
     struct GpuManagementApi *PRIVATE_FIELD(GpuManagementApi_NV0020_GPU_MANAGEMENT);
     struct EventBuffer *PRIVATE_FIELD(EventBuffer_NV_EVENT_BUFFER);
+    struct SemaphoreSurface *PRIVATE_FIELD(SemaphoreSurface_NV_SEMAPHORE_SURFACE);
     struct P2PApi *PRIVATE_FIELD(P2PApi_NV50_P2P);
     struct SyncGpuBoost *PRIVATE_FIELD(SyncGpuBoost_NV0060_SYNC_GPU_BOOST);
     struct Device *PRIVATE_FIELD(Device_NV01_DEVICE_0);
@@ -1118,6 +1163,7 @@ struct NVOCFwdDeclHack {
     struct KernelChannelGroupApi *PRIVATE_FIELD(KernelChannelGroupApi_KEPLER_CHANNEL_GROUP_A);
     struct RegisterMemory *PRIVATE_FIELD(RegisterMemory_NV01_MEMORY_LOCAL_PRIVILEGED);
     struct VideoMemory *PRIVATE_FIELD(VideoMemory_NV01_MEMORY_LOCAL_USER);
+    struct ExtendedGpuMemory *PRIVATE_FIELD(ExtendedGpuMemory_NV_MEMORY_EXTENDED_USER);
     struct PhysicalMemory *PRIVATE_FIELD(PhysicalMemory_NV01_MEMORY_LOCAL_PHYSICAL);
     struct VirtualMemory *PRIVATE_FIELD(VirtualMemory_NV50_MEMORY_VIRTUAL);
     struct SystemMemory *PRIVATE_FIELD(SystemMemory_NV01_MEMORY_SYSTEM);
@@ -1205,6 +1251,7 @@ struct NVOCFwdDeclHack {
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVB4B7_VIDEO_ENCODER);
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVC7B7_VIDEO_ENCODER);
     struct MsencContext *PRIVATE_FIELD(MsencContext_NVC9B7_VIDEO_ENCODER);
+    struct Sec2Context *PRIVATE_FIELD(Sec2Context_HOPPER_SEC2_WORK_LAUNCH_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_AMPERE_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_AMPERE_COMPUTE_A);
     struct KernelGraphicsObject *PRIVATE_FIELD(KernelGraphicsObject_AMPERE_B);
@@ -1222,6 +1269,7 @@ struct NVOCFwdDeclHack {
     struct Event *PRIVATE_FIELD(Event_NV01_EVENT_OS_EVENT);
     struct Event *PRIVATE_FIELD(Event_NV01_EVENT_KERNEL_CALLBACK);
     struct Event *PRIVATE_FIELD(Event_NV01_EVENT_KERNEL_CALLBACK_EX);
+    struct ConfidentialComputeApi *PRIVATE_FIELD(ConfidentialComputeApi_NV_CONFIDENTIAL_COMPUTE);
     struct KernelCcuApi *PRIVATE_FIELD(KernelCcuApi_NV_COUNTER_COLLECTION_UNIT);
 };
 

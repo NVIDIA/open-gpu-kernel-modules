@@ -166,14 +166,31 @@ typedef enum GSP_SEQUENCER_BUFFER_ERR
 
 // Sequencer implementation of FLD_WR_DRF_DEF()
 #define GSP_SEQ_FLD_WR_DRF_DEF(gpu, gsp, d, r, f, c)                \
-{                                                                   \
-    GSP_SEQUENCER_BUFFER_CMD cmd;                                   \
-    cmd.opCode = GSP_SEQ_BUF_OPCODE_REG_MODIFY;            \
-    cmd.payload.regModify.addr = NV##d##r;                                          \
-    cmd.payload.regModify.mask = DRF_MASK(NV##d##r##f) << DRF_SHIFT(NV##d##r##f);   \
-    cmd.payload.regModify.val = DRF_DEF(d, r, f, c);                               \
-    (void)gspAppendToSequencerBuffer(gpu, gsp, &cmd);               \
-}
+    {                                                               \
+        GSP_SEQUENCER_BUFFER_CMD cmd;                               \
+        cmd.opCode                 = GSP_SEQ_BUF_OPCODE_REG_MODIFY; \
+        cmd.payload.regModify.addr = NV##d##r;                      \
+        cmd.payload.regModify.mask = DRF_MASK(NV##d##r##f)          \
+                                     << DRF_SHIFT(NV##d##r##f);     \
+        cmd.payload.regModify.val  = DRF_DEF(d, r, f, c);           \
+        (void)gspAppendToSequencerBuffer(gpu, gsp, &cmd);           \
+    }
+
+//
+// Sequencer implementation similar to REG_FLD_WR_DRF_DEF() but with a base
+// address specified instead of an aperture.
+//
+#define GSP_SEQ_BASE_FLD_WR_DRF_DEF(gpu, gsp, b, d, r, f, c)        \
+    {                                                               \
+        GSP_SEQUENCER_BUFFER_CMD cmd;                               \
+        cmd.opCode                 = GSP_SEQ_BUF_OPCODE_REG_MODIFY; \
+        cmd.payload.regModify.addr = (b) + NV##d##r;                \
+        cmd.payload.regModify.mask = DRF_MASK(NV##d##r##f)          \
+                                     << DRF_SHIFT(NV##d##r##f);     \
+        cmd.payload.regModify.val = DRF_DEF(d, r, f, c);            \
+        (void)gspAppendToSequencerBuffer(gpu, gsp, &cmd);           \
+    }
+
 
 /*!
  * Forward references

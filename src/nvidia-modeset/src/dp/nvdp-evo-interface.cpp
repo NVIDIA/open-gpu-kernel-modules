@@ -110,7 +110,7 @@ NvU32 EvoInterface::getDisplayId()
 
 NvU32 EvoInterface::getSorIndex()
 {
-    return nvEvoConnectorGetPrimaryOr(pConnectorEvo);
+    return pConnectorEvo->or.primary;
 }
 
 NvU32 EvoInterface::getLinkIndex()

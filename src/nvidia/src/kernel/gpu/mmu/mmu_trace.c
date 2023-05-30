@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -461,23 +461,26 @@ _mmuTraceWalk
     NvBool               verbose
 )
 {
-    const void                *pFmt         = pLayout->pFmt;
-    const MMU_TRACE_CALLBACKS *pTraceCb     = pLayout->pTraceCb;
-    NvU32                      index        = mmuFmtVirtAddrToEntryIndex(pFmtLevel, va);
-    NvU64                      offset       = index * pFmtLevel->entrySize;
-    NV_STATUS                  status       = NV_OK;
-    MMU_INVALID_RANGE          invalidRange = {0};
-    NvU64                      entryVa      = va;
-    NvBool                     isPt         = NV_FALSE;
-    NvU8                      *pBase        = NULL;
-    MEMORY_DESCRIPTOR         *pTempMemDesc = NULL;
+    const void                *pFmt           = pLayout->pFmt;
+    const MMU_TRACE_CALLBACKS *pTraceCb       = pLayout->pTraceCb;
+    NvU32                      index          = mmuFmtVirtAddrToEntryIndex(pFmtLevel, va);
+    NvU64                      offset         = index * pFmtLevel->entrySize;
+    NV_STATUS                  status         = NV_OK;
+    MMU_INVALID_RANGE          invalidRange   = {0};
+    NvU64                      entryVa        = va;
+    NvBool                     isPt           = NV_FALSE;
+    NvU8                      *pBase          = NULL;
+    MEMORY_DESCRIPTOR         *pTempMemDesc   = NULL;
+    MemoryManager             *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     if (pMemDesc == NULL)
     {
         return NV_OK;
     }
 
-    pBase = kbusMapRmAperture_HAL(pGpu, pMemDesc);
+    pBase = memmgrMemDescBeginTransfer(pMemoryManager, pMemDesc,
+                                       TRANSFER_FLAGS_SHADOW_ALLOC |
+                                       TRANSFER_FLAGS_SHADOW_INIT_MEM);
     if (pBase == NULL)
     {
         return NV_ERR_INSUFFICIENT_RESOURCES;
@@ -572,9 +575,10 @@ _mmuTraceWalk
                 continue;
             }
 
-            NV_ASSERT_OK_OR_RETURN(
+            NV_ASSERT_OK_OR_GOTO(status,
                 mmuWalkGetPageLevelInfo(pWalk, &pFmtLevel->subLevels[i], entryVa,
-                                (const MMU_WALK_MEMDESC**)&pTempMemDesc, &memSize));
+                                (const MMU_WALK_MEMDESC**)&pTempMemDesc, &memSize),
+                unmap_and_exit);
 
             // Only print out the PDE the first time we know it's a valid PDE
             if (!valid)
@@ -659,7 +663,7 @@ update_and_continue:
 
 unmap_and_exit:
 
-    kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pBase, NV_FALSE);
+    memmgrMemDescEndTransfer(pMemoryManager, pMemDesc, TRANSFER_FLAGS_DEFER_FLUSH);
 
     return status;
 }

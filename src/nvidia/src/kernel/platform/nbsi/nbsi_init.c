@@ -728,7 +728,7 @@ static NvU8 checkUidMatch
 }
 
 //----------------------------------------------------------------------------
-//  NV_STATUS extractNBSIObjFromDir(pGpu, idx, 
+//  NV_STATUS extractNBSIObjFromDir(pGpu, idx,
 //                                  pNbsiDir, nbsiDirSize, tableLoc,
 //                                  wantedGlobType, wantedGlobIndex,
 //                                  * pActualGlobIdx,
@@ -1159,7 +1159,7 @@ static NV_STATUS freeNbsiCache
 }
 
 //----------------------------------------------------------------------------
-//  NV_STATUS getNbsiCacheInfoForGlobType(pGpu, idx, 
+//  NV_STATUS getNbsiCacheInfoForGlobType(pGpu, idx,
 //                                       globType,
 //                                       *pWantedGlobSource, *pWantedGlobIndex,
 //                                       *pNbsiDir, *pNbsiDirSize, *pCurTbl)
@@ -1384,7 +1384,7 @@ static NV_STATUS getNbsiObjFromCache
 
 
 //----------------------------------------------------------------------------
-//  NV_STATUS getNbsiDirFromRegistry(pGpu, idx, 
+//  NV_STATUS getNbsiDirFromRegistry(pGpu, idx,
 //                                   pNbsiDir, pNbsiDirSize)
 //
 //  This function determines if an emulated NBSI table exists in the registry
@@ -1544,7 +1544,7 @@ static NV_STATUS determineACPIAccess
 }
 
 //----------------------------------------------------------------------------
-//  NV_STATUS getNbsiDirectory(pGpu, idx, 
+//  NV_STATUS getNbsiDirectory(pGpu, idx,
 //                             searchDir, *pNbsiDir, *pNbsiDirSize,
 //                             curSource,
 //                             *pbFreeDirMemRequired,
@@ -2575,7 +2575,7 @@ static NV_STATUS getTableUsingAllObjectCall
 }
 
 //----------------------------------------------------------------------------
-//  NV_STATUS _extractNBSIObjFromACPIDir(pGpu, idx, 
+//  NV_STATUS _extractNBSIObjFromACPIDir(pGpu, idx,
 //                                       curDir,
 //                                       acpiFunction, validationOption, acpiMethod,
 //                                       wantedGlobType, wantedGlobIdx,

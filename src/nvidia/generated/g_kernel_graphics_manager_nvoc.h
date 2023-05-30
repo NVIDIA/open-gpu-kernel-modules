@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,6 +65,31 @@ struct GRMGR_LEGACY_KGRAPHICS_STATIC_INFO {
 
 
 struct KernelGraphicsManager {
+    const struct NVOC_RTTI *__nvoc_rtti;
+    struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
+    struct Object *__nvoc_pbase_Object;
+    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
+    struct KernelGraphicsManager *__nvoc_pbase_KernelGraphicsManager;
+    NV_STATUS (*__kgrmgrConstructEngine__)(struct OBJGPU *, struct KernelGraphicsManager *, ENGDESCRIPTOR);
+    NV_STATUS (*__kgrmgrStateLoad__)(POBJGPU, struct KernelGraphicsManager *, NvU32);
+    NV_STATUS (*__kgrmgrStateUnload__)(POBJGPU, struct KernelGraphicsManager *, NvU32);
+    NV_STATUS (*__kgrmgrStateInitLocked__)(POBJGPU, struct KernelGraphicsManager *);
+    NV_STATUS (*__kgrmgrStatePreLoad__)(POBJGPU, struct KernelGraphicsManager *, NvU32);
+    NV_STATUS (*__kgrmgrStatePostUnload__)(POBJGPU, struct KernelGraphicsManager *, NvU32);
+    void (*__kgrmgrStateDestroy__)(POBJGPU, struct KernelGraphicsManager *);
+    NV_STATUS (*__kgrmgrStatePreUnload__)(POBJGPU, struct KernelGraphicsManager *, NvU32);
+    NV_STATUS (*__kgrmgrStateInitUnlocked__)(POBJGPU, struct KernelGraphicsManager *);
+    void (*__kgrmgrInitMissing__)(POBJGPU, struct KernelGraphicsManager *);
+    NV_STATUS (*__kgrmgrStatePreInitLocked__)(POBJGPU, struct KernelGraphicsManager *);
+    NV_STATUS (*__kgrmgrStatePreInitUnlocked__)(POBJGPU, struct KernelGraphicsManager *);
+    NV_STATUS (*__kgrmgrStatePostLoad__)(POBJGPU, struct KernelGraphicsManager *, NvU32);
+    NvBool (*__kgrmgrIsPresent__)(POBJGPU, struct KernelGraphicsManager *);
+    struct GRMGR_LEGACY_KGRAPHICS_STATIC_INFO PRIVATE_FIELD(legacyKgraphicsStaticInfo);
+    NvU64 PRIVATE_FIELD(veidInUseMask);
+    NvU64 PRIVATE_FIELD(grIdxVeidMask)[8];
+    CTX_BUF_INFO PRIVATE_FIELD(globalCtxBufInfo)[10];
+};
+struct KernelGraphicsManager_PRIVATE {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
     struct Object *__nvoc_pbase_Object;
@@ -192,6 +217,11 @@ static inline NvBool kgrmgrIsPresent_DISPATCH(POBJGPU pGpu, struct KernelGraphic
     return pEngstate->__kgrmgrIsPresent__(pGpu, pEngstate);
 }
 
+static inline NvU64 kgrmgrGetGrIdxVeidMask(struct OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvU32 grIdx) {
+    struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
+    return pKernelGraphicsManager_PRIVATE->grIdxVeidMask[grIdx];
+}
+
 void kgrmgrGetGrObjectType_IMPL(NvU32 classNum, NvU32 *pObjectType);
 
 #define kgrmgrGetGrObjectType(classNum, pObjectType) kgrmgrGetGrObjectType_IMPL(classNum, pObjectType)
@@ -231,6 +261,17 @@ static inline NV_STATUS kgrmgrCtrlRouteKGR(struct OBJGPU *arg0, struct KernelGra
 #define kgrmgrCtrlRouteKGR(arg0, arg1, hClient, pGrRouteInfo, ppKernelGraphics) kgrmgrCtrlRouteKGR_IMPL(arg0, arg1, hClient, pGrRouteInfo, ppKernelGraphics)
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
+NV_STATUS kgrmgrCtrlRouteKGRWithDevice_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, struct Device *pDevice, const NV2080_CTRL_GR_ROUTE_INFO *pGrRouteInfo, struct KernelGraphics **ppKernelGraphics);
+
+#ifdef __nvoc_kernel_graphics_manager_h_disabled
+static inline NV_STATUS kgrmgrCtrlRouteKGRWithDevice(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, struct Device *pDevice, const NV2080_CTRL_GR_ROUTE_INFO *pGrRouteInfo, struct KernelGraphics **ppKernelGraphics) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_graphics_manager_h_disabled
+#define kgrmgrCtrlRouteKGRWithDevice(arg0, arg1, pDevice, pGrRouteInfo, ppKernelGraphics) kgrmgrCtrlRouteKGRWithDevice_IMPL(arg0, arg1, pDevice, pGrRouteInfo, ppKernelGraphics)
+#endif //__nvoc_kernel_graphics_manager_h_disabled
+
 NvU32 kgrmgrGetLegacyGpcMask_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1);
 
 #ifdef __nvoc_kernel_graphics_manager_h_disabled
@@ -240,6 +281,17 @@ static inline NvU32 kgrmgrGetLegacyGpcMask(struct OBJGPU *arg0, struct KernelGra
 }
 #else //__nvoc_kernel_graphics_manager_h_disabled
 #define kgrmgrGetLegacyGpcMask(arg0, arg1) kgrmgrGetLegacyGpcMask_IMPL(arg0, arg1)
+#endif //__nvoc_kernel_graphics_manager_h_disabled
+
+NvU32 kgrmgrGetLegacyPhysGfxGpcMask_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1);
+
+#ifdef __nvoc_kernel_graphics_manager_h_disabled
+static inline NvU32 kgrmgrGetLegacyPhysGfxGpcMask(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
+    return 0;
+}
+#else //__nvoc_kernel_graphics_manager_h_disabled
+#define kgrmgrGetLegacyPhysGfxGpcMask(arg0, arg1) kgrmgrGetLegacyPhysGfxGpcMask_IMPL(arg0, arg1)
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 NvU32 kgrmgrGetLegacyTpcMask_IMPL(struct OBJGPU *arg0, struct KernelGraphicsManager *arg1, NvU32 gpcId);

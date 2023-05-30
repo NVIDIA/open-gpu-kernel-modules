@@ -65,7 +65,7 @@ typedef enum
 typedef struct _DEPRECATED_CONTEXT
 {
     NV_STATUS (*RmAlloc)(struct _DEPRECATED_CONTEXT *pContext, NvHandle hClient, NvHandle hParent,
-                         NvHandle *phObject, NvU32 hClass, void *pAllocParams);
+                         NvHandle *phObject, NvU32 hClass, void *pAllocParams, NvU32 paramsSize);
 
     NV_STATUS (*RmControl)(struct _DEPRECATED_CONTEXT *pContext, NvHandle hClient, NvHandle hObject,
                            NvU32 cmd, void *pParams, NvU32 paramsSize);

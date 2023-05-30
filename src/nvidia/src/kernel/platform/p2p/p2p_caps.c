@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+// FIXME XXX
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/system.h"
 #include "gpu_mgr/gpu_mgr.h"
@@ -706,7 +709,7 @@ p2pGetCapsStatus
         // If any of the GPU has MIG enabled, return with no P2P support
         if (!bSmcNvLinkP2PSupported)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_NOTICE,
                   "P2P is marked unsupported with MIG for GPU instance = 0x%x\n",
                   gpuInstance);
             return NV_OK;
@@ -836,7 +839,7 @@ subdeviceCtrlCmdInternalSetP2pCaps_IMPL
         return NV_ERR_NOT_SUPPORTED;
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
-                       pParams->peerGpuCount <= NV_ARRAY_ELEMENTS32(pGpu->P2PPeerGpuCaps),
+                       pParams->peerGpuCount <= NV_ARRAY_ELEMENTS(pGpu->P2PPeerGpuCaps),
                        NV_ERR_INVALID_ARGUMENT);
 
     for (i = 0; i < pParams->peerGpuCount; i++)
@@ -851,7 +854,7 @@ subdeviceCtrlCmdInternalSetP2pCaps_IMPL
         if (pLocalPeerCaps == NULL)
         {
             NV_CHECK_OR_ELSE(LEVEL_ERROR,
-                             pGpu->P2PPeerGpuCount < NV_ARRAY_ELEMENTS32(pGpu->P2PPeerGpuCaps),
+                             pGpu->P2PPeerGpuCount < NV_ARRAY_ELEMENTS(pGpu->P2PPeerGpuCaps),
                              status = NV_ERR_INSUFFICIENT_RESOURCES; goto fail);
 
             pLocalPeerCaps = &pGpu->P2PPeerGpuCaps[pGpu->P2PPeerGpuCount];
@@ -905,7 +908,7 @@ subdeviceCtrlCmdInternalRemoveP2pCaps_IMPL
         return NV_ERR_NOT_SUPPORTED;
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
-                       pParams->peerGpuIdCount <= NV_ARRAY_ELEMENTS32(pGpu->P2PPeerGpuCaps),
+                       pParams->peerGpuIdCount <= NV_ARRAY_ELEMENTS(pGpu->P2PPeerGpuCaps),
                        NV_ERR_INVALID_ARGUMENT);
 
     for (i = 0; i < pParams->peerGpuIdCount; i++)
@@ -1028,7 +1031,7 @@ subdeviceCtrlCmdGetP2pCaps_IMPL
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
                        (pParams->bAllCaps ||
-                       (pParams->peerGpuCount <= NV_ARRAY_ELEMENTS32(pGpu->P2PPeerGpuCaps))),
+                       (pParams->peerGpuCount <= NV_ARRAY_ELEMENTS(pGpu->P2PPeerGpuCaps))),
                        NV_ERR_INVALID_ARGUMENT);
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR, (pParams->bUseUuid == NV_FALSE), NV_ERR_NOT_SUPPORTED);

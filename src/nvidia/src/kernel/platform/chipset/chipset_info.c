@@ -857,25 +857,6 @@ Intel_0685_setupFunc
     return NV_OK;
 }
 
-// Intel Ice Lake platform
-static NV_STATUS
-Intel_IceLake_setupFunc
-(
-    OBJCL *pCl
-)
-{
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-
-    // Intel IceLake
-    if ((pSys->cpuInfo.family == 0x6) &&
-        (pSys->cpuInfo.model == 0x6a) &&
-        (pSys->cpuInfo.stepping == 0x6))
-    {
-        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
-    }
-    return NV_OK;
-}
-
 // Intel Z590 platform (Rocket Lake)
 static NV_STATUS
 Intel_4381_setupFunc
@@ -962,6 +943,30 @@ Nvidia_T194_setupFunc
         return status;
 
     pCl->setProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT, NV_TRUE);
+
+    return NV_OK;
+}
+
+static NV_STATUS
+Nvidia_TH500_setupFunc
+(
+    OBJCL *pCl
+)
+{
+    if (!pCl->FHBAddr.valid)
+        return NV_ERR_GENERIC;
+
+    if (clInsertPcieConfigSpaceBase(pCl, 0, 0, 0, (NvU8)(PCI_MAX_BUSES - 1)) == NV_OK)
+        pCl->setProperty(pCl, PDB_PROP_CL_PCIE_CONFIG_ACCESSIBLE, NV_TRUE);
+
+    // Enable Gen2 ASLM
+    pCl->setProperty(pCl, PDB_PROP_CL_ASLM_SUPPORTS_GEN2_LINK_UPGRADE, NV_TRUE);
+
+    pCl->setProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT, NV_TRUE);
+
+    pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+
+    _Set_ASPM_L0S_L1(pCl, NV_FALSE, NV_FALSE);
 
     return NV_OK;
 }
@@ -1118,15 +1123,6 @@ AMD_X370_setupFunc
     OBJCL *pCl
 )
 {
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-
-    // AMD Milan
-    if (pSys->cpuInfo.family == 0x19 &&
-        pSys->cpuInfo.model == 0x1 &&
-        pSys->cpuInfo.stepping == 0x1)
-    {
-        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
-    }
 
     // Set ASPM L0S\L1 properties
     _Set_ASPM_L0S_L1(pCl, NV_FALSE, NV_FALSE);

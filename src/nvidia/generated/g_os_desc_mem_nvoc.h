@@ -72,7 +72,7 @@ struct OsDescMemory {
     NV_STATUS (*__osdescControlFilter__)(struct OsDescMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__osdescControlSerialization_Prologue__)(struct OsDescMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__osdescIsReady__)(struct OsDescMemory *, NvBool);
-    NV_STATUS (*__osdescCheckCopyPermissions__)(struct OsDescMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__osdescCheckCopyPermissions__)(struct OsDescMemory *, struct OBJGPU *, struct Device *);
     void (*__osdescPreDestruct__)(struct OsDescMemory *);
     NV_STATUS (*__osdescIsDuplicate__)(struct OsDescMemory *, NvHandle, NvBool *);
     void (*__osdescControlSerialization_Epilogue__)(struct OsDescMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -127,7 +127,7 @@ NV_STATUS __nvoc_objCreate_OsDescMemory(OsDescMemory**, Dynamic*, NvU32, CALL_CO
 #define osdescControlFilter(pResource, pCallContext, pParams) osdescControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define osdescControlSerialization_Prologue(pResource, pCallContext, pParams) osdescControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define osdescIsReady(pMemory, bCopyConstructorContext) osdescIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define osdescCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) osdescCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define osdescCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) osdescCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define osdescPreDestruct(pResource) osdescPreDestruct_DISPATCH(pResource)
 #define osdescIsDuplicate(pMemory, hMemory, pDuplicate) osdescIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define osdescControlSerialization_Epilogue(pResource, pCallContext, pParams) osdescControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -211,8 +211,8 @@ static inline NV_STATUS osdescIsReady_DISPATCH(struct OsDescMemory *pMemory, NvB
     return pMemory->__osdescIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS osdescCheckCopyPermissions_DISPATCH(struct OsDescMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__osdescCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS osdescCheckCopyPermissions_DISPATCH(struct OsDescMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__osdescCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void osdescPreDestruct_DISPATCH(struct OsDescMemory *pResource) {

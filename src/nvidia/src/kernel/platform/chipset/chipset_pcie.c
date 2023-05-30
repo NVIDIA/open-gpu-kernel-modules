@@ -57,6 +57,7 @@
 //
 
 static NV_STATUS objClInitPcieChipset(OBJGPU *, OBJCL *);
+static void      objClBuildPcieAtomicsAllowList(OBJGPU *, OBJCL *);
 static NvBool    objClInitGpuPortData(OBJGPU *, OBJCL *pCl);
 static NV_STATUS objClSetPortCapsOffsets(OBJCL *, PORTDATA *);
 static NV_STATUS objClSetPortPcieEnhancedCapsOffsets(OBJCL *, PORTDATA *);
@@ -191,6 +192,55 @@ addHwbcToList (OBJGPU *pGpu, OBJHWBC *pHWBC)
         pGpuHWBCList->pNext = pHWBCList;
     }
     return NV_OK;
+}
+
+/*! @brief Build PCIe atomics allow list for x86 CPUs
+ *         using CPU model and family.
+ *         
+ * Building allow list using only CPU model and family helps with
+ * passthrough virtualization where the host and passthrough VM
+ * has the same CPU model and family unlike the chipset.
+ * For non-x86 CPUs, allow list is built only during chipset discovery.
+ *
+ * @param[in]   pGpu              GPU object pointer
+ * @param[in]   pCl               Core logic object pointer
+ * @return None
+ */
+static
+void
+objClBuildPcieAtomicsAllowList(OBJGPU *pGpu, OBJCL *pCl)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+
+    // For non-x86 CPUs, allow list is built during chipset discovery.
+
+    // Intel IceLake
+    if ((pSys->cpuInfo.family == 0x6) &&
+        (pSys->cpuInfo.model == 0x6a) &&
+        (pSys->cpuInfo.stepping == 0x6))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    // Intel SapphireRapids
+    else if ((pSys->cpuInfo.family == 0x6) &&
+             (pSys->cpuInfo.model == 0x8f))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    // AMD Milan
+    else if (pSys->cpuInfo.family == 0x19 &&
+             pSys->cpuInfo.model == 0x1 &&
+             pSys->cpuInfo.stepping == 0x1)
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    // AMD Genoa
+    else if (pSys->cpuInfo.family == 0x19 &&
+             pSys->cpuInfo.model == 0x11)
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    return;
 }
 
 //
@@ -911,6 +961,8 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
         pCl->setProperty(pCl, PDB_PROP_CL_NOSNOOP_NOT_CAPABLE, NV_TRUE);
     }
 
+    objClBuildPcieAtomicsAllowList(pGpu, pCl);
+
     objClInitPcieChipset(pGpu, pCl);
 
     //
@@ -920,7 +972,7 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     //
     kbifInitPcieDeviceControlStatus(pGpu, pKernelBif);
 
-    // 
+    //
     // Probe root port PCIe atomic capabilities.
     // kbifProbePcieReqAtomicCaps_HAL should be called from here instead of
     // kbif construct because of the dependency on the chipset
@@ -4477,6 +4529,37 @@ clPcieGetRootGenSpeed_IMPL
 }
 
 /*!
+ * @brief: Returns the support for CPM of the root node
+ */
+NvU32
+clGetChipsetL1ClockPMSupport_IMPL
+(
+    OBJGPU  *pGpu,
+    OBJCL   *pCl
+)
+{
+    void  *handle;
+    NvU32  PCIECapPtr;
+    NvU32  linkCaps;
+    NvU32  clockPmSupport;
+
+    handle = pGpu->gpuClData.rootPort.addr.handle;
+    if (handle == NULL)
+    {
+        return 0;
+    }
+
+    PCIECapPtr = pGpu->gpuClData.rootPort.PCIECapPtr;
+
+    linkCaps = osPciReadDword(handle, CL_PCIE_LINK_CAP - CL_PCIE_BEGIN + PCIECapPtr);
+
+    // Read field 18:18 to get clock PM support
+    clockPmSupport = (linkCaps & CL_PCIE_LINK_CAP_CLOCK_PM_BIT);
+
+    return clockPmSupport;
+}
+
+/*!
  * @brief: Returns the value of link_capabilities_2 of the downstream port
  *
  * @param[i]   pGpu       GPU object pointer
@@ -4617,7 +4700,7 @@ static NvU16 _clPcieGetPcieCapSize(void *deviceHandle, NvU16 capType, NvU16 capI
                 {
                     tempDword = osPciReadDword(deviceHandle, capOffset + capSize + PCI_ENHANCED_ALLOCATION_ENTRY_HEADER);
                     tempDword = REF_VAL(PCI_ENHANCED_ALLOCATION_ENTRY_HEADER_ENTRY_SIZE, tempDword);
-                    capSize += (NvU16)((tempDword + 1) * NV_SIZEOF32(NvU32));
+                    capSize += (NvU16)((tempDword + 1) * sizeof(NvU32));
                 }
             }
             break;
@@ -4875,7 +4958,7 @@ static NvU16 _clPciePopulateCapMap(void * pDeviceHandle, NvU16 type, CL_PCIE_DC_
         return 0;
     }
     // clear the capability map.
-    portMemSet(pCapMap, 0, NV_SIZEOF32(*pCapMap));
+    portMemSet(pCapMap, 0, sizeof(*pCapMap));
 
     // if there is not a valid device handle, we are done.
     if (pDeviceHandle == NULL)
@@ -4996,14 +5079,14 @@ static NvU16 _clPcieCopyConfigSpaceDiagData(NvU8* pBuffer, NvU32 bufferSz, void 
     }
 
     // do all the full dword reads
-    for (; (blockSz - dataSz) >= sizeof(NvU32); dataSz += NV_SIZEOF32(NvU32))
+    for (; (blockSz - dataSz) >= sizeof(NvU32); dataSz += sizeof(NvU32))
     {
         // read a dword of data
         *((NvU32*)pBuffer) = osPciReadDword(pDeviceHandle, offset);
 
         // update the references to the next data to be read/written.
-        pBuffer += NV_SIZEOF32(NvU32);
-        offset += NV_SIZEOF32(NvU32);
+        pBuffer += sizeof(NvU32);
+        offset += sizeof(NvU32);
     }
 
     // we are at the nearest dword boundary to the end of the block.
@@ -5058,8 +5141,8 @@ NvU16 _clPcieSavePcieDiagnosticBlock(void *pDeviceHandle, CL_PCIE_DC_DIAGNOSTIC_
 
     // do some parameter checks
     if ((pBuffer == NULL)
-        || ((blkOffset + NV_SIZEOF32(*pBlkHeader) + blkSize) > PCI_EXTENDED_CONFIG_SPACE_LENGTH)
-        || ((NV_SIZEOF32(*pBlkHeader) + blkSize) > size))
+        || ((blkOffset + sizeof(*pBlkHeader) + blkSize) > PCI_EXTENDED_CONFIG_SPACE_LENGTH)
+        || ((sizeof(*pBlkHeader) + blkSize) > size))
     {
         return 0;
     }
@@ -5068,7 +5151,7 @@ NvU16 _clPcieSavePcieDiagnosticBlock(void *pDeviceHandle, CL_PCIE_DC_DIAGNOSTIC_
         // copy the block header & update the size
         pBlkHeader = (CL_PCIE_DC_DIAGNOSTIC_COLLECTION_ENTRY*)pBuffer;
         *pBlkHeader = *pScriptEntry;
-        collectedDataSize += NV_SIZEOF32(*pBlkHeader);
+        collectedDataSize += sizeof(*pBlkHeader);
     }
     if((pDeviceHandle != NULL)
         && (0 < blkSize)
@@ -5119,7 +5202,7 @@ NvU16 _clPcieGetDiagnosticData(OBJGPU *pGpu, CL_PCIE_DC_DIAGNOSTIC_COLLECTION_EN
     {
         return 0;
     }
-    portMemSet(pPCIeHandles, 0, NV_SIZEOF32(pPCIeHandles));
+    portMemSet(pPCIeHandles, 0, sizeof(pPCIeHandles));
 
     // get PCIE Handles.
     pUpstreamPort = &pGpu->gpuClData.upstreamPort.addr;
@@ -5142,7 +5225,7 @@ NvU16 _clPcieGetDiagnosticData(OBJGPU *pGpu, CL_PCIE_DC_DIAGNOSTIC_COLLECTION_EN
     {
         blkHeader = pScript[idx];
         // verify there is space, & we can access the device.
-        if ((size - collectedDataSize) < (NV_SIZEOF32(blkHeader) + blkHeader.length))
+        if ((size - collectedDataSize) < (sizeof(blkHeader) + blkHeader.length))
         {
             // if this block doesn't fit, skip it but continue because another block might.
             continue;
@@ -5300,6 +5383,6 @@ NvU16 clPcieGetGpuLostDiagnosticData_IMPL(OBJGPU *pGpu, OBJCL *pCl, NvU8 * pBuff
     };
 
     return _clPcieGetDiagnosticData(pGpu,
-        gpuLostCollectionScript, NV_ARRAY_ELEMENTS32(gpuLostCollectionScript),
+        gpuLostCollectionScript, NV_ARRAY_ELEMENTS(gpuLostCollectionScript),
         pBuffer, size);
 }

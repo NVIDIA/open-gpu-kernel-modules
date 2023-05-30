@@ -88,10 +88,16 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdSystemNotifyEvent__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_NOTIFY_EVENT_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetPlatformType__)(struct RmClientResource *, NV0000_CTRL_CMD_SYSTEM_GET_PLATFORM_TYPE_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemDebugCtrlRmMsg__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_DEBUG_RMMSG_CTRL_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemGpsControl__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_CONTROL_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemGpsBatchControl__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_BATCH_CONTROL_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetHwbcInfo__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_HWBC_INFO_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetP2pCaps__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetP2pCapsV2__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_P2P_CAPS_V2_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetP2pCapsMatrix__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_P2P_CAPS_MATRIX_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemGpsCtrl__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_CTRL_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemGpsGetFrmData__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_GET_FRM_DATA_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemGpsSetFrmData__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_SET_FRM_DATA_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemGpsCallAcpi__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_CALL_ACPI_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetPerfSensorCounters__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetExtendedPerfSensorCounters__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetGpusPowerStatus__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_GPUS_POWER_STATUS_PARAMS *);
@@ -163,6 +169,12 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdVgpuSetVgpuVersion__)(struct RmClientResource *, NV0000_CTRL_VGPU_SET_VGPU_VERSION_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemNVPCFGetPowerModeInfo__)(struct RmClientResource *, NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemSyncExternalFabricMgmt__)(struct RmClientResource *, NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrCtrl__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CTRL_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrGetFrmData__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_GET_FRM_DATA_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrSetFrmData__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_SET_FRM_DATA_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrCallAcpi__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CALL_ACPI_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrControl__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CONTROL_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrBatchControl__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_BATCH_CONTROL_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrGetPerfSensorCounters__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_GET_PERF_SENSOR_COUNTERS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_GET_PERF_SENSOR_COUNTERS_PARAMS *);
     NV_STATUS (*__cliresControl__)(struct RmClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -228,10 +240,16 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdSystemNotifyEvent(pRmCliRes, pParams) cliresCtrlCmdSystemNotifyEvent_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetPlatformType(pRmCliRes, pSysParams) cliresCtrlCmdSystemGetPlatformType_DISPATCH(pRmCliRes, pSysParams)
 #define cliresCtrlCmdSystemDebugCtrlRmMsg(pRmCliRes, pParams) cliresCtrlCmdSystemDebugCtrlRmMsg_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemGpsControl(pRmCliRes, controlParams) cliresCtrlCmdSystemGpsControl_DISPATCH(pRmCliRes, controlParams)
+#define cliresCtrlCmdSystemGpsBatchControl(pRmCliRes, controlParams) cliresCtrlCmdSystemGpsBatchControl_DISPATCH(pRmCliRes, controlParams)
 #define cliresCtrlCmdSystemGetHwbcInfo(pRmCliRes, pParams) cliresCtrlCmdSystemGetHwbcInfo_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetP2pCaps(pRmCliRes, pP2PParams) cliresCtrlCmdSystemGetP2pCaps_DISPATCH(pRmCliRes, pP2PParams)
 #define cliresCtrlCmdSystemGetP2pCapsV2(pRmCliRes, pP2PParams) cliresCtrlCmdSystemGetP2pCapsV2_DISPATCH(pRmCliRes, pP2PParams)
 #define cliresCtrlCmdSystemGetP2pCapsMatrix(pRmCliRes, pP2PParams) cliresCtrlCmdSystemGetP2pCapsMatrix_DISPATCH(pRmCliRes, pP2PParams)
+#define cliresCtrlCmdSystemGpsCtrl(pRmCliRes, pParams) cliresCtrlCmdSystemGpsCtrl_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemGpsGetFrmData(pRmCliRes, pParams) cliresCtrlCmdSystemGpsGetFrmData_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemGpsSetFrmData(pRmCliRes, pParams) cliresCtrlCmdSystemGpsSetFrmData_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemGpsCallAcpi(pRmCliRes, pParams) cliresCtrlCmdSystemGpsCallAcpi_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetPerfSensorCounters(pRmCliRes, pParams) cliresCtrlCmdSystemGetPerfSensorCounters_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetExtendedPerfSensorCounters(pRmCliRes, pParams) cliresCtrlCmdSystemGetExtendedPerfSensorCounters_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetGpusPowerStatus(pRmCliRes, pGpusPowerStatus) cliresCtrlCmdSystemGetGpusPowerStatus_DISPATCH(pRmCliRes, pGpusPowerStatus)
@@ -303,6 +321,12 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdVgpuSetVgpuVersion(pRmCliRes, vgpuVersionInfo) cliresCtrlCmdVgpuSetVgpuVersion_DISPATCH(pRmCliRes, vgpuVersionInfo)
 #define cliresCtrlCmdSystemNVPCFGetPowerModeInfo(pRmCliRes, pParams) cliresCtrlCmdSystemNVPCFGetPowerModeInfo_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemSyncExternalFabricMgmt(pRmCliRes, pExtFabricMgmtParams) cliresCtrlCmdSystemSyncExternalFabricMgmt_DISPATCH(pRmCliRes, pExtFabricMgmtParams)
+#define cliresCtrlCmdSystemPfmreqhndlrCtrl(pRmCliRes, pParams) cliresCtrlCmdSystemPfmreqhndlrCtrl_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemPfmreqhndlrGetFrmData(pRmCliRes, pParams) cliresCtrlCmdSystemPfmreqhndlrGetFrmData_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemPfmreqhndlrSetFrmData(pRmCliRes, pParams) cliresCtrlCmdSystemPfmreqhndlrSetFrmData_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemPfmreqhndlrCallAcpi(pRmCliRes, pParams) cliresCtrlCmdSystemPfmreqhndlrCallAcpi_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemPfmreqhndlrControl(pRmCliRes, controlParams) cliresCtrlCmdSystemPfmreqhndlrControl_DISPATCH(pRmCliRes, controlParams)
+#define cliresCtrlCmdSystemPfmreqhndlrBatchControl(pRmCliRes, controlParams) cliresCtrlCmdSystemPfmreqhndlrBatchControl_DISPATCH(pRmCliRes, controlParams)
 #define cliresCtrlCmdSystemPfmreqhndlrGetPerfSensorCounters(pRmCliRes, pParams) cliresCtrlCmdSystemPfmreqhndlrGetPerfSensorCounters_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters(pRmCliRes, pParams) cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters_DISPATCH(pRmCliRes, pParams)
 #define cliresControl(pResource, pCallContext, pParams) cliresControl_DISPATCH(pResource, pCallContext, pParams)
@@ -408,6 +432,18 @@ static inline NV_STATUS cliresCtrlCmdSystemDebugCtrlRmMsg_DISPATCH(struct RmClie
     return pRmCliRes->__cliresCtrlCmdSystemDebugCtrlRmMsg__(pRmCliRes, pParams);
 }
 
+NV_STATUS cliresCtrlCmdSystemGpsControl_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_CONTROL_PARAMS *controlParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemGpsControl_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_CONTROL_PARAMS *controlParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemGpsControl__(pRmCliRes, controlParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemGpsBatchControl_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_BATCH_CONTROL_PARAMS *controlParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemGpsBatchControl_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_BATCH_CONTROL_PARAMS *controlParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemGpsBatchControl__(pRmCliRes, controlParams);
+}
+
 NV_STATUS cliresCtrlCmdSystemGetHwbcInfo_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_HWBC_INFO_PARAMS *pParams);
 
 static inline NV_STATUS cliresCtrlCmdSystemGetHwbcInfo_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_HWBC_INFO_PARAMS *pParams) {
@@ -430,6 +466,30 @@ NV_STATUS cliresCtrlCmdSystemGetP2pCapsMatrix_IMPL(struct RmClientResource *pRmC
 
 static inline NV_STATUS cliresCtrlCmdSystemGetP2pCapsMatrix_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_P2P_CAPS_MATRIX_PARAMS *pP2PParams) {
     return pRmCliRes->__cliresCtrlCmdSystemGetP2pCapsMatrix__(pRmCliRes, pP2PParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemGpsCtrl_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_CTRL_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemGpsCtrl_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_CTRL_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemGpsCtrl__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemGpsGetFrmData_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_GET_FRM_DATA_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemGpsGetFrmData_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_GET_FRM_DATA_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemGpsGetFrmData__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemGpsSetFrmData_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_SET_FRM_DATA_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemGpsSetFrmData_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_SET_FRM_DATA_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemGpsSetFrmData__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemGpsCallAcpi_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_CALL_ACPI_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemGpsCallAcpi_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_CALL_ACPI_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemGpsCallAcpi__(pRmCliRes, pParams);
 }
 
 NV_STATUS cliresCtrlCmdSystemGetPerfSensorCounters_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS *pParams);
@@ -856,6 +916,42 @@ NV_STATUS cliresCtrlCmdSystemSyncExternalFabricMgmt_IMPL(struct RmClientResource
 
 static inline NV_STATUS cliresCtrlCmdSystemSyncExternalFabricMgmt_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_CMD_SYSTEM_SYNC_EXTERNAL_FABRIC_MGMT_PARAMS *pExtFabricMgmtParams) {
     return pRmCliRes->__cliresCtrlCmdSystemSyncExternalFabricMgmt__(pRmCliRes, pExtFabricMgmtParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemPfmreqhndlrCtrl_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CTRL_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemPfmreqhndlrCtrl_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CTRL_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemPfmreqhndlrCtrl__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemPfmreqhndlrGetFrmData_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_GET_FRM_DATA_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemPfmreqhndlrGetFrmData_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_GET_FRM_DATA_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemPfmreqhndlrGetFrmData__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemPfmreqhndlrSetFrmData_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_SET_FRM_DATA_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemPfmreqhndlrSetFrmData_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_SET_FRM_DATA_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemPfmreqhndlrSetFrmData__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemPfmreqhndlrCallAcpi_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CALL_ACPI_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemPfmreqhndlrCallAcpi_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CALL_ACPI_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemPfmreqhndlrCallAcpi__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemPfmreqhndlrControl_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CONTROL_PARAMS *controlParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemPfmreqhndlrControl_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CONTROL_PARAMS *controlParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemPfmreqhndlrControl__(pRmCliRes, controlParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemPfmreqhndlrBatchControl_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_BATCH_CONTROL_PARAMS *controlParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemPfmreqhndlrBatchControl_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_BATCH_CONTROL_PARAMS *controlParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemPfmreqhndlrBatchControl__(pRmCliRes, controlParams);
 }
 
 NV_STATUS cliresCtrlCmdSystemPfmreqhndlrGetPerfSensorCounters_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_GET_PERF_SENSOR_COUNTERS_PARAMS *pParams);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -505,12 +505,17 @@ PORT_MEM_ALLOCATOR *portMemAllocatorGetGlobalNonPaged(void);
 PORT_MEM_ALLOCATOR *portMemAllocatorGetGlobalPaged(void);
 /**
  * @brief Prints the memory details gathered by whatever tracking mechanism is
- * enabled. If pAllocator is NULL, it will print data for all allocators.
+ * enabled. If pTracking is NULL, aggregate tracking information from all
+ * allocators will be printed.
  *
- * @note Printing is done using portDbgPrintString, which prints regardless of
+ * @note Printing is done using portDbgPrintf, which prints regardless of
  * build type and debug levels.
  */
-void portMemPrintTrackingInfo(const PORT_MEM_ALLOCATOR *pAllocator);
+void portMemPrintTrackingInfo(const PORT_MEM_ALLOCATOR_TRACKING *pTracking);
+/**
+ * @brief Calls @ref portMemPrintTrackingInfo for all current allocator trackers.
+ */
+void portMemPrintAllTrackingInfo(void);
 
 // @} End core functions
 
@@ -568,12 +573,12 @@ NV_STATUS portMemExTrackingGetTotalStats(const PORT_MEM_ALLOCATOR *pAllocator, P
 /**
  * @brief Returns the statistics of peak allocations made with the given
  * allocator since it was created.
- * 
- * Peak data reports each field independently. For example, if the peak data
- * reports 100 allocations and 100000 bytes allocated, those two did not
- * necessarily happen *at the same time*. It could also be that the allocator
- * created 100 allocations of 1 byte each, then freed them and allocated a
- * single 100000 bytes block.
+ *
+ * Peak data reports the high-water mark based on the maximum size (the peak
+ * allocations doesn't report the largest number of allocations, it reports
+ * the number of allocations at the time the peak size was achieved). This is
+ * done so that the other peak stats, which are derived from peak size and
+ * peak allocations, are consistent with each other.
  *
  * If pAllocator is NULL, it returns stats for all allocators, as well as the
  * memory allocated with @ref portMemAllocPaged and @ref portMemAllocNonPaged
@@ -596,6 +601,16 @@ NV_STATUS portMemExTrackingGetPeakStats(const PORT_MEM_ALLOCATOR *pAllocator, PO
  * @return NV_ERR_OBJECT_NOT_FOUND if no allocations exist.
  */
 NV_STATUS portMemExTrackingGetNext(const PORT_MEM_ALLOCATOR *pAllocator, PORT_MEM_TRACK_ALLOC_INFO *pInfo, void **pIterator);
+
+/**
+ * @brief Gets the total size of the underlying heap, in bytes.
+ */
+NvLength portMemExTrackingGetHeapSize(void);
+
+/**
+ * @brief Gets the usable size in bytes (sans metadata/padding) of the given allocation.
+ */
+NvLength portMemExTrackingGetAllocUsableSize(void *pMem);
 
 /**
  * @brief Copies from user memory to kernel memory.
@@ -918,6 +933,9 @@ void portMemExUnmapIOSpace(void *addr, NvU64 byteSize);
 #endif
 #endif // !defined(PORT_MEM_TRACK_USE_LIMIT)
 
+// Memory tracking header can redefine some functions declared here.
+#include "nvport/inline/memory_tracking.h"
+
 /** @brief Nothing is printed unless @ref portMemPrintTrackingInfo is called */
 #define PORT_MEM_TRACK_PRINT_LEVEL_SILENT  0
 /** @brief Print when an error occurs and at shutdown */
@@ -926,15 +944,12 @@ void portMemExUnmapIOSpace(void *addr, NvU64 byteSize);
 #define PORT_MEM_TRACK_PRINT_LEVEL_VERBOSE 2
 
 #if !defined(PORT_MEM_TRACK_PRINT_LEVEL)
-#if PORT_IS_CHECKED_BUILD
+#if PORT_IS_CHECKED_BUILD || PORT_MEM_TRACK_ALLOC_SIZE
 #define PORT_MEM_TRACK_PRINT_LEVEL PORT_MEM_TRACK_PRINT_LEVEL_BASIC
 #else
 #define PORT_MEM_TRACK_PRINT_LEVEL PORT_MEM_TRACK_PRINT_LEVEL_SILENT
 #endif // PORT_IS_CHECKED_BUILD
 #endif // !defined(PORT_MEM_TRACK_PRINT_LEVEL)
-
-// Memory tracking header can redefine some functions declared here.
-#include "nvport/inline/memory_tracking.h"
 
 /**
  * @brief Single allocation description.

@@ -99,6 +99,8 @@ typedef struct
     NvU64   timer_count;                    // NvSwitch timer count
     NvU64   time;                           // Platform time, in ns
     NvU32   line;
+    NvU32   data_size;                      // Size of data
+    NvU8    description[NVSWITCH_ERROR_MAX_DESCRPTION_LEN]; // Short description of error type    
 
     union
     {
@@ -135,9 +137,9 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_FATAL,                                                  \
         _errresolved,                                                                   \
         NULL, 0,                                                                        \
-        __LINE__)
+        __LINE__, NULL)
 
-#define NVSWITCH_LOG_FATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata)   \
+#define NVSWITCH_LOG_FATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata, ...)   \
     nvswitch_record_error(                                                              \
         _device,                                                                        \
         &(_device->log_FATAL_ERRORS),                                                   \
@@ -147,8 +149,7 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_FATAL,                                                  \
         _errresolved,                                                                   \
         _errdata, sizeof(*_errdata),                                                    \
-        __LINE__)
-
+        __LINE__, #__VA_ARGS__)
 
 #define NVSWITCH_LOG_NONFATAL(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved) \
     nvswitch_record_error(                                                              \
@@ -160,9 +161,9 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_NONFATAL,                                               \
         _errresolved,                                                                   \
         NULL, 0,                                                                        \
-        __LINE__)
+        __LINE__, NULL)
 
-#define NVSWITCH_LOG_NONFATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata)   \
+#define NVSWITCH_LOG_NONFATAL_DATA(_device, _errsrc, _errtype, _instance, _subinstance, _errresolved, _errdata, ...)   \
     nvswitch_record_error(                                                              \
         _device,                                                                        \
         &(_device->log_NONFATAL_ERRORS),                                                \
@@ -172,7 +173,7 @@ typedef struct
         NVSWITCH_ERROR_SEVERITY_NONFATAL,                                               \
         _errresolved,                                                                   \
         _errdata, sizeof(*_errdata),                                                    \
-        __LINE__)
+        __LINE__, #__VA_ARGS__)
 
 #define NVSWITCH_NVLINK_ARCH_ERROR_NONE             0
 #define NVSWITCH_NVLINK_ARCH_ERROR_GENERIC          1

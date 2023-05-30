@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlc370/ctrlc370event.finn
+// Source file:      ctrl/ctrlc370/ctrlc370event.finn
 //
 
 #include "ctrl/ctrlc370/ctrlc370base.h"

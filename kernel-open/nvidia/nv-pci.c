@@ -269,6 +269,72 @@ resize:
 #endif /* NV_PCI_REBAR_GET_POSSIBLE_SIZES_PRESENT */
 }
 
+static void
+nv_init_coherent_link_info
+(
+    nv_state_t *nv
+)
+{
+#if defined(NV_DEVICE_PROPERTY_READ_U64_PRESENT) && \
+    defined(CONFIG_ACPI_NUMA) && \
+    NV_IS_EXPORT_SYMBOL_PRESENT_pxm_to_node
+    nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+    NvU64 pa = 0;
+    NvU64 pxm_start = 0;
+    NvU64 pxm_count = 0;
+    NvU32 pxm;
+
+    if (!NVCPU_IS_AARCH64)
+        return;
+
+    if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-base-pa", &pa) != 0)
+        goto failed;
+    if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-start", &pxm_start) != 0)
+        goto failed;
+    if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-count", &pxm_count) != 0)
+        goto failed;
+
+    NV_DEV_PRINTF(NV_DBG_INFO, nv, "DSD properties: \n");
+    NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU memory PA: 0x%lx \n", pa);
+    NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU memory PXM start: %u \n", pxm_start);
+    NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU memory PXM count: %u \n", pxm_count);
+
+    nvl->coherent_link_info.gpu_mem_pa = pa;
+
+    for (pxm = pxm_start; pxm < (pxm_start + pxm_count); pxm++)
+    {
+        NvU32 node = pxm_to_node(pxm);
+        if (node != NUMA_NO_NODE)
+        {
+            set_bit(node, nvl->coherent_link_info.free_node_bitmap);
+        }
+    }
+
+    if (NVreg_EnableUserNUMAManagement)
+    {
+        NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_OFFLINE);
+        nvl->numa_info.use_auto_online = NV_TRUE;
+
+        if (!bitmap_empty(nvl->coherent_link_info.free_node_bitmap, MAX_NUMNODES))
+        {
+            nvl->numa_info.node_id = find_first_bit(nvl->coherent_link_info.free_node_bitmap, MAX_NUMNODES);
+        }
+        NV_DEV_PRINTF(NV_DBG_SETUP, nv, "GPU NUMA information: node id: %u PA: 0x%llx\n",
+                      nvl->numa_info.node_id, nvl->coherent_link_info.gpu_mem_pa);
+    }
+    else
+    {
+        NV_DEV_PRINTF(NV_DBG_SETUP, nv, "User-mode NUMA onlining disabled.\n");
+    }
+
+    return;
+
+failed:
+    NV_DEV_PRINTF(NV_DBG_SETUP, nv, "Cannot get coherent link info.\n");
+#endif
+    return;
+}
+
 /* find nvidia devices and set initial state */
 static int
 nv_pci_probe
@@ -463,6 +529,13 @@ next_bar:
             NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
             NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn));
 
+        // With GH180 C2C, VF BAR1/2 are disabled and therefore expected to be 0.
+        if (j != NV_GPU_BAR_INDEX_REGS)
+        {
+            nv_printf(NV_DBG_INFO, "NVRM: ignore invalid BAR failure for BAR%d\n", j);
+            continue;
+        }
+
         goto failed;
     }
 
@@ -547,11 +620,16 @@ next_bar:
 
     nv_init_ibmnpu_info(nv);
 
+    nv_init_coherent_link_info(nv);
+
 #if defined(NVCPU_PPC64LE)
     // Use HW NUMA support as a proxy for ATS support. This is true in the only
     // PPC64LE platform where ATS is currently supported (IBM P9).
     nv_ats_supported &= nv_platform_supports_numa(nvl);
 #else
+#if defined(NV_PCI_DEV_HAS_ATS_ENABLED)
+    nv_ats_supported &= pci_dev->ats_enabled;
+#endif
 #endif
     if (nv_ats_supported)
     {

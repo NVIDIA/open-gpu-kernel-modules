@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -78,9 +78,11 @@ extern void CP_WRITE_CSSELR_REGISTER(NvU32 val);
 #define CP_MIDR_PRIMARY_PART_NUM_XGENE         0x0
 #define CP_MIDR_PRIMARY_PART_NUM_CORTEX_A57    0xd07
 #define CP_MIDR_PRIMARY_PART_NUM_CORTEX_A76    0xd0b
+#define CP_MIDR_PRIMARY_PART_NUM_NEOVERSE_V2   0xd4f
 #define CP_MIDR_PRIMARY_PART_NUM_THUNDER_X2    0x0af
 #define CP_MIDR_PRIMARY_PART_NUM_KUNPENG_920   0xd01
 #define CP_MIDR_PRIMARY_PART_NUM_BLUEFIELD     0xd08
+#define CP_MIDR_PRIMARY_PART_NUM_BLUEFIELD3    0xd42
 #define CP_MIDR_PRIMARY_PART_NUM_GRAVITRON2    0xd0c
 #define CP_MIDR_PRIMARY_PART_NUM_A64FX         0x001
 #define CP_MIDR_PRIMARY_PART_NUM_FT2000        0x662
@@ -88,6 +90,7 @@ extern void CP_WRITE_CSSELR_REGISTER(NvU32 val);
 #define CP_MIDR_PRIMARY_PART_NUM_ALTRA         0x000
 #define CP_MIDR_PRIMARY_PART_NUM_OCTEON_CN96XX 0x0b2
 #define CP_MIDR_PRIMARY_PART_NUM_OCTEON_CN98XX 0x0b1
+#define CP_MIDR_PRIMARY_PART_NUM_NEOVERSE_N2   0xd49
 
 // Cache Size Identification Register
 #define CP_CCSIDR                     "ccsidr_el1"

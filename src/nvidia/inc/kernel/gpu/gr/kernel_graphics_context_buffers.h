@@ -34,7 +34,7 @@
  *
  * Not all buffer types are supported on every GPU.
  */
-#define GR_GLOBALCTX_BUFFER_DEF(x) \
+#define GR_GLOBALCTX_BUFFER_DEF(x)                                                 \
     NV_ENUM_ENTRY(x, GR_GLOBALCTX_BUFFER_BUNDLE_CB,                    0x00000000) \
     NV_ENUM_ENTRY(x, GR_GLOBALCTX_BUFFER_PAGEPOOL,                     0x00000001) \
     NV_ENUM_ENTRY(x, GR_GLOBALCTX_BUFFER_ATTRIBUTE_CB,                 0x00000002) \
@@ -50,7 +50,7 @@ NV_ENUM_DEF(GR_GLOBALCTX_BUFFER, GR_GLOBALCTX_BUFFER_DEF)
 #define GR_GLOBALCTX_BUFFER_COUNT               NV_ENUM_SIZE(GR_GLOBALCTX_BUFFER)
 
 
-#define GR_CTX_BUFFER_DEF(x) \
+#define GR_CTX_BUFFER_DEF(x)                                 \
         NV_ENUM_ENTRY(x, GR_CTX_BUFFER_MAIN,     0x00000000) \
         NV_ENUM_ENTRY(x, GR_CTX_BUFFER_ZCULL,    0x00000001) \
         NV_ENUM_ENTRY(x, GR_CTX_BUFFER_PM,       0x00000002) \

@@ -97,6 +97,7 @@ typedef enum
 
 typedef enum
 {
+    // enum value unit = 270M
     linkBW_1_62Gbps                = 0x06,
     linkBW_2_16Gbps                = 0x08,
     linkBW_2_43Gbps                = 0x09,
@@ -104,7 +105,6 @@ typedef enum
     linkBW_3_24Gbps                = 0x0C,
     linkBW_4_32Gbps                = 0x10,
     linkBW_5_40Gbps                = 0x14,
-    linkBW_6_75Gbps                = 0x19,
     linkBW_8_10Gbps                = 0x1E,
     linkBW_Supported
 } DP_LINK_BANDWIDTH;
@@ -119,10 +119,8 @@ typedef enum
     linkSpeedId_2_43Gbps                = 0x05,
     linkSpeedId_3_24Gbps                = 0x06,
     linkSpeedId_4_32Gbps                = 0x07,
-    linkSpeedId_6_75Gbps                = 0x08,
     linkSpeedId_Supported
 } DP_LINK_SPEED_INDEX;
-
 
 typedef enum
 {
@@ -291,7 +289,7 @@ typedef struct
     NvBool  bSourceControlModeSupported;
     NvBool  bConcurrentLTSupported;
     NvBool  bConv444To420Supported;
-    NvU8    maxTmdsClkRate;
+    NvU32   maxTmdsClkRate;
     NvU8    maxBpc;
     NvU8    maxHdmiLinkBandwidthGbps;
 } PCONCaps;
@@ -477,7 +475,7 @@ typedef struct
 // Multiplier constant to get link frequency in KHZ
 // Maximum link rate of Main Link lanes = Value x 270M.
 // To get it to KHz unit, we need to multiply 270K.
-#define DP_LINK_BW_FREQUENCY_MULTIPLIER_KHZ (270*1000)
+#define DP_LINK_BW_FREQUENCY_MULTIPLIER_KHZ             (270*1000)
 
 // Multiplier constant to get link rate table's in KHZ
 #define DP_LINK_RATE_TABLE_MULTIPLIER_KHZ 200
@@ -553,11 +551,11 @@ typedef struct
 #define IS_INTERMEDIATE_LINKBW(val) (((NvU32)(val)==linkBW_2_16Gbps) || \
                                      ((NvU32)(val)==linkBW_2_43Gbps) || \
                                      ((NvU32)(val)==linkBW_3_24Gbps) || \
-                                     ((NvU32)(val)==linkBW_4_32Gbps) || \
-                                     ((NvU32)(val)==linkBW_6_75Gbps))
+                                     ((NvU32)(val)==linkBW_4_32Gbps))
 
-#define IS_VALID_LINKBW(val) (IS_STANDARD_LINKBW(val) || \
+#define IS_VALID_LINKBW(val) (IS_STANDARD_LINKBW(val)     || \
                               IS_INTERMEDIATE_LINKBW(val))
+
 //
 // Phy Repeater count read from DPCD offset F0002h is an
 // 8 bit value where each bit represents the total count

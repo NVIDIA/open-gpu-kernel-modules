@@ -74,7 +74,7 @@ struct RegisterMemory {
     NV_STATUS (*__regmemControlFilter__)(struct RegisterMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__regmemControlSerialization_Prologue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__regmemIsReady__)(struct RegisterMemory *, NvBool);
-    NV_STATUS (*__regmemCheckCopyPermissions__)(struct RegisterMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__regmemCheckCopyPermissions__)(struct RegisterMemory *, struct OBJGPU *, struct Device *);
     void (*__regmemPreDestruct__)(struct RegisterMemory *);
     NV_STATUS (*__regmemIsDuplicate__)(struct RegisterMemory *, NvHandle, NvBool *);
     void (*__regmemControlSerialization_Epilogue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -129,7 +129,7 @@ NV_STATUS __nvoc_objCreate_RegisterMemory(RegisterMemory**, Dynamic*, NvU32, CAL
 #define regmemControlFilter(pResource, pCallContext, pParams) regmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define regmemControlSerialization_Prologue(pResource, pCallContext, pParams) regmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define regmemIsReady(pMemory, bCopyConstructorContext) regmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define regmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) regmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define regmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) regmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define regmemPreDestruct(pResource) regmemPreDestruct_DISPATCH(pResource)
 #define regmemIsDuplicate(pMemory, hMemory, pDuplicate) regmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define regmemControlSerialization_Epilogue(pResource, pCallContext, pParams) regmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -213,8 +213,8 @@ static inline NV_STATUS regmemIsReady_DISPATCH(struct RegisterMemory *pMemory, N
     return pMemory->__regmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS regmemCheckCopyPermissions_DISPATCH(struct RegisterMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__regmemCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS regmemCheckCopyPermissions_DISPATCH(struct RegisterMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__regmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void regmemPreDestruct_DISPATCH(struct RegisterMemory *pResource) {

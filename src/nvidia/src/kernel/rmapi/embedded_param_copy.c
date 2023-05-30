@@ -888,7 +888,7 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
         case NV83DE_CTRL_CMD_DEBUG_WRITE_MEMORY:
         {
             CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS);
-                        
+
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS*)pRmCtrlParams->pParams)->buffer = paramCopies[0].pUserParams;
             break;

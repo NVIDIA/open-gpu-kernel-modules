@@ -26,7 +26,7 @@
 
 //
 // This file contains generic event buffer producer implementation for adding variable length data
-// 
+//
 // Data format:
 //
 // Event Record buffer holds fixed size records
@@ -112,7 +112,7 @@ eventBufferUpdateRecordBufferGet(EVENT_BUFFER_PRODUCER_INFO *info, NvU32 get)
     RECORD_BUFFER_INFO* pRecordBuffer = &info->recordBuffer;
     pRecordBuffer->pHeader->recordGet = get;
 
-    // used for notification 
+    // used for notification
     _eventBufferUpdateRecordBufferCount(info);
 
     // dropCounts get reset on every updateGet call
@@ -192,7 +192,7 @@ eventBufferProducerAddEvent
     }
 }
 
-NV_EVENT_BUFFER_RECORD* 
+NV_EVENT_BUFFER_RECORD*
 _eventBufferGetFreeRecord(EVENT_BUFFER_PRODUCER_INFO *info)
 {
     RECORD_BUFFER_INFO* pRecInfo = &info->recordBuffer;

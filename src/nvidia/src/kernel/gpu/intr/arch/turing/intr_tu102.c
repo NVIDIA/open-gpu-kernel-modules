@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,8 @@
 #include "vgpu/vgpu_events.h"
 #include "vgpu/rpc.h"
 #include "gpu/mmu/kern_gmmu.h"
+#include "libraries/nvport/nvport.h"
+#include "gpu/disp/kern_disp.h"
 
 #include "published/turing/tu102/dev_ctrl.h"
 #include "published/turing/tu102/dev_vm.h"
@@ -113,10 +115,10 @@ intrStateLoad_TU102
 )
 {
     NV_STATUS status = NV_OK;
-    INTR_TABLE_ENTRY *pIntrTable;
-    NvU32 intrTableSz, i;
+    InterruptTable    *pIntrTable;
+    InterruptTableIter iter;
 
-    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz));
+    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable));
 
     //
     // Make sure all leaf nodes are disabled before we enable them.  Older drivers
@@ -135,25 +137,26 @@ intrStateLoad_TU102
     // and all the VFs
     //
     pGpu->pmcRmOwnsIntrMask = INTERRUPT_MASK_DISABLED;
-    for (i = 0; i < intrTableSz; i++)
+    for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
     {
-        if (pIntrTable[i].pmcIntrMask != NV_PMC_INTR_INVALID_MASK)
+        INTR_TABLE_ENTRY *pEntry = iter.pValue;
+        if (pEntry->pmcIntrMask != NV_PMC_INTR_INVALID_MASK)
         {
-            pGpu->pmcRmOwnsIntrMask |= pIntrTable[i].pmcIntrMask;
+            pGpu->pmcRmOwnsIntrMask |= pEntry->pmcIntrMask;
 
-            if (pIntrTable[i].mcEngine != MC_ENGINE_IDX_TMR)
+            if (pEntry->mcEngine != MC_ENGINE_IDX_TMR)
                 continue;
         }
 
-        if (pIntrTable[i].intrVector != NV_INTR_VECTOR_INVALID)
+        if (pEntry->intrVector != NV_INTR_VECTOR_INVALID)
         {
-            intrEnableLeaf_HAL(pGpu, pIntr, pIntrTable[i].intrVector);
+            intrEnableLeaf_HAL(pGpu, pIntr, pEntry->intrVector);
         }
 
-        if ((pIntrTable[i].intrVectorNonStall != NV_INTR_VECTOR_INVALID) &&
-            !pIntrTable[i].bDisableNonStall)
+        if ((pEntry->intrVectorNonStall != NV_INTR_VECTOR_INVALID)
+            )
         {
-            intrEnableLeaf_HAL(pGpu, pIntr, pIntrTable[i].intrVectorNonStall);
+            intrEnableLeaf_HAL(pGpu, pIntr, pEntry->intrVectorNonStall);
         }
     }
 
@@ -248,7 +251,7 @@ intrCacheIntrFields_TU102
     }
     else
     {
-        pIntr->replayableFaultIntrVector = NV_INTR_VECTOR_INVALID;
+        pIntr->replayableFaultIntrVector = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_REPLAYABLE_FAULT_CPU, NV_FALSE);
     }
     if (pDisp != NULL)
     {
@@ -719,7 +722,7 @@ _intrGetUvmLeafMask_TU102
         NvBool bRmOwnsReplayableFault = !!(pKernelGmmu->uvmSharedIntrRmOwnsMask & RM_UVM_SHARED_INTR_MASK_MMU_REPLAYABLE_FAULT_NOTIFY);
         NvBool bRmOwnsAccessCntr      = !!(pKernelGmmu->uvmSharedIntrRmOwnsMask & RM_UVM_SHARED_INTR_MASK_HUB_ACCESS_COUNTER_NOTIFY);
 
-        if (bRmOwnsReplayableFault && (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu)))
+        if (bRmOwnsReplayableFault)
         {
             val |= NVBIT(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(pIntr->replayableFaultIntrVector));
         }
@@ -831,9 +834,9 @@ intrGetPendingStallEngines_TU102
     THREAD_STATE_NODE   *pThreadState
 )
 {
-    INTR_TABLE_ENTRY *pIntrTable;
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-    NvU32 intrTableSz, i;
+    InterruptTable    *pIntrTable;
+    InterruptTableIter iter;
     NvU64 sanityCheckSubtreeMask = 0;
     NvU32 numIntrLeaves = intrGetNumLeaves_HAL(pGpu, pIntr);
     NV_ASSERT(numIntrLeaves <= NV_MAX_INTR_LEAVES);
@@ -851,14 +854,15 @@ intrGetPendingStallEngines_TU102
     }
 
     NV_ASSERT_OK_OR_RETURN(intrGetLeafStatus_HAL(pGpu, pIntr, intrLeafValues, pThreadState));
-    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz));
+    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable));
 
-    for (i = 0; i < intrTableSz; i++)
+    for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
     {
-        NvU32 intrVector;
-        NvU32 leaf, leafIndex, leafBit;
-
-        intrVector = pIntrTable[i].intrVector;
+        INTR_TABLE_ENTRY *pEntry     = iter.pValue;
+        NvU32             intrVector = pEntry->intrVector;
+        NvU32             leaf;
+        NvU32             leafIndex;
+        NvU32             leafBit;
 
         // Check if this engine has a valid stalling interrupt vector in the new tree
         if (intrVector == NV_INTR_VECTOR_INVALID)
@@ -879,7 +883,10 @@ intrGetPendingStallEngines_TU102
         if ((sanityCheckSubtreeMask &
              NVBIT64(NV_CTRL_INTR_LEAF_IDX_TO_SUBTREE(leafIndex))) == 0)
         {
-            NV_PRINTF(LEVEL_ERROR, "MC_ENGINE_IDX %u has invalid stall intr vector %u\n", pIntrTable[i].mcEngine, intrVector);
+            NV_PRINTF(LEVEL_ERROR,
+                      "MC_ENGINE_IDX %u has invalid stall intr vector %u\n",
+                      pEntry->mcEngine,
+                      intrVector);
             DBG_BREAKPOINT();
             continue;
         }
@@ -899,7 +906,7 @@ intrGetPendingStallEngines_TU102
         }
 
         // Add engine to bitvector
-        bitVectorSet(pEngines, pIntrTable[i].mcEngine);
+        bitVectorSet(pEngines, pEntry->mcEngine);
     }
 
     if (pKernelGmmu != NULL)
@@ -1103,6 +1110,8 @@ intrGetPendingDisplayIntr_TU102
     THREAD_STATE_NODE   *pThreadState
 )
 {
+    KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+
     bitVectorClrAll(pEngines);
 
     if (IS_GPU_GC6_STATE_ENTERED(pGpu))
@@ -1113,6 +1122,14 @@ intrGetPendingDisplayIntr_TU102
     if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
     {
         return NV_ERR_GPU_IS_LOST;
+    }
+
+    if (pKernelDisplay != NULL && kdispGetDeferredVblankHeadMask(pKernelDisplay))
+    {
+        // Deferred vblank is pending which we need to handle
+        bitVectorSet(pEngines, MC_ENGINE_IDX_DISP);
+        // Nothing else to set here, return early
+        return NV_OK;
     }
 
     if (pIntr->displayIntrVector == NV_INTR_VECTOR_INVALID)
@@ -1186,10 +1203,10 @@ intrDumpState_TU102
     Intr *pIntr
 )
 {
-    INTR_TABLE_ENTRY *pIntrTable;
-    NvU32 intrTableSz = 0;
-    NvU32 i;
-    NvU32 intrLeafSize = intrGetLeafSize_HAL(pGpu, pIntr);
+    InterruptTable    *pIntrTable;
+    InterruptTableIter iter;
+    NvU32              i;
+    NvU32              intrLeafSize = intrGetLeafSize_HAL(pGpu, pIntr);
 
     NV_PRINTF(LEVEL_INFO, "Interrupt registers:\n");
     for (i = 0; i < NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP__SIZE_1; i++)
@@ -1205,16 +1222,19 @@ intrDumpState_TU102
     }
 
     NV_PRINTF(LEVEL_INFO, "MC Interrupt table:\n");
-    intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz);
+    intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable);
 
-    for (i = 0; i < intrTableSz; i++)
+    for (i = 0, iter = vectIterAll(pIntrTable); vectIterNext(&iter); i++)
     {
+        INTR_TABLE_ENTRY *pEntry = iter.pValue;
+        PORT_UNREFERENCED_VARIABLE(pEntry);
+
         NV_PRINTF(LEVEL_INFO,
-                  "%2u: mcEngineIdx=%-4u intrVector=%-10u intrVectorNonStall=%-10u bDisableNonStall=%u\n", i,
-                  pIntrTable[i].mcEngine,
-                  pIntrTable[i].intrVector,
-                  pIntrTable[i].intrVectorNonStall,
-                  pIntrTable[i].bDisableNonStall);
+            "%2u: mcEngineIdx=%-4u intrVector=%-10u intrVectorNonStall=%-10u\n",
+            i,
+            pEntry->mcEngine,
+            pEntry->intrVector,
+            pEntry->intrVectorNonStall);
     }
 }
 

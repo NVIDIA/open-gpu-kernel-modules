@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -156,7 +156,7 @@ subdeviceCtrlCmdMcServiceInterrupts_IMPL
     Intr *pIntr  = GPU_GET_INTR(pGpu);
     MC_ENGINE_BITVECTOR engines;
     NvBool bMIGInUse = IS_MIG_IN_USE(pGpu);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
 
     bitVectorClrAll(&engines);
 
@@ -195,7 +195,7 @@ subdeviceCtrlCmdMcServiceInterrupts_IMPL
             NvU32 i;
 
             NV_ASSERT_OK_OR_RETURN(
-                kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
+                kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
 
             // Compute instances always contain 1 GR
             grCount = 1;
@@ -543,30 +543,23 @@ intrGetVectorFromEngineId_IMPL
     NvBool    bNonStall
 )
 {
-    INTR_TABLE_ENTRY    *pIntrTable;
-    NvU32                intrTableSz;
-    NvU32                i;
-    NV_STATUS            status;
+    InterruptTable    *pIntrTable;
+    InterruptTableIter iter;
+    NV_STATUS          status;
 
-    status = intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz);
+    status = intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable);
     if (status != NV_OK)
     {
         NV_ASSERT_OK_FAILED("Failed to get interrupt table", status);
         return NV_INTR_VECTOR_INVALID;
     }
 
-    for (i = 0; i < intrTableSz; i++)
+    for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
     {
-        if (pIntrTable[i].mcEngine == mcEngineId)
+        INTR_TABLE_ENTRY *pEntry = iter.pValue;
+        if (pEntry->mcEngine == mcEngineId)
         {
-            if (bNonStall)
-            {
-                return pIntrTable[i].intrVectorNonStall;
-            }
-            else
-            {
-                return pIntrTable[i].intrVector;
-            }
+            return bNonStall ? pEntry->intrVectorNonStall : pEntry->intrVector;
         }
     }
 
@@ -592,22 +585,22 @@ intrConvertEngineMaskToPmcIntrMask_IMPL
     PMC_ENGINE_BITVECTOR engineMask
 )
 {
-    INTR_TABLE_ENTRY    *pIntrTable;
-    NvU32                intrTableSz;
-    NvU32                i;
-    NvU32                pmcIntrMask = 0;
+    InterruptTable    *pIntrTable;
+    InterruptTableIter iter;
+    NvU32              pmcIntrMask = 0;
 
-    if (NV_OK != intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz))
+    if (NV_OK != intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable))
     {
         NV_ASSERT(pmcIntrMask);
         return pmcIntrMask;
     }
 
-    for (i = 0; i < intrTableSz; i++)
+    for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
     {
-        if (bitVectorTest(engineMask, pIntrTable[i].mcEngine))
+        INTR_TABLE_ENTRY *pEntry = iter.pValue;
+        if (bitVectorTest(engineMask, pEntry->mcEngine))
         {
-            pmcIntrMask |= pIntrTable[i].pmcIntrMask;
+            pmcIntrMask |= pEntry->pmcIntrMask;
         }
     }
 
@@ -631,24 +624,25 @@ intrConvertPmcIntrMaskToEngineMask_IMPL
     PMC_ENGINE_BITVECTOR pEngines
 )
 {
-    INTR_TABLE_ENTRY    *pIntrTable;
-    NvU32                intrTableSz;
-    NvU32                i;
+    InterruptTable    *pIntrTable;
+    InterruptTableIter iter;
 
     NV_ASSERT_OR_RETURN_VOID(pEngines != NULL);
-    NV_ASSERT_OR_RETURN_VOID(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz) == NV_OK);
+    NV_ASSERT_OR_RETURN_VOID(
+        intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable) == NV_OK);
 
     bitVectorClrAll(pEngines);
-    for (i = 0; i < intrTableSz; i++)
+    for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
     {
-        if (pIntrTable[i].pmcIntrMask == NV_PMC_INTR_INVALID_MASK)
+        INTR_TABLE_ENTRY *pEntry = iter.pValue;
+        if (pEntry->pmcIntrMask == NV_PMC_INTR_INVALID_MASK)
         {
             continue;
         }
 
-        if (pIntrTable[i].pmcIntrMask & pmcIntrMask)
+        if (pEntry->pmcIntrMask & pmcIntrMask)
         {
-            bitVectorSet(pEngines, pIntrTable[i].mcEngine);
+            bitVectorSet(pEngines, pEntry->mcEngine);
         }
     }
 }
@@ -661,28 +655,24 @@ intrConvertPmcIntrMaskToEngineMask_IMPL
 NV_STATUS
 intrGetSmallestNotificationVector_IMPL
 (
-    OBJGPU  *pGpu,
-    Intr *pIntr,
-    NvU32   *pSmallestVector
+    OBJGPU *pGpu,
+    Intr   *pIntr,
+    NvU32  *pSmallestVector
 )
 {
-    INTR_TABLE_ENTRY    *pIntrTable;
-    NvU32                intrTableSz;
-    NvU32                i, leafIdx;
-    NvU32                val = NV_INTR_VECTOR_INVALID;
-
-    *pSmallestVector = val;
+    InterruptTable    *pIntrTable;
+    InterruptTableIter iter;
+    NvU32              val = NV_INTR_VECTOR_INVALID;
 
     NV_ASSERT_OR_RETURN(pSmallestVector != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz));
+    *pSmallestVector = val;
 
-    for (i = 0; i < intrTableSz; i++)
+    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable));
+
+    for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
     {
-        NvU32 curVector = pIntrTable[i].intrVectorNonStall;
-        if (curVector < val)
-        {
-            val = curVector;
-        }
+        val = NV_MIN(val,
+                     ((INTR_TABLE_ENTRY *)iter.pValue)->intrVectorNonStall);
     }
 
     //
@@ -690,8 +680,9 @@ intrGetSmallestNotificationVector_IMPL
     // This should be consistent across all chips even if they have different
     // floorsweeping configs
     //
-    leafIdx = NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(val));
-    *pSmallestVector = NV_CTRL_INTR_LEAF_IDX_TO_GPU_VECTOR_START(leafIdx);
+    *pSmallestVector = NV_CTRL_INTR_LEAF_IDX_TO_GPU_VECTOR_START(
+        NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(
+            NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(val)));
     return NV_OK;
 }
 
@@ -738,6 +729,7 @@ intrConstructEngine_IMPL
     return NV_OK;
 }
 
+
 void
 intrDestruct_IMPL
 (
@@ -753,6 +745,7 @@ intrDestruct_IMPL
         pNode = intrDequeueDpc(pGpu, pIntr, pDPCQueue);
         portMemFree(pNode);
     }
+
 }
 
 
@@ -796,6 +789,7 @@ intrStateInitLocked_IMPL
     Intr     *pIntr
 )
 {
+    NV_STATUS status = NV_OK;
     // Enable interrupts in the HAL
     pIntr->halIntrEnabled = NV_TRUE;
 
@@ -813,7 +807,7 @@ intrStateInitLocked_IMPL
         pKernelGmmu->uvmSharedIntrRmOwnsMask = RM_UVM_SHARED_INTR_MASK_ALL;
     }
 
-    NV_ASSERT_OK_OR_RETURN(intrInitInterruptTable_HAL(pGpu, pIntr));
+    NV_ASSERT_OK_OR_GOTO(status, intrInitInterruptTable_HAL(pGpu, pIntr), exit);
     _intrInitServiceTable(pGpu, pIntr);
 
     if (pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING))
@@ -832,7 +826,9 @@ intrStateInitLocked_IMPL
         // Hypervisor will set the intr unblocked mask later at the time of SWRL init.
     }
 
-    return NV_OK;
+exit:
+
+    return status;
 }
 
 void
@@ -972,65 +968,57 @@ NV_STATUS
 intrInitInterruptTable_KERNEL
 (
     OBJGPU *pGpu,
-    Intr *pIntr
+    Intr   *pIntr
 )
 {
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV_STATUS status = NV_OK;
-    NvU32 i = 0;
-    INTR_TABLE_ENTRY *pIntrTable = NULL;
+    NvU32     i;
     NV2080_CTRL_INTERNAL_INTR_GET_KERNEL_TABLE_PARAMS *pParams;
 
-    NV_ASSERT_OR_RETURN(pIntr->pIntrTable == NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(vectIsEmpty(&pIntr->intrTable), NV_ERR_INVALID_STATE);
 
     pParams = portMemAllocNonPaged(sizeof(*pParams));
-    if (pParams == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Could not allocate params for kernel intr table control");
-        status = NV_ERR_NO_MEMORY;
-        goto exit;
-    }
+    NV_ASSERT_TRUE_OR_GOTO(status, pParams != NULL, NV_ERR_NO_MEMORY, exit);
 
     NV_ASSERT_OK_OR_GOTO(status,
-        pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+        pRmApi->Control(pRmApi,
+                        pGpu->hInternalClient,
+                        pGpu->hInternalSubdevice,
                         NV2080_CTRL_CMD_INTERNAL_INTR_GET_KERNEL_TABLE,
-                        pParams, sizeof(*pParams)),
+                        pParams,
+                        sizeof *pParams),
         exit);
+    NV_ASSERT_TRUE_OR_GOTO(status,
+                           pParams->tableLen <=
+                               NV2080_CTRL_INTERNAL_INTR_MAX_TABLE_SIZE,
+                           NV_ERR_OUT_OF_RANGE,
+                           exit);
 
-    status = NV_ERR_INVALID_PARAMETER;
-    NV_ASSERT_OR_GOTO(pParams->tableLen <= NV2080_CTRL_INTERNAL_INTR_MAX_TABLE_SIZE, exit);
-
-    pIntrTable = portMemAllocNonPaged(sizeof(INTR_TABLE_ENTRY) * pParams->tableLen);
-    if (pIntrTable == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Could not allocate kernel interrupt table");
-        status = NV_ERR_NO_MEMORY;
-        goto exit;
-    }
-    portMemSet(pIntrTable, 0, sizeof(INTR_TABLE_ENTRY) * pParams->tableLen);
-
+    NV_ASSERT_OK_OR_GOTO(status,
+        vectInit(&pIntr->intrTable,
+                 portMemAllocatorGetGlobalNonPaged(),
+                 pParams->tableLen),
+        exit);
     for (i = 0; i < pParams->tableLen; ++i)
     {
-        pIntrTable[i].mcEngine           = pParams->table[i].engineIdx;
-        pIntrTable[i].pmcIntrMask        = pParams->table[i].pmcIntrMask;
-        pIntrTable[i].intrVector         = pParams->table[i].vectorStall;
-        pIntrTable[i].intrVectorNonStall = pParams->table[i].vectorNonStall;
+        INTR_TABLE_ENTRY entry = {0};
+        entry.mcEngine           = pParams->table[i].engineIdx;
+        entry.pmcIntrMask        = pParams->table[i].pmcIntrMask;
+        entry.intrVector         = pParams->table[i].vectorStall;
+        entry.intrVectorNonStall = pParams->table[i].vectorNonStall;
+        NV_ASSERT_TRUE_OR_GOTO(status,
+                               vectAppend(&pIntr->intrTable, &entry) != NULL,
+                               NV_ERR_NO_MEMORY,
+                               exit);
     }
-
-    // Transfer ownership of allocated table to pIntr and clear local to avoid MemFree
-    pIntr->pIntrTable = pIntrTable;
-    pIntr->intrTableSz = pParams->tableLen;
-    pIntrTable = NULL;
+    NV_ASSERT_OK_OR_GOTO(status, vectTrim(&pIntr->intrTable, 0), exit);
 
     portMemCopy(pIntr->subtreeMap,   sizeof pIntr->subtreeMap,
                 pParams->subtreeMap, sizeof pParams->subtreeMap);
 
-    status = NV_OK;
-
 exit:
     portMemFree(pParams);
-    portMemFree(pIntrTable);
-
     return status;
 }
 
@@ -1221,43 +1209,26 @@ intrCheckAndServiceFecsEventbuffer_IMPL
 NV_STATUS
 intrGetInterruptTable_IMPL
 (
-    OBJGPU  *pGpu,
-    Intr *pIntr,
-    INTR_TABLE_ENTRY **ppTable,
-    NvU32 *pTableSz
+    OBJGPU          *pGpu,
+    Intr            *pIntr,
+    InterruptTable **ppTable
 )
 {
     NV_ASSERT_OR_RETURN(ppTable != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pTableSz != NULL, NV_ERR_INVALID_ARGUMENT);
-
-    NV_ASSERT_OR_RETURN(pIntr->pIntrTable != NULL, NV_ERR_INVALID_STATE);
-
-    *ppTable = pIntr->pIntrTable;
-    *pTableSz = pIntr->intrTableSz;
-
+    NV_ASSERT_OR_RETURN(!vectIsEmpty(&pIntr->intrTable), NV_ERR_INVALID_STATE);
+    *ppTable = &pIntr->intrTable;
     return NV_OK;
 }
 
-/**
- * @brief Frees memory associated with interrupt table
- *
- * @param pGpu
- * @param pMc
- */
+
 NV_STATUS
 intrDestroyInterruptTable_IMPL
 (
-    OBJGPU  *pGpu,
-    Intr *pIntr
+    OBJGPU *pGpu,
+    Intr   *pIntr
 )
 {
-    if (pIntr->pIntrTable != NULL)
-    {
-        portMemFree(pIntr->pIntrTable);
-        pIntr->pIntrTable = NULL;
-        pIntr->intrTableSz = 0;
-    }
-
+    vectDestroy(&pIntr->intrTable);
     return NV_OK;
 }
 
@@ -1432,22 +1403,22 @@ _intrServiceStallExactList
 
     NvU32  engineIdx;
     NvU32  intr;
-    NvU32  i;
     NvBool bHandled;
     NvBool bIntrStuck = NV_FALSE;
     NvBool bPending   = NV_FALSE;
     NvBool bRequiresPossibleErrorNotifier;
 
-    INTR_TABLE_ENTRY     *pIntrTable;
-    NvU32                 intrTableSz;
+    InterruptTable    *pIntrTable;
+    InterruptTableIter iter;
 
     if (bitVectorTestAllCleared(pEngines))
     {
         return NV_FALSE;
     }
 
-    NV_ASSERT_OK_OR_ELSE(status, intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz),
-        return NV_FALSE);
+    NV_ASSERT_OK_OR_ELSE(status,
+                         intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable),
+                         return NV_FALSE);
 
     bRequiresPossibleErrorNotifier = intrRequiresPossibleErrorNotifier_HAL(pGpu, pIntr, pEngines);
 
@@ -1463,8 +1434,10 @@ _intrServiceStallExactList
         gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POSSIBLE_ERROR, NULL, 0, intrReadErrCont_HAL(pGpu, pIntr), 0);
     }
 
-    for (i = 0; i < intrTableSz; i++)
+    for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
     {
+        INTR_TABLE_ENTRY *pEntry = iter.pValue;
+
         // Skip servicing interrupts when GPU is off the bus
         if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu))
         {
@@ -1477,7 +1450,7 @@ _intrServiceStallExactList
             return NV_FALSE;
         }
 
-        engineIdx = pIntrTable[i].mcEngine;
+        engineIdx = pEntry->mcEngine;
 
         if (bitVectorTest(pEngines, engineIdx))
         {

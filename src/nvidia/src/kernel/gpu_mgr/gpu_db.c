@@ -127,7 +127,7 @@ gpudbRegisterGpu(const NvU8 *pUuid, const NBADDR *pUpstreamPortPciInfo, NvU64 pc
     pNode->upstreamPciPortInfo.bus = pUpstreamPortPciInfo->bus;
     pNode->upstreamPciPortInfo.device = pUpstreamPortPciInfo->device;
     pNode->upstreamPciPortInfo.function = pUpstreamPortPciInfo->func;
-    pNode->upstreamPciPortInfo.bValid = pUpstreamPortPciInfo->valid; 
+    pNode->upstreamPciPortInfo.bValid = pUpstreamPortPciInfo->valid;
 
     pNode->bShutdownState = NV_FALSE;
 

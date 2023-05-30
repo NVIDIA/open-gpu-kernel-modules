@@ -654,7 +654,7 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
     if (pDevEvo->gpus != NULL) {
 
         NVEvoSorCaps *sorCaps = pDevEvo->gpus[displayOwner].capabilities.sor;
-        NvU32 orIndex = nvEvoConnectorGetPrimaryOr(pConnectorEvo);
+        NvU32 orIndex = pConnectorEvo->or.primary;
 
         if (NV0073_CTRL_SYSTEM_GET_CAP(pDevEvo->commonCapsBits,
                 NV0073_CTRL_SYSTEM_CAPS_CROSS_BAR_SUPPORTED)) {
@@ -682,7 +682,10 @@ void nvDpyProbeMaxPixelClock(NVDpyEvoPtr pDpyEvo)
                  * those driving heads, we don't need to exclude RM from
                  * selecting any SOR, so an sorExcludeMask of 0 is appropriate.
                  */
-                if (nvAssignSOREvo(pConnectorEvo, 0) &&
+                if (nvAssignSOREvo(pDispEvo,
+                                   nvDpyIdToNvU32(pConnectorEvo->displayId),
+                                   FALSE /* b2Heads1Or */,
+                                   0 /* sorExcludeMask */) &&
                     nvHdmiFrlAssessLink(pDpyEvo)) {
                     /*
                      * Note that although we "assessed" the link above, the
@@ -1438,6 +1441,11 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
                 case NVT_TYPE_DISPLAYID_9:
                 case NVT_TYPE_DISPLAYID_10:
                 case NVT_TYPE_CVT_RB_3:
+                    /*
+                     * XXX temporarily disable the warning so that additional
+                     * NVT_TYPEs_ can be added to nvtiming.h.  Bug 3849339.
+                     */
+                default:
                     break;
             }
             break;
@@ -2893,6 +2901,7 @@ void nvDpyUpdateCurrentAttributes(NVDpyEvoRec *pDpyEvo)
         newAttributes.dithering.mode    = NV_KMS_DPY_ATTRIBUTE_CURRENT_DITHERING_MODE_NONE;
         newAttributes.digitalSignal =
             nvGetDefaultDpyAttributeDigitalSignalValue(pDpyEvo->pConnectorEvo);
+        newAttributes.numberOfHardwareHeadsUsed = 0;
     }
 
     if (newAttributes.colorSpace !=
@@ -2951,19 +2960,53 @@ void nvDpyUpdateCurrentAttributes(NVDpyEvoRec *pDpyEvo)
             newAttributes.digitalSignal);
     }
 
+    if (newAttributes.numberOfHardwareHeadsUsed !=
+        pDpyEvo->currentAttributes.numberOfHardwareHeadsUsed) {
+        nvSendDpyAttributeChangedEventEvo(
+            pDpyEvo,
+            NV_KMS_DPY_ATTRIBUTE_NUMBER_OF_HARDWARE_HEADS_USED,
+            newAttributes.numberOfHardwareHeadsUsed);
+    }
+
     pDpyEvo->currentAttributes = newAttributes;
 }
 
 // Returns TRUE if this display is capable of Adaptive-Sync
 NvBool nvDpyIsAdaptiveSync(const NVDpyEvoRec *pDpyEvo)
 {
-    return FALSE;
+    return ((pDpyEvo->vrr.type ==
+             NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED) ||
+            (pDpyEvo->vrr.type ==
+             NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED));
 }
 
 // Returns TRUE if this display is in the Adaptive-Sync defaultlist
 NvBool nvDpyIsAdaptiveSyncDefaultlisted(const NVDpyEvoRec *pDpyEvo)
 {
-    return FALSE;
+    NV0073_CTRL_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY_PARAMS params = { };
+    NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NvU32 ret;
+
+    if (!pDpyEvo->parsedEdid.valid) {
+        return FALSE;
+    }
+
+    params.manufacturerID = pDpyEvo->parsedEdid.info.manuf_id;
+    params.productID = pDpyEvo->parsedEdid.info.product_id;
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDevEvo->displayCommonHandle,
+                         NV0073_CTRL_CMD_SPECIFIC_DEFAULT_ADAPTIVESYNC_DISPLAY,
+                         &params, sizeof(params));
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+                     "Failed to query default adaptivesync listing for %s", pDpyEvo->name);
+        return FALSE;
+    }
+
+    return params.bDefaultAdaptivesync;
 }
 
 static enum NvKmsDpyAttributeColorBpcValue GetYuv422MaxBpc(
@@ -3076,4 +3119,35 @@ NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo)
     }
 
     return colorFormatsInfo;
+}
+
+NvU32 nvDpyGetPossibleApiHeadsMask(const NVDpyEvoRec *pDpyEvo)
+{
+    NvU32 possibleApiHeadMask = 0x0;
+    NvU32 possibleNumLayers = NVKMS_MAX_LAYERS_PER_HEAD;
+    const NVDevEvoRec *pDevEvo = pDpyEvo->pDispEvo->pDevEvo;
+
+    /*
+     * DSI supports only the hardware head-0 assigment, and the
+     * dp-serializer dpys are bound to the specific hardware head;
+     * the modeset client can be allowed to choose only those
+     * api-heads to drive these dpys which has the number of layers
+     * less than or equal to the number of layers supported by the
+     * bound hardware heads.
+     */
+    if (pDpyEvo->pConnectorEvo->signalFormat ==
+            NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
+        possibleNumLayers = pDevEvo->head[0].numLayers;
+    } else if (nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo)) {
+        const NvU32 boundHead = pDpyEvo->dp.serializerStreamIndex;
+        possibleNumLayers = pDevEvo->head[boundHead].numLayers;
+    }
+
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        if (pDevEvo->apiHead[apiHead].numLayers <= possibleNumLayers) {
+            possibleApiHeadMask |= NVBIT(apiHead);
+        }
+    }
+
+    return possibleApiHeadMask;
 }

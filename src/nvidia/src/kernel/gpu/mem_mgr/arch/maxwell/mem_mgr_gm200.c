@@ -38,7 +38,7 @@ memmgrGetMaxContextSize_GM200
     MemoryManager *pMemoryManager
 )
 {
-    NvU64  size;
+    NvU64  size = 0;
 
     //
     // This function's original purpose was to estimate how much heap memory RM
@@ -89,7 +89,8 @@ memmgrGetMaxContextSize_GM200
     }
     else
     {
-        if (memmgrIsPmaInitialized(pMemoryManager))
+        if (memmgrIsPmaEnabled(pMemoryManager) &&
+            memmgrIsPmaSupportedOnPlatform(pMemoryManager))
         {
             //
             // We need to estimate the reserved memory needs before PMA is initialized

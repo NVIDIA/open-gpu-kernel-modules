@@ -118,7 +118,7 @@ static NvBool __nvoc_thunk_OBJVASPACE_iovaspaceIsAtsEnabled(struct OBJIOVASPACE 
     return vaspaceIsAtsEnabled((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset));
 }
 
-static NvU32 __nvoc_thunk_OBJVASPACE_iovaspaceGetBigPageSize(struct OBJIOVASPACE *pVAS) {
+static NvU64 __nvoc_thunk_OBJVASPACE_iovaspaceGetBigPageSize(struct OBJIOVASPACE *pVAS) {
     return vaspaceGetBigPageSize((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset));
 }
 

@@ -30,6 +30,291 @@
 #include <osapi.h>
 #include <gpu/mem_mgr/mem_mgr.h>
 
+#include <vgpu/rpc.h>
+#include "vgpu/vgpu_events.h"
+
+static NV_STATUS
+unixCallVideoBIOS
+(
+    OBJGPU *pGpu,
+    NvU32  *eax,
+    NvU32  *ebx
+)
+{
+    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
+
+    if (NVCPU_IS_X86_64)
+    {
+        NvU32         eax_in = *eax;
+        NvU32         ebx_in = *ebx;
+
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_UEFI))
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+
+        NV_PRINTF(LEVEL_INFO, "unixCallVideoBIOS: 0x%x 0x%x, vga_satus = %d\n", *eax, *ebx, NV_PRIMARY_VGA(NV_GET_NV_STATE(pGpu)));
+
+        status = nv_vbios_call(pGpu, eax, ebx);
+
+        // this was originally changed for nt in changelist 644223
+        if (*eax != 0x4f)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "int10h(%04x, %04x) vesa call failed! (%04x, %04x)\n",
+                      eax_in, ebx_in, *eax, *ebx);
+            status = NV_ERR_GENERIC;
+        }
+    }
+
+    return status;
+}
+
+static void
+RmSaveDisplayState
+(
+    OBJGPU *pGpu
+)
+{
+    nv_state_t     *nv             = NV_GET_NV_STATE(pGpu);
+    nv_priv_t      *nvp            = NV_GET_NV_PRIV(nv);
+    RM_API         *pRmApi         = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NvBool          use_vbios      = NV_PRIMARY_VGA(nv) && RmGpuHasIOSpaceEnabled(nv);
+    NvU32           eax, ebx;
+    NV_STATUS       status;
+    NV2080_CTRL_CMD_INTERNAL_DISPLAY_UNIX_CONSOLE_PARAMS  unixConsoleParams = {0};
+
+
+    if (IS_VIRTUAL(pGpu) || pKernelDisplay == NULL)
+    {
+        return;
+    }
+
+    os_disable_console_access();
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_UEFI))
+    {
+        NV_PRINTF(LEVEL_INFO, "RM fallback doesn't support saving of efifb console\n");
+        goto done;
+    }
+
+    unixConsoleParams.bSaveOrRestore = NV_TRUE;
+    unixConsoleParams.bUseVbios      = use_vbios;
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,pRmApi->Control(pRmApi, nv->rmapi.hClient, nv->rmapi.hSubDevice,
+                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_UNIX_CONSOLE,
+                        &unixConsoleParams, sizeof(unixConsoleParams)), done);
+
+    if (use_vbios)
+    {
+        //
+        // Attempt to identify the currently set VESA mode; assume
+        // vanilla VGA text if the VBIOS call fails.
+        //
+        eax = 0x4f03;
+        ebx = 0;
+        if (NV_OK == unixCallVideoBIOS(pGpu, &eax, &ebx))
+        {
+            nvp->vga.vesaMode = (ebx & 0x3fff);
+        }
+        else
+        {
+            nvp->vga.vesaMode = 3;
+        }
+    }
+
+done:
+    os_enable_console_access();
+}
+
+static void RmRestoreDisplayState
+(
+    OBJGPU *pGpu
+)
+{
+    nv_state_t     *nv             = NV_GET_NV_STATE(pGpu);
+    nv_priv_t      *nvp            = NV_GET_NV_PRIV(nv);
+    RM_API         *pRmApi         = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NvBool          use_vbios      = NV_PRIMARY_VGA(nv) && RmGpuHasIOSpaceEnabled(nv);;
+    KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    NV_STATUS       status;
+    NvU32           eax, ebx;
+    NV2080_CTRL_CMD_INTERNAL_DISPLAY_UNIX_CONSOLE_PARAMS  unixConsoleParams = {0};
+    NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_RESTORE_PARAMS  restoreParams = {0};
+
+    NV_ASSERT_OR_RETURN_VOID(pKernelDisplay != NULL);
+
+    //
+    // vGPU:
+    //
+    // Since vGPU does all real hardware management in the
+    // host, there is nothing to do at this point in the
+    // guest OS (where IS_VIRTUAL(pGpu) is true).
+    //
+    if (IS_VIRTUAL(pGpu))
+    {
+        // we don't have VGA state that's needing to be restored.
+        NV_PRINTF(LEVEL_INFO, "skipping RestoreDisplayState on VGPU (0x%x)\n",
+                  pGpu->gpuId);
+        return;
+    }
+
+    os_disable_console_access();
+
+    //
+    // Fix up DCB index VBIOS scratch registers.
+    // The strategies employed are:
+    //
+    // SBIOS/VBIOS:
+    // Clear the DCB index, and set the previous DCB index to the original
+    // value. This allows the VBIOS (during the int10h mode-set) to
+    // determine which display to enable, and to set the head-enabled bit
+    // as needed (see bugs #264873 and #944398).
+    //
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_UEFI))
+    {
+        NV_PRINTF(LEVEL_INFO, "RM fallback doesn't support efifb console restore\n");
+        goto done;
+    }
+
+    unixConsoleParams.bUseVbios = use_vbios;
+    unixConsoleParams.bSaveOrRestore = NV_FALSE;
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient,
+                        nv->rmapi.hSubDevice,
+                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_UNIX_CONSOLE,
+                        &unixConsoleParams, sizeof(unixConsoleParams)), done);
+
+    eax = 0x4f02;
+    ebx = nvp->vga.vesaMode;
+
+    if (NV_OK == unixCallVideoBIOS(pGpu, &eax, &ebx))
+    {
+        restoreParams.bWriteCr = NV_TRUE;
+    }
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient,
+                        nv->rmapi.hSubDevice,
+                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_RESTORE,
+                        &restoreParams, sizeof(restoreParams)), done);
+
+done:
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_UEFI))
+    {
+    }
+    os_enable_console_access();
+}
+
+static void
+RmChangeResMode
+(
+    OBJGPU *pGpu,
+    NvBool  hires
+)
+{
+    if (hires)
+    {
+        SLI_LOOP_START(SLI_LOOP_FLAGS_NONE)
+
+        RmSaveDisplayState(pGpu);
+
+        SLI_LOOP_END
+    } 
+    else
+    {
+        SLI_LOOP_START(SLI_LOOP_FLAGS_NONE)
+
+        RmRestoreDisplayState(pGpu);
+        //
+        // vGPU:
+        //
+        // Since vGPU does all real hardware management in the host, if we
+        // are in guest OS (where IS_VIRTUAL(pGpu) is true), do an RPC to
+        // the host to trigger switch from HIRES to (LORES)VGA.
+        //
+        if (IS_VIRTUAL(pGpu))
+        {
+            NV_STATUS status = NV_OK;
+            NV_RM_RPC_SWITCH_TO_VGA(pGpu, status);
+        }
+
+        SLI_LOOP_END
+    }
+}
+
+NV_STATUS NV_API_CALL
+rm_save_low_res_mode
+(
+    nvidia_stack_t *sp,
+    nv_state_t *pNv
+)
+{
+    THREAD_STATE_NODE threadState;
+    OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+    void *fp;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    RmSaveDisplayState(pGpu);
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+
+    return NV_OK;
+}
+
+NV_STATUS
+deviceCtrlCmdOsUnixVTSwitch_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_OS_UNIX_VT_SWITCH_PARAMS *pParams
+)
+{
+    OBJGPU     *pGpu = GPU_RES_GET_GPU(pDevice);
+    nv_state_t *nv   = NV_GET_NV_STATE(pGpu);
+    NvBool      hires;
+    NvBool      bChangeResMode = NV_TRUE;
+
+    switch (pParams->cmd)
+    {
+        case NV0080_CTRL_OS_UNIX_VT_SWITCH_CMD_SAVE_VT_STATE:
+            hires = NV_TRUE;
+            break;
+
+        case NV0080_CTRL_OS_UNIX_VT_SWITCH_CMD_RESTORE_VT_STATE:
+            hires = NV_FALSE;
+            break;
+
+        case NV0080_CTRL_OS_UNIX_VT_SWITCH_CMD_CONSOLE_RESTORED:
+            bChangeResMode = NV_FALSE;
+            break;
+
+        default:
+            return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    RmUpdateGc6ConsoleRefCount(nv,
+                               pParams->cmd != NV0080_CTRL_OS_UNIX_VT_SWITCH_CMD_SAVE_VT_STATE);
+
+    if (!bChangeResMode)
+    {
+        return NV_OK;
+    }
+
+    if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_FB) == NV_OK)
+    {
+        RmChangeResMode(pGpu, hires);
+        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_INFO,"%s: Failed to acquire GPU lock",  __FUNCTION__);
+    }
+    return NV_OK;
+}
+
 NV_STATUS deviceCtrlCmdOsUnixVTGetFBInfo_IMPL
 (
     Device *pDevice,

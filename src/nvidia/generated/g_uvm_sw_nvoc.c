@@ -298,10 +298,7 @@ static void __nvoc_init_funcTable_UvmSwObject_1(UvmSwObject *pThis, RmHalspecOwn
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // Hal function -- uvmswGetSwMethods
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
-    {
-        pThis->__uvmswGetSwMethods__ = &uvmswGetSwMethods_56cd7a;
-    }
+    pThis->__uvmswGetSwMethods__ = &uvmswGetSwMethods_56cd7a;
 
     pThis->__nvoc_base_ChannelDescendant.__chandesGetSwMethods__ = &__nvoc_thunk_UvmSwObject_chandesGetSwMethods;
 

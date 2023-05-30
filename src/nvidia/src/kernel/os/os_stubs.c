@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -145,46 +145,33 @@ NV_STATUS osCallACPI_MXMX(OBJGPU *pGpu, NvU32 AcpiId, NvU8 *pInOut)
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS stubOsCallACPI_BCL(OBJGPU *pGpu, NvU32 acpiId, NvU32 *pOut, NvU16 *size)
+NV_STATUS osCallACPI_BCL(OBJGPU *pGpu, NvU32 acpiId, NvU32 *pOut, NvU16 *size)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS stubOsCallACPI_ON(OBJGPU *pGpu, NvU32 uAcpiId)
+NV_STATUS osCallACPI_ON(OBJGPU *pGpu, NvU32 uAcpiId)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS stubOsCallACPI_OFF(OBJGPU *pGpu, NvU32 uAcpiId)
+NV_STATUS osCallACPI_OFF(OBJGPU *pGpu, NvU32 uAcpiId)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS stubOsCallACPI_NBPS(OBJGPU *pGpu, NvU8 *pOut, NvU32 *pOutSize)
-{
-    *pOutSize = 0;
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS stubOsCallACPI_NBSL(OBJGPU *pGpu, NvU32 val)
+NV_STATUS osCallACPI_OPTM_GPUON(OBJGPU *pGpu)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS stubOsCallWMI_OPTM_GPUON(OBJGPU *pGpu)
+NV_STATUS osCallACPI_NVHG_GPUON(OBJGPU *pGpu, NvU32 *pInOut)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS stubOsCallWMI_NVHG_GPUON(OBJGPU *pGpu, NvU32 *pInOut)
+NV_STATUS osCallACPI_NVHG_GPUOFF(OBJGPU *pGpu, NvU32 *pInOut)
 {
-    //STUB_CHECK(225);
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS stubOsCallWMI_NVHG_GPUOFF(OBJGPU *pGpu, NvU32 *pInOut)
-{
-    //STUB_CHECK(226);
     return NV_ERR_NOT_SUPPORTED;
 }
 
@@ -223,7 +210,7 @@ NV_STATUS osCallACPI_MXID(OBJGPU *pGpu, NvU32 ulAcpiId, NvU32 *pInOut)
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS stubOsCallACPI_LRST(OBJGPU *pGpu, NvU32 ulAcpiId, NvU32 *pInOut)
+NV_STATUS osCallACPI_LRST(OBJGPU *pGpu, NvU32 ulAcpiId, NvU32 *pInOut)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -425,6 +412,23 @@ osTegraSocDsiPanelCleanup
 {
     return;
 }
+
+NV_STATUS
+osTegraSocHspSemaphoreAcquire
+(
+    NvU32 ownerId,
+    NvBool bAcquire,
+    NvU64 timeout
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NvBool
+osTegraSocGetHdcpEnabled(OS_GPU_INFO *pOsGpuInfo)
+{
+    return NV_TRUE;
+}
 #endif
 
 NV_STATUS
@@ -437,7 +441,6 @@ osTegraSocParseFixedModeTimings
 {
     return NV_OK;
 }
-
 
 NV_STATUS osLockPageableDataSection(RM_PAGEABLE_SECTION *pSection)
 {
@@ -659,28 +662,6 @@ osGetNvGlobalRegistryDword
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NvU32 osGetDynamicPowerSupportMask(void)
-{
-    return 0;
-}
-
-void osUnrefGpuAccessNeeded(OS_GPU_INFO *pOsGpuInfo)
-{
-    return;
-}
-
-NV_STATUS osRefGpuAccessNeeded(OS_GPU_INFO *pOsGpuInfo)
-{
-    return NV_OK;
-}
-
-void osClientGcoffDisallowRefcount(
-    OS_GPU_INFO  *pArg1,
-    NvBool        arg2
-)
-{
-}
-
 #if !RMCFG_FEATURE_PLATFORM_DCE /* dce_core_rm_clk_reset.c */ && \
     (!RMCFG_FEATURE_PLATFORM_UNIX || !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY || \
      RMCFG_FEATURE_DCE_CLIENT_RM /* osSocNvDisp.c */ )
@@ -796,22 +777,16 @@ osTegraSocPmUnpowergate
 {
     return NV_ERR_NOT_SUPPORTED;
 }
-#endif
 
-#if !(RMCFG_FEATURE_PLATFORM_UNIX) || \
-    (RMCFG_FEATURE_PLATFORM_UNIX && !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY)
 NvU32
 osTegraSocFuseRegRead(NvU32 addr)
 {
     return 0;
 }
+#endif
 
-NV_STATUS
-osTegraSocHspSemaphoreAcquire(NvU32 ownerId, NvBool bAcquire, NvU64 timeout)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
+#if !(RMCFG_FEATURE_PLATFORM_UNIX) || \
+    (RMCFG_FEATURE_PLATFORM_UNIX && !RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY)
 NV_STATUS
 osTegraSocDpUphyPllInit(OS_GPU_INFO *pOsGpuInfo, NvU32 link_rate, NvU32 lanes)
 {

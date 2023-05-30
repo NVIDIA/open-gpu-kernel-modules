@@ -44,7 +44,7 @@ _krcErrorWriteNotifierCpuMemHelper
 (
     OBJGPU    *pGpu,
     Memory    *pMemory,
-    NvHandle   hClient,
+    RsClient  *pClient,
     NvU32      exceptType,
     RM_ENGINE_TYPE localRmEngineType,
     NV_STATUS  notifierStatus
@@ -56,7 +56,7 @@ _krcErrorWriteNotifierCpuMemHelper
     {
         case ADDR_VIRTUAL:
             notifyFillNotifierGPUVA(pGpu,
-                hClient,
+                pClient,
                 RES_GET_HANDLE(pMemory),
                 memdescGetPhysAddr(pMemory->pMemDesc, AT_GPU_VA, 0),
                 exceptType,
@@ -147,7 +147,7 @@ krcErrorWriteNotifier_CPU
         {
             status = _krcErrorWriteNotifierCpuMemHelper(pGpu,
                 pMemory,
-                RES_GET_CLIENT_HANDLE(pKernelChannel),
+                RES_GET_CLIENT(pKernelChannel),
                 exceptType,
                 localRmEngineType,
                 notifierStatus);
@@ -199,7 +199,7 @@ krcErrorWriteNotifier_CPU
     {
         status = _krcErrorWriteNotifierCpuMemHelper(pGpu,
             pMemory,
-            RES_GET_CLIENT_HANDLE(pKernelChannel),
+            RES_GET_CLIENT(pKernelChannel),
             exceptType,
             localRmEngineType,
             notifierStatus);
@@ -335,7 +335,7 @@ NV_STATUS krcErrorSetNotifier_IMPL
     }
 
     if (flushFlags != 0) {
-        kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), flushFlags);
+        kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), flushFlags | BUS_FLUSH_USE_PCIE_READ);
     }
 
 Error:

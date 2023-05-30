@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,6 +47,8 @@
 #include "entry_points.h"
 
 static void RmUnmapBusAperture (OBJGPU *, NvP64, NvU64, NvBool, NvP64);
+
+#include "gpu/conf_compute/conf_compute.h"
 
 typedef struct RS_CPU_MAP_PARAMS RmMapParams;
 typedef struct RS_CPU_UNMAP_PARAMS RmUnmapParams;
@@ -176,8 +178,7 @@ memMap_IMPL
     KernelBus *pKernelBus = NULL;
     MemoryManager *pMemoryManager = NULL;
     KernelMemorySystem *pKernelMemorySystem = NULL;
-    RsClient *pRsClient;
-    RmClient *pRmClient;
+    RmClient *pClient;
     RsResourceRef *pContextRef;
     RsResourceRef *pMemoryRef;
     Memory *pMemoryInfo; // TODO: rename this field. pMemoryInfo is the legacy name.
@@ -206,8 +207,10 @@ memMap_IMPL
         pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     }
 
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, pMapParams->hClient, &pRsClient));
-    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pRsClient, pMapParams->hMemory, &pMemoryRef));
+    pClient = serverutilGetClientUnderLock(pMapParams->hClient);
+    NV_ASSERT_OR_ELSE(pClient != NULL, return NV_ERR_INVALID_CLIENT);
+    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(staticCast(pClient, RsClient),
+                pMapParams->hMemory, &pMemoryRef));
 
     pMemoryInfo = dynamicCast(pMemoryRef->pResource, Memory);
     NV_ASSERT_OR_RETURN(pMemoryInfo != NULL, NV_ERR_NOT_SUPPORTED);
@@ -228,12 +231,32 @@ memMap_IMPL
     //
     // CPU to directly access protected memory is allowed on MODS
     //
+    // The check below is for VPR and should be skipped for Hopper CC
+    if ((pGpu != NULL) && !gpuIsCCFeatureEnabled(pGpu))
+    {
         if ((pMemoryInfo->Flags & NVOS32_ALLOC_FLAGS_PROTECTED) &&
             (pMapParams->protect != NV_PROTECT_WRITEABLE) &&
             ! RMCFG_FEATURE_PLATFORM_MODS)
         {
             return NV_ERR_NOT_SUPPORTED;
         }
+    }
+
+    if ((pGpu != NULL) && (pMemoryInfo->Flags & NVOS32_ALLOC_FLAGS_PROTECTED))
+    {
+        ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+        //
+        // If neither BAR1 nor PCIE as a whole is trusted, fail the mapping
+        // for allocations in CPR region. Mapping should still succeed for
+        // allocations in non-CPR region
+        //
+        if ((pCC != NULL) && !pCC->ccStaticInfo.bIsBar1Trusted &&
+            !pCC->ccStaticInfo.bIsPcieTrusted)
+        {
+            NV_ASSERT(0);
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
 
     if (!pMapParams->bKernel &&
         FLD_TEST_DRF(OS32, _ATTR2, _PROTECTION_USER, _READ_ONLY, pMemoryInfo->Attr2) &&
@@ -278,6 +301,7 @@ memMap_IMPL
     }
 
     bIsSysmem = (effectiveAddrSpace == ADDR_SYSMEM);
+    bIsSysmem = bIsSysmem || (effectiveAddrSpace == ADDR_EGM);
 
     if (dynamicCast(pMemoryInfo, FlaMemory) != NULL)
     {
@@ -436,6 +460,8 @@ memMap_IMPL
             NV_ASSERT(pGpu->busInfo.gpuPhysFbAddr);
 
             {
+                Device *pDevice = NULL;
+
                 // Below, we only map one GPU's address for CPU access, so we can use UNICAST here
                 NvU32 busMapFbFlags = BUS_MAP_FB_FLAGS_MAP_UNICAST;
                 if(DRF_VAL(OS33, _FLAGS, _MAPPING, pMapParams->flags) == NVOS33_FLAGS_MAPPING_DIRECT)
@@ -457,15 +483,18 @@ memMap_IMPL
 
                 // WAR for Bug 3564398, need to allocate doorbell for windows differently
                 if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM &&
-                    memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1)) 
+                    memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
                 {
                     busMapFbFlags |= BUS_MAP_FB_FLAGS_MAP_DOWNWARDS;
                 }
 
+                (void) deviceGetByHandle(staticCast(pClient, RsClient),
+                                         pMapParams->hDevice, &pDevice);
+
                 rmStatus = kbusMapFbAperture_HAL(pGpu, pKernelBus,
                                                  pMemDesc, pMapParams->offset,
                                                  &gpuVirtAddr, &gpuMapLength,
-                                                 busMapFbFlags, pMapParams->hClient);
+                                                 busMapFbFlags, pDevice);
             }
 
             if (rmStatus != NV_OK)
@@ -583,13 +612,12 @@ memMap_IMPL
     {
         RS_PRIV_LEVEL privLevel;
 
-        pRmClient = dynamicCast(pRsClient, RmClient);
-        if (pRmClient == NULL)
-            return NV_ERR_OPERATING_SYSTEM;
-
-        privLevel = rmclientGetCachedPrivilege(pRmClient);
-        if (!rmclientIsAdmin(pRmClient, privLevel) && !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK))
+        privLevel = rmclientGetCachedPrivilege(pClient);
+        if (!rmclientIsAdmin(pClient, privLevel) &&
+            !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK))
+        {
             return NV_ERR_PROTECTION_FAULT;
+        }
 
         if (DRF_VAL(OS33, _FLAGS, _MEM_SPACE, pMapParams->flags) == NVOS33_FLAGS_MEM_SPACE_USER)
         {
@@ -815,8 +843,7 @@ serverMap_Prologue
 )
 {
     NV_STATUS           rmStatus;
-    RsClient           *pRsClient;
-    RmClient           *pRmClient;
+    RmClient           *pClient;
     RsResourceRef      *pMemoryRef;
     NvHandle            hClient = pMapParams->hClient;
     NvHandle            hParent = hClient;
@@ -830,16 +857,15 @@ serverMap_Prologue
         return NV_ERR_INVALID_FLAGS;
 
     // Populate Resource Server information
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
+    pClient = serverutilGetClientUnderLock(hClient);
+    NV_ASSERT_OR_ELSE(pClient != NULL, return NV_ERR_INVALID_CLIENT);
 
     // Validate hClient
-    pRmClient = dynamicCast(pRsClient, RmClient);
-    if (pRmClient == NULL)
-        return NV_ERR_OPERATING_SYSTEM;
-    privLevel = rmclientGetCachedPrivilege(pRmClient);
+    privLevel = rmclientGetCachedPrivilege(pClient);
 
     // RS-TODO: Assert if this fails after all objects are converted
-    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pRsClient, pMapParams->hMemory, &pMemoryRef));
+    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(staticCast(pClient, RsClient),
+                pMapParams->hMemory, &pMemoryRef));
 
     if (pMemoryRef->pParentRef != NULL)
         hParent = pMemoryRef->pParentRef->hResource;
@@ -859,7 +885,9 @@ serverMap_Prologue
         NV_ASSERT_OR_RETURN(hParent != hClient, NV_ERR_INVALID_OBJECT_PARENT);
 
         RsResourceRef *pContextRef;
-        rmStatus = clientGetResourceRef(pRsClient, pMapParams->hDevice, &pContextRef);
+        rmStatus = clientGetResourceRef(staticCast(pClient, RsClient),
+                pMapParams->hDevice, &pContextRef);
+
         if (rmStatus != NV_OK)
             return rmStatus;
 
@@ -917,8 +945,7 @@ serverUnmap_Prologue
 {
     OBJGPU *pGpu = NULL;
     NV_STATUS rmStatus;
-    RsClient *pRsClient;
-    RmClient *pRmClient;
+    RmClient *pClient;
     RsResourceRef *pMemoryRef;
     NvHandle hClient = pUnmapParams->hClient;
     NvHandle hParent = hClient;
@@ -931,16 +958,15 @@ serverUnmap_Prologue
     void *pProcessHandle = NULL;
 
     // Populate Resource Server information
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
+    pClient = serverutilGetClientUnderLock(hClient);
+    NV_ASSERT_OR_ELSE(pClient != NULL, return NV_ERR_INVALID_CLIENT);
 
     // check if we have a user or kernel RM client
-    pRmClient = dynamicCast(pRsClient, RmClient);
-    if (pRmClient == NULL)
-        return NV_ERR_OPERATING_SYSTEM;
-    privLevel = rmclientGetCachedPrivilege(pRmClient);
+    privLevel = rmclientGetCachedPrivilege(pClient);
 
     // RS-TODO: Assert if this fails after all objects are converted
-    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pRsClient, hMemory, &pMemoryRef));
+    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(staticCast(pClient, RsClient),
+                hMemory, &pMemoryRef));
 
     if (pMemoryRef->pParentRef != NULL)
         hParent = pMemoryRef->pParentRef->hResource;
@@ -955,7 +981,9 @@ serverUnmap_Prologue
         NV_ASSERT_OR_RETURN(hParent != hClient, NV_ERR_INVALID_OBJECT_PARENT);
 
         RsResourceRef *pContextRef;
-        rmStatus = clientGetResourceRef(pRsClient, pUnmapParams->hDevice, &pContextRef);
+        rmStatus = clientGetResourceRef(staticCast(pClient, RsClient),
+                pUnmapParams->hDevice, &pContextRef);
+
         if (rmStatus != NV_OK)
             return rmStatus;
 
@@ -1184,8 +1212,8 @@ rmapiMapToCpuWithSecInfo
     API_SECURITY_INFO *pSecInfo
 )
 {
-    return rmapiMapToCpuWithSecInfoV2(pRmApi, hClient, 
-        hDevice, hMemory, offset, length, ppCpuVirtAddr, 
+    return rmapiMapToCpuWithSecInfoV2(pRmApi, hClient,
+        hDevice, hMemory, offset, length, ppCpuVirtAddr,
         &flags, pSecInfo);
 }
 

@@ -47,9 +47,9 @@ typedef enum _NBSI_TBL_SOURCES                   // keep in sync with nvapi.spec
 #define NBSI_TBL_SOURCE_MAX 6                    // number of NBSI_TBL_SOURCES entries (not including BEST FIT)
 
 #define NBSI_TBL_SOURCE_ALL      (NBSI_TBL_SOURCE_REGISTRY | \
-                                  NBSI_TBL_SOURCE_VBIOS | \
-                                  NBSI_TBL_SOURCE_SBIOS | \
-                                  NBSI_TBL_SOURCE_ACPI | \
+                                  NBSI_TBL_SOURCE_VBIOS |    \
+                                  NBSI_TBL_SOURCE_SBIOS |    \
+                                  NBSI_TBL_SOURCE_ACPI |     \
                                   NBSI_TBL_SOURCE_UEFI)
 #define NBSI_TBL_SOURCE_NONE     0
 

@@ -83,6 +83,7 @@ static inline void NV_RM_RPC_GSP_MSG_TIMING(OBJGPU *pGpu, ...) { return; }
 
 static inline void NV_RM_RPC_VGPU_PF_REG_READ32(OBJGPU *pGpu, ...) { return; }
 static inline void NV_RM_RPC_PMA_SCRUBBER_SHARED_BUFFER_GUEST_PAGES_OPERATION(OBJGPU *pGpu, ...) { return; }
+static inline void NV_RM_RPC_INVALIDATE_TLB(OBJGPU *pGpu, ...) { return; }
 
 // RPC free stubs
 static inline void NV_RM_RPC_SIM_FREE_INFRA(OBJGPU *pGpu, ...) { return; }
@@ -108,10 +109,10 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
                                                                                               \
         if (!IsT234DorBetter(pGpu))                                                           \
         {                                                                                     \
-            RmClient *pClient = NULL;                                                         \
+            RmClient *pClient = serverutilGetClientUnderLock(hclient);                        \
                                                                                               \
             /* Get process ID from the client database */                                     \
-            if (NV_OK == serverutilGetClientUnderLock(hclient, &pClient))                     \
+            if (pClient != NULL)                                                              \
             {                                                                                 \
                 CALL_CONTEXT *pCallContext = resservGetTlsCallContext();                      \
                 NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);              \
@@ -132,7 +133,7 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
                                                                                               \
         status = pRmApi->AllocWithHandle(pRmApi, hclient, NV01_NULL_OBJECT,                   \
                                             NV01_NULL_OBJECT, NV01_ROOT,                      \
-                                            &root_alloc_params);                              \
+                                            &root_alloc_params, sizeof(root_alloc_params));   \
                                                                                               \
         if (status == NV_OK)                                                                  \
         {                                                                                     \
@@ -145,7 +146,8 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
             device_alloc_params.vaSpaceSize = vasize;                                         \
                                                                                               \
             status = pRmApi->AllocWithHandle(pRmApi, hclient, hclient, hdevice,               \
-                                                hclass, &device_alloc_params);                \
+                                                hclass, &device_alloc_params,                 \
+                                                sizeof(device_alloc_params));                 \
         }                                                                                     \
         else                                                                                  \
             NV_ASSERT(0);                                                                     \
@@ -180,7 +182,8 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
                                  DRF_DEF(OS02,_FLAGS,_PHYSICALITY,_NONCONTIGUOUS) |     \
                                  (flags & DRF_SHIFTMASK(NVOS02_FLAGS_COHERENCY)));      \
             status = pRmApi->AllocWithHandle(pRmApi, hclient, hdevice,                  \
-              hmemory, NV01_MEMORY_LIST_SYSTEM, &listAllocParams);                      \
+              hmemory, NV01_MEMORY_LIST_SYSTEM, &listAllocParams,                       \
+              sizeof(listAllocParams));                                                 \
           }                                                                             \
           else                                                                          \
           {                                                                             \
@@ -279,13 +282,14 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
             NV_ASSERT(IS_GSP_CLIENT(pGpu));                                             \
             RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);                              \
             status = pRmApi->AllocWithHandle(pRmApi, hclient, hparent, hchannel,        \
-                                             hclass, pGpfifoAllocParams);               \
+                                             hclass, pGpfifoAllocParams,                \
+                                             sizeof(*pGpfifoAllocParams));              \
         } else if (pRpc == NULL)                                                        \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                                     \
     }                                                                                   \
     while (0)
 
-#define NV_RM_RPC_ALLOC_OBJECT(pGpu, hclient, hchannel, hobject, hclass, params, status)\
+#define NV_RM_RPC_ALLOC_OBJECT(pGpu, hclient, hchannel, hobject, hclass, params, paramsSize, status) \
     do                                                                                  \
     {                                                                                   \
         OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                               \
@@ -295,7 +299,7 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
             NV_ASSERT(IS_GSP_CLIENT(pGpu));                                             \
             RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);                              \
             status = pRmApi->AllocWithHandle(pRmApi, hclient, hchannel, hobject,        \
-                                             hclass, params);                           \
+                                             hclass, params, paramsSize);               \
         }                                                                               \
     } while (0)
 
@@ -348,7 +352,8 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
             allocParams.data = 0;                                                  \
             status = pRmApi->AllocWithHandle(pRmApi, hclient,                      \
                                                 hobject, hevent,                   \
-                                                hclass, &allocParams);             \
+                                                hclass, &allocParams,              \
+                                                sizeof(allocParams));              \
         } else if (pRpc == NULL)                                                   \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                                \
     } while(0)
@@ -368,7 +373,8 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
             alloc_params.subDeviceId = subDeviceInst;                                   \
                                                                                         \
             status = pRmApi->AllocWithHandle(pRmApi, hclient, hdevice, hsubdevice,      \
-                                                hclass, &alloc_params);                 \
+                                                hclass, &alloc_params,                  \
+                                                sizeof(alloc_params));                  \
         } else if (pRpc == NULL)                                                        \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                                     \
     } while (0)

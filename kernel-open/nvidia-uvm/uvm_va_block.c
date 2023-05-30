@@ -39,6 +39,7 @@
 #include "uvm_gpu_access_counters.h"
 #include "uvm_va_space_mm.h"
 #include "uvm_test_ioctl.h"
+#include "uvm_conf_computing.h"
 
 typedef enum
 {
@@ -515,6 +516,33 @@ static uvm_cpu_chunk_t *uvm_cpu_chunk_first_in_region(uvm_va_block_t *va_block,
                                             (va_block),                                 \
                                             uvm_va_block_region_from_block((va_block)))
 
+struct vm_area_struct *uvm_va_block_find_vma_region(uvm_va_block_t *va_block,
+                                                    struct mm_struct *mm,
+                                                    NvU64 start,
+                                                    uvm_va_block_region_t *region)
+{
+    struct vm_area_struct *vma;
+    NvU64 end;
+
+    if (start > va_block->end)
+        return NULL;
+
+    vma = find_vma_intersection(mm, start, va_block->end + 1);
+    if (!vma)
+        return NULL;
+
+    if (start < vma->vm_start)
+        start = vma->vm_start;
+
+    end = vma->vm_end - 1;
+    if (end > va_block->end)
+        end = va_block->end;
+
+    *region = uvm_va_block_region_from_start_end(va_block, start, end);
+
+    return vma;
+}
+
 static bool block_check_cpu_chunks(uvm_va_block_t *block)
 {
     uvm_cpu_chunk_t *chunk;
@@ -955,6 +983,12 @@ static NV_STATUS cpu_chunk_add_sysmem_gpu_mapping(uvm_cpu_chunk_t *chunk,
     NV_STATUS status;
     uvm_chunk_size_t chunk_size;
 
+    // When the Confidential Computing feature is enabled the transfers don't
+    // use the DMA mapping of CPU chunks (since it's protected memory), but
+    // the DMA address of the unprotected dma buffer.
+    if (uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
     status = uvm_cpu_chunk_map_gpu(chunk, gpu);
     if (status != NV_OK)
         return status;
@@ -1334,6 +1368,7 @@ static NV_STATUS block_alloc_cpu_chunk(uvm_va_block_t *block,
 //
 // Also maps the page for physical access by all GPUs used by the block, which
 // is required for IOMMU support. Skipped on GPUs without access to CPU memory.
+// e.g., this happens when the Confidential Computing Feature is enabled.
 static NV_STATUS block_populate_pages_cpu(uvm_va_block_t *block,
                                           uvm_page_mask_t *populate_page_mask,
                                           uvm_va_block_region_t populate_region,
@@ -2259,11 +2294,7 @@ static NV_STATUS block_zero_new_gpu_chunk(uvm_va_block_t *block,
     // are the pages which must be zeroed.
     uvm_page_mask_complement(zero_mask, zero_mask);
 
-    if (uvm_mmu_gpu_needs_static_vidmem_mapping(gpu) || uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu))
-        memset_addr_base = uvm_gpu_address_virtual_from_vidmem_phys(gpu, chunk->address);
-    else
-        memset_addr_base = uvm_gpu_address_physical(UVM_APERTURE_VID, chunk->address);
-
+    memset_addr_base = uvm_gpu_address_copy(gpu, uvm_gpu_phys_address(UVM_APERTURE_VID, chunk->address));
     memset_addr = memset_addr_base;
 
     status = uvm_push_begin_acquire(gpu->channel_manager,
@@ -2563,29 +2594,16 @@ static uvm_gpu_address_t block_phys_page_copy_address(uvm_va_block_t *block,
     uvm_gpu_chunk_t *chunk;
     uvm_gpu_address_t copy_addr;
     uvm_va_space_t *va_space;
-    bool page_in_cpu, page_in_local_gpu;
 
     UVM_ASSERT_MSG(block_can_copy_from(block, gpu->id, block_page.processor),
                    "from %s to %s\n",
                    block_processor_name(block, gpu->id),
                    block_processor_name(block, block_page.processor));
 
-    page_in_cpu = UVM_ID_IS_CPU(block_page.processor);
-    page_in_local_gpu = uvm_id_equal(block_page.processor, gpu->id);
-
     // CPU and local GPU accesses can rely on block_phys_page_address, but the
     // resulting physical address may need to be converted into virtual.
-    if (page_in_cpu || page_in_local_gpu) {
-        uvm_gpu_phys_address_t gpu_phys_address = block_phys_page_address(block, block_page, gpu);
-
-        if (page_in_cpu && uvm_mmu_gpu_needs_dynamic_sysmem_mapping(gpu))
-            return uvm_gpu_address_virtual_from_sysmem_phys(gpu, gpu_phys_address.address);
-
-        if (page_in_local_gpu && uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu))
-            return uvm_gpu_address_virtual_from_vidmem_phys(gpu, gpu_phys_address.address);
-
-        return uvm_gpu_address_from_phys(gpu_phys_address);
-    }
+    if (UVM_ID_IS_CPU(block_page.processor) || uvm_id_equal(block_page.processor, gpu->id))
+        return uvm_gpu_address_copy(gpu, block_phys_page_address(block, block_page, gpu));
 
     va_space = uvm_va_block_get_va_space(block);
 
@@ -2636,6 +2654,7 @@ typedef struct
 {
     block_copy_addr_t src;
     block_copy_addr_t dst;
+    uvm_conf_computing_dma_buffer_t *dma_buffer;
 } block_copy_state_t;
 
 // Begin a push appropriate for copying data from src_id processor to dst_id processor.
@@ -2697,6 +2716,36 @@ static NV_STATUS block_copy_begin_push(uvm_va_block_t *va_block,
                                                  va_block->end);
     }
 
+    if (uvm_conf_computing_mode_enabled(gpu)) {
+        // When the Confidential Feature is enabled, additional dependencies
+        // apply to the input tracker as well as the dma_buffer tracker.
+        // * In the CPU to GPU case, because UVM performs CPU side
+        //   crypto-operations first before the GPU copy, we both need to
+        //   ensure that the dma_buffer and the input tracker are completed.
+        // * In the GPU to CPU case, the GPU copy happens first, but the same
+        //   principles apply. Hence, UVM acquires the input tracker and the
+        //   dma buffer.
+        status = uvm_tracker_overwrite_safe(&local_tracker, tracker);
+        if (status != NV_OK)
+            goto error;
+
+        UVM_ASSERT(copy_state->dma_buffer == NULL);
+        status = uvm_conf_computing_dma_buffer_alloc(&gpu->conf_computing.dma_buffer_pool,
+                                                     &copy_state->dma_buffer,
+                                                     &local_tracker);
+
+        if (status != NV_OK)
+            goto error;
+
+        if (channel_type == UVM_CHANNEL_TYPE_CPU_TO_GPU) {
+            status = uvm_tracker_wait(&local_tracker);
+            if (status != NV_OK)
+                goto error;
+        }
+
+        tracker_ptr = &local_tracker;
+    }
+
     status = uvm_push_begin_acquire(gpu->channel_manager,
                                     channel_type,
                                     tracker_ptr,
@@ -2707,6 +2756,8 @@ static NV_STATUS block_copy_begin_push(uvm_va_block_t *va_block,
                                     va_block->start,
                                     va_block->end);
 
+error:
+    // Caller is responsible for freeing the DMA buffer on error
     uvm_tracker_deinit(&local_tracker);
     return status;
 }
@@ -2863,13 +2914,191 @@ static uvm_gpu_address_t block_copy_get_address(uvm_va_block_t *block,
     return block_phys_page_copy_address(block, block_phys_page(bca->id, page_index), copying_gpu);
 }
 
-static uvm_gpu_address_t block_copy_addr_get_virt(uvm_va_block_t *block,
-                                                  block_copy_addr_t *bca,
-                                                  uvm_page_index_t page_index,
-                                                  uvm_gpu_t *copying_gpu)
+// When the Confidential Computing feature is enabled, the function performs
+// CPU side page encryption and GPU side decryption to the CPR.
+// GPU operations respect the caller's membar previously set in the push.
+static void conf_computing_block_copy_push_cpu_to_gpu(uvm_va_block_t *block,
+                                                      block_copy_state_t *copy_state,
+                                                      uvm_va_block_region_t region,
+                                                      uvm_push_t *push)
 {
-    uvm_gpu_address_t gpu_address = block_copy_get_address(block, bca, page_index, copying_gpu);
-    return uvm_gpu_address_virtual_from_vidmem_phys(copying_gpu, gpu_address.address);
+    uvm_push_flag_t membar_flag = 0;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    uvm_page_index_t page_index = region.first;
+    uvm_conf_computing_dma_buffer_t *dma_buffer = copy_state->dma_buffer;
+    struct page *src_page = uvm_cpu_chunk_get_cpu_page(block, page_index);
+    uvm_gpu_address_t staging_buffer = uvm_mem_gpu_address_virtual_kernel(dma_buffer->alloc, gpu);
+    uvm_gpu_address_t auth_tag_buffer = uvm_mem_gpu_address_virtual_kernel(dma_buffer->auth_tag, gpu);
+    char *cpu_auth_tag_buffer = (char *)uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag) +
+                                        (page_index * UVM_CONF_COMPUTING_AUTH_TAG_SIZE);
+    uvm_gpu_address_t dst_address = block_copy_get_address(block, &copy_state->dst, page_index, gpu);
+    char *cpu_va_staging_buffer = (char *)uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc) + (page_index * PAGE_SIZE);
+
+    UVM_ASSERT(UVM_ID_IS_CPU(copy_state->src.id));
+    UVM_ASSERT(UVM_ID_IS_GPU(copy_state->dst.id));
+
+    UVM_ASSERT(uvm_conf_computing_mode_enabled(gpu));
+
+    // See comment in block_copy_begin_push.
+    UVM_ASSERT(uvm_tracker_is_completed(&block->tracker));
+
+    staging_buffer.address += page_index * PAGE_SIZE;
+    auth_tag_buffer.address += page_index * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+
+    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE))
+        membar_flag = UVM_PUSH_FLAG_NEXT_MEMBAR_NONE;
+    else if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU))
+        membar_flag = UVM_PUSH_FLAG_NEXT_MEMBAR_GPU;
+
+    // kmap() only guarantees PAGE_SIZE contiguity, all encryption and
+    // decryption must happen on a PAGE_SIZE basis.
+    for_each_va_block_page_in_region(page_index, region) {
+        void *src_cpu_virt_addr;
+
+        // The caller guarantees that all pages in region are contiguous,
+        // meaning they're guaranteed to be part of the same compound page.
+        UVM_ASSERT(src_page == uvm_cpu_chunk_get_cpu_page(block, page_index));
+
+        src_cpu_virt_addr = kmap(src_page);
+        uvm_conf_computing_cpu_encrypt(push->channel,
+                                       cpu_va_staging_buffer,
+                                       src_cpu_virt_addr,
+                                       NULL,
+                                       PAGE_SIZE,
+                                       cpu_auth_tag_buffer);
+        kunmap(src_page);
+
+        // First LCE operation should be non-pipelined to guarantee ordering as
+        // we do not know when was the last non-pipelined copy.
+        // Last one applies the membar originally planned for the push if any
+        // TODO: 3857691: Inherit policy instead of forcing first invocation to
+        // be non pipelined.
+        if (page_index > region.first)
+            uvm_push_set_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
+
+        if (page_index < (region.outer - 1))
+            uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+        else if (membar_flag)
+            uvm_push_set_flag(push, membar_flag);
+
+        gpu->parent->ce_hal->decrypt(push, dst_address, staging_buffer, PAGE_SIZE, auth_tag_buffer);
+
+        src_page++;
+        dst_address.address += PAGE_SIZE;
+        cpu_va_staging_buffer += PAGE_SIZE;
+        staging_buffer.address += PAGE_SIZE;
+        cpu_auth_tag_buffer += UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+        auth_tag_buffer.address += UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+    }
+}
+
+// When the Confidential Computing feature is enabled, the function performs
+// GPU side page encryption. GPU operations respect the caller's membar
+// previously set in the push.
+static void conf_computing_block_copy_push_gpu_to_cpu(uvm_va_block_t *block,
+                                                      block_copy_state_t *copy_state,
+                                                      uvm_va_block_region_t region,
+                                                      uvm_push_t *push)
+{
+    uvm_push_flag_t membar_flag = 0;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    uvm_page_index_t page_index = region.first;
+    uvm_conf_computing_dma_buffer_t *dma_buffer = copy_state->dma_buffer;
+    uvm_gpu_address_t staging_buffer = uvm_mem_gpu_address_virtual_kernel(dma_buffer->alloc, gpu);
+    uvm_gpu_address_t auth_tag_buffer = uvm_mem_gpu_address_virtual_kernel(dma_buffer->auth_tag, gpu);
+    uvm_gpu_address_t src_address = block_copy_get_address(block, &copy_state->src, page_index, gpu);
+
+    UVM_ASSERT(UVM_ID_IS_GPU(copy_state->src.id));
+    UVM_ASSERT(UVM_ID_IS_CPU(copy_state->dst.id));
+
+    UVM_ASSERT(uvm_conf_computing_mode_enabled(gpu));
+
+    staging_buffer.address += page_index * PAGE_SIZE;
+    auth_tag_buffer.address += page_index * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+
+    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE))
+        membar_flag = UVM_PUSH_FLAG_NEXT_MEMBAR_NONE;
+    else if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU))
+        membar_flag = UVM_PUSH_FLAG_NEXT_MEMBAR_GPU;
+
+    // Because we use kmap() for mapping pages for CPU side
+    // crypto-operations and it only guarantees PAGE_SIZE contiguity, all
+    // encryptions and decryptions must happen on a PAGE_SIZE basis.
+    for_each_va_block_page_in_region(page_index, region) {
+        uvm_conf_computing_log_gpu_encryption(push->channel, &dma_buffer->decrypt_iv[page_index]);
+
+        // First LCE operation should be non-pipelined to guarantee ordering as
+        // we do not know when was the last non-pipelined copy.
+        // Last one applies the membar originally planned for the push if any
+        // TODO: 3857691: Inherit policy instead of forcing first invocation to
+        // be non pipelined.
+        if (page_index > region.first)
+            uvm_push_set_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
+
+        if (page_index < (region.outer - 1))
+            uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+        else if (membar_flag)
+            uvm_push_set_flag(push, membar_flag);
+
+        gpu->parent->ce_hal->encrypt(push, staging_buffer, src_address, PAGE_SIZE, auth_tag_buffer);
+
+        src_address.address += PAGE_SIZE;
+        staging_buffer.address += PAGE_SIZE;
+        auth_tag_buffer.address += UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+    }
+
+    uvm_page_mask_region_fill(&dma_buffer->encrypted_page_mask, region);
+}
+
+static NV_STATUS conf_computing_copy_pages_finish(uvm_va_block_t *block,
+                                                  block_copy_state_t *copy_state,
+                                                  uvm_push_t *push)
+{
+    NV_STATUS status;
+    uvm_page_index_t page_index;
+    uvm_conf_computing_dma_buffer_t *dma_buffer = copy_state->dma_buffer;
+    uvm_page_mask_t *encrypted_page_mask = &dma_buffer->encrypted_page_mask;
+    void *auth_tag_buffer_base = uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag);
+    void *staging_buffer_base = uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc);
+
+    UVM_ASSERT(uvm_channel_is_secure(push->channel));
+
+    if (UVM_ID_IS_GPU(copy_state->dst.id))
+        return NV_OK;
+
+    UVM_ASSERT(UVM_ID_IS_GPU(copy_state->src.id));
+
+    status = uvm_push_wait(push);
+    if (status != NV_OK)
+        return status;
+
+    // kmap() only guarantees PAGE_SIZE contiguity, all encryption and
+    // decryption must happen on a PAGE_SIZE basis.
+    for_each_va_block_page_in_mask(page_index, encrypted_page_mask, block) {
+        struct page *dst_page = uvm_cpu_chunk_get_cpu_page(block, page_index);
+        void *staging_buffer = (char *)staging_buffer_base + (page_index * PAGE_SIZE);
+        void *auth_tag_buffer = (char *)auth_tag_buffer_base + (page_index * UVM_CONF_COMPUTING_AUTH_TAG_SIZE);
+        void *cpu_page_address = kmap(dst_page);
+
+        status = uvm_conf_computing_cpu_decrypt(push->channel,
+                                                cpu_page_address,
+                                                staging_buffer,
+                                                &dma_buffer->decrypt_iv[page_index],
+                                                PAGE_SIZE,
+                                                auth_tag_buffer);
+        kunmap(dst_page);
+        if (status != NV_OK) {
+            // TODO: Bug 3814087: [UVM][HCC] Handle CSL auth_tag verification
+            //                    failures & other failures gracefully.
+            // uvm_conf_computing_cpu_decrypt() can fail if the authentication
+            // tag verification fails. May this happen, it is considered a
+            // critical failure and cannot be recovered.
+            uvm_global_set_fatal_error(status);
+            return status;
+        }
+    }
+
+    return NV_OK;
 }
 
 static void block_copy_push(uvm_va_block_t *block,
@@ -2882,6 +3111,15 @@ static void block_copy_push(uvm_va_block_t *block,
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
     uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+
+    if (uvm_channel_is_secure(push->channel)) {
+        if (UVM_ID_IS_CPU(copy_state->src.id))
+            conf_computing_block_copy_push_cpu_to_gpu(block, copy_state, region, push);
+        else
+            conf_computing_block_copy_push_gpu_to_cpu(block, copy_state, region, push);
+
+        return;
+    }
 
     gpu_dst_address = block_copy_get_address(block, &copy_state->dst, region.first, gpu);
     gpu_src_address = block_copy_get_address(block, &copy_state->src, region.first, gpu);
@@ -2902,9 +3140,24 @@ static NV_STATUS block_copy_end_push(uvm_va_block_t *block,
     //       at that point.
     uvm_push_end(push);
 
+    if ((push_status == NV_OK) && uvm_channel_is_secure(push->channel))
+        push_status = conf_computing_copy_pages_finish(block, copy_state, push);
+
     tracker_status = uvm_tracker_add_push_safe(copy_tracker, push);
     if (push_status == NV_OK)
         push_status = tracker_status;
+
+    if (uvm_channel_is_secure(push->channel)) {
+        uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+        uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
+
+        uvm_tracker_overwrite_with_push(&local_tracker, push);
+        uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool,
+                                           copy_state->dma_buffer,
+                                           &local_tracker);
+        copy_state->dma_buffer = NULL;
+        uvm_tracker_deinit(&local_tracker);
+    }
 
     return push_status;
 }
@@ -3062,6 +3315,12 @@ static NV_STATUS block_copy_resident_pages_between(uvm_va_block_t *block,
             contig_start_index = page_index;
             contig_cause = page_cause;
 
+            // When CC is enabled, transfers between GPU and CPU don't rely on
+            // any GPU mapping of CPU chunks, physical or virtual.
+            if (UVM_ID_IS_CPU(src_id) && uvm_conf_computing_mode_enabled(copying_gpu))
+                can_cache_src_phys_addr = false;
+            if (UVM_ID_IS_CPU(dst_id) && uvm_conf_computing_mode_enabled(copying_gpu))
+                can_cache_dst_phys_addr = false;
             // Computing the physical address is a non-trivial operation and
             // seems to be a performance limiter on systems with 2 or more
             // NVLINK links. Therefore, for physically-contiguous block
@@ -6118,7 +6377,6 @@ static NV_STATUS block_alloc_pt_range_with_retry(uvm_va_block_t *va_block,
     // to allocate the lower levels.
     bool use_alloc_table = block_gpu_supports_2m(va_block, gpu) && page_size < UVM_PAGE_SIZE_2M;
 
-    // TODO: Bug 3898454: check locking requirement for UVM-HMM.
     UVM_ASSERT(page_table_range->table == NULL);
 
     if (va_block_test && va_block_test->page_table_allocation_retry_force_count > 0) {
@@ -6310,26 +6568,31 @@ static NV_STATUS block_pre_populate_pde1_gpu(uvm_va_block_t *block,
                                              uvm_gpu_va_space_t *gpu_va_space,
                                              uvm_tracker_t *pending_tracker)
 {
-    NvU32 page_sizes = 0;
-    uvm_gpu_t *gpu = gpu_va_space->gpu;
-    uvm_va_block_gpu_state_t *gpu_state = block_gpu_state_get_alloc(block, gpu);
+    NvU32 page_sizes;
+    NvU32 big_page_size;
+    uvm_gpu_t *gpu;
+    uvm_va_block_gpu_state_t *gpu_state;
 
-    UVM_ASSERT(gpu_state);
+    UVM_ASSERT(block);
     UVM_ASSERT(gpu_va_space);
-    UVM_ASSERT(uvm_gpu_va_space_state(gpu_va_space) == UVM_GPU_VA_SPACE_STATE_ACTIVE);
     UVM_ASSERT(gpu_va_space->ats.enabled);
+    UVM_ASSERT(uvm_gpu_va_space_state(gpu_va_space) == UVM_GPU_VA_SPACE_STATE_ACTIVE);
+
+    gpu = gpu_va_space->gpu;
+    big_page_size = gpu_va_space->page_tables.big_page_size;
+
+    gpu_state = block_gpu_state_get_alloc(block, gpu);
+    if (!gpu_state)
+        return NV_ERR_NO_MEMORY;
 
     // If the VA Block supports 2M pages, allocate the 2M PTE only, as it
     // requires less memory
-    if (block_gpu_supports_2m(block, gpu)) {
+    if (block_gpu_supports_2m(block, gpu))
         page_sizes = UVM_PAGE_SIZE_2M;
-    }
-    else {
-        // ATS is only enabled on P9 + Volta, therefore, PAGE_SIZE should
-        // be 64K and should match Volta big page size
-        UVM_ASSERT(uvm_va_block_gpu_big_page_size(block, gpu) == PAGE_SIZE);
-        page_sizes = UVM_PAGE_SIZE_64K;
-    }
+    else if (uvm_va_block_num_big_pages(block, big_page_size) > 0)
+        page_sizes = big_page_size;
+    else
+        page_sizes = UVM_PAGE_SIZE_4K;
 
     return block_alloc_ptes_with_retry(block, gpu, page_sizes, pending_tracker);
 }
@@ -6586,7 +6849,7 @@ static struct page *block_page_get(uvm_va_block_t *block, block_phys_page_t bloc
         size_t chunk_offset;
         uvm_gpu_chunk_t *chunk = block_phys_page_chunk(block, block_page, &chunk_offset);
 
-        UVM_ASSERT(gpu->parent->numa_info.enabled);
+        UVM_ASSERT(gpu->mem_info.numa.enabled);
         page = uvm_gpu_chunk_to_page(&gpu->pmm, chunk) + chunk_offset / PAGE_SIZE;
     }
 
@@ -10806,6 +11069,162 @@ NV_STATUS uvm_va_block_find_create(uvm_va_space_t *va_space,
     return uvm_va_block_find_create_in_range(va_space, va_range, addr, va_block_context, out_block);
 }
 
+// Launch a synchronous, encrypted copy between GPU and CPU.
+//
+// The copy entails a GPU-side encryption (relying on the Copy Engine), and a
+// CPU-side decryption step, such that the destination CPU buffer pointed by
+// dst_plain will contain the unencrypted (plain text) contents. The destination
+// buffer can be in protected or unprotected sysmem, while the source buffer
+// must be in protected vidmem.
+//
+// The maximum copy size allowed is UVM_CONF_COMPUTING_DMA_BUFFER_SIZE.
+//
+// The input tracker, if not NULL, is internally acquired by the push
+// responsible for the encrypted copy.
+__attribute__ ((format(printf, 6, 7)))
+static NV_STATUS encrypted_memcopy_gpu_to_cpu(uvm_gpu_t *gpu,
+                                              void *dst_plain,
+                                              uvm_gpu_address_t src_gpu_address,
+                                              size_t size,
+                                              uvm_tracker_t *tracker,
+                                              const char *format,
+                                              ...)
+{
+    NV_STATUS status;
+    UvmCslIv decrypt_iv;
+    uvm_push_t push;
+    uvm_conf_computing_dma_buffer_t *dma_buffer;
+    uvm_gpu_address_t dst_gpu_address, auth_tag_gpu_address;
+    void *src_cipher, *auth_tag;
+    va_list args;
+
+    UVM_ASSERT(uvm_conf_computing_mode_enabled(gpu));
+    UVM_ASSERT(size <= UVM_CONF_COMPUTING_DMA_BUFFER_SIZE);
+
+    status = uvm_conf_computing_dma_buffer_alloc(&gpu->conf_computing.dma_buffer_pool, &dma_buffer, NULL);
+    if (status != NV_OK)
+        return status;
+
+    va_start(args, format);
+    status = uvm_push_begin_acquire(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_TO_CPU, tracker, &push, format, args);
+    va_end(args);
+
+    if (status != NV_OK)
+        goto out;
+
+    uvm_conf_computing_log_gpu_encryption(push.channel, &decrypt_iv);
+
+    dst_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->alloc, gpu);
+    auth_tag_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->auth_tag, gpu);
+    gpu->parent->ce_hal->encrypt(&push, dst_gpu_address, src_gpu_address, size, auth_tag_gpu_address);
+
+    status = uvm_push_end_and_wait(&push);
+    if (status != NV_OK)
+        goto out;
+
+    src_cipher = uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc);
+    auth_tag = uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag);
+    status = uvm_conf_computing_cpu_decrypt(push.channel, dst_plain, src_cipher, &decrypt_iv, size, auth_tag);
+
+ out:
+    uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool, dma_buffer, NULL);
+    return status;
+}
+
+// Launch a synchronous, encrypted copy between CPU and GPU.
+//
+// The source CPU buffer pointed by src_plain contains the unencrypted (plain
+// text) contents; the function internally performs a CPU-side encryption step
+// before launching the GPU-side CE decryption. The source buffer can be in
+// protected or unprotected sysmem, while the destination buffer must be in
+// protected vidmem.
+//
+// The maximum copy size allowed is UVM_CONF_COMPUTING_DMA_BUFFER_SIZE.
+//
+// The input tracker, if not NULL, is internally acquired by the push
+// responsible for the encrypted copy.
+__attribute__ ((format(printf, 6, 7)))
+static NV_STATUS encrypted_memcopy_cpu_to_gpu(uvm_gpu_t *gpu,
+                                              uvm_gpu_address_t dst_gpu_address,
+                                              void *src_plain,
+                                              size_t size,
+                                              uvm_tracker_t *tracker,
+                                              const char *format,
+                                              ...)
+{
+    NV_STATUS status;
+    uvm_push_t push;
+    uvm_conf_computing_dma_buffer_t *dma_buffer;
+    uvm_gpu_address_t src_gpu_address, auth_tag_gpu_address;
+    void *dst_cipher, *auth_tag;
+    va_list args;
+
+    UVM_ASSERT(uvm_conf_computing_mode_enabled(gpu));
+    UVM_ASSERT(size <= UVM_CONF_COMPUTING_DMA_BUFFER_SIZE);
+
+    status = uvm_conf_computing_dma_buffer_alloc(&gpu->conf_computing.dma_buffer_pool, &dma_buffer, NULL);
+    if (status != NV_OK)
+        return status;
+
+    va_start(args, format);
+    status = uvm_push_begin_acquire(gpu->channel_manager, UVM_CHANNEL_TYPE_CPU_TO_GPU, tracker, &push, format, args);
+    va_end(args);
+
+    if (status != NV_OK)
+        goto out;
+
+    dst_cipher = uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc);
+    auth_tag = uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag);
+    uvm_conf_computing_cpu_encrypt(push.channel, dst_cipher, src_plain, NULL, size, auth_tag);
+
+    src_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->alloc, gpu);
+    auth_tag_gpu_address = uvm_mem_gpu_address_virtual_kernel(dma_buffer->auth_tag, gpu);
+    gpu->parent->ce_hal->decrypt(&push, dst_gpu_address, src_gpu_address, size, auth_tag_gpu_address);
+
+    status = uvm_push_end_and_wait(&push);
+
+out:
+    uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool, dma_buffer, NULL);
+    return status;
+}
+
+static NV_STATUS va_block_write_cpu_to_gpu(uvm_va_block_t *va_block,
+                                           uvm_gpu_t *gpu,
+                                           uvm_gpu_address_t dst_gpu_address,
+                                           NvU64 dst,
+                                           uvm_mem_t *src_mem,
+                                           size_t size)
+{
+    NV_STATUS status;
+    uvm_push_t push;
+    uvm_gpu_address_t src_gpu_address;
+
+    if (uvm_conf_computing_mode_enabled(gpu)) {
+        return encrypted_memcopy_cpu_to_gpu(gpu,
+                                            dst_gpu_address,
+                                            uvm_mem_get_cpu_addr_kernel(src_mem),
+                                            size,
+                                            &va_block->tracker,
+                                            "Encrypted write to [0x%llx, 0x%llx)",
+                                            dst,
+                                            dst + size);
+    }
+
+    status = uvm_push_begin_acquire(gpu->channel_manager,
+                                    UVM_CHANNEL_TYPE_CPU_TO_GPU,
+                                    &va_block->tracker,
+                                    &push,
+                                    "Direct write to [0x%llx, 0x%llx)",
+                                    dst,
+                                    dst + size);
+    if (status != NV_OK)
+        return status;
+
+    src_gpu_address = uvm_mem_gpu_address_virtual_kernel(src_mem, gpu);
+    gpu->parent->ce_hal->memcopy(&push, dst_gpu_address, src_gpu_address, size);
+    return uvm_push_end_and_wait(&push);
+}
+
 NV_STATUS uvm_va_block_write_from_cpu(uvm_va_block_t *va_block,
                                       uvm_va_block_context_t *block_context,
                                       NvU64 dst,
@@ -10817,15 +11236,9 @@ NV_STATUS uvm_va_block_write_from_cpu(uvm_va_block_t *va_block,
     NvU64 page_offset = dst & (PAGE_SIZE - 1);
     uvm_processor_id_t proc = uvm_va_block_page_get_closest_resident(va_block, page_index, UVM_ID_CPU);
     uvm_va_block_region_t region = uvm_va_block_region_for_page(page_index);
-    void *src = uvm_mem_get_cpu_addr_kernel(src_mem);
-    uvm_gpu_t *gpu;
-    uvm_gpu_address_t src_gpu_address;
-    uvm_gpu_address_t dst_gpu_address;
-    uvm_push_t push;
 
     uvm_assert_mutex_locked(&va_block->lock);
-    UVM_ASSERT_MSG(UVM_ALIGN_DOWN(dst, PAGE_SIZE) == UVM_ALIGN_DOWN(dst + size - 1, PAGE_SIZE),
-            "dst 0x%llx size 0x%zx\n", dst, size);
+    UVM_ASSERT_MSG(page_offset + size <= PAGE_SIZE, "Write spans multiple pages: dst 0x%llx, size 0x%zx\n", dst, size);
 
     if (UVM_ID_IS_INVALID(proc))
         proc = UVM_ID_CPU;
@@ -10852,6 +11265,7 @@ NV_STATUS uvm_va_block_write_from_cpu(uvm_va_block_t *va_block,
     if (UVM_ID_IS_CPU(proc)) {
         char *mapped_page;
         struct page *page = uvm_cpu_chunk_get_cpu_page(va_block, page_index);
+        void *src = uvm_mem_get_cpu_addr_kernel(src_mem);
 
         status = uvm_tracker_wait(&va_block->tracker);
         if (status != NV_OK)
@@ -10863,50 +11277,74 @@ NV_STATUS uvm_va_block_write_from_cpu(uvm_va_block_t *va_block,
 
         return NV_OK;
     }
+    else {
+        uvm_gpu_t *dst_gpu;
+        uvm_gpu_address_t dst_gpu_address;
 
-    gpu = block_get_gpu(va_block, proc);
+        UVM_ASSERT(UVM_ID_IS_GPU(proc));
 
-    dst_gpu_address = block_phys_page_copy_address(va_block, block_phys_page(proc, page_index), gpu);
-    dst_gpu_address.address += page_offset;
+        dst_gpu = block_get_gpu(va_block, proc);
 
-    src_gpu_address = uvm_mem_gpu_address_virtual_kernel(src_mem, gpu);
+        dst_gpu_address = block_phys_page_copy_address(va_block, block_phys_page(proc, page_index), dst_gpu);
+        dst_gpu_address.address += page_offset;
+
+        return va_block_write_cpu_to_gpu(va_block, dst_gpu, dst_gpu_address, dst, src_mem, size);
+    }
+}
+
+static NV_STATUS va_block_read_gpu_to_cpu(uvm_va_block_t *va_block,
+                                          uvm_mem_t *dst_mem,
+                                          uvm_gpu_t *gpu,
+                                          uvm_gpu_address_t src_gpu_address,
+                                          NvU64 src,
+                                          size_t size)
+{
+    NV_STATUS status;
+    uvm_push_t push;
+    uvm_gpu_address_t dst_gpu_address;
+
+    if (uvm_conf_computing_mode_enabled(gpu)) {
+        return encrypted_memcopy_gpu_to_cpu(gpu,
+                                            uvm_mem_get_cpu_addr_kernel(dst_mem),
+                                            src_gpu_address,
+                                            size,
+                                            &va_block->tracker,
+                                            "Encrypted read from [0x%llx, 0x%llx)",
+                                            src,
+                                            src + size);
+    }
 
     status = uvm_push_begin_acquire(gpu->channel_manager,
-                                    UVM_CHANNEL_TYPE_CPU_TO_GPU,
+                                    UVM_CHANNEL_TYPE_GPU_TO_CPU,
                                     &va_block->tracker,
                                     &push,
-                                    "Direct write to [0x%llx, 0x%llx)",
-                                    dst,
-                                    dst + size);
+                                    "Direct read from [0x%llx, 0x%llx)",
+                                    src,
+                                    src + size);
     if (status != NV_OK)
         return status;
 
+    dst_gpu_address = uvm_mem_gpu_address_virtual_kernel(dst_mem, gpu);
     gpu->parent->ce_hal->memcopy(&push, dst_gpu_address, src_gpu_address, size);
     return uvm_push_end_and_wait(&push);
 }
 
 NV_STATUS uvm_va_block_read_to_cpu(uvm_va_block_t *va_block, uvm_mem_t *dst_mem, NvU64 src, size_t size)
 {
-    NV_STATUS status;
     uvm_page_index_t page_index = uvm_va_block_cpu_page_index(va_block, src);
     NvU64 page_offset = src & (PAGE_SIZE - 1);
     uvm_processor_id_t proc = uvm_va_block_page_get_closest_resident(va_block, page_index, UVM_ID_CPU);
     void *dst = uvm_mem_get_cpu_addr_kernel(dst_mem);
-    uvm_gpu_t *gpu;
-    uvm_gpu_address_t src_gpu_address;
-    uvm_gpu_address_t dst_gpu_address;
-    uvm_push_t push;
 
     uvm_assert_mutex_locked(&va_block->lock);
-    UVM_ASSERT_MSG(UVM_ALIGN_DOWN(src, PAGE_SIZE) == UVM_ALIGN_DOWN(src + size - 1, PAGE_SIZE),
-            "src 0x%llx size 0x%zx\n", src, size);
+    UVM_ASSERT_MSG(page_offset + size <= PAGE_SIZE, "Read spans multiple pages: src 0x%llx, size 0x%zx\n", src, size);
 
     if (UVM_ID_IS_INVALID(proc)) {
         memset(dst, 0, size);
         return NV_OK;
     }
-
-    if (UVM_ID_IS_CPU(proc)) {
+    else if (UVM_ID_IS_CPU(proc)) {
+        NV_STATUS status;
         char *mapped_page;
         struct page *page = uvm_cpu_chunk_get_cpu_page(va_block, page_index);
 
@@ -10920,27 +11358,15 @@ NV_STATUS uvm_va_block_read_to_cpu(uvm_va_block_t *va_block, uvm_mem_t *dst_mem,
 
         return NV_OK;
     }
+    else {
+        uvm_gpu_address_t src_gpu_address;
+        uvm_gpu_t *gpu = block_get_gpu(va_block, proc);
 
-    gpu = block_get_gpu(va_block, proc);
+        src_gpu_address = block_phys_page_copy_address(va_block, block_phys_page(proc, page_index), gpu);
+        src_gpu_address.address += page_offset;
 
-    dst_gpu_address = uvm_mem_gpu_address_virtual_kernel(dst_mem, gpu);
-
-    src_gpu_address = block_phys_page_copy_address(va_block, block_phys_page(proc, page_index), gpu);
-    src_gpu_address.address += page_offset;
-
-    status = uvm_push_begin_acquire(gpu->channel_manager,
-                                    UVM_CHANNEL_TYPE_GPU_TO_CPU,
-                                    &va_block->tracker,
-                                    &push,
-                                    "Direct read from [0x%llx, 0x%llx)",
-                                    src,
-                                    src + size);
-    if (status != NV_OK)
-        return status;
-
-    gpu->parent->ce_hal->memcopy(&push, dst_gpu_address, src_gpu_address, size);
-
-    return uvm_push_end_and_wait(&push);
+        return va_block_read_gpu_to_cpu(va_block, dst_mem, gpu, src_gpu_address, src, size);
+    }
 }
 
 // Deferred work item reestablishing accessed by mappings after eviction. On

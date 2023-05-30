@@ -28,6 +28,8 @@
 #include "ctrl/ctrl0080/ctrl0080gpu.h" // NV0080_CTRL_CMD_GPU_FIND_SUBDEVICE_HANDLE
 #include "nvos.h"
 
+#include <stddef.h>
+
 NV_STATUS
 RmDeprecatedGetHandleParent
 (
@@ -135,7 +137,7 @@ RmDeprecatedFindOrCreateSubDeviceHandle
 
     *pHSubDevice = 0;
 
-    status = pContext->RmAlloc(pContext, hClient, hDeviceOrSubDevice, pHSubDevice, NV20_SUBDEVICE_0, 0);
+    status = pContext->RmAlloc(pContext, hClient, hDeviceOrSubDevice, pHSubDevice, NV20_SUBDEVICE_0, NULL, 0);
 
     return status;
 }
@@ -163,10 +165,12 @@ NV_STATUS RmDeprecatedGetOrAllocObject
     }
     else
     {
+        //
         // Object does not exist yet, allocate.
-        void *pAllocParams = (void*)0; // TODO: Fill for classes that need them
+        // TODO: Fill alloc params for classes that need them
+        //
         status = pContext->RmAlloc(pContext, hClient, *pHObject,
-                                   pHObject, classId, pAllocParams);
+                                   pHObject, classId, NULL, 0);
     }
     return status;
 }

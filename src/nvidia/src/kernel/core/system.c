@@ -47,6 +47,7 @@
 #include "platform/cpu.h"
 #include "platform/platform.h"
 #include "diagnostics/gpu_acct.h"
+#include "platform/platform_request_handler.h"
 #include "gpu/external_device/gsync.h"
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "mem_mgr/virt_mem_mgr.h"
@@ -83,6 +84,7 @@ static sysChildObject sysChildObjects[] =
     { NV_OFFSETOF(OBJSYS, pGpuMgr),         classInfo(OBJGPUMGR),       NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGsyncMgr),       classInfo(OBJGSYNCMGR),     NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuAcct),        classInfo(GpuAccounting),   NV_TRUE },
+    { NV_OFFSETOF(OBJSYS, pPlatformRequestHandler), classInfo(PlatformRequestHandler),  NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pRcDB),           classInfo(OBJRCDB),         NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pVmm),            classInfo(OBJVMM),          NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pKernelVgpuMgr),  classInfo(KernelVgpuMgr),   NV_TRUE },
@@ -200,7 +202,7 @@ _sysCreateChildObjects(OBJSYS *pSys)
     NV_STATUS status = NV_OK;
     NvU32 i, n;
 
-    n = NV_ARRAY_ELEMENTS32(sysChildObjects);
+    n = NV_ARRAY_ELEMENTS(sysChildObjects);
 
     for (i = 0; i < n; i++)
     {
@@ -252,7 +254,7 @@ _sysDeleteChildObjects(OBJSYS *pSys)
 
     osRmCapUnregister(&pSys->pOsRmCaps);
 
-    for (i = NV_ARRAY_ELEMENTS32(sysChildObjects) - 1; i >= 0; i--)
+    for (i = NV_ARRAY_ELEMENTS(sysChildObjects) - 1; i >= 0; i--)
     {
         NvLength offset = sysChildObjects[i].childOffset;
         Dynamic **ppChild = reinterpretCast(reinterpretCast(pSys, NvU8*) + offset, Dynamic**);

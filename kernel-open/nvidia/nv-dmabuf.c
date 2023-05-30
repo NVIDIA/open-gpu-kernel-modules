@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,37 +25,74 @@
 
 #if defined(CONFIG_DMA_SHARED_BUFFER)
 
-//
-// The Linux kernel's dma_length in struct scatterlist is unsigned int
-// which limits the maximum sg length to 4GB - 1.
-// To get around this limitation, the BAR1 scatterlist returned by RM
-// is split into (4GB - PAGE_SIZE) sized chunks to build the sg_table.
-//
-#define NV_DMA_BUF_SG_MAX_LEN         ((NvU32)(NVBIT64(32) - PAGE_SIZE))
-
 typedef struct nv_dma_buf_mem_handle
 {
-    NvHandle h_memory;
-    NvU64    offset;
-    NvU64    size;
-    NvU64    bar1_va;
+    // Memory handle, offset and size
+    NvHandle                 h_memory;
+    NvU64                    offset;
+    NvU64                    size;
+
+    // RM memdesc specific data
+    void                    *static_mem_info;
+
+    //
+    // Refcount for phys addresses
+    // If refcount > 0, phys address ranges in phys_range are reused.
+    //
+    NvU64                    phys_refcount;
+
+    // Number of scatterlist entries in phys_range[] array
+    NvU32                    phys_range_count;
+
+    // List of phys address ranges to be used to dma map
+    nv_phys_addr_range_t    *phys_range;
 } nv_dma_buf_mem_handle_t;
 
 typedef struct nv_dma_buf_file_private
 {
+    // GPU device state
     nv_state_t              *nv;
+
+    // Client, device, subdevice handles
     NvHandle                 h_client;
     NvHandle                 h_device;
     NvHandle                 h_subdevice;
+
+    // Total number of handles supposed to be attached to this dma-buf
     NvU32                    total_objects;
+
+    //
+    // Number of handles actually attached to this dma-buf.
+    // This should equal total_objects, or map fails.
+    //
     NvU32                    num_objects;
+
+    // Total size of all handles supposed to be attached to this dma-buf
     NvU64                    total_size;
+
+    //
+    // Size of all handles actually attached to the dma-buf
+    // If all handles are attached, total_size and attached_size must match.
+    //
     NvU64                    attached_size;
+
+    // Mutex to lock priv state during dma-buf callbacks
     struct mutex             lock;
+
+    // Handle info: see nv_dma_buf_mem_handle_t
     nv_dma_buf_mem_handle_t *handles;
-    NvU64                    bar1_va_ref_count;
+
+    // RM-private info for MIG configs
     void                    *mig_info;
+
+    // Flag to indicate if dma-buf mmap is allowed
     NvBool                   can_mmap;
+
+    //
+    // Flag to indicate if phys addresses are static and can be
+    // fetched during dma-buf create/reuse instead of in map.
+    //
+    NvBool                   static_phys_addrs;
 } nv_dma_buf_file_private_t;
 
 static void
@@ -108,31 +145,94 @@ failed:
     return NULL;
 }
 
+static void
+nv_reset_phys_refcount(
+    nv_dma_buf_file_private_t *priv,
+    NvU32 start_index,
+    NvU32 handle_count
+)
+{
+    NvU32 i;
+    for (i = 0; i < handle_count; i++)
+    {
+        NvU32 index = start_index + i;
+        priv->handles[index].phys_refcount = 0;
+    }
+}
+
+static NvBool
+nv_dec_and_check_zero_phys_refcount(
+    nv_dma_buf_file_private_t *priv,
+    NvU32 start_index,
+    NvU32 handle_count
+)
+{
+    NvU32 i;
+    NvBool is_zero = NV_FALSE;
+
+    for (i = 0; i < handle_count; i++)
+    {
+        NvU32 index = start_index + i;
+        priv->handles[index].phys_refcount--;
+        if (priv->handles[index].phys_refcount == 0)
+        {
+            is_zero = NV_TRUE;
+        }
+    }
+
+    return is_zero;
+}
+
+static NvBool
+nv_inc_and_check_one_phys_refcount(
+    nv_dma_buf_file_private_t *priv,
+    NvU32 start_index,
+    NvU32 handle_count
+)
+{
+    NvU32 i;
+    NvBool is_one = NV_FALSE;
+
+    for (i = 0; i < handle_count; i++)
+    {
+        NvU32 index = start_index + i;
+        priv->handles[index].phys_refcount++;
+        if (priv->handles[index].phys_refcount == 1)
+        {
+            is_one = NV_TRUE;
+        }
+    }
+
+    return is_one;
+}
+
 // Must be called with RMAPI lock and GPU lock taken
 static void
 nv_dma_buf_undup_mem_handles_unlocked(
     nvidia_stack_t            *sp,
-    NvU32                      index,
+    NvU32                      start_index,
     NvU32                      num_objects,
     nv_dma_buf_file_private_t *priv
 )
 {
-    NvU32 i = 0;
+    NvU32 index, i;
 
-    for (i = index; i < num_objects; i++)
+    for (i = 0; i < num_objects; i++)
     {
-        if (priv->handles[i].h_memory == 0)
+        index = start_index + i;
+
+        if (priv->handles[index].h_memory == 0)
         {
             continue;
         }
 
         rm_dma_buf_undup_mem_handle(sp, priv->nv, priv->h_client,
-                                    priv->handles[i].h_memory);
+                                    priv->handles[index].h_memory);
 
-        priv->attached_size -= priv->handles[i].size;
-        priv->handles[i].h_memory = 0;
-        priv->handles[i].offset = 0;
-        priv->handles[i].size = 0;
+        priv->attached_size -= priv->handles[index].size;
+        priv->handles[index].h_memory = 0;
+        priv->handles[index].offset = 0;
+        priv->handles[index].size = 0;
         priv->num_objects--;
     }
 }
@@ -194,6 +294,7 @@ nv_dma_buf_dup_mem_handles(
     for (i = 0; i < params->numObjects; i++)
     {
         NvHandle h_memory_duped = 0;
+        void *mem_info = NULL;
 
         if (priv->handles[index].h_memory != 0)
         {
@@ -216,7 +317,8 @@ nv_dma_buf_dup_mem_handles(
                                            params->handles[i],
                                            params->offsets[i],
                                            params->sizes[i],
-                                           &h_memory_duped);
+                                           &h_memory_duped,
+                                           &mem_info);
         if (status != NV_OK)
         {
             goto failed;
@@ -226,6 +328,7 @@ nv_dma_buf_dup_mem_handles(
         priv->handles[index].h_memory = h_memory_duped;
         priv->handles[index].offset = params->offsets[i];
         priv->handles[index].size = params->sizes[i];
+        priv->handles[index].static_mem_info = mem_info;
         priv->num_objects++;
         index++;
         count++;
@@ -255,55 +358,411 @@ unlock_api_lock:
     return status;
 }
 
-// Must be called with RMAPI lock and GPU lock taken
 static void
-nv_dma_buf_unmap_unlocked(
+nv_put_phys_addresses(
     nvidia_stack_t *sp,
-    nv_dma_device_t *peer_dma_dev,
     nv_dma_buf_file_private_t *priv,
-    struct sg_table *sgt,
+    NvU32 start_index,
     NvU32 mapped_handle_count
 )
 {
-    NV_STATUS status;
     NvU32 i;
-    NvU64 dma_len;
-    NvU64 dma_addr;
-    NvBool bar1_unmap_needed;
-    struct scatterlist *sg = NULL;
 
-    bar1_unmap_needed = (priv->bar1_va_ref_count == 0);
-
-    sg = sgt->sgl;
     for (i = 0; i < mapped_handle_count; i++)
     {
-        NvU64 handle_size = priv->handles[i].size;
+        NvU32 index = start_index + i;
 
-        dma_addr = sg_dma_address(sg);
-        dma_len  = 0;
-
-        //
-        // Seek ahead in the scatterlist until the handle size is covered.
-        // IOVA unmap can then be done all at once instead of doing it
-        // one sg at a time.
-        //
-        while(handle_size != dma_len)
+        if (priv->handles[index].phys_refcount > 0)
         {
-            dma_len += sg_dma_len(sg);
-            sg = sg_next(sg);
+            continue;
         }
 
-        nv_dma_unmap_peer(peer_dma_dev, (dma_len / os_page_size), dma_addr);
+        // Per-handle phys_range is freed by RM
+        rm_dma_buf_unmap_mem_handle(sp, priv->nv, priv->h_client,
+                                    priv->handles[index].h_memory,
+                                    priv->handles[index].size,
+                                    &priv->handles[index].phys_range,
+                                    priv->handles[index].phys_range_count);
 
-        if (bar1_unmap_needed)
+        priv->handles[index].phys_range_count = 0;
+    }
+}
+
+static void
+nv_dma_buf_put_phys_addresses (
+    nv_dma_buf_file_private_t *priv,
+    NvU32 start_index,
+    NvU32 handle_count
+)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp = NULL;
+    NvBool api_lock_taken = NV_FALSE;
+    NvBool gpu_lock_taken = NV_FALSE;
+    int rc = 0;
+
+    if (!nv_dec_and_check_zero_phys_refcount(priv, start_index, handle_count))
+    {
+        return;
+    }
+
+    rc = nv_kmem_cache_alloc_stack(&sp);
+    if (WARN_ON(rc != 0))
+    {
+        return;
+    }
+
+    if (!priv->static_phys_addrs)
+    {
+        status = rm_acquire_api_lock(sp);
+        if (WARN_ON(status != NV_OK))
         {
-            status = rm_dma_buf_unmap_mem_handle(sp, priv->nv, priv->h_client,
-                                                 priv->handles[i].h_memory,
-                                                 priv->handles[i].size,
-                                                 priv->handles[i].bar1_va);
-            WARN_ON(status != NV_OK);
+            goto free_sp;
+        }
+        api_lock_taken = NV_TRUE;
+
+        status = rm_acquire_gpu_lock(sp, priv->nv);
+        if (WARN_ON(status != NV_OK))
+        {
+            goto unlock_api_lock;
+        }
+        gpu_lock_taken = NV_TRUE;
+    }
+
+    nv_put_phys_addresses(sp, priv, start_index, handle_count);
+
+    if (gpu_lock_taken)
+    {
+        rm_release_gpu_lock(sp, priv->nv);
+    }
+
+unlock_api_lock:
+    if (api_lock_taken)
+    {
+        rm_release_api_lock(sp);
+    }
+
+free_sp:
+    nv_kmem_cache_free_stack(sp);
+}
+
+static NV_STATUS
+nv_dma_buf_get_phys_addresses (
+    nv_dma_buf_file_private_t *priv,
+    NvU32 start_index,
+    NvU32 handle_count
+)
+{
+    NV_STATUS status = NV_OK;
+    nvidia_stack_t *sp = NULL;
+    NvBool api_lock_taken = NV_FALSE;
+    NvBool gpu_lock_taken = NV_FALSE;
+    NvU32 i;
+    int rc = 0;
+
+    if (!nv_inc_and_check_one_phys_refcount(priv, start_index, handle_count))
+    {
+        return NV_OK;
+    }
+
+    rc = nv_kmem_cache_alloc_stack(&sp);
+    if (rc != 0)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto failed;
+    }
+
+    //
+    // Locking is not needed for static phys address configs because the memdesc
+    // is not expected to change in this case and we hold the refcount on the
+    // owner GPU and memory before referencing it.
+    //
+    if (!priv->static_phys_addrs)
+    {
+        status = rm_acquire_api_lock(sp);
+        if (status != NV_OK)
+        {
+            goto free_sp;
+        }
+        api_lock_taken = NV_TRUE;
+
+        status = rm_acquire_gpu_lock(sp, priv->nv);
+        if (status != NV_OK)
+        {
+            goto unlock_api_lock;
+        }
+        gpu_lock_taken = NV_TRUE;
+    }
+
+    for (i = 0; i < handle_count; i++)
+    {
+        NvU32 index = start_index + i;
+
+        if (priv->handles[index].phys_refcount > 1)
+        {
+            continue;
+        }
+
+        // Per-handle phys_range is allocated by RM
+        status = rm_dma_buf_map_mem_handle(sp, priv->nv, priv->h_client,
+                                           priv->handles[index].h_memory,
+                                           priv->handles[index].offset,
+                                           priv->handles[index].size,
+                                           priv->handles[index].static_mem_info,
+                                           &priv->handles[index].phys_range,
+                                           &priv->handles[index].phys_range_count);
+        if (status != NV_OK)
+        {
+            goto unmap_handles;
         }
     }
+
+    if (gpu_lock_taken)
+    {
+        rm_release_gpu_lock(sp, priv->nv);
+    }
+
+    if (api_lock_taken)
+    {
+        rm_release_api_lock(sp);
+    }
+
+    nv_kmem_cache_free_stack(sp);
+
+    return NV_OK;
+
+unmap_handles:
+    nv_put_phys_addresses(sp, priv, start_index, i);
+
+    if (gpu_lock_taken)
+    {
+        rm_release_gpu_lock(sp, priv->nv);
+    }
+
+unlock_api_lock:
+    if (api_lock_taken)
+    {
+        rm_release_api_lock(sp);
+    }
+
+free_sp:
+    nv_kmem_cache_free_stack(sp);
+
+failed:
+    nv_reset_phys_refcount(priv, start_index, handle_count);
+
+    return status;
+}
+
+static void
+nv_dma_buf_unmap_pages(
+    struct device *dev,
+    struct sg_table *sgt
+)
+{
+    dma_unmap_sg(dev, sgt->sgl, sgt->nents, DMA_BIDIRECTIONAL);
+}
+
+static void
+nv_dma_buf_unmap_pfns(
+    struct device *dev,
+    struct sg_table *sgt
+)
+{
+    nv_dma_device_t peer_dma_dev = {{ 0 }};
+    struct scatterlist *sg = sgt->sgl;
+    NvU32 i;
+
+    peer_dma_dev.dev = dev;
+    peer_dma_dev.addressable_range.limit = (NvU64)dev->dma_mask;
+
+    for_each_sg(sgt->sgl, sg, sgt->nents, i)
+    {
+        nv_dma_unmap_peer(&peer_dma_dev,
+                          (sg_dma_len(sg) >> PAGE_SHIFT),
+                          sg_dma_address(sg));
+    }
+}
+
+static struct sg_table*
+nv_dma_buf_map_pages (
+    struct device *dev,
+    nv_dma_buf_file_private_t *priv
+)
+{
+    struct sg_table *sgt = NULL;
+    struct scatterlist *sg;
+    NvU32 nents = 0;
+    NvU32 i;
+    int rc;
+
+    // Calculate nents needed to allocate sg_table
+    for (i = 0; i < priv->num_objects; i++)
+    {
+        nents += priv->handles[i].phys_range_count;
+    }
+
+    NV_KZALLOC(sgt, sizeof(struct sg_table));
+    if (sgt == NULL)
+    {
+        return NULL;
+    }
+
+    rc = sg_alloc_table(sgt, nents, GFP_KERNEL);
+    if (rc != 0)
+    {
+        goto free_sgt;
+    }
+
+    sg = sgt->sgl;
+
+    for (i = 0; i < priv->num_objects; i++)
+    {
+        NvU32 range_count = priv->handles[i].phys_range_count;
+        NvU32 index = 0;
+        for (index = 0; index < range_count; index++)
+        {
+            NvU64 addr = priv->handles[i].phys_range[index].addr;
+            NvU64 len  = priv->handles[i].phys_range[index].len;
+            struct page *page = NV_GET_PAGE_STRUCT(addr);
+
+            if ((page == NULL) || (sg == NULL))
+            {
+                goto free_table;
+            }
+
+            sg_set_page(sg, page, len, 0);
+            sg = sg_next(sg);
+        }
+    }
+
+    // DMA map the sg_table
+    rc = dma_map_sg(dev, sgt->sgl, sgt->orig_nents, DMA_BIDIRECTIONAL);
+    if (rc <= 0)
+    {
+        goto free_table;
+    }
+    sgt->nents = rc;
+
+    return sgt;
+
+free_table:
+    sg_free_table(sgt);
+
+free_sgt:
+    NV_KFREE(sgt, sizeof(struct sg_table));
+
+    return NULL;
+}
+
+static struct sg_table*
+nv_dma_buf_map_pfns (
+    struct device *dev,
+    nv_dma_buf_file_private_t *priv
+)
+{
+    NV_STATUS status;
+    struct sg_table *sgt = NULL;
+    struct scatterlist *sg;
+    nv_dma_device_t peer_dma_dev = {{ 0 }};
+    NvU32 dma_max_seg_size;
+    NvU32 nents = 0;
+    NvU32 mapped_nents = 0;
+    NvU32 i = 0;
+    int rc = 0;
+
+    peer_dma_dev.dev = dev;
+    peer_dma_dev.addressable_range.limit = (NvU64)dev->dma_mask;
+
+    dma_max_seg_size = NV_ALIGN_DOWN(dma_get_max_seg_size(dev), PAGE_SIZE);
+
+    if (dma_max_seg_size < PAGE_SIZE)
+    {
+        return NULL;
+    }
+
+    // Calculate nents needed to allocate sg_table
+    for (i = 0; i < priv->num_objects; i++)
+    {
+        NvU32 range_count = priv->handles[i].phys_range_count;
+        NvU32 index;
+
+        for (index = 0; index < range_count; index++)
+        {
+            NvU64 length = priv->handles[i].phys_range[index].len;
+            NvU64 count = length + dma_max_seg_size - 1;
+            do_div(count, dma_max_seg_size);
+            nents += count;
+        }
+    }
+
+    NV_KZALLOC(sgt, sizeof(struct sg_table));
+    if (sgt == NULL)
+    {
+        return NULL;
+    }
+
+    rc = sg_alloc_table(sgt, nents, GFP_KERNEL);
+    if (rc != 0)
+    {
+        goto free_sgt;
+    }
+
+    sg = sgt->sgl;
+    for (i = 0; i < priv->num_objects; i++)
+    {
+        NvU32 range_count = priv->handles[i].phys_range_count;
+        NvU32 index = 0;
+
+        for (index = 0; index < range_count; index++)
+        {
+            NvU64 dma_addr = priv->handles[i].phys_range[index].addr;
+            NvU64 dma_len  = priv->handles[i].phys_range[index].len;
+
+            // Break the scatterlist into dma_max_seg_size chunks
+            while(dma_len != 0)
+            {
+                NvU32 sg_len = NV_MIN(dma_len, dma_max_seg_size);
+
+                if (sg == NULL)
+                {
+                    goto unmap_pfns;
+                }
+
+                status = nv_dma_map_peer(&peer_dma_dev, priv->nv->dma_dev, 0x1,
+                                         (sg_len >> PAGE_SHIFT), &dma_addr);
+                if (status != NV_OK)
+                {
+                    goto unmap_pfns;
+                }
+
+                sg_set_page(sg, NULL, sg_len, 0);
+                sg_dma_address(sg) = (dma_addr_t) dma_addr;
+                sg_dma_len(sg) = sg_len;
+                dma_addr += sg_len;
+                dma_len -= sg_len;
+                mapped_nents++;
+                sg = sg_next(sg);
+            }
+        }
+    }
+    sgt->nents = mapped_nents;
+
+    WARN_ON(sgt->nents != sgt->orig_nents);
+
+    return sgt;
+
+unmap_pfns:
+    sgt->nents = mapped_nents;
+
+    nv_dma_buf_unmap_pfns(dev, sgt);
+
+    sg_free_table(sgt);
+
+free_sgt:
+    NV_KFREE(sgt, sizeof(struct sg_table));
+
+    return NULL;
 }
 
 static struct sg_table*
@@ -313,28 +772,18 @@ nv_dma_buf_map(
 )
 {
     NV_STATUS status;
-    nvidia_stack_t *sp = NULL;
-    struct scatterlist *sg = NULL;
     struct sg_table *sgt = NULL;
     struct dma_buf *buf = attachment->dmabuf;
-    struct device *dev = attachment->dev;
     nv_dma_buf_file_private_t *priv = buf->priv;
-    nv_dma_device_t peer_dma_dev = {{ 0 }};
-    NvBool bar1_map_needed;
-    NvBool bar1_unmap_needed;
-    NvU32 mapped_handle_count = 0;
-    NvU32 num_sg_entries = 0;
-    NvU32 i = 0;
-    int rc = 0;
 
     //
-    // We support importers that are able to handle MMIO resources
-    // not backed by struct page. This will need to be revisited
-    // when dma-buf support for P9 will be added.
+    // On non-coherent platforms, importers must be able to handle peer
+    // MMIO resources not backed by struct page.
     //
 #if defined(NV_DMA_BUF_HAS_DYNAMIC_ATTACHMENT) && \
     defined(NV_DMA_BUF_ATTACHMENT_HAS_PEER2PEER)
-    if (dma_buf_attachment_is_dynamic(attachment) &&
+    if (!priv->nv->coherent &&
+        dma_buf_attachment_is_dynamic(attachment) &&
         !attachment->peer2peer)
     {
         nv_printf(NV_DBG_ERRORS,
@@ -350,144 +799,37 @@ nv_dma_buf_map(
         goto unlock_priv;
     }
 
-    rc = nv_kmem_cache_alloc_stack(&sp);
-    if (rc != 0)
+    if (!priv->static_phys_addrs)
     {
-        goto unlock_priv;
-    }
-
-    status = rm_acquire_api_lock(sp);
-    if (status != NV_OK)
-    {
-        goto free_sp;
-    }
-
-    status = rm_acquire_gpu_lock(sp, priv->nv);
-    if (status != NV_OK)
-    {
-        goto unlock_api_lock;
-    }
-
-    NV_KZALLOC(sgt, sizeof(struct sg_table));
-    if (sgt == NULL)
-    {
-        goto unlock_gpu_lock;
-    }
-
-    //
-    // Pre-calculate number of sg entries we need based on handle size.
-    // This is needed to allocate sg_table.
-    //
-    for (i = 0; i < priv->num_objects; i++)
-    {
-        NvU64 count = priv->handles[i].size + NV_DMA_BUF_SG_MAX_LEN - 1;
-        do_div(count, NV_DMA_BUF_SG_MAX_LEN);
-        num_sg_entries += count;
-    }
-
-    //
-    // RM currently returns contiguous BAR1, so we create as many
-    // sg entries as num_sg_entries calculated above.
-    // When RM can alloc discontiguous BAR1, this code will need to be revisited.
-    //
-    rc = sg_alloc_table(sgt, num_sg_entries, GFP_KERNEL);
-    if (rc != 0)
-    {
-        goto free_sgt;
-    }
-
-    peer_dma_dev.dev = dev;
-    peer_dma_dev.addressable_range.limit = (NvU64)dev->dma_mask;
-    bar1_map_needed = bar1_unmap_needed = (priv->bar1_va_ref_count == 0);
-
-    sg = sgt->sgl;
-    for (i = 0; i < priv->num_objects; i++)
-    {
-        NvU64 dma_addr;
-        NvU64 dma_len;
-
-        if (bar1_map_needed)
-        {
-            status = rm_dma_buf_map_mem_handle(sp, priv->nv, priv->h_client,
-                                               priv->handles[i].h_memory,
-                                               priv->handles[i].offset,
-                                               priv->handles[i].size,
-                                               &priv->handles[i].bar1_va);
-            if (status != NV_OK)
-            {
-                goto unmap_handles;
-            }
-        }
-
-        mapped_handle_count++;
-
-        dma_addr = priv->handles[i].bar1_va;
-        dma_len  = priv->handles[i].size;
-
-        //
-        // IOVA map the full handle at once and then breakdown the range
-        // (dma_addr, dma_addr + dma_len) into smaller sg entries.
-        //
-        status = nv_dma_map_peer(&peer_dma_dev, priv->nv->dma_dev,
-                                 0x1, (dma_len / os_page_size), &dma_addr);
+        status = nv_dma_buf_get_phys_addresses(priv, 0, priv->num_objects);
         if (status != NV_OK)
         {
-            if (bar1_unmap_needed)
-            {
-                // Unmap the recently mapped memory handle
-                (void) rm_dma_buf_unmap_mem_handle(sp, priv->nv, priv->h_client,
-                                                   priv->handles[i].h_memory,
-                                                   priv->handles[i].size,
-                                                   priv->handles[i].bar1_va);
-            }
-
-            mapped_handle_count--;
-
-            // Unmap remaining memory handles
-            goto unmap_handles;
-        }
-
-        while(dma_len != 0)
-        {
-            NvU32 sg_len = NV_MIN(dma_len, NV_DMA_BUF_SG_MAX_LEN);
-
-            sg_set_page(sg, NULL, sg_len, 0);
-            sg_dma_address(sg) = (dma_addr_t)dma_addr;
-            sg_dma_len(sg) = sg_len;
-            dma_addr += sg_len;
-            dma_len -= sg_len;
-            sg = sg_next(sg);
+            goto unlock_priv;
         }
     }
 
-    priv->bar1_va_ref_count++;
-
-    rm_release_gpu_lock(sp, priv->nv);
-
-    rm_release_api_lock(sp);
-
-    nv_kmem_cache_free_stack(sp);
+    if (priv->nv->coherent)
+    {
+        sgt = nv_dma_buf_map_pages(attachment->dev, priv);
+    }
+    else
+    {
+        sgt = nv_dma_buf_map_pfns(attachment->dev, priv);
+    }
+    if (sgt == NULL)
+    {
+        goto unmap_handles;
+    }
 
     mutex_unlock(&priv->lock);
 
     return sgt;
 
 unmap_handles:
-    nv_dma_buf_unmap_unlocked(sp, &peer_dma_dev, priv, sgt, mapped_handle_count);
-
-    sg_free_table(sgt);
-
-free_sgt:
-    NV_KFREE(sgt, sizeof(struct sg_table));
-
-unlock_gpu_lock:
-    rm_release_gpu_lock(sp, priv->nv);
-
-unlock_api_lock:
-    rm_release_api_lock(sp);
-
-free_sp:
-    nv_kmem_cache_free_stack(sp);
+    if (!priv->static_phys_addrs)
+    {
+        nv_dma_buf_put_phys_addresses(priv, 0, priv->num_objects);
+    }
 
 unlock_priv:
     mutex_unlock(&priv->lock);
@@ -502,59 +844,33 @@ nv_dma_buf_unmap(
     enum dma_data_direction direction
 )
 {
-    NV_STATUS status;
     struct dma_buf *buf = attachment->dmabuf;
-    struct device *dev = attachment->dev;
-    nvidia_stack_t *sp = NULL;
     nv_dma_buf_file_private_t *priv = buf->priv;
-    nv_dma_device_t peer_dma_dev = {{ 0 }};
-    int rc = 0;
 
     mutex_lock(&priv->lock);
 
-    if (priv->num_objects != priv->total_objects)
+    if (priv->nv->coherent)
     {
-        goto unlock_priv;
+        nv_dma_buf_unmap_pages(attachment->dev, sgt);
+    }
+    else
+    {
+        nv_dma_buf_unmap_pfns(attachment->dev, sgt);
     }
 
-    rc = nv_kmem_cache_alloc_stack(&sp);
-    if (WARN_ON(rc != 0))
+    //
+    // For static_phys_addrs platforms, this operation is done in release
+    // since getting the phys_addrs was done in create/reuse.
+    //
+    if (!priv->static_phys_addrs)
     {
-        goto unlock_priv;
+        nv_dma_buf_put_phys_addresses(priv, 0, priv->num_objects);
     }
-
-    status = rm_acquire_api_lock(sp);
-    if (WARN_ON(status != NV_OK))
-    {
-        goto free_sp;
-    }
-
-    status = rm_acquire_gpu_lock(sp, priv->nv);
-    if (WARN_ON(status != NV_OK))
-    {
-        goto unlock_api_lock;
-    }
-
-    peer_dma_dev.dev = dev;
-    peer_dma_dev.addressable_range.limit = (NvU64)dev->dma_mask;
-
-    priv->bar1_va_ref_count--;
-
-    nv_dma_buf_unmap_unlocked(sp, &peer_dma_dev, priv, sgt, priv->num_objects);
 
     sg_free_table(sgt);
 
     NV_KFREE(sgt, sizeof(struct sg_table));
 
-    rm_release_gpu_lock(sp, priv->nv);
-
-unlock_api_lock:
-    rm_release_api_lock(sp);
-
-free_sp:
-    nv_kmem_cache_free_stack(sp);
-
-unlock_priv:
     mutex_unlock(&priv->lock);
 }
 
@@ -564,6 +880,7 @@ nv_dma_buf_release(
 )
 {
     int rc = 0;
+    NvU32 i;
     nvidia_stack_t *sp = NULL;
     nv_dma_buf_file_private_t *priv = buf->priv;
     nv_state_t *nv;
@@ -575,16 +892,30 @@ nv_dma_buf_release(
 
     nv = priv->nv;
 
+    if (priv->static_phys_addrs)
+    {
+        nv_dma_buf_put_phys_addresses(priv, 0, priv->num_objects);
+    }
+
     rc = nv_kmem_cache_alloc_stack(&sp);
     if (WARN_ON(rc != 0))
     {
         return;
     }
 
+    // phys_addr refcounts must be zero at this point
+    for (i = 0; i < priv->num_objects; i++)
+    {
+        WARN_ON(priv->handles[i].phys_refcount > 0);
+    }
+
     nv_dma_buf_undup_mem_handles(sp, 0, priv->num_objects, priv);
 
     rm_dma_buf_put_client_and_device(sp, priv->nv, priv->h_client, priv->h_device,
                                      priv->h_subdevice, priv->mig_info);
+
+    WARN_ON(priv->attached_size > 0);
+    WARN_ON(priv->num_objects > 0);
 
     nv_dma_buf_free_file_private(priv);
     buf->priv = NULL;
@@ -737,7 +1068,8 @@ nv_dma_buf_create(
                                               &priv->h_client,
                                               &priv->h_device,
                                               &priv->h_subdevice,
-                                              &priv->mig_info);
+                                              &priv->mig_info,
+                                              &priv->static_phys_addrs);
     if (status != NV_OK)
     {
         goto cleanup_device;
@@ -747,6 +1079,17 @@ nv_dma_buf_create(
     if (status != NV_OK)
     {
         goto cleanup_client_and_device;
+    }
+
+    // Get CPU static phys addresses if possible to do so at this time.
+    if (priv->static_phys_addrs)
+    {
+        status = nv_dma_buf_get_phys_addresses(priv, params->index,
+                                               params->numObjects);
+        if (status != NV_OK)
+        {
+            goto cleanup_handles;
+        }
     }
 
 #if (NV_DMA_BUF_EXPORT_ARGUMENT_COUNT == 1)
@@ -774,7 +1117,7 @@ nv_dma_buf_create(
 
         status = NV_ERR_OPERATING_SYSTEM;
 
-        goto cleanup_handles;
+        goto put_phys_addrs;
     }
 
     nv_kmem_cache_free_stack(sp);
@@ -797,8 +1140,14 @@ nv_dma_buf_create(
 
     return NV_OK;
 
+put_phys_addrs:
+    if (priv->static_phys_addrs)
+    {
+        nv_dma_buf_put_phys_addresses(priv, params->index, params->numObjects);
+    }
+
 cleanup_handles:
-    nv_dma_buf_undup_mem_handles(sp, 0, priv->num_objects, priv);
+    nv_dma_buf_undup_mem_handles(sp, params->index, params->numObjects, priv);
 
 cleanup_client_and_device:
     rm_dma_buf_put_client_and_device(sp, priv->nv, priv->h_client, priv->h_device,
@@ -876,6 +1225,28 @@ nv_dma_buf_reuse(
     {
         goto cleanup_sp;
     }
+
+    // Get CPU static phys addresses if possible to do so at this time.
+    if (priv->static_phys_addrs)
+    {
+        status = nv_dma_buf_get_phys_addresses(priv, params->index,
+                                               params->numObjects);
+        if (status != NV_OK)
+        {
+            goto cleanup_handles;
+        }
+    }
+
+    nv_kmem_cache_free_stack(sp);
+
+    mutex_unlock(&priv->lock);
+
+    dma_buf_put(buf);
+
+    return NV_OK;
+
+cleanup_handles:
+    nv_dma_buf_undup_mem_handles(sp, params->index, params->numObjects, priv);
 
 cleanup_sp:
     nv_kmem_cache_free_stack(sp);

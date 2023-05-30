@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlc637.finn
+// Source file:      ctrl/ctrlc637.finn
 //
 
 #include "ctrl/ctrlxxxx.h"
@@ -311,8 +311,9 @@ typedef struct NVC637_CTRL_EXEC_PARTITIONS_EXPORTED_INFO {
 } NVC637_CTRL_EXEC_PARTITIONS_EXPORTED_INFO;
 
 typedef struct NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS {
-    NvU32 id;
+    NvU32  id;
     NV_DECLARE_ALIGNED(NVC637_CTRL_EXEC_PARTITIONS_EXPORTED_INFO info, 8);
+    NvBool bCreateCap;
 } NVC637_CTRL_EXEC_PARTITIONS_IMPORT_EXPORT_PARAMS;
 
 /*

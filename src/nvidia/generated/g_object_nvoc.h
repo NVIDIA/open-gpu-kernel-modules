@@ -166,10 +166,10 @@ static inline struct Object *objGetDirectParent(struct Object *pObj) {
 #undef PRIVATE_FIELD
 
 
-// 
-// IP versioning definitions are temporary until NVOC halspec support is 
-// finished. 
-//  
+//
+// IP versioning definitions are temporary until NVOC halspec support is
+// finished.
+//
 // IP_VERSION format as defined by the hardware engines.
 // A _MAJOR value of 0 means the object has no version number.
 //

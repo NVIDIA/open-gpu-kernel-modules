@@ -882,7 +882,7 @@ kbusAllocP2PMailboxBar1_GM200
     OBJGPU           *pParentGpu;
     NvU64             vaAllocMax;
     NV_STATUS         status = NV_OK;
-    
+
     VAS_ALLOC_FLAGS flags = {0};
 
     pParentGpu  = gpumgrGetParentGPU(pGpu);

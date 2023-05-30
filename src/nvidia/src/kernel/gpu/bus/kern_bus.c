@@ -393,7 +393,9 @@ kbusCommitBar2_KERNEL
     NvU32      flags
 )
 {
-    if (!KBUS_BAR0_PRAMIN_DISABLED(pGpu))
+    if (!KBUS_BAR0_PRAMIN_DISABLED(pGpu) &&
+        !kbusIsBarAccessBlocked(pKernelBus) &&
+        !(flags & GPU_STATE_FLAGS_GC6_TRANSITION))
     {
         // we will initialize bar2 to the default big page size of the system
         NV_ASSERT_OK_OR_RETURN(kbusInitVirtualBar2_HAL(pGpu, pKernelBus));
@@ -717,10 +719,14 @@ kbusPatchBar2Pdb_GSPCLIENT
     KernelBus   *pKernelBus
 )
 {
-    NV_STATUS            status = NV_OK;
+    NV_STATUS            status   = NV_OK;
     PMEMORY_DESCRIPTOR   pMemDesc;
-    GspStaticConfigInfo *pGSCI  = GPU_GET_GSP_STATIC_INFO(pGpu);
+    GspStaticConfigInfo *pGSCI    = GPU_GET_GSP_STATIC_INFO(pGpu);
+    const MMU_FMT_LEVEL *pRootFmt = pKernelBus->bar2[GPU_GFID_PF].pFmt->pRoot;
     NvU64                entryValue;
+    MEMORY_DESCRIPTOR   *pOldPdb;
+
+    pOldPdb = pKernelBus->virtualBar2[GPU_GFID_PF].pPDB;
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         memdescCreate(&pMemDesc, pGpu, pKernelBus->bar2[GPU_GFID_PF].pageDirSize, RM_PAGE_SIZE, NV_TRUE,
@@ -733,16 +739,32 @@ kbusPatchBar2Pdb_GSPCLIENT
 
     //
     // BAR2 page table is not yet working at this point, so retrieving the
-    // PDE3[0] of BAR2 page table via BAR0_WINDOW
+    // PDE3[0] of BAR2 page table via BAR0_WINDOW or GSP-DMA (in case BARs
+    // are blocked)
     //
-    entryValue = GPU_REG_RD32(pGpu, (NvU32)pKernelBus->bar2[GPU_GFID_PF].bar2OffsetInBar0Window) |
+    if (kbusIsBarAccessBlocked(pKernelBus))
+    {
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        TRANSFER_SURFACE surf = {0};
+
+        surf.pMemDesc = pOldPdb;
+        surf.offset = 0;
+
+        NV_ASSERT_OK_OR_RETURN(
+            memmgrMemRead(pMemoryManager, &surf, &entryValue,
+                          pRootFmt->entrySize, TRANSFER_FLAGS_NONE));
+    }
+    else
+    {
+        entryValue = GPU_REG_RD32(pGpu, (NvU32)pKernelBus->bar2[GPU_GFID_PF].bar2OffsetInBar0Window) |
                  ((NvU64)GPU_REG_RD32(pGpu, (NvU32)pKernelBus->bar2[GPU_GFID_PF].bar2OffsetInBar0Window + 4) << 32);
+    }
 
     //
     // Provide the PDE3[0] value to GSP-RM so that GSP-RM can merge CPU-RM's
     // page table to GSP-RM's page table
     //
-    NV_RM_RPC_UPDATE_BAR_PDE(pGpu, NV_RPC_UPDATE_PDE_BAR_2, entryValue, pKernelBus->bar2[GPU_GFID_PF].pFmt->pRoot->virtAddrBitLo, status);
+    NV_RM_RPC_UPDATE_BAR_PDE(pGpu, NV_RPC_UPDATE_PDE_BAR_2, entryValue, pRootFmt->virtAddrBitLo, status);
 
     return NV_OK;
 }
@@ -951,7 +973,7 @@ kbusGetDeviceCaps_IMPL
     bExplicitCacheFlushRequired = NVCPU_IS_ARM &&
                                   (RMCFG_FEATURE_PLATFORM_UNIX || RMCFG_FEATURE_PLATFORM_MODS_UNIX);
     if (bExplicitCacheFlushRequired ||
-        (!pCl->getProperty(pCL, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT)))
+        (!pCl->getProperty(pCl, PDB_PROP_CL_IS_CHIPSET_IO_COHERENT)))
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_HOST_CAPS, _EXPLICIT_CACHE_FLUSH_REQD);
 
     if ((pCl->FHBBusInfo.vendorID == PCI_VENDOR_ID_NVIDIA) &&
@@ -1019,7 +1041,8 @@ kbusMapFbApertureByHandle_IMPL
     NvHandle   hMemory,
     NvU64      offset,
     NvU64      size,
-    NvU64     *pBar1Va
+    NvU64     *pBar1Va,
+    Device    *pDevice
 )
 {
     NV_STATUS status;
@@ -1053,7 +1076,7 @@ kbusMapFbApertureByHandle_IMPL
 
     status = kbusMapFbAperture_HAL(pGpu, pKernelBus, pMemDesc, offset,
                                    &fbApertureOffset, &fbApertureLength,
-                                   BUS_MAP_FB_FLAGS_MAP_UNICAST, hClient);
+                                   BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
     if (status != NV_OK)
     {
         return status;
@@ -1185,9 +1208,16 @@ kbusGetNvlinkP2PPeerId_VGPU
     KernelBus *pKernelBus0,
     OBJGPU    *pGpu1,
     KernelBus *pKernelBus1,
-    NvU32     *nvlinkPeer
+    NvU32     *nvlinkPeer,
+    NvU32      flags
 )
 {
+    *nvlinkPeer = kbusGetPeerId_HAL(pGpu0, pKernelBus0, pGpu1);
+    if (*nvlinkPeer != BUS_INVALID_PEER)
+    {
+        return NV_OK;
+    }
+
     *nvlinkPeer = kbusGetUnusedPeerId_HAL(pGpu0, pKernelBus0);
 
     // If could not find a free peer ID, return error
@@ -1218,3 +1248,12 @@ kbusIsGpuP2pAlive_IMPL
 {
     return (pKernelBus->totalP2pObjectsAliveRefCount > 0);
 }
+
+/**
+ * @brief  Setup VF BAR2 during hibernate resume
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ * @param[in] flags
+ */
+

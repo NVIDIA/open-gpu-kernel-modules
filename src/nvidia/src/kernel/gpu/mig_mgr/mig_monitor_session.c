@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,10 +27,12 @@
  *
  *   Description:
  *       Upon successful allocation of this class, a client is granted
- *       permission to query information across the GPU instances 
+ *       permission to query information across the GPU instances
  *       irrespective of per-instance MIG subscriptions
  *
  *****************************************************************************/
+
+#define NVOC_MIG_MONITOR_SESSION_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
 #include "kernel/gpu/mig_mgr/mig_monitor_session.h"

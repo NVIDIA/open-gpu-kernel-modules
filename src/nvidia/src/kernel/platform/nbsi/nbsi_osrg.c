@@ -137,7 +137,7 @@ NV_STATUS nbsiReadRegistryDword
         if (errorCode == NV2080_CTRL_BIOS_GET_NBSI_SUCCESS)
         {
             *pData = nbsiDword;
-        }     
+        }
         else
         {
             //

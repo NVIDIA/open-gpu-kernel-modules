@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -348,8 +348,13 @@ typedef enum
     //
     ENGINE_INFO_TYPE_CHRAM_PRI_BASE,
 
+    // This entry added to copy data at RMCTRL_EXPORT() call for Kernel RM
+    ENGINE_INFO_TYPE_KERNEL_RM_MAX,
     // Used for iterating the engine info table by the index passed.
-    ENGINE_INFO_TYPE_INVALID,
+    ENGINE_INFO_TYPE_INVALID = ENGINE_INFO_TYPE_KERNEL_RM_MAX,
+
+    // Size of FIFO_ENGINE_LIST.engineData
+    ENGINE_INFO_TYPE_ENGINE_DATA_ARRAY_SIZE = ENGINE_INFO_TYPE_INVALID,
 
     // Input-only parameter for kfifoEngineInfoXlate.
     ENGINE_INFO_TYPE_PBDMA_ID
@@ -370,12 +375,12 @@ typedef enum
 
 typedef struct _def_fifo_engine_list
 {
-    NvU32 engineData[ENGINE_INFO_TYPE_INVALID];
+    NvU32 engineData[ENGINE_INFO_TYPE_ENGINE_DATA_ARRAY_SIZE];
     NvU32 pbdmaIds[FIFO_ENGINE_MAX_NUM_PBDMA];
     NvU32 pbdmaFaultIds[FIFO_ENGINE_MAX_NUM_PBDMA];
     NvU32 numPbdmas;
     char engineName[FIFO_ENGINE_NAME_MAX_SIZE];
-} FIFO_ENGINE_LIST, *PFIFO_ENGINE_LIST;
+} FIFO_ENGINE_LIST;
 
 typedef struct
 {
@@ -455,8 +460,8 @@ MAKE_LIST(FifoSchedulingHandlerEntryList, FifoSchedulingHandlerEntry);
 #define INST_BLOCK_APERTURE_SYSTEM_NON_COHERENT_MEMORY       0x00000003
 
 // Macro to verify HW and class defines are compatible
-#define VERIFY_INST_BLOCK_APERTURE(vid, coh, ncoh) \
-    ct_assert((vid) == INST_BLOCK_APERTURE_VIDEO_MEMORY); \
+#define VERIFY_INST_BLOCK_APERTURE(vid, coh, ncoh)                  \
+    ct_assert((vid) == INST_BLOCK_APERTURE_VIDEO_MEMORY);           \
     ct_assert((coh) == INST_BLOCK_APERTURE_SYSTEM_COHERENT_MEMORY); \
     ct_assert((ncoh) == INST_BLOCK_APERTURE_SYSTEM_NON_COHERENT_MEMORY)
 
@@ -480,8 +485,7 @@ struct KernelFifo {
     NV_STATUS (*__kfifoStatePostLoad__)(struct OBJGPU *, struct KernelFifo *, NvU32);
     NV_STATUS (*__kfifoStatePreUnload__)(struct OBJGPU *, struct KernelFifo *, NvU32);
     NV_STATUS (*__kfifoCheckChannelAllocAddrSpaces__)(struct KernelFifo *, NV_ADDRESS_SPACE, NV_ADDRESS_SPACE, NV_ADDRESS_SPACE);
-    NvU64 (*__kfifoGetMmioUsermodeOffset__)(struct OBJGPU *, struct KernelFifo *, NvBool);
-    NvU64 (*__kfifoGetMmioUsermodeSize__)(struct OBJGPU *, struct KernelFifo *, NvBool);
+    NV_STATUS (*__kfifoConstructUsermodeMemdescs__)(struct OBJGPU *, struct KernelFifo *);
     NvU32 (*__kfifoChannelGroupGetLocalMaxSubcontext__)(struct OBJGPU *, struct KernelFifo *, struct KernelChannelGroup *, NvBool);
     void (*__kfifoGetCtxBufferMapFlags__)(struct OBJGPU *, struct KernelFifo *, NvU32, NvU32 *);
     NV_STATUS (*__kfifoEngineInfoXlate__)(struct OBJGPU *, struct KernelFifo *, ENGINE_INFO_TYPE, NvU32, ENGINE_INFO_TYPE, NvU32 *);
@@ -507,6 +511,8 @@ struct KernelFifo {
     NvU32 maxSubcontextCount;
     FifoSchedulingHandlerEntryList postSchedulingEnableHandlerList;
     FifoSchedulingHandlerEntryList preSchedulingDisableHandlerList;
+    NvU32 maxSec2SecureChannels;
+    NvU32 maxCeSecureChannels;
     NvBool bUseChidHeap;
     NvBool bUsePerRunlistChram;
     NvBool bDisableChidIsolation;
@@ -527,6 +533,9 @@ struct KernelFifo {
     NvU32 InstAttr;
     const NV_ADDRESS_SPACE *pInstAllocList;
     MEMORY_DESCRIPTOR *pDummyPageMemDesc;
+    MEMORY_DESCRIPTOR *pBar1VF;
+    MEMORY_DESCRIPTOR *pBar1PrivVF;
+    MEMORY_DESCRIPTOR *pRegVF;
     CTX_BUF_POOL_INFO *pRunlistBufPool[62];
     MEMORY_DESCRIPTOR ***pppRunlistBufMemDesc;
 };
@@ -570,10 +579,8 @@ NV_STATUS __nvoc_objCreate_KernelFifo(KernelFifo**, Dynamic*, NvU32);
 #define kfifoStatePreUnload_HAL(pGpu, pKernelFifo, flags) kfifoStatePreUnload_DISPATCH(pGpu, pKernelFifo, flags)
 #define kfifoCheckChannelAllocAddrSpaces(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace) kfifoCheckChannelAllocAddrSpaces_DISPATCH(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace)
 #define kfifoCheckChannelAllocAddrSpaces_HAL(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace) kfifoCheckChannelAllocAddrSpaces_DISPATCH(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace)
-#define kfifoGetMmioUsermodeOffset(pGpu, pKernelFifo, arg0) kfifoGetMmioUsermodeOffset_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoGetMmioUsermodeOffset_HAL(pGpu, pKernelFifo, arg0) kfifoGetMmioUsermodeOffset_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoGetMmioUsermodeSize(pGpu, pKernelFifo, arg0) kfifoGetMmioUsermodeSize_DISPATCH(pGpu, pKernelFifo, arg0)
-#define kfifoGetMmioUsermodeSize_HAL(pGpu, pKernelFifo, arg0) kfifoGetMmioUsermodeSize_DISPATCH(pGpu, pKernelFifo, arg0)
+#define kfifoConstructUsermodeMemdescs(pGpu, pKernelFifo) kfifoConstructUsermodeMemdescs_DISPATCH(pGpu, pKernelFifo)
+#define kfifoConstructUsermodeMemdescs_HAL(pGpu, pKernelFifo) kfifoConstructUsermodeMemdescs_DISPATCH(pGpu, pKernelFifo)
 #define kfifoChannelGroupGetLocalMaxSubcontext(pGpu, pKernelFifo, arg0, arg1) kfifoChannelGroupGetLocalMaxSubcontext_DISPATCH(pGpu, pKernelFifo, arg0, arg1)
 #define kfifoChannelGroupGetLocalMaxSubcontext_HAL(pGpu, pKernelFifo, arg0, arg1) kfifoChannelGroupGetLocalMaxSubcontext_DISPATCH(pGpu, pKernelFifo, arg0, arg1)
 #define kfifoGetCtxBufferMapFlags(pGpu, pKernelFifo, engine, pFlags) kfifoGetCtxBufferMapFlags_DISPATCH(pGpu, pKernelFifo, engine, pFlags)
@@ -1304,6 +1311,20 @@ static inline NV_STATUS kfifoRestoreSchedPolicy(struct OBJGPU *pGpu, struct Kern
 
 #define kfifoRestoreSchedPolicy_HAL(pGpu, pKernelFifo) kfifoRestoreSchedPolicy(pGpu, pKernelFifo)
 
+NV_STATUS kfifoGetMaxSecureChannels_KERNEL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
+
+
+#ifdef __nvoc_kernel_fifo_h_disabled
+static inline NV_STATUS kfifoGetMaxSecureChannels(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
+    NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_fifo_h_disabled
+#define kfifoGetMaxSecureChannels(pGpu, pKernelFifo) kfifoGetMaxSecureChannels_KERNEL(pGpu, pKernelFifo)
+#endif //__nvoc_kernel_fifo_h_disabled
+
+#define kfifoGetMaxSecureChannels_HAL(pGpu, pKernelFifo) kfifoGetMaxSecureChannels(pGpu, pKernelFifo)
+
 NV_STATUS kfifoRunlistSetId_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, NvU32 runlistId);
 
 
@@ -1385,24 +1406,12 @@ static inline NV_STATUS kfifoCheckChannelAllocAddrSpaces_DISPATCH(struct KernelF
     return pKernelFifo->__kfifoCheckChannelAllocAddrSpaces__(pKernelFifo, userdAddrSpace, pushBuffAddrSpace, gpFifoAddrSpace);
 }
 
-NvU64 kfifoGetMmioUsermodeOffset_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg0);
+NV_STATUS kfifoConstructUsermodeMemdescs_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
-static inline NvU64 kfifoGetMmioUsermodeOffset_474d46(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg0) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
+NV_STATUS kfifoConstructUsermodeMemdescs_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo);
 
-static inline NvU64 kfifoGetMmioUsermodeOffset_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg0) {
-    return pKernelFifo->__kfifoGetMmioUsermodeOffset__(pGpu, pKernelFifo, arg0);
-}
-
-NvU64 kfifoGetMmioUsermodeSize_GH100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg0);
-
-static inline NvU64 kfifoGetMmioUsermodeSize_474d46(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg0) {
-    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
-}
-
-static inline NvU64 kfifoGetMmioUsermodeSize_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, NvBool arg0) {
-    return pKernelFifo->__kfifoGetMmioUsermodeSize__(pGpu, pKernelFifo, arg0);
+static inline NV_STATUS kfifoConstructUsermodeMemdescs_DISPATCH(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
+    return pKernelFifo->__kfifoConstructUsermodeMemdescs__(pGpu, pKernelFifo);
 }
 
 NvU32 kfifoChannelGroupGetLocalMaxSubcontext_GM107(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannelGroup *arg0, NvBool arg1);

@@ -51,7 +51,6 @@ struct OBJGPU;
 #include "ctrl/ctrl2080/ctrl2080internal.h"
 #include "ctrl/ctrlc637.h"
 #include "nvoc/utility.h"
-#include "nv_firmware_types.h"
 
 #include "gpu_mgr/gpu_mgr_sli.h"
 
@@ -120,6 +119,15 @@ typedef struct _def_gpumgr_save_vbios_state
     struct MEMORY_DESCRIPTOR *pSaveToMemDesc; //<! Where VGA workspace is saved to
     void *pSaveRegsOpaque;                    //<! Saved values of VGA registers
 } GPUMGRSAVEVBIOSSTATE, *PGPUMGRSAVEVBIOSSTATE;
+
+typedef struct CONF_COMPUTE_CAPS
+{
+    NvBool bApmFeatureCapable;
+    NvBool bHccFeatureCapable;
+    NvBool bCCFeatureEnabled;
+    NvBool bDevToolsModeEnabled;
+    NvBool bAcceptClientRequest;
+} CONF_COMPUTE_CAPS;
 
 //
 // types of bridges supported.
@@ -278,6 +286,7 @@ struct OBJGPUMGR {
     GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY MIGTopologyInfo[32];
     GPU_HANDLE_ID gpuHandleIDList[32];
     NvU32 numGpuHandles;
+    CONF_COMPUTE_CAPS ccCaps;
     pcieP2PCapsInfoList pcieP2PCapsInfoCache;
     void *pcieP2PCapsInfoLock;
 };
@@ -399,7 +408,7 @@ void gpumgrServiceInterrupts_IMPL(NvU32 arg0, MC_ENGINE_BITVECTOR *arg1, NvBool 
 
 typedef struct {
     NvBool         specified;                           // Set this flag when using this struct
-    NvBool         bIsIGPU;                             // Set this flag for iGPU 
+    NvBool         bIsIGPU;                             // Set this flag for iGPU
 
     DEVICE_MAPPING deviceMapping[DEVICE_INDEX_MAX];  // Register Aperture mapping
     NvU32          socChipId0;                          // Chip ID used for HAL binding
@@ -464,7 +473,15 @@ NV_STATUS   gpumgrUnregisterGpuId(NvU32 gpuId);
 NV_STATUS   gpumgrExcludeGpuId(NvU32 gpuId);
 NV_STATUS   gpumgrSetUuid(NvU32 gpuId, NvU8 *uuid);
 NV_STATUS   gpumgrGetGpuUuidInfo(NvU32 gpuId, NvU8 **ppUuidStr, NvU32 *pUuidStrLen, NvU32 uuidFlags);
-NvBool      gpumgrIsDeviceRmFirmwareCapable(NvU16 devId, NvU32 pmcBoot42, NvBool *pbEnableByDefault);
+// gpumgrGetRmFirmwarePolicy() and  gpumgrGetRmFirmwareLogsEnabled() contain
+// all logic for deciding the policies for loading firmwares, and so need to be
+// compiled for all platforms besides those actually running the firmwares
+void        gpumgrGetRmFirmwarePolicy(NvU32 chipId, NvU32 pmcBoot42, NvBool bIsSoc,
+                                      NvU32 enableFirmwareRegVal, NvBool *pbRequestFirmware,
+                                      NvBool *pbAllowFallbackToMonolithicRm);
+NvBool      gpumgrGetRmFirmwareLogsEnabled(NvU32 enableFirmwareLogsRegVal);
+NvBool      gpumgrIsDeviceRmFirmwareCapable(NvU16 devId, NvU32 pmcBoot42,
+                                            NvBool bIsSoc, NvBool *pbEnableByDefault);
 NV_STATUS   gpumgrAttachGpu(NvU32 deviceInstance, GPUATTACHARG *);
 NV_STATUS   gpumgrDetachGpu(NvU32 deviceInstance);
 OBJGPU*     gpumgrGetNextGpu(NvU32 gpuMask, NvU32 *pStartIndex);

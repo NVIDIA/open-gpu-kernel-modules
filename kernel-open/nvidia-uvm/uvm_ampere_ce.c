@@ -183,7 +183,10 @@ void uvm_hal_ampere_ce_memcopy_patch_src_c6b5(uvm_push_t *push, uvm_gpu_address_
     src->address -= uvm_pushbuffer_get_gpu_va_for_push(push->channel->pool->manager->pushbuffer, push);
 }
 
-bool uvm_hal_ampere_ce_memset_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t dst, size_t element_size)
+bool uvm_hal_ampere_ce_memset_is_valid_c6b5(uvm_push_t *push,
+                                            uvm_gpu_address_t dst,
+                                            size_t num_elements,
+                                            size_t element_size)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 

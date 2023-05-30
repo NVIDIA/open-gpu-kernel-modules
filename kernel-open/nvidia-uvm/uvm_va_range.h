@@ -537,6 +537,13 @@ NV_STATUS uvm_va_range_split(uvm_va_range_t *existing_va_range,
 
 // TODO: Bug 1707562: Merge va ranges
 
+static uvm_va_range_t *uvm_va_range_container(uvm_range_tree_node_t *node)
+{
+    if (!node)
+        return NULL;
+    return container_of(node, uvm_va_range_t, node);
+}
+
 // Returns the va_range containing addr, if any
 uvm_va_range_t *uvm_va_range_find(uvm_va_space_t *va_space, NvU64 addr);
 

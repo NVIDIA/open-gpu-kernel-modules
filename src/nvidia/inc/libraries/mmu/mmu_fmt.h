@@ -41,7 +41,7 @@ extern "C" {
 
 //
 // Separate files for the types as they're included by CTRL definitions
-// 
+//
 #include "mmu_fmt_types.h"
 
 /*!
@@ -105,7 +105,7 @@ const MMU_FMT_LEVEL *mmuFmtGetNextLevel(
 
 /*!
  * Return a level description from the format. Used for Verif.
- * 
+ *
  * @returns const char* string description of the level.
  */
 const char*

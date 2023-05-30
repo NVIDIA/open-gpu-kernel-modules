@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0000/ctrl0000gpu.finn
+// Source file:      ctrl/ctrl0000/ctrl0000gpu.finn
 //
 
 #include "ctrl/ctrl0000/ctrl0000base.h"
@@ -143,7 +143,8 @@ typedef struct NV0000_CTRL_GPU_GET_ID_INFO_PARAMS {
  *     GPU instance numbers are assigned in bus-probe order beginning with
  *     zero and are limited to one less the number of GPUs in the system.
  *   [out] numaId
- *     This parameter returns the ID of NUMA node for the specified GPU.
+ *     This parameter returns the ID of NUMA node for the specified GPU or
+ *     the subscribed MIG partition when MIG is enabled.
  *     In case there is no NUMA node, NV0000_CTRL_NO_NUMA_NODE is returned.
  *
  * Possible status values returned are:

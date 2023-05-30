@@ -1,11 +1,29 @@
 # Changelog
 
+## Release 535 Entries
+
+### [535.43.02] 2023-05-30
+
+#### Fixed
+
+- Fixed console restore with traditional VGA consoles.
+
+#### Added
+
+- Added support for Run Time D3 (RTD3) on Ampere and later GPUs.
+- Added support for G-Sync on desktop GPUs.
+
 ## Release 530 Entries
 
 ### [530.41.03] 2023-03-23
 
 ### [530.30.02] 2023-02-28
 
+#### Changed
+
+- GSP firmware is now distributed as `gsp_tu10x.bin` and `gsp_ga10x.bin` to better reflect the GPU architectures supported by each firmware file in this release.
+    - The .run installer will continue to install firmware to /lib/firmware/nvidia/<version> and the nvidia.ko kernel module will load the appropriate firmware for each GPU at runtime.
+  
 #### Fixed
 
 - Add support for resizable BAR on Linux when NVreg_EnableResizableBar=1 module param is set. [#3](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/3) by @sjkelly
@@ -15,6 +33,12 @@
 - Support for power management features like Suspend, Hibernate and Resume.
 
 ## Release 525 Entries
+
+### [525.116.04] 2023-05-09
+
+### [525.116.03] 2023-04-25
+
+### [525.105.17] 2023-03-30
 
 ### [525.89.02] 2023-02-08
 

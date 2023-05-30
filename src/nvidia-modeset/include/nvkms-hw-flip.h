@@ -47,6 +47,7 @@ NvBool nvUpdateFlipEvoHwState(
     const NvU32 head,
     const struct NvKmsFlipCommonParams *pParams,
     const NVHwModeTimingsEvo *pTimings,
+    const NvU8 tilePosition,
     NVFlipEvoHwState *pFlipState,
     NvBool allowVrr);
 

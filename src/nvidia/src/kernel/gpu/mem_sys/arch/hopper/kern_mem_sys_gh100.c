@@ -400,6 +400,131 @@ kmemsysAssertSysmemFlushBufferValid_GH100
               (GPU_REG_RD_DRF(pGpu, _PFB, _FBHUB_PCIE_FLUSH_SYSMEM_ADDR_HI, _ADR) != 0));
 }
 
+/*!
+ * @brief Add GPU memory as a NUMA node.
+ *
+ * Add GPU memory as a NUMA node to the OS kernel in platforms where
+ * GPU is coherently connected to the CPU.
+ *
+ * @param[in]  pGPU                OBJGPU pointer
+ * @param[in]  pKernelMemorySystem KernelMemorySystem pointer
+ * @param[in]  swizzId             swizzId of the MIG GPU instance, 0 for full GPU instance/non-MIG.
+ * @param[in]  offset              start offset of the GPU instance within FB
+ * @param[in]  size                size of the GPU instance
+ * @param[out] numaNodeId          NUMA node id corresponding to the added @swizzId partition memory
+ *                                 when NV_OK is returned.
+ *
+ * @returns NV_OK if all is okay.  Otherwise an error-specific value.
+ *
+ */
+NV_STATUS
+kmemsysNumaAddMemory_GH100
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU32               swizzId,
+    NvU64               offset,
+    NvU64               size,
+    NvS32              *numaNodeId
+)
+{
+    NV_STATUS status;
+    NvU64     memblockSize   = 0;
+    NvU32     lNumaNodeId;
+
+    NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
+    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED(size, memblockSize), NV_ERR_INVALID_STATE);
+
+    if (pKernelMemorySystem->memPartitionNumaInfo[swizzId].bInUse)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Memory partition: %u is already in use!\n", swizzId);
+        return NV_ERR_IN_USE;
+    }
+
+    status = osNumaAddGpuMemory(pGpu->pOsGpuInfo, offset, size, &lNumaNodeId);
+    if (status == NV_OK)
+    {
+        pKernelMemorySystem->memPartitionNumaInfo[swizzId].bInUse = NV_TRUE;
+        pKernelMemorySystem->memPartitionNumaInfo[swizzId].offset = offset;
+        pKernelMemorySystem->memPartitionNumaInfo[swizzId].size = size;
+        pKernelMemorySystem->memPartitionNumaInfo[swizzId].numaNodeId = lNumaNodeId;
+        *numaNodeId = lNumaNodeId;
+
+        pKernelMemorySystem->bNumaNodesAdded = NV_TRUE;
+
+        NV_PRINTF(LEVEL_INFO, "Memory partition: %u added successfully!"
+                  " numa id: %u offset: 0x%llx size: 0x%llx\n",
+                  swizzId, lNumaNodeId, offset, size);
+    }
+
+    return status;
+}
+
+/*!
+ * @brief Remove a particular MIG GPU instance GPU memory from OS kernel.
+ *
+ * Remove GPU memory from the OS kernel that is earlier added as a NUMA node
+ * to the kernel in platforms where GPU is coherently connected to the CPU.
+ *
+ * @param[in]  pGPU                OBJGPU pointer
+ * @param[in]  pKernelMemorySystem KernelMemorySystem pointer
+ * @param[in]  swizzId             swizzId of the MIG GPU instance, 0 for full partition/non-MIG.
+ */
+void
+kmemsysNumaRemoveMemory_GH100
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU32               swizzId
+)
+{
+    if (pKernelMemorySystem->memPartitionNumaInfo[swizzId].bInUse == NV_FALSE)
+    {
+        return;
+    }
+
+    osNumaRemoveGpuMemory(pGpu->pOsGpuInfo,
+                          pKernelMemorySystem->memPartitionNumaInfo[swizzId].offset,
+                          pKernelMemorySystem->memPartitionNumaInfo[swizzId].size,
+                          pKernelMemorySystem->memPartitionNumaInfo[swizzId].numaNodeId);
+    pKernelMemorySystem->memPartitionNumaInfo[swizzId].bInUse = NV_FALSE;
+    pKernelMemorySystem->memPartitionNumaInfo[swizzId].offset = 0;
+    pKernelMemorySystem->memPartitionNumaInfo[swizzId].size = 0;
+    pKernelMemorySystem->memPartitionNumaInfo[swizzId].numaNodeId = NV_U32_MAX;
+
+    NV_PRINTF(LEVEL_INFO, "NVRM: memory partition: %u removed successfully!\n",
+              swizzId);
+    return;
+}
+
+/*!
+ * @brief Remove all GPU memory from OS kernel.
+ *
+ * Remove all MIG GPU instances GPU memory from the OS kernel that is earlier added
+ * as a NUMA node  to the kernel in platforms where GPU is coherently
+ * connected to the CPU.
+ *
+ * @param[in]  pGPU                OBJGPU pointer
+ * @param[in]  pKernelMemorySystem KernelMemorySystem pointer
+ *
+ */
+void
+kmemsysNumaRemoveAllMemory_GH100
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    NvU32 swizzId;
+
+    for (swizzId = 0; swizzId < KMIGMGR_MAX_GPU_SWIZZID; swizzId++)
+    {
+        kmemsysNumaRemoveMemory_HAL(pGpu, pKernelMemorySystem, swizzId);
+    }
+
+    return;
+}
+
 /*
  * @brief   Function to map swizzId to VMMU Segments
  */
@@ -423,9 +548,18 @@ kmemsysSwizzIdToVmmuSegmentsRange_GH100
     NV_ASSERT_OR_RETURN(pStaticInfo->pSwizzIdFbMemPageRanges != NULL, NV_ERR_INVALID_STATE);
 
     startingVmmuSegment = pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo;
-    memSizeInVmmuSegment = pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].hi -
-                           pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo;
-    NV_ASSERT_OR_RETURN((memSizeInVmmuSegment <= totalVmmuSegments), NV_ERR_INVALID_STATE);
+    memSizeInVmmuSegment = (pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].hi -
+                            pStaticInfo->pSwizzIdFbMemPageRanges->fbMemPageRanges[swizzId].lo + 1);
+
+    if (memSizeInVmmuSegment > totalVmmuSegments)
+    {
+        //
+        // SwizzID-0 should cover only partitionable range, however for AMAP,
+        // there is no difference between swizzID-0 and no MIG which can result in
+        // AMAP returning an additional vmmuSegment for swizzID-0
+        //
+        NV_ASSERT_OR_RETURN((swizzId == 0), NV_ERR_INVALID_STATE);
+    }
 
     NV_ASSERT_OK_OR_RETURN(
         kmemsysInitMIGGPUInstanceMemConfigForSwizzId(pGpu, pKernelMemorySystem, swizzId, startingVmmuSegment, memSizeInVmmuSegment));

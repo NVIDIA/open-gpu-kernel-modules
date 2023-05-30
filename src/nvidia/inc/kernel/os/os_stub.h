@@ -53,11 +53,6 @@ OSSimEscapeWriteBuffer          stubOsSimEscapeWriteBuffer;
 OSSimEscapeRead                 stubOsSimEscapeRead;
 OSSimEscapeReadBuffer           stubOsSimEscapeReadBuffer;
 OSSetSurfaceName                stubOsSetSurfaceName;
-OSCallACPI_BCL                  stubOsCallACPI_BCL;
-OSCallACPI_ON                   stubOsCallACPI_ON;
-OSCallACPI_OFF                  stubOsCallACPI_OFF;
-OSCallACPI_NVHG_GPUON           stubOsCallWMI_NVHG_GPUON;
-OSCallACPI_NVHG_GPUOFF          stubOsCallWMI_NVHG_GPUOFF;
 OSCallACPI_NVHG_GPUSTA          stubOsCallWMI_NVHG_GPUSTA;
 OSCallACPI_NVHG_MXDS            stubOsCallWMI_NVHG_MXDS;
 OSCallACPI_NVHG_MXMX            stubOsCallWMI_NVHG_MXMX;
@@ -66,15 +61,11 @@ OSCallACPI_NVHG_DCS             stubOsCallWMI_NVHG_DCS;
 OSCheckCallback                 stubOsCheckCallback;
 OSRCCallback                    stubOsRCCallback;
 
-OSCallACPI_NBPS                 stubOsCallACPI_NBPS;
-OSCallACPI_NBSL                 stubOsCallACPI_NBSL;
-OSCallACPI_OPTM_GPUON           stubOsCallWMI_OPTM_GPUON;
 OSSetupVBlank                   stubOsSetupVBlank;
 OSObjectEventNotification       stubOsObjectEventNotification;
 OSPageArrayGetPhysAddr          stubOsPageArrayGetPhysAddr;
 OSInternalReserveFreeCallback   stubOsInternalReserveFreeCallback;
 OSInternalReserveAllocCallback  stubOsInternalReserveAllocCallback;
 OSGetUefiVariable               stubOsGetUefiVariable;
-OSCallACPI_LRST                 stubOsCallACPI_LRST;
 
 #endif // OS_STUB_H

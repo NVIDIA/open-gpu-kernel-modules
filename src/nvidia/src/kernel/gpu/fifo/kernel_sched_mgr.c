@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,12 +59,23 @@ _kschedmgrGetSchedulerPolicy
 
     switch (schedPolicy)
     {
+        case SCHED_POLICY_DEFAULT:
         default:
-            if (hypervisorIsVgxHyper())
-                return "BEST_EFFORT";
-            else // For baremetal and PT
-                return "NONE";
+            // For baremetal and PT
+            return "NONE";
     }
+}
+
+void kschedmgrSetConfigPolicyFromUser_IMPL
+(
+    KernelSchedMgr    *pKernelSchedMgr,
+    OBJGPU            *pGpu,
+    NvU32              schedSwPolicy
+)
+{
+    NvU32 schedSwPolicyLocal = SCHED_POLICY_DEFAULT;
+    pKernelSchedMgr->configSchedPolicy = schedSwPolicyLocal;
+    pKernelSchedMgr->bIsSchedSwEnabled = (schedSwPolicyLocal != SCHED_POLICY_DEFAULT);
 }
 
 /*!

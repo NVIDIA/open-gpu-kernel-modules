@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +44,11 @@ static NvU64 osCountTailPages(NvU64 sysPagePhysAddr)
 static void osAllocReleasePage(NvU64 sysPagePhysAddr)
 {
     return;
+}
+
+static NV_STATUS osOfflinePageAtAddress(NvU64 address)
+{
+    return NV_ERR_GENERIC;
 }
 
 NV_STATUS scrubCheck(OBJMEMSCRUB *pScrubber, PSCRUB_NODE *ppList, NvU64 *size)
@@ -519,7 +524,7 @@ _pmaEvictPages
     NvU64             evictPageCount,
     NvU64            *allocPages,
     NvU64             allocPageCount,
-    NvU32             pageSize,
+    NvU64             pageSize,
     NvU64             physBegin,
     NvU64             physEnd,
     MEMORY_PROTECTION prot
@@ -824,7 +829,7 @@ _pmaPredictOutOfMemory
 (
     PMA                    *pPma,
     NvLength                allocationCount,
-    NvU32                   pageSize,
+    NvU64                   pageSize,
     PMA_ALLOCATION_OPTIONS *allocationOptions
 )
 {
@@ -839,7 +844,15 @@ _pmaPredictOutOfMemory
 
     if ((alignFlag && (alignment == _PMA_2MB)) || pageSize == _PMA_2MB)
     {
-        free2mbPages = pPma->pmaStats.numFree2mbPages;
+        if (allocationOptions->flags & PMA_ALLOCATE_PROTECTED_REGION)
+        {
+            free2mbPages = pPma->pmaStats.numFree2mbPagesProtected;
+        }
+        else
+        {
+            free2mbPages = pPma->pmaStats.numFree2mbPages -
+                           pPma->pmaStats.numFree2mbPagesProtected;
+        }
 
         // If we have at least one page free, don't fail a partial allocation
         if (partialFlag && (free2mbPages > 0))
@@ -854,7 +867,15 @@ _pmaPredictOutOfMemory
     }
 
     // Do a quick check and exit early if we are in OOM case
-    bytesFree = pPma->pmaStats.numFreeFrames << PMA_PAGE_SHIFT;
+    if (allocationOptions->flags & PMA_ALLOCATE_PROTECTED_REGION)
+    {
+        bytesFree = pPma->pmaStats.numFreeFramesProtected << PMA_PAGE_SHIFT;
+    }
+    else
+    {
+        bytesFree = (pPma->pmaStats.numFreeFrames -
+                     pPma->pmaStats.numFreeFramesProtected) << PMA_PAGE_SHIFT;
+    }
 
     // If we have at least one page free, don't fail a partial allocation
     if (partialFlag && (bytesFree >= pageSize))
@@ -1224,6 +1245,32 @@ pmaRegisterBlacklistInfo
         alignedBlacklistAddr = NV_ALIGN_DOWN64(pBlacklistPageBase[blacklistEntryIn].physOffset, PMA_GRANULARITY);
         pmaSetBlockStateAttrib(pPma, alignedBlacklistAddr, PMA_GRANULARITY, ATTRIB_BLACKLIST, ATTRIB_BLACKLIST);
         pBlacklistChunk->bIsValid = NV_TRUE;
+ 
+        //
+        // In NUMA systems, memory allocation comes directly from kernel, which
+        // won't check for ATTRIB_BLACKLIST. So pages need to be blacklisted
+        // directly through the kernel.
+        //
+        // Use physOffset without 64K alignment, because kernel may use a different
+        // page size.
+        //
+        // This is only needed for NUMA systems that auto online NUMA memory.
+        // Other systems (e.g., P9) already do blacklisting in nvidia-persistenced.
+        //
+        if (pPma->bNuma && pPma->bNumaAutoOnline)
+        {
+            NV_STATUS status;
+
+            NV_PRINTF(LEVEL_INFO,
+                      "NUMA enabled - blacklisting page through kernel at address 0x%llx (GPA) 0x%llx (SPA)\n",
+                      pBlacklistPageBase[blacklistEntryIn].physOffset,
+                      pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
+            status = osOfflinePageAtAddress(pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "osOfflinePageAtAddress() failed with status: %d\n", status);
+            }
+        }
 
         blacklistEntryIn++;
     }

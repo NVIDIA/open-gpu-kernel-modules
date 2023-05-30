@@ -210,13 +210,13 @@ static NV_STATUS config_granularity_to_bytes(UVM_ACCESS_COUNTER_GRANULARITY gran
             *bytes = 64 * 1024ULL;
             break;
         case UVM_ACCESS_COUNTER_GRANULARITY_2M:
-            *bytes = 2 * 1024 * 1024ULL;
+            *bytes = 2 * UVM_SIZE_1MB;
             break;
         case UVM_ACCESS_COUNTER_GRANULARITY_16M:
-            *bytes = 16 * 1024 * 1024ULL;
+            *bytes = 16 * UVM_SIZE_1MB;
             break;
         case UVM_ACCESS_COUNTER_GRANULARITY_16G:
-            *bytes = 16 * 1024 * 1024 * 1024ULL;
+            *bytes = 16 * UVM_SIZE_1GB;
             break;
         default:
             return NV_ERR_INVALID_ARGUMENT;
@@ -404,7 +404,8 @@ NV_STATUS uvm_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu)
     UVM_ASSERT(parent_gpu->access_counter_buffer_hal != NULL);
 
     status = uvm_rm_locked_call(nvUvmInterfaceInitAccessCntrInfo(parent_gpu->rm_device,
-                                                                 &access_counters->rm_info));
+                                                                 &access_counters->rm_info,
+                                                                 0));
     if (status != NV_OK) {
         UVM_ERR_PRINT("Failed to init notify buffer info from RM: %s, GPU %s\n",
                       nvstatusToString(status),
@@ -707,6 +708,7 @@ static void access_counter_buffer_flush_locked(uvm_gpu_t *gpu, uvm_gpu_buffer_fl
     UVM_ASSERT(gpu->parent->access_counters_supported);
 
     // Read PUT pointer from the GPU if requested
+    UVM_ASSERT(flush_mode != UVM_GPU_BUFFER_FLUSH_MODE_WAIT_UPDATE_PUT);
     if (flush_mode == UVM_GPU_BUFFER_FLUSH_MODE_UPDATE_PUT)
         access_counters->cached_put = UVM_GPU_READ_ONCE(*access_counters->rm_info.pAccessCntrBufferPut);
 
@@ -1198,6 +1200,11 @@ static NV_STATUS service_phys_single_va_block(uvm_gpu_t *gpu,
         service_context->num_retries = 0;
         service_context->block_context.mm = mm;
 
+        if (uvm_va_block_is_hmm(va_block)) {
+            uvm_hmm_service_context_init(service_context);
+            uvm_hmm_migrate_begin_wait(va_block);
+        }
+
         uvm_mutex_lock(&va_block->lock);
 
         reverse_mappings_to_va_block_page_mask(va_block, reverse_mappings, num_reverse_mappings, accessed_pages);
@@ -1210,6 +1217,9 @@ static NV_STATUS service_phys_single_va_block(uvm_gpu_t *gpu,
                                                                    accessed_pages));
 
         uvm_mutex_unlock(&va_block->lock);
+
+        if (uvm_va_block_is_hmm(va_block))
+            uvm_hmm_migrate_finish(va_block);
 
         if (status == NV_OK)
             *out_flags |= UVM_ACCESS_COUNTER_ACTION_CLEAR;

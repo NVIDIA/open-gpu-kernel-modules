@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080fb.finn
+// Source file:      ctrl/ctrl0080/ctrl0080fb.finn
 //
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
@@ -86,6 +86,7 @@ typedef struct NV0080_CTRL_FB_GET_CAPS_PARAMS {
 #define NV0080_CTRL_FB_CAPS_OS_OWNS_HEAP_NEED_ECC_SCRUB                             1:0x10
 #define NV0080_CTRL_FB_CAPS_ASYNC_CE_L2_BYPASS_SET                                  1:0x20 // Deprecated
 #define NV0080_CTRL_FB_CAPS_DISABLE_TILED_CACHING_INVALIDATES_WITH_ECC_BUG_1521641  1:0x40
+#define NV0080_CTRL_FB_CAPS_GENERIC_PAGE_KIND                                       1:0x80
 
 #define NV0080_CTRL_FB_CAPS_DISABLE_MSCG_WITH_VR_BUG_1681803                        2:0x01
 #define NV0080_CTRL_FB_CAPS_VIDMEM_ALLOCS_ARE_CLEARED                               2:0x02

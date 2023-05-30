@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -97,7 +97,8 @@ _fabricCacheDelete
     FabricCacheEntry *pEntry;
 
     pEntry = multimapFindItem(pCache, key1, key2);
-    NV_ASSERT_OR_RETURN_VOID(pEntry != NULL);
+    if (pEntry == NULL)
+        return;
 
     mapRemoveByKey(&pEntry->map, key3);
     if (mapCount(&pEntry->map) > 0)

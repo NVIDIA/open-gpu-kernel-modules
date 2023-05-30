@@ -460,6 +460,7 @@ static NvBool evaluateIsDSCPossible(NVHDMIPKT_CLASS             *pThis,
 #endif // NVHDMIPKT_RM_CALLS_INTERNAL
         {
             bIsDSCPossible = pGetHdmiFrlCapacityComputationParams->dsc.bIsDSCPossible;
+            *pFRLParams = pGetHdmiFrlCapacityComputationParams->input;
         }
 
         pThis->callback.free(pThis->cbHandle, pGetHdmiFrlCapacityComputationParams);

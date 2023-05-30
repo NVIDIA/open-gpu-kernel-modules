@@ -279,6 +279,14 @@
 //      Operations not allowed while holding the lock:
 //      - GPU memory allocation which can evict memory (would require nesting
 //        block locks)
+// - GPU DMA Allocation pool lock (gpu->conf_computing.dma_buffer_pool.lock)
+//      Order: UVM_LOCK_ORDER_CONF_COMPUTING_DMA_BUFFER_POOL
+//      Exclusive lock (mutex)
+//
+//      Protects:
+//      - Protect the state of the uvm_conf_computing_dma_buffer_pool_t
+//        when the Confidential Computing feature is enabled on the system.
+//
 // - Chunk mapping lock (gpu->root_chunk_mappings.bitlocks and
 //   gpu->sysmem_mappings.bitlock)
 //      Order: UVM_LOCK_ORDER_CHUNK_MAPPING
@@ -313,6 +321,58 @@
 //      Operations not allowed while holding this lock
 //      - GPU memory allocation which can evict
 //
+// - Secure channel CSL channel pool semaphore
+//      Order: UVM_LOCK_ORDER_CSL_PUSH
+//      Semaphore per SEC2 channel pool
+//
+//      The semaphore controls concurrent pushes to secure channels. Secure work
+//      submission depends on channel availability in GPFIFO entries (as in any
+//      other channel type) but also on channel locking. Each secure channel has a
+//      lock to enforce ordering of pushes. The channel's CSL lock is taken on
+//      channel reservation until uvm_push_end. Secure channels are stateful
+//      channels and the CSL lock protects their CSL state/context.
+//
+//      Operations allowed while holding this lock
+//      - Pushing work to CE secure channels
+//
+// - WLC CSL channel pool semaphore
+//      Order: UVM_LOCK_ORDER_CSL_WLC_PUSH
+//      Semaphore per WLC channel pool
+//
+//      The semaphore controls concurrent pushes to WLC channels. WLC work
+//      submission depends on channel availability in GPFIFO entries (as in any
+//      other channel type) but also on channel locking. Each WLC channel has a
+//      lock to enforce ordering of pushes. The channel's CSL lock is taken on
+//      channel reservation until uvm_push_end. SEC2 channels are stateful
+//      channels and the CSL lock protects their CSL state/context.
+//
+//      This lock ORDER is different and sits below generic secure channel CSL
+//      lock and above SEC2 CSL lock. This reflects the dual nature of WLC
+//      channels; they use SEC2 indirect work launch during initialization,
+//      and after their schedule is initialized they provide indirect launch
+//      functionality to other CE channels.
+//
+//      Operations allowed while holding this lock
+//      - Pushing work to WLC channels
+//
+// - SEC2 CSL channel pool semaphore
+//      Order: UVM_LOCK_ORDER_SEC2_CSL_PUSH
+//      Semaphore per SEC2 channel pool
+//
+//      The semaphore controls concurrent pushes to SEC2 channels. SEC2 work
+//      submission depends on channel availability in GPFIFO entries (as in any
+//      other channel type) but also on channel locking. Each SEC2 channel has a
+//      lock to enforce ordering of pushes. The channel's CSL lock is taken on
+//      channel reservation until uvm_push_end. SEC2 channels are stateful
+//      channels and the CSL lock protects their CSL state/context.
+//
+//      This lock ORDER is different and lower than the generic secure channel
+//      lock to allow secure work submission to use a SEC2 channel to submit
+//      work before releasing the CSL lock of the originating secure channel.
+//
+//      Operations allowed while holding this lock
+//      - Pushing work to SEC2 channels
+//
 // - Concurrent push semaphore
 //      Order: UVM_LOCK_ORDER_PUSH
 //      Semaphore (uvm_semaphore_t)
@@ -346,6 +406,15 @@
 //      channel pool lock documentation contains the guidelines about which lock
 //      type (mutex or spinlock) to use.
 //
+// - WLC Channel lock
+//      Order: UVM_LOCK_ORDER_WLC_CHANNEL
+//      Spinlock (uvm_spinlock_t)
+//
+//      Lock protecting the state of WLC channels in a channel pool. This lock
+//      is separate from the above generic channel lock to allow for indirect
+//      worklaunch pushes while holding the main channel lock.
+//      (WLC pushes don't need any of the pushbuffer locks described above)
+//
 // - Tools global VA space list lock (g_tools_va_space_list_lock)
 //      Order: UVM_LOCK_ORDER_TOOLS_VA_SPACE_LIST
 //      Reader/writer lock (rw_sempahore)
@@ -365,6 +434,12 @@
 //      reporting with tools register/unregister. Since some of the tools
 //      events come from perf events, both VA_SPACE_EVENTS and VA_SPACE_TOOLS
 //      must be taken to register/report some tools events.
+//
+// - Tracking semaphores
+//      Order: UVM_LOCK_ORDER_SECURE_SEMAPHORE
+//      When the Confidential Computing feature is enabled, CE semaphores are
+//      encrypted, and require to take the CSL lock (UVM_LOCK_ORDER_LEAF) to
+//      decrypt the payload.
 //
 // - Leaf locks
 //      Order: UVM_LOCK_ORDER_LEAF
@@ -390,18 +465,25 @@ typedef enum
     UVM_LOCK_ORDER_GPU_SEMAPHORE_POOL,
     UVM_LOCK_ORDER_RM_API,
     UVM_LOCK_ORDER_RM_GPUS,
+    UVM_LOCK_ORDER_VA_BLOCK_MIGRATE,
     UVM_LOCK_ORDER_VA_BLOCK,
+    UVM_LOCK_ORDER_CONF_COMPUTING_DMA_BUFFER_POOL,
     UVM_LOCK_ORDER_CHUNK_MAPPING,
     UVM_LOCK_ORDER_PAGE_TREE,
+    UVM_LOCK_ORDER_CSL_PUSH,
+    UVM_LOCK_ORDER_CSL_WLC_PUSH,
+    UVM_LOCK_ORDER_CSL_SEC2_PUSH,
     UVM_LOCK_ORDER_PUSH,
     UVM_LOCK_ORDER_PMM,
     UVM_LOCK_ORDER_PMM_PMA,
     UVM_LOCK_ORDER_PMM_ROOT_CHUNK,
     UVM_LOCK_ORDER_CHANNEL,
+    UVM_LOCK_ORDER_WLC_CHANNEL,
     UVM_LOCK_ORDER_TOOLS_VA_SPACE_LIST,
     UVM_LOCK_ORDER_VA_SPACE_EVENTS,
     UVM_LOCK_ORDER_VA_SPACE_TOOLS,
     UVM_LOCK_ORDER_SEMA_POOL_TRACKER,
+    UVM_LOCK_ORDER_SECURE_SEMAPHORE,
     UVM_LOCK_ORDER_LEAF,
     UVM_LOCK_ORDER_COUNT,
 } uvm_lock_order_t;
@@ -914,9 +996,10 @@ typedef struct
 // be the same as the string passed to "spinlock".
 // See uvm_spin_lock() and uvm_spin_unlock() below as examples.
 //
-#define uvm_assert_spinlock_locked(spinlock) ({                                                               \
-        typeof(spinlock) _lock_ = (spinlock);                                                                 \
-        UVM_ASSERT(spin_is_locked(&_lock_->lock) && uvm_check_locked(_lock_, UVM_LOCK_FLAGS_MODE_EXCLUSIVE)); \
+#define uvm_assert_spinlock_locked(spinlock) ({                              \
+        typeof(spinlock) _lock_ = (spinlock);                                \
+        UVM_ASSERT(spin_is_locked(&_lock_->lock));                           \
+        UVM_ASSERT(uvm_check_locked(_lock_, UVM_LOCK_FLAGS_MODE_EXCLUSIVE)); \
     })
 
 #define uvm_assert_spinlock_unlocked(spinlock) UVM_ASSERT(!spin_is_locked(&(spinlock)->lock))

@@ -239,7 +239,7 @@ NV_STATUS rpcRmApiControl_dce(RM_API *pRmApi,
 NV_STATUS rpcRmApiAlloc_dce(RM_API *pRmApi,
                             NvHandle hClient, NvHandle hParent,
                             NvHandle hObject, NvU32 hClass,
-                            void *pAllocParams);
+                            void *pAllocParams, NvU32 allocParamsSize);
 NV_STATUS rpcRmApiDupObject_dce(RM_API *pRmApi, NvHandle hClient,
                                 NvHandle hParent, NvHandle *phObject, NvHandle hClientSrc,
                                 NvHandle hObjectSrc, NvU32 flags);

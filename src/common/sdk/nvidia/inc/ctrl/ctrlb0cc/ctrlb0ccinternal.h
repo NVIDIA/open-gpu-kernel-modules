@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlb0cc/ctrlb0ccinternal.finn
+// Source file:      ctrl/ctrlb0cc/ctrlb0ccinternal.finn
 //
 
 #include "ctrl/ctrlb0cc/ctrlb0ccbase.h"

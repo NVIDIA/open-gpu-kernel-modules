@@ -75,4 +75,7 @@ void uvm_gpu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu);
 // only called from the ISR bottom half
 void uvm_gpu_service_replayable_faults(uvm_gpu_t *gpu);
 
+// Returns true if UVM owns the hardware replayable fault buffer
+bool uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(uvm_parent_gpu_t *parent_gpu);
+
 #endif // __UVM_GPU_PAGE_FAULT_H__

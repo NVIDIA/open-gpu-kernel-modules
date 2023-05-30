@@ -517,29 +517,6 @@ deviceGetByGpu_IMPL
 // ****************************************************************************
 
 /**
- * WARNING: This function is deprecated! Please use deviceGetByHandle.
- */
-Device *
-CliGetDeviceInfo
-(
-    NvHandle hClient,
-    NvHandle hDevice
-)
-{
-    RsClient   *pClient;
-    NV_STATUS   status;
-    Device     *pDevice;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return NULL;
-
-    status = deviceGetByHandle(pClient, hDevice, &pDevice);
-
-    return (status == NV_OK) ? pDevice : NULL;
-}
-
-/**
  * WARNING: This function is deprecated and use is *strongly* discouraged
  * (especially for new code!)
  *

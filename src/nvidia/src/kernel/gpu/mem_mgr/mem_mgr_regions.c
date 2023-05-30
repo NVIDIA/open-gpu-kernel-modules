@@ -411,11 +411,11 @@ memmgrRegionSetupCommon_IMPL
         // if the region has an RM reserved block and is not already reserved, subdivide it.
         //
         if ((pMemoryManager->Ram.fbRegion[i].rsvdSize > 0) &&
+            (pMemoryManager->Ram.fbRegion[i].rsvdSize <= pMemoryManager->Ram.fbRegion[i].limit - pMemoryManager->Ram.fbRegion[i].base + 1) &&
             (pMemoryManager->Ram.fbRegion[i].bRsvdRegion == NV_FALSE))
         {
             portMemSet(&rsvdFbRegion, 0, sizeof(rsvdFbRegion));
 
-            NV_ASSERT(pMemoryManager->Ram.fbRegion[i].rsvdSize <= pMemoryManager->Ram.fbRegion[i].limit - pMemoryManager->Ram.fbRegion[i].base + 1);
             rsvdFbRegion.limit              = pMemoryManager->Ram.fbRegion[i].limit;
             rsvdFbRegion.base               = rsvdFbRegion.limit - pMemoryManager->Ram.fbRegion[i].rsvdSize + 1;
             rsvdFbRegion.rsvdSize           = pMemoryManager->Ram.fbRegion[i].rsvdSize;

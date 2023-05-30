@@ -35,7 +35,8 @@ rmapiAlloc
     NvHandle     hParent,
     NvHandle    *phObject,
     NvU32        hClass,
-    void        *pAllocParams
+    void        *pAllocParams,
+    NvU32        paramsSize
 );
 
 NV_STATUS
@@ -46,7 +47,8 @@ rmapiAllocWithHandle
     NvHandle     hParent,
     NvHandle     hObject,
     NvU32        hClass,
-    void        *pAllocParams
+    void        *pAllocParams,
+    NvU32        paramsSize
 );
 
 NV_STATUS
@@ -58,6 +60,7 @@ rmapiAllocWithSecInfo
     NvHandle            *phObject,
     NvU32                hClass,
     NvP64                pAllocParams,
+    NvU32                paramsSize,
     NvU32                flags,
     NvP64                pRightsRequired,
     API_SECURITY_INFO   *pSecInfo
@@ -72,6 +75,7 @@ rmapiAllocWithSecInfoTls
     NvHandle            *phObject,
     NvU32                hClass,
     NvP64                pAllocParams,
+    NvU32                paramsSize,
     NvU32                flags,
     NvP64                pRightsRequired,
     API_SECURITY_INFO   *pSecInfo

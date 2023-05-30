@@ -1016,6 +1016,23 @@ numa_status_read(
     rm_status = rm_get_gpu_numa_info(sp, nv,
                                      nid, numa_mem_addr, numa_mem_size,
                                      list->addresses, &list->numEntries);
+
+    if (rm_status == NV_OK && *nid == NUMA_NO_NODE)
+    {
+        // 
+        // RM returns NUMA_NO_NODE when running MIG instances because
+        // this rmClient is not subscribed to any MIG partition since
+        // it was subscribed to whole GPU only during RMInit and is not
+        // updated when MIG partitions are created.
+        // Returning error here so that numa_status results in EIO
+        // because of missing support in numa_status to use it for multiple 
+        // numa nodes.
+        // 
+        // TODO: add support for multiple numa nodes in numa_status interface 
+        // and remove this check, bug 4006012
+        //
+        rm_status = NV_ERR_NOT_SUPPORTED;
+    } 
     *status = nv_get_numa_status(nvl);
 
 done:

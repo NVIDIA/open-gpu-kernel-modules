@@ -293,3 +293,4 @@ subdeviceCtrlCmdFlaGetFabricMemStats_IMPL
 
     return fabricvaspaceGetFreeHeap(pFabricVAS, &pParams->freeSize);
 }
+

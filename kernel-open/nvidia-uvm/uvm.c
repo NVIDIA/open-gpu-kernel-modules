@@ -28,6 +28,7 @@
 #include "uvm_lock.h"
 #include "uvm_test.h"
 #include "uvm_va_space.h"
+#include "uvm_va_space_mm.h"
 #include "uvm_va_range.h"
 #include "uvm_va_block.h"
 #include "uvm_tools.h"
@@ -72,6 +73,11 @@ uvm_fd_type_t uvm_fd_type(struct file *filp, void **ptr_val)
             BUILD_BUG_ON(__alignof__(uvm_va_space_t) < (1UL << UVM_FD_TYPE_BITS));
             break;
 
+        case UVM_FD_MM:
+            UVM_ASSERT(ptr);
+            BUILD_BUG_ON(__alignof__(struct file) < (1UL << UVM_FD_TYPE_BITS));
+            break;
+
         default:
             UVM_ASSERT(0);
     }
@@ -80,6 +86,106 @@ uvm_fd_type_t uvm_fd_type(struct file *filp, void **ptr_val)
         *ptr_val = ptr;
 
     return type;
+}
+
+void *uvm_fd_get_type(struct file *filp, uvm_fd_type_t type)
+{
+    void *ptr;
+
+    UVM_ASSERT(uvm_file_is_nvidia_uvm(filp));
+
+    if (uvm_fd_type(filp, &ptr) == type)
+        return ptr;
+    else
+        return NULL;
+}
+
+static NV_STATUS uvm_api_mm_initialize(UVM_MM_INITIALIZE_PARAMS *params, struct file *filp)
+{
+    uvm_va_space_t *va_space;
+    uvm_va_space_mm_t *va_space_mm;
+    struct file *uvm_file;
+    uvm_fd_type_t old_fd_type;
+    struct mm_struct *mm;
+    NV_STATUS status;
+
+    uvm_file = fget(params->uvmFd);
+    if (!uvm_file_is_nvidia_uvm(uvm_file)) {
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto err;
+    }
+
+    if (uvm_fd_type(uvm_file, (void **)&va_space) != UVM_FD_VA_SPACE) {
+        status = NV_ERR_INVALID_ARGUMENT;
+        goto err;
+    }
+
+    // Tell userspace the MM FD is not required and it may be released
+    // with no loss of functionality.
+    if (!uvm_va_space_mm_enabled(va_space)) {
+        status = NV_WARN_NOTHING_TO_DO;
+        goto err;
+    }
+
+    old_fd_type = nv_atomic_long_cmpxchg((atomic_long_t *)&filp->private_data,
+                                         UVM_FD_UNINITIALIZED,
+                                         UVM_FD_INITIALIZING);
+    old_fd_type &= UVM_FD_TYPE_MASK;
+    if (old_fd_type != UVM_FD_UNINITIALIZED) {
+        status = NV_ERR_IN_USE;
+        goto err;
+    }
+
+    va_space_mm = &va_space->va_space_mm;
+    uvm_spin_lock(&va_space_mm->lock);
+    switch (va_space->va_space_mm.state) {
+        // We only allow the va_space_mm to be initialised once. If
+        // userspace passed the UVM FD to another process it is up to
+        // userspace to ensure it also passes the UVM MM FD that
+        // initialised the va_space_mm or arranges some other way to keep
+        // a reference on the FD.
+        case UVM_VA_SPACE_MM_STATE_ALIVE:
+            status = NV_ERR_INVALID_STATE;
+            goto err_release_unlock;
+            break;
+
+        // Once userspace has released the va_space_mm the GPU is
+        // effectively dead and no new work can be started. We don't
+        // support re-initializing once userspace has closed the FD.
+        case UVM_VA_SPACE_MM_STATE_RELEASED:
+            status = NV_ERR_PAGE_TABLE_NOT_AVAIL;
+            goto err_release_unlock;
+            break;
+
+        // Keep the warnings at bay
+        case UVM_VA_SPACE_MM_STATE_UNINITIALIZED:
+            mm = va_space->va_space_mm.mm;
+            if (!mm || !mmget_not_zero(mm)) {
+                status = NV_ERR_PAGE_TABLE_NOT_AVAIL;
+                goto err_release_unlock;
+            }
+
+            va_space_mm->state = UVM_VA_SPACE_MM_STATE_ALIVE;
+            break;
+
+        default:
+            UVM_ASSERT(0);
+            break;
+    }
+    uvm_spin_unlock(&va_space_mm->lock);
+    atomic_long_set_release((atomic_long_t *)&filp->private_data, (long)uvm_file | UVM_FD_MM);
+
+    return NV_OK;
+
+err_release_unlock:
+    uvm_spin_unlock(&va_space_mm->lock);
+    atomic_long_set_release((atomic_long_t *)&filp->private_data, UVM_FD_UNINITIALIZED);
+
+err:
+    if (uvm_file)
+        fput(uvm_file);
+
+    return status;
 }
 
 // Called when opening /dev/nvidia-uvm. This code doesn't take any UVM locks, so
@@ -147,20 +253,44 @@ static void uvm_release_deferred(void *data)
     uvm_up_read(&g_uvm_global.pm.lock);
 }
 
+static void uvm_mm_release(struct file *filp, struct file *uvm_file)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(uvm_file);
+    uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
+    struct mm_struct *mm = va_space_mm->mm;
+
+    if (uvm_va_space_mm_enabled(va_space)) {
+        uvm_va_space_mm_unregister(va_space);
+
+        if (uvm_va_space_mm_enabled(va_space))
+            uvm_mmput(mm);
+
+        va_space_mm->mm = NULL;
+        fput(uvm_file);
+    }
+}
+
 static int uvm_release(struct inode *inode, struct file *filp)
 {
+    void *ptr;
     uvm_va_space_t *va_space;
     uvm_fd_type_t fd_type;
     int ret;
 
-    fd_type = uvm_fd_type(filp, (void **)&va_space);
+    fd_type = uvm_fd_type(filp, &ptr);
     UVM_ASSERT(fd_type != UVM_FD_INITIALIZING);
     if (fd_type == UVM_FD_UNINITIALIZED) {
         uvm_kvfree(filp->f_mapping);
         return 0;
     }
+    else if (fd_type == UVM_FD_MM) {
+        uvm_kvfree(filp->f_mapping);
+        uvm_mm_release(filp, (struct file *)ptr);
+        return 0;
+    }
 
     UVM_ASSERT(fd_type == UVM_FD_VA_SPACE);
+    va_space = (uvm_va_space_t *)ptr;
     filp->private_data = NULL;
     filp->f_mapping = NULL;
 
@@ -756,6 +886,13 @@ out:
     return ret;
 }
 
+bool uvm_vma_is_managed(struct vm_area_struct *vma)
+{
+    return vma->vm_ops == &uvm_vm_ops_disabled ||
+           vma->vm_ops == &uvm_vm_ops_managed ||
+           vma->vm_ops == &uvm_vm_ops_semaphore_pool;
+}
+
 static int uvm_mmap_entry(struct file *filp, struct vm_area_struct *vma)
 {
    UVM_ENTRY_RET(uvm_mmap(filp, vma));
@@ -804,6 +941,9 @@ static NV_STATUS uvm_api_initialize(UVM_INITIALIZE_PARAMS *params, struct file *
         else
             status = NV_OK;
     }
+    else if (old_fd_type == UVM_FD_MM) {
+        status = NV_ERR_INVALID_ARGUMENT;
+    }
     else {
         UVM_ASSERT(old_fd_type == UVM_FD_INITIALIZING);
         status = NV_ERR_BUSY_RETRY;
@@ -827,6 +967,7 @@ static long uvm_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
             return 0;
 
         UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_INITIALIZE,                  uvm_api_initialize);
+        UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_MM_INITIALIZE,               uvm_api_mm_initialize);
 
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_PAGEABLE_MEM_ACCESS,            uvm_api_pageable_mem_access);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_PAGEABLE_MEM_ACCESS_ON_GPU,     uvm_api_pageable_mem_access_on_gpu);

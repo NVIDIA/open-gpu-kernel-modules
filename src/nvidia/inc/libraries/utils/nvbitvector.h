@@ -67,7 +67,7 @@ extern "C" {
  *            .-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-.
  *          0 |1                                                              |
  *          1 |                                                              1|
- *            `-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-' 
+ *            `-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-'
  *
  *          Thus, in order to conceptually model an NV_BITVECTOR horizontally as
  *          a continual ordered list of bits, one would have to write the
@@ -240,20 +240,20 @@ struct NV_BITVECTOR
         }                                                                   \
     }
 
-#define FOR_EACH_IN_BITVECTOR_PAIR(pBitVectorA, indexA, pBitVectorB, indexB)\
-    {                                                                       \
-        MAKE_ANON_BITVECTOR(sizeof(((pBitVectorA)->last->_))) localMaskA;   \
-        bitVectorCopy(&localMaskA, (pBitVectorA));                          \
-        MAKE_ANON_BITVECTOR(sizeof(((pBitVectorB)->last->_))) localMaskB;   \
-        bitVectorCopy(&localMaskB, (pBitVectorB));                          \
-        for ((indexA) = bitVectorCountTrailingZeros(&localMaskA),           \
-             (indexB) = bitVectorCountTrailingZeros(&localMaskB);           \
-             !bitVectorTestAllCleared(&localMaskA) &&                       \
-             !bitVectorTestAllCleared(&localMaskB);                         \
-             bitVectorClr(&localMaskA, (indexA)),                           \
-             bitVectorClr(&localMaskB, (indexB)),                           \
-             (indexA) = bitVectorCountTrailingZeros(&localMaskA),           \
-             (indexB) = bitVectorCountTrailingZeros(&localMaskB))           \
+#define FOR_EACH_IN_BITVECTOR_PAIR(pBitVectorA, indexA, pBitVectorB, indexB) \
+    {                                                                        \
+        MAKE_ANON_BITVECTOR(sizeof(((pBitVectorA)->last->_))) localMaskA;    \
+        bitVectorCopy(&localMaskA, (pBitVectorA));                           \
+        MAKE_ANON_BITVECTOR(sizeof(((pBitVectorB)->last->_))) localMaskB;    \
+        bitVectorCopy(&localMaskB, (pBitVectorB));                           \
+        for ((indexA) = bitVectorCountTrailingZeros(&localMaskA),            \
+             (indexB) = bitVectorCountTrailingZeros(&localMaskB);            \
+             !bitVectorTestAllCleared(&localMaskA) &&                        \
+             !bitVectorTestAllCleared(&localMaskB);                          \
+             bitVectorClr(&localMaskA, (indexA)),                            \
+             bitVectorClr(&localMaskB, (indexB)),                            \
+             (indexA) = bitVectorCountTrailingZeros(&localMaskA),            \
+             (indexB) = bitVectorCountTrailingZeros(&localMaskB))            \
         {
 
 #define FOR_EACH_IN_BITVECTOR_PAIR_END()                                    \

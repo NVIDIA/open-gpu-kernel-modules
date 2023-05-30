@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,11 +22,13 @@
  */
 
 #include "gpu/gpu.h"
+#include "gpu/gpu_child_class_defs.h"
 #include "kernel/gpu/intr/intr.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "published/ampere/ga100/dev_fb.h"
 #include "published/ampere/ga100/dev_vm.h"
 #include "published/ampere/ga100/dev_fuse.h"
+#include "virtualization/hypervisor/hypervisor.h"
 
 /*!
  * @brief Read fuse for display supported status.
@@ -115,6 +117,25 @@ gpuGetFlaVasSize_GA100
     }
 }
 
+/*!
+ * @brief Is ctx buffer allocation in PMA supported
+ */
+NvBool
+gpuIsCtxBufAllocInPmaSupported_GA100
+(
+    OBJGPU *pGpu
+)
+{
+    //
+    // This is supported by default on baremetal RM.
+    // This has no impact in guest-RM since ctxBufPools are disabled on guest.
+    // We leave this disabled on host-RM. TODO: Bug 4066846
+    //
+    if (!hypervisorIsVgxHyper())
+        return NV_TRUE;
+    return NV_FALSE;
+}
+
 //
 // List of GPU children that present for the chip. List entries contain$
 // {CLASS-ID, # of instances} pairs, e.g.: {CE, 2} is 2 instance of OBJCE. This$
@@ -130,88 +151,39 @@ gpuGetFlaVasSize_GA100
 
 static const GPUCHILDPRESENT gpuChildrenPresent_GA100[] =
 {
-    { classId(OBJFUSE), 1, },
-    { classId(OBJSEQ), 1, },
-    { classId(GpuMutexMgr), 1, },
-    { classId(OBJTMR), 1, },
-    { classId(GraphicsManager), 1, },
-    { classId(MIGManager), 1, },
-    { classId(KernelMIGManager), 1, },
-    { classId(KernelGraphicsManager), 1, },
-    { classId(OBJVBIOS), 1, },
-    { classId(OBJDCB), 1, },
-    { classId(OBJGPIO), 1, },
-    { classId(I2c), 1, },
-    { classId(Spi), 1, },
-    { classId(KernelRc), 1, },
-    { classId(OBJRC), 1, },
-    { classId(OBJSTEREO), 1, },
-    { classId(Intr), 1, },
-    { classId(OBJINFOROM), 1, },
-    { classId(NvDebugDump), 1, },
-    { classId(SMDebugger), 1, },
-    { classId(OBJGPULOG), 1, },
-    { classId(OBJGPUMON), 1, },
-    { classId(OBJSWENG), 1 },
-    { classId(OBJUVM), 1 },
-    { classId(OBJACR), 1 },
-    { classId(OBJBIF), 1 },
-    { classId(KernelBif), 1 },
-    { classId(OBJBSP), 5 },
-    { classId(OBJBUS), 1 },
-    { classId(KernelBus), 1 },
-    { classId(OBJCE), 10 },
-    { classId(KernelCE), 10 },
-    { classId(OBJCIPHER), 1 },
-    { classId(ClockManager), 1 },
-    { classId(OBJDISP), 1 },
-    { classId(KernelDisplay), 1 },
-    { classId(VirtMemAllocator), 1 },
-    { classId(OBJDPAUX), 1 },
-    { classId(Fan), 1 },
-    { classId(OBJHSHUBMANAGER), 1 },
-    { classId(Hshub), 2 },
-    { classId(MemorySystem), 1 },
-    { classId(KernelMemorySystem), 1 },
-    { classId(MemoryManager), 1 },
-    { classId(OBJFBFLCN), 1 },
-    { classId(KernelFifo), 1 },
-    { classId(OBJFIFO), 1 },
-    { classId(OBJGMMU), 1 },
-    { classId(KernelGmmu), 1},
-    { classId(Graphics), 8 },
-    { classId(KernelGraphics), 8 },
-    { classId(OBJHDACODEC), 1 },
-    { classId(OBJHWPM), 1 },
-    { classId(Lpwr   ), 1 },
-    { classId(OBJLSFM), 1 },
-    { classId(OBJMC), 1 },
-    { classId(KernelMc), 1 },
-    { classId(PrivRing), 1 },
-    { classId(SwIntr), 1 },
-    { classId(OBJNVJPG), 1 },
-    { classId(KernelNvlink), 1 },
-    { classId(Nvlink), 1 },
-    { classId(Perf), 1 },
-    { classId(KernelPerf), 1 },
-    { classId(Pmgr), 1 },
-    { classId(Pmu), 1 },
-    { classId(KernelPmu), 1 },
-    { classId(OBJSEC2), 1 },
-    { classId(Gsp), 1 },
-    { classId(Therm), 1 },
-    { classId(OBJVOLT), 1 },
-    { classId(OBJGRIDDISPLAYLESS), 1 },
-    { classId(OBJVMMU), 1 },
-    { classId(OBJOFA), 1 },
-    { classId(KernelSec2), 1 },
-    { classId(KernelGsp), 1 },
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJGPUMON, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 10),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 8),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelNvlink, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(KernelSec2, 1),
+    GPU_CHILD_PRESENT(KernelGsp, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
 };
 
 const GPUCHILDPRESENT *
 gpuGetChildrenPresent_GA100(OBJGPU *pGpu, NvU32 *pNumEntries)
 {
-    *pNumEntries = NV_ARRAY_ELEMENTS32(gpuChildrenPresent_GA100);
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GA100);
     return gpuChildrenPresent_GA100;
 }
 
@@ -229,89 +201,39 @@ gpuGetChildrenPresent_GA100(OBJGPU *pGpu, NvU32 *pNumEntries)
 //
 static const GPUCHILDPRESENT gpuChildrenPresent_GA102[] =
 {
-    { classId(OBJFUSE), 1, },
-    { classId(OBJSEQ), 1, },
-    { classId(GpuMutexMgr), 1, },
-    { classId(OBJTMR), 1, },
-    { classId(GraphicsManager), 1, },
-    { classId(MIGManager), 1, },
-    { classId(KernelMIGManager), 1, },
-    { classId(KernelGraphicsManager), 1, },
-    { classId(OBJVBIOS), 1, },
-    { classId(OBJDCB), 1, },
-    { classId(OBJGPIO), 1, },
-    { classId(I2c), 1, },
-    { classId(Spi), 1, },
-    { classId(KernelRc), 1, },
-    { classId(OBJRC), 1, },
-    { classId(OBJSTEREO), 1, },
-    { classId(Intr), 1, },
-    { classId(OBJINFOROM), 1, },
-    { classId(NvDebugDump), 1, },
-    { classId(SMDebugger), 1, },
-    { classId(OBJGPULOG), 1, },
-    { classId(OBJGPUMON), 1, },
-    {classId(OBJSWENG), 1},
-    {classId(OBJUVM), 1},
-    {classId(OBJACR), 1},
-    {classId(OBJBIF), 1},
-    {classId(KernelBif), 1},
-    {classId(Nne), 1},
-    {classId(OBJBSP), 2},
-    {classId(OBJBUS), 1},
-    {classId(KernelBus), 1},
-    {classId(OBJCE), 5},
-    {classId(KernelCE), 5},
-    {classId(OBJCIPHER), 1},
-    {classId(ClockManager), 1},
-    {classId(OBJDISP), 1},
-    {classId(KernelDisplay), 1},
-    {classId(VirtMemAllocator), 1},
-    {classId(OBJDPAUX), 1},
-    {classId(Fan), 1},
-    {classId(OBJHSHUBMANAGER), 1 },
-    {classId(Hshub), 2 },
-    {classId(MemorySystem), 1},
-    {classId(KernelMemorySystem), 1},
-    {classId(MemoryManager), 1},
-    {classId(OBJFBFLCN), 1},
-    {classId(KernelFifo), 1 },
-    {classId(OBJFIFO), 1},
-    {classId(OBJGMMU), 1},
-    {classId(KernelGmmu), 1},
-    {classId(Graphics), 1},
-    {classId(KernelGraphics), 1},
-    {classId(OBJHDACODEC), 1},
-    {classId(OBJHWPM), 1},
-    {classId(Lpwr   ), 1},
-    {classId(OBJLSFM), 1},
-    {classId(OBJMC), 1},
-    {classId(KernelMc), 1},
-    {classId(PrivRing), 1},
-    {classId(SwIntr), 1},
-    {classId(OBJMSENC), 1},
-    {classId(KernelNvlink), 1},
-    {classId(Nvlink), 1},
-    {classId(Perf), 1},
-    {classId(KernelPerf), 1 },
-    {classId(Pmgr), 1},
-    {classId(Pmu), 1},
-    {classId(KernelPmu), 1},
-    {classId(OBJSEC2), 1},
-    {classId(Gsp), 1},
-    {classId(Therm), 1},
-    {classId(OBJVOLT), 1},
-    {classId(OBJGRIDDISPLAYLESS), 1},
-    {classId(OBJVMMU), 1},
-    {classId(OBJOFA), 1 },
-    {classId(KernelSec2), 1},
-    {classId(KernelGsp), 1},
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJGPUMON, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 5),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelNvlink, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(KernelSec2, 1),
+    GPU_CHILD_PRESENT(KernelGsp, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
 };
 
 const GPUCHILDPRESENT *
 gpuGetChildrenPresent_GA102(OBJGPU *pGpu, NvU32 *pNumEntries)
 {
-    *pNumEntries = NV_ARRAY_ELEMENTS32(gpuChildrenPresent_GA102);
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GA102);
     return gpuChildrenPresent_GA102;
 }
 

@@ -47,14 +47,16 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     // A single top level PDE on Ampere covers 128 TB and that's the minimum
     // size that can be used.
     parent_gpu->rm_va_base = 0;
-    parent_gpu->rm_va_size = 128ull * 1024 * 1024 * 1024 * 1024;
+    parent_gpu->rm_va_size = 128 * UVM_SIZE_1TB;
 
-    parent_gpu->uvm_mem_va_base = 384ull * 1024 * 1024 * 1024 * 1024;
+    parent_gpu->uvm_mem_va_base = 384 * UVM_SIZE_1TB;
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
 
     // See uvm_mmu.h for mapping placement
-    parent_gpu->flat_vidmem_va_base = 136ull * 1024 * 1024 * 1024 * 1024;
-    parent_gpu->flat_sysmem_va_base = 256ull * 1024 * 1024 * 1024 * 1024;
+    parent_gpu->flat_vidmem_va_base = 136 * UVM_SIZE_1TB;
+    parent_gpu->flat_sysmem_va_base = 256 * UVM_SIZE_1TB;
+
+    parent_gpu->ce_phys_vidmem_write_supported = true;
 
     parent_gpu->peer_copy_mode = g_uvm_global.peer_copy_mode;
 

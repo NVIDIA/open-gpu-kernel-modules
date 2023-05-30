@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -51,7 +51,7 @@
 #define UVM_CHANNEL_NUM_GPFIFO_ENTRIES_MAX (1024 * 1024)
 
 // Maximum number of channels per pool.
-#define UVM_CHANNEL_MAX_NUM_CHANNELS_PER_POOL 8
+#define UVM_CHANNEL_MAX_NUM_CHANNELS_PER_POOL UVM_PUSH_MAX_CONCURRENT_PUSHES
 
 // Semaphore payloads cannot advance too much between calls to
 // uvm_gpu_tracking_semaphore_update_completed_value(). In practice the jumps
@@ -66,7 +66,7 @@
 
 #define uvm_channel_pool_assert_locked(pool) (          \
 {                                                       \
-    if (uvm_channel_pool_is_proxy(pool))                \
+    if (uvm_channel_pool_uses_mutex(pool))              \
         uvm_assert_mutex_locked(&(pool)->mutex);        \
     else                                                \
         uvm_assert_spinlock_locked(&(pool)->spinlock);  \
@@ -94,7 +94,29 @@ typedef enum
 
     // ^^^^^^
     // Channel types backed by a CE.
-    UVM_CHANNEL_TYPE_COUNT = UVM_CHANNEL_TYPE_CE_COUNT,
+    // ----------------------------------
+    // Channel types not backed by a CE.
+    // vvvvvv
+
+    // SEC2 channels
+    UVM_CHANNEL_TYPE_SEC2 = UVM_CHANNEL_TYPE_CE_COUNT,
+
+    // ----------------------------------
+    // Channel type with fixed schedules
+
+    // Work Launch Channel (WLC) is a specialized channel
+    // for launching work on other channels when
+    // Confidential Computing is enabled.
+    // It is paired with LCIC (below)
+    UVM_CHANNEL_TYPE_WLC,
+
+    // Launch Confirmation Indicator Channel (LCIC) is a
+    // specialized channel with fixed schedule. It gets
+    // triggered by executing WLC work, and makes sure that
+    // WLC get/put pointers are up-to-date.
+    UVM_CHANNEL_TYPE_LCIC,
+
+    UVM_CHANNEL_TYPE_COUNT,
 } uvm_channel_type_t;
 
 typedef enum
@@ -112,7 +134,15 @@ typedef enum
     // There is a single proxy pool and channel per GPU.
     UVM_CHANNEL_POOL_TYPE_CE_PROXY = (1 << 1),
 
-    UVM_CHANNEL_POOL_TYPE_COUNT = 2,
+    // A pool of SEC2 channels owned by UVM. These channels are backed by a SEC2
+    // engine.
+    UVM_CHANNEL_POOL_TYPE_SEC2 = (1 << 2),
+
+    UVM_CHANNEL_POOL_TYPE_WLC = (1 << 3),
+
+    UVM_CHANNEL_POOL_TYPE_LCIC = (1 << 4),
+
+    UVM_CHANNEL_POOL_TYPE_COUNT = 5,
 
     // A mask used to select pools of any type.
     UVM_CHANNEL_POOL_TYPE_MASK  = ((1U << UVM_CHANNEL_POOL_TYPE_COUNT) - 1)
@@ -136,15 +166,23 @@ struct uvm_gpfifo_entry_struct
     // this entry.
     NvU64 tracking_semaphore_value;
 
+    union {
+        struct {
+            // Offset of the pushbuffer in the pushbuffer allocation used by
+            // this entry.
+            NvU32 pushbuffer_offset;
+
+            // Size of the pushbuffer used for this entry.
+            NvU32 pushbuffer_size;
+        };
+
+        // Value of control entry
+        // Exact value of GPFIFO entry copied directly to GPFIFO[PUT] location.
+        NvU64 control_value;
+    };
+
     // The following fields are only valid when type is
     // UVM_GPFIFO_ENTRY_TYPE_NORMAL.
-
-    // Offset of the pushbuffer in the pushbuffer allocation used by
-    // this entry.
-    NvU32 pushbuffer_offset;
-
-    // Size of the pushbuffer used for this entry.
-    NvU32 pushbuffer_size;
 
     // List node used by the pushbuffer tracking
     struct list_head pending_list_node;
@@ -159,6 +197,19 @@ typedef struct
 {
     // Owning channel manager
     uvm_channel_manager_t *manager;
+
+    // On Volta+ GPUs, all channels in a pool are members of the same TSG, i.e.,
+    // num_tsgs is 1. Pre-Volta GPUs also have a single TSG object, but since HW
+    // does not support TSG for CE engines, a HW TSG is not created, but a TSG
+    // object is required to allocate channels.
+    // When Confidential Computing mode is enabled, the WLC and LCIC channel
+    // types require one TSG for each WLC/LCIC pair of channels. In this case,
+    // we do not use a TSG per channel pool, but instead a TSG per WLC/LCIC
+    // channel pair, num_tsgs equals to the number of channel pairs.
+    uvmGpuTsgHandle *tsg_handles;
+
+    // Number TSG handles owned by this pool.
+    NvU32 num_tsgs;
 
     // Channels in this pool
     uvm_channel_t *channels;
@@ -176,22 +227,26 @@ typedef struct
     // Lock protecting the state of channels in the pool.
     //
     // There are two pool lock types available: spinlock and mutex. The mutex
-    // variant is required when the thread holding the pool lock must
-    // sleep (ex: acquire another mutex) deeper in the call stack, either in UVM
-    // or RM. For example, work submission to proxy channels in SR-IOV heavy
-    // entails calling an RM API that acquires a mutex, so the proxy channel
-    // pool must use the mutex variant.
-    //
-    // Unless the mutex is required, the spinlock is preferred. This is because,
-    // other than for proxy channels, work submission takes little time and does
-    // not involve any RM calls, so UVM can avoid any invocation that may result
-    // on a sleep. All non-proxy channel pools use the spinlock variant, even in
-    // SR-IOV heavy.
+    // variant is required when the thread holding the pool lock must sleep
+    // (ex: acquire another mutex) deeper in the call stack, either in UVM or
+    // RM.
     union {
         uvm_spinlock_t spinlock;
         uvm_mutex_t mutex;
     };
 
+    // Secure operations require that uvm_push_begin order matches
+    // uvm_push_end order, because the engine's state is used in its internal
+    // operation and each push may modify this state. push_locks is protected by
+    // the channel pool lock.
+    DECLARE_BITMAP(push_locks, UVM_CHANNEL_MAX_NUM_CHANNELS_PER_POOL);
+
+    // Counting semaphore for available and unlocked channels, it must be
+    // acquired before submitting work to a secure channel.
+    uvm_semaphore_t push_sem;
+
+    // See uvm_channel_is_secure() documentation.
+    bool secure;
 } uvm_channel_pool_t;
 
 struct uvm_channel_struct
@@ -241,6 +296,66 @@ struct uvm_channel_struct
     // Each push on the channel increments the semaphore, see
     // uvm_channel_end_push().
     uvm_gpu_tracking_semaphore_t tracking_sem;
+
+    struct
+    {
+        // Secure operations require that uvm_push_begin order matches
+        // uvm_push_end order, because the engine's state is used in
+        // its internal operation and each push may modify this state.
+        uvm_mutex_t push_lock;
+
+        // Every secure channel has cryptographic state in HW, which is
+        // mirrored here for CPU-side operations.
+        UvmCslContext ctx;
+        bool is_ctx_initialized;
+
+        // CPU-side CSL crypto operations which operate on the same CSL state
+        // are not thread-safe, so they must be wrapped in locks at the UVM
+        // level. Encryption, decryption and logging operations must be
+        // protected with the ctx_lock.
+        uvm_mutex_t ctx_lock;
+    } csl;
+
+    struct
+    {
+        // The value of GPU side PUT index.
+        // Indirect work submission introduces delay between updating the CPU
+        // put when ending a push, and updating the GPU visible value via
+        // indirect work launch. It is used to order multiple pending indirect
+        // work launches to match the order of push end-s that triggered them.
+        volatile NvU32 gpu_put;
+
+        // Static pushbuffer for channels with static schedule (WLC/LCIC)
+        uvm_rm_mem_t *static_pb_protected_vidmem;
+
+        // Static pushbuffer staging buffer for WLC
+        uvm_rm_mem_t *static_pb_unprotected_sysmem;
+        void *static_pb_unprotected_sysmem_cpu;
+        void *static_pb_unprotected_sysmem_auth_tag_cpu;
+
+        // The above static locations are required by the WLC (and LCIC)
+        // schedule. Protected sysmem location completes WLC's independence
+        // from the pushbuffer allocator.
+        void *static_pb_protected_sysmem;
+
+        // Static tracking semaphore notifier values
+        // Because of LCIC's fixed schedule, the secure semaphore release
+        // mechanism uses two additional static locations for incrementing the
+        // notifier values. See:
+        // . channel_semaphore_secure_release()
+        // . setup_lcic_schedule()
+        // . internal_channel_submit_work_wlc()
+        uvm_rm_mem_t *static_notifier_unprotected_sysmem;
+        NvU32 *static_notifier_entry_unprotected_sysmem_cpu;
+        NvU32 *static_notifier_exit_unprotected_sysmem_cpu;
+        uvm_gpu_address_t static_notifier_entry_unprotected_sysmem_gpu_va;
+        uvm_gpu_address_t static_notifier_exit_unprotected_sysmem_gpu_va;
+
+        // Explicit location for push launch tag used by WLC.
+        // Encryption auth tags have to be located in unprotected sysmem.
+        void *launch_auth_tag_cpu;
+        NvU64 launch_auth_tag_gpu_va;
+    } conf_computing;
 
     // RM channel information
     union
@@ -337,6 +452,73 @@ struct uvm_channel_manager_struct
 // Create a channel manager for the GPU
 NV_STATUS uvm_channel_manager_create(uvm_gpu_t *gpu, uvm_channel_manager_t **manager_out);
 
+static bool uvm_channel_pool_is_ce(uvm_channel_pool_t *pool);
+
+// A channel is secure if it has HW encryption capabilities.
+//
+// Secure channels are treated differently in the UVM driver. Each secure
+// channel has a unique CSL context associated with it, has relatively
+// restrictive reservation policies (in comparison with non-secure channels),
+// it is requested to be allocated differently by RM, etc.
+static bool uvm_channel_pool_is_secure(uvm_channel_pool_t *pool)
+{
+    return pool->secure;
+}
+
+static bool uvm_channel_is_secure(uvm_channel_t *channel)
+{
+    return uvm_channel_pool_is_secure(channel->pool);
+}
+
+static bool uvm_channel_pool_is_sec2(uvm_channel_pool_t *pool)
+{
+    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+
+    return (pool->pool_type == UVM_CHANNEL_POOL_TYPE_SEC2);
+}
+
+static bool uvm_channel_pool_is_secure_ce(uvm_channel_pool_t *pool)
+{
+    return uvm_channel_pool_is_secure(pool) && uvm_channel_pool_is_ce(pool);
+}
+
+static bool uvm_channel_pool_is_wlc(uvm_channel_pool_t *pool)
+{
+    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+
+    return (pool->pool_type == UVM_CHANNEL_POOL_TYPE_WLC);
+}
+
+static bool uvm_channel_pool_is_lcic(uvm_channel_pool_t *pool)
+{
+    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+
+    return (pool->pool_type == UVM_CHANNEL_POOL_TYPE_LCIC);
+}
+
+static bool uvm_channel_is_sec2(uvm_channel_t *channel)
+{
+    return uvm_channel_pool_is_sec2(channel->pool);
+}
+
+static bool uvm_channel_is_secure_ce(uvm_channel_t *channel)
+{
+    return uvm_channel_pool_is_secure_ce(channel->pool);
+}
+
+static bool uvm_channel_is_wlc(uvm_channel_t *channel)
+{
+    return uvm_channel_pool_is_wlc(channel->pool);
+}
+
+static bool uvm_channel_is_lcic(uvm_channel_t *channel)
+{
+    return uvm_channel_pool_is_lcic(channel->pool);
+}
+
+bool uvm_channel_type_requires_secure_pool(uvm_gpu_t *gpu, uvm_channel_type_t channel_type);
+NV_STATUS uvm_channel_secure_init(uvm_gpu_t *gpu, uvm_channel_t *channel);
+
 static bool uvm_channel_pool_is_proxy(uvm_channel_pool_t *pool)
 {
     UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
@@ -352,6 +534,8 @@ static bool uvm_channel_is_proxy(uvm_channel_t *channel)
 static bool uvm_channel_pool_is_ce(uvm_channel_pool_t *pool)
 {
     UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+    if (uvm_channel_pool_is_wlc(pool) || uvm_channel_pool_is_lcic(pool))
+        return true;
 
     return (pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE) || uvm_channel_pool_is_proxy(pool);
 }
@@ -360,6 +544,8 @@ static bool uvm_channel_is_ce(uvm_channel_t *channel)
 {
     return uvm_channel_pool_is_ce(channel->pool);
 }
+
+bool uvm_channel_pool_uses_mutex(uvm_channel_pool_t *pool);
 
 // Proxy channels are used to push page tree related methods, so their channel
 // type is UVM_CHANNEL_TYPE_MEMOPS.
@@ -415,6 +601,13 @@ NvU32 uvm_channel_manager_update_progress(uvm_channel_manager_t *channel_manager
 // beginning.
 NV_STATUS uvm_channel_manager_wait(uvm_channel_manager_t *manager);
 
+// Check if WLC/LCIC mechanism is ready/setup
+// Should only return false during initialization
+static bool uvm_channel_manager_is_wlc_ready(uvm_channel_manager_t *manager)
+{
+    return (manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_WLC] != NULL) &&
+           (manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_LCIC] != NULL);
+}
 // Get the GPU VA of semaphore_channel's tracking semaphore within the VA space
 // associated with access_channel.
 //

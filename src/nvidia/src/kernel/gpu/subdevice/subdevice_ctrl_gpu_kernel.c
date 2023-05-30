@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,9 @@
  *        are directed unicast to the associated GPU.
  *        File contains ctrls related to general GPU
  */
+
+// FIXME XXX
+#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
 #include "core/locks.h"
@@ -196,13 +199,12 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 }
 
                 portMemSet(&params, 0x0, sizeof(params));
-                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                    pRmApi->Control(pRmApi,
-                                    pGpu->hInternalClient,
-                                    pGpu->hInternalSubdevice,
-                                    NV2080_CTRL_CMD_INTERNAL_GPU_GET_SMC_MODE,
-                                    &params,
-                                    sizeof(params)));
+                status = pRmApi->Control(pRmApi,
+                                         pGpu->hInternalClient,
+                                         pGpu->hInternalSubdevice,
+                                         NV2080_CTRL_CMD_INTERNAL_GPU_GET_SMC_MODE,
+                                         &params,
+                                         sizeof(params));
                 data = params.smcMode;
                 break;
             }
@@ -319,6 +321,35 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 }
                 break;
             }
+            case NV2080_CTRL_GPU_INFO_INDEX_GPU_LOCAL_EGM_CAPABILITY:
+            {
+                MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+                if (memmgrIsLocalEgmEnabled(pMemoryManager))
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_GPU_LOCAL_EGM_CAPABILITY_YES;
+                    data = FLD_SET_DRF_NUM(2080_CTRL_GPU_INFO, _INDEX_GPU_LOCAL_EGM, _PEERID, pMemoryManager->localEgmPeerId, data);
+                }
+                else
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_GPU_LOCAL_EGM_CAPABILITY_NO;
+                }
+                break;
+            }
+            case NV2080_CTRL_GPU_INFO_INDEX_GPU_SELF_HOSTED_CAPABILITY:
+            {
+                KernelBif *pKernelBif = GPU_GET_KERNEL_BIF(pGpu);
+
+                if (gpuIsSelfHosted(pGpu) &&
+                    pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_IS_C2C_LINK_UP))
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_GPU_SELF_HOSTED_CAPABILITY_YES;
+                }
+                else
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_GPU_SELF_HOSTED_CAPABILITY_NO;
+                }
+                break;
+            }
             case NV2080_CTRL_GPU_INFO_INDEX_CMP_SKU:
             {
                 if (gpuGetChipInfo(pGpu) && gpuGetChipInfo(pGpu)->isCmpSku)
@@ -337,9 +368,20 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
 
                 if (osDmabufIsSupported() &&
                     (!IS_VIRTUAL(pGpu)) &&
+                    (!gpuIsApmFeatureEnabled(pGpu)) &&
                     (!NVCPU_IS_PPC64LE))
                 {
                     data = NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY_YES;
+                }
+                break;
+            }
+            case NV2080_CTRL_GPU_INFO_INDEX_IS_RESETLESS_MIG_SUPPORTED:
+            {
+                data = NV2080_CTRL_GPU_INFO_INDEX_IS_RESETLESS_MIG_SUPPORTED_NO;
+
+                if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RESETLESS_MIG_SUPPORTED))
+                {
+                    data = NV2080_CTRL_GPU_INFO_INDEX_IS_RESETLESS_MIG_SUPPORTED_YES;
                 }
                 break;
             }
@@ -974,7 +1016,7 @@ subdeviceCtrlCmdGpuGetEnginesV2_IMPL
         if (pKernelMIGManager != NULL)
         {
             RM_ENGINE_TYPE rmEngineTypeList[NV2080_GPU_MAX_ENGINES_LIST_SIZE];
-            
+
             // Filter engines based on current partitioning scheme
             status = kmigmgrFilterEngineList(pGpu,
                                              pKernelMIGManager,
@@ -1011,10 +1053,28 @@ subdeviceCtrlCmdGpuGetEngineClasslist_IMPL
     OBJGPU       *pGpu = GPU_RES_GET_GPU(pSubdevice);
     ENGDESCRIPTOR engDesc;
     NV_STATUS     status = NV_OK;
+    RM_ENGINE_TYPE rmEngineType = gpuGetRmEngineType(pClassParams->engineType);
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
-    status = gpuXlateClientEngineIdToEngDesc(pGpu, gpuGetRmEngineType(pClassParams->engineType), &engDesc);
+    {
+        if (IS_MIG_IN_USE(pGpu))
+        {
+            KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+            MIG_INSTANCE_REF ref;
+
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, GPU_RES_GET_DEVICE(pSubdevice), &ref));
+
+            NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
+                                                    rmEngineType,
+                                                    &rmEngineType));
+        }
+    }
+
+    status = gpuXlateClientEngineIdToEngDesc(pGpu, rmEngineType, &engDesc);
+
     NV_ASSERT(status == NV_OK);
 
     if (status != NV_OK)
@@ -1051,7 +1111,6 @@ subdeviceCtrlCmdGpuGetEnginePartnerList_IMPL
 )
 {
     OBJGPU          *pGpu = GPU_RES_GET_GPU(pSubdevice);
-    NvHandle         hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     ENGDESCRIPTOR    engDesc;
     NvU32            localNv2080EngineType;
@@ -1095,11 +1154,12 @@ subdeviceCtrlCmdGpuGetEnginePartnerList_IMPL
     // Translate the instance-local engine type to the global engine type in MIG mode
     if (IS_MIG_IN_USE(pGpu))
     {
+        Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
         MIG_INSTANCE_REF ref;
 
         NV_CHECK_OK_OR_RETURN(
             LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
 
         NV_CHECK_OK_OR_RETURN(
             LEVEL_ERROR,
@@ -1191,11 +1251,11 @@ subdeviceCtrlCmdGpuGetEngineFaultInfo_IMPL
     if (IS_MIG_IN_USE(pGpu))
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-        NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+        Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
         MIG_INSTANCE_REF ref;
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,
@@ -1721,13 +1781,14 @@ subdeviceCtrlCmdGpuGetPids_IMPL
     if (IS_MIG_IN_USE(pGpu) &&
         !rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_SMC_MONITOR))
     {
+        Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
         //
         // Check instanceSubscription to limit the scope of the call
         // Clients with mig-monitor capability are allowed to get full device
         // info
         //
-        NV_CHECK_OR_RETURN(LEVEL_INFO, (kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                                        hClient, pRef) == NV_OK),
+        NV_CHECK_OR_RETURN(LEVEL_INFO, (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                                        pDevice, pRef) == NV_OK),
                          NV_ERR_INSUFFICIENT_PERMISSIONS);
     }
 
@@ -1787,13 +1848,14 @@ subdeviceCtrlCmdGpuGetPidInfo_IMPL
     if (IS_MIG_IN_USE(pGpu) &&
         !rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_SMC_MONITOR))
     {
+        Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
         //
         // Check instanceSubscription to limit the scope of the call
         // Clients with mig-monitor capability are allowed to get full device
         // info
         //
-       NV_CHECK_OR_RETURN(LEVEL_INFO, (kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                                       hClient, pRef) == NV_OK),
+        NV_CHECK_OR_RETURN(LEVEL_INFO, (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                                        pDevice, pRef) == NV_OK),
                          NV_ERR_INSUFFICIENT_PERMISSIONS);
         bGlobalInfo = NV_FALSE;
     }
@@ -1876,14 +1938,13 @@ subdeviceCtrlCmdGpuGetEngineRunlistPriBase_IMPL
         if (IS_MIG_IN_USE(pGpu))
         {
             KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-            MIG_INSTANCE_REF  ref;
-            NvHandle          hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+            Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+            MIG_INSTANCE_REF ref;
 
             NV_CHECK_OK_OR_RETURN(
                 LEVEL_ERROR,
-                kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                hClient,
-                                                &ref));
+                kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                pDevice, &ref));
 
             NV_CHECK_OK_OR_RETURN(
                 LEVEL_ERROR,
@@ -1948,14 +2009,13 @@ subdeviceCtrlCmdGpuGetHwEngineId_IMPL
         if (IS_MIG_IN_USE(pGpu))
         {
             KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-            MIG_INSTANCE_REF  ref;
-            NvHandle          hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+            Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+            MIG_INSTANCE_REF ref;
 
             NV_CHECK_OK_OR_RETURN(
                 LEVEL_ERROR,
-                kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                hClient,
-                                                &ref));
+                kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                pDevice, &ref));
 
             NV_CHECK_OK_OR_RETURN(
                 LEVEL_ERROR,
@@ -1994,6 +2054,7 @@ subdeviceCtrlCmdGpuGetMaxSupportedPageSize_IMPL
     pParams->maxSupportedPageSize = RM_PAGE_SIZE;
 
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
     if (kgmmuIsPageSize512mbSupported(pKernelGmmu))
     {
         pParams->maxSupportedPageSize = RM_PAGE_SIZE_512M;
@@ -2004,10 +2065,12 @@ subdeviceCtrlCmdGpuGetMaxSupportedPageSize_IMPL
     }
     else
     {
-        pParams->maxSupportedPageSize = kgmmuGetMaxBigPageSize_HAL(pKernelGmmu);
+        pParams->maxSupportedPageSize = (NvU32)kgmmuGetMaxBigPageSize_HAL(pKernelGmmu);
     }
 
-    if (gpuIsSriovEnabled(pGpu))
+    if (gpuIsSriovEnabled(pGpu)
+        || gpuIsCCFeatureEnabled(pGpu)
+       )
     {
         NvU64 vmmuSegmentSize = gpuGetVmmuSegmentSize(pGpu);
         if (vmmuSegmentSize > 0 &&
@@ -2043,8 +2106,9 @@ subdeviceCtrlCmdGpuGetNumMmusPerGpc_IMPL
     }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, RES_GET_CLIENT_HANDLE(pSubdevice),
-                           &pParams->grRouteInfo, &pKernelGraphics));
+        kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager,
+                                     GPU_RES_GET_DEVICE(pSubdevice),
+                                     &pParams->grRouteInfo, &pKernelGraphics));
 
     pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
     NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo != NULL, NV_ERR_INVALID_STATE);
@@ -2449,6 +2513,7 @@ subdeviceCtrlCmdUpdateGfidP2pCapability_IMPL
                 if (pP2PInfo[idx].gfid == INVALID_P2P_GFID)
                 {
                     pP2PInfo[idx].gfid = pParams->gfid;
+                    pGpu->sriovState.p2pFabricPartitionId = pParams->fabricPartitionId;
                     bSetP2PAccess = NV_TRUE;
                     break;
                 }
@@ -2458,6 +2523,7 @@ subdeviceCtrlCmdUpdateGfidP2pCapability_IMPL
                 if (pP2PInfo[idx].gfid == pParams->gfid)
                 {
                     pP2PInfo[idx].gfid = INVALID_P2P_GFID;
+                    pGpu->sriovState.p2pFabricPartitionId = INVALID_FABRIC_PARTITION_ID;
                     bSetP2PAccess = NV_TRUE;
                     break;
                 }
@@ -2480,6 +2546,19 @@ subdeviceCtrlCmdUpdateGfidP2pCapability_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    return NV_OK;
+}
+
+/*
+ * Set the EGM fabric base address
+ */
+NV_STATUS
+subdeviceCtrlCmdGpuSetEgmGpaFabricAddr_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_SET_EGM_GPA_FABRIC_BASE_ADDR_PARAMS *pParams
+)
+{
     return NV_OK;
 }
 
@@ -2611,13 +2690,13 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() &&
                            rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
-    if (pGpu->pGpuFabricProbeInfo == NULL)
+    if (pGpu->pGpuFabricProbeInfoKernel == NULL)
     {
         pParams->state = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_UNSUPPORTED;
         return NV_OK;
     }
 
-    status = gpuFabricProbeGetNumProbeReqs(pGpu->pGpuFabricProbeInfo,
+    status = gpuFabricProbeGetNumProbeReqs(pGpu->pGpuFabricProbeInfoKernel,
                                            &numProbeReqs);
     if (status != NV_OK)
     {
@@ -2629,10 +2708,10 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                      NV2080_CTRL_GPU_FABRIC_PROBE_STATE_NOT_STARTED :
                      NV2080_CTRL_GPU_FABRIC_PROBE_STATE_IN_PROGRESS;
 
-    if (gpuFabricProbeIsReceived(pGpu->pGpuFabricProbeInfo))
+    if (gpuFabricProbeIsReceived(pGpu->pGpuFabricProbeInfoKernel))
     {
         pParams->state  = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE;
-        pParams->status = gpuFabricProbeGetFmStatus(pGpu->pGpuFabricProbeInfo);
+        pParams->status = gpuFabricProbeGetFmStatus(pGpu->pGpuFabricProbeInfoKernel);
         if (pParams->status != NV_OK)
         {
             // Nothing needs to be done as probe response status is not success
@@ -2641,13 +2720,13 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
 
         ct_assert(NV2080_GPU_FABRIC_CLUSTER_UUID_LEN == NV_UUID_LEN);
 
-        NV_ASSERT_OK(gpuFabricProbeGetClusterUuid(pGpu->pGpuFabricProbeInfo,
+        NV_ASSERT_OK(gpuFabricProbeGetClusterUuid(pGpu->pGpuFabricProbeInfoKernel,
                     pClusterUuid));
 
-        NV_ASSERT_OK(gpuFabricProbeGetFabricPartitionId(pGpu->pGpuFabricProbeInfo,
+        NV_ASSERT_OK(gpuFabricProbeGetFabricPartitionId(pGpu->pGpuFabricProbeInfoKernel,
                      &pParams->fabricPartitionId));
 
-        NV_ASSERT_OK(gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfo, &fmCaps));
+        NV_ASSERT_OK(gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps));
 
         pParams->fabricCaps = _convertGpuFabricProbeInfoCaps(fmCaps);
     }

@@ -33,7 +33,7 @@
 
 static HYPERVISOR_OPS _hypervisorOps[OS_HYPERVISOR_UNKNOWN];
 
-static NV_STATUS _hypervisorDetection_HVM(OBJHYPERVISOR *, OBJOS *, NvU32 *);
+static NV_STATUS _hypervisorDetection_HVM(OBJHYPERVISOR *, OBJOS *);
 static NvBool _hypervisorCheckVirtualPcieP2PApproval(OBJHYPERVISOR *, NvU32);
 
 // Because M$ compiler doesn't support C99 we have to initialize
@@ -63,8 +63,6 @@ NV_STATUS hypervisorConstruct_IMPL(OBJHYPERVISOR *pHypervisor)
     return NV_OK;
 }
 
-static NvU32 _leaf;
-
 NvBool hypervisorPcieP2pDetection_IMPL
 (
     OBJHYPERVISOR *pHypervisor,
@@ -91,7 +89,7 @@ NV_STATUS hypervisorDetection_IMPL
     if (hypervisorIsVgxHyper())
         goto found_one;
 
-    if ((rmStatus = _hypervisorDetection_HVM(pHypervisor, pOS, &_leaf)) != NV_OK)
+    if ((rmStatus = _hypervisorDetection_HVM(pHypervisor, pOS)) != NV_OK)
         return rmStatus;
 
     if ((rmStatus = _hypervisorOps[pHypervisor->type].hypervisorPostDetection(pOS, &pHypervisor->bIsHVMGuest)) != NV_OK)
@@ -123,15 +121,13 @@ found_one:
 static NV_STATUS _hypervisorDetection_HVM
 (
     OBJHYPERVISOR *pHypervisor,
-    OBJOS *pOS,
-    NvU32 *pLeaf
+    OBJOS *pOS
 )
 {
+#if defined(NVCPU_X86_64)
     NvU32 i = 0, base, eax = 0;
     NvU32 vmmSignature[3];
-
-    NV_ASSERT_OR_RETURN(pLeaf,  NV_ERR_INVALID_ARGUMENT);
-    *pLeaf = 0;
+    NvU32 leaf = 0;
 
     for (base = 0x40000000; base < 0x40001000; base += 0x100)
     {
@@ -153,16 +149,103 @@ static NV_STATUS _hypervisorDetection_HVM
             if (!portMemCmp(_hypervisorOps[i].hypervisorSig,
                           vmmSignature, sizeof(vmmSignature)))
             {
-                if (base > *pLeaf)
+                if (base > leaf)
                 {
-                    *pLeaf = base;
+                    leaf = base;
                     pHypervisor->type = i;
                 }
             }
         }
     }
 
-    return *pLeaf ? NV_OK : NV_ERR_NOT_SUPPORTED;
+    return leaf ? NV_OK : NV_ERR_NOT_SUPPORTED;
+#elif defined(NVCPU_AARCH64)
+    void *pSmbiosTable = NULL;
+    NvU8 *tableStart = NULL;
+    NvU64 i = 0;
+    NvU64 totalLength = 0;
+    NvU64 numSubTypes;
+    NvU32 version;
+    NvBool bIsVM = NV_FALSE;
+
+    if (osGetSmbiosTable(&pSmbiosTable, &totalLength, &numSubTypes, &version) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_WARNING, "SMBIOS is NOT supported!\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    NV_ASSERT_OR_RETURN(pSmbiosTable, NV_ERR_INVALID_POINTER);
+    tableStart = (NvU8 *)pSmbiosTable;
+
+    // Traverse SMBIOS table to locate 'BIOS Information (Type 0)' struct
+    while (i < totalLength)
+    {
+        NvU8 *structStart;
+        NvU8 structType;
+        NvU8 structLength;
+
+        // SMBIOS Spec: https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.4.0.pdf
+        // Each SMBIOS struct has a formatted section followed by optional strings section.
+        // type of struct is at byte offset 0.
+        // length of formatted section is at byte offset 1.
+        // optional strings section starts at byte offset structLength.
+        // struct end is marked with two null bytes.
+
+        if ((i + 2ULL) <= totalLength)
+        {
+            structStart  = &tableStart[i];
+            structType   = structStart[0];
+            structLength = structStart[1];
+        }
+        else
+        {
+            break;
+        }
+
+        if (structType == 0x7f)
+        {
+            // 'End-of-Table (Type 127)' struct reached, stop traversing further.
+            break;
+        }
+
+        // traverse formatted section
+        i += structLength;
+
+        // traverse optional strings section until start of two null bytes
+        while (((i + 2ULL) <= totalLength) && (tableStart[i] || tableStart[i + 1])) 
+            i++;
+
+        // ensure that entire struct (including last two null bytes) is within tableLength
+        if ((i + 2ULL) <= totalLength)
+        {
+            if (structType == 0x0)
+            {
+                // found 'BIOS Information (Type 0)' struct.
+                // check Bit 4 of 'BIOS Characteristics Extention Byte 2' - offset 0x13
+                if ((structLength > 0x13) && (structStart[0x13] & NVBIT(4)))
+                {
+                    bIsVM = NV_TRUE;
+                }
+                break;
+            }
+        }
+
+        // traverse over two null bytes at end of a struct
+        i += 2;
+    }
+
+    osPutSmbiosTable(pSmbiosTable, totalLength);
+
+    if (bIsVM)
+    {
+        pHypervisor->type = OS_HYPERVISOR_KVM;
+        return NV_OK;
+    }
+    
+    return NV_ERR_NOT_SUPPORTED;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
 }
 
 HYPERVISOR_TYPE hypervisorGetHypervisorType_IMPL(OBJHYPERVISOR *pHypervisor)
@@ -170,6 +253,12 @@ HYPERVISOR_TYPE hypervisorGetHypervisorType_IMPL(OBJHYPERVISOR *pHypervisor)
     if (pHypervisor)
         return pHypervisor->type;
     return OS_HYPERVISOR_UNKNOWN;
+}
+
+void hypervisorSetHypervisorType_IMPL(OBJHYPERVISOR *pHypervisor, HYPERVISOR_TYPE type)
+{
+    pHypervisor->type = type;
+    pHypervisor->bDetected = type != OS_HYPERVISOR_UNKNOWN;
 }
 
 static NvBool _hypervisorCheckVirtualPcieP2PApproval

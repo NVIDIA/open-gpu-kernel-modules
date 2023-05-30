@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_GRAPHICS_OBJECT_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/gpu/gr/kernel_graphics_manager.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
@@ -65,8 +67,10 @@ kgrobjPromoteContext_IMPL
     if (IS_MODS_AMODEL(pGpu))
         return NV_OK;
 
-    pSubdevice = CliGetSubDeviceInfoFromGpu(RES_GET_CLIENT_HANDLE(pKernelGraphicsObject), pGpu);
-    NV_ASSERT_OR_RETURN(pSubdevice != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OK_OR_RETURN(
+            subdeviceGetByGpu(RES_GET_CLIENT(pKernelGraphicsObject), pGpu, &pSubdevice));
+
+    GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
     kgrobjGetPromoteIds_HAL(pGpu, pKernelGraphicsObject,
                             NV_ARRAY_ELEMENTS(promoteIds),
@@ -194,8 +198,6 @@ _kgrAlloc
             kgraphicsInitializeDeferredStaticData(pGpu, pKernelGraphics, NV01_NULL_OBJECT, NV01_NULL_OBJECT));
     }
 
-    pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid].bFecsTraceUnsupportedInGuest = NV_FALSE;
-
     // Allocate FECS buffer in Guest for SRIOV configs.
     if (kgrctxShouldManageCtxBuffers_HAL(pGpu, pKernelGraphicsObject->pKernelGraphicsContext, gfid) || IS_VIRTUAL_WITH_SRIOV(pGpu))
     {
@@ -245,7 +247,6 @@ static void _kgrobjDestruct
         NvHandle hClient = RES_GET_CLIENT_HANDLE(pChannelDescendant);
         NvHandle hParent = RES_GET_PARENT_HANDLE(pChannelDescendant);
         NvU32 classNum = pChannelDescendant->resourceDesc.externalClassId;
-        NvU32 gfid = kchannelGetGfid(pChannelDescendant->pKernelChannel);
 
         // If MIG is enabled, perform GR instance routing based upon parent channel handle
         kgrmgrCtrlSetChannelHandle(hParent, &grRouteInfo);
@@ -254,8 +255,6 @@ static void _kgrobjDestruct
 
         if (status != NV_OK)
             SLI_LOOP_CONTINUE;
-
-        pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid].bFecsTraceUnsupportedInGuest = NV_FALSE;
 
         // Free Compute Mmio mapping
         kgrobjFreeComputeMmio_HAL(pGpu, pKernelGraphicsObject);

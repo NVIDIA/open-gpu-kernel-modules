@@ -131,7 +131,7 @@ void pmaRegmapChangeStateAttrib(void *pMap, NvU64 frameNum,
  *
  * @return void
  */
-void pmaRegmapChangePageStateAttrib(void * pMap, NvU64 frameNumStart, NvU32 pageSize,
+void pmaRegmapChangePageStateAttrib(void * pMap, NvU64 frameNumStart, NvU64 pageSize,
                                     PMA_PAGESTATUS newState, NvBool writeAttrib);
 
 /*!
@@ -188,7 +188,7 @@ PMA_PAGESTATUS pmaRegmapRead(void *pMap, NvU64 frameNum, NvBool readAttrib);
  */
 NV_STATUS pmaRegmapScanContiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-    NvU64 numPages, NvU64 *freelist, NvU32 pageSize, NvU64 alignment,
+    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
     NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 /*!
@@ -215,7 +215,7 @@ NV_STATUS pmaRegmapScanContiguous(
  */
 NV_STATUS pmaRegmapScanDiscontiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-    NvU64 numPages, NvU64 *freelist, NvU32 pageSize, NvU64 alignment,
+    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
     NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 /*!

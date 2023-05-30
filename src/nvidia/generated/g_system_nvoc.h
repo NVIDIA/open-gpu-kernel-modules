@@ -332,7 +332,7 @@ typedef struct
     NvU32 l1DataCacheSize;         // L1 data (or unified) cache size (KB)
     NvU32 l2DataCacheSize;         // L2 data (or unified) cache size (KB)
     NvU32 dataCacheLineSize;       // Bytes per line in the L1 data cache
-    NvU32 hostPageSize;            // Native host os page size (4k/64k/etc)
+    NvU64 hostPageSize;            // Native host os page size (4k/64k/etc)
     NvU32 numPhysicalCpus;         // Number of physical cpus
     NvU32 numLogicalCpus;          // Total number of logical cpus
     NvU32 maxLogicalCpus;          // Max Number of Cores on the System

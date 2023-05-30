@@ -49,54 +49,54 @@
 #define portUtilGetReturnAddress() (NvUPtr)__builtin_return_address(0)
 
 #if NVCPU_IS_X86 || NVCPU_IS_X86_64
-#define NVPORT_DUMMY_LOOP() \
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-                                   \
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-                                   \
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-                                   \
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
-    __asm__ __volatile__ ("pause");\
+#define NVPORT_DUMMY_LOOP()         \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+                                    \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+                                    \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+                                    \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
+    __asm__ __volatile__ ("pause"); \
     __asm__ __volatile__ ("pause");
 #else
-#define NVPORT_DUMMY_LOOP() \
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-                                   \
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-                                   \
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-                                   \
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
-    __asm__ __volatile__ ("nop");\
+#define NVPORT_DUMMY_LOOP()       \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+                                  \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+                                  \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+                                  \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
+    __asm__ __volatile__ ("nop"); \
     __asm__ __volatile__ ("nop");
 #endif
 

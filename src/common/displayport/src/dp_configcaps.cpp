@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -739,7 +739,7 @@ struct DPCDHALImpl : DPCDHAL
         }
         return bSDPExtnForColorimetry;
     }
-    
+
     virtual bool getRootAsyncSDPSupported()
     {
         NvU8 byte = 0;
@@ -757,7 +757,6 @@ struct DPCDHALImpl : DPCDHAL
         }
         return true;
     }
-
 
     virtual AuxRetry::status setOuiSource(unsigned ouiId, const char * model, size_t modelNameLength, NvU8 chipRevision)
     {

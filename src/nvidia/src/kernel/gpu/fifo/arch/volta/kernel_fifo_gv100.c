@@ -28,6 +28,7 @@
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/rmapi/rmapi.h"
 #include "kernel/gpu/gpu.h"
+#include "kernel/mem_mgr/mem.h"
 
 #include "nvRmReg.h"
 
@@ -335,4 +336,37 @@ kfifoGetMaxCeChannelGroups_GV100
         numChannels = NV_MIN(pKernelFifo->numChannelsOverride, numChannels);
 
     return numChannels;
+}
+
+/*
+ * Allocate Memory Descriptors for Regmem VF page
+ *
+ * @param[in]   pGpu               OBJGPU pointer
+ * @param[in]   pKernelFifo        KernelFifo pointer
+ */
+NV_STATUS
+kfifoConstructUsermodeMemdescs_GV100
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo
+)
+{
+    NvU32          attr           = 0;
+    NvU32          attr2          = 0;
+    NvU64          offset         = 0;
+    NvU32          size           = 0;
+
+    attr = FLD_SET_DRF(OS32, _ATTR,  _PHYSICALITY, _CONTIGUOUS, attr);
+    attr = FLD_SET_DRF(OS32, _ATTR,  _COHERENCY, _CACHED, attr);
+
+    attr2 = FLD_SET_DRF(OS32, _ATTR2, _GPU_CACHEABLE, _NO, attr2);
+
+    NV_ASSERT_OK_OR_RETURN(kfifoGetUsermodeMapInfo_HAL(pGpu, pKernelFifo, &offset, &size));
+
+    NV_ASSERT_OK_OR_RETURN(memCreateMemDesc(pGpu, &(pKernelFifo->pRegVF), ADDR_REGMEM,
+                                            offset, size, attr, attr2));
+
+    memdescSetFlag(pKernelFifo->pRegVF, MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK, NV_TRUE);
+
+    return NV_OK;
 }

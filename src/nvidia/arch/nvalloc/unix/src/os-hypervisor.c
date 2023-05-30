@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,6 +60,16 @@ void hypervisorSetHypervVgpuSupported_IMPL(POBJHYPERVISOR pHypervisor)
 NvBool hypervisorIsVgxHyper_IMPL(void)
 {
     return os_is_vgx_hyper();
+}
+
+NvBool hypervisorIsAC_IMPL(void)
+{
+    return NV_FALSE;
+}
+
+void hypervisorSetACSupported_IMPL(POBJHYPERVISOR pHypervisor)
+{
+    pHypervisor->bIsACSupported = NV_TRUE;
 }
 
 NV_STATUS hypervisorInjectInterrupt_IMPL
@@ -225,7 +235,6 @@ NV_STATUS  NV_API_CALL nv_vgpu_get_type_info(
 {
     THREAD_STATE_NODE threadState;
     OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJGPU *pGpu = NULL;
     KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
     NV_STATUS rmStatus = NV_OK;
     VGPU_TYPE *vgpuTypeInfo;
@@ -238,14 +247,6 @@ NV_STATUS  NV_API_CALL nv_vgpu_get_type_info(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
     {
-        pGpu = NV_GET_NV_PRIV_PGPU(pNv);
-        if (pGpu == NULL)
-        {
-            NV_PRINTF(LEVEL_ERROR, "%s GPU handle is not valid \n", __FUNCTION__);
-            rmStatus = NV_ERR_INVALID_STATE;
-            goto exit;
-        }
-
         if ((rmStatus = kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pNv->gpu_id, &pgpuIndex)) ==
             NV_OK)
         {
@@ -447,14 +448,11 @@ NV_STATUS  NV_API_CALL nv_vgpu_create_request(
     const NvU8 *pMdevUuid,
     NvU32 vgpuTypeId,
     NvU16 *vgpuId,
-    NvU32 gpuPciBdf,
-    NvBool *is_driver_vm
+    NvU32 gpuPciBdf
 )
 {
     THREAD_STATE_NODE threadState;
-    OBJSYS        *pSys        = SYS_GET_INSTANCE();
     void          *fp          = NULL;
-    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
     NV_STATUS     rmStatus     = NV_OK;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
@@ -465,8 +463,6 @@ NV_STATUS  NV_API_CALL nv_vgpu_create_request(
     {
         rmStatus = kvgpumgrCreateRequestVgpu(pNv->gpu_id, pMdevUuid,
                                              vgpuTypeId, vgpuId, gpuPciBdf);
-
-        *is_driver_vm = pHypervisor->getProperty(pHypervisor, PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
@@ -725,7 +721,8 @@ NV_STATUS  NV_API_CALL  nv_vgpu_get_sparse_mmap(
         {
             if (pKernelHostVgpuDevice->gfid != 0)
             {
-                rmStatus = kbifGetNumVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, numAreas);
+                rmStatus = kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size,
+                                                          numAreas, NULL, NULL);
                 if (rmStatus == NV_OK)
                 {
                     os_alloc_mem((void **)&vfRegionOffsets, sizeof(NvU64) * (*numAreas));
@@ -733,7 +730,7 @@ NV_STATUS  NV_API_CALL  nv_vgpu_get_sparse_mmap(
                     if (vfRegionOffsets && vfRegionSizes)
                     {
                         rmStatus = kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size,
-                                                                  vfRegionOffsets, vfRegionSizes);
+                                                                  numAreas, vfRegionOffsets, vfRegionSizes);
                         if (rmStatus == NV_OK)
                         {
                             *offsets = vfRegionOffsets;
@@ -917,7 +914,7 @@ NV_STATUS osVgpuRegisterMdev
 )
 {
     NV_STATUS status = NV_OK;
-    vgpu_vfio_info vgpu_info;
+    vgpu_vfio_info vgpu_info = {0};
     OBJSYS *pSys = SYS_GET_INSTANCE();
     KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
     KERNEL_PHYS_GPU_INFO *pPhysGpuInfo;
@@ -935,12 +932,22 @@ NV_STATUS osVgpuRegisterMdev
     status = os_alloc_mem((void **)&vgpu_info.vgpuTypeIds,
                           ((vgpu_info.numVgpuTypes) * sizeof(NvU32)));
     if (status != NV_OK)
-        return status;
+        goto free_mem;
+
+    status = os_alloc_mem((void **)&vgpu_info.vgpuNames,
+                          ((vgpu_info.numVgpuTypes) * sizeof(char *)));
+    if (status != NV_OK)
+        goto free_mem;
 
     vgpu_info.nv = pOsGpuInfo;
     for (i = 0; i < pPhysGpuInfo->numVgpuTypes; i++)
     {
+        status = os_alloc_mem((void *)&vgpu_info.vgpuNames[i], (VGPU_STRING_BUFFER_SIZE * sizeof(char)));
+        if (status != NV_OK)
+            goto free_mem;
+
         vgpu_info.vgpuTypeIds[i] = pPhysGpuInfo->vgpuTypes[i]->vgpuTypeId;
+        os_snprintf((char *) vgpu_info.vgpuNames[i], VGPU_STRING_BUFFER_SIZE, "%s\n", pPhysGpuInfo->vgpuTypes[i]->vgpuName);
     }
 
     if ((!pPhysGpuInfo->sriovEnabled) || 
@@ -970,7 +977,22 @@ NV_STATUS osVgpuRegisterMdev
         }
     }
 
-    os_free_mem(vgpu_info.vgpuTypeIds);
+free_mem:
+    if (vgpu_info.vgpuTypeIds)
+        os_free_mem(vgpu_info.vgpuTypeIds);
+
+    if (vgpu_info.vgpuNames)
+    {
+        for (i = 0; i < pPhysGpuInfo->numVgpuTypes; i++)
+        {
+            if (vgpu_info.vgpuNames[i])
+            {
+                os_free_mem(vgpu_info.vgpuNames[i]);
+            }
+        }
+        os_free_mem(vgpu_info.vgpuNames);
+    }
+
     return status;
 }
 
@@ -981,15 +1003,20 @@ NV_STATUS osIsVgpuVfioPresent(void)
     return os_call_vgpu_vfio((void *) &vgpu_info, CMD_VGPU_VFIO_PRESENT);
 }
 
+NV_STATUS osIsVfioPciCorePresent(void)
+{
+    vgpu_vfio_info vgpu_info;
+
+    return os_call_vgpu_vfio((void *) &vgpu_info, CMD_VFIO_PCI_CORE_PRESENT);
+}
+
+
 void initVGXSpecificRegistry(OBJGPU *pGpu)
 {
     NvU32 data32;
     osWriteRegistryDword(pGpu, NV_REG_STR_RM_POWER_FEATURES, 0x55455555);
     osWriteRegistryDword(pGpu, NV_REG_STR_RM_INFOROM_DISABLE_BBX,
                                NV_REG_STR_RM_INFOROM_DISABLE_BBX_YES);
-#if !defined(NVCPU_X86_64)
-    osWriteRegistryDword(pGpu, NV_REG_STR_RM_BAR2_APERTURE_SIZE_MB, 4);
-#endif
     osWriteRegistryDword(pGpu, NV_REG_PROCESS_NONSTALL_INTR_IN_LOCKLESS_ISR,
                                NV_REG_PROCESS_NONSTALL_INTR_IN_LOCKLESS_ISR_ENABLE);
     if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_DUMP_NVLOG, &data32) != NV_OK))

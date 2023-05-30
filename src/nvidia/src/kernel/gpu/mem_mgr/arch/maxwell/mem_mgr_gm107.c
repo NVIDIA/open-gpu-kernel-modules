@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -197,7 +197,7 @@ memmgrAllocDetermineAlignment_GM107
             // No offset alignment requirement for 4KB compression.
             // The size should be aligned to compression pagesize.
             //
-            NvU32 comprPageSize = pMemorySystemConfig->comprPageSize;
+            NvU64 comprPageSize = pMemorySystemConfig->comprPageSize;
             *pMemSize = ((*pMemSize + alignPad + comprPageSize - 1) / comprPageSize) * comprPageSize;
         }
         else
@@ -644,11 +644,11 @@ memmgrGetSurfacePhysAttr_GM107
 }
 
 NV_STATUS
-memmgrGetBAR1InfoForClient_GM107
+memmgrGetBAR1InfoForDevice_GM107
 (
     OBJGPU        *pGpu,
     MemoryManager *pMemoryManager,
-    NvHandle       hClient,
+    Device        *pDevice,
     PGETBAR1INFO   bar1Info
 )
 {
@@ -658,6 +658,7 @@ memmgrGetBAR1InfoForClient_GM107
     OBJVASPACE    *pBar1VAS;
     OBJEHEAP      *pVASHeap;
     NV_RANGE       bar1VARange = NV_RANGE_EMPTY;
+    RsClient      *pClient = RES_GET_CLIENT(pDevice);
 
     /*
      * For legacy vGPU and SRIOV heavy, get BAR1 information from vGPU plugin.
@@ -667,11 +668,9 @@ memmgrGetBAR1InfoForClient_GM107
     {
         NV_STATUS status = NV_OK;
         NV2080_CTRL_FB_GET_INFO_V2_PARAMS fbInfoParams = {0};
-        RsClient *pRsClient;
         Subdevice *pSubdevice;
 
-        NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
-        NV_ASSERT_OK_OR_RETURN(subdeviceGetByGpu(pRsClient, pGpu, &pSubdevice));
+        NV_ASSERT_OK_OR_RETURN(subdeviceGetByGpu(pClient, pGpu, &pSubdevice));
 
         fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_BAR1_SIZE;
         fbInfoParams.fbInfoList[1].index = NV2080_CTRL_FB_INFO_INDEX_BAR1_AVAIL_SIZE;
@@ -680,7 +679,7 @@ memmgrGetBAR1InfoForClient_GM107
 
         fbInfoParams.fbInfoListSize = 4;
 
-        NV_RM_RPC_CONTROL(pGpu, hClient, RES_GET_HANDLE(pSubdevice),
+        NV_RM_RPC_CONTROL(pGpu, pClient->hClient, RES_GET_HANDLE(pSubdevice),
                           NV2080_CTRL_CMD_FB_GET_INFO_V2,
                           &fbInfoParams, sizeof(fbInfoParams),
                           status);
@@ -693,20 +692,32 @@ memmgrGetBAR1InfoForClient_GM107
         return status;
     }
 
-    pBar1VAS = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
-    pVASHeap = vaspaceGetHeap(pBar1VAS);
-
-    NV_ASSERT_OK_OR_RETURN(kbusGetBar1VARangeForClient(pGpu, pKernelBus, hClient, &bar1VARange));
-    bar1Info->bar1Size = (NvU32)(rangeLength(bar1VARange) / 1024);
-    bar1Info->bankSwizzleAlignment = vaspaceGetBigPageSize(pBar1VAS);
-
-    bar1Info->bar1AvailSize = 0;
-
-    if (pVASHeap != NULL)
+    if (!KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu))
     {
-        pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, &largestFreeSize, NULL, &freeSize);
-        bar1Info->bar1AvailSize = (NvU32)(freeSize / 1024);
-        bar1Info->bar1MaxContigAvailSize = (NvU32)(largestFreeSize / 1024);
+        pBar1VAS = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
+        NV_ASSERT_OR_RETURN(pBar1VAS != NULL, NV_ERR_INVALID_STATE);
+        pVASHeap = vaspaceGetHeap(pBar1VAS);
+
+        NV_ASSERT_OK_OR_RETURN(kbusGetBar1VARangeForClient(pGpu, pKernelBus, pClient->hClient, &bar1VARange));
+        bar1Info->bar1Size = (NvU32)(rangeLength(bar1VARange) / 1024);
+        bar1Info->bankSwizzleAlignment = vaspaceGetBigPageSize(pBar1VAS);
+
+        bar1Info->bar1AvailSize = 0;
+
+        if (pVASHeap != NULL)
+        {
+            pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, &largestFreeSize, NULL, &freeSize);
+            bar1Info->bar1AvailSize = (NvU32)(freeSize / 1024);
+            bar1Info->bar1MaxContigAvailSize = (NvU32)(largestFreeSize / 1024);
+        }
+    }
+    else
+    {
+        // When coherent C2C path is enabled, BAR1 is disabled
+        bar1Info->bar1Size = 0;
+        bar1Info->bar1AvailSize = 0;
+        bar1Info->bar1MaxContigAvailSize = 0;
+        bar1Info->bankSwizzleAlignment = 0;
     }
     return NV_OK;
 }
@@ -820,6 +831,8 @@ memmgrInitReservedMemory_GM107
         }
     }
 
+    bMemoryProtectionEnabled = gpuIsCCFeatureEnabled(pGpu);
+
     memmgrStateInitReservedMemory(pGpu, pMemoryManager);
 
     // Align reserved memory to 64K granularity
@@ -849,6 +862,10 @@ memmgrInitReservedMemory_GM107
         // Find the last region in memory which is not already reserved or
         // protected.  RM's reserved memory will then be carved out of it below
         // (once the final size and address are determined).
+        // RM internal data like BAR2 page tables, BAR1/2 instance blocks, etc should
+        // always be in protected memory whenever memory protection is enabled using Hopper
+        // Confidential Compute. For uses outside Hopper Confidential Compute, RM internal
+        // data should always be in unprotected video memory.
         //
         for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
         {
@@ -1070,7 +1087,7 @@ _memmgrGetOptimalSysmemPageSize
 (
     RmPhysAddr physAddr,
     MEMORY_DESCRIPTOR *pMemDesc,
-    NvU32 bigPageSize,
+    NvU64 bigPageSize,
     NvU64 sysmemPageSize
 )
 {
@@ -1233,7 +1250,7 @@ memmgrSetMemDescPageSize_GM107
     }
 
     // Only update the memory descriptor if it is unset
-    oldPageSize = memdescGetPageSize64(pMemDesc, addressTranslation);
+    oldPageSize = memdescGetPageSize(pMemDesc, addressTranslation);
     if (0 == oldPageSize)
     {
         memdescSetPageSize(pMemDesc, addressTranslation, newPageSize);

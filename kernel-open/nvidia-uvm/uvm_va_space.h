@@ -43,6 +43,7 @@
 #include "uvm_test_ioctl.h"
 #include "uvm_ats.h"
 #include "uvm_va_space_mm.h"
+#include "uvm_conf_computing.h"
 
 // uvm_deferred_free_object provides a mechanism for building and later freeing
 // a list of objects which are owned by a VA space, but can't be freed while the
@@ -277,6 +278,11 @@ struct uvm_va_space_struct
     // contain information for up to UVM_ID_MAX_GPUS nodes. The information is
     // stored in the VA space to avoid taking the global lock.
     uvm_cpu_gpu_affinity_t gpu_cpu_numa_affinity[UVM_ID_MAX_GPUS];
+
+    // Unregistering a GPU may trigger memory eviction from the GPU to the CPU.
+    // This must happen without allocation, thus, a buffer is preallocated
+    // at GPU register and freed at GPU unregister.
+    uvm_conf_computing_dma_buffer_t *gpu_unregister_dma_buffer[UVM_ID_MAX_GPUS];
 
     // Array of GPU VA spaces
     uvm_gpu_va_space_t *gpu_va_spaces[UVM_ID_MAX_GPUS];
@@ -772,9 +778,7 @@ static uvm_gpu_t *uvm_va_space_find_gpu_with_memory_node_id(uvm_va_space_t *va_s
         return NULL;
 
     for_each_va_space_gpu(gpu, va_space) {
-        UVM_ASSERT(gpu->parent->numa_info.enabled);
-
-        if (uvm_gpu_numa_info(gpu)->node_id == node_id)
+        if (uvm_gpu_numa_node(gpu) == node_id)
             return gpu;
     }
 

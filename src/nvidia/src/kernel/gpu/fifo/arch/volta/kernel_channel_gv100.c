@@ -170,7 +170,7 @@ kchannelCreateUserdMemDesc_GV100
     NvU32                   userdAddrLo;
     NvU32                   userdAddrHi;
     NvU32                   userdAlignment;
-    NvU32                   pageSize;
+    NvU64                   pageSize;
 
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
     pKernelChannel->pUserdSubDeviceMemDesc[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] = NULL;

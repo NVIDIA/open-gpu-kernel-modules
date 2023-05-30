@@ -86,15 +86,6 @@ module_param_named(config_file, nvkms_conf, charp, 0400);
 
 static atomic_t nvkms_alloc_called_count;
 
-static bool force_api_to_hw_head_identity_mapping = false;
-module_param_named(force_api_to_hw_head_identity_mapping,
-    force_api_to_hw_head_identity_mapping, bool, 0400);
-
-NvBool nvkms_force_api_to_hw_head_identity_mappings(void)
-{
-    return force_api_to_hw_head_identity_mapping;
-}
-
 NvBool nvkms_output_rounding_fix(void)
 {
     return output_rounding_fix;

@@ -45,6 +45,8 @@
 #include "nvidia-dma-resv-helper.h"
 #endif
 
+#include "linux/dma-buf.h"
+
 struct nv_drm_gem_object;
 
 struct nv_drm_gem_object_funcs {
@@ -71,7 +73,7 @@ struct nv_drm_gem_object {
 
     struct NvKmsKapiMemory *pMemory;
 
-#if defined(NV_DRM_FENCE_AVAILABLE)
+#if defined(NV_DRM_FENCE_AVAILABLE) && !defined(NV_DRM_GEM_OBJECT_HAS_RESV)
     nv_dma_resv_t  resv;
 #endif
 };
@@ -175,6 +177,15 @@ static inline int nv_drm_gem_handle_create(struct drm_file *filp,
                                            uint32_t *handle)
 {
     return drm_gem_handle_create(filp, &nv_gem->base, handle);
+}
+
+static inline nv_dma_resv_t *nv_drm_gem_res_obj(struct nv_drm_gem_object *nv_gem)
+{
+#if defined(NV_DRM_GEM_OBJECT_HAS_RESV)
+    return nv_gem->base.resv;
+#else
+    return nv_gem->base.dma_buf ? nv_gem->base.dma_buf->resv : &nv_gem->resv;
+#endif
 }
 
 void nv_drm_gem_object_init(struct nv_drm_device *nv_dev,

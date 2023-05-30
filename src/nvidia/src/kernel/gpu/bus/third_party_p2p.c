@@ -223,29 +223,6 @@ thirdpartyp2pDestruct_IMPL
     pParams->status = status;
 }
 
-NV_STATUS CliGetThirdPartyP2PInfo
-(
-    NvHandle                   hClient,
-    NvHandle                   hThirdPartyP2P,
-    ThirdPartyP2P            **ppThirdPartyP2P
-)
-{
-    RsResourceRef *pThirdPartyP2PRef;
-    RsClient *pRsClient;
-    NV_ASSERT_OR_RETURN((ppThirdPartyP2P != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
-    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pRsClient, hThirdPartyP2P, &pThirdPartyP2PRef));
-    *ppThirdPartyP2P = dynamicCast(pThirdPartyP2PRef->pResource, ThirdPartyP2P);
-
-    if (*ppThirdPartyP2P == NULL)
-    {
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-    }
-
-    return NV_OK;
-}
-
 NV_STATUS CliGetThirdPartyP2PInfoFromToken
 (
     NvU64  p2pToken,
@@ -359,27 +336,17 @@ NV_STATUS CliNextThirdPartyP2PInfoWithPid
 
 NV_STATUS CliAddThirdPartyP2PVASpace
 (
-    NvHandle  hClient,
-    NvHandle  hThirdPartyP2P,
-    NvHandle  hVASpace,
-    NvU32    *pVASpaceToken
+    ThirdPartyP2P *pThirdPartyP2P,
+    NvHandle       hVASpace,
+    NvU32         *pVASpaceToken
 )
 {
-    RsClient *pRsClient;
-    ThirdPartyP2P *pThirdPartyP2P;
+    NvHandle hThirdPartyP2P = RES_GET_HANDLE(pThirdPartyP2P);
+    RsClient *pClient = RES_GET_CLIENT(pThirdPartyP2P);
     CLI_THIRD_PARTY_P2P_VASPACE_INFO vaSpaceInfo;
     NvU32 vaSpaceToken;
-    NV_STATUS status;
 
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
     NV_ASSERT_OR_RETURN((pVASpaceToken != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK || pThirdPartyP2P == NULL)
-    {
-        return NV_ERR_INVALID_OBJECT;
-    }
 
     portMemSet(&vaSpaceInfo, 0, sizeof(CLI_THIRD_PARTY_P2P_VASPACE_INFO));
 
@@ -393,7 +360,7 @@ NV_STATUS CliAddThirdPartyP2PVASpace
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
 
-    vaSpaceInfo.hClient = hClient;
+    vaSpaceInfo.hClient = pClient->hClient;
     vaSpaceInfo.hThirdPartyP2P = hThirdPartyP2P;
     vaSpaceInfo.hVASpace = hVASpace;
     vaSpaceInfo.vaSpaceToken = vaSpaceToken;
@@ -414,8 +381,8 @@ NV_STATUS CliAddThirdPartyP2PVASpace
     {
         RsResourceRef *pP2PRef;
         RsResourceRef *pVASpaceRef;
-        if ((clientGetResourceRef(pRsClient, hThirdPartyP2P, &pP2PRef) == NV_OK) &&
-            (clientGetResourceRef(pRsClient, hVASpace, &pVASpaceRef) == NV_OK))
+        if ((clientGetResourceRef(pClient, hThirdPartyP2P, &pP2PRef) == NV_OK) &&
+            (clientGetResourceRef(pClient, hVASpace, &pVASpaceRef) == NV_OK))
         {
             refAddDependant(pVASpaceRef, pP2PRef);
         }
@@ -499,26 +466,18 @@ NV_STATUS thirdpartyp2pGetVASpaceInfoFromToken_IMPL
 
 NV_STATUS CliAddThirdPartyP2PVidmemInfo
 (
-    NvHandle     hClient,
-    NvHandle     hThirdPartyP2P,
-    NvHandle     hMemory,
-    NvU64        address,
-    NvU64        size,
-    NvU64        offset,
-    Memory      *pMemory
+    ThirdPartyP2P *pThirdPartyP2P,
+    NvHandle       hMemory,
+    NvU64          address,
+    NvU64          size,
+    NvU64          offset,
+    Memory        *pMemory
 )
 {
     NV_STATUS status;
-    ThirdPartyP2P *pThirdPartyP2P;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
 
     NV_ASSERT_OR_RETURN((pMemory != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P, &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     pVidmemInfo = portMemAllocNonPaged(sizeof(CLI_THIRD_PARTY_P2P_VIDMEM_INFO));
     if (pVidmemInfo == NULL)
@@ -559,8 +518,8 @@ NV_STATUS CliAddThirdPartyP2PVidmemInfo
         return status;
     }
 
-    pVidmemInfo->hClient = hClient;
-    pVidmemInfo->hThirdPartyP2P = hThirdPartyP2P;
+    pVidmemInfo->hClient = RES_GET_CLIENT_HANDLE(pThirdPartyP2P);
+    pVidmemInfo->hThirdPartyP2P = RES_GET_HANDLE(pThirdPartyP2P);
     pVidmemInfo->hMemory = hMemory;
     pVidmemInfo->pMemDesc = pMemory->pMemDesc;
     pVidmemInfo->id = portAtomicExIncrementU64(&vidmemInfoId);
@@ -644,8 +603,7 @@ NV_STATUS CliDelThirdPartyP2PVidmemInfo
 
 NV_STATUS CliGetThirdPartyP2PVidmemInfoFromAddress
 (
-    NvHandle                          hClient,
-    NvHandle                          hThirdPartyP2P,
+    ThirdPartyP2P                    *pThirdPartyP2P,
     NvU64                             address,
     NvU64                             length,
     NvU64                            *pOffset,
@@ -654,18 +612,10 @@ NV_STATUS CliGetThirdPartyP2PVidmemInfoFromAddress
 {
     NV_STATUS status;
     PNODE pNode;
-    ThirdPartyP2P *pThirdPartyP2P;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
 
     NV_ASSERT_OR_RETURN((pOffset != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((ppVidmemInfo != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     status = btreeSearch(address, &pNode,
                          pThirdPartyP2P->pAddressRangeTree);
@@ -693,24 +643,15 @@ NV_STATUS CliGetThirdPartyP2PVidmemInfoFromAddress
 
 NV_STATUS CliGetThirdPartyP2PVidmemInfoFromId
 (
-    NvHandle                          hClient,
-    NvHandle                          hThirdPartyP2P,
+    ThirdPartyP2P                    *pThirdPartyP2P,
     NvU64                             id,
     CLI_THIRD_PARTY_P2P_VIDMEM_INFO **ppVidmemInfo
 )
 {
     NV_STATUS status;
     PNODE pNode;
-    ThirdPartyP2P *pThirdPartyP2P;
 
     NV_ASSERT_OR_RETURN((ppVidmemInfo != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     status = btreeSearch(id, &pNode, pThirdPartyP2P->pAddressRangeTree);
     if (status != NV_OK)
@@ -725,8 +666,7 @@ NV_STATUS CliGetThirdPartyP2PVidmemInfoFromId
 
 NV_STATUS CliRegisterThirdPartyP2PMappingCallback
 (
-    NvHandle                              hClient,
-    NvHandle                              hThirdPartyP2P,
+    ThirdPartyP2P                        *pThirdPartyP2P,
     NvHandle                              hMemory,
     void                                 *pKey,
     THIRD_PARTY_P2P_VIDMEM_FREE_CALLBACK *pFreeCallback,
@@ -738,8 +678,8 @@ NV_STATUS CliRegisterThirdPartyP2PMappingCallback
 
     NV_ASSERT_OR_RETURN((pFreeCallback != NULL), NV_ERR_INVALID_ARGUMENT);
 
-    status = CliGetThirdPartyP2PMappingInfoFromKey(hClient, hThirdPartyP2P,
-                                                   hMemory, pKey, &pMappingInfo);
+    status = CliGetThirdPartyP2PMappingInfoFromKey(pThirdPartyP2P, hMemory, pKey,
+                                                   &pMappingInfo);
     if (status != NV_OK)
     {
         return status;
@@ -755,8 +695,7 @@ NV_STATUS CliRegisterThirdPartyP2PMappingCallback
 
 NV_STATUS CliAddThirdPartyP2PMappingInfo
 (
-    NvHandle                              hClient,
-    NvHandle                              hThirdPartyP2P,
+    ThirdPartyP2P                        *pThirdPartyP2P,
     NvHandle                              hMemory,
     void                                 *pKey,
     THIRD_PARTY_P2P_VIDMEM_FREE_CALLBACK *pFreeCallback,
@@ -765,19 +704,11 @@ NV_STATUS CliAddThirdPartyP2PMappingInfo
 )
 {
     NV_STATUS status;
-    ThirdPartyP2P *pThirdPartyP2P;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
     PCLI_THIRD_PARTY_P2P_MAPPING_INFO pMappingInfo;
 
     NV_ASSERT_OR_RETURN((pKey != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((ppMappingInfo != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     pVidmemInfo = mapFind(&pThirdPartyP2P->vidmemInfoMap, hMemory);
     if (pVidmemInfo == NULL)
@@ -814,27 +745,18 @@ NV_STATUS CliAddThirdPartyP2PMappingInfo
 
 NV_STATUS CliGetThirdPartyP2PMappingInfoFromKey
 (
-    NvHandle                           hClient,
-    NvHandle                           hThirdPartyP2P,
+    ThirdPartyP2P                     *pThirdPartyP2P,
     NvHandle                           hMemory,
     void                              *pKey,
     PCLI_THIRD_PARTY_P2P_MAPPING_INFO *ppMappingInfo
 )
 {
     NV_STATUS status;
-    ThirdPartyP2P *pThirdPartyP2P;
     PNODE pNode;
     PCLI_THIRD_PARTY_P2P_VIDMEM_INFO pVidmemInfo;
 
     NV_ASSERT_OR_RETURN((pKey != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((ppMappingInfo != NULL), NV_ERR_INVALID_ARGUMENT);
-
-    status = CliGetThirdPartyP2PInfo(hClient, hThirdPartyP2P,
-                                     &pThirdPartyP2P);
-    if (status != NV_OK)
-    {
-        return status;
-    }
 
     pVidmemInfo = mapFind(&pThirdPartyP2P->vidmemInfoMap, hMemory);
     if (pVidmemInfo == NULL)
@@ -1156,7 +1078,7 @@ CliUnregisterFromThirdPartyP2P
     return status;
 }
 
-NV_STATUS 
+NV_STATUS
 shrp2pConstruct_IMPL(P2PTokenShare *pP2PTokenShare)
 {
     return NV_OK;

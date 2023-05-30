@@ -26,7 +26,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080bsp.finn
+// Source file:      ctrl/ctrl0080/ctrl0080bsp.finn
 //
 
 #include "ctrl/ctrl0080/ctrl0080base.h"

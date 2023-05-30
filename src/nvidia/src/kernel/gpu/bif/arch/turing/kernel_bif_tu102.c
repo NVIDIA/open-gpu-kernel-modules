@@ -31,8 +31,6 @@
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "virtualization/hypervisor/hypervisor.h"
 
-#define NUM_VF_SPARSE_MMAP_REGIONS     2
-
 #include "published/turing/tu102/dev_nv_xve.h"
 #include "published/turing/tu102/dev_vm.h"
 
@@ -92,136 +90,112 @@ kbifDisableP2PTransactions_TU102
     }
 }
 
-/*!
- * @brief Get the number of sparse mmap regions
- *
- * @param[in]  pGpu        GPU object pointer
- * @param[in]  pKernelBif  BIF object pointer
- * @param[out] numAreas    Number of sparse mmap regions
- *
- * @returns    NV_OK                   If all args are proper
- *             NV_ERR_INVALID_ARGUMENT In case of erroneous args
- */
-
-NV_STATUS
-kbifGetNumVFSparseMmapRegions_TU102
-(
-    OBJGPU                  *pGpu,
-    KernelBif               *pKernelBif,
-    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice,
-    NvU32                   *numAreas
-)
-{
-    if (numAreas && pKernelHostVgpuDevice != NULL)
-    {
-        NvU32 maxInstance = 0;
-        NV_STATUS status;
-
-        status = kvgpumgrGetMaxInstanceOfVgpu(pKernelHostVgpuDevice->vgpuType, &maxInstance);
-        if (status != NV_OK)
-            goto exit;
-
-        if (maxInstance != 1 && pGpu->getProperty(pGpu, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE))
-            *numAreas = NUM_VF_SPARSE_MMAP_REGIONS + 1;     // +1 for TLB invalidation
-        else
-            *numAreas = NUM_VF_SPARSE_MMAP_REGIONS;
-
-        return NV_OK;
-    }
-
-exit:
-    return NV_ERR_INVALID_ARGUMENT;
-}
-
 NV_STATUS
 kbifGetVFSparseMmapRegions_TU102
 (
     OBJGPU                  *pGpu,
     KernelBif               *pKernelBif,
     KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice,
-    NvU64                   os_page_size,
-    NvU64                   *offsets,
-    NvU64                   *sizes)
+    NvU64                   osPageSize,
+    NvU32                   *pNumAreas,
+    NvU64                   *pOffsets,
+    NvU64                   *pSizes
+)
 {
-    NvBool bEmulateVfTlbInvalidation = pGpu->getProperty(pGpu, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE);
     NvU64 offsetStart = 0;
     NvU64 offsetEnd = 0;
-    int idx = 0; 
+    NvU32 idx = 0;
+    NvU32 maxInstance;
+    NvU32 i;
+    NvBool bDryRun;
 
-    if (offsets && sizes && pKernelHostVgpuDevice != NULL)
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelHostVgpuDevice != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pNumAreas != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          kvgpumgrGetMaxInstanceOfVgpu(pKernelHostVgpuDevice->vgpuType,
+                                                       &maxInstance));
+
+    // Dry run to calculate the total number of areas
+    bDryRun = ((pOffsets == NULL) || (pSizes == NULL));
+    if (bDryRun)
     {
-        NvU32 maxInstance = 0;
-        NV_STATUS status;
+        pOffsets = portMemAllocStackOrHeap(NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_MAX_BAR_MAPPING_RANGES * sizeof(pOffsets[0]));
+        pSizes = portMemAllocStackOrHeap(NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_MAX_BAR_MAPPING_RANGES * sizeof(pSizes[0]));
+    }
 
-        status = kvgpumgrGetMaxInstanceOfVgpu(pKernelHostVgpuDevice->vgpuType, &maxInstance);
-        if (status != NV_OK)
-            return NV_ERR_INVALID_ARGUMENT;
+    // For SRIOV heavy, trap BOOT_0 page
+    if (gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+    {
+        offsetStart = osPageSize;
+    }
 
-        // For SRIOV heavy, trap BOOT_0 page
-        if (gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
-        {
-            offsetStart = os_page_size; 
-        }
-
-        // For VF TLB emulation, trap MMU FAULT BUFFER page
-        if ((maxInstance > 1) && bEmulateVfTlbInvalidation)
-        {
-            offsetEnd = NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_LO(0);
-            offsets[idx] = offsetStart;
-            sizes[idx] = offsetEnd - offsetStart;
-            idx++;
-
-            offsetStart = NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_LO(0) + os_page_size;
-        }
-
-        // For non-GSP, trap VGPU_EMU page
-        if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
-        {
-            offsetEnd = DRF_BASE(NV_VGPU_EMU);
-            offsets[idx] = offsetStart;
-            sizes[idx] = offsetEnd - offsetStart;
-            idx++;
-
-            offsetStart = DRF_BASE(NV_VGPU_EMU) + os_page_size;
-        }
-
-        // For non-HyperV, trap MSI-X table page
-        if (!hypervisorIsType(OS_HYPERVISOR_HYPERV))
-        {
-            // Assert whenever the MSI-X table page is not immediately after
-            // the NV_VGPU_EMU page, as it will break the current assumption.
-            NV_ASSERT((DRF_BASE(NV_VGPU_EMU) + DRF_SIZE(NV_VGPU_EMU)) ==
-                      NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0));
-
-            offsetEnd = NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0);
-
-            // Since MSI-X page is immediately after VGPU_EMU, if both are
-            // trapped, skip creating a 0 size region in between
-            if (offsetEnd > offsetStart)
-            {
-                offsets[idx] = offsetStart;
-                sizes[idx] = offsetEnd - offsetStart;
-                idx++;
-            }
-
-            offsetStart = NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0) + os_page_size;
-        }
-
-        offsetEnd = pGpu->sriovState.vfBarSize[0];
-        offsets[idx] = offsetStart;
-        sizes[idx] = offsetEnd - offsetStart;
+    // For VF TLB emulation, trap MMU FAULT BUFFER page
+    if ((maxInstance > 1) && pGpu->getProperty(pGpu, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE))
+    {
+        offsetEnd = NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_LO(0);
+        pOffsets[idx] = offsetStart;
+        pSizes[idx] = offsetEnd - offsetStart;
         idx++;
+
+        offsetStart = NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_LO(0) + osPageSize;
+    }
+
+    // For non-GSP, trap VGPU_EMU page
+    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        offsetEnd = DRF_BASE(NV_VGPU_EMU);
+        pOffsets[idx] = offsetStart;
+        pSizes[idx] = offsetEnd - offsetStart;
+        idx++;
+
+        offsetStart = DRF_BASE(NV_VGPU_EMU) + osPageSize;
+    }
+
+    // For non-HyperV, trap MSI-X table page
+    if (!hypervisorIsType(OS_HYPERVISOR_HYPERV))
+    {
+        // Assert whenever the MSI-X table page is not immediately after
+        // the NV_VGPU_EMU page, as it will break the current assumption.
+        ct_assert((DRF_BASE(NV_VGPU_EMU) + DRF_SIZE(NV_VGPU_EMU)) == NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0));
+
+        offsetEnd = NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0);
+
+        // Since MSI-X page is immediately after VGPU_EMU, if both are
+        // trapped, skip creating a 0 size region in between
+        if (offsetEnd > offsetStart)
+        {
+            pOffsets[idx] = offsetStart;
+            pSizes[idx] = offsetEnd - offsetStart;
+            idx++;
+        }
+
+        offsetStart = NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0) + osPageSize;
+    }
+
+    offsetEnd = pGpu->sriovState.vfBarSize[0];
+    pOffsets[idx] = offsetStart;
+    pSizes[idx] = offsetEnd - offsetStart;
+    idx++;
+
+    if (bDryRun)
+    {
+        portMemFreeStackOrHeap(pOffsets);
+        portMemFreeStackOrHeap(pSizes);
     }
     else
     {
-        return NV_ERR_INVALID_ARGUMENT;
+        // It might be too late to check if the passed arrays are big enough,
+        // but better late than never
+        NV_ASSERT_OR_RETURN(idx <= *pNumAreas, NV_ERR_FATAL_ERROR);
+
+        for (i = 0; i < idx; i++)
+        {
+            NV_PRINTF(LEVEL_INFO, "VF Sparse Mmap Region[%u] range 0x%llx - 0x%llx, size 0x%llx\n",
+                    i, pOffsets[i], pOffsets[i] + pSizes[i], pSizes[i]);
+        }
     }
 
-    for (int i = 0; i < idx; i++)
-    {
-        NV_PRINTF(LEVEL_INFO, "VF Sparse Mmap Region[%u] range 0x%llx - 0x%llx, size 0x%llx\n",
-                  i, offsets[i], offsets[i] + sizes[i], sizes[i]);
-    }
-
+    *pNumAreas = idx;
     return NV_OK;
 }

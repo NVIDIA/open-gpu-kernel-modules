@@ -573,12 +573,13 @@ hdmiPacketWrite9171(NVHDMIPKT_CLASS*   pThis,
         packetLen == 0 || pPacketIn == 0 || pktType9171 == NVHDMIPKT_9171_INVALID_PKT_TYPE)
     {
         result = NVHDMIPKT_INVALID_ARG;
+        NvHdmiPkt_Print(pThis, "Invalid arg");
         goto hdmiPacketWrite9171_exit;
     }
 
     if ((result = validateInputPacketLength(pktType9171, packetLen, pPacketIn)) != NVHDMIPKT_SUCCESS)
     {
-        NvHdmiPkt_Print(pThis, "ERROR - input packet length incorrect");
+        NvHdmiPkt_Print(pThis, "ERROR - input packet length incorrect %d", packetLen);
         NvHdmiPkt_Assert(0);
         goto hdmiPacketWrite9171_exit;
     }

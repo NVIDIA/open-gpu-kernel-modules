@@ -186,7 +186,8 @@ kchangrpapiConstruct_IMPL
         NV_CHECK_OK_OR_GOTO(
             rmStatus,
             LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, pParams->hClient, &ref),
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                            pDevice, &ref),
             failed);
 
         NV_CHECK_OK_OR_GOTO(
@@ -200,6 +201,15 @@ kchangrpapiConstruct_IMPL
         // Rewrite the engineType with the global engine type
         pKernelChannelGroup->engineType = rmEngineType;
         pHeap = ref.pKernelMIGGpuInstance->pMemoryPartitionHeap;
+    }
+    else
+    {
+        // Only GR0 is allowed without MIG
+        if ((RM_ENGINE_TYPE_IS_GR(rmEngineType)) && (rmEngineType != RM_ENGINE_TYPE_GR0))
+        {
+            rmStatus = NV_ERR_INVALID_ARGUMENT;
+            goto failed;
+        }
     }
 
     if((pDevice->vaMode != NV_DEVICE_ALLOCATION_VAMODE_MULTIPLE_VASPACES) || (hVASpace != 0))
@@ -274,7 +284,7 @@ kchangrpapiConstruct_IMPL
     //
 
     //
-    // Size of memory that will be calculated for ctxBufPool reservation if ctxBufPool is enabled and MIG is disabled 
+    // Size of memory that will be calculated for ctxBufPool reservation if ctxBufPool is enabled and MIG is disabled
     // or current engine belongs to this MIG instance and MIG is enabled
     //
     if (pKernelChannelGroup->pCtxBufPool != NULL &&
@@ -358,6 +368,7 @@ kchangrpapiConstruct_IMPL
                 &pKernelChannelGroupApi->hKernelGraphicsContext,
                 KERNEL_GRAPHICS_CONTEXT,
                 NvP64_NULL,
+                0,
                 RMAPI_ALLOC_FLAGS_SKIP_RPC,
                 NvP64_NULL,
                 &pRmApi->defaultSecInfo),
@@ -376,6 +387,7 @@ kchangrpapiConstruct_IMPL
                                pParams->hResource,
                                pParams->externalClassId,
                                pAllocParams,
+                               sizeof(*pAllocParams),
                                rmStatus);
         //
         // Make sure that corresponding RPC occurs when freeing
@@ -879,6 +891,7 @@ kchangrpapiSetLegacyMode_IMPL
                                                   &hkCtxShare,
                                                   FERMI_CONTEXT_SHARE_A,
                                                   NV_PTR_TO_NvP64(&kctxshareParams),
+                                                  sizeof(kctxshareParams),
                                                   RMAPI_ALLOC_FLAGS_SKIP_RPC,
                                                   NvP64_NULL,
                                                   &pRmApi->defaultSecInfo),
@@ -903,6 +916,7 @@ kchangrpapiSetLegacyMode_IMPL
                                                       &hkCtxShare,
                                                       FERMI_CONTEXT_SHARE_A,
                                                       NV_PTR_TO_NvP64(&kctxshareParams),
+                                                      sizeof(kctxshareParams),
                                                       RMAPI_ALLOC_FLAGS_SKIP_RPC,
                                                       NvP64_NULL,
                                                       &pRmApi->defaultSecInfo),
@@ -1145,7 +1159,7 @@ kchangrpapiCtrlCmdBind_IMPL
 {
     NV_STATUS     rmStatus = NV_OK;
     OBJGPU       *pGpu     = GPU_RES_GET_GPU(pKernelChannelGroupApi);
-    NvHandle      hClient  = RES_GET_CLIENT_HANDLE(pKernelChannelGroupApi);
+    Device       *pDevice  = GPU_RES_GET_DEVICE(pKernelChannelGroupApi);
     CHANNEL_NODE *pChanNode;
     RM_ENGINE_TYPE localEngineType;
     RM_ENGINE_TYPE globalEngineType;
@@ -1162,7 +1176,7 @@ kchangrpapiCtrlCmdBind_IMPL
         MIG_INSTANCE_REF ref;
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,

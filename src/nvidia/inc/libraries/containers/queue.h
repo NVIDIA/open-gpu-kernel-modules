@@ -26,7 +26,7 @@
 #include "containers/type_safety.h"
 #include "nvtypes.h"
 #include "nvmisc.h"
-#include "nvport/nvport.h" 
+#include "nvport/nvport.h"
 #include "utils/nvassert.h"
 
 #ifdef __cplusplus
@@ -96,7 +96,7 @@ typedef enum
     circularQueueCapacity_IMPL(&((pQueue)->real))
 
 #define queueIsEmpty(pQueue)                                                 \
-    circularQueueIsEmpty_IMPL(&((pQueue)->real))    
+    circularQueueIsEmpty_IMPL(&((pQueue)->real))
 
 #define queuePush(pQueue, pElements, numElements)                            \
     circularQueuePush_IMPL(&(pQueue)->real,                                  \

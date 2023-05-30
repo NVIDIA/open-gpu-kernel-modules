@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/cl0005.finn
+// Source file:      class/cl0005.finn
 //
 
 #include "cl0005_notification.h"

@@ -73,7 +73,7 @@ struct SystemMemory {
     NV_STATUS (*__sysmemControlSerialization_Prologue__)(struct SystemMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__sysmemCanCopy__)(struct SystemMemory *);
     NV_STATUS (*__sysmemIsReady__)(struct SystemMemory *, NvBool);
-    NV_STATUS (*__sysmemCheckCopyPermissions__)(struct SystemMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__sysmemCheckCopyPermissions__)(struct SystemMemory *, struct OBJGPU *, struct Device *);
     void (*__sysmemPreDestruct__)(struct SystemMemory *);
     NV_STATUS (*__sysmemIsDuplicate__)(struct SystemMemory *, NvHandle, NvBool *);
     void (*__sysmemControlSerialization_Epilogue__)(struct SystemMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -130,7 +130,7 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory**, Dynamic*, NvU32, CALL_CO
 #define sysmemControlSerialization_Prologue(pResource, pCallContext, pParams) sysmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define sysmemCanCopy(pStandardMemory) sysmemCanCopy_DISPATCH(pStandardMemory)
 #define sysmemIsReady(pMemory, bCopyConstructorContext) sysmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define sysmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) sysmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define sysmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) sysmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define sysmemPreDestruct(pResource) sysmemPreDestruct_DISPATCH(pResource)
 #define sysmemIsDuplicate(pMemory, hMemory, pDuplicate) sysmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define sysmemControlSerialization_Epilogue(pResource, pCallContext, pParams) sysmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -238,8 +238,8 @@ static inline NV_STATUS sysmemIsReady_DISPATCH(struct SystemMemory *pMemory, NvB
     return pMemory->__sysmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS sysmemCheckCopyPermissions_DISPATCH(struct SystemMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__sysmemCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS sysmemCheckCopyPermissions_DISPATCH(struct SystemMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__sysmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void sysmemPreDestruct_DISPATCH(struct SystemMemory *pResource) {

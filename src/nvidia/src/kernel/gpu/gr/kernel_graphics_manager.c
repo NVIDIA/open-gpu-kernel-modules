@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,9 +21,12 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
+
 #include "kernel/gpu/gr/kernel_graphics_manager.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
 
+#include "kernel/gpu/device/device.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 
@@ -380,6 +383,50 @@ kgrmgrCtrlRouteKGR_IMPL
     KernelGraphics **ppKernelGraphics
 )
 {
+    RsClient *pClient;
+    Device *pDevice;
+
+    if (!IS_MIG_IN_USE(pGpu))
+    {
+        KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, 0);
+
+        NV_ASSERT_OR_RETURN(pKernelGraphics != NULL, NV_ERR_INVALID_STATE);
+
+        if (ppKernelGraphics != NULL)
+            *ppKernelGraphics = pKernelGraphics;
+
+        return NV_OK;
+    }
+
+    NV_ASSERT_OK_OR_RETURN(
+        serverGetClientUnderLock(&g_resServ, hClient, &pClient));
+
+    NV_ASSERT_OK_OR_RETURN(
+        deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice));
+
+    return kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice,
+                                        pGrRouteInfo, ppKernelGraphics);
+}
+
+/*!
+ * @brief Retrieves associated KernelGraphics engine for given device / route info
+ *
+ * @param[in]  pGpu
+ * @param[in]  pKernelGraphicsManager
+ * @param[in]  pDevice
+ * @param[in]  grRouteInfo                   Client-provided info to direct GR accesses
+ * @param[out] ppKernelGraphics (Optional)   Ptr to store appropriate KernelGraphics *, if desired.
+ */
+NV_STATUS
+kgrmgrCtrlRouteKGRWithDevice_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsManager *pKernelGraphicsManager,
+    Device *pDevice,
+    const NV2080_CTRL_GR_ROUTE_INFO *pGrRouteInfo,
+    KernelGraphics **ppKernelGraphics
+)
+{
     MIG_INSTANCE_REF ref;
     KernelGraphics *pKernelGraphics;
     NvU32 type;
@@ -387,6 +434,7 @@ kgrmgrCtrlRouteKGR_IMPL
     NvU32 grIdx;
     NV2080_CTRL_GR_ROUTE_INFO grRouteInfo = *pGrRouteInfo;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    RsClient *pClient;
 
     if (!IS_MIG_IN_USE(pGpu))
     {
@@ -394,8 +442,10 @@ kgrmgrCtrlRouteKGR_IMPL
         goto done;
     }
 
+    pClient = RES_GET_CLIENT(pDevice);
+
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
+        kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
 
     //
     // Compute instances always have 1 GR engine, so automatically fill in
@@ -408,8 +458,13 @@ kgrmgrCtrlRouteKGR_IMPL
     }
     else
     {
-        RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilegeByHandle(hClient);
-        if (!rmclientIsAdminByHandle(hClient, privLevel) &&
+        RmClient *pRmClient = dynamicCast(pClient, RmClient);
+
+        if (pRmClient == NULL)
+            return NV_ERR_INVALID_OBJECT_HANDLE;
+
+        RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilege(pRmClient);
+        if (!rmclientIsAdmin(pRmClient, privLevel) &&
              _kgrmgrGPUInstanceHasComputeInstances(pGpu, pKernelGraphicsManager, ref.pKernelMIGGpuInstance))
         {
             return NV_ERR_INSUFFICIENT_PERMISSIONS;
@@ -448,7 +503,7 @@ kgrmgrCtrlRouteKGR_IMPL
             NvHandle hChannel = DRF_VAL64(2080_CTRL_GR, _ROUTE_INFO_DATA,
                                           _CHANNEL_HANDLE, grRouteInfo.route);
 
-            status = CliGetKernelChannel(hClient, hChannel, &pKernelChannel);
+            status = CliGetKernelChannel(pClient, hChannel, &pKernelChannel);
             if (status != NV_OK)
             {
                 RsResourceRef         *pChanGrpRef;
@@ -459,12 +514,13 @@ kgrmgrCtrlRouteKGR_IMPL
                 // If retrieving a channel with the given hChannel doesn't work,
                 // try interpreting it as a handle to a channel group instead.
                 //
-                status = CliGetChannelGroup(hClient, hChannel, &pChanGrpRef, NULL);
+                status = CliGetChannelGroup(pClient->hClient, hChannel,
+                    &pChanGrpRef, NULL);
                 if (NV_OK != status)
                 {
                     NV_PRINTF(LEVEL_ERROR,
                               "Failed to find a channel or TSG with given handle 0x%08x associated with hClient=0x%08x\n",
-                              hChannel, hClient);
+                              hChannel, pClient->hClient);
                     return NV_ERR_INVALID_ARGUMENT;
                 }
 
@@ -530,6 +586,21 @@ kgrmgrGetLegacyGpcMask_IMPL
     NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized, 0);
 
     return pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks.gpcMask;
+}
+
+/*!
+ * @return legacy physical GFX GPC mask enumerated by this chip
+ */
+NvU32
+kgrmgrGetLegacyPhysGfxGpcMask_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsManager *pKernelGraphicsManager
+)
+{
+    NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized, 0);
+
+    return pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks.physGfxGpcMask;
 }
 
 /*!
@@ -652,7 +723,7 @@ kgrmgrAllocVeidsForGrIdx_IMPL
 
     veidStart = (veidSpanOffset * maxVeidsPerGpc) + pKernelMIGGPUInstance->resourceAllocation.veidOffset;
     veidEnd = veidStart + veidCount - 1;
-    
+
     NV_ASSERT_OR_RETURN(veidStart < veidEnd, NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(veidStart < 64, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(veidEnd < 64, NV_ERR_INVALID_ARGUMENT);
@@ -988,7 +1059,7 @@ kgrmgrCheckVeidsRequest_IMPL
         NV_PRINTF(LEVEL_ERROR, "veidCount %d is not aligned to maxVeidsPerGpc=%d\n", veidCount, maxVeidsPerGpc);
         return NV_ERR_INVALID_ARGUMENT;
     }
-    
+
     // Create a mask for VEIDs associated with this GPU instance
     GPUInstanceVeidEnd = pKernelMIGGPUInstance->resourceAllocation.veidOffset + pKernelMIGGPUInstance->resourceAllocation.veidCount - 1;
     GPUInstanceVeidMask = DRF_SHIFTMASK64(GPUInstanceVeidEnd:pKernelMIGGPUInstance->resourceAllocation.veidOffset);
@@ -1007,7 +1078,7 @@ kgrmgrCheckVeidsRequest_IMPL
         NV_ASSERT_OR_RETURN(veidEnd < 64, NV_ERR_INVALID_ARGUMENT);
     }
     else
-    {        
+    {
         NvU64 reqVeidMask = DRF_SHIFTMASK64(veidCount - 1:0);
         NvU32 i;
 

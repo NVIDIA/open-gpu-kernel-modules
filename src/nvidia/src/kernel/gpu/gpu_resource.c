@@ -457,7 +457,7 @@ gpuresGetByDeviceOrSubdeviceHandle
         return status;
 
     // Must be device or subdevice
-    if (!dynamicCast(*ppGpuResource, Device) && 
+    if (!dynamicCast(*ppGpuResource, Device) &&
         !dynamicCast(*ppGpuResource, Subdevice))
     {
         return NV_ERR_INVALID_OBJECT_HANDLE;

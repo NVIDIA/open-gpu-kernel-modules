@@ -56,18 +56,18 @@
 
 #else
 
-#define portSyncInitialize() \
-    do { \
+#define portSyncInitialize()                                                          \
+    do {                                                                              \
         portDbgPrintf("SYNC-DBG (%s:%d): portSyncInitialize() ", __FILE__, __LINE__); \
-        portSyncInitialize(); \
-        portDbgPrintf(" - Done;\n"); \
+        portSyncInitialize();                                                         \
+        portDbgPrintf(" - Done;\n");                                                  \
     } while (0)
 
-#define portSyncShutdown() \
-    do { \
+#define portSyncShutdown()                                                          \
+    do {                                                                            \
         portDbgPrintf("SYNC-DBG (%s:%d): portSyncShutdown() ", __FILE__, __LINE__); \
-        portSyncShutdown(); \
-        portDbgPrintf(" - Done;\n"); \
+        portSyncShutdown();                                                         \
+        portDbgPrintf(" - Done;\n");                                                \
     } while (0)
 
 
@@ -85,125 +85,125 @@ static NV_INLINE void *_syncPrintReturnPtr(void *ptr)
 }
 
 
-#define portSyncSpinlockInitialize(pSpinlock) \
+#define portSyncSpinlockInitialize(pSpinlock)                             \
     (portDbgPrintf("SYNC-DBG (%s:%d): portSyncSpinlockInitialize(%p) - ", \
-                    __FILE__, __LINE__, pSpinlock),\
+                    __FILE__, __LINE__, pSpinlock),                       \
         _syncPrintReturnStatus(portSyncSpinlockInitialize(pSpinlock)))
 
-#define portSyncSpinlockCreate(pAllocator) \
+#define portSyncSpinlockCreate(pAllocator)                            \
     (portDbgPrintf("SYNC-DBG (%s:%d): portSyncSpinlockCreate(%p) - ", \
-                    __FILE__, __LINE__, pAllocator),\
+                    __FILE__, __LINE__, pAllocator),                  \
         _syncPrintReturnPtr(portSyncSpinlockCreate(pAllocator)))
 
-#define portSyncSpinlockDestroy(pSpinlock) \
-    do { \
-        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSpinlockDestroy(%p) ",\
-          __FILE__, __LINE__, pSpinlock); \
-        portSyncSpinlockDestroy(pSpinlock); \
-        portDbgPrintf(" - Done;\n"); \
+#define portSyncSpinlockDestroy(pSpinlock)                              \
+    do {                                                                \
+        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSpinlockDestroy(%p) ", \
+          __FILE__, __LINE__, pSpinlock);                               \
+        portSyncSpinlockDestroy(pSpinlock);                             \
+        portDbgPrintf(" - Done;\n");                                    \
     } while (0)
 
-#define portSyncSpinlockAcquire(pSpinlock) \
-    do { \
-        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSpinlockAcquire(%p) ",\
-          __FILE__, __LINE__, pSpinlock); \
-        portSyncSpinlockAcquire(pSpinlock); \
-        portDbgPrintf(" - Done;\n"); \
+#define portSyncSpinlockAcquire(pSpinlock)                              \
+    do {                                                                \
+        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSpinlockAcquire(%p) ", \
+          __FILE__, __LINE__, pSpinlock);                               \
+        portSyncSpinlockAcquire(pSpinlock);                             \
+        portDbgPrintf(" - Done;\n");                                    \
     } while (0)
 
-#define portSyncSpinlockRelease(pSpinlock) \
-    do { \
-        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSpinlockRelease(%p) ",\
-          __FILE__, __LINE__, pSpinlock); \
-        portSyncSpinlockRelease(pSpinlock); \
-        portDbgPrintf(" - Done;\n"); \
+#define portSyncSpinlockRelease(pSpinlock)                              \
+    do {                                                                \
+        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSpinlockRelease(%p) ", \
+          __FILE__, __LINE__, pSpinlock);                               \
+        portSyncSpinlockRelease(pSpinlock);                             \
+        portDbgPrintf(" - Done;\n");                                    \
     } while (0)
 
 
 
 
-#define portSyncMutexInitialize(pMutex) \
+#define portSyncMutexInitialize(pMutex)                                \
     (portDbgPrintf("SYNC-DBG (%s:%d): portSyncMutexInitialize(%p) - ", \
-                    __FILE__, __LINE__, pMutex),\
+                    __FILE__, __LINE__, pMutex),                       \
         _syncPrintReturnStatus(portSyncMutexInitialize(pMutex)))
 
-#define portSyncMutexCreate(pAllocator) \
+#define portSyncMutexCreate(pAllocator)                            \
     (portDbgPrintf("SYNC-DBG (%s:%d): portSyncMutexCreate(%p) - ", \
-                    __FILE__, __LINE__, pAllocator),\
+                    __FILE__, __LINE__, pAllocator),               \
         _syncPrintReturnPtr(portSyncMutexCreate(pAllocator)))
 
-#define portSyncMutexDestroy(pMutex) \
-    do { \
-        portDbgPrintf("SYNC-DBG (%s:%d): portSyncMutexDestroy(%p) ",\
-          __FILE__, __LINE__, pMutex); \
-        portSyncMutexDestroy(pMutex); \
-        portDbgPrintf(" - Done;\n"); \
+#define portSyncMutexDestroy(pMutex)                                 \
+    do {                                                             \
+        portDbgPrintf("SYNC-DBG (%s:%d): portSyncMutexDestroy(%p) ", \
+          __FILE__, __LINE__, pMutex);                               \
+        portSyncMutexDestroy(pMutex);                                \
+        portDbgPrintf(" - Done;\n");                                 \
     } while (0)
 
-#define portSyncMutexAcquire(pMutex) \
-    do { \
-        portDbgPrintf("SYNC-DBG (%s:%d): portSyncMutexAcquire(%p) ",\
-          __FILE__, __LINE__, pMutex); \
-        portSyncMutexAcquire(pMutex); \
-        portDbgPrintf(" - Done;\n"); \
+#define portSyncMutexAcquire(pMutex)                                 \
+    do {                                                             \
+        portDbgPrintf("SYNC-DBG (%s:%d): portSyncMutexAcquire(%p) ", \
+          __FILE__, __LINE__, pMutex);                               \
+        portSyncMutexAcquire(pMutex);                                \
+        portDbgPrintf(" - Done;\n");                                 \
     } while (0)
 
-#define portSyncMutexRelease(pMutex) \
-    do { \
-        portDbgPrintf("SYNC-DBG (%s:%d): portSyncMutexRelease(%p) ",\
-          __FILE__, __LINE__, pMutex); \
-        portSyncMutexRelease(pMutex); \
-        portDbgPrintf(" - Done;\n"); \
+#define portSyncMutexRelease(pMutex)                                 \
+    do {                                                             \
+        portDbgPrintf("SYNC-DBG (%s:%d): portSyncMutexRelease(%p) ", \
+          __FILE__, __LINE__, pMutex);                               \
+        portSyncMutexRelease(pMutex);                                \
+        portDbgPrintf(" - Done;\n");                                 \
     } while (0)
 
-#define portSyncMutexAcquireConditional(pMutex) \
+#define portSyncMutexAcquireConditional(pMutex)                                \
     (portDbgPrintf("SYNC-DBG (%s:%d): portSyncMutexAcquireConditional(%p) - ", \
-                    __FILE__, __LINE__, pMutex),\
-        (portSyncMutexAcquireConditional(pMutex) ? \
+                    __FILE__, __LINE__, pMutex),                               \
+        (portSyncMutexAcquireConditional(pMutex) ?                             \
         (portDbgPrintf("TRUE\n"),NV_TRUE) : (portDbgPrintf("FALSE\n"),NV_FALSE)))
 
 
 
 
 
-#define portSyncSemaphoreInitialize(pSemaphore, s, l) \
+#define portSyncSemaphoreInitialize(pSemaphore, s, l)                              \
     (portDbgPrintf("SYNC-DBG (%s:%d): portSyncSemaphoreInitialize(%p, %u, %u) - ", \
-                    __FILE__, __LINE__, pSemaphore, s, l),\
+                    __FILE__, __LINE__, pSemaphore, s, l),                         \
         _syncPrintReturnStatus(portSyncSemaphoreInitialize(pSemaphore, s, l)))
 
-#define portSyncSemaphoreCreate(pAllocator, s, l) \
+#define portSyncSemaphoreCreate(pAllocator, s, l)                              \
     (portDbgPrintf("SYNC-DBG (%s:%d): portSyncSemaphoreCreate(%p, %u, %u) - ", \
-                    __FILE__, __LINE__, pAllocator, s, l),\
+                    __FILE__, __LINE__, pAllocator, s, l),                     \
         _syncPrintReturnPtr(portSyncSemaphoreCreate(pAllocator, s, l)))
 
-#define portSyncSemaphoreDestroy(pSemaphore) \
-    do { \
-        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSemaphoreDestroy(%p) ",\
-          __FILE__, __LINE__, pSemaphore); \
-        portSyncSemaphoreDestroy(pSemaphore); \
-        portDbgPrintf(" - Done;\n"); \
+#define portSyncSemaphoreDestroy(pSemaphore)                             \
+    do {                                                                 \
+        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSemaphoreDestroy(%p) ", \
+          __FILE__, __LINE__, pSemaphore);                               \
+        portSyncSemaphoreDestroy(pSemaphore);                            \
+        portDbgPrintf(" - Done;\n");                                     \
     } while (0)
 
-#define portSyncSemaphoreAcquire(pSemaphore) \
-    do { \
-        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSemaphoreAcquire(%p) ",\
-          __FILE__, __LINE__, pSemaphore); \
-        portSyncSemaphoreAcquire(pSemaphore); \
-        portDbgPrintf(" - Done;\n"); \
+#define portSyncSemaphoreAcquire(pSemaphore)                             \
+    do {                                                                 \
+        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSemaphoreAcquire(%p) ", \
+          __FILE__, __LINE__, pSemaphore);                               \
+        portSyncSemaphoreAcquire(pSemaphore);                            \
+        portDbgPrintf(" - Done;\n");                                     \
     } while (0)
 
-#define portSyncSemaphoreRelease(pSemaphore) \
-    do { \
-        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSemaphoreRelease(%p) ",\
-          __FILE__, __LINE__, pSemaphore); \
-        portSyncSemaphoreRelease(pSemaphore); \
-        portDbgPrintf(" - Done;\n"); \
+#define portSyncSemaphoreRelease(pSemaphore)                             \
+    do {                                                                 \
+        portDbgPrintf("SYNC-DBG (%s:%d): portSyncSemaphoreRelease(%p) ", \
+          __FILE__, __LINE__, pSemaphore);                               \
+        portSyncSemaphoreRelease(pSemaphore);                            \
+        portDbgPrintf(" - Done;\n");                                     \
     } while (0)
 
-#define portSyncSemaphoreAcquireConditional(pSemaphore) \
+#define portSyncSemaphoreAcquireConditional(pSemaphore)                            \
     (portDbgPrintf("SYNC-DBG (%s:%d): portSyncSemaphoreAcquireConditional(%p) - ", \
-                    __FILE__, __LINE__, pSemaphore),\
-        (portSyncSemaphoreAcquireConditional(pSemaphore) ? \
+                    __FILE__, __LINE__, pSemaphore),                               \
+        (portSyncSemaphoreAcquireConditional(pSemaphore) ?                         \
             (portDbgPrintf("TRUE\n"),NV_TRUE) : (portDbgPrintf("FALSE\n"),NV_FALSE)))
 
 

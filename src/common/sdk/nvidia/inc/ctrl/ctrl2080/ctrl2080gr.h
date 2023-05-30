@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080gr.finn
+// Source file:      ctrl/ctrl2080/ctrl2080gr.finn
 //
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
@@ -256,6 +256,9 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_GPCS              NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_GPCS
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_TPCS_PER_GFXC_GPC NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_GFXC_TPCS_PER_GFXC_GPC
 #define NV2080_CTRL_GR_INFO_INDEX_LITTER_NUM_SLICES_PER_LTC         NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_SLICES_PER_LTC
+
+
+#define NV2080_CTRL_GR_INFO_INDEX_DUMMY                             NV0080_CTRL_GR_INFO_INDEX_DUMMY
 #define NV2080_CTRL_GR_INFO_INDEX_GFX_CAPABILITIES                  NV0080_CTRL_GR_INFO_INDEX_GFX_CAPABILITIES
 
 /* When adding a new INDEX, please update INDEX_MAX and MAX_SIZE accordingly

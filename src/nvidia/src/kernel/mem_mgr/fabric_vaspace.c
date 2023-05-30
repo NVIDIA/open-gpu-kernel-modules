@@ -148,7 +148,7 @@ failed:
 }
 
 //
-// TODO: To be removed when legacy FLA VAS (pKernelBus->flaInfo.pFlaVAS) is removed"
+// TODO: To be removed when legacy FLA VAS (pKernelBus->flaInfo.pFlaVAS)is removed"
 // The instance block is unbind during kbusDestroyFla_HAL(). However, we unbind
 // it here and bind back the instance block for the legacy FLA VAS after the
 // last NV_FABRIC_MEMORY allocation is freed.
@@ -185,12 +185,15 @@ _fabricvaspaceUnbindInstBlk
     if (pKernelBus->flaInfo.pFlaVAS != NULL)
     {
         // Instantiate the instance block for FLA vaspace.
-        NV_ASSERT(kgmmuInstBlkInit(pKernelGmmu, pKernelBus->flaInfo.pInstblkMemDesc,
-                                pKernelBus->flaInfo.pFlaVAS, FIFO_PDB_IDX_BASE,
-                                &instblkParams) == NV_OK);
+        NV_ASSERT(kgmmuInstBlkInit(pKernelGmmu,
+                                   pKernelBus->flaInfo.pInstblkMemDesc,
+                                   pKernelBus->flaInfo.pFlaVAS,
+                                   FIFO_PDB_IDX_BASE,
+                                   &instblkParams) == NV_OK);
 
         // Bind the instance block for FLA vaspace.
-        NV_ASSERT(kbusSetupBindFla_HAL(pGpu, pKernelBus, pFabricVAS->gfid) == NV_OK);
+        NV_ASSERT(kbusSetupBindFla_HAL(pGpu, pKernelBus,
+                                       pFabricVAS->gfid) == NV_OK);
     }
 }
 
@@ -227,7 +230,7 @@ fabricvaspaceConstruct__IMPL
 
     status = pRmApi->AllocWithHandle(pRmApi, NV01_NULL_OBJECT,
                                      NV01_NULL_OBJECT, NV01_NULL_OBJECT,
-                                     NV01_ROOT, &hClient);
+                                     NV01_ROOT, &hClient, sizeof(hClient));
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "failed creating client, status=0x%x\n", status);
@@ -237,14 +240,16 @@ fabricvaspaceConstruct__IMPL
     status = serverutilGenResourceHandle(hClient, &hDevice);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "failed creating device handle, status=0x%x\n", status);
+        NV_PRINTF(LEVEL_ERROR,
+                  "failed creating device handle, status=0x%x\n", status);
         goto cleanup;
     }
 
     // Allocate a device handle
     devAllocParams.deviceId = gpuGetDeviceInstance(pGpu);
     status = pRmApi->AllocWithHandle(pRmApi, hClient, hClient, hDevice,
-                                     NV01_DEVICE_0, &devAllocParams);
+                                     NV01_DEVICE_0,
+                                     &devAllocParams, sizeof(devAllocParams));
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "failed creating device, status=0x%x\n", status);
@@ -263,7 +268,8 @@ fabricvaspaceConstruct__IMPL
         pFabricVAS->flags |= VASPACE_FLAGS_ALLOW_PAGES_IN_PHYS_MEM_SUBALLOCATOR;
     }
 
-    pFabricVAS->bRpcAlloc = IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
+    pFabricVAS->bRpcAlloc = IS_VIRTUAL(pGpu) &&
+                                gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
 
     // Create the GVASPACE object associated with this fabric vaspace.
     status = vmmCreateVaspace(pVmm, FERMI_VASPACE_A, 0, pVAS->gpuMask,
@@ -333,56 +339,11 @@ fabricvaspaceAlloc_IMPL
     NvU64           *pAddr
 )
 {
-    NV_STATUS status = NV_OK;
-
-    // Sanity check the input parameters.
-    NV_ASSERT_OR_RETURN(pFabricVAS->pGVAS != NULL,     NV_ERR_OBJECT_NOT_FOUND);
-    NV_ASSERT_OR_RETURN(pAddr != NULL,                 NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pageSize >= RM_PAGE_SIZE_HUGE, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(align != 0,                    NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(size != 0,                     NV_ERR_INVALID_ARGUMENT);
-
-    // Check the alignment and size are pageSize aligned
-    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(align, pageSize), NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(NV_IS_ALIGNED64(size, pageSize),  NV_ERR_INVALID_ARGUMENT);
-
-    status = _fabricvaspaceBindInstBlk(pFabricVAS);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to bind instance block for fabric vaspace."
-                  " Alloc failed\n");
-        return status;
-    }
-
-    // Adjust rangeLo and rangeHi
-    rangeLo = NV_ALIGN_DOWN(rangeLo, pageSize);
-    rangeHi = NV_ALIGN_UP(rangeHi, pageSize);
-
     //
-    // Allocate VA space of the size and alignment requested.
-    // RM_PAGE_SIZE_HUGE is passed since FLA->PA page size is 2MB or 512MB.
+    // TODO: If needed, can call into fabricvaspaceAllocNonContiguous_IMPL()
+    // by forcing contig flag.
     //
-    status = vaspaceAlloc(pFabricVAS->pGVAS, size, align, rangeLo, rangeHi,
-                          RM_PAGE_SIZE_HUGE | RM_PAGE_SHIFT_512M, flags, pAddr);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Failed to allocate vaspace\n");
-        goto failed;
-    }
-
-    // Assert that the address returned is pageSize aligned
-    NV_ASSERT(NV_IS_ALIGNED64(*pAddr, pageSize));
-
-    pFabricVAS->ucFabricFreeSize  -= size;
-    pFabricVAS->ucFabricInUseSize += size; 
-
-    return NV_OK;
-
-failed:
-
-    _fabricvaspaceUnbindInstBlk(pFabricVAS);
-
-    return status;
+    return NV_ERR_NOT_SUPPORTED;
 }
 
 NV_STATUS
@@ -462,7 +423,9 @@ fabricvaspaceAllocNonContiguous_IMPL
 
     //
     // Attempt to allocate VA space of the size and alignment requested.
-    // RM_PAGE_SIZE_HUGE is passed since FLA->PA page size is 2MB.
+    //
+    // RM_PAGE_SIZE_HUGE is passed since FLA->PA mappings support minimum
+    // 2MB pagesize.
     //
     if (flags.bForceContig || bDefaultAllocMode)
     {
@@ -482,8 +445,10 @@ fabricvaspaceAllocNonContiguous_IMPL
 
     //
     // If size could not be allocated in one memblock, break size into
-    // multiple pageSize chunks. RM_PAGE_SIZE_HUGE is passed since
-    // FLA->PA page size is 2MB.
+    // multiple pageSize chunks.
+    //
+    // RM_PAGE_SIZE_HUGE is passed since FLA->PA mappings support minimum
+    // 2MB pagesize.
     //
     if (flags.bForceNonContig || (bDefaultAllocMode && (status != NV_OK)))
     {
@@ -543,7 +508,7 @@ fabricvaspaceFree_IMPL
     NV_ASSERT(vaspaceFreeV2(pFabricVAS->pGVAS, vAddr, &blockSize) == NV_OK);
 
     kbusFlush_HAL(pGpu, pKernelBus, (BUS_FLUSH_VIDEO_MEMORY |
-                                     BUS_FLUSH_SYSTEM_MEMORY | 
+                                     BUS_FLUSH_SYSTEM_MEMORY |
                                      BUS_FLUSH_USE_PCIE_READ));
 
     fabricvaspaceInvalidateTlb(pFabricVAS, pGpu, PTE_DOWNGRADE);
@@ -670,7 +635,8 @@ fabricvaspaceBatchFree_IMPL
         bUcFla = (pAddr[idx] >= fabricvaspaceGetUCFlaStart(pFabricVAS) &&
                   pAddr[idx] < fabricvaspaceGetUCFlaLimit(pFabricVAS));
 
-        NV_ASSERT(vaspaceFreeV2(pFabricVAS->pGVAS, pAddr[idx], &freeSize) == NV_OK);
+        NV_ASSERT(vaspaceFreeV2(pFabricVAS->pGVAS,
+                                pAddr[idx], &freeSize) == NV_OK);
 
         idx += stride;
 
@@ -679,7 +645,7 @@ fabricvaspaceBatchFree_IMPL
     }
 
     kbusFlush_HAL(pGpu, pKernelBus, (BUS_FLUSH_VIDEO_MEMORY |
-                                     BUS_FLUSH_SYSTEM_MEMORY | 
+                                     BUS_FLUSH_SYSTEM_MEMORY |
                                      BUS_FLUSH_USE_PCIE_READ));
 
     fabricvaspaceInvalidateTlb(pFabricVAS, pGpu, PTE_DOWNGRADE);
@@ -721,8 +687,8 @@ fabricvaspaceGetGpaMemdesc_IMPL
 
     {
         bLoopbackSupported = pKernelNvlink != NULL &&
-                            (knvlinkIsP2pLoopbackSupported(pMappingGpu, pKernelNvlink) ||
-                             knvlinkIsForcedConfig(pMappingGpu, pKernelNvlink));
+                (knvlinkIsP2pLoopbackSupported(pMappingGpu, pKernelNvlink) ||
+                 knvlinkIsForcedConfig(pMappingGpu, pKernelNvlink));
     }
 
     if (memdescGetAddressSpace(pFabricMemdesc) != ADDR_FABRIC_V2 ||
@@ -745,28 +711,34 @@ fabricvaspaceGetGpaMemdesc_IMPL
     }
 
     //
-    // If the address space is of type ADDR_FABRIC_V2 then determine if the FLA import
-    // is on the mapping GPU. If FLA import is on the mapping GPU and NVLink P2P over
-    // loopback is not supported, then map GVA->PA directly. For discontiguous fabric
-    // memory allocation, searching for the first entry in the pteArray should be fine
-    // to determine if FLA import is on the mapping GPU.
+    // If the address space is of type ADDR_FABRIC_V2 then determine if the
+    // FLA import is on the mapping GPU. If FLA import is on the mapping GPU
+    // and NVLink P2P over loopback is not supported, then map GVA->PA directly.
+    // For discontiguous fabric memory allocation, searching for the first entry
+    // in the pteArray should be fine to determine if FLA import is on the
+    // mapping GPU.
     //
-    NV_ASSERT_OK_OR_RETURN(btreeSearch(pteArray[0], &pNode, pFabricVAS->pFabricVaToGpaMap));
+    NV_ASSERT_OK_OR_RETURN(btreeSearch(pteArray[0], &pNode,
+                                       pFabricVAS->pFabricVaToGpaMap));
 
-    FABRIC_VA_TO_GPA_MAP_NODE *pFabricNode = (FABRIC_VA_TO_GPA_MAP_NODE *)pNode->Data;
+    FABRIC_VA_TO_GPA_MAP_NODE *pFabricNode =
+                                 (FABRIC_VA_TO_GPA_MAP_NODE *)pNode->Data;
 
     //
-    // Create a sub-memdesc for the offset into the vidMemDesc where the GVA would be
-    // mapped. Note this includes two offsets:
+    // Create a sub-memdesc for the offset into the vidMemDesc where the GVA
+    // would be mapped. Note this includes two offsets:
     // 1. Offset into the fabric memdesc where the GVA is mapped.
-    // 2. Offset into the physical vidmem memdesc where the fabric memory is mapped.
+    // 2. Offset into the physical vidmem memdesc where the fabric memory is
+    // mapped.
     //
-    status = memdescCreateSubMem(ppAdjustedMemdesc, pFabricNode->pVidMemDesc, pMappingGpu,
+    status = memdescCreateSubMem(ppAdjustedMemdesc, pFabricNode->pVidMemDesc,
+                                 pMappingGpu,
                                  rootOffset + pFabricNode->offset,
                                  memdescGetSize(pFabricMemdesc));
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Failed to create submMemdesc for the GVA->PA mapping\n");
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to create submMemdesc for the GVA->PA mapping\n");
         return status;
     }
 
@@ -869,8 +841,12 @@ fabricvaspaceAllocMulticast_IMPL
     rangeLo = base;
     rangeHi = base + size - 1;
 
+    //
+    // RM_PAGE_SIZE_HUGE is passed since MCFLA->PA mappings support minimum
+    // 2MB pagesize.
+    //
     status = vaspaceAlloc(pFabricVAS->pGVAS, size, alignment, rangeLo,
-                          rangeHi, pageSize, flags, &addr);
+                          rangeHi, RM_PAGE_SIZE_HUGE, flags, &addr);
 
     NV_ASSERT(addr == base);
 
@@ -1010,9 +986,9 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
     FABRIC_VASPACE_MAPPING_REGIONS regions;
     NvU32 numRegions;
 
-    fabricPageSize = memdescGetPageSize64(pFabricMemDesc, AT_GPU);
+    fabricPageSize = memdescGetPageSize(pFabricMemDesc, AT_GPU);
 
-    NV_ASSERT_OR_RETURN_VOID(dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE) == \
+    NV_ASSERT_OR_RETURN_VOID(dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE) ==
                              pFabricVAS);
 
     _fabricvaspaceGetMappingRegions(fabricOffset, fabricPageSize, physMapLength,
@@ -1021,10 +997,13 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
 
     for (i = 0; i < numRegions; i++)
     {
-        fabricPageCount = ((memdescGetPteArraySize(pFabricMemDesc, AT_GPU) == 1) ||
-                           (regions.r[i].length < fabricPageSize)) ? \
-                          1 : (regions.r[i].length / fabricPageSize);
+        fabricPageCount =
+            ((memdescGetPteArraySize(pFabricMemDesc, AT_GPU) == 1) ||
+             (regions.r[i].length < fabricPageSize)) ?
+            1 : (regions.r[i].length / fabricPageSize);
+
         mapLength = (fabricPageCount == 1) ? regions.r[i].length : fabricPageSize;
+
         fabricOffset = regions.r[i].offset;
 
         for (j = 0; j < fabricPageCount; j++)
@@ -1035,10 +1014,11 @@ fabricvaspaceUnmapPhysMemdesc_IMPL
             }
             else
             {
-                fabricAddr = pFabricMemDesc->_pteArray[fabricOffset / pFabricMemDesc->pageArrayGranularity];
+                fabricAddr = pFabricMemDesc->_pteArray[fabricOffset /
+                                        pFabricMemDesc->pageArrayGranularity];
             }
 
-            vaspaceUnmap(pFabricVAS->pGVAS, pPhysMemDesc->pGpu, fabricAddr, \
+            vaspaceUnmap(pFabricVAS->pGVAS, pPhysMemDesc->pGpu, fabricAddr,
                          fabricAddr + mapLength - 1);
 
             fabricOffset = fabricOffset + mapLength;
@@ -1090,8 +1070,8 @@ fabricvaspaceMapPhysMemdesc_IMPL
     NV_ASSERT_OR_RETURN(dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE) == pFabricVAS,
                         NV_ERR_INVALID_ARGUMENT);
 
-    physPageSize = memdescGetPageSize64(pPhysMemDesc, AT_GPU);
-    fabricPageSize = memdescGetPageSize64(pFabricMemDesc, AT_GPU);
+    physPageSize = memdescGetPageSize(pPhysMemDesc, AT_GPU);
+    fabricPageSize = memdescGetPageSize(pFabricMemDesc, AT_GPU);
 
     status = _fabricVaspaceValidateMapAttrs(fabricOffset,
                                             memdescGetSize(pFabricMemDesc),
@@ -1108,6 +1088,27 @@ fabricvaspaceMapPhysMemdesc_IMPL
     status = memmgrGetKindComprFromMemDesc(pMemoryManager, pPhysMemDesc,
                                            physOffset, &kind, &comprInfo);
     NV_ASSERT_OK_OR_RETURN(status);
+
+    if (memdescGetAddressSpace(pPhysMemDesc) == ADDR_FBMEM)
+    {
+        aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
+    }
+    else if (memdescGetAddressSpace(pPhysMemDesc) == ADDR_SYSMEM)
+    {
+        if (memdescGetCpuCacheAttrib(pPhysMemDesc) == NV_MEMORY_CACHED)
+        {
+            aperture = NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
+        }
+        else
+        {
+            aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
+        }
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unsupported aperture\n");
+        NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
+    }
 
     _fabricvaspaceGetMappingRegions(fabricOffset, fabricPageSize, physMapLength,
                                     &regions, &numRegions);
@@ -1133,7 +1134,8 @@ fabricvaspaceMapPhysMemdesc_IMPL
             }
             else
             {
-                fabricAddr = pFabricMemDesc->_pteArray[fabricOffset / pFabricMemDesc->pageArrayGranularity];
+                fabricAddr = pFabricMemDesc->_pteArray[fabricOffset /
+                                        pFabricMemDesc->pageArrayGranularity];
             }
 
             if (pageArray.count == 1)
@@ -1143,7 +1145,8 @@ fabricvaspaceMapPhysMemdesc_IMPL
             }
             else
             {
-                pageArray.pData = &pPhysMemDesc->_pteArray[physOffset / pPhysMemDesc->pageArrayGranularity];
+                pageArray.pData = &pPhysMemDesc->_pteArray[physOffset /
+                                            pPhysMemDesc->pageArrayGranularity];
             }
 
             //
@@ -1166,27 +1169,6 @@ fabricvaspaceMapPhysMemdesc_IMPL
                 pTempMemdesc = pPhysMemDesc;
             }
 
-            if (memdescGetAddressSpace(pPhysMemDesc) == ADDR_FBMEM)
-            {
-                aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
-            }
-            else if (memdescGetAddressSpace(pPhysMemDesc) == ADDR_SYSMEM)
-            {
-                if (memdescGetCpuCacheAttrib(pPhysMemDesc) == NV_MEMORY_CACHED)
-                {
-                    aperture = NV_MMU_PTE_APERTURE_SYSTEM_COHERENT_MEMORY;
-                }
-                else
-                {
-                    aperture = NV_MMU_PTE_APERTURE_SYSTEM_NON_COHERENT_MEMORY;
-                }
-            }
-            else
-            {
-                NV_PRINTF(LEVEL_ERROR, "Unsupported aperture\n");
-                NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
-            }
-
             // Map the memory fabric object at the given physical memory offset.
             status = dmaUpdateVASpace_HAL(pGpu, pDma, pFabricVAS->pGVAS, pTempMemdesc,
                                       NULL, fabricAddr, fabricAddr + mapLength - 1,
@@ -1195,7 +1177,7 @@ fabricvaspaceMapPhysMemdesc_IMPL
                                       aperture,
                                       BUS_INVALID_PEER, NVLINK_INVALID_FABRIC_ADDR,
                                       DMA_DEFER_TLB_INVALIDATE, NV_FALSE,
-                                      memdescGetPageSize64(pTempMemdesc, AT_GPU));
+                                      memdescGetPageSize(pTempMemdesc, AT_GPU));
 
             if (pTempMemdesc != pPhysMemDesc)
                 memdescDestroy(pTempMemdesc);
@@ -1246,3 +1228,37 @@ fabricvaspaceInitUCRange_IMPL
     return NV_OK;
 }
 
+void
+fabricvaspaceClearUCRange_IMPL
+(
+    FABRIC_VASPACE *pFabricVAS
+)
+{
+    pFabricVAS->ucFabricBase      = 0;
+    pFabricVAS->ucFabricLimit     = 0;
+    pFabricVAS->ucFabricInUseSize = 0;
+    pFabricVAS->ucFabricFreeSize  = 0;
+}
+
+NV_STATUS
+fabricvaspaceGetPageLevelInfo_IMPL
+(
+    FABRIC_VASPACE *pFabricVAS,
+    OBJGPU         *pGpu,
+    NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams
+)
+{
+    OBJGVASPACE *pGVAS = dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE);
+    NV_ASSERT_OR_RETURN(pGVAS != NULL, NV_ERR_OBJECT_NOT_FOUND);
+
+    return gvaspaceGetPageLevelInfo(pGVAS, pGpu, pParams);
+}
+
+NvBool
+fabricvaspaceIsInUse_IMPL
+(
+    FABRIC_VASPACE *pFabricVAS
+)
+{
+    return gvaspaceIsInUse(dynamicCast(pFabricVAS->pGVAS, OBJGVASPACE));
+}

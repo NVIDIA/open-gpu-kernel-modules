@@ -43,7 +43,7 @@ typedef struct NODE
     NvU64             keyStart;
     NvU64             keyEnd;
 
-    // private:  
+    // private:
     NvBool            isRed;            // !IsRed == IsBlack
     struct NODE      *parent;           // tree links
     struct NODE      *left;

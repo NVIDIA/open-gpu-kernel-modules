@@ -28,14 +28,9 @@
 #include <linux/list.h>             // list
 #include <linux/sched.h>            // task_struct
 #include <linux/numa.h>             // NUMA_NO_NODE
+#include <linux/semaphore.h>
 
 #include "conftest.h"
-
-#if defined(NV_LINUX_SEMAPHORE_H_PRESENT)
-    #include <linux/semaphore.h>
-#else
-    #include <asm/semaphore.h>
-#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 // nv_kthread_q:

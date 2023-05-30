@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl208f/ctrl208ffb.finn
+// Source file:      ctrl/ctrl208f/ctrl208ffb.finn
 //
 
 #include "ctrl/ctrl208f/ctrl208fbase.h"
@@ -575,6 +575,9 @@ typedef struct NV208F_CTRL_FB_TOGGLE_PHYSICAL_ADDRESS_ECC_ON_OFF_PARAMS {
  *     remapped from the specified sources will be cleared/removed from the
  *     Inforom RRL object entries list.
  *
+ *   bForcePurge
+ *     This flag will force purge the RRL object and associated data structures
+ *
  *   Possbile status values returned are:
  *     NV_OK
  *     NV_ERR_NOT_SUPPORTED
@@ -584,7 +587,8 @@ typedef struct NV208F_CTRL_FB_TOGGLE_PHYSICAL_ADDRESS_ECC_ON_OFF_PARAMS {
 #define NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS_MESSAGE_ID (0x15U)
 
 typedef struct NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS {
-    NvU32 sourceMask;
+    NvU32  sourceMask;
+    NvBool bForcePurge;
 } NV208F_CTRL_FB_CLEAR_REMAPPED_ROWS_PARAMS;
 
 /*

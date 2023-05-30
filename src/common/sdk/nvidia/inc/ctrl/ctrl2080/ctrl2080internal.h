@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080internal.finn
+// Source file:      ctrl/ctrl2080/ctrl2080internal.finn
 //
 
 #include "nvimpshared.h"
@@ -38,6 +38,7 @@
 #include "ctrl/ctrl0080/ctrl0080msenc.h"     /* NV0080_CTRL_MSENC_CAPS_TBL_SIZE    */
 #include "ctrl/ctrl0080/ctrl0080bsp.h"       /* NV0080_CTRL_BSP_CAPS_TBL_SIZE      */
 #include "ctrl/ctrl2080/ctrl2080fifo.h"      /* NV2080_CTRL_FIFO_UPDATE_CHANNEL_INFO */
+#include "ctrl/ctrl0073/ctrl0073system.h"    /* NV0073_CTRL_SYSTEM_ACPI_ID_MAP_MAX_DISPLAYS */
 #include "ctrl/ctrl0000/ctrl0000system.h"
 #include "ctrl/ctrl90f1.h"
 #include "ctrl/ctrl30f1.h"
@@ -152,6 +153,9 @@ typedef struct NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS {
  * This command sends access counter buffer pages allocated by CPU-RM
  * to be setup and enabled in physical RM.
  *
+ * accessCounterIndex
+ *   Index of access counter buffer to register.
+ *
  * bufferSize
  *   Size of the access counter buffer to register.
  *
@@ -167,6 +171,7 @@ typedef struct NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS {
 #define NV2080_CTRL_INTERNAL_UVM_REGISTER_ACCESS_CNTR_BUFFER_PARAMS_MESSAGE_ID (0x1DU)
 
 typedef struct NV2080_CTRL_INTERNAL_UVM_REGISTER_ACCESS_CNTR_BUFFER_PARAMS {
+    NvU32 accessCounterIndex;
     NvU32 bufferSize;
     NV_DECLARE_ALIGNED(NvU64 bufferPteArray[NV2080_CTRL_INTERNAL_UVM_ACCESS_CNTR_BUFFER_MAX_PAGES], 8);
 } NV2080_CTRL_INTERNAL_UVM_REGISTER_ACCESS_CNTR_BUFFER_PARAMS;
@@ -176,39 +181,19 @@ typedef struct NV2080_CTRL_INTERNAL_UVM_REGISTER_ACCESS_CNTR_BUFFER_PARAMS {
  *
  * This command requests physical RM to disable the access counter buffer.
  *
- * Possible status values returned are:
- *   NV_OK
- */
-#define NV2080_CTRL_CMD_INTERNAL_UVM_UNREGISTER_ACCESS_CNTR_BUFFER (0x20800a1e) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | 0x1E" */
-
-/*
- * NV2080_CTRL_CMD_INTERNAL_UVM_SERVICE_ACCESS_CNTR_BUFFER
- *
- * This command requests physical RM to service the access counter buffer.
+ * accessCounterIndex
+ *   Index of access counter buffer to unregister.
  *
  * Possible status values returned are:
  *   NV_OK
  */
-#define NV2080_CTRL_CMD_INTERNAL_UVM_SERVICE_ACCESS_CNTR_BUFFER    (0x20800a21) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | 0x21" */
+#define NV2080_CTRL_CMD_INTERNAL_UVM_UNREGISTER_ACCESS_CNTR_BUFFER (0x20800a1e) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_UVM_UNREGISTER_ACCESS_CNTR_BUFFER_PARAMS_MESSAGE_ID" */
 
-/*
- * NV2080_CTRL_CMD_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_SIZE
- *
- * This command retrieves the access counter buffer size from physical RM.
- *
- * bufferSize[OUT]
- *   Size of the access counter buffer.
- *
- * Possible status values returned are:
- *   NV_OK
- */
-#define NV2080_CTRL_CMD_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_SIZE   (0x20800a29) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_SIZE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_INTERNAL_UVM_UNREGISTER_ACCESS_CNTR_BUFFER_PARAMS_MESSAGE_ID (0x1EU)
 
-#define NV2080_CTRL_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_SIZE_PARAMS_MESSAGE_ID (0x29U)
-
-typedef struct NV2080_CTRL_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_SIZE_PARAMS {
-    NvU32 bufferSize;
-} NV2080_CTRL_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_SIZE_PARAMS;
+typedef struct NV2080_CTRL_INTERNAL_UVM_UNREGISTER_ACCESS_CNTR_BUFFER_PARAMS {
+    NvU32 accessCounterIndex;
+} NV2080_CTRL_INTERNAL_UVM_UNREGISTER_ACCESS_CNTR_BUFFER_PARAMS;
 
 #define NV2080_CTRL_INTERNAL_GR_MAX_ENGINES         8
 
@@ -1362,7 +1347,9 @@ typedef struct NV2080_CTRL_INTERNAL_DISPLAY_CHANNEL_PUSHBUFFER_PARAMS {
 
 typedef struct NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS {
     NvU32 replayableFaultBufferSize;
+    NvU32 replayableShadowFaultBufferMetadataSize;
     NvU32 nonReplayableFaultBufferSize;
+    NvU32 nonReplayableShadowFaultBufferMetadataSize;
 } NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS;
 
 /*!
@@ -1848,12 +1835,13 @@ typedef struct NV2080_CTRL_INTERNAL_GMMU_REGISTER_FAULT_BUFFER_PARAMS {
  */
 #define NV2080_CTRL_CMD_INTERNAL_GMMU_REGISTER_CLIENT_SHADOW_FAULT_BUFFER (0x20800a9d) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_GMMU_REGISTER_CLIENT_SHADOW_FAULT_BUFFER_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_INTERNAL_GMMU_CLIENT_SHADOW_FAULT_BUFFER_MAX_PAGES    1500
+#define NV2080_CTRL_INTERNAL_GMMU_CLIENT_SHADOW_FAULT_BUFFER_MAX_PAGES    3000
 #define NV2080_CTRL_INTERNAL_GMMU_REGISTER_CLIENT_SHADOW_FAULT_BUFFER_PARAMS_MESSAGE_ID (0x9DU)
 
 typedef struct NV2080_CTRL_INTERNAL_GMMU_REGISTER_CLIENT_SHADOW_FAULT_BUFFER_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 shadowFaultBufferQueuePhysAddr, 8);
     NvU32 shadowFaultBufferSize;
+    NvU32 shadowFaultBufferMetadataSize;
     NV_DECLARE_ALIGNED(NvU64 shadowFaultBufferPteArray[NV2080_CTRL_INTERNAL_GMMU_CLIENT_SHADOW_FAULT_BUFFER_MAX_PAGES], 8);
     NvU32 shadowFaultBufferType;
     NV_DECLARE_ALIGNED(NvU64 faultBufferSharedMemoryPhysAddr, 8);
@@ -2287,6 +2275,25 @@ typedef struct NV2080_CTRL_INTERNAL_HSHUB_GET_NUM_UNITS_PARAMS {
 typedef struct NV2080_CTRL_INTERNAL_HSHUB_NEXT_HSHUB_ID_PARAMS {
     NvU8 hshubId;
 } NV2080_CTRL_INTERNAL_HSHUB_NEXT_HSHUB_ID_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_HSHUB_EGM_CONFIG
+ *
+ * Program HSHUB for EGM peer id.
+ *
+ *    egmPeerId[IN]
+ *      EGM peer id to program in the HSHUB registers.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ */
+#define NV2080_CTRL_CMD_INTERNAL_HSHUB_EGM_CONFIG (0x20800a8d) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_HSHUB_EGM_CONFIG_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_HSHUB_EGM_CONFIG_PARAMS_MESSAGE_ID (0x8dU)
+
+typedef struct NV2080_CTRL_INTERNAL_HSHUB_EGM_CONFIG_PARAMS {
+    NvU32 egmPeerId;
+} NV2080_CTRL_INTERNAL_HSHUB_EGM_CONFIG_PARAMS;
 
 
 
@@ -2880,6 +2887,8 @@ typedef struct NV2080_CTRL_INTERNAL_GSYNC_SET_OR_RESTORE_RASTER_SYNC_PARAMS {
  *     Handle to SYSMEM memlist object
  *   [in] gspFbAllocsSysOffset
  *     Offset in SYSMEM for GSP's FB Allocations
+ *   [in] bEnteringGcoffState
+ *     Value of PDB_PROP_GPU_GCOFF_STATE_ENTERING
  *
  * Possible status values returned are:
  *   NV_OK
@@ -2897,6 +2906,7 @@ typedef struct NV2080_CTRL_INTERNAL_FBSR_INIT_PARAMS {
     NvHandle hClient;
     NvHandle hSysMem;
     NV_DECLARE_ALIGNED(NvU64 gspFbAllocsSysOffset, 8);
+    NvBool   bEnteringGcoffState;
 } NV2080_CTRL_INTERNAL_FBSR_INIT_PARAMS;
 
 /*!
@@ -3211,6 +3221,8 @@ typedef struct NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_SET_PM1_STATE_PARAMS 
  *
  *   bEnable        [IN]
  *     Enable or Reset the settings
+ *   clientLimit    [IN]
+ *     Client requested limit
  *
  * Possible status values returned are:
  *   NV_OK
@@ -3225,6 +3237,7 @@ typedef struct NV2080_CTRL_CMD_INTERNAL_PERF_PFM_REQ_HNDLR_SET_PM1_STATE_PARAMS 
 
 typedef struct NV2080_CTRL_CMD_INTERNAL_PMGR_PFM_REQ_HNDLR_UPDATE_EDPP_LIMIT_PARAMS {
     NvBool bEnable;
+    NvU32  clientLimit;
 } NV2080_CTRL_CMD_INTERNAL_PMGR_PFM_REQ_HNDLR_UPDATE_EDPP_LIMIT_PARAMS;
 
 /*!
@@ -3466,5 +3479,336 @@ typedef struct NV2080_CTRL_INTERNAL_DISP_SET_SLI_LINK_GPIO_SW_CONTROL_PARAMS {
     NvU32  gpioPin; // out
     NvBool gpioDirection; // out
 } NV2080_CTRL_INTERNAL_DISP_SET_SLI_LINK_GPIO_SW_CONTROL_PARAMS;
+
+/* NV2080_CTRL_CMD_INTERNAL_SET_STATIC_EDID_DATA
+ *
+ * This command sets up ACPI DDC Edid data.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_INTERNAL_SET_STATIC_EDID_DATA (0x20800adf) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_CMD_INTERNAL_SET_STATIC_EDID_DATA_PARAMS_MESSAGE_ID" */
+
+/* From ACPI6.5 spec., the max size of EDID data from SBIOS(_DDC) is 512B */
+#define MAX_EDID_SIZE_FROM_SBIOS                      512U
+
+typedef struct NV2080_CTRL_INTERNAL_EDID_DATA {
+    NvU32 status;
+    NvU32 acpiId;
+    NvU32 bufferSize;
+    NvU8  edidBuffer[MAX_EDID_SIZE_FROM_SBIOS];
+} NV2080_CTRL_INTERNAL_EDID_DATA;
+
+#define NV2080_CTRL_CMD_INTERNAL_SET_STATIC_EDID_DATA_PARAMS_MESSAGE_ID (0xDFU)
+
+typedef struct NV2080_CTRL_CMD_INTERNAL_SET_STATIC_EDID_DATA_PARAMS {
+    NvU32                          tableLen;
+    NV2080_CTRL_INTERNAL_EDID_DATA edidTable[NV0073_CTRL_SYSTEM_ACPI_ID_MAP_MAX_DISPLAYS];
+} NV2080_CTRL_CMD_INTERNAL_SET_STATIC_EDID_DATA_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_DISPLAY_ACPI_SUBSYSTEM_ACTIVATED
+ *
+ * This command intializes display ACPI child devices.
+ * This command accepts no parameters.
+ *
+ */
+#define NV2080_CTRL_CMD_INTERNAL_DISPLAY_ACPI_SUBSYSTEM_ACTIVATED (0x20800af0) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | 0xF0" */
+
+/* NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_MODESET */
+#define NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_MODESET              (0x20800af1) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | 0xF1" */
+
+/* NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_MODESET */
+#define NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_MODESET             (0x20800af2) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | 0xF2" */
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_GET_GPU_FABRIC_PROBE_INFO_PARAMS
+ *
+ * This structure provides the params for getting GPU Fabric Probe Internal
+ * Info from GSP to CPU RM
+ *
+ *  numProbes[OUT]
+ *      - Number of probe requests sent
+ */
+#define NV2080_CTRL_CMD_INTERNAL_GET_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID (0xF4U)
+
+typedef struct NV2080_CTRL_CMD_INTERNAL_GET_GPU_FABRIC_PROBE_INFO_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 numProbes, 8);
+} NV2080_CTRL_CMD_INTERNAL_GET_GPU_FABRIC_PROBE_INFO_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_GPU_GET_FABRIC_PROBE_INFO
+ *
+ * This command is used to get NV2080_CTRL_CMD_INTERNAL_GPU_FABRIC_PROBE_INFO_PARAMS
+ * from GSP to CPU RM.
+ * This command accepts NV2080_CTRL_CMD_INTERNAL_GET_GPU_FABRIC_PROBE_INFO_PARAMS
+ *
+ */
+#define NV2080_CTRL_CMD_INTERNAL_GPU_GET_FABRIC_PROBE_INFO (0x208001f4) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_CMD_INTERNAL_GET_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID" */
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS
+ *
+ * This structure provides the params for starting GPU Fabric Probe
+ *
+ *  bwMode[IN]
+ *      - Nvlink Bandwidth mode
+ */
+#define NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID (0xF5U)
+
+typedef struct NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS {
+    NvU8 bwMode;
+} NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE
+ *
+ * This command is used to trigger start of GPU FABRIC PROBE PROCESS on GSP.
+ * This command accepts NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS
+ *
+ */
+#define NV2080_CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE   (0x208001f5) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID" */
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_GPU_STOP_FABRIC_PROBE
+ *
+ * This command is used to trigger stop of GPU FABRIC PROBE PROCESS on GSP.
+ * This command accepts no parameters
+ *
+ */
+#define NV2080_CTRL_CMD_INTERNAL_GPU_STOP_FABRIC_PROBE    (0x208001f6) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | 0xF6" */
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_GPU_SUSPEND_FABRIC_PROBE
+ *
+ * This command is used to trigger suspend of GPU FABRIC PROBE PROCESS on GSP.
+ * This command accepts no parameters
+ *
+ */
+#define NV2080_CTRL_CMD_INTERNAL_GPU_SUSPEND_FABRIC_PROBE (0x208001f7) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | 0xF7" */
+
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_RESUME_GPU_FABRIC_PROBE_INFO_PARAMS
+ *
+ * This structure provides the params for resuming GPU Fabric Probe
+ *
+ *  bwMode[IN]
+ *      - Nvlink Bandwidth mode
+ */
+#define NV2080_CTRL_CMD_INTERNAL_RESUME_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID (0xF8U)
+
+typedef struct NV2080_CTRL_CMD_INTERNAL_RESUME_GPU_FABRIC_PROBE_INFO_PARAMS {
+    NvU8 bwMode;
+} NV2080_CTRL_CMD_INTERNAL_RESUME_GPU_FABRIC_PROBE_INFO_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_GPU_RESUME_FABRIC_PROBE
+ *
+ * This command is used to trigger resume of GPU FABRIC PROBE PROCESS on GSP.
+ * This command accepts NV2080_CTRL_CMD_INTERNAL_RESUME_GPU_FABRIC_PROBE_INFO_PARAMS
+ *
+ */
+#define NV2080_CTRL_CMD_INTERNAL_GPU_RESUME_FABRIC_PROBE      (0x208001f8) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_CMD_INTERNAL_RESUME_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID" */
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_GPU_INVALIDATE_FABRIC_PROBE
+ *
+ * This command is used to invalidate/reset GPU_FABRIC_PROBE_INFO on GSP.
+ * This command accepts no parameters
+ *
+ */
+#define NV2080_CTRL_CMD_INTERNAL_GPU_INVALIDATE_FABRIC_PROBE  (0x208001f9) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | 0xF9" */
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO
+ *
+ * This command is an internal command sent from Kernel RM to Physical RM
+ * to get static conf compute info
+ *
+ *      bIsBar1Trusted: [OUT]
+ *          Is BAR1 trusted to access CPR
+ *      bIsPcieTrusted: [OUT]
+ *          Is PCIE trusted to access CPR
+ */
+#define NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO (0x20800af3) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS_MESSAGE_ID (0xF3U)
+
+typedef struct NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS {
+    NvBool bIsBar1Trusted;
+    NvBool bIsPcieTrusted;
+} NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS;
+
+
+
+/*
+ * NV2080_CTRL_CMD_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP
+ *
+ * This command is used by CPU-RM to perform memory operations using GSP
+ *
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NVOS_STATUS_TIMEOUT_RETRY
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_CMD_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP (0x20800afa) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP_PARAMS_MESSAGE_ID" */
+
+typedef enum NV2080_CTRL_MEMMGR_MEMORY_OP {
+    NV2080_CTRL_MEMMGR_MEMORY_OP_MEMCPY = 0,
+    NV2080_CTRL_MEMMGR_MEMORY_OP_MEMSET = 1,
+} NV2080_CTRL_MEMMGR_MEMORY_OP;
+
+typedef struct NV2080_CTRL_INTERNAL_TRANSFER_SURFACE_INFO {
+    /*!
+     * Base physical address of the surface
+     */
+    NV_DECLARE_ALIGNED(NvU64 baseAddr, 8);
+
+    /*!
+     * Size of the surface in bytes
+     */
+    NV_DECLARE_ALIGNED(NvU64 size, 8);
+
+    /*!
+     * Offset in bytes into the surface where read/write must happen 
+     */
+    NV_DECLARE_ALIGNED(NvU64 offset, 8);
+
+    /*!
+     * Aperture where the surface is allocated
+     */
+    NvU32 aperture;
+
+    /*!
+     * CPU caching attribute of the surface
+     */
+    NvU32 cpuCacheAttrib;
+} NV2080_CTRL_INTERNAL_TRANSFER_SURFACE_INFO;
+
+#define NV2080_CTRL_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP_PARAMS_MESSAGE_ID (0xFAU)
+
+typedef struct NV2080_CTRL_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP_PARAMS {
+
+    /*!
+     * Source surface info
+     */
+    NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_TRANSFER_SURFACE_INFO src, 8);
+
+    /*!
+     * Destination surface info
+     */
+    NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_TRANSFER_SURFACE_INFO dst, 8);
+
+    /*!
+     * Size of the data to be transferred
+     */
+    NV_DECLARE_ALIGNED(NvU64 transferSize, 8);
+
+    /*!
+     * To be set in case of memset
+     */
+    NvU32                        value;
+
+    /*!
+     * Memory op to be performed
+     */
+    NV2080_CTRL_MEMMGR_MEMORY_OP memop;
+} NV2080_CTRL_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_MEMSYS_GET_LOCAL_ATS_CONFIG
+ *
+ * This command is an internal command sent from Kernel RM to Physical RM
+ * to get local GPU's ATS config
+ *
+ *      addrSysPhys : [OUT]
+ *          System Physical Address
+ *      addrWidth   : [OUT]
+ *          Address width value
+ *      mask        : [OUT]
+ *          Mask value
+ *      maskWidth   : [OUT]
+ *          Mask width value
+ */
+#define NV2080_CTRL_CMD_INTERNAL_MEMSYS_GET_LOCAL_ATS_CONFIG (0x20800afb) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_MEMSYS_GET_LOCAL_ATS_CONFIG_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_MEMSYS_GET_LOCAL_ATS_CONFIG_PARAMS_MESSAGE_ID (0xFBU)
+
+typedef struct NV2080_CTRL_INTERNAL_MEMSYS_GET_LOCAL_ATS_CONFIG_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 addrSysPhys, 8);
+    NvU32 addrWidth;
+    NvU32 mask;
+    NvU32 maskWidth;
+} NV2080_CTRL_INTERNAL_MEMSYS_GET_LOCAL_ATS_CONFIG_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_MEMSYS_SET_PEER_ATS_CONFIG
+ *
+ * This command is an internal command sent from Kernel RM to Physical RM
+ * to set peer ATS config using the parameters passed in.
+ *
+ *      peerId      : [IN]
+ *          Peer Id of the peer for which ATS config is to be programmed
+ *      addrSysPhys : [IN]
+ *          System Physical Address
+ *      addrWidth   : [IN]
+ *          Address width value
+ *      mask        : [IN]
+ *          Mask value
+ *      maskWidth   : [IN]
+ *          Mask width value
+ */
+#define NV2080_CTRL_CMD_INTERNAL_MEMSYS_SET_PEER_ATS_CONFIG (0x20800afc) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_MEMSYS_SET_PEER_ATS_CONFIG_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_MEMSYS_SET_PEER_ATS_CONFIG_PARAMS_MESSAGE_ID (0xFCU)
+
+typedef struct NV2080_CTRL_INTERNAL_MEMSYS_SET_PEER_ATS_CONFIG_PARAMS {
+    NvU32 peerId;
+    NV_DECLARE_ALIGNED(NvU64 addrSysPhys, 8);
+    NvU32 addrWidth;
+    NvU32 mask;
+    NvU32 maskWidth;
+} NV2080_CTRL_INTERNAL_MEMSYS_SET_PEER_ATS_CONFIG_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_PMGR_PFM_REQ_HNDLR_GET_EDPP_LIMIT_INFO
+ *
+ * Get GPU EDPpeak Limit information
+ *
+ *   limitMin        [OUT]
+ *     Minimum allowed limit value on EDPp policy on both AC and DC
+ *   limitRated      [OUT]
+ *      Rated/default allowed limit value on EDPp policy on AC
+ *   limitMax        [OUT]
+ *     Maximum allowed limit value on EDPp policy on AC
+ *   limitCurr       [OUT]
+ *     Current resultant limit effective on EDPp policy on AC and DC
+ *   limitBattRated  [OUT]
+ *     Default/rated allowed limit on EDPp policy on DC
+ *   limitBattMax    [OUT]
+ *     Maximum allowed limit on EDPp policy on DC
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_GENERIC
+ */
+
+#define NV2080_CTRL_CMD_INTERNAL_PMGR_PFM_REQ_HNDLR_GET_EDPP_LIMIT_INFO (0x20800afd) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_CMD_INTERNAL_PMGR_PFM_REQ_HNDLR_GET_EDPP_LIMIT_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_INTERNAL_PMGR_PFM_REQ_HNDLR_GET_EDPP_LIMIT_INFO_PARAMS_MESSAGE_ID (0xFDU)
+
+typedef struct NV2080_CTRL_CMD_INTERNAL_PMGR_PFM_REQ_HNDLR_GET_EDPP_LIMIT_INFO_PARAMS {
+    NvU32 limitMin;
+    NvU32 limitRated;
+    NvU32 limitMax;
+    NvU32 limitCurr;
+    NvU32 limitBattRated;
+    NvU32 limitBattMax;
+} NV2080_CTRL_CMD_INTERNAL_PMGR_PFM_REQ_HNDLR_GET_EDPP_LIMIT_INFO_PARAMS;
 
 /* ctrl2080internal_h */

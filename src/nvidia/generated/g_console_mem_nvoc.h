@@ -72,7 +72,7 @@ struct ConsoleMemory {
     NV_STATUS (*__conmemControlFilter__)(struct ConsoleMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__conmemControlSerialization_Prologue__)(struct ConsoleMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__conmemIsReady__)(struct ConsoleMemory *, NvBool);
-    NV_STATUS (*__conmemCheckCopyPermissions__)(struct ConsoleMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__conmemCheckCopyPermissions__)(struct ConsoleMemory *, struct OBJGPU *, struct Device *);
     void (*__conmemPreDestruct__)(struct ConsoleMemory *);
     NV_STATUS (*__conmemIsDuplicate__)(struct ConsoleMemory *, NvHandle, NvBool *);
     void (*__conmemControlSerialization_Epilogue__)(struct ConsoleMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -127,7 +127,7 @@ NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory**, Dynamic*, NvU32, CALL_
 #define conmemControlFilter(pResource, pCallContext, pParams) conmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define conmemControlSerialization_Prologue(pResource, pCallContext, pParams) conmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define conmemIsReady(pMemory, bCopyConstructorContext) conmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define conmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) conmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define conmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) conmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define conmemPreDestruct(pResource) conmemPreDestruct_DISPATCH(pResource)
 #define conmemIsDuplicate(pMemory, hMemory, pDuplicate) conmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define conmemControlSerialization_Epilogue(pResource, pCallContext, pParams) conmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -211,8 +211,8 @@ static inline NV_STATUS conmemIsReady_DISPATCH(struct ConsoleMemory *pMemory, Nv
     return pMemory->__conmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS conmemCheckCopyPermissions_DISPATCH(struct ConsoleMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__conmemCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS conmemCheckCopyPermissions_DISPATCH(struct ConsoleMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__conmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void conmemPreDestruct_DISPATCH(struct ConsoleMemory *pResource) {

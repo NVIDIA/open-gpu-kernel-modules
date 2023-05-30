@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/cl0060.finn
+// Source file:      class/cl0060.finn
 //
 
 #define NV0060_SYNC_GPU_BOOST (0x60U) /* finn: Evaluated from "NV0060_ALLOC_PARAMETERS_MESSAGE_ID" */

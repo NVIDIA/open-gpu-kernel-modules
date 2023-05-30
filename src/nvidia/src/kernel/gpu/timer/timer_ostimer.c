@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -93,15 +93,15 @@ NV_STATUS tmrEventCreateOSTimer_OSTIMER
  *
  *   @param[in]  pTmr Pointer to Timer Object
  *   @param[in]  pEvent pointer to timer event information
- *   @param[in]  absolute time in nano seconds
+ *   @param[in]  relative time in nano seconds
  *
  *  @returns  NV_ERR_INVALID_REQUEST failed to create timer
 */
-NV_STATUS tmrEventScheduleAbsOSTimer_OSTIMER
+NV_STATUS tmrEventScheduleRelOSTimer_OSTIMER
 (
     OBJTMR     *pTmr,
     PTMR_EVENT  pPublicEvent,
-    NvU64       timeNs
+    NvU64       timeRelNs
 )
 {
     NV_STATUS status= NV_OK;
@@ -114,7 +114,7 @@ NV_STATUS tmrEventScheduleAbsOSTimer_OSTIMER
         return NV_ERR_INVALID_REQUEST;
     }
 
-    status = osStartNanoTimer(pGpu->pOsGpuInfo, pEvent->super.pOSTmrCBdata, timeNs);
+    status = osStartNanoTimer(pGpu->pOsGpuInfo, pEvent->super.pOSTmrCBdata, timeRelNs);
 
     if (status != NV_OK)
     {

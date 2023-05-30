@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,8 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+// FIXME XXX
+#define NVOC_GPU_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
+
 #include "core/prelude.h"
 
+
+// FIXME XXX
+#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
 
 #include <class/cl0002.h>
 #include <class/cl0005.h>
@@ -33,6 +39,7 @@
 #include <class/cl50a0.h> // NV50_MEMORY_VIRTUAL
 #include <class/cl90e6.h>
 #include <class/cl90f1.h>
+#include <class/cla06c.h> // KEPLER_CHANNEL_GROUP_A
 #include <class/cla06f.h>
 #include <class/clb069.h>
 #include <class/clb069sw.h>
@@ -65,9 +72,12 @@
 #include <class/clc6c0.h>
 #include <class/clc7b5.h>
 #include <class/clc7c0.h>
+#include <class/clcb33.h> // NV_CONFIDENTIAL_COMPUTE
 #include <class/clc661.h> // HOPPER_USERMODE_A
 #include <class/clc8b5.h> // HOPPER_DMA_COPY_A
 #include <class/clcbc0.h> // HOPPER_COMPUTE_A
+#include <class/clcba2.h> // HOPPER_SEC2_WORK_LAUNCH_A
+#include <alloc/alloc_access_counter_buffer.h>
 
 #include <ctrl/ctrl0000/ctrl0000gpu.h>
 #include <ctrl/ctrl0000/ctrl0000system.h>
@@ -84,6 +94,7 @@
 #include <ctrl/ctrlc365.h>
 #include <ctrl/ctrlc369.h>
 #include <ctrl/ctrlc36f.h>
+#include <ctrl/ctrlcb33.h>
 
 #include <ampere/ga100/dev_runlist.h>
 #include <containers/queue.h>
@@ -98,7 +109,6 @@
 #include <gpu/mmu/kern_gmmu.h>
 #include <gpu/subdevice/subdevice.h>
 #include <gpu_mgr/gpu_mgr.h>
-#include <kepler/gk104/dev_timer.h>
 #include <kernel/gpu/fifo/kernel_channel.h>
 #include <kernel/gpu/fifo/kernel_channel_group.h>
 #include <kernel/gpu/fifo/kernel_channel_group_api.h>
@@ -123,7 +133,10 @@
 #include <gpu/mem_mgr/vaspace_api.h>
 #include <vgpu/rpc.h>
 
+#include <maxwell/gm107/dev_timer.h>
 #include <pascal/gp100/dev_mmu.h>
+
+#include <kernel/gpu/conf_compute/ccsl.h>
 
 #define NV_GPU_OPS_NUM_GPFIFO_ENTRIES_DEFAULT 1024
 #define NV_GPU_SMALL_PAGESIZE (4 * 1024)
@@ -221,6 +234,9 @@ struct gpuDevice
     NvU32              deviceInstance;
     NvU32              subdeviceInstance;
     NvU32              gpuId;
+
+    // TODO: Bug 3906861: The info struct contains many of these fields. Find
+    //       and remove the redundant fields from this top level.
     NvU32              hostClass;
     NvU32              ceClass;
     NvU32              sec2Class;
@@ -232,9 +248,7 @@ struct gpuDevice
     struct gpuSession  *session;
     NvU8               gpuUUID[NV_GPU_UUID_LEN];
     gpuFbInfo          fbInfo;
-    UVM_LINK_TYPE      sysmemLink;
-    NvU32              sysmemLinkRateMBps;
-    NvBool             connectedToSwitch;
+    gpuInfo            info;
 
     MemdescMap         kern2PhysDescrMap;
 
@@ -263,25 +277,34 @@ struct gpuAddressSpace
     } dummyGpuAlloc;
 };
 
+struct gpuTsg
+{
+    NvHandle                    tsgHandle;
+    struct gpuAddressSpace      *vaSpace;
+    UVM_GPU_CHANNEL_ENGINE_TYPE engineType;
+
+    // Index of the engine the TSG is bound to.
+    // Ignored if engineType is anything other than
+    // UVM_GPU_CHANNEL_ENGINE_TYPE_CE.
+    NvU32                       engineIndex;
+
+    // True when the GPU does not support TSG for the engineType.
+    NvBool                      isFakeTsg;
+};
+
 struct gpuChannel
 {
+    const struct gpuTsg          *tsg;
     NvHandle                     channelHandle;
+    NvHandle                     engineHandle;
     NvU32                        hwRunlistId;
     NvU32                        hwChannelId;
-    UVM_GPU_CHANNEL_ENGINE_TYPE  engineType;
-
-    // If engineType is CE, engineIndex is a zero-based offset from
-    // RM_ENGINE_TYPE_COPY0. If engineType is GR, engineIndex is a
-    // zero-based offset from NV2080_ENGINE_TYPE_GR0.
-    NvU32                        engineIndex;
-    struct gpuAddressSpace       *vaSpace;
     NvU64                        gpFifo;
     NvNotification               *errorNotifier;
     NvU64                        errorNotifierOffset;
     NvU64                        *gpFifoEntries;
     NvU32                        fifoEntries;
     KeplerAControlGPFifo         *controlPage;
-    struct gpuObject             *nextAttachedEngine;
     NvHandle                     hFaultCancelSwMethodClass;
     volatile unsigned            *workSubmissionOffset;
     NvU32                        workSubmissionToken;
@@ -291,6 +314,8 @@ struct gpuChannel
     UVM_BUFFER_LOCATION          gpFifoLoc;
     UVM_BUFFER_LOCATION          gpPutLoc;
     NvBool                       retainedDummyAlloc;
+    NvBool                       bClientRegionGpuMappingNeeded;
+    NvU64                        clientRegionGpuAddr;
 };
 
 // Add 3 to include local ctx buffer, patch context buffer and PM ctxsw buffer
@@ -321,13 +346,6 @@ struct gpuRetainedChannel_struct
 
     // Handle for object that retains chId and instance mem
     NvHandle                    hChannelRetainer;
-};
-
-struct gpuObject
-{
-    NvHandle         handle;
-    NvU32            type;
-    struct gpuObject *next;
 };
 
 struct allocFlags
@@ -398,8 +416,9 @@ static void gpuDeviceUnmapCpuFreeHandle(struct gpuDevice *device,
                                         NvHandle handle,
                                         void *ptr,
                                         NvU32 flags);
-static NV_STATUS allocNvlinkStatusForSubdevice(struct gpuDevice *device,
-                                               NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS **nvlinkStatusOut);
+static NV_STATUS allocNvlinkStatus(NvHandle hClient,
+                                   NvHandle hSubDevice,
+                                   NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS **nvlinkStatusOut);
 static NvU32 getNvlinkConnectionToNpu(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *nvlinkStatus,
                                       NvBool *atomicSupported,
                                       NvU32 *linkBandwidthMBps);
@@ -413,6 +432,10 @@ static NV_STATUS _nvGpuOpsRetainChannelResources(struct gpuDevice *device,
                                                  gpuRetainedChannel *retainedChannel,
                                                  gpuChannelInstanceInfo *channelInstanceInfo);
 static void _nvGpuOpsReleaseChannelResources(gpuRetainedChannel *retainedChannel);
+
+static NV_STATUS
+nvGpuOpsQueryGpuConfidentialComputeCaps(NvHandle hClient,
+                                        UvmGpuConfComputeCaps *pGpuConfComputeCaps);
 
 /*
  * This function will lock the RM API lock according to rmApiLockFlags, and then
@@ -600,7 +623,7 @@ static NV_STATUS nvGpuOpsCreateClient(RM_API *pRmApi, NvHandle *hClient)
 
     *hClient = NV01_NULL_OBJECT;
     status = pRmApi->Alloc(pRmApi, NV01_NULL_OBJECT, NV01_NULL_OBJECT,
-                           hClient, NV01_ROOT, hClient);
+                           hClient, NV01_ROOT, hClient, sizeof(*hClient));
     if (status != NV_OK)
     {
         return status;
@@ -690,7 +713,7 @@ static NvBool deviceNeedsDummyAlloc(struct gpuDevice *device)
     // any CPU BAR1 PCIE writes prior to updating GPPUT. This is only needed
     // when the bus is non-coherent and when not in ZeroFB (where there can't be
     // any BAR1 mappings).
-    return device->sysmemLink < UVM_LINK_TYPE_NVLINK_2 && !device->fbInfo.bZeroFb;
+    return device->info.sysmemLink < UVM_LINK_TYPE_NVLINK_2 && !device->fbInfo.bZeroFb;
 }
 
 static NV_STATUS nvGpuOpsVaSpaceRetainDummyAlloc(struct gpuAddressSpace *vaSpace)
@@ -706,6 +729,12 @@ static NV_STATUS nvGpuOpsVaSpaceRetainDummyAlloc(struct gpuAddressSpace *vaSpace
 
     if (vaSpace->dummyGpuAlloc.refCount > 0)
         goto done;
+
+    // When HCC is enabled the allocation happens in CPR vidmem
+    // The dummy BAR1 pointer read mechanism won't work when
+    // BAR1 access to CPR vidmem is sealed off as part of HCC
+    // production settings. Creating dummy BAR1 mapping can
+    // also be avoided when doorbell is in BAR1.
 
     flags.bGetKernelVA = NV_FALSE;
     status = nvGpuOpsGpuMalloc(vaSpace,
@@ -908,7 +937,8 @@ static NV_STATUS nvGpuOpsRmDeviceCreate(struct gpuDevice *device)
                             session->handle,
                             &device->handle,
                             NV01_DEVICE_0,
-                            &nv0080AllocParams);
+                            &nv0080AllocParams,
+                            sizeof(nv0080AllocParams));
     if (status != NV_OK)
         goto cleanup_device_desc;
 
@@ -1111,7 +1141,8 @@ static NV_STATUS gpuDeviceRmSubDeviceInitEcc(struct gpuDevice *device)
                            device->subhandle,
                            &rmSubDevice->eccMasterHandle,
                            GF100_SUBDEVICE_MASTER,
-                           &tempPtr);
+                           &tempPtr,
+                           sizeof(tempPtr));
     if (status != NV_OK)
         goto done;
 
@@ -1173,7 +1204,8 @@ static NV_STATUS gpuDeviceRmSubDeviceInitEcc(struct gpuDevice *device)
                            device->subhandle,
                            &rmSubDevice->eccCallbackHandle,
                            NV01_EVENT_KERNEL_CALLBACK_EX,
-                           &pParams->allocDbe);
+                           &pParams->allocDbe,
+                           sizeof(pParams->allocDbe));
 
     if (status != NV_OK)
         goto done;
@@ -1431,7 +1463,8 @@ static NV_STATUS nvGpuOpsRmSubDeviceCreate(struct gpuDevice *device)
                            device->handle,
                            &device->subhandle,
                            NV20_SUBDEVICE_0,
-                           &nv2080AllocParams);
+                           &nv2080AllocParams,
+                           sizeof(nv2080AllocParams));
     if (status != NV_OK)
         goto cleanup_subdevice_desc;
     rmSubDevice->subDeviceHandle = device->subhandle;
@@ -1477,6 +1510,13 @@ static NvBool isDeviceAmperePlus(const struct gpuDevice *device)
 {
     NV_ASSERT(device->rmDevice);
     return device->rmDevice->arch >= GPU_ARCHITECTURE_AMPERE;
+}
+
+// Assume ...->Ampere->Ada->Hopper->...
+static NvBool isDeviceHopperPlus(const struct gpuDevice *device)
+{
+    NV_ASSERT(device->rmDevice);
+    return (device->rmDevice->arch >= GPU_ARCHITECTURE_HOPPER) && (device->rmDevice->arch != GPU_ARCHITECTURE_ADA);
 }
 
 static UVM_LINK_TYPE rmControlToUvmNvlinkVersion(NvU32 nvlinkVersion)
@@ -1564,9 +1604,9 @@ out:
     return nvStatus;
 }
 
-// Return the PCIE link cap max speed associated with the given GPU in
-// megabytes per seconds..
-static NV_STATUS getPCIELinkRateMBps(struct gpuDevice *device, NvU32 *pcieLinkRate)
+// Return the PCIE link cap max speed associated with the given subdevice in
+// megabytes per second.
+static NV_STATUS getPCIELinkRateMBps(NvHandle hClient, NvHandle hSubDevice, NvU32 *pcieLinkRate)
 {
     // PCI Express Base Specification: https://www.pcisig.com/specifications/pciexpress
     const NvU32 PCIE_1_ENCODING_RATIO_TOTAL = 10;
@@ -1593,8 +1633,8 @@ static NV_STATUS getPCIELinkRateMBps(struct gpuDevice *device, NvU32 *pcieLinkRa
     busInfoParams.busInfoList = NV_PTR_TO_NvP64(&busInfo);
 
     NV_STATUS status = pRmApi->Control(pRmApi,
-                                       device->session->handle,
-                                       device->subhandle,
+                                       hClient,
+                                       hSubDevice,
                                        NV2080_CTRL_CMD_BUS_GET_INFO,
                                        &busInfoParams,
                                        sizeof(busInfoParams));
@@ -1653,13 +1693,6 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
     NV_STATUS status;
     struct gpuDevice *device = NULL;
     NV0000_CTRL_GPU_GET_UUID_INFO_PARAMS gpuIdInfoParams = {{0}};
-    NV2080_CTRL_BUS_GET_INFO_V2_PARAMS *busInfoParams;
-    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *nvlinkStatus;
-    NvU32 nvlinkVersion;
-    NvU32 sysmemLink;
-    NvU32 linkBandwidthMBps;
-    NvU32 sysmemConnType;
-    NvBool atomicSupported;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
     OBJGPU *pGpu;
 
@@ -1683,6 +1716,8 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
     device->deviceInstance = gpuIdInfoParams.deviceInstance;
     device->subdeviceInstance = gpuIdInfoParams.subdeviceInstance;
     device->gpuId = gpuIdInfoParams.gpuId;
+
+    portMemCopy(&device->info, sizeof(device->info), pGpuInfo, sizeof(*pGpuInfo));
 
     status = nvGpuOpsRmDeviceCreate(device);
     if (status != NV_OK)
@@ -1733,91 +1768,6 @@ NV_STATUS nvGpuOpsDeviceCreate(struct gpuSession *session,
                                &device->sec2Class);
     if (status != NV_OK)
         goto cleanup_ecc;
-
-    busInfoParams = portMemAllocNonPaged(sizeof(*busInfoParams));
-    if (busInfoParams == NULL)
-    {
-        status = NV_ERR_INSUFFICIENT_RESOURCES;
-        goto cleanup_ecc;
-    }
-    portMemSet(busInfoParams, 0, sizeof(*busInfoParams));
-    busInfoParams->busInfoListSize = 1;
-    busInfoParams->busInfoList[0].index = NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE;
-    status = pRmApi->Control(pRmApi,
-                             device->session->handle,
-                             device->subhandle,
-                             NV2080_CTRL_CMD_BUS_GET_INFO_V2,
-                             busInfoParams,
-                             sizeof(*busInfoParams));
-    if (status != NV_OK)
-    {
-        portMemFree(busInfoParams);
-        goto cleanup_ecc;
-    }
-
-    sysmemConnType = busInfoParams->busInfoList[0].data;
-    portMemFree(busInfoParams);
-
-    sysmemLink = UVM_LINK_TYPE_NONE;
-    switch (sysmemConnType)
-    {
-        case NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE_NVLINK:
-        {
-            status = allocNvlinkStatusForSubdevice(device, &nvlinkStatus);
-            if (status != NV_OK)
-                goto cleanup_ecc;
-
-            nvlinkVersion = getNvlinkConnectionToNpu(nvlinkStatus,
-                                                     &atomicSupported,
-                                                     &linkBandwidthMBps);
-
-            sysmemLink = rmControlToUvmNvlinkVersion(nvlinkVersion);
-
-            portMemFree(nvlinkStatus);
-            nvlinkStatus = NULL;
-            break;
-        }
-        case NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE_PCIE:
-        {
-            sysmemLink = UVM_LINK_TYPE_PCIE;
-            status = getPCIELinkRateMBps(device, &linkBandwidthMBps);
-            if (status != NV_OK)
-                goto cleanup_ecc;
-            break;
-        }
-        default:
-        {
-            NV_PRINTF(LEVEL_ERROR, "Unsupported sysmem connection type: %d\n",
-                     sysmemConnType);
-            NV_ASSERT(0);
-            break;
-        }
-    }
-
-    NV_PRINTF(LEVEL_INFO, "sysmem link type: %d bw: %u\n", sysmemLink, linkBandwidthMBps);
-
-    NV_ASSERT(sysmemLink != UVM_LINK_TYPE_NONE);
-    device->sysmemLink = sysmemLink;
-    device->sysmemLinkRateMBps = linkBandwidthMBps;
-
-    status = allocNvlinkStatusForSubdevice(device, &nvlinkStatus);
-    if (status != NV_OK)
-        goto cleanup_ecc;
-    nvlinkVersion = getNvlinkConnectionToSwitch(nvlinkStatus,
-                                                &linkBandwidthMBps);
-
-    if (rmControlToUvmNvlinkVersion(nvlinkVersion) != UVM_LINK_TYPE_NONE)
-    {
-        NV_ASSERT(rmControlToUvmNvlinkVersion(nvlinkVersion) != UVM_LINK_TYPE_NVLINK_1);
-
-        // If the GPU is ever connected to the CPU via a switch, sysmemLink
-        // and sysmemLinkRateMBps need to be updated accordingly.
-        NV_ASSERT(sysmemConnType != NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE_NVLINK);
-
-        device->connectedToSwitch = NV_TRUE;
-    }
-
-    portMemFree(nvlinkStatus);
 
     mapInit(&device->kern2PhysDescrMap, portMemAllocatorGetGlobalNonPaged());
 
@@ -2072,7 +2022,8 @@ NV_STATUS nvGpuOpsAddressSpaceCreate(struct gpuDevice *device,
                             device->session->handle,
                             device->handle,
                             &gpuVaSpace->handle, FERMI_VASPACE_A,
-                            &vaParams);
+                            &vaParams,
+                            sizeof(vaParams));
     if (status != NV_OK)
     {
         goto cleanup_struct;
@@ -2222,8 +2173,9 @@ cleanup_vaspace:
 
 // Get the NVLink connection status for the given device. On success, caller is
 // responsible of freeing the memory.
-static NV_STATUS allocNvlinkStatusForSubdevice(struct gpuDevice *device,
-                                               NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS **nvlinkStatusOut)
+static NV_STATUS allocNvlinkStatus(NvHandle hClient,
+                                   NvHandle hSubDevice,
+                                   NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS **nvlinkStatusOut)
 {
     NV_STATUS status;
     NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *nvlinkStatus;
@@ -2237,8 +2189,8 @@ static NV_STATUS allocNvlinkStatusForSubdevice(struct gpuDevice *device,
 
     portMemSet(nvlinkStatus, 0, sizeof(*nvlinkStatus));
     status = pRmApi->Control(pRmApi,
-                             device->session->handle,
-                             device->subhandle,
+                             hClient,
+                             hSubDevice,
                              NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS,
                              nvlinkStatus,
                              sizeof(*nvlinkStatus));
@@ -2319,6 +2271,34 @@ static NvU32 getNvlinkConnectionToGpu(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK_ST
         NV_ASSERT(*linkBandwidthMBps == 0);
 
     return version;
+}
+
+static NV_STATUS getC2CConnectionToCpu(NvHandle hClient,
+                                       NvHandle hSubDevice,
+                                       NvBool *connectedToCpu,
+                                       NvU32 *linkBandwidthMBps)
+{
+    NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS params = {0};
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+
+    *connectedToCpu = NV_FALSE;
+    *linkBandwidthMBps = 0;
+
+    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                           hClient,
+                                           hSubDevice,
+                                           NV2080_CTRL_CMD_BUS_GET_C2C_INFO,
+                                           &params,
+                                           sizeof(params)));
+
+    if (params.bIsLinkUp == NV_TRUE &&
+        (params.remoteType == NV2080_CTRL_BUS_GET_C2C_INFO_REMOTE_TYPE_CPU))
+    {
+        *connectedToCpu = NV_TRUE;
+        *linkBandwidthMBps = params.nrLinks * params.perLinkBwMBps;
+    }
+
+    return NV_OK;
 }
 
 // If the given NvLink connection has a NPU device as an endpoint, return the
@@ -2414,8 +2394,7 @@ static NvU32 getNvlinkConnectionToSwitch(const NV2080_CTRL_CMD_NVLINK_GET_NVLINK
 // communicate through P9 NPUs
 static NV_STATUS gpusHaveNpuNvlink(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *nvlinkStatus1,
                                    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *nvlinkStatus2,
-                                   NvU32 *nvlinkVersion,
-                                   NvU32 *linkBandwidthMBps)
+                                   NvU32 *nvlinkVersion)
 {
     NvU32 nvlinkVersion1, nvlinkVersion2;
     NvU32 tmpLinkBandwidthMBps;
@@ -2453,11 +2432,6 @@ static NV_STATUS gpusHaveNpuNvlink(NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARA
     // if GPU A is connected to NPU M and GPU B is connected to NPU N, A can
     // access B.
     *nvlinkVersion = NV_MIN(nvlinkVersion1, nvlinkVersion2);
-
-    // Link bandwidth not provided because the intermediate link rate could
-    // vary a lot with system topologies & current load, making this bandwidth
-    // obsolete.
-    *linkBandwidthMBps = 0;
 
     return NV_OK;
 }
@@ -2566,7 +2540,7 @@ static NV_STATUS getNvlinkP2PCaps(struct gpuDevice *device1,
 
     *nvlinkVersion = NV2080_CTRL_NVLINK_STATUS_NVLINK_VERSION_INVALID;
 
-    if (device1->connectedToSwitch && device2->connectedToSwitch)
+    if (device1->info.connectedToSwitch && device2->info.connectedToSwitch)
     {
         nvlinkVersion1 = getNvlinkConnectionToSwitch(nvlinkStatus1,
                                                      &linkBandwidthMBps1);
@@ -2636,11 +2610,15 @@ NV_STATUS nvGpuOpsGetP2PCaps(struct gpuDevice *device1,
     if (!p2pCapsParams)
         return NV_ERR_INVALID_ARGUMENT;
 
-    status = allocNvlinkStatusForSubdevice(device1, &nvlinkStatus1);
+    status = allocNvlinkStatus(device1->session->handle,
+                               device1->subhandle,
+                               &nvlinkStatus1);
     if (status != NV_OK)
         goto cleanup;
 
-    status = allocNvlinkStatusForSubdevice(device2, &nvlinkStatus2);
+    status = allocNvlinkStatus(device2->session->handle,
+                               device2->subhandle,
+                               &nvlinkStatus2);
     if (status != NV_OK)
         goto cleanup;
 
@@ -2657,26 +2635,27 @@ NV_STATUS nvGpuOpsGetP2PCaps(struct gpuDevice *device1,
     if (p2pCaps.indirectAccessSupported)
     {
         NvU32 nvlinkVersion;
-        NvU32 linkBandwidthMBps;
         NvU32 p2pLink;
 
         status = gpusHaveNpuNvlink(nvlinkStatus1,
                                    nvlinkStatus2,
-                                   &nvlinkVersion,
-                                   &linkBandwidthMBps);
+                                   &nvlinkVersion);
         if (status != NV_OK)
             goto cleanup;
 
         p2pLink = rmControlToUvmNvlinkVersion(nvlinkVersion);
 
         NV_ASSERT(p2pLink >= UVM_LINK_TYPE_NVLINK_2);
-        NV_ASSERT(linkBandwidthMBps == 0);
 
         p2pCapsParams->indirectAccess           = NV_TRUE;
         p2pCapsParams->p2pLink                  = p2pLink;
         p2pCapsParams->optimalNvlinkWriteCEs[0] = p2pCaps.optimalNvlinkWriteCEs[0];
         p2pCapsParams->optimalNvlinkWriteCEs[1] = p2pCaps.optimalNvlinkWriteCEs[1];
-        p2pCapsParams->totalLinkLineRateMBps    = linkBandwidthMBps;
+
+        // Link bandwidth not provided because the intermediate link rate could
+        // vary a lot with system topologies & current load, making this bandwidth
+        // obsolete.
+        p2pCapsParams->totalLinkLineRateMBps    = 0;
     }
     else if (p2pCaps.accessSupported)
     {
@@ -2712,11 +2691,15 @@ NV_STATUS nvGpuOpsGetP2PCaps(struct gpuDevice *device1,
         {
             NvU32 linkBandwidthMBps1, linkBandwidthMBps2;
 
-            status = getPCIELinkRateMBps(device1, &linkBandwidthMBps1);
+            status = getPCIELinkRateMBps(device1->session->handle,
+                                         device1->subhandle,
+                                         &linkBandwidthMBps1);
             if (status != NV_OK)
                 goto cleanup;
 
-            status = getPCIELinkRateMBps(device2, &linkBandwidthMBps2);
+            status = getPCIELinkRateMBps(device2->session->handle,
+                                         device2->subhandle,
+                                         &linkBandwidthMBps2);
             if (status != NV_OK)
                 goto cleanup;
 
@@ -3688,6 +3671,17 @@ static NV_STATUS nvGpuOpsAllocPhysical(struct gpuDevice *device,
         memAllocParams.flags |= NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM;
 
     //
+    // Indicate to the RM that the allocation should be in unprotected memory.
+    // If the Confidential Computing feature is not enabled on the system, this
+    // flag has no effect.
+    //
+    if (allocInfo->bUnprotected)
+    {
+        memAllocParams.attr2 = FLD_SET_DRF(OS32, _ATTR2, _MEMORY_PROTECTION,
+                                           _UNPROTECTED, memAllocParams.attr2);
+    }
+
+    //
     // vid heap ctrl has a different policy as compared to other internal APIS
     // it expects the gpu lock to not be held. This means we have to drop the gpu lock
     // here. It is safe in this scenario because we still have the API lock and nothing
@@ -3700,7 +3694,8 @@ static NV_STATUS nvGpuOpsAllocPhysical(struct gpuDevice *device,
                                                 isSystemMemory ? device->handle : device->subhandle,
                                                 &physHandle,
                                                 isSystemMemory ? NV01_MEMORY_SYSTEM : NV01_MEMORY_LOCAL_USER,
-                                                &memAllocParams), done);
+                                                &memAllocParams,
+                                                sizeof(memAllocParams)), done);
     if (allocInfo->bContiguousPhysAlloc)
         allocInfo->gpuPhysOffset = memAllocParams.offset;
 
@@ -3778,7 +3773,8 @@ static NV_STATUS nvGpuOpsAllocVirtual(struct gpuAddressSpace *vaSpace,
                                                 vaSpace->device->handle,
                                                 &memDesc->handle,
                                                 NV50_MEMORY_VIRTUAL,
-                                                &memAllocParams), done);
+                                                &memAllocParams,
+                                                sizeof(memAllocParams)), done);
     memDesc->address = (NvU64)memAllocParams.offset;
     memDesc->size = length;
     memDesc->childHandle = physHandle;
@@ -3927,6 +3923,38 @@ cleanup_virtual:
 cleanup_physical:
     pRmApi->Free(pRmApi, vaSpace->device->session->handle, paMemDescHandle);
     return status;
+}
+
+// This function is generic and can be used outside CC as well.
+// As of today the only caller of this function is under CC checks
+// Hence this is also protected under the same checks. Otherwise,
+// builds will fail.
+static void nvGpuOpsUnmapGpuMemory(struct gpuAddressSpace *vaSpace,
+                                   NvU64 gpuOffset)
+{
+    gpuMemDesc *memDescVa = NULL;
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+
+    NV_ASSERT(vaSpace != NULL);
+
+    portSyncRwLockAcquireRead(vaSpace->allocationsLock);
+    NV_ASSERT_OK(findDescriptor(vaSpace->allocations, gpuOffset, (void**)&memDescVa));
+    portSyncRwLockReleaseRead(vaSpace->allocationsLock);
+
+    NV_ASSERT(memDescVa != NULL);
+    NV_ASSERT(memDescVa->handle != 0);
+    NV_ASSERT(memDescVa->childHandle != 0);
+    NV_ASSERT(memDescVa->address == gpuOffset);
+
+    NV_ASSERT_OK(pRmApi->Unmap(pRmApi,
+                               vaSpace->device->session->handle,
+                               vaSpace->device->handle,
+                               memDescVa->handle,
+                               memDescVa->childHandle,
+                               NV04_MAP_MEMORY_FLAGS_NONE,
+                               gpuOffset));
+
+    return;
 }
 
 static void nvGpuOpsFreeVirtual(struct gpuAddressSpace *vaSpace, NvU64 vaOffset)
@@ -4213,8 +4241,8 @@ static NV_STATUS nvGpuOpsChannelGetHwChannelId(struct gpuChannel *channel,
     params.pChannelList       = NV_PTR_TO_NvP64(hwChannelId);
 
     return pRmApi->Control(pRmApi,
-                           channel->vaSpace->device->session->handle,
-                           channel->vaSpace->device->handle,
+                           channel->tsg->vaSpace->device->session->handle,
+                           channel->tsg->vaSpace->device->handle,
                            NV0080_CTRL_CMD_FIFO_GET_CHANNELLIST,
                            &params,
                            sizeof(params));
@@ -4262,16 +4290,18 @@ static NV_STATUS gpuDeviceMapUsermodeRegion(struct gpuDevice *device)
     subDeviceDesc *rmSubDevice = device->rmSubDevice;
     NvU32 usermodeClass = VOLTA_USERMODE_A;
     void *pParams = NULL;
+    NvU32 paramsSize = 0;
     NV_HOPPER_USERMODE_A_PARAMS hopperParams =
     {
         .bBar1Mapping = NV_TRUE,
         .bPriv = NV_FALSE
     };
 
-    if (device->rmDevice->arch >= GPU_ARCHITECTURE_HOPPER)
+    if (isDeviceHopperPlus(device))
     {
         usermodeClass = HOPPER_USERMODE_A;
         pParams = &hopperParams;
+        paramsSize = sizeof(hopperParams);
     }
 
     NV_ASSERT(isDeviceVoltaPlus(device));
@@ -4283,7 +4313,9 @@ static NV_STATUS gpuDeviceMapUsermodeRegion(struct gpuDevice *device)
                            device->subhandle,
                            &regionHandle,
                            usermodeClass,
-                           pParams);
+                           pParams,
+                           paramsSize);
+
     if (NV_OK != status)
         return status;
 
@@ -4350,17 +4382,68 @@ static NV_STATUS nvGpuOpsGetWorkSubmissionInfo(struct gpuAddressSpace *vaSpace,
             (NV_CHANNELGPFIFO_NOTIFICATION_TYPE_WORK_SUBMIT_TOKEN * sizeof(NvNotification)) +
             NV_OFFSETOF(NvNotification, info32));
 
+    {
+        OBJGPU   *pGpu;
+        RsClient *pClient;
+        Device   *pDevice;
+
+        status = serverGetClientUnderLock(&g_resServ, session->handle, &pClient);
+        if (status != NV_OK)
+            return status;
+
+        status = deviceGetByHandle(pClient, device->handle, &pDevice);
+        if (status != NV_OK)
+            return status;
+
+        pGpu = GPU_RES_GET_GPU(pDevice);
+
+        // Map the usermode region in channel's vaspace
+        if (gpuIsCCFeatureEnabled(pGpu))
+        {
+            NvU64 vaOffset = 0;
+            NvU64 gpuOffset = 0;
+            gpuVaAllocInfo vaAllocInfo = {0};
+            struct allocFlags flags = {0};
+
+            NV_ASSERT(isDeviceHopperPlus(device));
+
+            status = nvGpuOpsAllocVirtual(vaSpace, NVC361_NV_USERMODE__SIZE, &vaOffset,
+                                          rmSubDevice->clientRegionHandle,
+                                          flags, &vaAllocInfo);
+            if (status != NV_OK)
+                return status;
+
+            status = nvGpuOpsMapGpuMemory(vaSpace, vaOffset, NVC361_NV_USERMODE__SIZE,
+                                          vaAllocInfo.pageSize, &gpuOffset, flags);
+            if (status != NV_OK)
+            {
+                nvGpuOpsFreeVirtual(vaSpace, vaOffset);
+                return status;
+            }
+
+            channel->bClientRegionGpuMappingNeeded = NV_TRUE;
+            channel->clientRegionGpuAddr = gpuOffset;
+        }
+    }
+
     return status;
 }
 
 static NvBool channelNeedsDummyAlloc(struct gpuChannel *channel)
 {
-    return channel->gpPutLoc == UVM_BUFFER_LOCATION_SYS && deviceNeedsDummyAlloc(channel->vaSpace->device);
+    if (deviceNeedsDummyAlloc(channel->tsg->vaSpace->device))
+    {
+        return isDeviceHopperPlus(channel->tsg->vaSpace->device) ?
+                   channel->gpPutLoc == UVM_BUFFER_LOCATION_VID :
+                   channel->gpPutLoc == UVM_BUFFER_LOCATION_SYS;
+    }
+
+    return NV_FALSE;
 }
 
 static NV_STATUS channelRetainDummyAlloc(struct gpuChannel *channel, gpuChannelInfo *channelInfo)
 {
-    struct gpuAddressSpace *vaSpace = channel->vaSpace;
+    struct gpuAddressSpace *vaSpace = channel->tsg->vaSpace;
     NV_STATUS status;
 
     if (!channelNeedsDummyAlloc(channel))
@@ -4381,32 +4464,34 @@ static void channelReleaseDummyAlloc(struct gpuChannel *channel)
     if (channel != NULL && channel->retainedDummyAlloc)
     {
         NV_ASSERT(channelNeedsDummyAlloc(channel));
-        nvGpuOpsVaSpaceReleaseDummyAlloc(channel->vaSpace);
+        nvGpuOpsVaSpaceReleaseDummyAlloc(channel->tsg->vaSpace);
     }
 }
 
-static RM_ENGINE_TYPE channelEngineType(const struct gpuChannel *channel)
+static RM_ENGINE_TYPE tsgEngineType(const struct gpuTsg *tsg)
 {
-    if (channel->engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE)
-        return RM_ENGINE_TYPE_COPY(channel->engineIndex);
-    else if (channel->engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2)
+    NV_ASSERT(tsg->engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE || tsg->engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2);
+
+    if (tsg->engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2)
         return RM_ENGINE_TYPE_SEC2;
     else
-        return RM_ENGINE_TYPE_GR(channel->engineIndex);
+        return RM_ENGINE_TYPE_COPY(tsg->engineIndex);
 }
 
-static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
-                                 UVM_GPU_CHANNEL_ENGINE_TYPE engineType,
+static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
                                  const gpuChannelAllocParams *params,
                                  struct gpuChannel **channelHandle,
                                  gpuChannelInfo *channelInfo)
 {
     NV_STATUS status;
+    nvGpuOpsLockSet acquiredLocks;
+    struct gpuAddressSpace *vaSpace = NULL;
     struct gpuChannel *channel = NULL;
     struct gpuDevice *device = NULL;
     struct gpuSession *session = NULL;
     void *cpuMap = NULL;
     NvHandle hErrorNotifier;
+    NvHandle hTsg;
     struct ChannelAllocInfo *pAllocInfo = NULL;
     void *gpfifoCtrl = NULL;
     PCLI_DMA_MAPPING_INFO pDmaMappingInfo = NULL;
@@ -4419,20 +4504,12 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
     UVM_BUFFER_LOCATION gpPutLoc;
     NvLength gpFifoSize, errorNotifierSize;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
-
-    if (!vaSpace || !channelHandle || !params || !channelInfo)
-        return NV_ERR_INVALID_ARGUMENT;
+    RsClient *pClient;
 
     if (params->numGpFifoEntries == 0)
         return NV_ERR_INVALID_ARGUMENT;
 
-    if (engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_CE &&
-        engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_GR &&
-        engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2)
-        return NV_ERR_INVALID_ARGUMENT;
-
-    // TODO: Bug 2458492: Ampere-SMC Verify GR/CE indices within partition/SMC Engine
-
+    vaSpace = tsg->vaSpace;
     device = vaSpace->device;
     NV_ASSERT(device);
     session = device->session;
@@ -4491,20 +4568,31 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
 
     portMemSet(channel, 0, sizeof(*channel));
 
-    channel->vaSpace = vaSpace;
+    channel->tsg         = tsg;
     channel->fifoEntries = params->numGpFifoEntries;
     channel->gpFifoLoc   = gpFifoLoc;
     channel->gpPutLoc    = gpPutLoc;
-
-    // Remember which engine we are using, so that RC recovery can reset it if
-    // it hangs:
-    channel->engineType = engineType;
-    channel->engineIndex = params->engineIndex;
 
     gpFifoSize = (NvLength)params->numGpFifoEntries * NVA06F_GP_ENTRY__SIZE;
 
     // If the allocation is vidmem ask RM to allocate persistent vidmem
     pAllocInfo->gpuAllocInfo.bPersistentVidmem = NV_TRUE;
+
+    if (gpuIsCCorApmFeatureEnabled(pGpu))
+    {
+        // Gpfifo can be placed in one of the following locations
+        // 1. Unprotected sysmem in case of both APM and HCC
+        // 2. Unprotected vidmem in case of APM
+        // 3. Protected vidmem in case of HCC
+        if ((gpFifoLoc == UVM_BUFFER_LOCATION_SYS) || gpuIsApmFeatureEnabled(pGpu))
+        {
+            pAllocInfo->gpuAllocInfo.bUnprotected = NV_TRUE;
+        }
+        else
+        {
+            pAllocInfo->gpuAllocInfo.bUnprotected = NV_FALSE;
+        }
+    }
 
     // 1. Allocate the GPFIFO entries. Dont pass any special flags.
     flags.bGetKernelVA = NV_FALSE;
@@ -4533,6 +4621,11 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
     // sufficiently large to also accommodate any other channel
     // notifiers, and request a kernel VA and CPU caching.
     //
+    if (gpuIsCCorApmFeatureEnabled(pGpu))
+    {
+        // Put notifier in unprotected sysmem
+        pAllocInfo->gpuAllocInfo.bUnprotected = NV_TRUE;
+    }
 
     flags.bGetKernelVA = NV_TRUE;
     errorNotifierSize = sizeof(NvNotification) *
@@ -4558,23 +4651,24 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
     // 4. Find and share the VA with UVM driver
 
     // TODO: Acquired because CliGetDmaMappingInfo expects RMAPI lock. Necessary?
-    status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
+    status = _nvGpuOpsLocksAcquire(RMAPI_LOCK_FLAGS_READ, session->handle, &pClient, 0,
+            0, 0, &acquiredLocks);
     if (status != NV_OK)
         goto cleanup_free_virtual;
 
-    if (!CliGetDmaMappingInfo(session->handle,
+    if (!CliGetDmaMappingInfo(pClient,
                               device->handle,
                               hErrorNotifier,
                               channel->errorNotifierOffset,
                               gpumgrGetDeviceGpuMask(device->deviceInstance),
                               &pDmaMappingInfo))
     {
-        rmapiLockRelease();
+        _nvGpuOpsLocksRelease(&acquiredLocks);
         status = NV_ERR_GENERIC;
         goto cleanup_free_virtual;
     }
 
-    rmapiLockRelease();
+    _nvGpuOpsLocksRelease(&acquiredLocks);
 
     //
     // RM uses the parent subdevice index to fill the notifier on SYSMEM. So use the same.
@@ -4598,12 +4692,27 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
 
     pAllocInfo->gpFifoAllocParams.gpFifoOffset  = channel->gpFifo;
     pAllocInfo->gpFifoAllocParams.gpFifoEntries = channel->fifoEntries;
-    // If zero then it will attach to the device address space
-    pAllocInfo->gpFifoAllocParams.hVASpace = vaSpace->handle;
-    pAllocInfo->gpFifoAllocParams.engineType = gpuGetNv2080EngineType(channelEngineType(channel));
+
+    if (params->secure)
+        pAllocInfo->gpFifoAllocParams.flags = FLD_SET_DRF(OS04, _FLAGS, _CC_SECURE, _TRUE, pAllocInfo->gpFifoAllocParams.flags);
 
     if (isDeviceVoltaPlus(device))
     {
+        if (gpuIsCCorApmFeatureEnabled(pGpu))
+        {
+            // USERD can be placed in one of the following locations
+            // 1. Unprotected sysmem in case of both APM and HCC
+            // 2. Unprotected vidmem in case of APM
+            // 3. Protected vidmem in case of HCC
+            if ((gpPutLoc == UVM_BUFFER_LOCATION_SYS) || gpuIsApmFeatureEnabled(pGpu))
+            {
+                pAllocInfo->gpuAllocInfo.bUnprotected = NV_TRUE;
+            }
+            else
+            {
+                pAllocInfo->gpuAllocInfo.bUnprotected = NV_FALSE;
+            }
+        }
 
         flags.bGetKernelVA = NV_FALSE;
         status = nvGpuOpsGpuMalloc(vaSpace,
@@ -4631,12 +4740,32 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
             goto cleanup_free_virtual;
     }
 
+    pAllocInfo->gpFifoAllocParams.engineType = gpuGetNv2080EngineType(tsgEngineType(channel->tsg));
+
+    if (channel->tsg->isFakeTsg)
+    {
+        // The internal RM TSG requires a valid vaSpace object.
+        pAllocInfo->gpFifoAllocParams.hVASpace = vaSpace->handle;
+
+        // Not a Tsg, device handle parents a channel when RM internal TSG is
+        // used.
+        hTsg = device->handle;
+    }
+    else
+    {
+        // If zero then it will attach to the TSG address space.
+        pAllocInfo->gpFifoAllocParams.hVASpace = NV01_NULL_OBJECT;
+        hTsg = channel->tsg->tsgHandle;
+    }
+
     channel->channelHandle = NV01_NULL_OBJECT;
-    status = pRmApi->Alloc(pRmApi, session->handle,
-                           device->handle,
+    status = pRmApi->Alloc(pRmApi,
+                           session->handle,
+                           hTsg,
                            &channel->channelHandle,
                            device->hostClass,
-                           &pAllocInfo->gpFifoAllocParams);
+                           &pAllocInfo->gpFifoAllocParams,
+                           sizeof(pAllocInfo->gpFifoAllocParams));
     if (status != NV_OK)
     {
         goto cleanup_free_virtual;
@@ -4647,7 +4776,7 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
     status = kfifoEngineInfoXlate_HAL(pGpu,
                                       pKernelFifo,
                                       ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
-                                      (NvU32)channelEngineType(channel),
+                                      (NvU32)tsgEngineType(channel->tsg),
                                       ENGINE_INFO_TYPE_RUNLIST,
                                       &channel->hwRunlistId);
     if (status != NV_OK)
@@ -4680,7 +4809,7 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
         goto cleanup_free_controlpage;
 
     // Allocate the SW method class for fault cancel
-    if (isDevicePascalPlus(device) && (engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2))
+    if (isDevicePascalPlus(device) && (channel->tsg->engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2))
     {
         channel->hFaultCancelSwMethodClass = NV01_NULL_OBJECT;
         status = pRmApi->Alloc(pRmApi,
@@ -4688,7 +4817,8 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
                                channel->channelHandle,
                                &channel->hFaultCancelSwMethodClass,
                                GP100_UVM_SW,
-                               NULL);
+                               NULL,
+                               0);
         if (status != NV_OK)
             goto cleanup_free_controlpage;
     }
@@ -4704,6 +4834,15 @@ static NV_STATUS channelAllocate(struct gpuAddressSpace *vaSpace,
     channelInfo->errorNotifier = channel->errorNotifier;
     channelInfo->hwRunlistId = channel->hwRunlistId;
     channelInfo->hwChannelId = channel->hwChannelId;
+
+    channelInfo->gpFifoGpuVa = channel->gpFifo;
+    channelInfo->gpPutGpuVa = channel->userdGpuAddr + NV_OFFSETOF(KeplerAControlGPFifo, GPPut);
+    if (gpuIsCCFeatureEnabled(pGpu) && (channel->tsg->engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2))
+    {
+        channelInfo->gpGet = NULL;
+        channelInfo->gpPut = NULL;
+        channelInfo->gpFifoEntries = NULL;
+    }
 
     return NV_OK;
 
@@ -4738,7 +4877,6 @@ cleanup_free_memory:
 static NV_STATUS engineAllocate(struct gpuChannel *channel, gpuChannelInfo *channelInfo, UVM_GPU_CHANNEL_ENGINE_TYPE engineType)
 {
     NV_STATUS status = NV_OK;
-    struct gpuObject *object = NULL;
     NVB0B5_ALLOCATION_PARAMETERS ceAllocParams = {0};
     NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS channelGrpParams = {0};
     struct gpuAddressSpace *vaSpace = NULL;
@@ -4746,49 +4884,45 @@ static NV_STATUS engineAllocate(struct gpuChannel *channel, gpuChannelInfo *chan
     struct gpuSession *session = NULL;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
     NvU32 class;
+    NvU32 paramsSize;
     void *params;
 
     NV_ASSERT(channel);
     NV_ASSERT(channelInfo);
-    NV_ASSERT(channel->engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE ||
-        channel->engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2);
+    NV_ASSERT(engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE || engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2);
 
-    // TODO: Bug 2458492: Ampere-SMC Verify GR/CE indices within partition
-
-    vaSpace = channel->vaSpace;
+    vaSpace = channel->tsg->vaSpace;
     NV_ASSERT(vaSpace);
     device = vaSpace->device;
     NV_ASSERT(device);
     session = device->session;
     NV_ASSERT(session);
 
-    object = portMemAllocNonPaged(sizeof(*object));
-    if (object == NULL)
-        return NV_ERR_NO_MEMORY;
-
-    object->handle = NV01_NULL_OBJECT;
-
     if (engineType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE)
     {
         ceAllocParams.version = NVB0B5_ALLOCATION_PARAMETERS_VERSION_1;
-        ceAllocParams.engineType = NV2080_ENGINE_TYPE_COPY(channel->engineIndex);
+        ceAllocParams.engineType = NV2080_ENGINE_TYPE_COPY(channel->tsg->engineIndex);
         params = &ceAllocParams;
+        paramsSize = sizeof(ceAllocParams);
         class = device->ceClass;
     }
     else
     {
         params = NULL;
+        paramsSize = 0;
         class = device->sec2Class;
     }
 
+    channel->engineHandle = NV01_NULL_OBJECT;
     status = pRmApi->Alloc(pRmApi, session->handle,
                        channel->channelHandle,
-                       &object->handle,
+                       &channel->engineHandle,
                        class,
-                       params);
+                       params,
+                       paramsSize);
 
     if (status != NV_OK)
-        goto cleanup_free_memory;
+        return status;
 
     // In volta+ gpus, the channel has a submission offset used as doorbell.
     if (isDeviceVoltaPlus(device))
@@ -4800,6 +4934,11 @@ static NV_STATUS engineAllocate(struct gpuChannel *channel, gpuChannelInfo *chan
         channelInfo->workSubmissionOffset = channel->workSubmissionOffset;
         channelInfo->workSubmissionToken = channel->workSubmissionToken;
         channelInfo->pWorkSubmissionToken = channel->pWorkSubmissionToken;
+        if (channel->bClientRegionGpuMappingNeeded)
+        {
+            channelInfo->workSubmissionOffsetGpuVa = channel->clientRegionGpuAddr +
+                                                     NVC361_NOTIFY_CHANNEL_PENDING;
+        }
     }
 
     // Schedule the channel
@@ -4814,45 +4953,47 @@ static NV_STATUS engineAllocate(struct gpuChannel *channel, gpuChannelInfo *chan
     if (status != NV_OK)
         goto cleanup_free_engine;
 
-    object->next = channel->nextAttachedEngine;
-    channel->nextAttachedEngine = object;
-    object->type = class;
-
     return NV_OK;
 
 cleanup_free_engine:
-    pRmApi->Free(pRmApi, session->handle, object->handle);
-cleanup_free_memory:
-    portMemFree(object);
+    pRmApi->Free(pRmApi, session->handle, channel->engineHandle);
+    channel->engineHandle = NV01_NULL_OBJECT;
     return status;
 }
 
-NV_STATUS nvGpuOpsChannelAllocate(struct gpuAddressSpace *vaSpace,
+NV_STATUS nvGpuOpsChannelAllocate(const gpuTsgHandle tsg,
                                   const gpuChannelAllocParams *params,
                                   struct gpuChannel **channelHandle,
                                   gpuChannelInfo *channelInfo)
 {
     NV_STATUS status;
-    UVM_GPU_CHANNEL_ENGINE_TYPE channelType = params->engineType;
+    UVM_GPU_CHANNEL_ENGINE_TYPE channelType;
 
-    NV_ASSERT_OR_RETURN((channelType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE || channelType == UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2), NV_ERR_NOT_SUPPORTED);
+    if (!tsg || !channelHandle || !params || !channelInfo)
+        return NV_ERR_INVALID_ARGUMENT;
 
-    status = channelAllocate(vaSpace, channelType, params,
-                             channelHandle, channelInfo);
+    channelType = tsg->engineType;
+    NV_ASSERT(channelType == UVM_GPU_CHANNEL_ENGINE_TYPE_CE || channelType == UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2);
+
+    status = channelAllocate(tsg, params, channelHandle, channelInfo);
     if (status != NV_OK)
         return status;
 
     status = engineAllocate(*channelHandle, channelInfo, channelType);
     if (status != NV_OK)
-        nvGpuOpsChannelDestroy(*channelHandle);
+        goto cleanup_free_channel;
 
+    return NV_OK;
+
+cleanup_free_channel:
+    nvGpuOpsChannelDestroy(*channelHandle);
+    *channelHandle = NULL;
     return status;
+
 }
 
 void nvGpuOpsChannelDestroy(struct gpuChannel *channel)
 {
-    struct gpuObject *nextEngine;
-    struct gpuObject *currEngine;
     NvU32 pid = osGetCurrentProcess();
     struct gpuAddressSpace *vaSpace = NULL;
     struct gpuDevice *device = NULL;
@@ -4862,26 +5003,17 @@ void nvGpuOpsChannelDestroy(struct gpuChannel *channel)
     if (!channel)
         return;
 
-    vaSpace = channel->vaSpace;
+    NV_ASSERT(channel->tsg);
+    vaSpace = channel->tsg->vaSpace;
     NV_ASSERT(vaSpace);
     device = vaSpace->device;
     NV_ASSERT(device);
     session = device->session;
     NV_ASSERT(session);
 
-    // destroy the engines under this channel
-    if (channel->nextAttachedEngine)
-    {
-        currEngine = channel->nextAttachedEngine;
-        nextEngine = currEngine;
-        do
-        {
-            currEngine = nextEngine;
-            nextEngine = currEngine->next;
-            pRmApi->Free(pRmApi, session->handle, currEngine->handle);
-            portMemFree(currEngine);
-        } while (nextEngine != NULL);
-    }
+    // destroy the engine associated with the channel.
+    if (channel->engineHandle != NV01_NULL_OBJECT)
+        pRmApi->Free(pRmApi, session->handle, channel->engineHandle);
 
     // Tear down the channel
     if (isDevicePascalPlus(device))
@@ -4903,6 +5035,13 @@ void nvGpuOpsChannelDestroy(struct gpuChannel *channel)
                              pid);
     }
 
+    if (channel->bClientRegionGpuMappingNeeded)
+    {
+        NV_ASSERT(isDeviceHopperPlus(device));
+        nvGpuOpsUnmapGpuMemory(vaSpace, channel->clientRegionGpuAddr);
+        nvGpuOpsFreeVirtual(vaSpace, channel->clientRegionGpuAddr);
+    }
+
     // Free the channel
     pRmApi->Free(pRmApi, session->handle, channel->channelHandle);
 
@@ -4915,6 +5054,105 @@ void nvGpuOpsChannelDestroy(struct gpuChannel *channel)
     channelReleaseDummyAlloc(channel);
 
     portMemFree(channel);
+}
+
+NV_STATUS nvGpuOpsTsgAllocate(struct gpuAddressSpace *vaSpace,
+                              const gpuTsgAllocParams *params,
+                              struct gpuTsg **tsgHandle)
+{
+    NV_STATUS status;
+    struct gpuDevice *device = NULL;
+    struct gpuSession *session = NULL;
+    struct gpuTsg *tsg = NULL;
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    NV_CHANNEL_GROUP_ALLOCATION_PARAMETERS tsgParams = { 0 };
+    UVM_GPU_CHANNEL_ENGINE_TYPE engineType;
+
+    if (!vaSpace || !params || !tsgHandle)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    engineType = params->engineType;
+
+    if (engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_CE &&
+        engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    tsg = portMemAllocNonPaged(sizeof(*tsg));
+    if (tsg == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    portMemSet(tsg, 0, sizeof(*tsg));
+
+    device = vaSpace->device;
+    NV_ASSERT(device);
+    session = device->session;
+    NV_ASSERT(session);
+
+    tsg->vaSpace = vaSpace;
+    tsg->engineType = engineType;
+    tsg->engineIndex = params->engineIndex;
+
+    // TSG is supported for any engine type starting on Volta. Prior to Volta
+    // only GR/compute channels use TSGs. nvGpuOps only allocates channels/TSGs
+    // for CE and SEC2 engine types.
+    tsg->isFakeTsg = !isDeviceVoltaPlus(device);
+    tsg->tsgHandle = NV01_NULL_OBJECT;
+
+    if (tsg->isFakeTsg)
+    {
+        *tsgHandle = tsg;
+        return NV_OK;
+    }
+
+    tsgParams.hVASpace = vaSpace->handle;
+    tsgParams.engineType = gpuGetNv2080EngineType(tsgEngineType(tsg));
+
+    status = pRmApi->Alloc(pRmApi,
+                           session->handle,
+                           device->handle,
+                           &tsg->tsgHandle,
+                           KEPLER_CHANNEL_GROUP_A,
+                           &tsgParams,
+                           sizeof(tsgParams));
+    if (status != NV_OK)
+        goto cleanup_free_tsg;
+
+    *tsgHandle = tsg;
+
+    return NV_OK;
+
+cleanup_free_tsg:
+    portMemFree(tsg);
+
+    return status;
+}
+
+void nvGpuOpsTsgDestroy(struct gpuTsg *tsg)
+{
+    if (!tsg)
+        return;
+
+    // RM takes care of freeing its internal TSG in the channel destruction
+    // path.
+    if (!tsg->isFakeTsg)
+    {
+        struct gpuAddressSpace *vaSpace = NULL;
+        struct gpuDevice *device = NULL;
+        struct gpuSession *session = NULL;
+        RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+
+        vaSpace = tsg->vaSpace;
+        NV_ASSERT(vaSpace);
+        device = vaSpace->device;
+        NV_ASSERT(device);
+        session = device->session;
+        NV_ASSERT(session);
+
+        // Free the TSG
+        pRmApi->Free(pRmApi, session->handle, tsg->tsgHandle);
+    }
+
+    portMemFree(tsg);
 }
 
 static NV_STATUS trackDescriptor(PNODE *pRoot, NvU64 key, void *desc)
@@ -5206,8 +5444,6 @@ NV_STATUS nvGpuOpsQueryCaps(struct gpuDevice *device, gpuCaps *caps)
     NV_STATUS status;
     nvGpuOpsLockSet acquiredLocks;
     THREAD_STATE_NODE threadState;
-    OBJGPU *pGpu = NULL;
-    KernelMemorySystem *pKernelMemorySystem;
     NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS infoParams = {0};
     struct gpuSession *session = device->session;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
@@ -5220,10 +5456,6 @@ NV_STATUS nvGpuOpsQueryCaps(struct gpuDevice *device, gpuCaps *caps)
         return status;
     }
 
-    caps->sysmemLink = device->sysmemLink;
-    caps->sysmemLinkRateMBps = device->sysmemLinkRateMBps;
-    caps->connectedToSwitch = device->connectedToSwitch;
-
     infoParams.gpuId = device->gpuId;
     status = pRmApi->Control(pRmApi,
                              session->handle,
@@ -5232,11 +5464,7 @@ NV_STATUS nvGpuOpsQueryCaps(struct gpuDevice *device, gpuCaps *caps)
                              &infoParams,
                              sizeof(infoParams));
     if (status != NV_OK)
-    {
-        _nvGpuOpsLocksRelease(&acquiredLocks);
-        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-        return status;
-    }
+        goto cleanup;
 
     if (infoParams.numaId != NV0000_CTRL_NO_NUMA_NODE)
     {
@@ -5244,51 +5472,10 @@ NV_STATUS nvGpuOpsQueryCaps(struct gpuDevice *device, gpuCaps *caps)
         caps->numaNodeId = infoParams.numaId;
     }
 
-    status = CliSetGpuContext(session->handle, device->handle, &pGpu, NULL);
-    if (status != NV_OK)
-    {
-        _nvGpuOpsLocksRelease(&acquiredLocks);
-        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-        return status;
-    }
-
-    pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-    if (!pKernelMemorySystem)
-    {
-        _nvGpuOpsLocksRelease(&acquiredLocks);
-        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-        return NV_ERR_OBJECT_NOT_FOUND;
-    }
-
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED))
-    {
-        caps->systemMemoryWindowStart = pKernelMemorySystem->coherentCpuFbBase;
-        caps->systemMemoryWindowSize = pKernelMemorySystem->coherentCpuFbEnd -
-            pKernelMemorySystem->coherentCpuFbBase;
-    }
-    else
-    {
-        caps->systemMemoryWindowStart = 0;
-        caps->systemMemoryWindowSize = 0;
-    }
-
-    if (device->connectedToSwitch)
-    {
-        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-        if (pKernelNvlink == NULL)
-        {
-            caps->nvswitchMemoryWindowStart = NVLINK_INVALID_FABRIC_ADDR;
-        }
-        else
-        {
-            caps->nvswitchMemoryWindowStart = knvlinkGetUniqueFabricBaseAddress(
-                                                            pGpu, pKernelNvlink);
-        }
-    }
-
+cleanup:
     _nvGpuOpsLocksRelease(&acquiredLocks);
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-    return NV_OK;
+    return status;
 }
 
 static NV_STATUS findVaspaceFromPid(unsigned pid, unsigned gpuId,
@@ -5323,8 +5510,12 @@ static NV_STATUS findVaspaceFromPid(unsigned pid, unsigned gpuId,
             if (!pGpu)
                 return NV_ERR_INVALID_ARGUMENT;
 
-            pSubDevice = CliGetSubDeviceInfoFromGpu(pRsClient->hClient,
-                                                    pGpu);
+            status = subdeviceGetByGpu(pRsClient, pGpu, &pSubDevice);
+
+            if (status != NV_OK)
+                continue;
+
+            GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
 
             status = deviceGetByGpu(pRsClient, pGpu, NV_TRUE, &pDevice);
             if (status == NV_OK)
@@ -5458,6 +5649,211 @@ static NV_STATUS queryVirtMode(NvHandle hClient, NvHandle hDevice, NvU32 *virtMo
     return status;
 }
 
+static NV_STATUS
+nvGpuOpsQueryGpuConfidentialComputeCaps(NvHandle hClient,
+                                        UvmGpuConfComputeCaps *pGpuConfComputeCaps)
+{
+    NV_CONFIDENTIAL_COMPUTE_ALLOC_PARAMS confComputeAllocParams = {0};
+    NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES_PARAMS confComputeParams = {0};
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    NvHandle hConfCompute = 0;
+    NV_STATUS status = NV_OK;
+
+    confComputeAllocParams.hClient = hClient;
+    status = pRmApi->Alloc(pRmApi,
+                           hClient,
+                           hClient,
+                           &hConfCompute,
+                           NV_CONFIDENTIAL_COMPUTE,
+                           &confComputeAllocParams,
+                           sizeof(confComputeAllocParams));
+    if (status == NV_ERR_INVALID_CLASS)
+    {
+        pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_NONE;
+        return NV_OK;
+    }
+    else
+    {
+        NV_ASSERT_OK_OR_RETURN(status);
+    }
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        pRmApi->Control(pRmApi,
+                        hClient,
+                        hConfCompute,
+                        NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_GET_CAPABILITIES,
+                        &confComputeParams,
+                        sizeof(confComputeParams)),
+        cleanup);
+
+    if (confComputeParams.ccFeature == NV_CONF_COMPUTE_SYSTEM_FEATURE_APM_ENABLED)
+    {
+        pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_APM;
+    }
+    else if (confComputeParams.ccFeature == NV_CONF_COMPUTE_SYSTEM_FEATURE_HCC_ENABLED)
+    {
+        pGpuConfComputeCaps->mode = UVM_GPU_CONF_COMPUTE_MODE_HCC;
+    }
+
+cleanup:
+    pRmApi->Free(pRmApi, hClient, hConfCompute);
+    return status;
+}
+
+static NV_STATUS getSysmemLinkInfo(NvHandle hClient,
+                                   NvHandle hSubDevice,
+                                   gpuInfo *pGpuInfo)
+{
+    NvU32 sysmemConnType;
+    NV2080_CTRL_BUS_GET_INFO_V2_PARAMS *busInfoParams;
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    NV_STATUS status;
+
+    pGpuInfo->sysmemLink = UVM_LINK_TYPE_NONE;
+
+    busInfoParams = portMemAllocNonPaged(sizeof(*busInfoParams));
+    if (busInfoParams == NULL)
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+
+    portMemSet(busInfoParams, 0, sizeof(*busInfoParams));
+    busInfoParams->busInfoListSize = 1;
+    busInfoParams->busInfoList[0].index = NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE;
+    status = pRmApi->Control(pRmApi,
+                             hClient,
+                             hSubDevice,
+                             NV2080_CTRL_CMD_BUS_GET_INFO_V2,
+                             busInfoParams,
+                             sizeof(*busInfoParams));
+    sysmemConnType = busInfoParams->busInfoList[0].data;
+    portMemFree(busInfoParams);
+
+    if (status != NV_OK)
+        return status;
+
+    switch (sysmemConnType)
+    {
+        case NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE_NVLINK:
+        {
+            NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *nvlinkStatus;
+            NvU32 nvlinkVersion;
+            NvBool atomicSupported;
+
+            status = allocNvlinkStatus(hClient, hSubDevice, &nvlinkStatus);
+            if (status != NV_OK)
+                return status;
+
+            nvlinkVersion = getNvlinkConnectionToNpu(nvlinkStatus,
+                                                     &atomicSupported,
+                                                     &pGpuInfo->sysmemLinkRateMBps);
+
+            pGpuInfo->sysmemLink = rmControlToUvmNvlinkVersion(nvlinkVersion);
+
+            portMemFree(nvlinkStatus);
+            break;
+        }
+        case NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE_C2C:
+        {
+            NvBool c2cConnectedToCpu = NV_FALSE;
+
+            status = getC2CConnectionToCpu(hClient,
+                                           hSubDevice,
+                                           &c2cConnectedToCpu,
+                                           &pGpuInfo->sysmemLinkRateMBps);
+            if (status != NV_OK)
+                return status;
+
+            if (c2cConnectedToCpu == NV_FALSE)
+            {
+                NV_ASSERT(0);
+                return NV_ERR_INVALID_STATE;
+            }
+
+            pGpuInfo->sysmemLink = UVM_LINK_TYPE_C2C;
+            break;
+        }
+        case NV2080_CTRL_BUS_INFO_INDEX_SYSMEM_CONNECTION_TYPE_PCIE:
+        {
+            pGpuInfo->sysmemLink = UVM_LINK_TYPE_PCIE;
+            status = getPCIELinkRateMBps(hClient, hSubDevice, &pGpuInfo->sysmemLinkRateMBps);
+            if (status != NV_OK)
+                return status;
+            break;
+        }
+        default:
+        {
+            NV_PRINTF(LEVEL_ERROR, "Unsupported sysmem connection type: %d\n",
+                      sysmemConnType);
+            break;
+        }
+    }
+
+    NV_PRINTF(LEVEL_INFO, "sysmem link type: %d bw: %u\n", pGpuInfo->sysmemLink, pGpuInfo->sysmemLinkRateMBps);
+    NV_ASSERT(pGpuInfo->sysmemLink != UVM_LINK_TYPE_NONE);
+    return NV_OK;
+}
+
+static NV_STATUS getSystemMemoryWindow(OBJGPU *pGpu, gpuInfo *pGpuInfo)
+{
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+
+    if (!pKernelMemorySystem)
+        return NV_ERR_OBJECT_NOT_FOUND;
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED))
+    {
+        pGpuInfo->systemMemoryWindowStart = pKernelMemorySystem->coherentCpuFbBase;
+        pGpuInfo->systemMemoryWindowSize  = pKernelMemorySystem->coherentCpuFbEnd -
+                                            pKernelMemorySystem->coherentCpuFbBase;
+    }
+    else
+    {
+        pGpuInfo->systemMemoryWindowStart = 0;
+        pGpuInfo->systemMemoryWindowSize = 0;
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS getNvswitchInfo(OBJGPU *pGpu,
+                                 NvHandle hClient,
+                                 NvHandle hSubDevice,
+                                 gpuInfo *pGpuInfo)
+{
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS *nvlinkStatus;
+    NvU32 nvlinkVersion;
+    NvU32 linkBandwidthMBps;
+    NV_STATUS status;
+
+    pGpuInfo->connectedToSwitch = NV_FALSE;
+
+    status = allocNvlinkStatus(hClient, hSubDevice, &nvlinkStatus);
+    if (status != NV_OK)
+        return status;
+
+    nvlinkVersion = getNvlinkConnectionToSwitch(nvlinkStatus, &linkBandwidthMBps);
+
+    if (rmControlToUvmNvlinkVersion(nvlinkVersion) != UVM_LINK_TYPE_NONE)
+    {
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+
+        NV_ASSERT(rmControlToUvmNvlinkVersion(nvlinkVersion) != UVM_LINK_TYPE_NVLINK_1);
+        pGpuInfo->connectedToSwitch = NV_TRUE;
+
+        if (pKernelNvlink == NULL)
+        {
+            pGpuInfo->nvswitchMemoryWindowStart = NVLINK_INVALID_FABRIC_ADDR;
+        }
+        else
+        {
+            pGpuInfo->nvswitchMemoryWindowStart = knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink);
+        }
+    }
+
+    portMemFree(nvlinkStatus);
+
+    return NV_OK;
+}
+
 NV_STATUS nvGpuOpsGetGpuInfo(const NvProcessorUuid *pUuid,
                              const gpuClientInfo *pGpuClientInfo,
                              gpuInfo *pGpuInfo)
@@ -5520,7 +5916,8 @@ NV_STATUS nvGpuOpsGetGpuInfo(const NvProcessorUuid *pUuid,
                            clientHandle,
                            &deviceHandle,
                            NV01_DEVICE_0,
-                           &nv0080AllocParams);
+                           &nv0080AllocParams,
+                           sizeof(nv0080AllocParams));
     if (NV_OK != status)
         goto cleanup;
 
@@ -5532,7 +5929,8 @@ NV_STATUS nvGpuOpsGetGpuInfo(const NvProcessorUuid *pUuid,
                            deviceHandle,
                            &subDeviceHandle,
                            NV20_SUBDEVICE_0,
-                           &nv2080AllocParams);
+                           &nv2080AllocParams,
+                           sizeof(nv2080AllocParams));
     if (NV_OK != status)
         goto cleanup;
 
@@ -5628,6 +6026,24 @@ NV_STATUS nvGpuOpsGetGpuInfo(const NvProcessorUuid *pUuid,
         goto cleanup;
 
     pGpuInfo->isSimulated = (simulationInfoParams.type != NV2080_CTRL_GPU_GET_SIMULATION_INFO_TYPE_NONE);
+
+    portMemSet(&pGpuInfo->gpuConfComputeCaps, 0, sizeof(pGpuInfo->gpuConfComputeCaps));
+
+    status = nvGpuOpsQueryGpuConfidentialComputeCaps(clientHandle, &pGpuInfo->gpuConfComputeCaps);
+    if (status != NV_OK)
+        goto cleanup;
+
+    status = getSysmemLinkInfo(clientHandle, subDeviceHandle, pGpuInfo);
+    if (status != NV_OK)
+        goto cleanup;
+
+    status = getSystemMemoryWindow(pGpu, pGpuInfo);
+    if (status != NV_OK)
+        goto cleanup;
+
+    status = getNvswitchInfo(pGpu, clientHandle, subDeviceHandle, pGpuInfo);
+    if (status != NV_OK)
+        goto cleanup;
 
 cleanup:
     if (isSubdeviceAllocated)
@@ -5738,7 +6154,7 @@ NV_STATUS nvGpuOpsCheckEccErrorSlowpath(struct gpuChannel *channel,
 
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
     status = _nvGpuOpsLocksAcquireAll(RMAPI_LOCK_FLAGS_READ,
-                                      channel->vaSpace->device->session->handle,
+                                      channel->tsg->vaSpace->device->session->handle,
                                       NULL,
                                       &acquiredLocks);
     if (status != NV_OK)
@@ -5750,13 +6166,13 @@ NV_STATUS nvGpuOpsCheckEccErrorSlowpath(struct gpuChannel *channel,
     *bEccDbeSet = NV_FALSE;
 
     // Do anything only if ECC is enabled on this device
-    if (channel->vaSpace->device->rmSubDevice->bEccEnabled)
+    if (channel->tsg->vaSpace->device->rmSubDevice->bEccEnabled)
     {
         portMemSet(&eccStatus, 0, sizeof(eccStatus));
 
         status = pRmApi->Control(pRmApi,
-                                 channel->vaSpace->device->session->handle,
-                                 channel->vaSpace->device->subhandle,
+                                 channel->tsg->vaSpace->device->session->handle,
+                                 channel->tsg->vaSpace->device->subhandle,
                                  NV2080_CTRL_CMD_GPU_QUERY_ECC_STATUS,
                                  &eccStatus,
                                  sizeof(eccStatus));
@@ -5838,7 +6254,8 @@ static NV_STATUS nvGpuOpsFillGpuMemoryInfo(PMEMORY_DESCRIPTOR pMemDesc,
 
 static NvBool memdescIsSysmem(PMEMORY_DESCRIPTOR pMemDesc)
 {
-    return memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM;
+    return (memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
+        !(memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1));
 }
 
 static NV_STATUS dupMemory(struct gpuDevice *device,
@@ -5858,11 +6275,12 @@ static NV_STATUS dupMemory(struct gpuDevice *device,
     FABRIC_VASPACE *pFabricVAS = NULL;
     OBJGPU *pMappingGpu;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    RsClient *pSessionClient;
     RsResourceRef *pResourceRef;
     RsResourceRef *pParentRef;
+    Subdevice *pSubdevice;
     struct gpuSession *session;
     NvHandle hParent;
-    NvHandle hSubDevice;
     NvBool bIsIndirectPeer = NV_FALSE;
 
     if (!device || !hDupMemory)
@@ -5873,20 +6291,21 @@ static NV_STATUS dupMemory(struct gpuDevice *device,
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     // RS-TODO use dual client locking
-    status = _nvGpuOpsLocksAcquireAll(RMAPI_LOCK_FLAGS_NONE, NV01_NULL_OBJECT, NULL, &acquiredLocks);
+    status = _nvGpuOpsLocksAcquireAll(RMAPI_LOCK_FLAGS_NONE, device->session->handle,
+        &pSessionClient, &acquiredLocks);
     if (status != NV_OK)
     {
         threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
         return status;
     }
 
-    status = CliSetSubDeviceContext(device->session->handle,
-                                    device->subhandle,
-                                    &hSubDevice,
-                                    &pMappingGpu);
-
+    status = subdeviceGetByHandle(pSessionClient, device->subhandle, &pSubdevice);
     if (status != NV_OK)
         goto done;
+
+    pMappingGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
     // Get all the necessary information about the memory
     status = nvGpuOpsGetMemoryByHandle(hClient,
@@ -6155,6 +6574,7 @@ static void setCeCaps(const NvU8 *rmCeCaps, gpuCeCaps *ceCaps)
     ceCaps->nvlinkP2p   = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_NVLINK_P2P);
     ceCaps->sysmem      = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_SYSMEM);
     ceCaps->p2p         = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_P2P);
+    ceCaps->secure      = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_CC_SECURE);
 }
 
 static NV_STATUS queryCopyEngines(struct gpuDevice *gpu, gpuCesCaps *cesCaps)
@@ -6283,7 +6703,8 @@ static NvBool isClassSec2(NvU32 class)
 {
     switch (class)
     {
-
+        case HOPPER_SEC2_WORK_LAUNCH_A:
+            return NV_TRUE;
         default:
             return NV_FALSE;
     }
@@ -6797,8 +7218,9 @@ NV_STATUS nvGpuOpsFreeDupedHandle(struct gpuDevice *device,
     Memory *pMemory = NULL;
     OBJGPU *pMappingGpu = NULL;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    RsClient *pClient;
+    Subdevice *pSubdevice;
     NvHandle hClient;
-    NvHandle hSubDevice;
 
     if (!device)
         return NV_ERR_INVALID_ARGUMENT;
@@ -6806,19 +7228,20 @@ NV_STATUS nvGpuOpsFreeDupedHandle(struct gpuDevice *device,
     hClient = device->session->handle;
 
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
-    status = _nvGpuOpsLocksAcquire(RMAPI_LOCK_FLAGS_READ, hClient, NULL, 0, 0, 0, &acquiredLocks);
+    status = _nvGpuOpsLocksAcquire(RMAPI_LOCK_FLAGS_READ, hClient, &pClient, 0, 0, 0, &acquiredLocks);
     if (status != NV_OK)
     {
         threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
         return status;
     }
 
-    status = CliSetSubDeviceContext(device->session->handle,
-                                    device->subhandle,
-                                    &hSubDevice,
-                                    &pMappingGpu);
+    status = subdeviceGetByHandle(pClient, device->subhandle, &pSubdevice);
     if (status != NV_OK)
         goto out;
+
+    pMappingGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
     status = nvGpuOpsGetMemoryByHandle(device->session->handle,
                                        hPhysHandle,
@@ -6852,6 +7275,21 @@ NV_STATUS nvGpuOpsInitFaultInfo(struct gpuDevice *device,
     void *bufferAddress = NULL;
     NvU32 faultBufferSize = 0;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+    RsClient *pClient;
+    Device   *pDevice;
+    NvHandle  hClient = device->session->handle;
+    NvHandle  hDevice = device->handle;
+    UvmFaultMetadataPacket *bufferMetadata = NULL;
+
+    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
+    if (status != NV_OK)
+        return status;
+
+    status = deviceGetByHandle(pClient, hDevice, &pDevice);
+    if (status != NV_OK)
+        return status;
+
+    pFaultInfo->pDevice = pDevice;
 
     pFaultInfo->faultBufferHandle = NV01_NULL_OBJECT;
     status = pRmApi->Alloc(pRmApi,
@@ -6859,11 +7297,22 @@ NV_STATUS nvGpuOpsInitFaultInfo(struct gpuDevice *device,
                            device->subhandle,
                            &pFaultInfo->faultBufferHandle,
                            device->faultBufferClass,
-                           &faultBufferAllocParams);
+                           &faultBufferAllocParams,
+                           sizeof(faultBufferAllocParams));
     if (status != NV_OK)
         goto cleanup;
 
 
+    OBJGPU   *pGpu;
+
+    pGpu = GPU_RES_GET_GPU(pDevice);
+    //
+    // When Hopper CC is enabled, UVM won't have direct access to the replayable
+    // HW fault buffer. Instead, it will be using a shadow fault buffer in
+    // unprotected sysmem and GSP-RM will be copying encrypted fault packets from the
+    // HW fault buffer to this shadow buffer
+    //
+    if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu))
     {
         // Get the Size of the fault buffer
         status = pRmApi->Control(pRmApi,
@@ -6906,6 +7355,44 @@ NV_STATUS nvGpuOpsInitFaultInfo(struct gpuDevice *device,
         pFaultInfo->nonReplayable.shadowBufferAddress = (void *)NvP64_VALUE(nonReplayableFaultsParams.pShadowBuffer);
         pFaultInfo->nonReplayable.shadowBufferContext = (void *)NvP64_VALUE(nonReplayableFaultsParams.pShadowBufferContext);
         pFaultInfo->nonReplayable.bufferSize          = nonReplayableFaultsParams.bufferSize;
+        pFaultInfo->nonReplayable.shadowBufferMetadata = (UvmFaultMetadataPacket *)NvP64_VALUE(nonReplayableFaultsParams.pShadowBufferMetadata);
+    }
+
+    if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
+    {
+        NVC369_CTRL_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF_PARAMS replayableFaultsParams = {0};
+
+        // Allocate a shadow buffer for replayable faults in case Hopper CC is enabled
+        status = pRmApi->Control(pRmApi,
+                                 session->handle,
+                                 pFaultInfo->faultBufferHandle,
+                                 NVC369_CTRL_CMD_MMU_FAULT_BUFFER_REGISTER_REPLAY_BUF,
+                                 &replayableFaultsParams,
+                                 sizeof(replayableFaultsParams));
+        if (status != NV_OK)
+            goto cleanup_fault_buffer;
+
+        bufferAddress   = (void *)NvP64_VALUE(replayableFaultsParams.pShadowBuffer);
+        faultBufferSize = replayableFaultsParams.bufferSize;
+
+        // Make sure that the UVM and RM sizes of the metadata packet are equal.
+        ct_assert(sizeof(GMMU_FAULT_PACKET_METADATA) == sizeof(UvmFaultMetadataPacket));
+        bufferMetadata  = (UvmFaultMetadataPacket *)NvP64_VALUE(replayableFaultsParams.pShadowBufferMetadata);
+
+        // Get the register mappings for non-replayable fault buffer
+        portMemSet(&registermappingsParams, 0, sizeof(registermappingsParams));
+
+        registermappingsParams.faultBufferType = NVB069_CTRL_FAULT_BUFFER_NON_REPLAYABLE;
+        status = pRmApi->Control(pRmApi,
+                                 session->handle,
+                                 pFaultInfo->faultBufferHandle,
+                                 NVB069_CTRL_CMD_FAULTBUFFER_GET_REGISTER_MAPPINGS,
+                                 &registermappingsParams,
+                                 sizeof(registermappingsParams));
+        if (status != NV_OK)
+            goto cleanup_fault_buffer;
+
+        pFaultInfo->nonReplayable.pFaultBufferPut = (NvU32*)(NvUPtr)registermappingsParams.pFaultBufferPut;
     }
 
     registermappingsParams.faultBufferType = NVB069_CTRL_FAULT_BUFFER_REPLAYABLE;
@@ -6928,10 +7415,21 @@ NV_STATUS nvGpuOpsInitFaultInfo(struct gpuDevice *device,
     pFaultInfo->replayable.pPrefetchCtrl          = (NvU32*)(NvUPtr)registermappingsParams.pPrefetchCtrl;
     pFaultInfo->replayable.bufferSize             = faultBufferSize;
     pFaultInfo->replayable.bufferAddress          = bufferAddress;
+    pFaultInfo->replayable.bufferMetadata         = bufferMetadata;
+
+    if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
+    {
+        pFaultInfo->replayable.bUvmOwnsHwFaultBuffer  = NV_FALSE;
+    }
+    else
+    {
+        pFaultInfo->replayable.bUvmOwnsHwFaultBuffer  = NV_TRUE;
+    }
 
     return NV_OK;
 
 cleanup_fault_buffer:
+    if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu))
     {
         gpuDeviceUnmapCpuFreeHandle(device,
                                     pFaultInfo->faultBufferHandle,
@@ -6944,15 +7442,15 @@ cleanup:
 }
 
 NV_STATUS nvGpuOpsInitAccessCntrInfo(struct gpuDevice *device,
-                                     gpuAccessCntrInfo *pAccessCntrInfo)
+                                     gpuAccessCntrInfo *pAccessCntrInfo,
+                                     NvU32 accessCntrIndex)
 {
     struct gpuSession *session = device->session;
     NV_STATUS status = NV_OK;
-    NvU32 accessCntrBufferAllocParams = {0};
+    NV_ACCESS_COUNTER_NOTIFY_BUFFER_ALLOC_PARAMS accessCntrBufferAllocParams = {0};
     NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_SIZE_PARAMS sizeParams = {0};
     NVC365_CTRL_ACCESS_CNTR_BUFFER_GET_REGISTER_MAPPINGS_PARAMS registermappings;
     void *bufferAddress;
-    NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR_PARAMS getDmaBaseSysmemAddrParams = {0};
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
     OBJGPU *pGpu = NULL;
 
@@ -6965,13 +7463,15 @@ NV_STATUS nvGpuOpsInitAccessCntrInfo(struct gpuDevice *device,
     if (status != NV_OK)
         return status;
 
+    accessCntrBufferAllocParams.accessCounterIndex = accessCntrIndex;
     pAccessCntrInfo->accessCntrBufferHandle = NV01_NULL_OBJECT;
     status = pRmApi->Alloc(pRmApi,
                            session->handle,
                            device->subhandle,
                            &pAccessCntrInfo->accessCntrBufferHandle,
                            device->accessCounterBufferClass,
-                           &accessCntrBufferAllocParams);
+                           &accessCntrBufferAllocParams,
+                           sizeof(accessCntrBufferAllocParams));
 
     if (status != NV_OK)
         goto cleanup;
@@ -7005,15 +7505,6 @@ NV_STATUS nvGpuOpsInitAccessCntrInfo(struct gpuDevice *device,
     if (status != NV_OK)
         goto cleanup_access_ctr_buffer;
 
-    status = pRmApi->Control(pRmApi,
-                             session->handle,
-                             device->handle,
-                             NV0080_CTRL_CMD_BIF_GET_DMA_BASE_SYSMEM_ADDR,
-                             &getDmaBaseSysmemAddrParams,
-                             sizeof(getDmaBaseSysmemAddrParams));
-    if (status != NV_OK)
-        goto cleanup_access_ctr_buffer;
-
     pAccessCntrInfo->pAccessCntrBufferGet  = (NvU32*)(NvUPtr)registermappings.pAccessCntrBufferGet;
     pAccessCntrInfo->pAccessCntrBufferPut  = (NvU32*)(NvUPtr)registermappings.pAccessCntrBufferPut;
     pAccessCntrInfo->pAccessCntrBufferFull = (NvU32*)(NvUPtr)registermappings.pAccessCntrBufferFull;
@@ -7021,7 +7512,6 @@ NV_STATUS nvGpuOpsInitAccessCntrInfo(struct gpuDevice *device,
     pAccessCntrInfo->pHubIntrEnSet         = (NvU32*)(NvUPtr)registermappings.pHubIntrEnSet;
     pAccessCntrInfo->pHubIntrEnClear       = (NvU32*)(NvUPtr)registermappings.pHubIntrEnClear;
     pAccessCntrInfo->accessCounterMask     = registermappings.accessCntrMask;
-    pAccessCntrInfo->baseDmaSysmemAddr     = getDmaBaseSysmemAddrParams.baseDmaSysmemAddr;
 
     return NV_OK;
 
@@ -7175,6 +7665,14 @@ NV_STATUS nvGpuOpsDestroyFaultInfo(struct gpuDevice *device,
     NV_STATUS status = NV_OK;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
 
+    OBJGPU *pGpu;
+
+    status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_GPU_OPS);
+    NV_ASSERT(status == NV_OK);
+    status = CliSetGpuContext(device->session->handle, device->handle, &pGpu, NULL);
+    NV_ASSERT(status == NV_OK);
+    rmapiLockRelease();
+
     if (pFaultInfo->faultBufferHandle && isDeviceVoltaPlus(device))
     {
         NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_NON_REPLAY_BUF_PARAMS params = {0};
@@ -7190,6 +7688,21 @@ NV_STATUS nvGpuOpsDestroyFaultInfo(struct gpuDevice *device,
         NV_ASSERT(status == NV_OK);
     }
 
+    if (pFaultInfo->faultBufferHandle && gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
+    {
+        NVC369_CTRL_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF_PARAMS params = {0};
+
+        params.pShadowBuffer = NV_PTR_TO_NvP64(pFaultInfo->replayable.bufferAddress);
+
+        status = pRmApi->Control(pRmApi,
+                                 device->session->handle,
+                                 pFaultInfo->faultBufferHandle,
+                                 NVC369_CTRL_CMD_MMU_FAULT_BUFFER_UNREGISTER_REPLAY_BUF,
+                                 &params,
+                                 sizeof(params));
+        NV_ASSERT(status == NV_OK);
+    }
+    else
     {
         gpuDeviceUnmapCpuFreeHandle(device,
                                     pFaultInfo->faultBufferHandle,
@@ -7204,39 +7717,134 @@ NV_STATUS nvGpuOpsDestroyFaultInfo(struct gpuDevice *device,
 NV_STATUS nvGpuOpsHasPendingNonReplayableFaults(gpuFaultInfo *pFaultInfo,
                                                 NvBool *hasPendingFaults)
 {
-    GMMU_SHADOW_FAULT_BUF *pQueue =
-        (GMMU_SHADOW_FAULT_BUF *) pFaultInfo->nonReplayable.shadowBufferAddress;
+    NV_STATUS status = NV_OK;
 
-    if (!pQueue || !hasPendingFaults)
+    if (hasPendingFaults == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
-    *hasPendingFaults = !queueIsEmpty(pQueue);
+    if (pFaultInfo->pDevice == NULL)
+        return NV_ERR_INVALID_ARGUMENT;
 
-    return NV_OK;
+    OBJGPU *pGpu;
+
+    pGpu = GPU_RES_GET_GPU(pFaultInfo->pDevice);
+
+    //
+    // In case of GSP owned HW fault buffers, CPU-RM maintains the get pointer.
+    // The PUT pointer is updated by GSP in a PRI and CPU-RM just reads the same.
+    // GET != PUT implies pending faults in the shadow buffer
+    //
+    if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
+    {
+        KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+        *hasPendingFaults = (pFaultInfo->nonReplayable.shadowBufferGet !=
+                             kgmmuReadShadowBufPutIndex_HAL(pGpu,
+                                                            pKernelGmmu,
+                                                            NON_REPLAYABLE_FAULT_BUFFER));
+
+    }
+    else
+    {
+        GMMU_SHADOW_FAULT_BUF *pQueue =
+            (GMMU_SHADOW_FAULT_BUF *) pFaultInfo->nonReplayable.shadowBufferAddress;
+
+        if (pQueue == NULL)
+            return NV_ERR_INVALID_ARGUMENT;
+
+        *hasPendingFaults = !queueIsEmpty(pQueue);
+    }
+
+    return status;
 }
 
 NV_STATUS nvGpuOpsGetNonReplayableFaults(gpuFaultInfo *pFaultInfo,
                                          void *faultBuffer,
                                          NvU32 *numFaults)
 {
-    GMMU_SHADOW_FAULT_BUF *pQueue =
-        (GMMU_SHADOW_FAULT_BUF *) pFaultInfo->nonReplayable.shadowBufferAddress;
-    QueueContext *pQueueCtx =
-        (QueueContext *) pFaultInfo->nonReplayable.shadowBufferContext;
+    NV_STATUS status = NV_OK;
 
-    if (!pQueue || !faultBuffer || !numFaults)
+    if (faultBuffer == NULL || numFaults == NULL)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    if (pFaultInfo->pDevice == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
     *numFaults = 0;
 
-    // Copy all faults in the client shadow fault buffer to the given buffer
-    while (queuePopAndCopyNonManaged(pQueue, pQueueCtx, faultBuffer))
+    OBJGPU *pGpu;
+
+    pGpu = GPU_RES_GET_GPU(pFaultInfo->pDevice);
+
+    if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
     {
-        ++(*numFaults);
-        faultBuffer = (char *)faultBuffer + NVC369_BUF_SIZE;
+        KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+        NvU32       shadowBufferPutIndex;
+        NvU32       shadowBufferGetIndex;
+        NvU32       maxFaultBufferEntries;
+
+        maxFaultBufferEntries = pFaultInfo->nonReplayable.bufferSize / NVC369_BUF_SIZE;
+        shadowBufferGetIndex = pFaultInfo->nonReplayable.shadowBufferGet;
+        shadowBufferPutIndex = kgmmuReadShadowBufPutIndex_HAL(pGpu,
+                                                              pKernelGmmu,
+                                                              NON_REPLAYABLE_FAULT_BUFFER);
+        // Copy the fault packets as long as GET != PUT
+        while (shadowBufferGetIndex != shadowBufferPutIndex)
+        {
+            UvmFaultMetadataPacket metadata;
+            NvU8 *pShadowBuffer = (NvU8 *)pFaultInfo->nonReplayable.shadowBufferAddress;
+            UvmFaultMetadataPacket *pShadowBufferMetadata = pFaultInfo->nonReplayable.shadowBufferMetadata;
+
+            ++(*numFaults);
+
+            // TODO: Revisit this while adding encryption/decryption support
+            // Once encryption/decryption is enabled, CPU-RM will have to decrypt
+            // the fault packet before copying it to the UVM provided buffer. For
+            // now a plain text copy should suffice.
+            portMemCopy(faultBuffer, NVC369_BUF_SIZE,
+                        pShadowBuffer + (shadowBufferGetIndex * NVC369_BUF_SIZE),
+                        NVC369_BUF_SIZE);
+
+            portMemCopy(&metadata, sizeof(UvmFaultMetadataPacket),
+                        pShadowBufferMetadata + shadowBufferGetIndex,
+                        sizeof(UvmFaultMetadataPacket));
+
+            // CC-TODO: Packet decryption should go here.
+            if (metadata.valid != GMMU_FAULT_PACKET_METADATA_VALID_YES)
+            {
+                return NV_ERR_INVALID_STATE;
+            }
+
+            // Clear the plaintext valid bit and authTag.
+            portMemSet(pShadowBufferMetadata + shadowBufferGetIndex,
+                       0x0,
+                       sizeof(UvmFaultMetadataPacket));
+
+            shadowBufferGetIndex = (shadowBufferGetIndex + 1) % maxFaultBufferEntries;
+            faultBuffer = (NvU8 *)faultBuffer + NVC369_BUF_SIZE;
+        }
+        // Update the GET pointer
+        pFaultInfo->nonReplayable.shadowBufferGet = shadowBufferGetIndex;
+    }
+    else
+    {
+        GMMU_SHADOW_FAULT_BUF *pQueue =
+            (GMMU_SHADOW_FAULT_BUF *) pFaultInfo->nonReplayable.shadowBufferAddress;
+        QueueContext *pQueueCtx =
+            (QueueContext *) pFaultInfo->nonReplayable.shadowBufferContext;
+
+        if (pQueue == NULL)
+            return NV_ERR_INVALID_ARGUMENT;
+
+        // Copy all faults in the client shadow fault buffer to the given buffer
+        while (queuePopAndCopyNonManaged(pQueue, pQueueCtx, faultBuffer))
+        {
+            ++(*numFaults);
+            faultBuffer = (char *)faultBuffer + NVC369_BUF_SIZE;
+        }
     }
 
-    return NV_OK;
+    return status;
 }
 
 NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(struct gpuDevice *device)
@@ -7265,36 +7873,38 @@ NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(struct gpuDevice *device)
 }
 
 static NV_STATUS nvGpuOpsVerifyChannel(struct gpuAddressSpace *vaSpace,
-                                       NvHandle hClient,
+                                       RsClient *pClient,
                                        NvHandle hKernelChannel,
                                        OBJGPU **pGpu,
                                        KernelChannel **ppKernelChannel)
 {
     NV_STATUS status = NV_OK;
-    NvHandle hDevice, hSubDevice;
+    NvHandle hDevice;
     OBJVASPACE *pVAS = NULL;
     OBJGPU *pVaSpaceGpu;
-    RsClient *pClient;
+    RsClient *pSessionClient;
+    Subdevice *pSubdevice;
 
     NV_ASSERT_OR_RETURN(ppKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    status = serverGetClientUnderLock(&g_resServ, vaSpace->device->session->handle, &pClient);
+    status = serverGetClientUnderLock(&g_resServ, vaSpace->device->session->handle,
+            &pSessionClient);
     if (status != NV_OK)
         return status;
 
-    status = vaspaceGetByHandleOrDeviceDefault(pClient,
+    status = vaspaceGetByHandleOrDeviceDefault(pSessionClient,
                                                vaSpace->device->handle,
                                                vaSpace->handle,
                                                &pVAS);
     if (status != NV_OK)
         return status;
 
-    status = CliGetKernelChannel(hClient, hKernelChannel, ppKernelChannel);
+    status = CliGetKernelChannel(pClient, hKernelChannel, ppKernelChannel);
     if (status != NV_OK)
         return NV_ERR_INVALID_OBJECT_HANDLE;
 
     hDevice = RES_GET_HANDLE(GPU_RES_GET_DEVICE(*ppKernelChannel));
-    status = CliSetGpuContext(hClient, hDevice, pGpu, NULL);
+    status = CliSetGpuContext(pClient->hClient, hDevice, pGpu, NULL);
     if (status != NV_OK)
         return status;
 
@@ -7311,12 +7921,14 @@ static NV_STATUS nvGpuOpsVerifyChannel(struct gpuAddressSpace *vaSpace,
 
     // In SLI config, RM's internal allocations such as channel instance
     // are tracked with a memdesc per subdevice. Hence, Get the correct pGpu.
-    status = CliSetSubDeviceContext(vaSpace->device->session->handle,
-                                    vaSpace->device->subhandle,
-                                    &hSubDevice,
-                                    pGpu);
+    status = subdeviceGetByHandle(pSessionClient, vaSpace->device->subhandle,
+            &pSubdevice);
     if (status != NV_OK)
         return status;
+
+    *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
     return NV_OK;
 }
@@ -7618,6 +8230,7 @@ NV_STATUS nvGpuOpsRetainChannel(struct gpuAddressSpace *vaSpace,
 {
     nvGpuOpsLockSet acquiredLocks;
     THREAD_STATE_NODE threadState;
+    RsClient *pClient;
     KernelChannel *pKernelChannel = NULL;
     OBJGPU *pGpu = NULL;
     gpuRetainedChannel *channel = NULL;
@@ -7635,7 +8248,7 @@ NV_STATUS nvGpuOpsRetainChannel(struct gpuAddressSpace *vaSpace,
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
     status = _nvGpuOpsLocksAcquireAll(RMAPI_LOCK_FLAGS_READ,
                                       hClient,
-                                      NULL,
+                                      &pClient,
                                       &acquiredLocks);
     if (status != NV_OK)
     {
@@ -7646,7 +8259,7 @@ NV_STATUS nvGpuOpsRetainChannel(struct gpuAddressSpace *vaSpace,
     device = vaSpace->device;
     rmSubDevice = device->rmSubDevice;
 
-    status = nvGpuOpsVerifyChannel(vaSpace, hClient, hKernelChannel, &pGpu,
+    status = nvGpuOpsVerifyChannel(vaSpace, pClient, hKernelChannel, &pGpu,
                                    &pKernelChannel);
     if (status != NV_OK)
     {
@@ -7716,7 +8329,8 @@ NV_STATUS nvGpuOpsRetainChannel(struct gpuAddressSpace *vaSpace,
                            hChannelParent,
                           &channel->hChannelRetainer,
                            UVM_CHANNEL_RETAINER,
-                          &channelRetainerParams);
+                          &channelRetainerParams,
+                          sizeof(channelRetainerParams));
     if (status != NV_OK)
         goto error;
 
@@ -8228,11 +8842,11 @@ NV_STATUS nvGpuOpsGetChannelResourcePtes(struct gpuAddressSpace *vaSpace,
     NV_STATUS status = NV_OK;
     nvGpuOpsLockSet acquiredLocks;
     THREAD_STATE_NODE threadState;
-    NvHandle hSubDevice;
     PMEMORY_DESCRIPTOR pMemDesc = NULL;
     OBJGPU *pMappingGpu = NULL;
     OBJVASPACE *pVAS = NULL;
     RsClient *pClient;
+    Subdevice *pSubDevice;
 
     if (!vaSpace || !resourceDescriptor || !pGpuExternalMappingInfo)
         return NV_ERR_INVALID_ARGUMENT;
@@ -8245,7 +8859,7 @@ NV_STATUS nvGpuOpsGetChannelResourcePtes(struct gpuAddressSpace *vaSpace,
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
     status = _nvGpuOpsLocksAcquireAll(RMAPI_LOCK_FLAGS_READ,
                                       vaSpace->device->session->handle,
-                                      NULL,
+                                      &pClient,
                                       &acquiredLocks);
     if (status != NV_OK)
     {
@@ -8255,16 +8869,17 @@ NV_STATUS nvGpuOpsGetChannelResourcePtes(struct gpuAddressSpace *vaSpace,
 
     pMemDesc = (MEMORY_DESCRIPTOR *) NvP64_VALUE(resourceDescriptor);
 
-    status = CliSetSubDeviceContext(vaSpace->device->session->handle,
-                                    vaSpace->device->subhandle,
-                                    &hSubDevice,
-                                    &pMappingGpu);
+    status = subdeviceGetByHandle(pClient, vaSpace->device->subhandle, &pSubDevice);
     if (status != NV_OK)
     {
         _nvGpuOpsLocksRelease(&acquiredLocks);
         threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
         return status;
     }
+
+    pMappingGpu = GPU_RES_GET_GPU(pSubDevice);
+
+    GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
 
     if (pMemDesc->pGpu != pMappingGpu)
     {
@@ -8280,14 +8895,6 @@ NV_STATUS nvGpuOpsGetChannelResourcePtes(struct gpuAddressSpace *vaSpace,
         _nvGpuOpsLocksRelease(&acquiredLocks);
         threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
         return NV_ERR_NOT_SUPPORTED;
-    }
-
-    status = serverGetClientUnderLock(&g_resServ, vaSpace->device->session->handle, &pClient);
-    if (status != NV_OK)
-    {
-        _nvGpuOpsLocksRelease(&acquiredLocks);
-        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-        return status;
     }
 
     status = vaspaceGetByHandleOrDeviceDefault(pClient,
@@ -8484,6 +9091,9 @@ ct_assert(sizeof(UvmPmaStatistics) == sizeof(PMA_STATS));
 ct_assert(NV_OFFSETOF(UvmPmaStatistics, numPages2m) == NV_OFFSETOF(PMA_STATS, num2mbPages));
 ct_assert(NV_OFFSETOF(UvmPmaStatistics, numFreePages64k) == NV_OFFSETOF(PMA_STATS, numFreeFrames));
 ct_assert(NV_OFFSETOF(UvmPmaStatistics, numFreePages2m) == NV_OFFSETOF(PMA_STATS, numFree2mbPages));
+ct_assert(NV_OFFSETOF(UvmPmaStatistics, numPages2mProtected) == NV_OFFSETOF(PMA_STATS, num2mbPagesProtected));
+ct_assert(NV_OFFSETOF(UvmPmaStatistics, numFreePages64kProtected) == NV_OFFSETOF(PMA_STATS, numFreeFramesProtected));
+ct_assert(NV_OFFSETOF(UvmPmaStatistics, numFreePages2mProtected) == NV_OFFSETOF(PMA_STATS, numFree2mbPagesProtected));
 
 /*!
  *  Retrieve the PMA (Physical Memory Allocator) object initialized by RM
@@ -8522,53 +9132,51 @@ NV_STATUS nvGpuOpsGetPmaObject(struct gpuDevice *device,
         return status;
     }
 
-    status = CliSetGpuContext(session->handle, device->handle, &pGpu, NULL);
-    if (status != NV_OK)
-    {
-        _nvGpuOpsLocksRelease(&acquiredLocks);
-        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-        return NV_ERR_OBJECT_NOT_FOUND;
-    }
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+        CliSetGpuContext(session->handle, device->handle, &pGpu, NULL),
+        done);
 
     pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    if (pMemoryManager == NULL)
-    {
-        _nvGpuOpsLocksRelease(&acquiredLocks);
-        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-        return NV_ERR_OBJECT_NOT_FOUND;
-    }
+    NV_CHECK_OR_ELSE(LEVEL_ERROR,
+        pMemoryManager != NULL,
+        status = NV_ERR_OBJECT_NOT_FOUND; goto done; );
 
     if (IS_MIG_IN_USE(pGpu))
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+        RsClient *pClient;
+        Device *pDevice;
 
-        status = kmigmgrGetMemoryPartitionHeapFromClient(pGpu, pKernelMIGManager, session->handle, &pHeap);
-        if (status != NV_OK)
-            return status;
+        NV_ASSERT_OK_OR_GOTO(status,
+            serverGetClientUnderLock(&g_resServ, session->handle, &pClient),
+            done);
+
+        NV_ASSERT_OK_OR_GOTO(status,
+            deviceGetByHandle(pClient, device->handle, &pDevice),
+            done);
+
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            kmigmgrGetMemoryPartitionHeapFromDevice(pGpu, pKernelMIGManager, pDevice, &pHeap),
+            done);
     }
     else
         pHeap = GPU_GET_HEAP(pGpu);
 
-    if (pHeap == NULL)
-    {
-        _nvGpuOpsLocksRelease(&acquiredLocks);
-        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-        return NV_ERR_OBJECT_NOT_FOUND;
-    }
+    NV_CHECK_OR_ELSE(LEVEL_ERROR,
+        pHeap != NULL,
+        status = NV_ERR_OBJECT_NOT_FOUND; goto done; );
 
-    if (!memmgrIsPmaInitialized(pMemoryManager))
-    {
-        _nvGpuOpsLocksRelease(&acquiredLocks);
-        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-        return NV_ERR_OBJECT_NOT_FOUND;
-    }
+    NV_CHECK_OR_ELSE(LEVEL_ERROR,
+        memmgrIsPmaInitialized(pMemoryManager),
+        status = NV_ERR_OBJECT_NOT_FOUND; goto done; );
 
     *pPmaObject = (void *)&pHeap->pmaObject;
     *pPmaStats = (const UvmPmaStatistics *)&pHeap->pmaObject.pmaStats;
 
+done:
     _nvGpuOpsLocksRelease(&acquiredLocks);
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
-    return NV_OK;
+    return status;
 }
 
 NV_STATUS nvGpuOpsP2pObjectCreate(struct gpuDevice *device1,
@@ -8600,7 +9208,7 @@ NV_STATUS nvGpuOpsP2pObjectCreate(struct gpuDevice *device1,
 
     session = device1->session;
     hTemp = NV01_NULL_OBJECT;
-    status = pRmApi->Alloc(pRmApi, session->handle, session->handle, &hTemp, NV50_P2P, &p2pAllocParams);
+    status = pRmApi->Alloc(pRmApi, session->handle, session->handle, &hTemp, NV50_P2P, &p2pAllocParams, sizeof(p2pAllocParams));
     if (status == NV_OK)
         *hP2pObject = hTemp;
 
@@ -9004,3 +9612,131 @@ static NV_STATUS nvGpuOpsGetMemoryByHandle(NvHandle hClient, NvHandle hMemory, M
                           ppMemory);
 }
 
+NV_STATUS nvGpuOpsCcslContextInit(struct ccslContext_t **ctx,
+                                  struct gpuChannel *channel)
+{
+    if ((ctx == NULL) || (channel == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return ccslContextInitViaChannel(ctx, channel->tsg->vaSpace->device->session->handle, channel->channelHandle);
+}
+
+NV_STATUS nvGpuOpsCcslContextClear(struct ccslContext_t *ctx)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    ccslContextClear(ctx);
+    return NV_OK;
+}
+
+NV_STATUS nvGpuOpsCcslAcquireEncryptionIv(struct ccslContext_t *ctx, NvU8 *encryptIv)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return ccslAcquireEncryptionIv(ctx, encryptIv);
+}
+
+NV_STATUS nvGpuOpsCcslLogDeviceEncryption(struct ccslContext_t *ctx, NvU8 *decryptIv)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return ccslLogDeviceEncryption(ctx, decryptIv);
+}
+
+NV_STATUS nvGpuOpsCcslRotateIv(struct ccslContext_t *ctx, NvU8 direction)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return ccslRotateIv(ctx, direction);
+}
+
+NV_STATUS nvGpuOpsCcslEncryptWithIv(struct ccslContext_t *ctx,
+                                    NvU32 bufferSize,
+                                    NvU8 const *inputBuffer,
+                                    NvU8 *encryptIv,
+                                    NvU8 *outputBuffer,
+                                    NvU8 *authTagBuffer)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return ccslEncryptWithIv(ctx, bufferSize, inputBuffer, encryptIv, outputBuffer, authTagBuffer);
+}
+
+NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,
+                              NvU32 bufferSize,
+                              NvU8 const *inputBuffer,
+                              NvU8 *outputBuffer,
+                              NvU8 *authTagBuffer)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return ccslEncrypt(ctx, bufferSize, inputBuffer, outputBuffer, authTagBuffer);
+}
+
+NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
+                              NvU32 bufferSize,
+                              NvU8 const *inputBuffer,
+                              NvU8 const *decryptIv,
+                              NvU8 *outputBuffer,
+                              NvU8 const *authTagBuffer)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return ccslDecrypt(ctx, bufferSize, inputBuffer, decryptIv, outputBuffer, authTagBuffer);
+}
+
+NV_STATUS nvGpuOpsCcslSign(struct ccslContext_t *ctx,
+                           NvU32 bufferSize,
+                           NvU8 const *inputBuffer,
+                           NvU8 *authTagBuffer)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return ccslSign(ctx, bufferSize, inputBuffer, authTagBuffer);
+}
+
+NV_STATUS nvGpuOpsQueryMessagePool(struct ccslContext_t *ctx,
+                                   NvU8 direction,
+                                   NvU64 *messageNum)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    switch (direction)
+    {
+        case UVM_CSL_DIR_CPU_TO_GPU:
+            return ccslQueryMessagePool(ctx, CCSL_DIR_HOST_TO_DEVICE, messageNum);
+        case UVM_CSL_DIR_GPU_TO_CPU:
+            return ccslQueryMessagePool(ctx, CCSL_DIR_DEVICE_TO_HOST, messageNum);
+        default:
+            return NV_ERR_INVALID_ARGUMENT;
+    }
+}

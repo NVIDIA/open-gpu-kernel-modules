@@ -29,6 +29,7 @@
 /* ------------------------- Includes --------------------------------------- */
 #include "gpu/gpu.h"
 #include "objtmr.h"
+#include "gpu/fsp/kern_fsp.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_timer.h"
 #include "published/hopper/gh100/dev_gc6_island.h"
@@ -36,6 +37,7 @@
 /* ------------------------- Macros ----------------------------------------- */
 /* ------------------------- Static Function Prototypes --------------------- */
 /* ------------------------- Public Functions  ------------------------------ */
+
 /*
  * @brief Sets the GPU time to the current wall-clock time.
  *
@@ -50,7 +52,9 @@ NV_STATUS tmrSetCurrentTime_GH100
     OBJTMR *pTmr
 )
 {
-    NvU64 ns;
+    KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+    NvU64 osTimeNs, secTimerNs, sysTimerOffsetNs;
+    NvU32 secTimerLo, secTimerHi, secTimerHi2;
     NvU32 seconds;
     NvU32 useconds;
 
@@ -60,10 +64,42 @@ NV_STATUS tmrSetCurrentTime_GH100
         "osGetCurrentTime returns 0x%x seconds, 0x%x useconds\n",
         seconds, useconds);
 
-    ns = ((NvU64)seconds * 1000000 + useconds) * 1000;
+    osTimeNs = ((NvU64)seconds * 1000000 + useconds) * 1000;
 
-    GPU_REG_WR32(pGpu, NV_PGC6_SCI_SYS_TIMER_OFFSET_1, NvU64_HI32(ns));
-    GPU_REG_WR32(pGpu, NV_PGC6_SCI_SYS_TIMER_OFFSET_0, NvU64_LO32(ns));
+    //
+    // Get the current secure timer value to calculate the offset to apply
+    // Use hi-lo-hi reading to ensure a consistent value.
+    //
+    secTimerHi2 = GPU_REG_RD32(pGpu, NV_PGC6_SCI_SEC_TIMER_TIME_1);
+    do
+    {
+        secTimerHi  = secTimerHi2;
+        secTimerLo  = GPU_REG_RD32(pGpu, NV_PGC6_SCI_SEC_TIMER_TIME_0);
+        secTimerHi2 = GPU_REG_RD32(pGpu, NV_PGC6_SCI_SEC_TIMER_TIME_1);
+    } while (secTimerHi != secTimerHi2);
+    secTimerNs = secTimerLo | (((NvU64)secTimerHi) << 32);
+
+    NV_ASSERT_OR_RETURN(secTimerNs < osTimeNs, NV_ERR_INVALID_STATE);
+    sysTimerOffsetNs = osTimeNs - secTimerNs;
+
+    if ((pKernelFsp == NULL) || !kfspRequiresBug3957833WAR_HAL(pGpu, pKernelFsp))
+    {
+        //
+        // We can only safely program the timer offset if FSP includes the fix
+        // for bug 3957833.
+        //
+        GPU_REG_WR32(pGpu, NV_PGC6_SCI_SYS_TIMER_OFFSET_1, NvU64_HI32(sysTimerOffsetNs));
+        GPU_REG_WR32(pGpu, NV_PGC6_SCI_SYS_TIMER_OFFSET_0, NvU64_LO32(sysTimerOffsetNs) |
+                     DRF_DEF(_PGC6, _SCI_SYS_TIMER_OFFSET_0, _UPDATE, _TRIGGER));
+    }
+
+    //
+    // PTIMER (the system timer) may need to be manually adjusted by the offset
+    // everywhere it is supposed to match the host timestamp (for cases where
+    // the above writes didn't stick, or where the calling code doesn't have
+    // ready access to NV_PTIMER_TIME).
+    //
+    pTmr->sysTimerOffsetNs = sysTimerOffsetNs;
 
     return NV_OK;
 }

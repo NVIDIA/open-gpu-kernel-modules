@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -554,27 +554,21 @@ rmclientPostProcessPendingFreeList_IMPL
     return NV_OK;
 }
 
-static RmClient *handleToObject(NvHandle hClient)
-{
-    RmClient *pClient;
-    return (NV_OK == serverutilGetClientUnderLock(hClient, &pClient)) ? pClient : NULL;
-}
-
 RS_PRIV_LEVEL rmclientGetCachedPrivilegeByHandle(NvHandle hClient)
 {
-    RmClient *pClient = handleToObject(hClient);
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
     return pClient ? rmclientGetCachedPrivilege(pClient) : RS_PRIV_LEVEL_USER;
 }
 
 NvBool rmclientIsAdminByHandle(NvHandle hClient, RS_PRIV_LEVEL privLevel)
 {
-    RmClient *pClient = handleToObject(hClient);
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
     return pClient ? rmclientIsAdmin(pClient, privLevel) : NV_FALSE;
 }
 
 NvBool rmclientSetClientFlagsByHandle(NvHandle hClient, NvU32 clientFlags)
 {
-    RmClient *pClient = handleToObject(hClient);
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
     if (pClient)
         rmclientSetClientFlags(pClient, clientFlags);
     return !!pClient;
@@ -582,20 +576,20 @@ NvBool rmclientSetClientFlagsByHandle(NvHandle hClient, NvU32 clientFlags)
 
 void rmclientPromoteDebuggerStateByHandle(NvHandle hClient, NvU32 newMinimumState)
 {
-    RmClient *pClient = handleToObject(hClient);
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
     if (pClient)
         _rmclientPromoteDebuggerState(pClient, newMinimumState);
 }
 
 void *rmclientGetSecurityTokenByHandle(NvHandle hClient)
 {
-    RmClient *pClient = handleToObject(hClient);
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
     return pClient ? rmclientGetSecurityToken(pClient) : NULL;
 }
 
 NV_STATUS rmclientUserClientSecurityCheckByHandle(NvHandle hClient, const API_SECURITY_INFO *pSecInfo)
 {
-    RmClient *pClient = handleToObject(hClient);
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
 
     //
     // Return early if it's a null object. This is probably the allocation of
@@ -857,7 +851,7 @@ NvBool rmclientIsCapableOrAdminByHandle
     RS_PRIV_LEVEL privLevel
 )
 {
-    RmClient *pClient = handleToObject(hClient);
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
     if (pClient == NULL)
     {
         return NV_FALSE;
@@ -888,7 +882,7 @@ NvBool rmclientIsCapableByHandle
     NvU32 capability
 )
 {
-    RmClient *pClient = handleToObject(hClient);
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
     if (pClient == NULL)
     {
         return NV_FALSE;
@@ -957,7 +951,7 @@ _unregisterOSInfo
      NvU64 key2 = (NvU64)(staticCast(pClient, RsClient))->hClient;
      OsInfoMapSubmap *pSubmap = NULL;
      RmClient **pFind = NULL;
- 
+
      pFind = multimapFindItem(&g_osInfoList, key1, key2);
      if (pFind != NULL)
          multimapRemoveItem(&g_osInfoList, pFind);
@@ -965,8 +959,8 @@ _unregisterOSInfo
      pSubmap = multimapFindSubmap(&g_osInfoList, key1);
      if (pSubmap == NULL || multimapCountSubmapItems(&g_osInfoList, pSubmap) > 0)
          return NV_OK;
- 
+
      multimapRemoveSubmap(&g_osInfoList, pSubmap);
- 
+
      return NV_OK;
 }

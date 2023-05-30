@@ -53,7 +53,7 @@ subdeviceCtrlCmdMcGetArchInfo_IMPL
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
 
-    if (IsTEGRA(pGpu))
+    if (IsTEGRA_NVDISP_GPUS(pGpu))
     {
         pArchInfoParams->architecture = pGpu->chipInfo.platformId;
         pArchInfoParams->implementation = pGpu->chipInfo.implementationId;
@@ -61,16 +61,8 @@ subdeviceCtrlCmdMcGetArchInfo_IMPL
     }
     else
     {
-        if (pGpu->idInfo.ArchitectureExternal && pGpu->idInfo.ImplementationExternal)
-        {
-            pArchInfoParams->architecture = pGpu->idInfo.ArchitectureExternal;
-            pArchInfoParams->implementation = pGpu->idInfo.ImplementationExternal;
-        }
-        else
-        {
-            pArchInfoParams->architecture = pGpu->chipInfo.pmcBoot0.arch;
-            pArchInfoParams->implementation = pGpu->chipInfo.pmcBoot0.impl;
-        }
+        pArchInfoParams->architecture = pGpu->chipInfo.pmcBoot0.arch;
+        pArchInfoParams->implementation = pGpu->chipInfo.pmcBoot0.impl;
         pArchInfoParams->revision = (pGpu->chipInfo.pmcBoot0.majorRev << 4) | pGpu->chipInfo.pmcBoot0.minorRev;
         pArchInfoParams->subRevision = pGpu->chipInfo.subRevision;
     }
@@ -123,11 +115,6 @@ subdeviceCtrlCmdMcChangeReplayableFaultOwnership_IMPL
 {
     OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-
-    if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
 
     if (pKernelGmmu != NULL)
     {
@@ -243,7 +230,7 @@ kmcStateLoad_IMPL
         // Adjust the pci latency timer if needed
         _kmcSetPciLatencyTimer(pGpu, pKernelMc);
     }
-    
+
     return NV_OK;
 }
 

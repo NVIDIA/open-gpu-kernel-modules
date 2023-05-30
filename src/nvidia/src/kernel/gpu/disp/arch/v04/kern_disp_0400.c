@@ -33,7 +33,7 @@
 #include "gpu/gpu.h"
 #include "gpu/disp/kern_disp.h"
 
-#include "published/disp/v04_00/dev_disp.h"
+#include "disp/v04_00/dev_disp.h"
 
 #include "ctrl/ctrl2080/ctrl2080gpio.h"
 #include "core/locks.h"

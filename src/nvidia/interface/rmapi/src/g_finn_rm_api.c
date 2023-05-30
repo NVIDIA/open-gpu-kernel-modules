@@ -27,7 +27,13 @@
 #elif defined(NV_LIBOS) /* LIBOS */
 #include <nvstdint.h>
 #include "nvport/nvport.h"
-#else /* User Mode */
+#elif defined(USE_CUSTOM_MALLOC) /* OpenGL */
+#include <stdint.h>
+#include <stddef.h>
+#include <string.h>
+extern void *rmapi_import_malloc(size_t size);
+extern void rmapi_import_free(void *ptr);
+#else /* Default */
 #include <stdint.h>
 #include <stddef.h>
 #include <stdlib.h>
@@ -52,7 +58,10 @@
 #elif defined(NV_LIBOS) /* LIBOS */
 #define FINN_MALLOC(size) portMemAllocNonPaged(size)
 
-#else /* User Mode */
+#elif defined(USE_CUSTOM_MALLOC) /* OpenGL */
+#define FINN_MALLOC(size) rmapi_import_malloc(size)
+
+#else /* Default */
 #define FINN_MALLOC(size) malloc(size)
 #endif
 
@@ -64,7 +73,10 @@
 #elif defined(NV_LIBOS) /* LIBOS */
 #define FINN_FREE(buf) portMemFree(buf)
 
-#else /* User Mode */
+#elif defined(USE_CUSTOM_MALLOC) /* OpenGL */
+#define FINN_FREE(buf) rmapi_import_free(buf)
+
+#else /* Default */
 #define FINN_FREE(buf) free(buf)
 #endif
 
@@ -76,7 +88,10 @@
 #elif defined(NV_LIBOS) /* LIBOS */
 #define FINN_MEMZERO(buf, size) portMemSet(buf, 0, size)
 
-#else /* User Mode */
+#elif defined(USE_CUSTOM_MALLOC) /* OpenGL */
+#define FINN_MEMZERO(buf, size) memset(buf, 0, size)
+
+#else /* Default */
 #define FINN_MEMZERO(buf, size) memset(buf, 0, size)
 #endif
 
@@ -88,19 +103,16 @@
 #elif defined(NV_LIBOS) /* LIBOS */
 #define FINN_MEMCPY(dst, src, size) portMemCopy(dst, size, src, size)
 
-#else /* User Mode */
+#elif defined(USE_CUSTOM_MALLOC) /* OpenGL */
+#define FINN_MEMCPY(dst, src, size) memcpy(dst, src, size)
+
+#else /* Default */
 #define FINN_MEMCPY(dst, src, size) memcpy(dst, src, size)
 #endif
 
 // Report an error.
 #if defined(FINN_ERROR) /* Use override from Makefile */
-#elif defined(NVRM) /* Kernel Mode */
-#define FINN_ERROR(err) /* No-op */
-
-#elif defined(NV_LIBOS) /* LIBOS */
-#define FINN_ERROR(err) /* No-op */
-
-#else /* User Mode */
+#else /* Default */
 #define FINN_ERROR(err) /* No-op */
 #endif
 
@@ -115,7 +127,6 @@ typedef struct finn_bit_pump_for_read finn_bit_pump_for_read;
 struct finn_bit_pump_for_read
 {
     uint64_t accumulator;               // Bits not yet read from the data buffer
-    uint64_t checksum;                  // Checksum of data
     const uint64_t *buffer_position;    // Next word within data buffer to be read
     const uint64_t *end_of_data;        // End of data within buffer
     uint8_t remaining_bit_count;        // Number of bits remaining in the accumulator
@@ -135,7 +146,6 @@ struct finn_bit_pump_for_read
 static inline void finn_open_buffer_for_read(finn_bit_pump_for_read *bp, const uint64_t *sod, const uint64_t *eod)
 {
     bp->accumulator         = 0U;
-    bp->checksum            = 0U;
     bp->buffer_position     = sod;
     bp->end_of_data         = eod;
     bp->remaining_bit_count = 0U;
@@ -155,7 +165,7 @@ static uint64_t finn_read_buffer(finn_bit_pump_for_read *bp, uint8_t bit_size)
     uint64_t value;
 
     // Boundary crossing
-    // Accumulator does not have enough to satisfy the request,
+    // Accumulator does not have enough to satisfy the request.
     if (bit_size > bp->remaining_bit_count)
     {
         // Number of bits not yet satisfied
@@ -172,9 +182,6 @@ static uint64_t finn_read_buffer(finn_bit_pump_for_read *bp, uint8_t bit_size)
         else
         bp->accumulator = *(bp->buffer_position++);
 
-        // Update the checksum.
-        bp->checksum = ((bp->checksum << 1) ^ (bp->checksum & 1U)) ^ bp->accumulator;
-
         //
         // This is the special case where we are reading an entire 64-bit word
         // without crossing a boundary (when the accumulator is empty).  The
@@ -186,6 +193,9 @@ static uint64_t finn_read_buffer(finn_bit_pump_for_read *bp, uint8_t bit_size)
         // would exceed the 64-bit capacity.  However, the needed logic is simple.
         //
         // 64 is the largest legal value for `bit_size`, so `>=` is equivalent to `==`.
+        // Furthermore, if `bit_size == 64`, then `bp->remaining_bit_count` must
+        // have been zero when subtracted above.  That's how we know that there is
+        // no boundary crossing.
         //
         if (bit_size >= 64)
         {
@@ -231,22 +241,7 @@ static uint64_t finn_read_buffer(finn_bit_pump_for_read *bp, uint8_t bit_size)
 }
 
 
-// Close the read buffer.
-// Postcondition:  `bp->checksum` is updated to end-of-data.
-static inline void finn_close_buffer_for_read(finn_bit_pump_for_read *bp)
-{
-    // No need to update the bit pump buffer position,
-    // so use a local for optimal performance.
-    const uint64_t *p = bp->buffer_position;
-
-    // Apply any unread words to the checksum.
-    while (p < bp->end_of_data)
-    bp->checksum = ((bp->checksum << 1U) ^ (bp->checksum & 1U)) ^ (*(p++));
-}
-
-
 typedef struct finn_bit_pump_for_write finn_bit_pump_for_write;
-
 struct finn_bit_pump_for_write
 {
     uint64_t accumulator;           // Bits not yet written to the data buffer
@@ -394,7 +389,10 @@ static inline void finn_close_buffer_for_write(finn_bit_pump_for_write *bp)
 
 static NV_STATUS finnSerializeRoot_FINN_RM_API(NvU64 interface, NvU64 message, const char *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeRoot_FINN_RM_API(NvU64 interface, NvU64 message, finn_bit_pump_for_read *bp, char *api, NvLength dst_size, NvBool deser_up);
+#if (defined(NVRM))
 NvBool finnBadEnum_NV402C_CTRL_I2C_TRANSACTION_TYPE(NV402C_CTRL_I2C_TRANSACTION_TYPE value);
+#endif // (defined(NVRM))
+
 static NV_STATUS finnSerializeInterface_FINN_GT200_DEBUGGER_DEBUG(NvU64 message, const char *api_intf, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeInterface_FINN_GT200_DEBUGGER_DEBUG(NvU64 message, finn_bit_pump_for_read *bp, FINN_GT200_DEBUGGER_DEBUG *api_intf, NvLength api_size, NvBool deser_up);
 static NvU64 finnUnserializedInterfaceSize_FINN_GT200_DEBUGGER_DEBUG(NvU64 message);
@@ -453,6 +451,7 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_DIAG_GPU(NvU64 me
 static NV_STATUS finnSerializeInterface_FINN_NV40_I2C_I2C(NvU64 message, const char *api_intf, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeInterface_FINN_NV40_I2C_I2C(NvU64 message, finn_bit_pump_for_read *bp, FINN_NV40_I2C_I2C *api_intf, NvLength api_size, NvBool deser_up);
 static NvU64 finnUnserializedInterfaceSize_FINN_NV40_I2C_I2C(NvU64 message);
+#if (defined(NVRM))
 static NV_STATUS finnSerializeMessage_NV0000_CTRL_NVD_GET_DUMP_PARAMS(const NV0000_CTRL_NVD_GET_DUMP_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV0000_CTRL_NVD_GET_DUMP_PARAMS(finn_bit_pump_for_read *bp, NV0000_CTRL_NVD_GET_DUMP_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS(const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
@@ -463,8 +462,11 @@ static NV_STATUS finnSerializeMessage_NV0080_CTRL_FIFO_GET_CAPS_PARAMS(const NV0
 static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CAPS_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS(const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *api, NvLength api_size, NvBool deser_up);
+#endif // (defined(NVRM))
+
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *api, NvLength api_size, NvBool deser_up);
+#if (defined(NVRM))
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_GR_GET_CAPS_PARAMS(const NV0080_CTRL_GR_GET_CAPS_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
@@ -487,7 +489,9 @@ static NV_STATUS finnSerializeMessage_NV2080_CTRL_NVD_GET_DUMP_PARAMS(const NV20
 static NV_STATUS finnDeserializeMessage_NV2080_CTRL_NVD_GET_DUMP_PARAMS(finn_bit_pump_for_read *bp, NV2080_CTRL_NVD_GET_DUMP_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS(const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS(finn_bit_pump_for_read *bp, NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *api, NvLength api_size, NvBool deser_up);
+#endif // (defined(NVRM))
 
+#if (defined(NVRM))
 static NV_STATUS finnSerializeMessage_NV402C_CTRL_I2C_INDEXED_PARAMS(const NV402C_CTRL_I2C_INDEXED_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeMessage_NV402C_CTRL_I2C_INDEXED_PARAMS(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_INDEXED_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeMessage_NV402C_CTRL_I2C_TRANSACTION_PARAMS(const NV402C_CTRL_I2C_TRANSACTION_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
@@ -504,11 +508,16 @@ static NV_STATUS finnSerializeMessage_NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS(co
 static NV_STATUS finnDeserializeMessage_NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS(finn_bit_pump_for_read *bp, NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeRecord_NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS(const NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeRecord_NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS(finn_bit_pump_for_read *bp, NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_PARAMS *api, NvLength api_size, NvBool deser_up);
+#endif // (defined(NVRM))
+
 static NV_STATUS finnSerializeRecord_NV0080_CTRL_FIFO_CHANNEL(const NV0080_CTRL_FIFO_CHANNEL *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeRecord_NV0080_CTRL_FIFO_CHANNEL(finn_bit_pump_for_read *bp, NV0080_CTRL_FIFO_CHANNEL *api, NvLength api_size, NvBool deser_up);
+#if (defined(NVRM))
 static NV_STATUS finnSerializeRecord_NV2080_CTRL_GPUMON_SAMPLES(const NV2080_CTRL_GPUMON_SAMPLES *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeRecord_NV2080_CTRL_GPUMON_SAMPLES(finn_bit_pump_for_read *bp, NV2080_CTRL_GPUMON_SAMPLES *api, NvLength api_size, NvBool deser_up);
+#endif // (defined(NVRM))
 
+#if (defined(NVRM))
 static NV_STATUS finnSerializeRecord_NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeRecord_NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeRecord_NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BUFFER_RW *api, finn_bit_pump_for_write *bp, NvBool seri_up);
@@ -531,12 +540,16 @@ static NV_STATUS finnSerializeRecord_NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUIC
 static NV_STATUS finnDeserializeRecord_NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_QUICK_RW *api, NvLength api_size, NvBool deser_up);
 static NV_STATUS finnSerializeRecord_NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW(const NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *api, finn_bit_pump_for_write *bp, NvBool seri_up);
 static NV_STATUS finnDeserializeRecord_NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WORD_RW *api, NvLength api_size, NvBool deser_up);
+#endif // (defined(NVRM))
 
+#if (defined(NVRM))
 static NV_STATUS finnSerializeUnion_NV402C_CTRL_I2C_TRANSACTION_DATA(const NV402C_CTRL_I2C_TRANSACTION_DATA *api, finn_bit_pump_for_write *bp, NvBool seri_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType);
 static NV_STATUS finnDeserializeUnion_NV402C_CTRL_I2C_TRANSACTION_DATA(finn_bit_pump_for_read *bp, NV402C_CTRL_I2C_TRANSACTION_DATA *api, NvLength dst_size, NvBool deser_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType);
 
+#endif // (defined(NVRM))
+
 // Serialize this API.
-NV_STATUS finnSerializeInternal_FINN_RM_API(NvU64 interface, NvU64 message, const char *api, char **dst, NvLength dst_size, NvBool seri_up)
+NV_STATUS finnSerializeInternal_FINN_RM_API(NvU64 interface, NvU64 message, const char *api, char *dst, NvLength dst_size, NvBool seri_up)
 {
     // Header
     FINN_RM_API *header;
@@ -554,17 +567,17 @@ NV_STATUS finnSerializeInternal_FINN_RM_API(NvU64 interface, NvU64 message, cons
     // Input validation
     // Null pointers are not permitted.
     // Buffer must begin on an 8-byte boundary.
-    if (!api || !dst || !(*dst) || !dst_size || (uintptr_t) dst & 0x7u)
+    if (!api || !dst || !dst_size || (uintptr_t) dst & 0x7u)
     {
         FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
         return NV_ERR_INVALID_ARGUMENT;
     }
 
     // Header is at the start of the buffer.
-    header = (FINN_RM_API *) *dst;
+    header = (FINN_RM_API *) dst;
 
     // Buffer must end on an 8-byte boundary, so round down.
-    dst_end = (const char *) ((uintptr_t) (*dst + dst_size) & ~ (uintptr_t) 0x7);
+    dst_end = (const char *) ((uintptr_t) (dst + dst_size) & ~ (uintptr_t) 0x7);
 
     // Set header data.
     header->version = FINN_SERIALIZATION_VERSION;
@@ -573,10 +586,10 @@ NV_STATUS finnSerializeInternal_FINN_RM_API(NvU64 interface, NvU64 message, cons
     header->message = message;
 
     // Advance past header.
-    (*dst) += sizeof(FINN_RM_API);
+    dst += sizeof(FINN_RM_API);
 
     // Open the bit pump.
-    finn_open_buffer_for_write(&bp, (uint64_t *) *dst, (const uint64_t *) dst_end);
+    finn_open_buffer_for_write(&bp, (uint64_t *) dst, (const uint64_t *) dst_end);
 
     // Call the serializer.
     error_code = finnSerializeRoot_FINN_RM_API(interface, message, api, &bp, seri_up);
@@ -587,9 +600,6 @@ NV_STATUS finnSerializeInternal_FINN_RM_API(NvU64 interface, NvU64 message, cons
     // Payload size in bytes
     if (error_code == NV_OK)
         header->payloadSize = (NvU64) (((const char *) bp.buffer_position) - ((const char *) header));
-
-    // Indicate the ending location.
-    *dst = (char *) bp.buffer_position;
 
     // Done
     return error_code;
@@ -652,7 +662,7 @@ static NV_STATUS finnSerializeRoot_FINN_RM_API(NvU64 interface, NvU64 message, c
 
 
 // Deserialize this API.
-NV_STATUS finnDeserializeInternal_FINN_RM_API(const char **src, NvLength src_size, char *api, NvLength api_size, NvBool deser_up)
+NV_STATUS finnDeserializeInternal_FINN_RM_API(const char *src, NvLength src_size, char *api, NvLength api_size, NvBool deser_up)
 {
     // Header
     const FINN_RM_API *header;
@@ -669,14 +679,14 @@ NV_STATUS finnDeserializeInternal_FINN_RM_API(const char **src, NvLength src_siz
     // Input validation
     // Null pointers are not permitted.
     // Buffer must begin on an 8-byte boundary.
-    if (!src || !(*src) || !src_size || !api || !api_size || (uintptr_t) *src & 0x7u)
+    if (!src || !src_size || !api || !api_size || (uintptr_t) src & 0x7u)
     {
         FINN_ERROR(NV_ERR_INVALID_ARGUMENT);
         return NV_ERR_INVALID_ARGUMENT;
     }
 
     // Header data comes first.
-    header = (const FINN_RM_API *) *src;
+    header = (const FINN_RM_API *) src;
 
     // Check the version.
     if (header->version != FINN_SERIALIZATION_VERSION)
@@ -686,35 +696,26 @@ NV_STATUS finnDeserializeInternal_FINN_RM_API(const char **src, NvLength src_siz
     }
 
     // Set src_max for buffer bounds checking.
-    src_max = *src + src_size;
+    src_max = src + src_size;
 
     // Check that source buffer is large enough.
     if (sizeof(FINN_RM_API) > src_size ||
         header->payloadSize > src_size ||
         header->payloadSize < sizeof(FINN_RM_API))
     {
-        *src = (const char *) &header->payloadSize;
         FINN_ERROR(NV_ERR_BUFFER_TOO_SMALL);
         return NV_ERR_BUFFER_TOO_SMALL;
     }
 
     // Open the bit punp, skipping past the header.
-    finn_open_buffer_for_read(&bp, (const uint64_t *) (*src + sizeof(FINN_RM_API)), (const uint64_t *) (src_max));
+    finn_open_buffer_for_read(&bp, (const uint64_t *) (src + sizeof(FINN_RM_API)), (const uint64_t *) (src_max));
 
     // Dispatch to interface-specific routine
     status = finnDeserializeRoot_FINN_RM_API(header->interface, header->message, &bp, api, api_size, deser_up);
 
-    // Update the buffer position, error or not.
-    *(src) = (const char *) bp.buffer_position;
-
     // Nothing more to do if there was an error.
     if (status != NV_OK)
         return status;
-
-    // Update the checksum.
-    finn_close_buffer_for_read(&bp);
-
-    // TODO: Check the checksum
 
     // Check that the declared size matches the serialization outcome.
     if (header->payloadSize != (NvU64) (((const char *) bp.buffer_position) - ((const char *) header)))
@@ -857,6 +858,7 @@ NvU64 FinnRmApiGetUnserializedSize(NvU64 interface, NvU64 message)
             return 0;
     }
 } // end FINN_RM_APIGetUnserializedSize
+#if (defined(NVRM))
 // Validate the enum value.
 NvBool finnBadEnum_NV402C_CTRL_I2C_TRANSACTION_TYPE(NV402C_CTRL_I2C_TRANSACTION_TYPE value)
 {   switch(value)
@@ -879,16 +881,21 @@ NvBool finnBadEnum_NV402C_CTRL_I2C_TRANSACTION_TYPE(NV402C_CTRL_I2C_TRANSACTION_
     }
 }
 
+#endif // (defined(NVRM))
+
 // Serialize this interface.
 static NV_STATUS finnSerializeInterface_FINN_GT200_DEBUGGER_DEBUG(NvU64 message, const char *api_intf, finn_bit_pump_for_write *bp, NvBool seri_up)
 {
     // Serialize one of 2 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS):
             return finnSerializeMessage_NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS((const NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *) api_intf, bp, seri_up);
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS):
             return finnSerializeMessage_NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS((const NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -906,10 +913,13 @@ static NV_STATUS finnDeserializeInterface_FINN_GT200_DEBUGGER_DEBUG(NvU64 messag
     // Deerialize one of 2 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS):
             return finnDeserializeMessage_NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS(bp, (NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS *) api_intf, api_size, deser_up);
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS):
             return finnDeserializeMessage_NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS(bp, (NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -927,10 +937,13 @@ static NvU64 finnUnserializedInterfaceSize_FINN_GT200_DEBUGGER_DEBUG(NvU64 messa
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS):
             return sizeof(NV83DE_CTRL_DEBUG_READ_MEMORY_PARAMS);
         case FINN_MESSAGE_ID(NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS):
             return sizeof(NV83DE_CTRL_DEBUG_WRITE_MEMORY_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -944,12 +957,15 @@ static NV_STATUS finnSerializeInterface_FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO(NvU
     // Serialize one of 3 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS):
             return finnSerializeMessage_NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS((const NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *) api_intf, bp, seri_up);
         case FINN_MESSAGE_ID(NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS):
             return finnSerializeMessage_NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS((const NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *) api_intf, bp, seri_up);
         case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS):
             return finnSerializeMessage_NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS((const NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -967,12 +983,15 @@ static NV_STATUS finnDeserializeInterface_FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO(N
     // Deerialize one of 3 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS):
             return finnDeserializeMessage_NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS(bp, (NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS *) api_intf, api_size, deser_up);
         case FINN_MESSAGE_ID(NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS):
             return finnDeserializeMessage_NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS(bp, (NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS *) api_intf, api_size, deser_up);
         case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS):
             return finnDeserializeMessage_NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS(bp, (NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -990,12 +1009,15 @@ static NvU64 finnUnserializedInterfaceSize_FINN_MAXWELL_CHANNEL_GPFIFO_A_GPFIFO(
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS):
             return sizeof(NVB06F_CTRL_GET_ENGINE_CTX_DATA_PARAMS);
         case FINN_MESSAGE_ID(NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS):
             return sizeof(NVB06F_CTRL_SAVE_ENGINE_CTX_DATA_PARAMS);
         case FINN_MESSAGE_ID(NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS):
             return sizeof(NVB06F_CTRL_CMD_RESTORE_ENGINE_CTX_DATA_FINN_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1009,8 +1031,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_DMA(NvU64 message, co
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS((const NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1028,8 +1053,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_DMA(NvU64 message, 
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS(bp, (NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1047,8 +1075,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_DEVICE_0_DMA(NvU64 message)
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS):
             return sizeof(NV0080_CTRL_DMA_UPDATE_PDE_2_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1062,8 +1093,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_FB(NvU64 message, con
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FB_GET_CAPS_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_FB_GET_CAPS_PARAMS((const NV0080_CTRL_FB_GET_CAPS_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1081,8 +1115,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_FB(NvU64 message, f
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FB_GET_CAPS_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_FB_GET_CAPS_PARAMS(bp, (NV0080_CTRL_FB_GET_CAPS_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1100,8 +1137,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_DEVICE_0_FB(NvU64 message)
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FB_GET_CAPS_PARAMS):
             return sizeof(NV0080_CTRL_FB_GET_CAPS_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1115,12 +1155,18 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_FIFO(NvU64 message, c
     // Serialize one of 3 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_FIFO_GET_CAPS_PARAMS((const NV0080_CTRL_FIFO_GET_CAPS_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS((const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *) api_intf, bp, seri_up);
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS((const NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1138,12 +1184,18 @@ static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_FIFO(NvU64 message,
     // Deerialize one of 3 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CAPS_PARAMS(bp, (NV0080_CTRL_FIFO_GET_CAPS_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS(bp, (NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *) api_intf, api_size, deser_up);
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS(bp, (NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1161,12 +1213,18 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_DEVICE_0_FIFO(NvU64 message
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CAPS_PARAMS):
             return sizeof(NV0080_CTRL_FIFO_GET_CAPS_PARAMS);
+#endif // (defined(NVRM))
+
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS):
             return sizeof(NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS);
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS):
             return sizeof(NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1180,8 +1238,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_GPU(NvU64 message, co
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS((const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1199,8 +1260,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_GPU(NvU64 message, 
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS(bp, (NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1218,8 +1282,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_DEVICE_0_GPU(NvU64 message)
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS):
             return sizeof(NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1233,8 +1300,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_GR(NvU64 message, con
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_GR_GET_CAPS_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_GR_GET_CAPS_PARAMS((const NV0080_CTRL_GR_GET_CAPS_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1252,8 +1322,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_GR(NvU64 message, f
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_GR_GET_CAPS_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_GR_GET_CAPS_PARAMS(bp, (NV0080_CTRL_GR_GET_CAPS_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1271,8 +1344,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_DEVICE_0_GR(NvU64 message)
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_GR_GET_CAPS_PARAMS):
             return sizeof(NV0080_CTRL_GR_GET_CAPS_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1286,8 +1362,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_HOST(NvU64 message, c
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_HOST_GET_CAPS_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_HOST_GET_CAPS_PARAMS((const NV0080_CTRL_HOST_GET_CAPS_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1305,8 +1384,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_HOST(NvU64 message,
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_HOST_GET_CAPS_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_HOST_GET_CAPS_PARAMS(bp, (NV0080_CTRL_HOST_GET_CAPS_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1324,8 +1406,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_DEVICE_0_HOST(NvU64 message
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_HOST_GET_CAPS_PARAMS):
             return sizeof(NV0080_CTRL_HOST_GET_CAPS_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1339,8 +1424,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_DEVICE_0_MSENC(NvU64 message, 
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_MSENC_GET_CAPS_PARAMS):
             return finnSerializeMessage_NV0080_CTRL_MSENC_GET_CAPS_PARAMS((const NV0080_CTRL_MSENC_GET_CAPS_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1358,8 +1446,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV01_DEVICE_0_MSENC(NvU64 message
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_MSENC_GET_CAPS_PARAMS):
             return finnDeserializeMessage_NV0080_CTRL_MSENC_GET_CAPS_PARAMS(bp, (NV0080_CTRL_MSENC_GET_CAPS_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1377,8 +1468,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_DEVICE_0_MSENC(NvU64 messag
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0080_CTRL_MSENC_GET_CAPS_PARAMS):
             return sizeof(NV0080_CTRL_MSENC_GET_CAPS_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1392,8 +1486,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV01_ROOT_NVD(NvU64 message, const 
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0000_CTRL_NVD_GET_DUMP_PARAMS):
             return finnSerializeMessage_NV0000_CTRL_NVD_GET_DUMP_PARAMS((const NV0000_CTRL_NVD_GET_DUMP_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1411,8 +1508,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV01_ROOT_NVD(NvU64 message, finn
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0000_CTRL_NVD_GET_DUMP_PARAMS):
             return finnDeserializeMessage_NV0000_CTRL_NVD_GET_DUMP_PARAMS(bp, (NV0000_CTRL_NVD_GET_DUMP_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1430,8 +1530,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV01_ROOT_NVD(NvU64 message)
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV0000_CTRL_NVD_GET_DUMP_PARAMS):
             return sizeof(NV0000_CTRL_NVD_GET_DUMP_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1445,8 +1548,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_BIOS(NvU64 message
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS):
             return finnSerializeMessage_NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS((const NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1464,8 +1570,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_BIOS(NvU64 messa
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS):
             return finnDeserializeMessage_NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS(bp, (NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1483,8 +1592,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_BIOS(NvU64 mess
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS):
             return sizeof(NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1498,8 +1610,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_CE(NvU64 message, 
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_CE_GET_CAPS_PARAMS):
             return finnSerializeMessage_NV2080_CTRL_CE_GET_CAPS_PARAMS((const NV2080_CTRL_CE_GET_CAPS_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1517,8 +1632,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_CE(NvU64 message
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_CE_GET_CAPS_PARAMS):
             return finnDeserializeMessage_NV2080_CTRL_CE_GET_CAPS_PARAMS(bp, (NV2080_CTRL_CE_GET_CAPS_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1536,8 +1654,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_CE(NvU64 messag
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_CE_GET_CAPS_PARAMS):
             return sizeof(NV2080_CTRL_CE_GET_CAPS_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1551,10 +1672,13 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_GPU(NvU64 message,
     // Serialize one of 2 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINES_PARAMS):
             return finnSerializeMessage_NV2080_CTRL_GPU_GET_ENGINES_PARAMS((const NV2080_CTRL_GPU_GET_ENGINES_PARAMS *) api_intf, bp, seri_up);
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS):
             return finnSerializeMessage_NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS((const NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1572,10 +1696,13 @@ static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_GPU(NvU64 messag
     // Deerialize one of 2 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINES_PARAMS):
             return finnDeserializeMessage_NV2080_CTRL_GPU_GET_ENGINES_PARAMS(bp, (NV2080_CTRL_GPU_GET_ENGINES_PARAMS *) api_intf, api_size, deser_up);
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS):
             return finnDeserializeMessage_NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS(bp, (NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1593,10 +1720,13 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_GPU(NvU64 messa
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINES_PARAMS):
             return sizeof(NV2080_CTRL_GPU_GET_ENGINES_PARAMS);
         case FINN_MESSAGE_ID(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS):
             return sizeof(NV2080_CTRL_GPU_GET_ENGINE_CLASSLIST_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1610,8 +1740,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_I2C(NvU64 message,
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_I2C_ACCESS_PARAMS):
             return finnSerializeMessage_NV2080_CTRL_I2C_ACCESS_PARAMS((const NV2080_CTRL_I2C_ACCESS_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1629,8 +1762,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_I2C(NvU64 messag
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_I2C_ACCESS_PARAMS):
             return finnDeserializeMessage_NV2080_CTRL_I2C_ACCESS_PARAMS(bp, (NV2080_CTRL_I2C_ACCESS_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1648,8 +1784,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_I2C(NvU64 messa
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_I2C_ACCESS_PARAMS):
             return sizeof(NV2080_CTRL_I2C_ACCESS_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1663,8 +1802,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_NVD(NvU64 message,
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_NVD_GET_DUMP_PARAMS):
             return finnSerializeMessage_NV2080_CTRL_NVD_GET_DUMP_PARAMS((const NV2080_CTRL_NVD_GET_DUMP_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1682,8 +1824,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_NVD(NvU64 messag
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_NVD_GET_DUMP_PARAMS):
             return finnDeserializeMessage_NV2080_CTRL_NVD_GET_DUMP_PARAMS(bp, (NV2080_CTRL_NVD_GET_DUMP_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1701,8 +1846,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_NVD(NvU64 messa
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_NVD_GET_DUMP_PARAMS):
             return sizeof(NV2080_CTRL_NVD_GET_DUMP_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1716,8 +1864,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_PERF(NvU64 message
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM):    /* alias */
             return finnSerializeRecord_NV2080_CTRL_GPUMON_SAMPLES((const NV2080_CTRL_GPUMON_SAMPLES *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1735,8 +1886,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_PERF(NvU64 messa
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM):    /* alias */
             return finnDeserializeRecord_NV2080_CTRL_GPUMON_SAMPLES(bp, (NV2080_CTRL_GPUMON_SAMPLES *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1754,8 +1908,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_PERF(NvU64 mess
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_PARAM):    /* alias */
             return sizeof(NV2080_CTRL_GPUMON_SAMPLES);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1769,8 +1926,11 @@ static NV_STATUS finnSerializeInterface_FINN_NV20_SUBDEVICE_0_RC(NvU64 message, 
     // Serialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS):
             return finnSerializeMessage_NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS((const NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1788,8 +1948,11 @@ static NV_STATUS finnDeserializeInterface_FINN_NV20_SUBDEVICE_0_RC(NvU64 message
     // Deerialize one of 1 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS):
             return finnDeserializeMessage_NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS(bp, (NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1807,8 +1970,11 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV20_SUBDEVICE_0_RC(NvU64 messag
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS):
             return sizeof(NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1872,10 +2038,13 @@ static NV_STATUS finnSerializeInterface_FINN_NV40_I2C_I2C(NvU64 message, const c
     // Serialize one of 2 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_INDEXED_PARAMS):
             return finnSerializeMessage_NV402C_CTRL_I2C_INDEXED_PARAMS((const NV402C_CTRL_I2C_INDEXED_PARAMS *) api_intf, bp, seri_up);
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_TRANSACTION_PARAMS):
             return finnSerializeMessage_NV402C_CTRL_I2C_TRANSACTION_PARAMS((const NV402C_CTRL_I2C_TRANSACTION_PARAMS *) api_intf, bp, seri_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1893,10 +2062,13 @@ static NV_STATUS finnDeserializeInterface_FINN_NV40_I2C_I2C(NvU64 message, finn_
     // Deerialize one of 2 messages in this interface.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_INDEXED_PARAMS):
             return finnDeserializeMessage_NV402C_CTRL_I2C_INDEXED_PARAMS(bp, (NV402C_CTRL_I2C_INDEXED_PARAMS *) api_intf, api_size, deser_up);
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_TRANSACTION_PARAMS):
             return finnDeserializeMessage_NV402C_CTRL_I2C_TRANSACTION_PARAMS(bp, (NV402C_CTRL_I2C_TRANSACTION_PARAMS *) api_intf, api_size, deser_up);
+#endif // (defined(NVRM))
+
 
         // Everything else is unsupported.
         default:
@@ -1914,10 +2086,13 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV40_I2C_I2C(NvU64 message)
     // Forward to message-specific routine.
     switch (message)
     {
+#if (defined(NVRM))
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_INDEXED_PARAMS):
             return sizeof(NV402C_CTRL_I2C_INDEXED_PARAMS);
         case FINN_MESSAGE_ID(NV402C_CTRL_I2C_TRANSACTION_PARAMS):
             return sizeof(NV402C_CTRL_I2C_TRANSACTION_PARAMS);
+#endif // (defined(NVRM))
+
 
         // Zero indicates an unsupported message (or interface).
         default:
@@ -1925,6 +2100,7 @@ static NvU64 finnUnserializedInterfaceSize_FINN_NV40_I2C_I2C(NvU64 message)
     }
 }
 
+#if (defined(NVRM))
 
 // Serialize each of the 3 field(s).
 // 2 out of 2 independent field(s) are reordered to be before 1 dependent field(s).
@@ -2927,6 +3103,8 @@ static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_GET_CHANNELLIST_PARAMS(
     return NV_OK;
 }
 
+#endif // (defined(NVRM))
+
 
 // Serialize each of the 3 field(s).
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS(const NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up)
@@ -3115,6 +3293,7 @@ static NV_STATUS finnDeserializeMessage_NV0080_CTRL_FIFO_START_SELECTED_CHANNELS
     return NV_OK;
 }
 
+#if (defined(NVRM))
 
 // Serialize each of the 2 field(s).
 static NV_STATUS finnSerializeMessage_NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS(const NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *api, finn_bit_pump_for_write *bp, NvBool seri_up)
@@ -5195,6 +5374,9 @@ static NV_STATUS finnDeserializeMessage_NV2080_CTRL_RC_READ_VIRTUAL_MEM_PARAMS(f
     return NV_OK;
 }
 
+#endif // (defined(NVRM))
+
+#if (defined(NVRM))
 
 // Serialize each of the 8 field(s).
 // 1 out of 6 independent field(s) are reordered to be before 2 dependent field(s).
@@ -6489,6 +6671,8 @@ static NV_STATUS finnDeserializeRecord_NV0080_CTRL_DMA_UPDATE_PDE_2_PAGE_TABLE_P
     return NV_OK;
 }
 
+#endif // (defined(NVRM))
+
 
 // Serialize each of the 1 field(s).
 static NV_STATUS finnSerializeRecord_NV0080_CTRL_FIFO_CHANNEL(const NV0080_CTRL_FIFO_CHANNEL *api, finn_bit_pump_for_write *bp, NvBool seri_up)
@@ -6537,6 +6721,7 @@ static NV_STATUS finnDeserializeRecord_NV0080_CTRL_FIFO_CHANNEL(finn_bit_pump_fo
     return NV_OK;
 }
 
+#if (defined(NVRM))
 
 // Serialize each of the 5 field(s).
 static NV_STATUS finnSerializeRecord_NV2080_CTRL_GPUMON_SAMPLES(const NV2080_CTRL_GPUMON_SAMPLES *api, finn_bit_pump_for_write *bp, NvBool seri_up)
@@ -6753,6 +6938,9 @@ static NV_STATUS finnDeserializeRecord_NV2080_CTRL_GPUMON_SAMPLES(finn_bit_pump_
     return NV_OK;
 }
 
+#endif // (defined(NVRM))
+
+#if (defined(NVRM))
 
 // Serialize each of the 3 field(s).
 static NV_STATUS finnSerializeRecord_NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW(const NV402C_CTRL_I2C_TRANSACTION_DATA_I2C_BLOCK_RW *api, finn_bit_pump_for_write *bp, NvBool seri_up)
@@ -8431,6 +8619,9 @@ static NV_STATUS finnDeserializeRecord_NV402C_CTRL_I2C_TRANSACTION_DATA_SMBUS_WO
     return NV_OK;
 }
 
+#endif // (defined(NVRM))
+
+#if (defined(NVRM))
 
 // Serialize selected field from 11 possible values.
 static NV_STATUS finnSerializeUnion_NV402C_CTRL_I2C_TRANSACTION_DATA(const NV402C_CTRL_I2C_TRANSACTION_DATA *api, finn_bit_pump_for_write *bp, NvBool seri_up, NV402C_CTRL_I2C_TRANSACTION_TYPE transType)
@@ -8885,3 +9076,4 @@ static NV_STATUS finnDeserializeUnion_NV402C_CTRL_I2C_TRANSACTION_DATA(finn_bit_
 }
 
 
+#endif // (defined(NVRM))

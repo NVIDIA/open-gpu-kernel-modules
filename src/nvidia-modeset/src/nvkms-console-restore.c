@@ -51,7 +51,9 @@ static NvBool FindMode(NVDpyEvoPtr pDpyEvo,
 
         params.request.dpyId = pDpyEvo->id;
         params.request.modeIndex = index++;
-        params.request.modeValidation.overrides = NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS;
+        params.request.modeValidation.overrides =
+            NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS |
+            NVKMS_MODE_VALIDATION_MAX_ONE_HARDWARE_HEAD;
 
         nvValidateModeIndex(pDpyEvo, &params.request, &params.reply);
 
@@ -229,7 +231,7 @@ static NvU32 PickApiHead(const NVDpyEvoRec *pDpyEvo,
                          const NvU32 availableApiHeadsMask)
 {
     const NvU32 possibleApiHeads = availableApiHeadsMask &
-                                   pDpyEvo->pConnectorEvo->validApiHeadMask;
+        nvDpyGetPossibleApiHeadsMask(pDpyEvo);
     const NvU32 activeApiHeadsMask =
         GetActiveApiHeadMask(pDpyEvo->pDispEvo);
 
@@ -279,7 +281,8 @@ static NvBool InitModeOneHeadRequest(
 
     pRequestHead->dpyIdList = nvAddDpyIdToEmptyDpyIdList(pDpyEvo->id);
     pRequestHead->modeValidationParams.overrides =
-        NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS;
+        NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS |
+        NVKMS_MODE_VALIDATION_MAX_ONE_HARDWARE_HEAD;
     if (pOverrideViewPortSizeIn != NULL) {
         pRequestHead->viewPortSizeIn = *pOverrideViewPortSizeIn;
     } else {

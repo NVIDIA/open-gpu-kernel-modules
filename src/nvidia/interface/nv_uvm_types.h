@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -92,6 +92,7 @@ typedef unsigned long long UvmGpuPointer;
 typedef struct uvmGpuSession_tag       *uvmGpuSessionHandle;       // gpuSessionHandle
 typedef struct uvmGpuDevice_tag        *uvmGpuDeviceHandle;        // gpuDeviceHandle
 typedef struct uvmGpuAddressSpace_tag  *uvmGpuAddressSpaceHandle;  // gpuAddressSpaceHandle
+typedef struct uvmGpuTsg_tag           *uvmGpuTsgHandle;           // gpuTsgHandle
 typedef struct uvmGpuChannel_tag       *uvmGpuChannelHandle;       // gpuChannelHandle
 typedef struct uvmGpuCopyEngine_tag    *uvmGpuCopyEngineHandle;    // gpuObjectHandle
 
@@ -280,6 +281,15 @@ typedef struct UvmGpuChannelInfo_tag
     // to kick off the new work.
     //
     volatile NvU32    *pWorkSubmissionToken;
+
+    // GPU VAs of both GPFIFO and GPPUT are needed in Confidential Computing
+    // so a channel can be controlled via another channel (SEC2 or WLC/LCIC)
+    NvU64             gpFifoGpuVa;
+    NvU64             gpPutGpuVa;
+    // GPU VA of work submission offset is needed in Confidential Computing
+    // so CE channels can ring doorbell of other channels as required for
+    // WLC/LCIC work submission
+    NvU64             workSubmissionOffsetGpuVa;
 } UvmGpuChannelInfo;
 
 typedef enum
@@ -292,6 +302,17 @@ typedef enum
     UVM_BUFFER_LOCATION_VID  = 2,
 } UVM_BUFFER_LOCATION;
 
+typedef struct UvmGpuTsgAllocParams_tag
+{
+    // Interpreted as UVM_GPU_CHANNEL_ENGINE_TYPE
+    NvU32 engineType;
+
+    // Index of the engine the TSG is bound to.
+    // Ignored if engineType is anything other than
+    // UVM_GPU_CHANNEL_ENGINE_TYPE_CE.
+    NvU32 engineIndex;
+} UvmGpuTsgAllocParams;
+
 typedef struct UvmGpuChannelAllocParams_tag
 {
     NvU32 numGpFifoEntries;
@@ -300,13 +321,9 @@ typedef struct UvmGpuChannelAllocParams_tag
     NvU32 gpFifoLoc;
     NvU32 gpPutLoc;
 
-    // Index of the engine the channel will be bound to
-    // ignored if engineType is anything other than UVM_GPU_CHANNEL_ENGINE_TYPE_CE
-    NvU32 engineIndex;
-
-    // interpreted as UVM_GPU_CHANNEL_ENGINE_TYPE
-    NvU32 engineType;
-
+    // Allocate the channel as secure. This flag should only be set when
+    // Confidential Compute is enabled.
+    NvBool secure;
 } UvmGpuChannelAllocParams;
 
 typedef struct UvmGpuPagingChannelAllocParams_tag
@@ -350,6 +367,9 @@ typedef struct
     // True if the CE can be used for P2P transactions
     NvBool p2p:1;
 
+    // True if the CE supports encryption
+    NvBool secure:1;
+
     // Mask of physical CEs assigned to this LCE
     //
     // The value returned by RM for this field may change when a GPU is
@@ -372,39 +392,16 @@ typedef enum
     UVM_LINK_TYPE_NVLINK_2,
     UVM_LINK_TYPE_NVLINK_3,
     UVM_LINK_TYPE_NVLINK_4,
+    UVM_LINK_TYPE_C2C,
 } UVM_LINK_TYPE;
 
 typedef struct UvmGpuCaps_tag
 {
-    NvU32    sysmemLink;            // UVM_LINK_TYPE
-    NvU32    sysmemLinkRateMBps;    // See UvmGpuP2PCapsParams::totalLinkLineRateMBps
+    // If numaEnabled is NV_TRUE, then the system address of allocated GPU
+    // memory can be converted to struct pages. See
+    // UvmGpuInfo::systemMemoryWindowStart.
     NvBool   numaEnabled;
     NvU32    numaNodeId;
-
-    // On ATS systems, GPUs connected to different CPU sockets can have peer
-    // traffic. They are called indirect peers. However, indirect peers are
-    // mapped using sysmem aperture. In order to disambiguate the location of a
-    // specific memory address, each GPU maps its memory to a different window
-    // in the System Physical Address (SPA) space. The following fields contain
-    // the base + size of such window for the GPU. systemMemoryWindowSize
-    // different than 0 indicates that the window is valid.
-    //
-    // - If the window is valid, then we can map GPU memory to the CPU as
-    // cache-coherent by adding the GPU address to the window start.
-    // - If numaEnabled is NV_TRUE, then we can also convert the system
-    // addresses of allocated GPU memory to struct pages.
-    //
-    // TODO: Bug 1986868: fix window start computation for SIMICS
-    NvU64    systemMemoryWindowStart;
-    NvU64    systemMemoryWindowSize;
-
-    // This tells if the GPU is connected to NVSwitch. On systems with NVSwitch
-    // all GPUs are connected to it. If connectedToSwitch is NV_TRUE,
-    // nvswitchMemoryWindowStart tells the base address for the GPU in the
-    // NVSwitch address space. It is used when creating PTEs of memory mappings
-    // to NVSwitch peers.
-    NvBool   connectedToSwitch;
-    NvU64    nvswitchMemoryWindowStart;
 } UvmGpuCaps;
 
 typedef struct UvmGpuAddressSpaceInfo_tag
@@ -436,6 +433,8 @@ typedef struct UvmGpuAllocInfo_tag
     NvBool  bMemGrowsDown;          // Causes RM to reserve physical heap from top of FB
     NvBool  bPersistentVidmem;      // Causes RM to allocate persistent video memory
     NvHandle hPhysHandle;           // Handle for phys allocation either provided or retrieved
+    NvBool   bUnprotected;            // Allocation to be made in unprotected memory whenever
+                                      // SEV or GPU CC modes are enabled. Ignored otherwise
 } UvmGpuAllocInfo;
 
 typedef enum
@@ -584,6 +583,20 @@ typedef struct UvmGpuClientInfo_tag
     NvHandle hSmcPartRef;
 } UvmGpuClientInfo;
 
+typedef enum
+{
+    UVM_GPU_CONF_COMPUTE_MODE_NONE,
+    UVM_GPU_CONF_COMPUTE_MODE_APM,
+    UVM_GPU_CONF_COMPUTE_MODE_HCC,
+    UVM_GPU_CONF_COMPUTE_MODE_COUNT
+} UvmGpuConfComputeMode;
+
+typedef struct UvmGpuConfComputeCaps_tag
+{
+    // Out: GPU's confidential compute mode
+    UvmGpuConfComputeMode mode;
+} UvmGpuConfComputeCaps;
+
 #define UVM_GPU_NAME_LENGTH 0x40
 
 typedef struct UvmGpuInfo_tag
@@ -648,6 +661,31 @@ typedef struct UvmGpuInfo_tag
 
     UvmGpuClientInfo smcUserClientInfo;
 
+    // Confidential Compute capabilities of this GPU
+    UvmGpuConfComputeCaps gpuConfComputeCaps;
+
+    // UVM_LINK_TYPE
+    NvU32 sysmemLink;
+
+    // See UvmGpuP2PCapsParams::totalLinkLineRateMBps
+    NvU32 sysmemLinkRateMBps;
+
+    // On coherent systems each GPU maps its memory to a window in the System
+    // Physical Address (SPA) space. The following fields describe that window.
+    //
+    // systemMemoryWindowSize > 0 indicates that the window is valid. meaning
+    // that GPU memory can be mapped by the CPU as cache-coherent by adding the
+    // GPU address to the window start.
+    NvU64 systemMemoryWindowStart;
+    NvU64 systemMemoryWindowSize;
+
+    // This tells if the GPU is connected to NVSwitch. On systems with NVSwitch
+    // all GPUs are connected to it. If connectedToSwitch is NV_TRUE,
+    // nvswitchMemoryWindowStart tells the base address for the GPU in the
+    // NVSwitch address space. It is used when creating PTEs of memory mappings
+    // to NVSwitch peers.
+    NvBool connectedToSwitch;
+    NvU64 nvswitchMemoryWindowStart;
 } UvmGpuInfo;
 
 typedef struct UvmGpuFbInfo_tag
@@ -690,6 +728,9 @@ typedef struct UvmPmaStatistics_tag
     volatile NvU64 numPages2m;                // PMA-wide 2MB pages count across all regions
     volatile NvU64 numFreePages64k;           // PMA-wide free 64KB page count across all regions
     volatile NvU64 numFreePages2m;            // PMA-wide free 2MB pages count across all regions
+    volatile NvU64 numPages2mProtected;       // PMA-wide 2MB pages count in protected memory
+    volatile NvU64 numFreePages64kProtected;  // PMA-wide free 64KB page count in protected memory
+    volatile NvU64 numFreePages2mProtected;   // PMA-wide free 2MB pages count in protected memory
 } UvmPmaStatistics;
 
 /*******************************************************************************
@@ -768,24 +809,80 @@ struct UvmOpsUvmEvents
     uvmEventIsrTopHalf_t  isrTopHalf;
 };
 
+#define UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES 32
+#define UVM_CSL_CRYPT_AUTH_TAG_SIZE_BYTES 16
+
+typedef union UvmFaultMetadataPacket_tag
+{
+    struct {
+        NvU8   authTag[UVM_CSL_CRYPT_AUTH_TAG_SIZE_BYTES];
+        NvBool valid;
+    };
+    // padding to 32Bytes
+    NvU8 _padding[32];
+} UvmFaultMetadataPacket;
+
 typedef struct UvmGpuFaultInfo_tag
 {
     struct
     {
-        // Register mappings obtained from RM
+        // Fault buffer GET register mapping.
+        //
+        // When Confidential Computing is enabled, GET refers to the shadow
+        // buffer (see bufferAddress below), and not to the actual HW buffer.
+        // In this setup, writes of GET (by UVM) do not result on re-evaluation
+        // of any interrupt condition.
         volatile NvU32* pFaultBufferGet;
+
+        // Fault buffer PUT register mapping.
+        //
+        // When Confidential Computing is enabled, PUT refers to the shadow
+        // buffer (see bufferAddress below), and not to the actual HW buffer.
+        // In this setup, writes of PUT (by GSP-RM) do not result on
+        // re-evaluation of any interrupt condition.
         volatile NvU32* pFaultBufferPut;
-        // Note: this variable is deprecated since buffer overflow is not a separate
-        // register from future chips.
+
+        // Note: this variable is deprecated since buffer overflow is not a
+        // separate register from future chips.
         volatile NvU32* pFaultBufferInfo;
+
+        // Register mapping used to clear a replayable fault interrupt in
+        // Turing+ GPUs.
         volatile NvU32* pPmcIntr;
+
+        // Register mapping used to enable replayable fault interrupts.
         volatile NvU32* pPmcIntrEnSet;
+
+        // Register mapping used to disable replayable fault interrupts.
         volatile NvU32* pPmcIntrEnClear;
+
+        // Register used to enable, or disable, faults on prefetches.
         volatile NvU32* pPrefetchCtrl;
+
+        // Replayable fault interrupt mask identifier.
         NvU32 replayableFaultMask;
-        // fault buffer cpu mapping and size
-        void* bufferAddress;
+
+        // Fault buffer CPU mapping
+        void*  bufferAddress;
+        //
+        // When Confidential Computing is disabled, the mapping points to the
+        // actual HW fault buffer.
+        //
+        // When Confidential Computing is enabled, the mapping points to a
+        // copy of the HW fault buffer. This "shadow buffer" is maintained
+        // by GSP-RM.
+
+        // Size, in bytes, of the fault buffer pointed by bufferAddress.
         NvU32  bufferSize;
+        // Mapping pointing to the start of the fault buffer metadata containing
+        // a 16Byte authentication tag and a valid byte. Always NULL when
+        // Confidential Computing is disabled.
+        UvmFaultMetadataPacket *bufferMetadata;
+
+        // Indicates whether UVM owns the replayable fault buffer.
+        // The value of this field is always NV_TRUE When Confidential Computing
+        // is disabled.
+        NvBool bUvmOwnsHwFaultBuffer;
     } replayable;
     struct
     {
@@ -805,8 +902,19 @@ typedef struct UvmGpuFaultInfo_tag
         // Preallocated stack for functions called from the UVM isr bottom half
         void *isr_bh_sp;
 
+        // Used only when Hopper Confidential Compute is enabled
+        // Register mappings obtained from RM
+        volatile NvU32* pFaultBufferPut;
+
+        // Used only when Hopper Confidential Compute is enabled
+        // Cached get index of the non-replayable shadow buffer
+        NvU32 shadowBufferGet;
+
+        // See replayable.bufferMetadata
+        UvmFaultMetadataPacket  *shadowBufferMetadata;
     } nonReplayable;
     NvHandle faultBufferHandle;
+    struct Device *pDevice;
 } UvmGpuFaultInfo;
 
 struct Device;
@@ -842,12 +950,6 @@ typedef struct UvmGpuAccessCntrInfo_tag
     void* bufferAddress;
     NvU32  bufferSize;
     NvHandle accessCntrBufferHandle;
-
-    // The Notification address in the access counter notification msg does not
-    // contain the correct upper bits 63-47 for GPA-based notifications. RM
-    // provides us with the correct offset to be added.
-    // See Bug 1803015
-    NvU64 baseDmaSysmemAddr;
 } UvmGpuAccessCntrInfo;
 
 typedef enum
@@ -890,6 +992,7 @@ typedef enum UvmPmaGpuMemoryType_tag
 } UVM_PMA_GPU_MEMORY_TYPE;
 
 typedef UvmGpuChannelInfo gpuChannelInfo;
+typedef UvmGpuTsgAllocParams gpuTsgAllocParams;
 typedef UvmGpuChannelAllocParams gpuChannelAllocParams;
 typedef UvmGpuCaps gpuCaps;
 typedef UvmGpuCopyEngineCaps gpuCeCaps;
@@ -913,5 +1016,25 @@ typedef UvmGpuPagingChannel *gpuPagingChannelHandle;
 typedef UvmGpuPagingChannelInfo gpuPagingChannelInfo;
 typedef UvmGpuPagingChannelAllocParams gpuPagingChannelAllocParams;
 typedef UvmPmaAllocationOptions gpuPmaAllocationOptions;
+
+// This struct shall not be accessed nor modified directly by UVM as it is
+// entirely managed by the RM layer
+typedef struct UvmCslContext_tag
+{
+    struct ccslContext_t *ctx;
+    void *nvidia_stack;
+} UvmCslContext;
+
+typedef struct UvmCslIv
+{
+    NvU8 iv[12];
+    NvU8 fresh;
+} UvmCslIv;
+
+typedef enum UvmCslDirection
+{
+    UVM_CSL_DIR_CPU_TO_GPU,
+    UVM_CSL_DIR_GPU_TO_CPU
+} UvmCslDirection;
 
 #endif // _NV_UVM_TYPES_H_

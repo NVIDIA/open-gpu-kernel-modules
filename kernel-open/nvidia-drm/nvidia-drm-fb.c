@@ -150,6 +150,14 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
 
     for (i = 0; i < ARRAY_SIZE(nv_fb->nv_gem); i++) {
         if (nv_fb->nv_gem[i] != NULL) {
+            if (!nvKms->isMemoryValidForDisplay(nv_dev->pDevice,
+                                                nv_fb->nv_gem[i]->pMemory)) {
+                NV_DRM_DEV_LOG_INFO(
+                        nv_dev,
+                        "Framebuffer memory not appropriate for scanout");
+                goto fail;
+            }
+
             params.planes[i].memory = nv_fb->nv_gem[i]->pMemory;
             params.planes[i].offset = nv_fb->base.offsets[i];
             params.planes[i].pitch = nv_fb->base.pitches[i];
@@ -164,6 +172,17 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
         params.layout = (modifier & 0x10) ?
             NvKmsSurfaceMemoryLayoutBlockLinear :
             NvKmsSurfaceMemoryLayoutPitch;
+
+        // See definition of DRM_FORMAT_MOD_NVIDIA_BLOCK_LINEAR_2D, we are testing
+        // 'c', the lossless compression field of the modifier
+        if (params.layout == NvKmsSurfaceMemoryLayoutBlockLinear &&
+            (modifier >> 23) & 0x7) {
+            NV_DRM_DEV_LOG_ERR(
+                    nv_dev,
+                    "Cannot create FB from compressible surface allocation");
+            goto fail;
+        }
+
         params.log2GobsPerBlockY = modifier & 0xf;
     } else {
         params.explicit_layout = false;
@@ -174,11 +193,14 @@ static int nv_drm_framebuffer_init(struct drm_device *dev,
     nv_fb->pSurface = nvKms->createSurface(nv_dev->pDevice, &params);
     if (nv_fb->pSurface == NULL) {
         NV_DRM_DEV_DEBUG_DRIVER(nv_dev, "Failed to create NvKmsKapiSurface");
-        drm_framebuffer_cleanup(&nv_fb->base);
-        return -EINVAL;
+        goto fail;
     }
 
     return 0;
+
+fail:
+    drm_framebuffer_cleanup(&nv_fb->base);
+    return -EINVAL;
 }
 
 struct drm_framebuffer *nv_drm_internal_framebuffer_create(

@@ -188,7 +188,7 @@ NV_STATUS nvlogGetBufferSnapshot(NVLOG_BUFFER_HANDLE hBuffer, NvU8 *pDest, NvU32
 /**
  * @brief Dumps all logs into the the kernel print log
  *
- * @note this will write to the log even if all other prints are disabled, 
+ * @note this will write to the log even if all other prints are disabled,
  * including external release builds. The output will be base64 encoded and
  * not decodable without the database, and pollute the logs. Use with caution.
  *

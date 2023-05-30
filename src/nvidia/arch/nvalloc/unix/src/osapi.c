@@ -59,6 +59,7 @@
 #include <nv-kernel-rmapi-ops.h>
 #include <rmobjexportimport.h>
 #include "nv-reg.h"
+#include "nv-firmware-registry.h"
 #include "core/hal_mgr.h"
 #include "gpu/device/device.h"
 
@@ -337,6 +338,11 @@ RmLogGpuCrash(OBJGPU *pGpu)
             "NVRM: A GPU crash dump has been created. If possible, please run\n"
             "NVRM: nvidia-bug-report.sh as root to collect this data before\n"
             "NVRM: the NVIDIA kernel module is unloaded.\n");
+        if (hypervisorIsVgxHyper())
+        {
+            nv_printf(NV_DBG_ERRORS, "NVRM: Dumping nvlogs buffers\n");
+            nvlogDumpToKernelLog(NV_FALSE);
+        }
     }
 
     // Restore the disconnected properties, if they were reset
@@ -1214,12 +1220,13 @@ static void RmHandleDNotifierEvent(
 
 static NV_STATUS
 RmDmabufVerifyMemHandle(
-    OBJGPU  *pGpu,
-    NvHandle hSrcClient,
-    NvHandle hMemory,
-    NvU64    offset,
-    NvU64    size,
-    void    *pGpuInstanceInfo
+    OBJGPU             *pGpu,
+    NvHandle            hSrcClient,
+    NvHandle            hMemory,
+    NvU64               offset,
+    NvU64               size,
+    void               *pGpuInstanceInfo,
+    MEMORY_DESCRIPTOR **ppMemDesc
 )
 {
     NV_STATUS status;
@@ -1281,6 +1288,8 @@ RmDmabufVerifyMemHandle(
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
+
+    *ppMemDesc = pMemDesc;
 
     return NV_OK;
 }
@@ -1662,6 +1671,43 @@ static void RmHandleGPSStatusChange
     nv_state_t *pNv
 )
 {
+    NV_STATUS          rmStatus;
+    RM_API            *pRmApi;
+    THREAD_STATE_NODE  threadState;
+    NV0000_CTRL_SYSTEM_GPS_CONTROL_PARAMS gpsControl = { 0 };
+
+    pRmApi = RmUnixRmApiPrologue(pNv, &threadState, RM_LOCK_MODULES_ACPI);
+    if (pRmApi == NULL)
+    {
+        return;
+    }
+
+    gpsControl.command = NV0000_CTRL_CMD_SYSTEM_GPS_DATA_INIT_USING_SBIOS_AND_ACK;
+    gpsControl.locale  = NV0000_CTRL_CMD_SYSTEM_GPS_LOCALE_SYSTEM;
+
+    //
+    // NV0000_CTRL_CMD_SYSTEM_GPS_CONTROL is not a subdevice command.
+    // But, Inside GPS module, the first GPU, which has GPS
+    // enabled will be grabbed with GPU manager. The RMAPI_API_LOCK_INTERNAL
+    // will internally grab the GPU locks and wake-up all the GPUs. Ideally
+    // this control call should be GPU specific command, if internally
+    // it uses the GPU.
+    //
+    rmStatus = pRmApi->Control(pRmApi,
+                               pNv->rmapi.hClient,
+                               pNv->rmapi.hClient,
+                               NV0000_CTRL_CMD_SYSTEM_GPS_CONTROL,
+                               (void *)&gpsControl,
+                               sizeof(NV0000_CTRL_SYSTEM_GPS_CONTROL_PARAMS));
+
+    RmUnixRmApiEpilogue(pNv, &threadState);
+
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "%s: Failed to handle ACPI GPS status change event, status=0x%x\n",
+                  __FUNCTION__, rmStatus);
+    }
 }
 
 /*!
@@ -1918,15 +1964,20 @@ static NV_STATUS RmCreateMmapContextLocked(
     {
         if (CliSetGpuContext(hClient, hDevice, &pGpu, NULL) != NV_OK)
         {
-            NvU32 tmp;
-            if (CliSetSubDeviceContext(hClient, hDevice, &tmp, &pGpu) != NV_OK)
-            {
-                //
-                // If this mapping isn't for a GPU then we don't need to
-                // create a context for it.
-                //
+            RsClient *pClient;
+            Subdevice *pSubdevice;
+
+            status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
+            if (status != NV_OK)
                 return status;
-            }
+
+            status = subdeviceGetByHandle(pClient, hDevice, &pSubdevice);
+            if (status != NV_OK)
+                return status;
+
+            pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+            GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
         }
     }
 
@@ -2125,6 +2176,7 @@ static NV_STATUS RmGetAllocPrivate(
     switch (memdescGetAddressSpace(pMemDesc))
     {
         case ADDR_SYSMEM:
+        case ADDR_EGM:
             break;
         default:
             rmStatus = NV_ERR_OBJECT_NOT_FOUND;
@@ -3147,37 +3199,6 @@ NV_STATUS rm_update_device_mapping_info(
     return RmStatus;
 }
 
-static void rm_is_device_rm_firmware_capable(
-    nv_state_t *pNv,
-    NvU32       pmcBoot42,
-    NvBool     *pbIsFirmwareCapable,
-    NvBool     *pbEnableByDefault
-)
-{
-    NvBool bIsFirmwareCapable = NV_FALSE;
-    NvBool bEnableByDefault = NV_FALSE;
-
-    if (NV_IS_SOC_DISPLAY_DEVICE(pNv))
-    {
-        bIsFirmwareCapable = NV_TRUE;
-    }
-    else
-    {
-        bIsFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pNv->pci_info.device_id,
-                                                             pmcBoot42,
-                                                             &bEnableByDefault);
-    }
-
-    if (pbIsFirmwareCapable != NULL)
-    {
-        *pbIsFirmwareCapable = bIsFirmwareCapable;
-    }
-    if (pbEnableByDefault != NULL)
-    {
-        *pbEnableByDefault = bEnableByDefault;
-    }
-}
-
 static NvBool NV_API_CALL rm_is_legacy_device(
     NvU16       device_id,
     NvU16       subsystem_vendor,
@@ -3268,10 +3289,10 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
     {
         NvBool bIsFirmwareCapable;
 
-        rm_is_device_rm_firmware_capable(pNv,
-                                         pmc_boot_42,
-                                         &bIsFirmwareCapable,
-                                         NULL);
+        bIsFirmwareCapable = gpumgrIsDeviceRmFirmwareCapable(pNv->pci_info.device_id,
+                                                             pmc_boot_42,
+                                                             NV_IS_SOC_DISPLAY_DEVICE(pNv),
+                                                             NULL);
         if (!bIsFirmwareCapable)
         {
             nv_printf(NV_DBG_ERRORS,
@@ -4042,7 +4063,7 @@ NV_STATUS NV_API_CALL rm_p2p_dma_map_pages(
     nvidia_stack_t  *sp,
     nv_dma_device_t *peer,
     NvU8            *pGpuUuid,
-    NvU32            pageSize,
+    NvU64            pageSize,
     NvU32            pageCount,
     NvU64           *pDmaAddresses,
     void           **ppPriv
@@ -4444,25 +4465,14 @@ static void rm_set_firmware_logs(
     nv_state_t *nv
 )
 {
-    NV_STATUS status;
-    NvU32 data;
     void *fp;
+    NvU32 enableFirmwareLogsRegVal = NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE_ON_DEBUG;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
 
-    status = RmReadRegistryDword(nv, NV_REG_ENABLE_GPU_FIRMWARE_LOGS, &data);
-    if (status == NV_OK)
-    {
-        if ((data == NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE)
-#if defined(DEBUG) || defined(DEVELOP)         
-            || (data == NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE_ON_DEBUG)
-#endif
-           )
-        {
-            nv->enable_firmware_logs = NV_TRUE;
-        }
-    }
-
+    (void) RmReadRegistryDword(nv, NV_REG_ENABLE_GPU_FIRMWARE_LOGS,
+                               &enableFirmwareLogsRegVal);
+    nv->enable_firmware_logs = gpumgrGetRmFirmwareLogsEnabled(enableFirmwareLogsRegVal);
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
 
@@ -4677,7 +4687,6 @@ void RmInitAcpiMethods(OBJOS *pOS, OBJSYS *pSys, OBJGPU *pGpu)
     // Check if NVPCF _DSM functions are implemented under NVPCF or GPU device scope.
     RmCheckNvpcfDsmScope(pGpu);
     acpiDsmInit(pGpu);
-
 }
 
 //
@@ -5094,7 +5103,8 @@ NvBool NV_API_CALL rm_is_iommu_needed_for_sriov(
 NvBool NV_API_CALL rm_disable_iomap_wc(void)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
-    return pSys->pCl->getProperty(pSys, PDB_PROP_CL_DISABLE_IOMAP_WC) == NV_TRUE;
+    OBJCL *pCl = pSys->pCl;
+    return pCl->getProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC) == NV_TRUE;
 }
 
 //
@@ -5112,9 +5122,11 @@ NV_STATUS NV_API_CALL rm_dma_buf_dup_mem_handle(
     NvHandle         hMemory,
     NvU64            offset,
     NvU64            size,
-    NvHandle        *phMemoryDuped
+    NvHandle        *phMemoryDuped,
+    void           **ppStaticMemInfo
 )
 {
+    MEMORY_DESCRIPTOR *pMemDesc;
     THREAD_STATE_NODE threadState;
     NV_STATUS rmStatus;
     OBJGPU *pGpu;
@@ -5130,7 +5142,8 @@ NV_STATUS NV_API_CALL rm_dma_buf_dup_mem_handle(
     NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
     rmStatus = RmDmabufVerifyMemHandle(pGpu, hSrcClient, hMemory,
-                                       offset, size, pGpuInstanceInfo);
+                                       offset, size, pGpuInstanceInfo,
+                                       &pMemDesc);
     if (rmStatus == NV_OK)
     {
         RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
@@ -5164,6 +5177,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_dup_mem_handle(
                 *phMemoryDuped = hMemoryDuped;
             }
         }
+        *ppStaticMemInfo = (void *) pMemDesc;
     }
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -5205,39 +5219,102 @@ void NV_API_CALL rm_dma_buf_undup_mem_handle(
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
 
-//
-// Maps a handle to BAR1.
-// Must be called with API lock and GPU lock held.
-//
 NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
-    nvidia_stack_t  *sp,
-    nv_state_t      *nv,
-    NvHandle         hClient,
-    NvHandle         hMemory,
-    NvU64            offset,
-    NvU64            size,
-    NvU64           *pBar1Va
+    nvidia_stack_t        *sp,
+    nv_state_t            *nv,
+    NvHandle               hClient,
+    NvHandle               hMemory,
+    NvU64                  offset,
+    NvU64                  size,
+    void                  *pStaticMemInfo,
+    nv_phys_addr_range_t **ppRanges,
+    NvU32                 *pRangeCount
 )
 {
     THREAD_STATE_NODE threadState;
-    NV_STATUS rmStatus;
+    NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu;
-    KernelBus *pKernelBus;
     void *fp;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
+    NV_ASSERT_OR_GOTO(((ppRanges != NULL) && (pRangeCount != NULL)), Done);
+
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
-    pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
-    NV_ASSERT(rmapiLockIsOwner());
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+    {
+        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+        MEMORY_DESCRIPTOR *pMemDesc = (MEMORY_DESCRIPTOR *) pStaticMemInfo;
+        NvU32 pageSize = 0;
+        NvU32 pageCount = 0;
+        NvU32 i = 0;
 
-    NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
+        pageSize = memdescGetPageSize(pMemDesc, AT_GPU);
+        pageCount = size / pageSize;
 
-    rmStatus = kbusMapFbApertureByHandle(pGpu, pKernelBus, hClient,
-                                         hMemory, offset, size, pBar1Va);
+        rmStatus = os_alloc_mem((void **) ppRanges,
+                                pageCount * sizeof(nv_phys_addr_range_t));
+        if (rmStatus != NV_OK)
+        {
+            goto Done;
+        }
 
+        for (i = 0; i < pageCount; i++)
+        {
+            NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU, offset);
+
+            (*ppRanges)[i].addr = pKernelMemorySystem->coherentCpuFbBase + physAddr;
+            (*ppRanges)[i].len = pageSize;
+
+            offset += pageSize;
+        }
+        *pRangeCount = pageCount;
+    }
+    else
+    {
+        Device *pDevice;
+        RsClient *pClient;
+        KernelBus *pKernelBus;
+        NvU64 bar1Va;
+
+        NV_ASSERT(rmapiLockIsOwner());
+        NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
+
+        NV_ASSERT_OK_OR_GOTO(rmStatus,
+            serverGetClientUnderLock(&g_resServ, hClient, &pClient),
+            Done);
+
+        NV_ASSERT_OK_OR_GOTO(rmStatus,
+            deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice),
+            Done);
+
+        pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+
+        rmStatus = kbusMapFbApertureByHandle(pGpu, pKernelBus, hClient,
+                                             hMemory, offset, size, &bar1Va,
+                                             pDevice);
+        if (rmStatus != NV_OK)
+        {
+            goto Done;
+        }
+
+        // Adjust this alloc when discontiguous BAR1 is supported
+        rmStatus = os_alloc_mem((void **) ppRanges,
+                                sizeof(nv_phys_addr_range_t));
+        if (rmStatus != NV_OK)
+        {
+            kbusUnmapFbApertureByHandle(pGpu, pKernelBus, hClient,
+                                        hMemory, bar1Va);
+            goto Done;
+        }
+        (*ppRanges)[0].addr = bar1Va;
+        (*ppRanges)[0].len = size;
+        *pRangeCount = 1;
+    }
+
+Done:
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
 
@@ -5248,38 +5325,52 @@ NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
 // Unmaps a handle from BAR1.
 // Must be called with API lock and GPU lock held.
 //
-NV_STATUS NV_API_CALL rm_dma_buf_unmap_mem_handle(
-    nvidia_stack_t  *sp,
-    nv_state_t      *nv,
-    NvHandle         hClient,
-    NvHandle         hMemory,
-    NvU64            size,
-    NvU64            bar1Va
+void NV_API_CALL rm_dma_buf_unmap_mem_handle(
+    nvidia_stack_t        *sp,
+    nv_state_t            *nv,
+    NvHandle               hClient,
+    NvHandle               hMemory,
+    NvU64                  size,
+    nv_phys_addr_range_t **ppRanges,
+    NvU32                  rangeCount
 )
 {
     THREAD_STATE_NODE threadState;
-    NV_STATUS rmStatus;
+    NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu;
-    KernelBus *pKernelBus;
+    NvU32 i;
     void *fp;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
+    NV_ASSERT_OR_GOTO(((ppRanges != NULL) && (rangeCount != 0)), Done);
+
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
-    pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
-    NV_ASSERT(rmapiLockIsOwner());
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+    {
+        KernelBus *pKernelBus;
 
-    NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
+        NV_ASSERT(rmapiLockIsOwner());
+        NV_ASSERT(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
-    rmStatus = kbusUnmapFbApertureByHandle(pGpu, pKernelBus, hClient,
-                                           hMemory, bar1Va);
+        pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
+        for (i = 0; i < rangeCount; i++)
+        {
+            rmStatus = kbusUnmapFbApertureByHandle(pGpu, pKernelBus, hClient,
+                                               hMemory, (*ppRanges)[i].addr);
+            NV_ASSERT_OK(rmStatus);
+        }
+    }
+
+    os_free_mem(*ppRanges);
+    *ppRanges = NULL;
+
+Done:
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
-
-    return rmStatus;
 }
 
 NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
@@ -5289,7 +5380,8 @@ NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
     NvHandle       *phClient,
     NvHandle       *phDevice,
     NvHandle       *phSubdevice,
-    void          **ppGpuInstanceInfo
+    void          **ppGpuInstanceInfo,
+    NvBool         *pbStaticPhysAddrs
 )
 {
     THREAD_STATE_NODE threadState;
@@ -5310,6 +5402,12 @@ NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
         {
             rmStatus = RmDmabufGetClientAndDevice(pGpu, hClient, phClient, phDevice,
                                                   phSubdevice, ppGpuInstanceInfo);
+            if (rmStatus == NV_OK)
+            {
+                // Note: revisit this when BAR1 static map is supported.
+                *pbStaticPhysAddrs = pGpu->getProperty(pGpu,
+                                        PDB_PROP_GPU_COHERENT_CPU_MAPPING);
+            }
 
             rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
         }
@@ -5368,6 +5466,25 @@ void NV_API_CALL rm_dma_buf_put_client_and_device(
 // Fetches GSP ucode data for usage during RM Init
 // NOTE: Used only on VMWware
 //
+
+void NV_API_CALL rm_vgpu_vfio_set_driver_vm(
+    nvidia_stack_t *sp,
+    NvBool is_driver_vm
+)
+{
+    OBJSYS *pSys;
+    POBJHYPERVISOR pHypervisor;
+    void *fp;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+
+    pSys = SYS_GET_INSTANCE();
+    pHypervisor = SYS_GET_HYPERVISOR(pSys);
+
+    pHypervisor->setProperty(pHypervisor, PDB_PROP_HYPERVISOR_DRIVERVM_ENABLED, is_driver_vm);
+
+    NV_EXIT_RM_RUNTIME(sp,fp);
+}
 
 NvBool NV_API_CALL rm_is_altstack_in_use(void)
 {

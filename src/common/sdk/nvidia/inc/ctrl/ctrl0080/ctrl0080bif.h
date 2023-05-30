@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080bif.finn
+// Source file:      ctrl/ctrl0080/ctrl0080bif.finn
 //
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
@@ -69,6 +69,7 @@ typedef struct NV0080_CTRL_BIF_RESET_PARAMS {
 #define NV0080_CTRL_BIF_RESET_FLAGS_TYPE_BOOT_DEVICE_FUSE 0x4
 #define NV0080_CTRL_BIF_RESET_FLAGS_TYPE_BOOT_DEVICE      0x5
 #define NV0080_CTRL_BIF_RESET_FLAGS_TYPE_PEX              0x6
+#define NV0080_CTRL_BIF_RESET_FLAGS_TYPE_OOBHUB_TRIGGER   0x7
 
 /*
  * NV0080_CTRL_BIF_GET_DMA_BASE_SYSMEM_ADDR
@@ -138,7 +139,7 @@ typedef struct NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS {
 } NV0080_CTRL_BIF_ASPM_CYA_UPDATE_PARAMS;
 
 /*
- * NV0080_CTRL_CMD_BIF_GET_PCIE_POWER_CONTROL_MASK
+ * NV0080_CTRL_BIF_ASPM_FEATURE
  *
  * pciePowerControlMask
  * pciePowerControlIdentifiedKeyOrder

@@ -507,6 +507,12 @@ typedef struct
 // place to re-locate these from nvos.h which cannot be included by a number
 // of builds that need them
 
+#if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
+    #define NV_ATTRIBUTE_UNUSED __attribute__((__unused__))
+#else
+    #define NV_ATTRIBUTE_UNUSED
+#endif
+
     #if defined(__GNUC__)
         #if (__GNUC__ > 3) || \
             ((__GNUC__ == 3) && (__GNUC_MINOR__ >= 1) && (__GNUC_PATCHLEVEL__ >= 1))
@@ -598,12 +604,6 @@ typedef struct
         #endif
     #else /* defined(__GNUC__) */
         #define NV_FORCERESULTCHECK
-    #endif
-
-    #if defined(__GNUC__) || defined(__clang__) || defined(__INTEL_COMPILER)
-        #define NV_ATTRIBUTE_UNUSED __attribute__((__unused__))
-    #else
-        #define NV_ATTRIBUTE_UNUSED
     #endif
 
     /*

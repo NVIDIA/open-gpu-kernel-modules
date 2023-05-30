@@ -221,6 +221,9 @@ struct NvKmsPerOpen {
 static void AllocSurfaceCtxDmasForAllOpens(NVDevEvoRec *pDevEvo);
 static void FreeSurfaceCtxDmasForAllOpens(NVDevEvoRec *pDevEvo);
 
+static void EnableAndSetupVblankSyncObjectForAllOpens(NVDevEvoRec *pDevEvo);
+static void DisableAndCleanVblankSyncObjectForAllOpens(NVDevEvoRec *pDevEvo);
+
 static NVListRec perOpenList = NV_LIST_INIT(&perOpenList);
 static NVListRec perOpenIoctlList = NV_LIST_INIT(&perOpenIoctlList);
 
@@ -1061,6 +1064,7 @@ static void RestoreConsole(NVDevEvoPtr pDevEvo)
         // If that didn't work, free the core channel to trigger RM's console
         // restore code.
         FreeSurfaceCtxDmasForAllOpens(pDevEvo);
+        DisableAndCleanVblankSyncObjectForAllOpens(pDevEvo);
         nvFreeCoreChannelEvo(pDevEvo);
 
         // Reallocate the core channel right after freeing it. This makes sure
@@ -1068,6 +1072,7 @@ static void RestoreConsole(NVDevEvoPtr pDevEvo)
         // started.
         if (nvAllocCoreChannelEvo(pDevEvo)) {
             nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
+            EnableAndSetupVblankSyncObjectForAllOpens(pDevEvo);
             AllocSurfaceCtxDmasForAllOpens(pDevEvo);
         }
     }
@@ -1462,11 +1467,10 @@ static void UnregisterDeferredRequestFifos(struct NvKmsPerOpenDev *pOpenDev)
  * Forward declaration since this function is used by
  * DisableRemainingVblankSyncObjects().
  */
-static void DisableAndCleanVblankSyncObject(struct NvKmsPerOpenDisp *pOpenDisp,
-                                            NvU32 apiHead,
+static void DisableAndCleanVblankSyncObject(NVDispEvoRec *pDispEvo,
+                                            const NvU32 apiHead,
                                             NVVblankSyncObjectRec *pVblankSyncObject,
-                                            NVEvoUpdateState *pUpdateState,
-                                            NvKmsVblankSyncObjectHandle handle);
+                                            NVEvoUpdateState *pUpdateState);
 
 static void DisableRemainingVblankSyncObjects(struct NvKmsPerOpen *pOpen,
                                               struct NvKmsPerOpenDev *pOpenDev)
@@ -1500,10 +1504,11 @@ static void DisableRemainingVblankSyncObjects(struct NvKmsPerOpen *pOpen,
             /* For each still-active vblank sync object: */
             FOR_ALL_POINTERS_IN_EVO_API_HANDLES(pHandles,
                                                 pVblankSyncObject, handle) {
-                DisableAndCleanVblankSyncObject(pOpenDisp, apiHead,
+                DisableAndCleanVblankSyncObject(pOpenDisp->pDispEvo, apiHead,
                                                 pVblankSyncObject,
-                                                &updateState,
-                                                handle);
+                                                &updateState);
+                /* Remove the handle from the map. */
+                nvEvoDestroyApiHandle(pHandles, handle);
             }
         }
 
@@ -1656,7 +1661,6 @@ static NvBool QueryConnectorStaticData(struct NvKmsPerOpen *pOpen,
     pParams->reply.signalFormat     = pConnectorEvo->signalFormat;
     pParams->reply.physicalIndex    = pConnectorEvo->physicalIndex;
     pParams->reply.physicalLocation = pConnectorEvo->physicalLocation;
-    pParams->reply.headMask         = pConnectorEvo->validApiHeadMask;
 
     pParams->reply.isLvds =
         (pConnectorEvo->or.type == NV0073_CTRL_SPECIFIC_OR_TYPE_SOR) &&
@@ -1757,6 +1761,7 @@ static NvBool QueryDpyStaticData(struct NvKmsPerOpen *pOpen,
 
     pParams->reply.mobileInternal = pDpyEvo->internal;
     pParams->reply.isDpMST = nvDpyEvoIsDPMST(pDpyEvo);
+    pParams->reply.headMask = nvDpyGetPossibleApiHeadsMask(pDpyEvo);
 
     return TRUE;
 }
@@ -4056,6 +4061,92 @@ static NvBool ExportVrrSemaphoreSurface(
     return nvExportVrrSemaphoreSurface(pOpenDev->pDevEvo, req->memFd);
 }
 
+static void EnableAndSetupVblankSyncObject(NVDispEvoRec *pDispEvo,
+                                           const NvU32 apiHead,
+                                           NVVblankSyncObjectRec *pVblankSyncObject,
+                                           NVEvoUpdateState *pUpdateState)
+{
+    /*
+     * The core channel re-allocation code path may end up allocating
+     * the fewer number of sync objects than the number of sync objects which
+     * are allocated and in use by the NVKMS clients, hCtxDma = 0 if the
+     * nvAllocCoreChannelEvo()-> InitApiHeadState()-> nvRmAllocCoreRGSyncpts()
+     * code path failes to re-allocate that sync object.
+     */
+    if (nvApiHeadIsActive(pDispEvo, apiHead) &&
+            (pVblankSyncObject->evoSyncpt.hCtxDma != 0)) {
+        NvU32 head = nvGetPrimaryHwHead(pDispEvo, apiHead);
+
+        nvAssert(head != NV_INVALID_HEAD);
+
+        pDispEvo->pDevEvo->hal->ConfigureVblankSyncObject(
+                    pDispEvo->pDevEvo,
+                    pDispEvo->headState[head].timings.rasterBlankStart.y,
+                    head,
+                    pVblankSyncObject->index,
+                    pVblankSyncObject->evoSyncpt.hCtxDma,
+                    pUpdateState);
+
+        pVblankSyncObject->enabled = TRUE;
+    }
+
+    pVblankSyncObject->inUse = TRUE;
+}
+
+static void EnableAndSetupVblankSyncObjectForAllOpens(NVDevEvoRec *pDevEvo)
+{
+    /*
+     * An NVEvoUpdateState has disp-scope, and we will only have
+     * one disp when programming syncpts.
+     */
+    NVEvoUpdateState updateState = { };
+    struct NvKmsPerOpen *pOpen;
+
+    if (!pDevEvo->supportsSyncpts ||
+        !pDevEvo->hal->caps.supportsVblankSyncObjects) {
+        return;
+    }
+
+    /* If Syncpts are supported, we're on Orin, which only has one display. */
+    nvAssert(pDevEvo->nDispEvo == 1);
+
+    nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenIoctlListEntry) {
+        struct NvKmsPerOpenDev *pOpenDev = DevEvoToOpenDev(pOpen, pDevEvo);
+        struct NvKmsPerOpenDisp *pOpenDisp;
+        NvKmsGenericHandle disp;
+
+        if (pOpenDev == NULL) {
+            continue;
+        }
+
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
+                                            pOpenDisp, disp) {
+
+            nvAssert(pOpenDisp->pDispEvo == pDevEvo->pDispEvo[0]);
+
+            for (NvU32 apiHead = 0; apiHead <
+                    ARRAY_LEN(pOpenDisp->vblankSyncObjectHandles); apiHead++) {
+                NVEvoApiHandlesRec *pHandles =
+                    &pOpenDisp->vblankSyncObjectHandles[apiHead];
+                NVVblankSyncObjectRec *pVblankSyncObject;
+                NvKmsVblankSyncObjectHandle handle;
+
+                FOR_ALL_POINTERS_IN_EVO_API_HANDLES(pHandles,
+                                                    pVblankSyncObject, handle) {
+                    EnableAndSetupVblankSyncObject(pOpenDisp->pDispEvo, apiHead,
+                                                   pVblankSyncObject,
+                                                   &updateState);
+                }
+            }
+        }
+    }
+
+    if (!nvIsUpdateStateEmpty(pDevEvo, &updateState)) {
+        nvEvoUpdateAndKickOff(pDevEvo->pDispEvo[0], TRUE, &updateState,
+                              TRUE);
+    }
+}
+
 static NvBool EnableVblankSyncObject(
     struct NvKmsPerOpen *pOpen,
     void *pParamsVoid)
@@ -4123,35 +4214,12 @@ static NvBool EnableVblankSyncObject(
         return FALSE;
     }
 
-    if (nvApiHeadIsActive(pDispEvo, apiHead)) {
-        NvU32 head = nvGetPrimaryHwHead(pDispEvo, apiHead);
-
-        nvAssert(head != NV_INVALID_HEAD);
-
-        /*
-         * Instruct the hardware to enable a semaphore corresponding to this
-         * syncpt. The Update State will be populated.
-         */
-        pDevEvo->hal->ConfigureVblankSyncObject(
-                    pDevEvo,
-                    pDispEvo->headState[head].timings.rasterBlankStart.y,
-                    head,
-                    freeVblankSyncObjectIdx,
-                    vblankSyncObjects[freeVblankSyncObjectIdx].evoSyncpt.hCtxDma,
-                    &updateState);
-
-        /*
-         * Instruct hardware to execute the staged commands from the
-         * ConfigureVblankSyncObject() call above. This will set up and wait for a
-         * notification that the hardware execution actually completed.
-         */
+    EnableAndSetupVblankSyncObject(pDispEvo, apiHead,
+                                   &vblankSyncObjects[freeVblankSyncObjectIdx],
+                                   &updateState);
+    if (!nvIsUpdateStateEmpty(pOpenDisp->pDispEvo->pDevEvo, &updateState)) {
         nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState, TRUE);
-
-        vblankSyncObjects[freeVblankSyncObjectIdx].enabled = TRUE;
     }
-
-    /* Populate the vblankSyncObjects array. */
-    vblankSyncObjects[freeVblankSyncObjectIdx].inUse = TRUE;
 
     /* Populate the reply field. */
     pParams->reply.vblankHandle = vblankHandle;
@@ -4162,14 +4230,11 @@ static NvBool EnableVblankSyncObject(
     return TRUE;
 }
 
-static void DisableAndCleanVblankSyncObject(struct NvKmsPerOpenDisp *pOpenDisp,
-                                            NvU32 apiHead,
+static void DisableAndCleanVblankSyncObject(NVDispEvoRec *pDispEvo,
+                                            const NvU32 apiHead,
                                             NVVblankSyncObjectRec *pVblankSyncObject,
-                                            NVEvoUpdateState *pUpdateState,
-                                            NvKmsVblankSyncObjectHandle handle)
+                                            NVEvoUpdateState *pUpdateState)
 {
-    NVDispEvoPtr pDispEvo = pOpenDisp->pDispEvo;
-
     if (nvApiHeadIsActive(pDispEvo, apiHead)) {
         NvU32 head = nvGetPrimaryHwHead(pDispEvo, apiHead);
 
@@ -4196,9 +4261,60 @@ static void DisableAndCleanVblankSyncObject(struct NvKmsPerOpenDisp *pOpenDisp,
 
     pVblankSyncObject->inUse = FALSE;
     pVblankSyncObject->enabled = FALSE;
+}
 
-    /* Remove the handle from the map. */
-    nvEvoDestroyApiHandle(&pOpenDisp->vblankSyncObjectHandles[apiHead], handle);
+static void DisableAndCleanVblankSyncObjectForAllOpens(NVDevEvoRec *pDevEvo)
+{
+    /*
+     * An NVEvoUpdateState has disp-scope, and we will only have
+     * one disp when programming syncpts.
+     */
+    NVEvoUpdateState updateState = { };
+    struct NvKmsPerOpen *pOpen;
+
+    if (!pDevEvo->supportsSyncpts ||
+        !pDevEvo->hal->caps.supportsVblankSyncObjects) {
+        return;
+    }
+
+    /* If Syncpts are supported, we're on Orin, which only has one display. */
+    nvAssert(pDevEvo->nDispEvo == 1);
+
+    nvListForEachEntry(pOpen, &perOpenIoctlList, perOpenIoctlListEntry) {
+        struct NvKmsPerOpenDev *pOpenDev = DevEvoToOpenDev(pOpen, pDevEvo);
+        struct NvKmsPerOpenDisp *pOpenDisp;
+        NvKmsGenericHandle disp;
+
+        if (pOpenDev == NULL) {
+            continue;
+        }
+
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
+                                            pOpenDisp, disp) {
+
+            nvAssert(pOpenDisp->pDispEvo == pDevEvo->pDispEvo[0]);
+
+            for (NvU32 apiHead = 0; apiHead <
+                    ARRAY_LEN(pOpenDisp->vblankSyncObjectHandles); apiHead++) {
+                NVEvoApiHandlesRec *pHandles =
+                    &pOpenDisp->vblankSyncObjectHandles[apiHead];
+                NVVblankSyncObjectRec *pVblankSyncObject;
+                NvKmsVblankSyncObjectHandle handle;
+
+                FOR_ALL_POINTERS_IN_EVO_API_HANDLES(pHandles,
+                                                    pVblankSyncObject, handle) {
+                    DisableAndCleanVblankSyncObject(pOpenDisp->pDispEvo, apiHead,
+                                                    pVblankSyncObject,
+                                                    &updateState);
+                }
+            }
+        }
+    }
+
+    if (!nvIsUpdateStateEmpty(pDevEvo, &updateState)) {
+        nvEvoUpdateAndKickOff(pDevEvo->pDispEvo[0], TRUE, &updateState,
+                              TRUE);
+    }
 }
 
 static NvBool DisableVblankSyncObject(
@@ -4245,8 +4361,8 @@ static NvBool DisableVblankSyncObject(
         return FALSE;
     }
 
-    DisableAndCleanVblankSyncObject(pOpenDisp, apiHead, pVblankSyncObject,
-                                    &updateState, pParams->request.vblankHandle);
+    DisableAndCleanVblankSyncObject(pOpenDisp->pDispEvo, apiHead,
+                                    pVblankSyncObject, &updateState);
 
     if (!nvIsUpdateStateEmpty(pOpenDisp->pDispEvo->pDevEvo, &updateState)) {
         /*
@@ -4257,6 +4373,10 @@ static NvBool DisableVblankSyncObject(
          */
         nvEvoUpdateAndKickOff(pOpenDisp->pDispEvo, TRUE, &updateState, TRUE);
     }
+
+    /* Remove the handle from the map. */
+    nvEvoDestroyApiHandle(&pOpenDisp->vblankSyncObjectHandles[apiHead],
+                          pParams->request.vblankHandle);
 
     return TRUE;
 }
@@ -5327,6 +5447,8 @@ void nvKmsGetProcFiles(const nvkms_procfs_file_t **ppProcFiles)
 
 static void FreeGlobalState(void)
 {
+    nvInvalidateTopologiesEvo();
+
     nvKmsClose(nvEvoGlobal.nvKmsPerOpen);
     nvEvoGlobal.nvKmsPerOpen = NULL;
 
@@ -5795,6 +5917,13 @@ NvBool nvSurfaceEvoInAnyOpens(const NVSurfaceEvoRec *pSurfaceEvo)
 }
 #endif
 
+NVDevEvoPtr nvGetDevEvoFromOpenDev(
+    const struct NvKmsPerOpenDev *pOpenDev)
+{
+    nvAssert(pOpenDev != NULL);
+    return pOpenDev->pDevEvo;
+}
+
 const struct NvKmsFlipPermissions *nvGetFlipPermissionsFromOpenDev(
     const struct NvKmsPerOpenDev *pOpenDev)
 {
@@ -5862,6 +5991,8 @@ void nvKmsSuspend(NvU32 gpuId)
                                NULL /* pTestFunc, shut down all heads */);
             pDevEvo->skipConsoleRestore = TRUE;
 
+            DisableAndCleanVblankSyncObjectForAllOpens(pDevEvo);
+
             FreeSurfaceCtxDmasForAllOpens(pDevEvo);
 
             nvSuspendDevEvo(pDevEvo);
@@ -5883,6 +6014,7 @@ void nvKmsResume(NvU32 gpuId)
 
             if (nvResumeDevEvo(pDevEvo)) {
                 nvDPSetAllowMultiStreaming(pDevEvo, TRUE /* allowMST */);
+                EnableAndSetupVblankSyncObjectForAllOpens(pDevEvo);
                 AllocSurfaceCtxDmasForAllOpens(pDevEvo);
             }
 

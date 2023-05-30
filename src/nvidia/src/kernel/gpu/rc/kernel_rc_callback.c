@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 #include "kernel/gpu/mmu/kern_gmmu.h"
 #include "kernel/os/os.h"
 #include "rmapi/client.h"
+#include "rmapi/rs_utils.h"
 
 #include "ctrl/ctrl506f.h"
 
@@ -147,6 +148,7 @@ krcResetCallback
             if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_RC) ==
                 NV_OK)
             {
+                RsClient      *pClient;
                 KernelChannel *pKernelChannel = NULL;
 
                 threadStateInitISRAndDeferredIntHandler(
@@ -156,11 +158,11 @@ krcResetCallback
 
                 NV_ASSERT_OK_OR_GOTO(
                     status,
-                    serverGetClientUnderLock(&g_resServ, hClient, NULL),
+                    serverGetClientUnderLock(&g_resServ, hClient, &pClient),
                     error_cleanup);
                 NV_ASSERT_OK_OR_GOTO(
                     status,
-                    CliGetKernelChannel(hClient, hChannel, &pKernelChannel),
+                    CliGetKernelChannel(pClient, hChannel, &pKernelChannel),
                     error_cleanup);
 
                 NV_ASSERT_OR_ELSE(pKernelChannel != NULL,
@@ -233,7 +235,6 @@ krcErrorInvokeCallback_IMPL
     OBJOS              *pOS               = SYS_GET_OS(pSys);
     KernelMIGManager   *pKernelMigManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     RmClient           *pClient           = NULL;
-    RsClient           *pRsClient;
     RC_CALLBACK_STATUS  clientAction;
     RM_ENGINE_TYPE      localRmEngineType  = rmEngineType;
     NvU32               rcDiagRecOwner = RCDB_RCDIAG_DEFAULT_OWNER;
@@ -243,13 +244,7 @@ krcErrorInvokeCallback_IMPL
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), bReturn);
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelChannel != NULL, bReturn);
 
-    status = serverGetClientUnderLock(&g_resServ,
-                                      RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                      &pRsClient);
-    if (status != NV_OK)
-        return bReturn;
-
-    pClient = dynamicCast(pRsClient, RmClient);
+    pClient = dynamicCast(RES_GET_CLIENT(pKernelChannel), RmClient);
     if (pClient == NULL)
         return bReturn;
 
@@ -263,7 +258,7 @@ krcErrorInvokeCallback_IMPL
         MIG_INSTANCE_REF ref;
         status = kmigmgrGetInstanceRefFromClient(pGpu,
                                                  pKernelMigManager,
-                                                 pRsClient->hClient,
+                                                 RES_GET_CLIENT_HANDLE(pKernelChannel),
                                                  &ref);
         if (status != NV_OK)
             return bReturn;
@@ -293,7 +288,7 @@ krcErrorInvokeCallback_IMPL
         Device           *pDevice;
 
         NV_ASSERT_OK_OR_RETURN(
-            deviceGetByGpu(pRsClient, pGpu, NV_TRUE, &pDevice));
+            deviceGetByGpu(RES_GET_CLIENT(pKernelChannel), pGpu, NV_TRUE, &pDevice));
 
         hDevice = RES_GET_HANDLE(pDevice);
 

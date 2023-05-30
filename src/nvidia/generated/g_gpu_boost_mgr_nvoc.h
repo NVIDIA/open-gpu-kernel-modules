@@ -57,11 +57,11 @@ extern "C" {
  * For every successful iteration, pGpuItr will point to the GPU being looped over.
  * After all the iterations are complete, pGpuItr will be NULL.
  */
-#define GPUBOOSTMGR_ITR_START(pBoostMgr, grpId, pGpuItr)                       \
-{                                                                              \
-    NvU32  itrIdx  = 0;                                                        \
-    NV_ASSERT(NULL != (pBoostMgr));                                            \
-    while (NULL != ((pGpuItr) = gpuboostmgrGpuItr((pBoostMgr), (grpId), &(itrIdx))))  \
+#define GPUBOOSTMGR_ITR_START(pBoostMgr, grpId, pGpuItr)                             \
+{                                                                                    \
+    NvU32  itrIdx  = 0;                                                              \
+    NV_ASSERT(NULL != (pBoostMgr));                                                  \
+    while (NULL != ((pGpuItr) = gpuboostmgrGpuItr((pBoostMgr), (grpId), &(itrIdx)))) \
     {
 
 #define GPUBOOSTMGR_ITR_END                                                    \

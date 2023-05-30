@@ -26,7 +26,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/clc670.finn
+// Source file:      class/clc670.finn
 //
 
 #define NVC670_DISPLAY (0xc670U) /* finn: Evaluated from "NVC670_ALLOCATION_PARAMETERS_MESSAGE_ID" */

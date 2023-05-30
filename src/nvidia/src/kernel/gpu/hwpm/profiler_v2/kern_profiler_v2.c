@@ -177,7 +177,7 @@ profilerDevConstructStatePrologue_FWCLIENT
     NV_STATUS   status      = NV_OK;
 
     NV_RM_RPC_ALLOC_OBJECT(pGpu, hClient, hParent, hObject, class,
-        pAllocParams->pAllocParams, status);
+        pAllocParams->pAllocParams, pAllocParams->paramsSize, status);
 
     return status;
 }

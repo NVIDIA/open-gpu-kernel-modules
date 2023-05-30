@@ -289,4 +289,7 @@ typedef NvU8 FLCN_STATUS;
 // Arithmetic errors
 #define FLCN_ERR_ARITHMETIC_OVERFLOW                                       (0xFAU)
 
+// Pri errros
+#define FLCN_ERR_OUTSTANDING_PRI_ERROR                                     (0xFBU)
+
 #endif // FLCNRETVAL_H

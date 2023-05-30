@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "gpu/fifo/kernel_channel_group_api.h"
 #include "gpu/intr/intr.h"
 #include "gpu/subdevice/subdevice.h"
+#include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "mem_mgr/gpu_vaspace.h"
 #include "mem_mgr/ctx_buf_pool.h"
@@ -96,7 +97,6 @@ static NV_STATUS _kflcnAllocAndMapCtxBuffer
     CTX_BUF_POOL_INFO  *pCtxBufPool = NULL;
     KernelChannelGroup *pKernelChannelGroup = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup;
     OBJGVASPACE        *pGVAS = dynamicCast(pKernelChannel->pVAS, OBJGVASPACE);
-    NvU8               *pInstMem;
     NV_STATUS           status = NV_OK;
     NvU64               flags = MEMDESC_FLAGS_OWNED_BY_CURRENT_DEVICE;
 
@@ -135,22 +135,10 @@ static NV_STATUS _kflcnAllocAndMapCtxBuffer
         memdescAllocList(pCtxMemDesc, memdescU32ToAddrSpaceList(pKernelFalcon->addrSpaceList)),
         done);
 
-    pInstMem = memdescMapInternal(pGpu, pCtxMemDesc, 0);
-    if (pInstMem != NULL)
-    {
-        // Clear the engine context buffer
-        NvU32 i;
-        for (i = 0; i < pKernelFalcon->ctxBufferSize; i += 4)
-        {
-            MEM_WR32(pInstMem + i, 0);
-        }
-        memdescUnmapInternal(pGpu, pCtxMemDesc, 0);
-    }
-    else
-    {
-        status = NV_ERR_INSUFFICIENT_RESOURCES;
-        goto done;
-    }
+    NV_ASSERT_OK_OR_GOTO(status,
+        memmgrMemDescMemSet(GPU_GET_MEMORY_MANAGER(pGpu), pCtxMemDesc, 0,
+                            TRANSFER_FLAGS_NONE),
+        done);
 
     NV_ASSERT_OK_OR_GOTO(status,
         kchannelSetEngineContextMemDesc(pGpu, pKernelChannel, pKernelFalcon->physEngDesc, pCtxMemDesc),
@@ -183,17 +171,16 @@ static NV_STATUS _kflcnPromoteContext
     RM_API                *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     RsClient              *pClient = RES_GET_CLIENT(pKernelChannel);
     Subdevice             *pSubdevice;
-    NvU64                  addr;
     RM_ENGINE_TYPE         rmEngineType;
     ENGINE_CTX_DESCRIPTOR *pEngCtx;
     NV2080_CTRL_GPU_PROMOTE_CTX_PARAMS rmCtrlParams = {0};
+    OBJGVASPACE           *pGVAS = dynamicCast(pKernelChannel->pVAS, OBJGVASPACE);
 
     NV_ASSERT_OK_OR_RETURN(subdeviceGetByGpu(pClient, pGpu, &pSubdevice));
     NV_ASSERT_OR_RETURN(gpumgrGetSubDeviceInstanceFromGpu(pGpu) == 0, NV_ERR_INVALID_STATE);
 
     pEngCtx = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->ppEngCtxDesc[0];
     NV_ASSERT_OR_RETURN(pEngCtx != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OK_OR_RETURN(vaListFindVa(&pEngCtx->vaList, pKernelChannel->pVAS, &addr));
 
     NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_HAL(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
                             ENGINE_INFO_TYPE_ENG_DESC, pKernelFalcon->physEngDesc,
@@ -202,10 +189,64 @@ static NV_STATUS _kflcnPromoteContext
     rmCtrlParams.hClient     = pClient->hClient;
     rmCtrlParams.hObject     = RES_GET_HANDLE(pKernelChannel);
     rmCtrlParams.hChanClient = pClient->hClient;
-    rmCtrlParams.virtAddress = addr;
     rmCtrlParams.size        = pKernelFalcon->ctxBufferSize;
     rmCtrlParams.engineType  = gpuGetNv2080EngineType(rmEngineType);
     rmCtrlParams.ChID        = pKernelChannel->ChID;
+
+    // Promote physical address only. VA will be promoted later as part of nvgpuBindChannelResources
+    if (gvaspaceIsExternallyOwned(pGVAS))
+    {
+        MEMORY_DESCRIPTOR *pMemDesc = NULL;
+        NvU32 physAttr = 0x0;
+
+        NV_ASSERT_OK_OR_RETURN(kchangrpGetEngineContextMemDesc(pGpu,
+                                   pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup, &pMemDesc));
+        NV_ASSERT_OR_RETURN(memdescGetContiguity(pMemDesc, AT_GPU), NV_ERR_INVALID_STATE);
+
+        switch (memdescGetAddressSpace(pMemDesc))
+        {
+            case ADDR_FBMEM:
+                physAttr = FLD_SET_DRF(2080, _CTRL_GPU_INITIALIZE_CTX,
+                           _APERTURE, _VIDMEM, physAttr);
+                break;
+
+            case ADDR_SYSMEM:
+                if (memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_CACHED)
+                {
+                    physAttr = FLD_SET_DRF(2080, _CTRL_GPU_INITIALIZE_CTX,
+                                _APERTURE, _COH_SYS, physAttr);
+                }
+                else if (memdescGetCpuCacheAttrib(pMemDesc) == NV_MEMORY_UNCACHED)
+                {
+                    physAttr = FLD_SET_DRF(2080, _CTRL_GPU_INITIALIZE_CTX,
+                               _APERTURE, _NCOH_SYS, physAttr);
+                }
+                else
+                {
+                    return NV_ERR_INVALID_STATE;
+                }
+                break;
+
+            default:
+                return NV_ERR_INVALID_STATE;
+        }
+
+        physAttr = FLD_SET_DRF(2080, _CTRL_GPU_INITIALIZE_CTX, _GPU_CACHEABLE, _NO, physAttr);
+
+        rmCtrlParams.entryCount = 1;
+        rmCtrlParams.promoteEntry[0].gpuPhysAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
+        rmCtrlParams.promoteEntry[0].size = pMemDesc->Size;
+        rmCtrlParams.promoteEntry[0].physAttr = physAttr;
+        rmCtrlParams.promoteEntry[0].bufferId = 0; // unused for flcn
+        rmCtrlParams.promoteEntry[0].bInitialize = NV_TRUE;
+        rmCtrlParams.promoteEntry[0].bNonmapped = NV_TRUE;
+    }
+    else
+    {
+        NvU64 addr;
+        NV_ASSERT_OK_OR_RETURN(vaListFindVa(&pEngCtx->vaList, pKernelChannel->pVAS, &addr));
+        rmCtrlParams.virtAddress = addr;
+    }
 
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pClient->hClient, RES_GET_HANDLE(pSubdevice),
         NV2080_CTRL_CMD_GPU_PROMOTE_CTX, &rmCtrlParams, sizeof(rmCtrlParams)));

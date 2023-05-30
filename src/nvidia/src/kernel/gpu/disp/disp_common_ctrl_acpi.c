@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,6 +62,7 @@ dispcmnCtrlCmdSpecificSetAcpiIdMapping_IMPL
                                staticCast(pDispCommon, DisplayApi),
                                DISPAPI_GET_GPUGRP(pDispCommon),
                                &pGpu,
+                               NULL,
                                pParams->mapTable[acpiIdx].subDeviceInstance);
         if (status != NV_OK)
             return status;
@@ -93,6 +94,48 @@ dispcmnCtrlCmdSpecificSetAcpiIdMapping_IMPL
 
     pGpu = pOrigGpu;
     gpumgrSetBcEnabledStatus(pGpu, bcState);
+
+    return status;
+}
+
+NV_STATUS
+dispcmnCtrlCmdSystemAcpiSubsystemActivated_IMPL
+(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS *pParams
+)
+{
+    OBJGPU    *pGpu   = DISPAPI_GET_GPU(pDispCommon);
+    RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    OBJOS     *pOs    = NULL;
+    NV_STATUS  status = NV_OK;
+
+    // client gave us a subdevice #: get right pGpu/pDisp for it
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pParams->subDeviceInstance);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    pOs = GPU_GET_OS(pGpu);
+
+    pOs->setProperty(pOs, PDB_PROP_OS_WAIT_FOR_ACPI_SUBSYSTEM, NV_FALSE);
+
+    status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                             NV2080_CTRL_CMD_INTERNAL_DISPLAY_ACPI_SUBSYSTEM_ACTIVATED,
+                             NULL, 0);
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "ERROR: NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED control call failed. "
+                  "Should be rmapi ctrl call which is failed");
+    }
 
     return status;
 }
@@ -200,7 +243,7 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
             }
 
             outDataSize = sizeof(NvU32);
-            outStatus = pOS->osCallACPI_NVHG_GPUON(pGpu, (NvU32*) pInOutData);
+            outStatus = osCallACPI_NVHG_GPUON(pGpu, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_GPUOFF:
@@ -212,7 +255,7 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
             }
 
             outDataSize = sizeof(NvU32);
-            outStatus = pOS->osCallACPI_NVHG_GPUOFF(pGpu, (NvU32*) pInOutData);
+            outStatus = osCallACPI_NVHG_GPUOFF(pGpu, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_GPUSTA:
@@ -327,8 +370,8 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
                         ((NvU8*) pInOutData) + NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_LRST_DISP_MASK_OFFSET,
                         sizeof(NvU32));
 
+            outStatus = osCallACPI_LRST(pGpu, acpiId, (NvU32*) pInOutData);
             outDataSize = sizeof(NvU32);
-            outStatus = pOS->osCallACPI_LRST(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DDC_EDID:
@@ -685,7 +728,7 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_WMMX_NVOP_GPUON:
         {
-            outStatus = pOS->osCallACPI_OPTM_GPUON(pGpu);
+            outStatus = osCallACPI_OPTM_GPUON(pGpu);
             break;
         }
         default:

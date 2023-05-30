@@ -97,9 +97,18 @@ typedef enum
 {
     // Memory type for backing user pages. On Pascal+ it can be evicted.
     UVM_PMM_GPU_MEMORY_TYPE_USER,
+    // When the Confidential Computing feature is enabled, the protected flavor
+    // allocates memory out of the VPR region. When it's disabled, all flavors
+    // have no effects and are equivalent to the base type.
+    UVM_PMM_GPU_MEMORY_TYPE_USER_PROTECTED = UVM_PMM_GPU_MEMORY_TYPE_USER,
+    UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED,
 
     // Memory type for internal UVM allocations. It cannot be evicted.
     UVM_PMM_GPU_MEMORY_TYPE_KERNEL,
+    // See user types for the behavior description when the Confidential
+    // Computing feature is ON or OFF.
+    UVM_PMM_GPU_MEMORY_TYPE_KERNEL_PROTECTED = UVM_PMM_GPU_MEMORY_TYPE_KERNEL,
+    UVM_PMM_GPU_MEMORY_TYPE_KERNEL_UNPROTECTED,
 
     // Number of types - MUST BE LAST.
     UVM_PMM_GPU_MEMORY_TYPE_COUNT
@@ -215,15 +224,6 @@ uvm_gpu_id_t uvm_pmm_devmem_page_to_gpu_id(struct page *page);
 
 // Return the PFN of the device private struct page for the given GPU chunk.
 unsigned long uvm_pmm_gpu_devmem_get_pfn(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
-
-// Free any orphan pages.
-// This should be called as part of removing a GPU: after all work is stopped
-// and all va_blocks have been destroyed. There normally won't be any
-// device private struct page references left but there can be cases after
-// fork() where a child process still holds a reference. This function searches
-// for pages that still have a reference and migrates the page to the GPU in
-// order to release the reference in the CPU page table.
-void uvm_pmm_gpu_free_orphan_pages(uvm_pmm_gpu_t *pmm);
 
 #endif
 
@@ -468,6 +468,10 @@ struct page *uvm_gpu_chunk_to_page(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk);
 // node has to be returned to a valid state before calling either of the APIs.
 //
 // In case of an error, the chunks array is guaranteed to be cleared.
+//
+// If the memory returned by the PMM allocator cannot be physically addressed,
+// the MMU interface provides user chunk mapping and unmapping functions
+// (uvm_mmu_chunk_map/unmap) that enable virtual addressing.
 NV_STATUS uvm_pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
                             size_t num_chunks,
                             uvm_chunk_size_t chunk_size,
@@ -480,21 +484,26 @@ NV_STATUS uvm_pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
 //
 // Internally calls uvm_pmm_gpu_alloc() and sets the state of all chunks to
 // allocated on success.
-NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
-                                   size_t num_chunks,
-                                   uvm_chunk_size_t chunk_size,
-                                   uvm_pmm_alloc_flags_t flags,
-                                   uvm_gpu_chunk_t **chunks,
-                                   uvm_tracker_t *out_tracker);
+//
+// If Confidential Computing is enabled, this helper allocates protected kernel
+// memory.
+static NV_STATUS uvm_pmm_gpu_alloc_kernel(uvm_pmm_gpu_t *pmm,
+                                          size_t num_chunks,
+                                          uvm_chunk_size_t chunk_size,
+                                          uvm_pmm_alloc_flags_t flags,
+                                          uvm_gpu_chunk_t **chunks,
+                                          uvm_tracker_t *out_tracker)
+{
+    return uvm_pmm_gpu_alloc(pmm, num_chunks, chunk_size, UVM_PMM_GPU_MEMORY_TYPE_KERNEL, flags, chunks, out_tracker);
+}
 
 // Helper for allocating user memory
 //
 // Simple wrapper that just uses UVM_PMM_GPU_MEMORY_TYPE_USER for the memory
 // type.
 //
-// If the memory returned by the PMM allocator cannot be physically addressed,
-// the MMU interface provides user chunk mapping and unmapping functions
-// (uvm_mmu_chunk_map/unmap) that enable virtual addressing.
+// If Confidential Computing is enabled, this helper allocates protected user
+// memory.
 static NV_STATUS uvm_pmm_gpu_alloc_user(uvm_pmm_gpu_t *pmm,
                                         size_t num_chunks,
                                         uvm_chunk_size_t chunk_size,

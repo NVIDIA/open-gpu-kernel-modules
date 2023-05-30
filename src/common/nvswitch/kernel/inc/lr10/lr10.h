@@ -569,7 +569,24 @@ typedef struct
 
     // Ganged Link table
     NvU64 *ganged_link_table;
+
+    //
+    // Mask of links on the LR10 device connected to a disabled
+    // remote link
+    //
+    NvU64 disabledRemoteEndLinkMask;
+
+    //
+    // Bool indicating if disabledRemoteEndLinkMask
+    // has been cached previously
+    //
+    NvBool bDisabledRemoteEndLinkMaskCached;
 } lr10_device;
+
+typedef struct {
+    NvU32 switchPhysicalId;
+    NvU64  linkMask;
+} lr10_links_connected_to_disabled_remote_end;
 
 #define NVSWITCH_GET_CHIP_DEVICE_LR10(_device)                  \
     (                                                           \
@@ -643,8 +660,8 @@ NvlStatus nvswitch_ctrl_get_nvlink_lp_counters_lr10(nvswitch_device *device, NVS
 NvlStatus nvswitch_service_nvldl_fatal_link_lr10(nvswitch_device *device, NvU32 nvliptInstance, NvU32 link);
 NvlStatus nvswitch_ctrl_inband_send_data_lr10(nvswitch_device *device, NVSWITCH_INBAND_SEND_DATA_PARAMS *p);
 NvlStatus nvswitch_ctrl_inband_read_data_lr10(nvswitch_device *device, NVSWITCH_INBAND_READ_DATA_PARAMS *p);
-void nvswitch_send_inband_nack_lr10(nvswitch_device *device, NvU32 *msghdr, NvU32  linkId);
-NvU32 nvswitch_get_max_persistent_message_count_lr10(nvswitch_device *device);
+void      nvswitch_send_inband_nack_lr10(nvswitch_device *device, NvU32 *msghdr, NvU32  linkId);
+NvU32     nvswitch_get_max_persistent_message_count_lr10(nvswitch_device *device);
 NvlStatus nvswitch_launch_ALI_link_training_lr10(nvswitch_device *device, nvlink_link *link, NvBool bSync);
 NvlStatus nvswitch_service_minion_link_lr10(nvswitch_device *device, NvU32 nvliptInstance);
 void      nvswitch_apply_recal_settings_lr10(nvswitch_device *device, nvlink_link *link);
@@ -660,5 +677,7 @@ NvlStatus nvswitch_launch_ALI_lr10(nvswitch_device *device);
 NvlStatus nvswitch_reset_and_train_link_lr10(nvswitch_device *device, nvlink_link *link);
 
 NvlStatus nvswitch_ctrl_get_bios_info_lr10(nvswitch_device *device, NVSWITCH_GET_BIOS_INFO_PARAMS *p);
+NvBool    nvswitch_does_link_need_termination_enabled_lr10(nvswitch_device *device, nvlink_link *link);
+NvlStatus nvswitch_link_termination_setup_lr10(nvswitch_device *device, nvlink_link* link);
 
 #endif //_LR10_H_

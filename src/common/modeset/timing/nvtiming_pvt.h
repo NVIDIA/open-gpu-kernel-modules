@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,7 +68,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *pEdid, NvU32 size, NVT_EDID_CEA861_INF
 void       parse861ExtDetailedTiming(NvU8 *pEdidExt, NvU8 basicCaps, NVT_EDID_INFO *pInfo);
 void       parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
-void       parse861bShortPreferredTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861HfScdb(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861HfEeodb(NVT_EDID_CEA861_INFO *pExt861, NvU32 *pTotalEdidExtensions);
@@ -81,8 +81,12 @@ void       parseEdidNvidiaVSDBBlock(VSDB_DATA *pVsdb, NVDA_VSDB_PARSED_INFO *vsd
 void       parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCea861Hdr10PlusDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCta861DIDType7VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
+void       parseCta861DIDType8VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
 void       parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
 NvBool     isMatchedCTA861Timing(NVT_EDID_INFO *pInfo, NVT_TIMING *pT);
+NvBool     isMatchedStandardTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT);
+NvBool     isMatchedEstablishedTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT);
 NvU32      isHdmi3DStereoType(NvU8 StereoStructureType);
 NvU32      getCEA861TimingAspectRatio(NvU32 vic);
 void       SetActiveSpaceForHDMI3DStereo(const NVT_TIMING *pTiming, NVT_EXT_TIMING *pExtTiming);
@@ -96,7 +100,9 @@ NVT_STATUS getDisplayIdEDIDExtInfo(NvU8* pEdid, NvU32 edidSize, NVT_EDID_INFO* p
 NVT_STATUS parseDisplayIdBlock(NvU8* pBlock, NvU8 max_length, NvU8* pLength, NVT_EDID_INFO* pEdidInfo);
 NVT_STATUS getDisplayId20EDIDExtInfo(NvU8* pDisplayid, NvU32 edidSize, NVT_EDID_INFO* pEdidInfo);
 NVT_STATUS parseDisplayId20EDIDExtDataBlocks(NvU8* pDataBlock, NvU8 remainSectionLength, NvU8* pCurrentDBLength, NVT_EDID_INFO* pEdidInfo);
-NVT_STATUS parseDisplayId20Timing10Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 payloadBytes);
+NVT_STATUS parseDisplayId20Timing7Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 count);
+NVT_STATUS parseDisplayId20Timing8Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 codeType, NvU8 codeSize, NvU8 index, NvU8 count);
+NVT_STATUS parseDisplayId20Timing10Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 payloadBytes, NvU8 count);
 void       updateColorFormatForDisplayIdExtnTimings(NVT_EDID_INFO* pInfo, NvU32 timingIdx);
 void       updateColorFormatForDisplayId20ExtnTimings(NVT_EDID_INFO* pInfo, NvU32 timingIdx);
 NvBool     assignNextAvailableDisplayId20Timing(NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo, const NVT_TIMING *pTiming);

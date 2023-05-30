@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -172,6 +172,7 @@ void RmInitCpuInfo(void)
         case AARCH64_VENDOR_PART(MARVELL, THUNDER_X2):
         case AARCH64_VENDOR_PART(HUAWEI, KUNPENG_920):
         case AARCH64_VENDOR_PART(ARM, BLUEFIELD):
+        case AARCH64_VENDOR_PART(ARM, BLUEFIELD3):
         // The Neoverse N1 is the same as Gravitron
         case AARCH64_VENDOR_PART(ARM, GRAVITRON2):
         case AARCH64_VENDOR_PART(FUJITSU, A64FX):
@@ -182,6 +183,10 @@ void RmInitCpuInfo(void)
         case AARCH64_VENDOR_PART(MARVELL, OCTEON_CN98XX):
         case AARCH64_VENDOR_PART(ARM, CORTEX_A57):
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;
+            break;
+        case AARCH64_VENDOR_PART(ARM, NEOVERSE_N2):
+        case AARCH64_VENDOR_PART(ARM, NEOVERSE_V2):
+            pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV9A_GENERIC;
             break;
         default:
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;

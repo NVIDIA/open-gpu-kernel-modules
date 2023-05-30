@@ -22,6 +22,11 @@
  */
 
 #include "kernel/gpu/fifo/usermode_api.h"
+#include "kernel/gpu/fifo/kernel_fifo.h"
+
+#include "class/clc661.h" // HOPPER_USERMODE_A
+#include "class/cl003e.h" // NV01_MEMORY_SYSTEM
+#include "class/cl003f.h" // NV01_MEMORY_LOCAL_PRIVILEGED
 
 NV_STATUS
 usrmodeConstruct_IMPL
@@ -31,7 +36,56 @@ usrmodeConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    return usrmodeConstructHal_HAL(pUserModeApi, pCallContext, pParams);
+    Memory                      *pMemory        = staticCast(pUserModeApi, Memory);
+    OBJGPU                      *pGpu           = pMemory->pGpu;
+    KernelFifo                  *pKernelFifo    = GPU_GET_KERNEL_FIFO(pGpu);
+    NV_HOPPER_USERMODE_A_PARAMS *pAllocParams   = (NV_HOPPER_USERMODE_A_PARAMS*) pParams->pAllocParams;
+    NvU32                        hClass         = pCallContext->pResourceRef->externalClassId;
+    NvBool                       bBar1Mapping   = NV_FALSE;
+    NvBool                       bPrivMapping   = NV_FALSE;
+    MEMORY_DESCRIPTOR           *pMemDesc       = pKernelFifo->pRegVF;
+
+    // Copy-construction has already been done by the base Memory class
+    if (RS_IS_COPY_CTOR(pParams))
+    {
+        return NV_OK;
+    }
+
+    //
+    // We check pKernelFifo->pBar1VF because for some reason RM allows HOPPER_USERMODE_A on ADA.
+    // This is a WAR until we root cause.
+    //
+    if (hClass >= HOPPER_USERMODE_A && pAllocParams != NULL && pKernelFifo->pBar1VF != NULL)
+    {
+        bBar1Mapping = pAllocParams->bBar1Mapping;
+        bPrivMapping = pAllocParams->bPriv;
+    }
+
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
+    {
+        bBar1Mapping = NV_FALSE;
+    }
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        !bPrivMapping || bBar1Mapping,
+        NV_ERR_INVALID_PARAMETER);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        !bPrivMapping || pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL,
+        NV_ERR_INSUFFICIENT_PERMISSIONS);
+
+    if (bBar1Mapping)
+    {
+        pMemDesc = bPrivMapping ? pKernelFifo->pBar1PrivVF : pKernelFifo->pBar1VF;
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            memConstructCommon(pMemory,
+                bBar1Mapping? NV01_MEMORY_SYSTEM : NV01_MEMORY_LOCAL_PRIVILEGED,
+                0, pMemDesc, 0, NULL, 0, 0, 0, 0, NVOS32_MEM_TAG_NONE, NULL));
+    memdescAddRef(pMemDesc);
+    return NV_OK;
 }
 
 NvBool

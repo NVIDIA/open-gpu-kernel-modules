@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,6 +68,13 @@ ctxBufPoolIsSupported
     if (!memmgrIsPmaInitialized(pMemoryManager))
     {
         NV_PRINTF(LEVEL_INFO, "PMA is disabled. Ctx buffers will be allocated in RM reserved heap\n");
+        return NV_FALSE;
+    }
+
+    // TODO remove when bug ID 3922001 for ap_sim_compute_uvm test case resolved
+    if (!IS_SILICON(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO, "Ctx buffers not supported on simulation/emulation\n");
         return NV_FALSE;
     }
 
@@ -155,6 +162,11 @@ ctxBufPoolInit
                            poolConfig),
             cleanup);
 
+        // Allocate the pool in CPR in case of Confidential Compute
+        if (gpuIsCCFeatureEnabled(pGpu))
+        {
+            rmMemPoolAllocateProtectedMemory(pCtxBufPool->pMemPool[i], NV_TRUE);
+        }
     }
     NV_PRINTF(LEVEL_INFO, "Ctx buf pool successfully initialized\n");
 
@@ -489,17 +501,16 @@ ctxBufPoolFree
     if (rmMemPoolIsScrubSkipped(pPool))
     {
         OBJGPU *pGpu = pMemDesc->pGpu;
-        NvU8   *pMem = kbusMapRmAperture_HAL(pGpu, pMemDesc);
-        if (pMem == NULL)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Failed to BAR2 map memdesc. memory won't be scrubbed\n");
-            NV_ASSERT(pMem != NULL);
-        }
-        else
-        {
-            portMemSet(pMem, 0, (pMemDesc->PageCount * RM_PAGE_SIZE));
-            kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pMem, NV_TRUE);
-        }
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        TRANSFER_SURFACE surf = {0};
+
+        surf.pMemDesc = pMemDesc;
+        surf.offset = 0;
+
+        NV_ASSERT_OK_OR_RETURN(
+            memmgrMemSet(pMemoryManager, &surf, 0,
+                         pMemDesc->PageCount * RM_PAGE_SIZE,
+                         TRANSFER_FLAGS_NONE));
     }
     rmMemPoolFree(pPool, (RM_POOL_ALLOC_MEMDESC*)pMemDesc, 0);
 

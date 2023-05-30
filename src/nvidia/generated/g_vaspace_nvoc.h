@@ -256,7 +256,7 @@ struct OBJVASPACE {
     NV_STATUS (*__vaspaceReserveMempool__)(struct OBJVASPACE *, struct OBJGPU *, NvHandle, NvU64, NvU64, NvU32);
     struct OBJEHEAP *(*__vaspaceGetHeap__)(struct OBJVASPACE *);
     NvU64 (*__vaspaceGetMapPageSize__)(struct OBJVASPACE *, struct OBJGPU *, EMEMBLOCK *);
-    NvU32 (*__vaspaceGetBigPageSize__)(struct OBJVASPACE *);
+    NvU64 (*__vaspaceGetBigPageSize__)(struct OBJVASPACE *);
     NvBool (*__vaspaceIsMirrored__)(struct OBJVASPACE *);
     NvBool (*__vaspaceIsFaultCapable__)(struct OBJVASPACE *);
     NvBool (*__vaspaceIsExternallyOwned__)(struct OBJVASPACE *);
@@ -435,12 +435,12 @@ static inline NvU64 vaspaceGetMapPageSize_DISPATCH(struct OBJVASPACE *pVAS, stru
     return pVAS->__vaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 
-static inline NvU32 vaspaceGetBigPageSize_07238a(struct OBJVASPACE *pVAS) {
+static inline NvU64 vaspaceGetBigPageSize_07238a(struct OBJVASPACE *pVAS) {
     NV_ASSERT_PRECOMP(((NvBool)(0 != 0)));
     return 0U;
 }
 
-static inline NvU32 vaspaceGetBigPageSize_DISPATCH(struct OBJVASPACE *pVAS) {
+static inline NvU64 vaspaceGetBigPageSize_DISPATCH(struct OBJVASPACE *pVAS) {
     return pVAS->__vaspaceGetBigPageSize__(pVAS);
 }
 

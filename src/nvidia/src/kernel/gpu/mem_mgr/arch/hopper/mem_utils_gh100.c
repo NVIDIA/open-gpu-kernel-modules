@@ -28,7 +28,7 @@
 
 
 /*!
- * Function to verify which memory scubber (fast/slow) has to use in Hopper+ for scrubbering 
+ * Function to verify which memory scubber (fast/slow) has to use in Hopper+ for scrubbering
  *
  * @param[in]     copyClass             DMA ccopy class
  * @param[in]     bIsVirtualMemory      Memory type
@@ -36,7 +36,7 @@
  * @param[in]     size                  Size of the region to scrub
  * @param[in]     dstAddressSpace       DST address space
  *
- * @returns       NV_TRUE  - Use memory fast scrbber for scrubbing 
+ * @returns       NV_TRUE  - Use memory fast scrbber for scrubbing
  *                NV_FALSE - Use slow scrubber
  */
 NvBool
@@ -64,7 +64,7 @@ memmgrMemUtilsCheckMemoryFastScrubEnable_GH100
     // Address is 4KB aligned
     // LineLength is 4KB aligned
     //
-    return  ((copyClass == HOPPER_DMA_COPY_A 
+    return  ((copyClass == HOPPER_DMA_COPY_A
              ) &&
              (!bIsVirtualMemory)                                                    &&
              (dstAddressSpace == ADDR_FBMEM)                                        &&

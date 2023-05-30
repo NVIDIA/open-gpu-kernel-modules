@@ -83,6 +83,13 @@ static NV_STATUS test_tracker_completion(uvm_va_space_t *va_space)
         uvm_for_each_pool(pool, gpu->channel_manager) {
             uvm_channel_t *channel;
 
+            // Skip WLC channels as they are used for secure work launch
+            if (uvm_channel_pool_is_wlc(pool))
+                continue;
+
+            // Skip LCIC channels as those can't accept pushes
+            if (uvm_channel_pool_is_lcic(pool))
+                continue;
             uvm_for_each_channel_in_pool(channel, pool) {
                 uvm_push_t push;
                 NvU64 semaphore_gpu_va;
@@ -214,6 +221,9 @@ static NV_STATUS test_tracker_basic(uvm_va_space_t *va_space)
         uvm_for_each_pool(pool, gpu->channel_manager) {
             uvm_channel_t *channel;
 
+            // Skip LCIC channels as those can't accept pushes
+            if (uvm_channel_pool_is_lcic(pool))
+                continue;
             uvm_for_each_channel_in_pool(channel, pool) {
                 uvm_push_t push;
                 status = uvm_push_begin_on_channel(channel, &push, "Test push");

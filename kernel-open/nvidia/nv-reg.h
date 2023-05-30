@@ -21,10 +21,15 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+//
+// This file holds Unix-specific NVIDIA driver options
+//
+
 #ifndef _RM_REG_H_
 #define _RM_REG_H_
 
 #include "nvtypes.h"
+#include "nv-firmware-registry.h"
 
 /*
  * use NV_REG_STRING to stringify a registry key when using that registry key
@@ -723,52 +728,21 @@
  * When this option is enabled, the NVIDIA driver will enable use of GPU
  * firmware.
  *
- * Possible mode values:
- *  0 - Do not enable GPU firmware
- *  1 - Enable GPU firmware
- *  2 - (Default) Use the default enablement policy for GPU firmware
- *
- * Setting this to anything other than 2 will alter driver firmware-
- * enablement policies, possibly disabling GPU firmware where it would
- * have otherwise been enabled by default.
- *
  * If this key is set globally to the system, the driver may still attempt
  * to apply some policies to maintain uniform firmware modes across all
  * GPUS.  This may result in the driver failing initialization on some GPUs
  * to maintain such a policy.
- * 
+ *
  * If this key is set using NVreg_RegistryDwordsPerDevice, then the driver 
  * will attempt to honor whatever configuration is specified without applying
  * additional policies.  This may also result in failed GPU initialzations if
  * the configuration is not possible (for example if the firmware is missing 
- * from the filesystem, or the GPU is not capable). 
+ * from the filesystem, or the GPU is not capable).
  *
- * Policy bits:
- *
- * POLICY_ALLOW_FALLBACK:
- *  As the normal behavior is to fail GPU initialization if this registry 
- *  entry is set in such a way that results in an invalid configuration, if 
- *  instead the user would like the driver to automatically try to fallback 
- *  to initializing the failing GPU with firmware disabled, then this bit can 
- *  be set (ex: 0x11 means try to enable GPU firmware but fall back if needed).
- *  Note that this can result in a mixed mode configuration (ex: GPU0 has 
- *  firmware enabled, but GPU1 does not).
- *
+ * NOTE: More details for this regkey can be found in nv-firmware-registry.h
  */
-
 #define __NV_ENABLE_GPU_FIRMWARE  EnableGpuFirmware
 #define NV_REG_ENABLE_GPU_FIRMWARE NV_REG_STRING(__NV_ENABLE_GPU_FIRMWARE)
-
-#define NV_REG_ENABLE_GPU_FIRMWARE_MODE_MASK              0x0000000F
-#define NV_REG_ENABLE_GPU_FIRMWARE_MODE_DISABLED          0x00000000
-#define NV_REG_ENABLE_GPU_FIRMWARE_MODE_ENABLED           0x00000001
-#define NV_REG_ENABLE_GPU_FIRMWARE_MODE_DEFAULT           0x00000002
-
-#define NV_REG_ENABLE_GPU_FIRMWARE_POLICY_MASK            0x000000F0
-#define NV_REG_ENABLE_GPU_FIRMWARE_POLICY_ALLOW_FALLBACK  0x00000010
-
-#define NV_REG_ENABLE_GPU_FIRMWARE_DEFAULT_VALUE          0x00000012
-#define NV_REG_ENABLE_GPU_FIRMWARE_INVALID_VALUE          0xFFFFFFFF
 
 /*
  * Option: EnableGpuFirmwareLogs
@@ -776,18 +750,10 @@
  * When this option is enabled, the NVIDIA driver will send GPU firmware logs
  * to the system log, when possible.
  *
- * Possible values:
- *  0 - Do not send GPU firmware logs to the system log
- *  1 - Enable sending of GPU firmware logs to the system log
- *  2 - (Default) Enable sending of GPU firmware logs to the system log for
- *      the debug kernel driver build only
+ * NOTE: More details for this regkey can be found in nv-firmware-registry.h
  */
 #define __NV_ENABLE_GPU_FIRMWARE_LOGS  EnableGpuFirmwareLogs
 #define NV_REG_ENABLE_GPU_FIRMWARE_LOGS NV_REG_STRING(__NV_ENABLE_GPU_FIRMWARE_LOGS)
-
-#define NV_REG_ENABLE_GPU_FIRMWARE_LOGS_DISABLE            0x00000000
-#define NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE             0x00000001
-#define NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE_ON_DEBUG    0x00000002
 
 /*
  * Option: EnableDbgBreakpoint

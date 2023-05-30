@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrla06f/ctrla06fgpfifo.finn
+// Source file:      ctrl/ctrla06f/ctrla06fgpfifo.finn
 //
 
 #include "ctrl/ctrla06f/ctrla06fbase.h"

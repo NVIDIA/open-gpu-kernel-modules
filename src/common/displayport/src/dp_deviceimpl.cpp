@@ -929,7 +929,7 @@ void DeviceImpl::applyOUIOverrides()
                     // color formats that are listed in 0x69h even in pass through mode.
                     //
                     this->bDscPassThroughColorFormatWar = true;
-            
+
                     if ((buffer[8] == 0x31) || (buffer[8] == 0x20))
                     {
                         this->bSdpExtCapable = False;
@@ -957,7 +957,7 @@ void DeviceImpl::applyOUIOverrides()
 bool DeviceImpl::getAsyncSDPSupported()
 {
     NvU8 byte = 0;
-    unsigned size = 0;
+    unsigned size = 1;
     unsigned sizeCompleted;
     unsigned nakReason = NakUndefined;
     //
@@ -2102,7 +2102,7 @@ bool DeviceImpl::setDscEnable(bool enable)
         return false;
     }
 
-    if ((this->devDoingDscDecompression == this) && !this->isLogical() && this->parent != NULL)
+    if ((this->devDoingDscDecompression == this) && !this->isLogical() && !(this->peerDevice == Dongle) && this->parent != NULL)
     {
         //
         // If the device has a parent, that means the sink is on a MST link and
@@ -2414,51 +2414,76 @@ AuxBus::status DeviceImpl::dscCrcControl(NvBool bEnable, gpuDscCrc *gpuData, sin
 bool DeviceImpl::getPCONCaps(PCONCaps *pPCONCaps)
 {
     AuxBus::status  status          = AuxBus::success;
-    NvU32           addr            = NV_DPCD_DETAILED_CAP_INFO_ONE(0);
-    NvU8            data            = 0;
-    unsigned        size            = 1;
+    NvU32           addr            = NV_DPCD_DETAILED_CAP_INFO_DWNSTRM_PORT(0);
+    NvU8            data[4]         = {0};
     unsigned        sizeCompleted   = 0;
     unsigned        nakReason       = 0;
+    NvU8            pConType        = 0;
 
-    if (isMultistream())
-        return false;
-
-    status = getDpcdData(addr, &data, size, &sizeCompleted, &nakReason);
-    if (status != AuxBus::success)
+    status = this->getDpcdData(addr, &data[0], sizeof(data), &sizeCompleted, &nakReason);
+    if (status == AuxBus::success)
     {
-        return false;
+        pConType = DRF_VAL(_DPCD, _DETAILED_CAP_INFO, _DWNSTRM_PORT_TX_TYPE, data[0]);
+        if (pConType == NV_DPCD_DETAILED_CAP_INFO_DWNSTRM_PORT_TX_TYPE_HDMI)
+        {
+            this->connectorType = connectorHDMI;
+            pPCONCaps->maxTmdsClkRate = data[1] * 2500000;
+
+            pPCONCaps->bSourceControlModeSupported =
+                    FLD_TEST_DRF(_DPCD, _DETAILED_CAP_INFO, _SRC_CONTROL_MODE_SUPPORT, _YES, data[2]);
+            pPCONCaps->bConcurrentLTSupported =
+                    FLD_TEST_DRF(_DPCD, _DETAILED_CAP_INFO, _CONCURRENT_LT_SUPPORT, _YES, data[2]);
+
+            switch (DRF_VAL(_DPCD, _DETAILED_CAP_INFO, _MAX_FRL_LINK_BW_SUPPORT, data[2]))
+            {
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_FRL_LINK_BW_SUPPORT_9G:
+                    pPCONCaps->maxHdmiLinkBandwidthGbps = 9;
+                    break;
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_FRL_LINK_BW_SUPPORT_18G:
+                    pPCONCaps->maxHdmiLinkBandwidthGbps = 18;
+                    break;
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_FRL_LINK_BW_SUPPORT_24G:
+                    pPCONCaps->maxHdmiLinkBandwidthGbps = 24;
+                    break;
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_FRL_LINK_BW_SUPPORT_32G:
+                    pPCONCaps->maxHdmiLinkBandwidthGbps = 32;
+                    break;
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_FRL_LINK_BW_SUPPORT_40G:
+                    pPCONCaps->maxHdmiLinkBandwidthGbps = 40;
+                    break;
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_FRL_LINK_BW_SUPPORT_48G:
+                    pPCONCaps->maxHdmiLinkBandwidthGbps = 48;
+                    break;
+                default:
+                    pPCONCaps->maxHdmiLinkBandwidthGbps = 0;
+                    break;
+            }
+
+            switch (DRF_VAL(_DPCD, _DETAILED_CAP_INFO, _MAX_BITS_PER_COMPONENT_DEF, data[2]))
+            {
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_BITS_PER_COMPONENT_DEF_10BPC:
+                    pPCONCaps->maxBpc = 10;
+                    break;
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_BITS_PER_COMPONENT_DEF_12BPC:
+                    pPCONCaps->maxBpc = 12;
+                    break;
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_BITS_PER_COMPONENT_DEF_16BPC:
+                    pPCONCaps->maxBpc = 16;
+                    break;
+                case NV_DPCD_DETAILED_CAP_INFO_MAX_BITS_PER_COMPONENT_DEF_8BPC:
+                default:
+                    pPCONCaps->maxBpc = 8;
+                    break;
+            }
+
+            DP_LOG((" DP2HDMI PCON caps - Max TMDS Clk: %u LinkBWGbps: %u MaxBpc: %u", 
+                    pPCONCaps->maxTmdsClkRate, pPCONCaps->maxHdmiLinkBandwidthGbps, pPCONCaps->maxBpc));
+        }
     }
-    pPCONCaps->maxTmdsClkRate = data;
-
-    addr = NV_DPCD_DETAILED_CAP_INFO_TWO(0);
-    status = getDpcdData(addr, &data, size, &sizeCompleted, &nakReason);
-    if (status != AuxBus::success)
+    else
     {
+        DP_LOG((" DP-DEV> Error - DPCD Read for detailed port capabilities (0x80) failed."));
         return false;
-    }
-
-    pPCONCaps->bSourceControlModeSupported =
-               FLD_TEST_DRF(_DPCD, _DETAILED_CAP_INFO, _SRC_CONTROL_MODE_SUPPORT, _YES, data);
-    pPCONCaps->bConcurrentLTSupported =
-               FLD_TEST_DRF(_DPCD, _DETAILED_CAP_INFO, _CONCURRENT_LT_SUPPORT, _YES, data);
-    pPCONCaps->maxHdmiLinkBandwidthGbps =
-               DRF_VAL(_DPCD, _DETAILED_CAP_INFO, _MAX_FRL_LINK_BW_SUPPORT, data);
-
-    switch (DRF_VAL(_DPCD, _DETAILED_CAP_INFO, _MAX_BITS_PER_COMPONENT_DEF, data))
-    {
-        case NV_DPCD_DETAILED_CAP_INFO_MAX_BITS_PER_COMPONENT_DEF_10BPC:
-            pPCONCaps->maxBpc = 10;
-            break;
-        case NV_DPCD_DETAILED_CAP_INFO_MAX_BITS_PER_COMPONENT_DEF_12BPC:
-            pPCONCaps->maxBpc = 12;
-            break;
-        case NV_DPCD_DETAILED_CAP_INFO_MAX_BITS_PER_COMPONENT_DEF_16BPC:
-            pPCONCaps->maxBpc = 16;
-            break;
-        case NV_DPCD_DETAILED_CAP_INFO_MAX_BITS_PER_COMPONENT_DEF_8BPC:
-        default:
-            pPCONCaps->maxBpc = 8;
-            break;
     }
     return true;
 }

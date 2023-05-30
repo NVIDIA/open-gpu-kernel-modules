@@ -169,8 +169,8 @@ static NV_STATUS __nvoc_thunk_Memory_memoryfabricIsReady(struct MemoryFabric *pM
     return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryFabric_Memory.offset), bCopyConstructorContext);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_memoryfabricCheckCopyPermissions(struct MemoryFabric *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryFabric_Memory.offset), pDstGpu, hDstClientNvBool);
+static NV_STATUS __nvoc_thunk_Memory_memoryfabricCheckCopyPermissions(struct MemoryFabric *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryFabric_Memory.offset), pDstGpu, pDstDevice);
 }
 
 static void __nvoc_thunk_RsResource_memoryfabricPreDestruct(struct MemoryFabric *pResource) {
@@ -289,12 +289,27 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryFa
         /*func=*/       "memoryfabricCtrlGetAttachedMem"
 #endif
     },
+    {               /*  [6] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x840u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) memoryfabricCtrlGetPageLevelInfo_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x840u)
+        /*flags=*/      0x840u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xf80107u,
+        /*paramSize=*/  sizeof(NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_MemoryFabric.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "memoryfabricCtrlGetPageLevelInfo"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_MemoryFabric = 
 {
-    /*numEntries=*/     6,
+    /*numEntries=*/     7,
     /*pExportEntries=*/ __nvoc_exported_method_def_MemoryFabric
 };
 
@@ -359,6 +374,10 @@ static void __nvoc_init_funcTable_MemoryFabric_1(MemoryFabric *pThis) {
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x810u)
     pThis->__memoryfabricCtrlGetAttachedMem__ = &memoryfabricCtrlGetAttachedMem_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x840u)
+    pThis->__memoryfabricCtrlGetPageLevelInfo__ = &memoryfabricCtrlGetPageLevelInfo_IMPL;
 #endif
 
     pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_MemoryFabric_resCanCopy;

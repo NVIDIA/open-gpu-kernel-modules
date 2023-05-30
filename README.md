@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 530.41.03.
+version 535.43.02.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-530.41.03 driver release.  This can be achieved by installing
+535.43.02 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -162,12 +162,25 @@ for the target kernel.
 - `src/nvidia/`                 The OS-agnostic code for nvidia.ko
 - `src/nvidia-modeset/`         The OS-agnostic code for nvidia-modeset.ko
 - `src/common/`                 Utility code used by one or more of nvidia.ko and nvidia-modeset.ko
+- `nouveau/`                    Tools for integration with the Nouveau device driver
+
+
+## Nouveau device driver integration
+
+The Python script in the 'nouveau' directory is used to extract some of the
+firmware binary images (and related data) encoded in the source code and
+store them as distinct files.  These files are used by the Nouveau device
+driver to load and communicate with the GSP firmware.
+
+The layout of the binary files is described in nouveau_firmware_layout.ods,
+which is an OpenDocument Spreadsheet file, compatible with most spreadsheet
+software applications.
 
 
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 530.41.03 release,
+(see the table below). However, in the 535.43.02 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -175,7 +188,7 @@ set the "NVreg_OpenRmEnableUnsupportedGpus" nvidia.ko kernel module
 parameter to 1. For more details, see the NVIDIA GPU driver end user
 README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/530.41.03/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/535.43.02/README/kernel_open.html
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -754,6 +767,7 @@ Subsystem Device ID.
 | NVIDIA RTX A3000 12GB Laptop GPU                | 24B9           |
 | NVIDIA RTX A4500 Laptop GPU                     | 24BA           |
 | NVIDIA RTX A3000 12GB Laptop GPU                | 24BB           |
+| NVIDIA GeForce RTX 3060                         | 24C7           |
 | NVIDIA GeForce RTX 3060 Ti                      | 24C9           |
 | NVIDIA GeForce RTX 3080 Laptop GPU              | 24DC           |
 | NVIDIA GeForce RTX 3070 Laptop GPU              | 24DD           |
@@ -799,6 +813,8 @@ Subsystem Device ID.
 | NVIDIA RTX A1000 Laptop GPU                     | 25B9           |
 | NVIDIA RTX A2000 8GB Laptop GPU                 | 25BA           |
 | NVIDIA RTX A500 Laptop GPU                      | 25BB           |
+| NVIDIA RTX A1000 6GB Laptop GPU                 | 25BC           |
+| NVIDIA RTX A500 Laptop GPU                      | 25BD           |
 | NVIDIA GeForce RTX 3050 Ti Laptop GPU           | 25E0           |
 | NVIDIA GeForce RTX 3050 Laptop GPU              | 25E2           |
 | NVIDIA GeForce RTX 3050 Laptop GPU              | 25E5           |
@@ -816,8 +832,10 @@ Subsystem Device ID.
 | NVIDIA L40                                      | 26B5 10DE 17DA |
 | NVIDIA GeForce RTX 4080                         | 2704           |
 | NVIDIA GeForce RTX 4090 Laptop GPU              | 2717           |
+| NVIDIA RTX 5000 Ada Generation Laptop GPU       | 2730           |
 | NVIDIA GeForce RTX 4090 Laptop GPU              | 2757           |
 | NVIDIA GeForce RTX 4070 Ti                      | 2782           |
+| NVIDIA GeForce RTX 4070                         | 2786           |
 | NVIDIA GeForce RTX 4080 Laptop GPU              | 27A0           |
 | NVIDIA RTX 4000 SFF Ada Generation              | 27B0 1028 16FA |
 | NVIDIA RTX 4000 SFF Ada Generation              | 27B0 103C 16FA |
@@ -825,10 +843,15 @@ Subsystem Device ID.
 | NVIDIA RTX 4000 SFF Ada Generation              | 27B0 17AA 16FA |
 | NVIDIA L4                                       | 27B8 10DE 16CA |
 | NVIDIA L4                                       | 27B8 10DE 16EE |
+| NVIDIA RTX 4000 Ada Generation Laptop GPU       | 27BA           |
+| NVIDIA RTX 3500 Ada Generation Laptop GPU       | 27BB           |
 | NVIDIA GeForce RTX 4080 Laptop GPU              | 27E0           |
+| NVIDIA GeForce RTX 4060 Ti                      | 2803           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2820           |
+| NVIDIA RTX 3000 Ada Generation Laptop GPU       | 2838           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2860           |
 | NVIDIA GeForce RTX 4060 Laptop GPU              | 28A0           |
 | NVIDIA GeForce RTX 4050 Laptop GPU              | 28A1           |
+| NVIDIA RTX 2000 Ada Generation Laptop GPU       | 28B8           |
 | NVIDIA GeForce RTX 4060 Laptop GPU              | 28E0           |
 | NVIDIA GeForce RTX 4050 Laptop GPU              | 28E1           |

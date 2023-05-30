@@ -54,7 +54,7 @@ static void uvm_pte_batch_flush_ptes_inline(uvm_pte_batch_t *batch)
     uvm_push_set_flag(batch->push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
     uvm_push_set_flag(batch->push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
     gpu->parent->ce_hal->memcopy(batch->push,
-                                 uvm_gpu_address_from_phys(batch->pte_first_address),
+                                 uvm_mmu_gpu_address(gpu, batch->pte_first_address),
                                  inline_data_addr,
                                  ptes_size);
 }
@@ -62,7 +62,7 @@ static void uvm_pte_batch_flush_ptes_inline(uvm_pte_batch_t *batch)
 static void uvm_pte_batch_flush_ptes_memset(uvm_pte_batch_t *batch)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(batch->push);
-    uvm_gpu_address_t addr = uvm_gpu_address_from_phys(batch->pte_first_address);
+    uvm_gpu_address_t addr = uvm_mmu_gpu_address(gpu, batch->pte_first_address);
     NvU32 i;
 
     UVM_ASSERT(batch->pte_count != 0);
@@ -201,7 +201,7 @@ void uvm_pte_batch_clear_ptes(uvm_pte_batch_t *batch, uvm_gpu_phys_address_t fir
     uvm_push_set_flag(batch->push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
     uvm_push_set_flag(batch->push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
     gpu->parent->ce_hal->memset_8(batch->push,
-                                  uvm_gpu_address_from_phys(first_pte),
+                                  uvm_mmu_gpu_address(gpu, first_pte),
                                   empty_pte_bits,
                                   entry_size * entry_count);
 

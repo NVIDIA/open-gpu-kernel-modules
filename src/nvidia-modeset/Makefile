@@ -105,6 +105,7 @@ CFLAGS += -fno-strict-aliasing
 CFLAGS += -ffunction-sections
 CFLAGS += -fdata-sections
 CFLAGS += -ffreestanding
+CFLAGS += -fno-stack-protector
 
 CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -Wformat-overflow=2)
 CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -Wformat-truncation=1)

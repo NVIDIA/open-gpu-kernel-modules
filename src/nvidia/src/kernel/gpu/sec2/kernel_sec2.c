@@ -55,7 +55,7 @@ ksec2Destruct_IMPL
     pKernelSec2->pGenericBlUcodeImg = NULL;
 }
 
-void 
+void
 ksec2RegisterIntrService_IMPL
 (
     OBJGPU *pGpu,
@@ -79,7 +79,7 @@ ksec2RegisterIntrService_IMPL
 
 }
 
-NV_STATUS 
+NV_STATUS
 ksec2ServiceNotificationInterrupt_IMPL
 (
     OBJGPU *pGpu,

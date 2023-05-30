@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/clc640.finn
+// Source file:      class/clc640.finn
 //
 
 #define AMPERE_SMC_MONITOR_SESSION (0xc640U) /* finn: Evaluated from "NVC640_ALLOCATION_PARAMETERS_MESSAGE_ID" */

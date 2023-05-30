@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2020 NVidia Corporation
+    Copyright (c) 2013-2023 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -493,7 +493,8 @@ typedef enum
     UvmEventFatalReasonInternalError      = 5,
 
     // This value is reported when a fault is triggered in an invalid context
-    // Example: CPU fault on a managed allocation while a kernel is running on a pre-Pascal GPU
+    // Example: CPU fault on a managed allocation while a kernel is running on a
+    // pre-Pascal GPU
     UvmEventFatalReasonInvalidOperation   = 6,
     // ---- Add new values above this line
     UvmEventNumFatalReasons
@@ -659,8 +660,8 @@ typedef struct
     // or malign-double will have no effect on the field offsets
     //
     NvU8 padding8bits;
-    NvU32 batchId;          // Per-GPU unique id to identify the faults that have
-                            // been serviced in batch
+    NvU32 batchId;          // Per-GPU unique id to identify the faults that
+                            // have been serviced in batch
     NvU64 timeStamp;        // cpu time when the replay of the faulting memory
                             // accesses is queued on the gpu
     NvU64 timeStampGpu;     // gpu time stamp when the replay operation finished
@@ -674,15 +675,16 @@ typedef struct
 {
     //
     // eventType has to be the 1st argument of this structure.
-    // Setting eventType = UvmEventTypeFatalFault helps to identify event data in
-    // a queue.
+    // Setting eventType = UvmEventTypeFatalFault helps to identify event data
+    // in a queue.
     //
     NvU8 eventType;
-    NvU8 faultType;       // type of gpu fault, refer UvmEventFaultType. Only valid
-                          // if processorIndex is a GPU
+    NvU8 faultType;       // type of gpu fault, refer UvmEventFaultType. Only
+                          // valid if processorIndex is a GPU
     NvU8 accessType;      // memory access type, refer UvmEventMemoryAccessType
     NvU8 processorIndex;  // processor that experienced the fault
-    NvU8 reason;          // reason why the fault is fatal, refer UvmEventFatalReason
+    NvU8 reason;          // reason why the fault is fatal, refer
+                          // UvmEventFatalReason
     NvU8 padding8bits;
     NvU16 padding16bits;
     NvU64 address;        // virtual address at which the processor faulted
@@ -798,8 +800,8 @@ typedef struct
 {
     //
     // eventType has to be the 1st argument of this structure.
-    // Setting eventType = UvmEventTypeThrottlingStart helps to identify event data
-    // in a queue.
+    // Setting eventType = UvmEventTypeThrottlingStart helps to identify event
+    // data in a queue.
     //
     NvU8 eventType;
     NvU8 processorIndex;    // index of the cpu/gpu that was throttled
@@ -819,8 +821,8 @@ typedef struct
 {
     //
     // eventType has to be the 1st argument of this structure.
-    // Setting eventType = UvmEventTypeThrottlingEnd helps to identify event data
-    // in a queue.
+    // Setting eventType = UvmEventTypeThrottlingEnd helps to identify event
+    // data in a queue.
     //
     NvU8 eventType;
     NvU8 processorIndex;    // index of the cpu/gpu that was throttled
@@ -946,8 +948,8 @@ typedef struct
 {
     //
     // eventType has to be the 1st argument of this structure.
-    // Setting eventType = UvmEventTypeAccessCounter helps to identify event data
-    // in a queue.
+    // Setting eventType = UvmEventTypeAccessCounter helps to identify event
+    // data in a queue.
     //
     NvU8 eventType;
     NvU8 srcIndex;          // index of the gpu that received the access counter

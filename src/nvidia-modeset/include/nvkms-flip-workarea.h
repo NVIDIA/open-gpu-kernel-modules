@@ -65,6 +65,8 @@ struct NvKmsFlipWorkArea {
             NVProposedFlipStateOneApiHead proposedFlipState;
         } apiHead[NVKMS_MAX_HEADS_PER_DISP];
     } disp[NVKMS_MAX_SUBDEVICES];
+
+    NVEvoUpdateState updateState;
 };
 
 #endif /* __NVKMS_FLIP_WORKAREA_H__ */

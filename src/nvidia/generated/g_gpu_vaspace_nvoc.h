@@ -228,7 +228,7 @@ struct OBJGVASPACE {
     void (*__gvaspaceUnmap__)(struct OBJGVASPACE *, struct OBJGPU *, const NvU64, const NvU64);
     struct OBJEHEAP *(*__gvaspaceGetHeap__)(struct OBJGVASPACE *);
     NvU64 (*__gvaspaceGetMapPageSize__)(struct OBJGVASPACE *, struct OBJGPU *, EMEMBLOCK *);
-    NvU32 (*__gvaspaceGetBigPageSize__)(struct OBJGVASPACE *);
+    NvU64 (*__gvaspaceGetBigPageSize__)(struct OBJGVASPACE *);
     NvU32 (*__gvaspaceGetFlags__)(struct OBJGVASPACE *);
     NvBool (*__gvaspaceIsMirrored__)(struct OBJGVASPACE *);
     NvBool (*__gvaspaceIsFaultCapable__)(struct OBJGVASPACE *);
@@ -249,8 +249,7 @@ struct OBJGVASPACE {
     NvU64 (*__gvaspaceGetVaLimit__)(struct OBJGVASPACE *);
     NvU64 (*__gvaspaceGetVaStart__)(struct OBJGVASPACE *);
     struct OBJEHEAP *pHeap;
-    NvU32 bigPageSize;
-    NvU64 maxPageSizeSupported;
+    NvU64 bigPageSize;
     NvU64 compPageSize;
     NvU64 extManagedAlign;
     NvU32 flags;
@@ -392,9 +391,9 @@ static inline NvU64 gvaspaceGetMapPageSize_DISPATCH(struct OBJGVASPACE *pVAS, st
     return pVAS->__gvaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 
-NvU32 gvaspaceGetBigPageSize_IMPL(struct OBJGVASPACE *pVAS);
+NvU64 gvaspaceGetBigPageSize_IMPL(struct OBJGVASPACE *pVAS);
 
-static inline NvU32 gvaspaceGetBigPageSize_DISPATCH(struct OBJGVASPACE *pVAS) {
+static inline NvU64 gvaspaceGetBigPageSize_DISPATCH(struct OBJGVASPACE *pVAS) {
     return pVAS->__gvaspaceGetBigPageSize__(pVAS);
 }
 

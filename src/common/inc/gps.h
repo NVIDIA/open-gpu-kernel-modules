@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,6 +43,8 @@
 #define GPS_FUNC_GETPPM                   0x00000028    // Get system power modes
 #define GPS_FUNC_SETPPM                   0x00000029    // Set system power modes
 #define GPS_FUNC_PSHAREPARAMS             0x0000002A    // Get sensor information and capabilities
+#define GPS_FUNC_SETEDPPLIMITINFO         0x0000002B    // Send the GPU EDPPeak limit info to platform
+#define GPS_FUNC_GETEDPPLIMIT             0x0000002C    // Get EDPPeak limit from platform
 
 #define GPS_EVENT_STATUS_CHANGE           0x000000C0    // when received call GPS_FUNC_PCONTROL,
                                                         // depends on whether system is GPS enabled.

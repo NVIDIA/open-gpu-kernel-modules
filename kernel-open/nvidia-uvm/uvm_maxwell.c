@@ -33,10 +33,12 @@ void uvm_hal_maxwell_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     // space for UVM internal mappings.
     // A single top level PDE covers 64 or 128 MB on Maxwell so 128 GB is fine to use.
     parent_gpu->rm_va_base = 0;
-    parent_gpu->rm_va_size = 128ull * 1024 * 1024 * 1024;
+    parent_gpu->rm_va_size = 128 * UVM_SIZE_1GB;
 
-    parent_gpu->uvm_mem_va_base = 768ull * 1024 * 1024 * 1024;
+    parent_gpu->uvm_mem_va_base = 768 * UVM_SIZE_1GB;
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
+
+    parent_gpu->ce_phys_vidmem_write_supported = true;
 
     // We don't have a compelling use case in UVM-Lite for direct peer
     // migrations between GPUs, so don't bother setting them up.

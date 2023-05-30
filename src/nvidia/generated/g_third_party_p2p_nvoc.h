@@ -561,15 +561,6 @@ typedef struct ThirdPartyP2P *PCLI_THIRD_PARTY_P2P_INFO; // RS-TODO: Remove
 //                          Functions prototypes
 // ****************************************************************************
 
-// Create and add/register a third-party P2P object
-NV_STATUS           CliAddThirdPartyP2P          (NvHandle, NvHandle, struct Subdevice *, NvU32, NvU64);
-
-// Delete the specified third-party P2P object
-NV_STATUS           CliDelThirdPartyP2P          (NvHandle, NvHandle);
-
-// Get third-party P2P info given client/object handles
-NV_STATUS           CliGetThirdPartyP2PInfo      (NvHandle, NvHandle, PCLI_THIRD_PARTY_P2P_INFO *);
-
 // Get registered third-party P2P info from pid. Also match the provided client handle if provided.
 NV_STATUS           CliNextThirdPartyP2PInfoWithPid (struct OBJGPU *, NvU32, NvHandle, struct RmClient**, PCLI_THIRD_PARTY_P2P_INFO *);
 
@@ -577,13 +568,13 @@ NV_STATUS           CliNextThirdPartyP2PInfoWithPid (struct OBJGPU *, NvU32, NvH
 NV_STATUS           CliGetThirdPartyP2PInfoFromToken (NvU64, PCLI_THIRD_PARTY_P2P_INFO *);
 
 // Register an address space with a third-party P2P object
-NV_STATUS           CliAddThirdPartyP2PVASpace   (NvHandle, NvHandle, NvHandle, NvU32 *);
+NV_STATUS           CliAddThirdPartyP2PVASpace   (struct ThirdPartyP2P*, NvHandle, NvU32 *);
 
 // Unregister an address space from a third-party P2P object
 NV_STATUS           CliDelThirdPartyP2PVASpace   (struct ThirdPartyP2P*, NvHandle);
 
 // Register video memory with a third-party P2P object
-NV_STATUS           CliAddThirdPartyP2PVidmemInfo (NvHandle, NvHandle, NvHandle, NvU64, NvU64, NvU64, struct Memory *);
+NV_STATUS           CliAddThirdPartyP2PVidmemInfo (struct ThirdPartyP2P*, NvHandle, NvU64, NvU64, NvU64, struct Memory *);
 
 // Unregister video memory from a third-party P2P object
 NV_STATUS           CliDelThirdPartyP2PVidmemInfo (struct ThirdPartyP2P*, NvHandle);
@@ -592,19 +583,19 @@ NV_STATUS           CliDelThirdPartyP2PVidmemInfo (struct ThirdPartyP2P*, NvHand
 void                CliDelThirdPartyP2PVidmemInfoPersistent (struct ThirdPartyP2P*, CLI_THIRD_PARTY_P2P_VIDMEM_INFO*);
 
 // Find registered video memory given an address
-NV_STATUS           CliGetThirdPartyP2PVidmemInfoFromAddress (NvHandle, NvHandle, NvU64, NvU64, NvU64 *, PCLI_THIRD_PARTY_P2P_VIDMEM_INFO *);
+NV_STATUS           CliGetThirdPartyP2PVidmemInfoFromAddress (struct ThirdPartyP2P*, NvU64, NvU64, NvU64 *, PCLI_THIRD_PARTY_P2P_VIDMEM_INFO *);
 
 // Find registered video memory given a VidmemInfo ID
-NV_STATUS           CliGetThirdPartyP2PVidmemInfoFromId(NvHandle, NvHandle, NvU64, CLI_THIRD_PARTY_P2P_VIDMEM_INFO **);
+NV_STATUS           CliGetThirdPartyP2PVidmemInfoFromId(struct ThirdPartyP2P*, NvU64, CLI_THIRD_PARTY_P2P_VIDMEM_INFO **);
 
 // Find platformData given a P2PInfo object
 NV_STATUS           CliGetThirdPartyP2PPlatformData (PCLI_THIRD_PARTY_P2P_INFO, void *);
 
 // Associate a P2P mapping with registered video memory
-NV_STATUS           CliAddThirdPartyP2PMappingInfo (NvHandle, NvHandle, NvHandle, void *, THIRD_PARTY_P2P_VIDMEM_FREE_CALLBACK *, void *, PCLI_THIRD_PARTY_P2P_MAPPING_INFO *);
+NV_STATUS           CliAddThirdPartyP2PMappingInfo (struct ThirdPartyP2P*, NvHandle, void *, THIRD_PARTY_P2P_VIDMEM_FREE_CALLBACK *, void *, PCLI_THIRD_PARTY_P2P_MAPPING_INFO *);
 
 // Find a P2P mapping given its platform specific data
-NV_STATUS           CliGetThirdPartyP2PMappingInfoFromKey (NvHandle, NvHandle, NvHandle, void *, PCLI_THIRD_PARTY_P2P_MAPPING_INFO *);
+NV_STATUS           CliGetThirdPartyP2PMappingInfoFromKey (struct ThirdPartyP2P*, NvHandle, void *, PCLI_THIRD_PARTY_P2P_MAPPING_INFO *);
 
 // Register pid & client with a third-party P2P Info object
 NV_STATUS           CliAddThirdPartyP2PClientPid (NvHandle, NvHandle, NvU32, NvU32);
@@ -616,7 +607,7 @@ NV_STATUS           CliDelThirdPartyP2PClientPid (struct RmClient*, NvHandle, Nv
 NV_STATUS           CliUnregisterFromThirdPartyP2P (struct RmClient*);
 
 // Register a free callback
-NV_STATUS           CliRegisterThirdPartyP2PMappingCallback (NvHandle, NvHandle, NvHandle, void *, THIRD_PARTY_P2P_VIDMEM_FREE_CALLBACK *, void *);
+NV_STATUS           CliRegisterThirdPartyP2PMappingCallback (struct ThirdPartyP2P*, NvHandle, void *, THIRD_PARTY_P2P_VIDMEM_FREE_CALLBACK *, void *);
 
 // Unregister memory from a third-party P2P Info object
 void                CliUnregisterMemoryFromThirdPartyP2P(struct Memory *pMemory);

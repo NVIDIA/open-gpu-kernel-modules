@@ -103,6 +103,7 @@ struct OBJFBSR {
     struct OBJFBSR *__nvoc_pbase_OBJFBSR;
     NV_STATUS (*__fbsrBegin__)(struct OBJGPU *, struct OBJFBSR *, FBSR_OP_TYPE);
     NV_STATUS (*__fbsrEnd__)(struct OBJGPU *, struct OBJFBSR *);
+    NV_STATUS (*__fbsrSendMemsysProgramRawCompressionMode__)(struct OBJGPU *, struct OBJFBSR *, NvBool);
     NvU32 type;
     struct OBJCE *pCe;
     FBSR_OP_TYPE op;
@@ -158,6 +159,8 @@ NV_STATUS __nvoc_objCreate_OBJFBSR(OBJFBSR**, Dynamic*, NvU32);
 #define fbsrBegin_HAL(pGpu, pFbsr, op) fbsrBegin_DISPATCH(pGpu, pFbsr, op)
 #define fbsrEnd(pGpu, pFbsr) fbsrEnd_DISPATCH(pGpu, pFbsr)
 #define fbsrEnd_HAL(pGpu, pFbsr) fbsrEnd_DISPATCH(pGpu, pFbsr)
+#define fbsrSendMemsysProgramRawCompressionMode(pGpu, pFbsr, bRawMode) fbsrSendMemsysProgramRawCompressionMode_DISPATCH(pGpu, pFbsr, bRawMode)
+#define fbsrSendMemsysProgramRawCompressionMode_HAL(pGpu, pFbsr, bRawMode) fbsrSendMemsysProgramRawCompressionMode_DISPATCH(pGpu, pFbsr, bRawMode)
 static inline NV_STATUS fbsrCreateChannelForCopy_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -260,6 +263,16 @@ NV_STATUS fbsrEnd_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
 
 static inline NV_STATUS fbsrEnd_DISPATCH(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
     return pFbsr->__fbsrEnd__(pGpu, pFbsr);
+}
+
+NV_STATUS fbsrSendMemsysProgramRawCompressionMode_GA100(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvBool bRawMode);
+
+static inline NV_STATUS fbsrSendMemsysProgramRawCompressionMode_56cd7a(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvBool bRawMode) {
+    return NV_OK;
+}
+
+static inline NV_STATUS fbsrSendMemsysProgramRawCompressionMode_DISPATCH(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr, NvBool bRawMode) {
+    return pFbsr->__fbsrSendMemsysProgramRawCompressionMode__(pGpu, pFbsr, bRawMode);
 }
 
 NV_STATUS fbsrObjectInit_IMPL(struct OBJFBSR *pFbsr, NvU32 arg0);

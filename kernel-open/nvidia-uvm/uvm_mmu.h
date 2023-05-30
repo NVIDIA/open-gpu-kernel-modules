@@ -50,7 +50,11 @@
 // |                |
 // |   (not used)   |
 // |                |
-// ------------------ 64PB + 8TB
+// ------------------ 64PB + 8TB + 256GB (UVM_GPU_MAX_PHYS_MEM)
+// |     vidmem     |
+// |  flat mapping  | ==> UVM_GPU_MAX_PHYS_MEM
+// |     (256GB)    |
+// ------------------ 64PB + 8TB (flat_vidmem_va_base)
 // |peer ident. maps|
 // |32 * 256GB = 8TB| ==> NV_MAX_DEVICES * UVM_PEER_IDENTITY_VA_SIZE
 // ------------------ 64PB
@@ -105,7 +109,7 @@
 // +----------------+ 0 (rm_va_base)
 
 // Maximum memory of any GPU.
-#define UVM_GPU_MAX_PHYS_MEM (256ull * 1024 * 1024 * 1024)
+#define UVM_GPU_MAX_PHYS_MEM (256 * UVM_SIZE_1GB)
 
 // The size of VA that should be reserved per peer identity mapping.
 // This should be at least the maximum amount of memory of any GPU.
@@ -648,6 +652,14 @@ static uvm_aperture_t uvm_page_table_range_aperture(uvm_page_table_range_t *rang
 {
     return range->table->phys_alloc.addr.aperture;
 }
+
+// Given a GPU or CPU physical address that refers to pages tables, retrieve an
+// address suitable for CE writes to those page tables. This should be used
+// instead of uvm_gpu_address_copy because PTE writes are used to bootstrap the
+// various flat virtual mappings, so we usually ensure that PTE writes work even
+// if virtual mappings are required for other accesses. This is only needed when
+// CE has system-wide physical addressing restrictions.
+uvm_gpu_address_t uvm_mmu_gpu_address(uvm_gpu_t *gpu, uvm_gpu_phys_address_t phys_addr);
 
 NV_STATUS uvm_test_invalidate_tlb(UVM_TEST_INVALIDATE_TLB_PARAMS *params, struct file *filp);
 

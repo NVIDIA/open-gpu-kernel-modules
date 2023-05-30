@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2011-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2011-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -84,6 +84,11 @@
 #define LSF_VPR_REGION_ID           (0x3U)
 
 /*!
+ * Expected REGION ID to be used for the CPR region with conf compute.
+ */
+#define LSF_CPR_REGION_ID           (0x3U)
+
+/*!
  * Size of the separate bootloader data that could be present in WPR region.
  */
 #define LSF_LS_BLDATA_EXPECTED_SIZE (0x100U)
@@ -143,9 +148,19 @@
 #define LSF_FALCON_ID_FECS_RISCV       (21U)
 #define LSF_FALCON_ID_GPCCS_RISCV      (22U)
 #define LSF_FALCON_ID_NVJPG_RISCV_EB   (23U)
-#define LSF_FALCON_ID_END              (24U)
+#define LSF_FALCON_ID_OFA_RISCV_EB     (24U)
+#define LSF_FALCON_ID_NVENC_RISCV_EB   (25U)
+#define LSF_FALCON_ID_END              (26U)
 
 #define LSF_FALCON_ID_INVALID   (0xFFFFFFFFU)
+
+//
+// TODO: Remove below Alias and add _EB Patching to macro LSF_FALCON_ID_FECS_RISCV, similarly for GPCCS,
+// and similar cleanups in RM since RISCV based CTXSW engines are to be booted externally.
+// Tracking in Bug 3808599
+//
+#define LSF_FALCON_ID_FECS_RISCV_EB    (LSF_FALCON_ID_FECS_RISCV)
+#define LSF_FALCON_ID_GPCCS_RISCV_EB   (LSF_FALCON_ID_GPCCS_RISCV)
 
 //
 // ************************ NOTIFICATION *********************************
@@ -176,7 +191,7 @@
  * to uniquely identify it.
  * @note this macro should be updated as needed whenever LSF_FALCON_ID* defines are added. See Bug: 3833461
  */
-#define LSF_FALCON_USES_INSTANCE(falconId)  ((falconId == LSF_FALCON_ID_NVDEC_RISCV_EB) || (falconId == LSF_FALCON_ID_NVJPG) || (falconId == LSF_FALCON_ID_NVJPG_RISCV_EB))
+#define LSF_FALCON_USES_INSTANCE(falconId)  ((falconId == LSF_FALCON_ID_NVDEC_RISCV_EB) || (falconId == LSF_FALCON_ID_NVJPG) || (falconId == LSF_FALCON_ID_NVJPG_RISCV_EB) || (falconId == LSF_FALCON_ID_NVENC_RISCV_EB))
 
 /*!
  * Size in entries of the ucode descriptor's dependency map.
@@ -375,6 +390,13 @@ typedef struct
 //
 #define LSF_FALCON_ID_END_PMU               (LSF_FALCON_ID_FBFALCON + 1)
 #define LSF_WPR_HEADERS_TOTAL_SIZE_MAX_PMU  (NV_ALIGN_UP((sizeof(LSF_WPR_HEADER) * LSF_FALCON_ID_END_PMU), LSF_WPR_HEADER_ALIGNMENT))
+
+//
+// In order to prevent LSF_FALCON_ID_END changes to affect older / shipped SEC2/ACR ucodes (increase of DMEM footprint)
+// adding SEC2/ACR specific ***_END define covering all supported falcons in pre-hopper SEC2-RTOS/ACR ucode.
+//
+#define LSF_FALCON_ID_END_ACR_ON_SEC2               (LSF_FALCON_ID_NVJPG + 1)
+#define LSF_WPR_HEADERS_TOTAL_SIZE_MAX_ACR_ON_SEC2  (NV_ALIGN_UP((sizeof(LSF_WPR_HEADER) * LSF_FALCON_ID_END_ACR_ON_SEC2), LSF_WPR_HEADER_ALIGNMENT))
 
 // Maximum SUB WPR header size
 #define LSF_SUB_WPR_HEADERS_TOTAL_SIZE_MAX  (NV_ALIGN_UP((sizeof(LSF_SHARED_SUB_WPR_HEADER) * LSF_SHARED_DATA_SUB_WPR_USE_CASE_ID_MAX), LSF_SUB_WPR_HEADER_ALIGNMENT))

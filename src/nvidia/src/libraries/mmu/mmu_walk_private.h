@@ -357,7 +357,7 @@ void
 mmuFmtCalcAlignedEntryIndices(const MMU_FMT_LEVEL *pPageFmtIn,
                               const NvU32 indexLoIn,
                               const NvU32 indexHiIn,
-                              const MMU_FMT_LEVEL *pPageFmtOut, 
+                              const MMU_FMT_LEVEL *pPageFmtOut,
                               NvU32 *pIndexLoOut,
                               NvU32 *pIndexHiOut);
 

@@ -29,15 +29,10 @@
 #include <linux/spinlock.h>
 #include <linux/rwsem.h>
 #include <linux/sched.h> /* signal_pending, cond_resched */
+#include <linux/semaphore.h>
 
 #if defined(NV_LINUX_SCHED_SIGNAL_H_PRESENT)
 #include <linux/sched/signal.h>     /* signal_pending for kernels >= 4.11 */
-#endif
-
-#if defined(NV_LINUX_SEMAPHORE_H_PRESENT)
-#include <linux/semaphore.h>
-#else
-#include <asm/semaphore.h>
 #endif
 
 #if defined(CONFIG_PREEMPT_RT) || defined(CONFIG_PREEMPT_RT_FULL)
@@ -62,20 +57,7 @@ typedef spinlock_t                nv_spinlock_t;
 #define NV_SPIN_UNLOCK_WAIT(lock) spin_unlock_wait(lock)
 #endif
 
-#if defined(NV_CONFIG_PREEMPT_RT)
-#define NV_INIT_SEMA(sema, val) sema_init(sema,val)
-#else
-#if !defined(__SEMAPHORE_INITIALIZER) && defined(__COMPAT_SEMAPHORE_INITIALIZER)
-#define __SEMAPHORE_INITIALIZER __COMPAT_SEMAPHORE_INITIALIZER
-#endif
-#define NV_INIT_SEMA(sema, val)                    \
-    {                                              \
-        struct semaphore __sema =                  \
-            __SEMAPHORE_INITIALIZER(*(sema), val); \
-        *(sema) = __sema;                          \
-    }
-#endif
-#define NV_INIT_MUTEX(mutex) NV_INIT_SEMA(mutex, 1)
+#define NV_INIT_MUTEX(mutex) sema_init(mutex, 1)
 
 static inline int nv_down_read_interruptible(struct rw_semaphore *lock)
 {

@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlc372/ctrlc372chnc.finn
+// Source file:      ctrl/ctrlc372/ctrlc372chnc.finn
 //
 
 #include "nvdisptypes.h"

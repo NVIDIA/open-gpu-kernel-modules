@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,6 +81,7 @@ typedef struct _def_knvlink_conn_info
 #define NVLINK_VERSION_30     0x00000005
 #define NVLINK_VERSION_31     0x00000006
 #define NVLINK_VERSION_40     0x00000007
+#define NVLINK_VERSION_50     0x00000008
 
 // Maximum links the GPU NVLink SW can currently support
 #define NVLINK_MAX_LINKS_SW             18
@@ -190,7 +191,7 @@ typedef struct _def_knvlink_link
 typedef struct NVLINK_INBAND_CALLBACK
 {
     NvU32 messageType;
-    void (*pCallback)(NvU32 gpuInstance,
+    NV_STATUS (*pCallback)(NvU32 gpuInstance,
                       NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pMessage);
     NvU32 wqItemFlags;
 } NVLINK_INBAND_MSG_CALLBACK;
@@ -227,6 +228,7 @@ struct KernelNvlink {
     NV_STATUS (*__knvlinkStatePostUnload__)(OBJGPU *, struct KernelNvlink *, NvU32);
     NvBool (*__knvlinkIsPresent__)(OBJGPU *, struct KernelNvlink *);
     NV_STATUS (*__knvlinkSetUniqueFabricBaseAddress__)(OBJGPU *, struct KernelNvlink *, NvU64);
+    void (*__knvlinkClearUniqueFabricBaseAddress__)(OBJGPU *, struct KernelNvlink *);
     NV_STATUS (*__knvlinkHandleFaultUpInterrupt__)(OBJGPU *, struct KernelNvlink *, NvU32);
     NV_STATUS (*__knvlinkValidateFabricBaseAddress__)(OBJGPU *, struct KernelNvlink *, NvU64);
     NvU32 (*__knvlinkGetConnectedLinksMask__)(OBJGPU *, struct KernelNvlink *);
@@ -249,6 +251,7 @@ struct KernelNvlink {
     NvU32 (*__knvlinkGetNumLinksToBeReducedPerIoctrl__)(struct KernelNvlink *);
     NvBool (*__knvlinkIsBandwidthModeOff__)(struct KernelNvlink *);
     void (*__knvlinkDirectConnectCheck__)(OBJGPU *, struct KernelNvlink *);
+    NvBool (*__knvlinkIsGpuReducedNvlinkConfig__)(OBJGPU *, struct KernelNvlink *);
     NvBool (*__knvlinkIsFloorSweepingNeeded__)(OBJGPU *, struct KernelNvlink *, NvU32, NvU32);
     NV_STATUS (*__knvlinkStateInitLocked__)(POBJGPU, struct KernelNvlink *);
     NV_STATUS (*__knvlinkStatePreLoad__)(POBJGPU, struct KernelNvlink *, NvU32);
@@ -271,53 +274,53 @@ struct KernelNvlink {
     NvBool PDB_PROP_KNVLINK_MINION_FORCE_NON_ALI_TRAINING;
     NvBool PDB_PROP_KNVLINK_MINION_GFW_BOOT;
     NvBool PDB_PROP_KNVLINK_SYSMEM_SUPPORT_ENABLED;
-    struct KernelIoctrl *pKernelIoctrl[3];
-    NvU32 ioctrlMask;
-    NvU32 ipVerNvlink;
-    NvU8 ioctrlNumEntries;
-    NvU32 ioctrlSize;
-    NvU32 registryControl;
-    NvU32 minionControl;
-    NvU32 verboseMask;
-    NvU32 *pLinkConnection;
-    NvBool bChiplibConfig;
-    NvBool bRegistryLinkOverride;
-    NvU32 registryLinkMask;
-    NvBool bOverrideComputePeerMode;
-    NvU32 discoveredLinks;
-    NvU32 vbiosDisabledLinkMask;
-    NvU32 regkeyDisabledLinksMask;
-    NvU32 initDisabledLinksMask;
-    NvU32 connectedLinksMask;
-    NvU32 bridgeSensableLinks;
-    NvU32 bridgedLinks;
-    NvU32 enabledLinks;
-    FaultUpList faultUpLinks;
-    NvU32 initializedLinks;
-    KNVLINK_RM_LINK nvlinkLinks[18];
-    NvBool bIsGpuDegraded;
-    NvU32 postRxDetLinkMask;
-    NvU32 disconnectedLinkMask;
-    NvU32 sysmemLinkMask;
-    NvU32 peerLinkMasks[32];
-    NvU32 forcedSysmemDeviceType;
-    NVLINK_INBAND_MSG_CALLBACK inbandCallback[5];
-    nvlink_device *pNvlinkDev;
-    NvU32 deviceLockRefcount;
-    NvBool bVerifTrainingEnable;
-    NvBool bL2Entry;
-    NvBool bSkipLinkTraining;
-    NvBool bForceAutoconfig;
-    NvBool bForceEnableCoreLibRtlsims;
-    NvBool bEnableTrainingAtLoad;
-    NvBool bEnableSafeModeAtLoad;
-    NvBool bEnableAli;
-    NvBool bFloorSwept;
-    NvBool bLinkTrainingDebugSpew;
-    NvBool bDisableL2Mode;
-    NvU32 nvlinkLinkSpeed;
-    NvU32 errorRecoveries[18];
-    NvBool bNvswitchProxy;
+    struct KernelIoctrl *PRIVATE_FIELD(pKernelIoctrl)[3];
+    NvU32 PRIVATE_FIELD(ioctrlMask);
+    NvU32 PRIVATE_FIELD(ipVerNvlink);
+    NvU8 PRIVATE_FIELD(ioctrlNumEntries);
+    NvU32 PRIVATE_FIELD(ioctrlSize);
+    NvU32 PRIVATE_FIELD(registryControl);
+    NvU32 PRIVATE_FIELD(minionControl);
+    NvU32 PRIVATE_FIELD(verboseMask);
+    NvU32 *PRIVATE_FIELD(pLinkConnection);
+    NvBool PRIVATE_FIELD(bChiplibConfig);
+    NvBool PRIVATE_FIELD(bRegistryLinkOverride);
+    NvU32 PRIVATE_FIELD(registryLinkMask);
+    NvBool PRIVATE_FIELD(bOverrideComputePeerMode);
+    NvU32 PRIVATE_FIELD(discoveredLinks);
+    NvU32 PRIVATE_FIELD(vbiosDisabledLinkMask);
+    NvU32 PRIVATE_FIELD(regkeyDisabledLinksMask);
+    NvU32 PRIVATE_FIELD(initDisabledLinksMask);
+    NvU32 PRIVATE_FIELD(connectedLinksMask);
+    NvU32 PRIVATE_FIELD(bridgeSensableLinks);
+    NvU32 PRIVATE_FIELD(bridgedLinks);
+    NvU32 PRIVATE_FIELD(enabledLinks);
+    FaultUpList PRIVATE_FIELD(faultUpLinks);
+    NvU32 PRIVATE_FIELD(initializedLinks);
+    KNVLINK_RM_LINK PRIVATE_FIELD(nvlinkLinks)[18];
+    NvBool PRIVATE_FIELD(bIsGpuDegraded);
+    NvU32 PRIVATE_FIELD(postRxDetLinkMask);
+    NvU32 PRIVATE_FIELD(disconnectedLinkMask);
+    NvU32 PRIVATE_FIELD(sysmemLinkMask);
+    NvU32 PRIVATE_FIELD(peerLinkMasks)[32];
+    NvU32 PRIVATE_FIELD(forcedSysmemDeviceType);
+    NVLINK_INBAND_MSG_CALLBACK PRIVATE_FIELD(inbandCallback)[5];
+    nvlink_device *PRIVATE_FIELD(pNvlinkDev);
+    NvU32 PRIVATE_FIELD(deviceLockRefcount);
+    NvBool PRIVATE_FIELD(bVerifTrainingEnable);
+    NvBool PRIVATE_FIELD(bL2Entry);
+    NvBool PRIVATE_FIELD(bSkipLinkTraining);
+    NvBool PRIVATE_FIELD(bForceAutoconfig);
+    NvBool PRIVATE_FIELD(bForceEnableCoreLibRtlsims);
+    NvBool PRIVATE_FIELD(bEnableTrainingAtLoad);
+    NvBool PRIVATE_FIELD(bEnableSafeModeAtLoad);
+    NvBool PRIVATE_FIELD(bEnableAli);
+    NvBool PRIVATE_FIELD(bFloorSwept);
+    NvBool PRIVATE_FIELD(bLinkTrainingDebugSpew);
+    NvBool PRIVATE_FIELD(bDisableL2Mode);
+    NvU32 PRIVATE_FIELD(nvlinkLinkSpeed);
+    NvU32 PRIVATE_FIELD(errorRecoveries)[18];
+    NvBool PRIVATE_FIELD(bNvswitchProxy);
     NvU64 fabricBaseAddr;
 };
 
@@ -388,6 +391,8 @@ NV_STATUS __nvoc_objCreate_KernelNvlink(KernelNvlink**, Dynamic*, NvU32);
 #define knvlinkIsPresent(arg0, arg1) knvlinkIsPresent_DISPATCH(arg0, arg1)
 #define knvlinkSetUniqueFabricBaseAddress(pGpu, pKernelNvlink, arg0) knvlinkSetUniqueFabricBaseAddress_DISPATCH(pGpu, pKernelNvlink, arg0)
 #define knvlinkSetUniqueFabricBaseAddress_HAL(pGpu, pKernelNvlink, arg0) knvlinkSetUniqueFabricBaseAddress_DISPATCH(pGpu, pKernelNvlink, arg0)
+#define knvlinkClearUniqueFabricBaseAddress(pGpu, pKernelNvlink) knvlinkClearUniqueFabricBaseAddress_DISPATCH(pGpu, pKernelNvlink)
+#define knvlinkClearUniqueFabricBaseAddress_HAL(pGpu, pKernelNvlink) knvlinkClearUniqueFabricBaseAddress_DISPATCH(pGpu, pKernelNvlink)
 #define knvlinkHandleFaultUpInterrupt(pGpu, pKernelNvlink, arg0) knvlinkHandleFaultUpInterrupt_DISPATCH(pGpu, pKernelNvlink, arg0)
 #define knvlinkHandleFaultUpInterrupt_HAL(pGpu, pKernelNvlink, arg0) knvlinkHandleFaultUpInterrupt_DISPATCH(pGpu, pKernelNvlink, arg0)
 #define knvlinkValidateFabricBaseAddress(pGpu, pKernelNvlink, arg0) knvlinkValidateFabricBaseAddress_DISPATCH(pGpu, pKernelNvlink, arg0)
@@ -432,6 +437,8 @@ NV_STATUS __nvoc_objCreate_KernelNvlink(KernelNvlink**, Dynamic*, NvU32);
 #define knvlinkIsBandwidthModeOff_HAL(pKernelNvlink) knvlinkIsBandwidthModeOff_DISPATCH(pKernelNvlink)
 #define knvlinkDirectConnectCheck(pGpu, pKernelNvlink) knvlinkDirectConnectCheck_DISPATCH(pGpu, pKernelNvlink)
 #define knvlinkDirectConnectCheck_HAL(pGpu, pKernelNvlink) knvlinkDirectConnectCheck_DISPATCH(pGpu, pKernelNvlink)
+#define knvlinkIsGpuReducedNvlinkConfig(pGpu, pKernelNvlink) knvlinkIsGpuReducedNvlinkConfig_DISPATCH(pGpu, pKernelNvlink)
+#define knvlinkIsGpuReducedNvlinkConfig_HAL(pGpu, pKernelNvlink) knvlinkIsGpuReducedNvlinkConfig_DISPATCH(pGpu, pKernelNvlink)
 #define knvlinkIsFloorSweepingNeeded(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl) knvlinkIsFloorSweepingNeeded_DISPATCH(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl)
 #define knvlinkIsFloorSweepingNeeded_HAL(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl) knvlinkIsFloorSweepingNeeded_DISPATCH(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl)
 #define knvlinkStateInitLocked(pGpu, pEngstate) knvlinkStateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -1360,6 +1367,16 @@ static inline NV_STATUS knvlinkSetUniqueFabricBaseAddress_DISPATCH(OBJGPU *pGpu,
     return pKernelNvlink->__knvlinkSetUniqueFabricBaseAddress__(pGpu, pKernelNvlink, arg0);
 }
 
+static inline void knvlinkClearUniqueFabricBaseAddress_b3696a(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    return;
+}
+
+void knvlinkClearUniqueFabricBaseAddress_GH100(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
+
+static inline void knvlinkClearUniqueFabricBaseAddress_DISPATCH(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    pKernelNvlink->__knvlinkClearUniqueFabricBaseAddress__(pGpu, pKernelNvlink);
+}
+
 NV_STATUS knvlinkHandleFaultUpInterrupt_GH100(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NvU32 arg0);
 
 static inline NV_STATUS knvlinkHandleFaultUpInterrupt_46f6a7(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NvU32 arg0) {
@@ -1584,6 +1601,16 @@ void knvlinkDirectConnectCheck_GH100(OBJGPU *pGpu, struct KernelNvlink *pKernelN
 
 static inline void knvlinkDirectConnectCheck_DISPATCH(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
     pKernelNvlink->__knvlinkDirectConnectCheck__(pGpu, pKernelNvlink);
+}
+
+static inline NvBool knvlinkIsGpuReducedNvlinkConfig_491d52(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    return ((NvBool)(0 != 0));
+}
+
+NvBool knvlinkIsGpuReducedNvlinkConfig_GA100(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
+
+static inline NvBool knvlinkIsGpuReducedNvlinkConfig_DISPATCH(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    return pKernelNvlink->__knvlinkIsGpuReducedNvlinkConfig__(pGpu, pKernelNvlink);
 }
 
 static inline NvBool knvlinkIsFloorSweepingNeeded_491d52(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NvU32 numActiveLinksPerIoctrl, NvU32 numLinksPerIoctrl) {

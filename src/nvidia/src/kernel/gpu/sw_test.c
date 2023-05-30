@@ -58,7 +58,7 @@ NV_STATUS swtestGetSwMethods_IMPL
 )
 {
     *ppMethods = Nv04SoftwareTestMethods;
-    *pNumMethods = NV_ARRAY_ELEMENTS32(Nv04SoftwareTestMethods);
+    *pNumMethods = NV_ARRAY_ELEMENTS(Nv04SoftwareTestMethods);
     return NV_OK;
 }
 

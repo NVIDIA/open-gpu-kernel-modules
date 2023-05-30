@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,6 +48,7 @@ extern "C" {
 #include "gpu/mem_mgr/heap.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "ctrl/ctrl0080/ctrl0080dma.h"
+#include "ctrl/ctrl90f1.h"
 #include "gpu/mem_mgr/mem_desc.h"
 
 #include "containers/list.h"
@@ -92,7 +93,7 @@ struct FABRIC_VASPACE {
     NvBool (*__fabricvaspaceIsInternalVaRestricted__)(struct FABRIC_VASPACE *);
     NvU32 (*__fabricvaspaceGetFlags__)(struct FABRIC_VASPACE *);
     NvBool (*__fabricvaspaceIsAtsEnabled__)(struct FABRIC_VASPACE *);
-    NvU32 (*__fabricvaspaceGetBigPageSize__)(struct FABRIC_VASPACE *);
+    NvU64 (*__fabricvaspaceGetBigPageSize__)(struct FABRIC_VASPACE *);
     NV_STATUS (*__fabricvaspaceGetPteInfo__)(struct FABRIC_VASPACE *, struct OBJGPU *, NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS *, RmPhysAddr *);
     NvU64 (*__fabricvaspaceGetVaLimit__)(struct FABRIC_VASPACE *);
     PMEMORY_DESCRIPTOR (*__fabricvaspaceGetPageDirBase__)(struct FABRIC_VASPACE *, struct OBJGPU *);
@@ -258,7 +259,7 @@ static inline NvBool fabricvaspaceIsAtsEnabled_DISPATCH(struct FABRIC_VASPACE *p
     return pVAS->__fabricvaspaceIsAtsEnabled__(pVAS);
 }
 
-static inline NvU32 fabricvaspaceGetBigPageSize_DISPATCH(struct FABRIC_VASPACE *pVAS) {
+static inline NvU64 fabricvaspaceGetBigPageSize_DISPATCH(struct FABRIC_VASPACE *pVAS) {
     return pVAS->__fabricvaspaceGetBigPageSize__(pVAS);
 }
 
@@ -444,6 +445,38 @@ static inline NV_STATUS fabricvaspaceInitUCRange(struct FABRIC_VASPACE *pFabricV
 }
 #else //__nvoc_fabric_vaspace_h_disabled
 #define fabricvaspaceInitUCRange(pFabricVAS, pGpu, ucFabricBase, ucFabricSize) fabricvaspaceInitUCRange_IMPL(pFabricVAS, pGpu, ucFabricBase, ucFabricSize)
+#endif //__nvoc_fabric_vaspace_h_disabled
+
+void fabricvaspaceClearUCRange_IMPL(struct FABRIC_VASPACE *pFabricVAS);
+
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline void fabricvaspaceClearUCRange(struct FABRIC_VASPACE *pFabricVAS) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+}
+#else //__nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceClearUCRange(pFabricVAS) fabricvaspaceClearUCRange_IMPL(pFabricVAS)
+#endif //__nvoc_fabric_vaspace_h_disabled
+
+NV_STATUS fabricvaspaceGetPageLevelInfo_IMPL(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams);
+
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NV_STATUS fabricvaspaceGetPageLevelInfo(struct FABRIC_VASPACE *pFabricVAS, struct OBJGPU *pGpu, NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS *pParams) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceGetPageLevelInfo(pFabricVAS, pGpu, pParams) fabricvaspaceGetPageLevelInfo_IMPL(pFabricVAS, pGpu, pParams)
+#endif //__nvoc_fabric_vaspace_h_disabled
+
+NvBool fabricvaspaceIsInUse_IMPL(struct FABRIC_VASPACE *pFabricVAS);
+
+#ifdef __nvoc_fabric_vaspace_h_disabled
+static inline NvBool fabricvaspaceIsInUse(struct FABRIC_VASPACE *pFabricVAS) {
+    NV_ASSERT_FAILED_PRECOMP("FABRIC_VASPACE was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_fabric_vaspace_h_disabled
+#define fabricvaspaceIsInUse(pFabricVAS) fabricvaspaceIsInUse_IMPL(pFabricVAS)
 #endif //__nvoc_fabric_vaspace_h_disabled
 
 #undef PRIVATE_FIELD

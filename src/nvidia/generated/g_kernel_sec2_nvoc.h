@@ -156,9 +156,9 @@ static inline NV_STATUS ksec2ConstructEngine_DISPATCH(struct OBJGPU *pGpu, struc
     return pKernelSec2->__ksec2ConstructEngine__(pGpu, pKernelSec2, arg0);
 }
 
-void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[166]);
+void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[167]);
 
-static inline void ksec2RegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[166]) {
+static inline void ksec2RegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[167]) {
     pKernelSec2->__ksec2RegisterIntrService__(pGpu, pKernelSec2, pRecords);
 }
 

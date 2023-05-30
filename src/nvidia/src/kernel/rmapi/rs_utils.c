@@ -101,28 +101,20 @@ serverutilGetResourceRefWithParent
     return NV_OK;
 }
 
-NV_STATUS
-serverutilGetClientUnderLock
+RmClient
+*serverutilGetClientUnderLock
 (
-    NvHandle hClient,
-    RmClient **ppClient
+    NvHandle hClient
 )
 {
     NV_STATUS status;
     RsClient *pRsClient;
-    RmClient *pClient;
 
     status = serverGetClientUnderLock(&g_resServ, hClient, &pRsClient);
     if (status != NV_OK)
-        return status;
+        return NULL;
 
-    pClient = dynamicCast(pRsClient, RmClient);
-    NV_ASSERT(pClient != NULL);
-
-    if (ppClient)
-        *ppClient = pClient;
-
-    return NV_OK;
+    return dynamicCast(pRsClient, RmClient);
 }
 
 RmClient
@@ -238,9 +230,9 @@ serverutilValidateNewResourceHandle
     NvHandle hObject
 )
 {
-    RmClient *pClient;
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
 
-    return ((NV_OK == serverutilGetClientUnderLock(hClient, &pClient)) &&
+    return ((pClient != NULL) &&
             (NV_OK == clientValidateNewResourceHandle(staticCast(pClient, RsClient), hObject, NV_TRUE)));
 }
 
@@ -257,7 +249,9 @@ serverutilGenResourceHandle
     // LOCK TEST: we should have the API lock here
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
-    if (NV_OK != serverutilGetClientUnderLock(hClient, &pClient))
+    pClient = serverutilGetClientUnderLock(hClient);
+
+    if (pClient == NULL)
         return NV_ERR_INVALID_CLIENT;
 
     status = clientGenResourceHandle(staticCast(pClient, RsClient), returnHandle);
