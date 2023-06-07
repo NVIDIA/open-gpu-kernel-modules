@@ -194,6 +194,10 @@ In the below table, if three IDs are listed, the first is the PCI Device
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
 Subsystem Device ID.
 
+
+<details>
+<summary>Compatible GPUs</summary>
+
 | Product Name                                    | PCI ID         |
 | ----------------------------------------------- | -------------- |
 | NVIDIA TITAN RTX                                | 1E02           |
@@ -855,3 +859,4 @@ Subsystem Device ID.
 | NVIDIA RTX 2000 Ada Generation Laptop GPU       | 28B8           |
 | NVIDIA GeForce RTX 4060 Laptop GPU              | 28E0           |
 | NVIDIA GeForce RTX 4050 Laptop GPU              | 28E1           |
+</details>
