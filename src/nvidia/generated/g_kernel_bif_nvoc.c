@@ -473,6 +473,16 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifPreOsGlobalErotGrantRequest__ = &kbifPreOsGlobalErotGrantRequest_56cd7a;
     }
 
+    // Hal function -- kbifCacheVFInfo
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kbifCacheVFInfo__ = &kbifCacheVFInfo_GH100;
+    }
+    else
+    {
+        pThis->__kbifCacheVFInfo__ = &kbifCacheVFInfo_TU102;
+    }
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelBif_engstateConstructEngine;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelBif_engstateStateInitLocked;

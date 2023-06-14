@@ -1736,6 +1736,18 @@ dmaUpdateVASpace_GF100
         NV_ASSERT_OR_RETURN(pageSize == vaSpaceBigPageSize, NV_ERR_INVALID_STATE);
     }
 
+   if (pGpu->bEnableBar1SparseForFillPteMemUnmap)
+    {
+        OBJGVASPACE *pGVAS = dynamicCast(pVAS, OBJGVASPACE);
+        if (bFillPteMem &&
+            (pGVAS->flags & VASPACE_FLAGS_BAR_BAR1) &&
+            (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
+            (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE))
+        {
+            bSparse = NV_TRUE;
+        }
+    }
+
     //
     // Determine whether we are invalidating or revoking privileges, so we know
     // whether to flush page accesses or not. ReadDisable and writeDisable have

@@ -95,6 +95,7 @@ scrubberConstruct
     NV_STATUS         status            = NV_OK;
     NvBool            bMIGInUse         = IS_MIG_IN_USE(pGpu);
     PMA              *pPma              = NULL;
+    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance = NULL;
 
     if (pHeap == NULL)
     {
@@ -145,19 +146,20 @@ scrubberConstruct
 
         if (bMIGInUse)
         {
-            KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance;
-            FOR_EACH_VALID_GPU_INSTANCE(pGpu, pKernelMIGManager, pKernelMIGGPUInstance)
+            KERNEL_MIG_GPU_INSTANCE *pCurrKernelMIGGPUInstance;
+
+            FOR_EACH_VALID_GPU_INSTANCE(pGpu, pKernelMIGManager, pCurrKernelMIGGPUInstance)
             {
-                if (pKernelMIGGPUInstance->pMemoryPartitionHeap == pHeap)
+                if (pCurrKernelMIGGPUInstance->pMemoryPartitionHeap == pHeap)
                 {
-                    ceutilsRegisterGPUInstance(&pScrubber->ceUtilsObject, pKernelMIGGPUInstance);
+                    pKernelMIGGPUInstance = pCurrKernelMIGGPUInstance;
                     break;
                 }
             }
             FOR_EACH_VALID_GPU_INSTANCE_END();
         }
 
-        NV_ASSERT_OK_OR_GOTO(status, ceutilsInitialize(&pScrubber->ceUtilsObject, pGpu, &ceUtilsAllocParams), destroyscrublist);
+        NV_ASSERT_OK_OR_GOTO(status, objCreate(&pScrubber->pCeUtils, pHeap, CeUtils, pGpu, pKernelMIGGPUInstance, &ceUtilsAllocParams), destroyscrublist);
         NV_ASSERT_OK_OR_GOTO(status, pmaRegMemScrub(pPma, pScrubber), destroyscrublist);
     }
 
@@ -192,7 +194,7 @@ _isScrubWorkPending(
     }
     else
     {
-        if (pScrubber->lastSubmittedWorkId != ceutilsUpdateProgress(&pScrubber->ceUtilsObject))
+        if (pScrubber->lastSubmittedWorkId != ceutilsUpdateProgress(pScrubber->pCeUtils))
             workPending = NV_TRUE;
     }
     return workPending;
@@ -266,7 +268,7 @@ scrubberDestruct
 
     portMemFree(pScrubber->pScrubList);
     {
-        ceutilsDeinit(&pScrubber->ceUtilsObject);
+        objDelete(pScrubber->pCeUtils);
     }
 
     portSyncMutexRelease(pScrubber->pScrubberMutex);
@@ -747,7 +749,9 @@ _scrubWaitAndSave
 
     while (currentCompletedId < (pScrubber->lastSeenIdByClient + itemsToSave))
     {
-        ceutilsServiceInterrupts(&pScrubber->ceUtilsObject);
+        {
+            ceutilsServiceInterrupts(pScrubber->pCeUtils);
+        }
         currentCompletedId = _scrubCheckProgress(pScrubber);
     }
 
@@ -853,7 +857,7 @@ _scrubCheckProgress
     }
     else
     {
-        lastSWSemaphoreDone = ceutilsUpdateProgress(&pScrubber->ceUtilsObject);
+        lastSWSemaphoreDone = ceutilsUpdateProgress(pScrubber->pCeUtils);
     }
     
     pScrubber->lastSWSemaphoreDone = lastSWSemaphoreDone;
@@ -888,9 +892,9 @@ _scrubMemory
 
     memsetParams.pMemDesc = pMemDesc;
     memsetParams.length = size;
-    memsetParams.flags = NV0050_CTRL_MEMSET_FLAGS_ASYNC;
+    memsetParams.flags = NV0050_CTRL_MEMSET_FLAGS_ASYNC | NV0050_CTRL_MEMSET_FLAGS_PIPELINED;
 
-    status = ceutilsMemset(&pScrubber->ceUtilsObject, &memsetParams);
+    status = ceutilsMemset(pScrubber->pCeUtils, &memsetParams);
     if (status == NV_OK)
     {
         pScrubber->lastSubmittedWorkId = memsetParams.submittedWorkId;

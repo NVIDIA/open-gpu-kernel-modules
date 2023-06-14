@@ -378,11 +378,12 @@ void uvm_conf_computing_log_gpu_encryption(uvm_channel_t *channel, UvmCslIv *iv)
     NV_STATUS status;
 
     uvm_mutex_lock(&channel->csl.ctx_lock);
-    status = nvUvmInterfaceCslLogDeviceEncryption(&channel->csl.ctx, iv);
+    status = nvUvmInterfaceCslIncrementIv(&channel->csl.ctx, UVM_CSL_OPERATION_DECRYPT, 1, iv);
     uvm_mutex_unlock(&channel->csl.ctx_lock);
 
-    // nvUvmInterfaceLogDeviceEncryption fails when a 64-bit encryption counter
-    // overflows. This is not supposed to happen on CC.
+    // TODO: Bug 4014720: If nvUvmInterfaceCslIncrementIv returns with
+    // NV_ERR_INSUFFICIENT_RESOURCES then the IV needs to be rotated via
+    // nvUvmInterfaceCslRotateIv.
     UVM_ASSERT(status == NV_OK);
 }
 
@@ -391,11 +392,12 @@ void uvm_conf_computing_acquire_encryption_iv(uvm_channel_t *channel, UvmCslIv *
     NV_STATUS status;
 
     uvm_mutex_lock(&channel->csl.ctx_lock);
-    status = nvUvmInterfaceCslAcquireEncryptionIv(&channel->csl.ctx, iv);
+    status = nvUvmInterfaceCslIncrementIv(&channel->csl.ctx, UVM_CSL_OPERATION_ENCRYPT, 1, iv);
     uvm_mutex_unlock(&channel->csl.ctx_lock);
 
-    // nvUvmInterfaceLogDeviceEncryption fails when a 64-bit encryption counter
-    // overflows. This is not supposed to happen on CC.
+    // TODO: Bug 4014720: If nvUvmInterfaceCslIncrementIv returns with
+    // NV_ERR_INSUFFICIENT_RESOURCES then the IV needs to be rotated via
+    // nvUvmInterfaceCslRotateIv.
     UVM_ASSERT(status == NV_OK);
 }
 
@@ -439,6 +441,8 @@ NV_STATUS uvm_conf_computing_cpu_decrypt(uvm_channel_t *channel,
                                       (const NvU8 *) src_cipher,
                                       src_iv,
                                       (NvU8 *) dst_plain,
+                                      NULL,
+                                      0,
                                       (const NvU8 *) auth_tag_buffer);
     uvm_mutex_unlock(&channel->csl.ctx_lock);
 

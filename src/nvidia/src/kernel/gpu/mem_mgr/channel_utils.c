@@ -112,11 +112,53 @@ channelSetupChannelBufferSizes
     pChannel->finishPayloadOffset = pChannel->semaOffset + 4;
 }
 
+NvU32
+channelReadChannelMemdesc
+(
+    OBJCHANNEL *pChannel,
+    NvU32       offset
+)
+{
+    NV_ASSERT_OR_RETURN(pChannel != NULL, 0);
+    NV_ASSERT_OR_RETURN(pChannel->pGpu != NULL, 0);
+
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pChannel->pGpu);
+    NvBool bReleaseMapping = NV_FALSE;
+    NvU32 result = 0;
+
+    //
+    // Use BAR1 if CPU access is allowed, otherwise allocate and init shadow
+    // buffer for DMA access
+    //
+    NvU32 transferFlags = (TRANSFER_FLAGS_USE_BAR1     |
+                           TRANSFER_FLAGS_SHADOW_ALLOC |
+                           TRANSFER_FLAGS_SHADOW_INIT_MEM);
+
+    if (pChannel->pbCpuVA == NULL)
+    {
+        pChannel->pbCpuVA = memmgrMemDescBeginTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc,
+                                                       transferFlags);
+        bReleaseMapping = NV_TRUE;
+    }
+
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, 0);
+
+    result = MEM_RD32((NvU8*)pChannel->pbCpuVA + offset);
+
+    if (bReleaseMapping)
+    {
+        memmgrMemDescEndTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc, transferFlags);
+        pChannel->pbCpuVA = NULL;
+    }
+
+    return result;
+}
+
 NV_STATUS
 channelWaitForFinishPayload
 (
     OBJCHANNEL *pChannel,
-    NvU64       targetPayload       
+    NvU64       targetPayload
 )
 {
     NV_ASSERT_OR_RETURN(pChannel != NULL, NV_ERR_INVALID_STATE);
@@ -232,8 +274,34 @@ channelFillGpFifo
     NvU64   pbPutOffset;
     OBJGPU *pGpu;
     KernelBus *pKernelBus;
+    MemoryManager *pMemoryManager;
+    NvBool bReleaseMapping = NV_FALSE;
 
-    NV_ASSERT(putIndex < pChannel->channelNumGpFifioEntries);
+    //
+    // Use BAR1 if CPU access is allowed, otherwise allocate and init shadow
+    // buffer for DMA access
+    //
+    NvU32 transferFlags = (TRANSFER_FLAGS_USE_BAR1     |
+                           TRANSFER_FLAGS_SHADOW_ALLOC |
+                           TRANSFER_FLAGS_SHADOW_INIT_MEM);
+
+    NV_ASSERT_OR_RETURN(putIndex < pChannel->channelNumGpFifioEntries, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(pChannel != NULL, NV_ERR_INVALID_STATE);
+
+    pGpu = pChannel->pGpu;
+    NV_ASSERT_OR_RETURN(pGpu != NULL, NV_ERR_INVALID_STATE);
+
+    pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+    if (pChannel->pbCpuVA == NULL)
+    {
+        pChannel->pbCpuVA = memmgrMemDescBeginTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc,
+                                                       transferFlags);
+        bReleaseMapping = NV_TRUE;
+    }
+
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, NV_ERR_GENERIC);
 
     pbPutOffset = (pChannel->pbGpuVA + (putIndex * pChannel->methodSizePerBlock));
 
@@ -250,19 +318,40 @@ channelFillGpFifo
     MEM_WR32(&pGpEntry[0], GpEntry0);
     MEM_WR32(&pGpEntry[1], GpEntry1);
 
+    if (bReleaseMapping)
+    {
+        memmgrMemDescEndTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc, 
+                                 transferFlags);
+        pChannel->pbCpuVA = NULL;
+    }
+
     //  need to flush WRC buffer
     osFlushCpuWriteCombineBuffer();
 
     // write GP put
+    if (pChannel->pControlGPFifo == NULL)
+    {
+        pChannel->pControlGPFifo = 
+            (void *)memmgrMemDescBeginTransfer(pMemoryManager, pChannel->pUserdMemdesc,
+                                               transferFlags);
+        NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_INVALID_STATE);
+        bReleaseMapping = NV_TRUE;
+    }
+
     MEM_WR32(&pChannel->pControlGPFifo->GPPut, putIndex);
+
+    if (bReleaseMapping)
+    {
+        memmgrMemDescEndTransfer(pMemoryManager, pChannel->pUserdMemdesc, transferFlags);
+        pChannel->pControlGPFifo = NULL;
+    }
+
     osFlushCpuWriteCombineBuffer();
     
     //
     // On some architectures, if doorbell is mapped via bar0, we need to send
     // an extra flush
     //
-    pGpu = pChannel->pGpu;
-    pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     if (kbusFlushPcieForBar0Doorbell_HAL(pGpu, pKernelBus) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Busflush failed in _scrubFillGpFifo\n");
@@ -273,11 +362,34 @@ channelFillGpFifo
     // removing the FIFO Lite Mode handling
     // Refer older _ceChannelUpdateGpFifo_GF100 code for implementation
     //
+
+    // Update doorbell with work submission token
     if (pChannel->bUseDoorbellRegister)
     {
+        if (pChannel->pTokenFromNotifier == NULL)
+        {
+            NvU8 *pErrNotifierCpuVA = 
+                (void *)memmgrMemDescBeginTransfer(pMemoryManager, 
+                    pChannel->pErrNotifierMemdesc, transferFlags);
+
+            NV_ASSERT_OR_RETURN(pErrNotifierCpuVA != NULL, NV_ERR_INVALID_STATE);
+
+            pChannel->pTokenFromNotifier =
+                (NvNotification *)(pErrNotifierCpuVA +
+                               (NV_CHANNELGPFIFO_NOTIFICATION_TYPE_WORK_SUBMIT_TOKEN *
+                                sizeof(NvNotification)));
+            bReleaseMapping = NV_TRUE;
+        }
+
         // Use the token from notifier memory for VM migration support.
         MEM_WR32(pChannel->pDoorbellRegisterOffset, 
                  MEM_RD32(&(pChannel->pTokenFromNotifier->info32)));
+
+        if (bReleaseMapping)
+        {
+            memmgrMemDescEndTransfer(pMemoryManager, pChannel->pErrNotifierMemdesc, transferFlags);
+            pChannel->pTokenFromNotifier = NULL;
+        }
     }
 
     return NV_OK;
@@ -294,6 +406,7 @@ channelFillPbFastScrub
 )
 {
     NvU32   pipelinedValue = 0;
+    NvU32   flushValue     = 0;
     NvU32  *pPtr           = (NvU32 *)((NvU8*)pChannel->pbCpuVA + (putIndex * pChannel->methodSizePerBlock));
     NvU32  *pStartPtr      = pPtr;
     NvU32   semaValue      = 0;
@@ -302,7 +415,6 @@ channelFillPbFastScrub
 
     NV_PRINTF(LEVEL_INFO, "PutIndex: %x, PbOffset: %x\n", putIndex,
                putIndex * pChannel->methodSizePerBlock);
-
     // SET OBJECT
     NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC86F_SET_OBJECT, pChannel->classEngineID);
 
@@ -327,6 +439,11 @@ channelFillPbFastScrub
         pipelinedValue = DRF_DEF(C8B5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _PIPELINED);
     else
         pipelinedValue = DRF_DEF(C8B5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _NON_PIPELINED);
+
+    if (bInsertFinishPayload)
+        flushValue = DRF_DEF(B0B5, _LAUNCH_DMA, _FLUSH_ENABLE, _TRUE);
+    else
+        flushValue = DRF_DEF(B0B5, _LAUNCH_DMA, _FLUSH_ENABLE, _FALSE);
 
     NV_PUSH_INC_2U(RM_SUBCHANNEL, NVC8B5_OFFSET_OUT_UPPER,
                    DRF_NUM(C8B5, _OFFSET_OUT_UPPER, _UPPER, NvU64_HI32(pChannelPbInfo->dstAddr)),
@@ -353,12 +470,12 @@ channelFillPbFastScrub
             DRF_DEF(C8B5, _LAUNCH_DMA, _DST_MEMORY_LAYOUT, _PITCH)    |
             DRF_DEF(C8B5, _LAUNCH_DMA, _REMAP_ENABLE, _FALSE)         |
             DRF_DEF(C8B5, _LAUNCH_DMA, _MULTI_LINE_ENABLE, _FALSE)    |
-            DRF_DEF(C8B5, _LAUNCH_DMA, _FLUSH_ENABLE, _TRUE)          |
             DRF_DEF(C8B5, _LAUNCH_DMA, _MEMORY_SCRUB_ENABLE, _TRUE)   |
             DRF_DEF(C8B5, _LAUNCH_DMA, _DISABLE_PLC, _TRUE)           |
             DRF_DEF(C8B5, _LAUNCH_DMA, _DST_TYPE, _PHYSICAL)          |
             DRF_DEF(C8B5, _LAUNCH_DMA, _SRC_TYPE, _PHYSICAL)          |
-            pipelinedValue |
+            pipelinedValue                                            |
+            flushValue                                                |
             semaValue);
 
     //
@@ -593,6 +710,7 @@ channelPushMethod
 )
 {
     NvU32 pipelinedValue = 0;
+    NvU32 flushValue = 0;
     NvU32 disablePlcKind = 0;
     NvU32 launchParams = 0;
     NvU32 *pPtr = *ppPtr;
@@ -604,6 +722,15 @@ channelPushMethod
     else
     {
         pipelinedValue = DRF_DEF(B0B5, _LAUNCH_DMA, _DATA_TRANSFER_TYPE, _NON_PIPELINED);
+    }
+
+    if (bInsertFinishPayload)
+    {
+        flushValue = DRF_DEF(B0B5, _LAUNCH_DMA, _FLUSH_ENABLE, _TRUE);
+    }
+    else
+    {
+        flushValue = DRF_DEF(B0B5, _LAUNCH_DMA, _FLUSH_ENABLE, _FALSE);
     }
 
     if (!pChannelPbInfo->bCeMemcopy)
@@ -629,9 +756,9 @@ channelPushMethod
                    DRF_DEF(B0B5, _LAUNCH_DMA, _SRC_MEMORY_LAYOUT, _PITCH) |
                    DRF_DEF(B0B5, _LAUNCH_DMA, _DST_MEMORY_LAYOUT, _PITCH) |
                    DRF_DEF(B0B5, _LAUNCH_DMA, _MULTI_LINE_ENABLE, _FALSE) |
-                   DRF_DEF(B0B5, _LAUNCH_DMA, _FLUSH_ENABLE, _TRUE)       |
                    launchType |
                    pipelinedValue |
+                   flushValue |
                    semaValue);
     *ppPtr = pPtr;
 }

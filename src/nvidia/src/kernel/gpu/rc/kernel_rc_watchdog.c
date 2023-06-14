@@ -490,6 +490,14 @@ krcWatchdogInit_IMPL
     portMemSet(&pKernelRc->watchdogChannelInfo, 0,
                sizeof pKernelRc->watchdogChannelInfo);
 
+    // Bug 4088184 WAR: release GPU lock before allocating NV01_ROOT
+    if (rmGpuLockIsOwner())
+    {
+        bAcquireLock = NV_TRUE;
+        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
+        pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
+    }
+
     // Allocate a root.
     {
         hClient = NV01_NULL_OBJECT;
@@ -511,6 +519,19 @@ krcWatchdogInit_IMPL
             status = NV_ERR_NO_MEMORY;
             goto error;
         }
+    }
+
+    if (bAcquireLock)
+    {
+        status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_RC);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to grab RM-Lock\n");
+            DBG_BREAKPOINT();
+            goto error;
+        }
+        pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        bAcquireLock = NV_FALSE;
     }
 
     // Alloc device
@@ -1153,6 +1174,7 @@ krcWatchdogInit_IMPL
 
 error:
     NV_ASSERT(status == NV_OK);
+
     if (status != NV_OK)
     {
         pRmApi->Free(pRmApi, hClient, hClient);

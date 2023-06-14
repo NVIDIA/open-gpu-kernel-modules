@@ -31,6 +31,7 @@
 #include <class/cl0000.h>
 #include <rmosxfac.h> // Declares RmInitRm().
 #include "gpu/gpu.h"
+#include "gps.h"
 #include <osfuncs.h>
 #include <platform/chipset/chipset.h>
 
@@ -85,6 +86,13 @@
 #include <virtualization/hypervisor/hypervisor.h>
 
 #include "gpu/bus/kern_bus.h"
+
+//
+// If timer callback comes when PM resume is in progress, then it can't be
+// serviced. The timer needs to be rescheduled in this case. This time controls
+// the duration of rescheduling.
+//
+#define TIMER_RESCHED_TIME_DURING_PM_RESUME_NS      (100 * 1000 * 1000)
 
 //
 // Helper function which can be called before doing any RM control
@@ -498,6 +506,8 @@ done:
         new_event->fd       = fd;
         new_event->active   = NV_TRUE;
         new_event->refcount = 0;
+
+        nvfp->bCleanupRmapi = NV_TRUE;
 
         NV_PRINTF(LEVEL_INFO, "allocated OS event:\n");
         NV_PRINTF(LEVEL_INFO, "   hParent: 0x%x\n", hParent);
@@ -1159,11 +1169,46 @@ NV_STATUS RmPowerSourceChangeEvent(
 }
 
 /*!
+ * @brief Function to request latest D-Notifier status from SBIOS.
+ *
+ * Handle certain scenarios (like a fresh boot or suspend/resume
+ * of the system) when RM is not available to receive the Dx notifiers.
+ * This function gets the latest D-Notifier status from SBIOS
+ * when RM is ready to receive and handle those events.
+ * Use GPS_FUNC_REQUESTDXSTATE subfunction to invoke current Dx state.
+ *
+ * @param[in]   pNv   nv_state_t pointer.
+ */
+void RmRequestDNotifierState(
+    nv_state_t *pNv
+)
+{
+    OBJGPU *pGpu         = NV_GET_NV_PRIV_PGPU(pNv);
+    NvU32 supportedFuncs = 0;
+    NvU16 dsmDataSize    = sizeof(supportedFuncs);
+    NV_STATUS status     = NV_OK; 
+
+    status = osCallACPI_DSM(pGpu, ACPI_DSM_FUNCTION_GPS_2X,
+                            GPS_FUNC_REQUESTDXSTATE, &supportedFuncs,
+                            &dsmDataSize);
+    if (status != NV_OK)
+    {
+        //
+        // Call for 'GPS_FUNC_REQUESTDXSTATE' subfunction may fail if the
+        // SBIOS/EC does not have the corresponding implementation.
+        //
+        NV_PRINTF(LEVEL_INFO,
+                  "%s: Failed to request Dx event update, status 0x%x\n",
+                  __FUNCTION__, status);
+    }
+}
+
+/*!
  * @brief Deal with D-notifier events to apply a performance
  * level based on the requested auxiliary power-state.
  * Read confluence page "D-Notifiers on Linux" for more details.
  *
- * @param[in]   pGpu         OBJGPU pointer.
+ * @param[in]   pNv          nv_state_t pointer.
  * @param[in]   event_type   NvU32 Event type.
  */
 static void RmHandleDNotifierEvent(
@@ -2551,6 +2596,16 @@ void NV_API_CALL rm_cleanup_file_private(
     OBJSYS *pSys = SYS_GET_INSTANCE();
 
     NV_ENTER_RM_RUNTIME(sp,fp);
+
+    //
+    // Skip cleaning up this fd if:
+    // - no RMAPI clients and events were ever allocated on this fd
+    // - no RMAPI object handles were exported on this fd
+    // Access nvfp->handles without locking as fd cleanup is synchronised by the kernel
+    //
+    if (!nvfp->bCleanupRmapi && nvfp->handles == NULL)
+        goto done;
+
     pRmApi = rmapiGetInterface(RMAPI_EXTERNAL);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
     threadStateSetTimeoutOverride(&threadState, 10 * 1000);
@@ -2600,6 +2655,7 @@ void NV_API_CALL rm_cleanup_file_private(
     rmapiEpilogue(pRmApi, &rmApiContext);
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 
+done:
     if (nvfp->ctl_nvfp != NULL)
     {
         nv_put_file_private(nvfp->ctl_nvfp_priv);
@@ -3018,14 +3074,16 @@ static NV_STATUS RmRunNanoTimerCallback(
     if ((status = rmGpuLocksAcquire(GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_TMR)) != NV_OK)
     {
         TMR_EVENT *pEvent = (TMR_EVENT *)pTmrEvent;
+        NvU64 timeNs = pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH) ?
+                            TIMER_RESCHED_TIME_DURING_PM_RESUME_NS :
+                            osGetTickResolution();
 
         //
         // We failed to acquire the lock - depending on what's holding it,
         // the lock could be held for a while, so try again soon, but not too
         // soon to prevent the owner from making forward progress indefinitely.
         //
-        return osStartNanoTimer(pGpu->pOsGpuInfo, pEvent->pOSTmrCBdata,
-                                osGetTickResolution());
+        return osStartNanoTimer(pGpu->pOsGpuInfo, pEvent->pOSTmrCBdata, timeNs);
     }
 
     threadStateInitISRAndDeferredIntHandler(&threadState, pGpu,
@@ -3062,7 +3120,7 @@ NV_STATUS NV_API_CALL rm_run_nano_timer_callback
     if (pGpu == NULL)
         return NV_ERR_GENERIC;
 
-    if (!FULL_GPU_SANITY_CHECK(pGpu))
+    if (!FULL_GPU_SANITY_FOR_PM_RESUME(pGpu))
     {
         return NV_ERR_GENERIC;
     }
@@ -4057,6 +4115,48 @@ void NV_API_CALL rm_power_source_change_event(
  
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
+}
+
+void NV_API_CALL rm_request_dnotifier_state(
+    nv_stack_t *sp,
+    nv_state_t *pNv
+)
+{
+    nv_priv_t *nvp = NV_GET_NV_PRIV(pNv);
+
+    if (nvp->b_mobile_config_enabled)
+    {
+        THREAD_STATE_NODE threadState;
+        void              *fp;
+        GPU_MASK          gpuMask;
+
+        NV_ENTER_RM_RUNTIME(sp,fp);
+        threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+        // LOCK: acquire API lock
+        if ((rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_ACPI)) == NV_OK)
+        {
+            OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+
+            // LOCK: acquire per device lock
+            if ((pGpu != NULL) &&
+                ((rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
+                                       GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_ACPI,
+                                       &gpuMask)) == NV_OK))
+            {
+                RmRequestDNotifierState(pNv);
+
+                // UNLOCK: release per device lock
+                rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
+            }
+
+            // UNLOCK: release API lock
+            rmapiLockRelease();
+        }
+
+        threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+        NV_EXIT_RM_RUNTIME(sp,fp);
+    }
 }
 
 NV_STATUS NV_API_CALL rm_p2p_dma_map_pages(

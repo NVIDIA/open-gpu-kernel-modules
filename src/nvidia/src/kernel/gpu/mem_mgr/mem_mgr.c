@@ -3496,7 +3496,7 @@ memmgrInitCeUtils_IMPL
     NV_ASSERT_OR_RETURN(pMemoryManager->pCeUtils == NULL, NV_ERR_INVALID_STATE);
 
     ceUtilsParams.flags = bFifoLite ? DRF_DEF(0050_CEUTILS, _FLAGS, _FIFO_LITE, _TRUE) : 0;
-    return objCreate(&pMemoryManager->pCeUtils, pMemoryManager, CeUtils, ENG_GET_GPU(pMemoryManager), &ceUtilsParams);
+    return objCreate(&pMemoryManager->pCeUtils, pMemoryManager, CeUtils, ENG_GET_GPU(pMemoryManager), NULL, &ceUtilsParams);
 }
 
 void

@@ -52,20 +52,7 @@ ceutilsConstruct_IMPL
 (
     CeUtils                      *pCeUtils,
     OBJGPU                       *pGpu,
-    NV0050_ALLOCATION_PARAMETERS *pParams
-)
-{
-    NV_ASSERT_OR_RETURN(pGpu, NV_ERR_INVALID_STATE);
-    return ceutilsInitialize(pCeUtils, pGpu, pParams);
-}
-
-
-// This is used by internal callsites without resource server
-NV_STATUS
-ceutilsInitialize
-(
-    CeUtils                      *pCeUtils,
-    OBJGPU                       *pGpu,
+    KERNEL_MIG_GPU_INSTANCE      *pKernelMIGGPUInstance,
     NV0050_ALLOCATION_PARAMETERS *pAllocParams
 )
 {
@@ -113,6 +100,8 @@ ceutilsInitialize
     pChannel->deviceId = pCeUtils->hDevice;
     pChannel->subdeviceId = pCeUtils->hSubdevice;
 
+    pChannel->pKernelMIGGpuInstance = pKernelMIGGPUInstance;
+
     // We'll allocate new VAS for now. Sharing client VAS will be added later
     pChannel->hVASpaceId = NV01_NULL_OBJECT;
     pChannel->bUseVasForCeCopy = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _VIRTUAL_MODE, _TRUE, allocFlags);
@@ -133,11 +122,6 @@ ceutilsInitialize
     NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
 
     channelSetupChannelBufferSizes(pChannel);
-
-    if (pCeUtils->pKernelMIGGPUInstance != NULL)
-    {
-        pChannel->pKernelMIGGpuInstance = pCeUtils->pKernelMIGGPUInstance;
-    }
 
     status = memmgrMemUtilsChannelInitialize_HAL(pGpu, pMemoryManager, pChannel);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_channel);
@@ -173,13 +157,14 @@ cleanup:
 }
 
 void
-ceutilsDeinit
+ceutilsDestruct_IMPL
 (
     CeUtils *pCeUtils
 )
 {
     OBJCHANNEL *pChannel = pCeUtils->pChannel;
     OBJGPU *pGpu = pCeUtils->pGpu;
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
     // Sanity checks
@@ -192,6 +177,49 @@ ceutilsDeinit
     {
         NV_PRINTF(LEVEL_ERROR, "Bad state during ceUtils teardown!\n");
         return;
+    }
+
+    if ((pChannel->bClientUserd) && (pChannel->pControlGPFifo != NULL))
+    {
+        if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)))
+        {
+            // 
+            // When PCIE is blocked, mappings should be created, used and torn
+            // down when they are used
+            //
+            NV_PRINTF(LEVEL_ERROR, "Leaked USERD mapping from ceUtils!\n");
+        }
+        else
+        {
+            memmgrMemDescEndTransfer(pMemoryManager, pChannel->pUserdMemdesc, TRANSFER_FLAGS_USE_BAR1);
+            pChannel->pControlGPFifo = NULL;
+        }
+    }
+
+    if (pChannel->pbCpuVA != NULL)
+    {
+        if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Leaked pushbuffer mapping!\n");
+        }
+        else
+        {
+            memmgrMemDescEndTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc, TRANSFER_FLAGS_USE_BAR1);
+            pChannel->pbCpuVA = NULL;
+        }
+    }
+
+    if (pChannel->pTokenFromNotifier != NULL)
+    {
+        if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Leaked notifier mapping!\n");
+        }
+        else
+        {
+            memmgrMemDescEndTransfer(pMemoryManager, pChannel->pErrNotifierMemdesc, TRANSFER_FLAGS_USE_BAR1);
+            pChannel->pTokenFromNotifier = NULL;
+        }
     }
 
     pRmApi->Free(pRmApi, pChannel->hClient, pChannel->channelId);
@@ -207,16 +235,7 @@ ceutilsDeinit
 }
 
 void
-ceutilsDestruct_IMPL
-(
-    CeUtils *pCeUtils
-)
-{
-    ceutilsDeinit(pCeUtils);
-}
-
-void
-ceutilsServiceInterrupts(CeUtils *pCeUtils)
+ceutilsServiceInterrupts_IMPL(CeUtils *pCeUtils)
 {
     OBJCHANNEL *pChannel = pCeUtils->pChannel;
 
@@ -285,64 +304,77 @@ static NV_STATUS
 _ceutilsSubmitPushBuffer
 (
     POBJCHANNEL       pChannel,
-    NvU64             opLength,
+    NvBool            bPipelined,
+    NvBool            bInsertFinishPayload,
     CHANNEL_PB_INFO * pChannelPbInfo
-
 )
 {
     NV_STATUS status = NV_OK;
-    NvBool bFirstIteration = NV_TRUE;
-    NvBool bInsertFinishPayload = NV_FALSE;
-    NvU32 methodsLength, tempSize, putIndex = 0;
-    NvU64 remainingLength = opLength;
+    NvU32 methodsLength, putIndex = 0;
 
     NV_ASSERT_OR_RETURN(pChannelPbInfo != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pChannel != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(opLength != 0, NV_ERR_INVALID_ARGUMENT);
 
-    do
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pChannel->pGpu);
+    NvBool bReleaseMapping = NV_FALSE;
+
+    // 
+    // Use BAR1 if CPU access is allowed, otherwise allocate and init shadow
+    // buffer for DMA access
+    //
+    NvU32 transferFlags = (TRANSFER_FLAGS_USE_BAR1     | 
+                           TRANSFER_FLAGS_SHADOW_ALLOC | 
+                           TRANSFER_FLAGS_SHADOW_INIT_MEM);
+    NV_PRINTF(LEVEL_INFO, "Actual size of copying to be pushed: %x\n", pChannelPbInfo->size);
+
+    status = channelWaitForFreeEntry(pChannel, &putIndex);
+    if (status != NV_OK)
     {
-        tempSize = (NvU32)NV_MIN(remainingLength, CE_MAX_BYTES_PER_LINE);
-        pChannelPbInfo->size = tempSize;
-        bInsertFinishPayload = (remainingLength == tempSize);
-        NV_PRINTF(LEVEL_INFO, "Actual size of copying to be pushed: %x \n", tempSize);
+        NV_PRINTF(LEVEL_ERROR, "Cannot get putIndex.\n");
+        return status;
+    }
 
-        status = channelWaitForFreeEntry(pChannel, &putIndex);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Cannot get putIndex.\n");
-            return status;
-        }
+    if (pChannel->pbCpuVA == NULL)
+    {    
+        pChannel->pbCpuVA = memmgrMemDescBeginTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc,
+                                                       transferFlags);
+        bReleaseMapping = NV_TRUE;
+    }
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, NV_ERR_GENERIC);
 
-        if (_ceUtilsFastScrubEnabled(pChannel, pChannelPbInfo))
-        {
-            methodsLength = channelFillPbFastScrub(pChannel, putIndex, bFirstIteration, bInsertFinishPayload, pChannelPbInfo);
-        }
-        else
-        {
-            methodsLength = channelFillPb(pChannel, putIndex, bFirstIteration, bInsertFinishPayload, pChannelPbInfo);
-        }
-        if (methodsLength == 0)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Cannot push methods to channel.\n");
-            return NV_ERR_NO_FREE_FIFOS;
-        }
+    if (_ceUtilsFastScrubEnabled(pChannel, pChannelPbInfo))
+    {
+        methodsLength = channelFillPbFastScrub(pChannel, putIndex, bPipelined, bInsertFinishPayload, pChannelPbInfo);
+    }
+    else
+    {
+        methodsLength = channelFillPb(pChannel, putIndex, bPipelined, bInsertFinishPayload, pChannelPbInfo);
+    }
 
-        status = channelFillGpFifo(pChannel, putIndex, methodsLength);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Channel operation failures during memcopy\n");
-            return status;
-        }
+    if (bReleaseMapping)
+    {
+        memmgrMemDescEndTransfer(pMemoryManager, pChannel->pChannelBufferMemdesc, transferFlags);
+        pChannel->pbCpuVA = NULL;
+    }
 
-        pChannel->lastSubmittedEntry = putIndex;
-        remainingLength -= tempSize;
+    if (methodsLength == 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Cannot push methods to channel.\n");
+        return NV_ERR_NO_FREE_FIFOS;
+    }
 
-        pChannelPbInfo->dstAddr += tempSize;
-        pChannelPbInfo->srcAddr += tempSize;
+    // 
+    // Pushbuffer can be written in a batch, but GPFIFO and doorbell require
+    // careful ordering so we do each write one-by-one
+    //
+    status = channelFillGpFifo(pChannel, putIndex, methodsLength);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Channel operation failures during memcopy\n");
+        return status;
+    }
 
-        bFirstIteration = NV_FALSE;
-    } while (remainingLength > 0);
+    pChannel->lastSubmittedEntry = putIndex;
 
     return status;
 }
@@ -364,6 +396,8 @@ ceutilsMemset_IMPL
 
     MEMORY_DESCRIPTOR *pMemDesc = pParams->pMemDesc;
     CHANNEL_PB_INFO channelPbInfo = {0};
+
+    NvBool bPipelined = pParams->flags & NV0050_CTRL_MEMSET_FLAGS_PIPELINED;
 
     if (pMemDesc == NULL)
     {
@@ -412,19 +446,23 @@ ceutilsMemset_IMPL
     do
     {
         NvU64 maxContigSize = bContiguous ? memsetLength : (pageGranularity - offset % pageGranularity);
-        NvU64 memsetSizeContig = NV_MIN(memsetLength, maxContigSize);
+        NvU32 memsetSizeContig = (NvU32)NV_MIN(NV_MIN(memsetLength, maxContigSize), CE_MAX_BYTES_PER_LINE);
 
         channelPbInfo.dstAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, offset);
 
-        NV_PRINTF(LEVEL_INFO, "CeUtils Memset dstAddr: %llx,  size: %llx\n",
+        NV_PRINTF(LEVEL_INFO, "CeUtils Memset dstAddr: %llx,  size: %x\n",
                   channelPbInfo.dstAddr, memsetSizeContig);
 
-        status = _ceutilsSubmitPushBuffer(pChannel, memsetSizeContig, &channelPbInfo);
+        channelPbInfo.size = memsetSizeContig;
+        status = _ceutilsSubmitPushBuffer(pChannel, bPipelined, memsetSizeContig == memsetLength, &channelPbInfo);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Cannot submit push buffer for memset.\n");
             return status;
         }
+
+         // Allow _LAUNCH_DMA methods that belong to the same memset operation to be pipelined after each other, as there are no dependencies
+        bPipelined = NV_TRUE;
 
         memsetLength -= memsetSizeContig;
         offset       += memsetSizeContig;
@@ -468,6 +506,8 @@ ceutilsMemcopy_IMPL
     NvU64 length = pParams->length;
     NvU64 srcOffset = pParams->srcOffset;
     NvU64 dstOffset = pParams->dstOffset;
+
+    NvBool bPipelined = pParams->flags & NV0050_CTRL_MEMCOPY_FLAGS_PIPELINED;
 
     // Validate params
     if ((pSrcMemDesc == NULL) || (pDstMemDesc == NULL))
@@ -531,20 +571,24 @@ ceutilsMemcopy_IMPL
         //
         NvU64 maxContigSizeSrc = bSrcContig ? copyLength : (srcPageGranularity - srcOffset % srcPageGranularity);
         NvU64 maxContigSizeDst = bDstContig ? copyLength : (dstPageGranularity - dstOffset % dstPageGranularity);
-        NvU64 copySizeContig = NV_MIN(copyLength, NV_MIN(maxContigSizeSrc, maxContigSizeDst));
+        NvU32 copySizeContig = (NvU32)NV_MIN(NV_MIN(copyLength, NV_MIN(maxContigSizeSrc, maxContigSizeDst)), CE_MAX_BYTES_PER_LINE);
 
         channelPbInfo.srcAddr = memdescGetPhysAddr(pSrcMemDesc, AT_GPU, srcOffset);
         channelPbInfo.dstAddr = memdescGetPhysAddr(pDstMemDesc, AT_GPU, dstOffset);
 
-        NV_PRINTF(LEVEL_INFO, "CeUtils Memcopy dstAddr: %llx, srcAddr: %llx, size: %llx\n",
+        NV_PRINTF(LEVEL_INFO, "CeUtils Memcopy dstAddr: %llx, srcAddr: %llx, size: %x\n",
                   channelPbInfo.dstAddr, channelPbInfo.srcAddr, copySizeContig);
 
-        status = _ceutilsSubmitPushBuffer(pChannel, copySizeContig, &channelPbInfo);
+        channelPbInfo.size = copySizeContig;
+        status = _ceutilsSubmitPushBuffer(pChannel, bPipelined, copySizeContig == copyLength, &channelPbInfo);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Cannot submit push buffer for memcopy.\n");
             return status;
         }
+
+         // Allow _LAUNCH_DMA methods that belong to the same copy operation to be pipelined after each other, as there are no dependencies
+        bPipelined = NV_TRUE;
 
         copyLength -= copySizeContig;
         srcOffset  += copySizeContig;
@@ -609,17 +653,6 @@ ceutilsUpdateProgress_IMPL
     return swLastCompletedPayload;
 }
 
-
-void
-ceutilsRegisterGPUInstance
-(
-    CeUtils *pCeUtils,
-    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance
-)
-{
-    pCeUtils->pKernelMIGGPUInstance = pKernelMIGGPUInstance;
-}
-
 #if defined(DEBUG) || defined (DEVELOP)
 NV_STATUS
 ceutilsapiCtrlCmdCheckProgress_IMPL
@@ -652,7 +685,7 @@ ceutilsapiConstruct_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    return objCreate(&pCeUtilsApi->pCeUtils, pCeUtilsApi, CeUtils, GPU_RES_GET_GPU(pCeUtilsApi), pAllocParams);
+    return objCreate(&pCeUtilsApi->pCeUtils, pCeUtilsApi, CeUtils, GPU_RES_GET_GPU(pCeUtilsApi), NULL, pAllocParams);
 }
 
 void

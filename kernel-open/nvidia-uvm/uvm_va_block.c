@@ -7189,6 +7189,7 @@ static NV_STATUS block_map_gpu_to(uvm_va_block_t *va_block,
 }
 
 static void map_get_allowed_destinations(uvm_va_block_t *block,
+                                         uvm_va_block_context_t *va_block_context,
                                          const uvm_va_policy_t *policy,
                                          uvm_processor_id_t id,
                                          uvm_processor_mask_t *allowed_mask)
@@ -7200,7 +7201,10 @@ static void map_get_allowed_destinations(uvm_va_block_t *block,
         uvm_processor_mask_zero(allowed_mask);
         uvm_processor_mask_set(allowed_mask, policy->preferred_location);
     }
-    else if ((uvm_va_policy_is_read_duplicate(policy, va_space) || uvm_id_equal(policy->preferred_location, id)) &&
+    else if ((uvm_va_policy_is_read_duplicate(policy, va_space) ||
+              (uvm_id_equal(policy->preferred_location, id) &&
+               !is_uvm_fault_force_sysmem_set() &&
+               !uvm_hmm_must_use_sysmem(block, va_block_context))) &&
              uvm_va_space_processor_has_memory(va_space, id)) {
         // When operating under read-duplication we should only map the local
         // processor to cause fault-and-duplicate of remote pages.
@@ -7285,7 +7289,7 @@ NV_STATUS uvm_va_block_map(uvm_va_block_t *va_block,
 
     // Map per resident location so we can more easily detect physically-
     // contiguous mappings.
-    map_get_allowed_destinations(va_block, va_block_context->policy, id, &allowed_destinations);
+    map_get_allowed_destinations(va_block, va_block_context, va_block_context->policy, id, &allowed_destinations);
 
     for_each_closest_id(resident_id, &allowed_destinations, id, va_space) {
         if (UVM_ID_IS_CPU(id)) {

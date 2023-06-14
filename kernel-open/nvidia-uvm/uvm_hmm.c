@@ -2575,7 +2575,7 @@ static NV_STATUS dmamap_src_sysmem_pages(uvm_va_block_t *va_block,
                 continue;
             }
 
-            if (folio_test_swapcache(page_folio(src_page))) {
+            if (PageSwapCache(src_page)) {
                 // TODO: Bug 4050579: Remove this when swap cached pages can be
                 // migrated.
                 if (service_context) {

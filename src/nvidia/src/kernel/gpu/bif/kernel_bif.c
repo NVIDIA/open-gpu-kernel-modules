@@ -76,6 +76,9 @@ kbifConstructEngine_IMPL
     // Cache MNOC interface support
     kbifIsMnocSupported_HAL(pGpu, pKernelBif);
 
+    // Cache VF info
+    kbifCacheVFInfo_HAL(pGpu, pKernelBif);
+
     // Used to track when the link has gone into Recovery, which can cause CEs.
     pKernelBif->EnteredRecoverySinceErrorsLastChecked = NV_FALSE;
 

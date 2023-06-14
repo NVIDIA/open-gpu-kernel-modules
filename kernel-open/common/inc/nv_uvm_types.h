@@ -286,6 +286,7 @@ typedef struct UvmGpuChannelInfo_tag
     // so a channel can be controlled via another channel (SEC2 or WLC/LCIC)
     NvU64             gpFifoGpuVa;
     NvU64             gpPutGpuVa;
+    NvU64             gpGetGpuVa;
     // GPU VA of work submission offset is needed in Confidential Computing
     // so CE channels can ring doorbell of other channels as required for
     // WLC/LCIC work submission
@@ -1060,10 +1061,10 @@ typedef struct UvmCslIv
     NvU8 fresh;
 } UvmCslIv;
 
-typedef enum UvmCslDirection
+typedef enum UvmCslOperation
 {
-    UVM_CSL_DIR_CPU_TO_GPU,
-    UVM_CSL_DIR_GPU_TO_CPU
-} UvmCslDirection;
+    UVM_CSL_OPERATION_ENCRYPT,
+    UVM_CSL_OPERATION_DECRYPT
+} UvmCslOperation;
 
 #endif // _NV_UVM_TYPES_H_

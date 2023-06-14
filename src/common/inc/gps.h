@@ -30,6 +30,7 @@
 #define GPS_FUNC_SUPPORT                  0x00000000    // Bit list of supported functions
 #define GPS_FUNC_GETOBJBYTYPE             0x00000010    // Fetch any specific Object by Type
 #define GPS_FUNC_GETALLOBJS               0x00000011    // Fetch all Objects
+#define GPS_FUNC_REQUESTDXSTATE           0x00000012    // Request D-Notifier state
 #define GPS_FUNC_GETCALLBACKS             0x00000013    // Get system requested callbacks
 #define GPS_FUNC_PCONTROL                 0x0000001C    // GPU power control function
 #define GPS_FUNC_PSHARESTATUS             0x00000020    // Get system requested Power Steering settings

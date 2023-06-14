@@ -115,6 +115,7 @@ struct KernelBif {
     NV_STATUS (*__kbifGetPciConfigSpacePriMirror__)(struct OBJGPU *, struct KernelBif *, NvU32 *, NvU32 *);
     NV_STATUS (*__kbifGetBusOptionsAddr__)(struct OBJGPU *, struct KernelBif *, BUS_OPTIONS, NvU32 *);
     NV_STATUS (*__kbifPreOsGlobalErotGrantRequest__)(struct OBJGPU *, struct KernelBif *);
+    void (*__kbifCacheVFInfo__)(struct OBJGPU *, struct KernelBif *);
     NV_STATUS (*__kbifStatePreLoad__)(POBJGPU, struct KernelBif *, NvU32);
     NV_STATUS (*__kbifStatePostUnload__)(POBJGPU, struct KernelBif *, NvU32);
     void (*__kbifStateDestroy__)(POBJGPU, struct KernelBif *);
@@ -263,6 +264,8 @@ NV_STATUS __nvoc_objCreate_KernelBif(KernelBif**, Dynamic*, NvU32);
 #define kbifGetBusOptionsAddr_HAL(pGpu, pKernelBif, options, addrReg) kbifGetBusOptionsAddr_DISPATCH(pGpu, pKernelBif, options, addrReg)
 #define kbifPreOsGlobalErotGrantRequest(pGpu, pKernelBif) kbifPreOsGlobalErotGrantRequest_DISPATCH(pGpu, pKernelBif)
 #define kbifPreOsGlobalErotGrantRequest_HAL(pGpu, pKernelBif) kbifPreOsGlobalErotGrantRequest_DISPATCH(pGpu, pKernelBif)
+#define kbifCacheVFInfo(pGpu, pKernelBif) kbifCacheVFInfo_DISPATCH(pGpu, pKernelBif)
+#define kbifCacheVFInfo_HAL(pGpu, pKernelBif) kbifCacheVFInfo_DISPATCH(pGpu, pKernelBif)
 #define kbifStatePreLoad(pGpu, pEngstate, arg0) kbifStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kbifStatePostUnload(pGpu, pEngstate, arg0) kbifStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kbifStateDestroy(pGpu, pEngstate) kbifStateDestroy_DISPATCH(pGpu, pEngstate)
@@ -604,6 +607,14 @@ static inline NV_STATUS kbifPreOsGlobalErotGrantRequest_56cd7a(struct OBJGPU *pG
 
 static inline NV_STATUS kbifPreOsGlobalErotGrantRequest_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
     return pKernelBif->__kbifPreOsGlobalErotGrantRequest__(pGpu, pKernelBif);
+}
+
+void kbifCacheVFInfo_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+void kbifCacheVFInfo_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+static inline void kbifCacheVFInfo_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    pKernelBif->__kbifCacheVFInfo__(pGpu, pKernelBif);
 }
 
 static inline NV_STATUS kbifStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelBif *pEngstate, NvU32 arg0) {

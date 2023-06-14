@@ -233,6 +233,9 @@ typedef struct OBJCHANNEL
     NvU64                           pbGpuVA;
     NvU64                           pbGpuBitMapVA;
     NvU64                           pbGpuNotifierVA;
+    MEMORY_DESCRIPTOR               *pUserdMemdesc;
+    MEMORY_DESCRIPTOR               *pChannelBufferMemdesc;
+    MEMORY_DESCRIPTOR               *pErrNotifierMemdesc;
     NvU8                            *pbCpuVA;
     NvU8                            *pbBitMapVA;
     Nv906fControl                   *pControlGPFifo;
@@ -2799,6 +2802,17 @@ static inline NV_STATUS memmgrInitSavedTopLevelScrubber(OBJGPU *arg0, struct Mem
 }
 #else //__nvoc_mem_mgr_h_disabled
 #define memmgrInitSavedTopLevelScrubber(arg0, arg1) memmgrInitSavedTopLevelScrubber_IMPL(arg0, arg1)
+#endif //__nvoc_mem_mgr_h_disabled
+
+MEMORY_DESCRIPTOR *memmgrMemUtilsGetMemDescFromHandle_IMPL(struct MemoryManager *pMemoryManager, NvHandle hClient, NvHandle hMemory);
+
+#ifdef __nvoc_mem_mgr_h_disabled
+static inline MEMORY_DESCRIPTOR *memmgrMemUtilsGetMemDescFromHandle(struct MemoryManager *pMemoryManager, NvHandle hClient, NvHandle hMemory) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
+    return NULL;
+}
+#else //__nvoc_mem_mgr_h_disabled
+#define memmgrMemUtilsGetMemDescFromHandle(pMemoryManager, hClient, hMemory) memmgrMemUtilsGetMemDescFromHandle_IMPL(pMemoryManager, hClient, hMemory)
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrVerifyGspDmaOps_IMPL(OBJGPU *arg0, struct MemoryManager *arg1);

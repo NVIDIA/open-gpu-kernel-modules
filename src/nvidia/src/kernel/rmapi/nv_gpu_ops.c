@@ -4606,13 +4606,18 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
         goto cleanup_free_memory;
 
     // 2. Map the gpfifo entries
-    status = nvGpuOpsMemoryCpuMap(vaSpace,
-                                  channel->gpFifo,
-                                  gpFifoSize,
-                                  &cpuMap,
-                                  PAGE_SIZE_DEFAULT);
-    if (status != NV_OK)
-        goto cleanup_free_gpfifo_entries;
+    // Skip this whenever HCC is enabled and GPFIFO is in vidmem. CPU access
+    // to vidmem is blocked in that scenario
+    if (!gpuIsCCFeatureEnabled(pGpu) || (gpFifoLoc == UVM_BUFFER_LOCATION_SYS))
+    {
+        status = nvGpuOpsMemoryCpuMap(vaSpace,
+                                      channel->gpFifo,
+                                      gpFifoSize,
+                                      &cpuMap,
+                                      PAGE_SIZE_DEFAULT);
+        if (status != NV_OK)
+            goto cleanup_free_gpfifo_entries;
+    }
 
     channel->gpFifoEntries = (NvU64 *) cpuMap;
 
@@ -4731,13 +4736,18 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
         pAllocInfo->gpFifoAllocParams.userdOffset[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] = 0;
         SLI_LOOP_END
 
-        status = nvGpuOpsMemoryCpuMap(vaSpace,
-                                      channel->userdGpuAddr,
-                                      sizeof(KeplerAControlGPFifo),
-                                      &gpfifoCtrl,
-                                      PAGE_SIZE_DEFAULT);
-        if (status != NV_OK)
-            goto cleanup_free_virtual;
+        // Skip this whenever HCC is enabled and USERD is in vidmem. CPU access
+        // to vidmem is blocked in that scenario.
+        if (!gpuIsCCFeatureEnabled(pGpu) || (gpPutLoc == UVM_BUFFER_LOCATION_SYS))
+        {
+            status = nvGpuOpsMemoryCpuMap(vaSpace,
+                                          channel->userdGpuAddr,
+                                          sizeof(KeplerAControlGPFifo),
+                                          &gpfifoCtrl,
+                                          PAGE_SIZE_DEFAULT);
+            if (status != NV_OK)
+                goto cleanup_free_virtual;
+        }
     }
 
     pAllocInfo->gpFifoAllocParams.engineType = gpuGetNv2080EngineType(tsgEngineType(channel->tsg));
@@ -4804,9 +4814,15 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
 
     channel->controlPage = gpfifoCtrl;
 
-    status = channelRetainDummyAlloc(channel, channelInfo);
-    if (status != NV_OK)
-        goto cleanup_free_controlpage;
+    // We create a BAR1 pointer inside channelRetainDummyAlloc and issue reads
+    // on the same to push pending BAR1 writes to vidmem. With HCC, BAR1 access
+    // to vidmem is blocked and hence there is no point creating the pointer
+    if (!gpuIsCCFeatureEnabled(pGpu))
+    {
+        status = channelRetainDummyAlloc(channel, channelInfo);
+        if (status != NV_OK)
+            goto cleanup_free_controlpage;
+    }
 
     // Allocate the SW method class for fault cancel
     if (isDevicePascalPlus(device) && (channel->tsg->engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2))
@@ -4826,8 +4842,8 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
     portMemFree(pAllocInfo);
 
     *channelHandle = channel;
-    channelInfo->gpGet = &channel->controlPage->GPGet;
-    channelInfo->gpPut = &channel->controlPage->GPPut;
+    channelInfo->gpGet = (channel->controlPage != NULL) ? &channel->controlPage->GPGet : NULL;
+    channelInfo->gpPut = (channel->controlPage != NULL) ? &channel->controlPage->GPPut : NULL;
     channelInfo->gpFifoEntries = channel->gpFifoEntries;
     channelInfo->channelClassNum = device->hostClass;
     channelInfo->numGpFifoEntries = channel->fifoEntries;
@@ -4837,12 +4853,7 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
 
     channelInfo->gpFifoGpuVa = channel->gpFifo;
     channelInfo->gpPutGpuVa = channel->userdGpuAddr + NV_OFFSETOF(KeplerAControlGPFifo, GPPut);
-    if (gpuIsCCFeatureEnabled(pGpu) && (channel->tsg->engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2))
-    {
-        channelInfo->gpGet = NULL;
-        channelInfo->gpPut = NULL;
-        channelInfo->gpFifoEntries = NULL;
-    }
+    channelInfo->gpGetGpuVa = channel->userdGpuAddr + NV_OFFSETOF(KeplerAControlGPFifo, GPGet);
 
     return NV_OK;
 
@@ -9634,26 +9645,6 @@ NV_STATUS nvGpuOpsCcslContextClear(struct ccslContext_t *ctx)
     return NV_OK;
 }
 
-NV_STATUS nvGpuOpsCcslAcquireEncryptionIv(struct ccslContext_t *ctx, NvU8 *encryptIv)
-{
-    if (ctx == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return ccslAcquireEncryptionIv(ctx, encryptIv);
-}
-
-NV_STATUS nvGpuOpsCcslLogDeviceEncryption(struct ccslContext_t *ctx, NvU8 *decryptIv)
-{
-    if (ctx == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return ccslLogDeviceEncryption(ctx, decryptIv);
-}
-
 NV_STATUS nvGpuOpsCcslRotateIv(struct ccslContext_t *ctx, NvU8 direction)
 {
     if (ctx == NULL)
@@ -9675,8 +9666,8 @@ NV_STATUS nvGpuOpsCcslEncryptWithIv(struct ccslContext_t *ctx,
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
-
-    return ccslEncryptWithIv(ctx, bufferSize, inputBuffer, encryptIv, outputBuffer, authTagBuffer);
+    return ccslEncryptWithIv(ctx, bufferSize, inputBuffer, encryptIv, NULL, 0,
+                             outputBuffer, authTagBuffer);
 }
 
 NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,
@@ -9690,7 +9681,8 @@ NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    return ccslEncrypt(ctx, bufferSize, inputBuffer, outputBuffer, authTagBuffer);
+    return ccslEncrypt(ctx, bufferSize, inputBuffer, NULL, 0,
+                       outputBuffer, authTagBuffer);
 }
 
 NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
@@ -9698,6 +9690,8 @@ NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
                               NvU8 const *inputBuffer,
                               NvU8 const *decryptIv,
                               NvU8 *outputBuffer,
+                              NvU8 const *addAuthData,
+                              NvU32 addAuthDataSize,
                               NvU8 const *authTagBuffer)
 {
     if (ctx == NULL)
@@ -9705,7 +9699,8 @@ NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    return ccslDecrypt(ctx, bufferSize, inputBuffer, decryptIv, outputBuffer, authTagBuffer);
+    return ccslDecrypt(ctx, bufferSize, inputBuffer, decryptIv, addAuthData, addAuthDataSize,
+                       outputBuffer, authTagBuffer);
 }
 
 NV_STATUS nvGpuOpsCcslSign(struct ccslContext_t *ctx,
@@ -9732,10 +9727,31 @@ NV_STATUS nvGpuOpsQueryMessagePool(struct ccslContext_t *ctx,
 
     switch (direction)
     {
-        case UVM_CSL_DIR_CPU_TO_GPU:
+        case UVM_CSL_OPERATION_ENCRYPT:
             return ccslQueryMessagePool(ctx, CCSL_DIR_HOST_TO_DEVICE, messageNum);
-        case UVM_CSL_DIR_GPU_TO_CPU:
+        case UVM_CSL_OPERATION_DECRYPT:
             return ccslQueryMessagePool(ctx, CCSL_DIR_DEVICE_TO_HOST, messageNum);
+        default:
+            return NV_ERR_INVALID_ARGUMENT;
+    }
+}
+
+NV_STATUS nvGpuOpsIncrementIv(struct ccslContext_t *ctx,
+                              NvU8 direction,
+                              NvU64 increment,
+                              NvU8 *iv)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    switch (direction)
+    {
+        case UVM_CSL_OPERATION_ENCRYPT:
+            return ccslIncrementIv(ctx, CCSL_DIR_HOST_TO_DEVICE, increment, iv);
+        case UVM_CSL_OPERATION_DECRYPT:
+            return ccslIncrementIv(ctx, CCSL_DIR_DEVICE_TO_HOST, increment, iv);
         default:
             return NV_ERR_INVALID_ARGUMENT;
     }

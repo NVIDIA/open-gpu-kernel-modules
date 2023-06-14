@@ -1504,43 +1504,17 @@ void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext)
 }
 EXPORT_SYMBOL(nvUvmInterfaceDeinitCslContext);
 
-NV_STATUS nvUvmInterfaceCslLogDeviceEncryption(UvmCslContext *uvmCslContext,
-                                               UvmCslIv *decryptIv)
-{
-    NV_STATUS status;
-    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
-
-    status = rm_gpu_ops_ccsl_log_device_encryption(sp, uvmCslContext->ctx, (NvU8 *)decryptIv);
-
-    return status;
-}
-EXPORT_SYMBOL(nvUvmInterfaceCslLogDeviceEncryption);
-
 NV_STATUS nvUvmInterfaceCslRotateIv(UvmCslContext *uvmCslContext,
-                                    UvmCslDirection direction)
+                                    UvmCslOperation operation)
 {
     NV_STATUS status;
     nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
 
-    status = rm_gpu_ops_ccsl_rotate_iv(sp, uvmCslContext->ctx, direction);
+    status = rm_gpu_ops_ccsl_rotate_iv(sp, uvmCslContext->ctx, operation);
 
     return status;
 }
 EXPORT_SYMBOL(nvUvmInterfaceCslRotateIv);
-
-NV_STATUS nvUvmInterfaceCslAcquireEncryptionIv(UvmCslContext *uvmCslContext,
-                                               UvmCslIv *encryptIv)
-{
-    NV_STATUS status;
-    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
-
-    BUILD_BUG_ON(NV_OFFSETOF(UvmCslIv, fresh) != sizeof(encryptIv->iv));
-
-    status = rm_gpu_ops_ccsl_acquire_encryption_iv(sp, uvmCslContext->ctx, (NvU8*)encryptIv);
-
-    return status;
-}
-EXPORT_SYMBOL(nvUvmInterfaceCslAcquireEncryptionIv);
 
 NV_STATUS nvUvmInterfaceCslEncrypt(UvmCslContext *uvmCslContext,
                                    NvU32 bufferSize,
@@ -1566,6 +1540,8 @@ NV_STATUS nvUvmInterfaceCslDecrypt(UvmCslContext *uvmCslContext,
                                    NvU8 const *inputBuffer,
                                    UvmCslIv const *decryptIv,
                                    NvU8 *outputBuffer,
+                                   NvU8 const *addAuthData,
+                                   NvU32 addAuthDataSize,
                                    NvU8 const *authTagBuffer)
 {
     NV_STATUS status;
@@ -1577,6 +1553,8 @@ NV_STATUS nvUvmInterfaceCslDecrypt(UvmCslContext *uvmCslContext,
                                      inputBuffer,
                                      (NvU8 *)decryptIv,
                                      outputBuffer,
+                                     addAuthData,
+                                     addAuthDataSize,
                                      authTagBuffer);
 
     return status;
@@ -1598,17 +1576,31 @@ NV_STATUS nvUvmInterfaceCslSign(UvmCslContext *uvmCslContext,
 EXPORT_SYMBOL(nvUvmInterfaceCslSign);
 
 NV_STATUS nvUvmInterfaceCslQueryMessagePool(UvmCslContext *uvmCslContext,
-                                            UvmCslDirection direction,
+                                            UvmCslOperation operation,
                                             NvU64 *messageNum)
 {
     NV_STATUS status;
     nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
 
-    status = rm_gpu_ops_ccsl_query_message_pool(sp, uvmCslContext->ctx, direction, messageNum);
+    status = rm_gpu_ops_ccsl_query_message_pool(sp, uvmCslContext->ctx, operation, messageNum);
 
     return status;
 }
 EXPORT_SYMBOL(nvUvmInterfaceCslQueryMessagePool);
+
+NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
+                                       UvmCslOperation operation,
+                                       NvU64 increment,
+                                       UvmCslIv *iv)
+{
+    NV_STATUS status;
+    nvidia_stack_t *sp = uvmCslContext->nvidia_stack;
+
+    status = rm_gpu_ops_ccsl_increment_iv(sp, uvmCslContext->ctx, operation, increment, (NvU8 *)iv);
+
+    return status;
+}
+EXPORT_SYMBOL(nvUvmInterfaceCslIncrementIv);
 
 #else // NV_UVM_ENABLE
 

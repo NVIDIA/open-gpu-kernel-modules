@@ -919,6 +919,21 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_VFIO_MIGRATION_OPS_PRESENT" "" "types"
         ;;
 
+        vfio_precopy_info)
+            #
+            # Determine if vfio_precopy_info struct is present or not
+            #
+            # Added by commit 4db52602a6074 ("vfio: Extend the device migration
+            # protocol with PRE_COPY" in v6.2
+            #
+            CODE="
+            #include <linux/vfio.h>
+            struct vfio_precopy_info precopy_info;
+            "
+
+            compile_check_conftest "$CODE" "NV_VFIO_PRECOPY_INFO_PRESENT" "" "types"
+        ;;
+
         vfio_log_ops)
             #
             # Determine if vfio_log_ops struct is present or not

@@ -949,11 +949,12 @@ kgspWaitForGfwBootOk_TU102
     }
 
     // The wait failed if we reach here (as above loop returns upon success).
-    NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: 0x%x (progress 0x%x)\n",
+    NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: 0x%x (progress 0x%x, VBIOS version %s)\n",
               status, GPU_REG_RD_DRF(pGpu,
                         _PGC6,
                         _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
-                        _PROGRESS));
+                        _PROGRESS),
+              pKernelGsp->vbiosVersionStr);
     NV_PRINTF(LEVEL_ERROR, "(the GPU may be in a bad state and may need to be reset)\n");
 
     return status;

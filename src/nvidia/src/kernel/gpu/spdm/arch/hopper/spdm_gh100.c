@@ -1482,7 +1482,7 @@ spdmCheckConnection_GH100
     size_t                      dataSize;
     NvU32                       i;
     NvU32                       algoCheckCount;
-    NvU32                       expectedAlgo;
+    NvU32                       actualAlgo;
     PSPDM_ALGO_CHECK_ENTRY      pCheckEntry;
 
     if (pGpu == NULL || pSpdm == NULL)
@@ -1544,15 +1544,16 @@ spdmCheckConnection_GH100
     {
         pCheckEntry = &g_SpdmAlgoCheckTable_GH100[i];
 
-        dataSize = sizeof(expectedAlgo);
-        ret = libspdm_get_data(pContext, pCheckEntry->dataType,
-                               &dataParam, &expectedAlgo, &dataSize);
+        actualAlgo = 0;
+        dataSize   = sizeof(actualAlgo);
+        ret        = libspdm_get_data(pContext, pCheckEntry->dataType,
+                                      &dataParam, &actualAlgo, &dataSize);
 
-        if (ret != LIBSPDM_STATUS_SUCCESS || expectedAlgo != pCheckEntry->expectedAlgo)
+        if (ret != LIBSPDM_STATUS_SUCCESS || actualAlgo != pCheckEntry->expectedAlgo)
         {
             NV_PRINTF(LEVEL_ERROR, "SPDM: Invalid crypto algorithms selected.\n");
-            NV_PRINTF(LEVEL_ERROR, "SPDM: AlgoCheckCount %d, i is %d, status is %d.\n", (NvU32)algoCheckCount, (NvU32)i, (NvU32)ret);
-            NV_PRINTF(LEVEL_ERROR, "SPDM: Expected ALgo %d, actual algo %d", (NvU32)expectedAlgo, (NvU32)pCheckEntry->expectedAlgo);
+            NV_PRINTF(LEVEL_ERROR, "SPDM: AlgoCheckCount 0x%0x, i is 0x%0x, status is 0x%0x.\n", (NvU32)algoCheckCount, (NvU32)i, (NvU32)ret);
+            NV_PRINTF(LEVEL_ERROR, "SPDM: Expected algo 0x%0x, actual algo 0x%0x\n", (NvU32)pCheckEntry->expectedAlgo, (NvU32)actualAlgo);
             return NV_ERR_INVALID_STATE;
         }
     }

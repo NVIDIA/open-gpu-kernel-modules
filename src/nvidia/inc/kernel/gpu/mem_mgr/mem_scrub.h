@@ -87,7 +87,7 @@ typedef struct OBJMEMSCRUB {
     PSCRUB_NODE                        pScrubList;
 #if !defined(SRT_BUILD)
     // Scrubber uses ceUtils to manage CE channel
-    CeUtils                            ceUtilsObject;
+    CeUtils                           *pCeUtils;
 #endif
     struct OBJGPU                     *pGpu;
     VGPU_GUEST_PMA_SCRUB_BUFFER_RING   vgpuScrubBuffRing;

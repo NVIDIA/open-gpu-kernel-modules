@@ -72,6 +72,19 @@
  *            identity mapped. To use this feature, users need to pass in the
  *            hVaspace with identity mapped addresses for the entire memory during
  *            construct.
+ *        PIPELINED
+ *            This flag allows the copy/memset operation to be pipelined with previous dma operations on the same channel
+ *            It means that its reads/writes are allowed happen before writes of preceding operations are tlb-acked
+ *            The flag can be useful when dealing with non-inersecting async operations,
+ *            but it can result in races when 2 async CE operations target the same allocation, and the second operation uses the flag
+ *            Race example:
+ *            1. async copy A -> B
+ *            2. pipelined copy B -> C
+ *            Here copy 2 can read B before copy finishes writing it, which will result in C containing invalid data
+ *            Technical details:
+ *            By default, first _LAUNCH_DMA method of a CE operation is marked has _TRANSFER_TYPE_NON_PIPELINED, which the flag overrides
+ *            Subsequent _LAUNCH_DMA methods belonging to the same operation use _TRANSFER_TYPE_PIPELINED, as each of these methods should
+ *            target different addresses
  *
  * submittedWorkId [OUT]
  *    The work submission token users can poll on to wait for work
@@ -79,8 +92,9 @@
  */
 
 #define NV0050_CTRL_MEMSET_FLAGS_DEFAULT 0
-#define NV0050_CTRL_MEMSET_FLAGS_ASYNC    NVBIT(0)
-#define NV0050_CTRL_MEMSET_FLAGS_VIRTUAL  NVBIT(1)
+#define NV0050_CTRL_MEMSET_FLAGS_ASYNC      NVBIT(0)
+#define NV0050_CTRL_MEMSET_FLAGS_VIRTUAL    NVBIT(1)
+#define NV0050_CTRL_MEMSET_FLAGS_PIPELINED  NVBIT(2)
 
 #define NV0050_CTRL_CMD_MEMSET           (0x500101U) /* finn: Evaluated from "(FINN_NV_CE_UTILS_UTILS_INTERFACE_ID << 8) | NV0050_CTRL_MEMSET_PARAMS_MESSAGE_ID" */
 
@@ -98,7 +112,7 @@ typedef struct NV0050_CTRL_MEMSET_PARAMS {
 /*
  * NV0050_CTRL_CMD_MEMCOPY
  *
- * Copies from a source memoryto ssdestination  memory and releases a semaphore 
+ * Copies from a source memoryto ssdestination  memory and releases a semaphore
  * on completion
  *
  * hDstMemory  [IN]
@@ -131,6 +145,19 @@ typedef struct NV0050_CTRL_MEMSET_PARAMS {
  *            identity mapped. To use this feature, users need to pass in the
  *            hVaspace with identity mapped addresses for the entire memory during
  *            construct.
+ *        PIPELINED
+ *            This flag allows the copy/memset operation to be pipelined with previous dma operations on the same channel
+ *            It means that its reads/writes are allowed happen before writes of preceding operations are tlb-acked
+ *            The flag can be useful when dealing with non-inersecting async operations,
+ *            but it can result in races when 2 async CE operations target the same allocation, and the second operation uses the flag
+ *            Race example:
+ *            1. async copy A -> B
+ *            2. pipelined copy B -> C
+ *            Here copy 2 can read B before copy finishes writing it, which will result in C containing invalid data
+ *            Technical details:
+ *            By default, first _LAUNCH_DMA method of a CE operation is marked has _TRANSFER_TYPE_NON_PIPELINED, which the flag overrides
+ *            Subsequent _LAUNCH_DMA methods belonging to the same operation use _TRANSFER_TYPE_PIPELINED, as each of these methods should
+ *            target different addresses
  *
  * submittedWorkId [OUT]
  *    The work submission token users can poll on to wait for work
@@ -138,8 +165,9 @@ typedef struct NV0050_CTRL_MEMSET_PARAMS {
  */
 
 #define NV0050_CTRL_MEMCOPY_FLAGS_DEFAULT 0
-#define NV0050_CTRL_MEMCOPY_FLAGS_ASYNC    NVBIT(1)
-#define NV0050_CTRL_MEMCOPY_FLAGS_VIRTUAL  NVBIT(2)
+#define NV0050_CTRL_MEMCOPY_FLAGS_ASYNC      NVBIT(0)
+#define NV0050_CTRL_MEMCOPY_FLAGS_VIRTUAL    NVBIT(1)
+#define NV0050_CTRL_MEMCOPY_FLAGS_PIPELINED  NVBIT(2)
 
 #define NV0050_CTRL_CMD_MEMCOPY           (0x500102U) /* finn: Evaluated from "(FINN_NV_CE_UTILS_UTILS_INTERFACE_ID << 8 | NV0050_CTRL_MEMCOPY_PARAMS_MESSAGE_ID)" */
 
@@ -157,12 +185,12 @@ typedef struct NV0050_CTRL_MEMCOPY_PARAMS {
 
 /*
  * NV0050_CTRL_CMD_CHECK_PROGRESS
- * 
+ *
  * Check if a previously submitted work item has been completed by HW.
  *
  * submittedWorkId  [IN]
  *    The work submission token users can poll on to wait for work
- *    completed by CE. 
+ *    completed by CE.
  *
  */
 #define NV0050_CTRL_CHECK_PROGRESS_RESULT_DEFAULT 0

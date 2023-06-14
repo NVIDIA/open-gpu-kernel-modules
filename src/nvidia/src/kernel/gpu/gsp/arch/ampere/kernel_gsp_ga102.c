@@ -310,32 +310,6 @@ kgspExecuteSequencerCommand_GA102
 
     switch (opCode)
     {
-        case GSP_SEQ_BUF_OPCODE_CORE_RESET:
-        {
-            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
-
-            // Reset falcon
-            kflcnEnable_HAL(pGpu, pKernelFalcon, NV_FALSE);
-            kflcnEnable_HAL(pGpu, pKernelFalcon, NV_TRUE);
-
-            kflcnDisableCtxReq_HAL(pGpu, pKernelFalcon);
-            break;
-        }
-        case GSP_SEQ_BUF_OPCODE_CORE_START:
-        {
-            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
-
-            kflcnStartCpu_HAL(pGpu, pKernelFalcon);
-            break;
-        }
-        case GSP_SEQ_BUF_OPCODE_CORE_WAIT_FOR_HALT:
-        {
-            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
-
-            // Wait for the bootloader to complete execution.
-            status = kflcnWaitForHalt_HAL(pGpu, pKernelFalcon, GPU_TIMEOUT_DEFAULT, 0);
-            break;
-        }
         case GSP_SEQ_BUF_OPCODE_CORE_RESUME:
         {
             RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;

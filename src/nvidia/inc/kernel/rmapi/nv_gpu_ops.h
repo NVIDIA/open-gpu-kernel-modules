@@ -284,10 +284,6 @@ NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(struct gpuDevice *device);
 NV_STATUS nvGpuOpsCcslContextInit(struct ccslContext_t **ctx,
                                   gpuChannelHandle channel);
 NV_STATUS nvGpuOpsCcslContextClear(struct ccslContext_t *ctx);
-NV_STATUS nvGpuOpsCcslLogDeviceEncryption(struct ccslContext_t *ctx,
-                                          NvU8 *decryptIv);
-NV_STATUS nvGpuOpsCcslAcquireEncryptionIv(struct ccslContext_t *ctx,
-                                          NvU8 *encryptIv);
 NV_STATUS nvGpuOpsCcslRotateIv(struct ccslContext_t *ctx,
                                NvU8 direction);
 NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,
@@ -306,6 +302,8 @@ NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
                               NvU8 const *inputBuffer,
                               NvU8 const *decryptIv,
                               NvU8 *outputBuffer,
+                              NvU8 const *addAuthData,
+                              NvU32 addAuthDataSize,
                               NvU8 const *authTagBuffer);
 NV_STATUS nvGpuOpsCcslSign(struct ccslContext_t *ctx,
                            NvU32 bufferSize,
@@ -314,5 +312,9 @@ NV_STATUS nvGpuOpsCcslSign(struct ccslContext_t *ctx,
 NV_STATUS nvGpuOpsQueryMessagePool(struct ccslContext_t *ctx,
                                    NvU8 direction,
                                    NvU64 *messageNum);
+NV_STATUS nvGpuOpsIncrementIv(struct ccslContext_t *ctx,
+                              NvU8 direction,
+                              NvU64 increment,
+                              NvU8 *iv);
 
 #endif /* _NV_GPU_OPS_H_*/

@@ -179,6 +179,7 @@ static inline int nv_drm_gem_handle_create(struct drm_file *filp,
     return drm_gem_handle_create(filp, &nv_gem->base, handle);
 }
 
+#if defined(NV_DRM_FENCE_AVAILABLE)
 static inline nv_dma_resv_t *nv_drm_gem_res_obj(struct nv_drm_gem_object *nv_gem)
 {
 #if defined(NV_DRM_GEM_OBJECT_HAS_RESV)
@@ -187,6 +188,7 @@ static inline nv_dma_resv_t *nv_drm_gem_res_obj(struct nv_drm_gem_object *nv_gem
     return nv_gem->base.dma_buf ? nv_gem->base.dma_buf->resv : &nv_gem->resv;
 #endif
 }
+#endif
 
 void nv_drm_gem_object_init(struct nv_drm_device *nv_dev,
                             struct nv_drm_gem_object *nv_gem,

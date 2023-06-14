@@ -1455,12 +1455,12 @@ NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channe
     concurrently with the same UvmCslContext parameter in different threads. The caller must
     guarantee this exclusion.
 
-    * nvUvmInterfaceCslLogDeviceEncryption
     * nvUvmInterfaceCslRotateIv
     * nvUvmInterfaceCslEncrypt
     * nvUvmInterfaceCslDecrypt
     * nvUvmInterfaceCslSign
     * nvUvmInterfaceCslQueryMessagePool
+    * nvUvmInterfaceCslIncrementIv
 */
 
 /*******************************************************************************
@@ -1495,62 +1495,17 @@ NV_STATUS nvUvmInterfaceCslInitContext(UvmCslContext *uvmCslContext,
 */
 void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext);
 
-
-/*******************************************************************************
-    nvUvmInterfaceCslLogDeviceEncryption
-
-    Returns an IV that can be later used in the nvUvmInterfaceCslEncrypt
-    method. The IV contains a "freshness bit" which value is set by this method
-    and subsequently dirtied by nvUvmInterfaceCslEncrypt to prevent
-    non-malicious reuse of the IV.
-
-    See "CSL Interface and Locking" for locking requirements.
-    This function does not perform dynamic memory allocation.
-
-    Arguments:
-        uvmCslContext[IN/OUT] - The CSL context.
-        encryptIv[OUT]        - Parameter that is stored before a successful
-                                device encryption. It is used as an input to
-                                nvUvmInterfaceCslEncrypt.
-
-    Error codes:
-      NV_ERR_INSUFFICIENT_RESOURCES - New IV would cause a counter to overflow.
-*/
-NV_STATUS nvUvmInterfaceCslAcquireEncryptionIv(UvmCslContext *uvmCslContext,
-                                               UvmCslIv *encryptIv);
-
-/*******************************************************************************
-    nvUvmInterfaceCslLogDeviceEncryption
-
-    Logs and checks information about device encryption.
-
-    See "CSL Interface and Locking" for locking requirements.
-    This function does not perform dynamic memory allocation.
-
-    Arguments:
-        uvmCslContext[IN/OUT] - The CSL context.
-        decryptIv[OUT]        - Parameter that is stored before a successful
-                                device encryption. It is used as an input to
-                                nvUvmInterfaceCslDecrypt.
-
-    Error codes:
-      NV_ERR_INSUFFICIENT_RESOURCES - The device encryption would cause a counter
-                                      to overflow.
-*/
-NV_STATUS nvUvmInterfaceCslLogDeviceEncryption(UvmCslContext *uvmCslContext,
-                                               UvmCslIv *decryptIv);
-
 /*******************************************************************************
     nvUvmInterfaceCslRotateIv
 
-    Rotates the IV for a given channel and direction.
+    Rotates the IV for a given channel and operation.
 
     This function will rotate the IV on both the CPU and the GPU.
     Outstanding messages that have been encrypted by the GPU should first be
-    decrypted before calling this function with direction equal to
-    UVM_CSL_DIR_GPU_TO_CPU. Similiarly, outstanding messages that have been
+    decrypted before calling this function with operation equal to
+    UVM_CSL_OPERATION_DECRYPT. Similarly, outstanding messages that have been
     encrypted by the CPU should first be decrypted before calling this function
-    with direction equal to UVM_CSL_DIR_CPU_TO_GPU. For a given direction
+    with operation equal to UVM_CSL_OPERATION_ENCRYPT. For a given operation
     the channel must be idle before calling this function. This function can be
     called regardless of the value of the IV's message counter.
 
@@ -1559,17 +1514,17 @@ NV_STATUS nvUvmInterfaceCslLogDeviceEncryption(UvmCslContext *uvmCslContext,
 
 Arguments:
         uvmCslContext[IN/OUT] - The CSL context.
-        direction[IN]         - Either
-                                - UVM_CSL_DIR_CPU_TO_GPU
-                                - UVM_CSL_DIR_GPU_TO_CPU
+        operation[IN]         - Either
+                                - UVM_CSL_OPERATION_ENCRYPT
+                                - UVM_CSL_OPERATION_DECRYPT
 
     Error codes:
       NV_ERR_INSUFFICIENT_RESOURCES - The rotate operation would cause a counter
                                       to overflow.
-      NV_ERR_INVALID_ARGUMENT       - Invalid value for direction.
+      NV_ERR_INVALID_ARGUMENT       - Invalid value for operation.
 */
 NV_STATUS nvUvmInterfaceCslRotateIv(UvmCslContext *uvmCslContext,
-                                    UvmCslDirection direction);
+                                    UvmCslOperation operation);
 
 /*******************************************************************************
     nvUvmInterfaceCslEncrypt
@@ -1580,7 +1535,7 @@ NV_STATUS nvUvmInterfaceCslRotateIv(UvmCslContext *uvmCslContext,
     this function produces undefined behavior. Performance is typically
     maximized when the input and output buffers are 16-byte aligned. This is
     natural alignment for AES block.
-    The encryptIV can be obtained from nvUvmInterfaceCslAcquireEncryptionIv.
+    The encryptIV can be obtained from nvUvmInterfaceCslIncrementIv.
     However, it is optional. If it is NULL, the next IV in line will be used.
 
     See "CSL Interface and Locking" for locking requirements.
@@ -1623,12 +1578,18 @@ NV_STATUS nvUvmInterfaceCslEncrypt(UvmCslContext *uvmCslContext,
 
     Arguments:
         uvmCslContext[IN/OUT] - The CSL context.
-        bufferSize[IN]        - Size of the input and output buffers in
-                                units of bytes. Value can range from 1 byte
-                                to (2^32) - 1 bytes.
-        decryptIv[IN]         - Parameter given by nvUvmInterfaceCslLogDeviceEncryption.
+        bufferSize[IN]        - Size of the input and output buffers in units of bytes.
+                                Value can range from 1 byte to (2^32) - 1 bytes.
+        decryptIv[IN]         - IV used to decrypt the ciphertext. Its value can either be given by
+                                nvUvmInterfaceCslIncrementIv, or, if NULL, the CSL context's
+                                internal counter is used.
         inputBuffer[IN]       - Address of ciphertext input buffer.
         outputBuffer[OUT]     - Address of plaintext output buffer.
+        addAuthData[IN]       - Address of the plaintext additional authenticated data used to
+                                calculate the authentication tag. Can be NULL.
+        addAuthDataSize[IN]   - Size of the additional authenticated data in units of bytes.
+                                Value can range from 1 byte to (2^32) - 1 bytes.
+                                This parameter is ignored if addAuthData is NULL.
         authTagBuffer[IN]     - Address of authentication tag buffer.
                                 Its size is UVM_CSL_CRYPT_AUTH_TAG_SIZE_BYTES.
 
@@ -1643,6 +1604,8 @@ NV_STATUS nvUvmInterfaceCslDecrypt(UvmCslContext *uvmCslContext,
                                    NvU8 const *inputBuffer,
                                    UvmCslIv const *decryptIv,
                                    NvU8 *outputBuffer,
+                                   NvU8 const *addAuthData,
+                                   NvU32 addAuthDataSize,
                                    NvU8 const *authTagBuffer);
 
 /*******************************************************************************
@@ -1673,7 +1636,6 @@ NV_STATUS nvUvmInterfaceCslSign(UvmCslContext *uvmCslContext,
                                 NvU8 const *inputBuffer,
                                 NvU8 *authTagBuffer);
 
-
 /*******************************************************************************
     nvUvmInterfaceCslQueryMessagePool
 
@@ -1684,14 +1646,45 @@ NV_STATUS nvUvmInterfaceCslSign(UvmCslContext *uvmCslContext,
 
     Arguments:
         uvmCslContext[IN/OUT] - The CSL context.
-        direction[IN]         - Either UVM_CSL_DIR_CPU_TO_GPU or UVM_CSL_DIR_GPU_TO_CPU.
+        operation[IN]         - Either UVM_CSL_OPERATION_ENCRYPT or UVM_CSL_OPERATION_DECRYPT.
         messageNum[OUT]       - Number of messages left before overflow.
 
     Error codes:
-      NV_ERR_INVALID_ARGUMENT - The value of the direction parameter is illegal.
+      NV_ERR_INVALID_ARGUMENT - The value of the operation parameter is illegal.
 */
 NV_STATUS nvUvmInterfaceCslQueryMessagePool(UvmCslContext *uvmCslContext,
-                                            UvmCslDirection direction,
+                                            UvmCslOperation operation,
                                             NvU64 *messageNum);
+
+/*******************************************************************************
+    nvUvmInterfaceCslIncrementIv
+
+    Increments the message counter by the specified amount.
+
+    If iv is non-NULL then the incremented value is returned.
+    If operation is UVM_CSL_OPERATION_ENCRYPT then the returned IV's "freshness" bit is set and
+    can be used in nvUvmInterfaceCslEncrypt. If operation is UVM_CSL_OPERATION_DECRYPT then
+    the returned IV can be used in nvUvmInterfaceCslDecrypt.
+
+    See "CSL Interface and Locking" for locking requirements.
+    This function does not perform dynamic memory allocation.
+
+Arguments:
+        uvmCslContext[IN/OUT] - The CSL context.
+        operation[IN]         - Either
+                                - UVM_CSL_OPERATION_ENCRYPT
+                                - UVM_CSL_OPERATION_DECRYPT
+        increment[IN]         - The amount by which the IV is incremented. Can be 0.
+        iv[out]               - If non-NULL, a buffer to store the incremented IV.
+
+    Error codes:
+      NV_ERR_INVALID_ARGUMENT       - The value of the operation parameter is illegal.
+      NV_ERR_INSUFFICIENT_RESOURCES - Incrementing the message counter would result
+                                      in an overflow.
+*/
+NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
+                                       UvmCslOperation operation,
+                                       NvU64 increment,
+                                       UvmCslIv *iv);
 
 #endif // _NV_UVM_INTERFACE_H_

@@ -28,6 +28,7 @@
 #include "os/nv_memory_type.h"
 #include "core/locks.h"
 #include "ctrl/ctrl2080.h"
+#include "rmapi/rs_utils.h"
 
 #include "gpu/bus/kern_bus.h"
 
@@ -854,6 +855,31 @@ void memUtilsInitFBAllocInfo
     }
 }
 
+
+MEMORY_DESCRIPTOR *
+memmgrMemUtilsGetMemDescFromHandle_IMPL
+(
+    MemoryManager *pMemoryManager,
+    NvHandle hClient,
+    NvHandle hMemory
+)
+{
+    RsResourceRef *pMemoryRef;
+    Memory        *pMemory;
+
+    if (serverutilGetResourceRef(hClient, hMemory, &pMemoryRef) != NV_OK)
+    {
+        return NULL;
+    }
+
+    pMemory = dynamicCast(pMemoryRef->pResource, Memory);
+    if (pMemory == NULL)
+    {
+        return NULL;
+    }
+    return pMemory->pMemDesc;
+}
+
 /*!
  * @brief This function is used for copying data b/w two memory regions
  *        Both memory regions can be in the same aperture of different apertures
@@ -1031,7 +1057,7 @@ memmgrMemBeginTransfer_IMPL
 
                 NV_ASSERT_OR_RETURN(memdescMap(pMemDesc, offset, memSz, NV_TRUE, protect,
                     (NvP64*) &pPtr, &pPriv) == NV_OK, NULL);
-                memdescSetKernelMappingPriv(pMemDesc, pPtr);
+                memdescSetKernelMappingPriv(pMemDesc, pPriv);
                 break;
             }
             NV_ASSERT_OR_RETURN((pPtr = memdescMapInternal(pGpu, pMemDesc, flags)) != NULL, NULL);
@@ -1078,11 +1104,12 @@ memmgrMemEndTransfer_IMPL
     NvU64              offset       = pTransferInfo->offset;
     OBJGPU            *pGpu         = ENG_GET_GPU(pMemoryManager);
     NvU64              memSz        = 0;
-    NvU8              *pMapping     = memdescGetKernelMapping(pMemDesc);
+    NvU8              *pMapping     = NULL;
 
     NV_ASSERT_OR_RETURN_VOID(pMemDesc != NULL);
-    NV_ASSERT_OR_RETURN_VOID((memSz = memdescGetSize(pMemDesc)) >= (shadowBufSize + offset) );
+    pMapping = memdescGetKernelMapping(pMemDesc);
 
+    NV_ASSERT_OR_RETURN_VOID((memSz = memdescGetSize(pMemDesc)) >= (shadowBufSize + offset) );
     memSz = shadowBufSize == 0 ? memSz : shadowBufSize;
 
     memdescSetKernelMapping(pMemDesc, NULL);
@@ -1094,7 +1121,10 @@ memmgrMemEndTransfer_IMPL
             {
                 NvP64 pPriv = memdescGetKernelMappingPriv(pMemDesc);
                 memdescSetKernelMappingPriv(pMemDesc, NULL);
-                memdescUnmap(pMemDesc, NV_TRUE, 0, pMapping, pPriv);
+                if (pMapping != NULL)
+                {
+                    memdescUnmap(pMemDesc, NV_TRUE, 0, pMapping, pPriv);
+                }
                 return;
             }
             memdescUnmapInternal(pGpu, pMemDesc, flags);
@@ -1127,6 +1157,11 @@ memmgrMemDescEndTransfer_IMPL
     NvU32 flags
 )
 {
+    if (pMemDesc == NULL)
+    {
+        return;
+    }
+
     TRANSFER_SURFACE transferSurface = {.offset = 0, .pMemDesc = pMemDesc};
     memmgrMemEndTransfer(pMemoryManager, &transferSurface, memdescGetSize(pMemDesc), flags);
 }
@@ -1145,6 +1180,7 @@ memmgrMemDescBeginTransfer_IMPL
     NvU32 flags
 )
 {
+    NV_ASSERT_OR_RETURN(pMemDesc != NULL, NULL);
     TRANSFER_SURFACE transferSurface = {.offset = 0, .pMemDesc = pMemDesc};
     return memmgrMemBeginTransfer(pMemoryManager, &transferSurface, memdescGetSize(pMemDesc), flags);
 }

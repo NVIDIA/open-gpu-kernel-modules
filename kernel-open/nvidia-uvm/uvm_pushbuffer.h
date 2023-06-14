@@ -161,22 +161,22 @@
 // * WFI:                     8B
 // Total:                    64B
 //
-// Push space needed for secure work launch is 224B. The push is constructed
+// Push space needed for secure work launch is 364B. The push is constructed
 // in 'internal_channel_submit_work_indirect' and 'uvm_channel_end_push'
 // * CE decrypt (of indirect PB):                   56B
-// * 2*semaphore release (indirect GPFIFO entry): 2*24B
+// * memset_8 (indirect GPFIFO entry):              44B
 // * semaphore release (indirect GPPUT):            24B
 // * semaphore release (indirect doorbell):         24B
 // Appendix added in 'uvm_channel_end_push':
 // * semaphore release (WLC tracking):             168B
-//      * semaphore increment (memcopy):            24B
+//      * semaphore release (payload):              24B
 //      * notifier memset:                          40B
 //      * payload encryption:                       64B
 //      * notifier memset:                          40B
 // * semaphore increment (LCIC GPPUT):              24B
 // * semaphore release (LCIC doorbell):             24B
-// Total:                                          368B
-#define UVM_MAX_WLC_PUSH_SIZE (368)
+// Total:                                          364B
+#define UVM_MAX_WLC_PUSH_SIZE (364)
 
 // Push space needed for static LCIC schedule, as initialized in
 // 'setup_lcic_schedule':
@@ -184,7 +184,7 @@
 // * semaphore increment (WLC GPPUT):      24B
 // * semaphore increment (WLC GPPUT):      24B
 // * semaphore increment (LCIC tracking): 160B
-//      * semaphore increment (memcopy):   24B
+//      * semaphore increment (payload):   24B
 //      * notifier memcopy:                36B
 //      * payload encryption:              64B
 //      * notifier memcopy:                36B

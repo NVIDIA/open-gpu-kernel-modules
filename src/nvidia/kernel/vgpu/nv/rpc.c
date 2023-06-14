@@ -29,7 +29,7 @@
 //******************************************************************************
 
 // FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_CONTEXT_H_PRIVATE_ACCESS_ALLOWED 
+#define NVOC_KERNEL_GRAPHICS_CONTEXT_H_PRIVATE_ACCESS_ALLOWED
 
 #include "os/os.h"
 #include "core/system.h"
@@ -677,17 +677,17 @@ NV_STATUS RmRpcSetGuestSystemInfo(OBJGPU *pGpu, OBJRPC *pRpc)
     {
         if (rpcVgxVersion.majorNum != 0)
         {
-			if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH) && !bSkipRpcVersionHandshake)
-			{
-				bSkipRpcVersionHandshake = NV_TRUE;
-			}
-			else
-			{
-				NV_PRINTF(LEVEL_INFO,
-						  "NVRM_RPC: Skipping RPC version handshake for instance 0x%x\n",
-						  gpuGetInstance(pGpu));
-				goto skip_ver_handshake;
-			}
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH) && !bSkipRpcVersionHandshake)
+            {
+                bSkipRpcVersionHandshake = NV_TRUE;
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_INFO,
+                          "NVRM_RPC: Skipping RPC version handshake for instance 0x%x\n",
+                          gpuGetInstance(pGpu));
+                goto skip_ver_handshake;
+            }
         }
         else
         {
@@ -1324,6 +1324,16 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
 
         rpcInfo->hypervisorType           = hypervisorGetHypervisorType(pHypervisor);
         rpcInfo->bIsPassthru              = pGpu->bIsPassthru;
+
+        // Fill in VF related GPU flags
+        rpcInfo->gspVFInfo.totalVFs           = pGpu->sriovState.totalVFs;
+        rpcInfo->gspVFInfo.firstVFOffset      = pGpu->sriovState.firstVFOffset;
+        rpcInfo->gspVFInfo.FirstVFBar0Address = pGpu->sriovState.firstVFBarAddress[0];
+        rpcInfo->gspVFInfo.FirstVFBar1Address = pGpu->sriovState.firstVFBarAddress[1];
+        rpcInfo->gspVFInfo.FirstVFBar2Address = pGpu->sriovState.firstVFBarAddress[2];
+        rpcInfo->gspVFInfo.b64bitBar0         = pGpu->sriovState.b64bitVFBar0;
+        rpcInfo->gspVFInfo.b64bitBar1         = pGpu->sriovState.b64bitVFBar1;
+        rpcInfo->gspVFInfo.b64bitBar2         = pGpu->sriovState.b64bitVFBar2;
 
         OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
         rpcInfo->sysTimerOffsetNs = pTmr->sysTimerOffsetNs;

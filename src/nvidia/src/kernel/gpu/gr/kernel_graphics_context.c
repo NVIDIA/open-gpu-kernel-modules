@@ -2343,24 +2343,27 @@ kgrctxUnmapAssociatedCtxBuffers_IMPL
     // channels could be using these mappings, and we must wait for both
     // channels to be detached before we remove them.
     //
+    if (pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->pChanList != NULL)
     {
-        RS_ORDERED_ITERATOR it;
-        RsResourceRef *pScopeRef = RES_GET_REF(pKernelChannel);
+        CHANNEL_NODE *pChanNode;
+        CHANNEL_LIST *pChanList;
 
-        // Iterate over all channels in this TSG and check for duplicate VAS
-        if (!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm)
-            pScopeRef = RES_GET_REF(pKernelChannel->pKernelChannelGroupApi);
+        pChanList = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->pChanList;
 
-        it = kchannelGetIter(RES_GET_CLIENT(pKernelChannel), pScopeRef);
-        while (clientRefOrderedIterNext(it.pClient, &it))
+        for (pChanNode = pChanList->pHead; pChanNode; pChanNode = pChanNode->pNext)
         {
-            KernelChannel *pLoopKernelChannel = dynamicCast(it.pResourceRef->pResource, KernelChannel);
-            NV_ASSERT_OR_RETURN_VOID(pLoopKernelChannel != NULL);
-
-            if (pLoopKernelChannel == pKernelChannel)
+            // Skip the channel we are looking to unmap
+            if (kchannelGetDebugTag(pKernelChannel) == kchannelGetDebugTag(pChanNode->pKernelChannel))
                 continue;
-
-            NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, pLoopKernelChannel->pVAS != pKernelChannel->pVAS);
+            
+            if (pKernelChannel->pVAS == pChanNode->pKernelChannel->pVAS)
+            {
+                NV_PRINTF(LEVEL_ERROR, "TSG %d Channel %d shares a pVAS with channel %d\n",
+                          pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->grpID,
+                          kchannelGetDebugTag(pKernelChannel), 
+                          kchannelGetDebugTag(pChanNode->pKernelChannel));
+                return;
+            }
         }
     }
 

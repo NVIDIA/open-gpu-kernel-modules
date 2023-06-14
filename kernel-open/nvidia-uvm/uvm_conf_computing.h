@@ -42,9 +42,11 @@
 // Use sizeof(UvmCslIv) to refer to the IV size.
 #define UVM_CONF_COMPUTING_IV_ALIGNMENT 16
 
-// SEC2 decrypt operation buffers are required to be 16-bytes aligned. CE
-// encrypt/decrypt can be unaligned if the buffer lies in a single 32B segment.
-// Otherwise, they need to be 32B aligned.
+// SEC2 decrypt operation buffers are required to be 16-bytes aligned.
+#define UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT 16
+
+// CE encrypt/decrypt can be unaligned if the entire buffer lies in a single
+// 32B segment. Otherwise, it needs to be 32B aligned.
 #define UVM_CONF_COMPUTING_BUF_ALIGNMENT 32
 
 #define UVM_CONF_COMPUTING_DMA_BUFFER_SIZE UVM_VA_BLOCK_SIZE

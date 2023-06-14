@@ -107,17 +107,8 @@
         NV_PUSH_DATA(d4);                                               \
     } while (0)
 
-#define READ_CHANNEL_PAYLOAD_SEMA(channel)       MEM_RD32((NvU8*)channel->pbCpuVA + \
-                                                  channel->finishPayloadOffset)
-
-#define READ_CHANNEL_PB_SEMA(channel)            MEM_RD32((NvU8*)channel->pbCpuVA + \
-                                                  channel->semaOffset)
-
-#define WRITE_CHANNEL_PB_SEMA(channel, val)      MEM_WR32((NvU8*)channel->pbCpuVA + \
-                                                  channel->semaOffset, val);
-
-#define WRITE_CHANNEL_PAYLOAD_SEMA(channel,val)  MEM_WR32((NvU8*)channel->pbCpuVA + \
-                                                  channel->finishPayloadOffset, val);
+#define READ_CHANNEL_PAYLOAD_SEMA(channel)  channelReadChannelMemdesc(channel, channel->finishPayloadOffset)
+#define READ_CHANNEL_PB_SEMA(channel)       channelReadChannelMemdesc(channel, channel->semaOffset)
 
 // 
 // This struct contains parameters needed to send a pushbuffer for a CE
@@ -141,6 +132,7 @@ typedef struct
 
 NV_STATUS channelSetupIDs(OBJCHANNEL *pChannel, OBJGPU *pGpu, NvBool bUseVasForCeCopy, NvBool bMIGInUse);
 void channelSetupChannelBufferSizes(OBJCHANNEL *pChannel);
+NvU32 channelReadChannelMemdesc(OBJCHANNEL *pChannel, NvU32 offset);
 
 // Needed for pushbuffer management
 NV_STATUS channelWaitForFreeEntry(OBJCHANNEL *pChannel, NvU32 *pPutIndex);

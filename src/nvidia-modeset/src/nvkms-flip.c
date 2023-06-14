@@ -146,29 +146,21 @@ static NvBool UpdateProposedFlipStateOneApiHead(
             if (!nvIsHDRCapableHead(pDispEvo, apiHead)) {
                 return FALSE;
             }
+
+            /* NVKMS_OUTPUT_TF_PQ requires the RGB color space */
+            if (pProposedApiHead->hdr.colorSpace !=
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) {
+                return FALSE;
+            }
         }
 
-        if (!nvChooseCurrentColorSpaceAndRangeEvo(pDpyEvo,
-                                                  pApiHeadState->timings.yuv420Mode,
-                                                  pParams->tf.val,
-                                                  pDpyEvo->requestedColorSpace,
-                                                  pDpyEvo->requestedColorRange,
-                                                  &pProposedApiHead->hdr.colorSpace,
-                                                  &pProposedApiHead->hdr.colorBpc,
-                                                  &pProposedApiHead->hdr.colorRange)) {
+        if (!nvChooseColorRangeEvo(pParams->tf.val,
+                                   pDpyEvo->requestedColorRange,
+                                   pProposedApiHead->hdr.colorSpace,
+                                   pProposedApiHead->hdr.colorBpc,
+                                   &pProposedApiHead->hdr.colorRange)) {
             return FALSE;
         }
-    }
-
-    /*
-     * Change in colorSpace and colorBpc is not handled. For DisplayPort,
-     * colorSpace and colorBpc  can not be changed without a modeset.
-     */
-    if ((pProposedApiHead->hdr.colorSpace !=
-            pApiHeadState->attributes.colorSpace) ||
-        (pProposedApiHead->hdr.colorBpc !=
-             pApiHeadState->attributes.colorBpc)) {
-        return FALSE;
     }
 
     if (pParams->viewPortIn.specified) {

@@ -338,11 +338,6 @@ static NV_STATUS test_memcpy_and_memset_inner(uvm_gpu_t *gpu,
         return NV_OK;
     }
 
-    if (!gpu->parent->ce_hal->memcopy_is_valid(&push, dst, src)) {
-        TEST_NV_CHECK_RET(uvm_push_end_and_wait(&push));
-        return NV_OK;
-    }
-
     // The input virtual addresses exist in UVM's internal address space, not
     // the proxy address space
     if (uvm_channel_is_proxy(push.channel)) {
@@ -401,7 +396,7 @@ static NV_STATUS test_memcpy_and_memset_inner(uvm_gpu_t *gpu,
 static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
 {
     NV_STATUS status = NV_OK;
-    bool is_proxy_va_space;
+    bool is_proxy_va_space = false;
     uvm_gpu_address_t gpu_verif_addr;
     void *cpu_verif_addr;
     uvm_mem_t *verif_mem = NULL;
@@ -437,6 +432,34 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
         }
     }
 
+    // Virtual address (in UVM's internal address space) backed by sysmem
+    TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_SYS, size, 0, &sys_rm_mem), done);
+    gpu_addresses[0] = uvm_rm_mem_get_gpu_va(sys_rm_mem, gpu, is_proxy_va_space);
+
+    if (uvm_conf_computing_mode_enabled(gpu)) {
+        for (i = 0; i < iterations; ++i) {
+            for (s = 0; s < ARRAY_SIZE(element_sizes); s++) {
+                TEST_NV_CHECK_GOTO(test_memcpy_and_memset_inner(gpu,
+                                                                gpu_addresses[0],
+                                                                gpu_addresses[0],
+                                                                size,
+                                                                element_sizes[s],
+                                                                gpu_verif_addr,
+                                                                cpu_verif_addr,
+                                                                i),
+                                    done);
+
+            }
+        }
+
+        // Because gpu_verif_addr is in sysmem, when the Confidential
+        // Computing feature is enabled, only the previous cases are valid.
+        // TODO: Bug 3839176: the test partially waived on Confidential
+        // Computing because it assumes that GPU can access system memory
+        // without using encryption.
+        goto done;
+    }
+
     // Using a page size equal to the allocation size ensures that the UVM
     // memories about to be allocated are physically contiguous. And since the
     // size is a valid GPU page size, the memories can be virtually mapped on
@@ -448,37 +471,22 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
     // Physical address in sysmem
     TEST_NV_CHECK_GOTO(uvm_mem_alloc(&mem_params, &sys_uvm_mem), done);
     TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_phys(sys_uvm_mem, gpu), done);
-    gpu_addresses[0] = uvm_mem_gpu_address_physical(sys_uvm_mem, gpu, 0, size);
+    gpu_addresses[1] = uvm_mem_gpu_address_physical(sys_uvm_mem, gpu, 0, size);
 
     // Physical address in vidmem
     mem_params.backing_gpu = gpu;
     TEST_NV_CHECK_GOTO(uvm_mem_alloc(&mem_params, &gpu_uvm_mem), done);
-    gpu_addresses[1] = uvm_mem_gpu_address_physical(gpu_uvm_mem, gpu, 0, size);
+    gpu_addresses[2] = uvm_mem_gpu_address_physical(gpu_uvm_mem, gpu, 0, size);
 
     // Virtual address (in UVM's internal address space) backed by vidmem
     TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_GPU, size, 0, &gpu_rm_mem), done);
-    is_proxy_va_space = false;
-    gpu_addresses[2] = uvm_rm_mem_get_gpu_va(gpu_rm_mem, gpu, is_proxy_va_space);
+    gpu_addresses[3] = uvm_rm_mem_get_gpu_va(gpu_rm_mem, gpu, is_proxy_va_space);
 
-    // Virtual address (in UVM's internal address space) backed by sysmem
-    TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_SYS, size, 0, &sys_rm_mem), done);
-    gpu_addresses[3] = uvm_rm_mem_get_gpu_va(sys_rm_mem, gpu, is_proxy_va_space);
 
     for (i = 0; i < iterations; ++i) {
         for (j = 0; j < ARRAY_SIZE(gpu_addresses); ++j) {
             for (k = 0; k < ARRAY_SIZE(gpu_addresses); ++k) {
                 for (s = 0; s < ARRAY_SIZE(element_sizes); s++) {
-                  // Because gpu_verif_addr is in sysmem, when the Confidential
-                  // Computing feature is enabled, only the following cases are
-                  // valid.
-                  //
-                  // TODO: Bug 3839176: the test partially waived on
-                  // Confidential Computing because it assumes that GPU can
-                  // access system memory without using encryption.
-                  if (uvm_conf_computing_mode_enabled(gpu) &&
-                      !(gpu_addresses[k].is_unprotected && gpu_addresses[j].is_unprotected)) {
-                        continue;
-                  }
                     TEST_NV_CHECK_GOTO(test_memcpy_and_memset_inner(gpu,
                                                                     gpu_addresses[k],
                                                                     gpu_addresses[j],

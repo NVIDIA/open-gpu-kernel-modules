@@ -367,6 +367,17 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
     }
 
     pThis->bIsGspOwnedFaultBuffersEnabled = ((NvBool)(0 != 0));
+
+    // Hal field -- bEnableBar1SparseForFillPteMemUnmap
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    {
+        pThis->bEnableBar1SparseForFillPteMemUnmap = ((NvBool)(0 == 0));
+    }
+    // default
+    else
+    {
+        pThis->bEnableBar1SparseForFillPteMemUnmap = ((NvBool)(0 != 0));
+    }
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );

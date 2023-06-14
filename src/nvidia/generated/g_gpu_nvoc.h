@@ -1139,6 +1139,7 @@ struct OBJGPU {
     NvBool bStateUnloading;
     NvBool bStateLoaded;
     NvBool bFullyConstructed;
+    NvBool bBf3WarBug4040336Enabled;
     NvBool bUnifiedMemorySpaceEnabled;
     NvBool bSriovEnabled;
     NvBool bWarBug200577889SriovHeavyEnabled;
@@ -1186,6 +1187,7 @@ struct OBJGPU {
     NvBool bRecheckSliSupportAtResume;
     _GPU_SLI_PEER peer[2];
     NvBool bIsGspOwnedFaultBuffersEnabled;
+    NvBool bEnableBar1SparseForFillPteMemUnmap;
     _GPU_GC6_STATE gc6State;
 };
 
@@ -3282,6 +3284,10 @@ static inline NvBool gpuIsFullyConstructed(struct OBJGPU *pGpu) {
 
 static inline NvBool gpuIsUnifiedMemorySpaceEnabled(struct OBJGPU *pGpu) {
     return pGpu->bUnifiedMemorySpaceEnabled;
+}
+
+static inline NvBool gpuIsWarBug4040336Enabled(struct OBJGPU *pGpu) {
+    return pGpu->bBf3WarBug4040336Enabled;
 }
 
 static inline NvBool gpuIsSriovEnabled(struct OBJGPU *pGpu) {

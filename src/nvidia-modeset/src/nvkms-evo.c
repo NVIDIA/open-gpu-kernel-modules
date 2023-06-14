@@ -2111,6 +2111,38 @@ NvBool nvGetDefaultColorSpace(
     return FALSE;
 }
 
+NvBool nvChooseColorRangeEvo(
+    enum NvKmsOutputTf tf,
+    const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
+    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
+    enum NvKmsDpyAttributeColorRangeValue *pColorRange)
+{
+    /* Hardware supports BPC_6 only for RGB */
+    nvAssert((colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) ||
+                (colorBpc != NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6));
+
+    if ((colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) &&
+            (colorBpc == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6)) {
+        /* At depth 18 only RGB and full range are allowed */
+        if (tf == NVKMS_OUTPUT_TF_PQ) {
+            /* NVKMS_OUTPUT_TF_PQ requires limited color range */
+            return FALSE;
+        }
+        *pColorRange = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
+    } else if ((colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444) ||
+               (colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422) ||
+               (colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420) ||
+               (tf == NVKMS_OUTPUT_TF_PQ)) {
+        /* Both YUV and NVKMS_OUTPUT_TF_PQ requires limited color range. */
+        *pColorRange = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED;
+    } else {
+        *pColorRange = requestedColorRange;
+    }
+
+    return TRUE;
+}
+
 /*!
  * Choose current colorSpace and colorRange for the given dpy based on
  * the dpy's color format capailities, the given modeset parameters (YUV420
@@ -2206,23 +2238,9 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
         }
     }
 
-    /* Hardware supports BPC_6 only for RGB */
-    nvAssert((newColorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) ||
-                (newColorBpc != NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6));
-    /*
-     * Both YUV and NVKMS_OUTPUT_TF_PQ requires limited color range.
-     */
-    if ((newColorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444) ||
-        (newColorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422) ||
-        (newColorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420) ||
-        (tf == NVKMS_OUTPUT_TF_PQ)) {
-        newColorRange = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED;
-    } else if ((newColorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) &&
-               (newColorBpc == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6)) {
-        /* At depth 18 only RGB and full range are allowed */
-        newColorRange = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
-    } else {
-        newColorRange = requestedColorRange;
+    if (!nvChooseColorRangeEvo(tf, requestedColorRange, newColorSpace,
+                               newColorBpc, &newColorRange)) {
+        return FALSE;
     }
 
     *pCurrentColorSpace = newColorSpace;

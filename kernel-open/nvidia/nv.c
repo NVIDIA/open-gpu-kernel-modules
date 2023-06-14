@@ -1396,6 +1396,8 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
 
     nv->flags |= NV_FLAG_OPEN;
 
+    rm_request_dnotifier_state(sp, nv);
+
     /*
      * Now that RM init is done, allow dynamic power to control the GPU in FINE
      * mode, if enabled.  (If the mode is COARSE, this unref will do nothing

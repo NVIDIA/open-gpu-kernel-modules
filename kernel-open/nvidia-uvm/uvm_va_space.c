@@ -418,15 +418,6 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
     uvm_global_processor_mask_t retained_gpus;
     LIST_HEAD(deferred_free_list);
 
-    // Normally we'd expect this to happen as part of uvm_mm_release()
-    // but if userspace never initialized uvm_mm_fd that won't happen.
-    // We don't have to take the va_space_mm spinlock and update state
-    // here because we know no other thread can be in or subsequently
-    // call uvm_api_mm_initialize successfully because the UVM
-    // file-descriptor has been released.
-    if (va_space->va_space_mm.state == UVM_VA_SPACE_MM_STATE_UNINITIALIZED)
-        uvm_va_space_mm_unregister(va_space);
-
     // Remove the VA space from the global list before we start tearing things
     // down so other threads can't see the VA space in a partially-valid state.
     uvm_mutex_lock(&g_uvm_global.va_spaces.lock);
@@ -532,7 +523,14 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
 
     uvm_deferred_free_object_list(&deferred_free_list);
 
-    // MM FD teardown should already have destroyed va_space_mm
+    // Normally we'd expect this to happen as part of uvm_mm_release()
+    // but if userspace never initialized uvm_mm_fd that won't happen.
+    // We don't have to take the va_space_mm spinlock and update state
+    // here because we know no other thread can be in or subsequently
+    // call uvm_api_mm_initialize successfully because the UVM
+    // file-descriptor has been released.
+    if (va_space->va_space_mm.state == UVM_VA_SPACE_MM_STATE_UNINITIALIZED)
+        uvm_va_space_mm_unregister(va_space);
     UVM_ASSERT(!uvm_va_space_mm_alive(&va_space->va_space_mm));
 
     uvm_mutex_lock(&g_uvm_global.global_lock);

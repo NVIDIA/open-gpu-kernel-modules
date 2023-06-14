@@ -2177,6 +2177,7 @@ RmPowerManagementInternal(
                         //
                         RmPowerSourceChangeEvent(nv, !ac_plugged);
                     }
+                    RmRequestDNotifierState(nv);
                 }
                 break;
 

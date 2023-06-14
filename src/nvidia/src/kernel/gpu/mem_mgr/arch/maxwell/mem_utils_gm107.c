@@ -70,7 +70,7 @@ static NV_STATUS _memUtilsAllocateUserD(OBJGPU *pGpu, MemoryManager *pMemoryMana
                                         NvHandle hDeviceId, OBJCHANNEL *pChannel);
 static NV_STATUS _memUtilsMapUserd_GM107(OBJGPU *pGpu, MemoryManager *pMemoryManager,
                            OBJCHANNEL *pChannel, NvHandle hClientId, NvHandle hDeviceId,
-                           NvHandle hChannelId);
+                           NvHandle hChannelId, NvBool bUseRmApiForBar1);
 static NV_STATUS _memUtilsAllocateReductionSema(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJCHANNEL *pChannel);
 static NvU32     _ceChannelScheduleBatchWork_GM107(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJCHANNEL *pChannel,
     RmPhysAddr src, NV_ADDRESS_SPACE srcAddressSpace, NvU32 srcCpuCacheAttrib,
@@ -378,27 +378,28 @@ memmgrMemUtilsChannelInitialize_GM107
     OBJCHANNEL    *pChannel
 )
 {
-    NV_STATUS                      rmStatus;
-    NV_STATUS                      lockStatus;
-    RsClient                      *pRsClient;
-    NvHandle                       hClient;
-    NvHandle                       hDevice;                    // device handle
-    NvHandle                       hPhysMem;                   // memory handle
-    NvU64                          size;
-    NvHandle                       hChannel;                   // channel handle
-    NvHandle                       hErrNotifierVirt;
-    NvHandle                       hErrNotifierPhys;
-    NvHandle                       hPushBuffer;
-    RM_API                        *pRmApi              = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    Heap                          *pHeap               = GPU_GET_HEAP(pGpu);
-    NvBool                         bMIGInUse           = IS_MIG_IN_USE(pGpu);
-    NvU8                          *pErrNotifierCpuVA   = NULL;
-    NV_ADDRESS_SPACE               userdAddrSpace;
-    NV_ADDRESS_SPACE               pushBuffAddrSpace;
-    NV_ADDRESS_SPACE               gpFifoAddrSpace;
-    OBJSYS                        *pSys                = SYS_GET_INSTANCE();
-    OBJCL                         *pCl                 = SYS_GET_CL(pSys);
-    NvU32                          cacheSnoopFlag      = 0 ;
+    NV_STATUS         rmStatus;
+    NV_STATUS         lockStatus;
+    RsClient         *pRsClient;
+    NvHandle          hClient;
+    NvHandle          hDevice;
+    NvHandle          hPhysMem;
+    NvU64             size;
+    NvHandle          hChannel;
+    NvHandle          hErrNotifierVirt;
+    NvHandle          hErrNotifierPhys;
+    NvHandle          hPushBuffer;
+    RM_API           *pRmApi              = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    Heap             *pHeap               = GPU_GET_HEAP(pGpu);
+    NvBool            bMIGInUse           = IS_MIG_IN_USE(pGpu);
+    NvU8             *pErrNotifierCpuVA   = NULL;
+    NV_ADDRESS_SPACE  userdAddrSpace;
+    NV_ADDRESS_SPACE  pushBuffAddrSpace;
+    NV_ADDRESS_SPACE  gpFifoAddrSpace;
+    OBJSYS           *pSys                = SYS_GET_INSTANCE();
+    OBJCL            *pCl                 = SYS_GET_CL(pSys);
+    NvU32             cacheSnoopFlag      = 0 ;
+    NvBool            bUseRmApiForBar1    = NV_FALSE;
 
     //
     // Heap alloc one chunk of memory to hold all of our alloc parameters to
@@ -858,46 +859,64 @@ memmgrMemUtilsChannelInitialize_GM107
         rmStatus,
         LEVEL_ERROR,
         _memUtilsMapUserd_GM107(pGpu, pMemoryManager, pChannel,
-                                hClient, hDevice, hChannel),
+                                hClient, hDevice, hChannel, bUseRmApiForBar1),
         exit_free_client);
 
-    //
-    // map cpu pointer
-    // Map the pushbuffer memory to CPU viewable region
-    //
-    NV_CHECK_OK_OR_GOTO(
-        rmStatus,
-        LEVEL_ERROR,
-        pRmApi->MapToCpu(pRmApi,
-                         hClient,
-                         hDevice,
-                         hPhysMem,
-                         0,
-                         size,
-                         (void **)&pChannel->pbCpuVA,
-                         0),
-        exit_free_client);
+    // Set up pushbuffer and semaphore memdesc and memset the buffer
+    pChannel->pChannelBufferMemdesc = 
+        memmgrMemUtilsGetMemDescFromHandle(pMemoryManager, pChannel->hClient, hPhysMem);
+    NV_ASSERT_OR_GOTO(pChannel->pChannelBufferMemdesc != NULL, exit_free_client);
 
-    portMemSet(pChannel->pbCpuVA, 0, (NvLength)size);
+    // Set up notifier memory
+    pChannel->pErrNotifierMemdesc = 
+        memmgrMemUtilsGetMemDescFromHandle(pMemoryManager, pChannel->hClient, hErrNotifierPhys);
+    NV_ASSERT_OR_GOTO(pChannel->pErrNotifierMemdesc != NULL, exit_free_client);
 
-    // Map the notifier memory to CPU viewable region
-    NV_CHECK_OK_OR_GOTO(
-        rmStatus,
-        LEVEL_ERROR,
-        pRmApi->MapToCpu(pRmApi,
-                         hClient,
-                         hDevice,
-                         hErrNotifierPhys,
-                         0,
-                         pChannel->channelNotifierSize,
-                         (void **)&pErrNotifierCpuVA,
-                         0),
-        exit_free_client);
+    if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)))
+    {
+        rmStatus = memmgrMemDescMemSet(pMemoryManager, pChannel->pChannelBufferMemdesc, 0, 
+                                       (TRANSFER_FLAGS_SHADOW_ALLOC | TRANSFER_FLAGS_SHADOW_INIT_MEM));
+        NV_ASSERT_OR_GOTO(rmStatus == NV_OK, exit_free_client);
 
-    pChannel->pTokenFromNotifier =
-        (NvNotification *)(pErrNotifierCpuVA +
-                           (NV_CHANNELGPFIFO_NOTIFICATION_TYPE_WORK_SUBMIT_TOKEN *
-                            sizeof(NvNotification)));
+        pChannel->pbCpuVA = NULL;
+        pChannel->pTokenFromNotifier = NULL;
+    }
+    else
+    {
+        if (bUseRmApiForBar1)
+        {
+            NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR,
+                pRmApi->MapToCpu(pRmApi, hClient, hDevice, hPhysMem, 0, size,
+                                 (void **)&pChannel->pbCpuVA, 0),
+                exit_free_client);
+
+            NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_ERROR,
+                pRmApi->MapToCpu(pRmApi, hClient, hDevice, hErrNotifierPhys, 0,
+                    pChannel->channelNotifierSize, (void **)&pErrNotifierCpuVA, 0),
+                exit_free_client);
+        }
+        else
+        {
+            // 
+            // Most use cases can migrate to the internal memdescMap path for BAR1
+            // And it is preferred because external path will not work with CC
+            //
+            pChannel->pbCpuVA = memmgrMemDescBeginTransfer(pMemoryManager, 
+                                    pChannel->pChannelBufferMemdesc, TRANSFER_FLAGS_USE_BAR1);
+            NV_ASSERT_OR_GOTO(pChannel->pbCpuVA != NULL, exit_free_client);
+
+            pErrNotifierCpuVA = memmgrMemDescBeginTransfer(pMemoryManager,
+                                    pChannel->pErrNotifierMemdesc, TRANSFER_FLAGS_USE_BAR1);
+            NV_ASSERT_OR_GOTO(pErrNotifierCpuVA != NULL, exit_free_client);
+        }
+
+        portMemSet(pChannel->pbCpuVA, 0, (NvLength)size);
+
+        pChannel->pTokenFromNotifier =
+            (NvNotification *)(pErrNotifierCpuVA +
+                               (NV_CHANNELGPFIFO_NOTIFICATION_TYPE_WORK_SUBMIT_TOKEN *
+                                sizeof(NvNotification)));
+    }
 
     //
     // Allocate and map the doorbell region to use in scrub on free
@@ -1188,7 +1207,12 @@ memmgrMemUtilsCopyEngineInitialize_GM107
 
     // initialize the channel parameters (should be done by the parent object)
     pChannel->channelPutOffset = 0;
-    MEM_WR32(pChannel->pbCpuVA + pChannel->semaOffset, 0);
+
+    if (pChannel->pbCpuVA != NULL)
+    {
+        MEM_WR32(pChannel->pbCpuVA + pChannel->semaOffset, 0);
+    }
+
     return NV_OK;
 
  exit_free:
@@ -1300,25 +1324,48 @@ _memUtilsMapUserd_GM107
     OBJCHANNEL    *pChannel,
     NvHandle       hClientId,
     NvHandle       hDeviceId,
-    NvHandle       hChannelId
+    NvHandle       hChannelId,
+    NvBool         bUseRmApiForBar1
 )
 {
-    NvU32      userdSize;
-    RM_API    *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    //
+    // The memTransfer API only works for client-allocated USERD
+    // because otherwise we are calling MapToCpu using the channel
+    // handle instead.
+    //
+    if (pChannel->bClientUserd && !bUseRmApiForBar1)
+    {
+        pChannel->pUserdMemdesc = 
+            memmgrMemUtilsGetMemDescFromHandle(pMemoryManager, hClientId, pChannel->hUserD);
+        NV_ASSERT_OR_RETURN(pChannel->pUserdMemdesc != NULL, NV_ERR_GENERIC);
 
-    kfifoGetUserdSizeAlign_HAL(GPU_GET_KERNEL_FIFO(pGpu), &userdSize, NULL);
+        if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)))
+        {
+            //
+            // GPFIFO aceess will not be set up in order to facilitate memTransfer APIs
+            // which will use GSP-DMA/CE with shadow buffers
+            //
+            pChannel->pControlGPFifo = NULL;
+        }
+        else
+        {
+            pChannel->pControlGPFifo =
+                (void *)memmgrMemDescBeginTransfer(pMemoryManager, pChannel->pUserdMemdesc,
+                                                   TRANSFER_FLAGS_USE_BAR1);
+            NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_GENERIC);
+        }
+    }
+    else
+    {
+        NvU32   userdSize = 0;
+        RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        kfifoGetUserdSizeAlign_HAL(GPU_GET_KERNEL_FIFO(pGpu), &userdSize, NULL);
 
-    NV_CHECK_OK_OR_RETURN(
-        LEVEL_ERROR,
-        pRmApi->MapToCpu(pRmApi,
-                         hClientId,
-                         hDeviceId,
-                         pChannel->bClientUserd ? pChannel->hUserD : hChannelId,
-                         0,
-                         userdSize,
-                         (void **)&pChannel->pControlGPFifo,
-                         0));
-
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            pRmApi->MapToCpu(pRmApi, hClientId, hDeviceId, 
+                             pChannel->bClientUserd ? pChannel->hUserD : hChannelId, 0,
+                             userdSize, (void **)&pChannel->pControlGPFifo, 0));
+    }
     return NV_OK;
 }
 
@@ -1522,6 +1569,10 @@ memmgrMemUtilsMemSet_GM107
         return NV_ERR_GENERIC;
 
     }
+
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, NV_ERR_GENERIC);
+    NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_GENERIC);
+
     if (pChannel->isProgressChecked)
     {
         // if progress is checked insert the semaphore with freeToken as payload
@@ -1578,6 +1629,9 @@ memmgrMemUtilsMemSetBlocking_GM107
         return NV_ERR_GENERIC;
 
     }
+
+    NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_GENERIC);
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, NV_ERR_GENERIC);
 
     blocksPushed = _ceChannelScheduleWork_GM107(pGpu, pMemoryManager, pChannel,
                        0, 0, 0,              // src parameters
@@ -1643,6 +1697,9 @@ memmgrMemUtilsMemSetBatched_GM107
 )
 {
     NvU32 blocksPushed = 0;
+
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, NV_ERR_GENERIC);
+    NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_GENERIC);
 
     blocksPushed = _ceChannelScheduleBatchWork_GM107(pGpu, pMemoryManager, pChannel,
                        0, 0, 0,                          // src parameters
@@ -1720,6 +1777,9 @@ memmgrMemUtilsMemCopyBatched_GM107
     NvU64            size
 )
 {
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, NV_ERR_GENERIC);
+    NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_GENERIC);
+
     NvU32 blocksPushed = _ceChannelScheduleBatchWork_GM107(pGpu, pMemoryManager, pChannel,
                             src, srcAddressSpace, srcCpuCacheAttrib, // src parameters
                             dst, dstAddressSpace, dstCpuCacheAttrib, // dst parameters
@@ -1897,6 +1957,8 @@ _getSpaceInPb(OBJCHANNEL *pChannel)
     NvU32 filledSpace;
     NvU32 avlblSpace;
 
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, 0);
+
     if (pChannel->channelPutOffset >= MEM_RD32((NvU8*)pChannel->pbCpuVA + pChannel->semaOffset))
     {
         filledSpace = (pChannel->channelPutOffset - MEM_RD32((NvU8*)pChannel->pbCpuVA + pChannel->semaOffset));
@@ -1952,6 +2014,8 @@ _ceChannelScheduleBatchWork_GM107
 
     spaceInPb = pChannel->channelPbSize - pChannel->channelPutOffset;
     NV_ASSERT_OR_RETURN(spaceInPb >= pChannel->methodSizePerBlock, 0);
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, 0);
+    NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, 0);
 
     // Support for sending semaphore release only work.
     if (size > 0)
@@ -2045,6 +2109,9 @@ _ceChannelScheduleWork_GM107
     NvU32            blocksPushed = 0;
     NvBool           addFinishPayload;
     NvU32            blockSize = 0;
+
+    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, 0);
+    NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, 0);
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
 
@@ -2223,6 +2290,9 @@ _ceChannelUpdateGpFifo_GM107
     NvU32            workSubmitToken = 0;
     KernelChannel   *pFifoKernelChannel;
     KernelFifo      *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+
+    NV_ASSERT_OR_RETURN_VOID(pChannel->pbCpuVA != NULL);
+    NV_ASSERT_OR_RETURN_VOID(pChannel->pControlGPFifo != NULL);
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
     GPPut = MEM_RD32(&pChannel->pControlGPFifo->GPPut);
