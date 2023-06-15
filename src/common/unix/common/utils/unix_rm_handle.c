@@ -200,11 +200,10 @@ NvU32 nvGenerateUnixRmHandleInternal(NVUnixRmHandleAllocatorPtr pAllocator)
         handleId++;
     }
 
-    if (handleId > pAllocator->maxHandles) {
-        if (!UnixRmHandleReallocBitmap(pAllocator, pAllocator->maxHandles * 2)) {
-            nvUnixRmHandleAssert(!"Failed to grow RM handle allocator bitmap");
-            return INVALID_HANDLE;
-        }
+    if ((handleId > pAllocator->maxHandles) && 
+        (!UnixRmHandleReallocBitmap(pAllocator, pAllocator->maxHandles * 2))) {
+        nvUnixRmHandleAssert(!"Failed to grow RM handle allocator bitmap");
+        return INVALID_HANDLE;
     }
 
     nvUnixRmHandleAssert(!USED(pAllocator->bitmap, handleId));
