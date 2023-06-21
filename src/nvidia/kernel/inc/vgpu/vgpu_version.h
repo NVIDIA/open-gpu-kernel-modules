@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,8 +30,8 @@
 
 #define RPC_VERSION_FROM_VGX_VERSION(major, minor) ( DRF_NUM(_RPC, _VERSION_NUMBER, _MAJOR, major) | \
                                                      DRF_NUM(_RPC, _VERSION_NUMBER, _MINOR, minor))
-#define VGX_MAJOR_VERSION_NUMBER  0x22
-#define VGX_MINOR_VERSION_NUMBER  0x02
+#define VGX_MAJOR_VERSION_NUMBER  0x23
+#define VGX_MINOR_VERSION_NUMBER  0x05
 
 #define VGX_MAJOR_VERSION_NUMBER_VGPU_12_0 0x1A
 #define VGX_MINOR_VERSION_NUMBER_VGPU_12_0 0x18
@@ -49,6 +49,7 @@
  * 2. This is the first break in migration compatibility after a release.
  */
 #define NV_VGPU_GRIDSW_INTERNAL_TO_EXTERNAL_VERSION_MAPPING \
+    {{0x23, 0x0}, {0x23, 0x05}, {0x12, 0x1}},               \
     {{0x22, 0x0}, {0x22, 0x02}, {0x11, 0x1}},               \
     {{0x21, 0x0}, {0x21, 0x0C}, {0x10, 0x1}},               \
     {{0x20, 0x0}, {0x20, 0x04}, {0xF, 0x1}},                \
@@ -94,7 +95,7 @@
 
 /* WARNING: Should be updated with each vGPU release, if there is a break in
  * migration compatibility during the development of that release. */
-#define NV_VGPU_MAX_SUPPORTED_GRIDSW_VERSION_EXTERNAL_MAJOR 0x11
+#define NV_VGPU_MAX_SUPPORTED_GRIDSW_VERSION_EXTERNAL_MAJOR 0x12
 #define NV_VGPU_MAX_SUPPORTED_GRIDSW_VERSION_EXTERNAL_MINOR 0x1
 
 /* WARNING: Should be updated with each vGPU release, if minimum supported

@@ -126,7 +126,7 @@ static NvBool __nvoc_thunk_OBJVASPACE_fabricvaspaceIsAtsEnabled(struct FABRIC_VA
     return vaspaceIsAtsEnabled((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset));
 }
 
-static NvU32 __nvoc_thunk_OBJVASPACE_fabricvaspaceGetBigPageSize(struct FABRIC_VASPACE *pVAS) {
+static NvU64 __nvoc_thunk_OBJVASPACE_fabricvaspaceGetBigPageSize(struct FABRIC_VASPACE *pVAS) {
     return vaspaceGetBigPageSize((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset));
 }
 

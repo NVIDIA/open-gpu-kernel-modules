@@ -74,7 +74,7 @@ struct NoDeviceMemory {
     NV_STATUS (*__nodevicememControlSerialization_Prologue__)(struct NoDeviceMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__nodevicememCanCopy__)(struct NoDeviceMemory *);
     NV_STATUS (*__nodevicememIsReady__)(struct NoDeviceMemory *, NvBool);
-    NV_STATUS (*__nodevicememCheckCopyPermissions__)(struct NoDeviceMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__nodevicememCheckCopyPermissions__)(struct NoDeviceMemory *, struct OBJGPU *, struct Device *);
     void (*__nodevicememPreDestruct__)(struct NoDeviceMemory *);
     NV_STATUS (*__nodevicememIsDuplicate__)(struct NoDeviceMemory *, NvHandle, NvBool *);
     void (*__nodevicememControlSerialization_Epilogue__)(struct NoDeviceMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -129,7 +129,7 @@ NV_STATUS __nvoc_objCreate_NoDeviceMemory(NoDeviceMemory**, Dynamic*, NvU32, CAL
 #define nodevicememControlSerialization_Prologue(pResource, pCallContext, pParams) nodevicememControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define nodevicememCanCopy(pResource) nodevicememCanCopy_DISPATCH(pResource)
 #define nodevicememIsReady(pMemory, bCopyConstructorContext) nodevicememIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define nodevicememCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) nodevicememCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define nodevicememCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) nodevicememCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define nodevicememPreDestruct(pResource) nodevicememPreDestruct_DISPATCH(pResource)
 #define nodevicememIsDuplicate(pMemory, hMemory, pDuplicate) nodevicememIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define nodevicememControlSerialization_Epilogue(pResource, pCallContext, pParams) nodevicememControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -213,8 +213,8 @@ static inline NV_STATUS nodevicememIsReady_DISPATCH(struct NoDeviceMemory *pMemo
     return pMemory->__nodevicememIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS nodevicememCheckCopyPermissions_DISPATCH(struct NoDeviceMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__nodevicememCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS nodevicememCheckCopyPermissions_DISPATCH(struct NoDeviceMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__nodevicememCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void nodevicememPreDestruct_DISPATCH(struct NoDeviceMemory *pResource) {

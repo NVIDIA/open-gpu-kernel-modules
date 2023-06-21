@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,9 @@
  * @file
  * @brief   GSP Client (CPU RM) specific GPU routines reside in this file.
  */
+
+// FIXME XXX
+#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
 #include "gpu/gpu.h"
@@ -62,26 +65,18 @@ gpuInitSriov_FWCLIENT
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
     NvU32 totalPcieFns = 0;
 
-    pGpu->sriovState.totalVFs             = pGSCI->sriovCaps.totalVFs;
-    pGpu->sriovState.firstVFOffset        = pGSCI->sriovCaps.firstVfOffset;
-    pGpu->sriovState.firstVFBarAddress[0] = pGSCI->sriovCaps.FirstVFBar0Address;
-    pGpu->sriovState.firstVFBarAddress[1] = pGSCI->sriovCaps.FirstVFBar1Address;
-    pGpu->sriovState.firstVFBarAddress[2] = pGSCI->sriovCaps.FirstVFBar2Address;
-    pGpu->sriovState.vfBarSize[0]         = pGSCI->sriovCaps.bar0Size;
-    pGpu->sriovState.vfBarSize[1]         = pGSCI->sriovCaps.bar1Size;
-    pGpu->sriovState.vfBarSize[2]         = pGSCI->sriovCaps.bar2Size;
-    pGpu->sriovState.b64bitVFBar0         = pGSCI->sriovCaps.b64bitBar0;
-    pGpu->sriovState.b64bitVFBar1         = pGSCI->sriovCaps.b64bitBar1;
-    pGpu->sriovState.b64bitVFBar2         = pGSCI->sriovCaps.b64bitBar2;
-    
-    pGpu->sriovState.maxGfid              = pGSCI->sriovMaxGfid;
+    pGpu->sriovState.vfBarSize[0] = pGSCI->sriovCaps.bar0Size;
+    pGpu->sriovState.vfBarSize[1] = pGSCI->sriovCaps.bar1Size;
+    pGpu->sriovState.vfBarSize[2] = pGSCI->sriovCaps.bar2Size;
+
+    pGpu->sriovState.maxGfid      = pGSCI->sriovMaxGfid;
 
     // note: pGpu->sriovState.virtualRegPhysOffset is initialized separately
 
     // owned by physical RM, so leave uninitialized
-    pGpu->sriovState.pP2PInfo             = NULL;
-    pGpu->sriovState.bP2PAllocated        = NV_FALSE;
-    pGpu->sriovState.maxP2pGfid           = 0;
+    pGpu->sriovState.pP2PInfo      = NULL;
+    pGpu->sriovState.bP2PAllocated = NV_FALSE;
+    pGpu->sriovState.maxP2pGfid    = 0;
 
     // Include Physical function that occupies GFID 0
     totalPcieFns = pGpu->sriovState.totalVFs + 1;
@@ -186,6 +181,14 @@ gpuGenGidData_FWCLIENT
     if (FLD_TEST_DRF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1, gidFlags))
     {
         GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+        NvU8 zeroGid[RM_SHA1_GID_SIZE] = { 0 };
+
+        if (portMemCmp(pGSCI->gidInfo.data, zeroGid, RM_SHA1_GID_SIZE) == 0)
+        {
+             NV_PRINTF(LEVEL_ERROR, "GSP Static Info has not been initialized yet for UUID\n");
+             return NV_ERR_INVALID_STATE;
+        }
+
         portMemCopy(pGidData, RM_SHA1_GID_SIZE, pGSCI->gidInfo.data, RM_SHA1_GID_SIZE);
         return NV_OK;
     }
@@ -207,9 +210,12 @@ NvBool gpuIsGlobalPoisonFuseEnabled_FWCLIENT(OBJGPU *pGpu)
 void gpuInitProperties_FWCLIENT(OBJGPU *pGpu)
 {
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+
     pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_MOBILE, pGSCI->bIsMobile);
     pGpu->setProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED, pGSCI->bIsGc6Rtd3Allowed);
     pGpu->setProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED, pGSCI->bIsGcOffRtd3Allowed);
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_UEFI, pGSCI->bIsGpuUefi);
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_LEGACY_GCOFF_SUPPORTED, pGSCI->bIsGcoffLegacyAllowed);
 }
 
 /*!
@@ -308,7 +314,7 @@ gpuGetLitterValues_FWCLIENT
     pGrInfo = pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo;
     NV_ASSERT_OR_RETURN(pGrInfo != NULL, 0);
 
-    for (i = 0; i < NV_ARRAY_ELEMENTS32(pGrInfo->infoList); i++)
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pGrInfo->infoList); i++)
     {
         if (pGrInfo->infoList[i].index == index)
             return pGrInfo->infoList[i].data;

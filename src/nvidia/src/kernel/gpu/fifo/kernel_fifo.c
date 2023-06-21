@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,9 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+// FIXME XXX
+#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
@@ -600,7 +603,8 @@ kfifoChidMgrAllocChid_IMPL
     chSize = 1;
 
     // Create unique isolation ID for each process
-    if (serverutilGetClientUnderLock(hClient, &pClient) != NV_OK)
+    pClient = serverutilGetClientUnderLock(hClient);
+    if (pClient == NULL)
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid client handle %ux\n", hClient);
         DBG_BREAKPOINT();
@@ -1097,6 +1101,7 @@ kfifoChidMgrReserveSystemChids_IMPL
             "channel ID heap\n");
         goto cleanup;
     }
+    portMemSet(pChidMgr->ppVirtualChIDHeap[gfid], 0, sizeof(OBJEHEAP));
 
     //
     // Construct heap using low as offset and size of numChannels. This heap
@@ -1875,7 +1880,7 @@ kfifoGetHostDeviceInfoTable_KERNEL
     NvHandle hClient = NV01_NULL_OBJECT;
     NvHandle hObject = NV01_NULL_OBJECT;
     NV2080_CTRL_FIFO_GET_DEVICE_INFO_TABLE_PARAMS *pParams;
-    NV2080_CTRL_FIFO_DEVICE_ENTRY *pHostEntries;
+    NV2080_CTRL_FIFO_DEVICE_ENTRY *pFetchedTable;
     NvU32 numEntries;
     NvU32 device;
     NvU32 entry;
@@ -1902,21 +1907,28 @@ kfifoGetHostDeviceInfoTable_KERNEL
         }
         else
         {
+            RsClient *pClient;
+            Subdevice *pSubdevice;
+
             hClient = hMigClient;
-            if ((status = CliGetSubDeviceHandleFromGpu(hClient, pGpu, &hObject)) != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "Unable to get subdevice handle.\n");
-                return NV_ERR_INVALID_STATE;
-            }
+
+            NV_ASSERT_OK_OR_RETURN(
+                    serverGetClientUnderLock(&g_resServ, hClient, &pClient));
+
+            NV_ASSERT_OK_OR_RETURN(subdeviceGetByGpu(pClient, pGpu, &pSubdevice));
+
+            GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
+
+            hObject = RES_GET_HANDLE(pSubdevice);
         }
     }
 
-    // Allocate pHostEntries and params on the heap to avoid stack overflow
+    // Allocate pFetchedTable and params on the heap to avoid stack overflow
     pLocals = portMemAllocNonPaged(sizeof(*pLocals));
     NV_ASSERT_OR_RETURN((pLocals != NULL), NV_ERR_NO_MEMORY);
 
     pParams = &pLocals->params;
-    pHostEntries = pLocals->entries;
+    pFetchedTable = pLocals->entries;
 
     //
     // Read device info table entries from Host RM until Host indicates that
@@ -1950,9 +1962,10 @@ kfifoGetHostDeviceInfoTable_KERNEL
             goto cleanup;
         }
 
-        portMemCopy(&pHostEntries[device], pParams->numEntries *
-                    sizeof(NV2080_CTRL_FIFO_DEVICE_ENTRY), pParams->entries, pParams->numEntries *
-                    sizeof(NV2080_CTRL_FIFO_DEVICE_ENTRY));
+        portMemCopy(&pFetchedTable[device],
+                    pParams->numEntries * (sizeof *pFetchedTable),
+                    pParams->entries,
+                    pParams->numEntries * (sizeof *pParams->entries));
 
         numEntries += pParams->numEntries;
 
@@ -1978,51 +1991,68 @@ kfifoGetHostDeviceInfoTable_KERNEL
     maxPbdmaId = 0;
     for (entry = 0; entry < numEntries; ++entry)
     {
-        portMemCopy(pEngineInfo->engineInfoList[entry].engineData,
-                    ENGINE_INFO_TYPE_INVALID * sizeof(*(pEngineInfo->engineInfoList[entry].engineData)),
-                    pHostEntries[entry].engineData,
-                    ENGINE_INFO_TYPE_INVALID * sizeof(*(pEngineInfo->engineInfoList[entry].engineData)));
+        FIFO_ENGINE_LIST *pLocalEntry = &pEngineInfo->engineInfoList[entry];
+        NV2080_CTRL_FIFO_DEVICE_ENTRY *pFetchedEntry = &pFetchedTable[entry];
 
-        pEngineInfo->engineInfoList[entry].numPbdmas = pHostEntries[entry].numPbdmas;
-        portMemCopy(pEngineInfo->engineInfoList[entry].pbdmaIds,
-                    FIFO_ENGINE_MAX_NUM_PBDMA * sizeof(*(pEngineInfo->engineInfoList[entry].pbdmaIds)),
-                    pHostEntries[entry].pbdmaIds,
-                    FIFO_ENGINE_MAX_NUM_PBDMA * sizeof(*(pEngineInfo->engineInfoList[entry].pbdmaIds)));
+        ct_assert(sizeof pLocalEntry->engineData <=
+                  sizeof pFetchedEntry->engineData);
+        portMemCopy(pLocalEntry->engineData,
+                    sizeof pLocalEntry->engineData,
+                    pFetchedEntry->engineData,
+                    NV_ARRAY_ELEMENTS(pLocalEntry->engineData) *
+                        (sizeof *pFetchedEntry->engineData));
 
-        portMemCopy(pEngineInfo->engineInfoList[entry].pbdmaFaultIds,
-                    FIFO_ENGINE_MAX_NUM_PBDMA * sizeof(*(pEngineInfo->engineInfoList[entry].pbdmaFaultIds)),
-                    pHostEntries[entry].pbdmaFaultIds,
-                    FIFO_ENGINE_MAX_NUM_PBDMA * sizeof(*(pEngineInfo->engineInfoList[entry].pbdmaFaultIds)));
+        pLocalEntry->numPbdmas = pFetchedEntry->numPbdmas;
+        NV_ASSERT_TRUE_OR_GOTO(status,
+            pLocalEntry->numPbdmas <=
+                    NV_ARRAY_ELEMENTS(pLocalEntry->pbdmaIds) &&
+                pLocalEntry->numPbdmas <=
+                    NV_ARRAY_ELEMENTS(pLocalEntry->pbdmaFaultIds),
+            NV_ERR_INVALID_STATE,
+            cleanup);
+        portMemCopy(
+            pLocalEntry->pbdmaIds,
+            pLocalEntry->numPbdmas * (sizeof *(pLocalEntry->pbdmaIds)),
+            pFetchedEntry->pbdmaIds,
+            pLocalEntry->numPbdmas * (sizeof *(pFetchedEntry->pbdmaIds)));
+        portMemCopy(
+            pLocalEntry->pbdmaFaultIds,
+            pLocalEntry->numPbdmas * (sizeof *(pLocalEntry->pbdmaFaultIds)),
+            pFetchedEntry->pbdmaFaultIds,
+            pLocalEntry->numPbdmas * (sizeof *(pFetchedEntry->pbdmaFaultIds)));
 
-        portStringCopy((char *)pEngineInfo->engineInfoList[entry].engineName,
-                       sizeof(pEngineInfo->engineInfoList[entry].engineName),
-                       (char *)pHostEntries[entry].engineName,
-                       FIFO_ENGINE_NAME_MAX_SIZE);
+        portStringCopy(pLocalEntry->engineName,
+                       sizeof pLocalEntry->engineName,
+                       pFetchedEntry->engineName,
+                       sizeof pFetchedEntry->engineName);
 
-        if (pEngineInfo->engineInfoList[entry].engineData[ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE] != 0)
+        if (pLocalEntry->engineData[ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE] != 0)
         {
             numRunlists++;
         }
         maxRunlistId = NV_MAX(maxRunlistId,
-                              pHostEntries[entry].engineData[ENGINE_INFO_TYPE_RUNLIST]);
+                              pFetchedEntry->engineData[ENGINE_INFO_TYPE_RUNLIST]);
 
-        for (i = 0; i < pEngineInfo->engineInfoList[entry].numPbdmas; i++)
+        for (i = 0; i < pLocalEntry->numPbdmas; i++)
         {
-            maxPbdmaId = NV_MAX(maxPbdmaId, pEngineInfo->engineInfoList[entry].pbdmaIds[i]);
+            maxPbdmaId = NV_MAX(maxPbdmaId, pLocalEntry->pbdmaIds[i]);
 
             //
             // SW engine while being constructed does not populate any PBDMA Fault IDs.
             // Hence, skipping it.
             //
-            if (pEngineInfo->engineInfoList[entry].engineData[ENGINE_INFO_TYPE_ENG_DESC] != ENG_SW)
+            if (pLocalEntry->engineData[ENGINE_INFO_TYPE_ENG_DESC] != ENG_SW)
             {
-                bitVectorSet(&pEngineInfo->validEngineIdsForPbdmas, pEngineInfo->engineInfoList[entry].pbdmaFaultIds[i]);
+                bitVectorSet(&pEngineInfo->validEngineIdsForPbdmas, pLocalEntry->pbdmaFaultIds[i]);
             }
         }
     }
 
-    NV_ASSERT_OR_GOTO(kfifoReservePbdmaFaultIds_HAL(pGpu, pKernelFifo, pEngineInfo->engineInfoList,
-                                    pEngineInfo->engineInfoListSize) == NV_OK, cleanup);
+    NV_ASSERT_OK_OR_GOTO(status,
+        kfifoReservePbdmaFaultIds_HAL(pGpu, pKernelFifo,
+                                      pEngineInfo->engineInfoList,
+                                      pEngineInfo->engineInfoListSize),
+        cleanup);
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -3379,3 +3409,31 @@ kfifoGetGuestEngineLookupTable_IMPL
     return guestEngineLookupTable;
 };
 
+/**
+ * @brief Fetch the maximum number of secure channels supported by SEC2
+ *        and secure CEs when confidential compute is enabled
+ *
+ */
+NV_STATUS
+kfifoGetMaxSecureChannels_KERNEL
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo
+)
+{
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV2080_CTRL_INTERNAL_FIFO_GET_NUM_SECURE_CHANNELS_PARAMS numSecureChannelsParams = {0};
+
+    NV_ASSERT_OK_OR_RETURN(
+        pRmApi->Control(pRmApi,
+                        pGpu->hInternalClient,
+                        pGpu->hInternalSubdevice,
+                        NV2080_CTRL_CMD_INTERNAL_FIFO_GET_NUM_SECURE_CHANNELS,
+                        &numSecureChannelsParams,
+                        sizeof(numSecureChannelsParams)));
+
+    pKernelFifo->maxSec2SecureChannels = numSecureChannelsParams.maxSec2SecureChannels;
+    pKernelFifo->maxCeSecureChannels = numSecureChannelsParams.maxCeSecureChannels;
+
+    return NV_OK;
+}

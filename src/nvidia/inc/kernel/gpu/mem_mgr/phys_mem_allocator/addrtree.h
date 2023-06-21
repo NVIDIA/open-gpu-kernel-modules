@@ -127,12 +127,12 @@ void pmaAddrtreeSetEvictingFrames(void *pMap, NvU64 frameEvictionsInProcess);
  */
 NV_STATUS pmaAddrtreeScanContiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-    NvU64 numPages, NvU64 *freelist, NvU32 pageSize, NvU64 alignment,
+    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
     NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 NV_STATUS pmaAddrtreeScanDiscontiguous(
     void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
-    NvU64 numPages, NvU64 *freelist, NvU32 pageSize, NvU64 alignment,
+    NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
     NvU64 *pagesAllocated, NvBool bSkipEvict, NvBool bReverseAlloc);
 
 void pmaAddrtreePrintTree(void *pMap, const char* str);
@@ -154,7 +154,7 @@ void pmaAddrtreePrintTree(void *pMap, const char* str);
 void pmaAddrtreeChangeState(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState);
 void pmaAddrtreeChangeStateAttrib(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState, NvBool writeAttrib);
 void pmaAddrtreeChangeStateAttribEx(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState,PMA_PAGESTATUS newStateMask);
-void pmaAddrtreeChangePageStateAttrib(void * pMap, NvU64 startFrame, NvU32 pageSize,
+void pmaAddrtreeChangePageStateAttrib(void * pMap, NvU64 startFrame, NvU64 pageSize,
                                       PMA_PAGESTATUS newState, NvBool writeAttrib);
 
 /*!

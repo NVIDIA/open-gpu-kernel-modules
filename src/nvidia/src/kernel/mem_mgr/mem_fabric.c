@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,7 +64,7 @@ _memoryfabricMemDescGetNumAddr
     NvU64   pageSize = 0;
 
     // Get the page size from the memory descriptor.
-    pageSize = memdescGetPageSize64(pMemDesc,
+    pageSize = memdescGetPageSize(pMemDesc,
                             VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
 
     // Get the number of addresses associated with this memory descriptor.
@@ -112,17 +112,19 @@ _memoryfabricValidatePhysMem
 
     pPhysMemDesc = (dynamicCast(pPhysmemRef->pResource, Memory))->pMemDesc;
 
-    if (!memmgrIsApertureSupportedByFla_HAL(pOwnerGpu, pMemoryManager, memdescGetAddressSpace(pPhysMemDesc)) ||
-        (pOwnerGpu != pPhysMemDesc->pGpu))
+    if ((pOwnerGpu != pPhysMemDesc->pGpu) ||
+        !memmgrIsApertureSupportedByFla_HAL(pOwnerGpu, pMemoryManager,
+                                        memdescGetAddressSpace(pPhysMemDesc)))
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid physmem handle passed\n");
 
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    physPageSize = memdescGetPageSize64(pPhysMemDesc, AT_GPU);
-    if ((physPageSize != NV_MEMORY_FABRIC_PAGE_SIZE_2M) &&
-        (physPageSize != NV_MEMORY_FABRIC_PAGE_SIZE_512M))
+    physPageSize = memdescGetPageSize(pPhysMemDesc, AT_GPU);
+    if (
+        (physPageSize != RM_PAGE_SIZE_HUGE) &&
+        (physPageSize != RM_PAGE_SIZE_512M))
     {
         NV_PRINTF(LEVEL_ERROR, "Physmem page size should be 2MB\n");
 
@@ -222,6 +224,13 @@ _memoryFabricAttachMem
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    if (gpuIsCCFeatureEnabled(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Unsupported when Confidential Computing is enabled\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     status = _memoryfabricValidatePhysMem(RES_GET_CLIENT_HANDLE(pMemory),
                                           pAttachInfo->hMemory,
                                           pGpu, &pPhysMemDesc);
@@ -280,7 +289,8 @@ freeNode:
     portMemFree(pNode);
 
 unmapVas:
-    fabricvaspaceUnmapPhysMemdesc(pFabricVAS, pFabricMemDesc, pAttachInfo->offset,
+    fabricvaspaceUnmapPhysMemdesc(pFabricVAS, pFabricMemDesc,
+                                  pAttachInfo->offset,
                                   pPhysMemDesc, pAttachInfo->mapLength);
 
 freeDupedMem:
@@ -308,10 +318,12 @@ _memoryfabricMemDescDestroyCallback
 
     pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
     pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pMemDesc);
-    pteArray = memdescGetPteArrayForGpu(pMemDesc, pGpu, VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
+    pteArray = memdescGetPteArrayForGpu(pMemDesc, pGpu,
+                                    VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
     numAddr = _memoryfabricMemDescGetNumAddr(pMemDesc);
     // Get the page size from the memory descriptor.
-    pageSize = memdescGetPageSize64(pMemDesc, VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
+    pageSize = memdescGetPageSize(pMemDesc,
+                                    VAS_ADDRESS_TRANSLATION(pGpu->pFabricVAS));
 
     // Remove the fabric memory allocations from the map.
     fabricvaspaceVaToGpaMapRemove(pFabricVAS, pteArray[0]);
@@ -323,10 +335,11 @@ _memoryfabricMemDescDestroyCallback
     {
         //
         // Call fabricvaspaceBatchFree to free the FLA allocations.
-        // _pteArray in memdesc is RM_PAGE_SIZE whereas page size for memory fabric
-        // allocations is either 2MB or 512MB. Pass stride accordingly.
+        // _pteArray in memdesc is RM_PAGE_SIZE whereas page size for memory
+        // fabric allocations is either 2MB or 512MB. Pass stride accordingly.
         //
-        fabricvaspaceBatchFree(pFabricVAS, pteArray, numAddr, (pageSize >> RM_PAGE_SHIFT));
+        fabricvaspaceBatchFree(pFabricVAS, pteArray, numAddr,
+                               (pageSize >> RM_PAGE_SHIFT));
     }
 
     if (pMemdescData != NULL)
@@ -398,12 +411,14 @@ _memoryfabricAllocFabricVa_VGPU
                            pParams->hResource,
                            pParams->externalClassId,
                            pAllocParams,
+                           sizeof(*pAllocParams),
                            status);
 
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Alloc NV_MEMORY_FABRIC RPC failed, status: %x\n",
-                    status);
+        NV_PRINTF(LEVEL_ERROR,
+                  "Alloc NV_MEMORY_FABRIC RPC failed, status: %x\n",
+                  status);
         return status;
     }
 
@@ -427,14 +442,16 @@ _memoryfabricAllocFabricVa_VGPU
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "CTRL_CMD_DESCRIBE failed, status: 0x%x, "
-                        "numPfns: 0x%x, totalPfns: 0x%llx, readSoFar: 0x%x \n",
-                        status, pDescribeParams->numPfns, pDescribeParams->totalPfns, idx);
+                      "numPfns: 0x%x, totalPfns: 0x%llx, readSoFar: 0x%x \n",
+                      status, pDescribeParams->numPfns,
+                      pDescribeParams->totalPfns, idx);
             goto cleanup;
         }
 
         if (pAddr == NULL)
         {
-            pAddr = portMemAllocNonPaged(sizeof(NvU64) * pDescribeParams->totalPfns);
+            pAddr = portMemAllocNonPaged(sizeof(NvU64) *
+                                         pDescribeParams->totalPfns);
             if (pAddr == NULL)
             {
                 status = NV_ERR_NO_MEMORY;
@@ -444,7 +461,8 @@ _memoryfabricAllocFabricVa_VGPU
 
         for (i=0; i < pDescribeParams->numPfns; i++)
         {
-            pAddr[idx + i] = (NvU64)((NvU64)pDescribeParams->pfnArray[i] << RM_PAGE_SHIFT_HUGE);
+            pAddr[idx + i] =
+                (NvU64)((NvU64)pDescribeParams->pfnArray[i] << RM_PAGE_SHIFT_HUGE);
         }
 
         idx += pDescribeParams->numPfns;
@@ -504,25 +522,25 @@ memoryfabricConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    Memory                       *pMemory        = staticCast(pMemoryFabric, Memory);
-    OBJGPU                       *pGpu           = pMemory->pGpu;
-    FABRIC_VASPACE               *pFabricVAS     = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    OBJGPU *pGpu = pMemory->pGpu;
+    FABRIC_VASPACE *pFabricVAS  = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
     NV00F8_ALLOCATION_PARAMETERS *pAllocParams   = pParams->pAllocParams;
-    RM_API                       *pRmApi         = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    MemoryManager                *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    MEMORY_DESCRIPTOR            *pPhysMemDesc    = NULL;
-    NV_STATUS                     status         = NV_OK;
-    MEMORY_DESCRIPTOR            *pMemDesc       = NULL;
-    FABRIC_MEMDESC_DATA          *pMemdescData   = NULL;
-    MEM_DESC_DESTROY_CALLBACK    *pCallback      = NULL;
-    VAS_ALLOC_FLAGS               flags          = {0};
-    NvU64                        *pAddr          = NULL;
-    NvU32                         numAddr        = 0;
-    NvU32                         pteKind        = 0;
-    NvBool                        bReadOnly      = NV_FALSE;
-    NvHandle                      hPhysMem;
-    NvBool                        bFlexible      = NV_FALSE;
-    NvU32                         mapFlags       = 0;
+    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    MEMORY_DESCRIPTOR *pPhysMemDesc = NULL;
+    NV_STATUS status = NV_OK;
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
+    FABRIC_MEMDESC_DATA *pMemdescData = NULL;
+    MEM_DESC_DESTROY_CALLBACK *pCallback = NULL;
+    VAS_ALLOC_FLAGS flags = {0};
+    NvU64   *pAddr = NULL;
+    NvU32    numAddr = 0;
+    NvU32    pteKind = 0;
+    NvBool   bReadOnly = NV_FALSE;
+    NvHandle hPhysMem;
+    NvBool   bFlexible = NV_FALSE;
+    NvU32    mapFlags = 0;
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -541,18 +559,19 @@ memoryfabricConstruct_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    // initialize Fabric VAS Unicast range if not already setup 
+    // initialize Fabric VAS Unicast range if not already setup
     if (fabricvaspaceGetUCFlaLimit(pFabricVAS) == 0)
     {
-        NV_PRINTF(LEVEL_ERROR, "UC FLA ranges should be initialized by this time!\n");
+        NV_PRINTF(LEVEL_ERROR,
+                  "UC FLA ranges should be initialized by this time!\n");
         return NV_ERR_INVALID_STATE;
     }
 
-    // Only page size 512MB and 2MB supported.
-    if ((pAllocParams->pageSize != NV_MEMORY_FABRIC_PAGE_SIZE_512M) &&
+    if (
+        (pAllocParams->pageSize != NV_MEMORY_FABRIC_PAGE_SIZE_512M) &&
         (pAllocParams->pageSize != NV_MEMORY_FABRIC_PAGE_SIZE_2M))
     {
-        NV_PRINTF(LEVEL_ERROR, "Unsupported pageSize: 0x%x\n",
+        NV_PRINTF(LEVEL_ERROR, "Unsupported pageSize: 0x%llx\n",
                   pAllocParams->pageSize);
 
         return NV_ERR_INVALID_ARGUMENT;
@@ -621,7 +640,7 @@ memoryfabricConstruct_IMPL
     {
         NV_PRINTF(LEVEL_ERROR,
                   "VA Space alloc failed! Status Code: 0x%x Size: 0x%llx "
-                  "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%x\n",
+                  "RangeLo: 0x%llx, RangeHi: 0x%llx, page size: 0x%llx\n",
                   status, pAllocParams->allocSize,
                   fabricvaspaceGetUCFlaStart(pFabricVAS),
                   fabricvaspaceGetUCFlaLimit(pFabricVAS),
@@ -700,7 +719,7 @@ memoryfabricConstruct_IMPL
     // Associate the memdescDestroy callback function.
     pCallback->pObject         = (void *)pCallback;
     pCallback->destroyCallback =
-                   (MemDescDestroyCallBack*) &_memoryfabricMemDescDestroyCallback;
+                (MemDescDestroyCallBack*) &_memoryfabricMemDescDestroyCallback;
 
     memdescAddDestroyCallback(pMemDesc, pCallback);
 
@@ -713,9 +732,11 @@ memoryfabricConstruct_IMPL
     if (hPhysMem != 0)
     {
         // Dup the physical memory handle and cache it in memfabric memdesc.
-        status = pRmApi->DupObject(pRmApi, pFabricVAS->hClient, pFabricVAS->hDevice,
-                            &pMemdescData->hDupedPhysMem, pCallContext->pClient->hClient,
-                            hPhysMem, 0);
+        status = pRmApi->DupObject(pRmApi, pFabricVAS->hClient,
+                                   pFabricVAS->hDevice,
+                                   &pMemdescData->hDupedPhysMem,
+                                   pCallContext->pClient->hClient,
+                                   hPhysMem, 0);
 
         if (status != NV_OK)
         {
@@ -769,7 +790,8 @@ memoryfabricConstruct_IMPL
         // No need to unmap on failure. Unmap happens implicitly when fabric VA
         // would be freed.
         //
-        status = fabricvaspaceVaToGpaMapInsert(pFabricVAS, pAddr[0], pPhysMemDesc,
+        status = fabricvaspaceVaToGpaMapInsert(pFabricVAS, pAddr[0],
+                                               pPhysMemDesc,
                                                pAllocParams->map.offset);
         if (status != NV_OK)
             goto freeDupedMem;
@@ -923,8 +945,8 @@ memoryfabricCtrlCmdDescribe_IMPL
 
     if (pParams->offset >= pParams->totalPfns)
     {
-        NV_PRINTF(LEVEL_ERROR, "offset: %llx is out of range: %llx \n", pParams->offset,
-                  pParams->totalPfns);
+        NV_PRINTF(LEVEL_ERROR, "offset: %llx is out of range: %llx \n",
+                  pParams->offset, pParams->totalPfns);
         return NV_ERR_OUT_OF_RANGE;
     }
 
@@ -937,8 +959,8 @@ memoryfabricCtrlCmdDescribe_IMPL
         return NV_ERR_NO_MEMORY;
 
     offset = pParams->offset * pageSize;
-    memdescGetPhysAddrsForGpu(pMemory->pMemDesc, pMemory->pMemDesc->pGpu, AT_GPU, offset,
-                              pageSize, pParams->numPfns,
+    memdescGetPhysAddrsForGpu(pMemory->pMemDesc, pMemory->pMemDesc->pGpu,
+                              AT_GPU, offset, pageSize, pParams->numPfns,
                               pFabricArray);
 
     for (i = 0; i < pParams->numPfns; i++)
@@ -1029,7 +1051,9 @@ memoryfabricCtrlGetNumAttachedMem_IMPL
 
     pParams->numMemInfos = 0;
 
-    btreeEnumStart(pParams->offsetStart, &pNode, pMemdescData->pAttachMemInfoTree);
+    btreeEnumStart(pParams->offsetStart, &pNode,
+                   pMemdescData->pAttachMemInfoTree);
+
     while ((pNode != NULL) && (pNode->keyStart <= pParams->offsetEnd))
     {
         pParams->numMemInfos++;
@@ -1062,7 +1086,9 @@ memoryfabricCtrlGetAttachedMem_IMPL
         (pParams->numMemInfos > NV00F8_MAX_ATTACHED_MEM_INFOS))
         return NV_ERR_INVALID_ARGUMENT;
 
-    btreeEnumStart(pParams->offsetStart, &pNode, pMemdescData->pAttachMemInfoTree);
+    btreeEnumStart(pParams->offsetStart, &pNode,
+                   pMemdescData->pAttachMemInfoTree);
+
     while (count < pParams->numMemInfos)
     {
         if (pNode == NULL)
@@ -1105,4 +1131,104 @@ cleanup:
     }
 
     return status;
+}
+
+static NV_STATUS
+_memoryfabricGetPhysAttrsUsingFabricMemdesc
+(
+    OBJGPU            *pGpu,
+    FABRIC_VASPACE    *pFabricVAS,
+    MEMORY_DESCRIPTOR *pFabricMemDesc,
+    NvU64              offset,
+    NvU64             *pPhysPageSize
+)
+{
+    NV_STATUS status;
+    MEMORY_DESCRIPTOR *pPhysMemDesc;
+    FABRIC_MEMDESC_DATA *pMemdescData;
+    NODE *pNode = NULL;
+    FABRIC_ATTCH_MEM_INFO_NODE *pAttachMemInfoNode;
+
+    if ((pFabricMemDesc == NULL) || (pPhysPageSize == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    status = fabricvaspaceGetGpaMemdesc(pFabricVAS, pFabricMemDesc, pGpu,
+                                        &pPhysMemDesc);
+    if (status == NV_OK)
+    {
+        *pPhysPageSize = memdescGetPageSize(pPhysMemDesc, AT_GPU);
+        memdescDestroy(pPhysMemDesc);
+        return NV_OK;
+    }
+
+    if (status != NV_ERR_OBJECT_NOT_FOUND)
+        return status;
+
+    // If the object is flexible, check the attach mem info tree.
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pFabricMemDesc);
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, btreeSearch(offset, &pNode,
+                          pMemdescData->pAttachMemInfoTree));
+    pAttachMemInfoNode = (FABRIC_ATTCH_MEM_INFO_NODE*)pNode->Data;
+
+    *pPhysPageSize = memdescGetPageSize(pAttachMemInfoNode->pPhysMemDesc,
+                                          AT_GPU);
+
+    return NV_OK;
+}
+
+NV_STATUS
+memoryfabricCtrlGetPageLevelInfo_IMPL
+(
+    MemoryFabric                           *pMemoryFabric,
+    NV00F8_CTRL_GET_PAGE_LEVEL_INFO_PARAMS *pParams
+)
+{
+    Memory *pMemory = staticCast(pMemoryFabric, Memory);
+    OBJGPU *pGpu  = pMemory->pGpu;
+    FABRIC_VASPACE *pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+    NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_PARAMS pageLevelInfoParams = {0};
+    MEMORY_DESCRIPTOR *pFabricMemDesc = pMemory->pMemDesc;
+    NvU64 fabricAddr;
+    NvU64 mappingPageSize;
+    NvU64 physPageSize;
+    NvU32 i;
+
+    NV_ASSERT_OR_RETURN(pFabricMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                          _memoryfabricGetPhysAttrsUsingFabricMemdesc(pGpu,
+                          pFabricVAS, pFabricMemDesc, pParams->offset,
+                          &physPageSize));
+
+    mappingPageSize = NV_MIN(physPageSize,
+                             memdescGetPageSize(pFabricMemDesc, AT_GPU));
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       NV_IS_ALIGNED64(pParams->offset, mappingPageSize),
+                       NV_ERR_INVALID_ARGUMENT);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+                       pParams->offset < memdescGetSize(pFabricMemDesc),
+                       NV_ERR_INVALID_ARGUMENT);
+
+    memdescGetPhysAddrsForGpu(pFabricMemDesc, pGpu, AT_GPU, pParams->offset,
+                              mappingPageSize, 1, &fabricAddr);
+
+    pageLevelInfoParams.virtAddress = fabricAddr;
+    pageLevelInfoParams.pageSize = mappingPageSize;
+
+    NV_ASSERT_OK_OR_RETURN(fabricvaspaceGetPageLevelInfo(pFabricVAS, pGpu,
+                           &pageLevelInfoParams));
+
+    pParams->numLevels = pageLevelInfoParams.numLevels;
+    for (i = 0; i < pParams->numLevels; i++)
+    {
+        portMemCopy(&pParams->levels[i], sizeof(pParams->levels[i]),
+                    &pageLevelInfoParams.levels[i],
+                    sizeof(pageLevelInfoParams.levels[i]));
+    }
+
+    return NV_OK;
 }

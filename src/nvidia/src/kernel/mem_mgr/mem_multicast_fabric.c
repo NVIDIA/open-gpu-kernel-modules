@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -434,7 +434,7 @@ _memMulticastFabricSendInbandTeamSetupRequestUnderlock
     NvU64 fmCaps;
     NV_STATUS status = NV_OK;
 
-    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfo, &fmCaps);
+    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps);
     if (status != NV_OK)
         return status;
 
@@ -455,7 +455,7 @@ _memMulticastFabricSendInbandTeamReleaseRequestUnderLock
     NvU64 fmCaps;
     NV_STATUS status = NV_OK;
 
-    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfo, &fmCaps);
+    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps);
     if (status != NV_OK)
         return status;
 
@@ -727,6 +727,82 @@ _memMulticastFabricInstallMemDescUnderLock
     _memMulticastFabricDescriptorFlushClientsUnderLock(pMulticastFabricDesc);
 }
 
+static NV_STATUS
+_memorymulticastFabricAllocVasUnderLock
+(
+    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc,
+    MEMORY_DESCRIPTOR               *pFabricMemDesc
+)
+{
+    NV_STATUS status = NV_OK;
+    FABRIC_VASPACE *pFabricVAS;
+    MEM_MULTICAST_FABRIC_GPU_INFO *pGpuInfo;
+    VAS_ALLOC_FLAGS flags = { 0 };
+    NvU64 gpuProbeHandle;
+
+    for (pGpuInfo = listHead(&pMulticastFabricDesc->gpuInfoList);
+         pGpuInfo != NULL;
+         pGpuInfo = listNext(&pMulticastFabricDesc->gpuInfoList, pGpuInfo))
+    {
+        OBJGPU *pGpu = pGpuInfo->pGpu;
+
+        pFabricVAS = dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE);
+        if (pFabricVAS == NULL)
+        {
+            status = NV_ERR_INVALID_STATE;
+            goto cleanup;
+        }
+
+        //
+        // The fabric handle might not be available or have changed, if fabric
+        // state was ever invalidated while MCFLA allocation was in progress.
+        //
+        status = gpuFabricProbeGetGpuFabricHandle(pGpu->pGpuFabricProbeInfoKernel,
+                                                  &gpuProbeHandle);
+        if ((status != NV_OK) || (pGpuInfo->gpuProbeHandle != gpuProbeHandle))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Attached GPU's probe handle is stale\n");
+            status = NV_ERR_INVALID_DEVICE;
+            goto cleanup;
+        }
+
+        status = fabricvaspaceAllocMulticast(pFabricVAS,
+                                    memdescGetPageSize(pFabricMemDesc, AT_GPU),
+                                    pMulticastFabricDesc->alignment,
+                                    flags, pFabricMemDesc->_pteArray[0],
+                                    pMulticastFabricDesc->allocSize);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Fabric VA space alloc failed for GPU %d\n",
+                      pGpuInfo->pGpu->gpuInstance);
+            goto cleanup;
+        }
+
+        pGpuInfo->bMcflaAlloc = NV_TRUE;
+    }
+
+    return NV_OK;
+
+cleanup:
+    for (pGpuInfo = listHead(&pMulticastFabricDesc->gpuInfoList);
+         pGpuInfo != NULL;
+         pGpuInfo = listNext(&pMulticastFabricDesc->gpuInfoList, pGpuInfo))
+    {
+        if (pGpuInfo->bMcflaAlloc)
+        {
+            pFabricVAS = dynamicCast(pGpuInfo->pGpu->pFabricVAS, FABRIC_VASPACE);
+
+            fabricvaspaceBatchFree(pFabricVAS, &pFabricMemDesc->_pteArray[0],
+                                   1, 1);
+
+            pGpuInfo->bMcflaAlloc = NV_FALSE;
+        }
+    }
+
+    return status;
+}
+
 NV_STATUS
 _memMulticastFabricAttachGpuPostProcessorUnderLock
 (
@@ -768,6 +844,21 @@ _memMulticastFabricAttachGpuPostProcessorUnderLock
 
     status = _memMulticastFabricCreateMemDescUnderLock(pMulticastFabricDesc,
                                                        mcAddressBase, &pMemDesc);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to allocate fabric memdesc\n");
+        goto installMemDesc;
+    }
+
+    status = _memorymulticastFabricAllocVasUnderLock(pMulticastFabricDesc,
+                                                     pMemDesc);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to allocate fabric VAS\n");
+        memdescDestroy(pMemDesc);
+        pMemDesc = NULL;
+        goto installMemDesc;
+    }
 
 installMemDesc:
     _memMulticastFabricInstallMemDescUnderLock(pMulticastFabricDesc,
@@ -800,7 +891,8 @@ _memorymulticastfabricDestructUnderLock
     _memMulticastFabricDescriptorFreeUnderLock(pMulticastFabricDesc);
 }
 
-void memorymulticastfabricTeamSetupResponseCallback
+NV_STATUS
+memorymulticastfabricTeamSetupResponseCallback
 (
     NvU32                                           gpuInstance,
     NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pInbandRcvParams
@@ -816,16 +908,15 @@ void memorymulticastfabricTeamSetupResponseCallback
     NvU64 mcAddressBase = 0;
     NvU64 mcAddressSize = 0;
     NvU8 *pRsvd = NULL;
-    NvU32 unused;
     OBJGPU *pGpu;
 
     NV_ASSERT(pInbandRcvParams != NULL);
-    NV_ASSERT(rmGpuGroupLockIsOwner(gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &unused));
+    NV_ASSERT(rmGpuLockIsOwner());
 
     if ((pGpu = gpumgrGetGpu(gpuInstance)) == NULL)
     {
         NV_ASSERT_FAILED("Invalid GPU instance");
-        return;
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
     pMcTeamSetupRspMsg = \
@@ -900,6 +991,8 @@ void memorymulticastfabricTeamSetupResponseCallback
     }
 
     fabricMulticastFabricOpsMutexRelease(pFabric);
+
+    return NV_OK;
 }
 
 NV_STATUS
@@ -972,6 +1065,7 @@ memorymulticastfabricCtrlAttachGpu_IMPL
     pGpu = GPU_RES_GET_GPU(pSubdevice);
 
     if (RMCFG_FEATURE_PLATFORM_WINDOWS ||
+        gpuIsCCFeatureEnabled(pGpu) ||
         IS_VIRTUAL(pGpu))
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -980,7 +1074,7 @@ memorymulticastfabricCtrlAttachGpu_IMPL
         goto fail;
     }
 
-    status = gpuFabricProbeGetGpuFabricHandle(pGpu->pGpuFabricProbeInfo,
+    status = gpuFabricProbeGetGpuFabricHandle(pGpu->pGpuFabricProbeInfoKernel,
                                               &gpuProbeHandle);
     if (status != NV_OK)
     {
@@ -1106,7 +1200,7 @@ _memorymulticastfabricValidatePhysMem
 {
     RsResourceRef *pPhysmemRef;
     MEMORY_DESCRIPTOR *pPhysMemDesc;
-    NvU32 physPageSize;
+    NvU64 physPageSize;
     NV_STATUS status;
 
     status = serverutilGetResourceRef(RES_GET_CLIENT_HANDLE(pMemoryMulticastFabric),
@@ -1185,28 +1279,7 @@ memorymulticastfabricCtrlAttachMem_IMPL
     pFabricMemDesc = pMulticastFabricDesc->pMemDesc;
     NV_ASSERT_OR_RETURN(pFabricMemDesc != NULL, NV_ERR_INVALID_STATE);
 
-    //
-    // No need to cleanup this MCFLA state on any further failure. We expect
-    // to get this cleaned up on object destruction only.
-    //
-    if (!pGpuInfo->bMcflaAlloc)
-    {
-        VAS_ALLOC_FLAGS flags = { 0 };
-
-        status = fabricvaspaceAllocMulticast(pFabricVAS,
-                                    memdescGetPageSize(pFabricMemDesc, AT_GPU),
-                                    pMulticastFabricDesc->alignment,
-                                    flags, pFabricMemDesc->_pteArray[0],
-                                    pMulticastFabricDesc->allocSize);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Fabric VA space alloc failed! for GPU\n");
-            return status;
-        }
-
-        pGpuInfo->bMcflaAlloc = NV_TRUE;
-    }
+    NV_ASSERT_OR_RETURN(pGpuInfo->bMcflaAlloc, NV_ERR_INVALID_STATE);
 
     status = pRmApi->DupObject(pRmApi, pFabricVAS->hClient,
                                pFabricVAS->hDevice, &hDupedPhysMem,

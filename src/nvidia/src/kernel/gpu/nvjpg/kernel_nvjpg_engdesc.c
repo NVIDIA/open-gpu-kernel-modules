@@ -23,6 +23,7 @@
 
 #include "gpu/gpu.h"
 #include "gpu/mig_mgr/kernel_mig_manager.h"
+#include "kernel/gpu/device/device.h"
 #include "nvos.h"
 #include "resserv/rs_server.h"
 
@@ -71,9 +72,16 @@ nvjpgGetEngineDescFromAllocParams
         case NVB8D1_VIDEO_NVJPG:
         case NVC9D1_VIDEO_NVJPG:
             engineInstance = pNvjpgAllocParms->engineInstance;
+            NV_PRINTF(LEVEL_INFO, "Supported nvjpg class Id (classId = 0x%x / engineInstance = 0x%x)\n",
+                      externalClassId,
+                      engineInstance);
             break;
+
         default:
             DBG_BREAKPOINT();
+            NV_PRINTF(LEVEL_ERROR, "Not supported nvjpg class Id (classId = 0x%x / engineInstance = 0x%x)\n",
+                      externalClassId,
+                      pNvjpgAllocParms->engineInstance);
             return ENG_INVALID;
     }
 
@@ -82,10 +90,19 @@ nvjpgGetEngineDescFromAllocParams
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
         RM_ENGINE_TYPE rmEngineType;
+        RsResourceRef *pDeviceRef = NULL;
 
         NV_ASSERT_OK(
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                            pCallContext->pClient->hClient, &ref));
+            refFindAncestorOfType(pCallContext->pResourceRef,
+                                  classId(Device), &pDeviceRef));
+
+        if (pDeviceRef == NULL)
+            return ENG_INVALID;
+
+        NV_ASSERT_OK(
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                            dynamicCast(pDeviceRef->pResource, Device),
+                                            &ref));
 
         NV_ASSERT_OK(
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,

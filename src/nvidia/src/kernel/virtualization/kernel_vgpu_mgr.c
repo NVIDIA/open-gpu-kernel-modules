@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -111,14 +111,14 @@ kvgpumgrDetachGpu(NvU32 gpuPciId)
 /*
  * @brief Sets Guest(VM) ID for the requested hostvgpudevice
  *
- * @param pParams               NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_GUEST_ID_PARAMS Pointer
+ * @param pParams               SET_GUEST_ID_PARAMS Pointer
  * @param pKernelHostVgpuDevice Device for which Vm ID need to be set
  * @param pGpu                  OBJGPU pointer
  *
  * @return NV_STATUS
  */
 NV_STATUS
-kvgpumgrRegisterGuestId(NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_GUEST_ID_PARAMS *pParams,
+kvgpumgrRegisterGuestId(SET_GUEST_ID_PARAMS *pParams,
                         KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice, OBJGPU *pGpu)
 {
     return NV_ERR_NOT_SUPPORTED;
@@ -303,9 +303,8 @@ kvgpumgrGetHostVgpuDeviceFromMdevUuid(NvU32 gpuPciId, const NvU8 *pMdevUuid,
 }
 
 NV_STATUS
-kvgpumgrGetHostVgpuDeviceFromVmId(NvU32 gpuPciId, VM_ID guestVmId,
-                                  KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice,
-                                  VM_ID_TYPE vmIdType)
+kvgpumgrGetHostVgpuDeviceFromVgpuUuid(NvU32 gpuPciId, NvU8 *vgpuUuid,
+                                  KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -317,4 +316,15 @@ kvgpumgrGetConfigEventInfoFromDb(NvHandle hClient,
                                  NvU32 pgpuIndex)
 {
     return NV_ERR_OBJECT_NOT_FOUND;
+}
+
+NV_STATUS
+kvgpuMgrRestoreSmcExecPart
+(
+    OBJGPU *pGpu,
+    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice,
+    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
 }

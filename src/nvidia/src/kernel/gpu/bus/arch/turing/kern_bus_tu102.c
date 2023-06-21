@@ -50,12 +50,12 @@ kbusGetUnusedPciePeerId_TU102
                         PDB_PROP_KNVLINK_WAR_BUG_3471679_PEERID_FILTERING)))
     {
         //
-        // Get the mask of NvLink peerIds, to exclude them from the 
+        // Get the mask of NvLink peerIds, to exclude them from the
         // peerIds PCIE P2P is using.
         // Pre-Ampere GPUs use a static peerId assignment reserved in
-        // busGetNvlinkP2PPeerId_GP100() and we need to make sure the 
-        // PCIE and nvLink P2P assignments do not collide. 
-        // Make this Windows + Turing only until bug 3471679 is fixed. 
+        // busGetNvlinkP2PPeerId_GP100() and we need to make sure the
+        // PCIE and nvLink P2P assignments do not collide.
+        // Make this Windows + Turing only until bug 3471679 is fixed.
         //
         nvlinkIdMask = knvlinkGetUniquePeerIdMask_HAL(pGpu, pKernelNvlink);
     }
@@ -63,7 +63,7 @@ kbusGetUnusedPciePeerId_TU102
     for (peerId = 0; peerId < pKernelBus->numPeers; peerId++)
     {
         if ((pKernelBus->p2pPcie.busPeer[peerId].refCount == 0) &&
-            (!pKernelBus->p2pPcie.busPeer[peerId].bReserved) && 
+            (!pKernelBus->p2pPcie.busPeer[peerId].bReserved) &&
             ((BIT(peerId) & nvlinkIdMask) == 0))
         {
             return peerId;

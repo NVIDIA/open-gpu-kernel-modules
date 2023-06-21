@@ -125,7 +125,7 @@ void __nvoc_init_halspec_DispIpHal(DispIpHal *pDispIpHal, NvU32 ipver)
     // DISPv0000
     else if(ipver == 0x0)
     {
-        pDispIpHal->__nvoc_HalVarIdx = 15;
+        pDispIpHal->__nvoc_HalVarIdx = 17;
     }
 }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,11 @@
 *                                                                          *
 \***************************************************************************/
 
+#define NVOC_KERNEL_SM_DEBUGGER_SESSION_H_PRIVATE_ACCESS_ALLOWED
+
+// FIXME XXX
+#define NVOC_KERNEL_GRAPHICS_OBJECT_H_PRIVATE_ACCESS_ALLOWED
+
 #include "kernel/rmapi/control.h"
 #include "kernel/rmapi/rmapi.h"
 #include "kernel/os/os.h"
@@ -58,14 +63,14 @@
 // for the caller to explicitly pass in the handle corresponding to the VaSpaceApi:
 //
 static NV_STATUS
-_nv83deCtrlCmdFetchVAS(NvU32 hClient, NvU32 hChannel, OBJVASPACE **ppVASpace)
+_nv83deCtrlCmdFetchVAS(RsClient *pClient, NvU32 hChannel, OBJVASPACE **ppVASpace)
 {
     KernelChannel *pKernelChannel = NULL;
 
     NV_ASSERT_OR_RETURN(ppVASpace != NULL, NV_ERR_INVALID_ARGUMENT);
 
     // Fetch the corresponding Channel object from our handle
-    NV_ASSERT_OK_OR_RETURN(CliGetKernelChannel(hClient, hChannel, &pKernelChannel));
+    NV_ASSERT_OK_OR_RETURN(CliGetKernelChannel(pClient, hChannel, &pKernelChannel));
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_ARGUMENT);
 
     *ppVASpace = pKernelChannel->pVAS;
@@ -148,7 +153,7 @@ _nv8deCtrlCmdReadWriteSurface
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelSMDebuggerSession);
+    RsClient *pClient = RES_GET_CLIENT(pKernelSMDebuggerSession);
     OBJVASPACE *pVASpace = NULL;
     NvU32 count = pParams->count;
     NvU32 i;
@@ -161,7 +166,7 @@ _nv8deCtrlCmdReadWriteSurface
 
     // Attempt to retrieve the VAS pointer
     NV_ASSERT_OK_OR_RETURN(
-        _nv83deCtrlCmdFetchVAS(hClient, pKernelSMDebuggerSession->hChannel, &pVASpace));
+        _nv83deCtrlCmdFetchVAS(pClient, pKernelSMDebuggerSession->hChannel, &pVASpace));
 
     // Validate VA range and fail if invalid
     NV_ASSERT_OK_OR_RETURN(
@@ -169,7 +174,6 @@ _nv8deCtrlCmdReadWriteSurface
 
     for (i = 0; i < count; i++)
     {
-        NvU8 *pBase;
         MEMORY_DESCRIPTOR *pMemDesc = NULL;
         NvU64 virtAddr = pParams->opsBuffer[i].gpuVA;
         NvP64 bufPtr = pParams->opsBuffer[i].pCpuVA;
@@ -191,8 +195,11 @@ _nv8deCtrlCmdReadWriteSurface
 
         for (cur4kPage = start4kPage; cur4kPage <= end4kPage; ++cur4kPage)
         {
-            MMU_TRACE_PARAM mmuParams = {0};
-            MMU_TRACE_ARG traceArg    = {0};
+            MMU_TRACE_PARAM mmuParams     = {0};
+            MMU_TRACE_ARG traceArg        = {0};
+            TRANSFER_SURFACE surf         = {0};
+            MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+            NvU8 *pKernBuffer = NULL;
 
             mmuParams.mode    = MMU_TRACE_MODE_TRANSLATE;
             mmuParams.va      = virtAddr;
@@ -207,6 +214,12 @@ _nv8deCtrlCmdReadWriteSurface
                 curSize = bufSize;
             }
 
+            pKernBuffer = portMemAllocNonPaged(curSize);
+            if (pKernBuffer == NULL)
+            {
+                return NV_ERR_INSUFFICIENT_RESOURCES;
+            }
+
             if (traceArg.aperture == ADDR_SYSMEM)
             {
                 NvP64 physAddr = NV_PTR_TO_NvP64(traceArg.pa);
@@ -217,7 +230,7 @@ _nv8deCtrlCmdReadWriteSurface
                                   DRF_DEF(OS02, _FLAGS, _PHYSICALITY,   _CONTIGUOUS)    |
                                   DRF_DEF(OS02, _FLAGS, _COHERENCY,     _CACHED);
 
-                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                NV_ASSERT_OK_OR_ELSE(status,
                     osCreateMemFromOsDescriptor(pGpu,
                                                 physAddr,
                                                 pKernelSMDebuggerSession->hInternalClient,
@@ -225,39 +238,55 @@ _nv8deCtrlCmdReadWriteSurface
                                                 &limit,
                                                 &pMemDesc,
                                                 NVOS32_DESCRIPTOR_TYPE_OS_PHYS_ADDR,
-                                                RS_PRIV_LEVEL_KERNEL));
+                                                RS_PRIV_LEVEL_KERNEL),
+                    portMemFree(pKernBuffer); return status; );
             }
             else if (traceArg.aperture == ADDR_FBMEM)
             {
-                NV_ASSERT_OK_OR_RETURN(memdescCreate(&pMemDesc, pGpu, curSize, 0, NV_TRUE,
-                                                     traceArg.aperture, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE));
+                NV_ASSERT_OK_OR_ELSE(status,
+                    memdescCreate(&pMemDesc, pGpu, curSize, 0, NV_TRUE,
+                                  traceArg.aperture, NV_MEMORY_UNCACHED,
+                                  MEMDESC_FLAGS_NONE),
+                    portMemFree(pKernBuffer); return status; );
                 memdescDescribe(pMemDesc, traceArg.aperture, traceArg.pa, curSize);
             }
 
-            pBase = kbusMapRmAperture_HAL(pGpu, pMemDesc);
-            NV_ASSERT_OR_ELSE(
-                pBase != NULL,
-                memdescDestroy(pMemDesc);
-                return NV_ERR_INVALID_ARGUMENT; );
+            surf.pMemDesc = pMemDesc;
+            surf.offset = pageStartOffset;
 
             if (bWrite)
             {
                 NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-                    portMemExCopyFromUser(bufPtr, pBase + pageStartOffset, curSize));
+                    portMemExCopyFromUser(bufPtr, pKernBuffer, curSize));
+
+                // Write out the buffer to memory
+                if (status == NV_OK)
+                {
+                    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+                        memmgrMemWrite(pMemoryManager, &surf, pKernBuffer, curSize,
+                                       TRANSFER_FLAGS_DEFER_FLUSH));
+                }
             }
             else
             {
+                // Read from memory
                 NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-                    portMemExCopyToUser(pBase + pageStartOffset, bufPtr, curSize));
+                    memmgrMemRead(pMemoryManager, &surf, pKernBuffer, curSize,
+                                  TRANSFER_FLAGS_DEFER_FLUSH));
+
+                if (status == NV_OK)
+                {
+                    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+                        portMemExCopyToUser(pKernBuffer, bufPtr, curSize));
+                }
             }
 
-            kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pBase, NV_FALSE);
+            portMemFree(pKernBuffer);
             memdescDestroy(pMemDesc);
 
             if (status != NV_OK)
                 return status;
 
-            pBase = NULL;
             pageStartOffset = 0;
             bufPtr = NvP64_PLUS_OFFSET(bufPtr,curSize);
             bufSize -= curSize;
@@ -297,7 +326,7 @@ ksmdbgssnCtrlCmdGetMappings_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelSMDebuggerSession);
+    RsClient *pClient = RES_GET_CLIENT(pKernelSMDebuggerSession);
     OBJVASPACE *pVASpace = NULL;
     MMU_TRACE_ARG traceArg = {0};
     MMU_TRACE_PARAM mmuParams = {0};
@@ -306,7 +335,7 @@ ksmdbgssnCtrlCmdGetMappings_IMPL
 
     // Attempt to retrieve the VAS pointer
     NV_ASSERT_OK_OR_RETURN(
-        _nv83deCtrlCmdFetchVAS(hClient, pKernelSMDebuggerSession->hChannel, &pVASpace));
+        _nv83deCtrlCmdFetchVAS(pClient, pKernelSMDebuggerSession->hChannel, &pVASpace));
 
     traceArg.pMapParams = pParams;
 

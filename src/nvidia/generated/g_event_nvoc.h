@@ -542,7 +542,7 @@ NV_STATUS CliGetEventNotificationList(NvHandle hClient, NvHandle hObject,
                                       struct INotifier **ppNotifier,
                                       PEVENTNOTIFICATION **pppEventNotification);
 
-NV_STATUS registerEventNotification(PEVENTNOTIFICATION*, NvHandle, NvHandle, NvHandle, NvU32, NvU32, NvP64, NvBool);
+NV_STATUS registerEventNotification(PEVENTNOTIFICATION*, struct RsClient *, NvHandle, NvHandle, NvU32, NvU32, NvP64, NvBool);
 NV_STATUS unregisterEventNotification(PEVENTNOTIFICATION*, NvHandle, NvHandle, NvHandle);
 NV_STATUS unregisterEventNotificationWithData(PEVENTNOTIFICATION *, NvHandle, NvHandle, NvHandle, NvBool, NvP64);
 NV_STATUS bindEventNotificationToSubdevice(PEVENTNOTIFICATION, NvHandle, NvU32);

@@ -141,7 +141,7 @@ RmIdleChannels
         GpuResource *pGpuResource;
 
         //
-        // Don't allow other clients' resources to be accessed/modified by this 
+        // Don't allow other clients' resources to be accessed/modified by this
         // control call.
         //
         if (hClient != phClients[chanIdx])

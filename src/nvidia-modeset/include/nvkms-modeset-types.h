@@ -29,26 +29,36 @@
 #include "nvkms-types.h"
 
 typedef struct {
-    NVHwModeTimingsEvo timings;
-    NVDpyIdList dpyIdList;
-    NVConnectorEvoRec *pConnectorEvo;
-    NvU32 activeRmId;
-    struct NvKmsSetLutCommonParams lut;
-    NvU8 allowFlipLockGroup;
-    NVAttributesSetEvoRec attributes;
+    NvU32 hwHeadsMask;
     struct NvKmsModeValidationParams modeValidationParams;
-    NvBool changed                       : 1;
-    NvBool hs10bpcHint                   : 1;
-    NvBool colorSpaceSpecified           : 1;
-    NvBool colorRangeSpecified           : 1;
+    NVHwModeTimingsEvo timings;
+    struct NvKmsPoint viewPortPointIn;
+    NvU32 activeRmId;
+    NVDpyIdList dpyIdList;
+    NVAttributesSetEvoRec attributes;
+    struct NvKmsSetLutCommonParams lut;
+    NVDispStereoParamsEvoRec stereo;
+    NVDscInfoEvoRec dscInfo;
+    NVDispHeadInfoFrameStateEvoRec infoFrame;
+    NvU8 allowFlipLockGroup;
+    enum NvKmsOutputTf tf;
+    NvBool colorSpaceSpecified : 1;
+    NvBool colorRangeSpecified : 1;
+    NvBool hs10bpcHint         : 1;
+    NvBool changed             : 1;
+} NVProposedModeSetStateOneApiHead;
+
+typedef struct {
+    NvU8 tilePosition;
+    NVHwModeTimingsEvo timings;
+    NVConnectorEvoRec *pConnectorEvo;
+    HDMI_FRL_CONFIG hdmiFrlConfig;
     NVDPLibModesetStatePtr pDpLibModesetState;
     NVDispHeadAudioStateEvoRec audio;
-    NVDispHeadInfoFrameStateEvoRec infoFrame;
-    enum NvKmsOutputTf tf;
-    NVDispStereoParamsEvoRec stereo;
 } NVProposedModeSetHwStateOneHead;
 
 typedef struct {
+    NVProposedModeSetStateOneApiHead apiHead[NVKMS_MAX_HEADS_PER_DISP];
     NVProposedModeSetHwStateOneHead head[NVKMS_MAX_HEADS_PER_DISP];
 } NVProposedModeSetHwStateOneDisp;
 
@@ -63,5 +73,14 @@ typedef struct {
     NVProposedModeSetHwStateOneSubDev sd[NVKMS_MAX_SUBDEVICES];
     NvBool allowHeadSurfaceInNvKms       : 1;
 } NVProposedModeSetHwState;
+
+static inline void nvAssignHwHeadsMaskProposedApiHead(
+    NVProposedModeSetStateOneApiHead *pProposedApiHead,
+    const NvU32 hwHeadsMask)
+{
+    pProposedApiHead->hwHeadsMask = hwHeadsMask;
+    pProposedApiHead->attributes.numberOfHardwareHeadsUsed =
+        nvPopCount32(hwHeadsMask);
+}
 
 #endif /* __NVKMS_MODESET_TYPES_H__ */

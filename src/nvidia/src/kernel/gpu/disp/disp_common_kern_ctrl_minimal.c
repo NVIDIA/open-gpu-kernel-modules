@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -116,6 +116,7 @@ dispcmnCtrlCmdSystemAllocateDisplayBandwidth_IMPL
                                staticCast(pDispCommon, DisplayApi),
                                DISPAPI_GET_GPUGRP(pDispCommon),
                                &pGpu,
+                               NULL,
                                pParams->subDeviceInstance);
     if (status != NV_OK)
     {
@@ -147,6 +148,7 @@ dispcmnCtrlCmdDpGenerateFakeInterrupt_IMPL
                                staticCast(pDispCommon, DisplayApi),
                                DISPAPI_GET_GPUGRP(pDispCommon),
                                &pGpu,
+                               NULL,
                                pParams->subDeviceInstance);
     if (status != NV_OK)
     {
@@ -207,4 +209,58 @@ dispcmnCtrlCmdDpGenerateFakeInterrupt_IMPL
     }
 
     return NV_OK;
+}
+
+NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_IMPL
+(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams
+)
+{
+    POBJGPU   pGpu   = DISPAPI_GET_GPU(pDispCommon);
+    NvHandle  hClient = RES_GET_CLIENT_HANDLE(pDispCommon);
+    NvHandle  hParent = RES_GET_PARENT_HANDLE(pDispCommon);
+    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(DISPAPI_GET_GPU(pDispCommon));
+    NV_STATUS status = NV_OK;
+
+    // Get the right pGpu from subdevice instance given by client
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pParams->subDeviceInstance);
+
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if (pParams->bEnable)
+    {
+        status = memdescRegisterToGSP(pGpu, hClient, hParent, pParams->hMemory);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "memdescRegisterToGSP failed %d\n", status);
+            return status;
+        }
+    }
+
+    status = pRmApi->Control(pRmApi,
+                             hClient,
+                             RES_GET_HANDLE(pDispCommon),
+                             NV0073_CTRL_CMD_INTERNAL_VRR_SET_RGLINE_ACTIVE,
+                             pParams,
+                             sizeof(*pParams));
+
+    if (!pParams->bEnable)
+    {
+        status = memdescDeregisterFromGSP(pGpu, hClient, hParent, pParams->hMemory);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "memdescDeRegisterFromGSP failed %d\n", status);
+        }
+    }
+
+    return status;
 }

@@ -22,6 +22,8 @@
  */
 
 #include "virtualization/common_vgpu_mgr.h"
+#include "virtualization/hypervisor/hypervisor.h"
+
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
 
 void

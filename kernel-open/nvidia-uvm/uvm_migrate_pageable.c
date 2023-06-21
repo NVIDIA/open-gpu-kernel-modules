@@ -63,7 +63,7 @@ static NV_STATUS migrate_vma_page_copy_address(struct page *page,
 
     if (owning_gpu == copying_gpu) {
         // Local vidmem address
-        *gpu_addr = uvm_gpu_address_from_phys(uvm_gpu_page_to_phys_address(owning_gpu, page));
+        *gpu_addr = uvm_gpu_address_copy(owning_gpu, uvm_gpu_page_to_phys_address(owning_gpu, page));
     }
     else if (direct_peer) {
         // Direct GPU peer
@@ -88,23 +88,11 @@ static NV_STATUS migrate_vma_page_copy_address(struct page *page,
 
         __set_bit(page_index, state->dma.page_mask);
 
-        *gpu_addr = uvm_gpu_address_physical(UVM_APERTURE_SYS, state->dma.addrs[page_index]);
+        *gpu_addr = uvm_gpu_address_copy(copying_gpu,
+                                         uvm_gpu_phys_address(UVM_APERTURE_SYS, state->dma.addrs[page_index]));
     }
 
     return NV_OK;
-}
-
-// Return the GPU identified with the given NUMA node id
-static uvm_gpu_t *get_gpu_from_node_id(uvm_va_space_t *va_space, int node_id)
-{
-    uvm_gpu_t *gpu;
-
-    for_each_va_space_gpu(gpu, va_space) {
-        if (uvm_gpu_numa_info(gpu)->node_id == node_id)
-            return gpu;
-    }
-
-    return NULL;
 }
 
 // Create a new push to zero pages on dst_id
@@ -169,7 +157,7 @@ static NV_STATUS migrate_vma_copy_begin_push(uvm_va_space_t *va_space,
     // NUMA-enabled GPUs can copy to any other NUMA node in the system even if
     // P2P access has not been explicitly enabled (ie va_space->can_copy_from
     // is not set).
-    if (!gpu->parent->numa_info.enabled) {
+    if (!gpu->mem_info.numa.enabled) {
         UVM_ASSERT_MSG(uvm_processor_mask_test(&va_space->can_copy_from[uvm_id_value(gpu->id)], dst_id),
                        "GPU %s dst %s src %s\n",
                        uvm_va_space_processor_name(va_space, gpu->id),
@@ -281,7 +269,7 @@ static void migrate_vma_compute_masks(struct vm_area_struct *vma, const unsigned
             continue;
         }
 
-        src_gpu = get_gpu_from_node_id(uvm_migrate_args->va_space, src_nid);
+        src_gpu = uvm_va_space_find_gpu_with_memory_node_id(uvm_migrate_args->va_space, src_nid);
 
         // Already resident on a node with no CPUs that doesn't belong to a
         // GPU, don't move
@@ -980,13 +968,14 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
         // wanted to call this function from a bottom half with CPU dst_id.
         UVM_ASSERT(!(current->flags & PF_KTHREAD));
 
-        if (!nv_numa_node_has_memory(dst_node_id) || get_gpu_from_node_id(va_space, dst_node_id) != NULL)
+        if (!nv_numa_node_has_memory(dst_node_id) ||
+            uvm_va_space_find_gpu_with_memory_node_id(va_space, dst_node_id) != NULL)
             return NV_ERR_INVALID_ARGUMENT;
     }
     else {
         // Incoming dst_node_id is only valid if dst_id belongs to the CPU. Use
         // dst_node_id as the GPU node id if dst_id doesn't belong to the CPU.
-        uvm_migrate_args->dst_node_id = uvm_gpu_numa_info(uvm_va_space_get_gpu(va_space, dst_id))->node_id;
+        uvm_migrate_args->dst_node_id = uvm_gpu_numa_node(uvm_va_space_get_gpu(va_space, dst_id));
     }
 
     state = kmem_cache_alloc(g_uvm_migrate_vma_state_cache, NV_UVM_GFP_FLAGS);

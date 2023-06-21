@@ -336,7 +336,7 @@ char * nvU32ToStr(NvU32 value, char *string, NvU32 radix)
  * @param[in]   value        to be converted to string
  * @param[in]   targetStrLen Denoted the converted string Length
  * @param[out] *string       is the char array to be have the converted data
- * 
+ *
  * @return the converted string
  */
 char *
@@ -356,9 +356,9 @@ nvU64ToStr
     {
         rem             = value % base;
         value           = value / base;
-        tempBuffer[inx] = (rem > 9)? (rem - 10) + 'a' : rem + '0'; 
+        tempBuffer[inx] = (rem > 9)? (rem - 10) + 'a' : rem + '0';
     }
-    
+
     for(inx = 0; inx < targetStrLen; inx++)
     {
         string[inx] = tempBuffer[targetStrLen - inx - 1];

@@ -25,9 +25,10 @@
 #include "gpu/disp/head/kernel_head.h"
 #include "objtmr.h"
 
-NV_STATUS 
+NV_STATUS
 kheadConstruct_IMPL(KernelHead *pKernelHead)
 {
+    pKernelHead->Vblank.IntrState = NV_HEAD_VBLANK_INTR_UNAVAILABLE;
     return NV_OK;
 }
 
@@ -215,7 +216,7 @@ kheadCheckVblankCallbacksQueued_IMPL
             {
                 if (kheadIsVblankCallbackDue(pCallback, state, time, vblankCount))
                 {
-                    *expiring |= VBLANK_STATE_PROCESS_NORMAL_LATENCY; 
+                    *expiring |= VBLANK_STATE_PROCESS_NORMAL_LATENCY;
                 }
 
                 pCallback = pCallback->Next;
@@ -239,10 +240,6 @@ kheadReadVblankIntrState_IMPL
         // HW is enabled, check if SW state is not enabled
         if (pKernelHead->Vblank.IntrState != NV_HEAD_VBLANK_INTR_ENABLED)
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Head %d: HW: %d != SW: %d!  Fixing SW State...\n",
-                      pKernelHead->PublicId, NV_HEAD_VBLANK_INTR_ENABLED,
-                      pKernelHead->Vblank.IntrState);
             pKernelHead->Vblank.IntrState = NV_HEAD_VBLANK_INTR_ENABLED;
         }
     }
@@ -272,9 +269,6 @@ kheadReadVblankIntrState_IMPL
 
             if (state != pKernelHead->Vblank.IntrState)
             {
-                NV_PRINTF(LEVEL_ERROR,
-                          "Head %d: HW: %d != SW: %d!  Fixing SW State...\n",
-                          pKernelHead->PublicId, state, pKernelHead->Vblank.IntrState);
                 pKernelHead->Vblank.IntrState = state;
             }
         }
@@ -286,9 +280,6 @@ kheadReadVblankIntrState_IMPL
             //
             if (!kheadGetDisplayInitialized_HAL(pGpu, pKernelHead))
             {
-                NV_PRINTF(LEVEL_ERROR,
-                          "Head %d: HW: %d != SW: %d!  Fixing SW State...\n",
-                          pKernelHead->PublicId, NV_HEAD_VBLANK_INTR_UNAVAILABLE, pKernelHead->Vblank.IntrState);
                 pKernelHead->Vblank.IntrState = NV_HEAD_VBLANK_INTR_UNAVAILABLE;
             }
         }

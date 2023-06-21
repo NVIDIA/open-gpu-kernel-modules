@@ -170,7 +170,7 @@ kchannelCreateUserdMemDesc_GV100
     NvU32                   userdAddrLo;
     NvU32                   userdAddrHi;
     NvU32                   userdAlignment;
-    NvU32                   pageSize;
+    NvU64                   pageSize;
 
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
     pKernelChannel->pUserdSubDeviceMemDesc[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] = NULL;
@@ -202,6 +202,15 @@ kchannelCreateUserdMemDesc_GV100
     userdAddr = memdescGetPhysAddr(pUserdMemDescForSubDev,
                                AT_GPU,
                                userdOffset);
+
+    // Adjust for the DMA window start address, if any
+    if (memdescGetAddressSpace(pUserdMemDescForSubDev) == ADDR_SYSMEM)
+    {
+        RmPhysAddr dmaWindowStart = gpuGetDmaStartAddress(pGpu); 
+        NV_ASSERT_OR_RETURN(userdAddr > dmaWindowStart, NV_ERR_INVALID_ADDRESS);
+
+        userdAddr -= dmaWindowStart;
+    }
 
     userdAddrLo = NvU64_LO32(userdAddr) >> userdShift;
     userdAddrHi = NvU64_HI32(userdAddr);

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -479,9 +479,9 @@ static inline NV_STATUS gkflcnResetHw_DISPATCH(struct OBJGPU *pGpu, struct Gener
     return pGenKernFlcn->__gkflcnResetHw__(pGpu, pGenKernFlcn);
 }
 
-void gkflcnRegisterIntrService_IMPL(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[166]);
+void gkflcnRegisterIntrService_IMPL(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[167]);
 
-static inline void gkflcnRegisterIntrService_DISPATCH(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[166]) {
+static inline void gkflcnRegisterIntrService_DISPATCH(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[167]) {
     arg1->__gkflcnRegisterIntrService__(arg0, arg1, arg2);
 }
 

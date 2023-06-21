@@ -99,7 +99,7 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill(struct OBJGPU *pGpu,
                                                 NvU32 releasevalue,
                                                 NvU32 flags,
                                                 NvU32 completionStatus,
-                                                NvHandle hClient,
+                                                struct RsClient *pClient,
                                                 NvHandle hEvent);
 
 /*!

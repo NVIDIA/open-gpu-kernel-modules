@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -1372,9 +1372,9 @@ static NVT_STATUS parseDisplayIdCtaData(NvU8 * block, NVT_EDID_INFO *pInfo)
     // yuv420-only video
     parse861bShortYuv420Timing(p861info, pInfo, FROM_DISPLAYID_13_DATA_BLOCK);
     // CEA861-F at 7.5.12 section about VFPDB block.
-    if (p861info->total_vfpdb != 0)
+    if (p861info->total_svr != 0)
     {
-        parse861bShortPreferredTiming(p861info, pInfo, FROM_DISPLAYID_13_DATA_BLOCK);
+        parseCta861NativeOrPreferredTiming(p861info, pInfo, FROM_DISPLAYID_13_DATA_BLOCK);
     }
 
     return NVT_STATUS_SUCCESS;

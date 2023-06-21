@@ -1049,6 +1049,41 @@ typedef struct
 } UVM_MAP_EXTERNAL_SPARSE_PARAMS;
 
 //
+// Used to initialise a secondary UVM file-descriptor which holds a
+// reference on the memory map to prevent it being torn down without
+// first notifying UVM. This is achieved by preventing mmap() calls on
+// the secondary file-descriptor so that on process exit
+// uvm_mm_release() will be called while the memory map is present
+// such that UVM can cleanly shutdown the GPU by handling faults
+// instead of cancelling them.
+//
+// This ioctl must be called after the primary file-descriptor has
+// been initialised with the UVM_INITIALIZE ioctl. The primary FD
+// should be passed in the uvmFd field and the UVM_MM_INITIALIZE ioctl
+// will hold a reference on the primary FD. Therefore uvm_release() is
+// guaranteed to be called after uvm_mm_release().
+//
+// Once this file-descriptor has been closed the UVM context is
+// effectively dead and subsequent operations requiring a memory map
+// will fail. Calling UVM_MM_INITIALIZE on a context that has already
+// been initialized via any FD will return NV_ERR_INVALID_STATE.
+//
+// Calling this with a non-UVM file-descriptor in uvmFd will return
+// NV_ERR_INVALID_ARGUMENT. Calling this on the same file-descriptor
+// as UVM_INITIALIZE or more than once on the same FD will return
+// NV_ERR_IN_USE.
+//
+// Not all platforms require this secondary file-descriptor. On those
+// platforms NV_WARN_NOTHING_TO_DO will be returned and users may
+// close the file-descriptor at anytime.
+#define UVM_MM_INITIALIZE                                             UVM_IOCTL_BASE(75)
+typedef struct
+{
+    NvS32                   uvmFd;    // IN
+    NV_STATUS               rmStatus; // OUT
+} UVM_MM_INITIALIZE_PARAMS;
+
+//
 // Temporary ioctls which should be removed before UVM 8 release
 // Number backwards from 2047 - highest custom ioctl function number
 // windows can handle.

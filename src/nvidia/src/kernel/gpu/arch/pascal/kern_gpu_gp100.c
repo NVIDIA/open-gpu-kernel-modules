@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "gpu/eng_desc.h"
+#include "gpu/gpu_child_class_defs.h"
 #include "gpu/nvlink/kernel_nvlink.h"
 #include "gpu_mgr/gpu_mgr_sli.h"
 

@@ -1340,6 +1340,18 @@ typedef struct OBJGMMU OBJGMMU;
 #endif /* __nvoc_class_id_OBJGMMU */
 
 
+struct ConfidentialCompute;
+
+#ifndef __NVOC_CLASS_ConfidentialCompute_TYPEDEF__
+#define __NVOC_CLASS_ConfidentialCompute_TYPEDEF__
+typedef struct ConfidentialCompute ConfidentialCompute;
+#endif /* __NVOC_CLASS_ConfidentialCompute_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_ConfidentialCompute
+#define __nvoc_class_id_ConfidentialCompute 0x9798cc
+#endif /* __nvoc_class_id_ConfidentialCompute */
+
+
 struct KernelCcu;
 
 #ifndef __NVOC_CLASS_KernelCcu_TYPEDEF__
@@ -1449,6 +1461,7 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_KERNEL_NVLINK        MKENGDESC(classId(KernelNvlink),        0)
 #define ENG_GMMU                 MKENGDESC(classId(OBJGMMU),             0)
 #define ENG_KERNEL_GMMU          MKENGDESC(classId(KernelGmmu),          0)
+#define ENG_CONF_COMPUTE         MKENGDESC(classId(ConfidentialCompute), 0)
 #define ENG_KERNEL_CCU           MKENGDESC(classId(KernelCcu),           0)
 
 // Indexed CE engine tag reference

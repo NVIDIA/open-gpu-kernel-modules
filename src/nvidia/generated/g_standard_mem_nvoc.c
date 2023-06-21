@@ -169,8 +169,8 @@ static NV_STATUS __nvoc_thunk_Memory_stdmemIsReady(struct StandardMemory *pMemor
     return memIsReady((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), bCopyConstructorContext);
 }
 
-static NV_STATUS __nvoc_thunk_Memory_stdmemCheckCopyPermissions(struct StandardMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pDstGpu, hDstClientNvBool);
+static NV_STATUS __nvoc_thunk_Memory_stdmemCheckCopyPermissions(struct StandardMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return memCheckCopyPermissions((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pDstGpu, pDstDevice);
 }
 
 static void __nvoc_thunk_RsResource_stdmemPreDestruct(struct StandardMemory *pResource) {

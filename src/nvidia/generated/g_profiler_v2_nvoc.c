@@ -200,12 +200,12 @@ static NvBool __nvoc_thunk_RmResource_profilerBaseAccessCallback(struct Profiler
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_ProfilerBase[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2010u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdReserveHwpmLegacy_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2010u)
+        /*flags=*/      0x2010u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb0cc0101u,
         /*paramSize=*/  sizeof(NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS),
@@ -335,12 +335,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
 #endif
     },
     {               /*  [9] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdExecRegops_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+        /*flags=*/      0x2210u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xb0cc010au,
         /*paramSize=*/  sizeof(NVB0CC_CTRL_EXEC_REG_OPS_PARAMS),
@@ -559,12 +559,42 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Profiler
         /*func=*/       "profilerBaseCtrlCmdInternalReserveHwpmLegacy"
 #endif
     },
+    {               /*  [24] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdRequestCgControls_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*flags=*/      0x210u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xb0cc0301u,
+        /*paramSize=*/  sizeof(NVB0CC_CTRL_POWER_REQUEST_FEATURES_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "profilerBaseCtrlCmdRequestCgControls"
+#endif
+    },
+    {               /*  [25] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) profilerBaseCtrlCmdReleaseCgControls_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*flags=*/      0x210u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xb0cc0302u,
+        /*paramSize=*/  sizeof(NVB0CC_CTRL_POWER_RELEASE_FEATURES_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_ProfilerBase.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "profilerBaseCtrlCmdReleaseCgControls"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_ProfilerBase = 
 {
-    /*numEntries=*/     24,
+    /*numEntries=*/     26,
     /*pExportEntries=*/ __nvoc_exported_method_def_ProfilerBase
 };
 
@@ -611,7 +641,7 @@ static void __nvoc_init_funcTable_ProfilerBase_1(ProfilerBase *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2010u)
     pThis->__profilerBaseCtrlCmdReserveHwpmLegacy__ = &profilerBaseCtrlCmdReserveHwpmLegacy_IMPL;
 #endif
 
@@ -667,7 +697,7 @@ static void __nvoc_init_funcTable_ProfilerBase_1(ProfilerBase *pThis, RmHalspecO
     pThis->__profilerBaseCtrlCmdPmaStreamUpdateGetPut__ = &profilerBaseCtrlCmdPmaStreamUpdateGetPut_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
     pThis->__profilerBaseCtrlCmdExecRegops__ = &profilerBaseCtrlCmdExecRegops_IMPL;
 #endif
 
@@ -705,6 +735,14 @@ static void __nvoc_init_funcTable_ProfilerBase_1(ProfilerBase *pThis, RmHalspecO
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__profilerBaseCtrlCmdReleaseHes__ = &profilerBaseCtrlCmdReleaseHes_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+    pThis->__profilerBaseCtrlCmdRequestCgControls__ = &profilerBaseCtrlCmdRequestCgControls_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+    pThis->__profilerBaseCtrlCmdReleaseCgControls__ = &profilerBaseCtrlCmdReleaseCgControls_IMPL;
 #endif
 
     pThis->__profilerBaseShareCallback__ = &__nvoc_thunk_GpuResource_profilerBaseShareCallback;

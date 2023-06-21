@@ -88,6 +88,7 @@ struct OBJHYPERVISOR {
     HYPERVISOR_TYPE type;
     NvBool bIsHypervHost;
     NvBool bIsHypervVgpuSupported;
+    NvBool bIsACSupported;
 };
 
 #ifndef __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__
@@ -153,6 +154,25 @@ static inline void hypervisorSetHypervVgpuSupported(struct OBJHYPERVISOR *arg0) 
 
 #define hypervisorSetHypervVgpuSupported_HAL(arg0) hypervisorSetHypervVgpuSupported(arg0)
 
+NvBool hypervisorIsAC_IMPL(void);
+
+
+#define hypervisorIsAC() hypervisorIsAC_IMPL()
+#define hypervisorIsAC_HAL() hypervisorIsAC()
+
+void hypervisorSetACSupported_IMPL(struct OBJHYPERVISOR *arg0);
+
+
+#ifdef __nvoc_hypervisor_h_disabled
+static inline void hypervisorSetACSupported(struct OBJHYPERVISOR *arg0) {
+    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
+}
+#else //__nvoc_hypervisor_h_disabled
+#define hypervisorSetACSupported(arg0) hypervisorSetACSupported_IMPL(arg0)
+#endif //__nvoc_hypervisor_h_disabled
+
+#define hypervisorSetACSupported_HAL(arg0) hypervisorSetACSupported(arg0)
+
 NvBool hypervisorCheckForObjectAccess_IMPL(NvHandle hClient);
 
 #define hypervisorCheckForObjectAccess(hClient) hypervisorCheckForObjectAccess_IMPL(hClient)
@@ -198,6 +218,16 @@ static inline HYPERVISOR_TYPE hypervisorGetHypervisorType(struct OBJHYPERVISOR *
 }
 #else //__nvoc_hypervisor_h_disabled
 #define hypervisorGetHypervisorType(arg0) hypervisorGetHypervisorType_IMPL(arg0)
+#endif //__nvoc_hypervisor_h_disabled
+
+void hypervisorSetHypervisorType_IMPL(struct OBJHYPERVISOR *pHypervisor, HYPERVISOR_TYPE type);
+
+#ifdef __nvoc_hypervisor_h_disabled
+static inline void hypervisorSetHypervisorType(struct OBJHYPERVISOR *pHypervisor, HYPERVISOR_TYPE type) {
+    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
+}
+#else //__nvoc_hypervisor_h_disabled
+#define hypervisorSetHypervisorType(pHypervisor, type) hypervisorSetHypervisorType_IMPL(pHypervisor, type)
 #endif //__nvoc_hypervisor_h_disabled
 
 #undef PRIVATE_FIELD

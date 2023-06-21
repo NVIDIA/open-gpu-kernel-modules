@@ -41,6 +41,7 @@ typedef enum _HYPERVISOR_TYPE
 #define CMD_VGPU_VFIO_INJECT_INTERRUPT        1
 #define CMD_VGPU_VFIO_REGISTER_MDEV           2
 #define CMD_VGPU_VFIO_PRESENT                 3
+#define CMD_VFIO_PCI_CORE_PRESENT             4
 
 #define MAX_VF_COUNT_PER_GPU 64
 
@@ -57,6 +58,7 @@ typedef struct
     void  *waitQueue;
     void  *nv;
     NvU32 *vgpuTypeIds;
+    NvU8 **vgpuNames;
     NvU32  numVgpuTypes;
     NvU32  domain;
     NvU8   bus;

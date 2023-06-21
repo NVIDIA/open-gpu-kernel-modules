@@ -255,12 +255,12 @@ static NV_STATUS __nvoc_thunk_Notifier_defapiGetOrAllocNotifShare(struct Deferre
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DeferredApiObject[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) defapiCtrlCmdDeferredApi_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*flags=*/      0x210u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800101u,
         /*paramSize=*/  sizeof(NV5080_CTRL_DEFERRED_API_PARAMS),
@@ -270,12 +270,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Deferred
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) defapiCtrlCmdRemoveApi_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*flags=*/      0x210u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800102u,
         /*paramSize=*/  sizeof(NV5080_CTRL_REMOVE_API_PARAMS),
@@ -285,12 +285,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Deferred
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) defapiCtrlCmdDeferredApiV2_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+        /*flags=*/      0x210u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800103u,
         /*paramSize=*/  sizeof(NV5080_CTRL_DEFERRED_API_V2_PARAMS),
@@ -345,15 +345,15 @@ static void __nvoc_init_funcTable_DeferredApiObject_1(DeferredApiObject *pThis) 
 
     pThis->__defapiIsSwMethodStalling__ = &defapiIsSwMethodStalling_IMPL;
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__defapiCtrlCmdDeferredApi__ = &defapiCtrlCmdDeferredApi_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__defapiCtrlCmdDeferredApiV2__ = &defapiCtrlCmdDeferredApiV2_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__defapiCtrlCmdRemoveApi__ = &defapiCtrlCmdRemoveApi_IMPL;
 #endif
 

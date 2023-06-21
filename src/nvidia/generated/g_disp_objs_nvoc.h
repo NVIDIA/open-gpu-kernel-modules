@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -204,19 +204,19 @@ NV_STATUS __nvoc_objCreate_DisplayApi(DisplayApi**, Dynamic*, NvU32, struct CALL
 #define dispapiGetNotificationShare(pNotifier) dispapiGetNotificationShare_DISPATCH(pNotifier)
 #define dispapiMap(pResource, pCallContext, pParams, pCpuMapping) dispapiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define dispapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) dispapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
-NV_STATUS dispapiSetUnicastAndSynchronize_KERNEL(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, NvU32 subDeviceInstance);
+NV_STATUS dispapiSetUnicastAndSynchronize_KERNEL(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, OBJDISP **ppDisp, NvU32 subDeviceInstance);
 
 
 #ifdef __nvoc_disp_objs_h_disabled
-static inline NV_STATUS dispapiSetUnicastAndSynchronize(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, NvU32 subDeviceInstance) {
+static inline NV_STATUS dispapiSetUnicastAndSynchronize(struct DisplayApi *pDisplayApi, struct OBJGPUGRP *pGpuGroup, struct OBJGPU **ppGpu, OBJDISP **ppDisp, NvU32 subDeviceInstance) {
     NV_ASSERT_FAILED_PRECOMP("DisplayApi was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_disp_objs_h_disabled
-#define dispapiSetUnicastAndSynchronize(pDisplayApi, pGpuGroup, ppGpu, subDeviceInstance) dispapiSetUnicastAndSynchronize_KERNEL(pDisplayApi, pGpuGroup, ppGpu, subDeviceInstance)
+#define dispapiSetUnicastAndSynchronize(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance) dispapiSetUnicastAndSynchronize_KERNEL(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance)
 #endif //__nvoc_disp_objs_h_disabled
 
-#define dispapiSetUnicastAndSynchronize_HAL(pDisplayApi, pGpuGroup, ppGpu, subDeviceInstance) dispapiSetUnicastAndSynchronize(pDisplayApi, pGpuGroup, ppGpu, subDeviceInstance)
+#define dispapiSetUnicastAndSynchronize_HAL(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance) dispapiSetUnicastAndSynchronize(pDisplayApi, pGpuGroup, ppGpu, ppDisp, subDeviceInstance)
 
 NV_STATUS dispapiControl_IMPL(struct DisplayApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
 
@@ -1387,11 +1387,14 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdSystemGetHotplugState__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_HOTPLUG_STATE_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemGetInternalDisplays__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemGetConnectorTable__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_CONNECTOR_TABLE_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSystemVrrDisplayInfo__)(struct DispCommon *, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdVRRSetRgLineActive__)(struct DispCommon *, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdInternalVRRSetRgLineActive__)(struct DispCommon *, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdDpEnableVrr__)(struct DispCommon *, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdClearELVBlock__)(struct DispCommon *, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificDisplayChange__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetSpreadSpectrum__)(struct DispCommon *, NV0073_CTRL_DFP_GET_SPREAD_SPECTRUM_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetLcdGpioPinNum__)(struct DispCommon *, NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS *);
-    NV_STATUS (*__dispcmnCtrlCmdDpEnableVrr__)(struct DispCommon *, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpGetAudioMuteStream__)(struct DispCommon *, NV0073_CTRL_DP_GET_AUDIO_MUTESTREAM_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpAuxchI2cTransferCtrl__)(struct DispCommon *, NV0073_CTRL_DP_AUXCH_I2C_TRANSFER_CTRL_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpASSRCtrl__)(struct DispCommon *, NV0073_CTRL_DP_ASSR_CTRL_PARAMS *);
@@ -1409,6 +1412,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDfpExecuteInternalLcdOverDrivePolicy__)(struct DispCommon *, NV0073_CTRL_DP_EXECUTE_OVERDRIVE_POLICY_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemExecuteAcpiMethod__)(struct DispCommon *, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemGetAcpiIdMap__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdSystemAcpiSubsystemActivated__)(struct DispCommon *, NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificSetAcpiIdMapping__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment__)(struct DispCommon *, NV0073_CTRL_GET_ACPI_DOD_DISPLAY_PORT_ATTACHMENT_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemGetCapsV2__)(struct DispCommon *, NV0073_CTRL_SYSTEM_GET_CAPS_V2_PARAMS *);
@@ -1565,11 +1569,14 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdSystemGetHotplugState(pDispCommon, pHotplugParams) dispcmnCtrlCmdSystemGetHotplugState_DISPATCH(pDispCommon, pHotplugParams)
 #define dispcmnCtrlCmdSystemGetInternalDisplays(pDispCommon, pInternalDisplaysParams) dispcmnCtrlCmdSystemGetInternalDisplays_DISPATCH(pDispCommon, pInternalDisplaysParams)
 #define dispcmnCtrlCmdSystemGetConnectorTable(pDispCommon, pParams) dispcmnCtrlCmdSystemGetConnectorTable_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdSystemVrrDisplayInfo(pDispCommon, pParams) dispcmnCtrlCmdSystemVrrDisplayInfo_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdVRRSetRgLineActive_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdInternalVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdInternalVRRSetRgLineActive_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDpEnableVrr(pDispCommon, pParams) dispcmnCtrlCmdDpEnableVrr_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdClearELVBlock(pDispCommon, pParams) dispcmnCtrlCmdClearELVBlock_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificDisplayChange(pDispCommon, pParams) dispcmnCtrlCmdSpecificDisplayChange_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetSpreadSpectrum(pDispCommon, pParams) dispcmnCtrlCmdDfpGetSpreadSpectrum_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetLcdGpioPinNum(pDispCommon, pParams) dispcmnCtrlCmdDfpGetLcdGpioPinNum_DISPATCH(pDispCommon, pParams)
-#define dispcmnCtrlCmdDpEnableVrr(pDispCommon, pParams) dispcmnCtrlCmdDpEnableVrr_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpGetAudioMuteStream(pDispCommon, pParams) dispcmnCtrlCmdDpGetAudioMuteStream_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpAuxchI2cTransferCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpAuxchI2cTransferCtrl_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpASSRCtrl(pDispCommon, pParams) dispcmnCtrlCmdDpASSRCtrl_DISPATCH(pDispCommon, pParams)
@@ -1587,6 +1594,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdDfpExecuteInternalLcdOverDrivePolicy(pDispCommon, pParams) dispcmnCtrlCmdDfpExecuteInternalLcdOverDrivePolicy_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSystemExecuteAcpiMethod(pDispCommon, pAcpiMethodParams) dispcmnCtrlCmdSystemExecuteAcpiMethod_DISPATCH(pDispCommon, pAcpiMethodParams)
 #define dispcmnCtrlCmdSystemGetAcpiIdMap(pDispCommon, pAcpiIdMapParams) dispcmnCtrlCmdSystemGetAcpiIdMap_DISPATCH(pDispCommon, pAcpiIdMapParams)
+#define dispcmnCtrlCmdSystemAcpiSubsystemActivated(pDispCommon, pParams) dispcmnCtrlCmdSystemAcpiSubsystemActivated_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificSetAcpiIdMapping(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetAcpiIdMapping_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSystemGetCapsV2(pDispCommon, pCapsParams) dispcmnCtrlCmdSystemGetCapsV2_DISPATCH(pDispCommon, pCapsParams)
@@ -1741,6 +1749,30 @@ static inline NV_STATUS dispcmnCtrlCmdSystemGetConnectorTable_DISPATCH(struct Di
     return pDispCommon->__dispcmnCtrlCmdSystemGetConnectorTable__(pDispCommon, pParams);
 }
 
+NV_STATUS dispcmnCtrlCmdSystemVrrDisplayInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSystemVrrDisplayInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdSystemVrrDisplayInfo__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdVRRSetRgLineActive__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdInternalVRRSetRgLineActive_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdInternalVRRSetRgLineActive_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdInternalVRRSetRgLineActive__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdDpEnableVrr_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdDpEnableVrr_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDpEnableVrr__(pDispCommon, pParams);
+}
+
 NV_STATUS dispcmnCtrlCmdClearELVBlock_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *pParams);
 
 static inline NV_STATUS dispcmnCtrlCmdClearELVBlock_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *pParams) {
@@ -1763,12 +1795,6 @@ NV_STATUS dispcmnCtrlCmdDfpGetLcdGpioPinNum_IMPL(struct DispCommon *pDispCommon,
 
 static inline NV_STATUS dispcmnCtrlCmdDfpGetLcdGpioPinNum_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_LCD_GPIO_PIN_NUM_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdDfpGetLcdGpioPinNum__(pDispCommon, pParams);
-}
-
-NV_STATUS dispcmnCtrlCmdDpEnableVrr_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams);
-
-static inline NV_STATUS dispcmnCtrlCmdDpEnableVrr_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams) {
-    return pDispCommon->__dispcmnCtrlCmdDpEnableVrr__(pDispCommon, pParams);
 }
 
 NV_STATUS dispcmnCtrlCmdDpGetAudioMuteStream_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DP_GET_AUDIO_MUTESTREAM_PARAMS *pParams);
@@ -1871,6 +1897,12 @@ NV_STATUS dispcmnCtrlCmdSystemGetAcpiIdMap_IMPL(struct DispCommon *pDispCommon, 
 
 static inline NV_STATUS dispcmnCtrlCmdSystemGetAcpiIdMap_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS *pAcpiIdMapParams) {
     return pDispCommon->__dispcmnCtrlCmdSystemGetAcpiIdMap__(pDispCommon, pAcpiIdMapParams);
+}
+
+NV_STATUS dispcmnCtrlCmdSystemAcpiSubsystemActivated_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdSystemAcpiSubsystemActivated_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdSystemAcpiSubsystemActivated__(pDispCommon, pParams);
 }
 
 NV_STATUS dispcmnCtrlCmdSpecificSetAcpiIdMapping_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_SPECIFIC_SET_ACPI_ID_MAPPING_PARAMS *pParams);

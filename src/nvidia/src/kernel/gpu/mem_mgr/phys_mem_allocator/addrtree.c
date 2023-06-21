@@ -82,8 +82,8 @@ pmaAddrtreePrintLevel(ADDRTREE_LEVEL *pLevel)
                   pNode->seeChild[mapIndex], i, pNode->state[mapIndex]);
 
         // In case compiler complains when the above print is compiled out
-        pNode = pNode;
-        mapIndex = mapIndex;
+        (void)pNode;
+        (void)mapIndex;
     }
 }
 
@@ -164,6 +164,13 @@ pmaAddrtreeInit
     pPmaStats->numFreeFrames += newTree->totalFrames;
     pPmaStats->num2mbPages += num2mbPages;
     pPmaStats->numFree2mbPages += num2mbPages;
+
+    if (bProtected)
+    {
+        pPmaStats->numFreeFramesProtected += newTree->totalFrames;
+        pPmaStats->num2mbPagesProtected += num2mbPages;
+        pPmaStats->numFree2mbPagesProtected += num2mbPages;
+    }
 
     newTree->bProtected = bProtected;
     newTree->pPmaStats = pPmaStats;
@@ -310,6 +317,12 @@ void pmaAddrtreeDestroy(void *pMap)
     num2mbPages = pTree->totalFrames / (_PMA_2MB >> PMA_PAGE_SHIFT);
     pTree->pPmaStats->numFreeFrames -= pTree->totalFrames;
     pTree->pPmaStats->numFree2mbPages -= num2mbPages;
+
+    if (pTree->bProtected)
+    {
+        pTree->pPmaStats->numFreeFramesProtected -= pTree->totalFrames;
+        pTree->pPmaStats->numFree2mbPagesProtected -= num2mbPages;
+    }
 
     portMemFree(pTree->root);
     portMemFree(pTree->levels);
@@ -1013,7 +1026,7 @@ _pmaAddrtreeScanContiguous
     NvU64 rangeEnd,
     NvU64 numPages,
     NvU64 *freeList,
-    NvU32 pageSize,
+    NvU64 pageSize,
     NvU64 alignment,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,
@@ -1034,7 +1047,7 @@ _pmaAddrtreeScanContiguous
     level = addrtreeGetTreeLevel(pageSize);
     if (level == 0)
     {
-        NV_PRINTF(LEVEL_ERROR, "address tree cannot handle page size 0x%x\n",
+        NV_PRINTF(LEVEL_ERROR, "address tree cannot handle page size 0x%llx\n",
                                pageSize);
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -1110,7 +1123,7 @@ pmaAddrtreeScanContiguous
     NvU64 rangeEnd,
     NvU64 numPages,
     NvU64 *freeList,
-    NvU32 pageSize,
+    NvU64 pageSize,
     NvU64 alignment,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,
@@ -1224,7 +1237,7 @@ _pmaAddrtreeScanDiscontiguous
     NvU64 rangeEnd,
     NvU64 numPages,
     NvU64 *freeList,
-    NvU32 pageSize,
+    NvU64 pageSize,
     NvU64 alignment,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,
@@ -1244,7 +1257,7 @@ _pmaAddrtreeScanDiscontiguous
     level = addrtreeGetTreeLevel(pageSize);
     if (level == 0)
     {
-        NV_PRINTF(LEVEL_ERROR, "address tree cannot handle page size 0x%x\n",
+        NV_PRINTF(LEVEL_ERROR, "address tree cannot handle page size 0x%llx\n",
                                pageSize);
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -1315,7 +1328,7 @@ pmaAddrtreeScanDiscontiguous
     NvU64 rangeEnd,
     NvU64 numPages,
     NvU64 *freeList,
-    NvU32 pageSize,
+    NvU64 pageSize,
     NvU64 alignment,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,
@@ -1758,7 +1771,7 @@ __pmaAddrtreeChangePageStateAttribEx
 (
     void           *pMap,
     NvU64           frameNumStart,
-    NvU32           pageSize,
+    NvU64           pageSize,
     PMA_PAGESTATUS  newState,
     PMA_PAGESTATUS  newStateMask
 )
@@ -1816,11 +1829,18 @@ __pmaAddrtreeChangePageStateAttribEx
         pmaStatsUpdateState(&pTree->pPmaStats->numFree2mbPages,
                             num2mbFramesTouched, targetFoundState, updatedState);
 
+        if (pTree->bProtected)
+        {
+            pmaStatsUpdateState(&pTree->pPmaStats->numFreeFramesProtected,
+                                numFramesTouched, targetFoundState, updatedState);
+            pmaStatsUpdateState(&pTree->pPmaStats->numFree2mbPagesProtected,
+                                num2mbFramesTouched, targetFoundState, updatedState);
+        }
     }
     else
     {
         // Do unoptimized case
-        NvU32 framesPerPage = pageSize >> PMA_PAGE_SHIFT;
+        NvU32 framesPerPage = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
         NvU32 j;
 
         for (j = 0; j < framesPerPage; j++)
@@ -1842,6 +1862,12 @@ __pmaAddrtreeChangePageStateAttribEx
 
             pmaStatsUpdateState(&pTree->pPmaStats->numFreeFrames, 1, oldState, updatedState);
 
+            if (pTree->bProtected)
+            {
+                pmaStatsUpdateState(&pTree->pPmaStats->numFreeFramesProtected,
+                                    1, oldState, updatedState);
+            }
+
             updatedState2mb = pmaAddrtreeReadLevel(pTree, levelNum2mb, frameNum2mb, NV_TRUE);
 
             if (updatedState2mb != oldState2mb)
@@ -1849,6 +1875,11 @@ __pmaAddrtreeChangePageStateAttribEx
                 pmaStatsUpdateState(&pTree->pPmaStats->numFree2mbPages, 1,
                                     oldState2mb, updatedState2mb);
 
+                if (pTree->bProtected)
+                {
+                    pmaStatsUpdateState(&pTree->pPmaStats->numFree2mbPagesProtected, 1,
+                                        oldState2mb, updatedState2mb);
+                }
             }
         }
 
@@ -1864,7 +1895,7 @@ _pmaAddrtreeChangePageStateAttribEx
 (
     void           *pMap,
     NvU64           frameNumStart,
-    NvU32           pageSize,
+    NvU64           pageSize,
     PMA_PAGESTATUS  newState,
     PMA_PAGESTATUS  newStateMask
 )
@@ -1930,7 +1961,7 @@ pmaAddrtreeChangePageStateAttrib
 (
     void * pTree,
     NvU64 frameNumStart,
-    NvU32 pageSize,
+    NvU64 pageSize,
     PMA_PAGESTATUS newState,
     NvBool writeAttrib
 )

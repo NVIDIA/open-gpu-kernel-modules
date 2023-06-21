@@ -74,7 +74,7 @@ struct PhysicalMemory {
     NV_STATUS (*__physmemControlFilter__)(struct PhysicalMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__physmemControlSerialization_Prologue__)(struct PhysicalMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__physmemIsReady__)(struct PhysicalMemory *, NvBool);
-    NV_STATUS (*__physmemCheckCopyPermissions__)(struct PhysicalMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__physmemCheckCopyPermissions__)(struct PhysicalMemory *, struct OBJGPU *, struct Device *);
     void (*__physmemPreDestruct__)(struct PhysicalMemory *);
     NV_STATUS (*__physmemIsDuplicate__)(struct PhysicalMemory *, NvHandle, NvBool *);
     void (*__physmemControlSerialization_Epilogue__)(struct PhysicalMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -129,7 +129,7 @@ NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, CAL
 #define physmemControlFilter(pResource, pCallContext, pParams) physmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define physmemControlSerialization_Prologue(pResource, pCallContext, pParams) physmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define physmemIsReady(pMemory, bCopyConstructorContext) physmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define physmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) physmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define physmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) physmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define physmemPreDestruct(pResource) physmemPreDestruct_DISPATCH(pResource)
 #define physmemIsDuplicate(pMemory, hMemory, pDuplicate) physmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define physmemControlSerialization_Epilogue(pResource, pCallContext, pParams) physmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -213,8 +213,8 @@ static inline NV_STATUS physmemIsReady_DISPATCH(struct PhysicalMemory *pMemory, 
     return pMemory->__physmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS physmemCheckCopyPermissions_DISPATCH(struct PhysicalMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__physmemCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS physmemCheckCopyPermissions_DISPATCH(struct PhysicalMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__physmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void physmemPreDestruct_DISPATCH(struct PhysicalMemory *pResource) {

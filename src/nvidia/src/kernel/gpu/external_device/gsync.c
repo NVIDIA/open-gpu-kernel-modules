@@ -241,7 +241,7 @@ gsyncP2060StartupProvider(OBJGSYNC *pGsync)
 
     // Constants to be returned in NV30F1_CTRL_GSYNC_GET_CAPS
     p2060->syncSkewResolutionInNs = NV_P2060_SYNC_SKEW_RESOLUTION;
-    p2060->syncSkewMax            = gsyncSupportsLargeSyncSkew_P2060(pExtDev) ? 
+    p2060->syncSkewMax            = gsyncSupportsLargeSyncSkew_P2060(pExtDev) ?
                                     NV_P2060_SYNC_SKEW_MAX_UNITS_FULL_SUPPORT :
                                     NV_P2060_SYNC_SKEW_MAX_UNITS_LIMITED_SUPPORT;
 

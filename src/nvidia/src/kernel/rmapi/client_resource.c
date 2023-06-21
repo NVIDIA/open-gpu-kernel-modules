@@ -61,6 +61,7 @@
 #include "jt.h"
 #include "nvop.h"
 #include "diagnostics/gpu_acct.h"
+#include "platform/platform_request_handler.h"
 #include "gpu/external_device/gsync.h"
 #include "mem_mgr/virt_mem_mgr.h"
 #include "diagnostics/journal.h"
@@ -218,7 +219,7 @@ cliresControl_Prologue_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
-    NV_STATUS status = serverDeserializeCtrlDown(pCallContext, pParams->cmd, pParams->pParams, pParams->paramsSize, &pParams->flags);
+    NV_STATUS status = serverDeserializeCtrlDown(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags);
 
     return status;
 }
@@ -231,7 +232,7 @@ cliresControl_Epilogue_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
-    NV_ASSERT_OK(serverSerializeCtrlUp(pCallContext, pParams->cmd, pParams->pParams, pParams->paramsSize, &pParams->flags));
+    NV_ASSERT_OK(serverSerializeCtrlUp(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags));
     serverFreeSerializeStructures(pCallContext, pParams->pParams);
 }
 
@@ -257,7 +258,8 @@ CliControlSystemEvent
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (NV_OK != serverutilGetClientUnderLock(hClient, &pClient))
+    pClient = serverutilGetClientUnderLock(hClient);
+    if (pClient == NULL)
         return NV_ERR_INVALID_CLIENT;
 
     CliGetEventNotificationList(hClient, hClient, NULL, &pEventNotification);
@@ -308,9 +310,9 @@ CliGetSystemEventStatus
 )
 {
     NvU32 Head, Tail;
-    RmClient *pClient;
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
 
-    if (NV_OK != serverutilGetClientUnderLock(hClient, &pClient))
+    if (pClient == NULL)
         return NV_ERR_INVALID_CLIENT;
 
     Head = pClient->CliSysEventInfo.systemEventsQueue.Head;
@@ -1941,6 +1943,99 @@ cliresCtrlCmdGpuAcctGetAccountingPids_IMPL
 }
 
 
+NV_STATUS
+cliresCtrlCmdSystemPfmreqhndlrControl_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CONTROL_PARAMS *controlParams
+)
+{
+    OBJSYS    				*pSys  				     = NULL;
+    PlatformRequestHandler  *pPlatformRequestHandler = NULL;
+    NV_STATUS  ret   = NV_OK;
+    NvU32      data  = 0;
+
+    pSys = SYS_GET_INSTANCE();
+    if (!pSys)
+    {
+        return NV_ERR_INVALID_REQUEST;
+    }
+
+    data = controlParams->data;
+
+    pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
+    if (!pPlatformRequestHandler)
+    {
+        return NV_ERR_INVALID_REQUEST;
+    }
+
+    ret = pfmreqhndlrControl(pPlatformRequestHandler, controlParams->command, controlParams->locale, &data);
+
+    if (NV_OK == ret)
+    {
+        controlParams->data = data;
+    }
+    else
+    {
+        controlParams->data = NV0000_CTRL_CMD_SYSTEM_PFM_REQ_HNDLR_CMD_DEF_INVALID;
+    }
+
+    return ret;
+}
+
+NV_STATUS
+cliresCtrlCmdSystemPfmreqhndlrBatchControl_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_BATCH_CONTROL_PARAMS *controlParams
+)
+{
+    OBJSYS    *pSys  = NULL;
+    PlatformRequestHandler       *pPlatformRequestHandler  = NULL;
+    NvU32      data  = 0;
+    NvU32      i     = 0;
+    NvU32      cnt   = 0;
+
+    if (controlParams->cmdCount > NV0000_CTRL_CMD_SYSTEM_PFM_REQ_HNDLR_BATCH_COMMAND_MAX)
+    {
+        return NV_ERR_INVALID_REQUEST;
+    }
+
+    pSys = SYS_GET_INSTANCE();
+    if (!pSys)
+    {
+        NV_ASSERT(pSys);
+        return NV_ERR_INVALID_REQUEST;
+    }
+
+    pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
+    if (!pPlatformRequestHandler)
+    {
+        NV_ASSERT(pPlatformRequestHandler);
+        return NV_ERR_INVALID_REQUEST;
+    }
+
+    for (i = 0; i < controlParams->cmdCount; i++)
+    {
+        data = controlParams->cmdData[i].data;
+        if (pfmreqhndlrControl(pPlatformRequestHandler,
+                       controlParams->cmdData[i].command,
+                       controlParams->cmdData[i].locale, &data) == NV_OK)
+        {
+            controlParams->cmdData[i].data = data;
+            cnt++;
+        }
+        else
+        {
+            controlParams->cmdData[i].data = NV0000_CTRL_CMD_SYSTEM_PFM_REQ_HNDLR_CMD_DEF_INVALID;
+        }
+    }
+
+    controlParams->succeeded = cnt;
+
+    return NV_OK;
+}
+
 /*!
  * Helper to build config data from unpacked table data,
  * static config v2.0/2.1.
@@ -2961,6 +3056,12 @@ cliresCtrlCmdNvdGetTimestamp_IMPL
     return status;
 }
 
+/**
+ * These control handlers can be called:
+ * - with pRmCliRes (i.e. this) == NULL
+ * - with RS TLS state missing.
+ */
+
 /*!
  * @brief Get Nvlog Info. Returns the current state of the NVLOG subsystem.
  *
@@ -2986,34 +3087,44 @@ cliresCtrlCmdNvdGetNvlogInfo_IMPL
         // GPUs.  This code assumes that GetNvlogInfo is called just before
         // GetNvlogBufferInfo and GetNvlog.
         //
-        NvU32           gpuMask = 0;
-        NvU32           gpuInstance = 0;
-        OBJGPU         *pGpu;
-
-        (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
-
-        for (;;)
+        //
+        // If pRmCliRes==NULL, we are not called from the ResourceServer path, and
+        // therefore cannot safely dereference OBJGPU in the below block.
+        //
+        if (pRmCliRes != NULL)
         {
-            pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+            NvU32           gpuMask = 0;
+            NvU32           gpuInstance = 0;
+            OBJGPU         *pGpu;
 
-            if (pGpu == NULL)
-                break;
+            (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
 
-            if (IS_GSP_CLIENT(pGpu))
+            for (;;)
             {
-                KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-                kgspDumpGspLogs(pGpu, pKernelGsp, NV_TRUE);
+                pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+
+                if (pGpu == NULL)
+                    break;
+
+                if (IS_GSP_CLIENT(pGpu))
+                {
+                    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+                    kgspDumpGspLogs(pGpu, pKernelGsp, NV_TRUE);
+                }
             }
         }
 
         pParams->version    = NvLogLogger.version;
 
         portMemSet(pParams->bufferTags, 0, sizeof(pParams->bufferTags));
+
+        portSyncMutexAcquire(NvLogLogger.buffersLock);
         for (i = 0; i < NVLOG_MAX_BUFFERS; i++)
         {
             if (NvLogLogger.pBuffers[i] != NULL)
                 pParams->bufferTags[i] = NvLogLogger.pBuffers[i]->tag;
         }
+        portSyncMutexRelease(NvLogLogger.buffersLock);
         status = NV_OK;
     }
 
@@ -3042,23 +3153,29 @@ cliresCtrlCmdNvdGetNvlogBufferInfo_IMPL
     {
         NVLOG_BUFFER *pBuffer;
         NVLOG_BUFFER_HANDLE hBuffer;
-        NvBool bPause;
+
+        portSyncMutexAcquire(NvLogLogger.buffersLock);
 
         if (pParams->tag != 0)
         {
             status = nvlogGetBufferHandleFromTag(pParams->tag, &hBuffer);
-            NV_ASSERT_OR_RETURN(status == NV_OK, status);
+            if (status != NV_OK)
+                goto done;
         }
         else
         {
-            NV_ASSERT_OR_RETURN(pParams->buffer < NVLOG_MAX_BUFFERS, NV_ERR_INVALID_ARGUMENT);
+            if (pParams->buffer >= NVLOG_MAX_BUFFERS)
+            {
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto done;
+            }
             hBuffer = pParams->buffer;
         }
 
         pBuffer = NvLogLogger.pBuffers[hBuffer];
         NV_ASSERT_OR_RETURN(pBuffer != NULL, NV_ERR_OBJECT_NOT_FOUND);
 
-        bPause = pParams->flags & DRF_DEF(0000, _CTRL_NVD_NVLOG_BUFFER_INFO_FLAGS, _PAUSE, _YES);
+        NvBool bPause = pParams->flags & DRF_DEF(0000, _CTRL_NVD_NVLOG_BUFFER_INFO_FLAGS, _PAUSE, _YES);
         nvlogPauseLoggingToBuffer(hBuffer, bPause);
 
         pParams->tag        = pBuffer->tag;
@@ -3067,6 +3184,9 @@ cliresCtrlCmdNvdGetNvlogBufferInfo_IMPL
         pParams->pos        = pBuffer->pos;
         pParams->overflow   = pBuffer->extra.ring.overflow;
         status = NV_OK;
+
+done:
+        portSyncMutexRelease(NvLogLogger.buffersLock);
     }
 
     return status;
@@ -3097,6 +3217,7 @@ cliresCtrlCmdNvdGetNvlog_IMPL
 
         NV_ASSERT_OR_RETURN(pParams->size <= NV0000_CTRL_NVLOG_MAX_BLOCK_SIZE, NV_ERR_INVALID_ARGUMENT);
 
+        portSyncMutexAcquire(NvLogLogger.buffersLock);
         nvlogPauseLoggingToBuffer(hBuffer, NV_TRUE);
         status = nvlogExtractBufferChunk(hBuffer, pParams->blockNum, &pParams->size, pParams->data);
 
@@ -3108,6 +3229,7 @@ cliresCtrlCmdNvdGetNvlog_IMPL
         {
             nvlogPauseLoggingToBuffer(hBuffer, NV_FALSE);
         }
+        portSyncMutexRelease(NvLogLogger.buffersLock);
     }
 
     return status;
@@ -3619,9 +3741,9 @@ cliresCtrlCmdSetSubProcessID_IMPL
 )
 {
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pRmCliRes);
-    RmClient *pClient;
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
 
-    if (NV_OK != serverutilGetClientUnderLock(hClient, &pClient))
+    if (pClient == NULL)
         return NV_ERR_INVALID_CLIENT;
 
     pClient->SubProcessID = pParams->subProcessID;
@@ -3643,9 +3765,9 @@ cliresCtrlCmdDisableSubProcessUserdIsolation_IMPL
 )
 {
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pRmCliRes);
-    RmClient *pClient;
+    RmClient *pClient = serverutilGetClientUnderLock(hClient);
 
-    if (NV_OK != serverutilGetClientUnderLock(hClient, &pClient))
+    if (pClient == NULL)
         return NV_ERR_INVALID_CLIENT;
 
     pClient->bIsSubProcessDisabled = pParams->bIsSubProcessDisabled;
@@ -3879,6 +4001,7 @@ cliresCtrlCmdClientGetAddrSpaceType_IMPL
     switch (memType)
     {
         case ADDR_SYSMEM:
+        case ADDR_EGM:
             pParams->addrSpaceType = NV0000_CTRL_CMD_CLIENT_GET_ADDR_SPACE_TYPE_SYSMEM;
             break;
         case ADDR_FBMEM:
@@ -4432,7 +4555,7 @@ cliresCtrlCmdSystemPfmreqhndlrGetPerfSensorCounters_IMPL
 )
 {
     NV_STATUS status = NV_OK;
-    portMemSet(pParams, 0, sizeof(*pParams));
+    status = pfmreqhndlrGetPerfSensorCounters(pParams, PFM_REQ_HNDLR_PSR_PUB_TAG);
     return status;
 }
 
@@ -4444,11 +4567,30 @@ cliresCtrlCmdSystemPfmreqhndlrGetExtendedPerfSensorCounters_IMPL
 )
 {
     NV_STATUS status = NV_OK;
-    portMemSet(pParams, 0, sizeof(*pParams));
+    status = pfmreqhndlrGetPerfSensorCounters(pParams, 0);
     return status;
 }
 
 // GPS HOSUNGK DELETE after KMD, NvAPI changes are made
+NV_STATUS
+cliresCtrlCmdSystemGpsControl_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_SYSTEM_GPS_CONTROL_PARAMS *controlParams
+)
+{
+    return NV_OK;
+}
+
+NV_STATUS
+cliresCtrlCmdSystemGpsBatchControl_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_SYSTEM_GPS_BATCH_CONTROL_PARAMS *controlParams
+)
+{
+    return NV_OK;
+}
 
 NV_STATUS
 cliresCtrlCmdSystemGetPerfSensorCounters_IMPL
@@ -4469,3 +4611,4 @@ cliresCtrlCmdSystemGetExtendedPerfSensorCounters_IMPL
 {
     return NV_OK;
 }
+

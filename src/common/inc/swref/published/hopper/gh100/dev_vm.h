@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-23 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,5 +46,19 @@
 #define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR__SIZE_1                                          16 /*       */
 #define NV_VIRTUAL_FUNCTION_PRIV_TIMER(i)               (0x2300+(i)*4) /* RW-4A */
 #define NV_VIRTUAL_FUNCTION_PRIV_TIMER__SIZE_1                      2  /*        */
+#define NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_LO               0x00003108 /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_LO_BASE               31:12 /* RWXVF */
+#define NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_HI               0x0000310C /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_DOORBELL                                          0x2200 /* -W-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(i)                              (0x1000+(i)*4) /* RW-4A */
+#define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_VALUE                                     31:0 /* RWXVF */
+#define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_VALUE_INIT                          0x00000000 /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET(i)                       (0x1200+(i)*4) /* RW-4A */
+#define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET_VALUE                              31:0 /* RWIVF */
+#define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET_VALUE_INIT                   0x00000000 /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR(i)                     (0x1400+(i)*4) /* RW-4A */
+#define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR_VALUE                            31:0 /* RWIVF */
+#define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR_VALUE_INIT                 0x00000000 /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_MMU_PAGE_FAULT_CTRL                           0x00003070 /* RW-4R */
 
 #endif // __gh100_dev_vm_h__

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -87,7 +87,7 @@ struct MIGMonitorSession {
     NV_STATUS (*__migmonitorsessionControlLookup__)(struct MIGMonitorSession *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__migmonitorsessionMap__)(struct MIGMonitorSession *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__migmonitorsessionAccessCallback__)(struct MIGMonitorSession *, struct RsClient *, void *, RsAccessRight);
-    NvU64 dupedCapDescriptor;
+    NvU64 PRIVATE_FIELD(dupedCapDescriptor);
 };
 
 #ifndef __NVOC_CLASS_MIGMonitorSession_TYPEDEF__

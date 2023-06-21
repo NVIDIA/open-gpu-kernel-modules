@@ -67,7 +67,7 @@ typedef struct
     NvU32       flags;
 
     /*!
-     * Specifies number of clients who requested 
+     * Specifies number of clients who requested
      * CUDA boost. This is used only in case of the CUDA clients.
      */
     NvU32       refCount;

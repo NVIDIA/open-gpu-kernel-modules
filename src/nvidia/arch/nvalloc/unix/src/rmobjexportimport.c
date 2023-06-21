@@ -262,7 +262,8 @@ static NV_STATUS RmRefObjExportImport(void)
                                        NV01_NULL_OBJECT,
                                        NV01_NULL_OBJECT,
                                        NV01_ROOT,
-                                       &hObjExportRmClient);
+                                       &hObjExportRmClient,
+                                       sizeof(hObjExportRmClient));
     if (rmStatus != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Unable to alloc root in %s\n", __FUNCTION__);
@@ -426,7 +427,8 @@ NV_STATUS RmExportObject(NvHandle hSrcClient, NvHandle hSrcObject,
                                          hObjExportRmClient,
                                          objExportDevice[deviceInstance].hRmDevice,
                                          NV01_DEVICE_0,
-                                         &params);
+                                         &params,
+                                         sizeof(params));
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Unable to alloc device in %s\n",
@@ -443,7 +445,8 @@ NV_STATUS RmExportObject(NvHandle hSrcClient, NvHandle hSrcObject,
                                          objExportDevice[deviceInstance].hRmDevice,
                                          objExportDevice[deviceInstance].hRmSubDevice,
                                          NV20_SUBDEVICE_0,
-                                         &subdevParams);
+                                         &subdevParams,
+                                         sizeof(subdevParams));
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Unable to alloc subdevice in %s\n",

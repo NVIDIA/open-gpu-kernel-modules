@@ -1081,20 +1081,6 @@ typedef struct
     NV_STATUS rmStatus;                                                                 // Out
 } UVM_TEST_VA_SPACE_MM_RETAIN_PARAMS;
 
-// Forces the VA space mm_shutdown callback to delay until more than one thread
-// has entered the callback. This provides a high probability of exercising code
-// to handle this race condition between exit_mmap and file close.
-//
-// The delay has an upper bound to prevent an infinite stall.
-#define UVM_TEST_VA_SPACE_MM_DELAY_SHUTDOWN              UVM_TEST_IOCTL_BASE(68)
-typedef struct
-{
-    NvBool verbose;
-
-    // NV_ERR_PAGE_TABLE_NOT_AVAIL if no va_space_mm is present
-    NV_STATUS rmStatus;
-} UVM_TEST_VA_SPACE_MM_DELAY_SHUTDOWN_PARAMS;
-
 #define UVM_TEST_PMM_CHUNK_WITH_ELEVATED_PAGE            UVM_TEST_IOCTL_BASE(69)
 typedef struct
 {
@@ -1371,10 +1357,6 @@ typedef struct
     // Approximate duration for which to sleep with the va_space_mm retained.
     NvU64 sleep_us                                                   NV_ALIGN_BYTES(8); // In
 
-    // On success, this contains the value of mm->mm_users before mmput() is
-    // called.
-    NvU64 mm_users                                                   NV_ALIGN_BYTES(8); // Out
-
     // NV_ERR_PAGE_TABLE_NOT_AVAIL  Could not retain va_space_mm
     //                              (uvm_va_space_mm_or_current_retain returned
     //                              NULL)
@@ -1420,6 +1402,12 @@ typedef struct
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_DESTROY_GPU_VA_SPACE_DELAY_PARAMS;
 
+#define UVM_TEST_SEC2_SANITY                             UVM_TEST_IOCTL_BASE(95)
+typedef struct
+{
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SEC2_SANITY_PARAMS;
+
 #define UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED             UVM_TEST_IOCTL_BASE(96)
 typedef struct
 {
@@ -1432,6 +1420,14 @@ typedef struct
     NvU64 delay_us;                                      // In
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_SPLIT_INVALIDATE_DELAY_PARAMS;
+
+// Tests the CSL/SEC2 encryption/decryption methods by doing a secure transfer
+// of memory from CPU->GPU and a subsequent GPU->CPU transfer.
+#define UVM_TEST_SEC2_CPU_GPU_ROUNDTRIP                  UVM_TEST_IOCTL_BASE(99)
+typedef struct
+{
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SEC2_CPU_GPU_ROUNDTRIP_PARAMS;
 
 #define UVM_TEST_CPU_CHUNK_API                           UVM_TEST_IOCTL_BASE(100)
 typedef struct

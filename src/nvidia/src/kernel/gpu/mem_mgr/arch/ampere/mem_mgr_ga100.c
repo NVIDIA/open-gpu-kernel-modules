@@ -110,10 +110,6 @@ memmgrScrubRegistryOverrides_GA100
     // Disabling for GSP-RM ucode, since scrubbing is done from CPU-side kernel RM.
     // Enabling virtual scrubbing mode for SRIOV-HEAVY mode.
     //
-    // Temporary: Disabling scrub on free if CC is enabled. Once the
-    // support for secure work launch is in, this temporary change can be
-    // reverted. Bug: 3334708
-    //
 
     if ((RMCFG_FEATURE_PLATFORM_WINDOWS && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE)) ||
          IS_SIMULATION(pGpu) || IsDFPGA(pGpu) ||
@@ -121,7 +117,6 @@ memmgrScrubRegistryOverrides_GA100
          IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
          RMCFG_FEATURE_PLATFORM_GSP ||
          (pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) && !gpuIsCacheOnlyModeEnabled(pGpu)) ||
-         gpuIsCCFeatureEnabled(pGpu) ||
          IsSLIEnabled(pGpu))
     {
         pMemoryManager->bScrubOnFreeEnabled = NV_FALSE;
@@ -364,20 +359,27 @@ memmgrGetBlackListPages_GA100
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    NV2080_CTRL_FB_GET_DYNAMIC_OFFLINED_PAGES_PARAMS *pBlParams =
+        portMemAllocNonPaged(sizeof(*pBlParams));
+    if (pBlParams == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
     while (baseIndex < NV2080_CTRL_FB_DYNAMIC_BLACKLIST_MAX_PAGES)
     {
         RM_API *pRmApi = IS_GSP_CLIENT(pGpu) ? GPU_GET_PHYSICAL_RMAPI(pGpu)
                                              : rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-        NV2080_CTRL_FB_GET_DYNAMIC_OFFLINED_PAGES_PARAMS blParams = {0};
+        portMemSet(pBlParams, 0, sizeof(*pBlParams));
 
-        blParams.baseIndex = baseIndex;
+        pBlParams->baseIndex = baseIndex;
 
         status = pRmApi->Control(pRmApi,
                                  pGpu->hInternalClient,
                                  pGpu->hInternalSubdevice,
                                  NV2080_CTRL_CMD_FB_GET_DYNAMIC_OFFLINED_PAGES,
-                                 &blParams,
-                                 sizeof(blParams));
+                                 pBlParams,
+                                 sizeof(*pBlParams));
         if(NV_OK != status)
         {
             if (NV_ERR_NOT_SUPPORTED == status ||
@@ -395,7 +397,7 @@ memmgrGetBlackListPages_GA100
             break;
         }
 
-        for (idx = 0; idx < blParams.validEntries; idx++)
+        for (idx = 0; idx < pBlParams->validEntries; idx++)
         {
 
             if (entryIdx >= *pCount)
@@ -403,12 +405,12 @@ memmgrGetBlackListPages_GA100
                 status = NV_ERR_BUFFER_TOO_SMALL;
                 goto done;
             }
-            pBlAddrs[entryIdx].address = blParams.offlined[idx].pageNumber << RM_PAGE_SHIFT;
-            pBlAddrs[entryIdx].type = blParams.offlined[idx].source;
+            pBlAddrs[entryIdx].address = pBlParams->offlined[idx].pageNumber << RM_PAGE_SHIFT;
+            pBlAddrs[entryIdx].type = pBlParams->offlined[idx].source;
             entryIdx++;
          }
 
-        if (!blParams.bMore) {
+        if (!pBlParams->bMore) {
             break;
         }
 
@@ -416,6 +418,7 @@ memmgrGetBlackListPages_GA100
     }
 
 done:
+    portMemFree(pBlParams);
     *pCount = entryIdx;
 
     return status;

@@ -618,7 +618,6 @@ static NV_STATUS cpu_chunk_map_on_cpu(uvm_cpu_chunk_t *chunk, void **cpu_addr)
 static NV_STATUS test_cpu_chunk_mapping_access(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
 {
     NvU64 dma_addr;
-    uvm_gpu_phys_address_t gpu_phys_addr;
     uvm_gpu_address_t gpu_addr;
     uvm_push_t push;
     NvU32 *cpu_addr;
@@ -630,12 +629,7 @@ static NV_STATUS test_cpu_chunk_mapping_access(uvm_cpu_chunk_t *chunk, uvm_gpu_t
     memset(cpu_addr, 0, chunk_size);
 
     dma_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu->parent);
-    gpu_phys_addr = uvm_gpu_phys_address(UVM_APERTURE_SYS, dma_addr);
-
-    if (uvm_mmu_gpu_needs_dynamic_sysmem_mapping(gpu))
-        gpu_addr = uvm_gpu_address_virtual_from_sysmem_phys(gpu, gpu_phys_addr.address);
-    else
-        gpu_addr = uvm_gpu_address_from_phys(gpu_phys_addr);
+    gpu_addr = uvm_gpu_address_copy(gpu, uvm_gpu_phys_address(UVM_APERTURE_SYS, dma_addr));
 
     TEST_NV_CHECK_GOTO(uvm_push_begin_acquire(gpu->channel_manager,
                                               UVM_CHANNEL_TYPE_GPU_TO_CPU,

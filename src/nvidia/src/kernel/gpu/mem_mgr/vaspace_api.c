@@ -80,6 +80,8 @@ vaspaceapiConstruct_IMPL
     NvBool                            bLockAcquired         = NV_FALSE;
     MemoryManager                    *pMemoryManager        = GPU_GET_MEMORY_MANAGER(pGpu);
     KernelMIGManager                 *pKernelMIGManager     = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NvU64                             originalVaBase;
+    NvU64                             originalVaSize;
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -114,6 +116,10 @@ vaspaceapiConstruct_IMPL
 
     pNvVASpaceAllocParams = pParams->pAllocParams;
     allocFlags            = pNvVASpaceAllocParams->flags;
+
+    // These input parameters get overwritten later but original values are needed
+    originalVaBase = pNvVASpaceAllocParams->vaBase;
+    originalVaSize = pNvVASpaceAllocParams->vaSize;
 
     // Translate & validate flags
     NV_CHECK_OK_OR_RETURN(LEVEL_WARNING, translateAllocFlagsToVASpaceFlags(allocFlags, &flags));
@@ -218,7 +224,7 @@ vaspaceapiConstruct_IMPL
             {
                 // In case of SR-IOV, the BAR1 and FLA is managed by the guest. So, no need
                 // to communicate with the host for BAR1 and FLA VA.
-                if ((pNvVASpaceAllocParams->index == NV_VASPACE_ALLOCATION_INDEX_GPU_HOST))
+                if (pNvVASpaceAllocParams->index == NV_VASPACE_ALLOCATION_INDEX_GPU_HOST)
                     bSendRPC = NV_FALSE;
             }
 
@@ -236,6 +242,7 @@ vaspaceapiConstruct_IMPL
                                    pParams->hResource,
                                    pParams->externalClassId,
                                    pNvVASpaceAllocParams,
+                                   sizeof(*pNvVASpaceAllocParams),
                                    status);
             if (status != NV_OK)
             {
@@ -327,30 +334,29 @@ vaspaceapiConstruct_IMPL
         // Get flags for the requested big page size
         flags |= translatePageSizeToVASpaceFlags(pNvVASpaceAllocParams);
 
-        if (0 != pNvVASpaceAllocParams->vaSize)
+        if (0 != originalVaSize)
         {
             // FLA VASpace can start from any base (!= 0)
             if (flags & VASPACE_FLAGS_FLA)
             {
-                vasLimit = pNvVASpaceAllocParams->vaBase +
-                           pNvVASpaceAllocParams->vaSize - 1;
-                if (vasLimit < pNvVASpaceAllocParams->vaBase)
+                vasLimit = originalVaBase + originalVaSize - 1;
+                if (vasLimit < originalVaBase)
                 {
                     NV_PRINTF(LEVEL_ERROR,
                               "Integer overflow !!! Invalid parameters for vaBase:%llx, vaSize:%llx\n",
-                              pNvVASpaceAllocParams->vaBase,
-                              pNvVASpaceAllocParams->vaSize);
+                              originalVaBase,
+                              originalVaSize);
                     status = NV_ERR_INVALID_ARGUMENT;
                     NV_ASSERT_OR_GOTO(0, done);
                 }
             }
             else
             {
-                vasLimit = pNvVASpaceAllocParams->vaSize - 1;
+                vasLimit = originalVaSize - 1;
             }
         }
 
-        // 
+        //
         // Bug 3610538 For unlinked SLI, clients want to restrict internal buffers to
         // Internal VA range. setting internal va range to match what we use for
         // windows.
@@ -366,7 +372,7 @@ vaspaceapiConstruct_IMPL
         status = vmmCreateVaspace(pVmm, pParams->externalClassId,
                                   pNvVASpaceAllocParams->index,
                                   gpuMask,
-                                  pNvVASpaceAllocParams->vaBase,
+                                  originalVaBase,
                                   vasLimit,
                                   vaStartInternal,
                                   vaLimitInternal,

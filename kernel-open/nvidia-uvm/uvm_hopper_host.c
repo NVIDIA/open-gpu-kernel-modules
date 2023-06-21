@@ -391,10 +391,15 @@ void uvm_hal_hopper_host_set_gpfifo_pushbuffer_segment_base(NvU64 *fifo_entry, N
     *fifo_entry |= (NvU64)(HWCONST(C86F, GP_ENTRY1, OPCODE, SET_PB_SEGMENT_EXTENDED_BASE)) << 32;
 }
 
-void uvm_hal_hopper_host_set_gpfifo_entry(NvU64 *fifo_entry, NvU64 pushbuffer_va, NvU32 pushbuffer_length)
+void uvm_hal_hopper_host_set_gpfifo_entry(NvU64 *fifo_entry,
+                                          NvU64 pushbuffer_va,
+                                          NvU32 pushbuffer_length,
+                                          uvm_gpfifo_sync_t sync_flag)
 {
     NvU64 fifo_entry_value;
     NvU64 pb_low_bits_mask = (1ull << 40) - 1;
+    const NvU32 sync_value = (sync_flag == UVM_GPFIFO_SYNC_WAIT) ? HWCONST(C86F, GP_ENTRY1, SYNC, WAIT) :
+                                                                   HWCONST(C86F, GP_ENTRY1, SYNC, PROCEED);
 
     UVM_ASSERT(!uvm_global_is_suspended());
     UVM_ASSERT_MSG(IS_ALIGNED(pushbuffer_va, 4), "pushbuffer va unaligned: %llu\n", pushbuffer_va);
@@ -406,7 +411,8 @@ void uvm_hal_hopper_host_set_gpfifo_entry(NvU64 *fifo_entry, NvU64 pushbuffer_va
     pushbuffer_va &= pb_low_bits_mask;
     fifo_entry_value =          HWVALUE(C86F, GP_ENTRY0, GET, NvU64_LO32(pushbuffer_va) >> 2);
     fifo_entry_value |= (NvU64)(HWVALUE(C86F, GP_ENTRY1, GET_HI, NvU64_HI32(pushbuffer_va)) |
-                                HWVALUE(C86F, GP_ENTRY1, LENGTH, pushbuffer_length >> 2)) << 32;
+                                HWVALUE(C86F, GP_ENTRY1, LENGTH, pushbuffer_length >> 2) |
+                                sync_value) << 32;
 
     *fifo_entry = fifo_entry_value;
 }

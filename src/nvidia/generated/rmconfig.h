@@ -229,6 +229,7 @@
 #define RMCFG_FEATURE_PLATFORM_GSP                0  // Running as part of GSP Firmware
 #define RMCFG_FEATURE_PLATFORM_MODS_WINDOWS       0  // Running as part of MODS on Windows
 #define RMCFG_FEATURE_PLATFORM_MODS_UNIX          0  // Running as part of MODS on UNIX
+#define RMCFG_FEATURE_PLATFORM_UNIX_VMWARE        0  // Running on VMware
 #define RMCFG_FEATURE_ARCH_UNKNOWN                0  // unknown arch
 #define RMCFG_FEATURE_ARCH_X86                    0  // Intel x86, 32bit
 #define RMCFG_FEATURE_ARCH_X64                    0  // Intel 64bit
@@ -269,6 +270,7 @@
 #define RMCFG_FEATURE_PAGE_RETIREMENT             1  // Offlining bad memory pages from the FB heap
 #define RMCFG_FEATURE_PMA                         1  // Physical memory allocator
 #define RMCFG_FEATURE_DEVINIT_SCRIPT              0  // VBIOS scripting engine for sharing register sequences
+#define RMCFG_FEATURE_UNIX_CONSOLE_STATE          1  // Unix console state management and display programming
 #define RMCFG_FEATURE_OLD_DAC                     1  // Legacy display support with dac code
 #define RMCFG_FEATURE_CRC_POLLING                 1  // GPU supports CRC Polling
 #define RMCFG_FEATURE_DSI_INFO                    0  // DSI information structures support
@@ -289,8 +291,10 @@
 #define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY         0  // Tegra SOC NvDisplay Driver
 #define RMCFG_FEATURE_TEGRA_SOC_NVDISPLAY_MINIMAL  0  // Enable only those parts of display code which are needed for Tegra SOC NvDisplay Driver
 #define RMCFG_FEATURE_HEAD_REGIONAL_CRC           0  // Display Head Regional CRC support
+#define RMCFG_FEATURE_FEATURE_GH180               1  // RMconfig to encapsulate GH180 features
 #define RMCFG_FEATURE_MULTICAST_FABRIC            1  // Support for MULTICAST_FABRIC
 #define RMCFG_FEATURE_NVLINK_ERROR_THRESHOLD      1  // Support for NVLINK_ERROR_THRESHOLD
+#define RMCFG_FEATURE_FABRIC_LINEAR_ADDRESSING    1  // Unicast fabric memory management
 
 
 
@@ -322,6 +326,7 @@
 #define RMCFG_CLASS_NV1_MEMORY_LOCAL_USER         1  // aka NV01_MEMORY_LOCAL_USER
 #define RMCFG_CLASS_NV01_MEMORY_USER              1  // aka NV01_MEMORY_LOCAL_USER
 #define RMCFG_CLASS_NV1_MEMORY_USER               1  // aka NV01_MEMORY_LOCAL_USER
+#define RMCFG_CLASS_NV_MEMORY_EXTENDED_USER       1  // Extended GPU Memory
 #define RMCFG_CLASS_NV01_MEMORY_VIRTUAL           1
 #define RMCFG_CLASS_NV01_MEMORY_SYSTEM_DYNAMIC    1  // aka NV01_MEMORY_VIRTUAL
 #define RMCFG_CLASS_NV1_MEMORY_SYSTEM_DYNAMIC     1  // aka NV01_MEMORY_VIRTUAL
@@ -338,6 +343,7 @@
 #define RMCFG_CLASS_NV_IMEX_SESSION               0
 #define RMCFG_CLASS_NV01_MEMORY_FLA               1
 #define RMCFG_CLASS_NV_MEMORY_FABRIC_EXPORT_V2    0
+#define RMCFG_CLASS_NV_CE_UTILS                   1
 #define RMCFG_CLASS_NV_MEMORY_FABRIC              1
 #define RMCFG_CLASS_NV_MEMORY_FABRIC_IMPORT_V2    0
 #define RMCFG_CLASS_NV_MEMORY_FABRIC_EXPORTED_REF  0
@@ -415,6 +421,7 @@
 #define RMCFG_CLASS_NV50_THIRD_PARTY_P2P          1
 #define RMCFG_CLASS_FERMI_TWOD_A                  1  // FERMI Graphics 2D
 #define RMCFG_CLASS_FERMI_VASPACE_A               1  // FERMI virtual address space
+#define RMCFG_CLASS_HOPPER_SEC2_WORK_LAUNCH_A     1  // Confidential Computing Work Launch
 #define RMCFG_CLASS_GF100_HDACODEC                1
 #define RMCFG_CLASS_NVB8B0_VIDEO_DECODER          1  // Decoder Class for Hopper
 #define RMCFG_CLASS_NVC4B0_VIDEO_DECODER          1  // Decoder Class for Turing
@@ -469,7 +476,9 @@
 #define RMCFG_CLASS_NV0060_SYNC_GPU_BOOST         1  // Synchronized GPU Boost Class. Defines a set of GPUs for Synchronized Boost
 #define RMCFG_CLASS_GP100_UVM_SW                  1  // UVM SW class to support SW methods for fault cancel
 #define RMCFG_CLASS_NV_EVENT_BUFFER               1  // Event buffer class used to share event data with UMD
+#define RMCFG_CLASS_NV_CONFIDENTIAL_COMPUTE       1  // Confidential Computing Class
 #define RMCFG_CLASS_NV_COUNTER_COLLECTION_UNIT    1  // Counter Collection Unit Class
+#define RMCFG_CLASS_NV_SEMAPHORE_SURFACE          1  // GPU Semaphore encapsulation class
 
 
 
@@ -567,7 +576,7 @@
 #define RMCFG_MODULE_KERNEL_CE                    1  // Kernel Copy Engine
 #define RMCFG_MODULE_PMU                          0  // PMU peregrine core
 #define RMCFG_MODULE_KERNEL_PMU                   1  // PMU peregrine core on Kernel(CPU) RM
-#define RMCFG_MODULE_PLATFORM_REQUEST_HANDLER     0  // Platform Request Handler on Kernel(CPU) RM
+#define RMCFG_MODULE_PLATFORM_REQUEST_HANDLER     1  // Platform Request Handler on Kernel(CPU) RM
 #define RMCFG_MODULE_MSENC                        0  // Video Encoder (MSENC) Engine
 #define RMCFG_MODULE_KERNEL_NVENC                 1
 #define RMCFG_MODULE_HDA                          0  // High Definition Audio (HDA) Engine
@@ -663,9 +672,11 @@
 #define RMCFG_MODULE_DCECLIENTRM                  0  // DCE Client RM
 #define RMCFG_MODULE_DCB                          0  // Display Control Block for all display related data in VBIOS/DCB Image
 #define RMCFG_MODULE_DISPMACRO                    0  // DispMacro RM infrastructure for IED removal from VBIOS
+#define RMCFG_MODULE_CONF_COMPUTE                 1  // Confidential Compute
 #define RMCFG_MODULE_DISP_MGR                     0  // Lid- and dock-related disp code for NOTEBOOK
 #define RMCFG_MODULE_PLATFORM                     1  // Object for platform related features
 #define RMCFG_MODULE_KERNEL_CCU                   1  // Counter Collection Unit Kernel(CPU) RM
+#define RMCFG_MODULE_SPDM                         1  // Secure Protocol and Data Management (SPDM) on Kernel(CPU) RM
 
 
 

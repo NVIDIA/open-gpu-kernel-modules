@@ -99,6 +99,8 @@ struct AccessCounterBuffer {
     PEVENTNOTIFICATION *(*__accesscntrGetNotificationListPtr__)(struct AccessCounterBuffer *);
     struct NotifShare *(*__accesscntrGetNotificationShare__)(struct AccessCounterBuffer *);
     NvBool (*__accesscntrAccessCallback__)(struct AccessCounterBuffer *, struct RsClient *, void *, RsAccessRight);
+    struct MEMORY_DESCRIPTOR *pUvmAccessCntrAllocMemDesc;
+    NvU32 accessCounterIndex;
 };
 
 #ifndef __NVOC_CLASS_AccessCounterBuffer_TYPEDEF__

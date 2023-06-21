@@ -21,6 +21,11 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+//
+// This file holds NVIDIA Resource Manager registry key definitions that are
+// shared between Windows and Unix
+//
+
 #ifndef NVRM_REGISTRY_H
 #define NVRM_REGISTRY_H
 
@@ -469,17 +474,6 @@
 // Enable/Disable RM event tracing
 // 0 - Disable RM event tracing
 // 1 - Enable RM event tracing
-
-
-#define NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA            "AllocCtxBuffersFromPMA"
-#define NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA_DISABLE    0
-#define NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA_DEFAULT    0
-#define NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA_ENABLE     1
-// Type DWORD
-// Encoding boolean
-// Enable/Disable context buffers from being allocated in PMA
-// 0 - Disable PMA allocation for context buffers and allocate from reserved memory
-// 1 - Enable PMA allocation for context buffers and do not allocate from reserved memory
 
 
 #define NV_REG_STR_RM_COMPUTE_MODE_RULES "RmComputeModeRules"
@@ -1820,5 +1814,116 @@
 #define NV_REG_STR_RM_NVLINK_ENABLE_PRIV_ERROR_RC                 "RmNvlinkEnablePrivErrorRc"
 #define NV_REG_STR_RM_NVLINK_ENABLE_PRIV_ERROR_RC_NO              0
 #define NV_REG_STR_RM_NVLINK_ENABLE_PRIV_ERROR_RC_YES             1
+
+//
+// Add the conditions to exclude these macros from Orin build, as CONFIDENTIAL_COMPUTE
+// is a guardword. The #if could be removed when nvRmReg.h file is trimmed from Orin build.
+//
+// Enable Disable Confidential Compute and control its various modes of operation
+// 0 - Feature Disable
+// 1 - Feature Enable
+//
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE                              "RmConfidentialCompute"
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_ENABLED                      0:0
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_ENABLED_NO                   0x00000000
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_ENABLED_YES                  0x00000001
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_DEV_MODE_ENABLED             1:1
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_DEV_MODE_ENABLED_NO          0x00000000
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_DEV_MODE_ENABLED_YES         0x00000001
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_GPUS_READY_CHECK             2:2
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_GPUS_READY_CHECK_DISABLED    0x00000000
+#define NV_REG_STR_RM_CONFIDENTIAL_COMPUTE_GPUS_READY_CHECK_ENABLED     0x00000001
+
+#define NV_REG_STR_RM_CONF_COMPUTE_EARLY_INIT                            "RmConfComputeEarlyInit"
+#define NV_REG_STR_RM_CONF_COMPUTE_EARLY_INIT_DISABLED                   0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_EARLY_INIT_ENABLED                    0x00000001
+
+//
+// Enable/disable SPDM feature in Confidential Compute. SPDM-capable profiles
+// may not be loaded by default. This regkey allows us to override the default
+// behavior and force SPDM to enabled/disabled.
+//
+// 0 - Feature disable
+// 1 - Feature enable
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_SPDM_POLICY                            "RmConfComputeSpdmPolicy"
+#define NV_REG_STR_RM_CONF_COMPUTE_SPDM_POLICY_ENABLED                    0:0
+#define NV_REG_STR_RM_CONF_COMPUTE_SPDM_POLICY_ENABLED_NO                 0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_SPDM_POLICY_ENABLED_YES                0x00000001
+
+// TYPE Dword
+// Encoding boolean
+// Regkey based solution to serialize VBlank Aggressive Handling in Top Half using spinlock
+// 2 - Enable serialization of aggressive vblank callbacks when HMD is active
+//
+//
+// 1 - Enable serialization of aggressive vblank callbacks in all scenarios
+// (even when a HMD is not active)
+//
+// 0 - (default) Disable WAR
+// This regkey settings are enabled when Aggressive Vblanks are enabled,
+// if RmDisableAggressiveVblank is set to disable then these regkeys do not have any affect
+#define NV_REG_STR_RM_BUG_2089053_WAR                               "RmBug2089053War"
+#define NV_REG_STR_RM_BUG_2089053_WAR_ENABLE_ON_HMD_ACTIVE_ONLY     0x00000002
+#define NV_REG_STR_RM_BUG_2089053_WAR_ENABLE_ALWAYS                 0x00000001
+#define NV_REG_STR_RM_BUG_2089053_WAR_DISABLE                       0x00000000
+#define NV_REG_STR_RM_BUG_2089053_WAR_DEFAULT                       (NV_REG_STR_RM_BUG_2089053_WAR_ENABLE_ALWAYS)
+
+//
+// Controls whether GSP-RM profiling is enabled.
+// 0 (default): disabled
+// 1: enabled
+//
+#define NV_REG_STR_RM_GSPRM_PROFILING "RmGspRmProfiling"
+#define NV_REG_STR_RM_GSPRM_PROFILING_DISABLE 0
+#define NV_REG_STR_RM_GSPRM_PROFILING_ENABLE  1
+
+//
+// Enable Local EGM HW verification using RM/SW stack.
+// Must be specified with a peerID corresponding to local EGM
+//
+#define NV_REG_STR_RM_ENABLE_LOCAL_EGM_PEER_ID            "RMEnableLocalEgmPeerId"
+
+//
+// Overrides the size of the GSP-RM firmware heap in GPU memory.
+// The GSP-RM firmware heap is reserved for system use and is not available to
+// applications. This regkey can be used to optimize the amount of memory
+// reserved for system use for targeted use cases. The default value for this
+// regkey is determined to support certain worst case resource allocation
+// patterns, but many use cases do not exhibit such resource allocation patterns
+// and could benefit from the lesser reserved GPU memory. Other use cases may
+// exhibit an even more pathological/stressful resource allocation pattern,
+// which can be enabled (up to a limit) with this regkey.
+// 
+// However, NVIDIA does not support setting this registry key, and will require
+// that any bugs observed with it set be reproducible with the default setting
+// as well.
+//
+// The value of this regkey is specified in megabytes. A value of 0 indicates to
+// use the default value. Values less than the minimum or greater than the
+// maximum will be clamped to the nearest optimum. The default values are
+// are dynamically computed for each GPU prior to booting GSP-RM.
+//
+#define NV_REG_STR_GSP_FIRMWARE_HEAP_SIZE_MB          "RmGspFirmwareHeapSizeMB"
+#define NV_REG_STR_GSP_FIRMWARE_HEAP_SIZE_MB_DEFAULT  0
+
+//
+// Type DWORD
+// This regkey can be used to enable GSP owned fault buffers
+//
+#define NV_REG_STR_RM_GSP_OWNED_FAULT_BUFFERS_ENABLE      "RmGspOwnedFaultBuffersEnable"
+#define NV_REG_STR_RM_GSP_OWNED_FAULT_BUFFERS_ENABLE_NO    0x00000000
+#define NV_REG_STR_RM_GSP_OWNED_FAULT_BUFFERS_ENABLE_YES   0x00000001
+
+//
+// WAR for BlueField3: Bug 4040336
+// BF3's PCI MMIO bus address 0x800000000000 is too high for Ampere to address.
+// Due to this, BF3's bus address is now moved to < 4GB. So, the CPU PA is no longer
+// the same as the bus address and this regkey adjusts the CPU PA passed in to the 
+// correct bus address.
+//
+#define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3 "RmDmaAdjustPeerMmioBF3"
+#define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_DISABLE 0
+#define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_ENABLE  1
 
 #endif // NVRM_REGISTRY_H

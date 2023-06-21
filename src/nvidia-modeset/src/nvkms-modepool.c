@@ -1557,28 +1557,51 @@ static NvBool ValidateModeTimings(
  * particular ViewPort.
  */
 
-static void LogViewPort(NVEvoInfoStringPtr pInfoString,
-                        const NVHwModeTimingsEvo *pTimings)
+static
+void LogViewPort(NVEvoInfoStringPtr pInfoString,
+                 const NVHwModeTimingsEvo timings[NVKMS_MAX_HEADS_PER_DISP],
+                 const NvU32 numHeads)
 {
-    const NVHwModeViewPortEvo *pViewPort = &pTimings->viewPort;
-    const struct NvKmsRect viewPortOut = nvEvoViewPortOutClientView(pTimings);
+    NvU32 head;
+    char str[64] = { }, *s = NULL;
+
+    nvAssert(numHeads <= 2);
+
+    nvEvoLogInfoString(pInfoString,
+            "DualHead Mode: %s", (numHeads > 1) ? "Yes" : "No");
 
     /* print the viewport name, size, and taps */
-
+    nvkms_memset(str, 0, sizeof(str));
+    for (head = 0, s = str; head < numHeads; head++) {
+        const struct NvKmsRect viewPortOut =
+            nvEvoViewPortOutClientView(&timings[head]);
+        size_t n = str + sizeof(str) - s;
+        s += nvkms_snprintf(s, n, "%s%dx%d+%d+%d", (s != str) ? ", " : "",
+                            viewPortOut.width, viewPortOut.height,
+                            viewPortOut.x, viewPortOut.x);
+    }
     nvEvoLogInfoString(pInfoString,
-               "Viewport                 %dx%d+%d+%d",
-               viewPortOut.width,
-               viewPortOut.height,
-               viewPortOut.x,
-               viewPortOut.y);
+               "Viewport                 %s", str);
 
+    nvkms_memset(str, 0, sizeof(str));
+    for (head = 0, s = str; head < numHeads; head++) {
+        const NVHwModeViewPortEvo *pViewPort = &timings[head].viewPort;
+        size_t n = str + sizeof(str) - s;
+        s += nvkms_snprintf(s, n, "%s%d", (s != str) ? ", " : "",
+                            NVEvoScalerTapsToNum(pViewPort->hTaps));
+    }
     nvEvoLogInfoString(pInfoString,
-               "  Horizontal Taps        %d",
-               NVEvoScalerTapsToNum(pViewPort->hTaps));
+               "  Horizontal Taps        %s", str);
 
+    nvkms_memset(str, 0, sizeof(str));
+    for (head = 0, s = str; head < numHeads; head++) {
+        const NVHwModeViewPortEvo *pViewPort = &timings[head].viewPort;
+        size_t n = str + sizeof(str) - s;
+        s += nvkms_snprintf(s, n, "%s%d", (s != str) ? ", " : "",
+                            NVEvoScalerTapsToNum(pViewPort->vTaps));
+    }
     nvEvoLogInfoString(pInfoString,
-               "  Vertical Taps          %d",
-               NVEvoScalerTapsToNum(pViewPort->hTaps));
+               "  Vertical Taps          %s", str);
 }
 
 /*
@@ -1598,14 +1621,28 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
     const NvModeTimings *pModeTimings = &pKmsMode->timings;
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
     NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
-
+    NvBool b2Heads1Or = FALSE;
     char localModeName[NV_MAX_MODE_NAME_LEN];
 
     NVHwModeTimingsEvo *pTimingsEvo =
         nvPreallocGet(pDevEvo,
                       PREALLOC_TYPE_VALIDATE_MODE_HW_MODE_TIMINGS,
                       sizeof(*pTimingsEvo));
-
+    HDMI_FRL_CONFIG *pHdmiFrlConfig =
+        nvPreallocGet(pDevEvo,
+                      PREALLOC_TYPE_VALIDATE_MODE_HDMI_FRL_CONFIG,
+                      sizeof(*pHdmiFrlConfig));
+    NVDscInfoEvoRec *pDscInfo =
+         nvPreallocGet(pDevEvo,
+                      PREALLOC_TYPE_VALIDATE_MODE_DSC_INFO,
+                      sizeof(*pDscInfo));
+    NVHwModeTimingsEvo *impOutTimings =
+        nvPreallocGet(pDevEvo,
+                      PREALLOC_TYPE_VALIDATE_MODE_IMP_OUT_HW_MODE_TIMINGS,
+                      sizeof(*impOutTimings) *
+                        NVKMS_MAX_HEADS_PER_DISP);
+    NvU32 impOutNumHeads = 0x0;
+    NvU32 head;
     NvBool ret = FALSE;
 
     if (modeName[0] == '\0') {
@@ -1617,6 +1654,9 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
     /* Initialize the EVO hwModeTimings structure */
 
     nvkms_memset(pTimingsEvo, 0, sizeof(*pTimingsEvo));
+    nvkms_memset(pHdmiFrlConfig, 0, sizeof(*pHdmiFrlConfig));
+    nvkms_memset(pDscInfo, 0, sizeof(*pDscInfo));
+    nvkms_memset(impOutTimings, 0, sizeof(*impOutTimings) * NVKMS_MAX_HEADS_PER_DISP);
 
     /* begin logging of ModeValidation for this mode */
 
@@ -1659,10 +1699,27 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
         goto done;
     }
 
-    if (!nvDPValidateModeEvo(pDpyEvo, pTimingsEvo, pParams)) {
-        LogModeValidationEnd(pDispEvo,
-                             pInfoString, "DP Bandwidth check failed");
-        goto done;
+    b2Heads1Or = nvEvoUse2Heads1OR(pDpyEvo, pTimingsEvo, pParams);
+
+    if (nvDpyIsHdmiEvo(pDpyEvo)) {
+        if (!nvHdmiFrlQueryConfig(pDpyEvo,
+                                  &pKmsMode->timings,
+                                  pTimingsEvo,
+                                  b2Heads1Or,
+                                  pParams,
+                                  pHdmiFrlConfig,
+                                  pDscInfo)) {
+            LogModeValidationEnd(pDispEvo, pInfoString,
+                "Unable to determine HDMI 2.1 Fixed Rate Link configuration.");
+            goto done;
+        }
+    } else {
+        if (!nvDPValidateModeEvo(pDpyEvo, pTimingsEvo, b2Heads1Or, pDscInfo,
+                                 pParams)) {
+            LogModeValidationEnd(pDispEvo,
+                                 pInfoString, "DP Bandwidth check failed");
+            goto done;
+        }
     }
 
     /*
@@ -1686,24 +1743,49 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
         if (!nvGetDefaultColorSpace(&colorFormats, &colorSpace, &colorBpc) ||
                 !nvConstructHwModeTimingsImpCheckEvo(pDpyEvo->pConnectorEvo,
                                                      pTimingsEvo,
+                                                     (pDscInfo->type !=
+                                                        NV_DSC_INFO_EVO_TYPE_DISABLED),
+                                                     b2Heads1Or,
                                                      colorSpace,
                                                      colorBpc,
                                                      pParams,
-                                                     pInfoString,
-                                                     0 /* head */)) {
+                                                     impOutTimings,
+                                                     &impOutNumHeads,
+                                                     pInfoString)) {
             LogModeValidationEnd(pDispEvo, pInfoString,
                                  "GPU extended capability check failed");
             goto done;
         }
     }
 
+    nvAssert(impOutNumHeads > 0);
+
     /* Log modevalidation information about the viewport. */
 
-    LogViewPort(pInfoString, pTimingsEvo);
+    LogViewPort(pInfoString, impOutTimings, impOutNumHeads);
 
-    /* Copy out the usage bounds that passed validation */
+    /*
+     * Copy out the usage bounds that passed validation; note we intersect
+     * the usage bounds across the hardware heads that would be used with
+     * this apiHead, accumulating the results in pModeUsage.
+     */
+    for (head = 0; head < impOutNumHeads; head++) {
+        if (head == 0) {
+            *pModeUsage = impOutTimings[0].viewPort.possibleUsage;
+        } else {
+            struct NvKmsUsageBounds *pTmpUsageBounds =
+                nvPreallocGet(pDevEvo,
+                    PREALLOC_TYPE_VALIDATE_MODE_TMP_USAGE_BOUNDS,
+                    sizeof(*pTmpUsageBounds));
 
-    nvkms_memcpy(pModeUsage, &pTimingsEvo->viewPort.possibleUsage, sizeof(*pModeUsage));
+            nvIntersectUsageBounds(pModeUsage,
+                                   &impOutTimings[head].viewPort.possibleUsage,
+                                   pTmpUsageBounds);
+            *pModeUsage = *pTmpUsageBounds;
+
+            nvPreallocRelease(pDevEvo, PREALLOC_TYPE_VALIDATE_MODE_TMP_USAGE_BOUNDS);
+        }
+    }
 
     /* Whew, if we got this far, the mode is valid. */
 
@@ -1713,6 +1795,9 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
 
 done:
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_VALIDATE_MODE_HW_MODE_TIMINGS);
+    nvPreallocRelease(pDevEvo, PREALLOC_TYPE_VALIDATE_MODE_HDMI_FRL_CONFIG);
+    nvPreallocRelease(pDevEvo, PREALLOC_TYPE_VALIDATE_MODE_DSC_INFO);
+    nvPreallocRelease(pDevEvo, PREALLOC_TYPE_VALIDATE_MODE_IMP_OUT_HW_MODE_TIMINGS);
 
     return ret;
 }

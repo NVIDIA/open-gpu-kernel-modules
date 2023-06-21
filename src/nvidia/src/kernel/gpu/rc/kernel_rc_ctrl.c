@@ -49,7 +49,7 @@ subdeviceCtrlCmdRcReadVirtualMem_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (CliGetKernelChannelWithDevice(RES_GET_CLIENT_HANDLE(pSubdevice),
+    if (CliGetKernelChannelWithDevice(RES_GET_CLIENT(pSubdevice),
                                       RES_GET_PARENT_HANDLE(pSubdevice),
                                       pReadVirtMemParam->hChannel,
                                       &pKernelChannel) == NV_OK)

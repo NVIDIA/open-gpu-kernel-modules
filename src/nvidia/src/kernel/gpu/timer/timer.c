@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -556,20 +556,29 @@ NV_STATUS tmrEventScheduleRel_IMPL
     NvU64   AbsTime, currentTime;
     NV_STATUS rmStatus;
 
+    if ((pEvent != NULL) && tmrIsOSTimer(pTmr, pEvent))
+    {
+        TMR_EVENT_PVT *pEventPvt = (TMR_EVENT_PVT *)pEvent;
+
+        NV_CHECK_OK(rmStatus, LEVEL_ERROR,
+                    tmrEventScheduleRelOSTimer_HAL(pTmr, pEvent, RelTime));
+        //
+        // Capture system time here, this will help in scheduling callbacks
+        // if there is a state unload before receiving the OS timer callback.
+        //
+        osGetCurrentTick(&pEventPvt->startTimeNs);
+        if (!tmrEventOnList(pTmr, pEvent))
+        {
+            _tmrInsertCallback(pTmr, pEventPvt, RelTime);
+        }
+        return rmStatus;
+    }
+
     rmStatus = tmrGetCurrentTime(pTmr, &currentTime);
     if (rmStatus != NV_OK)
         return rmStatus;
 
-    if (tmrIsOSTimer(pTmr, pEvent))
-    {
-        /*HR timer scheduled in relative mode*/
-        /*TBD : This condition needs to be moved to OS timer handling functions */
-        AbsTime = RelTime;
-    }
-    else
-    {
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(currentTime, RelTime, &AbsTime), NV_ERR_INVALID_ARGUMENT);
-    }
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, portSafeAddU64(currentTime, RelTime, &AbsTime), NV_ERR_INVALID_ARGUMENT);
 
     return tmrEventScheduleAbs(pTmr, pEvent, AbsTime);
 }
@@ -635,8 +644,8 @@ NvBool tmrEventOnList_IMPL
 )
 {
     PTMR_EVENT_PVT pEvent = (PTMR_EVENT_PVT)pEventPublic;
-    PTMR_EVENT_PVT pScan  = tmrIsOSTimer(pTmr, pEventPublic) ? 
-                            pTmr->pRmActiveOSTimerEventList : 
+    PTMR_EVENT_PVT pScan  = tmrIsOSTimer(pTmr, pEventPublic) ?
+                            pTmr->pRmActiveOSTimerEventList :
                             pTmr->pRmActiveEventList;
 
     while (pScan != NULL)
@@ -770,7 +779,6 @@ _tmrInsertCallbackInList
     {
         pEvent->pNext = pTmr->pRmActiveOSTimerEventList;
         pTmr->pRmActiveOSTimerEventList = pEvent;
-        pEvent->bInUse = NV_FALSE;
         return;
     }
 
@@ -850,29 +858,25 @@ NV_STATUS tmrEventScheduleAbs_IMPL
 (
     OBJTMR     *pTmr,
     PTMR_EVENT  pEventPublic,
-    NvU64       Time
+    NvU64       timeAbsNs
 )
 {
     NV_STATUS      rmStatus = NV_OK;
-    PTMR_EVENT_PVT pEvent = (PTMR_EVENT_PVT)pEventPublic;
+    TMR_EVENT_PVT *pEvent = (TMR_EVENT_PVT *)pEventPublic;
 
-    if ((pEventPublic != NULL) && (tmrIsOSTimer(pTmr, pEventPublic)))
+    if ((pEvent != NULL) && tmrIsOSTimer(pTmr, pEventPublic))
     {
-        NV_CHECK_OK(rmStatus, LEVEL_ERROR,
-            tmrEventScheduleAbsOSTimer_HAL(pTmr, pEventPublic, Time));
         //
-        // Capture system time here, this will help in scheduling callbacks
-        // if there is a state unload before receiving the OS timer callback.
+        // OS-Timer is supported only in Relative mode. This assert is to trap
+        // if someone trying to call tmrEventScheduleAbs for OSTimer
         //
-        osGetCurrentTick(&pEvent->startTimeNs);
-        if (!tmrEventOnList(pTmr, pEventPublic))
-        {
-            _tmrInsertCallback(pTmr, pEvent, Time);
-        }
+        NV_ASSERT_FAILED("Attempting to schedule OS-Timer callback with Abs time.");
+        rmStatus = NV_ERR_INVALID_ARGUMENT;
         return rmStatus;
     }
 
-    if (pEventPublic->pTimeProc == NULL && pEvent->pTimeProc_OBSOLETE == NULL)
+    if ((pEvent == NULL) || (pEventPublic->pTimeProc == NULL &&
+                             pEvent->pTimeProc_OBSOLETE == NULL))
     {
         //
         // Bug 372159: Not sure exactly how this is happening, but we are seeing
@@ -903,7 +907,7 @@ NV_STATUS tmrEventScheduleAbs_IMPL
         // removed the 250 ns threshold, so that we will always re-read the
         // current time after setting the alarm to prevent the wrap-around.
         //
-        rmStatus = _tmrInsertCallback(pTmr, pEvent, Time);
+        rmStatus = _tmrInsertCallback(pTmr, pEvent, timeAbsNs);
     }
 
     return rmStatus;
@@ -1067,6 +1071,7 @@ _tmrScanCallbackOSTimer
     {
         pTmr->pRmActiveOSTimerEventList = pCurrent->pNext;
         pEvent->pNext = NULL;
+        pEvent->bInUse = NV_FALSE;
         return;
     }
 
@@ -1076,6 +1081,7 @@ _tmrScanCallbackOSTimer
         {
             pCurrent->pNext = pEvent->pNext;
             pEvent->pNext = NULL;
+            pEvent->bInUse = NV_FALSE;
             break;
         }
         pCurrent = pCurrent->pNext;
@@ -1292,7 +1298,7 @@ _tmrStateLoadCallbacks
         // if there is a state unload before receiving the OS timer callback.
         //
         osGetCurrentTick(&pScan->startTimeNs);
-        tmrEventScheduleAbsOSTimer_HAL(pTmr, (PTMR_EVENT)pScan, pScan->timens);
+        tmrEventScheduleRelOSTimer_HAL(pTmr, (PTMR_EVENT)pScan, pScan->timens);
         pScan = pScan->pNext;
     }
 }
@@ -1761,6 +1767,7 @@ tmrCtrlCmdEventCreate
 /*!
  * Schedules an existing event. Takes in time arguments and a flag to
  * determine if it should be interpreted as absolute or relative time.
+ * While using OSTimer, use this api only with relative time.
  *
  * @returns NV_STATUS
  */
@@ -1773,10 +1780,19 @@ tmrCtrlCmdEventSchedule
 {
     NV_STATUS rc;
     OBJTMR    *pTmr   = GPU_GET_TIMER(pGpu);
-    PTMR_EVENT pEvent = (PTMR_EVENT)NvP64_VALUE(pParams->pEvent);
+    TMR_EVENT *pEvent = (PTMR_EVENT)NvP64_VALUE(pParams->pEvent);
 
-    if(pParams->bUseTimeAbs)
+    if (pParams->bUseTimeAbs)
     {
+        //
+        // FIXME: This function is called only from dynamic_power.c file,
+        // using OSTimer. And OSTimer is always scheduled in relative mode
+        //
+        if ((pEvent != NULL) && tmrIsOSTimer(pTmr, pEvent))
+        {
+            NV_ASSERT_FAILED("Attempting to schedule OSTimer with Abs time.");
+            return NV_ERR_INVALID_ARGUMENT;
+        }
         rc = tmrEventScheduleAbs(pTmr, pEvent, pParams->timeNs);
     }
     else

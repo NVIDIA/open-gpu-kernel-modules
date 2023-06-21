@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080bus.finn
+// Source file:      ctrl/ctrl2080/ctrl2080bus.finn
 //
 
 #include "nvcfg_sdk.h"
@@ -1419,6 +1419,11 @@ typedef struct NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS {
  *       NV2080_CTRL_BUS_GET_C2C_INFO_REMOTE_TYPE_CPU - connected to a CPU
  */
 
+ /*
+ *                                                      in either self-hosted mode or
+ *                                                      externally-hostedmode.
+ */
+
 
 
 #define NV2080_CTRL_CMD_BUS_GET_C2C_INFO                            (0x2080182b) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_MESSAGE_ID" */
@@ -1545,6 +1550,7 @@ typedef struct NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS {
 typedef struct NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS {
     NvU32  connectionType;
     NvU32  peerId;
+    NvBool bEgmPeer;
     NvBool bSpaAccessOnly;
     NvBool bUseUuid;
     NvU32  remoteGpuId;

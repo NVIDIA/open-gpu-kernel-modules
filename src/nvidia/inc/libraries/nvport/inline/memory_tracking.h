@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,24 @@
 #ifndef _NVPORT_MEMORY_INTERNAL_H_
 #define _NVPORT_MEMORY_INTERNAL_H_
 
+#define portMemExTrackingGetActiveStats_SUPPORTED       PORT_MEM_TRACK_USE_COUNTER
+#define portMemExTrackingGetTotalStats_SUPPORTED        PORT_MEM_TRACK_USE_COUNTER
+#define portMemExTrackingGetPeakStats_SUPPORTED         PORT_MEM_TRACK_USE_COUNTER
+#define portMemExTrackingGetNext_SUPPORTED              \
+    (PORT_MEM_TRACK_USE_FENCEPOSTS & PORT_MEM_TRACK_USE_ALLOCLIST)
+#define portMemExTrackingGetHeapSize_SUPPORTED          (NVOS_IS_LIBOS)
+//
+// portMemExTrackingGetAllocUsableSize provides higher-fidelity tracking at the
+// expense of higher runtime overhead, due to additional function calls in the
+// portMemAlloc path. It is only enabled by default in debug ("checked") builds for
+// this reason.
+//
+#define portMemExTrackingGetAllocUsableSize_SUPPORTED   (PORT_IS_CHECKED_BUILD && NVOS_IS_LIBOS)
+
+#define portMemExValidate_SUPPORTED            0
+#define portMemExValidateAllocations_SUPPORTED 0
+#define portMemExFreeAll_SUPPORTED             0
+
 /** @brief Untracked paged memory allocation, platform specific */
 void *_portMemAllocPagedUntracked(NvLength lengthBytes);
 /** @brief Untracked nonpaged memory allocation, platform specific */
@@ -45,7 +63,7 @@ void _portMemAllocatorFree(PORT_MEM_ALLOCATOR *pAlloc, void *pMem);
 
 #if PORT_MEM_TRACK_USE_LIMIT
 /** @brief Initialize per VF tracking limit **/
-void portMemInitializeAllocatorTrackingLimit(NvU32 pid, NvU64 heapSize, NvBool bLimitEnabled);
+void portMemInitializeAllocatorTrackingLimit(NvU32 pid, NvLength limit, NvBool bLimitEnabled);
 #endif
 
 typedef struct PORT_MEM_COUNTER
@@ -61,7 +79,6 @@ typedef struct PORT_MEM_COUNTER
 typedef struct PORT_MEM_FENCE_HEAD
 {
     PORT_MEM_ALLOCATOR *pAllocator;
-    NvLength blockSize;
     NvU32 magic;
 } PORT_MEM_FENCE_HEAD;
 
@@ -80,8 +97,8 @@ typedef struct PORT_MEM_LIST
 
 #if PORT_MEM_TRACK_USE_CALLERINFO_IP
 
-typedef NvU64 PORT_MEM_CALLERINFO;
-#define PORT_MEM_CALLERINFO_MAKE         ((NvU64)portUtilGetIPAddress())
+typedef NvUPtr PORT_MEM_CALLERINFO;
+#define PORT_MEM_CALLERINFO_MAKE         portUtilGetIPAddress()
 
 #else // PORT_MEM_TRACK_USE_CALLERINFO_IP
 
@@ -141,8 +158,8 @@ PORT_MEM_ALLOCATOR *portMemExAllocatorCreateLockedOnExistingBlock_CallerInfo(voi
 #define portMemAllocatorCreateOnExistingBlock(pMem, size)                      \
     portMemAllocatorCreateOnExistingBlock_CallerInfo(pMem, size, PORT_MEM_CALLERINFO_MAKE)
 #if portMemExAllocatorCreateLockedOnExistingBlock_SUPPORTED
-#define portMemExAllocatorCreateLockedOnExistingBlock(pMem, size, pLock)       \
-    portMemExAllocatorCreateLockedOnExistingBlock_CallerInfo(pMem, size, pLock,\
+#define portMemExAllocatorCreateLockedOnExistingBlock(pMem, size, pLock)        \
+    portMemExAllocatorCreateLockedOnExistingBlock_CallerInfo(pMem, size, pLock, \
                                                     PORT_MEM_CALLERINFO_MAKE)
 #endif //portMemExAllocatorCreateLockedOnExistingBlock_SUPPORTED
 #else
@@ -151,8 +168,30 @@ PORT_MEM_ALLOCATOR *portMemExAllocatorCreateLockedOnExistingBlock_CallerInfo(voi
 
 
 #if PORT_MEM_TRACK_USE_FENCEPOSTS || PORT_MEM_TRACK_USE_ALLOCLIST || PORT_MEM_TRACK_USE_CALLERINFO || PORT_MEM_TRACK_USE_LIMIT
+
+//
+// The blockSize of the allocation can be tracked in 1 of 2 places,
+// depending on build configuration. To reduce per-alloc memory waste in
+// allocating multiple fields for the same data, the following is the
+// order in which they are preferred at compile time:
+//
+//  1. portMemExTrackingGetAllocUsableSize - the underlying malloc
+//     implementation has a function to get the allocation size from allocated
+//     pointer. No memory will be allocated in the PORT_MEM_HEADER to track the
+//     block size.
+//  2. PORT_MEM_HEADER::blockSize - used when fenceposts or per-GFID limit
+//     tracking is enabled and portMemExTrackingGetAllocUsableSize is not
+//     available.
+//
+#define PORT_MEM_HEADER_HAS_BLOCK_SIZE  \
+    !PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetAllocUsableSize) && \
+    (PORT_MEM_TRACK_USE_FENCEPOSTS || PORT_MEM_TRACK_USE_LIMIT)
+
 typedef struct PORT_MEM_HEADER
 {
+#if PORT_MEM_HEADER_HAS_BLOCK_SIZE
+                                    NvLength blockSize;
+#endif
 #if PORT_MEM_TRACK_USE_CALLERINFO
                                     PORT_MEM_CALLERINFO callerInfo;
 #endif
@@ -163,8 +202,7 @@ typedef struct PORT_MEM_HEADER
                                     PORT_MEM_FENCE_HEAD fence;
 #endif
 #if PORT_MEM_TRACK_USE_LIMIT
-                                    NvU64 blockSize;
-                                    NvU32 pid;
+                 NV_DECLARE_ALIGNED(NvU32 pid, 8);
 #endif
 } PORT_MEM_HEADER;
 
@@ -178,12 +216,17 @@ typedef struct PORT_MEM_FOOTER
 #define PORT_MEM_ADD_HEADER_PTR(p)   ((PORT_MEM_HEADER*)p + 1)
 #define PORT_MEM_SUB_HEADER_PTR(p)   ((PORT_MEM_HEADER*)p - 1)
 #define PORT_MEM_STAGING_SIZE (sizeof(PORT_MEM_HEADER)+sizeof(PORT_MEM_FOOTER))
-
 #else
-#define PORT_MEM_ADD_HEADER_PTR(p)   p
-#define PORT_MEM_SUB_HEADER_PTR(p)   p
-#define PORT_MEM_STAGING_SIZE        0
+#define PORT_MEM_ADD_HEADER_PTR(p)              p
+#define PORT_MEM_SUB_HEADER_PTR(p)              p
+#define PORT_MEM_STAGING_SIZE                   0
+#define PORT_MEM_HEADER_HAS_BLOCK_SIZE          0
 #endif
+
+#define PORT_MEM_TRACK_ALLOC_SIZE                                   \
+    PORT_MEM_TRACK_USE_COUNTER &&                                   \
+    (PORT_IS_FUNC_SUPPORTED(portMemExTrackingGetAllocUsableSize) || \
+     PORT_MEM_HEADER_HAS_BLOCK_SIZE)
 
 struct PORT_MEM_ALLOCATOR_TRACKING
 {
@@ -202,17 +245,6 @@ struct PORT_MEM_ALLOCATOR_TRACKING
     PORT_MEM_CALLERINFO                 callerInfo;
 #endif
 };
-
-
-#define portMemExTrackingGetActiveStats_SUPPORTED PORT_MEM_TRACK_USE_COUNTER
-#define portMemExTrackingGetTotalStats_SUPPORTED  PORT_MEM_TRACK_USE_COUNTER
-#define portMemExTrackingGetPeakStats_SUPPORTED   PORT_MEM_TRACK_USE_COUNTER
-#define portMemExTrackingGetNext_SUPPORTED        \
-    (PORT_MEM_TRACK_USE_FENCEPOSTS & PORT_MEM_TRACK_USE_ALLOCLIST)
-
-#define portMemExValidate_SUPPORTED            0
-#define portMemExValidateAllocations_SUPPORTED 0
-#define portMemExFreeAll_SUPPORTED             0
 
 /// @brief Actual size of an allocator structure, including internals
 #define PORT_MEM_ALLOCATOR_SIZE \
@@ -282,11 +314,11 @@ typedef struct
 #define _PORT_CEIL_NO_UNDERFLOW(a, b) (NV_DIV_AND_CEIL(b + a, b) - 1)
 
 /// @brief Required additional size for a given number of chunks
-#define PORT_MEM_PREALLOCATED_BLOCK_SIZE_FOR_NONGRATIS_CHUNKS(num_chunks)      \
-    ((num_chunks > PORT_MEM_PREALLOCATED_BLOCK_CHUNKS_GRATIS)                  \
-       ? _PORT_CEIL_NO_UNDERFLOW(num_chunks - PORT_MEM_PREALLOCATED_BLOCK_CHUNKS_GRATIS,\
-                                 4*PORT_MEM_BITVECTOR_CHUNK_SIZE)              \
-         * PORT_MEM_BITVECTOR_CHUNK_SIZE                                       \
+#define PORT_MEM_PREALLOCATED_BLOCK_SIZE_FOR_NONGRATIS_CHUNKS(num_chunks)                \
+    ((num_chunks > PORT_MEM_PREALLOCATED_BLOCK_CHUNKS_GRATIS)                            \
+       ? _PORT_CEIL_NO_UNDERFLOW(num_chunks - PORT_MEM_PREALLOCATED_BLOCK_CHUNKS_GRATIS, \
+                                 4*PORT_MEM_BITVECTOR_CHUNK_SIZE)                        \
+         * PORT_MEM_BITVECTOR_CHUNK_SIZE                                                 \
        : 0)
 
 /// @brief Total required bookkeeping size for a block of given useful size

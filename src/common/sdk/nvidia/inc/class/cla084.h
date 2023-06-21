@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/cla084.finn
+// Source file:      class/cla084.finn
 //
 
 #include "nv_vgpu_types.h"
@@ -50,9 +50,10 @@
  *                                     save/restore will not be done in host-RM
  * vgpuDeviceInstanceId -> Specifies the vGPU device instance per VM to be used
  *                         for supporting multiple vGPUs per VM.
- * numGuestFbHandles -> number of guest memory handles
+ * hPluginClient -> handle to the plugin client
+ * numGuestFbHandles -> number of guest memory handles, the client handle is hPluginClient
  * guestFbHandleList -> handle list to guest memory
- * hPluginHeapMemory -> plugin heap memory handle
+ * hPluginHeapMemory -> plugin heap memory handle, the client handle is hPluginClient
  * bDeviceProfilingEnabled -> If set to true, profiling is allowed
  */
 #define NVA084_ALLOC_PARAMETERS_MESSAGE_ID (0xa084U)
@@ -69,6 +70,7 @@ typedef struct NVA084_ALLOC_PARAMETERS {
     NV_DECLARE_ALIGNED(VM_ID guestVmId, 8);
     NvBool     bDisableDefaultSmcExecPartRestore;
     NvU32      vgpuDeviceInstanceId;
+    NvHandle   hPluginClient;
     NvU32      numGuestFbHandles;
     NvHandle   guestFbHandleList[NVA084_MAX_VMMU_SEGMENTS];
     NvHandle   hPluginHeapMemory;

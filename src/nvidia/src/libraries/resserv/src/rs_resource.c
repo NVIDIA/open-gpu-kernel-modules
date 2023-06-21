@@ -121,10 +121,10 @@ NV_STATUS resControlLookup_IMPL
     const struct NVOC_EXPORTED_METHOD_DEF **ppEntry
 )
 {
-    const struct NVOC_EXPORTED_METHOD_DEF *pEntry;    
-    NvU32 cmd = pRsParams->cmd;    
+    const struct NVOC_EXPORTED_METHOD_DEF *pEntry;
+    NvU32 cmd = pRsParams->cmd;
 
-    *ppEntry = NULL;    
+    *ppEntry = NULL;
     pEntry = objGetExportedMethodDef(staticCast(objFullyDerive(pResource), Dynamic), cmd);
 
     if (pEntry == NULL)
@@ -212,14 +212,7 @@ resControl_IMPL
         {
             CONTROL_EXPORT_FNPTR pFunc = ((CONTROL_EXPORT_FNPTR) pEntry->pFunc);
 
-            if (pRsParams->flags & NVOS54_FLAGS_FINN_SERIALIZED)
-            {
-                status = pFunc(pDynamicObj, pCallContext->pDeserializedParams);
-            }
-            else
-            {
-                status = pFunc(pDynamicObj, pRsParams->pParams);
-            }
+            status = pFunc(pDynamicObj, pRsParams->pParams);
         }
     }
 
@@ -801,15 +794,20 @@ refAddDependant
     RsResourceRef *pDependantRef
 )
 {
+    NV_STATUS status;
+
     // dependencies are implicit between a parent resource reference and child resource reference
     if (refHasAncestor(pDependantRef, pResourceRef))
         return NV_OK;
 
-    indexAdd(&pDependantRef->depBackRefMap, pResourceRef->internalClassId, pResourceRef);
+    status = indexAdd(&pDependantRef->depBackRefMap, pResourceRef->internalClassId, pResourceRef);
+    if (status != NV_OK)
+        return status;
+
     return indexAdd(&pResourceRef->depRefMap, pDependantRef->internalClassId, pDependantRef);
 }
 
-NV_STATUS
+void
 refRemoveDependant
 (
     RsResourceRef *pResourceRef,
@@ -817,7 +815,7 @@ refRemoveDependant
 )
 {
     indexRemove(&pDependantRef->depBackRefMap, pResourceRef->internalClassId, pResourceRef);
-    return indexRemove(&pResourceRef->depRefMap, pDependantRef->internalClassId, pDependantRef);
+    indexRemove(&pResourceRef->depRefMap, pDependantRef->internalClassId, pDependantRef);
 }
 
 NvBool

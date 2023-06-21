@@ -27,9 +27,12 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/cl00f8.finn
+// Source file:      class/cl00f8.finn
 //
 
+
+
+#include "nvcfg_sdk.h"
 
 
 /*
@@ -93,6 +96,8 @@
 #define NV_MEMORY_FABRIC_PAGE_SIZE_2M   0x200000
 #define NV_MEMORY_FABRIC_PAGE_SIZE_512M 0x20000000
 
+
+
 #define NV00F8_ALLOC_FLAGS_DEFAULT      0
 #define NV00F8_ALLOC_FLAGS_FLEXIBLE_FLA        NVBIT(0)
 #define NV00F8_ALLOC_FLAGS_FORCE_NONCONTIGUOUS NVBIT(1)
@@ -106,7 +111,7 @@ typedef struct NV00F8_ALLOCATION_PARAMETERS {
     NV_DECLARE_ALIGNED(NvU64 alignment, 8);
     NV_DECLARE_ALIGNED(NvU64 allocSize, 8);
 
-    NvU32 pageSize;
+    NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
     NvU32 allocFlags;
 
     struct {

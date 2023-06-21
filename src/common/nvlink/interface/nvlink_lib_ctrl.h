@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVidia Corporation
+    Copyright (c) 2016-2023 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -154,7 +154,7 @@ typedef enum
     nvlink_link_mode_enable_pm,
     nvlink_link_mode_disable_pm,
     nvlink_link_mode_traffic_setup,
-    nvlink_link_mode_contain
+    nvlink_link_mode_contain,
 } nvlink_link_mode;
 
 /* sublink tx modes */

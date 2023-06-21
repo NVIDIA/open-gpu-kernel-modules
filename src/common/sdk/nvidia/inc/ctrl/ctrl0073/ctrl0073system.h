@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0073/ctrl0073system.finn
+// Source file:      ctrl/ctrl0073/ctrl0073system.finn
 //
 
 #include "ctrl/ctrl0073/ctrl0073base.h"
@@ -809,6 +809,42 @@ typedef struct NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS {
     NvU32 availableInternalDisplaysMask;
 } NV0073_CTRL_SYSTEM_GET_INTERNAL_DISPLAYS_PARAMS;
 
+/*
+ * NV0073_CTRL_CMD_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED
+ *
+ * This command is used to notify RM that all subdevices are ready for ACPI
+ * calls. The caller must make sure that the OS is ready to handle the ACPI
+ * calls for each ACPI ID. So, this call must be done after the OS has
+ * initialized all the display ACPI IDs to this subdevice.
+ * Besides, the ACPI spec provides a function for the display drivers to read
+ * the EDID directly from the SBIOS for each display's ACPI ID. This function
+ * is used to override the EDID found from a I2C or DPAux based transaction.
+ * This command will also attempt to call the ACPI _DDC function to read the
+ * EDID from the SBIOS for all displayIDs. If an EDID is found from this call,
+ * the RM will store that new EDID in the EDID buffer of that OD.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *
+ * Possible status values returned are:
+ * NV_OK
+ * NV_ERR_INVALID_PARAM_STRUCT
+ * NV_ERR_NOT_SUPPORTED
+ *
+ */
+
+#define NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS_MESSAGE_ID (0x5CU)
+
+typedef struct NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS {
+    NvU32 subDeviceInstance;
+} NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS;
+
+#define NV0073_CTRL_CMD_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED (0x73015cU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS_MESSAGE_ID" */
+
 
 /*
  * NV0073_CTRL_SYSTEM_CONNECTOR_INFO
@@ -1228,6 +1264,36 @@ typedef struct NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS {
 #define NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DDC_EDID_DISP_MASK_OFFSET          (0x00000004U)
 
 
+
+/*
+* NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS
+*
+* This command is used to update information about VRR capable monitors
+*   subDeviceInstance
+*     This parameter specifies the subdevice instance within the
+*     NV04_DISPLAY_COMMON parent device to which the operation should be
+*     directed.This parameter must specify a value between zero and the
+*     total number of subdevices within the parent device.This parameter
+*     should be set to zero for default behavior.
+*
+*   displayId
+*     DisplayId of the panel for which client wants to add or remove from VRR
+*     capable monitor list
+*
+*   bAddition
+*     When set to NV_TRUE, signifies that the vrr monitor is to be added.
+*     When set to NV_FALSE, signifies that the vrr monitor is to be removed.
+*
+*/
+#define NV0073_CTRL_CMD_SYSTEM_VRR_DISPLAY_INFO (0x730185U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS_MESSAGE_ID (0x85U)
+
+typedef struct NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS {
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvBool bAddition;
+} NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS;
 
 /*
  * NV0073_CTRL_CMD_SYSTEM_GET_HOTPLUG_UNPLUG_STATE
@@ -1669,6 +1735,61 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS {
     NvU32  displayId;
     NvBool bIsSidebandSrSupported;
 } NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE
+ *
+ * This command is used by client like nvkms to set up the VRR specific
+ * memory operation in RM such as mapping the client created shared memory
+ * into RM and reserving a RGline for processing of self-refresh timeout
+ * related calculations.
+ *
+ * Also the expectation is that the client which calls this command with parameter
+ * bEnable = TRUE, should also call this command with bEnable = FALSE on the
+ * same head when VRR needs to be disabled.
+ *
+ * Possible status values returned are:
+ *    NV_OK
+ *    NV_ERR_INVALID_ARGUMENT
+ *    NV_ERR_OBJECT_NOT_FOUND
+ *    NV_ERR_GENERIC
+ */
+
+/* 
+ * This is the shared structure that will be used to communicate between
+ * Physical RM and clients. As of now the access relies on single source of
+ * truth operation, i.e. only Physical RM writes into the shared location
+ * and client (nvkms) reads from the same location.
+ *
+ * "dataTimeStamp" field is added to capture the timestamp before and after
+ * updating the flip delay related data fields(all fields except "timeout").
+ * This timestamp will be used by clients to determine if the data got updated
+ * in between by RM while clients were reading it.
+ * As of now "timeout" field does not have such protection, as access to
+ * this field is only in response to notification from RM.
+ */
+typedef struct NV0073_CTRL_RM_VRR_SHARED_DATA {
+    NvU32  expectedFrameNum;
+    NvU32  timeout;
+    NV_DECLARE_ALIGNED(NvU64 flipTimeStamp, 8);
+    NvBool bCheckFlipTime;
+    NvBool bFlipTimeAdjustment;
+    NV_DECLARE_ALIGNED(NvU64 dataTimeStamp, 8);
+} NV0073_CTRL_RM_VRR_SHARED_DATA;
+
+#define NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE (0x73019eU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS_MESSAGE_ID (0x9EU)
+
+typedef struct NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS {
+    NvU32    subDeviceInstance;
+    NvBool   bEnable;
+    NvU32    head;
+    NvU32    height;
+    NvU32    maxFrameTime;
+    NvU32    minFrameTime;
+    NvHandle hMemory;
+} NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS;
 
 /* _ctrl0073system_h_ */
 

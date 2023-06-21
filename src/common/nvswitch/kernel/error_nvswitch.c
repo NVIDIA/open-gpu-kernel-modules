@@ -153,13 +153,20 @@ nvswitch_record_error
     NvBool                       error_resolved,
     void                        *data,
     NvU32                        data_size,
-    NvU32                        line
+    NvU32                        line,
+    const char                  *description
 )
 {
     NvU32 idx_error;
+    NvU32 description_len = (NvU32)nvswitch_os_strlen(description) - 2; //take out leading and trailing quotation
 
     NVSWITCH_ASSERT(errors != NULL);
     NVSWITCH_ASSERT(data_size <= sizeof(errors->error_log[idx_error].data));
+
+    if (description_len > NVSWITCH_ERROR_MAX_DESCRPTION_LEN)
+    {
+        description_len = NVSWITCH_ERROR_MAX_DESCRPTION_LEN;
+    }
 
     // If no error log has been created, don't log it.
     if ((errors->error_log_size != 0) && (errors->error_log != NULL))
@@ -192,6 +199,8 @@ nvswitch_record_error
         errors->error_log[idx_error].severity   = severity;
         errors->error_log[idx_error].error_resolved = error_resolved;
         errors->error_log[idx_error].line       = line;
+        errors->error_log[idx_error].data_size  = data_size;
+        nvswitch_os_memcpy(&errors->error_log[idx_error].description, description + 1, description_len);
 
         // Log tracking info
         errors->error_log[idx_error].timer_count = nvswitch_hw_counter_read_counter(device);
@@ -265,6 +274,7 @@ nvswitch_get_error
             error_entry->timer_count = 
                 ((device == NULL) ? 0 : nvswitch_hw_counter_read_counter(device));
             error_entry->time = nvswitch_os_get_platform_time();
+            error_entry->data_size = 0;
         }
         else
         {
@@ -545,6 +555,13 @@ nvswitch_ctrl_get_errors
         p->error[p->errorCount].subinstance = error.subinstance;
         p->error[p->errorCount].time = error.time;
         p->error[p->errorCount].error_resolved = error.error_resolved;
+        p->error[p->errorCount].error_data_size = error.data_size;
+        if (error.data_size > 0)
+        {
+            nvswitch_os_memcpy(p->error[p->errorCount].error_data, error.data.raw.data, error.data_size);
+        }
+        nvswitch_os_memcpy(p->error[p->errorCount].error_description, error.description, sizeof(error.description));
+        
         p->errorCount++;
         index++;
     }

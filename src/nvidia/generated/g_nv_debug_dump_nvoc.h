@@ -59,7 +59,7 @@ typedef enum
 #define NV_NVD_ERROR_CODE_MAJOR            31:16
 #define NV_NVD_ERROR_CODE_MINOR            15:0
 
-#define NVD_ERROR_CODE(Major, Minor)   \
+#define NVD_ERROR_CODE(Major, Minor)             \
     (DRF_NUM(_NVD, _ERROR_CODE, _MAJOR, Major) | \
      DRF_NUM(_NVD, _ERROR_CODE, _MINOR, Minor))
 
@@ -86,7 +86,7 @@ typedef enum
 #define NV_NVD_ENGINE_STEP_MAJOR            31:16
 #define NV_NVD_ENGINE_STEP_MINOR            15:0
 
-#define NVD_ENGINE_STEP(Major, Minor)   \
+#define NVD_ENGINE_STEP(Major, Minor)             \
     (DRF_NUM(_NVD, _ENGINE_STEP, _MAJOR, Major) | \
      DRF_NUM(_NVD, _ENGINE_STEP, _MINOR, Minor))
 

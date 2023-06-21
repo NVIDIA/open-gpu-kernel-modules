@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -173,7 +173,7 @@ kflcnSecureReset_TU102
     KernelFalcon *pKernelFlcn
 )
 {
-    NV_ASSERT_OR_RETURN_VOID(kflcnPreResetWait(pGpu, pKernelFlcn) == NV_OK);
+    NV_ASSERT_OR_RETURN_VOID(kflcnPreResetWait_HAL(pGpu, pKernelFlcn) == NV_OK);
     NV_ASSERT_OK(kflcnResetHw(pGpu, pKernelFlcn));
 
     kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn);
@@ -207,7 +207,7 @@ kflcnEnable_TU102
         }
         else
         {
-            kflcnSecureReset(pGpu, pKernelFlcn);
+            kflcnSecureReset_HAL(pGpu, pKernelFlcn);
         }
     }
     else
@@ -223,7 +223,7 @@ kflcnEnable_TU102
         }
         else
         {
-            kflcnSecureReset(pGpu, pKernelFlcn);
+            kflcnSecureReset_HAL(pGpu, pKernelFlcn);
         }
 
         kflcnSwitchToFalcon_HAL(pGpu, pKernelFlcn);

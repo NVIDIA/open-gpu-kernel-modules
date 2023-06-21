@@ -30,6 +30,22 @@
 extern "C" {
 #endif
 
+enum NvKmsDpyVRRType
+nvGetAllowedDpyVrrType(const NVDpyEvoRec *pDpyEvo,
+                       const NvModeTimings *pTimings,
+                       enum NvKmsStereoMode stereoMode,
+                       const NvBool allowGsync,
+                       const enum NvKmsAllowAdaptiveSync allowAdaptiveSync);
+void nvAdjustHwModeTimingsForVrrEvo(NVHwModeTimingsEvoPtr pTimings,
+                                    const enum NvKmsDpyVRRType vrrType,
+                                    const NvU32 edidTimeoutMicroseconds,
+                                    const NvU32 vrrOverrideMinRefreshRate,
+                                    const NvBool needsSwFramePacing);
+NvU16 nvPrepareNextVrrNotifier(NVEvoChannelPtr pChannel, NvU32 sd, NvU32 head);
+void nvTrackAndDelayFlipForVrrSwFramePacing(NVDispEvoPtr pDispEvo,
+    const struct NvKmsVrrFramePacingInfo *pVrrFramePacingInfo,
+    NVFlipChannelEvoHwState *pFlip);
+
 void nvAllocVrrEvo(NVDevEvoPtr pDevEvo);
 void nvFreeVrrEvo(NVDevEvoPtr pDevEvo);
 void nvDisableVrr(NVDevEvoPtr pDevEvo);

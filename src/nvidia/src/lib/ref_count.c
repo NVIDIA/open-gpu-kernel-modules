@@ -415,7 +415,7 @@ refcntReset_IMPL
  *                                   PDB property enabled
  * @param[in] bSuppressStateChange - Indicates whether the state change (and
  *                                   its callback) should be suppressed
- * @param[out] bNodeIsRemoved      - Whether the requester is removed from 
+ * @param[out] bNodeIsRemoved      - Whether the requester is removed from
  *                                   requesterTree.
  *
  * @returns NV_OK if the requester's references are successfully removed from

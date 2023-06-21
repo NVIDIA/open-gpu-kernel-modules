@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -217,6 +217,65 @@ rmapiGetInterface
     return &g_RmApiList[rmapiType];
 }
 
+static void
+_rmapiUnrefGpuAccessNeeded
+(
+    NvU32           gpuMask
+)
+{
+    NvU32           gpuInstance = 0;
+    OBJGPU         *pGpu = NULL;
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        osUnrefGpuAccessNeeded(pGpu->pOsGpuInfo);
+    }
+}
+
+static NV_STATUS
+_rmapiRefGpuAccessNeeded
+(
+    NvU32          *pGpuMask
+)
+{
+    NV_STATUS       status = NV_OK;
+    NvU32           mask = 0;
+    NvU32           gpuInstance = 0;
+    OBJGPU         *pGpu = NULL;
+
+    status = gpumgrGetGpuAttachInfo(NULL, &mask);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    while ((pGpu = gpumgrGetNextGpu(mask, &gpuInstance)) != NULL)
+    {
+        status = osRefGpuAccessNeeded(pGpu->pOsGpuInfo);
+        if (status != NV_OK)
+        {
+            goto unref;
+        }
+
+       /*
+        *_rmapiRefGpuAccessNeeded records the gpuMask
+        * during ref up and this is used to unref exact same
+        * GPUs in _rmapiUnrefGpuAccessNeeded. This is done
+        * to protect against obtaining incorrect pGpu if the mask
+        * changes due to a RM_API called between ref/unref
+        * sequence.
+        */
+        *pGpuMask |= (1 << pGpu->gpuInstance);
+    }
+
+unref:
+    if (status != NV_OK)
+    {
+        _rmapiUnrefGpuAccessNeeded(*pGpuMask);
+    }
+    return status;
+}
+
 NV_STATUS
 rmapiPrologue
 (
@@ -225,6 +284,49 @@ rmapiPrologue
 )
 {
     NV_STATUS       status = NV_OK;
+    NvBool          bApiLockTaken = NV_FALSE;
+    NvU32           mask;
+
+    NV_ASSERT_OR_RETURN(pRmApi != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pContext != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    /*
+     * Check for external clients. This condition is checked here
+     * in order to avoid a check at all caller sites of
+     * rmapiPrologue. Effectively rmapiprologue is a no-op for
+     * internal clients.
+     */
+    if (!pRmApi->bTlsInternal)
+    {
+        mask = osGetDynamicPowerSupportMask();
+        if (!mask)
+            return status;
+       /*
+        * NOTE1: Callers of rmapiPro{Epi}logue function call may call
+        * it with or without API lock taken. Hence, we check here
+        * whether API lock has been taken. We take API lock if
+        * it not taken already.
+        * We obtain the pGPU by using the gpuMask in
+        * _rmapiRef{Unref}GpuAccessNeeded. This needs API lock to be
+        * safe against init/teardown of GPUs while we ref/unref
+        * the GPUs. We release the lock after we have finished
+        * with ref/unref, if we had taken it.
+        */
+       if (!rmapiLockIsOwner())
+       {
+           status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_CLIENT);
+           if (status != NV_OK)
+           {
+               return status;
+           }
+           bApiLockTaken = NV_TRUE;
+       }
+       status = _rmapiRefGpuAccessNeeded(&pContext->gpuMask);
+       if (bApiLockTaken == NV_TRUE)
+       {
+           rmapiLockRelease();
+       }
+    }
     return status;
 }
 
@@ -235,6 +337,43 @@ rmapiEpilogue
     RM_API_CONTEXT *pContext
 )
 {
+    NV_STATUS       status = NV_OK;
+    NvBool          bApiLockTaken = NV_FALSE;
+    NvU32           mask;
+
+    NV_ASSERT_OR_RETURN_VOID(pRmApi != NULL);
+    NV_ASSERT_OR_RETURN_VOID(pContext != NULL);
+
+    /*
+     * Check for external clients. This condition is checked here
+     * in order to avoid a check at all caller sites of
+     * rmapiEpilogue. Effectively rmapiEpilogue is a no-op for
+     * internal clients.
+     */
+    if (!pRmApi->bTlsInternal)
+    {
+        mask = osGetDynamicPowerSupportMask();
+        if (!mask)
+            return;
+
+       /* Please see NOTE1 */
+       if (!rmapiLockIsOwner())
+       {
+           status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_CLIENT);
+           if (status != NV_OK)
+           {
+               return;
+           }
+           bApiLockTaken = NV_TRUE;
+       }
+
+       _rmapiUnrefGpuAccessNeeded(pContext->gpuMask);
+
+       if (bApiLockTaken == NV_TRUE)
+       {
+           rmapiLockRelease();
+       }
+    }
 }
 
 void
@@ -767,7 +906,7 @@ rmapiGetClientHandlesFromOSInfo
         {
             pClient = *it.pValue;
             pRsClient = staticCast(pClient, RsClient);
-            
+
             NV_CHECK_OR_ELSE_STR(LEVEL_ERROR, pClient->pOSInfo == pOSInfo, "*** OS info mismatch", continue);
 
             pClientHandleList[k++] = pRsClient->hClient;

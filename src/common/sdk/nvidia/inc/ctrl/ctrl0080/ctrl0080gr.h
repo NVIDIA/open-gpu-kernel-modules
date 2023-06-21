@@ -27,10 +27,11 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0080/ctrl0080gr.finn
+// Source file:      ctrl/ctrl0080/ctrl0080gr.finn
 //
 
 #include "ctrl/ctrl0080/ctrl0080base.h"
+#include "nvcfg_sdk.h"
 
 typedef struct NV0080_CTRL_GR_ROUTE_INFO {
     NvU32 flags;
@@ -148,14 +149,17 @@ typedef NVXXXX_CTRL_XXX_INFO NV0080_CTRL_GR_INFO;
 
 
 #define NV0080_CTRL_GR_INFO_INDEX_LITTER_NUM_SLICES_PER_LTC         (0x00000032)
-#define NV0080_CTRL_GR_INFO_INDEX_GFX_CAPABILITIES                  (0x00000033)
+
+
+#define NV0080_CTRL_GR_INFO_INDEX_DUMMY                             (0x00000033)
+#define NV0080_CTRL_GR_INFO_INDEX_GFX_CAPABILITIES                  (0x00000034)
 
 /* When adding a new INDEX, please update MAX_SIZE accordingly
  * NOTE: 0080 functionality is merged with 2080 functionality, so this max size
  * reflects that.
  */
-#define NV0080_CTRL_GR_INFO_INDEX_MAX                               (0x00000033)
-#define NV0080_CTRL_GR_INFO_MAX_SIZE                                (0x34) /* finn: Evaluated from "(NV0080_CTRL_GR_INFO_INDEX_MAX + 1)" */
+#define NV0080_CTRL_GR_INFO_INDEX_MAX                               (0x00000034)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE                                (0x35) /* finn: Evaluated from "(NV0080_CTRL_GR_INFO_INDEX_MAX + 1)" */
 
 /*
  * NV0080_CTRL_CMD_GR_GET_INFO

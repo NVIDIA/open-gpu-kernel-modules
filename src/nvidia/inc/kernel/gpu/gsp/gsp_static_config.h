@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,6 +42,19 @@
 #include "platform/chipset/chipset.h" // BUSINFO
 #include "gpu/nvbitmask.h" // NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX
 
+// VF related info for GSP-RM
+typedef struct GSP_VF_INFO
+{
+    NvU32  totalVFs;
+    NvU32  firstVFOffset;
+    NvU64  FirstVFBar0Address;
+    NvU64  FirstVFBar1Address;
+    NvU64  FirstVFBar2Address;
+    NvBool b64bitBar0;
+    NvBool b64bitBar1;
+    NvBool b64bitBar2;
+} GSP_VF_INFO;
+
 typedef struct GspSMInfo_t
 {
     NvU32 version;
@@ -75,7 +88,7 @@ typedef struct GspStaticConfigInfo_t
     GspSMInfo SM_info;
 
     NvBool poisonFuseEnabled;
-  
+
     NvU64 fb_length;
     NvU32 fbio_mask;
     NvU32 fb_bus_width;
@@ -100,6 +113,7 @@ typedef struct GspStaticConfigInfo_t
     NvBool bIsMobile;
     NvBool bIsGc6Rtd3Allowed;
     NvBool bIsGcOffRtd3Allowed;
+    NvBool bIsGcoffLegacyAllowed;
 
     NvU64 bar1PdeBase;
     NvU64 bar2PdeBase;
@@ -127,7 +141,10 @@ typedef struct GspStaticConfigInfo_t
     // Subdevice handle for internal RMAPI control.
     NvHandle hInternalSubdevice;
 
+    NvBool bSelfHostedMode;
     NvBool bAtsSupported;
+
+    NvBool bIsGpuUefi;
 } GspStaticConfigInfo;
 
 // Pushed from CPU-RM to GSP-RM
@@ -147,6 +164,7 @@ typedef struct GspSystemInfo
     NvU64 clPdbProperties;
     NvU32 Chipset;
     NvBool bGpuBehindBridge;
+    NvBool bMnocAvailable;
     NvBool bUpstreamL0sUnsupported;
     NvBool bUpstreamL1Unsupported;
     NvBool bUpstreamL1PorSupported;
@@ -155,6 +173,10 @@ typedef struct GspSystemInfo
     BUSINFO FHBBusInfo;
     BUSINFO chipsetIDInfo;
     ACPI_METHOD_DATA acpiMethodData;
+    NvU32 hypervisorType;
+    NvBool bIsPassthru;
+    NvU64 sysTimerOffsetNs;
+    GSP_VF_INFO gspVFInfo;
 } GspSystemInfo;
 
 

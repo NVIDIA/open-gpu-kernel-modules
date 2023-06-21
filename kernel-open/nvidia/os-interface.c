@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -173,7 +173,7 @@ void* NV_API_CALL os_alloc_semaphore
         return NULL;
     }
 
-    NV_INIT_SEMA(os_sema, initialValue);
+    sema_init(os_sema, initialValue);
 
     return (void *)os_sema;
 }
@@ -1422,8 +1422,7 @@ NV_STATUS NV_API_CALL os_get_euid(NvU32 *pSecToken)
     return NV_OK;
 }
 
-// These functions are needed only on x86_64 platforms.
-#if defined(NVCPU_X86_64)
+#if defined(NVCPU_X86_64) || defined(NVCPU_AARCH64)
 
 static NvBool os_verify_checksum(const NvU8 *pMappedAddr, NvU32 length)
 {
@@ -1461,6 +1460,9 @@ static NvBool os_verify_checksum(const NvU8 *pMappedAddr, NvU32 length)
 
 static NV_STATUS os_get_smbios_header_legacy(NvU64 *pSmbsAddr)
 {
+#if !defined(NVCPU_X86_64)
+    return NV_ERR_NOT_SUPPORTED;
+#else
     NV_STATUS status = NV_ERR_OPERATING_SYSTEM;
     NvU8 *pMappedAddr = NULL;
     NvU8 *pIterAddr = NULL;
@@ -1495,6 +1497,7 @@ static NV_STATUS os_get_smbios_header_legacy(NvU64 *pSmbsAddr)
     os_unmap_kernel_space(pMappedAddr, SMBIOS_LEGACY_SIZE);
 
     return status;
+#endif
 }
 
 // This function is needed only if "efi" is enabled.
@@ -1571,13 +1574,13 @@ static NV_STATUS os_get_smbios_header_uefi(NvU64 *pSmbsAddr)
     return status;
 }
 
-#endif // defined(NVCPU_X86_64)
+#endif // defined(NVCPU_X86_64) || defined(NVCPU_AARCH64)
 
 // The function locates the SMBIOS entry point.
 NV_STATUS NV_API_CALL os_get_smbios_header(NvU64 *pSmbsAddr)
 {
 
-#if !defined(NVCPU_X86_64)
+#if !defined(NVCPU_X86_64) && !defined(NVCPU_AARCH64)
     return NV_ERR_NOT_SUPPORTED;
 #else
     NV_STATUS status = NV_OK;
@@ -1998,13 +2001,22 @@ NvBool NV_API_CALL os_is_nvswitch_present(void)
     return !!pci_dev_present(nvswitch_pci_table);
 }
 
-void NV_API_CALL os_get_random_bytes
+/*
+ * This function may sleep (interruptible).
+ */
+NV_STATUS NV_API_CALL os_get_random_bytes
 (
     NvU8 *bytes,
     NvU16 numBytes
 )
 {
+#if defined NV_WAIT_FOR_RANDOM_BYTES_PRESENT
+    if (wait_for_random_bytes() < 0)
+        return NV_ERR_NOT_READY;
+#endif
+
     get_random_bytes(bytes, numBytes);
+    return NV_OK;
 }
 
 NV_STATUS NV_API_CALL os_alloc_wait_queue
@@ -2104,5 +2116,191 @@ void NV_API_CALL os_nv_cap_close_fd
 )
 {
     nv_cap_close_fd(fd);
+}
+
+NV_STATUS NV_API_CALL os_numa_add_gpu_memory
+(
+    void *handle,
+    NvU64 offset,
+    NvU64 size,
+    NvU32 *nodeId
+)
+{
+#if defined(NV_ADD_MEMORY_DRIVER_MANAGED_PRESENT)
+    int node = 0;
+    nv_linux_state_t *nvl = pci_get_drvdata(handle);
+    NvU64 base = offset + nvl->coherent_link_info.gpu_mem_pa;
+    int ret;
+
+    if (nodeId == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (bitmap_empty(nvl->coherent_link_info.free_node_bitmap, MAX_NUMNODES))
+    {
+        return NV_ERR_IN_USE;
+    }
+    node = find_first_bit(nvl->coherent_link_info.free_node_bitmap, MAX_NUMNODES);
+    if (node == MAX_NUMNODES)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_ONLINE_IN_PROGRESS);
+
+#ifdef NV_ADD_MEMORY_DRIVER_MANAGED_HAS_MHP_FLAGS_ARG
+    ret = add_memory_driver_managed(node, base, size, "System RAM (NVIDIA)", MHP_NONE);
+#else
+    ret = add_memory_driver_managed(node, base, size, "System RAM (NVIDIA)");
+#endif
+    if (ret == 0)
+    {
+        struct zone *zone = &NODE_DATA(node)->node_zones[ZONE_MOVABLE];
+        NvU64 start_pfn = base >> PAGE_SHIFT;
+        NvU64 end_pfn = (base + size) >> PAGE_SHIFT;
+
+        if (zone->zone_start_pfn != start_pfn ||
+            zone_end_pfn(zone) != end_pfn)
+        {
+            nv_printf(NV_DBG_ERRORS, "GPU memory zone movable auto onlining failed!\n");
+#ifdef NV_OFFLINE_AND_REMOVE_MEMORY_PRESENT
+#ifdef NV_REMOVE_MEMORY_HAS_NID_ARG
+            if (offline_and_remove_memory(node, base, size) != 0)
+#else
+            if (offline_and_remove_memory(base, size) != 0)
+#endif
+            {
+                nv_printf(NV_DBG_ERRORS, "offline_and_remove_memory failed\n");
+            }
+#endif
+            goto failed;
+        }
+
+        *nodeId = node;
+        clear_bit(node, nvl->coherent_link_info.free_node_bitmap);
+        NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_ONLINE);
+        return NV_OK;
+    }
+    nv_printf(NV_DBG_ERRORS, "NVRM: Memory add failed. base: 0x%lx size: 0x%lx ret: %d\n",
+              base, size, ret);
+failed:
+    NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_ONLINE_FAILED);
+    return NV_ERR_OPERATING_SYSTEM;
+#endif
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS NV_API_CALL os_numa_remove_gpu_memory
+(
+    void *handle,
+    NvU64 offset,
+    NvU64 size,
+    NvU32 nodeId
+)
+{
+#ifdef NV_ADD_MEMORY_DRIVER_MANAGED_PRESENT
+    nv_linux_state_t *nvl = pci_get_drvdata(handle);
+#ifdef NV_OFFLINE_AND_REMOVE_MEMORY_PRESENT
+    NvU64 base = offset + nvl->coherent_link_info.gpu_mem_pa;
+    remove_numa_memory_info_t numa_info;
+    nv_kthread_q_item_t remove_numa_memory_q_item;
+    int ret;
+#endif
+
+    if (nodeId >= MAX_NUMNODES)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+    if ((nodeId == NUMA_NO_NODE) || test_bit(nodeId, nvl->coherent_link_info.free_node_bitmap))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_OFFLINE_IN_PROGRESS);
+
+#ifdef NV_OFFLINE_AND_REMOVE_MEMORY_PRESENT
+    numa_info.base   = base;
+    numa_info.size   = size;
+    numa_info.nodeId = nodeId;
+    numa_info.ret    = 0;
+
+    nv_kthread_q_item_init(&remove_numa_memory_q_item,
+                           offline_numa_memory_callback,
+                           &numa_info);
+    nv_kthread_q_schedule_q_item(&nvl->remove_numa_memory_q,
+                                 &remove_numa_memory_q_item);
+    nv_kthread_q_flush(&nvl->remove_numa_memory_q);
+
+    ret = numa_info.ret;
+
+    if (ret == 0)
+    {
+        set_bit(nodeId, nvl->coherent_link_info.free_node_bitmap);
+
+        NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_OFFLINE);
+        return NV_OK;
+    }
+
+    nv_printf(NV_DBG_ERRORS, "NVRM: Memory remove failed. base: 0x%lx size: 0x%lx ret: %d\n",
+              base, size, ret);
+#endif
+    NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_OFFLINE_FAILED);
+    return NV_ERR_OPERATING_SYSTEM;
+#endif
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS NV_API_CALL os_offline_page_at_address
+(
+    NvU64 address
+)
+{
+#if defined(CONFIG_MEMORY_FAILURE)
+    int flags = 0;
+    int ret;
+    NvU64 pfn;
+    struct page *page = NV_GET_PAGE_STRUCT(address);
+
+    if (page == NULL)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Failed to get page struct for address: 0x%llx\n",
+                  address);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pfn = page_to_pfn(page);
+
+#ifdef NV_MEMORY_FAILURE_MF_SW_SIMULATED_DEFINED
+    //
+    // Set MF_SW_SIMULATED flag so Linux kernel can differentiate this from a HW
+    // memory failure. HW memory failures cannot be unset via unpoison_memory() API.
+    //
+    // Currently, RM does not use unpoison_memory(), so it makes no difference
+    // whether or not MF_SW_SIMULATED is set. Regardless, it is semantically more
+    // correct to set MF_SW_SIMULATED.
+    //
+    flags |= MF_SW_SIMULATED;
+#endif
+
+#ifdef NV_MEMORY_FAILURE_HAS_TRAPNO_ARG
+    ret = memory_failure(pfn, 0, flags);
+#else
+    ret = memory_failure(pfn, flags);
+#endif
+
+    if (ret != 0)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: page offlining failed. address: 0x%llx pfn: 0x%llx ret: %d\n",
+                  address, pfn, ret);
+        return NV_ERR_OPERATING_SYSTEM;
+    }
+
+    return NV_OK;
+#else // !defined(CONFIG_MEMORY_FAILURE)
+    nv_printf(NV_DBG_ERRORS, "NVRM: memory_failure() not supported by kernel. page offlining failed. address: 0x%llx\n",
+              address);
+    return NV_ERR_NOT_SUPPORTED;
+#endif
 }
 

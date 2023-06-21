@@ -152,6 +152,19 @@ memmgrPreInitReservedMemory_FWCLIENT
         tmpAddr += 0x10000;
     }
 
+    if (gpuIsSelfHosted(pGpu))
+    {
+        //
+        // Reserve space for the test buffer used in coherent link test
+        // that is run early when memory allocation is not ready yet.
+        //
+        // if Self-Hosted is running in PCIe mode then this space will
+        // will not be used, this should not cause any issue
+        //
+        pKernelBus->coherentLinkTestBufferBase = tmpAddr;
+        tmpAddr += BUS_COHERENT_LINK_TEST_BUFFER_SIZE;
+    }
+
     if (KBUS_BAR2_ENABLED(pKernelBus))
     {
         //

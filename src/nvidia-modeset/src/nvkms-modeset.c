@@ -72,7 +72,7 @@
  * TODO:
  * - Would it be worthwhile to centralize SOR (re)assignment, disp-wide,
  *   in ApplyProposedModeSetHwStateOneDisp() between the calls to
- *   ApplyProposedModeSetHwStateOneHeadShutDown() and
+ *   ApplyProposedModeSetStateOneApiHeadShutDown() and
  *   ApplyProposedModeSetHwStateOneHeadPreUpdate()?
  */
 
@@ -89,6 +89,7 @@
 #include "nvkms-private.h"
 #include "nvkms-vrr.h"
 #include "nvkms-lut.h"
+#include "nvkms-dma.h"
 
 #include "dp/nvdp-connector.h"
 
@@ -113,15 +114,15 @@ ClearProposedModeSetHwState(const NVDevEvoRec *pDevEvo,
 
         if (!committed)  {
             /* Free new allocated RM display IDs for changed heads */
-            for (head = 0; head < pDevEvo->numHeads; head++) {
-                NVProposedModeSetHwStateOneHead *pProposedHead =
-                    &pProposed->disp[dispIndex].head[head];
+            for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+                NVProposedModeSetStateOneApiHead *pProposedApiHead =
+                    &pProposed->disp[dispIndex].apiHead[apiHead];
 
-                if (!pProposedHead->changed ||
-                        (pProposedHead->activeRmId == 0x0)) {
+                if (!pProposedApiHead->changed ||
+                        (pProposedApiHead->activeRmId == 0x0)) {
                     continue;
                 }
-                nvRmFreeDisplayId(pDispEvo, pProposedHead->activeRmId);
+                nvRmFreeDisplayId(pDispEvo, pProposedApiHead->activeRmId);
             }
         }
 
@@ -170,18 +171,18 @@ static NvU8 GetAvailableAllowFlipLockGroupValue(
      * allowFlipLockGroupMask.
     */
     for (dispIndex = 0; dispIndex < ARRAY_LEN(pProposed->disp); dispIndex++) {
-        NvU32 head;
-        for (head = 0;
-             head < ARRAY_LEN(pProposed->disp[dispIndex].head);
-             head++) {
+        NvU32 apiHead;
+        for (apiHead = 0;
+             apiHead < ARRAY_LEN(pProposed->disp[dispIndex].apiHead);
+             apiHead++) {
 
-            const NVProposedModeSetHwStateOneHead *pProposedHead =
-                &pProposed->disp[dispIndex].head[head];
+            const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+                &pProposed->disp[dispIndex].apiHead[apiHead];
 
-            if (pProposedHead->allowFlipLockGroup != 0) {
-                nvAssert(pProposedHead->allowFlipLockGroup <= 64);
+            if (pProposedApiHead->allowFlipLockGroup != 0) {
+                nvAssert(pProposedApiHead->allowFlipLockGroup <= 64);
                 allowFlipLockGroupMask |=
-                    NVBIT64(pProposedHead->allowFlipLockGroup - 1);
+                    NVBIT64(pProposedApiHead->allowFlipLockGroup - 1);
             }
         }
     }
@@ -273,7 +274,7 @@ static NvBool
 GetColorSpaceAndColorRange(
     const NVDispEvoPtr pDispEvo,
     const struct NvKmsSetModeOneHeadRequest *pRequestHead,
-    NVProposedModeSetHwStateOneHead *pProposedHead)
+    NVProposedModeSetStateOneApiHead *pProposedApiHead)
 {
     enum NvKmsDpyAttributeColorRangeValue requestedColorRange;
     enum NvKmsDpyAttributeRequestedColorSpaceValue requestedColorSpace;
@@ -309,13 +310,13 @@ GetColorSpaceAndColorRange(
      * timings and the requested color space and range.
      */
     if (!nvChooseCurrentColorSpaceAndRangeEvo(pOneArbitraryDpyEvo,
-                                              pProposedHead->timings.yuv420Mode,
-                                              pProposedHead->tf,
+                                              pProposedApiHead->timings.yuv420Mode,
+                                              pProposedApiHead->tf,
                                               requestedColorSpace,
                                               requestedColorRange,
-                                              &pProposedHead->attributes.colorSpace,
-                                              &pProposedHead->attributes.colorBpc,
-                                              &pProposedHead->attributes.colorRange)) {
+                                              &pProposedApiHead->attributes.colorSpace,
+                                              &pProposedApiHead->attributes.colorBpc,
+                                              &pProposedApiHead->attributes.colorRange)) {
         return FALSE;
     }
 
@@ -325,7 +326,7 @@ GetColorSpaceAndColorRange(
      */
     if (pRequestHead->colorSpaceSpecified) {
         NvBool ret = FALSE;
-        switch (pProposedHead->attributes.colorSpace) {
+        switch (pProposedApiHead->attributes.colorSpace) {
             case NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB:
                 ret = (pRequestHead->colorSpace ==
                         NV_KMS_DPY_ATTRIBUTE_REQUESTED_COLOR_SPACE_RGB);
@@ -351,14 +352,92 @@ GetColorSpaceAndColorRange(
      * match the proposed color range.
      */
     if (pRequestHead->colorRangeSpecified &&
-        (pProposedHead->attributes.colorRange != pRequestHead->colorRange)) {
+        (pProposedApiHead->attributes.colorRange != pRequestHead->colorRange)) {
         return FALSE;
     }
 
-    pProposedHead->colorSpaceSpecified = pRequestHead->colorSpaceSpecified;
-    pProposedHead->colorRangeSpecified = pRequestHead->colorRangeSpecified;
+    pProposedApiHead->colorSpaceSpecified = pRequestHead->colorSpaceSpecified;
+    pProposedApiHead->colorRangeSpecified = pRequestHead->colorRangeSpecified;
 
     return TRUE;
+}
+
+/* count existing unchanged and new vrr heads */
+static NvU32 CountProposedVrrApiHeads(NVDevEvoPtr pDevEvo,
+                                      const struct NvKmsSetModeRequest *pRequest)
+{
+    NvU32 sd;
+    NVDispEvoPtr pDispEvo;
+    NvU32 numVRRApiHeads = 0;
+
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+        NvU32 apiHead;
+
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            const struct NvKmsSetModeOneDispRequest *pRequestDisp =
+                &pRequest->disp[sd];
+            const struct NvKmsSetModeOneHeadRequest *pRequestHead =
+                &pRequestDisp->head[apiHead];
+
+            if (((pRequest->requestedDispsBitMask & (1 << sd)) == 0) ||
+                    ((pRequestDisp->requestedHeadsBitMask & (1 << apiHead)) == 0)) {
+                const NVDispApiHeadStateEvoRec *pApiHeadState =
+                    &pDispEvo->apiHeadState[apiHead];
+
+                if (pApiHeadState->timings.vrr.type != NVKMS_DPY_VRR_TYPE_NONE) {
+                    numVRRApiHeads++;
+                }
+            } else {
+                const NVDpyEvoRec *pDpyEvo =
+                    nvGetOneArbitraryDpyEvo(pRequestHead->dpyIdList, pDispEvo);
+
+                if (pDpyEvo == NULL) {
+                    continue;
+                }
+
+                if (nvGetAllowedDpyVrrType(pDpyEvo,
+                                           &pRequestHead->mode.timings,
+                                           pRequestHead->modeValidationParams.stereoMode,
+                                           pRequestHead->allowGsync,
+                                           pRequestHead->allowAdaptiveSync) !=
+                        NVKMS_DPY_VRR_TYPE_NONE) {
+                    numVRRApiHeads++;
+                }
+            }
+        }
+    }
+
+    return numVRRApiHeads;
+}
+
+static void AdjustHwModeTimingsForVrr(const NVDispEvoRec *pDispEvo,
+    const struct NvKmsSetModeOneHeadRequest *pRequestHead,
+    const NvU32 prohibitAdaptiveSync,
+    NVHwModeTimingsEvo *pTimings)
+{
+    NVDpyEvoPtr pDpyEvo =
+        nvGetOneArbitraryDpyEvo(pRequestHead->dpyIdList, pDispEvo);
+    if (pDpyEvo == NULL) {
+        return;
+    }
+
+    const NvBool allowGsync = pRequestHead->allowGsync;
+    const enum NvKmsAllowAdaptiveSync allowAdaptiveSync =
+        prohibitAdaptiveSync ? NVKMS_ALLOW_ADAPTIVE_SYNC_DISABLED :
+            pRequestHead->allowAdaptiveSync;
+    const NvU32 vrrOverrideMinRefreshRate = pRequestHead->vrrOverrideMinRefreshRate;
+    const enum NvKmsDpyVRRType vrrType =
+        nvGetAllowedDpyVrrType(pDpyEvo,
+                               &pRequestHead->mode.timings,
+                               pRequestHead->modeValidationParams.stereoMode,
+                               allowGsync,
+                               allowAdaptiveSync);
+
+    nvAdjustHwModeTimingsForVrrEvo(pTimings,
+                                   vrrType,
+                                   pDpyEvo->vrr.edidTimeoutMicroseconds,
+                                   vrrOverrideMinRefreshRate,
+                                   pDpyEvo->vrr.needsSwFramePacing);
 }
 
 /*
@@ -378,6 +457,74 @@ NvBool nvGetAllowHeadSurfaceInNvKms(const NVDevEvoRec *pDevEvo,
 }
 
 static void
+InitNVProposedModeSetStateOneApiHead(
+    const NVDispEvoRec *pDispEvo,
+    const NvU32 apiHead,
+    NVProposedModeSetStateOneApiHead *pProposedApiHead)
+{
+#if defined(DEBUG)
+    const NVDpyEvoRec *pDpyEvo =
+        nvGetOneArbitraryDpyEvo(pDispEvo->apiHeadState[apiHead].activeDpys,
+                                pDispEvo);
+#endif
+
+    if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+        return;
+    }
+
+    nvAssert(pDispEvo->apiHeadState[apiHead].hwHeadsMask != 0x0);
+    nvAssert(pDpyEvo != NULL);
+
+    pProposedApiHead->hwHeadsMask =
+        pDispEvo->apiHeadState[apiHead].hwHeadsMask;
+    pProposedApiHead->timings =
+        pDispEvo->apiHeadState[apiHead].timings;
+    pProposedApiHead->dpyIdList =
+        pDispEvo->apiHeadState[apiHead].activeDpys;
+    pProposedApiHead->attributes =
+        pDispEvo->apiHeadState[apiHead].attributes;
+    pProposedApiHead->changed = FALSE;
+    pProposedApiHead->hs10bpcHint =
+        pDispEvo->apiHeadState[apiHead].hs10bpcHint;
+    pProposedApiHead->infoFrame =
+        pDispEvo->apiHeadState[apiHead].infoFrame;
+    pProposedApiHead->tf = pDispEvo->apiHeadState[apiHead].tf;
+    pProposedApiHead->viewPortPointIn =
+        pDispEvo->apiHeadState[apiHead].viewPortPointIn;
+
+    NvU32 head;
+    NvU32 hwHeadCount = 0;
+    FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask,
+        head) {
+        const NVDispHeadStateEvoRec *pHeadState =
+            &pDispEvo->headState[head];
+
+        nvAssert(pDpyEvo->pConnectorEvo ==
+                    pHeadState->pConnectorEvo);
+
+        if (hwHeadCount == 0) {
+            pProposedApiHead->dscInfo = pHeadState->dscInfo;
+            pProposedApiHead->activeRmId = pHeadState->activeRmId;
+            pProposedApiHead->allowFlipLockGroup =
+                pHeadState->allowFlipLockGroup;
+            pProposedApiHead->modeValidationParams =
+                pHeadState->modeValidationParams;
+         } else {
+            nvAssert(nvkms_memcmp(&pProposedApiHead->dscInfo,
+                        &pHeadState->dscInfo,
+                        sizeof(pProposedApiHead->dscInfo)) == 0x0);
+            nvAssert(pProposedApiHead->activeRmId ==
+                        pHeadState->activeRmId);
+            nvAssert(pProposedApiHead->allowFlipLockGroup ==
+                        pHeadState->allowFlipLockGroup);
+            nvAssert(nvkms_memcmp(&pProposedApiHead->modeValidationParams,
+                &pHeadState->modeValidationParams,
+                sizeof(pProposedApiHead->modeValidationParams)) == 0x0);
+         }
+    }
+}
+
+static void
 InitProposedModeSetHwState(const NVDevEvoRec *pDevEvo,
                            const struct NvKmsPerOpenDev *pOpenDev,
                            NVProposedModeSetHwState *pProposed)
@@ -387,58 +534,51 @@ InitProposedModeSetHwState(const NVDevEvoRec *pDevEvo,
 
     nvkms_memset(pProposed, 0, sizeof(*pProposed));
 
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        NvU32 head;
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            const NVDispHeadStateEvoRec *pHeadState;
-            NVProposedModeSetHwStateOneHead *pProposedHead =
-                &pProposed->disp[sd].head[head];
-            const NvU32 apiHead = nvHardwareHeadToApiHead(pDevEvo, head);
-
-            /*
-             * If the previous modeset can not be inherited then initialize the
-             * proposed modeset state to shutdown all heads.
-             */
-            if (!InheritPreviousModesetState(pDevEvo, pOpenDev)) {
+    /*
+     * If the previous modeset can not be inherited then initialize the
+     * proposed modeset state to shutdown all heads.
+     */
+    if (!InheritPreviousModesetState(pDevEvo, pOpenDev)) {
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+            for (NvU32 head = 0; head < pDevEvo->numHeads; head++) {
                 NvU32 layer;
                 NVFlipEvoHwState *pFlip = &pProposed->sd[sd].head[head].flip;
                 for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
                     pFlip->dirty.layer[layer] = TRUE;
                 }
-                pProposedHead->changed = TRUE;
-                continue;
             }
 
-            /*
-             * Case of invalid hardware head is handled inside
-             * nvInitFlipEvoHwState().
-             */
-            nvInitFlipEvoHwState(pDevEvo, sd, head,
-                                 &pProposed->sd[sd].head[head].flip);
-
-            if (!nvHeadIsActive(pDispEvo, head)) {
-                continue;
+            for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+                pProposed->disp[sd].apiHead[apiHead].changed = TRUE;
             }
+        }
+    } else {
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+            for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+                NVProposedModeSetStateOneApiHead *pProposedApiHead =
+                    &pProposed->disp[sd].apiHead[apiHead];;
 
-            pHeadState = &pDispEvo->headState[head];
+                InitNVProposedModeSetStateOneApiHead(pDispEvo, apiHead,
+                    pProposedApiHead);
 
-            pProposedHead->timings = pHeadState->timings;
-            pProposedHead->dpyIdList =
-                pDispEvo->apiHeadState[apiHead].activeDpys;
-            pProposedHead->pConnectorEvo = pHeadState->pConnectorEvo;
-            pProposedHead->activeRmId = pHeadState->activeRmId;
-            pProposedHead->allowFlipLockGroup = pHeadState->allowFlipLockGroup;
-            pProposedHead->modeValidationParams =
-                pHeadState->modeValidationParams;
-            pProposedHead->attributes =
-                pDispEvo->apiHeadState[apiHead].attributes;
-            pProposedHead->changed = FALSE;
-            pProposedHead->hs10bpcHint =
-                pDispEvo->apiHeadState[apiHead].hs10bpcHint;
-            pProposedHead->audio = pHeadState->audio;
-            pProposedHead->infoFrame =
-                pDispEvo->apiHeadState[apiHead].infoFrame;
-            pProposedHead->tf = pHeadState->tf;
+                NvU32 head;
+                FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask,
+                    head) {
+                    const NVDispHeadStateEvoRec *pHeadState =
+                        &pDispEvo->headState[head];
+                    NVProposedModeSetHwStateOneHead *pProposedHead =
+                        &pProposed->disp[sd].head[head];
+
+                    nvInitFlipEvoHwState(pDevEvo, sd, head,
+                                         &pProposed->sd[sd].head[head].flip);
+
+                    pProposedHead->tilePosition = pHeadState->tilePosition;
+                    pProposedHead->timings = pHeadState->timings;
+                    pProposedHead->pConnectorEvo = pHeadState->pConnectorEvo;
+                    pProposedHead->hdmiFrlConfig = pHeadState->hdmiFrlConfig;
+                    pProposedHead->audio = pHeadState->audio;
+                }
+            }
         }
     }
 }
@@ -449,15 +589,11 @@ AssignProposedModeSetNVFlipEvoHwState(
     const struct NvKmsPerOpenDev *pOpenDev,
     const NvU32 sd,
     const NvU32 head,
-    const struct NvKmsSetModeRequest *pRequest,
+    const struct NvKmsSetModeOneHeadRequest *pRequestHead,
     NVFlipEvoHwState *pFlip,
-    NVProposedModeSetHwStateOneHead *pProposedHead)
+    NVProposedModeSetHwStateOneHead *pProposedHead,
+    const NvBool commit)
 {
-    const NvU32 apiHead = nvHardwareHeadToApiHead(pDevEvo, head);
-    const struct NvKmsSetModeOneDispRequest *pRequestDisp = &pRequest->disp[sd];
-    const struct NvKmsSetModeOneHeadRequest *pRequestHead =
-        &pRequestDisp->head[apiHead];
-
     /*
      * Clear the flipStates of all layers:
      *
@@ -476,7 +612,7 @@ AssignProposedModeSetNVFlipEvoHwState(
 
     nvClearFlipEvoHwState(pFlip);
 
-    if (pRequest->commit) {
+    if (commit) {
         NvU32 layer;
 
         for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
@@ -494,10 +630,7 @@ AssignProposedModeSetNVFlipEvoHwState(
      * Window channels are interlocked.
      */
     if (pDevEvo->supportsSyncpts &&
-        IsPreSyncptSpecified(
-            pDevEvo,
-            head,
-            &pRequest->disp[sd].head[apiHead].flip)) {
+            IsPreSyncptSpecified(pDevEvo, head, &pRequestHead->flip)) {
         return FALSE;
     }
 
@@ -507,24 +640,10 @@ AssignProposedModeSetNVFlipEvoHwState(
                                 head,
                                 &pRequestHead->flip,
                                 &pProposedHead->timings,
+                                pProposedHead->tilePosition,
                                 pFlip,
                                 FALSE /* allowVrr */)) {
         return FALSE;
-    }
-
-    /*
-     * If the modeset is flipping to a depth 30 surface, record this as
-     * a hint to headSurface, so it can also allocate its surfaces at
-     * depth 30.
-     */
-    {
-        const NVSurfaceEvoRec *pSurfaceEvo =
-            pFlip->layer[NVKMS_MAIN_LAYER].pSurfaceEvo[NVKMS_LEFT];
-
-        pProposedHead->hs10bpcHint =
-            (pSurfaceEvo != NULL) &&
-            (pSurfaceEvo->format == NvKmsSurfaceMemoryFormatA2B10G10R10 ||
-             pSurfaceEvo->format == NvKmsSurfaceMemoryFormatX2B10G10R10);
     }
 
     /*
@@ -540,6 +659,330 @@ AssignProposedModeSetNVFlipEvoHwState(
          pRequestHead->lut.output.specified) &&
         !pDevEvo->hal->caps.supportsCoreLut) {
         pFlip->layer[NVKMS_MAIN_LAYER].tearing = FALSE;
+    }
+
+    return TRUE;
+}
+
+static
+NvBool AssignProposedHwHeadsForDsiConnector(
+    const NVDispEvoRec *pDispEvo,
+    NVProposedModeSetHwStateOneDisp *pProposedDisp,
+    NvU32 *pFreeHwHeadsMask)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NvU32 freeHwHeadsMask = *pFreeHwHeadsMask;
+    NvU32 ret = TRUE;
+
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
+        const NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+
+        if (!pProposedApiHead->changed ||
+                nvDpyIdListIsEmpty(pProposedApiHead->dpyIdList) ||
+                (pDpyEvo->pConnectorEvo->signalFormat !=
+                    NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI)) {
+            continue;
+        }
+
+        if (pProposedApiHead->hwHeadsMask == 0x0) {
+            /* DSI supports only HEAD0 assignment */
+            if ((freeHwHeadsMask & NVBIT(0)) != 0x0) {
+                nvAssert(pDevEvo->apiHead[apiHead].numLayers <=
+                            pDevEvo->head[0].numLayers);
+                nvAssignHwHeadsMaskProposedApiHead(pProposedApiHead, 0x1);
+                freeHwHeadsMask &= ~pProposedApiHead->hwHeadsMask;
+            } else {
+                ret = FALSE;
+            }
+        } else {
+            nvAssert(pProposedApiHead->hwHeadsMask == 0x1);
+        }
+
+        /* There can be only one DSI dpy */
+        break;
+    }
+
+    *pFreeHwHeadsMask &= freeHwHeadsMask;
+    return ret;
+}
+
+static
+NvBool AssignProposedHwHeadsForDPSerializer(
+    const NVDispEvoRec *pDispEvo,
+    NVProposedModeSetHwStateOneDisp *pProposedDisp,
+    NvU32 *pFreeHwHeadsMask)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NvU32 freeHwHeadsMask = *pFreeHwHeadsMask;
+    NvU32 ret = TRUE;
+
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
+        const NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+
+        if (!pProposedApiHead->changed ||
+                nvDpyIdListIsEmpty(pProposedApiHead->dpyIdList) ||
+                !nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo)) {
+            continue;
+        }
+
+        const NvU32 boundHead = pDpyEvo->dp.serializerStreamIndex;
+        if (pProposedApiHead->hwHeadsMask == 0x0) {
+            if ((freeHwHeadsMask & NVBIT(boundHead)) != 0x0) {
+                nvAssert(pDevEvo->apiHead[apiHead].numLayers <=
+                            pDevEvo->head[boundHead].numLayers);
+                nvAssignHwHeadsMaskProposedApiHead(
+                    pProposedApiHead, NVBIT(boundHead));
+                freeHwHeadsMask &= ~pProposedApiHead->hwHeadsMask;
+            } else {
+                ret = FALSE;
+                break;
+            }
+        } else {
+            nvAssert(pProposedApiHead->hwHeadsMask ==
+                        NVBIT(boundHead));
+        }
+    }
+
+    *pFreeHwHeadsMask &= freeHwHeadsMask;
+    return ret;
+}
+
+static NvBool HeadIsFree(const NVDevEvoRec *pDevEvo,
+                         const NvU32 apiHead,
+                         const NvU32 freeHwHeadsMask,
+                         const NvU32 head)
+{
+    if ((NVBIT(head) & freeHwHeadsMask) == 0x0) {
+        return FALSE;
+    }
+
+    if (pDevEvo->apiHead[apiHead].numLayers >
+            pDevEvo->head[head].numLayers) {
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+static NvU32 GetFree2Heads1ORHeadsMask(const NVDevEvoRec *pDevEvo,
+                                       const NvU32 apiHead,
+                                       const NvU32 freeHwHeadsMask)
+{
+    /*
+     * Hardware allows to setup 2Heads1OR mode
+     * between head-0 and head-1, or head-2 and head-3 only.
+     */
+
+    if (HeadIsFree(pDevEvo, apiHead, freeHwHeadsMask, 0) &&
+            HeadIsFree(pDevEvo, apiHead, freeHwHeadsMask, 1)) {
+        return NVBIT(0) | NVBIT(1);
+    }
+
+    if (HeadIsFree(pDevEvo, apiHead, freeHwHeadsMask, 2) &&
+            HeadIsFree(pDevEvo, apiHead, freeHwHeadsMask, 3)) {
+        return NVBIT(2) | NVBIT(3);
+    }
+
+    return 0;
+}
+
+static NvU32 GetFreeHeads(const NVDevEvoRec *pDevEvo,
+                          const NvU32 apiHead,
+                          const NvU32 freeHwHeadsMask)
+{
+    NvU32 foundHead = NV_INVALID_HEAD;
+
+    for (NvS32 head = (pDevEvo->numHeads - 1); head >= 0; head--) {
+        if (HeadIsFree(pDevEvo, apiHead, freeHwHeadsMask, head)) {
+            if ((foundHead == NV_INVALID_HEAD) ||
+                   (pDevEvo->head[head].numLayers <
+                    pDevEvo->head[foundHead].numLayers)) {
+                foundHead = head;
+            }
+        }
+    }
+
+    return foundHead;
+}
+
+static NvBool AssignProposedHwHeadsGeneric(
+    const NVDispEvoRec *pDispEvo,
+    NVProposedModeSetHwStateOneDisp *pProposedDisp,
+    NvU32 *pFreeHwHeadsMask,
+    const NvBool b2Heads1Or)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NvU32 freeHwHeadsMask = *pFreeHwHeadsMask;
+    NvU32 ret = TRUE;
+
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
+        const NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+
+        if (!pProposedApiHead->changed ||
+                nvDpyIdListIsEmpty(pProposedApiHead->dpyIdList) ||
+                (pProposedApiHead->hwHeadsMask != 0x0)) {
+            continue;
+        }
+
+        /*
+         * The hardware-head assigment for the DSI and dp-serializer dpys
+         * should be already done.
+         */
+        nvAssert((pDpyEvo->pConnectorEvo->signalFormat !=
+                    NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) &&
+                    !nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo));
+
+        NvU32 foundHeadsMask = 0x0;
+
+        if (b2Heads1Or) {
+            if (!nvEvoUse2Heads1OR(
+                    pDpyEvo,
+                    &pProposedApiHead->timings,
+                    &pProposedApiHead->modeValidationParams)) {
+                continue;
+            }
+            foundHeadsMask = GetFree2Heads1ORHeadsMask(pDevEvo, apiHead,
+                                                       freeHwHeadsMask);
+        } else {
+            nvAssert(!nvEvoUse2Heads1OR(
+                        pDpyEvo,
+                        &pProposedApiHead->timings,
+                        &pProposedApiHead->modeValidationParams));
+
+            NvU32 foundHead = GetFreeHeads(pDevEvo, apiHead, freeHwHeadsMask);
+            if (foundHead != NV_INVALID_HEAD) {
+                foundHeadsMask = NVBIT(foundHead);
+            }
+        }
+
+        if (foundHeadsMask != 0x0) {
+            nvAssignHwHeadsMaskProposedApiHead(
+                pProposedApiHead, foundHeadsMask);
+            freeHwHeadsMask &= ~pProposedApiHead->hwHeadsMask;
+        } else {
+            ret = FALSE;
+            goto done;
+        }
+    }
+
+done:
+    *pFreeHwHeadsMask &= freeHwHeadsMask;
+    return ret;
+}
+
+static void ClearHwHeadsMaskOneApiHead(const NVDispEvoRec *pDispEvo,
+                                       const NvU32 apiHead,
+                                       NVProposedModeSetHwState *pProposed)
+{
+    const NvU32 sd = pDispEvo->displayOwner;
+    NVProposedModeSetHwStateOneDisp *pProposedDisp =
+        &pProposed->disp[sd];
+    NVProposedModeSetStateOneApiHead *pProposedApiHead =
+        &pProposedDisp->apiHead[apiHead];
+    NvU32 head;
+
+    FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask, head) {
+        nvkms_memset(&pProposedDisp->head[head],
+                     0, sizeof(pProposedDisp->head[head]));
+        nvkms_memset(&pProposed->sd[sd].head[head],
+                     0, sizeof(pProposed->sd[sd].head[head]));
+    }
+    nvAssignHwHeadsMaskProposedApiHead(pProposedApiHead, 0);
+}
+
+static
+void ClearIncompatibleHwHeadsMaskOneDisp(const NVDispEvoRec *pDispEvo,
+                                         NVProposedModeSetHwState *pProposed)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    const NvU32 sd = pDispEvo->displayOwner;
+    NVProposedModeSetHwStateOneDisp *pProposedDisp =
+        &pProposed->disp[sd];
+
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
+        const NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+        if (!pProposedApiHead->changed || (pDpyEvo == NULL)) {
+            continue;
+        }
+
+        NvBool current2Heads1OrState =
+            (nvPopCount32(pProposedApiHead->hwHeadsMask) > 1);
+
+        const NvBool new2Heads1OrState =
+            nvEvoUse2Heads1OR(pDpyEvo,
+                              &pProposedApiHead->timings,
+                              &pProposedApiHead->modeValidationParams);
+
+        if (new2Heads1OrState != current2Heads1OrState) {
+            ClearHwHeadsMaskOneApiHead(pDispEvo, apiHead, pProposed);
+        }
+    }
+}
+
+static
+NvBool AssignProposedHwHeadsOneDisp(const NVDispEvoRec *pDispEvo,
+                                    NVProposedModeSetHwState *pProposed)
+{
+    const NvU32 sd = pDispEvo->displayOwner;
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NVProposedModeSetHwStateOneDisp *pProposedDisp =
+        &pProposed->disp[sd];
+    NvU32 freeHwHeadsMask;
+    /*
+     * In first pass, keep the all existing api-head to
+     * hardware-head(s) assignment unchanged.
+     */
+    NvU32 pass = 0;
+
+    ClearIncompatibleHwHeadsMaskOneDisp(pDispEvo, pProposed);
+
+repeatHwHeadsAssigment:
+    freeHwHeadsMask = NVBIT(pDevEvo->numHeads) - 1;
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
+        nvAssert((pProposedApiHead->hwHeadsMask == 0) ||
+                    !nvDpyIdListIsEmpty(pProposedApiHead->dpyIdList));
+        freeHwHeadsMask &= ~pProposedApiHead->hwHeadsMask;
+    }
+
+    if (!AssignProposedHwHeadsForDsiConnector(pDispEvo, pProposedDisp,
+                                              &freeHwHeadsMask) ||
+            !AssignProposedHwHeadsForDPSerializer(pDispEvo, pProposedDisp,
+                                                  &freeHwHeadsMask) ||
+            !AssignProposedHwHeadsGeneric(pDispEvo, pProposedDisp,
+                                          &freeHwHeadsMask,
+                                          TRUE /* b2Heads1Or */) ||
+            !AssignProposedHwHeadsGeneric(pDispEvo, pProposedDisp,
+                                          &freeHwHeadsMask,
+                                          FALSE /* b2Heads1Or */)) {
+        if (pass == 1) {
+            return FALSE;
+        }
+
+        /*
+         * In second pass, do the fresh hardware-head(s) assigment for
+         * the all changed api-heads.
+         */
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            if (pProposedDisp->apiHead[apiHead].changed) {
+                ClearHwHeadsMaskOneApiHead(pDispEvo, apiHead, pProposed);
+            }
+        }
+        pass = 1;
+        goto repeatHwHeadsAssigment;
     }
 
     return TRUE;
@@ -577,6 +1020,10 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
     NVDispEvoPtr pDispEvo;
     NvBool ret = TRUE;
     NvU8 allowFlipLockGroup = 0;
+    /* If more than one head will enable VRR on Pascal, disallow Adaptive-Sync */
+    const enum NvKmsAllowAdaptiveSync prohibitAdaptiveSync =
+        (!pDevEvo->hal->caps.supportsDisplayRate &&
+            (CountProposedVrrApiHeads(pDevEvo, pRequest) > 1));
 
     /* Initialize pProposed with the current hardware configuration. */
     InitProposedModeSetHwState(pDevEvo, pOpenDev, pProposed);
@@ -589,7 +1036,6 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
         const struct NvKmsSetModeOneDispRequest *pRequestDisp =
             &pRequest->disp[sd];
-        NvU32 head;
 
         if ((pRequest->requestedDispsBitMask & (1 << sd)) == 0) {
             continue;
@@ -600,12 +1046,12 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
 
         pDispEvo = pDevEvo->pDispEvo[sd];
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            const NvU32 apiHead = nvHardwareHeadToApiHead(pDevEvo, head);
+        /* Construct the per api head proposed modeset state */
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
             const struct NvKmsSetModeOneHeadRequest *pRequestHead =
                 &pRequestDisp->head[apiHead];
-            NVProposedModeSetHwStateOneHead *pProposedHead =
-                &pProposedDisp->head[head];
+            NVProposedModeSetStateOneApiHead *pProposedApiHead =
+                &pProposedDisp->apiHead[apiHead];
             const NVDpyEvoRec *pDpyEvo;
 
             if ((pRequestDisp->requestedHeadsBitMask & (1 << apiHead)) == 0) {
@@ -624,17 +1070,17 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                  * Clear the pProposedHead, so that no state leaks to the new
                  * configuration.
                  */
-                nvkms_memset(pProposedHead, 0, sizeof(*pProposedHead));
-                pProposedHead->changed = TRUE;
+                ClearHwHeadsMaskOneApiHead(pDispEvo, apiHead, pProposed);
+                nvkms_memset(pProposedApiHead, 0, sizeof(*pProposedApiHead));
+                pProposedApiHead->changed = TRUE;
                 continue;
             }
 
-            pProposedHead->changed = TRUE;
-            pProposedHead->dpyIdList = pRequestHead->dpyIdList;
-            pProposedHead->pConnectorEvo = pDpyEvo->pConnectorEvo;
-            pProposedHead->activeRmId =
-                nvRmAllocDisplayId(pDispEvo, pProposedHead->dpyIdList);
-            if (pProposedHead->activeRmId == 0x0) {
+            pProposedApiHead->changed = TRUE;
+            pProposedApiHead->dpyIdList = pRequestHead->dpyIdList;
+            pProposedApiHead->activeRmId =
+                nvRmAllocDisplayId(pDispEvo, pProposedApiHead->dpyIdList);
+            if (pProposedApiHead->activeRmId == 0x0) {
                 /* XXX Need separate error code? */
                 pReply->disp[sd].head[apiHead].status =
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_DPY;
@@ -642,8 +1088,7 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
                 continue;
             }
 
-            /* Verify that the requested dpys are valid on this head. */
-            if ((pProposedHead->pConnectorEvo->validHeadMask & NVBIT(head)) == 0) {
+            if ((nvDpyGetPossibleApiHeadsMask(pDpyEvo) & NVBIT(apiHead)) == 0) {
                 pReply->disp[sd].head[apiHead].status =
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_DPY;
                 ret = FALSE;
@@ -657,48 +1102,56 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
              * head so that if additional heads fail, we can report
              * more complete failure information to the client.
              */
-            if (!nvGetHwModeTimings(pDispEvo, pRequestHead,
-                    &pProposedHead->timings, &pProposedHead->infoFrame.ctrl)) {
+            if (!nvGetHwModeTimings(pDispEvo,
+                                    pRequestHead,
+                                    &pProposedApiHead->timings,
+                                    &pProposedApiHead->infoFrame.ctrl)) {
                 pReply->disp[sd].head[apiHead].status =
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
                 ret = FALSE;
                 continue;
             }
 
-            pProposedHead->stereo.mode =
-                pRequestHead->modeValidationParams.stereoMode;
-            pProposedHead->stereo.isAegis = pDpyEvo->stereo3DVision.isAegis;
-            pProposedHead->infoFrame.hdTimings =
-                nvEvoIsHDQualityVideoTimings(&pProposedHead->timings);
+            AdjustHwModeTimingsForVrr(pDispEvo,
+                                      pRequestHead,
+                                      prohibitAdaptiveSync,
+                                      &pProposedApiHead->timings);
 
-            pProposedHead->allowFlipLockGroup = 0;
-            pProposedHead->modeValidationParams =
+            pProposedApiHead->stereo.mode =
+                pRequestHead->modeValidationParams.stereoMode;
+            pProposedApiHead->stereo.isAegis = pDpyEvo->stereo3DVision.isAegis;
+            pProposedApiHead->infoFrame.hdTimings =
+                nvEvoIsHDQualityVideoTimings(&pProposedApiHead->timings);
+
+            pProposedApiHead->allowFlipLockGroup = 0;
+            pProposedApiHead->modeValidationParams =
                 pRequestHead->modeValidationParams;
 
-            if (!GetColorSpaceAndColorRange(pDispEvo, pRequestHead, pProposedHead)) {
+            if (!GetColorSpaceAndColorRange(pDispEvo, pRequestHead,
+                                            pProposedApiHead)) {
                 pReply->disp[sd].head[apiHead].status =
                     NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
                 ret = FALSE;
                 continue;
             }
 
-            pProposedHead->attributes.digitalSignal =
-                nvGetDefaultDpyAttributeDigitalSignalValue(pProposedHead->pConnectorEvo);
-            if (pProposedHead->timings.hdmiFrlConfig.frlRate !=
-                    HDMI_FRL_DATA_RATE_NONE) {
-                nvAssert(pProposedHead->attributes.digitalSignal ==
+            pProposedApiHead->attributes.digitalSignal =
+                nvGetDefaultDpyAttributeDigitalSignalValue(pDpyEvo->pConnectorEvo);
+            if (pProposedApiHead->timings.protocol ==
+                    NVKMS_PROTOCOL_SOR_HDMI_FRL) {
+                nvAssert(pProposedApiHead->attributes.digitalSignal ==
                             NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL_TMDS);
-                pProposedHead->attributes.digitalSignal =
+                pProposedApiHead->attributes.digitalSignal =
                     NV_KMS_DPY_ATTRIBUTE_DIGITAL_SIGNAL_HDMI_FRL;
             }
 
-            pProposedHead->attributes.dvc =
+            pProposedApiHead->attributes.dvc =
                 pDpyEvo->currentAttributes.dvc;
 
             /* Image sharpening is available when scaling is enabled. */
-            pProposedHead->attributes.imageSharpening.available =
-                nvIsImageSharpeningAvailable(&pProposedHead->timings.viewPort);
-            pProposedHead->attributes.imageSharpening.value =
+            pProposedApiHead->attributes.imageSharpening.available =
+                nvIsImageSharpeningAvailable(&pProposedApiHead->timings.viewPort);
+            pProposedApiHead->attributes.imageSharpening.value =
                 pDpyEvo->currentAttributes.imageSharpening.value;
 
             /*
@@ -708,41 +1161,156 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
              * keep them disabled by default.
              */
             if (!InheritPreviousModesetState(pDevEvo, pOpenDev)) {
-                pProposedHead->lut = pRequestHead->lut;
+                pProposedApiHead->lut = pRequestHead->lut;
 
                 if (!pRequestHead->lut.input.specified) {
-                    pProposedHead->lut.input.specified = TRUE;
-                    pProposedHead->lut.input.end = 0;
+                    pProposedApiHead->lut.input.specified = TRUE;
+                    pProposedApiHead->lut.input.end = 0;
                 }
 
                 if (!pRequestHead->lut.output.specified) {
-                    pProposedHead->lut.output.specified = TRUE;
-                    pProposedHead->lut.output.enabled = FALSE;
+                    pProposedApiHead->lut.output.specified = TRUE;
+                    pProposedApiHead->lut.output.enabled = FALSE;
                 }
             } else if (pRequestHead->lut.input.specified) {
-                pProposedHead->lut = pRequestHead->lut;
+                pProposedApiHead->lut = pRequestHead->lut;
             } else {
-                pProposedHead->lut.input.specified = FALSE;
+                pProposedApiHead->lut.input.specified = FALSE;
             }
 
-            if (!AssignProposedModeSetNVFlipEvoHwState(
-                    pDevEvo,
-                    pOpenDev,
-                    sd,
-                    head,
-                    pRequest,
-                    &pProposed->sd[sd].head[head].flip,
-                    pProposedHead)) {
-                pReply->disp[sd].head[apiHead].status =
-                    NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_FLIP;
+            if (pRequestHead->flip.viewPortIn.specified) {
+                pProposedApiHead->viewPortPointIn =
+                    pRequestHead->flip.viewPortIn.point;
+            }
+        } /* apiHead */
+
+        if (!AssignProposedHwHeadsOneDisp(pDispEvo, pProposed)) {
+            pReply->disp[sd].status =
+                NVKMS_SET_MODE_ONE_DISP_STATUS_FAILED_TO_ASSIGN_HARDWARE_HEADS;
+            ret = FALSE;
+            continue;
+        }
+
+        /*
+         * Construct the per hardware head proposed modeset/flip state, and
+         * assign the dependant per api head modeset parameters.
+         */
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            const struct NvKmsSetModeOneHeadRequest *pRequestHead;
+            NVProposedModeSetStateOneApiHead *pProposedApiHead =
+                &pProposedDisp->apiHead[apiHead];
+            const NvU32 primaryHead =
+                nvGetPrimaryHwHeadFromMask(pProposedApiHead->hwHeadsMask);
+            const NvU32 numTiles = nvPopCount32(pProposedApiHead->hwHeadsMask);
+            const NVDpyEvoRec *pDpyEvo =
+                nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+            NVProposedModeSetHwStateOneHead *pProposedPrimaryHead;
+            NvU32 secondaryHeadTilePosition = 1;
+            NvU32 head;
+
+            nvAssert((pProposedApiHead->hwHeadsMask != 0x0) ||
+                        (pDpyEvo == NULL));
+
+            if (!pProposedApiHead->changed ||
+                    (pProposedApiHead->hwHeadsMask == 0x0)) {
+                continue;
+            }
+
+            nvAssert(primaryHead != NV_INVALID_HEAD);
+            pProposedPrimaryHead = &pProposedDisp->head[primaryHead];
+
+            nvAssert((pRequestDisp->requestedHeadsBitMask & (1 << apiHead)) != 0);
+            pRequestHead = &pRequestDisp->head[apiHead];
+
+            enum NvKmsSetModeOneHeadStatus status =
+                NVKMS_SET_MODE_ONE_HEAD_STATUS_SUCCESS;
+
+            FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask, head) {
+                NVProposedModeSetHwStateOneHead *pProposedHead =
+                    &pProposedDisp->head[head];
+
+                pProposedHead->tilePosition =
+                    (head == primaryHead) ? 0 : (secondaryHeadTilePosition++);
+
+                if (!nvEvoGetSingleTileHwModeTimings(&pProposedApiHead->timings,
+                                                     numTiles,
+                                                     &pProposedHead->timings)) {
+                    status = NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
+                    break;
+                }
+
+                /*
+                 * Broadcast the connector and the requested flip state across
+                 * the corresponding hardware heads.
+                 */
+                pProposedHead->pConnectorEvo = pDpyEvo->pConnectorEvo;
+                if (!AssignProposedModeSetNVFlipEvoHwState(
+                        pDevEvo,
+                        pOpenDev,
+                        sd,
+                        head,
+                        &pRequest->disp[sd].head[apiHead],
+                        &pProposed->sd[sd].head[head].flip,
+                        pProposedHead,
+                        pRequest->commit)) {
+                    status = NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_FLIP;
+                    break;
+                }
+            }
+
+            if (status != NVKMS_SET_MODE_ONE_HEAD_STATUS_SUCCESS) {
+                pReply->disp[sd].head[apiHead].status = status;
                 ret = FALSE;
-                continue; /* next head */
+                continue; /* next api head */
             }
 
-            /* Construct audio state */
-            nvHdmiDpConstructHeadAudioState(pProposedHead->activeRmId,
-                                            pDpyEvo, &pProposedHead->audio);
-        } /* head */
+            nvAssert(nvPopCount32(pProposedApiHead->hwHeadsMask) <= 2);
+
+            /*
+             * Query the per api head HDMI FRL configuration, and pass it to
+             * the primary head. Save the dsc info into the per api head
+             * proposed modeset state, to broadcast it onto all hardware heads
+             * during modeset.
+             */
+            if (!nvHdmiFrlQueryConfig(pDpyEvo,
+                                      &pRequestHead->mode.timings,
+                                      &pProposedApiHead->timings,
+                                      (nvPopCount32(pProposedApiHead->hwHeadsMask) > 1)
+                                        /* b2Heads1Or */,
+                                      &pProposedApiHead->modeValidationParams,
+                                      &pProposedPrimaryHead->hdmiFrlConfig,
+                                      &pProposedApiHead->dscInfo)) {
+                pReply->disp[sd].head[apiHead].status =
+                    NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
+                ret = FALSE;
+                continue;
+            }
+
+            /*
+             * Construct the api head audio state, and pass it
+             * to the primary hardware head.
+             */
+            nvHdmiDpConstructHeadAudioState(pProposedApiHead->activeRmId,
+                                            pDpyEvo,
+                                            &pProposedPrimaryHead->audio);
+
+            /*
+             * If the modeset is flipping to a depth 30 surface, record this as
+             * a hint to headSurface, so it can also allocate its surfaces at
+             * depth 30.
+             */
+            {
+                const NVFlipEvoHwState *pFlip =
+                    &pProposed->sd[sd].head[primaryHead].flip;
+                const NVSurfaceEvoRec *pSurfaceEvo =
+                    pFlip->layer[NVKMS_MAIN_LAYER].pSurfaceEvo[NVKMS_LEFT];
+
+                pProposedApiHead->hs10bpcHint =
+                    (pSurfaceEvo != NULL) &&
+                    ((pSurfaceEvo->format == NvKmsSurfaceMemoryFormatA2B10G10R10) ||
+                     (pSurfaceEvo->format == NvKmsSurfaceMemoryFormatX2B10G10R10));
+            }
+        } /* apiHead */
     } /* pDispEvo */
 
     /* Assign allowFlipLockGroup for the heads specified in the request. */
@@ -750,19 +1318,15 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
     allowFlipLockGroup = GetAvailableAllowFlipLockGroupValue(pProposed);
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-
-        NvU32 head;
-
         if ((pRequest->requestedDispsBitMask & NVBIT(sd)) == 0) {
             continue;
         }
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            const NvU32 apiHead = nvHardwareHeadToApiHead(pDevEvo, head);
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
             const struct NvKmsSetModeOneHeadRequest *pRequestHead =
                 &pRequest->disp[sd].head[apiHead];
-            NVProposedModeSetHwStateOneHead *pProposedHead =
-                &pProposed->disp[sd].head[head];
+            NVProposedModeSetStateOneApiHead *pProposedApiHead =
+                &pProposed->disp[sd].apiHead[apiHead];
 
             if ((pRequest->disp[sd].requestedHeadsBitMask &
                  NVBIT(apiHead)) == 0) {
@@ -770,7 +1334,7 @@ AssignProposedModeSetHwState(NVDevEvoRec *pDevEvo,
             }
 
             if (pRequestHead->allowFlipLock) {
-                pProposedHead->allowFlipLockGroup = allowFlipLockGroup;
+                pProposedApiHead->allowFlipLockGroup = allowFlipLockGroup;
             }
         }
     }
@@ -805,24 +1369,26 @@ ValidateProposedModeSetHwStateOneDispImp(NVDispEvoPtr pDispEvo,
     NVValidateImpOneDispHeadParamsRec timingsParams[NVKMS_MAX_HEADS_PER_DISP];
     NvBool skipImpCheck = TRUE, requireBootClocks = FALSE;
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NvU32 head, downgradePossibleHeadsBitMask = 0;
+    NvU32 downgradePossibleHeadsBitMask = 0;
     NVEvoReallocateBandwidthMode reallocBandwidth = pDevEvo->isSOCDisplay ?
         NV_EVO_REALLOCATE_BANDWIDTH_MODE_PRE :
         NV_EVO_REALLOCATE_BANDWIDTH_MODE_NONE;
 
     nvkms_memset(&timingsParams, 0, sizeof(timingsParams));
 
-    for (head = 0; head < pDevEvo->numHeads; head++) {
-        NVProposedModeSetHwStateOneHead *pProposedHead =
-            &pProposedDisp->head[head];
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
 
         const NvBool skipImpCheckThisHead =
-            (pProposedHead->modeValidationParams.overrides &
+            (pProposedApiHead->modeValidationParams.overrides &
              NVKMS_MODE_VALIDATION_NO_EXTENDED_GPU_CAPABILITIES_CHECK) != 0;
 
         const NvBool requireBootClocksThisHead =
-            (pProposedHead->modeValidationParams.overrides &
+            (pProposedApiHead->modeValidationParams.overrides &
              NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS) != 0;
+
+        NvU32 head;
 
         /*
          * Don't try to downgrade heads which are not marked as changed.
@@ -835,22 +1401,28 @@ ValidateProposedModeSetHwStateOneDispImp(NVDispEvoPtr pDispEvo,
          * to handle it. This seems to be a fair trade-off for Orin, as by
          * default all heads are initialized with minimal usage bounds.
          */
-        if (pProposedHead->changed) {
-            downgradePossibleHeadsBitMask |= NVBIT(head);
+        if (pProposedApiHead->changed) {
+            downgradePossibleHeadsBitMask |= pProposedApiHead->hwHeadsMask;
         }
 
-        if (pProposedHead->pConnectorEvo == NULL) {
-            continue;
-        }
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask, head) {
+            NVProposedModeSetHwStateOneHead *pProposedHead =
+                &pProposedDisp->head[head];
 
-        timingsParams[head].pConnectorEvo = pProposedHead->pConnectorEvo;
-        timingsParams[head].activeRmId = pProposedHead->activeRmId;
-        timingsParams[head].pixelDepth =
-            nvEvoColorSpaceBpcToPixelDepth(pProposedHead->attributes.colorSpace,
-                                           pProposedHead->attributes.colorBpc);
-        timingsParams[head].pTimings = &pProposedHead->timings;
-        timingsParams[head].pUsage =
-            &pProposedHead->timings.viewPort.guaranteedUsage;
+            timingsParams[head].pConnectorEvo = pProposedHead->pConnectorEvo;
+            timingsParams[head].activeRmId = pProposedApiHead->activeRmId;
+            timingsParams[head].pixelDepth =
+                nvEvoColorSpaceBpcToPixelDepth(pProposedApiHead->attributes.colorSpace,
+                                               pProposedApiHead->attributes.colorBpc);
+            timingsParams[head].pTimings = &pProposedHead->timings;
+            timingsParams[head].enableDsc = (pProposedApiHead->dscInfo.type !=
+                NV_DSC_INFO_EVO_TYPE_DISABLED);
+            nvAssert(nvPopCount32(pProposedApiHead->hwHeadsMask) <= 2);
+            timingsParams[head].b2Heads1Or =
+                (nvPopCount32(pProposedApiHead->hwHeadsMask) > 1);
+            timingsParams[head].pUsage =
+                &pProposedHead->timings.viewPort.guaranteedUsage;
+        }
 
         skipImpCheck = skipImpCheck && skipImpCheckThisHead;
         requireBootClocks = requireBootClocks || requireBootClocksThisHead;
@@ -877,25 +1449,27 @@ ValidateProposedModeSetHwStateOneDispImp(NVDispEvoPtr pDispEvo,
             return FALSE;
         }
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            NVProposedModeSetHwStateOneHead *pProposedHead =
-                &pProposedDisp->head[head];
-            const struct NvKmsUsageBounds *pProposedUsage;
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+                &pProposedDisp->apiHead[apiHead];
+            NvU32 head;
 
-            if (pProposedHead->pConnectorEvo == NULL) {
-                continue;
+            FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask, head) {
+                NVProposedModeSetHwStateOneHead *pProposedHead =
+                    &pProposedDisp->head[head];
+                const struct NvKmsUsageBounds *pProposedUsage;
+
+                if (pProposedApiHead->changed) {
+                    pProposedUsage = &pProposed->sd[0].head[head].flip.usage;
+                } else {
+                    pProposedUsage =
+                        &pDevEvo->gpus[0].headState[head].preallocatedUsage;
+                }
+
+                nvUnionUsageBounds(&pProposedHead->timings.viewPort.guaranteedUsage,
+                                   pProposedUsage, &guaranteedAndProposed[head]);
+                timingsParams[head].pUsage = &guaranteedAndProposed[head];
             }
-
-            if (pProposedHead->changed) {
-                pProposedUsage = &pProposed->sd[0].head[head].flip.usage;
-            } else {
-                pProposedUsage =
-                    &pDevEvo->gpus[0].headState[head].preallocatedUsage;
-            }
-
-            nvUnionUsageBounds(&pProposedHead->timings.viewPort.guaranteedUsage,
-                               pProposedUsage, &guaranteedAndProposed[head]);
-            timingsParams[head].pUsage = &guaranteedAndProposed[head];
         }
 
         ret = nvValidateImpOneDisp(pDispEvo, timingsParams,
@@ -917,24 +1491,24 @@ ValidateProposedModeSetHwStateOneDispImp(NVDispEvoPtr pDispEvo,
 }
 
 static NvBool SkipDisplayPortBandwidthCheck(
-    const NVProposedModeSetHwStateOneHead *pProposedHead)
+    const NVProposedModeSetStateOneApiHead *pProposedApiHead)
 {
-    return (pProposedHead->modeValidationParams.overrides &
+    return (pProposedApiHead->modeValidationParams.overrides &
             NVKMS_MODE_VALIDATION_NO_DISPLAYPORT_BANDWIDTH_CHECK) != 0;
 }
 
 static NvBool DowngradeColorSpaceAndBpcOneHead(
     const NVDispEvoRec *pDispEvo,
-    NVProposedModeSetHwStateOneHead *pProposedHead)
+    NVProposedModeSetStateOneApiHead *pProposedApiHead)
 {
     enum NvKmsDpyAttributeColorRangeValue colorRange =
-        pProposedHead->attributes.colorRange;
+        pProposedApiHead->attributes.colorRange;
     enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace =
-        pProposedHead->attributes.colorSpace;
+        pProposedApiHead->attributes.colorSpace;
     enum NvKmsDpyAttributeColorBpcValue colorBpc =
-        pProposedHead->attributes.colorBpc;
+        pProposedApiHead->attributes.colorBpc;
     NVDpyEvoRec *pDpyEvo =
-        nvGetOneArbitraryDpyEvo(pProposedHead->dpyIdList,
+        nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList,
                                 pDispEvo);
     const NVColorFormatInfoRec supportedColorFormats =
         nvGetColorFormatInfo(pDpyEvo);
@@ -944,19 +1518,19 @@ static NvBool DowngradeColorSpaceAndBpcOneHead(
         return FALSE;
     }
 
-    if (pProposedHead->colorRangeSpecified &&
-        (colorRange != pProposedHead->attributes.colorRange)) {
+    if (pProposedApiHead->colorRangeSpecified &&
+        (colorRange != pProposedApiHead->attributes.colorRange)) {
         return FALSE;
     }
 
-    if (pProposedHead->colorSpaceSpecified &&
-        (colorSpace != pProposedHead->attributes.colorSpace)) {
+    if (pProposedApiHead->colorSpaceSpecified &&
+        (colorSpace != pProposedApiHead->attributes.colorSpace)) {
         return FALSE;
     }
 
-    pProposedHead->attributes.colorRange = colorRange;
-    pProposedHead->attributes.colorSpace = colorSpace;
-    pProposedHead->attributes.colorBpc = colorBpc;
+    pProposedApiHead->attributes.colorRange = colorRange;
+    pProposedApiHead->attributes.colorSpace = colorSpace;
+    pProposedApiHead->attributes.colorBpc = colorBpc;
 
     return TRUE;
 }
@@ -967,24 +1541,27 @@ static NvBool DowngradeColorSpaceAndBpcOneDisp(
     const NVConnectorEvoRec         *pConnectorEvo)
 {
     NvBool ret = FALSE;
-    NvU32 head;
+    NvU32 apiHead;
 
     /*
      * In DP-MST case, many heads can share same connector and dp-bandwidth
      * therefore its necessary to validate and downgrade dp-pixel-depth across
      * all head which are sharing same connector before retry.
      */
-    for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
-        NVProposedModeSetHwStateOneHead *pProposedHead =
-            &pProposedDisp->head[head];
+    for (apiHead = 0; apiHead < pDispEvo->pDevEvo->numApiHeads; apiHead++) {
+        NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
+        const NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
 
-        if (!pProposedHead->changed ||
-                SkipDisplayPortBandwidthCheck(pProposedHead)) {
+        if (!pProposedApiHead->changed ||
+                SkipDisplayPortBandwidthCheck(pProposedApiHead)) {
             continue;
         }
 
-        if ((pProposedHead->pConnectorEvo == pConnectorEvo) &&
-            DowngradeColorSpaceAndBpcOneHead(pDispEvo, pProposedHead)) {
+        if ((pDpyEvo != NULL) &&
+            (pDpyEvo->pConnectorEvo == pConnectorEvo) &&
+            DowngradeColorSpaceAndBpcOneHead(pDispEvo, pProposedApiHead)) {
             ret = TRUE;
         }
     }
@@ -1005,9 +1582,8 @@ static NvBool ValidateProposedModeSetHwStateOneDispDPlib(
     NVDispEvoPtr                     pDispEvo,
     NVProposedModeSetHwStateOneDisp *pProposedDisp)
 {
-    NvU32 head;
     NvBool bResult = TRUE, bTryAgain = FALSE;
-
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
 
 tryAgain:
 
@@ -1016,26 +1592,35 @@ tryAgain:
 
     nvDPBeginValidation(pDispEvo);
 
-    for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
-        NVProposedModeSetHwStateOneHead *pProposedHead =
-            &pProposedDisp->head[head];
-        NVHwModeTimingsEvoPtr pTimings = &pProposedHead->timings;
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
+        const NvU32 primaryHead =
+            nvGetPrimaryHwHeadFromMask(pProposedApiHead->hwHeadsMask);
+        const NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+        const NvBool b2Heads1Or =
+            nvPopCount32(pProposedApiHead->hwHeadsMask) > 1;
 
-        if ((pProposedHead->pConnectorEvo == NULL) ||
-            SkipDisplayPortBandwidthCheck(pProposedHead)) {
+        nvAssert(nvPopCount32(pProposedApiHead->hwHeadsMask) <= 2);
+
+        if ((pDpyEvo == NULL) ||
+            SkipDisplayPortBandwidthCheck(pProposedApiHead)) {
             continue;
         }
 
         bResult = !!nvDPLibValidateTimings(pDispEvo,
-                                           head,
-                                           pProposedHead->activeRmId,
-                                           pProposedHead->dpyIdList,
-                                           pProposedHead->attributes.colorSpace,
-                                           pProposedHead->attributes.colorBpc,
-                                           &pProposedHead->modeValidationParams,
-                                           pTimings);
+                                           primaryHead,
+                                           pProposedApiHead->activeRmId,
+                                           pProposedApiHead->dpyIdList,
+                                           pProposedApiHead->attributes.colorSpace,
+                                           pProposedApiHead->attributes.colorBpc,
+                                           &pProposedApiHead->modeValidationParams,
+                                           &pProposedApiHead->timings,
+                                           b2Heads1Or,
+                                           &pProposedApiHead->dscInfo);
 
-        if (!bResult && pProposedHead->changed) {
+        if (!bResult && pProposedApiHead->changed) {
 
             /*
              * First, try to downgrade the pixel depth for this current head.
@@ -1044,10 +1629,10 @@ tryAgain:
              * changed heads which are sharing same connector and dp-bandwidth.
              */
 
-            if (DowngradeColorSpaceAndBpcOneHead(pDispEvo, pProposedHead) ||
+            if (DowngradeColorSpaceAndBpcOneHead(pDispEvo, pProposedApiHead) ||
                 DowngradeColorSpaceAndBpcOneDisp(pDispEvo,
                                                  pProposedDisp,
-                                                 pProposedHead->pConnectorEvo)) {
+                                                 pDpyEvo->pConnectorEvo)) {
                 bTryAgain = TRUE;
             }
 
@@ -1075,25 +1660,40 @@ tryAgain:
     }
 
     if (bResult) {
-        for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
-            NVProposedModeSetHwStateOneHead *pProposedHead =
-                &pProposedDisp->head[head];
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+                &pProposedDisp->apiHead[apiHead];
+            const NvU32 primaryHead =
+                nvGetPrimaryHwHeadFromMask(pProposedApiHead->hwHeadsMask);
+            const NVDpyEvoRec *pDpyEvo =
+                nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+            NVProposedModeSetHwStateOneHead *pProposedPrimaryHead;
 
-            if ((pProposedHead->pConnectorEvo == NULL) ||
-                    !nvConnectorUsesDPLib(pProposedHead->pConnectorEvo)) {
-                pProposedHead->pDpLibModesetState = NULL;
+            nvAssert((pProposedApiHead->hwHeadsMask != 0x0) ||
+                        (pDpyEvo == NULL));
+
+            if ((pProposedApiHead->hwHeadsMask == 0x0)) {
                 continue;
             }
 
-            pProposedHead->pDpLibModesetState =
+            nvAssert(primaryHead != NV_INVALID_HEAD);
+            pProposedPrimaryHead = &pProposedDisp->head[primaryHead];
+
+            if (!nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo)) {
+                pProposedPrimaryHead->pDpLibModesetState = NULL;
+                continue;
+            }
+
+            pProposedPrimaryHead->pDpLibModesetState =
                 nvDPLibCreateModesetState(pDispEvo,
-                                          head,
-                                          pProposedHead->activeRmId,
-                                          pProposedHead->dpyIdList,
-                                          pProposedHead->attributes.colorSpace,
-                                          pProposedHead->attributes.colorBpc,
-                                          &pProposedHead->timings);
-            if (pProposedHead->pDpLibModesetState == NULL) {
+                                          primaryHead,
+                                          pProposedApiHead->activeRmId,
+                                          pProposedApiHead->dpyIdList,
+                                          pProposedApiHead->attributes.colorSpace,
+                                          pProposedApiHead->attributes.colorBpc,
+                                          &pProposedApiHead->timings,
+                                          &pProposedApiHead->dscInfo);
+            if (pProposedPrimaryHead->pDpLibModesetState == NULL) {
                 return FALSE;
             }
         }
@@ -1154,17 +1754,16 @@ ValidateProposedModeSetHwStateOneDisp(
 {
     const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NVDpyIdList dpyIdList;
-    NvU32 head;
 
     /*
      * Check that the requested configuration of connectors can be
      * driven simultaneously.
      */
     dpyIdList = nvEmptyDpyIdList();
-    for (head = 0; head < pDevEvo->numHeads; head++) {
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
         NVDpyEvoPtr pDpyEvo;
         FOR_ALL_EVO_DPYS(pDpyEvo,
-                         pProposedDisp->head[head].dpyIdList, pDispEvo) {
+                         pProposedDisp->apiHead[apiHead].dpyIdList, pDispEvo) {
             dpyIdList = nvAddDpyIdToDpyIdList(pDpyEvo->pConnectorEvo->displayId,
                                               dpyIdList);
         }
@@ -1179,15 +1778,15 @@ ValidateProposedModeSetHwStateOneDisp(
      * Check that no dpyId is used by multiple heads.
      */
     dpyIdList = nvEmptyDpyIdList();
-    for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
+    for (NvU32 apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
         /*
          * Intersect the proposed dpys for this head with the
          * accumulated list of dpys for this disp; if the intersection
          * is not empty, a dpy is proposed to be used on multiple
-         * heads.
+         * api heads.
          */
         NVDpyIdList proposedDpyIdList =
-            pProposedDisp->head[head].dpyIdList;
+            pProposedDisp->apiHead[apiHead].dpyIdList;
         NVDpyIdList intersectedDpyIdList =
             nvIntersectDpyIdListAndDpyIdList(dpyIdList, proposedDpyIdList);
 
@@ -1202,18 +1801,23 @@ ValidateProposedModeSetHwStateOneDisp(
     /*
      * Check ViewPortIn dimensions and ensure valid h/vTaps can be assigned.
      */
-    for (head = 0; head < pDevEvo->numHeads; head++) {
-        const NvU32 apiHead = nvHardwareHeadToApiHead(pDevEvo, head);
-        /* XXX assume the gpus have equal capabilities */
-        const NVEvoScalerCaps *pScalerCaps =
-            &pDevEvo->gpus[0].capabilities.head[head].scalerCaps;
-        const NVHwModeTimingsEvoPtr pTimings = &pProposedDisp->head[head].timings;
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NvU32 head;
+        NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
 
-        if (!nvValidateHwModeTimingsViewPort(pDevEvo, pScalerCaps, pTimings,
-                                             &dummyInfoString)) {
-            pReplyDisp->head[apiHead].status =
-                NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
-            return FALSE;
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask, head) {
+            /* XXX assume the gpus have equal capabilities */
+            const NVEvoScalerCaps *pScalerCaps =
+                &pDevEvo->gpus[0].capabilities.head[head].scalerCaps;
+            const NVHwModeTimingsEvoPtr pTimings = &pProposedDisp->head[head].timings;
+
+            if (!nvValidateHwModeTimingsViewPort(pDevEvo, pScalerCaps, pTimings,
+                                                 &dummyInfoString)) {
+                pReplyDisp->head[apiHead].status =
+                    NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_MODE;
+                return FALSE;
+            }
         }
     }
 
@@ -1231,21 +1835,20 @@ ValidateProposedModeSetHwStateOneDisp(
      * configuration, gets finalized as part of the DisplayPort bandwidth
      * validation.
      */
-    for (head = 0; head < pDevEvo->numHeads; head++) {
-        NVProposedModeSetHwStateOneHead *pProposedHead =
-            &pProposedDisp->head[head];
-        NVDpyEvoRec *pDpyEvo =
-            nvGetOneArbitraryDpyEvo(pProposedHead->dpyIdList,
-                                    pDispEvo);
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
+        const NVDpyEvoRec *pDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
 
-        if (!pProposedHead->changed || (pDpyEvo == NULL)) {
+        if (!pProposedApiHead->changed || (pDpyEvo == NULL)) {
             continue;
         }
 
         nvChooseDitheringEvo(pDpyEvo->pConnectorEvo,
-                             pProposedHead->attributes.colorBpc,
+                             pProposedApiHead->attributes.colorBpc,
                              &pDpyEvo->requestedDithering,
-                             &pProposedHead->attributes.dithering);
+                             &pProposedApiHead->attributes.dithering);
     }
 
     /*
@@ -1279,29 +1882,31 @@ ValidateProposedFlipHwStateOneSubDev(
     NVProposedModeSetHwStateOneSubDev *pProposedSd,
     struct NvKmsSetModeOneDispReply *pReplyDisp)
 {
-    NvU32 head;
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        NvU32 head;
+        const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
 
-    for (head = 0; head < pDevEvo->numHeads; head++) {
-        const NvU32 apiHead = nvHardwareHeadToApiHead(pDevEvo, head);
-
-        if (!pProposedDisp->head[head].changed ||
-                nvDpyIdListIsEmpty(pProposedDisp->head[head].dpyIdList)) {
+        if (!pProposedApiHead->changed ||
+                nvDpyIdListIsEmpty(pProposedApiHead->dpyIdList)) {
             continue;
         }
 
-        nvOverrideScalingUsageBounds(
-            pDevEvo,
-            head,
-            &pProposedSd->head[head].flip,
-            &pProposedDisp->head[head].timings.viewPort.possibleUsage);
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask, head) {
+            nvOverrideScalingUsageBounds(
+                pDevEvo,
+                head,
+                &pProposedSd->head[head].flip,
+                &pProposedDisp->head[head].timings.viewPort.possibleUsage);
 
-        if (!nvValidateFlipEvoHwState(pDevEvo,
-                                      head,
-                                      &pProposedDisp->head[head].timings,
-                                      &pProposedSd->head[head].flip)) {
-            pReplyDisp->head[apiHead].status =
-                NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_FLIP;
-            return FALSE;
+            if (!nvValidateFlipEvoHwState(pDevEvo,
+                                          head,
+                                          &pProposedDisp->head[head].timings,
+                                          &pProposedSd->head[head].flip)) {
+                pReplyDisp->head[apiHead].status =
+                    NVKMS_SET_MODE_ONE_HEAD_STATUS_INVALID_FLIP;
+                return FALSE;
+            }
         }
     }
 
@@ -1387,93 +1992,52 @@ done:
  * already been assigned and need to be excluded from consideration for
  * the new SOR assignment request.
  */
-static void AssignSor(NVModeSetWorkArea *pWorkArea,
-                      NVConnectorEvoPtr pConnectorEvo)
+static void AssignSor(const NVDispEvoRec *pDispEvo,
+                      const NVProposedModeSetStateOneApiHead *pProposedApiHead,
+                      NVModeSetWorkArea *pWorkArea)
 {
-    const NvU32 sd = pConnectorEvo->pDispEvo->displayOwner;
+    const NvU32 sd = pDispEvo->displayOwner;
+    const NVDpyEvoRec *pDpyEvo =
+        nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+    const NVConnectorEvoRec *pConnectorEvo = pDpyEvo->pConnectorEvo;
+
+    const NvBool b2Heads1Or =
+        (nvPopCount32(pProposedApiHead->hwHeadsMask) > 1);
+    /*
+     * In 2Heads1OR DP-MST case, NV0073_CTRL_CMD_DFP_ASSIGN_SOR needs
+     * to be called with the dynamic displayId.
+     */
+    const NvU32 displayId = (nvDpyEvoIsDPMST(pDpyEvo) && b2Heads1Or) ?
+        pProposedApiHead->activeRmId : nvDpyIdToNvU32(pConnectorEvo->displayId);
+    /*
+     * There are two usecases:
+     *  1. Two 2Heads1OR DP-MST streams over a same connector.
+     *  2. One legacy and one 2Heads1OR DP-MST stream over a same connector.
+     * For both of these usecases, NV0073_CTRL_CMD_DFP_ASSIGN_SOR will get
+     * called over the same connector multiple times,
+     *
+     * Two DP-MST streams over a same connector shares a same primary SOR index.
+     *
+     * Remove the already assigned assigned primary SOR index from
+     * sorExcludeMask, so that NV0073_CTRL_CMD_DFP_ASSIGN_SOR
+     * re-use it.
+     */
+    const NvU32 sorExcludeMask =
+        (pConnectorEvo->or.primary != NV_INVALID_OR) ?
+        (pWorkArea->sd[sd].assignedSorMask & ~NVBIT(pConnectorEvo->or.primary)) :
+        (pWorkArea->sd[sd].assignedSorMask);
 
     if (pConnectorEvo->or.type != NV0073_CTRL_SPECIFIC_OR_TYPE_SOR) {
         // Nothing to do!
         return;
     }
 
-    /* If an OR has already been assigned for this connector, we are done. */
-    if (nvDpyIdIsInDpyIdList(
-            pConnectorEvo->displayId,
-            pWorkArea->sd[sd].sorAssignedConnectorsList)) {
-        nvAssert(pConnectorEvo->or.mask != 0x0);
-        return;
-    }
-
-    /*
-     * We keep a record all the SORs assigned for this modeset, so that
-     * it can be used as the sorExcludeMask argument to
-     * nvAssignSOREvo().
-     */
-    if (nvAssignSOREvo(
-            pConnectorEvo,
-            pWorkArea->sd[sd].assignedSorMask /* sorExcludeMask */)) {
-        nvAssert(pConnectorEvo->or.mask != 0x0);
-
-        pWorkArea->sd[sd].sorAssignedConnectorsList =
-            nvAddDpyIdToDpyIdList(
-                pConnectorEvo->displayId,
-                pWorkArea->sd[sd].sorAssignedConnectorsList);
-        pWorkArea->sd[sd].assignedSorMask |= pConnectorEvo->or.mask;
+    if (nvAssignSOREvo(pDispEvo, displayId, b2Heads1Or, sorExcludeMask)) {
+        nvAssert(pConnectorEvo->or.primary != NV_INVALID_OR);
+        pWorkArea->sd[sd].assignedSorMask |= nvConnectorGetORMaskEvo(pConnectorEvo);
     } else {
         nvAssert(!"Failed to assign SOR, this failure might cause hang!");
     }
-}
-
-static void AssignProposedUsageOneHead(
-    NVDevEvoPtr pDevEvo,
-    const NVProposedModeSetHwState *pProposed,
-    NvU32 head)
-{
-    const NVProposedModeSetHwStateOneHead *pProposedHead =
-        &pProposed->disp[0].head[head];
-    const NVProposedModeSetHwStateOneSubDev *pProposedSd =
-        &pProposed->sd[0];
-
-    if (!pDevEvo->isSOCDisplay || (pProposedHead->pConnectorEvo == NULL)) {
-        return;
-    }
-
-    pDevEvo->gpus[0].headState[head].preallocatedUsage =
-        pProposedSd->head[head].flip.usage;
-}
-
-static NvBool IsProposedModeSetHwStateOneDispIncompatibleWithDpy
-(
-    NVDispEvoPtr pDispEvo,
-    const NVProposedModeSetHwStateOneDisp *pProposedDisp,
-    const NVConnectorEvoRec *pConnectorEvo
-)
-{
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NvU32 head;
-
-    for (head = 0; head < pDevEvo->numHeads; head++) {
-
-        const NVProposedModeSetHwStateOneHead *pProposedHead =
-            &pProposedDisp->head[head];
-
-        if (!pProposedHead->changed) {
-            continue;
-        }
-
-        /*
-         * DDC partners incompatible with each other, only one should be active
-         * at a time.
-         */
-        if ((pProposedHead->pConnectorEvo != NULL) &&
-            nvDpyIdIsInDpyIdList(pProposedHead->pConnectorEvo->displayId,
-                                 pConnectorEvo->ddcPartnerDpyIdsList)) {
-            return TRUE;
-        }
-    }
-
-    return FALSE;
 }
 
 static void
@@ -1481,6 +2045,13 @@ KickoffModesetUpdateState(
     NVDispEvoPtr pDispEvo,
     NVEvoModesetUpdateState *modesetUpdateState)
 {
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+
+    for (NvU32 head = 0; head < pDevEvo->numHeads; head++) {
+        nvEvoPreModesetRegisterFlipOccurredEvent(pDispEvo, head,
+            modesetUpdateState);
+    }
+
     if (!nvDpyIdListIsEmpty(modesetUpdateState->connectorIds)) {
         NVConnectorEvoRec *pConnectorEvo;
 
@@ -1512,15 +2083,20 @@ KickoffModesetUpdateState(
             }
 
             if (pConnectorEvo->pDpLibConnector != NULL) {
-                nvDPPostSetMode(pConnectorEvo->pDpLibConnector);
+                nvDPPostSetMode(pConnectorEvo->pDpLibConnector,
+                                modesetUpdateState);
             }  else if (nvConnectorIsDPSerializer(pConnectorEvo)) {
                 nvDPSerializerPostSetMode(pDispEvo, pConnectorEvo);
             }
         }
     }
 
-    *modesetUpdateState =
-        (NVEvoModesetUpdateState) {  };
+    for (NvU32 head = 0; head < pDevEvo->numHeads; head++) {
+        nvEvoPostModesetUnregisterFlipOccurredEvent(pDispEvo, head,
+            modesetUpdateState);
+    }
+
+    nvkms_memset(modesetUpdateState, 0, sizeof(*modesetUpdateState));
 }
 
 /*!
@@ -1528,28 +2104,69 @@ KickoffModesetUpdateState(
  * activated display devices.
  */
 static NvBool
-IsProposedModeSetHwStateOneHeadIncompatible(
+IsProposedModeSetStateOneApiHeadIncompatible(
     NVDispEvoPtr pDispEvo,
-    NvU32 head,
+    NvU32 apiHead,
     const
     NVProposedModeSetHwStateOneDisp *pProposedDisp)
 {
-    const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
-    NvBool isIncompatible;
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+        &pProposedDisp->apiHead[apiHead];
+    const NVDispApiHeadStateEvoRec *pApiHeadState =
+        &pDispEvo->apiHeadState[apiHead];
+    const NVDpyEvoRec *pDpyEvo =
+        nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
+
+    nvAssert(pDpyEvo != NULL);
 
     /*
      * DisplayPort devices require an EVO update when detaching the head
      * from the SOR, because DPlib performs link-training to powerdown
      * the link.  So, always consider DisplayPort as incompatible.
+     *
+     * Consider this api-head incompatible if there is change in the api-head
+     * to hardware-head(s) mapping.
      */
 
-    isIncompatible =
-            nvConnectorUsesDPLib(pHeadState->pConnectorEvo) ||
-            IsProposedModeSetHwStateOneDispIncompatibleWithDpy(pDispEvo,
-                                                               pProposedDisp,
-                                                               pHeadState->pConnectorEvo);
+    if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo) ||
+            ((pProposedApiHead->hwHeadsMask != 0x0) &&
+             (pProposedApiHead->hwHeadsMask != pApiHeadState->hwHeadsMask))) {
+        return TRUE;
+    }
 
-    return isIncompatible;
+    for (NvU32 tmpApiHead = 0; tmpApiHead < pDevEvo->numApiHeads; tmpApiHead++) {
+        const NVProposedModeSetStateOneApiHead *pTmpProposedApiHead =
+            &pProposedDisp->apiHead[tmpApiHead];
+        const NVDpyEvoRec *pDpyEvoTmp =
+            nvGetOneArbitraryDpyEvo(pTmpProposedApiHead->dpyIdList, pDispEvo);
+
+        if (!pTmpProposedApiHead->changed) {
+            continue;
+        }
+
+        /*
+         * DDC partners incompatible with each other, only one should be active
+         * at a time.
+         */
+        if ((pDpyEvoTmp != NULL) &&
+            nvDpyIdIsInDpyIdList(pDpyEvoTmp->pConnectorEvo->displayId,
+                                 pDpyEvo->pConnectorEvo->ddcPartnerDpyIdsList)) {
+            return TRUE;
+        }
+
+        /*
+         * Consider this api-head incompatible if its current hardware heads
+         * are proposed to map onto the different api-head.
+         */
+        if ((tmpApiHead != apiHead) &&
+                ((pTmpProposedApiHead->hwHeadsMask &
+                    pApiHeadState->hwHeadsMask) != 0x0)) {
+            return TRUE;
+        }
+    }
+
+    return FALSE;
 }
 
 static void DisableActiveCoreRGSyncObjects(NVDispEvoRec *pDispEvo,
@@ -1577,15 +2194,6 @@ static void DisableActiveCoreRGSyncObjects(NVDispEvoRec *pDispEvo,
     }
 }
 
-/*!
- * Send methods to shut down a head
- *
- * \param[in,out]  pDispEvo       The disp of the head.
- * \param[in]      head           The head to consider.
- * \param[in]      pProposedDisp  The requested configuration of the display
- * \param[in/out]  modesetUpdateState Structure tracking channels which need to
- *                                    be updated/kicked off
- */
 static void
 ApplyProposedModeSetHwStateOneHeadShutDown(
     NVDispEvoPtr pDispEvo,
@@ -1596,81 +2204,22 @@ ApplyProposedModeSetHwStateOneHeadShutDown(
     NVModeSetWorkArea *pWorkArea)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NVDispHeadStateEvoPtr pHeadState;
-    NVDpyEvoPtr pDpyEvo;
     const NvU32 sd = pDispEvo->displayOwner;
-    NvU32 apiHead = nvHardwareHeadToApiHead(pDevEvo, head);
-    NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
-
-    /*
-     * If nothing changed about this head's configuration, then we
-     * should not shut it down.
-     */
-    if (!pProposedDisp->head[head].changed) {
-        return;
-    }
-
-    /*
-     * Otherwise, go through the shutdown process for any head that
-     * changed.  If NVProposedModeSetHwStateOneHead::dpyIdList is
-     * empty, then we'll leave it shut down.  If it is non-empty, then
-     * ApplyProposedModeSetHwStateOneHead{Pre,Post}Update() will
-     * update the head with its new configuration.
-     */
-
-    if (!nvHeadIsActive(pDispEvo, head)) {
-        return;
-    }
-
-    pHeadState = &pDispEvo->headState[head];
-    pDpyEvo = nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
-
-    nvCancelSDRTransitionTimer(pApiHeadState);
-
-    /*
-     * Identify and disable any active core RG sync objects.
-     *
-     * Note: the disable occurs at the hardware level; this intentionally does
-     * not clear the software state tracking the existence of these sync
-     * objects, which will be re-enabled at the hardware level in
-     * ApplyProposedModeSetHwStateOneHeadPreUpdate(), if the given head will be
-     * active after the modeset.
-     */
-    DisableActiveCoreRGSyncObjects(pDispEvo, apiHead,
-                                   &pWorkArea->modesetUpdateState.updateState);
-
-    if (pApiHeadState->rmVBlankCallbackHandle != 0) {
-        nvRmRemoveVBlankCallback(pDispEvo,
-                                 pApiHeadState->rmVBlankCallbackHandle);
-        pApiHeadState->rmVBlankCallbackHandle = 0;
-    }
-
-    nvDisable3DVisionAegis(pDpyEvo);
+    NVDispHeadStateEvoPtr pHeadState = &pDispEvo->headState[head];
 
     nvHdmiDpEnableDisableAudio(pDispEvo, head, FALSE /* enable */);
 
-    /* Cancel any pending LUT updates. */
-    nvCancelLutUpdateEvo(pDispEvo, apiHead);
+    nvEvoDetachConnector(pHeadState->pConnectorEvo, head,
+                         &pWorkArea->modesetUpdateState);
 
-    nvEvoDetachConnector(pHeadState->pConnectorEvo, head, &pWorkArea->modesetUpdateState);
+    nvEvoDisableHwYUV420Packer(pDispEvo, head,
+        &pWorkArea->modesetUpdateState.updateState);
 
-    /* Clear software shadow state. */
-
-    pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList =
-        nvAddDpyIdListToDpyIdList(
-            pApiHeadState->activeDpys,
-            pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList);
-    pApiHeadState->activeDpys = nvEmptyDpyIdList();
-    nvkms_memset(&pApiHeadState->timings, 0, sizeof(pApiHeadState->timings));
-    nvkms_memset(&pApiHeadState->stereo, 0, sizeof(pApiHeadState->stereo));
     pHeadState->pConnectorEvo = NULL;
 
     pHeadState->bypassComposition = FALSE;
+    pHeadState->tilePosition = 0;
     nvkms_memset(&pHeadState->timings, 0, sizeof(pHeadState->timings));
-
-    /* Track old activeRmId and free it after end modeset */
-    pWorkArea->sd[pDispEvo->displayOwner].head[head].oldActiveRmId =
-        pHeadState->activeRmId;
     pHeadState->activeRmId = 0;
 
     pHeadState->allowFlipLockGroup = 0;
@@ -1686,54 +2235,170 @@ ApplyProposedModeSetHwStateOneHeadShutDown(
     pDevEvo->gpus[sd].headState[head].cursor.cursorCompParams =
         nvDefaultCursorCompositionParams(pDevEvo);
 
+    for (NvU32 layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+        nvEvoSetFlipOccurredEvent(pDispEvo,
+                                  head,
+                                  layer,
+                                  NULL,
+                                  &pWorkArea->modesetUpdateState);
+    }
+}
+
+/*!
+ * Send methods to shut down a api-head
+ *
+ * \param[in,out]  pDispEvo       The disp of the head.
+ * \param[in]      apiHead        The api head to consider.
+ * \param[in]      pProposedDisp  The requested configuration of the display
+ * \param[in/out]  modesetUpdateState Structure tracking channels which need to
+ *                                    be updated/kicked off
+ */
+static void
+ApplyProposedModeSetStateOneApiHeadShutDown(
+    NVDispEvoPtr pDispEvo,
+    NvU32 apiHead,
+    const
+    NVProposedModeSetHwStateOneDisp
+    *pProposedDisp,
+    NVModeSetWorkArea *pWorkArea)
+{
+    NVDpyEvoPtr pDpyEvo;
+    NVDispApiHeadStateEvoRec *pApiHeadState =
+        &pDispEvo->apiHeadState[apiHead];
+    NvU32 head;
+
+    /*
+     * If nothing changed about this head's configuration, then we
+     * should not shut it down.
+     */
+    if (!pProposedDisp->apiHead[apiHead].changed) {
+        return;
+    }
+
+    /*
+     * Otherwise, go through the shutdown process for any head that
+     * changed.  If NVProposedModeSetStateOneApiHead::dpyIdList is
+     * empty, then we'll leave it shut down.  If it is non-empty, then
+     * ApplyProposedModeSetHwStateOneHead{Pre,Post}Update() will
+     * update the head with its new configuration.
+     */
+
+    if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+        return;
+    }
+
+    nvAssert(pWorkArea->sd[pDispEvo->displayOwner].
+                        apiHead[apiHead].oldActiveRmId == 0);
+
+    if (nvPopCount32(pApiHeadState->hwHeadsMask) > 1) {
+        nvEvoDisableMergeMode(pDispEvo, pApiHeadState->hwHeadsMask,
+                              &pWorkArea->modesetUpdateState.updateState);
+    }
+
+    FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+        const NVDispHeadStateEvoRec *pHeadState =
+            &pDispEvo->headState[head];
+
+        /* Track old activeRmId and free it after end modeset */
+        if (pWorkArea->sd[pDispEvo->displayOwner].apiHead[apiHead].oldActiveRmId == 0) {
+            pWorkArea->sd[pDispEvo->displayOwner].
+                apiHead[apiHead].oldActiveRmId = pHeadState->activeRmId;
+        } else {
+            nvAssert(pWorkArea->sd[pDispEvo->displayOwner].
+                        apiHead[apiHead].oldActiveRmId == pHeadState->activeRmId);
+        }
+
+        ApplyProposedModeSetHwStateOneHeadShutDown(pDispEvo, head,
+                                                   pProposedDisp, pWorkArea);
+    }
+
+    pDpyEvo = nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
+
+    nvCancelSDRTransitionTimer(pApiHeadState);
+
+    /*
+     * Identify and disable any active core RG sync objects.
+     *
+     * Note: the disable occurs at the hardware level; this intentionally does
+     * not clear the software state tracking the existence of these sync
+     * objects, which will be re-enabled at the hardware level in
+     * ApplyProposedModeSetStateOneApiHeadPreUpdate(), if the given head will be
+     * active after the modeset.
+     */
+    DisableActiveCoreRGSyncObjects(pDispEvo, apiHead,
+                                   &pWorkArea->modesetUpdateState.updateState);
+
+    if (pApiHeadState->rmVBlankCallbackHandle != 0) {
+        nvRmRemoveVBlankCallback(pDispEvo,
+                                 pApiHeadState->rmVBlankCallbackHandle);
+        pApiHeadState->rmVBlankCallbackHandle = 0;
+    }
+
+    nvDisable3DVisionAegis(pDpyEvo);
+
+    /* Cancel any pending LUT updates. */
+    nvCancelLutUpdateEvo(pDispEvo, apiHead);
+
+    /* Clear software shadow state. */
+    pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList =
+        nvAddDpyIdListToDpyIdList(
+            pApiHeadState->activeDpys,
+            pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList);
+    pApiHeadState->activeDpys = nvEmptyDpyIdList();
+    nvkms_memset(&pApiHeadState->timings, 0, sizeof(pApiHeadState->timings));
+    nvkms_memset(&pApiHeadState->stereo, 0, sizeof(pApiHeadState->stereo));
+
     pDpyEvo->apiHead = NV_INVALID_HEAD;
+    nvAssignHwHeadsMaskApiHeadState(pApiHeadState, 0x0);
 }
 
 static void
-ApplyProposedModeSetHwStateOneDispFlip(
+ApplyProposedModeSetStateOneDispFlip(
     NVDispEvoPtr pDispEvo,
     const NVProposedModeSetHwState *pProposed,
     const NVProposedModeSetHwStateOneDisp *pProposedDisp,
     NVEvoUpdateState *pUpdateState)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-    NvU32 head;
 
-    for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
-        const NVProposedModeSetHwStateOneHead *pProposedHead =
-            &pProposedDisp->head[head];
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+            &pProposedDisp->apiHead[apiHead];
         const NVDpyEvoRec *pDpyEvo =
-            nvGetOneArbitraryDpyEvo(pProposedHead->dpyIdList, pDispEvo);
-        NvU32 apiHead = nvHardwareHeadToApiHead(pDevEvo, head);
+            nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
         const NvU32 sd = pDispEvo->displayOwner;
+        NvU32 head;
 
         /*
-         * If nothing changed about this head's configuration, then there
-         * is nothing to do.
+         * If nothing changed about this api-head's configuration or this
+         * api-head is disabled, then there is nothing to do.
          */
-        if (!pProposedHead->changed) {
-            continue;
-        }
-
-        /* Check for disabled heads. */
-        if (pProposedHead->pConnectorEvo == NULL) {
+        if (!pProposedApiHead->changed ||
+                (pProposedApiHead->hwHeadsMask == 0)) {
             continue;
         }
 
         nvAssert(pDpyEvo != NULL);
 
-        nvSetUsageBoundsEvo(pDevEvo, sd, head,
-                            &pProposed->sd[sd].head[head].flip.usage,
-                            pUpdateState);
+        FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask, head) {
+            nvSetUsageBoundsEvo(pDevEvo, sd, head,
+                                &pProposed->sd[sd].head[head].flip.usage,
+                                pUpdateState);
 
-        nvFlipEvoOneHead(pDevEvo, sd, head,
-                         &pDpyEvo->parsedEdid.info.hdr_static_metadata_info,
-                         &pProposed->sd[sd].head[head].flip,
-                         FALSE /* allowFlipLock */,
-                         pUpdateState);
+            nvFlipEvoOneHead(pDevEvo, sd, head,
+                             &pDpyEvo->parsedEdid.info.hdr_static_metadata_info,
+                             &pProposed->sd[sd].head[head].flip,
+                             FALSE /* allowFlipLock */,
+                             pUpdateState);
+
+            if (pDevEvo->isSOCDisplay) {
+                pDevEvo->gpus[0].headState[head].preallocatedUsage =
+                    pProposed->sd[sd].head[head].flip.usage;
+            }
+        }
 
         pDispEvo->apiHeadState[apiHead].viewPortPointIn =
-            pProposed->sd[sd].head[head].flip.viewPortPointIn;
+            pProposedApiHead->viewPortPointIn;
     }
 }
 
@@ -1762,105 +2427,32 @@ static void ReEnableActiveCoreRGSyncObjects(NVDispEvoRec *pDispEvo,
     }
 }
 
-/*!
- * Update the heads to be modified on this disp.
- *
- * This should update the ASSY state of the head, but not trigger an
- * UPDATE method.
- *
- * \param[in,out]  pDispEvo       The disp of the head.
- * \param[in]      head           The head to consider.
- * \param[in]      pProposedHead  The requested configuration of the head.
- * \param[in,out]  updateState    Indicates which channels require UPDATEs
- * \param[in]      bypassComposition
- *                                On Turing and newer, enable display
- *                                composition pipeline bypass mode.
- */
 static void
 ApplyProposedModeSetHwStateOneHeadPreUpdate(
     NVDispEvoPtr pDispEvo,
-    NvU32 head,
-    const NVProposedModeSetHwState *pProposed,
-    const NVProposedModeSetHwStateOneDisp *pProposedDisp,
-    NVModeSetWorkArea *pWorkArea,
-    NvBool bypassComposition)
+    const NVProposedModeSetStateOneApiHead *pProposedApiHead,
+    const NvU32 head,
+    const NvU32 isPrimaryHead,
+    const NVProposedModeSetHwStateOneHead *pProposedHead,
+    NvBool bypassComposition,
+    NVEvoModesetUpdateState *pModesetUpdateState)
 {
-    const NVProposedModeSetHwStateOneHead *pProposedHead =
-        &pProposedDisp->head[head];
-    NVEvoModesetUpdateState *pModesetUpdateState = &pWorkArea->modesetUpdateState;
+    NVDispHeadStateEvoPtr pHeadState = &pDispEvo->headState[head];
     NVEvoUpdateState *updateState = &pModesetUpdateState->updateState;
-    NVDispHeadStateEvoPtr pHeadState;
-    NVDpyEvoPtr pDpyEvo =
-        nvGetOneArbitraryDpyEvo(pProposedHead->dpyIdList, pDispEvo);
-    NvU32 apiHead = nvHardwareHeadToApiHead(pDispEvo->pDevEvo, head);
-    NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
 
-    /*
-     * If nothing changed about this head's configuration, then there
-     * is nothing to do.
-     */
-    if (!pProposedHead->changed) {
-        return;
-    }
-
-    /* Check for disabled heads. */
-
-    if (pProposedHead->pConnectorEvo == NULL) {
-        /*
-         * ApplyProposedModeSetHwStateOneHeadShutDown() should have
-         * already been called for this head.
-         */
-        nvAssert(!nvHeadIsActive(pDispEvo, head));
-        return;
-    }
-
-    if (pDpyEvo == NULL) {
-        nvAssert(!"Invalid pDpyEvo");
-        return;
-    }
-
-    pDpyEvo->apiHead = apiHead;
-
-    AssignSor(pWorkArea, pProposedHead->pConnectorEvo);
-
-    nvDpyUpdateHdmiPreModesetEvo(pDpyEvo);
-
-    pHeadState = &pDispEvo->headState[head];
-
+    pHeadState->allowFlipLockGroup = pProposedApiHead->allowFlipLockGroup;
+    pHeadState->modeValidationParams = pProposedApiHead->modeValidationParams;
     pHeadState->bypassComposition = bypassComposition;
-
-    pHeadState->activeRmId = pProposedHead->activeRmId;
-
-    /*
-     * Cache the list of active pDpys for this head, as well as the
-     * mode timings.
-     */
-    pApiHeadState->activeDpys = pProposedHead->dpyIdList;
-    pApiHeadState->timings = pProposedHead->timings;
-    pApiHeadState->stereo = pProposedHead->stereo;
-    pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList =
-        nvAddDpyIdListToDpyIdList(
-            pApiHeadState->activeDpys,
-            pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList);
-
-    nvAssert(pDpyEvo->pConnectorEvo == pProposedHead->pConnectorEvo);
+    pHeadState->activeRmId = pProposedApiHead->activeRmId;
     pHeadState->pConnectorEvo = pProposedHead->pConnectorEvo;
-
+    pHeadState->tilePosition = pProposedHead->tilePosition;
     pHeadState->timings = pProposedHead->timings;
+    pHeadState->dscInfo = pProposedApiHead->dscInfo;
+    pHeadState->hdmiFrlConfig = pProposedHead->hdmiFrlConfig;
     pHeadState->pixelDepth =
-        nvEvoColorSpaceBpcToPixelDepth(pProposedHead->attributes.colorSpace,
-                                       pProposedHead->attributes.colorBpc);
-
-
+        nvEvoColorSpaceBpcToPixelDepth(pProposedApiHead->attributes.colorSpace,
+                                       pProposedApiHead->attributes.colorBpc);
     pHeadState->audio = pProposedHead->audio;
-    pApiHeadState->infoFrame = pProposedHead->infoFrame;
-
-    AssignProposedUsageOneHead(pDispEvo->pDevEvo, pProposed, head);
-
-    nvSendHwModeTimingsToAegisEvo(pDispEvo, apiHead);
-
-    /* Set LUT settings */
-    nvEvoSetLut(pDispEvo, apiHead, FALSE /* kickoff */, &pProposedHead->lut);
 
     /* Update current LUT to hardware */
     nvEvoSetLUTContextDma(pDispEvo, head, updateState);
@@ -1869,7 +2461,7 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
 
     nvSetDitheringEvo(pDispEvo,
                       head,
-                      &pProposedHead->attributes.dithering,
+                      &pProposedApiHead->attributes.dithering,
                       updateState);
 
     nvEvoHeadSetControlOR(pDispEvo, head, updateState);
@@ -1877,12 +2469,13 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
     /* Update hardware's current colorSpace and colorRange */
     nvUpdateCurrentHardwareColorSpaceAndRangeEvo(pDispEvo,
                                                  head,
-                                                 pProposedHead->attributes.colorSpace,
-                                                 pProposedHead->attributes.colorRange,
+                                                 pProposedApiHead->attributes.colorSpace,
+                                                 pProposedApiHead->attributes.colorRange,
                                                  updateState);
 
     nvEvoAttachConnector(pProposedHead->pConnectorEvo,
                          head,
+                         isPrimaryHead,
                          pProposedHead->pDpLibModesetState,
                          pModesetUpdateState);
 
@@ -1891,16 +2484,142 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
     nvSetImageSharpeningEvo(
         pDispEvo,
         head,
-        pProposedHead->attributes.imageSharpening.value,
+        pProposedApiHead->attributes.imageSharpening.value,
         updateState);
 
 
     nvSetDVCEvo(pDispEvo, head,
-                pProposedHead->attributes.dvc,
+                pProposedApiHead->attributes.dvc,
                 updateState);
 
 
     nvHdmiFrlSetConfig(pDispEvo, head);
+
+    if (isPrimaryHead) {
+        pHeadState->mergeModeVrrSecondaryHeadMask =
+            pProposedApiHead->hwHeadsMask & ~NVBIT(head);
+    } else {
+        pHeadState->mergeModeVrrSecondaryHeadMask = 0x0;
+    }
+}
+
+/*!
+ * Update the api heads to be modified on this disp.
+ *
+ * This should update the ASSY state of the head, but not trigger an
+ * UPDATE method.
+ *
+ * \param[in,out]  pDispEvo       The disp of the head.
+ * \param[in]      apiHead        The api head to consider.
+ * \param[in]      pProposedHead  The requested configuration of the head.
+ * \param[in,out]  updateState    Indicates which channels require UPDATEs
+ * \param[in]      bypassComposition
+ *                                On Turing and newer, enable display
+ *                                composition pipeline bypass mode.
+ */
+static void
+ApplyProposedModeSetStateOneApiHeadPreUpdate(
+    NVDispEvoPtr pDispEvo,
+    const NvU32 apiHead,
+    const NVProposedModeSetHwStateOneDisp *pProposedDisp,
+    NVModeSetWorkArea *pWorkArea,
+    NvBool bypassComposition)
+{
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+    NVEvoModesetUpdateState *pModesetUpdateState = &pWorkArea->modesetUpdateState;
+    NVEvoUpdateState *updateState = &pModesetUpdateState->updateState;
+    NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
+    const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+        &pProposedDisp->apiHead[apiHead];
+    const NvU32 proposedPrimaryHead =
+        nvGetPrimaryHwHeadFromMask(pProposedApiHead->hwHeadsMask);
+    NVDpyEvoPtr pDpyEvo =
+        nvGetOneArbitraryDpyEvo(pProposedApiHead->dpyIdList, pDispEvo);
+    NvU32 head;
+
+    /*
+     * If nothing changed about this head's configuration, then there
+     * is nothing to do.
+     */
+    if (!pProposedApiHead->changed) {
+        return;
+    }
+
+    /* Check for disabled heads. */
+
+    if (nvDpyIdListIsEmpty(pProposedApiHead->dpyIdList)) {
+        /*
+         * ApplyProposedModeSetStateOneApiHeadShutDown() should have
+         * already been called for this head.
+         */
+        nvAssert(!nvApiHeadIsActive(pDispEvo, apiHead));
+        return;
+    }
+
+    if (pDpyEvo == NULL) {
+        nvAssert(!"Invalid pDpyEvo");
+        return;
+    }
+
+    /*
+     * pDevEvo->apiHead[apiHead].numLayers is the number of layers which are
+     * visible to nvkms clients, and that number should be less than or equal
+     * to pDevEvo->head[proposedPrimaryHead].numLayers.
+     *
+     * If (pDevEvo->head[proposedPrimaryHead].numLayers >
+     * pDevEvo->apiHead[apiHead].numLayers) then the extra per hardware-head
+     * layers remain unused and there is no need to register the completion
+     * notifier callback for those extra per hardware-head layers.
+     */
+
+    nvAssert(pDevEvo->head[proposedPrimaryHead].numLayers >=
+                 pDevEvo->apiHead[apiHead].numLayers);
+
+    for (NvU32 layer = 0; layer <
+            pDevEvo->apiHead[apiHead].numLayers; layer++) {
+        nvEvoSetFlipOccurredEvent(pDispEvo,
+                                  proposedPrimaryHead,
+                                  layer,
+                                  pApiHeadState->flipOccurredEvent[layer].
+                                    ref_ptr,
+                                  &pWorkArea->modesetUpdateState);
+    }
+    pApiHeadState->hwHeadsMask = pProposedApiHead->hwHeadsMask;
+    pDpyEvo->apiHead = apiHead;
+
+    AssignSor(pDispEvo, pProposedApiHead, pWorkArea);
+
+    nvDpyUpdateHdmiPreModesetEvo(pDpyEvo);
+
+    /*
+     * Cache the list of active pDpys for this head, as well as the
+     * mode timings.
+     */
+    pApiHeadState->activeDpys = pProposedApiHead->dpyIdList;
+    pApiHeadState->timings = pProposedApiHead->timings;
+    pApiHeadState->stereo = pProposedApiHead->stereo;
+    pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList =
+        nvAddDpyIdListToDpyIdList(
+            pApiHeadState->activeDpys,
+            pWorkArea->sd[pDispEvo->displayOwner].changedDpyIdList);
+
+    pApiHeadState->infoFrame = pProposedApiHead->infoFrame;
+
+    nvSendHwModeTimingsToAegisEvo(pDispEvo, apiHead);
+
+    /* Set LUT settings */
+    nvEvoSetLut(pDispEvo, apiHead, FALSE /* kickoff */, &pProposedApiHead->lut);
+
+    FOR_EACH_EVO_HW_HEAD_IN_MASK(pProposedApiHead->hwHeadsMask, head) {
+        const NvBool isPrimaryHead = (head == proposedPrimaryHead);
+
+        nvAssert(pDpyEvo->pConnectorEvo ==
+                    pProposedDisp->head[head].pConnectorEvo);
+
+        ApplyProposedModeSetHwStateOneHeadPreUpdate(pDispEvo, pProposedApiHead,
+            head, isPrimaryHead, &pProposedDisp->head[head],
+            bypassComposition, pModesetUpdateState);
+    }
 
     /*
      * Re-enable any active sync objects, configuring them in accordance with
@@ -1911,12 +2630,19 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
     nvAssert(pApiHeadState->rmVBlankCallbackHandle == 0);
     if (!nvListIsEmpty(&pApiHeadState->vblankCallbackList)) {
         pApiHeadState->rmVBlankCallbackHandle =
-            nvRmAddVBlankCallback(pDispEvo, head, VBlankCallback,
-                                  (void *)(NvUPtr)apiHead);
+            nvRmAddVBlankCallback(pDispEvo, proposedPrimaryHead,
+                VBlankCallback, (void *)(NvUPtr)apiHead);
     }
 
-    pApiHeadState->attributes = pProposedHead->attributes;
-    pApiHeadState->tf = pProposedHead->tf;
+    pApiHeadState->attributes = pProposedApiHead->attributes;
+    pApiHeadState->tf = pProposedApiHead->tf;
+    pApiHeadState->hs10bpcHint = pProposedApiHead->hs10bpcHint;
+
+    if (nvPopCount32(pProposedApiHead->hwHeadsMask) > 1) {
+        nvEvoEnableMergeModePreModeset(pDispEvo,
+                                       pProposedApiHead->hwHeadsMask,
+                                       &pModesetUpdateState->updateState);
+    }
 }
 
 
@@ -1926,81 +2652,81 @@ ApplyProposedModeSetHwStateOneHeadPreUpdate(
  * PreUpdate() will have already been called on this head, and an
  * UPDATE method sent.
  *
- * \param[in,out]  pDispEvo       The disp of the head.
- * \param[in]      head           The head to consider.
- * \param[in]      pProposedHead  The requested configuration of the head.
+ * \param[in,out]  pDispEvo          The disp of the head.
+ * \param[in]      apihead           The api head to consider.
+ * \param[in]      pProposedApiHead  The requested configuration of the api head.
  */
 static void
-ApplyProposedModeSetHwStateOneHeadPostUpdate(NVDispEvoPtr pDispEvo,
-                                             NvU32 head,
-                                             const
-                                             NVProposedModeSetHwStateOneHead
-                                             *pProposedHead)
+ApplyProposedModeSetStateOneApiHeadPostModesetUpdate(
+    NVDispEvoPtr pDispEvo,
+    NvU32 apiHead,
+    const NVProposedModeSetStateOneApiHead *pProposedApiHead,
+    NVEvoUpdateState *pUpdateState)
 {
-    NVDispHeadStateEvoRec *pHeadState;
+    NvU32 head;
     NVDpyEvoRec *pDpyEvo;
-    NvU32 apiHead = nvHardwareHeadToApiHead(pDispEvo->pDevEvo, head);
     NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[apiHead];
 
     /*
      * If nothing changed about this head's configuration, then there
      * is nothing to do.
      */
-    if (!pProposedHead->changed) {
+    if (!pProposedApiHead->changed) {
         return;
     }
 
-    if (!nvHeadIsActive(pDispEvo, head)) {
+    if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
         return;
     }
 
-    /*
-     * Cache configuration state in the headState, so that
-     * AssignProposedModeSetHwState() can preserve the configuration
-     * if this head is left alone in the next NvKmsSetModeRequest.
-     */
-    pHeadState = &pDispEvo->headState[head];
+    if (nvPopCount32(pProposedApiHead->hwHeadsMask) > 1) {
+        nvEvoEnableMergeModePostModeset(pDispEvo,
+                                        pProposedApiHead->hwHeadsMask,
+                                        pUpdateState);
+    }
 
     pDpyEvo = nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
     nvAssert(pDpyEvo != NULL);
-
-    pHeadState->allowFlipLockGroup = pProposedHead->allowFlipLockGroup;
-    pHeadState->modeValidationParams = pProposedHead->modeValidationParams;
-    pApiHeadState->hs10bpcHint = pProposedHead->hs10bpcHint;
 
     nvUpdateInfoFrames(pDpyEvo);
 
     /* Perform 3D vision authentication */
     nv3DVisionAuthenticationEvo(pDispEvo, apiHead);
 
-    nvHdmiDpEnableDisableAudio(pDispEvo, head, TRUE /* enable */);
+    FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+        nvHdmiDpEnableDisableAudio(pDispEvo, head, TRUE /* enable */);
+    }
 }
 
 /*
- * Shut down all heads that are incompatible with pProposedDisp. This
+ * Shut down all api-heads that are incompatible with pProposedDisp. This
  * requires doing an update immediately.
  */
 static void
-KickoffProposedModeSetHwStateIncompatibleHeadsShutDown(
+KickoffProposedModeSetStateIncompatibleApiHeadsShutDown(
     NVDispEvoPtr pDispEvo,
     const NVProposedModeSetHwStateOneDisp *pProposedDisp,
     NVModeSetWorkArea *pWorkArea)
 {
-    NvU32 head;
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     NvBool foundIncompatibleHead = FALSE;
     NvU32 clearHdmiFrlActiveRmId[NVKMS_MAX_HEADS_PER_DISP] = { };
     NVDpyIdList proposedActiveConnectorsList = nvEmptyDpyIdList();
     NVDpyIdList currActiveConnectorsList = nvEmptyDpyIdList();
     NVDpyIdList proposedInactiveConnectorList, unionOfActiveConnectorList;
 
-    for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
-        NVDpyId activeConnectorId =
-            (pDispEvo->headState[head].pConnectorEvo != NULL) ?
-                pDispEvo->headState[head].pConnectorEvo->displayId :
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        const NVDpyEvoRec *pActiveDpyEvo =
+            nvGetOneArbitraryDpyEvo(pDispEvo->apiHeadState[apiHead].activeDpys,
+                pDispEvo);
+        const NVDpyEvoRec *pProposedDpyEvo =
+            nvGetOneArbitraryDpyEvo(pProposedDisp->apiHead[apiHead].dpyIdList,
+                pDispEvo);
+        NVDpyId activeConnectorId = (pActiveDpyEvo != NULL) ?
+                pActiveDpyEvo->pConnectorEvo->displayId :
                 nvInvalidDpyId();
-        NVDpyId proposedConnectorId =
-            (pProposedDisp->head[head].pConnectorEvo != NULL) ?
-                pProposedDisp->head[head].pConnectorEvo->displayId :
+        NVDpyId proposedConnectorId = (pProposedDpyEvo != NULL) ?
+                pProposedDpyEvo->pConnectorEvo->displayId :
                 nvInvalidDpyId();
 
         currActiveConnectorsList =
@@ -2019,14 +2745,20 @@ KickoffProposedModeSetHwStateIncompatibleHeadsShutDown(
         nvAddDpyIdListToDpyIdList(proposedActiveConnectorsList,
                                   currActiveConnectorsList);
 
-    for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
         NvBool thisHeadIncompatible = FALSE;
-        const NVConnectorEvoRec *pCurrConnectorEvo =
-            pDispEvo->headState[head].pConnectorEvo;
 
-        if (!pProposedDisp->head[head].changed || !nvHeadIsActive(pDispEvo, head)) {
+        if (!pProposedDisp->apiHead[apiHead].changed ||
+                !nvApiHeadIsActive(pDispEvo, apiHead)) {
             continue;
         }
+
+        const NVDpyEvoRec *pCurrDpyEvo =
+            nvGetOneArbitraryDpyEvo(pDispEvo->apiHeadState[apiHead].activeDpys,
+                pDispEvo);
+        const NVConnectorEvoRec *pCurrConnectorEvo =
+            pCurrDpyEvo->pConnectorEvo;
+
 
         /*
          * If the number of current active connectors + proposed active
@@ -2040,6 +2772,10 @@ KickoffProposedModeSetHwStateIncompatibleHeadsShutDown(
          * In this situation, all the connectors which are not going active
          * after modeset, mark them incompatible and shut down them before
          * triggering modeset on all the active connectors.
+         *
+         * [2Heads1OR] XXX This incompatibility check will not work because in
+         * the 2Heads1OR configuration two heads gets attached to a single
+         * connector.
          */
         if (nvCountDpyIdsInDpyIdList(unionOfActiveConnectorList) >
             pDispEvo->pDevEvo->numHeads &&
@@ -2049,25 +2785,36 @@ KickoffProposedModeSetHwStateIncompatibleHeadsShutDown(
         }
 
         /* if the *new* timings are FRL, then we need to shut down the head. */
-        if (pProposedDisp->head[head].timings.hdmiFrlConfig.frlRate !=
-            HDMI_FRL_DATA_RATE_NONE) {
+        if (pProposedDisp->apiHead[apiHead].timings.protocol ==
+                NVKMS_PROTOCOL_SOR_HDMI_FRL) {
             thisHeadIncompatible = TRUE;
         }
 
         /* if the *old* timings are FRL, then we need to shut down the head and
          * clear the FRL config. */
-        if (pDispEvo->headState[head].timings.hdmiFrlConfig.frlRate !=
-            HDMI_FRL_DATA_RATE_NONE) {
+        if (pDispEvo->apiHeadState[apiHead].timings.protocol ==
+                NVKMS_PROTOCOL_SOR_HDMI_FRL) {
+            NvU32 head;
             thisHeadIncompatible = TRUE;
             /* cache the activeRmId since it will be cleared below, but
              * we don't want to actually call into the HDMI library until
              * afterwards. */
-            clearHdmiFrlActiveRmId[head] = pDispEvo->headState[head].activeRmId;
+            FOR_EACH_EVO_HW_HEAD_IN_MASK(
+                pDispEvo->apiHeadState[apiHead].hwHeadsMask,
+                head) {
+                if (clearHdmiFrlActiveRmId[apiHead] == 0) {
+                    clearHdmiFrlActiveRmId[apiHead] =
+                        pDispEvo->headState[head].activeRmId;
+                } else {
+                    nvAssert(clearHdmiFrlActiveRmId[apiHead] ==
+                                pDispEvo->headState[head].activeRmId);
+                }
+            }
         }
 
-        if (IsProposedModeSetHwStateOneHeadIncompatible(pDispEvo,
-                                                        head,
-                                                        pProposedDisp)) {
+        if (IsProposedModeSetStateOneApiHeadIncompatible(pDispEvo,
+                                                         apiHead,
+                                                         pProposedDisp)) {
             thisHeadIncompatible = TRUE;
         }
 
@@ -2075,9 +2822,9 @@ KickoffProposedModeSetHwStateIncompatibleHeadsShutDown(
             continue;
         }
 
-        ApplyProposedModeSetHwStateOneHeadShutDown(
+        ApplyProposedModeSetStateOneApiHeadShutDown(
             pDispEvo,
-            head,
+            apiHead,
             pProposedDisp,
             pWorkArea);
 
@@ -2087,11 +2834,11 @@ KickoffProposedModeSetHwStateIncompatibleHeadsShutDown(
     /* Submit UPDATE method and kick off, to shut down incompatible heads. */
     if (foundIncompatibleHead) {
         KickoffModesetUpdateState(pDispEvo, &pWorkArea->modesetUpdateState);
-        for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
-            if (clearHdmiFrlActiveRmId[head] == 0) {
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numHeads; apiHead++) {
+            if (clearHdmiFrlActiveRmId[apiHead] == 0) {
                 continue;
             }
-            nvHdmiFrlClearConfig(pDispEvo, clearHdmiFrlActiveRmId[head]);
+            nvHdmiFrlClearConfig(pDispEvo, clearHdmiFrlActiveRmId[apiHead]);
         }
     }
 }
@@ -2119,23 +2866,22 @@ KickoffProposedModeSetHwState(
      */
     const NvBool decoupleFlipUpdates =
         pModesetUpdateState->windowMappingChanged;
-    NvU32 head;
 
     /* Send methods to shut down any other unused heads, but don't update yet. */
-    for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
-        ApplyProposedModeSetHwStateOneHeadShutDown(
+    for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+        ApplyProposedModeSetStateOneApiHeadShutDown(
             pDispEvo,
-            head,
+            apiHead,
             pProposedDisp,
             pWorkArea);
     }
 
     /* Apply pre-UPDATE modifications for any enabled heads. */
-    for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
-        ApplyProposedModeSetHwStateOneHeadPreUpdate(
+    for (NvU32 apiHead = 0;
+            apiHead < pDispEvo->pDevEvo->numApiHeads; apiHead++) {
+        ApplyProposedModeSetStateOneApiHeadPreUpdate(
             pDispEvo,
-            head,
-            pProposed,
+            apiHead,
             pProposedDisp,
             pWorkArea,
             bypassComposition);
@@ -2143,7 +2889,7 @@ KickoffProposedModeSetHwState(
 
     if (!decoupleFlipUpdates) {
         /* Merge modeset and flip state updates together */
-        ApplyProposedModeSetHwStateOneDispFlip(
+        ApplyProposedModeSetStateOneDispFlip(
             pDispEvo,
             pProposed,
             pProposedDisp,
@@ -2157,7 +2903,7 @@ KickoffProposedModeSetHwState(
     if (decoupleFlipUpdates) {
         NVEvoUpdateState flipUpdateState = { };
 
-        ApplyProposedModeSetHwStateOneDispFlip(
+        ApplyProposedModeSetStateOneDispFlip(
             pDispEvo,
             pProposed,
             pProposedDisp,
@@ -2170,16 +2916,22 @@ KickoffProposedModeSetHwState(
 
     nvRemoveUnusedHdmiDpAudioDevice(pDispEvo);
 
-    /* Apply post-UPDATE modifications for any enabled heads. */
-    for (head = 0; head < pDispEvo->pDevEvo->numHeads; head++) {
+    {
+        NVEvoUpdateState updateState = { };
 
-        const NVProposedModeSetHwStateOneHead *pProposedHead =
-            &pProposedDisp->head[head];
+        /* Apply post-MODESET-UPDATE modifications for any enabled api-heads. */
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            ApplyProposedModeSetStateOneApiHeadPostModesetUpdate(
+                pDispEvo,
+                apiHead,
+                &pProposedDisp->apiHead[apiHead],
+                &updateState);
+        }
 
-        ApplyProposedModeSetHwStateOneHeadPostUpdate(
-            pDispEvo,
-            head,
-            pProposedHead);
+        if (!nvIsUpdateStateEmpty(pDevEvo, &updateState)) {
+            pDevEvo->hal->Update(pDevEvo, &updateState,
+                                 TRUE /* releaseElv */);
+        }
     }
 }
 
@@ -2307,7 +3059,7 @@ ApplyProposedModeSetHwStateOneDisp(
                      "Unexpectedly failed to lock to max DRAM pre-modeset!");
     }
 
-    KickoffProposedModeSetHwStateIncompatibleHeadsShutDown(
+    KickoffProposedModeSetStateIncompatibleApiHeadsShutDown(
         pDispEvo,
         pProposedDisp,
         pWorkArea);
@@ -2318,6 +3070,8 @@ ApplyProposedModeSetHwStateOneDisp(
         pProposedDisp,
         bypassComposition,
         pWorkArea);
+
+    nvEvoLockStateSetMergeMode(pDispEvo);
 
     /*
      * This function waits for 2 frames to make sure that the final IMP
@@ -2565,7 +3319,7 @@ static void FillPostSyncptReplyForModeset(
  * \param[out]  pReply    The reply to the client.
  */
 static void
-AssignReplySuccess(const NVDevEvoRec *pDevEvo,
+AssignReplySuccess(NVDevEvoRec *pDevEvo,
                    const struct NvKmsSetModeRequest *pRequest,
                    struct NvKmsSetModeReply *pReply,
                    const NVModeSetWorkArea *pWorkArea)
@@ -2576,8 +3330,6 @@ AssignReplySuccess(const NVDevEvoRec *pDevEvo,
     nvkms_memset(pReply, 0, sizeof(*pReply));
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-
-        NvU32 head;
         const struct NvKmsSetModeOneDispRequest *pRequestDisp =
             &pRequest->disp[dispIndex];
 
@@ -2585,8 +3337,7 @@ AssignReplySuccess(const NVDevEvoRec *pDevEvo,
             continue;
         }
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            const NvU32 apiHead = nvHardwareHeadToApiHead(pDevEvo, head);
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
             const struct NvKmsSetModeOneHeadRequest *pRequestHead =
                 &pRequestDisp->head[apiHead];
             struct NvKmsSetModeOneHeadReply *pReplyHead =
@@ -2599,25 +3350,58 @@ AssignReplySuccess(const NVDevEvoRec *pDevEvo,
             pReplyHead->status = NVKMS_SET_MODE_ONE_HEAD_STATUS_SUCCESS;
 
             if (!nvDpyIdListIsEmpty(pRequestHead->dpyIdList)) {
-                const NVDispHeadStateEvoRec *pHeadState =
-                    &pDispEvo->headState[head];
-                pReplyHead->possibleUsage = pHeadState->timings.viewPort.possibleUsage;
-                pReplyHead->guaranteedUsage = pHeadState->timings.viewPort.guaranteedUsage;
+                const NVDispApiHeadStateEvoRec *pApiHeadState =
+                    &pDispEvo->apiHeadState[apiHead];
+                const NvU32 primaryHwHead =
+                    nvGetPrimaryHwHeadFromMask(pApiHeadState->hwHeadsMask);
+
+                nvAssert((pApiHeadState->hwHeadsMask != 0x0) &&
+                            (primaryHwHead != NV_INVALID_HEAD));
+
+                struct NvKmsUsageBounds *pTmpUsageBounds =
+                    nvPreallocGet(pDevEvo,
+                                  PREALLOC_TYPE_MODE_SET_REPLY_TMP_USAGE_BOUNDS,
+                                  sizeof(*pTmpUsageBounds));
+                NvU32 head;
+
+                pReplyHead->possibleUsage = pDispEvo->headState[primaryHwHead].
+                    timings.viewPort.possibleUsage;
+                pReplyHead->guaranteedUsage = pDispEvo->headState[primaryHwHead].
+                    timings.viewPort.guaranteedUsage;
+                FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+                    const NVDispHeadStateEvoRec *pHeadState =
+                        &pDispEvo->headState[head];
+
+                    nvIntersectUsageBounds(&pReplyHead->possibleUsage,
+                                           &pHeadState->timings.viewPort.possibleUsage,
+                                           pTmpUsageBounds);
+                    pReplyHead->possibleUsage = *pTmpUsageBounds;
+
+                    nvIntersectUsageBounds(&pReplyHead->guaranteedUsage,
+                                           &pHeadState->timings.viewPort.guaranteedUsage,
+                                           pTmpUsageBounds);
+                    pReplyHead->guaranteedUsage = *pTmpUsageBounds;
+                }
+
+                nvPreallocRelease(pDevEvo,
+                                  PREALLOC_TYPE_MODE_SET_REPLY_TMP_USAGE_BOUNDS);
+
                 pReplyHead->usingHeadSurface =
                     (pDispEvo->pHsChannel[apiHead] != NULL);
                 pReplyHead->vrrEnabled =
-                    (pDispEvo->headState[head].timings.vrr.type !=
+                    (pApiHeadState->timings.vrr.type !=
                      NVKMS_DPY_VRR_TYPE_NONE);
-                pReplyHead->hwHead = head;
+                pReplyHead->hwHead = primaryHwHead;
+
+                FillPostSyncptReplyForModeset(
+                    pDevEvo,
+                    primaryHwHead,
+                    &pRequestHead->flip,
+                    &pReplyHead->flipReply,
+                    &pWorkArea->sd[dispIndex].head[primaryHwHead].newState);
             } else {
                 pReplyHead->hwHead = NV_INVALID_HEAD;
             }
-            FillPostSyncptReplyForModeset(
-                pDevEvo,
-                head,
-                &pRequestHead->flip,
-                &pReplyHead->flipReply,
-                &pWorkArea->sd[dispIndex].head[head].newState);
         }
     }
 }
@@ -2640,12 +3424,16 @@ BeginEndModeset(NVDevEvoPtr pDevEvo,
     NvU32 dispIndex;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        NvU32 head, dpyMask = 0;
+        const NVProposedModeSetHwStateOneDisp *pProposedDisp =
+            &pProposed->disp[dispIndex];
+        NvU32 apiHead, dpyMask = 0;
 
         /* Compute dpyMask: take all the dpyIds on this dispIndex. */
-        for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
-            dpyMask |=
-                nvDpyIdListToNvU32(pProposed->disp[dispIndex].head[head].dpyIdList);
+        for (apiHead = 0; apiHead <
+                ARRAY_LEN(pProposedDisp->apiHead); apiHead++) {
+            const NVProposedModeSetStateOneApiHead *pProposedApiHead =
+                &pProposedDisp->apiHead[apiHead];
+            dpyMask |= nvDpyIdListToNvU32(pProposedApiHead->dpyIdList);
         }
 
         nvRmBeginEndModeset(pDispEvo, beginOrEnd, dpyMask);
@@ -2944,8 +3732,6 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
     pDevEvo->modesetOwnerChanged = FALSE;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        NvU32 head;
-
         /*
          * In case of successful commit, update current attribute values and
          * free old display IDs.
@@ -2958,11 +3744,11 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
             nvDpyUpdateCurrentAttributes(pDpyEvo);
         }
 
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            if (pWorkArea->sd[dispIndex].head[head].oldActiveRmId != 0x0) {
+        for (NvU32 apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            if (pWorkArea->sd[dispIndex].apiHead[apiHead].oldActiveRmId != 0x0) {
                 nvRmFreeDisplayId(
                     pDispEvo,
-                    pWorkArea->sd[dispIndex].head[head].oldActiveRmId);
+                    pWorkArea->sd[dispIndex].apiHead[apiHead].oldActiveRmId);
             }
         }
     }

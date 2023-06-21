@@ -422,7 +422,7 @@ NV_STATUS serverFreeClient(RsServer *pServer, RS_CLIENT_FREE_PARAMS* pParams);
 NV_STATUS serverMarkClientListDisabled(RsServer *pServer, NvHandle *phClientList, NvU32 numClients, NvU32 freeState, API_SECURITY_INFO *pSecInfo);
 
 /**
- * Frees all currently disabled clients. All resources references owned by 
+ * Frees all currently disabled clients. All resources references owned by
  * any of the clients will be freed.
  * All priority resources will be freed first across all listed clients.
  *
@@ -516,44 +516,44 @@ NV_STATUS serverSetClientHandleBase(RsServer *pServer, NvU32 clientHandleBase);
  *
  * @param[in] pCallContext
  * @param[in] cmd
- * @param[in] pParams
- * @param[in] paramsSize
+ * @param[in/out] ppParams
+ * @param[in/out] pParamsSize
  * @param[in] flags
  */
-NV_STATUS serverDeserializeCtrlDown(CALL_CONTEXT *pCallContext, NvU32 cmd, void *pParams, NvU32 paramsSize, NvU32 *flags);
+NV_STATUS serverDeserializeCtrlDown(CALL_CONTEXT *pCallContext, NvU32 cmd, void **ppParams, NvU32 *pParamsSize, NvU32 *flags);
 
 /**
  * Serialize parameters for servicing command
  *
  * @param[in] pCallContext
  * @param[in] cmd
- * @param[in] pParams
- * @param[in] paramsSize
+ * @param[in/out] ppParams
+ * @param[in/out] pParamsSize
  * @param[in] flags
  */
-NV_STATUS serverSerializeCtrlDown(CALL_CONTEXT *pCallContext, NvU32 cmd, void *pParams, NvU32 paramsSize, NvU32 *flags);
+NV_STATUS serverSerializeCtrlDown(CALL_CONTEXT *pCallContext, NvU32 cmd, void **ppParams, NvU32 *pParamsSize, NvU32 *flags);
 
 /**
  * Deserialize parameters for returning from command
  *
  * @param[in] pCallContext
  * @param[in] cmd
- * @param[in] pParams
- * @param[in] paramsSize
+ * @param[out] ppParams
+ * @param[out] pParamsSize
  * @param[in] flags
  */
-NV_STATUS serverDeserializeCtrlUp(CALL_CONTEXT *pCallContext, NvU32 cmd, void *pParams, NvU32 paramsSize, NvU32 *flags);
+NV_STATUS serverDeserializeCtrlUp(CALL_CONTEXT *pCallContext, NvU32 cmd, void **ppParams, NvU32 *pParamsSize, NvU32 *flags);
 
 /**
  * Serialize parameters for returning from command
  *
  * @param[in] pCallContext
  * @param[in] cmd
- * @param[in] pParams
- * @param[in] paramsSize
+ * @param[out] ppParams
+ * @param[out] pParamsSize
  * @param[in] flags
  */
-NV_STATUS serverSerializeCtrlUp(CALL_CONTEXT *pCallContext, NvU32 cmd, void *pParams, NvU32 paramsSize, NvU32 *flags);
+NV_STATUS serverSerializeCtrlUp(CALL_CONTEXT *pCallContext, NvU32 cmd, void **ppParams, NvU32 *pParamsSize, NvU32 *flags);
 
 /**
  * Unset flag for reserializing control before going to GSP
@@ -562,6 +562,50 @@ NV_STATUS serverSerializeCtrlUp(CALL_CONTEXT *pCallContext, NvU32 cmd, void *pPa
  * @param[in] pCallContext
  */
 void serverDisableReserializeControl(CALL_CONTEXT *pCallContext);
+
+/**
+ * Serialize parameters for allocating
+ *
+ * @param[in] pCallContext
+ * @param[in] classId
+ * @param[in/out] ppParams
+ * @param[out] pParamsSize
+ * @param[in] flags
+ */
+NV_STATUS serverSerializeAllocDown(CALL_CONTEXT *pCallContext, NvU32 classId, void **ppParams, NvU32 *pParamsSize, NvU32 *flags);
+
+/**
+ * Deserialize parameters for allocating
+ *
+ * @param[in] pCallContext
+ * @param[in] classId
+ * @param[in/out] ppParams
+ * @param[in/out] pParamsSize
+ * @param[in] flags
+ */
+NV_STATUS serverDeserializeAllocDown(CALL_CONTEXT *pCallContext, NvU32 classId, void **ppParams, NvU32 *pParamsSize, NvU32 *flags);
+
+/**
+ * Serialize parameters for returning from allocating
+ *
+ * @param[in] pCallContext
+ * @param[in] classId
+ * @param[out] ppParams
+ * @param[out] pParamsSize
+ * @param[in] flags
+ */
+NV_STATUS serverSerializeAllocUp(CALL_CONTEXT *pCallContext, NvU32 classId, void **ppParams, NvU32 *pParamsSize, NvU32 *flags);
+
+/**
+ * Deserialize parameters for returning from allocating
+ *
+ * @param[in] pCallContext
+ * @param[in] classId
+ * @param[out] ppParams
+ * @param[out] pParamsSize
+ * @param[in] flags
+ */
+NV_STATUS serverDeserializeAllocUp(CALL_CONTEXT *pCallContext, NvU32 classId, void **ppParams, NvU32 *pParamsSize, NvU32 *flags);
 
 /**
  * Free finn structures allocated for serializing/deserializing

@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrlxxxx.finn
+// Source file:      ctrl/ctrlxxxx.finn
 //
 
 

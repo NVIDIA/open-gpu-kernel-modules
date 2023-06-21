@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -78,9 +78,23 @@ _kgspResetIntoRiscv
 )
 {
     KernelFalcon *pKernelFlcn = staticCast(pKernelGsp, KernelFalcon);
-    NV_ASSERT_OK_OR_RETURN(kflcnPreResetWait(pGpu, pKernelFlcn));
+    NV_ASSERT_OK_OR_RETURN(kflcnPreResetWait_HAL(pGpu, pKernelFlcn));
+
     GPU_FLD_WR_DRF_DEF(pGpu, _PGSP, _FALCON_ENGINE, _RESET, _TRUE);
+
+    // Reg read cycles needed for signal propagation.
+    for (NvU32 i = 0; i < FLCN_RESET_PROPAGATION_DELAY_COUNT; i++)
+    {
+        GPU_REG_RD32(pGpu, NV_PGSP_FALCON_ENGINE);
+    }
+
     GPU_FLD_WR_DRF_DEF(pGpu, _PGSP, _FALCON_ENGINE, _RESET, _FALSE);
+
+    // Reg read cycles needed for signal propagation.
+    for (NvU32 i = 0; i < FLCN_RESET_PROPAGATION_DELAY_COUNT; i++)
+    {
+        GPU_REG_RD32(pGpu, NV_PGSP_FALCON_ENGINE);
+    }
 
     NV_ASSERT_OK_OR_RETURN(kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn));
 
@@ -296,32 +310,6 @@ kgspExecuteSequencerCommand_GA102
 
     switch (opCode)
     {
-        case GSP_SEQ_BUF_OPCODE_CORE_RESET:
-        {
-            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
-
-            // Reset falcon
-            kflcnEnable_HAL(pGpu, pKernelFalcon, NV_FALSE);
-            kflcnEnable_HAL(pGpu, pKernelFalcon, NV_TRUE);
-
-            kflcnDisableCtxReq_HAL(pGpu, pKernelFalcon);
-            break;
-        }
-        case GSP_SEQ_BUF_OPCODE_CORE_START:
-        {
-            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
-
-            kflcnStartCpu_HAL(pGpu, pKernelFalcon);
-            break;
-        }
-        case GSP_SEQ_BUF_OPCODE_CORE_WAIT_FOR_HALT:
-        {
-            NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
-
-            // Wait for the bootloader to complete execution.
-            status = kflcnWaitForHalt_HAL(pGpu, pKernelFalcon, GPU_TIMEOUT_DEFAULT, 0);
-            break;
-        }
         case GSP_SEQ_BUF_OPCODE_CORE_RESUME:
         {
             RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
@@ -343,7 +331,7 @@ kgspExecuteSequencerCommand_GA102
                 // Wait for reload to be completed.
                 status = gpuTimeoutCondWait(pGpu, _kgspIsReloadCompleted, NULL, NULL);
 
-                // Check SEC mailbox. 
+                // Check SEC mailbox.
                 secMailbox0 = kflcnRegRead_HAL(pGpu, pKernelSec2Falcon, NV_PFALCON_FALCON_MAILBOX0);
 
                 if ((status != NV_OK) || (secMailbox0 != NV_OK))

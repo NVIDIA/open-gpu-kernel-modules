@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -288,9 +288,11 @@ NvU32 listCount_IMPL(ListBase *pList);
 void *listInsertNew_IMPL(NonIntrusiveList *pList, void *pNext);
 void *listAppendNew_IMPL(NonIntrusiveList *pList);
 void *listPrependNew_IMPL(NonIntrusiveList *pList);
-void *listInsertValue_IMPL(NonIntrusiveList *pList, void *pNext, void *pValue);
-void *listAppendValue_IMPL(NonIntrusiveList *pList, void *pValue);
-void *listPrependValue_IMPL(NonIntrusiveList *pList, void *pValue);
+void *listInsertValue_IMPL(NonIntrusiveList *pList,
+                           void             *pNext,
+                           const void       *pValue);
+void *listAppendValue_IMPL(NonIntrusiveList *pList, const void *pValue);
+void *listPrependValue_IMPL(NonIntrusiveList *pList, const void *pValue);
 void  listInsertExisting_IMPL(IntrusiveList *pList, void *pNext, void *pValue);
 void  listAppendExisting_IMPL(IntrusiveList *pList, void *pValue);
 void  listPrependExisting_IMPL(IntrusiveList *pList, void *pValue);

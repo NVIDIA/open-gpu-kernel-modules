@@ -22,6 +22,7 @@
  */
 
 #include "gpu/gpu.h"
+#include "gpu/gpu_child_class_defs.h"
 #include "gpu_mgr/gpu_mgr_sli.h"
 #include "gpu/bif/kernel_bif.h"
 #include "jt.h"
@@ -376,6 +377,7 @@ gpuGetIdInfo_GM107(OBJGPU *pGpu)
 static const GPUCHILDORDER
 gpuChildOrderList_GM200[] =
 {
+    {classId(ConfidentialCompute),      GCO_ALL},
     {classId(Pxuc),               GCO_ALL},
     {classId(OBJBIF),             GCO_ALL},
     {classId(KernelBif),          GCO_ALL},
@@ -471,7 +473,7 @@ gpuChildOrderList_GM200[] =
 const GPUCHILDORDER *
 gpuGetChildrenOrder_GM200(OBJGPU *pGpu, NvU32 *pNumEntries)
 {
-    *pNumEntries = NV_ARRAY_ELEMENTS32(gpuChildOrderList_GM200);
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildOrderList_GM200);
     return gpuChildOrderList_GM200;
 }
 
@@ -489,80 +491,34 @@ gpuGetChildrenOrder_GM200(OBJGPU *pGpu, NvU32 *pNumEntries)
 //
 static const GPUCHILDPRESENT gpuChildrenPresent_GM200[] =
 {
-    { classId(OBJFUSE), 1, },
-    { classId(OBJSEQ), 1, },
-    { classId(GpuMutexMgr), 1, },
-    { classId(OBJTMR), 1, },
-    { classId(GraphicsManager), 1, },
-    { classId(MIGManager), 1, },
-    { classId(KernelMIGManager), 1, },
-    { classId(KernelGraphicsManager), 1, },
-    { classId(OBJVBIOS), 1, },
-    { classId(OBJDCB), 1, },
-    { classId(OBJGPIO), 1, },
-    { classId(I2c), 1, },
-    { classId(Spi), 1, },
-    { classId(KernelRc), 1, },
-    { classId(OBJRC), 1, },
-    { classId(OBJSTEREO), 1, },
-    { classId(Intr), 1, },
-    { classId(OBJINFOROM), 1, },
-    { classId(NvDebugDump), 1, },
-    { classId(SMDebugger), 1, },
-    { classId(OBJGPULOG), 1, },
-    { classId(OBJGPUMON), 1, },
-    {classId(OBJSWENG), 1},
-    {classId(OBJACR), 1},
-    {classId(OBJBIF), 1},
-    {classId(KernelBif), 1},
-    {classId(OBJBSP), 1},
-    {classId(OBJBUS), 1},
-    {classId(KernelBus), 1},
-    {classId(OBJCE), 3},
-    {classId(KernelCE), 3},
-    {classId(OBJCIPHER), 1},
-    {classId(ClockManager), 1},
-    {classId(OBJDISP), 1},
-    {classId(KernelDisplay), 1},
-    {classId(VirtMemAllocator), 1},
-    {classId(OBJDPAUX), 1},
-    {classId(Fan), 1},
-    {classId(OBJHSHUBMANAGER), 1},
-    {classId(Hshub), 1},
-    {classId(MemorySystem), 1},
-    {classId(KernelMemorySystem), 1},
-    {classId(MemoryManager), 1},
-    {classId(KernelFifo), 1},
-    {classId(OBJFIFO), 1},
-    {classId(OBJGMMU), 1},
-    {classId(KernelGmmu), 1},
-    {classId(Graphics), 1},
-    {classId(KernelGraphics), 1},
-    {classId(OBJHDA), 1},
-    {classId(OBJHDACODEC), 1},
-    {classId(OBJHWPM), 1},
-    {classId(Lpwr   ), 1},
-    {classId(OBJLSFM), 1},
-    {classId(OBJMC), 1},
-    {classId(KernelMc), 1},
-    {classId(PrivRing), 1},
-    {classId(SwIntr), 1},
-    {classId(OBJMSENC), 2},
-    {classId(Perf), 1},
-    {classId(KernelPerf), 1},
-    {classId(Pmgr), 1},
-    {classId(Pmu), 1},
-    {classId(KernelPmu), 1},
-    {classId(OBJSEC2), 1},
-    {classId(Therm), 1},
-    {classId(OBJVOLT), 1},
-    {classId(OBJGRIDDISPLAYLESS), 1},
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJGPUMON, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 3),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
 };
 
 const GPUCHILDPRESENT *
 gpuGetChildrenPresent_GM200(OBJGPU *pGpu, NvU32 *pNumEntries)
 {
-    *pNumEntries = NV_ARRAY_ELEMENTS32(gpuChildrenPresent_GM200);
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GM200);
     return gpuChildrenPresent_GM200;
 }
 

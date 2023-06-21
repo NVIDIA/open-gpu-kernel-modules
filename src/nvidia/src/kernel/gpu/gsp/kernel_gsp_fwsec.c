@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -66,6 +66,18 @@ struct BIT_TOKEN_V1_00
 };
 #define BIT_TOKEN_V1_00_FMT "2b2w"
 typedef struct BIT_TOKEN_V1_00 BIT_TOKEN_V1_00;
+
+#define BIT_TOKEN_BIOSDATA          0x42
+
+// structure for only version info from BIT_DATA_BIOSDATA_V1 and BIT_DATA_BIOSDATA_V2
+typedef struct
+{
+    bios_U032 Version;     // BIOS Binary Version Ex. 5.40.00.01.12 = 0x05400001
+    bios_U008 OemVersion;  // OEM Version Number  Ex. 5.40.00.01.12 = 0x12
+} BIT_DATA_BIOSDATA_BINVER;
+
+#define BIT_DATA_BIOSDATA_BINVER_FMT "1d1b"
+#define BIT_DATA_BIOSDATA_BINVER_SIZE_5    5
 
 #define BIT_TOKEN_FALCON_DATA       0x70
 
@@ -441,6 +453,7 @@ s_vbiosFindBitHeader
  * @param[in]   bitAddr                 Offset of BIT header within VBIOS image
  * @param[in]   bUseDebugFwsec          Whether to look for debug or prod FWSEC
  * @param[out]  pFwsecUcodeDescFromBit  Resulting ucode desc
+ * @param[out]  pVbiosVersionCombined   (optional) output VBIOS version
  */
 static NV_STATUS
 s_vbiosParseFwsecUcodeDescFromBit
@@ -448,7 +461,8 @@ s_vbiosParseFwsecUcodeDescFromBit
     const KernelGspVbiosImg * const pVbiosImg,
     const NvU32 bitAddr,
     const NvBool bUseDebugFwsec,
-    FlcnUcodeDescFromBit *pFwsecUcodeDescFromBit  // out
+    FlcnUcodeDescFromBit *pFwsecUcodeDescFromBit,  // out
+    NvU64 *pVbiosVersionCombined  // out
 )
 {
 
@@ -489,6 +503,26 @@ s_vbiosParseFwsecUcodeDescFromBit
                       "failed to read BIT token %u, skipping: 0x%x\n",
                       tokIdx, status);
             continue;
+        }
+
+        // catch BIOSDATA token (for capturing VBIOS version)
+        if (pVbiosVersionCombined != NULL &&
+            bitToken.TokenId == BIT_TOKEN_BIOSDATA &&
+            ((bitToken.DataVersion == 1) || (bitToken.DataVersion == 2)) &&
+            bitToken.DataSize > BIT_DATA_BIOSDATA_BINVER_SIZE_5)
+        {
+            BIT_DATA_BIOSDATA_BINVER binver;
+            status = s_vbiosReadStructure(pVbiosImg, &binver,
+                                          bitToken.DataPtr, BIT_DATA_BIOSDATA_BINVER_FMT);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                          "failed to read BIOSDATA (BIT token %u), skipping: 0x%x\n",
+                          tokIdx, status);
+                continue;
+            }
+
+            *pVbiosVersionCombined = (((NvU64) binver.Version) << 8) | ((NvU32) binver.OemVersion);
         }
 
         // skip tokens that are not for falcon ucode data v2
@@ -1037,10 +1071,11 @@ s_vbiosNewFlcnUcodeFromDesc
  * The resulting KernelGspFlcnUcode should be freed with kgspFlcnUcodeFree
  * after use.
  *
- * @param[in]   pGpu           OBJGPU pointer
- * @param[in]   pKernelGsp     KernelGsp pointer
- * @param[in]   pVbiosImg      VBIOS image
- * @param[out]  ppFwsecUcode   Pointer to resulting KernelGspFlcnUcode
+ * @param[in]   pGpu                    OBJGPU pointer
+ * @param[in]   pKernelGsp              KernelGsp pointer
+ * @param[in]   pVbiosImg               VBIOS image
+ * @param[out]  ppFwsecUcode            Pointer to resulting KernelGspFlcnUcode
+ * @param[out]  pVbiosVersionCombined   (optional) pointer to output VBIOS version
  */
 NV_STATUS
 kgspParseFwsecUcodeFromVbiosImg_IMPL
@@ -1048,7 +1083,8 @@ kgspParseFwsecUcodeFromVbiosImg_IMPL
     OBJGPU *pGpu,
     KernelGsp *pKernelGsp,
     const KernelGspVbiosImg * const pVbiosImg,
-    KernelGspFlcnUcode **ppFwsecUcode  // out
+    KernelGspFlcnUcode **ppFwsecUcode,  // out
+    NvU64 *pVbiosVersionCombined  // out
 )
 {
     NV_STATUS status;
@@ -1072,7 +1108,8 @@ kgspParseFwsecUcodeFromVbiosImg_IMPL
     }
 
     bUseDebugFwsec = kgspIsDebugModeEnabled_HAL(pGpu, pKernelGsp);
-    status = s_vbiosParseFwsecUcodeDescFromBit(pVbiosImg, bitAddr, bUseDebugFwsec, &fwsecUcodeDescFromBit);
+    status = s_vbiosParseFwsecUcodeDescFromBit(pVbiosImg, bitAddr, bUseDebugFwsec,
+                                               &fwsecUcodeDescFromBit, pVbiosVersionCombined);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "failed to parse FWSEC ucode desc from VBIOS image: 0x%x\n", status);

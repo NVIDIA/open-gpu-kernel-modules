@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,6 +40,7 @@
 #include "core/thread_state.h"
 #include "vgpu/rpc.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
+#include <gpu/fsp/kern_fsp.h>
 
 //
 // Helper functions
@@ -71,9 +72,13 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        NV_ASSERT_OK_OR_GOTO(status, memmgrSavePowerMgmtState(pGpu, pMemoryManager), done);
+        // FB remains alive for GC6 cycle
+        if (!IS_GPU_GC6_STATE_ENTERING(pGpu))
+        {
+            NV_ASSERT_OK_OR_GOTO(status, memmgrSavePowerMgmtState(pGpu, pMemoryManager), done);
+        }
 
-        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu); 
+        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
 
 
         NV_RM_RPC_UNLOADING_GUEST_DRIVER(pGpu, status, NV_TRUE, IS_GPU_GC6_STATE_ENTERING(pGpu), newLevel);
@@ -86,31 +91,38 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
         // Dump GSP-RM logs before resetting and invoking FWSEC-SB
         kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
 
-        // Because of COT, RM cannot reset GSP-RISCV.
-        if (!(pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_COT_ENABLED)))
+        if (!IS_GPU_GC6_STATE_ENTERING(pGpu))
         {
-            kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+            // Because of COT, RM cannot reset GSP-RISCV.
+            if (!(pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_COT_ENABLED)))
+            {
+                kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+            }
+
+            // Invoke FWSEC-SB to load back PreOsApps.
+            status = kgspExecuteFwsecSb_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC-SB for PreOsApps\n");
+                goto done;
+            }
+
+            kpmuFreeLibosLoggingStructures(pGpu, GPU_GET_KERNEL_PMU(pGpu));
+
+            {
+                NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                                    kgspSavePowerMgmtState_HAL(pGpu, pKernelGsp), done);
+            }
         }
-
-        // Invoke FWSEC-SB to load back PreOsApps.
-        if (kgspExecuteFwsecSb_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode) != NV_OK)
+        else
         {
-            NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC-SB for PreOsApps\n");
-        } 
-
-        kpmuFreeLibosLoggingStructures(pGpu, GPU_GET_KERNEL_PMU(pGpu));
-
-        {
-            // Not called when kgspShouldBootWithBooter_HAL() is called and returns NV_FALSE
             NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                                kgspSavePowerMgmtState_HAL(pGpu, pKernelGsp), done);
-
+                                kgspExecuteBooterUnloadIfNeeded_HAL(pGpu, pKernelGsp, 0), done);
         }
-
     }
 
 done:
-    if (status != NV_OK)
+    if ((status != NV_OK) && !IS_GPU_GC6_STATE_ENTERING(pGpu))
     {
         memmgrFreeFbsrMemory(pGpu, pMemoryManager);
     }
@@ -161,7 +173,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
         //
         kmemsysProgramSysmemFlushBuffer_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
 
-        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu); 
+        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
 
         GSP_SR_INIT_ARGUMENTS gspSrInitArgs;
 
@@ -178,17 +190,29 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
             goto done;
         }
 
-        // Not called when kgspShouldBootWithBooter_HAL() is called and returns NV_FALSE
+        if (!IS_GPU_GC6_STATE_EXITING(pGpu))
         {
-            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                                kgspRestorePowerMgmtState_HAL(pGpu, pKernelGsp), done);
-        }
+            // Not called when kgspShouldBootWithBooter_HAL() is called and returns NV_FALSE
+            {
+                NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                                    kgspRestorePowerMgmtState_HAL(pGpu, pKernelGsp), done);
+            }
 
-        status = kpmuInitLibosLoggingStructures(pGpu, GPU_GET_KERNEL_PMU(pGpu));
-        if (status != NV_OK)
+            status = kpmuInitLibosLoggingStructures(pGpu, GPU_GET_KERNEL_PMU(pGpu));
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "cannot init libOS PMU logging structures: 0x%x\n", status);
+                goto done;
+            }
+        }
+        else
         {
-            NV_PRINTF(LEVEL_ERROR, "cannot init libOS PMU logging structures: 0x%x\n", status);
-            goto done;
+            status = kgspExecuteBooterLoad_HAL(pGpu, pKernelGsp, 0);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "cannot resume riscv/gsp from GC6: 0x%x\n", status);
+                goto done;
+            }
         }
 
         status = kgspWaitForRmInitDone(pGpu, pKernelGsp);
@@ -196,6 +220,22 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
         {
             NV_PRINTF(LEVEL_ERROR, "State load at resume for riscv/gsp failed: 0x%x\n", status);
             goto done;
+        }
+    }
+    else
+    {
+        // Boot GSP-FMC for monolithic RM
+        KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+        if ((pKernelFsp != NULL) && !IS_VIRTUAL(pGpu))
+        {
+            pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_BOOT_COMMAND_OK, NV_FALSE);
+
+            status = kfspSendBootCommands_HAL(pGpu, pKernelFsp);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "FSP boot command failed during resume.\n");
+                goto done;
+            }
         }
     }
 
@@ -215,7 +255,10 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
     NV_PRINTF(LEVEL_NOTICE, "Adapter now in D0 state\n");
 
 done:
-    memmgrFreeFbsrMemory(pGpu, pMemoryManager);
+    if (!IS_GPU_GC6_STATE_EXITING(pGpu))
+    {
+        memmgrFreeFbsrMemory(pGpu, pMemoryManager);
+    }
 
     return status;
 }

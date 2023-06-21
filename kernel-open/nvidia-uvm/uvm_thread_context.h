@@ -76,6 +76,9 @@ struct uvm_thread_context_struct
     // calls try_to_migrate() doesn't pass the pgmap_owner.
     uvm_va_block_t *ignore_hmm_invalidate_va_block;
 
+    // Used to filter out invalidations we don't care about.
+    unsigned long hmm_invalidate_seqnum;
+
     // Pointer to enclosing node (if any) in red-black tree
     //
     // This field is ignored in interrupt paths

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -80,8 +80,26 @@ typedef struct
     NvU64 bootloaderDataOffset;
     NvU64 bootloaderManifestOffset;
 
-    NvU64 sysmemAddrOfSignature;
-    NvU64 sizeOfSignature;
+    union
+    {
+        // Used only at initial boot
+        struct
+        {
+            NvU64 sysmemAddrOfSignature;
+            NvU64 sizeOfSignature;
+        };
+
+        //
+        // Used at suspend/resume to read GspFwHeapFreeList
+        // Offset relative to GspFwWprMeta FBMEM PA (gspFwWprStart)
+        //
+        struct
+        {
+            NvU32 gspFwHeapFreeListWprOffset;
+            NvU32 unused0;
+            NvU64 unused1;
+        };
+    };
 
     // ---- Members describing FB layout --------------------------------
     NvU64 gspFwRsvdStart;
@@ -157,5 +175,26 @@ typedef struct
 #define GSP_FW_WPR_META_VERIFIED  0xa0a0a0a0a0a0a0a0ULL
 #define GSP_FW_WPR_META_REVISION  1
 #define GSP_FW_WPR_META_MAGIC     0xdc3aae21371a60b3ULL
+
+#define GSP_FW_WPR_HEAP_FREE_REGION_COUNT 128
+
+typedef struct
+{
+    //
+    // offset relative to GspFwWprMeta FBMEM PA
+    // describes a region at [offs, offs + length)
+    //
+    NvU32 offs; // start, inclusive
+    NvU32 length;
+} GspFwHeapFreeRegion;
+
+typedef struct
+{
+    NvU64 magic;
+    NvU32 nregions;
+    GspFwHeapFreeRegion regions[GSP_FW_WPR_HEAP_FREE_REGION_COUNT];
+} GspFwHeapFreeList;
+
+#define GSP_FW_HEAP_FREE_LIST_MAGIC 0x4845415046524545ULL
 
 #endif // GSP_FW_WPR_META_H_

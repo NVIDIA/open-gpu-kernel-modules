@@ -233,6 +233,8 @@ typedef struct rpc_gsp_rm_alloc_v03_00
     NvU32      hClass;
     NvU32      status;
     NvU32      paramsSize;
+    NvU32      flags;
+    NvU8       reserved[4];
     NvU8       params[];
 } rpc_gsp_rm_alloc_v03_00;
 
@@ -245,9 +247,7 @@ typedef struct rpc_gsp_rm_control_v03_00
     NvU32      cmd;
     NvU32      status;
     NvU32      paramsSize;
-    NvBool     serialized;
-    NvBool     copyOutOnError;
-    NvU8       reserved[2];
+    NvU32      flags;
     NvU8       params[];
 } rpc_gsp_rm_control_v03_00;
 
@@ -282,6 +282,7 @@ typedef struct rpc_post_event_v17_00
     NvHandle   hEvent;
     NvU32      notifyIndex;
     NvU32      data;
+    NvU16      info16;
     NvU32      status;
     NvU32      eventDataSize;
     NvBool     bNotifyList;
@@ -513,6 +514,16 @@ typedef struct rpc_pfm_req_hndlr_state_sync_callback_v21_04
 
 typedef rpc_pfm_req_hndlr_state_sync_callback_v21_04 rpc_pfm_req_hndlr_state_sync_callback_v;
 
+typedef struct rpc_vgpu_gsp_mig_ci_config_v21_03
+{
+    NvU32      execPartCount;
+    NvU32      execPartId[NVC637_CTRL_MAX_EXEC_PARTITIONS];
+    NvU32      gfid;
+    NvBool     bDelete;
+} rpc_vgpu_gsp_mig_ci_config_v21_03;
+
+typedef rpc_vgpu_gsp_mig_ci_config_v21_03 rpc_vgpu_gsp_mig_ci_config_v;
+
 typedef struct rpc_gsp_lockdown_notice_v17_00
 {
     NvBool     bLockdownEngaging;
@@ -537,7 +548,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nop_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nop_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_nop",
+    #endif
     .fdesc = vmiopd_fdesc_t_rpc_nop_v03_00
 };
 #endif
@@ -547,50 +560,68 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_guest_system_info_v03_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, vgxVersionMajorNum),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "vgxVersionMajorNum"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, vgxVersionMinorNum),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "vgxVersionMinorNum"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestDriverVersionBufferLength),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "guestDriverVersionBufferLength"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestVersionBufferLength),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "guestVersionBufferLength"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestTitleBufferLength),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "guestTitleBufferLength"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestClNum),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "guestClNum"
+        #endif
     },
     {
         .vtype                = vtype_char_array,
         .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestDriverVersion),
         .array_length         = 0x100,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "guestDriverVersion"
+        #endif
     },
     {
         .vtype                = vtype_char_array,
         .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestVersion),
         .array_length         = 0x100,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "guestVersion"
+        #endif
     },
     {
         .vtype                = vtype_char_array,
         .offset               = NV_OFFSETOF(rpc_set_guest_system_info_v03_00, guestTitle),
         .array_length         = 0x100,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "guestTitle"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -598,8 +629,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_guest_system_info_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_guest_system_info_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_set_guest_system_info",
-    .header_length = NV_SIZEOF32(rpc_set_guest_system_info_v03_00),
+    #endif
+    .header_length = sizeof(rpc_set_guest_system_info_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_set_guest_system_info_v03_00
 };
 #endif
@@ -609,52 +642,72 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_memory_v13_01[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, hDevice),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hDevice"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, hMemory),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hMemory"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, hClass),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClass"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, flags),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "flags"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, pteAdjust),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "pteAdjust"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, format),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "format"
+        #endif
     },
     {
         .vtype                = vtype_NvU64,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, length),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "length"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, pageCount),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "pageCount"
+        #endif
     },
     {
         .vtype                = vtype_struct_pte_desc,
         .offset               = NV_OFFSETOF(rpc_alloc_memory_v13_01, pteDesc),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "pteDesc"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -662,8 +715,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_memory_v13_01[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_memory_v13_01 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_alloc_memory",
-    .header_length = NV_SIZEOF32(rpc_alloc_memory_v13_01),
+    #endif
+    .header_length = sizeof(rpc_alloc_memory_v13_01),
     .fdesc = vmiopd_fdesc_t_rpc_alloc_memory_v13_01
 };
 #endif
@@ -673,7 +728,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_free_v03_00[] = {
     {
         .vtype                = vtype_NVOS00_PARAMETERS_v03_00,
         .offset               = NV_OFFSETOF(rpc_free_v03_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -681,8 +738,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_free_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_free_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_free",
-    .header_length = NV_SIZEOF32(rpc_free_v03_00),
+    #endif
+    .header_length = sizeof(rpc_free_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_free_v03_00
 };
 #endif
@@ -692,7 +751,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_map_memory_dma_v03_00[] = {
     {
         .vtype                = vtype_NVOS46_PARAMETERS_v03_00,
         .offset               = NV_OFFSETOF(rpc_map_memory_dma_v03_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -700,8 +761,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_map_memory_dma_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_map_memory_dma_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_map_memory_dma",
-    .header_length = NV_SIZEOF32(rpc_map_memory_dma_v03_00),
+    #endif
+    .header_length = sizeof(rpc_map_memory_dma_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_map_memory_dma_v03_00
 };
 #endif
@@ -711,7 +774,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unmap_memory_dma_v03_00[] = {
     {
         .vtype                = vtype_NVOS47_PARAMETERS_v03_00,
         .offset               = NV_OFFSETOF(rpc_unmap_memory_dma_v03_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -719,8 +784,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unmap_memory_dma_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unmap_memory_dma_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_unmap_memory_dma",
-    .header_length = NV_SIZEOF32(rpc_unmap_memory_dma_v03_00),
+    #endif
+    .header_length = sizeof(rpc_unmap_memory_dma_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_unmap_memory_dma_v03_00
 };
 #endif
@@ -730,7 +797,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dup_object_v03_00[] = {
     {
         .vtype                = vtype_NVOS55_PARAMETERS_v03_00,
         .offset               = NV_OFFSETOF(rpc_dup_object_v03_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -738,8 +807,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dup_object_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_dup_object_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_dup_object",
-    .header_length = NV_SIZEOF32(rpc_dup_object_v03_00),
+    #endif
+    .header_length = sizeof(rpc_dup_object_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_dup_object_v03_00
 };
 #endif
@@ -749,24 +820,32 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_idle_channels_v03_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_idle_channels_v03_00, flags),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "flags"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_idle_channels_v03_00, timeout),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "timeout"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_idle_channels_v03_00, nchannels),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "nchannels"
+        #endif
     },
     {
         .vtype                = vtype_idle_channel_list_v03_00_array,
         .offset               = NV_OFFSETOF(rpc_idle_channels_v03_00, channel_list),
         .array_length         = 0,
         .array_length_fn      = get_array_length_rpc_idle_channels_v03_00_channel_list,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "channel_list"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -774,8 +853,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_idle_channels_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_idle_channels_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_idle_channels",
-    .header_length = NV_SIZEOF32(rpc_idle_channels_v03_00),
+    #endif
+    .header_length = sizeof(rpc_idle_channels_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_idle_channels_v03_00
 };
 #endif
@@ -788,7 +869,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_driver_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_driver_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_unloading_guest_driver",
+    #endif
     .fdesc = vmiopd_fdesc_t_rpc_unloading_guest_driver_v03_00
 };
 #endif
@@ -798,17 +881,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_driver_v1F_07[] = {
     {
         .vtype                = vtype_NvBool,
         .offset               = NV_OFFSETOF(rpc_unloading_guest_driver_v1F_07, bInPMTransition),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bInPMTransition"
+        #endif
     },
     {
         .vtype                = vtype_NvBool,
         .offset               = NV_OFFSETOF(rpc_unloading_guest_driver_v1F_07, bGc6Entering),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bGc6Entering"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_unloading_guest_driver_v1F_07, newLevel),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "newLevel"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -816,8 +905,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_driver_v1F_07[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_driver_v1F_07 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_unloading_guest_driver",
-    .header_length = NV_SIZEOF32(rpc_unloading_guest_driver_v1F_07),
+    #endif
+    .header_length = sizeof(rpc_unloading_guest_driver_v1F_07),
     .fdesc = vmiopd_fdesc_t_rpc_unloading_guest_driver_v1F_07
 };
 #endif
@@ -827,17 +918,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpu_exec_reg_ops_v12_01[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_gpu_exec_reg_ops_v12_01, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_gpu_exec_reg_ops_v12_01, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hObject"
+        #endif
     },
     {
         .vtype                = vtype_gpu_exec_reg_ops_v12_01,
         .offset               = NV_OFFSETOF(rpc_gpu_exec_reg_ops_v12_01, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -845,8 +942,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpu_exec_reg_ops_v12_01[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gpu_exec_reg_ops_v12_01 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_gpu_exec_reg_ops",
-    .header_length = NV_SIZEOF32(rpc_gpu_exec_reg_ops_v12_01),
+    #endif
+    .header_length = sizeof(rpc_gpu_exec_reg_ops_v12_01),
     .fdesc = vmiopd_fdesc_t_rpc_gpu_exec_reg_ops_v12_01
 };
 #endif
@@ -856,22 +955,30 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_page_directory_v1E_05[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_set_page_directory_v1E_05, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_set_page_directory_v1E_05, hDevice),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hDevice"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_page_directory_v1E_05, pasid),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "pasid"
+        #endif
     },
     {
         .vtype                = vtype_NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS_v1E_05,
         .offset               = NV_OFFSETOF(rpc_set_page_directory_v1E_05, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -879,8 +986,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_page_directory_v1E_05[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_page_directory_v1E_05 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_set_page_directory",
-    .header_length = NV_SIZEOF32(rpc_set_page_directory_v1E_05),
+    #endif
+    .header_length = sizeof(rpc_set_page_directory_v1E_05),
     .fdesc = vmiopd_fdesc_t_rpc_set_page_directory_v1E_05
 };
 #endif
@@ -890,17 +999,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_page_directory_v03_00[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_set_page_directory_v03_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_set_page_directory_v03_00, hDevice),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hDevice"
+        #endif
     },
     {
         .vtype                = vtype_NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS_v03_00,
         .offset               = NV_OFFSETOF(rpc_set_page_directory_v03_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -908,8 +1023,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_page_directory_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_page_directory_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_set_page_directory",
-    .header_length = NV_SIZEOF32(rpc_set_page_directory_v03_00),
+    #endif
+    .header_length = sizeof(rpc_set_page_directory_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_set_page_directory_v03_00
 };
 #endif
@@ -919,17 +1036,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unset_page_directory_v1E_05[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_unset_page_directory_v1E_05, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_unset_page_directory_v1E_05, hDevice),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hDevice"
+        #endif
     },
     {
         .vtype                = vtype_NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS_v1E_05,
         .offset               = NV_OFFSETOF(rpc_unset_page_directory_v1E_05, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -937,8 +1060,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unset_page_directory_v1E_05[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unset_page_directory_v1E_05 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_unset_page_directory",
-    .header_length = NV_SIZEOF32(rpc_unset_page_directory_v1E_05),
+    #endif
+    .header_length = sizeof(rpc_unset_page_directory_v1E_05),
     .fdesc = vmiopd_fdesc_t_rpc_unset_page_directory_v1E_05
 };
 #endif
@@ -948,17 +1073,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unset_page_directory_v03_00[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_unset_page_directory_v03_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_unset_page_directory_v03_00, hDevice),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hDevice"
+        #endif
     },
     {
         .vtype                = vtype_NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS_v03_00,
         .offset               = NV_OFFSETOF(rpc_unset_page_directory_v03_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -966,8 +1097,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unset_page_directory_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unset_page_directory_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_unset_page_directory",
-    .header_length = NV_SIZEOF32(rpc_unset_page_directory_v03_00),
+    #endif
+    .header_length = sizeof(rpc_unset_page_directory_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_unset_page_directory_v03_00
 };
 #endif
@@ -977,7 +1110,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_get_gsp_static_info_v14_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_get_gsp_static_info_v14_00, data),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "data"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -985,8 +1120,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_get_gsp_static_info_v14_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_get_gsp_static_info_v14_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_get_gsp_static_info",
-    .header_length = NV_SIZEOF32(rpc_get_gsp_static_info_v14_00),
+    #endif
+    .header_length = sizeof(rpc_get_gsp_static_info_v14_00),
     .fdesc = vmiopd_fdesc_t_rpc_get_gsp_static_info_v14_00
 };
 #endif
@@ -996,7 +1133,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_update_bar_pde_v15_00[] = {
     {
         .vtype                = vtype_UpdateBarPde_v15_00,
         .offset               = NV_OFFSETOF(rpc_update_bar_pde_v15_00, info),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "info"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1004,8 +1143,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_update_bar_pde_v15_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_update_bar_pde_v15_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_update_bar_pde",
-    .header_length = NV_SIZEOF32(rpc_update_bar_pde_v15_00),
+    #endif
+    .header_length = sizeof(rpc_update_bar_pde_v15_00),
     .fdesc = vmiopd_fdesc_t_rpc_update_bar_pde_v15_00
 };
 #endif
@@ -1015,17 +1156,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_pf_reg_read32_v15_00[] = {
     {
         .vtype                = vtype_NvU64,
         .offset               = NV_OFFSETOF(rpc_vgpu_pf_reg_read32_v15_00, address),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "address"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_vgpu_pf_reg_read32_v15_00, value),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "value"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_vgpu_pf_reg_read32_v15_00, grEngId),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "grEngId"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1033,8 +1180,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_pf_reg_read32_v15_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_pf_reg_read32_v15_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_vgpu_pf_reg_read32",
-    .header_length = NV_SIZEOF32(rpc_vgpu_pf_reg_read32_v15_00),
+    #endif
+    .header_length = sizeof(rpc_vgpu_pf_reg_read32_v15_00),
     .fdesc = vmiopd_fdesc_t_rpc_vgpu_pf_reg_read32_v15_00
 };
 #endif
@@ -1044,7 +1193,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02[] = 
     {
         .vtype                = vtype_NV2080_CTRL_GET_P2P_CAPS_PARAMS_v21_02,
         .offset               = NV_OFFSETOF(rpc_ctrl_subdevice_get_p2p_caps_v21_02, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "ctrlParams"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1052,8 +1203,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02[] = 
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_ctrl_subdevice_get_p2p_caps",
-    .header_length = NV_SIZEOF32(rpc_ctrl_subdevice_get_p2p_caps_v21_02),
+    #endif
+    .header_length = sizeof(rpc_ctrl_subdevice_get_p2p_caps_v21_02),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02
 };
 #endif
@@ -1063,17 +1216,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_ctrl_bus_set_p2p_mapping_v21_03, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_ctrl_bus_set_p2p_mapping_v21_03, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hObject"
+        #endif
     },
     {
         .vtype                = vtype_NV2080_CTRL_BUS_SET_P2P_MAPPING_PARAMS_v21_03,
         .offset               = NV_OFFSETOF(rpc_ctrl_bus_set_p2p_mapping_v21_03, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1081,8 +1240,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_ctrl_bus_set_p2p_mapping",
-    .header_length = NV_SIZEOF32(rpc_ctrl_bus_set_p2p_mapping_v21_03),
+    #endif
+    .header_length = sizeof(rpc_ctrl_bus_set_p2p_mapping_v21_03),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_bus_set_p2p_mapping_v21_03
 };
 #endif
@@ -1092,17 +1253,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_ctrl_bus_unset_p2p_mapping_v21_03, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_ctrl_bus_unset_p2p_mapping_v21_03, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hObject"
+        #endif
     },
     {
         .vtype                = vtype_NV2080_CTRL_BUS_UNSET_P2P_MAPPING_PARAMS_v21_03,
         .offset               = NV_OFFSETOF(rpc_ctrl_bus_unset_p2p_mapping_v21_03, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1110,8 +1277,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_ctrl_bus_unset_p2p_mapping",
-    .header_length = NV_SIZEOF32(rpc_ctrl_bus_unset_p2p_mapping_v21_03),
+    #endif
+    .header_length = sizeof(rpc_ctrl_bus_unset_p2p_mapping_v21_03),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03
 };
 #endif
@@ -1121,7 +1290,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_init_v15_00[] = {
     {
         .vtype                = vtype_NvU64,
         .offset               = NV_OFFSETOF(rpc_rmfs_init_v15_00, statusQueuePhysAddr),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "statusQueuePhysAddr"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1129,8 +1300,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_init_v15_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_init_v15_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_rmfs_init",
-    .header_length = NV_SIZEOF32(rpc_rmfs_init_v15_00),
+    #endif
+    .header_length = sizeof(rpc_rmfs_init_v15_00),
     .fdesc = vmiopd_fdesc_t_rpc_rmfs_init_v15_00
 };
 #endif
@@ -1143,7 +1316,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_close_queue_v15_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_close_queue_v15_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_rmfs_close_queue",
+    #endif
     .fdesc = vmiopd_fdesc_t_rpc_rmfs_close_queue_v15_00
 };
 #endif
@@ -1156,7 +1331,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_cleanup_v15_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_cleanup_v15_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_rmfs_cleanup",
+    #endif
     .fdesc = vmiopd_fdesc_t_rpc_rmfs_cleanup_v15_00
 };
 #endif
@@ -1166,22 +1343,30 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_test_v15_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rmfs_test_v15_00, numReps),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "numReps"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rmfs_test_v15_00, flags),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "flags"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rmfs_test_v15_00, testData1),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "testData1"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rmfs_test_v15_00, testData2),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "testData2"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1189,8 +1374,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_test_v15_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_test_v15_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_rmfs_test",
-    .header_length = NV_SIZEOF32(rpc_rmfs_test_v15_00),
+    #endif
+    .header_length = sizeof(rpc_rmfs_test_v15_00),
     .fdesc = vmiopd_fdesc_t_rpc_rmfs_test_v15_00
 };
 #endif
@@ -1200,7 +1387,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_set_system_info_v17_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_gsp_set_system_info_v17_00, data),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "data"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1208,8 +1397,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_set_system_info_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_set_system_info_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_gsp_set_system_info",
-    .header_length = NV_SIZEOF32(rpc_gsp_set_system_info_v17_00),
+    #endif
+    .header_length = sizeof(rpc_gsp_set_system_info_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_set_system_info_v17_00
 };
 #endif
@@ -1222,7 +1413,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_registry_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_registry_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_set_registry",
+    #endif
     .fdesc = vmiopd_fdesc_t_rpc_set_registry_v17_00
 };
 #endif
@@ -1232,38 +1425,67 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_alloc_v03_00[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, hParent),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hParent"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hObject"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, hClass),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClass"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, status),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "status"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, paramsSize),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "paramsSize"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, flags),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "flags"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, reserved),
+        .array_length         = 4,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "reserved"
+        #endif
     },
     {
         .vtype                = vtype_NvU8_array,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_alloc_v03_00, params),
         .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1271,8 +1493,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_alloc_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_rm_alloc_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_gsp_rm_alloc",
-    .header_length = NV_SIZEOF32(rpc_gsp_rm_alloc_v03_00),
+    #endif
+    .header_length = sizeof(rpc_gsp_rm_alloc_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_rm_alloc_v03_00
 };
 #endif
@@ -1282,49 +1506,52 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_control_v03_00[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hObject"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, cmd),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "cmd"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, status),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "status"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, paramsSize),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "paramsSize"
+        #endif
     },
     {
-        .vtype                = vtype_NvBool,
-        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, serialized),
-        .name                 = "serialized"
-    },
-    {
-        .vtype                = vtype_NvBool,
-        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, copyOutOnError),
-        .name                 = "copyOutOnError"
-    },
-    {
-        .vtype                = vtype_NvU8_array,
-        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, reserved),
-        .array_length         = 2,
-        .name                 = "reserved"
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, flags),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "flags"
+        #endif
     },
     {
         .vtype                = vtype_NvU8_array,
         .offset               = NV_OFFSETOF(rpc_gsp_rm_control_v03_00, params),
         .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1332,8 +1559,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_rm_control_v03_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_rm_control_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_gsp_rm_control",
-    .header_length = NV_SIZEOF32(rpc_gsp_rm_control_v03_00),
+    #endif
+    .header_length = sizeof(rpc_gsp_rm_control_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_rm_control_v03_00
 };
 #endif
@@ -1343,38 +1572,52 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dump_protobuf_component_v18_12[] = {
     {
         .vtype                = vtype_NvU16,
         .offset               = NV_OFFSETOF(rpc_dump_protobuf_component_v18_12, component),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "component"
+        #endif
     },
     {
         .vtype                = vtype_NvU8,
         .offset               = NV_OFFSETOF(rpc_dump_protobuf_component_v18_12, nvDumpType),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "nvDumpType"
+        #endif
     },
     {
         .vtype                = vtype_NvBool,
         .offset               = NV_OFFSETOF(rpc_dump_protobuf_component_v18_12, countOnly),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "countOnly"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_dump_protobuf_component_v18_12, bugCheckCode),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bugCheckCode"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_dump_protobuf_component_v18_12, internalCode),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "internalCode"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_dump_protobuf_component_v18_12, bufferSize),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bufferSize"
+        #endif
     },
     {
         .vtype                = vtype_NvU8_array,
         .offset               = NV_OFFSETOF(rpc_dump_protobuf_component_v18_12, blob),
         .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "blob"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1382,8 +1625,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dump_protobuf_component_v18_12[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_dump_protobuf_component_v18_12 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_dump_protobuf_component",
-    .header_length = NV_SIZEOF32(rpc_dump_protobuf_component_v18_12),
+    #endif
+    .header_length = sizeof(rpc_dump_protobuf_component_v18_12),
     .fdesc = vmiopd_fdesc_t_rpc_dump_protobuf_component_v18_12
 };
 #endif
@@ -1393,24 +1638,32 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_run_cpu_sequencer_v17_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_run_cpu_sequencer_v17_00, bufferSizeDWord),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bufferSizeDWord"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_run_cpu_sequencer_v17_00, cmdIndex),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "cmdIndex"
+        #endif
     },
     {
         .vtype                = vtype_NvU32_array,
         .offset               = NV_OFFSETOF(rpc_run_cpu_sequencer_v17_00, regSaveArea),
         .array_length         = 8,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "regSaveArea"
+        #endif
     },
     {
         .vtype                = vtype_NvU32_array,
         .offset               = NV_OFFSETOF(rpc_run_cpu_sequencer_v17_00, commandBuffer),
         .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "commandBuffer"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1418,8 +1671,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_run_cpu_sequencer_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_run_cpu_sequencer_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_run_cpu_sequencer",
-    .header_length = NV_SIZEOF32(rpc_run_cpu_sequencer_v17_00),
+    #endif
+    .header_length = sizeof(rpc_run_cpu_sequencer_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_run_cpu_sequencer_v17_00
 };
 #endif
@@ -1429,43 +1684,66 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_post_event_v17_00[] = {
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_post_event_v17_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_post_event_v17_00, hEvent),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hEvent"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_post_event_v17_00, notifyIndex),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "notifyIndex"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_post_event_v17_00, data),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "data"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU16,
+        .offset               = NV_OFFSETOF(rpc_post_event_v17_00, info16),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "info16"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_post_event_v17_00, status),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "status"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_post_event_v17_00, eventDataSize),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "eventDataSize"
+        #endif
     },
     {
         .vtype                = vtype_NvBool,
         .offset               = NV_OFFSETOF(rpc_post_event_v17_00, bNotifyList),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bNotifyList"
+        #endif
     },
     {
         .vtype                = vtype_NvU8_array,
         .offset               = NV_OFFSETOF(rpc_post_event_v17_00, eventData),
         .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "eventData"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1473,8 +1751,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_post_event_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_post_event_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_post_event",
-    .header_length = NV_SIZEOF32(rpc_post_event_v17_00),
+    #endif
+    .header_length = sizeof(rpc_post_event_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_post_event_v17_00
 };
 #endif
@@ -1484,27 +1764,37 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rc_triggered_v17_02[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, nv2080EngineType),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "nv2080EngineType"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, chid),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "chid"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, exceptType),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "exceptType"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, scope),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "scope"
+        #endif
     },
     {
         .vtype                = vtype_NvU16,
         .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, partitionAttributionId),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "partitionAttributionId"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1512,8 +1802,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rc_triggered_v17_02[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rc_triggered_v17_02 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_rc_triggered",
-    .header_length = NV_SIZEOF32(rpc_rc_triggered_v17_02),
+    #endif
+    .header_length = sizeof(rpc_rc_triggered_v17_02),
     .fdesc = vmiopd_fdesc_t_rpc_rc_triggered_v17_02
 };
 #endif
@@ -1523,23 +1815,31 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_os_error_log_v17_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, exceptType),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "exceptType"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, runlistId),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "runlistId"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, chid),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "chid"
+        #endif
     },
     {
         .vtype                = vtype_char_array,
         .offset               = NV_OFFSETOF(rpc_os_error_log_v17_00, errString),
         .array_length         = 0x100,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "errString"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1547,8 +1847,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_os_error_log_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_os_error_log_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_os_error_log",
-    .header_length = NV_SIZEOF32(rpc_os_error_log_v17_00),
+    #endif
+    .header_length = sizeof(rpc_os_error_log_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_os_error_log_v17_00
 };
 #endif
@@ -1558,12 +1860,16 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rg_line_intr_v17_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rg_line_intr_v17_00, head),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "head"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_rg_line_intr_v17_00, rgIntr),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "rgIntr"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1571,8 +1877,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rg_line_intr_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rg_line_intr_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_rg_line_intr",
-    .header_length = NV_SIZEOF32(rpc_rg_line_intr_v17_00),
+    #endif
+    .header_length = sizeof(rpc_rg_line_intr_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_rg_line_intr_v17_00
 };
 #endif
@@ -1582,17 +1890,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_display_modeset_v01_00[] = {
     {
         .vtype                = vtype_NvBool,
         .offset               = NV_OFFSETOF(rpc_display_modeset_v01_00, bModesetStart),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bModesetStart"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_display_modeset_v01_00, minRequiredIsoBandwidthKBPS),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "minRequiredIsoBandwidthKBPS"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_display_modeset_v01_00, minRequiredFloorBandwidthKBPS),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "minRequiredFloorBandwidthKBPS"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1600,8 +1914,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_display_modeset_v01_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_display_modeset_v01_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_display_modeset",
-    .header_length = NV_SIZEOF32(rpc_display_modeset_v01_00),
+    #endif
+    .header_length = sizeof(rpc_display_modeset_v01_00),
     .fdesc = vmiopd_fdesc_t_rpc_display_modeset_v01_00
 };
 #endif
@@ -1611,7 +1927,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00[] =
     {
         .vtype                = vtype_NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2_PARAMS_v17_00,
         .offset               = NV_OFFSETOF(rpc_gpuacct_perfmon_util_samples_v17_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1619,8 +1937,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00[] =
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_gpuacct_perfmon_util_samples",
-    .header_length = NV_SIZEOF32(rpc_gpuacct_perfmon_util_samples_v17_00),
+    #endif
+    .header_length = sizeof(rpc_gpuacct_perfmon_util_samples_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00
 };
 #endif
@@ -1630,12 +1950,16 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_gsp_plugin_triggered_v17_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_vgpu_gsp_plugin_triggered_v17_00, gfid),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "gfid"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_vgpu_gsp_plugin_triggered_v17_00, notifyIndex),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "notifyIndex"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1643,8 +1967,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_gsp_plugin_triggered_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_gsp_plugin_triggered_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_vgpu_gsp_plugin_triggered",
-    .header_length = NV_SIZEOF32(rpc_vgpu_gsp_plugin_triggered_v17_00),
+    #endif
+    .header_length = sizeof(rpc_vgpu_gsp_plugin_triggered_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_vgpu_gsp_plugin_triggered_v17_00
 };
 #endif
@@ -1654,7 +1980,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_config_event_v17_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_vgpu_config_event_v17_00, notifyIndex),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "notifyIndex"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1662,8 +1990,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_config_event_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_config_event_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_vgpu_config_event",
-    .header_length = NV_SIZEOF32(rpc_vgpu_config_event_v17_00),
+    #endif
+    .header_length = sizeof(rpc_vgpu_config_event_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_vgpu_config_event_v17_00
 };
 #endif
@@ -1673,7 +2003,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dce_rm_init_v01_00[] = {
     {
         .vtype                = vtype_NvBool,
         .offset               = NV_OFFSETOF(rpc_dce_rm_init_v01_00, bInit),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bInit"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1681,8 +2013,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_dce_rm_init_v01_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_dce_rm_init_v01_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_dce_rm_init",
-    .header_length = NV_SIZEOF32(rpc_dce_rm_init_v01_00),
+    #endif
+    .header_length = sizeof(rpc_dce_rm_init_v01_00),
     .fdesc = vmiopd_fdesc_t_rpc_dce_rm_init_v01_00
 };
 #endif
@@ -1693,17 +2027,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_sim_read_v1E_01[] = {
         .vtype                = vtype_char_array,
         .offset               = NV_OFFSETOF(rpc_sim_read_v1E_01, path),
         .array_length         = 0x100,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "path"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_sim_read_v1E_01, index),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "index"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_sim_read_v1E_01, count),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "count"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1711,8 +2051,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_sim_read_v1E_01[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_sim_read_v1E_01 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_sim_read",
-    .header_length = NV_SIZEOF32(rpc_sim_read_v1E_01),
+    #endif
+    .header_length = sizeof(rpc_sim_read_v1E_01),
     .fdesc = vmiopd_fdesc_t_rpc_sim_read_v1E_01
 };
 #endif
@@ -1723,22 +2065,30 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_sim_write_v1E_01[] = {
         .vtype                = vtype_char_array,
         .offset               = NV_OFFSETOF(rpc_sim_write_v1E_01, path),
         .array_length         = 0x100,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "path"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_sim_write_v1E_01, index),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "index"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_sim_write_v1E_01, count),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "count"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_sim_write_v1E_01, data),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "data"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1746,8 +2096,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_sim_write_v1E_01[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_sim_write_v1E_01 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_sim_write",
-    .header_length = NV_SIZEOF32(rpc_sim_write_v1E_01),
+    #endif
+    .header_length = sizeof(rpc_sim_write_v1E_01),
     .fdesc = vmiopd_fdesc_t_rpc_sim_write_v1E_01
 };
 #endif
@@ -1757,18 +2109,24 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ucode_libos_print_v1E_08[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_ucode_libos_print_v1E_08, ucodeEngDesc),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "ucodeEngDesc"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_ucode_libos_print_v1E_08, libosPrintBufSize),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "libosPrintBufSize"
+        #endif
     },
     {
         .vtype                = vtype_NvU8_array,
         .offset               = NV_OFFSETOF(rpc_ucode_libos_print_v1E_08, libosPrintBuf),
         .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "libosPrintBuf"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1776,8 +2134,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ucode_libos_print_v1E_08[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ucode_libos_print_v1E_08 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_ucode_libos_print",
-    .header_length = NV_SIZEOF32(rpc_ucode_libos_print_v1E_08),
+    #endif
+    .header_length = sizeof(rpc_ucode_libos_print_v1E_08),
     .fdesc = vmiopd_fdesc_t_rpc_ucode_libos_print_v1E_08
 };
 #endif
@@ -1787,7 +2147,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_init_done_v17_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_init_done_v17_00, not_used),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "not_used"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1795,8 +2157,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_init_done_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_init_done_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_init_done",
-    .header_length = NV_SIZEOF32(rpc_init_done_v17_00),
+    #endif
+    .header_length = sizeof(rpc_init_done_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_init_done_v17_00
 };
 #endif
@@ -1806,37 +2170,51 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_semaphore_schedule_callback_v17_00[] = 
     {
         .vtype                = vtype_NvU64,
         .offset               = NV_OFFSETOF(rpc_semaphore_schedule_callback_v17_00, GPUVA),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "GPUVA"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_semaphore_schedule_callback_v17_00, hVASpace),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hVASpace"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_semaphore_schedule_callback_v17_00, ReleaseValue),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "ReleaseValue"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_semaphore_schedule_callback_v17_00, Flags),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "Flags"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_semaphore_schedule_callback_v17_00, completionStatus),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "completionStatus"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_semaphore_schedule_callback_v17_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_semaphore_schedule_callback_v17_00, hEvent),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hEvent"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1844,8 +2222,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_semaphore_schedule_callback_v17_00[] = 
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_semaphore_schedule_callback_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_semaphore_schedule_callback",
-    .header_length = NV_SIZEOF32(rpc_semaphore_schedule_callback_v17_00),
+    #endif
+    .header_length = sizeof(rpc_semaphore_schedule_callback_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_semaphore_schedule_callback_v17_00
 };
 #endif
@@ -1855,32 +2235,44 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_timed_semaphore_release_v01_00[] = {
     {
         .vtype                = vtype_NvU64,
         .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, semaphoreVA),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "semaphoreVA"
+        #endif
     },
     {
         .vtype                = vtype_NvU64,
         .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, notifierVA),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "notifierVA"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, hVASpace),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hVASpace"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, releaseValue),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "releaseValue"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, completionStatus),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "completionStatus"
+        #endif
     },
     {
         .vtype                = vtype_NvHandle,
         .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "hClient"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1888,8 +2280,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_timed_semaphore_release_v01_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_timed_semaphore_release_v01_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_timed_semaphore_release",
-    .header_length = NV_SIZEOF32(rpc_timed_semaphore_release_v01_00),
+    #endif
+    .header_length = sizeof(rpc_timed_semaphore_release_v01_00),
     .fdesc = vmiopd_fdesc_t_rpc_timed_semaphore_release_v01_00
 };
 #endif
@@ -1899,7 +2293,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_perf_gpu_boost_sync_limits_callback_v17
     {
         .vtype                = vtype_NV2080_CTRL_INTERNAL_PERF_GPU_BOOST_SYNC_SET_LIMITS_PARAMS_v17_00,
         .offset               = NV_OFFSETOF(rpc_perf_gpu_boost_sync_limits_callback_v17_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1907,8 +2303,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_perf_gpu_boost_sync_limits_callback_v17
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_perf_gpu_boost_sync_limits_callback_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_perf_gpu_boost_sync_limits_callback",
-    .header_length = NV_SIZEOF32(rpc_perf_gpu_boost_sync_limits_callback_v17_00),
+    #endif
+    .header_length = sizeof(rpc_perf_gpu_boost_sync_limits_callback_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_perf_gpu_boost_sync_limits_callback_v17_00
 };
 #endif
@@ -1918,7 +2316,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_perf_bridgeless_info_update_v17_00[] = 
     {
         .vtype                = vtype_NvU64,
         .offset               = NV_OFFSETOF(rpc_perf_bridgeless_info_update_v17_00, bBridgeless),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bBridgeless"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1926,8 +2326,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_perf_bridgeless_info_update_v17_00[] = 
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_perf_bridgeless_info_update_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_perf_bridgeless_info_update",
-    .header_length = NV_SIZEOF32(rpc_perf_bridgeless_info_update_v17_00),
+    #endif
+    .header_length = sizeof(rpc_perf_bridgeless_info_update_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_perf_bridgeless_info_update_v17_00
 };
 #endif
@@ -1937,7 +2339,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_fault_up_v17_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_nvlink_fault_up_v17_00, linkId),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "linkId"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1945,8 +2349,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_fault_up_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_fault_up_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_nvlink_fault_up",
-    .header_length = NV_SIZEOF32(rpc_nvlink_fault_up_v17_00),
+    #endif
+    .header_length = sizeof(rpc_nvlink_fault_up_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_fault_up_v17_00
 };
 #endif
@@ -1956,7 +2362,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_256_v17_00[
     {
         .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_256_PARAMS_v17_00,
         .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_256_v17_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1964,8 +2372,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_256_v17_00[
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_256_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_nvlink_inband_received_data_256",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_256_v17_00),
+    #endif
+    .header_length = sizeof(rpc_nvlink_inband_received_data_256_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_256_v17_00
 };
 #endif
@@ -1975,7 +2385,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_512_v17_00[
     {
         .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_512_PARAMS_v17_00,
         .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_512_v17_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -1983,8 +2395,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_512_v17_00[
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_512_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_nvlink_inband_received_data_512",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_512_v17_00),
+    #endif
+    .header_length = sizeof(rpc_nvlink_inband_received_data_512_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_512_v17_00
 };
 #endif
@@ -1994,7 +2408,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_1024_v17_00
     {
         .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_1024_PARAMS_v17_00,
         .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_1024_v17_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -2002,8 +2418,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_1024_v17_00
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_1024_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_nvlink_inband_received_data_1024",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_1024_v17_00),
+    #endif
+    .header_length = sizeof(rpc_nvlink_inband_received_data_1024_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_1024_v17_00
 };
 #endif
@@ -2013,7 +2431,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_2048_v17_00
     {
         .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_2048_PARAMS_v17_00,
         .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_2048_v17_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -2021,8 +2441,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_2048_v17_00
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_2048_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_nvlink_inband_received_data_2048",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_2048_v17_00),
+    #endif
+    .header_length = sizeof(rpc_nvlink_inband_received_data_2048_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_2048_v17_00
 };
 #endif
@@ -2032,7 +2454,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_4096_v17_00
     {
         .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_4096_PARAMS_v17_00,
         .offset               = NV_OFFSETOF(rpc_nvlink_inband_received_data_4096_v17_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -2040,8 +2464,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_inband_received_data_4096_v17_00
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_inband_received_data_4096_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_nvlink_inband_received_data_4096",
-    .header_length = NV_SIZEOF32(rpc_nvlink_inband_received_data_4096_v17_00),
+    #endif
+    .header_length = sizeof(rpc_nvlink_inband_received_data_4096_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_inband_received_data_4096_v17_00
 };
 #endif
@@ -2051,7 +2477,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_is_gpu_degraded_v17_00[] = {
     {
         .vtype                = vtype_NV2080_CTRL_NVLINK_IS_GPU_DEGRADED_PARAMS_v17_00,
         .offset               = NV_OFFSETOF(rpc_nvlink_is_gpu_degraded_v17_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -2059,8 +2487,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_nvlink_is_gpu_degraded_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_is_gpu_degraded_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_nvlink_is_gpu_degraded",
-    .header_length = NV_SIZEOF32(rpc_nvlink_is_gpu_degraded_v17_00),
+    #endif
+    .header_length = sizeof(rpc_nvlink_is_gpu_degraded_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_is_gpu_degraded_v17_00
 };
 #endif
@@ -2070,7 +2500,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_send_user_shared_data_v17_00[] = {
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_gsp_send_user_shared_data_v17_00, data),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "data"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -2078,8 +2510,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_send_user_shared_data_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_send_user_shared_data_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_gsp_send_user_shared_data",
-    .header_length = NV_SIZEOF32(rpc_gsp_send_user_shared_data_v17_00),
+    #endif
+    .header_length = sizeof(rpc_gsp_send_user_shared_data_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_send_user_shared_data_v17_00
 };
 #endif
@@ -2089,17 +2523,23 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00, sysmemPfnBitmapRing),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "sysmemPfnBitmapRing"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00, sysmemPfnBitmapRingHi),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "sysmemPfnBitmapRingHi"
+        #endif
     },
     {
         .vtype                = vtype_NvU32,
         .offset               = NV_OFFSETOF(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00, sysmemPfnBitmap),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "sysmemPfnBitmap"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -2107,8 +2547,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_set_sysmem_dirty_page_tracking_buffer",
-    .header_length = NV_SIZEOF32(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00),
+    #endif
+    .header_length = sizeof(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00),
     .fdesc = vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 };
 #endif
@@ -2118,22 +2560,30 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_extdev_intr_service_v17_00[] = {
     {
         .vtype                = vtype_NvU8,
         .offset               = NV_OFFSETOF(rpc_extdev_intr_service_v17_00, lossRegStatus),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "lossRegStatus"
+        #endif
     },
     {
         .vtype                = vtype_NvU8,
         .offset               = NV_OFFSETOF(rpc_extdev_intr_service_v17_00, gainRegStatus),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "gainRegStatus"
+        #endif
     },
     {
         .vtype                = vtype_NvU8,
         .offset               = NV_OFFSETOF(rpc_extdev_intr_service_v17_00, miscRegStatus),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "miscRegStatus"
+        #endif
     },
     {
         .vtype                = vtype_NvBool,
         .offset               = NV_OFFSETOF(rpc_extdev_intr_service_v17_00, rmStatus),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "rmStatus"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -2141,8 +2591,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_extdev_intr_service_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_extdev_intr_service_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_extdev_intr_service",
-    .header_length = NV_SIZEOF32(rpc_extdev_intr_service_v17_00),
+    #endif
+    .header_length = sizeof(rpc_extdev_intr_service_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_extdev_intr_service_v17_00
 };
 #endif
@@ -2152,7 +2604,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_0
     {
         .vtype                = vtype_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_PARAMS_v21_04,
         .offset               = NV_OFFSETOF(rpc_pfm_req_hndlr_state_sync_callback_v21_04, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -2160,9 +2614,56 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_0
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_04 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_pfm_req_hndlr_state_sync_callback",
-    .header_length = NV_SIZEOF32(rpc_pfm_req_hndlr_state_sync_callback_v21_04),
+    #endif
+    .header_length = sizeof(rpc_pfm_req_hndlr_state_sync_callback_v21_04),
     .fdesc = vmiopd_fdesc_t_rpc_pfm_req_hndlr_state_sync_callback_v21_04
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_vgpu_gsp_mig_ci_config_v21_03
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_gsp_mig_ci_config_v21_03[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_vgpu_gsp_mig_ci_config_v21_03, execPartCount),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "execPartCount"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32_array,
+        .offset               = NV_OFFSETOF(rpc_vgpu_gsp_mig_ci_config_v21_03, execPartId),
+        .array_length         = NVC637_CTRL_MAX_EXEC_PARTITIONS,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "execPartId"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_vgpu_gsp_mig_ci_config_v21_03, gfid),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "gfid"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvBool,
+        .offset               = NV_OFFSETOF(rpc_vgpu_gsp_mig_ci_config_v21_03, bDelete),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "bDelete"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_gsp_mig_ci_config_v21_03 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_vgpu_gsp_mig_ci_config",
+    #endif
+    .header_length = sizeof(rpc_vgpu_gsp_mig_ci_config_v21_03),
+    .fdesc = vmiopd_fdesc_t_rpc_vgpu_gsp_mig_ci_config_v21_03
 };
 #endif
 
@@ -2171,7 +2672,9 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_lockdown_notice_v17_00[] = {
     {
         .vtype                = vtype_NvBool,
         .offset               = NV_OFFSETOF(rpc_gsp_lockdown_notice_v17_00, bLockdownEngaging),
+        #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "bLockdownEngaging"
+        #endif
     },
     {
         .vtype        = vt_end
@@ -2179,8 +2682,10 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_lockdown_notice_v17_00[] = {
 };
 
 static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_lockdown_notice_v17_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_gsp_lockdown_notice",
-    .header_length = NV_SIZEOF32(rpc_gsp_lockdown_notice_v17_00),
+    #endif
+    .header_length = sizeof(rpc_gsp_lockdown_notice_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_gsp_lockdown_notice_v17_00
 };
 #endif
@@ -2605,6 +3110,13 @@ vmiopd_mdesc_t *rpcdebugPfmReqHndlrStateSyncCallback_v21_04(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_vgpu_gsp_mig_ci_config_v21_03
+vmiopd_mdesc_t *rpcdebugVgpuGspMigCiConfig_v21_03(void)
+{
+    return &vmiopd_mdesc_t_rpc_vgpu_gsp_mig_ci_config_v21_03;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_gsp_lockdown_notice_v17_00
 vmiopd_mdesc_t *rpcdebugGspLockdownNotice_v17_00(void)
 {
@@ -2724,6 +3236,8 @@ typedef union rpc_generic_union {
     rpc_extdev_intr_service_v extdev_intr_service_v;
     rpc_pfm_req_hndlr_state_sync_callback_v21_04 pfm_req_hndlr_state_sync_callback_v21_04;
     rpc_pfm_req_hndlr_state_sync_callback_v pfm_req_hndlr_state_sync_callback_v;
+    rpc_vgpu_gsp_mig_ci_config_v21_03 vgpu_gsp_mig_ci_config_v21_03;
+    rpc_vgpu_gsp_mig_ci_config_v vgpu_gsp_mig_ci_config_v;
     rpc_gsp_lockdown_notice_v17_00 gsp_lockdown_notice_v17_00;
     rpc_gsp_lockdown_notice_v gsp_lockdown_notice_v;
 } rpc_generic_union;
@@ -2750,7 +3264,6 @@ static NV_STATUS get_array_length_rpc_idle_channels_v03_00_channel_list(void *ms
 
     if ((NvS32)(NV_OFFSETOF(rpc_idle_channels_v03_00, nchannels) + sizeof(param->nchannels)) > bytes_remaining)
         return NV_ERR_BUFFER_TOO_SMALL;
-
     *length = param->nchannels;
     return NV_OK;
 }

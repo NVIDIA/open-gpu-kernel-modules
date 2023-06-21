@@ -238,18 +238,11 @@ rmresControlSerialization_Prologue_IMPL
         ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)) ||
          (IS_GSP_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
     {
-        return serverSerializeCtrlDown(pCallContext, pParams->cmd, pParams->pParams, pParams->paramsSize, &pParams->flags);
+        return serverSerializeCtrlDown(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags);
     }
     else
     {
-        // Deserialize and replace the pParams->pParams if necessary
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, serverDeserializeCtrlDown(pCallContext, pParams->cmd, pParams->pParams, pParams->paramsSize, &pParams->flags));
-
-        if (pParams->flags & NVOS54_FLAGS_FINN_SERIALIZED)
-        {
-            pParams->pParams = pCallContext->pDeserializedParams;
-            pCallContext->bRestoreParams = NV_TRUE;
-        }
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, serverDeserializeCtrlDown(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags));
     }
 
     return NV_OK;
@@ -269,22 +262,18 @@ rmresControlSerialization_Epilogue_IMPL
         ((IS_VIRTUAL(pGpu)    && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST)) ||
          (IS_GSP_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
     {
-        NV_ASSERT_OK(serverDeserializeCtrlUp(pCallContext, pParams->cmd, pParams->pParams, pParams->paramsSize, &pParams->flags));
-    }
-    else if (pCallContext->bRestoreParams)
-    {
-        pParams->pParams = pCallContext->pSerializedParams;
+        NV_ASSERT_OK(serverDeserializeCtrlUp(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags));
     }
 
-    NV_ASSERT_OK(serverSerializeCtrlUp(pCallContext, pParams->cmd, pParams->pParams, pParams->paramsSize, &pParams->flags));
+    NV_ASSERT_OK(serverSerializeCtrlUp(pCallContext, pParams->cmd, &pParams->pParams, &pParams->paramsSize, &pParams->flags));
     serverFreeSerializeStructures(pCallContext, pParams->pParams);
 }
 
 NV_STATUS
 rmresControl_Prologue_IMPL
 (
-    RmResource *pResource, 
-    CALL_CONTEXT *pCallContext, 
+    RmResource *pResource,
+    CALL_CONTEXT *pCallContext,
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
@@ -296,7 +285,7 @@ rmresControl_Prologue_IMPL
          (IS_GSP_CLIENT(pGpu) && (pParams->pCookie->ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL))))
     {
         //
-        // GPU lock is required to protect the RPC buffers. 
+        // GPU lock is required to protect the RPC buffers.
         // However, some controls have  ROUTE_TO_PHYSICAL + NO_GPUS_LOCK flags set.
         // This is not valid in offload mode, but is in monolithic.
         // In those cases, just acquire the lock for the RPC

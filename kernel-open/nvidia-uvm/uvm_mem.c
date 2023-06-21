@@ -22,6 +22,7 @@
 *******************************************************************************/
 
 #include "uvm_mem.h"
+#include "uvm_hal_types.h"
 #include "uvm_mmu.h"
 #include "uvm_processors.h"
 #include "uvm_va_space.h"
@@ -67,26 +68,15 @@ static bool vidmem_can_be_mapped(uvm_mem_t *vidmem, bool is_user_space)
     return true;
 }
 
-static bool sysmem_can_be_mapped(uvm_mem_t *sysmem)
-{
-    UVM_ASSERT(uvm_mem_is_sysmem(sysmem));
-
-    // If SEV is enabled, only unprotected memory can be mapped
-    if (g_uvm_global.sev_enabled)
-        return uvm_mem_is_sysmem_dma(sysmem);
-
-    return true;
-}
-
 static bool mem_can_be_mapped_on_cpu(uvm_mem_t *mem, bool is_user_space)
 {
     if (uvm_mem_is_sysmem(mem))
-        return sysmem_can_be_mapped(mem);
+        return true;
 
     if (!vidmem_can_be_mapped(mem, is_user_space))
         return false;
 
-    return mem->backing_gpu->parent->numa_info.enabled && PAGE_ALIGNED(mem->chunk_size);
+    return mem->backing_gpu->mem_info.numa.enabled && PAGE_ALIGNED(mem->chunk_size);
 }
 
 static bool mem_can_be_mapped_on_cpu_kernel(uvm_mem_t *mem)
@@ -99,10 +89,21 @@ static bool mem_can_be_mapped_on_cpu_user(uvm_mem_t *mem)
     return mem_can_be_mapped_on_cpu(mem, true);
 }
 
+static bool sysmem_can_be_mapped_on_gpu(uvm_mem_t *sysmem)
+{
+    UVM_ASSERT(uvm_mem_is_sysmem(sysmem));
+
+    // If SEV is enabled, only unprotected memory can be mapped
+    if (g_uvm_global.sev_enabled)
+        return uvm_mem_is_sysmem_dma(sysmem);
+
+    return true;
+}
+
 static bool mem_can_be_mapped_on_gpu(uvm_mem_t *mem, uvm_gpu_t *gpu, bool is_user_space)
 {
     if (uvm_mem_is_sysmem(mem))
-        return sysmem_can_be_mapped(mem);
+        return sysmem_can_be_mapped_on_gpu(mem);
 
     if (!vidmem_can_be_mapped(mem, is_user_space))
         return false;
@@ -312,7 +313,7 @@ static NvU32 mem_pick_chunk_size(uvm_mem_t *mem)
 
     // When UVM_PAGE_SIZE_DEFAULT is used on NUMA-enabled GPUs, we force
     // chunk_size to be PAGE_SIZE at least, to allow CPU mappings.
-    if (mem->backing_gpu->parent->numa_info.enabled)
+    if (mem->backing_gpu->mem_info.numa.enabled)
         chunk_size = max(chunk_size, (NvU32)PAGE_SIZE);
 
     return chunk_size;
@@ -449,6 +450,9 @@ static gfp_t sysmem_allocation_gfp_flags(int order, bool zero)
     return gfp_flags;
 }
 
+// This allocation is a non-protected memory allocation under Confidential
+// Computing.
+//
 // There is a tighter coupling between allocation and mapping because of the
 // allocator UVM must use. Hence, this function does the equivalent of
 // uvm_mem_map_gpu_phys().
@@ -523,9 +527,10 @@ static NV_STATUS mem_alloc_sysmem_chunks(uvm_mem_t *mem, gfp_t gfp_flags)
 
 // In case of failure, the caller is required to handle cleanup by calling
 // uvm_mem_free
-static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero, bool is_protected)
+static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero, bool is_unprotected)
 {
     NV_STATUS status;
+    uvm_pmm_gpu_memory_type_t mem_type;
 
     UVM_ASSERT(uvm_mem_is_vidmem(mem));
 
@@ -542,14 +547,23 @@ static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero, bool is_prot
     if (!mem->vidmem.chunks)
         return NV_ERR_NO_MEMORY;
 
-    status = uvm_pmm_gpu_alloc_kernel(&mem->backing_gpu->pmm,
-                                      mem->chunks_count,
-                                      mem->chunk_size,
-                                      UVM_PMM_ALLOC_FLAGS_NONE,
-                                      mem->vidmem.chunks,
-                                      NULL);
+    // When CC is disabled the behavior is identical to that of PMM, and the
+    // protection flag is ignored (squashed by PMM internally).
+    if (is_unprotected)
+        mem_type = UVM_PMM_GPU_MEMORY_TYPE_KERNEL_UNPROTECTED;
+    else
+        mem_type = UVM_PMM_GPU_MEMORY_TYPE_KERNEL_PROTECTED;
+
+    status = uvm_pmm_gpu_alloc(&mem->backing_gpu->pmm,
+                               mem->chunks_count,
+                               mem->chunk_size,
+                               mem_type,
+                               UVM_PMM_ALLOC_FLAGS_NONE,
+                               mem->vidmem.chunks,
+                               NULL);
+
     if (status != NV_OK) {
-        UVM_ERR_PRINT("pmm_gpu_alloc(count=%zd, size=0x%x) failed: %s\n",
+        UVM_ERR_PRINT("uvm_pmm_gpu_alloc (count=%zd, size=0x%x) failed: %s\n",
                       mem->chunks_count,
                       mem->chunk_size,
                       nvstatusToString(status));
@@ -559,7 +573,7 @@ static NV_STATUS mem_alloc_vidmem_chunks(uvm_mem_t *mem, bool zero, bool is_prot
     return NV_OK;
 }
 
-static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zero, bool is_protected)
+static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zero, bool is_unprotected)
 {
     if (uvm_mem_is_sysmem(mem)) {
         gfp_t gfp_flags;
@@ -581,7 +595,7 @@ static NV_STATUS mem_alloc_chunks(uvm_mem_t *mem, struct mm_struct *mm, bool zer
         return status;
     }
 
-    return mem_alloc_vidmem_chunks(mem, zero, is_protected);
+    return mem_alloc_vidmem_chunks(mem, zero, is_unprotected);
 }
 
 NV_STATUS uvm_mem_map_kernel(uvm_mem_t *mem, const uvm_global_processor_mask_t *mask)
@@ -611,7 +625,7 @@ NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_ou
     NV_STATUS status;
     NvU64 physical_size;
     uvm_mem_t *mem = NULL;
-    bool is_protected = false;
+    bool is_unprotected = false;
 
     UVM_ASSERT(params->size > 0);
 
@@ -633,7 +647,12 @@ NV_STATUS uvm_mem_alloc(const uvm_mem_alloc_params_t *params, uvm_mem_t **mem_ou
     physical_size = UVM_ALIGN_UP(mem->size, mem->chunk_size);
     mem->chunks_count = physical_size / mem->chunk_size;
 
-    status = mem_alloc_chunks(mem, params->mm, params->zero, is_protected);
+    if (params->is_unprotected)
+        UVM_ASSERT(uvm_mem_is_vidmem(mem));
+
+    is_unprotected = params->is_unprotected;
+
+    status = mem_alloc_chunks(mem, params->mm, params->zero, is_unprotected);
     if (status != NV_OK)
         goto error;
 
@@ -718,8 +737,8 @@ static NV_STATUS mem_map_cpu_to_sysmem_kernel(uvm_mem_t *mem)
             pages[page_index] = mem_cpu_page(mem, page_index * PAGE_SIZE);
     }
 
-    if (g_uvm_global.sev_enabled)
-        prot = PAGE_KERNEL_NOENC;
+    if (g_uvm_global.sev_enabled && uvm_mem_is_sysmem_dma(mem))
+        prot = uvm_pgprot_decrypted(PAGE_KERNEL_NOENC);
 
     mem->kernel.cpu_addr = vmap(pages, num_pages, VM_MAP, prot);
 
@@ -982,7 +1001,7 @@ uvm_gpu_address_t uvm_mem_gpu_address_copy(uvm_mem_t *mem, uvm_gpu_t *accessing_
     UVM_ASSERT(uvm_mem_is_physically_contiguous(mem, offset, size));
 
     if (uvm_mem_is_sysmem(mem) || uvm_mem_is_local_vidmem(mem, accessing_gpu))
-        return uvm_mem_gpu_address_physical(mem, accessing_gpu, offset, size);
+        return uvm_gpu_address_copy(accessing_gpu, uvm_mem_gpu_physical(mem, accessing_gpu, offset, size));
 
     // Peer GPUs may need to use some form of translation (identity mappings,
     // indirect peers) to copy.
@@ -1040,6 +1059,16 @@ static NV_STATUS mem_map_gpu(uvm_mem_t *mem,
 
     page_size = mem_pick_gpu_page_size(mem, gpu, tree);
     UVM_ASSERT_MSG(uvm_mmu_page_size_supported(tree, page_size), "page_size 0x%x\n", page_size);
+
+    // When the Confidential Computing feature is enabled, DMA allocations are
+    // majoritarily allocated and managed by a per-GPU DMA buffer pool
+    // (uvm_conf_computing_dma_buffer_pool_t). Because we would typically
+    // already hold the DMA_BUFFER_POOL lock at this time, we cannot hold
+    // the block lock. Allocate PTEs without eviction in this context.
+    //
+    // See uvm_pmm_gpu_alloc()
+    if (uvm_mem_is_sysmem_dma(mem))
+        pmm_flags = UVM_PMM_ALLOC_FLAGS_NONE;
 
     status = uvm_page_table_range_vec_create(tree,
                                              gpu_va,
@@ -1205,7 +1234,7 @@ void uvm_mem_unmap_gpu_kernel(uvm_mem_t *mem, uvm_gpu_t *gpu)
 static bool mem_can_be_phys_mapped_on_gpu(uvm_mem_t *mem, uvm_gpu_t *gpu)
 {
     if (uvm_mem_is_sysmem(mem))
-        return sysmem_can_be_mapped(mem);
+        return sysmem_can_be_mapped_on_gpu(mem);
     else
         return uvm_mem_is_local_vidmem(mem, gpu);
 }
@@ -1306,10 +1335,16 @@ NvU64 uvm_mem_get_gpu_va_kernel(uvm_mem_t *mem, uvm_gpu_t *gpu)
 
 uvm_gpu_address_t uvm_mem_gpu_address_virtual_kernel(uvm_mem_t *mem, uvm_gpu_t *gpu)
 {
-    return uvm_gpu_address_virtual(uvm_mem_get_gpu_va_kernel(mem, gpu));
+    uvm_gpu_address_t addr = uvm_gpu_address_virtual(uvm_mem_get_gpu_va_kernel(mem, gpu));
+    if (uvm_conf_computing_mode_enabled(gpu) && mem->dma_owner)
+        addr.is_unprotected = true;
+    return addr;
 }
 
 uvm_gpu_address_t uvm_mem_gpu_address_physical(uvm_mem_t *mem, uvm_gpu_t *gpu, NvU64 offset, NvU64 size)
 {
-    return uvm_gpu_address_from_phys(uvm_mem_gpu_physical(mem, gpu, offset, size));
+    uvm_gpu_address_t addr = uvm_gpu_address_from_phys(uvm_mem_gpu_physical(mem, gpu, offset, size));
+    if (uvm_conf_computing_mode_enabled(gpu) && mem->dma_owner)
+        addr.is_unprotected = true;
+    return addr;
 }

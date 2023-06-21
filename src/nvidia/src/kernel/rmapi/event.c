@@ -188,7 +188,7 @@ eventConstruct_IMPL
 
         if (rmStatus == NV_OK)
             rmStatus = registerEventNotification(ppEventNotification,
-                                                 pRsClient->hClient,
+                                                 pRsClient,
                                                  pEvent->hNotifierResource,
                                                  pResourceRef->hResource,
                                                  pNv0050AllocParams->notifyIndex,
@@ -494,11 +494,11 @@ CliGetEventInfo
     Event          **ppEvent
 )
 {
-    RmClient       *pClient;
     RsClient       *pRsClient;
     RsResourceRef  *pResourceRef;
+    RmClient       *pClient = serverutilGetClientUnderLock(hClient);
 
-    if (NV_OK != serverutilGetClientUnderLock(hClient, &pClient))
+    if (pClient == NULL)
         return NV_FALSE;
 
     pRsClient = staticCast(pClient, RsClient);

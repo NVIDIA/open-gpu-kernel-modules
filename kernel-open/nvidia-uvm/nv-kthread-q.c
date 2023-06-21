@@ -301,7 +301,7 @@ static void _q_flush_function(void *args)
 static void _raw_q_flush(nv_kthread_q_t *q)
 {
     nv_kthread_q_item_t q_item;
-    DECLARE_COMPLETION(completion);
+    DECLARE_COMPLETION_ONSTACK(completion);
 
     nv_kthread_q_item_init(&q_item, _q_flush_function, &completion);
 

@@ -131,6 +131,7 @@ typedef struct _NvPushAllocDeviceParams {
     NvU32           numClasses;
     const NvU32    *supportedClasses;
 
+    NvPushConfidentialComputeMode confidentialComputeMode;
 } NvPushAllocDeviceParams;
 
 NvBool nvPushAllocDevice(
@@ -172,6 +173,13 @@ typedef struct _NvPushAllocChannelParams {
      * ignoreChannelErrors=TRUE to disable this check.
      */
     NvBool          ignoreChannelErrors;
+
+    /*
+     * This flag specifies if channel is intended to be used for
+     * encryption/decryption of data between SYSMEM <-> VIDMEM. Only CE
+     * & SEC2 Channels are capable of handling encrypted content.
+     */
+    NvBool          secureChannel;
 
     /*
      * DIFR stands for Display Idle Frame Refresh in which a CE is used to

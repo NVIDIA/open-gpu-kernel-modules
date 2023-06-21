@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -30,10 +30,6 @@
 #include "uvm_push_macros.h"
 #include "uvm_tracker.h"
 #include "nvtypes.h"
-
-// Space (in bytes) used by uvm_push_end() on a CE channel.
-// This is the storage required by a semaphore release.
-#define UVM_PUSH_CE_END_SIZE 24
 
 // The max amount of inline push data is limited by how much space can be jumped
 // over with a single NOOP method.
@@ -93,6 +89,12 @@ struct uvm_push_struct
 
     // A bitmap of flags from uvm_push_flag_t
     DECLARE_BITMAP(flags, UVM_PUSH_FLAG_COUNT);
+
+    // IV to use when launching WLC push
+    UvmCslIv launch_iv;
+
+    // Channel to use for indirect submission
+    uvm_channel_t *launch_channel;
 };
 
 #define UVM_PUSH_ACQUIRE_INFO_MAX_ENTRIES 16
@@ -127,7 +129,7 @@ struct uvm_push_acquire_info_struct
         };
     } values[UVM_PUSH_ACQUIRE_INFO_MAX_ENTRIES];
 
-    NvU32            num_values;
+    NvU32 num_values;
 };
 
 struct uvm_push_info_struct
@@ -361,8 +363,16 @@ static bool uvm_push_has_space(uvm_push_t *push, NvU32 free_space)
 // These do just enough for inline push data and uvm_push_get_gpu() to work.
 // Used by tests that run on fake GPUs without a channel manager (see
 // uvm_page_tree_test.c for an example).
+// When the Confidential Computing feature is enabled, LCIC channels also use
+// fake push for other things, like encrypting semaphore values to unprotected
+// sysmem.
 NV_STATUS uvm_push_begin_fake(uvm_gpu_t *gpu, uvm_push_t *push);
 void uvm_push_end_fake(uvm_push_t *push);
+
+static bool uvm_push_is_fake(uvm_push_t *push)
+{
+    return !push->channel;
+}
 
 // Begin an inline data fragment in the push
 //
@@ -380,6 +390,7 @@ void uvm_push_end_fake(uvm_push_t *push);
 static void uvm_push_inline_data_begin(uvm_push_t *push, uvm_push_inline_data_t *data)
 {
     data->push = push;
+
     // +1 for the NOOP method inserted at inline_data_end()
     data->next_data = (char*)(push->next + 1);
 }
@@ -407,7 +418,8 @@ void *uvm_push_inline_data_get(uvm_push_inline_data_t *data, size_t size);
 // Same as uvm_push_inline_data_get() but provides the specified alignment.
 void *uvm_push_inline_data_get_aligned(uvm_push_inline_data_t *data, size_t size, size_t alignment);
 
-// Get a single buffer of size bytes of inline data in the push
+// Get a single buffer of size bytes of inline data in the push, alignment must
+// be positive and a multiple of UVM_METHOD_SIZE.
 //
 // Returns the CPU pointer to the beginning of the buffer. The buffer can be
 // accessed as long as the push is on-going. Also returns the GPU address of the
@@ -415,7 +427,10 @@ void *uvm_push_inline_data_get_aligned(uvm_push_inline_data_t *data, size_t size
 //
 // This is a wrapper around uvm_push_inline_data_begin() and
 // uvm_push_inline_data_end() so see their comments for more details.
-void *uvm_push_get_single_inline_buffer(uvm_push_t *push, size_t size, uvm_gpu_address_t *gpu_address);
+void *uvm_push_get_single_inline_buffer(uvm_push_t *push,
+                                        size_t size,
+                                        size_t alignment,
+                                        uvm_gpu_address_t *gpu_address);
 
 // Helper that copies size bytes of data from src into the inline data fragment
 static void uvm_push_inline_data_add(uvm_push_inline_data_t *data, const void *src, size_t size)

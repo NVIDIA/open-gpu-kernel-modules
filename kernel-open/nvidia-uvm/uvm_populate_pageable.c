@@ -30,6 +30,14 @@
 #include "uvm_va_space.h"
 #include "uvm_populate_pageable.h"
 
+#if defined(NV_HANDLE_MM_FAULT_HAS_MM_ARG)
+#define UVM_HANDLE_MM_FAULT(vma, addr, flags)       handle_mm_fault(vma->vm_mm, vma, addr, flags)
+#elif defined(NV_HANDLE_MM_FAULT_HAS_PT_REGS_ARG)
+#define UVM_HANDLE_MM_FAULT(vma, addr, flags)       handle_mm_fault(vma, addr, flags, NULL)
+#else
+#define UVM_HANDLE_MM_FAULT(vma, addr, flags)       handle_mm_fault(vma, addr, flags)
+#endif
+
 static bool is_write_populate(struct vm_area_struct *vma, uvm_populate_permissions_t populate_permissions)
 {
     switch (populate_permissions) {
@@ -43,6 +51,34 @@ static bool is_write_populate(struct vm_area_struct *vma, uvm_populate_permissio
             UVM_ASSERT(0);
             return false;
     }
+}
+
+NV_STATUS uvm_handle_fault(struct vm_area_struct *vma, unsigned long start, unsigned long vma_num_pages, bool write)
+{
+    NV_STATUS status = NV_OK;
+
+    unsigned long i;
+    unsigned int ret = 0;
+    unsigned int fault_flags = write ? FAULT_FLAG_WRITE : 0;
+
+#ifdef FAULT_FLAG_REMOTE
+    fault_flags |= (FAULT_FLAG_REMOTE);
+#endif
+
+    for (i = 0; i < vma_num_pages; i++) {
+        ret = UVM_HANDLE_MM_FAULT(vma, start + (i * PAGE_SIZE), fault_flags);
+        if (ret & VM_FAULT_ERROR) {
+#if defined(NV_VM_FAULT_TO_ERRNO_PRESENT)
+            int err = vm_fault_to_errno(ret, fault_flags);
+            status = errno_to_nv_status(err);
+#else
+            status = errno_to_nv_status(-EFAULT);
+#endif
+            break;
+        }
+    }
+
+    return status;
 }
 
 NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
@@ -96,6 +132,10 @@ NV_STATUS uvm_populate_pageable_vma(struct vm_area_struct *vma,
     uvm_managed_vma = uvm_file_is_nvidia_uvm(vma->vm_file);
     if (uvm_managed_vma)
         uvm_record_unlock_mmap_lock_read(mm);
+
+    status = uvm_handle_fault(vma, start, vma_num_pages, !!(gup_flags & FOLL_WRITE));
+    if (status != NV_OK)
+        goto out;
 
     if (touch)
         ret = NV_PIN_USER_PAGES_REMOTE(mm, start, vma_num_pages, gup_flags, pages, NULL, NULL);

@@ -227,7 +227,7 @@ writeregu008_extdevice
     NvU8               Data
 )
 {
-    
+
     NV_STATUS status = NV_ERR_GENERIC;
 
     NvU32 i2cPort = (pGpu->i2cPortForExtdev < NV402C_CTRL_NUM_I2C_PORTS) ? pGpu->i2cPortForExtdev : pThis->I2CPort;
@@ -282,7 +282,7 @@ readregu008_extdevice
     NvU8               *pData
 )
 {
-    
+
     NV_STATUS status = NV_ERR_GENERIC;
 
     NvU32 i2cPort = (pGpu->i2cPortForExtdev < NV402C_CTRL_NUM_I2C_PORTS) ? pGpu->i2cPortForExtdev : pThis->I2CPort;

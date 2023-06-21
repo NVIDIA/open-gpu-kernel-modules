@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,7 +56,9 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_get_p2p_caps(nvidia_stack_t *, nvgpuDeviceHan
 
 NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_cpu_map(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, NvLength, void **, NvU32);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_memory_cpu_ummap(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, void*);
-NV_STATUS  NV_API_CALL  rm_gpu_ops_channel_allocate(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, const nvgpuChannelAllocParams_t *, nvgpuChannelHandle_t *, nvgpuChannelInfo_t);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_tsg_allocate(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, const nvgpuTsgAllocParams_t *, nvgpuTsgHandle_t *);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_tsg_destroy(nvidia_stack_t *, nvgpuTsgHandle_t);
+NV_STATUS  NV_API_CALL  rm_gpu_ops_channel_allocate(nvidia_stack_t *, const nvgpuTsgHandle_t, const nvgpuChannelAllocParams_t *, nvgpuChannelHandle_t *, nvgpuChannelInfo_t);
 NV_STATUS  NV_API_CALL  rm_gpu_ops_channel_destroy(nvidia_stack_t *, nvgpuChannelHandle_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_memory_free(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64);
 NV_STATUS  NV_API_CALL rm_gpu_ops_query_caps(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuCaps_t);
@@ -76,7 +78,7 @@ NV_STATUS  NV_API_CALL rm_gpu_ops_destroy_fault_info(nvidia_stack_t *, nvgpuDevi
 NV_STATUS  NV_API_CALL rm_gpu_ops_get_non_replayable_faults(nvidia_stack_t *, nvgpuFaultInfo_t, void *, NvU32 *);
 NV_STATUS  NV_API_CALL rm_gpu_ops_flush_replayable_fault_buffer(nvidia_stack_t *, nvgpuDeviceHandle_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_has_pending_non_replayable_faults(nvidia_stack_t *, nvgpuFaultInfo_t, NvBool *);
-NV_STATUS  NV_API_CALL rm_gpu_ops_init_access_cntr_info(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuAccessCntrInfo_t);
+NV_STATUS  NV_API_CALL rm_gpu_ops_init_access_cntr_info(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuAccessCntrInfo_t, NvU32);
 NV_STATUS  NV_API_CALL rm_gpu_ops_destroy_access_cntr_info(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuAccessCntrInfo_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_own_access_cntr_intr(nvidia_stack_t *, nvgpuSessionHandle_t, nvgpuAccessCntrInfo_t, NvBool);
 NV_STATUS  NV_API_CALL rm_gpu_ops_enable_access_cntr(nvidia_stack_t *, nvgpuDeviceHandle_t, nvgpuAccessCntrInfo_t, nvgpuAccessCntrConfig_t);
@@ -98,5 +100,15 @@ void       NV_API_CALL rm_gpu_ops_paging_channel_destroy(nvidia_stack_t *, nvgpu
 NV_STATUS  NV_API_CALL rm_gpu_ops_paging_channels_map(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, nvgpuDeviceHandle_t, NvU64 *);
 void       NV_API_CALL rm_gpu_ops_paging_channels_unmap(nvidia_stack_t *, nvgpuAddressSpaceHandle_t, NvU64, nvgpuDeviceHandle_t);
 NV_STATUS  NV_API_CALL rm_gpu_ops_paging_channel_push_stream(nvidia_stack_t *, nvgpuPagingChannelHandle_t, char *, NvU32);
+
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_context_init(nvidia_stack_t *, struct ccslContext_t **, nvgpuChannelHandle_t);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_context_clear(nvidia_stack_t *, struct ccslContext_t *);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_rotate_iv(nvidia_stack_t *, struct ccslContext_t *, NvU8);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_encrypt(nvidia_stack_t *, struct ccslContext_t *, NvU32, NvU8 const *, NvU8 *, NvU8 *);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_encrypt_with_iv(nvidia_stack_t *, struct ccslContext_t *, NvU32, NvU8 const *, NvU8*, NvU8 *, NvU8 *);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_decrypt(nvidia_stack_t *, struct ccslContext_t *, NvU32, NvU8 const *, NvU8 const *, NvU8 *, NvU8 const *, NvU32, NvU8 const *);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_sign(nvidia_stack_t *, struct ccslContext_t *, NvU32, NvU8 const *, NvU8 *);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_query_message_pool(nvidia_stack_t *, struct ccslContext_t *, NvU8, NvU64 *);
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_increment_iv(nvidia_stack_t *, struct ccslContext_t *, NvU8, NvU64, NvU8 *);
 
 #endif

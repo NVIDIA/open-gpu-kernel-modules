@@ -34,7 +34,7 @@
 #ifndef __vgpu_pma_guest_scrubber_h__
 #define __vgpu_pma_guest_scrubber_h__
 
-#include "gpu/mem_mgr/virt_mem_allocator_common.h"
+#include "gpu/mem_mgr/rm_page_size.h"
 
 #define VGPU_GUEST_PMA_MAX_SCRUB_ITEMS                  4096
 #define VGPU_GUEST_PMA_SCRUBBER_SHARED_BUFFER_SIZE      ((sizeof(VGPU_SCRUB_NODE) * VGPU_GUEST_PMA_MAX_SCRUB_ITEMS) + RM_PAGE_SIZE)

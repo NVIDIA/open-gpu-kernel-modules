@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 
 #include "gpu/gpu.h"
 #include "gpu/subdevice/subdevice.h"
@@ -622,7 +624,7 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
                 FOR_EACH_INDEX_IN_MASK(32, i, pParams->enabledLinkMask)
                 {
                     NV2080_CTRL_NVLINK_DEVICE_INFO *pDeviceInfo = &pParams->linkInfo[i].remoteDeviceInfo;
-                    OBJGPU *pLoopGpu = gpumgrGetGpuFromUuid(pDeviceInfo->deviceUUID, 
+                    OBJGPU *pLoopGpu = gpumgrGetGpuFromUuid(pDeviceInfo->deviceUUID,
                                                             DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1) |
                                                             DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT, _BINARY));
 

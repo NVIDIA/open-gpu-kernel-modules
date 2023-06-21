@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -286,7 +286,7 @@ NV_STATUS notifyFillNotifierArray
 NV_STATUS notifyFillNotifierGPUVATimestamp
 (
     OBJGPU    *pGpu,
-    NvHandle   hClient,
+    RsClient  *pClient,
     NvHandle   hMemoryCtx,
     NvU64      NotifyGPUVABase,
     NvV32      Info32,
@@ -302,13 +302,8 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
     NvU64                 offset;
     NvU32                 subdeviceInstance;
     NOTIFICATION         *pNotifier;
-    RsClient             *pClient;
     Device               *pDevice;
     NV_STATUS             status;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return status;
 
     status = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
     if (status != NV_OK)
@@ -317,7 +312,7 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
     notifyGPUVA = NotifyGPUVABase + (Index * sizeof(NOTIFICATION));
 
     // Memory context is required for mapping lookup
-    bFound = CliGetDmaMappingInfo(hClient,
+    bFound = CliGetDmaMappingInfo(pClient,
                                   RES_GET_HANDLE(pDevice),
                                   hMemoryCtx,
                                   notifyGPUVA,
@@ -395,7 +390,7 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
 NV_STATUS notifyFillNotifierGPUVA
 (
     OBJGPU    *pGpu,
-    NvHandle   hClient,
+    RsClient  *pClient,
     NvHandle   hMemoryCtx,
     NvU64      NotifyGPUVABase,
     NvV32      Info32,
@@ -410,7 +405,7 @@ NV_STATUS notifyFillNotifierGPUVA
     tmrGetCurrentTime(pTmr, &Time);
 
     return notifyFillNotifierGPUVATimestamp(pGpu,
-                                            hClient,
+                                            pClient,
                                             hMemoryCtx,
                                             NotifyGPUVABase,
                                             Info32,
@@ -449,6 +444,9 @@ NV_STATUS notifyFillNotifierMemoryTimestamp
 )
 {
     NvNotification * pDebugNotifier = NULL;
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    TRANSFER_SURFACE surf = {0};
 
     //
     // Check if there's already a CPU mapping we can use. If not, attempt to
@@ -458,21 +456,34 @@ NV_STATUS notifyFillNotifierMemoryTimestamp
     pDebugNotifier = (NvNotification *)((NvUPtr)pMemory->KernelVAddr);
     if (pDebugNotifier == NULL)
     {
-        pDebugNotifier = (NvNotification *) kbusMapRmAperture_HAL(pGpu,
-                                                                  pMemory->pMemDesc);
-        if (pDebugNotifier == NULL)
-        {
-            return NV_ERR_GENERIC;
-        }
+        surf.pMemDesc = pMemory->pMemDesc;
+        surf.offset = Index * sizeof(NvNotification);
+
+        pDebugNotifier =
+            (NvNotification *) memmgrMemBeginTransfer(pMemoryManager, &surf,
+                                                      sizeof(NvNotification),
+                                                      TRANSFER_FLAGS_SHADOW_ALLOC);
+        NV_ASSERT_OR_RETURN(pDebugNotifier != NULL, NV_ERR_INVALID_STATE);
+    }
+    else
+    {
+        //
+        // If a CPU pointer has been passed by caller ensure that the notifier
+        // is in sysmem or in case it in vidmem, BAR access to the same is not
+        // blocked (for HCC)
+        //
+        NV_ASSERT_OR_RETURN(
+            memdescGetAddressSpace(pMemory->pMemDesc) == ADDR_SYSMEM ||
+            !kbusIsBarAccessBlocked(pKernelBus), NV_ERR_INVALID_ARGUMENT);
+        pDebugNotifier = &pDebugNotifier[Index];
     }
 
-    notifyFillNvNotification(pGpu, &pDebugNotifier[Index], Info32, Info16,
+    notifyFillNvNotification(pGpu, pDebugNotifier, Info32, Info16,
                              CompletionStatus, NV_TRUE, Time);
 
     if (pMemory->KernelVAddr == NvP64_NULL)
     {
-        kbusUnmapRmAperture_HAL(pGpu, pMemory->pMemDesc,
-                                (NvU8 **)&pDebugNotifier, NV_TRUE);
+        memmgrMemEndTransfer(pMemoryManager, &surf, sizeof(NvNotification), 0);
     }
 
     return NV_OK;
@@ -541,7 +552,7 @@ NV_STATUS notifyFillNotifierMemory
 NV_STATUS semaphoreFillGPUVATimestamp
 (
     OBJGPU    *pGpu,
-    NvHandle   hClient,
+    RsClient  *pClient,
     NvHandle   hMemCtx,
     NvU64      SemaphoreGPUVABase,
     NvV32      ReleaseValue,
@@ -559,13 +570,8 @@ NV_STATUS semaphoreFillGPUVATimestamp
     NvGpuSemaphore       *pSemaphore;
     NvBool                bBcState = gpumgrGetBcEnabledStatus(pGpu);
     NvBool                bFound;
-    RsClient             *pClient;
     Device               *pDevice;
     NV_STATUS             status;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return status;
 
     status = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
     if (status != NV_OK)
@@ -581,7 +587,7 @@ NV_STATUS semaphoreFillGPUVATimestamp
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    bFound = CliGetDmaMappingInfo(hClient,
+    bFound = CliGetDmaMappingInfo(pClient,
                                   RES_GET_HANDLE(pDevice),
                                   hMemCtx,
                                   semaphoreGPUVA,
@@ -664,7 +670,7 @@ NV_STATUS semaphoreFillGPUVATimestamp
 NV_STATUS semaphoreFillGPUVA
 (
     OBJGPU    *pGpu,
-    NvHandle   hClient,
+    RsClient  *pClient,
     NvHandle   hMemCtx,
     NvU64      SemaphoreGPUVABase,
     NvV32      ReleaseValue,
@@ -678,7 +684,7 @@ NV_STATUS semaphoreFillGPUVA
     tmrGetCurrentTime(pTmr, &Time);
 
     return semaphoreFillGPUVATimestamp(pGpu,
-                                       hClient,
+                                       pClient,
                                        hMemCtx,
                                        SemaphoreGPUVABase,
                                        ReleaseValue,

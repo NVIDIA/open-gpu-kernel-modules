@@ -285,10 +285,13 @@ static NvBool GetSpaVersion(
         { NV2080_CTRL_GR_INFO_SM_VERSION_8_6, { 8,6 } },
         { NV2080_CTRL_GR_INFO_SM_VERSION_8_7, { 8,6 } },
         { NV2080_CTRL_GR_INFO_SM_VERSION_8_8, { 8,6 } },
+
         /* Ada */
         { NV2080_CTRL_GR_INFO_SM_VERSION_8_9, { 8,9 } },
+
         /* Hopper */
         { NV2080_CTRL_GR_INFO_SM_VERSION_9_0, { 9,0 } },
+
     };
 
     const NvU32 smVersion = GetSmVersion(pPushDevice);

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -156,7 +156,7 @@ struct Memory {
     NV_STATUS (*__memGetMemInterMapParams__)(struct Memory *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__memCheckMemInterUnmap__)(struct Memory *, NvBool);
     NV_STATUS (*__memGetMemoryMappingDescriptor__)(struct Memory *, MEMORY_DESCRIPTOR **);
-    NV_STATUS (*__memCheckCopyPermissions__)(struct Memory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__memCheckCopyPermissions__)(struct Memory *, struct OBJGPU *, struct Device *);
     NV_STATUS (*__memIsReady__)(struct Memory *, NvBool);
     NvBool (*__memIsGpuMapAllowed__)(struct Memory *, struct OBJGPU *);
     NV_STATUS (*__memCtrlCmdGetSurfaceCompressionCoverageLvm__)(struct Memory *, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *);
@@ -244,7 +244,7 @@ NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define memGetMemInterMapParams(pMemory, pParams) memGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define memCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) memCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define memGetMemoryMappingDescriptor(pMemory, ppMemDesc) memGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
-#define memCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) memCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define memCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) memCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define memIsReady(pMemory, bCopyConstructorContext) memIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define memIsGpuMapAllowed(pMemory, pGpu) memIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define memCtrlCmdGetSurfaceCompressionCoverageLvm(pMemory, pParams) memCtrlCmdGetSurfaceCompressionCoverageLvm_DISPATCH(pMemory, pParams)
@@ -317,12 +317,12 @@ static inline NV_STATUS memGetMemoryMappingDescriptor_DISPATCH(struct Memory *pM
     return pMemory->__memGetMemoryMappingDescriptor__(pMemory, ppMemDesc);
 }
 
-static inline NV_STATUS memCheckCopyPermissions_ac1694(struct Memory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
+static inline NV_STATUS memCheckCopyPermissions_ac1694(struct Memory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
     return NV_OK;
 }
 
-static inline NV_STATUS memCheckCopyPermissions_DISPATCH(struct Memory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__memCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS memCheckCopyPermissions_DISPATCH(struct Memory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__memCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 NV_STATUS memIsReady_IMPL(struct Memory *pMemory, NvBool bCopyConstructorContext);

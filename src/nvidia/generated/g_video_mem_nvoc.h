@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
  /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,18 @@ extern "C" {
 #include "gpu/mem_mgr/heap_base.h"
 
 typedef struct PMA_ALLOC_INFO PMA_ALLOC_INFO;
+struct Device;
+
+#ifndef __NVOC_CLASS_Device_TYPEDEF__
+#define __NVOC_CLASS_Device_TYPEDEF__
+typedef struct Device Device;
+#endif /* __NVOC_CLASS_Device_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_Device
+#define __nvoc_class_id_Device 0xe0ac20
+#endif /* __nvoc_class_id_Device */
+
+
 
 #ifdef NVOC_VIDEO_MEM_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
@@ -54,7 +66,7 @@ struct VideoMemory {
     struct Memory *__nvoc_pbase_Memory;
     struct StandardMemory *__nvoc_pbase_StandardMemory;
     struct VideoMemory *__nvoc_pbase_VideoMemory;
-    NV_STATUS (*__vidmemCheckCopyPermissions__)(struct VideoMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__vidmemCheckCopyPermissions__)(struct VideoMemory *, struct OBJGPU *, struct Device *);
     NV_STATUS (*__vidmemCheckMemInterUnmap__)(struct VideoMemory *, NvBool);
     NvBool (*__vidmemShareCallback__)(struct VideoMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__vidmemMapTo__)(struct VideoMemory *, RS_RES_MAP_TO_PARAMS *);
@@ -109,7 +121,7 @@ NV_STATUS __nvoc_objCreate_VideoMemory(VideoMemory**, Dynamic*, NvU32, CALL_CONT
 #define __objCreate_VideoMemory(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_VideoMemory((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
-#define vidmemCheckCopyPermissions(pVideoMemory, pDstGpu, hDstClientNvBool) vidmemCheckCopyPermissions_DISPATCH(pVideoMemory, pDstGpu, hDstClientNvBool)
+#define vidmemCheckCopyPermissions(pVideoMemory, pDstGpu, pDstDevice) vidmemCheckCopyPermissions_DISPATCH(pVideoMemory, pDstGpu, pDstDevice)
 #define vidmemCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) vidmemCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define vidmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) vidmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define vidmemMapTo(pResource, pParams) vidmemMapTo_DISPATCH(pResource, pParams)
@@ -134,10 +146,10 @@ NV_STATUS __nvoc_objCreate_VideoMemory(VideoMemory**, Dynamic*, NvU32, CALL_CONT
 #define vidmemControlSerialization_Epilogue(pResource, pCallContext, pParams) vidmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define vidmemMap(pMemory, pCallContext, pParams, pCpuMapping) vidmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
 #define vidmemAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) vidmemAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-NV_STATUS vidmemCheckCopyPermissions_IMPL(struct VideoMemory *pVideoMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool);
+NV_STATUS vidmemCheckCopyPermissions_IMPL(struct VideoMemory *pVideoMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice);
 
-static inline NV_STATUS vidmemCheckCopyPermissions_DISPATCH(struct VideoMemory *pVideoMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pVideoMemory->__vidmemCheckCopyPermissions__(pVideoMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS vidmemCheckCopyPermissions_DISPATCH(struct VideoMemory *pVideoMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pVideoMemory->__vidmemCheckCopyPermissions__(pVideoMemory, pDstGpu, pDstDevice);
 }
 
 static inline NV_STATUS vidmemCheckMemInterUnmap_DISPATCH(struct VideoMemory *pMemory, NvBool bSubdeviceHandleProvided) {
@@ -242,9 +254,9 @@ NV_STATUS vidmemConstruct_IMPL(struct VideoMemory *arg_pVideoMemory, CALL_CONTEX
 void vidmemDestruct_IMPL(struct VideoMemory *pVideoMemory);
 
 #define __nvoc_vidmemDestruct(pVideoMemory) vidmemDestruct_IMPL(pVideoMemory)
-struct Heap *vidmemGetHeap_IMPL(struct OBJGPU *pGpu, NvHandle hClient, NvBool bSubheap);
+struct Heap *vidmemGetHeap_IMPL(struct OBJGPU *pGpu, struct Device *pDevice, NvBool bSubheap);
 
-#define vidmemGetHeap(pGpu, hClient, bSubheap) vidmemGetHeap_IMPL(pGpu, hClient, bSubheap)
+#define vidmemGetHeap(pGpu, pDevice, bSubheap) vidmemGetHeap_IMPL(pGpu, pDevice, bSubheap)
 #undef PRIVATE_FIELD
 
 

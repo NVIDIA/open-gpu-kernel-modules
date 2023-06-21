@@ -1601,7 +1601,7 @@ gpuValidateRegOffset_IMPL
 {
     NvU64 maxBar0Size = pGpu->deviceMappings[0].gpuNvLength;
 
-    // The register offset should be 4 bytes smaller than the max bar size 
+    // The register offset should be 4 bytes smaller than the max bar size
     if (offset > (maxBar0Size - 4))
     {
         return NV_ERR_INVALID_ARGUMENT;

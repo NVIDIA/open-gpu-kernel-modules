@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,6 +37,7 @@ extern "C" {
 #include "ctrl/ctrl2080/ctrl2080vgpumgrinternal.h"
 #include "ctrl/ctrla081.h"
 #include "ctrl/ctrla084.h"
+#include "ctrl/ctrlc637.h"
 
 #include "gpu/gpu.h"
 #include "nv-hypervisor.h"
@@ -71,6 +72,7 @@ typedef struct VgpuConfigApi VgpuConfigApi;
 #endif /* __nvoc_class_id_VgpuConfigApi */
 
 
+typedef struct KERNEL_MIG_GPU_INSTANCE KERNEL_MIG_GPU_INSTANCE;
 
 /* vGPU events info lookup node*/
 typedef struct VGPU_EVENT_INFO_NODE
@@ -122,10 +124,13 @@ typedef struct KERNEL_HOST_VGPU_DEVICE
     NvHandle                         hPluginFBAllocationClient;
     VGPU_DEVICE_GUEST_FB_INFO        vgpuDeviceGuestFbInfo;
     NvU32                           *pGuestFbSegment;
-    NvU32                            guestFbSegmentPageSize;
+    NvU64                            guestFbSegmentPageSize;
     NvBool                           bOfflinedPageInfoValid;
     NvU32                            offlinedPageCount;       /* offlined page count */
     NvU64                            offlinedPageGpa[NV2080_CTRL_FB_OFFLINED_PAGES_MAX_PAGES];
+    MEMORY_DESCRIPTOR                *pGspPluginHeapMemDesc;
+    NvBool                            bDisableDefaultSmcExecPartRestore;
+    struct GPUMGR_SAVE_COMPUTE_INSTANCE savedExecPartitions[NVC637_CTRL_MAX_EXEC_PARTITIONS];
 } KERNEL_HOST_VGPU_DEVICE;
 
 MAKE_LIST(KERNEL_HOST_VGPU_DEVICE_LIST, KERNEL_HOST_VGPU_DEVICE);
@@ -204,7 +209,6 @@ struct KernelVgpuMgr {
     NvU32 user_max_supported_version;
     struct OBJEHEAP *pHeap;
     REQUEST_VGPU_INFO_NODE_LIST listRequestVgpuHead;
-    MEMORY_DESCRIPTOR *pGspPluginHeapMemDesc;
 };
 
 #ifndef __NVOC_CLASS_KernelVgpuMgr_TYPEDEF__
@@ -265,10 +269,6 @@ NV_STATUS
 kvgpumgrDetachGpu(NvU32 gpuPciId);
 
 NV_STATUS
-kvgpumgrRegisterGuestId(NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_SET_GUEST_ID_PARAMS *pParams,
-                        KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice, struct OBJGPU *pGpu);
-
-NV_STATUS
 kvgpumgrGuestRegister(struct OBJGPU *pGpu,
                       NvU32 gfid,
                       NvU32 vgpuType,
@@ -326,9 +326,8 @@ kvgpumgrGetHostVgpuDeviceFromMdevUuid(NvU32 gpuPciId, const NvU8 *pMdevUuid,
                                       KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice);
 
 NV_STATUS
-kvgpumgrGetHostVgpuDeviceFromVmId(NvU32 gpuPciId, VM_ID guestVmId,
-                                  KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice,
-                                  VM_ID_TYPE vmIdType);
+kvgpumgrGetHostVgpuDeviceFromVgpuUuid(NvU32 gpuPciId, NvU8 *vgpuUuid,
+                                  KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice);
 
 NV_STATUS
 kvgpumgrGetCreatableVgpuTypes(struct OBJGPU *pGpu, struct KernelVgpuMgr *pKernelVgpuMgr, NvU32 pgpuIndex, NvU32* numVgpuTypes, NvU32* vgpuTypes);
@@ -368,6 +367,13 @@ kvgpumgrSendAllVgpuTypesToGsp(struct OBJGPU *pGpu);
 
 NvBool
 kvgpumgrIsHeterogeneousVgpuSupported(void);
+
+NV_STATUS
+kvgpumgrGetHostVgpuDeviceFromGfid(NvU32 gpuPciId, NvU32 gfid,
+                                  KERNEL_HOST_VGPU_DEVICE** ppHostVgpuDevice);
+NV_STATUS
+kvgpuMgrRestoreSmcExecPart(struct OBJGPU *pGpu,KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice,
+                           KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance);
 
 #endif // __kernel_vgpu_mgr_h__
 

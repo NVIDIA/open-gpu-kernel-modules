@@ -29,6 +29,7 @@
 #include "class/cl0071.h" // NV01_MEMORY_SYSTEM_OS_DESCRIPTOR
 #include "class/cl50a0.h" // NV50_MEMORY_VIRTUAL
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
+#include "class/cl0042.h" // NV_MEMORY_EXTENDED_USER
 
 #include "ctrl/ctrl0041.h" // NV04_MEMORY
 #include "ctrl/ctrl2080/ctrl2080fb.h" // NV2080_CTRL_FB_INFO
@@ -142,7 +143,7 @@ _rmVidHeapControlAllocCommon
         externalClassId = NV01_MEMORY_SYSTEM;
 
     status = pContext->RmAlloc(pContext, hClient, hDevice, phMemory, externalClassId,
-                               pUserParams);
+                               pUserParams, sizeof(*pUserParams));
 
     pArgs->free = 0;
     pArgs->total = 0;
@@ -539,7 +540,8 @@ _nvos32FunctionHwAlloc
                                pArgs->hObjectParent,
                                &pArgs->data.HwAlloc.allochMemory,
                                NV01_MEMORY_HW_RESOURCES,
-                               &allocParams);
+                               &allocParams,
+                               sizeof(allocParams));
 
     pArgs->data.HwAlloc.hResourceHandle = pArgs->data.HwAlloc.allochMemory;
 
@@ -590,7 +592,8 @@ _nvos32FunctionAllocOsDesc
                                pArgs->hObjectParent,
                                &pArgs->data.AllocOsDesc.hMemory,
                                NV01_MEMORY_SYSTEM_OS_DESCRIPTOR,
-                               &allocParams);
+                               &allocParams,
+                               sizeof(allocParams));
 
     return status;
 }

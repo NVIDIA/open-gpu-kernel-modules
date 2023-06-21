@@ -159,7 +159,7 @@ CliNotifyGsyncEvent
             // Syncloss could also be a notifcation to reset the
             // event notification tracking when enabling framelock.
             //
-            if ((NV30F1_CTRL_GSYNC_SET_EVENT_NOTIFICATION_ACTION_SMART_SYNC_LOSS == oldEventFlags) && 
+            if ((NV30F1_CTRL_GSYNC_SET_EVENT_NOTIFICATION_ACTION_SMART_SYNC_LOSS == oldEventFlags) &&
                 (pEventNotification == NULL))
             {
                 // update smart event notification tracking when

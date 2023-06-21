@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -105,6 +105,11 @@ memmgrGetDeviceCaps
         }
     }
 
+    if (pMemoryManager->bGenericKindSupport)
+    {
+        RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _GENERIC_PAGE_KIND);
+    }
+
     if (memmgrIsScrubOnFreeEnabled(pMemoryManager)) {
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _VIDMEM_ALLOCS_ARE_CLEARED);
     }
@@ -153,6 +158,8 @@ memmgrGetDeviceCaps
                    NV0080_CTRL_FB_CAPS, _OS_OWNS_HEAP_NEED_ECC_SCRUB);
     RMCTRL_OR_CAP(pFbCaps, tempCaps, temp,
                    NV0080_CTRL_FB_CAPS, _DISABLE_TILED_CACHING_INVALIDATES_WITH_ECC_BUG_1521641);
+    RMCTRL_AND_CAP(pFbCaps, tempCaps, temp,
+                   NV0080_CTRL_FB_CAPS, _GENERIC_PAGE_KIND);
     RMCTRL_OR_CAP(pFbCaps, tempCaps, temp,
                    NV0080_CTRL_FB_CAPS, _DISABLE_MSCG_WITH_VR_BUG_1681803);
     RMCTRL_AND_CAP(pFbCaps, tempCaps, temp,
@@ -255,23 +262,14 @@ subdeviceCtrlCmdFbGetBar1Offset_IMPL
     NV2080_CTRL_FB_GET_BAR1_OFFSET_PARAMS *pFbMemParams
 )
 {
-    OBJGPU       *pGpu     = GPU_RES_GET_GPU(pSubdevice);
     NvHandle      hClient  = RES_GET_CLIENT_HANDLE(pSubdevice);
-    Device       *pDevice;
+    NvHandle      hDevice  = RES_GET_PARENT_HANDLE(pSubdevice);
     NvU64         offset;
     RsCpuMapping *pCpuMapping = NULL;
-    NV_STATUS     status;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
-    // Get the device handle
-    status = deviceGetByInstance(RES_GET_CLIENT(pSubdevice),
-                                 gpuGetDeviceInstance(pGpu),
-                                 &pDevice);
-    if (status != NV_OK)
-        return NV_ERR_INVALID_ARGUMENT;
-
-    pCpuMapping = CliFindMappingInClient(hClient, RES_GET_HANDLE(pDevice), pFbMemParams->cpuVirtAddress);
+    pCpuMapping = CliFindMappingInClient(hClient, hDevice, pFbMemParams->cpuVirtAddress);
     if (pCpuMapping == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
@@ -353,8 +351,9 @@ subdeviceCtrlCmdFbGetMemAlignment_IMPL
 {
     OBJGPU                 *pGpu       = GPU_RES_GET_GPU(pSubdevice);
     NvHandle                hClient    = RES_GET_CLIENT_HANDLE(pSubdevice);
+    Device                 *pDevice    = GPU_RES_GET_DEVICE(pSubdevice);
     NvHandle                hObject    = RES_GET_HANDLE(pSubdevice);
-    Heap                   *pHeap      = vidmemGetHeap(pGpu, hClient, NV_FALSE);
+    Heap                   *pHeap      = vidmemGetHeap(pGpu, pDevice, NV_FALSE);
     HEAP_ALLOC_HINT_PARAMS  AllocHint  = {0};
     NvU32                   i;
     NvU64                   _size, _alignment;
@@ -793,6 +792,35 @@ diagapiCtrlCmdFbEccAsyncScrubRegion_IMPL
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     memmgrAsyncScrubRegion_HAL(pGpu, pMemoryManager, pConfig->startBlock, pConfig->endBlock);
+
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGbGetSemaphoreSurfaceLayout_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_PARAMS *pParams
+)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(GPU_RES_GET_GPU(pSubdevice));
+
+    pParams->caps = 0;
+
+    if (pMemoryManager->bMonitoredFenceSupported)
+        pParams->caps |= NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_CAPS_MONITORED_FENCE_SUPPORTED;
+
+    if (pMemoryManager->b64BitSemaphoresSupported)
+        pParams->caps |= NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_CAPS_64BIT_SEMAPHORES_SUPPORTED;
+
+    //
+    // Assume semaphore values to always be 64-bit for simplicity
+    // It is not possible to pack the surface better due to alignment requirements,
+    // so use the static layout here. But keep the offsets interface for flexibility in the future.
+    //
+    pParams->monitoredFenceThresholdOffset = 16; // payload + timestamp
+    pParams->maxSubmittedSemaphoreValueOffset = 24;
+    pParams->size = 32;
 
     return NV_OK;
 }

@@ -328,6 +328,8 @@ static void EvoSetRasterParams90(NVDevEvoPtr pDevEvo, int head,
  */
 static void EvoSetRasterParams91(NVDevEvoPtr pDevEvo, int head,
                                  const NVHwModeTimingsEvo *pTimings,
+                                 const NvU8 tilePosition,
+                                 const NVDscInfoEvoRec *pDscInfo,
                                  const NVEvoColorRec *pOverscanColor,
                                  NVEvoUpdateState *updateState)
 {
@@ -335,6 +337,9 @@ static void EvoSetRasterParams91(NVDevEvoPtr pDevEvo, int head,
     NvU32 hdmiStereoCtrl =
         DRF_DEF(917D, _HEAD_SET_HDMI_CTRL, _STEREO3D_STRUCTURE, _FRAME_PACKED) |
         DRF_NUM(917D, _HEAD_SET_HDMI_CTRL, _HDMI_VIC, 0);
+
+    nvAssert(tilePosition == 0);
+    nvAssert(pDscInfo->type == NV_DSC_INFO_EVO_TYPE_DISABLED);
 
     EvoSetRasterParams90(pDevEvo, head,
                          pTimings,
@@ -2518,8 +2523,11 @@ static void EvoSetLUTContextDma90(const NVDispEvoRec *pDispEvo,
                REF_VAL(NV##cl##_CORE_NOTIFIER_##n##_CAPABILITIES_CAP_HEAD##i##_##x##_MAX_PIXELS##t##TAP444, \
                (pCaps)[NV##cl##_CORE_NOTIFIER_##n##_CAPABILITIES_CAP_HEAD##i##_##x]))
 
-#define NV_EVO2_CAP_GET_HEAD(cl, n, pEvoCaps, i, x, y, z, pCaps) \
+#define NV_EVO2_CAP_GET_HEAD(cl, n, pEvoCaps, i, x, y, z, a, pCaps) \
     (pEvoCaps)->head[(i)].usable = TRUE; \
+    (pEvoCaps)->head[(i)].maxPClkKHz = \
+        DRF_VAL(cl##_CORE_NOTIFIER_##n, _CAPABILITIES_CAP_HEAD##i##_##a, _PCLK_MAX, \
+                (pCaps)[NV##cl##_CORE_NOTIFIER_##n##_CAPABILITIES_CAP_HEAD##i##_##a]) * 10000; \
     (pEvoCaps)->head[(i)].scalerCaps.present = TRUE; \
     NV_EVO2_CAP_GET_HEAD_MAX_PIXELS(cl, n, pEvoCaps, i, x, 5, pCaps); \
     NV_EVO2_CAP_GET_HEAD_MAX_PIXELS(cl, n, pEvoCaps, i, y, 3, pCaps); \
@@ -2570,10 +2578,10 @@ static void EvoParseCapabilityNotifier3(NVEvoCapabilitiesPtr pEvoCaps,
     pEvoCaps->misc.supportsDSI = FALSE;
 
     // Heads
-    NV_EVO2_CAP_GET_HEAD(917D, 3, pEvoCaps, 0, 53, 54, 55, pCaps);
-    NV_EVO2_CAP_GET_HEAD(917D, 3, pEvoCaps, 1, 61, 62, 63, pCaps);
-    NV_EVO2_CAP_GET_HEAD(917D, 3, pEvoCaps, 2, 69, 70, 71, pCaps);
-    NV_EVO2_CAP_GET_HEAD(917D, 3, pEvoCaps, 3, 77, 78, 79, pCaps);
+    NV_EVO2_CAP_GET_HEAD(917D, 3, pEvoCaps, 0, 53, 54, 55, 56, pCaps);
+    NV_EVO2_CAP_GET_HEAD(917D, 3, pEvoCaps, 1, 61, 62, 63, 64, pCaps);
+    NV_EVO2_CAP_GET_HEAD(917D, 3, pEvoCaps, 2, 69, 70, 71, 72, pCaps);
+    NV_EVO2_CAP_GET_HEAD(917D, 3, pEvoCaps, 3, 77, 78, 79, 80, pCaps);
 
     // SORs
     NV_EVO2_CAP_GET_SOR(917D, 3, pEvoCaps, 0, 20, 21, pCaps);
@@ -3851,6 +3859,7 @@ NVEvoHAL nvEvo94 = {
     EvoClearSurfaceUsage91,                       /* ClearSurfaceUsage */
     EvoComputeWindowScalingTaps91,                /* ComputeWindowScalingTaps */
     NULL,                                         /* GetWindowScalingCaps */
+    NULL,                                         /* SetMergeMode */
     {                                             /* caps */
         FALSE,                                    /* supportsNonInterlockedUsageBoundsUpdate */
         FALSE,                                    /* supportsDisplayRate */
@@ -3868,6 +3877,7 @@ NVEvoHAL nvEvo94 = {
         FALSE,                                    /* supportsSynchronizedOverlayPositionUpdate */
         FALSE,                                    /* supportsVblankSyncObjects */
         TRUE,                                     /* requiresScalingTapsInBothDimensions */
+        FALSE,                                    /* supportsMergeMode */
         NV_EVO2_SUPPORTED_DITHERING_MODES,        /* supportedDitheringModes */
         sizeof(NV5070_CTRL_CMD_IS_MODE_POSSIBLE_PARAMS), /* impStructSize */
         NV_EVO_SCALER_1TAP,                       /* minScalerTaps */

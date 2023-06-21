@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,6 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
+
 #include "os/os.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
@@ -31,7 +33,7 @@
  * @brief This routine overrides the nvlink connection topology if chiplib arguments
  *        have been provided. It queries MODS API for the chiplib overrides and based
  *        on that, derives hshub configuration values that are programmed at a later
- *        stage during nvlink state load. The override values should exist for ALL 
+ *        stage during nvlink state load. The override values should exist for ALL
  *        links or NO links. The field encoding can be found in phys_nvlink.h
  *
  * @param[in] pGpu           OBJGPU pointer
@@ -248,4 +250,37 @@ knvlinkValidateFabricBaseAddress_GA100
     }
 
     return NV_OK;
+}
+
+/*!
+ * @brief   Checks to see if the GPU is a reduced nvlink config
+ *
+ * @param[in] pGpu            OBJGPU pointer
+ * @param[in] pKernelNvlink   KernelNvlink pointer
+ *
+ * @returns On the gpu being a reduced config, NV_TRUE.
+ *          otherwise , returns NV_FALSE.
+ */
+NvBool
+knvlinkIsGpuReducedNvlinkConfig_GA100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS params;
+    NV_STATUS status;
+
+    portMemSet(&params, 0, sizeof(params));
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                             NV2080_CTRL_CMD_NVLINK_IS_REDUCED_CONFIG,
+                             (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to execute GSP-RM GPC to get if the gpu has a reduced Nvlink config\n");
+        return NV_FALSE;
+    }
+
+    return params.bReducedNvlinkConfig;
 }

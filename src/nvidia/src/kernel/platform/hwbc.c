@@ -160,7 +160,7 @@ static NV_STATUS Plx_Pex8747_GetUpstreamBusSpeed(OBJHWBC *pPlx, OBJCL *pCl, NvU3
 static RmPhysAddr Plx_Pex8747_GetBar0(OBJCL *pCl, OBJHWBC *pPlx);
 
 //
-// static functions 
+// static functions
 //
 
 static OBJHWBC  *objClFindUpperHWBC(OBJCL *, NBADDR, OBJHWBC *, RmPhysAddr);

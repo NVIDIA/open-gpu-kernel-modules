@@ -50,7 +50,8 @@ memmgrScrubMapDoorbellRegion_GV100
                                      pChannel->subdeviceId,
                                      pChannel->doorbellRegionHandle,
                                      VOLTA_USERMODE_A,
-                                     NULL);
+                                     NULL,
+                                     0);
     if (status != NV_OK)
         goto exit;
 
@@ -115,8 +116,8 @@ memmgrGetMaxContextSize_GV100
     }
     else
     {
-        // TODO: Remove the PMA check after enabling on all chips.
-        if (memmgrIsPmaInitialized(pMemoryManager))
+        if (memmgrIsPmaEnabled(pMemoryManager) &&
+            memmgrIsPmaSupportedOnPlatform(pMemoryManager))
         {
             //
             // Increase the context size by 120 MB.

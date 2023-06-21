@@ -31,10 +31,6 @@
 #include "nvtypes.h"
 #include "flcnretval.h"
 
-#ifndef NV_SIZEOF32
-#define NV_SIZEOF32(v) (sizeof(v))
-#endif
-
 #ifndef NV_ARRAY_ELEMENTS
 #define NV_ARRAY_ELEMENTS(x)   ((sizeof(x)/sizeof((x)[0])))
 #endif

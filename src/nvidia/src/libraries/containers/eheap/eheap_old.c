@@ -376,19 +376,19 @@ eheapAlloc
         if (blockFree == NULL)
             goto failed;
 
-        do 
+        do
         {
-            desiredOffset = NV_ALIGN_DOWN(blockFree->begin, pHeap->ownerGranularity) + offsetAlign; 
+            desiredOffset = NV_ALIGN_DOWN(blockFree->begin, pHeap->ownerGranularity) + offsetAlign;
 
             while (desiredOffset + allocSize - 1 <= blockFree->end)
             {
                 desiredOffsetLo = NV_ALIGN_DOWN(desiredOffset, pHeap->ownerGranularity);
-                desiredOffsetHi = (((desiredOffset % pHeap->ownerGranularity) == 0) ? 
+                desiredOffsetHi = (((desiredOffset % pHeap->ownerGranularity) == 0) ?
                                     NV_ALIGN_UP((desiredOffset + 1), pHeap->ownerGranularity) :
                                     NV_ALIGN_UP(desiredOffset, pHeap->ownerGranularity));
 
                 if ((desiredOffset >= blockFree->begin) &&
-                    ((desiredOffsetLo >= blockFree->begin) && 
+                    ((desiredOffsetLo >= blockFree->begin) &&
                      (desiredOffsetHi <= blockFree->end)))
                 {
                     if (_eheapCheckOwnership(pHeap, pIsolationID, desiredOffset,
@@ -403,8 +403,8 @@ eheapAlloc
 
                 desiredOffset += pHeap->ownerGranularity;
             }
-                        
-            blockFree = blockFree->nextFree;        
+
+            blockFree = blockFree->nextFree;
 
         } while (blockFree != pHeap->pFreeBlockList);
 
@@ -456,7 +456,7 @@ eheapAlloc
                              desiredOffset + allocSize - 1, blockFree, checker))
                     {
                         break;
-                    }                    
+                    }
                 }
 
                 // we have a match, now remove it from the pool
@@ -571,7 +571,7 @@ eheapAlloc
                     allocLo = allocAl;
                     allocHi = allocAl + allocSize - 1;
 
-                    if (_eheapCheckOwnership(pHeap, pIsolationID, allocLo, allocHi, blockFree, checker)) 
+                    if (_eheapCheckOwnership(pHeap, pIsolationID, allocLo, allocHi, blockFree, checker))
                     {
                         goto alloc_done;
                     }
@@ -1075,8 +1075,8 @@ eheapInfo
 {
     NV_RANGE range = rangeMake(pHeap->rangeLo, pHeap->rangeHi);
 
-    if (pBytesFree) 
-    {  
+    if (pBytesFree)
+    {
         *pBytesFree  = pHeap->free;
     }
     if (pBytesTotal)
@@ -1100,14 +1100,14 @@ eheapInfoForRange
     PEMEMBLOCK blockFirstFree, blockFree;
     NvU64 freeBlockSize = 0;
     NvU64 largestFreeOffset = 0;
-    NvU64 largestFreeSize = 0;  
+    NvU64 largestFreeSize = 0;
     NvU32 numFreeBlocks = 0;
 
     if (pUsableBytesFree)
         *pUsableBytesFree = 0;
 
     blockFirstFree = pHeap->pFreeBlockList;
-    if (blockFirstFree) 
+    if (blockFirstFree)
     {
         NV_ASSERT( range.lo <= range.hi );
 
@@ -1385,7 +1385,7 @@ _eheapCheckOwnership
 {
     EMEMBLOCK *pTmpBlock;
     NvU64      checkLo = NV_ALIGN_DOWN(allocLo, pHeap->ownerGranularity);
-    NvU64      checkHi = (((allocHi % pHeap->ownerGranularity) == 0) ? 
+    NvU64      checkHi = (((allocHi % pHeap->ownerGranularity) == 0) ?
                             NV_ALIGN_UP((allocHi + 1), pHeap->ownerGranularity) :
                             NV_ALIGN_UP(allocHi, pHeap->ownerGranularity));
     NvU64      check;
@@ -1407,7 +1407,7 @@ _eheapCheckOwnership
                 if (!pComparator(pIsolationID, pTmpBlock->pData))
                 {
                     return NV_FALSE;
-                }             
+                }
             }
 
             check = pTmpBlock->end + 1;

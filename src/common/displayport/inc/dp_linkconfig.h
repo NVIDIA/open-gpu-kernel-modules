@@ -36,6 +36,7 @@
 #include "ctrl/ctrl0073/ctrl0073specific.h" // NV0073_CTRL_HDCP_VPRIME_SIZE
 #include "displayport.h"
 
+
 namespace DisplayPort
 {
     typedef NvU64 LinkRate;
@@ -45,7 +46,7 @@ namespace DisplayPort
     public:
         // Store link rate in multipler of 270MBPS to save space
         NvU8 element[NV_DPCD_SUPPORTED_LINK_RATES__SIZE];
-        NvU8 entries;
+        NvU8  entries;
 
         LinkRates()
         {
@@ -143,18 +144,17 @@ namespace DisplayPort
         totalUsableTimeslots = totalTimeslots - 1
     };
 
-    // in MBps
+    // in 10bps
     enum
     {
-        RBR         = 162000000,
-        EDP_2_16GHZ = 216000000,
-        EDP_2_43GHZ = 243000000,
-        HBR         = 270000000,
-        EDP_3_24GHZ = 324000000,
-        EDP_4_32GHZ = 432000000,
-        HBR2        = 540000000,
-        EDP_6_75GHZ = 675000000,
-        HBR3        = 810000000
+        RBR             =  162000000,
+        EDP_2_16GHZ     =  216000000,
+        EDP_2_43GHZ     =  243000000,
+        HBR             =  270000000,
+        EDP_3_24GHZ     =  324000000,
+        EDP_4_32GHZ     =  432000000,
+        HBR2            =  540000000,
+        HBR3            =  810000000
     };
 
     struct HDCPState

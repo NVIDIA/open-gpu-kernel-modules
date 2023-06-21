@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2020 NVidia Corporation
+    Copyright (c) 2017-2023 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -297,7 +297,6 @@ nvlink_core_get_endpoint_state
     NvU64     state = NVLINK_LINKSTATE_INVALID;
     NvU64     dlState = NVLINK_LINKSTATE_INVALID;
     NvU64     tlState = NVLINK_LINKSTATE_INVALID;
-
     if ((link == NULL) || (linkState == NULL))
     {
         return;
@@ -309,7 +308,7 @@ nvlink_core_get_endpoint_state
     // unless the corresponding HAL/Callbacks are not registered, which can
     // happen during early development cycle. Adding an assert to catch that
     // in debug builds.
-    //
+    //    
 
     status = link->link_handlers->get_dl_link_mode(link, &dlState);
     nvlink_assert(status == NVL_SUCCESS);

@@ -81,6 +81,8 @@ NVLOG_LOGGER NvLogLogger =
 NV_STATUS
 nvlogInit(void *pData)
 {
+    NV_STATUS status = NV_OK;
+
     nvlogRegRoot = pData;
     portInitialize();
     NvLogLogger.mainLock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
@@ -88,8 +90,13 @@ nvlogInit(void *pData)
     {
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
+    NvLogLogger.buffersLock = portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
+    if (NvLogLogger.buffersLock == NULL)
+    {
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+    }
     tlsInitialize();
-    return NV_OK;
+    return status;
 }
 
 void nvlogUpdate(void) {
@@ -98,22 +105,30 @@ void nvlogUpdate(void) {
 NV_STATUS
 nvlogDestroy(void)
 {
+    NV_STATUS status = NV_OK;
     NvU32 i;
 
-    tlsShutdown();
     for (i = 0; i < NVLOG_MAX_BUFFERS; i++)
     {
         nvlogDeallocBuffer(i, NV_TRUE);
     }
+
     if (NvLogLogger.mainLock != NULL)
     {
         portSyncSpinlockDestroy(NvLogLogger.mainLock);
         NvLogLogger.mainLock = NULL;
     }
+    if (NvLogLogger.buffersLock != NULL)
+    {
+        portSyncMutexDestroy(NvLogLogger.buffersLock);
+        NvLogLogger.buffersLock = NULL;
+    }
 
+    tlsShutdown();
     /// @todo Destructor should return void.
     portShutdown();
-    return NV_OK;
+
+    return status;
 }
 
 static NV_STATUS
@@ -228,6 +243,7 @@ nvlogAllocBuffer
         return status;
     }
 
+    portSyncMutexAcquire(NvLogLogger.buffersLock);
     portSyncSpinlockAcquire(NvLogLogger.mainLock);
 
     if (NvLogLogger.nextFree < NVLOG_MAX_BUFFERS)
@@ -249,6 +265,7 @@ nvlogAllocBuffer
         else break;
     }
     portSyncSpinlockRelease(NvLogLogger.mainLock);
+    portSyncMutexRelease(NvLogLogger.buffersLock);
 
     if (status != NV_OK)
     {
@@ -282,11 +299,13 @@ nvlogDeallocBuffer
                                  _YES, pBuffer->flags);
 
     while (pBuffer->threadCount > 0) { /*spin*/ }
+    portSyncMutexAcquire(NvLogLogger.buffersLock);
     portSyncSpinlockAcquire(NvLogLogger.mainLock);
       NvLogLogger.pBuffers[hBuffer] = NULL;
       NvLogLogger.nextFree = NV_MIN(hBuffer, NvLogLogger.nextFree);
       NvLogLogger.totalFree++;
     portSyncSpinlockRelease(NvLogLogger.mainLock);
+    portSyncMutexRelease(NvLogLogger.buffersLock);
 
     _deallocateNvlogBuffer(pBuffer);
 }

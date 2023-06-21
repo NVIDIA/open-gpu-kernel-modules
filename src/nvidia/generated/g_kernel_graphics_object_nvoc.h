@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -108,7 +108,7 @@ struct KernelGraphicsObject {
     struct NotifShare *(*__kgrobjGetNotificationShare__)(struct KernelGraphicsObject *);
     NV_STATUS (*__kgrobjMap__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NV_STATUS (*__kgrobjGetOrAllocNotifShare__)(struct KernelGraphicsObject *, NvHandle, NvHandle, struct NotifShare **);
-    MEMORY_DESCRIPTOR *pMmioMemDesc;
+    MEMORY_DESCRIPTOR *PRIVATE_FIELD(pMmioMemDesc);
     KernelSMDebuggerSessionList activeDebuggers;
     struct KernelGraphicsContext *pKernelGraphicsContext;
 };

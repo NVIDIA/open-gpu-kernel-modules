@@ -22,6 +22,7 @@
  */
 
 #include "common_nvswitch.h"
+#include "bios_nvswitch.h"
 #include "error_nvswitch.h"
 #include "regkey_nvswitch.h"
 #include "haldef_nvswitch.h"
@@ -3855,7 +3856,7 @@ nvswitch_initialize_device_state_lr10
     }
     else
     {
-        NVSWITCH_PRINT(device, ERROR,
+        NVSWITCH_PRINT(device, WARN,
             "%s: Skipping SPI init.\n",
             __FUNCTION__);
     }
@@ -3874,7 +3875,7 @@ nvswitch_initialize_device_state_lr10
     }
     else
     {
-        NVSWITCH_PRINT(device, ERROR,
+        NVSWITCH_PRINT(device, WARN,
             "%s: Skipping SMBPBI init.\n",
             __FUNCTION__);
     }
@@ -3981,7 +3982,7 @@ nvswitch_link_lane_reversed_lr10
     nvlink_link *link;
 
     link = nvswitch_get_link(device, linkId);
-    if (nvswitch_is_link_in_reset(device, link))
+    if ((link == NULL) || nvswitch_is_link_in_reset(device, link))
     {
         return NV_FALSE;
     }
@@ -4579,26 +4580,6 @@ _nvswitch_get_info_revision_minor_ext
     return (DRF_VAL(_PSMC, _BOOT_42, _MINOR_EXTENDED_REVISION, val));
 }
 
-static NvU32
-_nvswitch_get_info_voltage
-(
-    nvswitch_device *device
-)
-{
-    NvU32 voltage = 0;
-
-    return voltage;
-}
-
-static NvBool
-_nvswitch_inforom_nvl_supported
-(
-    nvswitch_device *device
-)
-{
-    return NV_FALSE;
-}
-
 static NvBool
 _nvswitch_inforom_bbx_supported
 (
@@ -4769,7 +4750,7 @@ nvswitch_ctrl_get_info_lr10
                 p->info[i] = device->switch_pll.vco_freq_khz;
                 break;
             case NVSWITCH_GET_INFO_INDEX_VOLTAGE_MVOLT:
-                p->info[i] = _nvswitch_get_info_voltage(device);
+                retval = -NVL_ERR_NOT_SUPPORTED;
                 break;
             case NVSWITCH_GET_INFO_INDEX_PHYSICAL_ID:
                 p->info[i] = nvswitch_read_physical_id(device);
@@ -6323,7 +6304,6 @@ nvswitch_get_nvlink_ecc_errors_lr10
         NvU32               sublinkWidth;
 
         link = nvswitch_get_link(device, i);
-        sublinkWidth = device->hal.nvswitch_get_sublink_width(device, i);
 
         if ((link == NULL) ||
             !NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NVLDL, link->linkNumber) ||
@@ -6331,6 +6311,8 @@ nvswitch_get_nvlink_ecc_errors_lr10
         {
             return -NVL_BAD_ARGS;
         }
+
+        sublinkWidth = device->hal.nvswitch_get_sublink_width(device, i);
 
         minion_enabled = nvswitch_is_minion_initialized(device,
             NVSWITCH_GET_LINK_ENG_INST(device, link->linkNumber, MINION));
@@ -6412,8 +6394,15 @@ nvswitch_ctrl_get_fom_values_lr10
 {
     NvlStatus status;
     NvU32     statData;
+    nvlink_link *link;
 
-    NVSWITCH_ASSERT(p->linkId < nvswitch_get_num_links(device));
+    link = nvswitch_get_link(device, p->linkId);
+    if (link == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: link #%d invalid\n",
+            __FUNCTION__, p->linkId);
+        return -NVL_BAD_ARGS;
+    }
 
     status = nvswitch_minion_get_dl_status(device, p->linkId,
                                         NV_NVLSTAT_TR16, 0, &statData);
@@ -6726,6 +6715,25 @@ nvswitch_is_spi_supported_lr10
     }
 
     return NV_TRUE;
+}
+
+NvBool
+nvswitch_is_bios_supported_lr10
+(
+    nvswitch_device *device
+)
+{
+    return nvswitch_is_spi_supported(device);
+}
+
+NvlStatus
+nvswitch_get_bios_size_lr10
+(
+    nvswitch_device *device,
+    NvU32 *pSize
+)
+{
+    return nvswitch_bios_read_size(device, pSize);
 }
 
 NvBool
@@ -7599,10 +7607,10 @@ nvswitch_parse_bios_image_lr10
     NV_STATUS status = NV_OK;
 
     // check if spi is supported
-    if (!nvswitch_is_spi_supported(device))
+    if (!nvswitch_is_bios_supported(device))
     {
         NVSWITCH_PRINT(device, ERROR,
-                "%s: SPI is not supported\n",
+                "%s: BIOS is not supported\n",
                 __FUNCTION__);
         return -NVL_ERR_NOT_SUPPORTED;
     }
@@ -7659,7 +7667,7 @@ nvswitch_ctrl_get_sw_info_lr10
         switch (p->index[i])
         {
             case NVSWITCH_GET_SW_INFO_INDEX_INFOROM_NVL_SUPPORTED:
-                p->info[i] = (NvU32)_nvswitch_inforom_nvl_supported(device);
+                p->info[i] = NV_TRUE;
                 break;
             case NVSWITCH_GET_SW_INFO_INDEX_INFOROM_BBX_SUPPORTED:
                 p->info[i] = (NvU32)_nvswitch_inforom_bbx_supported(device);

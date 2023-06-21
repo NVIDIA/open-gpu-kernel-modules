@@ -70,4 +70,8 @@
 #define NV_PDISP_RG_DPCA_FRM_CNT                                                    31:16 /* R--UF */
 #define NV_PDISP_FE_FLIPLOCK                                                   0x0061206C /* RW-4R */
 #define NV_PDISP_FE_FLIPLOCK_LSR_MIN_TIME                                            23:0 /* RWIVF */
+#define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP                                     0x00611C30 /* R--4R */
+#define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN                                     8:8 /* R-IVF */
+#define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN_NOT_PENDING                  0x00000000 /* R-I-V */
+#define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN_PENDING                      0x00000001 /* R---V */
 #endif // __v03_00_dev_disp_h__

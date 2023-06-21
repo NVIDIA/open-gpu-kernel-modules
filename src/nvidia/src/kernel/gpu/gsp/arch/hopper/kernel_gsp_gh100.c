@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
  */
 
 #include "rmconfig.h"
+#include "gpu/conf_compute/conf_compute.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "gsp/gspifpub.h"
@@ -44,6 +45,9 @@ kgspGetSignatureSectionNamePrefix_GH100
     KernelGsp *pKernelGsp
 )
 {
+    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+        return GSP_CC_SIGNATURE_SECTION_NAME_PREFIX;
     return GSP_SIGNATURE_SECTION_NAME_PREFIX;
 }
 
@@ -144,6 +148,8 @@ kgspAllocBootArgs_GH100
     NV_STATUS nvStatus = NV_OK;
     NvU64 flags = MEMDESC_FLAGS_NONE;
 
+    flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
+
     // Allocate GSP-FMC arguments
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                           memdescCreate(&pKernelGsp->pGspFmcArgumentsDescriptor,
@@ -200,6 +206,26 @@ kgspFreeBootArgs_GH100
     }
 }
 
+NvBool
+kgspIsWpr2Up_GH100
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+    {
+        //
+        // Due to BAR0 decoupler, we may not be able to read WPR2 MMU regs.
+        // Assume WPR2 is down.
+        //
+        return NV_FALSE;
+    }
+
+    return kgspIsWpr2Up_TU102(pGpu, pKernelGsp);
+}
+
 NV_STATUS
 kgspWaitForGfwBootOk_GH100
 (
@@ -208,7 +234,13 @@ kgspWaitForGfwBootOk_GH100
 )
 {
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
-    return kfspWaitForSecureBoot_HAL(pGpu, pKernelFsp);
+
+    if (pKernelFsp != NULL)
+    {
+        return kfspWaitForSecureBoot_HAL(pGpu, pKernelFsp);
+    }
+
+    return NV_OK;
 }
 
 /*!
@@ -226,7 +258,7 @@ kgspWaitForGfwBootOk_GH100
  *   ---------------------------- <- vbiosReservedOffset  (64K? aligned)
  *   | (potential align. gap)   |
  *   ---------------------------- <- gspFwWprEnd (128K aligned)
- *   | FRTS data                |    (frtsSize is 0 on GA100)
+ *   | FRTS data                |
  *   | ------------------------ | <- frtsOffset
  *   | BOOT BIN (e.g. GSP-FMC)  |
  *   ---------------------------- <- bootBinOffset
@@ -239,7 +271,6 @@ kgspWaitForGfwBootOk_GH100
  *   ---------------------------- <- gspFwWprStart (128K aligned)
  *   | GSP FW (non-WPR) HEAP    |
  *   ---------------------------- <- nonWprHeapOffset, gspFwRsvdStart
- *                                   (GSP_CARVEOUT_SIZE bytes from end of FB)
  *
  * @param       pGpu          GPU object pointer
  * @param       pKernelGsp    KernelGsp object pointer
@@ -299,9 +330,16 @@ kgspCalculateFbLayout_GH100
 
     //
     // The WPR heap size (gspFwHeapSize) is variable to also get any padding needed
-    // in the carveout to align the WPR start. We specify a minimum size here.
+    // in the carveout to align the WPR start. This is a minimum size request to
+    // the GSP-FMC.
     //
-    pWprMeta->gspFwHeapSize = kgspGetWprHeapSize(pGpu, pKernelGsp);
+    // We won't know the exact size of everything that comes after the heap until
+    // after the GSP-FMC lays it all out during boot. At any rate, this value isn't
+    // needed on Hopper+, since the GSP-FMC can scrub/unlock anything we would need
+    // before GSP-RM boots, so we pass 0 to allow the heap to extend outside the
+    // pre-scrubbed area at the end of FB, if needed.
+    //
+    pWprMeta->gspFwHeapSize = kgspGetFwHeapSize(pGpu, pKernelGsp, 0);
 
     // Number of VF partitions allocating sub-heaps from the WPR heap
     pWprMeta->gspFwHeapVfPartitionCount =
@@ -346,6 +384,12 @@ kgspSetupGspFmcArgs_GH100
     NV_ASSERT_OR_RETURN(pKernelGsp->pGspFmcArgumentsCached != NULL, NV_ERR_INVALID_STATE);
 
     GSP_FMC_BOOT_PARAMS *pGspFmcBootParams = pKernelGsp->pGspFmcArgumentsCached;
+
+    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+    if (pCC != NULL)
+    {
+        pGspFmcBootParams->initParams.regkeys = pCC->gspProxyRegkeys;
+    }
 
     pGspFmcBootParams->bootGspRmParams.gspRmDescOffset = memdescGetPhysAddr(pKernelGsp->pWprMetaDescriptor, AT_GPU, 0);
     pGspFmcBootParams->bootGspRmParams.gspRmDescSize = sizeof(*pKernelGsp->pWprMeta);
@@ -397,6 +441,10 @@ _kgspBootstrapGspFmc_GH100
     physAddr = memdescGetPhysAddr(pKernelGsp->pGspFmcArgumentsDescriptor, AT_GPU, 0);
     kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0, NvU64_LO32(physAddr));
     kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX1, NvU64_HI32(physAddr));
+
+    // CC needs additional "regkeys" stuffed in a separate mailbox for the init partition
+    ConfidentialCompute *pConfCompute =  GPU_GET_CONF_COMPUTE(pGpu);
+    GPU_REG_WR32(pGpu, NV_PGSP_MAILBOX(0), pConfCompute->gspProxyRegkeys);
 
     // Bootstrap the GSP-FMC by pointing the GSP's BootROM at it
     RM_RISCV_UCODE_DESC *pRiscvDesc = pKernelGsp->pGspRmBootUcodeDesc;
@@ -502,7 +550,7 @@ kgspBootstrapRiscvOSEarly_GH100
 
     if (pKernelFsp != NULL && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_GSPFMC))
     {
-        NV_PRINTF(LEVEL_ERROR, "Starting to boot GSP via FSP.\n");
+        NV_PRINTF(LEVEL_NOTICE, "Starting to boot GSP via FSP.\n");
         pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM, NV_TRUE);
         NV_ASSERT_OK_OR_RETURN(kfspSendBootCommands_HAL(pGpu, pKernelFsp));
     }
@@ -512,20 +560,23 @@ kgspBootstrapRiscvOSEarly_GH100
     }
 
     // Wait for target mask to be released.
-    status = kfspWaitForGspTargetMaskReleased_HAL(pGpu, pKernelFsp);
-    if (status != NV_OK)
+    if (pKernelFsp != NULL)
     {
-        NV_PRINTF(LEVEL_ERROR, "Timeout waiting for GSP target mask release. "
-                  "This error may be caused by several reasons: Bootrom may have failed, "
-                  "GSP init code may have failed or ACR failed to release target mask. "
-                  "RM does not have access to information on which of those conditions happened.\n");
-
-        if (pKernelFsp != NULL && pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
+        status = kfspWaitForGspTargetMaskReleased_HAL(pGpu, pKernelFsp);
+        if (status != NV_OK)
         {
-            kfspDumpDebugState_HAL(pGpu, pKernelFsp);
-        }
+            NV_PRINTF(LEVEL_ERROR, "Timeout waiting for GSP target mask release. "
+                      "This error may be caused by several reasons: Bootrom may have failed, "
+                      "GSP init code may have failed or ACR failed to release target mask. "
+                      "RM does not have access to information on which of those conditions happened.\n");
 
-        return status;
+            if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
+            {
+                kfspDumpDebugState_HAL(pGpu, pKernelFsp);
+            }
+
+            return status;
+        }
     }
 
     // Wait for lockdown to be released.
@@ -593,5 +644,24 @@ kgspGetGspRmBootUcodeStorage_GH100
     BINDATA_STORAGE **ppBinStorageDesc
 )
 {
+        ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+        if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+        {
+            const BINDATA_ARCHIVE *pBinArchiveConcatenatedFMCDesc = kgspGetBinArchiveConcatenatedFMCDesc_HAL(pKernelGsp);
+            const BINDATA_ARCHIVE *pBinArchiveConcatenatedFMC     = kgspGetBinArchiveConcatenatedFMC_HAL(pKernelGsp);
+
+            if (kgspIsDebugModeEnabled(pGpu, pKernelGsp))
+            {
+                *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMC, "ucode_image_dbg");
+                *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMCDesc, "ucode_desc_dbg");
+            }
+            else
+            {
+                *ppBinStorageImage = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMC, "ucode_image_prod");
+                *ppBinStorageDesc  = (BINDATA_STORAGE *)bindataArchiveGetStorage(pBinArchiveConcatenatedFMCDesc, "ucode_desc_prod");
+            }
+
+            return;
+        }
     kgspGetGspRmBootUcodeStorage_GA102(pGpu, pKernelGsp, ppBinStorageImage, ppBinStorageDesc);
 }

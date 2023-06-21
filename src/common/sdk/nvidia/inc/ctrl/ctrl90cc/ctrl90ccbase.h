@@ -25,7 +25,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl90cc/ctrl90ccbase.finn
+// Source file:      ctrl/ctrl90cc/ctrl90ccbase.finn
 //
 
 #include "ctrl/ctrlxxxx.h"

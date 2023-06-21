@@ -1014,7 +1014,7 @@ static void KeplerReleaseTimelineSemaphore(
 
     // Must be done before submitting the semaphore release to ensure the maximum
     // known-submitted value is never less than the semaphore's current value.
-    NvTimeSemFermiSetMaxSubmitted(report, val);
+    NvTimeSemFermiSetMaxSubmittedVal(&report->timer, val);
 
     nvPushMethod(p, 0, NVA16F_SEMAPHOREA, 4);
     nvPushSetMethodDataU64(p, gpuAddress);    // NVA16F_SEMAPHOREB
@@ -1106,13 +1106,6 @@ NvBool __nvPushGetHal(
             pHal->caps.extendedBase = TRUE;
             // otherwise backwards compatible with the Volta DMA HAL
             // fall through
-#if defined(__GNUC__) && __GNUC__ >= 7
-            // GCC apparently doesn't think the comment above is sufficient to
-            // quiet -Wimplicit-fallthrough, when there are preprocessor
-            // directives between it and the next case.
-            // This attribute is only supported on gcc 7 and later.
-            __attribute__ ((fallthrough));
-#endif
         case AMPERE_CHANNEL_GPFIFO_A:
             // backwards compatible with the Volta DMA HAL
             // fall through

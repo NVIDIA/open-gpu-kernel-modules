@@ -547,6 +547,7 @@ _rmAlloc
     NvHandle         *phObject,
     NvU32             hClass,
     NvP64             pUserAllocParams,
+    NvU32             paramsSize,
     NvU32             allocFlags,
     NvU32             allocInitStates,
     RS_LOCK_INFO     *pLockInfo,
@@ -569,6 +570,7 @@ _rmAlloc
     rmAllocParams.pSecInfo         = &secInfo;
     rmAllocParams.pResourceRef     = NULL;
     rmAllocParams.pAllocParams     = NvP64_VALUE(pUserAllocParams);
+    rmAllocParams.paramsSize       = paramsSize;
     rmAllocParams.pLockInfo        = pLockInfo;
     rmAllocParams.pRightsRequested = NvP64_VALUE(pRightsRequested);
     rmAllocParams.pRightsRequired  = NULL;
@@ -624,6 +626,7 @@ static
 NV_STATUS
 _serverAllocValidatePrivilege
 (
+    RsServer *pServer,
     RS_RESOURCE_DESC *pResDesc,
     RS_RES_ALLOC_PARAMS *pParams
 )
@@ -715,7 +718,7 @@ serverAllocResourceUnderLock
     NV_ASSERT_OK_OR_RETURN(_fixupAllocParams(&pResDesc, pRmAllocParams));
     rmapiResourceDescToLegacyFlags(pResDesc, &pLockInfo->flags, NULL);
 
-    status = _serverAllocValidatePrivilege(pResDesc, pRmAllocParams);
+    status = _serverAllocValidatePrivilege(pServer, pResDesc, pRmAllocParams);
     if (status != NV_OK)
         goto done;
 
@@ -917,6 +920,7 @@ serverAllocResourceUnderLock
                                    pRmAllocParams->hResource,
                                    pRmAllocParams->externalClassId,
                                    pRmAllocParams->pAllocParams,
+                                   pRmAllocParams->paramsSize,
                                    status);
             resservRestoreTlsCallContext(pOldContext);
 
@@ -996,10 +1000,6 @@ serverResLock_Epilogue
     NvU32 *pReleaseFlags
 )
 {
-    NvU32 gpuLockFlags = GPUS_LOCK_FLAGS_NONE;
-    if (access == LOCK_ACCESS_READ)
-        gpuLockFlags |= GPU_LOCK_FLAGS_READ;
-
     if (*pReleaseFlags & RM_LOCK_RELEASE_GPU_GROUP_LOCK)
     {
         // UNLOCK: release GPU group lock
@@ -1109,13 +1109,14 @@ rmapiAlloc
     NvHandle     hParent,
     NvHandle    *phObject,
     NvU32        hClass,
-    void        *pAllocParams
+    void        *pAllocParams,
+    NvU32        paramsSize
 )
 {
     if (!pRmApi->bHasDefaultSecInfo)
         return NV_ERR_NOT_SUPPORTED;
 
-    return pRmApi->AllocWithSecInfo(pRmApi, hClient, hParent, phObject, hClass, NV_PTR_TO_NvP64(pAllocParams),
+    return pRmApi->AllocWithSecInfo(pRmApi, hClient, hParent, phObject, hClass, NV_PTR_TO_NvP64(pAllocParams), paramsSize,
                                     RMAPI_ALLOC_FLAGS_NONE, NvP64_NULL, &pRmApi->defaultSecInfo);
 }
 
@@ -1127,13 +1128,14 @@ rmapiAllocWithHandle
     NvHandle     hParent,
     NvHandle     hObject,
     NvU32        hClass,
-    void        *pAllocParams
+    void        *pAllocParams,
+    NvU32        paramsSize
 )
 {
     if (!pRmApi->bHasDefaultSecInfo)
         return NV_ERR_NOT_SUPPORTED;
 
-    return pRmApi->AllocWithSecInfo(pRmApi, hClient, hParent, &hObject, hClass, NV_PTR_TO_NvP64(pAllocParams),
+    return pRmApi->AllocWithSecInfo(pRmApi, hClient, hParent, &hObject, hClass, NV_PTR_TO_NvP64(pAllocParams), paramsSize,
                                     RMAPI_ALLOC_FLAGS_NONE, NvP64_NULL, &pRmApi->defaultSecInfo);
 }
 
@@ -1146,6 +1148,7 @@ rmapiAllocWithSecInfo
     NvHandle            *phObject,
     NvU32                hClass,
     NvP64                pAllocParams,
+    NvU32                paramsSize,
     NvU32                flags,
     NvP64                pRightsRequested,
     API_SECURITY_INFO   *pSecInfo
@@ -1204,6 +1207,7 @@ rmapiAllocWithSecInfo
                       phObject,
                       hClass,
                       pAllocParams,
+                      paramsSize,
                       flags,
                       allocInitStates,
                       pLockInfo,
@@ -1335,6 +1339,7 @@ rmapiAllocWithSecInfoTls
     NvHandle            *phObject,
     NvU32                hClass,
     NvP64                pAllocParams,
+    NvU32                paramsSize,
     NvU32                flags,
     NvP64                pRightsRequested,
     API_SECURITY_INFO   *pSecInfo
@@ -1346,7 +1351,7 @@ rmapiAllocWithSecInfoTls
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
     status = rmapiAllocWithSecInfo(pRmApi, hClient, hParent, phObject, hClass,
-                                   pAllocParams, flags, pRightsRequested, pSecInfo);
+                                   pAllocParams, paramsSize, flags, pRightsRequested, pSecInfo);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 

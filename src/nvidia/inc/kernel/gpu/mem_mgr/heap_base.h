@@ -125,7 +125,7 @@ typedef struct PMA_ALLOC_INFO
 {
     NvBool bContig;
     NvU32  pageCount;
-    NvU32  pageSize;
+    NvU64  pageSize;
     NvU32  refCount;
     NvU64  allocSize;
     NvU32  flags;

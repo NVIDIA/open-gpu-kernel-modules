@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -351,11 +351,11 @@ void *uvm_push_inline_data_get(uvm_push_inline_data_t *data, size_t size)
     UVM_ASSERT(!uvm_global_is_suspended());
 
     UVM_ASSERT_MSG(uvm_push_get_size(data->push) + uvm_push_inline_data_size(data) + UVM_METHOD_SIZE + size <= UVM_MAX_PUSH_SIZE,
-            "push size %u inline data size %zu new data size %zu max push %u\n",
-            uvm_push_get_size(data->push), uvm_push_inline_data_size(data), size, UVM_MAX_PUSH_SIZE);
+                   "push size %u inline data size %zu new data size %zu max push %u\n",
+                   uvm_push_get_size(data->push), uvm_push_inline_data_size(data), size, UVM_MAX_PUSH_SIZE);
     UVM_ASSERT_MSG(uvm_push_inline_data_size(data) + size <= UVM_PUSH_INLINE_DATA_MAX_SIZE,
-            "inline data size %zu new data size %zu max %u\n",
-            uvm_push_inline_data_size(data), size, UVM_PUSH_INLINE_DATA_MAX_SIZE);
+                   "inline data size %zu new data size %zu max %u\n",
+                   uvm_push_inline_data_size(data), size, UVM_PUSH_INLINE_DATA_MAX_SIZE);
 
     data->next_data += size;
 
@@ -368,6 +368,7 @@ void *uvm_push_inline_data_get_aligned(uvm_push_inline_data_t *data, size_t size
     size_t offset = 0;
     char *buffer;
 
+    UVM_ASSERT(alignment <= UVM_PAGE_SIZE_4K);
     UVM_ASSERT_MSG(IS_ALIGNED(alignment, UVM_METHOD_SIZE), "alignment %zu\n", alignment);
 
     offset = UVM_ALIGN_UP(next_ptr, alignment) - next_ptr;
@@ -404,15 +405,15 @@ uvm_gpu_address_t uvm_push_inline_data_end(uvm_push_inline_data_t *data)
     return uvm_gpu_address_virtual(inline_data_address);
 }
 
-// Same as uvm_push_get_single_inline_buffer() but provides the specified
-// alignment.
-static void *push_get_single_inline_buffer_aligned(uvm_push_t *push,
-                                                   size_t size,
-                                                   size_t alignment,
-                                                   uvm_gpu_address_t *gpu_address)
+void *uvm_push_get_single_inline_buffer(uvm_push_t *push,
+                                        size_t size,
+                                        size_t alignment,
+                                        uvm_gpu_address_t *gpu_address)
 {
     uvm_push_inline_data_t data;
     void *buffer;
+
+    UVM_ASSERT(IS_ALIGNED(alignment, UVM_METHOD_SIZE));
 
     uvm_push_inline_data_begin(push, &data);
     buffer = uvm_push_inline_data_get_aligned(&data, size, alignment);
@@ -423,11 +424,6 @@ static void *push_get_single_inline_buffer_aligned(uvm_push_t *push,
     return buffer;
 }
 
-void *uvm_push_get_single_inline_buffer(uvm_push_t *push, size_t size, uvm_gpu_address_t *gpu_address)
-{
-    return push_get_single_inline_buffer_aligned(push, size, UVM_METHOD_SIZE, gpu_address);
-}
-
 NvU64 *uvm_push_timestamp(uvm_push_t *push)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
@@ -435,12 +431,15 @@ NvU64 *uvm_push_timestamp(uvm_push_t *push)
     NvU64 *timestamp;
     uvm_gpu_address_t address;
 
-    timestamp = (NvU64 *)push_get_single_inline_buffer_aligned(push, timestamp_size, timestamp_size, &address);
+    timestamp = (NvU64 *)uvm_push_get_single_inline_buffer(push, timestamp_size, timestamp_size, &address);
+
     // Timestamp is in the second half of the 16 byte semaphore release
     timestamp += 1;
 
     if (uvm_channel_is_ce(push->channel))
         gpu->parent->ce_hal->semaphore_timestamp(push, address.address);
+    else if (uvm_channel_is_sec2(push->channel))
+        gpu->parent->sec2_hal->semaphore_timestamp(push, address.address);
     else
         UVM_ASSERT_MSG(0, "Semaphore release timestamp on an unsupported channel.\n");
 
@@ -457,6 +456,8 @@ bool uvm_push_method_is_valid(uvm_push_t *push, NvU8 subch, NvU32 method_address
         return gpu->parent->host_hal->method_is_valid(push, method_address, method_data);
     else if (subch == UVM_SW_OBJ_SUBCHANNEL)
         return gpu->parent->host_hal->sw_method_is_valid(push, method_address, method_data);
+    else if (subch == UVM_SUBCHANNEL_SEC2)
+        return true;
 
     UVM_ERR_PRINT("Unsupported subchannel 0x%x\n", subch);
     return false;

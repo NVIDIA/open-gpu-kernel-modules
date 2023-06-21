@@ -109,7 +109,7 @@ g_RsResourceDescList[] =
 #undef RS_OPTIONAL
 #undef RS_NONE
 
-#define NUM_ENTRIES_DESC_LIST NV_ARRAY_ELEMENTS32(g_RsResourceDescList)
+#define NUM_ENTRIES_DESC_LIST NV_ARRAY_ELEMENTS(g_RsResourceDescList)
 
 void RsResInfoInitialize(void)
 {

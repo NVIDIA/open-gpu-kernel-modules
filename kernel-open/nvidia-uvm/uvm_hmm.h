@@ -84,25 +84,6 @@ typedef struct
                                     NvU64 addr,
                                     uvm_va_block_t **va_block_ptr);
 
-    // Find an existing HMM va_block when processing a CPU fault and try to
-    // isolate and lock the faulting page.
-    // Return NV_ERR_INVALID_ADDRESS if the block is not found,
-    // NV_ERR_BUSY_RETRY if the page could not be locked, and
-    // NV_OK if the block is found and the page is locked. Also,
-    // uvm_hmm_cpu_fault_finish() must be called if NV_OK is returned.
-    // Locking: This must be called with the vma->vm_mm locked and the va_space
-    // read locked.
-    NV_STATUS uvm_hmm_va_block_cpu_find(uvm_va_space_t *va_space,
-                                        uvm_service_block_context_t *service_context,
-                                        struct vm_fault *vmf,
-                                        uvm_va_block_t **va_block_ptr);
-
-    // This must be called after uvm_va_block_cpu_fault() if
-    // uvm_hmm_va_block_cpu_find() returns NV_OK.
-    // Locking: This must be called with the vma->vm_mm locked and the va_space
-    // read locked.
-    void uvm_hmm_cpu_fault_finish(uvm_service_block_context_t *service_context);
-
     // Find or create a new HMM va_block.
     //
     // Return NV_ERR_INVALID_ADDRESS if there is no VMA associated with the
@@ -135,6 +116,26 @@ typedef struct
     bool uvm_hmm_check_context_vma_is_valid(uvm_va_block_t *va_block,
                                             uvm_va_block_context_t *va_block_context,
                                             uvm_va_block_region_t region);
+
+    // Initialize the HMM portion of the service_context.
+    // This should be called one time before any retry loops calling
+    // uvm_va_block_service_locked().
+    void uvm_hmm_service_context_init(uvm_service_block_context_t *service_context);
+
+    // Begin a migration critical section. When calling into the kernel it is
+    // sometimes necessary to drop the va_block lock. This function returns
+    // NV_OK when no other thread has started a migration critical section.
+    // Otherwise, it returns NV_ERR_BUSY_RETRY and threads should then retry
+    // this function to begin a critical section.
+    // Locking: va_block lock must not be held.
+    NV_STATUS uvm_hmm_migrate_begin(uvm_va_block_t *va_block);
+
+    // Same as uvm_hmm_migrate_begin() but waits if required before beginning a
+    // critical section.
+    void uvm_hmm_migrate_begin_wait(uvm_va_block_t *va_block);
+
+    // Finish a migration critical section.
+    void uvm_hmm_migrate_finish(uvm_va_block_t *va_block);
 
     // Find or create a HMM va_block and mark it so the next va_block split
     // will fail for testing purposes.
@@ -314,6 +315,11 @@ typedef struct
                                      uvm_migrate_mode_t mode,
                                      uvm_tracker_t *out_tracker);
 
+    // Evicts all va_blocks in the va_space to the CPU. Unlike the
+    // other va_block eviction functions this is based on virtual
+    // address and therefore takes mmap_lock for read.
+    void uvm_hmm_evict_va_blocks(uvm_va_space_t *va_space);
+
     // This sets the va_block_context->hmm.src_pfns[] to the ZONE_DEVICE private
     // PFN for the GPU chunk memory.
     NV_STATUS uvm_hmm_va_block_evict_chunk_prep(uvm_va_block_t *va_block,
@@ -345,13 +351,13 @@ typedef struct
                                                     const uvm_page_mask_t *pages_to_evict,
                                                     uvm_va_block_region_t region);
 
-    // Migrate a GPU chunk to system memory. This called to remove CPU page
-    // table references to device private struct pages for the given GPU after
-    // all other references in va_blocks have been released and the GPU is
-    // in the process of being removed/torn down. Note that there is no mm,
-    // VMA, va_block or any user channel activity on this GPU.
-    NV_STATUS uvm_hmm_pmm_gpu_evict_chunk(uvm_gpu_t *gpu,
-                                          uvm_gpu_chunk_t *gpu_chunk);
+    // Migrate a GPU device-private page to system memory. This is
+    // called to remove CPU page table references to device private
+    // struct pages for the given GPU after all other references in
+    // va_blocks have been released and the GPU is in the process of
+    // being removed/torn down. Note that there is no mm, VMA,
+    // va_block or any user channel activity on this GPU.
+    NV_STATUS uvm_hmm_pmm_gpu_evict_pfn(unsigned long pfn);
 
     // This returns what would be the intersection of va_block start/end and
     // VMA start/end-1 for the given 'lookup_address' if
@@ -432,18 +438,6 @@ typedef struct
         return NV_ERR_INVALID_ADDRESS;
     }
 
-    static NV_STATUS uvm_hmm_va_block_cpu_find(uvm_va_space_t *va_space,
-                                               uvm_service_block_context_t *service_context,
-                                               struct vm_fault *vmf,
-                                               uvm_va_block_t **va_block_ptr)
-    {
-        return NV_ERR_INVALID_ADDRESS;
-    }
-
-    static void uvm_hmm_cpu_fault_finish(uvm_service_block_context_t *service_context)
-    {
-    }
-
     static NV_STATUS uvm_hmm_va_block_find_create(uvm_va_space_t *va_space,
                                                   NvU64 addr,
                                                   uvm_va_block_context_t *va_block_context,
@@ -462,6 +456,23 @@ typedef struct
                                                    uvm_va_block_region_t region)
     {
         return true;
+    }
+
+    static void uvm_hmm_service_context_init(uvm_service_block_context_t *service_context)
+    {
+    }
+
+    static NV_STATUS uvm_hmm_migrate_begin(uvm_va_block_t *va_block)
+    {
+        return NV_OK;
+    }
+
+    static void uvm_hmm_migrate_begin_wait(uvm_va_block_t *va_block)
+    {
+    }
+
+    static void uvm_hmm_migrate_finish(uvm_va_block_t *va_block)
+    {
     }
 
     static NV_STATUS uvm_hmm_test_va_block_inject_split_error(uvm_va_space_t *va_space, NvU64 addr)
@@ -586,6 +597,10 @@ typedef struct
         return NV_ERR_INVALID_ADDRESS;
     }
 
+    static void uvm_hmm_evict_va_blocks(uvm_va_space_t *va_space)
+    {
+    }
+
     static NV_STATUS uvm_hmm_va_block_evict_chunk_prep(uvm_va_block_t *va_block,
                                                        uvm_va_block_context_t *va_block_context,
                                                        uvm_gpu_chunk_t *gpu_chunk,
@@ -612,8 +627,7 @@ typedef struct
         return NV_OK;
     }
 
-    static NV_STATUS uvm_hmm_pmm_gpu_evict_chunk(uvm_gpu_t *gpu,
-                                                 uvm_gpu_chunk_t *gpu_chunk)
+    static NV_STATUS uvm_hmm_pmm_gpu_evict_pfn(unsigned long pfn)
     {
         return NV_OK;
     }

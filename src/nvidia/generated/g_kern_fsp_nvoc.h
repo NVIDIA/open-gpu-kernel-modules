@@ -40,12 +40,6 @@ extern "C" {
 #include "kernel/gpu/intr/intr_service.h"
 #include "fsp/nvdm_payload_cmd_response.h"
 
-#if RMCFG_MODULE_ENABLED (FSP)
-#include "gpu/falcon/falcon.h"
-#include "gpu/falcon/falcon_queue.h"
-#include "objflcnable.h"
-#endif
-
 //
 // VBIOS ucode descriptor v4 format. Used for the CPU command to FSP to boot
 // GSP FMC.
@@ -167,6 +161,7 @@ struct KernelFsp {
     NvU64 (*__kfspGetExtraReservedMemorySize__)(struct OBJGPU *, struct KernelFsp *);
     NvBool (*__kfspCheckGspSecureScratch__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspWaitForGspTargetMaskReleased__)(struct OBJGPU *, struct KernelFsp *);
+    NvBool (*__kfspRequiresBug3957833WAR__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspStateLoad__)(POBJGPU, struct KernelFsp *, NvU32);
     NV_STATUS (*__kfspStateUnload__)(POBJGPU, struct KernelFsp *, NvU32);
     NV_STATUS (*__kfspStateInitLocked__)(POBJGPU, struct KernelFsp *);
@@ -287,6 +282,8 @@ NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
 #define kfspCheckGspSecureScratch_HAL(pGpu, pKernelFsp) kfspCheckGspSecureScratch_DISPATCH(pGpu, pKernelFsp)
 #define kfspWaitForGspTargetMaskReleased(pGpu, pKernelFsp) kfspWaitForGspTargetMaskReleased_DISPATCH(pGpu, pKernelFsp)
 #define kfspWaitForGspTargetMaskReleased_HAL(pGpu, pKernelFsp) kfspWaitForGspTargetMaskReleased_DISPATCH(pGpu, pKernelFsp)
+#define kfspRequiresBug3957833WAR(pGpu, pKernelFsp) kfspRequiresBug3957833WAR_DISPATCH(pGpu, pKernelFsp)
+#define kfspRequiresBug3957833WAR_HAL(pGpu, pKernelFsp) kfspRequiresBug3957833WAR_DISPATCH(pGpu, pKernelFsp)
 #define kfspStateLoad(pGpu, pEngstate, arg0) kfspStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kfspStateUnload(pGpu, pEngstate, arg0) kfspStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kfspStateInitLocked(pGpu, pEngstate) kfspStateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -581,6 +578,16 @@ static inline NV_STATUS kfspWaitForGspTargetMaskReleased_395e98(struct OBJGPU *p
 
 static inline NV_STATUS kfspWaitForGspTargetMaskReleased_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
     return pKernelFsp->__kfspWaitForGspTargetMaskReleased__(pGpu, pKernelFsp);
+}
+
+NvBool kfspRequiresBug3957833WAR_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+static inline NvBool kfspRequiresBug3957833WAR_491d52(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool kfspRequiresBug3957833WAR_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return pKernelFsp->__kfspRequiresBug3957833WAR__(pGpu, pKernelFsp);
 }
 
 static inline NV_STATUS kfspStateLoad_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg0) {

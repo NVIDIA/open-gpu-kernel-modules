@@ -146,7 +146,7 @@ NV_STATUS stdmemValidateParams
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Encryption requested for video memory on a non-0FB chip;\n");
-        return NV_ERR_INVALID_ARGUMENT; 
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
     if (FLD_TEST_DRF(OS32, _ATTR2, _ALLOCATE_FROM_SUBHEAP, _YES, pAllocData->attr2))
@@ -256,7 +256,7 @@ stdmemQueryPageSize
 // Control calls for system memory objects maintained outside the heap.
 //
 
-NvU32 stdmemGetSysmemPageSize_IMPL(OBJGPU * pGpu, StandardMemory *pStdMemory)
+NvU64 stdmemGetSysmemPageSize_IMPL(OBJGPU * pGpu, StandardMemory *pStdMemory)
 {
     return GPU_GET_MEMORY_MANAGER(pGpu)->sysmemPageSize;
 }

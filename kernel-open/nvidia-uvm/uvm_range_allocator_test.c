@@ -78,7 +78,7 @@ static NvU64 test_free_range(uvm_range_allocator_t *range_allocator, uvm_range_a
     return size;
 }
 
-#define BASIC_TEST_SIZE (1024ull * 1024 * 1024)
+#define BASIC_TEST_SIZE UVM_SIZE_1GB
 #define BASIC_TEST_MAX_ALLOCS (128)
 
 // Check that a specific range is free in the allocator

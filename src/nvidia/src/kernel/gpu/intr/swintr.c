@@ -62,7 +62,7 @@ swintrServiceInterrupt_IMPL
 )
 {
     NV_ASSERT_OR_RETURN(pParams != NULL, 0);
-    
+
     switch (pParams->engineIdx)
     {
         case MC_ENGINE_IDX_CPU_DOORBELL:

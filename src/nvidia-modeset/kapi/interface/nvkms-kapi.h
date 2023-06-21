@@ -165,8 +165,6 @@ struct NvKmsKapiConnectorInfo {
 
     NvU32 physicalIndex;
 
-    NvU32 headMask;
-
     NvKmsConnectorSignalFormat signalFormat;
     NvKmsConnectorType         type;
 
@@ -194,6 +192,7 @@ struct NvKmsKapiStaticDisplayInfo {
     NvU32  numPossibleClones;
     NvKmsKapiDisplay possibleCloneHandles[NVKMS_KAPI_MAX_CLONE_DISPLAYS];
 
+    NvU32 headMask;
 };
 
 struct NvKmsKapiSyncpt {
@@ -1072,6 +1071,21 @@ struct NvKmsKapiFunctionsTable {
     void (*freeMemoryPages)
     (
         NvU64 *pPages
+    );
+
+     /*!
+     * Check if this memory object can be scanned out for display.
+     *
+     * \param [in]  device  A device allocated using allocateDevice().
+     *
+     * \param [in]  memory  The memory object to check for display support.
+     *
+     * \return NV_TRUE if this memory can be displayed, NV_FALSE if not.
+     */
+    NvBool (*isMemoryValidForDisplay)
+    (
+        const struct NvKmsKapiDevice *device,
+        const struct NvKmsKapiMemory *memory
     );
 
     /*

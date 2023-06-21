@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -116,6 +116,7 @@ struct KernelCE {
     NV_STATUS (*__kceGetNvlinkAutoConfigCeValues__)(OBJGPU *, struct KernelCE *, NvU32 *, NvU32 *, NvU32 *);
     NvBool (*__kceGetNvlinkMaxTopoForTable__)(OBJGPU *, struct KernelCE *, struct NVLINK_TOPOLOGY_PARAMS *, void *, NvU32, NvU32 *);
     NvBool (*__kceIsCurrentMaxTopology__)(OBJGPU *, struct KernelCE *, struct NVLINK_TOPOLOGY_PARAMS *, NvU32 *, NvU32 *);
+    NvBool (*__kceGetAutoConfigTableEntry__)(OBJGPU *, struct KernelCE *, struct NVLINK_TOPOLOGY_PARAMS *, struct NVLINK_CE_AUTO_CONFIG_TABLE *, NvU32, NvU32 *, NvU32 *);
     NvU32 (*__kceGetPce2lceConfigSize1__)(struct KernelCE *);
     NV_STATUS (*__kceGetMappings__)(OBJGPU *, struct KernelCE *, NVLINK_TOPOLOGY_PARAMS *, NvU32 *, NvU32 *, NvU32 *);
     NV_STATUS (*__kceMapPceLceForC2C__)(OBJGPU *, struct KernelCE *, NvU32 *, NvU32 *, NvU32 *);
@@ -195,6 +196,8 @@ NV_STATUS __nvoc_objCreate_KernelCE(KernelCE**, Dynamic*, NvU32);
 #define kceGetNvlinkMaxTopoForTable_HAL(pGpu, pKCe, arg0, arg1, arg2, arg3) kceGetNvlinkMaxTopoForTable_DISPATCH(pGpu, pKCe, arg0, arg1, arg2, arg3)
 #define kceIsCurrentMaxTopology(pGpu, arg0, arg1, arg2, arg3) kceIsCurrentMaxTopology_DISPATCH(pGpu, arg0, arg1, arg2, arg3)
 #define kceIsCurrentMaxTopology_HAL(pGpu, arg0, arg1, arg2, arg3) kceIsCurrentMaxTopology_DISPATCH(pGpu, arg0, arg1, arg2, arg3)
+#define kceGetAutoConfigTableEntry(pGpu, pKCe, arg0, arg1, arg2, arg3, arg4) kceGetAutoConfigTableEntry_DISPATCH(pGpu, pKCe, arg0, arg1, arg2, arg3, arg4)
+#define kceGetAutoConfigTableEntry_HAL(pGpu, pKCe, arg0, arg1, arg2, arg3, arg4) kceGetAutoConfigTableEntry_DISPATCH(pGpu, pKCe, arg0, arg1, arg2, arg3, arg4)
 #define kceGetPce2lceConfigSize1(arg0) kceGetPce2lceConfigSize1_DISPATCH(arg0)
 #define kceGetPce2lceConfigSize1_HAL(arg0) kceGetPce2lceConfigSize1_DISPATCH(arg0)
 #define kceGetMappings(pGpu, pCe, arg0, arg1, arg2, arg3) kceGetMappings_DISPATCH(pGpu, pCe, arg0, arg1, arg2, arg3)
@@ -342,20 +345,6 @@ static inline void kceClearAssignedNvlinkPeerMasks(OBJGPU *pGpu, struct KernelCE
 
 #define kceClearAssignedNvlinkPeerMasks_HAL(pGpu, pKCe) kceClearAssignedNvlinkPeerMasks(pGpu, pKCe)
 
-NvBool kceGetAutoConfigTableEntry_GV100(OBJGPU *pGpu, struct KernelCE *pKCe, struct NVLINK_TOPOLOGY_PARAMS *arg0, struct NVLINK_CE_AUTO_CONFIG_TABLE *arg1, NvU32 arg2, NvU32 *arg3, NvU32 *arg4);
-
-
-#ifdef __nvoc_kernel_ce_h_disabled
-static inline NvBool kceGetAutoConfigTableEntry(OBJGPU *pGpu, struct KernelCE *pKCe, struct NVLINK_TOPOLOGY_PARAMS *arg0, struct NVLINK_CE_AUTO_CONFIG_TABLE *arg1, NvU32 arg2, NvU32 *arg3, NvU32 *arg4) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCE was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_kernel_ce_h_disabled
-#define kceGetAutoConfigTableEntry(pGpu, pKCe, arg0, arg1, arg2, arg3, arg4) kceGetAutoConfigTableEntry_GV100(pGpu, pKCe, arg0, arg1, arg2, arg3, arg4)
-#endif //__nvoc_kernel_ce_h_disabled
-
-#define kceGetAutoConfigTableEntry_HAL(pGpu, pKCe, arg0, arg1, arg2, arg3, arg4) kceGetAutoConfigTableEntry(pGpu, pKCe, arg0, arg1, arg2, arg3, arg4)
-
 NvU32 kceGetGrceConfigSize1_TU102(struct KernelCE *arg0);
 
 
@@ -396,9 +385,9 @@ static inline NV_STATUS kceStateUnload_DISPATCH(OBJGPU *pGpu, struct KernelCE *p
     return pKCe->__kceStateUnload__(pGpu, pKCe, flags);
 }
 
-void kceRegisterIntrService_IMPL(OBJGPU *arg0, struct KernelCE *arg1, IntrServiceRecord arg2[166]);
+void kceRegisterIntrService_IMPL(OBJGPU *arg0, struct KernelCE *arg1, IntrServiceRecord arg2[167]);
 
-static inline void kceRegisterIntrService_DISPATCH(OBJGPU *arg0, struct KernelCE *arg1, IntrServiceRecord arg2[166]) {
+static inline void kceRegisterIntrService_DISPATCH(OBJGPU *arg0, struct KernelCE *arg1, IntrServiceRecord arg2[167]) {
     arg1->__kceRegisterIntrService__(arg0, arg1, arg2);
 }
 
@@ -434,6 +423,14 @@ static inline NvBool kceIsCurrentMaxTopology_491d52(OBJGPU *pGpu, struct KernelC
 
 static inline NvBool kceIsCurrentMaxTopology_DISPATCH(OBJGPU *pGpu, struct KernelCE *arg0, struct NVLINK_TOPOLOGY_PARAMS *arg1, NvU32 *arg2, NvU32 *arg3) {
     return arg0->__kceIsCurrentMaxTopology__(pGpu, arg0, arg1, arg2, arg3);
+}
+
+NvBool kceGetAutoConfigTableEntry_GV100(OBJGPU *pGpu, struct KernelCE *pKCe, struct NVLINK_TOPOLOGY_PARAMS *arg0, struct NVLINK_CE_AUTO_CONFIG_TABLE *arg1, NvU32 arg2, NvU32 *arg3, NvU32 *arg4);
+
+NvBool kceGetAutoConfigTableEntry_GH100(OBJGPU *pGpu, struct KernelCE *pKCe, struct NVLINK_TOPOLOGY_PARAMS *arg0, struct NVLINK_CE_AUTO_CONFIG_TABLE *arg1, NvU32 arg2, NvU32 *arg3, NvU32 *arg4);
+
+static inline NvBool kceGetAutoConfigTableEntry_DISPATCH(OBJGPU *pGpu, struct KernelCE *pKCe, struct NVLINK_TOPOLOGY_PARAMS *arg0, struct NVLINK_CE_AUTO_CONFIG_TABLE *arg1, NvU32 arg2, NvU32 *arg3, NvU32 *arg4) {
+    return pKCe->__kceGetAutoConfigTableEntry__(pGpu, pKCe, arg0, arg1, arg2, arg3, arg4);
 }
 
 NvU32 kceGetPce2lceConfigSize1_TU102(struct KernelCE *arg0);
@@ -701,24 +698,24 @@ static inline NV_STATUS kceGetCeFromNvlinkConfig(OBJGPU *pGpu, struct KernelCE *
                  continue;                                   \
              }
 
-// Iterate over all CE visible to hClient
-#define KCE_ITER_CLIENT_BEGIN(pGpu, pKCeIter, hClient)       \
-    {                                                        \
-        NvU32 maxCe = ENG_CE__SIZE_1;                        \
-        NV_STATUS kceStatus;                                 \
-        NvU32 kceInst;                                       \
-        NvU32 kceIdx;                                        \
-        for (kceInst = 0; kceInst < maxCe; kceInst++)        \
-        {                                                    \
-            kceStatus = ceIndexFromType(pGpu, hClient, RM_ENGINE_TYPE_COPY(kceInst), &kceIdx); \
-            if (kceStatus != NV_OK)                          \
-            {                                                \
-                continue;                                    \
-            }                                                \
-            pKCeIter = GPU_GET_KCE(pGpu, kceIdx);            \
-            if (pKCeIter == NULL)                            \
-            {                                                \
-                continue;                                    \
+// Iterate over all CE visible to Device
+#define KCE_ITER_DEVICE_BEGIN(pGpu, pKCeIter, pDevice)                                         \
+    {                                                                                          \
+        NvU32 maxCe = ENG_CE__SIZE_1;                                                          \
+        NV_STATUS kceStatus;                                                                   \
+        NvU32 kceInst;                                                                         \
+        NvU32 kceIdx;                                                                          \
+        for (kceInst = 0; kceInst < maxCe; kceInst++)                                          \
+        {                                                                                      \
+            kceStatus = ceIndexFromType(pGpu, pDevice, RM_ENGINE_TYPE_COPY(kceInst), &kceIdx); \
+            if (kceStatus != NV_OK)                                                            \
+            {                                                                                  \
+                continue;                                                                      \
+            }                                                                                  \
+            pKCeIter = GPU_GET_KCE(pGpu, kceIdx);                                              \
+            if (pKCeIter == NULL)                                                              \
+            {                                                                                  \
+                continue;                                                                      \
             }
 
 #define KCE_ITER_END                                         \

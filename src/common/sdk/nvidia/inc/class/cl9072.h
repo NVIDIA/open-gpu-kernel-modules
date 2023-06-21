@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/cl9072.finn
+// Source file:      class/cl9072.finn
 //
 
 #include "cl9072_notification.h"

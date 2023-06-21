@@ -191,7 +191,7 @@ clInitMappingPciBusDevice_IMPL
 
     if (gpuGetDBDF(pGpu) == 0)
     {
-        if (!(IS_SIMULATION(pGpu)|| IS_SIM_MODS(GPU_GET_OS(pGpu))) 
+        if (!(IS_SIMULATION(pGpu)|| IS_SIM_MODS(GPU_GET_OS(pGpu)))
                || (bFoundDevice == NV_FALSE))
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -210,7 +210,7 @@ clInitMappingPciBusDevice_IMPL
 static void getSubsystemFromPCIECapabilities
 (
     NvU32 domain,
-    NvU8 bus, 
+    NvU8 bus,
     NvU8 device,
     NvU8 func,
     NvU16 *subvendorID,
@@ -605,6 +605,65 @@ clIsL1MaskEnabledForUpstreamPort_IMPL
     return bEnable;
 }
 
+/*!
+ * @brief Check if L0s mask is enabled for upstream component
+ *
+ * @param[in] pGpu GPU object pointer
+ * @param[in] pCl  CL  object pointer
+ *
+ * @return NV_TRUE if mask is enabled (implies L0s is disabled)
+ */
+NvBool
+clIsL0sMaskEnabledForUpstreamPort_IMPL
+(
+    OBJGPU *pGpu,
+    OBJCL  *pCl
+)
+{
+    NvU32  linkCtrl;
+    NvBool bEnable = NV_FALSE;
+
+    if (!pGpu->gpuClData.upstreamPort.addr.valid)
+    {
+        if (!pGpu->gpuClData.rootPort.addr.valid)
+        {
+            bEnable = NV_TRUE;
+        }
+        else
+        {
+            if (clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.rootPort,
+                CL_PCIE_LINK_CTRL_STATUS, &linkCtrl) != NV_OK)
+            {
+                bEnable = NV_TRUE;
+            }
+            else
+            {
+                if (!(linkCtrl & CL_PCIE_LINK_CTRL_STATUS_ASPM_L0S_BIT))
+                {
+                    bEnable = NV_TRUE;
+                }
+            }
+        }
+    }
+    else
+    {
+        if (clPcieReadPortConfigReg(pGpu, pCl, &pGpu->gpuClData.upstreamPort,
+            CL_PCIE_LINK_CTRL_STATUS, &linkCtrl) != NV_OK)
+        {
+            bEnable = NV_TRUE;
+        }
+        else
+        {
+            if (!(linkCtrl & CL_PCIE_LINK_CTRL_STATUS_ASPM_L0S_BIT))
+            {
+                bEnable = NV_TRUE;
+            }
+        }
+    }
+
+    return bEnable;
+}
+
 NV_STATUS
 clInit_IMPL(
     OBJGPU *pGpu,
@@ -753,6 +812,7 @@ void clSyncWithGsp_IMPL(OBJCL *pCl, GspSystemInfo *pGSI)
     CL_SYNC_PDB(PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE);
     CL_SYNC_PDB(PDB_PROP_CL_IS_EXTERNAL_GPU);
     CL_SYNC_PDB(PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR);
+    CL_SYNC_PDB(PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS);
 
 #undef CL_SYNC_PDB
 

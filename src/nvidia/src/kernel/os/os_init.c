@@ -128,22 +128,13 @@ initWinNTStubOSFunctionPointers(OBJOS *pOS)
     pOS->osQueueWorkItem             = stubOsQueueWorkItem;
     pOS->osQueueWorkItemWithFlags    = stubOsQueueWorkItemWithFlags;
     pOS->osQueueSystemWorkItem       = stubOsQueueSystemWorkItem;
-    pOS->osCallACPI_BCL              = stubOsCallACPI_BCL;
-    pOS->osCallACPI_ON               = stubOsCallACPI_ON;
-    pOS->osCallACPI_OFF              = stubOsCallACPI_OFF;
-    pOS->osCallACPI_NVHG_GPUON       = stubOsCallWMI_NVHG_GPUON;
-    pOS->osCallACPI_NVHG_GPUOFF      = stubOsCallWMI_NVHG_GPUOFF;
     pOS->osCallACPI_NVHG_GPUSTA      = stubOsCallWMI_NVHG_GPUSTA;
     pOS->osCallACPI_NVHG_MXDS        = stubOsCallWMI_NVHG_MXDS;
     pOS->osCallACPI_NVHG_MXMX        = stubOsCallWMI_NVHG_MXMX;
     pOS->osCallACPI_NVHG_DOS         = stubOsCallWMI_NVHG_DOS;
     pOS->osCallACPI_NVHG_DCS         = stubOsCallWMI_NVHG_DCS;
     pOS->osSetupVBlank               = stubOsSetupVBlank;
-    pOS->osCallACPI_NBPS             = stubOsCallACPI_NBPS;
-    pOS->osCallACPI_NBSL             = stubOsCallACPI_NBSL;
-    pOS->osCallACPI_OPTM_GPUON       = stubOsCallWMI_OPTM_GPUON;
     pOS->osGetUefiVariable           = stubOsGetUefiVariable;
-    pOS->osCallACPI_LRST             = stubOsCallACPI_LRST;
 }
 
 static void
@@ -155,7 +146,6 @@ initMacOSCoreOSFunctionPointers(OBJOS *pOS)
     pOS->osNv_rdmsr                      = stubOsnv_rdmsr;
     pOS->osNv_wrmsr                      = stubOsnv_wrmsr;
     pOS->osRobustChannelsDefaultState    = stubOsRobustChannelsDefaultState;
-    pOS->osCallACPI_BCL                  = stubOsCallACPI_BCL;
     pOS->osGetUefiVariable               = stubOsGetUefiVariable;
 }
 
@@ -461,7 +451,7 @@ NvU32
 osGetCpuVaAddrShift(void)
 {
     NvU64 maxUserVa = osGetMaxUserVa();
-    
+
     //
     // Add 1 to account for kernel VA space, on the assumption
     // that kernel VA space is the top half of the address space.

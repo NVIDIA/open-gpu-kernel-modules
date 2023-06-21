@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -111,6 +111,11 @@ typedef struct
 
     // Whether the address is virtual
     bool is_virtual;
+
+    // Whether the address resides in a non-protected memory region when the
+    // Confidential Computing feature is enabled. Default is protected.
+    // Ignored if the feature is disabled and should not be used.
+    bool is_unprotected;
 } uvm_gpu_address_t;
 
 // Create a virtual GPU address
@@ -258,8 +263,8 @@ typedef enum
     UVM_FAULT_CANCEL_VA_MODE_COUNT,
 } uvm_fault_cancel_va_mode_t;
 
-// Types of faults that can show up in the fault buffer. Non-UVM related faults are grouped in FATAL category
-// since we don't care about the specific type
+// Types of faults that can show up in the fault buffer. Non-UVM related faults
+// are grouped in FATAL category since we don't care about the specific type.
 typedef enum
 {
     UVM_FAULT_TYPE_INVALID_PDE = 0,
@@ -272,7 +277,8 @@ typedef enum
     // READ to WRITE-ONLY (ATS)
     UVM_FAULT_TYPE_READ,
 
-    // The next values are considered fatal and are not handled by the UVM driver
+    // The next values are considered fatal and are not handled by the UVM
+    // driver
     UVM_FAULT_TYPE_FATAL,
 
     // Values required for tools
@@ -311,10 +317,24 @@ typedef enum
     UVM_MMU_ENGINE_TYPE_COUNT,
 } uvm_mmu_engine_type_t;
 
+typedef enum
+{
+    // Allow entry to be fetched before the previous entry finishes ESCHED
+    // execution.
+    UVM_GPFIFO_SYNC_PROCEED = 0,
+
+    // Fetch of this entry has to wait until the previous entry has finished
+    // executing by ESCHED.
+    // For a complete engine sync the previous entry needs to include
+    // WAIT_FOR_IDLE command or other engine synchronization.
+    UVM_GPFIFO_SYNC_WAIT,
+} uvm_gpfifo_sync_t;
+
 const char *uvm_mmu_engine_type_string(uvm_mmu_engine_type_t mmu_engine_type);
 
-// HW unit that triggered the fault. We include the fields required for fault cancelling. Including more information
-// might be useful for performance heuristics in the future
+// HW unit that triggered the fault. We include the fields required for fault
+// cancelling. Including more information might be useful for performance
+// heuristics in the future.
 typedef struct
 {
     uvm_fault_client_type_t                client_type  : order_base_2(UVM_FAULT_CLIENT_TYPE_COUNT) + 1;
@@ -429,7 +449,8 @@ typedef enum
     // Completes when all fault replays are in-flight
     UVM_FAULT_REPLAY_TYPE_START = 0,
 
-    // Completes when all faulting accesses have been correctly translated or faulted again
+    // Completes when all faulting accesses have been correctly translated or
+    // faulted again
     UVM_FAULT_REPLAY_TYPE_START_ACK_ALL,
 
     UVM_FAULT_REPLAY_TYPE_MAX
@@ -467,18 +488,18 @@ struct uvm_access_counter_buffer_entry_struct
     {
         struct
         {
-            // Instance pointer of one of the channels in the TSG that triggered the
-            // notification
+            // Instance pointer of one of the channels in the TSG that triggered
+            // the notification.
             uvm_gpu_phys_address_t instance_ptr;
 
             uvm_mmu_engine_type_t mmu_engine_type;
 
             NvU32 mmu_engine_id;
 
-            // Identifier of the subcontext that performed the memory accesses that
-            // triggered the notification. This value, combined with the instance_ptr,
-            // is needed to obtain the GPU VA space of the process that triggered the
-            // notification.
+            // Identifier of the subcontext that performed the memory accesses
+            // that triggered the notification. This value, combined with the
+            // instance_ptr, is needed to obtain the GPU VA space of the process
+            // that triggered the notification.
             NvU32 ve_id;
 
             // VA space for the address that triggered the notification
@@ -524,8 +545,8 @@ static uvm_prot_t uvm_fault_access_type_to_prot(uvm_fault_access_type_t access_t
             return UVM_PROT_READ_WRITE;
 
         default:
-            // Prefetch faults, if not ignored, are handled like read faults and require
-            // a mapping with, at least, READ_ONLY access permission
+            // Prefetch faults, if not ignored, are handled like read faults and
+            // requirea mapping with, at least, READ_ONLY access permission.
             return UVM_PROT_READ_ONLY;
     }
 }

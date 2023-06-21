@@ -26,7 +26,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/clc770.finn
+// Source file:      class/clc770.finn
 //
 
 #define NVC770_DISPLAY (0xc770U) /* finn: Evaluated from "NVC770_ALLOCATION_PARAMETERS_MESSAGE_ID" */

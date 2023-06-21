@@ -585,3 +585,64 @@ memmgrGetMaxContextSize_TU102
 
     return size;
 }
+
+
+/*!
+ * Calculates heap offset based on presence and size of console and CBC regions
+ *
+ * When GSP is in use, CBC is placed at the beginning of memory instead of the
+ * end, which means it must be taken into account when calculating where the
+ * heap starts. If the offset is successfully calculated, it is placed in the
+ * offset variable and NV_OK is returned
+ *
+ *  @returns NV_STATUS
+ */
+NV_STATUS
+memmgrCalculateHeapOffsetWithGSP_TU102
+(
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager,
+    NvU32         *offset
+)
+{
+    // The heap will be located after the Console and CBC regions if they are
+    // present. Zero, one, or both of them may be present. If Console and
+    // CBC regions are present, they are guaranteed to be in Regions 0 and 1.
+    // If only one is present, then it is guaranteed to be in Region 0. As an
+    // extra check, it should be validated that these regions are indeed
+    // reserved
+    KernelMemorySystem   *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    FB_REGION_DESCRIPTOR *pFbRegion0          = &pMemoryManager->Ram.fbRegion[0];
+    FB_REGION_DESCRIPTOR *pFbRegion1          = &pMemoryManager->Ram.fbRegion[1];
+
+    NvBool isConsoleRegionPresent = pMemoryManager->Ram.ReservedConsoleDispMemSize != 0;
+    NvBool isCbcRegionPresent     = !pKernelMemorySystem->pStaticConfig->bDisableCompbitBacking;
+
+    // Both regions in use
+    if (isCbcRegionPresent && isConsoleRegionPresent &&
+        pFbRegion0->bRsvdRegion && pFbRegion1->bRsvdRegion)
+    {
+        // Use Region 1 limit and safely convert to KB
+        *offset = NvU64_LO32((pFbRegion1->limit + 1) >> 10);
+        NV_ASSERT_OR_RETURN(((NvU64) *offset << 10ULL) == (pFbRegion1->limit + 1),
+                            NV_ERR_INVALID_DATA);
+    }
+
+    // One region in use
+    else if ((isCbcRegionPresent || isConsoleRegionPresent) &&
+             pFbRegion0->bRsvdRegion)
+    {
+        // Use Region 0 limit and safely convert to KB
+        *offset = NvU64_LO32((pFbRegion0->limit + 1) >> 10);
+        NV_ASSERT_OR_RETURN(((NvU64) *offset << 10ULL) == (pFbRegion0->limit + 1),
+                            NV_ERR_INVALID_DATA);
+    }
+
+    // Neither region in use, return NOT_SUPPORTED to fall back to default calculation
+    else
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    return NV_OK;
+}

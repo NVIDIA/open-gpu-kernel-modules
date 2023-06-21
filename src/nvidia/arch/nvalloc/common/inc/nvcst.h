@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,7 +62,6 @@ CHIPSET_SETUP_FUNC(Intel_A2D2_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_A2C9_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_A301_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_0685_setupFunc)
-CHIPSET_SETUP_FUNC(Intel_IceLake_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_4381_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_7A82_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_7A04_setupFunc)
@@ -91,6 +90,7 @@ CHIPSET_SETUP_FUNC(Ampere_Altra_setupFunc)
 CHIPSET_SETUP_FUNC(Arm_NeoverseN1_setupFunc)
 CHIPSET_SETUP_FUNC(Nvidia_T210_setupFunc)
 CHIPSET_SETUP_FUNC(Nvidia_T194_setupFunc)
+CHIPSET_SETUP_FUNC(Nvidia_TH500_setupFunc)
 
 
 // Keep string length <=32 (including termination) to avoid string copy overflow
@@ -179,13 +179,13 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0xA30D, CS_INTEL_A2C9,      "IntelH370",            Intel_A2C9_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA301, CS_INTEL_A301,      "Intel-CannonLake",     Intel_A301_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x0685, CS_INTEL_0685,      "Intel-CometLake",      Intel_0685_setupFunc},
-    {PCI_VENDOR_ID_INTEL,       0xA1CB, CS_INTEL_C620,      "Intel-IceLake",        Intel_IceLake_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0xA1CB, CS_INTEL_C620,      "Intel-IceLake",        NULL},
 	{PCI_VENDOR_ID_INTEL,       0x4381, CS_INTEL_4381,      "Intel-RocketLake",     Intel_4381_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x4385, CS_INTEL_4381,      "Intel-RocketLake",     Intel_4381_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A82, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A84, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x1B81, CS_INTEL_1B81,      "Intel-SapphireRapids", NULL},
-    {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        Intel_IceLake_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        NULL},
     {PCI_VENDOR_ID_INTEL,       0x7A04, CS_INTEL_7A04,      "Intel-RaptorLake",     Intel_7A04_setupFunc},
 
     {PCI_VENDOR_ID_NVIDIA,      0x0FAE, CS_NVIDIA_T210,      "T210",      Nvidia_T210_setupFunc},
@@ -200,6 +200,12 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_NVIDIA,      0x229E, CS_NVIDIA_T234,      "T234",      Nvidia_T194_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x22C2, CS_NVIDIA_T23x,      "T23x",      Nvidia_T194_setupFunc},
     {PCI_VENDOR_ID_NVIDIA,      0x22C3, CS_NVIDIA_T23x,      "T23x",      Nvidia_T194_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22B1, CS_NVIDIA_TH500,     "TH500",     Nvidia_TH500_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22B2, CS_NVIDIA_TH500,     "TH500",     Nvidia_TH500_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22B3, CS_NVIDIA_TH500,     "TH500",     Nvidia_TH500_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22B4, CS_NVIDIA_TH500,     "TH500",     Nvidia_TH500_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22B8, CS_NVIDIA_TH500,     "TH500",     Nvidia_TH500_setupFunc},
+    {PCI_VENDOR_ID_NVIDIA,      0x22B9, CS_NVIDIA_TH500,     "TH500",     Nvidia_TH500_setupFunc},
 
     {PCI_VENDOR_ID_SIS,         0x0649, CS_SIS_649,          "649",          SiS_656_setupFunc},
     {PCI_VENDOR_ID_SIS,         0x0656, CS_SIS_656,          "656",          SiS_656_setupFunc},
@@ -238,6 +244,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D0, CS_MELLANOX_BLUEFIELD, "Mellanox BlueField",  Mellanox_BlueField_setupFunc},
     {PCI_VENDOR_ID_MELLANOX,    0xA2D4, CS_MELLANOX_BLUEFIELD2, "Mellanox BlueField 2",  NULL},
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2, "Mellanox BlueField 2 Crypto disabled",  NULL},
+    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3, "Mellanox BlueField 3",  NULL},
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2, "Amazon Gravitron2",  Amazon_Gravitron2_setupFunc},
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX,     "Fujitsu A64FX", Fujitsu_A64FX_setupFunc},
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500,  "Phytium S2500",  NULL},
@@ -290,6 +297,7 @@ VENDORNAME vendorName[] =
     {PCI_VENDOR_ID_FUJITSU,     "Fujitsu"},
     {PCI_VENDOR_ID_CADENCE,     "Cadence"},
     {PCI_VENDOR_ID_ARM,         "ARM"},
+    {PCI_VENDOR_ID_ALIBABA,     "Alibaba"},
     {0,                         "Unknown"} // Indicates end of the table
 };
 
@@ -312,6 +320,12 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_NVIDIA,      0x229E, CS_NVIDIA_T234},        // NVIDIA Tegra Orin RP2
     {PCI_VENDOR_ID_NVIDIA,      0x22C2, CS_NVIDIA_T23x},        // NVIDIA Tegra RP0
     {PCI_VENDOR_ID_NVIDIA,      0x22C3, CS_NVIDIA_T23x},        // NVIDIA Tegra RP1
+    {PCI_VENDOR_ID_NVIDIA,      0x22B1, CS_NVIDIA_TH500},       // NVIDIA TH500 RP for GH100 GPU in GH180.
+    {PCI_VENDOR_ID_NVIDIA,      0x22B2, CS_NVIDIA_TH500},       // NVIDIA TH500 RP x16
+    {PCI_VENDOR_ID_NVIDIA,      0x22B3, CS_NVIDIA_TH500},       // NVIDIA TH500 RP x4
+    {PCI_VENDOR_ID_NVIDIA,      0x22B4, CS_NVIDIA_TH500},       // NVIDIA TH500 RP x1
+    {PCI_VENDOR_ID_NVIDIA,      0x22B8, CS_NVIDIA_TH500},       // NVIDIA TH500 RP x8
+    {PCI_VENDOR_ID_NVIDIA,      0x22B9, CS_NVIDIA_TH500},       // NVIDIA TH500 RP x2
 
     {PCI_VENDOR_ID_APM,         0xe004, CS_APM_STORM},          // Applied Micro X-Gene "Storm"
     {PCI_VENDOR_ID_MARVELL,     0xAF00, CS_MARVELL_THUNDERX2},  // Marvell ThunderX2
@@ -328,6 +342,7 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D0, CS_MELLANOX_BLUEFIELD}, // Mellanox BlueField
     {PCI_VENDOR_ID_MELLANOX,    0xA2D4, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2},// Mellanox BlueField 2 Crypto disabled
+    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3},// Mellanox BlueField 3
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2},  // Amazon Gravitron2
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX},      // Fujitsu A64FX
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500},      // Phytium S2500
@@ -345,6 +360,7 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_ARM,         0x0100, CS_ARM_NEOVERSEN1},     // Arm Neoverse N1
     {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN96XX}, // Marvell OCTEON CN96xx
     {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN98XX}, // Marvell OCTEON CN98xx
+    {PCI_VENDOR_ID_ALIBABA,     0x8000, CS_ALIBABA_YITIAN},      // Alibaba Yitian
 
     // last element must have chipset CS_UNKNOWN (zero)
     {0,                         0,      CS_UNKNOWN}

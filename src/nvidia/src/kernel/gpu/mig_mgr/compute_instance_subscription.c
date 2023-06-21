@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,11 @@
  *       This file contains the functions managing MIG compute instance subscriptions
  *
  *****************************************************************************/
+
+#define NVOC_COMPUTE_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
+
+// FIXME XXX
+#define NVOC_GPU_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
 #include "gpu/gpu.h"
@@ -124,7 +129,7 @@ cisubscriptionCopyConstruct_IMPL
     ComputeInstanceSubscription *pComputeInstanceSubscriptionSrc = dynamicCast(pSrcRef->pResource, ComputeInstanceSubscription);
     OBJGPU *pGpu = GPU_RES_GET_GPU(pComputeInstanceSubscription);
 
-    // non kernel clients are not allowed to dup MIG instances 
+    // non kernel clients are not allowed to dup MIG instances
     NV_CHECK_OR_RETURN(LEVEL_SILENT, pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL,
                        NV_ERR_NOT_SUPPORTED);
 

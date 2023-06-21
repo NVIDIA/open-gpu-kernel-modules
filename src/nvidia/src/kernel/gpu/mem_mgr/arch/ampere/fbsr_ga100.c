@@ -26,11 +26,12 @@
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/fbsr.h"
 
-static NV_STATUS
-fbsrSendMemsysProgramRawCompressionMode
+NV_STATUS
+fbsrSendMemsysProgramRawCompressionMode_GA100
 (
-    OBJGPU             *pGpu,
-    NvBool              bRawMode
+    OBJGPU  *pGpu,
+    OBJFBSR *pFbsr,
+    NvBool   bRawMode
 )
 {
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
@@ -69,7 +70,7 @@ fbsrBegin_GA100(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
 
         if (pMemorySystemConfig->bUseRawModeComptaglineAllocation)
         {
-            NV_ASSERT_OK(fbsrSendMemsysProgramRawCompressionMode(pGpu, NV_FALSE));
+            NV_ASSERT_OK(fbsrSendMemsysProgramRawCompressionMode_HAL(pGpu, pFbsr, NV_FALSE));
             pFbsr->bRawModeWasEnabled = NV_TRUE;
         }
     }
@@ -90,13 +91,13 @@ fbsrEnd_GA100(OBJGPU *pGpu, OBJFBSR *pFbsr)
 {
     NV_STATUS status = fbsrEnd_GM107(pGpu, pFbsr);
 
-    if (pFbsr->op == FBSR_OP_RESTORE &&
-        pFbsr->bRawModeWasEnabled)
+    if (pFbsr->op == FBSR_OP_RESTORE && pFbsr->bRawModeWasEnabled)
     {
         /*
          * Reenable raw mode if it was disabled by fbsrBegin_GA100.
          */
-        NV_ASSERT_OK(fbsrSendMemsysProgramRawCompressionMode(pGpu, NV_TRUE));
+        NV_ASSERT_OK(fbsrSendMemsysProgramRawCompressionMode_HAL(pGpu, pFbsr, NV_TRUE));
+        pFbsr->bRawModeWasEnabled = NV_FALSE;
     }
 
     return status;

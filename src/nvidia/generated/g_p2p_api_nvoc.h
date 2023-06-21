@@ -31,6 +31,7 @@ extern "C" {
 
 #include "g_p2p_api_nvoc.h"
 
+
 #ifndef _P2P_API_H_
 #define _P2P_API_H_
 
@@ -51,6 +52,9 @@ extern "C" {
 #define NV_P2PAPI_ATTRIBUTES_LINK_TYPE                           4:4
 #define NV_P2PAPI_ATTRIBUTES_LINK_TYPE_GPA                       0x0
 #define NV_P2PAPI_ATTRIBUTES_LINK_TYPE_SPA                       0x1
+#define NV_P2PAPI_ATTRIBUTES_REMOTE_EGM                          5:5
+#define NV_P2PAPI_ATTRIBUTES_REMOTE_EGM_NO                       0x0
+#define NV_P2PAPI_ATTRIBUTES_REMOTE_EGM_YES                      0x1
 
 #ifdef NVOC_P2P_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
@@ -92,6 +96,8 @@ struct P2PApi {
     NvU32 remoteGfid;
     NvU32 peerId1;
     NvU32 peerId2;
+    NvU32 egmPeerId1;
+    NvU32 egmPeerId2;
     NvU32 attributes;
 };
 

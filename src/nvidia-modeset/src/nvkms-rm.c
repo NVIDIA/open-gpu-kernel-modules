@@ -282,6 +282,9 @@ static void FreeDisplay(NVDispEvoPtr pDispEvo)
         return;
     }
 
+    nvAssert(pDispEvo->vrrSetTimeoutEventUsageCount == 0);
+    nvAssert(pDispEvo->vrrSetTimeoutEventHandle == 0);
+
 #if defined(DEBUG)
     for (NvU32 apiHead = 0;
          apiHead < ARRAY_LEN(pDispEvo->pSwapGroup); apiHead++) {
@@ -293,6 +296,7 @@ static void FreeDisplay(NVDispEvoPtr pDispEvo)
 
     nvkms_free_ref_ptr(pDispEvo->ref_ptr);
 
+    nvInvalidateTopologiesEvo();
     nvFree(pDispEvo);
 }
 
@@ -731,20 +735,6 @@ static NvBool AllocConnector(
 
     pConnectorEvo->dfpInfo = GetDfpInfo(pConnectorEvo);
 
-    if (pConnectorEvo->signalFormat == NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
-        nvAssert(pDevEvo->numHeads >= 1);
-        // DSI supports only HEAD0 assignment
-        pConnectorEvo->validHeadMask = 0x1;
-
-        if (pConnectorEvo->type != NVKMS_CONNECTOR_TYPE_DSI) {
-            nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
-                         "Mismatch between connector type and signal format for DSI!");
-            goto fail;
-        }
-    } else {
-        pConnectorEvo->validHeadMask = (1 << pDevEvo->numHeads) - 1;
-    }
-
     /* Assign connector indices. */
 
     pConnectorEvo->legacyType =
@@ -1144,11 +1134,11 @@ static void MarkConnectorBootHeadActive(NVDispEvoPtr pDispEvo, NvU32 head)
         } else {
             // Track the SOR assignment for this connector.  See the comment in
             // nvRmGetConnectorORInfo() for why this is deferred until now.
-            nvAssert(pConnectorEvo->or.mask == 0x0);
-            pConnectorEvo->or.mask |= NVBIT(params.index);
+            nvAssert(pConnectorEvo->or.primary == NV_INVALID_OR);
+            pConnectorEvo->or.primary = params.index;
         }
     }
-    nvAssert((pConnectorEvo->or.mask & NVBIT(params.index)) != 0x0);
+    nvAssert(pConnectorEvo->or.primary == params.index);
 
     pHeadState = &pDispEvo->headState[head];
 
@@ -2030,7 +2020,8 @@ void nvRmGetConnectorORInfo(NVConnectorEvoPtr pConnectorEvo, NvBool assertOnly)
             return;
         }
         pConnectorEvo->or.type = NV0073_CTRL_SPECIFIC_OR_TYPE_DAC;
-        pConnectorEvo->or.mask = 0;
+        pConnectorEvo->or.primary = NV_INVALID_OR;
+        pConnectorEvo->or.secondaryMask = 0;
         pConnectorEvo->or.protocol =
             NV0073_CTRL_SPECIFIC_OR_PROTOCOL_DAC_RGB_CRT;
         pConnectorEvo->or.ditherType = NV0073_CTRL_SPECIFIC_OR_DITHER_TYPE_OFF;
@@ -2053,9 +2044,11 @@ void nvRmGetConnectorORInfo(NVConnectorEvoPtr pConnectorEvo, NvBool assertOnly)
             //
             // All we really need to know is which SOR is assigned to the boot
             // display, so we defer the query to MarkConnectorBootHeadActive().
-            pConnectorEvo->or.mask = 0x0;
+            pConnectorEvo->or.secondaryMask = 0x0;
+            pConnectorEvo->or.primary = NV_INVALID_OR;
         } else {
-            pConnectorEvo->or.mask = NVBIT(params.index);
+            pConnectorEvo->or.secondaryMask = 0x0;
+            pConnectorEvo->or.primary = params.index;
         }
         pConnectorEvo->or.protocol = params.protocol;
         pConnectorEvo->or.ditherType = params.ditherType;
@@ -2063,7 +2056,7 @@ void nvRmGetConnectorORInfo(NVConnectorEvoPtr pConnectorEvo, NvBool assertOnly)
         pConnectorEvo->or.location = params.location;
     } else {
         nvAssert(pConnectorEvo->or.type == params.type);
-        nvAssert((pConnectorEvo->or.mask & NVBIT(params.index)) != 0x0);
+        nvAssert(pConnectorEvo->or.primary == params.index);
         nvAssert(pConnectorEvo->or.protocol == params.protocol);
         nvAssert(pConnectorEvo->or.ditherType == params.ditherType);
         nvAssert(pConnectorEvo->or.ditherAlgo == params.ditherAlgo);
@@ -2221,11 +2214,11 @@ NvBool nvRmSetDpmsEvo(NVDpyEvoPtr pDpyEvo, NvS64 value)
         NV5070_CTRL_CMD_SET_DAC_PWR_PARAMS powerParams = { { 0 }, 0 };
 
         powerParams.base.subdeviceIndex = pDispEvo->displayOwner;
-        if (pConnectorEvo->or.mask == 0x0) {
-            nvAssert(pConnectorEvo->or.mask != 0x0);
+        if (pConnectorEvo->or.primary == NV_INVALID_OR) {
+            nvAssert(pConnectorEvo->or.primary != NV_INVALID_OR);
             return FALSE;
         }
-        powerParams.orNumber = nvEvoConnectorGetPrimaryOr(pConnectorEvo);
+        powerParams.orNumber = pConnectorEvo->or.primary;
 
         switch (value) {
         case NV_KMS_DPY_ATTRIBUTE_DPMS_ON:
@@ -3157,7 +3150,7 @@ static NvBool AllocPostSyncptPerChannel(NVDevEvoPtr pDevEvo,
 NvBool nvRMAllocateWindowChannels(NVDevEvoPtr pDevEvo)
 {
     int index;
-    NvU32 window;
+    NvU32 window, sd;
 
     static const struct {
         NvU32 windowClass;
@@ -3196,6 +3189,18 @@ NvBool nvRMAllocateWindowChannels(NVDevEvoPtr pDevEvo)
 
         if (!pDevEvo->window[window]) {
             return FALSE;
+        }
+
+        for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+            NvU32 ret = nvRmEvoBindDispContextDMA(pDevEvo,
+                                            pDevEvo->window[window],
+                                            pDevEvo->window[window]->notifiersDma[sd].ctxHandle);
+            if (ret != NVOS_STATUS_SUCCESS) {
+                nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+                        "Failed to bind(window channel) display engine notify context DMA: 0x%x (%s)",
+                        ret, nvstatusToString(ret));
+                return FALSE;
+            }
         }
 
         if (!AllocImmediateChannelDma(pDevEvo, pDevEvo->window[window],
@@ -3431,6 +3436,7 @@ void nvRmFreeCoreRGSyncpts(NVDevEvoPtr pDevEvo)
         /* Free all core RG syncpts. */
         NVDispApiHeadStateEvoRec *pApiHeadState = &pDispEvo->apiHeadState[i];
         for (int j = 0; j < pApiHeadState->numVblankSyncObjectsCreated; j++) {
+            nvAssert(!pApiHeadState->vblankSyncObjects[j].inUse);
             nvRmEvoFreeSyncpt(pDevEvo,
                               &pApiHeadState->vblankSyncObjects[j].evoSyncpt);
         }

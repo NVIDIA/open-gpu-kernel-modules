@@ -25,7 +25,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl208f/ctrl208fbase.finn
+// Source file:      ctrl/ctrl208f/ctrl208fbase.finn
 //
 
 #include "ctrl/ctrlxxxx.h"

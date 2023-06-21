@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/heap.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
+#include "gpu/bus/kern_bus.h"
 #include "gpu/device/device.h"
 #include "rmapi/client.h"
 #include "virtualization/hypervisor/hypervisor.h"
@@ -67,6 +68,7 @@ physmemConstruct_IMPL
     NvU32                                 attr2          = 0;
     const MEMORY_SYSTEM_STATIC_CONFIG    *pMemorySystemConfig =
         kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+    KernelBus                            *pKernelBus     = GPU_GET_KERNEL_BUS(pGpu);
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
@@ -106,7 +108,17 @@ physmemConstruct_IMPL
             attr2 |= DRF_DEF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _2MB);
             break;
         default:
-            attr |= DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _BIG);
+            if (bCompressedKind &&
+                pKernelBus->bar1[GPU_GFID_PF].bStaticBar1Enabled)
+            {
+                NV_ASSERT_OR_RETURN(kgmmuIsHugePageSupported(pKernelGmmu), NV_ERR_INVALID_ARGUMENT);
+                attr |= DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _HUGE);
+                attr2 |= DRF_DEF(OS32, _ATTR2, _PAGE_SIZE_HUGE, _2MB);
+            }
+            else
+            {
+                attr |= DRF_DEF(OS32, _ATTR, _PAGE_SIZE, _BIG);
+            }
             break;
     }
 

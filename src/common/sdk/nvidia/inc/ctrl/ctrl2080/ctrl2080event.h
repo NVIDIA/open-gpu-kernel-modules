@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080event.finn
+// Source file:      ctrl/ctrl2080/ctrl2080event.finn
 //
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
@@ -208,11 +208,11 @@ typedef struct NV2080_CTRL_EVENT_SET_SEMAPHORE_MEMORY_PARAMS {
  *     guestMSIData
  *       This parameter indicates the MSI data set by the guest OS.
  *
- *     vmIdType
- *       This parameter specifies the type of guest virtual machine identifier
+ *     vgpuUuid
+ *       This parameter specifies the uuid of vGPU assigned to VM.
  *
- *     guestVmId
- *       This parameter specifies the guest virtual machine identifier
+ *     domainId
+ *       This parameter specifies the unique guest virtual machine identifier
  *
  * Possible status values returned are:
  *      NV_OK
@@ -225,11 +225,11 @@ typedef struct NV2080_CTRL_EVENT_SET_SEMAPHORE_MEMORY_PARAMS {
 
 typedef struct NV2080_CTRL_EVENT_SET_GUEST_MSI_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 guestMSIAddr, 8);
-    NvU32      guestMSIData;
-    NvHandle   hSemMemory;
-    NvBool     isReset;
-    VM_ID_TYPE vmIdType;
-    NV_DECLARE_ALIGNED(VM_ID guestVmId, 8);
+    NvU32    guestMSIData;
+    NvHandle hSemMemory;
+    NvBool   isReset;
+    NvU8     vgpuUuid[VM_UUID_SIZE];
+    NV_DECLARE_ALIGNED(NvU64 domainId, 8);
 } NV2080_CTRL_EVENT_SET_GUEST_MSI_PARAMS;
 
 

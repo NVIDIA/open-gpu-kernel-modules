@@ -54,7 +54,6 @@ dmaAllocBar1P2PMapping_GH100
     NvU64 bar1ApertureLen = 0;                               // BAR1 aperture mapped lengths
     OBJGPU *pPeerGpu = NULL;
     KernelBus *pPeerKernelBus = NULL;
-    NvHandle hClient = NV01_NULL_OBJECT;
     NV_STATUS status = NV_OK;
 
     if (params == NULL ||
@@ -89,7 +88,7 @@ dmaAllocBar1P2PMapping_GH100
                                    &phyAddr,
                                    &bar1ApertureLen,
                                    BUS_MAP_FB_FLAGS_MAP_UNICAST,
-                                   hClient);
+                                   NULL);
     if (status != NV_OK)
         goto cleanup;
 

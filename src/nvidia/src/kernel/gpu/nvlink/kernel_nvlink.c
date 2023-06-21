@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
+
+// FIXME XXX
+#define NVOC_KERNEL_IOCTRL_H_PRIVATE_ACCESS_ALLOWED
 
 #include "os/os.h"
 #include "core/hal.h"
@@ -643,12 +648,20 @@ knvlinkInbandMsgCallbackDispatcher_WORKITEM
 
     pHeader = (nvlink_inband_msg_header_t *)pMessage->data;
 
+    if (pKernelNvlink->inbandCallback[pHeader->type].pCallback == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "No Callback Registered for type %d. Dropping the msg\n", 
+                  pHeader->type);
+        return;
+    }
+
     // Assert reserved in msgHdr are zero
     pRsvd = &pHeader->reserved[0];
     NV_ASSERT((pRsvd[0] == 0) && portMemCmp(pRsvd, pRsvd + 1,
               sizeof(pHeader->reserved) - 1) == 0);
 
-    pKernelNvlink->inbandCallback[pHeader->type].pCallback(gpuInstance, pData);
+    (void)pKernelNvlink->inbandCallback[pHeader->type].pCallback(gpuInstance, pData);
 }
 
 NV_STATUS
@@ -1057,7 +1070,7 @@ knvlinkPrepareForXVEReset_IMPL
     // If GFW is booted and running through link-training, then no need to tear-down the
     // links to reset. Exit out early from the function
     //
-    if (!bForceShutdown && pKernelNvlink->getProperty(pNvlink, PDB_PROP_KNVLINK_MINION_GFW_BOOT))
+    if (!bForceShutdown && pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_GFW_BOOT))
     {
         return NV_OK;
     }

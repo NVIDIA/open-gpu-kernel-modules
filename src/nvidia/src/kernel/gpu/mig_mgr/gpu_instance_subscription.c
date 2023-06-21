@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,12 @@
  *       This file contains the functions managing GPU instance subscriptions
  *
  *****************************************************************************/
+
+// FIXME XXX
+#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
+#define NVOC_COMPUTE_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
+
+#define NVOC_GPU_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
 #include "core/system.h"
@@ -649,6 +655,7 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
         ++pParams->execPartCount;
 
         pOutInfo->gpcCount = pMIGComputeInstance->resourceAllocation.gpcCount;
+        pOutInfo->gfxGpcCount = pMIGComputeInstance->resourceAllocation.gfxGpcCount;
         pOutInfo->veidCount = pMIGComputeInstance->resourceAllocation.veidCount;
         pOutInfo->ceCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
                                                       RM_ENGINE_TYPE_COPY(0));
@@ -868,7 +875,8 @@ gisubscriptionCtrlCmdExecPartitionsImport_IMPL
         {
             KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
             NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pGPUInstance, NV_FALSE, restore, &pParams->id, NV_FALSE),
+                kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager,
+                 pGPUInstance, NV_FALSE, restore, &pParams->id, pParams->bCreateCap),
                 cleanup_rpc);
         }
         else

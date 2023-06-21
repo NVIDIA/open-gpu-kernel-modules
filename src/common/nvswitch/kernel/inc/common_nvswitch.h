@@ -132,13 +132,13 @@ void nvswitch_assert_log
     NvU32 line
 );
 
-#define NVSWITCH_ASSERT(_cond)                                      \
+#define NVSWITCH_ASSERT(_cond)                                                       \
     ((void)((!(_cond)) ? nvswitch_assert_log(__FUNCTION__, __FILE__, __LINE__) : 0))
 
 #else
 void nvswitch_assert_log(void);
 
-#define NVSWITCH_ASSERT(_cond) \
+#define NVSWITCH_ASSERT(_cond)                                       \
     ((void)((!(_cond)) ? nvswitch_assert_log() : 0))
 #endif
 
@@ -469,7 +469,8 @@ nvswitch_record_error
     NvBool  error_resolved,
     void    *data,
     NvU32   data_size,
-    NvU32   line
+    NvU32   line,
+    const char *description
 );
 
 void
@@ -579,5 +580,6 @@ NvlStatus nvswitch_set_training_mode(nvswitch_device *device);
 NvBool    nvswitch_is_link_in_reset(nvswitch_device *device, nvlink_link *link);
 void      nvswitch_apply_recal_settings(nvswitch_device *device, nvlink_link *link);
 void nvswitch_init_buffer_ready(nvswitch_device *device, nvlink_link *link, NvBool bNportBufferReady);
-
+NvBool    nvswitch_does_link_need_termination_enabled(nvswitch_device *device, nvlink_link *link);
+NvlStatus nvswitch_link_termination_setup(nvswitch_device *device, nvlink_link* link);
 #endif //_COMMON_NVSWITCH_H_

@@ -174,7 +174,7 @@ static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, RmHalspecOwner *pR
     {
         pThis->__kmcWritePmcEnableReg__ = &kmcWritePmcEnableReg_GK104;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    else
     {
         pThis->__kmcWritePmcEnableReg__ = &kmcWritePmcEnableReg_GA100;
     }
@@ -184,7 +184,7 @@ static void __nvoc_init_funcTable_KernelMc_1(KernelMc *pThis, RmHalspecOwner *pR
     {
         pThis->__kmcReadPmcEnableReg__ = &kmcReadPmcEnableReg_GK104;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    else
     {
         pThis->__kmcReadPmcEnableReg__ = &kmcReadPmcEnableReg_GA100;
     }

@@ -213,9 +213,9 @@ subdeviceCtrlCmdNvdGetNocatJournalRpt_IMPL
         pReportParams->nocatOutstandingRecordCount = rcdbGetNocatOutstandingCount(pRcdb);
 
         // add in the activity counters.
-        portMemCopy(pReportParams->activityCounters, NV_SIZEOF32(pReportParams->activityCounters),
+        portMemCopy(pReportParams->activityCounters, sizeof(pReportParams->activityCounters),
             pRcdb->nocatJournalDescriptor.nocatEventCounters,
-            NV_SIZEOF32(pRcdb->nocatJournalDescriptor.nocatEventCounters));
+            sizeof(pRcdb->nocatJournalDescriptor.nocatEventCounters));
     }
     return status;
 }

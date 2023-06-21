@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,13 +56,13 @@ typedef struct MIG_GPU_INSTANCE MIG_GPU_INSTANCE;
 #define  IS_MIG_IN_USE(pGpu)  (((pGpu) != NULL) && (GPU_GET_KERNEL_MIG_MANAGER(pGpu) != NULL) && \
                                kmigmgrIsMIGGpuInstancingEnabled((pGpu), GPU_GET_KERNEL_MIG_MANAGER(pGpu)))
 
-#define FOR_EACH_VALID_GPU_INSTANCE(pGpu, pKernelMIGManager, pLocal)                \
-    {                                                                               \
-        NvU32 i;                                                                    \
-        for (i = 0; i < KMIGMGR_MAX_GPU_INSTANCES; ++i)                             \
-        {                                                                           \
-            (pLocal) = kmigmgrGetMIGGpuInstanceSlot((pGpu), (pKernelMIGManager), i);\
-            if (((pLocal) == NULL) || !(pLocal)->bValid)                   \
+#define FOR_EACH_VALID_GPU_INSTANCE(pGpu, pKernelMIGManager, pLocal)                 \
+    {                                                                                \
+        NvU32 i;                                                                     \
+        for (i = 0; i < KMIGMGR_MAX_GPU_INSTANCES; ++i)                              \
+        {                                                                            \
+            (pLocal) = kmigmgrGetMIGGpuInstanceSlot((pGpu), (pKernelMIGManager), i); \
+            if (((pLocal) == NULL) || !(pLocal)->bValid)                             \
                 continue;
 
 #define FOR_EACH_VALID_GPU_INSTANCE_END()                                           \
@@ -79,7 +79,7 @@ typedef struct MIG_GPU_INSTANCE MIG_GPU_INSTANCE;
 #define KMIGMGR_CTSID_INVALID               0xFFFFFFFFUL
 #define KMIGMGR_SPAN_OFFSET_INVALID         KMIGMGR_CTSID_INVALID
 
-#define KMIGMGR_INSTANCE_ATTRIBUTION_ID_INVALID           \
+#define KMIGMGR_INSTANCE_ATTRIBUTION_ID_INVALID            \
     ((KMIGMGR_MAX_GPU_SWIZZID * KMIGMGR_MAX_GPU_SWIZZID) + \
      KMIGMGR_MAX_COMPUTE_INSTANCES)
 
@@ -243,7 +243,7 @@ typedef struct MIG_COMPUTE_INSTANCE
  *      instance ID support. (bug 2938187)
  *      TYPE_REQUEST_AT_SPAN
  *          Parameter refers to request data passed in via EXEC_PARTITIONS_CREATE ctrl
- *          call. All resources claimed by new instance are attempt to be claimed by 
+ *          call. All resources claimed by new instance are attempt to be claimed by
  *          the RM allocater starting at the specified resource span.
  */
 typedef struct KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS
@@ -384,10 +384,10 @@ typedef struct KERNEL_MIG_GPU_INSTANCE
      * GR to CTS ID mapping
      */
     NvU32 grCtsIdMap[KMIGMGR_MAX_COMPUTE_INSTANCES];
-    
+
     /*!
      * Mask tracking which compute spans are currently in-use
-     */ 
+     */
     NvU32 spanInUseMask;
 } KERNEL_MIG_GPU_INSTANCE;
 
@@ -463,6 +463,44 @@ typedef struct KERNEL_MIG_MANAGER_STATIC_INFO
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
 struct KernelMIGManager {
+    const struct NVOC_RTTI *__nvoc_rtti;
+    struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
+    struct Object *__nvoc_pbase_Object;
+    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
+    struct KernelMIGManager *__nvoc_pbase_KernelMIGManager;
+    NV_STATUS (*__kmigmgrConstructEngine__)(OBJGPU *, struct KernelMIGManager *, ENGDESCRIPTOR);
+    NV_STATUS (*__kmigmgrStateInitLocked__)(OBJGPU *, struct KernelMIGManager *);
+    NV_STATUS (*__kmigmgrStateUnload__)(OBJGPU *, struct KernelMIGManager *, NvU32);
+    NV_STATUS (*__kmigmgrCreateGPUInstanceCheck__)(OBJGPU *, struct KernelMIGManager *, NvBool);
+    NvBool (*__kmigmgrIsDevinitMIGBitSet__)(OBJGPU *, struct KernelMIGManager *);
+    NvBool (*__kmigmgrIsGPUInstanceCombinationValid__)(OBJGPU *, struct KernelMIGManager *, NvU32);
+    NvBool (*__kmigmgrIsGPUInstanceFlagValid__)(OBJGPU *, struct KernelMIGManager *, NvU32);
+    NvBool (*__kmigmgrIsMemoryPartitioningRequested__)(OBJGPU *, struct KernelMIGManager *, NvU32);
+    NvBool (*__kmigmgrIsMemoryPartitioningNeeded__)(OBJGPU *, struct KernelMIGManager *, NvU32);
+    struct NV_RANGE (*__kmigmgrMemSizeFlagToSwizzIdRange__)(OBJGPU *, struct KernelMIGManager *, NvU32);
+    NV_STATUS (*__kmigmgrStateLoad__)(POBJGPU, struct KernelMIGManager *, NvU32);
+    NV_STATUS (*__kmigmgrStatePreLoad__)(POBJGPU, struct KernelMIGManager *, NvU32);
+    NV_STATUS (*__kmigmgrStatePostUnload__)(POBJGPU, struct KernelMIGManager *, NvU32);
+    void (*__kmigmgrStateDestroy__)(POBJGPU, struct KernelMIGManager *);
+    NV_STATUS (*__kmigmgrStatePreUnload__)(POBJGPU, struct KernelMIGManager *, NvU32);
+    NV_STATUS (*__kmigmgrStateInitUnlocked__)(POBJGPU, struct KernelMIGManager *);
+    void (*__kmigmgrInitMissing__)(POBJGPU, struct KernelMIGManager *);
+    NV_STATUS (*__kmigmgrStatePreInitLocked__)(POBJGPU, struct KernelMIGManager *);
+    NV_STATUS (*__kmigmgrStatePreInitUnlocked__)(POBJGPU, struct KernelMIGManager *);
+    NV_STATUS (*__kmigmgrStatePostLoad__)(POBJGPU, struct KernelMIGManager *, NvU32);
+    NvBool (*__kmigmgrIsPresent__)(POBJGPU, struct KernelMIGManager *);
+    NvBool PRIVATE_FIELD(bIsA100ReducedConfig);
+    KERNEL_MIG_MANAGER_PRIVATE_DATA *PRIVATE_FIELD(pPrivate);
+    KERNEL_MIG_GPU_INSTANCE PRIVATE_FIELD(kernelMIGGpuInstance)[8];
+    NvBool PRIVATE_FIELD(bMIGEnabled);
+    NvU64 PRIVATE_FIELD(swizzIdInUseMask);
+    NvBool PRIVATE_FIELD(bRestoreWatchdog);
+    NvBool PRIVATE_FIELD(bReenableWatchdog);
+    union ENGTYPE_BIT_VECTOR PRIVATE_FIELD(partitionableEnginesInUse);
+    NvBool PRIVATE_FIELD(bDeviceProfilingInUse);
+    NvBool PRIVATE_FIELD(bMIGAutoOnlineEnabled);
+};
+struct KernelMIGManager_PRIVATE {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
     struct Object *__nvoc_pbase_Object;
@@ -878,11 +916,13 @@ static inline NvBool kmigmgrIsMIGNvlinkP2PSupportOverridden(OBJGPU *pGpu, struct
 }
 
 static inline const union ENGTYPE_BIT_VECTOR *kmigmgrGetPartitionableEnginesInUse(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
-    return &pKernelMIGManager->partitionableEnginesInUse;
+    struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
+    return &pKernelMIGManager_PRIVATE->partitionableEnginesInUse;
 }
 
 static inline NvBool kmigmgrIsA100ReducedConfig(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager) {
-    return pKernelMIGManager->bIsA100ReducedConfig;
+    struct KernelMIGManager_PRIVATE *pKernelMIGManager_PRIVATE = (struct KernelMIGManager_PRIVATE *)pKernelMIGManager;
+    return pKernelMIGManager_PRIVATE->bIsA100ReducedConfig;
 }
 
 NV_STATUS kmigmgrIncRefCount_IMPL(struct RsShared *arg0);
@@ -918,9 +958,9 @@ NvU32 kmigmgrCountEnginesOfType_IMPL(const union ENGTYPE_BIT_VECTOR *arg0, RM_EN
 NvU16 kmigmgrGetAttributionIdFromMIGReference_IMPL(struct MIG_INSTANCE_REF arg0);
 
 #define kmigmgrGetAttributionIdFromMIGReference(arg0) kmigmgrGetAttributionIdFromMIGReference_IMPL(arg0)
-NV_STATUS kmigmgrAllocateInstanceEngines_IMPL(union ENGTYPE_BIT_VECTOR *pSourceEngines, NvBool bShared, struct NV_RANGE engTypeRange, NvU32 reqEngCount, union ENGTYPE_BIT_VECTOR *pOutEngines, union ENGTYPE_BIT_VECTOR *pExclusiveEngines, union ENGTYPE_BIT_VECTOR *pSharedEngines);
+NV_STATUS kmigmgrAllocateInstanceEngines_IMPL(union ENGTYPE_BIT_VECTOR *pSourceEngines, NvBool bShared, struct NV_RANGE engTypeRange, NvU32 reqEngCount, union ENGTYPE_BIT_VECTOR *pOutEngines, union ENGTYPE_BIT_VECTOR *pExclusiveEngines, union ENGTYPE_BIT_VECTOR *pSharedEngines, union ENGTYPE_BIT_VECTOR *pAllocatableEngines);
 
-#define kmigmgrAllocateInstanceEngines(pSourceEngines, bShared, engTypeRange, reqEngCount, pOutEngines, pExclusiveEngines, pSharedEngines) kmigmgrAllocateInstanceEngines_IMPL(pSourceEngines, bShared, engTypeRange, reqEngCount, pOutEngines, pExclusiveEngines, pSharedEngines)
+#define kmigmgrAllocateInstanceEngines(pSourceEngines, bShared, engTypeRange, reqEngCount, pOutEngines, pExclusiveEngines, pSharedEngines, pAllocatableEngines) kmigmgrAllocateInstanceEngines_IMPL(pSourceEngines, bShared, engTypeRange, reqEngCount, pOutEngines, pExclusiveEngines, pSharedEngines, pAllocatableEngines)
 void kmigmgrGetLocalEngineMask_IMPL(union ENGTYPE_BIT_VECTOR *pPhysicalEngineMask, union ENGTYPE_BIT_VECTOR *pLocalEngineMask);
 
 #define kmigmgrGetLocalEngineMask(pPhysicalEngineMask, pLocalEngineMask) kmigmgrGetLocalEngineMask_IMPL(pPhysicalEngineMask, pLocalEngineMask)
@@ -1166,17 +1206,6 @@ static inline NvBool kmigmgrIsEngineInInstance(OBJGPU *arg0, struct KernelMIGMan
 #define kmigmgrIsEngineInInstance(arg0, arg1, globalRmEngType, arg2) kmigmgrIsEngineInInstance_IMPL(arg0, arg1, globalRmEngType, arg2)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
-NV_STATUS kmigmgrGetFreeEngines_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvU32 engineCount, struct NV_RANGE engineRange, union ENGTYPE_BIT_VECTOR *pInstanceEngines);
-
-#ifdef __nvoc_kernel_mig_manager_h_disabled
-static inline NV_STATUS kmigmgrGetFreeEngines(OBJGPU *arg0, struct KernelMIGManager *arg1, NvU32 engineCount, struct NV_RANGE engineRange, union ENGTYPE_BIT_VECTOR *pInstanceEngines) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_mig_manager_h_disabled
-#define kmigmgrGetFreeEngines(arg0, arg1, engineCount, engineRange, pInstanceEngines) kmigmgrGetFreeEngines_IMPL(arg0, arg1, engineCount, engineRange, pInstanceEngines)
-#endif //__nvoc_kernel_mig_manager_h_disabled
-
 NV_STATUS kmigmgrCreateGPUInstance_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvU32 *pSwizzId, KMIGMGR_CREATE_GPU_INSTANCE_PARAMS arg2, NvBool bValid, NvBool bCreateCap);
 
 #ifdef __nvoc_kernel_mig_manager_h_disabled
@@ -1367,6 +1396,17 @@ static inline NvBool kmigmgrIsClientUsingDeviceProfiling(OBJGPU *arg0, struct Ke
 #define kmigmgrIsClientUsingDeviceProfiling(arg0, arg1, hClient) kmigmgrIsClientUsingDeviceProfiling_IMPL(arg0, arg1, hClient)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
+NvBool kmigmgrIsDeviceUsingDeviceProfiling_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *pDevice);
+
+#ifdef __nvoc_kernel_mig_manager_h_disabled
+static inline NvBool kmigmgrIsDeviceUsingDeviceProfiling(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *pDevice) {
+    NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_kernel_mig_manager_h_disabled
+#define kmigmgrIsDeviceUsingDeviceProfiling(arg0, arg1, pDevice) kmigmgrIsDeviceUsingDeviceProfiling_IMPL(arg0, arg1, pDevice)
+#endif //__nvoc_kernel_mig_manager_h_disabled
+
 NV_STATUS kmigmgrEnableAllLCEs_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvBool bEnableAllLCEs);
 
 #ifdef __nvoc_kernel_mig_manager_h_disabled
@@ -1378,15 +1418,15 @@ static inline NV_STATUS kmigmgrEnableAllLCEs(OBJGPU *arg0, struct KernelMIGManag
 #define kmigmgrEnableAllLCEs(arg0, arg1, bEnableAllLCEs) kmigmgrEnableAllLCEs_IMPL(arg0, arg1, bEnableAllLCEs)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
-NV_STATUS kmigmgrGetInstanceRefFromDevice_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvHandle hDevice, struct MIG_INSTANCE_REF *arg2);
+NV_STATUS kmigmgrGetInstanceRefFromDevice_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *arg2, struct MIG_INSTANCE_REF *arg3);
 
 #ifdef __nvoc_kernel_mig_manager_h_disabled
-static inline NV_STATUS kmigmgrGetInstanceRefFromDevice(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvHandle hDevice, struct MIG_INSTANCE_REF *arg2) {
+static inline NV_STATUS kmigmgrGetInstanceRefFromDevice(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *arg2, struct MIG_INSTANCE_REF *arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_mig_manager_h_disabled
-#define kmigmgrGetInstanceRefFromDevice(arg0, arg1, hClient, hDevice, arg2) kmigmgrGetInstanceRefFromDevice_IMPL(arg0, arg1, hClient, hDevice, arg2)
+#define kmigmgrGetInstanceRefFromDevice(arg0, arg1, arg2, arg3) kmigmgrGetInstanceRefFromDevice_IMPL(arg0, arg1, arg2, arg3)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
 NV_STATUS kmigmgrGetInstanceRefFromClient_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, struct MIG_INSTANCE_REF *arg2);
@@ -1400,37 +1440,26 @@ static inline NV_STATUS kmigmgrGetInstanceRefFromClient(OBJGPU *arg0, struct Ker
 #define kmigmgrGetInstanceRefFromClient(arg0, arg1, hClient, arg2) kmigmgrGetInstanceRefFromClient_IMPL(arg0, arg1, hClient, arg2)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
-NV_STATUS kmigmgrGetMemoryPartitionHeapFromDevice_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvHandle hDevice, struct Heap **arg2);
+NV_STATUS kmigmgrGetMemoryPartitionHeapFromDevice_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *arg2, struct Heap **arg3);
 
 #ifdef __nvoc_kernel_mig_manager_h_disabled
-static inline NV_STATUS kmigmgrGetMemoryPartitionHeapFromDevice(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvHandle hDevice, struct Heap **arg2) {
+static inline NV_STATUS kmigmgrGetMemoryPartitionHeapFromDevice(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *arg2, struct Heap **arg3) {
     NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_mig_manager_h_disabled
-#define kmigmgrGetMemoryPartitionHeapFromDevice(arg0, arg1, hClient, hDevice, arg2) kmigmgrGetMemoryPartitionHeapFromDevice_IMPL(arg0, arg1, hClient, hDevice, arg2)
+#define kmigmgrGetMemoryPartitionHeapFromDevice(arg0, arg1, arg2, arg3) kmigmgrGetMemoryPartitionHeapFromDevice_IMPL(arg0, arg1, arg2, arg3)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
-NV_STATUS kmigmgrGetMemoryPartitionHeapFromClient_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, struct Heap **arg2);
+NV_STATUS kmigmgrGetSwizzIdFromDevice_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *pDevice, NvU32 *pSwizzId);
 
 #ifdef __nvoc_kernel_mig_manager_h_disabled
-static inline NV_STATUS kmigmgrGetMemoryPartitionHeapFromClient(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, struct Heap **arg2) {
+static inline NV_STATUS kmigmgrGetSwizzIdFromDevice(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *pDevice, NvU32 *pSwizzId) {
     NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_mig_manager_h_disabled
-#define kmigmgrGetMemoryPartitionHeapFromClient(arg0, arg1, hClient, arg2) kmigmgrGetMemoryPartitionHeapFromClient_IMPL(arg0, arg1, hClient, arg2)
-#endif //__nvoc_kernel_mig_manager_h_disabled
-
-NV_STATUS kmigmgrGetSwizzIdFromClient_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvU32 *pSwizzId);
-
-#ifdef __nvoc_kernel_mig_manager_h_disabled
-static inline NV_STATUS kmigmgrGetSwizzIdFromClient(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvU32 *pSwizzId) {
-    NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_mig_manager_h_disabled
-#define kmigmgrGetSwizzIdFromClient(arg0, arg1, hClient, pSwizzId) kmigmgrGetSwizzIdFromClient_IMPL(arg0, arg1, hClient, pSwizzId)
+#define kmigmgrGetSwizzIdFromDevice(arg0, arg1, pDevice, pSwizzId) kmigmgrGetSwizzIdFromDevice_IMPL(arg0, arg1, pDevice, pSwizzId)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
 void kmigmgrPrintGPUInstanceInfo_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, KERNEL_MIG_GPU_INSTANCE *arg2);
@@ -1553,15 +1582,15 @@ static inline NV_STATUS kmigmgrGetMIGReferenceFromEngineType(OBJGPU *arg0, struc
 #define kmigmgrGetMIGReferenceFromEngineType(arg0, arg1, rmEngineType, arg2) kmigmgrGetMIGReferenceFromEngineType_IMPL(arg0, arg1, rmEngineType, arg2)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
-NV_STATUS kmigmgrGetGPUInstanceScrubberCe_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvU32 *ceInst);
+NV_STATUS kmigmgrGetGPUInstanceScrubberCe_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *pDevice, NvU32 *ceInst);
 
 #ifdef __nvoc_kernel_mig_manager_h_disabled
-static inline NV_STATUS kmigmgrGetGPUInstanceScrubberCe(OBJGPU *arg0, struct KernelMIGManager *arg1, NvHandle hClient, NvU32 *ceInst) {
+static inline NV_STATUS kmigmgrGetGPUInstanceScrubberCe(OBJGPU *arg0, struct KernelMIGManager *arg1, struct Device *pDevice, NvU32 *ceInst) {
     NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_mig_manager_h_disabled
-#define kmigmgrGetGPUInstanceScrubberCe(arg0, arg1, hClient, ceInst) kmigmgrGetGPUInstanceScrubberCe_IMPL(arg0, arg1, hClient, ceInst)
+#define kmigmgrGetGPUInstanceScrubberCe(arg0, arg1, pDevice, ceInst) kmigmgrGetGPUInstanceScrubberCe_IMPL(arg0, arg1, pDevice, ceInst)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
 NV_STATUS kmigmgrDescribeGPUInstances_IMPL(OBJGPU *arg0, struct KernelMIGManager *arg1, NV2080_CTRL_GPU_DESCRIBE_PARTITIONS_PARAMS *arg2);
@@ -1803,6 +1832,17 @@ static inline NvBool kmigmgrIsCTSIdAvailable(OBJGPU *arg0, struct KernelMIGManag
 }
 #else //__nvoc_kernel_mig_manager_h_disabled
 #define kmigmgrIsCTSIdAvailable(arg0, arg1, ctsIdValidMask, ctsIdInUseMask, ctsId) kmigmgrIsCTSIdAvailable_IMPL(arg0, arg1, ctsIdValidMask, ctsIdInUseMask, ctsId)
+#endif //__nvoc_kernel_mig_manager_h_disabled
+
+NV_STATUS kmigmgrUpdateCiConfigForVgpu_IMPL(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvU32 execPartCount, NvU32 *pExecPartId, NvU32 gfid, NvBool bDelete);
+
+#ifdef __nvoc_kernel_mig_manager_h_disabled
+static inline NV_STATUS kmigmgrUpdateCiConfigForVgpu(OBJGPU *pGpu, struct KernelMIGManager *pKernelMIGManager, NvU32 execPartCount, NvU32 *pExecPartId, NvU32 gfid, NvBool bDelete) {
+    NV_ASSERT_FAILED_PRECOMP("KernelMIGManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_mig_manager_h_disabled
+#define kmigmgrUpdateCiConfigForVgpu(pGpu, pKernelMIGManager, execPartCount, pExecPartId, gfid, bDelete) kmigmgrUpdateCiConfigForVgpu_IMPL(pGpu, pKernelMIGManager, execPartCount, pExecPartId, gfid, bDelete)
 #endif //__nvoc_kernel_mig_manager_h_disabled
 
 #undef PRIVATE_FIELD

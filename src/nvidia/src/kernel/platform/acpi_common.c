@@ -358,13 +358,13 @@ _getRemappedDsmSubfunction
     // Use NV_ASSERT_OR_ELSE_STR for embedded %.
     //
     NV_ASSERT_OR_ELSE_STR(
-        !(NV_ARRAY_ELEMENTS32(genDsmSubFuncRemapTable) % (ACPI_DSM_FUNCTION_COUNT + 1)),
-        "!(NV_ARRAY_ELEMENTS32(genDsmSubFuncRemapTable) %% (ACPI_DSM_FUNCTION_COUNT + 1))",
+        !(NV_ARRAY_ELEMENTS(genDsmSubFuncRemapTable) % (ACPI_DSM_FUNCTION_COUNT + 1)),
+        "!(NV_ARRAY_ELEMENTS(genDsmSubFuncRemapTable) %% (ACPI_DSM_FUNCTION_COUNT + 1))",
         return NV_ERR_INVALID_ARGUMENT);
 
     // find the event in the table
     i = 0;
-    while (i <= (NV_ARRAY_ELEMENTS32(genDsmSubFuncRemapTable) - ACPI_DSM_FUNCTION_COUNT - 1))
+    while (i <= (NV_ARRAY_ELEMENTS(genDsmSubFuncRemapTable) - ACPI_DSM_FUNCTION_COUNT - 1))
     {
         if (acpiDsmSubFunction == genDsmSubFuncRemapTable[i])
         {
@@ -857,7 +857,7 @@ _acpiDsmSupportedFuncCacheInit
     }
 }
 
-static void 
+static void
 _acpiDsmCallbackInit
 (
     OBJGPU *pGpu
@@ -963,7 +963,7 @@ _acpiDsmCallbackInit
  *
  * @returns
  */
-static void 
+static void
 _acpiDsmCapsInit
 (
     OBJGPU *pGpu

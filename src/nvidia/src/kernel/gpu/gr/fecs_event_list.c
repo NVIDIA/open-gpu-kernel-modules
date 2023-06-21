@@ -30,6 +30,9 @@
 *                                                                          *
 \***************************************************************************/
 
+// FIXME XXX
+#define NVOC_GPU_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
+
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "kernel/rmapi/event.h"
 #include "kernel/rmapi/event_buffer.h"
@@ -880,7 +883,7 @@ NV_STATUS
 fecsAddBindpoint
 (
     OBJGPU *pGpu,
-    RsClient *pClient,
+    RmClient *pClient,
     RsResourceRef *pEventBufferRef,
     NvHandle hNotifier,
     NvBool bAllUsers,
@@ -891,8 +894,7 @@ fecsAddBindpoint
 )
 {
     NV_STATUS status;
-    NvHandle hClient = pClient->hClient;
-    RmClient *pRmClient = dynamicCast(pClient, RmClient);
+    NvHandle hClient = staticCast(pClient, RsClient)->hClient;
     NvHandle hEventBuffer = pEventBufferRef->hResource;
     EventBuffer *pEventBuffer;
     NvBool bAdmin = osIsAdministrator();
@@ -977,7 +979,7 @@ fecsAddBindpoint
     }
     else
     {
-        targetUser = (NvU64)(NvUPtr)pRmClient->pUserInfo;
+        targetUser = (NvU64)(NvUPtr)pClient->pUserInfo;
 
         // Filtering UIDs is not yet implemented in legacy vGPU
         if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
@@ -1015,14 +1017,14 @@ fecsAddBindpoint
     pBind->hNotifier = hNotifier;
     pBind->hEventBuffer = hEventBuffer;
     pBind->pEventBuffer = pEventBuffer;
-    pBind->pUserInfo = (NvU64)(NvUPtr)pRmClient->pUserInfo;
+    pBind->pUserInfo = (NvU64)(NvUPtr)pClient->pUserInfo;
     pBind->bAdmin = bAdmin;
     pBind->eventMask = eventMask;
     pBind->bKernel = bKernel;
     pBind->version = version;
 
     status = registerEventNotification(&pEventBuffer->pListeners,
-                hClient,
+                staticCast(pClient, RsClient),
                 hNotifier,
                 hEventBuffer,
                 (version == 2 ?
@@ -1043,7 +1045,8 @@ fecsAddBindpoint
         else
         {
             GPUInstanceSubscription *pGPUInstanceSubscription;
-            status = gisubscriptionGetGPUInstanceSubscription(pClient, hNotifier, &pGPUInstanceSubscription);
+            status = gisubscriptionGetGPUInstanceSubscription(
+                    staticCast(pClient, RsClient), hNotifier, &pGPUInstanceSubscription);
             if (status != NV_OK)
                 goto done;
 

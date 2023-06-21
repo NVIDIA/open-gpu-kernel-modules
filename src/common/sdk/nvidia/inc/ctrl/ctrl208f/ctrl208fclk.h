@@ -28,6 +28,6 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl208f/ctrl208fclk.finn
+// Source file:      ctrl/ctrl208f/ctrl208fclk.finn
 //
 

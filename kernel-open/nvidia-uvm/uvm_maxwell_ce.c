@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2022 NVIDIA Corporation
+    Copyright (c) 2021-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -29,10 +29,10 @@
 void uvm_hal_maxwell_ce_init(uvm_push_t *push)
 {
     // Notably this sends SET_OBJECT with the CE class on subchannel 0 instead
-    // of the recommended by HW subchannel 4 (subchannel 4 is recommended to
+    // of the recommended by HW subchannel 4 (subchannel 4 is required to
     // match CE usage on GRCE). For the UVM driver using subchannel 0 has the
-    // benefit of also verifying that we ended up on the right PBDMA though as
-    // SET_OBJECT with CE class on subchannel 0 would fail on GRCE.
+    // benefit of also verifying that we ended up on the right CE engine type
+    // though as SET_OBJECT with CE class on subchannel 0 would fail on GRCE.
     NV_PUSH_1U(B06F, SET_OBJECT, uvm_push_get_gpu(push)->parent->rm_info.ceClass);
 }
 
@@ -185,6 +185,12 @@ NvU32 uvm_hal_maxwell_ce_plc_mode(void)
     return 0;
 }
 
+// Noop, since COPY_TYPE doesn't exist in Maxwell.
+NvU32 uvm_hal_maxwell_ce_memcopy_copy_type(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
+{
+    return 0;
+}
+
 void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src, size_t size)
 {
     // If >4GB copies ever become an important use case, this function should
@@ -195,6 +201,7 @@ void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu
     NvU32 pipelined_value;
     NvU32 launch_dma_src_dst_type;
     NvU32 launch_dma_plc_mode;
+    NvU32 copy_type_value;
 
     UVM_ASSERT_MSG(gpu->parent->ce_hal->memcopy_is_valid(push, dst, src),
                    "Memcopy validation failed in channel %s, GPU %s.\n",
@@ -205,6 +212,7 @@ void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu
 
     launch_dma_src_dst_type = gpu->parent->ce_hal->phys_mode(push, dst, src);
     launch_dma_plc_mode = gpu->parent->ce_hal->plc_mode();
+    copy_type_value = gpu->parent->ce_hal->memcopy_copy_type(push, dst, src);
 
     if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED))
         pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, PIPELINED);
@@ -226,6 +234,7 @@ void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu
            HWCONST(B0B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE) |
            launch_dma_src_dst_type |
            launch_dma_plc_mode |
+           copy_type_value |
            pipelined_value);
 
         pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, PIPELINED);
@@ -266,7 +275,7 @@ static void memset_common(uvm_push_t *push, uvm_gpu_address_t dst, size_t size, 
     NvU32 launch_dma_dst_type;
     NvU32 launch_dma_plc_mode;
 
-    UVM_ASSERT_MSG(gpu->parent->ce_hal->memset_is_valid(push, dst, memset_element_size),
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->memset_is_valid(push, dst, size, memset_element_size),
                    "Memset validation failed in channel %s, GPU %s.\n",
                    push->channel->name,
                    uvm_gpu_name(gpu));
@@ -352,3 +361,24 @@ void uvm_hal_maxwell_ce_memset_v_4(uvm_push_t *push, NvU64 dst_va, NvU32 value, 
     uvm_push_get_gpu(push)->parent->ce_hal->memset_4(push, uvm_gpu_address_virtual(dst_va), value, size);
 }
 
+void uvm_hal_maxwell_ce_encrypt_unsupported(uvm_push_t *push,
+                                            uvm_gpu_address_t dst,
+                                            uvm_gpu_address_t src,
+                                            NvU32 size,
+                                            uvm_gpu_address_t auth_tag)
+{
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+
+    UVM_ASSERT_MSG(false, "CE encrypt is not supported on GPU: %s.\n", uvm_gpu_name(gpu));
+}
+
+void uvm_hal_maxwell_ce_decrypt_unsupported(uvm_push_t *push,
+                                            uvm_gpu_address_t dst,
+                                            uvm_gpu_address_t src,
+                                            NvU32 size,
+                                            uvm_gpu_address_t auth_tag)
+{
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+
+    UVM_ASSERT_MSG(false, "CE decrypt is not supported on GPU: %s.\n", uvm_gpu_name(gpu));
+}

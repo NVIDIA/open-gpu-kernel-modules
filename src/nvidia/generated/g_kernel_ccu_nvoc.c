@@ -175,10 +175,7 @@ static void __nvoc_init_funcTable_KernelCcu_1(KernelCcu *pThis, RmHalspecOwner *
     PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
     // Hal function -- kccuConstructEngine
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
-    {
-        pThis->__kccuConstructEngine__ = &kccuConstructEngine_IMPL;
-    }
+    pThis->__kccuConstructEngine__ = &kccuConstructEngine_IMPL;
 
     pThis->__kccuStateLoad__ = &kccuStateLoad_IMPL;
 

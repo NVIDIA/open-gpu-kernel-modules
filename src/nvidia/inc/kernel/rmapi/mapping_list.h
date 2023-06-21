@@ -163,7 +163,7 @@ NV_STATUS           intermapDelDmaMapping           (RsClient *, VirtualMemory *
 void                intermapFreeDmaMapping          (PCLI_DMA_MAPPING_INFO);
 CLI_DMA_MAPPING_INFO *intermapGetDmaMapping         (VirtualMemory *pVirtualMemory, NvU64 dmaOffset, NvU32 gpuMask);
 
-NvBool              CliGetDmaMappingInfo            (NvHandle, NvHandle, NvHandle, NvU64, NvU32, PCLI_DMA_MAPPING_INFO*);
+NvBool              CliGetDmaMappingInfo            (RsClient *, NvHandle, NvHandle, NvU64, NvU32, PCLI_DMA_MAPPING_INFO*);
 void                CliGetDmaMappingIterator        (PCLI_DMA_MAPPING_INFO *, PCLI_DMA_MAPPING_INFO_ITERATOR, PNODE pDmaMappingList);
 void                CliGetDmaMappingNext            (PCLI_DMA_MAPPING_INFO *, PCLI_DMA_MAPPING_INFO_ITERATOR);
 

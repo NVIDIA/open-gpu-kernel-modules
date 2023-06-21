@@ -26,7 +26,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/clc370.finn
+// Source file:      class/clc370.finn
 //
 
 #include "clc370_notification.h"

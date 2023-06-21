@@ -217,9 +217,14 @@ void uvm_hal_maxwell_host_semaphore_timestamp(uvm_push_t *push, NvU64 gpu_va)
                                  HWCONST(A16F, SEMAPHORED, RELEASE_WFI, DIS));
 }
 
-void uvm_hal_maxwell_host_set_gpfifo_entry(NvU64 *fifo_entry, NvU64 pushbuffer_va, NvU32 pushbuffer_length)
+void uvm_hal_maxwell_host_set_gpfifo_entry(NvU64 *fifo_entry,
+                                           NvU64 pushbuffer_va,
+                                           NvU32 pushbuffer_length,
+                                           uvm_gpfifo_sync_t sync_flag)
 {
     NvU64 fifo_entry_value;
+    const NvU32 sync_value = (sync_flag == UVM_GPFIFO_SYNC_WAIT) ? HWCONST(A16F, GP_ENTRY1, SYNC, WAIT) :
+                                                                   HWCONST(A16F, GP_ENTRY1, SYNC, PROCEED);
 
     UVM_ASSERT(!uvm_global_is_suspended());
     UVM_ASSERT_MSG(pushbuffer_va % 4 == 0, "pushbuffer va unaligned: %llu\n", pushbuffer_va);
@@ -228,7 +233,8 @@ void uvm_hal_maxwell_host_set_gpfifo_entry(NvU64 *fifo_entry, NvU64 pushbuffer_v
     fifo_entry_value =          HWVALUE(A16F, GP_ENTRY0, GET, NvU64_LO32(pushbuffer_va) >> 2);
     fifo_entry_value |= (NvU64)(HWVALUE(A16F, GP_ENTRY1, GET_HI, NvU64_HI32(pushbuffer_va)) |
                                 HWVALUE(A16F, GP_ENTRY1, LENGTH, pushbuffer_length >> 2) |
-                                HWCONST(A16F, GP_ENTRY1, PRIV,   KERNEL)) << 32;
+                                HWCONST(A16F, GP_ENTRY1, PRIV,   KERNEL) |
+                                sync_value) << 32;
 
     *fifo_entry = fifo_entry_value;
 }

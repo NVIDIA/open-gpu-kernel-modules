@@ -85,76 +85,86 @@ static void uvm_gpu_replayable_faults_intr_enable(uvm_parent_gpu_t *parent_gpu);
 
 static unsigned schedule_replayable_faults_handler(uvm_parent_gpu_t *parent_gpu)
 {
+    uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
+
+    if (parent_gpu->isr.is_suspended)
+        return 0;
+
     // handling gets set to false for all handlers during removal, so quit if
     // the GPU is in the process of being removed.
-    if (parent_gpu->isr.replayable_faults.handling) {
+    if (!parent_gpu->isr.replayable_faults.handling)
+        return 0;
 
-        // Use raw call instead of UVM helper. Ownership will be recorded in the
-        // bottom half. See comment replayable_faults_isr_bottom_half().
-        if (down_trylock(&parent_gpu->isr.replayable_faults.service_lock.sem) == 0) {
-            if (uvm_gpu_replayable_faults_pending(parent_gpu)) {
-                nv_kref_get(&parent_gpu->gpu_kref);
+    // Use raw call instead of UVM helper. Ownership will be recorded in the
+    // bottom half. See comment replayable_faults_isr_bottom_half().
+    if (down_trylock(&parent_gpu->isr.replayable_faults.service_lock.sem) != 0)
+        return 0;
 
-                // Interrupts need to be disabled here to avoid an interrupt
-                // storm
-                uvm_gpu_replayable_faults_intr_disable(parent_gpu);
-
-                // Schedule a bottom half, but do *not* release the GPU ISR
-                // lock. The bottom half releases the GPU ISR lock as part of
-                // its cleanup.
-                nv_kthread_q_schedule_q_item(&parent_gpu->isr.bottom_half_q,
-                                             &parent_gpu->isr.replayable_faults.bottom_half_q_item);
-                return 1;
-            }
-            else {
-                up(&parent_gpu->isr.replayable_faults.service_lock.sem);
-            }
-        }
+    if (!uvm_gpu_replayable_faults_pending(parent_gpu)) {
+        up(&parent_gpu->isr.replayable_faults.service_lock.sem);
+        return 0;
     }
 
-    return 0;
+    nv_kref_get(&parent_gpu->gpu_kref);
+
+    // Interrupts need to be disabled here to avoid an interrupt storm
+    uvm_gpu_replayable_faults_intr_disable(parent_gpu);
+
+    // Schedule a bottom half, but do *not* release the GPU ISR lock. The bottom
+    // half releases the GPU ISR lock as part of its cleanup.
+    nv_kthread_q_schedule_q_item(&parent_gpu->isr.bottom_half_q,
+                                 &parent_gpu->isr.replayable_faults.bottom_half_q_item);
+
+    return 1;
 }
 
 static unsigned schedule_non_replayable_faults_handler(uvm_parent_gpu_t *parent_gpu)
 {
+    bool scheduled;
+
+    if (parent_gpu->isr.is_suspended)
+        return 0;
+
     // handling gets set to false for all handlers during removal, so quit if
     // the GPU is in the process of being removed.
-    if (parent_gpu->isr.non_replayable_faults.handling) {
-        // Non-replayable_faults are stored in a synchronized circular queue
-        // shared by RM/UVM. Therefore, we can query the number of pending
-        // faults. This type of faults are not replayed and since RM advances
-        // GET to PUT when copying the fault packets to the queue, no further
-        // interrupts will be triggered by the gpu and faults may stay
-        // unserviced. Therefore, if there is a fault in the queue, we schedule
-        // a bottom half unconditionally.
-        if (uvm_gpu_non_replayable_faults_pending(parent_gpu)) {
-            bool scheduled;
-            nv_kref_get(&parent_gpu->gpu_kref);
+    if (!parent_gpu->isr.non_replayable_faults.handling)
+        return 0;
 
-            scheduled = nv_kthread_q_schedule_q_item(&parent_gpu->isr.bottom_half_q,
-                                                     &parent_gpu->isr.non_replayable_faults.bottom_half_q_item) != 0;
+    // Non-replayable_faults are stored in a synchronized circular queue
+    // shared by RM/UVM. Therefore, we can query the number of pending
+    // faults. This type of faults are not replayed and since RM advances
+    // GET to PUT when copying the fault packets to the queue, no further
+    // interrupts will be triggered by the gpu and faults may stay
+    // unserviced. Therefore, if there is a fault in the queue, we schedule
+    // a bottom half unconditionally.
+    if (!uvm_gpu_non_replayable_faults_pending(parent_gpu))
+        return 0;
 
-            // If the q_item did not get scheduled because it was already
-            // queued, that instance will handle the pending faults. Just
-            // drop the GPU kref.
-            if (!scheduled)
-                uvm_parent_gpu_kref_put(parent_gpu);
+    nv_kref_get(&parent_gpu->gpu_kref);
 
-            return 1;
-        }
-    }
+    scheduled = nv_kthread_q_schedule_q_item(&parent_gpu->isr.bottom_half_q,
+                                             &parent_gpu->isr.non_replayable_faults.bottom_half_q_item) != 0;
 
-    return 0;
+    // If the q_item did not get scheduled because it was already
+    // queued, that instance will handle the pending faults. Just
+    // drop the GPU kref.
+    if (!scheduled)
+        uvm_parent_gpu_kref_put(parent_gpu);
+
+    return 1;
 }
 
 static unsigned schedule_access_counters_handler(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
 
+    if (parent_gpu->isr.is_suspended)
+        return 0;
+
     if (!parent_gpu->isr.access_counters.handling_ref_count)
         return 0;
 
-    if (down_trylock(&parent_gpu->isr.access_counters.service_lock.sem))
+    if (down_trylock(&parent_gpu->isr.access_counters.service_lock.sem) != 0)
         return 0;
 
     if (!uvm_gpu_access_counters_pending(parent_gpu)) {
@@ -199,7 +209,7 @@ static NV_STATUS uvm_isr_top_half(const NvProcessorUuid *gpu_uuid)
 {
     uvm_parent_gpu_t *parent_gpu;
     unsigned num_handlers_scheduled = 0;
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
 
     if (!in_interrupt() && in_atomic()) {
         // Early-out if we're not in interrupt context, but memory allocations
@@ -238,18 +248,15 @@ static NV_STATUS uvm_isr_top_half(const NvProcessorUuid *gpu_uuid)
 
     ++parent_gpu->isr.interrupt_count;
 
-    if (parent_gpu->isr.is_suspended) {
-        status = NV_ERR_NO_INTR_PENDING;
-    }
-    else {
-        num_handlers_scheduled += schedule_replayable_faults_handler(parent_gpu);
-        num_handlers_scheduled += schedule_non_replayable_faults_handler(parent_gpu);
-        num_handlers_scheduled += schedule_access_counters_handler(parent_gpu);
+    num_handlers_scheduled += schedule_replayable_faults_handler(parent_gpu);
+    num_handlers_scheduled += schedule_non_replayable_faults_handler(parent_gpu);
+    num_handlers_scheduled += schedule_access_counters_handler(parent_gpu);
 
-        if (num_handlers_scheduled == 0)
-            status = NV_WARN_MORE_PROCESSING_REQUIRED;
+    if (num_handlers_scheduled == 0) {
+        if (parent_gpu->isr.is_suspended)
+            status = NV_ERR_NO_INTR_PENDING;
         else
-            status = NV_OK;
+            status = NV_WARN_MORE_PROCESSING_REQUIRED;
     }
 
     uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
@@ -511,6 +518,9 @@ static void replayable_faults_isr_bottom_half(void *args)
     uvm_gpu_replayable_faults_isr_unlock(parent_gpu);
 
 put_kref:
+    // It is OK to drop a reference on the parent GPU if a bottom half has
+    // been retriggered within uvm_gpu_replayable_faults_isr_unlock, because the
+    // rescheduling added an additional reference.
     uvm_parent_gpu_kref_put(parent_gpu);
 }
 
@@ -591,6 +601,51 @@ static void access_counters_isr_bottom_half_entry(void *args)
    UVM_ENTRY_VOID(access_counters_isr_bottom_half(args));
 }
 
+static void replayable_faults_retrigger_bottom_half(uvm_parent_gpu_t *parent_gpu)
+{
+    bool retrigger = false;
+
+    // When Confidential Computing is enabled, UVM does not (indirectly) trigger
+    // the replayable fault interrupt by updating GET. This is because, in this
+    // configuration, GET is a dummy register used to inform GSP-RM (the owner
+    // of the HW replayable fault buffer) of the latest entry consumed by the
+    // UVM driver. The real GET register is owned by GSP-RM.
+    //
+    // The retriggering of a replayable faults bottom half happens then
+    // manually, by scheduling a bottom half for later if there is any pending
+    // work in the fault buffer accessible by UVM. The retriggering adddresses
+    // two problematic scenarios caused by GET updates not setting any
+    // interrupt:
+    //
+    //   (1) UVM didn't process all the entries up to cached PUT
+    //
+    //   (2) UVM did process all the entries up to cached PUT, but GPS-RM
+    //       added new entries such that cached PUT is out-of-date
+    //
+    // In both cases, re-enablement of interrupts would have caused the
+    // replayable fault to be triggered in a non-CC setup, because the updated
+    // value of GET is different from PUT. But this not the case in Confidential
+    // Computing, so a bottom half needs to be manually scheduled in order to
+    // ensure that all faults are serviced.
+    //
+    // While in the typical case the retriggering happens within a replayable
+    // fault bottom half, it can also happen within a non-interrupt path such as
+    // uvm_gpu_fault_buffer_flush.
+    if (uvm_conf_computing_mode_enabled_parent(parent_gpu))
+        retrigger = true;
+
+    if (!retrigger)
+        return;
+
+    uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
+
+    // If there is pending work, schedule a replayable faults bottom
+    // half. It is valid for a bottom half (q_item) to reschedule itself.
+    (void) schedule_replayable_faults_handler(parent_gpu);
+
+    uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
+}
+
 void uvm_gpu_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(nv_kref_read(&parent_gpu->gpu_kref) > 0);
@@ -632,9 +687,9 @@ void uvm_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
     // service_lock mutex is released.
 
     if (parent_gpu->isr.replayable_faults.handling) {
-        // Turn page fault interrupts back on, unless remove_gpu() has already removed this GPU
-        // from the GPU table. remove_gpu() indicates that situation by setting
-        // gpu->replayable_faults.handling to false.
+        // Turn page fault interrupts back on, unless remove_gpu() has already
+        // removed this GPU from the GPU table. remove_gpu() indicates that
+        // situation by setting gpu->replayable_faults.handling to false.
         //
         // This path can only be taken from the bottom half. User threads
         // calling this function must have previously retained the GPU, so they
@@ -671,6 +726,8 @@ void uvm_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
     uvm_up_out_of_order(&parent_gpu->isr.replayable_faults.service_lock);
 
     uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
+
+    replayable_faults_retrigger_bottom_half(parent_gpu);
 }
 
 void uvm_gpu_non_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu)

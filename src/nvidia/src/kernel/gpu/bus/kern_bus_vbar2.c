@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -384,7 +384,7 @@ kbusInitVirtualBar2_VBAR2
 
     pMemDesc = pKernelBus->virtualBar2[gfid].pPageLevelsMemDesc;
 
-    if (KBUS_BAR2_TUNNELLED(pKernelBus))
+    if (KBUS_BAR2_TUNNELLED(pKernelBus) || kbusIsBarAccessBlocked(pKernelBus))
     {
         return NV_OK;
     }
@@ -441,7 +441,7 @@ kbusPreInitVirtualBar2_VBAR2
 
     pMemDesc = pKernelBus->virtualBar2[gfid].pPageLevelsMemDescForBootstrap;
 
-    if (KBUS_BAR2_TUNNELLED(pKernelBus))
+    if (KBUS_BAR2_TUNNELLED(pKernelBus) || kbusIsBarAccessBlocked(pKernelBus))
     {
         return NV_OK;
     }
@@ -897,6 +897,18 @@ kbusMapBar2Aperture_VBAR2
     NvU32              flags
 )
 {
+    //
+    // Fail the mapping when BAR2 access to CPR vidmem is blocked (for HCC)
+    // It is however legal to allow non-CPR vidmem to be mapped to BAR2
+    //
+    if (kbusIsBarAccessBlocked(pKernelBus) &&
+       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY))
+    {
+        os_dump_stack();
+        NV_PRINTF(LEVEL_ERROR, "Cannot map/unmap CPR vidmem into/from BAR2\n");
+        return NULL;
+    }
+
     if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
     {
         //
@@ -976,7 +988,7 @@ kbusUnmapBar2ApertureWithFlags_SCRATCH
 )
 {
     portMemFree(*pCpuPtr);
-    kbusFlush_HAL(pGpu, pKernelBus, kbusGetFlushAperture(pKernelBus, memdescGetAddressSpace(pMemDesc)));
+    kbusFlush_HAL(pGpu, pKernelBus, kbusGetFlushAperture(pKernelBus, memdescGetAddressSpace(pMemDesc)) | BUS_FLUSH_USE_PCIE_READ);
 }
 
 /*!
@@ -1006,6 +1018,18 @@ kbusUnmapBar2ApertureWithFlags_VBAR2
     NvU32              flags
 )
 {
+    //
+    // Fail the mapping when BAR2 access to CPR vidmem is blocked (for HCC)
+    // It is however legal to allow non-CPR vidmem to be mapped to BAR2
+    //
+    if (kbusIsBarAccessBlocked(pKernelBus) &&
+       !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY))
+    {
+        NV_ASSERT(0);
+        NV_PRINTF(LEVEL_ERROR, "Cannot map/unmap CPR vidmem into/from BAR2\n");
+        return;
+    }
+
     //
     // Free the dummy data we allocated for handling a reset GPU.
     // Let a map created before the reset go through the normal path

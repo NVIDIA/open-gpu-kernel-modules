@@ -62,14 +62,27 @@ NvBool nvHdmiFrlAssessLink(NVDpyEvoPtr pDpyEvo);
 NvBool nvHdmiDpySupportsFrl(const NVDpyEvoRec *pDpyEvo);
 NvBool nvHdmiFrlQueryConfig(const NVDpyEvoRec *pDpyEvo,
                             const NvModeTimings *pModeTimings,
-                            NVHwModeTimingsEvo *pTimings,
-                            const struct NvKmsModeValidationParams *pParams);
+                            const NVHwModeTimingsEvo *pHwTimings,
+                            const NvBool b2Heads1Or,
+                            const struct NvKmsModeValidationParams *pValidationParams,
+                            HDMI_FRL_CONFIG *pConfig,
+                            NVDscInfoEvoRec *pDscInfo);
 void nvHdmiFrlClearConfig(NVDispEvoRec *pDispEvo, NvU32 activeRmId);
 void nvHdmiFrlSetConfig(NVDispEvoRec *pDispEvo, NvU32 head);
 
 void nvHdmiDpConstructHeadAudioState(const NvU32 displayId,
                                      const NVDpyEvoRec *pDpyEvo,
                                      NVDispHeadAudioStateEvoRec *pAudioState);
+
+NvBool nvHdmiTimingsNeedFrl(const NVDpyEvoRec *pDpyEvo,
+                            const NVHwModeTimingsEvo *pHwTimings);
+
+static inline NvBool nvHdmiDpySupportsDsc(const NVDpyEvoRec *pDpyEvo)
+{
+    return nvDpyIsHdmiEvo(pDpyEvo) &&
+                pDpyEvo->parsedEdid.valid &&
+                pDpyEvo->parsedEdid.info.hdmiForumInfo.dsc_1p2;
+}
 
 #ifdef __cplusplus
 };

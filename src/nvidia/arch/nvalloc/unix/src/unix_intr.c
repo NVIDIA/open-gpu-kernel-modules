@@ -174,6 +174,18 @@ static NvBool osInterruptPending(
                     }
                 }
 
+                if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) &&
+                    !IS_VIRTUAL(pGpu) && bitVectorTest(&intr0Pending, MC_ENGINE_IDX_TMR))
+                {
+                    // We have to clear the top level interrupt bit here since otherwise
+                    // the bottom half will attempt to service the interrupt on the CPU
+                    // side before GSP receives the notification and services it
+                    intrClearLeafVector_HAL(pGpu, pIntr, MC_ENGINE_IDX_TMR, &threadState);
+                    bitVectorClr(&intr0Pending, MC_ENGINE_IDX_TMR);
+
+                    NV_ASSERT_OK(intrTriggerPrivDoorbell_HAL(pGpu, pIntr, NV_DOORBELL_NOTIFY_LEAF_SERVICE_TMR_HANDLE));
+                }
+
                 if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED) &&
                     !pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
                 {

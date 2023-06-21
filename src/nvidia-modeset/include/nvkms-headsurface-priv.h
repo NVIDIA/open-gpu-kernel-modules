@@ -481,7 +481,6 @@ static inline void HsIncrementNextIndex(
 }
 
 static inline void HsChangeSurfaceFlipRefCount(
-    NVDevEvoPtr pDevEvo,
     NVSurfaceEvoPtr pSurfaceEvo,
     NvBool increase)
 {
@@ -489,7 +488,7 @@ static inline void HsChangeSurfaceFlipRefCount(
         if (increase) {
             nvEvoIncrementSurfaceRefCnts(pSurfaceEvo);
         } else {
-            nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
+            nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
         }
     }
 }

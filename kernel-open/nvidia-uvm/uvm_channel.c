@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -33,8 +33,10 @@
 #include "uvm_lock.h"
 #include "uvm_kvmalloc.h"
 
+#include "nv_uvm_types.h"
 #include "nv_uvm_interface.h"
 #include "clb06f.h"
+#include "uvm_conf_computing.h"
 
 static unsigned uvm_channel_num_gpfifo_entries = UVM_CHANNEL_NUM_GPFIFO_ENTRIES_DEFAULT;
 
@@ -69,17 +71,42 @@ typedef enum
     UVM_CHANNEL_UPDATE_MODE_FORCE_ALL
 } uvm_channel_update_mode_t;
 
+bool uvm_channel_pool_uses_mutex(uvm_channel_pool_t *pool)
+{
+    // Work submission to proxy channels in SR-IOV heavy entails calling RM API
+    // that acquires a mutex, so the proxy channel pool must use a mutex.
+    if (uvm_channel_pool_is_proxy(pool))
+        return true;
+
+    // When Confidential Computing is enabled push submission requires call to
+    // CSL routines which acquire the CSL context mutex lock. Moreover, WLC
+    // submission uses UVM_SPIN_LOOP, which can call 'schedule', to wait for
+    // LCIC completion. Indirect submission is synchronous, calling
+    // uvm_push_wait which again uses UVM_SPIN_LOOP.
+    if (uvm_conf_computing_mode_enabled(pool->manager->gpu))
+        return true;
+
+    // Unless the mutex is required, the spinlock is preferred when work
+    // submission is expected to take little time.
+    return false;
+}
+
 static void channel_pool_lock_init(uvm_channel_pool_t *pool)
 {
-    if (uvm_channel_pool_is_proxy(pool))
-        uvm_mutex_init(&pool->mutex, UVM_LOCK_ORDER_CHANNEL);
+    uvm_lock_order_t order = UVM_LOCK_ORDER_CHANNEL;
+
+    if (uvm_conf_computing_mode_enabled(pool->manager->gpu) && uvm_channel_pool_is_wlc(pool))
+        order = UVM_LOCK_ORDER_WLC_CHANNEL;
+
+    if (uvm_channel_pool_uses_mutex(pool))
+        uvm_mutex_init(&pool->mutex, order);
     else
-        uvm_spin_lock_init(&pool->spinlock, UVM_LOCK_ORDER_CHANNEL);
+        uvm_spin_lock_init(&pool->spinlock, order);
 }
 
 static void channel_pool_lock(uvm_channel_pool_t *pool)
 {
-    if (uvm_channel_pool_is_proxy(pool))
+    if (uvm_channel_pool_uses_mutex(pool))
         uvm_mutex_lock(&pool->mutex);
     else
         uvm_spin_lock(&pool->spinlock);
@@ -87,7 +114,7 @@ static void channel_pool_lock(uvm_channel_pool_t *pool)
 
 static void channel_pool_unlock(uvm_channel_pool_t *pool)
 {
-    if (uvm_channel_pool_is_proxy(pool))
+    if (uvm_channel_pool_uses_mutex(pool))
         uvm_mutex_unlock(&pool->mutex);
     else
         uvm_spin_unlock(&pool->spinlock);
@@ -245,15 +272,53 @@ static bool try_claim_channel(uvm_channel_t *channel, NvU32 num_gpfifo_entries)
 
 static void unlock_channel_for_push(uvm_channel_t *channel)
 {
+    if (uvm_channel_is_secure(channel)) {
+        NvU32 index = uvm_channel_index_in_pool(channel);
+
+        uvm_channel_pool_assert_locked(channel->pool);
+        UVM_ASSERT(test_bit(index, channel->pool->push_locks));
+        __clear_bit(index, channel->pool->push_locks);
+        uvm_up_out_of_order(&channel->pool->push_sem);
+    }
 }
 
 static bool is_channel_locked_for_push(uvm_channel_t *channel)
 {
+    if (uvm_channel_is_secure(channel))
+        return test_bit(uvm_channel_index_in_pool(channel), channel->pool->push_locks);
 
     // For CE and proxy channels, we always return that the channel is locked,
     // which has no functional impact in the UVM channel code-flow, this is only
     // used on UVM_ASSERTs.
     return true;
+}
+
+static void lock_channel_for_push(uvm_channel_t *channel)
+{
+    if (uvm_channel_is_secure(channel)) {
+        NvU32 index = uvm_channel_index_in_pool(channel);
+
+        uvm_channel_pool_assert_locked(channel->pool);
+
+        UVM_ASSERT(!test_bit(index, channel->pool->push_locks));
+        __set_bit(index, channel->pool->push_locks);
+    }
+}
+
+static bool test_claim_and_lock_channel(uvm_channel_t *channel, NvU32 num_gpfifo_entries)
+{
+    NvU32 index = uvm_channel_index_in_pool(channel);
+
+    uvm_channel_pool_assert_locked(channel->pool);
+
+    if (uvm_channel_is_secure(channel) &&
+        !test_bit(index, channel->pool->push_locks) &&
+        try_claim_channel_locked(channel, num_gpfifo_entries)) {
+        lock_channel_for_push(channel);
+        return true;
+    }
+
+    return false;
 }
 
 // Reserve a channel in the specified CE pool
@@ -298,12 +363,78 @@ static NV_STATUS channel_reserve_in_ce_pool(uvm_channel_pool_t *pool, uvm_channe
     return NV_ERR_GENERIC;
 }
 
+// Reserve a channel in the specified secure pool
+static NV_STATUS channel_reserve_in_secure_pool(uvm_channel_pool_t *pool, uvm_channel_t **channel_out)
+{
+    uvm_channel_t *channel;
+    uvm_spin_loop_t spin;
+    NvU32 index;
+
+    UVM_ASSERT(pool);
+    UVM_ASSERT(pool->secure);
+    UVM_ASSERT(uvm_conf_computing_mode_enabled(pool->manager->gpu));
+
+    // This semaphore is uvm_up() in unlock_channel_for_push() as part of the
+    // uvm_channel_end_push() routine.
+    uvm_down(&pool->push_sem);
+
+    // At least one channel is unlocked. We check if any unlocked channel is
+    // available, i.e., if it has free GPFIFO entries.
+
+    channel_pool_lock(pool);
+
+    for_each_clear_bit(index, pool->push_locks, pool->num_channels) {
+        channel = &pool->channels[index];
+        if (try_claim_channel_locked(channel, 1)) {
+            lock_channel_for_push(channel);
+            goto done;
+        }
+    }
+
+    channel_pool_unlock(pool);
+
+    // No channels are available. Update and check errors on all channels until
+    // one becomes available.
+    uvm_spin_loop_init(&spin);
+    while (1) {
+        uvm_for_each_channel_in_pool(channel, pool) {
+            NV_STATUS status;
+
+            uvm_channel_update_progress(channel);
+            index = uvm_channel_index_in_pool(channel);
+
+            channel_pool_lock(pool);
+
+            if (test_claim_and_lock_channel(channel, 1))
+                goto done;
+
+            channel_pool_unlock(pool);
+
+            status = uvm_channel_check_errors(channel);
+            if (status != NV_OK) {
+                uvm_up(&pool->push_sem);
+                return status;
+            }
+
+            UVM_SPIN_LOOP(&spin);
+        }
+    }
+
+done:
+    channel_pool_unlock(pool);
+    *channel_out = channel;
+    return NV_OK;
+}
+
 NV_STATUS uvm_channel_reserve_type(uvm_channel_manager_t *manager, uvm_channel_type_t type, uvm_channel_t **channel_out)
 {
     uvm_channel_pool_t *pool = manager->pool_to_use.default_for_type[type];
 
     UVM_ASSERT(pool != NULL);
     UVM_ASSERT(type < UVM_CHANNEL_TYPE_COUNT);
+
+    if (pool->secure)
+        return channel_reserve_in_secure_pool(pool, channel_out);
 
     return channel_reserve_in_ce_pool(pool, channel_out);
 }
@@ -320,6 +451,9 @@ NV_STATUS uvm_channel_reserve_gpu_to_gpu(uvm_channel_manager_t *manager,
         pool = manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_GPU_TO_GPU];
 
     UVM_ASSERT(pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE);
+
+    if (pool->secure)
+        return channel_reserve_in_secure_pool(pool, channel_out);
 
     return channel_reserve_in_ce_pool(pool, channel_out);
 }
@@ -357,6 +491,49 @@ static NvU32 channel_get_available_push_info_index(uvm_channel_t *channel)
     return push_info - channel->push_infos;
 }
 
+static void channel_semaphore_gpu_encrypt_payload(uvm_push_t *push, uvm_channel_t *channel, NvU64 semaphore_va)
+{
+    NvU32 iv_index;
+    uvm_gpu_address_t notifier_gpu_va;
+    uvm_gpu_address_t auth_tag_gpu_va;
+    uvm_gpu_address_t semaphore_gpu_va;
+    uvm_gpu_address_t encrypted_payload_gpu_va;
+    uvm_gpu_t *gpu = push->gpu;
+    uvm_gpu_semaphore_t *semaphore = &channel->tracking_sem.semaphore;
+    UvmCslIv *iv_cpu_addr = semaphore->conf_computing.ivs;
+    NvU32 payload_size = sizeof(*semaphore->payload);
+    NvU32 *last_pushed_notifier = &semaphore->conf_computing.last_pushed_notifier;
+
+    UVM_ASSERT(uvm_channel_is_secure_ce(channel));
+
+    encrypted_payload_gpu_va = uvm_rm_mem_get_gpu_va(semaphore->conf_computing.encrypted_payload, gpu, false);
+    notifier_gpu_va = uvm_rm_mem_get_gpu_va(semaphore->conf_computing.notifier, gpu, false);
+    auth_tag_gpu_va = uvm_rm_mem_get_gpu_va(semaphore->conf_computing.auth_tag, gpu, false);
+    semaphore_gpu_va = uvm_gpu_address_virtual(semaphore_va);
+
+    iv_index = ((*last_pushed_notifier + 2) / 2) % channel->num_gpfifo_entries;
+
+    uvm_conf_computing_log_gpu_encryption(channel, &iv_cpu_addr[iv_index]);
+
+    gpu->parent->ce_hal->memset_4(push, notifier_gpu_va, ++(*last_pushed_notifier), sizeof(*last_pushed_notifier));
+    gpu->parent->ce_hal->encrypt(push, encrypted_payload_gpu_va, semaphore_gpu_va, payload_size, auth_tag_gpu_va);
+    gpu->parent->ce_hal->memset_4(push, notifier_gpu_va, ++(*last_pushed_notifier), sizeof(*last_pushed_notifier));
+}
+
+// Auxiliary buffer only used by SEC2 channels for CPU computation of the method
+// stream signature. Note that it is required that this inline pushbuffer buffer
+// is reserved at push->begin.
+static void push_reserve_csl_sign_buf(uvm_push_t *push)
+{
+    uvm_gpu_address_t dummy;
+    NvU32 *buf;
+
+    buf = uvm_push_get_single_inline_buffer(push, UVM_CONF_COMPUTING_SIGN_BUF_MAX_SIZE, UVM_METHOD_SIZE, &dummy);
+
+    // Offset UVM_METHOD_SIZE from buf due to the NOP method.
+    UVM_ASSERT((buf - UVM_METHOD_SIZE / sizeof(*buf)) == push->begin);
+}
+
 NV_STATUS uvm_channel_begin_push(uvm_channel_t *channel, uvm_push_t *push)
 {
     NV_STATUS status;
@@ -367,15 +544,39 @@ NV_STATUS uvm_channel_begin_push(uvm_channel_t *channel, uvm_push_t *push)
 
     manager = channel->pool->manager;
 
+    // Only SEC2 and WLC with set up fixed schedule can use direct push
+    // submission. All other cases (including WLC pre-schedule) need to
+    // reserve a launch channel that will be used to submit this push
+    // indirectly.
+    if (uvm_conf_computing_mode_enabled(uvm_channel_get_gpu(channel)) &&
+        !(uvm_channel_is_wlc(channel) && uvm_channel_manager_is_wlc_ready(manager)) &&
+        !uvm_channel_is_sec2(channel)) {
+        uvm_channel_type_t indirect_channel_type = uvm_channel_manager_is_wlc_ready(manager) ?
+                                                   UVM_CHANNEL_TYPE_WLC :
+                                                   UVM_CHANNEL_TYPE_SEC2;
+        status = uvm_channel_reserve_type(manager, indirect_channel_type, &push->launch_channel);
+        if (status != NV_OK)
+            return status;
+    }
+
+    // For secure channels, channel's lock should have been acquired in
+    // uvm_channel_reserve() or channel_reserve_in_secure_pool() before
+    // reaching here.
     UVM_ASSERT(is_channel_locked_for_push(channel));
+
+    push->channel = channel;
+    push->channel_tracking_value = 0;
 
     status = uvm_pushbuffer_begin_push(manager->pushbuffer, push);
     if (status != NV_OK)
         return status;
 
-    push->channel = channel;
-    push->channel_tracking_value = 0;
     push->push_info_index = channel_get_available_push_info_index(channel);
+
+    if (uvm_channel_is_sec2(push->channel))
+        push_reserve_csl_sign_buf(push);
+    else if (uvm_channel_is_wlc(push->channel) && uvm_channel_manager_is_wlc_ready(manager))
+        uvm_conf_computing_acquire_encryption_iv(push->channel, &push->launch_iv);
 
     return NV_OK;
 }
@@ -395,7 +596,15 @@ static void internal_channel_submit_work(uvm_push_t *push, NvU32 push_size, NvU3
     gpfifo_entry = (NvU64*)channel->channel_info.gpFifoEntries + channel->cpu_put;
     pushbuffer_va = uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push);
 
-    gpu->parent->host_hal->set_gpfifo_entry(gpfifo_entry, pushbuffer_va, push_size);
+    if (uvm_conf_computing_mode_enabled(gpu)) {
+        void *unprotected_pb = uvm_pushbuffer_get_unprotected_cpu_va_for_push(pushbuffer, push);
+        UVM_ASSERT(uvm_channel_is_sec2(channel));
+
+        // Copy push data to unprotected sysmem, it has already been signed.
+        memcpy(unprotected_pb, push->begin, push_size);
+    }
+
+    gpu->parent->host_hal->set_gpfifo_entry(gpfifo_entry, pushbuffer_va, push_size, UVM_GPFIFO_SYNC_PROCEED);
 
     // Need to make sure all the pushbuffer and the GPFIFO entries writes
     // complete before updating GPPUT. We also don't want any reads to be moved
@@ -432,22 +641,398 @@ static void proxy_channel_submit_work(uvm_push_t *push, NvU32 push_size)
     }
 }
 
-static void uvm_channel_semaphore_release(uvm_push_t *push, NvU64 semaphore_va, NvU32 new_payload)
+static void do_semaphore_release(uvm_push_t *push, NvU64 semaphore_va, NvU32 new_payload)
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    if (uvm_channel_is_ce(push->channel))
+        gpu->parent->ce_hal->semaphore_release(push, semaphore_va, new_payload);
+    else if (uvm_channel_is_sec2(push->channel))
+        gpu->parent->sec2_hal->semaphore_release(push, semaphore_va, new_payload);
+    else
+        UVM_ASSERT_MSG(0, "Semaphore release on an unsupported channel.\n");
+}
 
+static void uvm_channel_tracking_semaphore_release(uvm_push_t *push, NvU64 semaphore_va, NvU32 new_payload)
+{
     // We used to skip the membar or use membar GPU for the semaphore release
     // for a few pushes, but that doesn't provide sufficient ordering guarantees
     // in some cases (e.g. ga100 with an LCE with PCEs from both HSHUBs) for the
     // semaphore writes. To be safe, just always uses a membar sys for now.
-    // TODO bug 3770539: Optimize membars used by end of push semaphore releases
+    // TODO: Bug 3770539: Optimize membars used by end of push semaphore releases
     (void)uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
     (void)uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
 
-    if (uvm_channel_is_ce(push->channel))
-        gpu->parent->ce_hal->semaphore_release(push, semaphore_va, new_payload);
-    else
-        UVM_ASSERT_MSG(0, "Semaphore release on an unsupported channel.\n");
+    do_semaphore_release(push, semaphore_va, new_payload);
+
+    // When the Confidential Computing feature is enabled, additional work
+    // needs to be scheduled to get an encrypted shadow copy in unprotected
+    // sysmem. This allows UVM to later decrypt it and observe the new
+    // semaphore value.
+    if (uvm_channel_is_secure_ce(push->channel))
+        channel_semaphore_gpu_encrypt_payload(push, push->channel, semaphore_va);
+}
+
+static uvm_channel_t *get_paired_channel(uvm_channel_t *channel)
+{
+    unsigned index;
+    uvm_channel_pool_t *paired_pool;
+    uvm_channel_type_t paired_channel_type;
+
+    UVM_ASSERT(channel);
+    UVM_ASSERT(uvm_channel_is_wlc(channel) || uvm_channel_is_lcic(channel));
+
+    index = uvm_channel_index_in_pool(channel);
+    paired_channel_type = uvm_channel_is_wlc(channel) ? UVM_CHANNEL_TYPE_LCIC : UVM_CHANNEL_TYPE_WLC;
+    paired_pool = channel->pool->manager->pool_to_use.default_for_type[paired_channel_type];
+    return paired_pool->channels + index;
+}
+
+static uvm_channel_t *wlc_get_paired_lcic(uvm_channel_t *wlc_channel)
+{
+    UVM_ASSERT(wlc_channel);
+    UVM_ASSERT(uvm_channel_is_wlc(wlc_channel));
+
+    return get_paired_channel(wlc_channel);
+}
+
+static uvm_channel_t *lcic_get_paired_wlc(uvm_channel_t *lcic_channel)
+{
+    UVM_ASSERT(lcic_channel);
+    UVM_ASSERT(uvm_channel_is_lcic(lcic_channel));
+
+    return get_paired_channel(lcic_channel);
+}
+
+static void internal_channel_submit_work_wlc(uvm_push_t *push)
+{
+    uvm_channel_t *wlc_channel = push->channel;
+    uvm_channel_t *lcic_channel = wlc_get_paired_lcic(wlc_channel);
+    UvmCslIv *iv_cpu_addr = lcic_channel->tracking_sem.semaphore.conf_computing.ivs;
+    NvU32 *last_pushed_notifier;
+    NvU32 iv_index;
+    uvm_spin_loop_t spin;
+
+    UVM_ASSERT(lcic_channel);
+
+    // Wait for the WLC/LCIC to be primed. This means that PUT == GET + 2
+    // and a WLC doorbell ring is enough to start work.
+    UVM_SPIN_WHILE(!uvm_gpu_tracking_semaphore_is_completed(&lcic_channel->tracking_sem), &spin);
+
+    // Executing WLC adds an extra job to LCIC
+    ++lcic_channel->tracking_sem.queued_value;
+
+    UVM_ASSERT_MSG(uvm_push_get_size(push) == UVM_MAX_WLC_PUSH_SIZE,
+                   "WLC push submission size mismatch, expected: %u, got: %u",
+                   UVM_MAX_WLC_PUSH_SIZE,
+                   uvm_push_get_size(push));
+
+    // Handles the CPU part of the setup for the LCIC to be able to do GPU
+    // encryption of its tracking semaphore value. See setup_lcic_schedule().
+    last_pushed_notifier  = &lcic_channel->tracking_sem.semaphore.conf_computing.last_pushed_notifier;
+    *lcic_channel->conf_computing.static_notifier_entry_unprotected_sysmem_cpu = ++(*last_pushed_notifier);
+    *lcic_channel->conf_computing.static_notifier_exit_unprotected_sysmem_cpu = ++(*last_pushed_notifier);
+    iv_index = (*last_pushed_notifier / 2) % lcic_channel->num_gpfifo_entries;
+    uvm_conf_computing_log_gpu_encryption(lcic_channel, &iv_cpu_addr[iv_index]);
+
+    // Move push data
+    uvm_conf_computing_cpu_encrypt(wlc_channel,
+                                   wlc_channel->conf_computing.static_pb_unprotected_sysmem_cpu,
+                                   push->begin,
+                                   &push->launch_iv,
+                                   UVM_MAX_WLC_PUSH_SIZE,
+                                   wlc_channel->conf_computing.static_pb_unprotected_sysmem_auth_tag_cpu);
+
+    // Make sure all encrypted data is observable before ringing the doorbell.
+    wmb();
+
+    // Ring the WLC doorbell to start processing the above push
+    UVM_GPU_WRITE_ONCE(*wlc_channel->channel_info.workSubmissionOffset,
+                       wlc_channel->channel_info.workSubmissionToken);
+}
+
+static void internal_channel_submit_work_indirect_wlc(uvm_push_t *push,
+                                                      NvU32 old_cpu_put,
+                                                      NvU32 new_gpu_put)
+{
+    uvm_pushbuffer_t *pushbuffer = push->channel->pool->manager->pushbuffer;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+
+    uvm_push_t indirect_push;
+    NV_STATUS status;
+    NvU64 gpfifo_entry;
+
+    void *push_enc_cpu = uvm_pushbuffer_get_unprotected_cpu_va_for_push(pushbuffer, push);
+    NvU64 push_enc_gpu = uvm_pushbuffer_get_unprotected_gpu_va_for_push(pushbuffer, push);
+    void *push_enc_auth_tag;
+    uvm_gpu_address_t push_enc_auth_tag_gpu;
+    NvU64 gpfifo_gpu_va = push->channel->channel_info.gpFifoGpuVa + old_cpu_put * sizeof(gpfifo_entry);
+
+    UVM_ASSERT(!uvm_channel_is_sec2(push->channel));
+    UVM_ASSERT(uvm_channel_is_wlc(push->launch_channel));
+
+    // WLC submissions are done under channel lock, so there should be no
+    // contention to get the right submission order.
+    UVM_ASSERT(push->channel->conf_computing.gpu_put == old_cpu_put);
+
+    // This can never stall or return error. WLC launch after WLC channels are
+    // initialized uses private static pb space and it neither needs the general
+    // PB space, nor it counts towards max concurrent pushes.
+    status = uvm_push_begin_on_reserved_channel(push->launch_channel,
+                                                &indirect_push,
+                                                "Worklaunch to '%s' via '%s'",
+                                                push->channel->name,
+                                                push->launch_channel->name);
+    UVM_ASSERT(status == NV_OK);
+
+
+    // Move over the pushbuffer data
+    // WLC channels use a static preallocated space for launch auth tags
+    push_enc_auth_tag = indirect_push.channel->conf_computing.launch_auth_tag_cpu;
+    push_enc_auth_tag_gpu = uvm_gpu_address_virtual(indirect_push.channel->conf_computing.launch_auth_tag_gpu_va);
+
+    uvm_conf_computing_cpu_encrypt(indirect_push.channel,
+                                   push_enc_cpu,
+                                   push->begin,
+                                   NULL,
+                                   uvm_push_get_size(push),
+                                   push_enc_auth_tag);
+
+    uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+
+    gpu->parent->ce_hal->decrypt(&indirect_push,
+                                 uvm_gpu_address_virtual(uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push)),
+                                 uvm_gpu_address_virtual(push_enc_gpu),
+                                 uvm_push_get_size(push),
+                                 push_enc_auth_tag_gpu);
+
+    gpu->parent->host_hal->set_gpfifo_entry(&gpfifo_entry,
+                                            uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push),
+                                            uvm_push_get_size(push),
+                                            UVM_GPFIFO_SYNC_PROCEED);
+
+    gpu->parent->ce_hal->memset_8(&indirect_push,
+                                  uvm_gpu_address_virtual(gpfifo_gpu_va),
+                                  gpfifo_entry,
+                                  sizeof(gpfifo_entry));
+
+    uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
+    do_semaphore_release(&indirect_push, push->channel->channel_info.gpPutGpuVa, new_gpu_put);
+
+    uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
+    do_semaphore_release(&indirect_push,
+                         push->channel->channel_info.workSubmissionOffsetGpuVa,
+                         push->channel->channel_info.workSubmissionToken);
+
+    // Ignore return value of push_wait. It can only fail with channel error
+    // which will be detected when waiting for the primary push.
+    (void)uvm_push_end_and_wait(&indirect_push);
+
+    push->channel->conf_computing.gpu_put = new_gpu_put;
+}
+
+static void update_gpput_via_sec2(uvm_push_t *sec2_push, uvm_channel_t *channel, NvU32 new_gpu_put)
+{
+    uvm_gpu_t *gpu = uvm_push_get_gpu(sec2_push);
+    void *gpput_auth_tag_cpu, *gpput_enc_cpu;
+    uvm_gpu_address_t gpput_auth_tag_gpu, gpput_enc_gpu;
+    NvU32 gpput_scratchpad[UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT/sizeof(new_gpu_put)];
+
+    UVM_ASSERT(uvm_channel_is_sec2(sec2_push->channel));
+
+    gpput_enc_cpu = uvm_push_get_single_inline_buffer(sec2_push,
+                                                      UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT,
+                                                      UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT,
+                                                      &gpput_enc_gpu);
+    gpput_auth_tag_cpu = uvm_push_get_single_inline_buffer(sec2_push,
+                                                           UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                                           UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT,
+                                                           &gpput_auth_tag_gpu);
+
+
+
+    // Update GPPUT. The update needs 4B write to specific offset,
+    // however we can only do 16B aligned decrypt writes.
+    // A poison value is written to all other locations, this is ignored in
+    // most locations and overwritten by HW for GPGET location
+    memset(gpput_scratchpad, 0, sizeof(gpput_scratchpad));
+    UVM_ASSERT(sizeof(*gpput_scratchpad) == sizeof(new_gpu_put));
+    gpput_scratchpad[(channel->channel_info.gpPutGpuVa % UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT) /
+                     sizeof(*gpput_scratchpad)] = new_gpu_put;
+
+    // Set value of GPGET to be the same as GPPUT. It will be overwritten by
+    // HW next time GET value changes. UVM never reads GPGET.
+    // However, RM does read it when freeing a channel. When this function
+    // is called from 'channel_manager_stop_wlc' we set the value of GPGET
+    // to the same value as GPPUT. Mismatch between these two values makes
+    // RM wait for any "pending" tasks, leading to significant delays in the
+    // channel teardown sequence.
+    UVM_ASSERT(channel->channel_info.gpPutGpuVa / UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT ==
+               channel->channel_info.gpGetGpuVa / UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT);
+    gpput_scratchpad[(channel->channel_info.gpGetGpuVa % UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT) /
+                     sizeof(*gpput_scratchpad)] = new_gpu_put;
+
+    uvm_conf_computing_cpu_encrypt(sec2_push->channel,
+                                   gpput_enc_cpu,
+                                   gpput_scratchpad,
+                                   NULL,
+                                   sizeof(gpput_scratchpad),
+                                   gpput_auth_tag_cpu);
+    gpu->parent->sec2_hal->decrypt(sec2_push,
+                                   UVM_ALIGN_DOWN(channel->channel_info.gpPutGpuVa,
+                                                  UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT),
+                                   gpput_enc_gpu.address,
+                                   sizeof(gpput_scratchpad),
+                                   gpput_auth_tag_gpu.address);
+}
+
+static void set_gpfifo_via_sec2(uvm_push_t *sec2_push, uvm_channel_t *channel, NvU32 put, NvU64 value)
+{
+    uvm_gpu_t *gpu = uvm_push_get_gpu(sec2_push);
+    void *gpfifo_auth_tag_cpu, *gpfifo_enc_cpu;
+    uvm_gpu_address_t gpfifo_auth_tag_gpu, gpfifo_enc_gpu;
+    NvU64 gpfifo_gpu = channel->channel_info.gpFifoGpuVa + put * sizeof(value);
+    NvU64 gpfifo_scratchpad[2];
+
+    UVM_ASSERT(uvm_channel_is_sec2(sec2_push->channel));
+
+    gpfifo_enc_cpu = uvm_push_get_single_inline_buffer(sec2_push,
+                                                       sizeof(gpfifo_scratchpad),
+                                                       UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT,
+                                                       &gpfifo_enc_gpu);
+    gpfifo_auth_tag_cpu = uvm_push_get_single_inline_buffer(sec2_push,
+                                                            UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                                            UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT,
+                                                            &gpfifo_auth_tag_gpu);
+
+    if (IS_ALIGNED(gpfifo_gpu, UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT)) {
+        gpfifo_scratchpad[0] = value;
+
+        // Set the value of the odd entry to noop.
+        // It will be overwritten when the next entry is submitted.
+        gpu->parent->host_hal->set_gpfifo_noop(&gpfifo_scratchpad[1]);
+    }
+    else {
+        uvm_gpfifo_entry_t *previous_gpfifo;
+
+        UVM_ASSERT(put > 0);
+
+        previous_gpfifo = &channel->gpfifo_entries[put - 1];
+
+        if (previous_gpfifo->type ==  UVM_GPFIFO_ENTRY_TYPE_CONTROL) {
+            gpfifo_scratchpad[0] = previous_gpfifo->control_value;
+        }
+        else {
+            uvm_pushbuffer_t *pushbuffer = channel->pool->manager->pushbuffer;
+            NvU64 prev_pb_va = uvm_pushbuffer_get_gpu_va_base(pushbuffer) + previous_gpfifo->pushbuffer_offset;
+
+            // Reconstruct the previous gpfifo entry. UVM_GPFIFO_SYNC_WAIT is
+            // used only in static WLC schedule.
+            // Overwriting the previous entry with the same value doesn't hurt,
+            // whether the previous entry has been processed or not
+            gpu->parent->host_hal->set_gpfifo_entry(&gpfifo_scratchpad[0],
+                                                    prev_pb_va,
+                                                    previous_gpfifo->pushbuffer_size,
+                                                    UVM_GPFIFO_SYNC_PROCEED);
+        }
+
+        gpfifo_scratchpad[1] = value;
+    }
+
+    uvm_conf_computing_cpu_encrypt(sec2_push->channel,
+                                   gpfifo_enc_cpu,
+                                   gpfifo_scratchpad,
+                                   NULL,
+                                   sizeof(gpfifo_scratchpad),
+                                   gpfifo_auth_tag_cpu);
+    gpu->parent->sec2_hal->decrypt(sec2_push,
+                                   UVM_ALIGN_DOWN(gpfifo_gpu, UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT),
+                                   gpfifo_enc_gpu.address,
+                                   sizeof(gpfifo_scratchpad),
+                                   gpfifo_auth_tag_gpu.address);
+}
+
+static NV_STATUS internal_channel_submit_work_indirect_sec2(uvm_push_t *push,
+                                                            NvU32 old_cpu_put,
+                                                            NvU32 new_gpu_put)
+{
+    uvm_pushbuffer_t *pushbuffer = push->channel->pool->manager->pushbuffer;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+
+    uvm_push_t indirect_push;
+    NV_STATUS status;
+    NvU64 gpfifo_entry;
+
+    void *push_enc_cpu = uvm_pushbuffer_get_unprotected_cpu_va_for_push(pushbuffer, push);
+    NvU64 push_enc_gpu = uvm_pushbuffer_get_unprotected_gpu_va_for_push(pushbuffer, push);
+    void *push_auth_tag_cpu;
+    uvm_gpu_address_t push_auth_tag_gpu;
+    uvm_spin_loop_t spin;
+
+    UVM_ASSERT(!uvm_channel_is_sec2(push->channel));
+    UVM_ASSERT(uvm_channel_is_sec2(push->launch_channel));
+
+    // If the old_cpu_put is not equal to the last gpu put, other pushes are
+    // pending that need to be submitted. That push/es' submission will update
+    // the gpu_put pointer to expected value.
+    UVM_SPIN_WHILE(push->channel->conf_computing.gpu_put != old_cpu_put, &spin);
+
+    // This can never stall or return error. SEC2 launch used during init has
+    // plenty of PB space available before it needs to check for push
+    // completion/channel status. WLC launch after WLC channels are initialized
+    // uses private static pb space and needs neither general PB space, nor it
+    // counts towards max concurrent pushes.
+    status = uvm_push_begin_on_reserved_channel(push->launch_channel,
+                                                &indirect_push,
+                                                "Worklaunch to '%s' via '%s'",
+                                                push->channel->name,
+                                                push->launch_channel->name);
+    if (status != NV_OK)
+        return status;
+
+
+    // Move over the pushbuffer data
+    push_auth_tag_cpu = uvm_push_get_single_inline_buffer(&indirect_push,
+                                                          UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                                          UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT,
+                                                          &push_auth_tag_gpu);
+
+    uvm_conf_computing_cpu_encrypt(indirect_push.channel,
+                                   push_enc_cpu,
+                                   push->begin,
+                                   NULL,
+                                   uvm_push_get_size(push),
+                                   push_auth_tag_cpu);
+
+    uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+
+    gpu->parent->sec2_hal->decrypt(&indirect_push,
+                                   uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push),
+                                   push_enc_gpu,
+                                   uvm_push_get_size(push),
+                                   push_auth_tag_gpu.address);
+
+    gpu->parent->host_hal->set_gpfifo_entry(&gpfifo_entry,
+                                            uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push),
+                                            uvm_push_get_size(push),
+                                            UVM_GPFIFO_SYNC_PROCEED);
+
+
+    set_gpfifo_via_sec2(&indirect_push, push->channel, old_cpu_put, gpfifo_entry);
+    update_gpput_via_sec2(&indirect_push, push->channel, new_gpu_put);
+
+    // Ring the doorbell
+    uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
+    do_semaphore_release(&indirect_push,
+                         push->channel->channel_info.workSubmissionOffsetGpuVa,
+                         push->channel->channel_info.workSubmissionToken);
+
+    status = uvm_push_end_and_wait(&indirect_push);
+    if (status != NV_OK)
+        return status;
+
+    push->channel->conf_computing.gpu_put = new_gpu_put;
+
+    return status;
 }
 
 void uvm_channel_end_push(uvm_push_t *push)
@@ -462,6 +1047,7 @@ void uvm_channel_end_push(uvm_push_t *push)
     NvU32 push_size;
     NvU32 cpu_put;
     NvU32 new_cpu_put;
+    bool needs_sec2_work_submit = false;
 
     channel_pool_lock(channel->pool);
 
@@ -469,7 +1055,27 @@ void uvm_channel_end_push(uvm_push_t *push)
     new_payload = (NvU32)new_tracking_value;
 
     semaphore_va = uvm_channel_tracking_semaphore_get_gpu_va(channel);
-    uvm_channel_semaphore_release(push, semaphore_va, new_payload);
+    uvm_channel_tracking_semaphore_release(push, semaphore_va, new_payload);
+
+    if (uvm_channel_is_wlc(channel) && uvm_channel_manager_is_wlc_ready(channel_manager)) {
+        uvm_channel_t *paired_lcic = wlc_get_paired_lcic(channel);
+        uvm_gpu_t *gpu = uvm_channel_get_gpu(channel);
+        gpu->parent->ce_hal->semaphore_reduction_inc(push,
+                                                     paired_lcic->channel_info.gpPutGpuVa,
+                                                     paired_lcic->num_gpfifo_entries - 1);
+        uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
+        do_semaphore_release(push,
+                             paired_lcic->channel_info.workSubmissionOffsetGpuVa,
+                             paired_lcic->channel_info.workSubmissionToken);
+
+        if (uvm_push_get_size(push) < UVM_MAX_WLC_PUSH_SIZE) {
+            // The UVM_MAX_WLC_PUSH_SIZE is set to fit indirect work launch
+            // pushes. However, direct pushes to WLC can be smaller than this
+            // size. This is used e.g. by indirect submission of control
+            // gpfifo entries.
+            channel_manager->gpu->parent->host_hal->noop(push, UVM_MAX_WLC_PUSH_SIZE - uvm_push_get_size(push));
+        }
+    }
 
     push_size = uvm_push_get_size(push);
     UVM_ASSERT_MSG(push_size <= UVM_MAX_PUSH_SIZE, "push size %u\n", push_size);
@@ -481,16 +1087,36 @@ void uvm_channel_end_push(uvm_push_t *push)
     entry->tracking_semaphore_value = new_tracking_value;
     entry->pushbuffer_offset = uvm_pushbuffer_get_offset_for_push(pushbuffer, push);
     entry->pushbuffer_size = push_size;
+
+    // Indirect submission via SEC2/WLC needs pushes to be aligned for
+    // encryption/decryption. The pushbuffer_size of this push
+    // influences starting address of the next push.
+    if (uvm_conf_computing_mode_enabled(uvm_channel_get_gpu(channel)))
+        entry->pushbuffer_size = UVM_ALIGN_UP(push_size, UVM_CONF_COMPUTING_BUF_ALIGNMENT);
     entry->push_info = &channel->push_infos[push->push_info_index];
     entry->type = UVM_GPFIFO_ENTRY_TYPE_NORMAL;
 
     UVM_ASSERT(channel->current_gpfifo_count > 0);
     --channel->current_gpfifo_count;
 
-    if (uvm_channel_is_proxy(channel))
+    if (uvm_channel_is_proxy(channel)) {
         proxy_channel_submit_work(push, push_size);
-    else
+    }
+    else if (uvm_channel_is_wlc(channel) && uvm_channel_manager_is_wlc_ready(channel_manager)) {
+        internal_channel_submit_work_wlc(push);
+    }
+    else if (uvm_conf_computing_mode_enabled(channel_manager->gpu) && !uvm_channel_is_sec2(channel)) {
+        if (uvm_channel_manager_is_wlc_ready(channel_manager)) {
+            internal_channel_submit_work_indirect_wlc(push, cpu_put, new_cpu_put);
+        }
+        else {
+            // submitting via SEC2 starts a push, postpone until this push is ended
+            needs_sec2_work_submit = true;
+        }
+    }
+    else {
         internal_channel_submit_work(push, push_size, new_cpu_put);
+    }
 
     channel->cpu_put = new_cpu_put;
 
@@ -509,8 +1135,97 @@ void uvm_channel_end_push(uvm_push_t *push)
     // bug 124888, which GL works around by doing a clflush"
     wmb();
 
+    if (needs_sec2_work_submit) {
+        NV_STATUS status = internal_channel_submit_work_indirect_sec2(push, cpu_put, new_cpu_put);
+
+        // This codepath should only be used during initialization and thus
+        // NEVER return an error.
+        UVM_ASSERT(status == NV_OK);
+    }
+
     push->push_info_index = channel->num_gpfifo_entries;
     push->channel_tracking_value = new_tracking_value;
+}
+
+static void submit_ctrl_gpfifo(uvm_channel_t *channel, uvm_gpfifo_entry_t *entry, NvU32 new_cpu_put)
+{
+    uvm_gpu_t *gpu = channel->pool->manager->gpu;
+    NvU32 cpu_put = channel->cpu_put;
+    NvU64 *gpfifo_entry;
+
+    UVM_ASSERT(entry == &channel->gpfifo_entries[cpu_put]);
+    if (uvm_conf_computing_mode_enabled(gpu) && !uvm_channel_is_sec2(channel))
+        return;
+
+    gpfifo_entry = (NvU64*)channel->channel_info.gpFifoEntries + cpu_put;
+    *gpfifo_entry = entry->control_value;
+
+    // Need to make sure all the GPFIFO entries writes complete before updating
+    // GPPUT. We also don't want any reads to be moved after the GPPut write as
+    // the GPU might modify the data they read as soon as the GPPut write
+    // happens.
+    mb();
+
+    gpu->parent->host_hal->write_gpu_put(channel, new_cpu_put);
+}
+
+static NV_STATUS submit_ctrl_gpfifo_indirect(uvm_channel_t *channel,
+                                             uvm_gpfifo_entry_t *entry,
+                                             NvU32 old_cpu_put,
+                                             NvU32 new_gpu_put)
+{
+    uvm_push_t indirect_push;
+    NV_STATUS status = NV_OK;
+    uvm_spin_loop_t spin;
+    uvm_channel_type_t indirect_channel_type = uvm_channel_manager_is_wlc_ready(channel->pool->manager) ?
+                                               UVM_CHANNEL_TYPE_WLC :
+                                               UVM_CHANNEL_TYPE_SEC2;
+
+    UVM_ASSERT(!uvm_channel_is_sec2(channel));
+
+    // If the old_cpu_put is not equal to the last gpu put,
+    // Another push(es) is pending that needs to be submitted.
+    // That push/es' submission will update the gpu_put pointer
+    // to expected value.
+    UVM_SPIN_WHILE(channel->conf_computing.gpu_put != old_cpu_put, &spin);
+
+    status = uvm_push_begin(channel->pool->manager,
+                            indirect_channel_type,
+                            &indirect_push,
+                            "GPFIFO submit to '%s' via '%s'",
+                            channel->name,
+                            uvm_channel_type_to_string(indirect_channel_type));
+    if (status != NV_OK)
+        return status;
+
+    if (uvm_channel_is_sec2(indirect_push.channel)) {
+        set_gpfifo_via_sec2(&indirect_push, channel, old_cpu_put, entry->control_value);
+        update_gpput_via_sec2(&indirect_push, channel, new_gpu_put);
+    } else {
+        uvm_gpu_t *gpu = uvm_push_get_gpu(&indirect_push);
+        NvU64 gpfifo_gpu_va = channel->channel_info.gpFifoGpuVa + (old_cpu_put * sizeof(entry->control_value));
+
+        gpu->parent->ce_hal->memset_8(&indirect_push,
+                                      uvm_gpu_address_virtual(gpfifo_gpu_va),
+                                      entry->control_value,
+                                      sizeof(entry->control_value));
+
+        uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
+        do_semaphore_release(&indirect_push, channel->channel_info.gpPutGpuVa, new_gpu_put);
+    }
+
+    uvm_push_set_flag(&indirect_push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
+    do_semaphore_release(&indirect_push,
+                         channel->channel_info.workSubmissionOffsetGpuVa,
+                         channel->channel_info.workSubmissionToken);
+
+    status = uvm_push_end_and_wait(&indirect_push);
+    if (status != NV_OK)
+        return status;
+
+    channel->conf_computing.gpu_put = new_gpu_put;
+
+    return NV_OK;
 }
 
 // The caller must submit a normal GPFIFO entry with a semaphore release
@@ -519,10 +1234,9 @@ void uvm_channel_end_push(uvm_push_t *push)
 static void write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_entry_value)
 {
     uvm_gpfifo_entry_t *entry;
-    NvU64 *gpfifo_entry;
     NvU32 cpu_put;
     NvU32 new_cpu_put;
-    uvm_gpu_t *gpu = channel->pool->manager->gpu;
+    bool needs_indirect_submit = false;
 
     channel_pool_lock(channel->pool);
 
@@ -532,6 +1246,7 @@ static void write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_entry_valu
     entry = &channel->gpfifo_entries[cpu_put];
     memset(entry, 0, sizeof(*entry));
     entry->type = UVM_GPFIFO_ENTRY_TYPE_CONTROL;
+    entry->control_value = ctrl_fifo_entry_value;
 
     // Control GPFIFO entries are followed by a semaphore_release push in UVM.
     // We add the tracking semaphore value of the next GPFIFO entry,
@@ -543,16 +1258,9 @@ static void write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_entry_valu
     UVM_ASSERT(channel->current_gpfifo_count > 1);
     --channel->current_gpfifo_count;
 
-    gpfifo_entry = (NvU64*)channel->channel_info.gpFifoEntries + cpu_put;
-    *gpfifo_entry = ctrl_fifo_entry_value;
-
-    // Need to make sure all the GPFIFO entries writes complete before updating
-    // GPPUT. We also don't want any reads to be moved after the GPPut write as
-    // the GPU might modify the data they read as soon as the GPPut write
-    // happens.
-    mb();
-
-    gpu->parent->host_hal->write_gpu_put(channel, new_cpu_put);
+    submit_ctrl_gpfifo(channel, entry, new_cpu_put);
+    if (uvm_conf_computing_mode_enabled(channel->pool->manager->gpu) && !uvm_channel_is_sec2(channel))
+        needs_indirect_submit = true;
 
     channel->cpu_put = new_cpu_put;
 
@@ -562,6 +1270,13 @@ static void write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_entry_valu
     // unlock_channel_for_push() because a control GPFIFO is followed by a
     // semaphore release, where the channel is unlocked.
     channel_pool_unlock(channel->pool);
+
+    if (needs_indirect_submit) {
+        NV_STATUS status = submit_ctrl_gpfifo_indirect(channel, entry, cpu_put, new_cpu_put);
+
+        // All failures are globally fatal. There's nothing we do to recover.
+        UVM_ASSERT_RELEASE(status == NV_OK);
+    }
 
     // This memory barrier is borrowed from CUDA, as it supposedly fixes perf
     // issues on some systems. Comment from CUDA: "fixes throughput-related
@@ -577,6 +1292,11 @@ NV_STATUS uvm_channel_write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_
     uvm_push_t push;
 
     UVM_ASSERT(!uvm_channel_is_proxy(channel));
+
+    // WLC/LCIC channels can only process custom gpfifo entries before
+    // their schedule is set up.
+    UVM_ASSERT(!uvm_channel_is_lcic(channel) || !uvm_channel_manager_is_wlc_ready(channel->pool->manager));
+    UVM_ASSERT(!uvm_channel_is_wlc(channel) || !uvm_channel_manager_is_wlc_ready(channel->pool->manager));
 
     // We reserve two GPFIFO entries, i.e., the control GPFIFO entry and the
     // subsequent semaphore_release push. There is, however, a potential case
@@ -612,10 +1332,60 @@ NV_STATUS uvm_channel_write_ctrl_gpfifo(uvm_channel_t *channel, NvU64 ctrl_fifo_
     return NV_OK;
 }
 
+static NV_STATUS uvm_channel_reserve_secure(uvm_channel_t *channel, NvU32 num_gpfifo_entries)
+{
+    uvm_spin_loop_t spin;
+    NV_STATUS status = NV_OK;
+    uvm_channel_pool_t *pool = channel->pool;
+
+    // This semaphore is uvm_up() in unlock_channel_for_push() as part of the
+    // uvm_channel_end_push() routine. Note that different than in
+    // channel_reserve_in_secure_pool, we cannot pick an unlocked channel from
+    // the secure pool, even when there is one available and *channel is locked.
+    // Not a concern given that uvm_channel_reserve() is not the common-case for
+    // channel reservation, and only used for channel initialization, GPFIFO
+    // control work submission, and testing.
+    uvm_down(&pool->push_sem);
+
+    channel_pool_lock(pool);
+
+    if (test_claim_and_lock_channel(channel, num_gpfifo_entries))
+        goto out;
+
+    channel_pool_unlock(pool);
+
+    uvm_spin_loop_init(&spin);
+    while (1) {
+        uvm_channel_update_progress(channel);
+
+        channel_pool_lock(pool);
+
+        if (test_claim_and_lock_channel(channel, num_gpfifo_entries))
+            goto out;
+
+        channel_pool_unlock(pool);
+
+        status = uvm_channel_check_errors(channel);
+        if (status != NV_OK) {
+            uvm_up(&pool->push_sem);
+            return status;
+        }
+
+        UVM_SPIN_LOOP(&spin);
+    }
+
+out:
+    channel_pool_unlock(pool);
+    return NV_OK;
+}
+
 NV_STATUS uvm_channel_reserve(uvm_channel_t *channel, NvU32 num_gpfifo_entries)
 {
     NV_STATUS status = NV_OK;
     uvm_spin_loop_t spin;
+
+    if (uvm_channel_is_secure(channel))
+        return uvm_channel_reserve_secure(channel, num_gpfifo_entries);
 
     if (try_claim_channel(channel, num_gpfifo_entries))
         return NV_OK;
@@ -708,13 +1478,10 @@ NV_STATUS uvm_channel_check_errors(uvm_channel_t *channel)
                           push_info->function);
         }
         else {
-            NvU64 *gpfifo_entry;
-
             UVM_ASSERT(!uvm_channel_is_proxy(channel));
 
-            gpfifo_entry = (NvU64*)channel->channel_info.gpFifoEntries + (fatal_entry - channel->gpfifo_entries);
             UVM_ERR_PRINT("Channel error likely caused by GPFIFO control entry, data: 0x%llx, gpu_get: %d\n",
-                          *gpfifo_entry,
+                          fatal_entry->control_value,
                           channel->gpu_get);
         }
     }
@@ -755,6 +1522,198 @@ NvU64 uvm_channel_update_completed_value(uvm_channel_t *channel)
     return uvm_gpu_tracking_semaphore_update_completed_value(&channel->tracking_sem);
 }
 
+static NV_STATUS csl_init(uvm_channel_t *channel)
+{
+    NV_STATUS status;
+
+    UVM_ASSERT(uvm_channel_is_secure(channel));
+    uvm_mutex_init(&channel->csl.ctx_lock, UVM_LOCK_ORDER_LEAF);
+
+    status = uvm_rm_locked_call(nvUvmInterfaceCslInitContext(&channel->csl.ctx, channel->handle));
+    if (status == NV_OK) {
+        channel->csl.is_ctx_initialized = true;
+    }
+    else {
+        UVM_DBG_PRINT("nvUvmInterfaceCslInitContext() failed: %s, GPU %s\n",
+                      nvstatusToString(status),
+                      uvm_gpu_name(channel->pool->manager->gpu));
+    }
+
+    return status;
+}
+
+static void csl_destroy(uvm_channel_t *channel)
+{
+    if (!channel->csl.is_ctx_initialized)
+        return;
+
+    uvm_assert_mutex_unlocked(&channel->csl.ctx_lock);
+    UVM_ASSERT(!is_channel_locked_for_push(channel));
+
+    uvm_rm_locked_call_void(nvUvmInterfaceDeinitCslContext(&channel->csl.ctx));
+    channel->csl.is_ctx_initialized = false;
+}
+
+static void free_conf_computing_buffers(uvm_channel_t *channel)
+{
+    UVM_ASSERT(uvm_channel_is_secure_ce(channel));
+
+    uvm_rm_mem_free(channel->conf_computing.static_pb_protected_vidmem);
+    uvm_rm_mem_free(channel->conf_computing.static_pb_unprotected_sysmem);
+    uvm_rm_mem_free(channel->conf_computing.static_notifier_unprotected_sysmem);
+    uvm_kvfree(channel->conf_computing.static_pb_protected_sysmem);
+    channel->conf_computing.static_pb_protected_vidmem = NULL;
+    channel->conf_computing.static_pb_unprotected_sysmem = NULL;
+    channel->conf_computing.static_notifier_unprotected_sysmem = NULL;
+    channel->conf_computing.static_pb_protected_sysmem = NULL;
+
+    uvm_rm_mem_free(channel->tracking_sem.semaphore.conf_computing.encrypted_payload);
+    uvm_rm_mem_free(channel->tracking_sem.semaphore.conf_computing.notifier);
+    uvm_rm_mem_free(channel->tracking_sem.semaphore.conf_computing.auth_tag);
+    uvm_kvfree(channel->tracking_sem.semaphore.conf_computing.ivs);
+    channel->tracking_sem.semaphore.conf_computing.encrypted_payload = NULL;
+    channel->tracking_sem.semaphore.conf_computing.notifier = NULL;
+    channel->tracking_sem.semaphore.conf_computing.auth_tag = NULL;
+    channel->tracking_sem.semaphore.conf_computing.ivs = NULL;
+}
+
+static NV_STATUS alloc_conf_computing_buffers_semaphore(uvm_channel_t *channel)
+{
+    uvm_gpu_semaphore_t *semaphore = &channel->tracking_sem.semaphore;
+    uvm_gpu_t *gpu = channel->pool->manager->gpu;
+    NV_STATUS status;
+
+    UVM_ASSERT(uvm_channel_is_secure_ce(channel));
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu,
+                                          UVM_RM_MEM_TYPE_SYS,
+                                          sizeof(semaphore->conf_computing.last_pushed_notifier),
+                                          UVM_CONF_COMPUTING_BUF_ALIGNMENT,
+                                          &semaphore->conf_computing.notifier);
+
+    if (status != NV_OK)
+        return status;
+
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu,
+                                          UVM_RM_MEM_TYPE_SYS,
+                                          sizeof(*channel->tracking_sem.semaphore.payload),
+                                          UVM_CONF_COMPUTING_BUF_ALIGNMENT,
+                                          &semaphore->conf_computing.encrypted_payload);
+
+    if (status != NV_OK)
+        return status;
+
+    status = uvm_rm_mem_alloc_and_map_cpu(gpu,
+                                          UVM_RM_MEM_TYPE_SYS,
+                                          UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                          UVM_CONF_COMPUTING_BUF_ALIGNMENT,
+                                          &semaphore->conf_computing.auth_tag);
+
+    if (status != NV_OK)
+        return status;
+
+    semaphore->conf_computing.ivs = uvm_kvmalloc_zero(sizeof(*semaphore->conf_computing.ivs)
+                                    * channel->num_gpfifo_entries);
+
+    if (!semaphore->conf_computing.ivs)
+        return NV_ERR_NO_MEMORY;
+
+    return status;
+}
+
+static NV_STATUS alloc_conf_computing_buffers_wlc(uvm_channel_t *channel)
+{
+    uvm_gpu_t *gpu = channel->pool->manager->gpu;
+    size_t aligned_wlc_push_size = UVM_ALIGN_UP(UVM_MAX_WLC_PUSH_SIZE, UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT);
+    NV_STATUS status = uvm_rm_mem_alloc_and_map_cpu(gpu,
+                                                    UVM_RM_MEM_TYPE_SYS,
+                                                    aligned_wlc_push_size + UVM_CONF_COMPUTING_AUTH_TAG_SIZE * 2,
+                                                    PAGE_SIZE,
+                                                    &channel->conf_computing.static_pb_unprotected_sysmem);
+    if (status != NV_OK)
+        return status;
+
+    // Both pushes will be targets for SEC2 decrypt operations and have to
+    // be aligned for SEC2. The first push location will also be a target
+    // for CE decrypt operation and has to be aligned for CE decrypt.
+    status = uvm_rm_mem_alloc(gpu,
+                              UVM_RM_MEM_TYPE_GPU,
+                              UVM_ALIGN_UP(UVM_MAX_WLC_PUSH_SIZE, UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT) * 2,
+                              UVM_CONF_COMPUTING_BUF_ALIGNMENT,
+                              &channel->conf_computing.static_pb_protected_vidmem);
+    if (status != NV_OK)
+        return status;
+
+    channel->conf_computing.static_pb_unprotected_sysmem_cpu =
+        uvm_rm_mem_get_cpu_va(channel->conf_computing.static_pb_unprotected_sysmem);
+    channel->conf_computing.static_pb_unprotected_sysmem_auth_tag_cpu =
+        (char*)channel->conf_computing.static_pb_unprotected_sysmem_cpu + aligned_wlc_push_size;
+
+    // The location below is only used for launch pushes but reuses
+    // the same sysmem allocation
+    channel->conf_computing.launch_auth_tag_cpu =
+        (char*)channel->conf_computing.static_pb_unprotected_sysmem_cpu +
+        aligned_wlc_push_size + UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+    channel->conf_computing.launch_auth_tag_gpu_va =
+        uvm_rm_mem_get_gpu_uvm_va(channel->conf_computing.static_pb_unprotected_sysmem, gpu) +
+        aligned_wlc_push_size + UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+
+    channel->conf_computing.static_pb_protected_sysmem = uvm_kvmalloc(UVM_MAX_WLC_PUSH_SIZE + UVM_PAGE_SIZE_4K);
+    if (!channel->conf_computing.static_pb_protected_sysmem)
+        return NV_ERR_NO_MEMORY;
+
+    return status;
+}
+
+static NV_STATUS alloc_conf_computing_buffers_lcic(uvm_channel_t *channel)
+{
+    uvm_gpu_t *gpu = channel->pool->manager->gpu;
+    const size_t notifier_size = sizeof(*channel->conf_computing.static_notifier_entry_unprotected_sysmem_cpu);
+    NV_STATUS status = uvm_rm_mem_alloc_and_map_cpu(gpu,
+                                                    UVM_RM_MEM_TYPE_SYS,
+                                                    notifier_size * 2,
+                                                    UVM_CONF_COMPUTING_BUF_ALIGNMENT,
+                                                    &channel->conf_computing.static_notifier_unprotected_sysmem);
+    if (status != NV_OK)
+        return status;
+
+    status = uvm_rm_mem_alloc(gpu,
+                              UVM_RM_MEM_TYPE_GPU,
+                              UVM_LCIC_PUSH_SIZE,
+                              UVM_CONF_COMPUTING_BUF_ALIGNMENT,
+                              &channel->conf_computing.static_pb_protected_vidmem);
+    if (status != NV_OK)
+        return status;
+
+    channel->conf_computing.static_notifier_entry_unprotected_sysmem_cpu =
+        uvm_rm_mem_get_cpu_va(channel->conf_computing.static_notifier_unprotected_sysmem);
+    channel->conf_computing.static_notifier_exit_unprotected_sysmem_cpu =
+        channel->conf_computing.static_notifier_entry_unprotected_sysmem_cpu + 1;
+
+    channel->conf_computing.static_notifier_entry_unprotected_sysmem_gpu_va =
+        uvm_rm_mem_get_gpu_va(channel->conf_computing.static_notifier_unprotected_sysmem, gpu, false);
+    channel->conf_computing.static_notifier_exit_unprotected_sysmem_gpu_va =
+        channel->conf_computing.static_notifier_entry_unprotected_sysmem_gpu_va;
+    channel->conf_computing.static_notifier_exit_unprotected_sysmem_gpu_va.address += notifier_size;
+
+    return status;
+}
+
+static NV_STATUS alloc_conf_computing_buffers(uvm_channel_t *channel)
+{
+    NV_STATUS status;
+
+    status  = alloc_conf_computing_buffers_semaphore(channel);
+    if (status != NV_OK)
+        return status;
+
+    if (uvm_channel_is_wlc(channel))
+        status = alloc_conf_computing_buffers_wlc(channel);
+    else if (uvm_channel_is_lcic(channel))
+        status = alloc_conf_computing_buffers_lcic(channel);
+
+    return status;
+}
+
 static void channel_destroy(uvm_channel_pool_t *pool, uvm_channel_t *channel)
 {
     UVM_ASSERT(pool->num_channels > 0);
@@ -780,6 +1739,12 @@ static void channel_destroy(uvm_channel_pool_t *pool, uvm_channel_t *channel)
 
     uvm_kvfree(channel->gpfifo_entries);
 
+    if (uvm_channel_is_secure(channel)) {
+        csl_destroy(channel);
+        if (uvm_channel_is_secure_ce(channel))
+            free_conf_computing_buffers(channel);
+    }
+
     if (uvm_channel_is_proxy(channel))
         uvm_rm_locked_call_void(nvUvmInterfacePagingChannelDestroy(channel->proxy.handle));
     else
@@ -793,7 +1758,56 @@ static void channel_destroy(uvm_channel_pool_t *pool, uvm_channel_t *channel)
     pool->num_channels--;
 }
 
-static NV_STATUS internal_channel_create(uvm_channel_t *channel, unsigned engine_index)
+static unsigned channel_pool_type_num_gpfifo_entries(uvm_channel_manager_t *manager, uvm_channel_pool_type_t pool_type)
+{
+    switch (pool_type) {
+        case UVM_CHANNEL_POOL_TYPE_CE:
+        case UVM_CHANNEL_POOL_TYPE_CE_PROXY:
+            return manager->conf.num_gpfifo_entries;
+        case UVM_CHANNEL_POOL_TYPE_SEC2:
+            return manager->conf.num_gpfifo_entries;
+        case UVM_CHANNEL_POOL_TYPE_WLC: {
+            // WLC benefits from larger number of entries since more available
+            // entries result in less frequent calls to
+            // uvm_channel_update_progress 16 is the maximum size that can
+            // re-use static pb preallocated memory when uploading the WLC
+            // schedule.
+            return 16;
+        }
+        case UVM_CHANNEL_POOL_TYPE_LCIC: {
+            // Every channel needs at least 3 entries; 1 for sentinel and 2 more
+            // for submitting GPFIFO control entries. The number also has to be
+            // power of 2, as the HW stores the size as log2 value.
+            // LCIC does not accept external pushes, uvm_channel_update_progress
+            // is not a concern.
+            return 4;
+        }
+        default:
+            UVM_ASSERT_MSG(0, "Unhandled pool type: %d", pool_type);
+            return 0;
+    }
+}
+
+// Returns the TSG for a given channel.
+static uvmGpuTsgHandle channel_get_tsg(uvm_channel_t *channel)
+{
+    unsigned tsg_index = 0;
+    uvm_channel_pool_t *pool = channel->pool;
+
+    if (uvm_channel_pool_is_wlc(pool) || uvm_channel_pool_is_lcic(pool)) {
+        if (uvm_channel_pool_is_lcic(pool)) {
+            channel = lcic_get_paired_wlc(channel);
+            pool = channel->pool;
+        }
+
+        tsg_index = uvm_channel_index_in_pool(channel);
+    }
+    UVM_ASSERT(tsg_index < pool->num_tsgs);
+
+    return pool->tsg_handles[tsg_index];
+}
+
+static NV_STATUS internal_channel_create(uvm_channel_t *channel)
 {
     NV_STATUS status;
     UvmGpuChannelAllocParams channel_alloc_params;
@@ -802,25 +1816,29 @@ static NV_STATUS internal_channel_create(uvm_channel_t *channel, unsigned engine
     uvm_gpu_t *gpu = manager->gpu;
 
     memset(&channel_alloc_params, 0, sizeof(channel_alloc_params));
-    channel_alloc_params.numGpFifoEntries = manager->conf.num_gpfifo_entries;
+    channel_alloc_params.numGpFifoEntries = channel_pool_type_num_gpfifo_entries(manager, channel->pool->pool_type);
     channel_alloc_params.gpFifoLoc = manager->conf.gpfifo_loc;
     channel_alloc_params.gpPutLoc = manager->conf.gpput_loc;
-    channel_alloc_params.engineIndex = engine_index;
 
-    if (uvm_channel_is_ce(channel)) {
-        UVM_ASSERT(channel->pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE);
+    if (uvm_channel_is_sec2(channel)) {
+        UVM_ASSERT(uvm_conf_computing_mode_enabled(gpu));
 
-        channel_alloc_params.engineType = UVM_GPU_CHANNEL_ENGINE_TYPE_CE;
+        // SEC2 channels' GPPUT and GPFIFO must be allocated in sysmem.
+        channel_alloc_params.gpFifoLoc = UVM_BUFFER_LOCATION_SYS;
+        channel_alloc_params.gpPutLoc = UVM_BUFFER_LOCATION_SYS;
     }
 
-    status = uvm_rm_locked_call(nvUvmInterfaceChannelAllocate(gpu->rm_address_space,
+    channel_alloc_params.secure = channel->pool->secure;
+
+    status = uvm_rm_locked_call(nvUvmInterfaceChannelAllocate(channel_get_tsg(channel),
                                                               &channel_alloc_params,
                                                               &channel->handle,
                                                               channel_info));
     if (status != NV_OK) {
-        UVM_ERR_PRINT("nvUvmInterfaceChannelAllocate() failed: %s, GPU %s\n",
+        UVM_ERR_PRINT("nvUvmInterfaceChannelAllocate() failed: %s, GPU %s, type %s\n",
                       nvstatusToString(status),
-                      uvm_gpu_name(gpu));
+                      uvm_gpu_name(gpu),
+                      uvm_channel_pool_type_to_string(channel->pool->pool_type));
         return status;
     }
 
@@ -831,8 +1849,11 @@ static NV_STATUS internal_channel_create(uvm_channel_t *channel, unsigned engine
              channel_info->hwChannelId,
              channel_info->hwRunlistId,
              channel_info->hwChannelId,
-             "CE",
-             engine_index);
+             uvm_channel_is_sec2(channel) ? "SEC2" :
+             uvm_channel_is_wlc(channel) ? "WLC" :
+             uvm_channel_is_lcic(channel) ? "LCIC" :
+             uvm_channel_is_secure(channel) ? "CE (secure)" : "CE",
+             channel->pool->engine_index);
 
     return NV_OK;
 }
@@ -872,6 +1893,7 @@ static NV_STATUS channel_create(uvm_channel_pool_t *pool, uvm_channel_t *channel
     NV_STATUS status;
     uvm_channel_manager_t *manager = pool->manager;
     uvm_gpu_t *gpu = manager->gpu;
+    uvm_gpu_semaphore_pool_t *semaphore_pool = gpu->semaphore_pool;
     unsigned int i;
 
     UVM_ASSERT(channel != NULL);
@@ -882,7 +1904,10 @@ static NV_STATUS channel_create(uvm_channel_pool_t *pool, uvm_channel_t *channel
     channel->tools.pending_event_count = 0;
     INIT_LIST_HEAD(&channel->tools.channel_list_node);
 
-    status = uvm_gpu_tracking_semaphore_alloc(gpu->semaphore_pool, &channel->tracking_sem);
+    if (uvm_conf_computing_mode_enabled(gpu) && !uvm_channel_is_sec2(channel))
+        semaphore_pool = gpu->secure_semaphore_pool;
+
+    status = uvm_gpu_tracking_semaphore_alloc(semaphore_pool, &channel->tracking_sem);
     if (status != NV_OK) {
         UVM_ERR_PRINT("uvm_gpu_tracking_semaphore_alloc() failed: %s, GPU %s\n",
                       nvstatusToString(status),
@@ -893,16 +1918,30 @@ static NV_STATUS channel_create(uvm_channel_pool_t *pool, uvm_channel_t *channel
      if (uvm_channel_is_proxy(channel))
          status = proxy_channel_create(channel, pool->engine_index);
      else
-         status = internal_channel_create(channel, pool->engine_index);
+         status = internal_channel_create(channel);
 
      if (status != NV_OK)
          goto error;
 
-    channel->num_gpfifo_entries = manager->conf.num_gpfifo_entries;
+    channel->num_gpfifo_entries = channel_pool_type_num_gpfifo_entries(manager, pool->pool_type);
     channel->gpfifo_entries = uvm_kvmalloc_zero(sizeof(*channel->gpfifo_entries) * channel->num_gpfifo_entries);
     if (channel->gpfifo_entries == NULL) {
         status = NV_ERR_NO_MEMORY;
         goto error;
+    }
+
+    if (uvm_channel_is_secure(channel)) {
+        status = csl_init(channel);
+        if (status != NV_OK)
+            goto error;
+
+        if (uvm_channel_is_ce(channel)) {
+            // Must happen after the channel's num_gpfifo_entries is known, as
+            // UVM needs one IV slot per GPFIFO entry.
+            status = alloc_conf_computing_buffers(channel);
+            if (status != NV_OK)
+                goto error;
+        }
     }
 
     channel->push_infos = uvm_kvmalloc_zero(sizeof(*channel->push_infos) * channel->num_gpfifo_entries);
@@ -960,8 +1999,14 @@ static NV_STATUS channel_init(uvm_channel_t *channel)
     if (uvm_gpu_has_pushbuffer_segments(gpu)) {
         NvU64 gpfifo_entry;
         uvm_pushbuffer_t *pushbuffer = channel->pool->manager->pushbuffer;
-        gpu->parent->host_hal->set_gpfifo_pushbuffer_segment_base(&gpfifo_entry,
-                                                                  uvm_pushbuffer_get_gpu_va_base(pushbuffer));
+        NvU64 pb_base = uvm_pushbuffer_get_gpu_va_base(pushbuffer);
+
+        if (uvm_channel_is_sec2(channel))
+            pb_base = uvm_pushbuffer_get_sec2_gpu_va_base(pushbuffer);
+        else if (channel->conf_computing.static_pb_protected_vidmem)
+            pb_base = uvm_rm_mem_get_gpu_uvm_va(channel->conf_computing.static_pb_protected_vidmem, gpu);
+
+        gpu->parent->host_hal->set_gpfifo_pushbuffer_segment_base(&gpfifo_entry, pb_base);
         write_ctrl_gpfifo(channel, gpfifo_entry);
     }
 
@@ -973,12 +2018,20 @@ static NV_STATUS channel_init(uvm_channel_t *channel)
 
     if (uvm_channel_is_ce(channel))
         gpu->parent->ce_hal->init(&push);
+    else if (uvm_channel_is_sec2(channel))
+        gpu->parent->sec2_hal->init(&push);
+    else
+        UVM_ASSERT_MSG(0, "Unknown channel type!");
 
     gpu->parent->host_hal->init(&push);
 
     status = uvm_push_end_and_wait(&push);
-    if (status != NV_OK)
-        UVM_ERR_PRINT("Channel init failed: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("Channel '%s' init failed: %s, GPU %s\n",
+                      channel->name,
+                      nvstatusToString(status),
+                      uvm_gpu_name(gpu));
+    }
 
     return status;
 }
@@ -998,7 +2051,77 @@ static unsigned channel_pool_type_num_channels(uvm_channel_pool_type_t pool_type
     if (pool_type == UVM_CHANNEL_POOL_TYPE_CE_PROXY)
         return 1;
 
+    // Not all GPU architectures support more than 1 channel per TSG. Since SEC2
+    // is not in UVM critical path for performance, we conservatively create a
+    // pool/TSG with a single channel.
+    if (pool_type == UVM_CHANNEL_POOL_TYPE_SEC2)
+        return 1;
+
+    if (pool_type == UVM_CHANNEL_POOL_TYPE_WLC || pool_type == UVM_CHANNEL_POOL_TYPE_LCIC)
+        return UVM_PUSH_MAX_CONCURRENT_PUSHES;
+
     return 2;
+}
+
+// Number of TSGs to create in a pool of a given type.
+static unsigned channel_pool_type_num_tsgs(uvm_channel_pool_type_t pool_type)
+{
+    // For WLC and LCIC channels, we create one TSG per WLC/LCIC channel pair.
+    // The TSG is stored in the WLC pool.
+    if (pool_type == UVM_CHANNEL_POOL_TYPE_WLC)
+        return channel_pool_type_num_channels(pool_type);
+    else if (pool_type == UVM_CHANNEL_POOL_TYPE_LCIC)
+        return 0;
+
+    return 1;
+}
+
+static bool pool_type_is_valid(uvm_channel_pool_type_t pool_type)
+{
+    return(is_power_of_2(pool_type) && (pool_type < UVM_CHANNEL_POOL_TYPE_MASK));
+}
+
+static UVM_GPU_CHANNEL_ENGINE_TYPE pool_type_to_engine_type(uvm_channel_pool_type_t pool_type)
+{
+    if (pool_type ==  UVM_CHANNEL_POOL_TYPE_SEC2)
+        return UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2;
+    return UVM_GPU_CHANNEL_ENGINE_TYPE_CE;
+}
+
+static void tsg_destroy(uvm_channel_pool_t *pool, uvmGpuTsgHandle tsg_handle)
+{
+    UVM_ASSERT(pool->num_tsgs > 0);
+
+    uvm_rm_locked_call_void(nvUvmInterfaceTsgDestroy(tsg_handle));
+    pool->num_tsgs--;
+}
+
+static NV_STATUS tsg_create(uvm_channel_pool_t *pool, uvmGpuTsgHandle *tsg_handle)
+{
+    NV_STATUS status;
+    UvmGpuTsgAllocParams tsg_alloc_params;
+    uvm_gpu_t *gpu = pool->manager->gpu;
+
+    pool->num_tsgs++;
+
+    tsg_alloc_params.engineType = pool_type_to_engine_type(pool->pool_type);
+    tsg_alloc_params.engineIndex = pool->engine_index;
+
+    status = uvm_rm_locked_call(nvUvmInterfaceTsgAllocate(gpu->rm_address_space, &tsg_alloc_params, tsg_handle));
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("nvUvmInterfaceTsgAllocate() failed: %s, GPU %s, type %s\n",
+                      nvstatusToString(status),
+                      uvm_gpu_name(gpu),
+                      uvm_channel_pool_type_to_string(pool->pool_type));
+        goto error;
+    }
+
+    return NV_OK;
+
+error:
+    tsg_destroy(pool, *tsg_handle);
+
+    return status;
 }
 
 static void channel_pool_destroy(uvm_channel_pool_t *pool)
@@ -1007,8 +2130,14 @@ static void channel_pool_destroy(uvm_channel_pool_t *pool)
 
     while (pool->num_channels > 0)
         channel_destroy(pool, pool->channels + pool->num_channels - 1);
-
     uvm_kvfree(pool->channels);
+    pool->channels = NULL;
+
+    while (pool->num_tsgs > 0)
+        tsg_destroy(pool, *(pool->tsg_handles + pool->num_tsgs - 1));
+    uvm_kvfree(pool->tsg_handles);
+    pool->tsg_handles = NULL;
+
     pool->manager->num_channel_pools--;
 }
 
@@ -1020,23 +2149,56 @@ static NV_STATUS channel_pool_add(uvm_channel_manager_t *channel_manager,
     NV_STATUS status;
     unsigned i;
     unsigned num_channels;
+    unsigned num_tsgs;
     uvm_channel_pool_t *pool;
 
+    UVM_ASSERT(pool_type_is_valid(pool_type));
+
     pool = channel_manager->channel_pools + channel_manager->num_channel_pools;
+    channel_manager->num_channel_pools++;
+
     pool->manager = channel_manager;
     pool->engine_index = engine_index;
     pool->pool_type = pool_type;
+
+    num_tsgs = channel_pool_type_num_tsgs(pool_type);
+    if (num_tsgs != 0) {
+        pool->tsg_handles = uvm_kvmalloc_zero(sizeof(*pool->tsg_handles) * num_tsgs);
+        if (!pool->tsg_handles) {
+            status = NV_ERR_NO_MEMORY;
+            goto error;
+        }
+
+        for (i = 0; i < num_tsgs; i++) {
+            uvmGpuTsgHandle *tsg_handle = pool->tsg_handles + i;
+
+            status = tsg_create(pool, tsg_handle);
+            if (status != NV_OK)
+                goto error;
+        }
+    }
 
     channel_pool_lock_init(pool);
 
     num_channels = channel_pool_type_num_channels(pool_type);
     UVM_ASSERT(num_channels <= UVM_CHANNEL_MAX_NUM_CHANNELS_PER_POOL);
 
-    pool->channels = uvm_kvmalloc_zero(sizeof(*pool->channels) * num_channels);
-    if (!pool->channels)
-        return NV_ERR_NO_MEMORY;
+    if (pool->secure) {
+        // Use different order lock for SEC2 and WLC channels.
+        // This allows reserving a SEC2 or WLC channel for indirect work
+        // submission while holding a reservation for a secure channel.
+        uvm_lock_order_t order = uvm_channel_pool_is_sec2(pool) ? UVM_LOCK_ORDER_CSL_SEC2_PUSH :
+                                 (uvm_channel_pool_is_wlc(pool) ? UVM_LOCK_ORDER_CSL_WLC_PUSH :
+                                                                  UVM_LOCK_ORDER_CSL_PUSH);
 
-    channel_manager->num_channel_pools++;
+        uvm_sema_init(&pool->push_sem, num_channels, order);
+    }
+
+    pool->channels = uvm_kvmalloc_zero(sizeof(*pool->channels) * num_channels);
+    if (!pool->channels) {
+        status = NV_ERR_NO_MEMORY;
+        goto error;
+    }
 
     for (i = 0; i < num_channels; i++) {
         uvm_channel_t *channel = pool->channels + i;
@@ -1056,6 +2218,23 @@ static NV_STATUS channel_pool_add(uvm_channel_manager_t *channel_manager,
  error:
     channel_pool_destroy(pool);
     return status;
+}
+
+static NV_STATUS channel_pool_add_secure(uvm_channel_manager_t *channel_manager,
+                                         uvm_channel_pool_type_t pool_type,
+                                         unsigned engine_index,
+                                         uvm_channel_pool_t **pool_out)
+{
+    uvm_channel_pool_t *pool = channel_manager->channel_pools + channel_manager->num_channel_pools;
+
+    pool->secure = true;
+    return channel_pool_add(channel_manager, pool_type, engine_index, pool_out);
+}
+
+bool uvm_channel_type_requires_secure_pool(uvm_gpu_t *gpu, uvm_channel_type_t channel_type)
+{
+    // For now, all channels are secure channels
+    return true;
 }
 
 static bool ce_usable_for_channel_type(uvm_channel_type_t type, const UvmGpuCopyEngineCaps *cap)
@@ -1205,6 +2384,13 @@ static NV_STATUS pick_ce_for_channel_type(uvm_channel_manager_t *manager,
         if (!ce_usable_for_channel_type(type, cap))
             continue;
 
+        if (uvm_conf_computing_mode_is_hcc(manager->gpu)) {
+            // All usable CEs are secure
+            UVM_ASSERT(cap->secure);
+
+            // Multi-PCE LCEs are disallowed
+            UVM_ASSERT(hweight32(cap->cePceMask) == 1);
+        }
         __set_bit(i, manager->ce_mask);
 
         if (best_ce == UVM_COPY_ENGINE_COUNT_MAX) {
@@ -1229,32 +2415,38 @@ static NV_STATUS channel_manager_pick_copy_engines(uvm_channel_manager_t *manage
 {
     NV_STATUS status;
     unsigned i;
-    UvmGpuCopyEnginesCaps ces_caps;
+    UvmGpuCopyEnginesCaps *ces_caps;
     uvm_channel_type_t types[] = {UVM_CHANNEL_TYPE_CPU_TO_GPU,
                                   UVM_CHANNEL_TYPE_GPU_TO_CPU,
                                   UVM_CHANNEL_TYPE_GPU_INTERNAL,
                                   UVM_CHANNEL_TYPE_GPU_TO_GPU,
                                   UVM_CHANNEL_TYPE_MEMOPS};
 
-    memset(&ces_caps, 0, sizeof(ces_caps));
-    status = uvm_rm_locked_call(nvUvmInterfaceQueryCopyEnginesCaps(uvm_gpu_device_handle(manager->gpu), &ces_caps));
+    ces_caps = uvm_kvmalloc_zero(sizeof(*ces_caps));
+    if (!ces_caps)
+        return NV_ERR_NO_MEMORY;
+
+    status = uvm_rm_locked_call(nvUvmInterfaceQueryCopyEnginesCaps(uvm_gpu_device_handle(manager->gpu), ces_caps));
     if (status != NV_OK)
-        return status;
+        goto out;
 
    // The order of picking CEs for each type matters as it's affected by the
    // usage count of each CE and it increases every time a CE is selected.
    // MEMOPS has the least priority as it only cares about low usage of the
    // CE to improve latency
     for (i = 0; i < ARRAY_SIZE(types); ++i) {
-        status = pick_ce_for_channel_type(manager, ces_caps.copyEngineCaps, types[i], preferred_ce);
+        status = pick_ce_for_channel_type(manager, ces_caps->copyEngineCaps, types[i], preferred_ce);
         if (status != NV_OK)
-            return status;
+            goto out;
     }
 
-    return NV_OK;
+out:
+    uvm_kvfree(ces_caps);
+
+    return status;
 }
 
-// Return the pool corresponding to the given CE index
+// Return the non-secure pool corresponding to the given CE index
 //
 // This function cannot be used to access the proxy pool in SR-IOV heavy.
 static uvm_channel_pool_t *channel_manager_ce_pool(uvm_channel_manager_t *manager, NvU32 ce)
@@ -1342,6 +2534,28 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
 
     // 2- Allocation locations
 
+    if (uvm_conf_computing_mode_is_hcc(gpu)) {
+        UVM_ASSERT(gpu->mem_info.size > 0);
+
+        // When the Confidential Computing feature is enabled, the GPU is
+        // guaranteed to have a frame buffer and the hardware enforces the
+        // following apertures for all channel types but SEC2. We create SEC2
+        // channels by overriding their GPPUT and GPFIFO locations and ignoring
+        // the location from the channel manager. SEC2 channels are used to
+        // bootstrap secure work submission. To setup secure work launch, data
+        // transfers from unprotected main memory to protected vidmem are
+        // performed by the SEC2 engine and the driver must push work to SEC2
+        // channels using unprotected locations.
+        manager->conf.gpfifo_loc     = UVM_BUFFER_LOCATION_VID;
+        manager->conf.gpput_loc      = UVM_BUFFER_LOCATION_VID;
+
+        // Pushbuffer is located in unprotected sysmem. This is the location
+        // that gets mapped to both CPU and GPU. It is populated either by
+        // signed pushes (SEC2 channels), or encrypted pushes (CE channels).
+        manager->conf.pushbuffer_loc = UVM_BUFFER_LOCATION_SYS;
+        return;
+    }
+
     // Override if the GPU doesn't have memory
     if (gpu->mem_info.size == 0) {
         manager->conf.pushbuffer_loc = UVM_BUFFER_LOCATION_SYS;
@@ -1406,16 +2620,20 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
                 gpput_loc_value);
     }
 
-    // By default we place GPFIFO and GPPUT on vidmem as it potentially has
-    // lower latency.
-    manager->conf.gpfifo_loc = UVM_BUFFER_LOCATION_VID;
-    manager->conf.gpput_loc = UVM_BUFFER_LOCATION_VID;
-
-    // TODO: Bug 1766129: However, this will likely be different on P9 systems.
-    // Leaving GPFIFO on sysmem for now. GPPut on sysmem is not supported in
-    // production, so we keep it on vidmem, too.
-    if (gpu->parent->sysmem_link >= UVM_GPU_LINK_NVLINK_2)
+    // On coherent platforms where the GPU does not cache sysmem but the CPU
+    // caches vidmem (and sysmem), we place GPFIFO and GPPUT on sysmem to avoid
+    // cache thrash. The memory access latency is reduced, despite the required
+    // access through the bus, because no cache coherence message is exchanged.
+    if (uvm_gpu_is_coherent(gpu->parent)) {
         manager->conf.gpfifo_loc = UVM_BUFFER_LOCATION_SYS;
+        manager->conf.gpput_loc = UVM_BUFFER_LOCATION_SYS;
+    }
+    else {
+        // By default we place GPFIFO and GPPUT on vidmem as it potentially has
+        // lower latency.
+        manager->conf.gpfifo_loc = UVM_BUFFER_LOCATION_VID;
+        manager->conf.gpput_loc = UVM_BUFFER_LOCATION_VID;
+    }
 
     // Override defaults
     if (string_to_buffer_location(gpfifo_loc_value) != UVM_BUFFER_LOCATION_DEFAULT)
@@ -1440,6 +2658,16 @@ static unsigned channel_manager_get_max_pools(uvm_channel_manager_t *manager)
     if (uvm_gpu_uses_proxy_channel_pool(manager->gpu))
         num_channel_pools++;
 
+    if (uvm_conf_computing_mode_enabled(manager->gpu)) {
+
+        // Create one CE secure channel pool per usable CE
+        if (uvm_conf_computing_mode_is_hcc(manager->gpu))
+            num_channel_pools += num_used_ce;
+
+        // SEC2 pool, WLC pool, LCIC pool
+        num_channel_pools += 3;
+    }
+
     return num_channel_pools;
 }
 
@@ -1461,9 +2689,369 @@ static NV_STATUS channel_manager_create_ce_pools(uvm_channel_manager_t *manager,
             return status;
 
         for (type = 0; type < UVM_CHANNEL_TYPE_CE_COUNT; type++) {
-            if (preferred_ce[type] == ce)
+            // Set pool type if it hasn't been set before.
+            if (preferred_ce[type] == ce && manager->pool_to_use.default_for_type[type] == NULL)
                 manager->pool_to_use.default_for_type[type] = pool;
         }
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS channel_manager_create_ce_secure_pools(uvm_channel_manager_t *manager, unsigned *preferred_ce)
+{
+    unsigned ce;
+
+    if (!uvm_conf_computing_mode_is_hcc(manager->gpu))
+        return NV_OK;
+
+    for_each_set_bit(ce, manager->ce_mask, UVM_COPY_ENGINE_COUNT_MAX) {
+        NV_STATUS status;
+        unsigned type;
+        uvm_channel_pool_t *pool = NULL;
+
+        status = channel_pool_add_secure(manager, UVM_CHANNEL_POOL_TYPE_CE, ce, &pool);
+        if (status != NV_OK)
+            return status;
+
+        for (type = 0; type < UVM_CHANNEL_TYPE_CE_COUNT; type++) {
+            unsigned preferred = preferred_ce[type];
+
+            if (preferred != ce)
+                continue;
+
+            if (uvm_channel_type_requires_secure_pool(manager->gpu, type)) {
+                UVM_ASSERT(manager->pool_to_use.default_for_type[type] == NULL);
+                manager->pool_to_use.default_for_type[type] = pool;
+            }
+        }
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS setup_wlc_schedule(uvm_channel_t *wlc)
+{
+    uvm_gpu_t *gpu = uvm_channel_get_gpu(wlc);
+    NvU64 protected_vidmem = uvm_rm_mem_get_gpu_uvm_va(wlc->conf_computing.static_pb_protected_vidmem, gpu);
+    NvU64 unprotected_sysmem_gpu = uvm_rm_mem_get_gpu_uvm_va(wlc->conf_computing.static_pb_unprotected_sysmem, gpu);
+    void *unprotected_sysmem_cpu = wlc->conf_computing.static_pb_unprotected_sysmem_cpu;
+    NvU64 tag_offset = (uintptr_t)wlc->conf_computing.static_pb_unprotected_sysmem_auth_tag_cpu -
+                       (uintptr_t)wlc->conf_computing.static_pb_unprotected_sysmem_cpu;
+
+    NvU64 *wlc_gpfifo_entries;
+    uvm_push_t wlc_decrypt_push, sec2_push;
+    NvU32 decrypt_push_size;
+    int i;
+    NV_STATUS status = NV_OK;
+
+    // "gpfifo" is the representation of GPFIFO copied to gpFifoGpu
+    const size_t gpfifo_size = wlc->num_gpfifo_entries * sizeof(*wlc_gpfifo_entries);
+    void *gpfifo_unprotected_cpu = unprotected_sysmem_cpu;
+    NvU64 gpfifo_unprotected_gpu = unprotected_sysmem_gpu;
+
+    // "run_push" represents mutable push location used by WLC
+    uvm_gpu_address_t run_push_protected_gpu = uvm_gpu_address_virtual(protected_vidmem);
+    uvm_gpu_address_t run_push_unprotected_gpu = uvm_gpu_address_virtual(unprotected_sysmem_gpu);
+    uvm_gpu_address_t run_push_unprotected_auth_tag_gpu = uvm_gpu_address_virtual(unprotected_sysmem_gpu + tag_offset);
+
+    // "decrypt_push" represents WLC decrypt push, constructed using fake_push.
+    // Copied to wlc_pb_base + UVM_MAX_WLC_PUSH_SIZE, as the second of the two
+    // pushes that make the WLC fixed schedule.
+    NvU64 decrypt_push_protected_gpu = UVM_ALIGN_UP(protected_vidmem + UVM_MAX_WLC_PUSH_SIZE, UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT);
+    NvU64 decrypt_push_unprotected_gpu = unprotected_sysmem_gpu + gpfifo_size;
+    void *decrypt_push_unprotected_cpu = (char*)gpfifo_unprotected_cpu + gpfifo_size;
+
+    // Tags for upload via SEC2
+    void *decrypt_push_auth_tag, *gpfifo_auth_tag;
+    uvm_gpu_address_t decrypt_push_auth_tag_gpu, gpfifo_auth_tag_gpu;
+
+    BUILD_BUG_ON(sizeof(*wlc_gpfifo_entries) != sizeof(*wlc->channel_info.gpFifoEntries));
+
+    UVM_ASSERT(uvm_channel_is_wlc(wlc));
+    UVM_ASSERT(tag_offset == UVM_ALIGN_UP(UVM_MAX_WLC_PUSH_SIZE, UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT));
+
+    // WLC schedule consists of two parts, the number of entries needs to be even.
+    // This also guarantees that the size is 16B aligned
+    UVM_ASSERT(IS_ALIGNED(wlc->num_gpfifo_entries, 2));
+
+    wlc_gpfifo_entries = uvm_kvmalloc(gpfifo_size);
+    if (!wlc_gpfifo_entries)
+        return NV_ERR_NO_MEMORY;
+
+    // WLC can only process one job at a time.
+    // Prune any initialization entries and block all but one (+1 for sentinel)
+    uvm_channel_update_progress(wlc);
+    if (!try_claim_channel(wlc, wlc->num_gpfifo_entries - 2)) {
+        status = NV_ERR_INVALID_STATE;
+        goto free_gpfifo_entries;
+    }
+
+    // WLC schedule has two steps:
+    // 1.) Decrypt from gpu_unprotected_base to wlc_pb_base
+    //     Increment LCIC PUT
+    // 2.) Execute push at wlc_pb_base
+    // The first one is a push, the second one is just a GPFIFO entry
+    status = uvm_push_begin_fake(gpu, &wlc_decrypt_push);
+    if (status != NV_OK)
+        goto free_gpfifo_entries;
+
+    // Begin WLC DECRYPT push
+    uvm_push_set_flag(&wlc_decrypt_push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
+    gpu->parent->ce_hal->decrypt(&wlc_decrypt_push,
+                                 run_push_protected_gpu,
+                                 run_push_unprotected_gpu,
+                                 UVM_MAX_WLC_PUSH_SIZE,
+                                 run_push_unprotected_auth_tag_gpu);
+    uvm_hal_wfi_membar(&wlc_decrypt_push, UVM_MEMBAR_NONE);
+    decrypt_push_size = uvm_push_get_size(&wlc_decrypt_push);
+
+    // The code below reuses static unprotected sysmem buffer as a temporary
+    // storage for uploading the schedule. Check that everything fits.
+    UVM_ASSERT(gpfifo_size + decrypt_push_size <= UVM_MAX_WLC_PUSH_SIZE);
+
+    // GPFIFO schedule should alternate between the decrypt routine
+    // we don't know if initialization used even or odd number of
+    // GPFIFO entries so the exact pattern depends on the value of "PUT"
+    for (i = 0; i < wlc->num_gpfifo_entries; ++i) {
+        if (i % 2 == wlc->cpu_put % 2) {
+            gpu->parent->host_hal->set_gpfifo_entry(wlc_gpfifo_entries + i,
+                                                    decrypt_push_protected_gpu,
+                                                    decrypt_push_size,
+                                                    UVM_GPFIFO_SYNC_PROCEED);
+        }
+        else {
+            gpu->parent->host_hal->set_gpfifo_entry(wlc_gpfifo_entries + i,
+                                                    run_push_protected_gpu.address,
+                                                    UVM_MAX_WLC_PUSH_SIZE,
+                                                    UVM_GPFIFO_SYNC_WAIT);
+        }
+    }
+
+    // The schedule is prepared. Upload to vidmem
+    status = uvm_push_begin(wlc->pool->manager,
+                            UVM_CHANNEL_TYPE_SEC2,
+                            &sec2_push,
+                            "Upload WLC schedule for: %s", wlc->name);
+    if (status != NV_OK)
+        goto end_wlc_dec_push;
+
+    decrypt_push_auth_tag = uvm_push_get_single_inline_buffer(&sec2_push,
+                                                              UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                                              UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT,
+                                                              &decrypt_push_auth_tag_gpu);
+
+    gpfifo_auth_tag = uvm_push_get_single_inline_buffer(&sec2_push,
+                                                        UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                                        UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT,
+                                                        &gpfifo_auth_tag_gpu);
+
+    // Upload WLC pushbuffer
+    uvm_conf_computing_cpu_encrypt(sec2_push.channel,
+                                   decrypt_push_unprotected_cpu,
+                                   wlc_decrypt_push.begin,
+                                   NULL,
+                                   decrypt_push_size,
+                                   decrypt_push_auth_tag);
+    gpu->parent->sec2_hal->decrypt(&sec2_push,
+                                   decrypt_push_protected_gpu,
+                                   decrypt_push_unprotected_gpu,
+                                   decrypt_push_size,
+                                   decrypt_push_auth_tag_gpu.address);
+
+    // Upload WLC GPFIFO
+    uvm_conf_computing_cpu_encrypt(sec2_push.channel,
+                                   gpfifo_unprotected_cpu,
+                                   wlc_gpfifo_entries,
+                                   NULL,
+                                   gpfifo_size,
+                                   gpfifo_auth_tag);
+    gpu->parent->sec2_hal->decrypt(&sec2_push,
+                                   wlc->channel_info.gpFifoGpuVa,
+                                   gpfifo_unprotected_gpu,
+                                   gpfifo_size,
+                                   gpfifo_auth_tag_gpu.address);
+
+    // Prime the WLC by setting "PUT" two steps ahead. Reuse the current
+    // cpu_put value that was used during channel initialization.
+    // Don't update wlc->cpu_put, it will be used to track submitted pushes
+    // as any other channel.
+    update_gpput_via_sec2(&sec2_push, wlc, (wlc->cpu_put + 2) % wlc->num_gpfifo_entries);
+
+    status = uvm_push_end_and_wait(&sec2_push);
+
+end_wlc_dec_push:
+    uvm_push_end_fake(&wlc_decrypt_push);
+free_gpfifo_entries:
+    uvm_kvfree(wlc_gpfifo_entries);
+    return status;
+}
+
+static NV_STATUS setup_lcic_schedule(uvm_channel_t *paired_wlc, uvm_channel_t *lcic)
+{
+    uvm_gpu_t *gpu = uvm_channel_get_gpu(lcic);
+    NvU64 lcic_pb_base = uvm_rm_mem_get_gpu_uvm_va(lcic->conf_computing.static_pb_protected_vidmem, gpu);
+
+    // Reuse WLC sysmem allocation
+    NvU64 gpu_unprotected = uvm_rm_mem_get_gpu_uvm_va(paired_wlc->conf_computing.static_pb_unprotected_sysmem, gpu);
+    char *cpu_unprotected = paired_wlc->conf_computing.static_pb_unprotected_sysmem_cpu;
+    uvm_gpu_semaphore_t *lcic_gpu_semaphore = &lcic->tracking_sem.semaphore;
+    uvm_gpu_address_t notifier_src_entry_addr = lcic->conf_computing.static_notifier_entry_unprotected_sysmem_gpu_va;
+    uvm_gpu_address_t notifier_src_exit_addr = lcic->conf_computing.static_notifier_exit_unprotected_sysmem_gpu_va;
+    uvm_gpu_address_t notifier_dst_addr = uvm_rm_mem_get_gpu_va(lcic_gpu_semaphore->conf_computing.notifier,
+                                                                gpu,
+                                                                false);
+    uvm_gpu_address_t encrypted_payload_gpu_va =
+        uvm_rm_mem_get_gpu_va(lcic_gpu_semaphore->conf_computing.encrypted_payload, gpu, false);
+    uvm_gpu_address_t semaphore_gpu_va = uvm_gpu_address_virtual(uvm_channel_tracking_semaphore_get_gpu_va(lcic));
+    uvm_gpu_address_t auth_tag_gpu_va = uvm_rm_mem_get_gpu_va(lcic_gpu_semaphore->conf_computing.auth_tag, gpu, false);
+    NvU32 payload_size = sizeof(*lcic->tracking_sem.semaphore.payload);
+    NvU32 notifier_size = sizeof(*lcic->conf_computing.static_notifier_entry_unprotected_sysmem_cpu);
+
+    NvU64 *lcic_gpfifo_entries;
+    uvm_push_t lcic_push, sec2_push;
+    NvU32 lcic_push_size;
+    int i;
+    NV_STATUS status;
+
+    const size_t gpfifo_size = lcic->num_gpfifo_entries * sizeof(*lcic_gpfifo_entries);
+    char *gpfifo_unprotected_cpu = cpu_unprotected;
+    NvU64 gpfifo_unprotected_gpu = gpu_unprotected;
+    char *lcic_push_unprotected_cpu = gpfifo_unprotected_cpu + gpfifo_size;
+    NvU64 lcic_push_unprotected_gpu = gpfifo_unprotected_gpu + gpfifo_size;
+    NvU64 lcic_push_protected_gpu = lcic_pb_base;
+
+    char *lcic_push_enc_tag, *gpfifo_enc_tag;
+    uvm_gpu_address_t lcic_push_enc_tag_gpu, gpfifo_enc_tag_gpu;
+
+    BUILD_BUG_ON(sizeof(*lcic_gpfifo_entries) != sizeof(*lcic->channel_info.gpFifoEntries));
+
+    UVM_ASSERT(uvm_channel_is_wlc(paired_wlc));
+    UVM_ASSERT(uvm_channel_is_lcic(lcic));
+
+    lcic_gpfifo_entries = uvm_kvmalloc(gpfifo_size);
+    if (!lcic_gpfifo_entries)
+        return NV_ERR_NO_MEMORY;
+
+    // LCIC can not process outside jobs.
+    // Prune any initialization entries and
+    // block all gpfifo entries (-1 for sentinel)
+    uvm_channel_update_progress(lcic);
+    if (!try_claim_channel(lcic, lcic->num_gpfifo_entries - 1)) {
+        status = NV_ERR_INVALID_STATE;
+        goto free_gpfifo_entries;
+    }
+
+    status = uvm_push_begin_fake(gpu, &lcic_push);
+    if (status != NV_OK)
+        goto free_gpfifo_entries;
+
+    // LCIC schedule is simple:
+    // 1.) wait for engine idle
+    // 2.) advance the WLC PUT by 2
+    // 3.) release driver semaphore
+    uvm_hal_wfi_membar(&lcic_push, UVM_MEMBAR_NONE);
+    gpu->parent->ce_hal->semaphore_reduction_inc(&lcic_push,
+                                                 paired_wlc->channel_info.gpPutGpuVa,
+                                                 paired_wlc->num_gpfifo_entries - 1);
+    gpu->parent->ce_hal->semaphore_reduction_inc(&lcic_push,
+                                                 paired_wlc->channel_info.gpPutGpuVa,
+                                                 paired_wlc->num_gpfifo_entries - 1);
+    gpu->parent->ce_hal->semaphore_reduction_inc(&lcic_push,
+                                                 semaphore_gpu_va.address,
+                                                 0xffffffff);
+
+    gpu->parent->ce_hal->memcopy(&lcic_push, notifier_dst_addr, notifier_src_entry_addr, notifier_size);
+    gpu->parent->ce_hal->encrypt(&lcic_push, encrypted_payload_gpu_va, semaphore_gpu_va, payload_size, auth_tag_gpu_va);
+    gpu->parent->ce_hal->memcopy(&lcic_push, notifier_dst_addr, notifier_src_exit_addr, notifier_size);
+
+    // End LCIC push
+    lcic_push_size = uvm_push_get_size(&lcic_push);
+
+    // We're reusing pre-allocated structures from WLC, make sure we fit.
+    UVM_ASSERT(lcic_push_size == UVM_LCIC_PUSH_SIZE);
+    UVM_ASSERT(lcic_push_size + gpfifo_size <= UVM_MAX_WLC_PUSH_SIZE);
+
+    // Set all entries to execute the above push
+    for (i = 0; i < lcic->num_gpfifo_entries; ++i)
+        gpu->parent->host_hal->set_gpfifo_entry(lcic_gpfifo_entries + i,
+                                                lcic_push_protected_gpu,
+                                                lcic_push_size,
+                                                UVM_GPFIFO_SYNC_PROCEED);
+
+    // Upload the prepared schedule using SEC2
+    status = uvm_push_begin(lcic->pool->manager,
+                            UVM_CHANNEL_TYPE_SEC2,
+                            &sec2_push,
+                            "Upload LCIC schedule for: %s", lcic->name);
+    if (status != NV_OK)
+        goto end_lcic_push;
+
+    lcic_push_enc_tag = uvm_push_get_single_inline_buffer(&sec2_push,
+                                                          UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                                          UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT,
+                                                          &lcic_push_enc_tag_gpu);
+
+    gpfifo_enc_tag = uvm_push_get_single_inline_buffer(&sec2_push,
+                                                       UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                                       UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT,
+                                                       &gpfifo_enc_tag_gpu);
+
+    // Upload LCIC pushbuffer
+    uvm_conf_computing_cpu_encrypt(sec2_push.channel,
+                                   lcic_push_unprotected_cpu,
+                                   lcic_push.begin,
+                                   NULL,
+                                   lcic_push_size,
+                                   lcic_push_enc_tag);
+    gpu->parent->sec2_hal->decrypt(&sec2_push,
+                                   lcic_push_protected_gpu,
+                                   lcic_push_unprotected_gpu,
+                                   lcic_push_size,
+                                   lcic_push_enc_tag_gpu.address);
+
+    // Upload LCIC GPFIFO
+    uvm_conf_computing_cpu_encrypt(sec2_push.channel,
+                                   gpfifo_unprotected_cpu,
+                                   lcic_gpfifo_entries,
+                                   NULL,
+                                   gpfifo_size,
+                                   gpfifo_enc_tag);
+    gpu->parent->sec2_hal->decrypt(&sec2_push,
+                                   lcic->channel_info.gpFifoGpuVa,
+                                   gpfifo_unprotected_gpu,
+                                   gpfifo_size,
+                                   gpfifo_enc_tag_gpu.address);
+    status = uvm_push_end_and_wait(&sec2_push);
+
+end_lcic_push:
+    uvm_push_end_fake(&lcic_push);
+free_gpfifo_entries:
+    uvm_kvfree(lcic_gpfifo_entries);
+    return status;
+}
+
+static NV_STATUS channel_manager_setup_wlc_lcic(uvm_channel_pool_t *wlc_pool, uvm_channel_pool_t *lcic_pool)
+{
+    NvU32 i;
+
+    UVM_ASSERT(wlc_pool->manager == lcic_pool->manager);
+    UVM_ASSERT(wlc_pool->manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_WLC] != NULL);
+    UVM_ASSERT(lcic_pool->manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_LCIC] == NULL);
+    UVM_ASSERT(wlc_pool->num_channels == lcic_pool->num_channels);
+
+    for (i = 0; i < wlc_pool->num_channels; ++i) {
+        uvm_channel_t *wlc = wlc_pool->channels + i;
+        uvm_channel_t *lcic = lcic_pool->channels + i;
+        NV_STATUS status;
+
+        status = setup_wlc_schedule(wlc);
+        if (status != NV_OK)
+            return status;
+
+        status = setup_lcic_schedule(wlc, lcic);
+        if (status != NV_OK)
+            return status;
     }
 
     return NV_OK;
@@ -1475,7 +3063,6 @@ static NV_STATUS channel_manager_create_pools(uvm_channel_manager_t *manager)
     uvm_channel_type_t type;
     unsigned max_channel_pools;
     unsigned preferred_ce[UVM_CHANNEL_TYPE_CE_COUNT];
-    uvm_channel_pool_t *pool = NULL;
 
     for (type = 0; type < ARRAY_SIZE(preferred_ce); type++)
         preferred_ce[type] = UVM_COPY_ENGINE_COUNT_MAX;
@@ -1490,20 +3077,76 @@ static NV_STATUS channel_manager_create_pools(uvm_channel_manager_t *manager)
     if (!manager->channel_pools)
         return NV_ERR_NO_MEMORY;
 
-    status = channel_manager_create_ce_pools(manager, preferred_ce);
+    if (uvm_conf_computing_mode_enabled(manager->gpu)) {
+        uvm_channel_pool_t *sec2_pool = NULL;
+        uvm_channel_pool_t *wlc_pool = NULL;
+        uvm_channel_pool_t *lcic_pool = NULL;
+        unsigned wlc_lcic_ce_index;
+
+        status = uvm_rm_mem_alloc(manager->gpu,
+                                  UVM_RM_MEM_TYPE_SYS,
+                                  sizeof(UvmCslIv),
+                                  UVM_CONF_COMPUTING_BUF_ALIGNMENT,
+                                  &manager->gpu->conf_computing.iv_rm_mem);
+
+        if (status != NV_OK)
+            return status;
+
+        // Create SEC2 pool. This needs to be done first, initialization of
+        // other channels needs SEC2.
+        status = channel_pool_add_secure(manager, UVM_CHANNEL_POOL_TYPE_SEC2, 0, &sec2_pool);
+        if (status != NV_OK)
+            return status;
+
+        manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_SEC2] = sec2_pool;
+
+        // Use the same CE as CPU TO GPU channels for WLC/LCIC
+        // Both need to use the same engine for the fixed schedule to work.
+        // TODO: Bug 3981928: [hcc][uvm] Optimize parameters of WLC/LCIC secure
+        // work launch
+        // Find a metric to select the best CE to use
+        wlc_lcic_ce_index = preferred_ce[UVM_CHANNEL_TYPE_CPU_TO_GPU];
+
+        // Create WLC/LCIC pools. This should be done early, CE channels use
+        // them for secure launch. The WLC pool must be created before the LCIC.
+        status = channel_pool_add_secure(manager, UVM_CHANNEL_POOL_TYPE_WLC, wlc_lcic_ce_index, &wlc_pool);
+        if (status != NV_OK)
+            return status;
+
+        manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_WLC] = wlc_pool;
+
+        status = channel_pool_add_secure(manager, UVM_CHANNEL_POOL_TYPE_LCIC, wlc_lcic_ce_index, &lcic_pool);
+        if (status != NV_OK)
+            return status;
+
+        status = channel_manager_setup_wlc_lcic(wlc_pool, lcic_pool);
+        if (status != NV_OK)
+            return status;
+
+        // The LCIC pool must be assigned after the call to
+        // channel_manager_setup_wlc_lcic(). It determines WLC and LCIC channels
+        // are ready to be used for secure work submission.
+        manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_LCIC] = lcic_pool;
+        status = channel_manager_create_ce_secure_pools(manager, preferred_ce);
+    }
+    else {
+        status = channel_manager_create_ce_pools(manager, preferred_ce);
+    }
+
     if (status != NV_OK)
         return status;
 
     // In SR-IOV heavy, add an additional, single-channel, pool that is
     // dedicated to the MEMOPS type.
     if (uvm_gpu_uses_proxy_channel_pool(manager->gpu)) {
+        uvm_channel_pool_t *proxy_pool = NULL;
         uvm_channel_type_t channel_type = uvm_channel_proxy_channel_type();
 
-        status = channel_pool_add(manager, UVM_CHANNEL_POOL_TYPE_CE_PROXY, preferred_ce[channel_type], &pool);
+        status = channel_pool_add(manager, UVM_CHANNEL_POOL_TYPE_CE_PROXY, preferred_ce[channel_type], &proxy_pool);
         if (status != NV_OK)
             return status;
 
-        manager->pool_to_use.default_for_type[channel_type] = pool;
+        manager->pool_to_use.default_for_type[channel_type] = proxy_pool;
     }
 
     return NV_OK;
@@ -1547,10 +3190,53 @@ error:
 
 static void channel_manager_destroy_pools(uvm_channel_manager_t *manager)
 {
+    uvm_rm_mem_free(manager->gpu->conf_computing.iv_rm_mem);
+    manager->gpu->conf_computing.iv_rm_mem = NULL;
     while (manager->num_channel_pools > 0)
         channel_pool_destroy(manager->channel_pools + manager->num_channel_pools - 1);
 
     uvm_kvfree(manager->channel_pools);
+}
+
+// Because the WLC at rest state has PUT = GET + 2, there's always pending work
+// This is what enables the driver to submit work just by ringing a doorbell.
+// However, this also means that the pending work has to be removed before
+// the channel is passed to RM for deallocation.
+static void channel_manager_stop_wlc(uvm_channel_manager_t *manager)
+{
+    uvm_channel_pool_t *wlc_pool = manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_WLC];
+    uvm_channel_pool_t *lcic_pool = manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_LCIC];
+    uvm_channel_t *channel;
+    uvm_push_t push;
+    NV_STATUS status;
+
+    uvm_for_each_channel_in_pool(channel, lcic_pool) {
+        uvm_spin_loop_t spin;
+
+        // Wait for the WLC/LCIC to be primed. This means that PUT == GET + 2
+        // and a WLC doorbell ring is enough to start work.
+        UVM_SPIN_WHILE(!uvm_gpu_tracking_semaphore_is_completed(&channel->tracking_sem), &spin);
+    }
+
+    status = uvm_push_begin(manager, UVM_CHANNEL_TYPE_SEC2, &push, "Stop WLC channels");
+    if (status != NV_OK) {
+        UVM_ERR_PRINT_NV_STATUS("Failed to begin stop push for WLC", status);
+        return;
+    }
+
+    uvm_for_each_channel_in_pool(channel, wlc_pool) {
+        // Every gpfifo entry advances the gpu put of WLC by two so the current
+        // value is: (cpu_put * 2) % num_gpfifo_entries and it's ahead of the
+        // get pointer by 2.
+        update_gpput_via_sec2(&push, channel, (channel->cpu_put * 2 - 2) % channel->num_gpfifo_entries);
+    }
+
+    status = uvm_push_end_and_wait(&push);
+    if (status != NV_OK)
+        UVM_ERR_PRINT_NV_STATUS("Failed to end stop push for WLC", status);
+
+    manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_WLC] = NULL;
+    manager->pool_to_use.default_for_type[UVM_CHANNEL_TYPE_LCIC] = NULL;
 }
 
 void uvm_channel_manager_destroy(uvm_channel_manager_t *channel_manager)
@@ -1559,6 +3245,9 @@ void uvm_channel_manager_destroy(uvm_channel_manager_t *channel_manager)
         return;
 
     proc_remove(channel_manager->procfs.pending_pushes);
+
+    if (uvm_channel_manager_is_wlc_ready(channel_manager))
+        channel_manager_stop_wlc(channel_manager);
 
     channel_manager_destroy_pools(channel_manager);
 
@@ -1631,7 +3320,7 @@ uvm_channel_t *uvm_channel_any_of_type(uvm_channel_manager_t *manager, NvU32 poo
 
 const char *uvm_channel_type_to_string(uvm_channel_type_t channel_type)
 {
-    BUILD_BUG_ON(UVM_CHANNEL_TYPE_COUNT != 5);
+    BUILD_BUG_ON(UVM_CHANNEL_TYPE_COUNT != 8);
 
     switch (channel_type) {
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_CPU_TO_GPU);
@@ -1639,24 +3328,45 @@ const char *uvm_channel_type_to_string(uvm_channel_type_t channel_type)
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_GPU_INTERNAL);
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_MEMOPS);
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_GPU_TO_GPU);
+        UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_SEC2);
+        UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_WLC);
+        UVM_ENUM_STRING_CASE(UVM_CHANNEL_TYPE_LCIC);
         UVM_ENUM_STRING_DEFAULT();
     }
 }
 
 const char *uvm_channel_pool_type_to_string(uvm_channel_pool_type_t channel_pool_type)
 {
-    BUILD_BUG_ON(UVM_CHANNEL_POOL_TYPE_COUNT != 2);
+    BUILD_BUG_ON(UVM_CHANNEL_POOL_TYPE_COUNT != 5);
 
     switch (channel_pool_type) {
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_POOL_TYPE_CE);
         UVM_ENUM_STRING_CASE(UVM_CHANNEL_POOL_TYPE_CE_PROXY);
+        UVM_ENUM_STRING_CASE(UVM_CHANNEL_POOL_TYPE_SEC2);
+        UVM_ENUM_STRING_CASE(UVM_CHANNEL_POOL_TYPE_WLC);
+        UVM_ENUM_STRING_CASE(UVM_CHANNEL_POOL_TYPE_LCIC);
         UVM_ENUM_STRING_DEFAULT();
     }
 }
 
+static const char *get_gpfifo_location_string(uvm_channel_t *channel)
+{
+    // SEC2 channels override the channel manager location for GPFIFO.
+    if (uvm_channel_is_sec2(channel))
+        return buffer_location_to_string(UVM_BUFFER_LOCATION_SYS);
+    return buffer_location_to_string(channel->pool->manager->conf.gpfifo_loc);
+}
+
+static const char *get_gpput_location_string(uvm_channel_t *channel)
+{
+    // SEC2 channels override the channel manager location for GPPUT.
+    if (uvm_channel_is_sec2(channel))
+        return buffer_location_to_string(UVM_BUFFER_LOCATION_SYS);
+    return buffer_location_to_string(channel->pool->manager->conf.gpput_loc);
+}
+
 static void uvm_channel_print_info(uvm_channel_t *channel, struct seq_file *s)
 {
-    uvm_channel_manager_t *manager = channel->pool->manager;
     UVM_SEQ_OR_DBG_PRINT(s, "Channel %s\n", channel->name);
 
     channel_pool_lock(channel->pool);
@@ -1664,8 +3374,8 @@ static void uvm_channel_print_info(uvm_channel_t *channel, struct seq_file *s)
     UVM_SEQ_OR_DBG_PRINT(s, "completed          %llu\n", uvm_channel_update_completed_value(channel));
     UVM_SEQ_OR_DBG_PRINT(s, "queued             %llu\n", channel->tracking_sem.queued_value);
     UVM_SEQ_OR_DBG_PRINT(s, "GPFIFO count       %u\n", channel->num_gpfifo_entries);
-    UVM_SEQ_OR_DBG_PRINT(s, "GPFIFO location    %s\n", buffer_location_to_string(manager->conf.gpfifo_loc));
-    UVM_SEQ_OR_DBG_PRINT(s, "GPPUT location     %s\n", buffer_location_to_string(manager->conf.gpput_loc));
+    UVM_SEQ_OR_DBG_PRINT(s, "GPFIFO location    %s\n", get_gpfifo_location_string(channel));
+    UVM_SEQ_OR_DBG_PRINT(s, "GPPUT location     %s\n", get_gpput_location_string(channel));
     UVM_SEQ_OR_DBG_PRINT(s, "get                %u\n", channel->gpu_get);
     UVM_SEQ_OR_DBG_PRINT(s, "put                %u\n", channel->cpu_put);
     UVM_SEQ_OR_DBG_PRINT(s, "Semaphore GPU VA   0x%llx\n", uvm_channel_tracking_semaphore_get_gpu_va(channel));
@@ -1728,14 +3438,11 @@ static void channel_print_pushes(uvm_channel_t *channel, NvU32 finished_pushes_c
             continue;
 
         if (entry->type == UVM_GPFIFO_ENTRY_TYPE_CONTROL) {
-            NvU64 *gpfifo_entry;
-
             UVM_ASSERT(!uvm_channel_is_proxy(channel));
 
-            gpfifo_entry = (NvU64*)channel->channel_info.gpFifoEntries + gpu_get;
             UVM_SEQ_OR_DBG_PRINT(seq,
                                  " control GPFIFO entry - data: 0x%llx, gpu_get: %d\n",
-                                 *gpfifo_entry,
+                                 entry->control_value,
                                  gpu_get);
         }
         else {

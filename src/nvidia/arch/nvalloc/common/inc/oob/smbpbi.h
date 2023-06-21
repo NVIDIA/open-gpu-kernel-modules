@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -112,6 +112,7 @@
 #define NV_MSGBOX_CMD_ARG1_POWER_TOTAL                          0x00000000
 #define NV_MSGBOX_CMD_ARG1_SMBPBI_POWER                         0x00000001
 #define NV_MSGBOX_CMD_ARG1_POWER_FB                             0x00000002
+#define NV_MSGBOX_CMD_ARG1_POWER_MODULE                         0x00000003
 /* SysId info type encodings for opcode NV_MSGBOX_CMD_OPCODE_GET_SYS_ID_DATA (0x05) */
 #define NV_MSGBOX_CMD_ARG1_BOARD_PART_NUM_V1                    0x00000000
 #define NV_MSGBOX_CMD_ARG1_OEM_INFO_V1                          0x00000001
@@ -134,7 +135,8 @@
 #define NV_MSGBOX_CMD_ARG1_PCIE_SPEED_V1                        0x00000012
 #define NV_MSGBOX_CMD_ARG1_PCIE_WIDTH_V1                        0x00000013
 #define NV_MSGBOX_CMD_ARG1_TGP_LIMIT_V1                         0x00000014
-#define NV_MSGBOX_CMD_ARG1_SYS_ID_DATA_TYPE_MAX                 0x00000014    /* Adjust, when adding new types */
+#define NV_MSGBOX_CMD_ARG1_MODULE_POWER_LIMIT_V1                0x00000016
+#define NV_MSGBOX_CMD_ARG1_SYS_ID_DATA_TYPE_MAX                 0x00000016    /* Adjust, when adding new types */
 #define NV_MSGBOX_CMD_ARG1_REGISTER_ACCESS_WRITE                0x00000000
 #define NV_MSGBOX_CMD_ARG1_REGISTER_ACCESS_READ                 0x00000001
 #define NV_MSGBOX_CMD_ARG1_THERM_PARAM_TEMP_TARGET              0x00000000
@@ -142,6 +144,11 @@
 #define NV_MSGBOX_CMD_ARG1_THERM_PARAM_TEMP_SHUTDN              0x00000002
 #define NV_MSGBOX_CMD_ARG1_THERM_PARAM_TEMP_HBM_SLOWDN          0x00000003
 #define NV_MSGBOX_CMD_ARG1_THERM_PARAM_TEMP_SW_SLOWDN           0x00000004
+#define NV_MSGBOX_CMD_ARG1_THERM_PARAM_TEMP_TARGET_TLIMIT       0x00000005
+#define NV_MSGBOX_CMD_ARG1_THERM_PARAM_TEMP_HW_SLOWDN_TLIMIT    0x00000006
+#define NV_MSGBOX_CMD_ARG1_THERM_PARAM_TEMP_SHUTDN_TLIMIT       0x00000007
+#define NV_MSGBOX_CMD_ARG1_THERM_PARAM_TEMP_HBM_SLOWDN_TLIMIT   0x00000008
+#define NV_MSGBOX_CMD_ARG1_THERM_PARAM_TEMP_SW_SLOWDN_TLIMIT    0x00000009
 #define NV_MSGBOX_CMD_ARG1_GET_MISC_ECC_ENABLED_STATE           0x00000000
 #define NV_MSGBOX_CMD_ARG1_GET_MISC_GPU_RESET_REQUIRED          0x00000001
 #define NV_MSGBOX_CMD_ARG1_GET_MISC_GPU_FLAGS_PAGE_0            0x00000000
@@ -181,6 +188,10 @@
 #define NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_1            0x00000001
 #define NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_2            0x00000002
 #define NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_3            0x00000003
+#define NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_4            0x00000004
+#define NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_6            0x00000006
+#define NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_8            0x00000008
+#define NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_9            0x00000009
 
 /* Async requests */
 #define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_TGP_LIMIT_CONTROL_GET     \
@@ -219,6 +230,12 @@
                                                                 0x00000010
 #define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_CONFIGURE_PROGRAMMABLE_EDPP        \
                                                                 0x00000011
+#define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_MODULE_LIMIT_CONTROL_GET  \
+                                                                0x00000012
+#define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_MODULE_LIMIT_CONTROL_SET  \
+                                                                0x00000013
+#define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_MODULE_LIMIT_INFO_GET     \
+                                                                0x00000014
 #define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_POLL                   0x000000ff
 
 
@@ -323,6 +340,9 @@
 #define NV_MSGBOX_CMD_ARG1_ECC_V6_ERROR_TYPE                          15:8
 #define NV_MSGBOX_CMD_ARG1_ECC_V6_ERROR_TYPE_CORRECTABLE_ERROR           0
 #define NV_MSGBOX_CMD_ARG1_ECC_V6_ERROR_TYPE_UNCORRECTABLE_ERROR         1
+
+#define NV_MSGBOX_CMD_ARG1_ENERGY_COUNTER_GPU                   0x00000000
+#define NV_MSGBOX_CMD_ARG1_ENERGY_COUNTER_MODULE                0x00000003
 
 // Query type of _GET_POWER_HINT_INFO
 #define NV_MSGBOX_CMD_ARG1_GET_POWER_HINT_INFO_CLK                0x00000000
@@ -438,6 +458,34 @@
 #define NV_MSGBOX_CMD_ARG2_REMAP_ROW_RAW_CNT_CORR               0x00000002
 
 #define NV_MSGBOX_CMD_ARG2_REMAP_ROWS_STATE_FLAGS_PAGE0         0x00000000
+
+/*!
+ * Arg2 for _GET_PCIE_LINK_INFO
+ * Arg1 == _GET_PCIE_LINK_INFO_PAGE_8
+ * Return TX EQ parameters
+ */
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_8_LANE_IDX          3:0
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_8_SPEED_SELECT      5:4
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_8_SPEED_SELECT_GEN_3 \
+                                                                0x00000000
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_8_SPEED_SELECT_GEN_4 \
+                                                                0x00000001
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_8_SPEED_SELECT_GEN_5 \
+                                                                0x00000002
+
+/*!
+ * Arg2 for _GET_PCIE_LINK_INFO
+ * Arg1 == _GET_PCIE_LINK_INFO_PAGE_9
+ * Return RX EQ parameters
+ */
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_9_LANE_IDX          3:0
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_9_SPEED_SELECT      5:4
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_9_SPEED_SELECT_GEN_3 \
+                                                                0x00000000
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_9_SPEED_SELECT_GEN_4 \
+                                                                0x00000001
+#define NV_MSGBOX_CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_9_SPEED_SELECT_GEN_5 \
+                                                                0x00000002
 
 /*!
  * Arg2 for _GET_POWER_HINT_INFO
@@ -614,6 +662,18 @@
 #define NV_MSGBOX_DATA_CAP_0_EXT_TEMP_BITS_ADT7473                      0x00000002
 #define NV_MSGBOX_DATA_CAP_0_EXT_TEMP_BITS_SFXP11_5                     0x00000005
 #define NV_MSGBOX_DATA_CAP_0_EXT_TEMP_BITS_SFXP24_8                     0x00000008
+#define NV_MSGBOX_DATA_CAP_0_GET_ENERGY_COUNTER_MODULE                       12:12
+#define NV_MSGBOX_DATA_CAP_0_GET_ENERGY_COUNTER_MODULE_NOT_AVAILABLE    0x00000000
+#define NV_MSGBOX_DATA_CAP_0_GET_ENERGY_COUNTER_MODULE_AVAILABLE        0x00000001
+#define NV_MSGBOX_DATA_CAP_0_MODULE_LIMIT_CONTROL_GET                        13:13
+#define NV_MSGBOX_DATA_CAP_0_MODULE_LIMIT_CONTROL_GET_NOT_AVAILABLE     0x00000000
+#define NV_MSGBOX_DATA_CAP_0_MODULE_LIMIT_CONTROL_GET_AVAILABLE         0x00000001
+#define NV_MSGBOX_DATA_CAP_0_MODULE_LIMIT_CONTROL_SET                        14:14
+#define NV_MSGBOX_DATA_CAP_0_MODULE_LIMIT_CONTROL_SET_NOT_AVAILABLE     0x00000000
+#define NV_MSGBOX_DATA_CAP_0_MODULE_LIMIT_CONTROL_SET_AVAILABLE         0x00000001
+#define NV_MSGBOX_DATA_CAP_0_MODULE_LIMIT_INFO_GET                           15:15
+#define NV_MSGBOX_DATA_CAP_0_MODULE_LIMIT_INFO_GET_NOT_AVAILABLE        0x00000000
+#define NV_MSGBOX_DATA_CAP_0_MODULE_LIMIT_INFO_GET_AVAILABLE            0x00000001
 #define NV_MSGBOX_DATA_CAP_0_POWER_TOTAL                                     16:16
 #define NV_MSGBOX_DATA_CAP_0_POWER_TOTAL_NOT_AVAILABLE                  0x00000000
 #define NV_MSGBOX_DATA_CAP_0_POWER_TOTAL_AVAILABLE                      0x00000001
@@ -623,7 +683,24 @@
 #define NV_MSGBOX_DATA_CAP_0_GPU_SYSCONTROL                                  18:18
 #define NV_MSGBOX_DATA_CAP_0_GPU_SYSCONTROL_NOT_AVAILABLE               0x00000000
 #define NV_MSGBOX_DATA_CAP_0_GPU_SYSCONTROL_AVAILABLE                   0x00000001
-#define NV_MSGBOX_DATA_CAP_0_THERMP_BITS                                     28:24  // Adjust when adding new bits
+#define NV_MSGBOX_DATA_CAP_0_THERMP_BITS                                     28:19  // Adjust when adding new bits
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_TLIMIT_BITS                         23:19  // Adjust when adding new bits
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_BITS                                28:24  // Adjust when adding new bits
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_ACOUSTIC_TLIMIT                            19:19
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_ACOUSTIC_TLIMIT_NOT_AVAILABLE         0x00000000
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_ACOUSTIC_TLIMIT_AVAILABLE             0x00000001
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_SLOWDN_TLIMIT                              20:20
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_SLOWDN_TLIMIT_NOT_AVAILABLE           0x00000000
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_SLOWDN_TLIMIT_AVAILABLE               0x00000001
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_SHUTDN_TLIMIT                              21:21
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_SHUTDN_TLIMIT_NOT_AVAILABLE           0x00000000
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_SHUTDN_TLIMIT_AVAILABLE               0x00000001
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_MEMORY_TLIMIT                              22:22
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_MEMORY_TLIMIT_NOT_AVAILABLE           0x00000000
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_MEMORY_TLIMIT_AVAILABLE               0x00000001
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_GPU_SW_SLOWDOWN_TLIMIT                     23:23
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_GPU_SW_SLOWDOWN_TLIMIT_NOT_AVAILABLE  0x00000000
+#define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_GPU_SW_SLOWDOWN_TLIMIT_AVAILABLE      0x00000001
 #define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_ACOUSTIC                            24:24
 #define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_ACOUSTIC_NOT_AVAILABLE         0x00000000
 #define NV_MSGBOX_DATA_CAP_0_THERMP_TEMP_ACOUSTIC_AVAILABLE             0x00000001
@@ -645,6 +722,9 @@
 #define NV_MSGBOX_DATA_CAP_0_POWER_FB                                        30:30
 #define NV_MSGBOX_DATA_CAP_0_POWER_FB_NOT_AVAILABLE                     0x00000000
 #define NV_MSGBOX_DATA_CAP_0_POWER_FB_AVAILABLE                         0x00000001
+#define NV_MSGBOX_DATA_CAP_0_POWER_MODULE                                    31:31
+#define NV_MSGBOX_DATA_CAP_0_POWER_MODULE_NOT_AVAILABLE                 0x00000000
+#define NV_MSGBOX_DATA_CAP_0_POWER_MODULE_AVAILABLE                     0x00000001
 
 #define NV_MSGBOX_DATA_CAP_1                                                 1
 #define NV_MSGBOX_DATA_CAP_1_BOARD_PART_NUM_V1                             0:0
@@ -692,6 +772,9 @@
 #define NV_MSGBOX_DATA_CAP_1_INFOROM_VER_V1                              14:14
 #define NV_MSGBOX_DATA_CAP_1_INFOROM_VER_V1_NOT_AVAILABLE           0x00000000
 #define NV_MSGBOX_DATA_CAP_1_INFOROM_VER_V1_AVAILABLE               0x00000001
+#define NV_MSGBOX_DATA_CAP_1_MODULE_LIMIT_V1                             15:15
+#define NV_MSGBOX_DATA_CAP_1_MODULE_LIMIT_V1_NOT_AVAILABLE          0x00000000
+#define NV_MSGBOX_DATA_CAP_1_MODULE_LIMIT_V1_AVAILABLE              0x00000001
 #define NV_MSGBOX_DATA_CAP_1_ECC_V1                                      16:16
 #define NV_MSGBOX_DATA_CAP_1_ECC_V1_NOT_AVAILABLE                   0x00000000
 #define NV_MSGBOX_DATA_CAP_1_ECC_V1_AVAILABLE                       0x00000001
@@ -1070,16 +1153,14 @@
  * Response to
  * NV_MSGBOX_CMD_ARG1_GET_CLOCK_THROTTLE_REASON
  */
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON                                   31:0
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_NONE                        0x00000000
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_POWER_CAP                0x00000001
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_HW_SLOWDOWN                 0x00000002
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SYNC_BOOST                  0x00000004
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_THERMAL_SLOWDOWN_TLIMIT  0x00000008
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_THERMAL_SLOWDOWN_TAVG    0x00000010
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_THERMAL_SLOWDOWN_TMEM    0x00000020
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_HW_THERMAL_SLOWDOWN         0x00000040
-#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_HW_POWER_BREAK_SLOWDOWN     0x00000080
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON                                  31:0
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_NONE                       0x00000000
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_POWER_CAP               0x00000001
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_HW_SLOWDOWN                0x00000002
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_HW_THERMAL_SLOWDOWN        0x00000004
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_HW_POWER_BREAK_SLOWDOWN    0x00000008
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SYNC_BOOST                 0x00000010
+#define NV_MSGBOX_DATA_CLOCK_THROTTLE_REASON_SW_THERMAL_SLOWDOWN        0x00000020
 
 /*
  * Number of Nvlink data outputs (dataOut, extData) for
@@ -1105,6 +1186,8 @@
 #define NV_MSGBOX_DATA_NVLINK_INFO_LINK_STATE_V2_SAFE                   0x00000001
 #define NV_MSGBOX_DATA_NVLINK_INFO_LINK_STATE_V2_ACTIVE                 0x00000002
 #define NV_MSGBOX_DATA_NVLINK_INFO_LINK_STATE_V2_ERROR                  0x00000003
+#define NV_MSGBOX_DATA_NVLINK_INFO_LINK_STATE_V2_L1_LOW_POWER           0x00000004
+#define NV_MSGBOX_DATA_NVLINK_INFO_LINK_STATE_V2_NVLINK_DISABLED        0x00000005
 #define NV_MSGBOX_DATA_NVLINK_INFO_LINK_STATE_V2_INVALID                0x000000ff
 
 /* Response to NV_MSGBOX_CMD_ARG1_GET_NVLINK_INFO_LINK_BANDWIDTH (in Mps) */
@@ -1171,7 +1254,7 @@
 #define NV_MSGBOX_DATA_REMAP_ROW_HISTOGRAM_LOW_AVAILABILITY                 15:0
 #define NV_MSGBOX_DATA_REMAP_ROW_HISTOGRAM_PARTIAL_AVAILABILITY            31:16
 
-/* Respones to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_0 */
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_0 */
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_0_LINK_SPEED                    2:0
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_0_LINK_SPEED_UNKNOWN     0x00000000
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_0_LINK_SPEED_2500_MTPS   0x00000001
@@ -1191,12 +1274,60 @@
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_0_FATAL_ERROR_COUNT           23:16
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_0_UNSUPP_REQ_COUNT            31:24
 
-/* Respones to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_1 */
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_1 */
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_1_L0_TO_RECOVERY_COUNT         31:0
 
-/* Respones to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_2 */
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_2 */
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_2_REPLAY_ROLLOVER_COUNT        15:0
 #define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_2_NAKS_RCVD_COUNT             31:16
+
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_3 */
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED                    2:0
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_UNKNOWN     0x00000000
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_2500_MTPS   0x00000001
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_5000_MTPS   0x00000002
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_8000_MTPS   0x00000003
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_16000_MTPS  0x00000004
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_32000_MTPS  0x00000005
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_RESERVED           2:0
+
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_4 */
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_4_TX_COUNT                            31:0
+
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_6 */
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE                          4:0
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_DETECT            0x00000000
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_POLLING           0x00000001
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_CONFIGURATION     0x00000002
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_RECOVERY          0x00000003
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_RECOVERY_EQZN     0x00000004
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_L0                0x00000005
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_L0S               0x00000006
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_L1                0x00000007
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_L1_PLL_PD         0x00000008
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_L2                0x00000009
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_L1_CPM            0x0000000a
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_L1_1              0x0000000b
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_L1_2              0x0000000c
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_HOT_RESET         0x0000000d
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_LOOPBACK          0x0000000e
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_DISABLED          0x0000000f
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_LINK_DOWN         0x00000010
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_LINK_READY        0x00000011
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_LANES_IN_SLEEP    0x00000012
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_6_LTSSM_STATE_ILLEGAL           0x0000001f
+
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_8 */
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_8_EQ_TX_LOCAL_PRESET                   3:0
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_8_EQ_TX_LOCAL_USE_PRESET               4:4
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_8_EQ_TX_LOCAL_FS                      10:5
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_8_EQ_TX_LOCAL_LF                     16:11
+
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_9 */
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_9_EQ_RX_REMOTE_PRESET                  3:0
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_9_EQ_RX_REMOTE_USE_PRESET              4:4
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_9_EQ_RX_REMOTE_FS                     10:5
+#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_9_EQ_RX_REMOTE_LF                    16:11
 
 /*
  * Input for NV_MSGBOX_CMD_OPCODE_GPU_PERFORMANCE_MONITORING. Value is valid
@@ -1224,15 +1355,18 @@
 /* Respones to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_2 */
 #define NV_MSGBOX_EXT_DATA_PCIE_LINK_INFO_PAGE_2_NAKS_SENT_COUNT          15:0
 
-/* Respones to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_3 */
-#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED                    2:0
-#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_UNKNOWN     0x00000000
-#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_2500_MTPS   0x00000001
-#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_5000_MTPS   0x00000002
-#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_8000_MTPS   0x00000003
-#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_16000_MTPS  0x00000004
-#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_32000_MTPS  0x00000005
-#define NV_MSGBOX_DATA_PCIE_LINK_INFO_PAGE_3_TARGET_LINK_SPEED_RESERVED           2:0
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_4 */
+#define NV_MSGBOX_EXT_DATA_PCIE_LINK_INFO_PAGE_4_RX_COUNT                 31:0
+
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_8 */
+#define NV_MSGBOX_EXT_DATA_PCIE_LINK_INFO_PAGE_8_EQ_TX_LOCAL_PRECUR        5:0
+#define NV_MSGBOX_EXT_DATA_PCIE_LINK_INFO_PAGE_8_EQ_TX_LOCAL_MAINCUR      11:6
+#define NV_MSGBOX_EXT_DATA_PCIE_LINK_INFO_PAGE_8_EQ_TX_LOCAL_POSTCUR     17:12
+
+/* Response to NV_MSGBOX_CMD_ARG1_GET_PCIE_LINK_INFO_PAGE_9 */
+#define NV_MSGBOX_EXT_DATA_PCIE_LINK_INFO_PAGE_9_EQ_RX_REMOTE_PRECUR       5:0
+#define NV_MSGBOX_EXT_DATA_PCIE_LINK_INFO_PAGE_9_EQ_RX_REMOTE_MAINCUR     11:6
+#define NV_MSGBOX_EXT_DATA_PCIE_LINK_INFO_PAGE_9_EQ_RX_REMOTE_POSTCUR    17:12
 
 /* Response to NV_MSGBOX_CMD_ARG1_REMAP_ROWS_HISTOGRAM */
 #define NV_MSGBOX_EXT_DATA_REMAP_ROW_HISTOGRAM_MAX_AVAILABILITY            31:16
@@ -1341,6 +1475,7 @@ typedef enum
     NV_MSGBOX_EVENT_TYPE_MIG_TOGGLE_SUCCESS,
     NV_MSGBOX_EVENT_TYPE_SERVER_RESTART_WARM,
     NV_MSGBOX_EVENT_TYPE_DRIVER_ERROR_MESSAGE_NEW,
+    NV_MSGBOX_EVENT_TYPE_MODULE_LIMIT_SET_SUCCESS,
     NV_MSGBOX_NUM_EVENTS,                       /* insert new event types before this line */
 }   NvMsgboxEventType;
 
@@ -1680,8 +1815,10 @@ typedef enum
 
 /*!
  * This structure is used to hold parameters for
- * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_TGP_LIMIT_CONTROL_GET and
- * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_TGP_LIMIT_CONTROL_SET
+ * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_TGP_LIMIT_CONTROL_GET,
+ * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_TGP_LIMIT_CONTROL_SET,
+ * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_MODULE_LIMIT_CONTROL_GET and
+ * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_MODULE_LIMIT_CONTROL_SET
  */
 typedef struct
 {
@@ -1693,12 +1830,12 @@ typedef struct
      * If flags:_CLEAR is _ON, it will clear the TGP limit. The
      * persistence still depends on persist flag.
      */
-#define NV_MSGBOX_PMGR_PWR_TGP_LIMIT_CONTROL_PARAMS_FLAGS_PERSIST              0:0
-#define NV_MSGBOX_PMGR_PWR_TGP_LIMIT_CONTROL_PARAMS_FLAGS_PERSIST_OFF   0x00000000
-#define NV_MSGBOX_PMGR_PWR_TGP_LIMIT_CONTROL_PARAMS_FLAGS_PERSIST_ON    0x00000001
-#define NV_MSGBOX_PMGR_PWR_TGP_LIMIT_CONTROL_PARAMS_FLAGS_CLEAR                1:1
-#define NV_MSGBOX_PMGR_PWR_TGP_LIMIT_CONTROL_PARAMS_FLAGS_CLEAR_OFF     0x00000000
-#define NV_MSGBOX_PMGR_PWR_TGP_LIMIT_CONTROL_PARAMS_FLAGS_CLEAR_ON      0x00000001
+#define NV_MSGBOX_PMGR_PWR_POWER_LIMIT_CONTROL_PARAMS_FLAGS_PERSIST              0:0
+#define NV_MSGBOX_PMGR_PWR_POWER_LIMIT_CONTROL_PARAMS_FLAGS_PERSIST_OFF   0x00000000
+#define NV_MSGBOX_PMGR_PWR_POWER_LIMIT_CONTROL_PARAMS_FLAGS_PERSIST_ON    0x00000001
+#define NV_MSGBOX_PMGR_PWR_POWER_LIMIT_CONTROL_PARAMS_FLAGS_CLEAR                1:1
+#define NV_MSGBOX_PMGR_PWR_POWER_LIMIT_CONTROL_PARAMS_FLAGS_CLEAR_OFF     0x00000000
+#define NV_MSGBOX_PMGR_PWR_POWER_LIMIT_CONTROL_PARAMS_FLAGS_CLEAR_ON      0x00000001
 
     /*!
      * Current total GPU power limit value to enforce, requested by the
@@ -1714,11 +1851,12 @@ typedef struct
      * in milliwatts.
      */
     NvU32  limitCurrOutput;
-} NV_MSGBOX_PMGR_PWR_TGP_LIMIT_CONTROL_PARAMS;
+} NV_MSGBOX_PMGR_PWR_POWER_LIMIT_CONTROL_PARAMS;
 
 /*!
  * This structure is used to hold parameters for
- * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_TGP_LIMIT_INFO_GET
+ * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_TGP_LIMIT_INFO_GET and
+ * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_MODULE_LIMIT_INFO_GET
  */
 typedef struct
 {
@@ -1726,13 +1864,14 @@ typedef struct
      * Current total GPU power limit lower and upper bounds and the
      * default setting, expressed in milliwatts.
      * These constraints must be observed, when the limit
-     * is being set with
-     * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_TGP_LIMIT_CONTROL_SET.
+     * is being set with either
+     * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_TGP_LIMIT_CONTROL_SET or
+     * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_MODULE_LIMIT_CONTROL_SET.
      */
     NvU32  limitMin;
     NvU32  limitMax;
     NvU32  limitDefault;
-} NV_MSGBOX_PMGR_PWR_TGP_LIMIT_INFO_PARAMS;
+} NV_MSGBOX_PMGR_PWR_POWER_LIMIT_INFO_PARAMS;
 
 /*!
  * This structure is used to hold parameters for
@@ -1917,6 +2056,7 @@ typedef struct
                             //<!        have been lost
                             //<! bit 1: the text message has been
                             //<! truncated
+    NvU8    xidIdExt;       //<! event type Id (Xid) extension
     NvU32   seqNumber;      //<! record sequential number
     NvU32   timeStamp;      //<! seconds since the epoch UTC
 
@@ -2118,7 +2258,7 @@ typedef struct
  * amount of space parameter blocks can take.
  */
 typedef union {
-    NV_MSGBOX_PMGR_PWR_TGP_LIMIT_CONTROL_PARAMS tgpLimitControl;
+    NV_MSGBOX_PMGR_PWR_POWER_LIMIT_CONTROL_PARAMS tgpLimitControl;
     NV_MSGBOX_THERMAL_FAN_V1_COUNT_PARAMS fanCountV1Get;
     NV_MSGBOX_THERMAL_FAN_V1_INFO_PARAMS fanCountV1Info;
     NV_MSGBOX_THERMAL_FAN_V1_STATUS_PARAMS fanCountV1Status;
@@ -2544,12 +2684,45 @@ typedef union {
             FLD_SET_DRF(_MSGBOX, _CMD, _COPY_DATA, _ON, (cmd))                         \
         )
 
-#define NV_MSGBOX_CMD_GPM_GET_METRIC(type, metric, partition)                          \
+#define NV_MSGBOX_CMD_GET_PCIE_LINK_INFO_1(page)                                       \
+        (                                                                              \
+            NV_MSGBOX_CMD(_GET_PCIE_LINK_INFO,                                         \
+                          (page),                                                      \
+                          0)                                                           \
+        )
+
+// We use the fact here that for pages ## 8 and 9 Arg2 definitions are similar
+#define NV_MSGBOX_CMD_GET_PCIE_LINK_INFO_2(page, lane, speed)                          \
+        (                                                                              \
+            NV_MSGBOX_CMD(_GET_PCIE_LINK_INFO,                                         \
+                          (page),                                                      \
+                          DRF_NUM(_MSGBOX, _CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_8,        \
+                                  _LANE_IDX, (lane))                                 | \
+                          DRF_NUM(_MSGBOX, _CMD_ARG2_GET_PCIE_LINK_INFO_PAGE_8,        \
+                                  _SPEED_SELECT, (speed)))                             \
+        )
+
+#define NV_MSGBOX_CMD_GPM_GET_METRIC(type, metric, req_ci_metrics, partition)          \
         (                                                                              \
             NV_MSGBOX_CMD(_GPU_PERFORMANCE_MONITORING, 0, 0)                         | \
             DRF_DEF(_MSGBOX, _CMD, _ARG1_GPM_ACTION, type)                           | \
             DRF_NUM(_MSGBOX, _CMD, _ARG1_GPM_METRIC, metric)                         | \
-            DRF_NUM(_MSGBOX, _CMD, _ARG2_GPM_PARTITION_INDEX, partition)                     \
+            DRF_NUM(_MSGBOX, _CMD, _ARG2_GPM_CI_METRICS_REQUESTED, req_ci_metrics)   | \
+            DRF_NUM(_MSGBOX, _CMD, _ARG2_GPM_PARTITION_INDEX, partition)               \
+        )
+
+#define NV_MSGBOX_CMD_GPM_GET_METRIC_AGGREGATE(type, metric) \
+        (                                                                               \
+            NV_MSGBOX_CMD(_GPU_PERFORMANCE_MONITORING, 0, 0)                          | \
+            DRF_DEF(_MSGBOX, _CMD, _ARG1_GPM_ACTION, type)                            | \
+            DRF_NUM(_MSGBOX, _CMD, _ARG1_GPM_METRIC, metric)                          | \
+            DRF_DEF(_MSGBOX, _CMD, _ARG2, _GPM_PARTITION_AGGREGATE)                     \
+        )
+
+#define NV_MSGBOX_DATA_IN_GPM(instance_id, ci_index)                                   \
+        (                                                                              \
+            DRF_NUM(_MSGBOX, _DATA, _GPM_NVDEC_INSTANCE, instance_id)                | \
+            DRF_NUM(_MSGBOX, _DATA, _GPM_COMPUTE_INSTANCE_INDEX, ci_index)             \
         )
 
 #define NV_MSGBOX_CMD_GPM_SET_MULTIPLIER(multiplier)                                   \

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 
 #include "os/os.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
@@ -330,27 +332,32 @@ _knvlinkAreLinksDisconnected
 
     NV_ASSERT_OR_RETURN(bLinkDisconnected != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_INFO_PARAMS params;
+    NV2080_CTRL_NVLINK_GET_LINK_AND_CLOCK_INFO_PARAMS *pParams =
+        portMemAllocNonPaged(sizeof(*pParams));
+    if (pParams == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
 
-    portMemSet(&params, 0, sizeof(params));
-    params.linkMask = pKernelNvlink->enabledLinks;
+    portMemSet(pParams, 0, sizeof(*pParams));
+    pParams->linkMask = pKernelNvlink->enabledLinks;
 
     status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
                                  NV2080_CTRL_CMD_NVLINK_GET_LINK_AND_CLOCK_INFO,
-                                 (void *)&params, sizeof(params));
+                                 (void *)pParams, sizeof(*pParams));
     if (status != NV_OK)
-        return status;
+        goto cleanup;
 
     FOR_EACH_INDEX_IN_MASK(32, linkId, pKernelNvlink->enabledLinks)
     {
-        if ((params.linkInfo[linkId].linkState == NVLINK_LINKSTATE_SAFE) &&
-            (params.linkInfo[linkId].txSublinkState == NVLINK_SUBLINK_STATE_TX_OFF) &&
-            (params.linkInfo[linkId].rxSublinkState == NVLINK_SUBLINK_STATE_RX_OFF))
+        if ((pParams->linkInfo[linkId].linkState == NVLINK_LINKSTATE_SAFE) &&
+            (pParams->linkInfo[linkId].txSublinkState == NVLINK_SUBLINK_STATE_TX_OFF) &&
+            (pParams->linkInfo[linkId].rxSublinkState == NVLINK_SUBLINK_STATE_RX_OFF))
         {
             // Case 1: Pseudo-clean shutdown
             bLinkDisconnected[linkId] = NV_TRUE;
         }
-        else if (params.linkInfo[linkId].bLinkReset)
+        else if (pParams->linkInfo[linkId].bLinkReset)
         {
             // Case 2: Link reset post shutdown
             bLinkDisconnected[linkId] = NV_TRUE;
@@ -362,6 +369,9 @@ _knvlinkAreLinksDisconnected
         }
     }
     FOR_EACH_INDEX_IN_MASK_END;
+
+cleanup:
+    portMemFree(pParams);
 
     return status;
 }
@@ -500,6 +510,7 @@ knvlinkValidateFabricBaseAddress_GV100
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvU64          fbSizeBytes;
+    NvU64          fbUpperLimit;
 
     fbSizeBytes = pMemoryManager->Ram.fbTotalMemSizeMb << 20;
 
@@ -518,8 +529,14 @@ knvlinkValidateFabricBaseAddress_GV100
     // Align fbSize to mapslot size.
     fbSizeBytes = RM_ALIGN_UP(fbSizeBytes, NVBIT64(34));
 
+    // Check for integer overflow
+    if (!portSafeAddU64(fabricBaseAddr, fbSizeBytes, &fbUpperLimit))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     // Make sure the address range doesn't go beyond the limit, (8K * 16GB).
-    if ((fabricBaseAddr + fbSizeBytes) > NVBIT64(47))
+    if (fbUpperLimit > NVBIT64(47))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }

@@ -201,21 +201,20 @@ static bool uvm_api_range_invalid_64k(NvU64 base, NvU64 length)
     return uvm_api_range_invalid_aligned(base, length, UVM_PAGE_SIZE_64K);
 }
 
-// Returns true if the interval [start, start + length -1] is entirely covered
-// by vmas.
-//
-// LOCKING: mm->mmap_lock must be held in at least read mode.
-bool uvm_is_valid_vma_range(struct mm_struct *mm, NvU64 start, NvU64 length);
+typedef enum
+{
+    UVM_API_RANGE_TYPE_MANAGED,
+    UVM_API_RANGE_TYPE_HMM,
+    UVM_API_RANGE_TYPE_ATS,
+    UVM_API_RANGE_TYPE_INVALID
+} uvm_api_range_type_t;
 
-// Check that the interval [base, base + length) is fully covered by UVM
-// managed ranges (NV_OK is returned), or (if ATS is enabled and mm != NULL)
-// fully covered by valid vmas (NV_WARN_NOTHING_TO_DO is returned), or (if HMM
-// is enabled and mm != NULL) fully covered by valid vmas (NV_OK is returned).
-// Any other input results in a return status of NV_ERR_INVALID_ADDRESS.
+// If the interval [base, base + length) is fully covered by VMAs which all have
+// the same uvm_api_range_type_t, that range type is returned.
 //
 // LOCKING: va_space->lock must be held in at least read mode. If mm != NULL,
 //          mm->mmap_lock must also be held in at least read mode.
-NV_STATUS uvm_api_range_type_check(uvm_va_space_t *va_space, struct mm_struct *mm, NvU64 base, NvU64 length);
+uvm_api_range_type_t uvm_api_range_type_check(uvm_va_space_t *va_space, struct mm_struct *mm, NvU64 base, NvU64 length);
 
 NV_STATUS uvm_api_pageable_mem_access_on_gpu(UVM_PAGEABLE_MEM_ACCESS_ON_GPU_PARAMS *params, struct file *filp);
 NV_STATUS uvm_api_register_gpu(UVM_REGISTER_GPU_PARAMS *params, struct file *filp);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -71,9 +71,11 @@ osCreateMemFromOsDescriptor
     NV_STATUS rmStatus;
     void *pPrivate;
 
+    pClient = serverutilGetClientUnderLock(hClient);
+
     if ((pDescriptor == NvP64_NULL) ||
         (*pLimit == 0) ||
-        (serverutilGetClientUnderLock(hClient, &pClient) != NV_OK))
+        (pClient == NULL))
     {
         return NV_ERR_INVALID_PARAM_STRUCT;
     }
@@ -361,6 +363,23 @@ osCheckGpuBarsOverlapAddrRange
     return NV_OK;
 }
 
+static NvU64
+_doWarBug4040336
+(
+    OBJGPU *pGpu,
+    NvU64 addr
+)
+{
+    if (gpuIsWarBug4040336Enabled(pGpu))
+    {
+        if ((addr & 0xffffffff00000000ULL) == 0x7fff00000000ULL)
+        {
+            addr = addr & 0xffffffffULL;
+        }
+    }
+    return addr;
+}
+
 static NV_STATUS
 osCreateOsDescriptorFromIoMemory
 (
@@ -438,6 +457,14 @@ osCreateOsDescriptorFromIoMemory
                   __FUNCTION__, physAddrRange.min, physAddrRange.max);
         return rmStatus;
     }
+
+    //
+    // BF3's PCIe MMIO bus address at 0x800000000000(CPU PA 0x7fff00000000) is
+    // too high for Ampere to address. As a result, BF3's bus address is
+    // moved to < 4GB. Now, the CPU PA and the bus address are no longer 1:1
+    // and needs to be adjusted.
+    //
+    *base = _doWarBug4040336(pGpu, *base);
 
     rmStatus = memdescCreate(ppMemDesc, pGpu, (*pLimit + 1), 0,
                              NV_MEMORY_CONTIGUOUS, ADDR_SYSMEM,

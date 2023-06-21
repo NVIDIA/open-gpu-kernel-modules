@@ -182,7 +182,7 @@
 #define _NV_FOREACH_ARG_15(X, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15) \
     X(_1), X(_2), X(_3), X(_4), X(_5), X(_6), X(_7), X(_8), X(_9), X(_10), X(_11), X(_12), X(_13), X(_14), X(_15)
 #define _NV_FOREACH_ARG_16(X, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16) \
-    X(_1), X(_2), X(_3), X(_4), X(_5), X(_6), X(_7), X(_8), X(_9), X(_10), X(_11), X(_12), X(_13), X(_14), X(_15), X(_16) 
+    X(_1), X(_2), X(_3), X(_4), X(_5), X(_6), X(_7), X(_8), X(_9), X(_10), X(_11), X(_12), X(_13), X(_14), X(_15), X(_16)
 
 // Iterating over empty list is unsupported. Give a semi-readable error.
 #define _NV_FOREACH_ARG_NOCOMMA_0(X) NV_FOREACH_NOCOMMA_ERROR_argument_list_emtpy
@@ -218,16 +218,16 @@
 #define _NV_FOREACH_ARG_NOCOMMA_15(X, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15) \
     X(_1) X(_2) X(_3) X(_4) X(_5) X(_6) X(_7) X(_8) X(_9) X(_10) X(_11) X(_12) X(_13) X(_14) X(_15)
 #define _NV_FOREACH_ARG_NOCOMMA_16(X, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16) \
-    X(_1) X(_2) X(_3) X(_4) X(_5) X(_6) X(_7) X(_8) X(_9) X(_10) X(_11) X(_12) X(_13) X(_14) X(_15) X(_16) 
+    X(_1) X(_2) X(_3) X(_4) X(_5) X(_6) X(_7) X(_8) X(_9) X(_10) X(_11) X(_12) X(_13) X(_14) X(_15) X(_16)
 
 /// @endcond
 
 /// @cond NV_MACROS_COMPILE_TIME_TESTS
 //
-// What follows are a couple of compile time smoke tests that will let us know 
+// What follows are a couple of compile time smoke tests that will let us know
 // if the given compiler does not properly implement these macros.
 // These are disabled by default in the interest of compile time.
-// 
+//
 #if defined(NVMACRO_DO_COMPILETIME_TESTS)
 #if NV_NUM_ARGS(a) != 1
 #error "[NvMacros CT Test] NV_NUM_ARGS fails when given 1 args"

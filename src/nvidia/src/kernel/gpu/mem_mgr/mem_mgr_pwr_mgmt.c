@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include "vgpu/rpc.h"
 #include "os/nv_memory_type.h"
 #include "gpu/gsp/kernel_gsp.h"
+#include "gpu/gsp/gsp_static_config.h"
 
 static NV_STATUS _memmgrWalkHeap(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJFBSR *pFbsr);
 static NV_STATUS _memmgrAllocFbsrReservedRanges(OBJGPU *pGpu, MemoryManager *pMemoryManager);
@@ -571,18 +572,59 @@ memmgrAddMemNode
     return rmStatus;
 }
 
+NvBool
+memmgrIsGspOwnedMemory_KERNEL
+(
+    OBJGPU            *pGpu,
+    MemoryManager     *pMemoryManager,
+    MEMORY_DESCRIPTOR *pMemDesc
+)
+{
+
+    GspStaticConfigInfo *pGSCI        = GPU_GET_GSP_STATIC_INFO(pGpu);
+    RmPhysAddr           physAddr     = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
+    NvU64                fbRegionSize = 0;
+
+    NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS    *pFbRegionInfoParams = &pGSCI->fbRegionInfoParams;
+    NV2080_CTRL_CMD_FB_GET_FB_REGION_FB_REGION_INFO *pFbRegionInfo       = NULL;
+
+    // Return NV_TRUE if input MEMORY_DESCRIPTOR corresponds to any GSP managed regions
+    for (NvU32 i = 0; i < pFbRegionInfoParams->numFBRegions; i++)
+    {
+        pFbRegionInfo = &pFbRegionInfoParams->fbRegion[i];
+        fbRegionSize  = pFbRegionInfo->limit - pFbRegionInfo->base + 1;
+
+        if ((pFbRegionInfo->base == physAddr) && (fbRegionSize == pMemDesc->Size))
+        {
+            NV_PRINTF(LEVEL_INFO,
+                      "Skipping GSP FB Region with addr 0x%llx and size 0x%llx\n",
+                      physAddr, pMemDesc->Size);
+            return NV_TRUE;
+        }
+    }
+
+    return NV_FALSE;
+}
+
 NV_STATUS
-memmgrAddMemNodes_IMPL(OBJGPU *pGpu, MemoryManager *pMemoryManager, NvBool bSaveAllRmAllocations)
+memmgrAddMemNodes_IMPL
+(
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager,
+    NvBool         bSaveAllRmAllocations
+)
 {
     NV_STATUS           status    = NV_OK;
-    Heap               *pHeap       = GPU_GET_HEAP(pGpu);
+    Heap               *pHeap     = GPU_GET_HEAP(pGpu);
     MEMORY_DESCRIPTOR  *pAllocMemDesc;
     MEM_BLOCK          *block;
+    NvBool              bSaveNode = NV_FALSE;
 
     block = pHeap->pBlockList;
     do
     {
         pAllocMemDesc = block->pMemDesc;
+        bSaveNode     = NV_FALSE;
 
         //
         // TODO: Bug 1778161: Let memory descriptor lost on suspend be default,
@@ -590,17 +632,34 @@ memmgrAddMemNodes_IMPL(OBJGPU *pGpu, MemoryManager *pMemoryManager, NvBool bSave
         // content of memory descriptor, remove MEMDESC_FLAGS_LOST_ON_SUSPEND
         // flag.
         //
-        if ((pAllocMemDesc != NULL) &&
-            (((block->owner == HEAP_OWNER_RM_RESERVED_REGION) &&
-              (bSaveAllRmAllocations ||
-               memdescGetFlag(pAllocMemDesc, MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND))) ||
-             (((block->owner == HEAP_OWNER_RM_CHANNEL_CTX_BUFFER) ||
-               (block->owner == HEAP_OWNER_RM_KERNEL_CLIENT)) &&
-              (bSaveAllRmAllocations ||
-               (!memdescGetFlag(pAllocMemDesc, MEMDESC_FLAGS_LOST_ON_SUSPEND))))))
+        if (pAllocMemDesc != NULL)
         {
-            if ((memdescGetAddressSpace(pAllocMemDesc) == ADDR_FBMEM) ||
-                (memdescGetAddressSpace(pAllocMemDesc) == ADDR_SYSMEM))
+            //
+            // Save RM_RESERVED_REGION if it is not GSP managed FB region and
+            // - bSaveRmAllocations true or
+            // - MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND is set
+            // TODO: Use LOST_ON_SUSPEND flag to skip GSP managed FB regions
+            //
+            if  ((block->owner == HEAP_OWNER_RM_RESERVED_REGION) &&
+                 !memmgrIsGspOwnedMemory_HAL(pGpu, pMemoryManager, pAllocMemDesc))
+            {
+                if (bSaveAllRmAllocations || memdescGetFlag(pAllocMemDesc, MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND))
+                    bSaveNode = NV_TRUE;
+            }
+            //
+            // Save RM_CHANNEL_CTX_BUFFER or RM_KERNEL_CLIENT regions if
+            // - bSaveRmAllocations true or
+            // - MEMDESC_FLAGS_PRESERVE_LOST_ON_SUSPEND is not set
+            //
+            else if ((block->owner == HEAP_OWNER_RM_CHANNEL_CTX_BUFFER) || (block->owner == HEAP_OWNER_RM_KERNEL_CLIENT))
+            {
+                if (bSaveAllRmAllocations || (!memdescGetFlag(pAllocMemDesc, MEMDESC_FLAGS_LOST_ON_SUSPEND)))
+                    bSaveNode = NV_TRUE;
+            }
+
+            if (bSaveNode &&
+                ((memdescGetAddressSpace(pAllocMemDesc) == ADDR_FBMEM) ||
+                 (memdescGetAddressSpace(pAllocMemDesc) == ADDR_SYSMEM)))
             {
                 NV_CHECK_OK_OR_GOTO(status,
                                     LEVEL_ERROR,

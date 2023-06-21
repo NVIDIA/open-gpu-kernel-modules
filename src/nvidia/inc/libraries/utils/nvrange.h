@@ -33,7 +33,7 @@ extern "C" {
  * \anchor NV_RANGE_1
  * @defgroup NV_RANGE NV_RANGE
  *
- * @brief Range is a sequence of unsigned 64 bit integers, represented by its 
+ * @brief Range is a sequence of unsigned 64 bit integers, represented by its
  *        lower and upper bounds, inclusive.
  *
  * @details Range is a general purpose data structure utility.
@@ -44,15 +44,15 @@ extern "C" {
  *
  * @note If a range is declared like <I> Range r = {0x0, 0x2} </I> it consist
  *       of elements <I> 0x0, 0x1 and 0x2 </I>, i.e. <B> Range = [lo, hi] ! </B>
- *    
+ *
  *    > There are 4 possible options
  *    > -# (lo, hi)  lo+1 .. hi-1
  *    > -# [lo, hi)  lo   .. hi-1
  *    > -# (lo, hi]  lo+1 .. hi
  *    > -# [lo, hi]  lo   .. hi
  *
- * Notice that only option 4 is capable of describing a full range. 
- * Full range would be 0x0..NvU64_MAX, where 
+ * Notice that only option 4 is capable of describing a full range.
+ * Full range would be 0x0..NvU64_MAX, where
  * NvU64_MAX = 0xFFFFFFFFFFFFFFFF.
  *
  * @{
@@ -81,8 +81,8 @@ static NV_INLINE NvBool rangeIsEmpty(NV_RANGE range)
 /**
  * @brief Calculate range length in bytes.
  *
- * @warning If the range is max, i.e. from 0 to NvU64_MAX, calling this 
- *          function would result in overflow since range length is calculated 
+ * @warning If the range is max, i.e. from 0 to NvU64_MAX, calling this
+ *          function would result in overflow since range length is calculated
  *          as hi-lo+1.
  *
  * @par Example:
@@ -96,12 +96,12 @@ static NV_INLINE NvU64 rangeLength(NV_RANGE range)
 /**
  * @brief Creates a range
  *
- * @details This is useful since on some compilers the following code won't 
+ * @details This is useful since on some compilers the following code won't
  *          work: `rangeLength({0, 100})`.
  *          However, `rangeLength(rangeMake(0, 100))` will always work.
- * 
- * @Returns Range of elements from and including \a lo to and 
- *          including \a hi, i.e. <B> [lo, hi] </B> 
+ *
+ * @Returns Range of elements from and including \a lo to and
+ *          including \a hi, i.e. <B> [lo, hi] </B>
  */
 static NV_INLINE NV_RANGE rangeMake(NvU64 lo, NvU64 hi)
 {
@@ -124,7 +124,7 @@ static NV_INLINE NvBool rangeEquals(NV_RANGE range1, NV_RANGE range2)
 
 /**
  * @brief Check if \a range1 contains \a range2.
- * 
+ *
  * @param[in] range1 Container.
  * @param[in] range2 Containee.
  *
@@ -144,8 +144,8 @@ static NV_INLINE NvBool rangeContains(NV_RANGE range1, NV_RANGE range2)
  */
 static NV_INLINE NvBool rangeOverlaps(NV_RANGE range1, NV_RANGE range2)
 {
-    return (range1.lo <= range2.lo && range2.lo <= range1.hi) 
-           || 
+    return (range1.lo <= range2.lo && range2.lo <= range1.hi)
+           ||
            (range1.lo <= range2.hi && range2.hi <= range1.hi)
            ||
            (range2.lo <= range1.lo && range1.lo <= range2.hi)
@@ -180,7 +180,7 @@ static NV_INLINE NV_RANGE rangeIntersection(NV_RANGE range1, NV_RANGE range2)
  *         <0 - \a range1's lower bound is less than \a range2's lower bound,
  *         >0 - \a range2's lower bound is greater than \a range2's lower bound.
  *
- * @warning If function returns 0 that does not mean that ranges are equal, 
+ * @warning If function returns 0 that does not mean that ranges are equal,
  *          just that their lower bounds are equal!
  *
  * @par Example:
@@ -198,14 +198,14 @@ static NV_INLINE NvS32 rangeCompare(NV_RANGE range1, NV_RANGE range2)
 
 /**
  * @brief Merge two ranges into one.
- * 
- * @returns Merged range. If two ranges have no intersection 
+ *
+ * @returns Merged range. If two ranges have no intersection
  *          the returned range will be empty.
  *
  * @note Empty range is range with lo > hi.
  *
  * @par Example:
- * @snippet nv_range-test.cpp rangeMergeExample 
+ * @snippet nv_range-test.cpp rangeMergeExample
  */
 static NV_INLINE NV_RANGE rangeMerge(NV_RANGE range1, NV_RANGE range2)
 {
@@ -232,11 +232,11 @@ static NV_INLINE NV_RANGE rangeMerge(NV_RANGE range1, NV_RANGE range2)
 }
 
 /**
- * @brief Checks if \a range1 borders with \a range2, i.e. \a range1.lo == 
+ * @brief Checks if \a range1 borders with \a range2, i.e. \a range1.lo ==
  *         \a range2.hi+1 or \a range2.lo == \a range1.hi+1
- * 
+ *
  * @note [a,b] borders with [b+1,c] where a < b < c
- *  
+ *
  */
 static NV_INLINE NvBool rangeBorders(NV_RANGE range1, NV_RANGE range2)
 {
@@ -249,7 +249,7 @@ static NV_INLINE NvBool rangeBorders(NV_RANGE range1, NV_RANGE range2)
 }
 
 /**
- * @brief Splits \a pBigRange 
+ * @brief Splits \a pBigRange
  *
  * @param[in] pBigRange             Pointer to starting range.
  * @param[in] rangeToSplit          Range to split the first range over.
@@ -258,10 +258,10 @@ static NV_INLINE NvBool rangeBorders(NV_RANGE range1, NV_RANGE range2)
  * @par Example:
  * @snippet nv_range-test.cpp rangeSplitExample
  */
-static NV_INLINE NV_STATUS rangeSplit(NV_RANGE *pBigRange, 
+static NV_INLINE NV_STATUS rangeSplit(NV_RANGE *pBigRange,
                          NV_RANGE rangeToSplit, NV_RANGE *pSecondPartAfterSplit)
 {
-    if (rangeIsEmpty(*pBigRange) || rangeIsEmpty(rangeToSplit) || 
+    if (rangeIsEmpty(*pBigRange) || rangeIsEmpty(rangeToSplit) ||
         !rangeContains(*pBigRange, rangeToSplit))
     {
         return NV_ERR_INVALID_ARGUMENT;

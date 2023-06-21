@@ -126,7 +126,7 @@ vmrangeConstruct_IMPL
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
         NV_RM_RPC_ALLOC_OBJECT(pGpu, hClient, hParent, hMemory, class,
-            pAllocData, status);
+            pAllocData, sizeof(*pAllocData), status);
         if (status != NV_OK)
         {
             memdescDestroy(pMemDesc);

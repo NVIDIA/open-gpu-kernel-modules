@@ -88,7 +88,7 @@ struct StandardMemory {
     NV_STATUS (*__stdmemControlFilter__)(struct StandardMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__stdmemControlSerialization_Prologue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__stdmemIsReady__)(struct StandardMemory *, NvBool);
-    NV_STATUS (*__stdmemCheckCopyPermissions__)(struct StandardMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__stdmemCheckCopyPermissions__)(struct StandardMemory *, struct OBJGPU *, struct Device *);
     void (*__stdmemPreDestruct__)(struct StandardMemory *);
     NV_STATUS (*__stdmemIsDuplicate__)(struct StandardMemory *, NvHandle, NvBool *);
     void (*__stdmemControlSerialization_Epilogue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -143,17 +143,17 @@ NV_STATUS __nvoc_objCreate_StandardMemory(StandardMemory**, Dynamic*, NvU32, CAL
 #define stdmemControlFilter(pResource, pCallContext, pParams) stdmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define stdmemControlSerialization_Prologue(pResource, pCallContext, pParams) stdmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define stdmemIsReady(pMemory, bCopyConstructorContext) stdmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define stdmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) stdmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define stdmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) stdmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define stdmemPreDestruct(pResource) stdmemPreDestruct_DISPATCH(pResource)
 #define stdmemIsDuplicate(pMemory, hMemory, pDuplicate) stdmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define stdmemControlSerialization_Epilogue(pResource, pCallContext, pParams) stdmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define stdmemMap(pMemory, pCallContext, pParams, pCpuMapping) stdmemMap_DISPATCH(pMemory, pCallContext, pParams, pCpuMapping)
 #define stdmemAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) stdmemAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-NvU32 stdmemGetSysmemPageSize_IMPL(struct OBJGPU *pGpu, struct StandardMemory *pMemory);
+NvU64 stdmemGetSysmemPageSize_IMPL(struct OBJGPU *pGpu, struct StandardMemory *pMemory);
 
 
 #ifdef __nvoc_standard_mem_h_disabled
-static inline NvU32 stdmemGetSysmemPageSize(struct OBJGPU *pGpu, struct StandardMemory *pMemory) {
+static inline NvU64 stdmemGetSysmemPageSize(struct OBJGPU *pGpu, struct StandardMemory *pMemory) {
     NV_ASSERT_FAILED_PRECOMP("StandardMemory was disabled!");
     return 0;
 }
@@ -241,8 +241,8 @@ static inline NV_STATUS stdmemIsReady_DISPATCH(struct StandardMemory *pMemory, N
     return pMemory->__stdmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS stdmemCheckCopyPermissions_DISPATCH(struct StandardMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__stdmemCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS stdmemCheckCopyPermissions_DISPATCH(struct StandardMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__stdmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void stdmemPreDestruct_DISPATCH(struct StandardMemory *pResource) {

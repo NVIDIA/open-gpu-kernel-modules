@@ -79,7 +79,7 @@ struct VirtualMemory {
     NV_STATUS (*__virtmemControlSerialization_Prologue__)(struct VirtualMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__virtmemCanCopy__)(struct VirtualMemory *);
     NV_STATUS (*__virtmemIsReady__)(struct VirtualMemory *, NvBool);
-    NV_STATUS (*__virtmemCheckCopyPermissions__)(struct VirtualMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__virtmemCheckCopyPermissions__)(struct VirtualMemory *, struct OBJGPU *, struct Device *);
     void (*__virtmemPreDestruct__)(struct VirtualMemory *);
     NV_STATUS (*__virtmemIsDuplicate__)(struct VirtualMemory *, NvHandle, NvBool *);
     void (*__virtmemControlSerialization_Epilogue__)(struct VirtualMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -141,7 +141,7 @@ NV_STATUS __nvoc_objCreate_VirtualMemory(VirtualMemory**, Dynamic*, NvU32, CALL_
 #define virtmemControlSerialization_Prologue(pResource, pCallContext, pParams) virtmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define virtmemCanCopy(pStandardMemory) virtmemCanCopy_DISPATCH(pStandardMemory)
 #define virtmemIsReady(pMemory, bCopyConstructorContext) virtmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define virtmemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) virtmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define virtmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) virtmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define virtmemPreDestruct(pResource) virtmemPreDestruct_DISPATCH(pResource)
 #define virtmemIsDuplicate(pMemory, hMemory, pDuplicate) virtmemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define virtmemControlSerialization_Epilogue(pResource, pCallContext, pParams) virtmemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -227,8 +227,8 @@ static inline NV_STATUS virtmemIsReady_DISPATCH(struct VirtualMemory *pMemory, N
     return pMemory->__virtmemIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS virtmemCheckCopyPermissions_DISPATCH(struct VirtualMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__virtmemCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS virtmemCheckCopyPermissions_DISPATCH(struct VirtualMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__virtmemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void virtmemPreDestruct_DISPATCH(struct VirtualMemory *pResource) {

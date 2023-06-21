@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,6 +36,7 @@
 #include "rmapi/client.h"
 #include "rmapi/resource_fwd_decls.h"
 #include "core/thread_state.h"
+#include "virtualization/hypervisor/hypervisor.h"
 #include "virtualization/kernel_hostvgpudeviceapi.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
@@ -502,9 +503,16 @@ gpuNotifySubDeviceEvent_IMPL
     for (i = 0; i < pGpu->numSubdeviceBackReferences; i++)
     {
         Subdevice *pSubdevice = pGpu->pSubdeviceBackReferences[i];
+
+        //
+        // We've seen cases where pSubdevice is NULL implying that the
+        // pSubdeviceBackReferences[] array is being modified during this loop.
+        // Adding a NULL pointer check here is only a stopgap. See bug 3892382.
+        //
         NV_ASSERT_OR_RETURN_VOID(pSubdevice != NULL);
+
         INotifier *pNotifier = staticCast(pSubdevice, INotifier);
-        
+
         if (inotifyGetNotificationShare(pNotifier) == NULL)
             continue;
 
@@ -850,21 +858,43 @@ _gpuCollectMemInfo
             (bGlobalInfo || (pMemory->pHeap == pTargetedHeap)) &&
             (RES_GET_HANDLE(pMemory->pDevice) == hDevice) &&
             (pMemory->pMemDesc != NULL) &&
-            ((!bIsGuestProcess && (!memdescGetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_LIST_MEMORY))) ||
+            ((!bIsGuestProcess && (!memdescGetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_LIST_MEMORY))
+             && !(hypervisorIsVgxHyper() && (pResourceRef->externalClassId == NV01_MEMORY_HW_RESOURCES))) ||
              (bIsGuestProcess && (memdescGetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED)) && (pMemory->Type != NVOS32_TYPE_UNUSED))))
         {
+            NvBool bIsMemProtected = NV_FALSE;
+
+            bIsMemProtected = gpuIsCCorApmFeatureEnabled(pMemory->pMemDesc->pGpu) &&
+                              (pMemory->Flags & NVOS32_ALLOC_FLAGS_PROTECTED);
+            if (bIsMemProtected)
+            {
+                NV_ASSERT(!memdescGetFlag(pMemory->pMemDesc,
+                           MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY));
+            }
 
             if (pMemory->pMemDesc->DupCount == 1)
             {
                 pData->memPrivate += pMemory->Length;
+                if (bIsMemProtected)
+                {
+                    pData->protectedMemPrivate += pMemory->Length;
+                }
             }
             else if (pMemory->isMemDescOwner)
             {
                 pData->memSharedOwned += pMemory->Length;
+                if (bIsMemProtected)
+                {
+                    pData->protectedMemSharedOwned += pMemory->Length;
+                }
             }
             else
             {
                 pData->memSharedDuped += pMemory->Length;
+                if (bIsMemProtected)
+                {
+                    pData->protectedMemSharedDuped += pMemory->Length;
+                }
             }
         }
     }

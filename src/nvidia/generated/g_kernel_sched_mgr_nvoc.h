@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,6 +104,10 @@ static inline NvU32 kschedmgrGetSchedPolicy(struct KernelSchedMgr *pKernelSchedM
     return pKernelSchedMgr->configSchedPolicy;
 }
 
+static inline NvBool kschedmgrIsPvmrlEnabled(struct KernelSchedMgr *pKernelSchedMgr) {
+    return ((NvBool)(0 != 0));
+}
+
 void kschedmgrConstructPolicy_IMPL(struct KernelSchedMgr *pKernelSchedMgr, struct OBJGPU *pGpu);
 
 #ifdef __nvoc_kernel_sched_mgr_h_disabled
@@ -112,6 +116,16 @@ static inline void kschedmgrConstructPolicy(struct KernelSchedMgr *pKernelSchedM
 }
 #else //__nvoc_kernel_sched_mgr_h_disabled
 #define kschedmgrConstructPolicy(pKernelSchedMgr, pGpu) kschedmgrConstructPolicy_IMPL(pKernelSchedMgr, pGpu)
+#endif //__nvoc_kernel_sched_mgr_h_disabled
+
+void kschedmgrSetConfigPolicyFromUser_IMPL(struct KernelSchedMgr *pKernelSchedMgr, struct OBJGPU *pGpu, NvU32 schedSwPolicy);
+
+#ifdef __nvoc_kernel_sched_mgr_h_disabled
+static inline void kschedmgrSetConfigPolicyFromUser(struct KernelSchedMgr *pKernelSchedMgr, struct OBJGPU *pGpu, NvU32 schedSwPolicy) {
+    NV_ASSERT_FAILED_PRECOMP("KernelSchedMgr was disabled!");
+}
+#else //__nvoc_kernel_sched_mgr_h_disabled
+#define kschedmgrSetConfigPolicyFromUser(pKernelSchedMgr, pGpu, schedSwPolicy) kschedmgrSetConfigPolicyFromUser_IMPL(pKernelSchedMgr, pGpu, schedSwPolicy)
 #endif //__nvoc_kernel_sched_mgr_h_disabled
 
 #undef PRIVATE_FIELD

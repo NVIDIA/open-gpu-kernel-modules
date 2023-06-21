@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,14 +43,15 @@ kchangrpAllocFaultMethodBuffers_GV100
     NV_STATUS                    status         = NV_OK;
     NvU32                        bufSizeInBytes = 0;
     KernelFifo                  *pKernelFifo    = GPU_GET_KERNEL_FIFO(pGpu);
+    MemoryManager               *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvU32                        runQueues      = kfifoGetNumRunqueues_HAL(pGpu, pKernelFifo);
     NvU32                        index          = 0;
     NvU32                        faultBufApert  = ADDR_SYSMEM;
     NvU32                        faultBufAttr   = NV_MEMORY_CACHED;
-    NvU8                        *pRmMapAddr     = NULL;
     NvU64                        memDescFlags   = MEMDESC_FLAGS_LOST_ON_SUSPEND;
     HW_ENG_FAULT_METHOD_BUFFER  *pFaultMthdBuf  = NULL;
     NvU32                        gfid           = pKernelChannelGroup->gfid;
+    TRANSFER_SURFACE             surf           = {0};
 
     //
     // Allocate method buffer if applicable
@@ -122,21 +123,12 @@ kchangrpAllocFaultMethodBuffers_GV100
 
         memdescSetName(pGpu, pFaultMthdBuf->pMemDesc, NV_RM_SURF_NAME_CE_FAULT_METHOD_BUFFER, NULL);
 
-        // Map the buffer to RM
-        pRmMapAddr = kbusMapRmAperture_HAL(pGpu, pFaultMthdBuf->pMemDesc);
-        if (!pRmMapAddr)
-        {
-            status = NV_ERR_INVALID_ADDRESS;
-            goto fail;
-        }
+        surf.pMemDesc = pFaultMthdBuf->pMemDesc;
+        surf.offset = 0;
 
-        // Memset to 0
-        portMemSet(pRmMapAddr, 0, bufSizeInBytes);
-
-        // Unmap the buffer from RM
-        kbusUnmapRmAperture_HAL(pGpu, pFaultMthdBuf->pMemDesc, &(pRmMapAddr),
-                                NV_TRUE);
-        pRmMapAddr = NULL;
+        NV_ASSERT_OK_OR_RETURN(
+            memmgrMemSet(pMemoryManager, &surf, 0, bufSizeInBytes,
+                         TRANSFER_FLAGS_NONE));
 
         pFaultMthdBuf->bar2Addr = 0;
     }

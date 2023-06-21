@@ -459,14 +459,12 @@ struct uvm_va_block_struct
         // The MMU notifier is registered per va_block.
         struct mmu_interval_notifier notifier;
 
-        // Wait queue for GPU atomic operations to system memory.
-        struct wait_queue_head atomic_waitq;
-
-        // Mask of pages being migrated to system memory for GPU atomic access.
-        // It is used so other threads don't try to migrate those pages while
-        // make_device_exclusive_range() is called without holding the va_block
-        // lock.
-        uvm_page_mask_t atomic_busy;
+        // This is used to serialize migrations between CPU and GPU while
+        // allowing the va_block lock to be dropped.
+        // This must be acquired before locking the va_block lock if the
+        // critical section can change the residency state.
+        // Do not access directly, use the uvm_hmm_migrate_*() routines.
+        uvm_mutex_t migrate_lock;
 
         // Sequence number to tell if any changes were made to the va_block
         // while not holding the block lock and calling hmm_range_fault().
@@ -1805,6 +1803,11 @@ static bool uvm_page_mask_subset(const uvm_page_mask_t *subset, const uvm_page_m
     return bitmap_subset(subset->bitmap, mask->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
 
+static bool uvm_page_mask_equal(const uvm_page_mask_t *mask_in1, const uvm_page_mask_t *mask_in2)
+{
+    return bitmap_equal(mask_in1->bitmap, mask_in2->bitmap, PAGES_PER_UVM_VA_BLOCK);
+}
+
 static bool uvm_page_mask_init_from_region(uvm_page_mask_t *mask_out,
                                            uvm_va_block_region_t region,
                                            const uvm_page_mask_t *mask_in)
@@ -1990,6 +1993,23 @@ static NvU64 uvm_reverse_map_end(const uvm_reverse_map_t *reverse_map)
 // Iterate over all pages within the given VA block
 #define for_each_va_block_page(page_index, va_block)                                         \
     for_each_va_block_page_in_region((page_index), uvm_va_block_region_from_block(va_block))
+
+// Return the first vma intersecting the region [start, va_block->end]
+// or NULL if no such vma exists. Also returns the region covered by
+// the vma within the va_block.
+struct vm_area_struct *uvm_va_block_find_vma_region(uvm_va_block_t *va_block,
+                                                    struct mm_struct *mm,
+                                                    NvU64 start,
+                                                    uvm_va_block_region_t *region);
+
+// Iterate over all vma regions covered by a va_block
+#define for_each_va_block_vma_region(va_block, mm, vma, region)                                 \
+    for (vma = uvm_va_block_find_vma_region((va_block), (mm), (va_block)->start, (region));     \
+         (vma);                                                                                 \
+         vma = uvm_va_block_find_vma_region((va_block),                                         \
+                                            (mm),                                               \
+                                            uvm_va_block_region_end((va_block), *(region)) + 1, \
+                                            (region)))
 
 // Return the block region covered by the given chunk size. page_index must be
 // any page within the block known to be covered by the chunk.

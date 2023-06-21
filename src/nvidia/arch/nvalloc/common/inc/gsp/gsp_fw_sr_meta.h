@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,9 @@
 #ifndef GSP_FW_SR_META_H_
 #define GSP_FW_SR_META_H_
 
+#define GSP_FW_SR_META_MAGIC     0x8a3bb9e6c6c39d93ULL
+#define GSP_FW_SR_META_REVISION  2
+
 /*!
  * GSP firmware SR metadata
  *
@@ -39,14 +42,14 @@ typedef struct
     // Magic
     // Use for verification by Booter
     //
-    NvU64 magic; // = GSP_FW_SR_META_MAGIC;
+    NvU64 magic;  // = GSP_FW_SR_META_MAGIC;
 
     //
     // Revision number
     // Bumped up when we change this interface so it is not backward compatible.
     // Bumped up when we revoke GSP-RM ucode
     //
-    NvU64 revision; // = GSP_FW_SR_META_MAGIC_REVISION;
+    NvU64 revision;  // = GSP_FW_SR_META_MAGIC_REVISION;
 
     //
     // ---- Members regarding data in SYSMEM ----------------------------
@@ -58,26 +61,26 @@ typedef struct
     // ---- Members for crypto ops across S/R ---------------------------
 
     //
-    // IV used for encryption of the Suspend/Resume data
+    // HMAC over the entire GspFwSRMeta structure (including padding)
+    // with the hmac field itself zeroed.
     //
-    NvU8 IV[32];
+    NvU8 hmac[32];
+
+    // Hash over GspFwWprMeta structure
+    NvU8 wprMetaHash[32];
+
+    // Hash over GspFwHeapFreeList structure. All zeros signifies no free list.
+    NvU8 heapFreeListHash[32];
+
+    // Hash over data in WPR2 (skipping over free heap chunks; see Booter for details)
+    NvU8 dataHash[32];
 
     //
-    // Hash generated of the Suspend/Resume data
+    // Pad structure to exactly 256 bytes (1 DMA chunk).
+    // Padding initialized to zero.
     //
-    NvU8 hash[64];
-
-    // ---- Unused members ----------------------------------------------
-
-    //
-    // Pad structure to exactly 256 bytes (1 DMA chunk).  Can replace padding with additional
-    // fields without incrementing revision.  Padding initialized to 0.
-    //
-    NvU32 padding[32];
+    NvU32 padding[24];
 
 } GspFwSRMeta;
-
-#define GSP_FW_SR_META_REVISION  1
-#define GSP_FW_SR_META_MAGIC     0x8a3bb9e6c6c39d93ULL
 
 #endif // GSP_FW_SR_META_H_

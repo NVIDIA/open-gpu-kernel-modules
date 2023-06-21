@@ -957,12 +957,42 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
         /*func=*/       "kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex"
 #endif
     },
+    {               /*  [48] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) kchannelCtrlCmdGetKmb_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+        /*flags=*/      0x2210u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xc56f010bu,
+        /*paramSize=*/  sizeof(NVC56F_CTRL_CMD_GET_KMB_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_KernelChannel.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "kchannelCtrlCmdGetKmb"
+#endif
+    },
+    {               /*  [49] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) kchannelCtrlRotateSecureChannelIv_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+        /*flags=*/      0x2210u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xc56f010cu,
+        /*paramSize=*/  sizeof(NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_KernelChannel.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "kchannelCtrlRotateSecureChannelIv"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelChannel = 
 {
-    /*numEntries=*/     48,
+    /*numEntries=*/     50,
     /*pExportEntries=*/ __nvoc_exported_method_def_KernelChannel
 };
 
@@ -1035,27 +1065,27 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     pThis->__kchannelCheckMemInterUnmap__ = &kchannelCheckMemInterUnmap_IMPL;
 
     // Hal function -- kchannelCreateUserMemDesc
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
-    {
-        pThis->__kchannelCreateUserMemDesc__ = &kchannelCreateUserMemDesc_GM107;
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
         pThis->__kchannelCreateUserMemDesc__ = &kchannelCreateUserMemDesc_GA10B;
     }
+    else
+    {
+        pThis->__kchannelCreateUserMemDesc__ = &kchannelCreateUserMemDesc_GM107;
+    }
 
     // Hal function -- kchannelIsUserdAddrSizeValid
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GH100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
         pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GV100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    else
     {
         pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GA100;
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-    {
-        pThis->__kchannelIsUserdAddrSizeValid__ = &kchannelIsUserdAddrSizeValid_GH100;
     }
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
@@ -1232,6 +1262,14 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__kchannelCtrlCmdStopChannel__ = &kchannelCtrlCmdStopChannel_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+    pThis->__kchannelCtrlCmdGetKmb__ = &kchannelCtrlCmdGetKmb_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+    pThis->__kchannelCtrlRotateSecureChannelIv__ = &kchannelCtrlRotateSecureChannelIv_IMPL;
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)

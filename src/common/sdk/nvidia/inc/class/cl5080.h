@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/cl5080.finn
+// Source file:      class/cl5080.finn
 //
 
 #include "cl5080_notification.h"

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -105,11 +105,11 @@
 #if GPU_CHILD_MODULE(KERNEL_DISPLAY)
     GPU_CHILD_SINGLE_INST( KernelDisplay,        GPU_GET_KERNEL_DISPLAY,              1,                NV_FALSE,        pKernelDisplay   )
 #endif
-#if GPU_CHILD_MODULE(DISP)
-    GPU_CHILD_SINGLE_INST( OBJDISP,              GPU_GET_DISP,                        1,                NV_FALSE,        pDisp            )
-#endif
 #if GPU_CHILD_MODULE(TMR)
     GPU_CHILD_SINGLE_INST( OBJTMR,               GPU_GET_TIMER,                       1,                NV_TRUE,         pTmr             )
+#endif
+#if GPU_CHILD_MODULE(DISP)
+    GPU_CHILD_SINGLE_INST( OBJDISP,              GPU_GET_DISP,                        1,                NV_FALSE,        pDisp            )
 #endif
 #if GPU_CHILD_MODULE(BUS)
     GPU_CHILD_SINGLE_INST( OBJBUS,               GPU_GET_BUS,                         1,                NV_FALSE,        pBus             )
@@ -297,8 +297,11 @@
 #if GPU_CHILD_MODULE(OFA)
     GPU_CHILD_SINGLE_INST( OBJOFA,               GPU_GET_OFA,                         1,                NV_FALSE,        pOfa             )
 #endif
+#if RMCFG_MODULE_CONF_COMPUTE && GPU_CHILD_MODULE(CONF_COMPUTE)
+    GPU_CHILD_SINGLE_INST( ConfidentialCompute,  GPU_GET_CONF_COMPUTE,                1,                NV_TRUE,         pConfCompute      )
+#endif
 #if RMCFG_MODULE_KERNEL_CCU && GPU_CHILD_MODULE(KERNEL_CCU)
-    GPU_CHILD_SINGLE_INST( KernelCcu,            GPU_GET_KERNEL_CCU,                  1,                NV_FALSE,        pKernelCcu        )   
+    GPU_CHILD_SINGLE_INST( KernelCcu,            GPU_GET_KERNEL_CCU,                  1,                NV_FALSE,        pKernelCcu        )
 #endif
 
 // Undefine the entry macros to simplify call sites

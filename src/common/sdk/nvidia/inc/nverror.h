@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 1993-2022, NVIDIA CORPORATION. All rights reserved.
+ * Copyright (c) 1993-2023, NVIDIA CORPORATION. All rights reserved.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
  * copy of this software and associated documentation files (the "Software"),
@@ -118,8 +118,9 @@
 #define SPI_PMU_RPC_ERASE_FAIL                          (124)
 #define INFOROM_FS_ERROR                                (125)
 #define ALI_TRAINING_FAIL                               (136)
-#define ROBUST_CHANNEL_LAST_ERROR                       (ALI_TRAINING_FAIL)
 #define NVLINK_FLA_PRIV_ERR                             (137)
+#define ROBUST_CHANNEL_DLA_ERROR                        (138)
+#define ROBUST_CHANNEL_LAST_ERROR                       (ROBUST_CHANNEL_DLA_ERROR)
 
 
 // Indexed CE reference

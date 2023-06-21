@@ -195,12 +195,16 @@ static NV_STATUS test_all_gpus_in_va(uvm_va_space_t *va_space)
         for (i = 0; i < ARRAY_SIZE(sizes); ++i) {
             for (j = 0; j < ARRAY_SIZE(mem_types); ++j) {
                 for (k = 0; k < ARRAY_SIZE(alignments); ++k) {
+                    bool test_cpu_mappings = true;
 
                     // Create an allocation in the GPU's address space
                     TEST_NV_CHECK_RET(uvm_rm_mem_alloc(gpu, mem_types[j], sizes[i], alignments[k], &rm_mem));
 
+                    test_cpu_mappings = mem_types[j] == UVM_RM_MEM_TYPE_SYS ||
+                                        !uvm_conf_computing_mode_enabled(gpu);
                     // Test CPU mappings
-                    TEST_NV_CHECK_GOTO(map_cpu(rm_mem), error);
+                    if (test_cpu_mappings)
+                        TEST_NV_CHECK_GOTO(map_cpu(rm_mem), error);
 
                     // Test mappings in the GPU owning the allocation
                     TEST_NV_CHECK_GOTO(map_gpu_owner(rm_mem, alignments[k]), error);

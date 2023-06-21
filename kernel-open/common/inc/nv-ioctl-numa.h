@@ -62,6 +62,7 @@ typedef struct nv_ioctl_numa_info
     uint64_t memblock_size __aligned(8);
     uint64_t numa_mem_addr __aligned(8);
     uint64_t numa_mem_size __aligned(8);
+    uint8_t  use_auto_online;
     nv_offline_addresses_t offline_addresses __aligned(8);
 } nv_ioctl_numa_info_t;
 

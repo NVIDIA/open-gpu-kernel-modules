@@ -113,6 +113,7 @@ void uvm_hal_volta_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_a
     NvU32 launch_dma_src_dst_type;
     NvU32 launch_dma_plc_mode;
     NvU32 flush_value = HWCONST(C3B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE);
+    NvU32 copy_type_value = gpu->parent->ce_hal->memcopy_copy_type(push, dst, src);
 
     UVM_ASSERT_MSG(gpu->parent->ce_hal->memcopy_is_valid(push, dst, src),
                    "Memcopy validation failed in channel %s, GPU %s.\n",
@@ -148,6 +149,7 @@ void uvm_hal_volta_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_a
            flush_value |
            launch_dma_src_dst_type |
            launch_dma_plc_mode |
+           copy_type_value |
            pipelined_value);
 
         pipelined_value = HWCONST(C3B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, PIPELINED);
@@ -193,7 +195,7 @@ static void memset_common(uvm_push_t *push, uvm_gpu_address_t dst, size_t size, 
     NvU32 launch_dma_plc_mode;
     NvU32 flush_value = HWCONST(C3B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE);
 
-    UVM_ASSERT_MSG(gpu->parent->ce_hal->memset_is_valid(push, dst, memset_element_size),
+    UVM_ASSERT_MSG(gpu->parent->ce_hal->memset_is_valid(push, dst, size, memset_element_size),
                    "Memset validation failed in channel %s, GPU %s.\n",
                    push->channel->name,
                    uvm_gpu_name(gpu));

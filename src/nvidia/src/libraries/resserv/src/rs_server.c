@@ -20,7 +20,7 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
- 
+
 #define NVOC_RS_SERVER_H_PRIVATE_ACCESS_ALLOWED
 #include "nvlog_inc.h"
 #include "resserv/resserv.h"
@@ -639,6 +639,7 @@ serverAllocResource
     RS_LOCK_INFO       *pLockInfo;
     RsClient           *pSecondClient = NULL;
     NvHandle            hSecondClient;
+    CALL_CONTEXT        callContext = {0};
 
     if (!pServer->bConstructed)
         return NV_ERR_NOT_READY;
@@ -661,6 +662,10 @@ serverAllocResource
 
     if (status == NV_OK)
     {
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            serverDeserializeAllocDown(&callContext, pParams->externalClassId, &pParams->pAllocParams, &pParams->paramsSize, &pParams->allocFlags),
+            done);
+
         if (bClientAlloc)
         {
             status = serverAllocClient(pServer, pParams);
@@ -741,6 +746,10 @@ done:
                                             pLockInfo, &releaseFlags);
         }
     }
+
+    NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
+        serverSerializeAllocUp(&callContext, pParams->externalClassId, &pParams->pAllocParams, &pParams->paramsSize, &pParams->allocFlags));
+    serverFreeSerializeStructures(&callContext, pParams->pAllocParams);
 
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
 
@@ -3019,7 +3028,7 @@ serverAllocShareWithHalspecParent
     status = objCreateDynamicWithFlags(&pDynamic,
                                        pHalspecParent,
                                        (const NVOC_CLASS_INFO*)(const void*)pClassInfo,
-                                       flags); 
+                                       flags);
     if (status != NV_OK)
         return status;
 
@@ -3152,8 +3161,8 @@ serverSerializeCtrlDown
 (
     CALL_CONTEXT *pCallContext,
     NvU32 cmd,
-    void *pParams,
-    NvU32 paramsSize,
+    void **ppParams,
+    NvU32 *pParamsSize,
     NvU32 *flags
 )
 {
@@ -3165,8 +3174,8 @@ serverDeserializeCtrlDown
 (
     CALL_CONTEXT *pCallContext,
     NvU32 cmd,
-    void *pParams,
-    NvU32 paramsSize,
+    void **ppParams,
+    NvU32 *pParamsSize,
     NvU32 *flags
 )
 {
@@ -3178,8 +3187,8 @@ serverSerializeCtrlUp
 (
     CALL_CONTEXT *pCallContext,
     NvU32 cmd,
-    void *pParams,
-    NvU32 paramsSize,
+    void **ppParams,
+    NvU32 *pParamsSize,
     NvU32 *flags
 )
 {
@@ -3191,8 +3200,60 @@ serverDeserializeCtrlUp
 (
     CALL_CONTEXT *pCallContext,
     NvU32 cmd,
-    void *pParams,
-    NvU32 paramsSize,
+    void **ppParams,
+    NvU32 *pParamsSize,
+    NvU32 *flags
+)
+{
+    return NV_OK;
+}
+
+NV_STATUS
+serverSerializeAllocDown
+(
+    CALL_CONTEXT *pCallContext,
+    NvU32 classId,
+    void **ppParams,
+    NvU32 *pParamsSize,
+    NvU32 *flags
+)
+{
+    return NV_OK;
+}
+
+NV_STATUS
+serverDeserializeAllocDown
+(
+    CALL_CONTEXT *pCallContext,
+    NvU32 classId,
+    void **ppParams,
+    NvU32 *pParamsSize,
+    NvU32 *flags
+)
+{
+    return NV_OK;
+}
+
+NV_STATUS
+serverSerializeAllocUp
+(
+    CALL_CONTEXT *pCallContext,
+    NvU32 classId,
+    void **ppParams,
+    NvU32 *pParamsSize,
+    NvU32 *flags
+)
+{
+    return NV_OK;
+}
+
+NV_STATUS
+serverDeserializeAllocUp
+(
+    CALL_CONTEXT *pCallContext,
+    NvU32 classId,
+    void **pParams,
+    NvU32 *pParamsSize,
     NvU32 *flags
 )
 {

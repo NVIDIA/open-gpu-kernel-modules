@@ -541,7 +541,7 @@ static NV_STATUS allocate_then_free_8_8_64k(uvm_gpu_t *gpu)
 
     NvLength size = 64 * 1024;
     NvLength stride = 32 * size;
-    NvLength start = stride * 248 + 256LL * 1024 * 1024 * 1024 + (1LL << 47);
+    NvLength start = (248 * stride) + (256 * UVM_SIZE_1GB) + (128 * UVM_SIZE_1TB);
     int i;
 
     MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
@@ -662,7 +662,7 @@ static NV_STATUS get_entire_table_4k(uvm_gpu_t *gpu)
 
     NvU64 start = 1UL << 47;
 
-    NvLength size = 1 << 21;
+    NvLength size = 2 * UVM_SIZE_1MB;
 
     MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_4K, start, size, &range), NV_OK);
@@ -685,7 +685,7 @@ static NV_STATUS get_entire_table_512m(uvm_gpu_t *gpu)
     uvm_page_table_range_t range;
 
     NvU64 start = 1UL << 48;
-    NvLength size = 512UL * 512 * 1024 * 1024;
+    NvLength size = 512UL * UVM_PAGE_SIZE_512M;
 
     MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_512M, start, size, &range), NV_OK);
@@ -711,7 +711,7 @@ static NV_STATUS split_4k_from_2m(uvm_gpu_t *gpu)
     uvm_page_table_range_t range_64k;
 
     NvU64 start = 1UL << 48;
-    NvLength size = 1 << 21;
+    NvLength size = 2 * UVM_SIZE_1MB;
 
     MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_2M, start, size, &range_2m), NV_OK);
@@ -759,7 +759,7 @@ static NV_STATUS split_2m_from_512m(uvm_gpu_t *gpu)
     uvm_page_table_range_t range_2m;
 
     NvU64 start = 1UL << 48;
-    NvLength size = 512UL * 1024 * 1024;
+    NvLength size = UVM_PAGE_SIZE_512M;
 
     MEM_NV_CHECK_RET(test_page_tree_init_kernel(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);
     MEM_NV_CHECK_RET(test_page_tree_get_ptes(&tree, UVM_PAGE_SIZE_512M, start, size, &range_512m), NV_OK);
@@ -812,7 +812,7 @@ static NV_STATUS get_2gb_range(uvm_gpu_t *gpu)
     uvm_page_tree_t tree;
     uvm_page_table_range_t range;
 
-    NvU64 start = 2UL * (1 << 30);
+    NvU64 start = 2 * UVM_SIZE_1GB;
     NvU64 size = start;
 
     MEM_NV_CHECK_RET(test_page_tree_init(gpu, BIG_PAGE_SIZE_PASCAL, &tree), NV_OK);

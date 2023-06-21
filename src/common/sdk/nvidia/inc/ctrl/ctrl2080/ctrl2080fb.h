@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080fb.finn
+// Source file:      ctrl/ctrl2080/ctrl2080fb.finn
 //
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
@@ -420,27 +420,6 @@ typedef struct NV2080_CTRL_FB_GET_INFO_V2_PARAMS {
 } NV2080_CTRL_FB_GET_INFO_V2_PARAMS;
 
 /*
- * NV2080_CTRL_CMD_FB_GET_TILE_ADDRESS_INFO
- *
- * This command returns tile addressing information.
- *
- *   StartAddr
- *     This parameter returns BAR1 plus the size of the local FB.
- *   SpaceSize
- *     This parameter returns the BAR1 aperture size less the size of the
- *     local FB.
- *
- * Note that both parameters will contain zero if there is no system tile
- * address space.
- */
-#define NV2080_CTRL_CMD_FB_GET_TILE_ADDRESS_INFO (0x20801302U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x2" */
-
-typedef struct NV2080_CTRL_FB_GET_SYSTEM_TILE_ADDRESS_SPACE_INFO {
-    NV_DECLARE_ALIGNED(NvU64 StartAddr, 8);
-    NV_DECLARE_ALIGNED(NvU64 SpaceSize, 8);
-} NV2080_CTRL_FB_GET_SYSTEM_TILE_ADDRESS_SPACE_INFO;
-
-/*
  * NV2080_CTRL_CMD_FB_GET_BAR1_OFFSET
  *
  * This command returns the GPU virtual address of a bar1
@@ -537,53 +516,8 @@ typedef struct NV2080_CTRL_FB_GET_CALIBRATION_LOCK_FAILED_PARAMS {
 } NV2080_CTRL_FB_GET_CALIBRATION_LOCK_FAILED_PARAMS;
 
 /* valid flags parameter values */
-#define NV2080_CTRL_CMD_FB_GET_CAL_FLAG_NONE              (0x00000000U)
-#define NV2080_CTRL_CMD_FB_GET_CAL_FLAG_RESET             (0x00000001U)
-
-/*
- * NV2080_CTRL_CMD_FB_SET_SCANOUT_COMPACTION_ALLOWED
- *
- * This command specifies to RM if scanout compaction feature is allowed or
- * not in the current configuration. In hybrid mode when dGPU is rendering the
- * image, the dGPU blit to the scanout surface happens without mGPU's
- * knowledge (directly to system memory), which results in stale compacted
- * data resulting in corruption.
- *
- * This control call can be used to disable the compaction whenever the KMD
- * (client) is switching to the pref mode in Hybrid i.e., whenever there is a
- * possibility of dGPU doing a blit to mGpu scanout surface. Compaction can
- * be enabled when system is back in hybrid power mode as mGpu will be
- * rendering the image.
- *
- *   allowCompaction
- *     This parameter specifies if the display compaction feature is allowed
- *     or not allowed.
- *   immediate
- *     This parameter specifies whether compaction has to be enabled or
- *     disabled immediately (based on the value of allowCompaction field) or
- *     during the next modeset.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NVOS_STATUS_INVALID_PARAM_STRUCT
- *   NVOS_STATUS_NOT_SUPPORTED
- *   NV_ERR_INVALID_ARGUMENT
- */
-
-#define NV2080_CTRL_CMD_FB_SET_SCANOUT_COMPACTION_ALLOWED (0x2080130dU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0xD" */ // Deprecated, removed form RM
-
-typedef struct NV2080_CTRL_FB_SET_SCANOUT_COMPACTION_ALLOWED_PARAMS {
-    NvU32 allowCompaction;
-    NvU32 immediate;
-} NV2080_CTRL_FB_SET_SCANOUT_COMPACTION_ALLOWED_PARAMS;
-
-/* valid allowCompaction values */
-#define NV2080_CTRL_CMD_FB_SET_SCANOUT_COMPACTION_ALLOW         (0x00000001U)
-#define NV2080_CTRL_CMD_FB_SET_SCANOUT_COMPACTION_DISALLOW      (0x00000000U)
-
-/* valid immediate values */
-#define NV2080_CTRL_CMD_FB_SET_SCANOUT_COMPACTION_IMMEDIATE     (000000001U)
-#define NV2080_CTRL_CMD_FB_SET_SCANOUT_COMPACTION_NOT_IMMEDIATE (000000000U)
+#define NV2080_CTRL_CMD_FB_GET_CAL_FLAG_NONE         (0x00000000U)
+#define NV2080_CTRL_CMD_FB_GET_CAL_FLAG_RESET        (0x00000001U)
 
 /*
  * NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE
@@ -628,9 +562,9 @@ typedef struct NV2080_CTRL_FB_SET_SCANOUT_COMPACTION_ALLOWED_PARAMS {
  *     supports it.  Use this call if you want to flush a single allocation and
  *     you have a memory object describing the physical memory.
  */
-#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE                      (0x2080130eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE           (0x2080130eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_FB_FLUSH_GPU_CACHE_MAX_ADDRESSES            500U
+#define NV2080_CTRL_FB_FLUSH_GPU_CACHE_MAX_ADDRESSES 500U
 
 #define NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS_MESSAGE_ID (0xEU)
 
@@ -1614,239 +1548,6 @@ typedef struct NV2080_CTRL_CMD_FB_COMPBITCOPY_WRITE_COMPBITS64KB_PARAMS {
     NV_DECLARE_ALIGNED(NvU32 *compbitBuffer, 8);
     NvBool upper64KBCompbitSel;
 } NV2080_CTRL_CMD_FB_COMPBITCOPY_WRITE_COMPBITS64KB_PARAMS;
-
-/*!
- * NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_COMPBITSPS        < Deprecated >
- *
- * The PS (Performance Path, or Optimized path, or Per Slice version)
- * of PutCompBits.
- *
- * @params[out] NvU32  *fcbits;
- *     Buffer to receive Fast Clear Bits.
- * @params[out] NvU32  *compbits;
- *     Buffer to receive Compression Bits.
- * @params[out] NvU32  *compCacheLine;
- *     Buffer to receive Comp Cache Line data.
- * @params[in] NvU64  dataPhysicalStart;
- *     Start Address of Data
- * @params[in] NvU64  surfaceOffset;
- *     Offset in the surface
- * @params[in] NvU32  comptagLine;
- *     Compression Tag Line Number
- * @params[in] NvU32  ROPTile_offset;
- *     Offset in the surface of the ROP tile.
- * @params[in] NvBool upper64KBCompbitSel;
- *     Selects Upper or Lower 64K
- * @params[in] NvBool getFcBits;
- *   Indicates if fast clear bits should be returned.
- * @params[in] NvP64  derivedParams
- *   Actually a CompBitDerivedParams structure.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- */
-#define NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_COMPBITSPS (0x2080132eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x2E" */
-
-typedef struct NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_COMPBITSPS_PARAMS {
-    NV_DECLARE_ALIGNED(NvU32 *fcbits, 8);
-    NV_DECLARE_ALIGNED(NvU32 *compbits, 8);
-    NV_DECLARE_ALIGNED(NvU32 *compCacheLine, 8);
-    NV_DECLARE_ALIGNED(NvU64 dataPhysicalStart, 8);
-    NV_DECLARE_ALIGNED(NvU64 surfaceOffset, 8);
-    NvU32  comptagLine;
-    NvU32  ROPTile_offset;
-    NvBool upper64KBCompbitSel;
-    NvBool getFcBits;
-    NV_DECLARE_ALIGNED(NvP64 derivedParams, 8);
-} NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_COMPBITSPS_PARAMS;
-
-/*!
- * NV2080_CTRL_CMD_FB_COMPBITCOPY_PUT_COMPBITSPS        < Deprecated >
- *
- * The PS (Performance Path, or Optimized path, or Per Slice version)
- * of GetCompBits.
- *
- * @params[in] NvU32  fcbits;
- *     Buffer with Fast Clear Bits to write.
- * @params[in] NvU32  compbits;
- *     Buffer to receive Compression Bits.
- * @params[in] NvBool writeFc
- *     Indicates of Fast Clear Bits should be written.
- * @params[in] NvU32  *compCacheLine;
- *     Buffer to receive Comp Cache Line data.
- * @params[in] NvU64  dataPhysicalStart;
- *     Start Address of Data
- * @params[in] NvU64  surfaceOffset;
- *     Offset in the surface
- * @params[in] NvU32  comptagLine;
- *     Compression Tag Line Number
- * @params[in] NvU32  ROPTile_offset;
- *     Offset in the surface of the ROP tile.
- * @params[in] NvBool upper64KBCompbitSel;
- *     Selects Upper or Lower 64K
- * @params[in] NvP64  derivedParams
- *   Actually a CompBitDerivedParams structure.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- */
-#define NV2080_CTRL_CMD_FB_COMPBITCOPY_PUT_COMPBITSPS (0x2080132fU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x2F" */
-
-typedef struct NV2080_CTRL_CMD_FB_COMPBITCOPY_PUT_COMPBITSPS_PARAMS {
-    NvU32  fcbits;
-    NvU32  compbits;
-    NvBool writeFc;
-    NV_DECLARE_ALIGNED(NvU32 *compCacheLine, 8);
-    NV_DECLARE_ALIGNED(NvU64 dataPhysicalStart, 8);
-    NV_DECLARE_ALIGNED(NvU64 surfaceOffset, 8);
-    NvU32  comptagLine;
-    NvU32  ROPTile_offset;
-    NvBool upper64KBCompbitSel;
-    NV_DECLARE_ALIGNED(NvP64 derivedParams, 8);
-} NV2080_CTRL_CMD_FB_COMPBITCOPY_PUT_COMPBITSPS_PARAMS;
-
-/*!
- * NV2080_CTRL_CMD_FB_COMPBITCOPY_READ_COMPCACHELINEPS              < Deprecated >
- *
- * The PS (Performance Path, or Optimized path, or Per Slice version)
- * of ReadCompCacheLine.
- *
- * @paramsNvU32  *compCacheLine;
- *    Buffer for Comp Cache Line Read
- * @paramsNvU32  comptagLine;
- *    Comp Tag Line Number to read
- * @paramsNvU32  partition;
- *    FB Partition of the desired Comp Cache Line
- * @paramsNvU32  slice;
- *    Slice of the desired Comp Cache Line
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- */
-#define NV2080_CTRL_CMD_FB_COMPBITCOPY_READ_COMPCACHELINEPS (0x20801330U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x30" */
-
-typedef struct NV2080_CTRL_CMD_FB_COMPBITCOPY_READ_COMPCACHELINEPS_PARAMS {
-    NV_DECLARE_ALIGNED(NvU32 *compCacheLine, 8);
-    NvU32 comptagLine;
-    NvU32 partition;
-    NvU32 slice;
-} NV2080_CTRL_CMD_FB_COMPBITCOPY_READ_COMPCACHELINEPS_PARAMS;
-
-/*!
- * NV2080_CTRL_CMD_FB_COMPBITCOPY_WRITE_COMPCACHELINEPS             < Deprecated >
- *
- * The PS (Performance Path, or Optimized path, or Per Slice version)
- * of WriteCompCacheLine.
- *
- * @params[in] NvU32  *compCacheLine;
- *    Buffer for Comp Cache Line to Write
- * @params[in] NvU32  comptagLine;
- *    Comp Tag Line Number to Write
- * @params[in] NvU32  partition;
- *    FB Partition of the desired Comp Cache Line
- * @params[in] NvU32  slice;
- *    Slice of the desired Comp Cache Line
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- */
-#define NV2080_CTRL_CMD_FB_COMPBITCOPY_WRITE_COMPCACHELINEPS (0x20801331U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x31" */
-
-typedef struct NV2080_CTRL_CMD_FB_COMPBITCOPY_WRITE_COMPCACHELINEPS_PARAMS {
-    NV_DECLARE_ALIGNED(NvU32 *compCacheLine, 8);
-    NvU32 comptagLine;
-    NvU32 partition;
-    NvU32 slice;
-} NV2080_CTRL_CMD_FB_COMPBITCOPY_WRITE_COMPCACHELINEPS_PARAMS;
-
-/*!
- * NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_COMPCACHELINE_BOUNDS          < Deprecated >
- *
- * Used by PS (Performance Path, or Optimized path, or Per Slice version)
- * to retrieve upper and lower Address of the CompCacheLine.
- *
- * @params[out] NvU64  *minCPUAddress;
- *    Minimum (lower bound) of the ComCacheLine.
- * @params[out] NvU64  *minCPUAddress;
- *    Minimum (lower bound) of the ComCacheLine.
- * @params[in] NvU32  comptagLine;
- *    CompTagLine to fetch the bounds of.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- */
-#define NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_COMPCACHELINE_BOUNDS (0x20801332U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x32" */
-
-typedef struct NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_COMPCACHELINE_BOUNDS_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 *minCPUAddress, 8);
-    NV_DECLARE_ALIGNED(NvU64 *maxCPUAddress, 8);
-    NvU32 comptagLine;
-} NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_COMPCACHELINE_BOUNDS_PARAMS;
-
-/*!
- * NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_PART_SLICE_OFFSET             < Deprecated >
- *
- * Used by PS (Performance Path, or Optimized path, or Per Slice version)
- * to retrieve partition, slice and ROP Tile Offset  of the passed in
- * surface location.
- *
- * @params[out] NvU64  *part;
- *    Partition in which the target part of the surface resides.
- * @params[out] NvU64  *slice;
- *    Slice in which the target part of the surface resides.
- * @params[out] NvU64  *ropTileoffset;
- *    Offset to the start of the ROP Tile in which the target part of
- * the surface resides.
- * @params[in] NvU64  *dataPhysicalStart;
- *    Start address of data for which part/slice/offset is desired.
- * @params[in] NvU64  surfaceOffset;
- *    Byte offset of data for which part/slice/offset is desired.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- */
-#define NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_PART_SLICE_OFFSET (0x20801333U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x33" */
-
-typedef struct NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_PART_SLICE_OFFSET_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 *part, 8);
-    NV_DECLARE_ALIGNED(NvU64 *slice, 8);
-    NV_DECLARE_ALIGNED(NvU64 *ropTileoffset, 8);
-    NV_DECLARE_ALIGNED(NvU64 dataPhysicalStart, 8);
-    NV_DECLARE_ALIGNED(NvU64 surfaceOffset, 8);
-} NV2080_CTRL_CMD_FB_COMPBITCOPY_GET_PART_SLICE_OFFSET_PARAMS;
-
-/*!
- * NV2080_CTRL_CMD_FB_COMPBITCOPY_ALLOC_AND_INIT_DERIVEDPARAMS      < Deprecated >
- *
- * Used by PS (Performance Path, or Optimized path, or Per Slice version)
- * to create a CompBitCopy::CompBitDerivedParams object
- *
- * @params[out] NvP64  derivedParams
- *   Actually a CompBitDerivedParams structure.
-  * @params[in] NvU32  comptagLine;
- *     Compression Tag Line Number
- * @params[in] NvU32  ROPTile_offset;
- *     Offset in the surface of the ROP tile.
- * @params[in] NvBool upper64KBCompbitSel;
- *     Selects Upper or Lower 64K
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_NOT_SUPPORTED
- */
-#define NV2080_CTRL_CMD_FB_COMPBITCOPY_ALLOC_AND_INIT_DERIVEDPARAMS (0x20801334U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | 0x34" */
-
-typedef struct NV2080_CTRL_CMD_FB_COMPBITCOPY_ALLOC_AND_INIT_DERIVEDPARAMS_PARAMS {
-    NV_DECLARE_ALIGNED(NvP64 derivedParams, 8);
-    NvU32  comptagLine;
-    NvBool upper64KBCompbitSel;
-} NV2080_CTRL_CMD_FB_COMPBITCOPY_ALLOC_AND_INIT_DERIVEDPARAMS_PARAMS;
 
 /*!
  * NV2080_CTRL_CMD_FB_COMPBITCOPY_SET_FORCE_BAR1                    < Deprecated >
@@ -2876,8 +2577,9 @@ typedef struct NV2080_CTRL_FB_UPDATE_NUMA_STATUS_PARAMS {
 /*
  * NV2080_CTRL_CMD_FB_GET_NUMA_INFO
  *
- * This control command is used by clients to get per-subdevice NUMA memory
- * information as assigned by the system.
+ * This control command is used by clients to get per-subdevice or
+ * subscribed MIG partition(when MIG is enabled) NUMA memory information as
+ * assigned by the system.
  *
  * numaNodeId[OUT]
  *     - Specifies the NUMA node ID.
@@ -2915,5 +2617,38 @@ typedef struct NV2080_CTRL_FB_GET_NUMA_INFO_PARAMS {
     NvU32 numaOfflineAddressesCount;
     NV_DECLARE_ALIGNED(NvU64 numaOfflineAddresses[NV2080_CTRL_FB_NUMA_INFO_MAX_OFFLINE_ADDRESSES], 8);
 } NV2080_CTRL_FB_GET_NUMA_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_CMD_FB_GET_SEMAPHORE_SURFACE_LAYOUT
+ *
+ * This control command is used by clients to get NV_SEMAPHORE_SURFACE layout/caps before allocation.
+ * A semaphore surface can be viewed as an array of independent semaphore entries.
+ *
+ * maxSubmittedSemaphoreValueOffset[OUT]
+ *     - An offset of the max submitted value, relative to the semaphore surface entry start, if used.
+ *       Used to emulate 64-bit semaphore values on chips where 64-bit semaphores are not supported.
+ *
+ * monitoredFenceThresholdOffset[OUT]
+ *     - An offset of the monitored fence memory, relative to the semaphore surface entry start, if supported.
+ *
+ * size[OUT]
+ *     - A size of a single semaphore surface entry.
+ *
+ * caps[OUT]
+ *     - A mask of NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_CAPS_* values.
+ */
+#define NV2080_CTRL_CMD_FB_GET_SEMAPHORE_SURFACE_LAYOUT                             (0x20801352U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_CAPS_MONITORED_FENCE_SUPPORTED  (0x00000001U)
+#define NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_CAPS_64BIT_SEMAPHORES_SUPPORTED (0x00000002U)
+
+#define NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_PARAMS_MESSAGE_ID (0x52U)
+
+typedef struct NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 maxSubmittedSemaphoreValueOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 monitoredFenceThresholdOffset, 8);
+    NV_DECLARE_ALIGNED(NvU64 size, 8);
+    NvU32 caps;
+} NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_PARAMS;
 
 /* _ctrl2080fb_h_ */

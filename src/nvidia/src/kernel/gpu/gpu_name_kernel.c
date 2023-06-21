@@ -39,7 +39,7 @@ gpuGetNameString_KERNEL
 
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
                        NV2080_CTRL_CMD_GPU_GET_NAME_STRING, &params, sizeof(params)));
-    
+
     if (type == NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_ASCII)
     {
         portMemCopy(nameStringBuffer, sizeof(params.gpuNameString.ascii),

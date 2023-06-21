@@ -149,6 +149,7 @@ NV_STATUS_CODE(NV_ERR_NVLINK_TRAINING_ERROR,           0x00000077, "Nvlink Train
 NV_STATUS_CODE(NV_ERR_NVLINK_CONFIGURATION_ERROR,      0x00000078, "Nvlink Configuration Error")
 NV_STATUS_CODE(NV_ERR_RISCV_ERROR,                     0x00000079, "Generic RISC-V assert or halt")
 NV_STATUS_CODE(NV_ERR_FABRIC_MANAGER_NOT_PRESENT,      0x0000007A, "Fabric Manager is not loaded")
+NV_STATUS_CODE(NV_ERR_ALREADY_SIGNALLED,               0x0000007B, "Semaphore Surface value already >= requested wait value")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")

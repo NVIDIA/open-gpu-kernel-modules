@@ -146,3 +146,12 @@ void nvDPDpyFree(NVDpyEvoPtr pDpyEvo)
 
     pDpyEvo->pConnectorEvo->pDpLibConnector->evtSink->lostDevice(device);
 }
+
+NvBool nvDPDpyIsDscPossible(const NVDpyEvoRec *pDpyEvo)
+{
+    if (!nvDpyUsesDPLib(pDpyEvo) ||
+            (pDpyEvo->dp.pDpLibDevice == NULL)) {
+        return FALSE;
+    }
+    return pDpyEvo->dp.pDpLibDevice->device->isDSCPossible();
+}

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,11 +64,11 @@ struct KernelSec2 {
     NV_STATUS (*__ksec2ServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceServiceNotificationInterruptArguments *);
     void (*__ksec2ConfigureFalcon__)(struct OBJGPU *, struct KernelSec2 *);
     NV_STATUS (*__ksec2ResetHw__)(struct OBJGPU *, struct KernelSec2 *);
+    NV_STATUS (*__ksec2StateLoad__)(struct OBJGPU *, struct KernelSec2 *, NvU32);
     NvU32 (*__ksec2ReadUcodeFuseVersion__)(struct OBJGPU *, struct KernelSec2 *, NvU32);
     const BINDATA_ARCHIVE *(*__ksec2GetBinArchiveBlUcode__)(struct OBJGPU *, struct KernelSec2 *);
     NV_STATUS (*__ksec2GetGenericBlUcode__)(struct OBJGPU *, struct KernelSec2 *, const RM_FLCN_BL_DESC **, const NvU8 **);
     const BINDATA_ARCHIVE *(*__ksec2GetBinArchiveSecurescrubUcode__)(struct OBJGPU *, struct KernelSec2 *);
-    NV_STATUS (*__ksec2StateLoad__)(POBJGPU, struct KernelSec2 *, NvU32);
     NV_STATUS (*__ksec2StateUnload__)(POBJGPU, struct KernelSec2 *, NvU32);
     NV_STATUS (*__ksec2StateInitLocked__)(POBJGPU, struct KernelSec2 *);
     NV_STATUS (*__ksec2StatePreLoad__)(POBJGPU, struct KernelSec2 *, NvU32);
@@ -127,6 +127,8 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
 #define ksec2ConfigureFalcon_HAL(pGpu, pKernelSec2) ksec2ConfigureFalcon_DISPATCH(pGpu, pKernelSec2)
 #define ksec2ResetHw(pGpu, pKernelSec2) ksec2ResetHw_DISPATCH(pGpu, pKernelSec2)
 #define ksec2ResetHw_HAL(pGpu, pKernelSec2) ksec2ResetHw_DISPATCH(pGpu, pKernelSec2)
+#define ksec2StateLoad(pGpu, pKernelSec2, arg0) ksec2StateLoad_DISPATCH(pGpu, pKernelSec2, arg0)
+#define ksec2StateLoad_HAL(pGpu, pKernelSec2, arg0) ksec2StateLoad_DISPATCH(pGpu, pKernelSec2, arg0)
 #define ksec2ReadUcodeFuseVersion(pGpu, pKernelSec2, ucodeId) ksec2ReadUcodeFuseVersion_DISPATCH(pGpu, pKernelSec2, ucodeId)
 #define ksec2ReadUcodeFuseVersion_HAL(pGpu, pKernelSec2, ucodeId) ksec2ReadUcodeFuseVersion_DISPATCH(pGpu, pKernelSec2, ucodeId)
 #define ksec2GetBinArchiveBlUcode(pGpu, pKernelSec2) ksec2GetBinArchiveBlUcode_DISPATCH(pGpu, pKernelSec2)
@@ -135,7 +137,6 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
 #define ksec2GetGenericBlUcode_HAL(pGpu, pKernelSec2, ppDesc, ppImg) ksec2GetGenericBlUcode_DISPATCH(pGpu, pKernelSec2, ppDesc, ppImg)
 #define ksec2GetBinArchiveSecurescrubUcode(pGpu, pKernelSec2) ksec2GetBinArchiveSecurescrubUcode_DISPATCH(pGpu, pKernelSec2)
 #define ksec2GetBinArchiveSecurescrubUcode_HAL(pGpu, pKernelSec2) ksec2GetBinArchiveSecurescrubUcode_DISPATCH(pGpu, pKernelSec2)
-#define ksec2StateLoad(pGpu, pEngstate, arg0) ksec2StateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define ksec2StateUnload(pGpu, pEngstate, arg0) ksec2StateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define ksec2StateInitLocked(pGpu, pEngstate) ksec2StateInitLocked_DISPATCH(pGpu, pEngstate)
 #define ksec2StatePreLoad(pGpu, pEngstate, arg0) ksec2StatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -156,9 +157,9 @@ static inline NV_STATUS ksec2ConstructEngine_DISPATCH(struct OBJGPU *pGpu, struc
     return pKernelSec2->__ksec2ConstructEngine__(pGpu, pKernelSec2, arg0);
 }
 
-void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[166]);
+void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[167]);
 
-static inline void ksec2RegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[166]) {
+static inline void ksec2RegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[167]) {
     pKernelSec2->__ksec2RegisterIntrService__(pGpu, pKernelSec2, pRecords);
 }
 
@@ -182,6 +183,16 @@ NV_STATUS ksec2ResetHw_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2
 
 static inline NV_STATUS ksec2ResetHw_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
     return pKernelSec2->__ksec2ResetHw__(pGpu, pKernelSec2);
+}
+
+NV_STATUS ksec2StateLoad_GH100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 arg0);
+
+static inline NV_STATUS ksec2StateLoad_56cd7a(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 arg0) {
+    return NV_OK;
+}
+
+static inline NV_STATUS ksec2StateLoad_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 arg0) {
+    return pKernelSec2->__ksec2StateLoad__(pGpu, pKernelSec2, arg0);
 }
 
 static inline NvU32 ksec2ReadUcodeFuseVersion_b2b553(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId) {
@@ -222,10 +233,6 @@ static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_80f438(s
 
 static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
     return pKernelSec2->__ksec2GetBinArchiveSecurescrubUcode__(pGpu, pKernelSec2);
-}
-
-static inline NV_STATUS ksec2StateLoad_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
-    return pEngstate->__ksec2StateLoad__(pGpu, pEngstate, arg0);
 }
 
 static inline NV_STATUS ksec2StateUnload_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {

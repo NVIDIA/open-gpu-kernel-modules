@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,11 +81,11 @@ static inline const char *nv_firmware_path(
     {
         switch (fw_chip_family)
         {
+            case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_AD10X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GA10X:
                 return NV_FIRMWARE_PATH_FOR_FILENAME("gsp_ga10x.bin");
 
-            case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GA100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_TU11X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_TU10X:
@@ -100,11 +100,11 @@ static inline const char *nv_firmware_path(
     {
         switch (fw_chip_family)
         {
+            case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_AD10X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GA10X:
                 return NV_FIRMWARE_PATH_FOR_FILENAME("gsp_log_ga10x.bin");
 
-            case NV_FIRMWARE_CHIP_FAMILY_GH100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_GA100:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_TU11X:  // fall through
             case NV_FIRMWARE_CHIP_FAMILY_TU10X:

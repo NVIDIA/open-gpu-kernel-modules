@@ -83,9 +83,14 @@ void uvm_hal_turing_host_clear_faulted_channel_method(uvm_push_t *push,
 
 // Direct copy of uvm_hal_maxwell_host_set_gpfifo_entry(). It removes
 // GP_ENTRY1_PRIV_KERNEL, which has been deprecated in Turing+.
-void uvm_hal_turing_host_set_gpfifo_entry(NvU64 *fifo_entry, NvU64 pushbuffer_va, NvU32 pushbuffer_length)
+void uvm_hal_turing_host_set_gpfifo_entry(NvU64 *fifo_entry,
+                                          NvU64 pushbuffer_va,
+                                          NvU32 pushbuffer_length,
+                                          uvm_gpfifo_sync_t sync_flag)
 {
     NvU64 fifo_entry_value;
+    const NvU32 sync_value = (sync_flag == UVM_GPFIFO_SYNC_WAIT) ? HWCONST(C46F, GP_ENTRY1, SYNC, WAIT) :
+                                                                   HWCONST(C46F, GP_ENTRY1, SYNC, PROCEED);
 
     UVM_ASSERT(!uvm_global_is_suspended());
     UVM_ASSERT_MSG(pushbuffer_va % 4 == 0, "pushbuffer va unaligned: %llu\n", pushbuffer_va);
@@ -93,7 +98,8 @@ void uvm_hal_turing_host_set_gpfifo_entry(NvU64 *fifo_entry, NvU64 pushbuffer_va
 
     fifo_entry_value =          HWVALUE(C46F, GP_ENTRY0, GET, NvU64_LO32(pushbuffer_va) >> 2);
     fifo_entry_value |= (NvU64)(HWVALUE(C46F, GP_ENTRY1, GET_HI, NvU64_HI32(pushbuffer_va)) |
-                                HWVALUE(C46F, GP_ENTRY1, LENGTH, pushbuffer_length >> 2)) << 32;
+                                HWVALUE(C46F, GP_ENTRY1, LENGTH, pushbuffer_length >> 2) |
+                                sync_value) << 32;
 
     *fifo_entry = fifo_entry_value;
 }

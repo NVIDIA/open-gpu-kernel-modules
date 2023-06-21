@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,11 +22,13 @@
  */
 
 #include "gpu/gpu.h"
+#include "gpu/gpu_child_class_defs.h"
 #include "os/os.h"
 #include "nverror.h"
 
 #include "published/hopper/gh100/hwproject.h"
 #include "published/hopper/gh100/dev_gc6_island.h"
+#include "published/hopper/gh100/dev_gc6_island_addendum.h"
 #include "published/hopper/gh100/dev_pmc.h"
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 #include "published/hopper/gh100/pri_nv_xal_ep.h"
@@ -148,6 +150,15 @@ NvU32 gpuGetPhysAddrWidth_GH100
  */
 NvBool gpuIsAtsSupportedWithSmcMemPartitioning_GH100(OBJGPU *pGpu)
 {
+    //
+    // ATS is supported only on self-hosted Hopper.
+    // Also enable it for simulation platforms for fmodel/RTL verification
+    // with CPU model.
+    //
+    if (gpuIsSelfHosted(pGpu))
+    {
+        return NV_TRUE;
+    }
 
     if (IS_SIMULATION(pGpu))
     {
@@ -359,91 +370,121 @@ gpuGetFlaVasSize_GH100
 
 static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
 {
-    { classId(OBJFUSE), 1, },
-    { classId(OBJSEQ), 1, },
-    { classId(GpuMutexMgr), 1, },
-    { classId(OBJTMR), 1, },
-    { classId(GraphicsManager), 1, },
-    { classId(MIGManager), 1, },
-    { classId(KernelMIGManager), 1, },
-    { classId(KernelGraphicsManager), 1, },
-    { classId(OBJVBIOS), 1, },
-    { classId(OBJDCB), 1, },
-    { classId(OBJGPIO), 1, },
-    { classId(I2c), 1, },
-    { classId(Spi), 1, },
-    { classId(KernelRc), 1, },
-    { classId(OBJRC), 1, },
-    { classId(OBJSTEREO), 1, },
-    { classId(Intr), 1, },
-    { classId(OBJINFOROM), 1, },
-    { classId(NvDebugDump), 1, },
-    { classId(SMDebugger), 1, },
-    { classId(OBJGPULOG), 1, },
-    { classId(OBJGPUMON), 1, },
-    { classId(OBJSWENG), 1 },
-    { classId(OBJUVM), 1 },
-    { classId(OBJACR), 1 },
-    { classId(OBJBIF), 1 },
-    { classId(KernelBif), 1 },
-    { classId(OBJBSP), 8 },
-    { classId(OBJBUS), 1 },
-    { classId(KernelBus), 1 },
-    { classId(OBJCE), 10 },
-    { classId(KernelCE), 10 },
-    { classId(OBJCIPHER), 1 },
-    { classId(ClockManager), 1 },
-    { classId(OBJDISP), 1 },
-    { classId(KernelDisplay), 1 },
-    { classId(VirtMemAllocator), 1 },
-    { classId(OBJDPAUX), 1 },
-    { classId(Fan), 1 },
-    { classId(OBJHSHUBMANAGER), 1 },
-    { classId(Hshub), 5 },
-    { classId(MemorySystem), 1 },
-    { classId(KernelMemorySystem), 1 },
-    { classId(MemoryManager), 1 },
-    { classId(OBJFBFLCN), 1 },
-    {classId(KernelFifo), 1},
-    { classId(OBJFIFO), 1 },
-    { classId(OBJGMMU), 1 },
-    { classId(KernelGmmu), 1},
-    { classId(Graphics), 8 },
-    { classId(KernelGraphics), 8 },
-    { classId(OBJHDACODEC), 1 },
-    { classId(OBJHWPM), 1 },
-    { classId(Lpwr   ), 1 },
-    { classId(OBJLSFM), 1 },
-    { classId(OBJMC), 1 },
-    { classId(KernelMc), 1 },
-    { classId(PrivRing), 1 },
-    { classId(SwIntr), 1 },
-    { classId(OBJNVJPG), 8 },
-    { classId(KernelNvlink), 1 },
-    { classId(Nvlink), 1 },
-    { classId(Perf), 1 },
-    { classId(KernelPerf), 1 },
-    { classId(Pmgr), 1 },
-    { classId(Pmu), 1 },
-    { classId(KernelPmu), 1 },
-    { classId(OBJSEC2), 1 },
-    { classId(Gsp), 1 },
-    { classId(OBJFSP), 1 },
-    { classId(KernelFsp), 1 },
-    { classId(Therm), 1 },
-    { classId(OBJVOLT), 1 },
-    { classId(OBJGRIDDISPLAYLESS), 1 },
-    { classId(OBJVMMU), 1 },
-    { classId(OBJOFA), 1 },
-    { classId(KernelGsp), 1},
-    { classId(KernelSec2), 1},
-    { classId(KernelCcu), 1 },
+    GPU_CHILD_PRESENT(OBJTMR, 1),
+    GPU_CHILD_PRESENT(KernelMIGManager, 1),
+    GPU_CHILD_PRESENT(KernelGraphicsManager, 1),
+    GPU_CHILD_PRESENT(KernelRc, 1),
+    GPU_CHILD_PRESENT(Intr, 1),
+    GPU_CHILD_PRESENT(NvDebugDump, 1),
+    GPU_CHILD_PRESENT(OBJGPUMON, 1),
+    GPU_CHILD_PRESENT(OBJSWENG, 1),
+    GPU_CHILD_PRESENT(OBJUVM, 1),
+    GPU_CHILD_PRESENT(KernelBif, 1),
+    GPU_CHILD_PRESENT(KernelBus, 1),
+    GPU_CHILD_PRESENT(KernelCE, 10),
+    GPU_CHILD_PRESENT(KernelDisplay, 1),
+    GPU_CHILD_PRESENT(VirtMemAllocator, 1),
+    GPU_CHILD_PRESENT(KernelMemorySystem, 1),
+    GPU_CHILD_PRESENT(MemoryManager, 1),
+    GPU_CHILD_PRESENT(KernelFifo, 1),
+    GPU_CHILD_PRESENT(KernelGmmu, 1),
+    GPU_CHILD_PRESENT(KernelGraphics, 8),
+    GPU_CHILD_PRESENT(KernelMc, 1),
+    GPU_CHILD_PRESENT(SwIntr, 1),
+    GPU_CHILD_PRESENT(KernelNvlink, 1),
+    GPU_CHILD_PRESENT(KernelPerf, 1),
+    GPU_CHILD_PRESENT(KernelPmu, 1),
+    GPU_CHILD_PRESENT(KernelFsp, 1),
+    GPU_CHILD_PRESENT(KernelGsp, 1),
+    GPU_CHILD_PRESENT(KernelSec2, 1),
+    GPU_CHILD_PRESENT(ConfidentialCompute, 1),
+    GPU_CHILD_PRESENT(KernelCcu, 1),
 };
 
 const GPUCHILDPRESENT *
 gpuGetChildrenPresent_GH100(OBJGPU *pGpu, NvU32 *pNumEntries)
 {
-    *pNumEntries = NV_ARRAY_ELEMENTS32(gpuChildrenPresent_GH100);
+    *pNumEntries = NV_ARRAY_ELEMENTS(gpuChildrenPresent_GH100);
     return gpuChildrenPresent_GH100;
+}
+
+/*!
+ * @brief Determine if GPU is configured in Self Hosted mode.
+ * In Hopper+, GPU can be configured to work in Self Hosted,
+ * Externally Hosted and Endpoint mode.
+ *
+ * @param[in]      pGpu           OBJGPU pointer
+ *
+ * @return void
+ */
+void
+gpuDetermineSelfHostedMode_KERNEL_GH100
+(
+    OBJGPU *pGpu
+)
+{
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
+        if (pGSCI->bSelfHostedMode)
+        {
+            pGpu->bIsSelfHosted = NV_TRUE;
+            NV_PRINTF(LEVEL_INFO, "SELF HOSTED mode detected after reading GSP static info.\n");
+        }
+    }
+}
+
+/*!
+ * @brief Determine if MIG can be supported.
+ * In self hosted hopper, MIG can be supported only from specific
+ * GH100 revisions.
+ *
+ * @param[in]      pGpu           OBJGPU pointer
+ *
+ * @return void
+ */
+void
+gpuDetermineMIGSupport_GH100
+(
+    OBJGPU *pGpu
+)
+{
+    if (gpuIsSelfHosted(pGpu) &&
+        (gpuGetChipSubRev_HAL(pGpu) < NV2080_CTRL_MC_ARCH_INFO_SUBREVISION_R))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Disabling MIG Support. MIG can be supported on self hosted hopper "
+                  "only from revision R onwards\n");
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_MIG_SUPPORTED, NV_FALSE);
+    }
+}
+
+/*!
+ * Check if CC bit has been set in the scratch register
+ *
+ * @param[in]  pGpu  GPU object pointer
+ */
+NvBool
+gpuIsCCEnabledInHw_GH100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 val = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
+    return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _MODE_ENABLED, _TRUE, val);
+}
+
+/*!
+ * Check if dev mode bit has been set in the scratch register
+ *
+ * @param[in]  pGpu  GPU object pointer
+ */
+NvBool
+gpuIsDevModeEnabledInHw_GH100
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 val = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_20_CC);
+    return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _DEV_ENABLED, _TRUE, val);
 }
 

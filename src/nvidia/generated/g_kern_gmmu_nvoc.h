@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -206,6 +206,12 @@ typedef struct
     NvU32 numBufferPages;
 
     /*!
+     * Start index of the page containing the fault buffer metadata.
+     * 0 if no metadata is present.
+     */
+    NvU32 metadataStartIndex;
+
+    /*!
      * Used only by the replayable fault buffer. Memory descriptor used to
      * describe shared memory b/w CPU-RM and GSP-RM.
      */
@@ -214,6 +220,9 @@ typedef struct
     NvP64 pFaultBufferSharedMemoryAddress;
 
     NvP64 pFaultBufferSharedMemoryPriv;
+
+    NvP64 pFaultBufferMetadataAddress;
+
 } GMMU_CLIENT_SHADOW_FAULT_BUFFER;
 
 /*!
@@ -253,6 +262,9 @@ struct GMMU_FAULT_BUFFER
      * Flag stating fatalfault interrupt pending
      */
     NvS32 fatalFaultIntrPending;
+
+    /*! Generational counter for fault buffer. Incremented when the fault buffer wraps around. */
+    volatile NvU64 faultBufferGenerationCounter;
 };
 
 typedef struct GMMU_FAULT_PACKET
@@ -264,6 +276,18 @@ typedef struct GMMU_FAULT_PACKET
 // Initialize Circular Queue for MMU Shadow fault buffer
 MAKE_QUEUE_CIRCULAR(GMMU_SHADOW_FAULT_BUF, GMMU_FAULT_PACKET);
 
+#define GMMU_FAULT_PACKET_METADATA_SIZE                32
+#define GMMU_FAULT_PACKET_METADATA_AUTHTAG_IDX          0
+#define GMMU_FAULT_PACKET_METADATA_AUTHTAG_SIZE        16
+#define GMMU_FAULT_PACKET_METADATA_VALID_IDX           16
+#define GMMU_FAULT_PACKET_METADATA_VALID_SIZE           1
+#define GMMU_FAULT_PACKET_METADATA_VALID_YES      NV_TRUE
+#define GMMU_FAULT_PACKET_METADATA_VALID_NO      NV_FALSE
+
+typedef struct GMMU_FAULT_PACKET_METADATA
+{
+    NvU8 metadata[GMMU_FAULT_PACKET_METADATA_SIZE];
+} GMMU_FAULT_PACKET_METADATA;
 
 /*!
  * Structure that holds different parameters passed by an engine to kgmmuInstBlkInit
@@ -331,6 +355,7 @@ struct KernelGmmu {
     void (*__kgmmuFaultBufferFreeSharedMemory__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
     NV_STATUS (*__kgmmuSetupWarForBug2720120__)(struct KernelGmmu *, GMMU_FMT_FAMILY *);
     NvU32 (*__kgmmuGetGraphicsEngineId__)(struct KernelGmmu *);
+    NvU32 (*__kgmmuReadShadowBufPutIndex__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
     NV_STATUS (*__kgmmuStateLoad__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuStateUnload__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelGmmu *, IntrServiceServiceNotificationInterruptArguments *);
@@ -345,7 +370,7 @@ struct KernelGmmu {
     NvBool PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED;
     NvBool PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED;
     const NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pStaticInfo;
-    NvU32 defaultBigPageSize;
+    NvU64 defaultBigPageSize;
     NvU32 uvmSharedIntrRmOwnsMask;
     GMMU_FMT_FAMILY *PRIVATE_FIELD(pFmtFamilies)[3];
     NvU32 PRIVATE_FIELD(PDEAperture);
@@ -356,7 +381,7 @@ struct KernelGmmu {
     NvU32 PRIVATE_FIELD(PTEAttr);
     NvU32 PRIVATE_FIELD(PTEBAR1Aperture);
     NvU32 PRIVATE_FIELD(PTEBAR1Attr);
-    NvU32 PRIVATE_FIELD(overrideBigPageSize);
+    NvU64 PRIVATE_FIELD(overrideBigPageSize);
     NvBool PRIVATE_FIELD(bEnablePerVaspaceBigPage);
     NvBool PRIVATE_FIELD(bIgnoreHubTlbInvalidate);
     NvU64 PRIVATE_FIELD(maxVASize);
@@ -407,6 +432,7 @@ struct KernelGmmu_PRIVATE {
     void (*__kgmmuFaultBufferFreeSharedMemory__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
     NV_STATUS (*__kgmmuSetupWarForBug2720120__)(struct KernelGmmu *, GMMU_FMT_FAMILY *);
     NvU32 (*__kgmmuGetGraphicsEngineId__)(struct KernelGmmu *);
+    NvU32 (*__kgmmuReadShadowBufPutIndex__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
     NV_STATUS (*__kgmmuStateLoad__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuStateUnload__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelGmmu *, IntrServiceServiceNotificationInterruptArguments *);
@@ -421,7 +447,7 @@ struct KernelGmmu_PRIVATE {
     NvBool PDB_PROP_KGMMU_SYSMEM_FAULT_BUFFER_GPU_UNCACHED;
     NvBool PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED;
     const NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pStaticInfo;
-    NvU32 defaultBigPageSize;
+    NvU64 defaultBigPageSize;
     NvU32 uvmSharedIntrRmOwnsMask;
     GMMU_FMT_FAMILY *pFmtFamilies[3];
     NvU32 PDEAperture;
@@ -432,7 +458,7 @@ struct KernelGmmu_PRIVATE {
     NvU32 PTEAttr;
     NvU32 PTEBAR1Aperture;
     NvU32 PTEBAR1Attr;
-    NvU32 overrideBigPageSize;
+    NvU64 overrideBigPageSize;
     NvBool bEnablePerVaspaceBigPage;
     NvBool bIgnoreHubTlbInvalidate;
     NvU64 maxVASize;
@@ -533,6 +559,8 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu**, Dynamic*, NvU32);
 #define kgmmuSetupWarForBug2720120_HAL(pKernelGmmu, pFam) kgmmuSetupWarForBug2720120_DISPATCH(pKernelGmmu, pFam)
 #define kgmmuGetGraphicsEngineId(pKernelGmmu) kgmmuGetGraphicsEngineId_DISPATCH(pKernelGmmu)
 #define kgmmuGetGraphicsEngineId_HAL(pKernelGmmu) kgmmuGetGraphicsEngineId_DISPATCH(pKernelGmmu)
+#define kgmmuReadShadowBufPutIndex(pGpu, pKernelGmmu, type) kgmmuReadShadowBufPutIndex_DISPATCH(pGpu, pKernelGmmu, type)
+#define kgmmuReadShadowBufPutIndex_HAL(pGpu, pKernelGmmu, type) kgmmuReadShadowBufPutIndex_DISPATCH(pGpu, pKernelGmmu, type)
 #define kgmmuStateLoad(pGpu, pEngstate, arg0) kgmmuStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kgmmuStateUnload(pGpu, pEngstate, arg0) kgmmuStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kgmmuServiceNotificationInterrupt(pGpu, pIntrService, pParams) kgmmuServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
@@ -544,11 +572,11 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu**, Dynamic*, NvU32);
 #define kgmmuStatePreInitUnlocked(pGpu, pEngstate) kgmmuStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kgmmuClearInterrupt(pGpu, pIntrService, pParams) kgmmuClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define kgmmuIsPresent(pGpu, pEngstate) kgmmuIsPresent_DISPATCH(pGpu, pEngstate)
-NvU32 kgmmuGetMaxBigPageSize_GM107(struct KernelGmmu *pKernelGmmu);
+NvU64 kgmmuGetMaxBigPageSize_GM107(struct KernelGmmu *pKernelGmmu);
 
 
 #ifdef __nvoc_kern_gmmu_h_disabled
-static inline NvU32 kgmmuGetMaxBigPageSize(struct KernelGmmu *pKernelGmmu) {
+static inline NvU64 kgmmuGetMaxBigPageSize(struct KernelGmmu *pKernelGmmu) {
     NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
     return 0;
 }
@@ -588,6 +616,22 @@ static inline NV_STATUS kgmmuInstBlkAtsGet(struct KernelGmmu *pKernelGmmu, struc
 
 #define kgmmuInstBlkAtsGet_HAL(pKernelGmmu, pVAS, subctxid, pOffset, pData) kgmmuInstBlkAtsGet(pKernelGmmu, pVAS, subctxid, pOffset, pData)
 
+static inline NV_STATUS kgmmuInstBlkMagicValueGet_46f6a7(struct KernelGmmu *pKernelGmmu, NvU32 *pOffset, NvU32 *pData) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+
+#ifdef __nvoc_kern_gmmu_h_disabled
+static inline NV_STATUS kgmmuInstBlkMagicValueGet(struct KernelGmmu *pKernelGmmu, NvU32 *pOffset, NvU32 *pData) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kern_gmmu_h_disabled
+#define kgmmuInstBlkMagicValueGet(pKernelGmmu, pOffset, pData) kgmmuInstBlkMagicValueGet_46f6a7(pKernelGmmu, pOffset, pData)
+#endif //__nvoc_kern_gmmu_h_disabled
+
+#define kgmmuInstBlkMagicValueGet_HAL(pKernelGmmu, pOffset, pData) kgmmuInstBlkMagicValueGet(pKernelGmmu, pOffset, pData)
+
 NV_STATUS kgmmuInstBlkPageDirBaseGet_GV100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct OBJVASPACE *pVAS, INST_BLK_INIT_PARAMS *pParams, NvU32 subctxid, NvU32 *pOffsetLo, NvU32 *pDataLo, NvU32 *pOffsetHi, NvU32 *pDataHi);
 
 
@@ -616,11 +660,11 @@ static inline NvU32 kgmmuGetPDBAllocSize(struct KernelGmmu *pKernelGmmu, const M
 
 #define kgmmuGetPDBAllocSize_HAL(pKernelGmmu, arg0, arg1) kgmmuGetPDBAllocSize(pKernelGmmu, arg0, arg1)
 
-NvU32 kgmmuGetBigPageSize_GM107(struct KernelGmmu *pKernelGmmu);
+NvU64 kgmmuGetBigPageSize_GM107(struct KernelGmmu *pKernelGmmu);
 
 
 #ifdef __nvoc_kern_gmmu_h_disabled
-static inline NvU32 kgmmuGetBigPageSize(struct KernelGmmu *pKernelGmmu) {
+static inline NvU64 kgmmuGetBigPageSize(struct KernelGmmu *pKernelGmmu) {
     NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
     return 0;
 }
@@ -999,6 +1043,19 @@ static inline void kgmmuClearNonReplayableFaultIntr(OBJGPU *pGpu, struct KernelG
 
 #define kgmmuClearNonReplayableFaultIntr_HAL(pGpu, pKernelGmmu, arg0) kgmmuClearNonReplayableFaultIntr(pGpu, pKernelGmmu, arg0)
 
+void kgmmuClearReplayableFaultIntr_TU102(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *arg0);
+
+
+#ifdef __nvoc_kern_gmmu_h_disabled
+static inline void kgmmuClearReplayableFaultIntr(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *arg0) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
+}
+#else //__nvoc_kern_gmmu_h_disabled
+#define kgmmuClearReplayableFaultIntr(pGpu, pKernelGmmu, arg0) kgmmuClearReplayableFaultIntr_TU102(pGpu, pKernelGmmu, arg0)
+#endif //__nvoc_kern_gmmu_h_disabled
+
+#define kgmmuClearReplayableFaultIntr_HAL(pGpu, pKernelGmmu, arg0) kgmmuClearReplayableFaultIntr(pGpu, pKernelGmmu, arg0)
+
 NV_STATUS kgmmuConstructEngine_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, ENGDESCRIPTOR arg0);
 
 static inline NV_STATUS kgmmuConstructEngine_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, ENGDESCRIPTOR arg0) {
@@ -1029,9 +1086,9 @@ static inline void kgmmuStateDestroy_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *p
     pKernelGmmu->__kgmmuStateDestroy__(pGpu, pKernelGmmu);
 }
 
-void kgmmuRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg0[166]);
+void kgmmuRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg0[167]);
 
-static inline void kgmmuRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg0[166]) {
+static inline void kgmmuRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg0[167]) {
     pKernelGmmu->__kgmmuRegisterIntrService__(pGpu, pKernelGmmu, arg0);
 }
 
@@ -1238,6 +1295,16 @@ static inline NvU32 kgmmuGetGraphicsEngineId_DISPATCH(struct KernelGmmu *pKernel
     return pKernelGmmu->__kgmmuGetGraphicsEngineId__(pKernelGmmu);
 }
 
+NvU32 kgmmuReadShadowBufPutIndex_GH100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, FAULT_BUFFER_TYPE type);
+
+static inline NvU32 kgmmuReadShadowBufPutIndex_4a4dee(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, FAULT_BUFFER_TYPE type) {
+    return 0;
+}
+
+static inline NvU32 kgmmuReadShadowBufPutIndex_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, FAULT_BUFFER_TYPE type) {
+    return pKernelGmmu->__kgmmuReadShadowBufPutIndex__(pGpu, pKernelGmmu, type);
+}
+
 static inline NV_STATUS kgmmuStateLoad_DISPATCH(POBJGPU pGpu, struct KernelGmmu *pEngstate, NvU32 arg0) {
     return pEngstate->__kgmmuStateLoad__(pGpu, pEngstate, arg0);
 }
@@ -1322,12 +1389,12 @@ static inline NvU32 kgmmuGetPTEAttr(struct KernelGmmu *pKernelGmmu) {
     return pKernelGmmu_PRIVATE->PTEAttr;
 }
 
-static inline NvU32 kgmmuGetBigPageSizeOverride(struct KernelGmmu *pKernelGmmu) {
+static inline NvU64 kgmmuGetBigPageSizeOverride(struct KernelGmmu *pKernelGmmu) {
     struct KernelGmmu_PRIVATE *pKernelGmmu_PRIVATE = (struct KernelGmmu_PRIVATE *)pKernelGmmu;
     return pKernelGmmu_PRIVATE->overrideBigPageSize;
 }
 
-static inline void kgmmuSetBigPageSizeOverride(struct KernelGmmu *pKernelGmmu, NvU32 bigPageSize) {
+static inline void kgmmuSetBigPageSizeOverride(struct KernelGmmu *pKernelGmmu, NvU64 bigPageSize) {
     struct KernelGmmu_PRIVATE *pKernelGmmu_PRIVATE = (struct KernelGmmu_PRIVATE *)pKernelGmmu;
     pKernelGmmu_PRIVATE->overrideBigPageSize = bigPageSize;
 }
@@ -1474,10 +1541,10 @@ static inline const struct GMMU_FMT *kgmmuFmtGetLatestSupportedFormat(OBJGPU *pG
 #define kgmmuFmtGetLatestSupportedFormat(pGpu, pKernelGmmu) kgmmuFmtGetLatestSupportedFormat_IMPL(pGpu, pKernelGmmu)
 #endif //__nvoc_kern_gmmu_h_disabled
 
-NvU32 kgmmuGetMinBigPageSize_IMPL(struct KernelGmmu *pKernelGmmu);
+NvU64 kgmmuGetMinBigPageSize_IMPL(struct KernelGmmu *pKernelGmmu);
 
 #ifdef __nvoc_kern_gmmu_h_disabled
-static inline NvU32 kgmmuGetMinBigPageSize(struct KernelGmmu *pKernelGmmu) {
+static inline NvU64 kgmmuGetMinBigPageSize(struct KernelGmmu *pKernelGmmu) {
     NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
     return 0;
 }
@@ -1712,6 +1779,17 @@ static inline struct HW_FAULT_BUFFER *kgmmuGetHwFaultBufferPtr(struct KernelGmmu
 }
 #else //__nvoc_kern_gmmu_h_disabled
 #define kgmmuGetHwFaultBufferPtr(pKernelGmmu, gfid, faultBufferIndex) kgmmuGetHwFaultBufferPtr_IMPL(pKernelGmmu, gfid, faultBufferIndex)
+#endif //__nvoc_kern_gmmu_h_disabled
+
+NvU64 kgmmuGetFaultBufferGenCnt_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvU8 gfid);
+
+#ifdef __nvoc_kern_gmmu_h_disabled
+static inline NvU64 kgmmuGetFaultBufferGenCnt(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvU8 gfid) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
+    return 0;
+}
+#else //__nvoc_kern_gmmu_h_disabled
+#define kgmmuGetFaultBufferGenCnt(pGpu, pKernelGmmu, gfid) kgmmuGetFaultBufferGenCnt_IMPL(pGpu, pKernelGmmu, gfid)
 #endif //__nvoc_kern_gmmu_h_disabled
 
 #undef PRIVATE_FIELD

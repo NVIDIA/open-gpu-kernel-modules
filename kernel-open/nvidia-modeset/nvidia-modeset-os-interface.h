@@ -40,11 +40,30 @@
 #include "nv_stdarg.h"
 
 enum NvKmsSyncPtOp {
+    /*
+     * Call into Tegra's kernel nvhost driver, and allocate a syncpoint that can
+     * be exclusively used by the caller. Internally, this operation will call
+     * get() to set the initial refcount of the syncpoint to 1.
+     */
     NVKMS_SYNCPT_OP_ALLOC,
-    NVKMS_SYNCPT_OP_GET,
+    /*
+     * Decrease the refcount of an already allocated syncpoint. Once the
+     * refcount drops to 0, the syncpoint will be returned to the free pool that
+     * nvhost manages, so PUT can also be used to balance out an ALLOC.
+     */
     NVKMS_SYNCPT_OP_PUT,
+    /*
+     * Extract syncpt id and thresh from the sync-file file descriptor
+     */
     NVKMS_SYNCPT_OP_FD_TO_ID_AND_THRESH,
+    /*
+     * Create dma-fence from syncpt id and thresh value and create sync_file
+     * file descriptor for the dma-fence handle created.
+     */
     NVKMS_SYNCPT_OP_ID_AND_THRESH_TO_FD,
+    /*
+     * read syncpt minimum value of given syncpt
+     */
     NVKMS_SYNCPT_OP_READ_MINVAL,
 };
 
@@ -77,7 +96,6 @@ typedef struct {
     } read_minval;
 } NvKmsSyncPtOpParams;
 
-NvBool nvkms_force_api_to_hw_head_identity_mappings(void);
 NvBool nvkms_output_rounding_fix(void);
 
 void   nvkms_call_rm    (void *ops);

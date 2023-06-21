@@ -704,6 +704,15 @@ nvswitch_is_spi_supported
 }
 
 NvBool
+nvswitch_is_bios_supported
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_is_bios_supported(device);
+}
+
+NvBool
 nvswitch_is_smbpbi_supported
 (
     nvswitch_device *device
@@ -1626,7 +1635,7 @@ nvswitch_lib_post_init_device
         return retval;
     }
     
-    if (nvswitch_is_spi_supported(device))
+    if (nvswitch_is_bios_supported(device))
     {
         retval = nvswitch_bios_get_image(device);
         if (retval != NVL_SUCCESS)
@@ -1643,7 +1652,7 @@ nvswitch_lib_post_init_device
     else
     {
         NVSWITCH_PRINT(device, ERROR,
-            "%s: Skipping BIOS parsing since SPI is unsupported.\n",
+            "%s: Skipping BIOS parsing since BIOS is unsupported.\n",
             __FUNCTION__);
     }
 
@@ -3363,6 +3372,26 @@ _nvswitch_ctrl_i2c_smbus_command
                                           cmdType, addr, port, cmd, msgLen, pData);
 }
 
+NvBool
+nvswitch_does_link_need_termination_enabled
+(
+    nvswitch_device *device,
+    nvlink_link *link
+)
+{
+    return device->hal.nvswitch_does_link_need_termination_enabled(device, link);
+}
+
+NvlStatus
+nvswitch_link_termination_setup
+(
+    nvswitch_device *device,
+    nvlink_link* link
+)
+{
+    return device->hal.nvswitch_link_termination_setup(device, link);
+}
+
 static NvlStatus
 _nvswitch_ctrl_get_inforom_nvlink_max_correctable_error_rate
 (
@@ -4745,6 +4774,16 @@ _nvswitch_ctrl_therm_read_voltage
     return device->hal.nvswitch_ctrl_therm_read_voltage(device, info);
 }
 
+static NvlStatus
+_nvswitch_ctrl_therm_read_power
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_POWER_PARAMS *info
+)
+{
+    return device->hal.nvswitch_ctrl_therm_read_power(device, info);
+}
+
 NvlStatus
 nvswitch_lib_ctrl
 (
@@ -4980,6 +5019,8 @@ nvswitch_lib_ctrl
                 CTRL_NVSWITCH_RESERVED_9);
         NVSWITCH_DEV_CMD_DISPATCH_RESERVED(
                 CTRL_NVSWITCH_RESERVED_10);
+        NVSWITCH_DEV_CMD_DISPATCH_RESERVED(
+                CTRL_NVSWITCH_RESERVED_11);
         NVSWITCH_DEV_CMD_DISPATCH(
                 CTRL_NVSWITCH_GET_TEMPERATURE_LIMIT,
                 _nvswitch_ctrl_therm_get_temperature_limit,
@@ -5084,6 +5125,9 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_VOLTAGE,
                 _nvswitch_ctrl_therm_read_voltage,
                 NVSWITCH_CTRL_GET_VOLTAGE_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_POWER,
+                _nvswitch_ctrl_therm_read_power,
+                NVSWITCH_GET_POWER_PARAMS);
 
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "unknown ioctl %x\n", cmd);

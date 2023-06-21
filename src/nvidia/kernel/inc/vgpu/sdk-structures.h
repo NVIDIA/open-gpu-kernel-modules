@@ -106,6 +106,7 @@ typedef struct vmiopd_SM_info {
 
 #define NV2080_CTRL_NVLINK_MAX_LINKS_v15_02  6
 #define NV2080_CTRL_NVLINK_MAX_LINKS_v1A_18 12
+#define NV2080_CTRL_NVLINK_MAX_LINKS_v23_04 24
 
 #define NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE_v15_02   8
 #define NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE_v1F_0D   9
@@ -123,6 +124,7 @@ typedef struct vmiopd_SM_info {
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_1E_02                                      (0x00000032)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_21_01                                      (0x00000033)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_22_02                                      (0x00000034)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE_23_00                                      (0x00000035)
 #define NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04                               8
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1B_05                                   256
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1E_03                                   240
@@ -137,7 +139,6 @@ typedef struct vmiopd_SM_info {
 #define NV2080_CTRL_MIGRATABLE_OPS_ARRAY_MAX_v21_07                             50
 #define NV2080_CTRL_MAX_PCES_v21_0A                                             32
 #define NV2080_CTRL_CE_CAPS_TBL_SIZE_v21_0A                                     2
-#define NV2080_ENGINE_TYPE_COPY_SIZE_v21_0A                                     10
 
 // Defined this intermediate RM-RPC structure for making RPC call from Guest as
 // we have the restriction of passing max 4kb of data to plugin and the
@@ -182,8 +183,7 @@ struct pte_desc
  */
 
 #define VGPU_CACHED_RMCTRL_LIST                                                                                      \
-    VGPU_CACHED_RMCTRL_ENTRY(NV2080_CTRL_CMD_PERF_VPSTATES_GET_INFO,          NV2080_CTRL_PERF_VPSTATES_INFO)        \
-    VGPU_CACHED_RMCTRL_ENTRY(NV2080_CTRL_CMD_GPU_GET_MAX_SUPPORTED_PAGE_SIZE, NV2080_CTRL_GPU_GET_MAX_SUPPORTED_PAGE_SIZE_PARAMS)
+    VGPU_CACHED_RMCTRL_ENTRY(NV2080_CTRL_CMD_PERF_VPSTATES_GET_INFO,          NV2080_CTRL_PERF_VPSTATES_INFO)
 
 enum VGPU_CACHED_RMCTRL_INDICES
 {
@@ -221,6 +221,11 @@ typedef struct VGPU_BSP_CAPS
 
 #define NV2080_ENGINE_TYPE_LAST_v18_01      (0x0000002a)
 #define NV2080_ENGINE_TYPE_LAST_v1C_09      (0x00000034)
+
+#define NV2080_ENGINE_TYPE_LAST_v1A_00      (0x2a)
+
+#define NV2080_ENGINE_TYPE_COPY_SIZE_v1A_0D  (10)
+#define NV2080_ENGINE_TYPE_COPY_SIZE_v22_00  (10)
 
 #define NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE_v1A_0F   (0x00000033)
 #define NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE_v1C_09   (0x00000034)

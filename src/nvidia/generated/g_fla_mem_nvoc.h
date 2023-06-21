@@ -73,7 +73,7 @@ struct FlaMemory {
     NV_STATUS (*__flamemControlFilter__)(struct FlaMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__flamemControlSerialization_Prologue__)(struct FlaMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__flamemIsReady__)(struct FlaMemory *, NvBool);
-    NV_STATUS (*__flamemCheckCopyPermissions__)(struct FlaMemory *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__flamemCheckCopyPermissions__)(struct FlaMemory *, struct OBJGPU *, struct Device *);
     void (*__flamemPreDestruct__)(struct FlaMemory *);
     NV_STATUS (*__flamemIsDuplicate__)(struct FlaMemory *, NvHandle, NvBool *);
     void (*__flamemControlSerialization_Epilogue__)(struct FlaMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -132,7 +132,7 @@ NV_STATUS __nvoc_objCreate_FlaMemory(FlaMemory**, Dynamic*, NvU32, CALL_CONTEXT 
 #define flamemControlFilter(pResource, pCallContext, pParams) flamemControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define flamemControlSerialization_Prologue(pResource, pCallContext, pParams) flamemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define flamemIsReady(pMemory, bCopyConstructorContext) flamemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define flamemCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) flamemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define flamemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) flamemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define flamemPreDestruct(pResource) flamemPreDestruct_DISPATCH(pResource)
 #define flamemIsDuplicate(pMemory, hMemory, pDuplicate) flamemIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define flamemControlSerialization_Epilogue(pResource, pCallContext, pParams) flamemControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -222,8 +222,8 @@ static inline NV_STATUS flamemIsReady_DISPATCH(struct FlaMemory *pMemory, NvBool
     return pMemory->__flamemIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS flamemCheckCopyPermissions_DISPATCH(struct FlaMemory *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__flamemCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS flamemCheckCopyPermissions_DISPATCH(struct FlaMemory *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__flamemCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void flamemPreDestruct_DISPATCH(struct FlaMemory *pResource) {

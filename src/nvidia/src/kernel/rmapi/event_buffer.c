@@ -619,9 +619,7 @@ eventbuffertBufferCtrlCmdEnableEvent_IMPL
     // NvTelemetry requires a valid subdevice
     if (updateTelemetry && pEventBuffer->hSubDevice)
     {
-        NvHandle hClient = RES_GET_CLIENT_HANDLE(pEventBuffer);
-        NvHandle hDevice;
-        OBJGPU *pGpu;
+        Subdevice *pSubDevice;
 
         status = rmGpuGroupLockAcquire(pEventBuffer->subDeviceInst,
                                        GPU_LOCK_GRP_SUBDEVICE,
@@ -630,7 +628,12 @@ eventbuffertBufferCtrlCmdEnableEvent_IMPL
         if (status != NV_OK)
             return status;
 
-        status = CliSetSubDeviceContext(hClient, pEventBuffer->hSubDevice, &hDevice, &pGpu);
+        status = subdeviceGetByHandle(RES_GET_CLIENT(pEventBuffer),
+                pEventBuffer->hSubDevice, &pSubDevice);
+        if (status != NV_OK)
+            return status;
+
+        GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
 
         rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
     }

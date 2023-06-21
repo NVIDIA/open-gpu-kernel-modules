@@ -27,6 +27,7 @@
 #include "uvm_forward_decl.h"
 #include "uvm_processors.h"
 #include "uvm_test_ioctl.h"
+#include "uvm_hal_types.h"
 
 typedef enum
 {
@@ -143,9 +144,7 @@ NvU64 uvm_rm_mem_get_gpu_proxy_va(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu);
 
 // Get the GPU VA of the given memory in UVM's internal address space (if the
 // flag is false), or proxy address space (if flag is true).
-NvU64 uvm_rm_mem_get_gpu_va(uvm_rm_mem_t *rm_mem,
-                            uvm_gpu_t *gpu,
-                            bool is_proxy_va_space);
+uvm_gpu_address_t uvm_rm_mem_get_gpu_va(uvm_rm_mem_t *rm_mem, uvm_gpu_t *gpu, bool is_proxy_va_space);
 
 // Query if the memory is mapped on the CPU, GPU (UVM internal/kernel address
 // space), or GPU (proxy address space)

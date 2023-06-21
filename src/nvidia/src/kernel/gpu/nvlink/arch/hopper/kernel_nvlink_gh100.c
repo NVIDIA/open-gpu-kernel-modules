@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,6 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
+
 #include "os/os.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
@@ -29,6 +31,7 @@
 #include "nverror.h"
 #include "objtmr.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "gpu/gpu_fabric_probe.h"
 
 /*!
  * @brief Check if ALI is supported for the given device
@@ -210,7 +213,7 @@ knvlinkDiscoverPostRxDetLinks_GH100
     //
     // Initialize Mask of links that have made it past RxDet to 0 then
     // request to get all links from the given GPU that have gotted past RxDet
-    // 
+    //
     pKernelNvlink0->postRxDetLinkMask = 0;
     status = knvlinkUpdatePostRxDetectLinkMask(pGpu0, pKernelNvlink0);
     if(status != NV_OK)
@@ -243,7 +246,8 @@ knvlinkDiscoverPostRxDetLinks_GH100
     if(pKernelNvlink0->postRxDetLinkMask == 0 ||
        pKernelNvlink1->postRxDetLinkMask == 0)
     {
-        NV_PRINTF(LEVEL_ERROR, "Got 0 post RxDet Links!");
+        NV_PRINTF(LEVEL_INFO, "Got 0 post RxDet Links on GPU %d or GPU %d!\n",
+                gpuGetInstance(pGpu0), gpuGetInstance(pGpu1));
         return NV_ERR_NOT_READY;
     }
 
@@ -441,7 +445,7 @@ out:
  * @param[in]   pGpu               OBJGPU pointer of local GPU
  * @param[in]   pKernelNvlink      reference of KernelNvlink
  * @param[in]   pRemoteGpu         OBJGPU pointer of remote GPU
- * @param[in/out] pPeerLinkMask    reference of peerLinkMask   
+ * @param[in/out] pPeerLinkMask    reference of peerLinkMask
  */
 void
 knvlinkGetEffectivePeerLinkMask_GH100
@@ -457,14 +461,20 @@ knvlinkGetEffectivePeerLinkMask_GH100
     NvU32 numLinksPerIoctrl, numIoctrls;
     KernelNvlink *pRemoteKernelNvlink;
     NvU32 numLinksToBeReduced;
+    NvU32 linkMaskToBeReduced;
     NvU32 linkId, count, i;
 
     gpuInstance = gpuGetInstance(pGpu);
     remoteGpuInstance = gpuGetInstance(pRemoteGpu);
 
-    // Do not support NVSwitch systems for now.
     if (knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
     {
+        if (gpuFabricProbeGetlinkMaskToBeReduced(pGpu->pGpuFabricProbeInfoKernel,
+                                                 &linkMaskToBeReduced) == NV_OK)
+        {
+            *pPeerLinkMask &= (~linkMaskToBeReduced);
+        }
+
         return;
     }
 
@@ -481,7 +491,7 @@ knvlinkGetEffectivePeerLinkMask_GH100
     //
     pRemoteKernelNvlink = GPU_GET_KERNEL_NVLINK(pRemoteGpu);
     remotePeerLinkMask = pRemoteKernelNvlink->peerLinkMasks[gpuInstance];
-    NV_ASSERT(nvPopCount32(remotePeerLinkMask) == nvPopCount32(peerLinkMask));    
+    NV_ASSERT(nvPopCount32(remotePeerLinkMask) == nvPopCount32(peerLinkMask));
 
     // Find out number of active NVLinks between the two GPUs.
     numLinksToBeReduced = knvlinkGetNumLinksToBeReducedPerIoctrl_HAL(pKernelNvlink);
@@ -624,6 +634,22 @@ knvlinkSetUniqueFabricBaseAddress_GH100
 }
 
 /*!
+ * @brief   Clear unique fabric address for NVSwitch enabled systems.
+ *
+ * @param[in] pGpu           OBJGPU pointer
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ */
+void
+knvlinkClearUniqueFabricBaseAddress_GH100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    pKernelNvlink->fabricBaseAddr = NVLINK_INVALID_FABRIC_ADDR;
+}
+
+/*!
  * @brief   Check if system has enough active NVLinks and
  *          enough NVLink bridges
  *
@@ -640,10 +666,13 @@ knvlinkDirectConnectCheck_GH100
 {
     NV2080_CTRL_NVLINK_DIRECT_CONNECT_CHECK_PARAMS params = {0};
 
-    knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+    if (knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
                         NV2080_CTRL_CMD_NVLINK_DIRECT_CONNECT_CHECK,
                         (void *)&params,
-                        sizeof(params));
+                        sizeof(params)) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Fail to call direct conect check command\n"); 
+    }
 }
 
 /*!

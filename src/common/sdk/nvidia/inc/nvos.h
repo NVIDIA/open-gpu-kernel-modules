@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -142,6 +142,7 @@ extern "C" {
 
 #define NVOS_STATUS_ERROR_PRIV_SEC_VIOLATION                    NV_ERR_PRIV_SEC_VIOLATION
 #define NVOS_STATUS_ERROR_GPU_IN_DEBUG_MODE                     NV_ERR_GPU_IN_DEBUG_MODE
+#define NVOS_STATUS_ERROR_ALREADY_SIGNALLED                     NV_ERR_ALREADY_SIGNALLED
 
 /*
     Note:
@@ -242,6 +243,19 @@ typedef struct
 // If the flag is set RM will assume the memory pages are of type syncpoint.
 #define NVOS02_FLAGS_ALLOC_TYPE_SYNCPOINT                          24:24
 #define NVOS02_FLAGS_ALLOC_TYPE_SYNCPOINT_APERTURE                 (0x00000001)
+
+//
+// Allow client allocations to go to protected/unprotected video/system memory.
+// When Ampere Protected Model aka APM or Confidential Compute is enabled and
+// DEFAULT flag is set by client, allocations go to protected memory. When
+// protected memory is not enabled, allocations go to unprotected memory.
+// If APM or CC is not enabled, it is a bug for a client to set the PROTECTED
+// flag to YES
+//
+#define NVOS02_FLAGS_MEMORY_PROTECTION                             26:25
+#define NVOS02_FLAGS_MEMORY_PROTECTION_DEFAULT                     (0x00000000)
+#define NVOS02_FLAGS_MEMORY_PROTECTION_PROTECTED                   (0x00000001)
+#define NVOS02_FLAGS_MEMORY_PROTECTION_UNPROTECTED                 (0x00000002)
 
 //
 // If _NO_MAP is requested, the RM in supported platforms will not map the
@@ -444,6 +458,7 @@ typedef struct
     NvHandle hObjectNew;
     NvV32    hClass;
     NvP64    pAllocParms NV_ALIGN_BYTES(8);
+    NvU32    paramsSize;
     NvV32    status;
 } NVOS21_PARAMETERS;
 
@@ -459,6 +474,7 @@ typedef struct
     NvV32    hClass;                              // [in] class num of new object
     NvP64    pAllocParms NV_ALIGN_BYTES(8);       // [IN] class-specific alloc parameters
     NvP64    pRightsRequested NV_ALIGN_BYTES(8);  // [IN] RS_ACCESS_MASK to request rights, or NULL
+    NvU32    paramsSize;                          // [IN] Size of alloc params
     NvU32    flags;                               // [IN] flags for FINN serialization
     NvV32    status;                              // [OUT] status
 } NVOS64_PARAMETERS;
@@ -1280,6 +1296,18 @@ typedef struct
 #define NVOS32_ATTR2_PROTECTION_DEVICE_READ_WRITE        0x00000000
 #define NVOS32_ATTR2_PROTECTION_DEVICE_READ_ONLY         0x00000001
 
+//
+// Allow client allocations to go to protected/unprotected video/system memory.
+// When Ampere Protected Model aka APM or Confidential Compute is enabled and
+// DEFAULT flag is set by client, allocations go to protected memory. When
+// protected memory is not enabled, allocations go to unprotected memory.
+// If APM or CC is not enabled, it is a bug for a client to set the PROTECTED
+// flag to YES
+//
+#define NVOS32_ATTR2_MEMORY_PROTECTION                       26:25
+#define NVOS32_ATTR2_MEMORY_PROTECTION_DEFAULT          0x00000000
+#define NVOS32_ATTR2_MEMORY_PROTECTION_PROTECTED        0x00000001
+#define NVOS32_ATTR2_MEMORY_PROTECTION_UNPROTECTED      0x00000002
 //
 // Force the allocation to go to guest subheap.
 // This flag is used by vmiop plugin to allocate from GPA

@@ -57,7 +57,8 @@ rmapiutilAllocClientAndDeviceHandles
                                 NV01_NULL_OBJECT,
                                 NV01_NULL_OBJECT,
                                 NV01_ROOT,
-                                &hClient),
+                                &hClient,
+                                sizeof(hClient)),
         cleanup);
 
     // Allocate a device
@@ -75,7 +76,8 @@ rmapiutilAllocClientAndDeviceHandles
                                 hClient,
                                 hDevice,
                                 NV01_DEVICE_0,
-                                &nv0080AllocParams),
+                                &nv0080AllocParams,
+                                sizeof(nv0080AllocParams)),
         cleanup);
 
     // Allocate a subDevice
@@ -92,7 +94,8 @@ rmapiutilAllocClientAndDeviceHandles
                                 hDevice,
                                 hSubDevice,
                                 NV20_SUBDEVICE_0,
-                                &nv2080AllocParams),
+                                &nv2080AllocParams,
+                                sizeof(nv2080AllocParams)),
         cleanup);
 
     *phClient = hClient;

@@ -27,10 +27,13 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0073/ctrl0073dp.finn
+// Source file:      ctrl/ctrl0073/ctrl0073dp.finn
 //
 
 #include "ctrl/ctrl0073/ctrl0073base.h"
+#include "ctrl/ctrl0073/ctrl0073common.h"
+
+#include "nvcfg_sdk.h"
 
 /* NV04_DISPLAY_COMMON dfp-display-specific control commands and parameters */
 
@@ -1766,29 +1769,7 @@ typedef struct NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS {
  *   bOverrideLinkBw
  *     Returns NV_TRUE if DFP limits defined in DCB have to be honored, else NV_FALSE
  *
- *   DSC caps -
- *      bDscSupported
- *          If GPU supports DSC or not
- *
- *      encoderColorFormatMask
- *          Mask of all color formats for which DSC
- *          encoding is supported by GPU
- *
- *      lineBufferSizeKB
- *          Size of line buffer.
- *
- *      rateBufferSizeKB
- *          Size of rate buffer per slice.
- *
- *      bitsPerPixelPrecision
- *          Bits per pixel precision for DSC e.g. 1/16, 1/8, 1/4, 1/2, 1bpp
- *
- *      maxNumHztSlices
- *          Maximum number of horizontal slices supported by DSC encoder
- *
- *      lineBufferBitDepth
- *          Bit depth used by the GPU to store the reconstructed pixels within
- *          the line buffer
+ *  DSC caps
  *
  * Possible status values returned are:
  *      NV_OK
@@ -1802,28 +1783,20 @@ typedef struct NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS {
 #define NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS_MESSAGE_ID (0x69U)
 
 typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
-    NvU32  subDeviceInstance;
-    NvU32  sorIndex;
-    NvU32  maxLinkRate;
-    NvU32  dpVersionsSupported;
-    NvBool bIsMultistreamSupported;
-    NvBool bIsSCEnabled;
-    NvBool bHasIncreasedWatermarkLimits;
-    NvBool bIsPC2Disabled;
-    NvBool isSingleHeadMSTSupported;
-    NvBool bFECSupported;
-    NvBool bIsTrainPhyRepeater;
-    NvBool bOverrideLinkBw;
-
-    struct {
-        NvBool bDscSupported;
-        NvU32  encoderColorFormatMask;
-        NvU32  lineBufferSizeKB;
-        NvU32  rateBufferSizeKB;
-        NvU32  bitsPerPixelPrecision;
-        NvU32  maxNumHztSlices;
-        NvU32  lineBufferBitDepth;
-    } DSC;
+    NvU32                          subDeviceInstance;
+    NvU32                          sorIndex;
+    NvU32                          maxLinkRate;
+    NvU32                          dpVersionsSupported;
+    NvU32                          UHBRSupported;
+    NvBool                         bIsMultistreamSupported;
+    NvBool                         bIsSCEnabled;
+    NvBool                         bHasIncreasedWatermarkLimits;
+    NvBool                         bIsPC2Disabled;
+    NvBool                         isSingleHeadMSTSupported;
+    NvBool                         bFECSupported;
+    NvBool                         bIsTrainPhyRepeater;
+    NvBool                         bOverrideLinkBw;
+    NV0073_CTRL_CMD_DSC_CAP_PARAMS DSC;
 } NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS;
 
 #define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_2                0:0
@@ -1834,13 +1807,13 @@ typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
 #define NV0073_CTRL_CMD_DP_GET_CAPS_DP_VERSIONS_SUPPORTED_DP1_4_YES             (0x00000001U)
 
 
-
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE                           2:0
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_NONE                          (0x00000000U)
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_1_62                          (0x00000001U)
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_2_70                          (0x00000002U)
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_5_40                          (0x00000003U)
 #define NV0073_CTRL_CMD_DP_GET_CAPS_MAX_LINK_RATE_8_10                          (0x00000004U)
+
 
 #define NV0073_CTRL_CMD_DP_GET_CAPS_DSC_ENCODER_COLOR_FORMAT_RGB                (0x00000001U)
 #define NV0073_CTRL_CMD_DP_GET_CAPS_DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_444        (0x00000002U)

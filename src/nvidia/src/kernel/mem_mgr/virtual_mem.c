@@ -1088,18 +1088,25 @@ _virtmemAllocKernelMapping
         else
         {
             KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-            NvHandle hClient = NV01_NULL_OBJECT;
+            Device *pDevice = NULL;
             CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
             if ((pCallContext != NULL) && (pCallContext->pClient != NULL))
             {
-                hClient = pCallContext->pClient->hClient;
+                RsResourceRef *pDeviceRef = NULL;
+
+                status = refFindAncestorOfType(pCallContext->pResourceRef,
+                                               classId(Device), &pDeviceRef);
+                if (status == NV_OK)
+                {
+                    pDevice = dynamicCast(pDeviceRef->pResource, Device);
+                }
             }
 
             status = kbusMapFbAperture_HAL(pGpu, pKernelBus,
                                            pMemoryInfo->pMemDesc, offset,
                                            &pDmaMappingInfo->FbAperture[gpuSubDevInst],
                                            &pDmaMappingInfo->FbApertureLen[gpuSubDevInst],
-                                           BUS_MAP_FB_FLAGS_MAP_UNICAST, hClient);
+                                           BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
 
             if (status != NV_OK)
             {
@@ -1321,6 +1328,7 @@ virtmemMapTo_IMPL
 
     // Different cases for vidmem & system memory/fabric memory.
     bIsSysmem = (tgtAddressSpace == ADDR_SYSMEM);
+    bIsSysmem = bIsSysmem || (tgtAddressSpace == ADDR_EGM);
 
     if (bIsSysmem ||
         (tgtAddressSpace == ADDR_FABRIC_MC) ||

@@ -355,6 +355,7 @@ enum NvKmsModeValidationOverrides {
     NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS                = (1 << 16),
     NVKMS_MODE_VALIDATION_ALLOW_DP_INTERLACED                = (1 << 17),
     NVKMS_MODE_VALIDATION_NO_INTERLACED_MODES                = (1 << 18),
+    NVKMS_MODE_VALIDATION_MAX_ONE_HARDWARE_HEAD              = (1 << 19),
 };
 
 /*!
@@ -1277,9 +1278,6 @@ struct NvKmsQueryConnectorStaticDataReply {
     NvKmsConnectorSignalFormat signalFormat;
     NvU32 physicalIndex;
     NvU32 physicalLocation;
-
-    /* Bitmask of valid heads to drive dpy(s) on this connector. */
-    NvU32 headMask;
 };
 
 struct NvKmsQueryConnectorStaticDataParams {
@@ -1343,6 +1341,8 @@ struct NvKmsQueryDpyStaticDataReply {
     char dpAddress[NVKMS_DP_ADDRESS_STRING_LENGTH];
     NvBool mobileInternal;
     NvBool isDpMST;
+    /* Bitmask of valid heads to drive this dpy. */
+    NvU32 headMask;
 };
 
 struct NvKmsQueryDpyStaticDataParams {
@@ -1975,6 +1975,7 @@ enum NvKmsSetModeOneDispStatus {
     NVKMS_SET_MODE_ONE_DISP_STATUS_FAILED_DISPLAY_PORT_BANDWIDTH_CHECK = 3,
     NVKMS_SET_MODE_ONE_DISP_STATUS_INCOMPATIBLE_DPYS = 4,
     NVKMS_SET_MODE_ONE_DISP_STATUS_DUPLICATE_DPYS = 5,
+    NVKMS_SET_MODE_ONE_DISP_STATUS_FAILED_TO_ASSIGN_HARDWARE_HEADS = 6,
 };
 
 struct NvKmsSetModeOneDispReply {
@@ -2551,6 +2552,8 @@ enum NvKmsDpyAttribute {
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_CONNECTOR_TYPE,
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_IS_MULTISTREAM,
     NV_KMS_DPY_ATTRIBUTE_DISPLAYPORT_SINK_IS_AUDIO_CAPABLE,
+
+    NV_KMS_DPY_ATTRIBUTE_NUMBER_OF_HARDWARE_HEADS_USED,
 };
 
 /*! Values for the NV_KMS_DPY_ATTRIBUTE_REQUESTED_DITHERING attribute. */

@@ -86,7 +86,7 @@
 // The size of the VA used for mapping uvm_mem_t allocations
 // 128 GBs should be plenty for internal allocations and fits easily on all
 // supported architectures.
-#define UVM_MEM_VA_SIZE (128ull * 1024 * 1024 * 1024)
+#define UVM_MEM_VA_SIZE (128 * UVM_SIZE_1GB)
 
 typedef struct
 {
@@ -128,6 +128,11 @@ typedef struct
     // has to be aligned to PAGE_SIZE.
     NvU32 page_size;
 
+    // The protection flag is only observed for vidmem allocations when CC is
+    // enabled. If set to true, the allocation returns unprotected vidmem;
+    // otherwise, the allocation returns protected vidmem.
+    bool is_unprotected;
+
     // If true, the allocation is zeroed (scrubbed).
     bool zero;
 } uvm_mem_alloc_params_t;
@@ -161,6 +166,8 @@ struct uvm_mem_struct
     // lifetime of the GPU. For CPU allocations there is no lifetime limitation.
     uvm_gpu_t *backing_gpu;
 
+    // For Confidential Computing, the accessing GPU needs to be known at alloc
+    // time for sysmem allocations.
     uvm_gpu_t *dma_owner;
 
     union
@@ -383,6 +390,12 @@ static NV_STATUS uvm_mem_alloc_vidmem(NvU64 size, uvm_gpu_t *gpu, uvm_mem_t **me
     params.page_size = UVM_PAGE_SIZE_DEFAULT;
 
     return uvm_mem_alloc(&params, mem_out);
+}
+
+// Helper for allocating protected vidmem with the default page size
+static NV_STATUS uvm_mem_alloc_vidmem_protected(NvU64 size, uvm_gpu_t *gpu, uvm_mem_t **mem_out)
+{
+    return uvm_mem_alloc_vidmem(size, gpu, mem_out);
 }
 
 // Helper for allocating sysmem and mapping it on the CPU

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -289,6 +289,7 @@ dispapiSetUnicastAndSynchronize_KERNEL
     DisplayApi      *pDisplayApi,
     OBJGPUGRP       *pGpuGroup,
     OBJGPU         **ppGpu,
+    OBJDISP        **ppDisp,
     NvU32            subDeviceInstance
 )
 {
@@ -299,6 +300,19 @@ dispapiSetUnicastAndSynchronize_KERNEL
         return nvStatus;
 
     gpumgrSetBcEnabledStatus(*ppGpu, NV_FALSE);
+
+    //
+    // The _KERNEL version of this function is only called from Kernel RM, but
+    // in Kernel RM, OBJDISP is not available, so ppDisp must be NULL. If the
+    // caller needs to access OBJDISP, either the caller code must remove the
+    // OBJDISP dependency, or the caller code must be changed so that
+    // dispapiSetUnicastAndSynchronize is called only from physical or
+    // monolithic RM, never Kernel RM.
+    //
+    if (ppDisp != NULL)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
 
     return nvStatus;
 }
@@ -375,6 +389,7 @@ dispapiControl_Prologue_IMPL
     status = dispapiSetUnicastAndSynchronize_HAL(pDisplayApi,
                                              pRmCtrlParams->pGpuGrp,
                                              &pRmCtrlParams->pGpu,
+                                             NULL,
                                              subdeviceIndex);
 
     if (status == NV_OK)
@@ -469,7 +484,7 @@ dispcmnConstruct_IMPL
 )
 {
     DisplayApi *pDisplayApi = staticCast(pDispCommon, DisplayApi);
-    
+
     //
     // Not adding the priv-level check for this class
     // as it is being used by OpenGL from userspace.Once the Cleanup is done from the OpenGL

@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080mc.finn
+// Source file:      ctrl/ctrl2080/ctrl2080mc.finn
 //
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
@@ -77,7 +77,6 @@ typedef struct NV2080_CTRL_MC_GET_ARCH_INFO_PARAMS {
 
 #define NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_TU100         (0x00000160)
 #define NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_GA100         (0x00000170)
-
 
 
 /* valid ARCHITECTURE_T23X implementation values */

@@ -106,7 +106,7 @@ static NvU64 __nvoc_thunk_OBJGVASPACE_vaspaceGetMapPageSize(struct OBJVASPACE *p
     return gvaspaceGetMapPageSize((struct OBJGVASPACE *)(((unsigned char *)pVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset), pGpu, pMemBlock);
 }
 
-static NvU32 __nvoc_thunk_OBJGVASPACE_vaspaceGetBigPageSize(struct OBJVASPACE *pVAS) {
+static NvU64 __nvoc_thunk_OBJGVASPACE_vaspaceGetBigPageSize(struct OBJVASPACE *pVAS) {
     return gvaspaceGetBigPageSize((struct OBJGVASPACE *)(((unsigned char *)pVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset));
 }
 

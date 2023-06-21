@@ -40,7 +40,7 @@
  * FINN compiler version
  */
 #define FINN_VERSION_MAJOR 1
-#define FINN_VERSION_MINOR 17
+#define FINN_VERSION_MINOR 21
 #define FINN_VERSION_PATCH 0
 
 typedef struct FINN_RM_API
@@ -58,8 +58,8 @@ typedef struct FINN_RM_API
  * @brief Private functions not to be called directly
  */
 /**@{*/
-NV_STATUS finnSerializeInternal_FINN_RM_API(NvU64 interface, NvU64 message, const char *api, char **dst, NvLength dst_size, NvBool seri_up);
-NV_STATUS finnDeserializeInternal_FINN_RM_API(const char **src, NvLength src_size, char *api, NvLength api_size, NvBool deser_up);
+NV_STATUS finnSerializeInternal_FINN_RM_API(NvU64 interface, NvU64 message, const char *api, char *dst, NvLength dst_size, NvBool seri_up);
+NV_STATUS finnDeserializeInternal_FINN_RM_API(const char *src, NvLength src_size, char *api, NvLength api_size, NvBool deser_up);
 /**@}*/
 
 
@@ -78,12 +78,8 @@ NV_STATUS finnDeserializeInternal_FINN_RM_API(const char **src, NvLength src_siz
  *
  * @param[in]      interface  FINN interface ID of the param struct.
  * @param[in]      message    FINN message ID of the param struct.
- * @param[in]      api        Pointer to the source param struct from which to
- *                            copy the data.
- * @param[in, out] dst        Double pointer to the destination buffer into
- *                            which to copy the data. *dst will be set to
- *                            *dst + serialized size on success and to the
- *                            location of failed serialization on failure.
+ * @param[in]      api        Source param struct from which to copy the data.
+ * @param[in]      dst        Destination buffer into which to copy the data.
  * @param[in]      dst_size   Maximum size of the destination buffer measured in
  *                            `NvU8` units.
  *
@@ -96,13 +92,13 @@ NV_STATUS finnDeserializeInternal_FINN_RM_API(const char **src, NvLength src_siz
  * @retval NV_ERR_BUFFER_TOO_SMALL  Destination buffer size too small.
  */
 /**@{*/
-static NV_INLINE NV_STATUS FinnRmApiSerializeUp(NvU64 interface, NvU64 message, const void *api, NvU8 **dst, NvLength dst_size)
+static NV_INLINE NV_STATUS FinnRmApiSerializeUp(NvU64 interface, NvU64 message, const void *api, NvU8 *dst, NvLength dst_size)
 {
-    return finnSerializeInternal_FINN_RM_API(interface, message, (const char *) api, (char **) dst, dst_size, NV_TRUE);
+    return finnSerializeInternal_FINN_RM_API(interface, message, (const char *) api, (char *) dst, dst_size, NV_TRUE);
 }
-static NV_INLINE NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message, const void *api, NvU8 **dst, NvLength dst_size)
+static NV_INLINE NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message, const void *api, NvU8 *dst, NvLength dst_size)
 {
-    return finnSerializeInternal_FINN_RM_API(interface, message, (const char *) api, (char **) dst, dst_size, NV_FALSE);
+    return finnSerializeInternal_FINN_RM_API(interface, message, (const char *) api, (char *) dst, dst_size, NV_FALSE);
 }
 /**@}*/
 
@@ -124,14 +120,10 @@ static NV_INLINE NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message
  * @warning One of these may be unimplemented depending on platform. If both
  *          are implemented, misuse causes memory corruption and memory leaks.
  *
- * @param[in, out] src        Double pointer to the source buffer from which to
- *                            copy the data. *src is set to *src + serialized
- *                            size on success and to the location of failed
- *                            deserialization on failure.
+ * @param[in]      src        Source buffer from which to copy the data.
  * @param[in]      src_size   Maximum size of the source buffer measured in
  *                            `NvU8` units.
- * @param[in, out] api        Pointer to the destination param struct into which
- *                            to copy the data.
+ * @param[in, out] api        Destination param struct into which to copy the data.
  * @param[in]      api_size   Size of the destination param struct measured in
  *                            `char` units per `sizeof` operator.
  *
@@ -146,13 +138,13 @@ static NV_INLINE NV_STATUS FinnRmApiSerializeDown(NvU64 interface, NvU64 message
  * @retval NV_ERR_LIB_RM_VERSION_MISMATCH Version mismatch.
  */
 /**@{*/
-static NV_INLINE NV_STATUS FinnRmApiDeserializeDown(NvU8 **src, NvLength src_size, void *api, NvLength api_size)
+static NV_INLINE NV_STATUS FinnRmApiDeserializeDown(NvU8 *src, NvLength src_size, void *api, NvLength api_size)
 {
-    return finnDeserializeInternal_FINN_RM_API((const char **) src, src_size / sizeof(NvU8), (char *) api, api_size, NV_FALSE);
+    return finnDeserializeInternal_FINN_RM_API((const char *) src, src_size / sizeof(NvU8), (char *) api, api_size, NV_FALSE);
 }
-static NV_INLINE NV_STATUS FinnRmApiDeserializeUp(NvU8 **src, NvLength src_size, void *api, NvLength api_size)
+static NV_INLINE NV_STATUS FinnRmApiDeserializeUp(NvU8 *src, NvLength src_size, void *api, NvLength api_size)
 {
-    return finnDeserializeInternal_FINN_RM_API((const char **) src, src_size / sizeof(NvU8), (char *) api, api_size, NV_TRUE);
+    return finnDeserializeInternal_FINN_RM_API((const char *) src, src_size / sizeof(NvU8), (char *) api, api_size, NV_TRUE);
 }
 /**@}*/
 
@@ -241,6 +233,10 @@ typedef FINN_RM_API FINN_NV01_MEMORY_SYSTEM_MEMORY;
 typedef FINN_RM_API FINN_NV01_ROOT_USER_RESERVED;
 #define FINN_NV01_ROOT_USER_MEMORY_INTERFACE_ID (0x4101U)
 typedef FINN_RM_API FINN_NV01_ROOT_USER_MEMORY;
+#define FINN_NV_CE_UTILS_RESERVED_INTERFACE_ID (0x0050U)
+typedef FINN_RM_API FINN_NV_CE_UTILS_RESERVED;
+#define FINN_NV_CE_UTILS_UTILS_INTERFACE_ID (0x5001U)
+typedef FINN_RM_API FINN_NV_CE_UTILS_UTILS;
 #define FINN_NV04_DISPLAY_COMMON_RESERVED_INTERFACE_ID (0x7300U)
 typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_RESERVED;
 #define FINN_NV04_DISPLAY_COMMON_COMMON_INTERFACE_ID (0x7305U)
@@ -250,6 +246,8 @@ typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_DFP;
 #define FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID (0x7313U)
 typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_DP;
 
+#define FINN_NV04_DISPLAY_COMMON_EVENT_INTERFACE_ID (0x7303U)
+typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_EVENT;
 #define FINN_NV04_DISPLAY_COMMON_INTERNAL_INTERFACE_ID (0x7304U)
 typedef FINN_RM_API FINN_NV04_DISPLAY_COMMON_INTERNAL;
 #define FINN_NV04_DISPLAY_COMMON_PSR_INTERFACE_ID (0x7316U)
@@ -289,13 +287,13 @@ typedef FINN_RM_API FINN_NV01_DEVICE_0_NVJPG;
 #define FINN_NV01_DEVICE_0_PERF_INTERFACE_ID (0x8019U)
 typedef FINN_RM_API FINN_NV01_DEVICE_0_PERF;
 
-#define FINN_NV01_DEVICE_0_RC_INTERFACE_ID (0x801dU)
-typedef FINN_RM_API FINN_NV01_DEVICE_0_RC;
 #define FINN_NV01_DEVICE_0_OS_UNIX_INTERFACE_ID (0x801eU)
 typedef FINN_RM_API FINN_NV01_DEVICE_0_OS_UNIX;
 
 #define FINN_NV0090_KERNEL_GRAPHICS_CONTEXT_INTERFACE_ID (0x9001U)
 typedef FINN_RM_API FINN_NV0090_KERNEL_GRAPHICS_CONTEXT;
+#define FINN_NV_SEMAPHORE_SURFACE_INTERFACE_ID (0x00da00U)
+typedef FINN_RM_API FINN_NV_SEMAPHORE_SURFACE;
 #define FINN_IMEX_SESSION_INTERFACE_ID (0xf100U)
 typedef FINN_RM_API FINN_IMEX_SESSION;
 #define FINN_NV01_MEMORY_FABRIC_EXPORT_RESERVED_INTERFACE_ID (0xf400U)
@@ -335,6 +333,7 @@ typedef FINN_RM_API FINN_NV_MEMORY_MAPPER;
 
 #define FINN_NV20_SUBDEVICE_0_RESERVED_INTERFACE_ID (0x208000U)
 typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_RESERVED;
+
 #define FINN_NV20_SUBDEVICE_0_BIOS_INTERFACE_ID (0x208008U)
 typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_BIOS;
 #define FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID (0x208018U)
@@ -403,6 +402,9 @@ typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_NVLINK;
 
 #define FINN_NV20_SUBDEVICE_0_PERF_INTERFACE_ID (0x208020U)
 typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_PERF;
+
+#define FINN_NV20_SUBDEVICE_0_POWER_INTERFACE_ID (0x208027U)
+typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_POWER;
 
 #define FINN_NV20_SUBDEVICE_0_RC_INTERFACE_ID (0x208022U)
 typedef FINN_RM_API FINN_NV20_SUBDEVICE_0_RC;
@@ -635,6 +637,8 @@ typedef FINN_RM_API FINN_MAXWELL_CHANNEL_GPFIFO_A_EVENT;
 typedef FINN_RM_API FINN_MAXWELL_PROFILER_RESERVED;
 #define FINN_MAXWELL_PROFILER_INTERNAL_INTERFACE_ID (0xb0cc02U)
 typedef FINN_RM_API FINN_MAXWELL_PROFILER_INTERNAL;
+#define FINN_MAXWELL_PROFILER_POWER_INTERFACE_ID (0xb0cc03U)
+typedef FINN_RM_API FINN_MAXWELL_PROFILER_POWER;
 #define FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID (0xb0cc01U)
 typedef FINN_RM_API FINN_MAXWELL_PROFILER_PROFILER;
 #define FINN_MAXWELL_PROFILER_CONTEXT_RESERVED_INTERFACE_ID (0xb1cc00U)
@@ -729,6 +733,11 @@ typedef FINN_RM_API FINN_HOPPER_CHANNEL_GPFIFO_A_RESERVED;
 typedef FINN_RM_API FINN_HOPPER_CHANNEL_GPFIFO_A_GPFIFO;
 #define FINN_HOPPER_CHANNEL_GPFIFO_A_EVENT_INTERFACE_ID (0xc86f02U)
 typedef FINN_RM_API FINN_HOPPER_CHANNEL_GPFIFO_A_EVENT;
+
+#define FINN_NV_CONFIDENTIAL_COMPUTE_RESERVED_INTERFACE_ID (0xcb3300U)
+typedef FINN_RM_API FINN_NV_CONFIDENTIAL_COMPUTE_RESERVED;
+#define FINN_NV_CONFIDENTIAL_COMPUTE_CONF_COMPUTE_INTERFACE_ID (0xcb3301U)
+typedef FINN_RM_API FINN_NV_CONFIDENTIAL_COMPUTE_CONF_COMPUTE;
 
 #define FINN_NV_COUNTER_COLLECTION_UNIT_RESERVED_INTERFACE_ID (0xcbca00U)
 typedef FINN_RM_API FINN_NV_COUNTER_COLLECTION_UNIT_RESERVED;

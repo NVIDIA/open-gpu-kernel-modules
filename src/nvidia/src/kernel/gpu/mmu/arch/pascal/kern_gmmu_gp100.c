@@ -144,7 +144,7 @@ kgmmuInstBlkPageDirBaseGet_GP100
         RmPhysAddr         physAdd;
         NvU32              aperture;
         NvU32              addrLo;
-        NvU32              bigPageSize = vaspaceGetBigPageSize(pVAS);
+        NvU64              bigPageSize = vaspaceGetBigPageSize(pVAS);
 
         pPDB = (pParams->bIsClientAdmin) ? vaspaceGetKernelPageDirBase(pVAS, pGpu) :
             vaspaceGetPageDirBase(pVAS, pGpu);

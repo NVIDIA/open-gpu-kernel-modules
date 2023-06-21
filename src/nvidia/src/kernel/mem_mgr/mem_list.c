@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -419,15 +419,23 @@ continue_alloc_object:
         NvU64                              baseOffset          = 0;
         NvU64                              trueLength;
         NvU32                              hwResId             = 0;
-        NvU32                              pageSize            = 0;
+        NvU64                              pageSize            = 0;
         RM_ATTR_PAGE_SIZE                  pageSizeAttr;
         FB_ALLOC_INFO                     *pFbAllocInfo        = NULL;
         FB_ALLOC_PAGE_FORMAT              *pFbAllocPageFormat  = NULL;
         HWRESOURCE_INFO                   *pHwResource         = NULL;
         MemoryManager                     *pMemoryManager      = GPU_GET_MEMORY_MANAGER(pGpu);
         KernelGmmu                        *pKernelGmmu         = GPU_GET_KERNEL_GMMU(pGpu);
-        Heap                              *pHeap               = vidmemGetHeap(pGpu, hClient, NV_FALSE);
+        Heap                              *pHeap;
         NvBool                             bCallingContextPlugin;
+        RsResourceRef                     *pDeviceRef;
+
+        NV_ASSERT_OK_OR_RETURN(
+            refFindAncestorOfType(pResourceRef, classId(Device), &pDeviceRef));
+
+        pHeap = vidmemGetHeap(pGpu,
+                              dynamicCast(pDeviceRef->pResource, Device),
+                              NV_FALSE);
 
         //
         // When guest RM client doesn't subscribe to MIG partition and requests for vidmem allocation
@@ -580,6 +588,12 @@ continue_alloc_object:
             // only a kernel client can request for a protected allocation
             if (pFbAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_ALLOCATE_KERNEL_PRIVILEGED)
             {
+                if (privLevel < RS_PRIV_LEVEL_KERNEL)
+                {
+                    status = NV_ERR_INSUFFICIENT_PERMISSIONS;
+                    NV_PRINTF(LEVEL_ERROR, "only kernel clients may request for a protected allocation\n");
+                    goto done_fbmem;
+                }
                 pFbAllocInfo->bIsKernelAlloc = NV_TRUE;
             }
 

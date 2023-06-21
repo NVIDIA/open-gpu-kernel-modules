@@ -292,7 +292,7 @@ kctxshareapiCopyConstruct_IMPL
     if (pKernelChannelGroupApi->hKernelGraphicsContext != NV01_NULL_OBJECT)
     {
         RsResourceRef *pKernelGraphicsContextRef;
-        NV_ASSERT_OK_OR_ELSE(rmStatus, 
+        NV_ASSERT_OK_OR_ELSE(rmStatus,
                              clientGetResourceRef(pCallContext->pClient, pKernelChannelGroupApi->hKernelGraphicsContext, &pKernelGraphicsContextRef),
                              goto done);
 
@@ -300,7 +300,7 @@ kctxshareapiCopyConstruct_IMPL
     }
 
     //
-    // For legacy internal kctxshares, RPC is handled by the channelgroup object's copy ctor, 
+    // For legacy internal kctxshares, RPC is handled by the channelgroup object's copy ctor,
     // so we skip the automatic RPC here
     //
     if ((IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)) && !pKernelCtxShareApi->pShareData->pKernelChannelGroup->bLegacyMode)
@@ -311,7 +311,7 @@ kctxshareapiCopyConstruct_IMPL
                              pDstRef, rmStatus);
     }
 
-done: 
+done:
     if (rmStatus != NV_OK)
     {
         serverFreeShare(&g_resServ, pShared);

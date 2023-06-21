@@ -77,7 +77,7 @@ struct VirtualMemoryRange {
     NV_STATUS (*__vmrangeControlSerialization_Prologue__)(struct VirtualMemoryRange *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__vmrangeCanCopy__)(struct VirtualMemoryRange *);
     NV_STATUS (*__vmrangeIsReady__)(struct VirtualMemoryRange *, NvBool);
-    NV_STATUS (*__vmrangeCheckCopyPermissions__)(struct VirtualMemoryRange *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__vmrangeCheckCopyPermissions__)(struct VirtualMemoryRange *, struct OBJGPU *, struct Device *);
     void (*__vmrangePreDestruct__)(struct VirtualMemoryRange *);
     NV_STATUS (*__vmrangeIsDuplicate__)(struct VirtualMemoryRange *, NvHandle, NvBool *);
     void (*__vmrangeControlSerialization_Epilogue__)(struct VirtualMemoryRange *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -132,7 +132,7 @@ NV_STATUS __nvoc_objCreate_VirtualMemoryRange(VirtualMemoryRange**, Dynamic*, Nv
 #define vmrangeControlSerialization_Prologue(pResource, pCallContext, pParams) vmrangeControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define vmrangeCanCopy(pStandardMemory) vmrangeCanCopy_DISPATCH(pStandardMemory)
 #define vmrangeIsReady(pMemory, bCopyConstructorContext) vmrangeIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define vmrangeCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) vmrangeCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define vmrangeCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) vmrangeCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define vmrangePreDestruct(pResource) vmrangePreDestruct_DISPATCH(pResource)
 #define vmrangeIsDuplicate(pMemory, hMemory, pDuplicate) vmrangeIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define vmrangeControlSerialization_Epilogue(pResource, pCallContext, pParams) vmrangeControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -214,8 +214,8 @@ static inline NV_STATUS vmrangeIsReady_DISPATCH(struct VirtualMemoryRange *pMemo
     return pMemory->__vmrangeIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS vmrangeCheckCopyPermissions_DISPATCH(struct VirtualMemoryRange *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__vmrangeCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS vmrangeCheckCopyPermissions_DISPATCH(struct VirtualMemoryRange *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__vmrangeCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void vmrangePreDestruct_DISPATCH(struct VirtualMemoryRange *pResource) {

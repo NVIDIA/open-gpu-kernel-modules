@@ -286,7 +286,7 @@ kheadDeleteVblankCallback_IMPL
     }
 
     // Disable VBlank (if it is even on) while we scan/process the callback list
-    enabled = kheadReadVblankIntrEnable(pGpu, pKernelHead);
+    enabled = kheadReadVblankIntrEnable_HAL(pGpu, pKernelHead);
 
     if (enabled)
     {

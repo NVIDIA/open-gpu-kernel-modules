@@ -35,7 +35,7 @@
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 
-static NvU32
+static NvU64
 _getMappingPageSize
 (
     RsResourceRef *pMappableRef
@@ -113,7 +113,7 @@ serverInterMap_Prologue
 
         if (pVirtualMemory != NULL)
         {
-            NvU32 pageSize = RM_PAGE_SIZE;
+            NvU64 pageSize = RM_PAGE_SIZE;
 
             if (pVirtualMemory->bOptimizePageTableMempoolUsage)
             {

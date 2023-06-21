@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -126,6 +126,16 @@ RS_ENTRY(
     /* Multi-Instance         */ NV_TRUE,
     /* Parents                */ RS_LIST(classId(RmClientResource)),
     /* Alloc Param Info       */ RS_REQUIRED(NV_EVENT_BUFFER_ALLOC_PARAMETERS),
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
+RS_ENTRY(
+    /* External Class         */ NV_SEMAPHORE_SURFACE,
+    /* Internal Class         */ SemaphoreSurface,
+    /* Multi-Instance         */ NV_TRUE,
+    /* Parents                */ RS_LIST(classId(Subdevice)),
+    /* Alloc Param Info       */ RS_REQUIRED(NV_SEMAPHORE_SURFACE_ALLOC_PARAMETERS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
     /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
     /* Required Access Rights */ RS_ACCESS_NONE
@@ -395,6 +405,16 @@ RS_ENTRY(
 RS_ENTRY(
     /* External Class         */ NV01_MEMORY_LOCAL_USER,
     /* Internal Class         */ VideoMemory,
+    /* Multi-Instance         */ NV_TRUE,
+    /* Parents                */ RS_LIST(classId(Device), classId(Subdevice)),
+    /* Alloc Param Info       */ RS_REQUIRED(NV_MEMORY_ALLOCATION_PARAMS),
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK_ON_FREE | RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
+RS_ENTRY(
+    /* External Class         */ NV_MEMORY_EXTENDED_USER,
+    /* Internal Class         */ ExtendedGpuMemory,
     /* Multi-Instance         */ NV_TRUE,
     /* Parents                */ RS_LIST(classId(Device), classId(Subdevice)),
     /* Alloc Param Info       */ RS_REQUIRED(NV_MEMORY_ALLOCATION_PARAMS),
@@ -746,9 +766,9 @@ RS_ENTRY(
 RS_ENTRY(
     /* External Class         */ ACCESS_COUNTER_NOTIFY_BUFFER,
     /* Internal Class         */ AccessCounterBuffer,
-    /* Multi-Instance         */ NV_FALSE,
+    /* Multi-Instance         */ NV_TRUE,
     /* Parents                */ RS_LIST(classId(Subdevice)),
-    /* Alloc Param Info       */ RS_NONE,
+    /* Alloc Param Info       */ RS_REQUIRED(NV_ACCESS_COUNTER_NOTIFY_BUFFER_ALLOC_PARAMS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
     /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
     /* Required Access Rights */ RS_ACCESS_NONE
@@ -1276,6 +1296,16 @@ RS_ENTRY(
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
+    /* External Class         */ HOPPER_SEC2_WORK_LAUNCH_A,
+    /* Internal Class         */ Sec2Context,
+    /* Multi-Instance         */ NV_TRUE,
+    /* Parents                */ RS_LIST(classId(KernelChannel)),
+    /* Alloc Param Info       */ RS_NONE,
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_CHANNEL_DESCENDANT_COMMON,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
+RS_ENTRY(
     /* External Class         */ AMPERE_A,
     /* Internal Class         */ KernelGraphicsObject,
     /* Multi-Instance         */ NV_TRUE,
@@ -1446,6 +1476,16 @@ RS_ENTRY(
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
+    /* External Class         */ NV_CONFIDENTIAL_COMPUTE,
+    /* Internal Class         */ ConfidentialComputeApi,
+    /* Multi-Instance         */ NV_TRUE,
+    /* Parents                */ RS_LIST(classId(RmClientResource)),
+    /* Alloc Param Info       */ RS_OPTIONAL(NV_CONFIDENTIAL_COMPUTE_ALLOC_PARAMS),
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
+RS_ENTRY(
     /* External Class         */ NV_COUNTER_COLLECTION_UNIT,
     /* Internal Class         */ KernelCcuApi,
     /* Multi-Instance         */ NV_FALSE,
@@ -1455,6 +1495,18 @@ RS_ENTRY(
     /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
+#if RMCFG_CLASS_NV_CE_UTILS && (defined(DEBUG) || defined(DEVELOP))
+RS_ENTRY(
+    /* External Class         */ NV_CE_UTILS,
+    /* Internal Class         */ CeUtilsApi,
+    /* Multi-Instance         */ NV_TRUE,
+    /* Parents                */ RS_LIST(classId(Subdevice)),
+    /* Alloc Param Info       */ RS_REQUIRED(NV0050_ALLOCATION_PARAMETERS),
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ACQUIRE_GPUS_LOCK | RS_FLAGS_ALLOC_PRIVILEGED,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
+#endif
 
 // Undefine the entry macro to simplify call sites
 #undef RS_ENTRY

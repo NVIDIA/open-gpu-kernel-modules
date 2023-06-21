@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -83,7 +83,16 @@ _ctxdmaDestroyFBMappings
         //
         if (pCpuMapping)
         {
-            osUnmapPciMemoryKernelOld(pGpu, pContextDma->KernelVAddr[gpuSubDevInst]);
+            KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+
+            if(pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+            {
+                kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, pContextDma->pMemDesc);
+            }
+            else
+            {
+                osUnmapPciMemoryKernelOld(pGpu, pContextDma->KernelVAddr[gpuSubDevInst]);
+            }
             refRemoveMapping(pMemoryRef, pCpuMapping);
 
             ///
@@ -96,7 +105,6 @@ _ctxdmaDestroyFBMappings
             if (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu) &&
                 (pContextDma->FbApertureLen[gpuSubDevInst] != 0))
             {
-                KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
                 kbusUnmapFbAperture_HAL(pGpu, pKernelBus, pContextDma->pMemDesc,
                                         pContextDma->FbAperture[gpuSubDevInst],
                                         pContextDma->FbApertureLen[gpuSubDevInst],
@@ -194,18 +202,18 @@ ctxdmaConstruct_IMPL
     pContextDma->Type                 = type;
     pContextDma->Limit                = limit;
 
-    for (i = 0; i < NV_ARRAY_ELEMENTS32(pContextDma->KernelVAddr); i++)
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pContextDma->KernelVAddr); i++)
         pContextDma->KernelVAddr[i]   = NULL;
 
     pContextDma->KernelPriv           = NULL;
 
-    for (i = 0; i < NV_ARRAY_ELEMENTS32(pContextDma->FbAperture); i++)
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pContextDma->FbAperture); i++)
     {
         pContextDma->FbAperture[i]    = (NvU64)-1;
         pContextDma->FbApertureLen[i] = 0;
     }
 
-    for (i = 0; i < NV_ARRAY_ELEMENTS32(pContextDma->Instance); i++)
+    for (i = 0; i < NV_ARRAY_ELEMENTS(pContextDma->Instance); i++)
     {
         pContextDma->Instance[i]      = 0;
         pContextDma->InstRefCount[i]  = 0;
@@ -577,13 +585,27 @@ _ctxdmaConstruct
                         pContextDma->FbAperture[gpuSubDevInst] - pGpu->busInfo.gpuPhysFbAddr;
                 }
             }
+            else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+            {
+                NvP64 pMap = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus, pMemDesc);
+                if (pMap == NULL)
+                {
+                    rmStatus = NV_ERR_GENERIC;
+                }
+                else
+                {
+                    rmStatus = NV_OK;
+                    pMap = NvP64_PLUS_OFFSET(pMap, offset);
+                }
+                pContextDma->KernelVAddr[gpuSubDevInst] = pMap;
+            }
             else
             {
                 rmStatus = kbusMapFbAperture_HAL(pGpu, pKernelBus,
                                                  pMemDesc, offset,
                                                  &pContextDma->FbAperture[gpuSubDevInst],
                                                  &pContextDma->FbApertureLen[gpuSubDevInst],
-                                                 BUS_MAP_FB_FLAGS_MAP_UNICAST, hClient);
+                                                 BUS_MAP_FB_FLAGS_MAP_UNICAST, pDevice);
             }
             if (rmStatus != NV_OK)
             {
@@ -644,7 +666,7 @@ done:
             // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
             // do an RPC to the host to do the hardware update.
             //
-            NV_RM_RPC_ALLOC_CONTEXT_DMA(pGpu, hClient, hDevice, RES_GET_HANDLE(pContextDma), hClass, 
+            NV_RM_RPC_ALLOC_CONTEXT_DMA(pGpu, hClient, hDevice, RES_GET_HANDLE(pContextDma), hClass,
                                         flags, RES_GET_HANDLE(pMemory), offset, limit, rmStatus);
         }
     }
@@ -751,33 +773,6 @@ ctxdmaGetKernelVA_IMPL
     return NV_OK;
 }
 
-// ****************************************************************************
-//                            Deprecated Functions
-// ****************************************************************************
-
-/**
- * @warning This function is deprecated! Please use ctxdmaGetByHandle.
- */
-NV_STATUS
-CliGetContextDma
-(
-    NvHandle       hClient,
-    NvHandle       hContextDma,
-    ContextDma   **ppContextDma
-)
-{
-    RsClient   *pClient;
-    NV_STATUS   status;
-
-    *ppContextDma = NULL;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return NV_ERR_INVALID_CLIENT;
-
-    return ctxdmaGetByHandle(pClient, hContextDma, ppContextDma);
-}
-
 NV_STATUS
 ctxdmaMapTo_IMPL
 (
@@ -791,7 +786,7 @@ ctxdmaMapTo_IMPL
 
     //
     // For video memory, provide a way to look up the offset of an FB allocation within
-    // the given context target context dma. still useful for dFPGA.  
+    // the given context target context dma. still useful for dFPGA.
     // It is used by mods.
     //
     if ((memdescGetAddressSpace(memdescGetMemDescFromGpu(pSrcMemDesc, pGpu)) == ADDR_FBMEM) &&

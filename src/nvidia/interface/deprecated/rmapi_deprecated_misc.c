@@ -40,7 +40,7 @@ RmDeprecatedAllocObject
 )
 {
     pArgs->status = pContext->RmAlloc(pContext, pArgs->hRoot, pArgs->hObjectParent,
-                                      &pArgs->hObjectNew, pArgs->hClass, 0);
+                                      &pArgs->hObjectNew, pArgs->hClass, NULL, 0);
 }
 
 void
@@ -62,7 +62,7 @@ RmDeprecatedAddVblankCallback
         vblankArgs.pParm2 = pArgs->pParm2;
 
         status = pContext->RmAlloc(pContext, pArgs->hClient, pArgs->hDevice,
-                                   &pArgs->hVblank, NV9010_VBLANK_CALLBACK, &vblankArgs);
+                                   &pArgs->hVblank, NV9010_VBLANK_CALLBACK, &vblankArgs, sizeof(vblankArgs));
     }
     else
     {
@@ -113,7 +113,8 @@ RmDeprecatedAllocContextDma
         status = pContext->RmAlloc(pContext, hClient, hCtxDmaParent,
                                    &pArgs->hObjectNew,
                                    NV01_MEMORY_VIRTUAL,
-                                   &allocVirtualParams);
+                                   &allocVirtualParams,
+                                   sizeof(allocVirtualParams));
         goto done;
     }
 
@@ -124,7 +125,7 @@ RmDeprecatedAllocContextDma
     allocParams.limit = pArgs->limit;
 
     status = pContext->RmAlloc(pContext, hClient, hCtxDmaParent,
-                               &pArgs->hObjectNew, pArgs->hClass, &allocParams);
+                               &pArgs->hObjectNew, pArgs->hClass, &allocParams, sizeof(allocParams));
 
 done:
     pArgs->status = status;

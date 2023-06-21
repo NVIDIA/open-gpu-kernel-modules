@@ -44,6 +44,7 @@ extern "C" {
 #include "class/cl90cdfecs.h"
 #include "containers/multimap.h"
 #include "resserv/resserv.h"
+#include "rmapi/client.h"
 
 #include "ctrl/ctrl2080/ctrl2080gr.h" // NV2080_CTRL_GR_FECS_BIND_EVTBUF_LOD
 
@@ -127,7 +128,7 @@ ct_assert(sizeof(FECS_EVENT_RECORD_OUTPUT) == sizeof(NV_EVENT_BUFFER_RECORD_HEAD
 NV_STATUS fecsAddBindpoint
 (
     OBJGPU *pGpu,
-    struct RsClient *pClient,
+    struct RmClient *pClient,
     RsResourceRef *pEventBufferRef,
     NvHandle hNotifier,
     NvBool bAllUsers,

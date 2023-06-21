@@ -170,7 +170,7 @@
     __nvoc_objCreateDynamic((ppNewObj), staticCast((pParent), Dynamic),            \
                             (pClassInfo), (NVOC_OBJ_CREATE_FLAGS_NONE), ##__VA_ARGS__)
 #define objCreateDynamicWithFlags(ppNewObj, pParent, pClassInfo, flags, ...) \
-    __nvoc_objCreateDynamic((ppNewObj), staticCast((pParent), Dynamic),            \
+    __nvoc_objCreateDynamic((ppNewObj), staticCast((pParent), Dynamic),      \
                             (pClassInfo), (flags), ##__VA_ARGS__)
 
 /*!

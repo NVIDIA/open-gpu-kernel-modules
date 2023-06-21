@@ -217,7 +217,7 @@ intermapRegisterDmaMapping
         //
         if (IS_VIRTUAL_WITH_SRIOV(pGpu)
             && RMCFG_FEATURE_PLATFORM_MODS
-            && FLD_TEST_DRF(OS46, _FLAGS, _PAGE_SIZE, _4KB, pDmaMapping->Flags) 
+            && FLD_TEST_DRF(OS46, _FLAGS, _PAGE_SIZE, _4KB, pDmaMapping->Flags)
             && kgmmuIsVaspaceInteropSupported(GPU_GET_KERNEL_GMMU(pGpu))
             )
         {
@@ -225,7 +225,7 @@ intermapRegisterDmaMapping
         }
         else
         {
-            alignment = memdescGetPageSize64(memdescGetMemDescFromGpu(pDmaMapping->pMemDesc, pGpu),
+            alignment = memdescGetPageSize(memdescGetMemDescFromGpu(pDmaMapping->pMemDesc, pGpu),
                                              pDmaMapping->addressTranslation);
         }
     }
@@ -388,7 +388,7 @@ intermapGetDmaMapping
 NvBool
 CliGetDmaMappingInfo
 (
-    NvHandle               hClient,
+    RsClient              *pClient,
     NvHandle               hDevice,
     NvHandle               hMemCtx,
     NvU64                  dmaOffset,
@@ -397,14 +397,9 @@ CliGetDmaMappingInfo
 )
 {
     VirtualMemory      *pVirtualMemory;
-    RsClient           *pClient;
     Device             *pDevice;
     NODE               *pNode;
     NV_STATUS           status;
-
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
-        return NV_FALSE;
 
     // Try a non-zero handle as a NVxx_MEMORY_VIRTUAL object
     if (hMemCtx != NV01_NULL_OBJECT)
@@ -437,7 +432,7 @@ CliGetDmaMappingInfo
         btreeEnumNext(&pNode, pDevice->DevMemoryTable);
 
         if ((pVirtualMemory != NULL) &&
-             virtmemMatchesVASpace(pVirtualMemory, hClient, hMemCtx))
+             virtmemMatchesVASpace(pVirtualMemory, pClient->hClient, hMemCtx))
         {
             *ppDmaMappingInfo = intermapGetDmaMapping(pVirtualMemory, dmaOffset, gpuMask);
 

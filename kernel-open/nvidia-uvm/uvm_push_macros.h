@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -108,6 +108,14 @@
 // value. For example, Kepler reserves subchannels 5-7 for software objects.
 #define UVM_SUBCHANNEL_C076 UVM_SW_OBJ_SUBCHANNEL
 
+// NVA06F_SUBCHANNEL_COMPUTE is a semi-arbitrary value for UVM_SUBCHANNEL_SEC2.
+// We need a "unique" subchannel across all subchannels UVM submits work. This
+// is used when we are post-processing a pushbuffer and we need to extract SEC2
+// methods from a it, having a unique subchannel facilitates the SEC2 method
+// identification.
+#define UVM_SUBCHANNEL_SEC2 NVA06F_SUBCHANNEL_COMPUTE
+#define UVM_SUBCHANNEL_CBA2 UVM_SUBCHANNEL_SEC2
+
 #define UVM_METHOD_SIZE 4
 #define UVM_METHOD_COUNT_MAX HWMASK(B06F, DMA, INCR_COUNT)
 #if HWMASK(B06F, DMA, INCR_COUNT) != HWMASK(B06F, DMA, NONINCR_COUNT)
@@ -126,29 +134,29 @@
                              HWVALUE(B06F, DMA, NONINCR_SUBCHANNEL, (subch)) |      \
                              HWVALUE(B06F, DMA, NONINCR_COUNT, (count)))
 
-#define __UVM_ASSERT_CONTIGUOUS_METHODS(a1, a2) BUILD_BUG_ON((a2) - (a1) != 4)
+#define __UVM_ASSERT_CONTIGUOUS_METHODS(a1, a2) BUILD_BUG_ON((a2) - (a1) != UVM_METHOD_SIZE)
 
 // __NV_PUSH_*U support being called recursively from the N+1 sized method with
 // the _0U doing all the common things.
 // Notably all the push macros assume that symbol "push" of type uvm_push_t * is
 // in scope.
-#define __NV_PUSH_0U(subch, count, a1)                                                  \
-    do {                                                                                \
-        UVM_ASSERT(!uvm_global_is_suspended());                                         \
-        UVM_ASSERT(uvm_push_get_size(push) + (count + 1) * 4 <= UVM_MAX_PUSH_SIZE);     \
-        UVM_ASSERT_MSG(a1 % 4 == 0, "Address %u\n", a1);                                \
-                                                                                        \
-        push->next[0] = UVM_METHOD_INC(subch, a1, count);                               \
-        ++push->next;                                                                   \
+#define __NV_PUSH_0U(subch, count, a1)                                                            \
+    do {                                                                                          \
+        UVM_ASSERT(!uvm_global_is_suspended());                                                   \
+        UVM_ASSERT(uvm_push_get_size(push) + (count + 1) * UVM_METHOD_SIZE <= UVM_MAX_PUSH_SIZE); \
+        UVM_ASSERT_MSG(IS_ALIGNED(a1, UVM_METHOD_SIZE), "Address %u\n", a1);                      \
+                                                                                                  \
+        push->next[0] = UVM_METHOD_INC(subch, a1, count);                                         \
+        ++push->next;                                                                             \
     } while (0)
 
 #define __NV_PUSH_1U(subch, count, a1,d1)                               \
     do {                                                                \
         __NV_PUSH_0U(subch, count, a1);                                 \
-        push->next[0] = d1;                                             \
         UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a1, d1),   \
-                      "Method validation failed in channel %s\n",       \
-                      push->channel->name);                             \
+                       "Method validation failed in channel %s\n",      \
+                       push->channel->name);                            \
+        push->next[0] = d1;                                             \
         ++push->next;                                                   \
     } while (0)
 
@@ -157,8 +165,8 @@
         __UVM_ASSERT_CONTIGUOUS_METHODS(a1, a2);                        \
         __NV_PUSH_1U(subch, count, a1,d1);                              \
         UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a2, d2),   \
-                      "Method validation failed in channel %s\n",       \
-                      push->channel->name);                             \
+                       "Method validation failed in channel %s\n",      \
+                       push->channel->name);                            \
         push->next[0] = d2;                                             \
         ++push->next;                                                   \
     } while (0)
@@ -168,8 +176,8 @@
         __UVM_ASSERT_CONTIGUOUS_METHODS(a2, a3);                        \
         __NV_PUSH_2U(subch, count, a1,d1, a2,d2);                       \
         UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a3, d3),   \
-                      "Method validation failed in channel %s\n",       \
-                      push->channel->name);                             \
+                       "Method validation failed in channel %s\n",      \
+                       push->channel->name);                            \
         push->next[0] = d3;                                             \
         ++push->next;                                                   \
     } while (0)
@@ -179,8 +187,8 @@
         __UVM_ASSERT_CONTIGUOUS_METHODS(a3, a4);                        \
         __NV_PUSH_3U(subch, count, a1,d1, a2,d2, a3,d3);                \
         UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a4, d4),   \
-                      "Method validation failed in channel %s\n",       \
-                      push->channel->name);                             \
+                       "Method validation failed in channel %s\n",      \
+                       push->channel->name);                            \
         push->next[0] = d4;                                             \
         ++push->next;                                                   \
     } while (0)
@@ -190,8 +198,8 @@
         __UVM_ASSERT_CONTIGUOUS_METHODS(a4, a5);                        \
         __NV_PUSH_4U(subch, count, a1,d1, a2,d2, a3,d3, a4,d4);         \
         UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a5, d5),   \
-                      "Method validation failed in channel %s\n",       \
-                      push->channel->name);                             \
+                       "Method validation failed in channel %s\n",      \
+                       push->channel->name);                            \
         push->next[0] = d5;                                             \
         ++push->next;                                                   \
     } while (0)
@@ -201,8 +209,8 @@
         __UVM_ASSERT_CONTIGUOUS_METHODS(a5, a6);                                \
         __NV_PUSH_5U(subch, count, a1,d1, a2,d2, a3,d3, a4,d4, a5,d5);          \
         UVM_ASSERT_MSG(uvm_push_method_is_valid(push, subch, a6, d6),           \
-                      "Method validation failed in channel %s\n",               \
-                      push->channel->name);                                     \
+                       "Method validation failed in channel %s\n",              \
+                       push->channel->name);                                    \
         push->next[0] = d6;                                                     \
         ++push->next;                                                           \
     } while (0)
@@ -248,13 +256,13 @@
 
 // Non-incrementing method with count data fields following it. The data is left
 // untouched and hence it's primarily useful for a NOP method.
-#define __NV_PUSH_NU_NONINC(subch, count, address)                                      \
-    do {                                                                                \
-        UVM_ASSERT(!uvm_global_is_suspended());                                         \
-        UVM_ASSERT(uvm_push_get_size(push) + (count + 1) * 4 <= UVM_MAX_PUSH_SIZE);     \
-        UVM_ASSERT_MSG(address % 4 == 0, "Address %u\n", address);                      \
-        push->next[0] = UVM_METHOD_NONINC(subch, address, count);                       \
-        push->next += count + 1;                                                        \
+#define __NV_PUSH_NU_NONINC(subch, count, address)                                                \
+    do {                                                                                          \
+        UVM_ASSERT(!uvm_global_is_suspended());                                                   \
+        UVM_ASSERT(uvm_push_get_size(push) + (count + 1) * UVM_METHOD_SIZE <= UVM_MAX_PUSH_SIZE); \
+        UVM_ASSERT_MSG(IS_ALIGNED(address, UVM_METHOD_SIZE), "Address %u\n", address);            \
+        push->next[0] = UVM_METHOD_NONINC(subch, address, count);                                 \
+        push->next += count + 1;                                                                  \
     } while (0)
 
 #define NV_PUSH_NU_NONINC(class, a1, count)                 \

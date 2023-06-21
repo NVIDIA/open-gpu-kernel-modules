@@ -188,13 +188,21 @@ enum NvKmsAllocDeviceStatus nvAssignEvoCaps(NVDevEvoPtr pDevEvo)
          * classPrefix |         |  |  |  |    |                  |   |
          *         |   |         |  |  |  |    |                  |   |
          */
+        /* Ada */
         ENTRY_NVD(C7, C6, &nvEvoC6, 1, 1, 0, TURING_GENERIC_KIND, 12, 12),
+        /* Ampere */
         ENTRY_NVD(C6, C6, &nvEvoC6, 1, 1, 0, TURING_GENERIC_KIND, 12, 12),
+        /* Turing */
         ENTRY_NVD(C5, C5, &nvEvoC5, 1, 1, 0, TURING_GENERIC_KIND, 12, 12),
+        /* Volta */
         ENTRY_NVD(C3, C3, &nvEvoC3, 1, 1, 0, FERMI_GENERIC_KIND,  12, 12),
+        /* gp10x */
         ENTRY_EVO(98,     &nvEvo94, 1, 1, 1, FERMI_GENERIC_KIND,  12, 12),
+        /* gp100 */
         ENTRY_EVO(97,     &nvEvo94, 1, 1, 1, FERMI_GENERIC_KIND,  12, 12),
+        /* gm20x */
         ENTRY_EVO(95,     &nvEvo94, 0, 1, 1, FERMI_GENERIC_KIND,   8,  0),
+        /* gm10x */
         ENTRY_EVO(94,     &nvEvo94, 0, 0, 1, FERMI_GENERIC_KIND,   8,  0),
     };
 

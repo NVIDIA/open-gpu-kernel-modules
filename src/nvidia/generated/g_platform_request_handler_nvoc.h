@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,12 +49,13 @@ extern "C" {
 #include "platform/platform_request_handler_utils.h"
 #include "ctrl/ctrl0000/ctrl0000system.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"
+#include "nvfixedtypes.h"
 
 /* ------------------------ Macros ----------------------------------------- */
 //
 // Macro to check if SW ACPI version 2X or not
 //
-#define PFM_REQ_HNDLR_IS_ACPI_VERSION_SW_2X(pPlatformRequestHandler)                                       \
+#define PFM_REQ_HNDLR_IS_ACPI_VERSION_SW_2X(pPlatformRequestHandler)                                     \
     (pPlatformRequestHandler->sensorData.PFMREQHNDLRACPIData.acpiVersionSw ==                            \
      NV0000_CTRL_PFM_REQ_HNDLR_ACPI_REVISION_SW_2X)
 
@@ -89,11 +90,21 @@ extern "C" {
 #define PFM_REQ_HNDLR_PM1_STATE_AVAIL         (74U)
 #define PFM_REQ_HNDLR_TDP_IDX                 (96U)
 #define PFM_REQ_HNDLR_VPS_PS20_SUPPORT        (97U)
-#define PFM_REQ_HNDLR_RESERVED_COUNTER       (100U) // This should be the last counter, update as needed.
+#define PFM_REQ_HNDLR_RESERVED_COUNTER        (100U) // This should be the last counter, update as needed.
 
 #define PFM_REQ_HNDLR_NUM_COUNTERS            (PFM_REQ_HNDLR_RESERVED_COUNTER + 1)
 
 #define PFM_REQ_HNDLR_DEFAULT_COUNTER_HOLD_PERIOD_MS   (20U)
+
+//
+// PRH internal handling of a temp 0C from a platform request.
+//
+#define PFM_REQ_HNDLR_TEMP_0_C                 NV_TYPES_CELSIUS_TO_NV_TEMP(0)
+
+//
+// PRH handling for an invalid VP state index.
+//
+#define PFM_REQ_HNDLR_VPSTATE_INDEX_INVALID    NV_U8_MAX
 
 // Header to sensor structure
 typedef struct
@@ -133,6 +144,7 @@ typedef struct
     NvBool      bPlatformUserConfigTGPSupport;  // reflects SBIOS static requests to override power delta for User Configurable TGP mode
     NvU32       platformLimitDeltamW;           // Cached limit from platform custimization
     NvU32       prevSbiosVPStateLimit;          // reflects previous VPState requested to be set by SBIOS.
+    NvU32       platformEdppLimit;              // Cached last EDPp limit request from platform
 
     NvU32       acpiVersionSw;                  // mapping between spec and supported sw state
 } PFM_REQ_HNDLR_ACPI_CACHE;
@@ -186,6 +198,32 @@ typedef struct
 } PFM_REQ_HNDLR_PPM_DATA;
 
 /*!
+ * EDPPeak control data
+ */
+typedef struct
+{
+    /*!
+     * Set while OS workitem is pending execution.
+     */
+    NvBool  bWorkItemPending;
+
+    /*!
+     * EDPpeak limit info data status.
+     */
+    NvBool bDifferPlatformEdppLimit;
+
+    /*!
+     * EDPpeak limit info data status.
+     */
+    NV_STATUS  status;
+
+    /*!
+     * EDPpeak info data.
+     */
+    NV0000_CTRL_PFM_REQ_HNDLR_EDPP_LIMIT_INFO_V1 edppLimitInfo;
+} PFM_REQ_HNDLR_EDPP_DATA;
+
+/*!
  * Control tracking and cache limits from SBIOS
  */
 typedef struct
@@ -202,6 +240,9 @@ typedef struct
 
     // Current status of platform customized and applied user configurable TGP delta
     NvBool  bPlatformUserConfigTGPmodeEnabled;
+
+    // Current EDPPeak limit control
+    PFM_REQ_HNDLR_EDPP_DATA  edppLimit;
 } PFM_REQ_HNDLR_CONTROL_DATA;
 
 /*!
@@ -405,6 +446,39 @@ static inline NV_STATUS pfmreqhndlrHandleEdppeakLimitUpdate(struct PlatformReque
 }
 #else //__nvoc_platform_request_handler_h_disabled
 #define pfmreqhndlrHandleEdppeakLimitUpdate(pPlatformRequestHandler, pGpu, bEnable) pfmreqhndlrHandleEdppeakLimitUpdate_IMPL(pPlatformRequestHandler, pGpu, bEnable)
+#endif //__nvoc_platform_request_handler_h_disabled
+
+NV_STATUS pfmreqhndlrHandlePlatformEdppLimitUpdate_IMPL(struct PlatformRequestHandler *pPlatformRequestHandler, OBJGPU *pGpu, NvU32 platformEdppLimit);
+
+#ifdef __nvoc_platform_request_handler_h_disabled
+static inline NV_STATUS pfmreqhndlrHandlePlatformEdppLimitUpdate(struct PlatformRequestHandler *pPlatformRequestHandler, OBJGPU *pGpu, NvU32 platformEdppLimit) {
+    NV_ASSERT_FAILED_PRECOMP("PlatformRequestHandler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_platform_request_handler_h_disabled
+#define pfmreqhndlrHandlePlatformEdppLimitUpdate(pPlatformRequestHandler, pGpu, platformEdppLimit) pfmreqhndlrHandlePlatformEdppLimitUpdate_IMPL(pPlatformRequestHandler, pGpu, platformEdppLimit)
+#endif //__nvoc_platform_request_handler_h_disabled
+
+NV_STATUS pfmreqhndlrHandlePlatformGetEdppLimit_IMPL(struct PlatformRequestHandler *pPlatformRequestHandler, OBJGPU *pGpu, NvU32 *pPlatformEdppLimit);
+
+#ifdef __nvoc_platform_request_handler_h_disabled
+static inline NV_STATUS pfmreqhndlrHandlePlatformGetEdppLimit(struct PlatformRequestHandler *pPlatformRequestHandler, OBJGPU *pGpu, NvU32 *pPlatformEdppLimit) {
+    NV_ASSERT_FAILED_PRECOMP("PlatformRequestHandler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_platform_request_handler_h_disabled
+#define pfmreqhndlrHandlePlatformGetEdppLimit(pPlatformRequestHandler, pGpu, pPlatformEdppLimit) pfmreqhndlrHandlePlatformGetEdppLimit_IMPL(pPlatformRequestHandler, pGpu, pPlatformEdppLimit)
+#endif //__nvoc_platform_request_handler_h_disabled
+
+NV_STATUS pfmreqhndlrHandlePlatformSetEdppLimitInfo_IMPL(struct PlatformRequestHandler *pPlatformRequestHandler, OBJGPU *pGpu);
+
+#ifdef __nvoc_platform_request_handler_h_disabled
+static inline NV_STATUS pfmreqhndlrHandlePlatformSetEdppLimitInfo(struct PlatformRequestHandler *pPlatformRequestHandler, OBJGPU *pGpu) {
+    NV_ASSERT_FAILED_PRECOMP("PlatformRequestHandler was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_platform_request_handler_h_disabled
+#define pfmreqhndlrHandlePlatformSetEdppLimitInfo(pPlatformRequestHandler, pGpu) pfmreqhndlrHandlePlatformSetEdppLimitInfo_IMPL(pPlatformRequestHandler, pGpu)
 #endif //__nvoc_platform_request_handler_h_disabled
 
 NV_STATUS pfmreqhndlrHandleUserConfigurableTgpMode_IMPL(struct PlatformRequestHandler *pPlatformRequestHandler, OBJGPU *pGpu, NvBool bEnable);

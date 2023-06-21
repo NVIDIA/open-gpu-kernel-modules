@@ -643,6 +643,8 @@ _gpuboostmgrApplyPolicyFilters(NV0000_SYNC_GPU_BOOST_GROUP_CONFIG *pBoostConfig)
     for (i = 1; i < pBoostConfig->gpuCount; i++)
     {
         pGpuItr = gpumgrGetGpuFromId(pBoostConfig->gpuIds[i]);
+        NV_ASSERT_OR_RETURN(NULL != pGpuItr, NV_ERR_OBJECT_NOT_FOUND);
+
         if (pGpuGrp == gpumgrGetGpuGrpFromGpu(pGpuItr))
         {
             continue;

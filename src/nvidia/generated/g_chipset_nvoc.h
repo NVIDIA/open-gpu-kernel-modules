@@ -114,6 +114,7 @@ struct PCIECONFIGSPACEBASE
 // PCI Express Link control ASPM capability Bits
 #define CL_PCIE_LINK_CAP_ASPM_L0S_BIT              NVBIT(10)
 #define CL_PCIE_LINK_CAP_ASPM_L1_BIT               NVBIT(11)
+#define CL_PCIE_LINK_CAP_CLOCK_PM_BIT              NVBIT(18)
 
 // PCI Express Slot Capabilities
 #define CL_PCIE_SLOT_CAP_HOTPLUG_SURPRISE           NVBIT(5)
@@ -1031,6 +1032,20 @@ static inline NvBool clIsL1MaskEnabledForUpstreamPort(struct OBJGPU *arg0, struc
 
 #define clIsL1MaskEnabledForUpstreamPort_HAL(arg0, arg1) clIsL1MaskEnabledForUpstreamPort(arg0, arg1)
 
+NvBool clIsL0sMaskEnabledForUpstreamPort_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1);
+
+
+#ifdef __nvoc_chipset_h_disabled
+static inline NvBool clIsL0sMaskEnabledForUpstreamPort(struct OBJGPU *arg0, struct OBJCL *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_chipset_h_disabled
+#define clIsL0sMaskEnabledForUpstreamPort(arg0, arg1) clIsL0sMaskEnabledForUpstreamPort_IMPL(arg0, arg1)
+#endif //__nvoc_chipset_h_disabled
+
+#define clIsL0sMaskEnabledForUpstreamPort_HAL(arg0, arg1) clIsL0sMaskEnabledForUpstreamPort(arg0, arg1)
+
 NV_STATUS clControlL0sL1LinkControlUpstreamPort_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1, NvBool arg2);
 
 
@@ -1086,6 +1101,20 @@ static inline NvU16 clPcieGetGpuLostDiagnosticData(struct OBJGPU *pGpu, struct O
 #endif //__nvoc_chipset_h_disabled
 
 #define clPcieGetGpuLostDiagnosticData_HAL(pGpu, arg0, pBuffer, size) clPcieGetGpuLostDiagnosticData(pGpu, arg0, pBuffer, size)
+
+NvU32 clGetChipsetL1ClockPMSupport_IMPL(struct OBJGPU *arg0, struct OBJCL *arg1);
+
+
+#ifdef __nvoc_chipset_h_disabled
+static inline NvU32 clGetChipsetL1ClockPMSupport(struct OBJGPU *arg0, struct OBJCL *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
+    return 0;
+}
+#else //__nvoc_chipset_h_disabled
+#define clGetChipsetL1ClockPMSupport(arg0, arg1) clGetChipsetL1ClockPMSupport_IMPL(arg0, arg1)
+#endif //__nvoc_chipset_h_disabled
+
+#define clGetChipsetL1ClockPMSupport_HAL(arg0, arg1) clGetChipsetL1ClockPMSupport(arg0, arg1)
 
 NV_STATUS clConstruct_IMPL(struct OBJCL *arg_pCl);
 

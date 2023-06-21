@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #include "gpu/gpu.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
+#include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/nvlink/kernel_nvlink.h"
 #include "gpu/bus/kern_bus.h"
 #include "mem_mgr/gpu_vaspace.h"
@@ -180,7 +181,33 @@ _bar2WalkCBFillEntries
     // Determine how to write the entry value.
     if (memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM)
     {
-        if (pKernelBus->bar2[gfid].bBootstrap)
+        if (kbusIsBarAccessBlocked(pKernelBus))
+        {
+            MemoryManager   *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+            TRANSFER_SURFACE surf           = {0};
+            NvU32            sizeOfEntries;
+
+            NV_ASSERT_OR_RETURN_VOID(pKernelBus->virtualBar2[gfid].pPageLevels == NULL);
+
+            surf.pMemDesc = pMemDesc;
+            surf.offset = entryIndexLo * pLevelFmt->entrySize;
+
+            sizeOfEntries = (entryIndexHi - entryIndexLo + 1) * pLevelFmt->entrySize;
+
+            pMap = memmgrMemBeginTransfer(pMemoryManager, &surf, sizeOfEntries,
+                                          TRANSFER_FLAGS_SHADOW_ALLOC);
+
+            for (entryIndex = entryIndexLo; entryIndex <= entryIndexHi; entryIndex++)
+            {
+                NvU32 index = (entryIndex - entryIndexLo) * pLevelFmt->entrySize;
+                portMemCopy(&pMap[index], pLevelFmt->entrySize,
+                            entryValue.v8, pLevelFmt->entrySize);
+            }
+
+            memmgrMemEndTransfer(pMemoryManager, &surf, sizeOfEntries,
+                                 TRANSFER_FLAGS_SHADOW_ALLOC);
+        }
+        else if (pKernelBus->bar2[gfid].bBootstrap)
         {
             if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
             {
@@ -357,22 +384,38 @@ _bar2WalkCBUpdatePde
 
     entryOffset  = entryIndex * pLevelFmt->entrySize;
 
-    // If we are setting up BAR2, we need special handling.
-    if (pKernelBus->bar2[gfid].bBootstrap)
+    if (pKernelBus->PDEBAR2Aperture == ADDR_FBMEM)
     {
-        entryStart  = memdescGetPhysAddr(pMemDesc, FORCE_VMMU_TRANSLATION(pMemDesc, AT_GPU), entryOffset);
-        sizeInDWord = (NvU32)NV_CEIL(pLevelFmt->entrySize, sizeof(NvU32));
-
-        for (i = 0; i < sizeInDWord; i++)
+        if (kbusIsBarAccessBlocked(pKernelBus))
         {
-            if (ADDR_FBMEM == pKernelBus->PDEBAR2Aperture)
+            MemoryManager   *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+            TRANSFER_SURFACE surf           = {0};
+
+            NV_ASSERT_OR_RETURN(pKernelBus->virtualBar2[gfid].pPageLevels == NULL,
+                                NV_FALSE);
+
+            surf.pMemDesc = pMemDesc;
+            surf.offset = entryOffset;
+
+            NV_ASSERT_OR_RETURN(memmgrMemWrite(pMemoryManager, &surf,
+                                               entry.v8, pLevelFmt->entrySize,
+                                               TRANSFER_FLAGS_NONE) ==  NV_OK,
+                                NV_FALSE);
+        }
+        // If we are setting up BAR2, we need special handling.
+        else if (pKernelBus->bar2[gfid].bBootstrap)
+        {
+            if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
             {
-                if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-                {
-                    pMap = kbusCpuOffsetInBar2WindowGet(pGpu, pKernelBus, pMemDesc);
-                    portMemCopy(pMap + entryOffset, pLevelFmt->entrySize, entry.v8, pLevelFmt->entrySize);
-                }
-                else
+                pMap = kbusCpuOffsetInBar2WindowGet(pGpu, pKernelBus, pMemDesc);
+                portMemCopy(pMap + entryOffset, pLevelFmt->entrySize, entry.v8, pLevelFmt->entrySize);
+            }
+            else
+            {
+                entryStart  = memdescGetPhysAddr(pMemDesc, AT_PA, entryOffset);
+                sizeInDWord = (NvU32)NV_CEIL(pLevelFmt->entrySize, sizeof(NvU32));
+
+                for (i = 0; i < sizeInDWord; i++)
                 {
                     status = kbusMemAccessBar0Window_HAL(pGpu, pKernelBus,
                                           (entryStart + (sizeof(NvU32) * i)),
@@ -383,25 +426,9 @@ _bar2WalkCBUpdatePde
                     NV_ASSERT_OR_RETURN(NV_OK == status, NV_FALSE);
                 }
             }
-            else
-            {
-                // Plain old memmap.
-                status = memdescMapOld(pMemDesc, 0,
-                                       pMemDesc->Size,
-                                       NV_TRUE, // kernel,
-                                       NV_PROTECT_READ_WRITE,
-                                       (void **)&pMap,
-                                       &pPriv);
-                NV_ASSERT_OR_RETURN(NV_OK == status, NV_FALSE);
-                portMemCopy(pMap + entryOffset, pLevelFmt->entrySize, entry.v8, pLevelFmt->entrySize);
-                memdescUnmapOld(pMemDesc, 1, 0, pMap, pPriv);
-            }
         }
-    }
-    else if (pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid) ||
-             KBUS_BAR0_PRAMIN_DISABLED(pGpu))
-    {
-        if (ADDR_FBMEM == pKernelBus->PDEBAR2Aperture)
+        else if (pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid) ||
+                 KBUS_BAR0_PRAMIN_DISABLED(pGpu))
         {
             NV_ASSERT(NULL != pKernelBus->virtualBar2[gfid].pPageLevels);
 
@@ -413,12 +440,25 @@ _bar2WalkCBUpdatePde
         }
         else
         {
-            NV_ASSERT(0); // Page level instances in sysmem don't need migration.
+            NV_ASSERT_OR_RETURN(0, NV_FALSE); // Not yet supported.
         }
+    }
+    else if (pKernelBus->PDEBAR2Aperture == ADDR_SYSMEM)
+    {
+        // Plain old memmap.
+        status = memdescMapOld(pMemDesc, 0,
+                               pMemDesc->Size,
+                               NV_TRUE, // kernel,
+                               NV_PROTECT_READ_WRITE,
+                               (void **)&pMap,
+                               &pPriv);
+        NV_ASSERT_OR_RETURN(NV_OK == status, NV_FALSE);
+        portMemCopy(pMap + entryOffset, pLevelFmt->entrySize, entry.v8, pLevelFmt->entrySize);
+        memdescUnmapOld(pMemDesc, 1, 0, pMap, pPriv);
     }
     else
     {
-        NV_ASSERT(0); // Not yet supported.
+        NV_ASSERT_OR_RETURN(0, NV_FALSE); // only SYSMEM and FBMEM are supported.
     }
 
     return NV_TRUE;
@@ -488,8 +528,9 @@ _bar2WalkCBLevelAlloc
     }
 
     // Specify which Page Level we are initializing.
-    if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid) ||
-        KBUS_BAR0_PRAMIN_DISABLED(pGpu))
+    if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating ||
+        IS_GFID_VF(gfid) || KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
+        kbusIsBarAccessBlocked(pKernelBus))
     {
         if (pLevelFmt == pKernelBus->bar2[gfid].pFmt->pRoot)
         {
@@ -524,7 +565,8 @@ _bar2WalkCBLevelAlloc
     else
     {
             NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
-                      KBUS_BAR0_PRAMIN_DISABLED(pGpu));
+                      KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
+                      kbusIsBarAccessBlocked(pKernelBus));
             pdeBase = pKernelBus->bar2[gfid].pdeBase;
             pteBase = pKernelBus->bar2[gfid].pteBase;
     }
@@ -604,13 +646,15 @@ _bar2WalkCBLevelAlloc
             else
             {
                 NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
-                          KBUS_BAR0_PRAMIN_DISABLED(pGpu));
+                          KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
+                          kbusIsBarAccessBlocked(pKernelBus));
                 pKernelBus->bar2[gfid].pdeBase = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
                 pKernelBus->bar2[gfid].pPDEMemDesc = pMemDesc;
             }
         }
-        if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid) ||
-            KBUS_BAR0_PRAMIN_DISABLED(pGpu))
+        if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating ||
+            IS_GFID_VF(gfid) || KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
+            kbusIsBarAccessBlocked(pKernelBus))
         {
             pKernelBus->bar2[gfid].pageDirInit++;
         }
@@ -686,14 +730,16 @@ _bar2WalkCBLevelAlloc
             else
             {
                 NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
-                          KBUS_BAR0_PRAMIN_DISABLED(pGpu));
+                          KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
+                          kbusIsBarAccessBlocked(pKernelBus));
                 pKernelBus->bar2[gfid].pteBase = memdescGetPhysAddr(pMemDesc,
                                                                     AT_GPU, 0);
             }
             pKernelBus->virtualBar2[gfid].pPTEMemDesc = pMemDesc;
         }
-        if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating || IS_GFID_VF(gfid) ||
-            KBUS_BAR0_PRAMIN_DISABLED(pGpu))
+        if (pKernelBus->bar2[gfid].bBootstrap || pKernelBus->bar2[gfid].bMigrating ||
+            IS_GFID_VF(gfid) || KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
+            kbusIsBarAccessBlocked(pKernelBus))
         {
             pKernelBus->bar2[gfid].pageTblInit++;
         }
@@ -757,7 +803,29 @@ _bar2WalkCBWriteBuffer
 
     pStagingBufferMapping = &pStagingDescMapping[firstEntryOffset % tableSize];
 
-    if (pKernelBus->bar2[gfid].bBootstrap)
+    if (kbusIsBarAccessBlocked(pKernelBus))
+    {
+        MemoryManager   *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        TRANSFER_SURFACE surf           = {0};
+
+        NV_ASSERT_OR_RETURN_VOID(pKernelBus->virtualBar2[gfid].pPageLevels == NULL);
+
+        surf.pMemDesc = pOutputBufferDesc;
+        surf.offset = firstEntryOffset;
+
+        pOutputBufferMapping = memmgrMemBeginTransfer(pMemoryManager, &surf,
+                                                      entryRangeSize,
+                                                      TRANSFER_FLAGS_SHADOW_ALLOC);
+
+        portMemCopy(pOutputBufferMapping, entryRangeSize,
+                    pStagingBufferMapping, entryRangeSize);
+
+        memmgrMemEndTransfer(pMemoryManager, &surf, entryRangeSize,
+                             TRANSFER_FLAGS_SHADOW_ALLOC);
+
+        goto unmap_and_exit;
+    }
+    else if (pKernelBus->bar2[gfid].bBootstrap)
     {
         if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
         {
@@ -814,6 +882,7 @@ _bar2WalkCBWriteBuffer
                 pStagingBufferMapping,
                 entryRangeSize);
 
+unmap_and_exit:
     memdescUnmapOld(pStagingBufferDesc, NV_TRUE, 0, pStagingDescMapping, pPriv);
 
     if (bRestore)

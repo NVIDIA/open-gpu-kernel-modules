@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,12 +59,14 @@
 
 #define GMMU_PD1_VADDR_BIT_LO                        29
 
-static const NvU64 pageSizes[VAS_PAGESIZE_IDX_MAX] = {
+static const NvU64 pageSizes[] = {
     RM_PAGE_SIZE,
     RM_PAGE_SIZE_64K,
     RM_PAGE_SIZE_HUGE,
     RM_PAGE_SIZE_512M
 };
+
+static const NvU32 pageSizeCount = sizeof (pageSizes) / sizeof (*pageSizes);
 
 static NV_STATUS
 _gvaspaceGpuStateConstruct
@@ -441,8 +443,8 @@ gvaspaceReserveSplitVaSpace_IMPL
         if (pVAS->vasStart > pGVAS->vaStartServerRMOwned)
         {
             pGVAS->vaStartServerRMOwned = pVAS->vasStart + SPLIT_VAS_SERVER_RM_MANAGED_VA_START;
-        }           
- 
+        }
+
         pGVAS->vaLimitServerRMOwned = pGVAS->vaStartServerRMOwned +
                                       SPLIT_VAS_SERVER_RM_MANAGED_VA_SIZE - 1;
 
@@ -480,31 +482,6 @@ gvaspaceReserveSplitVaSpace_IMPL
         }
     }
     return status;
-}
-
-
-static NvU32
-_gvaspacePageSizeToIdx
-(
-    NvU64 pageSize
-)
-{
-    switch (pageSize)
-    {
-        case RM_PAGE_SIZE:
-            return VAS_PAGESIZE_IDX_4K;
-        case RM_PAGE_SIZE_64K:
-        case RM_PAGE_SIZE_128K:
-            return VAS_PAGESIZE_IDX_BIG;
-        case RM_PAGE_SIZE_HUGE:
-            return VAS_PAGESIZE_IDX_HUGE;
-        case RM_PAGE_SIZE_512M:
-            return VAS_PAGESIZE_IDX_512M;
-        default:
-            NV_PRINTF(LEVEL_ERROR, "Invalid pageSize=0x%llx!\n", pageSize);
-            NV_ASSERT(0);
-            return 0;
-    }
 }
 
 NV_STATUS
@@ -558,7 +535,7 @@ gvaspaceConstruct__IMPL
     {
         pGVAS->bIsAtsEnabled = NV_TRUE;
         NV_PRINTF(LEVEL_INFO, "ATS Enabled VaSpace\n");
-        // 
+        //
         // Initialize with invalid PASID value for sanity checking later during
         // PASID programming in HW.
         // For non-MODS case, PASID is programmed via control call
@@ -1103,8 +1080,7 @@ _gvaspaceGpuStateConstruct
     NvU64                pageSizeMask;
     NvU64                vaStartMin;
     NvU64                vaLimitMax;
-    NvU32                bigPageSize;
-    NvU64                maxPageSizeSupported;
+    NvU64                bigPageSize;
     NvU64                compPageSize;
     NvU64                extManagedAlign;
     NvU64                vaLimitExt;
@@ -1134,14 +1110,8 @@ _gvaspaceGpuStateConstruct
 
     // Determine GPU's page size settings.
     pageSizeMask = mmuFmtAllPageSizes(pFmt->pRoot);
-    bigPageSize = (NvU32)(pageSizeMask & (RM_PAGE_SIZE_64K | RM_PAGE_SIZE_128K));
-    //
-    // Set the max page size supported for the system to determine if we need to look into
-    // 512Mb page or not.
-    //
-    maxPageSizeSupported = (kgmmuIsPageSize512mbSupported(pKernelGmmu)?
-                            RM_PAGE_SIZE_512M: (kgmmuIsHugePageSupported(pKernelGmmu) ?
-                            RM_PAGE_SIZE_HUGE : bigPageSize));
+    bigPageSize = pageSizeMask & (RM_PAGE_SIZE_64K | RM_PAGE_SIZE_128K);
+
     compPageSize = pMemorySystemConfig->comprPageSize;
 
     // Determine externally managed VA alignment from big page table coverage.
@@ -1205,7 +1175,6 @@ _gvaspaceGpuStateConstruct
     if (bFirst)
     {
         pGVAS->bigPageSize  = bigPageSize;
-        pGVAS->maxPageSizeSupported = maxPageSizeSupported;
         pGVAS->compPageSize = compPageSize;
         pGVAS->extManagedAlign = extManagedAlign;
 
@@ -1383,7 +1352,7 @@ _gvaspaceAllocateFlaDummyPagesForFlaRange
 
     status = pRmApi->AllocWithHandle(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hSubDevice,
                                     pGpuState->flaDummyPage.hMemory, NV01_MEMORY_LOCAL_USER,
-                                    &memAllocParams);
+                                    &memAllocParams, sizeof(memAllocParams));
 
     if (bAcquireLock)
     {
@@ -2052,18 +2021,11 @@ gvaspaceGetMapPageSize_IMPL
         }
     }
 
-    if ((pageSizeMask >> 32) != 0)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Time to update width of variables for page size. PageSizeMask: 0x%llx\n",
-                  pageSizeMask);
-    }
-
     NV_ASSERT(0);
     return 0;
 }
 
-NvU32
+NvU64
 gvaspaceGetBigPageSize_IMPL(OBJGVASPACE *pGVAS)
 {
     return pGVAS->bigPageSize;
@@ -2115,7 +2077,7 @@ gvaspaceGetPasid_IMPL(OBJGVASPACE *pGVAS, NvU32 *pPasid)
 
     NV_PRINTF(LEVEL_INFO, "ATS enabled: %u PASID: %u\n",
               pGVAS->bIsAtsEnabled, pGVAS->processAddrSpaceId);
-    
+
     NV_ASSERT_OR_RETURN(pGVAS->bIsAtsEnabled, NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pGVAS->processAddrSpaceId != NV_U32_MAX, NV_ERR_INVALID_STATE);
     *pPasid = pGVAS->processAddrSpaceId;
@@ -2454,10 +2416,13 @@ gvaspaceGetVasInfo_IMPL
     NV_ASSERT_OR_RETURN(pBigPageTable, NV_ERR_INVALID_EVENT);
     pParams->bigPageSize = pGVAS->bigPageSize;
 
-    pParams->hugePageSize = kgmmuIsHugePageSupported(pKernelGmmu) ?
-                            RM_PAGE_SIZE_HUGE : 0;
-    pParams->pageSize512MB = kgmmuIsPageSize512mbSupported(pKernelGmmu) ?
-                             RM_PAGE_SIZE_512M : 0;
+    pParams->supportedPageSizeMask = RM_PAGE_SIZE | pParams->bigPageSize;
+
+    if (kgmmuIsHugePageSupported(pKernelGmmu))
+        pParams->supportedPageSizeMask |= RM_PAGE_SIZE_HUGE;
+
+    if (kgmmuIsPageSize512mbSupported(pKernelGmmu))
+        pParams->supportedPageSizeMask |= RM_PAGE_SIZE_512M;
 
     // Dual Page Table is supported for all Fermi-and-later chips
     pParams->dualPageTableSupported = (NvU32)NV_TRUE;
@@ -2504,7 +2469,6 @@ gvaspaceGetPageTableInfo_IMPL
     NvU32                    i;
     NvBool                   bOrigBcState;
     NV_STATUS                rmStatus;
-    NvU64                    maxPageSizeSupported = pGVAS->maxPageSizeSupported;
 
     NV_ASSERT_OR_RETURN(NULL != pParams, NV_ERR_INVALID_PARAM_STRUCT);
 
@@ -2531,7 +2495,7 @@ gvaspaceGetPageTableInfo_IMPL
 
     NV_ASSERT_OR_RETURN((NV_OK == rmStatus), rmStatus);
 
-    for (i = 0; i <= (_gvaspacePageSizeToIdx(maxPageSizeSupported)); i++)
+    for (i = 0; i < pageSizeCount; i++)
     {
         PMEMORY_DESCRIPTOR                  pMemDesc  = NULL;
         NvU32                               memSize   = 0;
@@ -2568,10 +2532,11 @@ gvaspaceGetPageTableInfo_IMPL
             pParams->pdeEntrySize = pParentFmt->entrySize;
         }
 
+        NV_ASSERT_OR_RETURN(pteBlockIdx < NV0080_CTRL_DMA_PDE_INFO_PTE_BLOCKS, NV_ERR_INVALID_STATE);
         pPteBlock = &pParams->pteBlocks[pteBlockIdx++];
 
         // Page size supported by this page table
-        pPteBlock->pageSize       = (NvU32)pageSize;
+        pPteBlock->pageSize       = pageSize;
 
         // Phys addr of the Page Table
         pPteBlock->ptePhysAddr    = memdescGetPhysAddr(pMemDesc, VAS_ADDRESS_TRANSLATION(pVAS), 0);
@@ -2657,14 +2622,15 @@ gvaspaceGetPteInfo_IMPL
 )
 {
     KernelGmmu     *pKernelGmmu;
+    MemoryManager  *pMemoryManager;
     GVAS_GPU_STATE *pGpuState;
     MMU_WALK       *pWalk;
     const GMMU_FMT *pFmt;
     NV_STATUS      status = NV_OK;
     NvU32          i;
     NvU32          pteBlockIndex = 0;
-    NvU64          maxPageSizeSupported = pGVAS->maxPageSizeSupported;
     const MMU_FMT_LEVEL *pRootFmt;
+    TRANSFER_SURFACE surf = {0};
 
     NV_ASSERT_OR_RETURN(NULL != pParams, NV_ERR_INVALID_PARAM_STRUCT);
 
@@ -2680,20 +2646,20 @@ gvaspaceGetPteInfo_IMPL
     pFmt      = pGpuState->pFmt;
     pRootFmt  = pFmt->pRoot;
     pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     //
     // We will try all available page sizes for valid allocation a the give VA.
     // Will flag error if mutiple valid allocations exist.
     //
 
-    for (i = 0; i <= (_gvaspacePageSizeToIdx(maxPageSizeSupported)); i++)
+    for (i = 0; i < pageSizeCount; i++)
     {
         NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK *pPteBlock = NULL;
         const GMMU_FIELD_ADDRESS           *pAddrField;
         const MMU_FMT_LEVEL                *pLevelFmt     = NULL;
         PMEMORY_DESCRIPTOR                  pMemDesc      = NULL;
         NvU32                               memSize       = 0;
-        NvU8                               *pMap          = NULL;
         NvU32                               pteIndex;
         GMMU_ENTRY_VALUE                    pte       = {{0}};
         NvU64                               pageSize;
@@ -2716,28 +2682,19 @@ gvaspaceGetPteInfo_IMPL
 
         pteIndex = mmuFmtVirtAddrToEntryIndex(pLevelFmt, pParams->gpuAddr);
 
-        // Map the Page Table to BAR
-        pMap = kbusMapRmAperture_HAL(pGpu, pMemDesc);
-        NV_ASSERT_OR_RETURN(NULL != pMap, NV_ERR_INSUFFICIENT_RESOURCES);
-        portMemCopy(pte.v8, pLevelFmt->entrySize, pMap + (pteIndex * pLevelFmt->entrySize), pLevelFmt->entrySize);
-        kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pMap, NV_FALSE);
+        // Read the PTE
+        surf.pMemDesc = pMemDesc;
+        surf.offset = pteIndex * pLevelFmt->entrySize;
 
-        if (pteBlockIndex <= _gvaspacePageSizeToIdx(maxPageSizeSupported))
-        {
-            pPteBlock = &pParams->pteBlocks[pteBlockIndex++];
-        }
-        else if (nvFieldGetBool(&pFmt->pPte->fldValid, pte.v8))
-        {
-            // Override last block if the PTE is valid.
-            pPteBlock = &pParams->pteBlocks[pteBlockIndex - 1];
-        }
-        else
-        {
-            break;
-        }
+        NV_ASSERT_OK_OR_RETURN(memmgrMemRead(pMemoryManager, &surf, pte.v8,
+                                             pLevelFmt->entrySize,
+                                             TRANSFER_FLAGS_DEFER_FLUSH));
+
+        NV_ASSERT_OR_RETURN(pteBlockIndex < NV0080_CTRL_DMA_PDE_INFO_PTE_BLOCKS, NV_ERR_INVALID_STATE);
+        pPteBlock = &pParams->pteBlocks[pteBlockIndex++];
 
         // Page size supported by this page table
-        pPteBlock->pageSize = (NvU32)pageSize;
+        pPteBlock->pageSize = pageSize;
 
         // Number of bytes occupied by one PTE
         pPteBlock->pteEntrySize = pLevelFmt->entrySize;
@@ -2810,11 +2767,10 @@ gvaspaceSetPteInfo_IMPL
 {
     OBJVASPACE              *pVAS = staticCast(pGVAS, OBJVASPACE);
     MemoryManager           *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU8                    *pMap = NULL;
     NvU8                     i;
     NV_STATUS                status = NV_OK;
     NvBool                   bDowngrade = NV_FALSE;
-    NvU64                    maxPageSizeSupported = pGVAS->maxPageSizeSupported;
+    TRANSFER_SURFACE         surf = {0};
 
     NV_ASSERT_OR_RETURN(NULL != pParams, NV_ERR_INVALID_PARAM_STRUCT);
 
@@ -2834,7 +2790,7 @@ gvaspaceSetPteInfo_IMPL
             goto catchGpu;
         }
 
-        for (i = 0; i <= (_gvaspacePageSizeToIdx(maxPageSizeSupported)); i++)
+        for (i = 0; i < NV0080_CTRL_DMA_SET_PTE_INFO_PTE_BLOCKS; i++)
         {
             NV0080_CTRL_DMA_PTE_INFO_PTE_BLOCK *pPteBlock = NULL;
             const MMU_FMT_LEVEL                *pLevelFmt;
@@ -2872,7 +2828,7 @@ gvaspaceSetPteInfo_IMPL
 
             // Query the Page Tables.
             pLevelFmt = mmuFmtFindLevelWithPageShift(pRootFmt,
-                                                     BIT_IDX_32(pParams->pteBlocks[i].pageSize));
+                                                     BIT_IDX_64(pParams->pteBlocks[i].pageSize));
             if (NULL == pLevelFmt)
             {
                 status = NV_ERR_INVALID_STATE;
@@ -2891,17 +2847,17 @@ gvaspaceSetPteInfo_IMPL
 
             pPteBlock  = &pParams->pteBlocks[i];
 
-            // Map the Page Table to BAR
-            pMap = kbusMapRmAperture_HAL(pGpu, pMemDesc);
-            if (NULL == pMap)
-            {
-                status = NV_ERR_INSUFFICIENT_RESOURCES;
-                NV_ASSERT_OR_GOTO(0, catchGpu);
-            }
-
             // Read the PTE
             pteIndex = mmuFmtVirtAddrToEntryIndex(pLevelFmt, pParams->gpuAddr);
-            portMemCopy(pte.v8, pLevelFmt->entrySize, pMap + (pteIndex * pLevelFmt->entrySize), pLevelFmt->entrySize);
+
+            surf.pMemDesc = pMemDesc;
+            surf.offset = pteIndex * pLevelFmt->entrySize;
+
+            NV_ASSERT_OK_OR_GOTO(status,
+                memmgrMemRead(pMemoryManager, &surf, pte.v8,
+                              pLevelFmt->entrySize,
+                              TRANSFER_FLAGS_NONE),
+                catchGpu);
 
             //
             // If any of these entries are being downgraded, we need to perform
@@ -3001,12 +2957,13 @@ gvaspaceSetPteInfo_IMPL
                 }
             }
 
-
-
-
             // Copy back the overwritten values to the actual PTE memory
-            portMemCopy(pMap + (pteIndex * pLevelFmt->entrySize), pLevelFmt->entrySize, pte.v8, pLevelFmt->entrySize);
-            kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pMap, NV_TRUE);
+            NV_ASSERT_OK_OR_GOTO(status,
+                memmgrMemWrite(pMemoryManager, &surf, pte.v8,
+                               pLevelFmt->entrySize,
+                               TRANSFER_FLAGS_NONE),
+                catchGpu);
+
         }
 
         // Invalidate TLB
@@ -3580,10 +3537,11 @@ _gmmuWalkCBMapSingleEntry
     NvU32                    *pProgress
 )
 {
-    OBJGPU              *pGpu      = pUserCtx->pGpu;
-    MMU_MAP_ITERATOR    *pIter     = pTarget->pIter;
-    MEMORY_DESCRIPTOR   *pMemDesc  = (MEMORY_DESCRIPTOR*)pLevelMem;
-    NvU8                *pMap      = NULL;
+    OBJGPU              *pGpu           = pUserCtx->pGpu;
+    MemoryManager       *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    MMU_MAP_ITERATOR    *pIter          = pTarget->pIter;
+    MEMORY_DESCRIPTOR   *pMemDesc       = (MEMORY_DESCRIPTOR*)pLevelMem;
+    TRANSFER_SURFACE     surf           = {0};
 
     NV_PRINTF(LEVEL_INFO, "[GPU%u]: PA 0x%llX, Entries 0x%X-0x%X\n",
               pUserCtx->pGpu->gpuInstance,
@@ -3592,15 +3550,13 @@ _gmmuWalkCBMapSingleEntry
 
     NV_ASSERT_OR_RETURN_VOID(entryIndexLo == entryIndexHi);
 
-    pMap = kbusMapRmAperture_HAL(pGpu, pMemDesc);
-    NV_ASSERT_OR_RETURN_VOID(NULL != pMap);
-
-    portMemCopy(pMap + entryIndexLo * pTarget->pLevelFmt->entrySize,
-                pTarget->pLevelFmt->entrySize,
-                pIter->entry.v8,
-                pTarget->pLevelFmt->entrySize);
-
-    kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pMap, NV_TRUE);
+    surf.pMemDesc = pMemDesc;
+    surf.offset = entryIndexLo * pTarget->pLevelFmt->entrySize;
+    
+    NV_ASSERT_OR_RETURN_VOID(memmgrMemWrite(pMemoryManager, &surf,
+                                            pIter->entry.v8,
+                                            pTarget->pLevelFmt->entrySize,
+                                            TRANSFER_FLAGS_NONE) == NV_OK);
 
     *pProgress = entryIndexHi - entryIndexLo + 1;
 }
@@ -3631,7 +3587,7 @@ gvaspaceUpdatePde2_IMPL
 
     // Lookup leaf page table formats.
     pPTBig = mmuFmtFindLevelWithPageShift(pFmt->pRoot,
-                                          BIT_IDX_32(gvaspaceGetBigPageSize(pGVAS)));
+                                          BIT_IDX_64(gvaspaceGetBigPageSize(pGVAS)));
     pPT4KB = mmuFmtFindLevelWithPageShift(pFmt->pRoot, 12);
 
     NV_ASSERT_OR_RETURN(NULL != pPTBig, NV_ERR_NOT_SUPPORTED);
@@ -3689,6 +3645,7 @@ gvaspaceUpdatePde2_IMPL
         if (GMMU_APERTURE_INVALID != aperture)
         {
             KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+            MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
             gmmuFieldSetAddress(gmmuFmtPdePhysAddrFld(pPdeFmt, aperture),
                 kgmmuEncodePhysAddr(pKernelGmmu, aperture, pPtParams->physAddr,
@@ -3701,21 +3658,22 @@ gvaspaceUpdatePde2_IMPL
                 NvU32                 pdePcfSw = 0;
                 PMEMORY_DESCRIPTOR    pMemDesc = NULL;
                 NvU32                 memSize  = 0;
-                NvU8                 *pMap     = NULL;
                 GMMU_ENTRY_VALUE      pde      = {{0}};
                 GMMU_APERTURE         currAperture;
+                TRANSFER_SURFACE      surf     = {0};
 
                 NV_ASSERT_OK_OR_RETURN(
                     mmuWalkGetPageLevelInfo(pGpuState->pWalk, mapTarget.pLevelFmt,
                         (pParams->pdeIndex * mmuFmtLevelPageSize(mapTarget.pLevelFmt)),
                             (const MMU_WALK_MEMDESC**)&pMemDesc, &memSize));
 
-                pMap = kbusMapRmAperture_HAL(pGpu, pMemDesc);
-                NV_ASSERT_OR_RETURN(pMap != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
-                portMemCopy(pde.v8, mapTarget.pLevelFmt->entrySize,
-                    pMap + (pParams->pdeIndex * mapTarget.pLevelFmt->entrySize),
-                        mapTarget.pLevelFmt->entrySize);
-                kbusUnmapRmAperture_HAL(pGpu, pMemDesc, &pMap, NV_FALSE);
+                surf.pMemDesc = pMemDesc;
+                surf.offset = pParams->pdeIndex * mapTarget.pLevelFmt->entrySize;
+
+                NV_ASSERT_OK_OR_RETURN(memmgrMemRead(pMemoryManager, &surf,
+                                                     pde.v8,
+                                                     mapTarget.pLevelFmt->entrySize,
+                                                     TRANSFER_FLAGS_DEFER_FLUSH));
 
                 pdePcfHw = nvFieldGet32(&pPdeFmt->fldPdePcf, pde.v8);
                 currAperture = gmmuFieldGetAperture(&pPdeFmt->fldAperture, pde.v8);
@@ -4150,6 +4108,7 @@ gvaspaceCopyServerRmReservedPdesToServerRm_IMPL
                                    hVASpace,
                                    FERMI_VASPACE_A,
                                    &vaParams,
+                                   sizeof(vaParams),
                                    status);
 
             NV_ASSERT_OR_RETURN(NV_OK == status, status);
@@ -4218,9 +4177,15 @@ _gvaspaceControl_Prolog
 
     if (0 != hSubDevice)
     {
-        NvHandle hDevice;
-        NV_ASSERT_OR_RETURN(CliSetSubDeviceContext(RES_GET_CLIENT_HANDLE(pVaspaceApi), hSubDevice, &hDevice, ppGpu) == NV_OK,
-                          NV_ERR_INVALID_OBJECT);
+        Subdevice *pSubDevice;
+
+        NV_ASSERT_OK_OR_RETURN(
+                subdeviceGetByHandle(RES_GET_CLIENT(pVaspaceApi),
+                    hSubDevice, &pSubDevice));
+
+        *ppGpu = GPU_RES_GET_GPU(pSubDevice);
+
+        GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
     }
     else
     {
@@ -5150,7 +5115,7 @@ _gvaspacePopulatePDEentries
     portMemSet(pPdeCopyParams, 0, sizeof(NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS));
 
     // Populate the input params.
-    pdeInfo.pageSize    = NVBIT32(GMMU_PD1_VADDR_BIT_LO);
+    pdeInfo.pageSize    = NVBIT64(GMMU_PD1_VADDR_BIT_LO);
     pdeInfo.virtAddress = pGVAS->vaStartServerRMOwned;
 
     // Fetch the details of the PDEs backing server RM's VA range.
@@ -5168,7 +5133,7 @@ _gvaspacePopulatePDEentries
 
     pPdeCopyParams->numLevelsToCopy = pdeInfo.numLevels;
     pPdeCopyParams->subDeviceId     = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-    pPdeCopyParams->pageSize        = NVBIT32(GMMU_PD1_VADDR_BIT_LO);
+    pPdeCopyParams->pageSize        = NVBIT64(GMMU_PD1_VADDR_BIT_LO);
     pPdeCopyParams->virtAddrLo      = pGVAS->vaStartServerRMOwned;
     pPdeCopyParams->virtAddrHi      = pPdeCopyParams->virtAddrLo +
                                         SPLIT_VAS_SERVER_RM_MANAGED_VA_SIZE - 1;

@@ -474,8 +474,12 @@ kgmmuReportFaultBufferOverflow_GV100
         MODS_ARCH_ERROR_PRINTF("MMU Fault Buffer overflow detected\n");
         rmStatus = notifyEvents(pGpu, *ppEventNotification, NVC369_NOTIFIER_MMU_FAULT_ERROR,
                                 0, 0, NV_OK, NV_OS_WRITE_THEN_AWAKEN);
-            if (rmStatus != NV_OK)
-                return rmStatus;
+        //
+        // Mods will check the error and clear error status. As Mods uses Async event
+        // clearing the error in RM will cause a race with Mods
+        //
+        if (RMCFG_FEATURE_MODS_FEATURES)
+            return rmStatus;
     }
 
     krcBreakpoint(GPU_GET_KERNEL_RC(pGpu));
@@ -484,6 +488,8 @@ kgmmuReportFaultBufferOverflow_GV100
     faultStatus = FLD_SET_DRF(_PFB_PRI, _MMU_FAULT_STATUS, _NON_REPLAYABLE_OVERFLOW, _RESET,
                               faultStatus);
     kgmmuWriteMmuFaultStatus_HAL(pGpu, pKernelGmmu, faultStatus);
+
+    gpuMarkDeviceForReset(pGpu);
     return rmStatus;
 }
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -101,19 +101,6 @@ gpuInitRegistryOverrides_KERNEL
         }
     }
 
-    if (osReadRegistryDword(pGpu,
-                            NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA, &data32) == NV_OK)
-    {
-        if (data32 == NV_REG_STR_RM_ALLOC_CTX_BUFFERS_FROM_PMA_ENABLE) 
-        {
-            pGpu->setProperty(pGpu, PDB_PROP_GPU_MOVE_CTX_BUFFERS_TO_PMA, NV_TRUE);
-        }
-        else 
-        {
-            pGpu->setProperty(pGpu, PDB_PROP_GPU_MOVE_CTX_BUFFERS_TO_PMA, NV_FALSE);
-        }
-    }
-
     if (pGpu->bSriovCapable)
     {
         if (osReadRegistryDword(pGpu, NV_REG_STR_RM_SET_SRIOV_MODE, &data32) == NV_OK)
@@ -140,11 +127,14 @@ gpuInitRegistryOverrides_KERNEL
                 }
             }
         }
+
     }
 
     if (pGpu->bSriovEnabled && (IS_GSP_CLIENT(pGpu) || RMCFG_FEATURE_PLATFORM_GSP))
     {
-        pGpu->bVgpuGspPluginOffloadEnabled = NV_TRUE;
+        {
+            pGpu->bVgpuGspPluginOffloadEnabled = NV_TRUE;
+        }
     }
 
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_RM_ALLOCATED_CTX_BUFFER, &data32) == NV_OK)
@@ -181,11 +171,19 @@ gpuInitRegistryOverrides_KERNEL
                   pGpu->bSplitVasManagementServerClientRm);
     }
 
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPU_FABRIC_PROBE, &pGpu->fabricProbeRegKeyOverride) == NV_OK)
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPU_FABRIC_PROBE,
+                            &pGpu->fabricProbeRegKeyOverride) == NV_OK)
     {
-        pGpu->fabricProbeRegKeyOverride |= DRF_NUM(_REG_STR, _RM_GPU_FABRIC_PROBE, _OVERRIDE, 1);
+        pGpu->fabricProbeRegKeyOverride |= \
+                        DRF_NUM(_REG_STR, _RM_GPU_FABRIC_PROBE, _OVERRIDE, 1);
     }
 
+    pGpu->bBf3WarBug4040336Enabled = NV_FALSE;
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3,
+                            &data32) == NV_OK)
+    {
+        pGpu->bBf3WarBug4040336Enabled = (data32 == NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_ENABLE);
+    }
 
     return NV_OK;
 }
@@ -199,6 +197,25 @@ gpuInitInstLocOverrides_IMPL
     OBJGPU *pGpu
 )
 {
+    NvU32 data32 = 0;
+    //
+    // If Hopper CC mode is enabled, move all except few buffers to FB
+    //
+    if (((osReadRegistryDword(pGpu, NV_REG_STR_RM_CONFIDENTIAL_COMPUTE, &data32) == NV_OK) &&
+         FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _ENABLED, _YES, data32) &&
+         pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE)) || gpuIsCCEnabledInHw_HAL(pGpu))
+    {
+
+        pGpu->instLocOverrides  = NV_REG_STR_RM_INST_LOC_ALL_VID;
+        pGpu->instLocOverrides2 = NV_REG_STR_RM_INST_LOC_ALL_VID;
+        pGpu->instLocOverrides3 = NV_REG_STR_RM_INST_LOC_ALL_VID;
+        pGpu->instLocOverrides4 = NV_REG_STR_RM_INST_LOC_ALL_VID;
+
+        // Only FW_SEC_LIC & FLCN UCODE buffers are required to be in NCOH now. These will be moved to VIDMEM eventually.
+        pGpu->instLocOverrides4 = FLD_SET_DRF(_REG_STR, _RM_INST_LOC_4, _FW_SEC_LIC_COMMAND, _NCOH, pGpu->instLocOverrides4);
+        pGpu->instLocOverrides4 = FLD_SET_DRF(_REG_STR, _RM_INST_LOC_4, _FLCN_UCODE_BUFFERS, _NCOH, pGpu->instLocOverrides4);
+    }
+    else
     {
         //
         // The pGpu fields are initialized to zero. Try to fill them from the
@@ -235,25 +252,6 @@ gpuInitInstLocOverrides_IMPL
         pGpu->instLocOverrides2 = NV_REG_STR_RM_INST_LOC_ALL_COH;
         pGpu->instLocOverrides3 = NV_REG_STR_RM_INST_LOC_ALL_COH;
         // Leave instLocOverrides4 as _DEFAULT until all flavors are tested.
-
-        if (gpuIsCacheOnlyModeEnabled(pGpu))
-        {
-            //
-            // If cache only mode is enabled then we will override
-            // userD and bar page tables to vidmem(l2 cache).
-            // This is to avoid deadlocks on platforms
-            // that don't support reflected accesses.
-            // Such platforms will need to enable cache only mode to
-            // run test zeroFb
-            // NOTE: Since this puts USERD in vidmem, you probably also want to
-            // reduce the number of channels to allocate, or else
-            // fifoPreAllocUserD_GF100 will fail due to the limited amount of
-            // L2 available as "vidmem".  (Use the RmNumFifos regkey.)
-            //
-            pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PTE, _VID, pGpu->instLocOverrides);
-            pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _USERD,   _VID, pGpu->instLocOverrides);
-            pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PDE, _VID, pGpu->instLocOverrides);
-        }
     }
 
     //
@@ -300,6 +298,7 @@ gpuInitInstLocOverrides_IMPL
     // SMs) are fine.
     //
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM) &&
+        !gpuIsCacheOnlyModeEnabled(pGpu) &&
         !(FLD_TEST_DRF(_REG_STR_RM, _INST_LOC, _BAR_PTE, _DEFAULT, pGpu->instLocOverrides) &&
           FLD_TEST_DRF(_REG_STR_RM, _INST_LOC, _BAR_PDE, _DEFAULT, pGpu->instLocOverrides)))
     {

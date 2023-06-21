@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -122,7 +122,12 @@ void *listPrependNew_IMPL(NonIntrusiveList *pList)
     return listInsertNew_IMPL(pList, listHead_IMPL(&(pList->base)));
 }
 
-void *listInsertValue_IMPL(NonIntrusiveList *pList, void *pNext, void *pValue)
+void *listInsertValue_IMPL
+(
+    NonIntrusiveList *pList,
+    void             *pNext,
+    const void       *pValue
+)
 {
     void *pCurrent;
 
@@ -135,12 +140,12 @@ void *listInsertValue_IMPL(NonIntrusiveList *pList, void *pNext, void *pValue)
     return portMemCopy(pCurrent, pList->valueSize, pValue, pList->valueSize);
 }
 
-void *listAppendValue_IMPL(NonIntrusiveList *pList, void *pValue)
+void *listAppendValue_IMPL(NonIntrusiveList *pList, const void *pValue)
 {
     return listInsertValue_IMPL(pList, NULL, pValue);
 }
 
-void *listPrependValue_IMPL(NonIntrusiveList *pList, void *pValue)
+void *listPrependValue_IMPL(NonIntrusiveList *pList, const void *pValue)
 {
     return listInsertValue_IMPL(pList, listHead_IMPL(&(pList->base)), pValue);
 }

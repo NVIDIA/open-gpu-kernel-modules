@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,7 +36,19 @@
 #define VGPU_UUID_SIZE                          NVA081_VM_UUID_SIZE
 #define VGPU_MAX_GFID                           64
 #define VGPU_SIGNATURE_SIZE                     NVA081_VGPU_SIGNATURE_SIZE
+#define VGPU_MAX_PLUGIN_CHANNELS                5
 #define MAX_VGPU_DEVICES_PER_PGPU               NVA081_MAX_VGPU_PER_PGPU
+
+#define SET_GUEST_ID_ACTION_SET                 0
+#define SET_GUEST_ID_ACTION_UNSET               1
+
+typedef struct
+{
+    NvU8 action;
+    NvU32 vmPid;
+    VM_ID_TYPE vmIdType;
+    VM_ID guestVmId;
+} SET_GUEST_ID_PARAMS;
 
 /* This structure represents the vGPU type's attributes */
 typedef struct

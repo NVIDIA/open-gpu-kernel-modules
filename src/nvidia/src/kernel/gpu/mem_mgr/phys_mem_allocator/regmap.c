@@ -317,12 +317,13 @@ pmaRegMapScanContiguousNumaEviction
 
     NvU64 alignedAddrBase;
     NvU64 frameNum;
-    NvU64 endFrame, frameStart;
+    NvU64 frameLimit, frameStart;
     NvU64 alignment = pageSize;
     NvU64 frameAlignment, frameAlignmentPadding;
     NvU64 numFrames = actualSize >> PMA_PAGE_SHIFT;
+    NvU64 numFramesLimit = numFrames - 1;
 
-    endFrame = pRegmap->totalFrames - 1;
+    frameLimit = pRegmap->totalFrames - 1;
 
     if (pRegmap->totalFrames < numFrames)
         return status;
@@ -334,14 +335,14 @@ pmaRegMapScanContiguousNumaEviction
     frameStart = alignUpToMod(0, frameAlignment, frameAlignmentPadding);
 
 
-    for (frameNum = frameStart; frameNum <= endFrame; )
+    for (frameNum = frameStart; frameNum <= (frameLimit - numFramesLimit); )
     {
         PMA_PAGESTATUS startFrameAllocState;
         PMA_PAGESTATUS endFrameAllocState;
         NvS64 firstUnevictableFrame;
 
         startFrameAllocState  = pmaRegmapRead(pRegmap, frameNum, NV_TRUE);
-        endFrameAllocState    = pmaRegmapRead(pRegmap, frameNum + numFrames - 1, NV_TRUE);
+        endFrameAllocState    = pmaRegmapRead(pRegmap, frameNum + numFramesLimit, NV_TRUE);
 
         if ((endFrameAllocState & STATE_MASK) != STATE_UNPIN)
         {
@@ -359,8 +360,8 @@ pmaRegMapScanContiguousNumaEviction
         }
 
 
-        // First occurrence of 0 in STATE_UNPIN  from frameNum to frameNum + numFrames - 1
-        firstUnevictableFrame = _pmaRegmapScanNumaUnevictable(pRegmap, frameNum, frameNum + numFrames - 1);
+        // First occurrence of 0 in STATE_UNPIN  from frameNum to frameNum + numFramesLimit
+        firstUnevictableFrame = _pmaRegmapScanNumaUnevictable(pRegmap, frameNum, frameNum + numFramesLimit);
 
         if (firstUnevictableFrame == -1)
         {
@@ -528,6 +529,13 @@ pmaRegmapInit
     pPmaStats->num2mbPages += num2mbPages;
     pPmaStats->numFree2mbPages += num2mbPages;
 
+    if (bProtected)
+    {
+        pPmaStats->numFreeFramesProtected += newMap->totalFrames;
+        pPmaStats->num2mbPagesProtected += num2mbPages;
+        pPmaStats->numFree2mbPagesProtected += num2mbPages;
+    }
+
     newMap->bProtected = bProtected;
     newMap->pPmaStats = pPmaStats;
     newMap->mapLength = PAGE_MAPIDX(numFrames-1) + 1;
@@ -562,8 +570,18 @@ pmaRegmapDestroy(void *pMap)
 
     pRegmap->pPmaStats->numFreeFrames -= pRegmap->totalFrames;
 
+    if (pRegmap->bProtected)
+    {
+        pRegmap->pPmaStats->numFreeFramesProtected -= pRegmap->totalFrames;
+    }
+
     num2mbPages = pRegmap->totalFrames / (_PMA_2MB >> PMA_PAGE_SHIFT);
     pRegmap->pPmaStats->numFree2mbPages -= num2mbPages;
+
+    if (pRegmap->bProtected)
+    {
+        pRegmap->pPmaStats->numFree2mbPagesProtected -= num2mbPages;
+    }
 
     portMemFree(pRegmap);
 }
@@ -631,6 +649,12 @@ pmaRegmapChangeStateAttribEx
     pmaStatsUpdateState(&pRegmap->pPmaStats->numFreeFrames, 1,
                         oldState, updatedState);
 
+    if (pRegmap->bProtected)
+    {
+        pmaStatsUpdateState(&pRegmap->pPmaStats->numFreeFramesProtected, 1,
+                            oldState, updatedState);
+    }
+
     //
     // If we are freeing a frame, we should check if we need to update the 2MB
     // page tracking
@@ -641,6 +665,11 @@ pmaRegmapChangeStateAttribEx
         pmaStatsUpdateState(&pRegmap->pPmaStats->numFree2mbPages, 1,
                             oldState, updatedState);
 
+        if (pRegmap->bProtected)
+        {
+           pmaStatsUpdateState(&pRegmap->pPmaStats->numFree2mbPagesProtected, 1,
+                               oldState, updatedState);
+        }
     }
 }
 
@@ -696,6 +725,12 @@ pmaRegmapChangeStateAttrib
     pmaStatsUpdateState(&pRegmap->pPmaStats->numFreeFrames, 1,
                         oldState, newState);
 
+    if (pRegmap->bProtected)
+    {
+        pmaStatsUpdateState(&pRegmap->pPmaStats->numFreeFramesProtected, 1,
+                            oldState, newState);
+    }
+
     //
     // If we are freeing a frame, we should check if we need to update the 2MB
     // page tracking
@@ -706,6 +741,11 @@ pmaRegmapChangeStateAttrib
         pmaStatsUpdateState(&pRegmap->pPmaStats->numFree2mbPages, 1,
                                    oldState, newState);
 
+        if (pRegmap->bProtected)
+        {
+            pmaStatsUpdateState(&pRegmap->pPmaStats->numFree2mbPagesProtected, 1,
+                                oldState, newState);
+        }
     }
 }
 
@@ -722,12 +762,12 @@ pmaRegmapChangePageStateAttrib
 (
     void * pMap,
     NvU64 startFrame,
-    NvU32 pageSize,
+    NvU64 pageSize,
     PMA_PAGESTATUS newState,
     NvBool writeAttrib
 )
 {
-    NvU32 framesPerPage = pageSize >> PMA_PAGE_SHIFT;
+    NvU32 framesPerPage = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
     NvU64 frame;
     for (frame = startFrame; frame < startFrame + framesPerPage; frame++)
     {
@@ -928,7 +968,7 @@ pmaRegmapScanContiguous
     NvU64 rangeEnd,
     NvU64 numPages,
     NvU64 *freeList,
-    NvU32 pageSize,
+    NvU64 pageSize,
     NvU64 alignment,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,
@@ -1022,7 +1062,7 @@ pmaRegmapScanDiscontiguous
     NvU64 rangeEnd,
     NvU64 numPages,
     NvU64 *freeList,
-    NvU32 pageSize,
+    NvU64 pageSize,
     NvU64 alignment,
     NvU64 *numPagesAlloc,
     NvBool bSkipEvict,

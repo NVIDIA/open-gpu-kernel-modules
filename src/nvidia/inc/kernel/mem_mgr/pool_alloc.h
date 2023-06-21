@@ -46,13 +46,13 @@
 
 typedef enum
 {
-    POOL_CONFIG_GMMU_FMT_1         = 0, // configure pool for client page tables with version = GMMU_FMT_VERSION_1
-    POOL_CONFIG_GMMU_FMT_2         = 1, // configure pool for client page tables with version = GMMU_FMT_VERSION_2
-    POOL_CONFIG_CTXBUF_512M        = 2, // configure pool for RM internal allocations like ctx buffers with 512MB page size
-    POOL_CONFIG_CTXBUF_2M          = 3, // configure pool for RM internal allocations like ctx buffers with 2MB page size
-    POOL_CONFIG_CTXBUF_64K         = 4, // configure pool for RM internal allocations like ctx buffers with 64KB page size
-    POOL_CONFIG_CTXBUF_4K          = 5, // configure pool for RM internal allocations like ctx buffers with 4KB page size
-    POOL_CONFIG_MAX_SUPPORTED      = 6
+    POOL_CONFIG_GMMU_FMT_1,     // configure pool for client page tables with version = GMMU_FMT_VERSION_1
+    POOL_CONFIG_GMMU_FMT_2,     // configure pool for client page tables with version = GMMU_FMT_VERSION_2
+    POOL_CONFIG_CTXBUF_512M,    // configure pool for RM internal allocations like ctx buffers with 512MB page size
+    POOL_CONFIG_CTXBUF_2M,      // configure pool for RM internal allocations like ctx buffers with 2MB page size
+    POOL_CONFIG_CTXBUF_64K,     // configure pool for RM internal allocations like ctx buffers with 64KB page size
+    POOL_CONFIG_CTXBUF_4K,      // configure pool for RM internal allocations like ctx buffers with 4KB page size
+    POOL_CONFIG_MAX_SUPPORTED
 
 }POOL_CONFIG_MODE;
 /* ------------------------------------ Datatypes ---------------------------------- */

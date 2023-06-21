@@ -99,20 +99,20 @@ typedef struct
 #define RMCTRL_CLEAR_CAP(tbl,cap,field)           ((tbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)]) &= ~(0?cap##field))
 
 // macros to AND/OR caps between two tables
-#define RMCTRL_AND_CAP(finaltbl,tmptbl,tmp,cap,field)     \
+#define RMCTRL_AND_CAP(finaltbl,tmptbl,tmp,cap,field)                                                                                                               \
     tmp = ((finaltbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)] & tmptbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)]) & (0?cap##field)); \
-    finaltbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)] &= ~(0?cap##field); \
+    finaltbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)] &= ~(0?cap##field);                                                                           \
     finaltbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)] |= tmp;
 
-#define RMCTRL_OR_CAP(finaltbl,tmptbl,tmp,cap,field)      \
+#define RMCTRL_OR_CAP(finaltbl,tmptbl,tmp,cap,field)                                                                                                                \
     tmp = ((finaltbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)] | tmptbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)]) & (0?cap##field)); \
-    finaltbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)] &= ~(0?cap##field); \
+    finaltbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)] &= ~(0?cap##field);                                                                           \
     finaltbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)] |= tmp;
 
 // Whether the command ID is a NULL command?
 //    We allow NVXXXX_CTRL_CMD_NULL (0x00000000) as well as the
 //    per-class NULL cmd ( _CATEGORY==0x00 and _INDEX==0x00 )
-#define RMCTRL_IS_NULL_CMD(cmd)             ((cmd == NVXXXX_CTRL_CMD_NULL) || \
+#define RMCTRL_IS_NULL_CMD(cmd)             ((cmd == NVXXXX_CTRL_CMD_NULL) ||                            \
                                              (FLD_TEST_DRF_NUM(XXXX, _CTRL_CMD, _CATEGORY, 0x00, cmd) && \
                                               FLD_TEST_DRF_NUM(XXXX, _CTRL_CMD, _INDEX,    0x00, cmd)))
 
@@ -141,11 +141,8 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 #define _RMCTRL_PREP_ACCESS_ARG(x)     | NVBIT(NV_CONCATENATE(RS_ACCESS_, x))
 #define ACCESS_RIGHTS(...)             (0 NV_FOREACH_ARG_NOCOMMA(_RMCTRL_PREP_ACCESS_ARG, __VA_ARGS__))
 
-#define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(ctrlFlags)           \
-    (                                                              \
-        (ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL) &&            \
-        !RMCFG_FEATURE_PHYSICAL_RM                        \
-    )
+#define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(ctrlFlags) \
+    (ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL)
 
 //
 // 'FLAGS' Attribute

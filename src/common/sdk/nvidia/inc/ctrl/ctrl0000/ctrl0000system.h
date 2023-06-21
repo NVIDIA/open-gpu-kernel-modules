@@ -26,7 +26,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0000/ctrl0000system.finn
+// Source file:      ctrl/ctrl0000/ctrl0000system.finn
 //
 
 #include "ctrl/ctrlxxxx.h"
@@ -296,8 +296,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS {
 
 /* Generic types */
 #define NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC     (0xA00FF000U)
-
-
+#define NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV9A_GENERIC     (0xA00FF001U)
 
 /* processor capabilities */
 #define NV0000_CTRL_SYSTEM_CPU_CAP_MMX                 (0x00000001U)
@@ -321,47 +320,6 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS {
 #define NV0000_CTRL_SYSTEM_CPU_CAP_SSE42               (0x00040000U)
 #define NV0000_CTRL_SYSTEM_CPU_CAP_AVX                 (0x00080000U)
 #define NV0000_CTRL_SYSTEM_CPU_CAP_ERMS                (0x00100000U)
-
-/* feature mask (as opposed to bugs, requirements, etc.) */
-#define NV0000_CTRL_SYSTEM_CPU_CAP_FEATURE_MASK        (0x1f5e7fU) /* finn: Evaluated from "(NV0000_CTRL_SYSTEM_CPU_CAP_MMX | NV0000_CTRL_SYSTEM_CPU_CAP_SSE | NV0000_CTRL_SYSTEM_CPU_CAP_3DNOW | NV0000_CTRL_SYSTEM_CPU_CAP_SSE2 | NV0000_CTRL_SYSTEM_CPU_CAP_SFENCE | NV0000_CTRL_SYSTEM_CPU_CAP_WRITE_COMBINING | NV0000_CTRL_SYSTEM_CPU_CAP_ALTIVEC | NV0000_CTRL_SYSTEM_CPU_CAP_3DNOW_EXT | NV0000_CTRL_SYSTEM_CPU_CAP_MMX_EXT | NV0000_CTRL_SYSTEM_CPU_CAP_CMOV | NV0000_CTRL_SYSTEM_CPU_CAP_CLFLUSH | NV0000_CTRL_SYSTEM_CPU_CAP_SSE3 | NV0000_CTRL_SYSTEM_CPU_CAP_HT_CAPABLE | NV0000_CTRL_SYSTEM_CPU_CAP_SSE41 | NV0000_CTRL_SYSTEM_CPU_CAP_SSE42 | NV0000_CTRL_SYSTEM_CPU_CAP_AVX | NV0000_CTRL_SYSTEM_CPU_CAP_ERMS)" */
-
-/*
- * NV0000_CTRL_CMD_SYSTEM_GET_CAPS
- *
- * This command returns the set of system capabilities in the
- * form of an array of unsigned bytes.  System capabilities include
- * supported features and required workarounds for the system,
- * each represented by a byte offset into the table and a bit
- * position within that byte.
- *
- *   capsTblSize
- *     This parameter specifies the size in bytes of the caps table.
- *     This value should be set to NV0000_CTRL_SYSTEM_CAPS_TBL_SIZE.
- *   capsTbl
- *     This parameter specifies a pointer to the client's caps table buffer
- *     into which the system caps bits will be transferred by the RM.
- *     The caps table is an array of unsigned bytes.
- *
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- *   NV_ERR_INVALID_ARGUMENT
- */
-#define NV0000_CTRL_CMD_SYSTEM_GET_CAPS                (0x103U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | 0x3" */
-
-typedef struct NV0000_CTRL_SYSTEM_GET_CAPS_PARAMS {
-    NvU32 capsTblSize;
-    NV_DECLARE_ALIGNED(NvP64 capsTbl, 8);
-} NV0000_CTRL_SYSTEM_GET_CAPS_PARAMS;
-
-/* extract cap bit setting from tbl */
-#define NV0000_CTRL_SYSTEM_GET_CAP(tbl,c)           (((NvU8)tbl[(1?c)]) & (0?c))
-
-/* caps format is byte_index:bit_mask */
-#define NV0000_CTRL_SYSTEM_CAPS_POWER_SLI_SUPPORTED                 0:0x01
-
-/* size in bytes of system caps table */
-#define NV0000_CTRL_SYSTEM_CAPS_TBL_SIZE        1U
 
 /*
  * NV0000_CTRL_CMD_SYSTEM_GET_CHIPSET_INFO
@@ -419,13 +377,13 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CAPS_PARAMS {
  *   NV_ERR_INVALID_ARGUMENT
  *   NV_ERR_OPERATING_SYSTEM
  */
-#define NV0000_CTRL_CMD_SYSTEM_GET_CHIPSET_INFO (0x104U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_SYSTEM_GET_CHIPSET_INFO        (0x104U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS_MESSAGE_ID" */
 
 /* maximum name string length */
-#define NV0000_SYSTEM_MAX_CHIPSET_STRING_LENGTH (0x0000020U)
+#define NV0000_SYSTEM_MAX_CHIPSET_STRING_LENGTH        (0x0000020U)
 
 /* invalid id */
-#define NV0000_SYSTEM_CHIPSET_INVALID_ID        (0xffffU)
+#define NV0000_SYSTEM_CHIPSET_INVALID_ID               (0xffffU)
 
 #define NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS_MESSAGE_ID (0x4U)
 
@@ -1572,9 +1530,11 @@ typedef struct NV0000_CTRL_SYSTEM_GPS_CTRL_PARAMS {
  * Please note: as implied above, administrator privileges are
  * required to modify security settings.
  */
-#define NV0000_CTRL_CMD_SYSTEM_SET_SECURITY_SETTINGS           (0x129U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | 0x29" */
+#define NV0000_CTRL_CMD_SYSTEM_SET_SECURITY_SETTINGS           (0x129U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS_MESSAGE_ID" */
 
 #define GPS_MAX_COUNTERS_PER_BLOCK                             32U
+#define NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS_MESSAGE_ID (0x29U)
+
 typedef struct NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS {
     NvU32 objHndl;
     NvU32 blockId;

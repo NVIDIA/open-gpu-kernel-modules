@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/clb2cc.finn
+// Source file:      class/clb2cc.finn
 //
 
 #include "clb0cc.h"

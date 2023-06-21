@@ -91,6 +91,7 @@ kgmmuValidateFabricBaseAddress_GA100
     OBJGPU        *pGpu = ENG_GET_GPU(pKernelGmmu);
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NvU64 fbSizeBytes;
+    NvU64 fbUpperLimit;
 
     fbSizeBytes = pMemoryManager->Ram.fbTotalMemSizeMb << 20;
 
@@ -109,8 +110,14 @@ kgmmuValidateFabricBaseAddress_GA100
     // Align fbSize to mapslot size.
     fbSizeBytes = RM_ALIGN_UP(fbSizeBytes, NVBIT64(36));
 
+    // Check for integer overflow
+    if (!portSafeAddU64(fabricBaseAddr, fbSizeBytes, &fbUpperLimit))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     // Make sure the address range doesn't go beyond the limit, (2K * 64GB).
-    if ((fabricBaseAddr + fbSizeBytes) > NVBIT64(47))
+    if (fbUpperLimit > NVBIT64(47))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }

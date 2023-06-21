@@ -46,11 +46,11 @@
 MAKE_LIST(ClientHandlesList, NvHandle);
 
 #define serverutilGetDerived(pRmClient, hResource, ppBaseRes, type) \
-    (clientGetResource(staticCast((pRmClient), RsClient), \
-            (hResource), \
-            classId(type), \
-            (ppBaseRes)) != NV_OK) \
-            ? NULL \
+    (clientGetResource(staticCast((pRmClient), RsClient),           \
+            (hResource),                                            \
+            classId(type),                                          \
+            (ppBaseRes)) != NV_OK)                                  \
+            ? NULL                                                  \
             : dynamicCast(*(ppBaseRes), type)
 
 /**
@@ -119,9 +119,8 @@ NV_STATUS serverutilGenResourceHandle(NvHandle, NvHandle*);
  * Get a client pointer from a client handle without taking any locks.
  *
  * @param[in]   hClient The client to acquire
- * @param[out]  ppClient Pointer to the RmClient
  */
-NV_STATUS serverutilGetClientUnderLock(NvHandle hClient, RmClient **ppClient);
+RmClient *serverutilGetClientUnderLock(NvHandle hClient);
 
 /**
  * Get a client pointer from a client handle and lock it.

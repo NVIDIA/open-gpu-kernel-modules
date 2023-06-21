@@ -24,6 +24,7 @@
 #include "os/os.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
+#include "kernel/gpu/device/device.h"
 
 #include "class/clc0b7.h"
 #include "class/cld0b7.h"
@@ -75,8 +76,14 @@ msencGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAl
         case NVC7B7_VIDEO_ENCODER:
         case NVC9B7_VIDEO_ENCODER:
             engineInstance = pMsencAllocParms->engineInstance;
+            NV_PRINTF(LEVEL_INFO, "Supported msenc class Id (classId = 0x%x / engineInstance = 0x%x)\n",
+                      externalClassId,
+                      engineInstance);
             break;
         default:
+            NV_PRINTF(LEVEL_ERROR, "Not supported msenc class Id (classId = 0x%x / engineInstance = 0x%x)\n",
+                      externalClassId,
+                      pMsencAllocParms->engineInstance);
             return ENG_INVALID;
     }
 
@@ -85,10 +92,19 @@ msencGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAl
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
         RM_ENGINE_TYPE rmEngineType;
+        RsResourceRef *pDeviceRef = NULL;
 
         NV_ASSERT_OK(
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                            pCallContext->pClient->hClient, &ref));
+            refFindAncestorOfType(pCallContext->pResourceRef,
+                                  classId(Device), &pDeviceRef));
+
+        if (pDeviceRef == NULL)
+            return ENG_INVALID;
+
+        NV_ASSERT_OK(
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                            dynamicCast(pDeviceRef->pResource, Device),
+                                            &ref));
 
         NV_ASSERT_OK(
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,

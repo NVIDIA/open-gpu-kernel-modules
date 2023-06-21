@@ -2714,12 +2714,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
 #endif
     },
     {               /*  [11] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdSystemGetAcpiIdMap_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
+        /*flags=*/      0x204u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x73015au,
         /*paramSize=*/  sizeof(NV0073_CTRL_SYSTEM_GET_ACPI_ID_MAP_PARAMS),
@@ -2744,6 +2744,21 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
 #endif
     },
     {               /*  [13] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdSystemAcpiSubsystemActivated_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x73015cu,
+        /*paramSize=*/  sizeof(NV0073_CTRL_SYSTEM_ACPI_SUBSYSTEM_ACTIVATED_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "dispcmnCtrlCmdSystemAcpiSubsystemActivated"
+#endif
+    },
+    {               /*  [14] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2758,7 +2773,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemGetConnectorTable"
 #endif
     },
-    {               /*  [14] */
+    {               /*  [15] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2773,7 +2788,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemGetBootDisplays"
 #endif
     },
-    {               /*  [15] */
+    {               /*  [16] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x12u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2788,7 +2803,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemExecuteAcpiMethod"
 #endif
     },
-    {               /*  [16] */
+    {               /*  [17] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2803,7 +2818,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemGetHotplugUnplugState"
 #endif
     },
-    {               /*  [17] */
+    {               /*  [18] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2818,7 +2833,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdClearELVBlock"
 #endif
     },
-    {               /*  [18] */
+    {               /*  [19] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2833,7 +2848,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemArmLightweightSupervisor"
 #endif
     },
-    {               /*  [19] */
+    {               /*  [20] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2848,7 +2863,22 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemConfigVrrPstateSwitch"
 #endif
     },
-    {               /*  [20] */
+    {               /*  [21] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdSystemVrrDisplayInfo_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
+        /*flags=*/      0x204u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x730185u,
+        /*paramSize=*/  sizeof(NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "dispcmnCtrlCmdSystemVrrDisplayInfo"
+#endif
+    },
+    {               /*  [22] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2863,7 +2893,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemQueryDisplayIdsWithMux"
 #endif
     },
-    {               /*  [21] */
+    {               /*  [23] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2878,7 +2908,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemAllocateDisplayBandwidth"
 #endif
     },
-    {               /*  [22] */
+    {               /*  [24] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2893,7 +2923,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemGetHotplugEventConfig"
 #endif
     },
-    {               /*  [23] */
+    {               /*  [25] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2908,7 +2938,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemSetHotplugEventConfig"
 #endif
     },
-    {               /*  [24] */
+    {               /*  [26] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2923,7 +2953,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpRecordChannelRegisters"
 #endif
     },
-    {               /*  [25] */
+    {               /*  [27] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2938,7 +2968,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemCheckSidebandI2cSupport"
 #endif
     },
-    {               /*  [26] */
+    {               /*  [28] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2953,7 +2983,22 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSystemCheckSidebandSrSupport"
 #endif
     },
-    {               /*  [27] */
+    {               /*  [29] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdVRRSetRgLineActive_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+        /*flags=*/      0x0u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x73019eu,
+        /*paramSize=*/  sizeof(NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "dispcmnCtrlCmdVRRSetRgLineActive"
+#endif
+    },
+    {               /*  [30] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2968,7 +3013,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetI2cPortid"
 #endif
     },
-    {               /*  [28] */
+    {               /*  [31] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x206u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2983,7 +3028,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetType"
 #endif
     },
-    {               /*  [29] */
+    {               /*  [32] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -2998,7 +3043,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificFakeDevice"
 #endif
     },
-    {               /*  [30] */
+    {               /*  [33] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3013,7 +3058,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetEdidV2"
 #endif
     },
-    {               /*  [31] */
+    {               /*  [34] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3028,7 +3073,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetEdidV2"
 #endif
     },
-    {               /*  [32] */
+    {               /*  [35] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3043,7 +3088,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetConnectorData"
 #endif
     },
-    {               /*  [33] */
+    {               /*  [36] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3058,7 +3103,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiEnable"
 #endif
     },
-    {               /*  [34] */
+    {               /*  [37] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3073,7 +3118,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificCtrlHdmi"
 #endif
     },
-    {               /*  [35] */
+    {               /*  [38] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3088,7 +3133,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiAudioMutestream"
 #endif
     },
-    {               /*  [36] */
+    {               /*  [39] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3103,7 +3148,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetAcpiIdMapping"
 #endif
     },
-    {               /*  [37] */
+    {               /*  [40] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3118,7 +3163,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetAcpiDodDisplayPortAttachment"
 #endif
     },
-    {               /*  [38] */
+    {               /*  [41] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3133,7 +3178,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetAllHeadMask"
 #endif
     },
-    {               /*  [39] */
+    {               /*  [42] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3148,7 +3193,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetOdPacket"
 #endif
     },
-    {               /*  [40] */
+    {               /*  [43] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3163,7 +3208,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetOdPacketCtrl"
 #endif
     },
-    {               /*  [41] */
+    {               /*  [44] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3178,7 +3223,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetPclkLimit"
 #endif
     },
-    {               /*  [42] */
+    {               /*  [45] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x206u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3193,7 +3238,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificOrGetInfo"
 #endif
     },
-    {               /*  [43] */
+    {               /*  [46] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3208,7 +3253,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetBacklightBrightness"
 #endif
     },
-    {               /*  [44] */
+    {               /*  [47] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3223,7 +3268,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetBacklightBrightness"
 #endif
     },
-    {               /*  [45] */
+    {               /*  [48] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3238,7 +3283,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiSinkCaps"
 #endif
     },
-    {               /*  [46] */
+    {               /*  [49] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3253,7 +3298,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetMonitorPower"
 #endif
     },
-    {               /*  [47] */
+    {               /*  [50] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3268,7 +3313,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiFrlLinkConfig"
 #endif
     },
-    {               /*  [48] */
+    {               /*  [51] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3283,7 +3328,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificApplyEdidOverrideV2"
 #endif
     },
-    {               /*  [49] */
+    {               /*  [52] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3298,7 +3343,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetHdmiGpuCaps"
 #endif
     },
-    {               /*  [50] */
+    {               /*  [53] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3313,7 +3358,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificDisplayChange"
 #endif
     },
-    {               /*  [51] */
+    {               /*  [54] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3328,7 +3373,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetHdmiScdcData"
 #endif
     },
-    {               /*  [52] */
+    {               /*  [55] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3343,7 +3388,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificIsDirectmodeDisplay"
 #endif
     },
-    {               /*  [53] */
+    {               /*  [56] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3358,7 +3403,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetHdmiFrlCapacityComputation"
 #endif
     },
-    {               /*  [54] */
+    {               /*  [57] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3373,7 +3418,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificSetSharedGenericPacket"
 #endif
     },
-    {               /*  [55] */
+    {               /*  [58] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3388,7 +3433,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificAcquireSharedGenericPacket"
 #endif
     },
-    {               /*  [56] */
+    {               /*  [59] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3403,7 +3448,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificReleaseSharedGenericPacket"
 #endif
     },
-    {               /*  [57] */
+    {               /*  [60] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3418,7 +3463,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificDispI2cReadWrite"
 #endif
     },
-    {               /*  [58] */
+    {               /*  [61] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3433,7 +3478,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment"
 #endif
     },
-    {               /*  [59] */
+    {               /*  [62] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3448,7 +3493,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdSpecificDefaultAdaptivesyncDisplay"
 #endif
     },
-    {               /*  [60] */
+    {               /*  [63] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3463,7 +3508,22 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdInternalGetHotplugUnplugState"
 #endif
     },
-    {               /*  [61] */
+    {               /*  [64] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdInternalVRRSetRgLineActive_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
+        /*flags=*/      0x600u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x730402u,
+        /*paramSize=*/  sizeof(NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_DispCommon.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "dispcmnCtrlCmdInternalVRRSetRgLineActive"
+#endif
+    },
+    {               /*  [65] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x212u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3478,7 +3538,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetInfo"
 #endif
     },
-    {               /*  [62] */
+    {               /*  [66] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3493,7 +3553,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetDisplayportDongleInfo"
 #endif
     },
-    {               /*  [63] */
+    {               /*  [67] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3508,7 +3568,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpSetEldAudioCaps"
 #endif
     },
-    {               /*  [64] */
+    {               /*  [68] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3523,7 +3583,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetSpreadSpectrum"
 #endif
     },
-    {               /*  [65] */
+    {               /*  [69] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3538,7 +3598,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpUpdateDynamicDfpCache"
 #endif
     },
-    {               /*  [66] */
+    {               /*  [70] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3553,7 +3613,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpSetAudioEnable"
 #endif
     },
-    {               /*  [67] */
+    {               /*  [71] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3568,7 +3628,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpAssignSor"
 #endif
     },
-    {               /*  [68] */
+    {               /*  [72] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3583,7 +3643,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetPadlinkMask"
 #endif
     },
-    {               /*  [69] */
+    {               /*  [73] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3598,7 +3658,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetLcdGpioPinNum"
 #endif
     },
-    {               /*  [70] */
+    {               /*  [74] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3613,7 +3673,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpConfigTwoHeadOneOr"
 #endif
     },
-    {               /*  [71] */
+    {               /*  [75] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3628,7 +3688,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpDscCrcControl"
 #endif
     },
-    {               /*  [72] */
+    {               /*  [76] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3643,7 +3703,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpInitMuxData"
 #endif
     },
-    {               /*  [73] */
+    {               /*  [77] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3658,7 +3718,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpSwitchDispMux"
 #endif
     },
-    {               /*  [74] */
+    {               /*  [78] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3673,7 +3733,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpRunPreDispMuxOperations"
 #endif
     },
-    {               /*  [75] */
+    {               /*  [79] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3688,7 +3748,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpRunPostDispMuxOperations"
 #endif
     },
-    {               /*  [76] */
+    {               /*  [80] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3703,7 +3763,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetDispMuxStatus"
 #endif
     },
-    {               /*  [77] */
+    {               /*  [81] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3718,7 +3778,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetDsiModeTiming"
 #endif
     },
-    {               /*  [78] */
+    {               /*  [82] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x202u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3733,7 +3793,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpGetFixedModeTiming"
 #endif
     },
-    {               /*  [79] */
+    {               /*  [83] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3748,7 +3808,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpAuxchCtrl"
 #endif
     },
-    {               /*  [80] */
+    {               /*  [84] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3763,7 +3823,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpAuxchSetSema"
 #endif
     },
-    {               /*  [81] */
+    {               /*  [85] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3778,7 +3838,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpCtrl"
 #endif
     },
-    {               /*  [82] */
+    {               /*  [86] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3793,7 +3853,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetLaneData"
 #endif
     },
-    {               /*  [83] */
+    {               /*  [87] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3808,7 +3868,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetLaneData"
 #endif
     },
-    {               /*  [84] */
+    {               /*  [88] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3823,7 +3883,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetTestpattern"
 #endif
     },
-    {               /*  [85] */
+    {               /*  [89] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3838,7 +3898,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data"
 #endif
     },
-    {               /*  [86] */
+    {               /*  [90] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3853,7 +3913,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data"
 #endif
     },
-    {               /*  [87] */
+    {               /*  [91] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3868,7 +3928,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpMainLinkCtrl"
 #endif
     },
-    {               /*  [88] */
+    {               /*  [92] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3883,7 +3943,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetAudioMuteStream"
 #endif
     },
-    {               /*  [89] */
+    {               /*  [93] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3898,7 +3958,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetAudioMuteStream"
 #endif
     },
-    {               /*  [90] */
+    {               /*  [94] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3913,7 +3973,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpASSRCtrl"
 #endif
     },
-    {               /*  [91] */
+    {               /*  [95] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3928,7 +3988,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpTopologyAllocateDisplayId"
 #endif
     },
-    {               /*  [92] */
+    {               /*  [96] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3943,7 +4003,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpTopologyFreeDisplayId"
 #endif
     },
-    {               /*  [93] */
+    {               /*  [97] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3958,7 +4018,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetLinkConfig"
 #endif
     },
-    {               /*  [94] */
+    {               /*  [98] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3973,7 +4033,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetEDPData"
 #endif
     },
-    {               /*  [95] */
+    {               /*  [99] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -3988,7 +4048,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigStream"
 #endif
     },
-    {               /*  [96] */
+    {               /*  [100] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4003,7 +4063,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetRateGov"
 #endif
     },
-    {               /*  [97] */
+    {               /*  [101] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4018,7 +4078,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetManualDisplayPort"
 #endif
     },
-    {               /*  [98] */
+    {               /*  [102] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4033,7 +4093,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetEcf"
 #endif
     },
-    {               /*  [99] */
+    {               /*  [103] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4048,7 +4108,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSendACT"
 #endif
     },
-    {               /*  [100] */
+    {               /*  [104] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x206u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4063,7 +4123,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetCaps"
 #endif
     },
-    {               /*  [101] */
+    {               /*  [105] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4078,7 +4138,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGenerateFakeInterrupt"
 #endif
     },
-    {               /*  [102] */
+    {               /*  [106] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4093,7 +4153,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigRadScratchReg"
 #endif
     },
-    {               /*  [103] */
+    {               /*  [107] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4108,7 +4168,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigSingleHeadMultiStream"
 #endif
     },
-    {               /*  [104] */
+    {               /*  [108] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4123,7 +4183,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetTriggerSelect"
 #endif
     },
-    {               /*  [105] */
+    {               /*  [109] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4138,13 +4198,13 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetTriggerAll"
 #endif
     },
-    {               /*  [106] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+    {               /*  [110] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdDpGetAuxLogData_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
+        /*flags=*/      0x204u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x731373u,
         /*paramSize=*/  sizeof(NV0073_CTRL_CMD_DP_GET_AUXLOGGER_BUFFER_DATA_PARAMS),
@@ -4153,7 +4213,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetAuxLogData"
 #endif
     },
-    {               /*  [107] */
+    {               /*  [111] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4168,7 +4228,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigIndexedLinkRates"
 #endif
     },
-    {               /*  [108] */
+    {               /*  [112] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4183,7 +4243,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetStereoMSAProperties"
 #endif
     },
-    {               /*  [109] */
+    {               /*  [113] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4198,7 +4258,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigureFec"
 #endif
     },
-    {               /*  [110] */
+    {               /*  [114] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4213,7 +4273,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpConfigMacroPad"
 #endif
     },
-    {               /*  [111] */
+    {               /*  [115] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4228,13 +4288,13 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpAuxchI2cTransferCtrl"
 #endif
     },
-    {               /*  [112] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
+    {               /*  [116] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) dispcmnCtrlCmdDpEnableVrr_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
-        /*flags=*/      0x204u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8204u)
+        /*flags=*/      0x8204u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x73137du,
         /*paramSize=*/  sizeof(NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS),
@@ -4243,7 +4303,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpEnableVrr"
 #endif
     },
-    {               /*  [113] */
+    {               /*  [117] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4258,7 +4318,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetGenericInfoframe"
 #endif
     },
-    {               /*  [114] */
+    {               /*  [118] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4273,7 +4333,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpGetMsaAttributes"
 #endif
     },
-    {               /*  [115] */
+    {               /*  [119] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4288,7 +4348,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpInternalLcdOverdrive"
 #endif
     },
-    {               /*  [116] */
+    {               /*  [120] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4303,7 +4363,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDpSetMSAPropertiesv2"
 #endif
     },
-    {               /*  [117] */
+    {               /*  [121] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4318,7 +4378,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdDfpExecuteInternalLcdOverDrivePolicy"
 #endif
     },
-    {               /*  [118] */
+    {               /*  [122] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4333,7 +4393,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
         /*func=*/       "dispcmnCtrlCmdPsrGetSrPanelInfo"
 #endif
     },
-    {               /*  [119] */
+    {               /*  [123] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -4353,7 +4413,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_DispComm
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_DispCommon = 
 {
-    /*numEntries=*/     120,
+    /*numEntries=*/     124,
     /*pExportEntries=*/ __nvoc_exported_method_def_DispCommon
 };
 
@@ -4413,6 +4473,22 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
     pThis->__dispcmnCtrlCmdSystemGetConnectorTable__ = &dispcmnCtrlCmdSystemGetConnectorTable_IMPL;
 #endif
 
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
+    pThis->__dispcmnCtrlCmdSystemVrrDisplayInfo__ = &dispcmnCtrlCmdSystemVrrDisplayInfo_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+    pThis->__dispcmnCtrlCmdVRRSetRgLineActive__ = &dispcmnCtrlCmdVRRSetRgLineActive_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x600u)
+    pThis->__dispcmnCtrlCmdInternalVRRSetRgLineActive__ = &dispcmnCtrlCmdInternalVRRSetRgLineActive_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x8204u)
+    pThis->__dispcmnCtrlCmdDpEnableVrr__ = &dispcmnCtrlCmdDpEnableVrr_IMPL;
+#endif
+
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x200u)
     pThis->__dispcmnCtrlCmdClearELVBlock__ = &dispcmnCtrlCmdClearELVBlock_IMPL;
 #endif
@@ -4427,10 +4503,6 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
     pThis->__dispcmnCtrlCmdDfpGetLcdGpioPinNum__ = &dispcmnCtrlCmdDfpGetLcdGpioPinNum_IMPL;
-#endif
-
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
-    pThis->__dispcmnCtrlCmdDpEnableVrr__ = &dispcmnCtrlCmdDpEnableVrr_IMPL;
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
@@ -4497,8 +4569,12 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
     pThis->__dispcmnCtrlCmdSystemExecuteAcpiMethod__ = &dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
     pThis->__dispcmnCtrlCmdSystemGetAcpiIdMap__ = &dispcmnCtrlCmdSystemGetAcpiIdMap_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+    pThis->__dispcmnCtrlCmdSystemAcpiSubsystemActivated__ = &dispcmnCtrlCmdSystemAcpiSubsystemActivated_IMPL;
 #endif
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
@@ -4837,7 +4913,7 @@ static void __nvoc_init_funcTable_DispCommon_1(DispCommon *pThis) {
     pThis->__dispcmnCtrlCmdDpSetTriggerAll__ = &dispcmnCtrlCmdDpSetTriggerAll_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x204u)
     pThis->__dispcmnCtrlCmdDpGetAuxLogData__ = &dispcmnCtrlCmdDpGetAuxLogData_IMPL;
 #endif
 

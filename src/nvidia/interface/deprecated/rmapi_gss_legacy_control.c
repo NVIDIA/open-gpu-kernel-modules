@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +44,7 @@ NV_STATUS RmGssLegacyRpcCmd
     NV_STATUS  status         = NV_OK;
     GPU_MASK   gpuMaskRelease = 0;
     void      *pKernelParams  = NULL;
+    NvBool     bApiLockTaken  = NV_FALSE;
 
     NV_ASSERT_OR_RETURN((pArgs->cmd & RM_GSS_LEGACY_MASK),
                         NV_ERR_INVALID_STATE);
@@ -53,18 +54,6 @@ NV_STATUS RmGssLegacyRpcCmd
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
-
-    NV_CHECK_OK_OR_ELSE(status,
-                        LEVEL_ERROR,
-                        serverGetClientUnderLock(&g_resServ, pArgs->hClient, &pClient),
-                        return NV_ERR_INVALID_ARGUMENT);
-
-    NV_CHECK_OK_OR_ELSE(status,
-                        LEVEL_ERROR,
-                        gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu),
-                        return NV_ERR_INVALID_ARGUMENT);
-
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     if (pSecInfo->paramLocation == PARAM_LOCATION_USER)
     {
@@ -84,6 +73,24 @@ NV_STATUS RmGssLegacyRpcCmd
         pKernelParams = (void*)pArgs->params;
     }
 
+    status = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_CLIENT);
+    if (status != NV_OK)
+        goto done;
+
+    bApiLockTaken = NV_TRUE;
+
+    NV_CHECK_OK_OR_GOTO(status,
+                        LEVEL_ERROR,
+                        serverGetClientUnderLock(&g_resServ, pArgs->hClient, &pClient),
+                        done);
+
+    NV_CHECK_OK_OR_GOTO(status,
+                        LEVEL_ERROR,
+                        gpuGetByHandle(pClient, pArgs->hObject, NULL, &pGpu),
+                        done);
+
+    osRefGpuAccessNeeded(pGpu->pOsGpuInfo);
+
     status = rmGpuGroupLockAcquire(pGpu->gpuInstance,
                            GPU_LOCK_GRP_SUBDEVICE,
                            GPUS_LOCK_FLAGS_NONE,
@@ -92,6 +99,7 @@ NV_STATUS RmGssLegacyRpcCmd
     if (status != NV_OK)
         goto done;
 
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     status = pRmApi->Control(pRmApi,
                              pArgs->hClient,
                              pArgs->hObject,
@@ -103,6 +111,16 @@ done:
     if (gpuMaskRelease != 0)
     {
         rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+    }
+
+    if (bApiLockTaken)
+    {
+        if (pGpu != NULL)
+        {
+            osUnrefGpuAccessNeeded(pGpu->pOsGpuInfo);
+        }
+
+        rmapiLockRelease();
     }
 
     if (pSecInfo->paramLocation == PARAM_LOCATION_USER)

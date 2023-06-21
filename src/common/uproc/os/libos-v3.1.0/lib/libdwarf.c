@@ -755,11 +755,10 @@ static void libosDwarfBuildTables(LibosDebugResolver *pThis)
 
     DwarfStream debugLines = {pThis->debugLineStart, 0, pThis->debugLineEnd - pThis->debugLineStart};
     DwarfStream unit;
-    NvU32 currentUnit = 1;
     NvU32 unitSize;
 
     // Run through the .debug_line elf section to match units to the arange table.
-    for (currentUnit = 1;; currentUnit++)
+    while (NV_TRUE)
     {
         if (!DWARF_READ(&debugLines, &unitSize) || unitSize >= 0xfffffff0)
         {
@@ -829,11 +828,10 @@ static void dwarfBuildARangeTable(LibosDebugResolver *pThis)
         // Pad to natural alignment
         unit.offset = (unit.offset + 15) & ~15;
 
-        NvU32 nUnitTupples;
         NvU64 combAddress = 0;
         NvU64 combLength  = 0;
 
-        for (nUnitTupples = 0;; nUnitTupples++)
+        while (NV_TRUE)
         {
             NvU64 address;
             NvU64 length;
@@ -918,7 +916,7 @@ static void dwarfSetARangeTableLineUnit(LibosDebugResolver *pThis, DwarfStream u
     }
 
     // Walk forwards setting the line unit info for all entries with the same arange unit.
-    for (; (foundUnit == pThis->arangeTable[i].arangeUnit); i++)
+    for (; foundUnit == pThis->arangeTable[i].arangeUnit; i++)
     {
         pThis->arangeTable[i].lineUnitBuffer = unit.buffer;
         pThis->arangeTable[i].lineUnitSize   = unit.size;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,11 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_SM_DEBUGGER_SESSION_H_PRIVATE_ACCESS_ALLOWED
+
+// FIXME XXX
+#define NVOC_KERNEL_GRAPHICS_OBJECT_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/os/os.h"
 #include "kernel/core/locks.h"
@@ -126,7 +131,8 @@ _ksmdbgssnInitClient
                                 NV01_NULL_OBJECT,
                                 NV01_NULL_OBJECT,
                                 NV01_ROOT,
-                                &pKernelSMDebuggerSession->hInternalClient),
+                                &pKernelSMDebuggerSession->hInternalClient,
+                                sizeof(pKernelSMDebuggerSession->hInternalClient)),
         failed);
 
     // Allocate a device.
@@ -143,7 +149,8 @@ _ksmdbgssnInitClient
                                 pKernelSMDebuggerSession->hInternalClient,
                                 pKernelSMDebuggerSession->hInternalDevice,
                                 NV01_DEVICE_0,
-                                &nv0080AllocParams),
+                                &nv0080AllocParams,
+                                sizeof(nv0080AllocParams)),
         failed);
 
     // Allocate a subdevice.
@@ -159,7 +166,8 @@ _ksmdbgssnInitClient
                                 pKernelSMDebuggerSession->hInternalDevice,
                                 pKernelSMDebuggerSession->hInternalSubdevice,
                                 NV20_SUBDEVICE_0,
-                                &nv2080AllocParams),
+                                &nv2080AllocParams,
+                                sizeof(nv2080AllocParams)),
         failed);
 
     if (bMIGInUse)
@@ -183,7 +191,8 @@ _ksmdbgssnInitClient
                                     pKernelSMDebuggerSession->hInternalSubdevice,
                                     pKernelSMDebuggerSession->hInternalSubscription,
                                     AMPERE_SMC_PARTITION_REF,
-                                    &nvC637AllocParams),
+                                    &nvC637AllocParams,
+                                    sizeof(nvC637AllocParams)),
             failed);
     }
 
@@ -219,6 +228,7 @@ ksmdbgssnConstruct_IMPL
     NvHandle                  hSubdevice;
     NV_STATUS                 status = NV_OK;
     RsClient                 *pAppClient;
+    Subdevice                *pSubdevice;
     RsResourceRef            *pGrResourceRef;
     RsResourceRef            *pParentRef;
 
@@ -306,8 +316,11 @@ ksmdbgssnConstruct_IMPL
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu == GPU_RES_GET_GPU(pKernelSMDebuggerSession->pObject),
                            NV_ERR_INVALID_ARGUMENT);
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        CliGetSubDeviceHandleFromGpu(pAppClient->hClient, pGpu, &hSubdevice));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, subdeviceGetByGpu(pAppClient, pGpu, &pSubdevice));
+
+    GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
+
+    hSubdevice = RES_GET_HANDLE(pSubdevice);
 
     // Initialize the object info
     pKernelSMDebuggerSession->hChannelClient  = pAppClient->hClient;

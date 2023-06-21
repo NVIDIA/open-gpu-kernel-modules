@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -427,4 +427,23 @@ kgmmuClearNonReplayableFaultIntr_TU102
 {
     Intr *pIntr = GPU_GET_INTR(pGpu);
     intrClearLeafVector_HAL(pGpu, pIntr, NV_PFB_PRI_MMU_INT_VECTOR_FAULT_NOTIFY_NON_REPLAYABLE, pThreadState);
+}
+
+/*!
+ * @brief Clear replayable fault interrupt.
+ *
+ * @param[in] pGpu              OBJGPU pointer
+ * @param[in] pKernelGmmu       KernelGmmu pointer
+ * @param[in] pThreadState      THREAD_STATE_NODE pointer
+ */
+void
+kgmmuClearReplayableFaultIntr_TU102
+(
+    OBJGPU            *pGpu,
+    KernelGmmu        *pKernelGmmu,
+    THREAD_STATE_NODE *pThreadState
+)
+{
+    Intr *pIntr = GPU_GET_INTR(pGpu);
+    intrClearLeafVector_HAL(pGpu, pIntr, NV_PFB_PRI_MMU_INT_VECTOR_FAULT_NOTIFY_REPLAYABLE, pThreadState);
 }

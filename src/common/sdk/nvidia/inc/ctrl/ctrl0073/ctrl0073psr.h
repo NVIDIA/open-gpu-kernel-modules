@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0073/ctrl0073psr.finn
+// Source file:      ctrl/ctrl0073/ctrl0073psr.finn
 //
 
 #include "ctrl/ctrl0073/ctrl0073base.h"

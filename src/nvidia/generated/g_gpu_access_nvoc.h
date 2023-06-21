@@ -246,6 +246,8 @@ void regCheckAndLogReadFailure(RegisterAccess *, NvU32 addr, NvU32 mask, NvU32 v
 
 #define GPU_VREG_IDX_RD_DRF(g,d,r,i,f)           (((GPU_VREG_RD32(g, NV ## d ## r(i)))>>GPU_DRF_SHIFT(NV ## d ## r ## f))&GPU_DRF_MASK(NV ## d ## r ## f))
 #define GPU_VREG_FLD_IDX_WR_DRF_DEF(g,d,r,i,f,c) GPU_VREG_WR32(g, NV##d##r(i),(GPU_VREG_RD32(g,NV##d##r(i))&~(GPU_DRF_MASK(NV##d##r##f)<<GPU_DRF_SHIFT(NV##d##r##f)))|GPU_DRF_DEF(d,r,f,c))
+#define GPU_VREG_FLD_IDX_WR_DRF_NUM(g,d,r,i,f,n) GPU_VREG_WR32(g, NV##d##r(i),(GPU_VREG_RD32(g,NV##d##r(i))&~(GPU_DRF_MASK(NV##d##r##f)<<GPU_DRF_SHIFT(NV##d##r##f)))|GPU_DRF_NUM(d,r,f,n))
+
 
 #define GPU_REG_RD32_EX(g,a,t)    REG_INST_RD32_EX(g,GPU,0,a,t)
 #define GPU_REG_WR32_EX(g,a,v,t)  REG_INST_WR32_EX(g,GPU,0,a,v,t)

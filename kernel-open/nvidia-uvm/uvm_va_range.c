@@ -31,6 +31,7 @@
 #include "uvm_kvmalloc.h"
 #include "uvm_map_external.h"
 #include "uvm_perf_thrashing.h"
+#include "uvm_conf_computing.h"
 #include "nv_uvm_interface.h"
 
 static struct kmem_cache *g_uvm_va_range_cache __read_mostly;
@@ -723,7 +724,10 @@ static void va_range_remove_gpu_va_space_semaphore_pool(uvm_va_range_t *va_range
 {
     UVM_ASSERT(va_range->type == UVM_VA_RANGE_TYPE_SEMAPHORE_POOL);
 
-    uvm_mem_unmap_gpu_user(va_range->semaphore_pool.mem, gpu);
+    if (uvm_conf_computing_mode_enabled(gpu) && (va_range->semaphore_pool.mem->dma_owner == gpu))
+        uvm_va_range_destroy(va_range, NULL);
+    else
+        uvm_mem_unmap_gpu_user(va_range->semaphore_pool.mem, gpu);
 }
 
 void uvm_va_range_remove_gpu_va_space(uvm_va_range_t *va_range,
@@ -1190,13 +1194,6 @@ error:
     uvm_va_range_destroy(new, NULL);
     return status;
 
-}
-
-static inline uvm_va_range_t *uvm_va_range_container(uvm_range_tree_node_t *node)
-{
-    if (!node)
-        return NULL;
-    return container_of(node, uvm_va_range_t, node);
 }
 
 uvm_va_range_t *uvm_va_range_find(uvm_va_space_t *va_space, NvU64 addr)

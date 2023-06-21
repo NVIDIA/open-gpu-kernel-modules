@@ -25,6 +25,7 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/nvdec/kernel_nvdec_ctx.h"
+#include "kernel/gpu/device/device.h"
 
 #include "class/cla0b0.h" // NVA0B0_VIDEO_DECODER
 #include "class/clb0b0.h" // NVB0B0_VIDEO_DECODER
@@ -97,10 +98,19 @@ nvdecGetEngineDescFromAllocParams
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
         RM_ENGINE_TYPE rmEngineType;
+        RsResourceRef *pDeviceRef = NULL;
 
         NV_ASSERT_OK(
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                            pCallContext->pClient->hClient, &ref));
+            refFindAncestorOfType(pCallContext->pResourceRef,
+                                  classId(Device), &pDeviceRef));
+
+        if (pDeviceRef == NULL)
+            return ENG_INVALID;
+
+        NV_ASSERT_OK(
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                            dynamicCast(pDeviceRef->pResource, Device),
+                                            &ref));
 
         NV_ASSERT_OK(
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref,

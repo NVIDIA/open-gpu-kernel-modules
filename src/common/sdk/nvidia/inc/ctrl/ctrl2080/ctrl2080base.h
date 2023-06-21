@@ -25,7 +25,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080base.finn
+// Source file:      ctrl/ctrl2080/ctrl2080base.finn
 //
 
 #include "ctrl/ctrlxxxx.h"
@@ -92,6 +92,7 @@
 #define NV2080_CTRL_GRMGR                         (0x38)
 #define NV2080_CTRL_UCODE_FUZZER                  (0x39)
 #define NV2080_CTRL_DMABUF                        (0x3A)
+#define NV2080_CTRL_BIF                           (0x3B)
 
 // per-OS categories start at highest category and work backwards
 #define NV2080_CTRL_OS_WINDOWS                    (0x3F)

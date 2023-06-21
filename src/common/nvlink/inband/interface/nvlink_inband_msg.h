@@ -76,6 +76,12 @@ typedef struct
 
 /* Add more caps as need in the future */
 
+#define NVLINK_INBAND_BW_MODE_FULL     0
+#define NVLINK_INBAND_BW_MODE_OFF      1
+#define NVLINK_INBAND_BW_MODE_MIN      2
+#define NVLINK_INBAND_BW_MODE_HALF     3
+#define NVLINK_INBAND_BW_MODE_3QUARTER 4
+
 typedef struct
 {
     NvU64  pciInfo;              /* Encoded as Domain(63:32):Bus(15:8):Device(0:7). (debug only) */
@@ -85,7 +91,8 @@ typedef struct
     NvU64  enabledLinkMask;      /* GPU's currently enabled NvLink mask info. (debug only) */
 
     NvU32  gpuCapMask;           /* GPU capabilities, one of NVLINK_INBAND_GPU_PROBE_CAPS */
-    NvU8   reserved[32];         /* For future use. Must be initialized to zero */
+    NvU8   bwMode;               /* NVLink bandwidth mode, one of NVLINK_INBAND_BW_MODE */
+    NvU8   reserved[31];         /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_req_t;
 
 typedef struct
@@ -96,6 +103,9 @@ typedef struct
 
 #define NVLINK_INBAND_FM_CAPS_MC_TEAM_SETUP_V1   NVBIT64(0)
 #define NVLINK_INBAND_FM_CAPS_MC_TEAM_RELEASE_V1 NVBIT64(1)
+#define NVLINK_INBAND_FM_CAPS_BW_MODE_MIN        NVBIT64(2)
+#define NVLINK_INBAND_FM_CAPS_BW_MODE_HALF       NVBIT64(3)
+#define NVLINK_INBAND_FM_CAPS_BW_MODE_3QUARTER   NVBIT64(4)
 
 typedef struct
 {
@@ -108,7 +118,8 @@ typedef struct
     NvU64  gpaAddressRange;       /* GPU GPA address range */
     NvU64  flaAddress;            /* FLA starting address for the GPU */
     NvU64  flaAddressRange;       /* GPU FLA address range */
-    NvU8   reserved[32];          /* For future use. Must be initialized to zero */
+    NvU32  linkMaskToBeReduced;   /* bit mask of unused NVLink ports for P2P */
+    NvU8   reserved[28];          /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_rsp_t;
 
 typedef struct

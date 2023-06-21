@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -196,12 +196,11 @@ intrGetPendingNonStall_TU102
     THREAD_STATE_NODE   *pThreadState
 )
 {
-    KernelFifo          *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
-    INTR_TABLE_ENTRY    *pIntrTable;
-    NvU32                intrTableSz;
-    NvU32                i, j, k;
-    NvU32                pending;
-    NvU32                intrVector;
+    KernelFifo     *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    InterruptTable *pIntrTable;
+    NvU32           i, j;
+    NvU32           pending;
+    NvU32           intrVector;
 
     NV_ASSERT_OR_RETURN(pEngines != NULL, NV_ERR_INVALID_ARGUMENT);
 
@@ -227,7 +226,7 @@ intrGetPendingNonStall_TU102
         return vgpuIsNonStallPending(pGpu, pEngines);
     }
 
-    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz));
+    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable));
 
     FOR_EACH_INDEX_IN_MASK(64, i, intrGetIntrTopNonStallMask_HAL(pGpu, pIntr))
     {
@@ -242,6 +241,7 @@ intrGetPendingNonStall_TU102
 
         for (j = NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(i); j <= NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(i); j++)
         {
+            InterruptTableIter iter;
             NvU32 intr = intrReadRegLeaf_HAL(pGpu, pIntr, j, pThreadState) &
                          intrReadRegLeafEnSet_HAL(pGpu, pIntr, j, pThreadState);
             if (intr == 0)
@@ -249,9 +249,10 @@ intrGetPendingNonStall_TU102
                 continue;
             }
 
-            for (k = 0; k < intrTableSz; k++)
+            for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
             {
-                NvU32 intrVector = pIntrTable[k].intrVectorNonStall;
+                INTR_TABLE_ENTRY *pEntry = iter.pValue;
+                NvU32 intrVector = pEntry->intrVectorNonStall;
 
                 if (intrVector == NV_INTR_VECTOR_INVALID)
                 {
@@ -267,7 +268,7 @@ intrGetPendingNonStall_TU102
                 }
                 if (intr & NVBIT(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(intrVector)))
                 {
-                    bitVectorSet(pEngines, pIntrTable[k].mcEngine);
+                    bitVectorSet(pEngines, pEntry->mcEngine);
                 }
             }
         }
@@ -318,23 +319,21 @@ _intrServiceNonStallLeaf_TU102
     THREAD_STATE_NODE   *pThreadState
 )
 {
-    INTR_TABLE_ENTRY *pIntrTable;
-    NvU32                intrTableSz;
-    NV_STATUS            status = NV_OK;
-    NV_STATUS            tmpStatus;
-    NvU32                i;
-    NvU16                mcEngineIdx;
+    InterruptTable    *pIntrTable;
+    NV_STATUS          status = NV_OK;
+    NV_STATUS          tmpStatus;
+    InterruptTableIter iter;
+    NvU16              mcEngineIdx;
 
     // Don't clear the bitvector pEngines since caller accumulates
+    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable));
 
-    NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable, &intrTableSz));
-
-    for (i = 0; i < intrTableSz; i++)
+    for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
     {
-        NvU32 intrVector;
-        NvU32 intrPending;
+        INTR_TABLE_ENTRY *pEntry     = iter.pValue;
+        NvU32             intrVector = pEntry->intrVectorNonStall;
+        NvU32             intrPending;
 
-        intrVector = pIntrTable[i].intrVectorNonStall;
         if (intrVector == NV_INTR_VECTOR_INVALID)
         {
             // This engine does not have a valid nonstall interrupt vector
@@ -354,7 +353,7 @@ _intrServiceNonStallLeaf_TU102
             continue;
         }
 
-        mcEngineIdx = pIntrTable[i].mcEngine;
+        mcEngineIdx = pEntry->mcEngine;
         bitVectorSet(pEngines, mcEngineIdx);
 
         //

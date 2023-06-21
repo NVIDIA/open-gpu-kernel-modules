@@ -169,8 +169,6 @@ static void HsIoctlSetCursorImage(
     NVHsChannelEvoRec *pHsChannel,
     NVSurfaceEvoRec *pSurfaceEvo)
 {
-    NVDevEvoPtr pDevEvo = pHsChannel->pDispEvo->pDevEvo;
-
     /*
      * Increment the refcnt of the new surface, and
      * decrement the refcnt of the old surface.
@@ -180,10 +178,10 @@ static void HsIoctlSetCursorImage(
      */
 
     HsChangeSurfaceFlipRefCount(
-        pDevEvo, pSurfaceEvo, TRUE /* increase */);
+        pSurfaceEvo, TRUE /* increase */);
 
     HsChangeSurfaceFlipRefCount(
-        pDevEvo, pHsChannel->config.cursor.pSurfaceEvo, FALSE /* increase */);
+        pHsChannel->config.cursor.pSurfaceEvo, FALSE /* increase */);
 
     pHsChannel->config.cursor.pSurfaceEvo = pSurfaceEvo;
 

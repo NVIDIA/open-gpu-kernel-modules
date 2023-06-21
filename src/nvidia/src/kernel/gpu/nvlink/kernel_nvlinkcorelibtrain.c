@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 
 #include "os/os.h"
 #include "core/hal.h"
@@ -1030,7 +1032,7 @@ knvlinkCoreShutdownDeviceLinks_IMPL
     NvU32        linkId;
 
     // Skip link shutdown where fabric manager is present, for nvlink version bellow 4.0
-    if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_40 && 
+    if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_40 &&
          pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED)) ||
         (pKernelNvlink->pNvlinkDev == NULL))
     {
@@ -1049,7 +1051,7 @@ knvlinkCoreShutdownDeviceLinks_IMPL
         return NV_OK;
     }
 
-    if (!bForceShutdown && pKernelNvlink->getProperty(pNvlink, PDB_PROP_KNVLINK_MINION_GFW_BOOT))
+    if (!bForceShutdown && pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_MINION_GFW_BOOT))
     {
         NV_PRINTF(LEVEL_INFO,
                 "GFW boot is enabled. Link shutdown is not required, skipping\n");
@@ -1068,7 +1070,7 @@ knvlinkCoreShutdownDeviceLinks_IMPL
             {
                 OBJGPU* pRemoteGpu = gpumgrGetGpuFromBusInfo(
                     pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.domain,
-                    pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.bus, 
+                    pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.bus,
                     pKernelNvlink->nvlinkLinks[linkId].remoteEndInfo.device);
                 if (API_GPU_IN_RESET_SANITY_CHECK(pRemoteGpu))
                 {
@@ -1129,7 +1131,7 @@ knvlinkCoreResetDeviceLinks_IMPL
     NvU32        linkId;
 
     // Skip link reset where fabric manager is present, for nvlink version bellow 4.0
-    if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_40 && 
+    if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_40 &&
          pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED)) ||
         (pKernelNvlink->pNvlinkDev == NULL))
     {
@@ -1341,6 +1343,12 @@ knvlinkFloorSweep_IMPL
                     pKernelNvlink->nvlinkLinks[linkId].core_link, &conn_info, 0);
     }
     FOR_EACH_INDEX_IN_MASK_END;
+
+    //
+    // This call must be before the floorswept to cache the NVLink bridge
+    // information in physical RM.
+    //
+    knvlinkDirectConnectCheck_HAL(pGpu, pKernelNvlink);
 
     // floorsweeping in corelib will update connection info that RM qill query below
     (void)nvlink_lib_powerdown_floorswept_links_to_off(pKernelNvlink->pNvlinkDev);
@@ -2434,7 +2442,7 @@ _knvlinkPrintTopologySummary
     }
 
     NV_PRINTF(LEVEL_INFO, "GPU%02u cached topology:\n", gpuGetInstance(pGpu));
- 
+
     NV2080_CTRL_NVLINK_HSHUB_GET_SYSMEM_NVLINK_MASK_PARAMS params;
     portMemSet(&params, 0, sizeof(params));
 

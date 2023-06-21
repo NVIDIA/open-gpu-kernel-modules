@@ -83,8 +83,8 @@ _kbusGetHostCaps(OBJGPU *pGpu, NvU8 *pHostCaps)
 static NV_STATUS
 _getAspmL1FlagsSendRpc
 (
-    OBJGPU *pGpu, 
-    NvBool *bCyaMaskL1, 
+    OBJGPU *pGpu,
+    NvBool *bCyaMaskL1,
     NvBool *bEnableAspmDtL1
 )
 {

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -56,21 +56,29 @@ NvU32 uvm_hal_volta_fault_buffer_read_get(uvm_parent_gpu_t *parent_gpu)
 void uvm_hal_volta_fault_buffer_write_get(uvm_parent_gpu_t *parent_gpu, NvU32 index)
 {
     NvU32 get = HWVALUE(_PFB_PRI_MMU, FAULT_BUFFER_GET, PTR, index);
+
     UVM_ASSERT(index < parent_gpu->fault_buffer_info.replayable.max_faults);
 
     // If HW has detected an overflow condition (PUT == GET - 1 and a fault has
-    // arrived, which is dropped due to no more space in the fault buffer), it will
-    // not deliver any more faults into the buffer until the overflow condition has
-    // been cleared. The overflow condition is cleared by updating the GET index to
-    // indicate space in the buffer and writing 1 to the OVERFLOW bit in GET.
-    // Unfortunately, this can not be done in the same write because it can collide
-    // with an arriving fault on the same cycle, resulting in the overflow condition
-    // being instantly reasserted.
-    // However, if the index is updated first and then the OVERFLOW bit is cleared
-    // such a collision will not cause a reassertion of the overflow condition.
+    // arrived, which is dropped due to no more space in the fault buffer), it
+    // will not deliver any more faults into the buffer until the overflow
+    // condition has been cleared. The overflow condition is cleared by
+    // updating the GET index to indicate space in the buffer and writing 1 to
+    // the OVERFLOW bit in GET. Unfortunately, this can not be done in the same
+    // write because it can collide with an arriving fault on the same cycle,
+    // resulting in the overflow condition being instantly reasserted. However,
+    // if the index is updated first and then the OVERFLOW bit is cleared such
+    // a collision will not cause a reassertion of the overflow condition.
     UVM_GPU_WRITE_ONCE(*parent_gpu->fault_buffer_info.rm_info.replayable.pFaultBufferGet, get);
 
-    // Clear the getptr_corrupted/overflow bits.
+    // Clearing GETPTR_CORRUPTED and OVERFLOW is not needed when GSP-RM owns
+    // the HW replayable fault buffer, because UVM does not write to the actual
+    // GET register; GSP-RM is responsible for clearing the bits in the real
+    // GET register.
+    if (!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu))
+        return;
+
+    // Clear the GETPTR_CORRUPTED and OVERFLOW bits.
     get |= HWCONST(_PFB_PRI_MMU, FAULT_BUFFER_GET, GETPTR_CORRUPTED, CLEAR) |
            HWCONST(_PFB_PRI_MMU, FAULT_BUFFER_GET, OVERFLOW, CLEAR);
     UVM_GPU_WRITE_ONCE(*parent_gpu->fault_buffer_info.rm_info.replayable.pFaultBufferGet, get);
@@ -144,7 +152,7 @@ static bool is_fault_address_virtual(const NvU32 *fault_entry)
     return UVM_FAULT_ACCESS_TYPE_COUNT;
 }
 
-static uvm_fault_type_t get_fault_type(const NvU32 *fault_entry)
+uvm_fault_type_t uvm_hal_volta_fault_buffer_get_fault_type(const NvU32 *fault_entry)
 {
     NvU32 hw_fault_type_value = READ_HWVALUE_MW(fault_entry, C369, BUF_ENTRY, FAULT_TYPE);
 
@@ -242,12 +250,9 @@ static void parse_fault_entry_common(uvm_parent_gpu_t *parent_gpu,
                                      NvU32 *fault_entry,
                                      uvm_fault_buffer_entry_t *buffer_entry)
 {
-    NV_STATUS status;
     NvU64 addr_hi, addr_lo;
     NvU64 timestamp_hi, timestamp_lo;
     bool replayable_fault_enabled;
-
-    status = NV_OK;
 
     addr_hi = READ_HWVALUE_MW(fault_entry, C369, BUF_ENTRY, INST_HI);
     addr_lo = READ_HWVALUE_MW(fault_entry, C369, BUF_ENTRY, INST_LO);
@@ -267,7 +272,7 @@ static void parse_fault_entry_common(uvm_parent_gpu_t *parent_gpu,
     timestamp_lo = READ_HWVALUE_MW(fault_entry, C369, BUF_ENTRY, TIMESTAMP_LO);
     buffer_entry->timestamp = timestamp_lo + (timestamp_hi << HWSIZE_MW(C369, BUF_ENTRY, TIMESTAMP_LO));
 
-    buffer_entry->fault_type = get_fault_type(fault_entry);
+    buffer_entry->fault_type = parent_gpu->fault_buffer_hal->get_fault_type(fault_entry);
 
     buffer_entry->fault_access_type = get_fault_access_type(fault_entry);
 
@@ -325,12 +330,14 @@ void uvm_hal_volta_fault_buffer_parse_entry(uvm_parent_gpu_t *parent_gpu,
     NvU32 *fault_entry;
     BUILD_BUG_ON(NVC369_BUF_SIZE > UVM_GPU_MMU_MAX_FAULT_PACKET_SIZE);
 
-    fault_entry = get_fault_buffer_entry(parent_gpu, index);
-
     // Valid bit must be set before this function is called
     UVM_ASSERT(parent_gpu->fault_buffer_hal->entry_is_valid(parent_gpu, index));
 
+    fault_entry = get_fault_buffer_entry(parent_gpu, index);
+
     parse_fault_entry_common(parent_gpu, fault_entry, buffer_entry);
+
+    UVM_ASSERT(buffer_entry->is_replayable);
 
     // Automatically clear valid bit for the entry in the fault buffer
     parent_gpu->fault_buffer_hal->entry_clear_valid(parent_gpu, index);
@@ -344,4 +351,5 @@ void uvm_hal_volta_fault_buffer_parse_non_replayable_entry(uvm_parent_gpu_t *par
 
     // No need to clear the valid bit since the fault buffer for non-replayable
     // faults is owned by RM and we are just parsing a copy of the packet
+    UVM_ASSERT(!buffer_entry->is_replayable);
 }

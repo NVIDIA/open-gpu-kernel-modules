@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2018 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -161,9 +161,9 @@ void *multimapInsertItemNew_IMPL
 void *multimapInsertItemValue_IMPL
 (
     MultimapBase *pBase,
-    NvU64 submapKey,
-    NvU64 itemKey,
-    void *pValue
+    NvU64         submapKey,
+    NvU64         itemKey,
+    const void   *pValue
 )
 {
     void *pLeaf;
@@ -299,7 +299,7 @@ void *multimapFirstItem_IMPL(MultimapBase *pBase)
         void *pItem = mapFindGEQ_IMPL(&pSubmap->base, 0);
         if (NULL != pItem)
             return pItem;
-            
+
         pSubmap = mapNext_IMPL(&pBase->map.base, pSubmap);
     }
 
@@ -317,7 +317,7 @@ void *multimapLastItem_IMPL(MultimapBase *pBase)
         void *pItem = mapFindLEQ_IMPL(&pSubmap->base, NV_U64_MAX);
         if (NULL != pItem)
             return pItem;
-            
+
         pSubmap = mapPrev_IMPL(&pBase->map.base, pSubmap);
     }
 
@@ -335,7 +335,7 @@ MultimapIterBase multimapItemIterRange_IMPL
 
     portMemSet(&it, 0, sizeof(it));
     it.pMultimap = pBase;
-    
+
     NV_ASSERT_OR_RETURN(NULL != pBase, it);
 
     if (pBase->itemCount == 0 || pFirst == NULL || pLast == NULL)

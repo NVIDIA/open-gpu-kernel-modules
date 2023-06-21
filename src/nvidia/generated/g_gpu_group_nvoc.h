@@ -85,19 +85,19 @@ struct OBJGPU;
         bOrigBcState = gpumgrGetBcEnabledStatus(pGpu);                  \
         gpumgrSetBcEnabledStatus(pGpu, NV_FALSE);                       \
 
-#define FOR_EACH_GPU_IN_MASK_UC_END                                     \
-    }                                                                   \
-    FOR_EACH_INDEX_IN_MASK_END                                          \
-    if (NULL != pGpu) /* break */                                       \
-    {                                                                   \
-        gpumgrSetBcEnabledStatus(pGpu, bOrigBcState);                   \
-        pGpu = NULL;                                                    \
-    }                                                                   \
-    if (pEntryGpu != NULL)                                              \
-    {                                                                   \
-        NV_ASSERT(bEntryBcState == gpumgrGetBcEnabledStatus(pEntryGpu));\
-        pGpu = pEntryGpu;                                               \
-    }                                                                   \
+#define FOR_EACH_GPU_IN_MASK_UC_END                                      \
+    }                                                                    \
+    FOR_EACH_INDEX_IN_MASK_END                                           \
+    if (NULL != pGpu) /* break */                                        \
+    {                                                                    \
+        gpumgrSetBcEnabledStatus(pGpu, bOrigBcState);                    \
+        pGpu = NULL;                                                     \
+    }                                                                    \
+    if (pEntryGpu != NULL)                                               \
+    {                                                                    \
+        NV_ASSERT(bEntryBcState == gpumgrGetBcEnabledStatus(pEntryGpu)); \
+        pGpu = pEntryGpu;                                                \
+    }                                                                    \
 }
 
 typedef struct _def_vid_link_node

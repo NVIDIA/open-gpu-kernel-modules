@@ -56,7 +56,7 @@ binapiprivConstruct_IMPL
     return NV_OK;
 }
 
-NV_STATUS 
+NV_STATUS
 binapiControl_IMPL
 (
     BinaryApi    *pResource,
@@ -93,9 +93,9 @@ binapiControl_IMPL
         rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
     }
     return status;
-} 
+}
 
-NV_STATUS 
+NV_STATUS
 binapiprivControl_IMPL
 (
     BinaryApiPrivileged *pResource,
@@ -106,15 +106,15 @@ binapiprivControl_IMPL
     // check if CMD is NULL, return early
     if (RMCTRL_IS_NULL_CMD(pParams->cmd))
         return NV_OK;
-    
+
     // Add check if privileged client
     if (pParams->secInfo.privLevel >= RS_PRIV_LEVEL_USER_ROOT)
     {
         return binapiControl_IMPL(staticCast(pResource, BinaryApi), pCallContext, pParams);
     }
-    else 
+    else
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;
     }
-} 
+}
 

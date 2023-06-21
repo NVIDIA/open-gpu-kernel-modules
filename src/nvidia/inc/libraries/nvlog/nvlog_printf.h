@@ -60,12 +60,12 @@ extern "C" {
  *
  * @param tag    - An identifier to help with offline filtering. Doesn't need to
  *                 be defined anywhere.
- * @param route  - 8bit mask of buffers the print will be routed to. 
+ * @param route  - 8bit mask of buffers the print will be routed to.
  *                 Use NVLOG_BUFFER_XXX constants
  * @param level  - Level at which to print. Calls with level < NVLOG_LEVEL will
  *                 be compiled out.
  * @param format - printf-like format string
- * @param ...    - printf arguments 
+ * @param ...    - printf arguments
  */
 #define NVLOG_PRINTF(tag, route, level, format, ...) _NVLOG_PRINTF(tag, route, level, format, __VA_ARGS__)
 

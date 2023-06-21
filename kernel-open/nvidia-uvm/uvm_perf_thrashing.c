@@ -22,6 +22,7 @@
 *******************************************************************************/
 
 #include "uvm_api.h"
+#include "uvm_conf_computing.h"
 #include "uvm_perf_events.h"
 #include "uvm_perf_module.h"
 #include "uvm_perf_thrashing.h"
@@ -262,6 +263,7 @@ static unsigned uvm_perf_thrashing_pin_threshold = UVM_PERF_THRASHING_PIN_THRESH
 // detection/prevention parameters
 #define UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT 500
 #define UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT_EMULATION (UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT * 800)
+#define UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT_HCC (UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT * 10)
 
 // Lapse of time in microseconds that determines if two consecutive events on
 // the same page can be considered thrashing
@@ -532,18 +534,20 @@ static void gpu_thrashing_stats_destroy(uvm_gpu_t *gpu)
 
 // Get the thrashing detection struct for the given VA space if it exists
 //
-// VA space lock needs to be held
+// The caller must ensure that the va_space cannot be deleted, for the
+// duration of this call. Holding either the va_block or va_space lock will do
+// that.
 static va_space_thrashing_info_t *va_space_thrashing_info_get_or_null(uvm_va_space_t *va_space)
 {
-    // TODO: Bug 3898454: check locking requirement for UVM-HMM.
-
     return uvm_perf_module_type_data(va_space->perf_modules_data, UVM_PERF_MODULE_TYPE_THRASHING);
 }
 
 // Get the thrashing detection struct for the given VA space. It asserts that
 // the information has been previously created.
 //
-// VA space lock needs to be held
+// The caller must ensure that the va_space cannot be deleted, for the
+// duration of this call. Holding either the va_block or va_space lock will do
+// that.
 static va_space_thrashing_info_t *va_space_thrashing_info_get(uvm_va_space_t *va_space)
 {
     va_space_thrashing_info_t *va_space_thrashing = va_space_thrashing_info_get_or_null(va_space);
@@ -1783,22 +1787,6 @@ const uvm_page_mask_t *uvm_perf_thrashing_get_thrashing_pages(uvm_va_block_t *va
     return &block_thrashing->thrashing_pages;
 }
 
-bool uvm_perf_thrashing_is_block_thrashing(uvm_va_block_t *va_block)
-{
-    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
-    va_space_thrashing_info_t *va_space_thrashing = va_space_thrashing_info_get(va_space);
-    block_thrashing_info_t *block_thrashing = NULL;
-
-    if (!va_space_thrashing->params.enable)
-        return false;
-
-    block_thrashing = thrashing_info_get(va_block);
-    if (!block_thrashing)
-        return false;
-
-    return block_thrashing->num_thrashing_pages > 0;
-}
-
 #define TIMER_GRANULARITY_NS 20000ULL
 static void thrashing_unpin_pages(struct work_struct *work)
 {
@@ -1854,6 +1842,8 @@ static void thrashing_unpin_pages(struct work_struct *work)
             break;
 
         va_block = pinned_page->va_block;
+        if (uvm_va_block_is_hmm(va_block))
+            uvm_hmm_migrate_begin_wait(va_block);
         uvm_mutex_lock(&va_block->lock);
 
         // Only operate if the pinned page's tracking state isn't already
@@ -1876,6 +1866,8 @@ static void thrashing_unpin_pages(struct work_struct *work)
         }
 
         uvm_mutex_unlock(&va_block->lock);
+        if (uvm_va_block_is_hmm(va_block))
+            uvm_hmm_migrate_finish(va_block);
         kmem_cache_free(g_pinned_page_cache, pinned_page);
     }
 
@@ -1947,12 +1939,24 @@ void uvm_perf_thrashing_unload(uvm_va_space_t *va_space)
 NV_STATUS uvm_perf_thrashing_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
 {
     // If a simulated GPU is registered, re-initialize thrashing parameters in
-    // case they need to be adjusted
-    if (g_uvm_global.num_simulated_devices > 0) {
+    // case they need to be adjusted.
+    bool params_need_readjusting = g_uvm_global.num_simulated_devices > 0;
+
+    // Likewise, when the Confidential Computing feature is enabled, the DMA
+    // path is slower due to cryptographic operations & other associated
+    // overhead. Enforce a larger window to allow the thrashing mitigation
+    // mechanisms to work properly.
+    params_need_readjusting = params_need_readjusting || uvm_conf_computing_mode_enabled(gpu);
+
+    if (params_need_readjusting) {
         va_space_thrashing_info_t *va_space_thrashing = va_space_thrashing_info_get(va_space);
 
-        if (!va_space_thrashing->params.test_overrides)
+        if (!va_space_thrashing->params.test_overrides) {
+            if (uvm_conf_computing_mode_enabled(gpu))
+                g_uvm_perf_thrashing_lapse_usec = UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT_HCC;
+
             va_space_thrashing_info_init_params(va_space_thrashing);
+        }
     }
 
     return NV_OK;

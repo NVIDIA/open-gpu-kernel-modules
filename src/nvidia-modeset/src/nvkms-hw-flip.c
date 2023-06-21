@@ -935,6 +935,8 @@ static NvBool UpdateCursorLayerFlipEvoHwState(
     const struct NvKmsPerOpenDev *pOpenDev,
     const NVDevEvoRec *pDevEvo,
     const struct NvKmsFlipCommonParams *pParams,
+    const NVHwModeTimingsEvo *pTimings,
+    const NvU8 tilePosition,
     NVFlipEvoHwState *pFlipState)
 {
     if (pParams->cursor.imageSpecified) {
@@ -952,7 +954,8 @@ static NvBool UpdateCursorLayerFlipEvoHwState(
     }
 
     if (pParams->cursor.positionSpecified) {
-        pFlipState->cursor.x = pParams->cursor.position.x;
+        pFlipState->cursor.x = (pParams->cursor.position.x -
+                                (pTimings->viewPort.in.width * tilePosition));
         pFlipState->cursor.y = pParams->cursor.position.y;
 
         pFlipState->dirty.cursorPosition = TRUE;
@@ -1040,6 +1043,7 @@ NvBool nvUpdateFlipEvoHwState(
     const NvU32 head,
     const struct NvKmsFlipCommonParams *pParams,
     const NVHwModeTimingsEvo *pTimings,
+    const NvU8 tilePosition,
     NVFlipEvoHwState *pFlipState,
     NvBool allowVrr)
 {
@@ -1047,11 +1051,13 @@ NvBool nvUpdateFlipEvoHwState(
 
     if (pParams->viewPortIn.specified) {
         pFlipState->dirty.viewPortPointIn = TRUE;
-        pFlipState->viewPortPointIn = pParams->viewPortIn.point;
+        pFlipState->viewPortPointIn.x = pParams->viewPortIn.point.x +
+            (pTimings->viewPort.in.width * tilePosition);
+        pFlipState->viewPortPointIn.y = pParams->viewPortIn.point.y;
     }
 
-    if (!UpdateCursorLayerFlipEvoHwState(pOpenDev, pDevEvo, pParams,
-                                         pFlipState)) {
+    if (!UpdateCursorLayerFlipEvoHwState(pOpenDev, pDevEvo, pParams, pTimings,
+                                         tilePosition, pFlipState)) {
         return FALSE;
     }
 
@@ -1790,7 +1796,7 @@ static void ChangeSurfaceFlipRefCount(
         if (increase) {
             nvEvoIncrementSurfaceRefCnts(pSurfaceEvo);
         } else {
-            nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
+            nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
         }
     }
 }
@@ -1876,6 +1882,44 @@ void nvUnionUsageBounds(const struct NvKmsUsageBounds *a,
     }
 }
 
+static void IntersectScalingUsageBounds(
+    const struct NvKmsScalingUsageBounds *a,
+    const struct NvKmsScalingUsageBounds *b,
+    struct NvKmsScalingUsageBounds *ret)
+{
+    ret->maxVDownscaleFactor = NV_MIN(a->maxVDownscaleFactor,
+                                      b->maxVDownscaleFactor);
+    ret->maxHDownscaleFactor = NV_MIN(a->maxHDownscaleFactor,
+                                      b->maxHDownscaleFactor);
+    ret->vTaps = NV_MIN(a->vTaps, b->vTaps);
+    ret->vUpscalingAllowed = a->vUpscalingAllowed && b->vUpscalingAllowed;
+}
+
+void nvIntersectUsageBounds(const struct NvKmsUsageBounds *a,
+                            const struct NvKmsUsageBounds *b,
+                            struct NvKmsUsageBounds *ret)
+{
+    NvU32 i;
+
+    nvkms_memset(ret, 0, sizeof(*ret));
+
+    for (i = 0; i < ARRAY_LEN(a->layer); i++) {
+        nvAssert(a->layer[i].usable ==
+                 !!a->layer[i].supportedSurfaceMemoryFormats);
+        nvAssert(b->layer[i].usable ==
+                 !!b->layer[i].supportedSurfaceMemoryFormats);
+
+        ret->layer[i].usable = a->layer[i].usable && b->layer[i].usable;
+
+        ret->layer[i].supportedSurfaceMemoryFormats =
+            a->layer[i].supportedSurfaceMemoryFormats &
+            b->layer[i].supportedSurfaceMemoryFormats;
+
+        IntersectScalingUsageBounds(&a->layer[i].scaling,
+                                    &b->layer[i].scaling,
+                                    &ret->layer[i].scaling);
+    }
+}
 NvBool UsageBoundsEqual(
     const struct NvKmsUsageBounds *a,
     const struct NvKmsUsageBounds *b)
@@ -1948,6 +1992,10 @@ NvBool nvAllocatePreFlipBandwidth(NVDevEvoPtr pDevEvo,
         timingsParams[head].activeRmId = pHeadState->activeRmId;
         timingsParams[head].pixelDepth = pHeadState->pixelDepth;
         timingsParams[head].pTimings = &pHeadState->timings;
+        timingsParams[head].enableDsc = (pHeadState->dscInfo.type !=
+            NV_DSC_INFO_EVO_TYPE_DISABLED);
+        timingsParams[head].b2Heads1Or =
+            (pHeadState->mergeMode != NV_EVO_MERGE_MODE_DISABLED);
 
         nvUnionUsageBounds(pCurrent, pNew, &currentAndNew[head]);
         nvUnionUsageBounds(&pHeadState->timings.viewPort.guaranteedUsage,
@@ -2178,6 +2226,10 @@ static void LowerDispBandwidth(void *dataPtr, NvU32 dataU32)
         timingsParams[head].activeRmId = pHeadState->activeRmId;
         timingsParams[head].pixelDepth = pHeadState->pixelDepth;
         timingsParams[head].pTimings = &pHeadState->timings;
+        timingsParams[head].enableDsc = (pHeadState->dscInfo.type !=
+            NV_DSC_INFO_EVO_TYPE_DISABLED);
+        timingsParams[head].b2Heads1Or =
+            (pHeadState->mergeMode != NV_EVO_MERGE_MODE_DISABLED);
 
         nvUnionUsageBounds(pGuaranteed, pCurrent, &guaranteedAndCurrent[head]);
         timingsParams[head].pUsage = &guaranteedAndCurrent[head];
@@ -2488,6 +2540,7 @@ void nvPreFlip(NVDevEvoRec *pDevEvo,
                const NvBool skipUpdate)
 {
     NvU32 sd, head;
+    NVDispEvoRec *pDispEvo;
 
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
 
@@ -2523,6 +2576,51 @@ void nvPreFlip(NVDevEvoRec *pDevEvo,
         nvSetVrrActive(pDevEvo, allowVrr);
     }
 
+    /*
+     * Update flip metering for Frame pacing smoothing/frame splitting for direct
+     * drive and adaptive sync VRR, and override the flip timestamp if
+     * necessary.
+     */
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+        for (NvU32 inputHead = 0; inputHead < pDevEvo->numHeads; inputHead++) {
+            const NVDispHeadStateEvoRec *pInputHeadState =
+                &pDispEvo->headState[inputHead];
+            const struct NvKmsVrrFramePacingInfo *pInputVrrFramePacingInfo =
+                &pInputHeadState->vrrFramePacingInfo;
+            const NvU32 headsMask = pInputHeadState->mergeModeVrrSecondaryHeadMask |
+                NVBIT(inputHead);
+
+            /*
+             * XXX[2Heads1OR] Implement per api-head frame pacing and remove this
+             * mergeMode check and NVDispEvoRec::mergeModeVrrSecondaryHeadMask.
+             */
+            if (pInputHeadState->mergeMode == NV_EVO_MERGE_MODE_SECONDARY) {
+                continue;
+            }
+
+#if defined(DEBUG)
+            FOR_EACH_EVO_HW_HEAD_IN_MASK(headsMask, head) {
+                const NVFlipEvoHwState *pInputHeadNewState =
+                    &pWorkArea->sd[sd].head[inputHead].newState;
+                const NVFlipEvoHwState *pNewState =
+                    &pWorkArea->sd[sd].head[head].newState;
+
+                nvAssert(pNewState->dirty.layer[NVKMS_MAIN_LAYER] ==
+                            pInputHeadNewState->dirty.layer[NVKMS_MAIN_LAYER]);
+            }
+#endif
+
+            FOR_EACH_EVO_HW_HEAD_IN_MASK(headsMask, head) {
+                NVFlipEvoHwState *pNewState =
+                    &pWorkArea->sd[sd].head[head].newState;
+                if (pNewState->dirty.layer[NVKMS_MAIN_LAYER]) {
+                    nvTrackAndDelayFlipForVrrSwFramePacing(pDispEvo,
+                        pInputVrrFramePacingInfo,
+                        &pNewState->layer[NVKMS_MAIN_LAYER]);
+                }
+            }
+        }
+    }
 }
 
 void nvPostFlip(NVDevEvoRec *pDevEvo,
@@ -2604,7 +2702,8 @@ NvBool nvAssignNVFlipEvoHwState(NVDevEvoRec *pDevEvo,
         &pHeadState->timings.viewPort.possibleUsage;
 
     if (!nvUpdateFlipEvoHwState(pOpenDev, pDevEvo, sd, head, pParams,
-                                &pHeadState->timings, pFlipHwState, allowVrr)) {
+                                &pHeadState->timings, pHeadState->tilePosition,
+                                pFlipHwState, allowVrr)) {
         return FALSE;
     }
 

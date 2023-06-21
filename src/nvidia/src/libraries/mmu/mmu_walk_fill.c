@@ -29,9 +29,9 @@
 
 static NV_STATUS _mmuWalkPostFillPTETasks
 (
-    const MMU_WALK             *pWalk, 
-    MMU_WALK_LEVEL             *pLevel, 
-    const NvU32                 entryIndexLo, 
+    const MMU_WALK             *pWalk,
+    MMU_WALK_LEVEL             *pLevel,
+    const NvU32                 entryIndexLo,
     const NvU32                 entryIndexHi,
     const MMU_WALK_FILL_STATE   fillState,
     const NvU64                 vaLo
@@ -41,17 +41,17 @@ static NV_STATUS _mmuWalkPostFillPTETasks
 /**
  * @brief      Fill a VA range to a constant state for levels below the root.
  *
- * @details    This function is of MmuWalkOp function type. Used by 
+ * @details    This function is of MmuWalkOp function type. Used by
  *             mmuWalkUnmap and mmuWalkSparsify, which fills INVALID and SPARSE
- *             states to the target page levels respectively. 
- *             With NV4K introduced with VOLTA ATS, cross PT inconsistency 
- *             during unmapping and sparsifying is handled here. 
- * 
- * @todo       Recover from failure. It is difficult to do because rollbacks 
+ *             states to the target page levels respectively.
+ *             With NV4K introduced with VOLTA ATS, cross PT inconsistency
+ *             during unmapping and sparsifying is handled here.
+ *
+ * @todo       Recover from failure. It is difficult to do because rollbacks
  *             are costly and complex. Do we really want recovery or asserts?
  *             If the later one, we can replace those recovery codes with
  *             asserts.
- * 
+ *
  * @copydoc    MmuWalkCBOpFunc
  *
  * @return     NV_OK on success
@@ -114,7 +114,7 @@ NV_STATUS mmuWalkFill
             // Clear out the PTEs modulo number of entries in table
             // We do a modulo of number of entries in the table so that
             // we do not exceed the allocated sysmem page.
-            // 
+            //
             pWalk->pCb->FillEntries(pWalk->pUserCtx,
                                     pLevel->pFmt,
                                     pWalk->pStagingBuffer,
@@ -127,7 +127,7 @@ NV_STATUS mmuWalkFill
             pWalk->pCb->WriteBuffer(pWalk->pUserCtx,
                                     pWalk->pStagingBuffer,
                                     pLevelInst->pMemDesc,
-                                    entryIndexLo, 
+                                    entryIndexLo,
                                     entryIndexHi,
                                     numEntries,
                                     pLevel->pFmt->entrySize);
@@ -212,14 +212,14 @@ mmuWalkFillSelectSubLevel
 }
 
 /**
- * @brief      Determines if entries indexLo to indexHi (inclusive) are 
+ * @brief      Determines if entries indexLo to indexHi (inclusive) are
  *             all invalid.
  *
  * @param      pLevelInst  The level instance
  * @param[in]  indexLo     The index lower
  * @param[in]  indexHi     The index higher
  *
- * @return     True if no level instance or all entries are invalid, 
+ * @return     True if no level instance or all entries are invalid,
  *             False otherwise.
  */
 static NvBool
@@ -247,13 +247,13 @@ _isRangeAllInvalid
 
 /**
  * @brief      Post PTE filling tasks to handle cross PTs inconsistency
- * 
+ *
  * @details    Helper function inside mmuWalkFill PT level to update 64K PTEs
- *             after mmuWalkFill operation complete. It gathers mmuWalkFill 
+ *             after mmuWalkFill operation complete. It gathers mmuWalkFill
  *             target entry index range and fillState as input and update
  *             64K PTEs accordingly. The function doesn't handle extra page
- *             table allocations and deallocations. It relies on 
- *             _mmuWalkPdeAcquire and _mmuWalkPdeRelease to prepare and 
+ *             table allocations and deallocations. It relies on
+ *             _mmuWalkPdeAcquire and _mmuWalkPdeRelease to prepare and
  *             cleanup page levels accordingly.
  *
  * @todo       Recovery on failure. Same discussion as in mmuWalkFill.
@@ -269,9 +269,9 @@ _isRangeAllInvalid
  */
 static NV_STATUS _mmuWalkPostFillPTETasks
 (
-    const MMU_WALK             *pWalk, 
-    MMU_WALK_LEVEL             *pLevel, 
-    const NvU32                 entryIndexLo, 
+    const MMU_WALK             *pWalk,
+    MMU_WALK_LEVEL             *pLevel,
+    const NvU32                 entryIndexLo,
     const NvU32                 entryIndexHi,
     const MMU_WALK_FILL_STATE   fillState,
     const NvU64                 virtAddr
@@ -279,10 +279,10 @@ static NV_STATUS _mmuWalkPostFillPTETasks
 {
     const MMU_FMT_LEVEL *pFmtLevel = pLevel->pFmt;
 
-    // 
+    //
     // NV4K is only necessary for ATS
     // Only update 64K PTEs on invalidation, not on sparsifying
-    // 
+    //
     if (pWalk->flags.bAtsEnabled && fillState == MMU_WALK_FILL_INVALID)
     {
         const NvU64 pageSize    = mmuFmtLevelPageSize(pFmtLevel);
@@ -304,10 +304,10 @@ static NV_STATUS _mmuWalkPostFillPTETasks
         btreeSearch(vaLevelBase, (NODE**)&pLevel4KInst,
             (NODE*)pLevel4K->pInstances);
 
-        // 
+        //
         // if 4K page table was modified in mmuWalkFill
         // check the range and update 64K PTEs accordingly
-        // 
+        //
         if (pageSize == 0x1000)
         {
             // get involved 64K PTEs and 4K PTEs
@@ -327,14 +327,14 @@ static NV_STATUS _mmuWalkPostFillPTETasks
             // otherwise check the head and tail groups
             else
             {
-                if (indexLo_4K < entryIndexLo && 
+                if (indexLo_4K < entryIndexLo &&
                     !_isRangeAllInvalid(pLevel4KInst, indexLo_4K,
                         entryIndexLo - 1))
                 {
                     indexLo_64K++;
                 }
                 if (indexHi_4K > entryIndexHi &&
-                    !_isRangeAllInvalid(pLevel4KInst, entryIndexHi + 1, 
+                    !_isRangeAllInvalid(pLevel4KInst, entryIndexHi + 1,
                         indexHi_4K))
                 {
                     indexHi_64K--;
@@ -344,8 +344,8 @@ static NV_STATUS _mmuWalkPostFillPTETasks
             // update 64K PT given the indexes calculated above
             if (indexLo_64K <= indexHi_64K)
             {
-                pWalk->pCb->FillEntries(pWalk->pUserCtx, pLevel64K->pFmt, 
-                    pLevel64KInst->pMemDesc, indexLo_64K, indexHi_64K, 
+                pWalk->pCb->FillEntries(pWalk->pUserCtx, pLevel64K->pFmt,
+                    pLevel64KInst->pMemDesc, indexLo_64K, indexHi_64K,
                     MMU_WALK_FILL_NV4K, &progress);
                 NV_ASSERT_OR_RETURN(progress == indexHi_64K - indexLo_64K + 1,
                     NV_ERR_INVALID_STATE);
@@ -353,28 +353,28 @@ static NV_STATUS _mmuWalkPostFillPTETasks
                 for (entryIndex = indexLo_64K; entryIndex <= indexHi_64K;
                      entryIndex++)
                 {
-                    mmuWalkSetEntryState(pLevel64KInst, entryIndex, 
+                    mmuWalkSetEntryState(pLevel64KInst, entryIndex,
                         MMU_ENTRY_STATE_NV4K);
                 }
             }
         }
-        // 
+        //
         // if 64K page table is invalidated in mmuWalkFill
         // correct the state as NV4K
         // @todo move this portion to mmuWalkFill
-        // 
+        //
         else if (pageSize == 0x10000)
         {
-            mmuFmtCalcAlignedEntryIndices(pLevel64K->pFmt, entryIndexLo, 
+            mmuFmtCalcAlignedEntryIndices(pLevel64K->pFmt, entryIndexLo,
                 entryIndexHi, pLevel4K->pFmt, &indexLo_4K, &indexHi_4K);
 
             // the 4K PTE should have already been invalid
-            NV_ASSERT_OR_RETURN(_isRangeAllInvalid(pLevel4KInst, indexLo_4K, 
+            NV_ASSERT_OR_RETURN(_isRangeAllInvalid(pLevel4KInst, indexLo_4K,
                     indexHi_4K), NV_ERR_INVALID_STATE);
 
             // Set 64K PTEs NV4K
-            pWalk->pCb->FillEntries(pWalk->pUserCtx, pLevel64K->pFmt, 
-                pLevel64KInst->pMemDesc, entryIndexLo, entryIndexHi, 
+            pWalk->pCb->FillEntries(pWalk->pUserCtx, pLevel64K->pFmt,
+                pLevel64KInst->pMemDesc, entryIndexLo, entryIndexHi,
                 MMU_WALK_FILL_NV4K, &progress);
             NV_ASSERT_OR_RETURN(progress == entryIndexHi - entryIndexLo + 1,
                 NV_ERR_INVALID_STATE);

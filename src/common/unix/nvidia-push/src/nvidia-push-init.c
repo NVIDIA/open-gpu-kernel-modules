@@ -412,6 +412,9 @@ static NvBool AllocChannelObject(
         }
 
         params.flags         = 0;
+        if (pParams->secureChannel) {
+            params.flags |= DRF_DEF(OS04, _FLAGS, _CC_SECURE, _TRUE);
+        }
         if (pParams->difrPrefetch) {
             params.flags |= DRF_DEF(OS04,
                                     _FLAGS,
@@ -1481,6 +1484,8 @@ NvBool nvPushAllocDevice(
 
     pDevice->numClasses       = pParams->numClasses;
     pDevice->supportedClasses = pParams->supportedClasses;
+
+    pDevice->confidentialComputeMode  = pParams->confidentialComputeMode;
 
     for (sd = 0; sd < pParams->numSubDevices; sd++) {
         pDevice->subDevice[sd].handle = pParams->subDevice[sd].handle;

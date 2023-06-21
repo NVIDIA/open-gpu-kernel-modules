@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -97,9 +97,6 @@ typedef struct
 
     // Tracks whether Physical has initialized the memory descriptor for the promoted Kernel buffer
     NvBool             bInitialized[GR_GLOBALCTX_BUFFER_COUNT];
-
-    // Check if vGPU Guest is running with FECS Trace feature supported driver
-    NvBool             bFecsTraceUnsupportedInGuest;
 } GR_GLOBALCTX_BUFFERS;
 
 struct KernelGraphicsContextUnicast;
@@ -191,7 +188,7 @@ struct KernelGraphicsContext {
     void (*__kgrctxControlSerialization_Epilogue__)(struct KernelGraphicsContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kgrctxMap__)(struct KernelGraphicsContext *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__kgrctxAccessCallback__)(struct KernelGraphicsContext *, struct RsClient *, void *, RsAccessRight);
-    struct KernelGraphicsContextShared *pShared;
+    struct KernelGraphicsContextShared *PRIVATE_FIELD(pShared);
 };
 
 #ifndef __NVOC_CLASS_KernelGraphicsContext_TYPEDEF__
@@ -973,7 +970,7 @@ struct KernelGraphicsContextShared {
     struct Object *__nvoc_pbase_Object;
     struct RsShared *__nvoc_pbase_RsShared;
     struct KernelGraphicsContextShared *__nvoc_pbase_KernelGraphicsContextShared;
-    struct KernelGraphicsContextUnicast kernelGraphicsContextUnicast;
+    struct KernelGraphicsContextUnicast PRIVATE_FIELD(kernelGraphicsContextUnicast);
 };
 
 #ifndef __NVOC_CLASS_KernelGraphicsContextShared_TYPEDEF__

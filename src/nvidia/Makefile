@@ -59,10 +59,21 @@ CFLAGS += -I inc/libraries
 CFLAGS += -I src/libraries
 CFLAGS += -I inc/kernel
 
+# Libspdm source requires additional include paths and build flags.
+include src/libraries/libspdm/nvidia/openspdm.mk
+$(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -I ,$(LIBSPDM_INCLUDES))
+$(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -D,$(LIBSPDM_DEFINES))
+
+CFLAGS += -I $(SRC_COMMON)/mbedtls/include
+CFLAGS += -I $(SRC_COMMON)/mbedtls/nvidia
+CFLAGS += -DMBEDTLS_USER_CONFIG_FILE=\"nvrm_mbedtls_config.h\"
+
 CFLAGS += -Werror-implicit-function-declaration
 CFLAGS += -Wwrite-strings
+CFLAGS += -Wundef
 CFLAGS += -fno-common
 CFLAGS += -ffreestanding
+CFLAGS += -fno-stack-protector
 
 ifeq ($(TARGET_ARCH),x86_64)
   CFLAGS += -msoft-float

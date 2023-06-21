@@ -80,6 +80,8 @@
 #include <class/cl2080.h>
 #include <class/cl402c.h>
 
+#include <gpu/conf_compute/conf_compute.h>
+
 #include <gpu/dce_client/dce_client.h>
 // RMCONFIG: need definition of REGISTER_ALL_HALS()
 #include "g_hal_register.h"
@@ -475,6 +477,8 @@ RmInitGpuInfoWithRmApi
             (pGpuInfoParams->gpuInfoList[2].data ==
              NV2080_CTRL_GPU_INFO_INDEX_DMABUF_CAPABILITY_YES);
     }
+
+    nv->coherent = pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING);
 
     portMemFree(pGpuInfoParams);
 
@@ -1381,7 +1385,8 @@ static NvBool RmUnixAllocRmApi(
                     NV01_NULL_OBJECT,
                     NV01_NULL_OBJECT,
                     NV01_ROOT,
-                    &nv->rmapi.hClient) != NV_OK)
+                    &nv->rmapi.hClient,
+                    sizeof(nv->rmapi.hClient)) != NV_OK)
     {
         goto fail;
     }
@@ -1405,7 +1410,8 @@ static NvBool RmUnixAllocRmApi(
                     nv->rmapi.hClient,
                     &nv->rmapi.hDevice,
                     NV01_DEVICE_0,
-                    &deviceParams) != NV_OK)
+                    &deviceParams,
+                    sizeof(deviceParams)) != NV_OK)
     {
         goto fail;
     }
@@ -1418,7 +1424,8 @@ static NvBool RmUnixAllocRmApi(
                     nv->rmapi.hDevice,
                     &nv->rmapi.hSubDevice,
                     NV20_SUBDEVICE_0,
-                    &subDeviceParams) != NV_OK)
+                    &subDeviceParams,
+                    sizeof(subDeviceParams)) != NV_OK)
     {
         goto fail;
     }
@@ -1433,7 +1440,8 @@ static NvBool RmUnixAllocRmApi(
                     nv->rmapi.hSubDevice,
                     &nv->rmapi.hI2C,
                     NV40_I2C,
-                    NULL) != NV_OK)
+                    NULL,
+                    0) != NV_OK)
     {
         nv->rmapi.hI2C = 0;
     }
@@ -1449,7 +1457,8 @@ static NvBool RmUnixAllocRmApi(
                     nv->rmapi.hDevice,
                     &nv->rmapi.hDisp,
                     NV04_DISPLAY_COMMON,
-                    NULL) != NV_OK)
+                    NULL,
+                    0) != NV_OK)
     {
         nv->rmapi.hDisp = 0;
     }
@@ -1459,6 +1468,59 @@ static NvBool RmUnixAllocRmApi(
 fail:
     RmUnixFreeRmApi(nv);
     return NV_FALSE;
+}
+
+static NV_STATUS RmFetchGspRmImages
+(
+    nv_state_t    *nv,
+    GSP_FIRMWARE  *pGspFw,
+    const void   **gspFwHandle,
+    const void   **gspFwLogHandle
+)
+{
+    nv_firmware_chip_family_t chipFamily;
+    nv_priv_t *nvp = NV_GET_NV_PRIV(nv);
+    NvU32 gpuArch = (DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, nvp->pmc_boot_42) <<
+                     GPU_ARCH_SHIFT);
+    NvU32 gpuImpl = DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, nvp->pmc_boot_42);
+
+    chipFamily = nv_firmware_get_chip_family(gpuArch, gpuImpl);
+
+    portMemSet(pGspFw, 0, sizeof(*pGspFw));
+
+    *gspFwHandle = nv_get_firmware(nv, NV_FIRMWARE_TYPE_GSP,
+                                   chipFamily,
+                                   &pGspFw->pBuf,
+                                   &pGspFw->size);
+    if (*gspFwHandle == NULL &&
+        !nv->allow_fallback_to_monolithic_rm)
+    {
+        NV_PRINTF(LEVEL_ERROR, "No firmware image found\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+    else if (*gspFwHandle != NULL)
+    {
+#if LIBOS_LOG_DECODE_ENABLE
+        if (nv->enable_firmware_logs)
+        {
+            *gspFwLogHandle = nv_get_firmware(nv, NV_FIRMWARE_TYPE_GSP_LOG,
+                                              chipFamily,
+                                              &pGspFw->pLogElf,
+                                              &pGspFw->logElfSize);
+            if (*gspFwLogHandle == NULL)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Failed to load gsp_log_*.bin, no GSP-RM logs will be printed (non-fatal)\n");
+            }
+        }
+#endif
+        nv->request_fw_client_rm = NV_TRUE;
+    }
+    else
+    {
+        nv->request_fw_client_rm = NV_FALSE;
+    }
+
+    return NV_OK;
 }
 
 NvBool RmInitAdapter(
@@ -1524,45 +1586,13 @@ NvBool RmInitAdapter(
     //
     if (nv->request_firmware)
     {
-        NvU32 gpuArch = (DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, nvp->pmc_boot_42) <<
-                         GPU_ARCH_SHIFT);
-        NvU32 gpuImpl = DRF_VAL(_PMC, _BOOT_42, _IMPLEMENTATION, nvp->pmc_boot_42);
-
-        nv_firmware_chip_family_t chipFamily = nv_firmware_get_chip_family(gpuArch, gpuImpl);
-
         nv_set_dma_address_size(nv, NV_GSP_GPU_MIN_SUPPORTED_DMA_ADDR_WIDTH);
 
-        gspFwHandle = nv_get_firmware(nv, NV_FIRMWARE_TYPE_GSP,
-                                      chipFamily,
-                                      &gspFw.pBuf,
-                                      &gspFw.size);
-        if (gspFwHandle == NULL &&
-            !nv->allow_fallback_to_monolithic_rm)
+        status.rmStatus = RmFetchGspRmImages(nv, &gspFw, &gspFwHandle, &gspFwLogHandle);
+        if (status.rmStatus != NV_OK)
         {
             RM_SET_ERROR(status, RM_INIT_FIRMWARE_FETCH_FAILED);
             goto shutdown;
-        }
-        else if (gspFwHandle != NULL)
-        {
-#if LIBOS_LOG_DECODE_ENABLE
-            if (nv->enable_firmware_logs)
-            {
-                gspFwLogHandle = nv_get_firmware(nv, NV_FIRMWARE_TYPE_GSP_LOG,
-                                                 chipFamily,
-                                                 &gspFw.pLogElf,
-                                                 &gspFw.logElfSize);
-                if (gspFwLogHandle == NULL)
-                {
-                    NV_PRINTF(LEVEL_ERROR, "Failed to load gsp_log_*.bin, no GSP-RM logs will be printed (non-fatal)\n");
-                }
-            }
-#endif
-
-            nv->request_fw_client_rm = NV_TRUE;
-        }
-        else
-        {
-            nv->request_fw_client_rm = NV_FALSE;
         }
     }
 
@@ -1606,6 +1636,7 @@ NvBool RmInitAdapter(
         if (status.rmStatus != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "FSP boot command failed.\n");
+            RM_SET_ERROR(status, RM_INIT_FIRMWARE_INIT_FAILED);
             goto shutdown;
         }
     }
@@ -1661,6 +1692,17 @@ NvBool RmInitAdapter(
         initNbsiTable(pGpu);
     }
 
+    //
+    // Load GSP proxy if early init is required. We need to do this
+    // before we trigger a full gpuStateInit and gpuStateLoad in
+    // RmInitNvDevice
+    // TODO: Check bug 200744430
+    //
+    if (gpuIsCCFeatureEnabled(pGpu))
+    {
+        confComputeEarlyInit(pGpu, GPU_GET_CONF_COMPUTE(pGpu));
+    }
+
     // finally, initialize the device
     RmInitNvDevice(devicereference, &status);
     if (! RM_INIT_SUCCESS(status.initStatus) )
@@ -1710,6 +1752,14 @@ NvBool RmInitAdapter(
         intrSetIntrEn(pIntr, INTERRUPT_TYPE_HARDWARE);
     }
 
+    // LOCK: acquire GPUs lock
+    status.rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE,
+                                        RM_LOCK_MODULES_INIT);
+    if (status.rmStatus != NV_OK)
+    {
+        goto shutdown;
+    }
+
     KernelRc *pKernelRc = GPU_GET_KERNEL_RC(pGpu);
     // initialize the watchdog (disabled by default)
     status.rmStatus = pKernelRc != NULL ? krcWatchdogInit_HAL(pGpu, pKernelRc) :
@@ -1729,8 +1779,13 @@ NvBool RmInitAdapter(
         RM_SET_ERROR(status, RM_INIT_WATCHDOG_FAILED);
         NV_PRINTF(LEVEL_ERROR,
                   "krcWatchdogInit failed, bailing out of RmInitAdapter\n");
+        // UNLOCK: release GPUs lock
+        rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         goto shutdown;
     }
+
+    // UNLOCK: release GPUs lock
+    rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
     nv_start_rc_timer(nv);
 
     nvp->status = NV_OK;

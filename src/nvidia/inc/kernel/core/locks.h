@@ -79,17 +79,17 @@ typedef struct
     NvU32 index;
 } LOCK_TRACE_INFO;
 
-#define INSERT_LOCK_TRACE(plti, ra, t, d16, d32, ti, irql, pr, ts)      \
-{                                                               \
-    (plti)->entries[(plti)->index].callerRA = (NvUPtr)ra;       \
-    (plti)->entries[(plti)->index].type = t;                    \
-    (plti)->entries[(plti)->index].data16.value = d16;          \
-    (plti)->entries[(plti)->index].data32.value = d32;          \
-    (plti)->entries[(plti)->index].threadId = ti;               \
-    (plti)->entries[(plti)->index].timestamp = ts;              \
-    (plti)->entries[(plti)->index].bHighIrql = irql;            \
-    (plti)->entries[(plti)->index].priority = pr;               \
-    (plti)->index = ((plti)->index + 1) % MAX_TRACE_LOCK_CALLS; \
+#define INSERT_LOCK_TRACE(plti, ra, t, d16, d32, ti, irql, pr, ts) \
+{                                                                  \
+    (plti)->entries[(plti)->index].callerRA = (NvUPtr)ra;          \
+    (plti)->entries[(plti)->index].type = t;                       \
+    (plti)->entries[(plti)->index].data16.value = d16;             \
+    (plti)->entries[(plti)->index].data32.value = d32;             \
+    (plti)->entries[(plti)->index].threadId = ti;                  \
+    (plti)->entries[(plti)->index].timestamp = ts;                 \
+    (plti)->entries[(plti)->index].bHighIrql = irql;               \
+    (plti)->entries[(plti)->index].priority = pr;                  \
+    (plti)->index = ((plti)->index + 1) % MAX_TRACE_LOCK_CALLS;    \
 }
 
 //

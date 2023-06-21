@@ -46,7 +46,7 @@ portCpuShutdown(void)
     if (PORT_CPU_GET_IMC_BAR_DESC_INIT_STATE() == NV_TRUE)
     {
         //
-        // If PORT_CPU_GET_IMC_BAR_DESC_INIT_STATE is true then 
+        // If PORT_CPU_GET_IMC_BAR_DESC_INIT_STATE is true then
         // portCpuExFreeImcBarDesc will be supported. Adding following check
         // to avoid compile time issues
         //

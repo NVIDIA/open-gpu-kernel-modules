@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -172,6 +172,7 @@ void RmInitCpuInfo(void)
         case AARCH64_VENDOR_PART(MARVELL, THUNDER_X2):
         case AARCH64_VENDOR_PART(HUAWEI, KUNPENG_920):
         case AARCH64_VENDOR_PART(ARM, BLUEFIELD):
+        case AARCH64_VENDOR_PART(ARM, BLUEFIELD3):
         // The Neoverse N1 is the same as Gravitron
         case AARCH64_VENDOR_PART(ARM, GRAVITRON2):
         case AARCH64_VENDOR_PART(FUJITSU, A64FX):
@@ -182,6 +183,10 @@ void RmInitCpuInfo(void)
         case AARCH64_VENDOR_PART(MARVELL, OCTEON_CN98XX):
         case AARCH64_VENDOR_PART(ARM, CORTEX_A57):
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;
+            break;
+        case AARCH64_VENDOR_PART(ARM, NEOVERSE_N2):
+        case AARCH64_VENDOR_PART(ARM, NEOVERSE_V2):
+            pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV9A_GENERIC;
             break;
         default:
             pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ARMV8A_GENERIC;
@@ -746,16 +751,31 @@ void RmInitCpuInfo(void)
     getEmbeddedProcessorName(pSys->cpuInfo.name, sizeof(pSys->cpuInfo.name));
 
     if (IS_INTEL(cpuinfo.Foundry))
+    {
         cpuidInfoIntel(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_INTEL;
+    }
     else if (IS_AMD(cpuinfo.Foundry))
+    {
         cpuidInfoAMD(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_AMD;
+    }
 #if defined(_M_IX86) || defined(NVCPU_X86)
     else if (IS_WINCHIP(cpuinfo.Foundry))
+    {
         cpuidInfoWinChip(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_WINCHIP;
+    }
     else if (IS_CYRIX(cpuinfo.Foundry))
+    {
         cpuidInfoCyrix(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_CYRIX;
+    }
     else if (IS_TRANSM(cpuinfo.Foundry))
+    {
         cpuidInfoTransmeta(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_TRANSM;
+    }
 #endif
     else
     {

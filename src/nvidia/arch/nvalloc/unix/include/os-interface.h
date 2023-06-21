@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -188,7 +188,7 @@ NV_STATUS   NV_API_CALL  os_read_file                (void *, NvU8 *, NvU64, NvU
 NV_STATUS   NV_API_CALL  os_open_readonly_file       (const char *, void **);
 NV_STATUS   NV_API_CALL  os_open_and_read_file       (const char *, NvU8 *, NvU64);
 NvBool      NV_API_CALL  os_is_nvswitch_present      (void);
-void        NV_API_CALL  os_get_random_bytes         (NvU8 *, NvU16);
+NV_STATUS   NV_API_CALL  os_get_random_bytes         (NvU8 *, NvU16);
 NV_STATUS   NV_API_CALL  os_alloc_wait_queue         (os_wait_queue **);
 void        NV_API_CALL  os_free_wait_queue          (os_wait_queue *);
 void        NV_API_CALL  os_wait_uninterruptible     (os_wait_queue *);
@@ -207,6 +207,9 @@ enum os_pci_req_atomics_type {
     OS_INTF_PCIE_REQ_ATOMICS_128BIT
 };
 NV_STATUS   NV_API_CALL  os_enable_pci_req_atomics   (void *, enum os_pci_req_atomics_type);
+NV_STATUS   NV_API_CALL  os_numa_add_gpu_memory      (void *, NvU64, NvU64, NvU32 *);
+NV_STATUS   NV_API_CALL  os_numa_remove_gpu_memory   (void *, NvU64, NvU64, NvU32); 
+NV_STATUS   NV_API_CALL  os_offline_page_at_address(NvU64 address);
 
 extern NvU32 os_page_size;
 extern NvU64 os_page_mask;

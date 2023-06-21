@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -90,8 +90,8 @@ struct ComputeInstanceSubscription {
     void (*__cisubscriptionControlSerialization_Epilogue__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__cisubscriptionMap__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__cisubscriptionAccessCallback__)(struct ComputeInstanceSubscription *, struct RsClient *, void *, RsAccessRight);
-    MIG_COMPUTE_INSTANCE *pMIGComputeInstance;
-    NvU64 dupedCapDescriptor;
+    MIG_COMPUTE_INSTANCE *PRIVATE_FIELD(pMIGComputeInstance);
+    NvU64 PRIVATE_FIELD(dupedCapDescriptor);
 };
 
 #ifndef __NVOC_CLASS_ComputeInstanceSubscription_TYPEDEF__

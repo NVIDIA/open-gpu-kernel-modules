@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl2080/ctrl2080nvlink.finn
+// Source file:      ctrl/ctrl2080/ctrl2080nvlink.finn
 //
 
 #include "ctrl/ctrl2080/ctrl2080base.h"
@@ -2097,6 +2097,7 @@ typedef struct NV2080_CTRL_NVLINK_UPDATE_HSHUB_MUX_PARAMS {
 typedef struct NV2080_CTRL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS {
     NvU32  peerId;
     NvU32  peerLinkMask;
+    NvBool bEgmPeer;
     NvBool bNvswitchConn;
 } NV2080_CTRL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS;
 #define NV2080_CTRL_CMD_NVLINK_PRE_SETUP_NVLINK_PEER (0x2080301dU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_PRE_SETUP_NVLINK_PEER_PARAMS_MESSAGE_ID" */
@@ -2970,6 +2971,23 @@ typedef struct NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS {
 } NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS;
 
 #define NV2080_CTRL_CMD_NVLINK_POST_FAULT_UP (0x20803043U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_POST_FAULT_UP_PARAMS_MESSAGE_ID" */
+
+
+/*
+ * NV2080_CTRL_CMD_NVLINK_IS_REDUCED_CONFIG
+ *
+ * This command is to check if a GPU has a reduced nvlink configuration
+ *
+ * [out] bReducedNvlinkConfig
+ *     Link number which the sequence should be triggered
+ */
+#define NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS_MESSAGE_ID (0x44U)
+
+typedef struct NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS {
+    NvBool bReducedNvlinkConfig;
+} NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS;
+
+#define NV2080_CTRL_CMD_NVLINK_IS_REDUCED_CONFIG (0x20803044U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_NVLINK_INTERFACE_ID << 8) | NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS_MESSAGE_ID" */
 
 
 /* _ctrl2080nvlink_h_ */

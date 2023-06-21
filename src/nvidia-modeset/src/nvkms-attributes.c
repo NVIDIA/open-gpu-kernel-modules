@@ -1085,16 +1085,85 @@ static NvBool GetStereoEvo(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue)
 
 static NvBool GetVrrMinRefreshRate(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue)
 {
-    return FALSE;
+    NvU32 timeoutMicroseconds;
+    const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    NvU32 head;
+
+    if (pDpyEvo->apiHead == NV_INVALID_HEAD) {
+        return FALSE;
+    }
+
+    head = nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead);
+    nvAssert(head != NV_INVALID_HEAD);
+    timeoutMicroseconds =
+        pDispEvo->headState[head].timings.vrr.timeoutMicroseconds;
+#if defined(DEBUG)
+    {
+        NvU32 h;
+        FOR_EACH_EVO_HW_HEAD(pDispEvo, pDpyEvo->apiHead, h) {
+            nvAssert(timeoutMicroseconds ==
+                         pDispEvo->headState[h].timings.vrr.timeoutMicroseconds);
+        }
+    }
+#endif
+
+    *pValue = timeoutMicroseconds ? (1000000 / timeoutMicroseconds) : 0;
+
+    return TRUE;
 }
 
 static NvBool GetVrrMinRefreshRateValidValues(
     const NVDpyEvoRec *pDpyEvo,
     struct NvKmsAttributeValidValuesCommonReply *pValidValues)
 {
-    return FALSE;
+    NvU32 minMinRefreshRate, maxMinRefreshRate;
+    const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    NvU32 head;
+
+    if (pDpyEvo->apiHead == NV_INVALID_HEAD) {
+        return FALSE;
+    }
+
+    head = nvGetPrimaryHwHead(pDispEvo, pDpyEvo->apiHead);
+    nvAssert(head != NV_INVALID_HEAD);
+    nvGetDpyMinRefreshRateValidValues(&pDispEvo->headState[head].timings,
+                                      pDpyEvo->vrr.type,
+                                      pDpyEvo->vrr.edidTimeoutMicroseconds,
+                                      &minMinRefreshRate,
+                                      &maxMinRefreshRate);
+#if defined(DEBUG)
+    {
+        NvU32 h;
+        FOR_EACH_EVO_HW_HEAD(pDispEvo, pDpyEvo->apiHead, h) {
+            NvU32 tmpMinMinRefreshRate, tmpMaxMinRefreshRate;
+
+            nvGetDpyMinRefreshRateValidValues(&pDispEvo->headState[h].timings,
+                                              pDpyEvo->vrr.type,
+                                              pDpyEvo->vrr.edidTimeoutMicroseconds,
+                                              &tmpMinMinRefreshRate,
+                                              &tmpMaxMinRefreshRate);
+
+            nvAssert(tmpMinMinRefreshRate == minMinRefreshRate);
+            nvAssert(tmpMaxMinRefreshRate == maxMinRefreshRate);
+        }
+    }
+#endif
+
+    nvAssert(pValidValues->type == NV_KMS_ATTRIBUTE_TYPE_RANGE);
+
+    pValidValues->u.range.min = minMinRefreshRate;
+    pValidValues->u.range.max = maxMinRefreshRate;
+
+    return TRUE;
 }
 
+static NvBool GetNumberOfHardwareHeadsUsed(
+    const NVDpyEvoRec *pDpyEvo,
+    NvS64 *pNumHwHeadsUsed)
+{
+    *pNumHwHeadsUsed = pDpyEvo->currentAttributes.numberOfHardwareHeadsUsed;
+    return TRUE;
+}
 static const struct {
     NvBool (*set)(NVDpyEvoPtr pDpyEvo, NvS64 value);
     NvBool (*get)(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue);
@@ -1282,6 +1351,12 @@ static const struct {
         .get            = GetVrrMinRefreshRate,
         .getValidValues = GetVrrMinRefreshRateValidValues,
         .type           = NV_KMS_ATTRIBUTE_TYPE_RANGE,
+    },
+    [NV_KMS_DPY_ATTRIBUTE_NUMBER_OF_HARDWARE_HEADS_USED] = {
+        .set            = NULL,
+        .get            = GetNumberOfHardwareHeadsUsed,
+        .getValidValues = NULL,
+        .type           = NV_KMS_ATTRIBUTE_TYPE_INTEGER,
     },
 };
 

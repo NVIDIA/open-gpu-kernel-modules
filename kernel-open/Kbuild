@@ -72,7 +72,7 @@ EXTRA_CFLAGS += -I$(src)/common/inc
 EXTRA_CFLAGS += -I$(src)
 EXTRA_CFLAGS += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-error -Wno-format-extra-args
 EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"530.41.03\"
+EXTRA_CFLAGS += -DNV_VERSION_STRING=\"535.54.03\"
 
 ifneq ($(SYSSRCHOST1X),)
  EXTRA_CFLAGS += -I$(SYSSRCHOST1X)
@@ -91,7 +91,8 @@ ifeq ($(ARCH),arm64)
 endif
 
 ifeq ($(NV_BUILD_TYPE),debug)
- EXTRA_CFLAGS += -g -gsplit-dwarf
+ EXTRA_CFLAGS += -g
+ EXTRA_CFLAGS += $(call cc-option,-gsplit-dwarf,)
 endif
 
 EXTRA_CFLAGS += -ffreestanding
@@ -216,8 +217,10 @@ NV_HEADER_PRESENCE_TESTS = \
  drm/drm_auth.h \
  drm/drm_gem.h \
  drm/drm_crtc.h \
+ drm/drm_color_mgmt.h \
  drm/drm_atomic.h \
  drm/drm_atomic_helper.h \
+ drm/drm_atomic_state_helper.h \
  drm/drm_encoder.h \
  drm/drm_atomic_uapi.h \
  drm/drm_drv.h \
@@ -241,7 +244,6 @@ NV_HEADER_PRESENCE_TESTS = \
  linux/efi.h \
  linux/kconfig.h \
  linux/platform/tegra/mc_utils.h \
- linux/semaphore.h \
  linux/printk.h \
  linux/ratelimit.h \
  linux/prio_tree.h \
@@ -296,6 +298,7 @@ NV_HEADER_PRESENCE_TESTS = \
  linux/iosys-map.h \
  asm/coco.h \
  linux/vfio_pci_core.h \
+ linux/mdev.h \
  soc/tegra/bpmp-abi.h \
  soc/tegra/bpmp.h
 

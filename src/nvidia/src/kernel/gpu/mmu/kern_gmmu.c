@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -928,6 +928,8 @@ kgmmuFaultBufferGetAddressSpace_IMPL
     NvU32 faultBufferAttr = 0;
     NvBool bAllocInVidmem = NV_FALSE;
 
+    bAllocInVidmem = gpuIsCCFeatureEnabled(pGpu);
+
     NV_ASSERT_OR_RETURN((index < NUM_FAULT_BUFFERS), NV_ERR_INVALID_ARGUMENT);
 
     if (index == NON_REPLAYABLE_FAULT_BUFFER)
@@ -944,8 +946,14 @@ kgmmuFaultBufferGetAddressSpace_IMPL
         memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_4, _UVM_FAULT_BUFFER_REPLAYABLE, pGpu->instLocOverrides4),
                                "UVM replayable fault", &faultBufferAddrSpace, &faultBufferAttr);
     }
+    //
+    // Whenever Hopper CC is enabled, HW requires both replayable and non-replayable
+    // fault buffers to be in CPR vidmem. It would be illegal to allocate the buffers
+    // in any other aperture
+    //
     if (bAllocInVidmem && (faultBufferAddrSpace == ADDR_SYSMEM))
     {
+        NV_PRINTF(LEVEL_ERROR, "Fault buffers must be in CPR vidmem when HCC is enabled\n");
         NV_ASSERT(0);
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -990,9 +998,12 @@ kgmmuFaultBufferCreateMemDesc_IMPL
     }
 
     if ((IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+        || gpuIsCCFeatureEnabled(pGpu)
        )
     {
         // Allocate contiguous fault buffers for SR-IOV Heavy
+        // Fault buffers get allocated in CPR vidmem when Hopper CC is enabled
+        // We're almost assured to get contiguous allocations in vidmem
         isContiguous = NV_TRUE;
     }
 
@@ -1194,6 +1205,7 @@ kgmmuFaultBufferReplayableAllocate_IMPL
 
     pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hFaultBufferClient = hClient;
     pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hFaultBufferObject = hObject;
+    pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].faultBufferGenerationCounter = 0;
 
     return NV_OK;
 }
@@ -1372,13 +1384,29 @@ _kgmmuClientShadowFaultBufferQueueAllocate
     NV_STATUS status;
     GMMU_CLIENT_SHADOW_FAULT_BUFFER *pClientShadowFaultBuffer;
     MEMORY_DESCRIPTOR *pQueueMemDesc;
+    NvU64 flags = MEMDESC_FLAGS_NONE;
+
+    //
+    // On systems with SEV enabled, the client shadow buffers should be allocated
+    // in unprotected sysmem as GSP will be writing the fault packets to these
+    // buffers. Since GSP will be encrypting the fault packets, we don't risk
+    // leaking any information
+    //
+    flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
+
+    //
+    // Shadow fault buffers are not implemented using circular queues when
+    // Hopper CC is enabled
+    //
+    if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
+        return NV_OK;
 
     pClientShadowFaultBuffer = &pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].clientShadowFaultBuffer[index];
 
     status = memdescCreate(&pQueueMemDesc, pGpu,
                            sizeof(GMMU_SHADOW_FAULT_BUF), RM_PAGE_SIZE,
                            NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
-                           MEMDESC_FLAGS_NONE);
+                           flags);
     if (status != NV_OK)
     {
         return status;
@@ -1422,6 +1450,13 @@ kgmmuClientShadowFaultBufferQueueDestroy_IMPL
     GMMU_CLIENT_SHADOW_FAULT_BUFFER *pClientShadowFaultBuffer;
     MEMORY_DESCRIPTOR *pQueueMemDesc;
 
+    //
+    // Shadow fault buffers are not implemented using circular queues when
+    // Hopper CC is enabled. So, there is nothing to free here
+    //
+    if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
+        return;
+
     pClientShadowFaultBuffer = &pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].clientShadowFaultBuffer[index];
 
     pQueueMemDesc = pClientShadowFaultBuffer->pQueueMemDesc;
@@ -1443,6 +1478,7 @@ _kgmmuClientShadowFaultBufferPagesAllocate
     OBJGPU           *pGpu,
     KernelGmmu       *pKernelGmmu,
     NvU32             shadowFaultBufferSize,
+    NvU32             shadowFaultBufferMetadataSize,
     FAULT_BUFFER_TYPE index
 )
 {
@@ -1450,13 +1486,22 @@ _kgmmuClientShadowFaultBufferPagesAllocate
     GMMU_CLIENT_SHADOW_FAULT_BUFFER *pClientShadowFaultBuffer;
     MEMORY_DESCRIPTOR *pMemDesc;
     NvU64 flags = MEMDESC_FLAGS_NONE;
+    NvU32 shadowFaultBufferSizeTotal;
+
+    //
+    // On systems with SEV enabled, the client shadow buffers should be allocated
+    // in unprotected sysmem as GSP will be writing the fault packets to these
+    // buffers. Since GSP will be encrypting the fault packets, we don't risk
+    // leaking any information
+    //
+    flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
 
     pClientShadowFaultBuffer = &pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].clientShadowFaultBuffer[index];
 
-    shadowFaultBufferSize = RM_PAGE_ALIGN_UP(shadowFaultBufferSize);
+    shadowFaultBufferSizeTotal = RM_PAGE_ALIGN_UP(shadowFaultBufferSize) + RM_PAGE_ALIGN_UP(shadowFaultBufferMetadataSize);
 
     status = memdescCreate(&pMemDesc, pGpu,
-                           shadowFaultBufferSize, RM_PAGE_SIZE,
+                           shadowFaultBufferSizeTotal, RM_PAGE_SIZE,
                            NV_FALSE, ADDR_SYSMEM, NV_MEMORY_CACHED,
                            flags);
     if (status != NV_OK)
@@ -1483,6 +1528,9 @@ _kgmmuClientShadowFaultBufferPagesAllocate
         return status;
     }
 
+    pClientShadowFaultBuffer->pFaultBufferMetadataAddress =
+                             ((NvP64)(((NvU64) pClientShadowFaultBuffer->pBufferAddress) +
+                              RM_PAGE_ALIGN_UP(shadowFaultBufferSize)));
     pClientShadowFaultBuffer->pBufferMemDesc = pMemDesc;
 
     return NV_OK;
@@ -1544,6 +1592,7 @@ kgmmuClientShadowFaultBufferRegister_IMPL
     RmPhysAddr shadowFaultBufferQueuePhysAddr;
     NvU32 queueCapacity, numBufferPages;
     NvU32 faultBufferSize;
+    NvU32 shadowFaultBufferMetadataSize;
     const NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pStaticInfo = kgmmuGetStaticInfo(pGpu, pKernelGmmu);
     NvBool bQueueAllocated = NV_FALSE;
 
@@ -1553,16 +1602,23 @@ kgmmuClientShadowFaultBufferRegister_IMPL
     if (index == NON_REPLAYABLE_FAULT_BUFFER)
     {
         faultBufferSize = pStaticInfo->nonReplayableFaultBufferSize;
+        shadowFaultBufferMetadataSize = pStaticInfo->nonReplayableShadowFaultBufferMetadataSize;
     }
     else if (index == REPLAYABLE_FAULT_BUFFER)
     {
         faultBufferSize = pStaticInfo->replayableFaultBufferSize;
+        shadowFaultBufferMetadataSize = pStaticInfo->replayableShadowFaultBufferMetadataSize;
     }
     else
     {
         NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_ARGUMENT);
     }
 
+    //
+    // We don't use circular queues for shadow fault buffers when Hopper
+    // CC is enabled
+    //
+    if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu))
     {
         pQueue = KERNEL_POINTER_FROM_NvP64(GMMU_SHADOW_FAULT_BUF *,
                                            pClientShadowFaultBuffer->pQueueAddress);
@@ -1627,15 +1683,23 @@ kgmmuClientShadowFaultBufferRegister_IMPL
                             0, RM_PAGE_SIZE,
                             numBufferPages, pParams->shadowFaultBufferPteArray);
 
+        if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu))
         {
             shadowFaultBufferQueuePhysAddr = memdescGetPhysAddr(pClientShadowFaultBuffer->pQueueMemDesc,
                                                                 AT_GPU, 0);
             pParams->shadowFaultBufferQueuePhysAddr = shadowFaultBufferQueuePhysAddr;
         }
-        pParams->shadowFaultBufferSize = faultBufferSize;
-        pParams->shadowFaultBufferType = (index == NON_REPLAYABLE_FAULT_BUFFER) ?
-                                         NV2080_CTRL_FAULT_BUFFER_NON_REPLAYABLE :
-                                         NV2080_CTRL_FAULT_BUFFER_REPLAYABLE;
+        pParams->shadowFaultBufferSize         = faultBufferSize;
+        pParams->shadowFaultBufferMetadataSize = shadowFaultBufferMetadataSize;
+        pParams->shadowFaultBufferType         = (index == NON_REPLAYABLE_FAULT_BUFFER) ?
+                                                 NV2080_CTRL_FAULT_BUFFER_NON_REPLAYABLE :
+                                                 NV2080_CTRL_FAULT_BUFFER_REPLAYABLE;
+
+        if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu) && index == REPLAYABLE_FAULT_BUFFER)
+        {
+            pParams->faultBufferSharedMemoryPhysAddr = memdescGetPhysAddr(pClientShadowFaultBuffer->pFaultBufferSharedMemDesc,
+                                                                          AT_GPU, 0);
+        }
 
         status = pRmApi->Control(pRmApi,
                                  pGpu->hInternalClient,
@@ -1706,6 +1770,7 @@ kgmmuClientShadowFaultBufferUnregister_IMPL
         pFaultBuffer->pClientShadowFaultBuffer[index] = NULL;
     }
 
+    if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu))
     {
         pClientShadowFaultBuffer = &pFaultBuffer->clientShadowFaultBuffer[index];
         pQueue = KERNEL_POINTER_FROM_NvP64(GMMU_SHADOW_FAULT_BUF *,
@@ -1735,6 +1800,7 @@ kgmmuClientShadowFaultBufferAllocate_IMPL
     NV_STATUS   status;
     const NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pStaticInfo = kgmmuGetStaticInfo(pGpu, pKernelGmmu);
     NvU32 faultBufferSize;
+    NvU32 shadowFaultBufferMetadataSize;
 
     ct_assert((RM_PAGE_SIZE % sizeof(struct GMMU_FAULT_PACKET)) == 0);
 
@@ -1745,10 +1811,12 @@ kgmmuClientShadowFaultBufferAllocate_IMPL
     if (index == NON_REPLAYABLE_FAULT_BUFFER)
     {
         faultBufferSize = pStaticInfo->nonReplayableFaultBufferSize;
+        shadowFaultBufferMetadataSize = pStaticInfo->nonReplayableShadowFaultBufferMetadataSize;
     }
     else if (index == REPLAYABLE_FAULT_BUFFER)
     {
         faultBufferSize = pStaticInfo->replayableFaultBufferSize;
+        shadowFaultBufferMetadataSize = pStaticInfo->replayableShadowFaultBufferMetadataSize;
     }
     else
     {
@@ -1763,6 +1831,7 @@ kgmmuClientShadowFaultBufferAllocate_IMPL
 
     status = _kgmmuClientShadowFaultBufferPagesAllocate(pGpu, pKernelGmmu,
                                                         faultBufferSize,
+                                                        shadowFaultBufferMetadataSize,
                                                         index);
     if (status != NV_OK)
     {
@@ -1841,7 +1910,7 @@ kgmmuClientShadowFaultBufferDestroy_IMPL
  *
  * @return NvU32
  */
-NvU32
+NvU64
 kgmmuGetMinBigPageSize_IMPL(KernelGmmu *pKernelGmmu)
 {
     //
@@ -1888,6 +1957,8 @@ kgmmuInstBlkInit_IMPL
     NvU32     dirBaseLoData;
     NvU32     atsOffset;
     NvU32     atsData;
+    NvU32     magicValueOffset;
+    NvU32     magicValueData;
     NV_STATUS status = NV_OK;
 
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
@@ -1912,6 +1983,9 @@ kgmmuInstBlkInit_IMPL
         atsOffset = 0;
         atsData = 0;
     }
+
+    status = kgmmuInstBlkMagicValueGet_HAL(pKernelGmmu, &magicValueOffset, &magicValueData);
+
     // Write the fields out
     pInstBlk = pInstBlkParams->pInstBlk;
 
@@ -1936,10 +2010,16 @@ kgmmuInstBlkInit_IMPL
 
         if (atsOffset != 0)
             MEM_WR32(pInstBlk + atsOffset, atsData);
+
+        if (status == NV_OK)
+            MEM_WR32(pInstBlk + magicValueOffset, magicValueData);
     }
     else
     {
-        pInstBlk = kbusMapRmAperture_HAL(pGpu, pInstBlkDesc);
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+        pInstBlk = memmgrMemDescBeginTransfer(pMemoryManager, pInstBlkDesc,
+                                              TRANSFER_FLAGS_SHADOW_ALLOC);
         if (pInstBlk == NULL)
         {
             return NV_ERR_INSUFFICIENT_RESOURCES;
@@ -1965,7 +2045,11 @@ kgmmuInstBlkInit_IMPL
         if (atsOffset != 0)
             MEM_WR32(pInstBlk + atsOffset, atsData);
 
-        kbusUnmapRmAperture_HAL(pGpu, pInstBlkDesc, &pInstBlk, NV_FALSE);
+        if (status == NV_OK)
+            MEM_WR32(pInstBlk + magicValueOffset, magicValueData);
+
+        memmgrMemDescEndTransfer(pMemoryManager, pInstBlkDesc,
+                                 TRANSFER_FLAGS_SHADOW_ALLOC);
     }
 
     if (!pInstBlkParams->bDeferFlush)
@@ -1974,7 +2058,7 @@ kgmmuInstBlkInit_IMPL
                                         | kbusGetFlushAperture(pKernelBus, memdescGetAddressSpace(pInstBlkDesc)));
     }
 
-    return status;
+    return NV_OK;
 }
 
 GMMU_APERTURE
@@ -2046,9 +2130,20 @@ kgmmuRegisterIntrService_IMPL
         MC_ENGINE_IDX_REPLAYABLE_FAULT_ERROR,
     };
 
+    static NvU16 engineIdxListForCC[] = {
+        MC_ENGINE_IDX_REPLAYABLE_FAULT_CPU,
+        MC_ENGINE_IDX_NON_REPLAYABLE_FAULT_CPU,
+    };
+
+    if (IS_GSP_CLIENT(pGpu) && gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
+    {
+        pEngineIdxList = engineIdxListForCC;
+        listSize = NV_ARRAY_ELEMENTS(engineIdxListForCC);
+    }
+    else
     {
         pEngineIdxList = engineIdxList;
-        listSize = NV_ARRAY_ELEMENTS32(engineIdxList);
+        listSize = NV_ARRAY_ELEMENTS(engineIdxList);
     }
 
     for (NvU32 tableIdx = 0; tableIdx < listSize; tableIdx++)
@@ -2098,6 +2193,18 @@ kgmmuServiceInterrupt_IMPL
                     "Failed to report replayable MMU fault buffer overflow error",
                     status);
             }
+            break;
+        }
+        case MC_ENGINE_IDX_NON_REPLAYABLE_FAULT_CPU:
+        {
+            osQueueMMUFaultHandler(pGpu);
+            status = 0;
+            break;
+        }
+        case MC_ENGINE_IDX_REPLAYABLE_FAULT_CPU:
+        {
+            NV_PRINTF(LEVEL_ERROR, "Unexpected replayable interrupt routed to RM. Verify UVM took ownership.\n");
+            status = NV_ERR_INVALID_STATE;
             break;
         }
         default:
@@ -2329,4 +2436,15 @@ kgmmuGetHwFaultBufferPtr_IMPL
 )
 {
     return &pKernelGmmu->mmuFaultBuffer[gfid].hwFaultBuffers[faultBufferIndex];
+}
+
+NvU64
+kgmmuGetFaultBufferGenCnt_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU8        gfid
+)
+{
+    return pKernelGmmu->mmuFaultBuffer[gfid].faultBufferGenerationCounter;
 }

@@ -102,8 +102,8 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_VideoMemory =
     /*pExportInfo=*/        &__nvoc_export_info_VideoMemory
 };
 
-static NV_STATUS __nvoc_thunk_VideoMemory_memCheckCopyPermissions(struct Memory *pVideoMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return vidmemCheckCopyPermissions((struct VideoMemory *)(((unsigned char *)pVideoMemory) - __nvoc_rtti_VideoMemory_Memory.offset), pDstGpu, hDstClientNvBool);
+static NV_STATUS __nvoc_thunk_VideoMemory_memCheckCopyPermissions(struct Memory *pVideoMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return vidmemCheckCopyPermissions((struct VideoMemory *)(((unsigned char *)pVideoMemory) - __nvoc_rtti_VideoMemory_Memory.offset), pDstGpu, pDstDevice);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_vidmemCheckMemInterUnmap(struct VideoMemory *pMemory, NvBool bSubdeviceHandleProvided) {

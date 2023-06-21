@@ -51,7 +51,7 @@ MAKE_MAP(ObjectToGpuInstMap, NvU64);
 // Stores the cached control value.
 // Each submap in the multimap stores the cached control value for one GPU.
 // The key to find a submap is GPU Instance stored in ObjectToGpuInstMap
-// 
+//
 // The key inside the submap is the control command
 // The value inside the submap is the cached control value for the command
 //
@@ -375,7 +375,7 @@ static NV_STATUS _rmapiControlCacheSet
 
     //
     // A succeeded getOrInit call without params allocated implies
-    // duplicated cache insertion that should be skipped. 
+    // duplicated cache insertion that should be skipped.
     // Duplicated cache set happens when
     // 1. Parallel controls call into RM before first cache set.
     //    All threads will attempt cache set after the control calls.
@@ -453,13 +453,13 @@ _getOrInitCacheEntry
 
     if (entry == NULL)
         goto failed_free_submap;
-    
+
     if (entry->params == NULL)
     {
         entry->params = portMemAllocNonPaged(allocSize);
         if (entry->params == NULL)
             goto failed_free_entry;
-        
+
         portMemSet(entry->params, 0, allocSize);
 
         if (pbParamsAllocated != NULL)
@@ -739,7 +739,7 @@ NV_STATUS _gpuNameStringGet
                         cachedParams->ascii,
                         sizeof(pParams->gpuNameString.ascii));
             break;
-        
+
         case NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_UNICODE:
             if (!cachedParams->bUnicodeValid)
             {
@@ -816,7 +816,7 @@ NV_STATUS _gpuNameStringSet
                 cachedParams->bAsciiValid = NV_TRUE;
             }
             break;
-        
+
         case NV2080_CTRL_GPU_GET_NAME_STRING_FLAGS_TYPE_UNICODE:
             if (cachedParams->bUnicodeValid)
             {

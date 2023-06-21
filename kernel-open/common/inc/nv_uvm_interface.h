@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -327,7 +327,7 @@ NV_STATUS nvUvmInterfaceGetPmaObject(uvmGpuDeviceHandle device,
 
 // Mirrors pmaEvictPagesCb_t, see its documentation in pma.h.
 typedef NV_STATUS (*uvmPmaEvictPagesCallback)(void *callbackData,
-                                              NvU32 pageSize,
+                                              NvU64 pageSize,
                                               NvU64 *pPages,
                                               NvU32 count,
                                               NvU64 physBegin,
@@ -390,7 +390,7 @@ void nvUvmInterfacePmaUnregisterEvictionCallbacks(void *pPma);
 */
 NV_STATUS nvUvmInterfacePmaAllocPages(void *pPma,
                                       NvLength pageCount,
-                                      NvU32 pageSize,
+                                      NvU64 pageSize,
                                       UvmPmaAllocationOptions *pPmaAllocOptions,
                                       NvU64 *pPages);
 
@@ -419,7 +419,7 @@ NV_STATUS nvUvmInterfacePmaAllocPages(void *pPma,
 NV_STATUS nvUvmInterfacePmaPinPages(void *pPma,
                                     NvU64 *pPages,
                                     NvLength pageCount,
-                                    NvU32 pageSize,
+                                    NvU64 pageSize,
                                     NvU32 flags);
 
 /*******************************************************************************
@@ -447,7 +447,7 @@ NV_STATUS nvUvmInterfacePmaPinPages(void *pPma,
 NV_STATUS nvUvmInterfacePmaUnpinPages(void *pPma,
                                       NvU64 *pPages,
                                       NvLength pageCount,
-                                      NvU32 pageSize);
+                                      NvU64 pageSize);
 
 /*******************************************************************************
     nvUvmInterfaceMemoryFree
@@ -488,7 +488,7 @@ void nvUvmInterfaceMemoryFree(uvmGpuAddressSpaceHandle vaSpace,
 void nvUvmInterfacePmaFreePages(void *pPma,
                                 NvU64 *pPages,
                                 NvLength pageCount,
-                                NvU32 pageSize,
+                                NvU64 pageSize,
                                 NvU32 flags);
 
 /*******************************************************************************
@@ -507,7 +507,7 @@ void nvUvmInterfacePmaFreePages(void *pPma,
 NV_STATUS nvUvmInterfaceMemoryCpuMap(uvmGpuAddressSpaceHandle vaSpace,
                                      UvmGpuPointer gpuPointer,
                                      NvLength length, void **cpuPtr,
-                                     NvU32 pageSize);
+                                     NvU64 pageSize);
 
 /*******************************************************************************
     uvmGpuMemoryCpuUnmap
@@ -518,15 +518,58 @@ void nvUvmInterfaceMemoryCpuUnMap(uvmGpuAddressSpaceHandle vaSpace,
                                   void *cpuPtr);
 
 /*******************************************************************************
+    nvUvmInterfaceTsgAllocate
+
+    This function allocates a Time-Slice Group (TSG).
+
+    allocParams must contain an engineIndex as TSGs need to be bound to an
+    engine type at allocation time. The possible values are [0,
+    UVM_COPY_ENGINE_COUNT_MAX) for CE engine type. Notably only the copy engines
+    that have UvmGpuCopyEngineCaps::supported set to true can be allocated.
+
+    Note that TSG is not supported on all GPU architectures for all engine
+    types, e.g., pre-Volta GPUs only support TSG for the GR/Compute engine type.
+    On devices that do not support HW TSGs on the requested engine, this API is
+    still required, i.e., a TSG handle is required in
+    nvUvmInterfaceChannelAllocate(), due to information stored in it necessary
+    for channel allocation. However, when HW TSGs aren't supported, a TSG handle
+    is essentially a "fake" TSG with no HW scheduling impact.
+
+    tsg is filled with the address of the corresponding TSG handle.
+
+    Arguments:
+        vaSpace[IN]      - VA space linked to a client and a device under which
+                           the TSG is allocated.
+        allocParams[IN]  - structure with allocation settings.
+        tsg[OUT]         - pointer to the new TSG handle.
+
+    Error codes:
+      NV_ERR_GENERIC
+      NV_ERR_INVALID_ARGUMENT
+      NV_ERR_NO_MEMORY
+      NV_ERR_NOT_SUPPORTED
+*/
+NV_STATUS nvUvmInterfaceTsgAllocate(uvmGpuAddressSpaceHandle vaSpace,
+                                    const UvmGpuTsgAllocParams *allocParams,
+                                    uvmGpuTsgHandle *tsg);
+
+/*******************************************************************************
+    nvUvmInterfaceTsgDestroy
+
+    This function destroys a given TSG.
+
+    Arguments:
+        tsg[IN]         - Tsg handle
+*/
+void nvUvmInterfaceTsgDestroy(uvmGpuTsgHandle tsg);
+
+/*******************************************************************************
     nvUvmInterfaceChannelAllocate
 
-    This function will allocate a channel bound to a copy engine
+    This function will allocate a channel bound to a copy engine(CE) or a SEC2
+    engine.
 
-    allocParams must contain an engineIndex as channels need to be bound to an
-    engine type at allocation time. The possible values are [0,
-    UVM_COPY_ENGINE_COUNT_MAX), but notably only the copy engines that have
-    UvmGpuCopyEngineCaps::supported set to true can be allocated. This struct
-    also contains information relative to GPFIFO and GPPut.
+    allocParams contains information relative to GPFIFO and GPPut.
 
     channel is filled with the address of the corresponding channel handle.
 
@@ -536,17 +579,18 @@ void nvUvmInterfaceMemoryCpuUnMap(uvmGpuAddressSpaceHandle vaSpace,
     Host channel submission doorbell.
 
     Arguments:
-        vaSpace[IN]      - VA space linked to a client and a device under which
-                           the channel will be allocated
+        tsg[IN]          - Time-Slice Group that the channel will be a member.
         allocParams[IN]  - structure with allocation settings
         channel[OUT]     - pointer to the new channel handle
         channelInfo[OUT] - structure filled with channel information
 
     Error codes:
       NV_ERR_GENERIC
+      NV_ERR_INVALID_ARGUMENT
       NV_ERR_NO_MEMORY
+      NV_ERR_NOT_SUPPORTED
 */
-NV_STATUS nvUvmInterfaceChannelAllocate(uvmGpuAddressSpaceHandle vaSpace,
+NV_STATUS nvUvmInterfaceChannelAllocate(const uvmGpuTsgHandle tsg,
                                         const UvmGpuChannelAllocParams *allocParams,
                                         uvmGpuChannelHandle *channel,
                                         UvmGpuChannelInfo *channelInfo);
@@ -554,7 +598,7 @@ NV_STATUS nvUvmInterfaceChannelAllocate(uvmGpuAddressSpaceHandle vaSpace,
 /*******************************************************************************
     nvUvmInterfaceChannelDestroy
 
-    This function destroys a given channel
+    This function destroys a given channel.
 
     Arguments:
         channel[IN]     - channel handle
@@ -575,7 +619,7 @@ void nvUvmInterfaceChannelDestroy(uvmGpuChannelHandle channel);
       NV_ERR_NO_MEMORY
 */
 NV_STATUS nvUvmInterfaceQueryCaps(uvmGpuDeviceHandle device,
-                                  UvmGpuCaps * caps);
+                                  UvmGpuCaps *caps);
 
 /*******************************************************************************
     nvUvmInterfaceQueryCopyEnginesCaps
@@ -946,13 +990,15 @@ NV_STATUS nvUvmInterfaceFlushReplayableFaultBuffer(uvmGpuDeviceHandle device);
     Arguments:
         device[IN]           - Device handle associated with the gpu
         pAccessCntrInfo[OUT] - Information provided by RM for access counter handling
+        accessCntrIndex[IN]  - Access counter index
 
     Error codes:
       NV_ERR_GENERIC
       NV_ERR_INVALID_ARGUMENT
 */
 NV_STATUS nvUvmInterfaceInitAccessCntrInfo(uvmGpuDeviceHandle device,
-                                           UvmGpuAccessCntrInfo *pAccessCntrInfo);
+                                           UvmGpuAccessCntrInfo *pAccessCntrInfo,
+                                           NvU32 accessCntrIndex);
 
 /*******************************************************************************
     nvUvmInterfaceDestroyAccessCntrInfo
@@ -1401,5 +1447,244 @@ void nvUvmInterfacePagingChannelsUnmap(uvmGpuAddressSpaceHandle srcVaSpace,
 NV_STATUS nvUvmInterfacePagingChannelPushStream(UvmGpuPagingChannelHandle channel,
                                                 char *methodStream,
                                                 NvU32 methodStreamSize);
+
+/*******************************************************************************
+    CSL Interface and Locking
+
+    The following functions do not acquire the RM API or GPU locks and must not be called
+    concurrently with the same UvmCslContext parameter in different threads. The caller must
+    guarantee this exclusion.
+
+    * nvUvmInterfaceCslRotateIv
+    * nvUvmInterfaceCslEncrypt
+    * nvUvmInterfaceCslDecrypt
+    * nvUvmInterfaceCslSign
+    * nvUvmInterfaceCslQueryMessagePool
+    * nvUvmInterfaceCslIncrementIv
+*/
+
+/*******************************************************************************
+    nvUvmInterfaceCslInitContext
+
+    Allocates and initializes a CSL context for a given secure channel.
+
+    The lifetime of the context is the same as the lifetime of the secure channel
+    it is paired with.
+
+    Arguments:
+        uvmCslContext[IN/OUT] - The CSL context.
+        channel[IN]           - Handle to a secure channel.
+
+    Error codes:
+      NV_ERR_INVALID_STATE   - The system is not operating in Confidential Compute mode.
+      NV_ERR_INVALID_CHANNEL - The associated channel is not a secure channel.
+      NV_ERR_IN_USE          - The context has already been initialized.
+*/
+NV_STATUS nvUvmInterfaceCslInitContext(UvmCslContext *uvmCslContext,
+                                       uvmGpuChannelHandle channel);
+
+/*******************************************************************************
+    nvUvmInterfaceDeinitCslContext
+
+    Securely deinitializes and clears the contents of a context.
+
+    If context is already deinitialized then function returns immediately.
+
+    Arguments:
+        uvmCslContext[IN] - The CSL context.
+*/
+void nvUvmInterfaceDeinitCslContext(UvmCslContext *uvmCslContext);
+
+/*******************************************************************************
+    nvUvmInterfaceCslRotateIv
+
+    Rotates the IV for a given channel and operation.
+
+    This function will rotate the IV on both the CPU and the GPU.
+    Outstanding messages that have been encrypted by the GPU should first be
+    decrypted before calling this function with operation equal to
+    UVM_CSL_OPERATION_DECRYPT. Similarly, outstanding messages that have been
+    encrypted by the CPU should first be decrypted before calling this function
+    with operation equal to UVM_CSL_OPERATION_ENCRYPT. For a given operation
+    the channel must be idle before calling this function. This function can be
+    called regardless of the value of the IV's message counter.
+
+    See "CSL Interface and Locking" for locking requirements.
+    This function does not perform dynamic memory allocation.
+
+Arguments:
+        uvmCslContext[IN/OUT] - The CSL context.
+        operation[IN]         - Either
+                                - UVM_CSL_OPERATION_ENCRYPT
+                                - UVM_CSL_OPERATION_DECRYPT
+
+    Error codes:
+      NV_ERR_INSUFFICIENT_RESOURCES - The rotate operation would cause a counter
+                                      to overflow.
+      NV_ERR_INVALID_ARGUMENT       - Invalid value for operation.
+*/
+NV_STATUS nvUvmInterfaceCslRotateIv(UvmCslContext *uvmCslContext,
+                                    UvmCslOperation operation);
+
+/*******************************************************************************
+    nvUvmInterfaceCslEncrypt
+
+    Encrypts data and produces an authentication tag.
+
+    Auth, input, and output buffers must not overlap. If they do then calling
+    this function produces undefined behavior. Performance is typically
+    maximized when the input and output buffers are 16-byte aligned. This is
+    natural alignment for AES block.
+    The encryptIV can be obtained from nvUvmInterfaceCslIncrementIv.
+    However, it is optional. If it is NULL, the next IV in line will be used.
+
+    See "CSL Interface and Locking" for locking requirements.
+    This function does not perform dynamic memory allocation.
+
+Arguments:
+        uvmCslContext[IN/OUT] - The CSL context.
+        bufferSize[IN]        - Size of the input and output buffers in
+                                units of bytes. Value can range from 1 byte
+                                to (2^32) - 1 bytes.
+        inputBuffer[IN]       - Address of plaintext input buffer.
+        encryptIv[IN/OUT]     - IV to use for encryption. Can be NULL.
+        outputBuffer[OUT]     - Address of ciphertext output buffer.
+        authTagBuffer[OUT]    - Address of authentication tag buffer.
+                                Its size is UVM_CSL_CRYPT_AUTH_TAG_SIZE_BYTES.
+
+    Error codes:
+      NV_ERR_INVALID_ARGUMENT       - The size of the data is 0 bytes.
+                                    - The encryptIv has already been used.
+*/
+NV_STATUS nvUvmInterfaceCslEncrypt(UvmCslContext *uvmCslContext,
+                                   NvU32 bufferSize,
+                                   NvU8 const *inputBuffer,
+                                   UvmCslIv *encryptIv,
+                                   NvU8 *outputBuffer,
+                                   NvU8 *authTagBuffer);
+
+/*******************************************************************************
+    nvUvmInterfaceCslDecrypt
+
+    Verifies the authentication tag and decrypts data.
+
+    Auth, input, and output buffers must not overlap. If they do then calling
+    this function produces undefined behavior. Performance is typically
+    maximized when the input and output buffers are 16-byte aligned. This is
+    natural alignment for AES block.
+
+    See "CSL Interface and Locking" for locking requirements.
+    This function does not perform dynamic memory allocation.
+
+    Arguments:
+        uvmCslContext[IN/OUT] - The CSL context.
+        bufferSize[IN]        - Size of the input and output buffers in units of bytes.
+                                Value can range from 1 byte to (2^32) - 1 bytes.
+        decryptIv[IN]         - IV used to decrypt the ciphertext. Its value can either be given by
+                                nvUvmInterfaceCslIncrementIv, or, if NULL, the CSL context's
+                                internal counter is used.
+        inputBuffer[IN]       - Address of ciphertext input buffer.
+        outputBuffer[OUT]     - Address of plaintext output buffer.
+        addAuthData[IN]       - Address of the plaintext additional authenticated data used to
+                                calculate the authentication tag. Can be NULL.
+        addAuthDataSize[IN]   - Size of the additional authenticated data in units of bytes.
+                                Value can range from 1 byte to (2^32) - 1 bytes.
+                                This parameter is ignored if addAuthData is NULL.
+        authTagBuffer[IN]     - Address of authentication tag buffer.
+                                Its size is UVM_CSL_CRYPT_AUTH_TAG_SIZE_BYTES.
+
+    Error codes:
+      NV_ERR_INSUFFICIENT_RESOURCES - The decryption operation would cause a
+                                      counter overflow to occur.
+      NV_ERR_INVALID_ARGUMENT       - The size of the data is 0 bytes.
+      NV_ERR_INVALID_DATA           - Verification of the authentication tag fails.
+*/
+NV_STATUS nvUvmInterfaceCslDecrypt(UvmCslContext *uvmCslContext,
+                                   NvU32 bufferSize,
+                                   NvU8 const *inputBuffer,
+                                   UvmCslIv const *decryptIv,
+                                   NvU8 *outputBuffer,
+                                   NvU8 const *addAuthData,
+                                   NvU32 addAuthDataSize,
+                                   NvU8 const *authTagBuffer);
+
+/*******************************************************************************
+    nvUvmInterfaceCslSign
+
+    Generates an authentication tag for secure work launch.
+
+    Auth and input buffers must not overlap. If they do then calling this function produces
+    undefined behavior.
+
+    See "CSL Interface and Locking" for locking requirements.
+    This function does not perform dynamic memory allocation.
+
+    Arguments:
+        uvmCslContext[IN/OUT] - The CSL context.
+        bufferSize[IN]        - Size of the input buffer in units of bytes.
+                                Value can range from 1 byte to (2^32) - 1 bytes.
+        inputBuffer[IN]       - Address of plaintext input buffer.
+        authTagBuffer[OUT]    - Address of authentication tag buffer.
+                                Its size is UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES.
+
+    Error codes:
+      NV_ERR_INSUFFICIENT_RESOURCES - The signing operation would cause a counter overflow to occur.
+      NV_ERR_INVALID_ARGUMENT       - The size of the data is 0 bytes.
+*/
+NV_STATUS nvUvmInterfaceCslSign(UvmCslContext *uvmCslContext,
+                                NvU32 bufferSize,
+                                NvU8 const *inputBuffer,
+                                NvU8 *authTagBuffer);
+
+/*******************************************************************************
+    nvUvmInterfaceCslQueryMessagePool
+
+    Returns the number of messages that can be encrypted before the message counter will overflow.
+
+    See "CSL Interface and Locking" for locking requirements.
+    This function does not perform dynamic memory allocation.
+
+    Arguments:
+        uvmCslContext[IN/OUT] - The CSL context.
+        operation[IN]         - Either UVM_CSL_OPERATION_ENCRYPT or UVM_CSL_OPERATION_DECRYPT.
+        messageNum[OUT]       - Number of messages left before overflow.
+
+    Error codes:
+      NV_ERR_INVALID_ARGUMENT - The value of the operation parameter is illegal.
+*/
+NV_STATUS nvUvmInterfaceCslQueryMessagePool(UvmCslContext *uvmCslContext,
+                                            UvmCslOperation operation,
+                                            NvU64 *messageNum);
+
+/*******************************************************************************
+    nvUvmInterfaceCslIncrementIv
+
+    Increments the message counter by the specified amount.
+
+    If iv is non-NULL then the incremented value is returned.
+    If operation is UVM_CSL_OPERATION_ENCRYPT then the returned IV's "freshness" bit is set and
+    can be used in nvUvmInterfaceCslEncrypt. If operation is UVM_CSL_OPERATION_DECRYPT then
+    the returned IV can be used in nvUvmInterfaceCslDecrypt.
+
+    See "CSL Interface and Locking" for locking requirements.
+    This function does not perform dynamic memory allocation.
+
+Arguments:
+        uvmCslContext[IN/OUT] - The CSL context.
+        operation[IN]         - Either
+                                - UVM_CSL_OPERATION_ENCRYPT
+                                - UVM_CSL_OPERATION_DECRYPT
+        increment[IN]         - The amount by which the IV is incremented. Can be 0.
+        iv[out]               - If non-NULL, a buffer to store the incremented IV.
+
+    Error codes:
+      NV_ERR_INVALID_ARGUMENT       - The value of the operation parameter is illegal.
+      NV_ERR_INSUFFICIENT_RESOURCES - Incrementing the message counter would result
+                                      in an overflow.
+*/
+NV_STATUS nvUvmInterfaceCslIncrementIv(UvmCslContext *uvmCslContext,
+                                       UvmCslOperation operation,
+                                       NvU64 increment,
+                                       UvmCslIv *iv);
 
 #endif // _NV_UVM_INTERFACE_H_

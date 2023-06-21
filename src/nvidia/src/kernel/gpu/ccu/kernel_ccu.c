@@ -230,7 +230,7 @@ _kccuUnmapAndFreeMemory
     NvU32 i = 0;
     NV_STATUS status = NV_OK;
     NV2080_CTRL_INTERNAL_CCU_UNMAP_INFO_PARAMS params = { 0 };
-    
+
     NV_PRINTF(LEVEL_INFO, "KernelCcu: Unmap and free shared buffer\n");
 
     // Internal RM api ctrl call to physical RM to unmap dev & mig shared buffer memdesc
@@ -556,7 +556,7 @@ NvU32 kccuCounterBlockSizeGet_IMPL
 (
     OBJGPU     *pGpu,
     KernelCcu  *pKernelCcu,
-    NvBool     bDevCounter      
+    NvBool     bDevCounter
 )
 {
     NV_PRINTF(LEVEL_INFO, "KernelCcu: Get counter block size \n");
@@ -583,7 +583,7 @@ NV_STATUS kccuStreamStateSet_IMPL
 (
     OBJGPU                                         *pGpu,
     KernelCcu                                      *pKernelCcu,
-    NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams    
+    NV_COUNTER_COLLECTION_UNIT_STREAM_STATE_PARAMS *pParams
 )
 {
     NV_STATUS status = NV_OK;

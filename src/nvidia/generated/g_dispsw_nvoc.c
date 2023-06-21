@@ -322,10 +322,7 @@ static void __nvoc_init_funcTable_DispSwObject_1(DispSwObject *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // Hal function -- dispswGetSwMethods
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
-    {
-        pThis->__dispswGetSwMethods__ = &dispswGetSwMethods_46f6a7;
-    }
+    pThis->__dispswGetSwMethods__ = &dispswGetSwMethods_46f6a7;
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__dispswCtrlCmdNotifyOnVblank__ = &dispswCtrlCmdNotifyOnVblank_IMPL;

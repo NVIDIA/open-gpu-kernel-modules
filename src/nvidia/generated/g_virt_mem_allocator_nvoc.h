@@ -491,7 +491,6 @@ static inline NV_STATUS dmaFreeMap(struct OBJGPU *pGpu, struct VirtMemAllocator 
 #define VAS_PAGESIZE_IDX_BIG   1
 #define VAS_PAGESIZE_IDX_HUGE  2
 #define VAS_PAGESIZE_IDX_512M  3
-#define VAS_PAGESIZE_IDX_MAX   4
 
 // VMM-TODO Used by old VAS Object
 #define VAS_NUM_PAGESIZE_TYPES VAS_PAGESIZE_IDX_BIG+1
@@ -576,7 +575,7 @@ RmPhysAddr dmaPageArrayGetPhysAddr(DMA_PAGE_ARRAY *pPageArray, NvU32 pageIndex);
 #define DMA_VA_LIMIT_49B                            NVBIT(0)
 #define DMA_VA_LIMIT_57B                            NVBIT(1)
 #define DMA_ALLOC_VASPACE_SIZE_ALIGNED              NVBIT(9)
-// 
+//
 // Bug 3610538 For unlinked SLI, clients want to restrict internal buffers to
 // Internal VA range, so that SLI vaspaces can mirror each other.
 //

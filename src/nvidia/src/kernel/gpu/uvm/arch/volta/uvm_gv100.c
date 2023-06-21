@@ -31,6 +31,7 @@
 #include "gpu/gpu.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/uvm/uvm.h"
+#include "gpu/uvm/access_cntr_buffer.h"
 #include "os/os.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_desc.h"
@@ -45,7 +46,8 @@ NV_STATUS
 uvmSetupAccessCntrBuffer_GV100
 (
     OBJGPU *pGpu,
-    OBJUVM *pUvm
+    OBJUVM *pUvm,
+    NvU32   accessCounterIndex
 )
 {
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
@@ -59,21 +61,21 @@ uvmSetupAccessCntrBuffer_GV100
         return NV_OK;
     }
 
-    if (!pUvm->accessCntrBuffer.pUvmAccessCntrMemDesc)
+    if (!pUvm->pAccessCounterBuffers[accessCounterIndex].pUvmAccessCntrMemDesc)
     {
         return NV_ERR_INVALID_OBJECT_BUFFER;
     }
 
-    status = kbusMapCpuInvisibleBar2Aperture_HAL(pGpu, pKernelBus, pUvm->accessCntrBuffer.pUvmAccessCntrMemDesc,
-                                                 &vaddr, pUvm->accessCntrBuffer.pUvmAccessCntrMemDesc->Size, 0, GPU_GFID_PF);
+    status = kbusMapCpuInvisibleBar2Aperture_HAL(pGpu, pKernelBus, pUvm->pAccessCounterBuffers[accessCounterIndex].pUvmAccessCntrMemDesc,
+                                                 &vaddr, pUvm->pAccessCounterBuffers[accessCounterIndex].pUvmAccessCntrMemDesc->Size, 0, GPU_GFID_PF);
     if (status != NV_OK)
     {
         return status;
     }
-    pUvm->accessCntrBuffer.bar2UvmAccessCntrBufferAddr = vaddr;
+    pUvm->pAccessCounterBuffers[accessCounterIndex].bar2UvmAccessCntrBufferAddr = vaddr;
 
-    uvmProgramWriteAccessCntrBufferAddress_HAL(pGpu, pUvm, vaddr);
-    uvmProgramAccessCntrBufferEnabled_HAL(pGpu, pUvm, NV_FALSE);
+    uvmProgramWriteAccessCntrBufferAddress_HAL(pGpu, pUvm, accessCounterIndex, vaddr);
+    uvmProgramAccessCntrBufferEnabled_HAL(pGpu, pUvm, accessCounterIndex, NV_FALSE);
 
     return NV_OK;
 }
@@ -83,6 +85,7 @@ uvmDisableAccessCntr_GV100
 (
     OBJGPU *pGpu,
     OBJUVM *pUvm,
+    NvU32   accessCounterIndex,
     NvBool  bIsErrorRecovery
 )
 {
@@ -103,7 +106,7 @@ uvmDisableAccessCntr_GV100
         bIsErrorRecovery = NV_TRUE;
     }
 
-    uvmProgramAccessCntrBufferEnabled_HAL(pGpu, pUvm, NV_FALSE);
+    uvmProgramAccessCntrBufferEnabled_HAL(pGpu, pUvm, accessCounterIndex, NV_FALSE);
 
     //
     // Check for any pending notifications which might be pending in pipe to ensure
@@ -113,9 +116,9 @@ uvmDisableAccessCntr_GV100
     // bit to show up for all packets and then reset the buffer
     //
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-    if (!uvmIsAccessCntrBufferEnabled_HAL(pGpu, pUvm))
+    if (!uvmIsAccessCntrBufferEnabled_HAL(pGpu, pUvm, accessCounterIndex))
     {
-        while (!uvmIsAccessCntrBufferPushed_HAL(pGpu, pUvm))
+        while (!uvmIsAccessCntrBufferPushed_HAL(pGpu, pUvm, accessCounterIndex))
         {
             if (gpuCheckTimeout(pGpu, &timeout) == NV_ERR_TIMEOUT)
             {
@@ -134,13 +137,13 @@ uvmDisableAccessCntr_GV100
             goto done;
 
         // If PUT pointer is updated, wait for VALID packets to show up and reset the packets
-        uvmReadAccessCntrBufferPutPtr_HAL(pGpu, pUvm, &putPtr);
-        uvmReadAccessCntrBufferGetPtr_HAL(pGpu, pUvm, &getPtr);
+        uvmReadAccessCntrBufferPutPtr_HAL(pGpu, pUvm, accessCounterIndex, &putPtr);
+        uvmReadAccessCntrBufferGetPtr_HAL(pGpu, pUvm, accessCounterIndex, &getPtr);
         if (getPtr != putPtr)
         {
             MEMORY_DESCRIPTOR *pMemDesc = RMCFG_FEATURE_PLATFORM_GSP ?
-                                          pUvm->accessCntrBuffer.pUvmAccessCntrMemDesc :
-                                          pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc;
+                                          pUvm->pAccessCounterBuffers[accessCounterIndex].pUvmAccessCntrMemDesc :
+                                          pUvm->pAccessCounterBuffers[accessCounterIndex].pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc;
             NvU8 *pAccessCntrBufferPage;
             NvU32 entriesPerPage = RM_PAGE_SIZE / NVC365_NOTIFY_BUF_SIZE;
             NvU32 pageSizeModBufSize = RM_PAGE_SIZE % NVC365_NOTIFY_BUF_SIZE;
@@ -186,13 +189,13 @@ uvmDisableAccessCntr_GV100
 
                         // Write get progress so far, all entries in [get, put)
                         // are valid or will become valid.
-                        uvmWriteAccessCntrBufferGetPtr_HAL(pGpu, pUvm, getPtr);
+                        uvmWriteAccessCntrBufferGetPtr_HAL(pGpu, pUvm, accessCounterIndex, getPtr);
                         return status;
                     }
                 }
             }
 
-            uvmWriteAccessCntrBufferGetPtr_HAL(pGpu, pUvm, getPtr);
+            uvmWriteAccessCntrBufferGetPtr_HAL(pGpu, pUvm, accessCounterIndex, getPtr);
 
             memdescUnmap(pMemDesc, NV_TRUE, osGetCurrentProcess(), pAddr, pPriv);
         }
@@ -209,7 +212,12 @@ done:
 }
 
 NV_STATUS
-uvmUnloadAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm)
+uvmUnloadAccessCntrBuffer_GV100
+(
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
+    NvU32   accessCounterIndex
+)
 {
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
@@ -220,16 +228,21 @@ uvmUnloadAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm)
         return NV_OK;
     }
 
-    uvmDisableAccessCntr_HAL(pGpu, pUvm, NV_FALSE);
-    kbusUnmapCpuInvisibleBar2Aperture_HAL(pGpu, pKernelBus, pUvm->accessCntrBuffer.pUvmAccessCntrMemDesc,
-                                          pUvm->accessCntrBuffer.bar2UvmAccessCntrBufferAddr, GPU_GFID_PF);
-    pUvm->accessCntrBuffer.bar2UvmAccessCntrBufferAddr = 0;
+    uvmDisableAccessCntr_HAL(pGpu, pUvm, accessCounterIndex, NV_FALSE);
+    kbusUnmapCpuInvisibleBar2Aperture_HAL(pGpu, pKernelBus, pUvm->pAccessCounterBuffers[accessCounterIndex].pUvmAccessCntrMemDesc,
+                                          pUvm->pAccessCounterBuffers[accessCounterIndex].bar2UvmAccessCntrBufferAddr, GPU_GFID_PF);
+    pUvm->pAccessCounterBuffers[accessCounterIndex].bar2UvmAccessCntrBufferAddr = 0;
 
     return NV_OK;
 }
 
 NV_STATUS
-uvmDestroyAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm)
+uvmDestroyAccessCntrBuffer_GV100
+(
+    OBJGPU              *pGpu,
+    OBJUVM              *pUvm,
+    AccessCounterBuffer *pAccessCounterBuffer
+)
 {
     if(pUvm == NULL)
     {
@@ -243,19 +256,24 @@ uvmDestroyAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm)
         return NV_OK;
     }
 
-    memdescFree(pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc);
-    memdescDestroy(pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc);
+    memdescFree(pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc);
+    memdescDestroy(pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc);
 
-    pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc = NULL;
-    pUvm->accessCntrBuffer.accessCntrBufferSize = 0;
+    pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc = NULL;
 
     return NV_OK;
 }
 
 NV_STATUS
-uvmInitAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm)
+uvmInitAccessCntrBuffer_GV100
+(
+    OBJGPU              *pGpu,
+    OBJUVM              *pUvm,
+    AccessCounterBuffer *pAccessCounterBuffer
+)
 {
     NV_STATUS           status;
+    NvU32               accessCntrBufferSize;
     MEMORY_DESCRIPTOR  *pUvmAccessCntrBufferDesc;
     NvP64               pAddr;
     NvP64               pPriv;
@@ -264,7 +282,6 @@ uvmInitAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm)
 
     NvU32 accessCntrBufferAperture = 0;
     NvU32 accessCntrBufferAttr = 0;
-    NV2080_CTRL_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_SIZE_PARAMS getSizeParams = {0};
 
     // Return if guest RM is with no sriov
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
@@ -273,26 +290,13 @@ uvmInitAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm)
         return NV_OK;
     }
 
-    // Issue control to fetch buffer size from physical
-    status = pUvm->pRmApi->Control(pUvm->pRmApi,
-                                   pUvm->hClient,
-                                   pUvm->hSubdevice,
-                                   NV2080_CTRL_CMD_INTERNAL_UVM_GET_ACCESS_CNTR_BUFFER_SIZE,
-                                   &getSizeParams,
-                                   sizeof(getSizeParams));
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    pUvm->accessCntrBuffer.accessCntrBufferSize = getSizeParams.bufferSize;
-
+    accessCntrBufferSize = uvmGetAccessCounterBufferSize_HAL(pGpu, pUvm, pAccessCounterBuffer->accessCounterIndex);
     accessCntrBufferAperture = ADDR_SYSMEM;
     accessCntrBufferAttr     = NV_MEMORY_CACHED;
     memdescOverrideInstLoc(DRF_VAL(_REG_STR_RM, _INST_LOC_4, _UVM_FAULT_BUFFER_REPLAYABLE, pGpu->instLocOverrides4),
                            "UVM access counter", &accessCntrBufferAperture, &accessCntrBufferAttr);
 
-    status = memdescCreate(&pUvmAccessCntrBufferDesc, pGpu, pUvm->accessCntrBuffer.accessCntrBufferSize, 0,
+    status = memdescCreate(&pUvmAccessCntrBufferDesc, pGpu, accessCntrBufferSize, 0,
                            NV_FALSE, accessCntrBufferAperture, accessCntrBufferAttr, MEMDESC_FLAGS_LOST_ON_SUSPEND);
     if (status != NV_OK)
     {
@@ -333,13 +337,19 @@ uvmInitAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm)
 
     memdescUnmap(pUvmAccessCntrBufferDesc, NV_TRUE, osGetCurrentProcess(), pAddr, pPriv);
 
-    pUvm->accessCntrBuffer.pUvmAccessCntrAllocMemDesc = pUvmAccessCntrBufferDesc;
+    pAccessCounterBuffer->pUvmAccessCntrAllocMemDesc = pUvmAccessCntrBufferDesc;
 
     return status;
 }
 
 NV_STATUS
-uvmResetAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm, NvU32 counterType)
+uvmResetAccessCntrBuffer_GV100
+(
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
+    NvU32   accessCounterIndex,
+    NvU32   counterType
+)
 {
     switch(counterType)
     {
@@ -359,7 +369,14 @@ uvmResetAccessCntrBuffer_GV100(OBJGPU *pGpu, OBJUVM *pUvm, NvU32 counterType)
 }
 
 NV_STATUS
-uvmAccessCntrSetCounterLimit_GV100(OBJGPU *pGpu, OBJUVM *pUvm, NvU32 type, NvU32 limit)
+uvmAccessCntrSetCounterLimit_GV100
+(
+    OBJGPU *pGpu,
+    OBJUVM *pUvm,
+    NvU32   accessCounterIndex,
+    NvU32   type,
+    NvU32   limit
+)
 {
     if (type == NVC365_CTRL_ACCESS_COUNTER_MIMC_LIMIT)
     {

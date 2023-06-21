@@ -90,6 +90,7 @@ struct RS_RES_ALLOC_PARAMS_INTERNAL
     API_SECURITY_INFO      *pSecInfo;
 
     void                   *pAllocParams;     ///< [in] Copied-in allocation parameters
+    NvU32                   paramsSize;       ///< [in] Copied-in allocation parameters size
 
     // ... Dupe alloc
     RsClient               *pSrcClient;       ///< The client that is sharing the resource
@@ -813,7 +814,7 @@ NV_STATUS refAddDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependant
 /**
  * Remove the dependency between this resource reference and a dependent resource reference.
  */
-NV_STATUS refRemoveDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependantRef);
+void refRemoveDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependantRef);
 
 /**
  * Find, Add, or Remove an inter-mapping between two resources to the Mapper's list of inter-mappings

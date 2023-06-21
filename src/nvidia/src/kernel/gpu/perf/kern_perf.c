@@ -54,40 +54,49 @@ kperfConstructEngine_IMPL(OBJGPU *pGpu, KernelPerf *pKernelPerf, ENGDESCRIPTOR e
 NV_STATUS
 kperfStateInitLocked_IMPL(OBJGPU *pGpu, KernelPerf *pKernelPerf)
 {
-    OBJSYS                  *pSys                    = SYS_GET_INSTANCE();
-    PlatformRequestHandler  *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
+
     NV_STATUS status = NV_OK;
 
     // Initialize SW state corresponding to SLI GPU Boost synchronization.
     status = kperfGpuBoostSyncStateInit(pGpu, pKernelPerf);
 
-    // Initialize PFM_REQ_HNDLR module which is a child of OBJSYS
-    if (RMCFG_MODULE_PLATFORM_REQUEST_HANDLER && pPlatformRequestHandler != NULL)
     {
-        pfmreqhndlrStateInit(pPlatformRequestHandler);
+        OBJSYS                  *pSys                    = SYS_GET_INSTANCE();
+        PlatformRequestHandler  *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
+
+
+        // Initialize PFM_REQ_HNDLR module which is a child of OBJSYS
+        if (pPlatformRequestHandler != NULL)
+        {
+            pfmreqhndlrStateInit(pPlatformRequestHandler);
+        }
     }
 
     return status;
 }
- 
+
 /*!
  * @copydoc kperfStateLoad
  */
 NV_STATUS
 kperfStateLoad_IMPL(OBJGPU *pGpu, KernelPerf *pKernelPerf, NvU32 flags)
 {
-    OBJSYS         			*pSys    				 = SYS_GET_INSTANCE();
-    OBJCL          			*pCl     				 = SYS_GET_CL(pSys);
-    PlatformRequestHandler  *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
-
     // Initialize SW state corresponding to SLI GPU Boost synchronization.
     kperfGpuBoostSyncStateInit(pGpu, pKernelPerf);
 
-    // Load PFM_REQ_HNDLR module which is a child of OBJSYS
-    // Skip pfmreqhndlrStateLoad on eGPU
-    if (!(pCl->getProperty(pCl, PDB_PROP_CL_IS_EXTERNAL_GPU)) && RMCFG_MODULE_PLATFORM_REQUEST_HANDLER && (pPlatformRequestHandler != NULL))
     {
-        pfmreqhndlrStateLoad(pPlatformRequestHandler);
+        OBJSYS                  *pSys                    = SYS_GET_INSTANCE();
+        OBJCL                   *pCl                     = SYS_GET_CL(pSys);
+        PlatformRequestHandler  *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
+
+
+        // Load PFM_REQ_HNDLR module which is a child of OBJSYS
+        // Skip pfmreqhndlrStateLoad on eGPU
+        if (!(pCl->getProperty(pCl, PDB_PROP_CL_IS_EXTERNAL_GPU)) &&
+             (pPlatformRequestHandler != NULL))
+        {
+            pfmreqhndlrStateLoad(pPlatformRequestHandler);
+        }
     }
 
     return NV_OK;
@@ -104,13 +113,15 @@ kperfStateUnload_IMPL
     NvU32          flags
 )
 {
-    OBJSYS         			*pSys    				 = SYS_GET_INSTANCE();
-    PlatformRequestHandler  *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
-
-    if (RMCFG_MODULE_PLATFORM_REQUEST_HANDLER && (pPlatformRequestHandler != NULL))
     {
-        // Unload PFM_REQ_HNDLR module which is a child of OBJSYS
-        pfmreqhndlrStateUnload(pPlatformRequestHandler);
+        OBJSYS                  *pSys                    = SYS_GET_INSTANCE();
+        PlatformRequestHandler  *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
+
+        if ((pPlatformRequestHandler != NULL))
+        {
+            // Unload PFM_REQ_HNDLR module which is a child of OBJSYS
+            pfmreqhndlrStateUnload(pPlatformRequestHandler);
+        }
     }
 
     return NV_OK;
@@ -126,13 +137,15 @@ kperfStateDestroy_IMPL
     KernelPerf    *pKernelPerf
 )
 {
-    OBJSYS         			*pSys    				 = SYS_GET_INSTANCE();
-    PlatformRequestHandler  *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
-
-    // destroy PFM_REQ_HNDLR module state
-    if (RMCFG_MODULE_PLATFORM_REQUEST_HANDLER && (pPlatformRequestHandler != NULL))
     {
-        pfmreqhndlrStateDestroy(pPlatformRequestHandler);
+        OBJSYS                  *pSys                    = SYS_GET_INSTANCE();
+        PlatformRequestHandler  *pPlatformRequestHandler = SYS_GET_PFM_REQ_HNDLR(pSys);
+
+        // destroy PFM_REQ_HNDLR module state
+        if (pPlatformRequestHandler != NULL)
+        {
+            pfmreqhndlrStateDestroy(pPlatformRequestHandler);
+        }
     }
 }
 

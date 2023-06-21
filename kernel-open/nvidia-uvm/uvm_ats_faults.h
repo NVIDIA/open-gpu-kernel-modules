@@ -25,10 +25,31 @@
 #include "uvm_lock.h"
 #include "uvm_global.h"
 #include "uvm_va_space.h"
+#include "uvm_gpu.h"
 
-NV_STATUS uvm_ats_service_fault_entry(uvm_gpu_va_space_t *gpu_va_space,
-                                      uvm_fault_buffer_entry_t *current_entry,
-                                      uvm_ats_fault_invalidate_t *ats_invalidate);
+// Service ATS faults in the range (base, base + UVM_VA_BLOCK_SIZE) with service
+// type for individual pages in the range requested by page masks set in
+// ats_context->read_fault_mask/write_fault_mask. base must be aligned to
+// UVM_VA_BLOCK_SIZE. The caller is responsible for ensuring that faulting
+// addresses fall completely within the VMA. The caller is also responsible for
+// ensuring that the faulting addresses don't overlap a GMMU region. (See
+// uvm_ats_check_in_gmmu_region). The caller is also responsible for handling
+// any errors returned by this function (fault cancellations etc.).
+//
+// Returns the fault service status in ats_context->faults_serviced_mask. In
+// addition, ats_context->reads_serviced_mask returns whether read servicing
+// worked on write faults iff the read service was also requested in the
+// corresponding bit in read_fault_mask. These returned masks are only valid if
+// the return status is NV_OK. Status other than NV_OK indicate system global
+// fault servicing failures.
+NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
+                                 struct vm_area_struct *vma,
+                                 NvU64 base,
+                                 uvm_ats_fault_context_t *ats_context);
+
+// Return whether there are any VA ranges (and thus GMMU mappings) within the
+// UVM_GMMU_ATS_GRANULARITY-aligned region containing address.
+bool uvm_ats_check_in_gmmu_region(uvm_va_space_t *va_space, NvU64 address, uvm_va_range_t *next);
 
 // This function performs pending TLB invalidations for ATS and clears the
 // ats_invalidate->write_faults_in_batch flag

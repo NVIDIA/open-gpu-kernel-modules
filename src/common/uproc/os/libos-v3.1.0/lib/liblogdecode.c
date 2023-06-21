@@ -34,6 +34,10 @@
 
 #else // NVRM
 
+#if defined(NVSYM_STANDALONE)
+#include "time.h"
+#endif
+
 #    include <stdio.h>
 #    include <stdlib.h>
 #    include <ctype.h>
@@ -65,6 +69,8 @@ int logPrintf(const char *, ...); // Forward declaration. TODO: allow libos code
 #    endif
 
 #endif // NVRM
+
+#include <stddef.h>
 
 #include "nvtypes.h"
 #include "liblogdecode.h"
@@ -484,7 +490,39 @@ static int libos_printf_a(
             // Prefix every line with GPUn Ucode-task: filename(lineNumber):
             snprintf(
                 logDecode->curLineBufPtr, LIBOS_LOG_LINE_BUFFER_SIZE - 1,
-                "T:%llu GPU%u %s-%s: %s(%u): ", pRec->timeStamp,
+                "T:%llu ", pRec->timeStamp);
+            logDecode->curLineBufPtr += portStringLength(logDecode->curLineBufPtr);
+
+#if defined(NVSYM_STANDALONE)
+            {
+                struct tm   tmStruct;
+                // Libos timestamp is a PTIMER value, which is UNIX time in ns
+                time_t      timeSec   = pRec->timeStamp / 1000000000;
+#if NVOS_IS_WINDOWS
+                // "The implementation of localtime_s in Microsoft CRT is incompatible with the
+                // C standard since it has reversed parameter order and returns errno_t."
+                errno_t     err       = localtime_s(&tmStruct, &timeSec);
+#else
+                int err = (localtime_r(&timeSec, &tmStruct) == NULL);
+#endif
+                if (err == 0)
+                {
+                    snprintf(logDecode->curLineBufPtr, LIBOS_LOG_LINE_BUFFER_SIZE - 1,
+                                   "%04d-%02d-%02d %d:%02d:%02d ",
+                                   tmStruct.tm_year + 1900,    // years since 1900
+                                   tmStruct.tm_mon + 1,        // months since January - [0,11]
+                                   tmStruct.tm_mday,           // day of the month - [1,31]
+                                   tmStruct.tm_hour,           // hours since midnight - [0,23]
+                                   tmStruct.tm_min,            // minutes after the hour - [0,59]
+                                   tmStruct.tm_sec);           // seconds after the minute - [0,59]
+                    logDecode->curLineBufPtr += portStringLength(logDecode->curLineBufPtr);
+                }
+        }
+#endif
+
+            snprintf(
+                logDecode->curLineBufPtr, LIBOS_LOG_LINE_BUFFER_SIZE - 1,
+                "GPU%u %s-%s: %s(%u): ",
                 pRec->log->gpuInstance, logDecode->sourceName, pRec->log->taskPrefix,
                 filename, pRec->meta->lineNumber);
             logDecode->curLineBufPtr += portStringLength(logDecode->curLineBufPtr);
@@ -1068,10 +1106,14 @@ static void libosExtractLogs_decode(LIBOS_LOG_DECODE *logDecode)
         // Copy records with highest timestamp.
         recSize = pLog->record.meta->argumentCount + LIBOS_LOG_DECODE_RECORD_BASE;
 
+        //
         // Skip duplicate records.  The same record can be in both wrap and nowrap buffers.
+        // memcmp LIBOS_LOG_DECODE_RECORD + args starting at LIBOS_LOG_DECODE_RECORD::meta.
+        //
+        NvU64 compareSz = recSize - offsetof(LIBOS_LOG_DECODE_RECORD, meta) / sizeof(NvU64);
         if ((pPrevRec == NULL) ||
             (pPrevRec->log->gpuInstance != pLog->gpuInstance) ||
-            (portMemCmp(&pPrevRec->meta, &pLog->record.meta, (recSize - 1) * sizeof(NvU64)) != 0))
+            (portMemCmp(&pPrevRec->meta, &pLog->record.meta, sizeof(NvU64) * compareSz) != 0))
         {
             // Record is not identical to previous record.
             if (dst < recSize)

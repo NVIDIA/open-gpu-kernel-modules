@@ -71,12 +71,18 @@ memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL
 
     if (pParams->hSubDevice)
     {
+        Subdevice *pSubDevice;
+
         // Alloc operation in unicast mode
-        NvHandle hDevice;
-        if ((status = CliSetSubDeviceContext(pRmCtrlParams->hClient, pParams->hSubDevice, &hDevice, &pGpu)) != NV_OK)
-        {
+        status = subdeviceGetByHandle(pCallContext->pClient,
+                pParams->hSubDevice, &pSubDevice);
+
+        if (status != NV_OK)
             return status;
-        }
+
+        pGpu = GPU_RES_GET_GPU(pSubDevice);
+
+        GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
     }
 
     status = memmgrGetSurfacePhysAttr_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu), pMemory,
@@ -134,7 +140,7 @@ memCtrlCmdGetSurfaceInfoLvm_IMPL
                 // gets allocated only when ATTR is set to COMPR_REQUIRED
                 //
                 if ((pMemory->pHwResource != NULL) &&
-                     pMemory->pHwResource->attr & 
+                     pMemory->pHwResource->attr &
                     DRF_DEF(OS32, _ATTR, _COMPR, _REQUIRED))
                 {
                     zero = 0;
@@ -326,7 +332,7 @@ memCtrlCmdGetMemPageSize_IMPL
 {
     OBJGPU             *pGpu = pMemory->pGpu;
     PMEMORY_DESCRIPTOR  pTempMemDesc = NULL;
-    NvU32               tempPageSize = 0;
+    NvU64               tempPageSize = 0;
 
     SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
     {
@@ -396,6 +402,6 @@ memCtrlCmdGetTag_IMPL
 )
 {
     pParams->tag = pMemory->tag;
-    
+
     return NV_OK;
 }

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-23 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -179,7 +179,7 @@ struct MemoryMulticastFabric {
     NV_STATUS (*__memorymulticastfabricGetMemoryMappingDescriptor__)(struct MemoryMulticastFabric *, MEMORY_DESCRIPTOR **);
     NV_STATUS (*__memorymulticastfabricControlFilter__)(struct MemoryMulticastFabric *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memorymulticastfabricControlSerialization_Prologue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__memorymulticastfabricCheckCopyPermissions__)(struct MemoryMulticastFabric *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__memorymulticastfabricCheckCopyPermissions__)(struct MemoryMulticastFabric *, struct OBJGPU *, struct Device *);
     void (*__memorymulticastfabricPreDestruct__)(struct MemoryMulticastFabric *);
     NV_STATUS (*__memorymulticastfabricIsDuplicate__)(struct MemoryMulticastFabric *, NvHandle, NvBool *);
     void (*__memorymulticastfabricControlSerialization_Epilogue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -241,7 +241,7 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
 #define memorymulticastfabricGetMemoryMappingDescriptor(pMemory, ppMemDesc) memorymulticastfabricGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define memorymulticastfabricControlFilter(pResource, pCallContext, pParams) memorymulticastfabricControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define memorymulticastfabricControlSerialization_Prologue(pResource, pCallContext, pParams) memorymulticastfabricControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
-#define memorymulticastfabricCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) memorymulticastfabricCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define memorymulticastfabricCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) memorymulticastfabricCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define memorymulticastfabricPreDestruct(pResource) memorymulticastfabricPreDestruct_DISPATCH(pResource)
 #define memorymulticastfabricIsDuplicate(pMemory, hMemory, pDuplicate) memorymulticastfabricIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define memorymulticastfabricControlSerialization_Epilogue(pResource, pCallContext, pParams) memorymulticastfabricControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -371,8 +371,8 @@ static inline NV_STATUS memorymulticastfabricControlSerialization_Prologue_DISPA
     return pResource->__memorymulticastfabricControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS memorymulticastfabricCheckCopyPermissions_DISPATCH(struct MemoryMulticastFabric *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__memorymulticastfabricCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS memorymulticastfabricCheckCopyPermissions_DISPATCH(struct MemoryMulticastFabric *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__memorymulticastfabricCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void memorymulticastfabricPreDestruct_DISPATCH(struct MemoryMulticastFabric *pResource) {
@@ -404,8 +404,8 @@ void memorymulticastfabricDestruct_IMPL(struct MemoryMulticastFabric *pMemoryMul
 #undef PRIVATE_FIELD
 
 
-void memorymulticastfabricTeamSetupResponseCallback(NvU32 gpuInstance,
-                                                    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pMessage);
+NV_STATUS memorymulticastfabricTeamSetupResponseCallback(NvU32 gpuInstance,
+                                                         NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pMessage);
 
 #endif // _MEMORYMULTICASTFABRIC_H_
 

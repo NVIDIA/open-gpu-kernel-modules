@@ -1290,7 +1290,7 @@ kfifoPreAllocUserD_GM107
             // Now BAR1 map it
             status = kbusMapFbAperture_HAL(pGpu, pKernelBus, pUserdInfo->userdPhysDesc[currentGpuInst], 0,
                                            &pUserdInfo->userdBar1MapStartOffset,
-                                           &temp, mapFlags | BUS_MAP_FB_FLAGS_PRE_INIT, NV01_NULL_OBJECT);
+                                           &temp, mapFlags | BUS_MAP_FB_FLAGS_PRE_INIT, NULL);
         }
 
         if (status != NV_OK)

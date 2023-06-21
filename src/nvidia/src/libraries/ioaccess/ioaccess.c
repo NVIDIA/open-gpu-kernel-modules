@@ -29,17 +29,17 @@
 /*!
  * Initialize an IO_APERTURE instance. This enables initialization for derived IO_APERTURE instances
  * that are not allocated via CreateIOAperture.
- * 
+ *
  * @param[in,out] pAperture        pointer to IO_APERTURE instance to be initialized.
  * @param[in]     pParentAperture  pointer to parent of the new IO_APERTURE.
  * @param[in]     pDevice          pointer to IO_DEVICE of the APERTURE.
  * @param[in]     offset           offset from the parent APERTURE's baseAddress.
  * @param[in]     length           length of the APERTURE.
- * 
+ *
  * @return NV_OK when inputs are valid.
  */
 NV_STATUS
-ioaccessInitIOAperture 
+ioaccessInitIOAperture
 (
     IO_APERTURE *pAperture,
     IO_APERTURE *pParentAperture,
@@ -75,7 +75,7 @@ ioaccessInitIOAperture
         // Check if the child Aperture strides beyond the parent's boundary.
         if ((length + offset) > pParentAperture->length)
         {
-            NV_PRINTF(LEVEL_WARNING, 
+            NV_PRINTF(LEVEL_WARNING,
                 "Child aperture crosses parent's boundary, length %u offset %u, Parent's length %u\n",
                 length, offset, pParentAperture->length);
         }

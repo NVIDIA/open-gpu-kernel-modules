@@ -72,7 +72,7 @@ struct MemoryHwResources {
     NV_STATUS (*__hwresControlFilter__)(struct MemoryHwResources *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__hwresControlSerialization_Prologue__)(struct MemoryHwResources *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__hwresIsReady__)(struct MemoryHwResources *, NvBool);
-    NV_STATUS (*__hwresCheckCopyPermissions__)(struct MemoryHwResources *, struct OBJGPU *, NvHandle);
+    NV_STATUS (*__hwresCheckCopyPermissions__)(struct MemoryHwResources *, struct OBJGPU *, struct Device *);
     void (*__hwresPreDestruct__)(struct MemoryHwResources *);
     NV_STATUS (*__hwresIsDuplicate__)(struct MemoryHwResources *, NvHandle, NvBool *);
     void (*__hwresControlSerialization_Epilogue__)(struct MemoryHwResources *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -127,7 +127,7 @@ NV_STATUS __nvoc_objCreate_MemoryHwResources(MemoryHwResources**, Dynamic*, NvU3
 #define hwresControlFilter(pResource, pCallContext, pParams) hwresControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define hwresControlSerialization_Prologue(pResource, pCallContext, pParams) hwresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define hwresIsReady(pMemory, bCopyConstructorContext) hwresIsReady_DISPATCH(pMemory, bCopyConstructorContext)
-#define hwresCheckCopyPermissions(pMemory, pDstGpu, hDstClientNvBool) hwresCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, hDstClientNvBool)
+#define hwresCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) hwresCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define hwresPreDestruct(pResource) hwresPreDestruct_DISPATCH(pResource)
 #define hwresIsDuplicate(pMemory, hMemory, pDuplicate) hwresIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
 #define hwresControlSerialization_Epilogue(pResource, pCallContext, pParams) hwresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -211,8 +211,8 @@ static inline NV_STATUS hwresIsReady_DISPATCH(struct MemoryHwResources *pMemory,
     return pMemory->__hwresIsReady__(pMemory, bCopyConstructorContext);
 }
 
-static inline NV_STATUS hwresCheckCopyPermissions_DISPATCH(struct MemoryHwResources *pMemory, struct OBJGPU *pDstGpu, NvHandle hDstClientNvBool) {
-    return pMemory->__hwresCheckCopyPermissions__(pMemory, pDstGpu, hDstClientNvBool);
+static inline NV_STATUS hwresCheckCopyPermissions_DISPATCH(struct MemoryHwResources *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
+    return pMemory->__hwresCheckCopyPermissions__(pMemory, pDstGpu, pDstDevice);
 }
 
 static inline void hwresPreDestruct_DISPATCH(struct MemoryHwResources *pResource) {

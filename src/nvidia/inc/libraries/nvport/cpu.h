@@ -107,7 +107,7 @@ typedef struct PORT_CPU_INTEL_X86_FEATURES
     NvU32 SDBG : 1; /**< IA32_DEBUG_INTERFACE MSR for silicon debug.*/
     NvU32 FMA : 1; /**< FMA extensions using YMM state.*/
     NvU32 CMPXCHG16B : 1; /**< CMPXCHG8B/CMPXCHG16B Compare and Exchange Bytes*/
-    NvU32 xTPRUpdateControl : 1; /** supports changing 
+    NvU32 xTPRUpdateControl : 1; /** supports changing
                                  IA32_MISC_ENABLE[bit 23].*/
     NvU32 PDCM : 1; /**< Perfmon and Debug Capability: supports the performance
                     and debug feature indication MSR IA32_PERF_CAPABILITIES.*/
@@ -139,7 +139,7 @@ typedef struct PORT_CPU_INTEL_X86_FEATURES
     NvU32 DE : 1; /**< Debugging Extensions.*/
     NvU32 PSE : 1; /**< Page Size Extension.*/
     NvU32 TSC : 1; /**< Time Stamp Counter.*/
-    NvU32 MSR : 1; /**< Model Specific Registers RDMSR and WRMSR 
+    NvU32 MSR : 1; /**< Model Specific Registers RDMSR and WRMSR
                    Instructions.*/
     NvU32 PAE : 1; /**< Physical Address Extension.*/
     NvU32 MCE : 1; /**< Machine Check Exception.*/
@@ -180,7 +180,7 @@ typedef enum PORT_CPU_INTEL_FAMILY
 
 /**
  * @brief Enum representing Intel family 6 processor model information.
- *  
+ *
  */
 typedef enum PORT_CPU_INTEL_FAMILY_6_MODEL
 {
@@ -237,19 +237,19 @@ typedef struct PORT_CPU_INTEL_TPM_FEATURES
     /// @{
     NvU32 DTS : 1; /**< Digital Temperature Sensor is supported if set.*/
     NvU32 IntelTurboBoost : 1; /**< Intel Turbo Boost Technology available.*/
-    NvU32 ARAT : 1; /**< APIC-Timer-always-running feature is supported 
+    NvU32 ARAT : 1; /**< APIC-Timer-always-running feature is supported
                     if set.*/
-    NvU32 PLN : 1; /**< Power limit notification controls are supported 
+    NvU32 PLN : 1; /**< Power limit notification controls are supported
                    if set.*/
-    NvU32 ECMD : 1; /**< Clock modulation duty cycle extension is supported 
+    NvU32 ECMD : 1; /**< Clock modulation duty cycle extension is supported
                     if set.*/
     NvU32 PTM : 1; /**< Package thermal management is supported if set.*/
-    NvU32 HWP : 1; /**< HWP base registers (IA32_PM_ENABLE[bit 0], 
-                   IA32_HWP_CAPABILITIES, IA32_HWP_REQUEST, IA32_HWP_STATUS) 
+    NvU32 HWP : 1; /**< HWP base registers (IA32_PM_ENABLE[bit 0],
+                   IA32_HWP_CAPABILITIES, IA32_HWP_REQUEST, IA32_HWP_STATUS)
                    are supported if set.*/
-    NvU32 HWPNotification : 1; /**< IA32_HWP_INTERRUPT MSR is supported 
+    NvU32 HWPNotification : 1; /**< IA32_HWP_INTERRUPT MSR is supported
                                if set.*/
-    NvU32 HWPActivityWindow : 1; /**< IA32_HWP_REQUEST[bits 41:32] is 
+    NvU32 HWPActivityWindow : 1; /**< IA32_HWP_REQUEST[bits 41:32] is
                                  supported if set.*/
     NvU32 HWPEPP : 1; /**< HWP_Energy_Performance_Preference.
                       IA32_HWP_REQUEST[bits 31:24] is supported if set.*/
@@ -263,13 +263,13 @@ typedef struct PORT_CPU_INTEL_TPM_FEATURES
                                if set.*/
     NvU32 HWPPECI : 1; /**< HWP PECI override is supported if set.*/
     NvU32 FLEXHWP : 1; /**< Flexible HWP is supported if set.*/
-    NvU32 FAM : 1; /**< Fast access mode for the IA32_HWP_REQUEST MSR is 
+    NvU32 FAM : 1; /**< Fast access mode for the IA32_HWP_REQUEST MSR is
                    supported if set.*/
     NvU32 ILPHWPRequest : 1; /**< Ignoring Idle Logical Processor HWP request
                              is supported if set.*/
     NvU32 NoOfInterruptThresholdsInDTS : 4; /**< Number of Interrupt Thresholds
                                             in Digital Thermal Sensor.*/
-    NvU32 HCFC : 1; /**< Hardware Coordination Feedback Capability 
+    NvU32 HCFC : 1; /**< Hardware Coordination Feedback Capability
                     (Presence of IA32_MPERF and IA32_APERF). The capability to
                     provide a measure of delivered processor performance
                     (since last reset of the counters), as a percentage of the
@@ -283,7 +283,7 @@ typedef struct PORT_CPU_INTEL_TPM_FEATURES
 } PORT_CPU_INTEL_TPM_FEATURES;
 
 /**
- * @brief Structure representing Intel Processor's Architecture Performance  
+ * @brief Structure representing Intel Processor's Architecture Performance
  * monitering features broken down into individual bit fields.
  */
 typedef struct PORT_CPU_INTEL_ARCH_PERF_MONITOR
@@ -296,10 +296,10 @@ typedef struct PORT_CPU_INTEL_ARCH_PERF_MONITOR
     NvU32 bitWidthOfGPCounters; /** Bit width of general-purpose, performance
                                 monitoring counter.*/
     NvU32 coreCycleEvent : 1; /**<  Core cycle event available if 1.*/
-    NvU32 instructionRetiredEvent : 1; /**< Instruction retired event 
+    NvU32 instructionRetiredEvent : 1; /**< Instruction retired event
                                        available if 1.*/
     NvU32 referenceCycelEvent : 1; /**< Reference cycles event available if 1.*/
-    NvU32 lastLevelCacheRefEvent : 1; /**< Last-level cache reference event 
+    NvU32 lastLevelCacheRefEvent : 1; /**< Last-level cache reference event
                                       available if 1.*/
     NvU32 lastLevelCacheMissEvent : 1; /**< Last-level cache misses event not
                                        available if 1.*/
@@ -309,8 +309,8 @@ typedef struct PORT_CPU_INTEL_ARCH_PERF_MONITOR
                                             not available if 1.*/
     NvU32 noOfFixedFuncPerfCounters; /**< Number of fixed-function performance
                                      counters (if Version ID > 1).*/
-    NvU32 bitWidthOfFixedFuncPerfCounters; /**< Bit width of fixed-function 
-                                           performance counters 
+    NvU32 bitWidthOfFixedFuncPerfCounters; /**< Bit width of fixed-function
+                                           performance counters
                                            (if Version ID > 1).*/
     /// @}
 } PORT_CPU_INTEL_ARCH_PERF_MONITOR;
@@ -335,7 +335,7 @@ typedef struct PORT_CPU_INTEL
     PORT_CPU_INTEL_X86_FEATURES features; /**< General Features.*/
     PORT_CPU_INTEL_TPM_FEATURES tpmFeatures; /**< Thermal and Power Management
                                              Features.*/
-    PORT_CPU_INTEL_ARCH_PERF_MONITOR archPerfMonitor; /**< Architecture 
+    PORT_CPU_INTEL_ARCH_PERF_MONITOR archPerfMonitor; /**< Architecture
                                                       Performance Monitoring
                                                       Features.*/
     /// @}
@@ -526,7 +526,7 @@ NV_STATUS portCpuExCpuId(NvU32* pCpuInfo, NvU32 functionId,
 /**
  * @brief Retrieve the current value and frequency of the performance counter
  *
- * @param[out] pFreq  A pointer to a variable to which this routine writes the 
+ * @param[out] pFreq  A pointer to a variable to which this routine writes the
  *                    performance counter frequency, in ticks per second.
  *                    This parameter is optional and can be NULL if the caller
  *                    does not need the counter frequency value.

@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: ctrl/ctrl0073/ctrl0073specific.finn
+// Source file:      ctrl/ctrl0073/ctrl0073specific.finn
 //
 
 #include "ctrl/ctrl0073/ctrl0073base.h"
@@ -1274,6 +1274,10 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_HDMI_SINK_CAPS_PARAMS {
  *   powerState
  *     This parameter should be one of the valid
  *     NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_* values.
+ *   headIdx
+ *     The head id on which power operation needs to be done.
+ *   bForceMonitorState
+ *     Monitor power state that client wants to force in RM.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -1285,9 +1289,11 @@ typedef struct NV0073_CTRL_SPECIFIC_SET_HDMI_SINK_CAPS_PARAMS {
 #define NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS_MESSAGE_ID (0x95U)
 
 typedef struct NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS {
-    NvU32 subDeviceInstance;
-    NvU32 displayId;
-    NvU32 powerState;
+    NvU32  subDeviceInstance;
+    NvU32  displayId;
+    NvU32  powerState;
+    NvU32  headIdx;
+    NvBool bForceMonitorState;
 } NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_PARAMS;
 
 #define NV0073_CTRL_SPECIFIC_SET_MONITOR_POWER_OFF     (0x00000000U)

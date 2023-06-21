@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -261,7 +261,7 @@ NvU32 mapCount_IMPL(MapBase *pMap);
 NvU64 mapKey_IMPL(MapBase *pMap, void *pValue);
 
 void *mapInsertNew_IMPL(NonIntrusiveMap *pMap, NvU64 key);
-void *mapInsertValue_IMPL(NonIntrusiveMap *pMap, NvU64 key, void *pValue);
+void *mapInsertValue_IMPL(NonIntrusiveMap *pMap, NvU64 key, const void *pValue);
 NvBool mapInsertExisting_IMPL(IntrusiveMap *pMap, NvU64 key, void *pValue);
 void mapRemove_IMPL(NonIntrusiveMap *pMap, void *pValue);
 void mapRemoveIntrusive_IMPL(MapBase *pMap, void *pValue);

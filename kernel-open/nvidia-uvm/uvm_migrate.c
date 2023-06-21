@@ -933,20 +933,15 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
         tracker_ptr = &tracker;
 
     if (params->length > 0) {
-        status = uvm_api_range_type_check(va_space, mm, params->base, params->length);
-        if (status == NV_OK) {
-            status = uvm_migrate(va_space,
-                                 mm,
-                                 params->base,
-                                 params->length,
-                                 (dest_gpu ? dest_gpu->id : UVM_ID_CPU),
-                                 params->flags,
-                                 uvm_va_space_iter_first(va_space,
-                                                         params->base,
-                                                         params->base),
-                                 tracker_ptr);
+        uvm_api_range_type_t type;
+
+        type = uvm_api_range_type_check(va_space, mm, params->base, params->length);
+        if (type == UVM_API_RANGE_TYPE_INVALID) {
+            status = NV_ERR_INVALID_ADDRESS;
+            goto done;
         }
-        else if (status == NV_WARN_NOTHING_TO_DO) {
+
+        if (type == UVM_API_RANGE_TYPE_ATS) {
             uvm_migrate_args_t uvm_migrate_args =
             {
                 .va_space               = va_space,
@@ -963,6 +958,18 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
             };
 
             status = uvm_migrate_pageable(&uvm_migrate_args);
+        }
+        else {
+            status = uvm_migrate(va_space,
+                                 mm,
+                                 params->base,
+                                 params->length,
+                                 (dest_gpu ? dest_gpu->id : UVM_ID_CPU),
+                                 params->flags,
+                                 uvm_va_space_iter_first(va_space,
+                                                         params->base,
+                                                         params->base),
+                                 tracker_ptr);
         }
     }
 

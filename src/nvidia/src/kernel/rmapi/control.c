@@ -69,7 +69,6 @@ NV_STATUS
 rmControl_Deferred(RmCtrlDeferredCmd* pRmCtrlDeferredCmd)
 {
     RmCtrlParams rmCtrlParams;
-    RmClient *pClient;
     NvU8 paramBuffer[RMCTRL_DEFERRED_MAX_PARAM_SIZE];
     NV_STATUS status;
     RS_LOCK_INFO lockInfo = {0};
@@ -108,7 +107,7 @@ rmControl_Deferred(RmCtrlDeferredCmd* pRmCtrlDeferredCmd)
 
     // client was checked when we came in through rmControl()
     // but check again to make sure it's still good
-    if (serverutilGetClientUnderLock(rmCtrlParams.hClient, &pClient) != NV_OK)
+    if (serverutilGetClientUnderLock(rmCtrlParams.hClient) == NULL)
     {
         status = NV_ERR_INVALID_CLIENT;
         goto exit;
@@ -391,7 +390,6 @@ static NV_STATUS
 _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams, NvU32 paramsSize, NvU32 flags, RM_API *pRmApi, API_SECURITY_INFO *pSecInfo)
 {
     OBJSYS    *pSys = SYS_GET_INSTANCE();
-    RmClient *pClient;
     RmCtrlParams rmCtrlParams;
     RS_CONTROL_COOKIE rmCtrlExecuteCookie = {0};
     NvBool bIsRaisedIrqlCmd;
@@ -470,7 +468,7 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
     }
 
     // Potential race condition if run lockless?
-    if (serverutilGetClientUnderLock(hClient, &pClient) != NV_OK)
+    if (serverutilGetClientUnderLock(hClient) == NULL)
     {
         rmStatus = NV_ERR_INVALID_CLIENT;
         goto done;
@@ -685,6 +683,12 @@ NV_STATUS serverControl_ValidateCookie
     NV_STATUS status;
     OBJGPU *pGpu;
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+
+    if (pCallContext == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Calling context is NULL!\n");
+        return NV_ERR_INVALID_PARAMETER;
+    }
 
     if (RMCFG_FEATURE_PLATFORM_GSP)
     {

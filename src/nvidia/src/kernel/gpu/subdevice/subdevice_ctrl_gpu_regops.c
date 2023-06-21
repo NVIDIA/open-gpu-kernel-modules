@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -120,7 +120,7 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     RmCtrlParams     *pRmCtrlParams = pCallContext->pControlParams;
     NvBool            bUseMigratableOps;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(GPU_RES_GET_GPU(pSubdevice)->gpuInstance));
 
     NV_PRINTF(LEVEL_INFO, "client 0x%x channel 0x%x\n", hClientTarget,
               hChannelTarget);

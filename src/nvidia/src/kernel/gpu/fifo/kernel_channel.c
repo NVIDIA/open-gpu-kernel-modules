@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,10 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+// FIXME XXX
+#define NVOC_KERNEL_GRAPHICS_CONTEXT_H_PRIVATE_ACCESS_ALLOWED
+
 #include "kernel/gpu/fifo/kernel_channel.h"
 
 #include "kernel/core/locks.h"
 #include "kernel/diagnostics/gpu_acct.h"
+#include "kernel/gpu/conf_compute/conf_compute_keystore.h"
 #include "kernel/gpu/device/device.h"
 #include "kernel/gpu/fifo/kernel_ctxshare.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
@@ -42,6 +46,7 @@
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
+#include "objtmr.h"
 
 #include "class/cl0090.h"   // KERNEL_GRAPHICS_CONTEXT
 #include "class/cl906fsw.h" // GF100_GPFIFO
@@ -162,6 +167,7 @@ kchannelConstruct_IMPL
     NvBool                  bFullSriov       = IS_VIRTUAL_WITH_SRIOV(pGpu) && !gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
     NvBool                  bAddedToGroup    = NV_FALSE;
     NvU32                   callingContextGfid;
+    Device                 *pDevice;
 
     // We only support physical channels.
     NV_ASSERT_OR_RETURN(FLD_TEST_DRF(OS04, _FLAGS, _CHANNEL_TYPE, _PHYSICAL, flags),
@@ -179,6 +185,8 @@ kchannelConstruct_IMPL
     pChannelGpfifoParams->cid = pKernelChannel->cid;
     NV_ASSERT_OK_OR_GOTO(status, refFindAncestorOfType(pResourceRef, classId(Device), &pDeviceRef), cleanup);
     NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &callingContextGfid));
+
+    pDevice = dynamicCast(pDeviceRef->pResource, Device);
 
     // Internal fields must be cleared when RMAPI call is from client
     if (!hypervisorIsVgxHyper() || IS_GSP_CLIENT(pGpu))
@@ -336,6 +344,7 @@ kchannelConstruct_IMPL
             &pChannelGpfifoParams->hPhysChannelGroup,
             KEPLER_CHANNEL_GROUP_A,
             NV_PTR_TO_NvP64(&tsgParams),
+            sizeof(tsgParams),
             RMAPI_ALLOC_FLAGS_SKIP_RPC,
             NvP64_NULL,
             &pRmApi->defaultSecInfo);
@@ -647,7 +656,8 @@ kchannelConstruct_IMPL
                 NV_CHECK_OK_OR_GOTO(
                     status,
                     LEVEL_ERROR,
-                    kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref),
+                    kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                    pDevice, &ref),
                     cleanup);
 
                 NV_CHECK_OK_OR_GOTO(
@@ -684,8 +694,8 @@ kchannelConstruct_IMPL
     // Set TLS state and BAR0 window if we are working with Gr
     if (bMIGInUse && RM_ENGINE_TYPE_IS_GR(pKernelChannel->engineType))
     {
-        NV_ASSERT_OK(kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, pRsClient->hClient,
-                                                     &pKernelChannel->partitionRef));
+        NV_ASSERT_OK(kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                     pDevice, &pKernelChannel->partitionRef));
     }
 
     // Allocate the ChId (except legacy VGPU which allocates ChID on the host)
@@ -1280,13 +1290,12 @@ kchannelGetIter
 NV_STATUS
 CliGetKernelChannelWithDevice
 (
-    NvHandle        hClient,
+    RsClient       *pClient,
     NvHandle        hParent,
     NvHandle        hKernelChannel,
     KernelChannel **ppKernelChannel
 )
 {
-    RsClient      *pRsClient;
     RsResourceRef *pParentRef;
     RsResourceRef *pResourceRef;
     KernelChannel *pKernelChannel;
@@ -1296,8 +1305,7 @@ CliGetKernelChannelWithDevice
 
     *ppKernelChannel = NULL;
 
-    NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
-    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pRsClient, hKernelChannel, &pResourceRef));
+    NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pClient, hKernelChannel, &pResourceRef));
 
     pKernelChannel = dynamicCast(pResourceRef->pResource, KernelChannel);
     NV_CHECK_OR_RETURN(LEVEL_INFO, pKernelChannel != NULL, NV_ERR_OBJECT_NOT_FOUND);
@@ -1516,12 +1524,12 @@ NV_STATUS kchannelGetNextKernelChannel
 }
 
 /**
- * @brief Finds the corresponding KernelChannel given client and channel handle
+ * @brief Finds the corresponding KernelChannel given client object and channel handle
  *
  * Looks in client object store for the channel handle.  Scales with total
  * number of registered objects in the client, not just the number of channels.
  *
- * @param[in]  hClient
+ * @param[in]  pClient
  * @param[in]  hKernelChannel a KernelChannel Channel handle
  * @param[out] ppKernelChannel
  *
@@ -1530,21 +1538,17 @@ NV_STATUS kchannelGetNextKernelChannel
 NV_STATUS
 CliGetKernelChannel
 (
-    NvHandle        hClient,
+    RsClient       *pClient,
     NvHandle        hKernelChannel,
     KernelChannel **ppKernelChannel
 )
 {
     NV_STATUS      status;
-    RsClient      *pRsClient;
     RsResourceRef *pResourceRef;
 
     *ppKernelChannel = NULL;
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
-        serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
-
-    status = clientGetResourceRef(pRsClient, hKernelChannel, &pResourceRef);
+    status = clientGetResourceRef(pClient, hKernelChannel, &pResourceRef);
     if (status != NV_OK)
     {
         return status;
@@ -1766,7 +1770,7 @@ kchannelGetNotifierInfo
             NvBool bFound;
 
             bFound = CliGetDmaMappingInfo(
-                pRsClient->hClient,
+                pRsClient,
                 RES_GET_HANDLE(pDevice),
                 RES_GET_HANDLE(pMemory),
                 notifyGpuVA,
@@ -1825,6 +1829,27 @@ kchannelGetNotifierInfo
     }
 
     return NV_ERR_OBJECT_NOT_FOUND;
+}
+
+/*!
+ * @brief  Check if the client that owns this channel is in user mode.
+ *
+ * This replaces using call context for privilege checking,
+ * and is callable from both CPU and GSP.
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelChannel
+ *
+ * @returns NV_TRUE if owned by user mode or NV_FALSE.
+ */
+NvBool
+kchannelCheckIsUserMode_IMPL
+(
+    KernelChannel *pKernelChannel
+)
+{
+    return (pKernelChannel->privilegeLevel == NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE_USER) ||
+           (pKernelChannel->privilegeLevel == NV_KERNELCHANNEL_ALLOC_INTERNALFLAGS_PRIVILEGE_ADMIN);
 }
 
 /*!
@@ -2066,7 +2091,7 @@ _kchannelAllocOrDescribeInstMem
                 || ((memdescGetAddressSpace(pUserdSubDeviceMemDesc) == ADDR_FBMEM) && bFullSriov)))
         {
             kfifoSetupUserD_HAL(pGpu, pKernelFifo, pUserdSubDeviceMemDesc);
-        } 
+        }
     }
     return NV_OK;
 
@@ -2247,9 +2272,11 @@ _kchannelDescribeMemDescsHeavySriov
     NV_STATUS               status         = NV_OK;
     FIFO_INSTANCE_BLOCK    *pInstanceBlock = NULL;
     NvU32                   subDevInst;
+    Subdevice              *pSubDevice;
     NvHandle                hSubDevice     = 0;
     NvU32                   apert          = ADDR_UNKNOWN;
     NV2080_CTRL_CMD_FIFO_GET_CHANNEL_MEM_INFO_PARAMS memInfoParams;
+    Device                 *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
 
     NV_ASSERT_OR_RETURN(IS_VIRTUAL_WITH_SRIOV(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu),
             NV_ERR_INVALID_STATE);
@@ -2271,14 +2298,20 @@ _kchannelDescribeMemDescsHeavySriov
     portMemSet(&memInfoParams, 0, sizeof(NV2080_CTRL_CMD_FIFO_GET_CHANNEL_MEM_INFO_PARAMS));
     memInfoParams.hChannel = RES_GET_HANDLE(pKernelChannel);
 
-
-    if ((status = CliGetSubDeviceHandleFromGpu(RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                               pGpu, &hSubDevice)) != NV_OK)
+    status = subdeviceGetByInstance(RES_GET_CLIENT(pKernelChannel),
+                                    RES_GET_HANDLE(pDevice),
+                                    subDevInst,
+                                    &pSubDevice);
+    if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Unable to get subdevice handle.\n");
+        NV_PRINTF(LEVEL_ERROR, "Unable to get subdevice object.\n");
         DBG_BREAKPOINT();
         SLI_LOOP_RETURN(status);
     }
+
+    GPU_RES_SET_THREAD_BC_STATE(pSubDevice);
+
+    hSubDevice = RES_GET_HANDLE(pSubDevice);
 
     NV_RM_RPC_CONTROL(pGpu,
                       RES_GET_CLIENT_HANDLE(pKernelChannel),
@@ -2696,8 +2729,8 @@ kchannelCtrlCmdGetClassEngineid_IMPL
         RM_ENGINE_TYPE localRmEngineType;
 
         NV_ASSERT_OK_OR_RETURN(
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                            RES_GET_CLIENT_HANDLE(pKernelChannel),
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                            GPU_RES_GET_DEVICE(pKernelChannel),
                                             &ref));
 
         NV_ASSERT_OK_OR_RETURN(
@@ -2859,18 +2892,8 @@ kchannelCtrlCmdSetErrorNotifier_IMPL
 )
 {
     OBJGPU   *pGpu = GPU_RES_GET_GPU(pKernelChannel);
-    Device   *pDevice;
-    RsClient *pClient = RES_GET_CLIENT(pKernelChannel);
     RC_NOTIFIER_SCOPE scope;
     NV_STATUS rmStatus = NV_OK;
-
-    rmStatus = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
-    if (rmStatus != NV_OK)
-    {
-       NV_PRINTF(LEVEL_ERROR, "Cannot find device for client 0x%x\n",
-                 pClient->hClient);
-        return NV_ERR_INVALID_DEVICE;
-    }
 
     NV_PRINTF(LEVEL_INFO,
               "calling setErrorNotifier on channel: 0x%x, broadcast to TSG: %s\n",
@@ -2899,7 +2922,6 @@ kchannelCtrlCmdBind_IMPL
     RM_ENGINE_TYPE globalRmEngineType;
     RM_ENGINE_TYPE localRmEngineType;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelChannel);
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelChannel);
     NvBool bMIGInUse = IS_MIG_IN_USE(pGpu);
     NV_STATUS rmStatus = NV_OK;
     ENGDESCRIPTOR engineDesc;
@@ -2928,7 +2950,9 @@ kchannelCtrlCmdBind_IMPL
         MIG_INSTANCE_REF ref;
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                            GPU_RES_GET_DEVICE(pKernelChannel),
+                                            &ref));
 
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref, localRmEngineType,
@@ -3135,12 +3159,10 @@ kchannelRegisterChild_IMPL
     if (pObject->resourceDesc.engDesc == ENG_SW)
     {
         RS_ORDERED_ITERATOR it;
-        RsClient *pClient;
+        RsClient *pClient = RES_GET_CLIENT(pKernelChannel);
         ChannelDescendant *pMatchingObject = NULL;
 
         firstObjectClassID = pKernelChannel->nextObjectClassID;
-
-        NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, RES_GET_CLIENT_HANDLE(pKernelChannel), &pClient));
 
         do
         {
@@ -3696,12 +3718,11 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
 {
     NvHandle hNotifier;
     RsClient *pClient = RES_GET_CLIENT(pKernelChannel);
-    Device *pDevice;
     Memory *pMemory;
     ContextDma *pContextDma;
     NvU32 addressSpace;
     NvU64 notificationBufferSize;
-    NV_STATUS status;
+    Device *pDevice;
 
     hNotifier = pKernelChannel->hErrorContext;
 
@@ -3716,9 +3737,7 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
         return NV_ERR_OUT_OF_RANGE;
     }
 
-    status = deviceGetByInstance(pClient, gpuGetDeviceInstance(pGpu), &pDevice);
-    if (status != NV_OK)
-        return NV_ERR_INVALID_DEVICE;
+    pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
 
     if (NV_OK == memGetByHandleAndDevice(pClient, hNotifier, RES_GET_HANDLE(pDevice), &pMemory))
     {
@@ -3734,7 +3753,7 @@ kchannelUpdateWorkSubmitTokenNotifIndex_IMPL
                 PCLI_DMA_MAPPING_INFO pDmaMappingInfo;
 
                 NV_CHECK_OR_RETURN(LEVEL_INFO,
-                    CliGetDmaMappingInfo(pClient->hClient,
+                    CliGetDmaMappingInfo(pClient,
                                          RES_GET_HANDLE(pDevice),
                                          RES_GET_HANDLE(pMemory),
                                          physAddr,
@@ -3791,87 +3810,75 @@ kchannelNotifyWorkSubmitToken_IMPL
     NvU32 token
 )
 {
-    NV_STATUS status = NV_OK;
-    NvHandle hNotifier;
-    RsClient *pClient = RES_GET_CLIENT(pKernelChannel);
-    Device *pDevice;
-    Memory *pMemory;
-    ContextDma *pContextDma;
-    NvU32 addressSpace;
+    MEMORY_DESCRIPTOR *pNotifierMemDesc = pKernelChannel->pErrContextMemDesc;
+    NV_ADDRESS_SPACE addressSpace;
     NvU16 notifyStatus = 0x0;
     NvU32 index;
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    NvU64 time;
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    TRANSFER_SURFACE surf = {0};
+    NvNotification *pNotifier = NULL;
+    NvBool bMemEndTransfer = NV_FALSE;
 
-    hNotifier = pKernelChannel->hErrorContext;
+    if (pNotifierMemDesc == NULL)
+        return NV_OK;
+
     index = pKernelChannel->notifyIndex[NV_CHANNELGPFIFO_NOTIFICATION_TYPE_WORK_SUBMIT_TOKEN];
-
-    status = deviceGetByInstance(pClient, gpuGetDeviceInstance(pGpu), &pDevice);
-    if (status != NV_OK)
-        return NV_ERR_INVALID_DEVICE;
 
     notifyStatus =
         FLD_SET_DRF(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _IN_PROGRESS, _TRUE, notifyStatus);
     notifyStatus =
         FLD_SET_DRF_NUM(_CHANNELGPFIFO, _NOTIFICATION_STATUS, _VALUE, 0xFFFF, notifyStatus);
 
-    if (NV_OK == memGetByHandleAndDevice(pClient, hNotifier, RES_GET_HANDLE(pDevice), &pMemory))
+    addressSpace = memdescGetAddressSpace(pNotifierMemDesc);
+    if (RMCFG_FEATURE_PLATFORM_GSP)
+        NV_ASSERT_OR_RETURN(addressSpace == ADDR_FBMEM, NV_ERR_INVALID_STATE);
+
+    //
+    // If clients did not allocate enough memory for the doorbell
+    // notifier, return NV_OK so as not to regress older clients
+    //
+    NV_CHECK_OR_RETURN(LEVEL_INFO, memdescGetSize(pNotifierMemDesc) >= (index + 1) * sizeof(NvNotification), NV_OK);
+
+    pNotifier = (NvNotification *)memdescGetKernelMapping(pNotifierMemDesc);
+    if (pNotifier == NULL)
     {
-        addressSpace = memdescGetAddressSpace(pMemory->pMemDesc);
+        surf.pMemDesc = pNotifierMemDesc;
+        surf.offset = index * sizeof(NvNotification);
 
-        //
-        // If clients did not allocate enough memory for the doorbell
-        // notifier, return NV_OK so as not to regress older clients
-        //
-        NV_CHECK_OR_RETURN(LEVEL_INFO, pMemory->Length >= ((index + 1) * sizeof(NvNotification)), NV_OK);
-        switch (addressSpace)
-        {
-            case ADDR_VIRTUAL:
-            {
-                NvU64 physAddr = memdescGetPhysAddr(pMemory->pMemDesc, AT_GPU_VA, 0);
-                PCLI_DMA_MAPPING_INFO pDmaMappingInfo;
-
-                NV_CHECK_OR_RETURN(LEVEL_INFO,
-                    CliGetDmaMappingInfo(pClient->hClient,
-                                         RES_GET_HANDLE(pDevice),
-                                         RES_GET_HANDLE(pMemory),
-                                         physAddr,
-                                         gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
-                                         &pDmaMappingInfo),
-                    NV_OK);
-
-                //
-                // If clients did not map enough memory for the doorbell
-                // notifier, return NV_OK so as not to regress older clients
-                //
-                NV_CHECK_OR_RETURN(LEVEL_INFO, pDmaMappingInfo->pMemDesc->Size >= ((index + 1) * sizeof(NvNotification)), NV_OK);
-
-                status = notifyFillNotifierGPUVA(pGpu, pClient->hClient, RES_GET_HANDLE(pMemory), physAddr,
-                                                 token, 0x0U, notifyStatus, index);
-                break;
-            }
-            case ADDR_FBMEM:
-                // fall through
-            case ADDR_SYSMEM:
-                status = notifyFillNotifierMemory(pGpu, pMemory, token, 0x0U, notifyStatus, index);
-                break;
-            default:
-                status = NV_ERR_NOT_SUPPORTED;
-                break;
-        }
+        pNotifier =
+            (NvNotification *) memmgrMemBeginTransfer(pMemoryManager, &surf,
+                                                      sizeof(NvNotification),
+                                                      TRANSFER_FLAGS_SHADOW_ALLOC);
+        NV_ASSERT_OR_RETURN(pNotifier != NULL, NV_ERR_INVALID_STATE);
+        bMemEndTransfer = NV_TRUE;
     }
-    else if (NV_OK == ctxdmaGetByHandle(pClient, hNotifier, &pContextDma))
+    else
     {
         //
-        // If clients did not allocate enough memory for the doorbell
-        // notifier, return NV_OK so as not to regress older clients
+        // If a CPU pointer has been passed by caller ensure that the notifier
+        // is in sysmem or in case it in vidmem, BAR access to the same is not
+        // blocked (for HCC)
         //
-        NV_CHECK_OR_RETURN(LEVEL_INFO, pContextDma->Limit >= (((index + 1) * sizeof(NvNotification)) - 1), NV_OK);
-
-        status = notifyFillNotifierOffset(pGpu, pContextDma, token, 0x0U, notifyStatus,
-                                          (sizeof(NvNotification) * index));
-
+        NV_ASSERT_OR_RETURN(
+            memdescGetAddressSpace(pNotifierMemDesc) == ADDR_SYSMEM ||
+            !kbusIsBarAccessBlocked(pKernelBus), NV_ERR_INVALID_ARGUMENT);
+        pNotifier = &pNotifier[index];
     }
 
-    return status;
+    tmrGetCurrentTime(pTmr, &time);
+
+    notifyFillNvNotification(pGpu, pNotifier, token, 0,
+                             notifyStatus, NV_TRUE, time);
+
+    if (bMemEndTransfer)
+    {
+        memmgrMemEndTransfer(pMemoryManager, &surf, sizeof(NvNotification), 0);
+    }
+
+    return NV_OK;
 }
 
 /**
@@ -4196,14 +4203,14 @@ _kchannelGetUserMemDesc
  * @brief Retrieve a KernelChannel from either a KernelChannel or TSG handle. KernelChannel is
  * checked first. If TSG is provided, the head of the TSG is returned.
  *
- * @param[in]  hClient            Client
+ * @param[in]  pClient            Client object
  * @param[in]  hDual              NvHandle either to TSG or to KernelChannel
  * @param[out] ppKernelChannel    Referenced KernelChannel
  */
 NV_STATUS
 kchannelGetFromDualHandle_IMPL
 (
-    NvHandle         hClient,
+    RsClient        *pClient,
     NvHandle         hDual,
     KernelChannel  **ppKernelChannel
 )
@@ -4215,13 +4222,13 @@ kchannelGetFromDualHandle_IMPL
 
     *ppKernelChannel = NULL;
 
-    if (CliGetKernelChannel(hClient, hDual, &pKernelChannel) == NV_OK)
+    if (CliGetKernelChannel(pClient, hDual, &pKernelChannel) == NV_OK)
     {
         *ppKernelChannel = pKernelChannel;
         return NV_OK;
     }
 
-    if (CliGetChannelGroup(hClient, hDual, &pChanGrpRef, NULL) == NV_OK)
+    if (CliGetChannelGroup(pClient->hClient, hDual, &pChanGrpRef, NULL) == NV_OK)
     {
         KernelChannelGroupApi *pKernelChannelGroupApi = dynamicCast(
             pChanGrpRef->pResource,
@@ -4250,20 +4257,20 @@ kchannelGetFromDualHandle_IMPL
  * checked first. If TSG is provided, the head of the TSG is returned. If
  * KernelChannel handle is provided, it must not be part of a client-allocated TSG.
  *
- * @param[in]  hClient            Client
+ * @param[in]  pClient            Client object
  * @param[in]  hDual              NvHandle either to TSG or to bare Channel
  * @param[out] ppKernelChannel    Referenced KernelChannel
  */
 NV_STATUS
 kchannelGetFromDualHandleRestricted_IMPL
 (
-    NvHandle         hClient,
+    RsClient        *pClient,
     NvHandle         hDual,
     KernelChannel  **ppKernelChannel
 )
 {
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        kchannelGetFromDualHandle(hClient, hDual, ppKernelChannel));
+        kchannelGetFromDualHandle(pClient, hDual, ppKernelChannel));
     if ((RES_GET_HANDLE(*ppKernelChannel) == hDual) &&
         (((*ppKernelChannel)->pKernelChannelGroupApi->pKernelChannelGroup != NULL) &&
          !(*ppKernelChannel)->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm))

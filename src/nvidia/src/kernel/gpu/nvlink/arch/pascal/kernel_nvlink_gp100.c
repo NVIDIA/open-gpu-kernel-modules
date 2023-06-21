@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,6 +20,8 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
+
+#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 
 #include "os/os.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
@@ -282,6 +284,7 @@ knvlinkSetupPeerMapping_GP100
             portMemSet(&preSetupNvlinkPeerParams, 0, sizeof(preSetupNvlinkPeerParams));
             preSetupNvlinkPeerParams.peerId        = peerId;
             preSetupNvlinkPeerParams.peerLinkMask  = peerLinkMask;
+            preSetupNvlinkPeerParams.bEgmPeer      = GPU_GET_KERNEL_BUS(pGpu)->p2p.bEgmPeer[peerId];
             preSetupNvlinkPeerParams.bNvswitchConn = knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink);
 
             status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,

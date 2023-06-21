@@ -141,7 +141,7 @@ chandesConstruct_IMPL
                     partnerParams.runqueue = kchannelGetRunqueue(pKernelChannel);
                     NV_ASSERT_OK_OR_RETURN(kfifoGetEnginePartnerList_HAL(pGpu, pKernelFifo, &partnerParams));
                     NV_ASSERT_OR_RETURN(partnerParams.numPartners == 1, NV_ERR_INVALID_STATE);
-                    rmEngineType = gpuGetRmEngineType(partnerParams.partnerList[0]); 
+                    rmEngineType = gpuGetRmEngineType(partnerParams.partnerList[0]);
                 }
 
                 // Get the engDesc from engineType
@@ -164,7 +164,7 @@ chandesConstruct_IMPL
         //
         ENGDESCRIPTOR engDesc = pParamToEngDescFn(pGpu, pParams->externalClassId,
                                                   pParams->pAllocParams);
-        
+
         if (rmapiutilIsExternalClassIdInternalOnly(pParams->externalClassId))
         {
             //
@@ -213,25 +213,25 @@ chandesConstruct_IMPL
         //
         engDesc = MKENGDESC(classId(KernelGraphics), GET_GR_IDX(engDesc));
     }
-    else if (IS_CE(engDesc) && gpuGetEngstate(pGpu, engDesc) == NULL)
-    {
-        // If CE is missing, check for KCE instead
-        engDesc = MKENGDESC(classId(KernelCE), GET_CE_IDX(engDesc));
-    }
-
-    void *pEngObject = gpuGetEngstate(pGpu, engDesc);
     //
-    // In a kernel-only config, falcons are represented by KernelFalcons and do not have an
-    // engstate.
+    // skip checking engstate for CE, engine guaranteed to exist if pParamToEngDescFn is succesful
     //
-    if (pEngObject == NULL)
-        pEngObject = kflcnGetKernelFalconForEngine(pGpu, engDesc);
-
-    if (pEngObject == NULL)
+    if (!IS_CE(engDesc))
     {
-        NV_PRINTF(LEVEL_ERROR, "engine is missing for class 0x%x\n",
-                  pParams->externalClassId);
-        return NV_ERR_INVALID_CLASS;
+        void *pEngObject = gpuGetEngstate(pGpu, engDesc);
+        //
+        // In a kernel-only config, falcons are represented by KernelFalcons and do not have an
+        // engstate.
+        //
+        if (pEngObject == NULL)
+            pEngObject = kflcnGetKernelFalconForEngine(pGpu, engDesc);
+
+        if (pEngObject == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "engine is missing for class 0x%x\n",
+                    pParams->externalClassId);
+            return NV_ERR_INVALID_CLASS;
+        }
     }
 
     pChannelDescendant->pKernelChannel = pKernelChannel;

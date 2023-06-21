@@ -139,6 +139,10 @@ static NV_INLINE NvU32 timeoutApplyScale(TIMEOUT_DATA *pTD, NvU32 timeout)
 #define gpuScaleTimeout(g,a)         timeoutApplyScale(&(g)->timeoutData, a)
 #define gpuTimeoutCondWait(g,a,b,t)  timeoutCondWait(&(g)->timeoutData, t, a, b, __LINE__)
 
-#define GPU_ENG_RESET_TIMEOUT_VALUE(g, t) (t)
+//
+// In SCSIM simulation platform, both CPU and GPU are simulated and the reg write/read itself
+// takes more time. This helper macro handles it with increased timeout value.
+//
+#define GPU_ENG_RESET_TIMEOUT_VALUE(g, t) ((gpuIsSelfHosted(g) && IS_SIMULATION(g)) ? 1000 : (t))
 
 #endif // _GPU_TIMEOUT_H_

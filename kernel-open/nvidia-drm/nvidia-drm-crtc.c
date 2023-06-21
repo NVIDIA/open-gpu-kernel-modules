@@ -44,6 +44,8 @@
 
 #if defined(NV_LINUX_NVHOST_H_PRESENT) && defined(CONFIG_TEGRA_GRHOST)
 #include <linux/nvhost.h>
+#elif defined(NV_LINUX_HOST1X_NEXT_H_PRESENT)            
+#include <linux/host1x-next.h>
 #endif
 
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
@@ -361,6 +363,21 @@ plane_req_config_update(struct drm_plane *plane,
 
         if (nv_drm_plane_state->fd_user_ptr) {
             req_config->config.syncptParams.postSyncptRequested = true;
+        }           
+#elif defined(NV_LINUX_HOST1X_NEXT_H_PRESENT)            
+        if (plane_state->fence != NULL) {            
+            int ret = host1x_fence_extract(            
+                      plane_state->fence,            
+                      &req_config->config.syncptParams.preSyncptId,            
+                      &req_config->config.syncptParams.preSyncptValue);            
+            if (ret != 0) {            
+                return ret;            
+            }            
+            req_config->config.syncptParams.preSyncptSpecified = true;            
+        }            
+
+        if (nv_drm_plane_state->fd_user_ptr) {            
+            req_config->config.syncptParams.postSyncptRequested = true;            
         }
 #else
         return -1;

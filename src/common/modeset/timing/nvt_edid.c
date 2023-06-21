@@ -1,6 +1,6 @@
 //*****************************************************************************
 //
-//  SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+//  SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 //  SPDX-License-Identifier: MIT
 //
 //  Permission is hereby granted, free of charge, to any person obtaining a
@@ -1079,15 +1079,17 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
                 // add the detailed timings in 18-byte long display descriptor
                 parse861ExtDetailedTiming(pExt, p861Info->basic_caps, pInfo);
 
-                if (p861Info->revision >= NVT_CTA861_REV_H && p861Info->total_did_type10db != 0)
+                if (p861Info->revision >= NVT_CTA861_REV_H)
                 {
-                    parseCta861DIDType10VideoTimingDataBlock(p861Info, pInfo);
+                    if (p861Info->total_did_type7db  != 0)  parseCta861DIDType7VideoTimingDataBlock(p861Info, pInfo);
+                    if (p861Info->total_did_type8db  != 0)  parseCta861DIDType8VideoTimingDataBlock(p861Info, pInfo);
+                    if (p861Info->total_did_type10db != 0)  parseCta861DIDType10VideoTimingDataBlock(p861Info, pInfo);
                 }
 
                 // CEA861-F at 7.5.12 section about VFPDB block.
-                if (p861Info->revision >= NVT_CEA861_REV_F && p861Info->total_vfpdb != 0)
+                if (p861Info->revision >= NVT_CEA861_REV_F && (p861Info->total_svr != 0 || p861Info->valid.NVRDB == 1))
                 {
-                    parse861bShortPreferredTiming(p861Info, pInfo, FROM_CTA861_EXTENSION);
+                    parseCta861NativeOrPreferredTiming(p861Info, pInfo, FROM_CTA861_EXTENSION);
                 }
 
                 k++;
@@ -1174,6 +1176,27 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
 
     // find out the total established timings - base EDID and then the LDDs
     parseEdidEstablishedTiming(pInfo);
+
+    // remove the T8VTDB timing if it co-existed in standard or established timings
+    if (pInfo->ext861.revision >= NVT_CTA861_REV_H && pInfo->ext861.total_did_type8db != 0 && pInfo->total_timings > 1)
+    {
+        for (i = 0; i < pInfo->total_timings; i++)
+        {
+            if (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[i].etc.status) == NVT_TYPE_CTA861_DID_T8)
+            {
+                if (isMatchedStandardTiming(pInfo, &pInfo->timing[i]) || isMatchedEstablishedTiming(pInfo, &pInfo->timing[i]))
+                {
+                    for (j = i; j < pInfo->total_timings - 1; j++)
+                    {
+                        // remove the entry by moving the next entry up.
+                        pInfo->timing[j] = pInfo->timing[j+1];
+                    }
+                    NVMISC_MEMSET(&pInfo->timing[pInfo->total_timings-1], 0, sizeof(NVT_TIMING));
+                    pInfo->total_timings--; i--;
+                }
+            }
+        }
+    }
 
     getEdidHDM1_4bVsdbTiming(pInfo);
 
@@ -1286,7 +1309,38 @@ void updateColorFormatAndBpcTiming(NVT_EDID_INFO *pInfo)
             }
         }
     }
+}
 
+CODE_SEGMENT(PAGE_DD_CODE)
+NvBool isMatchedStandardTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT)
+{
+    NvU32 j;
+
+    for (j = 0; j < pInfo->total_timings; j++)
+    {
+        if (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[j].etc.status) == NVT_TYPE_EDID_STD && 
+            NvTiming_IsTimingRelaxedEqual(&pInfo->timing[j], pT))
+        {
+            return NV_TRUE;
+        }
+    }
+    return NV_FALSE;
+}
+
+CODE_SEGMENT(PAGE_DD_CODE)
+NvBool isMatchedEstablishedTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT)
+{
+    NvU32 j;
+
+    for (j = 0; j < pInfo->total_timings; j++)
+    {
+        if (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[j].etc.status) == NVT_TYPE_EDID_EST && 
+            NvTiming_IsTimingRelaxedEqual(&pInfo->timing[j], pT))
+        {
+            return NV_TRUE;
+        }
+    }
+    return NV_FALSE;
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
@@ -1390,7 +1444,7 @@ CODE_SEGMENT(PAGE_DD_CODE)
 NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT_EDID_INFO *pEdidInfo, NVT_TIMING *pT, NvU32 rrx1k)
 {
     NvU32 i, j;
-    NvU32 preferred_cea, preferred_displayid_dtd, preferred_dtd1, dtd1, map0, map1, map2, map3, map4, ceaIndex, max, cvt;
+    NvU32 native_cta, preferred_cta, preferred_displayid_dtd, preferred_dtd1, dtd1, map0, map1, map2, map3, map4, ceaIndex, max, cvt;
     NVT_TIMING *pEdidTiming;
     NVT_EDID_DD_RANGE_CVT *pCVT = NULL;
     NVT_TIMING cvtTiming;
@@ -1406,7 +1460,9 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
 
     // the timing mapping index :
     //
-    // preferred_cea           - the "prefer SVD" in CEA-861-F (i.e. A Sink that prefers a Video Format that is not listed as an SVD in Video Data Block, but instead listed in YCBCR 4:2:0 VDB)
+    // native_cta              - the "native resoluiotn of the sink" in the CTA861.6 A Source shall override any other native video resolution indicators 
+    //                           if the Source supports NVRDB and the NVRDB was found in the E-EDID
+    // preferred_cta           - the "prefer SVD" in CTA-861-F (i.e. A Sink that prefers a Video Format that is not listed as an SVD in Video Data Block, but instead listed in YCBCR 4:2:0 VDB)
     // preferred_displayid_dtd - the "prefer detailed timing of DispalyID" extension
     // preferred_dtd1          - the first deatiled timing and PTM flag is enable
     // dtd1 - the first detailed timing
@@ -1416,7 +1472,7 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
     // map3 - the "closest" match to the panel's native timing (i.e. the first DTD timing or the short 861B/C/D timings with "native" flag).
     // map4 - the "closest" match with the same refresh rate
     // max  - the timing with the max visible area
-    preferred_cea = preferred_displayid_dtd = preferred_dtd1 = dtd1 = map0 = map1 = map2 = map3 = map4 = ceaIndex = pEdidInfo->total_timings;
+    native_cta = preferred_cta = preferred_displayid_dtd = preferred_dtd1 = dtd1 = map0 = map1 = map2 = map3 = map4 = ceaIndex = pEdidInfo->total_timings;
     max = cvt = 0;
     for (i = 0; i < pEdidInfo->total_timings; i++)
     {
@@ -1440,7 +1496,7 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
                 map0 = i;
             }
 
-            if ( (NVT_PREFERRED_TIMING_IS_CEA(pEdidTiming[i].etc.flag)) ||
+            if ( (NVT_PREFERRED_TIMING_IS_CTA(pEdidTiming[i].etc.flag)) ||
                  ((0 == (flag & NVT_FLAG_EDID_861_ST)) && NVT_PREFERRED_TIMING_IS_DTD1(pEdidTiming[i].etc.flag, pEdidTiming[i].etc.status)) ||
                  (NVT_PREFERRED_TIMING_IS_DISPLAYID(pEdidTiming[i].etc.flag)) ||
                  (NVT_IS_NATIVE_TIMING(pEdidTiming[i].etc.status)))
@@ -1479,10 +1535,14 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
         }
 
         // find out the preferred timing just in case of cea_vfpdb is existed
-        if (preferred_cea == pEdidInfo->total_timings &&
-            NVT_PREFERRED_TIMING_IS_CEA(pEdidTiming[i].etc.flag))
+        if (native_cta == pEdidInfo->total_timings && NVT_NATIVE_TIMING_IS_CTA(pEdidTiming[i].etc.flag))
         {
-            preferred_cea = i;
+            native_cta = i;
+        } 
+
+        if (preferred_cta == pEdidInfo->total_timings && NVT_PREFERRED_TIMING_IS_CTA(pEdidTiming[i].etc.flag))
+        {
+            preferred_cta = i;
         }
 
         // find out the preferred timing just in case
@@ -1741,7 +1801,8 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
     if (flag & NVT_FLAG_NV_PREFERRED_TIMING)
     {
         *pT = (preferred_displayid_dtd != pEdidInfo->total_timings) ? pEdidTiming[preferred_displayid_dtd] :
-              (preferred_cea != pEdidInfo->total_timings)           ? pEdidTiming[preferred_cea]           :
+              (native_cta     != pEdidInfo->total_timings)          ? pEdidTiming[native_cta]              :
+              (preferred_cta  != pEdidInfo->total_timings)          ? pEdidTiming[preferred_cta]           :
               (preferred_dtd1 != pEdidInfo->total_timings)          ? pEdidTiming[preferred_dtd1]          :
                                                                       pEdidTiming[dtd1];
         // what if DTD1 itself is filtered out, in such case dtd1 index points to an invalid timing[]?
@@ -1998,7 +2059,7 @@ NvU32 NvTiming_EDIDValidationMask(NvU8 *pEdid, NvU32 length, NvBool bIsStrongVal
     {
         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_VERSION);
         return ret;
-    }
+    } 
 
     // check block 0 checksum value
     if (!isChecksumValid(pEdid))
@@ -2313,7 +2374,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                         }
                         else if (ctaBlockTag == NVT_CEA861_TAG_EXTENDED_FLAG)
                         {
-                            if (*pData_collection == NVT_CEA861_EXT_TAG_HF_EEODB)
+                            if (*pData_collection == NVT_CTA861_EXT_TAG_HF_EEODB)
                             {
                                 if ((p->bVersionNumber != 0x01) || (p->bRevisionNumber != 0x03))
                                 {
@@ -2334,7 +2395,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                             else
                                 pData_collection += ctaPayload;
                         }
-                        else if (ctaBlockTag == NVT_CEA861_TAG_RSVD || ctaBlockTag == NVT_CEA861_TAG_RSVD1)
+                        else if (ctaBlockTag == NVT_CEA861_TAG_RSVD)
                         {
                             ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_TAG);
                             pData_collection += ctaPayload;

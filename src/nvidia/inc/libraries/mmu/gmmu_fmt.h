@@ -411,7 +411,7 @@ struct GMMU_FMT_PDE
      * Should be always the same as version in GMMU_FMT above.
      */
     NvU32 version;
-    
+
     /*!
      * Aperture field indicating which physical address space the sublevel resides.
      */
@@ -441,7 +441,7 @@ struct GMMU_FMT_PDE
      *       TODO: Wiki link to explain arch differences.
      */
     NV_FIELD_BOOL fldVolatile;
-    
+
     /*!
      * PDE_PCF field for V3 format.
      */

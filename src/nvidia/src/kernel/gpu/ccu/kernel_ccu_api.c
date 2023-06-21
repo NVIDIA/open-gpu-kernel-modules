@@ -82,7 +82,7 @@ _kccuapiMemdescGet
     {
         return kccuMemDescGetForShrBufId(pGpu, pKernelCcu, CCU_DEV_SHRBUF_ID, pMemDesc);
     }
-   
+
     // In case of MIG
     status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref);
     if (status != NV_OK)
@@ -175,7 +175,7 @@ kccuapiUnmap_IMPL
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
 
     NV_PRINTF(LEVEL_INFO, "Kernel Ccu Api: memdesc unmap\n");
-    
+
     status = rmapiValidateKernelMapping(rmclientGetCachedPrivilege(pClient),
                                         pCpuMapping->flags,
                                         &bKernel);

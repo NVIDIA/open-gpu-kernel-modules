@@ -27,7 +27,7 @@
 
 //
 // This file was generated with FINN, an NVIDIA coding tool.
-// Source file: class/clc639.finn
+// Source file:      class/clc639.finn
 //
 
 #define AMPERE_SMC_CONFIG_SESSION (0xc639U) /* finn: Evaluated from "NVC639_ALLOCATION_PARAMETERS_MESSAGE_ID" */

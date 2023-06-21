@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,8 +52,8 @@ static inline nv_firmware_chip_family_t nv_firmware_get_chip_family(
             return NV_FIRMWARE_CHIP_FAMILY_AD10X;
 
         case GPU_ARCHITECTURE_HOPPER:
-            if (gpuImpl == GPU_IMPLEMENTATION_GH100)
-                return NV_FIRMWARE_CHIP_FAMILY_GH100;
+            return NV_FIRMWARE_CHIP_FAMILY_GH100;
+
     }
 
     return NV_FIRMWARE_CHIP_FAMILY_NULL;
