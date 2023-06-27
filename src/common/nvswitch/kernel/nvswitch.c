@@ -1511,6 +1511,12 @@ nvswitch_lib_initialize_device
             nvswitch_reset_and_train_link(device, link);
         }
 
+        //
+        // WAR : Initializing the L1 threshold registers at this point as a WAR for
+        // Bug 3963639 where is it was discussed that the L1 threshold register should have 
+        // value the default value for all available links and not just for active links.
+        //
+        nvswitch_init_lpwr_regs(link);
     }
 
     retval = nvswitch_set_training_mode(device);
@@ -3361,6 +3367,26 @@ _nvswitch_ctrl_i2c_smbus_command
 
     return _nvswitch_perform_i2c_transfer(device, NVSWITCH_I2C_ACQUIRER_IOCTL,
                                           cmdType, addr, port, cmd, msgLen, pData);
+}
+
+NvBool
+nvswitch_does_link_need_termination_enabled
+(
+    nvswitch_device *device,
+    nvlink_link *link
+)
+{
+    return device->hal.nvswitch_does_link_need_termination_enabled(device, link);
+}
+
+NvlStatus
+nvswitch_link_termination_setup
+(
+    nvswitch_device *device,
+    nvlink_link* link
+)
+{
+    return device->hal.nvswitch_link_termination_setup(device, link);
 }
 
 static NvlStatus

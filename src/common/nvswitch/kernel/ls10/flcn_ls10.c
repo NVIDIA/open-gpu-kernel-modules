@@ -279,6 +279,7 @@ _flcnDbgInfoCaptureRiscvPcTrace_LS10
 {
     NvU32 ctl, ridx, widx, bufferSize;
     NvBool bWasFull;
+    NvU64 bios_version;
 
     // Only supported on riscv
     if (!UPROC_ENG_ARCH_FALCON_RISCV(pFlcn))
@@ -354,8 +355,13 @@ _flcnDbgInfoCaptureRiscvPcTrace_LS10
                 break;
             }
 
-            NVSWITCH_PRINT(device, ERROR, "%s: TRACE[%d] = 0x%16llx\n", __FUNCTION__, entry, pc);
+            NVSWITCH_PRINT_SXID_NO_BBX(device, NVSWITCH_ERR_HW_SOE_HALT, "SOE HALT data[%d] = 0x%16llx\n", entry, pc);
         }
+
+        // Print VBIOS version at the end
+        nvswitch_lib_get_bios_version(device, &bios_version);
+        NVSWITCH_PRINT_SXID_NO_BBX(device, NVSWITCH_ERR_HW_SOE_HALT,
+            "SOE HALT data[%d] = 0x%16llx\n", entry, bios_version);
     }
 
     // reset trace buffer

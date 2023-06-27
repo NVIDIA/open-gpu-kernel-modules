@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,47 +20,24 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#ifndef FALCON_COMMON_H
-#define FALCON_COMMON_H
 
-/*!
- * Alignment/granularity of falcon memory blocks
- */
-#define FLCN_BLK_ALIGNMENT (256)
+#if !defined(NV_IOCTL_NVLOG)
+#define NV_IOCTL_NVLOG
 
-/*!
- * Address/offset alignment required for falcon IMEM accesses
- */
-#define FLCN_IMEM_ACCESS_ALIGNMENT (4)
+#include <nvtypes.h>
+#include "ctrl/ctrl0000/ctrl0000nvd.h"
 
-/*!
- * Address/offset alignment required for falcon DMEM accesses
- */
-#define FLCN_DMEM_ACCESS_ALIGNMENT (4)
+typedef struct
+{
+    NvU32 ctrl; // in
+    NvU32 status; // out
+    union // in/out
+    {
+        NV0000_CTRL_NVD_GET_NVLOG_INFO_PARAMS getNvlogInfo;
+        NV0000_CTRL_NVD_GET_NVLOG_BUFFER_INFO_PARAMS getNvlogBufferInfo;
+        NV0000_CTRL_NVD_GET_NVLOG_PARAMS getNvlog;
+    } params;
+} NV_NVLOG_CTRL_PARAMS;
 
-/*!
- * Falcon IMEM block-size (as a power-of-2)
- */
-#define FALCON_IMEM_BLKSIZE2 (8)
+#endif
 
-/*!
- * Falcon DMEM block-size (as a power-of-2)
- */
-#define FALCON_DMEM_BLKSIZE2 (8)
-
-/*!
- * Denotes invalid/absent VA for falcon ucode loading
- */
-#define FLCN_DMEM_VA_INVALID 0xffffffff
-
-/*!
- * Default Falcon context buffer size
- */
-#define FLCN_CTX_ENG_BUFFER_SIZE_HW      4096
-
-/*!
- * Number of register read needed for reset signal propagation
- */
-#define FLCN_RESET_PROPAGATION_DELAY_COUNT    10
-
-#endif  // FALCON_COMMON_H

@@ -207,7 +207,7 @@ NV_STATUS   threadStateInitTimeout(OBJGPU *pGpu, NvU32 timeoutUs, NvU32 flags);
 NV_STATUS   threadStateCheckTimeout(OBJGPU *pGpu, NvU64 *pElapsedTimeUs);
 NV_STATUS   threadStateResetTimeout(OBJGPU *pGpu);
 void        threadStateLogTimeout(OBJGPU *pGpu, NvU64 funcAddr, NvU32 lineNum);
-void        threadStateYieldCpuIfNecessary(OBJGPU *pGpu);
+void        threadStateYieldCpuIfNecessary(OBJGPU *pGpu, NvBool bQuiet);
 void        threadStateSetTimeoutOverride(THREAD_STATE_NODE *, NvU64);
 
 NV_STATUS   threadStateEnqueueCallbackOnFree(THREAD_STATE_NODE *pThreadNode,

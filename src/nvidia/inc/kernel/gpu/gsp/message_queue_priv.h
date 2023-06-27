@@ -72,6 +72,7 @@ typedef struct _message_queue_info
     msgqHandle             hQueue;              // Do not allow requests when hQueue is null.
     NvU32                  txSeqNum;            // Next sequence number for tx.
     NvU32                  rxSeqNum;            // Next sequence number for rx.
+    NvU32                  txBufferFull;
 } MESSAGE_QUEUE_INFO;
 
 //

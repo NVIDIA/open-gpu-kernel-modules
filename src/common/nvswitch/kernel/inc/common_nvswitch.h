@@ -569,6 +569,7 @@ NvlStatus nvswitch_reset_and_train_link(nvswitch_device *device, nvlink_link *li
 NvlStatus nvswitch_set_training_mode(nvswitch_device *device);
 NvBool    nvswitch_is_link_in_reset(nvswitch_device *device, nvlink_link *link);
 void      nvswitch_apply_recal_settings(nvswitch_device *device, nvlink_link *link);
-void nvswitch_init_buffer_ready(nvswitch_device *device, nvlink_link *link, NvBool bNportBufferReady);
-
+void      nvswitch_init_buffer_ready(nvswitch_device *device, nvlink_link *link, NvBool bNportBufferReady);
+NvBool    nvswitch_does_link_need_termination_enabled(nvswitch_device *device, nvlink_link *link);
+NvlStatus nvswitch_link_termination_setup(nvswitch_device *device, nvlink_link* link);
 #endif //_COMMON_NVSWITCH_H_

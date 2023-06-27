@@ -62,26 +62,18 @@ gpuInitSriov_FWCLIENT
     GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
     NvU32 totalPcieFns = 0;
 
-    pGpu->sriovState.totalVFs             = pGSCI->sriovCaps.totalVFs;
-    pGpu->sriovState.firstVFOffset        = pGSCI->sriovCaps.firstVfOffset;
-    pGpu->sriovState.firstVFBarAddress[0] = pGSCI->sriovCaps.FirstVFBar0Address;
-    pGpu->sriovState.firstVFBarAddress[1] = pGSCI->sriovCaps.FirstVFBar1Address;
-    pGpu->sriovState.firstVFBarAddress[2] = pGSCI->sriovCaps.FirstVFBar2Address;
-    pGpu->sriovState.vfBarSize[0]         = pGSCI->sriovCaps.bar0Size;
-    pGpu->sriovState.vfBarSize[1]         = pGSCI->sriovCaps.bar1Size;
-    pGpu->sriovState.vfBarSize[2]         = pGSCI->sriovCaps.bar2Size;
-    pGpu->sriovState.b64bitVFBar0         = pGSCI->sriovCaps.b64bitBar0;
-    pGpu->sriovState.b64bitVFBar1         = pGSCI->sriovCaps.b64bitBar1;
-    pGpu->sriovState.b64bitVFBar2         = pGSCI->sriovCaps.b64bitBar2;
+    pGpu->sriovState.vfBarSize[0] = pGSCI->sriovCaps.bar0Size;
+    pGpu->sriovState.vfBarSize[1] = pGSCI->sriovCaps.bar1Size;
+    pGpu->sriovState.vfBarSize[2] = pGSCI->sriovCaps.bar2Size;
     
-    pGpu->sriovState.maxGfid              = pGSCI->sriovMaxGfid;
+    pGpu->sriovState.maxGfid      = pGSCI->sriovMaxGfid;
 
     // note: pGpu->sriovState.virtualRegPhysOffset is initialized separately
 
     // owned by physical RM, so leave uninitialized
-    pGpu->sriovState.pP2PInfo             = NULL;
-    pGpu->sriovState.bP2PAllocated        = NV_FALSE;
-    pGpu->sriovState.maxP2pGfid           = 0;
+    pGpu->sriovState.pP2PInfo      = NULL;
+    pGpu->sriovState.bP2PAllocated = NV_FALSE;
+    pGpu->sriovState.maxP2pGfid    = 0;
 
     // Include Physical function that occupies GFID 0
     totalPcieFns = pGpu->sriovState.totalVFs + 1;

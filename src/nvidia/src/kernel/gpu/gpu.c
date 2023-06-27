@@ -489,6 +489,10 @@ NV_STATUS gpuConstruct_IMPL
     // allocate OS-specific GPU extension area
     osInitOSHwInfo(pGpu);
 
+    // Initialize NvFBC session count and list.
+
+    // Initialize NvENC session count and list.
+
     return gpuConstructPhysical(pGpu);
 }
 

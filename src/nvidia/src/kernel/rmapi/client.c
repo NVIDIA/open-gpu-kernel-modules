@@ -932,6 +932,8 @@ _registerOSInfo
     if (pInsert == NULL)
         return NV_ERR_NO_MEMORY;
 
+    osAllocatedRmClient(pOSInfo);
+
     *pInsert = pClient;
 
     return NV_OK;

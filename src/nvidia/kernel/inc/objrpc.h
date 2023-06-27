@@ -45,7 +45,11 @@ typedef struct _object_vgpu OBJVGPU, *POBJVGPU;
 #include "g_rpc_hal.h" // For RPC_HAL_IFACES
 #include "g_rpc_odb.h" // For RPC_HAL_IFACES
 
+#define RPC_TIMEOUT_LIMIT_PRINT_RATE_THRESH 3  // rate limit after 3 prints
+#define RPC_TIMEOUT_LIMIT_PRINT_RATE_SKIP   29 // skip 29 of 30 prints
+
 #define RPC_HISTORY_DEPTH 8
+
 typedef struct RpcHistoryEntry
 {
     NvU32 function;
@@ -80,6 +84,8 @@ struct OBJRPC{
 
     RpcHistoryEntry rpcHistory[RPC_HISTORY_DEPTH];
     NvU32 rpcHistoryCurrent;
+    NvU32 timeoutCount;
+    NvBool bQuietPrints;
 
 };
 

@@ -496,6 +496,7 @@ struct MemoryManager {
     NvHandle hDevice;
     NvHandle hSubdevice;
     NvHandle hThirdPartyP2P;
+    NvBool bGenericKindSupport;
 };
 
 #ifndef __NVOC_CLASS_MemoryManager_TYPEDEF__

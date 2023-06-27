@@ -27,6 +27,7 @@
 
 #include "ls10/ls10.h"
 #include "ls10/minion_ls10.h"
+#include "ls10/soe_ls10.h"
 
 #include "nvswitch/ls10/dev_ctrl_ip.h"
 #include "nvswitch/ls10/dev_pri_masterstation_ip.h"
@@ -1257,8 +1258,16 @@ _nvswitch_service_route_fatal_ls10
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
     if (device->link[link].fatal_error_occurred)
     {
-        NVSWITCH_ENG_WR32(device, NPORT, , link, _ROUTE, _ERR_FATAL_REPORT_EN_0,
+        if (nvswitch_is_soe_supported(device))
+        {
+            nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
+                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_ROUTE_INTERRUPT);
+        }
+        else
+        {
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _ROUTE, _ERR_FATAL_REPORT_EN_0,
                 report.raw_enable ^ pending);
+        }
     }
 
     if (report.raw_first & report.mask)
@@ -1728,8 +1737,16 @@ _nvswitch_service_ingress_fatal_ls10
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
     if (device->link[link].fatal_error_occurred)
     {
-        NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_FATAL_REPORT_EN_0,
+        if (nvswitch_is_soe_supported(device))
+        {
+            nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
+                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_INGRESS_INTERRUPT);
+        }
+        else
+        {
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_FATAL_REPORT_EN_0,
                 report.raw_enable ^ pending);
+        }
     }
 
     if (report.raw_first & report.mask)
@@ -2496,8 +2513,16 @@ _nvswitch_service_tstate_fatal_ls10
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
     if (device->link[link].fatal_error_occurred)
     {
-        NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_FATAL_REPORT_EN_0,
+        if (nvswitch_is_soe_supported(device))
+        {
+            nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
+                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_TSTATE_INTERRUPT);
+        }
+        else
+        {
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_FATAL_REPORT_EN_0,
                 report.raw_enable ^ pending);
+        }
     }
 
     if (report.raw_first & report.mask)
@@ -3144,8 +3169,16 @@ _nvswitch_service_egress_fatal_ls10
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
     if (device->link[link].fatal_error_occurred)
     {
-        NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_FATAL_REPORT_EN_0,
+        if (nvswitch_is_soe_supported(device))
+        {
+            nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
+                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_EGRESS_0_INTERRUPT);
+        }
+        else
+        {
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_FATAL_REPORT_EN_0,
                 report.raw_enable ^ pending);
+        }
     }
 
     if (report.raw_first & report.mask)
@@ -3267,8 +3300,16 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
     if (device->link[link].fatal_error_occurred)
     {
-        NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_FATAL_REPORT_EN_1,
-            report.raw_enable ^ pending);
+        if (nvswitch_is_soe_supported(device))
+        {
+            nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
+                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_EGRESS_1_INTERRUPT);
+        }
+        else
+        {
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_FATAL_REPORT_EN_1,
+                report.raw_enable ^ pending);
+        }
     }
 
     if (report.raw_first & report.mask)
@@ -3491,8 +3532,16 @@ _nvswitch_service_sourcetrack_fatal_ls10
     //
     if (device->link[link].fatal_error_occurred)
     {
-        NVSWITCH_ENG_WR32(device, NPORT, , link, _SOURCETRACK, _ERR_FATAL_REPORT_EN_0,
+        if (nvswitch_is_soe_supported(device))
+        {
+            nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
+                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_SOURCETRACK_INTERRUPT);
+        }
+        else
+        {
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _SOURCETRACK, _ERR_FATAL_REPORT_EN_0,
                 report.raw_enable ^ pending);
+        }
     }
 
     if (report.raw_first & report.mask)
@@ -3775,8 +3824,16 @@ _nvswitch_service_multicast_fatal_ls10
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
     if (device->link[link].fatal_error_occurred)
     {
-        NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_FATAL_REPORT_EN_0,
+        if (nvswitch_is_soe_supported(device))
+        {
+            nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
+                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_MULTICAST_INTERRUPT);
+        }
+        else
+        {
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_FATAL_REPORT_EN_0,
                 report.raw_enable ^ pending);
+        }
     }
 
     if (report.raw_first & report.mask)
@@ -4068,8 +4125,16 @@ _nvswitch_service_reduction_fatal_ls10
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
     if (device->link[link].fatal_error_occurred)
     {
-        NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_FATAL_REPORT_EN_0,
+        if (nvswitch_is_soe_supported(device))
+        {
+            nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
+                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_REDUCTION_INTERRUPT);
+        }
+        else
+        {
+            NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_FATAL_REPORT_EN_0,
                 report.raw_enable ^ pending);
+        }
     }
 
     if (report.raw_first & report.mask)
@@ -5347,6 +5412,119 @@ _nvswitch_emit_link_errors_nvldl_fatal_link_ls10
 }
 
 static void
+_nvswitch_emit_link_errors_minion_fatal_ls10
+(
+    nvswitch_device *device,
+    NvU32 nvlipt_instance,
+    NvU32 link
+)
+{
+    ls10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
+    NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    NvU32 regData;
+    NvU32 enabledLinks;
+    NvU32 localLinkIdx = NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LS10(link);
+    NvU32 bit = BIT(localLinkIdx);
+
+    if (!chip_device->deferredLinkErrors[link].fatalIntrMask.minionLinkIntr.bPending)
+    {
+        return;
+    }
+
+    // Grab the cached interrupt data
+    regData     =  chip_device->deferredLinkErrors[link].fatalIntrMask.minionLinkIntr.regData;
+
+    // get all possible interrupting links associated with this minion
+    report.raw_enable  = link;
+    report.raw_pending = report.raw_enable;
+    report.mask = report.raw_enable;
+    report.data[0] = regData;
+
+    switch(DRF_VAL(_MINION, _NVLINK_LINK_INTR, _CODE, regData))
+    {
+        case NV_MINION_NVLINK_LINK_INTR_CODE_NA:
+            NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link NA interrupt", NV_FALSE);
+            break;
+        case NV_MINION_NVLINK_LINK_INTR_CODE_DLCMDFAULT:
+            NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link DLCMDFAULT interrupt", NV_FALSE);
+            break;
+        case NV_MINION_NVLINK_LINK_INTR_CODE_NOINIT:
+            NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link NOINIT interrupt", NV_FALSE);
+            break;
+        case NV_MINION_NVLINK_LINK_INTR_CODE_LOCAL_CONFIG_ERR:
+            NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link Local-Config-Error interrupt", NV_FALSE);
+            break;
+        case NV_MINION_NVLINK_LINK_INTR_CODE_NEGOTIATION_CONFIG_ERR:
+            NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link Negotiation Config Err Interrupt", NV_FALSE);
+            break;
+        case NV_MINION_NVLINK_LINK_INTR_CODE_BADINIT:
+            NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link BADINIT interrupt", NV_FALSE);
+            break;
+        case NV_MINION_NVLINK_LINK_INTR_CODE_PMFAIL:
+            NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link PMFAIL interrupt", NV_FALSE);
+            break;
+        default:
+            NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Interrupt code unknown", NV_FALSE);
+    }
+
+    // Fatal error was hit so disable the interrupt
+    regData = NVSWITCH_MINION_RD32_LS10(device, nvlipt_instance, _MINION, _MINION_INTR_STALL_EN);
+    enabledLinks = DRF_VAL(_MINION, _MINION_INTR_STALL_EN, _LINK, regData);
+    enabledLinks &= ~bit;
+    regData = DRF_NUM(_MINION, _MINION_INTR_STALL_EN, _LINK, enabledLinks);
+    NVSWITCH_MINION_LINK_WR32_LS10(device, link, _MINION, _MINION_INTR_STALL_EN, regData);
+}
+
+static void
+_nvswitch_emit_link_errors_minion_nonfatal_ls10
+(
+    nvswitch_device *device,
+    NvU32 nvlipt_instance,
+    NvU32 link
+)
+{
+    ls10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
+    NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
+    NvU32 regData;
+    NvU32 localLinkIdx = NVSWITCH_NVLIPT_GET_LOCAL_LINK_ID_LS10(link);
+    NvU32 bit = BIT(localLinkIdx);
+
+    if (!chip_device->deferredLinkErrors[link].nonFatalIntrMask.minionLinkIntr.bPending)
+    {
+        return;
+    }
+
+    // read in the enaled minion interrupts on this minion
+    regData = NVSWITCH_MINION_RD32_LS10(device, nvlipt_instance, _MINION, _MINION_INTR_STALL_EN);
+
+    // Grab the cached interrupt data
+    regData     =  chip_device->deferredLinkErrors[link].nonFatalIntrMask.minionLinkIntr.regData;
+
+    // get all possible interrupting links associated with this minion
+    report.raw_enable  = link;
+    report.raw_pending = report.raw_enable;
+    report.mask = report.raw_enable;
+    report.data[0] = regData;
+
+    switch(DRF_VAL(_MINION, _NVLINK_LINK_INTR, _CODE, regData))
+    {
+        case NV_MINION_NVLINK_LINK_INTR_CODE_DLREQ:
+                NVSWITCH_REPORT_NONFATAL(_HW_MINION_NONFATAL, "Minion Link DLREQ interrupt");
+                break;
+        case NV_MINION_NVLINK_LINK_INTR_CODE_PMDISABLED:
+            NVSWITCH_REPORT_NONFATAL(_HW_MINION_NONFATAL, "Minion Link PMDISABLED interrupt");
+            break;
+        case NV_MINION_NVLINK_LINK_INTR_CODE_DLCMDFAULT:
+            NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link DLCMDFAULT interrupt", NV_FALSE);
+            break;
+        case NV_MINION_NVLINK_LINK_INTR_CODE_TLREQ:
+            NVSWITCH_REPORT_NONFATAL(_HW_MINION_NONFATAL, "Minion Link TLREQ interrupt");
+            break;
+    }
+
+}
+
+static void
 _nvswitch_emit_link_errors_nvldl_nonfatal_link_ls10
 (
     nvswitch_device *device,
@@ -5449,6 +5627,9 @@ _nvswitch_emit_deferred_link_errors_ls10
     _nvswitch_emit_link_errors_nvldl_nonfatal_link_ls10(device, link);
     _nvswitch_emit_link_errors_nvltlc_rx_lnk_nonfatal_1_ls10(device, nvlipt_instance, link);
     _nvswitch_emit_link_errors_nvlipt_lnk_nonfatal_ls10(device, nvlipt_instance, link);
+    _nvswitch_emit_link_errors_minion_fatal_ls10(device, nvlipt_instance, link);
+    _nvswitch_emit_link_errors_minion_nonfatal_ls10(device, nvlipt_instance, link);
+
 }
 
 static void
@@ -7354,6 +7535,8 @@ nvswitch_service_minion_link_ls10
     NVSWITCH_INTERRUPT_LOG_TYPE report = { 0 };
     NvU32 pending, unhandled, minionIntr, linkIntr, reg, enabledLinks, bit;
     NvU32 localLinkIdx, link;
+    ls10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
+    MINION_LINK_INTR minionLinkIntr = { 0 };
 
     //
     // _MINION_MINION_INTR shows all interrupts currently at the host on this minion
@@ -7383,6 +7566,8 @@ nvswitch_service_minion_link_ls10
 
     unhandled = pending;
 
+    minionLinkIntr.bPending = NV_TRUE;
+
     FOR_EACH_INDEX_IN_MASK(32, localLinkIdx, pending)
     {
         link = (instance * NVSWITCH_LINKS_PER_NVLIPT_LS10) + localLinkIdx;
@@ -7390,6 +7575,7 @@ nvswitch_service_minion_link_ls10
 
         // read in the interrupt register for the given link
         linkIntr = NVSWITCH_MINION_LINK_RD32_LS10(device, link, _MINION, _NVLINK_LINK_INTR(localLinkIdx));
+        minionLinkIntr.regData = linkIntr;
 
         // _STATE must be set for _CODE to be valid
         if (!DRF_VAL(_MINION, _NVLINK_LINK_INTR, _STATE, linkIntr))
@@ -7413,7 +7599,15 @@ nvswitch_service_minion_link_ls10
         switch(DRF_VAL(_MINION, _NVLINK_LINK_INTR, _CODE, linkIntr))
         {
             case NV_MINION_NVLINK_LINK_INTR_CODE_NA:
-                NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link NA interrupt", NV_FALSE);
+            case NV_MINION_NVLINK_LINK_INTR_CODE_DLCMDFAULT:
+            case NV_MINION_NVLINK_LINK_INTR_CODE_LOCAL_CONFIG_ERR:
+            case NV_MINION_NVLINK_LINK_INTR_CODE_NEGOTIATION_CONFIG_ERR:
+            case NV_MINION_NVLINK_LINK_INTR_CODE_BADINIT:
+            case NV_MINION_NVLINK_LINK_INTR_CODE_PMFAIL:
+            case NV_MINION_NVLINK_LINK_INTR_CODE_NOINIT:
+                chip_device->deferredLinkErrors[link].fatalIntrMask.minionLinkIntr =
+                    minionLinkIntr;
+                _nvswitch_create_deferred_link_errors_task_ls10(device, instance, link);
                 break;
             case NV_MINION_NVLINK_LINK_INTR_CODE_SWREQ:
                 NVSWITCH_PRINT(device, INFO,
@@ -7421,36 +7615,15 @@ nvswitch_service_minion_link_ls10
                       __FUNCTION__, instance, link);
                 break;
             case NV_MINION_NVLINK_LINK_INTR_CODE_DLREQ:
-                NVSWITCH_REPORT_NONFATAL(_HW_MINION_NONFATAL, "Minion Link DLREQ interrupt");
-                break;
             case NV_MINION_NVLINK_LINK_INTR_CODE_PMDISABLED:
-                NVSWITCH_REPORT_NONFATAL(_HW_MINION_NONFATAL, "Minion Link PMDISABLED interrupt");
-                break;
-            case NV_MINION_NVLINK_LINK_INTR_CODE_DLCMDFAULT:
-                NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link DLCMDFAULT interrupt", NV_FALSE);
-                break;
             case NV_MINION_NVLINK_LINK_INTR_CODE_TLREQ:
-                NVSWITCH_REPORT_NONFATAL(_HW_MINION_NONFATAL, "Minion Link TLREQ interrupt");
-                break;
-            case NV_MINION_NVLINK_LINK_INTR_CODE_NOINIT:
-                NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link NOINIT interrupt", NV_FALSE);
-                break;
+                chip_device->deferredLinkErrors[link].nonFatalIntrMask.minionLinkIntr =
+                    minionLinkIntr;
+                _nvswitch_create_deferred_link_errors_task_ls10(device, instance, link);
             case NV_MINION_NVLINK_LINK_INTR_CODE_NOTIFY:
                 NVSWITCH_PRINT(device, INFO,
                       "%s: Received MINION NOTIFY interrupt on MINION %d : link %d.\n",
                       __FUNCTION__, instance, link);
-                break;
-            case NV_MINION_NVLINK_LINK_INTR_CODE_LOCAL_CONFIG_ERR:
-                NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link Local-Config-Error interrupt", NV_FALSE);
-                break;
-            case NV_MINION_NVLINK_LINK_INTR_CODE_NEGOTIATION_CONFIG_ERR:
-                NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link Negotiation Config Err Interrupt", NV_FALSE);
-                break;
-            case NV_MINION_NVLINK_LINK_INTR_CODE_BADINIT:
-                NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link BADINIT interrupt", NV_FALSE);
-                break;
-            case NV_MINION_NVLINK_LINK_INTR_CODE_PMFAIL:
-                NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Link PMFAIL interrupt", NV_FALSE);
                 break;
             case NV_MINION_NVLINK_LINK_INTR_CODE_INBAND_BUFFER_AVAILABLE:
             {
@@ -7459,19 +7632,10 @@ nvswitch_service_minion_link_ls10
                 nvswitch_minion_receive_inband_data_ls10(device, link);
                 break;
             }
-
             default:
                 NVSWITCH_REPORT_FATAL(_HW_MINION_FATAL_LINK_INTR, "Minion Interrupt code unknown", NV_FALSE);
         }
         nvswitch_clear_flags(&unhandled, bit);
-
-        // Disable interrupt bit for the given link - fatal error ocurred before
-        if (device->link[link].fatal_error_occurred)
-        {
-            enabledLinks &= ~bit;
-            reg = DRF_NUM(_MINION, _MINION_INTR_STALL_EN, _LINK, enabledLinks);
-            NVSWITCH_MINION_LINK_WR32_LS10(device, link, _MINION, _MINION_INTR_STALL_EN, reg);
-        }
     }
     FOR_EACH_INDEX_IN_MASK_END;
 
@@ -7484,4 +7648,3 @@ nvswitch_service_minion_link_ls10
 
     return NVL_SUCCESS;
 }
-

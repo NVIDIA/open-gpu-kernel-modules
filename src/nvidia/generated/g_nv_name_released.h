@@ -997,6 +997,7 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x27BA, 0x0000, 0x0000, "NVIDIA RTX 4000 Ada Generation Laptop GPU" },
     { 0x27BB, 0x0000, 0x0000, "NVIDIA RTX 3500 Ada Generation Laptop GPU" },
     { 0x27E0, 0x0000, 0x0000, "NVIDIA GeForce RTX 4080 Laptop GPU" },
+    { 0x2803, 0x0000, 0x0000, "NVIDIA GeForce RTX 4060 Ti" },
     { 0x2820, 0x0000, 0x0000, "NVIDIA GeForce RTX 4070 Laptop GPU" },
     { 0x2838, 0x0000, 0x0000, "NVIDIA RTX 3000 Ada Generation Laptop GPU" },
     { 0x2860, 0x0000, 0x0000, "NVIDIA GeForce RTX 4070 Laptop GPU" },

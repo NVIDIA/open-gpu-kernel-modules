@@ -105,6 +105,11 @@ memmgrGetDeviceCaps
         }
     }
 
+    if (pMemoryManager->bGenericKindSupport)
+    {
+        RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _GENERIC_PAGE_KIND);
+    }
+
     if (memmgrIsScrubOnFreeEnabled(pMemoryManager)) {
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _VIDMEM_ALLOCS_ARE_CLEARED);
     }
@@ -153,6 +158,8 @@ memmgrGetDeviceCaps
                    NV0080_CTRL_FB_CAPS, _OS_OWNS_HEAP_NEED_ECC_SCRUB);
     RMCTRL_OR_CAP(pFbCaps, tempCaps, temp,
                    NV0080_CTRL_FB_CAPS, _DISABLE_TILED_CACHING_INVALIDATES_WITH_ECC_BUG_1521641);
+    RMCTRL_AND_CAP(pFbCaps, tempCaps, temp,
+                   NV0080_CTRL_FB_CAPS, _GENERIC_PAGE_KIND);
     RMCTRL_OR_CAP(pFbCaps, tempCaps, temp,
                    NV0080_CTRL_FB_CAPS, _DISABLE_MSCG_WITH_VR_BUG_1681803);
     RMCTRL_AND_CAP(pFbCaps, tempCaps, temp,

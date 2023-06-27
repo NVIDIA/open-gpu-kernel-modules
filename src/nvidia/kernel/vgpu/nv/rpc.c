@@ -178,9 +178,9 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
     status = rpcSendMessage(pGpu, pRpc);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "rpcSendMessage failed with status 0x%08x for fn %d!\n",
-                  status, vgpu_rpc_message_header_v->function);
-        NV_ASSERT(0);
+        NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
+            "rpcSendMessage failed with status 0x%08x for fn %d!\n",
+            status, vgpu_rpc_message_header_v->function);
         //
         // It has been observed that returning NV_ERR_BUSY_RETRY in a bad state (RPC
         // buffers full and not being serviced) can make things worse, i.e. turn RPC
@@ -195,15 +195,16 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
     {
         if (status == NV_ERR_TIMEOUT)
         {
-            NV_PRINTF(LEVEL_ERROR, "rpcRecvPoll timedout for fn %d!\n",
-                      vgpu_rpc_message_header_v->function);
+            NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
+                "rpcRecvPoll timedout for fn %d!\n",
+                 vgpu_rpc_message_header_v->function);
         }
         else
         {
-            NV_PRINTF(LEVEL_ERROR, "rpcRecvPoll failed with status 0x%08x for fn %d!\n",
-                      status, vgpu_rpc_message_header_v->function);
+            NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
+                "rpcRecvPoll failed with status 0x%08x for fn %d!\n",
+                 status, vgpu_rpc_message_header_v->function);
         }
-        NV_ASSERT(0);
         return status;
     }
 
@@ -1317,6 +1318,16 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
         rpcInfo->bUpstreamL1PorMobileOnly = pGpu->getProperty(pGpu, PDB_PROP_GPU_UPSTREAM_PORT_L1_POR_MOBILE_ONLY);
         rpcInfo->upstreamAddressValid     = pGpu->gpuClData.upstreamPort.addr.valid;
 
+        // Fill in VF related GPU flags
+        rpcInfo->gspVFInfo.totalVFs           = pGpu->sriovState.totalVFs;
+        rpcInfo->gspVFInfo.firstVFOffset      = pGpu->sriovState.firstVFOffset;
+        rpcInfo->gspVFInfo.FirstVFBar0Address = pGpu->sriovState.firstVFBarAddress[0];
+        rpcInfo->gspVFInfo.FirstVFBar1Address = pGpu->sriovState.firstVFBarAddress[1];
+        rpcInfo->gspVFInfo.FirstVFBar2Address = pGpu->sriovState.firstVFBarAddress[2];
+        rpcInfo->gspVFInfo.b64bitBar0         = pGpu->sriovState.b64bitVFBar0;
+        rpcInfo->gspVFInfo.b64bitBar1         = pGpu->sriovState.b64bitVFBar1;
+        rpcInfo->gspVFInfo.b64bitBar2         = pGpu->sriovState.b64bitVFBar2;
+
         OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
         rpcInfo->sysTimerOffsetNs = pTmr->sysTimerOffsetNs;
 
@@ -1719,16 +1730,15 @@ NV_STATUS rpcRmApiControl_GSP
 
     if (status != NV_OK)
     {
-        NvBool bSilentErrorReport = NV_FALSE;
+        NvBool bQuiet = NV_FALSE;
         switch (status)
         {
             case NV_ERR_NOT_SUPPORTED:
             case NV_ERR_OBJECT_NOT_FOUND:
-                bSilentErrorReport = NV_TRUE;
+                bQuiet = NV_TRUE;
                 break;
         }
-
-        NV_PRINTF_COND(bSilentErrorReport, LEVEL_INFO, LEVEL_WARNING,
+        NV_PRINTF_COND((pRpc->bQuietPrints || bQuiet), LEVEL_INFO, LEVEL_WARNING,
             "GspRmControl failed: hClient=0x%08x; hObject=0x%08x; cmd=0x%08x; paramsSize=0x%08x; paramsStatus=0x%08x; status=0x%08x\n",
             hClient, hObject, cmd, paramsSize, rpc_params->status, status);
     }
@@ -1829,9 +1839,9 @@ NV_STATUS rpcRmApiAlloc_GSP
     }
     else
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "GspRmAlloc failed: hClient=0x%08x; hParent=0x%08x; hObject=0x%08x; hClass=0x%08x; paramsSize=0x%08x; paramsStatus=0x%08x; status=0x%08x\n",
-                  hClient, hParent, hObject, hClass, paramsSize, rpc_params->status, status);
+        NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
+            "GspRmAlloc failed: hClient=0x%08x; hParent=0x%08x; hObject=0x%08x; hClass=0x%08x; paramsSize=0x%08x; paramsStatus=0x%08x; status=0x%08x\n",
+            hClient, hParent, hObject, hClass, paramsSize, rpc_params->status, status);
         status = rpc_params->status;
     }
 
@@ -1883,9 +1893,9 @@ NV_STATUS rpcRmApiDupObject_GSP
     status = _issueRpcAndWait(pGpu, pRpc);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "GspRmDupObject failed: hClient=0x%08x; hParent=0x%08x; hObject=0x%08x; hClientSrc=0x%08x; hObjectSrc=0x%08x; flags=0x%08x; paramsStatus=0x%08x; status=0x%08x\n",
-                  hClient, hParent, *phObject, hClientSrc, hObjectSrc, flags, rpc_params->status, status);
+        NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
+            "GspRmDupObject failed: hClient=0x%08x; hParent=0x%08x; hObject=0x%08x; hClientSrc=0x%08x; hObjectSrc=0x%08x; flags=0x%08x; paramsStatus=0x%08x; status=0x%08x\n",
+             hClient, hParent, *phObject, hClientSrc, hObjectSrc, flags, rpc_params->status, status);
     }
 done:
     if (gpuMaskRelease != 0)
@@ -1928,9 +1938,9 @@ NV_STATUS rpcRmApiFree_GSP
     status = _issueRpcAndWait(pGpu, pRpc);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "GspRmFree failed: hClient=0x%08x; hObject=0x%08x; paramsStatus=0x%08x; status=0x%08x\n",
-                  hClient, hObject, rpc_params->status, status);
+        NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
+            "GspRmFree failed: hClient=0x%08x; hObject=0x%08x; paramsStatus=0x%08x; status=0x%08x\n",
+             hClient, hObject, rpc_params->status, status);
     }
 done:
     if (gpuMaskRelease != 0)

@@ -28,6 +28,24 @@
 #include "gpu/hwpm/profiler_v2.h"
 #include "ctrl/ctrlb0cc/ctrlb0ccinternal.h"
 #include "mem_mgr/mem.h"
+#include "vgpu/rpc.h"
+
+static NV_STATUS _issueRpcToHost(OBJGPU *pGpu)
+{
+    NV_STATUS status = NV_OK;
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+
+    NV_RM_RPC_CONTROL(pGpu,
+                      pRmCtrlParams->hClient,
+                      pRmCtrlParams->hObject,
+                      pRmCtrlParams->cmd,
+                      pRmCtrlParams->pParams,
+                      pRmCtrlParams->paramsSize,
+                      status);
+
+    return status;
+}
 
 NV_STATUS
 profilerBaseCtrlCmdFreePmaStream_IMPL
@@ -41,6 +59,13 @@ profilerBaseCtrlCmdFreePmaStream_IMPL
 
     portMemSet(&internalParams, 0, sizeof(NVB0CC_CTRL_INTERNAL_FREE_PMA_STREAM_PARAMS));
     internalParams.pmaChannelIdx = pParams->pmaChannelIdx;
+
+    //
+    // The following security checks are valid only if MemPmaBuffer and MemPmaBytesAvailable
+    // buffers are accessible and are set during PMA alloc
+    // Those buffers are not accessible on vGpu host (accessible on vGPU Guest and baremetal)
+    //
+    if (pProfiler->ppBytesAvailable != NULL && pProfiler->ppStreamBuffers != NULL)
     {
         RsResourceRef     *pCountRef = NULL;
         RsResourceRef     *pBufferRef = NULL;
@@ -94,41 +119,56 @@ profilerBaseCtrlCmdBindPmResources_IMPL
     NvHandle       hClient                    = RES_GET_CLIENT_HANDLE(pProfiler);
     NvHandle       hObject                    = RES_GET_HANDLE(pProfiler);
     NV_STATUS      status                     = NV_OK;
-    RsResourceRef *pCntRef                    = NULL;
-    RsResourceRef *pBufRef                    = NULL;
     Memory        *pCntMem                    = NULL;
     Memory        *pBufMem                    = NULL;
 
-    NV_CHECK_OR_GOTO(LEVEL_INFO,
-        !pProfiler->bLegacyHwpm && pProfiler->maxPmaChannels != 0, physical_control);
-
-    if (pProfiler->maxPmaChannels <= pProfiler->pmaVchIdx)
+    //
+    // The following security checks are valid only if MemPmaBuffer and MemPmaBytesAvailable
+    // buffers are accessible and are set during PMA alloc
+    // Those buffers are not accessible on vGpu host (accessible on vGPU Guest and baremetal)
+    //
+    if (pProfiler->ppBytesAvailable != NULL && pProfiler->ppStreamBuffers != NULL)
     {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
+        RsResourceRef *pCntRef                    = NULL;
+        RsResourceRef *pBufRef                    = NULL;
 
-    pCntRef = pProfiler->ppBytesAvailable[pProfiler->pmaVchIdx];
-    pBufRef = pProfiler->ppStreamBuffers[pProfiler->pmaVchIdx];
+        NV_CHECK_OR_GOTO(LEVEL_INFO,
+            !pProfiler->bLegacyHwpm && pProfiler->maxPmaChannels != 0, physical_control);
 
-    NV_CHECK_OR_GOTO(LEVEL_INFO,
-        pCntRef != NULL && pBufRef != NULL, physical_control);
+        if (pProfiler->maxPmaChannels <= pProfiler->pmaVchIdx)
+        {
+            return NV_ERR_INVALID_ARGUMENT;
+        }
 
-    pCntMem = dynamicCast(pCntRef->pResource, Memory);
-    pBufMem = dynamicCast(pBufRef->pResource, Memory);
+        pCntRef = pProfiler->ppBytesAvailable[pProfiler->pmaVchIdx];
+        pBufRef = pProfiler->ppStreamBuffers[pProfiler->pmaVchIdx];
 
-    NV_ASSERT_OR_RETURN(pCntMem != NULL && pBufMem != NULL, NV_ERR_INVALID_STATE);
+        NV_CHECK_OR_GOTO(LEVEL_INFO,
+            pCntRef != NULL && pBufRef != NULL, physical_control);
+
+        pCntMem = dynamicCast(pCntRef->pResource, Memory);
+        pBufMem = dynamicCast(pBufRef->pResource, Memory);
+
+        NV_ASSERT_OR_RETURN(pCntMem != NULL && pBufMem != NULL, NV_ERR_INVALID_STATE);
+
+        if (!memdescAcquireRmExclusiveUse(pCntMem->pMemDesc) ||
+            !memdescAcquireRmExclusiveUse(pBufMem->pMemDesc))
+        {
+            pCntMem->pMemDesc->bRmExclusiveUse = NV_FALSE;
+            pBufMem->pMemDesc->bRmExclusiveUse = NV_FALSE;
+            return NV_ERR_INVALID_ARGUMENT;
+        }
         
-    if (!memdescAcquireRmExclusiveUse(pCntMem->pMemDesc) ||
-        !memdescAcquireRmExclusiveUse(pBufMem->pMemDesc))
-    {
-        pCntMem->pMemDesc->bRmExclusiveUse = NV_FALSE;
-        pBufMem->pMemDesc->bRmExclusiveUse = NV_FALSE;
-        return NV_ERR_INVALID_ARGUMENT;
+        pProfiler->pBoundCntBuf = pCntRef;
+        pProfiler->pBoundPmaBuf = pBufRef;
     }
 
-    pProfiler->pBoundCntBuf = pCntRef;
-    pProfiler->pBoundPmaBuf = pBufRef;
 physical_control:
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        return _issueRpcToHost(pGpu);
+    }
 
     status = pRmApi->Control(pRmApi, hClient, hObject,
                              NVB0CC_CTRL_CMD_INTERNAL_BIND_PM_RESOURCES,
@@ -177,6 +217,11 @@ profilerBaseCtrlCmdUnbindPmResources_IMPL
             pBufMem->pMemDesc->bRmExclusiveUse = NV_FALSE;
         }
         pProfiler->pBoundPmaBuf = NULL;
+    }
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        return _issueRpcToHost(pGpu);
     }
 
     return pRmApi->Control(pRmApi, hClient, hObject,
@@ -241,32 +286,36 @@ profilerBaseCtrlCmdAllocPmaStream_IMPL
                         NVB0CC_CTRL_CMD_INTERNAL_ALLOC_PMA_STREAM,
                         pParams, sizeof(*pParams)), fail);
 
-    if (pProfiler->ppBytesAvailable == NULL)
+    if (serverutilGetResourceRef(hClient, pParams->hMemPmaBytesAvailable, &pMemoryRef) == NV_OK &&
+        serverutilGetResourceRef(hClient, pParams->hMemPmaBuffer, &pMemoryRef) == NV_OK)
     {
-        NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS maxPmaParams;
-        portMemSet(&maxPmaParams, 0, sizeof(NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS));
+        if (pProfiler->ppBytesAvailable == NULL)
+        {
+            NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS maxPmaParams;
+            portMemSet(&maxPmaParams, 0, sizeof(NVB0CC_CTRL_INTERNAL_GET_MAX_PMAS_PARAMS));
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                pRmApi->Control(pRmApi, hClient, hObject,
+                    NVB0CC_CTRL_CMD_INTERNAL_GET_MAX_PMAS,
+                    &maxPmaParams, sizeof(maxPmaParams)), fail);
+
+            pProfiler->maxPmaChannels = maxPmaParams.maxPmaChannels;
+            pProfiler->ppBytesAvailable = (RsResourceRef**)portMemAllocNonPaged(maxPmaParams.maxPmaChannels * sizeof(RsResourceRef*));
+            pProfiler->ppStreamBuffers = (RsResourceRef**)portMemAllocNonPaged(maxPmaParams.maxPmaChannels * sizeof(RsResourceRef*));
+        }
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            pRmApi->Control(pRmApi, hClient, hObject,
-                NVB0CC_CTRL_CMD_INTERNAL_GET_MAX_PMAS,
-                &maxPmaParams, sizeof(maxPmaParams)), fail);
+            serverutilGetResourceRef(hClient, pParams->hMemPmaBytesAvailable, &pMemoryRef), fail);
+        pProfiler->ppBytesAvailable[pParams->pmaChannelIdx] = pMemoryRef;
+        refAddDependant(pMemoryRef, RES_GET_REF(pProfiler));
 
-        pProfiler->maxPmaChannels = maxPmaParams.maxPmaChannels;
-        pProfiler->ppBytesAvailable = (RsResourceRef**)portMemAllocNonPaged(maxPmaParams.maxPmaChannels * sizeof(RsResourceRef*));
-        pProfiler->ppStreamBuffers = (RsResourceRef**)portMemAllocNonPaged(maxPmaParams.maxPmaChannels * sizeof(RsResourceRef*));
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, 
+            serverutilGetResourceRef(hClient, pParams->hMemPmaBuffer, &pMemoryRef), fail);
+        pProfiler->ppStreamBuffers[pParams->pmaChannelIdx] = pMemoryRef;
+        refAddDependant(pMemoryRef, RES_GET_REF(pProfiler));
+
+        // Copy output params to external struct.
+        pProfiler->pmaVchIdx = pParams->pmaChannelIdx;
+        pProfiler->bLegacyHwpm = NV_FALSE;
     }
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-        serverutilGetResourceRef(hClient, pParams->hMemPmaBytesAvailable, &pMemoryRef), fail);
-    pProfiler->ppBytesAvailable[pParams->pmaChannelIdx] = pMemoryRef;
-    refAddDependant(pMemoryRef, RES_GET_REF(pProfiler));
-
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, 
-        serverutilGetResourceRef(hClient, pParams->hMemPmaBuffer, &pMemoryRef), fail);
-    pProfiler->ppStreamBuffers[pParams->pmaChannelIdx] = pMemoryRef;
-    refAddDependant(pMemoryRef, RES_GET_REF(pProfiler));
-
-    // Copy output params to external struct.
-    pProfiler->pmaVchIdx = pParams->pmaChannelIdx;
-    pProfiler->bLegacyHwpm = NV_FALSE;
     
     return status;
 

@@ -267,6 +267,7 @@ struct KernelGsp {
     NvU32 (*__kgspReadUcodeFuseVersion__)(struct OBJGPU *, struct KernelGsp *, NvU32);
     NV_STATUS (*__kgspResetHw__)(struct OBJGPU *, struct KernelGsp *);
     NvBool (*__kgspIsEngineInReset__)(struct OBJGPU *, struct KernelGsp *);
+    NvBool (*__kgspIsWpr2Up__)(struct OBJGPU *, struct KernelGsp *);
     NvU32 (*__kgspGetFrtsSize__)(struct OBJGPU *, struct KernelGsp *);
     NvU64 (*__kgspGetPrescrubbedTopFbSize__)(struct OBJGPU *, struct KernelGsp *);
     NV_STATUS (*__kgspExtractVbiosFromRom__)(struct OBJGPU *, struct KernelGsp *, KernelGspVbiosImg **);
@@ -340,7 +341,6 @@ struct KernelGsp {
     NvBool bInInit;
     NvBool bInLockdown;
     NvBool bPollingForRpcResponse;
-    NvBool bXid119Printed;
     MEMORY_DESCRIPTOR *pMemDesc_simAccessBuf;
     SimAccessBuffer *pSimAccessBuf;
     NvP64 pSimAccessBufPriv;
@@ -411,6 +411,8 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 #define kgspResetHw_HAL(pGpu, pKernelGsp) kgspResetHw_DISPATCH(pGpu, pKernelGsp)
 #define kgspIsEngineInReset(pGpu, pKernelGsp) kgspIsEngineInReset_DISPATCH(pGpu, pKernelGsp)
 #define kgspIsEngineInReset_HAL(pGpu, pKernelGsp) kgspIsEngineInReset_DISPATCH(pGpu, pKernelGsp)
+#define kgspIsWpr2Up(pGpu, pKernelGsp) kgspIsWpr2Up_DISPATCH(pGpu, pKernelGsp)
+#define kgspIsWpr2Up_HAL(pGpu, pKernelGsp) kgspIsWpr2Up_DISPATCH(pGpu, pKernelGsp)
 #define kgspGetFrtsSize(pGpu, pKernelGsp) kgspGetFrtsSize_DISPATCH(pGpu, pKernelGsp)
 #define kgspGetFrtsSize_HAL(pGpu, pKernelGsp) kgspGetFrtsSize_DISPATCH(pGpu, pKernelGsp)
 #define kgspGetPrescrubbedTopFbSize(pGpu, pKernelGsp) kgspGetPrescrubbedTopFbSize_DISPATCH(pGpu, pKernelGsp)
@@ -688,6 +690,14 @@ NvBool kgspIsEngineInReset_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelG
 
 static inline NvBool kgspIsEngineInReset_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
     return pKernelGsp->__kgspIsEngineInReset__(pGpu, pKernelGsp);
+}
+
+NvBool kgspIsWpr2Up_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
+
+NvBool kgspIsWpr2Up_GH100(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
+
+static inline NvBool kgspIsWpr2Up_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return pKernelGsp->__kgspIsWpr2Up__(pGpu, pKernelGsp);
 }
 
 NvU32 kgspGetFrtsSize_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -197,6 +197,17 @@ kgspFreeBootArgs_GH100
         memdescDestroy(pKernelGsp->pGspFmcArgumentsDescriptor);
         pKernelGsp->pGspFmcArgumentsDescriptor = NULL;
     }
+}
+
+NvBool
+kgspIsWpr2Up_GH100
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+
+    return kgspIsWpr2Up_TU102(pGpu, pKernelGsp);
 }
 
 NV_STATUS

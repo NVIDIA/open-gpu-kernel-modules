@@ -62,7 +62,6 @@ CHIPSET_SETUP_FUNC(Intel_A2D2_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_A2C9_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_A301_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_0685_setupFunc)
-CHIPSET_SETUP_FUNC(Intel_IceLake_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_4381_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_7A82_setupFunc)
 CHIPSET_SETUP_FUNC(Intel_7A04_setupFunc)
@@ -179,13 +178,13 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0xA30D, CS_INTEL_A2C9,      "IntelH370",            Intel_A2C9_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0xA301, CS_INTEL_A301,      "Intel-CannonLake",     Intel_A301_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x0685, CS_INTEL_0685,      "Intel-CometLake",      Intel_0685_setupFunc},
-    {PCI_VENDOR_ID_INTEL,       0xA1CB, CS_INTEL_C620,      "Intel-IceLake",        Intel_IceLake_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0xA1CB, CS_INTEL_C620,      "Intel-IceLake",        NULL},
 	{PCI_VENDOR_ID_INTEL,       0x4381, CS_INTEL_4381,      "Intel-RocketLake",     Intel_4381_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x4385, CS_INTEL_4381,      "Intel-RocketLake",     Intel_4381_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A82, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A84, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x1B81, CS_INTEL_1B81,      "Intel-SapphireRapids", NULL},
-    {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        Intel_IceLake_setupFunc},
+    {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        NULL},
     {PCI_VENDOR_ID_INTEL,       0x7A04, CS_INTEL_7A04,      "Intel-RaptorLake",     Intel_7A04_setupFunc},
 
     {PCI_VENDOR_ID_NVIDIA,      0x0FAE, CS_NVIDIA_T210,      "T210",      Nvidia_T210_setupFunc},

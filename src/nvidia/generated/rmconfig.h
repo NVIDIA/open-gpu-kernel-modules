@@ -229,6 +229,7 @@
 #define RMCFG_FEATURE_PLATFORM_GSP                0  // Running as part of GSP Firmware
 #define RMCFG_FEATURE_PLATFORM_MODS_WINDOWS       0  // Running as part of MODS on Windows
 #define RMCFG_FEATURE_PLATFORM_MODS_UNIX          0  // Running as part of MODS on UNIX
+#define RMCFG_FEATURE_PLATFORM_UNIX_VMWARE        0  // Running on VMware
 #define RMCFG_FEATURE_ARCH_UNKNOWN                0  // unknown arch
 #define RMCFG_FEATURE_ARCH_X86                    0  // Intel x86, 32bit
 #define RMCFG_FEATURE_ARCH_X64                    0  // Intel 64bit

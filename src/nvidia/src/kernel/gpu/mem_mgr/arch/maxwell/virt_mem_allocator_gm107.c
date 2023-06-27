@@ -1622,7 +1622,9 @@ dmaUpdateVASpace_GF100
     NvU32       alignSize = pMemorySystemConfig->comprPageSize;
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
     NvBool      bFillPteMem = !!(flags & DMA_UPDATE_VASPACE_FLAGS_FILL_PTE_MEM);
-    NvBool      bUnmap;
+    NvBool      bUnmap = !bFillPteMem &&
+                          (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
+                          (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE);
     NvBool      bIsIndirectPeer;
     VAS_PTE_UPDATE_TYPE update_type;
 
@@ -1635,15 +1637,16 @@ dmaUpdateVASpace_GF100
 
     if (pGpu->bEnableBar1SparseForFillPteMemUnmap)
     {
-        bUnmap = (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
-                 (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE);
+        OBJGVASPACE *pGVAS = dynamicCast(pVAS, OBJGVASPACE);
+        if (bFillPteMem &&
+            (pGVAS->flags & VASPACE_FLAGS_BAR_BAR1) &&
+            (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
+            (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE))
+        {
+            bSparse = NV_TRUE;
+        }
     }
-    else
-    {
-        bUnmap = !bFillPteMem &&
-                  (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
-                  (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE);
-    }
+
     //
     // Determine whether we are invalidating or revoking privileges, so we know
     // whether to flush page accesses or not. ReadDisable and writeDisable have

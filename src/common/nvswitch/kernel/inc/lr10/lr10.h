@@ -569,7 +569,24 @@ typedef struct
 
     // Ganged Link table
     NvU64 *ganged_link_table;
+
+    //
+    // Mask of links on the LR10 device connected to a disabled
+    // remote link
+    //
+    NvU64 disabledRemoteEndLinkMask;
+
+    //
+    // Bool indicating if disabledRemoteEndLinkMask
+    // has been cached previously
+    //
+    NvBool bDisabledRemoteEndLinkMaskCached;
 } lr10_device;
+
+typedef struct {
+    NvU32 switchPhysicalId;
+    NvU64  linkMask;
+} lr10_links_connected_to_disabled_remote_end;
 
 #define NVSWITCH_GET_CHIP_DEVICE_LR10(_device)                  \
     (                                                           \
@@ -660,5 +677,7 @@ NvlStatus nvswitch_launch_ALI_lr10(nvswitch_device *device);
 NvlStatus nvswitch_reset_and_train_link_lr10(nvswitch_device *device, nvlink_link *link);
 
 NvlStatus nvswitch_ctrl_get_bios_info_lr10(nvswitch_device *device, NVSWITCH_GET_BIOS_INFO_PARAMS *p);
+NvBool    nvswitch_does_link_need_termination_enabled_lr10(nvswitch_device *device, nvlink_link *link);
+NvlStatus nvswitch_link_termination_setup_lr10(nvswitch_device *device, nvlink_link* link);
 
 #endif //_LR10_H_

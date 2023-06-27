@@ -643,6 +643,7 @@ NV_STATUS rm_gpu_handle_mmu_faults(
     
     if (pGpu == NULL)
     {
+        NV_EXIT_RM_RUNTIME(sp,fp);
         return NV_ERR_OBJECT_NOT_FOUND;
     }
 

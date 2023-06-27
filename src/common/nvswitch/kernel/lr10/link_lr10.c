@@ -28,6 +28,7 @@
 #include "regkey_nvswitch.h"
 #include "lr10/lr10.h"
 #include "lr10/minion_lr10.h"
+#include "lr10/pmgr_lr10.h"
 
 #include "nvswitch/lr10/dev_nvldl_ip.h"
 #include "nvswitch/lr10/dev_nvldl_ip_addendum.h"
@@ -41,6 +42,45 @@
 #include "nvswitch/lr10/dev_nvlperf_ip.h"
 #include "nvswitch/lr10/dev_nvlipt_ip.h"
 #include "nvswitch/lr10/dev_nport_ip.h"
+
+#define NUM_SWITCH_WITH_DISCONNETED_REMOTE_LINK 8 // This must be incremented if any entries are added to the array below
+lr10_links_connected_to_disabled_remote_end nvswitchDisconnetedRemoteLinkMasks[] =
+{
+    {
+        0x8,        // switchPhysicalId
+        0x56A000500 //linkMask
+    },
+    {
+        0x9,        // switchPhysicalId
+        0x509009900 //linkMask
+    },
+    {
+        0xb,        // switchPhysicalId
+        0x56A000600 //linkMask
+    },
+    {
+        0xc,        // switchPhysicalId
+        0x4A9009400 //linkMask
+    },
+    {
+        0x18,       // switchPhysicalId
+        0x56A000500 //linkMask
+    },
+    {
+        0x19,       // switchPhysicalId
+        0x509009900 //linkMask
+    },
+    {
+        0x1b,       // switchPhysicalId
+        0x56A000600 //linkMask
+    },
+    {
+        0x1c,       // switchPhysicalId
+        0x4A9009400 //linkMask
+    },
+};
+ct_assert(sizeof(nvswitchDisconnetedRemoteLinkMasks)/sizeof(lr10_links_connected_to_disabled_remote_end) == NUM_SWITCH_WITH_DISCONNETED_REMOTE_LINK);
+
 
 void
 nvswitch_setup_link_loopback_mode_lr10
@@ -799,6 +839,23 @@ nvswitch_corelib_set_dl_link_mode_lr10
         return -NVL_UNBOUND_DEVICE;
     }
 
+    if (nvswitch_does_link_need_termination_enabled(device, link))
+    {
+
+        if (mode == NVLINK_LINKSTATE_INITPHASE1)
+        {
+            status = nvswitch_link_termination_setup(device, link);
+            if (status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: Failed to enable termination on link #%d\n", __FUNCTION__, link->linkNumber);
+            }
+        }
+
+        // return SUCCESS to avoid errors being propogated
+        return NVL_SUCCESS;
+    }
+
     switch (mode)
     {
         case NVLINK_LINKSTATE_SAFE:
@@ -1233,6 +1290,15 @@ nvswitch_corelib_set_tl_link_mode_lr10
         return -NVL_UNBOUND_DEVICE;
     }
 
+    if (nvswitch_does_link_need_termination_enabled(device, link))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: link #% is connected to a disabled remote end. Skipping TL link mode request!\n", __FUNCTION__, link->linkNumber);
+
+        // return SUCCESS to avoid errors being propogated
+        return NVL_SUCCESS;
+    }
+
     switch (mode)
     {
         case NVLINK_LINKSTATE_RESET:
@@ -1349,6 +1415,15 @@ nvswitch_corelib_set_tx_mode_lr10
             "%s: link #%d invalid\n",
             __FUNCTION__, link->linkNumber);
         return -NVL_UNBOUND_DEVICE;
+    }
+
+    if (nvswitch_does_link_need_termination_enabled(device, link))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: link #% is connected to a disabled remote end. Skipping TX mode request!\n", __FUNCTION__, link->linkNumber);
+
+        // return SUCCESS to avoid errors being propogated
+        return NVL_SUCCESS;
     }
 
     // check if link is in reset
@@ -1614,6 +1689,15 @@ nvswitch_corelib_set_rx_mode_lr10
         return -NVL_UNBOUND_DEVICE;
     }
 
+    if (nvswitch_does_link_need_termination_enabled(device, link))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: link #% is connected to a disabled remote end. Skipping RX mode request!\n", __FUNCTION__, link->linkNumber);
+
+        // return SUCCESS to avoid errors being propogated
+        return NVL_SUCCESS;
+    }
+
     // check if link is in reset
     if (nvswitch_is_link_in_reset(device, link))
     {
@@ -1823,6 +1907,15 @@ nvswitch_corelib_set_rx_detect_lr10
 {
     NvlStatus status;
     nvswitch_device *device = link->dev->pDevInfo;
+
+    if (nvswitch_does_link_need_termination_enabled(device, link))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "%s: link #% is connected to a disabled remote end. Skipping RxDet request!\n", __FUNCTION__, link->linkNumber);
+
+        // return SUCCESS to avoid errors being propogated
+        return NVL_SUCCESS;
+    }
 
     status = nvswitch_minion_send_command(device, link->linkNumber,
                         NV_MINION_NVLINK_DL_CMD_COMMAND_TURING_RXDET, 0);
@@ -2378,4 +2471,110 @@ nvswitch_reset_and_train_link_lr10
 )
 {
     return NVL_ERR_NOT_IMPLEMENTED;
+}
+
+NvBool
+nvswitch_does_link_need_termination_enabled_lr10
+(
+    nvswitch_device *device,
+    nvlink_link *link
+)
+{
+#if defined(INCLUDE_NVLINK_LIB)
+    NvU32 i;
+    NvU32 physicalId;
+    lr10_device *chip_device;
+
+    physicalId = nvswitch_read_physical_id(device);
+    chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
+    if (chip_device == NULL)
+    {
+      NVSWITCH_PRINT(device, ERROR,
+        "%s: Failed to get lr10 chip device!\n", __FUNCTION__);
+      return NV_FALSE;
+    }
+
+    //
+    // If disabledRemoteEndLinkMask has not been cached then
+    // using the switch's physicalId search nvswitchDisconnetedRemoteLinkMasks
+    // til a match is found then copy out the linkMask to the chip_device
+    // Only run this operation if there is a registed device with a reduced
+    // nvlink config
+    //
+    if (chip_device->bDisabledRemoteEndLinkMaskCached == NV_FALSE)
+    {
+        chip_device->disabledRemoteEndLinkMask = 0;
+        if (nvlink_lib_is_registerd_device_with_reduced_config())
+        {
+            for (i = 0; i < NUM_SWITCH_WITH_DISCONNETED_REMOTE_LINK; ++i)
+            {
+                if (nvswitchDisconnetedRemoteLinkMasks[i].switchPhysicalId == physicalId)
+                {
+                    chip_device->disabledRemoteEndLinkMask =
+                                    nvswitchDisconnetedRemoteLinkMasks[i].linkMask;
+                    break;
+                }
+            }
+        }
+
+        chip_device->bDisabledRemoteEndLinkMaskCached = NV_TRUE;
+    }
+
+    // return NV_TRUE if the link is inside of  disabledRemoteEndLinkMask
+    return ((BIT64(link->linkNumber) & chip_device->disabledRemoteEndLinkMask) != 0);
+#else
+    return NV_FALSE;
+#endif //defined(INCLUDE_NVLINK_LIB)
+}
+
+NvlStatus
+nvswitch_link_termination_setup_lr10
+(
+    nvswitch_device *device,
+    nvlink_link* link
+)
+{
+    NvlStatus status;
+    NvU32 linkId = link->linkNumber;
+
+    // Sanity check
+    if ((link == NULL) ||
+        (linkId >= NVSWITCH_NVLINK_MAX_LINKS) ||
+        !NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NVLDL, linkId))
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Link %d is invalid!\n", __FUNCTION__, linkId);
+        return NVL_BAD_ARGS;
+    }
+
+    // Sanity check nvlink version
+    if (link->version != NVLINK_DEVICE_VERSION_30)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Link %d: only nvlink version 3.0 can run the termination setup\n",
+                     __FUNCTION__, linkId);
+        return NVL_BAD_ARGS;
+    }
+
+    // Send INITPHASE1 to the link
+    status = nvswitch_minion_send_command_lr10(device, link->linkNumber,
+                    NV_MINION_NVLINK_DL_CMD_COMMAND_INITPHASE1, 0);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to send initphase1 to link %d", __FUNCTION__, linkId);
+        return NVL_ERR_INVALID_STATE;
+    }
+
+    // Send INITRXTXTERM to the link
+    nvswitch_minion_send_command_lr10(device, link->linkNumber,
+        NV_MINION_NVLINK_DL_CMD_COMMAND_INITRXTXTERM, 0);
+
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to send INITRXTXTERM to link %d", __FUNCTION__, linkId);
+    }
+
+    NVSWITCH_PRINT(device, INFO,
+        "%s: enabled termination for switchPhysicalId %d link# %d\n",
+        __FUNCTION__, nvswitch_read_physical_id(device), linkId);
+
+    return NVL_SUCCESS;
 }

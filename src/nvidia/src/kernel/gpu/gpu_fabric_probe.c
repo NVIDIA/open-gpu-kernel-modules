@@ -422,10 +422,18 @@ _gpuFabricProbeSend_WORKITEM
     GPU_FABRIC_PROBE_INFO *pGpuFabricProbeInfo = pGpu->pGpuFabricProbeInfo;
     NV_STATUS status;
 
+    if (pGpuFabricProbeInfo == NULL)
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "GPU%u Invalid Probe info\n",
+                  gpuGetInstance(pGpu));
+        return;
+    }
+
     if (pKernelNvlink->bIsGpuDegraded ||
         (pKernelNvlink->discoveredLinks == 0))
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "GPU%u Degraded. Not sending probe\n",
                   gpuGetInstance(pGpu));
         _gpuFabricProbeForceCompletionError(pGpuFabricProbeInfo, NV_ERR_NOT_SUPPORTED);

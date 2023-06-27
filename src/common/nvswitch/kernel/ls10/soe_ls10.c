@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -477,6 +477,72 @@ nvswitch_soe_set_nport_interrupts_ls10
     }
 
     return NVL_SUCCESS;
+}
+
+/*
+ * @Brief : Disable NPORT Fatal Interrupt in SOE
+ *
+ * @param[in] device
+ * @param[in] nport
+ * @param[in] nportIntrEnable
+ * @param[in] nportIntrType
+ */
+void
+nvswitch_soe_disable_nport_fatal_interrupts_ls10
+(
+    nvswitch_device *device,
+    NvU32 nport,
+    NvU32 nportIntrEnable,
+    NvU8  nportIntrType   
+)
+{
+    FLCN            *pFlcn;
+    NvU32            cmdSeqDesc = 0;
+    NV_STATUS        status;
+    RM_FLCN_CMD_SOE  cmd;
+    NVSWITCH_TIMEOUT timeout;
+    RM_SOE_CORE_CMD_NPORT_FATAL_INTR *pNportIntrDisable;
+    NVSWITCH_GET_BIOS_INFO_PARAMS p = { 0 };
+    NvlStatus stat;
+    stat = device->hal.nvswitch_ctrl_get_bios_info(device, &p);
+    if ((stat != NVL_SUCCESS) || ((p.version & SOE_VBIOS_VERSION_MASK) < 
+            SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Skipping DISABLE_NPORT_FATAL_INTR command to SOE.  Update firmware "
+            "from .%02X to .%02X\n",
+            __FUNCTION__, (NvU32)((p.version & SOE_VBIOS_VERSION_MASK) >> 16), 
+                SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR);
+        return;
+    }
+    if (!nvswitch_is_soe_supported(device))
+    {
+        NVSWITCH_PRINT(device, INFO, "%s: SOE is not supported\n",
+                       __FUNCTION__);
+        return;
+    }
+    pFlcn       = device->pSoe->pFlcn;
+    nvswitch_os_memset(&cmd, 0, sizeof(cmd));
+    cmd.hdr.unitId = RM_SOE_UNIT_CORE;
+    cmd.hdr.size   = RM_SOE_CMD_SIZE(CORE, NPORT_FATAL_INTR);
+    pNportIntrDisable = &cmd.cmd.core.nportDisableIntr;
+    pNportIntrDisable->cmdType = RM_SOE_CORE_CMD_DISABLE_NPORT_FATAL_INTR;
+    pNportIntrDisable->nport   = nport;
+    pNportIntrDisable->nportIntrEnable = nportIntrEnable;
+    pNportIntrDisable->nportIntrType = nportIntrType;
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                      (PRM_FLCN_CMD)&cmd,
+                                      NULL,                 // pMsg
+                                      NULL,                 // pPayload
+                                      SOE_RM_CMDQ_LOG_ID,
+                                      &cmdSeqDesc,
+                                      &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to send DISABLE_NPORT_FATAL_INTR command to SOE, status 0x%x\n", 
+                       __FUNCTION__, status);
+    }
 }
 
 /*

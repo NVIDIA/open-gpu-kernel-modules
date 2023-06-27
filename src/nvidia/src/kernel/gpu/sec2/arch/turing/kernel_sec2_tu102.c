@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -67,7 +67,20 @@ ksec2ResetHw_TU102
 )
 {
     GPU_FLD_WR_DRF_DEF(pGpu, _PSEC, _FALCON_ENGINE, _RESET, _TRUE);
+
+    // Reg read cycles needed for signal propagation.
+    for (NvU32 i = 0; i < FLCN_RESET_PROPAGATION_DELAY_COUNT; i++)
+    {
+        GPU_REG_RD32(pGpu, NV_PSEC_FALCON_ENGINE);
+    }
+
     GPU_FLD_WR_DRF_DEF(pGpu, _PSEC, _FALCON_ENGINE, _RESET, _FALSE);
+
+    // Reg read cycles needed for signal propagation.
+    for (NvU32 i = 0; i < FLCN_RESET_PROPAGATION_DELAY_COUNT; i++)
+    {
+        GPU_REG_RD32(pGpu, NV_PSEC_FALCON_ENGINE);
+    }
 
     return NV_OK;
 }

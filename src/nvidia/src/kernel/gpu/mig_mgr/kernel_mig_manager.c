@@ -3395,6 +3395,7 @@ kmigmgrCreateComputeInstances_VF
     NvU32 i;
     NvU64 shadowCTSInUseMask;
     NvU64 shadowVeidInUseMask;
+    NvU32 maxVeidsPerGpc;
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
     KMIGMGR_CONFIGURE_INSTANCE_REQUEST *pConfigRequestPerCi = NULL;
     NvBool bIsCTSRequired = kmigmgrIsCTSAlignmentRequired_HAL(pGpu, pKernelMIGManager);
@@ -3418,6 +3419,10 @@ kmigmgrCreateComputeInstances_VF
     NV_ASSERT_OR_ELSE(pConfigRequestPerCi != NULL, status = NV_ERR_NO_MEMORY; goto done;);
 
     portMemSet(pConfigRequestPerCi, 0, sizeof(*pConfigRequestPerCi) * KMIGMGR_MAX_COMPUTE_INSTANCES);
+
+    NV_ASSERT_OK_OR_GOTO(status,
+        kgrmgrGetMaxVeidsPerGpc(pGpu, pKernelGraphicsManager, &maxVeidsPerGpc),
+        done);
 
     // Check that there's enough open compute instance slots, and count used GPCs
     freeSlots = 0;
@@ -3487,10 +3492,17 @@ kmigmgrCreateComputeInstances_VF
 
         if (params.type == KMIGMGR_CREATE_COMPUTE_INSTANCE_PARAMS_TYPE_REQUEST)
         {
-            spanStart =
-                (FLD_TEST_REF(NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_AT_SPAN, _TRUE, params.inst.request.requestFlags))
-                ? params.inst.request.pReqComputeInstanceInfo[CIIdx].spanStart
-                : KMIGMGR_SPAN_OFFSET_INVALID;
+            spanStart = KMIGMGR_SPAN_OFFSET_INVALID;
+            if (FLD_TEST_REF(NVC637_CTRL_DMA_EXEC_PARTITIONS_CREATE_REQUEST_AT_SPAN, _TRUE, params.inst.request.requestFlags))
+            {
+                //
+                // Select spanStart from spanStart field, else calculate the spanStart using the veid offset passed in.
+                // This is done specifically to accomodate legacy flows which don't have knowledge of the new spanStart field
+                //
+                spanStart = (params.inst.request.pReqComputeInstanceInfo[CIIdx].spanStart != 0)
+                            ? params.inst.request.pReqComputeInstanceInfo[CIIdx].spanStart
+                            : params.inst.request.pReqComputeInstanceInfo[CIIdx].veidStartOffset / maxVeidsPerGpc;
+            }
         }
         else
         {
@@ -3541,12 +3553,6 @@ kmigmgrCreateComputeInstances_VF
         }
         else
         {
-            NvU32 maxVeidsPerGpc;
-
-            NV_ASSERT_OK_OR_GOTO(status,
-                kgrmgrGetMaxVeidsPerGpc(pGpu, pKernelGraphicsManager, &maxVeidsPerGpc),
-                done);
-
             // If no CI profile was available. Populate one with bare-necessities
             pCIProfile->computeSize = KMIGMGR_COMPUTE_SIZE_INVALID;
             pCIProfile->gpcCount = gpcCount;

@@ -1207,6 +1207,8 @@ NV_STATUS osVerifySystemEnvironment(OBJGPU *pGpu);
 
 NV_STATUS osSanityTestIsr(OBJGPU *pGpu);
 
+void osAllocatedRmClient(void* pOSInfo);
+
 NV_STATUS osConfigurePcieReqAtomics(OS_GPU_INFO *pOsGpuInfo, NvU32 *pMask);
 
 NvBool osDmabufIsSupported(void);

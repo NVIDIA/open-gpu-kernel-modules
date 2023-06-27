@@ -44,6 +44,7 @@
 #include <ctrl/ctrl0000/ctrl0000gpu.h> /* NV0000_CTRL_CMD_GPU_GET_ID_INFO_V2 */
 #include <ctrl/ctrl0000/ctrl0000unix.h> /* NV0000_CTRL_CMD_OS_UNIX_IMPORT_OBJECT_FROM_FD */
 #include <ctrl/ctrl0080/ctrl0080gpu.h> /* NV0080_CTRL_CMD_GPU_GET_NUM_SUBDEVICES */
+#include <ctrl/ctrl0080/ctrl0080fb.h> /* NV0080_CTRL_CMD_FB_GET_CAPS_V2 */
 #include <ctrl/ctrl2080/ctrl2080unix.h> /* NV2080_CTRL_CMD_OS_UNIX_GC6_BLOCKER_REFCNT */
 
 #include "ctrl/ctrl003e.h" /* NV003E_CTRL_CMD_GET_SURFACE_PHYS_PAGES */
@@ -113,8 +114,10 @@ static NvBool RmAllocateDevice(struct NvKmsKapiDevice *device)
     NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS idInfoParams = { };
     NV2080_ALLOC_PARAMETERS subdevAllocParams = { 0 };
     NV0080_ALLOC_PARAMETERS allocParams = { };
+    NV0080_CTRL_FB_GET_CAPS_V2_PARAMS fbCapsParams = { 0 };
 
     NvU32 hRmDevice, hRmSubDevice;
+    NvBool supportsGenericPageKind;
     NvU32 ret;
 
     /* Allocate RM client */
@@ -227,6 +230,30 @@ static NvBool RmAllocateDevice(struct NvKmsKapiDevice *device)
     }
 
     device->hRmSubDevice = hRmSubDevice;
+
+    if (device->isSOC) {
+        /* NVKMS is only used on T23X and later chips,
+         * which all support generic memory. */
+        supportsGenericPageKind = NV_TRUE;
+    } else {
+        ret = nvRmApiControl(device->hRmClient,
+                             device->hRmDevice,
+                             NV0080_CTRL_CMD_FB_GET_CAPS_V2,
+                             &fbCapsParams,
+                             sizeof (fbCapsParams));
+        if (ret != NVOS_STATUS_SUCCESS) {
+            nvKmsKapiLogDeviceDebug(device, "Failed to query framebuffer capabilities");
+            goto failed;
+        }
+        supportsGenericPageKind =
+            NV0080_CTRL_FB_GET_CAP(fbCapsParams.capsTbl,
+                                   NV0080_CTRL_FB_CAPS_GENERIC_PAGE_KIND);
+    }
+
+    device->caps.genericPageKind = 
+        supportsGenericPageKind ?
+        0x06 /* NV_MMU_PTE_KIND_GENERIC_MEMORY */ :
+        0xfe /* NV_MMU_PTE_KIND_GENERIC_16BX2 */;
 
     return NV_TRUE;
 
@@ -352,8 +379,10 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     device->caps.maxWidthInPixels      = paramsAlloc->reply.maxWidthInPixels;
     device->caps.maxHeightInPixels     = paramsAlloc->reply.maxHeightInPixels;
     device->caps.maxCursorSizeInPixels = paramsAlloc->reply.maxCursorSize;
-    device->caps.genericPageKind       = paramsAlloc->reply.genericPageKind;
     device->caps.requiresVrrSemaphores = paramsAlloc->reply.requiresVrrSemaphores;
+    /* The generic page kind was determined during RM device allocation,
+     * but it should match what NVKMS reports */
+    nvAssert(device->caps.genericPageKind == paramsAlloc->reply.genericPageKind);
 
     /* XXX Add LUT support */
 
@@ -905,6 +934,7 @@ static NvBool GetDeviceResourcesInfo
     nvkms_memset(info, 0, sizeof(*info));
 
     info->caps.hasVideoMemory = !device->isSOC;
+    info->caps.genericPageKind = device->caps.genericPageKind;
 
     if (device->hKmsDevice == 0x0) {
         info->caps.pitchAlignment = 0x1;
@@ -972,7 +1002,6 @@ static NvBool GetDeviceResourcesInfo
     info->caps.maxWidthInPixels      = device->caps.maxWidthInPixels;
     info->caps.maxHeightInPixels     = device->caps.maxHeightInPixels;
     info->caps.maxCursorSizeInPixels = device->caps.maxCursorSizeInPixels;
-    info->caps.genericPageKind       = device->caps.genericPageKind;
 
     info->caps.pitchAlignment = NV_EVO_PITCH_ALIGNMENT;
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -62,14 +62,24 @@
 // Regkey to enable OUI caching/restoring in release branch.
 #define NV_DP_REGKEY_ENABLE_OUI_RESTORING             "DP_ENABLE_OUI_RESTORING"
 
+// Regkey to make sure enable FEC only when RM notified sink successfully
+#define NV_DP_CHECK_FEC_FOR_DDS_DSC_PANEL             "DP_DDS_CHECK_FEC_TO_ENABLE"
+
 // Message to power down video stream before power down link (set D3)
 #define NV_DP_REGKEY_POWER_DOWN_PHY                   "DP_POWER_DOWN_PHY"
+
+//
+// Regkey to re-assess max link if the first assessed link config 
+// is lower than the panel max
+//
+#define NV_DP_REGKEY_REASSESS_MAX_LINK                "DP_REASSESS_MAX_LINK"
 
 //
 // DSC capability of downstream device should be decided based on device's own
 // and its parent's DSC capability.
 //
 #define NV_DP_DSC_MST_CAP_BUG_3143315                  "DP_DSC_MST_CAP_BUG_3143315"
+
 
 //
 // Data Base used to store all the regkey values.
@@ -104,6 +114,8 @@ struct DP_REGKEY_DATABASE
     bool  bDscMstCapBug3143315;
     bool  bEnableOuiRestoring;
     bool  bPowerDownPhyBeforeD3;
+    bool  bCheckFECForDynamicMuxDSCPanel;
+    bool  bReassessMaxLink;
 };
 
 #endif //INCLUDED_DP_REGKEYDATABASE_H

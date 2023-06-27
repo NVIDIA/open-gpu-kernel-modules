@@ -57,6 +57,7 @@
 //
 
 static NV_STATUS objClInitPcieChipset(OBJGPU *, OBJCL *);
+static void      objClBuildPcieAtomicsAllowList(OBJGPU *, OBJCL *);
 static NvBool    objClInitGpuPortData(OBJGPU *, OBJCL *pCl);
 static NV_STATUS objClSetPortCapsOffsets(OBJCL *, PORTDATA *);
 static NV_STATUS objClSetPortPcieEnhancedCapsOffsets(OBJCL *, PORTDATA *);
@@ -191,6 +192,55 @@ addHwbcToList (OBJGPU *pGpu, OBJHWBC *pHWBC)
         pGpuHWBCList->pNext = pHWBCList;
     }
     return NV_OK;
+}
+
+/*! @brief Build PCIe atomics allow list for x86 CPUs
+ *         using CPU model and family.
+ *         
+ * Building allow list using only CPU model and family helps with
+ * passthrough virtualization where the host and passthrough VM
+ * has the same CPU model and family unlike the chipset.
+ * For non-x86 CPUs, allow list is built only during chipset discovery.
+ *
+ * @param[in]   pGpu              GPU object pointer
+ * @param[in]   pCl               Core logic object pointer
+ * @return None
+ */
+static
+void
+objClBuildPcieAtomicsAllowList(OBJGPU *pGpu, OBJCL *pCl)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+
+    // For non-x86 CPUs, allow list is built during chipset discovery.
+
+    // Intel IceLake
+    if ((pSys->cpuInfo.family == 0x6) &&
+        (pSys->cpuInfo.model == 0x6a) &&
+        (pSys->cpuInfo.stepping == 0x6))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    // Intel SapphireRapids
+    else if ((pSys->cpuInfo.family == 0x6) &&
+             (pSys->cpuInfo.model == 0x8f))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    // AMD Milan
+    else if (pSys->cpuInfo.family == 0x19 &&
+             pSys->cpuInfo.model == 0x1 &&
+             pSys->cpuInfo.stepping == 0x1)
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    // AMD Genoa
+    else if (pSys->cpuInfo.family == 0x19 &&
+             pSys->cpuInfo.model == 0x11)
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_BUG_3562968_WAR_ALLOW_PCIE_ATOMICS, NV_TRUE);
+    }
+    return;
 }
 
 //
@@ -824,6 +874,8 @@ clUpdatePcieConfig_IMPL(OBJGPU *pGpu, OBJCL *pCl)
     {
         pCl->setProperty(pCl, PDB_PROP_CL_NOSNOOP_NOT_CAPABLE, NV_TRUE);
     }
+
+    objClBuildPcieAtomicsAllowList(pGpu, pCl);
 
     objClInitPcieChipset(pGpu, pCl);
 

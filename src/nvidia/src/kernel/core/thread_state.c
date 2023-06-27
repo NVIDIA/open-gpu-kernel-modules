@@ -252,7 +252,7 @@ static void _threadStateSetNextCpuYieldTime(THREAD_STATE_NODE *pThreadNode)
         (TIMEOUT_DEFAULT_OS_RESCHEDULE_INTERVAL_SECS) * 1000000 * 1000;
 }
 
-void threadStateYieldCpuIfNecessary(OBJGPU *pGpu)
+void threadStateYieldCpuIfNecessary(OBJGPU *pGpu, NvBool bQuiet)
 {
     NV_STATUS rmStatus;
     THREAD_STATE_NODE *pThreadNode = NULL;
@@ -266,7 +266,7 @@ void threadStateYieldCpuIfNecessary(OBJGPU *pGpu)
         {
             if (NV_OK == osSchedule())
             {
-                NV_PRINTF(LEVEL_WARNING, "Yielding\n");
+                NV_PRINTF_COND(bQuiet, LEVEL_INFO, LEVEL_WARNING, "Yielding\n");
             }
 
             _threadStateSetNextCpuYieldTime(pThreadNode);

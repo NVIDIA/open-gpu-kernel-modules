@@ -121,8 +121,13 @@ nvswitch_init_lpwr_regs_ls10
     // IC Enter Threshold
     if (device->regkeys.lp_threshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
     {
+        //
         // TODO: get from bios. Refer Bug 3626523 for more info.
-        lpEntryThreshold = 100;
+        //
+        // The threshold is measured in 100us unit. So lpEntryThreshold = 1
+        // means the threshold is set to 100us in the register.
+        //
+        lpEntryThreshold = 1;
     }
     else
     {
@@ -1620,3 +1625,24 @@ nvswitch_are_link_clocks_on_ls10
     return NV_TRUE;
 }
 
+NvBool
+nvswitch_does_link_need_termination_enabled_ls10
+(
+    nvswitch_device *device,
+    nvlink_link *link
+)
+{
+    // Not defined for LS10
+    return NV_FALSE;
+}
+
+NvlStatus
+nvswitch_link_termination_setup_ls10
+(
+    nvswitch_device *device,
+    nvlink_link* link
+)
+{
+    // Not supported for LS10
+    return -NVL_ERR_NOT_SUPPORTED;
+}

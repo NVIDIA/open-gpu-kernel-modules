@@ -42,6 +42,19 @@
 #include "platform/chipset/chipset.h" // BUSINFO
 #include "gpu/nvbitmask.h" // NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX
 
+// VF related info for GSP-RM
+typedef struct GSP_VF_INFO
+{
+    NvU32  totalVFs;
+    NvU32  firstVFOffset;
+    NvU64  FirstVFBar0Address;
+    NvU64  FirstVFBar1Address;
+    NvU64  FirstVFBar2Address;
+    NvBool b64bitBar0;
+    NvBool b64bitBar1;
+    NvBool b64bitBar2;
+} GSP_VF_INFO;
+
 typedef struct GspSMInfo_t
 {
     NvU32 version;
@@ -154,6 +167,7 @@ typedef struct GspSystemInfo
     BUSINFO chipsetIDInfo;
     ACPI_METHOD_DATA acpiMethodData;
     NvU64 sysTimerOffsetNs;
+    GSP_VF_INFO gspVFInfo;
 } GspSystemInfo;
 
 

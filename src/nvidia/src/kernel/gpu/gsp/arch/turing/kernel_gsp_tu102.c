@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,6 +43,7 @@
 #include "published/turing/tu102/dev_riscv_pri.h"
 #include "published/turing/tu102/dev_fbif_v4.h"
 #include "published/turing/tu102/dev_falcon_v4.h"
+#include "published/turing/tu102/dev_fb.h"  // for NV_PFB_PRI_MMU_WPR2_ADDR_HI
 #include "published/turing/tu102/dev_fuse.h"
 #include "published/turing/tu102/dev_ram.h"
 #include "published/turing/tu102/dev_gc6_island.h"
@@ -730,7 +731,20 @@ kgspResetHw_TU102
 )
 {
     GPU_FLD_WR_DRF_DEF(pGpu, _PGSP, _FALCON_ENGINE, _RESET, _TRUE);
+
+    // Reg read cycles needed for signal propagation.
+    for (NvU32 i = 0; i < FLCN_RESET_PROPAGATION_DELAY_COUNT; i++)
+    {
+        GPU_REG_RD32(pGpu, NV_PGSP_FALCON_ENGINE);
+    }
+
     GPU_FLD_WR_DRF_DEF(pGpu, _PGSP, _FALCON_ENGINE, _RESET, _FALSE);
+
+    // Reg read cycles needed for signal propagation.
+    for (NvU32 i = 0; i < FLCN_RESET_PROPAGATION_DELAY_COUNT; i++)
+    {
+        GPU_REG_RD32(pGpu, NV_PGSP_FALCON_ENGINE);
+    }
 
     return NV_OK;
 }
@@ -887,6 +901,18 @@ kgspWaitForProcessorSuspend_TU102
     return gpuTimeoutCondWait(pGpu, _kgspIsProcessorSuspended, pKernelGsp, NULL);
 }
 
+NvBool
+kgspIsWpr2Up_TU102
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    NvU32 data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
+    NvU32 wpr2HiVal = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
+    return (wpr2HiVal != 0);
+}
+
 #define FWSECLIC_PROG_START_TIMEOUT     50000    // 50ms
 #define FWSECLIC_PROG_COMPLETE_TIMEOUT  2000000  // 2s
 
@@ -931,12 +957,15 @@ kgspWaitForGfwBootOk_TU102
         }
 
         status = gpuCheckTimeout(pGpu, &timeout);
-        if (status == NV_ERR_TIMEOUT)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Timeout waiting for GFW_BOOT to complete\n");
-        }
     }
+
+    // The wait failed if we reach here (as above loop returns upon success).
+    NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: 0x%x (progress 0x%x)\n",
+              status, GPU_REG_RD_DRF(pGpu,
+                        _PGC6,
+                        _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
+                        _PROGRESS));
+    NV_PRINTF(LEVEL_ERROR, "(the GPU may be in a bad state and may need to be reset)\n");
 
     return status;
 }

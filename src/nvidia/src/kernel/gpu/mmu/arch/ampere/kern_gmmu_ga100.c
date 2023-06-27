@@ -110,7 +110,11 @@ kgmmuValidateFabricBaseAddress_GA100
     // Align fbSize to mapslot size.
     fbSizeBytes = RM_ALIGN_UP(fbSizeBytes, NVBIT64(36));
 
-    fbUpperLimit = fabricBaseAddr + fbSizeBytes;
+    // Check for integer overflow
+    if (!portSafeAddU64(fabricBaseAddr, fbSizeBytes, &fbUpperLimit))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     // Make sure the address range doesn't go beyond the limit, (2K * 64GB).
     if (fbUpperLimit > NVBIT64(47))

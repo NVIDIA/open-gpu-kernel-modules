@@ -499,33 +499,33 @@ typedef NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_PARAMS_v21_04 NV2080_CTRL_
 #endif
 
 #ifdef SDK_UNION_MEMBER_NAME_FUNCTIONS
-// Union member name functions for NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_DATA_type
-static char* _get_union_member_name_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_DATA_type(NvU32 cmd)
+// Union member index functions for NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_DATA_type
+uint32_t _get_union_member_index_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_DATA_type_v21_04(NvU32 cmd)
 {
     switch (cmd)
     {
         case NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_DATA_TYPE_SMBPBI:
-                return "smbpbi";
+                return 0; // "smbpbi"
 
         default:
                 return UNION_UNKNOWN_FIELD_PRINT;
     }
 }
 
-#define _get_union_member_name_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_DATA_type_v21_04(cmd)  _get_union_member_name_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_DATA_type(cmd)
+
+
 
 
 #endif
 
 #ifdef SDK_UNION_MEMBER_NAME_FUNCTIONS_CMD
-static NV_STATUS get_union_member_name_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_data_v21_04_data(void *msg, NvS32 bytes_remaining, char** name)
+static NV_STATUS get_union_member_index_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_data_v21_04_data(void *msg, NvS32 bytes_remaining, uint32_t* index)
 {
     NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_data_v21_04 *param = msg;
 
     if ((NvS32)(NV_OFFSETOF(NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_data_v21_04, type) + sizeof(param->type)) > bytes_remaining)
         return NV_ERR_BUFFER_TOO_SMALL;
-
-    *name = _get_union_member_name_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_DATA_type_v21_04(param->type);
+    *index = _get_union_member_index_NV2080_CTRL_INTERNAL_PFM_REQ_HNDLR_STATE_SYNC_DATA_type_v21_04(param->type);
     return NV_OK;
 }
 
@@ -540,7 +540,6 @@ static NV_STATUS get_array_length_gpu_exec_reg_ops_v03_00_operations(void *msg, 
 
     if ((NvS32)(NV_OFFSETOF(gpu_exec_reg_ops_v03_00, reg_op_params.regOpCount) + sizeof(param->reg_op_params.regOpCount)) > bytes_remaining)
         return NV_ERR_BUFFER_TOO_SMALL;
-
     *length = param->reg_op_params.regOpCount;
     return NV_OK;
 }
@@ -550,7 +549,6 @@ static NV_STATUS get_array_length_gpu_exec_reg_ops_v12_01_operations(void *msg, 
 
     if ((NvS32)(NV_OFFSETOF(gpu_exec_reg_ops_v12_01, reg_op_params.regOpCount) + sizeof(param->reg_op_params.regOpCount)) > bytes_remaining)
         return NV_ERR_BUFFER_TOO_SMALL;
-
     *length = param->reg_op_params.regOpCount;
     return NV_OK;
 }

@@ -24,6 +24,7 @@
 
 /* ------------------------- System Includes -------------------------------- */
 #include "gpu/bif/kernel_bif.h"
+#include "gpu/bus/kern_bus.h"
 #include "gpu/gpu.h"
 
 #define NV_VGPU_EMU                           0x0000FFFF:0x0000F000 /* RW--D */
@@ -224,4 +225,57 @@ kbifGetVFSparseMmapRegions_TU102
     }
 
     return NV_OK;
+}
+
+/*! @brief Fetch VF details such as no. of VFs, First VF offset etc
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  Kernel BIF object pointer
+*/
+void
+kbifCacheVFInfo_TU102
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32     regVal = 0;
+    NvU32     saveLo = 0;
+    NvU32     saveHi = 0;
+
+    // Get total VF count
+    GPU_BUS_CFG_RD32(pGpu, NV_XVE_SRIOV_CAP_HDR3, &regVal);
+    pGpu->sriovState.totalVFs = GPU_DRF_VAL(_XVE, _SRIOV_CAP_HDR3,
+                                            _TOTAL_VFS, regVal);
+
+    // Get first VF offset
+    GPU_BUS_CFG_RD32(pGpu, NV_XVE_SRIOV_CAP_HDR5, &regVal);
+    pGpu->sriovState.firstVFOffset = GPU_DRF_VAL(_XVE, _SRIOV_CAP_HDR5,
+                                                 _FIRST_VF_OFFSET, regVal);
+
+    // Get VF BAR0 first address
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_XVE_SRIOV_CAP_HDR9, &saveLo);
+    NV_ASSERT(status == NV_OK);
+    pGpu->sriovState.firstVFBarAddress[0] = saveLo & 0xFFFFFFF0;
+
+    // Get VF BAR1 first address
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_XVE_SRIOV_CAP_HDR10, &saveLo);
+    NV_ASSERT(status == NV_OK);
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_XVE_SRIOV_CAP_HDR11_VF_BAR1_HI, &saveHi);
+    NV_ASSERT(status == NV_OK);
+    pGpu->sriovState.firstVFBarAddress[1] = (((NvU64)saveHi) << 32) + (saveLo & 0xFFFFFFF0);
+
+    // Get VF BAR2 first address
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_XVE_SRIOV_CAP_HDR12, &saveLo);
+    NV_ASSERT(status == NV_OK);
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_XVE_SRIOV_CAP_HDR13_VF_BAR2_HI, &saveHi);
+    NV_ASSERT(status == NV_OK);
+    pGpu->sriovState.firstVFBarAddress[2] = (((NvU64)saveHi) << 32) + (saveLo & 0xFFFFFFF0);
+
+    // Get if VF BARs are 64 bit addressable
+    regVal = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_SRIOV_CAP_HDR10);
+    pGpu->sriovState.b64bitVFBar1 = IS_BAR_64(regVal);
+    regVal = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_SRIOV_CAP_HDR12);
+    pGpu->sriovState.b64bitVFBar2 = IS_BAR_64(regVal);
 }

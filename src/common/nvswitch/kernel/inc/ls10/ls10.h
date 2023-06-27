@@ -183,6 +183,9 @@
 
 #define DMA_ADDR_WIDTH_LS10     64
 
+#define SOE_VBIOS_VERSION_MASK                        0xFF0000
+#define SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR    0x370000
+
 //
 // Helpful IO wrappers
 //
@@ -503,6 +506,12 @@ typedef struct
 // Struct used for passing around error masks in error handling functions
 typedef struct
 {
+    NvBool bPending;
+    NvU32  regData;
+} MINION_LINK_INTR;
+
+typedef struct
+{
     NvU32 dl;
     NvU32 tlcRx0;
     NvU32 tlcRx0Injected;
@@ -510,17 +519,17 @@ typedef struct
     NvU32 tlcRx1Injected;
     NvU32 liptLnk;
     NvU32 liptLnkInjected;
+    MINION_LINK_INTR minionLinkIntr;
 } NVLINK_LINK_ERROR_INFO_ERR_MASKS, *PNVLINK_LINK_ERROR_INFO_ERR_MASKS;
 
 typedef struct
-{     
+{
     NvBool bLinkErrorsCallBackEnabled;
     NvBool bLinkStateCallBackEnabled;
+    NvBool bResetAndDrainRetry;
 
     NVLINK_LINK_ERROR_INFO_ERR_MASKS fatalIntrMask;
     NVLINK_LINK_ERROR_INFO_ERR_MASKS nonFatalIntrMask;
-
-    NvBool bResetAndDrainRetry;
 } NVLINK_LINK_ERROR_REPORTING;
 
 typedef struct
@@ -1003,6 +1012,8 @@ void      nvswitch_set_error_rate_threshold_ls10(nvlink_link *link, NvBool bIsDe
 void      nvswitch_configure_error_rate_threshold_interrupt_ls10(nvlink_link *link, NvBool bEnable);
 NvlStatus nvswitch_reset_and_train_link_ls10(nvswitch_device *device, nvlink_link *link);
 NvBool    nvswitch_are_link_clocks_on_ls10(nvswitch_device *device, nvlink_link *link, NvU32 clocksMask);
+NvBool    nvswitch_does_link_need_termination_enabled_ls10(nvswitch_device *device, nvlink_link *link);
+NvlStatus nvswitch_link_termination_setup_ls10(nvswitch_device *device, nvlink_link* link);
 
 #endif //_LS10_H_
 

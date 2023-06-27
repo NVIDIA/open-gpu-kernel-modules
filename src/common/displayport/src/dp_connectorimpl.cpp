@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -190,6 +190,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bDscMstCapBug3143315          = dpRegkeyDatabase.bDscMstCapBug3143315;
     this->bEnableOuiRestoring           = dpRegkeyDatabase.bEnableOuiRestoring;
     this->bPowerDownPhyBeforeD3         = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
+    this->bReassessMaxLink              = dpRegkeyDatabase.bReassessMaxLink;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -2691,8 +2692,15 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
 
     DP_ASSERT(!this->isLinkQuiesced && "TMDS is attached, NABegin is impossible!");
 
+    //
     // Update the FEC enabled flag according to the mode requested.
+    //
+    // In MST config, if one panel needs DSC/FEC and the other one does not,
+    // we still need to keep FEC enabled on the connector since at least one
+    // stream needs it.
+    //
     this->bFECEnable |= bEnableFEC;
+
     highestAssessedLC.enableFEC(this->bFECEnable);
 
     if (main->isEDP() && this->bEnableOuiRestoring)
@@ -4646,6 +4654,7 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
 {
     LinkTrainingType preferredTrainingType = trainType;
     bool result;
+    bool bEnableFecOnSor;
     //
     //  Validate link config against caps
     //
@@ -4732,14 +4741,22 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
         this->hal->setDirtyLinkStatus(true);
 
     // We don't need post LQA while powering down the lanes.
-    if ((lConfig.lanes != 0) &&
-        hal->isPostLtAdjustRequestSupported() &&
-        result)
+    if ((lConfig.lanes != 0) && hal->isPostLtAdjustRequestSupported() && result)
     {
         result = postLTAdjustment(activeLinkConfig, force);
     }
 
-    if((lConfig.lanes != 0) && result && lConfig.bEnableFEC)
+    bEnableFecOnSor = lConfig.bEnableFEC;
+
+    if (main->isEDP())
+    {
+        DeviceImpl * nativeDev = findDeviceInList(Address());
+
+        if (nativeDev && nativeDev->bIsPreviouslyFakedMuxDevice)
+            bEnableFecOnSor = activeLinkConfig.bEnableFEC;
+    }
+
+    if((lConfig.lanes != 0) && result && bEnableFecOnSor)
     {
         //
         // Extended latency from link-train end to FEC enable pattern
@@ -4755,7 +4772,14 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
         DP_ASSERT(result);
     }
 
-    if (lConfig != activeLinkConfig)
+    //
+    // Do not compare bEnableFEC here. In DDS case FEC might be requested but
+    // not performed in RM.
+    //
+    if ((lConfig.lanes != activeLinkConfig.lanes) ||
+        (lConfig.peakRate != activeLinkConfig.peakRate) ||
+        (lConfig.enhancedFraming != activeLinkConfig.enhancedFraming) ||
+        (lConfig.multistream != activeLinkConfig.multistream))
     {
         // fallback happens, returns fail to make sure clients notice it.
         result = false;
@@ -5923,11 +5947,13 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
                 bPConConnected = true;
             }
 
+            LinkConfiguration maxLinkConfig = getMaxLinkConfig();
+
             if (bPConConnected ||
                 (main->isEDP() && this->bSkipAssessLinkForEDP) ||
                 (main->isInternalPanelDynamicMuxCapable()))
             {
-                this->highestAssessedLC = getMaxLinkConfig();
+                this->highestAssessedLC = maxLinkConfig;
                 this->linkGuessed = bPConConnected;
                 this->bSkipAssessLinkForPCon = bPConConnected;
             }
@@ -5942,6 +5968,22 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
                     hal->setPowerState(PowerStateD0);
                 }
                 this->assessLink();
+
+                if (this->bReassessMaxLink)
+                {
+                    //
+                    // If the highest assessed LC is not equal to 
+                    // max possible link config, re-assess link
+                    //
+                    NvU8 retries = 0U;
+
+                    while((retries < WAR_MAX_REASSESS_ATTEMPT) && (highestAssessedLC != maxLinkConfig))
+                    {
+                        DP_LOG(("DP> Assessed link is not equal to highest possible config. Reassess link."));
+                        this->assessLink();
+                        retries++;
+                    }
+                }
             }
 
             if (hal->getLegacyPortCount() != 0)

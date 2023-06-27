@@ -5247,3 +5247,11 @@ osDmabufIsSupported(void)
 {
     return os_dma_buf_enabled;
 }
+
+void osAllocatedRmClient(void *pOsInfo)
+{
+    nv_file_private_t* nvfp = (nv_file_private_t*)pOsInfo;
+
+    if (nvfp != NULL)
+        nvfp->bCleanupRmapi = NV_TRUE;
+}

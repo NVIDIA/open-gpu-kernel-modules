@@ -495,6 +495,12 @@ struct nv_file_private_t
     nv_file_private_t *ctl_nvfp;
     void *ctl_nvfp_priv;
     NvU32 register_or_refcount;
+
+    //
+    // True if a client or an event was ever allocated on this fd.
+    // If false, RMAPI cleanup is skipped.
+    //
+    NvBool bCleanupRmapi;
 };
 
 // Forward define the gpu ops structures

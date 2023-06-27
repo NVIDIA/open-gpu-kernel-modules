@@ -2955,6 +2955,12 @@ cliresCtrlCmdNvdGetTimestamp_IMPL
     return status;
 }
 
+/**
+ * These control handlers can be called:
+ * - with pRmCliRes (i.e. this) == NULL
+ * - with RS TLS state missing.
+ */
+
 /*!
  * @brief Get Nvlog Info. Returns the current state of the NVLOG subsystem.
  *
@@ -2980,34 +2986,44 @@ cliresCtrlCmdNvdGetNvlogInfo_IMPL
         // GPUs.  This code assumes that GetNvlogInfo is called just before
         // GetNvlogBufferInfo and GetNvlog.
         //
-        NvU32           gpuMask = 0;
-        NvU32           gpuInstance = 0;
-        OBJGPU         *pGpu;
-
-        (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
-
-        for (;;)
+        //
+        // If pRmCliRes==NULL, we are not called from the ResourceServer path, and
+        // therefore cannot safely dereference OBJGPU in the below block.
+        //
+        if (pRmCliRes != NULL)
         {
-            pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+            NvU32           gpuMask = 0;
+            NvU32           gpuInstance = 0;
+            OBJGPU         *pGpu;
 
-            if (pGpu == NULL)
-                break;
+            (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
 
-            if (IS_GSP_CLIENT(pGpu))
+            for (;;)
             {
-                KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-                kgspDumpGspLogs(pGpu, pKernelGsp, NV_TRUE);
+                pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance);
+
+                if (pGpu == NULL)
+                    break;
+
+                if (IS_GSP_CLIENT(pGpu))
+                {
+                    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+                    kgspDumpGspLogs(pGpu, pKernelGsp, NV_TRUE);
+                }
             }
         }
 
         pParams->version    = NvLogLogger.version;
 
         portMemSet(pParams->bufferTags, 0, sizeof(pParams->bufferTags));
+
+        portSyncMutexAcquire(NvLogLogger.buffersLock);
         for (i = 0; i < NVLOG_MAX_BUFFERS; i++)
         {
             if (NvLogLogger.pBuffers[i] != NULL)
                 pParams->bufferTags[i] = NvLogLogger.pBuffers[i]->tag;
         }
+        portSyncMutexRelease(NvLogLogger.buffersLock);
         status = NV_OK;
     }
 
@@ -3036,23 +3052,29 @@ cliresCtrlCmdNvdGetNvlogBufferInfo_IMPL
     {
         NVLOG_BUFFER *pBuffer;
         NVLOG_BUFFER_HANDLE hBuffer;
-        NvBool bPause;
+
+        portSyncMutexAcquire(NvLogLogger.buffersLock);
 
         if (pParams->tag != 0)
         {
             status = nvlogGetBufferHandleFromTag(pParams->tag, &hBuffer);
-            NV_ASSERT_OR_RETURN(status == NV_OK, status);
+            if (status != NV_OK)
+                goto done;
         }
         else
         {
-            NV_ASSERT_OR_RETURN(pParams->buffer < NVLOG_MAX_BUFFERS, NV_ERR_INVALID_ARGUMENT);
+            if (pParams->buffer >= NVLOG_MAX_BUFFERS)
+            {
+                status = NV_ERR_INVALID_ARGUMENT;
+                goto done;
+            }
             hBuffer = pParams->buffer;
         }
 
         pBuffer = NvLogLogger.pBuffers[hBuffer];
         NV_ASSERT_OR_RETURN(pBuffer != NULL, NV_ERR_OBJECT_NOT_FOUND);
 
-        bPause = pParams->flags & DRF_DEF(0000, _CTRL_NVD_NVLOG_BUFFER_INFO_FLAGS, _PAUSE, _YES);
+        NvBool bPause = pParams->flags & DRF_DEF(0000, _CTRL_NVD_NVLOG_BUFFER_INFO_FLAGS, _PAUSE, _YES);
         nvlogPauseLoggingToBuffer(hBuffer, bPause);
 
         pParams->tag        = pBuffer->tag;
@@ -3061,6 +3083,9 @@ cliresCtrlCmdNvdGetNvlogBufferInfo_IMPL
         pParams->pos        = pBuffer->pos;
         pParams->overflow   = pBuffer->extra.ring.overflow;
         status = NV_OK;
+
+done:
+        portSyncMutexRelease(NvLogLogger.buffersLock);
     }
 
     return status;
@@ -3091,6 +3116,7 @@ cliresCtrlCmdNvdGetNvlog_IMPL
 
         NV_ASSERT_OR_RETURN(pParams->size <= NV0000_CTRL_NVLOG_MAX_BLOCK_SIZE, NV_ERR_INVALID_ARGUMENT);
 
+        portSyncMutexAcquire(NvLogLogger.buffersLock);
         nvlogPauseLoggingToBuffer(hBuffer, NV_TRUE);
         status = nvlogExtractBufferChunk(hBuffer, pParams->blockNum, &pParams->size, pParams->data);
 
@@ -3102,6 +3128,7 @@ cliresCtrlCmdNvdGetNvlog_IMPL
         {
             nvlogPauseLoggingToBuffer(hBuffer, NV_FALSE);
         }
+        portSyncMutexRelease(NvLogLogger.buffersLock);
     }
 
     return status;

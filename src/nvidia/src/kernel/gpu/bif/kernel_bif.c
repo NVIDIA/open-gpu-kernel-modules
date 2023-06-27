@@ -73,6 +73,9 @@ kbifConstructEngine_IMPL
     // Disables P2P on VF
     kbifDisableP2PTransactions_HAL(pGpu, pKernelBif);
 
+    // Cache VF info
+    kbifCacheVFInfo_HAL(pGpu, pKernelBif);
+
     // Used to track when the link has gone into Recovery, which can cause CEs.
     pKernelBif->EnteredRecoverySinceErrorsLastChecked = NV_FALSE;
 

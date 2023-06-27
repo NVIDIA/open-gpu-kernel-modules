@@ -113,6 +113,7 @@ struct KernelBif {
     void (*__kbifProbePcieReqAtomicCaps__)(struct OBJGPU *, struct KernelBif *);
     NV_STATUS (*__kbifGetPciConfigSpacePriMirror__)(struct OBJGPU *, struct KernelBif *, NvU32 *, NvU32 *);
     NV_STATUS (*__kbifGetBusOptionsAddr__)(struct OBJGPU *, struct KernelBif *, BUS_OPTIONS, NvU32 *);
+    void (*__kbifCacheVFInfo__)(struct OBJGPU *, struct KernelBif *);
     NV_STATUS (*__kbifReconcileTunableState__)(POBJGPU, struct KernelBif *, void *);
     NV_STATUS (*__kbifStatePreLoad__)(POBJGPU, struct KernelBif *, NvU32);
     NV_STATUS (*__kbifStatePostUnload__)(POBJGPU, struct KernelBif *, NvU32);
@@ -259,6 +260,8 @@ NV_STATUS __nvoc_objCreate_KernelBif(KernelBif**, Dynamic*, NvU32);
 #define kbifGetPciConfigSpacePriMirror_HAL(pGpu, pKernelBif, pMirrorBase, pMirrorSize) kbifGetPciConfigSpacePriMirror_DISPATCH(pGpu, pKernelBif, pMirrorBase, pMirrorSize)
 #define kbifGetBusOptionsAddr(pGpu, pKernelBif, options, addrReg) kbifGetBusOptionsAddr_DISPATCH(pGpu, pKernelBif, options, addrReg)
 #define kbifGetBusOptionsAddr_HAL(pGpu, pKernelBif, options, addrReg) kbifGetBusOptionsAddr_DISPATCH(pGpu, pKernelBif, options, addrReg)
+#define kbifCacheVFInfo(pGpu, pKernelBif) kbifCacheVFInfo_DISPATCH(pGpu, pKernelBif)
+#define kbifCacheVFInfo_HAL(pGpu, pKernelBif) kbifCacheVFInfo_DISPATCH(pGpu, pKernelBif)
 #define kbifReconcileTunableState(pGpu, pEngstate, pTunableState) kbifReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define kbifStatePreLoad(pGpu, pEngstate, arg0) kbifStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kbifStatePostUnload(pGpu, pEngstate, arg0) kbifStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -571,6 +574,14 @@ NV_STATUS kbifGetBusOptionsAddr_GH100(struct OBJGPU *pGpu, struct KernelBif *pKe
 
 static inline NV_STATUS kbifGetBusOptionsAddr_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif, BUS_OPTIONS options, NvU32 *addrReg) {
     return pKernelBif->__kbifGetBusOptionsAddr__(pGpu, pKernelBif, options, addrReg);
+}
+
+void kbifCacheVFInfo_TU102(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+void kbifCacheVFInfo_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
+
+static inline void kbifCacheVFInfo_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
+    pKernelBif->__kbifCacheVFInfo__(pGpu, pKernelBif);
 }
 
 static inline NV_STATUS kbifReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelBif *pEngstate, void *pTunableState) {

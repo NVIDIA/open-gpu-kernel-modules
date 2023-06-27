@@ -451,8 +451,13 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
 
     for (i = 0; i < nElements; i++)
     {
+        NvU32 timeoutFlags = 0;
+
+        if (pMQI->txBufferFull)
+            timeoutFlags |= GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG;
+
         // Set a timeout of 1 sec
-        gpuSetTimeout(pGpu, 1000000, &timeout, 0);
+        gpuSetTimeout(pGpu, 1000000, &timeout, timeoutFlags);
 
         // Wait for space to put the next element. Retry for up to 10 ms.
         for (nRetries = 0; ; nRetries++)
@@ -473,9 +478,14 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
 
         if (pNextElement == NULL)
         {
-            NV_PRINTF(LEVEL_ERROR, "buffer is full\n");
+            pMQI->txBufferFull++;
+            NV_PRINTF_COND(pMQI->txBufferFull == 1, LEVEL_ERROR, LEVEL_INFO, "buffer is full\n");
             nvStatus = NV_ERR_BUSY_RETRY;
             goto done;
+        }
+        else
+        {
+            pMQI->txBufferFull = 0;
         }
 
         portMemCopy(pNextElement, GSP_MSG_QUEUE_ELEMENT_SIZE_MIN,

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,6 @@
 #include "gpu/falcon/kernel_falcon.h"
 #include "gpu/sec2/kernel_sec2.h"
 
-#include "published/turing/tu102/dev_fb.h"  // for NV_PFB_PRI_MMU_WPR2_ADDR_HI
 #include "published/turing/tu102/dev_falcon_v4.h"
 
 
@@ -131,11 +130,9 @@ kgspExecuteBooterUnloadIfNeeded_TU102
     KernelSec2 *pKernelSec2 = GPU_GET_KERNEL_SEC2(pGpu);
 
     // skip actually executing Booter Unload if WPR2 is not up
-    NvU32 data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
-    NvU32 wpr2HiVal = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
-    if (wpr2HiVal == 0)
+    if (!kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
     {
-        NV_PRINTF(LEVEL_INFO, "skipping executing Booter Unload as WPR is not up\n");
+        NV_PRINTF(LEVEL_INFO, "skipping executing Booter Unload as WPR2 is not up\n");
         return NV_OK;
     }
 
@@ -153,9 +150,7 @@ kgspExecuteBooterUnloadIfNeeded_TU102
         return status;
     }
 
-    data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
-    wpr2HiVal = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_HI, _VAL, data);
-    if (wpr2HiVal > 0)
+    if (kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
     {
         NV_PRINTF(LEVEL_ERROR, "failed to execute Booter Unload: WPR2 is still up\n");
         return NV_ERR_GENERIC;

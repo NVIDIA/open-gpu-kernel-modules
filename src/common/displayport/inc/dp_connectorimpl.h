@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -125,6 +125,7 @@ namespace DisplayPort
         bool    bPConConnected;                 // HDMI2.1-Protocol Converter (Support SRC control mode) connected.
         bool    bSkipAssessLinkForPCon;         // Skip assessLink() for PCON. DD will call assessFRLLink later.
         bool    bHdcpAuthOnlyOnDemand;          // True if only initiate Hdcp authentication on demand and MST won't auto-trigger authenticate at device attach.
+        bool    bReassessMaxLink;               // Retry assessLink() if the first assessed link config is lower than the panel max config.
 
         bool    constructorFailed;
 

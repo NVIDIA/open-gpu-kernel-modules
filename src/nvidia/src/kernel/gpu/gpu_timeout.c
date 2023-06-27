@@ -424,7 +424,7 @@ timeoutCheck
 
     if (!(pTimeout->flags & GPU_TIMEOUT_FLAGS_BYPASS_CPU_YIELD))
     {
-        threadStateYieldCpuIfNecessary(pGpu);
+        threadStateYieldCpuIfNecessary(pGpu, !!(pTimeout->flags & GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG));
     }
 
     //

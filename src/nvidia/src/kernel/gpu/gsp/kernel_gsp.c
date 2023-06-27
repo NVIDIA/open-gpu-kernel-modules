@@ -91,6 +91,7 @@ static void _kgspFreeRpcInfrastructure(OBJGPU *, KernelGsp *);
 static NV_STATUS _kgspRpcSendMessage(OBJGPU *, OBJRPC *);
 static NV_STATUS _kgspRpcRecvPoll(OBJGPU *, OBJRPC *, NvU32);
 static NV_STATUS _kgspRpcDrainEvents(OBJGPU *, KernelGsp *, NvU32);
+static void      _kgspRpcIncrementTimeoutCountAndRateLimitPrints(OBJGPU *, OBJRPC *);
 
 static NV_STATUS _kgspAllocSimAccessBuffer(OBJGPU *pGpu, KernelGsp *pKernelGsp);
 static void _kgspFreeSimAccessBuffer(OBJGPU *pGpu, KernelGsp *pKernelGsp);
@@ -181,7 +182,14 @@ _kgspRpcSendMessage
     nvStatus = GspMsgQueueSendCommand(pRpc->pMessageQueueInfo, pGpu);
     if (nvStatus != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "GspMsgQueueSendCommand failed: 0x%x\n", nvStatus);
+        if (nvStatus == NV_ERR_TIMEOUT ||
+            nvStatus == NV_ERR_BUSY_RETRY)
+        {
+            _kgspRpcIncrementTimeoutCountAndRateLimitPrints(pGpu, pRpc);
+        }
+        NV_PRINTF_COND(pRpc->bQuietPrints, LEVEL_INFO, LEVEL_ERROR,
+                       "GspMsgQueueSendCommand failed on GPU%d: 0x%x\n",
+                       gpuGetInstance(pGpu), nvStatus);
         return nvStatus;
     }
 
@@ -1087,13 +1095,12 @@ _kgspLogXid119
     NvU32 expectedFunc
 )
 {
-    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
     NvU32 historyEntry = pRpc->rpcHistoryCurrent;
     NvU32 activeData[2];
 
-    if (!pKernelGsp->bXid119Printed)
+    if (pRpc->timeoutCount == 1)
     {
-        NV_PRINTF(LEVEL_NOTICE,
+        NV_PRINTF(LEVEL_ERROR,
                   "********************************* GSP Failure **********************************\n");
     }
 
@@ -1109,7 +1116,7 @@ _kgspLogXid119
                   pRpc->rpcHistory[historyEntry].data[0],
                   pRpc->rpcHistory[historyEntry].data[1]);
 
-    if (!pKernelGsp->bXid119Printed)
+    if (pRpc->timeoutCount == 1)
     {
         NvU32 historyIndex;
 
@@ -1143,11 +1150,40 @@ _kgspLogXid119
         NV_PRINTF(LEVEL_ERROR, "Dumping stack:\n");
         osAssertFailed();
 
-        NV_PRINTF(LEVEL_NOTICE,
+        NV_PRINTF(LEVEL_ERROR,
                   "********************************************************************************\n");
     }
+}
 
-    pKernelGsp->bXid119Printed = NV_TRUE;
+static void
+_kgspRpcIncrementTimeoutCountAndRateLimitPrints
+(
+    OBJGPU *pGpu,
+    OBJRPC *pRpc
+)
+{
+    pRpc->timeoutCount++;
+
+    if ((pRpc->timeoutCount == (RPC_TIMEOUT_LIMIT_PRINT_RATE_THRESH + 1)) &&
+        (RPC_TIMEOUT_LIMIT_PRINT_RATE_SKIP > 0))
+    {
+        // make sure we warn Xid and NV_PRINTF/NVLOG consumers that we are rate limiting prints
+        if (GPU_GET_KERNEL_RC(pGpu)->bLogEvents)
+        {
+            portDbgPrintf(
+                "NVRM: Rate limiting GSP RPC error prints for GPU at PCI:%04x:%02x:%02x (printing 1 of every %d).  The GPU likely needs to be reset.\n",
+                gpuGetDomain(pGpu),
+                gpuGetBus(pGpu),
+                gpuGetDevice(pGpu),
+                RPC_TIMEOUT_LIMIT_PRINT_RATE_SKIP + 1);
+        }
+        NV_PRINTF(LEVEL_WARNING,
+                  "Rate limiting GSP RPC error prints (printing 1 of every %d)\n",
+                  RPC_TIMEOUT_LIMIT_PRINT_RATE_SKIP + 1);
+    }
+
+    pRpc->bQuietPrints = ((pRpc->timeoutCount > RPC_TIMEOUT_LIMIT_PRINT_RATE_THRESH) &&
+                          ((pRpc->timeoutCount % (RPC_TIMEOUT_LIMIT_PRINT_RATE_SKIP + 1)) != 0));
 }
 
 /*!
@@ -1165,6 +1201,7 @@ _kgspRpcRecvPoll
     NV_STATUS  nvStatus;
     RMTIMEOUT  timeout;
     NvU32      timeoutUs;
+    NvU32      timeoutFlags;
     NvBool     bSlowGspRpc = IS_EMULATION(pGpu) || IS_SIMULATION(pGpu);
 
     //
@@ -1214,7 +1251,12 @@ _kgspRpcRecvPoll
     }
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
-    gpuSetTimeout(pGpu, timeoutUs, &timeout, GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
+
+    timeoutFlags = GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE;
+    if (pRpc->bQuietPrints)
+        timeoutFlags |= GPU_TIMEOUT_FLAGS_BYPASS_JOURNAL_LOG;
+
+    gpuSetTimeout(pGpu, timeoutUs, &timeout, timeoutFlags);
 
     for (;;)
     {
@@ -1236,7 +1278,13 @@ _kgspRpcRecvPoll
         nvStatus = gpuCheckTimeout(pGpu, &timeout);
         if (nvStatus == NV_ERR_TIMEOUT)
         {
-            _kgspLogXid119(pGpu, pRpc, expectedFunc);
+            _kgspRpcIncrementTimeoutCountAndRateLimitPrints(pGpu, pRpc);
+
+            if (!pRpc->bQuietPrints)
+            {
+                _kgspLogXid119(pGpu, pRpc, expectedFunc);
+            }
+
             goto done;
         }
 
@@ -1246,6 +1294,8 @@ _kgspRpcRecvPoll
             goto done;
         }
     }
+
+    pRpc->timeoutCount = 0;
 
 done:
     pKernelGsp->bPollingForRpcResponse = NV_FALSE;
@@ -1985,9 +2035,6 @@ kgspInitRm_IMPL
                 goto done;
             }
         }
-
-        // execute Booter Unload if needed to reset from unclean shutdown
-        kgspExecuteBooterUnloadIfNeeded_HAL(pGpu, pKernelGsp);
     }
 
     // Prepare boot binary image.
@@ -2044,7 +2091,16 @@ kgspInitRm_IMPL
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, kgspInitLogging(pGpu, pKernelGsp, pGspFw), done);
 
     // Wait for GFW_BOOT OK status
-    kgspWaitForGfwBootOk_HAL(pGpu, pKernelGsp);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, kgspWaitForGfwBootOk_HAL(pGpu, pKernelGsp), done);
+
+    // Fail early if WPR2 is up
+    if (kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
+    {
+        NV_PRINTF(LEVEL_ERROR, "unexpected WPR2 already up, cannot proceed with booting gsp\n");
+        NV_PRINTF(LEVEL_ERROR, "(the GPU is likely in a bad state and may need to be reset)\n");
+        status = NV_ERR_INVALID_STATE;
+        goto done;
+    }
 
     // bring up ucode with RM offload task
     status = kgspBootstrapRiscvOSEarly_HAL(pGpu, pKernelGsp, pGspFw);

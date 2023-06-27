@@ -6312,7 +6312,6 @@ nvswitch_get_nvlink_ecc_errors_lr10
         NvU32               sublinkWidth;
 
         link = nvswitch_get_link(device, i);
-        sublinkWidth = device->hal.nvswitch_get_sublink_width(device, i);
 
         if ((link == NULL) ||
             !NVSWITCH_IS_LINK_ENG_VALID_LR10(device, NVLDL, link->linkNumber) ||
@@ -6320,6 +6319,8 @@ nvswitch_get_nvlink_ecc_errors_lr10
         {
             return -NVL_BAD_ARGS;
         }
+
+        sublinkWidth = device->hal.nvswitch_get_sublink_width(device, i);
 
         minion_enabled = nvswitch_is_minion_initialized(device,
             NVSWITCH_GET_LINK_ENG_INST(device, link->linkNumber, MINION));

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2019-2020 NVidia Corporation
+    Copyright (c) 2019-2023 NVidia Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -127,8 +127,8 @@ nvlink_lib_unload(void)
         }
 
         // Release and free top-level lock
-        nvlink_lib_top_lock_release(); 
-        nvlink_lib_top_lock_free(); 
+        nvlink_lib_top_lock_release();
+        nvlink_lib_top_lock_free();
     }
 
     return NVL_SUCCESS;
@@ -160,3 +160,40 @@ nvlink_lib_is_device_list_empty(void)
     return isEmpty;
 }
 
+/*
+ * Get if a device registerd to the nvlink corelib has a reduced nvlink config
+ *
+ * return NV_TRUE if there is a device registered to the core library that is a reduced
+ * nvlink config device
+ */
+NvBool
+nvlink_lib_is_registerd_device_with_reduced_config(void)
+{
+    NvlStatus lock_status = NVL_SUCCESS;
+    nvlink_device *dev    = NULL;
+
+    // Acquire top-level lock
+    lock_status = nvlink_lib_top_lock_acquire();
+    if (lock_status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Failed to acquire top-level lock\n",
+            __FUNCTION__));
+
+        return NV_FALSE;
+     }
+
+    FOR_EACH_DEVICE_REGISTERED(dev, nvlinkLibCtx.nv_devicelist_head, node)
+    {
+        if (dev->bReducedNvlinkConfig == NV_TRUE)
+        {
+            return NV_TRUE;
+        }
+    }
+
+    // Release and free top-level lock
+    nvlink_lib_top_lock_release();
+    nvlink_lib_top_lock_free();
+
+    return NV_FALSE;
+}

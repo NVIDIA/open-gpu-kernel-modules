@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -247,4 +247,37 @@ knvlinkValidateFabricBaseAddress_GA100
     }
 
     return NV_OK;
+}
+
+/*!
+ * @brief   Checks to see if the GPU is a reduced nvlink config
+ *
+ * @param[in] pGpu            OBJGPU pointer
+ * @param[in] pKernelNvlink   KernelNvlink pointer
+ *
+ * @returns On the gpu being a reduced config, NV_TRUE.
+ *          otherwise , returns NV_FALSE.
+ */
+NvBool
+knvlinkIsGpuReducedNvlinkConfig_GA100
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV2080_CTRL_NVLINK_IS_REDUCED_CONFIG_PARAMS params;
+    NV_STATUS status;
+
+    portMemSet(&params, 0, sizeof(params));
+
+    status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
+                             NV2080_CTRL_CMD_NVLINK_IS_REDUCED_CONFIG,
+                             (void *)&params, sizeof(params));
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to execute GSP-RM GPC to get if the gpu has a reduced Nvlink config\n");
+        return NV_FALSE;
+    }
+
+    return params.bReducedNvlinkConfig;
 }

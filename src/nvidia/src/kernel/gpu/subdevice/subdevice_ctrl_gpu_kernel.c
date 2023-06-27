@@ -196,13 +196,12 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 }
 
                 portMemSet(&params, 0x0, sizeof(params));
-                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                    pRmApi->Control(pRmApi,
-                                    pGpu->hInternalClient,
-                                    pGpu->hInternalSubdevice,
-                                    NV2080_CTRL_CMD_INTERNAL_GPU_GET_SMC_MODE,
-                                    &params,
-                                    sizeof(params)));
+                status = pRmApi->Control(pRmApi,
+                                         pGpu->hInternalClient,
+                                         pGpu->hInternalSubdevice,
+                                         NV2080_CTRL_CMD_INTERNAL_GPU_GET_SMC_MODE,
+                                         &params,
+                                         sizeof(params));
                 data = params.smcMode;
                 break;
             }

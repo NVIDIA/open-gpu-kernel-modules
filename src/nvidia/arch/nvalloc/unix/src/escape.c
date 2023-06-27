@@ -46,6 +46,10 @@
 #include <class/cl003e.h> // NV01_MEMORY_SYSTEM
 #include <class/cl0071.h> // NV01_MEMORY_SYSTEM_OS_DESCRIPTOR
 
+#include "rmapi/client_resource.h"
+#include "nvlog/nvlog.h"
+#include <nv-ioctl-nvlog.h>
+
 #include <ctrl/ctrl00fd.h>
 
 #define NV_CTL_DEVICE_ONLY(nv)                 \
@@ -837,6 +841,40 @@ NV_STATUS RmIoctl(
                                                          pOldCpuAddress,
                                                          pNewCpuAddress);
             break;
+        }
+
+        case NV_ESC_RM_NVLOG_CTRL:
+        {
+            NV_NVLOG_CTRL_PARAMS *pParams = data;
+
+            NV_CTL_DEVICE_ONLY(nv);
+
+            if (!osIsAdministrator())
+            {
+                rmStatus = NV_ERR_INSUFFICIENT_PERMISSIONS;
+                pParams->status = rmStatus;
+                goto done;
+            }
+
+            switch (pParams->ctrl)
+            {
+                // Do not use NVOC _DISPATCH here as it dereferences NULL RmClientResource*
+                case NV0000_CTRL_CMD_NVD_GET_NVLOG_INFO:
+                    rmStatus = cliresCtrlCmdNvdGetNvlogInfo_IMPL(NULL, &pParams->params.getNvlogInfo);
+                    break;
+                case NV0000_CTRL_CMD_NVD_GET_NVLOG_BUFFER_INFO:
+                    rmStatus = cliresCtrlCmdNvdGetNvlogBufferInfo_IMPL(NULL, &pParams->params.getNvlogBufferInfo);
+                    break;
+                case NV0000_CTRL_CMD_NVD_GET_NVLOG:
+                    rmStatus = cliresCtrlCmdNvdGetNvlog_IMPL(NULL, &pParams->params.getNvlog);
+                    break;
+                default:
+                    rmStatus = NV_ERR_NOT_SUPPORTED;
+                    break;
+            }
+
+            pParams->status = rmStatus;
+            goto done;
         }
 
         case NV_ESC_REGISTER_FD:

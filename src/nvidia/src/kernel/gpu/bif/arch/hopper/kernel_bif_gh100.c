@@ -736,3 +736,141 @@ kbifGetBusOptionsAddr_GH100
     return status;
 }
 
+
+/*!
+ * @brief: Get BAR information from PCIe config space
+ *
+ * @param[in]  pGpu               OBJGPU pointer
+ * @param[in]  barRegCSBase       The base register 0 address
+ * @param[in]  barIndex           The BAR index to check
+ * @param[out] pBarBaseAddress    The start address of the specified BAR
+ * @param[out] pIs64BitBar        To indicate if the BAR is using 64bit address
+ *
+ * @returns NV_STATUS
+ */
+static NV_STATUS
+_kbifGetBarInfo_GH100
+(
+    OBJGPU    *pGpu,
+    NvU32      barRegCSBase,
+    NvU32      barIndex,
+    NvU64     *pBarBaseAddress,
+    NvBool    *pIs64BitBar
+)
+{
+    NV_STATUS status         = NV_OK;
+    NvBool    barIs64Bit     = NV_FALSE;
+    NvU32     barAddrLow     = 0;
+    NvU32     barAddrHigh    = 0;
+    NvU32     barRegCSLimit  = barRegCSBase + NV_EP_PCFG_GPU_BARREG5 - NV_EP_PCFG_GPU_BARREG0;
+    NvU32     barRegCSOffset = barRegCSBase;
+    NvU64     barBaseAddr    = 0;
+    NvU32     i              = 0;
+
+    for (i = 0; i <= barIndex; i++)
+    {
+        if ((status = GPU_BUS_CFG_CYCLE_RD32(pGpu, barRegCSOffset, &barAddrLow)) != NV_OK)
+        {
+            return status;
+        }
+
+        //
+        // The SPACE_TYPE, ADDRESS_TYPE, PREFETCHABLE and BASE_ADDRESS fields
+        // have the same definition as for Base Address Register 0
+        //
+        barIs64Bit = FLD_TEST_DRF(_EP_PCFG_GPU, _BARREG0, _REG_ADDR_TYPE, _64BIT, barAddrLow);
+
+        if (i != barIndex)
+        {
+            barRegCSOffset += (barIs64Bit ? 8 : 4);
+
+            if (barRegCSOffset >= barRegCSLimit)
+            {
+                return NV_ERR_INVALID_INDEX;
+            }
+        }
+    }
+
+    if (pBarBaseAddress != NULL)
+    {
+        // Get the BAR address
+        barBaseAddr = barAddrLow & 0xFFFFFFF0;
+        if (barIs64Bit)
+        {
+            // Read and save the bar high address
+            status = GPU_BUS_CFG_CYCLE_RD32(pGpu, barRegCSOffset + 4, &barAddrHigh);
+            NV_ASSERT_OR_RETURN((status == NV_OK), status);
+
+            barBaseAddr |= (NvU64)barAddrHigh << 32;
+        }
+
+        *pBarBaseAddress = barBaseAddr;
+    }
+
+    if (pIs64BitBar != NULL)
+    {
+        *pIs64BitBar = barIs64Bit;
+    }
+
+    return NV_OK;
+}
+
+
+/*! @brief Fetch VF details such as no. of VFs, First VF offset etc
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  Kernel BIF object pointer
+*/
+void
+kbifCacheVFInfo_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NV_STATUS status     = NV_OK;
+    NvU32     regVal     = 0;
+    NvU64     barAddr    = 0;
+    NvBool    barIs64Bit = NV_FALSE;
+
+    // Get total VF count
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_SRIOV_INIT_TOT_VF, &regVal);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to read NV_EP_PCFG_GPU_SRIOV_INIT_TOT_VF\n");
+        return;
+    }
+    pGpu->sriovState.totalVFs = GPU_DRF_VAL(_EP_PCFG_GPU, _SRIOV_INIT_TOT_VF,
+                                            _TOTAL_VFS, regVal);
+
+    // Get first VF offset
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_SRIOV_FIRST_VF_STRIDE, &regVal);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to read NV_EP_PCFG_GPU_SRIOV_FIRST_VF_STRIDE\n");
+        return;
+    }
+    pGpu->sriovState.firstVFOffset = GPU_DRF_VAL(_EP_PCFG_GPU, _SRIOV_FIRST_VF_STRIDE,
+                                                 _FIRST_VF_OFFSET, regVal);
+
+    // Get VF BAR0 info
+    status = _kbifGetBarInfo_GH100(pGpu, NV_EP_PCFG_GPU_VF_BAR0, 0, &barAddr, &barIs64Bit);
+    NV_ASSERT(status == NV_OK);
+
+    pGpu->sriovState.firstVFBarAddress[0] = barAddr;
+    pGpu->sriovState.b64bitVFBar0         = barIs64Bit;
+
+    // Get VF BAR1 info
+    status = _kbifGetBarInfo_GH100(pGpu, NV_EP_PCFG_GPU_VF_BAR0, 1, &barAddr, &barIs64Bit);
+    NV_ASSERT(status == NV_OK);
+
+    pGpu->sriovState.firstVFBarAddress[1] = barAddr;
+    pGpu->sriovState.b64bitVFBar1         = barIs64Bit;
+
+    // Get VF BAR2 info
+    status = _kbifGetBarInfo_GH100(pGpu, NV_EP_PCFG_GPU_VF_BAR0, 2, &barAddr, &barIs64Bit);
+    NV_ASSERT(status == NV_OK);
+
+    pGpu->sriovState.firstVFBarAddress[2] = barAddr;
+    pGpu->sriovState.b64bitVFBar2         = barIs64Bit;
+}

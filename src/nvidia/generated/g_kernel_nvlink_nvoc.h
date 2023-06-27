@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -247,6 +247,7 @@ struct KernelNvlink {
     NV_STATUS (*__knvlinkLogAliDebugMessages__)(OBJGPU *, struct KernelNvlink *);
     NvBool (*__knvlinkIsFloorSweepingNeeded__)(OBJGPU *, struct KernelNvlink *, NvU32, NvU32);
     void (*__knvlinkDirectConnectCheck__)(OBJGPU *, struct KernelNvlink *);
+    NvBool (*__knvlinkIsGpuReducedNvlinkConfig__)(OBJGPU *, struct KernelNvlink *);
     NV_STATUS (*__knvlinkReconcileTunableState__)(POBJGPU, struct KernelNvlink *, void *);
     NV_STATUS (*__knvlinkStateInitLocked__)(POBJGPU, struct KernelNvlink *);
     NV_STATUS (*__knvlinkStatePreLoad__)(POBJGPU, struct KernelNvlink *, NvU32);
@@ -435,6 +436,8 @@ NV_STATUS __nvoc_objCreate_KernelNvlink(KernelNvlink**, Dynamic*, NvU32);
 #define knvlinkIsFloorSweepingNeeded_HAL(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl) knvlinkIsFloorSweepingNeeded_DISPATCH(pGpu, pKernelNvlink, numActiveLinksPerIoctrl, numLinksPerIoctrl)
 #define knvlinkDirectConnectCheck(pGpu, pKernelNvlink) knvlinkDirectConnectCheck_DISPATCH(pGpu, pKernelNvlink)
 #define knvlinkDirectConnectCheck_HAL(pGpu, pKernelNvlink) knvlinkDirectConnectCheck_DISPATCH(pGpu, pKernelNvlink)
+#define knvlinkIsGpuReducedNvlinkConfig(pGpu, pKernelNvlink) knvlinkIsGpuReducedNvlinkConfig_DISPATCH(pGpu, pKernelNvlink)
+#define knvlinkIsGpuReducedNvlinkConfig_HAL(pGpu, pKernelNvlink) knvlinkIsGpuReducedNvlinkConfig_DISPATCH(pGpu, pKernelNvlink)
 #define knvlinkReconcileTunableState(pGpu, pEngstate, pTunableState) knvlinkReconcileTunableState_DISPATCH(pGpu, pEngstate, pTunableState)
 #define knvlinkStateInitLocked(pGpu, pEngstate) knvlinkStateInitLocked_DISPATCH(pGpu, pEngstate)
 #define knvlinkStatePreLoad(pGpu, pEngstate, arg0) knvlinkStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -1571,6 +1574,16 @@ void knvlinkDirectConnectCheck_GH100(OBJGPU *pGpu, struct KernelNvlink *pKernelN
 
 static inline void knvlinkDirectConnectCheck_DISPATCH(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
     pKernelNvlink->__knvlinkDirectConnectCheck__(pGpu, pKernelNvlink);
+}
+
+static inline NvBool knvlinkIsGpuReducedNvlinkConfig_491d52(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    return ((NvBool)(0 != 0));
+}
+
+NvBool knvlinkIsGpuReducedNvlinkConfig_GA100(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
+
+static inline NvBool knvlinkIsGpuReducedNvlinkConfig_DISPATCH(OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    return pKernelNvlink->__knvlinkIsGpuReducedNvlinkConfig__(pGpu, pKernelNvlink);
 }
 
 static inline NV_STATUS knvlinkReconcileTunableState_DISPATCH(POBJGPU pGpu, struct KernelNvlink *pEngstate, void *pTunableState) {

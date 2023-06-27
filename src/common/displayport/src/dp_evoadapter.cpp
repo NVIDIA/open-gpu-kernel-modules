@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -95,7 +95,9 @@ const struct
     {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
     {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_ENABLE_OUI_RESTORING,             &dpRegkeyDatabase.bEnableOuiRestoring,             DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL}
+    {NV_DP_CHECK_FEC_FOR_DDS_DSC_PANEL,             &dpRegkeyDatabase.bCheckFECForDynamicMuxDSCPanel,  DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_REASSESS_MAX_LINK,                &dpRegkeyDatabase.bReassessMaxLink,                DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -896,6 +898,7 @@ void EvoMainLink::applyRegkeyOverrides()
     _skipPowerdownEDPPanelWhenHeadDetach = dpRegkeyDatabase.bPoweroffEdpInHeadDetachSkipped;
     _applyLinkBwOverrideWarRegVal        = dpRegkeyDatabase.bLinkBwOverrideWarApplied;
     _enableMSAOverrideOverMST            = dpRegkeyDatabase.bMsaOverMstEnabled;
+    _enableFecCheckForDDS                = dpRegkeyDatabase.bCheckFECForDynamicMuxDSCPanel;
 }
 
 NvU32 EvoMainLink::getRegkeyValue(const char *key)
@@ -1234,6 +1237,16 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
     bool result = (status == NVOS_STATUS_SUCCESS);
     retLink->setLaneRate(requestRmLC.peakRate, result ? requestRmLC.lanes : 0);
     retLink->setLTCounter(ltCounter);
+
+    // For release branch only, check FEC return values and update to "retLink"
+    if (_enableFecCheckForDDS)
+    {
+        if (requestRmLC.bEnableFEC && (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _ENABLE_FEC, _ERR, err)))
+        {
+            retLink->bEnableFEC = false;
+            DP_ASSERT(0);
+        }
+    }
 
     NV_DPTRACE_INFO(LINK_TRAINING_DONE, status, requestRmLC.peakRate, requestRmLC.lanes);
 

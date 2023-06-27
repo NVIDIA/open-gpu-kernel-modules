@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -91,6 +91,11 @@ enum
      * Set NPORT interrupts
      */
     RM_SOE_CORE_CMD_SET_NPORT_INTRS,
+
+    /*!
+     * Disable NPORT fatal interrupt
+     */
+    RM_SOE_CORE_CMD_DISABLE_NPORT_FATAL_INTR,
 };
 
 // Timeout for SOE reset callback function
@@ -174,6 +179,29 @@ typedef struct
     NvBool bEnable;
 } RM_SOE_CORE_CMD_NPORT_INTRS;
 
+typedef struct
+{
+    NvU8   cmdType;
+    NvU32  nport;
+    NvU32  nportIntrEnable;
+    NvU8   nportIntrType;
+} RM_SOE_CORE_CMD_NPORT_FATAL_INTR;
+
+/*!
+ * NPORT Interrupt Types 
+ */
+enum
+{
+    RM_SOE_CORE_NPORT_ROUTE_INTERRUPT,
+    RM_SOE_CORE_NPORT_INGRESS_INTERRUPT,
+    RM_SOE_CORE_NPORT_EGRESS_0_INTERRUPT,
+    RM_SOE_CORE_NPORT_EGRESS_1_INTERRUPT,
+    RM_SOE_CORE_NPORT_TSTATE_INTERRUPT,
+    RM_SOE_CORE_NPORT_SOURCETRACK_INTERRUPT,
+    RM_SOE_CORE_NPORT_MULTICAST_INTERRUPT,
+    RM_SOE_CORE_NPORT_REDUCTION_INTERRUPT
+};
+
 typedef union
 {
     NvU8 cmdType;
@@ -187,6 +215,7 @@ typedef union
     RM_SOE_CORE_CMD_L2_STATE l2State;
     RM_SOE_CORE_CMD_GET_POWER getPower;
     RM_SOE_CORE_CMD_NPORT_INTRS nportIntrs;
+    RM_SOE_CORE_CMD_NPORT_FATAL_INTR nportDisableIntr;
 } RM_SOE_CORE_CMD;
 
 typedef struct

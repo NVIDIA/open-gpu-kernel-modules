@@ -36,6 +36,7 @@
 #include "rmapi/client.h"
 #include "rmapi/resource_fwd_decls.h"
 #include "core/thread_state.h"
+#include "virtualization/hypervisor/hypervisor.h"
 #include "virtualization/kernel_hostvgpudeviceapi.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
@@ -847,7 +848,8 @@ _gpuCollectMemInfo
             (bGlobalInfo || (pMemory->pHeap == pTargetedHeap)) &&
             (RES_GET_HANDLE(pMemory->pDevice) == hDevice) &&
             (pMemory->pMemDesc != NULL) &&
-            ((!bIsGuestProcess && (!memdescGetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_LIST_MEMORY))) ||
+            ((!bIsGuestProcess && (!memdescGetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_LIST_MEMORY))
+             && !(hypervisorIsVgxHyper() && (pResourceRef->externalClassId == NV01_MEMORY_HW_RESOURCES))) ||
              (bIsGuestProcess && (memdescGetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED)) && (pMemory->Type != NVOS32_TYPE_UNUSED))))
         {
 
