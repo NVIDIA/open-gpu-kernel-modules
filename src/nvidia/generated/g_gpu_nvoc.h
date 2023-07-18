@@ -1006,6 +1006,9 @@ struct OBJGPU {
     NvU32 subdeviceInstance;
     NvS32 numaNodeId;
     _GPU_UUID gpuUuid;
+    NvU32 gpuPhysicalId;
+    NvU32 gpuTerminatedLinkMask;
+    NvBool gpuLinkTerminationEnabled;
     NvBool gspRmInitialized;
     _GPU_PCIE_PEER_CLIQUE pciePeerClique;
     NvU32 i2cPortForExtdev;
@@ -2418,6 +2421,19 @@ static inline void gpuUpdateUserSharedData(struct OBJGPU *pGpu) {
 #endif //__nvoc_gpu_h_disabled
 
 #define gpuUpdateUserSharedData_HAL(pGpu) gpuUpdateUserSharedData(pGpu)
+
+void gpuGetTerminatedLinkMask_GA100(struct OBJGPU *pGpu, NvU32 arg0);
+
+
+#ifdef __nvoc_gpu_h_disabled
+static inline void gpuGetTerminatedLinkMask(struct OBJGPU *pGpu, NvU32 arg0) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+}
+#else //__nvoc_gpu_h_disabled
+#define gpuGetTerminatedLinkMask(pGpu, arg0) gpuGetTerminatedLinkMask_GA100(pGpu, arg0)
+#endif //__nvoc_gpu_h_disabled
+
+#define gpuGetTerminatedLinkMask_HAL(pGpu, arg0) gpuGetTerminatedLinkMask(pGpu, arg0)
 
 NV_STATUS gpuJtVersionSanityCheck_TU102(struct OBJGPU *pGpu);
 

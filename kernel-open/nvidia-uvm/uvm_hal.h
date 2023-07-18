@@ -485,11 +485,24 @@ typedef NvU32 (*uvm_hal_fault_buffer_read_get_t)(uvm_parent_gpu_t *parent_gpu);
 typedef void (*uvm_hal_fault_buffer_write_get_t)(uvm_parent_gpu_t *parent_gpu, NvU32 get);
 typedef NvU8 (*uvm_hal_fault_buffer_get_ve_id_t)(NvU16 mmu_engine_id, uvm_mmu_engine_type_t mmu_engine_type);
 
-// Parse the entry on the given buffer index. This also clears the valid bit of
-// the entry in the buffer.
-typedef void (*uvm_hal_fault_buffer_parse_entry_t)(uvm_parent_gpu_t *gpu,
-                                                   NvU32 index,
-                                                   uvm_fault_buffer_entry_t *buffer_entry);
+// Parse the replayable entry at the given buffer index. This also clears the
+// valid bit of the entry in the buffer.
+typedef NV_STATUS (*uvm_hal_fault_buffer_parse_replayable_entry_t)(uvm_parent_gpu_t *gpu,
+                                                                   NvU32 index,
+                                                                   uvm_fault_buffer_entry_t *buffer_entry);
+
+NV_STATUS uvm_hal_maxwell_fault_buffer_parse_replayable_entry_unsupported(uvm_parent_gpu_t *parent_gpu,
+                                                                          NvU32 index,
+                                                                          uvm_fault_buffer_entry_t *buffer_entry);
+
+NV_STATUS uvm_hal_pascal_fault_buffer_parse_replayable_entry(uvm_parent_gpu_t *parent_gpu,
+                                                             NvU32 index,
+                                                             uvm_fault_buffer_entry_t *buffer_entry);
+
+NV_STATUS uvm_hal_volta_fault_buffer_parse_replayable_entry(uvm_parent_gpu_t *parent_gpu,
+                                                            NvU32 index,
+                                                            uvm_fault_buffer_entry_t *buffer_entry);
+
 typedef bool (*uvm_hal_fault_buffer_entry_is_valid_t)(uvm_parent_gpu_t *parent_gpu, NvU32 index);
 typedef void (*uvm_hal_fault_buffer_entry_clear_valid_t)(uvm_parent_gpu_t *parent_gpu, NvU32 index);
 typedef NvU32 (*uvm_hal_fault_buffer_entry_size_t)(uvm_parent_gpu_t *parent_gpu);
@@ -508,9 +521,6 @@ NvU32 uvm_hal_maxwell_fault_buffer_read_put_unsupported(uvm_parent_gpu_t *parent
 NvU32 uvm_hal_maxwell_fault_buffer_read_get_unsupported(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_maxwell_fault_buffer_write_get_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index);
 NvU8 uvm_hal_maxwell_fault_buffer_get_ve_id_unsupported(NvU16 mmu_engine_id, uvm_mmu_engine_type_t mmu_engine_type);
-void uvm_hal_maxwell_fault_buffer_parse_entry_unsupported(uvm_parent_gpu_t *parent_gpu,
-                                                          NvU32 index,
-                                                          uvm_fault_buffer_entry_t *buffer_entry);
 uvm_fault_type_t uvm_hal_maxwell_fault_buffer_get_fault_type_unsupported(const NvU32 *fault_entry);
 
 void uvm_hal_pascal_enable_replayable_faults(uvm_parent_gpu_t *parent_gpu);
@@ -519,18 +529,14 @@ void uvm_hal_pascal_clear_replayable_faults(uvm_parent_gpu_t *parent_gpu, NvU32 
 NvU32 uvm_hal_pascal_fault_buffer_read_put(uvm_parent_gpu_t *parent_gpu);
 NvU32 uvm_hal_pascal_fault_buffer_read_get(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_pascal_fault_buffer_write_get(uvm_parent_gpu_t *parent_gpu, NvU32 index);
-void uvm_hal_pascal_fault_buffer_parse_entry(uvm_parent_gpu_t *parent_gpu,
-                                             NvU32 index,
-                                             uvm_fault_buffer_entry_t *buffer_entry);
+
 uvm_fault_type_t uvm_hal_pascal_fault_buffer_get_fault_type(const NvU32 *fault_entry);
 
 NvU32 uvm_hal_volta_fault_buffer_read_put(uvm_parent_gpu_t *parent_gpu);
 NvU32 uvm_hal_volta_fault_buffer_read_get(uvm_parent_gpu_t *parent_gpu);
 void uvm_hal_volta_fault_buffer_write_get(uvm_parent_gpu_t *parent_gpu, NvU32 index);
 NvU8 uvm_hal_volta_fault_buffer_get_ve_id(NvU16 mmu_engine_id, uvm_mmu_engine_type_t mmu_engine_type);
-void uvm_hal_volta_fault_buffer_parse_entry(uvm_parent_gpu_t *parent_gpu,
-                                            NvU32 index,
-                                            uvm_fault_buffer_entry_t *buffer_entry);
+
 uvm_fault_type_t uvm_hal_volta_fault_buffer_get_fault_type(const NvU32 *fault_entry);
 
 void uvm_hal_turing_disable_replayable_faults(uvm_parent_gpu_t *parent_gpu);
@@ -772,7 +778,7 @@ struct uvm_fault_buffer_hal_struct
     uvm_hal_fault_buffer_read_get_t read_get;
     uvm_hal_fault_buffer_write_get_t write_get;
     uvm_hal_fault_buffer_get_ve_id_t get_ve_id;
-    uvm_hal_fault_buffer_parse_entry_t parse_entry;
+    uvm_hal_fault_buffer_parse_replayable_entry_t parse_replayable_entry;
     uvm_hal_fault_buffer_entry_is_valid_t entry_is_valid;
     uvm_hal_fault_buffer_entry_clear_valid_t entry_clear_valid;
     uvm_hal_fault_buffer_entry_size_t entry_size;

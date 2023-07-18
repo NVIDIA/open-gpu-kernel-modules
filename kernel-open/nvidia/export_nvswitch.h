@@ -939,6 +939,12 @@ nvswitch_os_get_os_version
     NvU32 *pBuildNum
 );
 
+NvlStatus
+nvswitch_os_get_pid
+(
+    NvU32 *pPid
+);
+
 void
 nvswitch_lib_smbpbi_log_sxid
 (

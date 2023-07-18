@@ -841,7 +841,7 @@ nvlink_core_reset_intranode_conns
     {
         if (conns[i] == NULL)
             continue;
-
+        
         //
         // Reset both ends of this connection.
         // This path should enable/init those link endpoints as well.

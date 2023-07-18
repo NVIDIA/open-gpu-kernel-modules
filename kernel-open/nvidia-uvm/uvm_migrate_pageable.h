@@ -43,6 +43,7 @@ typedef struct
     uvm_populate_permissions_t      populate_permissions;
     bool                            touch : 1;
     bool                            skip_mapped : 1;
+    bool                            populate_on_cpu_alloc_failures : 1;
     NvU64                           *user_space_start;
     NvU64                           *user_space_length;
 } uvm_migrate_args_t;

@@ -258,7 +258,7 @@ NV_STATUS uvm_pushbuffer_begin_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *pu
 
 // Complete a pending push
 // Updates the chunk state the pending push used
-void uvm_pushbuffer_mark_completed(uvm_pushbuffer_t *pushbuffer, uvm_gpfifo_entry_t *gpfifo);
+void uvm_pushbuffer_mark_completed(uvm_channel_t *channel, uvm_gpfifo_entry_t *gpfifo);
 
 // Get the GPU VA for an ongoing push
 NvU64 uvm_pushbuffer_get_gpu_va_for_push(uvm_pushbuffer_t *pushbuffer, uvm_push_t *push);

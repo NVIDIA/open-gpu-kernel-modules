@@ -132,13 +132,13 @@ _spdmAcquireTransportBuffer
         return LIBSPDM_STATUS_INVALID_PARAMETER;
     }
 
-    *msg_buf_ptr = portMemAllocNonPaged(SPDM_MAX_MESSAGE_BUFFER_SIZE);
+    *msg_buf_ptr = portMemAllocNonPaged(LIBSPDM_MAX_MESSAGE_BUFFER_SIZE);
     if (*msg_buf_ptr == NULL)
     {
         return LIBSPDM_STATUS_BUFFER_FULL;
     }
 
-    *max_msg_size = SPDM_MAX_MESSAGE_BUFFER_SIZE;
+    *max_msg_size = LIBSPDM_MAX_MESSAGE_BUFFER_SIZE;
 
     return LIBSPDM_STATUS_SUCCESS;
 }
@@ -379,13 +379,10 @@ spdmContextDeinit_IMPL
     }
 
     //
-    // End the session, then deinitialize the Responder.
-    //
-    // TODO CONFCOMP-1490: Formally send END_SESSION, even thouh
-    // deinitializing Responder will end session regardless.
+    // End the session by deinitializing the Responder.
+    // We don't send END_SESSION as Responder will handle teardown.
     //
     NV_PRINTF(LEVEL_INFO, "SPDM: Tearing down session.\n");
-    // CHECK_SPDM_STATUS(libspdm_stop_session(pSpdm->pLibspdmContext, pSpdm->sessionId, 0));
     status = spdmDeviceDeinit_HAL(pGpu, pSpdm, NV_TRUE);
 
     // Regardless of success or failure, clear any context.
@@ -434,7 +431,7 @@ spdmStart_IMPL
         goto ErrorExit;
     }
 
-    // Fetch the certificates from the responder
+    // Fetch the certificates from the responder and validate them
     status = spdmGetCertificates_HAL(pGpu, pSpdm);
     if (status != NV_OK)
     {

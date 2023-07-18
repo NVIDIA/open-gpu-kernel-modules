@@ -75,7 +75,7 @@ struct Spdm {
     NV_STATUS (*__spdmDeviceDeinit__)(struct OBJGPU *, struct Spdm *, NvBool);
     NV_STATUS (*__spdmDeviceSecuredSessionSupported__)(struct OBJGPU *, struct Spdm *);
     NV_STATUS (*__spdmCheckConnection__)(struct OBJGPU *, struct Spdm *);
-    NV_STATUS (*__spdmMessageProcess__)(struct OBJGPU *, struct Spdm *, NvU32, NvU8 *, NvU32, NvU8 *, NvU32 *);
+    NV_STATUS (*__spdmMessageProcess__)(struct OBJGPU *, struct Spdm *, NvU8 *, NvU32, NvU8 *, NvU32 *);
     NV_STATUS (*__spdmGetCertificates__)(struct OBJGPU *, struct Spdm *);
     void *pLibspdmContext;
     NvU32 libspdmContextSize;
@@ -132,8 +132,8 @@ NV_STATUS __nvoc_objCreate_Spdm(Spdm**, Dynamic*, NvU32);
 #define spdmDeviceSecuredSessionSupported_HAL(pGpu, pSpdm) spdmDeviceSecuredSessionSupported_DISPATCH(pGpu, pSpdm)
 #define spdmCheckConnection(pGpu, pSpdm) spdmCheckConnection_DISPATCH(pGpu, pSpdm)
 #define spdmCheckConnection_HAL(pGpu, pSpdm) spdmCheckConnection_DISPATCH(pGpu, pSpdm)
-#define spdmMessageProcess(pGpu, pSpdm, ctrlCode, pRequest, requestSize, pResponse, pResponseSize) spdmMessageProcess_DISPATCH(pGpu, pSpdm, ctrlCode, pRequest, requestSize, pResponse, pResponseSize)
-#define spdmMessageProcess_HAL(pGpu, pSpdm, ctrlCode, pRequest, requestSize, pResponse, pResponseSize) spdmMessageProcess_DISPATCH(pGpu, pSpdm, ctrlCode, pRequest, requestSize, pResponse, pResponseSize)
+#define spdmMessageProcess(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize) spdmMessageProcess_DISPATCH(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize)
+#define spdmMessageProcess_HAL(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize) spdmMessageProcess_DISPATCH(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize)
 #define spdmGetCertificates(pGpu, pSpdm) spdmGetCertificates_DISPATCH(pGpu, pSpdm)
 #define spdmGetCertificates_HAL(pGpu, pSpdm) spdmGetCertificates_DISPATCH(pGpu, pSpdm)
 NV_STATUS spdmConstruct_IMPL(struct Spdm *arg_pSpdm);
@@ -260,14 +260,14 @@ static inline NV_STATUS spdmCheckConnection_DISPATCH(struct OBJGPU *pGpu, struct
     return pSpdm->__spdmCheckConnection__(pGpu, pSpdm);
 }
 
-NV_STATUS spdmMessageProcess_GH100(struct OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 ctrlCode, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize);
+NV_STATUS spdmMessageProcess_GH100(struct OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize);
 
-static inline NV_STATUS spdmMessageProcess_46f6a7(struct OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 ctrlCode, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize) {
+static inline NV_STATUS spdmMessageProcess_46f6a7(struct OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS spdmMessageProcess_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pSpdm, NvU32 ctrlCode, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize) {
-    return pSpdm->__spdmMessageProcess__(pGpu, pSpdm, ctrlCode, pRequest, requestSize, pResponse, pResponseSize);
+static inline NV_STATUS spdmMessageProcess_DISPATCH(struct OBJGPU *pGpu, struct Spdm *pSpdm, NvU8 *pRequest, NvU32 requestSize, NvU8 *pResponse, NvU32 *pResponseSize) {
+    return pSpdm->__spdmMessageProcess__(pGpu, pSpdm, pRequest, requestSize, pResponse, pResponseSize);
 }
 
 NV_STATUS spdmGetCertificates_GH100(struct OBJGPU *pGpu, struct Spdm *pSpdm);

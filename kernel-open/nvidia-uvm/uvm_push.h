@@ -64,6 +64,14 @@ typedef enum
     UVM_PUSH_FLAG_COUNT,
 } uvm_push_flag_t;
 
+struct uvm_push_crypto_bundle_struct {
+    // Initialization vector used to decrypt the push
+    UvmCslIv iv;
+
+    // Size of the pushbuffer that is encrypted/decrypted
+    NvU32 push_size;
+};
+
 struct uvm_push_struct
 {
     // Location of the first method of the push

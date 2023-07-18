@@ -17,7 +17,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
 void __nvoc_init_CeUtils(CeUtils*);
 void __nvoc_init_funcTable_CeUtils(CeUtils*);
-NV_STATUS __nvoc_ctor_CeUtils(CeUtils*, OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS * arg_pAllocParams);
+NV_STATUS __nvoc_ctor_CeUtils(CeUtils*, struct OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS * arg_pAllocParams);
 void __nvoc_init_dataField_CeUtils(CeUtils*);
 void __nvoc_dtor_CeUtils(CeUtils*);
 extern const struct NVOC_EXPORT_INFO __nvoc_export_info_CeUtils;
@@ -75,7 +75,7 @@ void __nvoc_init_dataField_CeUtils(CeUtils *pThis) {
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_CeUtils(CeUtils *pThis, OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS * arg_pAllocParams) {
+NV_STATUS __nvoc_ctor_CeUtils(CeUtils *pThis, struct OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS * arg_pAllocParams) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
     if (status != NV_OK) goto __nvoc_ctor_CeUtils_fail_Object;
@@ -109,7 +109,7 @@ void __nvoc_init_CeUtils(CeUtils *pThis) {
     __nvoc_init_funcTable_CeUtils(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_CeUtils(CeUtils **ppThis, Dynamic *pParent, NvU32 createFlags, OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS * arg_pAllocParams) {
+NV_STATUS __nvoc_objCreate_CeUtils(CeUtils **ppThis, Dynamic *pParent, NvU32 createFlags, struct OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS * arg_pAllocParams) {
     NV_STATUS status;
     Object *pParentObj;
     CeUtils *pThis;
@@ -155,7 +155,7 @@ __nvoc_objCreate_CeUtils_cleanup:
 
 NV_STATUS __nvoc_objCreateDynamic_CeUtils(CeUtils **ppThis, Dynamic *pParent, NvU32 createFlags, va_list args) {
     NV_STATUS status;
-    OBJGPU * arg_pGpu = va_arg(args, OBJGPU *);
+    struct OBJGPU * arg_pGpu = va_arg(args, struct OBJGPU *);
     KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance = va_arg(args, KERNEL_MIG_GPU_INSTANCE *);
     NV0050_ALLOCATION_PARAMETERS * arg_pAllocParams = va_arg(args, NV0050_ALLOCATION_PARAMETERS *);
 

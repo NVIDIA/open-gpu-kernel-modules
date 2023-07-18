@@ -2083,12 +2083,6 @@ static uvm_processor_id_t block_page_get_closest_resident_in_mask(uvm_va_block_t
             return id;
     }
 
-    // HMM va_blocks don't know if a page is CPU resident until either
-    // migrate_vma_setup() or hmm_range_fault() is called. If a page isn't
-    // resident anywhere, assume it is CPU resident.
-    if (uvm_va_block_is_hmm(va_block))
-        return UVM_ID_CPU;
-
     return UVM_ID_INVALID;
 }
 
@@ -2888,7 +2882,7 @@ static uvm_va_block_region_t block_phys_contig_region(uvm_va_block_t *block,
 {
     if (UVM_ID_IS_CPU(resident_id)) {
         uvm_cpu_chunk_t *chunk = uvm_cpu_chunk_get_chunk_for_page(block, page_index);
-        return uvm_va_block_region(page_index, page_index + uvm_cpu_chunk_num_pages(chunk));
+        return uvm_cpu_chunk_block_region(block, chunk, page_index);
     }
     else {
         uvm_chunk_size_t chunk_size;

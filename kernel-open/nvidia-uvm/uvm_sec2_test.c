@@ -275,13 +275,15 @@ static NV_STATUS alloc_and_init_mem(uvm_gpu_t *gpu, uvm_mem_t **mem, size_t size
         TEST_NV_CHECK_GOTO(ce_memset_gpu(gpu, *mem, size, 0xdead), err);
     }
     else {
-        if (type == MEM_ALLOC_TYPE_SYSMEM_DMA)
+        if (type == MEM_ALLOC_TYPE_SYSMEM_DMA) {
             TEST_NV_CHECK_RET(uvm_mem_alloc_sysmem_dma(size, gpu, NULL, mem));
-        else
+            TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(*mem, gpu), err);
+        }
+        else {
             TEST_NV_CHECK_RET(uvm_mem_alloc_sysmem(size, NULL, mem));
+        }
 
         TEST_NV_CHECK_GOTO(uvm_mem_map_cpu_kernel(*mem), err);
-        TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(*mem, gpu), err);
         write_range_cpu(*mem, size, 0xdeaddead);
     }
 
@@ -442,7 +444,6 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu, size_t copy_size, siz
 
     cpu_encrypt(push.channel, src_cipher, src_plain, auth_tag_mem, size, copy_size);
     gpu_decrypt(&push, dst_plain, src_cipher, auth_tag_mem, size, copy_size);
-
 
     // Wait for SEC2 before launching the CE part.
     // SEC2 is only allowed to release semaphores in unprotected sysmem,

@@ -1664,7 +1664,11 @@ nvswitch_lib_post_init_device
 
     nvswitch_smbpbi_post_init(device);
 
-    (void)nvswitch_launch_ALI(device);
+    // ALI launched by VBIOS on silicon
+    if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
+    {
+        (void)nvswitch_launch_ALI(device);
+    }
 
     return NVL_SUCCESS;
 }

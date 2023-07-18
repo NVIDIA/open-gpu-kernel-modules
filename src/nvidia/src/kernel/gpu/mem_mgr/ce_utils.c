@@ -116,6 +116,10 @@ ceutilsConstruct_IMPL
         pChannel->type = FAST_SCRUBBER_CHANNEL;
         NV_PRINTF(LEVEL_INFO, "Enabled fast scrubber in construct.\n");
     }
+    else
+    {
+        pChannel->type = CE_SCRUBBER_CHANNEL;
+    }
 
     // Set up various channel resources
     status = channelSetupIDs(pChannel, pGpu, pChannel->bUseVasForCeCopy, bMIGInUse);
@@ -222,13 +226,6 @@ ceutilsDestruct_IMPL
         }
     }
 
-    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->channelId);
-    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->errNotifierIdPhys);
-    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->pushBufferId);
-    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->errNotifierIdVirt);
-    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hVASpaceId);
-    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->deviceId);
-
     // Resource server makes sure no leak can occur
     pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hClient);
     portMemFree(pChannel);
@@ -252,8 +249,7 @@ ceutilsServiceInterrupts_IMPL(CeUtils *pCeUtils)
     //
     if ((pChannel != NULL) && (rmDeviceGpuLockIsOwner(pChannel->pGpu->gpuInstance)))
     {
-        Intr *pIntr = GPU_GET_INTR(pChannel->pGpu);
-        intrServiceStallSingle_HAL(pChannel->pGpu, pIntr, MC_ENGINE_IDX_CE(pChannel->ceId), NV_FALSE);
+        channelServiceScrubberInterrupts(pChannel);
     }
     else
     {
@@ -348,7 +344,7 @@ _ceutilsSubmitPushBuffer
     }
     else
     {
-        methodsLength = channelFillPb(pChannel, putIndex, bPipelined, bInsertFinishPayload, pChannelPbInfo);
+        methodsLength = channelFillCePb(pChannel, putIndex, bPipelined, bInsertFinishPayload, pChannelPbInfo);
     }
 
     if (bReleaseMapping)

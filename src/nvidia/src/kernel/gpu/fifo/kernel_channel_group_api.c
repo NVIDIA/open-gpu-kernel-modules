@@ -29,6 +29,8 @@
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "kernel/gpu/falcon/kernel_falcon.h"
 
+#include "kernel/gpu/conf_compute/conf_compute.h"
+
 #include "class/cl0090.h" // KERNEL_GRAPHICS_CONTEXT
 #include "class/cl9067.h" // FERMI_CONTEXT_SHARE_A
 
@@ -47,29 +49,30 @@ kchangrpapiConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    NvBool            bTsgAllocated     = NV_FALSE;
-    RsResourceRef    *pResourceRef      = pCallContext->pResourceRef;
-    NV_STATUS         rmStatus;
-    OBJVASPACE       *pVAS              = NULL;
-    OBJGPU           *pGpu              = GPU_RES_GET_GPU(pKernelChannelGroupApi);
-    KernelMIGManager *pKernelMIGManager = NULL;
-    KernelFifo       *pKernelFifo       = GPU_GET_KERNEL_FIFO(pGpu);
-    NvHandle          hVASpace          = NV01_NULL_OBJECT;
-    Device           *pDevice           = NULL;
-    NvU32             gfid              = GPU_GFID_PF;
-    RsShared         *pShared           = NULL;
-    RsClient         *pClient;
-    NvBool            bLockAcquired           = NV_FALSE;
-    Heap             *pHeap                   = GPU_GET_HEAP(pGpu);
-    NvBool            bMIGInUse               = NV_FALSE;
-    CTX_BUF_INFO     *bufInfoList             = NULL;
-    NvU32             bufCount                = 0;
-    NvBool            bReserveMem             = NV_FALSE;
-    MIG_INSTANCE_REF  ref;
-    RM_API           *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    KernelChannelGroup *pKernelChannelGroup = NULL;
-    NV_CHANNEL_GROUP_ALLOCATION_PARAMETERS *pAllocParams = NULL;
-    RM_ENGINE_TYPE    rmEngineType;
+    NvBool                                  bTsgAllocated       = NV_FALSE;
+    RsResourceRef                          *pResourceRef        = pCallContext->pResourceRef;
+    NV_STATUS                               rmStatus;
+    OBJVASPACE                             *pVAS                = NULL;
+    OBJGPU                                 *pGpu                = GPU_RES_GET_GPU(pKernelChannelGroupApi);
+    KernelMIGManager                       *pKernelMIGManager   = NULL;
+    KernelFifo                             *pKernelFifo         = GPU_GET_KERNEL_FIFO(pGpu);
+    NvHandle                                hVASpace            = NV01_NULL_OBJECT;
+    Device                                 *pDevice             = NULL;
+    NvU32                                   gfid                = GPU_GFID_PF;
+    RsShared                               *pShared             = NULL;
+    RsClient                               *pClient;
+    NvBool                                  bLockAcquired       = NV_FALSE;
+    Heap                                   *pHeap               = GPU_GET_HEAP(pGpu);
+    NvBool                                  bMIGInUse           = NV_FALSE;
+    CTX_BUF_INFO                           *bufInfoList         = NULL;
+    NvU32                                   bufCount            = 0;
+    NvBool                                  bReserveMem         = NV_FALSE;
+    MIG_INSTANCE_REF                        ref;
+    RM_API                                 *pRmApi              = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    KernelChannelGroup                     *pKernelChannelGroup = NULL;
+    NV_CHANNEL_GROUP_ALLOCATION_PARAMETERS *pAllocParams        = NULL;
+    RM_ENGINE_TYPE                          rmEngineType;
+
 
     NV_PRINTF(LEVEL_INFO,
               "hClient: 0x%x, hParent: 0x%x, hObject:0x%x, hClass: 0x%x\n",
@@ -274,6 +277,28 @@ kchangrpapiConstruct_IMPL
         kchangrpSetInterleaveLevel(pGpu, pKernelChannelGroup,
                                    NVA06C_CTRL_INTERLEAVE_LEVEL_MEDIUM),
         failed);
+
+    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    if ((pConfCompute != NULL) &&
+        (pConfCompute->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)))
+    {
+        // TODO: jira CONFCOMP-1621: replace this with actual flag for TSG alloc that skips scrub
+        if ((pMemoryManager->bScrubChannelSetupInProgress) &&
+            (pKernelChannelGroup->pChannelBufPool != NULL) &&
+            (pKernelChannelGroup->pCtxBufPool != NULL))
+        {
+            if (pCallContext->secInfo.privLevel < RS_PRIV_LEVEL_KERNEL)
+            {
+                rmStatus = NV_ERR_INVALID_ARGUMENT;
+                NV_PRINTF(LEVEL_ERROR, "Only kernel priv clients can skip scrubber\n");
+                goto failed;
+            }
+            ctxBufPoolSetScrubSkip(pKernelChannelGroup->pChannelBufPool, NV_TRUE);
+            ctxBufPoolSetScrubSkip(pKernelChannelGroup->pCtxBufPool, NV_TRUE);
+            NV_PRINTF(LEVEL_INFO, "Skipping scrubber for all allocations on this context\n");
+        }
+    }
 
     //
     // If ctx buf pools are enabled, filter out partitionable engines

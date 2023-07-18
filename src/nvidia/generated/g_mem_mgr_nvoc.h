@@ -175,9 +175,10 @@ typedef NV_STATUS FbScrubCallback(OBJGPU *);
 #define MEMUTIL_SCRUB_LINE_LENGTH_ALIGNMENT   (4 * 1024)
 
 typedef enum {
-    SCRUBBER_CHANNEL,
+    CE_SCRUBBER_CHANNEL,
     FAST_SCRUBBER_CHANNEL,
     COPY_CHANNEL,
+    SWL_SCRUBBER_CHANNEL,
     MAX_CHANNEL_TYPE
 } CHANNEL_KIND;
 
@@ -190,7 +191,7 @@ typedef struct OBJCHANNEL
     NvHandle                        subdeviceId;        // Subdevice Handle
     NvHandle                        errNotifierIdVirt;
     NvHandle                        errNotifierIdPhys;
-    NvHandle                        copyObjectId;
+    NvHandle                        engineObjectId;
     NvHandle                        eventId;
     NvHandle                        pushBufferId;
     NvHandle                        bitMapSemPhysId;
@@ -207,6 +208,7 @@ typedef struct OBJCHANNEL
     NvU32                           methodSizePerBlock;
     NvU32                           semaOffset;
     NvU32                           finishPayloadOffset;
+    NvU32                           authTagBufSemaOffset;
     NvU32                           finishPayload;
     NvBool                          isChannelSynchronized;
     NvBool                          isProgressChecked;
@@ -243,6 +245,7 @@ typedef struct OBJCHANNEL
     NVOS10_EVENT_KERNEL_CALLBACK_EX callback;
     NvU32                           state;
     NvU32                           hTdCopyClass;
+    NvU32                           sec2Class;
     NvU32                           minBlockSize;
     NvU32                           maxBlockSize;
     NvU32                           channelPutOffset;
@@ -427,6 +430,7 @@ struct MemoryManager {
     NV_STATUS (*__memmgrStatePreUnload__)(OBJGPU *, struct MemoryManager *, NvU32);
     NV_STATUS (*__memmgrStateUnload__)(OBJGPU *, struct MemoryManager *, NvU32);
     void (*__memmgrStateDestroy__)(OBJGPU *, struct MemoryManager *);
+    NV_STATUS (*__memmgrMemUtilsSec2CtxInit__)(OBJGPU *, struct MemoryManager *, OBJCHANNEL *);
     NvBool (*__memmgrMemUtilsCheckMemoryFastScrubEnable__)(OBJGPU *, struct MemoryManager *, NvU32, NvBool, RmPhysAddr, NvU32, NV_ADDRESS_SPACE);
     NV_STATUS (*__memmgrAllocDetermineAlignment__)(OBJGPU *, struct MemoryManager *, NvU64 *, NvU64 *, NvU64, NvU32, NvU32, NvU32, NvU64);
     NvU64 (*__memmgrGetMaxContextSize__)(OBJGPU *, struct MemoryManager *);
@@ -473,6 +477,7 @@ struct MemoryManager {
     NvBool bEnableFbsrFileMode;
     NvBool bEnableDynamicPageOfflining;
     NvBool bVgpuPmaSupport;
+    NvBool bScrubChannelSetupInProgress;
     NvBool bEnableDynamicGranularityPageArrays;
     NvBool bAllowNoncontiguousAllocation;
     NvBool bLocalEgmSupported;
@@ -561,6 +566,8 @@ NV_STATUS __nvoc_objCreate_MemoryManager(MemoryManager**, Dynamic*, NvU32);
 #define memmgrStatePreUnload(pGpu, pMemoryManager, arg0) memmgrStatePreUnload_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrStateUnload(pGpu, pMemoryManager, arg0) memmgrStateUnload_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrStateDestroy(pGpu, pMemoryManager) memmgrStateDestroy_DISPATCH(pGpu, pMemoryManager)
+#define memmgrMemUtilsSec2CtxInit(pGpu, pMemoryManager, arg0) memmgrMemUtilsSec2CtxInit_DISPATCH(pGpu, pMemoryManager, arg0)
+#define memmgrMemUtilsSec2CtxInit_HAL(pGpu, pMemoryManager, arg0) memmgrMemUtilsSec2CtxInit_DISPATCH(pGpu, pMemoryManager, arg0)
 #define memmgrMemUtilsCheckMemoryFastScrubEnable(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4) memmgrMemUtilsCheckMemoryFastScrubEnable_DISPATCH(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4)
 #define memmgrMemUtilsCheckMemoryFastScrubEnable_HAL(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4) memmgrMemUtilsCheckMemoryFastScrubEnable_DISPATCH(pGpu, pMemoryManager, arg0, arg1, arg2, arg3, arg4)
 #define memmgrAllocDetermineAlignment(pGpu, pMemoryManager, pMemSize, pAlign, alignPad, allocFlags, retAttr, retAttr2, hwAlignment) memmgrAllocDetermineAlignment_DISPATCH(pGpu, pMemoryManager, pMemSize, pAlign, alignPad, allocFlags, retAttr, retAttr2, hwAlignment)
@@ -1877,6 +1884,16 @@ static inline void memmgrStateDestroy_DISPATCH(OBJGPU *pGpu, struct MemoryManage
     pMemoryManager->__memmgrStateDestroy__(pGpu, pMemoryManager);
 }
 
+NV_STATUS memmgrMemUtilsSec2CtxInit_GH100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0);
+
+static inline NV_STATUS memmgrMemUtilsSec2CtxInit_46f6a7(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS memmgrMemUtilsSec2CtxInit_DISPATCH(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0) {
+    return pMemoryManager->__memmgrMemUtilsSec2CtxInit__(pGpu, pMemoryManager, arg0);
+}
+
 NvBool memmgrMemUtilsCheckMemoryFastScrubEnable_GH100(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvBool arg1, RmPhysAddr arg2, NvU32 arg3, NV_ADDRESS_SPACE arg4);
 
 static inline NvBool memmgrMemUtilsCheckMemoryFastScrubEnable_491d52(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, NvU32 arg0, NvBool arg1, RmPhysAddr arg2, NvU32 arg3, NV_ADDRESS_SPACE arg4) {
@@ -2554,6 +2571,17 @@ static inline void memmgrMemUtilsSetupChannelBufferSizes(struct MemoryManager *p
 }
 #else //__nvoc_mem_mgr_h_disabled
 #define memmgrMemUtilsSetupChannelBufferSizes(pMemoryManager, arg0, arg1) memmgrMemUtilsSetupChannelBufferSizes_IMPL(pMemoryManager, arg0, arg1)
+#endif //__nvoc_mem_mgr_h_disabled
+
+NV_STATUS memmgrMemUtilsChannelSchedulingSetup_IMPL(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0);
+
+#ifdef __nvoc_mem_mgr_h_disabled
+static inline NV_STATUS memmgrMemUtilsChannelSchedulingSetup(OBJGPU *pGpu, struct MemoryManager *pMemoryManager, OBJCHANNEL *arg0) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryManager was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_mem_mgr_h_disabled
+#define memmgrMemUtilsChannelSchedulingSetup(pGpu, pMemoryManager, arg0) memmgrMemUtilsChannelSchedulingSetup_IMPL(pGpu, pMemoryManager, arg0)
 #endif //__nvoc_mem_mgr_h_disabled
 
 NV_STATUS memmgrGetKindComprFromMemDesc_IMPL(struct MemoryManager *pMemoryManager, MEMORY_DESCRIPTOR *arg0, NvU64 offset, NvU32 *kind, COMPR_INFO *pComprInfo);

@@ -24,6 +24,18 @@
 #ifndef _RM_SPDM_TRANSPORT_H_
 #define _RM_SPDM_TRANSPORT_H_
 
+#ifdef NVRM
+
+#include "gpu/mem_mgr/mem_desc.h"
+
+#else
+
+#ifndef ADDR_SYSMEM
+#define ADDR_SYSMEM     (1)         // System memory (PCI)
+#endif // ADDR_SYSMEM
+
+#endif //NVRM
+
 /* ------------------------- Macros and Defines ----------------------------- */
 // TODO CONFCOMP-1277: All these defines should be reviewed and simplified or removed.
 //
@@ -35,12 +47,6 @@
 #define NV_SPDM_MESSAGE_TYPE_NORMAL             (0)
 #define NV_SPDM_MESSAGE_TYPE_SECURED            (1)
 
-// SPDM Command Types
-#define CC_CTRL_CODE_UNDEFINED                       (0)
-#define CC_CTRL_CODE_SPDM_MESSAGE_PROCESS            (1)
-#define CC_CTRL_CODE_SESSION_MESSAGE_PROCESS         (2)
-#define CC_CTRL_CODE_APPLICATION_MESSAGE_PROCESS     (3)
-
 #define CC_SPDM_ENDPOINT_ID_INVALID (0xFFFFFFFF)
 #define CC_SPDM_GUEST_ID_INVALID    (0xFFFFFFFF)
 
@@ -50,13 +56,18 @@
 #define NV_SPDM_DESC_HEADER_ALIGNMENT           (256)
 #define NV_SPDM_RM_SURFACE_SIZE_IN_BYTE         (0x2000)
 #define NV_RM_BUFFER_SIZE_IN_BYTE               (NV_SPDM_RM_SURFACE_SIZE_IN_BYTE - NV_SPDM_DESC_HEADER_SIZE_IN_BYTE)
-#define NV_SPDM_UNPROTECTED_REGION_ID           (0x0U)
+// Limited by the transport size, do not increase without increasing transport buffer.
+#define NV_SPDM_MAX_RANDOM_MSG_BYTES            (0x80)
 
 typedef struct _NV_SPDM_DESC_HEADER
 {
     NvU32 msgType;
     NvU32 msgSizeByte;
 } NV_SPDM_DESC_HEADER, *PNV_SPDM_DESC_HEADER;
+
+
+#define NV_SPDM_DMA_ADDR_SPACE_DEFAULT (ADDR_SYSMEM)
+#define NV_SPDM_DMA_REGION_ID_DEFAULT  (0)
 
 #pragma pack()
 

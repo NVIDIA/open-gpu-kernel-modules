@@ -203,7 +203,8 @@ extern "C" {
 #define NV2080_NOTIFIERS_NVPCF_EVENTS                              (177)
 #define NV2080_NOTIFIERS_HDMI_FRL_RETRAINING_REQUEST               (178)
 #define NV2080_NOTIFIERS_VRR_SET_TIMEOUT                           (179)
-#define NV2080_NOTIFIERS_MAXCOUNT                                  (180)
+#define NV2080_NOTIFIERS_AUX_POWER_STATE_CHANGE                    (180)
+#define NV2080_NOTIFIERS_MAXCOUNT                                  (181)
 
 // Indexed GR notifier reference
 #define NV2080_NOTIFIERS_GR(x)         ((x == 0) ? (NV2080_NOTIFIERS_GR0) : (NV2080_NOTIFIERS_GR1 + (x - 1)))

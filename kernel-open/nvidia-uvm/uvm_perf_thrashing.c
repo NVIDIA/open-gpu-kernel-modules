@@ -1455,7 +1455,18 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
     hint.type = UVM_PERF_THRASHING_HINT_TYPE_NONE;
 
     closest_resident_id = uvm_va_block_page_get_closest_resident(va_block, page_index, requester);
-    UVM_ASSERT(UVM_ID_IS_VALID(closest_resident_id));
+    if (uvm_va_block_is_hmm(va_block)) {
+        // HMM pages always start out resident on the CPU but may not be
+        // recorded in the va_block state because hmm_range_fault() or
+        // similar functions haven't been called to get an accurate snapshot
+        // of the Linux state. We can assume pages are CPU resident for the
+        // purpose of deciding where to migrate to reduce thrashing.
+        if (UVM_ID_IS_INVALID(closest_resident_id))
+            closest_resident_id = UVM_ID_CPU;
+    }
+    else {
+        UVM_ASSERT(UVM_ID_IS_VALID(closest_resident_id));
+    }
 
     if (thrashing_processors_can_access(va_space, page_thrashing, preferred_location)) {
         // The logic in uvm_va_block_select_residency chooses the preferred

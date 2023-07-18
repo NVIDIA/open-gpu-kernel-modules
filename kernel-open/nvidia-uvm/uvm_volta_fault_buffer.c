@@ -25,7 +25,8 @@
 #include "uvm_global.h"
 #include "uvm_gpu.h"
 #include "uvm_hal.h"
-#include "uvm_push.h"
+#include "uvm_conf_computing.h"
+#include "nv_uvm_types.h"
 #include "hwref/volta/gv100/dev_fault.h"
 #include "hwref/volta/gv100/dev_fb.h"
 #include "clc369.h"
@@ -246,6 +247,20 @@ static NvU32 *get_fault_buffer_entry(uvm_parent_gpu_t *parent_gpu, NvU32 index)
     return fault_entry;
 }
 
+// See uvm_pascal_fault_buffer.c::get_fault_buffer_entry_metadata
+static UvmFaultMetadataPacket *get_fault_buffer_entry_metadata(uvm_parent_gpu_t *parent_gpu, NvU32 index)
+{
+    UvmFaultMetadataPacket *fault_entry_metadata;
+
+    UVM_ASSERT(index < parent_gpu->fault_buffer_info.replayable.max_faults);
+    UVM_ASSERT(!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu));
+
+    fault_entry_metadata = parent_gpu->fault_buffer_info.rm_info.replayable.bufferMetadata;
+    UVM_ASSERT(fault_entry_metadata != NULL);
+
+    return fault_entry_metadata + index;
+}
+
 static void parse_fault_entry_common(uvm_parent_gpu_t *parent_gpu,
                                      NvU32 *fault_entry,
                                      uvm_fault_buffer_entry_t *buffer_entry)
@@ -323,17 +338,38 @@ static void parse_fault_entry_common(uvm_parent_gpu_t *parent_gpu,
     UVM_ASSERT_MSG(replayable_fault_enabled, "Fault with REPLAYABLE_FAULT_EN bit unset\n");
 }
 
-void uvm_hal_volta_fault_buffer_parse_entry(uvm_parent_gpu_t *parent_gpu,
-                                            NvU32 index,
-                                            uvm_fault_buffer_entry_t *buffer_entry)
+NV_STATUS uvm_hal_volta_fault_buffer_parse_replayable_entry(uvm_parent_gpu_t *parent_gpu,
+                                                            NvU32 index,
+                                                            uvm_fault_buffer_entry_t *buffer_entry)
 {
+    fault_buffer_entry_c369_t entry;
     NvU32 *fault_entry;
-    BUILD_BUG_ON(NVC369_BUF_SIZE > UVM_GPU_MMU_MAX_FAULT_PACKET_SIZE);
+
+    BUILD_BUG_ON(sizeof(entry) > UVM_GPU_MMU_MAX_FAULT_PACKET_SIZE);
 
     // Valid bit must be set before this function is called
     UVM_ASSERT(parent_gpu->fault_buffer_hal->entry_is_valid(parent_gpu, index));
 
     fault_entry = get_fault_buffer_entry(parent_gpu, index);
+
+    // When Confidential Computing is enabled, faults are encrypted by RM, so
+    // they need to be decrypted before they can be parsed
+    if (!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu)) {
+        NV_STATUS status;
+        UvmFaultMetadataPacket *fault_entry_metadata = get_fault_buffer_entry_metadata(parent_gpu, index);
+
+        status = uvm_conf_computing_fault_decrypt(parent_gpu,
+                                                  &entry,
+                                                  fault_entry,
+                                                  fault_entry_metadata->authTag,
+                                                  fault_entry_metadata->valid);
+        if (status != NV_OK) {
+            uvm_global_set_fatal_error(status);
+            return status;
+        }
+
+        fault_entry = (NvU32 *) &entry;
+    }
 
     parse_fault_entry_common(parent_gpu, fault_entry, buffer_entry);
 
@@ -341,6 +377,8 @@ void uvm_hal_volta_fault_buffer_parse_entry(uvm_parent_gpu_t *parent_gpu,
 
     // Automatically clear valid bit for the entry in the fault buffer
     parent_gpu->fault_buffer_hal->entry_clear_valid(parent_gpu, index);
+
+    return NV_OK;
 }
 
 void uvm_hal_volta_fault_buffer_parse_non_replayable_entry(uvm_parent_gpu_t *parent_gpu,

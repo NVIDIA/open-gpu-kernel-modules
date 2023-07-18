@@ -215,6 +215,14 @@ kvgpumgrGetSwizzId(OBJGPU *pGpu,
 }
 
 NV_STATUS
+kvgpumgrValidateSwizzId(OBJGPU *pGpu,
+                        NvU32 vgpuTypeId,
+                        NvU32 swizzId)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
 kvgpumgrGetPartitionFlag(NvU32 vgpuTypeId, NvU32 *partitionFlag)
 {
     return NV_ERR_INVALID_ARGUMENT;

@@ -486,7 +486,9 @@ static NV_STATUS cancel_fault_precise_va(uvm_gpu_t *gpu,
     return status;
 }
 
-static NV_STATUS push_replay_on_gpu(uvm_gpu_t *gpu, uvm_fault_replay_type_t type, uvm_fault_service_batch_context_t *batch_context)
+static NV_STATUS push_replay_on_gpu(uvm_gpu_t *gpu,
+                                    uvm_fault_replay_type_t type,
+                                    uvm_fault_service_batch_context_t *batch_context)
 {
     NV_STATUS status;
     uvm_push_t push;
@@ -572,6 +574,19 @@ static NV_STATUS hw_fault_buffer_flush_locked(uvm_parent_gpu_t *parent_gpu)
     return status;
 }
 
+static void fault_buffer_skip_replayable_entry(uvm_parent_gpu_t *parent_gpu, NvU32 index)
+{
+    UVM_ASSERT(parent_gpu->fault_buffer_hal->entry_is_valid(parent_gpu, index));
+
+    // Flushed faults are never decrypted, but the decryption IV associated with
+    // replayable faults still requires manual adjustment so it is kept in sync
+    // with the encryption IV on the GSP-RM's side.
+    if (!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu))
+        uvm_conf_computing_fault_increment_decrypt_iv(parent_gpu, 1);
+
+    parent_gpu->fault_buffer_hal->entry_clear_valid(parent_gpu, index);
+}
+
 static NV_STATUS fault_buffer_flush_locked(uvm_gpu_t *gpu,
                                            uvm_gpu_buffer_flush_mode_t flush_mode,
                                            uvm_fault_replay_type_t fault_replay,
@@ -610,7 +625,7 @@ static NV_STATUS fault_buffer_flush_locked(uvm_gpu_t *gpu,
         // Wait until valid bit is set
         UVM_SPIN_WHILE(!parent_gpu->fault_buffer_hal->entry_is_valid(parent_gpu, get), &spin);
 
-        parent_gpu->fault_buffer_hal->entry_clear_valid(parent_gpu, get);
+        fault_buffer_skip_replayable_entry(parent_gpu, get);
         ++get;
         if (get == replayable_faults->max_faults)
             get = 0;
@@ -785,9 +800,9 @@ static bool fetch_fault_buffer_try_merge_entry(uvm_fault_buffer_entry_t *current
 // This optimization cannot be performed during fault cancel on Pascal GPUs
 // (fetch_mode == FAULT_FETCH_MODE_ALL) since we need accurate tracking of all
 // the faults in each uTLB in order to guarantee precise fault attribution.
-static void fetch_fault_buffer_entries(uvm_gpu_t *gpu,
-                                       uvm_fault_service_batch_context_t *batch_context,
-                                       fault_fetch_mode_t fetch_mode)
+static NV_STATUS fetch_fault_buffer_entries(uvm_gpu_t *gpu,
+                                            uvm_fault_service_batch_context_t *batch_context,
+                                            fault_fetch_mode_t fetch_mode)
 {
     NvU32 get;
     NvU32 put;
@@ -796,6 +811,7 @@ static void fetch_fault_buffer_entries(uvm_gpu_t *gpu,
     NvU32 utlb_id;
     uvm_fault_buffer_entry_t *fault_cache;
     uvm_spin_loop_t spin;
+    NV_STATUS status = NV_OK;
     uvm_replayable_fault_buffer_info_t *replayable_faults = &gpu->parent->fault_buffer_info.replayable;
     const bool in_pascal_cancel_path = (!gpu->parent->fault_cancel_va_supported && fetch_mode == FAULT_FETCH_MODE_ALL);
     const bool may_filter = uvm_perf_fault_coalesce && !in_pascal_cancel_path;
@@ -851,7 +867,9 @@ static void fetch_fault_buffer_entries(uvm_gpu_t *gpu,
         smp_mb__after_atomic();
 
         // Got valid bit set. Let's cache.
-        gpu->parent->fault_buffer_hal->parse_entry(gpu->parent, get, current_entry);
+        status = gpu->parent->fault_buffer_hal->parse_replayable_entry(gpu->parent, get, current_entry);
+        if (status != NV_OK)
+            goto done;
 
         // The GPU aligns the fault addresses to 4k, but all of our tracking is
         // done in PAGE_SIZE chunks which might be larger.
@@ -918,6 +936,8 @@ done:
 
     batch_context->num_cached_faults = fault_index;
     batch_context->num_coalesced_faults = num_coalesced_faults;
+
+    return status;
 }
 
 // Sort comparator for pointers to fault buffer entries that sorts by
@@ -2475,7 +2495,10 @@ static NV_STATUS cancel_faults_precise_tlb(uvm_gpu_t *gpu, uvm_fault_service_bat
         batch_context->has_throttled_faults        = false;
 
         // 5) Fetch all faults from buffer
-        fetch_fault_buffer_entries(gpu, batch_context, FAULT_FETCH_MODE_ALL);
+        status = fetch_fault_buffer_entries(gpu, batch_context, FAULT_FETCH_MODE_ALL);
+        if (status != NV_OK)
+            break;
+
         ++batch_context->batch_id;
 
         UVM_ASSERT(batch_context->num_cached_faults == batch_context->num_coalesced_faults);
@@ -2612,7 +2635,10 @@ void uvm_gpu_service_replayable_faults(uvm_gpu_t *gpu)
         batch_context->has_fatal_faults            = false;
         batch_context->has_throttled_faults        = false;
 
-        fetch_fault_buffer_entries(gpu, batch_context, FAULT_FETCH_MODE_BATCH_READY);
+        status = fetch_fault_buffer_entries(gpu, batch_context, FAULT_FETCH_MODE_BATCH_READY);
+        if (status != NV_OK)
+            break;
+
         if (batch_context->num_cached_faults == 0)
             break;
 

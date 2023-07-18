@@ -1759,6 +1759,17 @@ static inline void kgmmuAccessCntrChangeIntrOwnership(OBJGPU *pGpu, struct Kerne
 #define kgmmuAccessCntrChangeIntrOwnership(pGpu, pKernelGmmu, arg0) kgmmuAccessCntrChangeIntrOwnership_IMPL(pGpu, pKernelGmmu, arg0)
 #endif //__nvoc_kern_gmmu_h_disabled
 
+void *kgmmuGetShadowFaultBufferCslContext_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, FAULT_BUFFER_TYPE type);
+
+#ifdef __nvoc_kern_gmmu_h_disabled
+static inline void *kgmmuGetShadowFaultBufferCslContext(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, FAULT_BUFFER_TYPE type) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGmmu was disabled!");
+    return NULL;
+}
+#else //__nvoc_kern_gmmu_h_disabled
+#define kgmmuGetShadowFaultBufferCslContext(pGpu, pKernelGmmu, type) kgmmuGetShadowFaultBufferCslContext_IMPL(pGpu, pKernelGmmu, type)
+#endif //__nvoc_kern_gmmu_h_disabled
+
 NvS32 *kgmmuGetFatalFaultIntrPendingState_IMPL(struct KernelGmmu *pKernelGmmu, NvU8 gfid);
 
 #ifdef __nvoc_kern_gmmu_h_disabled

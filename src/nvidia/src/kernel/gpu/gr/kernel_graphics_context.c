@@ -2358,7 +2358,7 @@ kgrctxUnmapAssociatedCtxBuffers_IMPL
             
             if (pKernelChannel->pVAS == pChanNode->pKernelChannel->pVAS)
             {
-                NV_PRINTF(LEVEL_ERROR, "TSG %d Channel %d shares a pVAS with channel %d\n",
+                NV_PRINTF(LEVEL_INFO, "TSG %d Channel %d shares a pVAS with channel %d\n",
                           pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->grpID,
                           kchannelGetDebugTag(pKernelChannel), 
                           kchannelGetDebugTag(pChanNode->pKernelChannel));

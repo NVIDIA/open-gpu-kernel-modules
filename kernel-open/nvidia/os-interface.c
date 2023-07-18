@@ -1787,6 +1787,10 @@ NV_STATUS NV_API_CALL os_numa_memblock_size
     NvU64 *memblock_size
 )
 {
+#if NV_IS_EXPORT_SYMBOL_PRESENT_memory_block_size_bytes
+    *memblock_size = memory_block_size_bytes();
+    return NV_OK;
+#endif
     if (nv_ctl_device.numa_memblock_size == 0)
         return NV_ERR_INVALID_STATE;
     *memblock_size = nv_ctl_device.numa_memblock_size;
@@ -2118,6 +2122,53 @@ void NV_API_CALL os_nv_cap_close_fd
     nv_cap_close_fd(fd);
 }
 
+typedef struct os_numa_gpu_mem_hotplug_notifier_s
+{
+    NvU64 start_pa;
+    NvU64 size;
+    nv_pci_info_t pci_info;
+    struct notifier_block memory_notifier;
+} os_numa_gpu_mem_hotplug_notifier_t;
+
+static int os_numa_verify_gpu_memory_zone(struct notifier_block *nb,
+                                          unsigned long action, void *data)
+{
+    os_numa_gpu_mem_hotplug_notifier_t *notifier = container_of(nb,
+        os_numa_gpu_mem_hotplug_notifier_t,
+        memory_notifier);
+    struct memory_notify *mhp = data;
+    NvU64 start_pa = PFN_PHYS(mhp->start_pfn);
+    NvU64 size = PFN_PHYS(mhp->nr_pages);
+
+    if (action == MEM_GOING_ONLINE)
+    {
+        // Check if onlining memory falls in the GPU memory range
+        if ((start_pa >= notifier->start_pa) &&
+            (start_pa + size) <= (notifier->start_pa + notifier->size))
+        {
+            /*
+             * Verify GPU memory NUMA node has memory only in ZONE_MOVABLE before
+             * onlining the memory so that incorrect auto online setting doesn't
+             * cause the memory onlined in a zone where kernel allocations
+             * could happen, resulting in GPU memory hot unpluggable and requiring
+             * system reboot.
+             */
+            if (page_zonenum((pfn_to_page(mhp->start_pfn))) != ZONE_MOVABLE)
+            {
+                nv_printf(NV_DBG_ERRORS, "NVRM: Failing GPU memory onlining as the onlining zone "
+                          "is not movable. pa: 0x%llx size: 0x%llx\n"
+                          "NVRM: The NVIDIA GPU %04x:%02x:%02x.%x installed in the system\n"
+                          "NVRM: requires auto onlining mode online_movable enabled in\n"
+                          "NVRM: /sys/devices/system/memory/auto_online_blocks\n",
+                          start_pa, size, notifier->pci_info.domain, notifier->pci_info.bus,
+                          notifier->pci_info.slot, notifier->pci_info.function);
+                return NOTIFY_BAD;
+            }
+        }
+    }
+    return NOTIFY_OK;
+}
+
 NV_STATUS NV_API_CALL os_numa_add_gpu_memory
 (
     void *handle,
@@ -2129,8 +2180,16 @@ NV_STATUS NV_API_CALL os_numa_add_gpu_memory
 #if defined(NV_ADD_MEMORY_DRIVER_MANAGED_PRESENT)
     int node = 0;
     nv_linux_state_t *nvl = pci_get_drvdata(handle);
+    nv_state_t *nv = NV_STATE_PTR(nvl);
     NvU64 base = offset + nvl->coherent_link_info.gpu_mem_pa;
     int ret;
+    os_numa_gpu_mem_hotplug_notifier_t notifier =
+    {
+        .start_pa = base,
+        .size = size,
+        .pci_info = nv->pci_info,
+        .memory_notifier.notifier_call = os_numa_verify_gpu_memory_zone,
+    };
 
     if (nodeId == NULL)
     {
@@ -2149,21 +2208,31 @@ NV_STATUS NV_API_CALL os_numa_add_gpu_memory
 
     NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_ONLINE_IN_PROGRESS);
 
+    ret = register_memory_notifier(&notifier.memory_notifier);
+    if (ret)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Memory hotplug notifier registration failed\n");
+        goto failed;
+    }
+
 #ifdef NV_ADD_MEMORY_DRIVER_MANAGED_HAS_MHP_FLAGS_ARG
     ret = add_memory_driver_managed(node, base, size, "System RAM (NVIDIA)", MHP_NONE);
 #else
     ret = add_memory_driver_managed(node, base, size, "System RAM (NVIDIA)");
 #endif
+    unregister_memory_notifier(&notifier.memory_notifier);
+
     if (ret == 0)
     {
         struct zone *zone = &NODE_DATA(node)->node_zones[ZONE_MOVABLE];
         NvU64 start_pfn = base >> PAGE_SHIFT;
         NvU64 end_pfn = (base + size) >> PAGE_SHIFT;
 
+        /* Verify the full GPU memory range passed on is onlined */
         if (zone->zone_start_pfn != start_pfn ||
             zone_end_pfn(zone) != end_pfn)
         {
-            nv_printf(NV_DBG_ERRORS, "GPU memory zone movable auto onlining failed!\n");
+            nv_printf(NV_DBG_ERRORS, "NVRM: GPU memory zone movable auto onlining failed!\n");
 #ifdef NV_OFFLINE_AND_REMOVE_MEMORY_PRESENT
 #ifdef NV_REMOVE_MEMORY_HAS_NID_ARG
             if (offline_and_remove_memory(node, base, size) != 0)
@@ -2171,7 +2240,7 @@ NV_STATUS NV_API_CALL os_numa_add_gpu_memory
             if (offline_and_remove_memory(base, size) != 0)
 #endif
             {
-                nv_printf(NV_DBG_ERRORS, "offline_and_remove_memory failed\n");
+                nv_printf(NV_DBG_ERRORS, "NVRM: offline_and_remove_memory failed\n");
             }
 #endif
             goto failed;

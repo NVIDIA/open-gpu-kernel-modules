@@ -70,6 +70,10 @@ static NV_STATUS __nvoc_thunk_ConfidentialCompute_engstateConstructEngine(struct
     return confComputeConstructEngine(pGpu, (struct ConfidentialCompute *)(((unsigned char *)pConfCompute) - __nvoc_rtti_ConfidentialCompute_OBJENGSTATE.offset), engDesc);
 }
 
+static NV_STATUS __nvoc_thunk_ConfidentialCompute_engstateStatePreInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pConfCompute) {
+    return confComputeStatePreInitLocked(pGpu, (struct ConfidentialCompute *)(((unsigned char *)pConfCompute) - __nvoc_rtti_ConfidentialCompute_OBJENGSTATE.offset));
+}
+
 static NV_STATUS __nvoc_thunk_ConfidentialCompute_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pConfCompute) {
     return confComputeStateInitLocked(pGpu, (struct ConfidentialCompute *)(((unsigned char *)pConfCompute) - __nvoc_rtti_ConfidentialCompute_OBJENGSTATE.offset));
 }
@@ -78,12 +82,12 @@ static NV_STATUS __nvoc_thunk_ConfidentialCompute_engstateStatePostLoad(struct O
     return confComputeStatePostLoad(pGpu, (struct ConfidentialCompute *)(((unsigned char *)pConfCompute) - __nvoc_rtti_ConfidentialCompute_OBJENGSTATE.offset), flags);
 }
 
-static NV_STATUS __nvoc_thunk_ConfidentialCompute_engstateStatePreInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pConfCompute) {
-    return confComputeStatePreInitLocked(pGpu, (struct ConfidentialCompute *)(((unsigned char *)pConfCompute) - __nvoc_rtti_ConfidentialCompute_OBJENGSTATE.offset));
-}
-
 static NV_STATUS __nvoc_thunk_ConfidentialCompute_engstateStatePreUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pConfCompute, NvU32 flags) {
     return confComputeStatePreUnload(pGpu, (struct ConfidentialCompute *)(((unsigned char *)pConfCompute) - __nvoc_rtti_ConfidentialCompute_OBJENGSTATE.offset), flags);
+}
+
+static void __nvoc_thunk_ConfidentialCompute_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pConfCompute) {
+    confComputeStateDestroy(pGpu, (struct ConfidentialCompute *)(((unsigned char *)pConfCompute) - __nvoc_rtti_ConfidentialCompute_OBJENGSTATE.offset));
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_confComputeStateLoad(POBJGPU pGpu, struct ConfidentialCompute *pEngstate, NvU32 arg0) {
@@ -100,10 +104,6 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_confComputeStatePreLoad(POBJGPU pGpu, 
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_confComputeStatePostUnload(POBJGPU pGpu, struct ConfidentialCompute *pEngstate, NvU32 arg0) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_ConfidentialCompute_OBJENGSTATE.offset), arg0);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_confComputeStateDestroy(POBJGPU pGpu, struct ConfidentialCompute *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_ConfidentialCompute_OBJENGSTATE.offset));
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_confComputeStateInitUnlocked(POBJGPU pGpu, struct ConfidentialCompute *pEngstate) {
@@ -150,8 +150,10 @@ void __nvoc_init_dataField_ConfidentialCompute(ConfidentialCompute *pThis, RmHal
     pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED, ((NvBool)(0 != 0)));
     pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_DEVTOOLS_MODE_ENABLED, ((NvBool)(0 != 0)));
     pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT, ((NvBool)(0 != 0)));
-    pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED, ((NvBool)(0 == 0)));
     pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_ENCRYPT_READY, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED, ((NvBool)(0 != 0)));
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
@@ -182,13 +184,19 @@ static void __nvoc_init_funcTable_ConfidentialCompute_1(ConfidentialCompute *pTh
 
     pThis->__confComputeConstructEngine__ = &confComputeConstructEngine_IMPL;
 
-    pThis->__confComputeStateInitLocked__ = &confComputeStateInitLocked_IMPL;
-
-    pThis->__confComputeStatePostLoad__ = &confComputeStatePostLoad_IMPL;
-
+    // Hal function -- confComputeStatePreInitLocked
     pThis->__confComputeStatePreInitLocked__ = &confComputeStatePreInitLocked_IMPL;
 
-    pThis->__confComputeStatePreUnload__ = &confComputeStatePreUnload_IMPL;
+    pThis->__confComputeStateInitLocked__ = &confComputeStateInitLocked_IMPL;
+
+    // Hal function -- confComputeStatePostLoad
+    pThis->__confComputeStatePostLoad__ = &confComputeStatePostLoad_IMPL;
+
+    // Hal function -- confComputeStatePreUnload
+    pThis->__confComputeStatePreUnload__ = &confComputeStatePreUnload_56cd7a;
+
+    // Hal function -- confComputeStateDestroy
+    pThis->__confComputeStateDestroy__ = &confComputeStateDestroy_IMPL;
 
     // Hal function -- confComputeKeyStoreRetrieveViaChannel
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
@@ -256,6 +264,17 @@ static void __nvoc_init_funcTable_ConfidentialCompute_1(ConfidentialCompute *pTh
         pThis->__confComputeIsGpuCcCapable__ = &confComputeIsGpuCcCapable_491d52;
     }
 
+    // Hal function -- confComputeKeyStoreDepositIvMask
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__confComputeKeyStoreDepositIvMask__ = &confComputeKeyStoreDepositIvMask_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__confComputeKeyStoreDepositIvMask__ = &confComputeKeyStoreDepositIvMask_b3696a;
+    }
+
     // Hal function -- confComputeKeyStoreInit
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
@@ -300,17 +319,6 @@ static void __nvoc_init_funcTable_ConfidentialCompute_1(ConfidentialCompute *pTh
         pThis->__confComputeKeyStoreDeriveKey__ = &confComputeKeyStoreDeriveKey_46f6a7;
     }
 
-    // Hal function -- confComputeKeyStoreDepositIvMask
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-    {
-        pThis->__confComputeKeyStoreDepositIvMask__ = &confComputeKeyStoreDepositIvMask_GH100;
-    }
-    // default
-    else
-    {
-        pThis->__confComputeKeyStoreDepositIvMask__ = &confComputeKeyStoreDepositIvMask_b3696a;
-    }
-
     // Hal function -- confComputeKeyStoreClearExportMasterKey
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
@@ -335,13 +343,15 @@ static void __nvoc_init_funcTable_ConfidentialCompute_1(ConfidentialCompute *pTh
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_ConfidentialCompute_engstateConstructEngine;
 
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__ = &__nvoc_thunk_ConfidentialCompute_engstateStatePreInitLocked;
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_ConfidentialCompute_engstateStateInitLocked;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_thunk_ConfidentialCompute_engstateStatePostLoad;
 
-    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__ = &__nvoc_thunk_ConfidentialCompute_engstateStatePreInitLocked;
-
     pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__ = &__nvoc_thunk_ConfidentialCompute_engstateStatePreUnload;
+
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_thunk_ConfidentialCompute_engstateStateDestroy;
 
     pThis->__confComputeStateLoad__ = &__nvoc_thunk_OBJENGSTATE_confComputeStateLoad;
 
@@ -350,8 +360,6 @@ static void __nvoc_init_funcTable_ConfidentialCompute_1(ConfidentialCompute *pTh
     pThis->__confComputeStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_confComputeStatePreLoad;
 
     pThis->__confComputeStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_confComputeStatePostUnload;
-
-    pThis->__confComputeStateDestroy__ = &__nvoc_thunk_OBJENGSTATE_confComputeStateDestroy;
 
     pThis->__confComputeStateInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_confComputeStateInitUnlocked;
 

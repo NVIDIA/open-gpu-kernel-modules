@@ -152,7 +152,7 @@ static NvU32 uvm_channel_update_progress_with_max(uvm_channel_t *channel,
             break;
 
         if (entry->type == UVM_GPFIFO_ENTRY_TYPE_NORMAL) {
-            uvm_pushbuffer_mark_completed(channel->pool->manager->pushbuffer, entry);
+            uvm_pushbuffer_mark_completed(channel, entry);
             list_add_tail(&entry->push_info->available_list_node, &channel->available_push_infos);
         }
 
@@ -1035,6 +1035,57 @@ static NV_STATUS internal_channel_submit_work_indirect_sec2(uvm_push_t *push,
     return status;
 }
 
+// When the Confidential Computing feature is enabled, the CPU is unable to
+// access and read the pushbuffer. This is because it is located in the CPR of
+// vidmem in this configuration. This function allows UVM to retrieve the
+// content of the pushbuffer in an encrypted form for later decryption, hence,
+// simulating the original access pattern. E.g, reading timestamp semaphores.
+// See also: decrypt_push().
+static void encrypt_push(uvm_push_t *push)
+{
+    NvU64 push_protected_gpu_va;
+    NvU64 push_unprotected_gpu_va;
+    uvm_gpu_address_t auth_tag_gpu_va;
+    uvm_channel_t *channel = push->channel;
+    uvm_push_crypto_bundle_t *crypto_bundle;
+    uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    NvU32 push_size = uvm_push_get_size(push);
+    uvm_push_info_t *push_info = uvm_push_info_from_push(push);
+    uvm_pushbuffer_t *pushbuffer = channel->pool->manager->pushbuffer;
+    unsigned auth_tag_offset = UVM_CONF_COMPUTING_AUTH_TAG_SIZE * push->push_info_index;
+
+    if (!uvm_conf_computing_mode_enabled(gpu))
+        return;
+
+    if (!push_info->on_complete)
+        return;
+
+    if (!uvm_channel_is_ce(channel))
+        return;
+
+    if (push_size == 0)
+        return;
+
+    UVM_ASSERT(!uvm_channel_is_wlc(channel));
+    UVM_ASSERT(!uvm_channel_is_lcic(channel));
+    UVM_ASSERT(channel->conf_computing.push_crypto_bundles != NULL);
+
+    crypto_bundle = channel->conf_computing.push_crypto_bundles + push->push_info_index;
+    auth_tag_gpu_va = uvm_rm_mem_get_gpu_va(channel->conf_computing.push_crypto_bundle_auth_tags, gpu, false);
+    auth_tag_gpu_va.address += auth_tag_offset;
+
+    crypto_bundle->push_size = push_size;
+    push_protected_gpu_va = uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push);
+    push_unprotected_gpu_va = uvm_pushbuffer_get_unprotected_gpu_va_for_push(pushbuffer, push);
+
+    uvm_conf_computing_log_gpu_encryption(channel, &crypto_bundle->iv);
+    gpu->parent->ce_hal->encrypt(push,
+                                 uvm_gpu_address_virtual_unprotected(push_unprotected_gpu_va),
+                                 uvm_gpu_address_virtual(push_protected_gpu_va),
+                                 push_size,
+                                 auth_tag_gpu_va);
+}
+
 void uvm_channel_end_push(uvm_push_t *push)
 {
     uvm_channel_t *channel = push->channel;
@@ -1050,6 +1101,8 @@ void uvm_channel_end_push(uvm_push_t *push)
     bool needs_sec2_work_submit = false;
 
     channel_pool_lock(channel->pool);
+
+    encrypt_push(push);
 
     new_tracking_value = ++channel->tracking_sem.queued_value;
     new_payload = (NvU32)new_tracking_value;
@@ -1561,11 +1614,15 @@ static void free_conf_computing_buffers(uvm_channel_t *channel)
     uvm_rm_mem_free(channel->conf_computing.static_pb_protected_vidmem);
     uvm_rm_mem_free(channel->conf_computing.static_pb_unprotected_sysmem);
     uvm_rm_mem_free(channel->conf_computing.static_notifier_unprotected_sysmem);
+    uvm_rm_mem_free(channel->conf_computing.push_crypto_bundle_auth_tags);
     uvm_kvfree(channel->conf_computing.static_pb_protected_sysmem);
+    uvm_kvfree(channel->conf_computing.push_crypto_bundles);
     channel->conf_computing.static_pb_protected_vidmem = NULL;
     channel->conf_computing.static_pb_unprotected_sysmem = NULL;
     channel->conf_computing.static_notifier_unprotected_sysmem = NULL;
+    channel->conf_computing.push_crypto_bundle_auth_tags = NULL;
     channel->conf_computing.static_pb_protected_sysmem = NULL;
+    channel->conf_computing.push_crypto_bundles = NULL;
 
     uvm_rm_mem_free(channel->tracking_sem.semaphore.conf_computing.encrypted_payload);
     uvm_rm_mem_free(channel->tracking_sem.semaphore.conf_computing.notifier);
@@ -1702,14 +1759,34 @@ static NV_STATUS alloc_conf_computing_buffers(uvm_channel_t *channel)
 {
     NV_STATUS status;
 
-    status  = alloc_conf_computing_buffers_semaphore(channel);
+    UVM_ASSERT(uvm_channel_is_secure_ce(channel));
+
+    status = alloc_conf_computing_buffers_semaphore(channel);
     if (status != NV_OK)
         return status;
 
-    if (uvm_channel_is_wlc(channel))
+    if (uvm_channel_is_wlc(channel)) {
         status = alloc_conf_computing_buffers_wlc(channel);
-    else if (uvm_channel_is_lcic(channel))
+    }
+    else if (uvm_channel_is_lcic(channel)) {
         status = alloc_conf_computing_buffers_lcic(channel);
+    }
+    else {
+        uvm_gpu_t *gpu = channel->pool->manager->gpu;
+        void *push_crypto_bundles = uvm_kvmalloc_zero(sizeof(*channel->conf_computing.push_crypto_bundles) *
+                                                      channel->num_gpfifo_entries);
+
+        if (push_crypto_bundles == NULL)
+            return NV_ERR_NO_MEMORY;
+
+        channel->conf_computing.push_crypto_bundles = push_crypto_bundles;
+
+        status = uvm_rm_mem_alloc_and_map_cpu(gpu,
+                                              UVM_RM_MEM_TYPE_SYS,
+                                              channel->num_gpfifo_entries * UVM_CONF_COMPUTING_AUTH_TAG_SIZE,
+                                              UVM_CONF_COMPUTING_BUF_ALIGNMENT,
+                                              &channel->conf_computing.push_crypto_bundle_auth_tags);
+    }
 
     return status;
 }

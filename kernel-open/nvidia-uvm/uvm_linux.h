@@ -153,6 +153,10 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 #define VM_MIXEDMAP    0x00000000
 #endif
 
+#if !defined(MPOL_PREFERRED_MANY)
+#define MPOL_PREFERRED_MANY    5
+#endif
+
 //
 // printk.h already defined pr_fmt, so we have to redefine it so the pr_*
 // routines pick up our version

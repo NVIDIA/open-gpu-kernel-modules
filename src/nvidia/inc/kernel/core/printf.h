@@ -172,7 +172,7 @@ void osFlushLog(void);
 
 #include "utils/nvprintf.h"
 
-#define MAX_ERROR_STRING 256
+#define MAX_ERROR_STRING 512
 #ifndef NVPORT_CHECK_PRINTF_ARGUMENTS
 #define NVPORT_CHECK_PRINTF_ARGUMENTS(x,c)
 #endif

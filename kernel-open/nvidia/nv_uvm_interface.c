@@ -126,6 +126,19 @@ static void nvUvmFreeSafeStack(nvidia_stack_t *sp)
         nv_kmem_cache_free_stack(sp);
 }
 
+static NV_STATUS nvUvmDestroyFaultInfoAndStacks(nvidia_stack_t *sp,
+                                                uvmGpuDeviceHandle device,
+                                                UvmGpuFaultInfo *pFaultInfo)
+{
+    nv_kmem_cache_free_stack(pFaultInfo->replayable.cslCtx.nvidia_stack);
+    nv_kmem_cache_free_stack(pFaultInfo->nonReplayable.isr_bh_sp);
+    nv_kmem_cache_free_stack(pFaultInfo->nonReplayable.isr_sp);
+
+    return rm_gpu_ops_destroy_fault_info(sp,
+                                         (gpuDeviceHandle)device,
+                                         pFaultInfo);
+}
+
 NV_STATUS nvUvmInterfaceRegisterGpu(const NvProcessorUuid *gpuUuid, UvmGpuPlatformInfo *gpuInfo)
 {
     nvidia_stack_t *sp = NULL;
@@ -855,6 +868,7 @@ NV_STATUS nvUvmInterfaceInitFaultInfo(uvmGpuDeviceHandle device,
 {
     nvidia_stack_t *sp = NULL;
     NV_STATUS status;
+    int err;
 
     if (nv_kmem_cache_alloc_stack(&sp) != 0)
     {
@@ -864,36 +878,48 @@ NV_STATUS nvUvmInterfaceInitFaultInfo(uvmGpuDeviceHandle device,
     status = rm_gpu_ops_init_fault_info(sp,
                                        (gpuDeviceHandle)device,
                                        pFaultInfo);
+    if (status != NV_OK)
+    {
+        goto done;
+    }
 
     // Preallocate a stack for functions called from ISR top half
     pFaultInfo->nonReplayable.isr_sp = NULL;
     pFaultInfo->nonReplayable.isr_bh_sp = NULL;
-    if (status == NV_OK)
+    pFaultInfo->replayable.cslCtx.nvidia_stack = NULL;
+
+    // NOTE: nv_kmem_cache_alloc_stack does not allocate a stack on PPC.
+    // Therefore, the pointer can be NULL on success. Always use the
+    // returned error code to determine if the operation was successful.
+    err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->nonReplayable.isr_sp);
+    if (err)
     {
-        // NOTE: nv_kmem_cache_alloc_stack does not allocate a stack on PPC.
-        // Therefore, the pointer can be NULL on success. Always use the
-        // returned error code to determine if the operation was successful.
-        int err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->nonReplayable.isr_sp);
-        if (!err)
-        {
-            err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->nonReplayable.isr_bh_sp);
-            if (err)
-            {
-                nv_kmem_cache_free_stack(pFaultInfo->nonReplayable.isr_sp);
-                pFaultInfo->nonReplayable.isr_sp = NULL;
-            }
-        }
-
-        if (err)
-        {
-            rm_gpu_ops_destroy_fault_info(sp,
-                                          (gpuDeviceHandle)device,
-                                          pFaultInfo);
-
-            status = NV_ERR_NO_MEMORY;
-        }
+        goto error;
     }
 
+    err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->nonReplayable.isr_bh_sp);
+    if (err)
+    {
+        goto error;
+    }
+
+    // The cslCtx.ctx pointer is not NULL only when ConfidentialComputing is enabled.
+    if (pFaultInfo->replayable.cslCtx.ctx != NULL)
+    {
+        err = nv_kmem_cache_alloc_stack((nvidia_stack_t **)&pFaultInfo->replayable.cslCtx.nvidia_stack);
+        if (err)
+        {
+            goto error;
+        }
+    }
+    goto done;
+
+error:
+    nvUvmDestroyFaultInfoAndStacks(sp,
+                                   device,
+                                   pFaultInfo);
+    status = NV_ERR_NO_MEMORY;
+done:
     nv_kmem_cache_free_stack(sp);
     return status;
 }
@@ -949,23 +975,9 @@ NV_STATUS nvUvmInterfaceDestroyFaultInfo(uvmGpuDeviceHandle device,
     nvidia_stack_t *sp = nvUvmGetSafeStack();
     NV_STATUS status;
 
-    // Free the preallocated stack for functions called from ISR
-    if (pFaultInfo->nonReplayable.isr_sp != NULL)
-    {
-        nv_kmem_cache_free_stack((nvidia_stack_t *)pFaultInfo->nonReplayable.isr_sp);
-        pFaultInfo->nonReplayable.isr_sp = NULL;
-    }
-
-    if (pFaultInfo->nonReplayable.isr_bh_sp != NULL)
-    {
-        nv_kmem_cache_free_stack((nvidia_stack_t *)pFaultInfo->nonReplayable.isr_bh_sp);
-        pFaultInfo->nonReplayable.isr_bh_sp = NULL;
-    }
-
-    status = rm_gpu_ops_destroy_fault_info(sp,
-                                          (gpuDeviceHandle)device,
-                                          pFaultInfo);
-
+    status = nvUvmDestroyFaultInfoAndStacks(sp,
+                                            device,
+                                            pFaultInfo);
     nvUvmFreeSafeStack(sp);
     return status;
 }

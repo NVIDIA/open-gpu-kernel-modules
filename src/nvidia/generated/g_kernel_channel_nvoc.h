@@ -58,6 +58,8 @@ extern "C" {
 #include "ctrl/ctrlc36f.h"
 #include "ctrl/ctrlc56f.h"
 
+#include "cc_drv.h"
+
 struct OBJGPU;
 
 #ifndef __NVOC_CLASS_OBJGPU_TYPEDEF__
@@ -326,6 +328,8 @@ struct KernelChannel {
     struct MIG_INSTANCE_REF partitionRef;
     NvU32 runqueue;
     RM_ENGINE_TYPE engineType;
+    CC_KMB clientKmb;
+    NvBool bCCSecureChannel;
 };
 
 #ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
@@ -409,8 +413,10 @@ NV_STATUS __nvoc_objCreate_KernelChannel(KernelChannel**, Dynamic*, NvU32, CALL_
 #define kchannelCtrlCmdGpfifoUpdateFaultMethodBuffer(pKernelChannel, pFaultMthdBufferParams) kchannelCtrlCmdGpfifoUpdateFaultMethodBuffer_DISPATCH(pKernelChannel, pFaultMthdBufferParams)
 #define kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex(pKernelChannel, pParams) kchannelCtrlCmdGpfifoSetWorkSubmitTokenNotifIndex_DISPATCH(pKernelChannel, pParams)
 #define kchannelCtrlCmdStopChannel(pKernelChannel, pStopChannelParams) kchannelCtrlCmdStopChannel_DISPATCH(pKernelChannel, pStopChannelParams)
-#define kchannelCtrlCmdGetKmb(pKernelChannel, pStopChannelParams) kchannelCtrlCmdGetKmb_DISPATCH(pKernelChannel, pStopChannelParams)
+#define kchannelCtrlCmdGetKmb(pKernelChannel, pGetKmbParams) kchannelCtrlCmdGetKmb_DISPATCH(pKernelChannel, pGetKmbParams)
+#define kchannelCtrlCmdGetKmb_HAL(pKernelChannel, pGetKmbParams) kchannelCtrlCmdGetKmb_DISPATCH(pKernelChannel, pGetKmbParams)
 #define kchannelCtrlRotateSecureChannelIv(pKernelChannel, pRotateIvParams) kchannelCtrlRotateSecureChannelIv_DISPATCH(pKernelChannel, pRotateIvParams)
+#define kchannelCtrlRotateSecureChannelIv_HAL(pKernelChannel, pRotateIvParams) kchannelCtrlRotateSecureChannelIv_DISPATCH(pKernelChannel, pRotateIvParams)
 #define kchannelCtrlGetTpcPartitionMode(pKernelChannel, pParams) kchannelCtrlGetTpcPartitionMode_DISPATCH(pKernelChannel, pParams)
 #define kchannelCtrlSetTpcPartitionMode(pKernelChannel, pParams) kchannelCtrlSetTpcPartitionMode_DISPATCH(pKernelChannel, pParams)
 #define kchannelCtrlGetMMUDebugMode(pKernelChannel, pParams) kchannelCtrlGetMMUDebugMode_DISPATCH(pKernelChannel, pParams)
@@ -712,6 +718,36 @@ static inline NV_STATUS kchannelEnableVirtualContext(struct KernelChannel *arg0)
 #endif //__nvoc_kernel_channel_h_disabled
 
 #define kchannelEnableVirtualContext_HAL(arg0) kchannelEnableVirtualContext(arg0)
+
+static inline NV_STATUS kchannelRotateSecureChannelIv_46f6a7(struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU32 *encryptIv, NvU32 *decryptIv) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+
+#ifdef __nvoc_kernel_channel_h_disabled
+static inline NV_STATUS kchannelRotateSecureChannelIv(struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU32 *encryptIv, NvU32 *decryptIv) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_channel_h_disabled
+#define kchannelRotateSecureChannelIv(pKernelChannel, rotateOperation, encryptIv, decryptIv) kchannelRotateSecureChannelIv_46f6a7(pKernelChannel, rotateOperation, encryptIv, decryptIv)
+#endif //__nvoc_kernel_channel_h_disabled
+
+#define kchannelRotateSecureChannelIv_HAL(pKernelChannel, rotateOperation, encryptIv, decryptIv) kchannelRotateSecureChannelIv(pKernelChannel, rotateOperation, encryptIv, decryptIv)
+
+NV_STATUS kchannelRetrieveKmb_KERNEL(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle);
+
+
+#ifdef __nvoc_kernel_channel_h_disabled
+static inline NV_STATUS kchannelRetrieveKmb(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle) {
+    NV_ASSERT_FAILED_PRECOMP("KernelChannel was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_channel_h_disabled
+#define kchannelRetrieveKmb(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle) kchannelRetrieveKmb_KERNEL(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle)
+#endif //__nvoc_kernel_channel_h_disabled
+
+#define kchannelRetrieveKmb_HAL(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle) kchannelRetrieveKmb(pGpu, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle)
 
 NV_STATUS kchannelMap_IMPL(struct KernelChannel *pKernelChannel, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping);
 
@@ -1067,13 +1103,13 @@ static inline NV_STATUS kchannelCtrlCmdStopChannel_DISPATCH(struct KernelChannel
     return pKernelChannel->__kchannelCtrlCmdStopChannel__(pKernelChannel, pStopChannelParams);
 }
 
-NV_STATUS kchannelCtrlCmdGetKmb_IMPL(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pStopChannelParams);
+NV_STATUS kchannelCtrlCmdGetKmb_KERNEL(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pGetKmbParams);
 
-static inline NV_STATUS kchannelCtrlCmdGetKmb_DISPATCH(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pStopChannelParams) {
-    return pKernelChannel->__kchannelCtrlCmdGetKmb__(pKernelChannel, pStopChannelParams);
+static inline NV_STATUS kchannelCtrlCmdGetKmb_DISPATCH(struct KernelChannel *pKernelChannel, NVC56F_CTRL_CMD_GET_KMB_PARAMS *pGetKmbParams) {
+    return pKernelChannel->__kchannelCtrlCmdGetKmb__(pKernelChannel, pGetKmbParams);
 }
 
-NV_STATUS kchannelCtrlRotateSecureChannelIv_IMPL(struct KernelChannel *pKernelChannel, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams);
+NV_STATUS kchannelCtrlRotateSecureChannelIv_KERNEL(struct KernelChannel *pKernelChannel, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams);
 
 static inline NV_STATUS kchannelCtrlRotateSecureChannelIv_DISPATCH(struct KernelChannel *pKernelChannel, NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams) {
     return pKernelChannel->__kchannelCtrlRotateSecureChannelIv__(pKernelChannel, pRotateIvParams);
@@ -1436,6 +1472,19 @@ static inline NvU32 kchannelGetGfid(struct KernelChannel *pKernelChannel) {
 #endif //__nvoc_kernel_channel_h_disabled
 
 #undef PRIVATE_FIELD
+
+#ifndef NVOC_KERNEL_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
+#ifndef __nvoc_kernel_channel_h_disabled
+#undef kchannelRotateSecureChannelIv
+NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelRotateSecureChannelIv)(struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvU32 *encryptIv, NvU32 *decryptIv);
+#endif //__nvoc_kernel_channel_h_disabled
+
+#ifndef __nvoc_kernel_channel_h_disabled
+#undef kchannelRetrieveKmb
+NV_STATUS NVOC_PRIVATE_FUNCTION(kchannelRetrieveKmb)(struct OBJGPU *pGpu, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle);
+#endif //__nvoc_kernel_channel_h_disabled
+
+#endif // NVOC_KERNEL_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
 
 
 RS_ORDERED_ITERATOR kchannelGetIter(

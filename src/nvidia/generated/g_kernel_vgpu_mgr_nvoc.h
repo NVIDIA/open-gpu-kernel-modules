@@ -305,6 +305,11 @@ kvgpumgrGetSwizzId(struct OBJGPU *pGpu,
                    NvU32 *swizzId);
 
 NV_STATUS
+kvgpumgrValidateSwizzId(struct OBJGPU *pGpu,
+                        NvU32 vgpuTypeId,
+                        NvU32 swizzId);
+
+NV_STATUS
 kvgpumgrGetVgpuFbUsage(struct OBJGPU *pGpu, NVA081_CTRL_VGPU_CONFIG_GET_VGPU_FB_USAGE_PARAMS *pParams);
 
 NV_STATUS

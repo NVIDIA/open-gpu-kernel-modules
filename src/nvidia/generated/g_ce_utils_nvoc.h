@@ -76,7 +76,7 @@ struct CeUtils {
     NvHandle hDevice;
     NvHandle hSubdevice;
     OBJCHANNEL *pChannel;
-    OBJGPU *pGpu;
+    struct OBJGPU *pGpu;
     struct KernelCE *pKCe;
     NvBool bUseVasForCeCopy;
     NvU32 hTdCopyClass;
@@ -108,11 +108,11 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_CeUtils;
 
 NV_STATUS __nvoc_objCreateDynamic_CeUtils(CeUtils**, Dynamic*, NvU32, va_list);
 
-NV_STATUS __nvoc_objCreate_CeUtils(CeUtils**, Dynamic*, NvU32, OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS * arg_pAllocParams);
+NV_STATUS __nvoc_objCreate_CeUtils(CeUtils**, Dynamic*, NvU32, struct OBJGPU * arg_pGpu, KERNEL_MIG_GPU_INSTANCE * arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS * arg_pAllocParams);
 #define __objCreate_CeUtils(ppNewObj, pParent, createFlags, arg_pGpu, arg_pKernelMIGGPUInstance, arg_pAllocParams) \
     __nvoc_objCreate_CeUtils((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_pKernelMIGGPUInstance, arg_pAllocParams)
 
-NV_STATUS ceutilsConstruct_IMPL(struct CeUtils *arg_pCeUtils, OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS *arg_pAllocParams);
+NV_STATUS ceutilsConstruct_IMPL(struct CeUtils *arg_pCeUtils, struct OBJGPU *arg_pGpu, KERNEL_MIG_GPU_INSTANCE *arg_pKernelMIGGPUInstance, NV0050_ALLOCATION_PARAMETERS *arg_pAllocParams);
 
 #define __nvoc_ceutilsConstruct(arg_pCeUtils, arg_pGpu, arg_pKernelMIGGPUInstance, arg_pAllocParams) ceutilsConstruct_IMPL(arg_pCeUtils, arg_pGpu, arg_pKernelMIGGPUInstance, arg_pAllocParams)
 void ceutilsDestruct_IMPL(struct CeUtils *pCeUtils);

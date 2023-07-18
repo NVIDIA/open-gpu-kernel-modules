@@ -26,6 +26,7 @@
 #include "uvm_conf_computing.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_gpu.h"
+#include "uvm_hal.h"
 #include "uvm_mem.h"
 #include "uvm_processors.h"
 #include "uvm_tracker.h"
@@ -60,8 +61,7 @@ NV_STATUS uvm_conf_computing_init_parent_gpu(const uvm_parent_gpu_t *parent)
 
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
-    // TODO: Bug 2844714.
-    // Since we have no routine to traverse parent gpus,
+    // TODO: Bug 2844714: since we have no routine to traverse parent GPUs,
     // find first child GPU and get its parent.
     first = uvm_global_processor_mask_find_first_gpu(&g_uvm_global.retained_gpus);
     if (!first)
@@ -447,4 +447,52 @@ NV_STATUS uvm_conf_computing_cpu_decrypt(uvm_channel_t *channel,
     uvm_mutex_unlock(&channel->csl.ctx_lock);
 
     return status;
+}
+
+NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
+                                           void *dst_plain,
+                                           const void *src_cipher,
+                                           const void *auth_tag_buffer,
+                                           NvU8 valid)
+{
+    NV_STATUS status;
+
+    // There is no dedicated lock for the CSL context associated with replayable
+    // faults. The mutual exclusion required by the RM CSL API is enforced by
+    // relying on the GPU replayable service lock (ISR lock), since fault
+    // decryption is invoked as part of fault servicing.
+    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.replayable_faults.service_lock));
+
+    UVM_ASSERT(!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu));
+
+    status = nvUvmInterfaceCslDecrypt(&parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx,
+                                      parent_gpu->fault_buffer_hal->entry_size(parent_gpu),
+                                      (const NvU8 *) src_cipher,
+                                      NULL,
+                                      (NvU8 *) dst_plain,
+                                      &valid,
+                                      sizeof(valid),
+                                      (const NvU8 *) auth_tag_buffer);
+
+    if (status != NV_OK)
+        UVM_ERR_PRINT("nvUvmInterfaceCslDecrypt() failed: %s, GPU %s\n", nvstatusToString(status), parent_gpu->name);
+
+    return status;
+}
+
+void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu, NvU64 increment)
+{
+    NV_STATUS status;
+
+    // See comment in uvm_conf_computing_fault_decrypt
+    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.replayable_faults.service_lock));
+
+    UVM_ASSERT(!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu));
+
+    status = nvUvmInterfaceCslIncrementIv(&parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx,
+                                          UVM_CSL_OPERATION_DECRYPT,
+                                          increment,
+                                          NULL);
+
+    UVM_ASSERT(status == NV_OK);
 }

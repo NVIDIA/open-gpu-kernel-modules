@@ -7756,31 +7756,35 @@ nvswitch_service_nvldl_fatal_link_ls10
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _LTSSM_FAULT_DOWN, 1);
     if (nvswitch_test_flags(pending, bit))
     {
-        dlDeferredIntrLinkMask |= bit;
-        nvswitch_clear_flags(&unhandled, bit);
+        {
+            dlDeferredIntrLinkMask |= bit;
 
-        //
-        // Since reset and drain will reset the link, including clearing
-        // pending interrupts, skip the clear write below. There are cases
-        // where link clocks will not be on after reset and drain so there
-        // maybe PRI errors on writing to the register
-        //
-        bRequireResetAndDrain = NV_TRUE;
+            //
+            // Since reset and drain will reset the link, including clearing
+            // pending interrupts, skip the clear write below. There are cases
+            // where link clocks will not be on after reset and drain so there
+            // maybe PRI errors on writing to the register
+            //
+            bRequireResetAndDrain = NV_TRUE;
+        }
+        nvswitch_clear_flags(&unhandled, bit);
     }
 
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _LTSSM_FAULT_UP, 1);
     if (nvswitch_test_flags(pending, bit))
     {
-        dlDeferredIntrLinkMask |= bit;
-        nvswitch_clear_flags(&unhandled, bit);
+        {
+            dlDeferredIntrLinkMask |= bit;
 
-        //
-        // Since reset and drain will reset the link, including clearing
-        // pending interrupts, skip the clear write below. There are cases
-        // where link clocks will not be on after reset and drain so there
-        // maybe PRI errors on writing to the register
-        //
-        bRequireResetAndDrain = NV_TRUE;
+            //
+            // Since reset and drain will reset the link, including clearing
+            // pending interrupts, skip the clear write below. There are cases
+            // where link clocks will not be on after reset and drain so there
+            // maybe PRI errors on writing to the register
+            //
+            bRequireResetAndDrain = NV_TRUE;
+        }
+        nvswitch_clear_flags(&unhandled, bit);
     }
 
     if (bRequireResetAndDrain)

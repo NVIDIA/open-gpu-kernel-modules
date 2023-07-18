@@ -189,6 +189,9 @@ NvBool nv3dAllocChannelSurface(Nv3dChannelPtr p3dChannel)
 
 void nv3dFreeChannelSurface(Nv3dChannelPtr p3dChannel)
 {
+    if (p3dChannel->p3dDevice == NULL) {
+        return;
+    }
 
     if (p3dChannel->surface.gpuAddress != 0) {
         /*

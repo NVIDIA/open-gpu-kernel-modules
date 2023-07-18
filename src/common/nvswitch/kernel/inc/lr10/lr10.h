@@ -583,9 +583,12 @@ typedef struct
     NvBool bDisabledRemoteEndLinkMaskCached;
 } lr10_device;
 
+#define NVSWITCH_NUM_DEVICES_PER_DELTA_LR10 6
+
 typedef struct {
     NvU32 switchPhysicalId;
-    NvU64  linkMask;
+    NvU64 accessLinkMask;
+    NvU64 trunkLinkMask;
 } lr10_links_connected_to_disabled_remote_end;
 
 #define NVSWITCH_GET_CHIP_DEVICE_LR10(_device)                  \

@@ -36,20 +36,16 @@
 #include "nvcfg_sdk.h"
 
 // CLASS NV_CONF_COMPUTE
-#define CC_AES_256_GCM_IV_SIZE_BYTES   (0xcU) /* finn: Evaluated from "(96 / 8)" */
-#define CC_AES_256_GCM_IV_SIZE_DWORD   (0x3U) /* finn: Evaluated from "(CC_AES_256_GCM_IV_SIZE_BYTES / 4)" */
-#define CC_AES_256_GCM_KEY_SIZE_BYTES  (0x20U) /* finn: Evaluated from "(256 / 8)" */
-#define CC_AES_256_GCM_KEY_SIZE_DWORD  (0x8U) /* finn: Evaluated from "(CC_AES_256_GCM_KEY_SIZE_BYTES / 4)" */
+#define CC_AES_256_GCM_IV_SIZE_BYTES  (0xcU) /* finn: Evaluated from "(96 / 8)" */
+#define CC_AES_256_GCM_IV_SIZE_DWORD  (0x3U) /* finn: Evaluated from "(CC_AES_256_GCM_IV_SIZE_BYTES / 4)" */
+#define CC_AES_256_GCM_KEY_SIZE_BYTES (0x20U) /* finn: Evaluated from "(256 / 8)" */
+#define CC_AES_256_GCM_KEY_SIZE_DWORD (0x8U) /* finn: Evaluated from "(CC_AES_256_GCM_KEY_SIZE_BYTES / 4)" */
 
-#define CC_HMAC_NONCE_SIZE_BYTES       (0x20U) /* finn: Evaluated from "(256 / 8)" */
-#define CC_HMAC_NONCE_SIZE_DWORD       (0x8U) /* finn: Evaluated from "(CC_HMAC_NONCE_SIZE_BYTES / 4)" */
-#define CC_HMAC_KEY_SIZE_BYTES         (0x20U) /* finn: Evaluated from "(256 / 8)" */
-#define CC_HMAC_KEY_SIZE_DWORD         (0x8U) /* finn: Evaluated from "(CC_HMAC_KEY_SIZE_BYTES / 4)" */
+#define CC_HMAC_NONCE_SIZE_BYTES      (0x20U) /* finn: Evaluated from "(256 / 8)" */
+#define CC_HMAC_NONCE_SIZE_DWORD      (0x8U) /* finn: Evaluated from "(CC_HMAC_NONCE_SIZE_BYTES / 4)" */
+#define CC_HMAC_KEY_SIZE_BYTES        (0x20U) /* finn: Evaluated from "(256 / 8)" */
+#define CC_HMAC_KEY_SIZE_DWORD        (0x8U) /* finn: Evaluated from "(CC_HMAC_KEY_SIZE_BYTES / 4)" */
 
-#define APM_AES_128_CTR_IV_SIZE_BYTES  (0xcU) /* finn: Evaluated from "(96 / 8)" */
-#define APM_AES_128_CTR_IV_SIZE_DWORD  (0x3U) /* finn: Evaluated from "(APM_AES_128_CTR_IV_SIZE_BYTES / 4)" */
-#define APM_AES_128_CTR_KEY_SIZE_BYTES (0x10U) /* finn: Evaluated from "(128 / 8)" */
-#define APM_AES_128_CTR_KEY_SIZE_DWORD (0x4U) /* finn: Evaluated from "(APM_AES_128_CTR_KEY_SIZE_BYTES / 4)" */
 
 // Type is shared between CC control calls and RMKeyStore
 typedef enum ROTATE_IV_TYPE {

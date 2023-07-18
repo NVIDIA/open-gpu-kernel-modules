@@ -355,6 +355,13 @@ struct uvm_channel_struct
         // Encryption auth tags have to be located in unprotected sysmem.
         void *launch_auth_tag_cpu;
         NvU64 launch_auth_tag_gpu_va;
+
+        // Used to decrypt the push back to protected sysmem.
+        // This happens when profilers register callbacks for migration data.
+        uvm_push_crypto_bundle_t *push_crypto_bundles;
+
+        // Accompanying authentication tags for the crypto bundles
+        uvm_rm_mem_t *push_crypto_bundle_auth_tags;
     } conf_computing;
 
     // RM channel information

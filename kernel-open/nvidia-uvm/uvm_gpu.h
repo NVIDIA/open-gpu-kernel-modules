@@ -198,6 +198,12 @@ typedef struct
 
     // Client type of the service requestor.
     uvm_fault_client_type_t client_type;
+
+    // New residency ID of the faulting region.
+    uvm_processor_id_t residency_id;
+
+    // New residency NUMA node ID of the faulting region.
+    int residency_node;
 } uvm_ats_fault_context_t;
 
 struct uvm_fault_service_batch_context_struct

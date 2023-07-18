@@ -40,6 +40,6 @@ NV_STATUS GspMsgQueuesInit(OBJGPU *pGpu, MESSAGE_QUEUE_COLLECTION **ppMQCollecti
 void      GspMsgQueuesCleanup(MESSAGE_QUEUE_COLLECTION **ppMQCollection);
 NV_STATUS GspStatusQueueInit(OBJGPU *pGpu, MESSAGE_QUEUE_INFO **ppMQI);
 NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu);
-NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI);
+NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu);
 
 #endif // _MESSAGE_QUEUE_H_

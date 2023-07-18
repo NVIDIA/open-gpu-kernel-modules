@@ -600,6 +600,9 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit__)(struct Subdevice *);
     NV_STATUS (*__subdeviceCtrlCmdInternalDetectHsVideoBridge__)(struct Subdevice *);
     NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeGetStaticInfo__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeEncryptionControl__)(struct Subdevice *, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ENCRYPTION_CONTROL_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeDeriveSwlKeys__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeDeriveLceKeys__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask__)(struct Subdevice *, NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdVgpuMgrInternalShutdownGspVgpuPluginTask__)(struct Subdevice *, NV2080_CTRL_VGPU_MGR_INTERNAL_SHUTDOWN_GSP_VGPU_PLUGIN_TASK_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdVgpuMgrInternalPgpuAddVgpuType__)(struct Subdevice *, NV2080_CTRL_VGPU_MGR_INTERNAL_PGPU_ADD_VGPU_TYPE_PARAMS *);
@@ -648,7 +651,7 @@ struct Subdevice {
     struct Device *pDevice;
     NvBool bMaxGrTickFreqRequested;
     NvU64 P2PfbMappedBytes;
-    NvU32 notifyActions[180];
+    NvU32 notifyActions[181];
     NvHandle hNotifierMemory;
     struct Memory *pNotifierMemory;
     NvHandle hSemMemory;
@@ -1190,6 +1193,9 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit(pSubdevice) subdeviceCtrlCmdInternalPmgrUnsetDynamicBoostLimit_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdInternalDetectHsVideoBridge(pSubdevice) subdeviceCtrlCmdInternalDetectHsVideoBridge_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdInternalConfComputeGetStaticInfo(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeGetStaticInfo_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalConfComputeEncryptionControl(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeEncryptionControl_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalConfComputeDeriveSwlKeys(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeDeriveSwlKeys_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalConfComputeDeriveLceKeys(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeDeriveLceKeys_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdVgpuMgrInternalShutdownGspVgpuPluginTask(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalShutdownGspVgpuPluginTask_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdVgpuMgrInternalPgpuAddVgpuType(pSubdevice, pParams) subdeviceCtrlCmdVgpuMgrInternalPgpuAddVgpuType_DISPATCH(pSubdevice, pParams)
@@ -4139,6 +4145,24 @@ NV_STATUS subdeviceCtrlCmdInternalConfComputeGetStaticInfo_IMPL(struct Subdevice
 
 static inline NV_STATUS subdeviceCtrlCmdInternalConfComputeGetStaticInfo_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdInternalConfComputeGetStaticInfo__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalConfComputeEncryptionControl_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ENCRYPTION_CONTROL_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalConfComputeEncryptionControl_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ENCRYPTION_CONTROL_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalConfComputeEncryptionControl__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalConfComputeDeriveSwlKeys_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalConfComputeDeriveSwlKeys_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalConfComputeDeriveSwlKeys__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalConfComputeDeriveLceKeys_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalConfComputeDeriveLceKeys_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalConfComputeDeriveLceKeys__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdVgpuMgrInternalBootloadGspVgpuPluginTask_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_VGPU_MGR_INTERNAL_BOOTLOAD_GSP_VGPU_PLUGIN_TASK_PARAMS *pParams);

@@ -37,37 +37,10 @@ extern "C" {
 #include "nvstatus.h"
 #include "nvmisc.h"
 #include "kernel/gpu/conf_compute/conf_compute.h"
+#include "kernel/gpu/conf_compute/ccsl_context.h"
 
 #define CCSL_DIR_HOST_TO_DEVICE 0
 #define CCSL_DIR_DEVICE_TO_HOST 1
-
-struct ccslContext_t
-{
-    NvHandle hClient;
-    NvHandle hChannel;
-
-    enum {CSL_MSG_CTR_32, CSL_MSG_CTR_64} msgCounterSize;
-
-    NvU8 keyIn[CC_AES_256_GCM_KEY_SIZE_BYTES];
-    union
-    {
-        struct
-        {
-            NvU8 ivIn[CC_AES_256_GCM_IV_SIZE_BYTES];
-            NvU8 ivMaskIn[CC_AES_256_GCM_IV_SIZE_BYTES];
-        };
-        NvU8 nonce[CC_HMAC_NONCE_SIZE_BYTES];
-    };
-
-    NvU8 keyOut[CC_AES_256_GCM_KEY_SIZE_BYTES];
-    NvU8 ivOut[CC_AES_256_GCM_IV_SIZE_BYTES];
-    NvU8 ivMaskOut[CC_AES_256_GCM_IV_SIZE_BYTES];
-
-    NvU64 keyHandleIn;
-    NvU64 keyHandleOut;
-};
-
-typedef struct ccslContext_t *pCcslContext;
 
 /****************************************************************************\
  *                                                                           *

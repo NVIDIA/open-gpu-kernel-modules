@@ -108,5 +108,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += migrate_device_range
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += handle_mm_fault_has_mm_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += handle_mm_fault_has_pt_regs_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += mempolicy_has_unified_nodes
+NV_CONFTEST_TYPE_COMPILE_TESTS += mempolicy_has_home_node
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg

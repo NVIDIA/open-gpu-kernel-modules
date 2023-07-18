@@ -7430,7 +7430,15 @@ NV_STATUS nvGpuOpsInitFaultInfo(struct gpuDevice *device,
 
     if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
     {
-        pFaultInfo->replayable.bUvmOwnsHwFaultBuffer  = NV_FALSE;
+        KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+        pFaultInfo->replayable.bUvmOwnsHwFaultBuffer = NV_FALSE;
+        pFaultInfo->replayable.cslCtx.ctx = (struct ccslContext_t *) kgmmuGetShadowFaultBufferCslContext(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER);
+        if (pFaultInfo->replayable.cslCtx.ctx == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Replayable buffer CSL context not allocated\n");
+            goto cleanup_fault_buffer;
+        }
     }
     else
     {
@@ -7793,6 +7801,14 @@ NV_STATUS nvGpuOpsGetNonReplayableFaults(gpuFaultInfo *pFaultInfo,
         NvU32       shadowBufferPutIndex;
         NvU32       shadowBufferGetIndex;
         NvU32       maxFaultBufferEntries;
+        struct ccslContext_t *cslCtx;
+
+        cslCtx = (struct ccslContext_t *) kgmmuGetShadowFaultBufferCslContext(pGpu, pKernelGmmu, NON_REPLAYABLE_FAULT_BUFFER);
+        if (cslCtx == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Non Replayable buffer CSL context not allocated\n");
+            return NV_ERR_INVALID_STATE;
+        }
 
         maxFaultBufferEntries = pFaultInfo->nonReplayable.bufferSize / NVC369_BUF_SIZE;
         shadowBufferGetIndex = pFaultInfo->nonReplayable.shadowBufferGet;
@@ -7808,22 +7824,34 @@ NV_STATUS nvGpuOpsGetNonReplayableFaults(gpuFaultInfo *pFaultInfo,
 
             ++(*numFaults);
 
-            // TODO: Revisit this while adding encryption/decryption support
-            // Once encryption/decryption is enabled, CPU-RM will have to decrypt
-            // the fault packet before copying it to the UVM provided buffer. For
-            // now a plain text copy should suffice.
-            portMemCopy(faultBuffer, NVC369_BUF_SIZE,
-                        pShadowBuffer + (shadowBufferGetIndex * NVC369_BUF_SIZE),
-                        NVC369_BUF_SIZE);
-
             portMemCopy(&metadata, sizeof(UvmFaultMetadataPacket),
                         pShadowBufferMetadata + shadowBufferGetIndex,
                         sizeof(UvmFaultMetadataPacket));
 
-            // CC-TODO: Packet decryption should go here.
+            // Sanity check valid bit is present, even though Non-Replayable handling relies on the PRI values.
             if (metadata.valid != GMMU_FAULT_PACKET_METADATA_VALID_YES)
             {
                 return NV_ERR_INVALID_STATE;
+            }
+
+            //
+            // A read memory barrier here ensures that the valid bit check is performed before a decryption is attempted.
+            // This is needed for architectures like PowerPC and ARM where read instructions can be reordered.
+            //
+            portAtomicMemoryFenceLoad();
+
+            status = ccslDecrypt(cslCtx,
+                                 sizeof(GMMU_FAULT_PACKET),
+                                 pShadowBuffer + (shadowBufferGetIndex * NVC369_BUF_SIZE),
+                                 NULL,
+                                 &metadata.valid,
+                                 sizeof(metadata.valid),
+                                 faultBuffer,
+                                 metadata.authTag);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Fault buffer packet decryption failed with status = 0x%x\n", status);
+                return status;
             }
 
             // Clear the plaintext valid bit and authTag.

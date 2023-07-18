@@ -38,6 +38,7 @@ LIBSPDM_VERSION    := 2.3.1
 # NVIDIA-authored module code which depends on libspdm headers.
 LIBSPDM_SOURCES += src/kernel/gpu/spdm/spdm.c
 LIBSPDM_SOURCES += src/kernel/gpu/spdm/arch/hopper/spdm_gh100.c
+LIBSPDM_SOURCES += src/kernel/gpu/spdm/arch/hopper/spdm_certs_gh100.c
 LIBSPDM_SOURCES += src/kernel/gpu/conf_compute/ccsl.c
 LIBSPDM_SOURCES += src/kernel/gpu/conf_compute/arch/hopper/conf_compute_keystore_gh100.c
 
@@ -86,18 +87,6 @@ LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/memlib/compa
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/spdm_device_secret_lib_null/lib.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/platform_lib_null/watchdog.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/platform_lib_null/time_linux.c
-
-#if NV_USE_MBEDTLS
-# libspdm source providing hooks to MbedTLS. These are dependent on MbedTLS being enabled in RM build.
-LIBSPDM_SOURCES  += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_mbedtls/cipher/libspdm_aead_aes_gcm.c
-LIBSPDM_SOURCES  += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_mbedtls/hash/libspdm_sha.c
-LIBSPDM_SOURCES  += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_mbedtls/hmac/libspdm_hmac_sha.c
-LIBSPDM_SOURCES  += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_mbedtls/kdf/libspdm_hkdf_sha.c
-LIBSPDM_SOURCES  += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_mbedtls/pk/libspdm_ec.c
-LIBSPDM_SOURCES  += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_mbedtls/pk/libspdm_x509.c
-LIBSPDM_SOURCES  += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_mbedtls/rand/libspdm_rand.c
-LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_mbedtls
-#endif
 
 # Add all libspdm include paths required for the above LIBSPDM_SOURCES to LIBSPDM_INCLUDES.
 LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/include
