@@ -1571,7 +1571,7 @@ kbusSetupBar2GpuVaSpace_GM107
     NV_ASSERT_OR_RETURN(pWalk != NULL, NV_ERR_INVALID_STATE);
 
     // Pre-reserve and init 4K tables through BAR0 window (bBootstrap) mode.
-    mmuWalkSetUserCtx(pWalk, &userCtx);
+    NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pWalk, &userCtx));
 
     if (pKernelBus->bar2[gfid].cpuVisibleLimit != 0)
     {
@@ -1696,7 +1696,7 @@ kbusTeardownBar2GpuVaSpace_GM107
 
         userCtx.pGpu = pGpu;
 
-        mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx);
+        NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx));
 
         if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus) ||
             IS_GFID_VF(gfid) ||
@@ -1726,7 +1726,7 @@ kbusTeardownBar2GpuVaSpace_GM107
             kbusRestoreBar0WindowAfterBar2Bootstrap_HAL(pGpu, pKernelBus, origVidOffset);
         }
 
-        mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, NULL);
+        NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, NULL));
 
         mmuWalkDestroy(pKernelBus->bar2[gfid].pWalk);
         pKernelBus->bar2[gfid].pWalk                    = NULL;
@@ -2277,8 +2277,6 @@ kbusUpdateRmAperture_GM107
         }
     }
 
-    pFmt = pKernelBus->bar2[gfid].pFmt;
-
     // Math below requires page-sized va.
     if (vaSize == 0 || vaSize & RM_PAGE_MASK)
     {
@@ -2311,7 +2309,7 @@ kbusUpdateRmAperture_GM107
     dmaPageArrayInitFromMemDesc(&pageArray, pSubDevMemDesc, addressTranslation);
     userCtx.pGpu = pGpu;
     userCtx.gfid = gfid;
-    mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx);
+    NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx));
 
     if (bSparsify)
     {
@@ -2329,6 +2327,8 @@ kbusUpdateRmAperture_GM107
     }
     else
     {
+        pFmt = pKernelBus->bar2[gfid].pFmt;
+
         // MMU_MAP_CTX
         mapTarget.pLevelFmt      = mmuFmtFindLevelWithPageShift(pFmt->pRoot,
                                                                 BIT_IDX_64(pageSize));
@@ -2411,7 +2411,7 @@ kbusUpdateRmAperture_GM107
         NV_ASSERT(NV_OK == status);
     }
 
-    mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, NULL);
+    NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, NULL));
 
     if (pKernelBus->bar2[gfid].bBootstrap &&
         !kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))

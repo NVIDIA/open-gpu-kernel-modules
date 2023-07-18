@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 #include "gpu/ce/kernel_ce_private.h"
 #include "gpu/gpu.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "kernel/gpu/conf_compute/conf_compute.h"
 
 NV_STATUS kceStateLoad_GP100(OBJGPU *pGpu, KernelCE *pKCe, NvU32 flags)
 {
@@ -40,7 +41,40 @@ NV_STATUS kceStateLoad_GP100(OBJGPU *pGpu, KernelCE *pKCe, NvU32 flags)
     {
         NV_ASSERT_OK_OR_RETURN(kceTopLevelPceLceMappingsUpdate(pGpu, pKCe));
     }
+    if (gpuIsCCFeatureEnabled(pGpu))
+    {
+        ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
 
+        switch (pKCe->publicID)
+        {
+            case 2:
+                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE2));
+                break;
+            case 3:
+                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE3));
+                break;
+            case 4:
+                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE4));
+                break;
+            case 5:
+                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE5));
+                break;
+            case 6:
+                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE6));
+                break;
+            case 7:
+                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE7));
+                break;
+            case 8:
+                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE8));
+                break;
+            case 9:
+                NV_ASSERT_OK_OR_RETURN(confComputeDeriveSecrets(pCC, MC_ENGINE_IDX_CE9));
+                break;
+            default:
+                break;
+        }
+    }
     return NV_OK;
 }
 

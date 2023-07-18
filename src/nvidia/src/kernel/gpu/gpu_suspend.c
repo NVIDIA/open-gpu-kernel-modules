@@ -89,7 +89,7 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
         kgspWaitForProcessorSuspend_HAL(pGpu, pKernelGsp);
 
         // Dump GSP-RM logs before resetting and invoking FWSEC-SB
-        kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+        kgspDumpGspLogs(pKernelGsp, NV_FALSE);
 
         if (!IS_GPU_GC6_STATE_ENTERING(pGpu))
         {

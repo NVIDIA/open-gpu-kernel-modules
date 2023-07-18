@@ -50,6 +50,7 @@ typedef struct uvm_channel_struct uvm_channel_t;
 typedef struct uvm_user_channel_struct uvm_user_channel_t;
 typedef struct uvm_push_struct uvm_push_t;
 typedef struct uvm_push_info_struct uvm_push_info_t;
+typedef struct uvm_push_crypto_bundle_struct uvm_push_crypto_bundle_t;
 typedef struct uvm_push_acquire_info_struct uvm_push_acquire_info_t;
 typedef struct uvm_pushbuffer_struct uvm_pushbuffer_t;
 typedef struct uvm_gpfifo_entry_struct uvm_gpfifo_entry_t;

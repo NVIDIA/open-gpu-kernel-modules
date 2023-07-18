@@ -213,6 +213,8 @@ void __nvoc_init_dataField_MemoryManager(MemoryManager *pThis, RmHalspecOwner *p
         pThis->bVgpuPmaSupport = ((NvBool)(0 != 0));
     }
 
+    pThis->bScrubChannelSetupInProgress = ((NvBool)(0 != 0));
+
     pThis->bEnableDynamicGranularityPageArrays = ((NvBool)(0 != 0));
 
     // Hal field -- bAllowNoncontiguousAllocation
@@ -313,6 +315,17 @@ static void __nvoc_init_funcTable_MemoryManager_1(MemoryManager *pThis, RmHalspe
     pThis->__memmgrStateUnload__ = &memmgrStateUnload_IMPL;
 
     pThis->__memmgrStateDestroy__ = &memmgrStateDestroy_IMPL;
+
+    // Hal function -- memmgrMemUtilsSec2CtxInit
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__memmgrMemUtilsSec2CtxInit__ = &memmgrMemUtilsSec2CtxInit_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__memmgrMemUtilsSec2CtxInit__ = &memmgrMemUtilsSec2CtxInit_46f6a7;
+    }
 
     // Hal function -- memmgrMemUtilsCheckMemoryFastScrubEnable
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 

@@ -128,6 +128,13 @@ static uvm_gpu_address_t uvm_gpu_address_virtual(NvU64 va)
     return address;
 }
 
+static uvm_gpu_address_t uvm_gpu_address_virtual_unprotected(NvU64 va)
+{
+    uvm_gpu_address_t address = uvm_gpu_address_virtual(va);
+    address.is_unprotected = true;
+    return address;
+}
+
 // Create a physical GPU address
 static uvm_gpu_address_t uvm_gpu_address_physical(uvm_aperture_t aperture, NvU64 pa)
 {

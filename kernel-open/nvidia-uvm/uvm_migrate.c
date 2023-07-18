@@ -944,17 +944,18 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
         if (type == UVM_API_RANGE_TYPE_ATS) {
             uvm_migrate_args_t uvm_migrate_args =
             {
-                .va_space               = va_space,
-                .mm                     = mm,
-                .start                  = params->base,
-                .length                 = params->length,
-                .dst_id                 = (dest_gpu ? dest_gpu->id : UVM_ID_CPU),
-                .dst_node_id            = (int)params->cpuNumaNode,
-                .populate_permissions   = UVM_POPULATE_PERMISSIONS_INHERIT,
-                .touch                  = false,
-                .skip_mapped            = false,
-                .user_space_start       = &params->userSpaceStart,
-                .user_space_length      = &params->userSpaceLength,
+                .va_space                       = va_space,
+                .mm                             = mm,
+                .start                          = params->base,
+                .length                         = params->length,
+                .dst_id                         = (dest_gpu ? dest_gpu->id : UVM_ID_CPU),
+                .dst_node_id                    = (int)params->cpuNumaNode,
+                .populate_permissions           = UVM_POPULATE_PERMISSIONS_INHERIT,
+                .touch                          = false,
+                .skip_mapped                    = false,
+                .populate_on_cpu_alloc_failures = false,
+                .user_space_start               = &params->userSpaceStart,
+                .user_space_length              = &params->userSpaceLength,
             };
 
             status = uvm_migrate_pageable(&uvm_migrate_args);

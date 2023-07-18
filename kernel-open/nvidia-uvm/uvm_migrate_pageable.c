@@ -507,6 +507,22 @@ static NV_STATUS migrate_vma_copy_pages(struct vm_area_struct *vma,
     return NV_OK;
 }
 
+void migrate_vma_cleanup_pages(unsigned long *dst, unsigned long npages)
+{
+    unsigned long i;
+
+    for (i = 0; i < npages; i++) {
+        struct page *dst_page = migrate_pfn_to_page(dst[i]);
+
+        if (!dst_page)
+            continue;
+
+        unlock_page(dst_page);
+        __free_page(dst_page);
+        dst[i] = 0;
+    }
+}
+
 void uvm_migrate_vma_alloc_and_copy(struct migrate_vma *args, migrate_vma_state_t *state)
 {
     struct vm_area_struct *vma = args->vma;
@@ -531,6 +547,10 @@ void uvm_migrate_vma_alloc_and_copy(struct migrate_vma *args, migrate_vma_state_
 
     if (state->status == NV_OK)
         state->status = tracker_status;
+
+    // Mark all pages as not migrating if we're failing
+    if (state->status != NV_OK)
+        migrate_vma_cleanup_pages(args->dst, state->num_pages);
 }
 
 void uvm_migrate_vma_alloc_and_copy_helper(struct vm_area_struct *vma,
@@ -802,7 +822,7 @@ static NV_STATUS migrate_pageable_vma_region(struct vm_area_struct *vma,
         // If the destination is the CPU, signal user-space to retry with a
         // different node. Otherwise, just try to populate anywhere in the
         // system
-        if (UVM_ID_IS_CPU(uvm_migrate_args->dst_id)) {
+        if (UVM_ID_IS_CPU(uvm_migrate_args->dst_id) && !uvm_migrate_args->populate_on_cpu_alloc_failures) {
             *next_addr = start + find_first_bit(state->scratch2_mask, num_pages) * PAGE_SIZE;
             return NV_ERR_MORE_PROCESSING_REQUIRED;
         }
@@ -961,13 +981,10 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
         // We only check that dst_node_id is a valid node in the system and it
         // doesn't correspond to a GPU node. This is fine because
         // alloc_pages_node will clamp the allocation to
-        // cpuset_current_mems_allowed, and uvm_migrate_pageable is only called
-        // from process context (uvm_migrate) when dst_id is CPU. UVM bottom
-        // half never calls uvm_migrate_pageable when dst_id is CPU. So, assert
-        // that we're in a user thread. However, this would need to change if we
-        // wanted to call this function from a bottom half with CPU dst_id.
-        UVM_ASSERT(!(current->flags & PF_KTHREAD));
-
+        // cpuset_current_mems_allowed when uvm_migrate_pageable is called from
+        // process context (uvm_migrate) when dst_id is CPU. UVM bottom half
+        // calls uvm_migrate_pageable with CPU dst_id only when the VMA memory
+        // policy is set to dst_node_id and dst_node_id is not NUMA_NO_NODE.
         if (!nv_numa_node_has_memory(dst_node_id) ||
             uvm_va_space_find_gpu_with_memory_node_id(va_space, dst_node_id) != NULL)
             return NV_ERR_INVALID_ARGUMENT;

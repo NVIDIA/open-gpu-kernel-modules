@@ -197,3 +197,48 @@ nvlink_lib_is_registerd_device_with_reduced_config(void)
 
     return NV_FALSE;
 }
+
+/*
+* Get the number of devices that have the device type deviceType
+*/
+NvlStatus
+nvlink_lib_return_device_count_by_type
+(
+    NvU32 deviceType,
+    NvU32 *numDevices
+)
+{
+    NvlStatus lock_status = NVL_SUCCESS;
+    nvlink_device *dev = NULL;
+    NvU32 device_count = 0;
+
+    if (nvlink_lib_is_initialized())
+    {
+        // Acquire top-level lock
+        lock_status = nvlink_lib_top_lock_acquire();
+        if (lock_status != NVL_SUCCESS)
+        {
+            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+                "%s: Failed to acquire top-level lock\n",
+                __FUNCTION__));
+
+            return lock_status;
+         }
+
+        // Top-level lock is now acquired
+
+        // Loop through device list
+        FOR_EACH_DEVICE_REGISTERED(dev, nvlinkLibCtx.nv_devicelist_head, node)
+        {
+            if (dev->type == deviceType)
+            {
+                device_count++;
+            }
+        }
+
+        // Release top-level lock
+        nvlink_lib_top_lock_release(); 
+    }
+    *numDevices = device_count;
+    return NVL_SUCCESS;
+}

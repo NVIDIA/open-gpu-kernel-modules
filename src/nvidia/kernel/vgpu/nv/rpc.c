@@ -58,6 +58,8 @@
 #include "objtmr.h"
 #include "lib/base_utils.h"
 
+#include "gpu/conf_compute/conf_compute.h"
+
 #define SDK_ALL_CLASSES_INCLUDE_FULL_HEADER
 #include "g_allclasses.h"
 #undef SDK_ALL_CLASSES_INCLUDE_FULL_HEADER
@@ -180,6 +182,9 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
         osGetPerformanceCounter(&pNewEntry->rpcData.startTimeInNs);
     }
 
+    // For HCC, cache expectedFunc value before encrypting.
+    NvU32 expectedFunc = vgpu_rpc_message_header_v->function;
+
     status = rpcSendMessage(pGpu, pRpc);
     if (status != NV_OK)
     {
@@ -195,7 +200,8 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
         return (status == NV_ERR_BUSY_RETRY) ? NV_ERR_GENERIC : status;
     }
 
-    status = rpcRecvPoll(pGpu, pRpc, vgpu_rpc_message_header_v->function);
+    // Use cached expectedFunc here because vgpu_rpc_message_header_v is encrypted for HCC.
+    status = rpcRecvPoll(pGpu, pRpc, expectedFunc);
     if (status != NV_OK)
     {
         if (status == NV_ERR_TIMEOUT)
@@ -309,6 +315,13 @@ static NV_STATUS _issueRpcLarge
     {
         if (entryLength > remainingSize)
             entryLength = remainingSize;
+
+        ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+        if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED))
+        {
+            // Zero out the entire RPC message header to clear the state of previous chunk.
+            portMemSet(vgpu_rpc_message_header_v, 0, sizeof(rpc_message_header_v));
+        }
 
         portMemCopy(rpc_message, entryLength, pBuf8, entryLength);
 

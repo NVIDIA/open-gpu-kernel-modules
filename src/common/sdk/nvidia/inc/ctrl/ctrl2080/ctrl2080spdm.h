@@ -58,13 +58,8 @@
 typedef struct RM_GSP_SPDM_CC_INIT_CTX {
     NvU32         guestId;         // To indicate CC guest Id, VM0, VM1 ... etc
 
-    NvU8          dmaIdx;          // To indicate DMA engine which DMA idx is needed
 
     NvU64_ALIGN32 dmaAddr; // The address RM allocate in SYS memory or FB memory.
-
-    NvU32         addrSpace;         // The memory type allocated by RM (SYS or FB ...)
-
-    NvU32         regionId;         // If memory is in WPR, this is a WPR id.
 
     NvU32         rmBufferSizeInByte;         // The memort size allocated by RM(exclude NV_SPDM_DESC_HEADER)
 
@@ -118,10 +113,6 @@ typedef struct RM_GSP_SPDM_CC_CTRL_CTX {
     NvU32 guestId;     // To indicate CC client Id, VM0, VM1 ... etc
 
     NvU32 endpointId;     // To indicate SPDM endpoint Id
-
-    NvU32 ctrlCode;     // control code
-
-    NvU32 ctrlParam;     // Associated with ctrlCode
 
 } RM_GSP_SPDM_CC_CTRL_CTX;
 typedef struct RM_GSP_SPDM_CC_CTRL_CTX *PRM_GSP_SPDM_CC_CTRL_CTX;
@@ -214,24 +205,26 @@ typedef union RM_GSP_SPDM_CMD *PRM_GSP_SPDM_CMD;
  * SPDM message structure.
  */
 typedef struct RM_GSP_SPDM_MSG {
-    NvU8  msgType;
+    NvU8   msgType;
 
-    NvU32 version;
+    NvU32  version;
 
-    NvU32 guestId;
+    NvU32  guestId;
 
-    NvU32 endpointId;
+    NvU32  endpointId;
 
     // status returned from GSP message infrastructure.
-    NvU32 status;
+    NvU32  status;
 
-    NvU32 rsvd1;
+    NvU32  rsvd1;
 
-    NvU32 rsvd2;
+    NvU32  rsvd2;
 
-    NvU32 rsvd3;
+    NvU32  rsvd3;
 
-    NvU32 rsvd4;
+    NvU32  rsvd4;
+
+    NvBool rsvd5;
 } RM_GSP_SPDM_MSG;
 typedef struct RM_GSP_SPDM_MSG *PRM_GSP_SPDM_MSG;
 

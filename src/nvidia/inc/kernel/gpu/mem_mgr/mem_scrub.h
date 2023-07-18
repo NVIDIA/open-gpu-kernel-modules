@@ -36,6 +36,7 @@
 #include "vgpu/vgpu_guest_pma_scrubber.h"
 #if !defined(SRT_BUILD)
 #include "gpu/mem_mgr/ce_utils.h"
+#include "gpu/mem_mgr/sec2_utils.h"
 #endif
 
 struct OBJGPU;
@@ -88,7 +89,13 @@ typedef struct OBJMEMSCRUB {
 #if !defined(SRT_BUILD)
     // Scrubber uses ceUtils to manage CE channel
     CeUtils                           *pCeUtils;
-#endif
+
+    // Scrubber uses sec2Utils to manage SEC2 channel
+    Sec2Utils                         *pSec2Utils;
+#endif //  !defined(SRT_BUILD)
+    // Engine used for scrubbing 
+    NvU32                              engineType;
+
     struct OBJGPU                     *pGpu;
     VGPU_GUEST_PMA_SCRUB_BUFFER_RING   vgpuScrubBuffRing;
     NvBool                             bVgpuScrubberEnabled;

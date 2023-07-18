@@ -833,7 +833,7 @@ kgspService_TU102
         // provides RM a chance to handle it so we have better debugability
         // into GSP-RISCV issues.
         //
-        kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+        kgspDumpGspLogs(pKernelGsp, NV_FALSE);
         kgspHealthCheck_HAL(pGpu, pKernelGsp);
     }
     if (intrStatus & DRF_DEF(_PFALCON, _FALCON_IRQSTAT, _SWGEN0, _TRUE))

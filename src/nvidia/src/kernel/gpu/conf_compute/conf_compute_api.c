@@ -76,7 +76,7 @@ confComputeApiCtrlCmdSystemGetCapabilities_IMPL
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_NONE;
-    if (pSys->cpuInfo.bSEVCapable)
+    if ((sysGetStaticConfig(pSys))->bOsSevEnabled)
     {
         pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_AMD_SEV;
     }

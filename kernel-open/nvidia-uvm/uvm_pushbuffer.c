@@ -449,21 +449,68 @@ static uvm_pushbuffer_chunk_t *gpfifo_to_chunk(uvm_pushbuffer_t *pushbuffer, uvm
     return chunk;
 }
 
-void uvm_pushbuffer_mark_completed(uvm_pushbuffer_t *pushbuffer, uvm_gpfifo_entry_t *gpfifo)
+static void decrypt_push(uvm_channel_t *channel, uvm_gpfifo_entry_t *gpfifo)
+{
+    NV_STATUS status;
+    NvU32 auth_tag_offset;
+    void *auth_tag_cpu_va;
+    void *push_protected_cpu_va;
+    void *push_unprotected_cpu_va;
+    NvU32 pushbuffer_offset = gpfifo->pushbuffer_offset;
+    NvU32 push_info_index = gpfifo->push_info - channel->push_infos;
+    uvm_pushbuffer_t *pushbuffer = channel->pool->manager->pushbuffer;
+    uvm_push_crypto_bundle_t *crypto_bundle = channel->conf_computing.push_crypto_bundles + push_info_index;
+
+    if (channel->conf_computing.push_crypto_bundles == NULL)
+        return;
+
+    // When the crypto bundle is used, the push size cannot be zero
+    if (crypto_bundle->push_size == 0)
+        return;
+
+    UVM_ASSERT(!uvm_channel_is_wlc(channel));
+    UVM_ASSERT(!uvm_channel_is_lcic(channel));
+
+    push_protected_cpu_va = (char *)get_base_cpu_va(pushbuffer) + pushbuffer_offset;
+    push_unprotected_cpu_va = (char *)uvm_rm_mem_get_cpu_va(pushbuffer->memory_unprotected_sysmem) + pushbuffer_offset;
+    auth_tag_offset = push_info_index * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
+    auth_tag_cpu_va = (char *)uvm_rm_mem_get_cpu_va(channel->conf_computing.push_crypto_bundle_auth_tags) +
+                              auth_tag_offset;
+
+    status = uvm_conf_computing_cpu_decrypt(channel,
+                                            push_protected_cpu_va,
+                                            push_unprotected_cpu_va,
+                                            &crypto_bundle->iv,
+                                            crypto_bundle->push_size,
+                                            auth_tag_cpu_va);
+
+    // A decryption failure here is not fatal because it does not
+    // prevent UVM from running fine in the future and cannot be used
+    // maliciously to leak information or otherwise derail UVM from its
+    // regular duties.
+    UVM_ASSERT_MSG_RELEASE(status == NV_OK, "Pushbuffer decryption failure: %s\n", nvstatusToString(status));
+
+    // Avoid reusing the bundle across multiple pushes
+    crypto_bundle->push_size = 0;
+}
+
+void uvm_pushbuffer_mark_completed(uvm_channel_t *channel, uvm_gpfifo_entry_t *gpfifo)
 {
     uvm_pushbuffer_chunk_t *chunk;
-    uvm_push_info_t *push_info = gpfifo->push_info;
     bool need_to_update_chunk = false;
+    uvm_push_info_t *push_info = gpfifo->push_info;
+    uvm_pushbuffer_t *pushbuffer = channel->pool->manager->pushbuffer;
 
     UVM_ASSERT(gpfifo->type == UVM_GPFIFO_ENTRY_TYPE_NORMAL);
 
     chunk = gpfifo_to_chunk(pushbuffer, gpfifo);
 
-    if (push_info->on_complete != NULL)
+    if (push_info->on_complete != NULL) {
+        decrypt_push(channel, gpfifo);
         push_info->on_complete(push_info->on_complete_data);
-
-    push_info->on_complete = NULL;
-    push_info->on_complete_data = NULL;
+        push_info->on_complete = NULL;
+        push_info->on_complete_data = NULL;
+    }
 
     uvm_spin_lock(&pushbuffer->lock);
 

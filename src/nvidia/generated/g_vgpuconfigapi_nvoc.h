@@ -80,6 +80,7 @@ struct VgpuConfigApi {
     NV_STATUS (*__vgpuconfigapiCtrlCmdPgpuGetMultiVgpuSupportInfo__)(struct VgpuConfigApi *, NVA081_CTRL_PGPU_GET_MULTI_VGPU_SUPPORT_INFO_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdGetVgpuDriversCaps__)(struct VgpuConfigApi *, NVA081_CTRL_GET_VGPU_DRIVER_CAPS_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_SET_PGPU_INFO_PARAMS *);
+    NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS *);
     NvBool (*__vgpuconfigapiShareCallback__)(struct VgpuConfigApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__vgpuconfigapiCheckMemInterUnmap__)(struct VgpuConfigApi *, NvBool);
     NV_STATUS (*__vgpuconfigapiGetOrAllocNotifShare__)(struct VgpuConfigApi *, NvHandle, NvHandle, struct NotifShare **);
@@ -159,6 +160,7 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struc
 #define vgpuconfigapiCtrlCmdPgpuGetMultiVgpuSupportInfo(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdPgpuGetMultiVgpuSupportInfo_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdGetVgpuDriversCaps(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdGetVgpuDriversCaps_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo_DISPATCH(pVgpuConfigApi, pParams)
+#define vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) vgpuconfigapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define vgpuconfigapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vgpuconfigapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define vgpuconfigapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) vgpuconfigapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
@@ -295,6 +297,12 @@ NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo_IMPL(struct VgpuConfigApi *p
 
 static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_SET_PGPU_INFO_PARAMS *pParams) {
     return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo__(pVgpuConfigApi, pParams);
+}
+
+NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS *pParams);
+
+static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS *pParams) {
+    return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId__(pVgpuConfigApi, pParams);
 }
 
 static inline NvBool vgpuconfigapiShareCallback_DISPATCH(struct VgpuConfigApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {

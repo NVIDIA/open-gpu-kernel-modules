@@ -211,6 +211,7 @@
 #include <linux/highmem.h>
 
 #include <linux/nodemask.h>
+#include <linux/memory.h>
 
 #include <linux/workqueue.h>        /* workqueue                        */
 #include "nv-kthread-q.h"           /* kthread based queue              */

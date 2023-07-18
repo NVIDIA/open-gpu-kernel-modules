@@ -776,15 +776,6 @@ static NV_STATUS test_timestamp_on_gpu(uvm_gpu_t *gpu)
     NvU32 i;
     NvU64 last_stamp = 0;
 
-    // TODO: Bug 3988992: [UVM][HCC] RFE - Support encrypted semaphore for secure CE channels
-    // This test is waived when Confidential Computing is enabled because it
-    // assumes that CPU can directly read the result of a semaphore timestamp
-    // operation. Instead the operation needs to be follower up by an encrypt
-    // -decrypt trip to be accessible to CPU. This will be cleaner and simpler
-    // once encrypted semaphores are available.
-    if (uvm_conf_computing_mode_enabled(gpu))
-        return NV_OK;
-
     for (i = 0; i < 10; ++i) {
         status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, &push, "Releasing a timestamp");
         if (status != NV_OK)

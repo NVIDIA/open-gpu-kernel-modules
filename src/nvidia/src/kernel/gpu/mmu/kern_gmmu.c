@@ -45,6 +45,7 @@
 #include "vgpu/rpc.h"
 #include "kernel/gpu/intr/engine_idx.h"
 
+#include "kernel/gpu/conf_compute/ccsl.h"
 
 static void _kgmmuInitRegistryOverrides(OBJGPU *pGpu, KernelGmmu *pKernelGmmu);
 
@@ -184,6 +185,10 @@ NV_STATUS kgmmuStateInitLocked_IMPL
     }
 
     status = _kgmmuInitStaticInfo(pGpu, pKernelGmmu);
+    if (status != NV_OK)
+    {
+        return status;
+    }
 
     return status;
 }
@@ -2447,4 +2452,36 @@ kgmmuGetFaultBufferGenCnt_IMPL
 )
 {
     return pKernelGmmu->mmuFaultBuffer[gfid].faultBufferGenerationCounter;
+}
+
+void *
+kgmmuGetShadowFaultBufferCslContext_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu,
+    FAULT_BUFFER_TYPE type
+)
+{
+    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+    if (!gpuIsCCFeatureEnabled(pGpu))
+    {
+        return NULL;
+    }
+
+    NV_ASSERT_OR_RETURN(
+        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED),
+        NULL);
+
+    switch (type)
+    {
+        case NON_REPLAYABLE_FAULT_BUFFER:
+            return pConfCompute->pNonReplayableFaultCcslCtx;
+        case REPLAYABLE_FAULT_BUFFER:
+            return pConfCompute->pReplayableFaultCcslCtx;
+        default:
+            break;
+    }
+
+    return NULL;
 }

@@ -934,6 +934,53 @@ nvlink_core_train_intranode_conns_from_swcfg_to_active_non_ALI
 
 /**
  * Train intranode connections associated with a list of links to HS
+ * using non-ALI sequence
+ *
+ * @param[in]  links      Array of links to train
+ * @param[in]  numLinks   Number of links in the array
+ *
+ * return NVL_SUCCESS if the connections train successfully
+ */
+NvlStatus
+nvlink_core_train_intranode_conns_from_off_to_active_ALI
+(
+    nvlink_link **pLinks,
+    NvU32         numLinks
+)
+{
+    NvlStatus status       = NVL_SUCCESS;
+    NvlStatus returnStatus = NVL_SUCCESS;
+    NvU32     i;
+
+    if ((pLinks == NULL) || (numLinks == 0))
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: No links to train to ACTIVE\n",
+            __FUNCTION__));
+
+        return NVL_ERR_GENERIC;
+    }
+
+    for (i = 0; i < numLinks; ++i)
+    {
+        if (pLinks[i] == NULL)
+            continue;
+
+        status = pLinks[i]->link_handlers->ali_training(pLinks[i]);
+        if (status != NVL_SUCCESS)
+        {
+            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: failed to send ALI link training on link 0x%x\n",
+            __FUNCTION__, pLinks[i]->linkNumber));
+            returnStatus = status;
+        }
+    }
+
+    return returnStatus;
+}
+
+/**
+ * Train intranode connections associated with a list of links to HS
  * using ALT sequence
  *
  * @param[in]  conns      Array of connections to train

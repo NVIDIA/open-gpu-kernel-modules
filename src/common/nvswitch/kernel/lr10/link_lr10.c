@@ -43,40 +43,68 @@
 #include "nvswitch/lr10/dev_nvlipt_ip.h"
 #include "nvswitch/lr10/dev_nport_ip.h"
 
-#define NUM_SWITCH_WITH_DISCONNETED_REMOTE_LINK 8 // This must be incremented if any entries are added to the array below
+#define NUM_SWITCH_WITH_DISCONNETED_REMOTE_LINK 12 // This must be incremented if any entries are added to the array below
 lr10_links_connected_to_disabled_remote_end nvswitchDisconnetedRemoteLinkMasks[] =
 {
     {
-        0x8,        // switchPhysicalId
-        0x56A000500 //linkMask
+        0x8,         // switchPhysicalId
+        0x56A000500, // accessLinkMask
+        0xFF00FF     // trunkLinkMask
     },
     {
-        0x9,        // switchPhysicalId
-        0x509009900 //linkMask
+        0x9,         // switchPhysicalId
+        0x509009900, // accessLinkMask
+        0xFF00FF     // trunkLinkMask
     },
     {
-        0xb,        // switchPhysicalId
-        0x56A000600 //linkMask
+        0xa,         // switchPhysicalId
+        0x0,         // accessLinkMask
+        0xFF00FF     // trunkLinkMask
     },
     {
-        0xc,        // switchPhysicalId
-        0x4A9009400 //linkMask
+        0xb,         // switchPhysicalId
+        0x56A000600, // accessLinkMask
+        0xFF00FF     // trunkLinkMask
     },
     {
-        0x18,       // switchPhysicalId
-        0x56A000500 //linkMask
+        0xc,         // switchPhysicalId
+        0x4A9009400, // accessLinkMask
+        0xFF00FF     // trunkLinkMask
     },
     {
-        0x19,       // switchPhysicalId
-        0x509009900 //linkMask
+        0xd,         // switchPhysicalId
+        0x0,         // accessLinkMask
+        0xFF00FF     // trunkLinkMask
     },
     {
-        0x1b,       // switchPhysicalId
-        0x56A000600 //linkMask
+        0x18,        // switchPhysicalId
+        0x56A000500, // accessLinkMask
+        0xFF00FF     // trunkLinkMask
     },
     {
-        0x1c,       // switchPhysicalId
-        0x4A9009400 //linkMask
+        0x19,        // switchPhysicalId
+        0x509009900, // accessLinkMask
+        0xFF00FF     // trunkLinkMask
+    },
+    {
+        0x1a,        // switchPhysicalId
+        0x0,         // accessLinkMask
+        0xFF00FF     // trunkLinkMask
+    },
+    {
+        0x1b,        // switchPhysicalId
+        0x56A000600, // accessLinkMask
+        0xFF00FF     // trunkLinkMask
+    },
+    {
+        0x1c,        // switchPhysicalId
+        0x4A9009400, // accessLinkMask
+        0xFF00FF     // trunkLinkMask
+    },
+    {
+        0x1d,        // switchPhysicalId
+        0x0,         // accessLinkMask
+        0xFF00FF     // trunkLinkMask
     },
 };
 ct_assert(sizeof(nvswitchDisconnetedRemoteLinkMasks)/sizeof(lr10_links_connected_to_disabled_remote_end) == NUM_SWITCH_WITH_DISCONNETED_REMOTE_LINK);
@@ -841,7 +869,6 @@ nvswitch_corelib_set_dl_link_mode_lr10
 
     if (nvswitch_does_link_need_termination_enabled(device, link))
     {
-
         if (mode == NVLINK_LINKSTATE_INITPHASE1)
         {
             status = nvswitch_link_termination_setup(device, link);
@@ -2372,6 +2399,8 @@ nvswitch_load_link_disable_settings_lr10
     NvU32 val;
     NVLINK_CONFIG_DATA_LINKENTRY *vbios_link_entry = NULL;
     NVSWITCH_BIOS_NVLINK_CONFIG *bios_config;
+    NvlStatus status;
+    lr10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
 
     bios_config = nvswitch_get_bios_nvlink_config(device);
     if ((bios_config == NULL) || (bios_config->bit_address == 0))
@@ -2412,15 +2441,16 @@ nvswitch_load_link_disable_settings_lr10
                 __FUNCTION__, link->linkNumber);
             return;
         }
-        val = FLD_SET_DRF(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_MODE_CTRL, _LINK_DISABLE,
-                          _DISABLED, val);
-        NVSWITCH_LINK_WR32_LR10(device, link->linkNumber,
-                NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SYSTEM_LINK_MODE_CTRL, val);
 
-        // Set link to invalid and unregister from corelib
-        device->link[link->linkNumber].valid = NV_FALSE;
-        nvlink_lib_unregister_link(link);
-        nvswitch_destroy_link(link);
+        status = nvswitch_link_termination_setup(device, link);
+        if (status != NVL_SUCCESS)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: Failed to enable termination on link #%d\n", __FUNCTION__, link->linkNumber);
+            return;
+        }
+        // add link to disabledRemoteEndLinkMask
+        chip_device->disabledRemoteEndLinkMask |= NVBIT64(link->linkNumber);
 
         return;
     }
@@ -2488,6 +2518,8 @@ nvswitch_does_link_need_termination_enabled_lr10
     NvU32 i;
     NvU32 physicalId;
     lr10_device *chip_device;
+    NvU32 numNvswitches;
+    NvlStatus status;
 
     physicalId = nvswitch_read_physical_id(device);
     chip_device = NVSWITCH_GET_CHIP_DEVICE_LR10(device);
@@ -2510,15 +2542,29 @@ nvswitch_does_link_need_termination_enabled_lr10
         chip_device->disabledRemoteEndLinkMask = 0;
         if (nvlink_lib_is_registerd_device_with_reduced_config())
         {
-        for (i = 0; i < NUM_SWITCH_WITH_DISCONNETED_REMOTE_LINK; ++i)
-        {
-            if (nvswitchDisconnetedRemoteLinkMasks[i].switchPhysicalId == physicalId)
+            for (i = 0; i < NUM_SWITCH_WITH_DISCONNETED_REMOTE_LINK; ++i)
             {
-                chip_device->disabledRemoteEndLinkMask =
-                                nvswitchDisconnetedRemoteLinkMasks[i].linkMask;
-                break;
+                if (nvswitchDisconnetedRemoteLinkMasks[i].switchPhysicalId == physicalId)
+                {
+                    chip_device->disabledRemoteEndLinkMask |=
+                                    nvswitchDisconnetedRemoteLinkMasks[i].accessLinkMask;
+
+                    status = nvlink_lib_return_device_count_by_type(NVLINK_DEVICE_TYPE_NVSWITCH, &numNvswitches);
+                    if (status != NVL_SUCCESS)
+                    {
+                        NVSWITCH_PRINT(device, ERROR,
+                                        "%s: Failed to get nvswitch device count!\n", __FUNCTION__);
+                        break;
+                    }
+                    
+                    if (numNvswitches <= NVSWITCH_NUM_DEVICES_PER_DELTA_LR10)
+                    {
+                        chip_device->disabledRemoteEndLinkMask |= 
+                                    nvswitchDisconnetedRemoteLinkMasks[i].trunkLinkMask;
+                    }
+                    break;
+                }
             }
-        }
         }
 
         chip_device->bDisabledRemoteEndLinkMaskCached = NV_TRUE;

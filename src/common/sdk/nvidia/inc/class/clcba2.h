@@ -112,6 +112,9 @@ typedef volatile struct _clcba2_tag0 {
 #define NVCBA2_EXECUTE_TIMESTAMP                                                5:5
 #define NVCBA2_EXECUTE_TIMESTAMP_DISABLE                                        (0x00000000)
 #define NVCBA2_EXECUTE_TIMESTAMP_ENABLE                                         (0x00000001)
+#define NVCBA2_EXECUTE_PHYSICAL_SCRUBBER                                        6:6
+#define NVCBA2_EXECUTE_PHYSICAL_SCRUBBER_DISABLE                                (0x00000000)
+#define NVCBA2_EXECUTE_PHYSICAL_SCRUBBER_ENABLE                                 (0x00000001)
 
 // Class definitions
 #define NVCBA2_DECRYPT_COPY_SIZE_MAX_BYTES                                      (2*1024*1024)
@@ -133,6 +136,10 @@ typedef volatile struct _clcba2_tag0 {
 #define NVCBA2_ERROR_OS_APPLICATION                                             (0x0000000D)
 #define NVCBA2_ERROR_INVALID_CTXSW_REQUEST                                      (0x0000000E)
 #define NVCBA2_ERROR_BUFFER_OVERFLOW                                            (0x0000000F)
+#define NVCBA2_ERROR_SCRUBBER_FAILURE                                           (0x00000019)
+#define NVCBA2_ERROR_SCRUBBER_INVALD_ADDRESS                                    (0x0000001a)
+#define NVCBA2_ERROR_SCRUBBER_INSUFFICIENT_PERMISSIONS                          (0x0000001b)
+#define NVCBA2_ERROR_SCRUBBER_MUTEX_ACQUIRE_FAILURE                             (0x0000001c)
 
 #ifdef __cplusplus
 };     /* extern "C" */

@@ -45,6 +45,9 @@
 #include "nvstatus.h"
 #include "rmapi/rs_utils.h"
 #include "core/locks.h"
+
+#include "gpu/conf_compute/conf_compute.h"
+
 #include "class/cl0050.h"
 #include "class/clb0b5.h"   // MAXWELL_DMA_COPY_A
 #include "class/clc0b5.h"   // PASCAL_DMA_COPY_A
@@ -158,8 +161,20 @@ scrubberConstruct
             }
             FOR_EACH_VALID_GPU_INSTANCE_END();
         }
-
-        NV_ASSERT_OK_OR_GOTO(status, objCreate(&pScrubber->pCeUtils, pHeap, CeUtils, pGpu, pKernelMIGGPUInstance, &ceUtilsAllocParams), destroyscrublist);
+        ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+        if ((pConfCompute != NULL) &&
+            (pConfCompute->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED)))
+        {
+            NV_ASSERT_OK_OR_GOTO(status, objCreate(&pScrubber->pSec2Utils, pHeap, Sec2Utils, pGpu, pKernelMIGGPUInstance),
+               destroyscrublist);
+            pScrubber->engineType = NV2080_ENGINE_TYPE_SEC2;
+        }
+        else
+        {
+            NV_ASSERT_OK_OR_GOTO(status, objCreate(&pScrubber->pCeUtils, pHeap, CeUtils, pGpu, pKernelMIGGPUInstance, &ceUtilsAllocParams),
+               destroyscrublist);
+            pScrubber->engineType = NV2080_ENGINE_TYPE_COPY2;
+        }
         NV_ASSERT_OK_OR_GOTO(status, pmaRegMemScrub(pPma, pScrubber), destroyscrublist);
     }
 
@@ -194,7 +209,17 @@ _isScrubWorkPending(
     }
     else
     {
-        if (pScrubber->lastSubmittedWorkId != ceutilsUpdateProgress(pScrubber->pCeUtils))
+        NvU64 lastCompleted;
+        if (pScrubber->engineType ==  NV2080_ENGINE_TYPE_SEC2)
+        {
+            lastCompleted = sec2utilsUpdateProgress(pScrubber->pSec2Utils);
+        }
+        else
+        {
+            lastCompleted = ceutilsUpdateProgress(pScrubber->pCeUtils);
+        }
+
+        if (pScrubber->lastSubmittedWorkId != lastCompleted)
             workPending = NV_TRUE;
     }
     return workPending;
@@ -268,7 +293,14 @@ scrubberDestruct
 
     portMemFree(pScrubber->pScrubList);
     {
-        objDelete(pScrubber->pCeUtils);
+        if (pScrubber->engineType == NV2080_ENGINE_TYPE_SEC2)
+        {
+            objDelete(pScrubber->pSec2Utils);
+        }
+        else
+        {
+            objDelete(pScrubber->pCeUtils);
+        }
     }
 
     portSyncMutexRelease(pScrubber->pScrubberMutex);
@@ -383,7 +415,7 @@ scrubSubmitPages
     *pSize  = 0;
     *ppList = pScrubList;
 
-    NV_PRINTF(LEVEL_INFO, "submitting pages, pageCount:%llx\n", pageCount);
+    NV_PRINTF(LEVEL_INFO, "submitting pages, pageCount = 0x%llx chunkSize = 0x%llx\n", pageCount, chunkSize);
 
     freeEntriesInList = _scrubGetFreeEntries(pScrubber);
     if (freeEntriesInList < pageCount)
@@ -750,7 +782,10 @@ _scrubWaitAndSave
     while (currentCompletedId < (pScrubber->lastSeenIdByClient + itemsToSave))
     {
         {
-            ceutilsServiceInterrupts(pScrubber->pCeUtils);
+            if (pScrubber->engineType == NV2080_ENGINE_TYPE_SEC2)
+                sec2utilsServiceInterrupts(pScrubber->pSec2Utils);
+            else
+                ceutilsServiceInterrupts(pScrubber->pCeUtils);
         }
         currentCompletedId = _scrubCheckProgress(pScrubber);
     }
@@ -857,7 +892,10 @@ _scrubCheckProgress
     }
     else
     {
-        lastSWSemaphoreDone = ceutilsUpdateProgress(pScrubber->pCeUtils);
+        if (pScrubber->engineType ==  NV2080_ENGINE_TYPE_SEC2)
+            lastSWSemaphoreDone = sec2utilsUpdateProgress(pScrubber->pSec2Utils);
+        else
+            lastSWSemaphoreDone = ceutilsUpdateProgress(pScrubber->pCeUtils);
     }
     
     pScrubber->lastSWSemaphoreDone = lastSWSemaphoreDone;
@@ -882,24 +920,32 @@ _scrubMemory
 {
     NV_STATUS status = NV_OK;
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
-    CEUTILS_MEMSET_PARAMS memsetParams = {0};
-    
-    status = memdescCreate(&pMemDesc, pScrubber->pGpu, size, 0, NV_TRUE,
-                           ADDR_FBMEM, dstCpuCacheAttrib, MEMDESC_FLAGS_NONE);
-    NV_ASSERT_OR_RETURN(status == NV_OK, status);
+    NV_ASSERT_OK_OR_RETURN(memdescCreate(&pMemDesc, pScrubber->pGpu, size, 0, NV_TRUE,
+                                          ADDR_FBMEM, dstCpuCacheAttrib, MEMDESC_FLAGS_NONE));
 
     memdescDescribe(pMemDesc, ADDR_FBMEM, base, size);
 
-    memsetParams.pMemDesc = pMemDesc;
-    memsetParams.length = size;
-    memsetParams.flags = NV0050_CTRL_MEMSET_FLAGS_ASYNC | NV0050_CTRL_MEMSET_FLAGS_PIPELINED;
-
-    status = ceutilsMemset(pScrubber->pCeUtils, &memsetParams);
-    if (status == NV_OK)
+    if (pScrubber->engineType ==  NV2080_ENGINE_TYPE_SEC2)
     {
+        SEC2UTILS_MEMSET_PARAMS memsetParams = {0};
+        memsetParams.pMemDesc = pMemDesc;
+        memsetParams.length = size;
+
+        NV_ASSERT_OK_OR_GOTO(status, sec2utilsMemset(pScrubber->pSec2Utils, &memsetParams), cleanup);
+        pScrubber->lastSubmittedWorkId = memsetParams.submittedWorkId;
+    }
+    else
+    {
+        CEUTILS_MEMSET_PARAMS memsetParams = {0};
+        memsetParams.pMemDesc = pMemDesc;
+        memsetParams.length = size;
+        memsetParams.flags = NV0050_CTRL_MEMSET_FLAGS_ASYNC | NV0050_CTRL_MEMSET_FLAGS_PIPELINED;
+
+        NV_ASSERT_OK_OR_GOTO(status, ceutilsMemset(pScrubber->pCeUtils, &memsetParams), cleanup);
         pScrubber->lastSubmittedWorkId = memsetParams.submittedWorkId;
     }
 
+cleanup:
     memdescDestroy(pMemDesc);
     return status;
 }

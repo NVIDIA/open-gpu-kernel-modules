@@ -177,4 +177,28 @@ NV_STATUS uvm_conf_computing_cpu_decrypt(uvm_channel_t *channel,
                                          const UvmCslIv *src_iv,
                                          size_t size,
                                          const void *auth_tag_buffer);
+
+// CPU decryption of a single replayable fault, encrypted by GSP-RM.
+//
+// Replayable fault decryption depends not only on the encrypted fault contents,
+// and the authentication tag, but also on the plaintext valid bit associated
+// with the fault.
+//
+// When decrypting data previously encrypted by the Copy Engine, use
+// uvm_conf_computing_cpu_decrypt instead.
+//
+// Locking: this function must be invoked while holding the replayable ISR lock.
+NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
+                                           void *dst_plain,
+                                           const void *src_cipher,
+                                           const void *auth_tag_buffer,
+                                           NvU8 valid);
+
+// Increment the CPU-side decrypt IV of the CSL context associated with
+// replayable faults. The function is a no-op if the given increment is zero.
+//
+// The IV associated with a fault CSL context is a 64-bit counter.
+//
+// Locking: this function must be invoked while holding the replayable ISR lock.
+void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu, NvU64 increment);
 #endif // __UVM_CONF_COMPUTING_H__

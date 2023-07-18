@@ -77,7 +77,7 @@ NV_STATUS
 confComputeKeyStoreInit_GH100(ConfidentialCompute *pConfCompute)
 {
     NvU32          index;
-    cryptoBundle_t (*keySlotLocalPtr)[];
+    cryptoBundle_t (*pKeyStore)[];
 
     NV_PRINTF(LEVEL_INFO, "Initializing keystore.\n");
 
@@ -90,26 +90,26 @@ confComputeKeyStoreInit_GH100(ConfidentialCompute *pConfCompute)
 
     portMemSet(pConfCompute->m_keySlot, 0, (NvLength) sizeof(keySlot_t));
 
-    keySlotLocalPtr = pConfCompute->m_keySlot;
+    pKeyStore = pConfCompute->m_keySlot;
 
     // GSP key slots don't have a channel counter.
     for (index = 0; index < CC_KEYSPACE_GSP_SIZE; index++)
     {
-        (*keySlotLocalPtr)[index].type = NO_CHAN_COUNTER;
+        (*pKeyStore)[index].type = NO_CHAN_COUNTER;
     }
 
     // SEC2 key slots are a mix of encryption / decryption with channel counter and HMAC.
     ct_assert(CC_KEYSPACE_SEC2_SIZE == 4);
-    
-    (*keySlotLocalPtr)[index++].type = CRYPT_COUNTER;
-    (*keySlotLocalPtr)[index++].type = HMAC_COUNTER;
-    (*keySlotLocalPtr)[index++].type = CRYPT_COUNTER;
-    (*keySlotLocalPtr)[index++].type = HMAC_COUNTER;
+
+    (*pKeyStore)[index++].type = CRYPT_COUNTER;
+    (*pKeyStore)[index++].type = HMAC_COUNTER;
+    (*pKeyStore)[index++].type = CRYPT_COUNTER;
+    (*pKeyStore)[index++].type = HMAC_COUNTER;
 
     // The remaining LCE key slots are all encryption / decryption with channel counter.
     for (; index < CC_KEYSPACE_TOTAL_SIZE; index++)
     {
-        (*keySlotLocalPtr)[index].type = CRYPT_COUNTER;
+        (*pKeyStore)[index].type = CRYPT_COUNTER;
     }
 
     return NV_OK;
@@ -120,9 +120,12 @@ confComputeKeyStoreDeinit_GH100(ConfidentialCompute *pConfCompute)
 {
     NV_PRINTF(LEVEL_INFO, "Deinitializing keystore.\n");
 
-    portMemSet(pConfCompute->m_keySlot, 0, (NvLength) sizeof(keySlot_t));
-    confComputeKeyStoreClearExportMasterKey_HAL(pConfCompute);
-    portMemFree(pConfCompute->m_keySlot);
+    if (pConfCompute->m_keySlot != NULL)
+    {
+        portMemSet(pConfCompute->m_keySlot, 0, (NvLength) sizeof(keySlot_t));
+        confComputeKeyStoreClearExportMasterKey_HAL(pConfCompute);
+        portMemFree(pConfCompute->m_keySlot);
+    }
 }
 
 void
@@ -137,20 +140,49 @@ void
 NV_STATUS
 confComputeKeyStoreDeriveKey_GH100(ConfidentialCompute *pConfCompute, NvU32 globalKeyId)
 {
-    NvU32           slotIndex = getKeySlotFromGlobalKeyId(globalKeyId);
-    cryptoBundle_t (*keySlotLocalPtr)[];
-    
-    keySlotLocalPtr = pConfCompute->m_keySlot;
+    const NvU32    slotIndex = getKeySlotFromGlobalKeyId(globalKeyId);
+    cryptoBundle_t (*pKeyStore)[];
+
+    pKeyStore = pConfCompute->m_keySlot;
 
     NV_PRINTF(LEVEL_INFO, "Deriving key for global key ID %x.\n", globalKeyId);
 
-    if (!libspdm_hkdf_sha256_expand(pConfCompute->m_exportMasterKey, sizeof(pConfCompute->m_exportMasterKey),
-                                    (const uint8_t *)(CC_GKEYID_GET_STR(globalKeyId)),
-                                    (NvLength)portStringLength(CC_GKEYID_GET_STR(globalKeyId)),
-                                    (uint8_t *)(*keySlotLocalPtr)[slotIndex].cryptBundle.key,
-                                    sizeof((*keySlotLocalPtr)[slotIndex].cryptBundle.key)))
+    // SEC2 HMAC keys are not generated from the EMK but from the encryption/decryption key.
+    if ((globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_USER)) ||
+        (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)))
     {
-        return NV_ERR_FATAL_ERROR;
+        NvU32 sourceSlotIndex = 0;
+
+        switch (CC_GKEYID_GET_LKEYID(globalKeyId))
+        {
+            case CC_LKEYID_CPU_SEC2_HMAC_USER:
+                sourceSlotIndex = getKeySlotFromGlobalKeyId(
+                    CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_USER));
+                break;
+            case CC_LKEYID_CPU_SEC2_HMAC_KERN:
+                sourceSlotIndex = getKeySlotFromGlobalKeyId(
+                    CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_KERN));
+                break;
+        }
+
+        if (!libspdm_sha256_hash_all((const void *)(*pKeyStore)[sourceSlotIndex].cryptBundle.key,
+                                     sizeof((*pKeyStore)[sourceSlotIndex].cryptBundle.key),
+                                     (uint8_t *)(*pKeyStore)[slotIndex].hmacBundle.key))
+        {
+            return NV_ERR_FATAL_ERROR;
+        }
+    }
+    else
+    {
+        if (!libspdm_hkdf_sha256_expand(pConfCompute->m_exportMasterKey,
+                                        sizeof(pConfCompute->m_exportMasterKey),
+                                        (const uint8_t *)(CC_GKEYID_GET_STR(globalKeyId)),
+                                        (size_t)portStringLength(CC_GKEYID_GET_STR(globalKeyId)),
+                                        (uint8_t *)(*pKeyStore)[slotIndex].cryptBundle.key,
+                                        sizeof((*pKeyStore)[slotIndex].cryptBundle.key)))
+        {
+            return NV_ERR_FATAL_ERROR;
+        }
     }
 
     // LCEs will return an error / interrupt if the key is all 0s.
@@ -159,7 +191,7 @@ confComputeKeyStoreDeriveKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
     {
         for (NvU32 index = 0; index < CC_AES_256_GCM_KEY_SIZE_DWORD; index++)
         {
-            if ((*keySlotLocalPtr)[slotIndex].cryptBundle.key[index] != 0)
+            if ((*pKeyStore)[slotIndex].cryptBundle.key[index] != 0)
             {
                 return NV_OK;
             }
@@ -167,7 +199,6 @@ confComputeKeyStoreDeriveKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
 
         return NV_ERR_FATAL_ERROR;
     }
-
     return NV_OK;
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -181,14 +212,14 @@ confComputeKeyStoreDepositIvMask_GH100
 )
 {
     NvU32 slotNumber = getKeySlotFromGlobalKeyId(globalKeyId);
-    cryptoBundle_t (*keySlotLocalPtr)[];
-    
-    keySlotLocalPtr = pConfCompute->m_keySlot;
+    cryptoBundle_t (*pKeyStore)[];
+
+    pKeyStore = pConfCompute->m_keySlot;
 
     NV_PRINTF(LEVEL_INFO, "Depositing IV mask for global key ID %x.\n", globalKeyId);
 
-    portMemCopy((*keySlotLocalPtr)[slotNumber].cryptBundle.ivMask,
-                sizeof((*keySlotLocalPtr)[slotNumber].cryptBundle.ivMask),
+    portMemCopy((*pKeyStore)[slotNumber].cryptBundle.ivMask,
+                sizeof((*pKeyStore)[slotNumber].cryptBundle.ivMask),
                 ivMask, CC_AES_256_GCM_IV_SIZE_BYTES);
 }
 
@@ -257,13 +288,13 @@ confComputeKeyStoreRetrieveViaKeyId_GH100
     CC_KMB              *keyMaterialBundle
 )
 {
-    NvU32          slotNumber      = getKeySlotFromGlobalKeyId(globalKeyId);
-    cryptoBundle_t (*keySlotLocalPtr)[];    
-    
-    keySlotLocalPtr = pConfCompute->m_keySlot;
+    NvU32          slotNumber = getKeySlotFromGlobalKeyId(globalKeyId);
+    cryptoBundle_t (*pKeyStore)[];
+
+    pKeyStore = pConfCompute->m_keySlot;
 
     NV_PRINTF(LEVEL_INFO, "Retrieving KMB from slot number = %d and type is %d.\n",
-              slotNumber, (*keySlotLocalPtr)[slotNumber].type);
+              slotNumber, (*pKeyStore)[slotNumber].type);
 
     if ((slotNumber % 2) == 1)
     {
@@ -297,12 +328,12 @@ confComputeKeyStoreRetrieveViaKeyId_GH100
 
         if (includeSecrets)
         {
-            keyMaterialBundle->encryptBundle = (*keySlotLocalPtr)[slotNumber].cryptBundle;
+            keyMaterialBundle->encryptBundle = (*pKeyStore)[slotNumber].cryptBundle;
         }
         else
         {
             portMemCopy(keyMaterialBundle->encryptBundle.iv, sizeof(keyMaterialBundle->encryptBundle.iv),
-                        (*keySlotLocalPtr)[slotNumber].cryptBundle.iv, CC_AES_256_GCM_IV_SIZE_BYTES);
+                        (*pKeyStore)[slotNumber].cryptBundle.iv, CC_AES_256_GCM_IV_SIZE_BYTES);
         }
     }
 
@@ -311,34 +342,33 @@ confComputeKeyStoreRetrieveViaKeyId_GH100
     {
         incrementChannelCounter(pConfCompute, slotNumber + 1);
 
-        switch ((*keySlotLocalPtr)[slotNumber + 1].type)
+        switch ((*pKeyStore)[slotNumber + 1].type)
         {
             case NO_CHAN_COUNTER:
             case CRYPT_COUNTER:
                 if (includeSecrets)
                 {
-                    keyMaterialBundle->decryptBundle = (*keySlotLocalPtr)[slotNumber + 1].cryptBundle;
+                    keyMaterialBundle->decryptBundle = (*pKeyStore)[slotNumber + 1].cryptBundle;
                 }
                 else
                 {
                     portMemCopy(keyMaterialBundle->decryptBundle.iv, sizeof(keyMaterialBundle->decryptBundle.iv),
-                                (*keySlotLocalPtr)[slotNumber].cryptBundle.iv, CC_AES_256_GCM_IV_SIZE_BYTES);
+                                (*pKeyStore)[slotNumber].cryptBundle.iv, CC_AES_256_GCM_IV_SIZE_BYTES);
                 }
                 keyMaterialBundle->bIsWorkLaunch = NV_FALSE;
                 break;
             case HMAC_COUNTER:
                 if (includeSecrets)
                 {
-                    keyMaterialBundle->hmacBundle = (*keySlotLocalPtr)[slotNumber + 1].hmacBundle;
+                    keyMaterialBundle->hmacBundle = (*pKeyStore)[slotNumber + 1].hmacBundle;
                 }
                 else
                 {
                     portMemCopy(keyMaterialBundle->hmacBundle.nonce, sizeof(keyMaterialBundle->hmacBundle.nonce),
-                                (*keySlotLocalPtr)[slotNumber].hmacBundle.nonce, CC_AES_256_GCM_IV_SIZE_BYTES);
+                                (*pKeyStore)[slotNumber].hmacBundle.nonce, CC_HMAC_NONCE_SIZE_BYTES);
                 }
                 keyMaterialBundle->bIsWorkLaunch = NV_TRUE;
                 break;
-
         }
     }
 
@@ -525,23 +555,23 @@ incrementChannelCounter
 )
 {
     NvU64          channelCounter = getChannelCounter(pConfCompute, slotNumber);
-    cryptoBundle_t (*keySlotLocalPtr)[]; 
-    
-    keySlotLocalPtr = pConfCompute->m_keySlot;
+    cryptoBundle_t (*pKeyStore)[];
+
+    pKeyStore = pConfCompute->m_keySlot;
 
     channelCounter++;
 
-    switch ((*keySlotLocalPtr)[slotNumber].type)
+    switch ((*pKeyStore)[slotNumber].type)
     {
         case NO_CHAN_COUNTER:
             break;
         case CRYPT_COUNTER:
-            (*keySlotLocalPtr)[slotNumber].cryptBundle.iv[2] = NvU64_HI32(channelCounter);
-            (*keySlotLocalPtr)[slotNumber].cryptBundle.iv[1] = NvU64_LO32(channelCounter);
+            (*pKeyStore)[slotNumber].cryptBundle.iv[2] = NvU64_HI32(channelCounter);
+            (*pKeyStore)[slotNumber].cryptBundle.iv[1] = NvU64_LO32(channelCounter);
             break;
         case HMAC_COUNTER:
-            (*keySlotLocalPtr)[slotNumber].hmacBundle.nonce[7] = NvU64_HI32(channelCounter);
-            (*keySlotLocalPtr)[slotNumber].hmacBundle.nonce[6] = NvU64_LO32(channelCounter);
+            (*pKeyStore)[slotNumber].hmacBundle.nonce[7] = NvU64_HI32(channelCounter);
+            (*pKeyStore)[slotNumber].hmacBundle.nonce[6] = NvU64_LO32(channelCounter);
             break;
     }
 }
@@ -579,20 +609,20 @@ getChannelCounter
     NvU32                slotNumber
 )
 {
-    cryptoBundle_t (*keySlotLocalPtr)[];     
-    
-    keySlotLocalPtr = pConfCompute->m_keySlot;
+    cryptoBundle_t (*pKeyStore)[];
 
-    switch ((*keySlotLocalPtr)[slotNumber].type)
+    pKeyStore = pConfCompute->m_keySlot;
+
+    switch ((*pKeyStore)[slotNumber].type)
     {
         case NO_CHAN_COUNTER:
             return 0;
         case CRYPT_COUNTER:
-            return CONCAT64((*keySlotLocalPtr)[slotNumber].cryptBundle.iv[2],
-                            (*keySlotLocalPtr)[slotNumber].cryptBundle.iv[1]);
+            return CONCAT64((*pKeyStore)[slotNumber].cryptBundle.iv[2],
+                            (*pKeyStore)[slotNumber].cryptBundle.iv[1]);
         case HMAC_COUNTER:
-            return CONCAT64((*keySlotLocalPtr)[slotNumber].hmacBundle.nonce[7],
-                            (*keySlotLocalPtr)[slotNumber].hmacBundle.nonce[6]);
+            return CONCAT64((*pKeyStore)[slotNumber].hmacBundle.nonce[7],
+                            (*pKeyStore)[slotNumber].hmacBundle.nonce[6]);
         default:
             NV_ASSERT_OR_RETURN(NV_FALSE, 0);
     }

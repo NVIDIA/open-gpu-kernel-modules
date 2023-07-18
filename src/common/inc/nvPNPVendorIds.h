@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009 - 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009 - 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -443,6 +443,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "SAN",    _VENDOR_NAME_ENTRY("Sanyo Electric Co.,Ltd.")           },
     { "SCC",    _VENDOR_NAME_ENTRY("SORD")                              },
     { "SCD",    _VENDOR_NAME_ENTRY("Sanyo")                             },
+    { "SDC",    _VENDOR_NAME_ENTRY("Samsung Display Corp.")             },
     { "SDI",    _VENDOR_NAME_ENTRY("Samtron/Sigma Designs")             },
     { "SDT",    _VENDOR_NAME_ENTRY("Siemens AG")                        },
     { "SEA",    _VENDOR_NAME_ENTRY("Segate")                            },

@@ -852,6 +852,14 @@ typedef union UvmFaultMetadataPacket_tag
     NvU8 _padding[32];
 } UvmFaultMetadataPacket;
 
+// This struct shall not be accessed nor modified directly by UVM as it is
+// entirely managed by the RM layer
+typedef struct UvmCslContext_tag
+{
+    struct ccslContext_t *ctx;
+    void *nvidia_stack;
+} UvmCslContext;
+
 typedef struct UvmGpuFaultInfo_tag
 {
     struct
@@ -908,6 +916,10 @@ typedef struct UvmGpuFaultInfo_tag
         // a 16Byte authentication tag and a valid byte. Always NULL when
         // Confidential Computing is disabled.
         UvmFaultMetadataPacket *bufferMetadata;
+
+        // CSL context used for performing decryption of replayable faults when
+        // Confidential Computing is enabled.
+        UvmCslContext cslCtx;
 
         // Indicates whether UVM owns the replayable fault buffer.
         // The value of this field is always NV_TRUE When Confidential Computing
@@ -1046,14 +1058,6 @@ typedef UvmGpuPagingChannel *gpuPagingChannelHandle;
 typedef UvmGpuPagingChannelInfo gpuPagingChannelInfo;
 typedef UvmGpuPagingChannelAllocParams gpuPagingChannelAllocParams;
 typedef UvmPmaAllocationOptions gpuPmaAllocationOptions;
-
-// This struct shall not be accessed nor modified directly by UVM as it is
-// entirely managed by the RM layer
-typedef struct UvmCslContext_tag
-{
-    struct ccslContext_t *ctx;
-    void *nvidia_stack;
-} UvmCslContext;
 
 typedef struct UvmCslIv
 {

@@ -41,7 +41,6 @@ typedef struct NV_MEMORY_DESC_PARAMS {
     NvU32 cacheAttrib;
 } NV_MEMORY_DESC_PARAMS;
 
-
 /*
  * NV_CHANNEL_ALLOC_PARAMS.flags values.
  *
@@ -289,6 +288,8 @@ typedef struct NV_MEMORY_DESC_PARAMS {
 
 
 
+#define CC_CHAN_ALLOC_IV_SIZE_DWORD    3U
+#define CC_CHAN_ALLOC_NONCE_SIZE_DWORD 8U
 
 #define NV_CHANNEL_ALLOC_PARAMS_MESSAGE_ID (0x906fU)
 
@@ -330,6 +331,13 @@ typedef struct NV_CHANNEL_ALLOC_PARAMS {
     NV_DECLARE_ALIGNED(NV_MEMORY_DESC_PARAMS eccErrorNotifierMem, 8); // reserved
     NvU32    ProcessID;                 // reserved
     NvU32    SubProcessID;                 // reserved
+
+    // IV used for CPU-side encryption / GPU-side decryption.
+    NvU32    encryptIv[CC_CHAN_ALLOC_IV_SIZE_DWORD];          // reserved
+    // IV used for CPU-side decryption / GPU-side encryption.
+    NvU32    decryptIv[CC_CHAN_ALLOC_IV_SIZE_DWORD];          // reserved
+    // Nonce used CPU-side signing / GPU-side signature verification.
+    NvU32    hmacNonce[CC_CHAN_ALLOC_NONCE_SIZE_DWORD];       // reserved
 } NV_CHANNEL_ALLOC_PARAMS;
 
 typedef NV_CHANNEL_ALLOC_PARAMS NV_CHANNELGPFIFO_ALLOCATION_PARAMETERS;

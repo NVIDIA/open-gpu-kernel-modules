@@ -328,6 +328,27 @@ NvU32 nvlogGetFileLineFilterRules(NVLOG_FILELINE_FILTER *pFileLineFilter, NvU32 
  */
 void nvlogDumpToKernelLogIfEnabled(void);
 
+/**
+ * @param[in]   pCb   callback function to be called when nvlog buffers need to be flushed
+ * @param[in]   pData argument to pass to pCb
+ * @param[out]  ppCb  output callback data pointer
+ *
+ * @return NV_OK on success
+ */
+NV_STATUS nvlogRegisterFlushCb(void (*pCb)(void*), void *pData);
+
+/**
+ * @param[in] pCb   callback pCb to be deregistered
+ * @param[in] pData argument that pCb was registered with
+ */
+void nvlogDeregisterFlushCb(void (*pCb)(void*), void *pData);
+
+//
+// Run registered callbacks.
+// All callback list accesses are synchronised.
+//
+void nvlogRunFlushCbs(void);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif

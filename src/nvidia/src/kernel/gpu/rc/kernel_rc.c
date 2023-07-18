@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -184,7 +184,10 @@ _krcInitRegistryOverrides
     {
         pKernelRc->watchdog.flags |= WATCHDOG_FLAGS_DISABLED;
     }
-
+    else if (gpuIsCCFeatureEnabled(pGpu) && !gpuIsCCDevToolsModeEnabled(pGpu))
+    {
+        pKernelRc->watchdog.flags |= WATCHDOG_FLAGS_DISABLED;
+    }
 
     dword = 0;
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DO_LOG_RC_EVENTS, &dword) ==

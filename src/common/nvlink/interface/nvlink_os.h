@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,9 @@ extern "C" {
 #endif
 
 #include "nvlink_common.h"
+
+#define TOP_LEVEL_LOCKING_DISABLED 1 
+#define PER_LINK_LOCKING_DISABLED 1 
 
 #define NVLINK_FREE(x) nvlink_free((void *)x)
 
