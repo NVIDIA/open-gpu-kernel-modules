@@ -21,6 +21,10 @@ RpcVgpuPfRegRead32                 rpcVgpuPfRegRead32_STUB;  // TU10X, GA100, GA
 RpcDumpProtobufComponent           rpcDumpProtobufComponent_v18_12;
 RpcDumpProtobufComponent           rpcDumpProtobufComponent_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
+                                               // RPC:ECC_NOTIFIER_WRITE_ACK
+RpcEccNotifierWriteAck             rpcEccNotifierWriteAck_v23_05;
+RpcEccNotifierWriteAck             rpcEccNotifierWriteAck_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
                                                // RPC:ALLOC_MEMORY
 RpcAllocMemory                     rpcAllocMemory_v13_01;
 RpcAllocMemory                     rpcAllocMemory_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
@@ -2456,6 +2460,8 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcVgpuPfRegRead32 = rpcVgpuPfRegRead32_v15_00;
     if (IsIPVersionInRange(pRpc, 0x18120000, 0xFFFFFFFF))
        pRpcHal->rpcDumpProtobufComponent = rpcDumpProtobufComponent_v18_12;
+    if (IsIPVersionInRange(pRpc, 0x23050000, 0xFFFFFFFF))
+       pRpcHal->rpcEccNotifierWriteAck = rpcEccNotifierWriteAck_v23_05;
     if (IsIPVersionInRange(pRpc, 0x13010000, 0xFFFFFFFF))
        pRpcHal->rpcAllocMemory = rpcAllocMemory_v13_01;
     if (IsIPVersionInRange(pRpc, 0x12010000, 0xFFFFFFFF))
@@ -2526,6 +2532,7 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcVgpuPfRegRead32);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcDumpProtobufComponent);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcEccNotifierWriteAck);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcAllocMemory);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGpuExecRegOps);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRmfsInit);
@@ -3127,6 +3134,7 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
     {
         rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
         rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
+        rpcEccNotifierWriteAck_STUB,             // rpcEccNotifierWriteAck
         rpcAllocMemory_STUB,                     // rpcAllocMemory
         rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
         rpcRmfsInit_STUB,                        // rpcRmfsInit
@@ -3200,6 +3208,7 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
     {
         rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
         rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
+        rpcEccNotifierWriteAck_STUB,             // rpcEccNotifierWriteAck
         rpcAllocMemory_STUB,                     // rpcAllocMemory
         rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
         rpcRmfsInit_STUB,                        // rpcRmfsInit
@@ -3283,6 +3292,7 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
     {
         rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
         rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
+        rpcEccNotifierWriteAck_STUB,             // rpcEccNotifierWriteAck
         rpcAllocMemory_STUB,                     // rpcAllocMemory
         rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
         rpcRmfsInit_STUB,                        // rpcRmfsInit
@@ -3356,6 +3366,7 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
     {
         rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
         rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
+        rpcEccNotifierWriteAck_STUB,             // rpcEccNotifierWriteAck
         rpcAllocMemory_STUB,                     // rpcAllocMemory
         rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
         rpcRmfsInit_STUB,                        // rpcRmfsInit

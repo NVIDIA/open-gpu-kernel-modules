@@ -3055,7 +3055,7 @@ static NV_STATUS conf_computing_copy_pages_finish(uvm_va_block_t *block,
     void *auth_tag_buffer_base = uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag);
     void *staging_buffer_base = uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc);
 
-    UVM_ASSERT(uvm_channel_is_secure(push->channel));
+    UVM_ASSERT(uvm_conf_computing_mode_enabled(push->gpu));
 
     if (UVM_ID_IS_GPU(copy_state->dst.id))
         return NV_OK;
@@ -3106,7 +3106,7 @@ static void block_copy_push(uvm_va_block_t *block,
 
     uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
 
-    if (uvm_channel_is_secure(push->channel)) {
+    if (uvm_conf_computing_mode_enabled(gpu)) {
         if (UVM_ID_IS_CPU(copy_state->src.id))
             conf_computing_block_copy_push_cpu_to_gpu(block, copy_state, region, push);
         else
@@ -3134,19 +3134,18 @@ static NV_STATUS block_copy_end_push(uvm_va_block_t *block,
     //       at that point.
     uvm_push_end(push);
 
-    if ((push_status == NV_OK) && uvm_channel_is_secure(push->channel))
+    if ((push_status == NV_OK) && uvm_conf_computing_mode_enabled(push->gpu))
         push_status = conf_computing_copy_pages_finish(block, copy_state, push);
 
     tracker_status = uvm_tracker_add_push_safe(copy_tracker, push);
     if (push_status == NV_OK)
         push_status = tracker_status;
 
-    if (uvm_channel_is_secure(push->channel)) {
-        uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    if (uvm_conf_computing_mode_enabled(push->gpu)) {
         uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
 
         uvm_tracker_overwrite_with_push(&local_tracker, push);
-        uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool,
+        uvm_conf_computing_dma_buffer_free(&push->gpu->conf_computing.dma_buffer_pool,
                                            copy_state->dma_buffer,
                                            &local_tracker);
         copy_state->dma_buffer = NULL;
@@ -9612,15 +9611,9 @@ static uvm_prot_t compute_new_permission(uvm_va_block_t *va_block,
         if (uvm_processor_mask_empty(&revoke_processors))
             new_prot = UVM_PROT_READ_WRITE;
     }
-    if (logical_prot == UVM_PROT_READ_WRITE_ATOMIC) {
-        // HMM allocations with logical read/write/atomic permission can be
-        // upgraded without notifying the driver so assume read/write/atomic
-        // even if the fault is only for reading.
-        if (new_prot == UVM_PROT_READ_WRITE ||
-            (UVM_ID_IS_CPU(fault_processor_id) && uvm_va_block_is_hmm(va_block))) {
-            if (uvm_processor_mask_test(&va_space->has_native_atomics[uvm_id_value(new_residency)], fault_processor_id))
-                new_prot = UVM_PROT_READ_WRITE_ATOMIC;
-        }
+    if (logical_prot == UVM_PROT_READ_WRITE_ATOMIC && new_prot == UVM_PROT_READ_WRITE) {
+        if (uvm_processor_mask_test(&va_space->has_native_atomics[uvm_id_value(new_residency)], fault_processor_id))
+            new_prot = UVM_PROT_READ_WRITE_ATOMIC;
     }
 
     return new_prot;
@@ -9857,8 +9850,6 @@ out:
     return status == NV_OK ? tracker_status : status;
 }
 
-// TODO: Bug 1750144: check logical permissions from HMM to know what's the
-//       maximum allowed.
 uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block,
                                                         uvm_processor_id_t processor_id,
                                                         uvm_page_index_t page_index)
@@ -9935,14 +9926,18 @@ uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block
         // Exclude the processor for which the mapping protections are being computed
         uvm_processor_mask_clear(&write_mappings, processor_id);
 
-        // At this point, any processor with atomic mappings either has native atomics support to the
-        // processor with the resident copy or has disabled system-wide atomics. If the requesting
-        // processor has disabled system-wide atomics or has native atomics to that processor, we can
-        // map with ATOMIC privileges. Likewise, if there are no other processors with WRITE or ATOMIC
-        // mappings, we can map with ATOMIC privileges.
+        // At this point, any processor with atomic mappings either has native
+        // atomics support to the processor with the resident copy or has
+        // disabled system-wide atomics. If the requesting processor has
+        // disabled system-wide atomics or has native atomics to that processor,
+        // we can map with ATOMIC privileges. Likewise, if there are no other
+        // processors with WRITE or ATOMIC mappings, we can map with ATOMIC
+        // privileges. For HMM, don't allow GPU atomic access to remote mapped
+        // system memory even if there are no write mappings since CPU access
+        // can be upgraded without notification.
         if (!uvm_processor_mask_test(&va_space->system_wide_atomics_enabled_processors, processor_id) ||
             uvm_processor_mask_test(&va_space->has_native_atomics[uvm_id_value(residency)], processor_id) ||
-            uvm_processor_mask_empty(&write_mappings)) {
+            (uvm_processor_mask_empty(&write_mappings) && !uvm_va_block_is_hmm(va_block))) {
             return UVM_PROT_READ_WRITE_ATOMIC;
         }
 

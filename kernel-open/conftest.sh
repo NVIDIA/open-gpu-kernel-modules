@@ -445,6 +445,9 @@ compile_test() {
             #if defined(NV_ASM_PGTABLE_TYPES_H_PRESENT)
             #include <asm/pgtable_types.h>
             #endif
+            #if defined(NV_ASM_PAGE_H_PRESENT)
+            #include <asm/page.h>
+            #endif
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -466,6 +469,9 @@ compile_test() {
             #if defined(NV_ASM_SET_MEMORY_H_PRESENT)
             #if defined(NV_ASM_PGTABLE_TYPES_H_PRESENT)
             #include <asm/pgtable_types.h>
+            #endif
+            #if defined(NV_ASM_PAGE_H_PRESENT)
+            #include <asm/page.h>
             #endif
             #include <asm/set_memory.h>
             #else
@@ -524,6 +530,9 @@ compile_test() {
             #if defined(NV_ASM_PGTABLE_TYPES_H_PRESENT)
             #include <asm/pgtable_types.h>
             #endif
+            #if defined(NV_ASM_PAGE_H_PRESENT)
+            #include <asm/page.h>
+            #endif
             #include <asm/set_memory.h>
             #else
             #include <asm/cacheflush.h>
@@ -550,6 +559,9 @@ compile_test() {
             #if defined(NV_ASM_SET_MEMORY_H_PRESENT)
             #if defined(NV_ASM_PGTABLE_TYPES_H_PRESENT)
             #include <asm/pgtable_types.h>
+            #endif
+            #if defined(NV_ASM_PAGE_H_PRESENT)
+            #include <asm/page.h>
             #endif
             #include <asm/set_memory.h>
             #else
@@ -695,6 +707,50 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_IOREMAP_WC_PRESENT" "" "functions"
         ;;
 
+        ioremap_driver_hardened)
+            #
+            # Determine if the ioremap_driver_hardened() function is present.
+            # It does not exist on all architectures.
+            # TODO: Update the commit ID once the API is upstreamed.
+            #
+            CODE="
+            #include <asm/io.h>
+            void conftest_ioremap_driver_hardened(void) {
+                ioremap_driver_hardened();
+            }"
+
+            compile_check_conftest "$CODE" "NV_IOREMAP_DRIVER_HARDENED_PRESENT" "" "functions"
+        ;;
+
+        ioremap_driver_hardened_wc)
+            #
+            # Determine if the ioremap_driver_hardened_wc() function is present.
+            # It does not exist on all architectures.
+            # TODO: Update the commit ID once the API is upstreamed.
+            #
+            CODE="
+            #include <asm/io.h>
+            void conftest_ioremap_driver_hardened_wc(void) {
+                ioremap_driver_hardened_wc();
+            }"
+
+            compile_check_conftest "$CODE" "NV_IOREMAP_DRIVER_HARDENED_WC_PRESENT" "" "functions"
+        ;;
+
+        ioremap_cache_shared)
+            #
+            # Determine if the ioremap_cache_shared() function is present.
+            # It does not exist on all architectures.
+            # TODO: Update the commit ID once the API is upstreamed.
+            #
+            CODE="
+            #include <asm/io.h>
+            void conftest_ioremap_cache_shared(void) {
+                ioremap_cache_shared();
+            }"
+
+            compile_check_conftest "$CODE" "NV_IOREMAP_CACHE_SHARED_PRESENT" "" "functions"
+        ;;
         dom0_kernel_present)
             # Add config parameter if running on DOM0.
             if [ -n "$VGX_BUILD" ]; then
@@ -4888,40 +4944,22 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_PCI_CHANNEL_STATE_PRESENT" "" "types"
         ;;
 
-        pgprot_decrypted)
+        cc_platform_has)
             #
-            # Determine if the macro 'pgprot_decrypted()' is present.
+            # Determine if 'cc_platform_has()' is present.
             #
-            # Added by commit 21729f81ce8a ("x86/mm: Provide general kernel
-            # support for memory encryption") in v4.14 (2017-07-18)
+            # Added by commit aa5a461171f9 ("x86/sev: Add an x86 version of
+            # cc_platform_has()") in v5.15.3 (2021-10-04)
             CODE="
-            #include <asm/pgtable.h>
-
-            void conftest_pgprot_decrypted(void)
-                if(pgprot_decrypted()) {}
-            }"
-
-            compile_check_conftest "$CODE" "NV_PGPROT_DECRYPTED_PRESENT" "" "functions"
-
-        ;;
-
-        cc_mkdec)
-            #
-            # Determine if cc_mkdec() is present.
-            #
-            # cc_mkdec() by commit b577f542f93c ("x86/coco: Add API to handle
-            # encryption mask) in v5.18-rc1 (2022-02-22).
-            #
-            CODE="
-            #if defined(NV_ASM_COCO_H_PRESENT)
-            #include <asm/coco.h>
+            #if defined(NV_LINUX_CC_PLATFORM_H_PRESENT)
+            #include <linux/cc_platform.h>
             #endif
 
-            void conftest_cc_mkdec(void) {
-                cc_mkdec();
+            void conftest_cc_platfrom_has(void) {
+                cc_platform_has();
             }"
 
-            compile_check_conftest "$CODE" "NV_CC_MKDEC_PRESENT" "" "functions"
+            compile_check_conftest "$CODE" "NV_CC_PLATFORM_PRESENT" "" "functions"
         ;;
 
         drm_prime_pages_to_sg_has_drm_device_arg)
@@ -6636,8 +6674,8 @@ case "$5" in
             if [ "$VFIO_IOMMU_PRESENT" != "0" ] && [ "$KVM_PRESENT" != "0" ] ; then
 
                 # On x86_64, vGPU requires MDEV framework to be present.
-                # On aarch64, vGPU requires vfio-pci-core framework to be present.
-                if ([ "$ARCH" = "arm64" ] && [ "$VFIO_PCI_CORE_PRESENT" != "0" ]) ||
+                # On aarch64, vGPU requires MDEV or vfio-pci-core framework to be present.
+                if ([ "$ARCH" = "arm64" ] && ([ "$VFIO_MDEV_PRESENT" != "0" ] || [ "$VFIO_PCI_CORE_PRESENT" != "0" ])) ||
                    ([ "$ARCH" = "x86_64" ] && [ "$VFIO_MDEV_PRESENT" != "0" ];) then
                     exit 0
                 fi
@@ -6649,8 +6687,8 @@ case "$5" in
                 echo "CONFIG_VFIO_IOMMU_TYPE1";
             fi
 
-            if [ "$ARCH" = "arm64" ] &&  [ "$VFIO_PCI_CORE_PRESENT" = "0" ]; then
-                echo "CONFIG_VFIO_PCI_CORE";
+            if [ "$ARCH" = "arm64" ] && [ "$VFIO_MDEV_PRESENT" = "0" ] && [ "$VFIO_PCI_CORE_PRESENT" = "0" ]; then
+                echo "either CONFIG_VFIO_MDEV or CONFIG_VFIO_PCI_CORE";
             fi
 
             if [ "$ARCH" = "x86_64" ] && [ "$VFIO_MDEV_PRESENT" = "0" ]; then

@@ -2712,8 +2712,8 @@ void osInitSystemStaticConfig(SYS_STATIC_CONFIG *pConfig)
 {
     pConfig->bIsNotebook = rm_is_system_notebook();
     pConfig->osType = nv_get_os_type();
-    pConfig->osSevStatus = os_sev_status;
-    pConfig->bOsSevEnabled = os_sev_enabled;
+    pConfig->bOsCCEnabled = os_cc_enabled;
+    pConfig->bOsCCTdxEnabled = os_cc_tdx_enabled;
 }
 
 NvU32 osApiLockAcquireConfigureFlags(NvU32 flags)
@@ -4161,24 +4161,34 @@ osAllocPagesNode
     return status;
 }
 
-NV_STATUS
+void
 osAllocAcquirePage
 (
-    NvU64      pAddress
+    NvU64 pAddress,
+    NvU32 pageCount
 )
 {
-    os_get_page(pAddress);
-    return NV_OK;
+    NvU32 i;
+
+    for (i = 0; i < pageCount; i++)
+    {
+        os_get_page(pAddress + (i << os_page_shift));
+    }
 }
 
-NV_STATUS
+void
 osAllocReleasePage
 (
-    NvU64       pAddress
+    NvU64 pAddress,
+    NvU32 pageCount
 )
 {
-    os_put_page(pAddress);
-    return NV_OK;
+    NvU32 i;
+
+    for (i = 0; i < pageCount; i++)
+    {
+        os_put_page(pAddress + (i << os_page_shift));
+    }
 }
 
 /*
@@ -4260,6 +4270,12 @@ NvU64
 osGetPageSize(void)
 {
     return os_page_size;
+}
+
+NvU8
+osGetPageShift(void)
+{
+    return os_page_shift;
 }
 
 

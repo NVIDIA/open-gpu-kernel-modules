@@ -321,10 +321,6 @@ typedef struct UvmGpuChannelAllocParams_tag
     // The next two fields store UVM_BUFFER_LOCATION values
     NvU32 gpFifoLoc;
     NvU32 gpPutLoc;
-
-    // Allocate the channel as secure. This flag should only be set when
-    // Confidential Compute is enabled.
-    NvBool secure;
 } UvmGpuChannelAllocParams;
 
 typedef struct UvmGpuPagingChannelAllocParams_tag
@@ -367,9 +363,6 @@ typedef struct
 
     // True if the CE can be used for P2P transactions
     NvBool p2p:1;
-
-    // True if the CE supports encryption
-    NvBool secure:1;
 
     // Mask of physical CEs assigned to this LCE
     //

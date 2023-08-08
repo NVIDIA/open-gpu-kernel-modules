@@ -511,7 +511,11 @@ static inline void nv_vfree(void *ptr, NvU64 size)
 
 static inline void *nv_ioremap(NvU64 phys, NvU64 size)
 {
+#if IS_ENABLED(CONFIG_INTEL_TDX_GUEST) && defined(NV_IOREMAP_DRIVER_HARDENED_PRESENT)
+    void *ptr = ioremap_driver_hardened(phys, size);
+#else
     void *ptr = ioremap(phys, size);
+#endif
     if (ptr)
         NV_MEMDBG_ADD(ptr, size);
     return ptr;
@@ -524,11 +528,11 @@ static inline void *nv_ioremap_nocache(NvU64 phys, NvU64 size)
 
 static inline void *nv_ioremap_cache(NvU64 phys, NvU64 size)
 {
-#if defined(NV_IOREMAP_CACHE_PRESENT)
-    void *ptr = ioremap_cache(phys, size);
-    if (ptr)
-        NV_MEMDBG_ADD(ptr, size);
-    return ptr;
+    void *ptr = NULL;
+#if IS_ENABLED(CONFIG_INTEL_TDX_GUEST) && defined(NV_IOREMAP_CACHE_SHARED_PRESENT)
+    ptr = ioremap_cache_shared(phys, size);
+#elif defined(NV_IOREMAP_CACHE_PRESENT)
+    ptr = ioremap_cache(phys, size);
 #elif defined(NVCPU_PPC64LE)
     //
     // ioremap_cache() has been only implemented correctly for ppc64le with
@@ -543,25 +547,32 @@ static inline void *nv_ioremap_cache(NvU64 phys, NvU64 size)
     // (commit 40f1ce7fb7e8, kernel 3.0+) and that covers all kernels we
     // support on power.
     //
-    void *ptr = ioremap_prot(phys, size, pgprot_val(PAGE_KERNEL));
-    if (ptr)
-        NV_MEMDBG_ADD(ptr, size);
-    return ptr;
+    ptr = ioremap_prot(phys, size, pgprot_val(PAGE_KERNEL));
 #else
     return nv_ioremap(phys, size);
 #endif
+
+    if (ptr)
+        NV_MEMDBG_ADD(ptr, size);
+
+    return ptr;
 }
 
 static inline void *nv_ioremap_wc(NvU64 phys, NvU64 size)
 {
-#if defined(NV_IOREMAP_WC_PRESENT)
-    void *ptr = ioremap_wc(phys, size);
-    if (ptr)
-        NV_MEMDBG_ADD(ptr, size);
-    return ptr;
+    void *ptr = NULL;
+#if IS_ENABLED(CONFIG_INTEL_TDX_GUEST) && defined(NV_IOREMAP_DRIVER_HARDENED_WC_PRESENT)
+    ptr = ioremap_driver_hardened_wc(phys, size);
+#elif defined(NV_IOREMAP_WC_PRESENT)
+    ptr = ioremap_wc(phys, size);
 #else
     return nv_ioremap_nocache(phys, size);
 #endif
+
+    if (ptr)
+        NV_MEMDBG_ADD(ptr, size);
+
+    return ptr;
 }
 
 static inline void nv_iounmap(void *ptr, NvU64 size)
@@ -634,37 +645,24 @@ static NvBool nv_numa_node_has_memory(int node_id)
         free_pages(ptr, order);                      \
     }
 
-extern NvU64 nv_shared_gpa_boundary;
+static inline pgprot_t nv_sme_clr(pgprot_t prot)
+{
+#if defined(__sme_clr)
+    return __pgprot(__sme_clr(pgprot_val(prot)));
+#else
+    return prot;
+#endif // __sme_clr
+}
 
 static inline pgprot_t nv_adjust_pgprot(pgprot_t vm_prot, NvU32 extra)
 {
     pgprot_t prot = __pgprot(pgprot_val(vm_prot) | extra);
-#if defined(CONFIG_AMD_MEM_ENCRYPT) && defined(NV_PGPROT_DECRYPTED_PRESENT)
-    /*
-     * When AMD memory encryption is enabled, device memory mappings with the
-     * C-bit set read as 0xFF, so ensure the bit is cleared for user mappings.
-     *
-     * If cc_mkdec() is present, then pgprot_decrypted() can't be used.
-     */
-#if defined(NV_CC_MKDEC_PRESENT)
-    if (nv_shared_gpa_boundary != 0)
-    {
-        /*
-         * By design, a VM using vTOM doesn't see the SEV setting and
-         * for AMD with vTOM, *set* means decrypted.
-         */
-        prot =  __pgprot(nv_shared_gpa_boundary | (pgprot_val(vm_prot)));
-    }
-    else
-    {
-        prot =  __pgprot(__sme_clr(pgprot_val(vm_prot)));
-    }
-#else
-    prot = pgprot_decrypted(prot);
-#endif
-#endif
 
-    return prot;
+#if defined(pgprot_decrypted)
+    return pgprot_decrypted(prot);
+#else
+    return nv_sme_clr(prot);
+#endif // pgprot_decrypted
 }
 
 #if defined(PAGE_KERNEL_NOENC)
@@ -1324,7 +1322,7 @@ nv_dma_maps_swiotlb(struct device *dev)
      * SEV memory encryption") forces SWIOTLB to be enabled when AMD SEV 
      * is active in all cases.
      */
-    if (os_sev_enabled)
+    if (os_cc_enabled)
         swiotlb_in_use = NV_TRUE;
 #endif
 

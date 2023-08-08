@@ -66,6 +66,7 @@ typedef struct RPC_OBJ_IFACES {
 
 typedef NV_STATUS      RpcVgpuPfRegRead32(POBJGPU, POBJRPC, NvU64, NvU32*, NvU32);
 typedef NV_STATUS      RpcDumpProtobufComponent(POBJGPU, POBJRPC, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, NVDUMP_COMPONENT component);
+typedef NV_STATUS      RpcEccNotifierWriteAck(POBJGPU, POBJRPC);
 typedef NV_STATUS      RpcAllocMemory(POBJGPU, POBJRPC, NvHandle, NvHandle, NvHandle,
                                     NvU32, NvU32, MEMORY_DESCRIPTOR*);
 typedef NV_STATUS      RpcGpuExecRegOps(POBJGPU, POBJRPC, NvHandle, NvHandle,
@@ -100,6 +101,7 @@ typedef NV_STATUS      Rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *
 typedef struct RPC_HAL_IFACES {
     RpcVgpuPfRegRead32          *rpcVgpuPfRegRead32;          /* Read reg value from plugin */
     RpcDumpProtobufComponent    *rpcDumpProtobufComponent;    /* Dump a GSP component into the protobuf. */
+    RpcEccNotifierWriteAck      *rpcEccNotifierWriteAck;      /* ECC_NOTIFIER_WRITE_ACK */
     RpcAllocMemory              *rpcAllocMemory;              /* ALLOC_MEMORY */
     RpcGpuExecRegOps            *rpcGpuExecRegOps;            /* GPU_EXEC_REG_OPS */
     RpcRmfsInit                 *rpcRmfsInit;                 /* Resman File Streaming Init */
@@ -130,6 +132,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcVgpuPfRegRead32(_pGpu, _pRpc, _arg0, _pArg1, _arg2)
 #define rpcDumpProtobufComponent_HAL(_pGpu, _pRpc, _pPrbEnc, _pNvDumpState, _component)  \
         (_pRpc)->_hal.rpcDumpProtobufComponent(_pGpu, _pRpc, _pPrbEnc, _pNvDumpState, _component)
+#define rpcEccNotifierWriteAck_HAL(_pGpu, _pRpc)  \
+        (_pRpc)->_hal.rpcEccNotifierWriteAck(_pGpu, _pRpc)
 #define rpcAllocMemory_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _pArg5)  \
         (_pRpc)->_hal.rpcAllocMemory(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _pArg5)
 #define rpcGpuExecRegOps_HAL(_pGpu, _pRpc, _arg0, _arg1, _pArg2, _pArg3)  \

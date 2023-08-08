@@ -76,9 +76,13 @@ confComputeApiCtrlCmdSystemGetCapabilities_IMPL
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
     pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_NONE;
-    if ((sysGetStaticConfig(pSys))->bOsSevEnabled)
+    if ((sysGetStaticConfig(pSys))->bOsCCEnabled)
     {
         pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_AMD_SEV;
+        if ((sysGetStaticConfig(pSys))->bOsCCTdxEnabled)
+        {
+            pParams->cpuCapability = NV_CONF_COMPUTE_SYSTEM_CPU_CAPABILITY_INTEL_TDX;
+        }
     }
 
     pParams->gpusCapability = NV_CONF_COMPUTE_SYSTEM_GPUS_CAPABILITY_NONE;

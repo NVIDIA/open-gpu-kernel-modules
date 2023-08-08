@@ -121,6 +121,8 @@ bool uvm_hal_ampere_ce_memcopy_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t
         return true;
 
     if (uvm_channel_is_proxy(push->channel)) {
+        uvm_pushbuffer_t *pushbuffer;
+
         if (dst.is_virtual) {
             UVM_ERR_PRINT("Destination address of memcopy must be physical, not virtual\n");
             return false;
@@ -142,7 +144,8 @@ bool uvm_hal_ampere_ce_memcopy_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t
             return false;
         }
 
-        push_begin_gpu_va = uvm_pushbuffer_get_gpu_va_for_push(push->channel->pool->manager->pushbuffer, push);
+        pushbuffer = uvm_channel_get_pushbuffer(push->channel);
+        push_begin_gpu_va = uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push);
 
         if ((src.address < push_begin_gpu_va) || (src.address >= push_begin_gpu_va + uvm_push_get_size(push))) {
             UVM_ERR_PRINT("Source address of memcopy must point to pushbuffer\n");
@@ -177,10 +180,13 @@ bool uvm_hal_ampere_ce_memcopy_is_valid_c6b5(uvm_push_t *push, uvm_gpu_address_t
 // irrespective of the virtualization mode.
 void uvm_hal_ampere_ce_memcopy_patch_src_c6b5(uvm_push_t *push, uvm_gpu_address_t *src)
 {
+    uvm_pushbuffer_t *pushbuffer;
+
     if (!uvm_channel_is_proxy(push->channel))
         return;
 
-    src->address -= uvm_pushbuffer_get_gpu_va_for_push(push->channel->pool->manager->pushbuffer, push);
+    pushbuffer = uvm_channel_get_pushbuffer(push->channel);
+    src->address -= uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push);
 }
 
 bool uvm_hal_ampere_ce_memset_is_valid_c6b5(uvm_push_t *push,

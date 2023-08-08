@@ -4698,13 +4698,15 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
     pAllocInfo->gpFifoAllocParams.gpFifoOffset  = channel->gpFifo;
     pAllocInfo->gpFifoAllocParams.gpFifoEntries = channel->fifoEntries;
 
-    if (params->secure)
-        pAllocInfo->gpFifoAllocParams.flags = FLD_SET_DRF(OS04, _FLAGS, _CC_SECURE, _TRUE, pAllocInfo->gpFifoAllocParams.flags);
-
     if (isDeviceVoltaPlus(device))
     {
         if (gpuIsCCorApmFeatureEnabled(pGpu))
         {
+            // All channels are allocated as secure when the Confidential
+            // Computing feature is enabled.
+            pAllocInfo->gpFifoAllocParams.flags = FLD_SET_DRF(OS04, _FLAGS, _CC_SECURE, _TRUE,
+                                                              pAllocInfo->gpFifoAllocParams.flags);
+
             // USERD can be placed in one of the following locations
             // 1. Unprotected sysmem in case of both APM and HCC
             // 2. Unprotected vidmem in case of APM
@@ -6585,7 +6587,6 @@ static void setCeCaps(const NvU8 *rmCeCaps, gpuCeCaps *ceCaps)
     ceCaps->nvlinkP2p   = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_NVLINK_P2P);
     ceCaps->sysmem      = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_SYSMEM);
     ceCaps->p2p         = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_P2P);
-    ceCaps->secure      = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_CC_SECURE);
 }
 
 static NV_STATUS queryCopyEngines(struct gpuDevice *gpu, gpuCesCaps *cesCaps)

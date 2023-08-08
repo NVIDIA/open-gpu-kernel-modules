@@ -141,6 +141,51 @@ _kmemsysConfigureAtsPeers
     return NV_OK;
 }
 
+/*!
+ * @brief Remove local GPU's peer ATS config
+ *
+ * @param[in] pLocalGpu                Local GPU OBJGPU pointer
+ * @param[in] pLocalKernelMemorySystem Local GPU KernelMemorySystem pointer
+ * @param[in] peerId                   peer id from local GPU to remote GPU in
+ *                                     local GPU
+ *
+ * @return  NV_OK on success
+ */
+static
+NV_STATUS
+_kmemsysResetAtsPeerConfiguration
+(
+    OBJGPU             *pLocalGpu,
+    KernelMemorySystem *pLocalKernelMemorySystem,
+    NvU32               peerId
+)
+{
+    RM_API *pLocalRmApi = GPU_GET_PHYSICAL_RMAPI(pLocalGpu);
+    NV2080_CTRL_INTERNAL_MEMSYS_GET_LOCAL_ATS_CONFIG_PARAMS getParams = { 0 };
+    NV2080_CTRL_INTERNAL_MEMSYS_SET_PEER_ATS_CONFIG_PARAMS setParams = { 0 };
+
+    NV_ASSERT_OK_OR_RETURN(pLocalRmApi->Control(pLocalRmApi,
+                                           pLocalGpu->hInternalClient,
+                                           pLocalGpu->hInternalSubdevice,
+                                           NV2080_CTRL_CMD_INTERNAL_MEMSYS_GET_LOCAL_ATS_CONFIG,
+                                           &getParams,
+                                           sizeof(NV2080_CTRL_INTERNAL_MEMSYS_GET_LOCAL_ATS_CONFIG_PARAMS)));
+
+    setParams.peerId = peerId;
+    setParams.addrSysPhys = 0;
+    setParams.addrWidth = getParams.addrWidth;
+    setParams.mask = 0;
+    setParams.maskWidth = getParams.maskWidth;
+
+    NV_ASSERT_OK_OR_RETURN(pLocalRmApi->Control(pLocalRmApi,
+                                           pLocalGpu->hInternalClient,
+                                           pLocalGpu->hInternalSubdevice,
+                                           NV2080_CTRL_CMD_INTERNAL_MEMSYS_SET_PEER_ATS_CONFIG,
+                                           &setParams,
+                                           sizeof(NV2080_CTRL_INTERNAL_MEMSYS_SET_PEER_ATS_CONFIG_PARAMS)));
+
+    return NV_OK;
+}
 
 /**
  * @brief Setup one pair of ATS peers (non-chiplib configs)
@@ -215,6 +260,71 @@ _kmemsysSetupAtsPeers
 }
 
 /**
+ * @brief Remove one pair of ATS peers (non-chiplib configs)
+ *
+ * @param[in] pGpu                OBJGPU pointer
+ * @param[in] pKernelMemorySystem Kernel Memory System pointer
+ * @param[in] pRemoteGpu          OBJGPU pointer for the ATS peer
+ *
+ * @return  NV_OK on success
+ */
+static
+NV_STATUS
+_kmemsysRemoveAtsPeers
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    OBJGPU             *pRemoteGpu
+)
+{
+    NvU32         peer1         = BUS_INVALID_PEER;
+    NvU32         peer2         = BUS_INVALID_PEER;
+    NV_STATUS     status        = NV_OK;
+    KernelMemorySystem *pLocalKernelMs      = NULL;
+    KernelMemorySystem *pRemoteKernelMs     = NULL;
+    NvU32         attributes    = DRF_DEF(_P2PAPI, _ATTRIBUTES, _CONNECTION_TYPE, _NVLINK) |
+                                  DRF_DEF(_P2PAPI, _ATTRIBUTES, _LINK_TYPE, _SPA);
+
+    pLocalKernelMs      = pKernelMemorySystem;
+    pRemoteKernelMs     = GPU_GET_KERNEL_MEMORY_SYSTEM(pRemoteGpu);
+
+    peer1 = kbusGetPeerId_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), pRemoteGpu);
+    peer2 = kbusGetPeerId_HAL(pRemoteGpu, GPU_GET_KERNEL_BUS(pRemoteGpu), pGpu);
+
+    status = kbusRemoveP2PMapping_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), pRemoteGpu, GPU_GET_KERNEL_BUS(pRemoteGpu),
+                                      peer1, peer2, attributes);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if (pLocalKernelMs && pRemoteKernelMs &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED) &&
+        pRemoteGpu->getProperty(pRemoteGpu, PDB_PROP_GPU_ATS_SUPPORTED))
+    {
+        status = _kmemsysResetAtsPeerConfiguration(pGpu, pLocalKernelMs, peer1);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Removing ATS p2p config between GPU%u and GPU%u "
+                      "failed with status %x\n", pGpu->gpuInstance,
+                      pRemoteGpu->gpuInstance, status);
+        }
+
+        status = _kmemsysResetAtsPeerConfiguration(pRemoteGpu, pRemoteKernelMs, peer2);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Removinging ATS p2p config between GPU%u and GPU%u "
+                      "failed with status %x\n", pRemoteGpu->gpuInstance,
+                      pGpu->gpuInstance, status);
+        }
+    }
+
+    return NV_OK;
+}
+
+/**
  * @brief Setup ATS peer access. On GV100 and GH180, ATS peers use NVLINK.
  *
  * @param[in] pGpu                 OBJGPU pointer
@@ -258,4 +368,40 @@ kmemsysSetupAllAtsPeers_GV100
     return NV_OK;
 }
 
+/**
+ * @brief Remove ATS peer access. On GV100 and GH180, ATS peers use NVLINK.
+ *
+ * @param[in] pGpu                 OBJGPU pointer
+ * @param[in] pKernelMemorySystem  Kernel Memory System pointer
+ */
+void
+kmemsysRemoveAllAtsPeers_GV100
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    NvU32 gpuAttachCnt, gpuAttachMask, gpuInstance = 0;
+
+    NV_STATUS status     = NV_OK;
+    POBJGPU   pRemoteGpu = NULL;
+
+    // loop over all possible GPU pairs and remove the ATS config
+    gpumgrGetGpuAttachInfo(&gpuAttachCnt, &gpuAttachMask);
+    while ((pRemoteGpu = gpumgrGetNextGpu(gpuAttachMask, &gpuInstance)) != NULL)
+    {
+        if (pRemoteGpu == pGpu)
+            continue;
+
+        if (gpuIsGpuFullPower(pRemoteGpu) == NV_FALSE)
+            continue;
+
+        status = _kmemsysRemoveAtsPeers(pGpu, pKernelMemorySystem, pRemoteGpu);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to remove ATS peer access between GPU%d and GPU%d\n",
+                      pGpu->gpuInstance, pRemoteGpu->gpuInstance);
+        }
+    }
+}
 

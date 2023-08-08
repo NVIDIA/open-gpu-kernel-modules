@@ -221,6 +221,22 @@ kmemsysStatePostLoad_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+kmemsysStatePreUnload_IMPL
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU32 flags
+)
+{
+    if (IS_SILICON(pGpu) &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED))
+    {
+        kmemsysRemoveAllAtsPeers_HAL(pGpu, pKernelMemorySystem);
+    }
+    return NV_OK;
+}
+
 /*
  * Release the state accumulated in StateInit.
  * @param[in]  pGpu pointer to the GPU instance.

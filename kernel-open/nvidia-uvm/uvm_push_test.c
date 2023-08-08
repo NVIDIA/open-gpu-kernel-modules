@@ -40,10 +40,9 @@
 
 static NvU32 get_push_begin_size(uvm_channel_t *channel)
 {
-    if (uvm_channel_is_sec2(channel)) {
-        // SEC2 channels allocate CSL signature buffer at the beginning.
+    // SEC2 channels allocate CSL signature buffer at the beginning.
+    if (uvm_channel_is_sec2(channel))
         return UVM_CONF_COMPUTING_SIGN_BUF_MAX_SIZE + UVM_METHOD_SIZE;
-    }
 
     return 0;
 }
@@ -51,10 +50,14 @@ static NvU32 get_push_begin_size(uvm_channel_t *channel)
 // This is the storage required by a semaphore release.
 static NvU32 get_push_end_min_size(uvm_channel_t *channel)
 {
-    if (uvm_channel_is_ce(channel)) {
-        if (uvm_channel_is_wlc(channel)) {
-            // Space (in bytes) used by uvm_push_end() on a Secure CE channel.
-            // Note that Secure CE semaphore release pushes two memset and one
+    uvm_gpu_t *gpu = uvm_channel_get_gpu(channel);
+
+    if (uvm_conf_computing_mode_enabled(gpu)) {
+        if (uvm_channel_is_ce(channel)) {
+            // Space (in bytes) used by uvm_push_end() on a CE channel when
+            // the Confidential Computing feature is enabled.
+            //
+            // Note that CE semaphore release pushes two memset and one
             // encryption method on top of the regular release.
             // Memset size
             // -------------
@@ -75,43 +78,44 @@ static NvU32 get_push_end_min_size(uvm_channel_t *channel)
             //
             // TOTAL                            : 144 Bytes
 
-            // Same as CE + LCIC GPPut update + LCIC doorbell
-            return 24 + 144 + 24 + 24;
-        }
-        else if (uvm_channel_is_secure_ce(channel)) {
+            if (uvm_channel_is_wlc(channel)) {
+                // Same as CE + LCIC GPPut update + LCIC doorbell
+                return 24 + 144 + 24 + 24;
+            }
+
             return 24 + 144;
         }
-        // Space (in bytes) used by uvm_push_end() on a CE channel.
-        return 24;
-    }
-    else if (uvm_channel_is_sec2(channel)) {
+
+        UVM_ASSERT(uvm_channel_is_sec2(channel));
+
         // A perfectly aligned inline buffer in SEC2 semaphore release.
         // We add UVM_METHOD_SIZE because of the NOP method to reserve
         // UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES (the inline buffer.)
         return 48 + UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES + UVM_METHOD_SIZE;
     }
 
-    return 0;
+    UVM_ASSERT(uvm_channel_is_ce(channel));
+
+    // Space (in bytes) used by uvm_push_end() on a CE channel.
+    return 24;
 }
 
 static NvU32 get_push_end_max_size(uvm_channel_t *channel)
 {
-    if (uvm_channel_is_ce(channel)) {
-        if (uvm_channel_is_wlc(channel)) {
-            // WLC pushes are always padded to UVM_MAX_WLC_PUSH_SIZE
-            return UVM_MAX_WLC_PUSH_SIZE;
-        }
-        // Space (in bytes) used by uvm_push_end() on a CE channel.
-        return get_push_end_min_size(channel);
-    }
-    else if (uvm_channel_is_sec2(channel)) {
-        // Space (in bytes) used by uvm_push_end() on a SEC2 channel.
-        // Note that SEC2 semaphore release uses an inline buffer with alignment
-        // requirements. This is the "worst" case semaphore_release storage.
-        return 48 + UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES + UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT;
-    }
+    // WLC pushes are always padded to UVM_MAX_WLC_PUSH_SIZE
+    if (uvm_channel_is_wlc(channel))
+        return UVM_MAX_WLC_PUSH_SIZE;
 
-    return 0;
+    // Space (in bytes) used by uvm_push_end() on a SEC2 channel.
+    // Note that SEC2 semaphore release uses an inline buffer with alignment
+    // requirements. This is the "worst" case semaphore_release storage.
+    if (uvm_channel_is_sec2(channel))
+        return 48 + UVM_CSL_SIGN_AUTH_TAG_SIZE_BYTES + UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT;
+
+    UVM_ASSERT(uvm_channel_is_ce(channel));
+
+    // Space (in bytes) used by uvm_push_end() on a CE channel.
+    return get_push_end_min_size(channel);
 }
 
 static NV_STATUS test_push_end_size(uvm_va_space_t *va_space)
@@ -294,10 +298,19 @@ static NV_STATUS test_concurrent_pushes(uvm_va_space_t *va_space)
 {
     NV_STATUS status = NV_OK;
     uvm_gpu_t *gpu;
-    NvU32 i;
     uvm_push_t *pushes;
-    uvm_tracker_t tracker = UVM_TRACKER_INIT();
-    uvm_channel_type_t channel_type = UVM_CHANNEL_TYPE_GPU_INTERNAL;
+    uvm_tracker_t tracker;
+
+    // When the Confidential Computing feature is enabled, a channel reserved at
+    // the start of a push cannot be reserved again until that push ends. The
+    // test is waived, because the number of pushes it starts per pool exceeds
+    // the number of channels in the pool, so it would block indefinitely.
+    gpu = uvm_va_space_find_first_gpu(va_space);
+
+    if ((gpu != NULL) && uvm_conf_computing_mode_enabled(gpu))
+        return NV_OK;
+
+    uvm_tracker_init(&tracker);
 
     // As noted above, this test does unsafe things that would be detected by
     // lock tracking, opt-out.
@@ -310,16 +323,11 @@ static NV_STATUS test_concurrent_pushes(uvm_va_space_t *va_space)
     }
 
     for_each_va_space_gpu(gpu, va_space) {
+        NvU32 i;
 
-        // A secure channels reserved at the start of a push cannot be reserved
-        // again until that push ends. The test would block indefinitely
-        // if secure pools are not skipped, because the number of pushes started
-        // per pool exceeds the number of channels in the pool.
-        if (uvm_channel_type_requires_secure_pool(gpu, channel_type))
-            goto done;
         for (i = 0; i < UVM_PUSH_MAX_CONCURRENT_PUSHES; ++i) {
             uvm_push_t *push = &pushes[i];
-            status = uvm_push_begin(gpu->channel_manager, channel_type, push, "concurrent push %u", i);
+            status = uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, push, "concurrent push %u", i);
             TEST_CHECK_GOTO(status == NV_OK, done);
         }
         for (i = 0; i < UVM_PUSH_MAX_CONCURRENT_PUSHES; ++i) {

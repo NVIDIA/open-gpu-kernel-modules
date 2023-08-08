@@ -484,6 +484,7 @@ kbusStatePostLoad_GM107
         }
     }
 
+    // Call _kbusLinkP2P_GM107 only in case of Linked SLI and Unlinked SLI. Bug 4182245
     if ((pKernelBif != NULL)
         &&
         // RM managed P2P or restoring the HW state for OS resume
@@ -491,7 +492,9 @@ kbusStatePostLoad_GM107
          (flags & GPU_STATE_FLAGS_PM_TRANSITION))
         &&
         (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
-         !pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED)))
+         !pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED))
+        &&
+        !gpuIsSelfHosted(pGpu))
     {
         _kbusLinkP2P_GM107(pGpu, pKernelBus);
     }
@@ -538,6 +541,7 @@ kbusStateUnload_GM107
     if (IS_VIRTUAL(pGpu) && !(flags & GPU_STATE_FLAGS_PRESERVING))
         return NV_OK;
 
+    // Call kbusUnlinkP2P_HAL only in case of Linked SLI and Unliked SLI. Bug 4182245
     if ((pKernelBif != NULL)
         &&
         (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
@@ -545,7 +549,8 @@ kbusStateUnload_GM107
         &&
         // RM managed P2P or unconfiguring HW P2P for OS suspend/hibernate
         (!kbusIsP2pMailboxClientAllocated(pKernelBus) ||
-         (flags & GPU_STATE_FLAGS_PM_TRANSITION)))
+         (flags & GPU_STATE_FLAGS_PM_TRANSITION))
+        && !gpuIsSelfHosted(pGpu))
     {
         kbusUnlinkP2P_HAL(pGpu, pKernelBus);
     }
@@ -3526,9 +3531,12 @@ kbusStateDestroy_GM107
     // clean up private info block
     //
 
+
+    // Call _kbusDestroyP2P_GM107 only in case of Linked SLI and Unlinked SLI. Bug 4182245
     if ((pKernelBif != NULL) && ((!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
                                   !pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED)) &&
-                                 (kbusIsP2pInitialized(pKernelBus))))
+                                 (kbusIsP2pInitialized(pKernelBus))) && 
+                                 !gpuIsSelfHosted(pGpu))
     {
         (void)_kbusDestroyP2P_GM107(pGpu, pKernelBus);
     }

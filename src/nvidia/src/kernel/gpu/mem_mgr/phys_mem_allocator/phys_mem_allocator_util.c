@@ -41,7 +41,7 @@ static NvU64 osCountTailPages(NvU64 sysPagePhysAddr)
     return 0;
 }
 
-static void osAllocReleasePage(NvU64 sysPagePhysAddr)
+static void osAllocReleasePage(NvU64 sysPagePhysAddr, NvU32 pageCount)
 {
     return;
 }
@@ -49,6 +49,11 @@ static void osAllocReleasePage(NvU64 sysPagePhysAddr)
 static NV_STATUS osOfflinePageAtAddress(NvU64 address)
 {
     return NV_ERR_GENERIC;
+}
+
+static NvU8 osGetPageShift(void)
+{
+    return 0;
 }
 
 NV_STATUS scrubCheck(OBJMEMSCRUB *pScrubber, PSCRUB_NODE *ppList, NvU64 *size)
@@ -378,6 +383,10 @@ _pmaCleanupNumaReusePages
         // Since we set the NUMA_REUSE bit when we decide to reuse the pages,
         // we know exactly which pages to free both to OS and in PMA bitmap.
         //
+        NvU8 osPageShift = osGetPageShift();
+
+        NV_ASSERT_OR_RETURN(PMA_PAGE_SHIFT >= osPageShift, NV_ERR_INVALID_STATE);
+
         for (i = 0; i < numFrames; i++)
         {
             currentStatus = pPma->pMapInfo->pmaMapRead(pPma->pRegions[regId], (frameNum + i), NV_TRUE);
@@ -385,7 +394,7 @@ _pmaCleanupNumaReusePages
 
             if (currentStatus & ATTRIB_NUMA_REUSE)
             {
-                osAllocReleasePage(sysPagePhysAddr);
+                osAllocReleasePage(sysPagePhysAddr, 1 << (PMA_PAGE_SHIFT - osPageShift));
                 pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + i),
                                                           STATE_FREE, (STATE_MASK | ATTRIB_NUMA_REUSE));
             }
@@ -1245,7 +1254,7 @@ pmaRegisterBlacklistInfo
         alignedBlacklistAddr = NV_ALIGN_DOWN64(pBlacklistPageBase[blacklistEntryIn].physOffset, PMA_GRANULARITY);
         pmaSetBlockStateAttrib(pPma, alignedBlacklistAddr, PMA_GRANULARITY, ATTRIB_BLACKLIST, ATTRIB_BLACKLIST);
         pBlacklistChunk->bIsValid = NV_TRUE;
- 
+
         //
         // In NUMA systems, memory allocation comes directly from kernel, which
         // won't check for ATTRIB_BLACKLIST. So pages need to be blacklisted

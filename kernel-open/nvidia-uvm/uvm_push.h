@@ -377,11 +377,6 @@ static bool uvm_push_has_space(uvm_push_t *push, NvU32 free_space)
 NV_STATUS uvm_push_begin_fake(uvm_gpu_t *gpu, uvm_push_t *push);
 void uvm_push_end_fake(uvm_push_t *push);
 
-static bool uvm_push_is_fake(uvm_push_t *push)
-{
-    return !push->channel;
-}
-
 // Begin an inline data fragment in the push
 //
 // The inline data will be ignored by the GPU, but can be referenced from

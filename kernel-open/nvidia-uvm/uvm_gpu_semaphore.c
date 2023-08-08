@@ -579,8 +579,10 @@ static void uvm_gpu_semaphore_encrypted_payload_update(uvm_channel_t *channel, u
     void *auth_tag_cpu_addr = uvm_rm_mem_get_cpu_va(semaphore->conf_computing.auth_tag);
     NvU32 *gpu_notifier_cpu_addr = (NvU32 *)uvm_rm_mem_get_cpu_va(semaphore->conf_computing.notifier);
     NvU32 *payload_cpu_addr = (NvU32 *)uvm_rm_mem_get_cpu_va(semaphore->conf_computing.encrypted_payload);
+    uvm_gpu_t *gpu = uvm_channel_get_gpu(channel);
 
-    UVM_ASSERT(uvm_channel_is_secure_ce(channel));
+    UVM_ASSERT(uvm_conf_computing_mode_enabled(gpu));
+    UVM_ASSERT(uvm_channel_is_ce(channel));
 
     last_observed_notifier = semaphore->conf_computing.last_observed_notifier;
     gpu_notifier = UVM_READ_ONCE(*gpu_notifier_cpu_addr);

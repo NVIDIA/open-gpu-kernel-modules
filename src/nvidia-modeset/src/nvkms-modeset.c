@@ -2117,7 +2117,10 @@ IsProposedModeSetStateOneApiHeadIncompatible(
         &pDispEvo->apiHeadState[apiHead];
     const NVDpyEvoRec *pDpyEvo =
         nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
-
+    const NvBool bCurrent2Heads1Or =
+        (nvPopCount32(pApiHeadState->hwHeadsMask) > 1);
+    const NvBool bProposed2Heads1Or =
+        (nvPopCount32(pProposedApiHead->hwHeadsMask) > 1);
     nvAssert(pDpyEvo != NULL);
 
     /*
@@ -2127,11 +2130,22 @@ IsProposedModeSetStateOneApiHeadIncompatible(
      *
      * Consider this api-head incompatible if there is change in the api-head
      * to hardware-head(s) mapping.
+     *
+     * Mark api-head incompatible if its current or proposed modeset state is
+     * using 2Heads1OR configuration:
+     * Even if there is no change in the hardware heads or modetimings, it is
+     * not possible to do modeset on the active 2Heads1OR api-head without
+     * shutting it down first. The modeset code path is ready to handle the
+     * glitchless 2Heads1OR modeset, for example NV0073_CTRL_CMD_DFP_ASSIGN_SOR
+     * does not handles the assignment of secondary SORs if display is already
+     * active and returns incorrect information which leads to segfault in
+     * NVKMS.
      */
 
     if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo) ||
             ((pProposedApiHead->hwHeadsMask != 0x0) &&
-             (pProposedApiHead->hwHeadsMask != pApiHeadState->hwHeadsMask))) {
+             (pProposedApiHead->hwHeadsMask != pApiHeadState->hwHeadsMask)) ||
+            bCurrent2Heads1Or || bProposed2Heads1Or) {
         return TRUE;
     }
 

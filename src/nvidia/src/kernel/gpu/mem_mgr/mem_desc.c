@@ -1087,7 +1087,7 @@ memdescAlloc
             // use such memory has to be unprotected as protected sysmem is not
             // accessible to GPU
             //
-            if ((sysGetStaticConfig(pSys))->bOsSevEnabled)
+            if ((sysGetStaticConfig(pSys))->bOsCCEnabled)
             {
                 if (!gpuIsCCorApmFeatureEnabled(pGpu) ||
                     (gpuIsApmFeatureEnabled(pGpu) &&

@@ -458,7 +458,7 @@ static void decrypt_push(uvm_channel_t *channel, uvm_gpfifo_entry_t *gpfifo)
     void *push_unprotected_cpu_va;
     NvU32 pushbuffer_offset = gpfifo->pushbuffer_offset;
     NvU32 push_info_index = gpfifo->push_info - channel->push_infos;
-    uvm_pushbuffer_t *pushbuffer = channel->pool->manager->pushbuffer;
+    uvm_pushbuffer_t *pushbuffer = uvm_channel_get_pushbuffer(channel);
     uvm_push_crypto_bundle_t *crypto_bundle = channel->conf_computing.push_crypto_bundles + push_info_index;
 
     if (channel->conf_computing.push_crypto_bundles == NULL)
@@ -499,7 +499,7 @@ void uvm_pushbuffer_mark_completed(uvm_channel_t *channel, uvm_gpfifo_entry_t *g
     uvm_pushbuffer_chunk_t *chunk;
     bool need_to_update_chunk = false;
     uvm_push_info_t *push_info = gpfifo->push_info;
-    uvm_pushbuffer_t *pushbuffer = channel->pool->manager->pushbuffer;
+    uvm_pushbuffer_t *pushbuffer = uvm_channel_get_pushbuffer(channel);
 
     UVM_ASSERT(gpfifo->type == UVM_GPFIFO_ENTRY_TYPE_NORMAL);
 

@@ -209,7 +209,7 @@ sysmemConstruct_IMPL
 
     memdescSetFlag(pMemDesc, MEMDESC_FLAGS_SYSMEM_OWNED_BY_CLIENT, NV_TRUE);
 
-    if ((sysGetStaticConfig(SYS_GET_INSTANCE()))->bOsSevEnabled &&
+    if ((sysGetStaticConfig(SYS_GET_INSTANCE()))->bOsCCEnabled &&
         gpuIsCCorApmFeatureEnabled(pGpu) &&
         FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED,
                      pAllocData->attr2))

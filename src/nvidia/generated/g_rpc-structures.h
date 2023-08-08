@@ -1382,6 +1382,21 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_test_v15_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_ecc_notifier_write_ack_v23_05
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ecc_notifier_write_ack_v23_05[] = {
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ecc_notifier_write_ack_v23_05 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ecc_notifier_write_ack",
+    #endif
+    .fdesc = vmiopd_fdesc_t_rpc_ecc_notifier_write_ack_v23_05
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_gsp_set_system_info_v17_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_set_system_info_v17_00[] = {
     {
@@ -2869,6 +2884,13 @@ vmiopd_mdesc_t *rpcdebugRmfsCleanup_v15_00(void)
 vmiopd_mdesc_t *rpcdebugRmfsTest_v15_00(void)
 {
     return &vmiopd_mdesc_t_rpc_rmfs_test_v15_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ecc_notifier_write_ack_v23_05
+vmiopd_mdesc_t *rpcdebugEccNotifierWriteAck_v23_05(void)
+{
+    return &vmiopd_mdesc_t_rpc_ecc_notifier_write_ack_v23_05;
 }
 #endif
 

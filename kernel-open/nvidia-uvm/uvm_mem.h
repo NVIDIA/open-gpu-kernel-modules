@@ -392,12 +392,6 @@ static NV_STATUS uvm_mem_alloc_vidmem(NvU64 size, uvm_gpu_t *gpu, uvm_mem_t **me
     return uvm_mem_alloc(&params, mem_out);
 }
 
-// Helper for allocating protected vidmem with the default page size
-static NV_STATUS uvm_mem_alloc_vidmem_protected(NvU64 size, uvm_gpu_t *gpu, uvm_mem_t **mem_out)
-{
-    return uvm_mem_alloc_vidmem(size, gpu, mem_out);
-}
-
 // Helper for allocating sysmem and mapping it on the CPU
 static NV_STATUS uvm_mem_alloc_sysmem_and_map_cpu_kernel(NvU64 size, struct mm_struct *mm, uvm_mem_t **mem_out)
 {

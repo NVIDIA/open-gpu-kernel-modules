@@ -491,7 +491,6 @@ void uvm_hal_hopper_ce_encrypt(uvm_push_t *push,
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
     UVM_ASSERT(uvm_conf_computing_mode_is_hcc(gpu));
-    UVM_ASSERT(uvm_push_is_fake(push) || uvm_channel_is_secure(push->channel));
     UVM_ASSERT(IS_ALIGNED(auth_tag.address, UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT));
 
     if (!src.is_virtual)
@@ -540,7 +539,6 @@ void uvm_hal_hopper_ce_decrypt(uvm_push_t *push,
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
     UVM_ASSERT(uvm_conf_computing_mode_is_hcc(gpu));
-    UVM_ASSERT(!push->channel || uvm_channel_is_secure(push->channel));
     UVM_ASSERT(IS_ALIGNED(auth_tag.address, UVM_CONF_COMPUTING_AUTH_TAG_ALIGNMENT));
 
     // The addressing mode (and aperture, if applicable) of the source and

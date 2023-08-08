@@ -315,11 +315,11 @@ typedef struct SYS_STATIC_CONFIG
     /*! Indicates the type of OS flavor */
     NvU32 osType;
 
-    /*! AMD SEV (AMD's Secure Encrypted Virtualization) Status */
-    NvU32 osSevStatus;
+    /*! Indicates confidentail compute OS support is enabled or not */
+    NvBool bOsCCEnabled;
 
-    /*! Indicates AMD SEV is enabled or not */
-    NvBool bOsSevEnabled;
+    /*! Indicates Intel TDX confidentail compute OS support is enabled or not */
+    NvBool bOsCCTdxEnabled;
 } SYS_STATIC_CONFIG;
 
 typedef enum

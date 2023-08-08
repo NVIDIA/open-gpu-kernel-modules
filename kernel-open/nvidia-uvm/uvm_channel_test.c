@@ -681,9 +681,10 @@ done:
 }
 
 // The following test is inspired by uvm_push_test.c:test_concurrent_pushes.
-// This test verifies that concurrent pushes using the same secure channel pool
-// select different channels.
-NV_STATUS test_secure_channel_selection(uvm_va_space_t *va_space)
+// This test verifies that concurrent pushes using the same channel pool
+// select different channels, when the Confidential Computing feature is
+// enabled.
+NV_STATUS test_conf_computing_channel_selection(uvm_va_space_t *va_space)
 {
     NV_STATUS status = NV_OK;
     uvm_channel_pool_t *pool;
@@ -703,9 +704,6 @@ NV_STATUS test_secure_channel_selection(uvm_va_space_t *va_space)
         uvm_channel_type_t channel_type;
 
         for (channel_type = 0; channel_type < UVM_CHANNEL_TYPE_COUNT; channel_type++) {
-            if (!uvm_channel_type_requires_secure_pool(gpu, channel_type))
-                continue;
-
             pool = gpu->channel_manager->pool_to_use.default_for_type[channel_type];
             TEST_CHECK_RET(pool != NULL);
 
@@ -997,7 +995,7 @@ NV_STATUS uvm_test_channel_sanity(UVM_TEST_CHANNEL_SANITY_PARAMS *params, struct
     if (status != NV_OK)
         goto done;
 
-    status = test_secure_channel_selection(va_space);
+    status = test_conf_computing_channel_selection(va_space);
     if (status != NV_OK)
         goto done;
 

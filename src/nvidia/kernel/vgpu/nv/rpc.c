@@ -2003,3 +2003,27 @@ done:
     }
     return status;
 }
+
+/*
+ * Sends ack from CPU-RM to GSP-RM that ECC error
+ * notifier write has completed.
+ */
+NV_STATUS rpcEccNotifierWriteAck_v23_05
+(
+    OBJGPU                *pGpu,
+    OBJRPC                *pRpc
+)
+{
+    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_ECC_NOTIFIER_WRITE_ACK, 0);
+        if (status != NV_OK)
+            return status;
+
+        status = _issueRpcAsync(pGpu, pRpc);
+    }
+
+    return status;
+}

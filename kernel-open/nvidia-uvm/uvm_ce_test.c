@@ -760,7 +760,7 @@ static NV_STATUS alloc_vidmem_protected(uvm_gpu_t *gpu, uvm_mem_t **mem, size_t 
 
     *mem = NULL;
 
-    TEST_NV_CHECK_RET(uvm_mem_alloc_vidmem_protected(size, gpu, mem));
+    TEST_NV_CHECK_RET(uvm_mem_alloc_vidmem(size, gpu, mem));
     TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(*mem, gpu), err);
     TEST_NV_CHECK_GOTO(zero_vidmem(*mem), err);
 

@@ -86,6 +86,14 @@
 
 #include <linux/ioport.h>
 
+#if defined(NV_LINUX_CC_PLATFORM_H_PRESENT)
+#include <linux/cc_platform.h>
+#endif
+
+#if defined(NV_ASM_CPUFEATURE_H_PRESENT)
+#include <asm/cpufeature.h>
+#endif
+
 #include "conftest/patches.h"
 
 #define RM_THRESHOLD_TOTAL_IRQ_COUNT     100000
@@ -138,8 +146,6 @@ static int nv_tce_bypass_mode = NV_TCE_BYPASS_MODE_DEFAULT;
 struct semaphore nv_linux_devices_lock;
 
 static NvTristate nv_chipset_is_io_coherent = NV_TRISTATE_INDETERMINATE;
-
-NvU64 nv_shared_gpa_boundary = 0;
 
 // True if all the successfully probed devices support ATS
 // Assigned at device probe (module init) time
@@ -234,77 +240,23 @@ struct dev_pm_ops nv_pm_ops = {
  *** STATIC functions
  ***/
 
-#if defined(NVCPU_X86_64)
-#define NV_AMD_SEV_BIT BIT(1)
-
-#define NV_GENMASK_ULL(h, l) \
-    (((~0ULL) << (l)) & (~0ULL >> (BITS_PER_LONG_LONG - 1 - (h))))
-
 static
-void get_shared_gpa_boundary(
+void nv_detect_conf_compute_platform(
     void
 )
 {
-    NvU32 priv_high = cpuid_ebx(0x40000003);
-    if (priv_high & BIT(22))
+#if defined(NV_CC_PLATFORM_PRESENT)
+    os_cc_enabled = cc_platform_has(CC_ATTR_GUEST_MEM_ENCRYPT);
+
+#if defined(X86_FEATURE_TDX_GUEST)
+    if (cpu_feature_enabled(X86_FEATURE_TDX_GUEST))
     {
-        NvU32 isolation_config_b = cpuid_ebx(0x4000000C);
-        nv_shared_gpa_boundary = ((NvU64)1) << ((isolation_config_b & NV_GENMASK_ULL(11, 6)) >> 6);
+        os_cc_tdx_enabled = NV_TRUE;
     }
-}
-
-static
-NvBool nv_is_sev_supported(
-    void
-)
-{
-    unsigned int eax, ebx, ecx, edx;
-
-    /* Check for the SME/SEV support leaf */
-    eax = 0x80000000;
-    ecx = 0;
-    native_cpuid(&eax, &ebx, &ecx, &edx);
-    if (eax < 0x8000001f)
-        return NV_FALSE;
-
-    /* By design, a VM using vTOM doesn't see the SEV setting */
-    get_shared_gpa_boundary();
-    if (nv_shared_gpa_boundary != 0)
-        return NV_TRUE;
-
-    eax = 0x8000001f;
-    ecx = 0;
-    native_cpuid(&eax, &ebx, &ecx, &edx);
-    /* Check whether SEV is supported */
-    if (!(eax & NV_AMD_SEV_BIT))
-        return NV_FALSE;
-
-    return NV_TRUE;
-}
 #endif
-
-static
-void nv_sev_init(
-    void
-)
-{
-#if defined(MSR_AMD64_SEV) && defined(NVCPU_X86_64)
-    NvU32 lo_val, hi_val;
-
-    if (!nv_is_sev_supported())
-        return;
-
-    rdmsr(MSR_AMD64_SEV, lo_val, hi_val);
-
-    os_sev_status = lo_val;
-#if defined(MSR_AMD64_SEV_ENABLED)
-    os_sev_enabled = (os_sev_status & MSR_AMD64_SEV_ENABLED);
-#endif
-
-    /* By design, a VM using vTOM doesn't see the SEV setting */
-    if (nv_shared_gpa_boundary != 0)
-        os_sev_enabled = NV_TRUE;
-
+#else
+    os_cc_enabled = NV_FALSE;
+    os_cc_tdx_enabled = NV_FALSE;
 #endif
 }
 
@@ -710,7 +662,7 @@ nv_module_init(nv_stack_t **sp)
     }
 
     nv_init_rsync_info(); 
-    nv_sev_init();
+    nv_detect_conf_compute_platform();
 
     if (!rm_init_rm(*sp))
     {
@@ -4570,19 +4522,19 @@ NvU64 NV_API_CALL nv_get_dma_start_address(
      * as the starting address for all DMA mappings.
      */
     saved_dma_mask = pci_dev->dma_mask;
-    if (pci_set_dma_mask(pci_dev, DMA_BIT_MASK(64)) != 0)
+    if (dma_set_mask(&pci_dev->dev, DMA_BIT_MASK(64)) != 0)
     {
         goto done;
     }
 
-    dma_addr = pci_map_single(pci_dev, NULL, 1, DMA_BIDIRECTIONAL);
-    if (pci_dma_mapping_error(pci_dev, dma_addr))
+    dma_addr = dma_map_single(&pci_dev->dev, NULL, 1, DMA_BIDIRECTIONAL);
+    if (dma_mapping_error(&pci_dev->dev, dma_addr))
     {
-        pci_set_dma_mask(pci_dev, saved_dma_mask);
+        dma_set_mask(&pci_dev->dev, saved_dma_mask);
         goto done;
     }
 
-    pci_unmap_single(pci_dev, dma_addr, 1, DMA_BIDIRECTIONAL);
+    dma_unmap_single(&pci_dev->dev, dma_addr, 1, DMA_BIDIRECTIONAL);
 
     /*
      * From IBM: "For IODA2, native DMA bypass or KVM TCE-based implementation
@@ -4614,7 +4566,7 @@ NvU64 NV_API_CALL nv_get_dma_start_address(
          */
         nv_printf(NV_DBG_WARNINGS,
             "NVRM: DMA window limited by platform\n");
-        pci_set_dma_mask(pci_dev, saved_dma_mask);
+        dma_set_mask(&pci_dev->dev, saved_dma_mask);
         goto done;
     }
     else if ((dma_addr & saved_dma_mask) != 0)
@@ -4633,7 +4585,7 @@ NvU64 NV_API_CALL nv_get_dma_start_address(
              */
             nv_printf(NV_DBG_WARNINGS,
                 "NVRM: DMA window limited by memory size\n");
-            pci_set_dma_mask(pci_dev, saved_dma_mask);
+            dma_set_mask(&pci_dev->dev, saved_dma_mask);
             goto done;
         }
     }

@@ -1011,7 +1011,7 @@ cliresCtrlCmdSystemGetCpuInfo_IMPL
     pCpuInfoParams->family = pSys->cpuInfo.family;
     pCpuInfoParams->model = pSys->cpuInfo.model;
     pCpuInfoParams->stepping = pSys->cpuInfo.stepping;
-    pCpuInfoParams->bSEVEnabled = (sysGetStaticConfig(pSys))->bOsSevEnabled;
+    pCpuInfoParams->bSEVEnabled = (sysGetStaticConfig(pSys))->bOsCCEnabled;
     portMemCopy(pCpuInfoParams->name,
                 sizeof (pCpuInfoParams->name), pSys->cpuInfo.name,
                 sizeof (pCpuInfoParams->name));

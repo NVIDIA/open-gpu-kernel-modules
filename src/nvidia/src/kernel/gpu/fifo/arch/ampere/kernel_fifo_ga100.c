@@ -85,10 +85,13 @@ kfifoEngineInfoXlate_GA100
         if (outType == ENGINE_INFO_TYPE_MMU_FAULT_ID)
         {
             NvU32 grIdx, startSubctxId;
+            NV_STATUS status;
             RM_ENGINE_TYPE rmEngineType;
 
-            NV_ASSERT_OK_OR_RETURN(kfifoEngineInfoXlate_GV100(pGpu, pKernelFifo, inType, inVal,
-                                                              ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&rmEngineType));
+            status = kfifoEngineInfoXlate_GV100(pGpu, pKernelFifo, inType, inVal,
+                                                ENGINE_INFO_TYPE_RM_ENGINE_TYPE, (NvU32 *)&rmEngineType);
+            if (status != NV_OK)
+                return status;
 
             // check if rmEngineType corresponding to input is GR
             if (RM_ENGINE_TYPE_IS_GR(rmEngineType))

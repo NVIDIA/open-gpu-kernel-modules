@@ -294,11 +294,12 @@ typedef void       OSFlushCpuWriteCombineBuffer(void);
 typedef NV_STATUS  OSNumaMemblockSize(NvU64 *);
 typedef NvBool     OSNumaOnliningEnabled(OS_GPU_INFO *);
 typedef NV_STATUS  OSAllocPagesNode(NvS32, NvLength, NvU32, NvU64 *);
-typedef NV_STATUS  OSAllocAcquirePage(NvU64);
-typedef NV_STATUS  OSAllocReleasePage(NvU64);
+typedef void       OSAllocAcquirePage(NvU64, NvU32);
+typedef void       OSAllocReleasePage(NvU64, NvU32);
 typedef NvU32      OSGetPageRefcount(NvU64);
 typedef NvU32      OSCountTailPages(NvU64);
 typedef NvU64      OSGetPageSize(void);
+typedef NvU8       OSGetPageShift(void);
 
 
 // We use osAcquireRmSema to catch "unported" sema code to new lock model
@@ -1318,6 +1319,7 @@ OSAllocPagesInternal             osAllocPagesInternal;
 OSFreePagesInternal              osFreePagesInternal;
 
 OSGetPageSize                    osGetPageSize;
+OSGetPageShift                   osGetPageShift;
 OSNumaMemblockSize               osNumaMemblockSize;
 OSNumaOnliningEnabled            osNumaOnliningEnabled;
 OSAllocPagesNode                 osAllocPagesNode;

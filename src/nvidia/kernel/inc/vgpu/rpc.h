@@ -673,6 +673,17 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
             status = NV_ERR_INSUFFICIENT_RESOURCES;                            \
     } while (0)
 
+#define NV_RM_RPC_ECC_NOTIFIER_WRITE_ACK(pGpu, status)                         \
+    do                                                                         \
+    {                                                                          \
+        OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                      \
+        NV_ASSERT(pRpc != NULL);                                               \
+        if ((status == NV_OK) && (pRpc != NULL))                               \
+            status = rpcEccNotifierWriteAck_HAL(pGpu, pRpc);                   \
+        else if (pRpc == NULL)                                                 \
+            status = NV_ERR_INSUFFICIENT_RESOURCES;                            \
+    } while (0)
+
 #define NV_RM_RPC_RMFS_INIT(pGpu, statusQueueMemDesc, status) do {} while(0)
 
 #define NV_RM_RPC_RMFS_CLOSE_QUEUE(pGpu, status)  do {} while(0)

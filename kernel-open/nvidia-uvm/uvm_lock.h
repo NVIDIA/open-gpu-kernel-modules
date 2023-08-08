@@ -279,13 +279,14 @@
 //      Operations not allowed while holding the lock:
 //      - GPU memory allocation which can evict memory (would require nesting
 //        block locks)
+//
 // - GPU DMA Allocation pool lock (gpu->conf_computing.dma_buffer_pool.lock)
 //      Order: UVM_LOCK_ORDER_CONF_COMPUTING_DMA_BUFFER_POOL
+//      Condition: The Confidential Computing feature is enabled
 //      Exclusive lock (mutex)
 //
 //      Protects:
 //      - Protect the state of the uvm_conf_computing_dma_buffer_pool_t
-//        when the Confidential Computing feature is enabled on the system.
 //
 // - Chunk mapping lock (gpu->root_chunk_mappings.bitlocks and
 //   gpu->sysmem_mappings.bitlock)
@@ -321,22 +322,25 @@
 //      Operations not allowed while holding this lock
 //      - GPU memory allocation which can evict
 //
-// - Secure channel CSL channel pool semaphore
+// - CE channel CSL channel pool semaphore
 //      Order: UVM_LOCK_ORDER_CSL_PUSH
-//      Semaphore per SEC2 channel pool
+//      Condition: The Confidential Computing feature is enabled
+//      Semaphore per CE channel pool
 //
-//      The semaphore controls concurrent pushes to secure channels. Secure work
-//      submission depends on channel availability in GPFIFO entries (as in any
-//      other channel type) but also on channel locking. Each secure channel has a
-//      lock to enforce ordering of pushes. The channel's CSL lock is taken on
-//      channel reservation until uvm_push_end. Secure channels are stateful
-//      channels and the CSL lock protects their CSL state/context.
+//      The semaphore controls concurrent pushes to CE channels that are not WCL
+//      channels. Secure work submission depends on channel availability in
+//      GPFIFO entries (as in any other channel type) but also on channel
+//      locking. Each channel has a lock to enforce ordering of pushes. The
+//      channel's CSL lock is taken on channel reservation until uvm_push_end.
+//      When the Confidential Computing feature is enabled, channels are
+//      stateful, and the CSL lock protects their CSL state/context.
 //
 //      Operations allowed while holding this lock
-//      - Pushing work to CE secure channels
+//      - Pushing work to CE channels (except for WLC channels)
 //
 // - WLC CSL channel pool semaphore
 //      Order: UVM_LOCK_ORDER_CSL_WLC_PUSH
+//      Condition: The Confidential Computing feature is enabled
 //      Semaphore per WLC channel pool
 //
 //      The semaphore controls concurrent pushes to WLC channels. WLC work
@@ -346,8 +350,8 @@
 //      channel reservation until uvm_push_end. SEC2 channels are stateful
 //      channels and the CSL lock protects their CSL state/context.
 //
-//      This lock ORDER is different and sits below generic secure channel CSL
-//      lock and above SEC2 CSL lock. This reflects the dual nature of WLC
+//      This lock ORDER is different and sits below the generic channel CSL
+//      lock and above the SEC2 CSL lock. This reflects the dual nature of WLC
 //      channels; they use SEC2 indirect work launch during initialization,
 //      and after their schedule is initialized they provide indirect launch
 //      functionality to other CE channels.
@@ -357,6 +361,7 @@
 //
 // - SEC2 CSL channel pool semaphore
 //      Order: UVM_LOCK_ORDER_SEC2_CSL_PUSH
+//      Condition: The Confidential Computing feature is enabled
 //      Semaphore per SEC2 channel pool
 //
 //      The semaphore controls concurrent pushes to SEC2 channels. SEC2 work
@@ -366,9 +371,9 @@
 //      channel reservation until uvm_push_end. SEC2 channels are stateful
 //      channels and the CSL lock protects their CSL state/context.
 //
-//      This lock ORDER is different and lower than the generic secure channel
-//      lock to allow secure work submission to use a SEC2 channel to submit
-//      work before releasing the CSL lock of the originating secure channel.
+//      This lock ORDER is different and lower than UVM_LOCK_ORDER_CSL_PUSH
+//      to allow secure work submission to use a SEC2 channel to submit
+//      work before releasing the CSL lock of the originating channel.
 //
 //      Operations allowed while holding this lock
 //      - Pushing work to SEC2 channels
@@ -408,16 +413,18 @@
 //
 // - WLC Channel lock
 //      Order: UVM_LOCK_ORDER_WLC_CHANNEL
+//      Condition: The Confidential Computing feature is enabled
 //      Spinlock (uvm_spinlock_t)
 //
 //      Lock protecting the state of WLC channels in a channel pool. This lock
-//      is separate from the above generic channel lock to allow for indirect
-//      worklaunch pushes while holding the main channel lock.
-//      (WLC pushes don't need any of the pushbuffer locks described above)
+//      is separate from the generic channel lock (UVM_LOCK_ORDER_CHANNEL)
+//      to allow for indirect worklaunch pushes while holding the main channel
+//      lock (WLC pushes don't need any of the pushbuffer locks described
+//      above)
 //
 // - Tools global VA space list lock (g_tools_va_space_list_lock)
 //      Order: UVM_LOCK_ORDER_TOOLS_VA_SPACE_LIST
-//      Reader/writer lock (rw_sempahore)
+//      Reader/writer lock (rw_semaphore)
 //
 //      This lock protects the list of VA spaces used when broadcasting
 //      UVM profiling events.
@@ -437,9 +444,10 @@
 //
 // - Tracking semaphores
 //      Order: UVM_LOCK_ORDER_SECURE_SEMAPHORE
-//      When the Confidential Computing feature is enabled, CE semaphores are
-//      encrypted, and require to take the CSL lock (UVM_LOCK_ORDER_LEAF) to
-//      decrypt the payload.
+//      Condition: The Confidential Computing feature is enabled
+//
+//      CE semaphore payloads are encrypted, and require to take the CSL lock
+//      (UVM_LOCK_ORDER_LEAF) to decrypt the payload.
 //
 // - Leaf locks
 //      Order: UVM_LOCK_ORDER_LEAF

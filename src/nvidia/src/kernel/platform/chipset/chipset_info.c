@@ -1234,6 +1234,19 @@ Mellanox_BlueField_setupFunc
     return NV_OK;
 }
 
+// Mellanox BlueField3 Setup Function
+static NV_STATUS
+Mellanox_BlueField3_setupFunc
+(
+    OBJCL *pCl
+)
+{
+    // Bug 4151565: BlueField 3 does not support WC mapping 
+    pCl->setProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC, NV_TRUE);
+    return NV_OK;
+}
+
+
 // Amazon Gravitron2 Setup Function
 static NV_STATUS
 Amazon_Gravitron2_setupFunc

@@ -150,7 +150,8 @@
 #define LSF_FALCON_ID_NVJPG_RISCV_EB   (23U)
 #define LSF_FALCON_ID_OFA_RISCV_EB     (24U)
 #define LSF_FALCON_ID_NVENC_RISCV_EB   (25U)
-#define LSF_FALCON_ID_END              (26U)
+#define LSF_FALCON_ID_PMU_RISCV_EB     (26U)
+#define LSF_FALCON_ID_END              (27U)
 
 #define LSF_FALCON_ID_INVALID   (0xFFFFFFFFU)
 
@@ -176,13 +177,13 @@
 #define LSF_FALCON_ID_END_18           (18U)
 #define LSF_FALCON_ID_END_21           (21U)
 
-#define LSF_FALCON_INSTANCE_DEFAULT_0           (0x0)
-#define LSF_FALCON_INSTANCE_COUNT_DEFAULT_1     (0x1)
+#define LSF_FALCON_INSTANCE_DEFAULT_0           (0x0U)
+#define LSF_FALCON_INSTANCE_COUNT_DEFAULT_1     (0x1U)
 
 // Currently max supported instance is 8 for FECS/GPCCS SMC
-#define LSF_FALCON_INSTANCE_FECS_GPCCS_MAX      (0x8)
+#define LSF_FALCON_INSTANCE_FECS_GPCCS_MAX      (0x8U)
 #define LSF_FALCON_INSTANCE_INVALID             (0xFFFFFFFFU)
-#define LSF_FALCON_INDEX_MASK_DEFAULT_0         (0x0)
+#define LSF_FALCON_INDEX_MASK_DEFAULT_0         (0x0U)
 
 /*!
  * Checks if the LSF Falcon specified by falconId uses a falconInstance to uniquely identify itself.

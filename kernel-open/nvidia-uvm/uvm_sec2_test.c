@@ -270,7 +270,7 @@ static NV_STATUS alloc_and_init_mem(uvm_gpu_t *gpu, uvm_mem_t **mem, size_t size
     *mem = NULL;
 
     if (type == MEM_ALLOC_TYPE_VIDMEM_PROTECTED) {
-        TEST_NV_CHECK_RET(uvm_mem_alloc_vidmem_protected(size, gpu, mem));
+        TEST_NV_CHECK_RET(uvm_mem_alloc_vidmem(size, gpu, mem));
         TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(*mem, gpu), err);
         TEST_NV_CHECK_GOTO(ce_memset_gpu(gpu, *mem, size, 0xdead), err);
     }
@@ -348,9 +348,9 @@ static NV_STATUS cpu_decrypt(uvm_channel_t *channel,
     return NV_OK;
 }
 
-// gpu_encrypt uses a secure CE for encryption (instead of SEC2). SEC2 does not
-// support encryption. The following function is copied from uvm_ce_test.c and
-// adapted to SEC2 tests.
+// gpu_encrypt uses the Copy Engine for encryption, instead of SEC2. SEC2 does
+// not support encryption. The following function is copied from uvm_ce_test.c
+// and adapted to SEC2 tests.
 static void gpu_encrypt(uvm_push_t *push,
                         uvm_mem_t *dst_mem,
                         uvm_mem_t *src_mem,

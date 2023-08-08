@@ -43,7 +43,7 @@
  * This structure represents vGPU host device KERNEL object allocation parameters.
  * dbdf -> domain (31:16), bus (15:8), device (7:3), function (2:0)
  * gfid -> Used only when SRIOV is enabled otherwise set to 0.
- * swizzId [IN/OUT] -> Used only when MIG mode is enabled otherwise set
+ * swizzId [IN] -> Used only when MIG mode is enabled otherwise set
  *                     to NV2080_CTRL_GPU_PARTITION_ID_INVALID.
  * numChannels -> Used only when SRIOV is enabled. Must be a power of 2.
  * bDisableDefaultSmcExecPartRestore - If set to true, SMC default execution partition

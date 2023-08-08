@@ -15,6 +15,7 @@ static inline void _get_chip_id_for_alias_pgpu(NvU32 *dev_id, NvU32 *subdev_id)
         { 0x20B5, 0x1642, 0x20B5, 0x1533 },
         { 0x20B8, 0x1581, 0x20B5, 0x1533 },
         { 0x20B9, 0x157F, 0x20B7, 0x1532 },
+        { 0x2330, 0x16C0, 0x2330, 0x16C1 },
     };
 
     for (NvU32 i = 0; i < (sizeof(vgpu_aliases) / sizeof(struct vgpu_alias_details)); ++i) {
@@ -28,3 +29,5 @@ static inline void _get_chip_id_for_alias_pgpu(NvU32 *dev_id, NvU32 *subdev_id)
     return;
 }
 #endif //__VGPU_ALIAS_PGPU_LIST__
+
+

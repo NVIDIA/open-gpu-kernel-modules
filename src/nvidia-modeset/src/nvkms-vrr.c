@@ -183,13 +183,6 @@ static NvBool DpyIsGsync(const NVDpyEvoRec *pDpyEvo)
     return pDpyEvo->vrr.type == NVKMS_DPY_VRR_TYPE_GSYNC;
 }
 
-static NvBool IsAdaptiveSyncDpyVrrType(enum NvKmsDpyVRRType type)
-{
-    return ((type == NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED) ||
-            (type == NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED));
-}
-
-
 static NvBool AnyEnabledAdaptiveSyncDpys(const NVDevEvoRec *pDevEvo)
 {
     NVDispEvoPtr pDispEvo;
@@ -202,7 +195,7 @@ static NvBool AnyEnabledAdaptiveSyncDpys(const NVDevEvoRec *pDevEvo)
             const NVDispHeadStateEvoRec *pHeadState =
                 &pDispEvo->headState[head];
 
-            if (IsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
+            if (nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
                 return TRUE;
             }
         }
@@ -286,7 +279,7 @@ void nvAdjustHwModeTimingsForVrrEvo(NVHwModeTimingsEvoPtr pTimings,
 
     // Allow overriding the EDID min refresh rate on Adaptive-Sync
     // displays.
-    if (IsAdaptiveSyncDpyVrrType(vrrType) && vrrOverrideMinRefreshRate) {
+    if (nvIsAdaptiveSyncDpyVrrType(vrrType) && vrrOverrideMinRefreshRate) {
         NvU32 minMinRefreshRate, maxMinRefreshRate;
         NvU32 clampedMinRefreshRate;
 
@@ -737,7 +730,7 @@ void nvDisableVrr(NVDevEvoPtr pDevEvo)
             NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
 
             if ((pHeadState->pConnectorEvo != NULL) &&
-                    IsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
+                    nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
                 if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
                     nvDPLibSetAdaptiveSync(pDispEvo, head, FALSE);
                 } else {
@@ -799,7 +792,7 @@ void nvGetDpyMinRefreshRateValidValues(
 {
     NvU32 edidMinRefreshRate;
 
-    if (IsAdaptiveSyncDpyVrrType(vrrType)) {
+    if (nvIsAdaptiveSyncDpyVrrType(vrrType)) {
         /*
          * Adaptive-Sync monitors must always define a nonzero minimum refresh
          * rate in the EDID, and a modeset may override this within a range
@@ -860,7 +853,7 @@ void nvEnableVrr(NVDevEvoPtr pDevEvo)
             NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
 
             if ((pHeadState->pConnectorEvo != NULL) &&
-                    IsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
+                    nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
                 if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
                     nvDPLibSetAdaptiveSync(pDispEvo, head, TRUE);
                 } else {

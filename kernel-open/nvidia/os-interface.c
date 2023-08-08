@@ -41,8 +41,8 @@ extern nv_kthread_q_t nv_kthread_q;
 NvU32 os_page_size  = PAGE_SIZE;
 NvU64 os_page_mask  = NV_PAGE_MASK;
 NvU8  os_page_shift = PAGE_SHIFT;
-NvU32 os_sev_status = 0;
-NvBool os_sev_enabled = 0;
+NvBool os_cc_enabled = 0;
+NvBool os_cc_tdx_enabled = 0;
 
 #if defined(CONFIG_DMA_SHARED_BUFFER)
 NvBool os_dma_buf_enabled = NV_TRUE;
