@@ -80,6 +80,8 @@ static struct file_operations nv_frontend_fops = {
     .release   = nvidia_frontend_close,
 };
 
+static struct class *g_frontend_class;
+
 /* Helper functions */
 
 static int add_device(nvidia_module_t *module, nv_linux_state_t *device, NvBool all)
@@ -94,6 +96,14 @@ static int add_device(nvidia_module_t *module, nv_linux_state_t *device, NvBool 
         {
             nv_minor_num_table[i] = module;
             device->minor_num = i;
+            if (g_frontend_class) {
+                dev_t gpu_dev = MKDEV(NV_MAJOR_DEVICE_NUMBER, i);
+                struct device *created = device_create(g_frontend_class, NULL, gpu_dev, NULL, "nvidia%d", i, NULL);
+                if (IS_ERR(created)) {
+                    int err = PTR_ERR(created);
+                    printk(KERN_WARNING "Error %d while trying to create nvidia%d\n", err, i, NULL);
+                }
+            }
             if (all == NV_TRUE)
             {
                 device = device->next;
@@ -120,6 +130,9 @@ static int remove_device(nvidia_module_t *module, nv_linux_state_t *device)
     // remove this device from minor_number table
     if ((device != NULL) && (nv_minor_num_table[device->minor_num] != NULL))
     {
+        if (g_frontend_class) {
+            device_destroy(g_frontend_class, MKDEV(NV_MAJOR_DEVICE_NUMBER, device->minor_num));
+        }
         nv_minor_num_table[device->minor_num] = NULL;
         device->minor_num = 0;
         rc = 0;
@@ -146,6 +159,15 @@ int nvidia_register_module(nvidia_module_t *module)
     ctrl_minor_num = NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX - module->instance;
     nv_minor_num_table[ctrl_minor_num] = module;
     nv_num_instances++;
+    if (g_frontend_class) {
+        const char *name = module->module_name;
+        dev_t ctl_dev = MKDEV(NV_MAJOR_DEVICE_NUMBER, ctrl_minor_num);
+        struct device *created = device_create(g_frontend_class, NULL, ctl_dev, NULL, name, NULL);
+        if (IS_ERR(created)) {
+            int err = PTR_ERR(created);
+            printk(KERN_WARNING "Error %d while trying to create %s\n", err, name, NULL);
+        }
+    }
 done:
     up(&nv_module_table_lock);
 
@@ -169,6 +191,9 @@ int nvidia_unregister_module(nvidia_module_t *module)
     }
     else
     {
+        if (g_frontend_class) {
+            device_destroy(g_frontend_class, MKDEV(NV_MAJOR_DEVICE_NUMBER, ctrl_minor_num));
+        }
         nv_minor_num_table[ctrl_minor_num] = NULL;
         nv_num_instances--;
     }
@@ -350,9 +375,20 @@ int nvidia_frontend_mmap(
     return rc;
 }
 
+static char *frontend_devnode(struct device *dev, umode_t *mode)
+{
+    if (mode) {
+        *mode = 0666;
+    }
+    return NULL;
+}
+
 static int __init nvidia_frontend_init_module(void)
 {
     int status = 0;
+    dev_t ctl_dev = MKDEV(NV_MAJOR_DEVICE_NUMBER, NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX);
+    struct device *created;
+    int i, err;
 
     // initialise nvidia module table;
     nv_num_instances = 0;
@@ -366,13 +402,44 @@ static int __init nvidia_frontend_init_module(void)
     }
 
     // register char device
-    status = register_chrdev(NV_MAJOR_DEVICE_NUMBER, "nvidia-frontend", &nv_frontend_fops);
+    status = register_chrdev(NV_MAJOR_DEVICE_NUMBER, NV_FRONTEND_MODULE_NAME, &nv_frontend_fops);
     if (status < 0)
     {
         printk("NVRM: register_chrdev() failed!\n");
         nvidia_exit_module();
     }
 
+    g_frontend_class = class_create(THIS_MODULE, NV_FRONTEND_MODULE_NAME);
+    g_frontend_class->devnode = frontend_devnode;
+    created = device_create(g_frontend_class, NULL, ctl_dev, NULL, NV_CONTROL_DEVICE_NAME, NULL);
+    if (IS_ERR(created)) {
+        err = PTR_ERR(created);
+        printk(KERN_WARNING "Error %d while trying to create %s\n", err, NV_CONTROL_DEVICE_NAME, NULL);
+    }
+    for (i = 0; i <= NV_FRONTEND_CONTROL_DEVICE_MINOR_MIN; i++)
+    {
+        if (nv_minor_num_table[i] != NULL) {
+            dev_t gpu_dev = MKDEV(NV_MAJOR_DEVICE_NUMBER, i);
+            created = device_create(g_frontend_class, NULL, gpu_dev, NULL, "nvidia%d", i, NULL);
+            if (IS_ERR(created)) {
+                int err = PTR_ERR(created);
+                printk(KERN_WARNING "Error %d while trying to create nvidia%d\n", err, i, NULL);
+            }
+        }
+    }
+    for (i = NV_FRONTEND_CONTROL_DEVICE_MINOR_MIN + 1; i < NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX; i++)
+    {
+        const nvidia_module_t * module = nv_minor_num_table[i];
+        if (module  != NULL) {
+            const char *name = module->module_name;
+            dev_t ctl_dev = MKDEV(NV_MAJOR_DEVICE_NUMBER, i);
+            struct device *created = device_create(g_frontend_class, NULL, ctl_dev, NULL, name, NULL);
+            if (IS_ERR(created)) {
+                int err = PTR_ERR(created);
+                printk(KERN_WARNING "Error %d while trying to create %s\n", err, name, NULL);
+            }
+        }
+    }
     return status;
 }
 
@@ -384,7 +451,19 @@ static void __exit nvidia_frontend_exit_module(void)
      */
     if (nv_num_instances == 1)
     {
-        unregister_chrdev(NV_MAJOR_DEVICE_NUMBER, "nvidia-frontend");
+        if (g_frontend_class) {
+           int i;
+           device_destroy(g_frontend_class, MKDEV(NV_MAJOR_DEVICE_NUMBER, NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX));
+           for (i = 0; i < NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX; i++)
+           {
+               if (nv_minor_num_table[i] != NULL) {
+                   device_destroy(g_frontend_class, MKDEV(NV_MAJOR_DEVICE_NUMBER, i));
+               }
+           }
+           class_destroy(g_frontend_class);
+           g_frontend_class = NULL;
+        }
+        unregister_chrdev(NV_MAJOR_DEVICE_NUMBER, NV_FRONTEND_MODULE_NAME);
     }
 
     nvidia_exit_module();

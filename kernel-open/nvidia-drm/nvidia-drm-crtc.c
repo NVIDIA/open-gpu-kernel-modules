@@ -685,6 +685,9 @@ static inline void __nv_drm_plane_atomic_destroy_state(
     struct drm_plane *plane,
     struct drm_plane_state *state)
 {
+#if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
+    struct nv_drm_plane_state *nv_drm_plane_state;
+#endif
 #if defined(NV_DRM_ATOMIC_HELPER_PLANE_DESTROY_STATE_HAS_PLANE_ARG)
     __drm_atomic_helper_plane_destroy_state(plane, state);
 #else
@@ -692,7 +695,7 @@ static inline void __nv_drm_plane_atomic_destroy_state(
 #endif
 
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
-    struct nv_drm_plane_state *nv_drm_plane_state =
+    nv_drm_plane_state =
         to_nv_drm_plane_state(state);
     drm_property_blob_put(nv_drm_plane_state->hdr_output_metadata);
 #endif
