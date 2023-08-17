@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,12 +36,21 @@ typedef int vm_fault_t;
  * pin_user_pages() was added by commit eddb1c228f7951d399240
  * ("mm/gup: introduce pin_user_pages*() and FOLL_PIN") in v5.6-rc1 (2020-01-30)
  *
+ * Removed vmas parameter from pin_user_pages() by commit 40896a02751
+ * ("mm/gup: remove vmas parameter from pin_user_pages()")
+ * in linux-next, expected in v6.5-rc1 (2023-05-17)
+ *
  */
 
 #include <linux/mm.h>
 #include <linux/sched.h>
 #if defined(NV_PIN_USER_PAGES_PRESENT)
-    #define NV_PIN_USER_PAGES pin_user_pages
+    #if defined(NV_PIN_USER_PAGES_HAS_ARGS_VMAS)
+        #define NV_PIN_USER_PAGES pin_user_pages
+    #else
+        #define NV_PIN_USER_PAGES(start, nr_pages, gup_flags, pages, vmas) \
+            pin_user_pages(start, nr_pages, gup_flags, pages)
+    #endif // NV_PIN_USER_PAGES_HAS_ARGS_VMAS
     #define NV_UNPIN_USER_PAGE unpin_user_page
 #else
     #define NV_PIN_USER_PAGES NV_GET_USER_PAGES
@@ -64,11 +73,18 @@ typedef int vm_fault_t;
  * commit 8e50b8b07f462ab4b91bc1491b1c91bd75e4ad40 which cherry-picked the
  * replacement of the write and force parameters with gup_flags
  *
+ * Removed vmas parameter from get_user_pages() by commit 7bbf9c8c99
+ * ("mm/gup: remove unused vmas parameter from get_user_pages()")
+ * in linux-next, expected in v6.5-rc1 (2023-05-17)
+ *
  */
 
 #if defined(NV_GET_USER_PAGES_HAS_ARGS_FLAGS)
+    #define NV_GET_USER_PAGES(start, nr_pages, flags, pages, vmas) \
+        get_user_pages(start, nr_pages, flags, pages)
+#elif defined(NV_GET_USER_PAGES_HAS_ARGS_FLAGS_VMAS)
     #define NV_GET_USER_PAGES get_user_pages
-#elif defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_FLAGS)
+#elif defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_FLAGS_VMAS)
     #define NV_GET_USER_PAGES(start, nr_pages, flags, pages, vmas) \
         get_user_pages(current, current->mm, start, nr_pages, flags, pages, vmas)
 #else
@@ -81,13 +97,13 @@ typedef int vm_fault_t;
         int write = flags & FOLL_WRITE;
         int force = flags & FOLL_FORCE;
 
-    #if defined(NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE)
+    #if defined(NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE_VMAS)
         return get_user_pages(start, nr_pages, write, force, pages, vmas);
     #else
-        // NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE
+        // NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE_VMAS
         return get_user_pages(current, current->mm, start, nr_pages, write,
                               force, pages, vmas);
-    #endif // NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE
+    #endif // NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE_VMAS
     }
 #endif // NV_GET_USER_PAGES_HAS_ARGS_FLAGS
 
@@ -100,15 +116,22 @@ typedef int vm_fault_t;
  * 64019a2e467a ("mm/gup: remove task_struct pointer for  all gup code")
  * in v5.9-rc1 (2020-08-11). *
  *
+ * Removed unused vmas parameter from pin_user_pages_remote() by commit
+ * 83bcc2e132("mm/gup: remove unused vmas parameter from pin_user_pages_remote()")
+ * in linux-next, expected in v6.5-rc1 (2023-05-14)
+ *
  */
 
 #if defined(NV_PIN_USER_PAGES_REMOTE_PRESENT)
-    #if defined (NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK)
+    #if defined(NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK_VMAS)
         #define NV_PIN_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
             pin_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, vmas, locked)
-    #else
+    #elif defined(NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_VMAS)
         #define NV_PIN_USER_PAGES_REMOTE pin_user_pages_remote
-    #endif // NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK
+    #else
+        #define NV_PIN_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
+            pin_user_pages_remote(mm, start, nr_pages, flags, pages, locked)
+    #endif // NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK_VMAS
 #else
     #define NV_PIN_USER_PAGES_REMOTE NV_GET_USER_PAGES_REMOTE
 #endif // NV_PIN_USER_PAGES_REMOTE_PRESENT
@@ -135,22 +158,30 @@ typedef int vm_fault_t;
  * commit 64019a2e467a ("mm/gup: remove task_struct pointer for
  * all gup code") in v5.9-rc1 (2020-08-11).
  *
+ * Removed vmas parameter from get_user_pages_remote() by commit a4bde14d549 
+ * ("mm/gup: remove vmas parameter from get_user_pages_remote()")
+ * in linux-next, expected in v6.5-rc1 (2023-05-14)
+ *
  */
 
 #if defined(NV_GET_USER_PAGES_REMOTE_PRESENT)
     #if defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED)
+        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
+            get_user_pages_remote(mm, start, nr_pages, flags, pages, locked)
+
+    #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED_VMAS)
         #define NV_GET_USER_PAGES_REMOTE get_user_pages_remote
 
-    #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS_LOCKED)
+    #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS_LOCKED_VMAS)
         #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
             get_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, vmas, locked)
 
-    #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS)
+    #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS_VMAS)
         #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
             get_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, vmas)
 
     #else
-        // NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_WRITE_FORCE
+        // NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_WRITE_FORCE_VMAS
         static inline long NV_GET_USER_PAGES_REMOTE(struct mm_struct *mm,
                                                     unsigned long start,
                                                     unsigned long nr_pages,
@@ -167,7 +198,7 @@ typedef int vm_fault_t;
         }
     #endif // NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED
 #else
-    #if defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE)
+    #if defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE_VMAS)
         static inline long NV_GET_USER_PAGES_REMOTE(struct mm_struct *mm,
                                                     unsigned long start,
                                                     unsigned long nr_pages,
@@ -185,7 +216,7 @@ typedef int vm_fault_t;
     #else
         #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
             get_user_pages(NULL, mm, start, nr_pages, flags, pages, vmas)
-    #endif // NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE
+    #endif // NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE_VMAS
 #endif // NV_GET_USER_PAGES_REMOTE_PRESENT
 
 /*

@@ -71,3 +71,46 @@ memmgrMemUtilsCheckMemoryFastScrubEnable_GH100
              (NV_IS_ALIGNED64(addr, MEMUTIL_SCRUB_OFFSET_ALIGNMENT))                &&
              (NV_IS_ALIGNED(size, MEMUTIL_SCRUB_LINE_LENGTH_ALIGNMENT)));
 }
+
+/*!
+ * Create an engine object and setup SEC2 channel scheduling
+ *
+ * @param[in]     OBJCHANNEL - channel object 
+ *
+ * @returns       NV_OK
+ */
+NV_STATUS
+memmgrMemUtilsSec2CtxInit_GH100
+(
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager,
+    OBJCHANNEL    *pChannel
+)
+{
+    NV_STATUS rmStatus = NV_OK;
+    RM_API   *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    // Alloc sec2 context
+    NV_CHECK_OK_OR_GOTO(
+        rmStatus,
+        LEVEL_ERROR,
+        pRmApi->AllocWithHandle(pRmApi,
+                                pChannel->hClient,
+                                pChannel->channelId,
+                                pChannel->engineObjectId,
+                                pChannel->sec2Class,
+                                NULL, 0),
+        exit_free);
+
+    NV_CHECK_OK_OR_GOTO(
+        rmStatus,
+        LEVEL_ERROR,
+        memmgrMemUtilsChannelSchedulingSetup(pGpu, pMemoryManager, pChannel), exit_free);
+
+    return NV_OK;
+
+ exit_free:
+    pRmApi->Free(pRmApi, pChannel->hClient, pChannel->hClient);
+    NV_PRINTF(LEVEL_INFO, "end  NV_STATUS=0x%08x\n", rmStatus);
+    return rmStatus;
+}

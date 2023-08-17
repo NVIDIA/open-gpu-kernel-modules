@@ -1367,8 +1367,23 @@ static struct drm_driver nv_drm_driver = {
     .ioctls                 = nv_drm_ioctls,
     .num_ioctls             = ARRAY_SIZE(nv_drm_ioctls),
 
+/*
+ * linux-next commit 71a7974ac701 ("drm/prime: Unexport helpers for fd/handle
+ * conversion") unexports drm_gem_prime_handle_to_fd() and
+ * drm_gem_prime_fd_to_handle().
+ *
+ * Prior linux-next commit 6b85aa68d9d5 ("drm: Enable PRIME import/export for
+ * all drivers") made these helpers the default when .prime_handle_to_fd /
+ * .prime_fd_to_handle are unspecified, so it's fine to just skip specifying
+ * them if the helpers aren't present.
+ */
+#if NV_IS_EXPORT_SYMBOL_PRESENT_drm_gem_prime_handle_to_fd
     .prime_handle_to_fd     = drm_gem_prime_handle_to_fd,
+#endif
+#if NV_IS_EXPORT_SYMBOL_PRESENT_drm_gem_prime_fd_to_handle
     .prime_fd_to_handle     = drm_gem_prime_fd_to_handle,
+#endif
+
     .gem_prime_import       = nv_drm_gem_prime_import,
     .gem_prime_import_sg_table = nv_drm_gem_prime_import_sg_table,
 

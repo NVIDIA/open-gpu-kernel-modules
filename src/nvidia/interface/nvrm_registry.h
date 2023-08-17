@@ -1915,4 +1915,15 @@
 #define NV_REG_STR_RM_GSP_OWNED_FAULT_BUFFERS_ENABLE_NO    0x00000000
 #define NV_REG_STR_RM_GSP_OWNED_FAULT_BUFFERS_ENABLE_YES   0x00000001
 
+//
+// WAR for BlueField3: Bug 4040336
+// BF3's PCI MMIO bus address 0x800000000000 is too high for Ampere to address.
+// Due to this, BF3's bus address is now moved to < 4GB. So, the CPU PA is no longer
+// the same as the bus address and this regkey adjusts the CPU PA passed in to the 
+// correct bus address.
+//
+#define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3 "RmDmaAdjustPeerMmioBF3"
+#define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_DISABLE 0
+#define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_ENABLE  1
+
 #endif // NVRM_REGISTRY_H

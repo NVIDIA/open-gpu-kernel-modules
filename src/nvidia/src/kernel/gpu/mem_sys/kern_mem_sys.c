@@ -182,6 +182,20 @@ kmemsysStatePreLoad_IMPL
     kmemsysProgramSysmemFlushBuffer_HAL(pGpu, pKernelMemorySystem);
     kmemsysAssertSysmemFlushBufferValid_HAL(pGpu, pKernelMemorySystem);
 
+    // Self Hosted GPUs should have its memory onlined by now.
+    if (gpuIsSelfHosted(pGpu) &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) &&
+        osNumaOnliningEnabled(pGpu->pOsGpuInfo) &&
+        !pKernelMemorySystem->bNumaNodesAdded)
+    {
+        //
+        // TODO: Bug 1945658: Deferred error checking from stateInit so that stateDestroy
+        // gets called. Refer kmemsysNumaAddMemory_HAL call site for further
+        // details.
+        //
+        return NV_ERR_INVALID_STATE;
+    }
+
     return NV_OK;
 }
 
@@ -204,6 +218,22 @@ kmemsysStatePostLoad_IMPL
         }
     }
 
+    return NV_OK;
+}
+
+NV_STATUS
+kmemsysStatePreUnload_IMPL
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU32 flags
+)
+{
+    if (IS_SILICON(pGpu) &&
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED))
+    {
+        kmemsysRemoveAllAtsPeers_HAL(pGpu, pKernelMemorySystem);
+    }
     return NV_OK;
 }
 
@@ -785,13 +815,20 @@ kmemsysSetupCoherentCpuLink_IMPL
     NV_PRINTF(LEVEL_INFO, "fbSize: 0x%llx NUMA reserved memory size: 0x%llx online memory size: 0x%llx\n",
                   fbSize, totalRsvdBytes, numaOnlineSize);
     //
-    // Add NUMA nodes now. MODS doesn't support NUMA so skip calling
-    // kmemsysNumaAddMemory_HAL() for MODS
+    // TODO: Bug 1945658: Soldier through on GPU memory add
+    // failure(which is often possible because of missing auto online
+    // setting) and instead check for failure on stateLoad.
+    // Any failure in StateInit results in gpuStateDestroy not getting called.
+    // kgspUnloadRm_IMPL from gpuStateDestroy also doesn't get called leaving
+    // GSP in unclean state and requiring GPU reset to recover from that.
     //
-    // Do not add the last chunk as it could be memblock size unaligned and
-    // contains RM reserved memory region as well.
+    // kmemsysNumaAddMemory_HAL by itself cannot be called from stateLoad
+    // because the memory mapping that follows this call site comes from linear
+    // kernel virtual address when memory is added to the kernel vs the
+    // VMALLOC_START region when memory is not added.
     //
-    NV_ASSERT_OK_OR_RETURN(kmemsysNumaAddMemory_HAL(pGpu, pKernelMemorySystem, 0, 0, numaOnlineSize, &numaNodeId));
+    NV_ASSERT_OK(kmemsysNumaAddMemory_HAL(pGpu, pKernelMemorySystem, 0, 0,
+                                          numaOnlineSize, &numaNodeId));
     pGpu->numaNodeId = numaNodeId;
 
     NV_ASSERT_OK_OR_RETURN(kbusCreateCoherentCpuMapping_HAL(pGpu, pKernelBus, numaOnlineSize, bFlush));

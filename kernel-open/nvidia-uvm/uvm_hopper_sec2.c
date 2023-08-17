@@ -166,6 +166,7 @@ void uvm_hal_hopper_sec2_decrypt(uvm_push_t *push, NvU64 dst_va, NvU64 src_va, N
     NvU32 *csl_sign_init = push->next;
 
     // Check that the provided alignment matches HW
+    BUILD_BUG_ON(UVM_CONF_COMPUTING_SEC2_BUF_ALIGNMENT != (1 << HWSHIFT(CBA2, DECRYPT_COPY_DST_ADDR_LO, DATA)));
     BUILD_BUG_ON(UVM_CONF_COMPUTING_BUF_ALIGNMENT < (1 << HWSHIFT(CBA2, DECRYPT_COPY_DST_ADDR_LO, DATA)));
     BUILD_BUG_ON(UVM_CONF_COMPUTING_BUF_ALIGNMENT % (1 << HWSHIFT(CBA2, DECRYPT_COPY_DST_ADDR_LO, DATA)) != 0);
 

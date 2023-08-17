@@ -24,13 +24,19 @@
 #ifndef _CE_UTILS_SIZES_H
 #define _CE_UTILS_SIZES_H
 
+#define NUM_COPY_BLOCKS                       4096
+#define CHANNEL_HOST_SEMAPHORE_SIZE           4
+#define CHANNEL_ENGINE_SEMAPHORE_SIZE         4
+#define GPFIFO_SIZE                           NV906F_GP_ENTRY__SIZE * NUM_COPY_BLOCKS
+#define CHANNEL_NOTIFIER_SIZE                 (sizeof(NvNotification) *                 \
+                                              NV_CHANNELGPFIFO_NOTIFICATION_TYPE__SIZE_1)
+
 #define CE_MAX_BYTES_PER_LINE                 0xffffffffULL
-#define CE_NUM_COPY_BLOCKS                    4096
-#define CE_CHANNEL_SEMAPHORE_SIZE             8
-#define CE_GPFIFO_SIZE                        NV906F_GP_ENTRY__SIZE * CE_NUM_COPY_BLOCKS
-#define CE_CHANNEL_NOTIFIER_SIZE              (sizeof(NvNotification) *                     \
-                                               NV_CHANNELGPFIFO_NOTIFICATION_TYPE__SIZE_1)
 #define CE_METHOD_SIZE_PER_BLOCK              0x64
 #define FAST_SCRUBBER_METHOD_SIZE_PER_BLOCK   0x78
+
+// number of bytes per sec2 method-stream (including host methods)
+#define SEC2_METHOD_SIZE_PER_BLOCK            0x94
+#define SEC2_AUTH_TAG_BUF_SEMAPHORE_SIZE      4
 
 #endif //  _CE_UTILS_SIZES_H

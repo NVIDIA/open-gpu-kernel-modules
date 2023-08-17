@@ -312,6 +312,7 @@ struct KernelGsp {
     struct MESSAGE_QUEUE_COLLECTION *pMQCollection;
     struct OBJRPC *pRpc;
     struct OBJRPC *pLocklessRpc;
+    char vbiosVersionStr[16];
     KernelGspFlcnUcode *pFwsecUcode;
     KernelGspFlcnUcode *pScrubberUcode;
     KernelGspFlcnUcode *pBooterLoadUcode;
@@ -342,8 +343,10 @@ struct KernelGsp {
     RM_LIBOS_LOG_MEM rmLibosLogMem[3];
     RM_LIBOS_LOG_MEM gspPluginInitTaskLogMem[32];
     RM_LIBOS_LOG_MEM gspPluginVgpuTaskLogMem[32];
+    NvBool bHasVgpuLogs;
     void *pLogElf;
     NvU64 logElfDataSize;
+    PORT_MUTEX *pNvlogFlushMtx;
     NvBool bLibosLogsPollingEnabled;
     NvBool bInInit;
     NvBool bInLockdown;
@@ -1151,14 +1154,24 @@ static inline NV_STATUS kgspStartLogPolling(struct OBJGPU *pGpu, struct KernelGs
 #define kgspStartLogPolling(pGpu, pKernelGsp) kgspStartLogPolling_IMPL(pGpu, pKernelGsp)
 #endif //__nvoc_kernel_gsp_h_disabled
 
-void kgspDumpGspLogs_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvBool arg0);
+void kgspDumpGspLogs_IMPL(struct KernelGsp *pKernelGsp, NvBool arg0);
 
 #ifdef __nvoc_kernel_gsp_h_disabled
-static inline void kgspDumpGspLogs(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvBool arg0) {
+static inline void kgspDumpGspLogs(struct KernelGsp *pKernelGsp, NvBool arg0) {
     NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
 }
 #else //__nvoc_kernel_gsp_h_disabled
-#define kgspDumpGspLogs(pGpu, pKernelGsp, arg0) kgspDumpGspLogs_IMPL(pGpu, pKernelGsp, arg0)
+#define kgspDumpGspLogs(pKernelGsp, arg0) kgspDumpGspLogs_IMPL(pKernelGsp, arg0)
+#endif //__nvoc_kernel_gsp_h_disabled
+
+void kgspDumpGspLogsUnlocked_IMPL(struct KernelGsp *pKernelGsp, NvBool arg0);
+
+#ifdef __nvoc_kernel_gsp_h_disabled
+static inline void kgspDumpGspLogsUnlocked(struct KernelGsp *pKernelGsp, NvBool arg0) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
+}
+#else //__nvoc_kernel_gsp_h_disabled
+#define kgspDumpGspLogsUnlocked(pKernelGsp, arg0) kgspDumpGspLogsUnlocked_IMPL(pKernelGsp, arg0)
 #endif //__nvoc_kernel_gsp_h_disabled
 
 NV_STATUS kgspExecuteSequencerBuffer_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, void *pRunCpuSeqParams);
@@ -1172,15 +1185,15 @@ static inline NV_STATUS kgspExecuteSequencerBuffer(struct OBJGPU *pGpu, struct K
 #define kgspExecuteSequencerBuffer(pGpu, pKernelGsp, pRunCpuSeqParams) kgspExecuteSequencerBuffer_IMPL(pGpu, pKernelGsp, pRunCpuSeqParams)
 #endif //__nvoc_kernel_gsp_h_disabled
 
-NV_STATUS kgspParseFwsecUcodeFromVbiosImg_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, const KernelGspVbiosImg *const pVbiosImg, KernelGspFlcnUcode **ppFwsecUcode);
+NV_STATUS kgspParseFwsecUcodeFromVbiosImg_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, const KernelGspVbiosImg *const pVbiosImg, KernelGspFlcnUcode **ppFwsecUcode, NvU64 *pVbiosVersionCombined);
 
 #ifdef __nvoc_kernel_gsp_h_disabled
-static inline NV_STATUS kgspParseFwsecUcodeFromVbiosImg(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, const KernelGspVbiosImg *const pVbiosImg, KernelGspFlcnUcode **ppFwsecUcode) {
+static inline NV_STATUS kgspParseFwsecUcodeFromVbiosImg(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, const KernelGspVbiosImg *const pVbiosImg, KernelGspFlcnUcode **ppFwsecUcode, NvU64 *pVbiosVersionCombined) {
     NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_gsp_h_disabled
-#define kgspParseFwsecUcodeFromVbiosImg(pGpu, pKernelGsp, pVbiosImg, ppFwsecUcode) kgspParseFwsecUcodeFromVbiosImg_IMPL(pGpu, pKernelGsp, pVbiosImg, ppFwsecUcode)
+#define kgspParseFwsecUcodeFromVbiosImg(pGpu, pKernelGsp, pVbiosImg, ppFwsecUcode, pVbiosVersionCombined) kgspParseFwsecUcodeFromVbiosImg_IMPL(pGpu, pKernelGsp, pVbiosImg, ppFwsecUcode, pVbiosVersionCombined)
 #endif //__nvoc_kernel_gsp_h_disabled
 
 NV_STATUS kgspAllocateScrubberUcodeImage_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, KernelGspFlcnUcode **ppScrubberUcode);

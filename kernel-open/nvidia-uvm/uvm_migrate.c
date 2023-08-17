@@ -134,6 +134,22 @@ static NV_STATUS block_migrate_map_unmapped_pages(uvm_va_block_t *va_block,
     // first map operation
     uvm_page_mask_complement(&va_block_context->caller_page_mask, &va_block->maybe_mapped_pages);
 
+    if (uvm_va_block_is_hmm(va_block) && !UVM_ID_IS_CPU(dest_id)) {
+        // Do not map pages that are already resident on the CPU. This is in
+        // order to avoid breaking system-wide atomic operations on HMM. HMM's
+        // implementation of system-side atomic operations involves restricting
+        // mappings to one processor (CPU or a GPU) at a time. If we were to
+        // grant a GPU a mapping to system memory, this gets into trouble
+        // because, on the CPU side, Linux can silently upgrade PTE permissions
+        // (move from read-only, to read-write, without any MMU notifiers
+        // firing), thus breaking the model by allowing simultaneous read-write
+        // access from two separate processors. To avoid that, just don't map
+        // such pages at all, when migrating.
+        uvm_page_mask_andnot(&va_block_context->caller_page_mask,
+                             &va_block_context->caller_page_mask,
+                             uvm_va_block_resident_mask_get(va_block, UVM_ID_CPU));
+    }
+
     // Only map those pages that are not mapped anywhere else (likely due
     // to a first touch or a migration). We pass
     // UvmEventMapRemoteCauseInvalid since the destination processor of a
@@ -944,17 +960,18 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
         if (type == UVM_API_RANGE_TYPE_ATS) {
             uvm_migrate_args_t uvm_migrate_args =
             {
-                .va_space               = va_space,
-                .mm                     = mm,
-                .start                  = params->base,
-                .length                 = params->length,
-                .dst_id                 = (dest_gpu ? dest_gpu->id : UVM_ID_CPU),
-                .dst_node_id            = (int)params->cpuNumaNode,
-                .populate_permissions   = UVM_POPULATE_PERMISSIONS_INHERIT,
-                .touch                  = false,
-                .skip_mapped            = false,
-                .user_space_start       = &params->userSpaceStart,
-                .user_space_length      = &params->userSpaceLength,
+                .va_space                       = va_space,
+                .mm                             = mm,
+                .start                          = params->base,
+                .length                         = params->length,
+                .dst_id                         = (dest_gpu ? dest_gpu->id : UVM_ID_CPU),
+                .dst_node_id                    = (int)params->cpuNumaNode,
+                .populate_permissions           = UVM_POPULATE_PERMISSIONS_INHERIT,
+                .touch                          = false,
+                .skip_mapped                    = false,
+                .populate_on_cpu_alloc_failures = false,
+                .user_space_start               = &params->userSpaceStart,
+                .user_space_length              = &params->userSpaceLength,
             };
 
             status = uvm_migrate_pageable(&uvm_migrate_args);

@@ -66,7 +66,7 @@ dispswConstruct_IMPL
 
     if (!pKernelDisplay)
     {
-        NV_PRINTF(LEVEL_ERROR, "Display is not enabled, can't create class\n");
+        NV_PRINTF(LEVEL_INFO, "Display is not enabled, can't create class\n");
         return (NV_ERR_INVALID_ARGUMENT);
     }
 

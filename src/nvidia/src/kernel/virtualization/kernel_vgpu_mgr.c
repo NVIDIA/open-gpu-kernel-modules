@@ -215,6 +215,14 @@ kvgpumgrGetSwizzId(OBJGPU *pGpu,
 }
 
 NV_STATUS
+kvgpumgrValidateSwizzId(OBJGPU *pGpu,
+                        NvU32 vgpuTypeId,
+                        NvU32 swizzId)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
 kvgpumgrGetPartitionFlag(NvU32 vgpuTypeId, NvU32 *partitionFlag)
 {
     return NV_ERR_INVALID_ARGUMENT;
@@ -303,9 +311,8 @@ kvgpumgrGetHostVgpuDeviceFromMdevUuid(NvU32 gpuPciId, const NvU8 *pMdevUuid,
 }
 
 NV_STATUS
-kvgpumgrGetHostVgpuDeviceFromVmId(NvU32 gpuPciId, VM_ID guestVmId,
-                                  KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice,
-                                  VM_ID_TYPE vmIdType)
+kvgpumgrGetHostVgpuDeviceFromVgpuUuid(NvU32 gpuPciId, NvU8 *vgpuUuid,
+                                  KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice)
 {
     return NV_ERR_NOT_SUPPORTED;
 }

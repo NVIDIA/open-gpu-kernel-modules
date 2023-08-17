@@ -64,6 +64,14 @@ typedef enum
     UVM_PUSH_FLAG_COUNT,
 } uvm_push_flag_t;
 
+struct uvm_push_crypto_bundle_struct {
+    // Initialization vector used to decrypt the push
+    UvmCslIv iv;
+
+    // Size of the pushbuffer that is encrypted/decrypted
+    NvU32 push_size;
+};
+
 struct uvm_push_struct
 {
     // Location of the first method of the push
@@ -368,11 +376,6 @@ static bool uvm_push_has_space(uvm_push_t *push, NvU32 free_space)
 // sysmem.
 NV_STATUS uvm_push_begin_fake(uvm_gpu_t *gpu, uvm_push_t *push);
 void uvm_push_end_fake(uvm_push_t *push);
-
-static bool uvm_push_is_fake(uvm_push_t *push)
-{
-    return !push->channel;
-}
 
 // Begin an inline data fragment in the push
 //

@@ -139,6 +139,12 @@ void nvlink_core_init_links_from_off_to_swcfg_non_ALI(nvlink_link **pLinks,
  */
 NvlStatus nvlink_core_initnegotiate(nvlink_link **links, NvU32 numLinks, NvU32 flags);
 
+/*
+ * Initialize all the endpoints from OFF to ACTIVE state for ALI sequence
+ * Used for nvlink 4.0+
+ */
+NvlStatus nvlink_core_train_intranode_conns_from_off_to_active_ALI(nvlink_link **pLinks,
+                                                                   NvU32         numLinks);
 /************************************************************************************************/
 /*************************** NVLink topology discovery functions ********************************/
 /************************************************************************************************/
@@ -226,6 +232,12 @@ NvlStatus nvlink_core_train_intranode_conns_from_swcfg_to_active_non_ALI(nvlink_
  */
 NvlStatus nvlink_core_train_check_link_ready_ALI(nvlink_link **links,
                                                  NvU32         linkCount);
+
+/**
+ * Initiate ALI training for nvlink 4.0+
+ */
+NvlStatus nvlink_core_train_from_off_to_active_ALI(nvlink_link **links,
+                                                   NvU32        linkCount);
 
 
 /************************************************************************************************/

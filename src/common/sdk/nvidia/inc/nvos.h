@@ -1776,7 +1776,7 @@ typedef struct
 // - Used for controlling CPU addresses in CUDA's unified CPU+GPU virtual
 //   address space
 // - Only valid on NvRmMapMemory
-// - Only implemented on Linux
+// - Implemented on Unix but not VMware
 #define NVOS33_FLAGS_MAP_FIXED                                     18:18
 #define NVOS33_FLAGS_MAP_FIXED_DISABLE                             (0x00000000)
 #define NVOS33_FLAGS_MAP_FIXED_ENABLE                              (0x00000001)
@@ -1794,9 +1794,10 @@ typedef struct
 // - When combined with MAP_FIXED, this allows the client to exert
 //   significant control over the CPU heap
 // - Used in CUDA's unified CPU+GPU virtual address space
-// - Only valid on NvRmMapMemory (specifies RM's behavior whenever the
+// - Valid in nvRmUnmapMemory
+// - Valid on NvRmMapMemory (specifies RM's behavior whenever the
 //   mapping is destroyed, regardless of mechanism)
-// - Only implemented on Linux
+// - Implemented on Unix but not VMware
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP                              19:19
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP_DISABLE                      (0x00000000)
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP_ENABLE                       (0x00000001)

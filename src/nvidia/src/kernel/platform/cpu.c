@@ -751,16 +751,31 @@ void RmInitCpuInfo(void)
     getEmbeddedProcessorName(pSys->cpuInfo.name, sizeof(pSys->cpuInfo.name));
 
     if (IS_INTEL(cpuinfo.Foundry))
+    {
         cpuidInfoIntel(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_INTEL;
+    }
     else if (IS_AMD(cpuinfo.Foundry))
+    {
         cpuidInfoAMD(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_AMD;
+    }
 #if defined(_M_IX86) || defined(NVCPU_X86)
     else if (IS_WINCHIP(cpuinfo.Foundry))
+    {
         cpuidInfoWinChip(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_WINCHIP;
+    }
     else if (IS_CYRIX(cpuinfo.Foundry))
+    {
         cpuidInfoCyrix(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_CYRIX;
+    }
     else if (IS_TRANSM(cpuinfo.Foundry))
+    {
         cpuidInfoTransmeta(pSys, &cpuinfo);
+        pSys->cpuInfo.vendor = CPU_VENDOR_TRANSM;
+    }
 #endif
     else
     {

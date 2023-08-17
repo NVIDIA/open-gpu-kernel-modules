@@ -52,61 +52,6 @@
         SPDM_GET_CAPABILITIES_RESPONSE_FLAGS_KEY_EX_CAP     | \
         SPDM_GET_CAPABILITIES_RESPONSE_FLAGS_KEY_UPD_CAP
 
-#define DER_LONG_FORM_LENGTH_FIELD_BIT (0x80)
-#define DER_CERT_SIZE_FIELD_LENGTH     (0x1)
-
-#define SPDM_PEM_BEGIN_CERTIFICATE "-----BEGIN CERTIFICATE-----\n"
-#define SPDM_PEM_END_CERTIFICATE   "-----END CERTIFICATE-----\n"
-
-#define SPDM_L1_CERTIFICATE_PEM "-----BEGIN CERTIFICATE-----\n"\
-                                "MIICCzCCAZCgAwIBAgIQLTZwscoQBBHB/sDoKgZbVDAKBggqhkjOPQQDAzA1MSIw\n"\
-                                "IAYDVQQDDBlOVklESUEgRGV2aWNlIElkZW50aXR5IENBMQ8wDQYDVQQKDAZOVklE\n"\
-                                "SUEwIBcNMjExMTA1MDAwMDAwWhgPOTk5OTEyMzEyMzU5NTlaMDUxIjAgBgNVBAMM\n"\
-                                "GU5WSURJQSBEZXZpY2UgSWRlbnRpdHkgQ0ExDzANBgNVBAoMBk5WSURJQTB2MBAG\n"\
-                                "ByqGSM49AgEGBSuBBAAiA2IABA5MFKM7+KViZljbQSlgfky/RRnEQScW9NDZF8SX\n"\
-                                "gAW96r6u/Ve8ZggtcYpPi2BS4VFu6KfEIrhN6FcHG7WP05W+oM+hxj7nyA1r1jkB\n"\
-                                "2Ry70YfThX3Ba1zOryOP+MJ9vaNjMGEwDwYDVR0TAQH/BAUwAwEB/zAOBgNVHQ8B\n"\
-                                "Af8EBAMCAQYwHQYDVR0OBBYEFFeF/4PyY8xlfWi3Olv0jUrL+0lfMB8GA1UdIwQY\n"\
-                                "MBaAFFeF/4PyY8xlfWi3Olv0jUrL+0lfMAoGCCqGSM49BAMDA2kAMGYCMQCPeFM3\n"\
-                                "TASsKQVaT+8S0sO9u97PVGCpE9d/I42IT7k3UUOLSR/qvJynVOD1vQKVXf0CMQC+\n"\
-                                "EY55WYoDBvs2wPAH1Gw4LbcwUN8QCff8bFmV4ZxjCRr4WXTLFHBKjbfneGSBWwA=\n"\
-                                "-----END CERTIFICATE-----\n"
-
-#define SPDM_L2_CERTIFICATE_PEM "-----BEGIN CERTIFICATE-----\n"\
-                                "MIICijCCAhCgAwIBAgIQTCVe3jvQAb8/SjtgX8qJijAKBggqhkjOPQQDAzA1MSIw\n"\
-                                "IAYDVQQDDBlOVklESUEgRGV2aWNlIElkZW50aXR5IENBMQ8wDQYDVQQKDAZOVklE\n"\
-                                "SUEwIBcNMjIwMTEyMDAwMDAwWhgPOTk5OTEyMzEyMzU5NTlaMD0xHjAcBgNVBAMM\n"\
-                                "FU5WSURJQSBHSDEwMCBJZGVudGl0eTEbMBkGA1UECgwSTlZJRElBIENvcnBvcmF0\n"\
-                                "aW9uMHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE+pg+tDUuILlZILk5wg22YEJ9Oh6c\n"\
-                                "yPcsv3IvgRWcV4LeZK1pTCoQDIplZ0E4qsLG3G04pxsbMhxbqkiz9pqlTV2rtuVg\n"\
-                                "SmIqnSYkU1jWXsPS9oVLCGE8VRLl1JvqyOxUo4HaMIHXMA8GA1UdEwEB/wQFMAMB\n"\
-                                "Af8wDgYDVR0PAQH/BAQDAgEGMDsGA1UdHwQ0MDIwMKAuoCyGKmh0dHA6Ly9jcmwu\n"\
-                                "bmRpcy5udmlkaWEuY29tL2NybC9sMS1yb290LmNybDA3BggrBgEFBQcBAQQrMCkw\n"\
-                                "JwYIKwYBBQUHMAGGG2h0dHA6Ly9vY3NwLm5kaXMubnZpZGlhLmNvbTAdBgNVHQ4E\n"\
-                                "FgQUB0Kg6wOcgGB7oUFhmU2uJffCmx4wHwYDVR0jBBgwFoAUV4X/g/JjzGV9aLc6\n"\
-                                "W/SNSsv7SV8wCgYIKoZIzj0EAwMDaAAwZQIxAPIQhnveFxYIrPzBqViT2I34SfS4\n"\
-                                "JGWFnk/1UcdmgJmp+7l6rH/C4qxwntYSgeYrlQIwdjQuofHnhd1RL09OBO34566J\n"\
-                                "C9bYAosT/86cCojiGjhLnal9hJOH0nS/lrbaoc5a\n"\
-                                "-----END CERTIFICATE-----\n"
-
-#define SPDM_L3_CERTIFICATE_PEM "-----BEGIN CERTIFICATE-----\n"\
-                                "MIICqjCCAi+gAwIBAgIQav5xhPkiMsjfeyQiYXduVjAKBggqhkjOPQQDAzA9MR4w\n"\
-                                "HAYDVQQDDBVOVklESUEgR0gxMDAgSWRlbnRpdHkxGzAZBgNVBAoMEk5WSURJQSBD\n"\
-                                "b3Jwb3JhdGlvbjAgFw0yMjAzMDEwMDAwMDBaGA85OTk5MTIzMTIzNTk1OVowUzEn\n"\
-                                "MCUGA1UEAwweTlZJRElBIEdIMTAwIFByb3Zpc2lvbmVyIElDQSAxMRswGQYDVQQK\n"\
-                                "DBJOVklESUEgQ29ycG9yYXRpb24xCzAJBgNVBAYTAlVTMHYwEAYHKoZIzj0CAQYF\n"\
-                                "K4EEACIDYgAEzUdWqjn1OlXhLfFOKAFTghqG+Q3zF4xgSBbZsUEyWYCC3rKjE9Nn\n"\
-                                "o88ZpBQx85Oo0PkqP2dwoMVNTQMv5cvy9jLaTvSTXZwN2HQHE9u7x7BIYrWi0sG3\n"\
-                                "5q1IJNSOGO5Lo4HbMIHYMA8GA1UdEwEB/wQFMAMBAf8wDgYDVR0PAQH/BAQDAgEG\n"\
-                                "MDwGA1UdHwQ1MDMwMaAvoC2GK2h0dHA6Ly9jcmwubmRpcy5udmlkaWEuY29tL2Ny\n"\
-                                "bC9sMi1naDEwMC5jcmwwNwYIKwYBBQUHAQEEKzApMCcGCCsGAQUFBzABhhtodHRw\n"\
-                                "Oi8vb2NzcC5uZGlzLm52aWRpYS5jb20wHQYDVR0OBBYEFCloyxYs0HeVcqJ5EAPm\n"\
-                                "nroMzAqUMB8GA1UdIwQYMBaAFAdCoOsDnIBge6FBYZlNriX3wpseMAoGCCqGSM49\n"\
-                                "BAMDA2kAMGYCMQDK0BCr49DNJ48Yh5wu388bZifDFxAsiUS4U1fGmpJZFhCbODH6\n"\
-                                "mRwcMxp6EOayZuYCMQDYKTyNc2FxWFuhHtdCE3ls4S7SInehdErTZNuhFymc4YOM\n"\
-                                "6VlLWTY/CM+resjjqxQ=\n"\
-                                "-----END CERTIFICATE-----\n"
-
 /* ------------------------ Types Definitions ------------------------------ */
 /*!
  * Define context structure which tracks all state required for IO between
@@ -347,7 +292,6 @@ _spdmGetSequenceNumberGsp
 /*!
  * Callback to fill RNG blob in secured message.
  * The random number size is for secured message format only and defined in DMTF DSP0277.
- * Currently, requester(RM) and responder(GSP-SPDM) doesn't support random number.
  */
 uint32_t
 _spdmGetMaxRandomNumberCountGsp
@@ -355,8 +299,7 @@ _spdmGetMaxRandomNumberCountGsp
     void
 )
 {
-    // No RNG in GSP secured message.
-    return 0;
+    return NV_SPDM_MAX_RANDOM_MSG_BYTES;
 }
 
 /*!
@@ -485,6 +428,12 @@ _spdmEncodeMessageGsp
         *transport_message_size     = payloadSize;
     }
 
+    // Check final encrypted message size.
+    if (*transport_message_size > NV_SPDM_RM_SURFACE_SIZE_IN_BYTE)
+    {
+        return LIBSPDM_STATUS_BUFFER_TOO_SMALL;
+    }
+
     // Record the message in the last exchange transcript.
     if (message_size > SPDM_MAX_EXCHANGE_BUFFER_SIZE)
     {
@@ -539,7 +488,8 @@ _spdmDecodeMessageGsp
 
     // Retrieve NV-header from message, and perform basic validation.
     pNvSpdmDescHdr = (NV_SPDM_DESC_HEADER *)transport_message;
-    if (transport_message_size < sizeof(NV_SPDM_DESC_HEADER))
+    if (transport_message_size < sizeof(NV_SPDM_DESC_HEADER) ||
+        transport_message_size > NV_SPDM_RM_SURFACE_SIZE_IN_BYTE)
     {
         return LIBSPDM_STATUS_INVALID_MSG_FIELD;
     }
@@ -692,7 +642,6 @@ _spdmSendMessageGsp
     portMemCopy(pRequest, requestSize, message, message_size);
 
     nvStatus = spdmMessageProcess_HAL(g_pGpu, g_pSpdm,
-                                      CC_CTRL_CODE_SPDM_MESSAGE_PROCESS,
                                       pRequest, requestSize,
                                       pIOContext->pResponse,
                                       &pIOContext->responseSize);
@@ -808,260 +757,6 @@ _spdmSendInitRmDataCommand
     return NV_OK;
 }
 
-/*!
-* Static function that calculates the length of the X509 certificate in DER/TLV
-* format. It assumes that the certificate is valid.
-*/
-static NV_STATUS
-_calcX509CertSize
-(
-    NvU8 *pCert,
-    NvU8 *bufferEnd,
-    NvU32 *pCertLength
-)
-{
-    // The cert is in TLV format.
-    NvU32 certSize       = pCert[1];
-
-    // Check if the length is in DER longform.
-    // MSB in the length field is set for long form notation.
-    // fields.
-    if (certSize & DER_LONG_FORM_LENGTH_FIELD_BIT)
-    {
-        //
-        // The remaining bits in the length field indicate the
-        // number of following bytes used to represent the length.
-        // in base 256, most significant digit first.
-        //
-        NvU32 numLenBytes = certSize & 0x3f;
-        NvU8 *pStart      = &pCert[2];
-        NvU8 *pEnd        = pStart + numLenBytes;
-        // Checking for buffer overflow.
-        if (pEnd > bufferEnd)
-        {
-            return NV_ERR_BUFFER_TOO_SMALL;
-        }
-
-        certSize = *pStart;
-        while (++pStart < pEnd)
-        {
-            certSize = (certSize << 8) + *pStart ;
-        }
-        // Total cert length includes the Tag + length
-        // Adding it here.
-        certSize += 2 + numLenBytes;
-    }
-
-    *pCertLength = certSize;
-    return NV_OK;
-}
-
-static NV_STATUS
-pem_write_buffer
-(
-    NvU8 const *der,
-    NvU64       derLen,
-    NvU8       *buffer,
-    NvU64       bufferLen,
-    NvU64      *bufferUsed
-)
-{
-    static const NvU8 base64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    NvU64 i, tmp, size;
-    NvU64 printed = 0;
-    NvU8 *ptr = buffer;
-
-    // Base64 encoded size
-    size = (derLen + 2) / 3 * 4;
-
-    // Add 1 byte per 64 for newline
-    size = size + (size + 63) / 64;
-
-    // Add header excluding the terminating null and footer including the null
-    size += sizeof(SPDM_PEM_BEGIN_CERTIFICATE) - 1 +
-            sizeof(SPDM_PEM_END_CERTIFICATE);
-
-    if (bufferLen < size)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    portMemCopy(ptr, bufferLen - (ptr - buffer), SPDM_PEM_BEGIN_CERTIFICATE,
-                sizeof(SPDM_PEM_BEGIN_CERTIFICATE) - 1);
-    ptr += sizeof(SPDM_PEM_BEGIN_CERTIFICATE) - 1;
-
-    for (i = 0; (i + 2) < derLen; i += 3)
-    {
-        tmp = (der[i] << 16) | (der[i + 1] << 8) | (der[i + 2]);
-        *ptr++ = base64[(tmp >> 18) & 63];
-        *ptr++ = base64[(tmp >> 12) & 63];
-        *ptr++ = base64[(tmp >> 6) & 63];
-        *ptr++ = base64[(tmp >> 0) & 63];
-
-        printed += 4;
-        if (printed == 64)
-        {
-            *ptr++ = '\n';
-            printed = 0;
-        }
-    }
-
-    if ((i == derLen) && (printed != 0))
-    {
-        *ptr++ = '\n';
-    }
-
-    // 1 byte extra
-    if (i == (derLen - 1))
-    {
-        tmp = der[i] << 4;
-        *ptr++ = base64[(tmp >> 6) & 63];
-        *ptr++ = base64[(tmp >> 0) & 63];
-        *ptr++ = '=';
-        *ptr++ = '=';
-        *ptr++ = '\n';
-    }
-
-    // 2 byte extra
-    if (i == (derLen - 2))
-    {
-        tmp = ((der[i] << 8) | (der[i + 1])) << 2;
-        *ptr++ = base64[(tmp >> 12) & 63];
-        *ptr++ = base64[(tmp >> 6) & 63];
-        *ptr++ = base64[(tmp >> 0) & 63];
-        *ptr++ = '=';
-        *ptr++ = '\n';
-    }
-
-     portMemCopy(ptr, bufferLen - (ptr - buffer), SPDM_PEM_END_CERTIFICATE,
-                 sizeof(SPDM_PEM_END_CERTIFICATE));
-     ptr += sizeof(SPDM_PEM_END_CERTIFICATE);
-
-    *bufferUsed = size;
-    return NV_OK;
-}
-
-/*!
-* Static function that first converts the IK and AK certificates from DER to
-* PEM format. Then it builds the cert chain in PEM format. It is assumed that
-* the all the certificates are valid. Also it is assumend that there is a valid
-* spdm session already established.
-*/
-static NV_STATUS
-_spdmBuildCertChain
-(
-    NvU8   *pFirstCert,
-    NvU32   firstCertSize,
-    NvU8   *pSecondCert,
-    NvU32   secondCertSize,
-    NvU8   *pOutBuffer,
-    NvU32  *outBufferSize
-)
-{
-    NvU64              firstCertOutputSize      = 0;
-    NvU64              secondCertOutputSize     = 0;
-    NvU64              remainingOutBufferSize   = *outBufferSize;
-    void              *pPortMemCopyStatus       = NULL;
-    NV_STATUS          status;
-
-    if (pFirstCert == NULL || pSecondCert == NULL || pOutBuffer == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    //
-    // Write the AK certificate to the output buffer
-    //
-    status = pem_write_buffer(pFirstCert, firstCertSize, pOutBuffer,
-                              remainingOutBufferSize, &firstCertOutputSize);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    //
-    // Keep track how much space we have left in the output buffer
-    // and where the next certificate should start.
-    // Clear the last byte (NULL).
-    //
-    remainingOutBufferSize -= firstCertOutputSize - 1;
-    pOutBuffer             += firstCertOutputSize - 1;
-
-    //
-    // Write the IK certificate to the output buffer
-    //
-    status = pem_write_buffer(pSecondCert, secondCertSize, pOutBuffer,
-                              remainingOutBufferSize, &secondCertOutputSize);
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    remainingOutBufferSize -= secondCertOutputSize - 1;
-    pOutBuffer             += secondCertOutputSize - 1;
-
-    // Checking if the available size of buffer is enough to keep the whole
-    // certificate chain otherwise raise error.
-    if (remainingOutBufferSize < sizeof(SPDM_L1_CERTIFICATE_PEM)
-                               + sizeof(SPDM_L2_CERTIFICATE_PEM)
-                               + sizeof(SPDM_L3_CERTIFICATE_PEM))
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-    //
-    // Write the L3 certificate to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     SPDM_L3_CERTIFICATE_PEM,
-                                     sizeof(SPDM_L3_CERTIFICATE_PEM) - 1);
-    if (!pPortMemCopyStatus)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    remainingOutBufferSize -= sizeof(SPDM_L3_CERTIFICATE_PEM) - 1;
-    pOutBuffer             += sizeof(SPDM_L3_CERTIFICATE_PEM) - 1;
-
-    //
-    // Write the L2 certificate to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     SPDM_L2_CERTIFICATE_PEM,
-                                     sizeof(SPDM_L2_CERTIFICATE_PEM) - 1);
-    if (!pPortMemCopyStatus)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-    remainingOutBufferSize -= sizeof(SPDM_L2_CERTIFICATE_PEM) - 1;
-    pOutBuffer             += sizeof(SPDM_L2_CERTIFICATE_PEM) - 1;
-
-    //
-    // Write the L1 certificate to the output buffer
-    //
-    pPortMemCopyStatus = portMemCopy(pOutBuffer,
-                                     remainingOutBufferSize,
-                                     SPDM_L1_CERTIFICATE_PEM,
-                                     sizeof(SPDM_L1_CERTIFICATE_PEM) - 1);
-    if (!pPortMemCopyStatus)
-    {
-        return NV_ERR_BUFFER_TOO_SMALL;
-    }
-
-    //
-    // Output the total certificate chain size
-    // Do not count the NULL bytes.
-    //
-    *outBufferSize = firstCertOutputSize - 1 +
-                     secondCertOutputSize - 1 +
-                     sizeof(SPDM_L3_CERTIFICATE_PEM) - 1 +
-                     sizeof(SPDM_L2_CERTIFICATE_PEM) - 1 +
-                     sizeof(SPDM_L1_CERTIFICATE_PEM) - 1;
-
-    return NV_OK;
-}
-
 /* ------------------------ Public Functions ------------------------------- */
 /*!
  * On Hopper, we use GSP as SPDM Responder. To initialize, we must allocate
@@ -1121,8 +816,8 @@ spdmDeviceInit_GH100
     pIOContext->descHdrSizeInByte  = NV_SPDM_DESC_HEADER_SIZE_IN_BYTE;
     pIOContext->rmBufferSizeInByte = NV_RM_BUFFER_SIZE_IN_BYTE;
     pIOContext->alignSize          = SPDM_MESSAGE_BUFFER_ADDRESS_ALIGNMENT;
-    pIOContext->addrSpace          = ADDR_SYSMEM;
-    pIOContext->regionId           = NV_SPDM_UNPROTECTED_REGION_ID;
+    pIOContext->addrSpace          = NV_SPDM_DMA_ADDR_SPACE_DEFAULT;
+    pIOContext->regionId           = NV_SPDM_DMA_REGION_ID_DEFAULT;
     pIOContext->pResponse          = NULL;
     pIOContext->responseSize       = 0;
 
@@ -1190,10 +885,7 @@ spdmDeviceInit_GH100
     RM_GSP_SPDM_CC_INIT_CTX *pCcInitCtx = &pCcInit->ccInitCtx;
 
     // Ucode is responsible for setting DMA index.
-    pCcInitCtx->dmaIdx             = 0;
     pCcInitCtx->guestId            = pSpdm->guestId;
-    pCcInitCtx->regionId           = pIOContext->regionId;
-    pCcInitCtx->addrSpace          = pIOContext->addrSpace;
     pCcInitCtx->rmBufferSizeInByte = NV_RM_BUFFER_SIZE_IN_BYTE;
     NvU64_ALIGN32_PACK(&pCcInitCtx->dmaAddr, &pIOContext->dmaAddr);
 
@@ -1325,7 +1017,6 @@ spdmMessageProcess_GH100
 (
     OBJGPU *pGpu,
     Spdm   *pSpdm,
-    NvU32   ctrlCode,
     NvU8   *pRequest,
     NvU32   requestSize,
     NvU8   *pResponse,
@@ -1387,8 +1078,6 @@ spdmMessageProcess_GH100
     pCcCtrlCtx->version     = NV_SPDM_DESC_HEADER_VERSION_CURRENT;
     pCcCtrlCtx->guestId     = pSpdm->guestId;
     pCcCtrlCtx->endpointId  = pSpdm->endpointId;
-    pCcCtrlCtx->ctrlCode    = ctrlCode;
-    pCcCtrlCtx->ctrlParam   = 0;
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
 
@@ -1482,7 +1171,7 @@ spdmCheckConnection_GH100
     size_t                      dataSize;
     NvU32                       i;
     NvU32                       algoCheckCount;
-    NvU32                       expectedAlgo;
+    NvU32                       actualAlgo;
     PSPDM_ALGO_CHECK_ENTRY      pCheckEntry;
 
     if (pGpu == NULL || pSpdm == NULL)
@@ -1544,174 +1233,17 @@ spdmCheckConnection_GH100
     {
         pCheckEntry = &g_SpdmAlgoCheckTable_GH100[i];
 
-        dataSize = sizeof(expectedAlgo);
-        ret = libspdm_get_data(pContext, pCheckEntry->dataType,
-                               &dataParam, &expectedAlgo, &dataSize);
+        actualAlgo = 0;
+        dataSize   = sizeof(actualAlgo);
+        ret        = libspdm_get_data(pContext, pCheckEntry->dataType,
+                                      &dataParam, &actualAlgo, &dataSize);
 
-        if (ret != LIBSPDM_STATUS_SUCCESS || expectedAlgo != pCheckEntry->expectedAlgo)
+        if (ret != LIBSPDM_STATUS_SUCCESS || actualAlgo != pCheckEntry->expectedAlgo)
         {
             NV_PRINTF(LEVEL_ERROR, "SPDM: Invalid crypto algorithms selected.\n");
-            NV_PRINTF(LEVEL_ERROR, "SPDM: AlgoCheckCount %d, i is %d, status is %d.\n", (NvU32)algoCheckCount, (NvU32)i, (NvU32)ret);
-            NV_PRINTF(LEVEL_ERROR, "SPDM: Expected ALgo %d, actual algo %d", (NvU32)expectedAlgo, (NvU32)pCheckEntry->expectedAlgo);
+            NV_PRINTF(LEVEL_ERROR, "SPDM: AlgoCheckCount 0x%0x, i is 0x%0x, status is 0x%0x.\n", (NvU32)algoCheckCount, (NvU32)i, (NvU32)ret);
+            NV_PRINTF(LEVEL_ERROR, "SPDM: Expected algo 0x%0x, actual algo 0x%0x\n", (NvU32)pCheckEntry->expectedAlgo, (NvU32)actualAlgo);
             return NV_ERR_INVALID_STATE;
-        }
-    }
-
-    return NV_OK;
-}
-
-NV_STATUS
-spdmGetCertificates_GH100
-(
-    OBJGPU *pGpu,
-    Spdm   *pSpdm
-)
-{
-    NV_STATUS status = NV_OK;
-
-    if (pGpu == NULL || pSpdm == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    if (pSpdm->pLibspdmContext == NULL)
-    {
-        return NV_ERR_NOT_READY;
-    }
-
-    // Allocate buffer for certificates.
-    pSpdm->attestationCertChainSize = SPDM_MAX_CERT_CHAIN_SIZE;
-    pSpdm->pAttestationCertChain    = portMemAllocNonPaged(pSpdm->attestationCertChainSize);
-
-    // Ensure data was properly allocated.
-    if (pSpdm->pAttestationCertChain == NULL)
-    {
-        status = NV_ERR_NO_MEMORY;
-        goto ErrorExit;
-    }
-
-    // We fetch Attestation cert chain only on Hopper.
-    portMemSet(pSpdm->pAttestationCertChain, 0, pSpdm->attestationCertChainSize);
-    CHECK_SPDM_STATUS(libspdm_get_certificate(pSpdm->pLibspdmContext, SPDM_CERT_DEFAULT_SLOT_ID,
-                                              &pSpdm->attestationCertChainSize,
-                                              pSpdm->pAttestationCertChain));
-ErrorExit:
-    if (status != NV_OK)
-    {
-        // portMemFree() handles NULL.
-        portMemFree(pSpdm->pAttestationCertChain);
-        pSpdm->pAttestationCertChain    = NULL;
-        pSpdm->attestationCertChainSize = 0;
-    }
-
-    return status;
-}
-
-NV_STATUS
-spdmGetCertChains_GH100
-(
-    OBJGPU *pGpu,
-    Spdm   *pSpdm,
-    void   *pKeyExCertChain,
-    NvU32  *pKeyExCertChainSize,
-    void   *pAttestationCertChain,
-    NvU32  *pAttestationCertChainSize
-)
-{
-    NV_STATUS status              = NV_OK;
-    NvU8 *pIkCertificate          = NULL;
-    NvU32 ikCertificateSize       = 0;
-    NvU8 *pAkCertificate          = NULL;
-    NvU32 akCertificateSize       = 0;
-    NvU8 *pSpdmCertChainBufferEnd = NULL;
-    libspdm_context_t *pContext   = NULL;
-    uint32_t base_hash_algo       = 0;
-
-    if (pGpu == NULL || pSpdm == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Ensure we have a valid session, and have retrieved the certificates.
-    if (pSpdm->pLibspdmContext == NULL || pSpdm->sessionId == INVALID_SESSION_ID ||
-        pSpdm->pAttestationCertChain == NULL)
-    {
-        return NV_ERR_NOT_READY;
-    }
-
-    // We don't support multiple cert chains.
-    if (pKeyExCertChainSize != NULL)
-    {
-        *pKeyExCertChainSize = 0;
-    }
-
-    // Retrieve Attestation Cert Chain, if requested.
-    if (pAttestationCertChain != NULL && pAttestationCertChainSize != NULL)
-    {
-        // Comparison should account for type size mismatch.
-        if (pSpdm->attestationCertChainSize > (size_t)(*pAttestationCertChainSize))
-        {
-            return NV_ERR_BUFFER_TOO_SMALL;
-        }
-
-        //
-        // Get context
-        //
-        pContext = (libspdm_context_t *)pSpdm->pLibspdmContext;
-        if (pContext == NULL)
-        {
-            return NV_ERR_INVALID_ARGUMENT;
-        }
-
-        //
-        // Skip over the certificate chain size, reserved size and the root hash
-        //
-
-        pSpdmCertChainBufferEnd = pSpdm->pAttestationCertChain + pSpdm->attestationCertChainSize;
-        base_hash_algo          = pContext->connection_info.algorithm.base_hash_algo;
-        pIkCertificate          = (NvU8 *)pSpdm->pAttestationCertChain;
-        pIkCertificate         += sizeof(spdm_cert_chain_t) + libspdm_get_hash_size(base_hash_algo);
-
-        if (pIkCertificate> pSpdmCertChainBufferEnd)
-        {
-            return NV_ERR_BUFFER_TOO_SMALL;
-        }
-
-        status = _calcX509CertSize(pIkCertificate, pSpdmCertChainBufferEnd, &ikCertificateSize);
-        if (status != NV_OK)
-        {
-            return status;
-        }
-
-        if (pIkCertificate + ikCertificateSize > pSpdmCertChainBufferEnd)
-        {
-            return NV_ERR_BUFFER_TOO_SMALL;
-        }
-
-        pAkCertificate = (NvU8 *)pIkCertificate + ikCertificateSize;
-
-        if (pAkCertificate + DER_CERT_SIZE_FIELD_LENGTH > pSpdmCertChainBufferEnd)
-        {
-            return NV_ERR_BUFFER_TOO_SMALL;
-        }
-
-        status = _calcX509CertSize(pAkCertificate, pSpdmCertChainBufferEnd, &akCertificateSize);
-        if (status != NV_OK)
-        {
-            return status;
-        }
-
-        if (pAkCertificate + akCertificateSize > pSpdmCertChainBufferEnd)
-        {
-            return NV_ERR_BUFFER_TOO_SMALL;
-        }
-
-        status = _spdmBuildCertChain(pAkCertificate, akCertificateSize,
-                                     pIkCertificate, (size_t)ikCertificateSize,
-                                     pAttestationCertChain, pAttestationCertChainSize);
-        if (status != NV_OK)
-        {
-            return status;
         }
     }
 

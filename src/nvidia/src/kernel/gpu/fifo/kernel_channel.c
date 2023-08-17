@@ -23,12 +23,13 @@
 
 // FIXME XXX
 #define NVOC_KERNEL_GRAPHICS_CONTEXT_H_PRIVATE_ACCESS_ALLOWED
+#define NVOC_KERNEL_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/gpu/fifo/kernel_channel.h"
 
 #include "kernel/core/locks.h"
 #include "kernel/diagnostics/gpu_acct.h"
-#include "kernel/gpu/conf_compute/conf_compute_keystore.h"
+#include "kernel/gpu/conf_compute/conf_compute.h"
 #include "kernel/gpu/device/device.h"
 #include "kernel/gpu/fifo/kernel_ctxshare.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
@@ -198,6 +199,9 @@ kchannelConstruct_IMPL
                sizeof pChannelGpfifoParams->eccErrorNotifierMem);
     pChannelGpfifoParams->ProcessID = 0;
     pChannelGpfifoParams->SubProcessID = 0;
+    portMemSet(pChannelGpfifoParams->encryptIv, 0, sizeof(pChannelGpfifoParams->encryptIv));
+    portMemSet(pChannelGpfifoParams->decryptIv, 0, sizeof(pChannelGpfifoParams->decryptIv));
+    portMemSet(pChannelGpfifoParams->hmacNonce, 0, sizeof(pChannelGpfifoParams->hmacNonce));
 
     pRmClient = dynamicCast(pRsClient, RmClient);
     if (pRmClient == NULL)
@@ -306,8 +310,6 @@ kchannelConstruct_IMPL
             return NV_ERR_INVALID_STATE;
         }
     }
-
-
 
     // Find the TSG, or create the TSG if we need to wrap it
     status = clientGetResourceRefByType(pRsClient, hParent,
@@ -691,6 +693,39 @@ kchannelConstruct_IMPL
     // Determine initial runlist ID (based on engine type if provided or inherited from TSG)
     pKernelChannel->runlistId = kfifoGetDefaultRunlist_HAL(pGpu, pKernelFifo, pKernelChannel->engineType);
 
+    pKernelChannel->bCCSecureChannel = FLD_TEST_DRF(OS04, _FLAGS, _CC_SECURE, _TRUE, flags);
+    if (pKernelChannel->bCCSecureChannel)
+    {
+        ConfidentialCompute* pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+        // return early if gpu is not ready to accept work
+        if (pConfCompute && kchannelCheckIsUserMode(pKernelChannel)
+            && !confComputeAcceptClientRequest(pGpu, pConfCompute))
+        {
+            return NV_ERR_NOT_READY;
+        }
+
+        status = kchannelRetrieveKmb_HAL(pGpu, pKernelChannel, ROTATE_IV_ALL_VALID,
+                                         NV_TRUE, &pKernelChannel->clientKmb);
+        NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
+
+        portMemCopy(pChannelGpfifoParams->encryptIv,
+                    sizeof(pChannelGpfifoParams->encryptIv),
+                    pKernelChannel->clientKmb.encryptBundle.iv,
+                    sizeof(pKernelChannel->clientKmb.encryptBundle.iv));
+
+        portMemCopy(pChannelGpfifoParams->decryptIv,
+                    sizeof(pChannelGpfifoParams->decryptIv),
+                    pKernelChannel->clientKmb.decryptBundle.iv,
+                    sizeof(pKernelChannel->clientKmb.decryptBundle.iv));
+
+        portMemCopy(pChannelGpfifoParams->hmacNonce,
+                    sizeof(pChannelGpfifoParams->hmacNonce),
+                    pKernelChannel->clientKmb.hmacBundle.nonce,
+                    sizeof(pKernelChannel->clientKmb.hmacBundle.nonce));
+
+    }
+
     // Set TLS state and BAR0 window if we are working with Gr
     if (bMIGInUse && RM_ENGINE_TYPE_IS_GR(pKernelChannel->engineType))
     {
@@ -909,7 +944,6 @@ cleanup:
     if (bLockAcquired)
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
 
-
     // These fields are only needed internally; clear them here
     pChannelGpfifoParams->hPhysChannelGroup = 0;
     pChannelGpfifoParams->internalFlags = 0;
@@ -919,6 +953,9 @@ cleanup:
                sizeof pChannelGpfifoParams->eccErrorNotifierMem);
     pChannelGpfifoParams->ProcessID = 0;
     pChannelGpfifoParams->SubProcessID = 0;
+    portMemSet(pChannelGpfifoParams->encryptIv, 0, sizeof(pChannelGpfifoParams->encryptIv));
+    portMemSet(pChannelGpfifoParams->decryptIv, 0, sizeof(pChannelGpfifoParams->decryptIv));
+    portMemSet(pChannelGpfifoParams->hmacNonce, 0, sizeof(pChannelGpfifoParams->hmacNonce));
 
     // Free the allocated resources if there was an error
     if (status != NV_OK)
@@ -2419,6 +2456,24 @@ _kchannelSendChannelAllocRpc
                 sizeof(NvU64) * NV2080_MAX_SUBDEVICES,
                 (const void*)pChannelGpfifoParams->userdOffset,
                 sizeof(NvU64) * NV2080_MAX_SUBDEVICES);
+
+    if (pKernelChannel->bCCSecureChannel)
+    {
+        portMemCopy((void*)pRpcParams->encryptIv,
+                    sizeof(pRpcParams->encryptIv),
+                    (const void*)pChannelGpfifoParams->encryptIv,
+                    sizeof(pChannelGpfifoParams->encryptIv));
+
+        portMemCopy((void*)pRpcParams->decryptIv,
+                    sizeof(pRpcParams->decryptIv),
+                    (const void*)pChannelGpfifoParams->decryptIv,
+                    sizeof(pChannelGpfifoParams->decryptIv));
+
+        portMemCopy((void*)pRpcParams->hmacNonce,
+                    sizeof(pRpcParams->hmacNonce),
+                    (const void*)pChannelGpfifoParams->hmacNonce,
+                    sizeof(pChannelGpfifoParams->hmacNonce));
+    }
 
     //
     // These fields are only filled out for GSP client or full SRIOV
@@ -4304,4 +4359,155 @@ _kchannelUpdateFifoMapping
     pMapping->length              = cpuMapLength;
     pMapping->flags               = flags;
     pMapping->pContext            = (void*)(NvUPtr)pKernelChannel->ChID;
+}
+
+NV_STATUS kchannelRetrieveKmb_KERNEL
+(
+    OBJGPU *pGpu,
+    KernelChannel *pKernelChannel,
+    ROTATE_IV_TYPE rotateOperation,
+    NvBool includeSecrets,
+    CC_KMB *keyMaterialBundle
+)
+{
+    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+
+    NV_ASSERT(pCC != NULL);
+
+    return (confComputeKeyStoreRetrieveViaChannel_HAL(pCC, pKernelChannel, rotateOperation,
+                                                      includeSecrets, keyMaterialBundle));
+}
+
+/*!
+ * @brief Get KMB for secure channel
+ *
+ * @param[in] pKernelChannnel
+ * @param[out] pGetKmbParams
+ */
+NV_STATUS
+kchannelCtrlCmdGetKmb_KERNEL
+(
+    KernelChannel *pKernelChannel,
+    NVC56F_CTRL_CMD_GET_KMB_PARAMS *pGetKmbParams
+)
+{
+    if (!pKernelChannel->bCCSecureChannel)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    portMemCopy((void*)(&pGetKmbParams->kmb), sizeof(CC_KMB),
+                (const void*)(&pKernelChannel->clientKmb), sizeof(CC_KMB));
+
+    return NV_OK;
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+/*!
+ * @brief      Rotate the IVs for the given secure channel
+ *
+ * @param[in]  pKernelChannel
+ * @param[out] pRotateIvParams
+ *
+ * @return     NV_OK on success
+ * @return     NV_ERR_NOT_SUPPORTED if channel is not a secure channel.
+ */
+NV_STATUS
+kchannelCtrlRotateSecureChannelIv_KERNEL
+(
+    KernelChannel *pKernelChannel,
+    NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams
+)
+{
+    NV_STATUS            status            = NV_OK;
+    OBJGPU              *pGpu              = GPU_RES_GET_GPU(pKernelChannel);
+    ConfidentialCompute *pCC               = GPU_GET_CONF_COMPUTE(pGpu);
+    ROTATE_IV_TYPE       rotateIvOperation = pRotateIvParams->rotateIvType;
+
+    if (!pKernelChannel->bCCSecureChannel)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    NV_PRINTF(LEVEL_INFO, "Rotating IV in CPU-RM.\n");
+
+    status = confComputeKeyStoreRetrieveViaChannel_HAL(
+        pCC, pKernelChannel, rotateIvOperation, NV_TRUE, &pKernelChannel->clientKmb);
+
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    portMemSet(pRotateIvParams, 0, sizeof(*pRotateIvParams));
+
+    portMemCopy(pRotateIvParams->updatedKmb.encryptBundle.iv,
+                sizeof(pRotateIvParams->updatedKmb.encryptBundle.iv),
+                pKernelChannel->clientKmb.encryptBundle.iv,
+                sizeof(pKernelChannel->clientKmb.encryptBundle.iv));
+
+    portMemCopy(pRotateIvParams->updatedKmb.decryptBundle.iv,
+                sizeof(pRotateIvParams->updatedKmb.decryptBundle.iv),
+                pKernelChannel->clientKmb.decryptBundle.iv,
+                sizeof(pKernelChannel->clientKmb.decryptBundle.iv));
+
+    pRotateIvParams->rotateIvType = rotateIvOperation;
+
+    NV_RM_RPC_CONTROL(pGpu,
+                      RES_GET_CLIENT_HANDLE(pKernelChannel),
+                      RES_GET_HANDLE(pKernelChannel),
+                      NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV,
+                      pRotateIvParams,
+                      sizeof(*pRotateIvParams),
+                      status);
+
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if ((rotateIvOperation == ROTATE_IV_ALL_VALID) || (rotateIvOperation == ROTATE_IV_ENCRYPT))
+    {
+        portMemCopy(&pRotateIvParams->updatedKmb.encryptBundle,
+                    sizeof(pRotateIvParams->updatedKmb.encryptBundle),
+                    &pKernelChannel->clientKmb.encryptBundle,
+                    sizeof(pKernelChannel->clientKmb.encryptBundle));
+    }
+
+    if ((rotateIvOperation == ROTATE_IV_ALL_VALID) || (rotateIvOperation == ROTATE_IV_DECRYPT))
+    {
+        portMemCopy(&pRotateIvParams->updatedKmb.decryptBundle,
+                    sizeof(pRotateIvParams->updatedKmb.decryptBundle),
+                    &pKernelChannel->clientKmb.decryptBundle,
+                    sizeof(pKernelChannel->clientKmb.decryptBundle));
+    }
+
+    return NV_OK;
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+kchannelCtrlRotateSecureChannelIv_PHYSICAL
+(
+    KernelChannel *pKernelChannel,
+    NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS *pRotateIvParams
+)
+{
+    NV_STATUS status;
+    
+    NV_PRINTF(LEVEL_INFO, "Rotating IV in GSP-RM.\n");
+
+    // CPU-side encrypt IV corresponds to GPU-side decrypt IV.
+    // CPU-side decrypt IV corresponds to GPU-side encrypt IV.
+    status =
+        kchannelRotateSecureChannelIv_HAL(pKernelChannel,
+                                          pRotateIvParams->rotateIvType,
+                                          pRotateIvParams->updatedKmb.decryptBundle.iv,
+                                          pRotateIvParams->updatedKmb.encryptBundle.iv);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    return NV_OK;
 }

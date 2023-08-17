@@ -42,9 +42,12 @@
 
 typedef struct GSP_MSG_QUEUE_ELEMENT
 {
-    NvU32 checkSum;        // Set to value needed to make checksum always zero.
-    NvU32 seqNum;          // Sequence number maintained by the message queue.
-    rpc_message_header_v  rpc;
+    NvU8  authTagBuffer[16];         // Authentication tag buffer.
+    NvU8  aadBuffer[16];             // AAD buffer.
+    NvU32 checkSum;                  // Set to value needed to make checksum always zero.
+    NvU32 seqNum;                    // Sequence number maintained by the message queue.
+    NvU32 elemCount;                 // Number of message queue elements this message has.
+    NV_DECLARE_ALIGNED(rpc_message_header_v rpc, 8);
 } GSP_MSG_QUEUE_ELEMENT;
 
 typedef struct _message_queue_info

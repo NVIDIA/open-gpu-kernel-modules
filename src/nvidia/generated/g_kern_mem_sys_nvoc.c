@@ -82,6 +82,10 @@ static NV_STATUS __nvoc_thunk_KernelMemorySystem_engstateStatePostLoad(OBJGPU *p
     return kmemsysStatePostLoad(pGpu, (struct KernelMemorySystem *)(((unsigned char *)pKernelMemorySystem) - __nvoc_rtti_KernelMemorySystem_OBJENGSTATE.offset), flags);
 }
 
+static NV_STATUS __nvoc_thunk_KernelMemorySystem_engstateStatePreUnload(OBJGPU *pGpu, struct OBJENGSTATE *pKernelMemorySystem, NvU32 flags) {
+    return kmemsysStatePreUnload(pGpu, (struct KernelMemorySystem *)(((unsigned char *)pKernelMemorySystem) - __nvoc_rtti_KernelMemorySystem_OBJENGSTATE.offset), flags);
+}
+
 static void __nvoc_thunk_KernelMemorySystem_engstateStateDestroy(OBJGPU *pGpu, struct OBJENGSTATE *pKernelMemorySystem) {
     kmemsysStateDestroy(pGpu, (struct KernelMemorySystem *)(((unsigned char *)pKernelMemorySystem) - __nvoc_rtti_KernelMemorySystem_OBJENGSTATE.offset));
 }
@@ -96,10 +100,6 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmemsysStateUnload(POBJGPU pGpu, struc
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmemsysStatePostUnload(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, NvU32 arg0) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMemorySystem_OBJENGSTATE.offset), arg0);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmemsysStatePreUnload(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, NvU32 arg0) {
-    return engstateStatePreUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelMemorySystem_OBJENGSTATE.offset), arg0);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kmemsysStateInitUnlocked(POBJGPU pGpu, struct KernelMemorySystem *pEngstate) {
@@ -216,6 +216,8 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
     pThis->__kmemsysStatePreLoad__ = &kmemsysStatePreLoad_IMPL;
 
     pThis->__kmemsysStatePostLoad__ = &kmemsysStatePostLoad_IMPL;
+
+    pThis->__kmemsysStatePreUnload__ = &kmemsysStatePreUnload_IMPL;
 
     pThis->__kmemsysStateDestroy__ = &kmemsysStateDestroy_IMPL;
 
@@ -413,6 +415,16 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
         pThis->__kmemsysSetupAllAtsPeers__ = &kmemsysSetupAllAtsPeers_GV100;
     }
 
+    // Hal function -- kmemsysRemoveAllAtsPeers
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kmemsysRemoveAllAtsPeers__ = &kmemsysRemoveAllAtsPeers_b3696a;
+    }
+    else
+    {
+        pThis->__kmemsysRemoveAllAtsPeers__ = &kmemsysRemoveAllAtsPeers_GV100;
+    }
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelMemorySystem_engstateConstructEngine;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelMemorySystem_engstateStateInitLocked;
@@ -421,6 +433,8 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_thunk_KernelMemorySystem_engstateStatePostLoad;
 
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__ = &__nvoc_thunk_KernelMemorySystem_engstateStatePreUnload;
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_thunk_KernelMemorySystem_engstateStateDestroy;
 
     pThis->__kmemsysStateLoad__ = &__nvoc_thunk_OBJENGSTATE_kmemsysStateLoad;
@@ -428,8 +442,6 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
     pThis->__kmemsysStateUnload__ = &__nvoc_thunk_OBJENGSTATE_kmemsysStateUnload;
 
     pThis->__kmemsysStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_kmemsysStatePostUnload;
-
-    pThis->__kmemsysStatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_kmemsysStatePreUnload;
 
     pThis->__kmemsysStateInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_kmemsysStateInitUnlocked;
 

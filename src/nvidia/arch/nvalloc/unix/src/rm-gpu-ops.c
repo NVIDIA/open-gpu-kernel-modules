@@ -869,30 +869,6 @@ NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_context_clear(nvidia_stack_t *sp,
     return rmStatus;
 }
 
-NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_acquire_encryption_iv(nvidia_stack_t *sp,
-                                                            struct ccslContext_t *ctx,
-                                                            NvU8 *encryptIv)
-{
-    NV_STATUS rmStatus;
-    void *fp;
-    NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsCcslAcquireEncryptionIv(ctx, encryptIv);
-    NV_EXIT_RM_RUNTIME(sp,fp);
-    return rmStatus;
-}
-
-NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_log_device_encryption(nvidia_stack_t *sp,
-                                                            struct ccslContext_t *ctx,
-                                                            NvU8 *decryptIv)
-{
-    NV_STATUS rmStatus;
-    void *fp;
-    NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsCcslLogDeviceEncryption(ctx, decryptIv);
-    NV_EXIT_RM_RUNTIME(sp,fp);
-    return rmStatus;
-}
-
 NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_rotate_iv(nvidia_stack_t *sp,
                                                 struct ccslContext_t *ctx,
                                                 NvU8 direction)
@@ -942,12 +918,15 @@ NV_STATUS NV_API_CALL rm_gpu_ops_ccsl_decrypt(nvidia_stack_t *sp,
                                               NvU8 const *inputBuffer,
                                               NvU8 const *decryptIv,
                                               NvU8 *outputBuffer,
+                                              NvU8 const *addAuthData,
+                                              NvU32 addAuthDataSize,
                                               NvU8 const *authTagData)
 {
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsCcslDecrypt(ctx, bufferSize, inputBuffer, decryptIv, outputBuffer, authTagData);
+    rmStatus = nvGpuOpsCcslDecrypt(ctx, bufferSize, inputBuffer, decryptIv, outputBuffer,
+                                   addAuthData, addAuthDataSize, authTagData);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }
@@ -976,6 +955,20 @@ NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_query_message_pool(nvidia_stack_t *sp,
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
     rmStatus = nvGpuOpsQueryMessagePool(ctx, direction, messageNum);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return rmStatus;
+}
+
+NV_STATUS  NV_API_CALL rm_gpu_ops_ccsl_increment_iv(nvidia_stack_t *sp,
+                                                    struct ccslContext_t *ctx,
+                                                    NvU8 direction,
+                                                    NvU64 increment,
+                                                    NvU8 *iv)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    rmStatus = nvGpuOpsIncrementIv(ctx, direction, increment, iv);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }

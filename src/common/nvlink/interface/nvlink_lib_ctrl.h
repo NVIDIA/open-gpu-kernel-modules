@@ -587,6 +587,8 @@ typedef enum
     nvlink_train_conn_to_off,
     nvlink_train_conn_active_to_swcfg,
     nvlink_train_conn_swcfg_to_off,
+    nvlink_train_conn_off_to_active_ali_non_blocking,
+    nvlink_train_conn_off_to_active_ali_blocking,
     /* See enum modification guidelines at the top of this file */
 } nvlink_conn_train_type;
 
@@ -784,7 +786,10 @@ typedef struct
  * 
  * NVLink 3.0 onwards, connection detection is handled by Minion. After INITNEGOTIATE
  * completed, this interface needs to be queried to retrieve the local/remote SIDs
- * and the local/remote link number of all links associated with a device
+ * and the local/remote link number of all links associated with a device.
+ *
+ * On NVLink 4.0 this needs to be queried after all links in the system have been 
+ * trained.  
  *
  * Parameters:
  *   devInfo [IN]
@@ -1079,7 +1084,7 @@ typedef struct
 /*
  * CTRL_NVLINK_GET_DEVICE_LINK_STATES
  *
- * Returns the link state of all enabled links on a given device.
+ * Returns the link state of all links on a given device.
  *
  * Parameters:
  *   devInfo [IN]
@@ -1096,7 +1101,7 @@ typedef struct
  *      will show the states as INVALID.
  *
  *   endStatesCount [OUT]
- *      count of valid entries into the endStates array
+ *      count of total entries in the endStates array
  *
  */
 typedef struct
@@ -1107,7 +1112,7 @@ typedef struct
 
     /* output parameters */
     NvlStatus              status;
-    nvlink_link_state      endStates[NVLINK_MAX_NVLINK_ENDPOINTS];
+    nvlink_link_state      endStates[NVLINK_MAX_DEVICE_CONN];
     NvU32                  endStatesCount;
 } nvlink_get_device_link_states;
 

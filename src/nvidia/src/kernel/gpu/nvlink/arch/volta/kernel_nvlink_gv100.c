@@ -529,7 +529,11 @@ knvlinkValidateFabricBaseAddress_GV100
     // Align fbSize to mapslot size.
     fbSizeBytes = RM_ALIGN_UP(fbSizeBytes, NVBIT64(34));
 
-    fbUpperLimit = fabricBaseAddr + fbSizeBytes;
+    // Check for integer overflow
+    if (!portSafeAddU64(fabricBaseAddr, fbSizeBytes, &fbUpperLimit))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     // Make sure the address range doesn't go beyond the limit, (8K * 16GB).
     if (fbUpperLimit > NVBIT64(47))

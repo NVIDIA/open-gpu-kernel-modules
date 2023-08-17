@@ -233,6 +233,13 @@ NvBool nvValidateSetLutCommonParams(
     const NVDevEvoRec *pDevEvo,
     const struct NvKmsSetLutCommonParams *pParams);
 
+NvBool nvChooseColorRangeEvo(
+    enum NvKmsOutputTf tf,
+    const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
+    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    const enum NvKmsDpyAttributeColorBpcValue colorBpc,
+    enum NvKmsDpyAttributeColorRangeValue *pColorRange);
+
 NvBool nvChooseCurrentColorSpaceAndRangeEvo(
     const NVDpyEvoRec *pDpyEvo,
     enum NvYuv420Mode yuv420Mode,

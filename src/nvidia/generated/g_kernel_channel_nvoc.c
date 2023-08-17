@@ -958,12 +958,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [48] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2010u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kchannelCtrlCmdGetKmb_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-        /*flags=*/      0x2210u,
+        /*pFunc=*/      (void (*)(void)) kchannelCtrlCmdGetKmb_DISPATCH,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2010u)
+        /*flags=*/      0x2010u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xc56f010bu,
         /*paramSize=*/  sizeof(NVC56F_CTRL_CMD_GET_KMB_PARAMS),
@@ -973,12 +973,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelCh
 #endif
     },
     {               /*  [49] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2010u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
-        /*pFunc=*/      (void (*)(void)) kchannelCtrlRotateSecureChannelIv_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-        /*flags=*/      0x2210u,
+        /*pFunc=*/      (void (*)(void)) kchannelCtrlRotateSecureChannelIv_DISPATCH,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2010u)
+        /*flags=*/      0x2010u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xc56f010cu,
         /*paramSize=*/  sizeof(NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS),
@@ -1264,13 +1264,11 @@ static void __nvoc_init_funcTable_KernelChannel_1(KernelChannel *pThis, RmHalspe
     pThis->__kchannelCtrlCmdStopChannel__ = &kchannelCtrlCmdStopChannel_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-    pThis->__kchannelCtrlCmdGetKmb__ = &kchannelCtrlCmdGetKmb_IMPL;
-#endif
+    // Hal function -- kchannelCtrlCmdGetKmb
+    pThis->__kchannelCtrlCmdGetKmb__ = &kchannelCtrlCmdGetKmb_KERNEL;
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-    pThis->__kchannelCtrlRotateSecureChannelIv__ = &kchannelCtrlRotateSecureChannelIv_IMPL;
-#endif
+    // Hal function -- kchannelCtrlRotateSecureChannelIv
+    pThis->__kchannelCtrlRotateSecureChannelIv__ = &kchannelCtrlRotateSecureChannelIv_KERNEL;
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__kchannelCtrlGetTpcPartitionMode__ = &kchannelCtrlGetTpcPartitionMode_a094e1;

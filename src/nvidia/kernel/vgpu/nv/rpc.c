@@ -29,7 +29,7 @@
 //******************************************************************************
 
 // FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_CONTEXT_H_PRIVATE_ACCESS_ALLOWED 
+#define NVOC_KERNEL_GRAPHICS_CONTEXT_H_PRIVATE_ACCESS_ALLOWED
 
 #include "os/os.h"
 #include "core/system.h"
@@ -57,6 +57,8 @@
 #include "os/os.h"
 #include "objtmr.h"
 #include "lib/base_utils.h"
+
+#include "gpu/conf_compute/conf_compute.h"
 
 #define SDK_ALL_CLASSES_INCLUDE_FULL_HEADER
 #include "g_allclasses.h"
@@ -180,6 +182,9 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
         osGetPerformanceCounter(&pNewEntry->rpcData.startTimeInNs);
     }
 
+    // For HCC, cache expectedFunc value before encrypting.
+    NvU32 expectedFunc = vgpu_rpc_message_header_v->function;
+
     status = rpcSendMessage(pGpu, pRpc);
     if (status != NV_OK)
     {
@@ -195,7 +200,8 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
         return (status == NV_ERR_BUSY_RETRY) ? NV_ERR_GENERIC : status;
     }
 
-    status = rpcRecvPoll(pGpu, pRpc, vgpu_rpc_message_header_v->function);
+    // Use cached expectedFunc here because vgpu_rpc_message_header_v is encrypted for HCC.
+    status = rpcRecvPoll(pGpu, pRpc, expectedFunc);
     if (status != NV_OK)
     {
         if (status == NV_ERR_TIMEOUT)
@@ -309,6 +315,13 @@ static NV_STATUS _issueRpcLarge
     {
         if (entryLength > remainingSize)
             entryLength = remainingSize;
+
+        ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+        if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED))
+        {
+            // Zero out the entire RPC message header to clear the state of previous chunk.
+            portMemSet(vgpu_rpc_message_header_v, 0, sizeof(rpc_message_header_v));
+        }
 
         portMemCopy(rpc_message, entryLength, pBuf8, entryLength);
 
@@ -677,17 +690,17 @@ NV_STATUS RmRpcSetGuestSystemInfo(OBJGPU *pGpu, OBJRPC *pRpc)
     {
         if (rpcVgxVersion.majorNum != 0)
         {
-			if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH) && !bSkipRpcVersionHandshake)
-			{
-				bSkipRpcVersionHandshake = NV_TRUE;
-			}
-			else
-			{
-				NV_PRINTF(LEVEL_INFO,
-						  "NVRM_RPC: Skipping RPC version handshake for instance 0x%x\n",
-						  gpuGetInstance(pGpu));
-				goto skip_ver_handshake;
-			}
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_RESUME_CODEPATH) && !bSkipRpcVersionHandshake)
+            {
+                bSkipRpcVersionHandshake = NV_TRUE;
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_INFO,
+                          "NVRM_RPC: Skipping RPC version handshake for instance 0x%x\n",
+                          gpuGetInstance(pGpu));
+                goto skip_ver_handshake;
+            }
         }
         else
         {
@@ -1324,6 +1337,16 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
 
         rpcInfo->hypervisorType           = hypervisorGetHypervisorType(pHypervisor);
         rpcInfo->bIsPassthru              = pGpu->bIsPassthru;
+
+        // Fill in VF related GPU flags
+        rpcInfo->gspVFInfo.totalVFs           = pGpu->sriovState.totalVFs;
+        rpcInfo->gspVFInfo.firstVFOffset      = pGpu->sriovState.firstVFOffset;
+        rpcInfo->gspVFInfo.FirstVFBar0Address = pGpu->sriovState.firstVFBarAddress[0];
+        rpcInfo->gspVFInfo.FirstVFBar1Address = pGpu->sriovState.firstVFBarAddress[1];
+        rpcInfo->gspVFInfo.FirstVFBar2Address = pGpu->sriovState.firstVFBarAddress[2];
+        rpcInfo->gspVFInfo.b64bitBar0         = pGpu->sriovState.b64bitVFBar0;
+        rpcInfo->gspVFInfo.b64bitBar1         = pGpu->sriovState.b64bitVFBar1;
+        rpcInfo->gspVFInfo.b64bitBar2         = pGpu->sriovState.b64bitVFBar2;
 
         OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
         rpcInfo->sysTimerOffsetNs = pTmr->sysTimerOffsetNs;
@@ -1978,5 +2001,29 @@ done:
     {
         rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
     }
+    return status;
+}
+
+/*
+ * Sends ack from CPU-RM to GSP-RM that ECC error
+ * notifier write has completed.
+ */
+NV_STATUS rpcEccNotifierWriteAck_v23_05
+(
+    OBJGPU                *pGpu,
+    OBJRPC                *pRpc
+)
+{
+    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_ECC_NOTIFIER_WRITE_ACK, 0);
+        if (status != NV_OK)
+            return status;
+
+        status = _issueRpcAsync(pGpu, pRpc);
+    }
+
     return status;
 }

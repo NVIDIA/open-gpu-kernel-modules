@@ -104,16 +104,14 @@ typedef enum
     // ----------------------------------
     // Channel type with fixed schedules
 
-    // Work Launch Channel (WLC) is a specialized channel
-    // for launching work on other channels when
-    // Confidential Computing is enabled.
-    // It is paired with LCIC (below)
+    // Work Launch Channel (WLC) is a specialized channel for launching work on
+    // other channels when the Confidential Computing is feature enabled. It is
+    // paired with LCIC (below)
     UVM_CHANNEL_TYPE_WLC,
 
-    // Launch Confirmation Indicator Channel (LCIC) is a
-    // specialized channel with fixed schedule. It gets
-    // triggered by executing WLC work, and makes sure that
-    // WLC get/put pointers are up-to-date.
+    // Launch Confirmation Indicator Channel (LCIC) is a specialized channel
+    // with fixed schedule. It gets triggered by executing WLC work, and makes
+    // sure that WLC get/put pointers are up-to-date.
     UVM_CHANNEL_TYPE_LCIC,
 
     UVM_CHANNEL_TYPE_COUNT,
@@ -242,11 +240,9 @@ typedef struct
     DECLARE_BITMAP(push_locks, UVM_CHANNEL_MAX_NUM_CHANNELS_PER_POOL);
 
     // Counting semaphore for available and unlocked channels, it must be
-    // acquired before submitting work to a secure channel.
+    // acquired before submitting work to a channel when the Confidential
+    // Computing feature is enabled.
     uvm_semaphore_t push_sem;
-
-    // See uvm_channel_is_secure() documentation.
-    bool secure;
 } uvm_channel_pool_t;
 
 struct uvm_channel_struct
@@ -304,8 +300,9 @@ struct uvm_channel_struct
         // its internal operation and each push may modify this state.
         uvm_mutex_t push_lock;
 
-        // Every secure channel has cryptographic state in HW, which is
-        // mirrored here for CPU-side operations.
+        // When the Confidential Computing feature is enabled, every channel has
+        // cryptographic state in HW, which is mirrored here for CPU-side
+        // operations.
         UvmCslContext ctx;
         bool is_ctx_initialized;
 
@@ -355,6 +352,13 @@ struct uvm_channel_struct
         // Encryption auth tags have to be located in unprotected sysmem.
         void *launch_auth_tag_cpu;
         NvU64 launch_auth_tag_gpu_va;
+
+        // Used to decrypt the push back to protected sysmem.
+        // This happens when profilers register callbacks for migration data.
+        uvm_push_crypto_bundle_t *push_crypto_bundles;
+
+        // Accompanying authentication tags for the crypto bundles
+        uvm_rm_mem_t *push_crypto_bundle_auth_tags;
     } conf_computing;
 
     // RM channel information
@@ -452,46 +456,28 @@ struct uvm_channel_manager_struct
 // Create a channel manager for the GPU
 NV_STATUS uvm_channel_manager_create(uvm_gpu_t *gpu, uvm_channel_manager_t **manager_out);
 
-static bool uvm_channel_pool_is_ce(uvm_channel_pool_t *pool);
-
-// A channel is secure if it has HW encryption capabilities.
-//
-// Secure channels are treated differently in the UVM driver. Each secure
-// channel has a unique CSL context associated with it, has relatively
-// restrictive reservation policies (in comparison with non-secure channels),
-// it is requested to be allocated differently by RM, etc.
-static bool uvm_channel_pool_is_secure(uvm_channel_pool_t *pool)
+static bool uvm_pool_type_is_valid(uvm_channel_pool_type_t pool_type)
 {
-    return pool->secure;
-}
-
-static bool uvm_channel_is_secure(uvm_channel_t *channel)
-{
-    return uvm_channel_pool_is_secure(channel->pool);
+    return (is_power_of_2(pool_type) && (pool_type < UVM_CHANNEL_POOL_TYPE_MASK));
 }
 
 static bool uvm_channel_pool_is_sec2(uvm_channel_pool_t *pool)
 {
-    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+    UVM_ASSERT(uvm_pool_type_is_valid(pool->pool_type));
 
     return (pool->pool_type == UVM_CHANNEL_POOL_TYPE_SEC2);
 }
 
-static bool uvm_channel_pool_is_secure_ce(uvm_channel_pool_t *pool)
-{
-    return uvm_channel_pool_is_secure(pool) && uvm_channel_pool_is_ce(pool);
-}
-
 static bool uvm_channel_pool_is_wlc(uvm_channel_pool_t *pool)
 {
-    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+    UVM_ASSERT(uvm_pool_type_is_valid(pool->pool_type));
 
     return (pool->pool_type == UVM_CHANNEL_POOL_TYPE_WLC);
 }
 
 static bool uvm_channel_pool_is_lcic(uvm_channel_pool_t *pool)
 {
-    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+    UVM_ASSERT(uvm_pool_type_is_valid(pool->pool_type));
 
     return (pool->pool_type == UVM_CHANNEL_POOL_TYPE_LCIC);
 }
@@ -499,11 +485,6 @@ static bool uvm_channel_pool_is_lcic(uvm_channel_pool_t *pool)
 static bool uvm_channel_is_sec2(uvm_channel_t *channel)
 {
     return uvm_channel_pool_is_sec2(channel->pool);
-}
-
-static bool uvm_channel_is_secure_ce(uvm_channel_t *channel)
-{
-    return uvm_channel_pool_is_secure_ce(channel->pool);
 }
 
 static bool uvm_channel_is_wlc(uvm_channel_t *channel)
@@ -516,12 +497,9 @@ static bool uvm_channel_is_lcic(uvm_channel_t *channel)
     return uvm_channel_pool_is_lcic(channel->pool);
 }
 
-bool uvm_channel_type_requires_secure_pool(uvm_gpu_t *gpu, uvm_channel_type_t channel_type);
-NV_STATUS uvm_channel_secure_init(uvm_gpu_t *gpu, uvm_channel_t *channel);
-
 static bool uvm_channel_pool_is_proxy(uvm_channel_pool_t *pool)
 {
-    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
+    UVM_ASSERT(uvm_pool_type_is_valid(pool->pool_type));
 
     return pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE_PROXY;
 }
@@ -533,11 +511,7 @@ static bool uvm_channel_is_proxy(uvm_channel_t *channel)
 
 static bool uvm_channel_pool_is_ce(uvm_channel_pool_t *pool)
 {
-    UVM_ASSERT(pool->pool_type < UVM_CHANNEL_POOL_TYPE_MASK);
-    if (uvm_channel_pool_is_wlc(pool) || uvm_channel_pool_is_lcic(pool))
-        return true;
-
-    return (pool->pool_type == UVM_CHANNEL_POOL_TYPE_CE) || uvm_channel_pool_is_proxy(pool);
+    return !uvm_channel_pool_is_sec2(pool);
 }
 
 static bool uvm_channel_is_ce(uvm_channel_t *channel)
@@ -677,6 +651,11 @@ void uvm_channel_print_pending_pushes(uvm_channel_t *channel);
 static uvm_gpu_t *uvm_channel_get_gpu(uvm_channel_t *channel)
 {
     return channel->pool->manager->gpu;
+}
+
+static uvm_pushbuffer_t *uvm_channel_get_pushbuffer(uvm_channel_t *channel)
+{
+    return channel->pool->manager->pushbuffer;
 }
 
 // Index of a channel within the owning pool

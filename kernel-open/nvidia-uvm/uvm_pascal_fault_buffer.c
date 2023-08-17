@@ -214,9 +214,9 @@ static UvmFaultMetadataPacket *get_fault_buffer_entry_metadata(uvm_parent_gpu_t 
     return fault_entry_metadata + index;
 }
 
-void uvm_hal_pascal_fault_buffer_parse_entry(uvm_parent_gpu_t *parent_gpu,
-                                             NvU32 index,
-                                             uvm_fault_buffer_entry_t *buffer_entry)
+NV_STATUS uvm_hal_pascal_fault_buffer_parse_replayable_entry(uvm_parent_gpu_t *parent_gpu,
+                                                             NvU32 index,
+                                                             uvm_fault_buffer_entry_t *buffer_entry)
 {
     NvU32 *fault_entry;
     NvU64 addr_hi, addr_lo;
@@ -280,6 +280,8 @@ void uvm_hal_pascal_fault_buffer_parse_entry(uvm_parent_gpu_t *parent_gpu,
 
     // Automatically clear valid bit for the entry in the fault buffer
     uvm_hal_pascal_fault_buffer_entry_clear_valid(parent_gpu, index);
+
+    return NV_OK;
 }
 
 bool uvm_hal_pascal_fault_buffer_entry_is_valid(uvm_parent_gpu_t *parent_gpu, NvU32 index)

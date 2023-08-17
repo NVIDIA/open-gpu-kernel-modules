@@ -207,6 +207,8 @@ enum {
     X(RM, CTRL_SET_HS_CREDITS)                  // 198
     X(RM, CTRL_PM_AREA_PC_SAMPLER)              // 199
     X(RM, INVALIDATE_TLB)                       // 200
+    X(RM, RESERVED_201)                         // 201
+    X(RM, ECC_NOTIFIER_WRITE_ACK)               // 202
     X(RM, NUM_FUNCTIONS)                        //END
 #ifdef DEFINING_X_IN_RPC_GLOBAL_ENUMS_H
 };

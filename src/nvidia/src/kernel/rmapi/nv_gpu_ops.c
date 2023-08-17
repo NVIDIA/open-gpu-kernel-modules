@@ -4606,13 +4606,18 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
         goto cleanup_free_memory;
 
     // 2. Map the gpfifo entries
-    status = nvGpuOpsMemoryCpuMap(vaSpace,
-                                  channel->gpFifo,
-                                  gpFifoSize,
-                                  &cpuMap,
-                                  PAGE_SIZE_DEFAULT);
-    if (status != NV_OK)
-        goto cleanup_free_gpfifo_entries;
+    // Skip this whenever HCC is enabled and GPFIFO is in vidmem. CPU access
+    // to vidmem is blocked in that scenario
+    if (!gpuIsCCFeatureEnabled(pGpu) || (gpFifoLoc == UVM_BUFFER_LOCATION_SYS))
+    {
+        status = nvGpuOpsMemoryCpuMap(vaSpace,
+                                      channel->gpFifo,
+                                      gpFifoSize,
+                                      &cpuMap,
+                                      PAGE_SIZE_DEFAULT);
+        if (status != NV_OK)
+            goto cleanup_free_gpfifo_entries;
+    }
 
     channel->gpFifoEntries = (NvU64 *) cpuMap;
 
@@ -4693,13 +4698,15 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
     pAllocInfo->gpFifoAllocParams.gpFifoOffset  = channel->gpFifo;
     pAllocInfo->gpFifoAllocParams.gpFifoEntries = channel->fifoEntries;
 
-    if (params->secure)
-        pAllocInfo->gpFifoAllocParams.flags = FLD_SET_DRF(OS04, _FLAGS, _CC_SECURE, _TRUE, pAllocInfo->gpFifoAllocParams.flags);
-
     if (isDeviceVoltaPlus(device))
     {
         if (gpuIsCCorApmFeatureEnabled(pGpu))
         {
+            // All channels are allocated as secure when the Confidential
+            // Computing feature is enabled.
+            pAllocInfo->gpFifoAllocParams.flags = FLD_SET_DRF(OS04, _FLAGS, _CC_SECURE, _TRUE,
+                                                              pAllocInfo->gpFifoAllocParams.flags);
+
             // USERD can be placed in one of the following locations
             // 1. Unprotected sysmem in case of both APM and HCC
             // 2. Unprotected vidmem in case of APM
@@ -4731,13 +4738,18 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
         pAllocInfo->gpFifoAllocParams.userdOffset[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] = 0;
         SLI_LOOP_END
 
-        status = nvGpuOpsMemoryCpuMap(vaSpace,
-                                      channel->userdGpuAddr,
-                                      sizeof(KeplerAControlGPFifo),
-                                      &gpfifoCtrl,
-                                      PAGE_SIZE_DEFAULT);
-        if (status != NV_OK)
-            goto cleanup_free_virtual;
+        // Skip this whenever HCC is enabled and USERD is in vidmem. CPU access
+        // to vidmem is blocked in that scenario.
+        if (!gpuIsCCFeatureEnabled(pGpu) || (gpPutLoc == UVM_BUFFER_LOCATION_SYS))
+        {
+            status = nvGpuOpsMemoryCpuMap(vaSpace,
+                                          channel->userdGpuAddr,
+                                          sizeof(KeplerAControlGPFifo),
+                                          &gpfifoCtrl,
+                                          PAGE_SIZE_DEFAULT);
+            if (status != NV_OK)
+                goto cleanup_free_virtual;
+        }
     }
 
     pAllocInfo->gpFifoAllocParams.engineType = gpuGetNv2080EngineType(tsgEngineType(channel->tsg));
@@ -4804,9 +4816,15 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
 
     channel->controlPage = gpfifoCtrl;
 
-    status = channelRetainDummyAlloc(channel, channelInfo);
-    if (status != NV_OK)
-        goto cleanup_free_controlpage;
+    // We create a BAR1 pointer inside channelRetainDummyAlloc and issue reads
+    // on the same to push pending BAR1 writes to vidmem. With HCC, BAR1 access
+    // to vidmem is blocked and hence there is no point creating the pointer
+    if (!gpuIsCCFeatureEnabled(pGpu))
+    {
+        status = channelRetainDummyAlloc(channel, channelInfo);
+        if (status != NV_OK)
+            goto cleanup_free_controlpage;
+    }
 
     // Allocate the SW method class for fault cancel
     if (isDevicePascalPlus(device) && (channel->tsg->engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2))
@@ -4826,8 +4844,8 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
     portMemFree(pAllocInfo);
 
     *channelHandle = channel;
-    channelInfo->gpGet = &channel->controlPage->GPGet;
-    channelInfo->gpPut = &channel->controlPage->GPPut;
+    channelInfo->gpGet = (channel->controlPage != NULL) ? &channel->controlPage->GPGet : NULL;
+    channelInfo->gpPut = (channel->controlPage != NULL) ? &channel->controlPage->GPPut : NULL;
     channelInfo->gpFifoEntries = channel->gpFifoEntries;
     channelInfo->channelClassNum = device->hostClass;
     channelInfo->numGpFifoEntries = channel->fifoEntries;
@@ -4837,12 +4855,7 @@ static NV_STATUS channelAllocate(const gpuTsgHandle tsg,
 
     channelInfo->gpFifoGpuVa = channel->gpFifo;
     channelInfo->gpPutGpuVa = channel->userdGpuAddr + NV_OFFSETOF(KeplerAControlGPFifo, GPPut);
-    if (gpuIsCCFeatureEnabled(pGpu) && (channel->tsg->engineType != UVM_GPU_CHANNEL_ENGINE_TYPE_SEC2))
-    {
-        channelInfo->gpGet = NULL;
-        channelInfo->gpPut = NULL;
-        channelInfo->gpFifoEntries = NULL;
-    }
+    channelInfo->gpGetGpuVa = channel->userdGpuAddr + NV_OFFSETOF(KeplerAControlGPFifo, GPGet);
 
     return NV_OK;
 
@@ -6574,7 +6587,6 @@ static void setCeCaps(const NvU8 *rmCeCaps, gpuCeCaps *ceCaps)
     ceCaps->nvlinkP2p   = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_NVLINK_P2P);
     ceCaps->sysmem      = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_SYSMEM);
     ceCaps->p2p         = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_P2P);
-    ceCaps->secure      = !!NV2080_CTRL_CE_GET_CAP(rmCeCaps, NV2080_CTRL_CE_CAPS_CE_CC_SECURE);
 }
 
 static NV_STATUS queryCopyEngines(struct gpuDevice *gpu, gpuCesCaps *cesCaps)
@@ -7419,7 +7431,15 @@ NV_STATUS nvGpuOpsInitFaultInfo(struct gpuDevice *device,
 
     if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
     {
-        pFaultInfo->replayable.bUvmOwnsHwFaultBuffer  = NV_FALSE;
+        KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+        pFaultInfo->replayable.bUvmOwnsHwFaultBuffer = NV_FALSE;
+        pFaultInfo->replayable.cslCtx.ctx = (struct ccslContext_t *) kgmmuGetShadowFaultBufferCslContext(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER);
+        if (pFaultInfo->replayable.cslCtx.ctx == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Replayable buffer CSL context not allocated\n");
+            goto cleanup_fault_buffer;
+        }
     }
     else
     {
@@ -7782,6 +7802,14 @@ NV_STATUS nvGpuOpsGetNonReplayableFaults(gpuFaultInfo *pFaultInfo,
         NvU32       shadowBufferPutIndex;
         NvU32       shadowBufferGetIndex;
         NvU32       maxFaultBufferEntries;
+        struct ccslContext_t *cslCtx;
+
+        cslCtx = (struct ccslContext_t *) kgmmuGetShadowFaultBufferCslContext(pGpu, pKernelGmmu, NON_REPLAYABLE_FAULT_BUFFER);
+        if (cslCtx == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Non Replayable buffer CSL context not allocated\n");
+            return NV_ERR_INVALID_STATE;
+        }
 
         maxFaultBufferEntries = pFaultInfo->nonReplayable.bufferSize / NVC369_BUF_SIZE;
         shadowBufferGetIndex = pFaultInfo->nonReplayable.shadowBufferGet;
@@ -7797,22 +7825,34 @@ NV_STATUS nvGpuOpsGetNonReplayableFaults(gpuFaultInfo *pFaultInfo,
 
             ++(*numFaults);
 
-            // TODO: Revisit this while adding encryption/decryption support
-            // Once encryption/decryption is enabled, CPU-RM will have to decrypt
-            // the fault packet before copying it to the UVM provided buffer. For
-            // now a plain text copy should suffice.
-            portMemCopy(faultBuffer, NVC369_BUF_SIZE,
-                        pShadowBuffer + (shadowBufferGetIndex * NVC369_BUF_SIZE),
-                        NVC369_BUF_SIZE);
-
             portMemCopy(&metadata, sizeof(UvmFaultMetadataPacket),
                         pShadowBufferMetadata + shadowBufferGetIndex,
                         sizeof(UvmFaultMetadataPacket));
 
-            // CC-TODO: Packet decryption should go here.
+            // Sanity check valid bit is present, even though Non-Replayable handling relies on the PRI values.
             if (metadata.valid != GMMU_FAULT_PACKET_METADATA_VALID_YES)
             {
                 return NV_ERR_INVALID_STATE;
+            }
+
+            //
+            // A read memory barrier here ensures that the valid bit check is performed before a decryption is attempted.
+            // This is needed for architectures like PowerPC and ARM where read instructions can be reordered.
+            //
+            portAtomicMemoryFenceLoad();
+
+            status = ccslDecrypt(cslCtx,
+                                 sizeof(GMMU_FAULT_PACKET),
+                                 pShadowBuffer + (shadowBufferGetIndex * NVC369_BUF_SIZE),
+                                 NULL,
+                                 &metadata.valid,
+                                 sizeof(metadata.valid),
+                                 faultBuffer,
+                                 metadata.authTag);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Fault buffer packet decryption failed with status = 0x%x\n", status);
+                return status;
             }
 
             // Clear the plaintext valid bit and authTag.
@@ -9634,26 +9674,6 @@ NV_STATUS nvGpuOpsCcslContextClear(struct ccslContext_t *ctx)
     return NV_OK;
 }
 
-NV_STATUS nvGpuOpsCcslAcquireEncryptionIv(struct ccslContext_t *ctx, NvU8 *encryptIv)
-{
-    if (ctx == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return ccslAcquireEncryptionIv(ctx, encryptIv);
-}
-
-NV_STATUS nvGpuOpsCcslLogDeviceEncryption(struct ccslContext_t *ctx, NvU8 *decryptIv)
-{
-    if (ctx == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    return ccslLogDeviceEncryption(ctx, decryptIv);
-}
-
 NV_STATUS nvGpuOpsCcslRotateIv(struct ccslContext_t *ctx, NvU8 direction)
 {
     if (ctx == NULL)
@@ -9675,8 +9695,8 @@ NV_STATUS nvGpuOpsCcslEncryptWithIv(struct ccslContext_t *ctx,
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
-
-    return ccslEncryptWithIv(ctx, bufferSize, inputBuffer, encryptIv, outputBuffer, authTagBuffer);
+    return ccslEncryptWithIv(ctx, bufferSize, inputBuffer, encryptIv, NULL, 0,
+                             outputBuffer, authTagBuffer);
 }
 
 NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,
@@ -9690,7 +9710,8 @@ NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    return ccslEncrypt(ctx, bufferSize, inputBuffer, outputBuffer, authTagBuffer);
+    return ccslEncrypt(ctx, bufferSize, inputBuffer, NULL, 0,
+                       outputBuffer, authTagBuffer);
 }
 
 NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
@@ -9698,6 +9719,8 @@ NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
                               NvU8 const *inputBuffer,
                               NvU8 const *decryptIv,
                               NvU8 *outputBuffer,
+                              NvU8 const *addAuthData,
+                              NvU32 addAuthDataSize,
                               NvU8 const *authTagBuffer)
 {
     if (ctx == NULL)
@@ -9705,7 +9728,8 @@ NV_STATUS nvGpuOpsCcslDecrypt(struct ccslContext_t *ctx,
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    return ccslDecrypt(ctx, bufferSize, inputBuffer, decryptIv, outputBuffer, authTagBuffer);
+    return ccslDecrypt(ctx, bufferSize, inputBuffer, decryptIv, addAuthData, addAuthDataSize,
+                       outputBuffer, authTagBuffer);
 }
 
 NV_STATUS nvGpuOpsCcslSign(struct ccslContext_t *ctx,
@@ -9732,10 +9756,31 @@ NV_STATUS nvGpuOpsQueryMessagePool(struct ccslContext_t *ctx,
 
     switch (direction)
     {
-        case UVM_CSL_DIR_CPU_TO_GPU:
+        case UVM_CSL_OPERATION_ENCRYPT:
             return ccslQueryMessagePool(ctx, CCSL_DIR_HOST_TO_DEVICE, messageNum);
-        case UVM_CSL_DIR_GPU_TO_CPU:
+        case UVM_CSL_OPERATION_DECRYPT:
             return ccslQueryMessagePool(ctx, CCSL_DIR_DEVICE_TO_HOST, messageNum);
+        default:
+            return NV_ERR_INVALID_ARGUMENT;
+    }
+}
+
+NV_STATUS nvGpuOpsIncrementIv(struct ccslContext_t *ctx,
+                              NvU8 direction,
+                              NvU64 increment,
+                              NvU8 *iv)
+{
+    if (ctx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    switch (direction)
+    {
+        case UVM_CSL_OPERATION_ENCRYPT:
+            return ccslIncrementIv(ctx, CCSL_DIR_HOST_TO_DEVICE, increment, iv);
+        case UVM_CSL_OPERATION_DECRYPT:
+            return ccslIncrementIv(ctx, CCSL_DIR_DEVICE_TO_HOST, increment, iv);
         default:
             return NV_ERR_INVALID_ARGUMENT;
     }

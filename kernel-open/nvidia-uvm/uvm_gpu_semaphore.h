@@ -91,9 +91,9 @@ struct uvm_gpu_tracking_semaphore_struct
 // Create a semaphore pool for a GPU.
 NV_STATUS uvm_gpu_semaphore_pool_create(uvm_gpu_t *gpu, uvm_gpu_semaphore_pool_t **pool_out);
 
-// When the Confidential Computing feature is enabled, pools associated with
-// secure CE channels are allocated in the CPR of vidmem and as such have
-// all the associated access restrictions. Because of this, they're called
+// When the Confidential Computing feature is enabled, semaphore pools
+// associated with CE channels are allocated in the CPR of vidmem and as such
+// have all the associated access restrictions. Because of this, they're called
 // secure pools and secure semaphores are allocated out of said secure pools.
 NV_STATUS uvm_gpu_semaphore_secure_pool_create(uvm_gpu_t *gpu, uvm_gpu_semaphore_pool_t **pool_out);
 

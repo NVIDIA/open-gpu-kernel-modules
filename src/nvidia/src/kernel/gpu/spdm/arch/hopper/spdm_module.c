@@ -30,7 +30,8 @@
 #include "core/locks.h"
 #include "ctrl/ctrl2080/ctrl2080spdm.h"
 #include "rmapi/client_resource.h"
-
+#include "gpu/conf_compute/ccsl.h"
+#include "gpu/conf_compute/conf_compute.h"
 /* ------------------------- Macros and Defines ----------------------------- */
 
 /* ------------------------- Static Functions ------------------------------ */
@@ -64,16 +65,21 @@ NV_STATUS spdmCtrlSpdmPartition
         RM_API *pRmApi   = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
         // Calls the subdeviceCtrlCmdSpdmPartition_IMPL control call in Physical RM mode.
-        pRmApi->Control(pRmApi,
-                        pGpu->hInternalClient,
-                        pGpu->hInternalSubdevice,
-                        NV2080_CTRL_INTERNAL_SPDM_PARTITION,
-                        pSpdmPartitionParams,
-                        sizeof(NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS));
+        status = pRmApi->Control(pRmApi,
+                                 pGpu->hInternalClient,
+                                 pGpu->hInternalSubdevice,
+                                 NV2080_CTRL_INTERNAL_SPDM_PARTITION,
+                                 pSpdmPartitionParams,
+                                 sizeof(NV2080_CTRL_INTERNAL_SPDM_PARTITION_PARAMS));
     }
     else
     {
         return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "spdmCtrlSpdmPartition failed with error 0x%0x\n", status);
     }
 
     return status;

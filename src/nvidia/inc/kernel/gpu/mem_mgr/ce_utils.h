@@ -57,13 +57,9 @@ typedef struct
 NVOC_PREFIX(ceutils) class CeUtils : Object
 {
 public:
-    NV_STATUS ceutilsConstruct(CeUtils *pCeUtils, OBJGPU *pGpu, NV0050_ALLOCATION_PARAMETERS *pAllocParams);
-
+    NV_STATUS ceutilsConstruct(CeUtils *pCeUtils, OBJGPU *pGpu, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance,
+                               NV0050_ALLOCATION_PARAMETERS *pAllocParams);
     void ceutilsDestruct(CeUtils *pCeUtils);
-
-    NV_STATUS ceutilsInitialize(CeUtils *pCeUtils, OBJGPU *pGpu, NV0050_ALLOCATION_PARAMETERS *pAllocParams);
-    void ceutilsDeinit(CeUtils *pCeUtils);
-    void ceutilsRegisterGPUInstance(CeUtils *pCeUtils, KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance);
 
     NV_STATUS ceutilsMemset(CeUtils *pCeUtils, CEUTILS_MEMSET_PARAMS *pParams);
     NV_STATUS ceutilsMemcopy(CeUtils *pCeUtils, CEUTILS_MEMCOPY_PARAMS *pParams);
@@ -80,7 +76,6 @@ public:
     NvHandle hSubdevice;
 
     OBJCHANNEL *pChannel;
-    KERNEL_MIG_GPU_INSTANCE *pKernelMIGGPUInstance;
     OBJGPU *pGpu;
 
     KernelCE *pKCe;

@@ -721,4 +721,30 @@ typedef struct NVA081_CTRL_VGPU_CONFIG_SET_PGPU_INFO_PARAMS {
     NvU32 fractionalMultiVgpu;
 } NVA081_CTRL_VGPU_CONFIG_SET_PGPU_INFO_PARAMS;
 
+/*
+ * NVA081_CTRL_CMD_VGPU_CONFIG_VALIDATE_SWIZZID
+ *
+ * This command is used to vallidate input swizzid from RM
+ *
+ * vgpuTypeId [IN]
+ *  This param specifies the Type ID for VGPU profile
+ *
+ * swizzId [IN]
+ *  This param specifies the GPU Instance ID or Swizz ID
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_REQUEST
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NVA081_CTRL_CMD_VGPU_CONFIG_VALIDATE_SWIZZID (0xa081011a) /* finn: Evaluated from "(FINN_NVA081_VGPU_CONFIG_VGPU_CONFIG_INTERFACE_ID << 8) | NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS_MESSAGE_ID" */
+
+#define NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS_MESSAGE_ID (0x1aU)
+
+typedef struct NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS {
+    NvU32 vgpuTypeId;
+    NvU32 swizzId;
+} NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS;
+
 /* _ctrlA081vgpuconfig_h_ */

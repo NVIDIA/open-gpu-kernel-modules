@@ -691,6 +691,10 @@ static void SetHdmiAudioMute(const NVDispEvoRec *pDispEvo,
 static void EnableHdmiAudio(const NVDispEvoRec *pDispEvo,
                             const NvU32 head, const NvBool enable)
 {
+    /*
+     * XXX Is it correct to use pktType_GeneralControl to mute/unmute
+     * the audio? pktType_GeneralControl controls both the audio and video data.
+     */
     static const NvU8 InfoframeMutePacket[] = {
         pktType_GeneralControl, 0, 0, HDMI_GENCTRL_PACKET_MUTE_ENABLE, 0, 0, 0, 0,
         0, 0
@@ -998,12 +1002,13 @@ void nvHdmiDpConstructHeadAudioState(const NvU32 displayId,
         return;
     }
 
+    pAudioState->isAudioOverHdmi = nvDpyIsHdmiEvo(pDpyEvo);
+
     if (FillELDBuffer(displayId,
                       nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo),
                       &pDpyEvo->parsedEdid,
                       &pAudioState->eld,
                       &pAudioState->maxFreqSupported)) {
-        pAudioState->isAudioOverHdmi = nvDpyIsHdmiEvo(pDpyEvo);
         pAudioState->enabled = TRUE;
     }
 }
@@ -1197,37 +1202,25 @@ void nvHdmiDpEnableDisableAudio(const NVDispEvoRec *pDispEvo,
         return;
     }
 
-    if (!pHeadState->audio.enabled) {
-
-        if (enable) {
-            /* Make sure to remove corresponding audio device */
+    if (!enable) {
+        /*
+         * This is pre modeset code path. If audio device is enabled
+         * (pHeadState->audio.enabled == TRUE) then invalidate ELD buffer
+         * before disabling audio.
+         */
+        if (pHeadState->audio.enabled) {
             RmSetELDAudioCaps(pDispEvo,
                               pConnectorEvo,
-                              nvDpyIdToNvU32(pConnectorEvo->displayId),
+                              pHeadState->activeRmId,
                               deviceEntry,
                               0 /* maxFreqSupported */,
                               NULL /* pEld */,
-                              NV_ELD_POWER_ON_RESET);
-        } else {
-            /* Do nothing. The audio device is already in the disabled state. */
+                              NV_ELD_PRE_MODESET);
+
+            if (nvConnectorUsesDPLib(pConnectorEvo)) {
+                SetDpAudioEnable(pDispEvo, head, FALSE /* enable */);
+            }
         }
-
-        return;
-    }
-
-    /* Invalidate ELD buffer before disabling audio */
-    if (!enable) {
-        RmSetELDAudioCaps(pDispEvo,
-                          pConnectorEvo,
-                          pHeadState->activeRmId,
-                          deviceEntry,
-                          0 /* maxFreqSupported */,
-                          NULL /* pEld */,
-                          NV_ELD_PRE_MODESET);
-    }
-
-    if (nvConnectorUsesDPLib(pConnectorEvo)) {
-        SetDpAudioEnable(pDispEvo, head, enable);
     }
 
     if (pHeadState->audio.isAudioOverHdmi) {
@@ -1236,15 +1229,34 @@ void nvHdmiDpEnableDisableAudio(const NVDispEvoRec *pDispEvo,
         SendHdmiGcp(pDispEvo, head, !enable /* avmute */);
     }
 
-    /* Populate ELD buffer after enabling audio */
     if (enable) {
-        RmSetELDAudioCaps(pDispEvo,
-                          pConnectorEvo,
-                          pHeadState->activeRmId,
-                          deviceEntry,
-                          pHeadState->audio.maxFreqSupported,
-                          &pHeadState->audio.eld,
-                          NV_ELD_POST_MODESET);
+        /*
+         * This is post modeset code path. If audio device is enabled
+         * (pHeadState->audio.enabled == TRUE) then populate ELD buffer after
+         * enabling audio, otherwise make sure to remove corresponding audio
+         * device.
+         */
+        if (pHeadState->audio.enabled) {
+            if (nvConnectorUsesDPLib(pConnectorEvo)) {
+                SetDpAudioEnable(pDispEvo, head, TRUE /* enable */);
+            }
+
+            RmSetELDAudioCaps(pDispEvo,
+                              pConnectorEvo,
+                              pHeadState->activeRmId,
+                              deviceEntry,
+                              pHeadState->audio.maxFreqSupported,
+                              &pHeadState->audio.eld,
+                              NV_ELD_POST_MODESET);
+        } else {
+            RmSetELDAudioCaps(pDispEvo,
+                              pConnectorEvo,
+                              nvDpyIdToNvU32(pConnectorEvo->displayId),
+                              deviceEntry,
+                              0 /* maxFreqSupported */,
+                              NULL /* pEld */,
+                              NV_ELD_POWER_ON_RESET);
+        }
     }
 }
 

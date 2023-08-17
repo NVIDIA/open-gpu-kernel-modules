@@ -1068,6 +1068,12 @@ bool DeviceImpl::getSDPExtnForColorimetrySupported()
         }
     }
 
+    if (!targetDevice)
+    {
+        DP_ASSERT(0 && "targetDevice is invalid for SDP_EXT COLORIMETRY");
+        return false;
+    }
+
     // Send remote DPCD for devices behind the branch
     if ((AuxBus::success == targetDevice->getDpcdData(NV_DPCD_TRAINING_AUX_RD_INTERVAL,
                                                       &byte, sizeof byte, &size, &nakReason)) &&
@@ -2476,7 +2482,7 @@ bool DeviceImpl::getPCONCaps(PCONCaps *pPCONCaps)
                     break;
             }
 
-            DP_LOG((" DP2HDMI PCON caps - Max TMDS Clk: %u LinkBWGbps: %u MaxBpc: %u", 
+            DP_LOG((" DP2HDMI PCON caps - Max TMDS Clk: %u LinkBWGbps: %u MaxBpc: %u",
                     pPCONCaps->maxTmdsClkRate, pPCONCaps->maxHdmiLinkBandwidthGbps, pPCONCaps->maxBpc));
         }
     }

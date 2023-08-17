@@ -64,9 +64,11 @@ include src/libraries/libspdm/nvidia/openspdm.mk
 $(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -I ,$(LIBSPDM_INCLUDES))
 $(call BUILD_OBJECT_LIST,$(LIBSPDM_SOURCES)): CFLAGS += $(addprefix -D,$(LIBSPDM_DEFINES))
 
+#if NV_USE_MBEDTLS
 CFLAGS += -I $(SRC_COMMON)/mbedtls/include
 CFLAGS += -I $(SRC_COMMON)/mbedtls/nvidia
 CFLAGS += -DMBEDTLS_USER_CONFIG_FILE=\"nvrm_mbedtls_config.h\"
+#endif
 
 CFLAGS += -Werror-implicit-function-declaration
 CFLAGS += -Wwrite-strings

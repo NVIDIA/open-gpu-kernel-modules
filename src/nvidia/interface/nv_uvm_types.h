@@ -286,6 +286,7 @@ typedef struct UvmGpuChannelInfo_tag
     // so a channel can be controlled via another channel (SEC2 or WLC/LCIC)
     NvU64             gpFifoGpuVa;
     NvU64             gpPutGpuVa;
+    NvU64             gpGetGpuVa;
     // GPU VA of work submission offset is needed in Confidential Computing
     // so CE channels can ring doorbell of other channels as required for
     // WLC/LCIC work submission
@@ -320,10 +321,6 @@ typedef struct UvmGpuChannelAllocParams_tag
     // The next two fields store UVM_BUFFER_LOCATION values
     NvU32 gpFifoLoc;
     NvU32 gpPutLoc;
-
-    // Allocate the channel as secure. This flag should only be set when
-    // Confidential Compute is enabled.
-    NvBool secure;
 } UvmGpuChannelAllocParams;
 
 typedef struct UvmGpuPagingChannelAllocParams_tag
@@ -366,9 +363,6 @@ typedef struct
 
     // True if the CE can be used for P2P transactions
     NvBool p2p:1;
-
-    // True if the CE supports encryption
-    NvBool secure:1;
 
     // Mask of physical CEs assigned to this LCE
     //
@@ -822,6 +816,14 @@ typedef union UvmFaultMetadataPacket_tag
     NvU8 _padding[32];
 } UvmFaultMetadataPacket;
 
+// This struct shall not be accessed nor modified directly by UVM as it is
+// entirely managed by the RM layer
+typedef struct UvmCslContext_tag
+{
+    struct ccslContext_t *ctx;
+    void *nvidia_stack;
+} UvmCslContext;
+
 typedef struct UvmGpuFaultInfo_tag
 {
     struct
@@ -878,6 +880,10 @@ typedef struct UvmGpuFaultInfo_tag
         // a 16Byte authentication tag and a valid byte. Always NULL when
         // Confidential Computing is disabled.
         UvmFaultMetadataPacket *bufferMetadata;
+
+        // CSL context used for performing decryption of replayable faults when
+        // Confidential Computing is enabled.
+        UvmCslContext cslCtx;
 
         // Indicates whether UVM owns the replayable fault buffer.
         // The value of this field is always NV_TRUE When Confidential Computing
@@ -1017,24 +1023,16 @@ typedef UvmGpuPagingChannelInfo gpuPagingChannelInfo;
 typedef UvmGpuPagingChannelAllocParams gpuPagingChannelAllocParams;
 typedef UvmPmaAllocationOptions gpuPmaAllocationOptions;
 
-// This struct shall not be accessed nor modified directly by UVM as it is
-// entirely managed by the RM layer
-typedef struct UvmCslContext_tag
-{
-    struct ccslContext_t *ctx;
-    void *nvidia_stack;
-} UvmCslContext;
-
 typedef struct UvmCslIv
 {
     NvU8 iv[12];
     NvU8 fresh;
 } UvmCslIv;
 
-typedef enum UvmCslDirection
+typedef enum UvmCslOperation
 {
-    UVM_CSL_DIR_CPU_TO_GPU,
-    UVM_CSL_DIR_GPU_TO_CPU
-} UvmCslDirection;
+    UVM_CSL_OPERATION_ENCRYPT,
+    UVM_CSL_OPERATION_DECRYPT
+} UvmCslOperation;
 
 #endif // _NV_UVM_TYPES_H_

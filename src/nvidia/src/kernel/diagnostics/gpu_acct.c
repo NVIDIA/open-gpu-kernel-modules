@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -156,8 +156,9 @@ gpuacctCleanupDataStore
 {
     NV_ASSERT_OR_RETURN(pDS != NULL, NV_ERR_INVALID_ARGUMENT);
 
-    GPU_ACCT_PROC_LISTIter iter = listIterAll(&pDS->procList);
-    while (listIterNext(&iter))
+    for (GPU_ACCT_PROC_LISTIter iter = listIterAll(&pDS->procList);
+         listIterNext(&iter);
+         iter = listIterAll(&pDS->procList))
     {
         GPUACCT_PROC_ENTRY *pEntry = iter.pValue;
         if (pEntry)

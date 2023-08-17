@@ -484,6 +484,7 @@ kbusStatePostLoad_GM107
         }
     }
 
+    // Call _kbusLinkP2P_GM107 only in case of Linked SLI and Unlinked SLI. Bug 4182245
     if ((pKernelBif != NULL)
         &&
         // RM managed P2P or restoring the HW state for OS resume
@@ -491,7 +492,9 @@ kbusStatePostLoad_GM107
          (flags & GPU_STATE_FLAGS_PM_TRANSITION))
         &&
         (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
-         !pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED)))
+         !pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED))
+        &&
+        !gpuIsSelfHosted(pGpu))
     {
         _kbusLinkP2P_GM107(pGpu, pKernelBus);
     }
@@ -538,6 +541,7 @@ kbusStateUnload_GM107
     if (IS_VIRTUAL(pGpu) && !(flags & GPU_STATE_FLAGS_PRESERVING))
         return NV_OK;
 
+    // Call kbusUnlinkP2P_HAL only in case of Linked SLI and Unliked SLI. Bug 4182245
     if ((pKernelBif != NULL)
         &&
         (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
@@ -545,7 +549,8 @@ kbusStateUnload_GM107
         &&
         // RM managed P2P or unconfiguring HW P2P for OS suspend/hibernate
         (!kbusIsP2pMailboxClientAllocated(pKernelBus) ||
-         (flags & GPU_STATE_FLAGS_PM_TRANSITION)))
+         (flags & GPU_STATE_FLAGS_PM_TRANSITION))
+        && !gpuIsSelfHosted(pGpu))
     {
         kbusUnlinkP2P_HAL(pGpu, pKernelBus);
     }
@@ -1571,7 +1576,7 @@ kbusSetupBar2GpuVaSpace_GM107
     NV_ASSERT_OR_RETURN(pWalk != NULL, NV_ERR_INVALID_STATE);
 
     // Pre-reserve and init 4K tables through BAR0 window (bBootstrap) mode.
-    mmuWalkSetUserCtx(pWalk, &userCtx);
+    NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pWalk, &userCtx));
 
     if (pKernelBus->bar2[gfid].cpuVisibleLimit != 0)
     {
@@ -1696,7 +1701,7 @@ kbusTeardownBar2GpuVaSpace_GM107
 
         userCtx.pGpu = pGpu;
 
-        mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx);
+        NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx));
 
         if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus) ||
             IS_GFID_VF(gfid) ||
@@ -1726,7 +1731,7 @@ kbusTeardownBar2GpuVaSpace_GM107
             kbusRestoreBar0WindowAfterBar2Bootstrap_HAL(pGpu, pKernelBus, origVidOffset);
         }
 
-        mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, NULL);
+        NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, NULL));
 
         mmuWalkDestroy(pKernelBus->bar2[gfid].pWalk);
         pKernelBus->bar2[gfid].pWalk                    = NULL;
@@ -2277,8 +2282,6 @@ kbusUpdateRmAperture_GM107
         }
     }
 
-    pFmt = pKernelBus->bar2[gfid].pFmt;
-
     // Math below requires page-sized va.
     if (vaSize == 0 || vaSize & RM_PAGE_MASK)
     {
@@ -2311,7 +2314,7 @@ kbusUpdateRmAperture_GM107
     dmaPageArrayInitFromMemDesc(&pageArray, pSubDevMemDesc, addressTranslation);
     userCtx.pGpu = pGpu;
     userCtx.gfid = gfid;
-    mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx);
+    NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, &userCtx));
 
     if (bSparsify)
     {
@@ -2329,6 +2332,8 @@ kbusUpdateRmAperture_GM107
     }
     else
     {
+        pFmt = pKernelBus->bar2[gfid].pFmt;
+
         // MMU_MAP_CTX
         mapTarget.pLevelFmt      = mmuFmtFindLevelWithPageShift(pFmt->pRoot,
                                                                 BIT_IDX_64(pageSize));
@@ -2411,7 +2416,7 @@ kbusUpdateRmAperture_GM107
         NV_ASSERT(NV_OK == status);
     }
 
-    mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, NULL);
+    NV_ASSERT_OK_OR_RETURN(mmuWalkSetUserCtx(pKernelBus->bar2[gfid].pWalk, NULL));
 
     if (pKernelBus->bar2[gfid].bBootstrap &&
         !kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
@@ -3526,9 +3531,12 @@ kbusStateDestroy_GM107
     // clean up private info block
     //
 
+
+    // Call _kbusDestroyP2P_GM107 only in case of Linked SLI and Unlinked SLI. Bug 4182245
     if ((pKernelBif != NULL) && ((!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_READS_DISABLED) ||
                                   !pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_P2P_WRITES_DISABLED)) &&
-                                 (kbusIsP2pInitialized(pKernelBus))))
+                                 (kbusIsP2pInitialized(pKernelBus))) && 
+                                 !gpuIsSelfHosted(pGpu))
     {
         (void)_kbusDestroyP2P_GM107(pGpu, pKernelBus);
     }

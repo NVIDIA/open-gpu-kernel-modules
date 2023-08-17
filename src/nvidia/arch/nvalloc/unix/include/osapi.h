@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -129,6 +129,8 @@ void       RmI2cAddGpuPorts(nv_state_t *);
 NV_STATUS  RmInitX86EmuState(OBJGPU *);
 void       RmFreeX86EmuState(OBJGPU *);
 NV_STATUS  RmPowerSourceChangeEvent(nv_state_t *, NvU32);
+
+void       RmRequestDNotifierState(nv_state_t *);
 
 const NvU8 *RmGetGpuUuidRaw(nv_state_t *);
 

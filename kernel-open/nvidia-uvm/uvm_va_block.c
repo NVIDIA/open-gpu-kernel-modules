@@ -2083,12 +2083,6 @@ static uvm_processor_id_t block_page_get_closest_resident_in_mask(uvm_va_block_t
             return id;
     }
 
-    // HMM va_blocks don't know if a page is CPU resident until either
-    // migrate_vma_setup() or hmm_range_fault() is called. If a page isn't
-    // resident anywhere, assume it is CPU resident.
-    if (uvm_va_block_is_hmm(va_block))
-        return UVM_ID_CPU;
-
     return UVM_ID_INVALID;
 }
 
@@ -2888,7 +2882,7 @@ static uvm_va_block_region_t block_phys_contig_region(uvm_va_block_t *block,
 {
     if (UVM_ID_IS_CPU(resident_id)) {
         uvm_cpu_chunk_t *chunk = uvm_cpu_chunk_get_chunk_for_page(block, page_index);
-        return uvm_va_block_region(page_index, page_index + uvm_cpu_chunk_num_pages(chunk));
+        return uvm_cpu_chunk_block_region(block, chunk, page_index);
     }
     else {
         uvm_chunk_size_t chunk_size;
@@ -3061,7 +3055,7 @@ static NV_STATUS conf_computing_copy_pages_finish(uvm_va_block_t *block,
     void *auth_tag_buffer_base = uvm_mem_get_cpu_addr_kernel(dma_buffer->auth_tag);
     void *staging_buffer_base = uvm_mem_get_cpu_addr_kernel(dma_buffer->alloc);
 
-    UVM_ASSERT(uvm_channel_is_secure(push->channel));
+    UVM_ASSERT(uvm_conf_computing_mode_enabled(push->gpu));
 
     if (UVM_ID_IS_GPU(copy_state->dst.id))
         return NV_OK;
@@ -3112,7 +3106,7 @@ static void block_copy_push(uvm_va_block_t *block,
 
     uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
 
-    if (uvm_channel_is_secure(push->channel)) {
+    if (uvm_conf_computing_mode_enabled(gpu)) {
         if (UVM_ID_IS_CPU(copy_state->src.id))
             conf_computing_block_copy_push_cpu_to_gpu(block, copy_state, region, push);
         else
@@ -3140,19 +3134,18 @@ static NV_STATUS block_copy_end_push(uvm_va_block_t *block,
     //       at that point.
     uvm_push_end(push);
 
-    if ((push_status == NV_OK) && uvm_channel_is_secure(push->channel))
+    if ((push_status == NV_OK) && uvm_conf_computing_mode_enabled(push->gpu))
         push_status = conf_computing_copy_pages_finish(block, copy_state, push);
 
     tracker_status = uvm_tracker_add_push_safe(copy_tracker, push);
     if (push_status == NV_OK)
         push_status = tracker_status;
 
-    if (uvm_channel_is_secure(push->channel)) {
-        uvm_gpu_t *gpu = uvm_push_get_gpu(push);
+    if (uvm_conf_computing_mode_enabled(push->gpu)) {
         uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
 
         uvm_tracker_overwrite_with_push(&local_tracker, push);
-        uvm_conf_computing_dma_buffer_free(&gpu->conf_computing.dma_buffer_pool,
+        uvm_conf_computing_dma_buffer_free(&push->gpu->conf_computing.dma_buffer_pool,
                                            copy_state->dma_buffer,
                                            &local_tracker);
         copy_state->dma_buffer = NULL;
@@ -7189,6 +7182,7 @@ static NV_STATUS block_map_gpu_to(uvm_va_block_t *va_block,
 }
 
 static void map_get_allowed_destinations(uvm_va_block_t *block,
+                                         uvm_va_block_context_t *va_block_context,
                                          const uvm_va_policy_t *policy,
                                          uvm_processor_id_t id,
                                          uvm_processor_mask_t *allowed_mask)
@@ -7200,7 +7194,10 @@ static void map_get_allowed_destinations(uvm_va_block_t *block,
         uvm_processor_mask_zero(allowed_mask);
         uvm_processor_mask_set(allowed_mask, policy->preferred_location);
     }
-    else if ((uvm_va_policy_is_read_duplicate(policy, va_space) || uvm_id_equal(policy->preferred_location, id)) &&
+    else if ((uvm_va_policy_is_read_duplicate(policy, va_space) ||
+              (uvm_id_equal(policy->preferred_location, id) &&
+               !is_uvm_fault_force_sysmem_set() &&
+               !uvm_hmm_must_use_sysmem(block, va_block_context))) &&
              uvm_va_space_processor_has_memory(va_space, id)) {
         // When operating under read-duplication we should only map the local
         // processor to cause fault-and-duplicate of remote pages.
@@ -7285,7 +7282,7 @@ NV_STATUS uvm_va_block_map(uvm_va_block_t *va_block,
 
     // Map per resident location so we can more easily detect physically-
     // contiguous mappings.
-    map_get_allowed_destinations(va_block, va_block_context->policy, id, &allowed_destinations);
+    map_get_allowed_destinations(va_block, va_block_context, va_block_context->policy, id, &allowed_destinations);
 
     for_each_closest_id(resident_id, &allowed_destinations, id, va_space) {
         if (UVM_ID_IS_CPU(id)) {
@@ -9614,15 +9611,9 @@ static uvm_prot_t compute_new_permission(uvm_va_block_t *va_block,
         if (uvm_processor_mask_empty(&revoke_processors))
             new_prot = UVM_PROT_READ_WRITE;
     }
-    if (logical_prot == UVM_PROT_READ_WRITE_ATOMIC) {
-        // HMM allocations with logical read/write/atomic permission can be
-        // upgraded without notifying the driver so assume read/write/atomic
-        // even if the fault is only for reading.
-        if (new_prot == UVM_PROT_READ_WRITE ||
-            (UVM_ID_IS_CPU(fault_processor_id) && uvm_va_block_is_hmm(va_block))) {
-            if (uvm_processor_mask_test(&va_space->has_native_atomics[uvm_id_value(new_residency)], fault_processor_id))
-                new_prot = UVM_PROT_READ_WRITE_ATOMIC;
-        }
+    if (logical_prot == UVM_PROT_READ_WRITE_ATOMIC && new_prot == UVM_PROT_READ_WRITE) {
+        if (uvm_processor_mask_test(&va_space->has_native_atomics[uvm_id_value(new_residency)], fault_processor_id))
+            new_prot = UVM_PROT_READ_WRITE_ATOMIC;
     }
 
     return new_prot;
@@ -9859,8 +9850,6 @@ out:
     return status == NV_OK ? tracker_status : status;
 }
 
-// TODO: Bug 1750144: check logical permissions from HMM to know what's the
-//       maximum allowed.
 uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block,
                                                         uvm_processor_id_t processor_id,
                                                         uvm_page_index_t page_index)
@@ -9937,14 +9926,18 @@ uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block
         // Exclude the processor for which the mapping protections are being computed
         uvm_processor_mask_clear(&write_mappings, processor_id);
 
-        // At this point, any processor with atomic mappings either has native atomics support to the
-        // processor with the resident copy or has disabled system-wide atomics. If the requesting
-        // processor has disabled system-wide atomics or has native atomics to that processor, we can
-        // map with ATOMIC privileges. Likewise, if there are no other processors with WRITE or ATOMIC
-        // mappings, we can map with ATOMIC privileges.
+        // At this point, any processor with atomic mappings either has native
+        // atomics support to the processor with the resident copy or has
+        // disabled system-wide atomics. If the requesting processor has
+        // disabled system-wide atomics or has native atomics to that processor,
+        // we can map with ATOMIC privileges. Likewise, if there are no other
+        // processors with WRITE or ATOMIC mappings, we can map with ATOMIC
+        // privileges. For HMM, don't allow GPU atomic access to remote mapped
+        // system memory even if there are no write mappings since CPU access
+        // can be upgraded without notification.
         if (!uvm_processor_mask_test(&va_space->system_wide_atomics_enabled_processors, processor_id) ||
             uvm_processor_mask_test(&va_space->has_native_atomics[uvm_id_value(residency)], processor_id) ||
-            uvm_processor_mask_empty(&write_mappings)) {
+            (uvm_processor_mask_empty(&write_mappings) && !uvm_va_block_is_hmm(va_block))) {
             return UVM_PROT_READ_WRITE_ATOMIC;
         }
 

@@ -43,6 +43,7 @@ extern "C" {
 #include "conf_compute/cc_keystore.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/intr/engine_idx.h"
+#include "kernel/gpu/conf_compute/ccsl_context.h"
 
 /****************************************************************************\
  *                                                                           *
@@ -62,28 +63,28 @@ struct ConfidentialCompute {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct ConfidentialCompute *__nvoc_pbase_ConfidentialCompute;
     NV_STATUS (*__confComputeConstructEngine__)(struct OBJGPU *, struct ConfidentialCompute *, ENGDESCRIPTOR);
+    NV_STATUS (*__confComputeStatePreInitLocked__)(struct OBJGPU *, struct ConfidentialCompute *);
     NV_STATUS (*__confComputeStateInitLocked__)(struct OBJGPU *, struct ConfidentialCompute *);
     NV_STATUS (*__confComputeStatePostLoad__)(struct OBJGPU *, struct ConfidentialCompute *, NvU32);
-    NV_STATUS (*__confComputeStatePreInitLocked__)(struct OBJGPU *, struct ConfidentialCompute *);
     NV_STATUS (*__confComputeStatePreUnload__)(struct OBJGPU *, struct ConfidentialCompute *, NvU32);
+    void (*__confComputeStateDestroy__)(struct OBJGPU *, struct ConfidentialCompute *);
     NV_STATUS (*__confComputeKeyStoreRetrieveViaChannel__)(struct ConfidentialCompute *, struct KernelChannel *, ROTATE_IV_TYPE, NvBool, CC_KMB *);
     NV_STATUS (*__confComputeKeyStoreRetrieveViaKeyId__)(struct ConfidentialCompute *, NvU32, ROTATE_IV_TYPE, NvBool, CC_KMB *);
     NV_STATUS (*__confComputeDeriveSecrets__)(struct ConfidentialCompute *, NvU32);
     NvBool (*__confComputeIsSpdmEnabled__)(struct OBJGPU *, struct ConfidentialCompute *);
     NvBool (*__confComputeIsDebugModeEnabled__)(struct OBJGPU *, struct ConfidentialCompute *);
     NvBool (*__confComputeIsGpuCcCapable__)(struct OBJGPU *, struct ConfidentialCompute *);
+    void (*__confComputeKeyStoreDepositIvMask__)(struct ConfidentialCompute *, NvU32, void *);
     NV_STATUS (*__confComputeKeyStoreInit__)(struct ConfidentialCompute *);
     void (*__confComputeKeyStoreDeinit__)(struct ConfidentialCompute *);
     void *(*__confComputeKeyStoreGetExportMasterKey__)(struct ConfidentialCompute *);
     NV_STATUS (*__confComputeKeyStoreDeriveKey__)(struct ConfidentialCompute *, NvU32);
-    void (*__confComputeKeyStoreDepositIvMask__)(struct ConfidentialCompute *, NvU32, void *);
     void (*__confComputeKeyStoreClearExportMasterKey__)(struct ConfidentialCompute *);
     NV_STATUS (*__confComputeKeyStoreUpdateKey__)(struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeStateLoad__)(POBJGPU, struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeStateUnload__)(POBJGPU, struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeStatePreLoad__)(POBJGPU, struct ConfidentialCompute *, NvU32);
     NV_STATUS (*__confComputeStatePostUnload__)(POBJGPU, struct ConfidentialCompute *, NvU32);
-    void (*__confComputeStateDestroy__)(POBJGPU, struct ConfidentialCompute *);
     NV_STATUS (*__confComputeStateInitUnlocked__)(POBJGPU, struct ConfidentialCompute *);
     void (*__confComputeInitMissing__)(POBJGPU, struct ConfidentialCompute *);
     NV_STATUS (*__confComputeStatePreInitUnlocked__)(POBJGPU, struct ConfidentialCompute *);
@@ -95,9 +96,16 @@ struct ConfidentialCompute {
     NvBool PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT;
     NvBool PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED;
     NvBool PDB_PROP_CONFCOMPUTE_SPDM_ENABLED;
+    NvBool PDB_PROP_CONFCOMPUTE_ENCRYPT_READY;
+    NvBool PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED;
     NvU32 gspProxyRegkeys;
     struct Spdm *pSpdm;
     NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS ccStaticInfo;
+    struct ccslContext_t *pRpcCcslCtx;
+    struct ccslContext_t *pDmaCcslCtx;
+    struct ccslContext_t *pNonReplayableFaultCcslCtx;
+    struct ccslContext_t *pReplayableFaultCcslCtx;
+    PORT_SPINLOCK *pAesEngineLock;
     NvU8 PRIVATE_FIELD(m_exportMasterKey)[32];
     void *PRIVATE_FIELD(m_keySlot);
 };
@@ -123,12 +131,16 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_ConfidentialCompute;
     ((ConfidentialCompute*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(ConfidentialCompute)))
 #endif //__nvoc_conf_compute_h_disabled
 
+#define PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED_BASE_CAST
+#define PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED
 #define PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED_BASE_CAST
 #define PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_APM_FEATURE_ENABLED
 #define PDB_PROP_CONFCOMPUTE_IS_MISSING_BASE_CAST __nvoc_base_OBJENGSTATE.
 #define PDB_PROP_CONFCOMPUTE_IS_MISSING_BASE_NAME PDB_PROP_ENGSTATE_IS_MISSING
 #define PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT_BASE_CAST
 #define PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT_BASE_NAME PDB_PROP_CONFCOMPUTE_ENABLE_EARLY_INIT
+#define PDB_PROP_CONFCOMPUTE_ENCRYPT_READY_BASE_CAST
+#define PDB_PROP_CONFCOMPUTE_ENCRYPT_READY_BASE_NAME PDB_PROP_CONFCOMPUTE_ENCRYPT_READY
 #define PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED_BASE_CAST
 #define PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED_BASE_NAME PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED
 #define PDB_PROP_CONFCOMPUTE_ENABLED_BASE_CAST
@@ -147,10 +159,15 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
     __nvoc_objCreate_ConfidentialCompute((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 #define confComputeConstructEngine(pGpu, pConfCompute, engDesc) confComputeConstructEngine_DISPATCH(pGpu, pConfCompute, engDesc)
+#define confComputeStatePreInitLocked(pGpu, pConfCompute) confComputeStatePreInitLocked_DISPATCH(pGpu, pConfCompute)
+#define confComputeStatePreInitLocked_HAL(pGpu, pConfCompute) confComputeStatePreInitLocked_DISPATCH(pGpu, pConfCompute)
 #define confComputeStateInitLocked(pGpu, pConfCompute) confComputeStateInitLocked_DISPATCH(pGpu, pConfCompute)
 #define confComputeStatePostLoad(pGpu, pConfCompute, flags) confComputeStatePostLoad_DISPATCH(pGpu, pConfCompute, flags)
-#define confComputeStatePreInitLocked(pGpu, pConfCompute) confComputeStatePreInitLocked_DISPATCH(pGpu, pConfCompute)
+#define confComputeStatePostLoad_HAL(pGpu, pConfCompute, flags) confComputeStatePostLoad_DISPATCH(pGpu, pConfCompute, flags)
 #define confComputeStatePreUnload(pGpu, pConfCompute, flags) confComputeStatePreUnload_DISPATCH(pGpu, pConfCompute, flags)
+#define confComputeStatePreUnload_HAL(pGpu, pConfCompute, flags) confComputeStatePreUnload_DISPATCH(pGpu, pConfCompute, flags)
+#define confComputeStateDestroy(pGpu, pConfCompute) confComputeStateDestroy_DISPATCH(pGpu, pConfCompute)
+#define confComputeStateDestroy_HAL(pGpu, pConfCompute) confComputeStateDestroy_DISPATCH(pGpu, pConfCompute)
 #define confComputeKeyStoreRetrieveViaChannel(pConfCompute, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle) confComputeKeyStoreRetrieveViaChannel_DISPATCH(pConfCompute, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle)
 #define confComputeKeyStoreRetrieveViaChannel_HAL(pConfCompute, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle) confComputeKeyStoreRetrieveViaChannel_DISPATCH(pConfCompute, pKernelChannel, rotateOperation, includeSecrets, keyMaterialBundle)
 #define confComputeKeyStoreRetrieveViaKeyId(pConfCompute, globalKeyId, rotateOperation, includeSecrets, keyMaterialBundle) confComputeKeyStoreRetrieveViaKeyId_DISPATCH(pConfCompute, globalKeyId, rotateOperation, includeSecrets, keyMaterialBundle)
@@ -163,6 +180,8 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeIsDebugModeEnabled_HAL(pGpu, pConfCompute) confComputeIsDebugModeEnabled_DISPATCH(pGpu, pConfCompute)
 #define confComputeIsGpuCcCapable(pGpu, pConfCompute) confComputeIsGpuCcCapable_DISPATCH(pGpu, pConfCompute)
 #define confComputeIsGpuCcCapable_HAL(pGpu, pConfCompute) confComputeIsGpuCcCapable_DISPATCH(pGpu, pConfCompute)
+#define confComputeKeyStoreDepositIvMask(pConfCompute, globalKeyId, ivMask) confComputeKeyStoreDepositIvMask_DISPATCH(pConfCompute, globalKeyId, ivMask)
+#define confComputeKeyStoreDepositIvMask_HAL(pConfCompute, globalKeyId, ivMask) confComputeKeyStoreDepositIvMask_DISPATCH(pConfCompute, globalKeyId, ivMask)
 #define confComputeKeyStoreInit(pConfCompute) confComputeKeyStoreInit_DISPATCH(pConfCompute)
 #define confComputeKeyStoreInit_HAL(pConfCompute) confComputeKeyStoreInit_DISPATCH(pConfCompute)
 #define confComputeKeyStoreDeinit(pConfCompute) confComputeKeyStoreDeinit_DISPATCH(pConfCompute)
@@ -171,8 +190,6 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeKeyStoreGetExportMasterKey_HAL(pConfCompute) confComputeKeyStoreGetExportMasterKey_DISPATCH(pConfCompute)
 #define confComputeKeyStoreDeriveKey(pConfCompute, globalKeyId) confComputeKeyStoreDeriveKey_DISPATCH(pConfCompute, globalKeyId)
 #define confComputeKeyStoreDeriveKey_HAL(pConfCompute, globalKeyId) confComputeKeyStoreDeriveKey_DISPATCH(pConfCompute, globalKeyId)
-#define confComputeKeyStoreDepositIvMask(pConfCompute, globalKeyId, ivMask) confComputeKeyStoreDepositIvMask_DISPATCH(pConfCompute, globalKeyId, ivMask)
-#define confComputeKeyStoreDepositIvMask_HAL(pConfCompute, globalKeyId, ivMask) confComputeKeyStoreDepositIvMask_DISPATCH(pConfCompute, globalKeyId, ivMask)
 #define confComputeKeyStoreClearExportMasterKey(pConfCompute) confComputeKeyStoreClearExportMasterKey_DISPATCH(pConfCompute)
 #define confComputeKeyStoreClearExportMasterKey_HAL(pConfCompute) confComputeKeyStoreClearExportMasterKey_DISPATCH(pConfCompute)
 #define confComputeKeyStoreUpdateKey(pConfCompute, globalKeyId) confComputeKeyStoreUpdateKey_DISPATCH(pConfCompute, globalKeyId)
@@ -181,7 +198,6 @@ NV_STATUS __nvoc_objCreate_ConfidentialCompute(ConfidentialCompute**, Dynamic*, 
 #define confComputeStateUnload(pGpu, pEngstate, arg0) confComputeStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define confComputeStatePreLoad(pGpu, pEngstate, arg0) confComputeStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define confComputeStatePostUnload(pGpu, pEngstate, arg0) confComputeStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define confComputeStateDestroy(pGpu, pEngstate) confComputeStateDestroy_DISPATCH(pGpu, pEngstate)
 #define confComputeStateInitUnlocked(pGpu, pEngstate) confComputeStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define confComputeInitMissing(pGpu, pEngstate) confComputeInitMissing_DISPATCH(pGpu, pEngstate)
 #define confComputeStatePreInitUnlocked(pGpu, pEngstate) confComputeStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
@@ -202,10 +218,58 @@ static inline NV_STATUS confComputeEarlyInit(struct OBJGPU *pGpu, struct Confide
 
 #define confComputeEarlyInit_HAL(pGpu, pConfCompute) confComputeEarlyInit(pGpu, pConfCompute)
 
+NV_STATUS confComputeStartEncryption_KERNEL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
+
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NV_STATUS confComputeStartEncryption(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeStartEncryption(pGpu, pConfCompute) confComputeStartEncryption_KERNEL(pGpu, pConfCompute)
+#endif //__nvoc_conf_compute_h_disabled
+
+#define confComputeStartEncryption_HAL(pGpu, pConfCompute) confComputeStartEncryption(pGpu, pConfCompute)
+
+NV_STATUS confComputeStopEncryption_KERNEL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
+
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NV_STATUS confComputeStopEncryption(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeStopEncryption(pGpu, pConfCompute) confComputeStopEncryption_KERNEL(pGpu, pConfCompute)
+#endif //__nvoc_conf_compute_h_disabled
+
+#define confComputeStopEncryption_HAL(pGpu, pConfCompute) confComputeStopEncryption(pGpu, pConfCompute)
+
+NV_STATUS confComputeEstablishSpdmSessionAndKeys_KERNEL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
+
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NV_STATUS confComputeEstablishSpdmSessionAndKeys(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeEstablishSpdmSessionAndKeys(pGpu, pConfCompute) confComputeEstablishSpdmSessionAndKeys_KERNEL(pGpu, pConfCompute)
+#endif //__nvoc_conf_compute_h_disabled
+
+#define confComputeEstablishSpdmSessionAndKeys_HAL(pGpu, pConfCompute) confComputeEstablishSpdmSessionAndKeys(pGpu, pConfCompute)
+
 NV_STATUS confComputeConstructEngine_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, ENGDESCRIPTOR engDesc);
 
 static inline NV_STATUS confComputeConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, ENGDESCRIPTOR engDesc) {
     return pConfCompute->__confComputeConstructEngine__(pGpu, pConfCompute, engDesc);
+}
+
+NV_STATUS confComputeStatePreInitLocked_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
+
+static inline NV_STATUS confComputeStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
+    return pConfCompute->__confComputeStatePreInitLocked__(pGpu, pConfCompute);
 }
 
 NV_STATUS confComputeStateInitLocked_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
@@ -220,16 +284,18 @@ static inline NV_STATUS confComputeStatePostLoad_DISPATCH(struct OBJGPU *pGpu, s
     return pConfCompute->__confComputeStatePostLoad__(pGpu, pConfCompute, flags);
 }
 
-NV_STATUS confComputeStatePreInitLocked_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
-
-static inline NV_STATUS confComputeStatePreInitLocked_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
-    return pConfCompute->__confComputeStatePreInitLocked__(pGpu, pConfCompute);
+static inline NV_STATUS confComputeStatePreUnload_56cd7a(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 flags) {
+    return NV_OK;
 }
-
-NV_STATUS confComputeStatePreUnload_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 flags);
 
 static inline NV_STATUS confComputeStatePreUnload_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute, NvU32 flags) {
     return pConfCompute->__confComputeStatePreUnload__(pGpu, pConfCompute, flags);
+}
+
+void confComputeStateDestroy_IMPL(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute);
+
+static inline void confComputeStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct ConfidentialCompute *pConfCompute) {
+    pConfCompute->__confComputeStateDestroy__(pGpu, pConfCompute);
 }
 
 NV_STATUS confComputeKeyStoreRetrieveViaChannel_GH100(struct ConfidentialCompute *pConfCompute, struct KernelChannel *pKernelChannel, ROTATE_IV_TYPE rotateOperation, NvBool includeSecrets, CC_KMB *keyMaterialBundle);
@@ -294,6 +360,16 @@ static inline NvBool confComputeIsGpuCcCapable_DISPATCH(struct OBJGPU *pGpu, str
     return pConfCompute->__confComputeIsGpuCcCapable__(pGpu, pConfCompute);
 }
 
+void confComputeKeyStoreDepositIvMask_GH100(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId, void *ivMask);
+
+static inline void confComputeKeyStoreDepositIvMask_b3696a(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId, void *ivMask) {
+    return;
+}
+
+static inline void confComputeKeyStoreDepositIvMask_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId, void *ivMask) {
+    pConfCompute->__confComputeKeyStoreDepositIvMask__(pConfCompute, globalKeyId, ivMask);
+}
+
 NV_STATUS confComputeKeyStoreInit_GH100(struct ConfidentialCompute *pConfCompute);
 
 static inline NV_STATUS confComputeKeyStoreInit_46f6a7(struct ConfidentialCompute *pConfCompute) {
@@ -334,16 +410,6 @@ static inline NV_STATUS confComputeKeyStoreDeriveKey_DISPATCH(struct Confidentia
     return pConfCompute->__confComputeKeyStoreDeriveKey__(pConfCompute, globalKeyId);
 }
 
-void confComputeKeyStoreDepositIvMask_GH100(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId, void *ivMask);
-
-static inline void confComputeKeyStoreDepositIvMask_b3696a(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId, void *ivMask) {
-    return;
-}
-
-static inline void confComputeKeyStoreDepositIvMask_DISPATCH(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId, void *ivMask) {
-    pConfCompute->__confComputeKeyStoreDepositIvMask__(pConfCompute, globalKeyId, ivMask);
-}
-
 void confComputeKeyStoreClearExportMasterKey_GH100(struct ConfidentialCompute *pConfCompute);
 
 static inline void confComputeKeyStoreClearExportMasterKey_b3696a(struct ConfidentialCompute *pConfCompute) {
@@ -378,10 +444,6 @@ static inline NV_STATUS confComputeStatePreLoad_DISPATCH(POBJGPU pGpu, struct Co
 
 static inline NV_STATUS confComputeStatePostUnload_DISPATCH(POBJGPU pGpu, struct ConfidentialCompute *pEngstate, NvU32 arg0) {
     return pEngstate->__confComputeStatePostUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline void confComputeStateDestroy_DISPATCH(POBJGPU pGpu, struct ConfidentialCompute *pEngstate) {
-    pEngstate->__confComputeStateDestroy__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS confComputeStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct ConfidentialCompute *pEngstate) {
@@ -437,12 +499,6 @@ NV_STATUS NVOC_PRIVATE_FUNCTION(confComputeKeyStoreDeriveKey)(struct Confidentia
 
 #undef confComputeKeyStoreDeriveKey_HAL
 NV_STATUS NVOC_PRIVATE_FUNCTION(confComputeKeyStoreDeriveKey_HAL)(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId);
-
-#undef confComputeKeyStoreDepositIvMask
-void NVOC_PRIVATE_FUNCTION(confComputeKeyStoreDepositIvMask)(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId, void *ivMask);
-
-#undef confComputeKeyStoreDepositIvMask_HAL
-void NVOC_PRIVATE_FUNCTION(confComputeKeyStoreDepositIvMask_HAL)(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId, void *ivMask);
 
 #undef confComputeKeyStoreClearExportMasterKey
 void NVOC_PRIVATE_FUNCTION(confComputeKeyStoreClearExportMasterKey)(struct ConfidentialCompute *pConfCompute);

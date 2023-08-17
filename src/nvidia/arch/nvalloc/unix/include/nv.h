@@ -510,6 +510,12 @@ struct nv_file_private_t
     nv_file_private_t *ctl_nvfp;
     void *ctl_nvfp_priv;
     NvU32 register_or_refcount;
+
+    //
+    // True if a client or an event was ever allocated on this fd.
+    // If false, RMAPI cleanup is skipped.
+    //
+    NvBool bCleanupRmapi;
 };
 
 // Forward define the gpu ops structures
@@ -958,6 +964,8 @@ NV_STATUS  NV_API_CALL  rm_i2c_transfer           (nvidia_stack_t *, nv_state_t 
 NV_STATUS  NV_API_CALL  rm_perform_version_check  (nvidia_stack_t *, void *, NvU32);
 
 void       NV_API_CALL  rm_power_source_change_event        (nvidia_stack_t *, NvU32);
+
+void       NV_API_CALL  rm_request_dnotifier_state          (nvidia_stack_t *, nv_state_t *);
 
 void       NV_API_CALL  rm_disable_gpu_state_persistence    (nvidia_stack_t *sp, nv_state_t *);
 NV_STATUS  NV_API_CALL  rm_p2p_init_mapping       (nvidia_stack_t *, NvU64, NvU64 *, NvU64 *, NvU64 *, NvU64 *, NvU64, NvU64, NvU64, NvU64, void (*)(void *), void *);

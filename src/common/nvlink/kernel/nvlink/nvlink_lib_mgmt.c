@@ -171,6 +171,7 @@ nvlink_lib_is_registerd_device_with_reduced_config(void)
 {
     NvlStatus lock_status = NVL_SUCCESS;
     nvlink_device *dev    = NULL;
+    NvBool         bIsReducedConfg = NV_FALSE;
 
     // Acquire top-level lock
     lock_status = nvlink_lib_top_lock_acquire();
@@ -187,13 +188,13 @@ nvlink_lib_is_registerd_device_with_reduced_config(void)
     {
         if (dev->bReducedNvlinkConfig == NV_TRUE)
         {
-            return NV_TRUE;
+            bIsReducedConfg = NV_TRUE;
+            break;
         }
     }
 
-    // Release and free top-level lock
+    // Release top-level lock
     nvlink_lib_top_lock_release();
-    nvlink_lib_top_lock_free();
 
-    return NV_FALSE;
+    return bIsReducedConfg;
 }

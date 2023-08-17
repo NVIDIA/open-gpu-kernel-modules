@@ -170,14 +170,16 @@ mmuWalkGetUserCtx
     return pWalk->pUserCtx;
 }
 
-void
+NV_STATUS
 mmuWalkSetUserCtx
 (
     MMU_WALK          *pWalk,
     MMU_WALK_USER_CTX *pUserCtx
 )
 {
+
     pWalk->pUserCtx = pUserCtx;
+    return NV_OK;
 }
 
 const MMU_WALK_CALLBACKS *

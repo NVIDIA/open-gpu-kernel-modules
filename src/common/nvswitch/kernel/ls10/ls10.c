@@ -1505,7 +1505,7 @@ nvswitch_reset_and_drain_links_ls10
         //   DEBUG_CLEAR (0x144) register
         // - Assert NPortWarmReset[i] using the WARMRESET (0x140) register
         //
-        // nvswitch_soe_issue_nport_reset_ls10(device, link);
+        nvswitch_soe_issue_nport_reset_ls10(device, link);
 
         //
         // Step 5.0 : Issue Minion request to perform the link reset sequence
@@ -1583,7 +1583,7 @@ nvswitch_reset_and_drain_links_ls10
         // - Assert NPORT INITIALIZATION and program the state tracking RAMS
         // - Restore NPORT state after reset
         //
-        // nvswitch_soe_restore_nport_state_ls10(device, link);
+        nvswitch_soe_restore_nport_state_ls10(device, link);
 
         // Step 7.0 : Re-program the routing table for DBEs
   

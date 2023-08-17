@@ -391,11 +391,13 @@ uvm_gpu_address_t uvm_push_inline_data_end(uvm_push_inline_data_t *data)
         inline_data_address = (NvU64) (uintptr_t)(push->next + 1);
     }
     else {
+        uvm_pushbuffer_t *pushbuffer = uvm_channel_get_pushbuffer(channel);
+
         // Offset of the inlined data within the push.
         inline_data_address = (push->next - push->begin + 1) * UVM_METHOD_SIZE;
 
         // Add GPU VA of the push begin
-        inline_data_address += uvm_pushbuffer_get_gpu_va_for_push(channel->pool->manager->pushbuffer, push);
+        inline_data_address += uvm_pushbuffer_get_gpu_va_for_push(pushbuffer, push);
     }
 
     // This will place a noop right before the inline data that was written.
@@ -438,10 +440,8 @@ NvU64 *uvm_push_timestamp(uvm_push_t *push)
 
     if (uvm_channel_is_ce(push->channel))
         gpu->parent->ce_hal->semaphore_timestamp(push, address.address);
-    else if (uvm_channel_is_sec2(push->channel))
-        gpu->parent->sec2_hal->semaphore_timestamp(push, address.address);
     else
-        UVM_ASSERT_MSG(0, "Semaphore release timestamp on an unsupported channel.\n");
+        gpu->parent->sec2_hal->semaphore_timestamp(push, address.address);
 
     return timestamp;
 }

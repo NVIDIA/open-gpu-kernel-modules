@@ -41,6 +41,7 @@
 --undefined=rm_release_all_gpus_lock
 --undefined=rm_shutdown_rm
 --undefined=rm_power_source_change_event
+--undefined=rm_request_dnotifier_state
 --undefined=rm_write_registry_binary
 --undefined=rm_write_registry_dword
 --undefined=rm_write_registry_string
@@ -121,16 +122,15 @@
 --undefined=rm_gpu_ops_paging_channel_push_stream
 --undefined=rm_gpu_ops_device_create
 --undefined=rm_gpu_ops_device_destroy
---undefined=rm_gpu_ops_ccsl_acquire_encryption_iv
 --undefined=rm_gpu_ops_ccsl_sign
 --undefined=rm_gpu_ops_ccsl_encrypt
 --undefined=rm_gpu_ops_ccsl_encrypt_with_iv
 --undefined=rm_gpu_ops_ccsl_context_init
 --undefined=rm_gpu_ops_ccsl_context_clear
---undefined=rm_gpu_ops_ccsl_log_device_encryption
 --undefined=rm_gpu_ops_ccsl_rotate_iv
 --undefined=rm_gpu_ops_ccsl_decrypt
 --undefined=rm_gpu_ops_ccsl_query_message_pool
+--undefined=rm_gpu_ops_ccsl_increment_iv
 --undefined=rm_log_gpu_crash
 --undefined=rm_kernel_rmapi_op
 --undefined=nv_get_hypervisor_type

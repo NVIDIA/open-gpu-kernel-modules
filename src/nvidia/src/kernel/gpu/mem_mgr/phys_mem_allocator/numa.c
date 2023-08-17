@@ -189,6 +189,8 @@ NV_STATUS _pmaNumaAllocateRange
     NvU32 flags = OS_ALLOC_PAGES_NODE_NONE;
     *allocatedCount    = 0;
 
+    NV_ASSERT_OR_RETURN(actualSize >= osGetPageSize(), NV_ERR_INVALID_ARGUMENT);
+
     // check if numFreeFrames(64KB) are below a certain % of PMA managed memory(indicated by num2mbPages).
     if (_pmaCheckFreeFramesToSkipReclaim(pPma))
     {
@@ -202,12 +204,10 @@ NV_STATUS _pmaNumaAllocateRange
 
     if (status == NV_OK)
     {
-        NvU32 j;
-        // j=0 head page is already refcounted  at allocation
-        for (j = 1; j < (actualSize >> PMA_PAGE_SHIFT); j++)
-        {
-            osAllocAcquirePage(sysPhysAddr + (j << PMA_PAGE_SHIFT));
-        }
+        NvU8 osPageShift = osGetPageShift();
+
+        // Skip the first page as it is refcounted at allocation.
+        osAllocAcquirePage(sysPhysAddr + (1 << osPageShift), (actualSize >> osPageShift) - 1);
 
         gpaPhysAddr = sysPhysAddr - pPma->coherentCpuFbBase;
         NV_ASSERT(gpaPhysAddr < pPma->coherentCpuFbBase);
@@ -330,10 +330,12 @@ static NV_STATUS _pmaNumaAllocatePages
 {
     NV_STATUS status = NV_ERR_NO_MEMORY;
     NvU64     sysPhysAddr;
-    NvU64     i = 0, j = 0;
-    NvU32 flags = OS_ALLOC_PAGES_NODE_NONE;
+    NvU64     i = 0;
+    NvU32     flags = OS_ALLOC_PAGES_NODE_NONE;
+    NvU8      osPageShift = osGetPageShift();
 
     NV_ASSERT(allocationCount);
+    NV_ASSERT_OR_RETURN(pageSize >= osGetPageSize(), NV_ERR_INVALID_ARGUMENT);
 
     // check if numFreeFrames are below certain % of PMA managed memory.
     if (_pmaCheckFreeFramesToSkipReclaim(pPma))
@@ -357,11 +359,8 @@ static NV_STATUS _pmaNumaAllocatePages
         NV_ASSERT(sysPhysAddr >= pPma->coherentCpuFbBase);
         pPages[i] = sysPhysAddr - pPma->coherentCpuFbBase;
 
-        // Skip the head page at offset 0 (j=0) as it is refcounted at allocation
-        for (j = 1; j < (pageSize >> PMA_PAGE_SHIFT); j++)
-        {
-            osAllocAcquirePage(sysPhysAddr + (j << PMA_PAGE_SHIFT));
-        }
+        // Skip the first page as it is refcounted at allocation.
+        osAllocAcquirePage(sysPhysAddr + (1 << osPageShift), (pageSize >> osPageShift) - 1);
     }
 
     if (bScrubOnAlloc)
@@ -658,6 +657,9 @@ void pmaNumaFreeInternal
 )
 {
     NvU64 i, j;
+    NvU8 osPageShift = osGetPageShift();
+
+    NV_ASSERT_OR_RETURN_VOID(PMA_PAGE_SHIFT >= osPageShift);
 
     NV_PRINTF(LEVEL_INFO, "Freeing pPage[0] = %llx pageCount %lld\n", pPages[0], pageCount);
 
@@ -704,7 +706,7 @@ void pmaNumaFreeInternal
                 continue;
             }
             sysPagePhysAddr = sysPhysAddr + (j << PMA_PAGE_SHIFT);
-            osAllocReleasePage(sysPagePhysAddr);
+            osAllocReleasePage(sysPagePhysAddr, 1 << (PMA_PAGE_SHIFT - osPageShift));
             pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + j), newStatus, ~ATTRIB_EVICTING);
         }
     }

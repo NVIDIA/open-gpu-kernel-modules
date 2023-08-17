@@ -178,6 +178,13 @@ gpuInitRegistryOverrides_KERNEL
                         DRF_NUM(_REG_STR, _RM_GPU_FABRIC_PROBE, _OVERRIDE, 1);
     }
 
+    pGpu->bBf3WarBug4040336Enabled = NV_FALSE;
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3,
+                            &data32) == NV_OK)
+    {
+        pGpu->bBf3WarBug4040336Enabled = (data32 == NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_ENABLE);
+    }
+
     return NV_OK;
 }
 

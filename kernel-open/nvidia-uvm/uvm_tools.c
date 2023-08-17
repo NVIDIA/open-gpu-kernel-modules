@@ -229,6 +229,24 @@ static void unmap_user_pages(struct page **pages, void *addr, NvU64 size)
     uvm_kvfree(pages);
 }
 
+// This must be called with the mmap_lock held in read mode or better.
+static NV_STATUS check_vmas(struct mm_struct *mm, NvU64 start_va, NvU64 size)
+{
+    struct vm_area_struct *vma;
+    NvU64 addr = start_va;
+    NvU64 region_end = start_va + size;
+
+    do {
+        vma = find_vma(mm, addr);
+        if (!vma || !(addr >= vma->vm_start) || uvm_file_is_nvidia_uvm(vma->vm_file))
+            return NV_ERR_INVALID_ARGUMENT;
+
+        addr = vma->vm_end;
+    } while (addr < region_end);
+
+    return NV_OK;
+}
+
 // Map virtual memory of data from [user_va, user_va + size) of current process into kernel.
 // Sets *addr to kernel mapping and *pages to the array of struct pages that contain the memory.
 static NV_STATUS map_user_pages(NvU64 user_va, NvU64 size, void **addr, struct page ***pages)
@@ -237,7 +255,6 @@ static NV_STATUS map_user_pages(NvU64 user_va, NvU64 size, void **addr, struct p
     long ret = 0;
     long num_pages;
     long i;
-    struct vm_area_struct **vmas = NULL;
 
     *addr = NULL;
     *pages = NULL;
@@ -254,22 +271,30 @@ static NV_STATUS map_user_pages(NvU64 user_va, NvU64 size, void **addr, struct p
         goto fail;
     }
 
-    vmas = uvm_kvmalloc(sizeof(struct vm_area_struct *) * num_pages);
-    if (vmas == NULL) {
-        status = NV_ERR_NO_MEMORY;
+    // Although uvm_down_read_mmap_lock() is preferable due to its participation
+    // in the UVM lock dependency tracker, it cannot be used here. That's
+    // because pin_user_pages() may fault in HMM pages which are GPU-resident.
+    // When that happens, the UVM page fault handler would record another
+    // mmap_read_lock() on the same thread as this one, leading to a false
+    // positive lock dependency report.
+    //
+    // Therefore, use the lower level nv_mmap_read_lock() here.
+    nv_mmap_read_lock(current->mm);
+    status = check_vmas(current->mm, user_va, size);
+    if (status != NV_OK) {
+        nv_mmap_read_unlock(current->mm);
         goto fail;
     }
-
-    nv_mmap_read_lock(current->mm);
-    ret = NV_PIN_USER_PAGES(user_va, num_pages, FOLL_WRITE, *pages, vmas);
+    ret = NV_PIN_USER_PAGES(user_va, num_pages, FOLL_WRITE, *pages, NULL);
     nv_mmap_read_unlock(current->mm);
+
     if (ret != num_pages) {
         status = NV_ERR_INVALID_ARGUMENT;
         goto fail;
     }
 
     for (i = 0; i < num_pages; i++) {
-        if (page_count((*pages)[i]) > MAX_PAGE_COUNT || uvm_file_is_nvidia_uvm(vmas[i]->vm_file)) {
+        if (page_count((*pages)[i]) > MAX_PAGE_COUNT) {
             status = NV_ERR_INVALID_ARGUMENT;
             goto fail;
         }
@@ -279,14 +304,11 @@ static NV_STATUS map_user_pages(NvU64 user_va, NvU64 size, void **addr, struct p
     if (*addr == NULL)
         goto fail;
 
-    uvm_kvfree(vmas);
     return NV_OK;
 
 fail:
     if (*pages == NULL)
         return status;
-
-    uvm_kvfree(vmas);
 
     if (ret > 0)
         uvm_put_user_pages_dirty(*pages, ret);

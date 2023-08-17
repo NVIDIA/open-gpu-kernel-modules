@@ -3433,7 +3433,7 @@ typedef struct NV2080_CTRL_INTERNAL_FIFO_GET_NUM_SECURE_CHANNELS_PARAMS {
  * NV2080_CTRL_CMD_INTERNAL_BIF_DISABLE_SYSTEM_MEMORY_ACCESS
  *
  * This command is an internal command sent from Kernel RM to Physical RM
- * to disable the GPU system memory access after quiescing the GPU or 
+ * to disable the GPU system memory access after quiescing the GPU or
  * re-enable sysmem access.
  *
  *   bDisable   [IN]
@@ -3642,6 +3642,72 @@ typedef struct NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS {
     NvBool bIsPcieTrusted;
 } NV2080_CTRL_INTERNAL_CONF_COMPUTE_GET_STATIC_INFO_PARAMS;
 
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ENCRYPTION_CONTROL
+ *
+ * This command is used to trigger the initialization / suspension of encrypted RPCs for Confidential Compute.
+ *      bEncryptionControl : [IN]
+ *          NV_TRUE indicates initialization.
+ *          NV_FALSE indicates suspension.
+ */
+#define NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ENCRYPTION_CONTROL (0x208001b2) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ENCRYPTION_CONTROL_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ENCRYPTION_CONTROL_PARAMS_MESSAGE_ID (0xB2U)
+
+typedef struct NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ENCRYPTION_CONTROL_PARAMS {
+    NvBool bEncryptionControl;
+} NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ENCRYPTION_CONTROL_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS
+ *
+ * This command is an internal command sent from Kernel RM to Physical RM
+ * to derive SWL keys and IV masks for a given engine
+ *
+ *      engineId: [IN]
+ *          NV2080_ENGINE_TYPE_* for engine for which keys and IV mask should be derived
+ *      ivMaskSet: [OUT]
+ *          Set of IV masks for given engine
+ */
+#define NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS (0x20800ae1) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SIZE         3U
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_KERNEL   0U
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_USER     1U
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_COUNT    2U
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_LCE_COUNT    6U
+
+typedef struct NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK {
+    NvU32 ivMask[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SIZE];
+} NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK;
+
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS_PARAMS_MESSAGE_ID (0xE1U)
+
+typedef struct NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS_PARAMS {
+    NvU32                                    engineId;
+    NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_SWL_COUNT];
+} NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_SWL_KEYS_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS
+ *
+ * This command is an internal command sent from Kernel RM to Physical RM
+ * to derive LCE keys and IV masks for a given engine
+ *
+ *      engineId: [IN]
+ *          NV2080_ENGINE_TYPE_* for engine for which keys and IV mask should be derived
+ *      ivMaskSet: [OUT]
+ *          Set of IV masks for given engine
+ */
+#define NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS (0x20800ae2) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS_MESSAGE_ID (0xE2U)
+
+typedef struct NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS {
+    NvU32                                    engineId;
+    NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_LCE_COUNT];
+} NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS;
+
 
 
 /*
@@ -3675,7 +3741,7 @@ typedef struct NV2080_CTRL_INTERNAL_TRANSFER_SURFACE_INFO {
     NV_DECLARE_ALIGNED(NvU64 size, 8);
 
     /*!
-     * Offset in bytes into the surface where read/write must happen 
+     * Offset in bytes into the surface where read/write must happen
      */
     NV_DECLARE_ALIGNED(NvU64 offset, 8);
 
@@ -3690,6 +3756,8 @@ typedef struct NV2080_CTRL_INTERNAL_TRANSFER_SURFACE_INFO {
     NvU32 cpuCacheAttrib;
 } NV2080_CTRL_INTERNAL_TRANSFER_SURFACE_INFO;
 
+#define CC_AES_256_GCM_AUTH_TAG_SIZE_BYTES (0x10U) /* finn: Evaluated from "(128 / 8)" */
+
 #define NV2080_CTRL_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP_PARAMS_MESSAGE_ID (0xFAU)
 
 typedef struct NV2080_CTRL_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP_PARAMS {
@@ -3698,6 +3766,11 @@ typedef struct NV2080_CTRL_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP_PARAMS {
      * Source surface info
      */
     NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_TRANSFER_SURFACE_INFO src, 8);
+
+    /*!
+     * Authentication tag if data is encrypted
+     */
+    NvU8                         authTag[CC_AES_256_GCM_AUTH_TAG_SIZE_BYTES];
 
     /*!
      * Destination surface info

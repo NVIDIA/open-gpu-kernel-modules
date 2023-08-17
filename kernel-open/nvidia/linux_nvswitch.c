@@ -2691,3 +2691,17 @@ nvswitch_os_get_supported_register_events_params
     *os_descriptor = NV_FALSE;
     return NVL_SUCCESS;
 }
+
+NvlStatus
+nvswitch_os_get_pid
+(
+    NvU32 *pPid
+)
+{
+    if (pPid != NULL)
+    {
+        *pPid = task_pid_nr(current);
+    }
+    
+    return NVL_SUCCESS;
+}

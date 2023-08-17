@@ -49,6 +49,8 @@
 
 #include "class/clc86f.h"   // HOPPER_CHANNEL_GPFIFO_A
 
+#include "gpu/conf_compute/ccsl.h"
+
 #include "nvctassert.h"
 #include "vgpu/vgpu_guest_pma_scrubber.h"
 
@@ -107,17 +109,8 @@
         NV_PUSH_DATA(d4);                                               \
     } while (0)
 
-#define READ_CHANNEL_PAYLOAD_SEMA(channel)       MEM_RD32((NvU8*)channel->pbCpuVA + \
-                                                  channel->finishPayloadOffset)
-
-#define READ_CHANNEL_PB_SEMA(channel)            MEM_RD32((NvU8*)channel->pbCpuVA + \
-                                                  channel->semaOffset)
-
-#define WRITE_CHANNEL_PB_SEMA(channel, val)      MEM_WR32((NvU8*)channel->pbCpuVA + \
-                                                  channel->semaOffset, val);
-
-#define WRITE_CHANNEL_PAYLOAD_SEMA(channel,val)  MEM_WR32((NvU8*)channel->pbCpuVA + \
-                                                  channel->finishPayloadOffset, val);
+#define READ_CHANNEL_PAYLOAD_SEMA(channel)  channelReadChannelMemdesc(channel, channel->finishPayloadOffset)
+#define READ_CHANNEL_PB_SEMA(channel)       channelReadChannelMemdesc(channel, channel->semaOffset)
 
 // 
 // This struct contains parameters needed to send a pushbuffer for a CE
@@ -141,17 +134,26 @@ typedef struct
 
 NV_STATUS channelSetupIDs(OBJCHANNEL *pChannel, OBJGPU *pGpu, NvBool bUseVasForCeCopy, NvBool bMIGInUse);
 void channelSetupChannelBufferSizes(OBJCHANNEL *pChannel);
+NvU32 channelReadChannelMemdesc(OBJCHANNEL *pChannel, NvU32 offset);
 
 // Needed for pushbuffer management
 NV_STATUS channelWaitForFreeEntry(OBJCHANNEL *pChannel, NvU32 *pPutIndex);
 NV_STATUS channelFillGpFifo(OBJCHANNEL *pChannel, NvU32 putIndex, NvU32 methodsLength);
-NvU32 channelFillPb(OBJCHANNEL *pChannel, NvU32 putIndex, NvBool bPipelined,
-                    NvBool bInsertFinishPayload, CHANNEL_PB_INFO *pChannelPbInfo);
+NvU32 channelFillCePb(OBJCHANNEL *pChannel, NvU32 putIndex, NvBool bPipelined,
+                      NvBool bInsertFinishPayload, CHANNEL_PB_INFO *pChannelPbInfo);
 NvU32 channelFillPbFastScrub(OBJCHANNEL *pChannel, NvU32 putIndex, NvBool bPipelined,
                     NvBool bInsertFinishPayload, CHANNEL_PB_INFO *pChannelPbInfo);
+
+NV_STATUS channelFillSec2Pb(OBJCHANNEL *pChannel, NvU32 putIndex, NvBool bInsertFinishPayload,
+                            CHANNEL_PB_INFO *pChannelPbInfo, CCSL_CONTEXT *pCcslCtx, 
+                            MEMORY_DESCRIPTOR *pScrubMemDesc, MEMORY_DESCRIPTOR *pSemaMemDesc,
+                            NvU64 scrubMthdAuthTagBufGpuVA, NvU32 scrubAuthTagBufIndex,
+                            NvU64 semaMthdAuthTagBufGpuVA, NvU32 semaAuthTagBufIndex, NvU32* methodLength);
 
 // Needed for work tracking
 NV_STATUS channelWaitForFinishPayload(OBJCHANNEL *pChannel, NvU64 targetPayload);
 NvU64 channelGetFinishPayload(OBJCHANNEL *pChannel);
+
+void channelServiceScrubberInterrupts(OBJCHANNEL *pChannel);
 
 #endif // _CHANNEL_UTILS_H_

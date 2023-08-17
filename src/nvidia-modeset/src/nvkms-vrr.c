@@ -183,13 +183,6 @@ static NvBool DpyIsGsync(const NVDpyEvoRec *pDpyEvo)
     return pDpyEvo->vrr.type == NVKMS_DPY_VRR_TYPE_GSYNC;
 }
 
-static NvBool IsAdaptiveSyncDpyVrrType(enum NvKmsDpyVRRType type)
-{
-    return ((type == NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED) ||
-            (type == NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED));
-}
-
-
 static NvBool AnyEnabledAdaptiveSyncDpys(const NVDevEvoRec *pDevEvo)
 {
     NVDispEvoPtr pDispEvo;
@@ -202,7 +195,7 @@ static NvBool AnyEnabledAdaptiveSyncDpys(const NVDevEvoRec *pDevEvo)
             const NVDispHeadStateEvoRec *pHeadState =
                 &pDispEvo->headState[head];
 
-            if (IsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
+            if (nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
                 return TRUE;
             }
         }
@@ -286,7 +279,7 @@ void nvAdjustHwModeTimingsForVrrEvo(NVHwModeTimingsEvoPtr pTimings,
 
     // Allow overriding the EDID min refresh rate on Adaptive-Sync
     // displays.
-    if (IsAdaptiveSyncDpyVrrType(vrrType) && vrrOverrideMinRefreshRate) {
+    if (nvIsAdaptiveSyncDpyVrrType(vrrType) && vrrOverrideMinRefreshRate) {
         NvU32 minMinRefreshRate, maxMinRefreshRate;
         NvU32 clampedMinRefreshRate;
 
@@ -737,7 +730,7 @@ void nvDisableVrr(NVDevEvoPtr pDevEvo)
             NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
 
             if ((pHeadState->pConnectorEvo != NULL) &&
-                    IsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
+                    nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
                 if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
                     nvDPLibSetAdaptiveSync(pDispEvo, head, FALSE);
                 } else {
@@ -799,7 +792,7 @@ void nvGetDpyMinRefreshRateValidValues(
 {
     NvU32 edidMinRefreshRate;
 
-    if (IsAdaptiveSyncDpyVrrType(vrrType)) {
+    if (nvIsAdaptiveSyncDpyVrrType(vrrType)) {
         /*
          * Adaptive-Sync monitors must always define a nonzero minimum refresh
          * rate in the EDID, and a modeset may override this within a range
@@ -860,7 +853,7 @@ void nvEnableVrr(NVDevEvoPtr pDevEvo)
             NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
 
             if ((pHeadState->pConnectorEvo != NULL) &&
-                    IsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
+                    nvIsAdaptiveSyncDpyVrrType(pHeadState->timings.vrr.type)) {
                 if (nvConnectorUsesDPLib(pHeadState->pConnectorEvo)) {
                     nvDPLibSetAdaptiveSync(pDispEvo, head, TRUE);
                 } else {
@@ -922,22 +915,42 @@ static void ConfigVrrPstateSwitch(NVDispEvoPtr pDispEvo, NvBool vrrEnabled,
     NV0073_CTRL_SYSTEM_CONFIG_VRR_PSTATE_SWITCH_PARAMS params = { };
     NvU32 ret;
     const NVDispHeadStateEvoRec *pHeadState = &pDispEvo->headState[head];
+    const NVHwModeTimingsEvo *pTimings = &pHeadState->timings;
+
+    if (nvkms_disable_vrr_memclk_switch() ||
+        (pTimings->vrr.type == NVKMS_DPY_VRR_TYPE_NONE)) {
+        return;
+    }
+
+    /*
+     * An inactive head should always have pTimings->vrr.type ==
+     * NVKMS_DPY_VRR_TYPE_NONE and therefore return early above.
+     */
+    nvAssert(nvHeadIsActive(pDispEvo, head));
+
     params.displayId = pHeadState->activeRmId;
     params.bVrrEnabled = vrrEnabled;
     params.bVrrState = vrrState;
     params.bVrrDirty = vrrDirty;
 
-    params.subDeviceInstance = pDispEvo->displayOwner;
+    if (params.bVrrDirty) {
+        NvU64 frameTimeUs = axb_div_c(pTimings->rasterSize.y * 1000ULL,
+                                      pTimings->rasterSize.x, pTimings->pixelClock);
+        NvU64 timePerLineNs = (frameTimeUs * 1000ULL) / pTimings->rasterSize.y;
 
-    if (pHeadState->timings.vrr.type != NVKMS_DPY_VRR_TYPE_NONE) {
-        ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                             pDispEvo->pDevEvo->displayCommonHandle,
-                             NV0073_CTRL_CMD_SYSTEM_CONFIG_VRR_PSTATE_SWITCH,
-                             &params, sizeof(params));
-        if (ret != NVOS_STATUS_SUCCESS) {
-            nvEvoLogDispDebug(pDispEvo, EVO_LOG_WARN,
-                "NV0073_CTRL_CMD_SYSTEM_CONFIG_VRR_PSTATE_SWITCH failed");
-        }
+        NvU64 maxFrameTimeUs = pTimings->vrr.timeoutMicroseconds;
+        NvU64 maxVblankExtTimeNs = (maxFrameTimeUs - frameTimeUs) * 1000ULL;
+
+        params.maxVblankExtension = maxVblankExtTimeNs / timePerLineNs;
+    }
+
+    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
+                         pDispEvo->pDevEvo->displayCommonHandle,
+                         NV0073_CTRL_CMD_SYSTEM_CONFIG_VRR_PSTATE_SWITCH,
+                         &params, sizeof(params));
+    if (ret != NVOS_STATUS_SUCCESS) {
+        nvEvoLogDispDebug(pDispEvo, EVO_LOG_WARN,
+            "NV0073_CTRL_CMD_SYSTEM_CONFIG_VRR_PSTATE_SWITCH failed");
     }
 }
 

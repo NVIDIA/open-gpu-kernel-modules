@@ -213,6 +213,7 @@ done:
 typedef enum
 {
     MEM_ALLOC_TYPE_SYSMEM_DMA,
+    MEM_ALLOC_TYPE_SYSMEM_PROTECTED,
     MEM_ALLOC_TYPE_VIDMEM_PROTECTED
 } mem_alloc_type_t;
 
@@ -269,14 +270,20 @@ static NV_STATUS alloc_and_init_mem(uvm_gpu_t *gpu, uvm_mem_t **mem, size_t size
     *mem = NULL;
 
     if (type == MEM_ALLOC_TYPE_VIDMEM_PROTECTED) {
-        TEST_NV_CHECK_RET(uvm_mem_alloc_vidmem_protected(size, gpu, mem));
+        TEST_NV_CHECK_RET(uvm_mem_alloc_vidmem(size, gpu, mem));
         TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(*mem, gpu), err);
         TEST_NV_CHECK_GOTO(ce_memset_gpu(gpu, *mem, size, 0xdead), err);
     }
     else {
-        TEST_NV_CHECK_RET(uvm_mem_alloc_sysmem_dma(size, gpu, NULL, mem));
+        if (type == MEM_ALLOC_TYPE_SYSMEM_DMA) {
+            TEST_NV_CHECK_RET(uvm_mem_alloc_sysmem_dma(size, gpu, NULL, mem));
+            TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(*mem, gpu), err);
+        }
+        else {
+            TEST_NV_CHECK_RET(uvm_mem_alloc_sysmem(size, NULL, mem));
+        }
+
         TEST_NV_CHECK_GOTO(uvm_mem_map_cpu_kernel(*mem), err);
-        TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(*mem, gpu), err);
         write_range_cpu(*mem, size, 0xdeaddead);
     }
 
@@ -341,9 +348,9 @@ static NV_STATUS cpu_decrypt(uvm_channel_t *channel,
     return NV_OK;
 }
 
-// gpu_encrypt uses a secure CE for encryption (instead of SEC2). SEC2 does not
-// support encryption. The following function is copied from uvm_ce_test.c and
-// adapted to SEC2 tests.
+// gpu_encrypt uses the Copy Engine for encryption, instead of SEC2. SEC2 does
+// not support encryption. The following function is copied from uvm_ce_test.c
+// and adapted to SEC2 tests.
 static void gpu_encrypt(uvm_push_t *push,
                         uvm_mem_t *dst_mem,
                         uvm_mem_t *src_mem,
@@ -405,48 +412,6 @@ static void gpu_decrypt(uvm_push_t *push,
     }
 }
 
-// This test only uses sysmem so that we can use the CPU for encryption and SEC2
-// for decryption, i.e., the test doesn't depend on any other GPU engine for
-// the encryption operation (refer to test_cpu_to_gpu_roundtrip()). This is not
-// how SEC2 is used in the driver. The intended SEC2 usage is to decrypt from
-// unprotected sysmem to protected vidmem, which is tested in
-// test_cpu_to_gpu_roundtrip().
-static NV_STATUS test_cpu_to_gpu_sysmem(uvm_gpu_t *gpu, size_t copy_size, size_t size)
-{
-    NV_STATUS status = NV_OK;
-    uvm_mem_t *src_plain = NULL;
-    uvm_mem_t *cipher = NULL;
-    uvm_mem_t *dst_plain = NULL;
-    uvm_mem_t *auth_tag_mem = NULL;
-    size_t auth_tag_buffer_size = (size / copy_size) * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
-    uvm_push_t push;
-
-    TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &src_plain, size, MEM_ALLOC_TYPE_SYSMEM_DMA), out);
-    TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &dst_plain, size, MEM_ALLOC_TYPE_SYSMEM_DMA), out);
-    TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &cipher, size, MEM_ALLOC_TYPE_SYSMEM_DMA), out);
-    TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &auth_tag_mem, auth_tag_buffer_size, MEM_ALLOC_TYPE_SYSMEM_DMA), out);
-
-    write_range_cpu(src_plain, size, uvm_get_stale_thread_id());
-    write_range_cpu(dst_plain, size, 0xA5A5A5A5);
-
-    TEST_NV_CHECK_GOTO(uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_SEC2, &push, "enc(cpu)_dec(gpu)"), out);
-
-    cpu_encrypt(push.channel, cipher, src_plain, auth_tag_mem, size, copy_size);
-    gpu_decrypt(&push, dst_plain, cipher, auth_tag_mem, size, copy_size);
-
-    uvm_push_end_and_wait(&push);
-
-    TEST_CHECK_GOTO(mem_match(src_plain, dst_plain), out);
-
-out:
-    uvm_mem_free(auth_tag_mem);
-    uvm_mem_free(cipher);
-    uvm_mem_free(dst_plain);
-    uvm_mem_free(src_plain);
-
-    return status;
-}
-
 // This test depends on the CE for the encryption, so we assume tests from
 // uvm_ce_test.c have successfully passed.
 static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu, size_t copy_size, size_t size)
@@ -461,19 +426,16 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu, size_t copy_size, siz
     size_t auth_tag_buffer_size = (size / copy_size) * UVM_CONF_COMPUTING_AUTH_TAG_SIZE;
     uvm_push_t push;
     UvmCslIv *decrypt_iv;
-    uvm_tracker_t tracker;
 
     decrypt_iv = uvm_kvmalloc_zero((size / copy_size) * sizeof(UvmCslIv));
     if (!decrypt_iv)
         return NV_ERR_NO_MEMORY;
 
-    uvm_tracker_init(&tracker);
-
-    TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &src_plain, size, MEM_ALLOC_TYPE_SYSMEM_DMA), out);
+    TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &src_plain, size, MEM_ALLOC_TYPE_SYSMEM_PROTECTED), out);
     TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &src_cipher, size, MEM_ALLOC_TYPE_SYSMEM_DMA), out);
     TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &dst_cipher, size, MEM_ALLOC_TYPE_SYSMEM_DMA), out);
     TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &dst_plain, size, MEM_ALLOC_TYPE_VIDMEM_PROTECTED), out);
-    TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &dst_plain_cpu, size, MEM_ALLOC_TYPE_SYSMEM_DMA), out);
+    TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &dst_plain_cpu, size, MEM_ALLOC_TYPE_SYSMEM_PROTECTED), out);
     TEST_NV_CHECK_GOTO(alloc_and_init_mem(gpu, &auth_tag_mem, auth_tag_buffer_size, MEM_ALLOC_TYPE_SYSMEM_DMA), out);
 
     write_range_cpu(src_plain, size, uvm_get_stale_thread_id());
@@ -483,14 +445,12 @@ static NV_STATUS test_cpu_to_gpu_roundtrip(uvm_gpu_t *gpu, size_t copy_size, siz
     cpu_encrypt(push.channel, src_cipher, src_plain, auth_tag_mem, size, copy_size);
     gpu_decrypt(&push, dst_plain, src_cipher, auth_tag_mem, size, copy_size);
 
-    uvm_push_end(&push);
-    TEST_NV_CHECK_GOTO(uvm_tracker_add_push(&tracker, &push), out);
+    // Wait for SEC2 before launching the CE part.
+    // SEC2 is only allowed to release semaphores in unprotected sysmem,
+    // and CE can only acquire semaphores in protected vidmem.
+    TEST_NV_CHECK_GOTO(uvm_push_end_and_wait(&push), out);
 
-    TEST_NV_CHECK_GOTO(uvm_push_begin_acquire(gpu->channel_manager,
-                                              UVM_CHANNEL_TYPE_GPU_TO_CPU,
-                                              &tracker,
-                                              &push,
-                                              "enc(gpu)_dec(cpu)"),
+    TEST_NV_CHECK_GOTO(uvm_push_begin(gpu->channel_manager, UVM_CHANNEL_TYPE_GPU_TO_CPU, &push, "enc(gpu)_dec(cpu)"),
                        out);
 
     gpu_encrypt(&push, dst_cipher, dst_plain, decrypt_iv, auth_tag_mem, size, copy_size);
@@ -521,8 +481,6 @@ out:
 
     uvm_kvfree(decrypt_iv);
 
-    uvm_tracker_deinit(&tracker);
-
     return status;
 }
 
@@ -545,7 +503,6 @@ static NV_STATUS test_encryption_decryption(uvm_gpu_t *gpu)
 
         UVM_ASSERT(size % copy_sizes[i] == 0);
 
-        TEST_NV_CHECK_RET(test_cpu_to_gpu_sysmem(gpu, copy_sizes[i], size));
         TEST_NV_CHECK_RET(test_cpu_to_gpu_roundtrip(gpu, copy_sizes[i], size));
     }
 

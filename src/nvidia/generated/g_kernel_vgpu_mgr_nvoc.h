@@ -305,6 +305,11 @@ kvgpumgrGetSwizzId(struct OBJGPU *pGpu,
                    NvU32 *swizzId);
 
 NV_STATUS
+kvgpumgrValidateSwizzId(struct OBJGPU *pGpu,
+                        NvU32 vgpuTypeId,
+                        NvU32 swizzId);
+
+NV_STATUS
 kvgpumgrGetVgpuFbUsage(struct OBJGPU *pGpu, NVA081_CTRL_VGPU_CONFIG_GET_VGPU_FB_USAGE_PARAMS *pParams);
 
 NV_STATUS
@@ -326,9 +331,8 @@ kvgpumgrGetHostVgpuDeviceFromMdevUuid(NvU32 gpuPciId, const NvU8 *pMdevUuid,
                                       KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice);
 
 NV_STATUS
-kvgpumgrGetHostVgpuDeviceFromVmId(NvU32 gpuPciId, VM_ID guestVmId,
-                                  KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice,
-                                  VM_ID_TYPE vmIdType);
+kvgpumgrGetHostVgpuDeviceFromVgpuUuid(NvU32 gpuPciId, NvU8 *vgpuUuid,
+                                  KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice);
 
 NV_STATUS
 kvgpumgrGetCreatableVgpuTypes(struct OBJGPU *pGpu, struct KernelVgpuMgr *pKernelVgpuMgr, NvU32 pgpuIndex, NvU32* numVgpuTypes, NvU32* vgpuTypes);

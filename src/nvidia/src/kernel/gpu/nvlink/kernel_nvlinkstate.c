@@ -253,6 +253,10 @@ knvlinkIsPresent_IMPL
 {
     NV_STATUS status = NV_OK;
 
+    // Mark NVLINK as absent when HCC is enabled
+    if (gpuIsCCFeatureEnabled(pGpu))
+        return NV_FALSE;
+
     // On GSP clients, retrieve all device discovery info from GSP through RPC
     status = knvlinkCopyNvlinkDeviceInfo(pGpu, pKernelNvlink);
     if (status != NV_OK)

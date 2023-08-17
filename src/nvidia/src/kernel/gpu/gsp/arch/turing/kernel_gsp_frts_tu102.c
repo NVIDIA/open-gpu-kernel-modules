@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -398,7 +398,7 @@ s_executeFwsec_TU102
         {
             NV_PRINTF(LEVEL_ERROR, "failed to prepare interface data for FWSEC cmd 0x%x: 0x%x\n",
                       cmd, status);
-            return status;
+            goto out;
         }
     }
     else if (pFwsecUcode->bootType == KGSP_FLCN_UCODE_BOOT_WITH_LOADER)
@@ -426,7 +426,7 @@ s_executeFwsec_TU102
         {
             NV_PRINTF(LEVEL_ERROR, "failed to prepare interface data for FWSEC cmd 0x%x: 0x%x\n",
                       cmd, status);
-            return status;
+            goto out;
         }
     }
     else
@@ -440,7 +440,7 @@ s_executeFwsec_TU102
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC cmd 0x%x: status 0x%x\n", cmd, status);
-        return status;
+        goto out;
     }
 
     if (cmd == FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS)
@@ -456,7 +456,8 @@ s_executeFwsec_TU102
         if (frtsErrCode != NV_VBIOS_FWSECLIC_FRTS_ERR_CODE_NONE)
         {
             NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC for FRTS: FRTS error code 0x%x\n", frtsErrCode);
-            return NV_ERR_GENERIC;
+            status = NV_ERR_GENERIC;
+            goto out;
         }
 
         data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_HI);
@@ -464,7 +465,8 @@ s_executeFwsec_TU102
         if (wpr2HiVal == 0)
         {
             NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC for FRTS: no initialized WPR2 found\n");
-            return NV_ERR_GENERIC;
+            status = NV_ERR_GENERIC;
+            goto out;
         }
 
         data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_LO);
@@ -475,7 +477,8 @@ s_executeFwsec_TU102
             NV_PRINTF(LEVEL_ERROR,
                       "failed to execute FWSEC for FRTS: WPR2 initialized at an unexpected location: 0x%08x (expected 0x%08x)\n",
                       wpr2LoVal, expectedLoVal);
-            return NV_ERR_GENERIC;
+            status = NV_ERR_GENERIC;
+            goto out;
         }
     }
     else  // i.e. FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_SB
@@ -487,14 +490,16 @@ s_executeFwsec_TU102
                                   _READ_PROTECTION_LEVEL0, _ENABLE))
         {
             NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC for SB: GFW PLM not lowered\n");
-            return NV_ERR_GENERIC;
+            status = NV_ERR_GENERIC;
+            goto out;
         }
 
         if (!GPU_FLD_TEST_DRF_DEF(pGpu, _PGC6, _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
                                   _PROGRESS, _COMPLETED))
         {
             NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC for SB: GFW progress not completed\n");
-            return NV_ERR_GENERIC;
+            status = NV_ERR_GENERIC;
+            goto out;
         }
 
         data = GPU_REG_RD32(pGpu, NV_PBUS_VBIOS_SCRATCH(NV_VBIOS_FWSECLIC_SCRATCH_INDEX_15));
@@ -502,8 +507,15 @@ s_executeFwsec_TU102
         if (sbErrCode != NV_VBIOS_FWSECLIC_SB_ERR_CODE_NONE)
         {
             NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC for SB: SB error code 0x%x\n", sbErrCode);
-            return NV_ERR_GENERIC;
+            status = NV_ERR_GENERIC;
+            goto out;
         }
+    }
+
+out:
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "(note: VBIOS version %s)\n", pKernelGsp->vbiosVersionStr);
     }
 
     return status;

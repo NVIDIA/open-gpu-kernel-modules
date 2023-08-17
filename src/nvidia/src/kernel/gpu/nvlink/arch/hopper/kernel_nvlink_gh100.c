@@ -246,7 +246,8 @@ knvlinkDiscoverPostRxDetLinks_GH100
     if(pKernelNvlink0->postRxDetLinkMask == 0 ||
        pKernelNvlink1->postRxDetLinkMask == 0)
     {
-        NV_PRINTF(LEVEL_ERROR, "Got 0 post RxDet Links!");
+        NV_PRINTF(LEVEL_INFO, "Got 0 post RxDet Links on GPU %d or GPU %d!\n",
+                gpuGetInstance(pGpu0), gpuGetInstance(pGpu1));
         return NV_ERR_NOT_READY;
     }
 

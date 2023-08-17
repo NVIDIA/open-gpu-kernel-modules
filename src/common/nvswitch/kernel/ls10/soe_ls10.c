@@ -223,10 +223,12 @@ _nvswitch_is_soe_attached_ls10
 )
 {
     NvU32 val;
+    NvBool bSoeAttached;
 
     val = NVSWITCH_SAW_RD32_LS10(device, _NVLSAW, _SOE_ATTACH_DETACH);
+    bSoeAttached = FLD_TEST_DRF(_NVLSAW, _SOE_ATTACH_DETACH, _STATUS, _ATTACHED, val);
 
-    return FLD_TEST_DRF(_NVLSAW, _SOE_ATTACH_DETACH, _STATUS, _ATTACHED, val);
+    return bSoeAttached;
 }
 
 /*
@@ -1338,4 +1340,3 @@ soeSetupHal_LS10
     pHal->waitForInitAck     = _soeWaitForInitAck_LS10;
     pHal->i2cAccess          = _soeI2CAccess_LS10;
 }
-

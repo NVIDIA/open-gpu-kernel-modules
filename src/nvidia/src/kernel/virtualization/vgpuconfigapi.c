@@ -231,3 +231,14 @@ vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo_IMPL
 {
     return NV_ERR_NOT_SUPPORTED;
 }
+
+NV_STATUS
+vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_IMPL
+(
+    VgpuConfigApi *pVgpuConfigApi,
+    NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS *pParams
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+

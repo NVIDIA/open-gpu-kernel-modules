@@ -177,31 +177,34 @@ bool uvm_gpu_non_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu)
     return has_pending_faults == NV_TRUE;
 }
 
-static NvU32 fetch_non_replayable_fault_buffer_entries(uvm_gpu_t *gpu)
+static NV_STATUS fetch_non_replayable_fault_buffer_entries(uvm_parent_gpu_t *parent_gpu, NvU32 *cached_faults)
 {
     NV_STATUS status;
-    NvU32 i = 0;
-    NvU32 cached_faults = 0;
-    uvm_fault_buffer_entry_t *fault_cache;
-    NvU32 entry_size = gpu->parent->fault_buffer_hal->entry_size(gpu->parent);
-    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &gpu->parent->fault_buffer_info.non_replayable;
+    NvU32 i;
+    NvU32 entry_size = parent_gpu->fault_buffer_hal->entry_size(parent_gpu);
+    uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &parent_gpu->fault_buffer_info.non_replayable;
     char *current_hw_entry = (char *)non_replayable_faults->shadow_buffer_copy;
+    uvm_fault_buffer_entry_t *fault_entry = non_replayable_faults->fault_cache;
 
-    fault_cache = non_replayable_faults->fault_cache;
+    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.non_replayable_faults.service_lock));
+    UVM_ASSERT(parent_gpu->non_replayable_faults_supported);
 
-    UVM_ASSERT(uvm_sem_is_locked(&gpu->parent->isr.non_replayable_faults.service_lock));
-    UVM_ASSERT(gpu->parent->non_replayable_faults_supported);
+    status = nvUvmInterfaceGetNonReplayableFaults(&parent_gpu->fault_buffer_info.rm_info,
+                                                  current_hw_entry,
+                                                  cached_faults);
 
-    status = nvUvmInterfaceGetNonReplayableFaults(&gpu->parent->fault_buffer_info.rm_info,
-                                                  non_replayable_faults->shadow_buffer_copy,
-                                                  &cached_faults);
-    UVM_ASSERT(status == NV_OK);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("nvUvmInterfaceGetNonReplayableFaults() failed: %s, GPU %s\n",
+                      nvstatusToString(status),
+                      parent_gpu->name);
+
+        uvm_global_set_fatal_error(status);
+        return status;
+    }
 
     // Parse all faults
-    for (i = 0; i < cached_faults; ++i) {
-        uvm_fault_buffer_entry_t *fault_entry = &non_replayable_faults->fault_cache[i];
-
-        gpu->parent->fault_buffer_hal->parse_non_replayable_entry(gpu->parent, current_hw_entry, fault_entry);
+    for (i = 0; i < *cached_faults; ++i) {
+        parent_gpu->fault_buffer_hal->parse_non_replayable_entry(parent_gpu, current_hw_entry, fault_entry);
 
         // The GPU aligns the fault addresses to 4k, but all of our tracking is
         // done in PAGE_SIZE chunks which might be larger.
@@ -226,9 +229,10 @@ static NvU32 fetch_non_replayable_fault_buffer_entries(uvm_gpu_t *gpu)
         }
 
         current_hw_entry += entry_size;
+        fault_entry++;
     }
 
-    return cached_faults;
+    return NV_OK;
 }
 
 // In SRIOV, the UVM (guest) driver does not have access to the privileged
@@ -705,20 +709,27 @@ exit_no_channel:
     uvm_va_space_up_read(va_space);
     uvm_va_space_mm_release_unlock(va_space, mm);
 
+    if (status != NV_OK)
+        UVM_DBG_PRINT("Error servicing non-replayable faults on GPU: %s\n", uvm_gpu_name(gpu));
+
     return status;
 }
 
 void uvm_gpu_service_non_replayable_fault_buffer(uvm_gpu_t *gpu)
 {
-    NV_STATUS status = NV_OK;
     NvU32 cached_faults;
 
     // If this handler is modified to handle fewer than all of the outstanding
     // faults, then special handling will need to be added to uvm_suspend()
     // to guarantee that fault processing has completed before control is
     // returned to the RM.
-    while ((cached_faults = fetch_non_replayable_fault_buffer_entries(gpu)) > 0) {
+    do {
+        NV_STATUS status;
         NvU32 i;
+
+        status = fetch_non_replayable_fault_buffer_entries(gpu->parent, &cached_faults);
+        if (status != NV_OK)
+            return;
 
         // Differently to replayable faults, we do not batch up and preprocess
         // non-replayable faults since getting multiple faults on the same
@@ -728,10 +739,7 @@ void uvm_gpu_service_non_replayable_fault_buffer(uvm_gpu_t *gpu)
         for (i = 0; i < cached_faults; ++i) {
             status = service_fault(gpu, &gpu->parent->fault_buffer_info.non_replayable.fault_cache[i]);
             if (status != NV_OK)
-                break;
+                return;
         }
-    }
-
-    if (status != NV_OK)
-        UVM_DBG_PRINT("Error servicing non-replayable faults on GPU: %s\n", uvm_gpu_name(gpu));
+    } while (cached_faults > 0);
 }

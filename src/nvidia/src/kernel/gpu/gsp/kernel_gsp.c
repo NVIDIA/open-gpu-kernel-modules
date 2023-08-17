@@ -1190,7 +1190,7 @@ _kgspRpcDrainOneEvent
     //       waiting for a message that has already arrived.
     portAtomicMemoryFenceFull();
 
-    nvStatus = GspMsgQueueReceiveStatus(pRpc->pMessageQueueInfo);
+    nvStatus = GspMsgQueueReceiveStatus(pRpc->pMessageQueueInfo, pGpu);
 
     if (nvStatus == NV_OK)
     {
@@ -1243,7 +1243,7 @@ _kgspRpcDrainEvents
     while (nvStatus == NV_OK)
     {
         nvStatus = _kgspRpcDrainOneEvent(pGpu, pRpc, expectedFunc);
-        kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+        kgspDumpGspLogs(pKernelGsp, NV_FALSE);
     }
 
     kgspHealthCheck_HAL(pGpu, pKernelGsp);
@@ -1687,7 +1687,7 @@ kgspFreeVgpuPartitionLogging_IMPL
     else
     {
         // Make sure there is no lingering debug output.
-        kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+        kgspDumpGspLogs(pKernelGsp, NV_FALSE);
 
         _kgspFreeLibosVgpuPartitionLoggingStructures(pGpu, pKernelGsp, gfid);
         return NV_OK;
@@ -1718,6 +1718,8 @@ kgspInitVgpuPartitionLogging_IMPL
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
+
+    portSyncMutexAcquire(pKernelGsp->pNvlogFlushMtx);
 
     // Source name is used to generate a tag that is a unique identifier for nvlog buffers.
     // As the source name 'GSP' is already in use, we will need a custom source name.
@@ -1823,11 +1825,21 @@ kgspInitVgpuPartitionLogging_IMPL
                        "GSP", SOURCE_NAME_MAX_LENGTH);
     }
 
+    pKernelGsp->bHasVgpuLogs = NV_TRUE;
+
 error_cleanup:
+    portSyncMutexRelease(pKernelGsp->pNvlogFlushMtx);
+
     if (nvStatus != NV_OK)
         _kgspFreeLibosVgpuPartitionLoggingStructures(pGpu, pKernelGsp, gfid);
 
     return nvStatus;
+}
+
+void kgspNvlogFlushCb(void *pKernelGsp)
+{
+    if (pKernelGsp != NULL)
+        kgspDumpGspLogs((KernelGsp*)pKernelGsp, NV_TRUE);
 }
 
 /*!
@@ -1845,7 +1857,15 @@ _kgspFreeLibosLoggingStructures
     _kgspStopLogPolling(pGpu, pKernelGsp);
 
     // Make sure there is no lingering debug output.
-    kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+    kgspDumpGspLogs(pKernelGsp, NV_FALSE);
+
+    if (pKernelGsp->pNvlogFlushMtx != NULL)
+    {
+        nvlogDeregisterFlushCb(kgspNvlogFlushCb, pKernelGsp);
+        portSyncMutexDestroy(pKernelGsp->pNvlogFlushMtx);
+
+        pKernelGsp->pNvlogFlushMtx = NULL;
+    }
 
     libosLogDestroy(&pKernelGsp->logDecode);
 
@@ -1911,6 +1931,13 @@ _kgspInitLibosLoggingStructures
     NV_STATUS nvStatus = NV_OK;
     NvU8      idx;
     NvU64 flags = MEMDESC_FLAGS_NONE;
+
+    pKernelGsp->pNvlogFlushMtx = portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
+    if (pKernelGsp->pNvlogFlushMtx == NULL)
+    {
+        nvStatus = NV_ERR_INSUFFICIENT_RESOURCES;
+        goto error_cleanup;
+    }
 
     libosLogCreate(&pKernelGsp->logDecode);
 
@@ -2148,6 +2175,26 @@ done:
 }
 
 /*!
+ * Convert VBIOS version containing Version and OemVersion packed together to
+ * a string representation.
+ *
+ * Example:
+ *   for Version 0x05400001, OemVersion 0x12
+ *   input argument vbiosVersionCombined 0x0540000112
+ *   output str "5.40.00.01.12"
+ */
+static void
+_kgspVbiosVersionToStr(NvU64 vbiosVersionCombined, char *pVbiosVersionStr, NvU32 size)
+{
+    nvDbgSnprintf(pVbiosVersionStr, size, "%2X.%02X.%02X.%02X.%02X",
+                  (vbiosVersionCombined >> 32) & 0xff,
+                  (vbiosVersionCombined >> 24) & 0xff,
+                  (vbiosVersionCombined >> 16) & 0xff,
+                  (vbiosVersionCombined >> 8) & 0xff,
+                  (vbiosVersionCombined) & 0xff);
+}
+
+/*!
  * Initialize GSP-RM
  *
  * @param[in]      pGpu          GPU object pointer
@@ -2200,21 +2247,34 @@ kgspInitRm_IMPL
     {
         KernelGspVbiosImg *pVbiosImg = NULL;
 
+        // Start VBIOS version string as "unknown"
+        portStringCopy(pKernelGsp->vbiosVersionStr, sizeof(pKernelGsp->vbiosVersionStr), "unknown", sizeof("unknown"));
+
         // Try and extract a VBIOS image.
         status = kgspExtractVbiosFromRom_HAL(pGpu, pKernelGsp, &pVbiosImg);
 
         if (status == NV_OK)
         {
+            NvU64 vbiosVersionCombined = 0;
+
             // Got a VBIOS image, now parse it for FWSEC.
             status = kgspParseFwsecUcodeFromVbiosImg(pGpu, pKernelGsp, pVbiosImg,
-                                                        &pKernelGsp->pFwsecUcode);
+                                                     &pKernelGsp->pFwsecUcode, &vbiosVersionCombined);
             kgspFreeVbiosImg(pVbiosImg);
+
+            if (vbiosVersionCombined > 0)
+            {
+                _kgspVbiosVersionToStr(vbiosVersionCombined, pKernelGsp->vbiosVersionStr, sizeof(pKernelGsp->vbiosVersionStr));
+            }
+
             if (status != NV_OK)
             {
-                NV_PRINTF(LEVEL_ERROR, "failed to parse FWSEC ucode from VBIOS image: 0x%x\n",
-                            status);
+                NV_PRINTF(LEVEL_ERROR, "failed to parse FWSEC ucode from VBIOS image (VBIOS version %s): 0x%x\n",
+                          pKernelGsp->vbiosVersionStr, status);
                 goto done;
             }
+
+            NV_PRINTF(LEVEL_INFO, "parsed VBIOS version %s\n", pKernelGsp->vbiosVersionStr);
         }
         else if (status == NV_ERR_NOT_SUPPORTED)
         {
@@ -2291,7 +2351,26 @@ kgspInitRm_IMPL
         goto done;
     }
 
-    status = kgspCalculateFbLayout(pGpu, pKernelGsp, pGspFw);
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, _kgspInitLibosLogDecoder(pGpu, pKernelGsp, pGspFw), done);
+
+    // If live decoding is enabled, do not register flush callback to avoid racing with ioctl
+    if (pKernelGsp->pLogElf == NULL)
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, nvlogRegisterFlushCb(kgspNvlogFlushCb, pKernelGsp), done);
+
+    // Wait for GFW_BOOT OK status
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, kgspWaitForGfwBootOk_HAL(pGpu, pKernelGsp), done);
+
+    // Fail early if WPR2 is up
+    if (kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
+    {
+        NV_PRINTF(LEVEL_ERROR, "unexpected WPR2 already up, cannot proceed with booting gsp\n");
+        NV_PRINTF(LEVEL_ERROR, "(the GPU is likely in a bad state and may need to be reset)\n");
+        status = NV_ERR_INVALID_STATE;
+        goto done;
+    }
+
+    // Calculate FB layout (requires knowing FB size which depends on GFW_BOOT)
+    status = kgspCalculateFbLayout_HAL(pGpu, pKernelGsp, pGspFw);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Error calculating FB layout\n");
@@ -2324,20 +2403,6 @@ kgspInitRm_IMPL
                       "skipping allocating Scrubber ucode as pre-scrubbed memory (0x%llx bytes) is sufficient (0x%llx bytes needed)\n",
                       prescrubbedSize, neededSize);
         }
-    }
-
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, _kgspInitLibosLogDecoder(pGpu, pKernelGsp, pGspFw), done);
-
-    // Wait for GFW_BOOT OK status
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, kgspWaitForGfwBootOk_HAL(pGpu, pKernelGsp), done);
-
-    // Fail early if WPR2 is up
-    if (kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
-    {
-        NV_PRINTF(LEVEL_ERROR, "unexpected WPR2 already up, cannot proceed with booting gsp\n");
-        NV_PRINTF(LEVEL_ERROR, "(the GPU is likely in a bad state and may need to be reset)\n");
-        status = NV_ERR_INVALID_STATE;
-        goto done;
     }
 
     // bring up ucode with RM offload task
@@ -2411,7 +2476,7 @@ kgspUnloadRm_IMPL
     kgspWaitForProcessorSuspend_HAL(pGpu, pKernelGsp);
 
     // Dump GSP-RM logs and reset before invoking FWSEC-SB
-    kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+    kgspDumpGspLogs(pKernelGsp, NV_FALSE);
 
     //
     // Avoid cascading timeouts when attempting to invoke the below ucodes if
@@ -2447,6 +2512,19 @@ kgspUnloadRm_IMPL
         status = kgspExecuteBooterUnloadIfNeeded_HAL(pGpu, pKernelGsp, 0);
     }
 
+    //
+    // To fix boot issue after GPU reset on ESXi config:
+    // We still do not have root cause but looks like some sanity is failing during boot after reset is done.
+    // As temp WAR, add delay of 250 ms after gsp rm unload is done.
+    // Limit this to [VGPU-GSP] supported configs only and when we are in GPU RESET path.
+    //
+    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu) &&
+        gpuIsSriovEnabled(pGpu) &&
+        IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        osDelay(250);
+    }
+
     if (rpcStatus != NV_OK)
     {
         return rpcStatus;
@@ -2468,6 +2546,9 @@ kgspDestruct_IMPL
 
     if (!IS_GSP_CLIENT(pGpu))
         return;
+
+    // set VBIOS version string back to "unknown"
+    portStringCopy(pKernelGsp->vbiosVersionStr, sizeof(pKernelGsp->vbiosVersionStr), "unknown", sizeof("unknown"));
 
     kgspFreeFlcnUcode(pKernelGsp->pFwsecUcode);
     pKernelGsp->pFwsecUcode = NULL;
@@ -2491,10 +2572,32 @@ kgspDestruct_IMPL
     kgspFreeSuspendResumeData_HAL(pGpu, pKernelGsp);
 }
 
+void
+kgspDumpGspLogsUnlocked_IMPL
+(
+    KernelGsp *pKernelGsp,
+    NvBool bSyncNvLog
+)
+{
+    if (pKernelGsp->bInInit || pKernelGsp->pLogElf || bSyncNvLog)
+    {
+        libosExtractLogs(&pKernelGsp->logDecode, bSyncNvLog);
+
+        if (pKernelGsp->bHasVgpuLogs)
+        {
+            // Dump logs from vGPU partition
+            for (NvU32 i = 0; i < MAX_PARTITIONS_WITH_GFID; i++)
+            {
+                libosExtractLogs(&pKernelGsp->logDecodeVgpuPartition[i], bSyncNvLog);
+            }
+        }
+    }
+
+}
+
 /*!
  * Dump logs coming from GSP-RM
  *
- * @param[in] pGpu          OBJGPU pointer
  * @param[in] pKernelGsp    KernelGsp pointer
  * @param[in] bSyncNvLog    NV_TRUE: Copy a snapshot of the libos logs
  *                          into the nvLog wrap buffers.
@@ -2502,30 +2605,20 @@ kgspDestruct_IMPL
 void
 kgspDumpGspLogs_IMPL
 (
-    OBJGPU *pGpu,
     KernelGsp *pKernelGsp,
     NvBool bSyncNvLog
 )
 {
-    if (!IS_GSP_CLIENT(pGpu))
-    {
-        return;
-    }
-
     if (pKernelGsp->bInInit || pKernelGsp->pLogElf || bSyncNvLog)
     {
-        libosExtractLogs(&pKernelGsp->logDecode, bSyncNvLog);
-    }
+        if (pKernelGsp->pNvlogFlushMtx != NULL)
+            portSyncMutexAcquire(pKernelGsp->pNvlogFlushMtx);
 
-    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
-    {
-        // Dump logs from vGPU partition
-        for (NvU32 i = 0; i < MAX_PARTITIONS_WITH_GFID; i++)
-        {
-            libosExtractLogs(&pKernelGsp->logDecodeVgpuPartition[i], bSyncNvLog);
-        }
-    }
+        kgspDumpGspLogsUnlocked(pKernelGsp, bSyncNvLog);
 
+        if (pKernelGsp->pNvlogFlushMtx != NULL)
+            portSyncMutexRelease(pKernelGsp->pNvlogFlushMtx);
+    }
 }
 
 /*!
@@ -3372,6 +3465,31 @@ kgspExecuteSequencerBuffer_IMPL
                 break;
             }
 
+            case GSP_SEQ_BUF_OPCODE_CORE_RESET:
+            {
+                NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
+
+                kflcnReset_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+                kflcnDisableCtxReq_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+                break;
+            }
+
+            case GSP_SEQ_BUF_OPCODE_CORE_START:
+            {
+                NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
+
+                kflcnStartCpu_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon));
+                break;
+            }
+
+            case GSP_SEQ_BUF_OPCODE_CORE_WAIT_FOR_HALT:
+            {
+                NV_ASSERT_OR_RETURN(payloadSize == 0, NV_ERR_INVALID_ARGUMENT);
+
+                NV_ASSERT_OK_OR_RETURN(kflcnWaitForHalt_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon), GPU_TIMEOUT_DEFAULT, 0));
+                break;
+            }
+
             default:
                 //
                 // Route this command to the arch-specific handler.
@@ -3393,8 +3511,12 @@ _kgspLogPollingCallback
     void   *data
 )
 {
+    //
+    // Do not take any locks in kgspDumpGspLogs. As this callback only fires when kgspNvlogFlushCb
+    // is not registered, there is no possibility of data race.
+    //
     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-    kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+    kgspDumpGspLogsUnlocked(pKernelGsp, NV_FALSE);
 }
 
 NV_STATUS
@@ -3404,8 +3526,14 @@ kgspStartLogPolling_IMPL
     KernelGsp *pKernelGsp
 )
 {
-    NV_STATUS status;
-    status = osSchedule1SecondCallback(pGpu, _kgspLogPollingCallback, NULL, NV_OS_1HZ_REPEAT);
+    NV_STATUS status = NV_OK;
+
+    //
+    // Only enable the 1 Hz poll if we can live decode logs in dmesg. Else we'll flush it on demand
+    // by nvidia-debugdump.
+    //
+    if (pKernelGsp->pLogElf != NULL)
+        status = osSchedule1SecondCallback(pGpu, _kgspLogPollingCallback, NULL, NV_OS_1HZ_REPEAT);
     return status;
 }
 
@@ -3416,7 +3544,8 @@ _kgspStopLogPolling
     KernelGsp *pKernelGsp
 )
 {
-    osRemove1SecondRepeatingCallback(pGpu, _kgspLogPollingCallback, NULL);
+    if (pKernelGsp->pLogElf != NULL)
+        osRemove1SecondRepeatingCallback(pGpu, _kgspLogPollingCallback, NULL);
 }
 
 #else // LIBOS_LOG_DECODE_ENABLE

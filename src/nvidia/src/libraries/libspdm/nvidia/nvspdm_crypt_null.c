@@ -40,7 +40,7 @@
 #include "library/debuglib.h"
 #include "library/memlib.h"
 #include "library/cryptlib.h"
-
+#include <rmconfig.h>
 // Stub out all crypto functions that we do not support.
 
 bool libspdm_ec_get_private_key_from_pem(const uint8_t *pem_data, size_t pem_size,

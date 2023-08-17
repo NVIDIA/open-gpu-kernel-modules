@@ -507,12 +507,27 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_VgpuConf
         /*func=*/       "vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo"
 #endif
     },
+    {               /*  [18] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xa081011au,
+        /*paramSize=*/  sizeof(NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_VgpuConfigApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_VgpuConfigApi = 
 {
-    /*numEntries=*/     18,
+    /*numEntries=*/     19,
     /*pExportEntries=*/ __nvoc_exported_method_def_VgpuConfigApi
 };
 
@@ -626,6 +641,10 @@ static void __nvoc_init_funcTable_VgpuConfigApi_1(VgpuConfigApi *pThis) {
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo__ = &vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+    pThis->__vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId__ = &vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_IMPL;
 #endif
 
     pThis->__vgpuconfigapiShareCallback__ = &__nvoc_thunk_GpuResource_vgpuconfigapiShareCallback;

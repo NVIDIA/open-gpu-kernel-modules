@@ -1515,6 +1515,10 @@ memorymulticastfabricControl_IMPL
     }
     else
     {
+        // Clients may busy-loop on this error status, don't log error.
+        if (status == NV_ERR_NOT_READY)
+            return status;
+
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }
 

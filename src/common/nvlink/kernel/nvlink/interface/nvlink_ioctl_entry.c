@@ -1445,6 +1445,54 @@ nvlink_lib_ctrl_device_read_discovery_tokens
 }
 
 /**
+ * Perform peer link discovery
+ *
+ * @param[in]  readParams  IOCTL params
+ *
+ * return NvlStatus
+ */
+static NvlStatus
+_nvlink_lib_ctrl_device_discover_peer_link
+(
+    nvlink_link *link
+)
+{
+    NvlStatus      status   = NVL_SUCCESS;
+
+    //
+    // If the link succeeds rxDet(link is in HS, SAFE, or SLEEP mode) then go through and find its
+    // peer link. What is important is not actually finding the link, but making sure the corelib
+    // goes through the discovery process and has endpoints cache the remote information in the corelib
+    // such that FM or endpoints can query the corelib for the topology of the system.
+    //
+    NvU64 linkMode = NVLINK_LINKSTATE_OFF;
+    status = link->link_handlers->get_dl_link_mode(link, &linkMode);
+    if (status != NVL_SUCCESS)
+    {
+        NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
+            "%s: Unable to get link mode for %s:%s\n",
+            __FUNCTION__, link->dev->deviceName, link->linkName));
+        return status;
+    }
+
+    if ((linkMode == NVLINK_LINKSTATE_SAFE) ||
+        (linkMode == NVLINK_LINKSTATE_HS)   ||
+        (linkMode == NVLINK_LINKSTATE_SLEEP))
+    {
+        nvlink_link   *remoteLink = NULL;
+        nvlink_core_discover_and_get_remote_end(link, &remoteLink, 0);
+        if (remoteLink == NULL)
+        {
+            NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
+                "%s: link 0x%x: couldn't find link pair! Possible that other device queries need to finish before there is a found connection in the corelib\n",
+                __FUNCTION__, link->linkNumber));
+        }
+    }
+
+    return NVL_SUCCESS;
+}
+
+/**
  * Read the SIDs for the the local and remote device
  *
  * @param[in]  readParams  IOCTL params
@@ -1557,6 +1605,19 @@ nvlink_lib_ctrl_device_read_sids
 
     for (i = 0; i < numLinks; i++)
     {
+        // ALI specific handling to update corelib structures and verify link status
+        if (dev->enableALI)
+        {
+            status = _nvlink_lib_ctrl_device_discover_peer_link(links[i]);
+            if (status != NVL_SUCCESS)
+            {
+                // Release the per-link locks and free links
+                nvlink_lib_link_locks_release(links, numLinks);
+                nvlink_free((void *)links);
+                return status;
+            }
+        }
+
         // Fill-up the local/remote link numbers and SIDs
         readParams->sidInfo[numEntries].localLinkSid  = links[i]->localSid;
         readParams->sidInfo[numEntries].remoteLinkSid = links[i]->remoteSid;
@@ -1684,6 +1745,22 @@ nvlink_lib_ctrl_discover_intranode_conns
                 // If receiver detect has failed, then there is no connection
                 continue;
             }
+
+        // ALI specific handling to update corelib structures and verify link status
+        if (dev->enableALI)
+        {
+            status = _nvlink_lib_ctrl_device_discover_peer_link(link);
+            if (status != NVL_SUCCESS)
+            {
+                // Release the per-link locks
+                nvlink_lib_link_locks_release(links, numLinks);
+
+                // Release the top-level lock
+                nvlink_lib_top_lock_release();
+                nvlink_free((void *)links);
+                return status;
+            }
+        }
 
             writeToken = nvlink_core_get_link_discovery_token(link);
 
@@ -2006,6 +2083,7 @@ nvlink_lib_ctrl_train_intranode_conn
     nvlink_intranode_conn *conn         = NULL;
     NvlStatus              status       = NVL_SUCCESS;
     NvU32                  count;
+    NvU32                  i;
 
     // make sure that this call is for single node systems
     if (trainParams->srcEndPoint.nodeId != trainParams->dstEndPoint.nodeId)
@@ -2171,6 +2249,44 @@ nvlink_lib_ctrl_train_intranode_conn
             if (status == NVL_SUCCESS)
             {
                 nvlink_core_reset_intranode_conns(&conn, 1, NVLINK_STATE_CHANGE_SYNC);
+            }
+            break;
+        }
+        case nvlink_train_conn_off_to_active_ali_non_blocking:
+        case nvlink_train_conn_off_to_active_ali_blocking:
+        {
+           if (srcLink->version >= NVLINK_DEVICE_VERSION_40 &&
+               srcLink->dev->enableALI)
+            {
+                status = nvlink_core_train_intranode_conns_from_off_to_active_ALI(initLinks, count);
+
+                if (trainParams->trainTo == nvlink_train_conn_off_to_active_ali_blocking)
+                {
+                    NvU32 timeout = NVLINK_TRANSITION_HS_TIMEOUT;
+                    do
+                    {
+                        nvlink_sleep(1);
+                        status = nvlink_core_train_check_link_ready_ALI(initLinks, count);
+                        if (status == NVL_SUCCESS)
+                        {
+                            break;
+                        }
+
+                        timeout--;
+                    } while(timeout > 0);
+
+                    if (status == NVL_SUCCESS)
+                    {
+                        for ( i = 0; i < count; ++i)
+                        {
+                            //
+                            // NVLINK_LINKSTATE_TRAFFIC_SETUP will make sure a request to active completes before
+                            // setting buffer ready so use the internal check to see if the request for ALI completed
+                            //
+                            (void)initLinks[i]->link_handlers->set_dl_link_mode(initLinks[i], NVLINK_LINKSTATE_TRAFFIC_SETUP, 0);
+                        }
+                }
+            }
             }
             break;
         }
@@ -2473,6 +2589,45 @@ nvlink_lib_ctrl_train_intranode_conns_parallel
             if (status == NVL_SUCCESS)
             {
                 nvlink_core_reset_intranode_conns(conns, numConns, NVLINK_STATE_CHANGE_SYNC);
+            }
+            break;
+        }
+        case nvlink_train_conn_off_to_active_ali_non_blocking:
+        case nvlink_train_conn_off_to_active_ali_blocking:
+        {
+            if (srcLink->version >= NVLINK_DEVICE_VERSION_40 &&
+                srcLink->dev->enableALI)
+            {
+                status = nvlink_core_train_intranode_conns_from_off_to_active_ALI(
+                                                 initLinks, count);
+
+                if (trainParams->trainTo == nvlink_train_conn_off_to_active_ali_blocking)
+                {
+                    NvU32 timeout = NVLINK_TRANSITION_HS_TIMEOUT;
+                    do
+                    {
+                        nvlink_sleep(1);
+                        status = nvlink_core_train_check_link_ready_ALI(initLinks, count);
+                        if (status == NVL_SUCCESS)
+                        {
+                            break;
+                        }
+
+                        timeout--;
+                    } while(timeout > 0);
+
+                    if (status == NVL_SUCCESS)
+                    {
+                        for ( i = 0; i < count; ++i)
+                        {
+                            //
+                            // NVLINK_LINKSTATE_TRAFFIC_SETUP will make sure a request to active completes before
+                            // setting buffer ready so use the internal check to see if the request for ALI completed
+                            //
+                            (void)initLinks[i]->link_handlers->set_dl_link_mode(initLinks[i], NVLINK_LINKSTATE_TRAFFIC_SETUP, 0);
+                        }
+                }
+            }
             }
             break;
         }
@@ -3397,6 +3552,8 @@ static NvlStatus nvlink_lib_ctrl_get_link_state
     NvU32         numLinks  = 0;
     NvU32         i         = 0;
 
+    ct_assert(NVLINK_MAX_SYSTEM_LINK_NUM == NVLINK_MAX_NVLINK_ENDPOINTS);
+
     nvlink_link   **links = (nvlink_link **)nvlink_malloc(
                             sizeof(nvlink_link *) * NVLINK_MAX_SYSTEM_LINK_NUM);
     if (links == NULL)
@@ -3531,15 +3688,16 @@ nvlink_lib_ctrl_get_device_link_states
     NvlStatus     status    = NVL_SUCCESS;
     NvU32         numLinks  = 0;
     NvU32         i         = 0;
-
-    ct_assert(NVLINK_MAX_SYSTEM_LINK_NUM == NVLINK_MAX_NVLINK_ENDPOINTS);
+    NvU8          linkNumber;  
 
     nvlink_link   **links = (nvlink_link **)nvlink_malloc(
-                            sizeof(nvlink_link *) * NVLINK_MAX_SYSTEM_LINK_NUM);
+                            sizeof(nvlink_link *) * NVLINK_MAX_DEVICE_CONN);
     if (links == NULL)
     {
         return NVL_NO_MEM;
     }
+
+    nvlink_memset(params->endStates, 0x0, sizeof(params->endStates));    
 
     // Acquire the top-level lock
     status = nvlink_lib_top_lock_acquire();
@@ -3573,10 +3731,10 @@ nvlink_lib_ctrl_get_device_link_states
     //
     FOR_EACH_LINK_REGISTERED(endpoint, dev, node)
     {
-        if (numLinks >= NVLINK_MAX_SYSTEM_LINK_NUM)
+        if (numLinks >= NVLINK_MAX_DEVICE_CONN)
         {
             NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_ERRORS,
-                "%s: numLinks >= NVLINK_MAX_SYSTEM_LINK_NUM",
+                "%s: numLinks >= NVLINK_MAX_DEVICE_CONN",
                 __FUNCTION__));
 
             nvlink_assert(0);
@@ -3614,16 +3772,20 @@ nvlink_lib_ctrl_get_device_link_states
 
     for (i = 0; i < numLinks; ++i)
     {
+        linkNumber = links[i]->linkNumber;
+
+        nvlink_assert(linkNumber < NVLINK_MAX_DEVICE_CONN);
+
         // Get the endpoint states of the link
-        nvlink_core_get_endpoint_state(links[i], &(params->endStates[i]));
+        nvlink_core_get_endpoint_state(links[i], &(params->endStates[linkNumber]));
 
         NVLINK_PRINT((DBG_MODULE_NVLINK_CORE, NVLINK_DBG_LEVEL_INFO,
             "%s: link 0x%x -- linkMode 0x%x,\n",
-            __FUNCTION__, i, params->endStates[i].linkMode));
-
+            __FUNCTION__, linkNumber, params->endStates[linkNumber].linkMode));
     }
 
-    params->endStatesCount = numLinks;
+    // This is done to preserve client behavior that uses endStatesCount to iterate across endStates array
+    params->endStatesCount = NVLINK_MAX_DEVICE_CONN;
 
     // Release the per-link locks
     nvlink_lib_link_locks_release(links, numLinks);

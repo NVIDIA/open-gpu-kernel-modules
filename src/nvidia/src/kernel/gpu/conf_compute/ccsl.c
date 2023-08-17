@@ -21,7 +21,10 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#define NVOC_CCSL_H_PRIVATE_ACCESS_ALLOWED
+
 #include "core/prelude.h"
+#include "core/locks.h"
 #include "rmconfig.h"
 #include "kernel/gpu/conf_compute/ccsl.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
@@ -32,35 +35,12 @@
 // This guard is here until we fix CONF_COMPUTE and SPDM guards across whole RM
 #include "kernel/gpu/spdm/libspdm_includes.h"
 #include <hal/library/cryptlib.h>
+#include <nvspdm_cryptlib_extensions.h>
+
 #include "cc_drv.h"
 
-struct ccslContext_t
-{
-    NvHandle hClient;
-    NvHandle hChannel;
-
-    enum {CSL_MSG_CTR_32, CSL_MSG_CTR_64} msgCounterSize;
-
-    NvU8 keyIn[CC_AES_256_GCM_KEY_SIZE_BYTES];
-    union
-    {
-        struct
-        {
-            NvU8 ivIn[CC_AES_256_GCM_IV_SIZE_BYTES];
-            NvU8 ivMaskIn[CC_AES_256_GCM_IV_SIZE_BYTES];
-        };
-        NvU8 nonce[CC_HMAC_NONCE_SIZE_BYTES];
-    };
-
-    NvU8 keyOut[CC_AES_256_GCM_KEY_SIZE_BYTES];
-    NvU8 ivOut[CC_AES_256_GCM_IV_SIZE_BYTES];
-    NvU8 ivMaskOut[CC_AES_256_GCM_IV_SIZE_BYTES];
-
-    NvU64 keyHandleIn;
-    NvU64 keyHandleOut;
-};
-
-static void ccslSplit32(NvU8 *dst, NvU32 num)
+static void
+ccslSplit32(NvU8 *dst, NvU32 num)
 {
     dst[3] = (NvU8) (num >> 24);
     dst[2] = (NvU8) (num >> 16);
@@ -68,7 +48,8 @@ static void ccslSplit32(NvU8 *dst, NvU32 num)
     dst[0] = (NvU8) (num);
 }
 
-static void ccslSplit64(NvU8 *dst, NvU64 num)
+static void
+ccslSplit64(NvU8 *dst, NvU64 num)
 {
     dst[7] = (NvU8) (num >> 56);
     dst[6] = (NvU8) (num >> 48);
@@ -80,41 +61,8 @@ static void ccslSplit64(NvU8 *dst, NvU64 num)
     dst[0] = (NvU8) (num);
 }
 
-static NV_STATUS incrementCounter(pCcslContext pCtx, NvU8 *ctr)
-{
-    NvU32 msgCounterLo = NvU32_BUILD(ctr[3], ctr[2], ctr[1], ctr[0]);
-
-    switch (pCtx->msgCounterSize)
-    {
-        case CSL_MSG_CTR_32:
-            if (msgCounterLo == NV_U32_MAX)
-            {
-                return NV_ERR_INSUFFICIENT_RESOURCES;
-            }
-
-            ++msgCounterLo;
-            ccslSplit32(ctr, msgCounterLo);
-            break;
-        case CSL_MSG_CTR_64:
-        {
-            NvU32 msgCounterhi = NvU32_BUILD(ctr[7], ctr[6], ctr[5], ctr[4]);
-            NvU64 msgCounter = ((NvU64) msgCounterhi << 32) | msgCounterLo;
-
-            if (msgCounter == NV_U64_MAX)
-            {
-                return NV_ERR_INSUFFICIENT_RESOURCES;
-            }
-
-            ++msgCounter;
-            ccslSplit64(ctr, msgCounter);
-            break;
-        }
-    }
-
-    return NV_OK;
-}
-
-static void writeKmbToContext
+static void
+writeKmbToContext
 (
     pCcslContext  pCtx,
     CC_KMB       *kmb
@@ -159,7 +107,52 @@ static void writeKmbToContext
 }
 
 NV_STATUS
-ccslContextInitViaChannel
+ccslIncrementCounter_IMPL
+(
+    pCcslContext  pCtx,
+    NvU8         *ctr,
+    NvU64         increment
+)
+{
+    NvU32 msgCounterLo = NvU32_BUILD(ctr[3], ctr[2], ctr[1], ctr[0]);
+
+    switch (pCtx->msgCounterSize)
+    {
+        case CSL_MSG_CTR_32:
+            if (increment > NV_U32_MAX)
+            {
+                return NV_ERR_INVALID_ARGUMENT;
+            }
+
+            if (msgCounterLo > (NV_U32_MAX - increment))
+            {
+                return NV_ERR_INSUFFICIENT_RESOURCES;
+            }
+
+            msgCounterLo += increment;
+            ccslSplit32(ctr, msgCounterLo);
+            break;
+        case CSL_MSG_CTR_64:
+        {
+            NvU32 msgCounterHi = NvU32_BUILD(ctr[7], ctr[6], ctr[5], ctr[4]);
+            NvU64 msgCounter = ((NvU64) msgCounterHi << 32) | msgCounterLo;
+
+            if (msgCounterLo > (NV_U64_MAX - increment))
+            {
+                return NV_ERR_INSUFFICIENT_RESOURCES;
+            }
+
+            msgCounter += increment;
+            ccslSplit64(ctr, msgCounter);
+            break;
+        }
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+ccslContextInitViaChannel_IMPL
 (
     pCcslContext *ppCtx,
     NvHandle      hClient,
@@ -174,6 +167,7 @@ ccslContextInitViaChannel
     NvU32      gpuMask;
     NvU32      gpuInstance = 0;
     RM_API    *pRmApi      = NULL;
+    NV_STATUS  status;
 
     NVC56F_CTRL_CMD_GET_KMB_PARAMS getKmbParams;
 
@@ -197,6 +191,12 @@ ccslContextInitViaChannel
     }
     *ppCtx = pCtx;
 
+    if (!libspdm_aead_gcm_prealloc(&pCtx->openrmCtx))
+    {
+        portMemFree(pCtx);
+        return NV_ERR_NO_MEMORY;
+    }
+
     pCtx->hClient = hClient;
     pCtx->hChannel = hChannel;
 
@@ -206,7 +206,14 @@ ccslContextInitViaChannel
     {
         if (IS_GSP_CLIENT(pGpu))
         {
-            pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+            if (rmGpuLockIsOwner())
+            {
+                pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+            }
+            else
+            {
+                pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+            }
         }
         else
         {
@@ -214,12 +221,15 @@ ccslContextInitViaChannel
         }
         portMemSet(&getKmbParams, 0, sizeof(getKmbParams));
 
-        NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
-                                               hClient,
-                                               hChannel,
-                                               NVC56F_CTRL_CMD_GET_KMB,
-                                               &getKmbParams,
-                                               sizeof(getKmbParams)));
+        status = pRmApi->Control(pRmApi, hClient, hChannel,
+                                 NVC56F_CTRL_CMD_GET_KMB, &getKmbParams,
+                                 sizeof(getKmbParams));
+        if (status != NV_OK)
+        {
+            libspdm_aead_free(pCtx->openrmCtx);
+            portMemFree(pCtx);
+            return status;
+        }
 
         pCtx->msgCounterSize = CSL_MSG_CTR_32;
 
@@ -232,7 +242,7 @@ ccslContextInitViaChannel
 }
 
 NV_STATUS
-ccslContextInitViaKeyId
+ccslContextInitViaKeyId_KERNEL
 (
     ConfidentialCompute *pConfCompute,
     pCcslContext        *ppCtx,
@@ -263,6 +273,11 @@ ccslContextInitViaKeyId
         return NV_ERR_NO_MEMORY;
     }
     *ppCtx = pCtx;
+    if (!libspdm_aead_gcm_prealloc(&pCtx->openrmCtx))
+    {
+        portMemFree(pCtx);
+        return NV_ERR_NO_MEMORY;
+    }
 
     status = confComputeKeyStoreRetrieveViaKeyId_HAL(pConfCompute,
                                                      globalKeyId,
@@ -271,6 +286,8 @@ ccslContextInitViaKeyId
                                                      &kmb);
     if (status != NV_OK)
     {
+    libspdm_aead_free(pCtx->openrmCtx);
+        portMemFree(pCtx);
         return status;
     }
 
@@ -282,7 +299,7 @@ ccslContextInitViaKeyId
 }
 
 void
-ccslContextClear
+ccslContextClear_IMPL
 (
     pCcslContext pCtx
 )
@@ -294,56 +311,12 @@ ccslContextClear
         return;
     }
 
+    libspdm_aead_free(pCtx->openrmCtx);
     portMemFree(pCtx);
 }
 
 NV_STATUS
-ccslLogDeviceEncryption
-(
-    pCcslContext  pCtx,
-    NvU8         *decryptIv
-)
-{
-    NV_STATUS status;
-
-    status = incrementCounter(pCtx, pCtx->ivIn);
-
-    if (status != NV_OK)
-    {
-        return NV_ERR_INSUFFICIENT_RESOURCES;
-    }
-
-    portMemCopy(decryptIv, CC_AES_256_GCM_IV_SIZE_BYTES, pCtx->ivIn, CC_AES_256_GCM_IV_SIZE_BYTES);
-
-    return NV_OK;
-}
-
-NV_STATUS
-ccslAcquireEncryptionIv
-(
-    pCcslContext  pCtx,
-    NvU8         *encryptIv
-)
-{
-    NV_STATUS status;
-
-    status = incrementCounter(pCtx, pCtx->ivOut);
-
-    if (status != NV_OK)
-    {
-        return NV_ERR_INSUFFICIENT_RESOURCES;
-    }
-
-    portMemCopy(encryptIv, CC_AES_256_GCM_IV_SIZE_BYTES, pCtx->ivOut,  CC_AES_256_GCM_IV_SIZE_BYTES);
-
-    // The "freshness" bit is right after the IV.
-    encryptIv[CC_AES_256_GCM_IV_SIZE_BYTES] = 1;
-
-    return NV_OK;
-}
-
-NV_STATUS
-ccslRotateIv
+ccslRotateIv_IMPL
 (
     pCcslContext pCtx,
     NvU8         direction
@@ -422,12 +395,14 @@ ccslRotateIv
 }
 
 NV_STATUS
-ccslEncryptWithIv
+ccslEncryptWithIv_IMPL
 (
     pCcslContext  pCtx,
     NvU32         bufferSize,
     NvU8 const   *inputBuffer,
     NvU8         *encryptIv,
+    NvU8 const   *aadBuffer,
+    NvU32         aadSize,
     NvU8         *outputBuffer,
     NvU8         *authTagBuffer
 )
@@ -448,11 +423,11 @@ ccslEncryptWithIv
         iv[i] = encryptIv[i] ^ pCtx->ivMaskOut[i];
     }
 
-    if(!libspdm_aead_aes_gcm_encrypt(
-                (NvU8 *)pCtx->keyOut, CC_AES_256_GCM_KEY_SIZE_BYTES,
-                iv, CC_AES_256_GCM_IV_SIZE_BYTES, NULL, 0,
-                inputBuffer, bufferSize, authTagBuffer, 16,
-                outputBuffer, &outputBufferSize))
+    if(!libspdm_aead_aes_gcm_encrypt_prealloc(pCtx->openrmCtx,
+        (NvU8 *)pCtx->keyOut, CC_AES_256_GCM_KEY_SIZE_BYTES,
+        iv, CC_AES_256_GCM_IV_SIZE_BYTES, aadBuffer, aadSize,
+        inputBuffer, bufferSize, authTagBuffer, 16,
+        outputBuffer, &outputBufferSize))
     {
         return NV_ERR_GENERIC;
     }
@@ -461,11 +436,13 @@ ccslEncryptWithIv
 }
 
 NV_STATUS
-ccslEncrypt
+ccslEncrypt_KERNEL
 (
     pCcslContext  pCtx,
     NvU32         bufferSize,
     NvU8 const   *inputBuffer,
+    NvU8 const   *aadBuffer,
+    NvU32         aadSize,
     NvU8         *outputBuffer,
     NvU8         *authTagBuffer
 )
@@ -473,7 +450,7 @@ ccslEncrypt
     NvU8   iv[CC_AES_256_GCM_IV_SIZE_BYTES] = {0};
     size_t outputBufferSize                 = bufferSize;
 
-    if (incrementCounter(pCtx, pCtx->ivOut) != NV_OK)
+    if (ccslIncrementCounter(pCtx, pCtx->ivOut, 1) != NV_OK)
     {
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
@@ -483,11 +460,11 @@ ccslEncrypt
         iv[i] = pCtx->ivOut[i] ^ pCtx->ivMaskOut[i];
     }
 
-    if(!libspdm_aead_aes_gcm_encrypt(
-                (NvU8 *)pCtx->keyOut, CC_AES_256_GCM_KEY_SIZE_BYTES,
-                iv, CC_AES_256_GCM_IV_SIZE_BYTES, NULL, 0,
-                inputBuffer, bufferSize, authTagBuffer, 16,
-                outputBuffer, &outputBufferSize))
+    if(!libspdm_aead_aes_gcm_encrypt_prealloc(pCtx->openrmCtx,
+        (NvU8 *)pCtx->keyOut, CC_AES_256_GCM_KEY_SIZE_BYTES,
+        iv, CC_AES_256_GCM_IV_SIZE_BYTES, aadBuffer, aadSize,
+        inputBuffer, bufferSize, authTagBuffer, 16,
+        outputBuffer, &outputBufferSize))
     {
         return NV_ERR_GENERIC;
     }
@@ -496,12 +473,14 @@ ccslEncrypt
 }
 
 NV_STATUS
-ccslDecrypt
+ccslDecrypt_KERNEL
 (
     pCcslContext  pCtx,
     NvU32         bufferSize,
     NvU8 const   *inputBuffer,
     NvU8 const   *decryptIv,
+    NvU8 const   *aadBuffer,
+    NvU32         aadSize,
     NvU8         *outputBuffer,
     NvU8 const   *authTagBuffer
 )
@@ -509,9 +488,14 @@ ccslDecrypt
     NvU8   iv[CC_AES_256_GCM_IV_SIZE_BYTES] = {0};
     size_t outputBufferSize = bufferSize;
 
+    if ((bufferSize == 0) || ((aadBuffer != NULL) && (aadSize == 0)))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     if (decryptIv == NULL)
     {
-        if (incrementCounter(pCtx, pCtx->ivIn) != NV_OK)
+        if (ccslIncrementCounter(pCtx, pCtx->ivIn, 1) != NV_OK)
         {
             return NV_ERR_INSUFFICIENT_RESOURCES;
         }
@@ -529,11 +513,11 @@ ccslDecrypt
         }
     }
 
-    if(!libspdm_aead_aes_gcm_decrypt(
-                (NvU8 *)pCtx->keyIn, CC_AES_256_GCM_KEY_SIZE_BYTES,
-                iv, CC_AES_256_GCM_IV_SIZE_BYTES, NULL, 0,
-                inputBuffer, bufferSize, authTagBuffer, 16,
-                outputBuffer, &outputBufferSize))
+    if(!libspdm_aead_aes_gcm_decrypt_prealloc(pCtx->openrmCtx,
+        (NvU8 *)pCtx->keyIn, CC_AES_256_GCM_KEY_SIZE_BYTES,
+        iv, CC_AES_256_GCM_IV_SIZE_BYTES, aadBuffer, aadSize,
+        inputBuffer, bufferSize, (NvU8 *) authTagBuffer, 16,
+        outputBuffer, &outputBufferSize))
     {
         return NV_ERR_INVALID_DATA;
     }
@@ -541,7 +525,7 @@ ccslDecrypt
     return NV_OK;
 }
 
-static NV_STATUS incrementCounter192(NvU8 *ctr)
+static NV_STATUS ccslIncrementCounter192(NvU8 *ctr)
 {
     NvU8 carry = 1;
     NvU64 i;
@@ -570,7 +554,7 @@ static NV_STATUS incrementCounter192(NvU8 *ctr)
 }
 
 NV_STATUS
-ccslSign
+ccslSign_IMPL
 (
     pCcslContext  pCtx,
     NvU32         bufferSize,
@@ -585,7 +569,7 @@ ccslSign
         return NV_ERR_INVALID_PARAMETER;
     }
 
-    if (incrementCounter192(pCtx->nonce) != NV_OK)
+    if (ccslIncrementCounter192(pCtx->nonce) != NV_OK)
     {
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
@@ -625,11 +609,17 @@ ccslSign
     return NV_OK;
 }
 
-static NvU64 getMessageCounterAndLimit (pCcslContext pCtx, NvU8 *iv, NvU64 *limit)
+static NvU64
+getMessageCounterAndLimit
+(
+    pCcslContext  pCtx,
+    NvU8         *iv,
+    NvU64        *limit
+)
 {
     NvU32 msgCounterLo = NvU32_BUILD(iv[3], iv[2], iv[1], iv[0]);
-    NvU32 msgCounterHi = NvU32_BUILD(iv[7], iv[6], iv[5], iv[4]);    
-    
+    NvU32 msgCounterHi = NvU32_BUILD(iv[7], iv[6], iv[5], iv[4]);
+
     switch (pCtx->msgCounterSize)
     {
         case CSL_MSG_CTR_32:
@@ -644,7 +634,7 @@ static NvU64 getMessageCounterAndLimit (pCcslContext pCtx, NvU8 *iv, NvU64 *limi
 }
 
 NV_STATUS
-ccslQueryMessagePool
+ccslQueryMessagePool_IMPL
 (
     pCcslContext  pCtx,
     NvU8          direction,
@@ -667,6 +657,55 @@ ccslQueryMessagePool
     }
 
     *messageNum = limit - messageCounter;
+
+    return NV_OK;
+}
+
+NV_STATUS
+ccslIncrementIv_IMPL
+(
+    pCcslContext  pCtx,
+    NvU8          direction,
+    NvU64         increment,
+    NvU8         *iv
+)
+{
+    NV_STATUS status;
+    void *ivPtr;
+
+    switch (direction)
+    {
+        case CCSL_DIR_HOST_TO_DEVICE:
+            ivPtr = pCtx->ivOut;
+            break;
+        case CCSL_DIR_DEVICE_TO_HOST:
+            ivPtr = pCtx->ivIn;
+            break;
+        default:
+            return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    status = ccslIncrementCounter(pCtx, ivPtr, increment);
+
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if (iv != NULL) {
+        portMemCopy(iv, CC_AES_256_GCM_IV_SIZE_BYTES, ivPtr, CC_AES_256_GCM_IV_SIZE_BYTES);
+
+        if (direction == CCSL_DIR_HOST_TO_DEVICE)
+        {
+            // The "freshness" bit is right after the IV.
+            iv[CC_AES_256_GCM_IV_SIZE_BYTES] = 1;
+        }
+        else
+        {
+            // Decrypt IV cannot be used for encryption.
+            iv[CC_AES_256_GCM_IV_SIZE_BYTES] = 0;
+        }
+    }
 
     return NV_OK;
 }

@@ -84,6 +84,7 @@ CHIPSET_SETUP_FUNC(QEMU_setupFunc)
 CHIPSET_SETUP_FUNC(Ampere_eMag_setupFunc)
 CHIPSET_SETUP_FUNC(Huawei_Kunpeng920_setupFunc)
 CHIPSET_SETUP_FUNC(Mellanox_BlueField_setupFunc)
+CHIPSET_SETUP_FUNC(Mellanox_BlueField3_setupFunc)
 CHIPSET_SETUP_FUNC(Amazon_Gravitron2_setupFunc)
 CHIPSET_SETUP_FUNC(Fujitsu_A64FX_setupFunc)
 CHIPSET_SETUP_FUNC(Ampere_Altra_setupFunc)
@@ -244,7 +245,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_MELLANOX,    0xA2D0, CS_MELLANOX_BLUEFIELD, "Mellanox BlueField",  Mellanox_BlueField_setupFunc},
     {PCI_VENDOR_ID_MELLANOX,    0xA2D4, CS_MELLANOX_BLUEFIELD2, "Mellanox BlueField 2",  NULL},
     {PCI_VENDOR_ID_MELLANOX,    0xA2D5, CS_MELLANOX_BLUEFIELD2, "Mellanox BlueField 2 Crypto disabled",  NULL},
-    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3, "Mellanox BlueField 3",  NULL},
+    {PCI_VENDOR_ID_MELLANOX,    0xA2DB, CS_MELLANOX_BLUEFIELD3, "Mellanox BlueField 3",  Mellanox_BlueField3_setupFunc},
     {PCI_VENDOR_ID_AMAZON,      0x0200, CS_AMAZON_GRAVITRON2, "Amazon Gravitron2",  Amazon_Gravitron2_setupFunc},
     {PCI_VENDOR_ID_FUJITSU,     0x1952, CS_FUJITSU_A64FX,     "Fujitsu A64FX", Fujitsu_A64FX_setupFunc},
     {PCI_VENDOR_ID_CADENCE,     0xDC01, CS_PHYTIUM_S2500,  "Phytium S2500",  NULL},

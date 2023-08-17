@@ -100,8 +100,8 @@ static NV_STATUS __nvoc_thunk_KernelSec2_kflcnResetHw(struct OBJGPU *pGpu, struc
     return ksec2ResetHw(pGpu, (struct KernelSec2 *)(((unsigned char *)pKernelSec2) - __nvoc_rtti_KernelSec2_KernelFalcon.offset));
 }
 
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StateLoad(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg0);
+static NV_STATUS __nvoc_thunk_KernelSec2_engstateStateLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelSec2, NvU32 arg0) {
+    return ksec2StateLoad(pGpu, (struct KernelSec2 *)(((unsigned char *)pKernelSec2) - __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg0);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StateUnload(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
@@ -252,6 +252,17 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
     // Hal function -- ksec2ResetHw
     pThis->__ksec2ResetHw__ = &ksec2ResetHw_TU102;
 
+    // Hal function -- ksec2StateLoad
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__ksec2StateLoad__ = &ksec2StateLoad_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__ksec2StateLoad__ = &ksec2StateLoad_56cd7a;
+    }
+
     // Hal function -- ksec2ReadUcodeFuseVersion
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
@@ -300,7 +311,7 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
 
     pThis->__nvoc_base_KernelFalcon.__kflcnResetHw__ = &__nvoc_thunk_KernelSec2_kflcnResetHw;
 
-    pThis->__ksec2StateLoad__ = &__nvoc_thunk_OBJENGSTATE_ksec2StateLoad;
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_thunk_KernelSec2_engstateStateLoad;
 
     pThis->__ksec2StateUnload__ = &__nvoc_thunk_OBJENGSTATE_ksec2StateUnload;
 
