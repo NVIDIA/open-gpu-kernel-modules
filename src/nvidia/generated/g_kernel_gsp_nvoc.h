@@ -253,6 +253,8 @@ struct KernelGsp {
     struct Object *__nvoc_pbase_Object;
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct IntrService *__nvoc_pbase_IntrService;
+    struct CrashCatEngine *__nvoc_pbase_CrashCatEngine;
+    struct KernelCrashCatEngine *__nvoc_pbase_KernelCrashCatEngine;
     struct KernelFalcon *__nvoc_pbase_KernelFalcon;
     struct KernelGsp *__nvoc_pbase_KernelGsp;
     NV_STATUS (*__kgspConstructEngine__)(struct OBJGPU *, struct KernelGsp *, ENGDESCRIPTOR);
@@ -294,21 +296,36 @@ struct KernelGsp {
     NV_STATUS (*__kgspFreeVgpuPartitionLogging__)(struct OBJGPU *, struct KernelGsp *, NvU32);
     const char *(*__kgspGetSignatureSectionNamePrefix__)(struct OBJGPU *, struct KernelGsp *);
     NV_STATUS (*__kgspSetupGspFmcArgs__)(struct OBJGPU *, struct KernelGsp *, GSP_FIRMWARE *);
+    NvBool (*__kgspConfigured__)(struct KernelGsp *);
+    NvU32 (*__kgspPriRead__)(struct KernelGsp *, NvU32);
+    void (*__kgspRegWrite__)(struct OBJGPU *, struct KernelGsp *, NvU32, NvU32);
+    NvU32 (*__kgspMaskDmemAddr__)(struct OBJGPU *, struct KernelGsp *, NvU32);
+    void (*__kgspStateDestroy__)(POBJGPU, struct KernelGsp *);
+    void (*__kgspVprintf__)(struct KernelGsp *, NvBool, const char *, va_list);
+    NvBool (*__kgspClearInterrupt__)(struct OBJGPU *, struct KernelGsp *, IntrServiceClearInterruptArguments *);
+    void (*__kgspPriWrite__)(struct KernelGsp *, NvU32, NvU32);
+    void *(*__kgspMapBufferDescriptor__)(struct KernelGsp *, CrashCatBufferDescriptor *);
+    void (*__kgspSyncBufferDescriptor__)(struct KernelGsp *, CrashCatBufferDescriptor *, NvU32, NvU32);
+    NvU32 (*__kgspRegRead__)(struct OBJGPU *, struct KernelGsp *, NvU32);
+    NvBool (*__kgspIsPresent__)(POBJGPU, struct KernelGsp *);
+    void (*__kgspReadEmem__)(struct KernelGsp *, NvU64, NvU64, void *);
     NV_STATUS (*__kgspStateLoad__)(POBJGPU, struct KernelGsp *, NvU32);
+    const NvU32 *(*__kgspGetScratchOffsets__)(struct KernelGsp *, NV_CRASHCAT_SCRATCH_GROUP_ID);
+    void (*__kgspUnload__)(struct KernelGsp *);
     NV_STATUS (*__kgspStateUnload__)(POBJGPU, struct KernelGsp *, NvU32);
     NV_STATUS (*__kgspServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelGsp *, IntrServiceServiceNotificationInterruptArguments *);
+    NvU32 (*__kgspGetWFL0Offset__)(struct KernelGsp *);
     NV_STATUS (*__kgspStateInitLocked__)(POBJGPU, struct KernelGsp *);
     NV_STATUS (*__kgspStatePreLoad__)(POBJGPU, struct KernelGsp *, NvU32);
     NV_STATUS (*__kgspStatePostUnload__)(POBJGPU, struct KernelGsp *, NvU32);
-    void (*__kgspStateDestroy__)(POBJGPU, struct KernelGsp *);
     NV_STATUS (*__kgspStatePreUnload__)(POBJGPU, struct KernelGsp *, NvU32);
     NV_STATUS (*__kgspStateInitUnlocked__)(POBJGPU, struct KernelGsp *);
     void (*__kgspInitMissing__)(POBJGPU, struct KernelGsp *);
     NV_STATUS (*__kgspStatePreInitLocked__)(POBJGPU, struct KernelGsp *);
     NV_STATUS (*__kgspStatePreInitUnlocked__)(POBJGPU, struct KernelGsp *);
-    NvBool (*__kgspClearInterrupt__)(struct OBJGPU *, struct KernelGsp *, IntrServiceClearInterruptArguments *);
     NV_STATUS (*__kgspStatePostLoad__)(POBJGPU, struct KernelGsp *, NvU32);
-    NvBool (*__kgspIsPresent__)(POBJGPU, struct KernelGsp *);
+    void (*__kgspUnmapBufferDescriptor__)(struct KernelGsp *, CrashCatBufferDescriptor *);
+    void (*__kgspReadDmem__)(struct KernelGsp *, NvU32, NvU32, void *);
     struct MESSAGE_QUEUE_COLLECTION *pMQCollection;
     struct OBJRPC *pRpc;
     struct OBJRPC *pLocklessRpc;
@@ -351,6 +368,7 @@ struct KernelGsp {
     NvBool bInInit;
     NvBool bInLockdown;
     NvBool bPollingForRpcResponse;
+    NvBool bFatalError;
     MEMORY_DESCRIPTOR *pMemDesc_simAccessBuf;
     SimAccessBuffer *pSimAccessBuf;
     NvP64 pSimAccessBufPriv;
@@ -470,21 +488,36 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 #define kgspGetSignatureSectionNamePrefix_HAL(pGpu, pKernelGsp) kgspGetSignatureSectionNamePrefix_DISPATCH(pGpu, pKernelGsp)
 #define kgspSetupGspFmcArgs(pGpu, pKernelGsp, pGspFw) kgspSetupGspFmcArgs_DISPATCH(pGpu, pKernelGsp, pGspFw)
 #define kgspSetupGspFmcArgs_HAL(pGpu, pKernelGsp, pGspFw) kgspSetupGspFmcArgs_DISPATCH(pGpu, pKernelGsp, pGspFw)
+#define kgspConfigured(arg0) kgspConfigured_DISPATCH(arg0)
+#define kgspPriRead(arg0, offset) kgspPriRead_DISPATCH(arg0, offset)
+#define kgspRegWrite(pGpu, pKernelFlcn, offset, data) kgspRegWrite_DISPATCH(pGpu, pKernelFlcn, offset, data)
+#define kgspMaskDmemAddr(pGpu, pKernelFlcn, addr) kgspMaskDmemAddr_DISPATCH(pGpu, pKernelFlcn, addr)
+#define kgspStateDestroy(pGpu, pEngstate) kgspStateDestroy_DISPATCH(pGpu, pEngstate)
+#define kgspVprintf(arg0, bReportStart, fmt, args) kgspVprintf_DISPATCH(arg0, bReportStart, fmt, args)
+#define kgspClearInterrupt(pGpu, pIntrService, pParams) kgspClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
+#define kgspPriWrite(arg0, offset, data) kgspPriWrite_DISPATCH(arg0, offset, data)
+#define kgspMapBufferDescriptor(arg0, pBufDesc) kgspMapBufferDescriptor_DISPATCH(arg0, pBufDesc)
+#define kgspSyncBufferDescriptor(arg0, pBufDesc, offset, size) kgspSyncBufferDescriptor_DISPATCH(arg0, pBufDesc, offset, size)
+#define kgspRegRead(pGpu, pKernelFlcn, offset) kgspRegRead_DISPATCH(pGpu, pKernelFlcn, offset)
+#define kgspIsPresent(pGpu, pEngstate) kgspIsPresent_DISPATCH(pGpu, pEngstate)
+#define kgspReadEmem(arg0, offset, size, pBuf) kgspReadEmem_DISPATCH(arg0, offset, size, pBuf)
 #define kgspStateLoad(pGpu, pEngstate, arg0) kgspStateLoad_DISPATCH(pGpu, pEngstate, arg0)
+#define kgspGetScratchOffsets(arg0, scratchGroupId) kgspGetScratchOffsets_DISPATCH(arg0, scratchGroupId)
+#define kgspUnload(arg0) kgspUnload_DISPATCH(arg0)
 #define kgspStateUnload(pGpu, pEngstate, arg0) kgspStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kgspServiceNotificationInterrupt(pGpu, pIntrService, pParams) kgspServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
+#define kgspGetWFL0Offset(arg0) kgspGetWFL0Offset_DISPATCH(arg0)
 #define kgspStateInitLocked(pGpu, pEngstate) kgspStateInitLocked_DISPATCH(pGpu, pEngstate)
 #define kgspStatePreLoad(pGpu, pEngstate, arg0) kgspStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kgspStatePostUnload(pGpu, pEngstate, arg0) kgspStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define kgspStateDestroy(pGpu, pEngstate) kgspStateDestroy_DISPATCH(pGpu, pEngstate)
 #define kgspStatePreUnload(pGpu, pEngstate, arg0) kgspStatePreUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kgspStateInitUnlocked(pGpu, pEngstate) kgspStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kgspInitMissing(pGpu, pEngstate) kgspInitMissing_DISPATCH(pGpu, pEngstate)
 #define kgspStatePreInitLocked(pGpu, pEngstate) kgspStatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define kgspStatePreInitUnlocked(pGpu, pEngstate) kgspStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define kgspClearInterrupt(pGpu, pIntrService, pParams) kgspClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define kgspStatePostLoad(pGpu, pEngstate, arg0) kgspStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define kgspIsPresent(pGpu, pEngstate) kgspIsPresent_DISPATCH(pGpu, pEngstate)
+#define kgspUnmapBufferDescriptor(arg0, pBufDesc) kgspUnmapBufferDescriptor_DISPATCH(arg0, pBufDesc)
+#define kgspReadDmem(arg0, offset, size, pBuf) kgspReadDmem_DISPATCH(arg0, offset, size, pBuf)
 void kgspProgramLibosBootArgsAddr_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
 
 
@@ -512,12 +545,13 @@ static inline NV_STATUS kgspSetCmdQueueHead(struct OBJGPU *pGpu, struct KernelGs
 
 #define kgspSetCmdQueueHead_HAL(pGpu, pKernelGsp, queueIdx, value) kgspSetCmdQueueHead(pGpu, pKernelGsp, queueIdx, value)
 
-void kgspHealthCheck_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
+NvBool kgspHealthCheck_TU102(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
 
 
 #ifdef __nvoc_kernel_gsp_h_disabled
-static inline void kgspHealthCheck(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+static inline NvBool kgspHealthCheck(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
     NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
+    return NV_FALSE;
 }
 #else //__nvoc_kernel_gsp_h_disabled
 #define kgspHealthCheck(pGpu, pKernelGsp) kgspHealthCheck_TU102(pGpu, pKernelGsp)
@@ -984,8 +1018,68 @@ static inline NV_STATUS kgspSetupGspFmcArgs_DISPATCH(struct OBJGPU *pGpu, struct
     return pKernelGsp->__kgspSetupGspFmcArgs__(pGpu, pKernelGsp, pGspFw);
 }
 
+static inline NvBool kgspConfigured_DISPATCH(struct KernelGsp *arg0) {
+    return arg0->__kgspConfigured__(arg0);
+}
+
+static inline NvU32 kgspPriRead_DISPATCH(struct KernelGsp *arg0, NvU32 offset) {
+    return arg0->__kgspPriRead__(arg0, offset);
+}
+
+static inline void kgspRegWrite_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelFlcn, NvU32 offset, NvU32 data) {
+    pKernelFlcn->__kgspRegWrite__(pGpu, pKernelFlcn, offset, data);
+}
+
+static inline NvU32 kgspMaskDmemAddr_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelFlcn, NvU32 addr) {
+    return pKernelFlcn->__kgspMaskDmemAddr__(pGpu, pKernelFlcn, addr);
+}
+
+static inline void kgspStateDestroy_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate) {
+    pEngstate->__kgspStateDestroy__(pGpu, pEngstate);
+}
+
+static inline void kgspVprintf_DISPATCH(struct KernelGsp *arg0, NvBool bReportStart, const char *fmt, va_list args) {
+    arg0->__kgspVprintf__(arg0, bReportStart, fmt, args);
+}
+
+static inline NvBool kgspClearInterrupt_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pIntrService, IntrServiceClearInterruptArguments *pParams) {
+    return pIntrService->__kgspClearInterrupt__(pGpu, pIntrService, pParams);
+}
+
+static inline void kgspPriWrite_DISPATCH(struct KernelGsp *arg0, NvU32 offset, NvU32 data) {
+    arg0->__kgspPriWrite__(arg0, offset, data);
+}
+
+static inline void *kgspMapBufferDescriptor_DISPATCH(struct KernelGsp *arg0, CrashCatBufferDescriptor *pBufDesc) {
+    return arg0->__kgspMapBufferDescriptor__(arg0, pBufDesc);
+}
+
+static inline void kgspSyncBufferDescriptor_DISPATCH(struct KernelGsp *arg0, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size) {
+    arg0->__kgspSyncBufferDescriptor__(arg0, pBufDesc, offset, size);
+}
+
+static inline NvU32 kgspRegRead_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelFlcn, NvU32 offset) {
+    return pKernelFlcn->__kgspRegRead__(pGpu, pKernelFlcn, offset);
+}
+
+static inline NvBool kgspIsPresent_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate) {
+    return pEngstate->__kgspIsPresent__(pGpu, pEngstate);
+}
+
+static inline void kgspReadEmem_DISPATCH(struct KernelGsp *arg0, NvU64 offset, NvU64 size, void *pBuf) {
+    arg0->__kgspReadEmem__(arg0, offset, size, pBuf);
+}
+
 static inline NV_STATUS kgspStateLoad_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
     return pEngstate->__kgspStateLoad__(pGpu, pEngstate, arg0);
+}
+
+static inline const NvU32 *kgspGetScratchOffsets_DISPATCH(struct KernelGsp *arg0, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
+    return arg0->__kgspGetScratchOffsets__(arg0, scratchGroupId);
+}
+
+static inline void kgspUnload_DISPATCH(struct KernelGsp *arg0) {
+    arg0->__kgspUnload__(arg0);
 }
 
 static inline NV_STATUS kgspStateUnload_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
@@ -994,6 +1088,10 @@ static inline NV_STATUS kgspStateUnload_DISPATCH(POBJGPU pGpu, struct KernelGsp 
 
 static inline NV_STATUS kgspServiceNotificationInterrupt_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
     return pIntrService->__kgspServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
+}
+
+static inline NvU32 kgspGetWFL0Offset_DISPATCH(struct KernelGsp *arg0) {
+    return arg0->__kgspGetWFL0Offset__(arg0);
 }
 
 static inline NV_STATUS kgspStateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate) {
@@ -1006,10 +1104,6 @@ static inline NV_STATUS kgspStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelGsp
 
 static inline NV_STATUS kgspStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
     return pEngstate->__kgspStatePostUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline void kgspStateDestroy_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    pEngstate->__kgspStateDestroy__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kgspStatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
@@ -1032,16 +1126,16 @@ static inline NV_STATUS kgspStatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct K
     return pEngstate->__kgspStatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NvBool kgspClearInterrupt_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return pIntrService->__kgspClearInterrupt__(pGpu, pIntrService, pParams);
-}
-
 static inline NV_STATUS kgspStatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
     return pEngstate->__kgspStatePostLoad__(pGpu, pEngstate, arg0);
 }
 
-static inline NvBool kgspIsPresent_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate) {
-    return pEngstate->__kgspIsPresent__(pGpu, pEngstate);
+static inline void kgspUnmapBufferDescriptor_DISPATCH(struct KernelGsp *arg0, CrashCatBufferDescriptor *pBufDesc) {
+    arg0->__kgspUnmapBufferDescriptor__(arg0, pBufDesc);
+}
+
+static inline void kgspReadDmem_DISPATCH(struct KernelGsp *arg0, NvU32 offset, NvU32 size, void *pBuf) {
+    arg0->__kgspReadDmem__(arg0, offset, size, pBuf);
 }
 
 void kgspDestruct_IMPL(struct KernelGsp *pKernelGsp);

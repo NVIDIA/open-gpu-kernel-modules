@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -376,7 +376,7 @@ NV_STATUS uvm_va_range_create_semaphore_pool(uvm_va_space_t *va_space,
         if (status != NV_OK)
             goto error;
 
-        if (i == 0 && g_uvm_global.sev_enabled)
+        if (i == 0 && g_uvm_global.conf_computing_enabled)
             mem_alloc_params.dma_owner = gpu;
 
         if (attrs.is_cacheable) {
@@ -608,7 +608,6 @@ static NV_STATUS va_range_add_gpu_va_space_managed(uvm_va_range_t *va_range,
         uvm_va_block_t *va_block;
         uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(va_space, mm);
 
-        va_block_context->policy = uvm_va_range_get_policy(va_range);
 
         // TODO: Bug 2090378. Consolidate all per-VA block operations within
         // uvm_va_block_add_gpu_va_space so we only need to take the VA block
@@ -687,7 +686,6 @@ static void va_range_remove_gpu_va_space_managed(uvm_va_range_t *va_range,
     bool should_enable_read_duplicate;
     uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(va_space, mm);
 
-    va_block_context->policy = uvm_va_range_get_policy(va_range);
     should_enable_read_duplicate =
         uvm_va_range_get_policy(va_range)->read_duplication == UVM_READ_DUPLICATION_ENABLED &&
         uvm_va_space_can_read_duplicate(va_space, NULL) != uvm_va_space_can_read_duplicate(va_space, gpu_va_space->gpu);
@@ -769,7 +767,6 @@ static NV_STATUS uvm_va_range_enable_peer_managed(uvm_va_range_t *va_range, uvm_
     uvm_va_space_t *va_space = va_range->va_space;
     uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(va_space, NULL);
 
-    va_block_context->policy = uvm_va_range_get_policy(va_range);
 
     for_each_va_block_in_va_range(va_range, va_block) {
         // TODO: Bug 1767224: Refactor the uvm_va_block_set_accessed_by logic
@@ -1322,7 +1319,6 @@ static NV_STATUS range_unmap_mask(uvm_va_range_t *va_range,
     if (uvm_processor_mask_empty(mask))
         return NV_OK;
 
-    block_context->policy = uvm_va_range_get_policy(va_range);
 
     for_each_va_block_in_va_range(va_range, block) {
         NV_STATUS status;
@@ -1364,7 +1360,6 @@ static NV_STATUS range_map_uvm_lite_gpus(uvm_va_range_t *va_range, uvm_tracker_t
     if (uvm_processor_mask_empty(&va_range->uvm_lite_gpus))
         return NV_OK;
 
-    va_block_context->policy = uvm_va_range_get_policy(va_range);
 
     for_each_va_block_in_va_range(va_range, va_block) {
         // UVM-Lite GPUs always map with RWA
@@ -1528,7 +1523,6 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_t *va_range,
     uvm_processor_mask_copy(&va_range->uvm_lite_gpus, &new_uvm_lite_gpus);
 
     va_block_context = uvm_va_space_block_context(va_space, mm);
-    va_block_context->policy = uvm_va_range_get_policy(va_range);
 
     for_each_va_block_in_va_range(va_range, va_block) {
         uvm_processor_id_t id;
@@ -1610,7 +1604,6 @@ NV_STATUS uvm_va_range_set_accessed_by(uvm_va_range_t *va_range,
 
     uvm_processor_mask_copy(&va_range->uvm_lite_gpus, &new_uvm_lite_gpus);
     va_block_context = uvm_va_space_block_context(va_space, mm);
-    va_block_context->policy = policy;
 
     for_each_va_block_in_va_range(va_range, va_block) {
         status = uvm_va_block_set_accessed_by(va_block, va_block_context, processor_id);
@@ -1657,7 +1650,6 @@ NV_STATUS uvm_va_range_set_read_duplication(uvm_va_range_t *va_range, struct mm_
         return NV_OK;
 
     va_block_context = uvm_va_space_block_context(va_range->va_space, mm);
-    va_block_context->policy = uvm_va_range_get_policy(va_range);
 
     for_each_va_block_in_va_range(va_range, va_block) {
         NV_STATUS status = uvm_va_block_set_read_duplication(va_block, va_block_context);
@@ -1679,7 +1671,6 @@ NV_STATUS uvm_va_range_unset_read_duplication(uvm_va_range_t *va_range, struct m
         return NV_OK;
 
     va_block_context = uvm_va_space_block_context(va_range->va_space, mm);
-    va_block_context->policy = uvm_va_range_get_policy(va_range);
 
     for_each_va_block_in_va_range(va_range, va_block) {
         status = uvm_va_block_unset_read_duplication(va_block, va_block_context);
@@ -1816,7 +1807,7 @@ NV_STATUS uvm_api_alloc_semaphore_pool(UVM_ALLOC_SEMAPHORE_POOL_PARAMS *params, 
     if (params->gpuAttributesCount > UVM_MAX_GPUS)
         return NV_ERR_INVALID_ARGUMENT;
 
-    if (g_uvm_global.sev_enabled && params->gpuAttributesCount == 0)
+    if (g_uvm_global.conf_computing_enabled && params->gpuAttributesCount == 0)
         return NV_ERR_INVALID_ARGUMENT;
 
     // The mm needs to be locked in order to remove stale HMM va_blocks.

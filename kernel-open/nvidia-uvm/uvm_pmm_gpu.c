@@ -3820,18 +3820,11 @@ NV_STATUS uvm_test_evict_chunk(UVM_TEST_EVICT_CHUNK_PARAMS *params, struct file 
     // For virtual mode, look up and retain the block first so that eviction can
     // be started without the VA space lock held.
     if (params->eviction_mode == UvmTestEvictModeVirtual) {
-        uvm_va_block_context_t *block_context;
+        if (mm)
+            status = uvm_va_block_find_create(va_space, params->address, NULL, &block);
+        else
+            status = uvm_va_block_find_create_managed(va_space, params->address, &block);
 
-        block_context = uvm_va_block_context_alloc(mm);
-        if (!block_context) {
-            status = NV_ERR_NO_MEMORY;
-            uvm_va_space_up_read(va_space);
-            uvm_va_space_mm_release_unlock(va_space, mm);
-            goto out;
-        }
-
-        status = uvm_va_block_find_create(va_space, params->address, block_context, &block);
-        uvm_va_block_context_free(block_context);
         if (status != NV_OK) {
             uvm_va_space_up_read(va_space);
             uvm_va_space_mm_or_current_release_unlock(va_space, mm);

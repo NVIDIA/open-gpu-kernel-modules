@@ -49,9 +49,7 @@ typedef struct
     bool uvm_hmm_is_enabled_system_wide(void);
 
     // Initialize HMM for the given the va_space.
-    // Locking: the va_space->va_space_mm.mm mmap_lock must be write locked
-    // and the va_space lock must be held in write mode.
-    NV_STATUS uvm_hmm_va_space_initialize(uvm_va_space_t *va_space);
+    void uvm_hmm_va_space_initialize(uvm_va_space_t *va_space);
 
     // Destroy any HMM state for the given the va_space.
     // Locking: va_space lock must be held in write mode.
@@ -90,31 +88,30 @@ typedef struct
     // address 'addr' or the VMA does not have at least PROT_READ permission.
     // The caller is also responsible for checking that there is no UVM
     // va_range covering the given address before calling this function.
-    // If va_block_context is not NULL, the VMA is cached in
-    // va_block_context->hmm.vma.
+    // The VMA is returned in vma_out if it's not NULL.
     // Locking: This function must be called with mm retained and locked for
     // at least read and the va_space lock at least for read.
     NV_STATUS uvm_hmm_va_block_find_create(uvm_va_space_t *va_space,
                                            NvU64 addr,
-                                           uvm_va_block_context_t *va_block_context,
+                                           struct vm_area_struct **vma_out,
                                            uvm_va_block_t **va_block_ptr);
 
-    // Find the VMA for the given address and set va_block_context->hmm.vma.
-    // Return NV_ERR_INVALID_ADDRESS if va_block_context->mm is NULL or there
-    // is no VMA associated with the address 'addr' or the VMA does not have at
-    // least PROT_READ permission.
+    // Find the VMA for the given address and return it in vma_out. Return
+    // NV_ERR_INVALID_ADDRESS if mm is NULL or there is no VMA associated with
+    // the address 'addr' or the VMA does not have at least PROT_READ
+    // permission.
     // Locking: This function must be called with mm retained and locked for
     // at least read or mm equal to NULL.
-    NV_STATUS uvm_hmm_find_vma(uvm_va_block_context_t *va_block_context, NvU64 addr);
+    NV_STATUS uvm_hmm_find_vma(struct mm_struct *mm, struct vm_area_struct **vma_out, NvU64 addr);
 
-    // If va_block is a HMM va_block, check that va_block_context->hmm.vma is
-    // not NULL and covers the given region. This always returns true and is
-    // intended to only be used with UVM_ASSERT().
+    // If va_block is a HMM va_block, check that vma is not NULL and covers the
+    // given region. This always returns true and is intended to only be used
+    // with UVM_ASSERT().
     // Locking: This function must be called with the va_block lock held and if
-    // va_block is a HMM block, va_block_context->mm must be retained and
-    // locked for at least read.
+    // va_block is a HMM block, va_space->va_space_mm.mm->mmap_lock must be
+    // retained and locked for at least read.
     bool uvm_hmm_check_context_vma_is_valid(uvm_va_block_t *va_block,
-                                            uvm_va_block_context_t *va_block_context,
+                                            struct vm_area_struct *vma,
                                             uvm_va_block_region_t region);
 
     // Initialize the HMM portion of the service_context.
@@ -225,31 +222,29 @@ typedef struct
         return NV_OK;
     }
 
-    // This function assigns va_block_context->policy to the policy covering
-    // the given address 'addr' and assigns the ending address '*endp' to the
-    // minimum of va_block->end, va_block_context->hmm.vma->vm_end - 1, and the
-    // ending address of the policy range. Note that va_block_context->hmm.vma
-    // is expected to be initialized before calling this function.
-    // Locking: This function must be called with
-    // va_block_context->hmm.vma->vm_mm retained and locked for least read and
-    // the va_block lock held.
-    void uvm_hmm_find_policy_end(uvm_va_block_t *va_block,
-                                 uvm_va_block_context_t *va_block_context,
-                                 unsigned long addr,
-                                 NvU64 *endp);
+    // This function returns the policy covering the given address 'addr' and
+    // assigns the ending address '*endp' to the minimum of va_block->end,
+    // vma->vm_end - 1, and the ending address of the policy range. Locking:
+    // This function must be called with vma->vm_mm retained and locked for at
+    // least read and the va_block and va_space lock held.
+    const uvm_va_policy_t *uvm_hmm_find_policy_end(uvm_va_block_t *va_block,
+                                                   struct vm_area_struct *vma,
+                                                   unsigned long addr,
+                                                   NvU64 *endp);
 
-    // This function finds the VMA for the page index 'page_index' and assigns
-    // it to va_block_context->vma, sets va_block_context->policy to the policy
-    // covering the given address, and sets the ending page range '*outerp'
-    // to the minimum of *outerp, va_block_context->hmm.vma->vm_end - 1, the
-    // ending address of the policy range, and va_block->end.
-    // Return NV_ERR_INVALID_ADDRESS if no VMA is found; otherwise, NV_OK.
-    // Locking: This function must be called with
-    // va_block_context->hmm.vma->vm_mm retained and locked for least read and
-    // the va_block lock held.
+    // This function finds the VMA for the page index 'page_index' and returns
+    // it in vma_out which must not be NULL. Returns the policy covering the
+    // given address, and sets the ending page range '*outerp' to the minimum of
+    // *outerp, vma->vm_end - 1, the ending address of the policy range, and
+    // va_block->end.
+    // Return NV_ERR_INVALID_ADDRESS if no VMA is found; otherwise sets *vma
+    // and returns NV_OK.
+    // Locking: This function must be called with mm retained and locked for at
+    // least read and the va_block and va_space lock held.
     NV_STATUS uvm_hmm_find_policy_vma_and_outer(uvm_va_block_t *va_block,
-                                                uvm_va_block_context_t *va_block_context,
+                                                struct vm_area_struct **vma,
                                                 uvm_page_index_t page_index,
+                                                const uvm_va_policy_t **policy,
                                                 uvm_page_index_t *outerp);
 
     // Clear thrashing policy information from all HMM va_blocks.
@@ -258,24 +253,21 @@ typedef struct
 
     // Return the expanded region around 'address' limited to the intersection
     // of va_block start/end, vma start/end, and policy start/end.
-    // va_block_context must not be NULL, va_block_context->hmm.vma must be
-    // valid (this is usually set by uvm_hmm_va_block_find_create()), and
-    // va_block_context->policy must be valid.
-    // Locking: the caller must hold mm->mmap_lock in at least read mode, the
-    // va_space lock must be held in at least read mode, and the va_block lock
-    // held.
+    // Locking: the caller must hold va_space->va_space_mm.mm->mmap_lock in at
+    // least read mode, the va_space lock must be held in at least read mode,
+    // and the va_block lock held.
     uvm_va_block_region_t uvm_hmm_get_prefetch_region(uvm_va_block_t *va_block,
-                                                      uvm_va_block_context_t *va_block_context,
+                                                      struct vm_area_struct *vma,
+                                                      const uvm_va_policy_t *policy,
                                                       NvU64 address);
 
     // Return the logical protection allowed of a HMM va_block for the page at
-    // the given address.
-    // va_block_context must not be NULL and va_block_context->hmm.vma must be
-    // valid (this is usually set by uvm_hmm_va_block_find_create()).
-    // Locking: the caller must hold va_block_context->mm mmap_lock in at least
-    // read mode.
+    // the given address within the vma which must be valid. This is usually
+    // obtained from uvm_hmm_va_block_find_create()).
+    // Locking: the caller must hold va_space->va_space_mm.mm mmap_lock in at
+    // least read mode.
     uvm_prot_t uvm_hmm_compute_logical_prot(uvm_va_block_t *va_block,
-                                            uvm_va_block_context_t *va_block_context,
+                                            struct vm_area_struct *vma,
                                             NvU64 addr);
 
     // This is called to service a GPU fault.
@@ -288,9 +280,9 @@ typedef struct
                                               uvm_service_block_context_t *service_context);
 
     // This is called to migrate a region within a HMM va_block.
-    // va_block_context must not be NULL and va_block_context->policy and
-    // va_block_context->hmm.vma must be valid.
-    // Locking: the va_block_context->mm must be retained, mmap_lock must be
+    // va_block_context must not be NULL and va_block_context->hmm.vma
+    // must be valid.
+    // Locking: the va_space->va_space_mm.mm must be retained, mmap_lock must be
     // locked, and the va_block lock held.
     NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                               uvm_va_block_retry_t *va_block_retry,
@@ -303,7 +295,7 @@ typedef struct
     // UvmMigrate().
     //
     // va_block_context must not be NULL. The caller is not required to set
-    // va_block_context->policy or va_block_context->hmm.vma.
+    // va_block_context->hmm.vma.
     //
     // Locking: the va_space->va_space_mm.mm mmap_lock must be locked and
     // the va_space read lock must be held.
@@ -412,9 +404,8 @@ typedef struct
         return false;
     }
 
-    static NV_STATUS uvm_hmm_va_space_initialize(uvm_va_space_t *va_space)
+    static void uvm_hmm_va_space_initialize(uvm_va_space_t *va_space)
     {
-        return NV_OK;
     }
 
     static void uvm_hmm_va_space_destroy(uvm_va_space_t *va_space)
@@ -440,19 +431,19 @@ typedef struct
 
     static NV_STATUS uvm_hmm_va_block_find_create(uvm_va_space_t *va_space,
                                                   NvU64 addr,
-                                                  uvm_va_block_context_t *va_block_context,
+                                                  struct vm_area_struct **vma,
                                                   uvm_va_block_t **va_block_ptr)
     {
         return NV_ERR_INVALID_ADDRESS;
     }
 
-    static NV_STATUS uvm_hmm_find_vma(uvm_va_block_context_t *va_block_context, NvU64 addr)
+    static NV_STATUS uvm_hmm_find_vma(struct mm_struct *mm, struct vm_area_struct **vma, NvU64 addr)
     {
         return NV_OK;
     }
 
     static bool uvm_hmm_check_context_vma_is_valid(uvm_va_block_t *va_block,
-                                                   uvm_va_block_context_t *va_block_context,
+                                                   struct vm_area_struct *vma,
                                                    uvm_va_block_region_t region)
     {
         return true;
@@ -533,16 +524,19 @@ typedef struct
         return NV_ERR_INVALID_ADDRESS;
     }
 
-    static void uvm_hmm_find_policy_end(uvm_va_block_t *va_block,
-                                        uvm_va_block_context_t *va_block_context,
-                                        unsigned long addr,
-                                        NvU64 *endp)
+    static const uvm_va_policy_t *uvm_hmm_find_policy_end(uvm_va_block_t *va_block,
+                                                          struct vm_area_struct *vma,
+                                                          unsigned long addr,
+                                                          NvU64 *endp)
     {
+        UVM_ASSERT(0);
+        return NULL;
     }
 
     static NV_STATUS uvm_hmm_find_policy_vma_and_outer(uvm_va_block_t *va_block,
-                                                       uvm_va_block_context_t *va_block_context,
+                                                       struct vm_area_struct **vma,
                                                        uvm_page_index_t page_index,
+                                                       const uvm_va_policy_t **policy,
                                                        uvm_page_index_t *outerp)
     {
         return NV_OK;
@@ -554,14 +548,15 @@ typedef struct
     }
 
     static uvm_va_block_region_t uvm_hmm_get_prefetch_region(uvm_va_block_t *va_block,
-                                                             uvm_va_block_context_t *va_block_context,
+                                                             struct vm_area_struct *vma,
+                                                             const uvm_va_policy_t *policy,
                                                              NvU64 address)
     {
         return (uvm_va_block_region_t){};
     }
 
     static uvm_prot_t uvm_hmm_compute_logical_prot(uvm_va_block_t *va_block,
-                                                   uvm_va_block_context_t *va_block_context,
+                                                   struct vm_area_struct *vma,
                                                    NvU64 addr)
     {
         return UVM_PROT_NONE;

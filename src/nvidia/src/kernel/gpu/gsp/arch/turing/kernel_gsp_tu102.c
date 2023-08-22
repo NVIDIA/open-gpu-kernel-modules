@@ -37,6 +37,7 @@
 #include "os/os.h"
 #include "nverror.h"
 #include "gsp/gsp_error.h"
+#include "crashcat/crashcat_report.h"
 
 #include "published/turing/tu102/dev_gsp.h"
 #include "published/turing/tu102/dev_gsp_addendum.h"
@@ -75,6 +76,11 @@ kgspConfigureFalcon_TU102
     falconConfig.pmcEnableMask      = 0;
     falconConfig.bIsPmcDeviceEngine = NV_FALSE;
     falconConfig.physEngDesc        = ENG_GSP;
+
+    // Enable CrashCat monitoring
+    falconConfig.crashcatEngConfig.bEnable = NV_TRUE;
+    falconConfig.crashcatEngConfig.pName = MAKE_NV_PRINTF_STR("GSP");
+    falconConfig.crashcatEngConfig.errorId = GSP_ERROR;
 
     kflcnConfigureEngine(pGpu, staticCast(pKernelGsp, KernelFalcon), &falconConfig);
 }
@@ -612,6 +618,16 @@ kgspCalculateFbLayout_TU102
         pWprMeta->sizeOfSignature = memdescGetSize(pKernelGsp->pSignatureMemdesc);
     }
 
+    // CrashCat queue (if allocated in sysmem)
+    KernelCrashCatEngine *pKernelCrashCatEng = staticCast(pKernelGsp, KernelCrashCatEngine);
+    MEMORY_DESCRIPTOR *pCrashCatQueueMemDesc = kcrashcatEngineGetQueueMemDesc(pKernelCrashCatEng);
+    if (pCrashCatQueueMemDesc != NULL)
+    {
+        NV_ASSERT_CHECKED(memdescGetAddressSpace(pCrashCatQueueMemDesc) == ADDR_SYSMEM);
+        pWprMeta->sysmemAddrOfCrashReportQueue = memdescGetPhysAddr(pCrashCatQueueMemDesc, AT_GPU, 0);
+        pWprMeta->sizeOfCrashReportQueue = (NvU32)memdescGetSize(pCrashCatQueueMemDesc);
+    }
+
     pWprMeta->bootCount = 0;
     pWprMeta->verified = 0;
     pWprMeta->revision = GSP_FW_WPR_META_REVISION;
@@ -752,42 +768,84 @@ kgspResetHw_TU102
     return NV_OK;
 }
 
-void
+NvBool
 kgspHealthCheck_TU102
 (
     OBJGPU *pGpu,
     KernelGsp *pKernelGsp
 )
 {
+    NvBool bHealthy = NV_TRUE;
+
+    // If enabled, CrashCat is the primary reporting interface for GSP issues
+    KernelCrashCatEngine *pKernelCrashCatEng = staticCast(pKernelGsp, KernelCrashCatEngine);
+    if (kcrashcatEngineConfigured(pKernelCrashCatEng))
+    {
+        CrashCatEngine *pCrashCatEng = staticCast(pKernelCrashCatEng, CrashCatEngine);
+        CrashCatReport *pReport;
+
+        while ((pReport = crashcatEngineGetNextCrashReport(pCrashCatEng)) != NULL)
+        {
+            bHealthy = NV_FALSE;
+
+            pKernelGsp->bFatalError = NV_TRUE;
+
+            NV_PRINTF(LEVEL_ERROR,
+                "****************************** GSP-CrashCat Report *******************************\n");
+            crashcatReportLog(pReport);
+            NV_PRINTF(LEVEL_ERROR,
+                "**********************************************************************************\n");
+
+            objDelete(pReport);
+        }
+
+        return bHealthy;
+    }
+
     NvU32 mb0 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0));
 
     //
-    // Check for an error message in the GSP mailbox.  Any error here is severe
-    // enough that it should be reported as an Xid.  Clear the error so more can
-    // potentially be reported by GSP, if it was able to recover.  In that case,
-    // it's possible that GSP will skip reporting some more errors that happened
-    // before the clear, and it will just update the "skipped" count.
+    // Check for an error message in the GSP mailbox.  Any error reported here is
+    // almost certainly fatal.
     //
     if (FLD_TEST_DRF(_GSP, _ERROR, _TAG, _VAL, mb0))
     {
         NvU32 mb1 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(1));
+        NvU32 skipped = DRF_VAL(_GSP, _ERROR, _SKIPPED, mb0);
+        bHealthy = NV_FALSE;
 
+        pKernelGsp->bFatalError = NV_TRUE;
+
+        // Clear the mailbox
         GPU_REG_WR32(pGpu, NV_PGSP_MAILBOX(0), 0);
 
-        NV_PRINTF(LEVEL_NOTICE,
+        NV_PRINTF(LEVEL_ERROR,
                   "********************************* GSP Failure **********************************\n");
 
         nvErrorLog_va((void*)pGpu, GSP_ERROR,
-                      "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x (%d more errors skipped)",
+                      "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x.  The GPU likely needs to be reset.",
                       DRF_VAL(_GSP, _ERROR, _TASK, mb0),
                       DRF_VAL(_GSP, _ERROR, _CODE, mb0),
                       DRF_VAL(_GSP, _ERROR, _REASON, mb0),
-                      mb1,
-                      DRF_VAL(_GSP, _ERROR, _SKIPPED, mb0));
+                      mb1);
+        NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR, NV_PRINTF_ADD_PREFIX
+                     ("GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x"),
+                     DRF_VAL(_GSP, _ERROR, _TASK, mb0),
+                     DRF_VAL(_GSP, _ERROR, _CODE, mb0),
+                     DRF_VAL(_GSP, _ERROR, _REASON, mb0),
+                     mb1);
 
-        NV_PRINTF(LEVEL_NOTICE,
+        // Check if GSP had more errors to report (unlikely)
+        if (skipped)
+        {
+            NV_PRINTF(LEVEL_ERROR, "%d more errors skipped\n", skipped);
+        }
+
+        NV_PRINTF(LEVEL_ERROR,
                   "********************************************************************************\n");
     }
+
+    return bHealthy;
 }
 
 /*!
@@ -803,7 +861,6 @@ kgspService_TU102
     KernelGsp  *pKernelGsp
 )
 {
-    NvU32         clearBits     = 0;
     NvU32         intrStatus;
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
 
@@ -825,16 +882,17 @@ kgspService_TU102
 
     if (intrStatus & DRF_DEF(_PFALCON, _FALCON_IRQSTAT, _HALT, _TRUE))
     {
-        clearBits |= DRF_DEF(_PFALCON, _FALCON_IRQSCLR, _HALT, _SET);
+        //
+        // The _HALT is triggered by ucode as part of the CrashCat protocol to
+        // signal the host that some handling is required. Clear the interrupt
+        // before handling, so that once the GSP code continues, we won't miss
+        // a second _HALT interrupt for the next step.
+        //
+        kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_IRQSCLR,
+            DRF_DEF(_PFALCON, _FALCON_IRQSCLR, _HALT, _SET));
 
-        //
-        // Currently, GSP-RISCV triggers _HALT interrupt to RM when it finds
-        // itself running into a bad state. Triggering _HALT interrupt to RM
-        // provides RM a chance to handle it so we have better debugability
-        // into GSP-RISCV issues.
-        //
         kgspDumpGspLogs(pKernelGsp, NV_FALSE);
-        kgspHealthCheck_HAL(pGpu, pKernelGsp);
+        (void)kgspHealthCheck_HAL(pGpu, pKernelGsp);
     }
     if (intrStatus & DRF_DEF(_PFALCON, _FALCON_IRQSTAT, _SWGEN0, _TRUE))
     {
@@ -853,9 +911,6 @@ kgspService_TU102
         //
         NV_CHECK_OR_RETURN(LEVEL_SILENT, !pKernelGsp->bInLockdown, 0);
     }
-
-    // Clear any sources that were serviced and get the new status
-    kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_IRQSCLR, clearBits);
 
     kflcnIntrRetrigger_HAL(pGpu, pKernelFalcon);
 

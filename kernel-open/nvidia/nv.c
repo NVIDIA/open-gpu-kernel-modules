@@ -96,6 +96,8 @@
 
 #include "conftest/patches.h"
 
+#include "detect-self-hosted.h"
+
 #define RM_THRESHOLD_TOTAL_IRQ_COUNT     100000
 #define RM_THRESHOLD_UNAHNDLED_IRQ_COUNT 99900
 #define RM_UNHANDLED_TIMEOUT_US          100000

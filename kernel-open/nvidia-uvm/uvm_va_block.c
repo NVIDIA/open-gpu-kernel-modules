@@ -106,36 +106,6 @@ uvm_va_space_t *uvm_va_block_get_va_space(uvm_va_block_t *va_block)
     return va_space;
 }
 
-bool uvm_va_block_check_policy_is_valid(uvm_va_block_t *va_block,
-                                        const uvm_va_policy_t *policy,
-                                        uvm_va_block_region_t region)
-{
-    uvm_assert_mutex_locked(&va_block->lock);
-
-    if (uvm_va_block_is_hmm(va_block)) {
-        const uvm_va_policy_node_t *node;
-
-        if (uvm_va_policy_is_default(policy)) {
-            // There should only be the default policy within the region.
-            node = uvm_va_policy_node_iter_first(va_block,
-                                                 uvm_va_block_region_start(va_block, region),
-                                                 uvm_va_block_region_end(va_block, region));
-            UVM_ASSERT(!node);
-        }
-        else {
-            // The policy node should cover the region.
-            node = uvm_va_policy_node_from_policy(policy);
-            UVM_ASSERT(node->node.start <= uvm_va_block_region_start(va_block, region));
-            UVM_ASSERT(node->node.end >= uvm_va_block_region_end(va_block, region));
-        }
-    }
-    else {
-        UVM_ASSERT(policy == uvm_va_range_get_policy(va_block->va_range));
-    }
-
-    return true;
-}
-
 static NvU64 block_gpu_pte_flag_cacheable(uvm_va_block_t *block, uvm_gpu_t *gpu, uvm_processor_id_t resident_id)
 {
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(block);
@@ -3697,7 +3667,6 @@ NV_STATUS uvm_va_block_make_resident_copy(uvm_va_block_t *va_block,
 
     uvm_assert_mutex_locked(&va_block->lock);
     UVM_ASSERT(uvm_va_block_is_hmm(va_block) || va_block->va_range->type == UVM_VA_RANGE_TYPE_MANAGED);
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, va_block_context->policy, region));
 
     resident_mask = block_resident_mask_get_alloc(va_block, dest_id);
     if (!resident_mask)
@@ -3944,7 +3913,6 @@ NV_STATUS uvm_va_block_make_resident_read_duplicate(uvm_va_block_t *va_block,
 
     // TODO: Bug 3660922: need to implement HMM read duplication support.
     UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
-    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
 
     va_block_context->make_resident.dest_id = dest_id;
     va_block_context->make_resident.cause = cause;
@@ -4742,7 +4710,7 @@ static void block_unmap_cpu(uvm_va_block_t *block, uvm_va_block_region_t region,
 // Given a mask of mapped pages, returns true if any of the pages in the mask
 // are mapped remotely by the given GPU.
 static bool block_has_remote_mapping_gpu(uvm_va_block_t *block,
-                                         uvm_va_block_context_t *block_context,
+                                         uvm_page_mask_t *scratch_page_mask,
                                          uvm_gpu_id_t gpu_id,
                                          const uvm_page_mask_t *mapped_pages)
 {
@@ -4764,7 +4732,7 @@ static bool block_has_remote_mapping_gpu(uvm_va_block_t *block,
     }
 
     // Remote pages are pages which are mapped but not resident locally
-    return uvm_page_mask_andnot(&block_context->scratch_page_mask, mapped_pages, &gpu_state->resident);
+    return uvm_page_mask_andnot(scratch_page_mask, mapped_pages, &gpu_state->resident);
 }
 
 // Writes pte_clear_val to the 4k PTEs covered by clear_page_mask. If
@@ -6659,7 +6627,7 @@ static NV_STATUS block_unmap_gpu(uvm_va_block_t *block,
     if (status != NV_OK)
         return status;
 
-    only_local_mappings = !block_has_remote_mapping_gpu(block, block_context, gpu->id, pages_to_unmap);
+    only_local_mappings = !block_has_remote_mapping_gpu(block, &block_context->scratch_page_mask, gpu->id, pages_to_unmap);
     tlb_membar = uvm_hal_downgrade_membar_type(gpu, only_local_mappings);
 
     status = uvm_push_begin_acquire(gpu->channel_manager,
@@ -6794,16 +6762,15 @@ static NV_STATUS uvm_cpu_insert_page(struct vm_area_struct *vma,
 }
 
 static uvm_prot_t compute_logical_prot(uvm_va_block_t *va_block,
-                                       uvm_va_block_context_t *va_block_context,
+                                       struct vm_area_struct *hmm_vma,
                                        uvm_page_index_t page_index)
 {
-    struct vm_area_struct *vma;
     uvm_prot_t logical_prot;
 
     if (uvm_va_block_is_hmm(va_block)) {
         NvU64 addr = uvm_va_block_cpu_page_address(va_block, page_index);
 
-        logical_prot = uvm_hmm_compute_logical_prot(va_block, va_block_context, addr);
+        logical_prot = uvm_hmm_compute_logical_prot(va_block, hmm_vma, addr);
     }
     else {
         uvm_va_range_t *va_range = va_block->va_range;
@@ -6815,6 +6782,8 @@ static uvm_prot_t compute_logical_prot(uvm_va_block_t *va_block,
             logical_prot = UVM_PROT_NONE;
         }
         else {
+            struct vm_area_struct *vma;
+
             vma = uvm_va_range_vma(va_range);
 
             if (!(vma->vm_flags & VM_READ))
@@ -6864,13 +6833,15 @@ static struct page *block_page_get(uvm_va_block_t *block, block_phys_page_t bloc
 //    with new_prot permissions
 //  - Guarantee that vm_insert_page is safe to use (vma->vm_mm has a reference
 //    and mmap_lock is held in at least read mode)
+//  - For HMM blocks that vma is valid and safe to use, vma->vm_mm has a
+//    reference and mmap_lock is held in at least read mode
 //  - Ensure that the struct page corresponding to the physical memory being
 //    mapped exists
 //  - Manage the block's residency bitmap
 //  - Ensure that the block hasn't been killed (block->va_range is present)
 //  - Update the pte/mapping tracking state on success
 static NV_STATUS block_map_cpu_page_to(uvm_va_block_t *block,
-                                       uvm_va_block_context_t *va_block_context,
+                                       struct vm_area_struct *hmm_vma,
                                        uvm_processor_id_t resident_id,
                                        uvm_page_index_t page_index,
                                        uvm_prot_t new_prot)
@@ -6883,7 +6854,7 @@ static NV_STATUS block_map_cpu_page_to(uvm_va_block_t *block,
     NvU64 addr;
     struct page *page;
 
-    UVM_ASSERT(uvm_va_block_is_hmm(block) || va_range->type == UVM_VA_RANGE_TYPE_MANAGED);
+    UVM_ASSERT((uvm_va_block_is_hmm(block) && hmm_vma) || va_range->type == UVM_VA_RANGE_TYPE_MANAGED);
     UVM_ASSERT(new_prot != UVM_PROT_NONE);
     UVM_ASSERT(new_prot < UVM_PROT_MAX);
     UVM_ASSERT(uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(resident_id)], UVM_ID_CPU));
@@ -6904,7 +6875,7 @@ static NV_STATUS block_map_cpu_page_to(uvm_va_block_t *block,
 
     // Check for existing VMA permissions. They could have been modified after
     // the initial mmap by mprotect.
-    if (new_prot > compute_logical_prot(block, va_block_context, page_index))
+    if (new_prot > compute_logical_prot(block, hmm_vma, page_index))
         return NV_ERR_INVALID_ACCESS_TYPE;
 
     if (uvm_va_block_is_hmm(block)) {
@@ -7001,7 +6972,7 @@ static NV_STATUS block_map_cpu_to(uvm_va_block_t *block,
 
     for_each_va_block_page_in_region_mask(page_index, pages_to_map, region) {
         status = block_map_cpu_page_to(block,
-                                       block_context,
+                                       block_context->hmm.vma,
                                        resident_id,
                                        page_index,
                                        new_prot);
@@ -7234,13 +7205,13 @@ NV_STATUS uvm_va_block_map(uvm_va_block_t *va_block,
     const uvm_page_mask_t *pte_mask;
     uvm_page_mask_t *running_page_mask = &va_block_context->mapping.map_running_page_mask;
     NV_STATUS status;
+    const uvm_va_policy_t *policy = uvm_va_policy_get_region(va_block, region);
 
     va_block_context->mapping.cause = cause;
 
     UVM_ASSERT(new_prot != UVM_PROT_NONE);
     UVM_ASSERT(new_prot < UVM_PROT_MAX);
     uvm_assert_mutex_locked(&va_block->lock);
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, va_block_context->policy, region));
 
     // Mapping is not supported on the eviction path that doesn't hold the VA
     // space lock.
@@ -7282,7 +7253,7 @@ NV_STATUS uvm_va_block_map(uvm_va_block_t *va_block,
 
     // Map per resident location so we can more easily detect physically-
     // contiguous mappings.
-    map_get_allowed_destinations(va_block, va_block_context, va_block_context->policy, id, &allowed_destinations);
+    map_get_allowed_destinations(va_block, va_block_context, policy, id, &allowed_destinations);
 
     for_each_closest_id(resident_id, &allowed_destinations, id, va_space) {
         if (UVM_ID_IS_CPU(id)) {
@@ -7587,8 +7558,6 @@ NV_STATUS uvm_va_block_map_mask(uvm_va_block_t *va_block,
     NV_STATUS status = NV_OK;
     NV_STATUS tracker_status;
     uvm_processor_id_t id;
-
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, va_block_context->policy, region));
 
     for_each_id_in_mask(id, map_processor_mask) {
         status = uvm_va_block_map(va_block,
@@ -9573,7 +9542,7 @@ static bool block_region_might_read_duplicate(uvm_va_block_t *va_block,
 //       could be changed in the future to optimize multiple faults/counters on
 //       contiguous pages.
 static uvm_prot_t compute_new_permission(uvm_va_block_t *va_block,
-                                         uvm_va_block_context_t *va_block_context,
+                                         struct vm_area_struct *hmm_vma,
                                          uvm_page_index_t page_index,
                                          uvm_processor_id_t fault_processor_id,
                                          uvm_processor_id_t new_residency,
@@ -9586,7 +9555,7 @@ static uvm_prot_t compute_new_permission(uvm_va_block_t *va_block,
     //       query_promote: upgrade access privileges to avoid future faults IF
     //       they don't trigger further revocations.
     new_prot = uvm_fault_access_type_to_prot(access_type);
-    logical_prot = compute_logical_prot(va_block, va_block_context, page_index);
+    logical_prot = compute_logical_prot(va_block, hmm_vma, page_index);
 
     UVM_ASSERT(logical_prot >= new_prot);
 
@@ -9729,11 +9698,10 @@ NV_STATUS uvm_va_block_add_mappings_after_migration(uvm_va_block_t *va_block,
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     const uvm_page_mask_t *final_page_mask = map_page_mask;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
-    const uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = uvm_va_policy_get_region(va_block, region);
     uvm_processor_id_t preferred_location;
 
     uvm_assert_mutex_locked(&va_block->lock);
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, policy, region));
 
     // Read duplication takes precedence over SetAccessedBy.
     //
@@ -9958,8 +9926,6 @@ NV_STATUS uvm_va_block_add_mappings(uvm_va_block_t *va_block,
     uvm_page_index_t page_index;
     uvm_range_group_range_iter_t iter;
     uvm_prot_t prot_to_map;
-
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, va_block_context->policy, region));
 
     if (UVM_ID_IS_CPU(processor_id) && !uvm_va_block_is_hmm(va_block)) {
         if (!uvm_va_range_vma_check(va_range, va_block_context->mm))
@@ -10207,11 +10173,8 @@ uvm_processor_id_t uvm_va_block_select_residency(uvm_va_block_t *va_block,
 {
     uvm_processor_id_t id;
 
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block,
-                                                  va_block_context->policy,
-                                                  uvm_va_block_region_for_page(page_index)));
     UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block,
-                                                  va_block_context,
+                                                  va_block_context->hmm.vma,
                                                   uvm_va_block_region_for_page(page_index)));
 
     id = block_select_residency(va_block,
@@ -10255,6 +10218,7 @@ static bool check_access_counters_dont_revoke(uvm_va_block_t *block,
 // Update service_context->prefetch_hint, service_context->per_processor_masks,
 // and service_context->region.
 static void uvm_va_block_get_prefetch_hint(uvm_va_block_t *va_block,
+                                           const uvm_va_policy_t *policy,
                                            uvm_service_block_context_t *service_context)
 {
     uvm_processor_id_t new_residency;
@@ -10265,20 +10229,19 @@ static void uvm_va_block_get_prefetch_hint(uvm_va_block_t *va_block,
     if (uvm_processor_mask_get_count(&service_context->resident_processors) == 1) {
         uvm_page_index_t page_index;
         uvm_page_mask_t *new_residency_mask;
-        const uvm_va_policy_t *policy = service_context->block_context.policy;
 
         new_residency = uvm_processor_mask_find_first_id(&service_context->resident_processors);
         new_residency_mask = &service_context->per_processor_masks[uvm_id_value(new_residency)].new_residency;
 
         // Update prefetch tracking structure with the pages that will migrate
         // due to faults
-        uvm_perf_prefetch_get_hint(va_block,
-                                   &service_context->block_context,
-                                   new_residency,
-                                   new_residency_mask,
-                                   service_context->region,
-                                   &service_context->prefetch_bitmap_tree,
-                                   &service_context->prefetch_hint);
+        uvm_perf_prefetch_get_hint_va_block(va_block,
+                                            &service_context->block_context,
+                                            new_residency,
+                                            new_residency_mask,
+                                            service_context->region,
+                                            &service_context->prefetch_bitmap_tree,
+                                            &service_context->prefetch_hint);
 
         // Obtain the prefetch hint and give a fake fault access type to the
         // prefetched pages
@@ -10463,7 +10426,7 @@ NV_STATUS uvm_va_block_service_finish(uvm_processor_id_t processor_id,
 
     for_each_va_block_page_in_region_mask(page_index, new_residency_mask, service_context->region) {
         new_prot = compute_new_permission(va_block,
-                                          &service_context->block_context,
+                                          service_context->block_context.hmm.vma,
                                           page_index,
                                           processor_id,
                                           new_residency,
@@ -10706,11 +10669,8 @@ NV_STATUS uvm_va_block_service_locked(uvm_processor_id_t processor_id,
     NV_STATUS status = NV_OK;
 
     uvm_assert_mutex_locked(&va_block->lock);
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block,
-                                                  service_context->block_context.policy,
-                                                  service_context->region));
     UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block,
-                                                  &service_context->block_context,
+                                                  service_context->block_context.hmm.vma,
                                                   service_context->region));
 
     // GPU fault servicing must be done under the VA space read lock. GPU fault
@@ -10724,7 +10684,9 @@ NV_STATUS uvm_va_block_service_locked(uvm_processor_id_t processor_id,
     else
         uvm_assert_rwsem_locked_read(&va_space->lock);
 
-    uvm_va_block_get_prefetch_hint(va_block, service_context);
+    uvm_va_block_get_prefetch_hint(va_block,
+                                   uvm_va_policy_get_region(va_block, service_context->region),
+                                   service_context);
 
     for_each_id_in_mask(new_residency, &service_context->resident_processors) {
         if (uvm_va_block_is_hmm(va_block)) {
@@ -10757,11 +10719,8 @@ NV_STATUS uvm_va_block_check_logical_permissions(uvm_va_block_t *va_block,
     uvm_va_range_t *va_range = va_block->va_range;
     uvm_prot_t access_prot = uvm_fault_access_type_to_prot(access_type);
 
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block,
-                                                  va_block_context->policy,
-                                                  uvm_va_block_region_for_page(page_index)));
     UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block,
-                                                  va_block_context,
+                                                  va_block_context->hmm.vma,
                                                   uvm_va_block_region_for_page(page_index)));
 
     // CPU permissions are checked later by block_map_cpu_page.
@@ -10779,8 +10738,8 @@ NV_STATUS uvm_va_block_check_logical_permissions(uvm_va_block_t *va_block,
         // vm_flags at any moment (for example on mprotect) and here we are not
         // guaranteed to have vma->vm_mm->mmap_lock. During tests we ensure that
         // this scenario does not happen.
-        if ((va_block_context->mm || uvm_enable_builtin_tests) &&
-            (access_prot > compute_logical_prot(va_block, va_block_context, page_index)))
+        if (((va_block->hmm.va_space && va_block->hmm.va_space->va_space_mm.mm) || uvm_enable_builtin_tests) &&
+            (access_prot > compute_logical_prot(va_block, va_block_context->hmm.vma, page_index)))
             return NV_ERR_INVALID_ACCESS_TYPE;
     }
 
@@ -10866,6 +10825,7 @@ static NV_STATUS block_cpu_fault_locked(uvm_va_block_t *va_block,
     uvm_perf_thrashing_hint_t thrashing_hint;
     uvm_processor_id_t new_residency;
     bool read_duplicate;
+    const uvm_va_policy_t *policy;
 
     uvm_assert_rwsem_locked(&va_space->lock);
 
@@ -10874,13 +10834,13 @@ static NV_STATUS block_cpu_fault_locked(uvm_va_block_t *va_block,
 
     uvm_assert_mmap_lock_locked(service_context->block_context.mm);
 
-    service_context->block_context.policy = uvm_va_policy_get(va_block, fault_addr);
+    policy = uvm_va_policy_get(va_block, fault_addr);
 
     if (service_context->num_retries == 0) {
         // notify event to tools/performance heuristics
         uvm_perf_event_notify_cpu_fault(&va_space->perf_events,
                                         va_block,
-                                        service_context->block_context.policy->preferred_location,
+                                        policy->preferred_location,
                                         fault_addr,
                                         fault_access_type > UVM_FAULT_ACCESS_TYPE_READ,
                                         KSTK_EIP(current));
@@ -10925,7 +10885,7 @@ static NV_STATUS block_cpu_fault_locked(uvm_va_block_t *va_block,
                                                   page_index,
                                                   UVM_ID_CPU,
                                                   uvm_fault_access_type_mask_bit(fault_access_type),
-                                                  service_context->block_context.policy,
+                                                  policy,
                                                   &thrashing_hint,
                                                   UVM_SERVICE_OPERATION_REPLAYABLE_FAULTS,
                                                   &read_duplicate);
@@ -11025,7 +10985,6 @@ NV_STATUS uvm_va_block_find(uvm_va_space_t *va_space, NvU64 addr, uvm_va_block_t
 NV_STATUS uvm_va_block_find_create_in_range(uvm_va_space_t *va_space,
                                             uvm_va_range_t *va_range,
                                             NvU64 addr,
-                                            uvm_va_block_context_t *va_block_context,
                                             uvm_va_block_t **out_block)
 {
     size_t index;
@@ -11033,12 +10992,7 @@ NV_STATUS uvm_va_block_find_create_in_range(uvm_va_space_t *va_space,
     if (uvm_enable_builtin_tests && atomic_dec_if_positive(&va_space->test.va_block_allocation_fail_nth) == 0)
         return NV_ERR_NO_MEMORY;
 
-    if (!va_range) {
-        if (!va_block_context || !va_block_context->mm)
-            return NV_ERR_INVALID_ADDRESS;
-        return uvm_hmm_va_block_find_create(va_space, addr, va_block_context, out_block);
-    }
-
+    UVM_ASSERT(va_range);
     UVM_ASSERT(addr >= va_range->node.start);
     UVM_ASSERT(addr <= va_range->node.end);
 
@@ -11052,14 +11006,32 @@ NV_STATUS uvm_va_block_find_create_in_range(uvm_va_space_t *va_space,
     return uvm_va_range_block_create(va_range, index, out_block);
 }
 
-NV_STATUS uvm_va_block_find_create(uvm_va_space_t *va_space,
+NV_STATUS uvm_va_block_find_create_managed(uvm_va_space_t *va_space,
                                    NvU64 addr,
-                                   uvm_va_block_context_t *va_block_context,
                                    uvm_va_block_t **out_block)
 {
     uvm_va_range_t *va_range = uvm_va_range_find(va_space, addr);
 
-    return uvm_va_block_find_create_in_range(va_space, va_range, addr, va_block_context, out_block);
+    if (va_range)
+        return uvm_va_block_find_create_in_range(va_space, va_range, addr, out_block);
+    else
+        return NV_ERR_INVALID_ADDRESS;
+}
+
+NV_STATUS uvm_va_block_find_create(uvm_va_space_t *va_space,
+                                   NvU64 addr,
+                                   struct vm_area_struct **hmm_vma,
+                                   uvm_va_block_t **out_block)
+{
+    uvm_va_range_t *va_range = uvm_va_range_find(va_space, addr);
+
+    if (hmm_vma)
+        *hmm_vma = NULL;
+
+    if (va_range)
+        return uvm_va_block_find_create_in_range(va_space, va_range, addr, out_block);
+    else
+        return uvm_hmm_va_block_find_create(va_space, addr, hmm_vma, out_block);
 }
 
 // Launch a synchronous, encrypted copy between GPU and CPU.
@@ -11236,8 +11208,6 @@ NV_STATUS uvm_va_block_write_from_cpu(uvm_va_block_t *va_block,
     if (UVM_ID_IS_INVALID(proc))
         proc = UVM_ID_CPU;
 
-    block_context->policy = uvm_va_policy_get(va_block, dst);
-
     // Use make_resident() in all cases to break read-duplication, but
     // block_retry can be NULL as if the page is not resident yet we will make
     // it resident on the CPU.
@@ -11406,7 +11376,6 @@ static void block_add_eviction_mappings(void *args)
         uvm_va_range_t *va_range = va_block->va_range;
         NV_STATUS status = NV_OK;
 
-        block_context->policy = uvm_va_range_get_policy(va_range);
         for_each_id_in_mask(id, &uvm_va_range_get_policy(va_range)->accessed_by) {
             status = uvm_va_block_set_accessed_by(va_block, block_context, id);
             if (status != NV_OK)
@@ -11557,8 +11526,8 @@ NV_STATUS uvm_va_block_evict_chunks(uvm_va_block_t *va_block,
                                                &accessed_by_set);
     }
     else {
-        block_context->policy = uvm_va_range_get_policy(va_block->va_range);
-        accessed_by_set = uvm_processor_mask_get_count(&block_context->policy->accessed_by) > 0;
+        const uvm_va_policy_t *policy = uvm_va_range_get_policy(va_block->va_range);
+        accessed_by_set = uvm_processor_mask_get_count(&policy->accessed_by) > 0;
 
         // TODO: Bug 1765193: make_resident() breaks read-duplication, but it's
         // not necessary to do so for eviction. Add a version that unmaps only
@@ -11749,19 +11718,16 @@ NV_STATUS uvm_test_va_block_inject_error(UVM_TEST_VA_BLOCK_INJECT_ERROR_PARAMS *
     struct mm_struct *mm;
     uvm_va_block_t *va_block;
     uvm_va_block_test_t *va_block_test;
-    uvm_va_block_context_t *block_context = NULL;
     NV_STATUS status = NV_OK;
 
     mm = uvm_va_space_mm_or_current_retain_lock(va_space);
     uvm_va_space_down_read(va_space);
 
-    block_context = uvm_va_block_context_alloc(mm);
-    if (!block_context) {
-        status = NV_ERR_NO_MEMORY;
-        goto out;
-    }
+    if (mm)
+        status = uvm_va_block_find_create(va_space, params->lookup_address, NULL, &va_block);
+    else
+        status = uvm_va_block_find_create_managed(va_space, params->lookup_address, &va_block);
 
-    status = uvm_va_block_find_create(va_space, params->lookup_address, block_context, &va_block);
     if (status != NV_OK)
         goto out;
 
@@ -11801,7 +11767,6 @@ block_unlock:
 out:
     uvm_va_space_up_read(va_space);
     uvm_va_space_mm_or_current_release_unlock(va_space, mm);
-    uvm_va_block_context_free(block_context);
     return status;
 }
 
@@ -11872,7 +11837,11 @@ NV_STATUS uvm_test_change_pte_mapping(UVM_TEST_CHANGE_PTE_MAPPING_PARAMS *params
         goto out;
     }
 
-    status = uvm_va_block_find_create(va_space, params->va, block_context, &block);
+    if (mm)
+        status = uvm_va_block_find_create(va_space, params->va, &block_context->hmm.vma, &block);
+    else
+        status = uvm_va_block_find_create_managed(va_space, params->va, &block);
+
     if (status != NV_OK)
         goto out;
 
@@ -11898,8 +11867,6 @@ NV_STATUS uvm_test_change_pte_mapping(UVM_TEST_CHANGE_PTE_MAPPING_PARAMS *params
         status = NV_ERR_INVALID_OPERATION;
         goto out_block;
     }
-
-    block_context->policy = uvm_va_policy_get(block, params->va);
 
     if (new_prot == UVM_PROT_NONE) {
         status = uvm_va_block_unmap(block, block_context, id, region, NULL, &block->tracker);

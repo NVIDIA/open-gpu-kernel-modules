@@ -886,7 +886,6 @@ spdmDeviceInit_GH100
 
     // Ucode is responsible for setting DMA index.
     pCcInitCtx->guestId            = pSpdm->guestId;
-    pCcInitCtx->rmBufferSizeInByte = NV_RM_BUFFER_SIZE_IN_BYTE;
     NvU64_ALIGN32_PACK(&pCcInitCtx->dmaAddr, &pIOContext->dmaAddr);
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);

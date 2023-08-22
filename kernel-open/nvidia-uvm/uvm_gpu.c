@@ -1099,12 +1099,7 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
         return status;
     }
 
-    status = uvm_conf_computing_init_parent_gpu(parent_gpu);
-    if (status != NV_OK) {
-        UVM_ERR_PRINT("Confidential computing: %s, GPU %s\n",
-                      nvstatusToString(status), parent_gpu->name);
-        return status;
-    }
+    uvm_conf_computing_check_parent_gpu(parent_gpu);
 
     parent_gpu->pci_dev = gpu_platform_info->pci_dev;
     parent_gpu->closest_cpu_numa_node = dev_to_node(&parent_gpu->pci_dev->dev);

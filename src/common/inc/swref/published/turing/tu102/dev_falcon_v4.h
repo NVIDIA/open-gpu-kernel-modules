@@ -110,7 +110,18 @@
 #define NV_PFALCON_FALCON_DMEMC_AINCW                                                                  24:24          /* RWIVF */
 #define NV_PFALCON_FALCON_DMEMC_AINCW_TRUE                                                             0x00000001     /* RW--V */
 #define NV_PFALCON_FALCON_DMEMC_AINCW_FALSE                                                            0x00000000     /* RW--V */
+#define NV_PFALCON_FALCON_DMEMC_AINCR                                                                  25:25          /* RWIVF */
+#define NV_PFALCON_FALCON_DMEMC_AINCR_TRUE                                                             0x00000001     /* RW--V */
+#define NV_PFALCON_FALCON_DMEMC_AINCR_FALSE                                                            0x00000000     /* RW--V */
 #define NV_PFALCON_FALCON_DMEMD(i)                                                                     (0x000001c4+(i)*8) /* RW-4A */
 #define NV_PFALCON_FALCON_DMEMD_DATA                                                                   31:0           /* RW-VF */
+#define NV_PFALCON_FALCON_COMMON_SCRATCH_GROUP_0(i)                                                    (0x00000300+(i)*4) /* RW-4A */
+#define NV_PFALCON_FALCON_COMMON_SCRATCH_GROUP_0__SIZE_1                                               4              /*       */
+#define NV_PFALCON_FALCON_COMMON_SCRATCH_GROUP_1(i)                                                    (0x00000310+(i)*4) /* RW-4A */
+#define NV_PFALCON_FALCON_COMMON_SCRATCH_GROUP_1__SIZE_1                                               4              /*       */
+#define NV_PFALCON_FALCON_COMMON_SCRATCH_GROUP_2(i)                                                    (0x00000320+(i)*4) /* RW-4A */
+#define NV_PFALCON_FALCON_COMMON_SCRATCH_GROUP_2__SIZE_1                                               4              /*       */
+#define NV_PFALCON_FALCON_COMMON_SCRATCH_GROUP_3(i)                                                    (0x00000330+(i)*4) /* RW-4A */
+#define NV_PFALCON_FALCON_COMMON_SCRATCH_GROUP_3__SIZE_1                                               4              /*       */
 
 #endif // __tu102_dev_falcon_v4_h__

@@ -100,6 +100,9 @@ bool uvm_va_policy_is_read_duplicate(const uvm_va_policy_t *policy, uvm_va_space
 // Locking: The va_block lock must be held.
 const uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr);
 
+// Same as above but asserts the policy covers the whole region
+const uvm_va_policy_t *uvm_va_policy_get_region(uvm_va_block_t *va_block, uvm_va_block_region_t region);
+
 // Return a uvm_va_policy_node_t given a uvm_va_policy_t pointer.
 static const uvm_va_policy_node_t *uvm_va_policy_node_from_policy(const uvm_va_policy_t *policy)
 {

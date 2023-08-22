@@ -1009,6 +1009,7 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
         NvU64 address = uvm_va_block_cpu_page_address(va_block, page_index);
         bool read_duplicate = false;
         uvm_processor_id_t new_residency;
+        const uvm_va_policy_t *policy;
 
         // Ensure that the migratability iterator covers the current address
         while (iter.end < address)
@@ -1035,21 +1036,23 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
 
         // If the underlying VMA is gone, skip HMM migrations.
         if (uvm_va_block_is_hmm(va_block)) {
-            status = uvm_hmm_find_vma(&service_context->block_context, address);
+            status = uvm_hmm_find_vma(service_context->block_context.mm,
+                                      &service_context->block_context.hmm.vma,
+                                      address);
             if (status == NV_ERR_INVALID_ADDRESS)
                 continue;
 
             UVM_ASSERT(status == NV_OK);
         }
 
-        service_context->block_context.policy = uvm_va_policy_get(va_block, address);
+        policy = uvm_va_policy_get(va_block, address);
 
         new_residency = uvm_va_block_select_residency(va_block,
                                                       &service_context->block_context,
                                                       page_index,
                                                       processor,
                                                       uvm_fault_access_type_mask_bit(UVM_FAULT_ACCESS_TYPE_PREFETCH),
-                                                      service_context->block_context.policy,
+                                                      policy,
                                                       &thrashing_hint,
                                                       UVM_SERVICE_OPERATION_ACCESS_COUNTERS,
                                                       &read_duplicate);
@@ -1094,12 +1097,17 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
         if (!uvm_processor_mask_empty(&service_context->resident_processors)) {
             while (first_page_index <= last_page_index) {
                 uvm_page_index_t outer = last_page_index + 1;
+                const uvm_va_policy_t *policy;
 
                 if (uvm_va_block_is_hmm(va_block)) {
-                    status = uvm_hmm_find_policy_vma_and_outer(va_block,
-                                                               &service_context->block_context,
-                                                               first_page_index,
-                                                               &outer);
+                    status = NV_ERR_INVALID_ADDRESS;
+                    if (service_context->block_context.mm) {
+                        status = uvm_hmm_find_policy_vma_and_outer(va_block,
+                                                                   &service_context->block_context.hmm.vma,
+                                                                   first_page_index,
+                                                                   &policy,
+                                                                   &outer);
+                    }
                     if (status != NV_OK)
                         break;
                 }

@@ -6341,6 +6341,21 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMPOLICY_HAS_HOME_NODE" "" "types"
         ;;
 
+        mmu_interval_notifier)
+            #
+            # Determine if mmu_interval_notifier struct is present or not
+            #
+            # Added by commit 99cb252f5 ("mm/mmu_notifier: add an interval tree
+            # notifier") in v5.10 (2019-11-12).
+            #
+            CODE="
+            #include <linux/mmu_notifier.h>
+            struct mmu_interval_notifier interval_notifier;
+            "
+
+            compile_check_conftest "$CODE" "NV_MMU_INTERVAL_NOTIFIER" "" "types"
+        ;;
+
         # When adding a new conftest entry, please use the correct format for
         # specifying the relevant upstream Linux kernel commit.
         #

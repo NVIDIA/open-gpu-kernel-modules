@@ -160,7 +160,7 @@ static NV_STATUS preferred_location_unmap_remote_pages(uvm_va_block_t *va_block,
     NV_STATUS status = NV_OK;
     NV_STATUS tracker_status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
-    const uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = uvm_va_policy_get_region(va_block, region);
     uvm_processor_id_t preferred_location = policy->preferred_location;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     const uvm_page_mask_t *mapped_mask;
@@ -278,6 +278,9 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
         UVM_ASSERT(va_range_last->node.end >= last_address);
         return NV_OK;
     }
+
+    if (!mm)
+        return NV_ERR_INVALID_ADDRESS;
 
     return uvm_hmm_set_preferred_location(va_space, preferred_location, base, last_address, out_tracker);
 }
@@ -445,7 +448,6 @@ NV_STATUS uvm_va_block_set_accessed_by_locked(uvm_va_block_t *va_block,
     NV_STATUS tracker_status;
 
     uvm_assert_mutex_locked(&va_block->lock);
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, va_block_context->policy, region));
 
     status = uvm_va_block_add_mappings(va_block,
                                        va_block_context,
@@ -467,13 +469,13 @@ NV_STATUS uvm_va_block_set_accessed_by(uvm_va_block_t *va_block,
     uvm_va_block_region_t region = uvm_va_block_region_from_block(va_block);
     NV_STATUS status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
+    uvm_va_policy_t *policy = uvm_va_range_get_policy(va_block->va_range);
 
     UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
-    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
 
     // Read duplication takes precedence over SetAccessedBy. Do not add mappings
     // if read duplication is enabled.
-    if (uvm_va_policy_is_read_duplicate(va_block_context->policy, va_space))
+    if (uvm_va_policy_is_read_duplicate(policy, va_space))
         return NV_OK;
 
     status = UVM_VA_BLOCK_LOCK_RETRY(va_block,
@@ -592,8 +594,15 @@ static NV_STATUS accessed_by_set(uvm_va_space_t *va_space,
         UVM_ASSERT(va_range_last->node.end >= last_address);
     }
     else {
+        // NULL mm case already filtered by uvm_api_range_type_check()
+        UVM_ASSERT(mm);
         UVM_ASSERT(type == UVM_API_RANGE_TYPE_HMM);
-        status = uvm_hmm_set_accessed_by(va_space, processor_id, set_bit, base, last_address, &local_tracker);
+        status = uvm_hmm_set_accessed_by(va_space,
+                                         processor_id,
+                                         set_bit,
+                                         base,
+                                         last_address,
+                                         &local_tracker);
     }
 
 done:
@@ -656,7 +665,6 @@ NV_STATUS uvm_va_block_set_read_duplication(uvm_va_block_t *va_block,
 
     // TODO: Bug 3660922: need to implement HMM read duplication support.
     UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
-    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
 
     status = UVM_VA_BLOCK_LOCK_RETRY(va_block, &va_block_retry,
                                      va_block_set_read_duplication_locked(va_block,
@@ -675,7 +683,7 @@ static NV_STATUS va_block_unset_read_duplication_locked(uvm_va_block_t *va_block
     uvm_processor_id_t processor_id;
     uvm_va_block_region_t block_region = uvm_va_block_region_from_block(va_block);
     uvm_page_mask_t *break_read_duplication_pages = &va_block_context->caller_page_mask;
-    const uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = uvm_va_range_get_policy(va_block->va_range);
     uvm_processor_id_t preferred_location = policy->preferred_location;
     uvm_processor_mask_t accessed_by = policy->accessed_by;
 
@@ -757,7 +765,6 @@ NV_STATUS uvm_va_block_unset_read_duplication(uvm_va_block_t *va_block,
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
 
     UVM_ASSERT(!uvm_va_block_is_hmm(va_block));
-    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_block->va_range));
 
     // Restore all SetAccessedBy mappings
     status = UVM_VA_BLOCK_LOCK_RETRY(va_block, &va_block_retry,
@@ -915,7 +922,6 @@ static NV_STATUS system_wide_atomics_set(uvm_va_space_t *va_space, const NvProce
             if (va_range->type != UVM_VA_RANGE_TYPE_MANAGED)
                 continue;
 
-            va_block_context->policy = uvm_va_range_get_policy(va_range);
             for_each_va_block_in_va_range(va_range, va_block) {
                 uvm_page_mask_t *non_resident_pages = &va_block_context->caller_page_mask;
 

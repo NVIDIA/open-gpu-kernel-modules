@@ -71,11 +71,6 @@ static void uvm_unregister_callbacks(void)
     }
 }
 
-static void sev_init(const UvmPlatformInfo *platform_info)
-{
-    g_uvm_global.sev_enabled = platform_info->sevEnabled;
-}
-
 NV_STATUS uvm_global_init(void)
 {
     NV_STATUS status;
@@ -124,8 +119,7 @@ NV_STATUS uvm_global_init(void)
 
     uvm_ats_init(&platform_info);
     g_uvm_global.num_simulated_devices = 0;
-
-    sev_init(&platform_info);
+    g_uvm_global.conf_computing_enabled = platform_info.confComputingEnabled;
 
     status = uvm_gpu_init();
     if (status != NV_OK) {

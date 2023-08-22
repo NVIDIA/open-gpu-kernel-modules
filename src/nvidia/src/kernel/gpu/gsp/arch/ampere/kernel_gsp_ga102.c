@@ -28,6 +28,8 @@
 #include "gpu/gsp/kernel_gsp.h"
 
 #include "gpu/bus/kern_bus.h"
+#include "gpu/conf_compute/conf_compute.h"
+#include "nverror.h"
 #include "rmgspseq.h"
 #include "vgpu/rpc.h"
 
@@ -60,6 +62,22 @@ kgspConfigureFalcon_GA102
     falconConfig.pmcEnableMask      = 0;
     falconConfig.bIsPmcDeviceEngine = NV_FALSE;
     falconConfig.physEngDesc        = ENG_GSP;
+
+    // Enable CrashCat monitoring
+    falconConfig.crashcatEngConfig.bEnable = NV_TRUE;
+    falconConfig.crashcatEngConfig.pName = MAKE_NV_PRINTF_STR("GSP");
+    falconConfig.crashcatEngConfig.errorId = GSP_ERROR;
+
+    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+    {
+        // No CrashCat queue when CC is enabled, as it's not encrypted
+        falconConfig.crashcatEngConfig.allocQueueSize = 0;
+    }
+    else
+    {
+        falconConfig.crashcatEngConfig.allocQueueSize = RM_PAGE_SIZE;
+    }
 
     kflcnConfigureEngine(pGpu, staticCast(pKernelGsp, KernelFalcon), &falconConfig);
 }

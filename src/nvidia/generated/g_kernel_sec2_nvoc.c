@@ -19,6 +19,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_IntrService;
 
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_CrashCatEngine;
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelCrashCatEngine;
+
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelFalcon;
 
 void __nvoc_init_KernelSec2(KernelSec2*, RmHalspecOwner* );
@@ -52,6 +56,18 @@ static const struct NVOC_RTTI __nvoc_rtti_KernelSec2_IntrService = {
     /*offset=*/             NV_OFFSETOF(KernelSec2, __nvoc_base_IntrService),
 };
 
+static const struct NVOC_RTTI __nvoc_rtti_KernelSec2_CrashCatEngine = {
+    /*pClassDef=*/          &__nvoc_class_def_CrashCatEngine,
+    /*dtor=*/               &__nvoc_destructFromBase,
+    /*offset=*/             NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_base_CrashCatEngine),
+};
+
+static const struct NVOC_RTTI __nvoc_rtti_KernelSec2_KernelCrashCatEngine = {
+    /*pClassDef=*/          &__nvoc_class_def_KernelCrashCatEngine,
+    /*dtor=*/               &__nvoc_destructFromBase,
+    /*offset=*/             NV_OFFSETOF(KernelSec2, __nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine),
+};
+
 static const struct NVOC_RTTI __nvoc_rtti_KernelSec2_KernelFalcon = {
     /*pClassDef=*/          &__nvoc_class_def_KernelFalcon,
     /*dtor=*/               &__nvoc_destructFromBase,
@@ -59,10 +75,12 @@ static const struct NVOC_RTTI __nvoc_rtti_KernelSec2_KernelFalcon = {
 };
 
 static const struct NVOC_CASTINFO __nvoc_castinfo_KernelSec2 = {
-    /*numRelatives=*/       5,
+    /*numRelatives=*/       7,
     /*relatives=*/ {
         &__nvoc_rtti_KernelSec2_KernelSec2,
         &__nvoc_rtti_KernelSec2_KernelFalcon,
+        &__nvoc_rtti_KernelSec2_KernelCrashCatEngine,
+        &__nvoc_rtti_KernelSec2_CrashCatEngine,
         &__nvoc_rtti_KernelSec2_IntrService,
         &__nvoc_rtti_KernelSec2_OBJENGSTATE,
         &__nvoc_rtti_KernelSec2_Object,
@@ -104,8 +122,76 @@ static NV_STATUS __nvoc_thunk_KernelSec2_engstateStateLoad(struct OBJGPU *pGpu, 
     return ksec2StateLoad(pGpu, (struct KernelSec2 *)(((unsigned char *)pKernelSec2) - __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg0);
 }
 
+static NvBool __nvoc_thunk_KernelCrashCatEngine_ksec2Configured(struct KernelSec2 *arg0) {
+    return kcrashcatEngineConfigured((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset));
+}
+
+static NvU32 __nvoc_thunk_KernelCrashCatEngine_ksec2PriRead(struct KernelSec2 *arg0, NvU32 offset) {
+    return kcrashcatEnginePriRead((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset), offset);
+}
+
+static void __nvoc_thunk_KernelFalcon_ksec2RegWrite(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 offset, NvU32 data) {
+    kflcnRegWrite(pGpu, (struct KernelFalcon *)(((unsigned char *)pKernelFlcn) + __nvoc_rtti_KernelSec2_KernelFalcon.offset), offset, data);
+}
+
+static NvU32 __nvoc_thunk_KernelFalcon_ksec2MaskDmemAddr(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 addr) {
+    return kflcnMaskDmemAddr(pGpu, (struct KernelFalcon *)(((unsigned char *)pKernelFlcn) + __nvoc_rtti_KernelSec2_KernelFalcon.offset), addr);
+}
+
+static void __nvoc_thunk_OBJENGSTATE_ksec2StateDestroy(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
+}
+
+static void __nvoc_thunk_KernelCrashCatEngine_ksec2Vprintf(struct KernelSec2 *arg0, NvBool bReportStart, const char *fmt, va_list args) {
+    kcrashcatEngineVprintf((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset), bReportStart, fmt, args);
+}
+
+static NvBool __nvoc_thunk_IntrService_ksec2ClearInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceClearInterruptArguments *pParams) {
+    return intrservClearInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_KernelSec2_IntrService.offset), pParams);
+}
+
+static void __nvoc_thunk_KernelCrashCatEngine_ksec2PriWrite(struct KernelSec2 *arg0, NvU32 offset, NvU32 data) {
+    kcrashcatEnginePriWrite((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset), offset, data);
+}
+
+static void *__nvoc_thunk_KernelCrashCatEngine_ksec2MapBufferDescriptor(struct KernelSec2 *arg0, CrashCatBufferDescriptor *pBufDesc) {
+    return kcrashcatEngineMapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset), pBufDesc);
+}
+
+static void __nvoc_thunk_KernelCrashCatEngine_ksec2SyncBufferDescriptor(struct KernelSec2 *arg0, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size) {
+    kcrashcatEngineSyncBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset), pBufDesc, offset, size);
+}
+
+static NvU32 __nvoc_thunk_KernelFalcon_ksec2RegRead(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 offset) {
+    return kflcnRegRead(pGpu, (struct KernelFalcon *)(((unsigned char *)pKernelFlcn) + __nvoc_rtti_KernelSec2_KernelFalcon.offset), offset);
+}
+
+static NvBool __nvoc_thunk_OBJENGSTATE_ksec2IsPresent(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
+}
+
+static NvU32 __nvoc_thunk_IntrService_ksec2ServiceInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceServiceInterruptArguments *pParams) {
+    return intrservServiceInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_KernelSec2_IntrService.offset), pParams);
+}
+
+static void __nvoc_thunk_KernelCrashCatEngine_ksec2ReadEmem(struct KernelSec2 *arg0, NvU64 offset, NvU64 size, void *pBuf) {
+    kcrashcatEngineReadEmem((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset), offset, size, pBuf);
+}
+
+static const NvU32 *__nvoc_thunk_KernelCrashCatEngine_ksec2GetScratchOffsets(struct KernelSec2 *arg0, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
+    return kcrashcatEngineGetScratchOffsets((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset), scratchGroupId);
+}
+
+static void __nvoc_thunk_KernelCrashCatEngine_ksec2Unload(struct KernelSec2 *arg0) {
+    kcrashcatEngineUnload((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset));
+}
+
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StateUnload(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
     return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg0);
+}
+
+static NvU32 __nvoc_thunk_KernelCrashCatEngine_ksec2GetWFL0Offset(struct KernelSec2 *arg0) {
+    return kcrashcatEngineGetWFL0Offset((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset));
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StateInitLocked(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
@@ -118,10 +204,6 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StatePreLoad(POBJGPU pGpu, struct
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StatePostUnload(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg0);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_ksec2StateDestroy(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StatePreUnload(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
@@ -144,20 +226,16 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StatePreInitUnlocked(POBJGPU pGpu
     return engstateStatePreInitUnlocked(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
 }
 
-static NvBool __nvoc_thunk_IntrService_ksec2ClearInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return intrservClearInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_KernelSec2_IntrService.offset), pParams);
-}
-
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_ksec2StatePostLoad(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
     return engstateStatePostLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg0);
 }
 
-static NvBool __nvoc_thunk_OBJENGSTATE_ksec2IsPresent(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
-    return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelSec2_OBJENGSTATE.offset));
+static void __nvoc_thunk_KernelCrashCatEngine_ksec2UnmapBufferDescriptor(struct KernelSec2 *arg0, CrashCatBufferDescriptor *pBufDesc) {
+    kcrashcatEngineUnmapBufferDescriptor((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset), pBufDesc);
 }
 
-static NvU32 __nvoc_thunk_IntrService_ksec2ServiceInterrupt(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceServiceInterruptArguments *pParams) {
-    return intrservServiceInterrupt(pGpu, (struct IntrService *)(((unsigned char *)pIntrService) + __nvoc_rtti_KernelSec2_IntrService.offset), pParams);
+static void __nvoc_thunk_KernelCrashCatEngine_ksec2ReadDmem(struct KernelSec2 *arg0, NvU32 offset, NvU32 size, void *pBuf) {
+    kcrashcatEngineReadDmem((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelSec2_KernelCrashCatEngine.offset), offset, size, pBuf);
 }
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelSec2 = 
@@ -313,15 +391,47 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_thunk_KernelSec2_engstateStateLoad;
 
+    pThis->__ksec2Configured__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2Configured;
+
+    pThis->__ksec2PriRead__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2PriRead;
+
+    pThis->__ksec2RegWrite__ = &__nvoc_thunk_KernelFalcon_ksec2RegWrite;
+
+    pThis->__ksec2MaskDmemAddr__ = &__nvoc_thunk_KernelFalcon_ksec2MaskDmemAddr;
+
+    pThis->__ksec2StateDestroy__ = &__nvoc_thunk_OBJENGSTATE_ksec2StateDestroy;
+
+    pThis->__ksec2Vprintf__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2Vprintf;
+
+    pThis->__ksec2ClearInterrupt__ = &__nvoc_thunk_IntrService_ksec2ClearInterrupt;
+
+    pThis->__ksec2PriWrite__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2PriWrite;
+
+    pThis->__ksec2MapBufferDescriptor__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2MapBufferDescriptor;
+
+    pThis->__ksec2SyncBufferDescriptor__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2SyncBufferDescriptor;
+
+    pThis->__ksec2RegRead__ = &__nvoc_thunk_KernelFalcon_ksec2RegRead;
+
+    pThis->__ksec2IsPresent__ = &__nvoc_thunk_OBJENGSTATE_ksec2IsPresent;
+
+    pThis->__ksec2ServiceInterrupt__ = &__nvoc_thunk_IntrService_ksec2ServiceInterrupt;
+
+    pThis->__ksec2ReadEmem__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2ReadEmem;
+
+    pThis->__ksec2GetScratchOffsets__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2GetScratchOffsets;
+
+    pThis->__ksec2Unload__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2Unload;
+
     pThis->__ksec2StateUnload__ = &__nvoc_thunk_OBJENGSTATE_ksec2StateUnload;
+
+    pThis->__ksec2GetWFL0Offset__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2GetWFL0Offset;
 
     pThis->__ksec2StateInitLocked__ = &__nvoc_thunk_OBJENGSTATE_ksec2StateInitLocked;
 
     pThis->__ksec2StatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_ksec2StatePreLoad;
 
     pThis->__ksec2StatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_ksec2StatePostUnload;
-
-    pThis->__ksec2StateDestroy__ = &__nvoc_thunk_OBJENGSTATE_ksec2StateDestroy;
 
     pThis->__ksec2StatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_ksec2StatePreUnload;
 
@@ -333,13 +443,11 @@ static void __nvoc_init_funcTable_KernelSec2_1(KernelSec2 *pThis, RmHalspecOwner
 
     pThis->__ksec2StatePreInitUnlocked__ = &__nvoc_thunk_OBJENGSTATE_ksec2StatePreInitUnlocked;
 
-    pThis->__ksec2ClearInterrupt__ = &__nvoc_thunk_IntrService_ksec2ClearInterrupt;
-
     pThis->__ksec2StatePostLoad__ = &__nvoc_thunk_OBJENGSTATE_ksec2StatePostLoad;
 
-    pThis->__ksec2IsPresent__ = &__nvoc_thunk_OBJENGSTATE_ksec2IsPresent;
+    pThis->__ksec2UnmapBufferDescriptor__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2UnmapBufferDescriptor;
 
-    pThis->__ksec2ServiceInterrupt__ = &__nvoc_thunk_IntrService_ksec2ServiceInterrupt;
+    pThis->__ksec2ReadDmem__ = &__nvoc_thunk_KernelCrashCatEngine_ksec2ReadDmem;
 }
 
 void __nvoc_init_funcTable_KernelSec2(KernelSec2 *pThis, RmHalspecOwner *pRmhalspecowner) {
@@ -354,6 +462,8 @@ void __nvoc_init_KernelSec2(KernelSec2 *pThis, RmHalspecOwner *pRmhalspecowner) 
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;
     pThis->__nvoc_pbase_OBJENGSTATE = &pThis->__nvoc_base_OBJENGSTATE;
     pThis->__nvoc_pbase_IntrService = &pThis->__nvoc_base_IntrService;
+    pThis->__nvoc_pbase_CrashCatEngine = &pThis->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__nvoc_base_CrashCatEngine;
+    pThis->__nvoc_pbase_KernelCrashCatEngine = &pThis->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine;
     pThis->__nvoc_pbase_KernelFalcon = &pThis->__nvoc_base_KernelFalcon;
     __nvoc_init_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     __nvoc_init_IntrService(&pThis->__nvoc_base_IntrService);

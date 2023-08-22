@@ -906,11 +906,10 @@ error:
 // --------------|-------------------------||----------------|----------------
 //    vidmem     |           -             ||    vidmem      |      false
 //    sysmem     |           -             ||    sysmem      |      false
-//    default    |        <not set>        ||    vidmem      |      true (1)
+//    default    |        <not set>        ||    vidmem      |      true
 //    default    |         vidmem          ||    vidmem      |      false
 //    default    |         sysmem          ||    sysmem      |      false
 //
-// (1) When SEV mode is enabled, the fallback path is disabled.
 //
 // In SR-IOV heavy the the page tree must be in vidmem, to prevent guest drivers
 // from updating GPU page tables without hypervisor knowledge.
@@ -926,28 +925,27 @@ error:
 //
 static void page_tree_set_location(uvm_page_tree_t *tree, uvm_aperture_t location)
 {
-    bool should_location_be_vidmem;
     UVM_ASSERT(tree->gpu != NULL);
     UVM_ASSERT_MSG((location == UVM_APERTURE_VID) ||
                    (location == UVM_APERTURE_SYS) ||
                    (location == UVM_APERTURE_DEFAULT),
                    "Invalid location %s (%d)\n", uvm_aperture_string(location), (int)location);
 
-    should_location_be_vidmem = uvm_gpu_is_virt_mode_sriov_heavy(tree->gpu)
-                                || uvm_conf_computing_mode_enabled(tree->gpu);
-
     // The page tree of a "fake" GPU used during page tree testing can be in
-    // sysmem even if should_location_be_vidmem is true. A fake GPU can be
-    // identified by having no channel manager.
-    if ((tree->gpu->channel_manager != NULL) && should_location_be_vidmem)
-        UVM_ASSERT(location == UVM_APERTURE_VID);
+    // sysmem in scenarios where a "real" GPU must be in vidmem. Fake GPUs can
+    // be identified by having no channel manager.
+    if (tree->gpu->channel_manager != NULL) {
+
+        if (uvm_gpu_is_virt_mode_sriov_heavy(tree->gpu))
+            UVM_ASSERT(location == UVM_APERTURE_VID);
+        else if (uvm_conf_computing_mode_enabled(tree->gpu))
+            UVM_ASSERT(location == UVM_APERTURE_VID);
+    }
 
     if (location == UVM_APERTURE_DEFAULT) {
         if (page_table_aperture == UVM_APERTURE_DEFAULT) {
             tree->location = UVM_APERTURE_VID;
-
-            // See the comment (1) above.
-            tree->location_sys_fallback = !g_uvm_global.sev_enabled;
+            tree->location_sys_fallback = true;
         }
         else {
             tree->location = page_table_aperture;

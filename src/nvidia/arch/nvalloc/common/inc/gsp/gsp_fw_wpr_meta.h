@@ -137,28 +137,51 @@ typedef struct
     // Boot count.  Used to determine whether to load the firmware image.
     NvU64 bootCount;
 
-    // TODO: the partitionRpc* fields below do not really belong in this
-    //       structure. The values are patched in by the partition bootstrapper
-    //       when GSP-RM is booted in a partition, and this structure was a
-    //       convenient place for the bootstrapper to access them. These should
-    //       be moved to a different comm. mechanism between the bootstrapper
-    //       and the GSP-RM tasks.
+    // This union is organized the way it is to start at an 8-byte boundary and achieve natural
+    // packing of the internal struct fields.
+    union
+    {
+        struct
+        {
+            // TODO: the partitionRpc* fields below do not really belong in this
+            //       structure. The values are patched in by the partition bootstrapper
+            //       when GSP-RM is booted in a partition, and this structure was a
+            //       convenient place for the bootstrapper to access them. These should
+            //       be moved to a different comm. mechanism between the bootstrapper
+            //       and the GSP-RM tasks.
 
-    // Shared partition RPC memory (physical address)
-    NvU64 partitionRpcAddr;
+            // Shared partition RPC memory (physical address)
+            NvU64 partitionRpcAddr;
 
-    // Offsets relative to partitionRpcAddr
-    NvU16 partitionRpcRequestOffset;
-    NvU16 partitionRpcReplyOffset;
+            // Offsets relative to partitionRpcAddr
+            NvU16 partitionRpcRequestOffset;
+            NvU16 partitionRpcReplyOffset;
 
-    // Code section and dataSection offset and size.
-    NvU32 elfCodeOffset;
-    NvU32 elfDataOffset;
-    NvU32 elfCodeSize;
-    NvU32 elfDataSize;
+            // Code section and dataSection offset and size.
+            NvU32 elfCodeOffset;
+            NvU32 elfDataOffset;
+            NvU32 elfCodeSize;
+            NvU32 elfDataSize;
 
-    // Used during GSP-RM resume to check for revocation
-    NvU32 lsUcodeVersion;
+            // Used during GSP-RM resume to check for revocation
+            NvU32 lsUcodeVersion;
+        };
+
+        struct
+        {
+            // Pad for the partitionRpc* fields, plus 4 bytes
+            NvU32 partitionRpcPadding[4];
+
+            // CrashCat (contiguous) buffer size/location - occupies same bytes as the
+            // elf(Code|Data)(Offset|Size) fields above.
+            // TODO: move to GSP_FMC_INIT_PARAMS
+            NvU64 sysmemAddrOfCrashReportQueue;
+            NvU32 sizeOfCrashReportQueue;
+
+            // Pad for the lsUcodeVersion field
+            NvU32 lsUcodeVersionPadding[1];
+        };
+    };
 
     // Number of VF partitions allocating sub-heaps from the WPR heap
     // Used during boot to ensure the heap is adequately sized

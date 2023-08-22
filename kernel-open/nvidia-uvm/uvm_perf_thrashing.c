@@ -1095,7 +1095,7 @@ static NV_STATUS unmap_remote_pinned_pages(uvm_va_block_t *va_block,
     NV_STATUS tracker_status;
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     uvm_processor_id_t processor_id;
-    const uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = uvm_va_policy_get(va_block, uvm_va_block_region_start(va_block, region));
 
     uvm_assert_mutex_locked(&va_block->lock);
 
@@ -1141,10 +1141,9 @@ NV_STATUS uvm_perf_thrashing_unmap_remote_pinned_pages_all(uvm_va_block_t *va_bl
 {
     block_thrashing_info_t *block_thrashing;
     uvm_processor_mask_t unmap_processors;
-    const uvm_va_policy_t *policy = va_block_context->policy;
+    const uvm_va_policy_t *policy = uvm_va_policy_get_region(va_block, region);
 
     uvm_assert_mutex_locked(&va_block->lock);
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, policy, region));
 
     block_thrashing = thrashing_info_get(va_block);
     if (!block_thrashing || !block_thrashing->pages)
@@ -1867,8 +1866,6 @@ static void thrashing_unpin_pages(struct work_struct *work)
             UVM_ASSERT(uvm_page_mask_test(&block_thrashing->pinned_pages.mask, page_index));
 
             uvm_va_block_context_init(va_block_context, NULL);
-            va_block_context->policy =
-                uvm_va_policy_get(va_block, uvm_va_block_cpu_page_address(va_block, page_index));
 
             uvm_perf_thrashing_unmap_remote_pinned_pages_all(va_block,
                                                              va_block_context,
@@ -2122,8 +2119,6 @@ NV_STATUS uvm_test_set_page_thrashing_policy(UVM_TEST_SET_PAGE_THRASHING_POLICY_
             for_each_va_block_in_va_range(va_range, va_block) {
                 uvm_va_block_region_t va_block_region = uvm_va_block_region_from_block(va_block);
                 uvm_va_block_context_t *block_context = uvm_va_space_block_context(va_space, NULL);
-
-                block_context->policy = uvm_va_range_get_policy(va_range);
 
                 uvm_mutex_lock(&va_block->lock);
 

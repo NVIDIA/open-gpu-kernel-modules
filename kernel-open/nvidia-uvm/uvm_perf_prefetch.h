@@ -61,21 +61,41 @@ typedef struct
 // Global initialization function (no clean up needed).
 NV_STATUS uvm_perf_prefetch_init(void);
 
+// Returns whether prefetching is enabled in the VA space.
+// va_space cannot be NULL.
+bool uvm_perf_prefetch_enabled(uvm_va_space_t *va_space);
+
+// Return the prefetch mask with the pages that may be prefetched in a ATS
+// block. ATS block is a system allocated memory block with base aligned to
+// UVM_VA_BLOCK_SIZE and a maximum size of UVM_VA_BLOCK_SIZE. The faulted_pages
+// mask and faulted_region are the pages being faulted on the given residency.
+//
+// Only residency_mask can be NULL.
+//
+// Locking: The caller must hold the va_space lock.
+void uvm_perf_prefetch_compute_ats(uvm_va_space_t *va_space,
+                                   const uvm_page_mask_t *faulted_pages,
+                                   uvm_va_block_region_t faulted_region,
+                                   uvm_va_block_region_t max_prefetch_region,
+                                   const uvm_page_mask_t *residency_mask,
+                                   uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
+                                   uvm_page_mask_t *out_prefetch_mask);
+
 // Return a hint with the pages that may be prefetched in the block.
 // The faulted_pages mask and faulted_region are the pages being migrated to
 // the given residency.
-// va_block_context must not be NULL, va_block_context->policy must be valid,
-// and if the va_block is a HMM block, va_block_context->hmm.vma must be valid
-// which also means the va_block_context->mm is not NULL, retained, and locked
-// for at least read.
+// va_block_context must not be NULL, and if the va_block is a HMM
+// block, va_block_context->hmm.vma must be valid which also means the
+// va_block_context->mm is not NULL, retained, and locked for at least
+// read.
 // Locking: The caller must hold the va_space lock and va_block lock.
-void uvm_perf_prefetch_get_hint(uvm_va_block_t *va_block,
-                                uvm_va_block_context_t *va_block_context,
-                                uvm_processor_id_t new_residency,
-                                const uvm_page_mask_t *faulted_pages,
-                                uvm_va_block_region_t faulted_region,
-                                uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
-                                uvm_perf_prefetch_hint_t *out_hint);
+void uvm_perf_prefetch_get_hint_va_block(uvm_va_block_t *va_block,
+                                         uvm_va_block_context_t *va_block_context,
+                                         uvm_processor_id_t new_residency,
+                                         const uvm_page_mask_t *faulted_pages,
+                                         uvm_va_block_region_t faulted_region,
+                                         uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
+                                         uvm_perf_prefetch_hint_t *out_hint);
 
 void uvm_perf_prefetch_bitmap_tree_iter_init(const uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
                                              uvm_page_index_t page_index,

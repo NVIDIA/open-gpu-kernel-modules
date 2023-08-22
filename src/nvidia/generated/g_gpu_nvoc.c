@@ -266,6 +266,7 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
     {
         pThis->setProperty(pThis, PDB_PROP_GPU_CHIP_SUPPORTS_RTD3_DEF, ((NvBool)(0 == 0)));
     }
+    pThis->setProperty(pThis, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED, ((NvBool)(0 != 0)));
 
     pThis->boardId = ~0;
 

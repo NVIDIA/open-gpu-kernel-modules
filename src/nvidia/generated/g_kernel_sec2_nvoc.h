@@ -57,6 +57,8 @@ struct KernelSec2 {
     struct Object *__nvoc_pbase_Object;
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct IntrService *__nvoc_pbase_IntrService;
+    struct CrashCatEngine *__nvoc_pbase_CrashCatEngine;
+    struct KernelCrashCatEngine *__nvoc_pbase_KernelCrashCatEngine;
     struct KernelFalcon *__nvoc_pbase_KernelFalcon;
     struct KernelSec2 *__nvoc_pbase_KernelSec2;
     NV_STATUS (*__ksec2ConstructEngine__)(struct OBJGPU *, struct KernelSec2 *, ENGDESCRIPTOR);
@@ -69,20 +71,35 @@ struct KernelSec2 {
     const BINDATA_ARCHIVE *(*__ksec2GetBinArchiveBlUcode__)(struct OBJGPU *, struct KernelSec2 *);
     NV_STATUS (*__ksec2GetGenericBlUcode__)(struct OBJGPU *, struct KernelSec2 *, const RM_FLCN_BL_DESC **, const NvU8 **);
     const BINDATA_ARCHIVE *(*__ksec2GetBinArchiveSecurescrubUcode__)(struct OBJGPU *, struct KernelSec2 *);
+    NvBool (*__ksec2Configured__)(struct KernelSec2 *);
+    NvU32 (*__ksec2PriRead__)(struct KernelSec2 *, NvU32);
+    void (*__ksec2RegWrite__)(struct OBJGPU *, struct KernelSec2 *, NvU32, NvU32);
+    NvU32 (*__ksec2MaskDmemAddr__)(struct OBJGPU *, struct KernelSec2 *, NvU32);
+    void (*__ksec2StateDestroy__)(POBJGPU, struct KernelSec2 *);
+    void (*__ksec2Vprintf__)(struct KernelSec2 *, NvBool, const char *, va_list);
+    NvBool (*__ksec2ClearInterrupt__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceClearInterruptArguments *);
+    void (*__ksec2PriWrite__)(struct KernelSec2 *, NvU32, NvU32);
+    void *(*__ksec2MapBufferDescriptor__)(struct KernelSec2 *, CrashCatBufferDescriptor *);
+    void (*__ksec2SyncBufferDescriptor__)(struct KernelSec2 *, CrashCatBufferDescriptor *, NvU32, NvU32);
+    NvU32 (*__ksec2RegRead__)(struct OBJGPU *, struct KernelSec2 *, NvU32);
+    NvBool (*__ksec2IsPresent__)(POBJGPU, struct KernelSec2 *);
+    NvU32 (*__ksec2ServiceInterrupt__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceServiceInterruptArguments *);
+    void (*__ksec2ReadEmem__)(struct KernelSec2 *, NvU64, NvU64, void *);
+    const NvU32 *(*__ksec2GetScratchOffsets__)(struct KernelSec2 *, NV_CRASHCAT_SCRATCH_GROUP_ID);
+    void (*__ksec2Unload__)(struct KernelSec2 *);
     NV_STATUS (*__ksec2StateUnload__)(POBJGPU, struct KernelSec2 *, NvU32);
+    NvU32 (*__ksec2GetWFL0Offset__)(struct KernelSec2 *);
     NV_STATUS (*__ksec2StateInitLocked__)(POBJGPU, struct KernelSec2 *);
     NV_STATUS (*__ksec2StatePreLoad__)(POBJGPU, struct KernelSec2 *, NvU32);
     NV_STATUS (*__ksec2StatePostUnload__)(POBJGPU, struct KernelSec2 *, NvU32);
-    void (*__ksec2StateDestroy__)(POBJGPU, struct KernelSec2 *);
     NV_STATUS (*__ksec2StatePreUnload__)(POBJGPU, struct KernelSec2 *, NvU32);
     NV_STATUS (*__ksec2StateInitUnlocked__)(POBJGPU, struct KernelSec2 *);
     void (*__ksec2InitMissing__)(POBJGPU, struct KernelSec2 *);
     NV_STATUS (*__ksec2StatePreInitLocked__)(POBJGPU, struct KernelSec2 *);
     NV_STATUS (*__ksec2StatePreInitUnlocked__)(POBJGPU, struct KernelSec2 *);
-    NvBool (*__ksec2ClearInterrupt__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceClearInterruptArguments *);
     NV_STATUS (*__ksec2StatePostLoad__)(POBJGPU, struct KernelSec2 *, NvU32);
-    NvBool (*__ksec2IsPresent__)(POBJGPU, struct KernelSec2 *);
-    NvU32 (*__ksec2ServiceInterrupt__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceServiceInterruptArguments *);
+    void (*__ksec2UnmapBufferDescriptor__)(struct KernelSec2 *, CrashCatBufferDescriptor *);
+    void (*__ksec2ReadDmem__)(struct KernelSec2 *, NvU32, NvU32, void *);
     const RM_FLCN_BL_DESC *pGenericBlUcodeDesc;
     const NvU8 *pGenericBlUcodeImg;
 };
@@ -137,20 +154,35 @@ NV_STATUS __nvoc_objCreate_KernelSec2(KernelSec2**, Dynamic*, NvU32);
 #define ksec2GetGenericBlUcode_HAL(pGpu, pKernelSec2, ppDesc, ppImg) ksec2GetGenericBlUcode_DISPATCH(pGpu, pKernelSec2, ppDesc, ppImg)
 #define ksec2GetBinArchiveSecurescrubUcode(pGpu, pKernelSec2) ksec2GetBinArchiveSecurescrubUcode_DISPATCH(pGpu, pKernelSec2)
 #define ksec2GetBinArchiveSecurescrubUcode_HAL(pGpu, pKernelSec2) ksec2GetBinArchiveSecurescrubUcode_DISPATCH(pGpu, pKernelSec2)
+#define ksec2Configured(arg0) ksec2Configured_DISPATCH(arg0)
+#define ksec2PriRead(arg0, offset) ksec2PriRead_DISPATCH(arg0, offset)
+#define ksec2RegWrite(pGpu, pKernelFlcn, offset, data) ksec2RegWrite_DISPATCH(pGpu, pKernelFlcn, offset, data)
+#define ksec2MaskDmemAddr(pGpu, pKernelFlcn, addr) ksec2MaskDmemAddr_DISPATCH(pGpu, pKernelFlcn, addr)
+#define ksec2StateDestroy(pGpu, pEngstate) ksec2StateDestroy_DISPATCH(pGpu, pEngstate)
+#define ksec2Vprintf(arg0, bReportStart, fmt, args) ksec2Vprintf_DISPATCH(arg0, bReportStart, fmt, args)
+#define ksec2ClearInterrupt(pGpu, pIntrService, pParams) ksec2ClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
+#define ksec2PriWrite(arg0, offset, data) ksec2PriWrite_DISPATCH(arg0, offset, data)
+#define ksec2MapBufferDescriptor(arg0, pBufDesc) ksec2MapBufferDescriptor_DISPATCH(arg0, pBufDesc)
+#define ksec2SyncBufferDescriptor(arg0, pBufDesc, offset, size) ksec2SyncBufferDescriptor_DISPATCH(arg0, pBufDesc, offset, size)
+#define ksec2RegRead(pGpu, pKernelFlcn, offset) ksec2RegRead_DISPATCH(pGpu, pKernelFlcn, offset)
+#define ksec2IsPresent(pGpu, pEngstate) ksec2IsPresent_DISPATCH(pGpu, pEngstate)
+#define ksec2ServiceInterrupt(pGpu, pIntrService, pParams) ksec2ServiceInterrupt_DISPATCH(pGpu, pIntrService, pParams)
+#define ksec2ReadEmem(arg0, offset, size, pBuf) ksec2ReadEmem_DISPATCH(arg0, offset, size, pBuf)
+#define ksec2GetScratchOffsets(arg0, scratchGroupId) ksec2GetScratchOffsets_DISPATCH(arg0, scratchGroupId)
+#define ksec2Unload(arg0) ksec2Unload_DISPATCH(arg0)
 #define ksec2StateUnload(pGpu, pEngstate, arg0) ksec2StateUnload_DISPATCH(pGpu, pEngstate, arg0)
+#define ksec2GetWFL0Offset(arg0) ksec2GetWFL0Offset_DISPATCH(arg0)
 #define ksec2StateInitLocked(pGpu, pEngstate) ksec2StateInitLocked_DISPATCH(pGpu, pEngstate)
 #define ksec2StatePreLoad(pGpu, pEngstate, arg0) ksec2StatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define ksec2StatePostUnload(pGpu, pEngstate, arg0) ksec2StatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define ksec2StateDestroy(pGpu, pEngstate) ksec2StateDestroy_DISPATCH(pGpu, pEngstate)
 #define ksec2StatePreUnload(pGpu, pEngstate, arg0) ksec2StatePreUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define ksec2StateInitUnlocked(pGpu, pEngstate) ksec2StateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define ksec2InitMissing(pGpu, pEngstate) ksec2InitMissing_DISPATCH(pGpu, pEngstate)
 #define ksec2StatePreInitLocked(pGpu, pEngstate) ksec2StatePreInitLocked_DISPATCH(pGpu, pEngstate)
 #define ksec2StatePreInitUnlocked(pGpu, pEngstate) ksec2StatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
-#define ksec2ClearInterrupt(pGpu, pIntrService, pParams) ksec2ClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define ksec2StatePostLoad(pGpu, pEngstate, arg0) ksec2StatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
-#define ksec2IsPresent(pGpu, pEngstate) ksec2IsPresent_DISPATCH(pGpu, pEngstate)
-#define ksec2ServiceInterrupt(pGpu, pIntrService, pParams) ksec2ServiceInterrupt_DISPATCH(pGpu, pIntrService, pParams)
+#define ksec2UnmapBufferDescriptor(arg0, pBufDesc) ksec2UnmapBufferDescriptor_DISPATCH(arg0, pBufDesc)
+#define ksec2ReadDmem(arg0, offset, size, pBuf) ksec2ReadDmem_DISPATCH(arg0, offset, size, pBuf)
 NV_STATUS ksec2ConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg0);
 
 static inline NV_STATUS ksec2ConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, ENGDESCRIPTOR arg0) {
@@ -235,8 +267,76 @@ static inline const BINDATA_ARCHIVE *ksec2GetBinArchiveSecurescrubUcode_DISPATCH
     return pKernelSec2->__ksec2GetBinArchiveSecurescrubUcode__(pGpu, pKernelSec2);
 }
 
+static inline NvBool ksec2Configured_DISPATCH(struct KernelSec2 *arg0) {
+    return arg0->__ksec2Configured__(arg0);
+}
+
+static inline NvU32 ksec2PriRead_DISPATCH(struct KernelSec2 *arg0, NvU32 offset) {
+    return arg0->__ksec2PriRead__(arg0, offset);
+}
+
+static inline void ksec2RegWrite_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 offset, NvU32 data) {
+    pKernelFlcn->__ksec2RegWrite__(pGpu, pKernelFlcn, offset, data);
+}
+
+static inline NvU32 ksec2MaskDmemAddr_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 addr) {
+    return pKernelFlcn->__ksec2MaskDmemAddr__(pGpu, pKernelFlcn, addr);
+}
+
+static inline void ksec2StateDestroy_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+    pEngstate->__ksec2StateDestroy__(pGpu, pEngstate);
+}
+
+static inline void ksec2Vprintf_DISPATCH(struct KernelSec2 *arg0, NvBool bReportStart, const char *fmt, va_list args) {
+    arg0->__ksec2Vprintf__(arg0, bReportStart, fmt, args);
+}
+
+static inline NvBool ksec2ClearInterrupt_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceClearInterruptArguments *pParams) {
+    return pIntrService->__ksec2ClearInterrupt__(pGpu, pIntrService, pParams);
+}
+
+static inline void ksec2PriWrite_DISPATCH(struct KernelSec2 *arg0, NvU32 offset, NvU32 data) {
+    arg0->__ksec2PriWrite__(arg0, offset, data);
+}
+
+static inline void *ksec2MapBufferDescriptor_DISPATCH(struct KernelSec2 *arg0, CrashCatBufferDescriptor *pBufDesc) {
+    return arg0->__ksec2MapBufferDescriptor__(arg0, pBufDesc);
+}
+
+static inline void ksec2SyncBufferDescriptor_DISPATCH(struct KernelSec2 *arg0, CrashCatBufferDescriptor *pBufDesc, NvU32 offset, NvU32 size) {
+    arg0->__ksec2SyncBufferDescriptor__(arg0, pBufDesc, offset, size);
+}
+
+static inline NvU32 ksec2RegRead_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelFlcn, NvU32 offset) {
+    return pKernelFlcn->__ksec2RegRead__(pGpu, pKernelFlcn, offset);
+}
+
+static inline NvBool ksec2IsPresent_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
+    return pEngstate->__ksec2IsPresent__(pGpu, pEngstate);
+}
+
+static inline NvU32 ksec2ServiceInterrupt_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceServiceInterruptArguments *pParams) {
+    return pIntrService->__ksec2ServiceInterrupt__(pGpu, pIntrService, pParams);
+}
+
+static inline void ksec2ReadEmem_DISPATCH(struct KernelSec2 *arg0, NvU64 offset, NvU64 size, void *pBuf) {
+    arg0->__ksec2ReadEmem__(arg0, offset, size, pBuf);
+}
+
+static inline const NvU32 *ksec2GetScratchOffsets_DISPATCH(struct KernelSec2 *arg0, NV_CRASHCAT_SCRATCH_GROUP_ID scratchGroupId) {
+    return arg0->__ksec2GetScratchOffsets__(arg0, scratchGroupId);
+}
+
+static inline void ksec2Unload_DISPATCH(struct KernelSec2 *arg0) {
+    arg0->__ksec2Unload__(arg0);
+}
+
 static inline NV_STATUS ksec2StateUnload_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
     return pEngstate->__ksec2StateUnload__(pGpu, pEngstate, arg0);
+}
+
+static inline NvU32 ksec2GetWFL0Offset_DISPATCH(struct KernelSec2 *arg0) {
+    return arg0->__ksec2GetWFL0Offset__(arg0);
 }
 
 static inline NV_STATUS ksec2StateInitLocked_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
@@ -249,10 +349,6 @@ static inline NV_STATUS ksec2StatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelSe
 
 static inline NV_STATUS ksec2StatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
     return pEngstate->__ksec2StatePostUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline void ksec2StateDestroy_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
-    pEngstate->__ksec2StateDestroy__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS ksec2StatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
@@ -275,20 +371,16 @@ static inline NV_STATUS ksec2StatePreInitUnlocked_DISPATCH(POBJGPU pGpu, struct 
     return pEngstate->__ksec2StatePreInitUnlocked__(pGpu, pEngstate);
 }
 
-static inline NvBool ksec2ClearInterrupt_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceClearInterruptArguments *pParams) {
-    return pIntrService->__ksec2ClearInterrupt__(pGpu, pIntrService, pParams);
-}
-
 static inline NV_STATUS ksec2StatePostLoad_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate, NvU32 arg0) {
     return pEngstate->__ksec2StatePostLoad__(pGpu, pEngstate, arg0);
 }
 
-static inline NvBool ksec2IsPresent_DISPATCH(POBJGPU pGpu, struct KernelSec2 *pEngstate) {
-    return pEngstate->__ksec2IsPresent__(pGpu, pEngstate);
+static inline void ksec2UnmapBufferDescriptor_DISPATCH(struct KernelSec2 *arg0, CrashCatBufferDescriptor *pBufDesc) {
+    arg0->__ksec2UnmapBufferDescriptor__(arg0, pBufDesc);
 }
 
-static inline NvU32 ksec2ServiceInterrupt_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pIntrService, IntrServiceServiceInterruptArguments *pParams) {
-    return pIntrService->__ksec2ServiceInterrupt__(pGpu, pIntrService, pParams);
+static inline void ksec2ReadDmem_DISPATCH(struct KernelSec2 *arg0, NvU32 offset, NvU32 size, void *pBuf) {
+    arg0->__ksec2ReadDmem__(arg0, offset, size, pBuf);
 }
 
 void ksec2Destruct_IMPL(struct KernelSec2 *pKernelSec2);

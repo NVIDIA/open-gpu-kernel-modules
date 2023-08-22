@@ -50,22 +50,6 @@
 
 using namespace DisplayPort;
 
-// These wrappers are specifically for DSC PPS library malloc and free callbacks
-// Pointer to these functions are populated to dscMalloc/dscFree in DSC_InitializeCallBack and it is initialized from both DPLib and HDMiPacketLib.
-// In HDMI case, callback function for malloc/free needs client handle so to match function prototype, in DP case, adding these wrappers.
-extern "C" void * dpMallocCb(const void *clientHandle, NvLength size);
-extern "C" void dpFreeCb(const void *clientHandle, void *pMemPtr);
-
-extern "C" void * dpMallocCb(const void *clientHandle, NvLength size)
-{
-    return dpMalloc(size);
-}
-
-extern "C" void dpFreeCb(const void *clientHandle, void *pMemPtr)
-{
-    dpFree(pMemPtr);
-}
-
 ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Connector::EventSink * sink)
     : main(main),
       auxBus(auxBus),
@@ -158,14 +142,6 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
     hal->applyRegkeyOverrides(dpRegkeyDatabase);
 
     highestAssessedLC = getMaxLinkConfig();
-
-    // Initialize DSC callbacks
-    DSC_CALLBACK callback;
-    callback.clientHandle   = NULL;
-    callback.dscPrint       = NULL;
-    callback.dscMalloc      = dpMallocCb;
-    callback.dscFree        = dpFreeCb;
-    DSC_InitializeCallback(callback);
 }
 
 void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatabase)
@@ -1309,10 +1285,13 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                 warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
                 warData.connectorType = DSC_DP;
 
+                DSC_GENERATE_PPS_OPAQUE_WORKAREA *pScratchBuffer = nullptr;
+                pScratchBuffer = (DSC_GENERATE_PPS_OPAQUE_WORKAREA*) dpMalloc(sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA));
+
                 result = DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
                                          &warData, availableBandwidthBitsPerSecond,
                                          (NvU32*)(PPS),
-                                         (NvU32*)(&bitsPerPixelX16));
+                                         (NvU32*)(&bitsPerPixelX16), pScratchBuffer);
 
                 // Try max dsc compression bpp = 8 once to check if that can support that mode.
                 if (result != NVT_STATUS_SUCCESS && !bDscBppForced)
@@ -1324,7 +1303,13 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                     result = DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
                                              &warData, availableBandwidthBitsPerSecond,
                                              (NvU32*)(PPS),
-                                             (NvU32*)(&bitsPerPixelX16));
+                                             (NvU32*)(&bitsPerPixelX16), pScratchBuffer);
+                }
+
+                if (pScratchBuffer)
+                {
+                    dpFree(pScratchBuffer);
+                    pScratchBuffer = nullptr;
                 }
 
                 if (result != NVT_STATUS_SUCCESS)
@@ -1614,10 +1599,21 @@ nonDscDpIMP:
                     warData.dpData.dpMode = DSC_DP_SST;
                     warData.connectorType = DSC_DP;
 
-                    if ((DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
-                                         &warData, availableBandwidthBitsPerSecond,
-                                         (NvU32*)(PPS),
-                                         (NvU32*)(&bitsPerPixelX16))) != NVT_STATUS_SUCCESS)
+                    DSC_GENERATE_PPS_OPAQUE_WORKAREA *pScratchBuffer = nullptr;
+                    pScratchBuffer = (DSC_GENERATE_PPS_OPAQUE_WORKAREA*)dpMalloc(sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA));
+
+                    bool bPpsFailure = ((DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
+                                                         &warData, availableBandwidthBitsPerSecond,
+                                                         (NvU32*)(PPS),
+                                                         (NvU32*)(&bitsPerPixelX16),
+                                                         pScratchBuffer)) != NVT_STATUS_SUCCESS);
+                    if (pScratchBuffer)
+                    {
+                        dpFree(pScratchBuffer);
+                        pScratchBuffer = nullptr;
+                    }
+
+                    if (bPpsFailure)
                     {
                         compoundQueryResult = false;
                         pDscParams->bEnableDsc = false;

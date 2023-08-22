@@ -489,6 +489,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalStaticKMIGmgrGetComputeInstanceProfiles__)(struct Subdevice *, NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_COMPUTE_PROFILES_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalKMIGmgrExportGPUInstance__)(struct Subdevice *, NV2080_CTRL_INTERNAL_KMIGMGR_IMPORT_EXPORT_GPU_INSTANCE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalKMIGmgrImportGPUInstance__)(struct Subdevice *, NV2080_CTRL_INTERNAL_KMIGMGR_IMPORT_EXPORT_GPU_INSTANCE_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalKMIGmgrPromoteGpuInstanceMemRange__)(struct Subdevice *, NV2080_CTRL_INTERNAL_KMIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdOsUnixGc6BlockerRefCnt__)(struct Subdevice *, NV2080_CTRL_OS_UNIX_GC6_BLOCKER_REFCNT_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdOsUnixAllowDisallowGcoff__)(struct Subdevice *, NV2080_CTRL_OS_UNIX_ALLOW_DISALLOW_GCOFF_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdOsUnixAudioDynamicPower__)(struct Subdevice *, NV2080_CTRL_OS_UNIX_AUDIO_DYNAMIC_POWER_PARAMS *);
@@ -1082,6 +1083,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalStaticKMIGmgrGetComputeInstanceProfiles(pSubdevice, pParams) subdeviceCtrlCmdInternalStaticKMIGmgrGetComputeInstanceProfiles_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalKMIGmgrExportGPUInstance(pSubdevice, pParams) subdeviceCtrlCmdInternalKMIGmgrExportGPUInstance_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalKMIGmgrImportGPUInstance(pSubdevice, pParams) subdeviceCtrlCmdInternalKMIGmgrImportGPUInstance_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalKMIGmgrPromoteGpuInstanceMemRange(pSubdevice, pParams) subdeviceCtrlCmdInternalKMIGmgrPromoteGpuInstanceMemRange_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdOsUnixGc6BlockerRefCnt(pSubdevice, pParams) subdeviceCtrlCmdOsUnixGc6BlockerRefCnt_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdOsUnixAllowDisallowGcoff(pSubdevice, pParams) subdeviceCtrlCmdOsUnixAllowDisallowGcoff_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdOsUnixAudioDynamicPower(pSubdevice, pParams) subdeviceCtrlCmdOsUnixAudioDynamicPower_DISPATCH(pSubdevice, pParams)
@@ -3479,6 +3481,12 @@ NV_STATUS subdeviceCtrlCmdInternalKMIGmgrImportGPUInstance_IMPL(struct Subdevice
 
 static inline NV_STATUS subdeviceCtrlCmdInternalKMIGmgrImportGPUInstance_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KMIGMGR_IMPORT_EXPORT_GPU_INSTANCE_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdInternalKMIGmgrImportGPUInstance__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalKMIGmgrPromoteGpuInstanceMemRange_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KMIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalKMIGmgrPromoteGpuInstanceMemRange_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_KMIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalKMIGmgrPromoteGpuInstanceMemRange__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdOsUnixGc6BlockerRefCnt_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_OS_UNIX_GC6_BLOCKER_REFCNT_PARAMS *pParams);

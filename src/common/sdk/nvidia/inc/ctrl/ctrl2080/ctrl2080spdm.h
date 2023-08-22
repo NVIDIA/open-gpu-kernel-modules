@@ -60,9 +60,6 @@ typedef struct RM_GSP_SPDM_CC_INIT_CTX {
 
 
     NvU64_ALIGN32 dmaAddr; // The address RM allocate in SYS memory or FB memory.
-
-    NvU32         rmBufferSizeInByte;         // The memort size allocated by RM(exclude NV_SPDM_DESC_HEADER)
-
 } RM_GSP_SPDM_CC_INIT_CTX;
 typedef struct RM_GSP_SPDM_CC_INIT_CTX *PRM_GSP_SPDM_CC_INIT_CTX;
 

@@ -158,6 +158,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "CSE",    _VENDOR_NAME_ENTRY("Compu Shack")                       },
     { "CSI",    _VENDOR_NAME_ENTRY("Cabletron")                         },
     { "CSS",    _VENDOR_NAME_ENTRY("CSS Laboratories")                  },
+    { "CSW",    _VENDOR_NAME_ENTRY("China Star Optoelectronics Technology Co., Ltd") },
     { "CTN",    _VENDOR_NAME_ENTRY("Computone")                         },
     { "CTX",    _VENDOR_NAME_ENTRY("Chuntex/CTX")                       },
     { "CUB",    _VENDOR_NAME_ENTRY("Cubix")                             },

@@ -59,6 +59,7 @@
 #include "platform/platform.h"
 #include "platform/chipset/chipset.h"
 #include "kernel/gpu/host_eng/host_eng.h"
+#include "gpu/bif/kernel_bif.h"
 #include "gpu/ce/kernel_ce.h"
 #include "gpu/conf_compute/conf_compute.h"
 #include "gpu/fifo/kernel_fifo.h"

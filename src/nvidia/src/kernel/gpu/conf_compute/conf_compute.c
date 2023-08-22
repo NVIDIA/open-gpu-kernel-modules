@@ -88,6 +88,7 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
         else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE))
         {
             pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED, NV_TRUE);
+            pGpu->setProperty(pGpu, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED, NV_TRUE);
         }
         else
         {

@@ -209,7 +209,7 @@ NV_STATUS nvUvmInterfaceSessionCreate(uvmGpuSessionHandle *session,
     memset(platformInfo, 0, sizeof(*platformInfo));
     platformInfo->atsSupported = nv_ats_supported;
 
-    platformInfo->sevEnabled = os_cc_enabled;
+    platformInfo->confComputingEnabled = os_cc_enabled;
 
     status = rm_gpu_ops_create_session(sp, (gpuSessionHandle *)session);
 
