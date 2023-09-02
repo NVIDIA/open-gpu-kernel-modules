@@ -110,7 +110,20 @@ typedef struct
 
 bool uvm_hmm_is_enabled_system_wide(void)
 {
-    return !uvm_disable_hmm && !g_uvm_global.ats.enabled && uvm_va_space_mm_enabled_system();
+    if (uvm_disable_hmm)
+        return false;
+
+    if (g_uvm_global.ats.enabled)
+        return false;
+
+    // Confidential Computing and HMM impose mutually exclusive constraints. In
+    // Confidential Computing the GPU can only access pages resident in vidmem,
+    // but in HMM pages may be required to be resident in sysmem: file backed
+    // VMAs, huge pages, etc.
+    if (g_uvm_global.conf_computing_enabled)
+        return false;
+
+    return uvm_va_space_mm_enabled_system();
 }
 
 bool uvm_hmm_is_enabled(uvm_va_space_t *va_space)
@@ -127,32 +140,17 @@ static uvm_va_block_t *hmm_va_block_from_node(uvm_range_tree_node_t *node)
     return container_of(node, uvm_va_block_t, hmm.node);
 }
 
-NV_STATUS uvm_hmm_va_space_initialize(uvm_va_space_t *va_space)
+void uvm_hmm_va_space_initialize(uvm_va_space_t *va_space)
 {
     uvm_hmm_va_space_t *hmm_va_space = &va_space->hmm;
-    struct mm_struct *mm = va_space->va_space_mm.mm;
-    int ret;
 
     if (!uvm_hmm_is_enabled(va_space))
-        return NV_OK;
-
-    uvm_assert_mmap_lock_locked_write(mm);
-    uvm_assert_rwsem_locked_write(&va_space->lock);
+        return;
 
     uvm_range_tree_init(&hmm_va_space->blocks);
     uvm_mutex_init(&hmm_va_space->blocks_lock, UVM_LOCK_ORDER_LEAF);
 
-    // Initialize MMU interval notifiers for this process.
-    // This allows mmu_interval_notifier_insert() to be called without holding
-    // the mmap_lock for write.
-    // Note: there is no __mmu_notifier_unregister(), this call just allocates
-    // memory which is attached to the mm_struct and freed when the mm_struct
-    // is freed.
-    ret = __mmu_notifier_register(NULL, mm);
-    if (ret)
-        return errno_to_nv_status(ret);
-
-    return NV_OK;
+    return;
 }
 
 void uvm_hmm_va_space_destroy(uvm_va_space_t *va_space)
@@ -325,7 +323,6 @@ static bool hmm_invalidate(uvm_va_block_t *va_block,
     region = uvm_va_block_region_from_start_end(va_block, start, end);
 
     va_block_context->hmm.vma = NULL;
-    va_block_context->policy = NULL;
 
     // We only need to unmap GPUs since Linux handles the CPUs.
     for_each_gpu_id_in_mask(id, &va_block->mapped) {
@@ -444,11 +441,11 @@ static void hmm_va_block_init(uvm_va_block_t *va_block,
 static NV_STATUS hmm_va_block_find_create(uvm_va_space_t *va_space,
                                           NvU64 addr,
                                           bool allow_unreadable_vma,
-                                          uvm_va_block_context_t *va_block_context,
+                                          struct vm_area_struct **vma_out,
                                           uvm_va_block_t **va_block_ptr)
 {
-    struct mm_struct *mm = va_space->va_space_mm.mm;
-    struct vm_area_struct *vma;
+    struct mm_struct *mm;
+    struct vm_area_struct *va_block_vma;
     uvm_va_block_t *va_block;
     NvU64 start, end;
     NV_STATUS status;
@@ -457,15 +454,14 @@ static NV_STATUS hmm_va_block_find_create(uvm_va_space_t *va_space,
     if (!uvm_hmm_is_enabled(va_space))
         return NV_ERR_INVALID_ADDRESS;
 
-    UVM_ASSERT(mm);
-    UVM_ASSERT(!va_block_context || va_block_context->mm == mm);
+    mm = va_space->va_space_mm.mm;
     uvm_assert_mmap_lock_locked(mm);
     uvm_assert_rwsem_locked(&va_space->lock);
     UVM_ASSERT(PAGE_ALIGNED(addr));
 
     // Note that we have to allow PROT_NONE VMAs so that policies can be set.
-    vma = find_vma(mm, addr);
-    if (!uvm_hmm_vma_is_valid(vma, addr, allow_unreadable_vma))
+    va_block_vma = find_vma(mm, addr);
+    if (!uvm_hmm_vma_is_valid(va_block_vma, addr, allow_unreadable_vma))
         return NV_ERR_INVALID_ADDRESS;
 
     // Since we only hold the va_space read lock, there can be multiple
@@ -517,8 +513,8 @@ static NV_STATUS hmm_va_block_find_create(uvm_va_space_t *va_space,
 
 done:
     uvm_mutex_unlock(&va_space->hmm.blocks_lock);
-    if (va_block_context)
-        va_block_context->hmm.vma = vma;
+    if (vma_out)
+        *vma_out = va_block_vma;
     *va_block_ptr = va_block;
     return NV_OK;
 
@@ -532,43 +528,36 @@ err_unlock:
 
 NV_STATUS uvm_hmm_va_block_find_create(uvm_va_space_t *va_space,
                                        NvU64 addr,
-                                       uvm_va_block_context_t *va_block_context,
+                                       struct vm_area_struct **vma,
                                        uvm_va_block_t **va_block_ptr)
 {
-    return hmm_va_block_find_create(va_space, addr, false, va_block_context, va_block_ptr);
+    return hmm_va_block_find_create(va_space, addr, false, vma, va_block_ptr);
 }
 
-NV_STATUS uvm_hmm_find_vma(uvm_va_block_context_t *va_block_context, NvU64 addr)
+NV_STATUS uvm_hmm_find_vma(struct mm_struct *mm, struct vm_area_struct **vma_out, NvU64 addr)
 {
-    struct mm_struct *mm = va_block_context->mm;
-    struct vm_area_struct *vma;
-
     if (!mm)
         return NV_ERR_INVALID_ADDRESS;
 
     uvm_assert_mmap_lock_locked(mm);
 
-    vma = find_vma(mm, addr);
-    if (!uvm_hmm_vma_is_valid(vma, addr, false))
+    *vma_out = find_vma(mm, addr);
+    if (!uvm_hmm_vma_is_valid(*vma_out, addr, false))
         return NV_ERR_INVALID_ADDRESS;
-
-    va_block_context->hmm.vma = vma;
 
     return NV_OK;
 }
 
 bool uvm_hmm_check_context_vma_is_valid(uvm_va_block_t *va_block,
-                                        uvm_va_block_context_t *va_block_context,
+                                        struct vm_area_struct *vma,
                                         uvm_va_block_region_t region)
 {
     uvm_assert_mutex_locked(&va_block->lock);
 
     if (uvm_va_block_is_hmm(va_block)) {
-        struct vm_area_struct *vma = va_block_context->hmm.vma;
-
         UVM_ASSERT(vma);
-        UVM_ASSERT(va_block_context->mm == vma->vm_mm);
-        uvm_assert_mmap_lock_locked(va_block_context->mm);
+        UVM_ASSERT(va_block->hmm.va_space->va_space_mm.mm == vma->vm_mm);
+        uvm_assert_mmap_lock_locked(va_block->hmm.va_space->va_space_mm.mm);
         UVM_ASSERT(vma->vm_start <= uvm_va_block_region_start(va_block, region));
         UVM_ASSERT(vma->vm_end > uvm_va_block_region_end(va_block, region));
     }
@@ -619,8 +608,6 @@ static NV_STATUS hmm_migrate_range(uvm_va_block_t *va_block,
     uvm_mutex_lock(&va_block->lock);
 
     uvm_for_each_va_policy_in(policy, va_block, start, end, node, region) {
-        va_block_context->policy = policy;
-
         // Even though UVM_VA_BLOCK_RETRY_LOCKED() may unlock and relock the
         // va_block lock, the policy remains valid because we hold the mmap
         // lock so munmap can't remove the policy, and the va_space lock so the
@@ -670,7 +657,6 @@ void uvm_hmm_evict_va_blocks(uvm_va_space_t *va_space)
                 continue;
 
             block_context->hmm.vma = vma;
-            block_context->policy = &uvm_va_policy_default;
             uvm_hmm_va_block_migrate_locked(va_block,
                                             NULL,
                                             block_context,
@@ -1046,11 +1032,7 @@ static NV_STATUS hmm_set_preferred_location_locked(uvm_va_block_t *va_block,
             uvm_processor_mask_test(&old_policy->accessed_by, old_policy->preferred_location))
             uvm_processor_mask_set(&set_accessed_by_processors, old_policy->preferred_location);
 
-        va_block_context->policy = uvm_va_policy_set_preferred_location(va_block,
-                                                                        region,
-                                                                        preferred_location,
-                                                                        old_policy);
-        if (!va_block_context->policy)
+        if (!uvm_va_policy_set_preferred_location(va_block, region, preferred_location, old_policy))
             return NV_ERR_NO_MEMORY;
 
         // Establish new remote mappings if the old preferred location had
@@ -1109,7 +1091,7 @@ NV_STATUS uvm_hmm_set_preferred_location(uvm_va_space_t *va_space,
     for (addr = base; addr < last_address; addr = va_block->end + 1) {
         NvU64 end;
 
-        status = hmm_va_block_find_create(va_space, addr, true, va_block_context, &va_block);
+        status = hmm_va_block_find_create(va_space, addr, true, &va_block_context->hmm.vma, &va_block);
         if (status != NV_OK)
             break;
 
@@ -1151,7 +1133,6 @@ static NV_STATUS hmm_set_accessed_by_start_end_locked(uvm_va_block_t *va_block,
         if (uvm_va_policy_is_read_duplicate(&node->policy, va_space))
             continue;
 
-        va_block_context->policy = &node->policy;
         region = uvm_va_block_region_from_start_end(va_block,
                                                     max(start, node->node.start),
                                                     min(end, node->node.end));
@@ -1196,7 +1177,7 @@ NV_STATUS uvm_hmm_set_accessed_by(uvm_va_space_t *va_space,
     for (addr = base; addr < last_address; addr = va_block->end + 1) {
         NvU64 end;
 
-        status = hmm_va_block_find_create(va_space, addr, true, va_block_context, &va_block);
+        status = hmm_va_block_find_create(va_space, addr, true, &va_block_context->hmm.vma, &va_block);
         if (status != NV_OK)
             break;
 
@@ -1249,8 +1230,6 @@ void uvm_hmm_block_add_eviction_mappings(uvm_va_space_t *va_space,
     uvm_mutex_lock(&va_block->lock);
 
     uvm_for_each_va_policy_node_in(node, va_block, va_block->start, va_block->end) {
-        block_context->policy = &node->policy;
-
         for_each_id_in_mask(id, &node->policy.accessed_by) {
             status = hmm_set_accessed_by_start_end_locked(va_block,
                                                           block_context,
@@ -1309,13 +1288,13 @@ void uvm_hmm_block_add_eviction_mappings(uvm_va_space_t *va_space,
     }
 }
 
-void uvm_hmm_find_policy_end(uvm_va_block_t *va_block,
-                             uvm_va_block_context_t *va_block_context,
-                             unsigned long addr,
-                             NvU64 *endp)
+const uvm_va_policy_t *uvm_hmm_find_policy_end(uvm_va_block_t *va_block,
+                                               struct vm_area_struct *vma,
+                                               unsigned long addr,
+                                               NvU64 *endp)
 {
-    struct vm_area_struct *vma = va_block_context->hmm.vma;
     const uvm_va_policy_node_t *node;
+    const uvm_va_policy_t *policy;
     NvU64 end = va_block->end;
 
     uvm_assert_mmap_lock_locked(vma->vm_mm);
@@ -1326,40 +1305,45 @@ void uvm_hmm_find_policy_end(uvm_va_block_t *va_block,
 
     node = uvm_va_policy_node_find(va_block, addr);
     if (node) {
-        va_block_context->policy = &node->policy;
+        policy = &node->policy;
         if (end > node->node.end)
             end = node->node.end;
     }
     else {
-        va_block_context->policy = &uvm_va_policy_default;
+        policy = &uvm_va_policy_default;
     }
 
     *endp = end;
+
+    return policy;
 }
 
 NV_STATUS uvm_hmm_find_policy_vma_and_outer(uvm_va_block_t *va_block,
-                                            uvm_va_block_context_t *va_block_context,
+                                            struct vm_area_struct **vma_out,
                                             uvm_page_index_t page_index,
+                                            const uvm_va_policy_t **policy,
                                             uvm_page_index_t *outerp)
 {
-    struct vm_area_struct *vma;
     unsigned long addr;
     NvU64 end;
     uvm_page_index_t outer;
+    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
+    struct mm_struct *mm = va_space->va_space_mm.mm;
+
+    if (!mm)
+        return NV_ERR_INVALID_ADDRESS;
 
     UVM_ASSERT(uvm_va_block_is_hmm(va_block));
-    uvm_assert_mmap_lock_locked(va_block_context->mm);
+    uvm_assert_mmap_lock_locked(mm);
     uvm_assert_mutex_locked(&va_block->lock);
 
     addr = uvm_va_block_cpu_page_address(va_block, page_index);
 
-    vma = vma_lookup(va_block_context->mm, addr);
-    if (!vma || !(vma->vm_flags & VM_READ))
+    *vma_out = vma_lookup(mm, addr);
+    if (!*vma_out || !((*vma_out)->vm_flags & VM_READ))
         return NV_ERR_INVALID_ADDRESS;
 
-    va_block_context->hmm.vma = vma;
-
-    uvm_hmm_find_policy_end(va_block, va_block_context, addr, &end);
+    *policy = uvm_hmm_find_policy_end(va_block, *vma_out, addr, &end);
 
     outer = uvm_va_block_cpu_page_index(va_block, end) + 1;
     if (*outerp > outer)
@@ -1379,8 +1363,6 @@ static NV_STATUS hmm_clear_thrashing_policy(uvm_va_block_t *va_block,
     uvm_mutex_lock(&va_block->lock);
 
     uvm_for_each_va_policy_in(policy, va_block, va_block->start, va_block->end, node, region) {
-        block_context->policy = policy;
-
         // Unmap may split PTEs and require a retry. Needs to be called
         // before the pinned pages information is destroyed.
         status = UVM_VA_BLOCK_RETRY_LOCKED(va_block,
@@ -1424,11 +1406,10 @@ NV_STATUS uvm_hmm_clear_thrashing_policy(uvm_va_space_t *va_space)
 }
 
 uvm_va_block_region_t uvm_hmm_get_prefetch_region(uvm_va_block_t *va_block,
-                                                  uvm_va_block_context_t *va_block_context,
+                                                  struct vm_area_struct *vma,
+                                                  const uvm_va_policy_t *policy,
                                                   NvU64 address)
 {
-    struct vm_area_struct *vma = va_block_context->hmm.vma;
-    const uvm_va_policy_t *policy = va_block_context->policy;
     NvU64 start, end;
 
     UVM_ASSERT(uvm_va_block_is_hmm(va_block));
@@ -1457,13 +1438,11 @@ uvm_va_block_region_t uvm_hmm_get_prefetch_region(uvm_va_block_t *va_block,
 }
 
 uvm_prot_t uvm_hmm_compute_logical_prot(uvm_va_block_t *va_block,
-                                        uvm_va_block_context_t *va_block_context,
+                                        struct vm_area_struct *vma,
                                         NvU64 addr)
 {
-    struct vm_area_struct *vma = va_block_context->hmm.vma;
-
     UVM_ASSERT(uvm_va_block_is_hmm(va_block));
-    uvm_assert_mmap_lock_locked(va_block_context->mm);
+    uvm_assert_mmap_lock_locked(va_block->hmm.va_space->va_space_mm.mm);
     UVM_ASSERT(vma && addr >= vma->vm_start && addr < vma->vm_end);
 
     if (!(vma->vm_flags & VM_READ))
@@ -2907,8 +2886,6 @@ static NV_STATUS uvm_hmm_migrate_alloc_and_copy(struct vm_area_struct *vma,
     if (status != NV_OK)
         return status;
 
-    UVM_ASSERT(!uvm_va_policy_is_read_duplicate(va_block_context->policy, va_block->hmm.va_space));
-
     status = uvm_va_block_make_resident_copy(va_block,
                                              va_block_retry,
                                              va_block_context,
@@ -3140,7 +3117,7 @@ NV_STATUS uvm_hmm_migrate_ranges(uvm_va_space_t *va_space,
     for (addr = base; addr < last_address; addr = end + 1) {
         struct vm_area_struct *vma;
 
-        status = hmm_va_block_find_create(va_space, addr, false, va_block_context, &va_block);
+        status = hmm_va_block_find_create(va_space, addr, false, &va_block_context->hmm.vma, &va_block);
         if (status != NV_OK)
             return status;
 
@@ -3232,7 +3209,6 @@ static NV_STATUS hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
     uvm_for_each_va_policy_in(policy, va_block, start, end, node, region) {
         npages = uvm_va_block_region_num_pages(region);
 
-        va_block_context->policy = policy;
         if (out_accessed_by_set && uvm_processor_mask_get_count(&policy->accessed_by) > 0)
             *out_accessed_by_set = true;
 

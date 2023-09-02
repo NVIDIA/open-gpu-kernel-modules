@@ -181,24 +181,6 @@ static const NVHDMIPKT_CLASS_HIERARCHY hierarchy[] =
     },
 };
 
-#if defined(DSC_CALLBACK_MODIFIED)
-// Callbacks for DSC PPS library
-void *hdmipktMallocCb(const void *clientHandle, NvLength size);
-void  hdmipktFreeCb(const void *clientHandle, void *pMemPtr);
-
-void *hdmipktMallocCb(const void *clientHandle, NvLength size)
-{
-    const NVHDMIPKT_CLASS *pClass = (const NVHDMIPKT_CLASS*)(clientHandle);
-    return pClass->callback.malloc(pClass->cbHandle, size);
-}
-
-void hdmipktFreeCb(const void *clientHandle, void *pMemPtr)
-{
-    const NVHDMIPKT_CLASS *pClass = (const NVHDMIPKT_CLASS*)(clientHandle);
-    pClass->callback.free(pClass->cbHandle, pMemPtr);
-}
-#endif // DSC_CALLBACK_MODIFIED
-
 /********************************** HDMI Library interfaces *************************************/
 /*
  * NvHdmiPkt_PacketCtrl
@@ -580,15 +562,6 @@ NvHdmiPkt_InitializeLibrary(NvU32                              const hwClass,
 
     // 2. Constructor calls
     result = NvHdmiPkt_CallConstructors(thisClassId, pClass);
-
-#if defined(DSC_CALLBACK_MODIFIED)
-    DSC_CALLBACK callbacks;
-    NVMISC_MEMSET(&callbacks, 0, sizeof(DSC_CALLBACK));
-    callbacks.clientHandle = pClass;
-    callbacks.dscMalloc    = hdmipktMallocCb;
-    callbacks.dscFree      = hdmipktFreeCb;
-    DSC_InitializeCallback(callbacks);
-#endif // DSC_CALLBACK_MODIFIED
 
 NvHdmiPkt_InitializeLibrary_exit:
     if (result)

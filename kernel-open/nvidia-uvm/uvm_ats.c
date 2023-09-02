@@ -44,6 +44,8 @@ void uvm_ats_init(const UvmPlatformInfo *platform_info)
 
 void uvm_ats_init_va_space(uvm_va_space_t *va_space)
 {
+    uvm_init_rwsem(&va_space->ats.lock, UVM_LOCK_ORDER_LEAF);
+
     if (UVM_ATS_IBM_SUPPORTED())
         uvm_ats_ibm_init_va_space(va_space);
 }

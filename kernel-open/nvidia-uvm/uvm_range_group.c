@@ -264,7 +264,6 @@ NV_STATUS uvm_range_group_va_range_migrate(uvm_va_range_t *va_range,
         return NV_ERR_NO_MEMORY;
 
     uvm_assert_rwsem_locked(&va_range->va_space->lock);
-    va_block_context->policy = uvm_va_range_get_policy(va_range);
 
     // Iterate over blocks, populating them if necessary
     for (i = uvm_va_range_block_index(va_range, start); i <= uvm_va_range_block_index(va_range, end); ++i) {

@@ -120,7 +120,8 @@
 #define ALI_TRAINING_FAIL                               (136)
 #define NVLINK_FLA_PRIV_ERR                             (137)
 #define ROBUST_CHANNEL_DLA_ERROR                        (138)
-#define ROBUST_CHANNEL_LAST_ERROR                       (ROBUST_CHANNEL_DLA_ERROR)
+#define ROBUST_CHANNEL_FAST_PATH_ERROR                  (139)
+#define ROBUST_CHANNEL_LAST_ERROR                       (ROBUST_CHANNEL_FAST_PATH_ERROR)
 
 
 // Indexed CE reference

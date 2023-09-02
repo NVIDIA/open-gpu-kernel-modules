@@ -54,6 +54,52 @@ const uvm_va_policy_t *uvm_va_policy_get(uvm_va_block_t *va_block, NvU64 addr)
     }
 }
 
+// HMM va_blocks can have different polices for different regions withing the
+// va_block. This function checks the given region is covered by the same policy
+// and asserts if the region is covered by different policies.
+// This always returns true and is intended to only be used with UVM_ASSERT() to
+// avoid calling it on release builds.
+// Locking: the va_block lock must be held.
+static bool uvm_hmm_va_block_assert_policy_is_valid(uvm_va_block_t *va_block,
+                                                    const uvm_va_policy_t *policy,
+                                                    uvm_va_block_region_t region)
+{
+    const uvm_va_policy_node_t *node;
+
+    if (uvm_va_policy_is_default(policy)) {
+        // There should only be the default policy within the region.
+        node = uvm_va_policy_node_iter_first(va_block,
+                                             uvm_va_block_region_start(va_block, region),
+                                             uvm_va_block_region_end(va_block, region));
+        UVM_ASSERT(!node);
+    }
+    else {
+        // The policy node should cover the region.
+        node = uvm_va_policy_node_from_policy(policy);
+        UVM_ASSERT(node->node.start <= uvm_va_block_region_start(va_block, region));
+        UVM_ASSERT(node->node.end >= uvm_va_block_region_end(va_block, region));
+    }
+
+    return true;
+}
+
+const uvm_va_policy_t *uvm_va_policy_get_region(uvm_va_block_t *va_block, uvm_va_block_region_t region)
+{
+    uvm_assert_mutex_locked(&va_block->lock);
+
+    if (uvm_va_block_is_hmm(va_block)) {
+        const uvm_va_policy_t *policy;
+        const uvm_va_policy_node_t *node = uvm_va_policy_node_find(va_block, uvm_va_block_region_start(va_block, region));
+
+        policy = node ? &node->policy : &uvm_va_policy_default;
+        UVM_ASSERT(uvm_hmm_va_block_assert_policy_is_valid(va_block, policy, region));
+        return policy;
+    }
+    else {
+        return uvm_va_range_get_policy(va_block->va_range);
+    }
+}
+
 #if UVM_IS_CONFIG_HMM()
 
 static struct kmem_cache *g_uvm_va_policy_node_cache __read_mostly;

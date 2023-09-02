@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -44,10 +44,10 @@ static NvU32 first_page_size(NvU32 page_sizes)
 
 static inline NV_STATUS __alloc_map_sysmem(NvU64 size, uvm_gpu_t *gpu, uvm_mem_t **sys_mem)
 {
-    if (g_uvm_global.sev_enabled)
+    if (g_uvm_global.conf_computing_enabled)
         return uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(size, gpu, current->mm, sys_mem);
-    else
-        return uvm_mem_alloc_sysmem_and_map_cpu_kernel(size, current->mm, sys_mem);
+
+    return uvm_mem_alloc_sysmem_and_map_cpu_kernel(size, current->mm, sys_mem);
 }
 
 static NV_STATUS check_accessible_from_gpu(uvm_gpu_t *gpu, uvm_mem_t *mem)
@@ -335,9 +335,6 @@ error:
 
 static bool should_test_page_size(size_t alloc_size, NvU32 page_size)
 {
-    if (g_uvm_global.sev_enabled)
-        return false;
-
     if (g_uvm_global.num_simulated_devices == 0)
         return true;
 

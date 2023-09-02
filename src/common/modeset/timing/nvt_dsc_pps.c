@@ -33,20 +33,19 @@
 #include "nvt_dsc_pps.h"
 #include "nvmisc.h"
 #include "displayport/displayport.h"
+#include "nvctassert.h"
 #include <stddef.h>
 
 /* ------------------------ Macros ----------------------------------------- */
 
-#if defined (DEBUG)
-#define DSC_Print(...)                               \
-    do {                                             \
-        if (callbacks.dscPrint) {                    \
-            callbacks.dscPrint("DSC: " __VA_ARGS__); \
-        }                                            \
-    } while(0)
-#else
+//
+// DSC_Print macro was for debugging purposes in early development of 
+// DSC PPS library. The print statements no longer get logged 
+// inside any client logger. But the lines of print in this file are useful 
+// for browsing code, hence this DSC_Print is left as a stub
+// definition intentionally to help reader understand the PPS code.
+//
 #define DSC_Print(...) do { } while(0)
-#endif
 
 #define MIN_CHECK(s,a,b)     { if((a)<(b)) { DSC_Print("%s (=%u) needs to be larger than %u",s,a,b); return (NVT_STATUS_ERR);} }
 #define RANGE_CHECK(s,a,b,c) { if((((NvS32)(a))<(NvS32)(b))||(((NvS32)(a))>(NvS32)(c))) { DSC_Print("%s (=%u) needs to be between %u and %u",s,a,b,c); return (NVT_STATUS_ERR);} }
@@ -171,9 +170,21 @@ typedef struct
     NvU32 flatness_det_thresh;
 } DSC_OUTPUT_PARAMS;
 
-/* ------------------------ Global Variables ------------------------------- */
+//
+// Opaque scratch space is passed by client for DSC calculation usage.
+// Use an internal struct to cast the input buffer
+// into in/out params for DSC PPS calculation functions to work with
+//
+typedef struct _DSC_GENERATE_PPS_WORKAREA
+{
+    DSC_INPUT_PARAMS  in;
+    DSC_OUTPUT_PARAMS out;
+} DSC_GENERATE_PPS_WORKAREA;
 
-DSC_CALLBACK callbacks;
+// Compile time check to ensure Opaque workarea buffer size always covers required work area. 
+ct_assert(sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA) >= sizeof(DSC_GENERATE_PPS_WORKAREA));
+
+/* ------------------------ Global Variables ------------------------------- */
 
 static const NvU8 minqp444_8b[15][37]={
         { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}
@@ -396,8 +407,6 @@ static const NvU32 rcBufThresh[] = { 896, 1792, 2688, 3584, 4480, 5376, 6272, 67
 /* ------------------------ Static Variables ------------------------------- */
 /* ------------------------ Private Functions Prototype--------------------- */
 
-static void * DSC_Malloc(NvLength size);
-static void DSC_Free(void * ptr);
 static NvU32
 DSC_GetHigherSliceCount
 (
@@ -1586,19 +1595,11 @@ static NVT_STATUS
 DSC_PpsDataGen
 (
     const DSC_INPUT_PARAMS *in,
-    NvU32 out[DSC_MAX_PPS_SIZE_DWORD]
+    DSC_OUTPUT_PARAMS      *pPpsOut,
+    NvU32                   out[DSC_MAX_PPS_SIZE_DWORD]
 )
 {
     NVT_STATUS ret;
-    DSC_OUTPUT_PARAMS *pPpsOut;
-
-    pPpsOut = (DSC_OUTPUT_PARAMS *)DSC_Malloc(sizeof(DSC_OUTPUT_PARAMS));
-    if (pPpsOut == NULL)
-    {
-        DSC_Print("ERROR - Memory allocation error.");
-        ret = NVT_STATUS_NO_MEMORY;
-        goto done;
-    }
 
     NVMISC_MEMSET(pPpsOut, 0, sizeof(DSC_OUTPUT_PARAMS));
     ret = DSC_PpsCalc(in, pPpsOut);
@@ -1612,42 +1613,7 @@ DSC_PpsDataGen
 
     /* fall through */
 done:
-    DSC_Free(pPpsOut);
-
     return ret;
-}
-
-/*
- * @brief Allocates memory for requested size
- *
- * @param[in]   size   Size to be allocated
- *
- * @returns Pointer to allocated memory
- */
-static void *
-DSC_Malloc(NvLength size)
-{
-#if defined(DSC_CALLBACK_MODIFIED)
-    return (callbacks.dscMalloc)(callbacks.clientHandle, size);
-#else
-    return (callbacks.dscMalloc)(size);
-#endif // DSC_CALLBACK_MODIFIED
-}
-
-/*
- * @brief Frees dynamically allocated memory 
- *
- * @param[in]   ptr   Pointer to a memory to be deallocated
- *
- */
-static void
-DSC_Free(void * ptr)
-{
-#if defined(DSC_CALLBACK_MODIFIED)
-    (callbacks.dscFree)(callbacks.clientHandle, ptr);
-#else
-    (callbacks.dscFree)(ptr);
-#endif // DSC_CALLBACK_MODIFIED
 }
 
 /*
@@ -1992,32 +1958,31 @@ DSC_GeneratePPS
     const WAR_DATA *pWARData,
     NvU64 availableBandwidthBitsPerSecond,
     NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
-    NvU32 *pBitsPerPixelX16
+    NvU32 *pBitsPerPixelX16,
+    DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea
 )
 {
-    DSC_INPUT_PARAMS *in = NULL;
+    DSC_INPUT_PARAMS  *in  = NULL;
+    DSC_OUTPUT_PARAMS *out = NULL;
+    DSC_GENERATE_PPS_WORKAREA *pWorkarea = NULL;
     NVT_STATUS ret = NVT_STATUS_ERR;
 
-    if ((!pDscInfo) || (!pModesetInfo) || (!pBitsPerPixelX16))
+    if ((!pDscInfo) || (!pModesetInfo) || (!pBitsPerPixelX16) || (!pOpaqueWorkarea))
     {
         DSC_Print("ERROR - Invalid parameter.");
         ret = NVT_STATUS_INVALID_PARAMETER;
         goto done;
     }
+
+    pWorkarea = (DSC_GENERATE_PPS_WORKAREA*)(pOpaqueWorkarea);
+    in  = &pWorkarea->in;
+    out = &pWorkarea->out;
 
     ret = _validateInput(pDscInfo, pModesetInfo, pWARData, availableBandwidthBitsPerSecond);
     if (ret != NVT_STATUS_SUCCESS)
     {
         DSC_Print("ERROR - Invalid parameter.");
         ret = NVT_STATUS_INVALID_PARAMETER;
-        goto done;
-    }
-
-    in = (DSC_INPUT_PARAMS *)DSC_Malloc(sizeof(DSC_INPUT_PARAMS));
-    if (in == NULL)
-    {
-        DSC_Print("ERROR - Memory allocation error.");
-        ret = NVT_STATUS_NO_MEMORY;
         goto done;
     }
 
@@ -2277,42 +2242,11 @@ DSC_GeneratePPS
         }
     }
 
-    ret = DSC_PpsDataGen(in, pps);
+    ret = DSC_PpsDataGen(in, out, pps);
 
     *pBitsPerPixelX16 = in->bits_per_pixel;
 
     /* fall through */
 done:
-    DSC_Free(in);
-
     return ret;
-}
-
-/*
- * @brief Initializes callbacks for print and assert
- *
- * @param[in]   callback   DSC callbacks
- *
- * @returns NVT_STATUS_SUCCESS if successful;
- *          NVT_STATUS_ERR if unsuccessful;
- */
-NVT_STATUS DSC_InitializeCallback(DSC_CALLBACK callback)
-{
-    // if callbacks are initialized already, return nothing to do
-    if (callbacks.dscMalloc && callbacks.dscFree)
-    {
-        return NVT_STATUS_SUCCESS;
-    }
-
-#if defined(DSC_CALLBACK_MODIFIED)
-    callbacks.clientHandle    = callback.clientHandle;
-#endif // DSC_CALLBACK_MODIFIED
-    callbacks.dscPrint        = NULL;
-    callbacks.dscMalloc       = callback.dscMalloc;
-    callbacks.dscFree         = callback.dscFree;
-#if defined (DEBUG)
-    callbacks.dscPrint        = callback.dscPrint;
-#endif
-
-    return NVT_STATUS_SUCCESS;
 }

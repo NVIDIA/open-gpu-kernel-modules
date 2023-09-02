@@ -566,8 +566,11 @@ typedef struct UvmPlatformInfo_tag
     // Out: ATS (Address Translation Services) is supported
     NvBool atsSupported;
 
-    // Out: AMD SEV (Secure Encrypted Virtualization) is enabled
-    NvBool sevEnabled;
+    // Out: True if HW trusted execution, such as AMD's SEV-SNP or Intel's TDX,
+    // is enabled in the VM, indicating that Confidential Computing must be
+    // also enabled in the GPU(s); these two security features are either both
+    // enabled, or both disabled.
+    NvBool confComputingEnabled;
 } UvmPlatformInfo;
 
 typedef struct UvmGpuClientInfo_tag

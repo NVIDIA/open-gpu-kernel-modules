@@ -405,6 +405,11 @@ NV_STATUS GspStatusQueueInit(OBJGPU *pGpu, MESSAGE_QUEUE_INFO **ppMQI)
             break;
 
         kgspDumpGspLogs(pKernelGsp, NV_FALSE);
+        if (!kgspHealthCheck_HAL(pGpu, pKernelGsp))
+        {
+            nvStatus = NV_ERR_RESET_REQUIRED;
+            break;
+        }
     }
 
     if (nRet < 0)

@@ -242,9 +242,7 @@ NV_STATUS uvm_va_space_create(struct address_space *mapping, uvm_va_space_t **va
     if (status != NV_OK)
         goto fail;
 
-    status = uvm_hmm_va_space_initialize(va_space);
-    if (status != NV_OK)
-        goto fail;
+    uvm_hmm_va_space_initialize(va_space);
 
     uvm_va_space_up_write(va_space);
     uvm_up_write_mmap_lock(current->mm);
@@ -2226,11 +2224,12 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
             // address with mremap() so create a new va_block if needed.
             status = uvm_hmm_va_block_find_create(va_space,
                                                   fault_addr,
-                                                  &service_context->block_context,
+                                                  &service_context->block_context.hmm.vma,
                                                   &va_block);
             if (status != NV_OK)
                 break;
 
+            UVM_ASSERT(service_context->block_context.hmm.vma == vma);
             status = uvm_hmm_migrate_begin(va_block);
             if (status != NV_OK)
                 break;

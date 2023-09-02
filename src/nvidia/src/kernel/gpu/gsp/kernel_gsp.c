@@ -60,6 +60,7 @@
 #include "kernel/gpu/pmu/kern_pmu.h"
 #include "gpu/perf/kern_perf.h"
 #include "core/locks.h"
+#include "kernel/gpu/intr/intr.h"
 
 #define RPC_STRUCTURES
 #define RPC_GENERIC_UNION
@@ -185,6 +186,43 @@ _kgspGetActiveRpcDebugData
     }
 }
 
+static NV_STATUS
+_kgspRpcSanityCheck(OBJGPU *pGpu)
+{
+    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "GPU in reset, skipping RPC\n");
+        return NV_ERR_GPU_IN_FULLCHIP_RESET;
+    }
+    if (!API_GPU_ATTACHED_SANITY_CHECK(pGpu) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_LOST))
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "GPU lost, skipping RPC\n");
+        return NV_ERR_GPU_IS_LOST;
+    }
+    if (osIsGpuShutdown(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "GPU shutdown, skipping RPC\n");
+        return NV_ERR_GPU_IS_LOST;
+    }
+    if (!gpuIsGpuFullPowerForPmResume(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "GPU not full power, skipping RPC\n");
+        return NV_ERR_GPU_NOT_FULL_POWER;
+    }
+    if (!gpuCheckSysmemAccess(pGpu))
+    {
+        NV_PRINTF(LEVEL_INFO,
+                  "GPU has no sysmem access, skipping RPC\n");
+        return NV_ERR_INVALID_ACCESS_TYPE;
+    }
+    return NV_OK;
+}
+
 /*!
  * GSP client RM RPC send routine
  */
@@ -200,14 +238,7 @@ _kgspRpcSendMessage
 
     NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
-    NV_ASSERT_OR_RETURN(!osIsGpuShutdown(pGpu), NV_ERR_GPU_IS_LOST);
-
-    // Skip queuing RPC if we are in the GPU reset path.
-    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu))
-    {
-        NV_PRINTF(LEVEL_INFO, "Skip queuing RPC in the GPU reset path \n");
-        return NV_ERR_GPU_IS_LOST;
-    }
+    NV_CHECK_OK_OR_RETURN(LEVEL_SILENT, _kgspRpcSanityCheck(pGpu));
 
     nvStatus = GspMsgQueueSendCommand(pRpc->pMessageQueueInfo, pGpu);
     if (nvStatus != NV_OK)
@@ -374,6 +405,18 @@ _kgspRpcRCTriggered
     // check if there's a PCI-E error pending either in device status or in AER
     krcCheckBusError_HAL(pGpu, pKernelRc);
 
+    //
+    // If we have received a special msg from GSP then ack back immediately
+    // that we are done writing notifiers since we would have already processed the
+    // other RC msgs that trigger notifier writes before this one.
+    //
+    if (rpc_params->exceptType == ROBUST_CHANNEL_FAST_PATH_ERROR)
+    {
+        NV_RM_RPC_ECC_NOTIFIER_WRITE_ACK(pGpu, status);
+        NV_ASSERT_OK(status);
+        return status;
+    }
+
     status = kfifoGetChidMgrFromType(pGpu, pKernelFifo,
                                      ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
                                      (NvU32)rmEngineType,
@@ -387,6 +430,16 @@ _kgspRpcRCTriggered
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
                        pKernelChannel != NULL,
                        NV_ERR_INVALID_CHANNEL);
+
+    // With CC enabled, CPU-RM needs to write error notifiers
+    if (gpuIsCCFeatureEnabled(pGpu))
+    {
+        NV_ASSERT_OK_OR_RETURN(krcErrorSetNotifier(pGpu, pKernelRc,
+                                                   pKernelChannel,
+                                                   rpc_params->exceptType,
+                                                   rmEngineType,
+                                                   rpc_params->scope));
+    }
 
     return krcErrorSendEventNotifications_HAL(pGpu, pKernelRc,
         pKernelChannel,
@@ -1246,7 +1299,9 @@ _kgspRpcDrainEvents
         kgspDumpGspLogs(pKernelGsp, NV_FALSE);
     }
 
-    kgspHealthCheck_HAL(pGpu, pKernelGsp);
+    // If GSP-RM has died, 
+    if (!kgspHealthCheck_HAL(pGpu, pKernelGsp))
+        return NV_ERR_RESET_REQUIRED;
 
     if (nvStatus == NV_WARN_NOTHING_TO_DO)
         nvStatus = NV_OK;
@@ -1282,6 +1337,12 @@ _kgspLogXid119
                   _getRpcName(expectedFunc),
                   pRpc->rpcHistory[historyEntry].data[0],
                   pRpc->rpcHistory[historyEntry].data[1]);
+    NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR, NV_PRINTF_ADD_PREFIX
+                 ("Timeout waiting for RPC from GSP%d! Expected function %d (0x%x 0x%x)"),
+                 gpuGetInstance(pGpu),
+                 expectedFunc,
+                 pRpc->rpcHistory[historyEntry].data[0],
+                 pRpc->rpcHistory[historyEntry].data[1]);
 
     if (pRpc->timeoutCount == 1)
     {
@@ -1333,7 +1394,16 @@ _kgspRpcIncrementTimeoutCountAndRateLimitPrints
     OBJRPC *pRpc
 )
 {
+    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+
     pRpc->timeoutCount++;
+
+    if (pKernelGsp->bFatalError)
+    {
+        // in case of a fatal GSP error, don't bother printing RPC errors at all
+        pRpc->bQuietPrints = NV_TRUE;
+        return;
+    }
 
     if ((pRpc->timeoutCount == (RPC_TIMEOUT_LIMIT_PRINT_RATE_THRESH + 1)) &&
         (RPC_TIMEOUT_LIMIT_PRINT_RATE_SKIP > 0))
@@ -1369,7 +1439,8 @@ _kgspRpcRecvPoll
 )
 {
     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-    NV_STATUS  nvStatus;
+    NV_STATUS  rpcStatus = NV_OK;
+    NV_STATUS  timeoutStatus = NV_OK;
     RMTIMEOUT  timeout;
     NvU32      timeoutUs;
     NvU32      timeoutFlags;
@@ -1431,11 +1502,17 @@ _kgspRpcRecvPoll
 
     for (;;)
     {
-        nvStatus = _kgspRpcDrainEvents(pGpu, pKernelGsp, expectedFunc);
+        //
+        // Check for GPU timeout, save that information, and then verify if the RPC is completed.
+        // Otherwise if the CPU thread goes to sleep immediately after the RPC check, it may result in hitting a timeout.
+        //
+        timeoutStatus = gpuCheckTimeout(pGpu, &timeout);
 
-        switch (nvStatus) {
+        rpcStatus = _kgspRpcDrainEvents(pGpu, pKernelGsp, expectedFunc);
+
+        switch (rpcStatus) {
             case NV_WARN_MORE_PROCESSING_REQUIRED:
-                nvStatus = NV_OK;
+                rpcStatus = NV_OK;
                 goto done;
             case NV_OK:
                 // Check timeout and continue outer loop.
@@ -1444,11 +1521,12 @@ _kgspRpcRecvPoll
                 goto done;
         }
 
-        osSpinLoop();
+        NV_CHECK_OK_OR_GOTO(rpcStatus, LEVEL_SILENT, _kgspRpcSanityCheck(pGpu), done);
 
-        nvStatus = gpuCheckTimeout(pGpu, &timeout);
-        if (nvStatus == NV_ERR_TIMEOUT)
+        if (timeoutStatus == NV_ERR_TIMEOUT)
         {
+            rpcStatus = timeoutStatus;
+
             _kgspRpcIncrementTimeoutCountAndRateLimitPrints(pGpu, pRpc);
 
             if (!pRpc->bQuietPrints)
@@ -1458,12 +1536,15 @@ _kgspRpcRecvPoll
 
             goto done;
         }
-
-        if (osIsGpuShutdown(pGpu))
+        else if (timeoutStatus != NV_OK)
         {
-            nvStatus = NV_ERR_GPU_IS_LOST;
+            NV_PRINTF(LEVEL_ERROR, "gpuCheckTimeout() returned unexpected error (0x%08x)\n",
+                      timeoutStatus);
+            rpcStatus = timeoutStatus;
             goto done;
         }
+
+        osSpinLoop();
     }
 
     pRpc->timeoutCount = 0;
@@ -1477,7 +1558,7 @@ done:
         threadStateResetTimeout(pGpu);
     }
 
-    return nvStatus;
+    return rpcStatus;
 }
 
 /*!
@@ -2410,7 +2491,13 @@ kgspInitRm_IMPL
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "cannot bootstrap riscv/gsp: 0x%x\n", status);
-        kgspHealthCheck_HAL(pGpu, pKernelGsp);
+
+        //
+        // Ignore return value - a crash report may have already been consumed,
+        // this is just here as a last attempt to report boot issues that might
+        // escaped prior checks.
+        //
+        (void)kgspHealthCheck_HAL(pGpu, pKernelGsp);
         goto done;
     }
 

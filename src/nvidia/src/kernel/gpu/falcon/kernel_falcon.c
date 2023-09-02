@@ -36,7 +36,6 @@
 #include "mem_mgr/ctx_buf_pool.h"
 #include "rmapi/rmapi.h"
 
-
 void kflcnConfigureEngine_IMPL(OBJGPU *pGpu, KernelFalcon *pKernelFalcon, KernelFalconEngineConfig *pFalconConfig)
 {
     pKernelFalcon->registerBase       = pFalconConfig->registerBase;
@@ -49,6 +48,10 @@ void kflcnConfigureEngine_IMPL(OBJGPU *pGpu, KernelFalcon *pKernelFalcon, Kernel
     pKernelFalcon->ctxAttr            = pFalconConfig->ctxAttr;
     pKernelFalcon->ctxBufferSize      = pFalconConfig->ctxBufferSize;
     pKernelFalcon->addrSpaceList      = pFalconConfig->addrSpaceList;
+
+    // Configure CrashCat with caller arguments (disabled by default)
+    kcrashcatEngineConfigure(staticCast(pKernelFalcon, KernelCrashCatEngine),
+                             &pFalconConfig->crashcatEngConfig);
 
     NV_PRINTF(LEVEL_INFO, "for physEngDesc 0x%x\n", pKernelFalcon->physEngDesc);
 }

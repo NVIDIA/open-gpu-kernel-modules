@@ -1322,6 +1322,7 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_t *gpu,
     uvm_fault_buffer_entry_t **ordered_fault_cache = batch_context->ordered_fault_cache;
     uvm_service_block_context_t *block_context = &replayable_faults->block_service_context;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
+    const uvm_va_policy_t *policy;
     NvU64 end;
 
     // Check that all uvm_fault_access_type_t values can fit into an NvU8
@@ -1347,13 +1348,13 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_t *gpu,
     UVM_ASSERT(ordered_fault_cache[first_fault_index]->fault_address <= va_block->end);
 
     if (uvm_va_block_is_hmm(va_block)) {
-        uvm_hmm_find_policy_end(va_block,
-                                &block_context->block_context,
-                                ordered_fault_cache[first_fault_index]->fault_address,
-                                &end);
+        policy = uvm_hmm_find_policy_end(va_block,
+                                         block_context->block_context.hmm.vma,
+                                         ordered_fault_cache[first_fault_index]->fault_address,
+                                         &end);
     }
     else {
-        block_context->block_context.policy = uvm_va_range_get_policy(va_block->va_range);
+        policy = uvm_va_range_get_policy(va_block->va_range);
         end = va_block->end;
     }
 
@@ -1393,7 +1394,7 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_t *gpu,
             update_batch_and_notify_fault(gpu,
                                           batch_context,
                                           va_block,
-                                          block_context->block_context.policy->preferred_location,
+                                          policy->preferred_location,
                                           current_entry,
                                           is_duplicate);
         }
@@ -1473,7 +1474,7 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_t *gpu,
                                                       page_index,
                                                       gpu->id,
                                                       service_access_type_mask,
-                                                      block_context->block_context.policy,
+                                                      policy,
                                                       &thrashing_hint,
                                                       UVM_SERVICE_OPERATION_REPLAYABLE_FAULTS,
                                                       &read_duplicate);
@@ -1625,21 +1626,25 @@ static NV_STATUS service_fault_batch_ats_sub_vma(uvm_gpu_va_space_t *gpu_va_spac
     uvm_ats_fault_context_t *ats_context = &batch_context->ats_context;
     const uvm_page_mask_t *read_fault_mask = &ats_context->read_fault_mask;
     const uvm_page_mask_t *write_fault_mask = &ats_context->write_fault_mask;
-    const uvm_page_mask_t *faults_serviced_mask = &ats_context->faults_serviced_mask;
     const uvm_page_mask_t *reads_serviced_mask = &ats_context->reads_serviced_mask;
-    uvm_page_mask_t *tmp_mask = &ats_context->tmp_mask;
+    uvm_page_mask_t *faults_serviced_mask = &ats_context->faults_serviced_mask;
+    uvm_page_mask_t *faulted_mask = &ats_context->faulted_mask;
 
     UVM_ASSERT(vma);
 
     ats_context->client_type = UVM_FAULT_CLIENT_TYPE_GPC;
 
-    uvm_page_mask_or(tmp_mask, write_fault_mask, read_fault_mask);
+    uvm_page_mask_or(faulted_mask, write_fault_mask, read_fault_mask);
 
     status = uvm_ats_service_faults(gpu_va_space, vma, base, &batch_context->ats_context);
 
-    UVM_ASSERT(uvm_page_mask_subset(faults_serviced_mask, tmp_mask));
+    // Remove prefetched pages from the serviced mask since fault servicing
+    // failures belonging to prefetch pages need to be ignored.
+    uvm_page_mask_and(faults_serviced_mask, faults_serviced_mask, faulted_mask);
 
-    if ((status != NV_OK) || uvm_page_mask_equal(faults_serviced_mask, tmp_mask)) {
+    UVM_ASSERT(uvm_page_mask_subset(faults_serviced_mask, faulted_mask));
+
+    if ((status != NV_OK) || uvm_page_mask_equal(faults_serviced_mask, faulted_mask)) {
         (*block_faults) += (fault_index_end - fault_index_start);
         return status;
     }
@@ -1867,7 +1872,13 @@ static NV_STATUS service_fault_batch_dispatch(uvm_va_space_t *va_space,
         va_range_next = uvm_va_space_iter_next(va_range_next, ~0ULL);
     }
 
-    status = uvm_va_block_find_create_in_range(va_space, va_range, fault_address, va_block_context, &va_block);
+    if (va_range)
+        status = uvm_va_block_find_create_in_range(va_space, va_range, fault_address, &va_block);
+    else if (mm)
+        status = uvm_hmm_va_block_find_create(va_space, fault_address, &va_block_context->hmm.vma, &va_block);
+    else
+        status = NV_ERR_INVALID_ADDRESS;
+
     if (status == NV_OK) {
         status = service_fault_batch_block(gpu, va_block, batch_context, fault_index, block_faults);
     }

@@ -343,6 +343,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
     bool read_duplicate;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &gpu->parent->fault_buffer_info.non_replayable;
+    const uvm_va_policy_t *policy;
 
     UVM_ASSERT(!fault_entry->is_fatal);
 
@@ -352,7 +353,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
     UVM_ASSERT(fault_entry->fault_address >= va_block->start);
     UVM_ASSERT(fault_entry->fault_address <= va_block->end);
 
-    service_context->block_context.policy = uvm_va_policy_get(va_block, fault_entry->fault_address);
+    policy = uvm_va_policy_get(va_block, fault_entry->fault_address);
 
     if (service_context->num_retries == 0) {
         // notify event to tools/performance heuristics. For now we use a
@@ -361,7 +362,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
         uvm_perf_event_notify_gpu_fault(&va_space->perf_events,
                                         va_block,
                                         gpu->id,
-                                        service_context->block_context.policy->preferred_location,
+                                        policy->preferred_location,
                                         fault_entry,
                                         ++non_replayable_faults->batch_id,
                                         false);
@@ -396,7 +397,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
                                                   page_index,
                                                   gpu->id,
                                                   fault_entry->access_type_mask,
-                                                  service_context->block_context.policy,
+                                                  policy,
                                                   &thrashing_hint,
                                                   UVM_SERVICE_OPERATION_NON_REPLAYABLE_FAULTS,
                                                   &read_duplicate);
@@ -678,10 +679,17 @@ static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_e
     fault_entry->fault_source.channel_id = user_channel->hw_channel_id;
 
     if (!fault_entry->is_fatal) {
-        status = uvm_va_block_find_create(fault_entry->va_space,
-                                          fault_entry->fault_address,
-                                          va_block_context,
-                                          &va_block);
+        if (mm) {
+            status = uvm_va_block_find_create(fault_entry->va_space,
+                                              fault_entry->fault_address,
+                                              &va_block_context->hmm.vma,
+                                              &va_block);
+        }
+        else {
+            status = uvm_va_block_find_create_managed(fault_entry->va_space,
+                                                      fault_entry->fault_address,
+                                                      &va_block);
+        }
         if (status == NV_OK)
             status = service_managed_fault_in_block(gpu_va_space->gpu, va_block, fault_entry);
         else
@@ -734,8 +742,6 @@ void uvm_gpu_service_non_replayable_fault_buffer(uvm_gpu_t *gpu)
         // Differently to replayable faults, we do not batch up and preprocess
         // non-replayable faults since getting multiple faults on the same
         // memory region is not very likely
-        //
-        // TODO: Bug 2103669: [UVM/ATS] Optimize ATS fault servicing
         for (i = 0; i < cached_faults; ++i) {
             status = service_fault(gpu, &gpu->parent->fault_buffer_info.non_replayable.fault_cache[i]);
             if (status != NV_OK)

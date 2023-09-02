@@ -274,6 +274,22 @@ NV_STATUS uvm_va_space_mm_register(uvm_va_space_t *va_space)
         }
     }
 
+    if ((UVM_IS_CONFIG_HMM() || UVM_ATS_PREFETCH_SUPPORTED()) && uvm_va_space_pageable_mem_access_supported(va_space)) {
+        #if UVM_CAN_USE_MMU_NOTIFIERS()
+            // Initialize MMU interval notifiers for this process. This allows
+            // mmu_interval_notifier_insert() to be called without holding the
+            // mmap_lock for write.
+            // Note: there is no __mmu_notifier_unregister(), this call just
+            // allocates memory which is attached to the mm_struct and freed
+            // when the mm_struct is freed.
+            ret = __mmu_notifier_register(NULL, current->mm);
+            if (ret)
+                return errno_to_nv_status(ret);
+        #else
+            UVM_ASSERT(0);
+        #endif
+    }
+
     return NV_OK;
 }
 

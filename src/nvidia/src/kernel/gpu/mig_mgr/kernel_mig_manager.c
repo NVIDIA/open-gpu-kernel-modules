@@ -2542,6 +2542,29 @@ kmigmgrSetGPUInstanceInfo_IMPL
             pKernelMIGGpuInstance->pMemoryPartitionHeap = pMemoryPartitionHeap;
             pKernelMIGGpuInstance->partitionFlag = partitionFlag;
 
+            //
+            // Offloading of VGPU to GSP requires that the memRange in KERNEL_MIG_GPU_INSTANCE
+            // be populated, as the plugin will query only within GSP for GPU INSTANCE information.
+            // CPU-RM is the entity which actually calculates and allocates memory, so with
+            // VGPU offloaded, GSP-RM must be updated with the memRange info.
+            //
+            if (IS_GSP_CLIENT(pGpu) && !IS_VIRTUAL(pGpu) && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+            {
+                RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+                NV2080_CTRL_INTERNAL_KMIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE_PARAMS memParams;
+                
+                memParams.swizzId = pKernelMIGGpuInstance->swizzId;
+                memParams.memAddrRange.lo = pKernelMIGGpuInstance->memRange.lo;
+                memParams.memAddrRange.hi = pKernelMIGGpuInstance->memRange.hi;
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, 
+                    pRmApi->Control(pRmApi,
+                                    pGpu->hInternalClient,
+                                    pGpu->hInternalSubdevice,
+                                    NV2080_CTRL_CMD_INTERNAL_KMIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE,
+                                    &memParams,
+                                    sizeof(memParams)));
+            }
+
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                 kmigmgrGetProfileByPartitionFlag(pGpu, pKernelMIGManager, partitionFlag, &pKernelMIGGpuInstance->pProfile));
 

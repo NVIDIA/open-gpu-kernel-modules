@@ -218,57 +218,11 @@ static void grow_fault_granularity(uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
     }
 }
 
-// Within a block we only allow prefetching to a single processor. Therefore,
-// if two processors are accessing non-overlapping regions within the same
-// block they won't benefit from prefetching.
-//
-// TODO: Bug 1778034: [uvm] Explore prefetching to different processors within
-// a VA block.
-static NvU32 uvm_perf_prefetch_prenotify_fault_migrations(uvm_va_block_t *va_block,
-                                                          uvm_va_block_context_t *va_block_context,
-                                                          uvm_processor_id_t new_residency,
-                                                          const uvm_page_mask_t *faulted_pages,
-                                                          uvm_va_block_region_t faulted_region,
-                                                          uvm_page_mask_t *prefetch_pages,
-                                                          uvm_perf_prefetch_bitmap_tree_t *bitmap_tree)
+static void init_bitmap_tree_from_region(uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
+                                         uvm_va_block_region_t max_prefetch_region,
+                                         const uvm_page_mask_t *resident_mask,
+                                         const uvm_page_mask_t *faulted_pages)
 {
-    uvm_page_index_t page_index;
-    const uvm_page_mask_t *resident_mask = NULL;
-    const uvm_page_mask_t *thrashing_pages = NULL;
-    uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
-    const uvm_va_policy_t *policy = va_block_context->policy;
-    uvm_va_block_region_t max_prefetch_region;
-    NvU32 big_page_size;
-    uvm_va_block_region_t big_pages_region;
-
-    if (!uvm_id_equal(va_block->prefetch_info.last_migration_proc_id, new_residency)) {
-        va_block->prefetch_info.last_migration_proc_id = new_residency;
-        va_block->prefetch_info.fault_migrations_to_last_proc = 0;
-    }
-
-    // Compute the expanded region that prefetching is allowed from.
-    if (uvm_va_block_is_hmm(va_block)) {
-        max_prefetch_region = uvm_hmm_get_prefetch_region(va_block,
-                                                          va_block_context,
-                                                          uvm_va_block_region_start(va_block, faulted_region));
-    }
-    else {
-        max_prefetch_region = uvm_va_block_region_from_block(va_block);
-    }
-
-    uvm_page_mask_zero(prefetch_pages);
-
-    if (UVM_ID_IS_CPU(new_residency) || va_block->gpus[uvm_id_gpu_index(new_residency)] != NULL)
-        resident_mask = uvm_va_block_resident_mask_get(va_block, new_residency);
-
-    // If this is a first-touch fault and the destination processor is the
-    // preferred location, populate the whole max_prefetch_region.
-    if (uvm_processor_mask_empty(&va_block->resident) &&
-        uvm_id_equal(new_residency, policy->preferred_location)) {
-        uvm_page_mask_region_fill(prefetch_pages, max_prefetch_region);
-        goto done;
-    }
-
     if (resident_mask)
         uvm_page_mask_or(&bitmap_tree->pages, resident_mask, faulted_pages);
     else
@@ -276,6 +230,29 @@ static NvU32 uvm_perf_prefetch_prenotify_fault_migrations(uvm_va_block_t *va_blo
 
     // If we are using a subregion of the va_block, align bitmap_tree
     uvm_page_mask_shift_right(&bitmap_tree->pages, &bitmap_tree->pages, max_prefetch_region.first);
+
+    bitmap_tree->offset = 0;
+    bitmap_tree->leaf_count = uvm_va_block_region_num_pages(max_prefetch_region);
+    bitmap_tree->level_count = ilog2(roundup_pow_of_two(bitmap_tree->leaf_count)) + 1;
+}
+
+static void update_bitmap_tree_from_va_block(uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
+                                             uvm_va_block_t *va_block,
+                                             uvm_va_block_context_t *va_block_context,
+                                             uvm_processor_id_t new_residency,
+                                             const uvm_page_mask_t *faulted_pages,
+                                             uvm_va_block_region_t max_prefetch_region)
+
+{
+    NvU32 big_page_size;
+    uvm_va_block_region_t big_pages_region;
+    uvm_va_space_t *va_space;
+    const uvm_page_mask_t *thrashing_pages;
+
+    UVM_ASSERT(va_block);
+    UVM_ASSERT(va_block_context);
+
+    va_space = uvm_va_block_get_va_space(va_block);
 
     // Get the big page size for the new residency.
     // Assume 64K size if the new residency is the CPU or no GPU va space is
@@ -302,13 +279,9 @@ static NvU32 uvm_perf_prefetch_prenotify_fault_migrations(uvm_va_block_t *va_blo
         UVM_ASSERT(bitmap_tree->leaf_count <= PAGES_PER_UVM_VA_BLOCK);
 
         uvm_page_mask_shift_left(&bitmap_tree->pages, &bitmap_tree->pages, bitmap_tree->offset);
-    }
-    else {
-        bitmap_tree->offset = 0;
-        bitmap_tree->leaf_count = uvm_va_block_region_num_pages(max_prefetch_region);
-    }
 
-    bitmap_tree->level_count = ilog2(roundup_pow_of_two(bitmap_tree->leaf_count)) + 1;
+        bitmap_tree->level_count = ilog2(roundup_pow_of_two(bitmap_tree->leaf_count)) + 1;
+    }
 
     thrashing_pages = uvm_perf_thrashing_get_thrashing_pages(va_block);
 
@@ -320,25 +293,99 @@ static NvU32 uvm_perf_prefetch_prenotify_fault_migrations(uvm_va_block_t *va_blo
                            max_prefetch_region,
                            faulted_pages,
                            thrashing_pages);
+}
 
-    // Do not compute prefetch regions with faults on pages that are thrashing
-    if (thrashing_pages)
-        uvm_page_mask_andnot(&va_block_context->scratch_page_mask, faulted_pages, thrashing_pages);
-    else
-        uvm_page_mask_copy(&va_block_context->scratch_page_mask, faulted_pages);
+static void compute_prefetch_mask(uvm_va_block_region_t faulted_region,
+                                  uvm_va_block_region_t max_prefetch_region,
+                                  uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
+                                  const uvm_page_mask_t *faulted_pages,
+                                  uvm_page_mask_t *out_prefetch_mask)
+{
+    uvm_page_index_t page_index;
 
-    // Update the tree using the scratch mask to compute the pages to prefetch
-    for_each_va_block_page_in_region_mask(page_index, &va_block_context->scratch_page_mask, faulted_region) {
+    uvm_page_mask_zero(out_prefetch_mask);
+
+    // Update the tree using the faulted mask to compute the pages to prefetch.
+    for_each_va_block_page_in_region_mask(page_index, faulted_pages, faulted_region) {
         uvm_va_block_region_t region = compute_prefetch_region(page_index, bitmap_tree, max_prefetch_region);
 
-        uvm_page_mask_region_fill(prefetch_pages, region);
+        uvm_page_mask_region_fill(out_prefetch_mask, region);
 
         // Early out if we have already prefetched until the end of the VA block
         if (region.outer == max_prefetch_region.outer)
             break;
     }
+}
 
-done:
+// Within a block we only allow prefetching to a single processor. Therefore,
+// if two processors are accessing non-overlapping regions within the same
+// block they won't benefit from prefetching.
+//
+// TODO: Bug 1778034: [uvm] Explore prefetching to different processors within
+// a VA block.
+static NvU32 uvm_perf_prefetch_prenotify_fault_migrations(uvm_va_block_t *va_block,
+                                                          uvm_va_block_context_t *va_block_context,
+                                                          uvm_processor_id_t new_residency,
+                                                          const uvm_page_mask_t *faulted_pages,
+                                                          uvm_va_block_region_t faulted_region,
+                                                          uvm_page_mask_t *prefetch_pages,
+                                                          uvm_perf_prefetch_bitmap_tree_t *bitmap_tree)
+{
+    const uvm_page_mask_t *resident_mask = NULL;
+    const uvm_va_policy_t *policy = uvm_va_policy_get_region(va_block, faulted_region);
+    uvm_va_block_region_t max_prefetch_region;
+    const uvm_page_mask_t *thrashing_pages = uvm_perf_thrashing_get_thrashing_pages(va_block);
+
+    if (!uvm_id_equal(va_block->prefetch_info.last_migration_proc_id, new_residency)) {
+        va_block->prefetch_info.last_migration_proc_id = new_residency;
+        va_block->prefetch_info.fault_migrations_to_last_proc = 0;
+    }
+
+    // Compute the expanded region that prefetching is allowed from.
+    if (uvm_va_block_is_hmm(va_block)) {
+        max_prefetch_region = uvm_hmm_get_prefetch_region(va_block,
+                                                          va_block_context->hmm.vma,
+                                                          policy,
+                                                          uvm_va_block_region_start(va_block, faulted_region));
+    }
+    else {
+        max_prefetch_region = uvm_va_block_region_from_block(va_block);
+    }
+
+    uvm_page_mask_zero(prefetch_pages);
+
+    if (UVM_ID_IS_CPU(new_residency) || va_block->gpus[uvm_id_gpu_index(new_residency)] != NULL)
+        resident_mask = uvm_va_block_resident_mask_get(va_block, new_residency);
+
+    // If this is a first-touch fault and the destination processor is the
+    // preferred location, populate the whole max_prefetch_region.
+    if (uvm_processor_mask_empty(&va_block->resident) &&
+        uvm_id_equal(new_residency, policy->preferred_location)) {
+        uvm_page_mask_region_fill(prefetch_pages, max_prefetch_region);
+    }
+    else {
+        init_bitmap_tree_from_region(bitmap_tree, max_prefetch_region, resident_mask, faulted_pages);
+
+        update_bitmap_tree_from_va_block(bitmap_tree,
+                                         va_block,
+                                         va_block_context,
+                                         new_residency,
+                                         faulted_pages,
+                                         max_prefetch_region);
+
+        // Do not compute prefetch regions with faults on pages that are thrashing
+        if (thrashing_pages)
+            uvm_page_mask_andnot(&va_block_context->scratch_page_mask, faulted_pages, thrashing_pages);
+        else
+            uvm_page_mask_copy(&va_block_context->scratch_page_mask, faulted_pages);
+
+        compute_prefetch_mask(faulted_region,
+                              max_prefetch_region,
+                              bitmap_tree,
+                              &va_block_context->scratch_page_mask,
+                              prefetch_pages);
+    }
+
     // Do not prefetch pages that are going to be migrated/populated due to a
     // fault
     uvm_page_mask_andnot(prefetch_pages, prefetch_pages, faulted_pages);
@@ -364,31 +411,58 @@ done:
     return uvm_page_mask_weight(prefetch_pages);
 }
 
-void uvm_perf_prefetch_get_hint(uvm_va_block_t *va_block,
-                                uvm_va_block_context_t *va_block_context,
-                                uvm_processor_id_t new_residency,
-                                const uvm_page_mask_t *faulted_pages,
-                                uvm_va_block_region_t faulted_region,
-                                uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
-                                uvm_perf_prefetch_hint_t *out_hint)
+bool uvm_perf_prefetch_enabled(uvm_va_space_t *va_space)
 {
-    const uvm_va_policy_t *policy = va_block_context->policy;
+    if (!g_uvm_perf_prefetch_enable)
+        return false;
+
+    UVM_ASSERT(va_space);
+
+    return va_space->test.page_prefetch_enabled;
+}
+
+void uvm_perf_prefetch_compute_ats(uvm_va_space_t *va_space,
+                                   const uvm_page_mask_t *faulted_pages,
+                                   uvm_va_block_region_t faulted_region,
+                                   uvm_va_block_region_t max_prefetch_region,
+                                   const uvm_page_mask_t *residency_mask,
+                                   uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
+                                   uvm_page_mask_t *out_prefetch_mask)
+{
+    UVM_ASSERT(faulted_pages);
+    UVM_ASSERT(bitmap_tree);
+    UVM_ASSERT(out_prefetch_mask);
+
+    uvm_page_mask_zero(out_prefetch_mask);
+
+    if (!uvm_perf_prefetch_enabled(va_space))
+        return;
+
+    init_bitmap_tree_from_region(bitmap_tree, max_prefetch_region, residency_mask, faulted_pages);
+
+    compute_prefetch_mask(faulted_region, max_prefetch_region, bitmap_tree, faulted_pages, out_prefetch_mask);
+}
+
+void uvm_perf_prefetch_get_hint_va_block(uvm_va_block_t *va_block,
+                                         uvm_va_block_context_t *va_block_context,
+                                         uvm_processor_id_t new_residency,
+                                         const uvm_page_mask_t *faulted_pages,
+                                         uvm_va_block_region_t faulted_region,
+                                         uvm_perf_prefetch_bitmap_tree_t *bitmap_tree,
+                                         uvm_perf_prefetch_hint_t *out_hint)
+{
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
     uvm_page_mask_t *prefetch_pages = &out_hint->prefetch_pages_mask;
     NvU32 pending_prefetch_pages;
 
     uvm_assert_rwsem_locked(&va_space->lock);
     uvm_assert_mutex_locked(&va_block->lock);
-    UVM_ASSERT(uvm_va_block_check_policy_is_valid(va_block, policy, faulted_region));
-    UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block, va_block_context, faulted_region));
+    UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block, va_block_context->hmm.vma, faulted_region));
 
     out_hint->residency = UVM_ID_INVALID;
     uvm_page_mask_zero(prefetch_pages);
 
-    if (!g_uvm_perf_prefetch_enable)
-        return;
-
-    if (!va_space->test.page_prefetch_enabled)
+    if (!uvm_perf_prefetch_enabled(va_space))
         return;
 
     pending_prefetch_pages = uvm_perf_prefetch_prenotify_fault_migrations(va_block,

@@ -223,7 +223,7 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
     NV_STATUS status, tracker_status = NV_OK;
 
     uvm_assert_mutex_locked(&va_block->lock);
-    UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block, va_block_context, region));
+    UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block, va_block_context->hmm.vma, region));
 
     if (uvm_va_block_is_hmm(va_block)) {
         status = uvm_hmm_va_block_migrate_locked(va_block,
@@ -234,9 +234,9 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                                  UVM_MAKE_RESIDENT_CAUSE_API_MIGRATE);
     }
     else {
-        va_block_context->policy = uvm_va_range_get_policy(va_block->va_range);
+        uvm_va_policy_t *policy = uvm_va_range_get_policy(va_block->va_range);
 
-        if (uvm_va_policy_is_read_duplicate(va_block_context->policy, va_space)) {
+        if (uvm_va_policy_is_read_duplicate(policy, va_space)) {
             status = uvm_va_block_make_resident_read_duplicate(va_block,
                                                                va_block_retry,
                                                                va_block_context,
@@ -371,8 +371,6 @@ static bool va_block_should_do_cpu_preunmap(uvm_va_block_t *va_block,
     if (!va_block)
         return true;
 
-    UVM_ASSERT(va_range_should_do_cpu_preunmap(va_block_context->policy, uvm_va_block_get_va_space(va_block)));
-
     region = uvm_va_block_region_from_start_end(va_block, max(start, va_block->start), min(end, va_block->end));
 
     uvm_mutex_lock(&va_block->lock);
@@ -496,11 +494,9 @@ static NV_STATUS uvm_va_range_migrate(uvm_va_range_t *va_range,
                                       uvm_tracker_t *out_tracker)
 {
     NvU64 preunmap_range_start = start;
+    uvm_va_policy_t *policy = uvm_va_range_get_policy(va_range);
 
-    UVM_ASSERT(va_block_context->policy == uvm_va_range_get_policy(va_range));
-
-    should_do_cpu_preunmap = should_do_cpu_preunmap && va_range_should_do_cpu_preunmap(va_block_context->policy,
-                                                                                       va_range->va_space);
+    should_do_cpu_preunmap = should_do_cpu_preunmap && va_range_should_do_cpu_preunmap(policy, va_range->va_space);
 
     // Divide migrations into groups of contiguous VA blocks. This is to trigger
     // CPU unmaps for that region before the migration starts.
@@ -577,8 +573,6 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
             break;
         }
 
-        va_block_context->policy = uvm_va_range_get_policy(va_range);
-
         // For UVM-Lite GPUs, the CUDA driver may suballocate a single va_range
         // into many range groups.  For this reason, we iterate over each va_range first
         // then through the range groups within.
@@ -653,6 +647,8 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
 
     if (mm)
         uvm_assert_mmap_lock_locked(mm);
+    else if (!first_va_range)
+        return NV_ERR_INVALID_ADDRESS;
 
     va_block_context = uvm_va_block_context_alloc(mm);
     if (!va_block_context)

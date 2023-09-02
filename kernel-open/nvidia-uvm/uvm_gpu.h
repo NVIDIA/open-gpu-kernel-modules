@@ -46,6 +46,7 @@
 #include "uvm_rb_tree.h"
 #include "uvm_perf_prefetch.h"
 #include "nv-kthread-q.h"
+#include <linux/mmu_notifier.h>
 #include "uvm_conf_computing.h"
 
 // Buffer length to store uvm gpu id, RM device name and gpu uuid.
@@ -192,9 +193,9 @@ typedef struct
     // Mask of successfully serviced read faults on pages in write_fault_mask.
     uvm_page_mask_t reads_serviced_mask;
 
-    // Temporary mask used for uvm_page_mask_or_equal. This is used since
-    // bitmap_or_equal() isn't present in all linux kernel versions.
-    uvm_page_mask_t tmp_mask;
+    // Mask of all faulted pages in a UVM_VA_BLOCK_SIZE aligned region of a
+    // SAM VMA. This is used as input to the prefetcher.
+    uvm_page_mask_t faulted_mask;
 
     // Client type of the service requestor.
     uvm_fault_client_type_t client_type;
@@ -204,6 +205,40 @@ typedef struct
 
     // New residency NUMA node ID of the faulting region.
     int residency_node;
+
+    struct
+    {
+        // True if preferred_location was set on this faulting region.
+        // UVM_VA_BLOCK_SIZE sized region in the faulting region bound by the
+        // VMA is is prefetched if preferred_location was set and if first_touch
+        // is true;
+        bool has_preferred_location;
+
+        // True if the UVM_VA_BLOCK_SIZE sized region isn't resident on any
+        // node. False if any page in the region is resident somewhere.
+        bool first_touch;
+
+        // Mask of prefetched pages in a UVM_VA_BLOCK_SIZE aligned region of a
+        // SAM VMA.
+        uvm_page_mask_t prefetch_pages_mask;
+
+        // PFN info of the faulting region
+        unsigned long pfns[PAGES_PER_UVM_VA_BLOCK];
+
+        // Faulting/preferred processor residency mask of the faulting region.
+        uvm_page_mask_t residency_mask;
+
+#if defined(NV_MMU_INTERVAL_NOTIFIER)
+        // MMU notifier used to compute residency of this faulting region.
+        struct mmu_interval_notifier notifier;
+#endif
+
+        uvm_va_space_t *va_space;
+
+        // Prefetch temporary state.
+        uvm_perf_prefetch_bitmap_tree_t bitmap_tree;
+    } prefetch_state;
+
 } uvm_ats_fault_context_t;
 
 struct uvm_fault_service_batch_context_struct

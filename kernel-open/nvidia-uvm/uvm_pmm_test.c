@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -324,7 +324,7 @@ static NV_STATUS gpu_mem_check(uvm_gpu_t *gpu,
 
     // TODO: Bug 3839176: [UVM][HCC][uvm_test] Update tests that assume GPU
     //                     engines can directly access sysmem
-    // Skip this test for now. To enable this test under SEV,
+    // Skip this test for now. To enable this test in Confidential Computing,
     // The GPU->CPU CE copy needs to be updated so it uses encryption when
     // CC is enabled.
     if (uvm_conf_computing_mode_enabled(gpu))
@@ -1222,8 +1222,6 @@ static NV_STATUS test_indirect_peers(uvm_gpu_t *owning_gpu, uvm_gpu_t *accessing
     chunks = uvm_kvmalloc_zero(num_chunks * sizeof(chunks[0]));
     if (!chunks)
         return NV_ERR_NO_MEMORY;
-
-    UVM_ASSERT(!g_uvm_global.sev_enabled);
 
     TEST_NV_CHECK_GOTO(uvm_mem_alloc_sysmem_and_map_cpu_kernel(UVM_CHUNK_SIZE_MAX, current->mm, &verif_mem), out);
     TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(verif_mem, owning_gpu), out);

@@ -453,11 +453,12 @@ struct uvm_va_block_struct
         NvU16 fault_migrations_to_last_proc;
     } prefetch_info;
 
-#if UVM_IS_CONFIG_HMM()
     struct
     {
+#if UVM_IS_CONFIG_HMM()
         // The MMU notifier is registered per va_block.
         struct mmu_interval_notifier notifier;
+#endif
 
         // This is used to serialize migrations between CPU and GPU while
         // allowing the va_block lock to be dropped.
@@ -487,7 +488,6 @@ struct uvm_va_block_struct
         // Storage node for range tree of va_blocks.
         uvm_range_tree_node_t node;
     } hmm;
-#endif
 };
 
 // We define additional per-VA Block fields for testing. When
@@ -678,17 +678,7 @@ static void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, 
         memset(va_block_context, 0xff, sizeof(*va_block_context));
 
     va_block_context->mm = mm;
-#if UVM_IS_CONFIG_HMM()
-    va_block_context->hmm.vma = NULL;
-#endif
 }
-
-// Check that a single policy covers the given region for the given va_block.
-// This always returns true and is intended to only be used with UVM_ASSERT().
-// Locking: the va_block lock must be held.
-bool uvm_va_block_check_policy_is_valid(uvm_va_block_t *va_block,
-                                        const uvm_va_policy_t *policy,
-                                        uvm_va_block_region_t region);
 
 // TODO: Bug 1766480: Using only page masks instead of a combination of regions
 //       and page masks could simplify the below APIs and their implementations
@@ -734,15 +724,15 @@ bool uvm_va_block_check_policy_is_valid(uvm_va_block_t *va_block,
 // user memory is guaranteed not to happen. Allocation-retry of GPU page tables
 // can still occur though.
 //
-// va_block_context must not be NULL. This function will set a bit in
-// va_block_context->make_resident.pages_changed_residency for each page that
-// changed residency (due to a migration or first population) as a result of the
-// operation and va_block_context->make_resident.all_involved_processors for
-// each processor involved in the copy. This function only sets bits in those
-// masks. It is the caller's responsiblity to zero the masks or not first.
-//
-// va_block_context->policy must also be set by the caller for the given region.
-// See the comments for uvm_va_block_check_policy_is_valid().
+// va_block_context must not be NULL and policy for the region must
+// match. This function will set a bit in
+// va_block_context->make_resident.pages_changed_residency for each
+// page that changed residency (due to a migration or first
+// population) as a result of the operation and
+// va_block_context->make_resident.all_involved_processors for each
+// processor involved in the copy. This function only sets bits in
+// those masks. It is the caller's responsiblity to zero the masks or
+// not first.
 //
 // Notably any status other than NV_OK indicates that the block's lock might
 // have been unlocked and relocked.
@@ -839,7 +829,7 @@ void uvm_va_block_make_resident_finish(uvm_va_block_t *va_block,
 // pages because the earlier operation can cause a PTE split or merge which is
 // assumed by the later operation.
 //
-// va_block_context must not be NULL and va_block_context->policy must be valid.
+// va_block_context must not be NULL and policy for the region must match.
 // See the comments for uvm_va_block_check_policy_is_valid().
 //
 // If allocation-retry was required as part of the operation and was successful,
@@ -896,7 +886,7 @@ NV_STATUS uvm_va_block_map_mask(uvm_va_block_t *va_block,
 // pages because the earlier operation can cause a PTE split or merge which is
 // assumed by the later operation.
 //
-// va_block_context must not be NULL. The va_block_context->policy is unused.
+// va_block_context must not be NULL.
 //
 // If allocation-retry was required as part of the operation and was successful,
 // NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case, the entries in the
@@ -929,7 +919,7 @@ NV_STATUS uvm_va_block_unmap_mask(uvm_va_block_t *va_block,
 // - Unmap the preferred location's processor from any pages in this region
 //   which are not resident on the preferred location.
 //
-// va_block_context must not be NULL and va_block_context->policy must be valid.
+// va_block_context must not be NULL and policy for the region must match.
 // See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: The caller must hold the VA block lock.
@@ -941,7 +931,7 @@ NV_STATUS uvm_va_block_set_preferred_location_locked(uvm_va_block_t *va_block,
 // location and policy. Waits for the operation to complete before returning.
 // This function should only be called with managed va_blocks.
 //
-// va_block_context must not be NULL and va_block_context->policy must be valid.
+// va_block_context must not be NULL and policy for the region must match.
 // See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: This takes and releases the VA block lock. If va_block_context->mm
@@ -956,7 +946,7 @@ NV_STATUS uvm_va_block_set_accessed_by(uvm_va_block_t *va_block,
 // the tracker after all mappings have been started.
 // This function can be called with HMM and managed va_blocks.
 //
-// va_block_context must not be NULL and va_block_context->policy must be valid.
+// va_block_context must not be NULL and policy for the region must match.
 // See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: The caller must hold the va_block lock and
@@ -970,7 +960,7 @@ NV_STATUS uvm_va_block_set_accessed_by_locked(uvm_va_block_t *va_block,
 // Breaks SetAccessedBy and remote mappings
 // This function should only be called with managed va_blocks.
 //
-// va_block_context must not be NULL and va_block_context->policy must be valid.
+// va_block_context must not be NULL and policy for the region must match.
 // See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: This takes and releases the VA block lock. If va_block_context->mm
@@ -982,7 +972,7 @@ NV_STATUS uvm_va_block_set_read_duplication(uvm_va_block_t *va_block,
 // Restores SetAccessedBy mappings
 // This function should only be called with managed va_blocks.
 //
-// va_block_context must not be NULL and va_block_context->policy must be valid.
+// va_block_context must not be NULL and policy for the region must match.
 // See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: This takes and releases the VA block lock. If va_block_context->mm
@@ -1002,10 +992,9 @@ NV_STATUS uvm_va_block_unset_read_duplication(uvm_va_block_t *va_block,
 // NV_ERR_INVALID_OPERATION     The access would violate the policies specified
 //                              by UvmPreventMigrationRangeGroups.
 //
-// va_block_context must not be NULL, va_block_context->policy must be valid,
-// and if the va_block is a HMM block, va_block_context->hmm.vma must be valid
-// which also means the va_block_context->mm is not NULL, retained, and locked
-// for at least read.
+// va_block_context must not be NULL, policy must match, and if the va_block is
+// a HMM block, va_block_context->hmm.vma must be valid which also means the
+// va_block_context->mm is not NULL, retained, and locked for at least read.
 // Locking: the va_block lock must be held.
 NV_STATUS uvm_va_block_check_logical_permissions(uvm_va_block_t *va_block,
                                                  uvm_va_block_context_t *va_block_context,
@@ -1041,7 +1030,7 @@ NV_STATUS uvm_va_block_check_logical_permissions(uvm_va_block_t *va_block,
 // different pages because the earlier operation can cause a PTE split or merge
 // which is assumed by the later operation.
 //
-// va_block_context must not be NULL. The va_block_context->policy is unused.
+// va_block_context must not be NULL.
 //
 // If allocation-retry was required as part of the operation and was successful,
 // NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case, the entries in the
@@ -1081,7 +1070,7 @@ NV_STATUS uvm_va_block_revoke_prot_mask(uvm_va_block_t *va_block,
 // processor_id, which triggered the migration and should have already been
 // mapped).
 //
-// va_block_context must not be NULL and va_block_context->policy must be valid.
+// va_block_context must not be NULL and policy for the region must match.
 // See the comments for uvm_va_block_check_policy_is_valid().
 //
 // This function acquires/waits for the va_block tracker and updates that
@@ -1112,7 +1101,7 @@ NV_STATUS uvm_va_block_add_mappings_after_migration(uvm_va_block_t *va_block,
 // Note that this can return NV_ERR_MORE_PROCESSING_REQUIRED just like
 // uvm_va_block_map() indicating that the operation needs to be retried.
 //
-// va_block_context must not be NULL and va_block_context->policy must be valid.
+// va_block_context must not be NULL and policy must for the region must match.
 // See the comments for uvm_va_block_check_policy_is_valid().
 //
 // LOCKING: The caller must hold the va block lock. If va_block_context->mm !=
@@ -1134,7 +1123,7 @@ NV_STATUS uvm_va_block_add_gpu_va_space(uvm_va_block_t *va_block, uvm_gpu_va_spa
 // If mm != NULL, that mm is used for any CPU mappings which may be created as
 // a result of this call. See uvm_va_block_context_t::mm for details.
 //
-// va_block_context must not be NULL. The va_block_context->policy is unused.
+// va_block_context must not be NULL.
 //
 // LOCKING: The caller must hold the va_block lock. If block_context->mm is not
 // NULL, the caller must hold mm->mmap_lock in at least read mode.
@@ -1225,7 +1214,6 @@ NV_STATUS uvm_va_block_split_locked(uvm_va_block_t *existing_va_block,
 //  - va_space lock must be held in at least read mode
 //
 // service_context->block_context.mm is ignored and vma->vm_mm is used instead.
-// service_context->block_context.policy is set by this function.
 //
 // Returns NV_ERR_INVALID_ACCESS_TYPE if a CPU mapping to fault_addr cannot be
 // accessed, for example because it's within a range group which is non-
@@ -1239,10 +1227,10 @@ NV_STATUS uvm_va_block_cpu_fault(uvm_va_block_t *va_block,
 // (migrations, cache invalidates, etc.) in response to the given service block
 // context.
 //
-// service_context must not be NULL and service_context->block_context.policy
-// must be valid. See the comments for uvm_va_block_check_policy_is_valid().
-// If va_block is a HMM block, va_block_context->hmm.vma must be valid.
-// See the comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
+// service_context must not be NULL and policy for service_context->region must
+// match. See the comments for uvm_va_block_check_policy_is_valid().  If
+// va_block is a HMM block, va_block_context->hmm.vma must be valid.  See the
+// comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 // service_context->prefetch_hint is set by this function.
 //
 // Locking:
@@ -1267,10 +1255,10 @@ NV_STATUS uvm_va_block_service_locked(uvm_processor_id_t processor_id,
 // Performs population of the destination pages, unmapping and copying source
 // pages to new_residency.
 //
-// service_context must not be NULL and service_context->block_context.policy
-// must be valid. See the comments for uvm_va_block_check_policy_is_valid().
-// If va_block is a HMM block, va_block_context->hmm.vma must be valid.
-// See the comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
+// service_context must not be NULL and policy for service_context->region must
+// match.  See the comments for uvm_va_block_check_policy_is_valid().  If
+// va_block is a HMM block, va_block_context->hmm.vma must be valid.  See the
+// comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 // service_context->prefetch_hint should be set before calling this function.
 //
 // Locking:
@@ -1296,10 +1284,10 @@ NV_STATUS uvm_va_block_service_copy(uvm_processor_id_t processor_id,
 // This updates the va_block residency state and maps the faulting processor_id
 // to the new residency (which may be remote).
 //
-// service_context must not be NULL and service_context->block_context.policy
-// must be valid. See the comments for uvm_va_block_check_policy_is_valid().
-// If va_block is a HMM block, va_block_context->hmm.vma must be valid.
-// See the comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
+// service_context must not be NULL and policy for service_context->region must
+// match. See the comments for uvm_va_block_check_policy_is_valid().  If
+// va_block is a HMM block, va_block_context->hmm.vma must be valid.  See the
+// comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 // service_context must be initialized by calling uvm_va_block_service_copy()
 // before calling this function.
 //
@@ -1428,39 +1416,33 @@ const uvm_page_mask_t *uvm_va_block_map_mask_get(uvm_va_block_t *block, uvm_proc
 NV_STATUS uvm_va_block_find(uvm_va_space_t *va_space, NvU64 addr, uvm_va_block_t **out_block);
 
 // Same as uvm_va_block_find except that the block is created if not found.
-// If addr is covered by a UVM_VA_RANGE_TYPE_MANAGED va_range, a managed block
-// will be created. Otherwise, if addr is not covered by any va_range, HMM is
-// enabled in the va_space, and va_block_context and va_block_context->mm are
-// non-NULL, then a HMM block will be created and va_block_context->hmm.vma is
-// set to the VMA covering 'addr'. The va_block_context->policy field is left
-// unchanged.
-// In either case, if va_block_context->mm is non-NULL, it must be retained and
-// locked in at least read mode. Return values:
+// If addr is covered by a UVM_VA_RANGE_TYPE_MANAGED va_range a managed block
+// will be created. If addr is not covered by any va_range and HMM is
+// enabled in the va_space then a HMM block will be created and hmm_vma is
+// set to the VMA covering 'addr'. The va_space_mm must be retained and locked.
+// Otherwise hmm_vma is set to NULL.
+// Return values:
 // NV_ERR_INVALID_ADDRESS   addr is not a UVM_VA_RANGE_TYPE_MANAGED va_range nor
 //                          a HMM enabled VMA.
 // NV_ERR_NO_MEMORY         memory could not be allocated.
 NV_STATUS uvm_va_block_find_create(uvm_va_space_t *va_space,
                                    NvU64 addr,
-                                   uvm_va_block_context_t *va_block_context,
+                                   struct vm_area_struct **hmm_vma,
                                    uvm_va_block_t **out_block);
 
-// Same as uvm_va_block_find_create except that va_range lookup was already done
-// by the caller. If the supplied va_range is NULL, this function behaves just
-// like when the va_range lookup in uvm_va_block_find_create is NULL.
+// Same as uvm_va_block_find_create except that only managed va_blocks are
+// created if not already present in the VA range. Does not require va_space_mm
+// to be locked or retained.
+NV_STATUS uvm_va_block_find_create_managed(uvm_va_space_t *va_space,
+                                           NvU64 addr,
+                                           uvm_va_block_t **out_block);
+
+// Same as uvm_va_block_find_create_managed except that va_range lookup was
+// already done by the caller. The supplied va_range must not be NULL.
 NV_STATUS uvm_va_block_find_create_in_range(uvm_va_space_t *va_space,
                                             uvm_va_range_t *va_range,
                                             NvU64 addr,
-                                            uvm_va_block_context_t *va_block_context,
                                             uvm_va_block_t **out_block);
-
-// Same as uvm_va_block_find_create except that only managed va_blocks are
-// created if not already present in the VA range.
-static NV_STATUS uvm_va_block_find_create_managed(uvm_va_space_t *va_space,
-                                                  NvU64 addr,
-                                                  uvm_va_block_t **out_block)
-{
-    return uvm_va_block_find_create(va_space, addr, NULL, out_block);
-}
 
 // Look up a chunk backing a specific address within the VA block.
 // Returns NULL if none.
@@ -1476,10 +1458,10 @@ uvm_gpu_chunk_t *uvm_va_block_lookup_gpu_chunk(uvm_va_block_t *va_block, uvm_gpu
 // The caller needs to handle allocation-retry. va_block_retry can be NULL if
 // the destination is the CPU.
 //
-// va_block_context must not be NULL and va_block_context->policy must be valid.
-// See the comments for uvm_va_block_check_policy_is_valid().
-// If va_block is a HMM block, va_block_context->hmm.vma must be valid.
-// See the comments for uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
+// va_block_context must not be NULL and policy for the region must match. See
+// the comments for uvm_va_block_check_policy_is_valid().  If va_block is a HMM
+// block, va_block_context->hmm.vma must be valid.  See the comments for
+// uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 //
 // LOCKING: The caller must hold the va_block lock. If va_block_context->mm !=
 //          NULL, va_block_context->mm->mmap_lock must be held in at least
@@ -1497,7 +1479,7 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
 // The [dst, dst + size) range has to fit within a single PAGE_SIZE page.
 //
 // va_block_context must not be NULL. The caller is not required to set
-// va_block_context->policy or va_block_context->hmm.vma.
+// va_block_context->hmm.vma.
 //
 // The caller needs to support allocation-retry of page tables.
 //
@@ -1569,7 +1551,7 @@ void uvm_va_block_mark_cpu_dirty(uvm_va_block_t *va_block);
 // successful, NV_ERR_MORE_PROCESSING_REQUIRED is returned. In this case the
 // block's lock was unlocked and relocked.
 //
-// va_block_context must not be NULL. The va_block_context->policy is unused.
+// va_block_context must not be NULL.
 //
 // LOCKING: The caller must hold the va_block lock.
 NV_STATUS uvm_va_block_set_cancel(uvm_va_block_t *va_block, uvm_va_block_context_t *block_context, uvm_gpu_t *gpu);
@@ -1650,12 +1632,18 @@ static uvm_va_block_region_t uvm_va_block_region_from_block(uvm_va_block_t *va_b
     return uvm_va_block_region(0, uvm_va_block_num_cpu_pages(va_block));
 }
 
-// Create a block region from a va block and page mask. Note that the region
+// Create a block region from a va block and page mask. If va_block is NULL, the
+// region is assumed to cover the maximum va_block size. Note that the region
 // covers the first through the last set bit and may have unset bits in between.
 static uvm_va_block_region_t uvm_va_block_region_from_mask(uvm_va_block_t *va_block, const uvm_page_mask_t *page_mask)
 {
     uvm_va_block_region_t region;
-    uvm_page_index_t outer = uvm_va_block_num_cpu_pages(va_block);
+    uvm_page_index_t outer;
+
+    if (va_block)
+        outer = uvm_va_block_num_cpu_pages(va_block);
+    else
+        outer = PAGES_PER_UVM_VA_BLOCK;
 
     region.first = find_first_bit(page_mask->bitmap, outer);
     if (region.first >= outer) {
@@ -2140,15 +2128,14 @@ uvm_va_block_region_t uvm_va_block_big_page_region_subset(uvm_va_block_t *va_blo
 // MAX_BIG_PAGES_PER_UVM_VA_BLOCK is returned.
 size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t page_index, NvU32 big_page_size);
 
-// Returns the new residency for a page that faulted or triggered access
-// counter notifications. The read_duplicate output parameter indicates if the
-// page meets the requirements to be read-duplicated
-// va_block_context must not be NULL, va_block_context->policy must be valid,
-// and if the va_block is a HMM block, va_block_context->hmm.vma must be valid
-// which also means the va_block_context->mm is not NULL, retained, and locked
-// for at least read. See the comments for uvm_va_block_check_policy_is_valid()
-// and uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
-// Locking: the va_block lock must be held.
+// Returns the new residency for a page that faulted or triggered access counter
+// notifications. The read_duplicate output parameter indicates if the page
+// meets the requirements to be read-duplicated va_block_context must not be
+// NULL, and if the va_block is a HMM block, va_block_context->hmm.vma must be
+// valid which also means the va_block_context->mm is not NULL, retained, and
+// locked for at least read. See the comments for
+// uvm_va_block_check_policy_is_valid() and uvm_hmm_check_context_vma_is_valid()
+// in uvm_hmm.h.  Locking: the va_block lock must be held.
 uvm_processor_id_t uvm_va_block_select_residency(uvm_va_block_t *va_block,
                                                  uvm_va_block_context_t *va_block_context,
                                                  uvm_page_index_t page_index,

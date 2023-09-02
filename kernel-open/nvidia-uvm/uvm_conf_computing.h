@@ -60,10 +60,8 @@
 // UVM_METHOD_SIZE * 2 * 10 = 80.
 #define UVM_CONF_COMPUTING_SIGN_BUF_MAX_SIZE 80
 
-// All GPUs derive confidential computing status from their parent.
-// By current policy all parent GPUs have identical confidential
-// computing status.
-NV_STATUS uvm_conf_computing_init_parent_gpu(const uvm_parent_gpu_t *parent);
+void uvm_conf_computing_check_parent_gpu(const uvm_parent_gpu_t *parent);
+
 bool uvm_conf_computing_mode_enabled_parent(const uvm_parent_gpu_t *parent);
 bool uvm_conf_computing_mode_enabled(const uvm_gpu_t *gpu);
 bool uvm_conf_computing_mode_is_hcc(const uvm_gpu_t *gpu);

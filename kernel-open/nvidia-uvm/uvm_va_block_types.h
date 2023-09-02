@@ -29,9 +29,7 @@
 #include "uvm_tlb_batch.h"
 #include "uvm_forward_decl.h"
 
-#if UVM_IS_CONFIG_HMM()
 #include <linux/migrate.h>
-#endif
 
 // UVM_VA_BLOCK_BITS is 21, meaning the maximum block size is 2MB. Rationale:
 // - 2MB matches the largest Pascal GPU page size so it's a natural fit
@@ -234,9 +232,6 @@ typedef struct
     // the mm, such as creating CPU mappings.
     struct mm_struct *mm;
 
-    const uvm_va_policy_t *policy;
-
-#if UVM_IS_CONFIG_HMM()
     struct
     {
         // These are used for migrate_vma_*(), hmm_range_fault(), and
@@ -257,10 +252,11 @@ typedef struct
         // Cached VMA pointer. This is only valid while holding the mmap_lock.
         struct vm_area_struct *vma;
 
+#if UVM_IS_CONFIG_HMM()
         // Used for migrate_vma_*() to migrate pages to/from GPU/CPU.
         struct migrate_vma migrate_vma_args;
-    } hmm;
 #endif
+    } hmm;
 
     // Convenience buffer for page mask prints
     char page_mask_string_buffer[UVM_PAGE_MASK_PRINT_MIN_BUFFER_SIZE];

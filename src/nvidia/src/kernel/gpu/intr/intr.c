@@ -166,6 +166,16 @@ subdeviceCtrlCmdMcServiceInterrupts_IMPL
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
         NV_STATUS status = NV_OK;
 
+        //
+        // Force kernel-RM to service interrupts from GSP-RM. This will allow
+        // kernel-RM to write notifiers and send an ack back to GSP. 
+        // GSP waits for this ack before clearing fast path POSSIBLE_ERR interrupt.
+        //
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED))
+        {
+            intrServiceStallSingle_HAL(pGpu, pIntr, MC_ENGINE_IDX_GSP, NV_TRUE);
+        }
+
         NV_RM_RPC_CONTROL(pGpu, pRmCtrlParams->hClient, pRmCtrlParams->hObject, pRmCtrlParams->cmd,
                           pRmCtrlParams->pParams, pRmCtrlParams->paramsSize, status);
         if (status != NV_OK)
@@ -1424,14 +1434,14 @@ _intrServiceStallExactList
 
     if (bRequiresPossibleErrorNotifier)
     {
-        //
-        // Notify CUDA there may be an error in ERR_CONT that they may miss because we're
-        // about to clear it out of the NV_CTRL tree backing ERR_CONT before the interrupt
-        // is serviced.
-        //
-        // info32 contains shadowed value of ERR_CONT
-        //
-        gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POSSIBLE_ERROR, NULL, 0, intrReadErrCont_HAL(pGpu, pIntr), 0);
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED))
+        {
+        }
+        else
+        {
+            // info32 contains shadowed value of ERR_CONT
+            gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POSSIBLE_ERROR, NULL, 0, intrReadErrCont_HAL(pGpu, pIntr), 0);
+        }
     }
 
     for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
@@ -1486,14 +1496,10 @@ _intrServiceStallExactList
 
     if (bRequiresPossibleErrorNotifier)
     {
-        //
-        // Notify CUDA there may be an error in ERR_CONT that they may miss because we're
-        // about to clear it out of the NV_CTRL tree backing ERR_CONT before the interrupt
-        // is serviced.
-        //
-        // info32 contains shadowed value of ERR_CONT
-        //
-        gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POSSIBLE_ERROR, NULL, 0, intrReadErrCont_HAL(pGpu, pIntr), 0);
+        {
+            // info32 contains shadowed value of ERR_CONT
+            gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POSSIBLE_ERROR, NULL, 0, intrReadErrCont_HAL(pGpu, pIntr), 0);
+        }
     }
 
     if (bIntrStuck)

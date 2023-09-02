@@ -103,11 +103,11 @@ void uvm_perf_thrashing_unload(uvm_va_space_t *va_space);
 // Destroy the thrashing detection struct for the given block.
 void uvm_perf_thrashing_info_destroy(uvm_va_block_t *va_block);
 
-// Unmap remote mappings from all processors on the pinned pages
-// described by region and block_thrashing->pinned pages.
-// va_block_context must not be NULL and va_block_context->policy must be valid.
-// See the comments for uvm_va_block_check_policy_is_valid() in uvm_va_block.h.
-// Locking: the va_block lock must be held.
+// Unmap remote mappings from all processors on the pinned pages described by
+// region and block_thrashing->pinned pages.  va_block_context must not be NULL
+// and policy for the region must match.  See the comments for
+// uvm_va_block_check_policy_is_valid() in uvm_va_block.h.  Locking: the
+// va_block lock must be held.
 NV_STATUS uvm_perf_thrashing_unmap_remote_pinned_pages_all(uvm_va_block_t *va_block,
                                                            uvm_va_block_context_t *va_block_context,
                                                            uvm_va_block_region_t region);

@@ -43,27 +43,6 @@
 
 /* ------------------------ Datatypes -------------------------------------- */
 
-#define DSC_CALLBACK_MODIFIED 1
-
-#if defined(DSC_CALLBACK_MODIFIED)
-typedef struct
-{
-    // DSC - Callbacks
-    const void* clientHandle;    // ClientHandle is only used when calling into HDMI lib's mallocCb/freeCb
-    void (*dscPrint) (const char* fmtstring, ...);
-    void *(*dscMalloc)(const void *clientHandle, NvLength size);
-    void (*dscFree) (const void *clientHandle, void * ptr);
-} DSC_CALLBACK;
-#else
-typedef struct
-{
-    // DSC - Callbacks
-    void (*dscPrint) (const char* fmtstring, ...);
-    void *(*dscMalloc)(NvLength size);
-    void (*dscFree) (void * ptr);
-} DSC_CALLBACK;
-#endif // DSC_CALLBACK_MODIFIED
-
 typedef struct
 {
     NvU32 versionMajor;
@@ -278,6 +257,16 @@ typedef struct
     }dpData;
 } WAR_DATA;
 
+//
+// DSC PPS calculations need large scratch buffer to work with, which can be too
+// big for some platforms. These buffers need to be allocated on heap rather 
+// than local stack variable. Clients are expected to pre-allocate
+// this buffer and pass it in to DSC PPS interface 
+//
+typedef struct {
+    NvU8 data[512U]; // an upper bound of total size of DSC_IN/OUTPUT_PARAMS
+} DSC_GENERATE_PPS_OPAQUE_WORKAREA;
+
 /*
  *  Windows testbed compiles are done with warnings as errors
  *  with the maximum warning level.  Here we turn off some
@@ -292,16 +281,6 @@ typedef struct
 #ifdef __cplusplus
 extern "C" {
 #endif
-/*
- * @brief Initializes callbacks for print and assert
- *
- * @param[in]   callback   DSC callbacks
- *
- * @returns NVT_STATUS_SUCCESS if successful;
- *          NVT_STATUS_ERR if unsuccessful;
- */
-NVT_STATUS DSC_InitializeCallback(DSC_CALLBACK callback);
-
 /*
  * @brief Calculate PPS parameters based on passed down Sink,
  *        GPU capability and modeset info
@@ -323,7 +302,8 @@ NVT_STATUS DSC_GeneratePPS(const DSC_INFO *pDscInfo,
                            const WAR_DATA *pWARData,
                            NvU64 availableBandwidthBitsPerSecond,
                            NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
-                           NvU32 *pBitsPerPixelX16);
+                           NvU32 *pBitsPerPixelX16,
+                           DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea);
 
 #ifdef __cplusplus
 }

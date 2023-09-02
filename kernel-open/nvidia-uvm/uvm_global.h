@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2021 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -143,11 +143,16 @@ struct uvm_global_struct
         struct page *page;
     } unload_state;
 
-    // AMD Secure Encrypted Virtualization (SEV) status. True if VM has SEV
-    // enabled. This field is set once during global initialization
-    // (uvm_global_init), and can be read afterwards without acquiring any
-    // locks.
-    bool sev_enabled;
+    // True if the VM has AMD's SEV, or equivalent HW security extensions such
+    // as Intel's TDX, enabled. The flag is always false on the host.
+    //
+    // This value moves in tandem with that of Confidential Computing in the
+    // GPU(s) in all supported configurations, so it is used as a proxy for the
+    // Confidential Computing state.
+    //
+    // This field is set once during global initialization (uvm_global_init),
+    // and can be read afterwards without acquiring any locks.
+    bool conf_computing_enabled;
 };
 
 // Initialize global uvm state

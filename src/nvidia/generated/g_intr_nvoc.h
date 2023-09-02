@@ -625,40 +625,6 @@ static inline void intrClearLeafVector(OBJGPU *pGpu, struct Intr *pIntr, NvU32 v
 
 #define intrClearLeafVector_HAL(pGpu, pIntr, vector, pThreadState) intrClearLeafVector(pGpu, pIntr, vector, pThreadState)
 
-static inline void intrClearCpuLeafVector_b3696a(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, struct THREAD_STATE_NODE *pThreadState) {
-    return;
-}
-
-void intrClearCpuLeafVector_GH100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, struct THREAD_STATE_NODE *pThreadState);
-
-
-#ifdef __nvoc_intr_h_disabled
-static inline void intrClearCpuLeafVector(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, struct THREAD_STATE_NODE *pThreadState) {
-    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
-}
-#else //__nvoc_intr_h_disabled
-#define intrClearCpuLeafVector(pGpu, pIntr, vector, pThreadState) intrClearCpuLeafVector_b3696a(pGpu, pIntr, vector, pThreadState)
-#endif //__nvoc_intr_h_disabled
-
-#define intrClearCpuLeafVector_HAL(pGpu, pIntr, vector, pThreadState) intrClearCpuLeafVector(pGpu, pIntr, vector, pThreadState)
-
-static inline void intrWriteCpuRegLeaf_b3696a(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2) {
-    return;
-}
-
-void intrWriteCpuRegLeaf_GH100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2);
-
-
-#ifdef __nvoc_intr_h_disabled
-static inline void intrWriteCpuRegLeaf(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
-}
-#else //__nvoc_intr_h_disabled
-#define intrWriteCpuRegLeaf(pGpu, pIntr, arg0, arg1, arg2) intrWriteCpuRegLeaf_b3696a(pGpu, pIntr, arg0, arg1, arg2)
-#endif //__nvoc_intr_h_disabled
-
-#define intrWriteCpuRegLeaf_HAL(pGpu, pIntr, arg0, arg1, arg2) intrWriteCpuRegLeaf(pGpu, pIntr, arg0, arg1, arg2)
-
 NvBool intrIsVectorPending_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, struct THREAD_STATE_NODE *pThreadState);
 
 

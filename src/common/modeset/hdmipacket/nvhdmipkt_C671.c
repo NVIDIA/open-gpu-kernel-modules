@@ -1168,16 +1168,27 @@ frlQuery_Success:
         NvU64 availableLinkBw = (NvU64)(frlBitRateGbps) * (NvU64)(numLanes) * MULTIPLIER_1G;
         warData.connectorType = DSC_HDMI;
 
+        DSC_GENERATE_PPS_OPAQUE_WORKAREA *pDscScratchBuffer = NULL;
+        pDscScratchBuffer = (DSC_GENERATE_PPS_OPAQUE_WORKAREA*)pThis->callback.malloc(pThis->cbHandle, 
+                                                                      sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA));
+
         if ((DSC_GeneratePPS(&dscInfo,
                              &dscModesetInfo,
                              &warData,
                              availableLinkBw,
                              pFRLConfig->dscInfo.pps,
-                             &bitsPerPixelX16)) != NVT_STATUS_SUCCESS)
+                             &bitsPerPixelX16,
+                             pDscScratchBuffer)) != NVT_STATUS_SUCCESS)
         {
             NvHdmiPkt_Print(pThis, "ERROR - DSC PPS calculation failed.");
             NvHdmiPkt_Assert(0);
             result = NVHDMIPKT_FAIL;
+        }
+
+        if (pDscScratchBuffer != NULL)
+        {
+            pThis->callback.free(pThis->cbHandle, pDscScratchBuffer);
+            pDscScratchBuffer = NULL;
         }
 
         // DSC lib should honor the bpp setting passed from client, assert here just in case

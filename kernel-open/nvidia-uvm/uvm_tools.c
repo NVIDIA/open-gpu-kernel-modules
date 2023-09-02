@@ -2069,7 +2069,11 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
 
         // The RM flavor of the lock is needed to perform ECC checks.
         uvm_va_space_down_read_rm(va_space);
-        status = uvm_va_block_find_create(va_space, UVM_PAGE_ALIGN_DOWN(target_va_start), block_context, &block);
+        if (mm)
+            status = uvm_va_block_find_create(va_space, UVM_PAGE_ALIGN_DOWN(target_va_start), &block_context->hmm.vma, &block);
+        else
+            status = uvm_va_block_find_create_managed(va_space, UVM_PAGE_ALIGN_DOWN(target_va_start), &block);
+
         if (status != NV_OK)
             goto unlock_and_exit;
 

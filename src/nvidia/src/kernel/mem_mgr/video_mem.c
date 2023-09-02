@@ -131,14 +131,37 @@ _vidmemPmaAllocate
     NV_STATUS                    status;
     NvU64                        sizeAlign    = 0;
     PMA_ALLOCATION_OPTIONS       allocOptions = {0};
-    NvBool                       bContig      = !FLD_TEST_DRF(OS32, _ATTR,
-                                                   _PHYSICALITY, _NONCONTIGUOUS,
-                                                   pAllocData->attr);
+    NvBool                       bContig;
     NvU32                        subdevInst   = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
     NvBool                       bCompressed  = !FLD_TEST_DRF(OS32, _ATTR, _COMPR,
                                                   _NONE, pAllocData->attr);
     KernelBus                   *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32                        gfid;
+    NvU32                        pmaConfig    = PMA_QUERY_NUMA_ENABLED;
+
+    status = pmaQueryConfigs(pPma, &pmaConfig);
+    NV_ASSERT(status == NV_OK);
+
+    //
+    // In NUMA platforms, contig memory is allocated using page order from
+    // kernel and that could lead to memory wastage when the size is not
+    // naturally aligned to page order. Prefer non-contig when clients
+    // are okay with NON_CONTIG.
+    //
+    if ((status == NV_OK) && (pmaConfig & PMA_QUERY_NUMA_ENABLED))
+    {
+        bContig =
+            !FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY,
+                                _ALLOW_NONCONTIGUOUS, pAllocData->attr) &&
+            !FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY,
+                          _NONCONTIGUOUS, pAllocData->attr);
+    }
+    else
+    {
+        bContig = !FLD_TEST_DRF(OS32, _ATTR,
+                                _PHYSICALITY, _NONCONTIGUOUS,
+                                pAllocData->attr);
+    }
 
     // LOCK: acquire device lock
     status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,

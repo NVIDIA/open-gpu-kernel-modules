@@ -110,5 +110,6 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += handle_mm_fault_has_mm_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += handle_mm_fault_has_pt_regs_arg
 NV_CONFTEST_TYPE_COMPILE_TESTS += mempolicy_has_unified_nodes
 NV_CONFTEST_TYPE_COMPILE_TESTS += mempolicy_has_home_node
+NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_interval_notifier
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg

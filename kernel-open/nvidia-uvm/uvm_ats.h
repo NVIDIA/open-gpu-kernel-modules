@@ -28,16 +28,31 @@
 #include "uvm_forward_decl.h"
 #include "uvm_ats_ibm.h"
 #include "nv_uvm_types.h"
+#include "uvm_lock.h"
 
     #include "uvm_ats_sva.h"
 
     #define UVM_ATS_SUPPORTED() (UVM_ATS_IBM_SUPPORTED() || UVM_ATS_SVA_SUPPORTED())
+
+// ATS prefetcher uses hmm_range_fault() to query residency information.
+// hmm_range_fault() needs CONFIG_HMM_MIRROR. To detect racing CPU invalidates
+// of memory regions while hmm_range_fault() is being called, MMU interval
+// notifiers are needed.
+    #if defined(CONFIG_HMM_MIRROR) && defined(NV_MMU_INTERVAL_NOTIFIER)
+        #define UVM_ATS_PREFETCH_SUPPORTED() 1
+    #else
+        #define UVM_ATS_PREFETCH_SUPPORTED() 0
+    #endif
 
 typedef struct
 {
     // Mask of gpu_va_spaces which are registered for ATS access. The mask is
     // indexed by gpu->id. This mask is protected by the VA space lock.
     uvm_processor_mask_t registered_gpu_va_spaces;
+
+    // Protects racing invalidates in the VA space while hmm_range_fault() is
+    // being called in ats_compute_residency_mask().
+    uvm_rw_semaphore_t lock;
 
     union
     {

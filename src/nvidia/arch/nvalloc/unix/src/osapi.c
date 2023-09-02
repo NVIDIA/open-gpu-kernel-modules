@@ -5332,14 +5332,16 @@ NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
 )
 {
     THREAD_STATE_NODE threadState;
-    NV_STATUS rmStatus = NV_OK;
+    NV_STATUS rmStatus = NV_ERR_INVALID_ARGUMENT;
     OBJGPU *pGpu;
     void *fp;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    NV_ASSERT_OR_GOTO(((ppRanges != NULL) && (pRangeCount != NULL)), Done);
+    NV_ASSERT_OR_GOTO(((ppRanges != NULL) &&
+                       (pRangeCount != NULL) &&
+                       (pStaticMemInfo != NULL)), Done);
 
     pGpu = NV_GET_NV_PRIV_PGPU(nv);
 
@@ -5347,12 +5349,54 @@ NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
     {
         KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
         MEMORY_DESCRIPTOR *pMemDesc = (MEMORY_DESCRIPTOR *) pStaticMemInfo;
-        NvU32 pageSize = 0;
+        NvU32 memdescPageSize = memdescGetPageSize(pMemDesc, AT_GPU);
+        NvU64 prologueOffset = offset;
+        NvU64 prologueSize = 0;
+        NvU64 epilogueOffset = offset;
+        NvU64 epilogueSize = 0;
+        NvU64 mainOffset = offset;
+        NvU64 mainSize = 0;
+        NvU32 mainPageCount = 0;
+        NvU64 alignedOffset;
         NvU32 pageCount = 0;
-        NvU32 i = 0;
+        NvU32 index = 0;
 
-        pageSize = memdescGetPageSize(pMemDesc, AT_GPU);
-        pageCount = size / pageSize;
+        alignedOffset = NV_ALIGN_UP64(offset, memdescPageSize);
+
+        if ((size > 0) && offset != alignedOffset)
+        {
+            prologueOffset = offset;
+            prologueSize = NV_MIN(alignedOffset - offset, size);
+            pageCount++;
+
+            size -= prologueSize;
+        }
+
+        if (size > 0)
+        {
+            mainOffset = prologueOffset + prologueSize;
+            mainSize = NV_ALIGN_DOWN64(size, memdescPageSize);
+            mainPageCount = mainSize / memdescPageSize;
+            pageCount += mainPageCount;
+
+            size -= mainSize;
+        }
+
+        if (size > 0)
+        {
+            epilogueOffset = mainOffset + mainSize;
+            epilogueSize = size;
+            pageCount++;
+
+            size -= epilogueSize;
+        }
+
+        if ((pageCount == 0) || (size != 0))
+        {
+            NV_ASSERT(0);
+            rmStatus = NV_ERR_INVALID_STATE;
+            goto Done;
+        }
 
         rmStatus = os_alloc_mem((void **) ppRanges,
                                 pageCount * sizeof(nv_phys_addr_range_t));
@@ -5361,15 +5405,39 @@ NV_STATUS NV_API_CALL rm_dma_buf_map_mem_handle(
             goto Done;
         }
 
-        for (i = 0; i < pageCount; i++)
+        // Fill the first unaligned segment
+        if (prologueSize > 0)
         {
-            NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU, offset);
+            NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU, prologueOffset);
+            (*ppRanges)[0].addr = pKernelMemorySystem->coherentCpuFbBase + physAddr;
+            (*ppRanges)[0].len  = prologueSize;
 
-            (*ppRanges)[i].addr = pKernelMemorySystem->coherentCpuFbBase + physAddr;
-            (*ppRanges)[i].len = pageSize;
-
-            offset += pageSize;
+            index = 1;
         }
+
+        // Fill the aligned segments between first and last entries
+        while (mainPageCount != 0)
+        {
+            NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU, alignedOffset);
+            (*ppRanges)[index].addr = pKernelMemorySystem->coherentCpuFbBase + physAddr;
+            (*ppRanges)[index].len  = memdescPageSize;
+            index++;
+
+            alignedOffset += memdescPageSize;
+            mainPageCount--;
+        }
+
+        // Fill the last unaligned segment
+        if (epilogueSize > 0)
+        {
+            NvU64 physAddr = memdescGetPhysAddr(pMemDesc, AT_CPU, epilogueOffset);
+            (*ppRanges)[index].addr = pKernelMemorySystem->coherentCpuFbBase + physAddr;
+            (*ppRanges)[index].len  = epilogueSize;
+            index++;
+        }
+
+        NV_ASSERT(index == pageCount);
+
         *pRangeCount = pageCount;
     }
     else
