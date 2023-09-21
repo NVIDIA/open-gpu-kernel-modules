@@ -1069,23 +1069,11 @@ void nvHsConfigInitSwapGroup(
             NVHsChannelConfig *pChannelConfig = &pHsConfigOneHead->channelConfig;
 
             /*
-             * If (pDevEvo->modesetOwner == NULL) that means either the vbios
-             * console or the NVKMS console might be active, the console
-             * surface may not be set up to be the source of headSurface
-             * operations, and NVKMS may be unloaded, so we can't have the
-             * display rely on headSurface.
+             * The console surface may not be set up to be the source of
+             * headSurface operations, and NVKMS may be unloaded, so we can't
+             * have the display rely on headSurface.
              */
-            if (pDevEvo->modesetOwner == NULL) {
-                continue;
-            }
-
-            /*
-             * If (pDevEvo->modesetOwner != NULL) but
-             * pDevEvo->modesetOwnerChanged is TRUE, that means the modeset
-             * ownership is grabbed by the external client but it hasn't
-             * performed any modeset and the console is still active.
-             */
-            if ((pDevEvo->modesetOwner != NULL) && pDevEvo->modesetOwnerChanged) {
+            if (nvEvoIsConsoleActive(pDevEvo)) {
                 continue;
             }
 

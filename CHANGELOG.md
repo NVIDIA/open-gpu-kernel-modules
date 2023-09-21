@@ -2,6 +2,12 @@
 
 ## Release 535 Entries
 
+### [535.113.01] 2023-09-21
+
+#### Fixed
+
+- Fixed building main against current centos stream 8 fails, [#550](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/550) by @airlied
+
 ### [535.104.05] 2023-08-22
 
 ### [535.98] 2023-08-08

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018 NVIDIA Corporation
+    Copyright (c) 2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -149,7 +149,11 @@ static void ats_batch_select_residency(uvm_gpu_va_space_t *gpu_va_space,
 
     mode = vma_policy->mode;
 
-    if ((mode == MPOL_BIND) || (mode == MPOL_PREFERRED_MANY) || (mode == MPOL_PREFERRED)) {
+    if ((mode == MPOL_BIND)
+#if defined(NV_MPOL_PREFERRED_MANY_PRESENT)
+         || (mode == MPOL_PREFERRED_MANY)
+#endif
+         || (mode == MPOL_PREFERRED)) {
         int home_node = NUMA_NO_NODE;
 
 #if defined(NV_MEMPOLICY_HAS_HOME_NODE)
@@ -467,6 +471,10 @@ NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
             uvm_page_mask_and(write_fault_mask, write_fault_mask, read_fault_mask);
         else
             uvm_page_mask_zero(write_fault_mask);
+
+        // There are no pending faults beyond write faults to RO region.
+        if (uvm_page_mask_empty(read_fault_mask))
+            return status;
     }
 
     ats_batch_select_residency(gpu_va_space, vma, ats_context);

@@ -799,7 +799,7 @@ kgspHealthCheck_TU102
             objDelete(pReport);
         }
 
-        return bHealthy;
+        goto exit_health_check;
     }
 
     NvU32 mb0 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0));
@@ -845,6 +845,12 @@ kgspHealthCheck_TU102
                   "********************************************************************************\n");
     }
 
+exit_health_check:
+    if (!bHealthy)
+    {
+        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+        kmemsysCheckEccCounts_HAL(pGpu, pKernelMemorySystem);
+    }
     return bHealthy;
 }
 

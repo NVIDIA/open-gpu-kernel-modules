@@ -2438,7 +2438,8 @@ kgspInitRm_IMPL
     if (pKernelGsp->pLogElf == NULL)
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, nvlogRegisterFlushCb(kgspNvlogFlushCb, pKernelGsp), done);
 
-    // Wait for GFW_BOOT OK status
+    // Reset thread state timeout and wait for GFW_BOOT OK status
+    threadStateResetTimeout(pGpu);
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, kgspWaitForGfwBootOk_HAL(pGpu, pKernelGsp), done);
 
     // Fail early if WPR2 is up

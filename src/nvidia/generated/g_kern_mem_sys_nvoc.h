@@ -222,6 +222,8 @@ struct KernelMemorySystem {
     void (*__kmemsysNumaRemoveAllMemory__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysSetupAllAtsPeers__)(OBJGPU *, struct KernelMemorySystem *);
     void (*__kmemsysRemoveAllAtsPeers__)(OBJGPU *, struct KernelMemorySystem *);
+    void (*__kmemsysCheckEccCounts__)(OBJGPU *, struct KernelMemorySystem *);
+    NV_STATUS (*__kmemsysClearEccCounts__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysStateLoad__)(POBJGPU, struct KernelMemorySystem *, NvU32);
     NV_STATUS (*__kmemsysStateUnload__)(POBJGPU, struct KernelMemorySystem *, NvU32);
     NV_STATUS (*__kmemsysStatePostUnload__)(POBJGPU, struct KernelMemorySystem *, NvU32);
@@ -323,6 +325,10 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysSetupAllAtsPeers_HAL(pGpu, pKernelMemorySystem) kmemsysSetupAllAtsPeers_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysRemoveAllAtsPeers(pGpu, pKernelMemorySystem) kmemsysRemoveAllAtsPeers_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysRemoveAllAtsPeers_HAL(pGpu, pKernelMemorySystem) kmemsysRemoveAllAtsPeers_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysCheckEccCounts(pGpu, pKernelMemorySystem) kmemsysCheckEccCounts_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysCheckEccCounts_HAL(pGpu, pKernelMemorySystem) kmemsysCheckEccCounts_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysClearEccCounts(pGpu, pKernelMemorySystem) kmemsysClearEccCounts_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysClearEccCounts_HAL(pGpu, pKernelMemorySystem) kmemsysClearEccCounts_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysStateLoad(pGpu, pEngstate, arg0) kmemsysStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kmemsysStateUnload(pGpu, pEngstate, arg0) kmemsysStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kmemsysStatePostUnload(pGpu, pEngstate, arg0) kmemsysStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -731,6 +737,26 @@ void kmemsysRemoveAllAtsPeers_GV100(OBJGPU *pGpu, struct KernelMemorySystem *pKe
 
 static inline void kmemsysRemoveAllAtsPeers_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     pKernelMemorySystem->__kmemsysRemoveAllAtsPeers__(pGpu, pKernelMemorySystem);
+}
+
+void kmemsysCheckEccCounts_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+static inline void kmemsysCheckEccCounts_b3696a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return;
+}
+
+static inline void kmemsysCheckEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    pKernelMemorySystem->__kmemsysCheckEccCounts__(pGpu, pKernelMemorySystem);
+}
+
+NV_STATUS kmemsysClearEccCounts_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+static inline NV_STATUS kmemsysClearEccCounts_56cd7a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kmemsysClearEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return pKernelMemorySystem->__kmemsysClearEccCounts__(pGpu, pKernelMemorySystem);
 }
 
 static inline NV_STATUS kmemsysStateLoad_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, NvU32 arg0) {

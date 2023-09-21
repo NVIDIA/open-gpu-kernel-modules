@@ -5636,23 +5636,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_GPIO_TO_IRQ_PRESENT" "" "functions"
         ;;
 
-        migrate_vma_setup)
-            #
-            # Determine if migrate_vma_setup() function is present
-            #
-            # migrate_vma_setup() function was added by commit
-            # a7d1f22bb74f32cf3cd93f52776007e161f1a738 ("mm: turn migrate_vma
-            # upside down) in v5.4.
-            # (2019-08-20).
-            CODE="
-            #include <linux/migrate.h>
-            int conftest_migrate_vma_setup(void) {
-                migrate_vma_setup();
-            }"
-
-            compile_check_conftest "$CODE" "NV_MIGRATE_VMA_SETUP_PRESENT" "" "functions"
-        ;;
-
         migrate_vma_added_flags)
             #
             # Determine if migrate_vma structure has flags
@@ -5743,23 +5726,25 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_IOASID_GET_PRESENT" "" "functions"
         ;;
 
-        mm_pasid_set)
+        mm_pasid_drop)
             #
-            # Determine if mm_pasid_set() function is present
+            # Determine if mm_pasid_drop() function is present
             #
-            # mm_pasid_set() function was added by commit
-            # 701fac40384f07197b106136012804c3cae0b3de (iommu/sva: Assign a
-            # PASID to mm on PASID allocation and free it on mm exit) in v5.18.
-            # (2022-02-15).
+            # Added by commit 701fac40384f ("iommu/sva: Assign a PASID to mm
+            # on PASID allocation and free it on mm exit") in v5.18.
+            # Moved to linux/iommu.h in commit cd3891158a77 ("iommu/sva: Move
+            # PASID helpers to sva code") in v6.4.
+            #
             CODE="
             #if defined(NV_LINUX_SCHED_MM_H_PRESENT)
             #include <linux/sched/mm.h>
             #endif
-            void conftest_mm_pasid_set(void) {
-                mm_pasid_set();
+            #include <linux/iommu.h>
+            void conftest_mm_pasid_drop(void) {
+                mm_pasid_drop();
             }"
 
-            compile_check_conftest "$CODE" "NV_MM_PASID_SET_PRESENT" "" "functions"
+            compile_check_conftest "$CODE" "NV_MM_PASID_DROP_PRESENT" "" "functions"
         ;;
 
         drm_crtc_state_has_no_vblank)
@@ -6339,6 +6324,22 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_MEMPOLICY_HAS_HOME_NODE" "" "types"
+        ;;
+
+        mpol_preferred_many_present)
+            #
+            # Determine if MPOL_PREFERRED_MANY enum is present or not
+            #
+            # Added by commit b27abaccf8e8b ("mm/mempolicy: add
+            # MPOL_PREFERRED_MANY for multiple preferred nodes") in
+            # v5.15
+            #
+            CODE="
+            #include <linux/mempolicy.h>
+            int mpol_preferred_many = MPOL_PREFERRED_MANY;
+            "
+
+            compile_check_conftest "$CODE" "NV_MPOL_PREFERRED_MANY_PRESENT" "" "types"
         ;;
 
         mmu_interval_notifier)

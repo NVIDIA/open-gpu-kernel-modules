@@ -10155,6 +10155,30 @@ static uvm_processor_id_t block_select_residency(uvm_va_block_t *va_block,
         uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(preferred_location)], processor_id))
         return preferred_location;
 
+    // Check if we should map the closest resident processor remotely on remote CPU fault
+    //
+    // When faulting on CPU, there's a linux process on behalf of it, which is associated
+    // with a unique VM pointed by current->mm. A block of memory residing on GPU is also
+    // associated with VM, pointed by va_block_context->mm. If they match, it's a regular
+    // (local) fault, and we may want to migrate a page from GPU to CPU.
+    // If it's a 'remote' fault, i.e. linux process differs from one associated with block
+    // VM, we might preserve residence.
+    //
+    // Establishing a remote fault without access counters means the memory could stay in
+    // the wrong spot for a long time, which is why we prefer to avoid creating remote
+    // mappings. However when NIC accesses a memory residing on GPU, it's worth to keep it
+    // in place for NIC accesses.
+    //
+    // The logic that's used to detect remote faulting also keeps memory in place for
+    // ptrace accesses. We would prefer to control those policies separately, but the
+    // NIC case takes priority.
+    if (UVM_ID_IS_CPU(processor_id) &&
+        uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(closest_resident_processor)], processor_id) &&
+        va_block_context->mm != current->mm) {
+        UVM_ASSERT(va_block_context->mm != NULL);
+        return closest_resident_processor;
+    }
+
     // If the page is resident on a processor other than the preferred location,
     // or the faulting processor can't access the preferred location, we select
     // the faulting processor as the new residency.

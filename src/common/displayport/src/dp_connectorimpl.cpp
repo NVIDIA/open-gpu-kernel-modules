@@ -4740,7 +4740,7 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
 {
     LinkTrainingType preferredTrainingType = trainType;
     bool result;
-    bool bEnableFecOnSor;
+
     //
     //  Validate link config against caps
     //
@@ -4832,16 +4832,7 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
         result = postLTAdjustment(activeLinkConfig, force);
     }
 
-    bEnableFecOnSor = lConfig.bEnableFEC;
-
-    if (main->isEDP())
-    {
-        DeviceImpl * nativeDev = findDeviceInList(Address());
-        if (nativeDev && nativeDev->bIsPreviouslyFakedMuxDevice)
-            bEnableFecOnSor = activeLinkConfig.bEnableFEC;
-    }
-
-    if((lConfig.lanes != 0) && result && bEnableFecOnSor)
+    if((lConfig.lanes != 0) && result && activeLinkConfig.bEnableFEC)
     {
         //
         // Extended latency from link-train end to FEC enable pattern
@@ -6057,7 +6048,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
                 if (this->bReassessMaxLink)
                 {
                     //
-                    // If the highest assessed LC is not equal to 
+                    // If the highest assessed LC is not equal to
                     // max possible link config, re-assess link
                     //
                     NvU8 retries = 0U;

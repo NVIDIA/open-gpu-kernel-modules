@@ -1353,7 +1353,53 @@ nvswitch_init_warm_reset_ls10
 )
 {
     NVSWITCH_PRINT(device, WARN, "%s: Function not implemented\n", __FUNCTION__);
- }
+}
+
+//
+// Helper funcction to query MINION to see if DL clocks are on
+// return NV_TRUE if the clocks are on
+//        NV_FALSE if the clocks are off
+static
+NvBool
+_nvswitch_are_dl_clocks_on
+(
+    nvswitch_device *device,
+    NvU32            linkNumber
+)
+{
+    NvU32 link_state;
+    NvU32 stat_data;
+    NvlStatus status = NVL_SUCCESS;
+    nvlink_link * link= nvswitch_get_link(device, linkNumber);
+
+    if (link == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: invalid link %d\n",
+                       __FUNCTION__, linkNumber);
+        return NV_FALSE;
+    }
+
+    status = nvswitch_minion_get_dl_status(device, linkNumber,
+                NV_NVLSTAT_UC01, 0, &stat_data);
+    if (status != NVL_SUCCESS)
+    {
+        return NV_FALSE;
+    }
+
+    link_state = DRF_VAL(_NVLSTAT, _UC01, _LINK_STATE, stat_data);
+    switch(link_state)
+    {
+        case LINKSTATUS_RESET:
+        case LINKSTATUS_UNINIT:
+            return NV_FALSE;
+        case LINKSTATUS_LANESHUTDOWN:
+        case LINKSTATUS_ACTIVE_PENDING:
+            return nvswitch_are_link_clocks_on_ls10(device, link,
+                    NVSWITCH_PER_LINK_CLOCK_SET(RXCLK) | NVSWITCH_PER_LINK_CLOCK_SET(TXCLK));
+    }
+
+    return NV_TRUE;
+}
 
 //
 // Implement reset and drain sequence for ls10
@@ -1586,10 +1632,10 @@ nvswitch_reset_and_drain_links_ls10
         nvswitch_soe_restore_nport_state_ls10(device, link);
 
         // Step 7.0 : Re-program the routing table for DBEs
-  
+
         // Step 8.0 : Reset NVLW and NPORT interrupt state
         _nvswitch_link_reset_interrupts_ls10(device, link);
-  
+
         // Re-register links.
         status = nvlink_lib_register_link(device->nvlink_device, link_info);
         if (status != NVL_SUCCESS)
@@ -1625,21 +1671,9 @@ nvswitch_reset_and_drain_links_ls10
         do
         {
             bKeepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
+            bAreDlClocksOn = _nvswitch_are_dl_clocks_on(device, link);
 
-            status = nvswitch_minion_get_dl_status(device, link_info->linkNumber,
-                        NV_NVLSTAT_UC01, 0, &stat_data);
-
-            if (status != NVL_SUCCESS)
-            {
-                continue;
-            }
-
-            link_state = DRF_VAL(_NVLSTAT, _UC01, _LINK_STATE, stat_data);
-
-            bAreDlClocksOn = (link_state != LINKSTATUS_INITPHASE1) ?
-                                            NV_TRUE:NV_FALSE;
-
-            if (bAreDlClocksOn == NV_TRUE)
+            if (bAreDlClocksOn)
             {
                 break;
             }

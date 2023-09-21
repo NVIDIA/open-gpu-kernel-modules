@@ -114,10 +114,13 @@ void crashcatReportLogReporter_V1_LIBOS2(CrashCatReport *pReport)
     NvCrashCatReport_V1 *pReportV1 = &pReport->v1.report;
     NvU8 taskId = crashcatReportV1ReporterLibos2TaskId(pReportV1);
 
+    //
+    // Though this is technically not a separate packet, we use the CRASHCAT_REPORT_LOG_PACKET_TYPE
+    // macro to get the correct prefix/indentation for the reporter information.
+    //
     if (taskId == NV_CRASHCAT_REPORT_V1_REPORTER_ID_LIBOS2_TASK_ID_UNSPECIFIED)
     {
-        crashcatEnginePrintf(pReport->pEngine, NV_FALSE,
-            "Reported by libos kernel v%u.%u [%u] @ %u",
+        CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "Reported by libos kernel v%u.%u [%u] @ %u",
             crashcatReportV1ReporterVersionLibos2Major(pReportV1),
             crashcatReportV1ReporterVersionLibos2Minor(pReportV1),
             crashcatReportV1ReporterVersionLibos2Cl(pReportV1),
@@ -125,8 +128,7 @@ void crashcatReportLogReporter_V1_LIBOS2(CrashCatReport *pReport)
     }
     else
     {
-        crashcatEnginePrintf(pReport->pEngine, NV_FALSE,
-            "Reported by libos task:%u v%u.%u [%u] @ ts:%u",
+        CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "Reported by libos task:%u v%u.%u [%u] @ ts:%u",
             taskId, crashcatReportV1ReporterVersionLibos2Major(pReportV1),
             crashcatReportV1ReporterVersionLibos2Minor(pReportV1),
             crashcatReportV1ReporterVersionLibos2Cl(pReportV1),

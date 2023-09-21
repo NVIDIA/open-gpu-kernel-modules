@@ -5800,6 +5800,7 @@ kmigmgrInitGPUInstanceBufPools_IMPL
 {
     Heap *pHeap;
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    NvU32 pmaConfig = PMA_QUERY_NUMA_ONLINED;
     NV_ASSERT_OR_RETURN(pKernelMIGGpuInstance != NULL, NV_ERR_INVALID_ARGUMENT);
     pHeap = pKernelMIGGpuInstance->pMemoryPartitionHeap;
     NV_ASSERT_OR_RETURN(pHeap != NULL, NV_ERR_INVALID_STATE);
@@ -5815,7 +5816,12 @@ kmigmgrInitGPUInstanceBufPools_IMPL
     // This is just a sanity check to make sure this assumption is correct and
     // allocation from PMA cannot trigger UVM evictions.
     //
-    if (memmgrIsPmaInitialized(pMemoryManager))
+    // When FB memory is onlined as NUMA node, kernel can directly alloc FB memory
+    // and hence free memory can not be expected to be same as total memory.
+    //
+    if (memmgrIsPmaInitialized(pMemoryManager) &&
+        (pmaQueryConfigs(&pHeap->pmaObject, &pmaConfig) == NV_OK) &&
+        !(pmaConfig & PMA_QUERY_NUMA_ONLINED))
     {
         NvU64 freeSpace, totalSpace;
         pmaGetFreeMemory(&pHeap->pmaObject, &freeSpace);

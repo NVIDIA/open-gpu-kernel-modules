@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,10 +20,14 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#define NV_CHIP_EXTENDED_SYSTEM_PHYSICAL_ADDRESS_BITS              52
-#define NV_LTC_PRI_STRIDE                            8192
-#define NV_LTS_PRI_STRIDE                             512
-#define NV_FBPA_PRI_STRIDE                      16384
-#define NV_SCAL_LITTER_NUM_FBPAS                       24
-#define NV_XPL_BASE_ADDRESS                    540672
-#define NV_XTL_BASE_ADDRESS                    593920
+
+#ifndef __gh100_dev_ltc_h_
+#define __gh100_dev_ltc_h_
+
+#define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT                  0x001404f8 /* RW-4R */
+#define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_TOTAL                  15:0 /* RWIVF */
+#define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_TOTAL_INIT           0x0000 /* RWI-V */
+#define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_UNIQUE                31:16 /* RWIVF */
+#define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_UNIQUE_INIT          0x0000 /* RWI-V */
+
+#endif // __gh100_dev_ltc_h_

@@ -213,6 +213,7 @@
     _op(void,      nvswitch_reset_persistent_link_hw_state, (nvswitch_device *device, NvU32 linkNumber), _arch)\
     _op(void,      nvswitch_store_topology_information, (nvswitch_device *device, nvlink_link *link), _arch) \
     _op(void,      nvswitch_init_lpwr_regs, (nvlink_link *link), _arch) \
+    _op(void,      nvswitch_program_l1_scratch_reg, (nvswitch_device *device, NvU32 linkNumber), _arch) \
     _op(NvlStatus, nvswitch_set_training_mode, (nvswitch_device *device), _arch) \
     _op(NvU32,     nvswitch_get_sublink_width, (nvswitch_device *device, NvU32 linkNumber), _arch) \
     _op(NvBool,    nvswitch_i2c_is_device_access_allowed, (nvswitch_device *device, NvU32 port, NvU8 addr, NvBool bIsRead), _arch) \

@@ -880,6 +880,10 @@ NV_STATUS osReserveCpuAddressSpaceUpperBound(void **ppSectionHandle,
                                              NvU64 maxSectionSize);
 void osReleaseCpuAddressSpaceUpperBound(void *pSectionHandle);
 
+void* osGetPidInfo(void);
+void osPutPidInfo(void *pOsPidInfo);
+NV_STATUS osFindNsPid(void *pOsPidInfo, NvU32 *pNsPid);
+
 // OS Tegra IPC functions
 NV_STATUS osTegraDceRegisterIpcClient(NvU32 interfaceType, void *usrCtx,
                                       NvU32 *clientId);
@@ -1248,6 +1252,8 @@ static NV_INLINE NV_STATUS isrWrapper(NvBool testIntr, OBJGPU *pGpu)
 #define OS_PCIE_CAP_MASK_REQ_ATOMICS_32    NVBIT(0)
 #define OS_PCIE_CAP_MASK_REQ_ATOMICS_64    NVBIT(1)
 #define OS_PCIE_CAP_MASK_REQ_ATOMICS_128   NVBIT(2)
+
+void osGetNumaMemoryUsage(NvS32 numaId, NvU64 *free_memory_bytes, NvU64 *total_memory_bytes);
 
 NV_STATUS osNumaAddGpuMemory(OS_GPU_INFO *pOsGpuInfo, NvU64 offset,
                              NvU64 size, NvU32 *pNumaNodeId);

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020-2022 NVIDIA Corporation
+    Copyright (c) 2020-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -368,7 +368,10 @@ static NvU64 small_half_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc)
     return pde_bits;
 }
 
-static void make_pde_hopper(void *entry, uvm_mmu_page_table_alloc_t **phys_allocs, NvU32 depth)
+static void make_pde_hopper(void *entry,
+                            uvm_mmu_page_table_alloc_t **phys_allocs,
+                            NvU32 depth,
+                            uvm_page_directory_t *child_dir)
 {
     NvU32 entry_count = entries_per_index_hopper(depth);
     NvU64 *entry_bits = (NvU64 *)entry;

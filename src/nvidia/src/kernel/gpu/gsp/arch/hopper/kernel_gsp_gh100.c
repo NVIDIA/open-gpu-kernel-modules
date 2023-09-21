@@ -29,6 +29,7 @@
 #include "gpu/conf_compute/conf_compute.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/gsp/kernel_gsp.h"
+#include "gpu/mem_sys/kern_mem_sys.h"
 #include "gsp/gspifpub.h"
 #include "vgpu/rpc.h"
 
@@ -523,6 +524,7 @@ kgspBootstrapRiscvOSEarly_GH100
 {
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NV_STATUS     status        = NV_OK;
 
     // Only for GSP client builds
@@ -532,8 +534,16 @@ kgspBootstrapRiscvOSEarly_GH100
         return NV_ERR_NOT_SUPPORTED;
     }
 
+    // Clear ECC errors before attempting to load GSP
+    status = kmemsysClearEccCounts_HAL(pGpu, pKernelMemorySystem);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Issue clearing ECC counts! Status:0x%x\n", status);
+    }
+
     // Setup the descriptors that GSP-FMC needs to boot GSP-RM
-    NV_ASSERT_OK_OR_RETURN(kgspSetupGspFmcArgs_HAL(pGpu, pKernelGsp, pGspFw));
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+            kgspSetupGspFmcArgs_HAL(pGpu, pKernelGsp, pGspFw), exit);
 
     kgspSetupLibosInitArgs(pGpu, pKernelGsp);
 
@@ -562,7 +572,8 @@ kgspBootstrapRiscvOSEarly_GH100
     {
         NV_PRINTF(LEVEL_NOTICE, "Starting to boot GSP via FSP.\n");
         pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM, NV_TRUE);
-        NV_ASSERT_OK_OR_RETURN(kfspSendBootCommands_HAL(pGpu, pKernelFsp));
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                kfspSendBootCommands_HAL(pGpu, pKernelFsp), exit);
     }
     else
     {
@@ -585,7 +596,7 @@ kgspBootstrapRiscvOSEarly_GH100
                 kfspDumpDebugState_HAL(pGpu, pKernelFsp);
             }
 
-            return status;
+            goto exit;
         }
     }
 
@@ -606,7 +617,7 @@ kgspBootstrapRiscvOSEarly_GH100
                   kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0));
         NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX1 = 0x%x\n",
                   kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX1));
-        return status;
+        goto exit;
     }
 
     // Start polling for libos logs now that lockdown is released
@@ -640,6 +651,11 @@ kgspBootstrapRiscvOSEarly_GH100
     NV_PRINTF(LEVEL_INFO, "GSP FW RM ready.\n");
 
 exit:
+    // If GSP fails to boot, check if there's any DED error.
+    if (status != NV_OK)
+    {
+        kmemsysCheckEccCounts_HAL(pGpu, pKernelMemorySystem);
+    }
     NV_ASSERT(status == NV_OK);
 
     return status;

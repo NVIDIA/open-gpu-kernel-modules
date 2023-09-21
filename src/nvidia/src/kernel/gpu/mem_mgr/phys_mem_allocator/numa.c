@@ -363,7 +363,7 @@ static NV_STATUS _pmaNumaAllocatePages
         osAllocAcquirePage(sysPhysAddr + (1 << osPageShift), (pageSize >> osPageShift) - 1);
     }
 
-    if (bScrubOnAlloc)
+    if (bScrubOnAlloc && (i > 0))
     {
         PSCRUB_NODE pPmaScrubList = NULL;
         NvU64 count;

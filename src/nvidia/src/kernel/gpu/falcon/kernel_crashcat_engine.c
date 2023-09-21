@@ -264,7 +264,7 @@ void *kcrashcatEngineMapBufferDescriptor_IMPL
         memdescMap(pMemDesc, 0, memdescGetSize(pMemDesc), NV_TRUE,
                    NV_PROTECT_READABLE, &pBuf, &pPriv),
         {
-            if (pBufDesc->pEngPriv == NULL)
+            if (!pBufDesc->bRegistered)
                 memdescDestroy(pMemDesc);
             return NULL;
         });

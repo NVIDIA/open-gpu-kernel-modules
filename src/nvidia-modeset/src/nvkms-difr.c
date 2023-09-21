@@ -274,8 +274,12 @@ NvU32 nvDIFRPrefetchSurfaces(NVDIFRStateEvoPtr pDifr, size_t l2CacheSize)
     NvU32 i;
     NvU32 status;
 
-    /* If DIFR is disabled it's because we know we were or will be flipping. */
-    if (pDifr->hwDisabled) {
+    /*
+     * If DIFR is disabled it's because we know we were or will be flipping, or
+     * if console is active then the scanout surfaces will get updated by the
+     * OS console driver without any knowledge of NVKMS.
+     */
+    if (pDifr->hwDisabled || nvEvoIsConsoleActive(pDevEvo)) {
         return NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_OS_FLIPS_ENABLED;
     }
 

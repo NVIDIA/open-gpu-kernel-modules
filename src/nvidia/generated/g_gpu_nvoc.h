@@ -877,6 +877,7 @@ struct OBJGPU {
     NV_STATUS (*__gpuReadFunctionConfigReg__)(struct OBJGPU *, NvU32, NvU32, NvU32 *);
     NV_STATUS (*__gpuWriteFunctionConfigReg__)(struct OBJGPU *, NvU32, NvU32, NvU32);
     NV_STATUS (*__gpuWriteFunctionConfigRegEx__)(struct OBJGPU *, NvU32, NvU32, NvU32, THREAD_STATE_NODE *);
+    NV_STATUS (*__gpuReadVgpuConfigReg__)(struct OBJGPU *, NvU32, NvU32 *);
     void (*__gpuGetIdInfo__)(struct OBJGPU *);
     void (*__gpuHandleSanityCheckRegReadError__)(struct OBJGPU *, NvU32, NvU32);
     void (*__gpuHandleSecFault__)(struct OBJGPU *);
@@ -1007,6 +1008,9 @@ struct OBJGPU {
     NvU32 subdeviceInstance;
     NvS32 numaNodeId;
     _GPU_UUID gpuUuid;
+    NvU32 gpuPhysicalId;
+    NvU32 gpuTerminatedLinkMask;
+    NvBool gpuLinkTerminationEnabled;
     NvBool gspRmInitialized;
     _GPU_PCIE_PEER_CLIQUE pciePeerClique;
     NvU32 i2cPortForExtdev;
@@ -1427,6 +1431,8 @@ NV_STATUS __nvoc_objCreate_OBJGPU(OBJGPU**, Dynamic*, NvU32,
 #define gpuWriteFunctionConfigReg_HAL(pGpu, function, reg, data) gpuWriteFunctionConfigReg_DISPATCH(pGpu, function, reg, data)
 #define gpuWriteFunctionConfigRegEx(pGpu, function, reg, data, pThreadState) gpuWriteFunctionConfigRegEx_DISPATCH(pGpu, function, reg, data, pThreadState)
 #define gpuWriteFunctionConfigRegEx_HAL(pGpu, function, reg, data, pThreadState) gpuWriteFunctionConfigRegEx_DISPATCH(pGpu, function, reg, data, pThreadState)
+#define gpuReadVgpuConfigReg(pGpu, index, data) gpuReadVgpuConfigReg_DISPATCH(pGpu, index, data)
+#define gpuReadVgpuConfigReg_HAL(pGpu, index, data) gpuReadVgpuConfigReg_DISPATCH(pGpu, index, data)
 #define gpuGetIdInfo(pGpu) gpuGetIdInfo_DISPATCH(pGpu)
 #define gpuGetIdInfo_HAL(pGpu) gpuGetIdInfo_DISPATCH(pGpu)
 #define gpuHandleSanityCheckRegReadError(pGpu, addr, value) gpuHandleSanityCheckRegReadError_DISPATCH(pGpu, addr, value)
@@ -2422,6 +2428,19 @@ static inline void gpuUpdateUserSharedData(struct OBJGPU *pGpu) {
 
 #define gpuUpdateUserSharedData_HAL(pGpu) gpuUpdateUserSharedData(pGpu)
 
+void gpuGetTerminatedLinkMask_GA100(struct OBJGPU *pGpu, NvU32 arg0);
+
+
+#ifdef __nvoc_gpu_h_disabled
+static inline void gpuGetTerminatedLinkMask(struct OBJGPU *pGpu, NvU32 arg0) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+}
+#else //__nvoc_gpu_h_disabled
+#define gpuGetTerminatedLinkMask(pGpu, arg0) gpuGetTerminatedLinkMask_GA100(pGpu, arg0)
+#endif //__nvoc_gpu_h_disabled
+
+#define gpuGetTerminatedLinkMask_HAL(pGpu, arg0) gpuGetTerminatedLinkMask(pGpu, arg0)
+
 NV_STATUS gpuJtVersionSanityCheck_TU102(struct OBJGPU *pGpu);
 
 
@@ -2968,6 +2987,16 @@ static inline NV_STATUS gpuWriteFunctionConfigRegEx_5baef9(struct OBJGPU *pGpu, 
 
 static inline NV_STATUS gpuWriteFunctionConfigRegEx_DISPATCH(struct OBJGPU *pGpu, NvU32 function, NvU32 reg, NvU32 data, THREAD_STATE_NODE *pThreadState) {
     return pGpu->__gpuWriteFunctionConfigRegEx__(pGpu, function, reg, data, pThreadState);
+}
+
+NV_STATUS gpuReadVgpuConfigReg_GH100(struct OBJGPU *pGpu, NvU32 index, NvU32 *data);
+
+static inline NV_STATUS gpuReadVgpuConfigReg_46f6a7(struct OBJGPU *pGpu, NvU32 index, NvU32 *data) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS gpuReadVgpuConfigReg_DISPATCH(struct OBJGPU *pGpu, NvU32 index, NvU32 *data) {
+    return pGpu->__gpuReadVgpuConfigReg__(pGpu, index, data);
 }
 
 void gpuGetIdInfo_GM107(struct OBJGPU *pGpu);

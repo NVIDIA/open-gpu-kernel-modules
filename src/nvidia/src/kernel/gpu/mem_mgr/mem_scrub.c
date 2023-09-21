@@ -69,11 +69,13 @@ static NvU32  _scrubMemory(OBJMEMSCRUB  *pScrubber, RmPhysAddr base, NvU64 size,
                            NvU32 dstCpuCacheAttrib, NvU32 freeToken);
 static void   _scrubWaitAndSave(OBJMEMSCRUB *pScrubber, PSCRUB_NODE pList, NvLength  itemsToSave);
 static NvU64  _scrubGetFreeEntries(OBJMEMSCRUB *pScrubber);
-static NvU64  _scrubCheckAndSubmit(OBJMEMSCRUB *pScrubber, NvU64  chunkSize, NvU64  *pPages,
-                                 NvU64  pageCount, PSCRUB_NODE  pList, NvLength  pagesToScrubCheck);
+static NvU64  _scrubCheckAndSubmit(OBJMEMSCRUB *pScrubber, NvU64 pageCount, PSCRUB_NODE  pList,
+                                   PSCRUB_NODE pScrubListCopy, NvLength  pagesToScrubCheck);
 static void   _scrubCopyListItems(OBJMEMSCRUB *pScrubber, PSCRUB_NODE pList, NvLength itemsToSave);
 
 static NV_STATUS _scrubCheckLocked(OBJMEMSCRUB  *pScrubber, PSCRUB_NODE *ppList, NvU64 *pSize);
+static NV_STATUS _scrubCombinePages(NvU64 *pPages, NvU64 pageSize, NvU64 pageCount,
+                                    PSCRUB_NODE *ppScrubList, NvU64 *pSize);
 
 /**
  * Constructs the memory scrubber object and signals
@@ -403,69 +405,90 @@ scrubSubmitPages
 {
     NvU64       curPagesSaved     = 0;
     PSCRUB_NODE pScrubList        = NULL;
+    PSCRUB_NODE pScrubListCopy    = NULL;
+    NvU64       scrubListSize     = 0;
     NvLength    pagesToScrubCheck = 0;
     NvU64       totalSubmitted    = 0;
     NvU64       numFinished       = 0;
     NvU64       freeEntriesInList = 0;
     NvU64       scrubCount        = 0;
-    NvU64       numPagesToScrub   = pageCount;
+    NvU64       numPagesToScrub   = 0;
     NV_STATUS   status            = NV_OK;
 
     portSyncMutexAcquire(pScrubber->pScrubberMutex);
     *pSize  = 0;
     *ppList = pScrubList;
 
+    NV_CHECK_OR_GOTO(LEVEL_INFO, pageCount > 0, cleanup);
+
     NV_PRINTF(LEVEL_INFO, "submitting pages, pageCount = 0x%llx chunkSize = 0x%llx\n", pageCount, chunkSize);
 
     freeEntriesInList = _scrubGetFreeEntries(pScrubber);
-    if (freeEntriesInList < pageCount)
-    {
-        pScrubList = (PSCRUB_NODE)
-                     portMemAllocNonPaged((NvLength)(sizeof(SCRUB_NODE) * (pageCount - freeEntriesInList)));
 
-        if (pScrubList == NULL)
+    NV_ASSERT_OK_OR_GOTO(status,
+                         _scrubCombinePages(pPages,
+                                            chunkSize,
+                                            pageCount,
+                                            &pScrubList,
+                                            &scrubListSize),
+                         cleanup);
+
+    numPagesToScrub = scrubListSize;
+
+    if (freeEntriesInList < scrubListSize)
+    {
+        pScrubListCopy = (PSCRUB_NODE)
+                          portMemAllocNonPaged((NvLength)(sizeof(SCRUB_NODE) * (scrubListSize - freeEntriesInList)));
+
+        if (pScrubListCopy == NULL)
         {
             status = NV_ERR_NO_MEMORY;
             goto cleanup;
         }
 
-        while (freeEntriesInList < pageCount)
+        while (freeEntriesInList < scrubListSize)
         {
-            if (pageCount > MAX_SCRUB_ITEMS)
+            if (scrubListSize > MAX_SCRUB_ITEMS)
             {
                 pagesToScrubCheck = (NvLength)(MAX_SCRUB_ITEMS - freeEntriesInList);
                 scrubCount        = MAX_SCRUB_ITEMS;
             }
             else
             {
-                pagesToScrubCheck  = (NvLength)(pageCount - freeEntriesInList);
-                scrubCount         = pageCount;
+                pagesToScrubCheck = (NvLength)(scrubListSize - freeEntriesInList);
+                scrubCount        = scrubListSize;
             }
 
-            numFinished = _scrubCheckAndSubmit(pScrubber, chunkSize, &pPages[totalSubmitted],
-                                               scrubCount, &pScrubList[curPagesSaved],
+            numFinished = _scrubCheckAndSubmit(pScrubber, scrubCount,
+                                               &pScrubList[totalSubmitted],
+                                               &pScrubListCopy[curPagesSaved],
                                                pagesToScrubCheck);
 
-            pageCount         -= numFinished;
+            scrubListSize     -= numFinished;
             curPagesSaved     += pagesToScrubCheck;
             totalSubmitted    += numFinished;
             freeEntriesInList  = _scrubGetFreeEntries(pScrubber);
         }
 
-        *ppList = pScrubList;
+        *ppList = pScrubListCopy;
         *pSize  = curPagesSaved;
     }
     else
     {
-        totalSubmitted = _scrubCheckAndSubmit(pScrubber, chunkSize, pPages,
-                                              pageCount, NULL,
-                                              0);
+        totalSubmitted = _scrubCheckAndSubmit(pScrubber, scrubListSize,
+                                              pScrubList, NULL, 0);
         *ppList = NULL;
         *pSize  = 0;
     }
 
 cleanup:
     portSyncMutexRelease(pScrubber->pScrubberMutex);
+
+    if (pScrubList != NULL)
+    {
+        portMemFree(pScrubList);
+        pScrubList = NULL;
+    }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_INFO, status);
 
@@ -507,15 +530,33 @@ scrubWaitPages
 )
 {
 
-    NvU32     iter   = 0;
-    NV_STATUS status = NV_OK;
+    NvU32       iter          = 0;
+    NV_STATUS   status        = NV_OK;
+    PSCRUB_NODE pScrubList    = NULL;
+    NvU64       scrubListSize = 0;
+
+    NV_ASSERT_OK_OR_RETURN(_scrubCombinePages(pPages,
+                                              chunkSize,
+                                              pageCount,
+                                              &pScrubList,
+                                              &scrubListSize));
 
     portSyncMutexAcquire(pScrubber->pScrubberMutex);
-    for (iter = 0; iter < pageCount; iter++)
+
+    for (iter = 0; iter < scrubListSize; iter++)
     {
-        _waitForPayload(pScrubber, pPages[iter], (pPages[iter] + chunkSize - 1));
+        _waitForPayload(pScrubber,
+                        pScrubList[iter].base,
+                        (pScrubList[iter].base + pScrubList[iter].size - 1));
     }
     portSyncMutexRelease(pScrubber->pScrubberMutex);
+
+    if (pScrubList != NULL)
+    {
+        portMemFree(pScrubList);
+        pScrubList = NULL;
+    }
+
     return status;
 
 }
@@ -644,29 +685,28 @@ _scrubCopyListItems
 /*  This function is used to check and submit work items always within the
  *  available / maximum scrub list size.
  *
- *  @param[in]  pScrubber    OBJMEMSCRUB pointer
- *  @param[in]  chunkSize     size of each page
- *  @param[in]  pPages       Array of base address
- *  @param[in]  pageCount    number of pages in the array
- *  @param[in]  pList        pointer will store the return check array
+ *  @param[in]  pScrubber           OBJMEMSCRUB pointer
+ *  @param[in]  pageCount           number of pages in the array
+ *  @param[in]  pList               pointer will store the return check array
+ *  @param[in]  pScrubListCopy      List where pages are saved
+ *  @param[in]  pagesToScrubCheck   How many pages will need to be saved
  *  @returns the number of work successfully submitted, else 0
  */
 static NvU64
 _scrubCheckAndSubmit
 (
     OBJMEMSCRUB *pScrubber,
-    NvU64        chunkSize,
-    NvU64       *pPages,
     NvU64        pageCount,
     PSCRUB_NODE  pList,
+    PSCRUB_NODE  pScrubListCopy,
     NvLength     pagesToScrubCheck
 )
 {
-    NvU64        iter              = 0;
-    NvU64        newId;
-    NV_STATUS    status;
+    NvU64     iter = 0;
+    NvU64     newId;
+    NV_STATUS status;
 
-    if (pList == NULL && pagesToScrubCheck != 0)
+    if (pScrubListCopy == NULL && pagesToScrubCheck != 0)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "pages need to be saved off, but stash list is invalid\n");
@@ -681,19 +721,19 @@ _scrubCheckAndSubmit
 
         NV_PRINTF(LEVEL_INFO,
                   "Submitting work, Id: %llx, base: %llx, size: %llx\n",
-                  newId, pPages[iter], chunkSize);
+                  newId, pList[iter].base, pList[iter].size);
 
         {
-            status =_scrubMemory(pScrubber, pPages[iter], chunkSize, NV_MEMORY_DEFAULT,
+            status =_scrubMemory(pScrubber, pList[iter].base, pList[iter].size, NV_MEMORY_DEFAULT,
                                  (NvU32)newId);
         }
 
         if(status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "Failing because the work dint submit.\n");
+            NV_PRINTF(LEVEL_ERROR, "Failing because the work didn't submit.\n");
             goto exit;
         }
-        _scrubAddWorkToList(pScrubber, pPages[iter], chunkSize, newId);
+        _scrubAddWorkToList(pScrubber, pList[iter].base, pList[iter].size, newId);
         _scrubCheckProgress(pScrubber);
     }
 
@@ -897,7 +937,7 @@ _scrubCheckProgress
         else
             lastSWSemaphoreDone = ceutilsUpdateProgress(pScrubber->pCeUtils);
     }
-    
+
     pScrubber->lastSWSemaphoreDone = lastSWSemaphoreDone;
 
     return lastSWSemaphoreDone;
@@ -948,4 +988,43 @@ _scrubMemory
 cleanup:
     memdescDestroy(pMemDesc);
     return status;
+}
+
+static NV_STATUS
+_scrubCombinePages
+(
+    NvU64       *pPages,
+    NvU64        pageSize,
+    NvU64        pageCount,
+    PSCRUB_NODE *ppScrubList,
+    NvU64       *pSize
+)
+{
+    NvU64 i, j;
+
+    *ppScrubList = (PSCRUB_NODE)portMemAllocNonPaged(sizeof(SCRUB_NODE) * pageCount);
+    NV_ASSERT_OR_RETURN(*ppScrubList != NULL, NV_ERR_NO_MEMORY);
+
+    // Copy first element from original list to new list
+    (*ppScrubList)[0].base = pPages[0];
+    (*ppScrubList)[0].size = pageSize;
+
+    for (i = 0, j = 0; i < (pageCount - 1); i++)
+    {
+        if ((((*ppScrubList)[j].size + pageSize) > SCRUB_MAX_BYTES_PER_LINE) ||
+            ((pPages[i] + pageSize) != pPages[i+1]))
+        {
+            j++;
+            (*ppScrubList)[j].base = pPages[i+1];
+            (*ppScrubList)[j].size = pageSize;
+        }
+        else
+        {
+            (*ppScrubList)[j].size += pageSize;
+        }
+    }
+
+    *pSize = j + 1;
+
+    return NV_OK;
 }

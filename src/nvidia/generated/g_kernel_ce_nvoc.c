@@ -221,6 +221,16 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, RmHalspecOwner *pR
 
     pThis->__kceServiceNotificationInterrupt__ = &kceServiceNotificationInterrupt_IMPL;
 
+    // Hal function -- kceGetP2PCes
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kceGetP2PCes__ = &kceGetP2PCes_GH100;
+    }
+    else
+    {
+        pThis->__kceGetP2PCes__ = &kceGetP2PCes_GV100;
+    }
+
     // Hal function -- kceGetNvlinkAutoConfigCeValues
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {

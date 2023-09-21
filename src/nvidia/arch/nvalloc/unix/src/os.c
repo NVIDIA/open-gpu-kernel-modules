@@ -684,6 +684,21 @@ NV_STATUS osGetCurrentThread(OS_THREAD_HANDLE *pThreadId)
     return rmStatus;
 }
 
+void* osGetPidInfo(void)
+{
+    return os_get_pid_info();
+}
+
+void osPutPidInfo(void *pOsPidInfo)
+{
+    os_put_pid_info(pOsPidInfo);
+}
+
+NV_STATUS osFindNsPid(void *pOsPidInfo, NvU32 *pNsPid)
+{
+    return os_find_ns_pid(pOsPidInfo, pNsPid);
+}
+
 NV_STATUS osAttachToProcess(void** ppProcessInfo, NvU32 ProcessId)
 {
     //
@@ -5369,6 +5384,28 @@ osReleaseGpuOsInfo
 )
 {
     nv_put_file_private(pOsInfo);
+}
+
+/*!
+ * @brief Get free, total memory of a NUMA node by NUMA node ID from kernel.
+ *
+ * @param[in]      numaId              NUMA node ID.
+ * @param[out]     free_memory_bytes   free memory in bytes.
+ * @param[out]     total_memory_bytes  total memory in bytes.
+ *
+ */
+void
+osGetNumaMemoryUsage
+(
+    NvS32 numaId,
+    NvU64 *free_memory_bytes,
+    NvU64 *total_memory_bytes
+)
+{
+    NV_STATUS status = os_get_numa_node_memory_usage(numaId,
+                                                     free_memory_bytes,
+                                                     total_memory_bytes);
+    NV_ASSERT(status == NV_OK);
 }
 
 /*!

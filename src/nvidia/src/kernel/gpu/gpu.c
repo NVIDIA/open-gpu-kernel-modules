@@ -4941,12 +4941,19 @@ gpuReadBusConfigCycle_IMPL
     NvU8  device   = gpuGetDevice(pGpu);
     NvU8  function = 0;
 
-    if (pGpu->hPci == NULL)
+    if (IS_PASSTHRU(pGpu))
     {
-        pGpu->hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+        gpuReadVgpuConfigReg_HAL(pGpu, index, pData);
     }
+    else
+    {
+        if (pGpu->hPci == NULL)
+        {
+            pGpu->hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+        }
 
-    *pData = osPciReadDword(pGpu->hPci, index);
+        *pData = osPciReadDword(pGpu->hPci, index);
+    }
 
     return NV_OK;
 }

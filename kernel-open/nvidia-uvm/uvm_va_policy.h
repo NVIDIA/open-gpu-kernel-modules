@@ -193,7 +193,8 @@ uvm_va_policy_node_t *uvm_va_policy_node_iter_next(uvm_va_block_t *va_block, uvm
     for ((node) = uvm_va_policy_node_iter_first((va_block), (start), (end)),  \
          (next) = uvm_va_policy_node_iter_next((va_block), (node), (end));    \
          (node);                                                              \
-         (node) = (next))
+         (node) = (next),                                                     \
+         (next) = uvm_va_policy_node_iter_next((va_block), (node), (end)))
 
 // Returns the first policy in the range [start, end], if any.
 // Locking: The va_block lock must be held.

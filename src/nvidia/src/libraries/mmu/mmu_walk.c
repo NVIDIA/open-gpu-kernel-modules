@@ -223,9 +223,12 @@ mmuWalkFindLevel
 )
 {
     const MMU_WALK_LEVEL *pLevel = &pWalk->root;
-    while (pLevel->pFmt != pLevelFmt)
+    while (pLevel != NULL && pLevel->pFmt != pLevelFmt)
     {
         NvU32 subLevel;
+
+        NV_ASSERT_OR_RETURN(pLevel->pFmt != NULL, NULL);
+
         // Single sub-level always continues.
         if (1 == pLevel->pFmt->numSubLevels)
         {

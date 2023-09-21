@@ -142,6 +142,7 @@ static CrashCatBufferDescriptor *_crashcatEngineCreateBufferDescriptor
 
     portMemSet(pBufDesc, 0, sizeof(*pBufDesc));
 
+    pBufDesc->bRegistered = NV_FALSE;
     pBufDesc->aperture = aperture;
     pBufDesc->physOffset = offset;
     pBufDesc->size = size;
@@ -315,6 +316,8 @@ void *crashcatEngineMapCrashBuffer_IMPL
         //
         if (!pBufDesc->bRegistered)
             _crashcatEngineDestroyBufferDescriptor(pCrashCatEng, pBufDesc);
+
+        return NULL;
     }
 
     return pBufDesc->pMapping;

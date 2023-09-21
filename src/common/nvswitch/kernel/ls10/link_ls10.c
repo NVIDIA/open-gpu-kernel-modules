@@ -99,6 +99,30 @@ _nvswitch_configure_reserved_throughput_counters
 }
 
 void
+nvswitch_program_l1_scratch_reg_ls10
+(
+    nvswitch_device *device,
+    NvU32 linkNumber
+)
+{
+    NvU32 scrRegVal;
+    NvU32 tempRegVal;
+
+    // Read L1 register and store initial/VBIOS L1 Threshold Value in Scratch register
+    tempRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD);
+ 
+    scrRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _SCRATCH_WARM);
+
+    // Update the scratch register value only if it has not been written to before
+    if (scrRegVal == NV_NVLIPT_LNK_SCRATCH_WARM_DATA_INIT)
+    {
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _SCRATCH_WARM, tempRegVal);
+    }
+}
+
+#define BUG_3797211_LS10_VBIOS_VERSION     0x9610410000
+
+void
 nvswitch_init_lpwr_regs_ls10
 (
     nvlink_link *link
@@ -110,33 +134,56 @@ nvswitch_init_lpwr_regs_ls10
     NvU32 tempRegVal, lpEntryThreshold;
     NvU8  softwareDesired;
     NvBool bLpEnable;
+    NvU64 biosVersion;
 
     if (device->regkeys.enable_pm == NV_SWITCH_REGKEY_ENABLE_PM_NO)
     {
         return;
     }
 
-    // bios_config = nvswitch_get_bios_nvlink_config(device);
-
-    // IC Enter Threshold
-    if (device->regkeys.lp_threshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
+    if (nvswitch_lib_get_bios_version(device, &biosVersion) != NVL_SUCCESS)
     {
-        //
-        // TODO: get from bios. Refer Bug 3626523 for more info.
-        //
-        // The threshold is measured in 100us unit. So lpEntryThreshold = 1
-        // means the threshold is set to 100us in the register.
-        //
-        lpEntryThreshold = 1;
+        NVSWITCH_PRINT(device, WARN, "%s Get VBIOS version failed.\n",
+                        __FUNCTION__);
+        biosVersion = 0;
+    }
+
+    // bios_config = nvswitch_get_bios_nvlink_config(device);
+    if (biosVersion >= BUG_3797211_LS10_VBIOS_VERSION)
+    {
+        // IC Enter Threshold
+        if (device->regkeys.lp_threshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
+        {
+            //
+            // Do nothing since VBIOS (version 96.10.41.00.00 and above) 
+            // sets the default L1 threshold.
+            // Refer Bug 3797211 for more info.
+            //
+        }
+        else
+        {
+            lpEntryThreshold = device->regkeys.lp_threshold;
+            tempRegVal = 0;
+            tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_L1_ENTER_THRESHOLD, _THRESHOLD, lpEntryThreshold, tempRegVal);
+            NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD, tempRegVal);
+        }
     }
     else
     {
-        lpEntryThreshold = device->regkeys.lp_threshold;
-    }
+        // IC Enter Threshold
+        if (device->regkeys.lp_threshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
+        {
+            lpEntryThreshold = 1;
+        }
+        else
+        {
+            lpEntryThreshold = device->regkeys.lp_threshold;
+        }
 
-    tempRegVal = 0;
-    tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_L1_ENTER_THRESHOLD, _THRESHOLD, lpEntryThreshold, tempRegVal);
-    NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD, tempRegVal);
+        tempRegVal = 0;
+        tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_L1_ENTER_THRESHOLD, _THRESHOLD, lpEntryThreshold, tempRegVal);
+        NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD, tempRegVal);
+    }
 
     //LP Entry Enable
     bLpEnable = NV_TRUE;
@@ -1423,7 +1470,7 @@ nvswitch_load_link_disable_settings_ls10
     nvswitch_device *device,
     nvlink_link *link
 )
-{   
+{
     NvU32 regVal;
 
     // Read state from NVLIPT HW
@@ -1432,7 +1479,7 @@ nvswitch_load_link_disable_settings_ls10
 
     if (FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, _DISABLE, regVal))
     {
-        
+
         // Set link to invalid and unregister from corelib
         device->link[link->linkNumber].valid = NV_FALSE;
         nvlink_lib_unregister_link(link);
@@ -1473,7 +1520,7 @@ nvswitch_execute_unilateral_link_shutdown_ls10
         // Status is explicitly ignored here since we are required to soldier-on
         // in this scenario
         //
-        status = nvswitch_request_tl_link_state_lr10(link,
+        status = nvswitch_request_tl_link_state_ls10(link,
                    NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_SHUTDOWN, NV_TRUE);
 
         if (status == NVL_SUCCESS)
@@ -1492,22 +1539,22 @@ nvswitch_execute_unilateral_link_shutdown_ls10
         {
             link_intr_subcode = DRF_VAL(_NVLSTAT, _MN00, _LINK_INTR_SUBCODE, stat_data);
 
-        if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
-            (link_intr_subcode == MINION_ALARM_BUSY))
-        {
-            NVSWITCH_PRINT(device, INFO,
-                           "%s: Retrying shutdown due to Minion DLCMD Fault subcode = 0x%x\n",
-                           __FUNCTION__, link_intr_subcode);
-            //
-            // We retry the shutdown sequence 3 times when we see a MINION_REQUEST_FAIL
-            // or MINION_ALARM_BUSY
-            //
-            retry_count--;
-        }
-        else
-        {
-            break;
-        }
+            if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
+                (link_intr_subcode == MINION_ALARM_BUSY))
+            {
+                NVSWITCH_PRINT(device, INFO,
+                               "%s: Retrying shutdown due to Minion DLCMD Fault subcode = 0x%x\n",
+                               __FUNCTION__, link_intr_subcode);
+                //
+                // We retry the shutdown sequence 3 times when we see a MINION_REQUEST_FAIL
+                // or MINION_ALARM_BUSY
+                //
+                retry_count--;
+            }
+            else
+            {
+                break;
+            }
         }
         else
         {
@@ -1542,6 +1589,12 @@ nvswitch_reset_and_train_link_ls10
     nvswitch_execute_unilateral_link_shutdown_ls10(link);
     nvswitch_corelib_clear_link_state_ls10(link);
 
+    //
+    // When a link faults there could be a race between the driver requesting
+    // reset and MINION processing Emergency Shutdown. Minion will notify if
+    // such a collision happens and will deny the reset request, so try the
+    // request up to 3 times
+    //
     do
     {
         status = nvswitch_request_tl_link_state_ls10(link,
@@ -1565,24 +1618,24 @@ nvswitch_reset_and_train_link_ls10
             {
                 link_intr_subcode = DRF_VAL(_NVLSTAT, _MN00, _LINK_INTR_SUBCODE, stat_data);
 
-            if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
-                (link_intr_subcode == MINION_ALARM_BUSY))
-            {
+                if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
+                    (link_intr_subcode == MINION_ALARM_BUSY))
+                {
 
-                status = nvswitch_request_tl_link_state_ls10(link,
-                         NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_RESET, NV_TRUE);
+                    status = nvswitch_request_tl_link_state_ls10(link,
+                             NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_RESET, NV_TRUE);
 
-                //
-                // We retry the shutdown sequence 3 times when we see a MINION_REQUEST_FAIL
-                // or MINION_ALARM_BUSY
-                //
-                retry_count--;
+                    //
+                    // We retry the shutdown sequence 3 times when we see a MINION_REQUEST_FAIL
+                    // or MINION_ALARM_BUSY
+                    //
+                    retry_count--;
+                }
+                else
+                {
+                    break;
+                }
             }
-            else
-            {
-                break;
-            }
-        }
             else
             {
                 // failed to query minion for the link_intr_subcode so retry
@@ -1597,15 +1650,18 @@ nvswitch_reset_and_train_link_ls10
             "%s: NvLink Reset has failed for link %d\n",
             __FUNCTION__, link->linkNumber);
 
-        // Re-register links.
-        status = nvlink_lib_register_link(device->nvlink_device, link);
-        if (status != NVL_SUCCESS)
-        {
-            nvswitch_destroy_link(link);
-            return status;
-        }
         return status;
     }
+
+    status = nvswitch_launch_ALI_link_training(device, link, NV_FALSE);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: NvLink failed to request ACTIVE for link %d\n",
+            __FUNCTION__, link->linkNumber);
+        return status;
+    }
+
     return NVL_SUCCESS;
 }
 
@@ -1655,6 +1711,76 @@ nvswitch_are_link_clocks_on_ls10
     FOR_EACH_INDEX_IN_MASK_END;
 
     return NV_TRUE;
+}
+
+NvlStatus
+nvswitch_request_tl_link_state_ls10
+(
+    nvlink_link *link,
+    NvU32        tlLinkState,
+    NvBool       bSync
+)
+{
+    nvswitch_device *device = link->dev->pDevInfo;
+    NvlStatus status = NVL_SUCCESS;
+    NvU32 linkStatus;
+    NvU32 lnkErrStatus;
+    NvU32 bit;
+
+    if (!NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NVLIPT_LNK, link->linkNumber))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: link #%d invalid\n",
+            __FUNCTION__, link->linkNumber);
+        return -NVL_UNBOUND_DEVICE;
+    }
+
+    // Wait for the TL link state register to report ready
+    status = nvswitch_wait_for_tl_request_ready_lr10(link);
+    if (status != NVL_SUCCESS)
+    {
+        return status;
+    }
+
+    // Clear any pending FAILEDMINIONREQUEST status that maybe populated as it is stale now
+    bit = DRF_NUM(_NVLIPT_LNK, _ERR_STATUS_0, _FAILEDMINIONREQUEST, 1);
+    lnkErrStatus = NVSWITCH_LINK_RD32(device, link->linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _ERR_STATUS_0);
+    if (nvswitch_test_flags(lnkErrStatus, bit))
+    {
+        NVSWITCH_LINK_WR32(device, link->linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _ERR_STATUS_0,
+                bit);
+    }
+
+
+    // Request state through CTRL_LINK_STATE_REQUEST
+    NVSWITCH_LINK_WR32_LS10(device, link->linkNumber,
+            NVLIPT_LNK, _NVLIPT_LNK, _CTRL_LINK_STATE_REQUEST,
+            DRF_NUM(_NVLIPT_LNK, _CTRL_LINK_STATE_REQUEST, _REQUEST, tlLinkState));
+
+    if (bSync)
+    {
+        // Wait for the TL link state register to complete
+        status = nvswitch_wait_for_tl_request_ready_lr10(link);
+        if (status != NVL_SUCCESS)
+        {
+            return status;
+        }
+
+        // Check for state requested
+        linkStatus  = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
+                NVLIPT_LNK , _NVLIPT_LNK , _CTRL_LINK_STATE_STATUS);
+
+        if (DRF_VAL(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, linkStatus) !=
+                    tlLinkState)
+        {
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: TL link state request to state 0x%x for link #%d did not complete!\n",
+                __FUNCTION__, tlLinkState, link->linkNumber);
+            return -NVL_ERR_GENERIC;
+        }
+    }
+
+    return status;
 }
 
 NvBool

@@ -1013,7 +1013,7 @@ _rmapiControlWithSecInfoTlsIRQL
     NV_STATUS           status;
     THREAD_STATE_NODE   threadState;
 
-    NvU8                stackAllocator[TLS_ISR_ALLOCATOR_SIZE];
+    NvU8                stackAllocator[2*TLS_ISR_ALLOCATOR_SIZE];
     PORT_MEM_ALLOCATOR* pIsrAllocator = portMemAllocatorCreateOnExistingBlock(stackAllocator, sizeof(stackAllocator));
     tlsIsrInit(pIsrAllocator);
 

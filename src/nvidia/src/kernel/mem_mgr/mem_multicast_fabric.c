@@ -218,7 +218,7 @@ _memMulticastFabricDescriptorDequeueWaitUnderLock
     }
 }
 
-NV_STATUS
+static NV_STATUS
 _memMulticastFabricGpuInfoAddUnderLock
 (
     MemoryMulticastFabric          *pMemoryMulticastFabric,
@@ -1027,8 +1027,8 @@ memorymulticastfabricConstruct_IMPL
     return status;
 }
 
-NV_STATUS
-memorymulticastfabricCtrlAttachGpu_IMPL
+static NV_STATUS
+_memorymulticastfabricCtrlAttachGpu
 (
     MemoryMulticastFabric         *pMemoryMulticastFabric,
     NV00FD_CTRL_ATTACH_GPU_PARAMS *pParams
@@ -1041,14 +1041,13 @@ memorymulticastfabricCtrlAttachGpu_IMPL
     OBJGPU *pGpu;
     FABRIC_VASPACE *pFabricVAS;
     NvU64 gpuProbeHandle;
-    MEM_MULTICAST_FABRIC_GPU_INFO *pNode = \
-                                listTail(&pMulticastFabricDesc->gpuInfoList);
+    MEM_MULTICAST_FABRIC_GPU_INFO *pNode = NULL;
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
 
     if (pParams->flags != 0)
     {
         NV_PRINTF(LEVEL_ERROR, "flags passed for attach mem must be zero\n");
-        status = NV_ERR_INVALID_ARGUMENT;
-        goto fail;
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
     // Check if the Multicast FLA object has any additional slots for GPUs
@@ -1070,9 +1069,18 @@ memorymulticastfabricCtrlAttachGpu_IMPL
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Multicast attach not supported on Windows/CC/vGPU modes\n");
-        status = NV_ERR_NOT_SUPPORTED;
-        goto fail;
+        return NV_ERR_NOT_SUPPORTED;
     }
+
+    status = _memMulticastFabricGpuInfoAddUnderLock(pMemoryMulticastFabric,
+                                                    pCallContext->pControlParams);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to populate GPU info\n");
+        return status;
+    }
+
+    pNode = listTail(&pMulticastFabricDesc->gpuInfoList);
 
     status = gpuFabricProbeGetGpuFabricHandle(pGpu->pGpuFabricProbeInfoKernel,
                                               &gpuProbeHandle);
@@ -1119,6 +1127,26 @@ fail:
     return status;
 }
 
+NV_STATUS
+memorymulticastfabricCtrlAttachGpu_IMPL
+(
+    MemoryMulticastFabric         *pMemoryMulticastFabric,
+    NV00FD_CTRL_ATTACH_GPU_PARAMS *pParams
+)
+{
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    NV_STATUS status = NV_OK;
+
+    fabricMulticastFabricOpsMutexAcquire(pFabric);
+
+    status = _memorymulticastfabricCtrlAttachGpu(pMemoryMulticastFabric,
+                                                 pParams);
+
+    fabricMulticastFabricOpsMutexRelease(pFabric);
+
+    return status;
+}
+
 static MEM_MULTICAST_FABRIC_GPU_INFO*
 _memorymulticastfabricGetAttchedGpuInfo
 (
@@ -1148,8 +1176,8 @@ _memorymulticastfabricGetAttchedGpuInfo
     return NULL;
 }
 
-NV_STATUS
-memorymulticastfabricCtrlDetachMem_IMPL
+static NV_STATUS
+_memorymulticastfabricCtrlDetachMem
 (
     MemoryMulticastFabric         *pMemoryMulticastFabric,
     NV00FD_CTRL_DETACH_MEM_PARAMS *pParams
@@ -1189,6 +1217,26 @@ memorymulticastfabricCtrlDetachMem_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+memorymulticastfabricCtrlDetachMem_IMPL
+(
+    MemoryMulticastFabric         *pMemoryMulticastFabric,
+    NV00FD_CTRL_DETACH_MEM_PARAMS *pParams
+)
+{
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    NV_STATUS status = NV_OK;
+
+    fabricMulticastFabricOpsMutexAcquire(pFabric);
+
+    status = _memorymulticastfabricCtrlDetachMem(pMemoryMulticastFabric,
+                                                 pParams);
+
+    fabricMulticastFabricOpsMutexRelease(pFabric);
+
+    return status;
+}
+
 static NV_STATUS
 _memorymulticastfabricValidatePhysMem
 (
@@ -1202,6 +1250,7 @@ _memorymulticastfabricValidatePhysMem
     MEMORY_DESCRIPTOR *pPhysMemDesc;
     NvU64 physPageSize;
     NV_STATUS status;
+    Memory *pMemory;
 
     status = serverutilGetResourceRef(RES_GET_CLIENT_HANDLE(pMemoryMulticastFabric),
                                       hPhysMem, &pPhysmemRef);
@@ -1213,7 +1262,19 @@ _memorymulticastfabricValidatePhysMem
         return status;
     }
 
-    pPhysMemDesc = (dynamicCast(pPhysmemRef->pResource, Memory))->pMemDesc;
+    pMemory = dynamicCast(pPhysmemRef->pResource, Memory);
+    if (pMemory == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid memory handle\n");
+        return NV_ERR_INVALID_OBJECT_HANDLE;
+    }
+
+    pPhysMemDesc = pMemory->pMemDesc;
+    if (pPhysMemDesc == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid memory handle\n");
+        return NV_ERR_INVALID_OBJECT_HANDLE;
+    }
 
     if (memdescGetAddressSpace(pPhysMemDesc) != ADDR_FBMEM ||
         (pAttachedGpu != pPhysMemDesc->pGpu))
@@ -1237,8 +1298,8 @@ _memorymulticastfabricValidatePhysMem
     return NV_OK;
 }
 
-NV_STATUS
-memorymulticastfabricCtrlAttachMem_IMPL
+static NV_STATUS
+_memorymulticastfabricCtrlAttachMem
 (
     MemoryMulticastFabric         *pMemoryMulticastFabric,
     NV00FD_CTRL_ATTACH_MEM_PARAMS *pParams
@@ -1342,6 +1403,26 @@ freeDupedMem:
     return status;
 }
 
+NV_STATUS
+memorymulticastfabricCtrlAttachMem_IMPL
+(
+    MemoryMulticastFabric         *pMemoryMulticastFabric,
+    NV00FD_CTRL_ATTACH_MEM_PARAMS *pParams
+)
+{
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    NV_STATUS status = NV_OK;
+
+    fabricMulticastFabricOpsMutexAcquire(pFabric);
+
+    status = _memorymulticastfabricCtrlAttachMem(pMemoryMulticastFabric,
+                                                 pParams);
+
+    fabricMulticastFabricOpsMutexRelease(pFabric);
+
+    return status;
+}
+
 void
 memorymulticastfabricDestruct_IMPL
 (
@@ -1393,8 +1474,8 @@ memorymulticastfabricCopyConstruct_IMPL
     return NV_OK;
 }
 
-NV_STATUS
-memorymulticastfabricCtrlGetInfo_IMPL
+static NV_STATUS
+_memorymulticastfabricCtrlGetInfo
 (
     MemoryMulticastFabric       *pMemoryMulticastFabric,
     NV00FD_CTRL_GET_INFO_PARAMS *pParams
@@ -1411,6 +1492,26 @@ memorymulticastfabricCtrlGetInfo_IMPL
     pParams->numAttachedGpus = pMulticastFabricDesc->numAttachedGpus;
 
     return NV_OK;
+}
+
+NV_STATUS
+memorymulticastfabricCtrlGetInfo_IMPL
+(
+    MemoryMulticastFabric       *pMemoryMulticastFabric,
+    NV00FD_CTRL_GET_INFO_PARAMS *pParams
+)
+{
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    NV_STATUS status = NV_OK;
+
+    fabricMulticastFabricOpsMutexAcquire(pFabric);
+
+    status = _memorymulticastfabricCtrlGetInfo(pMemoryMulticastFabric,
+                                               pParams);
+
+    fabricMulticastFabricOpsMutexRelease(pFabric);
+
+    return status;
 }
 
 NV_STATUS
@@ -1451,8 +1552,8 @@ memorymulticastfabricIsReady_IMPL
     return mcTeamStatus;
 }
 
-NV_STATUS
-memorymulticastfabricCtrlRegisterEvent_IMPL
+static NV_STATUS
+_memorymulticastfabricCtrlRegisterEvent
 (
     MemoryMulticastFabric             *pMemoryMulticastFabric,
     NV00FD_CTRL_REGISTER_EVENT_PARAMS *pParams
@@ -1467,20 +1568,23 @@ memorymulticastfabricCtrlRegisterEvent_IMPL
 }
 
 NV_STATUS
-memorymulticastfabricControl_Prologue_IMPL
+memorymulticastfabricCtrlRegisterEvent_IMPL
 (
-    MemoryMulticastFabric          *pMemoryMulticastFabric,
-    CALL_CONTEXT                   *pCallContext,
-    RS_RES_CONTROL_PARAMS_INTERNAL *pParams
+    MemoryMulticastFabric             *pMemoryMulticastFabric,
+    NV00FD_CTRL_REGISTER_EVENT_PARAMS *pParams
 )
 {
-    RmResource *pResource = staticCast(pMemoryMulticastFabric, RmResource);
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    NV_STATUS status = NV_OK;
 
-    // Other control calls, nothing to be validated.
-    if (pParams->cmd != NV00FD_CTRL_CMD_ATTACH_GPU)
-        return rmresControl_Prologue_IMPL(pResource, pCallContext, pParams);
+    fabricMulticastFabricOpsMutexAcquire(pFabric);
 
-    return _memMulticastFabricGpuInfoAddUnderLock(pMemoryMulticastFabric, pParams);
+    status = _memorymulticastfabricCtrlRegisterEvent(pMemoryMulticastFabric,
+                                                     pParams);
+
+    fabricMulticastFabricOpsMutexRelease(pFabric);
+
+    return status;
 }
 
 NV_STATUS
@@ -1491,7 +1595,6 @@ memorymulticastfabricControl_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
-    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
     NV_STATUS status = NV_OK;
 
     if (pParams->cmd != NV00FD_CTRL_CMD_ATTACH_GPU)
@@ -1522,14 +1625,13 @@ memorymulticastfabricControl_IMPL
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }
 
-    fabricMulticastFabricOpsMutexAcquire(pFabric);
-
-    status = resControl_IMPL(staticCast(pMemoryMulticastFabric, RsResource),
-                             pCallContext, pParams);
-
-    fabricMulticastFabricOpsMutexRelease(pFabric);
-
-    return status;
+    //
+    // Note: GPU lock(s) is required for some control calls. Thus, it is
+    // incorrect to take the leaf lock here. resControl_IMPL() attempts to
+    // acquire the GPU locks before it calls the control call body.
+    //
+    return resControl_IMPL(staticCast(pMemoryMulticastFabric, RsResource),
+                           pCallContext, pParams);
 }
 
 NvBool

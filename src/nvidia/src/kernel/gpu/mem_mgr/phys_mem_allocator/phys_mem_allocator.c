@@ -1618,6 +1618,24 @@ pmaGetFreeMemory
     NvU64           *pBytesFree
 )
 {
+#if !defined(SRT_BUILD)
+    NvU64 val;
+
+    portSyncSpinlockAcquire(pPma->pPmaLock);
+    NvBool nodeOnlined = pPma->nodeOnlined;
+    portSyncSpinlockRelease(pPma->pPmaLock);
+
+    if (nodeOnlined)
+    {
+        osGetNumaMemoryUsage(pPma->numaNodeId, pBytesFree, &val);
+        return;
+    }
+    //
+    // what to return when bNUMA == NV_TRUE and nodeOnlined==NV_FALSE?
+    // TODO : BUG 4199482.
+    //
+#endif
+
     portSyncSpinlockAcquire(pPma->pPmaLock);
 
     *pBytesFree = pPma->pmaStats.numFreeFrames << PMA_PAGE_SHIFT;
@@ -1637,6 +1655,24 @@ pmaGetTotalMemory
     NvU32 i;
 
     *pBytesTotal = 0;
+
+#if !defined(SRT_BUILD)
+    NvU64 val;
+
+    portSyncSpinlockAcquire(pPma->pPmaLock);
+    NvBool nodeOnlined = pPma->nodeOnlined;
+    portSyncSpinlockRelease(pPma->pPmaLock);
+
+    if (nodeOnlined)
+    {
+        osGetNumaMemoryUsage(pPma->numaNodeId, &val, pBytesTotal);
+        return;
+    }
+    //
+    // what to return when bNUMA == NV_TRUE and nodeOnlined==NV_FALSE?
+    // TODO : BUG 4199482.
+    //
+#endif
 
     for (i = 0; i < pPma->regSize; i++)
     {

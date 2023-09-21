@@ -82,6 +82,8 @@ rmclientConstruct_IMPL
     pClient->pSecurityToken  = NULL;
     pClient->pOSInfo         = pSecInfo->clientOSInfo;
 
+    pClient->cachedPrivilege = pSecInfo->privLevel;
+
     // TODO: Revisit in M2, see GPUSWSEC-1176
     if (RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
     {
@@ -96,9 +98,9 @@ rmclientConstruct_IMPL
     else
     {
         pClient->ProcID = osGetCurrentProcess();
+        if (pClient->cachedPrivilege <= RS_PRIV_LEVEL_USER_ROOT)
+            pClient->pOsPidInfo = osGetPidInfo();
     }
-
-    pClient->cachedPrivilege = pSecInfo->privLevel;
 
     // Set user-friendly client name from current process
     osGetCurrentProcessName(pClient->name, NV_PROC_NAME_MAX_LENGTH);
@@ -128,7 +130,7 @@ rmclientConstruct_IMPL
         {
             NV_PRINTF(LEVEL_WARNING,
                       "NVRM_RPC: Failed to set host client resource handle range %x\n", status);
-            return status;
+            goto out;
         }
     }
 
@@ -139,7 +141,7 @@ rmclientConstruct_IMPL
     {
         NV_PRINTF(LEVEL_WARNING,
                   "Failed to set host client restricted resource handle range. Status=%x\n", status);
-        return status;
+        goto out;
     }
 
     if (!rmGpuLockIsOwner())
@@ -148,7 +150,7 @@ rmclientConstruct_IMPL
         if ((status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_CLIENT)) != NV_OK)
         {
             NV_ASSERT(0);
-            return status;
+            goto out;
         }
         bReleaseLock = NV_TRUE;
     }
@@ -206,6 +208,13 @@ rmclientConstruct_IMPL
     if (status == NV_OK && pParams->pAllocParams != NULL)
         *(NvHandle*)(pParams->pAllocParams) = pParams->hClient;
 
+out:
+    if (status != NV_OK)
+    {
+        osPutPidInfo(pClient->pOsPidInfo);
+        pClient->pOsPidInfo = NULL;
+    }
+
     return status;
 }
 
@@ -229,6 +238,8 @@ rmclientDestruct_IMPL
 
     // Free any association of the client with existing third-party p2p object
     CliUnregisterFromThirdPartyP2P(pClient);
+
+    osPutPidInfo(pClient->pOsPidInfo);
 
     //
     // Free all of the devices of the client (do it in reverse order to
