@@ -28,6 +28,9 @@
 #include "nv-linux.h"
 #include "nv-register-module.h"
 
+#define NV_FRONTEND_MODULE_NAME                 "nvidia-frontend"
+#define NV_CONTROL_DEVICE_NAME                  "nvidiactl"
+
 #define NV_MAX_MODULE_INSTANCES                 8
 
 #define NV_FRONTEND_MINOR_NUMBER(x)             minor((x)->i_rdev)
