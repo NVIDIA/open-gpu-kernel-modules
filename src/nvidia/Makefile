@@ -94,6 +94,11 @@ ifeq ($(TARGET_ARCH),aarch64)
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mno-outline-atomics)
 endif
 
+ifeq ($(TARGET_ARCH),riscv64)
+  CFLAGS += -march=rv64imac
+  CFLAGS += -mabi=lp64
+endif
+
 CFLAGS += -fno-pic
 
 CFLAGS += -D_LANGUAGE_C

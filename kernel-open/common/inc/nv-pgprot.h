@@ -119,6 +119,15 @@ static inline pgprot_t pgprot_modify_writecombine(pgprot_t old_prot)
 #define NV_PGPROT_WRITE_COMBINED(old_prot)    old_prot
 #define NV_PGPROT_READ_ONLY(old_prot)                                         \
     __pgprot(pgprot_val((old_prot)) & ~NV_PAGE_RW)
+#elif defined(NVCPU_RISCV64)
+#define pgprot_mod(prot,mask,bits) \
+  __pgprot((pgprot_val(prot) & ~(mask)) | pgprot_val(bits))
+#define NV_PROT_WRITE_COMBINED_DEVICE   (PAGE_WRITE)
+#define NV_PGPROT_WRITE_COMBINED_DEVICE(old_prot)                             \
+    pgprot_mod(old_prot, 0, NV_PROT_WRITE_COMBINED_DEVICE)
+#define NV_PGPROT_WRITE_COMBINED(old_prot)      NV_PGPROT_UNCACHED(old_prot)
+#define NV_PGPROT_READ_ONLY(old_prot)                                         \
+            pgprot_mod(old_prot, 0, PAGE_READ)
 #else
 /* Writecombine is not supported */
 #undef NV_PGPROT_WRITE_COMBINED_DEVICE(old_prot)

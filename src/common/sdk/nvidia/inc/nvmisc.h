@@ -96,6 +96,32 @@ extern "C" {
     ((((n) & 0xCCCCCCCCCCCCCCCCULL) != 0U) ? 0x02U: 0U) |   \
     ((((n) & 0xAAAAAAAAAAAAAAAAULL) != 0U) ? 0x01U: 0U) )
 
+#if defined(NVCPU_RISCV64) && __riscv_xlen == 64
+// On RISC-V 64-bit platform, GCC would expand __builtin_ffs() to ffs()
+// see: https://github.com/riscv-collab/riscv-newlib/blob/master/newlib/libc/machine/riscv/ffs.c
+// see: https://sourceware.org/pipermail/newlib/2017/014958.html
+
+// in case GCC changes the behavior, we force the expansion
+#define __builtin_ffs(x) ffs(x)
+
+static inline int ffs(unsigned int x)
+{
+    unsigned int y;
+
+    // __builtin_ffs() is undefined at this point
+    if (x == 0) return 0;
+
+    // count trailing zeros.
+    // Copied and adapted from util_generic.h because I cannot
+    // include that file directly. This should be refactored out.
+    for (y = 0; !(x & 0x80000000); y++)
+        x <<= 1;
+
+    // ffs = ctz + 1
+    return y + 1;
+}
+#endif
+
 /*!
  * DRF MACRO README:
  *

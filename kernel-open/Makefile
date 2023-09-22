@@ -57,6 +57,7 @@ else
       -e 's/armv[0-7]\w\+/arm/' \
       -e 's/aarch64/arm64/' \
       -e 's/ppc64le/powerpc/' \
+      -e 's/riscv64/riscv/' \
     )
   endif
 
