@@ -1444,6 +1444,14 @@ _portMemAllocatorCreateOnExistingBlock
     pAllocator->pTracking     = NULL; // No tracking for this allocator
     pAllocator->pImpl         = (PORT_MEM_ALLOCATOR_IMPL*)(pAllocator + 1);
 
+
+    //
+    // PORT_MEM_BITVECTOR (pAllocator->pImpl) and PORT_MEM_ALLOCATOR_TRACKING (pAllocator->pImpl->tracking)
+    // are mutually exclusively used.
+    // When pAllocator->pTracking = NULL the data in pAllocator->pImpl->tracking is not used and instead 
+    // pBitVector uses the same meory location. 
+    // When pAllocator->pImpl->tracking there is no usage of PORT_MEM_BITVECTOR
+    //
     pBitVector = (PORT_MEM_BITVECTOR*)(pAllocator->pImpl);
     pBitVector->pSpinlock = pSpinlock;
 
@@ -1543,6 +1551,10 @@ _portMemAllocatorAllocExistingWrapper
     if (pSpinlock != NULL)
     {
         portSyncSpinlockRelease(pSpinlock);
+    }
+    if (pMem == NULL)
+    {
+         PORT_MEM_PRINT_ERROR("Memory allocation failed.\n");
     }
     return pMem;
 }

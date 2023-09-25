@@ -1542,6 +1542,12 @@ nvswitch_reset_and_train_link_ls10
     nvswitch_execute_unilateral_link_shutdown_ls10(link);
     nvswitch_corelib_clear_link_state_ls10(link);
 
+    //
+    // When a link faults there could be a race between the driver requesting
+    // reset and MINION processing Emergency Shutdown. Minion will notify if
+    // such a collision happens and will deny the reset request, so try the
+    // request up to 3 times
+    //
     do
     {
         status = nvswitch_request_tl_link_state_ls10(link,
@@ -1597,15 +1603,18 @@ nvswitch_reset_and_train_link_ls10
             "%s: NvLink Reset has failed for link %d\n",
             __FUNCTION__, link->linkNumber);
 
-        // Re-register links.
-        status = nvlink_lib_register_link(device->nvlink_device, link);
-        if (status != NVL_SUCCESS)
-        {
-            nvswitch_destroy_link(link);
-            return status;
-        }
         return status;
     }
+
+    status = nvswitch_launch_ALI_link_training(device, link, NV_FALSE);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: NvLink failed to request ACTIVE for link %d\n",
+            __FUNCTION__, link->linkNumber);
+        return status;
+    }
+
     return NVL_SUCCESS;
 }
 

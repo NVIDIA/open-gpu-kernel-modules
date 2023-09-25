@@ -5743,23 +5743,25 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_IOASID_GET_PRESENT" "" "functions"
         ;;
 
-        mm_pasid_set)
+        mm_pasid_drop)
             #
-            # Determine if mm_pasid_set() function is present
+            # Determine if mm_pasid_drop() function is present
             #
-            # mm_pasid_set() function was added by commit
-            # 701fac40384f07197b106136012804c3cae0b3de (iommu/sva: Assign a
-            # PASID to mm on PASID allocation and free it on mm exit) in v5.18.
-            # (2022-02-15).
+            # Added by commit 701fac40384f ("iommu/sva: Assign a PASID to mm
+            # on PASID allocation and free it on mm exit") in v5.18.
+            # Moved to linux/iommu.h in commit cd3891158a77 ("iommu/sva: Move
+            # PASID helpers to sva code") in v6.4.
+            #
             CODE="
             #if defined(NV_LINUX_SCHED_MM_H_PRESENT)
             #include <linux/sched/mm.h>
             #endif
-            void conftest_mm_pasid_set(void) {
-                mm_pasid_set();
+            #include <linux/iommu.h>
+            void conftest_mm_pasid_drop(void) {
+                mm_pasid_drop();
             }"
 
-            compile_check_conftest "$CODE" "NV_MM_PASID_SET_PRESENT" "" "functions"
+            compile_check_conftest "$CODE" "NV_MM_PASID_DROP_PRESENT" "" "functions"
         ;;
 
         drm_crtc_state_has_no_vblank)

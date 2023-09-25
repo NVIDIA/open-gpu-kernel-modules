@@ -492,6 +492,17 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
         pThis->__gpuWriteFunctionConfigRegEx__ = &gpuWriteFunctionConfigRegEx_GM107;
     }
 
+    // Hal function -- gpuReadVgpuConfigReg
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__gpuReadVgpuConfigReg__ = &gpuReadVgpuConfigReg_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__gpuReadVgpuConfigReg__ = &gpuReadVgpuConfigReg_46f6a7;
+    }
+
     // Hal function -- gpuGetIdInfo
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {

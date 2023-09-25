@@ -47,5 +47,17 @@
 #define NV_XAL_EP_INTR_0_PRI_RSP_TIMEOUT                                              3:3
 #define NV_XAL_EP_INTR_0_PRI_RSP_TIMEOUT_PENDING                                      0x1
 #define NV_XAL_EP_SCPM_PRI_DUMMY_DATA_PATTERN_INIT                             0xbadf0200
+
+#define NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT                            0x0010f364 /* RW-4R */
+#define NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT_TOTAL                            15:0 /* RWIUF */
+#define NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT_TOTAL_INIT                     0x0000 /* RWI-V */
+#define NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT_UNIQUE                          31:16 /* RWIUF */
+#define NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT_UNIQUE_INIT                    0x0000 /* RWI-V */
+
+#define NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT                             0x0010f37c /* RW-4R */
+#define NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT_TOTAL                             15:0 /* RWIUF */
+#define NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT_TOTAL_INIT                      0x0000 /* RWI-V */
+#define NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT_UNIQUE                           31:16 /* RWIUF */
+#define NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT_UNIQUE_INIT                     0x0000 /* RWI-V */
 #endif // __gh100_pri_nv_xal_ep_h__
 

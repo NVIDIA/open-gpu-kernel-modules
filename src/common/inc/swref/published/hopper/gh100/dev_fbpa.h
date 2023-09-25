@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,10 +20,10 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#define NV_CHIP_EXTENDED_SYSTEM_PHYSICAL_ADDRESS_BITS              52
-#define NV_LTC_PRI_STRIDE                            8192
-#define NV_LTS_PRI_STRIDE                             512
-#define NV_FBPA_PRI_STRIDE                      16384
-#define NV_SCAL_LITTER_NUM_FBPAS                       24
-#define NV_XPL_BASE_ADDRESS                    540672
-#define NV_XTL_BASE_ADDRESS                    593920
+
+#ifndef __gh100_dev_fbpa_h_
+#define __gh100_dev_fbpa_h_
+
+#define NV_PFB_FBPA_0_ECC_DED_COUNT__SIZE_1               4 /*       */
+#define NV_PFB_FBPA_0_ECC_DED_COUNT(i)                   (0x009025A0+(i)*4) /* RW-4A */
+#endif // __gh100_dev_fbpa_h_
