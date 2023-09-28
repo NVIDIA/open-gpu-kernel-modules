@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 535.43.09.
+version 535.43.10.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-535.43.09 driver release.  This can be achieved by installing
+535.43.10 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -180,7 +180,7 @@ software applications.
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 535.43.09 release,
+(see the table below). However, in the 535.43.10 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -188,7 +188,7 @@ set the "NVreg_OpenRmEnableUnsupportedGpus" nvidia.ko kernel module
 parameter to 1. For more details, see the NVIDIA GPU driver end user
 README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/535.43.09/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/535.43.10/README/kernel_open.html
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -677,7 +677,10 @@ Subsystem Device ID.
 | NVIDIA A800-SXM4-80GB                           | 20F3 10DE 17A2 |
 | NVIDIA A800 80GB PCIe                           | 20F5 10DE 1799 |
 | NVIDIA A800 80GB PCIe LC                        | 20F5 10DE 179A |
+| NVIDIA A800 40GB Active                         | 20F6 1028 180A |
+| NVIDIA A800 40GB Active                         | 20F6 103C 180A |
 | NVIDIA A800 40GB Active                         | 20F6 10DE 180A |
+| NVIDIA A800 40GB Active                         | 20F6 17AA 180A |
 | NVIDIA GeForce GTX 1660 Ti                      | 2182           |
 | NVIDIA GeForce GTX 1660                         | 2184           |
 | NVIDIA GeForce GTX 1650 SUPER                   | 2187           |
@@ -853,6 +856,10 @@ Subsystem Device ID.
 | NVIDIA RTX 4000 SFF Ada Generation              | 27B0 103C 16FA |
 | NVIDIA RTX 4000 SFF Ada Generation              | 27B0 10DE 16FA |
 | NVIDIA RTX 4000 SFF Ada Generation              | 27B0 17AA 16FA |
+| NVIDIA RTX 4500 Ada Generation                  | 27B1 1028 180C |
+| NVIDIA RTX 4500 Ada Generation                  | 27B1 103C 180C |
+| NVIDIA RTX 4500 Ada Generation                  | 27B1 10DE 180C |
+| NVIDIA RTX 4500 Ada Generation                  | 27B1 17AA 180C |
 | NVIDIA RTX 4000 Ada Generation                  | 27B2 1028 181B |
 | NVIDIA RTX 4000 Ada Generation                  | 27B2 103C 181B |
 | NVIDIA RTX 4000 Ada Generation                  | 27B2 10DE 181B |
