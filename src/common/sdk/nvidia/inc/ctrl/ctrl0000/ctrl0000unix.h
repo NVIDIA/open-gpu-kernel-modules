@@ -225,6 +225,10 @@ typedef struct NV0000_CTRL_OS_GET_GPU_INFO_PARAMS {
  *    NV_MAX_DEVICES is returned if the object is parented by a client instead
  *    of a device.
  *
+ *  gpuInstanceId
+ *    For objects parented by device this parameter returns MIG GPU instance
+ *    id the device is subscribed to or NV_U32_MAX if no subscription was made.
+ *
  *  maxObjects
  *    This parameter returns the maximum number of object handles that may be
  *    contained in the file descriptor.
@@ -246,9 +250,10 @@ typedef struct NV0000_CTRL_OS_GET_GPU_INFO_PARAMS {
 #define NV0000_CTRL_OS_UNIX_GET_EXPORT_OBJECT_INFO_PARAMS_MESSAGE_ID (0x8U)
 
 typedef struct NV0000_CTRL_OS_UNIX_GET_EXPORT_OBJECT_INFO_PARAMS {
-    NvS32 fd;               /* IN  */
+    NvS32 fd;   /* IN  */
     NvU32 deviceInstance;   /* OUT */
-    NvU16 maxObjects;       /* OUT */
+    NvU32 gpuInstanceId;   /* OUT */
+    NvU16 maxObjects;   /* OUT */
     NvU8  metadata[NV0000_OS_UNIX_EXPORT_OBJECT_FD_BUFFER_SIZE]; /* OUT */
 } NV0000_CTRL_OS_UNIX_GET_EXPORT_OBJECT_INFO_PARAMS;
 

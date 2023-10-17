@@ -128,8 +128,9 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 // present if we see the callback.
 //
 // The callback was added in commit 0f0a327fa12cd55de5e7f8c05a70ac3d047f405e,
-// v3.19 (2014-11-13).
-    #if defined(NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE)
+// v3.19 (2014-11-13) and renamed in commit 1af5a8109904.
+    #if defined(NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE) || \
+        defined(NV_MMU_NOTIFIER_OPS_HAS_ARCH_INVALIDATE_SECONDARY_TLBS)
         #define UVM_CAN_USE_MMU_NOTIFIERS() 1
     #else
         #define UVM_CAN_USE_MMU_NOTIFIERS() 0
@@ -346,6 +347,47 @@ static inline NvU64 NV_GETTIME(void)
         for ((bit) = find_next_zero_bit((addr), (size), (bit));     \
              (bit) < (size);                                        \
              (bit) = find_next_zero_bit((addr), (size), (bit) + 1))
+#endif
+
+#if !defined(NV_FIND_NEXT_BIT_WRAP_PRESENT)
+    static inline unsigned long find_next_bit_wrap(const unsigned long *addr, unsigned long size, unsigned long offset)
+    {
+        unsigned long bit = find_next_bit(addr, size, offset);
+
+        if (bit < size)
+            return bit;
+
+        bit = find_first_bit(addr, offset);
+        return bit < offset ? bit : size;
+    }
+#endif
+
+// for_each_set_bit_wrap and __for_each_wrap were introduced in v6.1-rc1
+// by commit 4fe49b3b97c2640147c46519c2a6fdb06df34f5f
+#if !defined(for_each_set_bit_wrap)
+static inline unsigned long __for_each_wrap(const unsigned long *bitmap,
+                                            unsigned long size,
+                                            unsigned long start,
+                                            unsigned long n)
+{
+    unsigned long bit;
+
+    if (n > start) {
+        bit = find_next_bit(bitmap, size, n);
+        if (bit < size)
+            return bit;
+
+        n = 0;
+    }
+
+    bit = find_next_bit(bitmap, start, n);
+    return bit < start ? bit : size;
+}
+
+#define for_each_set_bit_wrap(bit, addr, size, start)                   \
+    for ((bit) = find_next_bit_wrap((addr), (size), (start));           \
+         (bit) < (size);                                                \
+         (bit) = __for_each_wrap((addr), (size), (start), (bit) + 1))
 #endif
 
 // Added in 2.6.24
@@ -579,4 +621,5 @@ static inline pgprot_t uvm_pgprot_decrypted(pgprot_t prot)
   #include <asm/page.h>
   #define page_to_virt(x)    __va(PFN_PHYS(page_to_pfn(x)))
 #endif
+
 #endif // _UVM_LINUX_H

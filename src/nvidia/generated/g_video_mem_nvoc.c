@@ -122,6 +122,10 @@ static NV_STATUS __nvoc_thunk_Memory_vidmemGetMapAddrSpace(struct VideoMemory *p
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VideoMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_vidmemIsExportAllowed(struct VideoMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VideoMemory_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_vidmemGetRefCount(struct VideoMemory *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VideoMemory_RsResource.offset));
 }
@@ -252,6 +256,8 @@ static void __nvoc_init_funcTable_VideoMemory_1(VideoMemory *pThis) {
     pThis->__vidmemMapTo__ = &__nvoc_thunk_RsResource_vidmemMapTo;
 
     pThis->__vidmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_vidmemGetMapAddrSpace;
+
+    pThis->__vidmemIsExportAllowed__ = &__nvoc_thunk_Memory_vidmemIsExportAllowed;
 
     pThis->__vidmemGetRefCount__ = &__nvoc_thunk_RsResource_vidmemGetRefCount;
 

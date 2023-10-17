@@ -270,7 +270,7 @@ NV_STATUS notifyFillNotifierArray
  * Notifier write is skipped when CPU kernel mapping is missing.
  *
  * @param[in] pGpu              OBJGPU pointer
- * @param[in] hClient           NvU32 client handle
+ * @param[in] pDevice           Device pointer
  * @param[in] hMemoryCtx        Handle of a memory object to which NotifyGPUVABase belongs
  * @param[in] NotifyGPUVABase   64b GPU VA base address of semaphore
  * @param[in] Info32            32b info part
@@ -286,7 +286,7 @@ NV_STATUS notifyFillNotifierArray
 NV_STATUS notifyFillNotifierGPUVATimestamp
 (
     OBJGPU    *pGpu,
-    RsClient  *pClient,
+    Device    *pDevice,
     NvHandle   hMemoryCtx,
     NvU64      NotifyGPUVABase,
     NvV32      Info32,
@@ -302,17 +302,11 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
     NvU64                 offset;
     NvU32                 subdeviceInstance;
     NOTIFICATION         *pNotifier;
-    Device               *pDevice;
-    NV_STATUS             status;
-
-    status = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
-    if (status != NV_OK)
-        return status;
 
     notifyGPUVA = NotifyGPUVABase + (Index * sizeof(NOTIFICATION));
 
     // Memory context is required for mapping lookup
-    bFound = CliGetDmaMappingInfo(pClient,
+    bFound = CliGetDmaMappingInfo(RES_GET_CLIENT(pDevice),
                                   RES_GET_HANDLE(pDevice),
                                   hMemoryCtx,
                                   notifyGPUVA,
@@ -376,7 +370,7 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
  * Gets current time and routes data to notifyFillNotifierGPUVATimestamp
  *
  * @param[in] pGpu              OBJGPU pointer
- * @param[in] hClient           NvU32 client handle
+ * @param[in] pDevice           Device pointer
  * @param[in] hMemoryCtx        Handle of a memory object to which NotifyGPUVABase belongs
  * @param[in] NotifyGPUVABase   64b GPU VA base address of semaphore
  * @param[in] Info32            32b info part
@@ -390,7 +384,7 @@ NV_STATUS notifyFillNotifierGPUVATimestamp
 NV_STATUS notifyFillNotifierGPUVA
 (
     OBJGPU    *pGpu,
-    RsClient  *pClient,
+    Device    *pDevice,
     NvHandle   hMemoryCtx,
     NvU64      NotifyGPUVABase,
     NvV32      Info32,
@@ -405,7 +399,7 @@ NV_STATUS notifyFillNotifierGPUVA
     tmrGetCurrentTime(pTmr, &Time);
 
     return notifyFillNotifierGPUVATimestamp(pGpu,
-                                            pClient,
+                                            pDevice,
                                             hMemoryCtx,
                                             NotifyGPUVABase,
                                             Info32,
@@ -539,7 +533,7 @@ NV_STATUS notifyFillNotifierMemory
  * Semaphore write is skipped when CPU kernel mapping is missing.
  *
  * @param[in] pGpu                  OBJGPU pointer
- * @param[in] hClient               NvU32 client handle
+ * @param[in] pDevice               Device pointer
  * @param[in] SemaphoreGPUVABase    64b GPU VA base address of semaphore
  * @param[in] ReleaseValue          NvU32 value to write to semaphore upon release
  * @param[in] Index                 index of semaphore in semaphore array
@@ -552,7 +546,7 @@ NV_STATUS notifyFillNotifierMemory
 NV_STATUS semaphoreFillGPUVATimestamp
 (
     OBJGPU    *pGpu,
-    RsClient  *pClient,
+    Device    *pDevice,
     NvHandle   hMemCtx,
     NvU64      SemaphoreGPUVABase,
     NvV32      ReleaseValue,
@@ -570,12 +564,6 @@ NV_STATUS semaphoreFillGPUVATimestamp
     NvGpuSemaphore       *pSemaphore;
     NvBool                bBcState = gpumgrGetBcEnabledStatus(pGpu);
     NvBool                bFound;
-    Device               *pDevice;
-    NV_STATUS             status;
-
-    status = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
-    if (status != NV_OK)
-        return status;
 
     if (!portSafeMulU64((NvU64) Index,
                         (NvU64) sizeof(NvGpuSemaphore),
@@ -587,7 +575,7 @@ NV_STATUS semaphoreFillGPUVATimestamp
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    bFound = CliGetDmaMappingInfo(pClient,
+    bFound = CliGetDmaMappingInfo(RES_GET_CLIENT(pDevice),
                                   RES_GET_HANDLE(pDevice),
                                   hMemCtx,
                                   semaphoreGPUVA,
@@ -660,7 +648,7 @@ NV_STATUS semaphoreFillGPUVATimestamp
  * semaphoreFillGPUVATimestamp.
  *
  * @param[in] pGpu                  OBJGPU pointer
- * @param[in] hClient               NvU32 client handle
+ * @param[in] pDevice               Device pointer
  * @param[in] SemaphoreGPUVABase    64b GPU VA base address of semaphore
  * @param[in] ReleaseValue          NvU32 value to write to semaphore upon release
  * @param[in] Index                 index of semaphore in semaphore array
@@ -670,7 +658,7 @@ NV_STATUS semaphoreFillGPUVATimestamp
 NV_STATUS semaphoreFillGPUVA
 (
     OBJGPU    *pGpu,
-    RsClient  *pClient,
+    Device    *pDevice,
     NvHandle   hMemCtx,
     NvU64      SemaphoreGPUVABase,
     NvV32      ReleaseValue,
@@ -684,7 +672,7 @@ NV_STATUS semaphoreFillGPUVA
     tmrGetCurrentTime(pTmr, &Time);
 
     return semaphoreFillGPUVATimestamp(pGpu,
-                                       pClient,
+                                       pDevice,
                                        hMemCtx,
                                        SemaphoreGPUVABase,
                                        ReleaseValue,

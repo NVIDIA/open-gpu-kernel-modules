@@ -34,6 +34,8 @@
 #include "published/hopper/gh100/dev_xtl_ep_pri.h"
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 #include "published/hopper/gh100/hwproject.h"
+#include "published/hopper/gh100/dev_pmc.h"
+#include "published/hopper/gh100/dev_vm.h"
 
 #include "os/os.h"
 
@@ -733,6 +735,87 @@ kbifGetBusOptionsAddr_GH100
 }
 
 /*!
+ * @brief Returns size of MSIX vector control table
+ *
+ * @param  pGpu  OBJGPU pointer
+ * @param  pKernelBif  Kernel BIF object pointer
+ */
+NvU32
+kbifGetMSIXTableVectorControlSize_GH100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    return NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL__SIZE_1;
+}
+
+
+/*!
+ * @brief Check and cache Function level reset support
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  Kernel BIF object pointer
+ *
+ */
+void
+kbifCacheFlrSupport_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 regVal = 0;
+
+    // Read config register
+    if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_DEVICE_CAPABILITIES,
+                               &regVal) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to read NV_EP_PCFG_GPU_DEVICE_CAPABILITIES\n");
+        return;
+    }
+
+    // Check if FLR is supported
+    if (FLD_TEST_DRF(_EP_PCFG_GPU, _DEVICE_CAPABILITIES, _FUNCTION_LEVEL_RESET_CAPABILITY,
+                     _SUPPORTED, regVal))
+    {
+        pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED, NV_TRUE);
+    }
+}
+
+/*!
+ * @brief Check and cache 64b BAR0 support
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  Kernel BIF object pointer
+ *
+ */
+void
+kbifCache64bBar0Support_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 regVal = 0;
+
+    // Read config register
+    if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_BARREG0,
+                               &regVal) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to read NV_EP_PCFG_GPU_BARREG0\n");
+        return;
+    }
+
+    // Check if 64b BAR0 is supported
+    if (FLD_TEST_DRF(_EP_PCFG_GPU, _BARREG0, _REG_ADDR_TYPE,
+                     _64BIT, regVal))
+    {
+        pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_64BIT_BAR0_SUPPORTED, NV_TRUE);
+    }
+}
+
+/*!
  * @brief: Get BAR information from PCIe config space
  *
  * @param[in]  pGpu               OBJGPU pointer
@@ -868,5 +951,181 @@ kbifCacheVFInfo_GH100
 
     pGpu->sriovState.firstVFBarAddress[2] = barAddr;
     pGpu->sriovState.b64bitVFBar2         = barIs64Bit;
+}
+
+/*!
+ * @brief Clears Bus Master Enable bit in command register, disabling
+ *  Function 0 - from issuing any new requests to sysmem.
+ *
+ * @param[in] pGpu        GPU object pointer
+ * @param[in] pKernelBif  KernelBif object pointer
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kbifStopSysMemRequests_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvBool     bStop
+)
+{
+    NvU32 regVal;
+
+    NV_ASSERT_OK_OR_RETURN(GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS,
+                                                  &regVal));
+
+    if (bStop)
+    {
+        regVal = FLD_SET_DRF(_EP_PCFG_GPU, _CTRL_CMD_AND_STATUS, _CMD_BUS_MASTER, _DISABLE, regVal);
+    }
+    else
+    {
+        regVal = FLD_SET_DRF(_EP_PCFG_GPU, _CTRL_CMD_AND_STATUS, _CMD_BUS_MASTER, _ENABLE, regVal);
+    }
+
+    NV_ASSERT_OK_OR_RETURN(GPU_BUS_CFG_CYCLE_WR32(pGpu, NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS,
+                                                  regVal));
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Waits for function issued transaction completions (sysmem to GPU) to arrive
+ *
+ * @param[in] pGpu        GPU object pointer
+ * @param[in] pKernelBif  KernelBif object pointer
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kbifWaitForTransactionsComplete_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    RMTIMEOUT timeout;
+    NvU32     regVal;
+
+    NV_ASSERT_OK_OR_RETURN(GPU_BUS_CFG_CYCLE_RD32(
+        pGpu, NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS, &regVal));
+
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+
+    // Wait for number of pending transactions to go to 0
+    while (DRF_VAL(_EP_PCFG_GPU, _DEVICE_CONTROL_STATUS, _TRANSACTIONS_PENDING, regVal) != 0)
+    {
+        NV_ASSERT_OK_OR_RETURN(gpuCheckTimeout(pGpu, &timeout));
+        NV_ASSERT_OK_OR_RETURN(GPU_BUS_CFG_CYCLE_RD32(
+            pGpu, NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS, &regVal));
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Trigger FLR.
+ *
+ * @param[in] pGpu        GPU object pointer
+ * @param[in] pKernelBif  KernelBif object pointer
+ *
+ * @return  NV_OK if successful.
+ */
+NV_STATUS
+kbifTriggerFlr_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32     regVal = 0;
+    NV_STATUS status = NV_OK;
+
+    status = GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS,
+                                    &regVal);
+
+    if (status != NV_OK)
+    {
+        NV_ASSERT_FAILED("Config space read of device control failed\n");
+        return status;
+    }
+
+    regVal = FLD_SET_DRF_NUM(_EP_PCFG_GPU, _DEVICE_CONTROL_STATUS ,
+                             _INITIATE_FN_LVL_RST, 0x1, regVal);
+
+    status = GPU_BUS_CFG_CYCLE_WR32(pGpu, NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS,
+                                    regVal);
+
+    if (status != NV_OK)
+    {
+        NV_ASSERT_FAILED("FLR trigger failed\n");
+        return status;
+    }
+
+    return status;
+}
+
+/*!
+ * @brief Try restoring BAR registers and command register using config cycles
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return    NV_OK on success
+ *            NV_ERR_INVALID_READ if the register read returns unexpected value
+ *            NV_ERR_OBJECT_NOT_FOUND if the object is not found
+ */
+NV_STATUS
+kbifRestoreBarsAndCommand_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32  *pBarRegOffsets = pKernelBif->barRegOffsets;
+    NvU32  barOffsetEntry;
+
+    // Restore all BAR registers
+    for (barOffsetEntry = 0; barOffsetEntry < KBIF_NUM_BAR_OFFSET_ENTRIES; barOffsetEntry++)
+    {
+        if (pBarRegOffsets[barOffsetEntry] != KBIF_INVALID_BAR_REG_OFFSET)
+        {
+            GPU_BUS_CFG_CYCLE_WR32(pGpu, pBarRegOffsets[barOffsetEntry],
+                                   pKernelBif->cacheData.gpuBootConfigSpace[pBarRegOffsets[barOffsetEntry]/sizeof(NvU32)]);
+        }
+    }
+
+    // Restore Device Control register
+    GPU_BUS_CFG_CYCLE_WR32(pGpu, NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS,
+                           pKernelBif->cacheData.gpuBootConfigSpace[NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS/sizeof(NvU32)]);
+
+    if (GPU_REG_RD32(pGpu, NV_PMC_BOOT_0) != pGpu->chipId0)
+    {
+        return NV_ERR_INVALID_READ;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief HAL specific BIF software state initialization
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return    NV_OK on success
+ */
+NV_STATUS
+kbifInit_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    // Cache the offsets of BAR registers into an array for subsequent use
+    kbifStoreBarRegOffsets_HAL(pGpu, pKernelBif, NV_EP_PCFG_GPU_VF_BAR0);
+
+    return NV_OK;
 }
 

@@ -43,9 +43,13 @@
 #if defined(NV_LINUX_FENCE_H_PRESENT)
 typedef struct fence nv_dma_fence_t;
 typedef struct fence_ops nv_dma_fence_ops_t;
+typedef struct fence_cb nv_dma_fence_cb_t;
+typedef fence_func_t nv_dma_fence_func_t;
 #else
 typedef struct dma_fence nv_dma_fence_t;
 typedef struct dma_fence_ops nv_dma_fence_ops_t;
+typedef struct dma_fence_cb nv_dma_fence_cb_t;
+typedef dma_fence_func_t nv_dma_fence_func_t;
 #endif
 
 #if defined(NV_LINUX_FENCE_H_PRESENT)
@@ -97,6 +101,14 @@ static inline int nv_dma_fence_signal(nv_dma_fence_t *fence) {
 #endif
 }
 
+static inline int nv_dma_fence_signal_locked(nv_dma_fence_t *fence) {
+#if defined(NV_LINUX_FENCE_H_PRESENT)
+    return fence_signal_locked(fence);
+#else
+    return dma_fence_signal_locked(fence);
+#endif
+}
+
 static inline u64 nv_dma_fence_context_alloc(unsigned num) {
 #if defined(NV_LINUX_FENCE_H_PRESENT)
     return fence_context_alloc(num);
@@ -108,11 +120,34 @@ static inline u64 nv_dma_fence_context_alloc(unsigned num) {
 static inline void
 nv_dma_fence_init(nv_dma_fence_t *fence,
                   const nv_dma_fence_ops_t *ops,
-                  spinlock_t *lock, u64 context, unsigned seqno) {
+                  spinlock_t *lock, u64 context, uint64_t seqno) {
 #if defined(NV_LINUX_FENCE_H_PRESENT)
     fence_init(fence, ops, lock, context, seqno);
 #else
     dma_fence_init(fence, ops, lock, context, seqno);
+#endif
+}
+
+static inline void
+nv_dma_fence_set_error(nv_dma_fence_t *fence,
+                       int error) {
+#if defined(NV_DMA_FENCE_SET_ERROR_PRESENT)
+    return dma_fence_set_error(fence, error);
+#elif defined(NV_FENCE_SET_ERROR_PRESENT)
+    return fence_set_error(fence, error);
+#else
+    fence->status = error;
+#endif
+}
+
+static inline int
+nv_dma_fence_add_callback(nv_dma_fence_t *fence,
+                          nv_dma_fence_cb_t *cb,
+                          nv_dma_fence_func_t func) {
+#if defined(NV_LINUX_FENCE_H_PRESENT)
+    return fence_add_callback(fence, cb, func);
+#else
+    return dma_fence_add_callback(fence, cb, func);
 #endif
 }
 

@@ -238,7 +238,7 @@ subdeviceCtrlCmdTimerGetTime_IMPL
     }
     else
     {
-        LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+        LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
     }
 
     tmrGetCurrentTime(pTmr, &pParams->time_nsec);

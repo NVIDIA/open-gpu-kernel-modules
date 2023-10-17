@@ -341,4 +341,5 @@ NV_STATUS profilerConstruct_IMPL(struct Profiler *arg_pProfiler, struct CALL_CON
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_PROFILER_V1_NVOC_H_

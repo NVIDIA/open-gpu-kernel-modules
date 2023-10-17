@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,9 +30,6 @@
 *                                                                          *
 \***************************************************************************/
 
-// FIXME XXX
-#define NVOC_GPU_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
-
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "kernel/rmapi/event.h"
 #include "kernel/rmapi/event_buffer.h"
@@ -45,14 +42,17 @@
 #include "kernel/gpu/bus/kern_bus.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
+#include "kernel/gpu/subdevice/subdevice.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "rmapi/client.h"
+#include "objtmr.h"
 
 #include "class/cl90cdtypes.h"
 #include "ctrl/ctrl90cd.h"
 
 #define NV_FECS_TRACE_MAX_TIMESTAMPS 5
 #define NV_FECS_TRACE_MAGIC_INVALIDATED 0xdededede         // magic number for entries that have been read
+#define NV_FECS_TRACE_CALLBACK_TIME_NS 33333333            // Approximating 30Hz callback
 
 typedef struct
 {
@@ -712,6 +712,97 @@ fecsBufferChanged
     return NV_FALSE;
 }
 
+static void
+_fecsOsWorkItem
+(
+    NvU32 gpuInstance,
+    void *data
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    KernelGraphicsManager *pKernelGraphicsManager;
+
+    NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR, pGpu != NULL);
+    pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+
+    nvEventBufferFecsCallback(pGpu, NULL);
+    kgrmgrClearFecsCallbackScheduled(pGpu, pKernelGraphicsManager);
+}
+
+static NV_STATUS
+_fecsTimerCallback
+(
+    OBJGPU *pGpu,
+    OBJTMR *pTmr,
+    TMR_EVENT *pTmrEvent
+)
+{
+    NV_STATUS status = NV_OK;
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    NvU32 i;
+
+    // If any Kgraphics have events, schedule work item
+    for (i = 0; i < GPU_MAX_GRS; i++)
+    {
+        KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, i);
+
+        if (pKernelGraphics == NULL)
+            continue;
+
+        if (fecsBufferChanged(pGpu, pKernelGraphics) && kgrmgrSignalFecsCallbackScheduled(pGpu, pKernelGraphicsManager))
+        {
+            NV_CHECK_OK(status, LEVEL_ERROR, osQueueWorkItemWithFlags(pGpu, _fecsOsWorkItem, NULL, OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW));
+
+            if (status != NV_OK)
+                kgrmgrClearFecsCallbackScheduled(pGpu, pKernelGraphicsManager);
+
+            break;
+        }
+    }
+
+    // TMR_FLAG_RECUR does not work, so reschedule it here.
+    NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR, tmrEventScheduleRel(pTmr, pTmrEvent, NV_FECS_TRACE_CALLBACK_TIME_NS));
+
+    return status;
+}
+
+static NV_STATUS
+_fecsTimerCreate
+(
+    OBJGPU *pGpu
+)
+{
+    OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+    NvU32 timerFlags = TMR_FLAG_RECUR;
+    // Unix needs to use the OS timer to avoid corrupting records, but Windows doesn't have an OS timer implementation
+    timerFlags |= TMR_FLAG_USE_OS_TIMER;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        tmrEventCreate(pTmr, &pGpu->pFecsTimerEvent, _fecsTimerCallback, NULL, timerFlags));
+
+    // This won't be a true 30Hz timer as the callbacks are scheduled from the time they're called
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        tmrEventScheduleRel(pTmr, pGpu->pFecsTimerEvent, NV_FECS_TRACE_CALLBACK_TIME_NS));
+
+    return NV_OK;
+}
+
+static void
+_fecsTimerDestroy
+(
+    OBJGPU *pGpu
+)
+{
+    if (pGpu->pFecsTimerEvent != NULL)
+    {
+        OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
+
+        tmrEventCancel(pTmr, pGpu->pFecsTimerEvent);
+        tmrEventDestroy(pTmr, pGpu->pFecsTimerEvent);
+        pGpu->pFecsTimerEvent = NULL;
+    }
+}
+
 /**
  * @brief The callback function that transfers FECS Buffer entries to an EventBuffer
  */
@@ -885,7 +976,7 @@ fecsAddBindpoint
     OBJGPU *pGpu,
     RmClient *pClient,
     RsResourceRef *pEventBufferRef,
-    NvHandle hNotifier,
+    Subdevice *pNotifier,
     NvBool bAllUsers,
     NV2080_CTRL_GR_FECS_BIND_EVTBUF_LOD levelOfDetail,
     NvU32 eventFilter,
@@ -896,13 +987,13 @@ fecsAddBindpoint
     NV_STATUS status;
     NvHandle hClient = staticCast(pClient, RsClient)->hClient;
     NvHandle hEventBuffer = pEventBufferRef->hResource;
+    NvHandle hNotifier = RES_GET_HANDLE(pNotifier);
     EventBuffer *pEventBuffer;
     NvBool bAdmin = osIsAdministrator();
     NvU32 eventMask = 0;
     NvU64 targetUser;
     NvS32 gpuConsumerCount = pGpu->fecsCtxswLogConsumerCount;
     NvBool bFecsBindingActive = (pGpu->fecsCtxswLogConsumerCount > 0);
-    NvBool bScheduled = NV_FALSE;
     NvBool bIntrDriven = NV_FALSE;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool bMIGInUse = IS_MIG_IN_USE(pGpu);
@@ -1038,7 +1129,7 @@ fecsAddBindpoint
 
     if (bMIGInUse)
     {
-        if (kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
+        if (kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, GPU_RES_GET_DEVICE(pNotifier)))
         {
             pBind->swizzId = NV2080_CTRL_GPU_PARTITION_ID_INVALID;
         }
@@ -1050,7 +1141,7 @@ fecsAddBindpoint
             if (status != NV_OK)
                 goto done;
 
-            if (pGPUInstanceSubscription->pKernelMIGGpuInstance == NULL)
+            if (gisubscriptionGetMIGGPUInstance(pGPUInstanceSubscription) == NULL)
             {
                 if (pReasonCode != NULL)
                     *pReasonCode = NV2080_CTRL_GR_FECS_BIND_REASON_CODE_NOT_ENABLED;
@@ -1059,7 +1150,7 @@ fecsAddBindpoint
                 goto done;
             }
 
-            pBind->swizzId = pGPUInstanceSubscription->pKernelMIGGpuInstance->swizzId;
+            pBind->swizzId = gisubscriptionGetMIGGPUInstance(pGPUInstanceSubscription)->swizzId;
         }
     }
 
@@ -1090,18 +1181,7 @@ fecsAddBindpoint
 
     if (!bFecsBindingActive && !bIntrDriven)
     {
-        status = osSchedule1SecondCallback(pGpu,
-                nvEventBufferFecsCallback,
-                NULL,
-                NV_OS_1HZ_REPEAT);
-
-        if (status != NV_OK)
-        {
-            status = NV_ERR_INSUFFICIENT_RESOURCES;
-            goto done;
-        }
-
-        bScheduled = NV_TRUE;
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, _fecsTimerCreate(pGpu), done);
     }
 
 done:
@@ -1110,8 +1190,7 @@ done:
         if (gpuConsumerCount != pGpu->fecsCtxswLogConsumerCount)
             fecsRemoveBindpoint(pGpu, targetUser, pBind);
 
-        if (bScheduled)
-            osRemove1SecondRepeatingCallback(pGpu, nvEventBufferFecsCallback, NULL);
+        _fecsTimerDestroy(pGpu);
     }
 
     return status;
@@ -1165,7 +1244,7 @@ fecsRemoveBindpoint
 
         if (!bIntrDriven)
         {
-            osRemove1SecondRepeatingCallback(pGpu, nvEventBufferFecsCallback, NULL);
+            _fecsTimerDestroy(pGpu);
         }
     }
 }

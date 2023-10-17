@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -58,7 +58,6 @@ _Class5080GetDeferredApiInfo(DeferredApiObject  *pDeferredApiObject,
 
 static NV_STATUS
 _Class5080AddDeferredApi(DeferredApiObject               *pDeferredApiObject,
-                         NvHandle                         hClient,
                          NvHandle                         hDeferredApi,
                          NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi,
                          NvU32                            size,
@@ -66,7 +65,6 @@ _Class5080AddDeferredApi(DeferredApiObject               *pDeferredApiObject,
 
 static NV_STATUS
 _Class5080AddDeferredApiV2(DeferredApiObject *pDeferredApiObject,
-                           NvHandle           hClient,
                            NvHandle           hDeferredApi,
                            NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi,
                            NvU32                               size);
@@ -76,7 +74,6 @@ static NV_STATUS
 _Class5080AddDeferredApi
 (
     DeferredApiObject               *pDeferredApiObject,
-    NvHandle                         hClient,
     NvHandle                         hDeferredApi,
     NV5080_CTRL_DEFERRED_API_PARAMS *pDeferredApi,
     NvU32                            size,
@@ -86,11 +83,9 @@ _Class5080AddDeferredApi
     NV_STATUS          rmStatus = NV_OK;
     DEFERRED_API_INFO *pCliDeferredApi;
     CALL_CONTEXT      *pCallContext = resservGetTlsCallContext();
+    NvHandle           hClient = RES_GET_CLIENT_HANDLE(pDeferredApiObject);
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
-
-    if (NV_OK != serverGetClientUnderLock(&g_resServ, hClient, NULL))
-        return NV_ERR_INVALID_CLIENT;
 
     // validate handle
     if (!serverutilValidateNewResourceHandle(hClient, hDeferredApi))
@@ -103,7 +98,6 @@ _Class5080AddDeferredApi
     if (NULL != pCliDeferredApi)
     {
         // initialize the entry
-        pCliDeferredApi->Client      = hClient;
         pCliDeferredApi->Handle      = hDeferredApi;
         pCliDeferredApi->pDeferredApiInfo = (NvU8 *)pCliDeferredApi + sizeof(DEFERRED_API_INFO);
         pCliDeferredApi->Node.keyStart = pCliDeferredApi->Handle;
@@ -132,7 +126,6 @@ static NV_STATUS
 _Class5080AddDeferredApiV2
 (
     DeferredApiObject                  *pDeferredApiObject,
-    NvHandle                            hClient,
     NvHandle                            hDeferredApi,
     NV5080_CTRL_DEFERRED_API_V2_PARAMS *pDeferredApi,
     NvU32                               size
@@ -141,11 +134,9 @@ _Class5080AddDeferredApiV2
     NV_STATUS          rmStatus = NV_OK;
     DEFERRED_API_INFO *pCliDeferredApi;
     CALL_CONTEXT      *pCallContext = resservGetTlsCallContext();
+    NvHandle           hClient = RES_GET_CLIENT_HANDLE(pDeferredApiObject);
 
     NV_ASSERT_OR_RETURN(pCallContext != NULL, NV_ERR_INVALID_STATE);
-
-    if (NV_OK != serverGetClientUnderLock(&g_resServ, hClient, NULL))
-        return NV_ERR_INVALID_CLIENT;
 
     // validate handle
     if (!serverutilValidateNewResourceHandle(hClient, hDeferredApi))
@@ -166,7 +157,6 @@ _Class5080AddDeferredApiV2
     if (NULL != pCliDeferredApi)
     {
         // initialize the entry
-        pCliDeferredApi->Client      = hClient;
         pCliDeferredApi->Handle      = hDeferredApi;
         pCliDeferredApi->pDeferredApiInfo = (NvU8 *)pCliDeferredApi + sizeof(DEFERRED_API_INFO);
         pCliDeferredApi->Node.keyStart = pCliDeferredApi->Handle;
@@ -389,7 +379,6 @@ defapiCtrlCmdDeferredApi_IMPL
     }
 
     return _Class5080AddDeferredApi(pDeferredApiObj,
-                                    RES_GET_CLIENT_HANDLE(pDeferredApiObj),
                                     pDeferredApi->hApiHandle,
                                     pDeferredApi,
                                     sizeof(NV5080_CTRL_DEFERRED_API_PARAMS),
@@ -426,7 +415,6 @@ defapiCtrlCmdDeferredApiV2_IMPL
     }
 
     return _Class5080AddDeferredApiV2(pDeferredApiObj,
-                                      RES_GET_CLIENT_HANDLE(pDeferredApiObj),
                                       pDeferredApi->hApiHandle,
                                       pDeferredApi,
                                       sizeof(NV5080_CTRL_DEFERRED_API_V2_PARAMS));
@@ -588,7 +576,8 @@ _class5080DeferredApiV2
             RmCtrlExecuteCookie rmCtrlExecuteCookie = {0};
             RS_LOCK_INFO        lockInfo = {0};
             Subdevice          *pSubdevice;
-            RsClient           *pRsClient;
+            RsClient           *pRsClient = RES_GET_CLIENT(pDeferredApiObject);
+            Device             *pDevice = GPU_RES_GET_DEVICE(pDeferredApiObject);
             const struct NVOC_EXPORTED_METHOD_DEF *pEntry;
             LOCK_ACCESS_TYPE access;
             NvU32 releaseFlags = 0;
@@ -596,7 +585,7 @@ _class5080DeferredApiV2
             CALL_CONTEXT *pOldContext = NULL;
 
             portMemSet(&rmCtrlParams, 0, sizeof(RmCtrlParams));
-            rmCtrlParams.hClient    = pCliDeferredApi->Client;
+            rmCtrlParams.hClient    = pRsClient->hClient;
             rmCtrlParams.pGpu       = pGpu;
             rmCtrlParams.cmd        = pDeferredApi->cmd;
             rmCtrlParams.flags      = 0;
@@ -622,13 +611,8 @@ _class5080DeferredApiV2
                 rmCtrlParams.flags |= NVOS54_FLAGS_IRQL_RAISED;
             }
 
-            rmStatus = serverGetClientUnderLock(&g_resServ, pCliDeferredApi->Client, &pRsClient);
-            if (rmStatus != NV_OK)
-            {
-                goto cleanup;
-            }
-
-            rmStatus = subdeviceGetByGpu(pRsClient, pGpu, &pSubdevice);
+            rmStatus = subdeviceGetByDeviceAndGpu(pRsClient, pDevice, pGpu,
+                                                  &pSubdevice);
             if (rmStatus != NV_OK)
             {
                 goto cleanup;

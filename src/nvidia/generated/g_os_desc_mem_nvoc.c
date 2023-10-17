@@ -113,6 +113,10 @@ static NV_STATUS __nvoc_thunk_Memory_osdescGetMapAddrSpace(struct OsDescMemory *
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_OsDescMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_osdescIsExportAllowed(struct OsDescMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_OsDescMemory_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_osdescGetRefCount(struct OsDescMemory *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_OsDescMemory_RsResource.offset));
 }
@@ -242,6 +246,8 @@ static void __nvoc_init_funcTable_OsDescMemory_1(OsDescMemory *pThis) {
     pThis->__osdescMapTo__ = &__nvoc_thunk_RsResource_osdescMapTo;
 
     pThis->__osdescGetMapAddrSpace__ = &__nvoc_thunk_Memory_osdescGetMapAddrSpace;
+
+    pThis->__osdescIsExportAllowed__ = &__nvoc_thunk_Memory_osdescIsExportAllowed;
 
     pThis->__osdescGetRefCount__ = &__nvoc_thunk_RsResource_osdescGetRefCount;
 

@@ -80,6 +80,7 @@ struct MemoryFabric {
     NvBool (*__memoryfabricShareCallback__)(struct MemoryFabric *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__memoryfabricMapTo__)(struct MemoryFabric *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__memoryfabricGetMapAddrSpace__)(struct MemoryFabric *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__memoryfabricIsExportAllowed__)(struct MemoryFabric *);
     NvU32 (*__memoryfabricGetRefCount__)(struct MemoryFabric *);
     void (*__memoryfabricAddAdditionalDependants__)(struct RsClient *, struct MemoryFabric *, RsResourceRef *);
     NV_STATUS (*__memoryfabricControl_Prologue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -143,6 +144,7 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 #define memoryfabricShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memoryfabricShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define memoryfabricMapTo(pResource, pParams) memoryfabricMapTo_DISPATCH(pResource, pParams)
 #define memoryfabricGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) memoryfabricGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define memoryfabricIsExportAllowed(pMemory) memoryfabricIsExportAllowed_DISPATCH(pMemory)
 #define memoryfabricGetRefCount(pResource) memoryfabricGetRefCount_DISPATCH(pResource)
 #define memoryfabricAddAdditionalDependants(pClient, pResource, pReference) memoryfabricAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define memoryfabricControl_Prologue(pResource, pCallContext, pParams) memoryfabricControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -236,6 +238,10 @@ static inline NV_STATUS memoryfabricMapTo_DISPATCH(struct MemoryFabric *pResourc
 
 static inline NV_STATUS memoryfabricGetMapAddrSpace_DISPATCH(struct MemoryFabric *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__memoryfabricGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool memoryfabricIsExportAllowed_DISPATCH(struct MemoryFabric *pMemory) {
+    return pMemory->__memoryfabricIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 memoryfabricGetRefCount_DISPATCH(struct MemoryFabric *pResource) {
@@ -349,4 +355,5 @@ typedef struct
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MEM_FABRIC_NVOC_H_

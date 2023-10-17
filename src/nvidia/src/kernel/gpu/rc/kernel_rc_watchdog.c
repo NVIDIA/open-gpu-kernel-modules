@@ -23,6 +23,7 @@
 
 #include "kernel/core/core.h"
 #include "kernel/core/locks.h"
+#include "gpu/subdevice/subdevice.h"
 #include "kernel/gpu/mem_mgr/heap.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"

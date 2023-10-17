@@ -33,6 +33,14 @@
 #define NV_TYPEOF_SUPPORTED 0
 #endif
 
+//
+// Validate whether a container iterator is valid.
+// In checked builds, a container and its iterator get assigned a versionNumber. pIter gets version
+// number once at the time of construction. pCont's versionNumber is initially zero and changes
+// when pCont is modified. Any container modification invalidates all iterators.
+//
+#define CONT_ITER_IS_VALID(pCont, pIter) ((pCont)->versionNumber == (pIter)->versionNumber)
+
 /**
  * Tag a non-intrusive container union with the following info:
  *    valueSize : size of its element type for non-intrusive malloc

@@ -979,5 +979,53 @@ typedef struct NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS {
     NvU8 mode;
 } NV0000_CTRL_GPU_GET_NVLINK_BW_MODE_PARAMS;
 
+/*
+ * NV0000_CTRL_GPU_ACTIVE_DEVICE
+ *
+ * This structure describes a single MIG or plain device in the system
+ * available for use.
+ *
+ *   gpuId
+ *     ID of an attached GPU.
+ *   gpuInstanceId
+ *     MIG gpu instance id of an instance existing on this GPU.
+ *     NV0000_CTRL_GPU_INVALID_ID if the GPU is not in MIG mode.
+ *   computeInstanceId
+ *     MIG compute instance id of an instance existing on this GPU.
+ *     NV0000_CTRL_GPU_INVALID_ID if the GPU is not in MIG mode.
+ *
+ */
+typedef struct NV0000_CTRL_GPU_ACTIVE_DEVICE {
+    NvU32 gpuId;
+    NvU32 gpuInstanceId;
+    NvU32 computeInstanceId;
+} NV0000_CTRL_GPU_ACTIVE_DEVICE;
+
+/*
+ * NV0000_CTRL_CMD_GPU_GET_ACTIVE_DEVICE_IDS
+ *
+ * This command returns a list of valid GPUs treating uniformly MIG devices
+ * and GPUs not in MIG mode.
+ *
+ *   [out] devices
+ *      List of devices aviable for use.
+ *   [out] numDevices
+ *      Number of valid entries in gpus
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_PARAM_STRUCT
+ */
+#define NV0000_CTRL_CMD_GPU_GET_ACTIVE_DEVICE_IDS (0x288U) /* finn: Evaluated from "(FINN_NV01_ROOT_GPU_INTERFACE_ID << 8) | NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_GPU_MAX_ACTIVE_DEVICES        256U
+
+#define NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS_MESSAGE_ID (0x88U)
+
+typedef struct NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS {
+    NvU32                         numDevices;
+    NV0000_CTRL_GPU_ACTIVE_DEVICE devices[NV0000_CTRL_GPU_MAX_ACTIVE_DEVICES];
+} NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS;
+
 /* _ctrl0000gpu_h_ */
 

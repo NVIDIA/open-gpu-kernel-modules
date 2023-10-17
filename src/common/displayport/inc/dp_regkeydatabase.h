@@ -59,9 +59,6 @@
 
 #define NV_DP_REGKEY_FORCE_EDP_ILR                    "DP_BYPASS_EDP_ILR_REV_CHECK"
 
-// Regkey to make sure enable FEC only when RM notified sink successfully
-#define NV_DP_CHECK_FEC_FOR_DDS_DSC_PANEL             "DP_DDS_CHECK_FEC_TO_ENABLE"
-
 // Message to power down video stream before power down link (set D3)
 #define NV_DP_REGKEY_POWER_DOWN_PHY                   "DP_POWER_DOWN_PHY"
 
@@ -76,7 +73,6 @@
 // and its parent's DSC capability.
 //
 #define NV_DP_DSC_MST_CAP_BUG_3143315                  "DP_DSC_MST_CAP_BUG_3143315"
-
 
 //
 // Data Base used to store all the regkey values.
@@ -110,7 +106,6 @@ struct DP_REGKEY_DATABASE
     bool  bBypassEDPRevCheck;
     bool  bDscMstCapBug3143315;
     bool  bPowerDownPhyBeforeD3;
-    bool  bCheckFECForDynamicMuxDSCPanel;
     bool  bReassessMaxLink;
 };
 

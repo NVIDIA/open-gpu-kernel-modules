@@ -255,22 +255,38 @@ static void
 memmgrSetZbcReferenced
 (
     OBJGPU *pGpu,
+    NvHandle hClient,
+    NvHandle hDevice,
     NvBool  bZbcSurfacesExist
 )
 {
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_PARAMS params = {0};
+    RsClient *pClient;
+    Subdevice *pSubdevice;
+    NvHandle hSubdevice;
+    NvU32 subDevInst;
 
     // Allocations are RPCed to host, so they are counted there
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
         return;
 
     params.bZbcSurfacesExist = bZbcSurfacesExist;
+
+    NV_ASSERT_OR_RETURN_VOID(
+        serverGetClientUnderLock(&g_resServ, hClient, &pClient) == NV_OK);
+
+    subDevInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
+
+    NV_ASSERT_OR_RETURN_VOID(subdeviceGetByInstance(pClient, hDevice, subDevInst, &pSubdevice) == NV_OK);
+
+    hSubdevice = RES_GET_HANDLE(pSubdevice);
+
     NV_ASSERT_OK(
         pRmApi->Control(
             pRmApi,
-            pGpu->hInternalClient,
-            pGpu->hInternalSubdevice,
+            hClient,
+            hSubdevice,
             NV2080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED,
             &params,
             sizeof(params)));
@@ -290,7 +306,7 @@ memmgrAllocHal_GM107
 {
     KernelMemorySystem *pKernelMemorySystem   = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NV_STATUS           status                = NV_OK;
-    NvU32               comprAttr, tiledAttr, zcullAttr, type;
+    NvU32               comprAttr, zcullAttr, type;
     NvU32               cacheAttr;
     NvU32               format, kind, bAlignPhase;
     NvU32               retAttr               = pFbAllocInfo->retAttr;
@@ -302,7 +318,6 @@ memmgrAllocHal_GM107
 
     // get the specified attribute values
     comprAttr     = DRF_VAL(OS32, _ATTR, _COMPR, pFbAllocInfo->pageFormat->attr);
-    tiledAttr     = DRF_VAL(OS32, _ATTR, _TILED, pFbAllocInfo->pageFormat->attr);
     zcullAttr     = DRF_VAL(OS32, _ATTR, _ZCULL, pFbAllocInfo->pageFormat->attr);
     format        = DRF_VAL(OS32, _ATTR, _FORMAT, pFbAllocInfo->pageFormat->attr);
     cacheAttr     = DRF_VAL(OS32, _ATTR2, _GPU_CACHEABLE, pFbAllocInfo->pageFormat->attr2);
@@ -321,9 +336,6 @@ memmgrAllocHal_GM107
     // So the caller is urged to verify integrity.
     //
     if (
-        // Tiling is not supported in nv50+
-        (tiledAttr == NVOS32_ATTR_TILED_REQUIRED) ||
-        (tiledAttr == NVOS32_ATTR_TILED_DEFERRED) ||
         // check the value of compression attribute
         // attributes verification for compressed surfaces
         !(memmgrVerifyComprAttrs_HAL(pMemoryManager, type, format, comprAttr)) ||
@@ -334,9 +346,6 @@ memmgrAllocHal_GM107
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
-
-    // Fermi does not support tiling
-    retAttr = FLD_SET_DRF(OS32, _ATTR, _TILED, _NONE, retAttr);
 
     if (cacheAttr == NVOS32_ATTR2_GPU_CACHEABLE_DEFAULT)
     {
@@ -481,7 +490,7 @@ memmgrAllocHal_GM107
                           pMemoryManager->zbcSurfaces, pFbAllocInfo->hwResId);
 
                 if (pMemoryManager->zbcSurfaces == 1)
-                    memmgrSetZbcReferenced(pGpu, NV_TRUE);
+                    memmgrSetZbcReferenced(pGpu, pFbAllocInfo->hClient, pFbAllocInfo->hDevice, NV_TRUE);
             }
         }
         else
@@ -551,7 +560,7 @@ memmgrFreeHal_GM107
             pMemoryManager->zbcSurfaces--;
 
             if (pMemoryManager->zbcSurfaces == 0)
-                memmgrSetZbcReferenced(pGpu, NV_FALSE);
+                memmgrSetZbcReferenced(pGpu, pFbAllocInfo->hClient, pFbAllocInfo->hDevice, NV_FALSE);
         }
 
         NV_PRINTF(LEVEL_INFO,
@@ -561,83 +570,6 @@ memmgrFreeHal_GM107
 
         NV_PRINTF(LEVEL_INFO, "[2] zbcSurfaces = 0x%x\n",
                   pMemoryManager->zbcSurfaces);
-    }
-
-    return NV_OK;
-}
-
-NV_STATUS
-memmgrGetSurfacePhysAttr_GM107
-(
-    OBJGPU           *pGpu,
-    MemoryManager    *pMemoryManager,
-    Memory           *pMemory,
-    NvU64            *pOffset,
-    NvU32            *pMemAperture,
-    NvU32            *pMemKind,
-    NvU32            *pComprOffset,
-    NvU32            *pComprKind,
-    NvU32            *pLineMin,
-    NvU32            *pLineMax,
-    NvU32            *pZCullId,
-    NvU32            *pGpuCacheAttr,
-    NvU32            *pGpuP2PCacheAttr,
-    NvU64            *contigSegmentSize
-)
-{
-    NV_STATUS                   rmStatus;
-    PMEMORY_DESCRIPTOR          pMemDesc      = memdescGetMemDescFromGpu(pMemory->pMemDesc, pGpu);
-    COMPR_INFO                  comprInfo;
-    NvU32                       unused;
-
-    NV_ASSERT(pMemDesc);
-
-    rmStatus = memmgrFillMemdescForPhysAttr(pGpu, pMemoryManager, pMemDesc, AT_GPU, pOffset, pMemAperture,
-                                            pMemKind, pZCullId, pGpuCacheAttr, pGpuP2PCacheAttr,
-                                            contigSegmentSize);
-    if (NV_OK != rmStatus)
-    {
-        return rmStatus;
-    }
-
-    if ((!memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, *pMemKind)) ||
-         !FB_HWRESID_CTAGID_VAL_FERMI(memdescGetHwResId(pMemDesc)))
-    {
-        *pComprKind = 0;
-        return NV_OK;
-    }
-    // vGPU: pPrivate->pCompTags is not
-    // currently initialized in the guest RM
-    // vGPU does not use compression tags yet.
-    // GSPTODO: sort out ctags
-    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
-    {
-        *pComprOffset = 0x0;
-        *pLineMin = 0x0;
-        *pLineMax = 0x0;
-        return NV_OK;
-    }
-
-    rmStatus = memmgrGetKindComprFromMemDesc(pMemoryManager, pMemDesc, 0, &unused, &comprInfo);
-    if (rmStatus != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "dmaGetKidnCompr failed: %x\n", rmStatus);
-        return rmStatus;
-    }
-
-    if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, comprInfo.kind))
-    {
-        *pLineMin = comprInfo.compTagLineMin;
-        *pLineMax = comprInfo.compPageIndexHi - comprInfo.compPageIndexLo + comprInfo.compTagLineMin;
-        *pComprOffset = comprInfo.compPageIndexLo;
-        *pComprKind = 1;
-    }
-    else
-    {
-        // No coverage at all (stripped by release/reacquire or invalid hw res).
-        *pLineMin = ~0;
-        *pLineMax = ~0;
-        *pComprKind = 0;
     }
 
     return NV_OK;
@@ -670,7 +602,11 @@ memmgrGetBAR1InfoForDevice_GM107
         NV2080_CTRL_FB_GET_INFO_V2_PARAMS fbInfoParams = {0};
         Subdevice *pSubdevice;
 
-        NV_ASSERT_OK_OR_RETURN(subdeviceGetByGpu(pClient, pGpu, &pSubdevice));
+        NV_ASSERT_OK_OR_RETURN(
+            subdeviceGetByInstance(pClient,
+                                   RES_GET_HANDLE(pDevice),
+                                   gpumgrGetSubDeviceInstanceFromGpu(pGpu),
+                                   &pSubdevice));
 
         fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_BAR1_SIZE;
         fbInfoParams.fbInfoList[1].index = NV2080_CTRL_FB_INFO_INDEX_BAR1_AVAIL_SIZE;
@@ -698,7 +634,7 @@ memmgrGetBAR1InfoForDevice_GM107
         NV_ASSERT_OR_RETURN(pBar1VAS != NULL, NV_ERR_INVALID_STATE);
         pVASHeap = vaspaceGetHeap(pBar1VAS);
 
-        NV_ASSERT_OK_OR_RETURN(kbusGetBar1VARangeForClient(pGpu, pKernelBus, pClient->hClient, &bar1VARange));
+        NV_ASSERT_OK_OR_RETURN(kbusGetBar1VARangeForDevice(pGpu, pKernelBus, pDevice, &bar1VARange));
         bar1Info->bar1Size = (NvU32)(rangeLength(bar1VARange) / 1024);
         bar1Info->bankSwizzleAlignment = vaspaceGetBigPageSize(pBar1VAS);
 
@@ -1549,8 +1485,7 @@ memmgrGetBlackListPages_GM107
     }
     portMemSet(pParams, 0, sizeof(*pParams));
 
-    pRmApi = IS_GSP_CLIENT(pGpu) ? GPU_GET_PHYSICAL_RMAPI(pGpu) :
-                                    rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     status = pRmApi->Control(pRmApi,
                              pGpu->hInternalClient,
@@ -1652,4 +1587,16 @@ memmgrGetBlackListPagesForHeap_GM107
 
     // Failure to read offlined pages from host is not fatal
     return NV_OK;
+}
+
+NvU32
+memmgrGetFBEndReserveSizeEstimate_GM107
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+    const NvU32 ESTIMATED_RESERVE_FB = 0x200000;
+
+    return ESTIMATED_RESERVE_FB;
 }

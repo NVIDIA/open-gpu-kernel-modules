@@ -99,8 +99,8 @@ static void fill_gpu_info(uvm_parent_gpu_t *parent_gpu, const UvmGpuInfo *gpu_in
     parent_gpu->system_bus.link_rate_mbyte_per_s = gpu_info->sysmemLinkRateMBps;
 
     if (gpu_info->systemMemoryWindowSize > 0) {
-        // memory_window_end is inclusive but uvm_gpu_is_coherent() checks
-        // memory_window_end > memory_window_start as its condition.
+        // memory_window_end is inclusive but uvm_parent_gpu_is_coherent()
+        // checks memory_window_end > memory_window_start as its condition.
         UVM_ASSERT(gpu_info->systemMemoryWindowSize > 1);
         parent_gpu->system_bus.memory_window_start = gpu_info->systemMemoryWindowStart;
         parent_gpu->system_bus.memory_window_end   = gpu_info->systemMemoryWindowStart +
@@ -136,12 +136,12 @@ static NV_STATUS get_gpu_caps(uvm_gpu_t *gpu)
         return status;
 
     if (gpu_caps.numaEnabled) {
-        UVM_ASSERT(uvm_gpu_is_coherent(gpu->parent));
+        UVM_ASSERT(uvm_parent_gpu_is_coherent(gpu->parent));
         gpu->mem_info.numa.enabled = true;
         gpu->mem_info.numa.node_id = gpu_caps.numaNodeId;
     }
     else {
-        UVM_ASSERT(!uvm_gpu_is_coherent(gpu->parent));
+        UVM_ASSERT(!uvm_parent_gpu_is_coherent(gpu->parent));
     }
 
     return NV_OK;
@@ -1089,7 +1089,7 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
 {
     NV_STATUS status;
 
-    status = uvm_rm_locked_call(nvUvmInterfaceDeviceCreate(g_uvm_global.rm_session_handle,
+    status = uvm_rm_locked_call(nvUvmInterfaceDeviceCreate(uvm_global_session_handle(),
                                                            gpu_info,
                                                            gpu_uuid,
                                                            &parent_gpu->rm_device,
@@ -1099,7 +1099,12 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
         return status;
     }
 
-    uvm_conf_computing_check_parent_gpu(parent_gpu);
+    status = uvm_conf_computing_init_parent_gpu(parent_gpu);
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("Confidential computing: %s, GPU %s\n",
+                      nvstatusToString(status), parent_gpu->name);
+        return status;
+    }
 
     parent_gpu->pci_dev = gpu_platform_info->pci_dev;
     parent_gpu->closest_cpu_numa_node = dev_to_node(&parent_gpu->pci_dev->dev);
@@ -1161,19 +1166,8 @@ static NV_STATUS init_gpu(uvm_gpu_t *gpu, const UvmGpuInfo *gpu_info)
 {
     NV_STATUS status;
 
-    // Presently, an RM client can only subscribe to a single partition per
-    // GPU. Therefore, UVM needs to create several RM clients. For simplicity,
-    // and since P2P is not supported when SMC partitions are created, we
-    // create a client (session) per GPU partition.
     if (gpu->parent->smc.enabled) {
-        UvmPlatformInfo platform_info;
-        status = uvm_rm_locked_call(nvUvmInterfaceSessionCreate(&gpu->smc.rm_session_handle, &platform_info));
-        if (status != NV_OK) {
-            UVM_ERR_PRINT("Creating RM session failed: %s\n", nvstatusToString(status));
-            return status;
-        }
-
-        status = uvm_rm_locked_call(nvUvmInterfaceDeviceCreate(uvm_gpu_session_handle(gpu),
+        status = uvm_rm_locked_call(nvUvmInterfaceDeviceCreate(uvm_global_session_handle(),
                                                                gpu_info,
                                                                uvm_gpu_uuid(gpu),
                                                                &gpu->smc.rm_device,
@@ -1543,9 +1537,6 @@ static void deinit_gpu(uvm_gpu_t *gpu)
     if (gpu->parent->smc.enabled) {
         if (gpu->smc.rm_device != 0)
             uvm_rm_locked_call_void(nvUvmInterfaceDeviceDestroy(gpu->smc.rm_device));
-
-        if (gpu->smc.rm_session_handle != 0)
-            uvm_rm_locked_call_void(nvUvmInterfaceSessionDestroy(gpu->smc.rm_session_handle));
     }
 
     gpu->magic = 0;
@@ -2575,7 +2566,7 @@ static void disable_peer_access(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
         uvm_mmu_destroy_peer_identity_mappings(gpu0, gpu1);
         uvm_mmu_destroy_peer_identity_mappings(gpu1, gpu0);
 
-        uvm_rm_locked_call_void(nvUvmInterfaceP2pObjectDestroy(uvm_gpu_session_handle(gpu0), p2p_handle));
+        uvm_rm_locked_call_void(nvUvmInterfaceP2pObjectDestroy(uvm_global_session_handle(), p2p_handle));
 
         UVM_ASSERT(uvm_gpu_get(gpu0->global_id) == gpu0);
         UVM_ASSERT(uvm_gpu_get(gpu1->global_id) == gpu1);
@@ -2701,9 +2692,9 @@ uvm_processor_id_t uvm_gpu_get_processor_id_by_address(uvm_gpu_t *gpu, uvm_gpu_p
     return id;
 }
 
-uvm_gpu_peer_t *uvm_gpu_index_peer_caps(const uvm_gpu_id_t gpu_id1, const uvm_gpu_id_t gpu_id2)
+uvm_gpu_peer_t *uvm_gpu_index_peer_caps(const uvm_gpu_id_t gpu_id0, const uvm_gpu_id_t gpu_id1)
 {
-    NvU32 table_index = uvm_gpu_peer_table_index(gpu_id1, gpu_id2);
+    NvU32 table_index = uvm_gpu_peer_table_index(gpu_id0, gpu_id1);
     return &g_uvm_global.peers[table_index];
 }
 

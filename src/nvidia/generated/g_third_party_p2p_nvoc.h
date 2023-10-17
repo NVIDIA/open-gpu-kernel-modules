@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,28 +36,34 @@ extern "C" {
 
 #include "rmapi/client.h"
 #include "gpu/mem_mgr/mem_desc.h"
-#include "gpu/subdevice/subdevice.h"
 #include "gpu/gpu_resource.h"
 
 #include <ctrl/ctrl503c.h>
 
-//
-// The third-party P2P token is a 64bit integer.
-//
-// The value may be passed by the RM client enabling the third-party P2P access.
-// Otherwise the P2P token format is:
-//
-//   fn  [  *GPU ID*  ]  [ *UNUSED*  ]  [  *PEER INDEX*  ]
-//   bit 63          32  31          8  7                0
-//
-// The third-party P2P token is a globally unique identifier for one
-// of an attached GPU's several P2P slots.  It is passed, as an
-// opaque handle, to third-party driver stacks to allow the setup
-// of a P2P mapping between a given GPU and a third-party device with
-// NVIDIA P2P capabilities.
-//
+struct Subdevice;
 
-#define CLI_ENCODEP2PTOKEN(gpuId, peerIndex) (((NvU64)gpuId << 32) | peerIndex)
+#ifndef __NVOC_CLASS_Subdevice_TYPEDEF__
+#define __NVOC_CLASS_Subdevice_TYPEDEF__
+typedef struct Subdevice Subdevice;
+#endif /* __NVOC_CLASS_Subdevice_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_Subdevice
+#define __nvoc_class_id_Subdevice 0x4b01b3
+#endif /* __nvoc_class_id_Subdevice */
+
+
+struct Memory;
+
+#ifndef __NVOC_CLASS_Memory_TYPEDEF__
+#define __NVOC_CLASS_Memory_TYPEDEF__
+typedef struct Memory Memory;
+#endif /* __NVOC_CLASS_Memory_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_Memory
+#define __nvoc_class_id_Memory 0x4789f2
+#endif /* __nvoc_class_id_Memory */
+
+
 
 #define CLI_THIRD_PARTY_P2P_FLAGS_INITIALIZED   NVBIT(0)
 
@@ -617,4 +623,5 @@ void                CliUnregisterMemoryFromThirdPartyP2P(struct Memory *pMemory)
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_THIRD_PARTY_P2P_NVOC_H_

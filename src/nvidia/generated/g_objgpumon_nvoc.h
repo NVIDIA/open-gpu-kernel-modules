@@ -207,4 +207,5 @@ static inline NV_STATUS gpumonGetPerfmonUtilSamples(struct OBJGPU *pGpu, struct 
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_OBJGPUMON_NVOC_H_

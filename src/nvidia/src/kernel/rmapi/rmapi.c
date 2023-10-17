@@ -36,6 +36,7 @@
 #include "core/thread_state.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "resource_desc.h"
+#include "ctrl/ctrl0000/ctrl0000system.h"
 
 typedef struct
 {
@@ -46,6 +47,9 @@ typedef struct
     NvU64               tlsEntryId;
     volatile NvU32      contentionCount;
     NvU32               lowPriorityAging;
+    volatile NvU64      totalWaitTime;
+    volatile NvU64      totalRwHoldTime;
+    volatile NvU64      totalRoHoldTime;
 } RMAPI_LOCK;
 
 RsServer          g_resServ;
@@ -376,33 +380,97 @@ rmapiEpilogue
     }
 }
 
-void
+NV_STATUS
 rmapiInitLockInfo
 (
-    RM_API            *pRmApi,
-    NvHandle           hClient,
-    RS_LOCK_INFO      *pLockInfo
+    RM_API       *pRmApi,
+    NvHandle      hClient,
+    NvHandle      hSecondClient,
+    RS_LOCK_INFO *pLockInfo
 )
 {
-    NV_ASSERT_OR_RETURN_VOID(pLockInfo != NULL);
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+
+    NV_ASSERT_OR_RETURN(pLockInfo != NULL, NV_ERR_INVALID_STATE);
     pLockInfo->flags = 0;
     pLockInfo->state = 0;
 
     if (hClient != 0)
     {
-        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
         if ((pCallContext != NULL) && (pCallContext->pLockInfo != NULL))
         {
             pLockInfo->state = pCallContext->pLockInfo->state;
 
-            if ((pCallContext->pLockInfo->pClient != NULL) &&
-                (pCallContext->pLockInfo->pClient->hClient == hClient))
+            // If no clients are locked, then we need to acquire client locks
+            if (pCallContext->pLockInfo->pClient == NULL)
+                pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+
+            // If we only need one client locked
+            else if (hSecondClient == NV01_NULL_OBJECT)
             {
-                pLockInfo->pClient = pCallContext->pLockInfo->pClient;
+                if (pCallContext->pLockInfo->pClient->hClient == hClient)
+                    pLockInfo->pClient = pCallContext->pLockInfo->pClient;
+                else if ((pCallContext->pLockInfo->pSecondClient != NULL) &&
+                         (pCallContext->pLockInfo->pSecondClient->hClient == hClient))
+                {
+                    pLockInfo->pClient = pCallContext->pLockInfo->pSecondClient;
+                }
+                else
+                    pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
             }
+
+            // If we only have one client locked, but we need two
+            else if (pCallContext->pLockInfo->pSecondClient == NULL)
+            {
+                if ((pCallContext->pLockInfo->pClient->hClient == hClient) ||
+                     (pCallContext->pLockInfo->pClient->hClient == hSecondClient))
+                {
+                    pLockInfo->pClient = pCallContext->pLockInfo->pClient;
+
+                    //
+                    // Special case: if both clients are the same -
+                    // Set both pClient's so _serverLockDualClientWithLockInfo
+                    // doesn't complain about the lock state being invalid.
+                    //
+                    if (hClient == hSecondClient)
+                        pLockInfo->pSecondClient = pCallContext->pLockInfo->pClient;
+                }
+                else
+                    pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+            }
+
+            // If we need two clients locked, and already have two
             else
             {
-                pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+                //
+                // Check whether both clients match, keep the original order of the
+                // clients (dual client locking always locks the lower numbered client
+                // handle first).
+                //
+                if (((pCallContext->pLockInfo->pClient->hClient == hClient) &&
+                     (pCallContext->pLockInfo->pSecondClient->hClient == hSecondClient)) ||
+                    ((pCallContext->pLockInfo->pClient->hClient == hSecondClient) &&
+                     (pCallContext->pLockInfo->pSecondClient->hClient == hClient)))
+                {
+                    pLockInfo->pClient = pCallContext->pLockInfo->pClient;
+                    pLockInfo->pSecondClient = pCallContext->pLockInfo->pSecondClient;
+                }
+
+                // Check whether one client handle matches
+                else if ((pCallContext->pLockInfo->pClient->hClient == hClient) ||
+                         (pCallContext->pLockInfo->pClient->hClient == hSecondClient))
+                {
+                    pLockInfo->pClient = pCallContext->pLockInfo->pClient;
+                    pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+                }
+                else if ((pCallContext->pLockInfo->pSecondClient->hClient == hClient) ||
+                         (pCallContext->pLockInfo->pSecondClient->hClient == hSecondClient))
+                {
+                    pLockInfo->pClient = pCallContext->pLockInfo->pSecondClient;
+                    pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
+                }
+                else
+                    pLockInfo->state &= ~RM_LOCK_STATES_CLIENT_LOCK_ACQUIRED;
             }
         }
     }
@@ -414,13 +482,92 @@ rmapiInitLockInfo
     {
         pLockInfo->state |= RM_LOCK_STATES_API_LOCK_ACQUIRED;
 
-        // RS-TODO: Assert that API rwlock is taken if no client is locked
-        if (pLockInfo->pClient == NULL)
-            pLockInfo->flags |= RM_LOCK_FLAGS_NO_CLIENT_LOCK;
+        //
+        // If we don't have the exact clients we need locked,
+        // and this is an internal call we MUST have the RW API lock in order
+        // to prevent the client from being modified concurrently.
+        //
+        if (((hClient != NV01_NULL_OBJECT) && (pLockInfo->pClient == NULL)) ||
+            ((hSecondClient != NV01_NULL_OBJECT) && (pLockInfo->pSecondClient == NULL)))
+        {
+            NvBool bPrevClientsLocked = 
+                ((pCallContext != NULL &&
+                  pCallContext->pLockInfo != NULL) &&
+                 (pCallContext->pLockInfo->pClient != NULL ||
+                  pCallContext->pLockInfo->pSecondClient != NULL));
+
+            //
+            // Check for the RW API lock only if we have one or more non-internal client
+            // handles that aren't already locked. Assume that in the case of RM
+            // internal clients the caller, which can only be RM for internal clients,
+            // has checked the path's locking properly and doesn't require the RW API
+            // lock. However, ensure that at least the RO API lock is held.
+            //
+
+            // If we haven't locked either hClient or hSecondClient yet
+            if (pLockInfo->pClient == NULL)
+            {
+                //
+                // Both client handles have to be kernel only to execute with the
+                // RO API lock.
+                //
+                if (!rmclientIsKernelOnlyByHandle(hClient) ||
+                    ((hSecondClient != NV01_NULL_OBJECT) &&
+                     (!rmclientIsKernelOnlyByHandle(hSecondClient))))
+                {
+                    LOCK_ASSERT_AND_RETURN(rmapiLockIsWriteOwner());
+                }
+
+                //
+                // Require the API lock if there are previous clients locked since
+                // that will prevent us from locking any individual client objects
+                // and therefore prevent them from being freed concurrently.
+                //
+                else if (bPrevClientsLocked)
+                {
+                    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+                }
+            }
+
+            // If we have 1 client already locked but we're using 2
+            else if ((hSecondClient != NV01_NULL_OBJECT) &&
+                     (pLockInfo->pSecondClient == NULL))  
+            {
+                NvHandle hUnlockedClient = (pLockInfo->pClient->hClient == hClient ?
+                                            hSecondClient : hClient);
+
+                //
+                // The unlocked client handle has to be unusable from user space to
+                // execute with the RO API lock.
+                //
+                if (!rmclientIsKernelOnlyByHandle(hUnlockedClient))
+                {
+                    LOCK_ASSERT_AND_RETURN(rmapiLockIsWriteOwner());
+                }
+
+                //
+                // Require the API lock if there are previous clients locked since
+                // that will prevent us from locking any individual client objects
+                // and therefore prevent them from being freed concurrently.
+                //
+                else if (bPrevClientsLocked)
+                {
+                    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+                }
+            }
+
+            // Don't acquire client locks if we already hold the API lock.
+            if (rmapiLockIsOwner())
+            {
+                pLockInfo->flags |= RM_LOCK_FLAGS_NO_CLIENT_LOCK;
+            }
+        }
     }
 
     if (pRmApi->bGpuLockInternal)
         pLockInfo->state |= RM_LOCK_STATES_ALLOW_RECURSIVE_LOCKS;
+
+    return NV_OK;
 }
 
 static NV_STATUS
@@ -466,12 +613,17 @@ _rmapiLockFree(void)
 NV_STATUS
 rmapiLockAcquire(NvU32 flags, NvU32 module)
 {
+    OBJSYS *pSys = SYS_GET_INSTANCE();
     NV_STATUS rmStatus = NV_OK;
     NvU64 threadId = portThreadGetCurrentThreadId();
 
     NvU64 myPriority = 0;
+    NvU64 startWaitTime;
 
     LOCK_ASSERT_AND_RETURN(!rmapiLockIsOwner());
+
+    // Ensure that GPU locks are NEVER acquired before the API lock
+    LOCK_ASSERT_AND_RETURN(rmGpuLocksGetOwnedMask() == 0);
 
     //
     // If a read-only lock was requested, check to see if the module is allowed
@@ -479,12 +631,15 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
     //
     if ((flags & RMAPI_LOCK_FLAGS_READ) && (module != RM_LOCK_MODULES_NONE))
     {
-        OBJSYS *pSys = SYS_GET_INSTANCE();
         if ((pSys->apiLockModuleMask & RM_LOCK_MODULE_GRP(module)) == 0)
         {
             flags &= ~RMAPI_LOCK_FLAGS_READ;
         }
     }
+
+    // Get start wait time measuring lock wait times
+    if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
+        osGetCurrentTick(&startWaitTime);
 
     //
     // For conditional acquires and DISPATCH_LEVEL we want to exit
@@ -527,6 +682,7 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
             if (flags & RMAPI_LOCK_FLAGS_LOW_PRIORITY)
             {
                 NvS32 age = g_RmApiLock.lowPriorityAging;
+
                 portSyncRwLockAcquireWrite(g_RmApiLock.pLock);
                 while ((g_RmApiLock.contentionCount > 0) && (age--))
                 {
@@ -550,6 +706,10 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
     {
         NvU64 timestamp;
         osGetCurrentTick(&timestamp);
+
+        // Update total API lock wait time if measuring lock times
+        if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
+            portAtomicExAddU64(&g_RmApiLock.totalWaitTime, timestamp - startWaitTime);
 
         if (g_RmApiLock.threadId == threadId)
             g_RmApiLock.timestamp = timestamp;
@@ -578,10 +738,17 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
         }
     }
 
-    NvP64 *pAcquireAddress = tlsEntryAcquire(g_RmApiLock.tlsEntryId);
-    if (pAcquireAddress != NULL)
+    NvP64 *pStartTime = tlsEntryAcquire(g_RmApiLock.tlsEntryId);
+    if (pStartTime != NULL)
     {
-        *pAcquireAddress = (NvP64)(NvUPtr)NV_RETURN_ADDRESS();
+        //
+        // Store start time to track lock hold time. This is done
+        // regardless of the value of PDB_PROP_SYS_RM_LOCK_TIME_COLLECT since
+        // the API lock can be acquired before PDB properties are initialized
+        // and released after they are which could lead to uninitialized memory
+        // being present in TLS.
+        //
+        osGetCurrentTick((NvU64 *) pStartTime);
     }
 
     return rmStatus;
@@ -590,8 +757,14 @@ rmapiLockAcquire(NvU32 flags, NvU32 module)
 void
 rmapiLockRelease(void)
 {
+    OBJSYS *pSys = SYS_GET_INSTANCE();
     NvU64 threadId = portThreadGetCurrentThreadId();
     NvU64 timestamp;
+    NvU64 startTime = 0;
+
+    // Fetch start of hold time from TLS if measuring lock times
+    if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
+        startTime = (NvU64) tlsEntryGet(g_RmApiLock.tlsEntryId);
 
     osGetCurrentTick(&timestamp);
 
@@ -615,11 +788,20 @@ rmapiLockRelease(void)
         //
         g_RmApiLock.threadId  = ~0ull;
         g_RmApiLock.timestamp = timestamp;
+
+        // Update total RW API lock hold time if measuring lock times
+        if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
+            portAtomicExAddU64(&g_RmApiLock.totalRwHoldTime, timestamp - startTime);
+
         portSyncRwLockReleaseWrite(g_RmApiLock.pLock);
 
     }
     else
     {
+        // Update total RO API lock hold time if measuring lock times
+        if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
+            portAtomicExAddU64(&g_RmApiLock.totalRoHoldTime, timestamp - startTime);
+
         portSyncRwLockReleaseRead(g_RmApiLock.pLock);
     }
 
@@ -629,7 +811,26 @@ rmapiLockRelease(void)
 NvBool
 rmapiLockIsOwner(void)
 {
-    return tlsEntryGet(g_RmApiLock.tlsEntryId) != NvP64_NULL;
+    return tlsEntryGet(g_RmApiLock.tlsEntryId) != 0;
+}
+
+NvBool
+rmapiLockIsWriteOwner(void)
+{
+    NvU64 threadId = portThreadGetCurrentThreadId();
+
+    return (rmapiLockIsOwner() && (threadId == g_RmApiLock.threadId));
+}
+
+//
+// Retrieve total RM API lock wait and hold times
+//
+void
+rmapiLockGetTimes(NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *pParams)
+{
+    pParams->waitApiLock   = g_RmApiLock.totalWaitTime;
+    pParams->holdRoApiLock = g_RmApiLock.totalRoHoldTime;
+    pParams->holdRwApiLock = g_RmApiLock.totalRwHoldTime;
 }
 
 //

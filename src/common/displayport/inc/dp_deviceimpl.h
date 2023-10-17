@@ -255,13 +255,13 @@ namespace DisplayPort
 
         virtual bool isLoop()
         {
-            DP_LOG(("isLoop implementation is pending (bug 791059)"));
+           // implementation is pending (bug 791059)
             return false;
         }
 
         virtual bool isRedundant()
         {
-            DP_LOG(("isRedundant implementation is pending (bug 791059)"));
+            // implementation is pending (bug 791059)
             return false;
         }
 

@@ -74,4 +74,11 @@
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN                                     8:8 /* R-IVF */
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN_NOT_PENDING                  0x00000000 /* R-I-V */
 #define NV_PDISP_FE_RM_INTR_STAT_CTRL_DISP_AWAKEN_PENDING                      0x00000001 /* R---V */
+#define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER(i)                    (0x0061611C+(i)*2048) /* RW-4A */
+#define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER__SIZE_1                                   8 /*       */
+#define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER_VALUE                                  31:0 /* RWIUF */
+#define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER_VALUE_INIT                       0x00000000 /* RWI-V */
+#define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER_VALUE_ZERO                       0x00000000 /* RW--V */
+#define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER_VALUE_HW                         0x00000000 /* R---V */
+#define NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER_VALUE_SW                         0x00000000 /* -W--V */
 #endif // __v03_00_dev_disp_h__

@@ -272,7 +272,7 @@ kgmmuTranslatePdePcfFromHw_GH100
     NvU32          *pPdePcfSw
 )
 {
-    if (!aperture)
+    if (aperture == GMMU_APERTURE_INVALID)
     {
         switch (pdePcfHw)
         {
@@ -487,7 +487,8 @@ kgmmuFaultBufferAllocSharedMemory_GH100
         return status;
     }
 
-    status = memdescAlloc(pMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_131, 
+                    pMemDesc);
     if (status != NV_OK)
     {
         goto destroy_memdesc;

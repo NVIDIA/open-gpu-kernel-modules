@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "core/locks.h"
 #include "gpu/gpu.h"
+#include "gpu/subdevice/subdevice.h"
 #include "gpu/bus/third_party_p2p.h"
 #include "platform/p2p/p2p_caps.h"
 #include "gpu/bus/kern_bus.h"
@@ -39,6 +40,11 @@
 // This is used to get internal VidmemInfo for persistent mappings.
 //
 static volatile NvU64 vidmemInfoId = 0;
+
+//
+// A monotonic counter as ID that's assigned to every new 3rd party p2p class.
+//
+static volatile NvU64 p2pTokenId = 0;
 
 //
 // We make sure that only one instance of NV50_THIRD_PARTY_P2P can be active at
@@ -111,7 +117,7 @@ thirdpartyp2pConstruct_IMPL
             return NV_ERR_INVALID_ARGUMENT;
         }
 
-        p2pToken = CLI_ENCODEP2PTOKEN(pGpu->gpuId, hClient);
+        p2pToken = portAtomicExIncrementU64(&p2pTokenId);;
     }
     else if (type == CLI_THIRD_PARTY_P2P_TYPE_NVLINK)
     {
@@ -120,7 +126,7 @@ thirdpartyp2pConstruct_IMPL
             return NV_ERR_INVALID_STATE;
         }
 
-        p2pToken = CLI_ENCODEP2PTOKEN(pGpu->gpuId, hClient);
+        p2pToken = portAtomicExIncrementU64(&p2pTokenId);;
     }
     else
     {

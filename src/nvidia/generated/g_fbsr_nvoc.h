@@ -161,38 +161,6 @@ NV_STATUS __nvoc_objCreate_OBJFBSR(OBJFBSR**, Dynamic*, NvU32);
 #define fbsrEnd_HAL(pGpu, pFbsr) fbsrEnd_DISPATCH(pGpu, pFbsr)
 #define fbsrSendMemsysProgramRawCompressionMode(pGpu, pFbsr, bRawMode) fbsrSendMemsysProgramRawCompressionMode_DISPATCH(pGpu, pFbsr, bRawMode)
 #define fbsrSendMemsysProgramRawCompressionMode_HAL(pGpu, pFbsr, bRawMode) fbsrSendMemsysProgramRawCompressionMode_DISPATCH(pGpu, pFbsr, bRawMode)
-static inline NV_STATUS fbsrCreateChannelForCopy_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-#ifdef __nvoc_fbsr_h_disabled
-static inline NV_STATUS fbsrCreateChannelForCopy(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrCreateChannelForCopy(pGpu, pFbsr) fbsrCreateChannelForCopy_46f6a7(pGpu, pFbsr)
-#endif //__nvoc_fbsr_h_disabled
-
-#define fbsrCreateChannelForCopy_HAL(pGpu, pFbsr) fbsrCreateChannelForCopy(pGpu, pFbsr)
-
-static inline NV_STATUS fbsrDestroyChannelForCopy_46f6a7(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-
-#ifdef __nvoc_fbsr_h_disabled
-static inline NV_STATUS fbsrDestroyChannelForCopy(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr) {
-    NV_ASSERT_FAILED_PRECOMP("OBJFBSR was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_fbsr_h_disabled
-#define fbsrDestroyChannelForCopy(pGpu, pFbsr) fbsrDestroyChannelForCopy_46f6a7(pGpu, pFbsr)
-#endif //__nvoc_fbsr_h_disabled
-
-#define fbsrDestroyChannelForCopy_HAL(pGpu, pFbsr) fbsrDestroyChannelForCopy(pGpu, pFbsr)
-
 NV_STATUS fbsrInit_GM107(struct OBJGPU *pGpu, struct OBJFBSR *pFbsr);
 
 
@@ -327,4 +295,5 @@ static inline void fbsrFreeReservedSysMemoryForPowerMgmt(struct OBJFBSR *pFbsr) 
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_FBSR_NVOC_H_

@@ -186,6 +186,9 @@ static inline NvBool dceclientIsPresent_DISPATCH(POBJGPU pGpu, struct OBJDCECLIE
     return pEngstate->__dceclientIsPresent__(pGpu, pEngstate);
 }
 
+void dceclientDestruct_IMPL(struct OBJDCECLIENTRM *arg0);
+
+#define __nvoc_dceclientDestruct(arg0) dceclientDestruct_IMPL(arg0)
 NV_STATUS dceclientInitRpcInfra_IMPL(struct OBJGPU *arg0, struct OBJDCECLIENTRM *arg1);
 
 #ifdef __nvoc_dce_client_h_disabled
@@ -250,4 +253,5 @@ NV_STATUS rpcDceRmInit_dce(RM_API *pRmApi, NvBool bInit);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_DCE_CLIENT_NVOC_H_

@@ -58,6 +58,18 @@ nvidia-modeset-y += $(NVIDIA_MODESET_BINARY_OBJECT_O)
 NVIDIA_MODESET_CFLAGS += -I$(src)/nvidia-modeset
 NVIDIA_MODESET_CFLAGS += -UDEBUG -U_DEBUG -DNDEBUG -DNV_BUILD_MODULE_INSTANCES=0
 
+# Some Android kernels prohibit driver use of filesystem functions like
+# filp_open() and kernel_read().  Disable the NVKMS_CONFIG_FILE_SUPPORTED
+# functionality that uses those functions when building for Android.
+
+PLATFORM_IS_ANDROID ?= 0
+
+ifeq ($(PLATFORM_IS_ANDROID),1)
+  NVIDIA_MODESET_CFLAGS += -DNVKMS_CONFIG_FILE_SUPPORTED=0
+else
+  NVIDIA_MODESET_CFLAGS += -DNVKMS_CONFIG_FILE_SUPPORTED=1
+endif
+
 $(call ASSIGN_PER_OBJ_CFLAGS, $(NVIDIA_MODESET_OBJECTS), $(NVIDIA_MODESET_CFLAGS))
 
 

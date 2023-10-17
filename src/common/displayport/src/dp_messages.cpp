@@ -39,7 +39,13 @@ using namespace DisplayPort;
 namespace DisplayPort
 {
     GenericMessageCompletion::GenericMessageCompletion() :
-        failed(false), completed(false) {}
+        failed(false), completed(false)
+    {
+        // Initialize nakData seperately.
+        nakData.reason      = NakUndefined;
+        nakData.nak_data    = 0;
+        // nakData.guid is initalized in its own constructor.
+    }
     void GenericMessageCompletion::messageFailed(MessageManager::Message * from, NakData * data)
     {
         nakData = *data;
@@ -73,6 +79,7 @@ bool MessageManager::send(MessageManager::Message * message, NakData & nakData)
         {
             DP_LOG(("DP-MM> Device went offline while waiting for reply and so ignoring message %p (ID = %02X, target = %s)",
                     message, message->requestIdentifier, ((message->state).target).toString(sb)));
+            completion.nakData.reason = NakDpcdFail;
             nakData = completion.nakData;
             completion.failed = true;
             break;

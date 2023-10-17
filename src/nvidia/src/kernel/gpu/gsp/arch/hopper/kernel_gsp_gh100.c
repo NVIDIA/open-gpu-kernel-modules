@@ -159,8 +159,10 @@ kgspAllocBootArgs_GH100
                                         flags),
                           _kgspAllocBootArgs_exit_cleanup);
 
+    memdescTagAlloc(nvStatus, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_56,
+                    pKernelGsp->pGspFmcArgumentsDescriptor);
     NV_ASSERT_OK_OR_GOTO(nvStatus,
-                          memdescAlloc(pKernelGsp->pGspFmcArgumentsDescriptor),
+                          nvStatus,
                           _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,

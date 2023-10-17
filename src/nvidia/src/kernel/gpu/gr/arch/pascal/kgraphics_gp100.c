@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/intr/engine_idx.h"
+#include "kernel/gpu/bus/kern_bus.h"
 #include "nvRmReg.h"
 
 #include "ctrl/ctrl0080/ctrl0080fifo.h"
@@ -155,6 +156,7 @@ kgraphicsAllocGlobalCtxBuffers_GP100
     NvU32 fecsBufferAlign = 0x0;
     GR_GLOBALCTX_BUFFERS *pCtxBuffers;
     GR_BUFFER_ATTR *pCtxAttr;
+    NV_STATUS status;
 
     // SKIP FECS buffer allocation for Virtual context
     if (IS_GFID_VF(gfid))
@@ -224,8 +226,9 @@ kgraphicsAllocGlobalCtxBuffers_GP100
             NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
         }
 
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_FECS_EVENT].pAllocList));
+        memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_108, 
+                    (*ppMemDesc), (pCtxAttr[GR_GLOBALCTX_BUFFER_FECS_EVENT].pAllocList));
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }
 
     return NV_OK;

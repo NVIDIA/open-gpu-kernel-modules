@@ -235,8 +235,7 @@ confComputeApiCtrlCmdGetGpuCertificate_IMPL
     pGpu         = GPU_RES_GET_GPU(pSubdevice);
     pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
-    if (pConfCompute != NULL && pConfCompute->pSpdm != NULL &&
-        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
+    if (pConfCompute != NULL)
     {
         // Set max size of certificate buffers before calling SPDM.
         pParams->certChainSize            = NV_CONF_COMPUTE_CERT_CHAIN_MAX_SIZE;
@@ -272,8 +271,7 @@ confComputeApiCtrlCmdGetGpuAttestationReport_IMPL
     pGpu         = GPU_RES_GET_GPU(pSubdevice);
     pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
-    if (pConfCompute != NULL && pConfCompute->pSpdm != NULL &&
-        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
+    if (pConfCompute != NULL)
     {
         // Set max size of report buffers before calling SPDM.
         pParams->attestationReportSize    = NV_CONF_COMPUTE_GPU_ATTESTATION_REPORT_MAX_SIZE;

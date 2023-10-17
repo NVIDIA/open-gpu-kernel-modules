@@ -99,7 +99,7 @@ static NV_STATUS __nvoc_thunk_KernelDisplay_engstateStateUnload(OBJGPU *pGpu, st
     return kdispStateUnload(pGpu, (struct KernelDisplay *)(((unsigned char *)pKernelDisplay) - __nvoc_rtti_KernelDisplay_OBJENGSTATE.offset), flags);
 }
 
-static void __nvoc_thunk_KernelDisplay_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pKernelDisplay, IntrServiceRecord pRecords[167]) {
+static void __nvoc_thunk_KernelDisplay_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pKernelDisplay, IntrServiceRecord pRecords[168]) {
     kdispRegisterIntrService(pGpu, (struct KernelDisplay *)(((unsigned char *)pKernelDisplay) - __nvoc_rtti_KernelDisplay_IntrService.offset), pRecords);
 }
 

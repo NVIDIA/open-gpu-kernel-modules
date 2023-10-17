@@ -189,6 +189,7 @@ typedef struct
     // sysmem was originally allocated under. For the allocation to remain valid
     // we need to prevent the GPU from going away, similarly to P2P mapped
     // memory.
+    // Similarly for EGM memory.
     //
     // This field is not used for sparse mappings as they don't have an
     // allocation and, hence, owning GPU.
@@ -208,6 +209,9 @@ typedef struct
     // backing.
     bool is_sysmem;
 
+    // EGM memory. If true is_sysmem also has to be true and owning_gpu
+    // has to be valid.
+    bool is_egm;
     // GPU page tables mapping the allocation
     uvm_page_table_range_vec_t pt_range_vec;
 

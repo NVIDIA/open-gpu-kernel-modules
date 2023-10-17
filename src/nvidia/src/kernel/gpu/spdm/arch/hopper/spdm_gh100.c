@@ -838,7 +838,8 @@ spdmDeviceInit_GH100
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
 
-    status = memdescAlloc(pIOContext->pMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_82, 
+                    pIOContext->pMemDesc);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "SPDM: Cannot allocate SPDM surface!\n");
@@ -886,6 +887,7 @@ spdmDeviceInit_GH100
 
     // Ucode is responsible for setting DMA index.
     pCcInitCtx->guestId            = pSpdm->guestId;
+    pCcInitCtx->rmBufferSizeInByte = NV_RM_BUFFER_SIZE_IN_BYTE;
     NvU64_ALIGN32_PACK(&pCcInitCtx->dmaAddr, &pIOContext->dmaAddr);
 
     gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);

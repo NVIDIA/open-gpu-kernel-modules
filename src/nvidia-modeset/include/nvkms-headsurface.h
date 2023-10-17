@@ -47,7 +47,7 @@ void nvHsUnmapSurfaceFromDevice(
 
 NVHsSurfacePtr nvHsAllocSurface(
     NVDevEvoRec *pDevEvo,
-    const NvBool requireCtxDma,
+    const NvBool requireDisplayHardwareAccess,
     const enum NvKmsSurfaceMemoryFormat format,
     const NvU32 widthInPixels,
     const NvU32 heightInPixels);
@@ -121,7 +121,7 @@ void nvHsProcessPendingViewportFlips(NVDevEvoPtr pDevEvo);
 
 NVSurfaceEvoRec *nvHsGetNvKmsSurface(const NVDevEvoRec *pDevEvo,
                                      NvKmsSurfaceHandle surfaceHandle,
-                                     const NvBool requireCtxDma);
+                                     const NvBool requireDisplayHardwareAccess);
 
 #if NVKMS_PROCFS_ENABLE
 void nvHsProcFs(

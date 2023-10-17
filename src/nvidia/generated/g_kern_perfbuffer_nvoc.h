@@ -279,4 +279,5 @@ static inline NV_STATUS perfbufferPrivilegeCheck(struct PerfBuffer *pPerfBuffer)
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERN_PERFBUFFER_NVOC_H_

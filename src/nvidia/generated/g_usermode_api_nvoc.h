@@ -59,10 +59,12 @@ struct UserModeApi {
     struct Memory *__nvoc_pbase_Memory;
     struct UserModeApi *__nvoc_pbase_UserModeApi;
     NvBool (*__usrmodeCanCopy__)(struct UserModeApi *);
+    NV_STATUS (*__usrmodeGetMemInterMapParams__)(struct UserModeApi *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__usrmodeCheckMemInterUnmap__)(struct UserModeApi *, NvBool);
     NvBool (*__usrmodeShareCallback__)(struct UserModeApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__usrmodeMapTo__)(struct UserModeApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__usrmodeGetMapAddrSpace__)(struct UserModeApi *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__usrmodeIsExportAllowed__)(struct UserModeApi *);
     NvU32 (*__usrmodeGetRefCount__)(struct UserModeApi *);
     void (*__usrmodeAddAdditionalDependants__)(struct RsClient *, struct UserModeApi *, RsResourceRef *);
     NV_STATUS (*__usrmodeControl_Prologue__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -72,7 +74,6 @@ struct UserModeApi {
     NV_STATUS (*__usrmodeControlLookup__)(struct UserModeApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__usrmodeControl__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__usrmodeUnmap__)(struct UserModeApi *, CALL_CONTEXT *, RsCpuMapping *);
-    NV_STATUS (*__usrmodeGetMemInterMapParams__)(struct UserModeApi *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__usrmodeGetMemoryMappingDescriptor__)(struct UserModeApi *, MEMORY_DESCRIPTOR **);
     NV_STATUS (*__usrmodeControlFilter__)(struct UserModeApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__usrmodeControlSerialization_Prologue__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -83,6 +84,8 @@ struct UserModeApi {
     void (*__usrmodeControlSerialization_Epilogue__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__usrmodeMap__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__usrmodeAccessCallback__)(struct UserModeApi *, struct RsClient *, void *, RsAccessRight);
+    NvBool bPrivMapping;
+    NvBool bInternalMmio;
 };
 
 #ifndef __NVOC_CLASS_UserModeApi_TYPEDEF__
@@ -114,10 +117,12 @@ NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONT
     __nvoc_objCreate_UserModeApi((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 #define usrmodeCanCopy(pUserModeApi) usrmodeCanCopy_DISPATCH(pUserModeApi)
+#define usrmodeGetMemInterMapParams(pMemory, pParams) usrmodeGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define usrmodeCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) usrmodeCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define usrmodeShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) usrmodeShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define usrmodeMapTo(pResource, pParams) usrmodeMapTo_DISPATCH(pResource, pParams)
 #define usrmodeGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) usrmodeGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define usrmodeIsExportAllowed(pMemory) usrmodeIsExportAllowed_DISPATCH(pMemory)
 #define usrmodeGetRefCount(pResource) usrmodeGetRefCount_DISPATCH(pResource)
 #define usrmodeAddAdditionalDependants(pClient, pResource, pReference) usrmodeAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define usrmodeControl_Prologue(pResource, pCallContext, pParams) usrmodeControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -127,7 +132,6 @@ NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONT
 #define usrmodeControlLookup(pResource, pParams, ppEntry) usrmodeControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define usrmodeControl(pMemory, pCallContext, pParams) usrmodeControl_DISPATCH(pMemory, pCallContext, pParams)
 #define usrmodeUnmap(pMemory, pCallContext, pCpuMapping) usrmodeUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
-#define usrmodeGetMemInterMapParams(pMemory, pParams) usrmodeGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define usrmodeGetMemoryMappingDescriptor(pMemory, ppMemDesc) usrmodeGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define usrmodeControlFilter(pResource, pCallContext, pParams) usrmodeControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define usrmodeControlSerialization_Prologue(pResource, pCallContext, pParams) usrmodeControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -144,6 +148,12 @@ static inline NvBool usrmodeCanCopy_DISPATCH(struct UserModeApi *pUserModeApi) {
     return pUserModeApi->__usrmodeCanCopy__(pUserModeApi);
 }
 
+NV_STATUS usrmodeGetMemInterMapParams_IMPL(struct UserModeApi *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams);
+
+static inline NV_STATUS usrmodeGetMemInterMapParams_DISPATCH(struct UserModeApi *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return pMemory->__usrmodeGetMemInterMapParams__(pMemory, pParams);
+}
+
 static inline NV_STATUS usrmodeCheckMemInterUnmap_DISPATCH(struct UserModeApi *pMemory, NvBool bSubdeviceHandleProvided) {
     return pMemory->__usrmodeCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
 }
@@ -158,6 +168,10 @@ static inline NV_STATUS usrmodeMapTo_DISPATCH(struct UserModeApi *pResource, RS_
 
 static inline NV_STATUS usrmodeGetMapAddrSpace_DISPATCH(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__usrmodeGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool usrmodeIsExportAllowed_DISPATCH(struct UserModeApi *pMemory) {
+    return pMemory->__usrmodeIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 usrmodeGetRefCount_DISPATCH(struct UserModeApi *pResource) {
@@ -194,10 +208,6 @@ static inline NV_STATUS usrmodeControl_DISPATCH(struct UserModeApi *pMemory, CAL
 
 static inline NV_STATUS usrmodeUnmap_DISPATCH(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return pMemory->__usrmodeUnmap__(pMemory, pCallContext, pCpuMapping);
-}
-
-static inline NV_STATUS usrmodeGetMemInterMapParams_DISPATCH(struct UserModeApi *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return pMemory->__usrmodeGetMemInterMapParams__(pMemory, pParams);
 }
 
 static inline NV_STATUS usrmodeGetMemoryMappingDescriptor_DISPATCH(struct UserModeApi *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
@@ -251,4 +261,5 @@ NV_STATUS usrmodeConstruct_IMPL(struct UserModeApi *arg_pUserModeApi, CALL_CONTE
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_USERMODE_API_NVOC_H_

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -99,7 +99,7 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
 #else // NV_RM_STUB_RPC
 
 #define NV_RM_RPC_ALLOC_SHARE_DEVICE_FWCLIENT(pGpu, hclient, hdevice, hclientshare, htargetclient, htargetdevice, hclass, \
-                                        allocflags, vasize, vamode, status)                   \
+                                        allocflags, vasize, vamode, bFirstDevice, status)     \
     do                                                                                        \
     {                                                                                         \
         RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);                                        \
@@ -131,9 +131,16 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
                 NV_ASSERT(0);                                                                 \
         }                                                                                     \
                                                                                               \
-        status = pRmApi->AllocWithHandle(pRmApi, hclient, NV01_NULL_OBJECT,                   \
-                                            NV01_NULL_OBJECT, NV01_ROOT,                      \
-                                            &root_alloc_params, sizeof(root_alloc_params));   \
+        if (bFirstDevice)                                                                     \
+        {                                                                                     \
+            status = pRmApi->AllocWithHandle(pRmApi, hclient, NV01_NULL_OBJECT,               \
+                                             NV01_NULL_OBJECT, NV01_ROOT,                     \
+                                             &root_alloc_params, sizeof(root_alloc_params));  \
+        }                                                                                     \
+        else                                                                                  \
+        {                                                                                     \
+            status = NV_OK;                                                                   \
+        }                                                                                     \
                                                                                               \
         if (status == NV_OK)                                                                  \
         {                                                                                     \
@@ -240,7 +247,7 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
     } while(0)
 
 #define NV_RM_RPC_ALLOC_SHARE_DEVICE(pGpu, hclient, hdevice, hclientshare, htargetclient, htargetdevice, hclass, \
-                                     allocflags, vasize, vamode, status)                      \
+                                     allocflags, vasize, vamode, bFirstDevice, status)        \
     do                                                                                        \
     {                                                                                         \
         OBJRPC *pRpc = GPU_GET_RPC(pGpu);                                                     \
@@ -249,7 +256,7 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
         {                                                                                     \
             NV_ASSERT(IS_GSP_CLIENT(pGpu));                                                   \
             NV_RM_RPC_ALLOC_SHARE_DEVICE_FWCLIENT(pGpu, hclient, hdevice, hclientshare, htargetclient, htargetdevice, hclass, \
-                                                  allocflags, vasize, vamode, status);        \
+                                                  allocflags, vasize, vamode, bFirstDevice, status); \
         } else if (pRpc == NULL)                                                              \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                                           \
     }                                                                                         \
@@ -443,16 +450,6 @@ static inline void NV_RM_RPC_SIM_UPDATE_DISP_CHANNEL_INFO(OBJGPU *pGpu, ...) { r
         if (pRpc == NULL)                                                       \
             status = NV_ERR_INSUFFICIENT_RESOURCES;                             \
     } while(0)
-
-#define NV_RM_RPC_SIM_LOAD_ESCAPE_FUNCTIONS(pos)                         \
-    do                                                                   \
-    {                                                                    \
-        NV_ASSERT(pos);                                                  \
-        /* load simulation escape read/write routines */                 \
-        pos->osSimEscapeRead  = RmRpcSimEscapeRead;                      \
-        pos->osSimEscapeWrite = RmRpcSimEscapeWrite;                     \
-    }                                                                    \
-    while(0)
 
 /* outgoing updates to the plugin */
 #define NV_RM_RPC_SIM_UPDATE_DISP_CONTEXT_DMA(pGpu, hclient, pcontextdma, physaddrnew,  \

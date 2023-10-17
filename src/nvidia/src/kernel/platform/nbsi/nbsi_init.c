@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -94,7 +94,7 @@ static NvU32 setNbsiOSstring
 
     if (dataLen > MAX_NBSI_OS_STR_LEN)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "NBSI OS string length %d too long for OS ndx %d.\n",
                   dataLen, nbsiOSndx);
         dataLen = MAX_NBSI_OS_STR_LEN;
@@ -160,7 +160,7 @@ static NV_STATUS testObjectHash
     if (tableHash != pNbsiGenObj->objHdr.sig)
     {
         status = NV_ERR_INVALID_DATA;
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "NBSI tbl computed hash %llx != hash %llx\n",
                   tableHash, pNbsiGenObj->objHdr.sig);
     }
@@ -286,7 +286,7 @@ static NV_STATUS getNbsiDirSize
 
     if (nbsiDirVer > MAXNBSIDIRVER)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "GPU%d, source %d, NBSI dir ver %d > max ver %d.\n",
                   idx, tblSource, nbsiDirVer, MAXNBSIDIRVER);
         return NV_ERR_GENERIC;
@@ -341,7 +341,7 @@ static NV_STATUS testNbsiDir
 
     if (testDirSize > allocSize)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "GPU%d, source %d, Size of NBSI dir %x > alloc mem %x.\n",
                   idx, tblSource, testDirSize, allocSize);
         return NV_ERR_GENERIC;
@@ -423,7 +423,7 @@ static NV_STATUS testNbsiTable
         // Sanity check 1 for globSize... must be larger than NBSI_MIN_GEN_OBJ_SIZE
         if (pNbsiGenObj->objHdr.size < NBSI_MIN_GEN_OBJ_SIZE)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_NOTICE,
                       "NBSI Gpu%d Tloc=%d/Glob=%d table size 0x%x < min 0x%x\n",
                       idx, tableLoc, i,
                       pNbsiGenObj->objHdr.size, (NvU32)NBSI_MIN_GEN_OBJ_SIZE);
@@ -433,7 +433,7 @@ static NV_STATUS testNbsiTable
         // Sanity check 2 for globSize... must be less than maximum
         if (pNbsiGenObj->objHdr.size > NBSI_MAX_TABLE_SIZE)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_NOTICE,
                       "NBSI Gpu%d Tloc=%d/Glob=%d tbl size 0x%x > max 0x%x\n",
                       idx, tableLoc, i,
                       pNbsiGenObj->objHdr.size, NBSI_MAX_TABLE_SIZE);
@@ -443,7 +443,7 @@ static NV_STATUS testNbsiTable
         // Sanity check 3 for globSize... must be less than allocated size
         if (bDoAllocSzCk & (pNbsiGenObj->objHdr.size > allocSize))
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_NOTICE,
                       "NBSI Gpu%d Tloc=%d/Glob=%d table size 0x%x > alloc 0x%x\n",
                       idx, tableLoc, i,
                       pNbsiGenObj->objHdr.size, allocSize);
@@ -454,7 +454,7 @@ static NV_STATUS testNbsiTable
         if ((pNbsiGenObj->objHdr.globType == NBSI_DRIVER) &&
             (pNbsiDriverObj->numModules > NV2080_CTRL_BIOS_NBSI_NUM_MODULES))
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_NOTICE,
                       "NBSI Gpu%d Tloc=%d/Glob=%d numModules %d > max %d\n",
                       idx, tableLoc, i,
                       pNbsiDriverObj->numModules,
@@ -466,7 +466,7 @@ static NV_STATUS testNbsiTable
         if ((pNbsiGenObj->objHdr.globType != wantedGlobType) && bGlobTypeCk)
 
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_NOTICE,
                       "NBSI Gpu%d Tloc=%d/Glob=%d wantedGlobType = %04x != returned globtype = %04x\n",
                       idx, tableLoc, i, wantedGlobType,
                       pNbsiGenObj->objHdr.globType);
@@ -493,7 +493,7 @@ static NV_STATUS testNbsiTable
             if (status != NV_OK)
             {
                 // bad hash error message occurred in testObjectHash
-                NV_PRINTF(LEVEL_ERROR,
+                NV_PRINTF(LEVEL_NOTICE,
                           "NBSI Gpu%d TLoc=%d/globType=%x bad hash\n",
                           idx, tableLoc,
                           pNbsiGenObj->objHdr.globType);
@@ -719,7 +719,7 @@ static NvU8 checkUidMatch
             }
         }
 
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "NBSI Gpu%d Tloc=%d/Glob=%d object match score/ver = (%x/%d)\n",
                   idx, tableLoc, globNdx, score, tRev);
     }
@@ -936,7 +936,7 @@ static NV_STATUS extractNBSIObjFromDir
         pNbsiGenObj = pBestDriverObjectMatch;
         curGlob = bestDriverObjectMatchGlob;
         bMyFound = NV_TRUE;
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "NBSI Gpu%d Tloc=%d/Glob=%d best fit (score/ver = (%x/%d))\n",
                   idx, tableLoc, bestDriverObjectMatchGlob,
                   bestDriverObjectMatchScore, bestFitDriverVersion);
@@ -991,7 +991,7 @@ static NV_STATUS allocNbsiCache
     pNbsiObj->pTblCache[idx] = portMemAllocNonPaged(cacheSize);
     if (pNbsiObj->pTblCache[idx] == NULL)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_WARNING,
                   "Unable to allocate 0x%x memory for NBSI cache.\n",
                   cacheSize);
         return NV_ERR_NO_MEMORY;
@@ -1070,7 +1070,7 @@ static NV_STATUS addNbsiCacheEntry
 
             if (pCacheObj->pCacheEntry[cacheNdx] == NULL)
             {
-                NV_PRINTF(LEVEL_ERROR,
+                NV_PRINTF(LEVEL_WARNING,
                           "Unable to alloc 0x%x mem for NBSI cache entry\n",
                           szOfCacheEntry);
                 return NV_ERR_NO_MEMORY;
@@ -1081,7 +1081,7 @@ static NV_STATUS addNbsiCacheEntry
 
             if (pCacheObj->pCacheEntry[cacheNdx]->pObj == NULL)
             {
-                NV_PRINTF(LEVEL_ERROR,
+                NV_PRINTF(LEVEL_WARNING,
                           "Unable to alloc 0x%x mem for NBSI cache entry\n",
                           testObjSize);
                 return NV_ERR_NO_MEMORY;
@@ -1431,7 +1431,7 @@ static NV_STATUS getNbsiDirFromRegistry
         // do some minimal testing of first block?
         if (nbsiDirSize > NBSI_MAX_TABLE_SIZE)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_WARNING,
                       "Emulated NBSI table too big. 0x%x > than 0x%x!\n",
                       nbsiDirSize, NBSI_MAX_TABLE_SIZE);
             return NV_ERR_GENERIC;
@@ -1441,7 +1441,7 @@ static NV_STATUS getNbsiDirFromRegistry
         *pNbsiDir = portMemAllocNonPaged(nbsiDirSize);
         if (*pNbsiDir == NULL)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_WARNING,
                       "Can't allocate 0x%x mem for emulated NBSI table.\n",
                       nbsiDirSize);
             return NV_ERR_NO_MEMORY;
@@ -1454,7 +1454,7 @@ static NV_STATUS getNbsiDirFromRegistry
                                       &nbsiDirSize);
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_WARNING,
                       "Unable to read emulated NBSI table from reg.\n");
             portMemFree((void*)pNbsiDir);
             pNbsiDir = NULL;
@@ -1671,7 +1671,11 @@ static NV_STATUS nbsiObjTypeCallAcpi
     NvU16       acpiRtnSize = (NvU16) inOutDataSz;
 
     // curGlob fits in 15:12... so make sure we don't ask for anything higher (can happen if the SBIOS keeps sending us the same one).
-    NV_ASSERT_OR_RETURN((curGlob < 16), NV_ERR_INVALID_ARGUMENT);
+    if (curGlob >= 16)
+    {
+        NV_PRINTF(LEVEL_NOTICE, "curGlob bits do not fit in 15:12. Returning early\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     leftToRead = *sizeToRead;
     *sizeToRead = 0;
@@ -1761,12 +1765,10 @@ static NV_STATUS nbsiObjTypeCallUefi
     uefiVariableName[11] = globTypeWanted & 0xFF;
     uefiVariableName[12] = curGlob + (curGlob < 10 ? '0' : 'A' - 10);
 
-    status = pGpu->pOS->osGetUefiVariable(pGpu,
-                                          uefiVariableName,
-                                          (LPGUID)&NV_GUID_UEFI_VARIABLE,
-                                          inOutData,
-                                         &uefiRtnSize,
-                                          NULL);
+    status = osGetUefiVariable(uefiVariableName,
+                               (LPGUID)&NV_GUID_UEFI_VARIABLE,
+                               inOutData,
+                              &uefiRtnSize);
 
     if (status == NV_OK)
     {
@@ -2042,7 +2044,7 @@ static NV_STATUS getTableUsingObjTypeCall
         curGlob = bestDriverObjectMatchGlob;
         curGlobSize = bestDriverObjectMatchSize;
         bMyFound = NV_TRUE;
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "NBSI Gpu%d Tloc=%d/Glob=%d best fit (score/ver = (%x/%d))\n",
                   idx, NBSI_TBL_SOURCE_ACPI_BY_OBJ_TYPE,
                   bestDriverObjectMatchGlob, bestDriverObjectMatchScore,
@@ -2056,7 +2058,7 @@ static NV_STATUS getTableUsingObjTypeCall
         pNbsiDrvrObj = portMemAllocNonPaged(curGlobSize);
         if (pNbsiDrvrObj == NULL)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_WARNING,
                       "Can't alloc 0x%x bytes for ACPI NBSI table.\n",
                       curGlobSize);
             return NV_ERR_GENERIC;
@@ -2482,7 +2484,7 @@ static NV_STATUS getTableUsingAllObjectCall
         curOffset = bestDriverObjectMatchOffset;
         curGlobSize = bestDriverObjectMatchSize;
         bMyFound = NV_TRUE;
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "NBSI Gpu%d Tloc=%d/Glob=%d best fit (score/ver = (%x/%d))\n",
                   idx, NBSI_TBL_SOURCE_ACPI_BY_ALL_OBJ,
                   bestDriverObjectIndex, bestDriverObjectMatchScore,
@@ -2507,7 +2509,7 @@ static NV_STATUS getTableUsingAllObjectCall
         pNbsiDrvrObj = portMemAllocNonPaged(curGlobSize);
         if (pNbsiDrvrObj == NULL)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_WARNING,
                       "Can't alloc 0x%x bytes for ACPI NBSI table.\n",
                       curGlobSize);
             return NV_ERR_GENERIC;
@@ -2656,7 +2658,7 @@ static NV_STATUS _extractNBSIObjFromACPIDir
         inOutData = portMemAllocNonPaged(inOutDataSz);
         if (inOutData == NULL)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_WARNING,
                       "Unable to allocate 0x%x bytes for ACPI parm memory.\n",
                       inOutDataSz);
             status = NV_ERR_NO_MEMORY;
@@ -2667,7 +2669,7 @@ static NV_STATUS _extractNBSIObjFromACPIDir
         tmpBuffer = portMemAllocNonPaged(tmpBufferSz);
         if (tmpBuffer == NULL)
         {
-            NV_PRINTF(LEVEL_ERROR,
+            NV_PRINTF(LEVEL_WARNING,
                       "Unable to allocate 0x%x bytes for ACPI parm memory.\n",
                       tmpBufferSz);
             status = NV_ERR_NO_MEMORY;
@@ -2837,7 +2839,7 @@ NV_STATUS getNbsiObjByType
     idx = gpuGetInstance(pGpu);
     if (idx >= NV_MAX_DEVICES)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_NOTICE,
                   "Invalid gpu index %d. Aborting NBSI get object.\n",
                   idx);
         return NV_ERR_GENERIC;
@@ -3176,13 +3178,13 @@ NV_STATUS initNbsiTable(OBJGPU *pGpu)
     idx = gpuGetInstance(pGpu);
     if (idx >= NV_MAX_DEVICES)
     {
-        NV_PRINTF(LEVEL_ERROR, "Invalid gpu index %d. Aborting NBSI init.\n", idx);
+        NV_PRINTF(LEVEL_WARNING, "Invalid gpu index %d. Aborting NBSI init.\n", idx);
         return NV_ERR_GENERIC;
     }
 
     if (pNbsiObj->nbsiDrvrTable[idx] != NULL)
     {
-        NV_PRINTF(LEVEL_ERROR, "NBSI table already initialized for GPU index %d. Aborting NBSI init.\n", idx);
+        NV_PRINTF(LEVEL_NOTICE, "NBSI table already initialized for GPU index %d. Aborting NBSI init.\n", idx);
         return NV_WARN_NOTHING_TO_DO;
     }
 
@@ -3346,7 +3348,7 @@ void freeNbsiTable(OBJGPU *pGpu)
 
     if (idx >= NV_MAX_DEVICES)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_WARNING,
                   "Invalid gpu index %d. Aborting free NBSI table.\n",
                   idx);
         return;

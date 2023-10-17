@@ -295,4 +295,5 @@ void swtestDestruct_IMPL(struct SoftwareMethodTest *pSwTest);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_SW_TEST_NVOC_H_

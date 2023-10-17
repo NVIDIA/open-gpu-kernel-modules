@@ -1353,7 +1353,7 @@ nvswitch_init_warm_reset_ls10
 )
 {
     NVSWITCH_PRINT(device, WARN, "%s: Function not implemented\n", __FUNCTION__);
-}
+ }
 
 //
 // Helper funcction to query MINION to see if DL clocks are on
@@ -1401,11 +1401,8 @@ _nvswitch_are_dl_clocks_on
     return NV_TRUE;
 }
 
-//
-// Implement reset and drain sequence for ls10
-//
-NvlStatus
-nvswitch_reset_and_drain_links_ls10
+static NvlStatus
+_nvswitch_reset_and_drain_links_ls10
 (
     nvswitch_device *device,
     NvU64 link_mask
@@ -1424,7 +1421,6 @@ nvswitch_reset_and_drain_links_ls10
     NvBool bIsLinkInEmergencyShutdown;
     NvBool bAreDlClocksOn;
     NVSWITCH_TIMEOUT timeout;
-
 
     if (link_mask == 0)
     {
@@ -1538,6 +1534,14 @@ nvswitch_reset_and_drain_links_ls10
             NVSWITCH_PRINT(device, ERROR,
                 "%s: link %d failed to enter emergency shutdown\n",
                 __FUNCTION__, link);
+            
+            // Re-register links.
+            status = nvlink_lib_register_link(device->nvlink_device, link_info);
+            if (status != NVL_SUCCESS)
+            {
+                nvswitch_destroy_link(link_info);
+            }
+            
             continue;
         }
 
@@ -1632,10 +1636,10 @@ nvswitch_reset_and_drain_links_ls10
         nvswitch_soe_restore_nport_state_ls10(device, link);
 
         // Step 7.0 : Re-program the routing table for DBEs
-
+  
         // Step 8.0 : Reset NVLW and NPORT interrupt state
         _nvswitch_link_reset_interrupts_ls10(device, link);
-
+  
         // Re-register links.
         status = nvlink_lib_register_link(device->nvlink_device, link_info);
         if (status != NVL_SUCCESS)
@@ -1654,16 +1658,18 @@ nvswitch_reset_and_drain_links_ls10
         // Request active, but don't block. FM will come back and check
         // active link status by blocking on this TLREQ's completion
         //
-        status = nvswitch_request_tl_link_state_ls10(link_info,
-                     NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_ACTIVE,
-                     NV_FALSE);
-
-        if (status != NVL_SUCCESS)
         {
-            NVSWITCH_PRINT(device, ERROR,
-                "%s: TL link state request to active for ALI failed for link: 0x%x\n",
-                __FUNCTION__, link);
-            continue;
+            status = nvswitch_request_tl_link_state_ls10(link_info,
+                        NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_ACTIVE,
+                        NV_FALSE);
+
+            if (status != NVL_SUCCESS)
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: TL link state request to active for ALI failed for link: 0x%x\n",
+                    __FUNCTION__, link);
+                continue;
+            }
         }
 
         bAreDlClocksOn = NV_FALSE;
@@ -1692,7 +1698,26 @@ nvswitch_reset_and_drain_links_ls10
     }
     FOR_EACH_INDEX_IN_MASK_END;
 
-    // TODO: CCI Links Support: Reset the CCI links
+    return NVL_SUCCESS;
+}
+
+//
+// Implement reset and drain sequence for ls10
+//
+NvlStatus
+nvswitch_reset_and_drain_links_ls10
+(
+    nvswitch_device *device,
+    NvU64 link_mask
+)
+{
+    NvlStatus    status    = NVL_SUCCESS;
+    
+    status = _nvswitch_reset_and_drain_links_ls10(device, link_mask);
+    if (status != NVL_SUCCESS)
+    {
+        return status;
+    }
 
     return NVL_SUCCESS;
 }
@@ -2841,17 +2866,6 @@ nvswitch_set_fatal_error_ls10
 
     NVSWITCH_ASSERT(link_id < nvswitch_get_num_links(device));
 
-    // On first fatal error, notify PORT_DOWN
-    if (!device->link[link_id].fatal_error_occurred)
-    {
-        if (nvswitch_lib_notify_client_events(device,
-                    NVSWITCH_DEVICE_EVENT_PORT_DOWN) != NVL_SUCCESS)
-        {
-            NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify PORT_DOWN event\n",
-                         __FUNCTION__);
-        }
-    }
-
     device->link[link_id].fatal_error_occurred = NV_TRUE;
 
     if (device_fatal)
@@ -2925,6 +2939,11 @@ nvswitch_is_soe_supported_ls10
     {
         NVSWITCH_PRINT(device, INFO, "SOE is not yet supported on fmodel\n");
         return NV_FALSE;
+    }
+
+    if (device->regkeys.soe_disable == NV_SWITCH_REGKEY_SOE_DISABLE_YES)
+    {
+        NVSWITCH_PRINT(device, WARN, "SOE can not be disabled via regkey.\n");
     }
 
     return NV_TRUE;
@@ -5896,29 +5915,29 @@ nvswitch_read_vbios_link_entries_ls10
             tblPtr += (sizeof(NVLINK_VBIOS_CONFIG_DATA_LINKENTRY_20)/sizeof(NvU32));
 
 
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "<<<---- NvLink ID 0x%x ---->>>\n", i);
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 0 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam0, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam0));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 1 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam1, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam1));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 2 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam2, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam2));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 3 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam3, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam3));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 4 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam4, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam4));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 5 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam5, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam5));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 6 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam6, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam6));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 7 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam7, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam7));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 8 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam8, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam8));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 9 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam9, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam9));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "<<<---- NvLink ID 0x%x ---->>>\n\n", i);
     }
     *identified_link_entriesCount = i;

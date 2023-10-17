@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -61,7 +61,7 @@ _kccuapiMemdescGet
 (
     KernelCcuApi      *pKernelCcuApi,
     RmClient          *pClient,
-    NvHandle          hClient,
+    Device            *pDevice,
     MEMORY_DESCRIPTOR **pMemDesc
 )
 {
@@ -84,7 +84,7 @@ _kccuapiMemdescGet
     }
 
     // In case of MIG
-    status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref);
+    status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref);
     if (status != NV_OK)
     {
         // Check if client is allowed to query for device counters
@@ -120,7 +120,7 @@ kccuapiMap_IMPL
     NV_STATUS status  = NV_OK;
     NvBool bKernel    = NV_FALSE;
     RmClient *pClient = dynamicCast(pCallContext->pClient, RmClient);
-    NvHandle hClient  = pCallContext->pClient->hClient;
+    Device *pDevice   = GPU_RES_GET_DEVICE(pKernelCcuApi);
 
     NV_PRINTF(LEVEL_INFO, "Kernel Ccu Api: memdesc map\n");
 
@@ -135,7 +135,7 @@ kccuapiMap_IMPL
 
     pCpuMapping->processId = osGetCurrentProcess();
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kccuapiMemdescGet(pKernelCcuApi, pClient, hClient, &pMemDesc));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kccuapiMemdescGet(pKernelCcuApi, pClient, pDevice, &pMemDesc));
 
     if (pMemDesc == NULL)
     {
@@ -170,7 +170,7 @@ kccuapiUnmap_IMPL
 {
     NV_STATUS status = NV_OK;
     NvBool bKernel   = NV_FALSE;
-    NvHandle hClient = pCallContext->pClient->hClient;
+    Device *pDevice  = GPU_RES_GET_DEVICE(pKernelCcuApi);
     RmClient *pClient = dynamicCast(pCallContext->pClient, RmClient);
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
 
@@ -185,7 +185,7 @@ kccuapiUnmap_IMPL
         return status;
     }
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kccuapiMemdescGet(pKernelCcuApi, pClient, hClient, &pMemDesc));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kccuapiMemdescGet(pKernelCcuApi, pClient, pDevice, &pMemDesc));
 
     if (pMemDesc == NULL)
     {
@@ -213,13 +213,13 @@ kccuapiGetMapAddrSpace_IMPL
 {
     NV_ADDRESS_SPACE addrSpace  = 0;
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
-    NvHandle hClient  = pCallContext->pClient->hClient;
+    Device *pDevice   = GPU_RES_GET_DEVICE(pKernelCcuApi);
     RmClient *pClient = dynamicCast(pCallContext->pClient, RmClient);
     OBJGPU    *pGpu   = GPU_RES_GET_GPU(pKernelCcuApi);
 
     NV_PRINTF(LEVEL_INFO, "Kernel Ccu Api: get memdesc address-space\n");
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kccuapiMemdescGet(pKernelCcuApi, pClient, hClient, &pMemDesc));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kccuapiMemdescGet(pKernelCcuApi, pClient, pDevice, &pMemDesc));
 
     if (pMemDesc == NULL)
     {
@@ -242,12 +242,12 @@ kccuapiGetMemoryMappingDescriptor_IMPL
 )
 {
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
-    NvHandle hClient  = RES_GET_CLIENT_HANDLE(pKernelCcuApi);
+    Device *pDevice   = GPU_RES_GET_DEVICE(pKernelCcuApi);
     RmClient *pClient = dynamicCast(RES_GET_CLIENT(pKernelCcuApi), RmClient);
 
     NV_PRINTF(LEVEL_INFO, "Kernel Ccu Api: get memdesc\n");
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kccuapiMemdescGet(pKernelCcuApi, pClient, hClient, &pMemDesc));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kccuapiMemdescGet(pKernelCcuApi, pClient, pDevice, &pMemDesc));
 
     if (pMemDesc == NULL)
     {
@@ -270,7 +270,7 @@ kccuapiCtrlCmdSubscribe_IMPL
     MIG_INSTANCE_REF ref;
     MEMORY_DESCRIPTOR *pMemDesc = NULL;
     NV_STATUS status      = NV_OK;
-    NvHandle hClient      = RES_GET_CLIENT_HANDLE(pKernelCcuApi);
+    Device *pDevice       = GPU_RES_GET_DEVICE(pKernelCcuApi);
     OBJGPU    *pGpu       = GPU_RES_GET_GPU(pKernelCcuApi);
     KernelCcu *pKernelCcu = GPU_GET_KERNEL_CCU(pGpu);
     RmClient *pClient     = dynamicCast(RES_GET_CLIENT(pKernelCcuApi), RmClient);
@@ -300,7 +300,7 @@ kccuapiCtrlCmdSubscribe_IMPL
     }
 
     // In case of MIG
-    status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref);
+    status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref);
     if (status != NV_OK)
     {
         // Check if client is allowed to query for device counters or not

@@ -22,6 +22,7 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTRACEABLE;
 void __nvoc_init_OBJGPU(OBJGPU*,
         NvU32 ChipHal_arch, NvU32 ChipHal_impl, NvU32 ChipHal_hidrev,
         RM_RUNTIME_VARIANT RmVariantHal_rmVariant,
+        TEGRA_CHIP_TYPE TegraChipHal_tegraType,
         NvU32 DispIpHal_ipver);
 void __nvoc_init_funcTable_OBJGPU(OBJGPU*);
 NV_STATUS __nvoc_ctor_OBJGPU(OBJGPU*, NvU32 arg_gpuInstance);
@@ -136,16 +137,16 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
         pThis->setProperty(pThis, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE, ((NvBool)(0 != 0)));
     }
 
-    // NVOC Property Hal field -- PDB_PROP_GPU_IS_UEFI
-    // default
-    {
-        pThis->setProperty(pThis, PDB_PROP_GPU_IS_UEFI, ((NvBool)(0 != 0)));
-    }
-
     // NVOC Property Hal field -- PDB_PROP_GPU_ZERO_FB
     // default
     {
         pThis->setProperty(pThis, PDB_PROP_GPU_ZERO_FB, ((NvBool)(0 != 0)));
+    }
+
+    // NVOC Property Hal field -- PDB_PROP_GPU_BAR1_BAR2_DISABLED
+    // default
+    {
+        pThis->setProperty(pThis, PDB_PROP_GPU_BAR1_BAR2_DISABLED, ((NvBool)(0 != 0)));
     }
 
     // NVOC Property Hal field -- PDB_PROP_GPU_CAN_OPTIMIZE_COMPUTE_USE_CASE
@@ -226,7 +227,6 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
         pThis->setProperty(pThis, PDB_PROP_GPU_SKIP_CE_MAPPINGS_NO_NVLINK, ((NvBool)(0 == 0)));
     }
     pThis->setProperty(pThis, PDB_PROP_GPU_OPTIMUS_GOLD_CFG_SPACE_RESTORE, ((NvBool)(0 == 0)));
-    pThis->setProperty(pThis, PDB_PROP_GPU_SRIOV_HEAVY_FORCE_INVALIDATE_ALL_PDBS_WAR_BUG3896322, ((NvBool)(0 != 0)));
 
     // NVOC Property Hal field -- PDB_PROP_GPU_CC_FEATURE_CAPABLE
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
@@ -266,7 +266,12 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
     {
         pThis->setProperty(pThis, PDB_PROP_GPU_CHIP_SUPPORTS_RTD3_DEF, ((NvBool)(0 == 0)));
     }
-    pThis->setProperty(pThis, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED, ((NvBool)(0 != 0)));
+
+    // NVOC Property Hal field -- PDB_PROP_GPU_IS_SOC_SDM
+    // default
+    {
+        pThis->setProperty(pThis, PDB_PROP_GPU_IS_SOC_SDM, ((NvBool)(0 != 0)));
+    }
 
     pThis->boardId = ~0;
 
@@ -301,6 +306,9 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
     // Hal field -- bWarBug200577889SriovHeavyEnabled
     pThis->bWarBug200577889SriovHeavyEnabled = ((NvBool)(0 != 0));
 
+    // Hal field -- bNonPowerOf2ChannelCountSupported
+    pThis->bNonPowerOf2ChannelCountSupported = ((NvBool)(0 != 0));
+
     // Hal field -- bNeed4kPageIsolation
     // default
     {
@@ -329,6 +337,8 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
     {
         pThis->bClientRmAllocatedCtxBuffer = ((NvBool)(0 != 0));
     }
+
+    pThis->bIterativeMmuWalker = ((NvBool)(0 == 0));
 
     // Hal field -- bVidmemPreservationBrokenBug3172217
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
@@ -367,17 +377,23 @@ void __nvoc_init_dataField_OBJGPU(OBJGPU *pThis) {
         pThis->bRecheckSliSupportAtResume = ((NvBool)(0 == 0));
     }
 
-    pThis->bIsGspOwnedFaultBuffersEnabled = ((NvBool)(0 != 0));
-
-    // Hal field -- bEnableBar1SparseForFillPteMemUnmap
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    // Hal field -- bGpuNvEncAv1Supported
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
-        pThis->bEnableBar1SparseForFillPteMemUnmap = ((NvBool)(0 == 0));
+        pThis->bGpuNvEncAv1Supported = ((NvBool)(0 == 0));
     }
     // default
     else
     {
-        pThis->bEnableBar1SparseForFillPteMemUnmap = ((NvBool)(0 != 0));
+        pThis->bGpuNvEncAv1Supported = ((NvBool)(0 != 0));
+    }
+
+    pThis->bIsGspOwnedFaultBuffersEnabled = ((NvBool)(0 != 0));
+
+    // Hal field -- bVideoTraceLogSupported
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    {
+        pThis->bVideoTraceLogSupported = ((NvBool)(0 == 0));
     }
 }
 
@@ -625,8 +641,9 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     // Hal function -- gpuClearFbhubPoisonIntrForBug2924523
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
     {
-        pThis->__gpuClearFbhubPoisonIntrForBug2924523__ = &gpuClearFbhubPoisonIntrForBug2924523_GA100_KERNEL;
+        pThis->__gpuClearFbhubPoisonIntrForBug2924523__ = &gpuClearFbhubPoisonIntrForBug2924523_GA100;
     }
+    // default
     else
     {
         pThis->__gpuClearFbhubPoisonIntrForBug2924523__ = &gpuClearFbhubPoisonIntrForBug2924523_56cd7a;
@@ -739,18 +756,19 @@ void __nvoc_init_funcTable_OBJGPU(OBJGPU *pThis) {
 }
 
 void __nvoc_init_Object(Object*);
-void __nvoc_init_RmHalspecOwner(RmHalspecOwner*, NvU32, NvU32, NvU32, RM_RUNTIME_VARIANT, NvU32);
+void __nvoc_init_RmHalspecOwner(RmHalspecOwner*, NvU32, NvU32, NvU32, RM_RUNTIME_VARIANT, TEGRA_CHIP_TYPE, NvU32);
 void __nvoc_init_OBJTRACEABLE(OBJTRACEABLE*);
 void __nvoc_init_OBJGPU(OBJGPU *pThis,
         NvU32 ChipHal_arch, NvU32 ChipHal_impl, NvU32 ChipHal_hidrev,
         RM_RUNTIME_VARIANT RmVariantHal_rmVariant,
+        TEGRA_CHIP_TYPE TegraChipHal_tegraType,
         NvU32 DispIpHal_ipver) {
     pThis->__nvoc_pbase_OBJGPU = pThis;
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
     pThis->__nvoc_pbase_RmHalspecOwner = &pThis->__nvoc_base_RmHalspecOwner;
     pThis->__nvoc_pbase_OBJTRACEABLE = &pThis->__nvoc_base_OBJTRACEABLE;
     __nvoc_init_Object(&pThis->__nvoc_base_Object);
-    __nvoc_init_RmHalspecOwner(&pThis->__nvoc_base_RmHalspecOwner, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, DispIpHal_ipver);
+    __nvoc_init_RmHalspecOwner(&pThis->__nvoc_base_RmHalspecOwner, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, TegraChipHal_tegraType, DispIpHal_ipver);
     __nvoc_init_OBJTRACEABLE(&pThis->__nvoc_base_OBJTRACEABLE);
     __nvoc_init_funcTable_OBJGPU(pThis);
 }
@@ -758,6 +776,7 @@ void __nvoc_init_OBJGPU(OBJGPU *pThis,
 NV_STATUS __nvoc_objCreate_OBJGPU(OBJGPU **ppThis, Dynamic *pParent, NvU32 createFlags,
         NvU32 ChipHal_arch, NvU32 ChipHal_impl, NvU32 ChipHal_hidrev,
         RM_RUNTIME_VARIANT RmVariantHal_rmVariant,
+        TEGRA_CHIP_TYPE TegraChipHal_tegraType,
         NvU32 DispIpHal_ipver, NvU32 arg_gpuInstance) {
     NV_STATUS status;
     Object *pParentObj;
@@ -783,7 +802,7 @@ NV_STATUS __nvoc_objCreate_OBJGPU(OBJGPU **ppThis, Dynamic *pParent, NvU32 creat
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_OBJGPU(pThis, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, DispIpHal_ipver);
+    __nvoc_init_OBJGPU(pThis, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, TegraChipHal_tegraType, DispIpHal_ipver);
     status = __nvoc_ctor_OBJGPU(pThis, arg_gpuInstance);
     if (status != NV_OK) goto __nvoc_objCreate_OBJGPU_cleanup;
 
@@ -808,10 +827,11 @@ NV_STATUS __nvoc_objCreateDynamic_OBJGPU(OBJGPU **ppThis, Dynamic *pParent, NvU3
     NvU32 ChipHal_impl = va_arg(args, NvU32);
     NvU32 ChipHal_hidrev = va_arg(args, NvU32);
     RM_RUNTIME_VARIANT RmVariantHal_rmVariant = va_arg(args, RM_RUNTIME_VARIANT);
+    TEGRA_CHIP_TYPE TegraChipHal_tegraType = va_arg(args, TEGRA_CHIP_TYPE);
     NvU32 DispIpHal_ipver = va_arg(args, NvU32);
     NvU32 arg_gpuInstance = va_arg(args, NvU32);
 
-    status = __nvoc_objCreate_OBJGPU(ppThis, pParent, createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, DispIpHal_ipver, arg_gpuInstance);
+    status = __nvoc_objCreate_OBJGPU(ppThis, pParent, createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, TegraChipHal_tegraType, DispIpHal_ipver, arg_gpuInstance);
 
     return status;
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,7 +41,7 @@ static NvBool osInterruptPending(
     THREAD_STATE_NODE *pThreadState
 )
 {
-    POBJDISP pDisp;
+    OBJDISP *pDisp;
     KernelDisplay   *pKernelDisplay;
     NvBool pending, sema_release;
     THREAD_STATE_NODE threadState;
@@ -128,7 +128,7 @@ static NvBool osInterruptPending(
                 }
 
                 intrGetPendingStall_HAL(pGpu, pIntr, &intr0Pending, &threadState);
-                POBJTMR pTmr = GPU_GET_TIMER(pGpu);
+                OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
                 *serviced = tmrServiceSwrlWrapper(pGpu, pTmr, &intr0Pending, &threadState);
             }
         }
@@ -338,18 +338,11 @@ void osEnableInterrupts(OBJGPU *pGpu)
 
         intrEn = intrGetIntrEn(pIntr);
         intrSetIntrEnInHw_HAL(pGpu, pIntr, intrEn, NULL);
-
-        if (pIntr != NULL)
-        {
-            intrSetStall_HAL(pGpu, pIntr, intrEn, NULL);
-        }
+        intrSetStall_HAL(pGpu, pIntr, intrEn, NULL);
 
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED))
         {
-            if (pIntr != NULL)
-            {
-                intrRestoreNonStall_HAL(pGpu, pIntr, intrGetIntrEn(pIntr), NULL);
-            }
+            intrRestoreNonStall_HAL(pGpu, pIntr, intrGetIntrEn(pIntr), NULL);
         }
 
     }
@@ -373,23 +366,17 @@ void osDisableInterrupts(
 
         intrSetIntrEnInHw_HAL(pGpu, pIntr, new_intr_en_0, NULL);
 
-        if (pIntr != NULL)
-        {
-            intrSetStall_HAL(pGpu, pIntr, new_intr_en_0, NULL);
-        }
+        intrSetStall_HAL(pGpu, pIntr, new_intr_en_0, NULL);
 
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED))
         {
-            if (pIntr != NULL)
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
             {
-                if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_HANDLE_LOCKLESS))
-                {
-                    intrRestoreNonStall_HAL(pGpu, pIntr, intrGetIntrEn(pIntr), NULL);
-                }
-                else
-                {
-                    intrRestoreNonStall_HAL(pGpu, pIntr, new_intr_en_0, NULL);
-                }
+                intrRestoreNonStall_HAL(pGpu, pIntr, intrGetIntrEn(pIntr), NULL);
+            }
+            else
+            {
+                intrRestoreNonStall_HAL(pGpu, pIntr, new_intr_en_0, NULL);
             }
         }
     }
@@ -405,7 +392,7 @@ static void RmIsrBottomHalf(
     NvU32 gpuMask, gpuInstance;
     OBJGPU *pDeviceLockGpu = pGpu;
     Intr *pIntr = NULL;
-    POBJDISP pDisp = NULL;
+    OBJDISP *pDisp = NULL;
     NvU8 stackAllocator[TLS_ISR_ALLOCATOR_SIZE]; // ISR allocations come from this buffer
     PORT_MEM_ALLOCATOR *pIsrAllocator;
 

@@ -350,4 +350,5 @@ static inline void tmrapiDeregisterEvents(struct TimerApi *pTimerApi) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_TMR_NVOC_H_

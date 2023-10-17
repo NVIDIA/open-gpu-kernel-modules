@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -256,9 +256,9 @@ GspMsgQueuesInit
 
     memdescSetFlag(pMQCollection->pSharedMemDesc, MEMDESC_FLAGS_KERNEL_MODE, NV_TRUE);
 
-    NV_ASSERT_OK_OR_GOTO(nvStatus,
-        memdescAlloc(pMQCollection->pSharedMemDesc),
-        error_ret);
+    memdescTagAlloc(nvStatus, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_58, 
+                    pMQCollection->pSharedMemDesc);
+    NV_ASSERT_OK_OR_GOTO(nvStatus, nvStatus, error_ret);
 
     // Create kernel mapping for command queue.
     NV_ASSERT_OK_OR_GOTO(nvStatus,

@@ -71,6 +71,25 @@ extern "C" {
 #define BUS_DEVICE_ID_TIGERLAKE_TB3_09             0x9A2B
 #define BUS_DEVICE_ID_TIGERLAKE_TB3_10             0x9A2D
 
+// Meteor Lake ThunderBolt Device IDs
+#define BUS_DEVICE_ID_METEOR_TB3_01                0x7EB2
+#define BUS_DEVICE_ID_METEOR_TB3_02                0x7EC2
+#define BUS_DEVICE_ID_METEOR_TB3_03                0x7EC3
+#define BUS_DEVICE_ID_METEOR_TB3_04                0x7EB4
+#define BUS_DEVICE_ID_METEOR_TB3_05                0x7EC4
+#define BUS_DEVICE_ID_METEOR_TB3_06                0x7EB5
+#define BUS_DEVICE_ID_METEOR_TB3_07                0x7EC5
+#define BUS_DEVICE_ID_METEOR_TB3_08                0x7EC6
+#define BUS_DEVICE_ID_METEOR_TB3_09                0x7EC7
+
+// Raptor Lake ThunderBolt Device IDs
+#define BUS_DEVICE_ID_RAPTOR_TB3_01                0xA73E
+#define BUS_DEVICE_ID_RAPTOR_TB3_02                0xA76D
+#define BUS_DEVICE_ID_RAPTOR_TB3_03                0x466E
+#define BUS_DEVICE_ID_RAPTOR_TB3_04                0x463F
+#define BUS_DEVICE_ID_RAPTOR_TB3_05                0x462F
+#define BUS_DEVICE_ID_RAPTOR_TB3_06                0x461F
+
 //#define BUS_DEVICE_ID_TB2_FALCON_RIDGE_DSL5520_01  0X156C   // obsolete
 #define BUS_DEVICE_ID_TB2_FALCON_RIDGE_DSL5520_02  0X156D
 #define BUS_DEVICE_ID_TB2_03                       0x157E
@@ -128,7 +147,22 @@ EGPU_INLINE NvBool isTB3DeviceID(NvU16 deviceID)
                                 BUS_DEVICE_ID_TIGERLAKE_TB3_07,
                                 BUS_DEVICE_ID_TIGERLAKE_TB3_08,
                                 BUS_DEVICE_ID_TIGERLAKE_TB3_09,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_10
+                                BUS_DEVICE_ID_TIGERLAKE_TB3_10,
+                                BUS_DEVICE_ID_METEOR_TB3_01,
+                                BUS_DEVICE_ID_METEOR_TB3_02,
+                                BUS_DEVICE_ID_METEOR_TB3_03,
+                                BUS_DEVICE_ID_METEOR_TB3_04,
+                                BUS_DEVICE_ID_METEOR_TB3_05,
+                                BUS_DEVICE_ID_METEOR_TB3_06,
+                                BUS_DEVICE_ID_METEOR_TB3_07,
+                                BUS_DEVICE_ID_METEOR_TB3_08,
+                                BUS_DEVICE_ID_METEOR_TB3_09,
+                                BUS_DEVICE_ID_RAPTOR_TB3_01,
+                                BUS_DEVICE_ID_RAPTOR_TB3_02,
+                                BUS_DEVICE_ID_RAPTOR_TB3_03,
+                                BUS_DEVICE_ID_RAPTOR_TB3_04,
+                                BUS_DEVICE_ID_RAPTOR_TB3_05,
+                                BUS_DEVICE_ID_RAPTOR_TB3_06
                               };
     for (index = 0; index < (sizeof(tb3DeviceIDList)/sizeof(NvU16)); index++)
     {

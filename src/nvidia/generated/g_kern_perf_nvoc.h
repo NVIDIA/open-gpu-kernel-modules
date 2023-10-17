@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -228,17 +228,6 @@ static inline NvBool kperfIsPresent_DISPATCH(POBJGPU pGpu, struct KernelPerf *pE
     return pEngstate->__kperfIsPresent__(pGpu, pEngstate);
 }
 
-NV_STATUS kperfBoostStateInit_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf);
-
-#ifdef __nvoc_kern_perf_h_disabled
-static inline NV_STATUS kperfBoostStateInit(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf) {
-    NV_ASSERT_FAILED_PRECOMP("KernelPerf was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_perf_h_disabled
-#define kperfBoostStateInit(pGpu, pKernelPerf) kperfBoostStateInit_IMPL(pGpu, pKernelPerf)
-#endif //__nvoc_kern_perf_h_disabled
-
 NV_STATUS kperfGpuBoostSyncActivate_IMPL(struct OBJGPU *pGpu, struct KernelPerf *pKernelPerf, NvBool bActivate);
 
 #ifdef __nvoc_kern_perf_h_disabled
@@ -284,4 +273,5 @@ static inline NV_STATUS kperfReentrancy(struct OBJGPU *pGpu, struct KernelPerf *
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERN_PERF_NVOC_H_

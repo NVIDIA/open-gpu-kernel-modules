@@ -133,4 +133,5 @@ static inline NV_STATUS vmmGetVaspaceFromId(struct OBJVMM *pVmm, NvU32 vaspaceId
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_VIRT_MEM_MGR_NVOC_H_

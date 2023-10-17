@@ -646,4 +646,5 @@ static inline NvBool kfspIsPresent_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEng
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERN_FSP_NVOC_H_

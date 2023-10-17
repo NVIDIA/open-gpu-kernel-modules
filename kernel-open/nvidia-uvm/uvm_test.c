@@ -106,26 +106,6 @@ static NV_STATUS uvm_test_nv_kthread_q(UVM_TEST_NV_KTHREAD_Q_PARAMS *params, str
     return NV_ERR_INVALID_STATE;
 }
 
-static NV_STATUS uvm_test_numa_get_closest_cpu_node_to_gpu(UVM_TEST_NUMA_GET_CLOSEST_CPU_NODE_TO_GPU_PARAMS *params,
-                                                           struct file *filp)
-{
-    uvm_gpu_t *gpu;
-    NV_STATUS status;
-    uvm_rm_user_object_t user_rm_va_space = {
-        .rm_control_fd = -1,
-        .user_client = params->client,
-        .user_object = params->smc_part_ref
-    };
-
-    status = uvm_gpu_retain_by_uuid(&params->gpu_uuid, &user_rm_va_space, &gpu);
-    if (status != NV_OK)
-        return status;
-
-    params->node_id = gpu->parent->closest_cpu_numa_node;
-    uvm_gpu_release(gpu);
-    return NV_OK;
-}
-
 // Callers of this function should ensure that node is not NUMA_NO_NODE in order
 // to avoid overrunning the kernel's node to cpumask map.
 static NV_STATUS uvm_test_verify_bh_affinity(uvm_intr_handler_t *isr, int node)
@@ -307,8 +287,6 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_DRAIN_REPLAYABLE_FAULTS,      uvm_test_drain_replayable_faults);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMA_GET_BATCH_SIZE,           uvm_test_pma_get_batch_size);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_PMM_QUERY_PMA_STATS,          uvm_test_pmm_query_pma_stats);
-        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_NUMA_GET_CLOSEST_CPU_NODE_TO_GPU,
-                                       uvm_test_numa_get_closest_cpu_node_to_gpu);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_NUMA_CHECK_AFFINITY,          uvm_test_numa_check_affinity);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_ADD_DUMMY_THREAD_CONTEXTS,
                                        uvm_test_va_space_add_dummy_thread_contexts);

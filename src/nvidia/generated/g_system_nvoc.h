@@ -200,18 +200,6 @@ typedef struct GpuDb GpuDb;
 #endif /* __nvoc_class_id_GpuDb */
 
 
-struct OBJSWINSTR;
-
-#ifndef __NVOC_CLASS_OBJSWINSTR_TYPEDEF__
-#define __NVOC_CLASS_OBJSWINSTR_TYPEDEF__
-typedef struct OBJSWINSTR OBJSWINSTR;
-#endif /* __NVOC_CLASS_OBJSWINSTR_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_OBJSWINSTR
-#define __nvoc_class_id_OBJSWINSTR 0xd586f3
-#endif /* __nvoc_class_id_OBJSWINSTR */
-
-
 struct OBJCL;
 
 #ifndef __NVOC_CLASS_OBJCL_TYPEDEF__
@@ -322,16 +310,6 @@ typedef struct SYS_STATIC_CONFIG
     NvBool bOsCCTdxEnabled;
 } SYS_STATIC_CONFIG;
 
-typedef enum
-{
-    CPU_VENDOR_UNKNOWN = 0,
-    CPU_VENDOR_INTEL,
-    CPU_VENDOR_AMD,
-    CPU_VENDOR_WINCHIP,
-    CPU_VENDOR_CYRIX,
-    CPU_VENDOR_TRANSM
-} CPU_VENDOR;
-
 typedef struct
 {
     NvBool bInitialized;           // Set to true once we id the CPU
@@ -350,7 +328,6 @@ typedef struct
                                    // filled in if CPU has embedded name
     NvU32 family;                  // Vendor defined Family/extended Family
     NvU32 model;                   // Vendor defined Model/extended Model
-    NvU8  vendor;                  // Vendor CPU_VENDOR
     NvU32 coresOnDie;              // # of cores on the die (0 if unknown)
     NvU32 platformID;              // Chip package type
     NvU8 stepping;                 // Silicon stepping
@@ -364,7 +341,6 @@ typedef struct
     NvU32  genRegsVse2VidsysEn;
     NvU32  genRegsMiscIoAdr;
 } SYS_VGA_POST_STATE;
-
 
 #ifdef NVOC_SYSTEM_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
@@ -407,6 +383,7 @@ struct OBJSYS {
     NvU32 PDB_PROP_SYS_PRIORITY_THROTTLE_DELAY_US;
     NvBool PDB_PROP_SYS_BUGCHECK_ON_TIMEOUT;
     NvBool PDB_PROP_SYS_CLIENT_HANDLE_LOOKUP;
+    NvBool PDB_PROP_SYS_RM_LOCK_TIME_COLLECT;
     NvU32 apiLockMask;
     NvU32 apiLockModuleMask;
     NvU32 gpuLockModuleMask;
@@ -435,7 +412,6 @@ struct OBJSYS {
     struct OBJOS *pOS;
     struct OBJCL *pCl;
     struct OBJPFM *pPfm;
-    struct OBJSWINSTR *pSwInstr;
     struct GpuAccounting *pGpuAcct;
     struct PlatformRequestHandler *pPlatformRequestHandler;
     Journal *pRcDB;
@@ -526,6 +502,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS;
 #define PDB_PROP_SYS_IS_AGGRESSIVE_GC6_ENABLED_BASE_NAME PDB_PROP_SYS_IS_AGGRESSIVE_GC6_ENABLED
 #define PDB_PROP_SYS_HASWELL_CPU_C0_STEPPING_BASE_CAST
 #define PDB_PROP_SYS_HASWELL_CPU_C0_STEPPING_BASE_NAME PDB_PROP_SYS_HASWELL_CPU_C0_STEPPING
+#define PDB_PROP_SYS_RM_LOCK_TIME_COLLECT_BASE_CAST
+#define PDB_PROP_SYS_RM_LOCK_TIME_COLLECT_BASE_NAME PDB_PROP_SYS_RM_LOCK_TIME_COLLECT
 #define PDB_PROP_SYS_DEBUGGER_DISABLED_BASE_CAST
 #define PDB_PROP_SYS_DEBUGGER_DISABLED_BASE_NAME PDB_PROP_SYS_DEBUGGER_DISABLED
 #define PDB_PROP_SYS_MXM_THERMAL_CONTROL_PRESENT_BASE_CAST
@@ -630,4 +608,5 @@ extern struct OBJSYS *g_pSys;
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_SYSTEM_NVOC_H_

@@ -34,9 +34,6 @@
 
 PUSH_SEGMENTS
 
-// DisplayId2 as EDID extension entry point functions
-static NVT_STATUS parseDisplayId20EDIDExtSection(DISPLAYID_2_0_SECTION *section, NVT_EDID_INFO *pEdidInfo);
-
 /**
  *
  * @brief Parses a displayId20 EDID Extension block, with timings stored in p and
@@ -183,6 +180,8 @@ parseDisplayId20EDIDExtDataBlocks(
     NVT_STATUS              status = NVT_STATUS_SUCCESS;
     NVT_DISPLAYID_2_0_INFO *pDisplayId20Info = NULL;
 
+    NvU8 i;
+
     // size sanity checking
     if ((pDataBlock == NULL || RemainSectionLength <= NVT_DISPLAYID_DATABLOCK_HEADER_LEN) ||
         (block_header->data_bytes > RemainSectionLength - NVT_DISPLAYID_DATABLOCK_HEADER_LEN))
@@ -195,7 +194,7 @@ parseDisplayId20EDIDExtDataBlocks(
 
     if (pEdidInfo != NULL)
     {
-        pDisplayId20Info = &(pEdidInfo->ext_displayid20);
+        pDisplayId20Info = &pEdidInfo->ext_displayid20;
     }
 
     *pCurrentDBLength = block_header->data_bytes + NVT_DISPLAYID_DATABLOCK_HEADER_LEN;
@@ -234,6 +233,24 @@ parseDisplayId20EDIDExtDataBlocks(
                 pDisplayId20Info->basic_caps |= NVT_DISPLAY_2_0_CAP_BASIC_AUDIO;
             }
 
+            for (i = 0; i < pDisplayId20Info->interface_features.combination_count; i++)
+            {
+                if (pDisplayId20Info->interface_features.colorspace_eotf_combination[i].eotf == INTERFACE_EOTF_SMPTE_ST2084 &&
+                    pDisplayId20Info->interface_features.colorspace_eotf_combination[i].color_space == INTERFACE_COLOR_SPACE_BT2020)
+                {
+                    pEdidInfo->hdr_static_metadata_info.static_metadata_type = 1;
+                    pEdidInfo->hdr_static_metadata_info.supported_eotf.smpte_st_2084_eotf = 1;
+
+                    pEdidInfo->ext861.hdr_static_metadata.byte1 |= NVT_CEA861_EOTF_SMPTE_ST2084;
+                    pEdidInfo->ext861.colorimetry.byte1 |= NVT_CEA861_COLORIMETRY_BT2020RGB;
+
+                    if (IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId20Info->interface_features.yuv444.bpcs) || 
+                        IS_BPC_SUPPORTED_COLORFORMAT(pDisplayId20Info->interface_features.yuv422.bpcs))
+                    {
+                        pEdidInfo->ext861.colorimetry.byte1 |= NVT_CEA861_COLORIMETRY_BT2020YCC;
+                    }
+                }
+            }
         break;
 
         // DisplayID_v2.0 E5 defined 
@@ -241,7 +258,7 @@ parseDisplayId20EDIDExtDataBlocks(
         // * support for 420 pixel encoding is limited to the timings exposed in the restricted set exposed in the CTA data block.
         // * field of "Mini Pixel Rate at YCbCr420" shall be set 00h
         case DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA:
-            pDisplayId20Info->valid_data_blocks.cta_data_present = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.cta_data_present                   = NV_TRUE;
 
             // copy all the vendor specific data block from DisplayId20 to pEdidInfo
             // NOTE: mixed CTA extension block and DID2.0 extension block are not handled
@@ -268,7 +285,7 @@ parseDisplayId20EDIDExtDataBlocks(
                 pDisplayId20Info->basic_caps                 = pEdidInfo->ext861.basic_caps;
             }
 
-            // this is the DisplayID20 Extension, so we need to copy from what is the CTA raw data in DID20 to Edid's CTA block
+            // this is the DisplayID20 Extension, so we need to copy the data from the CTA in DID20 to CTA section
             if (pEdidInfo->ext861.revision == 0)
                 NVMISC_MEMCPY(&pEdidInfo->ext861, &pDisplayId20Info->cta.cta861_info, sizeof(NVT_EDID_CEA861_INFO));
             else if (pEdidInfo->ext861_2.revision == 0)
@@ -276,9 +293,9 @@ parseDisplayId20EDIDExtDataBlocks(
         break;
 
         case DISPLAYID_2_0_BLOCK_TYPE_DISPLAY_PARAM:
-            pDisplayId20Info->valid_data_blocks.parameters_present = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.parameters_present                 = NV_TRUE;
 
-            // EDID only supported 10bits chromaitcity to match the OS D3DKMDT_2DOFFSET 10bits, so we don't need to transfer it here.
+            // EDID only supported 10bits chromaticity to match the OS D3DKMDT_2DOFFSET 10bits, so we don't need to transfer it here.
 
             pEdidInfo->input.u.digital.bpc = NVT_COLORDEPTH_HIGHEST_BPC(pDisplayId20Info->display_param.native_color_depth);
             pEdidInfo->gamma = pDisplayId20Info->display_param.gamma_x100;
@@ -288,36 +305,43 @@ parseDisplayId20EDIDExtDataBlocks(
                 pDisplayId20Info->basic_caps |= NVT_DISPLAY_2_0_CAP_BASIC_AUDIO;
             }
 
+            if (pDisplayId20Info->display_param.gamma_x100 != 0)
+            {
+                pEdidInfo->hdr_static_metadata_info.supported_eotf.trad_gamma_sdr_eotf = 1;
+            }
         break;
         case DISPLAYID_2_0_BLOCK_TYPE_STEREO:
-            pDisplayId20Info->valid_data_blocks.stereo_interface_present    = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.stereo_interface_present           = NV_TRUE;
         break;
         case DISPLAYID_2_0_BLOCK_TYPE_TILED_DISPLAY:
-            pDisplayId20Info->valid_data_blocks.tiled_display_present       = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.tiled_display_present              = NV_TRUE;
         break;
         case DISPLAYID_2_0_BLOCK_TYPE_CONTAINER_ID:
-            pDisplayId20Info->valid_data_blocks.container_id_present        = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.container_id_present               = NV_TRUE;
         break;
         case DISPLAYID_2_0_BLOCK_TYPE_TIMING_7:
-            pDisplayId20Info->valid_data_blocks.type7Timing_present         = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.type7Timing_present                = NV_TRUE;
         break;
         case DISPLAYID_2_0_BLOCK_TYPE_TIMING_8:
-            pDisplayId20Info->valid_data_blocks.type8Timing_present         = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.type8Timing_present                = NV_TRUE;
         break;
         case DISPLAYID_2_0_BLOCK_TYPE_TIMING_9:
-            pDisplayId20Info->valid_data_blocks.type9Timing_present         = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.type9Timing_present                = NV_TRUE;
         break;
         case DISPLAYID_2_0_BLOCK_TYPE_TIMING_10:
-            pDisplayId20Info->valid_data_blocks.type10Timing_present        = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.type10Timing_present               = NV_TRUE;
         break;
         case DISPLAYID_2_0_BLOCK_TYPE_RANGE_LIMITS:
-            pDisplayId20Info->valid_data_blocks.dynamic_range_limit_present = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.dynamic_range_limit_present        = NV_TRUE;
             break;
         case DISPLAYID_2_0_BLOCK_TYPE_ADAPTIVE_SYNC:
-            pDisplayId20Info->valid_data_blocks.adaptive_sync_present       = NV_TRUE;  
-        break;  
+            pDisplayId20Info->valid_data_blocks.adaptive_sync_present              = NV_TRUE;  
+        break;
+        case DISPLAYID_2_0_BLOCK_TYPE_BRIGHTNESS_LUMINANCE_RANGE:
+            pDisplayId20Info->valid_data_blocks.brightness_luminance_range_present = NV_TRUE;
+        break;        
         case DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC:
-            pDisplayId20Info->valid_data_blocks.vendor_specific_present     = NV_TRUE;
+            pDisplayId20Info->valid_data_blocks.vendor_specific_present            = NV_TRUE;
         break;
         default:
             break;

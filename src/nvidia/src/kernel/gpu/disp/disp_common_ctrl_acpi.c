@@ -155,7 +155,6 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
     KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     OBJSYS *pSys          = SYS_GET_INSTANCE();
     OBJPFM *pPfm          = SYS_GET_PFM(pSys);
-    OBJOS  *pOS           = GPU_GET_OS(pGpu);
     NvU32   method        = (NvU32)pAcpiMethodParams->method;
     NvU32   outStatus     = 0;
     NvU16   inDataSize;               // NOTE: must be NvU16, see below
@@ -267,7 +266,7 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
             }
 
             outDataSize = sizeof(NvU32);
-            outStatus = pOS->osCallACPI_NVHG_GPUSTA(pGpu, (NvU32*) pInOutData);
+            outStatus = osCallACPI_NVHG_GPUSTA(pGpu, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_MXDS:
@@ -290,7 +289,7 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
                         sizeof(NvU32));
 
             outDataSize = sizeof(NvU32);
-            outStatus = pOS->osCallACPI_NVHG_MXDS(pGpu, acpiId, (NvU32*) pInOutData);
+            outStatus = osCallACPI_NVHG_MXDS(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_NBCI_MXDS:
@@ -416,7 +415,7 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
             acpiId = pfmFindAcpiId(pPfm, pGpu, displayMask);
 
             outDataSize = sizeof(NvU32);
-            outStatus = pOS->osCallACPI_NVHG_MXMX(pGpu, acpiId, (NvU32*) pInOutData);
+            outStatus = osCallACPI_NVHG_MXMX(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DOS:
@@ -441,7 +440,7 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
             acpiId = pfmFindAcpiId(pPfm, pGpu, displayMask);
 
             outDataSize = sizeof(NvU32);
-            outStatus = pOS->osCallACPI_NVHG_DOS(pGpu, acpiId, (NvU32*) pInOutData);
+            outStatus = osCallACPI_NVHG_DOS(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_ROM:
@@ -469,7 +468,7 @@ dispcmnCtrlCmdSystemExecuteAcpiMethod_IMPL
             portMemCopy(&acpiId, sizeof(NvU32), pInOutData, sizeof(NvU32));
 
             outDataSize = sizeof(NvU32);
-            outStatus = pOS->osCallACPI_NVHG_DCS(pGpu, acpiId, (NvU32*) pInOutData);
+            outStatus = osCallACPI_NVHG_DCS(pGpu, acpiId, (NvU32*) pInOutData);
             break;
         }
         case NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_DOD:

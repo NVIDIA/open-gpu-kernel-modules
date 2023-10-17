@@ -89,6 +89,9 @@ typedef union  GPUHWREG  GPUHWREG;
 #define REGISTER_FILTER_FLAGS_VIRTUAL      (0)
 #define REGISTER_FILTER_FLAGS_READ_WRITE   (REGISTER_FILTER_FLAGS_READ | REGISTER_FILTER_FLAGS_WRITE)
 
+// Do not warn if attempting to add a filter on GSP [CORERM-5356]
+#define REGISTER_FILTER_FLAGS_NO_GSP_WARNING (NVBIT(3))
+
 typedef struct REGISTER_FILTER REGISTER_FILTER;
 
 struct REGISTER_FILTER
@@ -630,4 +633,5 @@ NV_STATUS swbcaprtConstruct_IMPL(struct SwBcAperture *arg_pAperture, struct IoAp
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_ACCESS_NVOC_H_

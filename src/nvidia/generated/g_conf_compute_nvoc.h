@@ -534,4 +534,5 @@ NV_STATUS spdmCtrlSpdmPartition(struct OBJGPU *pGpu, NV2080_CTRL_INTERNAL_SPDM_P
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CONF_COMPUTE_NVOC_H_

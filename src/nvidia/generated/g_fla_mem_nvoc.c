@@ -113,6 +113,10 @@ static NV_STATUS __nvoc_thunk_Memory_flamemGetMapAddrSpace(struct FlaMemory *pMe
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_FlaMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_flamemIsExportAllowed(struct FlaMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_FlaMemory_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_flamemGetRefCount(struct FlaMemory *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_FlaMemory_RsResource.offset));
 }
@@ -245,6 +249,8 @@ static void __nvoc_init_funcTable_FlaMemory_1(FlaMemory *pThis) {
     pThis->__flamemMapTo__ = &__nvoc_thunk_RsResource_flamemMapTo;
 
     pThis->__flamemGetMapAddrSpace__ = &__nvoc_thunk_Memory_flamemGetMapAddrSpace;
+
+    pThis->__flamemIsExportAllowed__ = &__nvoc_thunk_Memory_flamemIsExportAllowed;
 
     pThis->__flamemGetRefCount__ = &__nvoc_thunk_RsResource_flamemGetRefCount;
 

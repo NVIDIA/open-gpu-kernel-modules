@@ -304,11 +304,24 @@ uvm_chunk_sizes_mask_t uvm_cpu_chunk_get_allocation_sizes(void);
 
 // Allocate a physical CPU chunk of the specified size.
 //
+// The nid argument is used to indicate a memory node preference. If the
+// value is a memory node ID, the chunk allocation will be attempted on
+// that memory node. If the chunk cannot be allocated on that memory node,
+// it will be allocated on any memory node allowed by the process's policy.
+//
+// If the value of nid is a memory node ID that is not in the set of
+// current process's allowed memory nodes, it will be allocated on one of the
+// nodes in the allowed set.
+//
+// If the value of nid is NUMA_NO_NODE, the chunk will be allocated from any
+// of the allowed memory nodes by the process policy.
+//
 // If a CPU chunk allocation succeeds, NV_OK is returned. new_chunk will be set
 // to point to the newly allocated chunk. On failure, NV_ERR_NO_MEMORY is
 // returned.
 NV_STATUS uvm_cpu_chunk_alloc(uvm_chunk_size_t alloc_size,
                               uvm_cpu_chunk_alloc_flags_t flags,
+                              int nid,
                               uvm_cpu_chunk_t **new_chunk);
 
 // Allocate a HMM CPU chunk.
@@ -374,6 +387,9 @@ static uvm_cpu_logical_chunk_t *uvm_cpu_chunk_to_logical(uvm_cpu_chunk_t *chunk)
     UVM_ASSERT(uvm_cpu_chunk_is_logical(chunk));
     return container_of((chunk), uvm_cpu_logical_chunk_t, common);
 }
+
+// Return the NUMA node ID of the physical page backing the chunk.
+int uvm_cpu_chunk_get_numa_node(uvm_cpu_chunk_t *chunk);
 
 // Free a CPU chunk.
 // This may not result in the immediate freeing of the physical pages of the

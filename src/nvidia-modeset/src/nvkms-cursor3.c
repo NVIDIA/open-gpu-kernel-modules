@@ -45,7 +45,7 @@ static void WaitForFreeSpace(NVDevEvoPtr pDevEvo,
             return;
         }
 
-        if (nvExceedsTimeoutUSec(&startTime, timeout)) {
+        if (nvExceedsTimeoutUSec(pDevEvo, &startTime, timeout)) {
             break;
         }
 
@@ -112,3 +112,4 @@ NVEvoCursorHAL nvEvoCursorC6 = {
         256,                                    /* maxSize */
     },
 };
+

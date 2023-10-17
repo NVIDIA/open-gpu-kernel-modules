@@ -160,4 +160,5 @@ static inline void sec2utilsServiceInterrupts(struct Sec2Utils *psec2utils) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_SEC2_UTILS_NVOC_H_

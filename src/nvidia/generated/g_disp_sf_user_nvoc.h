@@ -255,4 +255,5 @@ NV_STATUS dispsfConstruct_IMPL(struct DispSfUser *arg_pDispSfUser, struct CALL_C
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_DISP_SF_USER_NVOC_H_

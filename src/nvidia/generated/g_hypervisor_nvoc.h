@@ -273,4 +273,5 @@ extern HYPERVISOR_OPS vmwareHypervisorOps;
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_HYPERVISOR_NVOC_H_

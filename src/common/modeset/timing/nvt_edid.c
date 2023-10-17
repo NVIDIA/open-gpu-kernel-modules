@@ -1053,15 +1053,10 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
                 // parseCta861VsdbBlocks() uses hfScdb info so need to be parsed first
                 parseCta861HfScdb(p861Info, pInfo, FROM_CTA861_EXTENSION);
                 parseCta861VsdbBlocks(p861Info, pInfo, FROM_CTA861_EXTENSION);
+                parseCta861VsvdbBlocks(p861Info, pInfo, FROM_CTA861_EXTENSION);
 
                 // parse HDR related information from the HDR static metadata data block
                 parseCea861HdrStaticMetadataDataBlock(p861Info, pInfo, FROM_CTA861_EXTENSION);
-
-                // parse Dolby Vision related information from the DV vendor specific video data block
-                parseCea861DvStaticMetadataDataBlock(p861Info, pInfo, FROM_CTA861_EXTENSION);
-
-                // parse HDR10+ related information from the HDR10+ LLC Vendor Specific Video Data Block
-                parseCea861Hdr10PlusDataBlock(p861Info, pInfo, FROM_CTA861_EXTENSION);
 
                 // Timings are listed (or shall) be listed in priority order
                 // So read SVD, yuv420 SVDs first before reading detailed timings
@@ -1443,6 +1438,7 @@ NVT_STATUS NvTiming_Get18ByteLongDescriptorIndex(NVT_EDID_INFO *pEdidInfo, NvU8 
 CODE_SEGMENT(PAGE_DD_CODE)
 NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT_EDID_INFO *pEdidInfo, NVT_TIMING *pT, NvU32 rrx1k)
 {
+    NvU8 kth = 0;
     NvU32 i, j;
     NvU32 native_cta, preferred_cta, preferred_displayid_dtd, preferred_dtd1, dtd1, map0, map1, map2, map3, map4, ceaIndex, max, cvt;
     NVT_TIMING *pEdidTiming;
@@ -1474,6 +1470,12 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
     // max  - the timing with the max visible area
     native_cta = preferred_cta = preferred_displayid_dtd = preferred_dtd1 = dtd1 = map0 = map1 = map2 = map3 = map4 = ceaIndex = pEdidInfo->total_timings;
     max = cvt = 0;
+
+    if (pEdidInfo->ext861.total_svr > 1)
+    {
+        kth = getHighestPrioritySVRIdx(pEdidInfo->ext861.svr_vfpdb[0]);
+    }
+
     for (i = 0; i < pEdidInfo->total_timings; i++)
     {
         // if the client prefers _NATIVE timing, then don't select custom timing
@@ -1542,7 +1544,25 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
 
         if (preferred_cta == pEdidInfo->total_timings && NVT_PREFERRED_TIMING_IS_CTA(pEdidTiming[i].etc.flag))
         {
-            preferred_cta = i;
+            if (pEdidInfo->ext861.total_svr > 1)
+            {
+                if (kth != 0)
+                {
+                    // svr == vic
+                    if (NVT_IS_CTA861(pEdidTiming[i].etc.status) && (NVT_GET_CEA_FORMAT(pEdidTiming[i].etc.status) == kth))
+                    {
+                        preferred_cta = i;
+                    }
+                    else if (NVT_GET_TIMING_STATUS_SEQ(pEdidTiming[i].etc.status) == kth)
+                    {
+                        preferred_cta = i;
+                    }
+                }
+            }
+            else
+            {
+                preferred_cta = i;
+            }
         }
 
         // find out the preferred timing just in case
@@ -2165,7 +2185,7 @@ NvU32 NvTiming_EDIDValidationMask(NvU8 *pEdid, NvU32 length, NvBool bIsStrongVal
                     // validate DTD blocks
                     pDTD = (DETAILEDTIMINGDESCRIPTOR *)&pExt[((EIA861EXTENSION *)pExt)->offset];
                     while ((pDTD->wDTPixelClock != 0) &&
-                           (((NvU8 *)pDTD - pExt + sizeof(DETAILEDTIMINGDESCRIPTOR)) < ((NvU8)sizeof(EIA861EXTENSION) - 1)))
+                           (((NvU8 *)pDTD - pExt + sizeof(DETAILEDTIMINGDESCRIPTOR)) < ((NvU8)sizeof(EIA861EXTENSION))))
                     {
                         if (parseEdidDetailedTimingDescriptor((NvU8 *)pDTD, NULL) != NVT_STATUS_SUCCESS)
                         {
@@ -2413,7 +2433,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                 // validate DTD blocks
                 pDTD = (DETAILEDTIMINGDESCRIPTOR *)&pExt[((EIA861EXTENSION *)pExt)->offset];
                 while ((pDTD->wDTPixelClock != 0) &&
-                       (((NvU8 *)pDTD - pExt + sizeof(DETAILEDTIMINGDESCRIPTOR)) < ((NvU8)sizeof(EIA861EXTENSION) -1)))
+                       (((NvU8 *)pDTD - pExt + sizeof(DETAILEDTIMINGDESCRIPTOR)) < ((NvU8)sizeof(EIA861EXTENSION))))
                 {
                     if (parseEdidDetailedTimingDescriptor((NvU8 *)pDTD, NULL) != NVT_STATUS_SUCCESS)
                         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DTD);
@@ -2463,8 +2483,8 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
 
                     // Sanity check every data blocks
                     while (((pDID2Header->type >= DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY &&
-                            pDID2Header->type <= DISPLAYID_2_0_BLOCK_TYPE_ARVR_LAYER)  ||
-                            pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC ||
+                            pDID2Header->type <= DISPLAYID_2_0_BLOCK_TYPE_BRIGHTNESS_LUMINANCE_RANGE) ||
+                            pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC                 ||
                             pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA) && pDID2Header->data_bytes != 0 &&
                             (pData_collection - pExt < (int)sizeof(DIDEXTENSION)))
                     {
@@ -2497,8 +2517,8 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                     // if the first tag failed, ignore all the tags afterward then
                     if (!bAllZero && 
                         (pDID2Header->type < DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY || 
-                        (pDID2Header->type > DISPLAYID_2_0_BLOCK_TYPE_ARVR_LAYER   && 
-                        pDID2Header->type != DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC  &&
+                        (pDID2Header->type > DISPLAYID_2_0_BLOCK_TYPE_BRIGHTNESS_LUMINANCE_RANGE   && 
+                        pDID2Header->type != DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC                  &&
                         pDID2Header->type != DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA))       &&
                         (pData_collection - pExt < (int)sizeof(DIDEXTENSION)))
                     {
@@ -2791,6 +2811,32 @@ NvBool assignNextAvailableTiming(NVT_EDID_INFO *pInfo,
 
     pInfo->timing[pInfo->total_timings++] = *pTiming;
     return NV_TRUE;
+}
+
+/**
+ * @brief Return the first high priority nth index based on the different SVR
+ * @param svr Short Video Reference
+ */
+CODE_SEGMENT(PAGE_DD_CODE)
+NvU8 getHighestPrioritySVRIdx(NvU8 svr)
+{
+    // In general sink shall define the first one timing sequence
+    NvU8 kth = 1;
+
+    // Reserved
+    if (svr == 0 || svr == 128 || (svr >= 176 && svr <= 192) || svr == 255)
+        return 0;
+
+    if (svr >= 129 && svr <= 144)      return svr - 128;  // Interpret as the Kth 18-byte DTD in both base0 and CTA block (for N = 1 to 16)
+    else if (svr >= 145 && svr <= 160) return svr - 144;  // Interpret as the Nth 20-byte DTD or 6- or 7-byte CVT-based descriptor. (for N = 1 to 16)
+    else if (svr >= 161 && svr <= 175) return svr - 160;  // Interpret as the video format indicated by the first VFD of the first VFDB with Frame Rates of Rate Index N (for N = 1 to 15)
+    else if (svr == 254)               return kth;        // Interpret as the timing format indicated by the first code of the first T8VTDB (for N = 1)
+    else // assign corresponding CTA format's timing from pre-defined CE timing table, EIA861B
+    {
+        // ( SVR >= 1 and SVR <= 127) and (SVR >= 193 and SVR <= 253) needs to handle it by client
+        return svr;
+    }
+    return 0;
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)

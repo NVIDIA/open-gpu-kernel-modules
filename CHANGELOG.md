@@ -1,5 +1,17 @@
 # Changelog
 
+## Release 545 Entries
+
+### [545.23.06] 2023-10-17
+
+#### Fixed
+
+- Fix always-false conditional, [#493](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/493) by @meme8383
+
+#### Added
+
+- Added beta-quality support for GeForce and Workstation GPUs. Please see the "Open Linux Kernel Modules" chapter in the NVIDIA GPU driver end user README for details.
+
 ## Release 535 Entries
 
 ### [535.113.01] 2023-09-21

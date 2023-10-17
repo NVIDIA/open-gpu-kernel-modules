@@ -28,8 +28,7 @@
  * @brief Defines max values used for the KernelDisplay Engine Object,
  *        including values shared by OBJDISP code.
  */
-
-#define OBJ_MAX_HEADS                     4
+#define OBJ_MAX_HEADS                     8
 #define MAX_RG_LINE_CALLBACKS_PER_HEAD    2
 #define OBJ_MAX_DFPS                     31
 

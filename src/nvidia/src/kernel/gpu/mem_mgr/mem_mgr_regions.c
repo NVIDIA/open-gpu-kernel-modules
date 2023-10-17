@@ -555,5 +555,4 @@ memmgrClearFbRegions_IMPL
     pMemoryManager->Ram.numFBRegions = 0;
     pMemoryManager->Ram.numFBRegionPriority = 0;
     pMemoryManager->Ram.reservedMemSize = 0;
-    pMemoryManager->bLddmReservedMemoryCalculated = NV_FALSE;
 }

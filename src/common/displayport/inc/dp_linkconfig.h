@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2010-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2010-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,7 +36,6 @@
 #include "ctrl/ctrl0073/ctrl0073specific.h" // NV0073_CTRL_HDCP_VPRIME_SIZE
 #include "displayport.h"
 
-
 namespace DisplayPort
 {
     typedef NvU64 LinkRate;
@@ -44,32 +43,59 @@ namespace DisplayPort
     class LinkRates : virtual public Object
     {
     public:
+        NvU8 entries;
+
+        virtual void clear() = 0;
+        virtual bool import(NvU8 linkBw)
+        {
+            DP_ASSERT(0);
+            return false;
+        }
+
+        virtual LinkRate getLowerRate(LinkRate rate) = 0;
+        virtual LinkRate getMaxRate() = 0;
+        virtual NvU8 getNumElements() = 0;
+
+        NvU8 getNumLinkRates()
+        {
+            return entries;
+        }
+
+    };
+
+    class LinkRates1x : virtual public LinkRates
+    {
+    public:
         // Store link rate in multipler of 270MBPS to save space
-        NvU8 element[NV_DPCD_SUPPORTED_LINK_RATES__SIZE];
-        NvU8  entries;
+        NvU8 element[NV_SUPPORTED_DP1X_LINK_RATES__SIZE];
 
-        LinkRates()
+        LinkRates1x()
         {
             entries = 0;
-
-            for (int i = 0; i < NV_DPCD_SUPPORTED_LINK_RATES__SIZE; i++)
+            for (int i = 0; i < NV_SUPPORTED_DP1X_LINK_RATES__SIZE; i++)
             {
                 element[i] = 0;
             }
         }
 
-        void clear()
+        virtual void clear()
         {
             entries = 0;
-            for (int i = 0; i < NV_DPCD_SUPPORTED_LINK_RATES__SIZE; i++)
+            for (int i = 0; i < NV_SUPPORTED_DP1X_LINK_RATES__SIZE; i++)
             {
                 element[i] = 0;
             }
         }
 
-        bool import(NvU8 linkBw)
+        virtual bool import(NvU8 linkBw)
         {
-            if (entries < NV_DPCD_SUPPORTED_LINK_RATES__SIZE)
+            if (!IS_VALID_LINKBW(linkBw))
+            {
+                DP_ASSERT(0 && "Unsupported Link Bandwidth");
+                return false;
+            }
+
+            if (entries < NV_SUPPORTED_DP1X_LINK_RATES__SIZE)
             {
                 element[entries] = linkBw;
                 entries++;
@@ -79,12 +105,7 @@ namespace DisplayPort
                 return false;
         }
 
-        NvU8 getNumLinkRates()
-        {
-            return entries;
-        }
-
-        LinkRate getLowerRate(LinkRate rate)
+        virtual LinkRate getLowerRate(LinkRate rate)
         {
             int i;
             NvU8 linkBw = (NvU8)(rate / DP_LINK_BW_FREQ_MULTI_MBPS);
@@ -102,24 +123,29 @@ namespace DisplayPort
             return rate;
         }
 
-        LinkRate getMaxRate()
+        virtual LinkRate getMaxRate()
         {
             LinkRate rate = 0;
             if ((entries > 0) &&
-                (entries <= NV_DPCD_SUPPORTED_LINK_RATES__SIZE))
+                (entries <= NV_SUPPORTED_DP1X_LINK_RATES__SIZE))
             {
                 rate = (LinkRate)element[entries - 1] * DP_LINK_BW_FREQ_MULTI_MBPS;
             }
 
             return rate;
         }
+        virtual NvU8 getNumElements()
+        {
+            return NV_SUPPORTED_DP1X_LINK_RATES__SIZE;
+        }
+
     };
 
     class LinkPolicy : virtual public Object
     {
-        bool        bNoFallback;                // No fallback when LT fails
-        LinkRates   linkRates;
-
+    protected:
+        bool            bNoFallback;                // No fallback when LT fails
+        LinkRates1x     linkRates;
     public:
         LinkPolicy() : bNoFallback(false)
         {
@@ -138,13 +164,25 @@ namespace DisplayPort
             return &linkRates;
         }
     };
+
     enum
     {
         totalTimeslots = 64,
         totalUsableTimeslots = totalTimeslots - 1
     };
 
-    // in 10bps
+    //
+    // Link Data Rate per DP Lane, in MBPS,
+    // For 8b/10b channel coding:
+    //     Link Data Rate = link rate * (8 / 10) / 8
+    //                    = link rate * 0.1
+    // For 128b/132b channel coding:
+    //     Link Data Rate = link rate * (128 / 132) / 8
+    //                    = link rate * 4 / 33
+    //                   ~= link rate * 0.12
+    //
+    // Link Bandwidth     = Lane Count * Link Data Rate
+    //
     enum
     {
         RBR             =  162000000,

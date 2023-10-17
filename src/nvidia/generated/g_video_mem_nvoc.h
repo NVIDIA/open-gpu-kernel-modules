@@ -71,6 +71,7 @@ struct VideoMemory {
     NvBool (*__vidmemShareCallback__)(struct VideoMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__vidmemMapTo__)(struct VideoMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__vidmemGetMapAddrSpace__)(struct VideoMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__vidmemIsExportAllowed__)(struct VideoMemory *);
     NvU32 (*__vidmemGetRefCount__)(struct VideoMemory *);
     void (*__vidmemAddAdditionalDependants__)(struct RsClient *, struct VideoMemory *, RsResourceRef *);
     NV_STATUS (*__vidmemControl_Prologue__)(struct VideoMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -126,6 +127,7 @@ NV_STATUS __nvoc_objCreate_VideoMemory(VideoMemory**, Dynamic*, NvU32, CALL_CONT
 #define vidmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) vidmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define vidmemMapTo(pResource, pParams) vidmemMapTo_DISPATCH(pResource, pParams)
 #define vidmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) vidmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define vidmemIsExportAllowed(pMemory) vidmemIsExportAllowed_DISPATCH(pMemory)
 #define vidmemGetRefCount(pResource) vidmemGetRefCount_DISPATCH(pResource)
 #define vidmemAddAdditionalDependants(pClient, pResource, pReference) vidmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define vidmemControl_Prologue(pResource, pCallContext, pParams) vidmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -166,6 +168,10 @@ static inline NV_STATUS vidmemMapTo_DISPATCH(struct VideoMemory *pResource, RS_R
 
 static inline NV_STATUS vidmemGetMapAddrSpace_DISPATCH(struct VideoMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__vidmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool vidmemIsExportAllowed_DISPATCH(struct VideoMemory *pMemory) {
+    return pMemory->__vidmemIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 vidmemGetRefCount_DISPATCH(struct VideoMemory *pResource) {
@@ -254,9 +260,9 @@ NV_STATUS vidmemConstruct_IMPL(struct VideoMemory *arg_pVideoMemory, CALL_CONTEX
 void vidmemDestruct_IMPL(struct VideoMemory *pVideoMemory);
 
 #define __nvoc_vidmemDestruct(pVideoMemory) vidmemDestruct_IMPL(pVideoMemory)
-struct Heap *vidmemGetHeap_IMPL(struct OBJGPU *pGpu, struct Device *pDevice, NvBool bSubheap);
+struct Heap *vidmemGetHeap_IMPL(struct OBJGPU *pGpu, struct Device *pDevice, NvBool bSubheap, NvBool bForceGlobalHeap);
 
-#define vidmemGetHeap(pGpu, pDevice, bSubheap) vidmemGetHeap_IMPL(pGpu, pDevice, bSubheap)
+#define vidmemGetHeap(pGpu, pDevice, bSubheap, bForceGlobalHeap) vidmemGetHeap_IMPL(pGpu, pDevice, bSubheap, bForceGlobalHeap)
 #undef PRIVATE_FIELD
 
 
@@ -271,4 +277,5 @@ NV_STATUS vidmemAllocResources(OBJGPU *pGpu, struct MemoryManager *pMemoryManage
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_VIDEO_MEM_NVOC_H_

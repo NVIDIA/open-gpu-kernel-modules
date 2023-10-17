@@ -176,7 +176,9 @@ static NV_STATUS preferred_location_unmap_remote_pages(uvm_va_block_t *va_block,
     mapped_mask = uvm_va_block_map_mask_get(va_block, preferred_location);
 
     if (uvm_processor_mask_test(&va_block->resident, preferred_location)) {
-        const uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, preferred_location);
+        const uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block,
+                                                                              preferred_location,
+                                                                              NUMA_NO_NODE);
 
         if (!uvm_page_mask_andnot(&va_block_context->caller_page_mask, mapped_mask, resident_mask))
             goto done;
@@ -638,7 +640,7 @@ static NV_STATUS va_block_set_read_duplication_locked(uvm_va_block_t *va_block,
 
     for_each_id_in_mask(src_id, &va_block->resident) {
         NV_STATUS status;
-        uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, src_id);
+        uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, src_id, NUMA_NO_NODE);
 
         // Calling uvm_va_block_make_resident_read_duplicate will break all
         // SetAccessedBy and remote mappings
@@ -695,7 +697,7 @@ static NV_STATUS va_block_unset_read_duplication_locked(uvm_va_block_t *va_block
     // If preferred_location is set and has resident copies, give it preference
     if (UVM_ID_IS_VALID(preferred_location) &&
         uvm_processor_mask_test(&va_block->resident, preferred_location)) {
-        uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, preferred_location);
+        uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, preferred_location, NUMA_NO_NODE);
         bool is_mask_empty = !uvm_page_mask_and(break_read_duplication_pages,
                                                 &va_block->read_duplicated_pages,
                                                 resident_mask);
@@ -723,7 +725,7 @@ static NV_STATUS va_block_unset_read_duplication_locked(uvm_va_block_t *va_block
         if (uvm_id_equal(processor_id, preferred_location))
             continue;
 
-        resident_mask = uvm_va_block_resident_mask_get(va_block, processor_id);
+        resident_mask = uvm_va_block_resident_mask_get(va_block, processor_id, NUMA_NO_NODE);
         is_mask_empty = !uvm_page_mask_and(break_read_duplication_pages,
                                            &va_block->read_duplicated_pages,
                                            resident_mask);

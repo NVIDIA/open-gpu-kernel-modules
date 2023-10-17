@@ -796,7 +796,7 @@ static void FreeSwapGroups(struct NvKmsPerOpenDev *pOpenDev)
                                         handle) {
         nvEvoDestroyApiHandle(&pOpenDev->swapGroupHandles, handle);
 
-        if (pDevEvo->modesetOwner == pOpenDev) {
+        if (nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
             nvHsFreeSwapGroup(pDevEvo, pSwapGroup);
         } else {
             nvHsDecrementSwapGroupRefCnt(pSwapGroup);
@@ -809,7 +809,8 @@ static void FreeSwapGroups(struct NvKmsPerOpenDev *pOpenDev)
  */
 static NvBool ValidateNvKmsPermissions(
     const NVDevEvoRec *pDevEvo,
-    const struct NvKmsPermissions *pPermissions)
+    const struct NvKmsPermissions *pPermissions,
+    enum NvKmsClientType clientType)
 {
     if (pPermissions->type == NV_KMS_PERMISSIONS_TYPE_FLIPPING) {
         NvU32 d, h;
@@ -870,6 +871,13 @@ static NvBool ValidateNvKmsPermissions(
                 }
             }
         }
+    } else if (pPermissions->type == NV_KMS_PERMISSIONS_TYPE_SUB_OWNER) {
+
+        /* Only kapi uses this permission type, so disallow it from userspace */
+        if (clientType != NVKMS_CLIENT_KERNEL_SPACE) {
+            return FALSE;
+        }
+
     } else {
         return FALSE;
     }
@@ -913,6 +921,16 @@ static void AssignFullNvKmsModesetPermissions(
     }
 }
 
+static void AssignFullNvKmsPermissions(
+    struct NvKmsPerOpenDev *pOpenDev
+)
+{
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+
+    AssignFullNvKmsFlipPermissions(pDevEvo, &pOpenDev->flipPermissions);
+    AssignFullNvKmsModesetPermissions(pDevEvo, &pOpenDev->modesetPermissions);
+}
+
 /*!
  * Set the modeset owner to pOpenDev
  *
@@ -942,9 +960,7 @@ static NvBool GrabModesetOwnership(struct NvKmsPerOpenDev *pOpenDev)
     pDevEvo->modesetOwner = pOpenDev;
     pDevEvo->modesetOwnerChanged = TRUE;
 
-    AssignFullNvKmsFlipPermissions(pDevEvo, &pOpenDev->flipPermissions);
-    AssignFullNvKmsModesetPermissions(pDevEvo, &pOpenDev->modesetPermissions);
-
+    AssignFullNvKmsPermissions(pOpenDev);
     return TRUE;
 }
 
@@ -1016,7 +1032,7 @@ static NvBool RemoveModesetPermissions(struct NvKmsModesetPermissions *pModeset,
  */
 static void RevokePermissionsInternal(
     const NvU32 typeBitmask,
-    const NVDevEvoRec *pDevEvo,
+    NVDevEvoRec *pDevEvo,
     const struct NvKmsPerOpenDev *pOpenDevExclude)
 {
     struct NvKmsPerOpen *pOpen;
@@ -1041,6 +1057,20 @@ static void RevokePermissionsInternal(
             }
 
             if (pOpenDev == pOpenDevExclude || pOpenDev->isPrivileged) {
+                continue;
+            }
+
+            if (pOpenDev == pDevEvo->modesetSubOwner &&
+                (typeBitmask & NVBIT(NV_KMS_PERMISSIONS_TYPE_SUB_OWNER))) {
+                FreeSwapGroups(pOpenDev);
+                pDevEvo->modesetSubOwner = NULL;
+            }
+
+            /*
+             * Clients with sub-owner permission (or better) don't get flipping
+             * or modeset permission revoked.
+             */
+            if (nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
                 continue;
             }
 
@@ -1102,7 +1132,8 @@ static NvBool ReleaseModesetOwnership(struct NvKmsPerOpenDev *pOpenDev)
 
     RestoreConsole(pDevEvo);
     RevokePermissionsInternal(NVBIT(NV_KMS_PERMISSIONS_TYPE_FLIPPING) |
-                              NVBIT(NV_KMS_PERMISSIONS_TYPE_MODESET),
+                              NVBIT(NV_KMS_PERMISSIONS_TYPE_MODESET) |
+                              NVBIT(NV_KMS_PERMISSIONS_TYPE_SUB_OWNER),
                               pDevEvo, NULL /* pOpenDevExclude */);
     return TRUE;
 }
@@ -1202,10 +1233,7 @@ struct NvKmsPerOpenDev *nvAllocPerOpenDev(struct NvKmsPerOpen *pOpen,
 
     pOpenDev->isPrivileged = isPrivileged;
     if (pOpenDev->isPrivileged) {
-        AssignFullNvKmsFlipPermissions(pDevEvo,
-                                       &pOpenDev->flipPermissions);
-        AssignFullNvKmsModesetPermissions(pOpenDev->pDevEvo,
-                                          &pOpenDev->modesetPermissions);
+        AssignFullNvKmsPermissions(pOpenDev);
     }
 
     if (!nvEvoInitApiHandles(&pOpenDev->deferredRequestFifoHandles, 4)) {
@@ -1548,6 +1576,11 @@ static void FreeDeviceReference(struct NvKmsPerOpen *pOpen,
         ReleaseModesetOwnership(pOpenDev);
 
         nvAssert(pOpenDev->pDevEvo->modesetOwner != pOpenDev);
+
+        // If this pOpenDev is the modeset sub-owner, implicitly release it.
+        if (pOpenDev->pDevEvo->modesetSubOwner == pOpenDev) {
+            pOpenDev->pDevEvo->modesetSubOwner = NULL;
+        }
     }
 
     nvFreePerOpenDev(pOpen, pOpenDev);
@@ -2065,7 +2098,7 @@ static NvBool SetModePrepUser(
     for (disp = 0; disp < ARRAY_LEN(pReq->disp); disp++) {
         for (apiHead = 0; apiHead < ARRAY_LEN(pReq->disp[disp].head); apiHead++) {
             struct NvKmsSetLutCommonParams *pCommonLutParams =
-                &pReq->disp[disp].head[apiHead].lut;
+                &pReq->disp[disp].head[apiHead].flip.lut;
 
             if (!CopyInLutParams(pCommonLutParams)) {
                 /* Remember how far we got through these loops before we
@@ -2083,7 +2116,7 @@ fail:
     for (disp = 0; disp < ARRAY_LEN(pReq->disp); disp++) {
         for (apiHead = 0; apiHead < ARRAY_LEN(pReq->disp[disp].head); apiHead++) {
             struct NvKmsSetLutCommonParams *pCommonLutParams =
-                &pReq->disp[disp].head[apiHead].lut;
+                &pReq->disp[disp].head[apiHead].flip.lut;
 
             if (disp > dispFailed ||
                 (disp == dispFailed && apiHead >= apiHeadFailed)) {
@@ -2111,7 +2144,7 @@ static NvBool SetModeDoneUser(
     for (disp = 0; disp < ARRAY_LEN(pReq->disp); disp++) {
         for (apiHead = 0; apiHead < ARRAY_LEN(pReq->disp[disp].head); apiHead++) {
             struct NvKmsSetLutCommonParams *pCommonLutParams =
-                &pReq->disp[disp].head[apiHead].lut;
+                &pReq->disp[disp].head[apiHead].flip.lut;
 
             FreeCopiedInLutParams(pCommonLutParams);
         }
@@ -2367,7 +2400,7 @@ static NvBool IdleBaseChannelAll(
         }
 
         /* Break out of the loop if we exceed the timeout. */
-        if (nvExceedsTimeoutUSec(&startTime, timeout)) {
+        if (nvExceedsTimeoutUSec(pDevEvo, &startTime, timeout)) {
             break;
         }
 
@@ -2396,9 +2429,9 @@ static NvBool IdleBaseChannel(struct NvKmsPerOpen *pOpen,
         return FALSE;
     }
 
-    /* Only the modesetOwner can idle base. */
+    /* Only a modeset owner can idle base. */
 
-    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
 
@@ -2407,11 +2440,18 @@ static NvBool IdleBaseChannel(struct NvKmsPerOpen *pOpen,
 }
 
 
+/* No extra user state needed for Flip; although we lose the user pointers
+ * for the LUT ramps after copying them in, that's okay because we don't need
+ * to copy them back out again. */
 struct NvKmsFlipExtraUserState
 {
     // Nothing needed.
 };
 
+/*!
+ * Copy in any data referenced by pointer for the Flip request.  Currently
+ * this is the flip head request array and the LUT ramps.
+ */
 static NvBool FlipPrepUser(
     void *pParamsVoid,
     void *pExtraUserStateVoid)
@@ -2421,6 +2461,7 @@ static NvBool FlipPrepUser(
     struct NvKmsFlipRequestOneHead *pFlipHeadKernel = NULL;
     NvU64 pFlipHeadUser = pRequest->pFlipHead;
     size_t size;
+    NvU32 apiHead, apiHeadFailed;
     int status;
 
     if (!nvKmsNvU64AddressIsSafe(pFlipHeadUser)) {
@@ -2444,19 +2485,54 @@ static NvBool FlipPrepUser(
         return FALSE;
     }
 
+    /* Iterate over all of the common LUT ramp pointers embedded in the Flip
+     * request, and copy in each one. */
+    for (apiHead = 0; apiHead < pRequest->numFlipHeads; apiHead++) {
+        struct NvKmsSetLutCommonParams *pCommonLutParams =
+            &pFlipHeadKernel[apiHead].flip.lut;
+
+        if (!CopyInLutParams(pCommonLutParams)) {
+            /* Remember how far we got through this loop before we
+             * failed, so that we can undo everything up to this point. */
+            apiHeadFailed = apiHead;
+            goto fail_lut;
+        }
+    }
+
     pRequest->pFlipHead = nvKmsPointerToNvU64(pFlipHeadKernel);
 
     return TRUE;
+
+fail_lut:
+    for (apiHead = 0; apiHead < apiHeadFailed; apiHead++) {
+        struct NvKmsSetLutCommonParams *pCommonLutParams =
+            &pFlipHeadKernel[apiHead].flip.lut;
+
+        FreeCopiedInLutParams(pCommonLutParams);
+    }
+    nvFree(pFlipHeadKernel);
+    return FALSE;
 }
 
+/*!
+ * Free buffers allocated in FlipPrepUser.
+ */
 static NvBool FlipDoneUser(
     void *pParamsVoid,
     void *pExtraUserStateVoid)
 {
     struct NvKmsFlipParams *pParams = pParamsVoid;
     struct NvKmsFlipRequest *pRequest = &pParams->request;
+    struct NvKmsFlipRequestOneHead *pFlipHead = nvKmsNvU64ToPointer(pRequest->pFlipHead);
+    NvU32 apiHead;
 
-    nvFree(nvKmsNvU64ToPointer(pRequest->pFlipHead));
+    for (apiHead = 0; apiHead < pRequest->numFlipHeads; apiHead++) {
+        struct NvKmsSetLutCommonParams *pCommonLutParams =
+            &pFlipHead[apiHead].flip.lut;
+
+        FreeCopiedInLutParams(pCommonLutParams);
+    }
+    nvFree(pFlipHead);
     /* The request is not copied back out to userspace (only the reply is), so
      * we don't need to worry about restoring the user pointer */
     pRequest->pFlipHead = 0;
@@ -2614,9 +2690,9 @@ static NvBool GrantSurface(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
     }
 
     pSurfaceEvo =
-        nvEvoGetSurfaceFromHandleNoCtxDmaOk(pOpenDev->pDevEvo,
-                                            &pOpenDev->surfaceHandles,
-                                            pParams->request.surfaceHandle);
+        nvEvoGetSurfaceFromHandleNoDispHWAccessOk(pOpenDev->pDevEvo,
+                                                  &pOpenDev->surfaceHandles,
+                                                  pParams->request.surfaceHandle);
     if (pSurfaceEvo == NULL) {
         return FALSE;
     }
@@ -2743,7 +2819,7 @@ static NvBool GrantSwapGroup(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
         return FALSE;
     }
 
-    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
 
@@ -3243,14 +3319,15 @@ static NvBool GrantPermissions(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
         return FALSE;
     }
 
-    /* Only the modesetOwner can grant permissions. */
+    /* Only a modeset owner can grant permissions. */
 
-    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
 
     if (!ValidateNvKmsPermissions(pOpenDev->pDevEvo,
-                                  &pParams->request.permissions)) {
+                                  &pParams->request.permissions,
+                                  pOpen->clientType)) {
         return FALSE;
     }
 
@@ -3327,6 +3404,16 @@ static NvBool AcquirePermissions(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
         }
 
         pParams->reply.permissions.modeset = pOpenDev->modesetPermissions;
+
+    } else if (type == NV_KMS_PERMISSIONS_TYPE_SUB_OWNER) {
+
+        if (pOpenDev->pDevEvo->modesetSubOwner != NULL) {
+            /* There can be only one sub-owner */
+            return FALSE;
+        }
+
+        pOpenDev->pDevEvo->modesetSubOwner = pOpenDev;
+        AssignFullNvKmsPermissions(pOpenDev);
 
     } else {
         /*
@@ -3423,6 +3510,16 @@ static NvBool RevokePermissionsSet(
     return TRUE;
 }
 
+static NvBool IsHeadRevoked(const NVDispEvoRec *pDispEvo,
+                            const NvU32 apiHead,
+                            void *pData)
+{
+    const struct NvKmsPermissions *pPermissions = pData;
+
+    return !nvDpyIdListIsEmpty(
+        pPermissions->modeset.disp[pDispEvo->displayOwner].head[apiHead].dpyIdList);
+}
+
 static NvBool RevokePermissions(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
 {
     struct NvKmsRevokePermissionsParams *pParams = pParamsVoid;
@@ -3430,20 +3527,44 @@ static NvBool RevokePermissions(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
         GetPerOpenDev(pOpen, pParams->request.deviceHandle);
     const NvU32 validBitmask =
         NVBIT(NV_KMS_PERMISSIONS_TYPE_FLIPPING) |
-        NVBIT(NV_KMS_PERMISSIONS_TYPE_MODESET);
+        NVBIT(NV_KMS_PERMISSIONS_TYPE_MODESET) |
+        NVBIT(NV_KMS_PERMISSIONS_TYPE_SUB_OWNER);
 
     if (pOpenDev == NULL) {
-        return FALSE;
-    }
-
-    /* Only the modeset owner can revoke permissions. */
-    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
         return FALSE;
     }
 
     /* Reject invalid bitmasks. */
 
     if ((pParams->request.permissionsTypeBitmask & ~validBitmask) != 0) {
+        return FALSE;
+    }
+
+    if ((pParams->request.permissionsTypeBitmask & NVBIT(NV_KMS_PERMISSIONS_TYPE_SUB_OWNER)) != 0) {
+        if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+            /* Only the modeset owner can revoke sub-owner permissions. */
+            return FALSE;
+        }
+
+        /*
+         * When revoking ownership permissions, shut down all heads.
+         *
+         * This is necessary to keep the state of nvidia-drm in sync with NVKMS.
+         * Otherwise, an NVKMS client can leave heads enabled when handing off
+         * control of the device back to nvidia-drm, and nvidia-drm's flip queue
+         * handling will get out of sync because it thinks all heads are
+         * disabled and does not expect flip events on those heads.
+         */
+        nvShutDownApiHeads(pOpenDev->pDevEvo, pOpenDev, NULL /* pTestFunc */,
+                           NULL /* pData */,
+                           TRUE /* doRasterLock */);
+    }
+
+    /*
+     * Only a client with sub-owner permissions (or better) can revoke other
+     * kinds of permissions.
+     */
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
 
@@ -3456,7 +3577,23 @@ static NvBool RevokePermissions(struct NvKmsPerOpen *pOpen, void *pParamsVoid)
                                   pOpenDev /* pOpenDevExclude */);
     } else {
         /* If not using bitmask, revoke using the set. */
-        return RevokePermissionsSet(pOpenDev, &pParams->request.permissions);
+        if (!RevokePermissionsSet(pOpenDev, &pParams->request.permissions)) {
+            return FALSE;
+        }
+
+        /*
+         * When revoking ownership permissions, shut down those heads.
+         *
+         * This is necessary to keep the state of nvidia-drm in sync with NVKMS.
+         * Otherwise, an NVKMS client can leave heads enabled when handing off
+         * control of the device back to nvidia-drm, which prevents them from
+         * being able to be leased again.
+         */
+        if (pParams->request.permissions.type == NV_KMS_PERMISSIONS_TYPE_MODESET) {
+            nvShutDownApiHeads(pOpenDev->pDevEvo, pOpenDev, IsHeadRevoked,
+                               &pParams->request.permissions,
+                               TRUE /* doRasterLock */);
+        }
     }
 
     return TRUE;
@@ -3477,7 +3614,7 @@ static NvBool RegisterDeferredRequestFifo(struct NvKmsPerOpen *pOpen,
         return FALSE;
     }
 
-    pSurfaceEvo = nvEvoGetSurfaceFromHandleNoCtxDmaOk(
+    pSurfaceEvo = nvEvoGetSurfaceFromHandleNoDispHWAccessOk(
         pOpenDev->pDevEvo,
         &pOpenDev->surfaceHandles,
         pParams->request.surfaceHandle);
@@ -3499,7 +3636,7 @@ static NvBool RegisterDeferredRequestFifo(struct NvKmsPerOpen *pOpen,
      * noDisplayHardwareAccess==TRUE, then skip the idle in
      * nvEvoDecrementSurfaceRefCnts() for these surfaces.
      */
-    if (pSurfaceEvo->requireCtxDma) {
+    if (pSurfaceEvo->requireDisplayHardwareAccess) {
         return FALSE;
     }
 
@@ -3573,8 +3710,8 @@ static NvBool QueryDpyCRC32(struct NvKmsPerOpen *pOpen,
         return FALSE;
     }
 
-    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
-        // Only the current owner can query CRC32 values.
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
+        // Only a current owner can query CRC32 values.
         return FALSE;
     }
 
@@ -3623,7 +3760,7 @@ static NvBool AllocSwapGroup(
         return FALSE;
     }
 
-    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
 
@@ -3660,7 +3797,7 @@ static NvBool FreeSwapGroup(
         return FALSE;
     }
 
-    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
 
@@ -3930,7 +4067,7 @@ static NvBool SetSwapGroupClipList(
         return FALSE;
     }
 
-    if (pOpenDev->pDevEvo->modesetOwner != pOpenDev) {
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
         return FALSE;
     }
 
@@ -4003,15 +4140,13 @@ static NvBool SwitchMux(
     struct NvKmsSwitchMuxParams *pParams = pParamsVoid;
     const struct NvKmsSwitchMuxRequest *r = &pParams->request;
     NVDpyEvoPtr pDpyEvo;
-    NVDevEvoPtr pDevEvo;
 
     pDpyEvo = GetPerOpenDpy(pOpen, r->deviceHandle, r->dispHandle, r->dpyId);
     if (pDpyEvo == NULL) {
         return FALSE;
     }
 
-    pDevEvo = pDpyEvo->pDispEvo->pDevEvo;
-    if (pDevEvo->modesetOwner != GetPerOpenDev(pOpen, r->deviceHandle)) {
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(GetPerOpenDev(pOpen, r->deviceHandle))) {
         return FALSE;
     }
 
@@ -4074,7 +4209,7 @@ static void EnableAndSetupVblankSyncObject(NVDispEvoRec *pDispEvo,
      * code path failes to re-allocate that sync object.
      */
     if (nvApiHeadIsActive(pDispEvo, apiHead) &&
-            (pVblankSyncObject->evoSyncpt.hCtxDma != 0)) {
+            (pVblankSyncObject->evoSyncpt.surfaceDesc.ctxDmaHandle != 0)) {
         NvU32 head = nvGetPrimaryHwHead(pDispEvo, apiHead);
 
         nvAssert(head != NV_INVALID_HEAD);
@@ -4084,7 +4219,7 @@ static void EnableAndSetupVblankSyncObject(NVDispEvoRec *pDispEvo,
                     pDispEvo->headState[head].timings.rasterBlankStart.y,
                     head,
                     pVblankSyncObject->index,
-                    pVblankSyncObject->evoSyncpt.hCtxDma,
+                    &pVblankSyncObject->evoSyncpt.surfaceDesc,
                     pUpdateState);
 
         pVblankSyncObject->enabled = TRUE;
@@ -4251,7 +4386,7 @@ static void DisableAndCleanVblankSyncObject(NVDispEvoRec *pDispEvo,
                                                           0, /* rasterLine */
                                                           head,
                                                           pVblankSyncObject->index,
-                                                          0, /* hCtxDma */
+                                                          NULL, /* pSurfaceDesc */
                                                           pUpdateState);
         /*
          * Note: it is the caller's responsibility to call
@@ -4442,6 +4577,96 @@ static NvBool NotifyVblank(
     return NV_TRUE;
 }
 
+static NvBool SetFlipLockGroup(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsSetFlipLockGroupParams *pParams = pParamsVoid;
+    const struct NvKmsSetFlipLockGroupRequest *pRequest = &pParams->request;
+    /* Fill in this array as we look up the pDevEvo from the given device
+     * handles, so that later processing can use it without converting
+     * deviceHandle -> pDevEvo again. */
+    NVDevEvoPtr pDevEvo[NV_MAX_SUBDEVICES] = { };
+    NvU32 dev;
+
+    /* Ensure we don't overrun the pDevEvo array. */
+    ct_assert(ARRAY_LEN(pRequest->dev) == NV_MAX_SUBDEVICES);
+
+    for (dev = 0; dev < ARRAY_LEN(pRequest->dev); dev++) {
+        const struct NvKmsSetFlipLockGroupOneDev *pRequestDev =
+            &pRequest->dev[dev];
+        struct NvKmsPerOpenDev *pOpenDev = NULL;
+        NVDispEvoPtr pDispEvo;
+        NvU32 dispIndex;
+        NvU32 i;
+
+        if (pRequestDev->requestedDispsBitMask == 0) {
+            break;
+        }
+
+        pOpenDev = GetPerOpenDev(pOpen, pRequestDev->deviceHandle);
+
+        if (pOpenDev == NULL) {
+            return FALSE;
+        }
+
+        pDevEvo[dev] = pOpenDev->pDevEvo;
+
+        /* The caller must be the modeset owner for every specified device. */
+        if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
+            return FALSE;
+        }
+
+        /* Do not allow the same device to be specified twice. */
+        for (i = 0; i < dev; i++) {
+            if (pDevEvo[i] == pDevEvo[dev]) {
+                return FALSE;
+            }
+        }
+
+        /* Check for invalid disps in requestedDispsBitMask. */
+        if (nvHasBitAboveMax(pRequestDev->requestedDispsBitMask,
+                             pDevEvo[dev]->nDispEvo)) {
+            return FALSE;
+        }
+
+        /* Check for invalid heads in requestedHeadsBitMask. */
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo[dev]) {
+            const NvU32 requestedHeadsBitMask =
+                pRequestDev->disp[dispIndex].requestedHeadsBitMask;
+            NvU32 apiHead;
+
+            if (requestedHeadsBitMask == 0) {
+                return FALSE;
+            }
+            if (nvHasBitAboveMax(requestedHeadsBitMask,
+                                 pDevEvo[dev]->numHeads)) {
+                return FALSE;
+            }
+
+            /*
+             * Verify that all API heads in requestedHeadsBitMask are active.
+             * The requested fliplock group will be implicitly disabled if any of
+             * these heads are specified in a modeset.
+             */
+            for (apiHead = 0; apiHead < pDevEvo[dev]->numHeads; apiHead++) {
+                if ((requestedHeadsBitMask & (1 << apiHead)) != 0) {
+                    if (!nvApiHeadIsActive(pDispEvo, apiHead)) {
+                        return FALSE;
+                    }
+                }
+            }
+        }
+    }
+
+    /* Verify that at least one device was specified */
+    if (pDevEvo[0] == NULL) {
+        return FALSE;
+    }
+
+    return nvSetFlipLockGroup(pDevEvo, pRequest);
+}
+
 /*!
  * Perform the ioctl operation requested by the client.
  *
@@ -4563,6 +4788,7 @@ NvBool nvKmsIoctl(
         ENTRY(NVKMS_IOCTL_ENABLE_VBLANK_SYNC_OBJECT, EnableVblankSyncObject),
         ENTRY(NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT, DisableVblankSyncObject),
         ENTRY(NVKMS_IOCTL_NOTIFY_VBLANK, NotifyVblank),
+        ENTRY(NVKMS_IOCTL_SET_FLIPLOCK_GROUP, SetFlipLockGroup),
     };
 
     struct NvKmsPerOpen *pOpen = pOpenVoid;
@@ -4792,6 +5018,7 @@ static const char *ProcFsPermissionsTypeString(
     switch (permissionsType) {
     case NV_KMS_PERMISSIONS_TYPE_FLIPPING: return "flipping";
     case NV_KMS_PERMISSIONS_TYPE_MODESET:  return "modeset";
+    case NV_KMS_PERMISSIONS_TYPE_SUB_OWNER:return "sub-owner";
     }
 
     return "unknown";
@@ -4960,7 +5187,7 @@ static void PrintSurfacePlanes(
             "plane[%u] disp ctxDma:0x%08x pitch:%u offset:%" NvU64_fmtu
             " rmObjectSizeInBytes:%" NvU64_fmtu,
             planeIndex,
-            pSurfaceEvo->planes[planeIndex].ctxDma,
+            pSurfaceEvo->planes[planeIndex].surfaceDesc.ctxDmaHandle,
             pSurfaceEvo->planes[planeIndex].pitch,
             pSurfaceEvo->planes[planeIndex].offset,
             pSurfaceEvo->planes[planeIndex].rmObjectSizeInBytes);
@@ -5425,6 +5652,116 @@ ProcFsPrintDpyCrcs(
     }
 }
 
+static const char *
+SignalFormatString(NvKmsConnectorSignalFormat signalFormat)
+{
+    switch (signalFormat) {
+    case NVKMS_CONNECTOR_SIGNAL_FORMAT_VGA:     return "VGA";
+    case NVKMS_CONNECTOR_SIGNAL_FORMAT_LVDS:    return "LVDS";
+    case NVKMS_CONNECTOR_SIGNAL_FORMAT_TMDS:    return "TMDS";
+    case NVKMS_CONNECTOR_SIGNAL_FORMAT_DP:      return "DP";
+    case NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI:     return "DSI";
+    case NVKMS_CONNECTOR_SIGNAL_FORMAT_UNKNOWN: break;
+    }
+
+    return "unknown";
+}
+
+static const char *
+PixelDepthString(enum nvKmsPixelDepth pixelDepth)
+{
+    switch (pixelDepth) {
+    case NVKMS_PIXEL_DEPTH_18_444: return "18bpp 4:4:4";
+    case NVKMS_PIXEL_DEPTH_24_444: return "24bpp 4:4:4";
+    case NVKMS_PIXEL_DEPTH_30_444: return "30bpp 4:4:4";
+    case NVKMS_PIXEL_DEPTH_20_422: return "20bpp 4:2:2";
+    case NVKMS_PIXEL_DEPTH_16_422: return "16bpp 4:2:2";
+    }
+
+    return "unknown";
+}
+
+static void
+ProcFsPrintHeads(
+    void *data,
+    char *buffer,
+    size_t size,
+    nvkms_procfs_out_string_func_t *outString)
+{
+    NVDevEvoPtr pDevEvo;
+    NVDispEvoPtr pDispEvo;
+    NvU32 dispIndex, head;
+    NVEvoInfoStringRec infoString;
+
+    FOR_ALL_EVO_DEVS(pDevEvo) {
+
+        nvInitInfoString(&infoString, buffer, size);
+        nvEvoLogInfoString(&infoString,
+                "pDevEvo (deviceId:%02d)         : %p",
+                pDevEvo->deviceId, pDevEvo);
+        outString(data, buffer);
+
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+
+            nvInitInfoString(&infoString, buffer, size);
+            nvEvoLogInfoString(&infoString,
+                    " pDispEvo (dispIndex:%02d)      : %p",
+                    dispIndex, pDispEvo);
+            outString(data, buffer);
+
+            if (pDevEvo->coreInitMethodsPending) {
+                /* If the core channel has been allocated but no mode has yet
+                 * been set, pConnectorEvo will be non-NULL for heads being
+                 * driven by the console, but data like the mode timings will
+                 * be bogus. */
+                nvInitInfoString(&infoString, buffer, size);
+                nvEvoLogInfoString(&infoString, "  (not yet initialized)");
+                outString(data, buffer);
+                continue;
+            }
+
+            for (head = 0; head < pDevEvo->numHeads; head++) {
+                const NVDispHeadStateEvoRec *pHeadState =
+                    &pDispEvo->headState[head];
+                const NVConnectorEvoRec *pConnectorEvo =
+                    pHeadState->pConnectorEvo;
+                const NVHwModeTimingsEvo *pHwModeTimings =
+                    &pHeadState->timings;
+
+                nvInitInfoString(&infoString, buffer, size);
+                if (pConnectorEvo == NULL) {
+                    nvEvoLogInfoString(&infoString,
+                            "  head %d                      : inactive",
+                            head);
+                } else {
+                    const NvU32 refreshRate10kHz =
+                        nvGetRefreshRate10kHz(pHwModeTimings);
+
+                    nvEvoLogInfoString(&infoString,
+                            "  head %d                      : %s",
+                            head, pConnectorEvo->name);
+
+                    nvEvoLogInfoString(&infoString,
+                            "   protocol                   : %s",
+                            SignalFormatString(pConnectorEvo->signalFormat));
+
+                    nvEvoLogInfoString(&infoString,
+                            "   mode                       : %u x %u @ %u.%04u Hz",
+                            nvEvoVisibleWidth(pHwModeTimings),
+                            nvEvoVisibleHeight(pHwModeTimings),
+                            refreshRate10kHz / 10000,
+                            refreshRate10kHz % 10000);
+
+                    nvEvoLogInfoString(&infoString,
+                            "   depth                      : %s",
+                            PixelDepthString(pHeadState->pixelDepth));
+                }
+                outString(data, buffer);
+            }
+        }
+    }
+}
+
 #endif /* NVKMS_PROCFS_ENABLE */
 
 void nvKmsGetProcFiles(const nvkms_procfs_file_t **ppProcFiles)
@@ -5436,6 +5773,7 @@ void nvKmsGetProcFiles(const nvkms_procfs_file_t **ppProcFiles)
         { "headsurface",            ProcFsPrintHeadSurface },
         { "deferred-request-fifos", ProcFsPrintDeferredRequestFifos },
         { "crcs",                   ProcFsPrintDpyCrcs },
+        { "heads",                  ProcFsPrintHeads },
         { NULL, NULL },
     };
 
@@ -5447,7 +5785,7 @@ void nvKmsGetProcFiles(const nvkms_procfs_file_t **ppProcFiles)
 
 static void FreeGlobalState(void)
 {
-    nvInvalidateTopologiesEvo();
+    nvInvalidateRasterLockGroupsEvo();
 
     nvKmsClose(nvEvoGlobal.nvKmsPerOpen);
     nvEvoGlobal.nvKmsPerOpen = NULL;
@@ -5805,8 +6143,8 @@ static void AllocSurfaceCtxDmasForAllOpens(NVDevEvoRec *pDevEvo)
                 continue;
             }
 
-            if (!pSurfaceEvo->requireCtxDma) {
-                nvAssert(pSurfaceEvo->planes[0].ctxDma == 0);
+            if (!pSurfaceEvo->requireDisplayHardwareAccess) {
+                nvAssert(pSurfaceEvo->planes[0].surfaceDesc.ctxDmaHandle == 0);
                 continue;
             }
 
@@ -5817,16 +6155,16 @@ static void AllocSurfaceCtxDmasForAllOpens(NVDevEvoRec *pDevEvo)
             nvAssert(pSurfaceEvo->rmRefCnt > 0);
 
             FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
-
-                pSurfaceEvo->planes[planeIndex].ctxDma =
-                    nvRmEvoAllocateAndBindDispContextDMA(
-                    pDevEvo,
-                    pSurfaceEvo->planes[planeIndex].rmHandle,
-                    pSurfaceEvo->layout,
-                    pSurfaceEvo->planes[planeIndex].rmObjectSizeInBytes - 1);
-                if (!pSurfaceEvo->planes[planeIndex].ctxDma) {
+                NvU32 ret =
+                    nvRmAllocAndBindSurfaceDescriptor(
+                            pDevEvo,
+                            pSurfaceEvo->planes[planeIndex].rmHandle,
+                            pSurfaceEvo->layout,
+                            pSurfaceEvo->planes[planeIndex].rmObjectSizeInBytes - 1,
+                            &pSurfaceEvo->planes[planeIndex].surfaceDesc);
+                if (ret != NVOS_STATUS_SUCCESS) {
                     FreeSurfaceCtxDmasForAllOpens(pDevEvo);
-                    nvAssert(!"Failed to re-allocate surface ctx dma");
+                    nvAssert(!"Failed to re-allocate surface descriptor");
                     return;
                 }
             }
@@ -5864,15 +6202,16 @@ static void FreeSurfaceCtxDmasForAllOpens(NVDevEvoRec *pDevEvo)
              */
             nvAssert(pSurfaceEvo->rmRefCnt > 0);
 
-            if (!pSurfaceEvo->requireCtxDma) {
-                nvAssert(pSurfaceEvo->planes[0].ctxDma == 0);
+            if (!pSurfaceEvo->requireDisplayHardwareAccess) {
+                nvAssert(pSurfaceEvo->planes[0].surfaceDesc.ctxDmaHandle == 0);
                 continue;
             }
 
             FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
-                nvRmEvoFreeDispContextDMA(
+                pDevEvo->hal->FreeSurfaceDescriptor(
                     pDevEvo,
-                    &pSurfaceEvo->planes[planeIndex].ctxDma);
+                    nvEvoGlobal.clientHandle,
+                    &pSurfaceEvo->planes[planeIndex].surfaceDesc);
             }
         }
     }
@@ -5916,13 +6255,6 @@ NvBool nvSurfaceEvoInAnyOpens(const NVSurfaceEvoRec *pSurfaceEvo)
     return FALSE;
 }
 #endif
-
-NVDevEvoPtr nvGetDevEvoFromOpenDev(
-    const struct NvKmsPerOpenDev *pOpenDev)
-{
-    nvAssert(pOpenDev != NULL);
-    return pOpenDev->pDevEvo;
-}
 
 const struct NvKmsFlipPermissions *nvGetFlipPermissionsFromOpenDev(
     const struct NvKmsPerOpenDev *pOpenDev)
@@ -5987,8 +6319,10 @@ void nvKmsSuspend(NvU32 gpuId)
              * that becomes stale after suspend. Shutting the heads down here
              * clears the relevant state explicitly.
              */
-            nvShutDownApiHeads(pDevEvo,
-                               NULL /* pTestFunc, shut down all heads */);
+            nvShutDownApiHeads(pDevEvo, pDevEvo->pNvKmsOpenDev,
+                               NULL /* pTestFunc, shut down all heads */,
+                               NULL /* pData */,
+                               TRUE /* doRasterLock */);
             pDevEvo->skipConsoleRestore = TRUE;
 
             DisableAndCleanVblankSyncObjectForAllOpens(pDevEvo);
@@ -6147,4 +6481,11 @@ NvBool nvKmsSetBacklight(NvU32 display_id, void *drv_priv, NvU32 brightness)
                             &params, sizeof(params));
 
     return status == NV_OK;
+}
+
+NvBool nvKmsOpenDevHasSubOwnerPermissionOrBetter(const struct NvKmsPerOpenDev *pOpenDev)
+{
+    return pOpenDev->isPrivileged ||
+           pOpenDev->pDevEvo->modesetOwner == pOpenDev ||
+           pOpenDev->pDevEvo->modesetSubOwner == pOpenDev;
 }

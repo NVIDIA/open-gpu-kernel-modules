@@ -32,9 +32,6 @@
 
 #define NVOC_KERNEL_SM_DEBUGGER_SESSION_H_PRIVATE_ACCESS_ALLOWED
 
-// FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_OBJECT_H_PRIVATE_ACCESS_ALLOWED
-
 #include "kernel/rmapi/control.h"
 #include "kernel/rmapi/rmapi.h"
 #include "kernel/os/os.h"
@@ -869,7 +866,7 @@ ksmdbgssnCtrlCmdDebugReadAllSmErrorStates_IMPL
         {
             NV_ASSERT_OK(
                 kgrctxLookupMmuFault(pGpu,
-                                     pKernelSMDebuggerSession->pObject->pKernelGraphicsContext,
+                                     kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject),
                                      &pParams->mmuFault));
         }
 
@@ -913,7 +910,7 @@ ksmdbgssnCtrlCmdDebugClearAllSmErrorStates_IMPL
         if (IS_VIRTUAL_WITH_SRIOV(pGpu))
         {
             NV_ASSERT_OK(
-                kgrctxClearMmuFault(pGpu, pKernelSMDebuggerSession->pObject->pKernelGraphicsContext));
+                kgrctxClearMmuFault(pGpu, kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject)));
         }
 
         return rmStatus;
@@ -958,7 +955,7 @@ ksmdbgssnCtrlCmdDebugReadMMUFaultInfo_IMPL
 
     NV_ASSERT_OK_OR_RETURN(
         kgrctxLookupMmuFaultInfo(pGpu,
-                                 pKernelSMDebuggerSession->pObject->pKernelGraphicsContext,
+                                 kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject),
                                  pParams));
 
     return NV_OK;

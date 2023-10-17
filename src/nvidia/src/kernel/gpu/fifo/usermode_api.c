@@ -44,27 +44,23 @@ usrmodeConstruct_IMPL
     NvBool                       bBar1Mapping   = NV_FALSE;
     NvBool                       bPrivMapping   = NV_FALSE;
     MEMORY_DESCRIPTOR           *pMemDesc       = pKernelFifo->pRegVF;
+    NvU32                        memClassId     = NV01_MEMORY_LOCAL_PRIVILEGED;
 
     // Copy-construction has already been done by the base Memory class
     if (RS_IS_COPY_CTOR(pParams))
     {
+        UserModeApi *pUserModeSrc = dynamicCast(pParams->pSrcRef->pResource, UserModeApi);
+
+        pUserModeApi->bInternalMmio = pUserModeSrc->bInternalMmio;
+        pUserModeApi->bPrivMapping = pUserModeSrc->bPrivMapping;
+
         return NV_OK;
     }
 
-    //
-    // We check pKernelFifo->pBar1VF because for some reason RM allows HOPPER_USERMODE_A on ADA.
-    // This is a WAR until we root cause.
-    //
-    if (hClass >= HOPPER_USERMODE_A && pAllocParams != NULL && pKernelFifo->pBar1VF != NULL)
+    if (hClass >= HOPPER_USERMODE_A && pAllocParams != NULL)
     {
         bBar1Mapping = pAllocParams->bBar1Mapping;
         bPrivMapping = pAllocParams->bPriv;
-    }
-
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
-        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
-    {
-        bBar1Mapping = NV_FALSE;
     }
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
@@ -75,15 +71,33 @@ usrmodeConstruct_IMPL
         !bPrivMapping || pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL,
         NV_ERR_INSUFFICIENT_PERMISSIONS);
 
+    //
+    // In order to map only internal MMIO, pAllocParams->bBar1Mapping must be set to true,
+    // and clients need not map to CPU. This parameter might be renamed in the future to indicate
+    // that it is both for BAR1 use and internal MMIO use.
+    //
+    pUserModeApi->bInternalMmio = bBar1Mapping;
+    pUserModeApi->bPrivMapping = bPrivMapping;
+
+    //
+    // On coherent platforms, we don't support BAR1 mapping of doorbell, but we still support internal MMIO.
+    // This check transparently returns a BAR0 CPU mapping on these platforms.
+    //
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
+    {
+        bBar1Mapping = NV_FALSE;
+    }
+
     if (bBar1Mapping)
     {
         pMemDesc = bPrivMapping ? pKernelFifo->pBar1PrivVF : pKernelFifo->pBar1VF;
+        memClassId = NV01_MEMORY_SYSTEM;
     }
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            memConstructCommon(pMemory,
-                bBar1Mapping? NV01_MEMORY_SYSTEM : NV01_MEMORY_LOCAL_PRIVILEGED,
-                0, pMemDesc, 0, NULL, 0, 0, 0, 0, NVOS32_MEM_TAG_NONE, NULL));
+            memConstructCommon(pMemory, memClassId, 0, pMemDesc, 0, NULL,
+                               0, 0, 0, 0, NVOS32_MEM_TAG_NONE, NULL));
     memdescAddRef(pMemDesc);
     return NV_OK;
 }
@@ -91,4 +105,29 @@ usrmodeConstruct_IMPL
 NvBool
 usrmodeCanCopy_IMPL(UserModeApi *pUserModeApi){
     return NV_TRUE;
+}
+
+NV_STATUS
+usrmodeGetMemInterMapParams_IMPL
+(
+    UserModeApi *pUserModeApi,
+    RMRES_MEM_INTER_MAP_PARAMS *pParams
+)
+{
+    //
+    // We need to always return the correct memdesc for GPU mapping, regardless of what is used on the CPU.
+    // We do this by overriding the regular pParams returned from memGetMemInterMapParams
+    //
+    Memory     *pMemory     = staticCast(pUserModeApi, Memory);
+    OBJGPU     *pGpu        = pMemory->pGpu;
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, memGetMemInterMapParams_IMPL(pMemory, pParams));
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pUserModeApi->bInternalMmio, NV_ERR_INVALID_PARAMETER);
+
+    pParams->pSrcMemDesc = pUserModeApi->bPrivMapping ? pKernelFifo->pBar1PrivVF : pKernelFifo->pBar1VF;
+
+    return NV_OK;
+
 }

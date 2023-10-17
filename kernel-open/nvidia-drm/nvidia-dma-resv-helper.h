@@ -121,6 +121,20 @@ static inline void nv_dma_resv_add_excl_fence(nv_dma_resv_t *obj,
 #endif
 }
 
+static inline void nv_dma_resv_add_shared_fence(nv_dma_resv_t *obj,
+                                                nv_dma_fence_t *fence)
+{
+#if defined(NV_LINUX_DMA_RESV_H_PRESENT)
+#if defined(NV_DMA_RESV_ADD_FENCE_PRESENT)
+    dma_resv_add_fence(obj, fence, DMA_RESV_USAGE_READ);
+#else
+    dma_resv_add_shared_fence(obj, fence);
+#endif
+#else
+    reservation_object_add_shared_fence(obj, fence);
+#endif
+}
+
 #endif /* defined(NV_DRM_FENCE_AVAILABLE) */
 
 #endif /* __NVIDIA_DMA_RESV_HELPER_H__ */

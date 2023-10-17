@@ -271,4 +271,5 @@ static inline void kcrashcatEngineUnregisterCrashBuffer(struct KernelCrashCatEng
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_CRASHCAT_ENGINE_NVOC_H_

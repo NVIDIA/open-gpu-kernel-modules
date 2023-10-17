@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,6 +35,8 @@
 // headers. TODO: consider sharing a list of forward struct declarations with
 // e.g. eng_desc.h?
 //
+
+struct KernelPmu;
 struct KernelGsp;
 struct KernelSec2;
 

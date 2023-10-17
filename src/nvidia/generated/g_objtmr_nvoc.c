@@ -75,7 +75,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_OBJTMR =
     /*pExportInfo=*/        &__nvoc_export_info_OBJTMR
 };
 
-static void __nvoc_thunk_OBJTMR_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pTmr, IntrServiceRecord pRecords[167]) {
+static void __nvoc_thunk_OBJTMR_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pTmr, IntrServiceRecord pRecords[168]) {
     tmrRegisterIntrService(pGpu, (struct OBJTMR *)(((unsigned char *)pTmr) - __nvoc_rtti_OBJTMR_IntrService.offset), pRecords);
 }
 

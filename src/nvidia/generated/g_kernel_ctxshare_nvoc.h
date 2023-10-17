@@ -434,4 +434,5 @@ void kctxshareapiDestruct_IMPL(struct KernelCtxShareApi *pKernelCtxShareApi);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_CTXSHARE_NVOC_H_

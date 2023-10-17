@@ -42,6 +42,8 @@ NVDpyEvoPtr nvAllocDpyEvo(NVDispEvoPtr pDispEvo,
 void nvFreeDpyEvo(NVDispEvoPtr pDispEvo, NVDpyEvoPtr pDpyEvo);
 NVConnectorEvoPtr nvGetConnectorFromDisp(NVDispEvoPtr pDispEvo, NVDpyId dpyId);
 
+void nvDpyAssignSDRInfoFramePayload(NVT_HDR_INFOFRAME_PAYLOAD *pPayload);
+void nvCancelSDRTransitionTimer(NVDpyEvoRec *pDpyEvo);
 void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo);
 
 NvBool nvDpyRequiresDualLinkEvo(const NVDpyEvoRec *pDpyEvo,
@@ -84,6 +86,8 @@ nvGetDefaultDpyAttributeDigitalSignalValue(const NVConnectorEvoRec *pConnectorEv
 NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo);
 
 NvU32 nvDpyGetPossibleApiHeadsMask(const NVDpyEvoRec *pDpyEvo);
+
+NvBool nvDpyIsHDRCapable(const NVDpyEvoRec *pDpyEvo);
 
 #ifdef __cplusplus
 };

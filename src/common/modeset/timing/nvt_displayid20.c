@@ -30,38 +30,13 @@
 #include "nvBinSegment.h"
 #include "nvmisc.h"
 
-#include "nvtiming.h"
 #include "nvtiming_pvt.h"
 #include "displayid20.h"
 
 PUSH_SEGMENTS
 
-// DisplayID20 Entry point functions
-static NVT_STATUS parseDisplayId20BaseSection(const DISPLAYID_2_0_SECTION *pSection, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);
-static NVT_STATUS parseDisplayId20SectionDataBlocks(const DISPLAYID_2_0_SECTION *pSection, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);
-static NVT_STATUS parseDisplayId20ExtensionSection(const DISPLAYID_2_0_SECTION *pSection, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);
-
-// DisplayID20 Data Block Tag Alloction
-static NVT_STATUS parseDisplayId20ProductIdentity(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                // 0x20 Product Identificaton
-static NVT_STATUS parseDisplayId20DisplayParam(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                   // 0x21 Display Parameters
-static NVT_STATUS parseDisplayId20Timing7(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                        // 0x22 Type VII Timing - Detailed Timing
-static NVT_STATUS parseDisplayId20Timing8(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                        // 0x23 Type VIII Timing - Enumerated Timing
-static NVT_STATUS parseDisplayId20Timing9(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                        // 0x24 Type IX Timing - Formula-based
-static NVT_STATUS parseDisplayId20RangeLimit(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                     // 0x25 Dynamic Video Timing Range Limits
-static NVT_STATUS parseDisplayId20DisplayInterfaceFeatures(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);       // 0x26 Display Interface Features
-static NVT_STATUS parseDisplayId20Stereo(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                         // 0x27 Stereo Display Interface
-static NVT_STATUS parseDisplayId20TiledDisplay(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                   // 0x28 Tiled Display Topology
-static NVT_STATUS parseDisplayId20ContainerId(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                    // 0x29 ContainerID
-static NVT_STATUS parseDisplayId20Timing10(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                       // 0x2A Type X Timing - Formula-based Timing
-static NVT_STATUS parseDisplayId20AdaptiveSync(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                   // 0x2B Adaptive-Sync
-static NVT_STATUS parseDisplayId20ARVRHMD(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                        // 0x2C ARVR HMD
-static NVT_STATUS parseDisplayId20ARVRLayer(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                      // 0x2D ARVR Layer
-static NVT_STATUS parseDisplayId20VendorSpecific(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                 // 0x7E Vendor-specific
-static NVT_STATUS parseDisplayId20CtaData(const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo);                        // 0x81 CTA DisplayID
-
 // Helper function
 static NVT_STATUS getPrimaryUseCase(NvU8 product_type, NVT_DISPLAYID_PRODUCT_PRIMARY_USE_CASE *primary_use_case);
-static NVT_STATUS parseDisplayId20Timing9Descriptor(const DISPLAYID_2_0_TIMING_9_DESCRIPTOR *pDescriptor, NVT_TIMING *pTiming, NvU8 count);
 static NvU32      greatestCommonDenominator(NvU32 x, NvU32 y);
 static NvU8       getExistedTimingSeqNumber(NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo, enum NVT_TIMING_TYPE);
 
@@ -141,7 +116,9 @@ NvTiming_parseDisplayId20Info(
     return status;
 }
 
-NvU32 NvTiming_DisplayID2ValidationMask(
+CODE_SEGMENT(PAGE_DD_CODE)
+NvU32 
+NvTiming_DisplayID2ValidationMask(
     NVT_DISPLAYID_2_0_INFO *pDisplayId20Info,
     NvBool bIsStrongValidation)
 {
@@ -215,7 +192,7 @@ NvTiming_DisplayID2ValidationDataBlocks(
 
 //  DisplayID20 Entry point functions
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20BaseSection(
     const DISPLAYID_2_0_SECTION *pSection,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -245,7 +222,7 @@ parseDisplayId20BaseSection(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20ExtensionSection(
     const DISPLAYID_2_0_SECTION *pSection,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -269,7 +246,7 @@ parseDisplayId20ExtensionSection(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20SectionDataBlocks(
     const DISPLAYID_2_0_SECTION *pSection,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -355,31 +332,34 @@ parseDisplayId20SectionDataBlocks(
                 }
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_STEREO:
-                pDisplayIdInfo->valid_data_blocks.stereo_interface_present       = NV_TRUE;
+                pDisplayIdInfo->valid_data_blocks.stereo_interface_present           = NV_TRUE;
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_TILED_DISPLAY:
-                pDisplayIdInfo->valid_data_blocks.tiled_display_present          = NV_TRUE;
+                pDisplayIdInfo->valid_data_blocks.tiled_display_present              = NV_TRUE;
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_CONTAINER_ID:
-                pDisplayIdInfo->valid_data_blocks.container_id_present           = NV_TRUE;
+                pDisplayIdInfo->valid_data_blocks.container_id_present               = NV_TRUE;
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_TIMING_10:
-                pDisplayIdInfo->valid_data_blocks.type10Timing_present           = NV_TRUE;
+                pDisplayIdInfo->valid_data_blocks.type10Timing_present               = NV_TRUE;
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_ADAPTIVE_SYNC:
-                pDisplayIdInfo->valid_data_blocks.adaptive_sync_present          = NV_TRUE;                
+                pDisplayIdInfo->valid_data_blocks.adaptive_sync_present              = NV_TRUE;                
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_ARVR_HMD:
-                pDisplayIdInfo->valid_data_blocks.arvr_hmd_present               = NV_TRUE;
+                pDisplayIdInfo->valid_data_blocks.arvr_hmd_present                   = NV_TRUE;
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_ARVR_LAYER:
-                pDisplayIdInfo->valid_data_blocks.arvr_layer_present             = NV_TRUE;
+                pDisplayIdInfo->valid_data_blocks.arvr_layer_present                 = NV_TRUE;
+                break;
+            case DISPLAYID_2_0_BLOCK_TYPE_BRIGHTNESS_LUMINANCE_RANGE:
+                pDisplayIdInfo->valid_data_blocks.brightness_luminance_range_present = NV_TRUE;
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC:
-                pDisplayIdInfo->valid_data_blocks.vendor_specific_present        = NV_TRUE;
+                pDisplayIdInfo->valid_data_blocks.vendor_specific_present            = NV_TRUE;
                 break;
             case DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA:
-                pDisplayIdInfo->valid_data_blocks.cta_data_present               = NV_TRUE;
+                pDisplayIdInfo->valid_data_blocks.cta_data_present                   = NV_TRUE;
                 break;
             default:
                 status = NVT_STATUS_ERR;
@@ -444,6 +424,9 @@ parseDisplayId20DataBlock(
     case DISPLAYID_2_0_BLOCK_TYPE_ARVR_LAYER:
         status = parseDisplayId20ARVRLayer(pDataBlock, pDisplayIdInfo);
         break;
+    case DISPLAYID_2_0_BLOCK_TYPE_BRIGHTNESS_LUMINANCE_RANGE:
+        status = parseDisplayId20BrightnessLuminanceRange(pDataBlock, pDisplayIdInfo);
+        break;
     case DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC:
         status = parseDisplayId20VendorSpecific(pDataBlock, pDisplayIdInfo);
         break;
@@ -503,7 +486,7 @@ parseDisplayId20ProductIdentity(
 
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20DisplayParam(    
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -561,8 +544,8 @@ parseDisplayId20DisplayParam(
     // IEEE 754 half-precision binary floating-point format
     pDisplayParam->native_max_luminance_full_coverage = pDisplayParamBlock->max_luminance_full_coverage[1] << 8 |
         pDisplayParamBlock->max_luminance_full_coverage[0];
-    pDisplayParam->native_max_luminance_1_percent_rect_coverage = pDisplayParamBlock->max_luminance_1_percent_rectangular_coverage[1] << 8 |
-        pDisplayParamBlock->max_luminance_1_percent_rectangular_coverage[0];
+    pDisplayParam->native_max_luminance_10_percent_rect_coverage = pDisplayParamBlock->max_luminance_10_percent_rectangular_coverage[1] << 8 |
+        pDisplayParamBlock->max_luminance_10_percent_rectangular_coverage[0];
     pDisplayParam->native_min_luminance = pDisplayParamBlock->min_luminance[1] << 8 |
         pDisplayParamBlock->min_luminance[0];
 
@@ -598,7 +581,7 @@ parseDisplayId20DisplayParam(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE) 
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20Timing7(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -687,7 +670,7 @@ parseDisplayId20Timing7(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE) 
-static  NVT_STATUS
+NVT_STATUS
 parseDisplayId20Timing8(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -751,7 +734,7 @@ parseDisplayId20Timing8(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE) 
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20Timing9(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -798,7 +781,7 @@ parseDisplayId20Timing9(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE) 
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20Timing10(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -909,7 +892,7 @@ parseDisplayId20Timing10(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20RangeLimit(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -970,7 +953,7 @@ parseDisplayId20RangeLimit(
                 } while(0)
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20DisplayInterfaceFeatures(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -1088,7 +1071,7 @@ parseDisplayId20DisplayInterfaceFeatures(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20Stereo(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -1103,7 +1086,7 @@ parseDisplayId20Stereo(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20TiledDisplay(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -1166,7 +1149,7 @@ parseDisplayId20TiledDisplay(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20ContainerId(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -1207,7 +1190,7 @@ parseDisplayId20ContainerId(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20AdaptiveSync(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -1279,7 +1262,7 @@ parseDisplayId20AdaptiveSync(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20ARVRHMD(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -1294,7 +1277,7 @@ parseDisplayId20ARVRHMD(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20ARVRLayer(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -1308,10 +1291,36 @@ parseDisplayId20ARVRLayer(
     return status;
 }
 
+CODE_SEGMENT(PAGE_DD_CODE)
+NVT_STATUS
+parseDisplayId20BrightnessLuminanceRange(
+    const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
+    NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
+{
+    NVT_STATUS status = NVT_STATUS_SUCCESS;
+    const DISPLAYID_2_0_BRIGHTNESS_LUMINANCE_RANGE_BLOCK  *pBrightnessLuminanceRangeBlock = NULL;
+    NVT_DISPLAYID_BRIGHTNESS_LUMINANCE_RANGE *pluminanceRanges = NULL;
 
+    if ((pDataBlock == NULL) || pDataBlock->data_bytes != DISPLAYID_2_0_BRIGHTNESS_LUMINANCE_RANGE_BLOCK_PAYLOAD_LENGTH)
+    {
+        return NVT_STATUS_ERR;
+    }
+
+    if (pDisplayIdInfo == NULL) return status;
+
+    pBrightnessLuminanceRangeBlock = (const DISPLAYID_2_0_BRIGHTNESS_LUMINANCE_RANGE_BLOCK *)pDataBlock;
+    pluminanceRanges      = &pDisplayIdInfo->luminance_ranges;
+
+    pluminanceRanges->revision                = pDataBlock->revision;
+    pluminanceRanges->min_sdr_luminance       = pBrightnessLuminanceRangeBlock->min_sdr_luminance;
+    pluminanceRanges->max_sdr_luminance       = pBrightnessLuminanceRangeBlock->max_sdr_luminance;
+    pluminanceRanges->max_boost_sdr_luminance = pBrightnessLuminanceRangeBlock->max_boost_sdr_luminance;
+
+    return status;
+}
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20VendorSpecific(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock, 
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -1365,7 +1374,7 @@ parseDisplayId20VendorSpecific(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20CtaData(
     const DISPLAYID_2_0_DATA_BLOCK_HEADER *pDataBlock,
     NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo)
@@ -1399,6 +1408,8 @@ parseDisplayId20CtaData(
     p861Info = &(pDisplayIdInfo->cta.cta861_info);
 
     parseCta861VsdbBlocks(p861Info, pDisplayIdInfo, FROM_DISPLAYID_20_DATA_BLOCK);
+    parseCta861VsvdbBlocks(p861Info, pDisplayIdInfo, FROM_DISPLAYID_20_DATA_BLOCK);
+
     parseCta861HfScdb(p861Info, pDisplayIdInfo, FROM_DISPLAYID_20_DATA_BLOCK);
     // This CTA 861 function to parse 861 part
     parse861bShortTiming(p861Info, pDisplayIdInfo, FROM_DISPLAYID_20_DATA_BLOCK);
@@ -1406,8 +1417,6 @@ parseDisplayId20CtaData(
     parse861bShortYuv420Timing(p861Info, pDisplayIdInfo, FROM_DISPLAYID_20_DATA_BLOCK);
 
     parseCea861HdrStaticMetadataDataBlock(p861Info, pDisplayIdInfo, FROM_DISPLAYID_20_DATA_BLOCK);
-    parseCea861DvStaticMetadataDataBlock(p861Info, pDisplayIdInfo, FROM_DISPLAYID_20_DATA_BLOCK);
-    parseCea861Hdr10PlusDataBlock(p861Info, pDisplayIdInfo, FROM_DISPLAYID_20_DATA_BLOCK);
 
     // CEA861-F at 7.5.12 section about VFPDB block.
     if (p861Info->total_svr > 0)
@@ -1694,16 +1703,19 @@ parseDisplayId20Timing8Descriptor(
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-static NVT_STATUS
+NVT_STATUS
 parseDisplayId20Timing9Descriptor(
-    const DISPLAYID_2_0_TIMING_9_DESCRIPTOR *pDescriptor,
+    const void *pVoidDescriptor,
     NVT_TIMING *pTiming,
     NvU8 count)
 {
     NVT_STATUS  status = NVT_STATUS_SUCCESS;
+    const DISPLAYID_2_0_TIMING_9_DESCRIPTOR* pDescriptor = NULL;
     NvU32       width  = 0;
     NvU32       height = 0;
     NvU32       rr     = 0;
+
+    pDescriptor = (const DISPLAYID_2_0_TIMING_9_DESCRIPTOR *)pVoidDescriptor;
 
     width  = (pDescriptor->horizontal_active_pixels[1] << 8 | pDescriptor->horizontal_active_pixels[0]) + 1;
     height = (pDescriptor->vertical_active_lines[1] << 8    | pDescriptor->vertical_active_lines[0]) + 1;

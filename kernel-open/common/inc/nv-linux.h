@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -248,7 +248,7 @@ NV_STATUS nvos_forward_error_to_cray(struct pci_dev *, NvU32,
 #undef NV_SET_PAGES_UC_PRESENT
 #endif
 
-#if !defined(NVCPU_AARCH64) && !defined(NVCPU_PPC64LE)
+#if !defined(NVCPU_AARCH64) && !defined(NVCPU_PPC64LE) && !defined(NVCPU_RISCV64)
 #if !defined(NV_SET_MEMORY_UC_PRESENT) && !defined(NV_SET_PAGES_UC_PRESENT)
 #error "This driver requires the ability to change memory types!"
 #endif
@@ -430,6 +430,11 @@ extern NvBool nvos_is_chipset_io_coherent(void);
 #define CACHE_FLUSH()            asm volatile("sync;  \n" \
                                               "isync; \n" ::: "memory")
 #define WRITE_COMBINE_FLUSH()    CACHE_FLUSH()
+#elif defined(NVCPU_RISCV64)
+#define CACHE_FLUSH()            mb()
+#define WRITE_COMBINE_FLUSH()    CACHE_FLUSH()
+#else
+#error "CACHE_FLUSH() and WRITE_COMBINE_FLUSH() need to be defined for this architecture."
 #endif
 
 typedef enum
@@ -440,7 +445,7 @@ typedef enum
     NV_MEMORY_TYPE_DEVICE_MMIO, /* All kinds of MMIO referred by NVRM e.g. BARs and MCFG of device */
 } nv_memory_type_t;
 
-#if defined(NVCPU_AARCH64) || defined(NVCPU_PPC64LE)
+#if defined(NVCPU_AARCH64) || defined(NVCPU_PPC64LE) || defined(NVCPU_RISCV64)
 #define NV_ALLOW_WRITE_COMBINING(mt)    1
 #elif defined(NVCPU_X86_64)
 #if defined(NV_ENABLE_PAT_SUPPORT)
@@ -753,7 +758,6 @@ static inline dma_addr_t nv_phys_to_dma(struct device *dev, NvU64 pa)
 #define NV_VMA_FILE(vma)              ((vma)->vm_file)
 
 #define NV_DEVICE_MINOR_NUMBER(x)     minor((x)->i_rdev)
-#define NV_CONTROL_DEVICE_MINOR       255
 
 #define NV_PCI_DISABLE_DEVICE(pci_dev)                           \
     {                                                            \
@@ -1646,20 +1650,11 @@ typedef struct nvidia_event
     nv_event_t event;
 } nvidia_event_t;
 
-typedef enum
-{
-    NV_FOPS_STACK_INDEX_MMAP,
-    NV_FOPS_STACK_INDEX_IOCTL,
-    NV_FOPS_STACK_INDEX_COUNT
-} nvidia_entry_point_index_t;
-
 typedef struct
 {
     nv_file_private_t nvfp;
 
     nvidia_stack_t *sp;
-    nvidia_stack_t *fops_sp[NV_FOPS_STACK_INDEX_COUNT];
-    struct semaphore fops_sp_lock[NV_FOPS_STACK_INDEX_COUNT];
     nv_alloc_t *free_list;
     void *nvptr;
     nvidia_event_t *event_data_head, *event_data_tail;
@@ -1688,28 +1683,6 @@ static inline nv_linux_file_private_t *nv_get_nvlfp_from_nvfp(nv_file_private_t 
 #define NV_GET_NVL_FROM_NV_STATE(nv)    ((nv_linux_state_t *)nv->os_state)
 
 #define NV_STATE_PTR(nvl)   &(((nv_linux_state_t *)(nvl))->nv_state)
-
-static inline nvidia_stack_t *nv_nvlfp_get_sp(nv_linux_file_private_t *nvlfp, nvidia_entry_point_index_t which)
-{
-#if defined(NVCPU_X86_64)
-    if (rm_is_altstack_in_use())
-    {
-        down(&nvlfp->fops_sp_lock[which]);
-        return nvlfp->fops_sp[which];
-    }
-#endif
-    return NULL;
-}
-
-static inline void nv_nvlfp_put_sp(nv_linux_file_private_t *nvlfp, nvidia_entry_point_index_t which)
-{
-#if defined(NVCPU_X86_64)
-    if (rm_is_altstack_in_use())
-    {
-        up(&nvlfp->fops_sp_lock[which]);
-    }
-#endif
-}
 
 #define NV_ATOMIC_READ(data)            atomic_read(&(data))
 #define NV_ATOMIC_SET(data,val)         atomic_set(&(data), (val))

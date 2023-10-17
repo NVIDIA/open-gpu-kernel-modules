@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -620,10 +620,29 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
         RM_API_CONTEXT rmApiContext = {0};
         rmStatus = rmapiPrologue(pRmApi, &rmApiContext);
         if (rmStatus != NV_OK)
-            goto done;
+            goto epilogue;
+
+        //
+        // If this is an internal request within the same RM instance, make
+        // sure we don't double lock clients and preserve previous lock state.
+        //
+        if (bInternalRequest && resservGetTlsCallContext() != NULL)
+        {
+            rmStatus = rmapiInitLockInfo(pRmApi, hClient, NV01_NULL_OBJECT, &lockInfo);
+            if (rmStatus != NV_OK)
+                goto epilogue;
+
+            //
+            // rmapiInitLockInfo overwrites lockInfo.flags, re-add
+            // RM_LOCK_FLAGS_NO_API_LOCK if it was originally added.
+            //
+            if (pRmApi->bApiLockInternal)
+                lockInfo.flags |= RM_LOCK_FLAGS_NO_API_LOCK;
+        }
 
         lockInfo.flags |= RM_LOCK_FLAGS_RM_SEMA;
         rmStatus = serverControl(&g_resServ, &rmCtrlParams);
+epilogue:
         rmapiEpilogue(pRmApi, &rmApiContext);
     }
 done:
@@ -837,12 +856,10 @@ serverControlLookupLockFlags
 {
     //
     // Calls with LOCK_TOP doesn't fill in the cookie param correctly.
-    // This is just a WAR for this. Since the optimisation that depends on this
-    // flag only works in full GSP offload mode, it's gated to that.
+    // This is just a WAR for this.
     //
-    NvBool areAllGpusInOffloadMode = gpumgrAreAllGpusInOffloadMode();
     NvU32 controlFlags = pRmCtrlExecuteCookie->ctrlFlags;
-    if (controlFlags == 0 && !RMCFG_FEATURE_PLATFORM_GSP && areAllGpusInOffloadMode)
+    if (controlFlags == 0 && !RMCFG_FEATURE_PLATFORM_GSP)
     {
         NV_STATUS status = rmapiutilGetControlInfo(pRmCtrlParams->cmd, &controlFlags, NULL);
         if (status != NV_OK)
@@ -852,6 +869,8 @@ serverControlLookupLockFlags
                       pRmCtrlParams->cmd, controlFlags, status);
         }
     }
+
+    NvBool areAllGpusInOffloadMode = gpumgrAreAllGpusInOffloadMode();
 
     //
     // If the control is ROUTE_TO_PHYSICAL, and we're in GSP offload mode,

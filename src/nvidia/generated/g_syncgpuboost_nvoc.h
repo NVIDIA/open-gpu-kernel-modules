@@ -223,4 +223,5 @@ void syncgpuboostDestruct_IMPL(struct SyncGpuBoost *pResource);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_SYNCGPUBOOST_NVOC_H_

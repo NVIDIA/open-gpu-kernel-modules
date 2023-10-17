@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -169,7 +169,9 @@ kgmmuSetupWarForBug2720120_GA100
                                          kgmmuGetPTEAperture(pKernelGmmu),
                                          kgmmuGetPTEAttr(pKernelGmmu), 0));
 
-    NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(pKernelGmmu->pWarSmallPageTable), failed);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_WAR_PT, 
+                    pKernelGmmu->pWarSmallPageTable);
+    NV_ASSERT_OK_OR_GOTO(status, status, failed);
 
     switch (memdescGetAddressSpace(pKernelGmmu->pWarSmallPageTable))
     {
@@ -225,7 +227,9 @@ kgmmuSetupWarForBug2720120_GA100
                                                kgmmuGetPTEAperture(pKernelGmmu),
                                                kgmmuGetPTEAttr(pKernelGmmu), 0), failed);
 
-    NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(pKernelGmmu->pWarPageDirectory0), failed);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_WAR_PD, 
+                    pKernelGmmu->pWarPageDirectory0);
+    NV_ASSERT_OK_OR_GOTO(status, status, failed);
 
     entryIndexHi = mmuFmtLevelEntryCount(pPageDir0) - 1;
     switch (memdescGetAddressSpace(pKernelGmmu->pWarPageDirectory0))

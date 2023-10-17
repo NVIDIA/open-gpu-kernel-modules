@@ -198,6 +198,16 @@ static void __nvoc_init_funcTable_KernelHead_1(KernelHead *pThis, RmHalspecOwner
     {
         pThis->__kheadReadPendingVblank__ = &kheadReadPendingVblank_108313;
     }
+
+    // Hal function -- kheadGetLoadVCounter
+    if (( ((dispIpHal_HalVarIdx >> 5) == 0UL) && ((1UL << (dispIpHal_HalVarIdx & 0x1f)) & 0x00020000UL) )) /* DispIpHal: DISPv0000 */ 
+    {
+        pThis->__kheadGetLoadVCounter__ = &kheadGetLoadVCounter_4a4dee;
+    }
+    else
+    {
+        pThis->__kheadGetLoadVCounter__ = &kheadGetLoadVCounter_v03_00;
+    }
 }
 
 void __nvoc_init_funcTable_KernelHead(KernelHead *pThis, RmHalspecOwner *pRmhalspecowner) {

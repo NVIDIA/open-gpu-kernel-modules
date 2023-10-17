@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,6 +27,7 @@
 #include "class/cl2080.h"
 #include "nvrangetypes.h"
 #include "utils/nvbitvector.h"
+#include "rmconfig.h"
 
 typedef enum
 {
@@ -49,6 +50,16 @@ typedef enum
     RM_ENGINE_TYPE_COPY7                =       (0x00000010),
     RM_ENGINE_TYPE_COPY8                =       (0x00000011),
     RM_ENGINE_TYPE_COPY9                =       (0x00000012),
+    RM_ENGINE_TYPE_RESERVED13           =       (0x00000013),
+    RM_ENGINE_TYPE_RESERVED14           =       (0x00000014),
+    RM_ENGINE_TYPE_RESERVED15           =       (0x00000015),
+    RM_ENGINE_TYPE_RESERVED16           =       (0x00000016),
+    RM_ENGINE_TYPE_RESERVED17           =       (0x00000017),
+    RM_ENGINE_TYPE_RESERVED18           =       (0x00000018),
+    RM_ENGINE_TYPE_RESERVED19           =       (0x00000019),
+    RM_ENGINE_TYPE_RESERVED1a           =       (0x0000001a),
+    RM_ENGINE_TYPE_RESERVED1b           =       (0x0000001b),
+    RM_ENGINE_TYPE_RESERVED1c           =       (0x0000001c),
     RM_ENGINE_TYPE_NVDEC0               =       (0x0000001d),
     RM_ENGINE_TYPE_NVDEC1               =       (0x0000001e),
     RM_ENGINE_TYPE_NVDEC2               =       (0x0000001f),
@@ -81,8 +92,9 @@ typedef enum
     RM_ENGINE_TYPE_NVJPEG5              =       (0x0000003a),
     RM_ENGINE_TYPE_NVJPEG6              =       (0x0000003b),
     RM_ENGINE_TYPE_NVJPEG7              =       (0x0000003c),
-    RM_ENGINE_TYPE_OFA                  =       (0x0000003d),
-    RM_ENGINE_TYPE_LAST                 =       (0x0000003e),
+    RM_ENGINE_TYPE_OFA0                 =       (0x0000003d),
+    RM_ENGINE_TYPE_RESERVED3e           =       (0x0000003e),
+    RM_ENGINE_TYPE_LAST                 =       (0x0000003f),
 } RM_ENGINE_TYPE;
 
 //
@@ -119,9 +131,9 @@ typedef enum
 #define RM_ENGINE_TYPE_IS_NVJPEG(i)  (((i) >= RM_ENGINE_TYPE_NVJPEG0) && ((i) < RM_ENGINE_TYPE_NVJPEG(RM_ENGINE_TYPE_NVJPEG_SIZE)))
 #define RM_ENGINE_TYPE_NVJPEG_IDX(i) ((i) - RM_ENGINE_TYPE_NVJPEG0)
 
-#define RM_ENGINE_TYPE_OFA(i)      (RM_ENGINE_TYPE_OFA+(i))
-#define RM_ENGINE_TYPE_IS_OFA(i)   (((i) >= RM_ENGINE_TYPE_OFA) && ((i) < RM_ENGINE_TYPE_OFA(RM_ENGINE_TYPE_OFA_SIZE)))
-#define RM_ENGINE_TYPE_OFA_IDX(i)  ((i) - RM_ENGINE_TYPE_OFA)
+#define RM_ENGINE_TYPE_OFA(i)      (RM_ENGINE_TYPE_OFA0+(i))
+#define RM_ENGINE_TYPE_IS_OFA(i)   (((i) >= RM_ENGINE_TYPE_OFA0) && ((i) < RM_ENGINE_TYPE_OFA(RM_ENGINE_TYPE_OFA_SIZE)))
+#define RM_ENGINE_TYPE_OFA_IDX(i)  ((i) - RM_ENGINE_TYPE_OFA0)
 
 #define RM_ENGINE_TYPE_IS_VIDEO(i) (RM_ENGINE_TYPE_IS_NVENC(i)  | \
                                     RM_ENGINE_TYPE_IS_NVDEC(i)  | \
@@ -140,6 +152,7 @@ typedef enum
 #define RM_ENGINE_RANGE_NVDEC() rangeMake(RM_ENGINE_TYPE_NVDEC(0), RM_ENGINE_TYPE_NVDEC(RM_ENGINE_TYPE_NVDEC_SIZE - 1))
 #define RM_ENGINE_RANGE_NVENC() rangeMake(RM_ENGINE_TYPE_NVENC(0), RM_ENGINE_TYPE_NVENC(RM_ENGINE_TYPE_NVENC_SIZE - 1))
 #define RM_ENGINE_RANGE_NVJPEG() rangeMake(RM_ENGINE_TYPE_NVJPEG(0), RM_ENGINE_TYPE_NVJPEG(RM_ENGINE_TYPE_NVJPEG_SIZE - 1))
+#define RM_ENGINE_RANGE_OFA()    rangeMake(RM_ENGINE_TYPE_OFA(0), RM_ENGINE_TYPE_OFA(RM_ENGINE_TYPE_OFA_SIZE - 1))
 
 // Bit Vectors
 MAKE_BITVECTOR(ENGTYPE_BIT_VECTOR, RM_ENGINE_TYPE_LAST);

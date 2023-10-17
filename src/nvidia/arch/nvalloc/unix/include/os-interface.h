@@ -162,7 +162,7 @@ NvBool      NV_API_CALL  os_is_vgx_hyper             (void);
 NV_STATUS   NV_API_CALL  os_inject_vgx_msi           (NvU16, NvU64, NvU32);
 NvBool      NV_API_CALL  os_is_grid_supported        (void);
 NvU32       NV_API_CALL  os_get_grid_csp_support     (void);
-void        NV_API_CALL  os_get_screen_info          (NvU64 *, NvU16 *, NvU16 *, NvU16 *, NvU16 *, NvU64, NvU64);
+void        NV_API_CALL  os_get_screen_info          (NvU64 *, NvU32 *, NvU32 *, NvU32 *, NvU32 *, NvU64, NvU64);
 void        NV_API_CALL  os_bug_check                (NvU32, const char *);
 NV_STATUS   NV_API_CALL  os_lock_user_pages          (void *, NvU64, void **, NvU32);
 NV_STATUS   NV_API_CALL  os_lookup_user_io_memory    (void *, NvU64, NvU64 **, void**);
@@ -230,12 +230,14 @@ extern NvBool os_dma_buf_enabled;
  * ---------------------------------------------------------------------------
  */
 
-#define NV_DBG_INFO       0x0
-#define NV_DBG_SETUP      0x1
-#define NV_DBG_USERERRORS 0x2
+#define NV_DBG_INFO       0x1
+#define NV_DBG_SETUP      0x2
 #define NV_DBG_WARNINGS   0x3
 #define NV_DBG_ERRORS     0x4
+#define NV_DBG_HW_ERRORS  0x5
+#define NV_DBG_FATAL      0x6
 
+#define NV_DBG_FORCE_LEVEL(level) ((level) | (1 << 8))
 
 void NV_API_CALL  out_string(const char *str);
 int  NV_API_CALL  nv_printf(NvU32 debuglevel, const char *printf_format, ...);

@@ -428,10 +428,13 @@ dmaAllocMapping_GM107
     // RM allocating one comptagline per 64KB allocation (From Pascal to Turing).
     // See bug 3909010
     //
+    // Skipping it for Raw mode, See bug 4036809
+    //
     if ((pLocals->pageSize == RM_PAGE_SIZE) &&
-        memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, pLocals->kind))
+        memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, pLocals->kind) &&
+        !(pMemorySystemConfig->bUseRawModeComptaglineAllocation))
     {
-        NV_PRINTF(LEVEL_WARNING, "Requested 4K mapping on compressible sufrace. Overriding to physical page granularity...");
+        NV_PRINTF(LEVEL_WARNING, "Requested 4K mapping on compressible sufrace. Overriding to physical page granularity...\n");
         pLocals->pageSize = pLocals->physPageSize;
     }
 
@@ -971,10 +974,8 @@ dmaAllocMapping_GM107
                 SLI_LOOP_BREAK;
             }
         }
-        else if ((memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_EGM))
+        else if (memdescIsEgm(pLocals->pTempMemDesc))
         {
-            NV_ASSERT(memdescGetFlag(pLocals->pTempMemDesc, MEMDESC_FLAGS_ALLOC_FROM_EGM));
-
             pLocals->aperture = NV_MMU_PTE_APERTURE_PEER_MEMORY;
 
             if (pLocals->p2p)
@@ -1721,6 +1722,17 @@ dmaUpdateVASpace_GF100
     NvBool      bIsIndirectPeer;
     VAS_PTE_UPDATE_TYPE update_type;
 
+    {
+        OBJGVASPACE *pGVAS = dynamicCast(pVAS, OBJGVASPACE);
+        if (bFillPteMem &&
+            (pGVAS->flags & VASPACE_FLAGS_BAR_BAR1) &&
+            (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
+            (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE))
+        {
+            bSparse = NV_TRUE;
+        }
+    }
+
     priv = (flags & DMA_UPDATE_VASPACE_FLAGS_PRIV) ? NV_MMU_PTE_PRIVILEGE_TRUE : NV_MMU_PTE_PRIVILEGE_FALSE;
     tlbLock = (flags & DMA_UPDATE_VASPACE_FLAGS_TLB_LOCK) ? NV_MMU_PTE_LOCK_TRUE : NV_MMU_PTE_LOCK_FALSE;
     readOnly = (flags & DMA_UPDATE_VASPACE_FLAGS_READ_ONLY) ? NV_MMU_PTE_READ_ONLY_TRUE : NV_MMU_PTE_READ_ONLY_FALSE;
@@ -1734,18 +1746,6 @@ dmaUpdateVASpace_GF100
     if ((pageSize == RM_PAGE_SIZE_64K) || (pageSize == RM_PAGE_SIZE_128K))
     {
         NV_ASSERT_OR_RETURN(pageSize == vaSpaceBigPageSize, NV_ERR_INVALID_STATE);
-    }
-
-   if (pGpu->bEnableBar1SparseForFillPteMemUnmap)
-    {
-        OBJGVASPACE *pGVAS = dynamicCast(pVAS, OBJGVASPACE);
-        if (bFillPteMem &&
-            (pGVAS->flags & VASPACE_FLAGS_BAR_BAR1) &&
-            (flags & DMA_UPDATE_VASPACE_FLAGS_UPDATE_VALID) &&
-            (SF_VAL(_MMU, _PTE_VALID, valid) == NV_MMU_PTE_VALID_FALSE))
-        {
-            bSparse = NV_TRUE;
-        }
     }
 
     //
@@ -2118,8 +2118,7 @@ dmaUpdateVASpace_GF100
     if ((NULL == pTgtPteMem) && DMA_TLB_INVALIDATE == deferInvalidate)
     {
         kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY |
-                                        BUS_FLUSH_SYSTEM_MEMORY |
-                                        BUS_FLUSH_USE_PCIE_READ);
+                                        BUS_FLUSH_SYSTEM_MEMORY);
         gvaspaceInvalidateTlb(pGVAS, pGpu, update_type);
     }
 
@@ -2560,8 +2559,7 @@ _dmaApplyWarForBug2720120
 
     // Flush PTE writes to vidmem and issue TLB invalidate
     kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY |
-                                    BUS_FLUSH_SYSTEM_MEMORY |
-                                    BUS_FLUSH_USE_PCIE_READ);
+                                    BUS_FLUSH_SYSTEM_MEMORY);
     gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_UPGRADE);
 
     return NV_OK;

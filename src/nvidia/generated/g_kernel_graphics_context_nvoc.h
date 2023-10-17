@@ -68,6 +68,19 @@ typedef struct KernelChannelGroupApi KernelChannelGroupApi;
 #endif /* __nvoc_class_id_KernelChannelGroupApi */
 
 
+struct KernelSMDebuggerSession;
+
+#ifndef __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__
+#define __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__
+typedef struct KernelSMDebuggerSession KernelSMDebuggerSession;
+#endif /* __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_KernelSMDebuggerSession
+#define __nvoc_class_id_KernelSMDebuggerSession 0x4adc81
+#endif /* __nvoc_class_id_KernelSMDebuggerSession */
+
+
+MAKE_LIST(KernelSMDebuggerSessionList, KernelSMDebuggerSession *);
 
 typedef struct
 {
@@ -587,6 +600,40 @@ static inline void kgrctxRecordMmuFault(struct OBJGPU *arg0, struct KernelGraphi
 #define kgrctxRecordMmuFault(arg0, arg1, mmuFaultInfo, mmuFaultAddress, mmuFaultType, mmuFaultAccessType) kgrctxRecordMmuFault_IMPL(arg0, arg1, mmuFaultInfo, mmuFaultAddress, mmuFaultType, mmuFaultAccessType)
 #endif //__nvoc_kernel_graphics_context_h_disabled
 
+KernelSMDebuggerSessionListIter kgrctxGetDebuggerSessionIter_IMPL(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1);
+
+#ifdef __nvoc_kernel_graphics_context_h_disabled
+static inline KernelSMDebuggerSessionListIter kgrctxGetDebuggerSessionIter(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsContext was disabled!");
+    KernelSMDebuggerSessionListIter ret;
+    portMemSet(&ret, 0, sizeof(KernelSMDebuggerSessionListIter));
+    return ret;
+}
+#else //__nvoc_kernel_graphics_context_h_disabled
+#define kgrctxGetDebuggerSessionIter(arg0, arg1) kgrctxGetDebuggerSessionIter_IMPL(arg0, arg1)
+#endif //__nvoc_kernel_graphics_context_h_disabled
+
+NvBool kgrctxRegisterKernelSMDebuggerSession_IMPL(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelSMDebuggerSession *arg2);
+
+#ifdef __nvoc_kernel_graphics_context_h_disabled
+static inline NvBool kgrctxRegisterKernelSMDebuggerSession(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelSMDebuggerSession *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsContext was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_kernel_graphics_context_h_disabled
+#define kgrctxRegisterKernelSMDebuggerSession(arg0, arg1, arg2) kgrctxRegisterKernelSMDebuggerSession_IMPL(arg0, arg1, arg2)
+#endif //__nvoc_kernel_graphics_context_h_disabled
+
+void kgrctxDeregisterKernelSMDebuggerSession_IMPL(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelSMDebuggerSession *arg2);
+
+#ifdef __nvoc_kernel_graphics_context_h_disabled
+static inline void kgrctxDeregisterKernelSMDebuggerSession(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelSMDebuggerSession *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsContext was disabled!");
+}
+#else //__nvoc_kernel_graphics_context_h_disabled
+#define kgrctxDeregisterKernelSMDebuggerSession(arg0, arg1, arg2) kgrctxDeregisterKernelSMDebuggerSession_IMPL(arg0, arg1, arg2)
+#endif //__nvoc_kernel_graphics_context_h_disabled
+
 NvBool kgrctxIsValid_IMPL(struct OBJGPU *arg0, struct KernelGraphicsContext *arg1, struct KernelChannel *arg2);
 
 #ifdef __nvoc_kernel_graphics_context_h_disabled
@@ -971,6 +1018,7 @@ struct KernelGraphicsContextShared {
     struct RsShared *__nvoc_pbase_RsShared;
     struct KernelGraphicsContextShared *__nvoc_pbase_KernelGraphicsContextShared;
     struct KernelGraphicsContextUnicast PRIVATE_FIELD(kernelGraphicsContextUnicast);
+    KernelSMDebuggerSessionList PRIVATE_FIELD(activeDebuggers);
 };
 
 #ifndef __NVOC_CLASS_KernelGraphicsContextShared_TYPEDEF__
@@ -1074,4 +1122,5 @@ NV_STATUS kgrctxCtrlHandle
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_GRAPHICS_CONTEXT_NVOC_H_

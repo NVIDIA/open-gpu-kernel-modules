@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -451,4 +451,5 @@ NV_STATUS binapiprivConstruct_IMPL(struct BinaryApiPrivileged *arg_pResource, st
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_BINARY_API_NVOC_H_

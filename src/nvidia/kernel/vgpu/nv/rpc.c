@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -154,7 +154,6 @@ static NV_STATUS _issueRpcAndWait(OBJGPU *pGpu, OBJRPC *pRpc)
 
     // should not be called in broadcast mode
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
-    NV_CHECK(LEVEL_ERROR, rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     if (bProfileRPC)
     {
@@ -1303,6 +1302,10 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
 
             // Cache MNOC interface support
             rpcInfo->bMnocAvailable = pKernelBif->bMnocAvailable;
+
+            // Cache FLR and 64b Bar0 support
+            rpcInfo->bFlrSupported     = pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_SUPPORTED);
+            rpcInfo->b64bBar0Supported = pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_64BIT_BAR0_SUPPORTED);
         }
 
         if (IS_SIMULATION(pGpu))
@@ -1587,7 +1590,7 @@ NV_STATUS rpcRmApiControl_GSP
                 GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE, RM_LOCK_MODULES_RPC, &gpuMaskRelease));
     }
 
-    rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight);
+    (void) rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight);
     bCacheable = rmapiControlIsCacheable(ctrlFlags, ctrlAccessRight, NV_TRUE);
 
     pCallContext = resservGetTlsCallContext();

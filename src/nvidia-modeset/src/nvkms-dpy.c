@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,7 +81,7 @@ static void PatchAndParseEdid             (const NVDpyEvoRec *pDpyEvo,
                                            NVEvoInfoStringPtr pInfoString);
 static void ReadAndApplyEdidEvo           (NVDpyEvoPtr pDpyEvo,
                                            struct NvKmsQueryDpyDynamicDataParams *pParams);
-static NvBool GetFixedModeTimings         (NVDpyEvoPtr pDpyEvo);
+static NvBool GetFixedModeTimings         (NVDpyEvoPtr pDpyEvo, struct NvKmsSuperframeInfo *pSuperframeInfo);
 static NvBool ReadDSITimingsFromResman    (const NVDpyEvoRec *pDpyEvo,
                                            NVT_TIMING *pTimings,
                                            NvU8 *pBpc);
@@ -114,7 +114,9 @@ static NvBool DpyConnectEvo(
 
     if ((pDpyEvo->pConnectorEvo->signalFormat == NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) ||
         nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo)) {
-        return GetFixedModeTimings(pDpyEvo);
+        if (!GetFixedModeTimings(pDpyEvo, &pParams->reply.superframeInfo)) {
+            return FALSE;
+        }
     } else {
         ReadAndApplyEdidEvo(pDpyEvo, pParams);
     }
@@ -460,10 +462,84 @@ static NvBool ReadDSITimingsFromResman(
     return TRUE;
 }
 
+static NvBool ParseSuperframeInfo(
+    NVDpyEvoRec *pDpyEvo,
+    const NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS *pParams,
+    struct NvKmsSuperframeInfo *pSuperframeInfo)
+{
+    NvU8 i;
+
+    if (pParams->superframeInfo.numViews == 0) {
+        return TRUE;
+    }
+
+    // Currently, we support only dual view superframe.
+    if (pParams->superframeInfo.numViews != 2) {
+        nvEvoLog(EVO_LOG_ERROR, "Invalid number of superframe views");
+        return FALSE;
+    }
+
+    // Currently, we support only packed symmetrical side-by-side superframe.
+    if ((pParams->superframeInfo.view[0].width * pParams->superframeInfo.numViews) !=
+        pParams->hActive) {
+        nvEvoLog(EVO_LOG_ERROR, "The width of Superframe view[0] is invalid");
+        return FALSE;
+    }
+
+    if (pParams->superframeInfo.view[0].height != pParams->vActive) {
+        nvEvoLog(EVO_LOG_ERROR, "The height of Superframe view[0] is invalid");
+        return FALSE;
+    }
+
+    pSuperframeInfo->numViews = 0;
+
+    for (i = 0; i < pParams->superframeInfo.numViews; i++) {
+        // All superframe views must not have horizontal spacing in between them.
+        if ((pParams->superframeInfo.view[0].width * i) !=
+            pParams->superframeInfo.view[i].x) {
+            nvEvoLog(EVO_LOG_ERROR, "The x offset of Superframe view[%u] is invalid", i);
+            goto fail;
+        }
+
+        // All superframe views must have y offset as 0.
+        if (pParams->superframeInfo.view[i].y != 0) {
+            nvEvoLog(EVO_LOG_ERROR, "The y offset of Superframe view[%u] is invalid", i);
+            goto fail;
+        }
+
+        // All superframe views must have the same width.
+        if (pParams->superframeInfo.view[0].width !=
+            pParams->superframeInfo.view[i].width) {
+            nvEvoLog(EVO_LOG_ERROR, "The width of Superframe view[%u] is invalid", i);
+            goto fail;
+        }
+
+        // All superframe views must have the same height.
+        if (pParams->superframeInfo.view[0].height !=
+            pParams->superframeInfo.view[i].height) {
+            nvEvoLog(EVO_LOG_ERROR, "The height of Superframe view[%u] is invalid", i);
+            goto fail;
+        }
+
+        pSuperframeInfo->view[i].x = pParams->superframeInfo.view[i].x;
+        pSuperframeInfo->view[i].width = pParams->superframeInfo.view[i].width;
+        pSuperframeInfo->view[i].y = pParams->superframeInfo.view[i].y;
+        pSuperframeInfo->view[i].height = pParams->superframeInfo.view[i].height;
+        pSuperframeInfo->numViews++;
+    }
+
+    return TRUE;
+
+fail:
+    nvkms_memset(pSuperframeInfo, 0, sizeof(*pSuperframeInfo));
+    return FALSE;
+}
+
 static NvBool ReadDPSerializerTimings(
-    const NVDpyEvoRec *pDpyEvo,
+    NVDpyEvoRec *pDpyEvo,
     NVT_TIMING *pTimings,
-    NvU8 *pBpc)
+    NvU8 *pBpc,
+    struct NvKmsSuperframeInfo *pSuperframeInfo)
 {
     NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS timingParams = { };
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
@@ -492,6 +568,10 @@ static NvBool ReadDPSerializerTimings(
         return FALSE;
     }
 
+    if (!ParseSuperframeInfo(pDpyEvo, &timingParams, pSuperframeInfo)) {
+        return FALSE;
+    }
+
     nvkms_memset(pTimings, 0, sizeof(NVT_TIMING));
 
     pTimings->HVisible = timingParams.hActive;
@@ -515,7 +595,8 @@ static NvBool ReadDPSerializerTimings(
 }
 
 static NvBool GetFixedModeTimings(
-    NVDpyEvoPtr pDpyEvo)
+    NVDpyEvoPtr pDpyEvo,
+    struct NvKmsSuperframeInfo *pSuperframeInfo)
 {
     NVT_TIMING timings = { };
     NvBool ret = FALSE;
@@ -524,7 +605,8 @@ static NvBool GetFixedModeTimings(
     if (pDpyEvo->pConnectorEvo->signalFormat == NVKMS_CONNECTOR_SIGNAL_FORMAT_DSI) {
         ret = ReadDSITimingsFromResman(pDpyEvo, &timings, &bpc);
     } else if (nvConnectorIsDPSerializer(pDpyEvo->pConnectorEvo)) {
-        ret = ReadDPSerializerTimings(pDpyEvo, &timings, &bpc);
+        ret = ReadDPSerializerTimings(pDpyEvo, &timings, &bpc,
+                                      pSuperframeInfo);
     }
 
     if (!ret) {
@@ -1184,7 +1266,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
                            const NvBool ignoreEdidChecksum)
 {
     NvU32 status, tmpStatus;
-    int errorCount = 0;
 
     status = NvTiming_EDIDValidationMask(pEdid->buffer, pEdid->length, TRUE);
     tmpStatus = status;
@@ -1207,7 +1288,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID has an unrecognized version.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_VERSION);
-        errorCount++;
     }
 
     if (status &
@@ -1215,7 +1295,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID is too short.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_SIZE);
-        errorCount++;
     }
 
     if (status &
@@ -1237,7 +1316,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
                      "timings beyond the capabilities of your display, and "
                      "could damage your hardware. Please use with care.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_CHECKSUM);
-        errorCount++;
     }
 
     if (status &
@@ -1245,7 +1323,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID has a bad range limit.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_RANGE_LIMIT);
-        errorCount++;
     }
 
     if (status &
@@ -1253,7 +1330,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID has a bad detailed timing descriptor.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_DTD);
-        errorCount++;
     }
 
     if (status &
@@ -1262,7 +1338,6 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
                      "- The EDID has an extension block with a bad detailed "
                      "timing descriptor.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DTD);
-        errorCount++;
     }
 
     if (status &
@@ -1270,13 +1345,11 @@ static NvBool ValidateEdid(const NVDpyEvoRec *pDpyEvo, NVEdidPtr pEdid,
         nvEvoLogInfoString(pInfoString,
                      "- The EDID extension block is invalid.");
         tmpStatus &= ~NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT);
-        errorCount++;
     }
 
     if (tmpStatus) {
         nvEvoLogInfoString(pInfoString,
                      "- The EDID has an unrecognized error.");
-        errorCount++;
     }
 
     /*
@@ -2283,6 +2356,8 @@ NVDpyEvoPtr nvAllocDpyEvo(NVDispEvoPtr pDispEvo,
 
 void nvFreeDpyEvo(NVDispEvoPtr pDispEvo, NVDpyEvoPtr pDpyEvo)
 {
+    nvCancelSDRTransitionTimer(pDpyEvo);
+
     DpyDisconnectEvo(pDpyEvo);
 
     // Let the DP library host implementation handle deleting a pDpy as if the
@@ -2333,12 +2408,12 @@ NVConnectorEvoPtr nvGetConnectorFromDisp(NVDispEvoPtr pDispEvo, NVDpyId dpyId)
     return NULL;
 }
 
-static const NVT_HDR_INFOFRAME_PAYLOAD NV_SDR_PAYLOAD =
+void nvDpyAssignSDRInfoFramePayload(NVT_HDR_INFOFRAME_PAYLOAD *pPayload)
 {
-    .eotf = NVT_CEA861_HDR_INFOFRAME_EOTF_SDR_GAMMA,
-    .static_metadata_desc_id = NVT_CEA861_STATIC_METADATA_SM0
-    // type1 is empty - no metadata
-};
+    nvkms_memset(pPayload, 0, sizeof(*pPayload));
+    pPayload->eotf = NVT_CEA861_HDR_INFOFRAME_EOTF_SDR_GAMMA;
+    pPayload->static_metadata_desc_id = NVT_CEA861_STATIC_METADATA_SM0;
+}
 
 static void UpdateDpHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head)
 {
@@ -2372,13 +2447,11 @@ static void UpdateDpHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head)
 
     nvAssert((sizeof(sdp->db) - 2) >= sizeof(NVT_HDR_INFOFRAME_PAYLOAD));
 
-    if (pHeadState->hdr.outputState == NVKMS_HDR_OUTPUT_STATE_HDR) {
+    if (pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_ENABLED) {
         NVT_HDR_INFOFRAME_PAYLOAD *payload =
             (NVT_HDR_INFOFRAME_PAYLOAD *) &sdp->db.db2;
 
-        // XXX HDR TODO: Support EOTFs other than PQ.
-        nvAssert(pHeadState->tf == NVKMS_OUTPUT_TF_PQ);
-        payload->eotf = NVT_CEA861_HDR_INFOFRAME_EOTF_ST2084;
+        payload->eotf = pHeadState->hdrInfoFrame.eotf;
 
         payload->static_metadata_desc_id = NVT_CEA861_STATIC_METADATA_SM0;
 
@@ -2386,21 +2459,21 @@ static void UpdateDpHDRInfoFrame(const NVDispEvoRec *pDispEvo, const NvU32 head)
         nvAssert(sizeof(NVT_HDR_INFOFRAME_MASTERING_DATA) ==
                  (sizeof(struct NvKmsHDRStaticMetadata)));
         nvkms_memcpy(&payload->type1,
-                     &pHeadState->hdr.staticMetadata,
+                     &pHeadState->hdrInfoFrame.staticMetadata,
                      sizeof(NVT_HDR_INFOFRAME_MASTERING_DATA));
 
         params.transmitControl =
             DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _SINGLE_FRAME, _DISABLE);
-    } else if (pHeadState->hdr.outputState ==
-               NVKMS_HDR_OUTPUT_STATE_TRANSITIONING_TO_SDR) {
-        nvkms_memcpy(&sdp->db.db2, &NV_SDR_PAYLOAD, sizeof(NVT_HDR_INFOFRAME_PAYLOAD));
+    } else if (pHeadState->hdrInfoFrame.state ==
+               NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING) {
+        nvDpyAssignSDRInfoFramePayload((NVT_HDR_INFOFRAME_PAYLOAD *) &sdp->db.db2);
 
         params.transmitControl =
             DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _SINGLE_FRAME, _DISABLE);
     } else {
-        nvAssert(pHeadState->hdr.outputState == NVKMS_HDR_OUTPUT_STATE_SDR);
+        nvAssert(pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_DISABLED);
 
-        nvkms_memcpy(&sdp->db.db2, &NV_SDR_PAYLOAD, sizeof(NVT_HDR_INFOFRAME_PAYLOAD));
+        nvDpyAssignSDRInfoFramePayload((NVT_HDR_INFOFRAME_PAYLOAD *) &sdp->db.db2);
 
         params.transmitControl =
             DRF_DEF(0073_CTRL_SPECIFIC, _SET_OD_PACKET_TRANSMIT_CONTROL, _SINGLE_FRAME, _ENABLE);
@@ -2523,10 +2596,54 @@ static void UpdateDpInfoFrames(const NVDispEvoRec *pDispEvo,
     UpdateDpYUV420InfoFrame(pDispEvo, head, pAttributesSet);
 }
 
+void nvCancelSDRTransitionTimer(NVDpyEvoRec *pDpyEvo)
+{
+    nvkms_free_timer(pDpyEvo->hdrToSdrTransitionTimer);
+    pDpyEvo->hdrToSdrTransitionTimer = NULL;
+}
+
+static void SDRTransition(void *dataPtr, NvU32 dataU32)
+{
+    NvU32 head;
+    NVDpyEvoRec *pDpyEvo = dataPtr;
+    NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    NVDispApiHeadStateEvoRec *pApiHeadState =
+        &pDispEvo->apiHeadState[pDpyEvo->apiHead];
+
+    nvCancelSDRTransitionTimer(pDpyEvo);
+
+    nvAssert(pApiHeadState->hwHeadsMask != 0);
+
+    FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
+        NVDispHeadStateEvoRec *pHeadState =
+            &pDispEvo->headState[head];
+        nvAssert(pHeadState->hdrInfoFrame.state ==
+                 NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING);
+        pHeadState->hdrInfoFrame.state = NVKMS_HDR_INFOFRAME_STATE_DISABLED;
+    }
+
+    nvUpdateInfoFrames(pDpyEvo);
+}
+
+static
+void ScheduleSDRTransitionTimer(NVDpyEvoRec *pDpyEvo)
+{
+    if (pDpyEvo->hdrToSdrTransitionTimer) {
+        return;
+    }
+
+    pDpyEvo->hdrToSdrTransitionTimer =
+        nvkms_alloc_timer(SDRTransition,
+                          pDpyEvo,
+                          0,
+                          2000000 /* 2 seconds */);
+}
+
 void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo)
 {
-    const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
     const NVDispApiHeadStateEvoRec *pApiHeadState;
+    const NVDispHeadStateEvoRec *pHeadState;
     NvU32 head;
 
     if (pDpyEvo->apiHead == NV_INVALID_HEAD) {
@@ -2541,6 +2658,8 @@ void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo)
 
     nvAssert(head != NV_INVALID_HEAD);
 
+    pHeadState = &pDispEvo->headState[head];
+
     if (nvConnectorUsesDPLib(pDpyEvo->pConnectorEvo)) {
         UpdateDpInfoFrames(pDispEvo, head, &pApiHeadState->attributes);
     } else {
@@ -2549,6 +2668,13 @@ void nvUpdateInfoFrames(NVDpyEvoRec *pDpyEvo)
                                &pApiHeadState->attributes,
                                &pApiHeadState->infoFrame,
                                pDpyEvo);
+    }
+
+    if (pHeadState->hdrInfoFrame.state == NVKMS_HDR_INFOFRAME_STATE_ENABLED) {
+        nvCancelSDRTransitionTimer(pDpyEvo);
+    } else if (pHeadState->hdrInfoFrame.state ==
+               NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING) {
+        ScheduleSDRTransitionTimer(pDpyEvo);
     }
 }
 
@@ -3106,10 +3232,13 @@ NVColorFormatInfoRec nvGetColorFormatInfo(const NVDpyEvoRec *pDpyEvo)
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
             }
         } else {
-
             colorFormatsInfo.rgb444.maxBpc =
-                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+                nvDpyIsHdmiDepth30Evo(pDpyEvo) ?
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10 :
+                    NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+
             if (nvDpyIsHdmiEvo(pDpyEvo)) {
+                // TODO: Handle depth 30 YUV
                 colorFormatsInfo.yuv444.maxBpc =
                     NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
                 colorFormatsInfo.yuv422.maxBpc =
@@ -3150,4 +3279,61 @@ NvU32 nvDpyGetPossibleApiHeadsMask(const NVDpyEvoRec *pDpyEvo)
     }
 
     return possibleApiHeadMask;
+}
+
+NvBool nvDpyIsHDRCapable(const NVDpyEvoRec *pDpyEvo)
+{
+    const NVDispEvoRec *pDispEvo = pDpyEvo->pDispEvo;
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
+
+    const NVT_EDID_INFO *pInfo = &pDpyEvo->parsedEdid.info;
+    const NVT_HDR_STATIC_METADATA *pHdrInfo =
+        &pInfo->hdr_static_metadata_info;
+
+    // Only supported on DP 1.3+ or HDMI
+    if (nvDpyUsesDPLib(pDpyEvo)) {
+        unsigned int major;
+        unsigned int minor;
+
+        if(!pDevEvo->caps.supportsDP13) {
+            return FALSE;
+        }
+
+        if (!nvDPDpyGetDpcdRevision(pDpyEvo, &major, &minor)) {
+            return FALSE;
+        }
+
+        if ((major < 1) || (minor < 3)) {
+            return FALSE;
+        }
+    } else if (!nvDpyIsHdmiEvo(pDpyEvo)) {
+        return FALSE;
+    }
+
+    if (!pDpyEvo->parsedEdid.valid) {
+        return FALSE;
+    }
+
+    /*
+     * XXX HDR is not supported with HDMI 3D due to both using VSI
+     * infoframes.
+     */
+    if (pInfo->HDMI3DSupported) {
+        return FALSE;
+    }
+
+    // Sink should support ST2084 EOTF.
+    if (!pHdrInfo->supported_eotf.smpte_st_2084_eotf) {
+        return FALSE;
+    }
+
+    /*
+     * Sink should support static metadata type1. Nvtiming sets
+     * static_metadata_type to 1 if the sink supports static metadata type1.
+     */
+    if (pHdrInfo->static_metadata_type != 1) {
+        return FALSE;
+    }
+
+    return TRUE;
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,7 +30,7 @@
  * Routines shared between CE and KCE.
  */
 
-NvBool ceIsCeGrce(OBJGPU *pGpu, NvU32 ceEngineType);
+NvBool ceIsCeGrce(OBJGPU *pGpu, RM_ENGINE_TYPE ceEngineType);
 NvU32 ceCountGrCe(OBJGPU *pGpu);
 
 #endif

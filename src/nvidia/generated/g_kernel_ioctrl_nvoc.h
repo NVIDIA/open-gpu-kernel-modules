@@ -243,4 +243,5 @@ static inline void kioctrlDestructEngine(struct KernelIoctrl *arg0) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_IOCTRL_NVOC_H_

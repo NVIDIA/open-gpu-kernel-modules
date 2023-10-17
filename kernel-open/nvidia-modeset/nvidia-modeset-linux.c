@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-21 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,8 +65,14 @@
 static bool output_rounding_fix = true;
 module_param_named(output_rounding_fix, output_rounding_fix, bool, 0400);
 
+static bool disable_hdmi_frl = false;
+module_param_named(disable_hdmi_frl, disable_hdmi_frl, bool, 0400);
+
 static bool disable_vrr_memclk_switch = false;
 module_param_named(disable_vrr_memclk_switch, disable_vrr_memclk_switch, bool, 0400);
+
+static bool hdmi_deepcolor = false;
+module_param_named(hdmi_deepcolor, hdmi_deepcolor, bool, 0400);
 
 /* These parameters are used for fault injection tests.  Normally the defaults
  * should be used. */
@@ -78,6 +84,7 @@ MODULE_PARM_DESC(malloc_verbose, "Report information about malloc calls on modul
 static bool malloc_verbose = false;
 module_param_named(malloc_verbose, malloc_verbose, bool, 0400);
 
+#if NVKMS_CONFIG_FILE_SUPPORTED
 /* This parameter is used to find the dpy override conf file */
 #define NVKMS_CONF_FILE_SPECIFIED (nvkms_conf != NULL)
 
@@ -86,6 +93,7 @@ MODULE_PARM_DESC(config_file,
                  "(default: disabled)");
 static char *nvkms_conf = NULL;
 module_param_named(config_file, nvkms_conf, charp, 0400);
+#endif
 
 static atomic_t nvkms_alloc_called_count;
 
@@ -94,9 +102,19 @@ NvBool nvkms_output_rounding_fix(void)
     return output_rounding_fix;
 }
 
+NvBool nvkms_disable_hdmi_frl(void)
+{
+    return disable_hdmi_frl;
+}
+
 NvBool nvkms_disable_vrr_memclk_switch(void)
 {
     return disable_vrr_memclk_switch;
+}
+
+NvBool nvkms_hdmi_deepcolor(void)
+{
+    return hdmi_deepcolor;
 }
 
 #define NVKMS_SYNCPT_STUBS_NEEDED
@@ -335,7 +353,7 @@ NvU64 nvkms_get_usec(void)
     struct timespec64 ts;
     NvU64 ns;
 
-    ktime_get_real_ts64(&ts);
+    ktime_get_raw_ts64(&ts);
 
     ns = timespec64_to_ns(&ts);
     return ns / 1000;
@@ -1382,6 +1400,7 @@ static void nvkms_proc_exit(void)
 /*************************************************************************
  * NVKMS Config File Read
  ************************************************************************/
+#if NVKMS_CONFIG_FILE_SUPPORTED
 static NvBool nvkms_fs_mounted(void)
 {
     return current->fs != NULL;
@@ -1489,6 +1508,11 @@ static void nvkms_read_config_file_locked(void)
 
     nvkms_free(buffer, buf_size);
 }
+#else
+static void nvkms_read_config_file_locked(void)
+{
+}
+#endif
 
 /*************************************************************************
  * NVKMS KAPI functions

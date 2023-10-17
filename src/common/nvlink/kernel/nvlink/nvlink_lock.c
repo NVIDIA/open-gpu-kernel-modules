@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020-2023 NVidia Corporation
+    Copyright (c) 2020 NVidia Corporation
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
     deal in the Software without restriction, including without limitation the
@@ -296,9 +296,9 @@ nvlink_lib_link_locks_acquire
                 "%s: Acquire link lock for dom:%d bus:%d dev:%d fun:%d link:%d\n",
                 __FUNCTION__,
 
-			links[i]->dev->pciInfo.domain, links[i]->dev->pciInfo.bus,
-			links[i]->dev->pciInfo.device, links[i]->dev->pciInfo.function,
-			links[i]->linkNumber));
+            links[i]->dev->pciInfo.domain, links[i]->dev->pciInfo.bus,
+            links[i]->dev->pciInfo.device, links[i]->dev->pciInfo.function,
+            links[i]->linkNumber));
         }
 
         link_prev = links[i];
@@ -358,9 +358,9 @@ nvlink_lib_link_locks_release
                 "%s: Release link lock for dom:%d bus:%d dev:%d fun:%d link:%d\n",
                 __FUNCTION__,
 
-			links[i]->dev->pciInfo.domain, links[i]->dev->pciInfo.bus,
-			links[i]->dev->pciInfo.device, links[i]->dev->pciInfo.function,
-			links[i]->linkNumber));
+            links[i]->dev->pciInfo.domain, links[i]->dev->pciInfo.bus,
+            links[i]->dev->pciInfo.device, links[i]->dev->pciInfo.function,
+            links[i]->linkNumber));
         }
 
         link_prev = links[i];

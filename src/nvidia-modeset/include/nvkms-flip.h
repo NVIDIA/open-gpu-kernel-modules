@@ -69,8 +69,6 @@ void nvApiHeadUpdateFlipLock(NVDevEvoRec *pDevEvo,
                              const NvU32 apiHeadMaskPerSd[NVKMS_MAX_SUBDEVICES],
                              const NvBool enable);
 
-void nvCancelSDRTransitionTimer(NVDispApiHeadStateEvoRec *pApiHeadState);
-
 NvBool nvIdleMainLayerChannelCheckIdleOneApiHead(NVDispEvoPtr pDispEvo,
                                                  NvU32 apiHead);
 

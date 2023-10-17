@@ -112,20 +112,54 @@ typedef struct NV00F8_CTRL_GET_INFO_PARAMS {
  *  numPfns [OUT]
  *    Number of valid entries in pfnArray.
  *
- * Note: This ctrl call is only available for kerenl mode client in vGPU platforms.
+ *  attrs [OUT]
+ *    Attributes associated with memory allocation.
+ *
+ *  physAttrs [OUT]
+ *    Physical attributes associated with memory allocation.
+ *    For flexible mappings, it is not possible to retrieve this information,
+ *    behavior is undefined (returns all zeros).
+ *
+ *  memFlags [OUT]
+ *    Flags associated with memory allocation.
+ *
+ * Note: This control call is only available for privileged clients.
  */
 
 #define NV00F8_CTRL_CMD_DESCRIBE            (0xf80102) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_DESCRIBE_PARAMS_MESSAGE_ID" */
 
 #define NV00F8_CTRL_DESCRIBE_PFN_ARRAY_SIZE 512
 
+/*
+ *  kind
+ *    Kind of memory allocation.
+ *
+ *  pageSize
+ *    Page size of memory allocation.
+ *
+ *  size
+ *    Size of memory allocation
+ *
+ *  cliqueId
+ *    Clique ID of the owner GPU
+ */
+typedef struct NV_FABRIC_MEMORY_ATTRS {
+    NvU32 kind;
+    NV_DECLARE_ALIGNED(NvU64 pageSize, 8);
+    NV_DECLARE_ALIGNED(NvU64 size, 8);
+    NvU32 cliqueId;
+} NV_FABRIC_MEMORY_ATTRS;
+
 #define NV00F8_CTRL_DESCRIBE_PARAMS_MESSAGE_ID (0x2U)
 
 typedef struct NV00F8_CTRL_DESCRIBE_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 offset, 8);
     NV_DECLARE_ALIGNED(NvU64 totalPfns, 8);
-    NvU32 pfnArray[NV00F8_CTRL_DESCRIBE_PFN_ARRAY_SIZE];
-    NvU32 numPfns;
+    NvU32                    pfnArray[NV00F8_CTRL_DESCRIBE_PFN_ARRAY_SIZE];
+    NvU32                    numPfns;
+    NV_DECLARE_ALIGNED(NV_FABRIC_MEMORY_ATTRS attrs, 8);
+    NV_PHYSICAL_MEMORY_ATTRS physAttrs;
+    NvU32                    memFlags;
 } NV00F8_CTRL_DESCRIBE_PARAMS;
 
 /*

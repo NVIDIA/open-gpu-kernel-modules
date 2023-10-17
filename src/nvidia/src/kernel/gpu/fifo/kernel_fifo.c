@@ -21,9 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-// FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
-
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
@@ -1019,7 +1016,7 @@ kfifoChidMgrReserveSystemChids_IMPL
     NvU32             gfid,
     NvU32            *pChidOffset,
     NvU32            *pChannelCount,
-    NvHandle          hMigClient,
+    Device           *pMigDevice,
     NvU32             engineFifoListNumEntries,
     FIFO_ENGINE_LIST *pEngineFifoList
 )
@@ -1084,7 +1081,7 @@ kfifoChidMgrReserveSystemChids_IMPL
 
     status = kfifoSetChidOffset(pGpu, pKernelFifo, pChidMgr, (NvU32)offset,
                                 numChannels, gfid, pChidOffset, pChannelCount,
-                                hMigClient, engineFifoListNumEntries, pEngineFifoList);
+                                pMigDevice, engineFifoListNumEntries, pEngineFifoList);
 
     if (status != NV_OK)
     {
@@ -1123,7 +1120,7 @@ kfifoChidMgrReserveSystemChids_IMPL
 cleanup:
     portMemFree(pChidMgr->ppVirtualChIDHeap[gfid]);
     NV_ASSERT(kfifoSetChidOffset(pGpu, pKernelFifo, pChidMgr, 0, 0,
-                                 gfid, pChidOffset, pChannelCount, hMigClient,
+                                 gfid, pChidOffset, pChannelCount, pMigDevice,
                                  engineFifoListNumEntries, pEngineFifoList) == NV_OK);
     NV_ASSERT(pChidMgr->pGlobalChIDHeap->eheapFree(pChidMgr->pGlobalChIDHeap, offset) == NV_OK);
     portMemFree(pIsolationID);
@@ -1140,7 +1137,7 @@ kfifoChidMgrFreeSystemChids_IMPL
     NvU32             gfid,
     NvU32            *pChidOffset,
     NvU32            *pChannelCount,
-    NvHandle          hMigClient,
+    Device           *pMigDevice,
     NvU32             engineFifoListNumEntries,
     FIFO_ENGINE_LIST *pEngineFifoList
 )
@@ -1184,7 +1181,7 @@ kfifoChidMgrFreeSystemChids_IMPL
     }
 
     tmpStatus = kfifoSetChidOffset(pGpu, pKernelFifo, pChidMgr, 0, 0,
-                                   gfid, pChidOffset, pChannelCount, hMigClient,
+                                   gfid, pChidOffset, pChannelCount, pMigDevice,
                                    engineFifoListNumEntries, pEngineFifoList);
     if (tmpStatus != NV_OK)
     {
@@ -1873,7 +1870,7 @@ kfifoGetHostDeviceInfoTable_KERNEL
     OBJGPU      *pGpu,
     KernelFifo  *pKernelFifo,
     ENGINE_INFO *pEngineInfo,
-    NvHandle     hMigClient
+    Device      *pMigDevice
 )
 {
     NV_STATUS status = NV_OK;
@@ -1907,18 +1904,15 @@ kfifoGetHostDeviceInfoTable_KERNEL
         }
         else
         {
-            RsClient *pClient;
+            RsClient *pClient = RES_GET_CLIENT(pMigDevice);
             Subdevice *pSubdevice;
 
-            hClient = hMigClient;
-
             NV_ASSERT_OK_OR_RETURN(
-                    serverGetClientUnderLock(&g_resServ, hClient, &pClient));
-
-            NV_ASSERT_OK_OR_RETURN(subdeviceGetByGpu(pClient, pGpu, &pSubdevice));
+                subdeviceGetByInstance(pClient, RES_GET_HANDLE(pMigDevice), 0, &pSubdevice));
 
             GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
+            hClient = pClient->hClient;
             hObject = RES_GET_HANDLE(pSubdevice);
         }
     }
@@ -2622,7 +2616,8 @@ kfifoRunlistAllocBuffers_IMPL
             }
         }
 
-        status = memdescAlloc(ppMemDesc[counter]);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_101, 
+                        ppMemDesc[counter]);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Runlist buffer mem alloc failed 0x%08x\n",
@@ -2657,10 +2652,10 @@ kfifoGetMaxSubcontextFromGr_KERNEL
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
 
     NV_ASSERT_OR_RETURN(pKernelGraphicsManager != NULL, 0);
-    NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized, 0);
-    NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo != NULL, 0);
+    NV_ASSERT_OR_RETURN(kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->bInitialized, 0);
+    NV_ASSERT_OR_RETURN(kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo != NULL, 0);
 
-    return pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo->infoList[NV0080_CTRL_GR_INFO_INDEX_MAX_SUBCONTEXT_COUNT].data;
+    return kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo->infoList[NV0080_CTRL_GR_INFO_INDEX_MAX_SUBCONTEXT_COUNT].data;
 }
 
 NvU32
@@ -3110,7 +3105,7 @@ kfifoSetChidOffset_IMPL
     NvU32             gfid,
     NvU32            *pChidOffset,
     NvU32            *pChannelCount,
-    NvU32             hMigClient,
+    Device           *pMigDevice,
     NvU32             engineFifoListNumEntries,
     FIFO_ENGINE_LIST *pEngineFifoList
 )
@@ -3137,7 +3132,7 @@ kfifoSetChidOffset_IMPL
     }
 
     NV_ASSERT_OK_OR_GOTO(status, kfifoProgramChIdTable_HAL(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid,
-                                                           hMigClient, engineFifoListNumEntries, pEngineFifoList), cleanup);
+                                                           pMigDevice, engineFifoListNumEntries, pEngineFifoList), cleanup);
 
 cleanup:
 
@@ -3374,9 +3369,9 @@ kfifoGetGuestEngineLookupTable_IMPL
         {NV2080_ENGINE_TYPE_COPY7,      MC_ENGINE_IDX_CE7},
         {NV2080_ENGINE_TYPE_COPY8,      MC_ENGINE_IDX_CE8},
         {NV2080_ENGINE_TYPE_COPY9,      MC_ENGINE_IDX_CE9},
-        {NV2080_ENGINE_TYPE_NVENC0,     MC_ENGINE_IDX_MSENC},
-        {NV2080_ENGINE_TYPE_NVENC1,     MC_ENGINE_IDX_MSENC1},
-        {NV2080_ENGINE_TYPE_NVENC2,     MC_ENGINE_IDX_MSENC2},
+        {NV2080_ENGINE_TYPE_NVENC0,     MC_ENGINE_IDX_NVENC},
+        {NV2080_ENGINE_TYPE_NVENC1,     MC_ENGINE_IDX_NVENC1},
+        {NV2080_ENGINE_TYPE_NVENC2,     MC_ENGINE_IDX_NVENC2},
         {NV2080_ENGINE_TYPE_NVDEC0,     MC_ENGINE_IDX_NVDEC0},
         {NV2080_ENGINE_TYPE_NVDEC1,     MC_ENGINE_IDX_NVDEC1},
         {NV2080_ENGINE_TYPE_NVDEC2,     MC_ENGINE_IDX_NVDEC2},
@@ -3395,14 +3390,14 @@ kfifoGetGuestEngineLookupTable_IMPL
         {NV2080_ENGINE_TYPE_NVJPEG5,    MC_ENGINE_IDX_NVJPEG5},
         {NV2080_ENGINE_TYPE_NVJPEG6,    MC_ENGINE_IDX_NVJPEG6},
         {NV2080_ENGINE_TYPE_NVJPEG7,    MC_ENGINE_IDX_NVJPEG7},
-        {NV2080_ENGINE_TYPE_OFA,        MC_ENGINE_IDX_OFA0},
+        {NV2080_ENGINE_TYPE_OFA0,       MC_ENGINE_IDX_OFA0},
     };
 
     //
     // To trap NV2080_ENGINE_TYPE expansions.
     // Please update the table guestEngineLookupTable if this assertion is triggered.
     //
-    ct_assert(NV2080_ENGINE_TYPE_LAST == 0x0000003e);
+    ct_assert(NV2080_ENGINE_TYPE_LAST == 0x0000003f);
 
     *pEngLookupTblSize = NV_ARRAY_ELEMENTS(guestEngineLookupTable);
 
@@ -3424,13 +3419,16 @@ kfifoGetMaxSecureChannels_KERNEL
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_INTERNAL_FIFO_GET_NUM_SECURE_CHANNELS_PARAMS numSecureChannelsParams = {0};
 
-    NV_ASSERT_OK_OR_RETURN(
-        pRmApi->Control(pRmApi,
-                        pGpu->hInternalClient,
-                        pGpu->hInternalSubdevice,
-                        NV2080_CTRL_CMD_INTERNAL_FIFO_GET_NUM_SECURE_CHANNELS,
-                        &numSecureChannelsParams,
-                        sizeof(numSecureChannelsParams)));
+    if (gpuIsCCFeatureEnabled(pGpu))
+    {
+        NV_ASSERT_OK_OR_RETURN(
+            pRmApi->Control(pRmApi,
+                            pGpu->hInternalClient,
+                            pGpu->hInternalSubdevice,
+                            NV2080_CTRL_CMD_INTERNAL_FIFO_GET_NUM_SECURE_CHANNELS,
+                            &numSecureChannelsParams,
+                            sizeof(numSecureChannelsParams)));
+    }
 
     pKernelFifo->maxSec2SecureChannels = numSecureChannelsParams.maxSec2SecureChannels;
     pKernelFifo->maxCeSecureChannels = numSecureChannelsParams.maxCeSecureChannels;

@@ -5545,8 +5545,6 @@ _nvswitch_emit_link_errors_nvldl_fatal_link_ls10
     if (nvswitch_test_flags(pending, bit))
     {
         NVSWITCH_REPORT_FATAL(_HW_DLPL_LTSSM_FAULT_DOWN, "LTSSM Fault Down", NV_FALSE);
-        error_event.error = INFOROM_NVLINK_DL_LTSSM_FAULT_DOWN_FATAL;
-        nvswitch_inforom_nvlink_log_error_event(device, &error_event);
     }
 }
 
@@ -5827,17 +5825,18 @@ _nvswitch_deferred_link_state_check_ls10
     NvU64 lastLinkUpTime;
     NvU64 lastRetrainTime;
     NvU64 current_time = nvswitch_os_get_platform_time();
+    NvBool bRedeferLinkStateCheck;
 
     chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
     lastLinkUpTime = chip_device->deferredLinkErrors[link].state.lastLinkUpTime;
     lastRetrainTime = chip_device->deferredLinkErrors[link].state.lastRetrainTime;
-
     // Sanity Check
     NVSWITCH_ASSERT(nvswitch_is_link_valid(device, link));
 
     nvswitch_os_free(pErrorReportParams);
     pErrorReportParams = NULL;
     chip_device->deferredLinkErrors[link].state.bLinkStateCallBackEnabled = NV_FALSE;
+    bRedeferLinkStateCheck = NV_FALSE;
 
     // Link came up after last retrain
     if (lastLinkUpTime >= lastRetrainTime)
@@ -5854,16 +5853,21 @@ _nvswitch_deferred_link_state_check_ls10
     {
         if ((current_time - lastRetrainTime) < NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS)
         {
-            nvswitch_create_deferred_link_state_check_task_ls10(device, nvlipt_instance, link);
-            return;
+            bRedeferLinkStateCheck = NV_TRUE;
         }
+    }
+
+    if (bRedeferLinkStateCheck)
+    {
+        nvswitch_create_deferred_link_state_check_task_ls10(device, nvlipt_instance, link);
+        return;
     }
 
     //
     // Otherwise, the link hasn't retrained within the timeout so emit the
     // deferred errors.
     //
-    _nvswitch_emit_deferred_link_errors_ls10(device, nvlipt_instance, link);
+        _nvswitch_emit_deferred_link_errors_ls10(device, nvlipt_instance, link);
     _nvswitch_clear_deferred_link_errors_ls10(device, link);
 }
 
@@ -5948,9 +5952,9 @@ _nvswitch_deferred_link_errors_check_ls10
     // It is assumed that this callback runs long before a link could have been
     // retrained and hit errors again.
     //
-    _nvswitch_emit_deferred_link_errors_ls10(device, nvlipt_instance, link);
-    _nvswitch_clear_deferred_link_errors_ls10(device, link);
-}
+        _nvswitch_emit_deferred_link_errors_ls10(device, nvlipt_instance, link);
+        _nvswitch_clear_deferred_link_errors_ls10(device, link);
+    }
 
 static void
 _nvswitch_create_deferred_link_errors_task_ls10
@@ -6645,6 +6649,12 @@ _nvswitch_service_nvlipt_lnk_status_ls10
 
     link = nvswitch_get_link(device, link_id);
     chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
+
+    if (link == NULL)
+    {
+        return -NVL_BAD_ARGS;
+    }
+
     pending =  NVSWITCH_LINK_RD32(device, link_id, NVLIPT_LNK, _NVLIPT_LNK, _INTR_STATUS);
     enabled =  NVSWITCH_LINK_RD32(device, link_id, NVLIPT_LNK, _NVLIPT_LNK, _INTR_INT1_EN);
     pending &= enabled;
@@ -6670,12 +6680,6 @@ _nvswitch_service_nvlipt_lnk_status_ls10
         {
             NVSWITCH_PRINT(device, INFO, "%s: nvlipt_lnk_status: Link is up!. LinkId %d\n",
                         __FUNCTION__, link_id);
-            if (nvswitch_lib_notify_client_events(device,
-                        NVSWITCH_DEVICE_EVENT_PORT_UP) != NVL_SUCCESS)
-            {
-                NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify PORT_UP event. LinkId %d\n",
-                            __FUNCTION__, link_id);
-            }
 
             //
             // When a link comes up ensure that we finish off the post-training tasks:
@@ -6684,7 +6688,7 @@ _nvswitch_service_nvlipt_lnk_status_ls10
             //
             nvswitch_corelib_training_complete_ls10(link);
             nvswitch_init_buffer_ready(device, link, NV_TRUE);
-            link->bRxDetected = NV_TRUE;
+                link->bRxDetected = NV_TRUE;
 
             //
             // Clear out any cached interrupts for the link and update the last link up timestamp
@@ -7754,38 +7758,51 @@ nvswitch_service_nvldl_fatal_link_ls10
     // pending DL interrupts. In order to log all error before wiping that state,
     // service all other interrupts before this one
     //
-
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _LTSSM_FAULT_DOWN, 1);
     if (nvswitch_test_flags(pending, bit))
     {
+        nvswitch_record_port_event(device, &(device->log_PORT_EVENTS), link, NVSWITCH_PORT_EVENT_TYPE_DOWN);
+        if (nvswitch_lib_notify_client_events(device,
+                    NVSWITCH_DEVICE_EVENT_PORT_DOWN) != NVL_SUCCESS)
         {
-        dlDeferredIntrLinkMask |= bit;
+            NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify PORT_DOWN event\n",
+                         __FUNCTION__);
+        }
+            dlDeferredIntrLinkMask |= bit;
 
-        //
-        // Since reset and drain will reset the link, including clearing
-        // pending interrupts, skip the clear write below. There are cases
-        // where link clocks will not be on after reset and drain so there
-        // maybe PRI errors on writing to the register
-        //
-        bRequireResetAndDrain = NV_TRUE;
-    }
+            //
+            // Since reset and drain will reset the link, including clearing
+            // pending interrupts, skip the clear write below. There are cases
+            // where link clocks will not be on after reset and drain so there
+            // maybe PRI errors on writing to the register
+            //
+        {
+            bRequireResetAndDrain = NV_TRUE;
+        }
         nvswitch_clear_flags(&unhandled, bit);
     }
 
     bit = DRF_NUM(_NVLDL_TOP, _INTR, _LTSSM_FAULT_UP, 1);
     if (nvswitch_test_flags(pending, bit))
     {
+        nvswitch_record_port_event(device, &(device->log_PORT_EVENTS), link, NVSWITCH_PORT_EVENT_TYPE_DOWN);
+        if (nvswitch_lib_notify_client_events(device,
+                    NVSWITCH_DEVICE_EVENT_PORT_DOWN) != NVL_SUCCESS)
         {
-        dlDeferredIntrLinkMask |= bit;
+            NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify PORT_DOWN event\n",
+                         __FUNCTION__);
+        }
+            dlDeferredIntrLinkMask |= bit;
 
-        //
-        // Since reset and drain will reset the link, including clearing
-        // pending interrupts, skip the clear write below. There are cases
-        // where link clocks will not be on after reset and drain so there
-        // maybe PRI errors on writing to the register
-        //
-        bRequireResetAndDrain = NV_TRUE;
-    }
+            //
+            // Since reset and drain will reset the link, including clearing
+            // pending interrupts, skip the clear write below. There are cases
+            // where link clocks will not be on after reset and drain so there
+            // maybe PRI errors on writing to the register
+            //
+        {
+            bRequireResetAndDrain = NV_TRUE;
+        }
         nvswitch_clear_flags(&unhandled, bit);
     }
 

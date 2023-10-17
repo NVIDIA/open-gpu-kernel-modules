@@ -476,9 +476,20 @@ _ctxdmaConstruct
 
     gpuSetThreadBcState(pGpu, !pContextDma->bUnicast);
 
-    rmStatus = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
-    if (rmStatus != NV_OK)
-        return NV_ERR_INVALID_OBJECT_PARENT;
+    if (hSubDevice == 0)
+    {
+        //
+        // We verified that pMemory is parented by Device.
+        // pGpu == NULL & hSubdevice == 0 errors out above.
+        //
+        pDevice = pMemory->pDevice;
+    }
+    else
+    {
+        rmStatus = deviceGetByGpu(pClient, pGpu, NV_TRUE, &pDevice);
+        if (rmStatus != NV_OK)
+            return NV_ERR_INVALID_OBJECT_PARENT;
+    }
 
     pContextDma->pDevice = pDevice;
 

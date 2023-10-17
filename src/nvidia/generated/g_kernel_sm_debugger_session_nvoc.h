@@ -674,4 +674,5 @@ static inline void ksmdbgssnFreeCallback(struct KernelSMDebuggerSession *arg0) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_SM_DEBUGGER_SESSION_NVOC_H_

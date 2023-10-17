@@ -23,6 +23,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "gpu/subdevice/subdevice.h"
 #include <class/cl90f1.h>  // FERMI_VASPACE_A
 #include <rmp2pdefines.h>
 #include "gpu/bus/third_party_p2p.h"

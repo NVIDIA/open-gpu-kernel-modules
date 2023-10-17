@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -73,6 +73,15 @@ typedef struct ENGSTATE_TRANSITION_DATA
     NvU64 transitionStartTimeNs;
 } ENGSTATE_TRANSITION_DATA;
 
+// Engine status for each state
+typedef struct ENGSTATE_STATUS
+{
+    NV_STATUS engStatus;
+#if NV_PRINTF_STRINGS_ALLOWED
+    char name[100];
+#endif
+} ENGSTATE_STATUS;
+
 typedef struct OBJENGSTATE *POBJENGSTATE;
 
 #define ENG_GET_FIFO(p)                 (engstateGetFifo(staticCast((p), OBJENGSTATE)))
@@ -112,6 +121,7 @@ struct OBJENGSTATE {
     struct OBJGPU *pGpu;
     ENGSTATE_STATE currentState;
     ENGSTATE_STATS stats[11];
+    ENGSTATE_STATUS status[11];
     char name[100];
 };
 
@@ -274,6 +284,16 @@ static inline void engstateLogStateTransitionPost(struct OBJENGSTATE *arg0, ENGS
 #define engstateLogStateTransitionPost(arg0, arg1, arg2) engstateLogStateTransitionPost_IMPL(arg0, arg1, arg2)
 #endif //__nvoc_eng_state_h_disabled
 
+void engstateLogStateStatus_IMPL(struct OBJENGSTATE *arg0, ENGSTATE_STATE arg1, NV_STATUS status);
+
+#ifdef __nvoc_eng_state_h_disabled
+static inline void engstateLogStateStatus(struct OBJENGSTATE *arg0, ENGSTATE_STATE arg1, NV_STATUS status) {
+    NV_ASSERT_FAILED_PRECOMP("OBJENGSTATE was disabled!");
+}
+#else //__nvoc_eng_state_h_disabled
+#define engstateLogStateStatus(arg0, arg1, status) engstateLogStateStatus_IMPL(arg0, arg1, status)
+#endif //__nvoc_eng_state_h_disabled
+
 const char *engstateGetName_IMPL(struct OBJENGSTATE *arg0);
 
 #ifdef __nvoc_eng_state_h_disabled
@@ -342,4 +362,5 @@ static inline struct OBJFIFO *engstateGetFifo(POBJENGSTATE pEngstate) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_ENG_STATE_NVOC_H_

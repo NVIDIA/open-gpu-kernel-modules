@@ -1716,12 +1716,12 @@ _knvlinkActivateDiscoveredP2pConn
 
                 // Set the PCI information for remote end
                 pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.bConnected  = NV_TRUE;
-                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.domain      = pKernelNvlink0->pNvlinkDev->pciInfo.domain;
-                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.bus         = pKernelNvlink0->pNvlinkDev->pciInfo.bus;
-                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.device      = pKernelNvlink0->pNvlinkDev->pciInfo.device;
-                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.function    = pKernelNvlink0->pNvlinkDev->pciInfo.function;
-                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.pciDeviceId = pKernelNvlink0->pNvlinkDev->pciInfo.pciDeviceId;
-                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.deviceType  = pKernelNvlink0->pNvlinkDev->type;
+                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.domain      = gpuGetDomain(pGpu0);
+                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.bus         = gpuGetBus(pGpu0);
+                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.device      = gpuGetDevice(pGpu0);
+                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.function    = 0;
+                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.pciDeviceId = pGpu->idInfo.PCIDeviceID;
+                pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.deviceType  = NVLINK_DEVICE_TYPE_GPU;
                 pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.chipSid     = pKernelNvlink0->nvlinkLinks[linkId].core_link->localSid;
                 pKernelNvlink1->nvlinkLinks[remoteLinkId].remoteEndInfo.linkNumber  = linkId;
 

@@ -101,70 +101,26 @@ vaspaceFillAllocParams_IMPL
         }
     }
 
-    if (vaspaceIsInternalVaRestricted(pVAS)) // will be true only for MAC's GPUVA.
+    //
+    // Handle 32bit pointer requests.  32b pointers are forced below 32b
+    // on all chips.  Non-32b requests are only forced on some chips,
+    // typically kepler, and only if there are no other address hints.
+    //
+    // If requested size cannot be satisfied with range above 4 GB, then relax that
+    // restriction.
+    //
+    if (FLD_TEST_DRF(OS32, _ATTR2, _32BIT_POINTER, _ENABLE, pAllocInfo->pageFormat->attr2))
     {
-
-        if (pFlags->bClientAllocation) //  client allocations
-        {
-            NvU64 partitionRangeLo = 0;
-            NvU64 partitionRangeHi = 0;
-
-            // If 32 bit enforcement is set, route to the lower va range.
-            if (FLD_TEST_DRF(OS32, _ATTR2, _32BIT_POINTER, _ENABLE, pAllocInfo->pageFormat->attr2))
-            {
-                partitionRangeLo = vaspaceGetVaStart(pVAS);
-                partitionRangeHi = NVBIT64(32) - 1;
-            }
-            else
-            {
-                // route to >4gig
-                partitionRangeLo = NVBIT64(32);
-                partitionRangeHi = vaspaceGetVaLimit(pVAS);
-            }
-
-            // If fixed address is requested - the range should be entirely contained within the partition.
-            if (pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE ||
-                pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_USE_BEGIN_END) // Is this a valid expectation?
-            {
-                // Within the 32 bit or 64 bit partition.
-                if (!(*pRangeLo >= partitionRangeLo && *pRangeHi <=partitionRangeHi))
-                {
-                    return NV_ERR_INVALID_PARAMETER;
-                }
-                // both use_begin_end and fixed_addr_range will have this flag set
-                pFlags->bFixedAddressRange = NV_TRUE;
-            }
-            else
-            {
-                *pRangeLo = partitionRangeLo;
-                *pRangeHi = partitionRangeHi;
-                pFlags->bFixedAddressRange = NV_FALSE;
-            }
-        }
+        *pRangeHi = NV_MIN(*pRangeHi, NVBIT64(32) - 1);
     }
-    else
-    {
-            //
-            // Handle 32bit pointer requests.  32b pointers are forced below 32b
-            // on all chips.  Non-32b requests are only forced on some chips,
-            // typically kepler, and only if there are no other address hints.
-            //
-            // If requested size cannot be satisfied with range above 4 GB, then relax that
-            // restriction.
-            //
-            if (FLD_TEST_DRF(OS32, _ATTR2, _32BIT_POINTER, _ENABLE, pAllocInfo->pageFormat->attr2))
-            {
-                *pRangeHi = NV_MIN(*pRangeHi, NVBIT64(32) - 1);
-            }
 
-            else if (bEnforce32bitPtr &&
-                     !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) &&
-                     !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_USE_BEGIN_END) &&
-                     ((*pRangeHi - *pRangeLo + 1 - *pSize) > NVBIT64(32)) &&
-                     !(vasFlags & VASPACE_FLAGS_FLA))
-            {
-                *pRangeLo = NV_MAX(*pRangeLo, NVBIT64(32));
-            }
+    else if (bEnforce32bitPtr &&
+             !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_FIXED_ADDRESS_ALLOCATE) &&
+             !(pAllocInfo->pageFormat->flags & NVOS32_ALLOC_FLAGS_USE_BEGIN_END) &&
+             ((*pRangeHi - *pRangeLo + 1 - *pSize) > NVBIT64(32)) &&
+             !(vasFlags & VASPACE_FLAGS_FLA))
+    {
+        *pRangeLo = NV_MAX(*pRangeLo, NVBIT64(32));
     }
 
     if ((*pRangeHi - *pRangeLo + 1) < *pSize) // Moved the range check here
@@ -221,12 +177,6 @@ vaspaceInvalidateTlb_IMPL
 )
 {
     NV_ASSERT(0);
-}
-
-NvBool
-vaspaceIsInternalVaRestricted_IMPL(OBJVASPACE *pVAS)
-{
-    return NV_FALSE;
 }
 
 NV_STATUS

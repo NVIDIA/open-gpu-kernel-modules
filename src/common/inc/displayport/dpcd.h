@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -452,12 +452,12 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_DOWNSPREAD_CTRL_MSA_TIMING_PAR_IGNORED_TRUE      (0x00000001) /* RWXUV */
 
 #define NV_DPCD_MAIN_LINK_CHANNEL_CODING_SET                      (0x00000108) /* RWXUR */
-#define NV_DPCD_MAIN_LINK_CNANNEL_CODING_SET_ANSI_8B_10B                  0:0  /* RWXUF */
-#define NV_DPCD_MAIN_LINK_CNANNEL_CODING_SET_ANSI_8B_10B_FALSE    (0x00000000) /* RWXUV */
-#define NV_DPCD_MAIN_LINK_CNANNEL_CODING_SET_ANSI_8B_10B_TRUE     (0x00000001) /* RWXUV */
-#define NV_DPCD_MAIN_LINK_CNANNEL_CODING_SET_ANSI_128B_132B               1:1  /* RWXUF */
-#define NV_DPCD_MAIN_LINK_CNANNEL_CODING_SET_ANSI_128B_132B_FALSE (0x00000000) /* RWXUV */
-#define NV_DPCD_MAIN_LINK_CNANNEL_CODING_SET_ANSI_128B_132B_TRUE  (0x00000001) /* RWXUV */
+#define NV_DPCD_MAIN_LINK_CHANNEL_CODING_SET_ANSI_8B_10B                  0:0  /* RWXUF */
+#define NV_DPCD_MAIN_LINK_CHANNEL_CODING_SET_ANSI_8B_10B_FALSE    (0x00000000) /* RWXUV */
+#define NV_DPCD_MAIN_LINK_CHANNEL_CODING_SET_ANSI_8B_10B_TRUE     (0x00000001) /* RWXUV */
+#define NV_DPCD_MAIN_LINK_CHANNEL_CODING_SET_ANSI_128B_132B               1:1  /* RWXUF */
+#define NV_DPCD_MAIN_LINK_CHANNEL_CODING_SET_ANSI_128B_132B_FALSE (0x00000000) /* RWXUV */
+#define NV_DPCD_MAIN_LINK_CHANNEL_CODING_SET_ANSI_128B_132B_TRUE  (0x00000001) /* RWXUV */
 
 #define NV_DPCD_I2C_CTRL_SET                                     (0x00000109) /* RWXUR */
 #define NV_DPCD_I2C_CTRL_SET_SPEED                                       7:0  /* RWXUF */
@@ -1000,6 +1000,8 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_EDP_REV_VAL_1_4                                     (0x00000003) /* R-XUV */
 #define NV_DPCD_EDP_REV_VAL_1_4A                                    (0x00000004) /* R-XUV */
 #define NV_DPCD_EDP_REV_VAL_1_4B                                    (0x00000005) /* R-XUV */
+#define NV_DPCD_EDP_REV_VAL_1_5                                     (0x00000006) /* R-XUV */
+#define NV_DPCD_EDP_REV_VAL_1_5A                                    (0x00000006) /* R-XUV */
 #define NV_DPCD_EDP_GENERAL_CAP1                                    (0x00000701) /* R-XUR */
 #define NV_DPCD_EDP_GENERAL_CAP1_TCON_BKLGHT_ADJUST_CAP                     0:0  /* R-XUF */
 #define NV_DPCD_EDP_GENERAL_CAP1_TCON_BKLGHT_ADJUST_CAP_YES         (0x00000001) /* R-XUV */
@@ -1061,6 +1063,9 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_EDP_GENERAL_CAP2_OVERDRIVE_CONTROL_CAP                      3:3  /* R-XUF */
 #define NV_DPCD_EDP_GENERAL_CAP2_OVERDRIVE_CONTROL_CAP_NO           (0x00000000) /* R-XUV */
 #define NV_DPCD_EDP_GENERAL_CAP2_OVERDRIVE_CONTROL_CAP_YES          (0x00000001) /* R-XUV */
+#define NV_DPCD_EDP_GENERAL_CAP2_PANEL_LUMINANCE_CONTROL_CAP                4:4  /* R-XUF */
+#define NV_DPCD_EDP_GENERAL_CAP2_PANEL_LUMINANCE_CONTROL_CAP_NO     (0x00000000) /* R-XUV */
+#define NV_DPCD_EDP_GENERAL_CAP2_PANEL_LUMINANCE_CONTROL_CAP_YES    (0x00000001) /* R-XUV */
 #define NV_DPCD_EDP_GENERAL_CAP3                                    (0x00000704) /* R-XUV */
 #define NV_DPCD_EDP_GENERAL_CAP3_X_REGION_CAP                               3:0  /* R-XUF */
 #define NV_DPCD_EDP_GENERAL_CAP3_X_REGION_CAP_NOT_SUPPORTED         (0x00000000) /* R-XUV */
@@ -1115,6 +1120,9 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_EDP_BKLGHT_MODE_SET_UPDATE_REGION_BRIGHTNESS                6:6  /* RWXUF */
 #define NV_DPCD_EDP_BKLGHT_MODE_SET_UPDATE_REGION_BRIGHTNESS_ENABLED  (0x00000001) /* RWXUV */
 #define NV_DPCD_EDP_BKLGHT_MODE_SET_UPDATE_REGION_BRIGHTNESS_DISABLED (0x00000000) /* RWXUV */
+#define NV_DPCD_EDP_BKLGHT_MODE_SET_PANEL_LUMINANCE_CONTROL_ENABLE          7:7  /* RWXUF */
+#define NV_DPCD_EDP_BKLGHT_MODE_SET_PANEL_LUMINANCE_CONTROL_ENABLE_YES (0x00000001) /* RWXUV */
+#define NV_DPCD_EDP_BKLGHT_MODE_SET_PANEL_LUMINANCE_CONTROL_ENABLE_NO  (0x00000000) /* RWXUV */
 #define NV_DPCD_EDP_BKLGHT_BRIGHTNESS_MSB                           (0x00000722) /* RWXUR */
 #define NV_DPCD_EDP_BKLGHT_BRIGHTNESS_MSB_VAL                               7:0  /* RWXUF */
 #define NV_DPCD_EDP_BKLGHT_BRIGHTNESS_MSB_VAL_INIT                  (0x00000000) /* RWXUV */
@@ -1162,6 +1170,15 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_EDP_DBC_MAXIMUM_BRIGHTNESS_SET                      (0x00000733) /* RWXUR */
 #define NV_DPCD_EDP_DBC_MAXIMUM_BRIGHTNESS_CAP_VAL                          4:0  /* RWXUF */
 #define NV_DPCD_EDP_DBC_MAXIMUM_BRIGHTNESS_CAP_VAL_INIT             (0x00000000) /* RWXUV */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_LSB                          (0x00000734) /* RWXUR */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_LSB_VAL                              7:0  /* RWXUF */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_LSB_VAL_INIT                 (0x00000000) /* RWXUV */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_MID                          (0x00000735) /* RWXUR */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_MID_VAL                              7:0  /* RWXUF */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_MID_VAL_INIT                  0x00000000) /* RWXUV */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_MSB                          (0x00000736) /* RWXUR */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_MSB_VAL                              7:0  /* RWXUF */
+#define NV_DPCD_PANEL_TARGET_LUMINANCE_MSB_VAL_INIT                  0x00000000) /* RWXUV */
 #define NV_DPCD_EDP_REGIONAL_BKLGHT_BASE                            (0x00000740) /* RWXUR */
 #define NV_DPCD_EDP_REGIONAL_BKLGHT_BASE_INDEX_OFFSET_VAL                   7:0  /* RWXUF */
 #define NV_DPCD_EDP_REGIONAL_BKLGHT_BASE_INDEX_OFFSET_VAL_INIT      (0x00000000) /* RWXUV */
@@ -1262,6 +1279,10 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_DEVICE_SERVICE_IRQ_VECTOR_ESI1_RX_GTC_MSTR_REQ_STATUS_CHANGE                0:0  /* R-XUF */
 #define NV_DPCD_DEVICE_SERVICE_IRQ_VECTOR_ESI1_RX_GTC_MSTR_REQ_STATUS_CHANGE_NO     (0x00000000) /* R-XUV */
 #define NV_DPCD_DEVICE_SERVICE_IRQ_VECTOR_ESI1_RX_GTC_MSTR_REQ_STATUS_CHANGE_YES    (0x00000001) /* R-XUV */
+#define NV_DPCD_DEVICE_SERVICE_IRQ_VECTOR_ESI1_PANEL_REPLAY_ERROR_STATUS                    3:3  /* R-XUF */
+#define NV_DPCD_DEVICE_SERVICE_IRQ_VECTOR_ESI1_PANEL_REPLAY_ERROR_STATUS_NO         (0x00000000) /* R-XUV */
+#define NV_DPCD_DEVICE_SERVICE_IRQ_VECTOR_ESI1_PANEL_REPLAY_ERROR_STATUS_YES        (0x00000001) /* R-XUV */
+
 
 #define NV_DPCD_LINK_SERVICE_IRQ_VECTOR_ESI0                                (0x00002005) /* R-XUR */
 #define NV_DPCD_LINK_SERVICE_IRQ_VECTOR_ESI0_RX_CAP_CHANGED                         0:0  /* R-XUF */

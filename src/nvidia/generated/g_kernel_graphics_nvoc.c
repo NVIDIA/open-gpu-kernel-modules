@@ -107,7 +107,7 @@ static NV_STATUS __nvoc_thunk_KernelGraphics_engstateStatePostLoad(OBJGPU *arg0,
     return kgraphicsStatePostLoad(arg0, (struct KernelGraphics *)(((unsigned char *)arg1) - __nvoc_rtti_KernelGraphics_OBJENGSTATE.offset), flags);
 }
 
-static void __nvoc_thunk_KernelGraphics_intrservRegisterIntrService(OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[167]) {
+static void __nvoc_thunk_KernelGraphics_intrservRegisterIntrService(OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[168]) {
     kgraphicsRegisterIntrService(arg0, (struct KernelGraphics *)(((unsigned char *)arg1) - __nvoc_rtti_KernelGraphics_IntrService.offset), arg2);
 }
 

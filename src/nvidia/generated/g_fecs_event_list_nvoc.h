@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -72,6 +72,18 @@ typedef struct EventBuffer EventBuffer;
 #endif /* __nvoc_class_id_EventBuffer */
 
 
+struct Subdevice;
+
+#ifndef __NVOC_CLASS_Subdevice_TYPEDEF__
+#define __NVOC_CLASS_Subdevice_TYPEDEF__
+typedef struct Subdevice Subdevice;
+#endif /* __NVOC_CLASS_Subdevice_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_Subdevice
+#define __nvoc_class_id_Subdevice 0x4b01b3
+#endif /* __nvoc_class_id_Subdevice */
+
+
 
 // TODO move to cl90cdfecs.h
 #define NV_EVENT_BUFFER_INVALID_MIG_GI      0xFF
@@ -130,7 +142,7 @@ NV_STATUS fecsAddBindpoint
     OBJGPU *pGpu,
     struct RmClient *pClient,
     RsResourceRef *pEventBufferRef,
-    NvHandle hNotifier,
+    struct Subdevice *pNotifier,
     NvBool bAllUsers,
     NV2080_CTRL_GR_FECS_BIND_EVTBUF_LOD levelOfDetail,
     NvU32 eventFilter,
@@ -250,4 +262,5 @@ void fecsSetVgpuStagingBuffer
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_FECS_EVENT_LIST_NVOC_H_

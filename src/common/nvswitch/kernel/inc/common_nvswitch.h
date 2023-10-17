@@ -94,12 +94,12 @@ static NV_INLINE void nvswitch_clear_flags(NvU32 *val, NvU32 flags)
 #endif
 
 #define NV_ARRAY_ELEMENTS(x)   ((sizeof(x)/sizeof((x)[0])))
-
-#define NVSWITCH_DBG_LEVEL NVSWITCH_DBG_LEVEL_INFO
+ 
+#define NVSWITCH_DBG_LEVEL(_d) (_d == NULL ? NVSWITCH_DBG_LEVEL_INFO : ((nvswitch_device *)_d)->regkeys.debug_level)
 
 #if defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
 #define NVSWITCH_PRINT(_d, _lvl, _fmt, ...)                 \
-    ((NVSWITCH_DBG_LEVEL <= NVSWITCH_DBG_LEVEL_ ## _lvl) ?  \
+    ((NVSWITCH_DBG_LEVEL(_d) <= NVSWITCH_DBG_LEVEL_ ## _lvl) ?  \
         nvswitch_os_print(NVSWITCH_DBG_LEVEL_ ## _lvl,      \
             "%s[%-5s]: " _fmt,                              \
             ((_d == NULL) ?                                 \
@@ -271,6 +271,7 @@ typedef struct
     NvU32 surpress_link_errors_for_gpu_reset;
     NvU32 block_code_mode;
     NvU32 reference_clock_mode;
+    NvU32 debug_level;
 } NVSWITCH_REGKEY_TYPE;
 
 //
@@ -341,6 +342,30 @@ struct NVSWITCH_CLIENT_EVENT
     void      *private_driver_data;
 };
 
+typedef struct 
+{
+    NvU8 port_event_type;        // 0 = port up, 1 = port down, 2 = error invalid entry
+    NvU64 local_port_event_num;  // Count of preceding port events (local port event log)
+    NvU64 global_port_event_num; // Count of preceding port events (globally)
+    NvU32 link_id;               // Link that event occured on
+    NvU64 time;                  // Platform time, in ns
+} NVSWITCH_PORT_EVENT_TYPE;
+
+#define NVSWITCH_PORT_EVENT_LOG_SIZE 1024
+
+typedef struct
+{
+    NvU32 port_event_start;     // Start index within CB (circular buffer)
+    NvU32 port_event_count;     // Count of current port events in CB
+    NvU64 port_event_total;     // Count of total port events logged
+    NvU32 port_event_log_size;  // CB size
+    NVSWITCH_PORT_EVENT_TYPE *port_event_log; 
+    NvBool overwritable;        // Old entries can be overwritten
+    NvBool bOverflow;           // True when log has been overflowed and no
+                                //  longer contains all port events that occurred
+} NVSWITCH_PORT_EVENT_LOG_TYPE;
+
+
 //
 // common device information
 //
@@ -368,6 +393,9 @@ struct nvswitch_device
     NvU64                               error_total;    // Total errors recorded across all error logs
     NVSWITCH_ERROR_LOG_TYPE             log_FATAL_ERRORS;
     NVSWITCH_ERROR_LOG_TYPE             log_NONFATAL_ERRORS;
+
+    // Port Events
+    NVSWITCH_PORT_EVENT_LOG_TYPE        log_PORT_EVENTS;
 
     NVSWITCH_FIRMWARE                   firmware;
 
@@ -582,4 +610,7 @@ void      nvswitch_apply_recal_settings(nvswitch_device *device, nvlink_link *li
 void nvswitch_init_buffer_ready(nvswitch_device *device, nvlink_link *link, NvBool bNportBufferReady);
 NvBool    nvswitch_does_link_need_termination_enabled(nvswitch_device *device, nvlink_link *link);
 NvlStatus nvswitch_link_termination_setup(nvswitch_device *device, nvlink_link* link);
+void      nvswitch_record_port_event(nvswitch_device *device, NVSWITCH_PORT_EVENT_LOG_TYPE *port_events, NvU32 link_id, NvU8 port_event_type);
+NvlStatus nvswitch_ctrl_get_port_events(nvswitch_device *device, NVSWITCH_GET_PORT_EVENTS_PARAMS *p);
+
 #endif //_COMMON_NVSWITCH_H_

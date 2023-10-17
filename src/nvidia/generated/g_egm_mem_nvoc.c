@@ -118,6 +118,10 @@ static NV_STATUS __nvoc_thunk_Memory_egmmemGetMapAddrSpace(struct ExtendedGpuMem
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_egmmemIsExportAllowed(struct ExtendedGpuMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ExtendedGpuMemory_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_egmmemGetRefCount(struct ExtendedGpuMemory *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ExtendedGpuMemory_RsResource.offset));
 }
@@ -247,6 +251,8 @@ static void __nvoc_init_funcTable_ExtendedGpuMemory_1(ExtendedGpuMemory *pThis) 
     pThis->__egmmemMapTo__ = &__nvoc_thunk_RsResource_egmmemMapTo;
 
     pThis->__egmmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_egmmemGetMapAddrSpace;
+
+    pThis->__egmmemIsExportAllowed__ = &__nvoc_thunk_Memory_egmmemIsExportAllowed;
 
     pThis->__egmmemGetRefCount__ = &__nvoc_thunk_RsResource_egmmemGetRefCount;
 

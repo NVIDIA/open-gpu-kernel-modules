@@ -580,9 +580,9 @@ static inline NV_STATUS gkflcnResetHw_DISPATCH(struct OBJGPU *pGpu, struct Gener
     return pGenKernFlcn->__gkflcnResetHw__(pGpu, pGenKernFlcn);
 }
 
-void gkflcnRegisterIntrService_IMPL(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[167]);
+void gkflcnRegisterIntrService_IMPL(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[168]);
 
-static inline void gkflcnRegisterIntrService_DISPATCH(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[167]) {
+static inline void gkflcnRegisterIntrService_DISPATCH(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[168]) {
     arg1->__gkflcnRegisterIntrService__(arg0, arg1, arg2);
 }
 
@@ -671,4 +671,5 @@ NV_STATUS gkflcnConstruct_IMPL(struct GenericKernelFalcon *arg_pGenKernFlcn, str
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_FALCON_NVOC_H_

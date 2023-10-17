@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -146,7 +146,8 @@ _kfifoAllocDummyPage
         return status;
     }
 
-    status = memdescAllocList(pKernelFifo->pDummyPageMemDesc, pKernelFifo->pInstAllocList);
+    memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_80, 
+                    pKernelFifo->pDummyPageMemDesc, pKernelFifo->pInstAllocList);
     if (status !=  NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Could not allocate dummy page\n");
@@ -1244,7 +1245,8 @@ kfifoPreAllocUserD_GM107
     }
     else
     {
-        status = memdescAlloc(pUserdInfo->userdPhysDesc[currentGpuInst]);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_81, 
+                        pUserdInfo->userdPhysDesc[currentGpuInst]);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -1267,7 +1269,7 @@ kfifoPreAllocUserD_GM107
             (memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_FBMEM))
         {
 
-            NV_PRINTF(LEVEL_INFO, "Mapping USERD with coherent link.\n");
+            NV_PRINTF(LEVEL_INFO, "Mapping USERD with coherent link (USERD in FBMEM).\n");
             NV_ASSERT(pGpu->getProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED));
             NV_ASSERT(pUserdInfo->userdPhysDesc[currentGpuInst]->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS);
 
@@ -1275,6 +1277,22 @@ kfifoPreAllocUserD_GM107
             {
                 pUserdInfo->userdBar1MapStartOffset =  pUserdInfo->userdPhysDesc[currentGpuInst]->_pteArray[0] +
                                                        pUserdInfo->userdPhysDesc[currentGpuInst]->PteAdjust;
+            }
+        }
+        //
+        // get sysmem mapping for USERD if USERD is in sysmem and reflected BAR access is not allowed
+        //
+        else if ((bCoherentCpuMapping &&
+                 memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_SYSMEM &&
+                 !kbusIsReflectedMappingAccessAllowed(pKernelBus)) ||
+                 pGpu->getProperty(pGpu, PDB_PROP_GPU_BAR1_BAR2_DISABLED))
+        {
+            NV_PRINTF(LEVEL_INFO, "Mapping USERD with coherent link (USERD in SYSMEM).\n");
+
+            if (bFifoFirstInit)
+            {
+                pUserdInfo->userdBar1MapStartOffset =
+                        memdescGetPhysAddr(pUserdInfo->userdPhysDesc[currentGpuInst], AT_CPU, 0);
             }
         }
         else
@@ -1291,17 +1309,17 @@ kfifoPreAllocUserD_GM107
             status = kbusMapFbAperture_HAL(pGpu, pKernelBus, pUserdInfo->userdPhysDesc[currentGpuInst], 0,
                                            &pUserdInfo->userdBar1MapStartOffset,
                                            &temp, mapFlags | BUS_MAP_FB_FLAGS_PRE_INIT, NULL);
-        }
 
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Could not map USERD to BAR1\n");
-            DBG_BREAKPOINT();
-            goto fail;
-        }
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Could not map USERD to BAR1\n");
+                DBG_BREAKPOINT();
+                goto fail;
+            }
 
-        // Add current GPU to list of GPUs referencing pFifo userD bar1
-        pUserdInfo->userdBar1RefMask |= NVBIT(pGpu->gpuInstance);
+            // Add current GPU to list of GPUs referencing pFifo userD bar1
+            pUserdInfo->userdBar1RefMask |= NVBIT(pGpu->gpuInstance);
+        }
     }
 
     if (bFifoFirstInit)
@@ -1314,6 +1332,18 @@ kfifoPreAllocUserD_GM107
             pUserdInfo->userdBar1CpuPtr = kbusMapCoherentCpuMapping_HAL(pGpu, pKernelBus,
                                              pUserdInfo->userdPhysDesc[currentGpuInst]);
             status = pUserdInfo->userdBar1CpuPtr == NULL ? NV_ERR_GENERIC : NV_OK;
+        }
+        else if ((bCoherentCpuMapping &&
+                 memdescGetAddressSpace(pUserdInfo->userdPhysDesc[currentGpuInst]) == ADDR_SYSMEM &&
+                 !kbusIsReflectedMappingAccessAllowed(pKernelBus)) ||
+                 pGpu->getProperty(pGpu, PDB_PROP_GPU_BAR1_BAR2_DISABLED))
+        {
+            status = osMapPciMemoryKernelOld(pGpu,
+                                             pUserdInfo->userdBar1MapStartOffset,
+                                             pUserdInfo->userdBar1MapSize,
+                                             NV_PROTECT_READ_WRITE,
+                                             (void**)&pUserdInfo->userdBar1CpuPtr,
+                                             NV_MEMORY_UNCACHED);
         }
         else
         {

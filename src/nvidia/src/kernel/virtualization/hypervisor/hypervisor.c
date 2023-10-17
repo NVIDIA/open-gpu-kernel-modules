@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -71,7 +71,6 @@ NvBool hypervisorPcieP2pDetection_IMPL
 {
     if (_hypervisorCheckVirtualPcieP2PApproval(pHypervisor, gpuMask))
         return NV_TRUE;
-
     if (hypervisorIsVgxHyper())
         return NV_FALSE;
 

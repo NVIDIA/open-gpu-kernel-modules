@@ -413,7 +413,7 @@ static NV_STATUS __nvoc_thunk_GenericKernelFalcon_kflcnResetHw(struct OBJGPU *pG
     return gkflcnResetHw(pGpu, (struct GenericKernelFalcon *)(((unsigned char *)pGenKernFlcn) - __nvoc_rtti_GenericKernelFalcon_KernelFalcon.offset));
 }
 
-static void __nvoc_thunk_GenericKernelFalcon_intrservRegisterIntrService(struct OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[167]) {
+static void __nvoc_thunk_GenericKernelFalcon_intrservRegisterIntrService(struct OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[168]) {
     gkflcnRegisterIntrService(arg0, (struct GenericKernelFalcon *)(((unsigned char *)arg1) - __nvoc_rtti_GenericKernelFalcon_IntrService.offset), arg2);
 }
 

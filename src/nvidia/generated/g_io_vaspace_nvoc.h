@@ -156,7 +156,6 @@ struct OBJIOVASPACE {
     NV_STATUS (*__iovaspaceGetVasInfo__)(struct OBJIOVASPACE *, NV0080_CTRL_DMA_ADV_SCHED_GET_VA_CAPS_PARAMS *);
     NvBool (*__iovaspaceIsMirrored__)(struct OBJIOVASPACE *);
     NvBool (*__iovaspaceIsExternallyOwned__)(struct OBJIOVASPACE *);
-    NvBool (*__iovaspaceIsInternalVaRestricted__)(struct OBJIOVASPACE *);
     NvU32 (*__iovaspaceGetFlags__)(struct OBJIOVASPACE *);
     NvBool (*__iovaspaceIsAtsEnabled__)(struct OBJIOVASPACE *);
     NvU64 (*__iovaspaceGetBigPageSize__)(struct OBJIOVASPACE *);
@@ -174,7 +173,7 @@ struct OBJIOVASPACE {
     NV_STATUS (*__iovaspaceFreeV2__)(struct OBJIOVASPACE *, NvU64, NvU64 *);
     NV_STATUS (*__iovaspaceGetPasid__)(struct OBJIOVASPACE *, NvU32 *);
     NV_STATUS (*__iovaspaceGetPageTableInfo__)(struct OBJIOVASPACE *, NV0080_CTRL_DMA_GET_PDE_INFO_PARAMS *);
-    NV_STATUS (*__iovaspaceReserveMempool__)(struct OBJIOVASPACE *, struct OBJGPU *, NvHandle, NvU64, NvU64, NvU32);
+    NV_STATUS (*__iovaspaceReserveMempool__)(struct OBJIOVASPACE *, struct OBJGPU *, struct Device *, NvU64, NvU64, NvU32);
     NV_STATUS (*__iovaspaceMap__)(struct OBJIOVASPACE *, struct OBJGPU *, const NvU64, const NvU64, const MMU_MAP_TARGET *, const VAS_MAP_FLAGS);
     NvU64 mappingCount;
 };
@@ -217,7 +216,6 @@ NV_STATUS __nvoc_objCreate_OBJIOVASPACE(OBJIOVASPACE**, Dynamic*, NvU32);
 #define iovaspaceGetVasInfo(pVAS, pParams) iovaspaceGetVasInfo_DISPATCH(pVAS, pParams)
 #define iovaspaceIsMirrored(pVAS) iovaspaceIsMirrored_DISPATCH(pVAS)
 #define iovaspaceIsExternallyOwned(pVAS) iovaspaceIsExternallyOwned_DISPATCH(pVAS)
-#define iovaspaceIsInternalVaRestricted(pVAS) iovaspaceIsInternalVaRestricted_DISPATCH(pVAS)
 #define iovaspaceGetFlags(pVAS) iovaspaceGetFlags_DISPATCH(pVAS)
 #define iovaspaceIsAtsEnabled(pVAS) iovaspaceIsAtsEnabled_DISPATCH(pVAS)
 #define iovaspaceGetBigPageSize(pVAS) iovaspaceGetBigPageSize_DISPATCH(pVAS)
@@ -235,7 +233,7 @@ NV_STATUS __nvoc_objCreate_OBJIOVASPACE(OBJIOVASPACE**, Dynamic*, NvU32);
 #define iovaspaceFreeV2(pVAS, vAddr, pSize) iovaspaceFreeV2_DISPATCH(pVAS, vAddr, pSize)
 #define iovaspaceGetPasid(pVAS, pPasid) iovaspaceGetPasid_DISPATCH(pVAS, pPasid)
 #define iovaspaceGetPageTableInfo(pVAS, pParams) iovaspaceGetPageTableInfo_DISPATCH(pVAS, pParams)
-#define iovaspaceReserveMempool(pVAS, pGpu, hClient, size, pageSizeLockMask, flags) iovaspaceReserveMempool_DISPATCH(pVAS, pGpu, hClient, size, pageSizeLockMask, flags)
+#define iovaspaceReserveMempool(pVAS, pGpu, pDevice, size, pageSizeLockMask, flags) iovaspaceReserveMempool_DISPATCH(pVAS, pGpu, pDevice, size, pageSizeLockMask, flags)
 #define iovaspaceMap(pVAS, pGpu, vaLo, vaHi, pTarget, flags) iovaspaceMap_DISPATCH(pVAS, pGpu, vaLo, vaHi, pTarget, flags)
 NV_STATUS iovaspaceConstruct__IMPL(struct OBJIOVASPACE *pVAS, NvU32 classId, NvU32 vaspaceId, NvU64 vaStart, NvU64 vaLimit, NvU64 vaStartInternal, NvU64 vaLimitInternal, NvU32 flags);
 
@@ -291,10 +289,6 @@ static inline NvBool iovaspaceIsMirrored_DISPATCH(struct OBJIOVASPACE *pVAS) {
 
 static inline NvBool iovaspaceIsExternallyOwned_DISPATCH(struct OBJIOVASPACE *pVAS) {
     return pVAS->__iovaspaceIsExternallyOwned__(pVAS);
-}
-
-static inline NvBool iovaspaceIsInternalVaRestricted_DISPATCH(struct OBJIOVASPACE *pVAS) {
-    return pVAS->__iovaspaceIsInternalVaRestricted__(pVAS);
 }
 
 static inline NvU32 iovaspaceGetFlags_DISPATCH(struct OBJIOVASPACE *pVAS) {
@@ -365,8 +359,8 @@ static inline NV_STATUS iovaspaceGetPageTableInfo_DISPATCH(struct OBJIOVASPACE *
     return pVAS->__iovaspaceGetPageTableInfo__(pVAS, pParams);
 }
 
-static inline NV_STATUS iovaspaceReserveMempool_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, NvHandle hClient, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags) {
-    return pVAS->__iovaspaceReserveMempool__(pVAS, pGpu, hClient, size, pageSizeLockMask, flags);
+static inline NV_STATUS iovaspaceReserveMempool_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, struct Device *pDevice, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags) {
+    return pVAS->__iovaspaceReserveMempool__(pVAS, pGpu, pDevice, size, pageSizeLockMask, flags);
 }
 
 static inline NV_STATUS iovaspaceMap_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi, const MMU_MAP_TARGET *pTarget, const VAS_MAP_FLAGS flags) {
@@ -424,4 +418,5 @@ void iovaMappingDestroy(PIOVAMAPPING pIovaMapping);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_IO_VASPACE_NVOC_H_

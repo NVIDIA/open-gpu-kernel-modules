@@ -61,6 +61,18 @@ typedef struct
     NvU64 submittedWorkId;   // Payload to poll for async completion
 } CEUTILS_MEMCOPY_PARAMS;
 
+struct KernelChannel;
+
+#ifndef __NVOC_CLASS_KernelChannel_TYPEDEF__
+#define __NVOC_CLASS_KernelChannel_TYPEDEF__
+typedef struct KernelChannel KernelChannel;
+#endif /* __NVOC_CLASS_KernelChannel_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_KernelChannel
+#define __nvoc_class_id_KernelChannel 0x5d8d70
+#endif /* __nvoc_class_id_KernelChannel */
+
+
 
 #ifdef NVOC_CE_UTILS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
@@ -82,6 +94,7 @@ struct CeUtils {
     NvU32 hTdCopyClass;
     NvU64 lastSubmittedPayload;
     NvU64 lastCompletedPayload;
+    struct KernelChannel *pLiteKernelChannel;
 };
 
 #ifndef __NVOC_CLASS_CeUtils_TYPEDEF__
@@ -198,4 +211,5 @@ public:
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CE_UTILS_NVOC_H_

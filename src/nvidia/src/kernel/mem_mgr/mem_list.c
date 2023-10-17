@@ -50,15 +50,6 @@ memlistConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-#define CLEAR_HAL_ATTR(a) \
-    a = (a & ~(DRF_SHIFTMASK(NVOS32_ATTR_COMPR) | \
-               DRF_SHIFTMASK(NVOS32_ATTR_TILED) | \
-               DRF_SHIFTMASK(NVOS32_ATTR_ZCULL)));
-
-#define CLEAR_HAL_ATTR2(a) \
-    a = (a & ~(DRF_SHIFTMASK(NVOS32_ATTR2_ZBC) | \
-               DRF_SHIFTMASK(NVOS32_ATTR2_GPU_CACHEABLE)));
-
     NV_MEMORY_LIST_ALLOCATION_PARAMS *pAllocParams;
     RsResourceRef                    *pResourceRef = pCallContext->pResourceRef;
     NvHandle                          hClient = pCallContext->pClient->hClient;
@@ -109,22 +100,6 @@ memlistConstruct_IMPL
         return NV_ERR_NOT_SUPPORTED;
     }
 continue_alloc_object:
-
-    //
-    // These classes are used by the vGPU support to create memory objects for memory
-    // assigned to a guest VM.  The NV01_MEMORY_LIST_OBJECT case creates an object
-    // whose pages are based on another object's pages.
-    //
-    if ((externalClassId == NV01_MEMORY_LIST_FBMEM) || (externalClassId == NV01_MEMORY_LIST_OBJECT))
-    {
-        if (!(rmclientIsAdminByHandle(hClient, privLevel) || hypervisorCheckForObjectAccess(hClient)))
-            return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
-    else
-    {
-        if (!rmclientIsAdminByHandle(hClient, privLevel))
-            return NV_ERR_INSUFFICIENT_PERMISSIONS;
-    }
 
     if (DRF_VAL(OS02, _FLAGS, _COHERENCY, pAllocParams->flagsOs02) == NVOS02_FLAGS_COHERENCY_UNCACHED)
         Cache = NV_MEMORY_UNCACHED;
@@ -370,7 +345,8 @@ continue_alloc_object:
 
         // this will fake a memory allocation at
         // the OS driver interface level - and also set pMemDesc->Allocated
-        status = memdescAlloc(pMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_46, 
+                        pMemDesc);
 
         if (status != NV_OK)
         {
@@ -435,6 +411,7 @@ continue_alloc_object:
 
         pHeap = vidmemGetHeap(pGpu,
                               dynamicCast(pDeviceRef->pResource, Device),
+                              NV_FALSE,
                               NV_FALSE);
 
         //
@@ -780,6 +757,8 @@ done_fbmem:
                 pFbAllocInfo->pageFormat->type = pAllocParams->type;
                 pFbAllocInfo->hwResId          = hwResId;
                 pFbAllocInfo->size             = memSize;
+                pFbAllocInfo->hClient          = hClient;
+                pFbAllocInfo->hDevice          = hParent;
 
                 memmgrFreeHwResources(pGpu, pMemoryManager, pFbAllocInfo);
             }

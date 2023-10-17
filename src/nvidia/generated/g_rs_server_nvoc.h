@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -661,10 +661,12 @@ extern NV_STATUS serverAllocApiCopyOut(RsServer *pServer, NV_STATUS status, API_
 
 /**
  * Obtain a second client handle to lock if required for the allocation.
- * @param[in]   pParams  Resource allocation parameters
- * @param[in]   phClient Client to lock, if any
+ * @param[in]   externalClassId External class ID of resource
+ * @param[in]   pAllocParams    Class-specific allocation parameters
+ *
+ * @return Second client to lock, if any
  */
-extern NV_STATUS serverLookupSecondClient(RS_RES_ALLOC_PARAMS_INTERNAL *pParams, NvHandle *phClient);
+extern NvHandle serverAllocLookupSecondClient(NvU32 externalClassId, void *pAllocParams);
 
 /**
  * Acquires a top-level lock. User-implemented.
@@ -1213,4 +1215,5 @@ RsResourceRef *resservGetContextRefByType(NvU32 internalClassId, NvBool bSearchA
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_RS_SERVER_NVOC_H_

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1340,9 +1340,36 @@ RmDmabufVerifyMemHandle(
 }
 
 static NV_STATUS
+RmDmabufGetParentDevice(
+    OBJGPU    *pGpu,
+    NvHandle   hClient,
+    NvHandle   hMemory,
+    Device   **ppDevice
+)
+{
+    RsClient *pClient;
+    RsResourceRef *pDeviceRef;
+    RsResourceRef *pMemoryRef;
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        serverGetClientUnderLock(&g_resServ, hClient, &pClient));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        clientGetResourceRef(pClient, hMemory, &pMemoryRef));
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        refFindAncestorOfType(pMemoryRef, classId(Device), &pDeviceRef));
+
+    *ppDevice = dynamicCast(pDeviceRef->pResource, Device);
+
+    return NV_OK;
+}
+
+static NV_STATUS
 RmDmabufGetClientAndDevice(
     OBJGPU   *pGpu,
     NvHandle  hClient,
+    NvHandle  hMemory,
     NvHandle *phClient,
     NvHandle *phDevice,
     NvHandle *phSubdevice,
@@ -1355,10 +1382,18 @@ RmDmabufGetClientAndDevice(
     {
         NV_STATUS status;
         MIG_INSTANCE_REF ref;
+        Device *pParentDevice;
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
 
-        status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                 hClient, &ref);
+        status = RmDmabufGetParentDevice(pGpu, hClient, hMemory,
+                                         &pParentDevice);
+        if (status != NV_OK)
+        {
+            return status;
+        }
+
+        status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                 pParentDevice, &ref);
         if (status != NV_OK)
         {
             return status;
@@ -3067,7 +3102,7 @@ static NV_STATUS RmRunNanoTimerCallback(
     void *pTmrEvent
 )
 {
-    POBJTMR             pTmr = GPU_GET_TIMER(pGpu);
+    OBJTMR             *pTmr = GPU_GET_TIMER(pGpu);
     THREAD_STATE_NODE   threadState;
     NV_STATUS         status = NV_OK;
     // LOCK: try to acquire GPUs lock
@@ -3285,7 +3320,7 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
     THREAD_STATE_NODE threadState;
     NV_STATUS   rmStatus;
     OBJSYS     *pSys;
-    POBJHALMGR  pHalMgr;
+    OBJHALMGR  *pHalMgr;
     GPUHWREG   *reg_mapping;
     NvU32       myHalPublicID;
     void       *fp;
@@ -4872,14 +4907,18 @@ rm_gpu_need_4k_page_isolation
     return nvp->b_4k_page_isolation_required;
 }
 
+//
+// This API updates only the following fields in nv_ioctl_numa_info_t:
+// - nid
+// - numa_mem_addr
+// - numa_mem_size
+// - offline_addresses
+//
+// Rest of the fields should be updated by caller.
 NV_STATUS NV_API_CALL rm_get_gpu_numa_info(
-    nvidia_stack_t *sp,
-    nv_state_t *nv,
-    NvS32 *pNid,
-    NvU64 *pNumaMemAddr,
-    NvU64 *pNumaMemSize,
-    NvU64 *pOfflineAddresses,
-    NvU32 *pOfflineAddressesCount
+    nvidia_stack_t          *sp,
+    nv_state_t              *nv,
+    nv_ioctl_numa_info_t    *numa_info
 )
 {
     NV2080_CTRL_FB_GET_NUMA_INFO_PARAMS *pParams;
@@ -4888,14 +4927,12 @@ NV_STATUS NV_API_CALL rm_get_gpu_numa_info(
     void               *fp;
     NV_STATUS           status = NV_OK;
 
-    if ((pNid == NULL) || (pNumaMemAddr == NULL) || (pNumaMemSize == NULL))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
+    ct_assert(NV_ARRAY_ELEMENTS(numa_info->offline_addresses.addresses) >=
+          NV_ARRAY_ELEMENTS(pParams->numaOfflineAddresses));
 
-    if ((pOfflineAddressesCount != NULL) &&
-        ((pOfflineAddresses == NULL) ||
-         (*pOfflineAddressesCount > NV_ARRAY_ELEMENTS(pParams->numaOfflineAddresses))))
+    if ((numa_info == NULL) ||
+        (numa_info->offline_addresses.numEntries >
+         NV_ARRAY_ELEMENTS(pParams->numaOfflineAddresses)))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -4910,11 +4947,8 @@ NV_STATUS NV_API_CALL rm_get_gpu_numa_info(
     }
 
     portMemSet(pParams, 0, sizeof(*pParams));
-
-    if (pOfflineAddressesCount != NULL)
-    {
-        pParams->numaOfflineAddressesCount = *pOfflineAddressesCount;
-    }
+    pParams->numaOfflineAddressesCount =
+        numa_info->offline_addresses.numEntries;
 
     pRmApi = RmUnixRmApiPrologue(nv, &threadState, RM_LOCK_MODULES_MEM);
     if (pRmApi == NULL)
@@ -4933,14 +4967,16 @@ NV_STATUS NV_API_CALL rm_get_gpu_numa_info(
     {
         NvU32 i;
 
-        *pNid = pParams->numaNodeId;
-        *pNumaMemAddr = pParams->numaMemAddr;
-        *pNumaMemSize = pParams->numaMemSize;
-        *pOfflineAddressesCount = pParams->numaOfflineAddressesCount;
+        numa_info->nid = pParams->numaNodeId;
+        numa_info->numa_mem_addr = pParams->numaMemAddr;
+        numa_info->numa_mem_size = pParams->numaMemSize;
+        numa_info->offline_addresses.numEntries =
+            pParams->numaOfflineAddressesCount;
 
         for (i = 0; i < pParams->numaOfflineAddressesCount; i++)
         {
-            pOfflineAddresses[i] = pParams->numaOfflineAddresses[i];
+            numa_info->offline_addresses.addresses[i] =
+                pParams->numaOfflineAddresses[i];
         }
     }
 
@@ -5126,7 +5162,7 @@ NvBool rm_get_uefi_console_status(
     nv_state_t *nv
 )
 {
-    NvU16 fbWidth, fbHeight, fbDepth, fbPitch;
+    NvU32 fbWidth, fbHeight, fbDepth, fbPitch;
     NvU64 fbSize;
     NvU64 fbBaseAddress = 0;
     NvBool bConsoleDevice = NV_FALSE;
@@ -5140,7 +5176,7 @@ NvBool rm_get_uefi_console_status(
                        nv->bars[NV_GPU_BAR_INDEX_FB].cpu_address,
                        nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address + 0x1000000);
 
-    fbSize = fbHeight * fbPitch;
+    fbSize = (NvU64)fbHeight * (NvU64)fbPitch;
 
     bConsoleDevice = (fbSize != 0);
 
@@ -5152,7 +5188,7 @@ NvU64 rm_get_uefi_console_size(
     NvU64      *pFbBaseAddress
 )
 {
-    NvU16 fbWidth, fbHeight, fbDepth, fbPitch;
+    NvU32 fbWidth, fbHeight, fbDepth, fbPitch;
     NvU64 fbSize;
 
     fbSize = fbWidth = fbHeight = fbDepth = fbPitch = 0;
@@ -5166,7 +5202,7 @@ NvU64 rm_get_uefi_console_size(
                        nv->bars[NV_GPU_BAR_INDEX_FB].cpu_address,
                        nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address + 0x1000000);
 
-    fbSize = fbHeight * fbPitch;
+    fbSize = (NvU64)fbHeight * (NvU64)fbPitch;
 
     return fbSize;
 }
@@ -5545,6 +5581,7 @@ NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
     nvidia_stack_t *sp,
     nv_state_t     *nv,
     NvHandle        hClient,
+    NvHandle        hMemory,
     NvHandle       *phClient,
     NvHandle       *phDevice,
     NvHandle       *phSubdevice,
@@ -5568,7 +5605,8 @@ NV_STATUS NV_API_CALL rm_dma_buf_get_client_and_device(
         rmStatus = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI);
         if (rmStatus == NV_OK)
         {
-            rmStatus = RmDmabufGetClientAndDevice(pGpu, hClient, phClient, phDevice,
+            rmStatus = RmDmabufGetClientAndDevice(pGpu, hClient, hMemory,
+                                                  phClient, phDevice,
                                                   phSubdevice, ppGpuInstanceInfo);
             if (rmStatus == NV_OK)
             {
@@ -5641,7 +5679,7 @@ void NV_API_CALL rm_vgpu_vfio_set_driver_vm(
 )
 {
     OBJSYS *pSys;
-    POBJHYPERVISOR pHypervisor;
+    OBJHYPERVISOR *pHypervisor;
     void *fp;
 
     NV_ENTER_RM_RUNTIME(sp,fp);

@@ -525,12 +525,14 @@ NvBool mapIterNext_IMPL(MapIterBase *pIt)
 {
     NV_ASSERT_OR_RETURN(pIt, NV_FALSE);
 
-    //
-    // Check whether the map was mutated during the iteration.
-    // If the map changed (by adding or removing entries),
-    // the iterator becomes invalid and must be reinitialized.
-    //
-    NV_ASSERT_CHECKED(pIt->versionNumber == pIt->pMap->versionNumber);
+#if PORT_IS_CHECKED_BUILD
+    if (pIt->bValid && !CONT_ITER_IS_VALID(pIt->pMap, pIt))
+    {
+        NV_ASSERT(CONT_ITER_IS_VALID(pIt->pMap, pIt));
+        PORT_DUMP_STACK();
+        pIt->bValid = NV_FALSE;
+    }
+#endif
 
     if (!pIt->pNode)
         return NV_FALSE;

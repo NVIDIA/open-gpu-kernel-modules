@@ -46,6 +46,8 @@ void nvEvoUpdateAndKickOff(const NVDispEvoRec *pDispEvo, NvBool sync,
                            NVEvoUpdateState *updateState, NvBool releaseElv);
 void nvDoIMPUpdateEvo(NVDispEvoPtr pDispEvo,
                       NVEvoUpdateState *updateState);
+void nvEvoFlipUpdate(NVDispEvoPtr pDispEvo,
+                     NVEvoUpdateState *updateState);
 void nvEvoArmLightweightSupervisor(NVDispEvoPtr pDispEvo,
                                    const NvU32 head,
                                    NvBool isVrr,
@@ -96,9 +98,13 @@ NvU64 nvEvoGetFormatsWithEqualOrLowerUsageBound(
 void nvCancelLowerDispBandwidthTimer(NVDevEvoPtr pDevEvo);
 void nvScheduleLowerDispBandwidthTimer(NVDevEvoPtr pDevEvo);
 void nvAssertAllDpysAreInactive(NVDevEvoPtr pDevEvo);
-void nvEvoLockStatePreModeset(NVDevEvoPtr pDevEvo, NvU32 *dispNeedsEarlyUpdate,
-                              NVEvoUpdateState *updateState);
+void nvEvoLockStatePreModeset(NVDevEvoPtr pDevEvo);
 void nvEvoLockStatePostModeset(NVDevEvoPtr pDevEvo, const NvBool doRasterLock);
+NvBool nvSetFlipLockGroup(NVDevEvoRec *pDevEvo[NV_MAX_SUBDEVICES],
+                          const struct NvKmsSetFlipLockGroupRequest *pRequest);
+void nvEvoRemoveOverlappingFlipLockRequestGroupsForModeset(
+    NVDevEvoPtr pDevEvo,
+    const struct NvKmsSetModeRequest *pRequest);
 NvBool nvSetUsageBoundsEvo(
     NVDevEvoPtr pDevEvo,
     NvU32 sd,
@@ -129,7 +135,7 @@ void nvSetDitheringEvo(
 NvBool nvEnableFrameLockEvo(NVDispEvoPtr pDispEvo);
 NvBool nvDisableFrameLockEvo(NVDispEvoPtr pDispEvo);
 NvBool nvQueryRasterLockEvo(const NVDpyEvoRec *pDpyEvo, NvS64 *val);
-void   nvInvalidateTopologiesEvo(void);
+void   nvInvalidateRasterLockGroupsEvo(void);
 NvBool nvSetFlipLockEvo(NVDpyEvoPtr pDpyEvo, NvS64 value);
 NvBool nvGetFlipLockEvo(const NVDpyEvoRec *pDpyEvo, NvS64 *pValue);
 NvBool nvAllowFlipLockEvo(NVDispEvoPtr pDispEvo, NvS64 value);
@@ -227,6 +233,13 @@ NvBool nvValidateImpOneDispDowngrade(
 NvBool nvFrameLockServerPossibleEvo(const NVDpyEvoRec *pDpyEvo);
 NvBool nvFrameLockClientPossibleEvo(const NVDpyEvoRec *pDpyEvo);
 
+NvBool nvEvoLUTNotifiersNeedCommit(NVDispEvoPtr pDispEvo);
+int nvEvoCommitLUTNotifiers(NVDispEvoPtr pDispEvo);
+void nvEvoClearStagedLUTNotifiers(NVDispEvoPtr pDispEvo);
+void nvEvoStageLUTNotifier(NVDispEvoPtr pDispEvo, NvU32 apiHead);
+NvBool nvEvoIsLUTNotifierComplete(NVDispEvoPtr pDispEvo, NvU32 apiHead);
+void nvEvoWaitForLUTNotifier(const NVDispEvoPtr pDispEvo, NvU32 apiHead);
+
 void nvEvoSetLut(NVDispEvoPtr pDispEvo, NvU32 apiHead, NvBool kickoff,
                  const struct NvKmsSetLutCommonParams *pParams);
 NvBool nvValidateSetLutCommonParams(
@@ -234,7 +247,7 @@ NvBool nvValidateSetLutCommonParams(
     const struct NvKmsSetLutCommonParams *pParams);
 
 NvBool nvChooseColorRangeEvo(
-    enum NvKmsOutputTf tf,
+    enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
     const enum NvKmsDpyAttributeColorBpcValue colorBpc,
@@ -242,8 +255,9 @@ NvBool nvChooseColorRangeEvo(
 
 NvBool nvChooseCurrentColorSpaceAndRangeEvo(
     const NVDpyEvoRec *pDpyEvo,
-    enum NvYuv420Mode yuv420Mode,
-    enum NvKmsOutputTf tf,
+    const NVHwModeTimingsEvo *pHwTimings,
+    NvU8 hdmiFrlBpc,
+    enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeRequestedColorSpaceValue requestedColorSpace,
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     enum NvKmsDpyAttributeCurrentColorSpaceValue *pCurrentColorSpace,
@@ -253,6 +267,7 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
 void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
     NVDispEvoPtr pDispEvo,
     const NvU32 head,
+    const enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
     const enum NvKmsDpyAttributeColorRangeValue colorRange,
     NVEvoUpdateState *pUpdateState);
@@ -274,7 +289,6 @@ NVDevEvoPtr nvAllocDevEvo(const struct NvKmsAllocDeviceRequest *pRequest,
 NvU32 nvGetActiveSorMask(const NVDispEvoRec *pDispEvo);
 NvBool nvUpdateFlipLockEvoOneHead(NVDispEvoPtr pDispEvo, const NvU32 head,
                                   NvU32 *val, NvBool set,
-                                  NvBool *needsEarlyUpdate,
                                   NVEvoUpdateState *updateState);
 
 void nvEvoSetLUTContextDma(NVDispEvoPtr pDispEvo,
@@ -316,9 +330,6 @@ void nvDPSerializerPostSetMode(NVDispEvoPtr pDispEvo,
 
 NvBool nvFramelockSetControlUnsyncEvo(NVDispEvoPtr pDispEvo, const NvU32 headMask,
                                       NvBool server);
-
-NvBool nvIsHDRCapableHead(const NVDispEvoRec *pDispEvo,
-                          NvU32 apiHead);
 
 NvU32 nvGetHDRSrcMaxLum(const NVFlipChannelEvoHwState *pHwState);
 
@@ -388,6 +399,8 @@ NvBool nvEvoGetSingleTileHwModeTimings(const NVHwModeTimingsEvo *pSrc,
 NvBool nvEvoUse2Heads1OR(const NVDpyEvoRec *pDpyEvo,
                          const NVHwModeTimingsEvo *pTimings,
                          const struct NvKmsModeValidationParams *pParams);
+
+NvU32 nvGetRefreshRate10kHz(const NVHwModeTimingsEvo *pTimings);
 
 #ifdef __cplusplus
 };

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,23 +21,42 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#if !defined(NV_IOCTL_NVLOG)
-#define NV_IOCTL_NVLOG
+#ifndef __NV_KTHREAD_QUEUE_OS_H__
+#define __NV_KTHREAD_QUEUE_OS_H__
 
-#include <nvtypes.h>
-#include "ctrl/ctrl0000/ctrl0000nvd.h"
+#include <linux/types.h>            // atomic_t
+#include <linux/list.h>             // list
+#include <linux/sched.h>            // task_struct
+#include <linux/numa.h>             // NUMA_NO_NODE
+#include <linux/semaphore.h>
 
-typedef struct
+#include "conftest.h"
+
+struct nv_kthread_q
 {
-    NvU32 ctrl; // in
-    NvU32 status; // out
-    union // in/out
-    {
-        NV0000_CTRL_NVD_GET_NVLOG_INFO_PARAMS getNvlogInfo;
-        NV0000_CTRL_NVD_GET_NVLOG_BUFFER_INFO_PARAMS getNvlogBufferInfo;
-        NV0000_CTRL_NVD_GET_NVLOG_PARAMS getNvlog;
-    } params;
-} NV_NVLOG_CTRL_PARAMS;
+    struct list_head q_list_head;
+    spinlock_t q_lock;
 
+    // This is a counting semaphore. It gets incremented and decremented
+    // exactly once for each item that is added to the queue.
+    struct semaphore q_sem;
+    atomic_t main_loop_should_exit;
+
+    struct task_struct *q_kthread;
+};
+
+struct nv_kthread_q_item
+{
+    struct list_head q_list_node;
+    nv_q_func_t function_to_run;
+    void *function_args;
+};
+
+
+#ifndef NUMA_NO_NODE
+#define NUMA_NO_NODE (-1)
 #endif
 
+#define NV_KTHREAD_NO_NODE NUMA_NO_NODE
+
+#endif

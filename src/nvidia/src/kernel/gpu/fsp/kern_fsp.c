@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -74,7 +74,7 @@ kfspInitRegistryOverrides
 
     if (((osReadRegistryDword(pGpu, NV_REG_STR_RM_DISABLE_FSP, &data) == NV_OK) &&
         (data == NV_REG_STR_RM_DISABLE_FSP_YES) && IS_EMULATION(pGpu)) ||
-        IS_FMODEL(pGpu))
+        IS_FMODEL(pGpu) || IS_RTLSIM(pGpu))
     {
         //
         // Force disable FSP engine, used only on emulation because some
@@ -103,8 +103,10 @@ kfspInitRegistryOverrides
         }
     }
 
-    // Inst-in-sys must only set up FRTS in SYSMEM. This includes FB broken.
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
+    // Inst-in-sys must only set up FRTS in SYSMEM. This includes FB broken and cache only.
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
+        gpuIsCacheOnlyModeEnabled(pGpu))
     {
         pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM, NV_TRUE);
     }

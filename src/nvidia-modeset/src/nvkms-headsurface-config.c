@@ -271,9 +271,10 @@ static NvBool HsConfigInitModesetOneHeadWarpAndBlendSurface(
         return TRUE;
     }
 
-    *ppSurface = nvEvoGetSurfaceFromHandleNoCtxDmaOk(pDevEvo,
-                                                     pOpenDevSurfaceHandles,
-                                                     handle);
+    *ppSurface =
+        nvEvoGetSurfaceFromHandleNoDispHWAccessOk(pDevEvo,
+                                                  pOpenDevSurfaceHandles,
+                                                  handle);
 
     return *ppSurface != NULL;
 }
@@ -302,9 +303,10 @@ static NvBool HsConfigInitModesetWarpMesh(
         return TRUE;
     }
 
-    pSurface = nvEvoGetSurfaceFromHandleNoCtxDmaOk(pDevEvo,
-                                                   pOpenDevSurfaceHandles,
-                                                   p->warpMesh.surfaceHandle);
+    pSurface =
+        nvEvoGetSurfaceFromHandleNoDispHWAccessOk(pDevEvo,
+                                                  pOpenDevSurfaceHandles,
+                                                  p->warpMesh.surfaceHandle);
     if (pSurface == NULL) {
         return FALSE;
     }
@@ -1435,7 +1437,7 @@ static NvBool HsConfigAllocSurfacesOneBuf(
             HsConfigAllocSurfacesOneSurface(pDevEvo,
                                             pHsConfig,
                                             apiHead,
-                                            TRUE, /* requireCtxDma */
+                                            TRUE, /* requireDisplayHardwareAccess */
                                             pWorkArea->headSurfaceSize,
                                             pWorkArea->format);
         if (pSurface[eye] == NULL) {
@@ -1825,16 +1827,21 @@ static void HsConfigInitFlipQueue(
 }
 
 static void HsConfigUpdateSurfaceRefCount(
+    NVDevEvoPtr pDevEvo,
     const NVHsChannelConfig *pChannelConfig,
     NvBool increase)
 {
-    HsChangeSurfaceFlipRefCount(pChannelConfig->warpMesh.pSurface, increase);
+    HsChangeSurfaceFlipRefCount(
+        pDevEvo, pChannelConfig->warpMesh.pSurface, increase);
 
-    HsChangeSurfaceFlipRefCount(pChannelConfig->pBlendTexSurface, increase);
+    HsChangeSurfaceFlipRefCount(
+        pDevEvo, pChannelConfig->pBlendTexSurface, increase);
 
-    HsChangeSurfaceFlipRefCount(pChannelConfig->pOffsetTexSurface, increase);
+    HsChangeSurfaceFlipRefCount(
+        pDevEvo, pChannelConfig->pOffsetTexSurface, increase);
 
-    HsChangeSurfaceFlipRefCount(pChannelConfig->cursor.pSurfaceEvo, increase);
+    HsChangeSurfaceFlipRefCount(
+        pDevEvo, pChannelConfig->cursor.pSurfaceEvo, increase);
 }
 
 /*!
@@ -2246,6 +2253,7 @@ void nvHsConfigStart(
              */
             if (pHsConfigOneHead->pHsChannel != NULL) {
                 HsConfigUpdateSurfaceRefCount(
+                    pDevEvo,
                     &pHsConfigOneHead->channelConfig,
                     TRUE /* increase */);
             }
@@ -2256,6 +2264,7 @@ void nvHsConfigStart(
              */
             if (pDispEvo->pHsChannel[apiHead] != NULL) {
                 HsConfigUpdateSurfaceRefCount(
+                    pDevEvo,
                     &pDispEvo->pHsChannel[apiHead]->config,
                     FALSE /* increase */);
             }
@@ -2597,7 +2606,7 @@ NvBool nvHsConfigPatchSetModeRequest(const NVDevEvoRec *pDevEvo,
                         NVSurfaceEvoRec *pSurfaceEvo =
                             nvHsGetNvKmsSurface(pDevEvo,
                                                 pHsSurface->nvKmsHandle,
-                                                TRUE /* requireCtxDma */);
+                                                TRUE /* requireDisplayHardwareAccess */);
                         nvAssert(pSurfaceEvo != NULL);
 
                         pRequestHead->flip.layer[layer].surface.handle[eye] =

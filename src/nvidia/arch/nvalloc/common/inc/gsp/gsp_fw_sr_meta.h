@@ -75,11 +75,14 @@ typedef struct
     // Hash over data in WPR2 (skipping over free heap chunks; see Booter for details)
     NvU8 dataHash[32];
 
+    // Same as flags of GspFwWprMeta
+    NvU32 flags;
+
     //
     // Pad structure to exactly 256 bytes (1 DMA chunk).
     // Padding initialized to zero.
     //
-    NvU32 padding[24];
+    NvU32 padding[23];
 
 } GspFwSRMeta;
 

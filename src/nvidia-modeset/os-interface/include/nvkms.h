@@ -66,6 +66,8 @@ enum NvKmsClientType {
     NVKMS_CLIENT_KERNEL_SPACE,
 };
 
+struct NvKmsPerOpenDev;
+
 NvBool nvKmsIoctl(
     void *pOpenVoid,
     NvU32 cmd,
@@ -103,5 +105,7 @@ NvBool nvKmsKapiGetFunctionsTableInternal
 
 NvBool nvKmsGetBacklight(NvU32 display_id, void *drv_priv, NvU32 *brightness);
 NvBool nvKmsSetBacklight(NvU32 display_id, void *drv_priv, NvU32 brightness);
+
+NvBool nvKmsOpenDevHasSubOwnerPermissionOrBetter(const struct NvKmsPerOpenDev *pOpenDev);
 
 #endif /* __NV_KMS_H__ */

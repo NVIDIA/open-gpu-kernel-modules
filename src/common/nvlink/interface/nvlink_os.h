@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -64,6 +64,7 @@ void        nvlink_assert(int expression);
 void        nvlink_sleep(unsigned int ms);
 void        nvlink_print(const char *, int, const char *, int, const char *, ...);
 int         nvlink_is_admin(void);
+NvU64       nvlink_get_platform_time(void);
 
 // Capability functions
 NvlStatus nvlink_acquire_fabric_mgmt_cap(void *osPrivate, NvU64 capDescriptor);

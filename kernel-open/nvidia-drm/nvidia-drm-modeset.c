@@ -237,6 +237,14 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
     int i;
     int ret;
 
+    /*
+     * If sub-owner permission was granted to another NVKMS client, disallow
+     * modesets through the DRM interface.
+     */
+    if (nv_dev->subOwnershipGranted) {
+        return -EINVAL;
+    }
+
     memset(requested_config, 0, sizeof(*requested_config));
 
     /* Loop over affected crtcs and construct NvKmsKapiRequestedModeSetConfig */
@@ -274,9 +282,6 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
 
                 nv_new_crtc_state->nv_flip = NULL;
             }
-#if defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
-            requested_config->headRequestedConfig[nv_crtc->head].modeSetConfig.vrrEnabled = new_crtc_state->vrr_enabled;
-#endif
         }
     }
 
@@ -292,7 +297,9 @@ nv_drm_atomic_apply_modeset_config(struct drm_device *dev,
                                    requested_config,
                                    &reply_config,
                                    commit)) {
-        return -EINVAL;
+        if (commit || reply_config.flipResult != NV_KMS_FLIP_RESULT_IN_PROGRESS) {
+            return -EINVAL;
+        }
     }
 
     if (commit && nv_dev->supportsSyncpts) {
@@ -388,41 +395,55 @@ int nv_drm_atomic_commit(struct drm_device *dev,
     struct nv_drm_device *nv_dev = to_nv_device(dev);
 
     /*
-     * drm_mode_config_funcs::atomic_commit() mandates to return -EBUSY
-     * for nonblocking commit if previous updates (commit tasks/flip event) are
-     * pending. In case of blocking commits it mandates to wait for previous
-     * updates to complete.
+     * XXX: drm_mode_config_funcs::atomic_commit() mandates to return -EBUSY
+     * for nonblocking commit if the commit would need to wait for previous
+     * updates (commit tasks/flip event) to complete. In case of blocking
+     * commits it mandates to wait for previous updates to complete. However,
+     * the kernel DRM-KMS documentation does explicitly allow maintaining a
+     * queue of outstanding commits.
+     *
+     * Our system already implements such a queue, but due to
+     * bug 4054608, it is currently not used.
      */
-    if (nonblock) {
-        nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
-            struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
+    nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
+        struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);
 
-            /*
-             * Here you aren't required to hold nv_drm_crtc::flip_list_lock
-             * because:
-             *
-             * The core DRM driver acquires lock for all affected crtcs before
-             * calling into ->commit() hook, therefore it is not possible for
-             * other threads to call into ->commit() hook affecting same crtcs
-             * and enqueue flip objects into flip_list -
-             *
-             *   nv_drm_atomic_commit_internal()
-             *     |-> nv_drm_atomic_apply_modeset_config(commit=true)
-             *           |-> nv_drm_crtc_enqueue_flip()
-             *
-             * Only possibility is list_empty check races with code path
-             * dequeuing flip object -
-             *
-             *   __nv_drm_handle_flip_event()
-             *     |-> nv_drm_crtc_dequeue_flip()
-             *
-             * But this race condition can't lead list_empty() to return
-             * incorrect result. nv_drm_crtc_dequeue_flip() in the middle of
-             * updating the list could not trick us into thinking the list is
-             * empty when it isn't.
-             */
+        /*
+         * Here you aren't required to hold nv_drm_crtc::flip_list_lock
+         * because:
+         *
+         * The core DRM driver acquires lock for all affected crtcs before
+         * calling into ->commit() hook, therefore it is not possible for
+         * other threads to call into ->commit() hook affecting same crtcs
+         * and enqueue flip objects into flip_list -
+         *
+         *   nv_drm_atomic_commit_internal()
+         *     |-> nv_drm_atomic_apply_modeset_config(commit=true)
+         *           |-> nv_drm_crtc_enqueue_flip()
+         *
+         * Only possibility is list_empty check races with code path
+         * dequeuing flip object -
+         *
+         *   __nv_drm_handle_flip_event()
+         *     |-> nv_drm_crtc_dequeue_flip()
+         *
+         * But this race condition can't lead list_empty() to return
+         * incorrect result. nv_drm_crtc_dequeue_flip() in the middle of
+         * updating the list could not trick us into thinking the list is
+         * empty when it isn't.
+         */
+        if (nonblock) {
             if (!list_empty(&nv_crtc->flip_list)) {
                 return -EBUSY;
+            }
+        } else {
+            if (wait_event_timeout(
+                    nv_dev->flip_event_wq,
+                    list_empty(&nv_crtc->flip_list),
+                    3 * HZ /* 3 second */) == 0) {
+                NV_DRM_DEV_LOG_ERR(
+                    nv_dev,
+                    "Flip event timeout on head %u", nv_crtc->head);
             }
         }
     }
@@ -467,6 +488,7 @@ int nv_drm_atomic_commit(struct drm_device *dev,
 
         goto done;
     }
+    nv_dev->drmMasterChangedSinceLastAtomicCommit = NV_FALSE;
 
     nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
         struct nv_drm_crtc *nv_crtc = to_nv_crtc(crtc);

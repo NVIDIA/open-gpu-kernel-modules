@@ -64,8 +64,9 @@ static void FreeSurfaceEvoRm(NVDevEvoPtr pDevEvo, NVSurfaceEvoPtr pSurfaceEvo)
     nvAssert(pSurfaceEvo->rmRefCnt == 0);
 
     FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
-        nvRmEvoFreeDispContextDMA(pDevEvo,
-                                  &pSurfaceEvo->planes[planeIndex].ctxDma);
+        pDevEvo->hal->FreeSurfaceDescriptor(pDevEvo,
+                                            nvEvoGlobal.clientHandle,
+                                            &pSurfaceEvo->planes[planeIndex].surfaceDesc);
     }
 
     firstPlaneRmHandle = pSurfaceEvo->planes[0].rmHandle;
@@ -486,18 +487,16 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
         /* XXX Validate sizeInBytes: can we query the surface size from RM? */
 
         if (!pRequest->noDisplayHardwareAccess) {
-
-            const NvU32 planeCtxDma =
-                nvRmEvoAllocateAndBindDispContextDMA(
-                    pDevEvo,
-                    planeRmHandle,
-                    pRequest->layout,
-                    pRequest->planes[planeIndex].rmObjectSizeInBytes - 1);
-            if (!planeCtxDma) {
+            NvU32 ret =
+                nvRmAllocAndBindSurfaceDescriptor(
+                        pDevEvo,
+                        planeRmHandle,
+                        pRequest->layout,
+                        pRequest->planes[planeIndex].rmObjectSizeInBytes - 1,
+                        &pSurfaceEvo->planes[planeIndex].surfaceDesc);
+            if (ret != NVOS_STATUS_SUCCESS) {
                 goto fail;
             }
-
-            pSurfaceEvo->planes[planeIndex].ctxDma = planeCtxDma;
         }
 
         pSurfaceEvo->planes[planeIndex].pitch =
@@ -508,7 +507,7 @@ void nvEvoRegisterSurface(NVDevEvoPtr pDevEvo,
                             pRequest->planes[planeIndex].rmObjectSizeInBytes;
     }
 
-    pSurfaceEvo->requireCtxDma = !pRequest->noDisplayHardwareAccess;
+    pSurfaceEvo->requireDisplayHardwareAccess = !pRequest->noDisplayHardwareAccess;
     pSurfaceEvo->noDisplayCaching = pRequest->noDisplayCaching;
 
     /*
@@ -958,7 +957,7 @@ void nvEvoFreeClientSurfaces(NVDevEvoPtr pDevEvo,
         nvEvoDestroyApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
         if (isOwner) {
-            nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
+            nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
         } else {
             nvEvoDecrementSurfaceStructRefCnt(pSurfaceEvo);
         }
@@ -1003,7 +1002,7 @@ void nvEvoUnregisterSurface(NVDevEvoPtr pDevEvo,
     /* Remove the handle from the calling client's namespace. */
     nvEvoDestroyApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
-    nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
+    nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
 }
 
 void nvEvoReleaseSurface(NVDevEvoPtr pDevEvo,
@@ -1041,15 +1040,13 @@ void nvEvoIncrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo)
     pSurfaceEvo->structRefCnt++;
 }
 
-void nvEvoDecrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo)
+void nvEvoDecrementSurfaceRefCnts(NVDevEvoPtr pDevEvo,
+                                  NVSurfaceEvoPtr pSurfaceEvo)
 {
     nvAssert(pSurfaceEvo->rmRefCnt >= 1);
     pSurfaceEvo->rmRefCnt--;
 
     if (pSurfaceEvo->rmRefCnt == 0) {
-        NVDevEvoPtr pDevEvo =
-            nvGetDevEvoFromOpenDev(pSurfaceEvo->owner.pOpenDev);
-
         /*
          * Don't sync if this surface was registered as not requiring display
          * hardware access, to WAR timeouts that result from OGL unregistering
@@ -1057,7 +1054,7 @@ void nvEvoDecrementSurfaceRefCnts(NVSurfaceEvoPtr pSurfaceEvo)
          * GLS hasn't had the opportunity to release semaphores with pending
          * flips. (Bug 2050970)
          */
-        if (pSurfaceEvo->requireCtxDma) {
+        if (pSurfaceEvo->requireDisplayHardwareAccess) {
             nvEvoClearSurfaceUsage(pDevEvo, pSurfaceEvo);
         }
 
@@ -1079,12 +1076,12 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
     const NvKmsSurfaceHandle surfaceHandle,
     const NvBool isUsedByCursorChannel,
     const NvBool isUsedByLayerChannel,
-    const NvBool requireCtxDma)
+    const NvBool requireDisplayHardwareAccess)
 {
     NVSurfaceEvoPtr pSurfaceEvo =
         nvEvoGetPointerFromApiHandle(pOpenDevSurfaceHandles, surfaceHandle);
 
-    nvAssert(requireCtxDma || (!isUsedByCursorChannel && !isUsedByLayerChannel));
+    nvAssert(requireDisplayHardwareAccess || (!isUsedByCursorChannel && !isUsedByLayerChannel));
 
     if (pSurfaceEvo == NULL) {
         return NULL;
@@ -1094,7 +1091,7 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
         return NULL;
     }
 
-    if (requireCtxDma && !pSurfaceEvo->requireCtxDma) {
+    if (requireDisplayHardwareAccess && !pSurfaceEvo->requireDisplayHardwareAccess) {
         return NULL;
     }
 
@@ -1105,15 +1102,15 @@ static NVSurfaceEvoPtr GetSurfaceFromHandle(
     }
 
     /*
-     * XXX If !requireCtxDma, fetched surfaces aren't going to be accessed by
-     * the display hardware, so they shouldn't need to be checked by
+     * XXX If !requireDisplayHardwareAccess, fetched surfaces aren't going to be
+     * accessed by the display hardware, so they shouldn't need to be checked by
      * nvEvoGetHeadSetStoragePitchValue(). These surfaces will be used as a
      * texture by the 3d engine. But previously all surfaces were checked by
      * nvEvoGetHeadSetStoragePitchValue() at registration time, and we don't
      * know if nvEvoGetHeadSetStoragePitchValue() was protecting us from any
      * surface dimensions that could cause trouble for the 3d engine.
      */
-    if (isUsedByLayerChannel || !requireCtxDma) {
+    if (isUsedByLayerChannel || !requireDisplayHardwareAccess) {
         NvU8 planeIndex;
 
         FOR_ALL_VALID_PLANES(planeIndex, pSurfaceEvo) {
@@ -1141,10 +1138,10 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandle(
                                 surfaceHandle,
                                 isUsedByCursorChannel,
                                 isUsedByLayerChannel,
-                                TRUE /* requireCtxDma */);
+                                TRUE /* requireDisplayHardwareAccess */);
 }
 
-NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoCtxDmaOk(
+NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoDispHWAccessOk(
     const NVDevEvoRec *pDevEvo,
     const NVEvoApiHandlesRec *pOpenDevSurfaceHandles,
     NvKmsSurfaceHandle surfaceHandle)
@@ -1154,7 +1151,7 @@ NVSurfaceEvoPtr nvEvoGetSurfaceFromHandleNoCtxDmaOk(
                                 surfaceHandle,
                                 FALSE /* isUsedByCursorChannel */,
                                 FALSE /* isUsedByLayerChannel */,
-                                FALSE /* requireCtxDma */);
+                                FALSE /* requireDisplayHardwareAccess */);
 }
 
 /*!
@@ -1224,7 +1221,7 @@ void nvEvoUnregisterDeferredRequestFifo(
                     pDeferredRequestFifo->fifo,
                     0);
 
-    nvEvoDecrementSurfaceRefCnts(pDeferredRequestFifo->pSurfaceEvo);
+    nvEvoDecrementSurfaceRefCnts(pDevEvo, pDeferredRequestFifo->pSurfaceEvo);
 
     nvFree(pDeferredRequestFifo);
 }

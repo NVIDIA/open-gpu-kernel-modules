@@ -238,4 +238,5 @@ void gpumgmtapiDestruct_IMPL(struct GpuManagementApi *pGpuMgmt);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_MGMT_API_NVOC_H_

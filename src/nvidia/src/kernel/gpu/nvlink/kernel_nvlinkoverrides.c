@@ -263,5 +263,15 @@ knvlinkApplyRegkeyOverrides_IMPL
         pKernelNvlink->forcedSysmemDeviceType = NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_EBRIDGE;
     }
 
+    if (NV_OK == osReadRegistryDword(pGpu,
+                 NV_REG_STR_RM_NVLINK_FORCED_LOOPBACK_ON_SWITCH, &regdata))
+    {
+        if (FLD_TEST_DRF(_REG_STR_RM, _NVLINK_FORCED_LOOPBACK_ON_SWITCH, _MODE, _ENABLED, regdata))
+        {
+            pKernelNvlink->setProperty(pGpu, PDB_PROP_KNVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE_ENABLED, NV_TRUE);
+            NV_PRINTF(LEVEL_INFO,
+                      "Forced Loopback on switch is enabled\n");
+        }        
+    }
     return NV_OK;
 }

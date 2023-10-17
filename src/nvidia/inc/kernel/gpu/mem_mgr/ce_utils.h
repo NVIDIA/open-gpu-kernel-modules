@@ -53,6 +53,7 @@ typedef struct
     NvU64 submittedWorkId;   // Payload to poll for async completion
 } CEUTILS_MEMCOPY_PARAMS;
 
+class KernelChannel;
 
 NVOC_PREFIX(ceutils) class CeUtils : Object
 {
@@ -83,6 +84,9 @@ public:
     NvU32 hTdCopyClass;
     NvU64 lastSubmittedPayload;
     NvU64 lastCompletedPayload;
+
+    // Only used by fifo lite implementation
+    KernelChannel *pLiteKernelChannel;
 };
 
 

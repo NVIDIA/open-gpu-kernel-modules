@@ -62,6 +62,8 @@ static size_t GetSizeForType(NVDevEvoPtr pDevEvo, enum NVPreallocType type)
         return sizeof(NVHwModeTimingsEvo) * NVKMS_MAX_HEADS_PER_DISP;
     case PREALLOC_TYPE_VALIDATE_MODE_TMP_USAGE_BOUNDS:
         return sizeof(struct NvKmsUsageBounds);
+    case PREALLOC_TYPE_DPLIB_IS_MODE_POSSIBLE_PARAMS:
+        return sizeof(NVDpLibIsModePossibleParamsRec);
     case PREALLOC_TYPE_MAX:
         /* Not a real option, but added for -Wswitch-enum */
         break;

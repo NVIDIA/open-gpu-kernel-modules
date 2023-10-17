@@ -177,6 +177,7 @@ kperfDoSyncGpuBoostLimits_IMPL
         GPUBOOSTMGR_ITR_START(pBoostMgr, grpId, pGpuItr)
         {
             pKernelPerf = GPU_GET_KERNEL_PERF(pGpuItr);
+            NV_CHECK_OR_RETURN(LEVEL_ERROR, (pKernelPerf != NULL), NV_ERR_INVALID_POINTER);
 
             // Find min of all GPU Boost PERF_LIMITs across all the GPUs.
             for (i = 0; i <  NV2080_CTRL_INTERNAL_PERF_SYNC_GPU_BOOST_LIMITS_NUM; i++)

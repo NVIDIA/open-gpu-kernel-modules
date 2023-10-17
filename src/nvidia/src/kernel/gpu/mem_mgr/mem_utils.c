@@ -36,6 +36,8 @@
 
 #include "gpu/bus/kern_bus.h"
 
+#include "gpu/mem_mgr/ce_utils.h"
+
 #include "kernel/gpu/conf_compute/ccsl.h"
 
 #include "class/cl0005.h"      // NV01_EVENT
@@ -56,34 +58,47 @@ memmgrGetMemTransferType
 (
     MemoryManager    *pMemoryManager,
     TRANSFER_SURFACE *pDst,
-    TRANSFER_SURFACE *pSrc
+    TRANSFER_SURFACE *pSrc,
+    NvU32             flags
 )
 {
     TRANSFER_TYPE transferType        = TRANSFER_TYPE_PROCESSOR;
-    OBJGPU    *pGpu       = ENG_GET_GPU(pMemoryManager);
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    OBJGPU       *pGpu                = ENG_GET_GPU(pMemoryManager);
+    KernelBus    *pKernelBus          = GPU_GET_KERNEL_BUS(pGpu);
 
-    //
-    // In case of copy, both dest and src will be passed
-    // In case of memset/memread/memwrite either dest or src will be passed
-    //
-    if ((pDst != NULL) && (pSrc != NULL) &&
-        (memdescGetAddressSpace(pDst->pMemDesc) == ADDR_SYSMEM) &&
-        (memdescGetAddressSpace(pSrc->pMemDesc) == ADDR_SYSMEM))
+    if (flags & TRANSFER_FLAGS_PREFER_CE)
     {
-        transferType = TRANSFER_TYPE_PROCESSOR;
+        if (IS_SIMULATION(pGpu) && pSrc != NULL)
+        {
+            //
+            // This is significantly faster on fmodel for S/R (5min vs. 5sec) because of the
+            // backdoor memory reads and writes.
+            // Memset is not currently supported
+            //
+            return TRANSFER_TYPE_BAR0;
+        }
+
+        if (pMemoryManager->pCeUtils != NULL)
+        {
+            return TRANSFER_TYPE_CE;
+        }
+
+        NV_PRINTF(LEVEL_WARNING, "Can't copy using CE, falling back to other methods\n");
     }
-    else if (((pDst != NULL) &&
-             (memdescGetAddressSpace(pDst->pMemDesc) == ADDR_SYSMEM)) ||
-             ((pSrc != NULL) &&
-             (memdescGetAddressSpace(pSrc->pMemDesc) == ADDR_SYSMEM)))
+
+    if ((pDst == NULL || memdescGetAddressSpace(pDst->pMemDesc) == ADDR_SYSMEM) &&
+        (pSrc == NULL || memdescGetAddressSpace(pSrc->pMemDesc) == ADDR_SYSMEM))
     {
+        //
+        // If the operation only touches sysmem, use processor copy
+        //
         transferType = TRANSFER_TYPE_PROCESSOR;
     }
     else if (kbusIsBarAccessBlocked(pKernelBus))
     {
         transferType = TRANSFER_TYPE_GSP_DMA;
     }
+
     return transferType;
 }
 
@@ -110,7 +125,9 @@ _memmgrAllocAndMapSurface
         memdescCreate(ppMemDesc, pGpu, size, RM_PAGE_SIZE, NV_TRUE,
                       ADDR_SYSMEM, NV_MEMORY_UNCACHED, flags));
 
-    NV_ASSERT_OK_OR_GOTO(status, memdescAlloc(*ppMemDesc), failed);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_77, 
+                    (*ppMemDesc));
+    NV_ASSERT_OK_OR_GOTO(status, status, failed);
 
     NV_ASSERT_OK_OR_GOTO(status,
         memdescMapOld(*ppMemDesc, 0, size, NV_TRUE, NV_PROTECT_READ_WRITE,
@@ -508,11 +525,72 @@ memmgrMemCopyWithTransferType
             }
             break;
         case TRANSFER_TYPE_CE:
-            NV_PRINTF(LEVEL_INFO, "Add call to CE\n");
+            {
+                NV_ASSERT_OR_RETURN(pMemoryManager->pCeUtils != NULL, NV_ERR_INVALID_STATE);
+
+                CEUTILS_MEMCOPY_PARAMS  params = {0};
+
+                params.pDstMemDesc = pDstInfo->pMemDesc;
+                params.dstOffset   = pDstInfo->offset;
+                params.pSrcMemDesc = pSrcInfo->pMemDesc;
+                params.srcOffset   = pSrcInfo->offset;
+                params.length      = size;
+
+                return ceutilsMemcopy(pMemoryManager->pCeUtils, &params);
+            }
+            break;
+        case TRANSFER_TYPE_CE_PRI:
+            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
+            break;
+        case TRANSFER_TYPE_BAR0:
+            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
             break;
     }
 
     return NV_OK;
+}
+
+static NV_STATUS
+_memmgrMemReadOrWriteUsingStagingBuffer
+(
+    MemoryManager    *pMemoryManager,
+    TRANSFER_SURFACE *pAlloc,
+    void             *pBuf,
+    NvU64             size,
+    NvU32             transferType,
+    NvBool            bRead
+)
+{
+    MEMORY_DESCRIPTOR *pStagingBuf = NULL;
+    void *pStagingBufMap = NULL;
+    void *pStagingBufPriv = NULL;
+    TRANSFER_SURFACE staging = {0};
+    TRANSFER_SURFACE *pSrc = bRead ? pAlloc : &staging;
+    TRANSFER_SURFACE *pDst = bRead ? &staging : pAlloc;
+    NV_STATUS status = NV_OK;
+
+
+    NV_ASSERT_OK_OR_RETURN(
+        _memmgrAllocAndMapSurface(ENG_GET_GPU(pMemoryManager), size, &pStagingBuf, &pStagingBufMap,
+                                  &pStagingBufPriv));
+    staging.pMemDesc = pStagingBuf;
+
+    if (!bRead)
+    {
+        portMemCopy(pStagingBufMap, size, pBuf, size);
+    }
+
+    NV_ASSERT_OK_OR_GOTO(status, memmgrMemCopyWithTransferType(pMemoryManager, pDst, pSrc, size, transferType, 0), failed);
+
+    if (bRead)
+    {
+        portMemCopy(pBuf, size, pStagingBufMap, size);
+    }
+
+failed:
+    _memmgrUnmapAndFreeSurface(pStagingBuf, pStagingBufMap, pStagingBufPriv);
+
+    return status;
 }
 
 /*!
@@ -567,8 +645,27 @@ memmgrMemSetWithTransferType
             }
             break;
         case TRANSFER_TYPE_CE:
-            NV_PRINTF(LEVEL_INFO, "Add call to CE\n");
+            {
+                NV_ASSERT_OR_RETURN(pMemoryManager->pCeUtils != NULL, NV_ERR_INVALID_STATE);
+
+                CEUTILS_MEMSET_PARAMS  params = {0};
+
+                params.pMemDesc = pDstInfo->pMemDesc;
+                params.offset   = pDstInfo->offset;
+                params.length   = size;
+                params.pattern  = value;
+
+                return ceutilsMemset(pMemoryManager->pCeUtils, &params);
+            }
             break;
+        case TRANSFER_TYPE_CE_PRI:
+            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
+            break;
+        case TRANSFER_TYPE_BAR0:
+            NV_PRINTF(LEVEL_ERROR, "BAR0 memset unimplemented\n");
+            NV_ASSERT(0);
+            break;
+
     }
 
     return NV_OK;
@@ -718,7 +815,11 @@ memmgrMemWriteWithTransferType
             }
             break;
         case TRANSFER_TYPE_CE:
-            NV_PRINTF(LEVEL_INFO, "Add call to CE\n");
+        case TRANSFER_TYPE_CE_PRI:
+        case TRANSFER_TYPE_BAR0:
+            NV_ASSERT_OK_OR_RETURN(
+                _memmgrMemReadOrWriteUsingStagingBuffer(pMemoryManager, pDstInfo, pBuf, size,
+                                                        transferType, NV_FALSE /* bRead */));
             break;
     }
 
@@ -788,7 +889,11 @@ memmgrMemReadWithTransferType
             }
             break;
         case TRANSFER_TYPE_CE:
-            NV_PRINTF(LEVEL_INFO, "Add call to CE\n");
+        case TRANSFER_TYPE_CE_PRI:
+        case TRANSFER_TYPE_BAR0:
+            NV_ASSERT_OK_OR_RETURN(
+            _memmgrMemReadOrWriteUsingStagingBuffer(pMemoryManager, pSrcInfo, pBuf, size,
+                                                    transferType, NV_TRUE /* bRead */));
             break;
     }
 
@@ -938,7 +1043,7 @@ memmgrMemCopy_IMPL
 )
 {
     TRANSFER_TYPE transferType = memmgrGetMemTransferType(pMemoryManager,
-                                                          pDstInfo, pSrcInfo);
+                                                          pDstInfo, pSrcInfo, flags);
 
     return memmgrMemCopyWithTransferType(pMemoryManager, pDstInfo, pSrcInfo,
                                          size, transferType, flags);
@@ -963,7 +1068,7 @@ memmgrMemSet_IMPL
 )
 {
     TRANSFER_TYPE transferType = memmgrGetMemTransferType(pMemoryManager,
-                                                          pDstInfo, NULL);
+                                                          pDstInfo, NULL, flags);
 
     return memmgrMemSetWithTransferType(pMemoryManager, pDstInfo, value,
                                         size, transferType, flags);
@@ -987,7 +1092,7 @@ memmgrMemDescMemSet_IMPL
 {
     TRANSFER_SURFACE transferSurface = {.offset = 0, .pMemDesc = pMemDesc};
     TRANSFER_TYPE    transferType = memmgrGetMemTransferType(pMemoryManager,
-                                                             &transferSurface, NULL);
+                                                             &transferSurface, NULL, flags);
 
     return memmgrMemSetWithTransferType(pMemoryManager, &transferSurface, value,
                                         (NvU32)memdescGetSize(pMemDesc),
@@ -1014,7 +1119,7 @@ memmgrMemWrite_IMPL
 )
 {
     TRANSFER_TYPE transferType = memmgrGetMemTransferType(pMemoryManager,
-                                                          pDstInfo, NULL);
+                                                          pDstInfo, NULL, flags);
 
     return memmgrMemWriteWithTransferType(pMemoryManager, pDstInfo, pBuf,
                                           size, transferType, flags);
@@ -1040,7 +1145,7 @@ memmgrMemRead_IMPL
 )
 {
     TRANSFER_TYPE transferType = memmgrGetMemTransferType(pMemoryManager,
-                                                          NULL, pSrcInfo);
+                                                          NULL, pSrcInfo, flags);
 
     return memmgrMemReadWithTransferType(pMemoryManager, pSrcInfo, pBuf,
                                          size, transferType, flags);
@@ -1063,7 +1168,7 @@ memmgrMemBeginTransfer_IMPL
 )
 {
     TRANSFER_TYPE      transferType = memmgrGetMemTransferType(pMemoryManager,
-                                                               pTransferInfo, NULL);
+                                                               pTransferInfo, NULL, flags);
     MEMORY_DESCRIPTOR *pMemDesc     = pTransferInfo->pMemDesc;
     NvU64              offset       = pTransferInfo->offset;
     OBJGPU            *pGpu         = ENG_GET_GPU(pMemoryManager);
@@ -1104,6 +1209,8 @@ memmgrMemBeginTransfer_IMPL
             break;
         case TRANSFER_TYPE_GSP_DMA:
         case TRANSFER_TYPE_CE:
+        case TRANSFER_TYPE_CE_PRI:
+        case TRANSFER_TYPE_BAR0:
             if (flags & TRANSFER_FLAGS_SHADOW_ALLOC)
             {
                 NV_ASSERT_OR_RETURN((pPtr = portMemAllocNonPaged(memSz)), NULL);
@@ -1137,7 +1244,7 @@ memmgrMemEndTransfer_IMPL
 )
 {
     TRANSFER_TYPE      transferType = memmgrGetMemTransferType(pMemoryManager,
-                                                               pTransferInfo, NULL);
+                                                               pTransferInfo, NULL, flags);
     MEMORY_DESCRIPTOR *pMemDesc     = pTransferInfo->pMemDesc;
     NvU64              offset       = pTransferInfo->offset;
     OBJGPU            *pGpu         = ENG_GET_GPU(pMemoryManager);
@@ -1169,6 +1276,8 @@ memmgrMemEndTransfer_IMPL
             return;
         case TRANSFER_TYPE_GSP_DMA:
         case TRANSFER_TYPE_CE:
+        case TRANSFER_TYPE_CE_PRI:
+        case TRANSFER_TYPE_BAR0:
             if (pMapping != NULL)
             {
                 NV_ASSERT_OK(memmgrMemWrite(pMemoryManager, pTransferInfo, pMapping, memSz, flags));

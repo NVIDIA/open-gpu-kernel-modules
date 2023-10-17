@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -179,7 +179,11 @@ _gmmuPrintPa
     NvU32         peerIndex
 )
 {
+#if NV_PRINTF_STRINGS_ALLOWED
     NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "%s", _decodeAperture[aperture]);
+#else
+    NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "%c", _decodeAperture[aperture]);
+#endif
     if (GMMU_APERTURE_PEER == aperture)
     {
         NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "[%d]", peerIndex);

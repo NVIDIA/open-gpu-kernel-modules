@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -215,40 +215,33 @@ serverAllocApiCopyOut
     return status;
 }
 
-NV_STATUS
-serverLookupSecondClient
+NvHandle
+serverAllocLookupSecondClient
 (
-    RS_RES_ALLOC_PARAMS_INTERNAL *pParams,
-    NvHandle *phClient
+    NvU32    externalClassId,
+    void     *pAllocParams
 )
 {
-    *phClient = 0;
-
-    switch (pParams->externalClassId)
+    if (pAllocParams != NULL)
     {
-        case GT200_DEBUGGER:
+        switch (externalClassId)
         {
-            NV83DE_ALLOC_PARAMETERS *pNv83deParams = pParams->pAllocParams;
-
-            if (pNv83deParams->hAppClient != pParams->hClient)
-                *phClient = pNv83deParams->hAppClient;
-
-            break;
+            case GT200_DEBUGGER:
+            {
+                return ((NV83DE_ALLOC_PARAMETERS *) pAllocParams)->hAppClient;
+                break;
+            }
+            case UVM_CHANNEL_RETAINER:
+            {
+                return ((NV_UVM_CHANNEL_RETAINER_ALLOC_PARAMS *) pAllocParams)->hClient;
+                break;
+            }
+            default:
+                break;
         }
-        case UVM_CHANNEL_RETAINER:
-        {
-            NV_UVM_CHANNEL_RETAINER_ALLOC_PARAMS *pUvmChannelRetainerParams = pParams->pAllocParams;
-
-            if (pUvmChannelRetainerParams->hClient != pParams->hClient)
-                *phClient = pUvmChannelRetainerParams->hClient;
-
-            break;
-        }
-        default:
-            break;
     }
 
-    return NV_OK;
+    return NV01_NULL_OBJECT;
 }
 
 NV_STATUS
@@ -622,8 +615,45 @@ _fixupAllocParams
     return NV_OK;
 }
 
-static
-NV_STATUS
+static NV_STATUS
+_serverAlloc_ValidateVgpu
+(
+    RsClient *pClient,
+    NvU32 hParent,
+    NvU32 externalClassId,
+    RS_PRIV_LEVEL privLevel,
+    const NvU32 flags
+)
+{
+    //
+    // Get any GPU to check environmental properties
+    // Assume: In multi-vGPU systems, no mix and matching SRIOV and non-SRIOV GPUs.
+    // Assume: This POBJGPU will only used to read system properties.
+    //
+    OBJGPU *pGpu = gpumgrGetSomeGpu();
+
+    // Check whether context is already sufficiently privileged
+    if (flags & RS_FLAGS_ALLOC_PRIVILEGED)
+    {
+        if (privLevel >= RS_PRIV_LEVEL_USER_ROOT)
+        {
+            return NV_TRUE;
+        }
+    }
+
+    // Check whether object is allowed in current environment
+    if
+    (
+        (IS_SRIOV_WITH_VGPU_GSP_ENABLED(pGpu) && (flags & RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_VGPU_GSP))
+    )
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
+static NV_STATUS
 _serverAllocValidatePrivilege
 (
     RsServer *pServer,
@@ -631,25 +661,36 @@ _serverAllocValidatePrivilege
     RS_RES_ALLOC_PARAMS *pParams
 )
 {
-    if (hypervisorIsVgxHyper())
+    RsClient *pClient = pParams->pClient;
+
+    // Reject allocations for objects with no flags.
+    if (!(pResDesc->flags & RS_FLAGS_ALLOC_NON_PRIVILEGED) &&
+        !(pResDesc->flags & RS_FLAGS_ALLOC_PRIVILEGED) &&
+        !(pResDesc->flags & RS_FLAGS_ALLOC_KERNEL_PRIVILEGED))
+    {
+        // See GPUSWSEC-1560 for more details on object privilege flag requirements
+        NV_PRINTF(LEVEL_WARNING, "external class 0x%08x is missing its privilege flag in RS_ENTRY\n", pParams->externalClassId);
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+
+    if (hypervisorIsVgxHyper() &&
+        clientIsAdmin(pClient, clientGetCachedPrivilege(pClient)) &&
+        (pParams->pSecInfo->privLevel != RS_PRIV_LEVEL_KERNEL) &&
+        !(pResDesc->flags & RS_FLAGS_ALLOC_NON_PRIVILEGED))
     {
         // Host CPU-RM context
-        // Don't check here, allow it to pass to the inline constructor check.
-        // TODO: GPUSWSEC-1552 Hypervisor
+        if (!_serverAlloc_ValidateVgpu(pClient, pParams->hParent, pParams->externalClassId,
+                                      pParams->pSecInfo->privLevel, pResDesc->flags))
+        {
+            NV_PRINTF(LEVEL_WARNING,
+                      "hClient: 0x%08x, externalClassId: 0x%08x: CPU hypervisor does not have permission to allocate object\n",
+                      pParams->hClient, pParams->externalClassId);
+            return NV_ERR_INSUFFICIENT_PERMISSIONS;
+        }
     }
     else
     {
         RS_PRIV_LEVEL privLevel = pParams->pSecInfo->privLevel;
-
-        // Reject allocations for objects with no flags.
-        if (!(pResDesc->flags & RS_FLAGS_ALLOC_NON_PRIVILEGED) &&
-            !(pResDesc->flags & RS_FLAGS_ALLOC_PRIVILEGED) &&
-            !(pResDesc->flags & RS_FLAGS_ALLOC_KERNEL_PRIVILEGED))
-        {
-            // See GPUSWSEC-1560 for more details on privilege flag requirements
-            NV_PRINTF(LEVEL_WARNING, "external class 0x%08x is missing its privilege flag in RS_ENTRY\n", pParams->externalClassId);
-            return NV_ERR_INSUFFICIENT_PERMISSIONS;
-        }
 
         // Default case, verify admin and kernel privileges
         if (pResDesc->flags & RS_FLAGS_ALLOC_PRIVILEGED)
@@ -728,7 +769,10 @@ serverAllocResourceUnderLock
     if (pRmAllocParams->hResource == hClient)
     {
         if (pResDesc->pParentList[i] != 0)
+        {
             status = NV_ERR_INVALID_OBJECT_PARENT;
+            goto done;
+        }
         hParent = 0;
 
         // Single instance restriction is implied
@@ -1158,6 +1202,7 @@ rmapiAllocWithSecInfo
     NvU32          allocInitStates = RM_ALLOC_STATES_NONE;
     RM_API_CONTEXT rmApiContext    = {0};
     RS_LOCK_INFO  *pLockInfo;
+    NvHandle       hSecondClient = NV01_NULL_OBJECT;
 
     status = rmapiPrologue(pRmApi, &rmApiContext);
     if (status != NV_OK)
@@ -1170,8 +1215,16 @@ rmapiAllocWithSecInfo
         goto done;
     }
 
+    if (pSecInfo->paramLocation == PARAM_LOCATION_KERNEL)
+    {
+        hSecondClient = serverAllocLookupSecondClient(hClass,
+            NvP64_VALUE(pAllocParams));
+    }
+
     portMemSet(pLockInfo, 0, sizeof(*pLockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, pLockInfo);
+    status = rmapiInitLockInfo(pRmApi, hClient, hSecondClient, pLockInfo);
+    if (status != NV_OK)
+        goto done;
 
     // RS-TODO: Fix calls that use RMAPI_GPU_LOCK_INTERNAL without holding the API lock
     if (pRmApi->bGpuLockInternal && !rmapiLockIsOwner())
@@ -1398,7 +1451,12 @@ rmapiFreeWithSecInfo
         return status;
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, hClient, NV01_NULL_OBJECT, &lockInfo);
+    if (status != NV_OK)
+    {
+        rmapiEpilogue(pRmApi, &rmApiContext);
+        return status;
+    }
 
     // RS-TODO: Fix calls that use RMAPI_GPU_LOCK_INTERNAL without holding the API lock
     if (pRmApi->bGpuLockInternal && !rmapiLockIsOwner())
@@ -1537,7 +1595,7 @@ serverRwApiLockIsOwner
     RsServer *pServer
 )
 {
-    return rmapiLockIsOwner();
+    return rmapiLockIsWriteOwner();
 }
 
 NV_STATUS

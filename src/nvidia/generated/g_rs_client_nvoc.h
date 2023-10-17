@@ -665,4 +665,5 @@ NvBool indexRefIterNext(RsIndexIter *pIt);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_RS_CLIENT_NVOC_H_

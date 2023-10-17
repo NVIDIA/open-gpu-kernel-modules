@@ -215,6 +215,17 @@ void __nvoc_init_dataField_MemoryManager(MemoryManager *pThis, RmHalspecOwner *p
 
     pThis->bScrubChannelSetupInProgress = ((NvBool)(0 != 0));
 
+    // Hal field -- bBug3922001DisableCtxBufOnSim
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->bBug3922001DisableCtxBufOnSim = ((NvBool)(0 == 0));
+    }
+    // default
+    else
+    {
+        pThis->bBug3922001DisableCtxBufOnSim = ((NvBool)(0 != 0));
+    }
+
     pThis->bEnableDynamicGranularityPageArrays = ((NvBool)(0 != 0));
 
     // Hal field -- bAllowNoncontiguousAllocation
@@ -271,6 +282,12 @@ void __nvoc_init_dataField_MemoryManager(MemoryManager *pThis, RmHalspecOwner *p
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
     {
         pThis->bGenericKindSupport = ((NvBool)(0 == 0));
+    }
+
+    // Hal field -- bLocalizedMemPoolEnabled
+    // default
+    {
+        pThis->bLocalizedMemPoolEnabled = ((NvBool)(0 != 0));
     }
 }
 

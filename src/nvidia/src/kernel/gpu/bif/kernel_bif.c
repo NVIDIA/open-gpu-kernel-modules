@@ -74,7 +74,13 @@ kbifConstructEngine_IMPL
     kbifDisableP2PTransactions_HAL(pGpu, pKernelBif);
 
     // Cache MNOC interface support
-    kbifIsMnocSupported_HAL(pGpu, pKernelBif);
+    kbifCacheMnocSupport_HAL(pGpu, pKernelBif);
+
+    // Cache FLR support
+    kbifCacheFlrSupport_HAL(pGpu, pKernelBif);
+
+    // Cache 64B BAR0 support
+    kbifCache64bBar0Support_HAL(pGpu, pKernelBif);
 
     // Cache VF info
     kbifCacheVFInfo_HAL(pGpu, pKernelBif);
@@ -101,7 +107,12 @@ kbifStateInitLocked_IMPL
     OBJSYS    *pSys   = SYS_GET_INSTANCE();
     OBJOS     *pOS    = SYS_GET_OS(pSys);
     OBJCL     *pCl    = SYS_GET_CL(pSys);
-    NV_STATUS  status = NV_OK;
+
+    kbifInitXveRegMap_HAL(pGpu, pKernelBif, 1);
+    kbifInitXveRegMap_HAL(pGpu, pKernelBif, 0);
+
+    // Do the HAL dependent init
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kbifInit_HAL(pGpu, pKernelBif));
 
     // Return early if GPU is connected to an unsupported chipset
     if (pCl->getProperty(pCl, PDB_PROP_CL_UNSUPPORTED_CHIPSET))
@@ -110,11 +121,7 @@ kbifStateInitLocked_IMPL
     }
 
     // Initialize OS mapping and core logic
-    status = osInitMapping(pGpu);
-    if (status != NV_OK)
-    {
-        return status;
-    }
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, osInitMapping(pGpu));
 
     // Initialize BIF static info
     kbifStaticInfoInit(pGpu, pKernelBif);
@@ -133,7 +140,7 @@ kbifStateInitLocked_IMPL
         pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_SUPPORT_NONCOHERENT, NV_FALSE);
     }
 
-    return status;
+    return NV_OK;
 }
 
 /*!
@@ -341,6 +348,10 @@ kbifStaticInfoInit_IMPL
                             pStaticInfo->bPcieGen4Capable);
     pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_IS_C2C_LINK_UP,
                             pStaticInfo->bIsC2CLinkUp);
+    pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION,
+                            pStaticInfo->bIsDeviceMultiFunction);
+    pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_GCX_PMU_CFG_SPACE_RESTORE,
+                            pStaticInfo->bGcxPmuCfgSpaceRestore);
     pKernelBif->dmaWindowStartAddress = pStaticInfo->dmaWindowStartAddress;
 
 kBifStaticInfoInit_IMPL_exit:
@@ -353,7 +364,7 @@ kBifStaticInfoInit_IMPL_exit:
  * @brief Initialize PCI-E config space bits based on chipset and GPU support.
  */
 void
-kbifInitPcieDeviceControlStatus
+kbifInitPcieDeviceControlStatus_IMPL
 (
     OBJGPU    *pGpu,
     KernelBif *pKernelBif
@@ -814,7 +825,8 @@ kbifControlGetPCIEInfo_IMPL
     NvU32   index = pBusInfo->index;
     NvU32   data  = 0;
 
-    if (kbifGetBusIntfType_HAL(pKernelBif) != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS)
+    if ((pKernelBif != NULL) &&
+        (kbifGetBusIntfType_HAL(pKernelBif) != NV2080_CTRL_BUS_INFO_TYPE_PCI_EXPRESS))
     {
         // KMD cannot handle error codes for this ctrl call, hence returning
         // NV_OK, once KMD fixes the bug:3545197, RM can return NV_ERR_NOT_SUPPORTED

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -128,7 +128,7 @@
 static void RmScheduleCallbackForIdlePreConditions(OBJGPU *);
 static void RmScheduleCallbackForIdlePreConditionsUnderGpuLock(OBJGPU *);
 static void RmScheduleCallbackToIndicateIdle(OBJGPU *);
-static NvBool RmCheckForGc6SupportOnCurrentState(OBJGPU *);
+static NvBool RmCheckForGcxSupportOnCurrentState(OBJGPU *);
 static void RmScheduleCallbackToRemoveIdleHoldoff(OBJGPU *);
 static void RmQueueIdleSustainedWorkitem(OBJGPU *);
 
@@ -246,18 +246,36 @@ NvBool nv_dynamic_power_state_transition(
  *
  * @return      TRUE if the GPU appears to be currently idle; FALSE otherwise.
  */
-static NvBool RmCheckForGpuIdlenessUnderGpuLock(
+static NvBool RmCanEnterGcxUnderGpuLock(
     OBJGPU *pGpu
 )
 {
     NV_ASSERT(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
+    /*
+     * If GPU does not support GC6 and the actual FB utilization is higher than the threshold,
+     * then the GPU can neither enter GC6 nor GCOFF. So, return from here.
+     */
+    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED))
+    {
+        NvU64          usedFbSize     = 0;
+        nv_state_t    *nv             = NV_GET_NV_STATE(pGpu);
+        nv_priv_t     *nvp            = NV_GET_NV_PRIV(nv);
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+        if (!((memmgrGetUsedRamSize(pGpu, pMemoryManager, &usedFbSize) == NV_OK) &&
+            (usedFbSize <= nvp->dynamic_power.gcoff_max_fb_size)))
+        {
+            return NV_FALSE;
+        }
+    }
+
     // Check the instantaneous engine level idleness.
-    return RmCheckForGc6SupportOnCurrentState(pGpu);
+    return RmCheckForGcxSupportOnCurrentState(pGpu);
 }
 
 /*!
- * @brief: Check if the GPU hardware appears to be idle.
+ * @brief: Check the feasibility of GPU engaging in a GCx cycle.
  *
  * Takes the GPU lock.
  *
@@ -265,7 +283,7 @@ static NvBool RmCheckForGpuIdlenessUnderGpuLock(
  *
  * @return      TRUE if the GPU appears to be currently idle; FALSE otherwise.
  */
-static NvBool RmCheckForGpuIdleness(
+static NvBool RmCanEnterGcx(
     OBJGPU *pGpu
 )
 {
@@ -279,7 +297,7 @@ static NvBool RmCheckForGpuIdleness(
                                    &gpuMask);
     if (status == NV_OK)
     {
-        result = RmCheckForGpuIdlenessUnderGpuLock(pGpu);
+        result = RmCanEnterGcxUnderGpuLock(pGpu);
         // UNLOCK: release per device lock
         rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
     }
@@ -365,7 +383,7 @@ static void RmIndicateIdle(
 
     if (nv_get_all_mappings_revoked_locked(nv) &&
         nvp->dynamic_power.state == NV_DYNAMIC_POWER_STATE_IDLE_SUSTAINED &&
-        RmCheckForGpuIdleness(pGpu))
+        RmCanEnterGcx(pGpu))
     {
         nv_set_safe_to_mmap_locked(nv, NV_FALSE);
         nv_dynamic_power_state_transition(nv, NV_DYNAMIC_POWER_STATE_IDLE_SUSTAINED,
@@ -400,11 +418,10 @@ NV_STATUS NV_API_CALL rm_schedule_gpu_wakeup(
     void *fp;
     NV_STATUS ret;
     OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(nv);
-    OBJOS *pOS = GPU_GET_OS(pGpu);
 
     NV_ENTER_RM_RUNTIME(sp, fp);
 
-    ret = pOS->osQueueWorkItem(pGpu, RmForceGpuNotIdle, NULL);
+    ret = osQueueWorkItem(pGpu, RmForceGpuNotIdle, NULL);
 
     NV_EXIT_RM_RUNTIME(sp, fp);
 
@@ -1293,36 +1310,36 @@ void osUnrefGpuAccessNeeded(
 }
 
 /*!
- * @brief Check if GC6 is supported on current pstate and if engines are idle.
+ * @brief Check if GCx is supported on current pstate and if engines are idle.
  *
  * @param[in]   pGpu    OBJGPU pointer.
  */
-static NvBool RmCheckForGc6SupportOnCurrentState(
+static NvBool RmCheckForGcxSupportOnCurrentState(
     OBJGPU *pGpu
 )
 {
     NV_STATUS   status = NV_OK;
     nv_state_t *nv     = NV_GET_NV_STATE(pGpu);
     RM_API     *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-    NV2080_CTRL_INTERNAL_GC6_ENTRY_PREREQUISITE_PARAMS entryPrerequisiteParams;
+    NV2080_CTRL_INTERNAL_GCX_ENTRY_PREREQUISITE_PARAMS entryPrerequisiteParams;
 
     portMemSet(&entryPrerequisiteParams, 0, sizeof(entryPrerequisiteParams));
 
     status = pRmApi->Control(pRmApi,
                              nv->rmapi.hClient,
                              nv->rmapi.hSubDevice,
-                             NV2080_CTRL_CMD_INTERNAL_GC6_ENTRY_PREREQUISITE,
+                             NV2080_CTRL_CMD_INTERNAL_GCX_ENTRY_PREREQUISITE,
                              (void*)&entryPrerequisiteParams,
                              sizeof(entryPrerequisiteParams));
 
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "NVRM, Failed to get GC6 pre-requisite, status=0x%x\n",
+        NV_PRINTF(LEVEL_ERROR, "NVRM, Failed to get GCx pre-requisite, status=0x%x\n",
                   status);
         return NV_FALSE;
     }
 
-    return entryPrerequisiteParams.bIsSatisfied;
+    return entryPrerequisiteParams.bIsGC6Satisfied || entryPrerequisiteParams.bIsGCOFFSatisfied;
 }
 
 /*!
@@ -1348,7 +1365,7 @@ static void RmRemoveIdleHoldoff(
 
     if (nvp->dynamic_power.b_idle_holdoff == NV_TRUE)
     {
-        if ((RmCheckForGc6SupportOnCurrentState(pGpu) == NV_TRUE) ||
+        if ((RmCheckForGcxSupportOnCurrentState(pGpu) == NV_TRUE) ||
             (nvp->dynamic_power.idle_precondition_check_callback_scheduled))
         {
             nv_indicate_idle(nv);
@@ -1372,12 +1389,11 @@ static void timerCallbackToRemoveIdleHoldoff(
 )
 {
     OBJGPU *pGpu   = reinterpretCast(pCallbackData, OBJGPU *);
-    OBJOS *pOS     = GPU_GET_OS(pGpu);
 
-    pOS->osQueueWorkItemWithFlags(pGpu,
-                                  RmRemoveIdleHoldoff,
-                                  NULL,
-                                  OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
+    osQueueWorkItemWithFlags(pGpu,
+                             RmRemoveIdleHoldoff,
+                             NULL,
+                             OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
 }
 
 /*!
@@ -1393,15 +1409,14 @@ static void timerCallbackToIndicateIdle(
     OBJGPU     *pGpu    = reinterpretCast(pCallbackData, OBJGPU *);
     nv_state_t *nv      = NV_GET_NV_STATE(pGpu);
     nv_priv_t  *nvp     = NV_GET_NV_PRIV(nv);
-    OBJOS      *pOS     = GPU_GET_OS(pGpu);
 
     nv_acquire_mmap_lock(nv);
 
     if (nv_get_all_mappings_revoked_locked(nv) &&
         nvp->dynamic_power.state == NV_DYNAMIC_POWER_STATE_IDLE_SUSTAINED &&
-        RmCheckForGpuIdlenessUnderGpuLock(pGpu))
+        RmCanEnterGcxUnderGpuLock(pGpu))
     {
-        pOS->osQueueWorkItem(pGpu, RmIndicateIdle, NULL);
+        osQueueWorkItem(pGpu, RmIndicateIdle, NULL);
     }
     else
     {
@@ -1459,7 +1474,7 @@ static void timerCallbackForIdlePreConditions(
 
     if (nvp->dynamic_power.state != NV_DYNAMIC_POWER_STATE_IN_USE)
     {
-        if (RmCheckForGpuIdlenessUnderGpuLock(pGpu))
+        if (RmCanEnterGcxUnderGpuLock(pGpu))
         {
             switch (nvp->dynamic_power.state)
             {
@@ -1927,7 +1942,7 @@ static void RmScheduleCallbackToRemoveIdleHoldoff(
  *
  * @param[in]   pGpu    OBJGPU pointer.
  */
-static NvBool RmCheckRtd3Gc6Support(
+static NvBool RmCheckRtd3GcxSupport(
     nv_state_t *pNv
 )
 {
@@ -1936,6 +1951,8 @@ static NvBool RmCheckRtd3Gc6Support(
     RM_API    *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NV_STATUS  status;
     NV0080_CTRL_GPU_GET_VIRTUALIZATION_MODE_PARAMS virtModeParams = { 0 };
+    NvBool     bGC6Support   = NV_FALSE;
+    NvBool     bGCOFFSupport = NV_FALSE;
 
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_UNIX_DYNAMIC_POWER_SUPPORTED))
     {
@@ -1943,15 +1960,22 @@ static NvBool RmCheckRtd3Gc6Support(
         return NV_FALSE;
     }
 
-    if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED))
+    if (nvp->b_mobile_config_enabled)
     {
-        NV_PRINTF(LEVEL_NOTICE, "NVRM: RTD3/GC6 is not supported in Vbios\n");
-        return NV_FALSE;
+        bGC6Support = pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED);
+        bGCOFFSupport = bGC6Support;
+    }
+    else
+    {
+        bGC6Support = pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED);
+        bGCOFFSupport = pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GCOFF_SUPPORTED);
     }
 
-    if (!nvp->b_mobile_config_enabled)
+    if (!bGC6Support && !bGCOFFSupport)
     {
-        NV_PRINTF(LEVEL_NOTICE, "NVRM: Disabling RTD3/GC6, as it is only supported on Notebook SKU\n");
+        NV_PRINTF(LEVEL_NOTICE,
+                  "NVRM: Disabling RTD3. [GC6 support=%d GCOFF support=%d]\n",
+                  bGC6Support, bGCOFFSupport);
         return NV_FALSE;
     }
 
@@ -1997,7 +2021,7 @@ void RmInitDeferredDynamicPowerManagement(
         {
             OBJGPU *pGpu = NV_GET_NV_PRIV_PGPU(nv);
 
-            if (!RmCheckRtd3Gc6Support(nv))
+            if (!RmCheckRtd3GcxSupport(nv))
             {
                  nvp->dynamic_power.mode = NV_DYNAMIC_PM_NEVER;
                  nvp->dynamic_power.b_fine_not_supported = NV_TRUE;
@@ -2221,7 +2245,8 @@ RmPowerManagement(
 NV_STATUS RmGcxPowerManagement(
     OBJGPU *pGpu,
     NvBool  bEnter,
-    NvBool  bIsDynamicPM
+    NvBool  bIsDynamicPM,
+    NvBool *bTryAgain
 )
 {
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
@@ -2245,16 +2270,21 @@ NV_STATUS RmGcxPowerManagement(
     if (bEnter)
     {
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-        NvU64          usedFbSize;
-        NvBool         bCanUseGc6;
+        NvU64          usedFbSize = 0;
+        NvBool         bCanUseGc6 = NV_FALSE;
+        NV_STATUS      fbsrStatus = NV_ERR_GENERIC;
 
         //
-        // Check if GC6 can be used for current power management request.
-        // For dynamic PM, it can be used always.
-        // For system PM, it can be used only if current system suspend
-        // happened with s2idle.
+        // If the GPU supports GC6, then check if GC6 can be used for
+        // the current power management request.
+        // 1. For dynamic PM, GC6 can be used if it is supported by the GPU.
+        // 2. For system PM with s2idle, GC6 can be used if it is
+        //    supported by the GPU.
         //
-        bCanUseGc6 = bIsDynamicPM ? NV_TRUE : nv_s2idle_pm_configured();
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_RTD3_GC6_SUPPORTED))
+        {
+            bCanUseGc6 = bIsDynamicPM ? NV_TRUE : nv_s2idle_pm_configured();
+        }
 
         //
         // If GC6 cannot be used, then no need to compare the used FB size with
@@ -2262,8 +2292,8 @@ NV_STATUS RmGcxPowerManagement(
         //
         if ((memmgrGetUsedRamSize(pGpu, pMemoryManager, &usedFbSize) == NV_OK) &&
             (!bCanUseGc6 || RmCheckForGcOffPM(pGpu, usedFbSize, bIsDynamicPM)) &&
-            (fbsrReserveSysMemoryForPowerMgmt(pGpu, pMemoryManager->pFbsr[FBSR_TYPE_DMA],
-                                             usedFbSize) == NV_OK))
+            ((fbsrStatus = fbsrReserveSysMemoryForPowerMgmt(pGpu, pMemoryManager->pFbsr[FBSR_TYPE_DMA],
+                                             usedFbSize)) == NV_OK))
         {
             pGpu->setProperty(pGpu, PDB_PROP_GPU_GCOFF_STATE_ENTERING, NV_TRUE);
 
@@ -2330,19 +2360,32 @@ NV_STATUS RmGcxPowerManagement(
             }
         }
         //
-        // This condition will hit only for systems which support s2idle but
-        // are currently configured for deep sleep based system power
-        // management, and that too when sufficient system memory
-        // is not available. For this case, the suspend request will fail
-        // and the system will remain in S0.
+        // The else condition below will hit in the following cases: 
+        // Case 1. During system suspend transition: For systems that support s2idle but are configured
+        // for deep sleep, this "else" condition will be hit when the system memory 
+        // is not sufficient. In this case, we should unset bTryAgain to abort the current suspend entry. 
+        // Case 2. During runtime suspend transition: For systems that do not support GC6 but support 
+        // GCOFF, this "else" condition will be hit when system memory is not sufficent, In this case, we 
+        // should set bTryagain so that the kernel can reschedule the callback later. 
         //
         else
         {
-            status = NV_ERR_NOT_SUPPORTED;
-            NV_PRINTF(LEVEL_ERROR,
-                      "NVRM: %s: System suspend failed with current system suspend configuration. "
-                      "Please change the system suspend configuration to s2idle in /sys/power/mem_sleep.\n",
-                      __FUNCTION__);
+            if (bIsDynamicPM)
+            {
+                if (fbsrStatus == NV_ERR_NO_MEMORY)
+                {
+                    *bTryAgain = NV_TRUE;
+                }
+                status = fbsrStatus;
+            }
+            else
+            {
+                status = NV_ERR_NOT_SUPPORTED;
+                NV_PRINTF(LEVEL_ERROR,
+                          "NVRM: %s: System suspend failed with current system suspend configuration. "
+                          "Please change the system suspend configuration to s2idle in /sys/power/mem_sleep.\n",
+                          __FUNCTION__);
+            }
         }
     }
     else
@@ -2377,6 +2420,7 @@ NV_STATUS NV_API_CALL rm_power_management(
     THREAD_STATE_NODE threadState;
     NV_STATUS rmStatus = NV_OK;
     void *fp;
+    NvBool bTryAgain = NV_FALSE;
 
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
@@ -2421,7 +2465,7 @@ NV_STATUS NV_API_CALL rm_power_management(
                     {
                         rmStatus = RmGcxPowerManagement(pGpu,
                                         pmAction == NV_PM_ACTION_STANDBY,
-                                        NV_FALSE);
+                                        NV_FALSE, &bTryAgain);
 
                     }
                     else
@@ -2461,13 +2505,14 @@ NV_STATUS NV_API_CALL rm_power_management(
  */
 static NV_STATUS RmTransitionDynamicPower(
     OBJGPU *pGpu,
-    NvBool  bEnter
+    NvBool  bEnter,
+    NvBool *bTryAgain
 )
 {
     nv_state_t *nv   = NV_GET_NV_STATE(pGpu);
     NV_STATUS   status;
 
-    status = RmGcxPowerManagement(pGpu, bEnter, NV_TRUE);
+    status = RmGcxPowerManagement(pGpu, bEnter, NV_TRUE, bTryAgain);
 
     if (!bEnter && status == NV_OK)
     {
@@ -2493,7 +2538,8 @@ static NV_STATUS RmTransitionDynamicPower(
 NV_STATUS NV_API_CALL rm_transition_dynamic_power(
     nvidia_stack_t *sp,
     nv_state_t     *nv,
-    NvBool          bEnter
+    NvBool          bEnter,
+    NvBool         *bTryAgain
 )
 {
     OBJGPU             *pGpu = NV_GET_NV_PRIV_PGPU(nv);
@@ -2509,7 +2555,7 @@ NV_STATUS NV_API_CALL rm_transition_dynamic_power(
     status = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_DYN_POWER);
     if (status == NV_OK)
     {
-        status = RmTransitionDynamicPower(pGpu, bEnter);
+        status = RmTransitionDynamicPower(pGpu, bEnter, bTryAgain);
 
         // UNLOCK: release GPUs lock
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
@@ -2670,15 +2716,14 @@ static void RmQueueIdleSustainedWorkitem(
 {
     nv_state_t *nv   = NV_GET_NV_STATE(pGpu);
     nv_priv_t  *nvp  = NV_GET_NV_PRIV(nv);
-    OBJOS      *pOS  = GPU_GET_OS(pGpu);
     NV_STATUS status = NV_OK;
 
     if (!nvp->dynamic_power.b_idle_sustained_workitem_queued)
     {
-        status = pOS->osQueueWorkItemWithFlags(pGpu,
-                                               RmHandleIdleSustained,
-                                               NULL,
-                                               OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
+        status = osQueueWorkItemWithFlags(pGpu,
+                                          RmHandleIdleSustained,
+                                          NULL,
+                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_WARNING,
@@ -2703,10 +2748,16 @@ RmInitS0ixPowerManagement(
     NvU32       data;
     NvBool      bRtd3Gc6Support = NV_FALSE;
 
+    // S0ix-based S2Idle, on desktops, is not supported yet. Return early for desktop SKUs
+    if (!nvp->b_mobile_config_enabled)
+    {
+        return;
+    }
+
     // LOCK: acquire GPUs lock
     if (rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT) == NV_OK)
     {
-        bRtd3Gc6Support = RmCheckRtd3Gc6Support(nv);
+        bRtd3Gc6Support = RmCheckRtd3GcxSupport(nv);
 
         // UNLOCK: release GPUs lock
         rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);

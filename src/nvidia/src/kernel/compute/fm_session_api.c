@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -114,7 +114,8 @@ fmsessionapiConstruct_IMPL
 
     osRmCapInitDescriptor(&pFmSessionApi->dupedCapDescriptor);
 
-    if ((pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL) && !RMCFG_FEATURE_PLATFORM_MODS)
+    if ((pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL)
+        && !RMCFG_FEATURE_PLATFORM_MODS)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "only supported for usermode clients\n");
@@ -155,7 +156,6 @@ fmsessionapiConstruct_IMPL
 
     if (pFabric != NULL)
     {
-
         fabricSetFmSessionFlags(pFabric, pAllocParams->flags);
     }
 
@@ -212,4 +212,3 @@ fmsessionapiCtrlCmdClearFmState_IMPL
 
     return NV_OK;
 }
-

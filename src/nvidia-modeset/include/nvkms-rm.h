@@ -77,25 +77,16 @@ NvBool nvRMSyncEvoChannel(
 NvBool nvRMIdleBaseChannel(NVDevEvoPtr pDevEvo, NvU32 head, NvU32 sd,
                            NvBool *stoppedBase);
 NvBool nvRmEvoClassListCheck(const NVDevEvoRec *pDevEvo, NvU32 classID);
-NvU32 nvRmEvoBindDispContextDMA(
-    NVDevEvoPtr pDevEvo,
-    NVEvoChannelPtr pChannel,
-    NvU32 hCtxDma);
-NvU32 nvRmEvoAllocateAndBindDispContextDMA(
-    NVDevEvoPtr pDevEvo,
-    NvU32 hMemory,
-    const enum NvKmsSurfaceMemoryLayout layout,
-    NvU64 limit);
 NvBool nvRmEvoAllocAndBindSyncpt(
     NVDevEvoRec *pDevEvo,
     NVEvoChannel *pChannel,
     NvU32 id,
-    NvU32 *pSyncptHandle,
-    NvU32 *pSyncptCtxDmaHandle);
+    NVSurfaceDescriptor *pSurfaceDesc,
+    NVEvoSyncpt *pEvoSyncpt);
 void nvRmEvoFreePreSyncpt(NVDevEvoRec *pDevEvo,
                           NVEvoChannel *pChannel);
-NvBool nvRmGarbageCollectSyncpts(
-    NVDevEvoRec *pDevEvo);
+void nvRmFreeSyncptHandle(NVDevEvoRec *pDevEvo,
+                          NVEvoSyncpt *pSyncpt);
 void nvRmEvoFreeSyncpt(NVDevEvoRec *pDevEvo,
                        NVEvoSyncpt *pEvoSyncpt);
 void nvRmEvoFreeDispContextDMA(NVDevEvoPtr pDevEvo,
@@ -152,6 +143,13 @@ void nvRmUnregisterBacklight(NVDispEvoRec *pDispEvo);
 
 void nvRmAllocCoreRGSyncpts(NVDevEvoPtr pDevEvo);
 void nvRmFreeCoreRGSyncpts(NVDevEvoPtr pDevEvo);
+
+NvU32 nvRmAllocAndBindSurfaceDescriptor(
+    NVDevEvoPtr pDevEvo,
+    NvU32 hMemory,
+    const enum NvKmsSurfaceMemoryLayout layout,
+    NvU64 limit,
+    NVSurfaceDescriptor *pSurfaceDesc);
 
 #ifdef __cplusplus
 };

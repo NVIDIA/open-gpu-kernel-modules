@@ -515,7 +515,7 @@ nvswitch_soe_disable_nport_fatal_interrupts_ls10
     NvlStatus stat;
 
     stat = device->hal.nvswitch_ctrl_get_bios_info(device, &p);
-    if ((stat != NVL_SUCCESS) || ((p.version &  SOE_VBIOS_VERSION_MASK) < 
+    if ((stat != NVL_SUCCESS) || ((p.version & SOE_VBIOS_VERSION_MASK) < 
             SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR))
     {
         NVSWITCH_PRINT(device, ERROR,

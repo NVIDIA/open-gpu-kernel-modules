@@ -69,6 +69,7 @@ static void _calculateNvlinkCaps
     NvU32   bridgedLinks,
     NvU32   ipVerNvlink,
     NvBool  bMIGNvLinkP2PSupported,
+    NvBool  bNvlinkEnabled,
     NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS *pParams
 )
 {
@@ -179,6 +180,11 @@ static void _calculateNvlinkCaps
         }
     }
 
+    if (bNvlinkEnabled)
+    {
+        RMCTRL_SET_CAP(tempCaps, NV2080_CTRL_NVLINK_CAPS, _VALID);
+    }
+
     portMemCopy(&pParams->capsTbl, NV2080_CTRL_NVLINK_CAPS_TBL_SIZE, tempCaps, NV2080_CTRL_NVLINK_CAPS_TBL_SIZE);
 }
 
@@ -241,7 +247,10 @@ nvlinkCtrlCmdBusGetNvlinkCaps
             //
             knvlinkFilterBridgeLinks_HAL(pGpu, pKernelNvlink);
         }
-        _calculateNvlinkCaps(pGpu, pKernelNvlink->bridgeSensableLinks, pKernelNvlink->bridgedLinks, pKernelNvlink->ipVerNvlink, bMIGNvLinkP2PSupported, pParams);
+        _calculateNvlinkCaps(pGpu, pKernelNvlink->bridgeSensableLinks, pKernelNvlink->bridgedLinks,
+                             pKernelNvlink->ipVerNvlink, bMIGNvLinkP2PSupported,
+                             pKernelNvlink->getProperty(pNvlink, PDB_PROP_KNVLINK_ENABLED),
+                             pParams);
 
         pParams->discoveredLinkMask = knvlinkGetDiscoveredLinkMask(pGpu, pKernelNvlink);
         pParams->enabledLinkMask    = knvlinkGetEnabledLinkMask(pGpu, pKernelNvlink);
@@ -659,7 +668,7 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
 
     if (!bMIGNvLinkP2PSupported)
     {
-        NV_PRINTF(LEVEL_ERROR, "MIG NVLink P2P is not supported.\n");
+        NV_PRINTF(LEVEL_INFO, "MIG NVLink P2P is not supported.\n");
         status = NV_OK;
         return status;
     }

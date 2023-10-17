@@ -288,4 +288,5 @@ static inline NV_STATUS spdmGetCertificates_DISPATCH(struct OBJGPU *pGpu, struct
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_SPDM_NVOC_H_

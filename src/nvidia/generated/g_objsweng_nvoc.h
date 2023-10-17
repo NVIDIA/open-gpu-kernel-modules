@@ -184,4 +184,5 @@ static inline NvBool swengIsPresent_DISPATCH(POBJGPU pGpu, struct OBJSWENG *pEng
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_OBJSWENG_NVOC_H_

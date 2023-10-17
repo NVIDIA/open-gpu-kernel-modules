@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,6 +65,7 @@ struct VirtualMemory {
     NV_STATUS (*__virtmemCheckMemInterUnmap__)(struct VirtualMemory *, NvBool);
     NvBool (*__virtmemShareCallback__)(struct VirtualMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__virtmemGetMapAddrSpace__)(struct VirtualMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__virtmemIsExportAllowed__)(struct VirtualMemory *);
     NvU32 (*__virtmemGetRefCount__)(struct VirtualMemory *);
     void (*__virtmemAddAdditionalDependants__)(struct RsClient *, struct VirtualMemory *, RsResourceRef *);
     NV_STATUS (*__virtmemControl_Prologue__)(struct VirtualMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -127,6 +128,7 @@ NV_STATUS __nvoc_objCreate_VirtualMemory(VirtualMemory**, Dynamic*, NvU32, CALL_
 #define virtmemCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) virtmemCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define virtmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) virtmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define virtmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) virtmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define virtmemIsExportAllowed(pMemory) virtmemIsExportAllowed_DISPATCH(pMemory)
 #define virtmemGetRefCount(pResource) virtmemGetRefCount_DISPATCH(pResource)
 #define virtmemAddAdditionalDependants(pClient, pResource, pReference) virtmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define virtmemControl_Prologue(pResource, pCallContext, pParams) virtmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -169,6 +171,10 @@ static inline NvBool virtmemShareCallback_DISPATCH(struct VirtualMemory *pResour
 
 static inline NV_STATUS virtmemGetMapAddrSpace_DISPATCH(struct VirtualMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__virtmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool virtmemIsExportAllowed_DISPATCH(struct VirtualMemory *pMemory) {
+    return pMemory->__virtmemIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 virtmemGetRefCount_DISPATCH(struct VirtualMemory *pResource) {
@@ -257,15 +263,15 @@ NV_STATUS virtmemConstruct_IMPL(struct VirtualMemory *arg_pVirtualMemory, CALL_C
 void virtmemDestruct_IMPL(struct VirtualMemory *pVirtualMemory);
 
 #define __nvoc_virtmemDestruct(pVirtualMemory) virtmemDestruct_IMPL(pVirtualMemory)
-NV_STATUS virtmemReserveMempool_IMPL(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg0, NvHandle hDevice, NvU64 size, NvU64 pageSizeMask);
+NV_STATUS virtmemReserveMempool_IMPL(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg0, struct Device *pDevice, NvU64 size, NvU64 pageSizeMask);
 
 #ifdef __nvoc_virtual_mem_h_disabled
-static inline NV_STATUS virtmemReserveMempool(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg0, NvHandle hDevice, NvU64 size, NvU64 pageSizeMask) {
+static inline NV_STATUS virtmemReserveMempool(struct VirtualMemory *pVirtualMemory, struct OBJGPU *arg0, struct Device *pDevice, NvU64 size, NvU64 pageSizeMask) {
     NV_ASSERT_FAILED_PRECOMP("VirtualMemory was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_virtual_mem_h_disabled
-#define virtmemReserveMempool(pVirtualMemory, arg0, hDevice, size, pageSizeMask) virtmemReserveMempool_IMPL(pVirtualMemory, arg0, hDevice, size, pageSizeMask)
+#define virtmemReserveMempool(pVirtualMemory, arg0, pDevice, size, pageSizeMask) virtmemReserveMempool_IMPL(pVirtualMemory, arg0, pDevice, size, pageSizeMask)
 #endif //__nvoc_virtual_mem_h_disabled
 
 NvBool virtmemMatchesVASpace_IMPL(struct VirtualMemory *pVirtualMemory, NvHandle hClient, NvHandle hVASpace);
@@ -296,4 +302,5 @@ NV_STATUS virtmemAllocResources(OBJGPU *pGpu, struct MemoryManager *pMemoryManag
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_VIRTUAL_MEM_NVOC_H_

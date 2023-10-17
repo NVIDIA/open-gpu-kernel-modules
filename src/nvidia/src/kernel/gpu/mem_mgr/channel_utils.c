@@ -23,6 +23,7 @@
 
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
+#include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "utils/nvassert.h"
 #include "core/locks.h"
@@ -32,12 +33,10 @@
 #include "kernel/gpu/mem_mgr/channel_utils.h"
 #include "class/clcba2.h"
 
-
 #define SEC2_WL_METHOD_ARRAY_SIZE 16
 #define SHA_256_HASH_SIZE_BYTE  32
 
 /* Static helper functions */
-static void channelPushAddress(OBJCHANNEL *pChannel, CHANNEL_PB_INFO *pChannelPbInfo, NvU32 **ppPtr);
 static NvU32 channelPushMemoryProperties(OBJCHANNEL *pChannel, CHANNEL_PB_INFO *pChannelPbInfo, NvU32 **ppPtr);
 static void channelPushMethod(OBJCHANNEL *pChannel, CHANNEL_PB_INFO *pChannelPbInfo,
                               NvBool bPipelined, NvBool bInsertFinishPayload,
@@ -247,7 +246,10 @@ channelWaitForFinishPayload
 
         if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
         {
-            channelServiceScrubberInterrupts(pChannel);
+            if (!kfifoIsLiteModeEnabled_HAL(pGpu, GPU_GET_KERNEL_FIFO(pGpu)))
+            {
+                channelServiceScrubberInterrupts(pChannel);
+            }
         }
         else
         {
@@ -301,7 +303,10 @@ channelWaitForFreeEntry
         
         if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
         {
-            channelServiceScrubberInterrupts(pChannel);
+            if (!kfifoIsLiteModeEnabled_HAL(pGpu, GPU_GET_KERNEL_FIFO(pGpu)))
+            {
+                channelServiceScrubberInterrupts(pChannel);
+            }
         }
         else
         {
@@ -387,7 +392,6 @@ channelFillGpFifo
         pChannel->pbCpuVA = NULL;
     }
 
-    //  need to flush WRC buffer
     osFlushCpuWriteCombineBuffer();
 
     // write GP put
@@ -419,11 +423,6 @@ channelFillGpFifo
         NV_PRINTF(LEVEL_ERROR, "Busflush failed in _scrubFillGpFifo\n");
         return NV_ERR_GENERIC;
     }
-
-    //
-    // removing the FIFO Lite Mode handling
-    // Refer older _ceChannelUpdateGpFifo_GF100 code for implementation
-    //
 
     // Update doorbell with work submission token
     if (pChannel->bUseDoorbellRegister)
@@ -507,21 +506,18 @@ channelFillPbFastScrub
     else
         flushValue = DRF_DEF(B0B5, _LAUNCH_DMA, _FLUSH_ENABLE, _FALSE);
 
-    NV_PUSH_INC_2U(RM_SUBCHANNEL, NVC8B5_OFFSET_OUT_UPPER,
-                   DRF_NUM(C8B5, _OFFSET_OUT_UPPER, _UPPER, NvU64_HI32(pChannelPbInfo->dstAddr)),
-                   NVC8B5_OFFSET_OUT_LOWER,
-                   DRF_NUM(C8B5, _OFFSET_OUT_LOWER, _VALUE,NvU64_LO32(pChannelPbInfo->dstAddr)));
+    NV_PUSH_INC_2U(RM_SUBCHANNEL,
+        NVC8B5_OFFSET_OUT_UPPER, NvU64_HI32(pChannelPbInfo->dstAddr),
+        NVC8B5_OFFSET_OUT_LOWER, NvU64_LO32(pChannelPbInfo->dstAddr));
 
     NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC8B5_LINE_LENGTH_IN, pChannelPbInfo->size);
 
     if (semaValue)
     {
-        NV_PUSH_INC_3U(RM_SUBCHANNEL, NVC8B5_SET_SEMAPHORE_A,
-            DRF_NUM(C8B5, _SET_SEMAPHORE_A, _UPPER, NvU64_HI32(pChannel->pbGpuVA + pChannel->finishPayloadOffset)),
-            NVC8B5_SET_SEMAPHORE_B,
-            DRF_NUM(C8B5, _SET_SEMAPHORE_B, _LOWER, NvU64_LO32(pChannel->pbGpuVA + pChannel->finishPayloadOffset)),
-            NVC8B5_SET_SEMAPHORE_PAYLOAD,
-            pChannelPbInfo->payload);
+        NV_PUSH_INC_3U(RM_SUBCHANNEL,
+            NVC8B5_SET_SEMAPHORE_A,       NvU64_HI32(pChannel->pbGpuVA + pChannel->finishPayloadOffset),
+            NVC8B5_SET_SEMAPHORE_B,       NvU64_LO32(pChannel->pbGpuVA + pChannel->finishPayloadOffset),
+            NVC8B5_SET_SEMAPHORE_PAYLOAD, pChannelPbInfo->payload);
     }
 
     NV_PUSH_INC_1U(RM_SUBCHANNEL, NVC8B5_SET_MEMORY_SCRUB_PARAMETERS,
@@ -551,10 +547,9 @@ channelFillPbFastScrub
 
     pSemaAddr = (pChannel->pbGpuVA+pChannel->semaOffset);
 
-    NV_PUSH_INC_4U(RM_SUBCHANNEL, NVC86F_SEM_ADDR_LO,
-            DRF_NUM(C86F, _SEM_ADDR_LO, _OFFSET, NvU64_LO32(pSemaAddr) >> 2),
-            NVC86F_SEM_ADDR_HI,
-            DRF_NUM(C86F, _SEM_ADDR_HI, _OFFSET, NvU64_HI32(pSemaAddr)),
+    NV_PUSH_INC_4U(RM_SUBCHANNEL,
+            NVC86F_SEM_ADDR_LO,    NvU64_LO32(pSemaAddr),
+            NVC86F_SEM_ADDR_HI,    NvU64_HI32(pSemaAddr),
             NVC86F_SEM_PAYLOAD_LO, putIndex,
             NVC86F_SEM_PAYLOAD_HI, 0);
 
@@ -589,14 +584,11 @@ channelAddHostSema
     // denotes that HOST has read all the methods needed for this memory operation
     // and safely assume that this GPFIFO and PB entry can be reused.
     //
-    NV_PUSH_INC_4U(RM_SUBCHANNEL, NV906F_SEMAPHOREA,
-                   DRF_NUM(906F, _SEMAPHOREA_OFFSET, _UPPER, NvU64_HI32(pSemaAddr)),
-                   NV906F_SEMAPHOREB,
-                   DRF_NUM(906F, _SEMAPHOREB_OFFSET, _LOWER, NvU64_LO32(pSemaAddr) >> 2),
-                   NV906F_SEMAPHOREC,
-                   putIndex,
-                   NV906F_SEMAPHORED, 
-                   data);
+    NV_PUSH_INC_4U(RM_SUBCHANNEL,
+                   NV906F_SEMAPHOREA, NvU64_HI32(pSemaAddr),
+                   NV906F_SEMAPHOREB, NvU64_LO32(pSemaAddr),
+                   NV906F_SEMAPHOREC, putIndex,
+                   NV906F_SEMAPHORED, data);
     *ppPtr = pPtr;
 }
 
@@ -624,11 +616,9 @@ channelFillCePb
 
     NV_PUSH_INC_1U(RM_SUBCHANNEL, NV906F_SET_OBJECT, pChannel->classEngineID);
 
-    // Side effect - pushed target aperture and REMAP method for memset
+    // Side effect - pushed target addresses, aperture and REMAP method for memset
     launchType = channelPushMemoryProperties(pChannel, pChannelPbInfo, &pPtr);
 
-    // Side effect - pushed addresses
-    channelPushAddress(pChannel, pChannelPbInfo, &pPtr);
     NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_LINE_LENGTH_IN, pChannelPbInfo->size);
 
     if (bInsertFinishPayload)
@@ -638,12 +628,10 @@ channelFillCePb
         // Do not support client semaphore for now
         NV_ASSERT(pChannelPbInfo->clientSemaAddr == 0);
 
-        NV_PUSH_INC_3U(RM_SUBCHANNEL, NVB0B5_SET_SEMAPHORE_A,
-                       DRF_NUM(B0B5, _SET_SEMAPHORE_A, _UPPER, NvU64_HI32(pChannel->pbGpuVA + pChannel->finishPayloadOffset)),
-                       NVB0B5_SET_SEMAPHORE_B,
-                       DRF_NUM(B0B5, _SET_SEMAPHORE_B, _LOWER, NvU64_LO32(pChannel->pbGpuVA + pChannel->finishPayloadOffset)),
-                       NVB0B5_SET_SEMAPHORE_PAYLOAD,
-                       pChannelPbInfo->payload);
+        NV_PUSH_INC_3U(RM_SUBCHANNEL,
+            NVB0B5_SET_SEMAPHORE_A,       NvU64_HI32(pChannel->pbGpuVA + pChannel->finishPayloadOffset),
+            NVB0B5_SET_SEMAPHORE_B,       NvU64_LO32(pChannel->pbGpuVA + pChannel->finishPayloadOffset),
+            NVB0B5_SET_SEMAPHORE_PAYLOAD, pChannelPbInfo->payload);
     }
 
     // Side effect - pushed LAUNCH_DMA methods
@@ -831,6 +819,8 @@ channelPushMemoryProperties
     NV_ADDRESS_SPACE srcAddressSpace = pChannelPbInfo->srcAddressSpace;
     NvU32 dstCpuCacheAttrib = pChannelPbInfo->dstCpuCacheAttrib;
     NvU32 srcCpuCacheAttrib = pChannelPbInfo->srcCpuCacheAttrib;
+    NvU64 dstAddr = pChannelPbInfo->dstAddr;
+    NvU64 srcAddr = pChannelPbInfo->srcAddr;
 
     NvU32 data = 0;
     NvU32 retVal = 0;
@@ -862,6 +852,20 @@ channelPushMemoryProperties
         }
         
         NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_SET_SRC_PHYS_MODE, data);
+
+        if (pChannel->bUseVasForCeCopy && srcAddressSpace == ADDR_FBMEM)
+        {
+            srcAddr = srcAddr + pChannel->fbAliasVA - pChannel->startFbOffset;
+            retVal |= DRF_DEF(B0B5, _LAUNCH_DMA, _SRC_TYPE, _VIRTUAL);
+        }
+        else
+        {
+            retVal |= DRF_DEF(B0B5, _LAUNCH_DMA, _SRC_TYPE, _PHYSICAL);
+        }
+
+        NV_PUSH_INC_2U(RM_SUBCHANNEL,
+            NVB0B5_OFFSET_IN_UPPER, NvU64_HI32(srcAddr),
+            NVB0B5_OFFSET_IN_LOWER, NvU64_LO32(srcAddr));
     }
 
     // Push dst addr properties
@@ -879,60 +883,24 @@ channelPushMemoryProperties
     }
     
     NV_PUSH_INC_1U(RM_SUBCHANNEL, NVB0B5_SET_DST_PHYS_MODE, data);
-    
-    if (pChannel->bUseVasForCeCopy)
+
+    if (pChannel->bUseVasForCeCopy && dstAddressSpace == ADDR_FBMEM)
     {
-        retVal = DRF_DEF(B0B5, _LAUNCH_DMA, _DST_TYPE, _VIRTUAL) | 
-                 DRF_DEF(B0B5, _LAUNCH_DMA, _SRC_TYPE, _VIRTUAL);
+        dstAddr = dstAddr + pChannel->fbAliasVA - pChannel->startFbOffset;
+        retVal |= DRF_DEF(B0B5, _LAUNCH_DMA, _DST_TYPE, _VIRTUAL);
     }
     else
     {
-        retVal = DRF_DEF(B0B5, _LAUNCH_DMA, _DST_TYPE, _PHYSICAL) |
-                 DRF_DEF(B0B5, _LAUNCH_DMA, _SRC_TYPE, _PHYSICAL);
+        retVal |= DRF_DEF(B0B5, _LAUNCH_DMA, _DST_TYPE, _PHYSICAL);
     }
+
+    NV_PUSH_INC_2U(RM_SUBCHANNEL,
+        NVB0B5_OFFSET_OUT_UPPER, NvU64_HI32(dstAddr),
+        NVB0B5_OFFSET_OUT_LOWER, NvU64_LO32(dstAddr));
 
     *ppPtr = pPtr;
     return retVal;
 }
-
-
-static void
-channelPushAddress
-(
-    OBJCHANNEL      *pChannel,
-    CHANNEL_PB_INFO *pChannelPbInfo,
-    NvU32           **ppPtr
-)
-{
-    NvU64 dstAddr = pChannelPbInfo->dstAddr;
-    NvU64 srcAddr = pChannelPbInfo->srcAddr;
-    NvU32 *pPtr = *ppPtr;
-
-    // Linear translation to map the PA to VA
-    if (pChannel->bUseVasForCeCopy)
-    {
-        dstAddr = dstAddr + pChannel->fbAliasVA - pChannel->startFbOffset;
-        srcAddr = srcAddr + pChannel->fbAliasVA - pChannel->startFbOffset;
-    }
-
-    // Set dst addr 
-    NV_PUSH_INC_2U(RM_SUBCHANNEL, NVB0B5_OFFSET_OUT_UPPER,
-                   DRF_NUM(B0B5, _OFFSET_OUT_UPPER, _UPPER, NvU64_HI32(dstAddr)),
-                   NVB0B5_OFFSET_OUT_LOWER,
-                   DRF_NUM(B0B5, _OFFSET_OUT_LOWER, _VALUE, NvU64_LO32(dstAddr)));
-
-    // Set src addr if memcopy
-    if (pChannelPbInfo->bCeMemcopy)
-    {
-        NV_PUSH_INC_2U(RM_SUBCHANNEL, NVB0B5_OFFSET_IN_UPPER,
-                       DRF_NUM(B0B5, _OFFSET_IN_UPPER, _UPPER, NvU64_HI32(srcAddr)),
-                       NVB0B5_OFFSET_IN_LOWER,
-                       DRF_NUM(B0B5, _OFFSET_IN_LOWER, _VALUE, NvU64_LO32(srcAddr)));
-    }
-
-    *ppPtr = pPtr;
-}
-
 
 static void
 channelPushMethod

@@ -370,7 +370,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
 
     // Check logical permissions
     status = uvm_va_block_check_logical_permissions(va_block,
-                                                    &service_context->block_context,
+                                                    service_context->block_context,
                                                     gpu->id,
                                                     uvm_va_block_cpu_page_index(va_block,
                                                                                 fault_entry->fault_address),
@@ -393,7 +393,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
 
     // Compute new residency and update the masks
     new_residency = uvm_va_block_select_residency(va_block,
-                                                  &service_context->block_context,
+                                                  service_context->block_context,
                                                   page_index,
                                                   gpu->id,
                                                   fault_entry->access_type_mask,
@@ -629,7 +629,7 @@ static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_e
     uvm_gpu_va_space_t *gpu_va_space;
     uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &gpu->parent->fault_buffer_info.non_replayable;
     uvm_va_block_context_t *va_block_context =
-        &gpu->parent->fault_buffer_info.non_replayable.block_service_context.block_context;
+        gpu->parent->fault_buffer_info.non_replayable.block_service_context.block_context;
 
     status = uvm_gpu_fault_entry_to_va_space(gpu, fault_entry, &va_space);
     if (status != NV_OK) {
@@ -655,7 +655,7 @@ static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_e
     // to remain valid until we release. If no mm is registered, we
     // can only service managed faults, not ATS/HMM faults.
     mm = uvm_va_space_mm_retain_lock(va_space);
-    va_block_context->mm = mm;
+    uvm_va_block_context_init(va_block_context, mm);
 
     uvm_va_space_down_read(va_space);
 

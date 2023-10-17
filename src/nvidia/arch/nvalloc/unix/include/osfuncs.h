@@ -32,13 +32,6 @@
 
 #include <os/os.h>
 
-OSQueueWorkItem                 osQueueWorkItem;
-OSQueueWorkItemWithFlags        osQueueWorkItemWithFlags;
-OSQueueSystemWorkItem           osQueueSystemWorkItem;
-OSDbgBreakpointEnabled          osDbgBreakpointEnabled;
-
-void*                           osGetStereoDongleInterface(void);
-
 #if defined(NVCPU_X86_64)
 OSnv_rdcr4                      nv_rdcr4;
 NvU64                           nv_rdcr3(OBJOS *);

@@ -838,4 +838,5 @@ NV_STATUS dispchndmaConstruct_IMPL(struct DispChannelDma *arg_pDispChannelDma, s
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_DISP_CHANNEL_NVOC_H_

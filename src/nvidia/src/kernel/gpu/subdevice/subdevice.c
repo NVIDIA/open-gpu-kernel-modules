@@ -280,24 +280,39 @@ subdeviceGetByGpu_IMPL
     Subdevice       **ppSubdevice
 )
 {
-    Subdevice          *pSubdevice = NULL;
-    OBJGPU             *pTmpGpu = NULL;
-    RS_ITERATOR         it;
-    RsResourceRef      *pResourceRef;
+    return subdeviceGetByDeviceAndGpu(pClient, NULL, pGpu, ppSubdevice);
+}
+
+NV_STATUS
+subdeviceGetByDeviceAndGpu_IMPL
+(
+    RsClient         *pClient,
+    Device           *pDevice,
+    OBJGPU           *pGpu,
+    Subdevice       **ppSubdevice
+)
+{
+    Subdevice    *pSubdevice = NULL;
+    RS_ITERATOR   it;
+    RS_ITER_TYPE  iterType = RS_ITERATE_DESCENDANTS;
+    RsResourceRef *pDeviceRef = NULL;
 
     *ppSubdevice = NULL;
 
-    it = clientRefIter(pClient, NULL, classId(Subdevice), RS_ITERATE_DESCENDANTS, NV_TRUE);
+    if (pDevice != NULL)
+    {
+        pDeviceRef = RES_GET_REF(pDevice);
+        iterType = RS_ITERATE_CHILDREN;
+    }
+
+    it = clientRefIter(pClient, pDeviceRef, classId(Subdevice),
+                       iterType, NV_TRUE);
+
     while (clientRefIterNext(pClient, &it))
     {
-        pResourceRef = it.pResourceRef;
-        pSubdevice = dynamicCast(pResourceRef->pResource, Subdevice);
-        if (pSubdevice == NULL)
-            continue;
+        pSubdevice = dynamicCast(it.pResourceRef->pResource, Subdevice);
 
-        pTmpGpu = GPU_RES_GET_GPU(pSubdevice);
-
-        if (pTmpGpu == pGpu)
+        if (GPU_RES_GET_GPU(pSubdevice) == pGpu)
         {
             *ppSubdevice = pSubdevice;
             return NV_OK;

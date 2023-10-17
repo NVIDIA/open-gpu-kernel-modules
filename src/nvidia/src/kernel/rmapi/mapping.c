@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -85,6 +85,7 @@ serverInterMap_Prologue
             return NV_ERR_INVALID_OBJECT;
 
         pGpu = GPU_RES_GET_GPU(pSubdevice);
+        pDevice = GPU_RES_GET_DEVICE(pSubdevice);
         GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
         hBroadcastDevice = RES_GET_HANDLE(pSubdevice->pDevice);
@@ -121,7 +122,7 @@ serverInterMap_Prologue
             }
 
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-               virtmemReserveMempool(pVirtualMemory, pGpu, hBroadcastDevice,
+               virtmemReserveMempool(pVirtualMemory, pGpu, pDevice,
                                      pParams->length, pageSize));
         }
     }
@@ -378,7 +379,13 @@ rmapiMapWithSecInfo
         return status;
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, hClient, NV01_NULL_OBJECT, &lockInfo);
+    if (status != NV_OK)
+    {
+        rmapiEpilogue(pRmApi, &rmApiContext);
+        return status;
+    }
+
     lockInfo.flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK |
                       RM_LOCK_FLAGS_NO_GPUS_LOCK;
 
@@ -496,7 +503,12 @@ rmapiUnmapWithSecInfo
         return status;
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, hClient, NV01_NULL_OBJECT, &lockInfo);
+    if (status != NV_OK)
+    {
+        rmapiEpilogue(pRmApi, &rmApiContext);
+        return status;
+    }
     lockInfo.flags |= RM_LOCK_FLAGS_GPU_GROUP_LOCK |
                       RM_LOCK_FLAGS_NO_GPUS_LOCK;
 

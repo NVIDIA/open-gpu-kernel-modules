@@ -109,6 +109,10 @@ static NV_STATUS __nvoc_thunk_RsResource_nodevicememMapTo(struct NoDeviceMemory 
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NoDeviceMemory_RsResource.offset), pParams);
 }
 
+static NvBool __nvoc_thunk_Memory_nodevicememIsExportAllowed(struct NoDeviceMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_NoDeviceMemory_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_nodevicememGetRefCount(struct NoDeviceMemory *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NoDeviceMemory_RsResource.offset));
 }
@@ -241,6 +245,8 @@ static void __nvoc_init_funcTable_NoDeviceMemory_1(NoDeviceMemory *pThis) {
     pThis->__nodevicememShareCallback__ = &__nvoc_thunk_RmResource_nodevicememShareCallback;
 
     pThis->__nodevicememMapTo__ = &__nvoc_thunk_RsResource_nodevicememMapTo;
+
+    pThis->__nodevicememIsExportAllowed__ = &__nvoc_thunk_Memory_nodevicememIsExportAllowed;
 
     pThis->__nodevicememGetRefCount__ = &__nvoc_thunk_RsResource_nodevicememGetRefCount;
 

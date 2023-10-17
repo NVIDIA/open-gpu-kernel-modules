@@ -1164,7 +1164,12 @@ typedef struct NV0073_CTRL_SPECIFIC_OR_GET_INFO_PARAMS {
  *     The backlight brightness in the range [0,100], inclusive.  This
  *     is an input for SET_BACKLIGHT_BRIGHTNESS, and an output for
  *     GET_BACKLIGHT_BRIGHTNESS.
- *
+ *   brightnessType
+ *     This can take in one of the three parameters:
+ *     NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT100(for percentage brightness with value calibrated to 100 scale),
+ *     NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT1000(for percentage brightness with uncalibrated values),
+ *     NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_NITS(used when panel supports Nits based)
+ *     based on the brightness control method to be used.
  *
  * Possible status values returned include:
  *   NV_OK
@@ -1180,7 +1185,11 @@ typedef struct NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS {
     NvU32  displayId;
     NvU32  brightness;
     NvBool bUncalibrated;
+    NvU8   brightnessType;
 } NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS;
+#define NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT100        1
+#define NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT1000       2
+#define NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_NITS              3
 
 #define NV0073_CTRL_SPECIFIC_GET_BACKLIGHT_BRIGHTNESS_PARAMS_MESSAGE_ID (0x91U)
 

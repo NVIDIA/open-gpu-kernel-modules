@@ -169,6 +169,8 @@ static void HsIoctlSetCursorImage(
     NVHsChannelEvoRec *pHsChannel,
     NVSurfaceEvoRec *pSurfaceEvo)
 {
+    NVDevEvoPtr pDevEvo = pHsChannel->pDispEvo->pDevEvo;
+
     /*
      * Increment the refcnt of the new surface, and
      * decrement the refcnt of the old surface.
@@ -178,10 +180,10 @@ static void HsIoctlSetCursorImage(
      */
 
     HsChangeSurfaceFlipRefCount(
-        pSurfaceEvo, TRUE /* increase */);
+        pDevEvo, pSurfaceEvo, TRUE /* increase */);
 
     HsChangeSurfaceFlipRefCount(
-        pHsChannel->config.cursor.pSurfaceEvo, FALSE /* increase */);
+        pDevEvo, pHsChannel->config.cursor.pSurfaceEvo, FALSE /* increase */);
 
     pHsChannel->config.cursor.pSurfaceEvo = pSurfaceEvo;
 
@@ -256,7 +258,7 @@ static struct NvKmsFlipRequestOneHead *HsIoctlRemoveHsHeadsFromNvKmsFlipHead(
     const struct NvKmsFlipRequestOneHead *pFlipHeadOriginal,
     const NvU32 numFlipHeadsOriginal,
     const NvU32 numFlipHeads,
-    const NvU8 hsMask[NVKMS_MAX_SUBDEVICES])
+    const NvU8 hsMask[NV_MAX_FLIP_REQUEST_HEADS / 8])
 {
     struct NvKmsFlipRequestOneHead *pFlipHead = NULL;
     NvU32 i, j;
@@ -268,9 +270,7 @@ static struct NvKmsFlipRequestOneHead *HsIoctlRemoveHsHeadsFromNvKmsFlipHead(
 
     j = 0;
     for (i = 0; i < numFlipHeadsOriginal; i++) {
-        const NvU32 apiHead = pFlipHeadOriginal[i].head;
-        const NvU32 sd = pFlipHeadOriginal[i].sd;
-        if ((hsMask[sd] & NVBIT(apiHead)) == 0) {
+        if ((hsMask[i / 8] & NVBIT(i % 8)) == 0) {
             pFlipHead[j++] = pFlipHeadOriginal[i];
         }
     }
@@ -481,9 +481,8 @@ NvBool nvHsIoctlFlip(
     struct NvKmsFlipReply *pReply)
 {
     NvU32 i;
-    ct_assert(NVKMS_MAX_HEADS_PER_DISP <= 8);
-    NvU8 hsMask[NVKMS_MAX_SUBDEVICES] = { };
-    NvU8 nonHsMask[NVKMS_MAX_SUBDEVICES] = { };
+    ct_assert((NV_MAX_FLIP_REQUEST_HEADS % 8) == 0);
+    NvU8 hsMask[NV_MAX_FLIP_REQUEST_HEADS / 8] = { };
     NvU32 nHsApiHeads = 0;
     NvU32 nNonHsApiHeads = 0;
     NvBool ret = FALSE;
@@ -503,10 +502,9 @@ NvBool nvHsIoctlFlip(
         NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[sd];
 
         if (pDispEvo->pHsChannel[apiHead] == NULL) {
-            nonHsMask[sd] |= NVBIT(apiHead);
             nNonHsApiHeads++;
         } else {
-            hsMask[sd] |= NVBIT(apiHead);
+            hsMask[i / 8] |= NVBIT(i % 8);
             nHsApiHeads++;
         }
     }
@@ -540,7 +538,7 @@ NvBool nvHsIoctlFlip(
         const NvU32 sd = pFlipHead[i].sd;
         NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[sd];
 
-        if ((hsMask[sd] & NVBIT(apiHead)) == 0) {
+        if ((hsMask[i / 8] & NVBIT(i % 8)) == 0) {
             continue;
         }
 
@@ -637,7 +635,7 @@ NvBool nvHsIoctlFlip(
         const NvU32 sd = pFlipHead[i].sd;
         NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[sd];
 
-        if ((hsMask[sd] & NVBIT(apiHead)) == 0) {
+        if ((hsMask[i / 8] & NVBIT(i % 8)) == 0) {
             continue;
         }
 
@@ -664,7 +662,7 @@ NvBool nvHsIoctlFlip(
         const NvU32 sd = pFlipHead[i].sd;
         NVDispEvoPtr pDispEvo = pDevEvo->pDispEvo[sd];
 
-        if ((hsMask[sd] & NVBIT(apiHead)) == 0) {
+        if ((hsMask[i / 8] & NVBIT(i % 8)) == 0) {
             continue;
         }
 

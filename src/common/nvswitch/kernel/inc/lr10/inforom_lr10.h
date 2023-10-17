@@ -169,4 +169,12 @@ nvswitch_bbx_get_sxid_lr10
     NVSWITCH_GET_SXIDS_PARAMS * params
 );
 
+NvlStatus
+nvswitch_bbx_get_data_lr10
+(
+    nvswitch_device *device,
+    NvU8 dataType,
+    void *params
+);
+
 #endif //_INFOROM_LR10_H_

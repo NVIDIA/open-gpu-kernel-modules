@@ -525,4 +525,5 @@ NV_STATUS pfmreqhndlrGetPerfSensorCounters              (NV0000_CTRL_SYSTEM_PFM_
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_PLATFORM_REQUEST_HANDLER_NVOC_H_

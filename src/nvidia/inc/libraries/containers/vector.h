@@ -93,6 +93,7 @@ struct VectorIterBase
     NvBool  bForward;
 #if PORT_IS_CHECKED_BUILD
     NvU32 versionNumber;
+    NvBool bValid;
 #endif
 };
 
@@ -123,6 +124,7 @@ struct VectorWrapper
                   capacity,                     \
                   sizeof(*(pVector)->valueSize))
 #define vectDestroy(pVector)  vectDestroy_IMPL(&((pVector)->real.base))
+#define vectClear(pVector)    vectClear_IMPL(&((pVector)->real.base))
 #define vectCount(pVector)    vectCount_IMPL(&((pVector)->real.base))
 #define vectCapacity(pVector) vectCapacity_IMPL(&((pVector)->real.base))
 #define vectIsEmpty(pVector)  vectIsEmpty_IMPL(&((pVector)->real.base))
@@ -138,7 +140,6 @@ struct VectorWrapper
                    vectIsValid_IMPL)
 #define vectRemove(pVector, index) \
     vectRemove_IMPL(&((pVector)->real.base), index)
-#define vectClear(pVector) vectDestroy(pVector)
 #define vectAppend(pVector, pValue)                                  \
     CONT_CAST_ELEM((pVector),                                        \
                    vectAppend_IMPL(&(pVector)->real.base,            \
@@ -175,6 +176,7 @@ NV_STATUS vectInit_IMPL(Vector             *pVector,
                         NvU32               capacity,
                         NvU32               valueSize);
 void  vectDestroy_IMPL(Vector *pVector);
+void  vectClear_IMPL(Vector *pVector);
 NvU32 vectCount_IMPL(Vector *pVector);
 NvU32 vectCapacity_IMPL(Vector *pVector);
 NvBool vectIsEmpty_IMPL(Vector *pVector);

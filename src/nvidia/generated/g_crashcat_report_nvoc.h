@@ -385,4 +385,5 @@ const char *crashcatReportRiscvCauseToString(NvU64 xcause);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CRASHCAT_REPORT_NVOC_H_

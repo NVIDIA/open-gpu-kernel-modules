@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,6 +59,7 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
     MemoryManager                *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     CTX_BUF_POOL_INFO            *pCtxBufPool;
     const KGRAPHICS_STATIC_INFO  *pKernelGraphicsStaticInfo;
+	NV_STATUS                     status;
 
     NV_ASSERT_OR_RETURN(!gpumgrGetBcEnabledStatus(pGpu), NV_ERR_INVALID_STATE);
 
@@ -172,8 +173,9 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
             memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
             NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
         }
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_BUNDLE_CB].pAllocList));
+
+        memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_CIRCULAR_BUFFER, *ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_BUNDLE_CB].pAllocList);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }
 
     // Page Pool
@@ -197,8 +199,9 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
             memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
             NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
         }
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_PAGEPOOL].pAllocList));
+
+        memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_PAGE_POOL, *ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_PAGEPOOL].pAllocList);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }
 
     // Attribute Buffer
@@ -222,8 +225,11 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
             memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
             NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
         }
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_ATTRIBUTE_CB].pAllocList));
+
+
+        memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_ATTR_BUFFER, *ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_ATTRIBUTE_CB].pAllocList);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+
         memdescSetName(pGpu, *ppMemDesc, NV_RM_SURF_NAME_GR_CIRCULAR_BUFFER, NULL);
     }
 
@@ -257,8 +263,8 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
                     memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
                     NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
                 }
-                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                    memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_PRIV_ACCESS_MAP].pAllocList));
+                memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_ACCESS_MAP, *ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_PRIV_ACCESS_MAP].pAllocList);
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
             }
 
             //
@@ -289,9 +295,9 @@ kgraphicsAllocGrGlobalCtxBuffers_GM200
                     NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
                 }
 
-                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-                    memdescAllocList(*ppMemDesc,
-                                     pCtxAttr[GR_GLOBALCTX_BUFFER_UNRESTRICTED_PRIV_ACCESS_MAP].pAllocList));
+                memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_ACCESS_MAP, *ppMemDesc,
+                                     pCtxAttr[GR_GLOBALCTX_BUFFER_UNRESTRICTED_PRIV_ACCESS_MAP].pAllocList);
+                NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
             }
         }
     }

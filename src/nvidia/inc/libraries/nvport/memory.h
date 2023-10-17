@@ -904,7 +904,7 @@ void portMemExUnmapIOSpace(void *addr, NvU64 byteSize);
  * Has no effect unless PORT_MEM_TRACK_USE_CALLERINFO is also set.
  */
 #if !defined(PORT_MEM_TRACK_USE_CALLERINFO_IP)
-#if NVCPU_IS_RISCV64
+#if NVOS_IS_LIBOS
 #define PORT_MEM_TRACK_USE_CALLERINFO_IP 1
 #else
 #define PORT_MEM_TRACK_USE_CALLERINFO_IP 0

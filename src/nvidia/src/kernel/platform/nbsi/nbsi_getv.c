@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -262,7 +262,7 @@ NV_STATUS getNbsiValue
     NBSI_ELEMENT    *pNbsiElement;
     NBSI_ELEMENT    *pNbsiElementFound[MAX_NBSI_OS];
     NV_STATUS        status = NV_OK;
-    NvU16            n;
+    NvU32            n;
     NvBool           bFound;
     NvU32            elementSize;
     NvU32            idx;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -43,6 +43,11 @@
 #define NV_XVE_BAR0                                 0x00000010 /* RW-4R */
 #define NV_XVE_BAR0_BASE_ADDRESS                         31:24 /* RWIVF */
 #define NV_XVE_BAR0_BASE_ADDRESS_INIT               0x00000000 /* RWI-V */
+#define NV_XVE_BAR1_LO                                 0x00000014 /* RW-4R */
+#define NV_XVE_BAR1_HI                                 0x00000018 /* RW-4R */
+#define NV_XVE_BAR2_LO                                 0x0000001C /* RW-4R */
+#define NV_XVE_BAR2_HI                                 0x00000020 /* RW-4R */
+#define NV_XVE_BAR3                                 0x00000024 /* RW-4R */
 #define NV_XVE_SUBSYSTEM                      0x0000002C /* R--4R */
 #define NV_XVE_MSI_CTRL                                    0x00000068 /* RW-4R */
 #define NV_XVE_MSI_CTRL_MSI                                     16:16 /* RWIVF */

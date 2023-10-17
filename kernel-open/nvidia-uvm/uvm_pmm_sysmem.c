@@ -749,6 +749,7 @@ NV_STATUS uvm_cpu_chunk_map_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu)
 }
 
 static struct page *uvm_cpu_chunk_alloc_page(uvm_chunk_size_t alloc_size,
+                                             int nid,
                                              uvm_cpu_chunk_alloc_flags_t alloc_flags)
 {
     gfp_t kernel_alloc_flags;
@@ -764,18 +765,27 @@ static struct page *uvm_cpu_chunk_alloc_page(uvm_chunk_size_t alloc_size,
 
     kernel_alloc_flags |= GFP_HIGHUSER;
 
-    // For allocation sizes higher than PAGE_SIZE, use __GFP_NORETRY in
-    // order to avoid higher allocation latency from the kernel compacting
-    // memory to satisfy the request.
+    // For allocation sizes higher than PAGE_SIZE, use __GFP_NORETRY in order
+    // to avoid higher allocation latency from the kernel compacting memory to
+    // satisfy the request.
+    // Use __GFP_NOWARN to avoid printing allocation failure to the kernel log.
+    // High order allocation failures are handled gracefully by the caller.
     if (alloc_size > PAGE_SIZE)
-        kernel_alloc_flags |= __GFP_COMP | __GFP_NORETRY;
+        kernel_alloc_flags |= __GFP_COMP | __GFP_NORETRY | __GFP_NOWARN;
 
     if (alloc_flags & UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO)
         kernel_alloc_flags |= __GFP_ZERO;
 
-    page = alloc_pages(kernel_alloc_flags, get_order(alloc_size));
-    if (page && (alloc_flags & UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO))
-        SetPageDirty(page);
+    UVM_ASSERT(nid < num_online_nodes());
+    if (nid == NUMA_NO_NODE)
+        page = alloc_pages(kernel_alloc_flags, get_order(alloc_size));
+    else
+        page = alloc_pages_node(nid, kernel_alloc_flags, get_order(alloc_size));
+
+    if (page) {
+        if (alloc_flags & UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO)
+            SetPageDirty(page);
+    }
 
     return page;
 }
@@ -805,6 +815,7 @@ static uvm_cpu_physical_chunk_t *uvm_cpu_chunk_create(uvm_chunk_size_t alloc_siz
 
 NV_STATUS uvm_cpu_chunk_alloc(uvm_chunk_size_t alloc_size,
                               uvm_cpu_chunk_alloc_flags_t alloc_flags,
+                              int nid,
                               uvm_cpu_chunk_t **new_chunk)
 {
     uvm_cpu_physical_chunk_t *chunk;
@@ -812,7 +823,7 @@ NV_STATUS uvm_cpu_chunk_alloc(uvm_chunk_size_t alloc_size,
 
     UVM_ASSERT(new_chunk);
 
-    page = uvm_cpu_chunk_alloc_page(alloc_size, alloc_flags);
+    page = uvm_cpu_chunk_alloc_page(alloc_size, nid, alloc_flags);
     if (!page)
         return NV_ERR_NO_MEMORY;
 
@@ -845,6 +856,13 @@ NV_STATUS uvm_cpu_chunk_alloc_hmm(struct page *page,
 
     *new_chunk = &chunk->common;
     return NV_OK;
+}
+
+int uvm_cpu_chunk_get_numa_node(uvm_cpu_chunk_t *chunk)
+{
+    UVM_ASSERT(chunk);
+    UVM_ASSERT(chunk->page);
+    return page_to_nid(chunk->page);
 }
 
 NV_STATUS uvm_cpu_chunk_split(uvm_cpu_chunk_t *chunk, uvm_cpu_chunk_t **new_chunks)

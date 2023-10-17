@@ -863,3 +863,174 @@ nvswitch_bbx_get_sxid_ls10_free_and_exit:
 
     return status;
 }
+
+NvlStatus
+nvswitch_bbx_get_data_ls10
+(
+    nvswitch_device *device,
+    NvU8 dataType,
+    void *params
+)
+{
+    NvlStatus status;
+    void *pDmaBuf;
+    NvU64 dmaHandle;
+    FLCN *pFlcn;
+    RM_FLCN_CMD_SOE bbxCmd;
+    NvU32 cmdSeqDesc;
+    NVSWITCH_TIMEOUT timeout;
+    NvU32 transferSize;
+
+    if (!nvswitch_is_inforom_supported_ls10(device))
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: InfoROM is not supported\n", __FUNCTION__);
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    if (params == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: params is NULL\n", __FUNCTION__);
+        return -NVL_BAD_ARGS;
+    }
+
+    switch (dataType)
+    {
+        case RM_SOE_IFR_BBX_GET_SYS_INFO:
+            transferSize = sizeof(NVSWITCH_GET_SYS_INFO_PARAMS);
+        break;
+
+        case RM_SOE_IFR_BBX_GET_TIME_INFO:
+            transferSize = sizeof(NVSWITCH_GET_TIME_INFO_PARAMS);
+        break;
+
+        case RM_SOE_IFR_BBX_GET_TEMP_DATA:
+            transferSize = sizeof(NVSWITCH_GET_TEMP_DATA_PARAMS);
+        break;
+
+        case RM_SOE_IFR_BBX_GET_TEMP_SAMPLES:
+            transferSize = sizeof(NVSWITCH_GET_TEMP_SAMPLES_PARAMS);
+        break;
+        default:
+            NVSWITCH_PRINT(device, ERROR, "Unknown dataType %d", dataType);
+            return -NVL_BAD_ARGS;
+        break;
+    }
+
+    status = nvswitch_os_alloc_contig_memory(device->os_handle, &pDmaBuf, transferSize,
+                                            (device->dma_addr_width == 32));
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to allocate contig memory. rc:%d\n", __FUNCTION__, status);
+        return status;
+    }
+
+    status = nvswitch_os_map_dma_region(device->os_handle, pDmaBuf, &dmaHandle,
+                                        transferSize, NVSWITCH_DMA_DIR_TO_SYSMEM);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to map DMA region. rc:%d\n", __FUNCTION__, status);
+        goto nvswitch_bbx_get_data_ls10_free_and_exit;
+    }
+
+    nvswitch_os_memset(pDmaBuf, 0, transferSize);
+
+    pFlcn = device->pSoe->pFlcn;
+    nvswitch_timeout_create(NVSWITCH_INTERVAL_5MSEC_IN_NS, &timeout);
+
+    nvswitch_os_memset(&bbxCmd, 0, sizeof(bbxCmd));
+    bbxCmd.hdr.unitId = RM_SOE_UNIT_IFR;
+    bbxCmd.hdr.size = sizeof(bbxCmd);
+    bbxCmd.cmd.ifr.cmdType = RM_SOE_IFR_BBX_DATA_GET;
+    bbxCmd.cmd.ifr.bbxDataGet.sizeInBytes = transferSize;
+    bbxCmd.cmd.ifr.bbxDataGet.dataType = dataType;
+    RM_FLCN_U64_PACK(&bbxCmd.cmd.ifr.bbxDataGet.dmaHandle, &dmaHandle);
+
+    status = flcnQueueCmdPostBlocking(device, pFlcn,
+                                (PRM_FLCN_CMD)&bbxCmd,
+                                NULL,   // pMsg
+                                NULL,   // pPayload
+                                SOE_RM_CMDQ_LOG_ID,
+                                &cmdSeqDesc,
+                                &timeout);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: BX_GET_DATA type=%d failed. rc:%d\n",
+                        __FUNCTION__, dataType, status);
+        goto nvswitch_bbx_get_data_ls10_unmap_and_exit;
+    }
+
+    status = nvswitch_os_sync_dma_region_for_cpu(device->os_handle, dmaHandle,
+                                                        transferSize,
+                                                        NVSWITCH_DMA_DIR_TO_SYSMEM);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to sync DMA region. rc:%d\n", __FUNCTION__, status);
+        goto nvswitch_bbx_get_data_ls10_unmap_and_exit;
+    }
+
+    if (dataType == RM_SOE_IFR_BBX_GET_SYS_INFO)
+    {
+        NVSWITCH_GET_SYS_INFO_PARAMS bbxSysInfoData = {0};
+
+        nvswitch_os_memcpy((NvU8 *)&bbxSysInfoData, (NvU8 *)pDmaBuf, sizeof(NVSWITCH_GET_SYS_INFO_PARAMS));
+        nvswitch_os_memcpy((NvU8 *)params, (NvU8 *)&bbxSysInfoData, sizeof(NVSWITCH_GET_SYS_INFO_PARAMS));
+    }
+    else if (dataType == RM_SOE_IFR_BBX_GET_TIME_INFO)
+    {
+        NVSWITCH_GET_TIME_INFO_PARAMS bbxTimeInfoData = {0};
+
+        nvswitch_os_memcpy((NvU8 *)&bbxTimeInfoData, (NvU8 *)pDmaBuf, sizeof(NVSWITCH_GET_TIME_INFO_PARAMS));
+        nvswitch_os_memcpy((NvU8 *)params, (NvU8 *)&bbxTimeInfoData, sizeof(NVSWITCH_GET_TIME_INFO_PARAMS));
+    }
+    else if (dataType == RM_SOE_IFR_BBX_GET_TEMP_DATA)
+    {
+        NVSWITCH_GET_TEMP_DATA_PARAMS *pBbxTempData = NULL;
+
+        pBbxTempData = nvswitch_os_malloc(sizeof(NVSWITCH_GET_TEMP_DATA_PARAMS));
+        if (pBbxTempData == NULL)
+        {
+            NVSWITCH_PRINT(device, ERROR, "Out of memory: dataType %d", dataType);
+            status = -NVL_NO_MEM;
+            goto nvswitch_bbx_get_data_ls10_unmap_and_exit;
+        }
+        
+        nvswitch_os_memset(pBbxTempData, 0, sizeof(NVSWITCH_GET_TEMP_DATA_PARAMS));
+
+        nvswitch_os_memcpy((NvU8 *)pBbxTempData, (NvU8 *)pDmaBuf, sizeof(NVSWITCH_GET_TEMP_DATA_PARAMS));
+        nvswitch_os_memcpy((NvU8 *)params, (NvU8 *)pBbxTempData, sizeof(NVSWITCH_GET_TEMP_DATA_PARAMS));
+
+        nvswitch_os_free(pBbxTempData);
+    }
+    else if (dataType == RM_SOE_IFR_BBX_GET_TEMP_SAMPLES)
+    {
+        NVSWITCH_GET_TEMP_SAMPLES_PARAMS *pBbxTempSamples = NULL;
+
+        pBbxTempSamples = nvswitch_os_malloc(sizeof(NVSWITCH_GET_TEMP_SAMPLES_PARAMS));
+        if (pBbxTempSamples == NULL)
+        {
+            NVSWITCH_PRINT(device, ERROR, "Out of memory: dataType %d", dataType);
+            status = -NVL_NO_MEM;
+            goto nvswitch_bbx_get_data_ls10_unmap_and_exit;
+        }
+        
+        nvswitch_os_memset(pBbxTempSamples, 0, sizeof(NVSWITCH_GET_TEMP_SAMPLES_PARAMS));
+
+        nvswitch_os_memcpy((NvU8 *)pBbxTempSamples, (NvU8 *)pDmaBuf, sizeof(NVSWITCH_GET_TEMP_SAMPLES_PARAMS));
+        nvswitch_os_memcpy((NvU8 *)params, (NvU8 *)pBbxTempSamples, sizeof(NVSWITCH_GET_TEMP_SAMPLES_PARAMS));
+
+        nvswitch_os_free(pBbxTempSamples);
+    }
+    else
+    {
+        NVSWITCH_PRINT(device, ERROR, "Unknown dataType %d", dataType);
+        goto nvswitch_bbx_get_data_ls10_unmap_and_exit;
+    }
+
+nvswitch_bbx_get_data_ls10_unmap_and_exit:
+    nvswitch_os_unmap_dma_region(device->os_handle, pDmaBuf, dmaHandle,
+                                        transferSize, NVSWITCH_DMA_DIR_FROM_SYSMEM);
+nvswitch_bbx_get_data_ls10_free_and_exit:
+    nvswitch_os_free_contig_memory(device->os_handle, pDmaBuf, transferSize);
+
+    return status;
+}

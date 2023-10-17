@@ -27,6 +27,7 @@
 #include "gpu/external_device/external_device.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/i2c/i2c_api.h"
+#include "gpu/disp/kern_disp_max.h"
 
 static
 PDACEXTERNALDEVICE extdevGetExtDev

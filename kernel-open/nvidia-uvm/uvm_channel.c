@@ -2683,7 +2683,7 @@ static void init_channel_manager_conf(uvm_channel_manager_t *manager)
     // caches vidmem (and sysmem), we place GPFIFO and GPPUT on sysmem to avoid
     // cache thrash. The memory access latency is reduced, despite the required
     // access through the bus, because no cache coherence message is exchanged.
-    if (uvm_gpu_is_coherent(gpu->parent)) {
+    if (uvm_parent_gpu_is_coherent(gpu->parent)) {
         manager->conf.gpfifo_loc = UVM_BUFFER_LOCATION_SYS;
 
         // On GPUs with limited ESCHED addressing range, e.g., Volta on P9, RM

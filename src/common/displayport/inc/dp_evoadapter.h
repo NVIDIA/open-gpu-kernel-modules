@@ -43,7 +43,6 @@
 #define HDCP_DUMMY_CN    (0x1)
 #define HDCP_DUMMY_CKSV  (0xFFFFF)
 
-
 namespace DisplayPort
 {
     class EvoInterface
@@ -148,8 +147,7 @@ namespace DisplayPort
         // Bit mask for GPU supported DP versions.
         // Defines the same as NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS.dpVersionsSupported
         //
-        NvU32 _gpuSupportedDpVersions;
-
+        NvU32   _gpuSupportedDpVersions;
         bool _isStreamCloningEnabled;
         bool _needForceRmEdid;
         bool _skipPowerdownEDPPanelWhenHeadDetach;
@@ -160,7 +158,6 @@ namespace DisplayPort
         bool _applyLinkBwOverrideWarRegVal;
         bool _isDynamicMuxCapable;
         bool _enableMSAOverrideOverMST;
-        bool _enableFecCheckForDDS;
 
         bool _isLTPhyRepeaterSupported;
         //
@@ -208,7 +205,6 @@ namespace DisplayPort
         {
             return _gpuSupportedDpVersions;
         }
-
         virtual bool isFECSupported()
         {
             return _isFECSupported;

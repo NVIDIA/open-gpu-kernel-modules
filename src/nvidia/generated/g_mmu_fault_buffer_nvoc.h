@@ -338,4 +338,5 @@ void faultbufDestruct_IMPL(struct MmuFaultBuffer *pMmuFaultBuffer);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MMU_FAULT_BUFFER_NVOC_H_

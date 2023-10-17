@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -255,7 +255,8 @@ NV_STATUS kchannelAllocMem_GM107
         }
     }
 
-    status = memdescAllocList(pInstanceBlock->pInstanceBlockDesc, pInstAllocList);
+    memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_116, 
+                        pInstanceBlock->pInstanceBlockDesc, pInstAllocList);
     if (status == NV_OK)
     {
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);

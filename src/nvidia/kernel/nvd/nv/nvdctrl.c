@@ -234,6 +234,8 @@ subdeviceCtrlCmdNvdSetNocatJournalData_IMPL
 {
     OBJSYS                     *pSys = SYS_GET_INSTANCE();
     Journal                    *pRcdb = SYS_GET_RCDB(pSys);
+    OBJGPU* pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NOCAT_JOURNAL_PARAMS    newEntry;
 
     switch (pReportParams->dataType)
     {
@@ -242,9 +244,6 @@ subdeviceCtrlCmdNvdSetNocatJournalData_IMPL
         break;
 
     case NV2080_CTRL_NOCAT_JOURNAL_DATA_TYPE_INSERT_RECORD:
-    {
-        NOCAT_JOURNAL_PARAMS    newEntry;
-
         portMemSet(&newEntry, 0, sizeof(newEntry));
 
         // fill in the newEntry structure with the data from the insertData.
@@ -276,8 +275,7 @@ subdeviceCtrlCmdNvdSetNocatJournalData_IMPL
         }
         pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_INSERT_RECORDS_IDX]++;
         rcdbNocatInsertNocatError(NULL, &newEntry);
-    }
-    break;
+        break;
 
     case NV2080_CTRL_NOCAT_JOURNAL_DATA_TYPE_SET_TAG:
         if ((pReportParams->nocatJournalData.tagData.tag[0] == '\0') ||
@@ -297,6 +295,21 @@ subdeviceCtrlCmdNvdSetNocatJournalData_IMPL
                 portStringLength((char *)pReportParams->nocatJournalData.tagData.tag) + 1);
         }
         break;
+
+    case NV2080_CTRL_NOCAT_JOURNAL_DATA_TYPE_RCLOG:
+        portMemSet(&newEntry, 0, sizeof(newEntry));
+
+        // fill in the newEntry structure rec type & source data.
+        newEntry.recType = NV2080_NOCAT_JOURNAL_REC_TYPE_BUGCHECK;
+        newEntry.pSource = "RCLOG";
+
+        // point to the payload of the nocat Journal Data for an rclog entry.
+        newEntry.pDiagBuffer = (void*)&pReportParams->nocatJournalData.rclog;
+        newEntry.diagBufferLen = sizeof(pReportParams->nocatJournalData.rclog);
+
+        rcdbNocatInsertNocatError(pGpu, &newEntry);
+        break;
+
 
     default:
         break;

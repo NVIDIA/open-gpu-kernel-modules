@@ -806,7 +806,7 @@ typedef enum NVT_TV_FORMAT
 #define NVT_CEA861_SPEAKER_ALLOC_RLC_RRC     0x40  // speaker allocation : Rear Left Center + Rear Right Center
 
 //***********************
-// vendor specific data
+// vendor specific data block (VSDB)
 //***********************
 #define NVT_CEA861_VSDB_HEADER_SIZE          4
 #define NVT_CEA861_VSDB_PAYLOAD_MAX_LENGTH   28    // max allowed vendor specific data block payload (in byte)
@@ -829,8 +829,9 @@ typedef struct VSDB_DATA
 } VSDB_DATA;
 
 //*******************************
-// vendor specific video data
+// vendor specific video data block (VSVDB)
 //*******************************
+#define NVT_CEA861_VSVDB_MAX_BLOCKS                 2           // Dolby Vision, HDR10+ VSVDBs
 #define NVT_CEA861_DV_IEEE_ID                       0x00D046
 #define NVT_CEA861_HDR10PLUS_IEEE_ID                0x90848B
 #define NVT_CEA861_VSVDB_PAYLOAD_MAX_LENGTH         25          // max allowed vendor specific video data block payload (in byte)
@@ -1287,7 +1288,8 @@ typedef struct tagEDID_CEA861_INFO
     VSDB_DATA  vsdb[NVT_CEA861_VSDB_MAX_BLOCKS];
 
     // vendor specific video data
-    VSVDB_DATA  vsvdb;
+    NvU8       total_vsvdb;
+    VSVDB_DATA vsvdb[NVT_CEA861_VSVDB_MAX_BLOCKS];
  
     // indicates which of the extended data blocks below contain valid data excluding extended blocks with total count
     NVT_VALID_EXTENDED_BLOCKS   valid;
@@ -2514,7 +2516,7 @@ typedef struct _tagNVT_DISPLAYID_DISPLAY_PARAMETERS
     NVT_COLOR_POINT                 white;
     NVT_NATIVE_LUMINANCE_INFO       native_luminance_info;
     NvU16                           native_max_luminance_full_coverage;
-    NvU16                           native_max_luminance_1_percent_rect_coverage;
+    NvU16                           native_max_luminance_10_percent_rect_coverage;
     NvU16                           native_min_luminance;
     NVT_COLORDEPTH                  native_color_depth;
     NvU16                           gamma_x100;
@@ -2592,6 +2594,14 @@ typedef struct _tagNVT_DISPLAYID_CTA
     NVT_HDR10PLUS_INFO             hdr10PlusInfo;
 } NVT_DISPLAYID_CTA;
 
+typedef struct _tagNVT_DISPLAYID_BRIGHTNESS_LUMINANCE_RANGE
+{
+    NvU32   revision;
+    NvU16   min_sdr_luminance;
+    NvU16   max_sdr_luminance;
+    NvU16   max_boost_sdr_luminance;
+} NVT_DISPLAYID_BRIGHTNESS_LUMINANCE_RANGE;
+
 typedef struct _tagNVT_VALID_DATA_BLOCKS
 {
     NvBool product_id_present;
@@ -2608,6 +2618,7 @@ typedef struct _tagNVT_VALID_DATA_BLOCKS
     NvBool adaptive_sync_present;
     NvBool arvr_hmd_present;
     NvBool arvr_layer_present;
+    NvBool brightness_luminance_range_present;
     NvBool vendor_specific_present;
     NvBool cta_data_present;
 } NVT_VALID_DATA_BLOCKS;
@@ -2615,60 +2626,63 @@ typedef struct _tagNVT_VALID_DATA_BLOCKS
 #define NVT_DISPLAYID_MAX_TOTAL_TIMING            NVT_MAX_TOTAL_TIMING 
 typedef struct _tagNVT_DISPLAYID_2_0_INFO
 {
-    NvU8                                    revision;
-    NvU8                                    version;
+    NvU8                                      revision;
+    NvU8                                      version;
     
     // support audio/yuv444/yuv422 color for CTA861 compatible
-    NvU8                                    basic_caps;
+    NvU8                                      basic_caps;
 
     // the all extensions that may appear following the base section
-    NvU32                                   extension_count;
+    NvU32                                     extension_count;
 
     // this displayID20 is EDID extension or not
-    NvBool                                  as_edid_extension;
+    NvBool                                    as_edid_extension;
 
     // data blocks present or not
-    NVT_VALID_DATA_BLOCKS                   valid_data_blocks;
+    NVT_VALID_DATA_BLOCKS                     valid_data_blocks;
 
-    NVT_DISPLAYID_PRODUCT_PRIMARY_USE_CASE  primary_use_case;
+    NVT_DISPLAYID_PRODUCT_PRIMARY_USE_CASE    primary_use_case;
 
     // Product Identification Data Block (Mandatory)
-    NVT_DISPLAYID_PRODUCT_IDENTITY          product_identity;
+    NVT_DISPLAYID_PRODUCT_IDENTITY            product_identity;
 
     // Display Parameter Data Block (Mandatory for Display Use)
-    NVT_DISPLAYID_DISPLAY_PARAMETERS        display_param;
+    NVT_DISPLAYID_DISPLAY_PARAMETERS          display_param;
 
     // Detailed Timing Data Block (Mandatory for Display Use)
-    NvU32                                   total_timings;
-    NVT_TIMING                              timing[NVT_DISPLAYID_MAX_TOTAL_TIMING];
+    NvU32                                     total_timings;
+    NVT_TIMING                                timing[NVT_DISPLAYID_MAX_TOTAL_TIMING];
 
     // Enumerated Timing Code Data Block (Not Mandatory)
 
     // Formula-based Timing Data Block (Not Mandatory)
 
     // Dynamic Video Timing Range Limits Data Block (Not Mandatory)
-    NVT_DISPLAYID_RANGE_LIMITS              range_limits;
+    NVT_DISPLAYID_RANGE_LIMITS                range_limits;
 
     // Display Interface Features Data Block (Mandatory)    
-    NVT_DISPLAYID_INTERFACE_FEATURES        interface_features;
+    NVT_DISPLAYID_INTERFACE_FEATURES          interface_features;
 
     // Stereo Display Interface Data Block (Not Mandatory)
     
     // Tiled Display Topology Data Block (Not Mandatory)
-    NVT_DISPLAYID_TILED_DISPLAY_TOPOLOGY    tile_topo;
+    NVT_DISPLAYID_TILED_DISPLAY_TOPOLOGY      tile_topo;
 
     // ContainerID Data Block (Mandatory for Multi-function Device)
-    NVT_DISPLAYID_CONTAINERID               container_id;
+    NVT_DISPLAYID_CONTAINERID                 container_id;
 
     // Adaptive-Sync Data Block (Mandatory for display device supports Adaptive-Sync)
-    NvU32                                   total_adaptive_sync_descriptor;
-    NVT_DISPLAYID_ADAPTIVE_SYNC             adaptive_sync_descriptor[NVT_ADAPTIVE_SYNC_DESCRIPTOR_MAX_COUNT];
+    NvU32                                     total_adaptive_sync_descriptor;
+    NVT_DISPLAYID_ADAPTIVE_SYNC               adaptive_sync_descriptor[NVT_ADAPTIVE_SYNC_DESCRIPTOR_MAX_COUNT];
 
+    // Brightness Luminance Range Data Block (Mandatory for display device supports Nits based brightness control)
+    NVT_DISPLAYID_BRIGHTNESS_LUMINANCE_RANGE  luminance_ranges; 
+    
     // Vendor-specific Data Block (Not Mandatory)
-    NVT_DISPLAYID_VENDOR_SPECIFIC           vendor_specific;
+    NVT_DISPLAYID_VENDOR_SPECIFIC             vendor_specific;
 
     // CTA DisplayID Data Block (Not Mandatory)
-    NVT_DISPLAYID_CTA                       cta;
+    NVT_DISPLAYID_CTA                         cta;
 } NVT_DISPLAYID_2_0_INFO;
 
 #define NVT_EDID_PRIMARY_COLOR_FP2INT_FACTOR 1024  // Per EDID 1.4, 10bit color primary is encoded in floating point as (bit9/2 + bit8/4 + bi7/8 + ... + bit0)
@@ -2934,6 +2948,8 @@ typedef struct tagNVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL
     NvU32 ReducedBlanking;
     NvU32 BaseRefreshRate;
     NvU32 EnableQMS;
+    NvU32 NextTFR;
+    NvU32 Sync;
 } NVT_EXTENDED_METADATA_PACKET_INFOFRAME_CTRL;
 
 typedef struct tagNVT_ADAPTIVE_SYNC_SDP_CTRL
@@ -3776,6 +3792,9 @@ typedef struct tagNVT_EXTENDED_METADATA_PACKET_INFOFRAME
 #define NVT_HDMI_EMP_BYTE8_MD2_RB_SHIFT                                             2
 #define NVT_HDMI_EMP_BYTE8_MD2_RB_DISABLE                                           0
 #define NVT_HDMI_EMP_BYTE8_MD2_RB_ENABLE                                            1
+
+#define NVT_HDMI_EMP_BYTE8_MD2_NEXT_TFR_MASK                                        0x1f
+#define NVT_HDMI_EMP_BYTE8_MD2_NEXT_TFR_SHIFT                                       3
 
 #define NVT_HDMI_EMP_BYTE8_MD2_BASE_RR_MSB_MASK                                     0x03
 #define NVT_HDMI_EMP_BYTE8_MD2_BASE_RR_MSB_SHIFT                                    0
@@ -5492,6 +5511,18 @@ typedef enum
     NVT_STATUS_ERR     = 0x80000000, // generic get timing error
     NVT_STATUS_INVALID_PARAMETER,    // passed an invalid parameter
     NVT_STATUS_NO_MEMORY,            // memory allocation failed
+    NVT_STATUS_COLOR_FORMAT_NOT_SUPPORTED,
+    NVT_STATUS_INVALID_HBLANK,
+    NVT_STATUS_INVALID_BPC,
+    NVT_STATUS_INVALID_BPP,
+    NVT_STATUS_MAX_LINE_BUFFER_ERROR,
+    NVT_STATUS_OVERALL_THROUGHPUT_ERROR,
+    NVT_STATUS_DSC_SLICE_ERROR,
+    NVT_STATUS_PPS_SLICE_COUNT_ERROR,
+    NVT_STATUS_PPS_SLICE_HEIGHT_ERROR,
+    NVT_STATUS_PPS_SLICE_WIDTH_ERROR,
+    NVT_STATUS_INVALID_PEAK_THROUGHPUT,
+    NVT_STATUS_MIN_SLICE_COUNT_ERROR,
 } NVT_STATUS;
 
 //*************************************

@@ -260,6 +260,9 @@ typedef NV0080_CTRL_GR_INFO NV2080_CTRL_GR_INFO;
 
 #define NV2080_CTRL_GR_INFO_INDEX_DUMMY                             NV0080_CTRL_GR_INFO_INDEX_DUMMY
 #define NV2080_CTRL_GR_INFO_INDEX_GFX_CAPABILITIES                  NV0080_CTRL_GR_INFO_INDEX_GFX_CAPABILITIES
+#define NV2080_CTRL_GR_INFO_INDEX_MAX_MIG_ENGINES                   NV0080_CTRL_GR_INFO_INDEX_MAX_MIG_ENGINES
+#define NV2080_CTRL_GR_INFO_INDEX_MAX_PARTITIONABLE_GPCS            NV0080_CTRL_GR_INFO_INDEX_MAX_PARTITIONABLE_GPCS
+#define NV2080_CTRL_GR_INFO_INDEX_LITTER_MIN_SUBCTX_PER_SMC_ENG     NV0080_CTRL_GR_INFO_INDEX_LITTER_MIN_SUBCTX_PER_SMC_ENG
 
 /* When adding a new INDEX, please update INDEX_MAX and MAX_SIZE accordingly
  * NOTE: 0080 functionality is merged with 2080 functionality, so this max size
@@ -1276,16 +1279,24 @@ typedef struct NV2080_CTRL_GR_GFX_POOL_QUERY_SIZE_PARAMS {
  * NV2080_CTRL_GR_GFX_POOL_INITIALIZE_PARAMS
  *   struct to hand in the required info to RM
  *
- *   pControlStructure
- *     This input is the kernel CPU pointer to the control structure.
+ *   maxSlots
+ *      Max pool slots
+ *   hMemory
+ *      Handle to GFX Pool memory
+ *   offset
+ *      Offset of the control structure in GFX Pool memory
+ *   size
+ *      Size of the control structure
  */
 #define NV2080_CTRL_CMD_GR_GFX_POOL_INITIALIZE (0x20801220U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GFX_POOL_INITIALIZE_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_GR_GFX_POOL_INITIALIZE_PARAMS_MESSAGE_ID (0x20U)
 
 typedef struct NV2080_CTRL_GR_GFX_POOL_INITIALIZE_PARAMS {
-    NV_DECLARE_ALIGNED(NvP64 pControlStructure, 8);
-    NvU32 maxSlots;
+    NvU32    maxSlots;
+    NvHandle hMemory;
+    NvU32    offset;
+    NvU32    size;
 } NV2080_CTRL_GR_GFX_POOL_INITIALIZE_PARAMS;
 
 #define NV2080_CTRL_GR_GFX_POOL_MAX_SLOTS     64U
@@ -1301,21 +1312,27 @@ typedef struct NV2080_CTRL_GR_GFX_POOL_INITIALIZE_PARAMS {
  *
  * NV2080_CTRL_GR_GFX_POOL_ADD_SLOTS_PARAMS
  *
- *   pControlStructure
- *     This input is the kernel CPU pointer to the control structure
  *   numSlots
  *     This input indicates how many slots are being added and are contained in the slots parameter
  *   slots
  *     This input contains an array of the slots to be added to the control structure
+ *   hMemory
+ *      Handle to GFX Pool memory
+ *   offset
+ *      Offset of the control structure in GFX Pool memory
+ *   size
+ *      Size of the control structure
  */
 #define NV2080_CTRL_CMD_GR_GFX_POOL_ADD_SLOTS (0x20801221U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GFX_POOL_ADD_SLOTS_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_GR_GFX_POOL_ADD_SLOTS_PARAMS_MESSAGE_ID (0x21U)
 
 typedef struct NV2080_CTRL_GR_GFX_POOL_ADD_SLOTS_PARAMS {
-    NV_DECLARE_ALIGNED(NvP64 pControlStructure, 8);
-    NvU32 numSlots;
-    NvU32 slots[NV2080_CTRL_GR_GFX_POOL_MAX_SLOTS];
+    NvU32    numSlots;
+    NvU32    slots[NV2080_CTRL_GR_GFX_POOL_MAX_SLOTS];
+    NvHandle hMemory;
+    NvU32    offset;
+    NvU32    size;
 } NV2080_CTRL_GR_GFX_POOL_ADD_SLOTS_PARAMS;
 
 /*
@@ -1330,8 +1347,6 @@ typedef struct NV2080_CTRL_GR_GFX_POOL_ADD_SLOTS_PARAMS {
  *
  * NV2080_CTRL_CMD_GR_GFX_POOL_REMOVE_SLOTS_PARAMS
  *
- *   pControlStructure
- *     This input is the kernel CPU pointer to the control structure
  *   numSlots
  *     This input indicates how many slots are being removed.  if
  *     bRemoveSpecificSlots is true, then it also indicates how many entries in
@@ -1348,16 +1363,24 @@ typedef struct NV2080_CTRL_GR_GFX_POOL_ADD_SLOTS_PARAMS {
  *     the number of slots they want removed and RM will pick up to that
  *     many.  If there are not enough slots on the freelist to remove the
  *     requested amount, RM will return the number it was able to remove.
+ *   hMemory
+ *      Handle to GFX Pool memory
+ *   offset
+ *      Offset of the control structure in GFX Pool memory
+ *   size
+ *      Size of the control structure
  */
 #define NV2080_CTRL_CMD_GR_GFX_POOL_REMOVE_SLOTS (0x20801222U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_GFX_POOL_REMOVE_SLOTS_PARAMS_MESSAGE_ID" */
 
 #define NV2080_CTRL_GR_GFX_POOL_REMOVE_SLOTS_PARAMS_MESSAGE_ID (0x22U)
 
 typedef struct NV2080_CTRL_GR_GFX_POOL_REMOVE_SLOTS_PARAMS {
-    NV_DECLARE_ALIGNED(NvP64 pControlStructure, 8);
-    NvU32  numSlots;
-    NvU32  slots[NV2080_CTRL_GR_GFX_POOL_MAX_SLOTS];
-    NvBool bRemoveSpecificSlots;
+    NvU32    numSlots;
+    NvU32    slots[NV2080_CTRL_GR_GFX_POOL_MAX_SLOTS];
+    NvBool   bRemoveSpecificSlots;
+    NvHandle hMemory;
+    NvU32    offset;
+    NvU32    size;
 } NV2080_CTRL_GR_GFX_POOL_REMOVE_SLOTS_PARAMS;
 
 

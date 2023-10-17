@@ -117,6 +117,10 @@ static NV_STATUS __nvoc_thunk_Memory_memoryfabricGetMapAddrSpace(struct MemoryFa
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryFabric_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_memoryfabricIsExportAllowed(struct MemoryFabric *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryFabric_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_memoryfabricGetRefCount(struct MemoryFabric *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryFabric_RsResource.offset));
 }
@@ -215,12 +219,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_MemoryFa
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2844u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2850u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) memoryfabricCtrlCmdDescribe_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2844u)
-        /*flags=*/      0x2844u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2850u)
+        /*flags=*/      0x2850u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0xf80102u,
         /*paramSize=*/  sizeof(NV00F8_CTRL_DESCRIBE_PARAMS),
@@ -356,7 +360,7 @@ static void __nvoc_init_funcTable_MemoryFabric_1(MemoryFabric *pThis) {
     pThis->__memoryfabricCtrlGetInfo__ = &memoryfabricCtrlGetInfo_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2844u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2850u)
     pThis->__memoryfabricCtrlCmdDescribe__ = &memoryfabricCtrlCmdDescribe_IMPL;
 #endif
 
@@ -391,6 +395,8 @@ static void __nvoc_init_funcTable_MemoryFabric_1(MemoryFabric *pThis) {
     pThis->__memoryfabricMapTo__ = &__nvoc_thunk_RsResource_memoryfabricMapTo;
 
     pThis->__memoryfabricGetMapAddrSpace__ = &__nvoc_thunk_Memory_memoryfabricGetMapAddrSpace;
+
+    pThis->__memoryfabricIsExportAllowed__ = &__nvoc_thunk_Memory_memoryfabricIsExportAllowed;
 
     pThis->__memoryfabricGetRefCount__ = &__nvoc_thunk_RsResource_memoryfabricGetRefCount;
 

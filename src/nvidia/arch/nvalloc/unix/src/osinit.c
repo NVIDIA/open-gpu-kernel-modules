@@ -841,8 +841,8 @@ RmInitDeviceDma(
     if (nv->iovaspace_id != NV_IOVA_DOMAIN_NONE)
     {
         OBJSYS *pSys = SYS_GET_INSTANCE();
-        POBJVMM pVmm = SYS_GET_VMM(pSys);
-        POBJVASPACE pIOVAS;
+        OBJVMM *pVmm = SYS_GET_VMM(pSys);
+        OBJVASPACE *pIOVAS;
         NV_STATUS status = vmmCreateVaspace(pVmm, IO_VASPACE_A,
                                             nv->iovaspace_id, 0, 0ULL, ~0ULL,
                                             0ULL, 0ULL,
@@ -865,8 +865,8 @@ RmTeardownDeviceDma(
     if (nv->iovaspace_id != NV_IOVA_DOMAIN_NONE)
     {
         OBJSYS *pSys = SYS_GET_INSTANCE();
-        POBJVMM pVmm = SYS_GET_VMM(pSys);
-        POBJVASPACE pIOVAS;
+        OBJVMM *pVmm = SYS_GET_VMM(pSys);
+        OBJVASPACE *pIOVAS;
 
         if (NV_OK == vmmGetVaspaceFromId(pVmm, nv->iovaspace_id, IO_VASPACE_A, &pIOVAS))
         {
@@ -1565,22 +1565,6 @@ NvBool RmInitAdapter(
     pSys = SYS_GET_INSTANCE();
 
     //
-    // WAR: If the below UEFI property is set, display RM will attempt to read
-    // the state cache during RM init in order to retrieve a snapshot of the
-    // display state that the UEFI driver has already programmed. On Orin
-    // (T234D), the UEFI boot flow is being enabled on Linux, but our UEFI
-    // driver doesn't have any display support right now. As such, our UEFI
-    // driver won't allocate any of the display channels, which means that RM
-    // will attempt to read the state cache for uninitialized channels. WAR this
-    // issue by un-setting the below UEFI property for now.
-    //
-    // JIRA task TDS-5094 tracks adding display support to the UEFI driver.
-    //
-    if (NV_IS_SOC_DISPLAY_DEVICE(nv)) {
-        pSys->setProperty(pSys, PDB_PROP_SYS_IS_UEFI, NV_FALSE);
-    }
-
-    //
     // Get firmware from the OS, if requested, and decide if RM will run as a
     // firmware client.
     //
@@ -1871,38 +1855,6 @@ NvBool RmInitAdapter(
 
                 // UNLOCK: release GPU lock
                 rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
-            }
-        }
-    }
-
-    {
-        // OpenRM support for features beyond what is used on Data Center GPUs
-        // is still fairly immature, so for now require users to opt into use of
-        // OpenRM with a special registry key, if not on a Data Center GPU.
-        const GspStaticConfigInfo *pSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
-
-        if (pSCI->computeBranding != COMPUTE_BRANDING_TYPE_TESLA &&
-            ((pGpu->idInfo.PCIDeviceID >> 16) & 0xffff) != NV_PCI_DEVID_DEVICE_PG189_SKU600)
-        {
-            NvU32 data = NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DEFAULT;
-            RmReadRegistryDword(nv, NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS, &data);
-
-            if (data == NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DISABLE)
-            {
-                if (!nv->printed_openrm_enable_unsupported_gpus_error)
-                {
-                    nv_printf(NV_DBG_ERRORS,
-                        "NVRM: Open nvidia.ko is only ready for use on Data Center GPUs.\n");
-                    nv_printf(NV_DBG_ERRORS,
-                        "NVRM: To force use of Open nvidia.ko on other GPUs, see the\n");
-                    nv_printf(NV_DBG_ERRORS,
-                        "NVRM: 'OpenRmEnableUnsupportedGpus' kernel module parameter described\n");
-                    nv_printf(NV_DBG_ERRORS,
-                        "NVRM: in the README.\n");
-                    nv->printed_openrm_enable_unsupported_gpus_error = NV_TRUE;
-                }
-                RM_SET_ERROR(status, RM_INIT_FIRMWARE_INIT_FAILED);
-                goto shutdown;
             }
         }
     }

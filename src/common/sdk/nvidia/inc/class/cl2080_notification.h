@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,9 +24,13 @@
 #ifndef _cl2080_notification_h_
 #define _cl2080_notification_h_
 
+#include "nvcfg_sdk.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+#include "nvcfg_sdk.h"
 
 /* event values */
 #define NV2080_NOTIFIERS_SW                                        (0)
@@ -187,6 +191,7 @@ extern "C" {
 #define NV2080_NOTIFIERS_GR6                                       (151)
 #define NV2080_NOTIFIERS_GR7                                       (152)
 #define NV2080_NOTIFIERS_OFA                                       (153)
+#define NV2080_NOTIFIERS_OFA0                                      NV2080_NOTIFIERS_OFA
 #define NV2080_NOTIFIERS_DSTATE_HDA                                (154)
 #define NV2080_NOTIFIERS_POISON_ERROR_NON_FATAL                    (155)
 #define NV2080_NOTIFIERS_POISON_ERROR_FATAL                        (156)
@@ -199,18 +204,31 @@ extern "C" {
 #define NV2080_NOTIFIERS_SEC_FAULT_ERROR                           (163)
 #define NV2080_NOTIFIERS_POSSIBLE_ERROR                            (164)
 #define NV2080_NOTIFIERS_NVLINK_INFO_LINK_UP                       (165)
+#define NV2080_NOTIFIERS_RESERVED166                               (166)
+#define NV2080_NOTIFIERS_RESERVED167                               (167)
+#define NV2080_NOTIFIERS_RESERVED168                               (168)
+#define NV2080_NOTIFIERS_RESERVED169                               (169)
+#define NV2080_NOTIFIERS_RESERVED170                               (170)
+#define NV2080_NOTIFIERS_RESERVED171                               (171)
+#define NV2080_NOTIFIERS_RESERVED172                               (172)
+#define NV2080_NOTIFIERS_RESERVED173                               (173)
+#define NV2080_NOTIFIERS_RESERVED174                               (174)
+#define NV2080_NOTIFIERS_RESERVED175                               (175)
 #define NV2080_NOTIFIERS_NVLINK_INFO_LINK_DOWN                     (176)
 #define NV2080_NOTIFIERS_NVPCF_EVENTS                              (177)
 #define NV2080_NOTIFIERS_HDMI_FRL_RETRAINING_REQUEST               (178)
 #define NV2080_NOTIFIERS_VRR_SET_TIMEOUT                           (179)
-#define NV2080_NOTIFIERS_AUX_POWER_STATE_CHANGE                    (180)
-#define NV2080_NOTIFIERS_MAXCOUNT                                  (181)
+#define NV2080_NOTIFIERS_RESERVED180                               (180)
+#define NV2080_NOTIFIERS_AUX_POWER_EVENT                           (181)
+#define NV2080_NOTIFIERS_AUX_POWER_STATE_CHANGE                    (182)
+#define NV2080_NOTIFIERS_MAXCOUNT                                  (183)
 
 // Indexed GR notifier reference
 #define NV2080_NOTIFIERS_GR(x)         ((x == 0) ? (NV2080_NOTIFIERS_GR0) : (NV2080_NOTIFIERS_GR1 + (x - 1)))
 #define NV2080_NOTIFIERS_GR_IDX(x)     ((x) - NV2080_NOTIFIERS_GR0)
 #define NV2080_NOTIFIER_TYPE_IS_GR(x)  (((x) == NV2080_NOTIFIERS_GR0) || (((x) >= NV2080_NOTIFIERS_GR1) && ((x) <= NV2080_NOTIFIERS_GR7)))
 
+// Indexed CE notifier reference
 #define NV2080_NOTIFIERS_CE(x)         (NV2080_NOTIFIERS_CE0 + (x))
 #define NV2080_NOTIFIERS_CE_IDX(x)     ((x) - NV2080_NOTIFIERS_CE0)
 #define NV2080_NOTIFIER_TYPE_IS_CE(x)  (((x) >= NV2080_NOTIFIERS_CE0) && ((x) <= NV2080_NOTIFIERS_CE9))
@@ -227,6 +245,11 @@ extern "C" {
 #define NV2080_NOTIFIERS_NVJPEG(x)         (NV2080_NOTIFIERS_NVJPEG0 + (x))
 #define NV2080_NOTIFIERS_NVJPEG_IDX(x)     ((x) - NV2080_NOTIFIERS_NVJPEG0)
 #define NV2080_NOTIFIER_TYPE_IS_NVJPEG(x)  (((x) >= NV2080_NOTIFIERS_NVJPEG0) && ((x) <= NV2080_NOTIFIERS_NVJPEG7))
+
+// Indexed OFA notifier reference
+#define NV2080_NOTIFIERS_OFAn(x)         ((x == 0) ? (NV2080_NOTIFIERS_OFA0) : (NV2080_NOTIFIERS_MAXCOUNT))
+#define NV2080_NOTIFIERS_OFA_IDX(x)     ((x == NV2080_NOTIFIERS_OFA0) ? (0) : (-1))
+#define NV2080_NOTIFIER_TYPE_IS_OFA(x)  (((x) == NV2080_NOTIFIERS_OFA0))
 
 #define NV2080_NOTIFIERS_GPIO_RISING_INTERRUPT(pin)                (NV2080_NOTIFIERS_GPIO_0_RISING_INTERRUPT + (pin))
 #define NV2080_NOTIFIERS_GPIO_FALLING_INTERRUPT(pin)               (NV2080_NOTIFIERS_GPIO_0_FALLING_INTERRUPT + (pin))
@@ -295,14 +318,34 @@ extern "C" {
 #define NV2080_ENGINE_TYPE_NVJPEG6                    (0x00000031)
 #define NV2080_ENGINE_TYPE_NVJPEG7                    (0x00000032)
 #define NV2080_ENGINE_TYPE_OFA                        (0x00000033)
-#define NV2080_ENGINE_TYPE_LAST                       (0x0000003e)
+#define NV2080_ENGINE_TYPE_OFA0                       NV2080_ENGINE_TYPE_OFA
+#define NV2080_ENGINE_TYPE_RESERVED34                 (0x00000034)
+#define NV2080_ENGINE_TYPE_RESERVED35                 (0x00000035)
+#define NV2080_ENGINE_TYPE_RESERVED36                 (0x00000036)
+#define NV2080_ENGINE_TYPE_RESERVED37                 (0x00000037)
+#define NV2080_ENGINE_TYPE_RESERVED38                 (0x00000038)
+#define NV2080_ENGINE_TYPE_RESERVED39                 (0x00000039)
+#define NV2080_ENGINE_TYPE_RESERVED3a                 (0x0000003a)
+#define NV2080_ENGINE_TYPE_RESERVED3b                 (0x0000003b)
+#define NV2080_ENGINE_TYPE_RESERVED3c                 (0x0000003c)
+#define NV2080_ENGINE_TYPE_RESERVED3d                 (0x0000003d)
+#define NV2080_ENGINE_TYPE_RESERVED3e                 (0x0000003e)
+#define NV2080_ENGINE_TYPE_LAST                       (0x0000003f)
 #define NV2080_ENGINE_TYPE_ALLENGINES                 (0xffffffff)
 
-#define NV2080_ENGINE_TYPE_COPY_SIZE 10
+//
+// NV2080_ENGINE_TYPE_COPY_SIZE is now defined as the maximum possible CE size.
+// It does not reflect the max supported NV2080_ENGINE_TYPE_COPY counts. Bug 3713687 #90.
+// It needs to use NV2080_ENGINE_TYPE_IS_COPY() to check if a CE is valid when
+// the clients try to enumerate all NV2080_ENGINE_TYPE_COPYs.
+//
+#define NV2080_ENGINE_TYPE_COPY_SIZE 64
+
 #define NV2080_ENGINE_TYPE_NVENC_SIZE 3
 #define NV2080_ENGINE_TYPE_NVJPEG_SIZE 8
 #define NV2080_ENGINE_TYPE_NVDEC_SIZE 8
 #define NV2080_ENGINE_TYPE_GR_SIZE 8
+#define NV2080_ENGINE_TYPE_OFA_SIZE 1
 
 // Indexed engines
 #define NV2080_ENGINE_TYPE_COPY(i)     (NV2080_ENGINE_TYPE_COPY0+(i))
@@ -324,6 +367,10 @@ extern "C" {
 #define NV2080_ENGINE_TYPE_GR(i)       (NV2080_ENGINE_TYPE_GR0 + (i))
 #define NV2080_ENGINE_TYPE_IS_GR(i)    (((i) >= NV2080_ENGINE_TYPE_GR0) && ((i) < NV2080_ENGINE_TYPE_GR(NV2080_ENGINE_TYPE_GR_SIZE)))
 #define NV2080_ENGINE_TYPE_GR_IDX(i)   ((i) - NV2080_ENGINE_TYPE_GR0)
+
+#define NV2080_ENGINE_TYPE_OFAn(i)       ((i == 0) ? (NV2080_ENGINE_TYPE_OFA0) : (NV2080_ENGINE_TYPE_LAST))
+#define NV2080_ENGINE_TYPE_IS_OFA(i)    (((i) == NV2080_ENGINE_TYPE_OFA0))
+#define NV2080_ENGINE_TYPE_OFA_IDX(i)   ((i == NV2080_ENGINE_TYPE_OFA0) ? (0) : (-1))
 
 #define NV2080_ENGINE_TYPE_IS_VALID(i) (((i) > (NV2080_ENGINE_TYPE_NULL)) && ((i) < (NV2080_ENGINE_TYPE_LAST)))
 

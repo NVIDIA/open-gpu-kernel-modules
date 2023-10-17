@@ -364,3 +364,28 @@ knvlinkProgramLinkSpeed_GP100
 
     return NV_OK;
 }
+
+/*!
+ * @brief Get the device PCI info and store it in 
+ * nvlink_device_info struct which will be passed to corelib
+ *
+ * @param[in]  pGpu                 OBJGPU pointer
+ * @param[in]  pKernelNvlink        KernelNvlink pointer
+ * @param[out] nvlink_device_info   Nvlink device info pointer
+ *
+ */
+#if defined(INCLUDE_NVLINK_LIB)
+void
+knvlinkCoreGetDevicePciInfo_GP100
+(
+    OBJGPU             *pGpu,
+    KernelNvlink       *pKernelNvlink,
+    nvlink_device_info *devInfo
+)
+{
+    devInfo->pciInfo.domain   = gpuGetDomain(pGpu);
+    devInfo->pciInfo.bus      = gpuGetBus(pGpu);
+    devInfo->pciInfo.device   = gpuGetDevice(pGpu);
+    devInfo->pciInfo.function = 0;
+}
+#endif

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -75,7 +75,8 @@ fbsrReserveSysMemoryForPowerMgmt_IMPL
     if (status != NV_OK)
         return status;
 
-    status = memdescAlloc(pFbsr->pSysReservedMemDesc);
+    memdescTagAlloc(status, 
+            NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_18, pFbsr->pSysReservedMemDesc);
     if (status != NV_OK)
     {
         memdescDestroy(pFbsr->pSysReservedMemDesc);
@@ -102,13 +103,3 @@ fbsrFreeReservedSysMemoryForPowerMgmt_IMPL(OBJFBSR *pFbsr)
         pFbsr->pSysReservedMemDesc = NULL;
     }
 }
-
-/*!
- * @brief create channel for FB save/restore.
- *
- * @param[in] pGpu  OBJGPU pointer
- * @param[in] pFbsr OBJFBSR pointer
- *
- * @returns status
- */
-

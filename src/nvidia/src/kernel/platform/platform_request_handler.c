@@ -84,7 +84,7 @@ pfmreqhndlrInitGpu
     // Invalid GPU configuration
     if (gpuCount < 1 || gpuCount > PFM_REQ_HNDLR_MAX_GPU_SUPPORTED)
     {
-        NV_PRINTF(LEVEL_ERROR, "PLATFORM_REQUEST_HANDLER: Cannot support %u GPUs yet\n", gpuCount);
+        NV_PRINTF(LEVEL_INFO, "PLATFORM_REQUEST_HANDLER: Cannot support %u GPUs yet\n", gpuCount);
     }
     else
     {
@@ -773,39 +773,54 @@ _pfmreqhndlrSupportExists
     OBJGPU *pGpu
 )
 {
-    NvU64       supportedFunction = 0;
-    NvU16       outDataSize       = 0;
+    NvU16      outDataSize  = 0U;
+    NV_STATUS  status       = NV_OK;
+    NvU8  supportFuncs[MAX_DSM_SUPPORTED_FUNCS_RTN_LEN];
+    NvU8  i;
 
     if (pPlatformRequestHandler->dsmVersion == ACPI_DSM_FUNCTION_INVALID)
     {
-        return NV_ERR_NOT_SUPPORTED;
+        status = NV_ERR_NOT_SUPPORTED;
+        goto _pfmreqhndlrSupportExists_exit;
     }
 
-    outDataSize = sizeof(supportedFunction);
+    portMemSet(supportFuncs, 0, sizeof(supportFuncs));
+    outDataSize = sizeof(supportFuncs);
 
 
     if (osCallACPI_DSM(pGpu,
                        pPlatformRequestHandler->dsmVersion,
                        GPS_FUNC_SUPPORT,
-                       (NvU32 *)&supportedFunction,
+                       (NvU32 *)&supportFuncs,
                        &outDataSize) != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "GPS FUNC_SUPPORT is not supported on this Platform, Failing ACPI-GPS subfunction 0x%x.\n",
                   GPS_FUNC_SUPPORT);
-        return NV_ERR_NOT_SUPPORTED;
+        status = NV_ERR_NOT_SUPPORTED;
+        goto _pfmreqhndlrSupportExists_exit;
     }
     else
     {
-        if (supportedFunction == 0)
+        for (i = 0; i < MAX_DSM_SUPPORTED_FUNCS_RTN_LEN; i++)
         {
-            NV_PRINTF(LEVEL_INFO,
-                      "PRH : This system doesn't support any ACPI-GPS-subfunctions.\n");
-            return NV_ERR_NOT_SUPPORTED;
+            if (supportFuncs[i] != 0)
+            {
+                // Atleast one subfunction is enabled for PRH, platform support exists for PRH
+                status = NV_OK;
+                goto _pfmreqhndlrSupportExists_exit;
+            }
         }
+
+        // None of the subfunctions are enabled for PRH, no platform support exists for PRH
+        NV_PRINTF(LEVEL_INFO,
+                  "PRH : This system doesn't support any ACPI-GPS-subfunctions.\n");
+        status = NV_ERR_NOT_SUPPORTED;
+        goto _pfmreqhndlrSupportExists_exit;
     }
 
-    return NV_OK;
+_pfmreqhndlrSupportExists_exit:
+    return status;
 }
 
 /*!

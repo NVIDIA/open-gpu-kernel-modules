@@ -54,6 +54,14 @@ NvU32 nvRmApiControl(
     void *pParams,
     NvU32 paramsSize);
 
+NvU32 nvRmApiDupObject2(
+    NvU32 hClient,
+    NvU32 hParent,
+    NvU32 *hObjectDest,
+    NvU32 hClientSrc,
+    NvU32 hObjectSrc,
+    NvU32 flags);
+
 NvU32 nvRmApiDupObject(
     NvU32 hClient,
     NvU32 hParent,

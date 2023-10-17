@@ -222,6 +222,12 @@ NV_STATUS uvm_va_space_create(struct address_space *mapping, uvm_va_space_t **va
     uvm_down_write_mmap_lock(current->mm);
     uvm_va_space_down_write(va_space);
 
+    va_space->va_block_context = uvm_va_block_context_alloc(NULL);
+    if (!va_space->va_block_context) {
+        status = NV_ERR_NO_MEMORY;
+        goto fail;
+    }
+
     status = uvm_perf_init_va_space_events(va_space, &va_space->perf_events);
     if (status != NV_OK)
         goto fail;
@@ -258,6 +264,7 @@ NV_STATUS uvm_va_space_create(struct address_space *mapping, uvm_va_space_t **va
 fail:
     uvm_perf_heuristics_unload(va_space);
     uvm_perf_destroy_va_space_events(&va_space->perf_events);
+    uvm_va_block_context_free(va_space->va_block_context);
     uvm_va_space_up_write(va_space);
     uvm_up_write_mmap_lock(current->mm);
 
@@ -457,8 +464,6 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
         uvm_va_range_destroy(va_range, &deferred_free_list);
     }
 
-    uvm_hmm_va_space_destroy(va_space);
-
     uvm_range_group_radix_tree_destroy(va_space);
 
     // Unregister all GPUs in the VA space. Note that this does not release the
@@ -466,10 +471,16 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
     for_each_va_space_gpu(gpu, va_space)
         unregister_gpu(va_space, gpu, NULL, &deferred_free_list, NULL);
 
+    uvm_hmm_va_space_destroy(va_space);
+
     uvm_perf_heuristics_unload(va_space);
     uvm_perf_destroy_va_space_events(&va_space->perf_events);
 
     va_space_remove_dummy_thread_contexts(va_space);
+
+    // Destroy the VA space's block context node tracking after all ranges have
+    // been destroyed as the VA blocks may reference it.
+    uvm_va_block_context_free(va_space->va_block_context);
 
     uvm_va_space_up_write(va_space);
 
@@ -688,7 +699,7 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
 
     // Mixing coherent and non-coherent GPUs is not supported
     for_each_va_space_gpu(other_gpu, va_space) {
-        if (uvm_gpu_is_coherent(gpu->parent) != uvm_gpu_is_coherent(other_gpu->parent)) {
+        if (uvm_parent_gpu_is_coherent(gpu->parent) != uvm_parent_gpu_is_coherent(other_gpu->parent)) {
             status = NV_ERR_INVALID_DEVICE;
             goto done;
         }
@@ -729,7 +740,7 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
         processor_mask_array_set(va_space->has_nvlink, UVM_ID_CPU, gpu->id);
     }
 
-    if (uvm_gpu_is_coherent(gpu->parent)) {
+    if (uvm_parent_gpu_is_coherent(gpu->parent)) {
         processor_mask_array_set(va_space->has_native_atomics, gpu->id, UVM_ID_CPU);
 
         if (gpu->mem_info.numa.enabled) {
@@ -1540,7 +1551,6 @@ static void remove_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space,
     atomic_inc(&va_space->gpu_va_space_deferred_free.num_pending);
 
     uvm_processor_mask_clear(&va_space->registered_gpu_va_spaces, gpu_va_space->gpu->id);
-    uvm_processor_mask_clear_atomic(&va_space->needs_fault_buffer_flush, gpu_va_space->gpu->id);
     va_space->gpu_va_spaces[uvm_id_gpu_index(gpu_va_space->gpu->id)] = NULL;
     gpu_va_space->state = UVM_GPU_VA_SPACE_STATE_DEAD;
 }
@@ -1610,14 +1620,14 @@ NV_STATUS uvm_va_space_unregister_gpu_va_space(uvm_va_space_t *va_space, const N
     return status;
 }
 
-bool uvm_va_space_peer_enabled(uvm_va_space_t *va_space, uvm_gpu_t *gpu1, uvm_gpu_t *gpu2)
+bool uvm_va_space_peer_enabled(uvm_va_space_t *va_space, const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1)
 {
     size_t table_index;
 
+    UVM_ASSERT(uvm_processor_mask_test(&va_space->registered_gpus, gpu0->id));
     UVM_ASSERT(uvm_processor_mask_test(&va_space->registered_gpus, gpu1->id));
-    UVM_ASSERT(uvm_processor_mask_test(&va_space->registered_gpus, gpu2->id));
 
-    table_index = uvm_gpu_peer_table_index(gpu1->id, gpu2->id);
+    table_index = uvm_gpu_peer_table_index(gpu0->id, gpu1->id);
     return !!test_bit(table_index, va_space->enabled_peers);
 }
 
@@ -2073,8 +2083,15 @@ NV_STATUS uvm_service_block_context_init(void)
     // Pre-allocate some fault service contexts for the CPU and add them to the global list
     while (num_preallocated_contexts-- > 0) {
         uvm_service_block_context_t *service_context = uvm_kvmalloc(sizeof(*service_context));
+
         if (!service_context)
             return NV_ERR_NO_MEMORY;
+
+        service_context->block_context = uvm_va_block_context_alloc(NULL);
+        if (!service_context->block_context) {
+            uvm_kvfree(service_context);
+            return NV_ERR_NO_MEMORY;
+        }
 
         list_add(&service_context->cpu_fault.service_context_list, &g_cpu_service_block_context_list);
     }
@@ -2089,6 +2106,7 @@ void uvm_service_block_context_exit(void)
     // Free fault service contexts for the CPU and add clear the global list
     list_for_each_entry_safe(service_context, service_context_tmp, &g_cpu_service_block_context_list,
                              cpu_fault.service_context_list) {
+        uvm_va_block_context_free(service_context->block_context);
         uvm_kvfree(service_context);
     }
     INIT_LIST_HEAD(&g_cpu_service_block_context_list);
@@ -2110,8 +2128,17 @@ static uvm_service_block_context_t *service_block_context_cpu_alloc(void)
 
     uvm_spin_unlock(&g_cpu_service_block_context_list_lock);
 
-    if (!service_context)
+    if (!service_context) {
         service_context = uvm_kvmalloc(sizeof(*service_context));
+        service_context->block_context = uvm_va_block_context_alloc(NULL);
+        if (!service_context->block_context) {
+            uvm_kvfree(service_context);
+            service_context = NULL;
+        }
+    }
+    else {
+        uvm_va_block_context_init(service_context->block_context, NULL);
+    }
 
     return service_context;
 }
@@ -2137,6 +2164,7 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
     NV_STATUS status = uvm_global_get_status();
     bool tools_enabled;
     bool major_fault = false;
+    bool is_remote_mm = false;
     uvm_service_block_context_t *service_context;
     uvm_global_processor_mask_t gpus_to_check_for_ecc;
 
@@ -2177,7 +2205,7 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
     // mmap_lock held on the CPU fault path, so tell the fault handler to use
     // that one. current->mm might differ if we're on the access_process_vm
     // (ptrace) path or if another driver is calling get_user_pages.
-    service_context->block_context.mm = vma->vm_mm;
+    service_context->block_context->mm = vma->vm_mm;
 
     // The mmap_lock might be held in write mode, but the mode doesn't matter
     // for the purpose of lock ordering and we don't rely on it being in write
@@ -2216,25 +2244,32 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
             uvm_tools_record_throttling_end(va_space, fault_addr, UVM_ID_CPU);
 
         if (is_hmm) {
-            // Note that normally we should find a va_block for the faulting
-            // address because the block had to be created when migrating a
-            // page to the GPU and a device private PTE inserted into the CPU
-            // page tables in order for migrate_to_ram() to be called. Not
-            // finding it means the PTE was remapped to a different virtual
-            // address with mremap() so create a new va_block if needed.
-            status = uvm_hmm_va_block_find_create(va_space,
-                                                  fault_addr,
-                                                  &service_context->block_context.hmm.vma,
-                                                  &va_block);
-            if (status != NV_OK)
-                break;
+            if (va_space->va_space_mm.mm == vma->vm_mm) {
+                // Note that normally we should find a va_block for the faulting
+                // address because the block had to be created when migrating a
+                // page to the GPU and a device private PTE inserted into the CPU
+                // page tables in order for migrate_to_ram() to be called. Not
+                // finding it means the PTE was remapped to a different virtual
+                // address with mremap() so create a new va_block if needed.
+                status = uvm_hmm_va_block_find_create(va_space,
+                                                      fault_addr,
+                                                      &service_context->block_context->hmm.vma,
+                                                      &va_block);
+                if (status != NV_OK)
+                    break;
 
-            UVM_ASSERT(service_context->block_context.hmm.vma == vma);
-            status = uvm_hmm_migrate_begin(va_block);
-            if (status != NV_OK)
-                break;
+                UVM_ASSERT(service_context->block_context->hmm.vma == vma);
+                status = uvm_hmm_migrate_begin(va_block);
+                if (status != NV_OK)
+                    break;
 
-            service_context->cpu_fault.vmf = vmf;
+                service_context->cpu_fault.vmf = vmf;
+            }
+            else {
+                is_remote_mm = true;
+                status = uvm_hmm_remote_cpu_fault(vmf);
+                break;
+            }
         }
         else {
             status = uvm_va_block_find_create_managed(va_space, fault_addr, &va_block);
@@ -2265,7 +2300,7 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
 
     tools_enabled = va_space->tools.enabled;
 
-    if (status == NV_OK) {
+    if (status == NV_OK && !is_remote_mm) {
         uvm_va_space_global_gpus_in_mask(va_space,
                                          &gpus_to_check_for_ecc,
                                          &service_context->cpu_fault.gpus_to_check_for_ecc);
@@ -2275,7 +2310,7 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
     uvm_va_space_up_read(va_space);
     uvm_record_unlock_mmap_lock_read(vma->vm_mm);
 
-    if (status == NV_OK) {
+    if (status == NV_OK && !is_remote_mm) {
         status = uvm_global_mask_check_ecc_error(&gpus_to_check_for_ecc);
         uvm_global_mask_release(&gpus_to_check_for_ecc);
     }

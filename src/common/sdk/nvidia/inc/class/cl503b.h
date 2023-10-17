@@ -37,13 +37,14 @@
 #define NV503B_FLAGS_P2P_TYPE_GPA 0
 #define NV503B_FLAGS_P2P_TYPE_SPA 1
 
-/* 
+/*
  * NV503B_BAR1_P2P_DMA_INFO
  *
- *  The DMA information for BAR1 P2P, it is only valid for BAR1 P2P.
- *  dma_address will be set to NV_U64_MAX and dma_size will be set to 0
- *  when the DMA info is not available.
- *  
+ *  The DMA information for BAR1 P2P.
+ *  The default value for dma_address is NV_U64_MAX and dma_size is 0.
+ *  This BAR1 P2P DMA information is only valid for the kernel-privileged clients.
+ *  For unprivileged clients, all fields will be the default values.
+ *
  */
 typedef struct NV503B_BAR1_P2P_DMA_INFO {
     NV_DECLARE_ALIGNED(NvU64 dma_address, 8);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,9 +39,13 @@ extern "C" {
 #endif
 
 #include "nv-kernel-interface-api.h"
+#include "utils/nvprintf_level.h"
+#include "os-interface.h"
+
 void NV_API_CALL os_dbg_breakpoint(void);
 void NV_API_CALL out_string(const char *str);
 int  NV_API_CALL nv_printf(NvU32 debuglevel, const char *format, ...);
+void NV_API_CALL os_dump_stack(void);
 
 // No init/shutdown needed
 #define portDbgInitialize()
@@ -58,15 +62,16 @@ portDbgPrintString
     out_string(str);
 }
 
-#define portDbgPrintf(fmt, ...) nv_printf(0xFFFFFFFF, fmt, ##__VA_ARGS__)
+#define portDbgPrintf(fmt, ...) nv_printf(NV_DBG_FORCE_LEVEL(LEVEL_INFO), fmt, ##__VA_ARGS__)
 #undef portDbgPrintf_SUPPORTED
 #define portDbgPrintf_SUPPORTED 1
 
-#define portDbgExPrintfLevel(level, fmt, ...) nv_printf(level, fmt, ##__VA_ARGS__)
+#define portDbgExPrintfLevel(level, fmt, ...) nv_printf(NV_DBG_FORCE_LEVEL(level), fmt, ##__VA_ARGS__)
 #undef portDbgExPrintfLevel_SUPPORTED
 #define portDbgExPrintfLevel_SUPPORTED 1
 
 #define PORT_BREAKPOINT() os_dbg_breakpoint()
+#define PORT_DUMP_STACK() os_dump_stack()
 
 #ifdef __cplusplus
 }

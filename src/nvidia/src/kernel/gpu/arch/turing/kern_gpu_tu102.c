@@ -62,6 +62,7 @@ gpuGetSriovCaps_TU102
     pParams->bSriovHeavyEnabled                    = gpuIsWarBug200577889SriovHeavyEnabled(pGpu);
     pParams->bEmulateVFBar0TlbInvalidationRegister = pGpu->getProperty(pGpu, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE);
     pParams->bClientRmAllocatedCtxBuffer           = gpuIsClientRmAllocatedCtxBufferEnabled(pGpu);
+    pParams->bNonPowerOf2ChannelCountSupported     = gpuIsNonPowerOf2ChannelCountSupported(pGpu);
 
     return NV_OK;
 }

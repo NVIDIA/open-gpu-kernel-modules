@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -170,6 +170,12 @@ void __nvoc_objDelete(Dynamic *pDynamic)
     Object *pObj, *pChild;
 
     if (pDynamic == NULL)
+    {
+        return;
+    }
+    // objCreate might be skipped for NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT objects.
+    // In result, objDelete will be called on zeroed objects, skip their destruction.
+    if (pDynamic->__nvoc_rtti == NULL)
     {
         return;
     }

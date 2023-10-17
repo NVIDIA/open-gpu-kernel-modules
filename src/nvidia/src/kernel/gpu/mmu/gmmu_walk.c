@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
 #include "mem_mgr/gpu_vaspace.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "kernel/gpu/fifo/kernel_fifo.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "nvRmReg.h"  // NV_REG_STR_RM_*
 
@@ -335,7 +336,8 @@ _gmmuWalkCBLevelAlloc
                         break;
                     }
                 case ADDR_SYSMEM:
-                    status = memdescAlloc(pMemDescTemp);
+                    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_143, 
+                                    pMemDescTemp);
                     break;
                 default:
                     NV_ASSERT_OR_GOTO(0, done);
@@ -410,10 +412,9 @@ _gmmuWalkCBLevelAlloc
                   mmuFmtLevelVirtAddrHi(pLevelFmt, vaLimit));
 #else // NV_PRINTF_STRINGS_ALLOWED
         NV_PRINTF(LEVEL_INFO,
-                  "[GPU%u]:  [Packed: %c] %sPA 0x%llX (0x%X bytes) for VA 0x%llX-0x%llX\n",
+                  "[GPU%u]:  [Packed: %c] PA 0x%llX (0x%X bytes) for VA 0x%llX-0x%llX\n",
                   pUserCtx->pGpu->gpuInstance,
                   bPacked ? 'Y' : 'N',
-                  bMirror ? _gmmuUVMMirroringDirString[i] : ' ',
                   memdescGetPhysAddr(pMemDesc[i], AT_GPU, 0), newMemSize,
                   mmuFmtLevelVirtAddrLo(pLevelFmt, vaBase),
                   mmuFmtLevelVirtAddrHi(pLevelFmt, vaLimit));

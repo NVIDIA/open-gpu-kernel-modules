@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,6 +40,7 @@
 #include "kernel/gpu/intr/intr.h"
 #include <gpu/bif/kernel_bif.h>
 #include "gpu/disp/kern_disp.h"
+#include "ctrl/ctrl0000/ctrl0000system.h"
 
 //
 // GPU lock
@@ -121,6 +122,16 @@ typedef struct
     // Lock call trace info.
     //
     LOCK_TRACE_INFO     traceInfo;
+
+    //
+    // Total time spent waiting to acquire GPU locks.
+    //
+    volatile NvU64               totalWaitTime;
+
+    //
+    // Total time spent holding GPU locks.
+    //
+    volatile NvU64               totalHoldTime;
 } GPULOCKINFO;
 
 static GPULOCKINFO rmGpuLockInfo;
@@ -473,6 +484,7 @@ static void _gpuLocksAcquireDisableInterrupts(NvU32 gpuInst, NvU32 flags)
 static NV_STATUS
 _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pGpuLockedMask)
 {
+    OBJSYS *pSys = SYS_GET_INSTANCE();
     NV_STATUS status = NV_OK;
     NvU32     gpuInst;
     NvU32     gpuMaskLocked = 0;
@@ -483,6 +495,7 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     NvU64     priority = 0;
     NvU64     priorityPrev = 0;
     NvU64     timestamp;
+    NvU64     startWaitTime;
     NvBool    bLockAll = NV_FALSE;
 
     bHighIrql = (portSyncExSafeToSleep() == NV_FALSE);
@@ -519,7 +532,6 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     //
     if ((flags & GPU_LOCK_FLAGS_READ) && (module != RM_LOCK_MODULES_NONE))
     {
-        OBJSYS *pSys = SYS_GET_INSTANCE();
         if ((pSys->gpuLockModuleMask & NVBIT(module)) == 0)
         {
             flags &= ~RMAPI_LOCK_FLAGS_READ;
@@ -615,6 +627,10 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
             }
         }
     }
+
+    // Get start wait time if measuring lock times
+    if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
+        osGetCurrentTick(&startWaitTime);
 
     //
     // Now (attempt) to acquire the locks...
@@ -742,6 +758,14 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
 
 next_gpu_instance:
         ;
+    }
+
+    // Update total GPU lock wait time if measuring lock times
+    if (status == NV_OK && pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
+    {
+        osGetCurrentTick(&timestamp);
+
+        portAtomicExAddU64(&rmGpuLockInfo.totalWaitTime, timestamp - startWaitTime);
     }
 
     // update gpusLockedMask
@@ -1200,6 +1224,7 @@ static NvU32
 _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
 {
     static volatile NvU32 bug200413011_WAR_WakeUpMask;
+    OBJSYS *pSys = SYS_GET_INSTANCE();
     GPULOCK *pGpuLock;
     NvU32   gpuMaskWakeup = 0;
     NvU32   gpuInst;
@@ -1210,6 +1235,7 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
     NvU64   priority = 0;
     NvU64   priorityPrev = 0;
     NvU64   timestamp;
+    NvU64   startHoldTime = 0;
     NV_STATUS status;
 
     //
@@ -1282,6 +1308,10 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
             continue;
 
         pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+
+        // Start of GPU lock hold time is the first acquired GPU lock
+        if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
+            startHoldTime = pGpuLock->timestamp;
 
         if (pGpuLock->count < 0)
         {
@@ -1408,6 +1438,17 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
     status = NV_SEMA_RELEASE_SUCCEED;
 
 done:
+    // Update total GPU lock hold time if measuring lock times
+    if (status == NV_SEMA_RELEASE_SUCCEED &&
+        pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT) &&
+        startHoldTime > 0)
+    {
+        osGetCurrentTick(&timestamp);
+
+        portAtomicExAddU64(&rmGpuLockInfo.totalHoldTime,
+            timestamp - startHoldTime);
+    }
+
     threadPriorityRestore();
 
     return status;
@@ -1726,6 +1767,18 @@ rmGpuLockSetOwner(OS_THREAD_HANDLE threadId)
     }
 
     return NV_OK;
+}
+
+//
+// rmGpuLockGetTimes
+//
+// Retrieve time spent waiting and holding GPU locks.
+//
+void
+rmGpuLockGetTimes(NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *pParams)
+{
+    pParams->holdGpuLock = rmGpuLockInfo.totalHoldTime;
+    pParams->waitGpuLock = rmGpuLockInfo.totalWaitTime;
 }
 
 //

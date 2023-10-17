@@ -118,6 +118,10 @@ static NV_STATUS __nvoc_thunk_Memory_sysmemGetMapAddrSpace(struct SystemMemory *
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_SystemMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_sysmemIsExportAllowed(struct SystemMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_SystemMemory_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_sysmemGetRefCount(struct SystemMemory *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SystemMemory_RsResource.offset));
 }
@@ -294,6 +298,8 @@ static void __nvoc_init_funcTable_SystemMemory_1(SystemMemory *pThis) {
     pThis->__sysmemMapTo__ = &__nvoc_thunk_RsResource_sysmemMapTo;
 
     pThis->__sysmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_sysmemGetMapAddrSpace;
+
+    pThis->__sysmemIsExportAllowed__ = &__nvoc_thunk_Memory_sysmemIsExportAllowed;
 
     pThis->__sysmemGetRefCount__ = &__nvoc_thunk_RsResource_sysmemGetRefCount;
 

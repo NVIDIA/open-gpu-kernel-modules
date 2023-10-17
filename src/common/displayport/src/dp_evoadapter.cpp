@@ -40,6 +40,7 @@
 #include <ctrl/ctrl0073/ctrl0073specific.h>
 #include <ctrl/ctrl0073/ctrl0073system.h>
 #include <ctrl/ctrl5070/ctrl5070or.h>
+
 using namespace DisplayPort;
 
 //
@@ -93,7 +94,6 @@ const struct
     {NV_DP_REGKEY_KEEP_OPT_LINK_ALIVE_SST,          &dpRegkeyDatabase.bOptLinkKeptAliveSst,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_FORCE_EDP_ILR,                    &dpRegkeyDatabase.bBypassEDPRevCheck,              DP_REG_VAL_BOOL},
     {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
-    {NV_DP_CHECK_FEC_FOR_DDS_DSC_PANEL,             &dpRegkeyDatabase.bCheckFECForDynamicMuxDSCPanel,  DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_REASSESS_MAX_LINK,                &dpRegkeyDatabase.bReassessMaxLink,                DP_REG_VAL_BOOL}
 };
@@ -893,7 +893,6 @@ void EvoMainLink::applyRegkeyOverrides()
     _skipPowerdownEDPPanelWhenHeadDetach = dpRegkeyDatabase.bPoweroffEdpInHeadDetachSkipped;
     _applyLinkBwOverrideWarRegVal        = dpRegkeyDatabase.bLinkBwOverrideWarApplied;
     _enableMSAOverrideOverMST            = dpRegkeyDatabase.bMsaOverMstEnabled;
-    _enableFecCheckForDDS                = dpRegkeyDatabase.bCheckFECForDynamicMuxDSCPanel;
 }
 
 NvU32 EvoMainLink::getRegkeyValue(const char *key)
@@ -1236,14 +1235,10 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
     retLink->setLaneRate(requestRmLC.peakRate, result ? requestRmLC.lanes : 0);
     retLink->setLTCounter(ltCounter);
 
-    // For release branch only, check FEC return values and update to "retLink"
-    if (_enableFecCheckForDDS)
+    if (requestRmLC.bEnableFEC && (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _ENABLE_FEC, _ERR, err)))
     {
-        if (requestRmLC.bEnableFEC && (FLD_TEST_DRF(0073_CTRL_DP, _ERR, _ENABLE_FEC, _ERR, err)))
-        {
-            retLink->bEnableFEC = false;
-            DP_ASSERT(0);
-        }
+        retLink->bEnableFEC = false;
+        DP_ASSERT(0);
     }
 
     NV_DPTRACE_INFO(LINK_TRAINING_DONE, status, requestRmLC.peakRate, requestRmLC.lanes);
@@ -1345,7 +1340,17 @@ void EvoMainLink::getLinkConfig(unsigned &laneCount, NvU64 & linkRate)
     if (code == NVOS_STATUS_SUCCESS)
     {
         laneCount = params.laneCount;
-        linkRate = (NvU64)27000000 * params.linkBW;    // BUG: Beware, turbo mode need to be taken into account
+
+        if (params.linkBW != 0)
+        {
+            // BUG: Beware, turbo mode need to be taken into account
+            linkRate = ((NvU64)params.linkBW) * DP_LINK_BW_FREQ_MULTI_MBPS;
+        }
+        else
+        {
+            // No link rate available.
+            linkRate = 0;
+        }
     }
     else
     {
@@ -1417,6 +1422,7 @@ bool EvoMainLink::queryAndUpdateDfpParams()
             _maxLinkRateSupportedDfp = HBR3;
             break;
     }
+
 
     _isDynamicMuxCapable = FLD_TEST_DRF(0073, _CTRL_DFP_FLAGS, _DYNAMIC_MUX_CAPABLE, _TRUE, dfpFlags);
 
@@ -1770,8 +1776,8 @@ bool EvoMainLink::dscCrcTransaction(NvBool bEnable, gpuDscCrc *data, NvU16 *head
 //
 bool EvoMainLink::configureLinkRateTable
 (
-    const NvU16 *pLinkRateTable,
-    LinkRates   *pLinkRates
+    const NvU16     *pLinkRateTable,
+    LinkRates       *pLinkRates
 )
 {
     NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES_PARAMS params;
@@ -1809,9 +1815,8 @@ bool EvoMainLink::configureLinkRateTable
                 case linkBW_4_32Gbps:
                 case linkBW_5_40Gbps:
                 case linkBW_8_10Gbps:
-                    pLinkRates->import(params.linkBwTbl[i]);
+                    pLinkRates->import((NvU8)params.linkBwTbl[i]);
                     break;
-
                 default:
                     DP_LOG(("DP_EVO> %s: Unsupported link rate received",
                            __FUNCTION__));

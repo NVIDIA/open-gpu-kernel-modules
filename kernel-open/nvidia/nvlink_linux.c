@@ -639,3 +639,8 @@ int nvlink_is_admin(void)
 {
     return NV_IS_SUSER();
 }
+
+NvU64 nvlink_get_platform_time(void)
+{
+    return nv_ktime_get_raw_ns();
+}

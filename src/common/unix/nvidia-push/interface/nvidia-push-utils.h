@@ -67,7 +67,7 @@ void nvPushAcquireTimelineSemaphore(
     NvU64 val);
 
 NvBool nvPushDecodeMethod(NvU32 header, NvU32 *count);
-void nvPushSetObject(NvPushChannelPtr p, NvU32 subch, NvU32 object[NV_MAX_SUBDEVICES]);
+void nvPushSetObject(NvPushChannelPtr p, NvU32 subch, NvU32 *object);
 void nvPushSetSubdeviceMask(NvPushChannelPtr p, NvU32 mask);
 void __nvPushMakeRoom(NvPushChannelPtr, NvU32 count);
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,16 +41,17 @@ _isDeviceProfilingPermitted(OBJGPU *pGpu, ProfilerBase *pProf, API_SECURITY_INFO
 }
 
 static NvBool
-_isMemoryProfilingPermitted(OBJGPU *pGpu, ProfilerBase *pProf, NvHandle hClient)
+_isMemoryProfilingPermitted(OBJGPU *pGpu, ProfilerBase *pProf)
 {
     NvBool bSmcGpuPartitioningEnabled = IS_MIG_IN_USE(pGpu);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    Device *pDevice = GPU_RES_GET_DEVICE(pProf);
 
-    if (bSmcGpuPartitioningEnabled && !kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
+    if (bSmcGpuPartitioningEnabled && !kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice))
     {
         MIG_INSTANCE_REF ref;
 
-        if (kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref) != NV_OK)
+        if (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref) != NV_OK)
             return NV_FALSE;
 
         if (!kmigmgrIsMIGReferenceValid(&ref))
@@ -116,11 +117,10 @@ profilerDevQueryCapabilities_IMPL
     OBJGPU              *pGpu                   = GPU_RES_GET_GPU(pProfDev);
     ProfilerBase        *pProfBase              = staticCast(pProfDev, ProfilerBase);
     API_SECURITY_INFO   *pSecInfo               = pParams->pSecInfo;
-    NvHandle            hClient                 = pCallContext->pClient->hClient;
     NvBool              bAnyProfilingPermitted  = NV_FALSE;
 
     pClientPermissions->bMemoryProfilingPermitted =
-        _isMemoryProfilingPermitted(pGpu, pProfBase, hClient);
+        _isMemoryProfilingPermitted(pGpu, pProfBase);
 
     pClientPermissions->bAdminProfilingPermitted = NV_FALSE;
     if (pSecInfo->privLevel >= RS_PRIV_LEVEL_USER_ROOT)

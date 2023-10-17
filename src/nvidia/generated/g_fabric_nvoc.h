@@ -70,10 +70,6 @@ MAKE_MULTIMAP(FabricCache, FabricCacheEntry);
 
 #include "nvlink_inband_msg.h"
 
-NV_STATUS fabricInitInbandMsgHdr(nvlink_inband_msg_header_t *pMsgHdr,
-                                 NvU32 type,
-                                 NvU32 len);
-
 void fabricMulticastWaitOnTeamCleanupCallback(void *pCbData);
 
 //
@@ -241,4 +237,5 @@ static inline void *fabricMulticastCleanupCacheGetUnderLock(struct Fabric *pFabr
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_FABRIC_NVOC_H_

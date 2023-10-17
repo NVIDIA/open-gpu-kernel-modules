@@ -768,26 +768,7 @@ memUnmap_IMPL
     }
     else if (memdescGetAddressSpace(pMemDesc) == ADDR_VIRTUAL)
     {
-        // If the memory is tiled, then it's being mapped through BAR1
-        if( DRF_VAL(OS32, _ATTR, _TILED, pMemory->Attr) )
-        {
-            // BAR1 mapping.  Unmap it.
-            if (pCpuMapping->pPrivate->bKernel)
-            {
-                osUnmapPciMemoryKernel64(pGpu, pCpuMapping->pLinearAddress);
-            }
-            else
-            {
-                osUnmapPciMemoryUser(pGpu->pOsGpuInfo,
-                                     pCpuMapping->pLinearAddress,
-                                     pCpuMapping->length,
-                                     pCpuMapping->pPrivate->pPriv);
-            }
-        }
-        else
-        {
-            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
-        }
+        NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
     }
     else if (memdescGetAddressSpace(pMemDesc) == ADDR_REGMEM)
     {
@@ -1157,7 +1138,12 @@ rmapiMapToCpuWithSecInfoV2
     NV_PRINTF(LEVEL_INFO, "MMU_PROFILER Nv04MapMemory 0x%x\n", *flags);
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, hClient, NV01_NULL_OBJECT, &lockInfo);
+    if (status != NV_OK)
+    {
+        rmapiEpilogue(pRmApi, &rmApiContext);
+        return status;
+    }
 
     LOCK_METER_DATA(MAPMEM, flags, 0, 0);
 
@@ -1327,7 +1313,12 @@ rmapiUnmapFromCpuWithSecInfo
         return status;
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, hClient, NV01_NULL_OBJECT, &lockInfo);
+    if (status != NV_OK)
+    {
+        rmapiEpilogue(pRmApi, &rmApiContext);
+        return NV_OK;
+    }
 
     LOCK_METER_DATA(UNMAPMEM, flags, 0, 0);
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,6 @@
 
 #include "os-interface.h"
 #include "nv-linux.h"
-#include "nv-frontend.h"
 
 NV_STATUS NV_API_CALL nv_add_mapping_context_to_file(
     nv_state_t *nv,

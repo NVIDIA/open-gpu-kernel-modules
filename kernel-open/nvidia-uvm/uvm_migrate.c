@@ -130,9 +130,9 @@ static NV_STATUS block_migrate_map_unmapped_pages(uvm_va_block_t *va_block,
     NV_STATUS status = NV_OK;
     NV_STATUS tracker_status;
 
-    // Save the mask of unmapped pages because it will change after the
+    // Get the mask of unmapped pages because it will change after the
     // first map operation
-    uvm_page_mask_complement(&va_block_context->caller_page_mask, &va_block->maybe_mapped_pages);
+    uvm_va_block_unmapped_pages_get(va_block, region, &va_block_context->caller_page_mask);
 
     if (uvm_va_block_is_hmm(va_block) && !UVM_ID_IS_CPU(dest_id)) {
         // Do not map pages that are already resident on the CPU. This is in
@@ -147,7 +147,7 @@ static NV_STATUS block_migrate_map_unmapped_pages(uvm_va_block_t *va_block,
         // such pages at all, when migrating.
         uvm_page_mask_andnot(&va_block_context->caller_page_mask,
                              &va_block_context->caller_page_mask,
-                             uvm_va_block_resident_mask_get(va_block, UVM_ID_CPU));
+                             uvm_va_block_resident_mask_get(va_block, UVM_ID_CPU, NUMA_NO_NODE));
     }
 
     // Only map those pages that are not mapped anywhere else (likely due
@@ -377,7 +377,7 @@ static bool va_block_should_do_cpu_preunmap(uvm_va_block_t *va_block,
 
     mapped_pages_cpu = uvm_va_block_map_mask_get(va_block, UVM_ID_CPU);
     if (uvm_processor_mask_test(&va_block->resident, dest_id)) {
-        const uvm_page_mask_t *resident_pages_dest = uvm_va_block_resident_mask_get(va_block, dest_id);
+        const uvm_page_mask_t *resident_pages_dest = uvm_va_block_resident_mask_get(va_block, dest_id, NUMA_NO_NODE);
         uvm_page_mask_t *do_not_unmap_pages = &va_block_context->scratch_page_mask;
 
         // TODO: Bug 1877578

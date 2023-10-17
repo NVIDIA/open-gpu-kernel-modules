@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,7 +81,9 @@ typedef struct vmiopd_SM_info {
 // NV_SCAL_FAMILY_MAX_FBPS 16
 #define MAX_FBPS 16 //Maximum number of FBPs
 
-#define OBJ_MAX_HEADS 4
+#define OBJ_MAX_HEADS_v03_00 4
+#define OBJ_MAX_HEADS_v24_08 8
+
 
 #define MAX_NVDEC_ENGINES 5     // Maximum number of NVDEC engines
 
@@ -115,6 +117,7 @@ typedef struct vmiopd_SM_info {
 #define VM_UUID_SIZE_v21_02                            16
 
 #define NV2080_CTRL_FB_FS_INFO_MAX_QUERIES_v1A_1D       96
+#define NV2080_CTRL_FB_FS_INFO_MAX_QUERIES_v24_00       120
 #define NV2080_CTRL_FB_FS_INFO_MAX_QUERY_SIZE_v1A_1D    24
 #define NV2080_CTRL_GRMGR_GR_FS_INFO_MAX_QUERIES_v1A_1D 96
 #define NV2080_CTRL_GRMGR_MAX_SMC_IDS_v1A_1D            8
@@ -125,6 +128,9 @@ typedef struct vmiopd_SM_info {
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_21_01                                      (0x00000033)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_22_02                                      (0x00000034)
 #define NV0080_CTRL_GR_INFO_MAX_SIZE_23_00                                      (0x00000035)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE_24_02                                      (0x00000036)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE_24_03                                      (0x00000037)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE_24_07                                      (0x00000038)
 #define NV2080_CTRL_INTERNAL_GR_MAX_ENGINES_1B_04                               8
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1B_05                                   256
 #define NV2080_CTRL_INTERNAL_GR_MAX_SM_v1E_03                                   240
@@ -139,6 +145,31 @@ typedef struct vmiopd_SM_info {
 #define NV2080_CTRL_MIGRATABLE_OPS_ARRAY_MAX_v21_07                             50
 #define NV2080_CTRL_MAX_PCES_v21_0A                                             32
 #define NV2080_CTRL_CE_CAPS_TBL_SIZE_v21_0A                                     2
+
+//NV2080_CTRL_PERF_PSTATES_INFO data union enums for r535 code 
+#define NV2080_CTRL_PERF_PSTATE_VERSION_INVALID_v23_02                             0x00
+#define NV2080_CTRL_PERF_PSTATE_VERSION_MODEL_10_v23_02                            0xFE
+#define NV2080_CTRL_PERF_PSTATE_VERSION_2X_v23_02                                  0x20
+#define NV2080_CTRL_PERF_PSTATE_VERSION_3X_v23_02                                  0xFD
+#define NV2080_CTRL_PERF_PSTATE_VERSION_30_v23_02                                  0x30
+#define NV2080_CTRL_PERF_PSTATE_VERSION_35_v23_02                                  0x35
+#define NV2080_CTRL_PERF_PSTATE_VERSION_40_v23_02                                  0x40
+#define NV2080_CTRL_PERF_PSTATE_VERSION_PMU_INIT_1X_v23_02                         0xFC
+#define NV2080_CTRL_PERF_PSTATE_VERSION_70_v23_02                                  0x70
+#define NV2080_CTRL_PERF_PSTATE_VERSION_DISABLED_v23_02                            NV_U8_MAX
+
+//NV2080_CTRL_PERF_PSTATES_INFO data union enums for chips_a
+#define NV2080_CTRL_PERF_PSTATES_TYPE_BASE_v24_01                                  0x00U
+#define NV2080_CTRL_PERF_PSTATES_TYPE_MODEL_10_v24_01                              0x01U
+#define NV2080_CTRL_PERF_PSTATES_TYPE_2X_v24_01                                    0x02U
+#define NV2080_CTRL_PERF_PSTATES_TYPE_3X_v24_01                                    0x03U
+#define NV2080_CTRL_PERF_PSTATES_TYPE_30_v24_01                                    0x04U
+#define NV2080_CTRL_PERF_PSTATES_TYPE_35_v24_01                                    0x05U
+#define NV2080_CTRL_PERF_PSTATES_TYPE_PMU_INIT_1X_v24_01                           0x07U
+#define NV2080_CTRL_PERF_PSTATES_TYPE_70_v24_01                                    0x08U
+#define NV2080_CTRL_PERF_PSTATES_TYPE_50_v24_01                                    0x09U
+#define NV2080_CTRL_PERF_PSTATES_TYPE_5X_v24_01                                    0x0AU
+#define NV2080_CTRL_PERF_PSTATES_TYPE_INVALID_v24_01                               NV2080_CTRL_BOARDOBJGRP_CLASS_TYPE_INVALID
 
 // Defined this intermediate RM-RPC structure for making RPC call from Guest as
 // we have the restriction of passing max 4kb of data to plugin and the
@@ -218,6 +249,7 @@ typedef struct VGPU_BSP_CAPS
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v1A_04 (0x00000014)
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v1C_09 (0x00000016)
 #define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v20_03 (0x00000018)
+#define NV2080_CTRL_GPU_ECC_UNIT_COUNT_v24_06 (0x00000019)
 
 #define NV2080_ENGINE_TYPE_LAST_v18_01      (0x0000002a)
 #define NV2080_ENGINE_TYPE_LAST_v1C_09      (0x00000034)
@@ -226,6 +258,7 @@ typedef struct VGPU_BSP_CAPS
 
 #define NV2080_ENGINE_TYPE_COPY_SIZE_v1A_0D  (10)
 #define NV2080_ENGINE_TYPE_COPY_SIZE_v22_00  (10)
+#define NV2080_ENGINE_TYPE_COPY_SIZE_v24_09  (64)
 
 #define NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE_v1A_0F   (0x00000033)
 #define NV2080_CTRL_BUS_INFO_MAX_LIST_SIZE_v1C_09   (0x00000034)
@@ -248,6 +281,7 @@ typedef struct VGPU_BSP_CAPS
 #define NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_1A_24 0x33
 #define NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_1E_01 0x35
 #define NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_1F_0F 0x36
+#define NV2080_CTRL_FB_INFO_MAX_LIST_SIZE_24_0A 0x37
 
 #define NV2080_CTRL_PERF_MAX_LIMITS_v1C_0B 0x100
 

@@ -166,16 +166,6 @@ subdeviceCtrlCmdMcServiceInterrupts_IMPL
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
         NV_STATUS status = NV_OK;
 
-        //
-        // Force kernel-RM to service interrupts from GSP-RM. This will allow
-        // kernel-RM to write notifiers and send an ack back to GSP. 
-        // GSP waits for this ack before clearing fast path POSSIBLE_ERR interrupt.
-        //
-        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED))
-        {
-            intrServiceStallSingle_HAL(pGpu, pIntr, MC_ENGINE_IDX_GSP, NV_TRUE);
-        }
-
         NV_RM_RPC_CONTROL(pGpu, pRmCtrlParams->hClient, pRmCtrlParams->hObject, pRmCtrlParams->cmd,
                           pRmCtrlParams->pParams, pRmCtrlParams->paramsSize, status);
         if (status != NV_OK)
@@ -1238,6 +1228,13 @@ intrDestroyInterruptTable_IMPL
     Intr   *pIntr
 )
 {
+    for (INTR_TREE tree = 0; tree < NV_ARRAY_ELEMENTS(pIntr->vectorToMcIdx);
+         ++tree)
+    {
+        portMemFree(pIntr->vectorToMcIdx[tree]);
+        pIntr->vectorToMcIdx[tree]       = NULL;
+        pIntr->vectorToMcIdxCounts[tree] = 0;
+    }
     vectDestroy(&pIntr->intrTable);
     return NV_OK;
 }
@@ -1434,14 +1431,14 @@ _intrServiceStallExactList
 
     if (bRequiresPossibleErrorNotifier)
     {
-        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_FASTPATH_SEQ_ENABLED))
-        {
-        }
-        else
-        {
-            // info32 contains shadowed value of ERR_CONT
-            gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POSSIBLE_ERROR, NULL, 0, intrReadErrCont_HAL(pGpu, pIntr), 0);
-        }
+        //
+        // Notify CUDA there may be an error in ERR_CONT that they may miss because we're
+        // about to clear it out of the NV_CTRL tree backing ERR_CONT before the interrupt
+        // is serviced.
+        //
+        // info32 contains shadowed value of ERR_CONT
+        //
+        gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POSSIBLE_ERROR, NULL, 0, intrReadErrCont_HAL(pGpu, pIntr), 0);
     }
 
     for (iter = vectIterAll(pIntrTable); vectIterNext(&iter);)
@@ -1496,10 +1493,14 @@ _intrServiceStallExactList
 
     if (bRequiresPossibleErrorNotifier)
     {
-        {
-            // info32 contains shadowed value of ERR_CONT
-            gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POSSIBLE_ERROR, NULL, 0, intrReadErrCont_HAL(pGpu, pIntr), 0);
-        }
+        //
+        // Notify CUDA there may be an error in ERR_CONT that they may miss because we're
+        // about to clear it out of the NV_CTRL tree backing ERR_CONT before the interrupt
+        // is serviced.
+        //
+        // info32 contains shadowed value of ERR_CONT
+        //
+        gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_POSSIBLE_ERROR, NULL, 0, intrReadErrCont_HAL(pGpu, pIntr), 0);
     }
 
     if (bIntrStuck)
@@ -1730,4 +1731,27 @@ intrGetIntrTopLockedMask_IMPL
     // Sanity check that Intr.subtreeMap is initialized
     NV_ASSERT(ret != 0);
     return ret;
+}
+
+
+NV_STATUS intrSetInterruptEntry_IMPL
+(
+    Intr                 *pIntr,
+    INTR_TREE             tree,
+    NvU32                 vector,
+    const InterruptEntry *pEntry
+)
+{
+    NV_ASSERT_OR_RETURN(pEntry != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(tree < NV_ARRAY_ELEMENTS(pIntr->vectorToMcIdx),
+                        NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pIntr->vectorToMcIdx[tree] != NULL,
+                        NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(vector < pIntr->vectorToMcIdxCounts[tree],
+                        NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(
+        pIntr->vectorToMcIdx[tree][vector].mcEngine == MC_ENGINE_IDX_NULL,
+        NV_ERR_INVALID_STATE);
+    pIntr->vectorToMcIdx[tree][vector] = *pEntry;
+    return NV_OK;
 }

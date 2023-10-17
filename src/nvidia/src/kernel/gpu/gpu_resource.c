@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -250,11 +250,27 @@ gpuresShareCallback_IMPL
                 KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
                 MIG_INSTANCE_REF refClient;
                 MIG_INSTANCE_REF refResource;
+                RsResourceRef *pInvokingDeviceRef;
+                Device *pInvokingDevice;
+
+                NV_ASSERT_OR_RETURN(pParentRef != NULL, NV_ERR_INVALID_ARGUMENT);
+
+                if (pParentRef->internalClassId == classId(Device))
+                {
+                    pInvokingDeviceRef = pParentRef;
+                }
+                else
+                {
+                    NV_ASSERT_OK_OR_RETURN(
+                        refFindAncestorOfType(pParentRef, classId(Device), &pInvokingDeviceRef));
+                }
+
+                pInvokingDevice = dynamicCast(pInvokingDeviceRef->pResource, Device);
 
                 if (bMIGInUse &&
-                    (kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, pInvokingClient->hClient,
+                    (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pInvokingDevice,
                                                      &refClient) == NV_OK) &&
-                    (kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, RES_GET_CLIENT_HANDLE(pGpuResource),
+                    (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, GPU_RES_GET_DEVICE(pGpuResource),
                                                      &refResource) == NV_OK))
                 {
                     // Ignore execution partition differences when sharing

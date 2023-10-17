@@ -42,7 +42,6 @@ typedef struct {
         NvU32 assignedSorMask;
     } sd[NVKMS_MAX_SUBDEVICES];
     NVHsConfig hsConfig;
-    NVEvoUpdateState earlyUpdateState;
     NVEvoModesetUpdateState modesetUpdateState;
 
     /*

@@ -295,7 +295,7 @@
     GPU_CHILD_SINGLE_INST( KernelFsp,            GPU_GET_KERNEL_FSP,                  1,                NV_FALSE,        pKernelFsp       )
 #endif
 #if GPU_CHILD_MODULE(OFA)
-    GPU_CHILD_SINGLE_INST( OBJOFA,               GPU_GET_OFA,                         1,                NV_FALSE,        pOfa             )
+    GPU_CHILD_MULTI_INST( OBJOFA,                GPU_GET_OFA,                         GPU_MAX_OFAS,      NV_FALSE,        pOfa             )
 #endif
 #if RMCFG_MODULE_CONF_COMPUTE && GPU_CHILD_MODULE(CONF_COMPUTE)
     GPU_CHILD_SINGLE_INST( ConfidentialCompute,  GPU_GET_CONF_COMPUTE,                1,                NV_TRUE,         pConfCompute      )

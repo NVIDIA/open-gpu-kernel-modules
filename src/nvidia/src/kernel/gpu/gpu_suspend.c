@@ -237,6 +237,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
                 goto done;
             }
         }
+
     }
 
     // This is a no-op in CPU-RM

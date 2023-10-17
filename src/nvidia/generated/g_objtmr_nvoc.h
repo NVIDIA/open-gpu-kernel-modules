@@ -743,9 +743,9 @@ static inline NV_STATUS tmrEventDestroyOSTimer(struct OBJTMR *pTmr, PTMR_EVENT p
 
 #define tmrEventDestroyOSTimer_HAL(pTmr, pEvent) tmrEventDestroyOSTimer(pTmr, pEvent)
 
-void tmrRegisterIntrService_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[167]);
+void tmrRegisterIntrService_IMPL(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[168]);
 
-static inline void tmrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[167]) {
+static inline void tmrRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct OBJTMR *pTmr, IntrServiceRecord pRecords[168]) {
     pTmr->__tmrRegisterIntrService__(pGpu, pTmr, pRecords);
 }
 
@@ -1179,4 +1179,5 @@ NV_STATUS tmrCtrlCmdEventDestroy(OBJGPU *pGpu, TMR_EVENT_GENERAL_PARAMS *pParams
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_OBJTMR_NVOC_H_

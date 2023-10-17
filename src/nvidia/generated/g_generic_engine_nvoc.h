@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,6 +35,7 @@ extern "C" {
 
 #include "gpu/gpu_resource.h"
 #include "ctrl/ctrl90e6.h"
+#include "ctrl/ctrl90e7.h"
 #include "rmapi/resource.h" // for macro RMCTRL_EXPORT etc.
 
 /*!
@@ -61,6 +62,7 @@ struct GenericEngineApi {
     NV_STATUS (*__genapiControl__)(struct GenericEngineApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__genapiCtrlCmdMasterGetErrorIntrOffsetMask__)(struct GenericEngineApi *, NV90E6_CTRL_MASTER_GET_ERROR_INTR_OFFSET_MASK_PARAMS *);
     NV_STATUS (*__genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask__)(struct GenericEngineApi *, NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS *);
+    NV_STATUS (*__genapiCtrlCmdBBXGetLastFlushTime__)(struct GenericEngineApi *, NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS *);
     NvBool (*__genapiShareCallback__)(struct GenericEngineApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__genapiCheckMemInterUnmap__)(struct GenericEngineApi *, NvBool);
     NV_STATUS (*__genapiMapTo__)(struct GenericEngineApi *, RS_RES_MAP_TO_PARAMS *);
@@ -118,6 +120,7 @@ NV_STATUS __nvoc_objCreate_GenericEngineApi(GenericEngineApi**, Dynamic*, NvU32,
 #define genapiControl(pGenericEngineApi, pCallContext, pParams) genapiControl_DISPATCH(pGenericEngineApi, pCallContext, pParams)
 #define genapiCtrlCmdMasterGetErrorIntrOffsetMask(pGenericEngineApi, pParams) genapiCtrlCmdMasterGetErrorIntrOffsetMask_DISPATCH(pGenericEngineApi, pParams)
 #define genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask(pGenericEngineApi, pParams) genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_DISPATCH(pGenericEngineApi, pParams)
+#define genapiCtrlCmdBBXGetLastFlushTime(pGenericEngineApi, pParams) genapiCtrlCmdBBXGetLastFlushTime_DISPATCH(pGenericEngineApi, pParams)
 #define genapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) genapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define genapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) genapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define genapiMapTo(pResource, pParams) genapiMapTo_DISPATCH(pResource, pParams)
@@ -168,6 +171,12 @@ NV_STATUS genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_IMPL(struct Gen
 
 static inline NV_STATUS genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_DISPATCH(struct GenericEngineApi *pGenericEngineApi, NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS *pParams) {
     return pGenericEngineApi->__genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask__(pGenericEngineApi, pParams);
+}
+
+NV_STATUS genapiCtrlCmdBBXGetLastFlushTime_IMPL(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS *pParams);
+
+static inline NV_STATUS genapiCtrlCmdBBXGetLastFlushTime_DISPATCH(struct GenericEngineApi *pGenericEngineApi, NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS *pParams) {
+    return pGenericEngineApi->__genapiCtrlCmdBBXGetLastFlushTime__(pGenericEngineApi, pParams);
 }
 
 static inline NvBool genapiShareCallback_DISPATCH(struct GenericEngineApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -272,4 +281,5 @@ void genapiDestruct_IMPL(struct GenericEngineApi *pGenericEngineApi);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GENERIC_ENGINE_NVOC_H_

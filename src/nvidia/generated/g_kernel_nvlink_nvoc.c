@@ -66,31 +66,31 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelNvlink =
     /*pExportInfo=*/        &__nvoc_export_info_KernelNvlink
 };
 
-static NV_STATUS __nvoc_thunk_KernelNvlink_engstateConstructEngine(OBJGPU *arg0, struct OBJENGSTATE *arg1, ENGDESCRIPTOR arg2) {
+static NV_STATUS __nvoc_thunk_KernelNvlink_engstateConstructEngine(struct OBJGPU *arg0, struct OBJENGSTATE *arg1, ENGDESCRIPTOR arg2) {
     return knvlinkConstructEngine(arg0, (struct KernelNvlink *)(((unsigned char *)arg1) - __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset), arg2);
 }
 
-static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStatePreInitLocked(OBJGPU *arg0, struct OBJENGSTATE *arg1) {
+static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStatePreInitLocked(struct OBJGPU *arg0, struct OBJENGSTATE *arg1) {
     return knvlinkStatePreInitLocked(arg0, (struct KernelNvlink *)(((unsigned char *)arg1) - __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset));
 }
 
-static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStateLoad(OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 arg2) {
+static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStateLoad(struct OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 arg2) {
     return knvlinkStateLoad(arg0, (struct KernelNvlink *)(((unsigned char *)arg1) - __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset), arg2);
 }
 
-static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStatePostLoad(OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 arg2) {
+static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStatePostLoad(struct OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 arg2) {
     return knvlinkStatePostLoad(arg0, (struct KernelNvlink *)(((unsigned char *)arg1) - __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset), arg2);
 }
 
-static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStateUnload(OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 arg2) {
+static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStateUnload(struct OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 arg2) {
     return knvlinkStateUnload(arg0, (struct KernelNvlink *)(((unsigned char *)arg1) - __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset), arg2);
 }
 
-static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStatePostUnload(OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 arg2) {
+static NV_STATUS __nvoc_thunk_KernelNvlink_engstateStatePostUnload(struct OBJGPU *arg0, struct OBJENGSTATE *arg1, NvU32 arg2) {
     return knvlinkStatePostUnload(arg0, (struct KernelNvlink *)(((unsigned char *)arg1) - __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset), arg2);
 }
 
-static NvBool __nvoc_thunk_KernelNvlink_engstateIsPresent(OBJGPU *arg0, struct OBJENGSTATE *arg1) {
+static NvBool __nvoc_thunk_KernelNvlink_engstateIsPresent(struct OBJGPU *arg0, struct OBJENGSTATE *arg1) {
     return knvlinkIsPresent(arg0, (struct KernelNvlink *)(((unsigned char *)arg1) - __nvoc_rtti_KernelNvlink_OBJENGSTATE.offset));
 }
 

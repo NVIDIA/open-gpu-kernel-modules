@@ -54,91 +54,7 @@ extern "C" {
 //                          Type Definitions
 // ****************************************************************************
 
-typedef struct mem_multicast_fabric_attach_mem_info_node
-{
-    MEMORY_DESCRIPTOR *pPhysMemDesc;
-    NvHandle           hDupedPhysMem;
-    NvU64              physMapLength;
-    NODE               node;
-} MEM_MULTICAST_FABRIC_ATTACH_MEM_INFO_NODE;
-
-typedef struct mem_multicast_fabric_client_info
-{
-    void   *pOsEvent;
-    struct Memory *pMemory;
-} MEM_MULTICAST_FABRIC_CLIENT_INFO;
-
-typedef struct mem_multicast_fabric_gpu_info
-{
-    void   *pGpuOsInfo;
-    OBJGPU *pGpu;
-    NvU64   gpuProbeHandle;
-    NvBool  bMcflaAlloc;
-
-    // Tracks memory attached using NV00FD_CTRL_CMD_ATTACH_MEM
-    PNODE pAttachMemInfoTree;
-} MEM_MULTICAST_FABRIC_GPU_INFO;
-
-MAKE_LIST(MemMulticastFabricClientInfoList, MEM_MULTICAST_FABRIC_CLIENT_INFO);
-
-MAKE_LIST(MemMulticastFabricGpuInfoList, MEM_MULTICAST_FABRIC_GPU_INFO);
-
-typedef enum
-{
-    MEM_MULTICAST_FABRIC_TEAM_SETUP_REQUEST = 0,
-    MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST,
-} MEM_MULTICAST_FABRIC_REQUEST_TYPE;
-
-typedef struct mem_multicast_fabric_descriptor
-{
-    // Refcount to keep this descriptor alive
-    NvU64 refCount;
-
-    // List of clients waiting on this object to be ready
-    MemMulticastFabricClientInfoList waitingClientsList;
-
-    // Mask representing the list of attached GPUs
-    NvU32 attachedGpusMask;
-
-    // List of attached GPU info
-    MemMulticastFabricGpuInfoList gpuInfoList;
-
-    // Boolean to be set when pMemDesc is installed
-    NvBool bMemdescInstalled;
-
-    // Memory descriptor associated with the multicast object
-    MEMORY_DESCRIPTOR *pMemDesc;
-
-    // Unique handle assigned for the multicast team by FM
-    NvU64 mcTeamHandle;
-
-    // Status of the multicast team
-    NV_STATUS mcTeamStatus;
-
-    // Boolean to be set when an Inband request has been sent to FM and is currently in progress
-    NvBool bInbandReqInProgress;
-
-    // Request Id associated with the Inband request in progress when bInbandReqSent is set to true
-    NvU64 inbandReqId;
-
-    // Alignment for the multicast FLA allocation
-    NvU64 alignment;
-
-    // Multicast FLA allocation size
-    NvU64 allocSize;
-
-    // Page size for the multicast FLA
-    NvU64 pageSize;
-
-    // Multicast FLA allocation flags
-    NvU32 allocFlags;
-
-    // Max. number of unique GPUs associated with the multicast object
-    NvU32 numMaxGpus;
-
-    // No. of unique GPUs currently attached to the multicast object
-    NvU32 numAttachedGpus;
-} MEM_MULTICAST_FABRIC_DESCRIPTOR;
+typedef struct mem_multicast_fabric_descriptor MEM_MULTICAST_FABRIC_DESCRIPTOR;
 
 #ifdef NVOC_MEM_MULTICAST_FABRIC_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
@@ -159,6 +75,7 @@ struct MemoryMulticastFabric {
     NV_STATUS (*__memorymulticastfabricIsReady__)(struct MemoryMulticastFabric *, NvBool);
     NV_STATUS (*__memorymulticastfabricControl__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__memorymulticastfabricIsGpuMapAllowed__)(struct MemoryMulticastFabric *, struct OBJGPU *);
+    NvBool (*__memorymulticastfabricIsExportAllowed__)(struct MemoryMulticastFabric *);
     NV_STATUS (*__memorymulticastfabricGetMapAddrSpace__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     NV_STATUS (*__memorymulticastfabricCtrlGetInfo__)(struct MemoryMulticastFabric *, NV00FD_CTRL_GET_INFO_PARAMS *);
     NV_STATUS (*__memorymulticastfabricCtrlAttachMem__)(struct MemoryMulticastFabric *, NV00FD_CTRL_ATTACH_MEM_PARAMS *);
@@ -185,7 +102,7 @@ struct MemoryMulticastFabric {
     void (*__memorymulticastfabricControlSerialization_Epilogue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memorymulticastfabricMap__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__memorymulticastfabricAccessCallback__)(struct MemoryMulticastFabric *, struct RsClient *, void *, RsAccessRight);
-    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc;
+    MEM_MULTICAST_FABRIC_DESCRIPTOR *PRIVATE_FIELD(pMulticastFabricDesc);
 };
 
 #ifndef __NVOC_CLASS_MemoryMulticastFabric_TYPEDEF__
@@ -221,6 +138,7 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
 #define memorymulticastfabricIsReady(pMemoryMulticastFabric, bCopyConstructorContext) memorymulticastfabricIsReady_DISPATCH(pMemoryMulticastFabric, bCopyConstructorContext)
 #define memorymulticastfabricControl(pMemoryMulticastFabric, pCallContext, pParams) memorymulticastfabricControl_DISPATCH(pMemoryMulticastFabric, pCallContext, pParams)
 #define memorymulticastfabricIsGpuMapAllowed(pMemoryMulticastFabric, pGpu) memorymulticastfabricIsGpuMapAllowed_DISPATCH(pMemoryMulticastFabric, pGpu)
+#define memorymulticastfabricIsExportAllowed(pMemoryMulticastFabric) memorymulticastfabricIsExportAllowed_DISPATCH(pMemoryMulticastFabric)
 #define memorymulticastfabricGetMapAddrSpace(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace) memorymulticastfabricGetMapAddrSpace_DISPATCH(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace)
 #define memorymulticastfabricCtrlGetInfo(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlGetInfo_DISPATCH(pMemoryMulticastFabric, pParams)
 #define memorymulticastfabricCtrlAttachMem(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlAttachMem_DISPATCH(pMemoryMulticastFabric, pParams)
@@ -275,6 +193,12 @@ NvBool memorymulticastfabricIsGpuMapAllowed_IMPL(struct MemoryMulticastFabric *p
 
 static inline NvBool memorymulticastfabricIsGpuMapAllowed_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, struct OBJGPU *pGpu) {
     return pMemoryMulticastFabric->__memorymulticastfabricIsGpuMapAllowed__(pMemoryMulticastFabric, pGpu);
+}
+
+NvBool memorymulticastfabricIsExportAllowed_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
+
+static inline NvBool memorymulticastfabricIsExportAllowed_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric) {
+    return pMemoryMulticastFabric->__memorymulticastfabricIsExportAllowed__(pMemoryMulticastFabric);
 }
 
 NV_STATUS memorymulticastfabricGetMapAddrSpace_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace);
@@ -403,11 +327,12 @@ void memorymulticastfabricDestruct_IMPL(struct MemoryMulticastFabric *pMemoryMul
 
 
 NV_STATUS memorymulticastfabricTeamSetupResponseCallback(NvU32 gpuInstance,
-                                                         NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pMessage);
+                                        NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pMessage);
 
 #endif // _MEMORYMULTICASTFABRIC_H_
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MEM_MULTICAST_FABRIC_NVOC_H_

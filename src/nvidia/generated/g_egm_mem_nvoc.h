@@ -61,6 +61,7 @@ struct ExtendedGpuMemory {
     NvBool (*__egmmemShareCallback__)(struct ExtendedGpuMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__egmmemMapTo__)(struct ExtendedGpuMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__egmmemGetMapAddrSpace__)(struct ExtendedGpuMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__egmmemIsExportAllowed__)(struct ExtendedGpuMemory *);
     NvU32 (*__egmmemGetRefCount__)(struct ExtendedGpuMemory *);
     void (*__egmmemAddAdditionalDependants__)(struct RsClient *, struct ExtendedGpuMemory *, RsResourceRef *);
     NV_STATUS (*__egmmemControl_Prologue__)(struct ExtendedGpuMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -116,6 +117,7 @@ NV_STATUS __nvoc_objCreate_ExtendedGpuMemory(ExtendedGpuMemory**, Dynamic*, NvU3
 #define egmmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) egmmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define egmmemMapTo(pResource, pParams) egmmemMapTo_DISPATCH(pResource, pParams)
 #define egmmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) egmmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define egmmemIsExportAllowed(pMemory) egmmemIsExportAllowed_DISPATCH(pMemory)
 #define egmmemGetRefCount(pResource) egmmemGetRefCount_DISPATCH(pResource)
 #define egmmemAddAdditionalDependants(pClient, pResource, pReference) egmmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define egmmemControl_Prologue(pResource, pCallContext, pParams) egmmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -151,6 +153,10 @@ static inline NV_STATUS egmmemMapTo_DISPATCH(struct ExtendedGpuMemory *pResource
 
 static inline NV_STATUS egmmemGetMapAddrSpace_DISPATCH(struct ExtendedGpuMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__egmmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool egmmemIsExportAllowed_DISPATCH(struct ExtendedGpuMemory *pMemory) {
+    return pMemory->__egmmemIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 egmmemGetRefCount_DISPATCH(struct ExtendedGpuMemory *pResource) {
@@ -254,4 +260,5 @@ NV_STATUS egmmemAllocResources(OBJGPU *pGpu, struct MemoryManager *pMemoryManage
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_EGM_MEM_NVOC_H_

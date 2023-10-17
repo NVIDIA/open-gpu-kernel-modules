@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,14 +65,21 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS {
 
 /* Valid feature values */
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI                                 0:0
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_FALSE         (0x00000000U)
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_TRUE          (0x00000001U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_FALSE                    (0x00000000U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_SLI_TRUE                     (0x00000001U)
+
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_UEFI                                1:1
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_UEFI_FALSE        (0x00000000U)
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_UEFI_TRUE         (0x00000001U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_UEFI_FALSE                   (0x00000000U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_UEFI_TRUE                    (0x00000001U)
+
 #define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT                         2:2
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_FALSE (0x00000000U)
-#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_TRUE  (0x00000001U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_FALSE            (0x00000000U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_IS_EFI_INIT_TRUE             (0x00000001U)
+
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING              3:3
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING_FALSE (0x00000000U)
+#define NV0000_CTRL_SYSTEM_GET_FEATURES_UUID_BASED_MEM_SHARING_TRUE  (0x00000001U)
+
 /*
  * NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION
  *
@@ -103,7 +110,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_FEATURES_PARAMS {
  *   NV_ERR_INVALID_PARAM_STRUCT
  */
 
-#define NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION          (0x101U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_SYSTEM_GET_BUILD_VERSION                     (0x101U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_PARAMS_MESSAGE_ID" */
 
 #define NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_PARAMS_MESSAGE_ID (0x1U)
 
@@ -260,6 +267,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS {
 #define NV0000_CTRL_SYSTEM_CPU_TYPE_CELN_M16H          (0x00000011U)
 #define NV0000_CTRL_SYSTEM_CPU_TYPE_CORE2_EXTRM        (0x00000012U)
 #define NV0000_CTRL_SYSTEM_CPU_TYPE_ATOM               (0x00000013U)
+#define NV0000_CTRL_SYSTEM_CPU_TYPE_XEON_SPR           (0x00000014U)
 /* AMD types */
 #define NV0000_CTRL_SYSTEM_CPU_TYPE_K5                 (0x00000030U)
 #define NV0000_CTRL_SYSTEM_CPU_TYPE_K6                 (0x00000031U)
@@ -431,6 +439,45 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS {
 typedef struct NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS {
     NvU32 memorySize;
 } NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS;
+
+/*
+ * NV0000_CTRL_CMD_SYSTEM_GET_LOCK_TIMES
+ *
+ * This command is used to retrieve the measured times spent holding and waiting for
+ * the main RM locks (API and GPU).
+ *
+ *   waitApiLock
+ *     Total time spent by RM API's waiting to acquire the API lock
+ *
+ *   holdRoApiLock
+ *     Total time spent by RM API's holding the API lock in RO mode.
+ *
+ *   holdRwApiLock
+ *     Total time spent by RM API's holding the API lock in RW mode.
+ *
+ *   waitGpuLock
+ *     Total time spent by RM API's waiting to acquire one or more GPU locks.
+ *
+ *   holdGpuLock
+ *     Total time spent by RM API's holding one or more GPU locks.
+ *
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV0000_CTRL_CMD_SYSTEM_GET_LOCK_TIMES (0x109U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS_MESSAGE_ID (0x9U)
+
+typedef struct NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 waitApiLock, 8);
+    NV_DECLARE_ALIGNED(NvU64 holdRoApiLock, 8);
+    NV_DECLARE_ALIGNED(NvU64 holdRwApiLock, 8);
+    NV_DECLARE_ALIGNED(NvU64 waitGpuLock, 8);
+    NV_DECLARE_ALIGNED(NvU64 holdGpuLock, 8);
+} NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS;
 
 /*
  * NV0000_CTRL_CMD_SYSTEM_GET_CLASSLIST
@@ -2072,16 +2119,16 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
     NvU32 subFunc;
 
     /* Configurable TGP offset, in mW */
-    NvU32 ctgpOffsetmW;
+    NvS32 ctgpOffsetmW;
 
     /* TPP, as offset in mW */
-    NvU32 targetTppOffsetmW;
+    NvS32 targetTppOffsetmW;
 
     /* Maximum allowed output, as offset in mW */
-    NvU32 maxOutputOffsetmW;
+    NvS32 maxOutputOffsetmW;
 
     /* Minimum allowed output, as offset in mW */
-    NvU32 minOutputOffsetmW;
+    NvS32 minOutputOffsetmW;
 
     /* The System Controller Table Version */
     NvU8  version;

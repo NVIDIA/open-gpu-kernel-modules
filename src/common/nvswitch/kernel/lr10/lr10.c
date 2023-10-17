@@ -837,23 +837,23 @@ nvswitch_read_vbios_link_entries_lr10
         link_entries[i].nvLinkparam6 = (NvU8)vbios_link_entry.nvLinkparam6;
         tblPtr += (sizeof(NVLINK_VBIOS_CONFIG_DATA_LINKENTRY_20)/sizeof(NvU32));
 
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "<<<---- NvLink ID 0x%x ---->>>\n", i);
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 0 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam0, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam0));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 1 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam1, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam1));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 2 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam2, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam2));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 3 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam3, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam3));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 4 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam4, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam4));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 5 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam5, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam5));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "NVLink Params 6 \t0x%x \tBinary:"BYTE_TO_BINARY_PATTERN"\n", vbios_link_entry.nvLinkparam6, BYTE_TO_BINARY(vbios_link_entry.nvLinkparam6));
-        NVSWITCH_PRINT(device, SETUP,
+        NVSWITCH_PRINT(device, NOISY,
             "<<<---- NvLink ID 0x%x ---->>>\n\n", i);
     }
     *identified_link_entriesCount = i;
@@ -914,23 +914,23 @@ _nvswitch_vbios_fetch_nvlink_entries
         goto vbios_fetch_nvlink_entries_done;
     }
 
-    NVSWITCH_PRINT(device, SETUP,
+    NVSWITCH_PRINT(device, NOISY,
         "<<<---- NvLink Header ---->>>\n\n");
-    NVSWITCH_PRINT(device, SETUP,
+    NVSWITCH_PRINT(device, NOISY,
         "Version \t\t 0x%x\n", header.ver_20.Version);
-    NVSWITCH_PRINT(device, SETUP,
+    NVSWITCH_PRINT(device, NOISY,
         "Header Size \t0x%x\n", header.ver_20.HeaderSize);
-    NVSWITCH_PRINT(device, SETUP,
+    NVSWITCH_PRINT(device, NOISY,
         "Base Entry Size \t0x%x\n", header.ver_20.BaseEntrySize);
-    NVSWITCH_PRINT(device, SETUP,
+    NVSWITCH_PRINT(device, NOISY,
         "Base Entry count \t0x%x\n", header.ver_20.BaseEntryCount);
-    NVSWITCH_PRINT(device, SETUP,
+    NVSWITCH_PRINT(device, NOISY,
         "Link Entry Size \t0x%x\n", header.ver_20.LinkEntrySize);
-    NVSWITCH_PRINT(device, SETUP,
+    NVSWITCH_PRINT(device, NOISY,
         "Link Entry Count \t0x%x\n", header.ver_20.LinkEntryCount);
-    NVSWITCH_PRINT(device, SETUP,
+    NVSWITCH_PRINT(device, NOISY,
         "Reserved \t0x%x\n", header.ver_20.Reserved);
-    NVSWITCH_PRINT(device, SETUP,
+    NVSWITCH_PRINT(device, NOISY,
         "<<<---- NvLink Header ---->>>\n");
     if (header.ver_20.Version == NVLINK_CONFIG_DATA_HEADER_VER_20)
     {
@@ -6668,6 +6668,12 @@ nvswitch_is_soe_supported_lr10
     nvswitch_device *device
 )
 {
+    if (device->regkeys.soe_disable == NV_SWITCH_REGKEY_SOE_DISABLE_YES)
+    {
+        NVSWITCH_PRINT(device, INFO, "SOE is disabled via regkey.\n");
+        return NV_FALSE;
+    }
+
     return NV_TRUE;
 }
 

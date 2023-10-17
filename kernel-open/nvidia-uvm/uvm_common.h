@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2021 NVIDIA Corporation
+    Copyright (c) 2013-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -282,9 +282,6 @@ static inline void kmem_cache_destroy_safe(struct kmem_cache **ppCache)
     }
 }
 
-static const uid_t UVM_ROOT_UID = 0;
-
-
 typedef struct
 {
     NvU64 start_time_ns;
@@ -335,7 +332,6 @@ NV_STATUS errno_to_nv_status(int errnoCode);
 int nv_status_to_errno(NV_STATUS status);
 unsigned uvm_get_stale_process_id(void);
 unsigned uvm_get_stale_thread_id(void);
-NvBool uvm_user_id_security_check(uid_t euidTarget);
 
 extern int uvm_enable_builtin_tests;
 

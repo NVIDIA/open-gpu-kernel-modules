@@ -44,6 +44,7 @@
 
 #include <linux/mmu_notifier.h>
 #include <linux/wait.h>
+#include <linux/nodemask.h>
 
 // VA blocks are the leaf nodes in the uvm_va_space tree for managed allocations
 // (VA ranges with type == UVM_VA_RANGE_TYPE_MANAGED):
@@ -229,6 +230,42 @@ typedef struct
 
 } uvm_va_block_gpu_state_t;
 
+typedef struct
+{
+    // Per-page residency bit vector, used for fast traversal of resident
+    // pages.
+    //
+    // A set bit means the CPU has a coherent copy of the physical page
+    // resident in the NUMA node's memory, and that a CPU chunk for the
+    // corresponding page index has been allocated. This does not mean that
+    // the coherent copy is currently mapped anywhere, however. A page may be
+    // resident on multiple processors (but not multiple CPU NUMA nodes) when in
+    // read-duplicate mode.
+    //
+    // A cleared bit means the CPU NUMA node does not have a coherent copy of
+    // that page resident. A CPU chunk for the corresponding page index may or
+    // may not have been allocated. If the chunk is present, it's a cached chunk
+    // which can be reused in the future.
+    //
+    // Allocating PAGES_PER_UVM_VA_BLOCK is overkill when the block is
+    // smaller than UVM_VA_BLOCK_SIZE, but it's not much extra memory
+    // overhead on the whole.
+    uvm_page_mask_t resident;
+
+    // Per-page allocation bit vector.
+    //
+    // A set bit means that a CPU chunk has been allocated for the
+    // corresponding page index on this NUMA node.
+    uvm_page_mask_t allocated;
+
+    // CPU memory chunks represent physically contiguous CPU memory
+    // allocations. See uvm_pmm_sysmem.h for more details on CPU chunks.
+    // This member is meant to hold an opaque value indicating the CPU
+    // chunk storage method. For more details on CPU chunk storage,
+    // see uvm_cpu_chunk_storage_type_t in uvm_va_block.c.
+    unsigned long chunks;
+} uvm_va_block_cpu_node_state_t;
+
 // TODO: Bug 1766180: Worst-case we could have one of these per system page.
 //       Options:
 //       1) Rely on the OOM killer to prevent the user from trying to do that
@@ -306,37 +343,29 @@ struct uvm_va_block_struct
 
     struct
     {
-        // Per-page residency bit vector, used for fast traversal of resident
-        // pages.
-        //
-        // A set bit means the CPU has a coherent copy of the physical page
-        // resident in its memory, and that the corresponding entry in the pages
-        // array is present. This does not mean that the coherent copy is
-        // currently mapped anywhere, however. A page may be resident on
-        // multiple processors when in read-duplicate mode.
-        //
-        // A cleared bit means the CPU does not have a coherent copy of that
-        // page resident. The corresponding entry in the pages array may or may
-        // not present. If the entry is present, it's a cached page which can be
-        // reused in the future.
-        //
-        // Allocating PAGES_PER_UVM_VA_BLOCK is overkill when the block is
-        // smaller than UVM_VA_BLOCK_SIZE, but it's not much extra memory
-        // overhead on the whole.
-        uvm_page_mask_t resident;
-
-        // CPU memory chunks represent physically contiguous CPU memory
-        // allocations. See uvm_pmm_sysmem.h for more details on CPU chunks.
-        // This member is meant to hold an opaque value indicating the CPU
-        // chunk storage method. For more details on CPU chunk storage,
-        // see uvm_cpu_chunk_storage_type_t in uvm_va_block.c.
-        unsigned long chunks;
+        // Per-NUMA node tracking of CPU allocations.
+        // This is a dense array with one entry per possible NUMA node.
+        uvm_va_block_cpu_node_state_t **node_state;
 
         // Per-page allocation bit vector.
         //
         // A set bit means that a CPU page has been allocated for the
-        // corresponding page index.
+        // corresponding page index on at least one CPU NUMA node.
         uvm_page_mask_t allocated;
+
+        // Per-page residency bit vector. See
+        // uvm_va_block_cpu_numa_state_t::resident for a detailed description.
+        // This mask is a cumulative mask (logical OR) of all
+        // uvm_va_block_cpu_node_state_t::resident masks. It is meant to be used
+        // only for fast testing of page residency when it matters only if the
+        // page is resident on the CPU.
+        //
+        // Note that this mask cannot be set directly as this will cause
+        // inconsistencies between this mask and the per-NUMA residency masks.
+        // In order to properly maintain consistency between the per-NUMA masks
+        // and this one, uvm_va_block_cpu_[set|clear]_residency_*() helpers
+        // should be used.
+        uvm_page_mask_t resident;
 
         // Per-page mapping bit vectors, one per bit we need to track. These are
         // used for fast traversal of valid mappings in the block. These contain
@@ -418,7 +447,8 @@ struct uvm_va_block_struct
     uvm_page_mask_t read_duplicated_pages;
 
     // Mask to keep track of the pages that are not mapped on any non-UVM-Lite
-    // processor.
+    // processor. This mask is not used for HMM because the CPU can map pages
+    // at any time without notifying the driver.
     //     0: Page is definitely not mapped by any processors
     //     1: Page may or may not be mapped by a processor
     //
@@ -524,6 +554,13 @@ struct uvm_va_block_wrapper_struct
         // use kernels to trigger migrations and a fault replay could trigger
         // a successful migration if this error flag is cleared.
         NvU32 inject_cpu_pages_allocation_error_count;
+
+        // A NUMA node ID on which any CPU chunks will be allocated from.
+        // This will override any other setting and/or policy.
+        // Note that the kernel is still free to allocate from any of the
+        // nodes in the thread's policy.
+        int cpu_chunk_allocation_target_id;
+        int cpu_chunk_allocation_actual_id;
 
         // Force the next eviction attempt on this block to fail. Used for
         // testing only.
@@ -668,17 +705,12 @@ void uvm_va_block_context_free(uvm_va_block_context_t *va_block_context);
 // Initialization of an already-allocated uvm_va_block_context_t.
 //
 // mm is used to initialize the value of va_block_context->mm. NULL is allowed.
-static void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, struct mm_struct *mm)
-{
-    UVM_ASSERT(va_block_context);
+void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, struct mm_struct *mm);
 
-    // Write garbage into the VA Block context to ensure that the UVM code
-    // clears masks appropriately
-    if (UVM_IS_DEBUG())
-        memset(va_block_context, 0xff, sizeof(*va_block_context));
-
-    va_block_context->mm = mm;
-}
+// Return the preferred NUMA node ID for the block's policy.
+// If the preferred node ID is NUMA_NO_NODE, the current NUMA node ID
+// is returned.
+int uvm_va_block_context_get_node(uvm_va_block_context_t *va_block_context);
 
 // TODO: Bug 1766480: Using only page masks instead of a combination of regions
 //       and page masks could simplify the below APIs and their implementations
@@ -733,6 +765,9 @@ static void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, 
 // processor involved in the copy. This function only sets bits in
 // those masks. It is the caller's responsiblity to zero the masks or
 // not first.
+//
+// va_block_context->make_resident.dest_nid is used to guide the NUMA node for
+// CPU allocations.
 //
 // Notably any status other than NV_OK indicates that the block's lock might
 // have been unlocked and relocked.
@@ -1377,14 +1412,27 @@ static uvm_va_block_test_t *uvm_va_block_get_test(uvm_va_block_t *va_block)
 
 // Get the page residency mask for a processor if it's known to be there.
 //
+// If the processor is the CPU, the residency mask for the NUMA node ID
+// specified by nid will be returned (see
+// uvm_va_block_cpu_node_state_t::resident). If nid is NUMA_NO_NODE,
+// the cumulative CPU residency mask will be returned (see
+// uvm_va_block_t::cpu::resident).
+//
 // If the processor is a GPU, this will assert that GPU state is indeed present.
-uvm_page_mask_t *uvm_va_block_resident_mask_get(uvm_va_block_t *block, uvm_processor_id_t processor);
+uvm_page_mask_t *uvm_va_block_resident_mask_get(uvm_va_block_t *block, uvm_processor_id_t processor, int nid);
 
 // Get the page mapped mask for a processor. The returned mask cannot be
 // directly modified by the caller
 //
 // If the processor is a GPU, this will assert that GPU state is indeed present.
 const uvm_page_mask_t *uvm_va_block_map_mask_get(uvm_va_block_t *block, uvm_processor_id_t processor);
+
+// Return a mask of non-UVM-Lite pages that are unmapped within the given
+// region.
+// Locking: The block lock must be held.
+void uvm_va_block_unmapped_pages_get(uvm_va_block_t *va_block,
+                                     uvm_va_block_region_t region,
+                                     uvm_page_mask_t *out_mask);
 
 // VA block lookup functions. There are a number of permutations which might be
 // useful, such as looking up the block from {va_space, va_range} x {addr,
@@ -1756,17 +1804,28 @@ static bool uvm_page_mask_full(const uvm_page_mask_t *mask)
     return bitmap_full(mask->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
 
-static bool uvm_page_mask_and(uvm_page_mask_t *mask_out, const uvm_page_mask_t *mask_in1, const uvm_page_mask_t *mask_in2)
+static void uvm_page_mask_fill(uvm_page_mask_t *mask)
+{
+    bitmap_fill(mask->bitmap, PAGES_PER_UVM_VA_BLOCK);
+}
+
+static bool uvm_page_mask_and(uvm_page_mask_t *mask_out,
+                              const uvm_page_mask_t *mask_in1,
+                              const uvm_page_mask_t *mask_in2)
 {
     return bitmap_and(mask_out->bitmap, mask_in1->bitmap, mask_in2->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
 
-static bool uvm_page_mask_andnot(uvm_page_mask_t *mask_out, const uvm_page_mask_t *mask_in1, const uvm_page_mask_t *mask_in2)
+static bool uvm_page_mask_andnot(uvm_page_mask_t *mask_out,
+                                 const uvm_page_mask_t *mask_in1,
+                                 const uvm_page_mask_t *mask_in2)
 {
     return bitmap_andnot(mask_out->bitmap, mask_in1->bitmap, mask_in2->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
 
-static void uvm_page_mask_or(uvm_page_mask_t *mask_out, const uvm_page_mask_t *mask_in1, const uvm_page_mask_t *mask_in2)
+static void uvm_page_mask_or(uvm_page_mask_t *mask_out,
+                             const uvm_page_mask_t *mask_in1,
+                             const uvm_page_mask_t *mask_in2)
 {
     bitmap_or(mask_out->bitmap, mask_in1->bitmap, mask_in2->bitmap, PAGES_PER_UVM_VA_BLOCK);
 }
@@ -2036,30 +2095,49 @@ uvm_processor_id_t uvm_va_block_page_get_closest_resident(uvm_va_block_t *va_blo
                                                           uvm_page_index_t page_index,
                                                           uvm_processor_id_t processor);
 
+// Mark CPU page page_index as resident on NUMA node specified by nid.
+// nid cannot be NUMA_NO_NODE.
+void uvm_va_block_cpu_set_resident_page(uvm_va_block_t *va_block, int nid, uvm_page_index_t page_index);
+
+// Test if a CPU page is resident on NUMA node nid. If nid is NUMA_NO_NODE,
+// the function will return True if the page is resident on any CPU NUMA node.
+bool uvm_va_block_cpu_is_page_resident_on(uvm_va_block_t *va_block, int nid, uvm_page_index_t page_index);
+
+// Test if all pages in region are resident on NUMA node nid. If nid is
+// NUMA_NO_NODE, the function will test if the pages in the region are
+// resident on any CPU NUMA node.
+bool uvm_va_block_cpu_is_region_resident_on(uvm_va_block_t *va_block, int nid, uvm_va_block_region_t region);
+
 // Insert a CPU chunk at the given page_index into the va_block.
 // Locking: The va_block lock must be held.
-NV_STATUS uvm_cpu_chunk_insert_in_block(uvm_va_block_t *va_block,
-                                        uvm_cpu_chunk_t *chunk,
-                                        uvm_page_index_t page_index);
+NV_STATUS uvm_cpu_chunk_insert_in_block(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
 
 // Remove a CPU chunk at the given page_index from the va_block.
+// nid cannot be NUMA_NO_NODE.
 // Locking: The va_block lock must be held.
-void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block,
-                                     uvm_page_index_t page_index);
+void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block, int nid, uvm_page_index_t page_index);
 
-// Return the CPU chunk at the given page_index from the va_block.
+// Return the CPU chunk at the given page_index on the given NUMA node from the
+// va_block. nid cannot be NUMA_NO_NODE.
 // Locking: The va_block lock must be held.
 uvm_cpu_chunk_t *uvm_cpu_chunk_get_chunk_for_page(uvm_va_block_t *va_block,
+                                                  int nid,
                                                   uvm_page_index_t page_index);
 
-// Return the CPU chunk at the given page_index from the va_block.
+// Return the struct page * from the chunk corresponding to the given page_index
 // Locking: The va_block lock must be held.
-struct page *uvm_cpu_chunk_get_cpu_page(uvm_va_block_t *va_block,
-                                        uvm_page_index_t page_index);
+struct page *uvm_cpu_chunk_get_cpu_page(uvm_va_block_t *va_block, uvm_cpu_chunk_t *chunk, uvm_page_index_t page_index);
+
+// Return the struct page * of the resident chunk at the given page_index from
+// the va_block. The given page_index must be resident on the CPU.
+// Locking: The va_block lock must be held.
+struct page *uvm_va_block_get_cpu_page(uvm_va_block_t *va_block, uvm_page_index_t page_index);
 
 // Physically map a CPU chunk so it is DMA'able from all registered GPUs.
+// nid cannot be NUMA_NO_NODE.
 // Locking: The va_block lock must be held.
 NV_STATUS uvm_va_block_map_cpu_chunk_on_gpus(uvm_va_block_t *va_block,
+                                             uvm_cpu_chunk_t *chunk,
                                              uvm_page_index_t page_index);
 
 // Physically unmap a CPU chunk from all registered GPUs.

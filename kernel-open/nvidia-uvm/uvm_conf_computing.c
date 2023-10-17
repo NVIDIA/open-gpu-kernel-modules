@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021-2023 NVIDIA Corporation
+    Copyright (c) 2021 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -54,26 +54,23 @@ bool uvm_conf_computing_mode_is_hcc(const uvm_gpu_t *gpu)
     return uvm_conf_computing_get_mode(gpu->parent) == UVM_GPU_CONF_COMPUTE_MODE_HCC;
 }
 
-void uvm_conf_computing_check_parent_gpu(const uvm_parent_gpu_t *parent)
+NV_STATUS uvm_conf_computing_init_parent_gpu(const uvm_parent_gpu_t *parent)
 {
-    uvm_gpu_t *first_gpu;
+    UvmGpuConfComputeMode cc, sys_cc;
+    uvm_gpu_t *first;
 
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
-    // The Confidential Computing state of the GPU should match that of the
-    // system.
-    UVM_ASSERT(uvm_conf_computing_mode_enabled_parent(parent) == g_uvm_global.conf_computing_enabled);
-
     // TODO: Bug 2844714: since we have no routine to traverse parent GPUs,
     // find first child GPU and get its parent.
-    first_gpu = uvm_global_processor_mask_find_first_gpu(&g_uvm_global.retained_gpus);
-    if (first_gpu == NULL)
-        return;
+    first = uvm_global_processor_mask_find_first_gpu(&g_uvm_global.retained_gpus);
+    if (!first)
+        return NV_OK;
 
-    // All GPUs derive Confidential Computing status from their parent. By
-    // current policy all parent GPUs have identical Confidential Computing
-    // status.
-    UVM_ASSERT(uvm_conf_computing_get_mode(parent) == uvm_conf_computing_get_mode(first_gpu->parent));
+    sys_cc = uvm_conf_computing_get_mode(first->parent);
+    cc = uvm_conf_computing_get_mode(parent);
+
+    return cc == sys_cc ? NV_OK : NV_ERR_NOT_SUPPORTED;
 }
 
 static void dma_buffer_destroy_locked(uvm_conf_computing_dma_buffer_pool_t *dma_buffer_pool,

@@ -938,7 +938,6 @@ void   nvswitch_corelib_clear_link_state_lr10(nvlink_link *link);
 NvlStatus nvswitch_corelib_set_dl_link_mode_ls10(nvlink_link *link, NvU64 mode, NvU32 flags);
 NvlStatus nvswitch_corelib_set_tx_mode_ls10(nvlink_link *link, NvU64 mode, NvU32 flags);
 void nvswitch_init_lpwr_regs_ls10(nvlink_link *link);
-void nvswitch_program_l1_scratch_reg_ls10(nvswitch_device *device, NvU32 linkNumber);
 
 NvlStatus nvswitch_minion_service_falcon_interrupts_ls10(nvswitch_device *device, NvU32 instance);
 

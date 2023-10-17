@@ -565,11 +565,26 @@ endef
 #  $(1): Path to the file to convert
 ##############################################################################
 
+LD_TARGET_EMULATION_FLAG =
+LD_TARGET_EMULATION_FLAG_Linux_x86      = elf_i386
+LD_TARGET_EMULATION_FLAG_Linux_x86_64   = elf_x86_64
+LD_TARGET_EMULATION_FLAG_Linux_aarch64  = aarch64elf
+LD_TARGET_EMULATION_FLAG_Linux_ppc64le  = elf64lppc
+LD_TARGET_EMULATION_FLAG_SunOS_x86      = elf_i386_sol2
+LD_TARGET_EMULATION_FLAG_SunOS_x86_64   = elf_x86_64_sol2
+LD_TARGET_EMULATION_FLAG_FreeBSD_x86    = elf_i386_fbsd
+LD_TARGET_EMULATION_FLAG_FreeBSD_x86_64 = elf_x86_64_fbsd
+
+ifdef LD_TARGET_EMULATION_FLAG_$(TARGET_OS)_$(TARGET_ARCH)
+  LD_TARGET_EMULATION_FLAG = -m $(LD_TARGET_EMULATION_FLAG_$(TARGET_OS)_$(TARGET_ARCH))
+endif
+
 define READ_ONLY_OBJECT_FROM_FILE_RULE
   $$(OUTPUTDIR)/$$(notdir $(1)).o: $(1)
 	$(at_if_quiet)$$(MKDIR) $$(OUTPUTDIR)
 	$(at_if_quiet)cd $$(dir $(1)); \
 	$$(call quiet_cmd_no_at,LD) -r -z noexecstack --format=binary \
+	    $$(LD_TARGET_EMULATION_FLAG) \
 	    $$(notdir $(1)) -o $$(OUTPUTDIR_ABSOLUTE)/$$(notdir $$@)
 	$$(call quiet_cmd,OBJCOPY) \
 	    --rename-section .data=.rodata,contents,alloc,load,data,readonly \

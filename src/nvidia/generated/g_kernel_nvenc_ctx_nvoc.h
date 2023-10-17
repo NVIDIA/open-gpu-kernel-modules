@@ -323,4 +323,5 @@ static inline void __nvoc_msencctxDestruct(struct MsencContext *pMsencContext) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_NVENC_CTX_NVOC_H_

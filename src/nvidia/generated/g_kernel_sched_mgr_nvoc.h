@@ -140,4 +140,5 @@ static inline void kschedmgrSetConfigPolicyFromUser(struct KernelSchedMgr *pKern
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_SCHED_MGR_NVOC_H_

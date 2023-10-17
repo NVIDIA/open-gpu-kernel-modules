@@ -105,7 +105,7 @@ static NV_STATUS __nvoc_thunk_RsResource_vblcbMapTo(struct VblankCallback *pReso
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VblankCallback_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_vblcbGetMapAddrSpace(struct VblankCallback *pGpuResource, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+static NV_STATUS __nvoc_thunk_GpuResource_vblcbGetMapAddrSpace(struct VblankCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VblankCallback_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
@@ -145,11 +145,11 @@ static NvHandle __nvoc_thunk_GpuResource_vblcbGetInternalObjectHandle(struct Vbl
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VblankCallback_GpuResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_vblcbControl(struct VblankCallback *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static NV_STATUS __nvoc_thunk_GpuResource_vblcbControl(struct VblankCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VblankCallback_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_vblcbUnmap(struct VblankCallback *pGpuResource, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+static NV_STATUS __nvoc_thunk_GpuResource_vblcbUnmap(struct VblankCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
     return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VblankCallback_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
@@ -185,7 +185,7 @@ static void __nvoc_thunk_RmResource_vblcbControlSerialization_Epilogue(struct Vb
     rmresControlSerialization_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_VblankCallback_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_vblcbMap(struct VblankCallback *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+static NV_STATUS __nvoc_thunk_GpuResource_vblcbMap(struct VblankCallback *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
     return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VblankCallback_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 

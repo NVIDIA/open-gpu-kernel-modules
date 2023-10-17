@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -672,10 +672,8 @@ serverAllocResource
         }
         else
         {
-            status = serverLookupSecondClient(pParams, &hSecondClient);
-
-            if (status != NV_OK)
-                goto done;
+            hSecondClient = serverAllocLookupSecondClient(pParams->externalClassId, 
+                                                          pParams->pAllocParams);
 
             if (hSecondClient == 0)
             {
@@ -1190,8 +1188,7 @@ serverFreeResourceTree
 
     if (bPopFreeStack)
     {
-        if (pClient != NULL)
-            pClient->pFreeStack = freeStack.pPrev;
+        pClient->pFreeStack = freeStack.pPrev;
         bPopFreeStack = NV_FALSE;
     }
 
@@ -1213,7 +1210,7 @@ serverFreeResourceTree
         if (bReAcquireLock)
         {
             serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);
-            serverTopLock_Prologue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
+            NV_CHECK_OK(status, LEVEL_INFO, serverTopLock_Prologue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags));
             _serverFreeClient(pServer, &clientFreeParams);
             serverTopLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
             initialLockState &= ~RS_LOCK_STATE_CLIENT_LOCK_ACQUIRED;
@@ -2433,10 +2430,10 @@ _serverLockClient
     }
 
     pClient = pClientEntry->pClient;
-    NV_ASSERT(pClient->hClient == pClientEntry->hClient);
 
     if ((pClient == NULL) || (pClient->hClient != hClient))
     {
+        NV_ASSERT(0);
         if (access == LOCK_ACCESS_READ)
             RS_RWLOCK_RELEASE_READ(pClientEntry->pLock, &pClientEntry->lockVal);
         else
@@ -3320,16 +3317,14 @@ serverAllocEpilogue_WAR
     return status;
 }
 
-NV_STATUS
-serverLookupSecondClient
+NvHandle
+serverAllocLookupSecondClient
 (
-    RS_RES_ALLOC_PARAMS_INTERNAL *pParams,
-    NvHandle *phClient
+    NvU32    externalClassId,
+    void     *pAllocParams
 )
 {
-    *phClient = 0;
-
-    return NV_OK;
+    return 0;
 }
 
 NV_STATUS serverTopLock_Prologue
@@ -3856,7 +3851,7 @@ NV_STATUS serverControl_Prologue
     if (status != NV_OK)
         return status;
 
-    serverControlLookupLockFlags(pServer, RS_LOCK_RESOURCE, pParams, pParams->pCookie, pAccess);
+    status = serverControlLookupLockFlags(pServer, RS_LOCK_RESOURCE, pParams, pParams->pCookie, pAccess);
     if (status != NV_OK)
         return status;
 

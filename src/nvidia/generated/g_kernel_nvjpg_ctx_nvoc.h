@@ -323,4 +323,5 @@ static inline void __nvoc_nvjpgctxDestruct(struct NvjpgContext *pNvjpgContext) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_NVJPG_CTX_NVOC_H_

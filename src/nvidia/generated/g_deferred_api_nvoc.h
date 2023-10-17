@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,7 +47,6 @@ typedef struct _def_deferred_api_info
 {
     NODE                Node;
     NvHandle            Handle;
-    NvHandle            Client;
     NvU32               Flags;                  // see DEFERRED_API_INFO_FLAGS_* defines
     RS_PRIV_LEVEL       privLevel;              // privilege level of the client that initiated deferred call.
     void *              pDeferredApiInfo;
@@ -341,4 +340,5 @@ void defapiDestruct_IMPL(struct DeferredApiObject *pDeferredApi);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_DEFERRED_API_NVOC_H_

@@ -1449,7 +1449,6 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_GSP                  MKENGDESC(classId(Gsp),                 0)
 #define ENG_FSP                  MKENGDESC(classId(OBJFSP),              0)
 #define ENG_KERNEL_FSP           MKENGDESC(classId(KernelFsp),           0)
-#define ENG_OFA                  MKENGDESC(classId(OBJOFA),              0)
 #define ENG_KERNEL_GSP           MKENGDESC(classId(KernelGsp),           0)
 #define ENG_KERNEL_SEC2          MKENGDESC(classId(KernelSec2),          0)
 #define ENG_DISPMACRO            MKENGDESC(classId(OBJDISPMACRO),        0)
@@ -1524,9 +1523,15 @@ typedef struct KernelCcu KernelCcu;
 #define IS_KERNEL_IOCTRL(engDesc)        (ENGDESC_FIELD(engDesc, _CLASS) == classId(KernelIoctrl))
 #define GET_KERNEL_IOCTRL_IDX(engDesc)   ENGDESC_FIELD(engDesc, _INST)
 
+// Indexed OFA engine tag reference
+#define ENG_OFA(x)                  MKENGDESC(classId(OBJOFA),              x)
+#define ENG_OFA__SIZE_1             1
+#define IS_OFA(engDesc)             (ENGDESC_FIELD(engDesc, _CLASS) == classId(OBJOFA))
+#define GET_OFA_IDX(engDesc)        ENGDESC_FIELD(engDesc, _INST)
 #endif // _ENG_DESC_H_
 
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_ENG_DESC_NVOC_H_

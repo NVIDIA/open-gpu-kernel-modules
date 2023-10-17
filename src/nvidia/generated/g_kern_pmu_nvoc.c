@@ -70,6 +70,10 @@ static NV_STATUS __nvoc_thunk_KernelPmu_engstateConstructEngine(struct OBJGPU *p
     return kpmuConstructEngine(pGpu, (struct KernelPmu *)(((unsigned char *)pKernelPmu) - __nvoc_rtti_KernelPmu_OBJENGSTATE.offset), engDesc);
 }
 
+static void __nvoc_thunk_KernelPmu_engstateStateDestroy(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPmu) {
+    kpmuStateDestroy(pGpu, (struct KernelPmu *)(((unsigned char *)pKernelPmu) - __nvoc_rtti_KernelPmu_OBJENGSTATE.offset));
+}
+
 static NV_STATUS __nvoc_thunk_KernelPmu_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelPmu) {
     return kpmuStateInitLocked(pGpu, (struct KernelPmu *)(((unsigned char *)pKernelPmu) - __nvoc_rtti_KernelPmu_OBJENGSTATE.offset));
 }
@@ -88,10 +92,6 @@ static NV_STATUS __nvoc_thunk_OBJENGSTATE_kpmuStatePreLoad(POBJGPU pGpu, struct 
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kpmuStatePostUnload(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg0) {
     return engstateStatePostUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelPmu_OBJENGSTATE.offset), arg0);
-}
-
-static void __nvoc_thunk_OBJENGSTATE_kpmuStateDestroy(POBJGPU pGpu, struct KernelPmu *pEngstate) {
-    engstateStateDestroy(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelPmu_OBJENGSTATE.offset));
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kpmuStatePreUnload(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg0) {
@@ -158,9 +158,13 @@ static void __nvoc_init_funcTable_KernelPmu_1(KernelPmu *pThis) {
 
     pThis->__kpmuConstructEngine__ = &kpmuConstructEngine_IMPL;
 
+    pThis->__kpmuStateDestroy__ = &kpmuStateDestroy_IMPL;
+
     pThis->__kpmuStateInitLocked__ = &kpmuStateInitLocked_IMPL;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelPmu_engstateConstructEngine;
+
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateDestroy__ = &__nvoc_thunk_KernelPmu_engstateStateDestroy;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelPmu_engstateStateInitLocked;
 
@@ -171,8 +175,6 @@ static void __nvoc_init_funcTable_KernelPmu_1(KernelPmu *pThis) {
     pThis->__kpmuStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_kpmuStatePreLoad;
 
     pThis->__kpmuStatePostUnload__ = &__nvoc_thunk_OBJENGSTATE_kpmuStatePostUnload;
-
-    pThis->__kpmuStateDestroy__ = &__nvoc_thunk_OBJENGSTATE_kpmuStateDestroy;
 
     pThis->__kpmuStatePreUnload__ = &__nvoc_thunk_OBJENGSTATE_kpmuStatePreUnload;
 

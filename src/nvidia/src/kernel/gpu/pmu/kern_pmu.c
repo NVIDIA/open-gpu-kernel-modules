@@ -29,6 +29,7 @@
 ****************************************************************************/
 
 #include "gpu/pmu/kern_pmu.h"
+#include "gpu/mem_mgr/mem_mgr.h"
 
 NV_STATUS
 kpmuConstructEngine_IMPL(OBJGPU *pGpu, KernelPmu *pKernelPmu, ENGDESCRIPTOR engDesc)
@@ -38,12 +39,45 @@ kpmuConstructEngine_IMPL(OBJGPU *pGpu, KernelPmu *pKernelPmu, ENGDESCRIPTOR engD
 }
 
 void
+kpmuStateDestroy_IMPL
+(
+    OBJGPU *pGpu,
+    KernelPmu *pKernelPmu
+)
+{
+    if (pKernelPmu->pPmuRsvdMemdesc != NULL)
+    {
+        memdescFree(pKernelPmu->pPmuRsvdMemdesc);
+        memdescDestroy(pKernelPmu->pPmuRsvdMemdesc);
+        pKernelPmu->pPmuRsvdMemdesc = NULL;
+    }
+}
+
+void
 kpmuDestruct_IMPL(KernelPmu *pKernelPmu)
 {
     OBJGPU *pGpu = ENG_GET_GPU(pKernelPmu);
 
     kpmuFreeLibosLoggingStructures(pGpu, pKernelPmu);
 }
+
+NvU32 kpmuReservedMemorySizeGet_IMPL
+(
+    KernelPmu *pKernelPmu
+)
+{
+    return 0U;
+}
+
+NvU64 kpmuReservedMemoryOffsetGet_IMPL
+(
+    OBJGPU *pGpu,
+    KernelPmu *pKernelPmu
+)
+{
+    return 0U;
+}
+
 
 /*!
  * Init libos PMU logging

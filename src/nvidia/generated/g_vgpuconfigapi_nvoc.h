@@ -441,4 +441,5 @@ void                CliNotifyVgpuConfigEvent    (OBJGPU *,  NvU32);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_VGPUCONFIGAPI_NVOC_H_

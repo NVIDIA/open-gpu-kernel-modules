@@ -72,10 +72,22 @@ EXTRA_CFLAGS += -I$(src)/common/inc
 EXTRA_CFLAGS += -I$(src)
 EXTRA_CFLAGS += -Wall $(DEFINES) $(INCLUDES) -Wno-cast-qual -Wno-error -Wno-format-extra-args
 EXTRA_CFLAGS += -D__KERNEL__ -DMODULE -DNVRM
-EXTRA_CFLAGS += -DNV_VERSION_STRING=\"535.113.01\"
+EXTRA_CFLAGS += -DNV_VERSION_STRING=\"545.23.06\"
 
 ifneq ($(SYSSRCHOST1X),)
  EXTRA_CFLAGS += -I$(SYSSRCHOST1X)
+endif
+
+# Some Android kernels prohibit driver use of filesystem functions like
+# filp_open() and kernel_read(). Disable the NV_FILESYSTEM_ACCESS_AVAILABLE
+# functionality that uses those functions when building for Android.
+
+PLATFORM_IS_ANDROID ?= 0
+
+ifeq ($(PLATFORM_IS_ANDROID),1)
+ EXTRA_CFLAGS += -DNV_FILESYSTEM_ACCESS_AVAILABLE=0
+else
+ EXTRA_CFLAGS += -DNV_FILESYSTEM_ACCESS_AVAILABLE=1
 endif
 
 EXTRA_CFLAGS += -Wno-unused-function
@@ -92,7 +104,6 @@ endif
 
 ifeq ($(NV_BUILD_TYPE),debug)
  EXTRA_CFLAGS += -g
- EXTRA_CFLAGS += $(call cc-option,-gsplit-dwarf,)
 endif
 
 EXTRA_CFLAGS += -ffreestanding
@@ -214,6 +225,7 @@ $(obj)/conftest/patches.h: $(NV_CONFTEST_SCRIPT)
 NV_HEADER_PRESENCE_TESTS = \
  asm/system.h \
  drm/drmP.h \
+ drm/drm_aperture.h \
  drm/drm_auth.h \
  drm/drm_gem.h \
  drm/drm_crtc.h \
@@ -224,6 +236,7 @@ NV_HEADER_PRESENCE_TESTS = \
  drm/drm_encoder.h \
  drm/drm_atomic_uapi.h \
  drm/drm_drv.h \
+ drm/drm_fbdev_generic.h \
  drm/drm_framebuffer.h \
  drm/drm_connector.h \
  drm/drm_probe_helper.h \
@@ -257,6 +270,7 @@ NV_HEADER_PRESENCE_TESTS = \
  linux/sched/task_stack.h \
  xen/ioemu.h \
  linux/fence.h \
+ linux/dma-fence.h \
  linux/dma-resv.h \
  soc/tegra/chip-id.h \
  soc/tegra/fuse.h \
@@ -302,6 +316,7 @@ NV_HEADER_PRESENCE_TESTS = \
  linux/mdev.h \
  soc/tegra/bpmp-abi.h \
  soc/tegra/bpmp.h \
+ linux/sync_file.h \
  linux/cc_platform.h \
  asm/cpufeature.h
 

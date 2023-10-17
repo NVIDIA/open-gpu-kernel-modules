@@ -190,13 +190,15 @@ static NvU32 RmRunSLISupportCheck
 
     // RMCONFIG: is SLI enabled in this build?
 
+    OBJSYS    *pSys                 = SYS_GET_INSTANCE();
+
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
         gpuSliStatus |= NV0000_CTRL_SLI_STATUS_GPU_NOT_SUPPORTED;
 
         // Detect SLI link before failing on GSP client RM
         if (!IS_GSP_CLIENT(pGpu))
-            goto done;
+            goto fail;
     }
 
     // get gpu attach info
@@ -207,7 +209,20 @@ static NvU32 RmRunSLISupportCheck
     {
         // Do not cache this status in pGpu->sliStatus as it is dependent on the GPU count
         gpuSliStatus |= NV0000_CTRL_SLI_STATUS_INVALID_GPU_COUNT;
-        goto done;
+        goto fail;
+    }
+
+    KernelNvlink *pKernelNvlink     = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    // Do not run the SLI check with NVSwitch
+    if ((pSys->getProperty(pSys, PDB_PROP_SYS_NVSWITCH_IS_PRESENT) ||
+         ((pKernelNvlink != NULL) &&
+          ((GPU_IS_NVSWITCH_DETECTED(pGpu)) ||
+           knvlinkIsNvswitchProxyPresent(pGpu, pKernelNvlink)))) &&
+        pSys->getProperty(pSys, PDB_PROP_SYS_FABRIC_IS_EXTERNALLY_MANAGED))
+    {
+        gpuSliStatus |= NV0000_CTRL_SLI_STATUS_GPU_NOT_SUPPORTED;
+        goto fail;
     }
 
      // For 9 GPUs and above, we do not check the SLI configs
@@ -231,6 +246,11 @@ static NvU32 RmRunSLISupportCheck
             pGpu->sliStatus = gpuSliStatus;
         }
     }
+goto done;
+
+fail:
+    pGpu->sliStatus = gpuSliStatus;
+
 done:
     NV_PRINTF(LEVEL_INFO, "gpuSliStatus 0x%x\n", gpuSliStatus);
 

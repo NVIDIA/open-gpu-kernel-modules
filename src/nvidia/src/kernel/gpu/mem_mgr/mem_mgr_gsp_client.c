@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -165,15 +165,12 @@ memmgrPreInitReservedMemory_FWCLIENT
         tmpAddr += BUS_COHERENT_LINK_TEST_BUFFER_SIZE;
     }
 
-    if (KBUS_BAR2_ENABLED(pKernelBus))
-    {
-        //
-        // This has to be the very *last* thing in reserved memory as it
-        // will may grow past the 1MB reserved memory window.  We cannot
-        // size it until memsysStateInitLockedHal_GK104.
-        //
-        memmgrReserveBar2BackingStore(pGpu, pMemoryManager, &tmpAddr);
-    }
+    //
+    // This has to be the very *last* thing in reserved memory as it
+    // will may grow past the 1MB reserved memory window.  We cannot
+    // size it until memsysStateInitLockedHal_GK104.
+    //
+    memmgrReserveBar2BackingStore(pGpu, pMemoryManager, &tmpAddr);
 
     NV_ASSERT(NvU64_LO32(tmpAddr) == tmpAddr);
     pMemoryManager->rsvdMemorySize = NvU64_LO32(tmpAddr);

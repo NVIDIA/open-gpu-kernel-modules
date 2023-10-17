@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2019 NVIDIA Corporation
+    Copyright (c) 2017-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -664,6 +664,7 @@ done:
 
 static NV_STATUS test_cpu_chunk_alloc(uvm_chunk_size_t size,
                                       uvm_cpu_chunk_alloc_flags_t flags,
+                                      int nid,
                                       uvm_cpu_chunk_t **out_chunk)
 {
     uvm_cpu_chunk_t *chunk;
@@ -675,7 +676,7 @@ static NV_STATUS test_cpu_chunk_alloc(uvm_chunk_size_t size,
     // It is possible that the allocation fails due to lack of large pages
     // rather than an API issue, which will result in a false negative.
     // However, that should be very rare.
-    TEST_NV_CHECK_RET(uvm_cpu_chunk_alloc(size, flags, &chunk));
+    TEST_NV_CHECK_RET(uvm_cpu_chunk_alloc(size, flags, nid, &chunk));
 
     // Check general state of the chunk:
     //   - chunk should be a physical chunk,
@@ -684,6 +685,12 @@ static NV_STATUS test_cpu_chunk_alloc(uvm_chunk_size_t size,
     TEST_CHECK_GOTO(uvm_cpu_chunk_is_physical(chunk), done);
     TEST_CHECK_GOTO(uvm_cpu_chunk_get_size(chunk) == size, done);
     TEST_CHECK_GOTO(uvm_cpu_chunk_num_pages(chunk) == size / PAGE_SIZE, done);
+
+    // It is possible for the kernel to allocate a chunk on a NUMA node other
+    // than the one requested. However, that should not be an issue with
+    // sufficient memory on each NUMA node.
+    if (nid != NUMA_NO_NODE)
+        TEST_CHECK_GOTO(uvm_cpu_chunk_get_numa_node(chunk) == nid, done);
 
     if (flags & UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO) {
         NvU64 *cpu_addr;
@@ -719,7 +726,7 @@ static NV_STATUS test_cpu_chunk_mapping_basic_verify(uvm_gpu_t *gpu,
     NvU64 dma_addr;
     NV_STATUS status = NV_OK;
 
-    TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, flags, &chunk));
+    TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, flags, NUMA_NO_NODE, &chunk));
     phys_chunk = uvm_cpu_chunk_to_physical(chunk);
 
     // Check state of the physical chunk:
@@ -763,27 +770,27 @@ static NV_STATUS test_cpu_chunk_mapping_basic(uvm_gpu_t *gpu, uvm_cpu_chunk_allo
     return NV_OK;
 }
 
-static NV_STATUS test_cpu_chunk_mapping_array(uvm_gpu_t *gpu1, uvm_gpu_t *gpu2, uvm_gpu_t *gpu3)
+static NV_STATUS test_cpu_chunk_mapping_array(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1, uvm_gpu_t *gpu2)
 {
     NV_STATUS status = NV_OK;
     uvm_cpu_chunk_t *chunk;
     uvm_cpu_physical_chunk_t *phys_chunk;
-    NvU64 dma_addr_gpu2;
+    NvU64 dma_addr_gpu1;
 
-    TEST_NV_CHECK_RET(test_cpu_chunk_alloc(PAGE_SIZE, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, &chunk));
+    TEST_NV_CHECK_RET(test_cpu_chunk_alloc(PAGE_SIZE, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, NUMA_NO_NODE, &chunk));
     phys_chunk = uvm_cpu_chunk_to_physical(chunk);
 
-    TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu2), done);
-    TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu2), done);
-    TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu3), done);
-    TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu2), done);
-    TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu3), done);
-    dma_addr_gpu2 = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu2->parent);
-    uvm_cpu_chunk_unmap_gpu_phys(chunk, gpu3->parent);
-    TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu2), done);
     TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu1), done);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu1), done);
+    TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu2), done);
+    TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu1), done);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu2), done);
+    dma_addr_gpu1 = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu1->parent);
+    uvm_cpu_chunk_unmap_gpu_phys(chunk, gpu2->parent);
+    TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu1), done);
+    TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu0), done);
+    TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu0), done);
+    TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu1), done);
 
     // DMA mapping addresses for different GPUs live in different IOMMU spaces,
     // so it would be perfectly legal for them to have the same IOVA, and even
@@ -793,7 +800,7 @@ static NV_STATUS test_cpu_chunk_mapping_array(uvm_gpu_t *gpu1, uvm_gpu_t *gpu2, 
     // GPU1. It's true that we may get a false negative if both addresses
     // happened to alias and we had a bug in how the addresses are shifted in
     // the dense array, but that's better than intermittent failure.
-    TEST_CHECK_GOTO(uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu2->parent) == dma_addr_gpu2, done);
+    TEST_CHECK_GOTO(uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu1->parent) == dma_addr_gpu1, done);
 
 done:
     uvm_cpu_chunk_free(chunk);
@@ -911,7 +918,7 @@ static NV_STATUS test_cpu_chunk_split_and_merge(uvm_gpu_t *gpu)
         uvm_cpu_chunk_t *chunk;
         NV_STATUS status;
 
-        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, &chunk));
+        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, NUMA_NO_NODE, &chunk));
         status = do_test_cpu_chunk_split_and_merge(chunk, gpu);
         uvm_cpu_chunk_free(chunk);
 
@@ -993,7 +1000,7 @@ static NV_STATUS test_cpu_chunk_dirty(uvm_gpu_t *gpu)
         uvm_cpu_physical_chunk_t *phys_chunk;
         size_t num_pages;
 
-        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, &chunk));
+        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, NUMA_NO_NODE, &chunk));
         phys_chunk = uvm_cpu_chunk_to_physical(chunk);
         num_pages = uvm_cpu_chunk_num_pages(chunk);
 
@@ -1005,7 +1012,7 @@ static NV_STATUS test_cpu_chunk_dirty(uvm_gpu_t *gpu)
 
         uvm_cpu_chunk_free(chunk);
 
-        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO, &chunk));
+        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO, NUMA_NO_NODE, &chunk));
         phys_chunk = uvm_cpu_chunk_to_physical(chunk);
         num_pages = uvm_cpu_chunk_num_pages(chunk);
 
@@ -1170,8 +1177,30 @@ NV_STATUS test_cpu_chunk_free(uvm_va_space_t *va_space, uvm_processor_mask_t *te
     size_t size = uvm_chunk_find_next_size(alloc_sizes, PAGE_SIZE);
 
     for_each_chunk_size_from(size, alloc_sizes) {
-        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, &chunk));
+        TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, NUMA_NO_NODE, &chunk));
         TEST_NV_CHECK_RET(do_test_cpu_chunk_free(chunk, va_space, test_gpus));
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS test_cpu_chunk_numa_alloc(uvm_va_space_t *va_space)
+{
+    uvm_cpu_chunk_t *chunk;
+    uvm_chunk_sizes_mask_t alloc_sizes = uvm_cpu_chunk_get_allocation_sizes();
+    size_t size;
+
+    for_each_chunk_size(size, alloc_sizes) {
+        int nid;
+
+        for_each_possible_uvm_node(nid) {
+            // Do not test CPU allocation on nodes that have no memory or CPU
+            if (!node_state(nid, N_MEMORY) || !node_state(nid, N_CPU))
+                continue;
+
+            TEST_NV_CHECK_RET(test_cpu_chunk_alloc(size, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE, nid, &chunk));
+            uvm_cpu_chunk_free(chunk);
+        }
     }
 
     return NV_OK;
@@ -1197,6 +1226,7 @@ NV_STATUS uvm_test_cpu_chunk_api(UVM_TEST_CPU_CHUNK_API_PARAMS *params, struct f
     }
 
     TEST_NV_CHECK_GOTO(test_cpu_chunk_free(va_space, &test_gpus), done);
+    TEST_NV_CHECK_GOTO(test_cpu_chunk_numa_alloc(va_space), done);
 
     if (uvm_processor_mask_get_gpu_count(&test_gpus) >= 3) {
         uvm_gpu_t *gpu2, *gpu3;

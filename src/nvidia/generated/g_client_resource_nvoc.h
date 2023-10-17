@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -84,6 +84,7 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdSystemExecuteAcpiMethod__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetChipsetInfo__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemSetMemorySize__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemGetLockTimes__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetClassList__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_CLASSLIST_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemNotifyEvent__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_NOTIFY_EVENT_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetPlatformType__)(struct RmClientResource *, NV0000_CTRL_CMD_SYSTEM_GET_PLATFORM_TYPE_PARAMS *);
@@ -125,6 +126,7 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdGpuGetIdInfoV2__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetInitStatus__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_INIT_STATUS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetDeviceIds__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_DEVICE_IDS_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdGpuGetActiveDeviceIds__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetProbedIds__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuAttachIds__)(struct RmClientResource *, NV0000_CTRL_GPU_ATTACH_IDS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuDetachIds__)(struct RmClientResource *, NV0000_CTRL_GPU_DETACH_IDS_PARAMS *);
@@ -236,6 +238,7 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdSystemExecuteAcpiMethod(pRmCliRes, pAcpiMethodParams) cliresCtrlCmdSystemExecuteAcpiMethod_DISPATCH(pRmCliRes, pAcpiMethodParams)
 #define cliresCtrlCmdSystemGetChipsetInfo(pRmCliRes, pChipsetInfo) cliresCtrlCmdSystemGetChipsetInfo_DISPATCH(pRmCliRes, pChipsetInfo)
 #define cliresCtrlCmdSystemSetMemorySize(pRmCliRes, pParams) cliresCtrlCmdSystemSetMemorySize_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemGetLockTimes(pRmCliRes, pParams) cliresCtrlCmdSystemGetLockTimes_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetClassList(pRmCliRes, pParams) cliresCtrlCmdSystemGetClassList_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemNotifyEvent(pRmCliRes, pParams) cliresCtrlCmdSystemNotifyEvent_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetPlatformType(pRmCliRes, pSysParams) cliresCtrlCmdSystemGetPlatformType_DISPATCH(pRmCliRes, pSysParams)
@@ -277,6 +280,7 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdGpuGetIdInfoV2(pRmCliRes, pGpuIdInfoParams) cliresCtrlCmdGpuGetIdInfoV2_DISPATCH(pRmCliRes, pGpuIdInfoParams)
 #define cliresCtrlCmdGpuGetInitStatus(pRmCliRes, pGpuInitStatusParams) cliresCtrlCmdGpuGetInitStatus_DISPATCH(pRmCliRes, pGpuInitStatusParams)
 #define cliresCtrlCmdGpuGetDeviceIds(pRmCliRes, pDeviceIdsParams) cliresCtrlCmdGpuGetDeviceIds_DISPATCH(pRmCliRes, pDeviceIdsParams)
+#define cliresCtrlCmdGpuGetActiveDeviceIds(pRmCliRes, pActiveDeviceIdsParams) cliresCtrlCmdGpuGetActiveDeviceIds_DISPATCH(pRmCliRes, pActiveDeviceIdsParams)
 #define cliresCtrlCmdGpuGetProbedIds(pRmCliRes, pGpuProbedIds) cliresCtrlCmdGpuGetProbedIds_DISPATCH(pRmCliRes, pGpuProbedIds)
 #define cliresCtrlCmdGpuAttachIds(pRmCliRes, pGpuAttachIds) cliresCtrlCmdGpuAttachIds_DISPATCH(pRmCliRes, pGpuAttachIds)
 #define cliresCtrlCmdGpuDetachIds(pRmCliRes, pGpuDetachIds) cliresCtrlCmdGpuDetachIds_DISPATCH(pRmCliRes, pGpuDetachIds)
@@ -406,6 +410,12 @@ NV_STATUS cliresCtrlCmdSystemSetMemorySize_IMPL(struct RmClientResource *pRmCliR
 
 static inline NV_STATUS cliresCtrlCmdSystemSetMemorySize_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS *pParams) {
     return pRmCliRes->__cliresCtrlCmdSystemSetMemorySize__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemGetLockTimes_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemGetLockTimes_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemGetLockTimes__(pRmCliRes, pParams);
 }
 
 NV_STATUS cliresCtrlCmdSystemGetClassList_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_CLASSLIST_PARAMS *pParams);
@@ -652,6 +662,12 @@ NV_STATUS cliresCtrlCmdGpuGetDeviceIds_IMPL(struct RmClientResource *pRmCliRes, 
 
 static inline NV_STATUS cliresCtrlCmdGpuGetDeviceIds_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_DEVICE_IDS_PARAMS *pDeviceIdsParams) {
     return pRmCliRes->__cliresCtrlCmdGpuGetDeviceIds__(pRmCliRes, pDeviceIdsParams);
+}
+
+NV_STATUS cliresCtrlCmdGpuGetActiveDeviceIds_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS *pActiveDeviceIdsParams);
+
+static inline NV_STATUS cliresCtrlCmdGpuGetActiveDeviceIds_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS *pActiveDeviceIdsParams) {
+    return pRmCliRes->__cliresCtrlCmdGpuGetActiveDeviceIds__(pRmCliRes, pActiveDeviceIdsParams);
 }
 
 NV_STATUS cliresCtrlCmdGpuGetProbedIds_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *pGpuProbedIds);
@@ -1064,4 +1080,5 @@ NV_STATUS CliGetSystemP2pCaps(NvU32 *gpuIds,
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CLIENT_RESOURCE_NVOC_H_

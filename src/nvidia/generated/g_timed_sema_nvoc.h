@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -182,11 +182,11 @@ NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU3
 #define tsemaGetNotificationShare(pNotifier) tsemaGetNotificationShare_DISPATCH(pNotifier)
 #define tsemaMap(pGpuResource, pCallContext, pParams, pCpuMapping) tsemaMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define tsemaGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) tsemaGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
-NV_STATUS tsemaRelease_KERNEL(struct OBJGPU *pGpu, NvU64 semaphoreVA, NvU64 notifierVA, NvU32 hVASpace, NvU32 releasevalue, NvU32 completionStatus, struct RsClient *pClient);
+NV_STATUS tsemaRelease_KERNEL(struct OBJGPU *pGpu, NvU64 semaphoreVA, NvU64 notifierVA, NvU32 hVASpace, NvU32 releasevalue, NvU32 completionStatus, struct Device *pDevice);
 
 
-#define tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pClient) tsemaRelease_KERNEL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pClient)
-#define tsemaRelease_HAL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pClient) tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pClient)
+#define tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice) tsemaRelease_KERNEL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice)
+#define tsemaRelease_HAL(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice) tsemaRelease(pGpu, semaphoreVA, notifierVA, hVASpace, releasevalue, completionStatus, pDevice)
 
 NV_STATUS tsemaGetSwMethods_IMPL(struct TimedSemaSwObject *pTimedSemSw, const METHOD **ppMethods, NvU32 *pNumMethods);
 
@@ -353,4 +353,5 @@ typedef struct TimedSemaSwObject *PGF100_TIMED_SEM_SW_OBJECT;
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_TIMED_SEMA_NVOC_H_

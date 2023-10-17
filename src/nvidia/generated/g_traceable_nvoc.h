@@ -84,4 +84,5 @@ void objTraverseCaptureState_IMPL(struct Object *pObj);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_TRACEABLE_NVOC_H_

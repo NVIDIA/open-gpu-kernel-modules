@@ -751,31 +751,16 @@ void RmInitCpuInfo(void)
     getEmbeddedProcessorName(pSys->cpuInfo.name, sizeof(pSys->cpuInfo.name));
 
     if (IS_INTEL(cpuinfo.Foundry))
-    {
         cpuidInfoIntel(pSys, &cpuinfo);
-        pSys->cpuInfo.vendor = CPU_VENDOR_INTEL;
-    }
     else if (IS_AMD(cpuinfo.Foundry))
-    {
         cpuidInfoAMD(pSys, &cpuinfo);
-        pSys->cpuInfo.vendor = CPU_VENDOR_AMD;
-    }
 #if defined(_M_IX86) || defined(NVCPU_X86)
     else if (IS_WINCHIP(cpuinfo.Foundry))
-    {
         cpuidInfoWinChip(pSys, &cpuinfo);
-        pSys->cpuInfo.vendor = CPU_VENDOR_WINCHIP;
-    }
     else if (IS_CYRIX(cpuinfo.Foundry))
-    {
         cpuidInfoCyrix(pSys, &cpuinfo);
-        pSys->cpuInfo.vendor = CPU_VENDOR_CYRIX;
-    }
     else if (IS_TRANSM(cpuinfo.Foundry))
-    {
         cpuidInfoTransmeta(pSys, &cpuinfo);
-        pSys->cpuInfo.vendor = CPU_VENDOR_TRANSM;
-    }
 #endif
     else
     {
@@ -1292,6 +1277,10 @@ static void cpuidInfoIntel(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
                 pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_ATOM;
                 break;
 
+            case 143:                                  // Intel Xeon Sapphire Rapids(SPR) model 143
+                pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_XEON_SPR;
+                break;
+
             case 8:                                    // Pentium III, Pentium III Xeon, or Celeron (Coppermine, 0.18 micron)
             case 10:                                   // Pentium III Xeon (Tualatin, 0.13 micron)
             case 11:                                   // Pentium III, or Celeron (Tualatin, 0.13 micron)
@@ -1414,6 +1403,9 @@ static void cpuidInfoAMD(OBJSYS *pSys, PCPUIDINFO pCpuidInfo)
                 pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_K11;
                 break;
             case 0x080:
+                // Zen, Zen+, Zen 2
+            case 0x0A0:
+                // Zen 3, Zen 4
                 pSys->cpuInfo.type = NV0000_CTRL_SYSTEM_CPU_TYPE_RYZEN;
                 break;
             default:

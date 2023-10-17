@@ -2333,6 +2333,12 @@ nvlink_lib_ctrl_train_intranode_conns_parallel
     NvU32                   i;
     NvU32                   count = 0;
 
+    // sanity check endPointPairsCount
+    if (trainParams->endPointPairsCount > NVLINK_MAX_PARALLEL_CONNS_TRAIN_COUNT)
+    {
+        return NVL_BAD_ARGS;
+    }
+
     //
     // sanity check the input parms
     // make sure that this call is for single node systems
@@ -3688,10 +3694,14 @@ nvlink_lib_ctrl_get_device_link_states
     NvlStatus     status    = NVL_SUCCESS;
     NvU32         numLinks  = 0;
     NvU32         i         = 0;
-    NvU8          linkNumber;  
+    NvU8          linkNumber;
 
     nvlink_link   **links = (nvlink_link **)nvlink_malloc(
                             sizeof(nvlink_link *) * NVLINK_MAX_DEVICE_CONN);
+
+    // Get current monotonic time in seconds.nanoseconds
+    params->time = nvlink_get_platform_time();
+
     if (links == NULL)
     {
         return NVL_NO_MEM;

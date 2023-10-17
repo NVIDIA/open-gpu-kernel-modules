@@ -60,6 +60,7 @@ struct RegisterMemory {
     NvBool (*__regmemShareCallback__)(struct RegisterMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__regmemMapTo__)(struct RegisterMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__regmemGetMapAddrSpace__)(struct RegisterMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__regmemIsExportAllowed__)(struct RegisterMemory *);
     NvU32 (*__regmemGetRefCount__)(struct RegisterMemory *);
     void (*__regmemAddAdditionalDependants__)(struct RsClient *, struct RegisterMemory *, RsResourceRef *);
     NV_STATUS (*__regmemControl_Prologue__)(struct RegisterMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -115,6 +116,7 @@ NV_STATUS __nvoc_objCreate_RegisterMemory(RegisterMemory**, Dynamic*, NvU32, CAL
 #define regmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) regmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define regmemMapTo(pResource, pParams) regmemMapTo_DISPATCH(pResource, pParams)
 #define regmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) regmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define regmemIsExportAllowed(pMemory) regmemIsExportAllowed_DISPATCH(pMemory)
 #define regmemGetRefCount(pResource) regmemGetRefCount_DISPATCH(pResource)
 #define regmemAddAdditionalDependants(pClient, pResource, pReference) regmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define regmemControl_Prologue(pResource, pCallContext, pParams) regmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -155,6 +157,10 @@ static inline NV_STATUS regmemMapTo_DISPATCH(struct RegisterMemory *pResource, R
 
 static inline NV_STATUS regmemGetMapAddrSpace_DISPATCH(struct RegisterMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__regmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool regmemIsExportAllowed_DISPATCH(struct RegisterMemory *pMemory) {
+    return pMemory->__regmemIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 regmemGetRefCount_DISPATCH(struct RegisterMemory *pResource) {
@@ -248,4 +254,5 @@ NV_STATUS regmemConstruct_IMPL(struct RegisterMemory *arg_pRegisterMemory, CALL_
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_REG_MEM_NVOC_H_

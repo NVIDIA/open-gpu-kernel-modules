@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -138,11 +138,13 @@ NV_STATUS kmemsysStateInitLocked_IMPL
 
                 pGpu->setProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED, NV_TRUE);
             }
-
+        }
+        if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL_WITH_SRIOV(pGpu))
+        {
             //
-            // PDB_PROP_GPU_C2C_SYSMEM is already set in physical RM but not in
-            // in Kernel-RM where it is actually consumed. setting PDB_PROP_GPU_C2C_SYSMEM
-            // in Kernel-RM when the platform is self-hosted and the C2C links are up, which
+            // PDB_PROP_GPU_C2C_SYSMEM is already set in physical-RM but not in
+            // in Kernel-RM/Guest-RM where it is actually consumed. setting PDB_PROP_GPU_C2C_SYSMEM
+            // in Kernel-RM/Guest-RM when the platform is self-hosted and the C2C links are up, which
             // indicate the C2C is connected to CPU and Physical-RM would have set up the HSHUB
             // to route sysmem through C2C.
             //
@@ -311,6 +313,7 @@ kmemsysDestruct_IMPL
     pKernelMemorySystem->pSysmemFlushBufferMemDesc = NULL;
 
     portMemSet(pKernelMemorySystem->gpuInstanceMemConfig, 0, sizeof(pKernelMemorySystem->gpuInstanceMemConfig));
+
 }
 
 NV_STATUS
@@ -531,6 +534,7 @@ kmemsysGetMIGGPUInstanceMemInfo_IMPL
     NvU64 vmmuSegmentSize;
     NvU64 startAddr;
     NvU64 endAddr;
+    NvU64 partitionSize;
 
     NV_ASSERT_OR_RETURN(pAddrRange != NULL, NV_ERR_INVALID_ARGUMENT);
     *pAddrRange = NV_RANGE_EMPTY;
@@ -556,7 +560,27 @@ kmemsysGetMIGGPUInstanceMemInfo_IMPL
     NV_ASSERT_OR_RETURN((vmmuSegmentSize != 0), NV_ERR_INVALID_STATE);
 
     startAddr = pKernelMemorySystem->gpuInstanceMemConfig[swizzId].startingVmmuSegment * vmmuSegmentSize;
-    endAddr = startAddr + (pKernelMemorySystem->gpuInstanceMemConfig[swizzId].memSizeInVmmuSegment * vmmuSegmentSize) - 1;
+    partitionSize = pKernelMemorySystem->gpuInstanceMemConfig[swizzId].memSizeInVmmuSegment * vmmuSegmentSize;
+
+    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        NvU64 memblockSize;
+        NvU64 alignedStartAddr;
+
+        NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
+
+        //
+        // Align the partition start address and size to memblock size
+        // Some FB memory is wasted here if it is not already aligned.
+        //
+        alignedStartAddr = NV_ALIGN_UP64(startAddr, memblockSize);
+        partitionSize -= (alignedStartAddr - startAddr);
+        startAddr = alignedStartAddr;
+        partitionSize = NV_ALIGN_DOWN64(partitionSize, memblockSize);
+    }
+
+    endAddr = startAddr + partitionSize - 1;
+
     *pAddrRange = rangeMake(startAddr, endAddr);
 
     return NV_OK;
@@ -809,26 +833,29 @@ kmemsysSetupCoherentCpuLink_IMPL
     //
     numaOnlineSize = NV_ALIGN_DOWN64(fbSize - totalRsvdBytes, memblockSize);
 
-    pKernelMemorySystem->numaOnlineBase   = numaOnlineBase;
-    pKernelMemorySystem->numaOnlineSize   = numaOnlineSize;
-
-    NV_PRINTF(LEVEL_INFO, "fbSize: 0x%llx NUMA reserved memory size: 0x%llx online memory size: 0x%llx\n",
-                  fbSize, totalRsvdBytes, numaOnlineSize);
-    //
-    // TODO: Bug 1945658: Soldier through on GPU memory add
-    // failure(which is often possible because of missing auto online
-    // setting) and instead check for failure on stateLoad.
-    // Any failure in StateInit results in gpuStateDestroy not getting called.
-    // kgspUnloadRm_IMPL from gpuStateDestroy also doesn't get called leaving
-    // GSP in unclean state and requiring GPU reset to recover from that.
-    //
-    // kmemsysNumaAddMemory_HAL by itself cannot be called from stateLoad
-    // because the memory mapping that follows this call site comes from linear
-    // kernel virtual address when memory is added to the kernel vs the
-    // VMALLOC_START region when memory is not added.
-    //
-    NV_ASSERT_OK(kmemsysNumaAddMemory_HAL(pGpu, pKernelMemorySystem, 0, 0,
-                                          numaOnlineSize, &numaNodeId));
+    NV_PRINTF(LEVEL_INFO,
+              "fbSize: 0x%llx NUMA reserved memory size: 0x%llx online memory size: 0x%llx\n",
+              fbSize, totalRsvdBytes, numaOnlineSize);
+    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        pKernelMemorySystem->numaOnlineBase   = numaOnlineBase;
+        pKernelMemorySystem->numaOnlineSize   = numaOnlineSize;
+        //
+        // TODO: Bug 1945658: Soldier through on GPU memory add
+        // failure(which is often possible because of missing auto online
+        // setting) and instead check for failure on stateLoad.
+        // Any failure in StateInit results in gpuStateDestroy not getting called.
+        // kgspUnloadRm_IMPL from gpuStateDestroy also doesn't get called leaving
+        // GSP in unclean state and requiring GPU reset to recover from that.
+        //
+        // kmemsysNumaAddMemory_HAL by itself cannot be called from stateLoad
+        // because the memory mapping that follows this call site comes from linear
+        // kernel virtual address when memory is added to the kernel vs the
+        // VMALLOC_START region when memory is not added.
+        //
+        NV_ASSERT_OK(kmemsysNumaAddMemory_HAL(pGpu, pKernelMemorySystem, 0, 0,
+                                              numaOnlineSize, &numaNodeId));
+    }
     pGpu->numaNodeId = numaNodeId;
 
     NV_ASSERT_OK_OR_RETURN(kbusCreateCoherentCpuMapping_HAL(pGpu, pKernelBus, numaOnlineSize, bFlush));

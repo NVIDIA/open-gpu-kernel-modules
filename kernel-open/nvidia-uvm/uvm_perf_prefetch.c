@@ -355,7 +355,7 @@ static NvU32 uvm_perf_prefetch_prenotify_fault_migrations(uvm_va_block_t *va_blo
     uvm_page_mask_zero(prefetch_pages);
 
     if (UVM_ID_IS_CPU(new_residency) || va_block->gpus[uvm_id_gpu_index(new_residency)] != NULL)
-        resident_mask = uvm_va_block_resident_mask_get(va_block, new_residency);
+        resident_mask = uvm_va_block_resident_mask_get(va_block, new_residency, NUMA_NO_NODE);
 
     // If this is a first-touch fault and the destination processor is the
     // preferred location, populate the whole max_prefetch_region.

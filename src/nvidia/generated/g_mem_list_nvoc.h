@@ -59,6 +59,7 @@ struct MemoryList {
     NvBool (*__memlistShareCallback__)(struct MemoryList *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__memlistMapTo__)(struct MemoryList *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__memlistGetMapAddrSpace__)(struct MemoryList *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__memlistIsExportAllowed__)(struct MemoryList *);
     NvU32 (*__memlistGetRefCount__)(struct MemoryList *);
     void (*__memlistAddAdditionalDependants__)(struct RsClient *, struct MemoryList *, RsResourceRef *);
     NV_STATUS (*__memlistControl_Prologue__)(struct MemoryList *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -114,6 +115,7 @@ NV_STATUS __nvoc_objCreate_MemoryList(MemoryList**, Dynamic*, NvU32, CALL_CONTEX
 #define memlistShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memlistShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define memlistMapTo(pResource, pParams) memlistMapTo_DISPATCH(pResource, pParams)
 #define memlistGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) memlistGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define memlistIsExportAllowed(pMemory) memlistIsExportAllowed_DISPATCH(pMemory)
 #define memlistGetRefCount(pResource) memlistGetRefCount_DISPATCH(pResource)
 #define memlistAddAdditionalDependants(pClient, pResource, pReference) memlistAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define memlistControl_Prologue(pResource, pCallContext, pParams) memlistControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -154,6 +156,10 @@ static inline NV_STATUS memlistMapTo_DISPATCH(struct MemoryList *pResource, RS_R
 
 static inline NV_STATUS memlistGetMapAddrSpace_DISPATCH(struct MemoryList *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__memlistGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool memlistIsExportAllowed_DISPATCH(struct MemoryList *pMemory) {
+    return pMemory->__memlistIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 memlistGetRefCount_DISPATCH(struct MemoryList *pResource) {
@@ -247,4 +253,5 @@ NV_STATUS memlistConstruct_IMPL(struct MemoryList *arg_pMemoryList, CALL_CONTEXT
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MEM_LIST_NVOC_H_

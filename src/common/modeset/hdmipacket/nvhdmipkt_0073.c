@@ -337,10 +337,10 @@ hdmiQueryFRLConfigDummy(NVHDMIPKT_CLASS                     *pThis,
 
 NVHDMIPKT_RESULT
 hdmiSetFRLConfigDummy(NVHDMIPKT_CLASS               *pThis,
-                       NvU32                         subDevice,
-                       NvU32                         displayId,
-                       NvBool                        bFakeLt,
-                       HDMI_FRL_CONFIG              *pFRLConfig)
+                      NvU32                         subDevice,
+                      NvU32                         displayId,
+                      NvBool                        bFakeLt,
+                      HDMI_FRL_CONFIG              *pFRLConfig)
 {
     NvHdmiPkt_Print(pThis, "ERROR - Dummy function hdmiSetFRLConfigDummy called. "
                            "Should never be called.");
@@ -350,8 +350,8 @@ hdmiSetFRLConfigDummy(NVHDMIPKT_CLASS               *pThis,
 
 NVHDMIPKT_RESULT
 hdmiClearFRLConfigDummy(NVHDMIPKT_CLASS                   *pThis,
-                       NvU32                              subDevice,
-                       NvU32                              displayId)
+                        NvU32                              subDevice,
+                        NvU32                              displayId)
 {
     NvHdmiPkt_Print(pThis, "ERROR - Dummy function hdmiClearFRLConfigDummy called. "
                            "Should never be called.");

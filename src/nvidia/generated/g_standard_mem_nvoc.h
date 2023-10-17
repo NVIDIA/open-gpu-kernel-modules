@@ -74,6 +74,7 @@ struct StandardMemory {
     NvBool (*__stdmemShareCallback__)(struct StandardMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__stdmemMapTo__)(struct StandardMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__stdmemGetMapAddrSpace__)(struct StandardMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__stdmemIsExportAllowed__)(struct StandardMemory *);
     NvU32 (*__stdmemGetRefCount__)(struct StandardMemory *);
     void (*__stdmemAddAdditionalDependants__)(struct RsClient *, struct StandardMemory *, RsResourceRef *);
     NV_STATUS (*__stdmemControl_Prologue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -129,6 +130,7 @@ NV_STATUS __nvoc_objCreate_StandardMemory(StandardMemory**, Dynamic*, NvU32, CAL
 #define stdmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) stdmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define stdmemMapTo(pResource, pParams) stdmemMapTo_DISPATCH(pResource, pParams)
 #define stdmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) stdmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define stdmemIsExportAllowed(pMemory) stdmemIsExportAllowed_DISPATCH(pMemory)
 #define stdmemGetRefCount(pResource) stdmemGetRefCount_DISPATCH(pResource)
 #define stdmemAddAdditionalDependants(pClient, pResource, pReference) stdmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define stdmemControl_Prologue(pResource, pCallContext, pParams) stdmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -183,6 +185,10 @@ static inline NV_STATUS stdmemMapTo_DISPATCH(struct StandardMemory *pResource, R
 
 static inline NV_STATUS stdmemGetMapAddrSpace_DISPATCH(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__stdmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool stdmemIsExportAllowed_DISPATCH(struct StandardMemory *pMemory) {
+    return pMemory->__stdmemIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 stdmemGetRefCount_DISPATCH(struct StandardMemory *pResource) {
@@ -288,4 +294,5 @@ NvU64 stdmemQueryPageSize_IMPL(struct MemoryManager *pMemoryManager, NvHandle hC
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_STANDARD_MEM_NVOC_H_

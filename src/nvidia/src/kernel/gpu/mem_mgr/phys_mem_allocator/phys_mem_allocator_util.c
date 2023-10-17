@@ -228,6 +228,27 @@ pmaStateCheck(PMA *pPma)
     return NV_TRUE;
 }
 
+NV_STATUS
+pmaCheckRangeAgainstRegionDesc
+(
+    PMA   *pPma,
+    NvU64  base,
+    NvU64  size
+)
+{
+    PMA_REGION_DESCRIPTOR *pRegionDesc;
+    NvU32 regId = findRegionID(pPma, base);
+    pRegionDesc = pPma->pRegDescriptors[regId];
+
+    if ((base < pRegionDesc->base) ||
+        ((base + size - 1) > pRegionDesc->limit))
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    return NV_OK;
+}
+
 void
 pmaSetBlockStateAttribUnderPmaLock
 (
@@ -251,6 +272,9 @@ pmaSetBlockStateAttribUnderPmaLock
 
     numFrames = size >> PMA_PAGE_SHIFT;
     baseFrame = (base - pPma->pRegDescriptors[regId]->base) >> PMA_PAGE_SHIFT;
+
+    // Ensure accessing the frame data would not go out of bound in lower level
+    NV_ASSERT_OR_RETURN_VOID((base + size - 1) <= pPma->pRegDescriptors[regId]->limit);
 
     for (i = 0; i < numFrames; i++)
     {
@@ -1215,7 +1239,8 @@ pmaRegisterBlacklistInfo
     PMA                    *pPma,
     NvU64                   physAddrBase,
     PMA_BLACKLIST_ADDRESS  *pBlacklistPageBase,
-    NvU32                   blacklistCount
+    NvU32                   blacklistCount,
+    NvBool                  bBlacklistFromInforom
 )
 {
     NvU32 i;
@@ -1260,24 +1285,37 @@ pmaRegisterBlacklistInfo
         // won't check for ATTRIB_BLACKLIST. So pages need to be blacklisted
         // directly through the kernel.
         //
-        // Use physOffset without 64K alignment, because kernel may use a different
-        // page size.
-        //
         // This is only needed for NUMA systems that auto online NUMA memory.
         // Other systems (e.g., P9) already do blacklisting in nvidia-persistenced.
         //
         if (pPma->bNuma && pPma->bNumaAutoOnline)
         {
-            NV_STATUS status;
-
-            NV_PRINTF(LEVEL_INFO,
-                      "NUMA enabled - blacklisting page through kernel at address 0x%llx (GPA) 0x%llx (SPA)\n",
-                      pBlacklistPageBase[blacklistEntryIn].physOffset,
-                      pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
-            status = osOfflinePageAtAddress(pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
-            if (status != NV_OK)
+            //
+            // Only blacklist pages from inforom (i.e., during heap/PMA init) need 
+            // to be blacklisted with kernel here. The blacklist pages stored in 
+            // inforom need to remain blacklisted persistently across GPU resets -
+            // kernel won't automatically blacklist these so RM must do it
+            // explicitly here.
+            //
+            // Blacklist pages not from inforom (i.e., from ECC interrupt handling)
+            // do not need to be blacklisted with kernel. This is because the ECC
+            // interrupt will automatically trigger kernel itself to blacklist the page.
+            //
+            if (bBlacklistFromInforom)
             {
-                NV_PRINTF(LEVEL_ERROR, "osOfflinePageAtAddress() failed with status: %d\n", status);
+                NV_STATUS status;
+
+                // Use physOffset without 64K alignment, because kernel may use a different page size.
+                NV_PRINTF(LEVEL_INFO,
+                          "NUMA enabled - blacklisting page through kernel at address 0x%llx (GPA) 0x%llx (SPA)\n",
+                          pBlacklistPageBase[blacklistEntryIn].physOffset,
+                          pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
+
+                status = osOfflinePageAtAddress(pBlacklistPageBase[blacklistEntryIn].physOffset + pPma->coherentCpuFbBase);
+                if (status != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_ERROR, "osOfflinePageAtAddress() failed with status: %d\n", status);
+                }
             }
         }
 

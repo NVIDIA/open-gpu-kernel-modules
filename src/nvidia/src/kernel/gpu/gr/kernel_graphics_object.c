@@ -61,6 +61,7 @@ kgrobjPromoteContext_IMPL
     NvU32 entryCount;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     NV_STATUS status;
+    Device *pDevice = GPU_RES_GET_DEVICE(pKernelGraphicsObject);
     Subdevice *pSubdevice;
     ChannelDescendant *pChannelDescendant = staticCast(pKernelGraphicsObject, ChannelDescendant);
 
@@ -68,7 +69,11 @@ kgrobjPromoteContext_IMPL
         return NV_OK;
 
     NV_ASSERT_OK_OR_RETURN(
-            subdeviceGetByGpu(RES_GET_CLIENT(pKernelGraphicsObject), pGpu, &pSubdevice));
+        subdeviceGetByDeviceAndGpu(
+            RES_GET_CLIENT(pKernelGraphicsObject),
+            pDevice,
+            pGpu,
+            &pSubdevice));
 
     GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
@@ -189,8 +194,6 @@ _kgrAlloc
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         kgrobjSetComputeMmio_HAL(pGpu, pKernelGraphicsObject));
 
-    listInit(&pKernelGraphicsObject->activeDebuggers, portMemAllocatorGetGlobalNonPaged());
-
     // Ensure that ctx buffer information is initialized
     if (!IS_MODS_AMODEL(pGpu))
     {
@@ -244,23 +247,20 @@ static void _kgrobjDestruct
         KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
         KernelGraphics *pKernelGraphics;
         NV2080_CTRL_GR_ROUTE_INFO grRouteInfo = {0};
-        NvHandle hClient = RES_GET_CLIENT_HANDLE(pChannelDescendant);
+        Device *pDevice = GPU_RES_GET_DEVICE(pChannelDescendant);
         NvHandle hParent = RES_GET_PARENT_HANDLE(pChannelDescendant);
         NvU32 classNum = pChannelDescendant->resourceDesc.externalClassId;
 
         // If MIG is enabled, perform GR instance routing based upon parent channel handle
         kgrmgrCtrlSetChannelHandle(hParent, &grRouteInfo);
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-            kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &grRouteInfo, &pKernelGraphics));
+            kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &grRouteInfo, &pKernelGraphics));
 
         if (status != NV_OK)
             SLI_LOOP_CONTINUE;
 
         // Free Compute Mmio mapping
         kgrobjFreeComputeMmio_HAL(pGpu, pKernelGraphicsObject);
-
-        NV_ASSERT(listCount(&pKernelGraphicsObject->activeDebuggers) == 0);
-        listDestroy(&pKernelGraphicsObject->activeDebuggers);
 
         if (bDestructor)
             kgrctxDecObjectCount_HAL(pGpu, pKernelGraphicsObject->pKernelGraphicsContext, classNum);
@@ -292,7 +292,7 @@ kgrobjConstruct_IMPL
     KernelChannel     *pKernelChannel = pChannelDescendant->pKernelChannel;
     NV_STATUS          status = NV_OK;
     OBJGPU            *pGpu = GPU_RES_GET_GPU(pChannelDescendant);
-    NvHandle           hClient = pCallContext->pClient->hClient;
+    Device            *pDevice = GPU_RES_GET_DEVICE(pKernelGraphicsObject);
 
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_STATE);
 
@@ -334,7 +334,7 @@ kgrobjConstruct_IMPL
         // If MIG is enabled, perform GR instance routing based upon parent channel handle
         kgrmgrCtrlSetChannelHandle(pParams->hParent, &grRouteInfo);
         NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
-            kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &grRouteInfo, &pKernelGraphics));
+            kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &grRouteInfo, &pKernelGraphics));
         if (status != NV_OK)
             SLI_LOOP_BREAK;
 

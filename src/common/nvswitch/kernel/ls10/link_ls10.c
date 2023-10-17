@@ -99,30 +99,6 @@ _nvswitch_configure_reserved_throughput_counters
 }
 
 void
-nvswitch_program_l1_scratch_reg_ls10
-(
-    nvswitch_device *device,
-    NvU32 linkNumber
-)
-{
-    NvU32 scrRegVal;
-    NvU32 tempRegVal;
-
-    // Read L1 register and store initial/VBIOS L1 Threshold Value in Scratch register
-    tempRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD);
- 
-    scrRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _SCRATCH_WARM);
-
-    // Update the scratch register value only if it has not been written to before
-    if (scrRegVal == NV_NVLIPT_LNK_SCRATCH_WARM_DATA_INIT)
-    {
-        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _SCRATCH_WARM, tempRegVal);
-    }
-}
-
-#define BUG_3797211_LS10_VBIOS_VERSION     0x9610410000
-
-void
 nvswitch_init_lpwr_regs_ls10
 (
     nvlink_link *link
@@ -134,55 +110,33 @@ nvswitch_init_lpwr_regs_ls10
     NvU32 tempRegVal, lpEntryThreshold;
     NvU8  softwareDesired;
     NvBool bLpEnable;
-    NvU64 biosVersion;
+
+    if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
+    {
+        return;
+    }
 
     if (device->regkeys.enable_pm == NV_SWITCH_REGKEY_ENABLE_PM_NO)
     {
         return;
     }
 
-    if (nvswitch_lib_get_bios_version(device, &biosVersion) != NVL_SUCCESS)
-    {
-        NVSWITCH_PRINT(device, WARN, "%s Get VBIOS version failed.\n",
-                        __FUNCTION__);
-        biosVersion = 0;
-    }
-
     // bios_config = nvswitch_get_bios_nvlink_config(device);
-    if (biosVersion >= BUG_3797211_LS10_VBIOS_VERSION)
+
+    // IC Enter Threshold
+    if (device->regkeys.lp_threshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
     {
-        // IC Enter Threshold
-        if (device->regkeys.lp_threshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
-        {
-            //
-            // Do nothing since VBIOS (version 96.10.41.00.00 and above) 
-            // sets the default L1 threshold.
-            // Refer Bug 3797211 for more info.
-            //
-        }
-        else
-        {
-            lpEntryThreshold = device->regkeys.lp_threshold;
-            tempRegVal = 0;
-            tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_L1_ENTER_THRESHOLD, _THRESHOLD, lpEntryThreshold, tempRegVal);
-            NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD, tempRegVal);
-        }
+        //
+        // Do nothing since VBIOS sets the default L1 threshold.
+        // Refer Bug 3797211 for more info.
+        //
     }
     else
     {
-        // IC Enter Threshold
-        if (device->regkeys.lp_threshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
-        {
-            lpEntryThreshold = 1;
-        }
-        else
-        {
-            lpEntryThreshold = device->regkeys.lp_threshold;
-        }
-
-        tempRegVal = 0;
-        tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_L1_ENTER_THRESHOLD, _THRESHOLD, lpEntryThreshold, tempRegVal);
-        NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD, tempRegVal);
+        lpEntryThreshold = device->regkeys.lp_threshold;
+    tempRegVal = 0;
+    tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_L1_ENTER_THRESHOLD, _THRESHOLD, lpEntryThreshold, tempRegVal);
+    NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD, tempRegVal);
     }
 
     //LP Entry Enable
@@ -211,6 +165,7 @@ nvswitch_corelib_training_complete_ls10
         NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify PORT_UP event\n",
                      __FUNCTION__);
     }
+    nvswitch_record_port_event(device, &(device->log_PORT_EVENTS), link->linkNumber, NVSWITCH_PORT_EVENT_TYPE_UP);
 
     return;
 }
@@ -1470,7 +1425,7 @@ nvswitch_load_link_disable_settings_ls10
     nvswitch_device *device,
     nvlink_link *link
 )
-{
+{   
     NvU32 regVal;
 
     // Read state from NVLIPT HW
@@ -1479,7 +1434,7 @@ nvswitch_load_link_disable_settings_ls10
 
     if (FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, _DISABLE, regVal))
     {
-
+        
         // Set link to invalid and unregister from corelib
         device->link[link->linkNumber].valid = NV_FALSE;
         nvlink_lib_unregister_link(link);
@@ -1619,7 +1574,7 @@ nvswitch_reset_and_train_link_ls10
                 link_intr_subcode = DRF_VAL(_NVLSTAT, _MN00, _LINK_INTR_SUBCODE, stat_data);
 
                 if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
-                    (link_intr_subcode == MINION_ALARM_BUSY))
+                (link_intr_subcode == MINION_ALARM_BUSY))
                 {
 
                     status = nvswitch_request_tl_link_state_ls10(link,

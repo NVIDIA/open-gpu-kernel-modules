@@ -122,9 +122,9 @@ NV_STATUS __nvoc_objCreate_IntrService(IntrService**, Dynamic*, NvU32);
 #define intrservClearInterrupt(pGpu, pIntrService, pParams) intrservClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define intrservServiceInterrupt(pGpu, pIntrService, pParams) intrservServiceInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define intrservServiceNotificationInterrupt(pGpu, pIntrService, pParams) intrservServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
-void intrservRegisterIntrService_IMPL(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceRecord pRecords[167]);
+void intrservRegisterIntrService_IMPL(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceRecord pRecords[168]);
 
-static inline void intrservRegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceRecord pRecords[167]) {
+static inline void intrservRegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct IntrService *pIntrService, IntrServiceRecord pRecords[168]) {
     pIntrService->__intrservRegisterIntrService__(pGpu, pIntrService, pRecords);
 }
 
@@ -154,4 +154,5 @@ static inline NV_STATUS intrservServiceNotificationInterrupt_DISPATCH(struct OBJ
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_INTR_SERVICE_NVOC_H_

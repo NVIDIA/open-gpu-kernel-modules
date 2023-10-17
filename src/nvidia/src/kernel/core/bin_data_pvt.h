@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -81,7 +81,7 @@ struct BINDATA_RUNTIME_INFO
 //
 #define BINDATA_IS_MUTABLE RMCFG_FEATURE_PLATFORM_GSP
 #if BINDATA_IS_MUTABLE
-#define BINDATA_CONST
+#define BINDATA_CONST __attribute__((section(".bindata")))
 #else
 #define BINDATA_CONST const
 #endif

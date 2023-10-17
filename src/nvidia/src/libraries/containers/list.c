@@ -338,6 +338,7 @@ ListIterBase listIterRange_IMPL
     NV_ASSERT_CHECKED(it.pNode == NULL || it.pNode->pList == pList);
     NV_ASSERT_CHECKED(it.pLast == NULL || it.pLast->pList == pList);
     NV_ASSERT_CHECKED(_listIterRangeCheck(pList, it.pNode, it.pLast));
+    NV_CHECKED_ONLY(it.bValid = NV_TRUE);
 
     return it;
 }
@@ -346,7 +347,15 @@ NvBool listIterNext_IMPL(ListIterBase *pIt)
 {
     NV_ASSERT_OR_RETURN(NULL != pIt, NV_FALSE);
 
-    NV_ASSERT_CHECKED(pIt->versionNumber == pIt->pList->versionNumber);
+#if PORT_IS_CHECKED_BUILD
+    if (pIt->bValid && !CONT_ITER_IS_VALID(pIt->pList, pIt))
+    {
+        NV_ASSERT(CONT_ITER_IS_VALID(pIt->pList, pIt));
+        PORT_DUMP_STACK();
+
+        pIt->bValid = NV_FALSE;
+    }
+#endif
 
     if (!pIt->pNode)
         return NV_FALSE;

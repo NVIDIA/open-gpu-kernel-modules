@@ -371,4 +371,5 @@ void accesscntrDestruct_IMPL(struct AccessCounterBuffer *pAccessCounterBuffer);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_ACCESS_CNTR_BUFFER_NVOC_H_

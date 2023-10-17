@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -498,4 +498,5 @@ void    CliNotifyGsyncEvent     (NvU32, NvU32);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GSYNC_API_NVOC_H_

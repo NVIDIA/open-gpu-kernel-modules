@@ -43,7 +43,6 @@
 #include "nvkms-push.h"
 #include "nvkms-difr.h"
 
-#include "class/cl0002.h" /* NV01_CONTEXT_DMA */
 #include "class/cl0005.h" /* NV01_EVENT */
 
 #include <class/cl0070.h> // NV01_MEMORY_VIRTUAL
@@ -296,7 +295,7 @@ static void FreeDisplay(NVDispEvoPtr pDispEvo)
 
     nvkms_free_ref_ptr(pDispEvo->ref_ptr);
 
-    nvInvalidateTopologiesEvo();
+    nvInvalidateRasterLockGroupsEvo();
     nvFree(pDispEvo);
 }
 
@@ -1476,9 +1475,9 @@ static void FreeDpys(NVDispEvoPtr pDispEvo)
  * This function is registered as the kernel callback function from
  * resman when an NV2080_NOTIFIERS_HOTPLUG event is generated.
  *
- * However, this function is called with resman's context (alternate
- * stack, resman locks held, etc).  Schedule deferred work, so that we
- * can process the hotplug event without resman's encumbrances.
+ * However, this function is called with resman's context (resman locks held,
+ * etc).  Schedule deferred work, so that we can process the hotplug event
+ * without resman's encumbrances.
  */
 static void ReceiveHotplugEvent(void *arg, void *pEventDataVoid, NvU32 hEvent,
                                 NvU32 Data, NV_STATUS Status)
@@ -2379,14 +2378,13 @@ NvBool nvRmAllocSysmem(NVDevEvoPtr pDevEvo, NvU32 memoryHandle,
 NvBool nvRmAllocEvoDma(NVDevEvoPtr pDevEvo, NVEvoDmaPtr pDma,
                        NvU64 limit, NvU32 ctxDmaFlags, NvU32 subDeviceMask)
 {
-    NV_CONTEXT_DMA_ALLOCATION_PARAMS ctxdmaParams = { };
     NvBool bufferAllocated = FALSE;
     NvU32  memoryHandle = 0;
     void  *pBase = NULL;
 
     NvBool needBar1Mapping = FALSE;
 
-    NvU32 ctxDmaHandle = 0;
+    NVSurfaceDescriptor surfaceDesc;
     NvU32 localCtxDmaFlags = ctxDmaFlags |
         DRF_DEF(OS03, _FLAGS, _ACCESS, _READ_WRITE) |
         DRF_DEF(OS03, _FLAGS, _HASH_TABLE, _DISABLE);
@@ -2454,19 +2452,9 @@ NvBool nvRmAllocEvoDma(NVDevEvoPtr pDevEvo, NVEvoDmaPtr pDma,
         return FALSE;
     }
 
-    ctxDmaHandle = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
-
-    // Create a ctxdma for this allocation.
-    ctxdmaParams.hMemory = memoryHandle;
-    ctxdmaParams.flags = localCtxDmaFlags;
-    ctxdmaParams.offset = 0;
-    ctxdmaParams.limit = limit;
-
-    ret = nvRmApiAlloc(nvEvoGlobal.clientHandle,
-                       pDevEvo->deviceHandle,
-                       ctxDmaHandle,
-                       NV01_CONTEXT_DMA,
-                       &ctxdmaParams);
+    // Create surface descriptor for this allocation.
+    ret = pDevEvo->hal->AllocSurfaceDescriptor(pDevEvo, &surfaceDesc, memoryHandle,
+                                               localCtxDmaFlags, limit);
 
     if (ret != NVOS_STATUS_SUCCESS) {
         if (pBase != NULL) {
@@ -2480,16 +2468,14 @@ NvBool nvRmAllocEvoDma(NVDevEvoPtr pDevEvo, NVEvoDmaPtr pDma,
                     pDevEvo->deviceHandle, memoryHandle);
         nvFreeUnixRmHandle(&pDevEvo->handleAllocator, memoryHandle);
 
-        nvFreeUnixRmHandle(&pDevEvo->handleAllocator, ctxDmaHandle);
-
-        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "Failed to allocate a DMA context");
+        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "Failed to allocate surface descriptor");
 
         return FALSE;
     }
 
     pDma->memoryHandle = memoryHandle;
 
-    pDma->ctxHandle = ctxDmaHandle;
+    pDma->surfaceDesc = surfaceDesc;
 
     pDma->limit = limit;
 
@@ -2523,17 +2509,9 @@ void nvRmFreeEvoDma(NVDevEvoPtr pDevEvo, NVEvoDmaPtr pDma)
 {
     NvU32 ret;
 
-    if (pDma->ctxHandle != 0) {
-        ret = nvRmApiFree(nvEvoGlobal.clientHandle,
-                          pDevEvo->deviceHandle, pDma->ctxHandle);
-
-        if (ret != NVOS_STATUS_SUCCESS) {
-            nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "Failed to free DMA context");
-        }
-
-        nvFreeUnixRmHandle(&pDevEvo->handleAllocator, pDma->ctxHandle);
-        pDma->ctxHandle = 0;
-    }
+    pDevEvo->hal->FreeSurfaceDescriptor(pDevEvo,
+                                        pDevEvo->deviceHandle,
+                                        &pDma->surfaceDesc);
 
     if (pDma->memoryHandle != 0) {
         if (pDma->isBar1Mapping) {
@@ -2677,7 +2655,7 @@ RmAllocEvoChannel(NVDevEvoPtr pDevEvo,
             // Channel instance (always 0 for CORE - head number otherwise)
             ChannelAllocParams.channelInstance = instance;
             // PB CtxDMA Handle
-            ChannelAllocParams.hObjectBuffer   = buffer->dma.ctxHandle;
+            ChannelAllocParams.hObjectBuffer   = buffer->dma.surfaceDesc.ctxDmaHandle;
             // Initial offset within the PB
             ChannelAllocParams.offset          = 0;
 
@@ -3085,9 +3063,10 @@ NvBool nvRMAllocateOverlayChannels(NVDevEvoPtr pDevEvo)
 static NvBool AllocSyncpt(NVDevEvoPtr pDevEvo, NVEvoChannelPtr pChannel,
         NVEvoSyncpt *pEvoSyncptOut)
 {
-    NvU32 hSyncptCtxDma, hSyncpt, id;
+    NvU32 id;
     NvKmsSyncPtOpParams params = { };
     NvBool result;
+    NVSurfaceDescriptor surfaceDesc;
 
     if (!pDevEvo->supportsSyncpts) {
         return FALSE;
@@ -3116,15 +3095,13 @@ static NvBool AllocSyncpt(NVDevEvoPtr pDevEvo, NVEvoChannelPtr pChannel,
     }
 
     result = nvRmEvoAllocAndBindSyncpt(pDevEvo, pChannel, id,
-                                       &hSyncpt, &hSyncptCtxDma);
+                                       &surfaceDesc,
+                                       pEvoSyncptOut);
     if (!result) {
         goto failed;
     }
 
     /*! Populate syncpt values to return. */
-    pEvoSyncptOut->id = id;
-    pEvoSyncptOut->hCtxDma = hSyncptCtxDma;
-    pEvoSyncptOut->hSyncpt = hSyncpt;
     pEvoSyncptOut->channelMask = pChannel->channelMask;
     pEvoSyncptOut->syncptMaxVal = params.read_minval.minval;
 
@@ -3192,12 +3169,13 @@ NvBool nvRMAllocateWindowChannels(NVDevEvoPtr pDevEvo)
         }
 
         for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-            NvU32 ret = nvRmEvoBindDispContextDMA(pDevEvo,
-                                            pDevEvo->window[window],
-                                            pDevEvo->window[window]->notifiersDma[sd].ctxHandle);
+            NvU32 ret = pDevEvo->hal->BindSurfaceDescriptor(
+                pDevEvo,
+                pDevEvo->window[window],
+                &pDevEvo->window[window]->notifiersDma[sd].surfaceDesc);
             if (ret != NVOS_STATUS_SUCCESS) {
                 nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-                        "Failed to bind(window channel) display engine notify context DMA: 0x%x (%s)",
+                        "Failed to bind(window channel) display engine notify surface descriptor: 0x%x (%s)",
                         ret, nvstatusToString(ret));
                 return FALSE;
             }
@@ -3351,13 +3329,14 @@ NvBool nvRMSetupEvoCoreChannel(NVDevEvoPtr pDevEvo)
     }
 
     for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-        // Bind the core notifier ctxDma
+        // Bind the core notifier surface descriptor
         NvU32 ret =
-            nvRmEvoBindDispContextDMA(pDevEvo, pDevEvo->core,
-                                      pDevEvo->core->notifiersDma[sd].ctxHandle);
+            pDevEvo->hal->BindSurfaceDescriptor(
+                pDevEvo, pDevEvo->core,
+                &pDevEvo->core->notifiersDma[sd].surfaceDesc);
         if (ret != NVOS_STATUS_SUCCESS) {
             nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-                        "Failed to bind display engine notify context DMA: 0x%x (%s)",
+                        "Failed to bind display engine notify surface descriptor: 0x%x (%s)",
                         ret, nvstatusToString(ret));
             nvRMFreeEvoCoreChannel(pDevEvo);
             return FALSE;
@@ -3473,14 +3452,12 @@ static NvBool SyncOneEvoChannel(
             break;
         }
 
-        if (!nvIsEmulationEvo(pDevEvo)) {
-            if (nvExceedsTimeoutUSec(&startTime, timeout)) {
-                nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
-                            "Idling display engine timed out: 0x%08x:%d:%d:%d",
-                            pChan->hwclass, pChan->instance,
-                            sd, errorToken);
-                return FALSE;
-            }
+        if (nvExceedsTimeoutUSec(pDevEvo, &startTime, timeout)) {
+            nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+                        "Idling display engine timed out: 0x%08x:%d:%d:%d",
+                        pChan->hwclass, pChan->instance,
+                        sd, errorToken);
+            return FALSE;
         }
 
         nvkms_yield();
@@ -3546,7 +3523,7 @@ NvBool nvRMIdleBaseChannel(NVDevEvoPtr pDevEvo, NvU32 head, NvU32 sd,
             break;
         }
 
-        if (nvExceedsTimeoutUSec(&startTime, timeout)) {
+        if (nvExceedsTimeoutUSec(pDevEvo, &startTime, timeout)) {
             idleTimedOut = TRUE;
             break;
         }
@@ -3596,13 +3573,13 @@ NvBool nvRmEvoAllocAndBindSyncpt(
     NVDevEvoRec *pDevEvo,
     NVEvoChannel *pChannel,
     NvU32 id,
-    NvU32 *pSyncptHandle,
-    NvU32 *pSyncptCtxDmaHandle)
+    NVSurfaceDescriptor *pSurfaceDesc,
+    NVEvoSyncpt *pEvoSyncpt)
 {
     return FALSE;
 }
 
-static void FreeSyncptHandle(
+void nvRmFreeSyncptHandle(
     NVDevEvoRec *pDevEvo,
     NVEvoSyncpt *pSyncpt)
 {
@@ -3613,12 +3590,10 @@ static void FreeSyncptHandle(
                        pSyncpt->hSyncpt);
     pSyncpt->hSyncpt = 0;
 
-    nvRmApiFree(nvEvoGlobal.clientHandle,
-                pDevEvo->deviceHandle,
-                pSyncpt->hCtxDma);
-    nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
-                       pSyncpt->hCtxDma);
-    pSyncpt->hCtxDma = 0;
+    pDevEvo->hal->FreeSurfaceDescriptor(pDevEvo,
+                                        pDevEvo->deviceHandle,
+                                        &pSyncpt->surfaceDesc);
+    pSyncpt->allocated = FALSE;
 }
 
 /*!
@@ -3657,77 +3632,12 @@ void nvRmEvoFreePreSyncpt(
 
         pDevEvo->preSyncptTable[i].channelMask &= ~pChannel->channelMask;
         if (pDevEvo->preSyncptTable[i].channelMask == 0 &&
-            pDevEvo->preSyncptTable[i].hCtxDma != 0) {
+            pDevEvo->preSyncptTable[i].allocated) {
 
             /*! Free handles */
-            FreeSyncptHandle(pDevEvo, &pDevEvo->preSyncptTable[i]);
+            nvRmFreeSyncptHandle(pDevEvo, &pDevEvo->preSyncptTable[i]);
         }
     }
-}
-
-static NvBool GarbageCollectSyncptHelperOneChannel(
-    NVDevEvoRec *pDevEvo,
-    NvU32 sd,
-    NVEvoChannel *pChannel,
-    NVEvoSyncpt *pSyncpt,
-    NVEvoChannelMask *pIdledChannelMask)
-{
-    NvBool isChannelIdle = FALSE;
-
-    if ((pChannel->channelMask & pSyncpt->channelMask) == 0) {
-        return TRUE;
-    }
-
-    if ((*pIdledChannelMask) & pChannel->channelMask) {
-        goto done;
-    }
-
-    /*! Check whether channel is idle. */
-    pDevEvo->hal->IsChannelIdle(pDevEvo, pChannel, sd, &isChannelIdle);
-
-    if (!isChannelIdle) {
-        return FALSE;
-    }
-
-    /*! record idle channel mask to use in next check */
-    *pIdledChannelMask |= pChannel->channelMask;
-
-done:
-    pSyncpt->channelMask &= ~pChannel->channelMask;
-    return TRUE;
-}
-
-static NvBool GarbageCollectSyncptHelperOneSyncpt(
-    NVDevEvoRec *pDevEvo,
-    NVEvoSyncpt *pSyncpt,
-    NVEvoChannelMask *pIdledChannelMask)
-{
-    NvBool ret = TRUE;
-    NvU32 head, sd;
-
-    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
-
-        for (head = 0; head < pDevEvo->numHeads; head++) {
-            NvU32 layer;
-
-            /*!
-             * If a given channel isn't idle, continue to check if this syncpt
-             * is used on other channels which may be idle.
-             */
-            for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-                if (!GarbageCollectSyncptHelperOneChannel(
-                        pDevEvo,
-                        sd,
-                        pDevEvo->head[head].layer[layer],
-                        pSyncpt,
-                        &pIdledChannelMask[sd])) {
-                    ret = FALSE;
-                }
-            }
-        }
-    }
-
-    return ret;
 }
 
 /*!
@@ -3748,186 +3658,7 @@ void nvRmEvoFreeSyncpt(
     nvkms_syncpt_op(NVKMS_SYNCPT_OP_PUT, &params);
 
     /*! Free handles */
-    FreeSyncptHandle(pDevEvo, pEvoSyncpt);
-}
-
-/*!
- * This API try to find free syncpt and then unregisters it.
- * It searches global table, and when finds that all channels using this
- * syncpt are idle then frees it. It makes sure that syncpt is not part
- * of current flip.
- */
-NvBool nvRmGarbageCollectSyncpts(
-    NVDevEvoRec *pDevEvo)
-{
-    NvU32 i;
-    NvBool freedSyncpt = FALSE;
-    NVEvoChannelMask idledChannelMask[NVKMS_MAX_SUBDEVICES] = { 0 };
-
-    if (!pDevEvo->supportsSyncpts) {
-        return FALSE;
-    }
-
-    for (i = 0; i < NV_SYNCPT_GLOBAL_TABLE_LENGTH; i++) {
-
-        NvBool allLayersIdle = NV_TRUE;
-
-        if (pDevEvo->pAllSyncptUsedInCurrentFlip != NULL) {
-            if (pDevEvo->pAllSyncptUsedInCurrentFlip[i]) {
-                /*! syncpt is part of current flip, so skip it */
-                continue;
-            }
-        }
-
-        if (pDevEvo->preSyncptTable[i].hCtxDma == 0) {
-            /*! syncpt isn't registered, so skip it */
-            continue;
-        }
-
-        allLayersIdle = GarbageCollectSyncptHelperOneSyncpt(
-                            pDevEvo,
-                            &pDevEvo->preSyncptTable[i],
-                            idledChannelMask);
-
-        if (allLayersIdle) {
-            /*! Free handles */
-            FreeSyncptHandle(pDevEvo, &pDevEvo->preSyncptTable[i]);
-            freedSyncpt = TRUE;
-        }
-    }
-
-    return freedSyncpt;
-}
-
-NvU32 nvRmEvoBindDispContextDMA(
-    NVDevEvoPtr pDevEvo,
-    NVEvoChannelPtr pChannel,
-    NvU32 hCtxDma)
-{
-    NV0002_CTRL_BIND_CONTEXTDMA_PARAMS params = { };
-    NvU32 ret;
-    NvBool retryOnlyOnce = TRUE;
-
-    params.hChannel = pChannel->pb.channel_handle;
-
-retryOnce:
-    ret = nvRmApiControl(nvEvoGlobal.clientHandle,
-                         hCtxDma,
-                         NV0002_CTRL_CMD_BIND_CONTEXTDMA,
-                         &params, sizeof(params));
-    if (ret != NVOS_STATUS_SUCCESS) {
-        /*!
-         * syncpts (lazily freed) occupy space in the disp ctxDma hash
-         * table, and therefore may cause bind ctxDma to fail.
-         * Free any unused syncpts and try again.
-         */
-        if (retryOnlyOnce) {
-            /*! try to free syncpt only once */
-            if (nvRmGarbageCollectSyncpts(pDevEvo)) {
-                retryOnlyOnce = FALSE;
-                goto retryOnce;
-            }
-        }
-    }
-    return ret;
-}
-
-
-NvU32 nvRmEvoAllocateAndBindDispContextDMA(
-    NVDevEvoPtr pDevEvo,
-    NvU32 hMemory,
-    const enum NvKmsSurfaceMemoryLayout layout,
-    NvU64 limit)
-{
-    NV_CONTEXT_DMA_ALLOCATION_PARAMS ctxdmaParams = { };
-    NvU32 hDispCtxDma;
-    NvU32 flags = DRF_DEF(OS03, _FLAGS, _HASH_TABLE, _DISABLE);
-    NvU32 ret;
-    int h;
-
-    /* each surface to be displayed needs its own ctx dma. */
-    nvAssert(pDevEvo->displayHandle != 0);
-
-    nvAssert(pDevEvo->core);
-    nvAssert(pDevEvo->core->pb.channel_handle);
-
-    nvAssert(hMemory);
-    nvAssert(limit);
-
-    switch (layout) {
-        case NvKmsSurfaceMemoryLayoutBlockLinear:
-            flags |= DRF_DEF(OS03, _FLAGS, _PTE_KIND, _BL);
-            break;
-        case NvKmsSurfaceMemoryLayoutPitch:
-            flags |= DRF_DEF(OS03, _FLAGS, _PTE_KIND, _PITCH);
-            break;
-    }
-
-    hDispCtxDma = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
-
-    ctxdmaParams.hMemory = hMemory;
-    ctxdmaParams.flags = flags;
-    ctxdmaParams.offset = 0;
-    ctxdmaParams.limit = limit;
-
-    ret = nvRmApiAlloc(nvEvoGlobal.clientHandle,
-                       pDevEvo->deviceHandle,
-                       hDispCtxDma,
-                       NV01_CONTEXT_DMA,
-                       &ctxdmaParams);
-
-    if (ret != NVOS_STATUS_SUCCESS) {
-        goto cleanup_this_handle_and_fail;
-    }
-
-    ret = nvRmEvoBindDispContextDMA(pDevEvo, pDevEvo->core, hDispCtxDma);
-
-    if (ret != NVOS_STATUS_SUCCESS) {
-        goto free_this_handle_and_fail;
-    }
-
-    for (h = 0; h < pDevEvo->numHeads; h++) {
-        NvU32 layer;
-
-        for (layer = 0; layer < pDevEvo->head[h].numLayers; layer++) {
-            if (pDevEvo->head[h].layer[layer]) {
-                nvAssert(pDevEvo->head[h].layer[layer]->pb.channel_handle);
-
-                ret = nvRmEvoBindDispContextDMA(pDevEvo,
-                                                pDevEvo->head[h].layer[layer],
-                                                hDispCtxDma);
-
-                if (ret != NVOS_STATUS_SUCCESS) {
-                    goto free_this_handle_and_fail;
-                }
-            }
-        }
-    }
-
-    return hDispCtxDma;
-
-free_this_handle_and_fail:
-
-    nvRmApiFree(nvEvoGlobal.clientHandle,
-                nvEvoGlobal.clientHandle, hDispCtxDma);
-
-        /* Fall through */
-cleanup_this_handle_and_fail:
-
-    nvFreeUnixRmHandle(&pDevEvo->handleAllocator, hDispCtxDma);
-
-    return 0;
-}
-
-void nvRmEvoFreeDispContextDMA(NVDevEvoPtr pDevEvo,
-                               NvU32 *hDispCtxDma)
-{
-    if (*hDispCtxDma) {
-        nvRmApiFree(nvEvoGlobal.clientHandle,
-                    nvEvoGlobal.clientHandle, *hDispCtxDma);
-        nvFreeUnixRmHandle(&pDevEvo->handleAllocator, *hDispCtxDma);
-        *hDispCtxDma = 0;
-    }
+    nvRmFreeSyncptHandle(pDevEvo, pEvoSyncpt);
 }
 
 void nvRmEvoUnMapVideoMemory(NVDevEvoPtr pDevEvo, NvU32 memoryHandle,
@@ -4400,8 +4131,8 @@ static void NonStallInterruptCallback(
     NV_STATUS status)
 {
     /*
-     * We are called within resman's altstack and locks.  Schedule a separate
-     * callback to execute with the nvkms_lock.
+     * We are called within resman's locks.  Schedule a separate callback to
+     * execute with the nvkms_lock.
      *
      * XXX It might be nice to use a lighter-weight lock here to check if any
      * requests are pending in any NvKmsDeferredRequestFifo before scheduling
@@ -5767,4 +5498,74 @@ void nvRmUnregisterBacklight(NVDispEvoRec *pDispEvo)
         nvkms_unregister_backlight(pDispEvo->backlightDevice);
     }
     pDispEvo->backlightDevice = NULL;
+}
+
+NvU32 nvRmAllocAndBindSurfaceDescriptor(
+    NVDevEvoPtr pDevEvo,
+    NvU32 hMemory,
+    const enum NvKmsSurfaceMemoryLayout layout,
+    NvU64 limit,
+    NVSurfaceDescriptor *pSurfaceDesc)
+{
+    NVSurfaceDescriptor surfaceDesc;
+    NvU32 flags = DRF_DEF(OS03, _FLAGS, _HASH_TABLE, _DISABLE);
+    NvU32 head, layer;
+    NvU32 ret;
+
+    switch (layout) {
+        case NvKmsSurfaceMemoryLayoutBlockLinear:
+            flags |= DRF_DEF(OS03, _FLAGS, _PTE_KIND, _BL);
+            break;
+        case NvKmsSurfaceMemoryLayoutPitch:
+            flags |= DRF_DEF(OS03, _FLAGS, _PTE_KIND, _PITCH);
+            break;
+    }
+
+     /* Each surface to be displayed needs its own surface descriptor */
+    nvAssert(pDevEvo->displayHandle != 0);
+    nvAssert(pDevEvo->core);
+    nvAssert(pDevEvo->core->pb.channel_handle);
+    nvAssert(hMemory);
+    nvAssert(limit);
+
+    ret =
+        pDevEvo->hal->AllocSurfaceDescriptor(pDevEvo, &surfaceDesc,
+                                             hMemory, flags, limit);
+
+    if (ret != NVOS_STATUS_SUCCESS) {
+        return ret;
+    }
+
+    ret =
+        pDevEvo->hal->BindSurfaceDescriptor(pDevEvo,
+                                            pDevEvo->core,
+                                            &surfaceDesc);
+    if (ret != NVOS_STATUS_SUCCESS) {
+        goto free_this_handle_and_fail;
+    }
+
+    for (head = 0; head < pDevEvo->numHeads; head++) {
+        for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+            if (pDevEvo->head[head].layer[layer]) {
+                 nvAssert(pDevEvo->head[head].layer[layer]->pb.channel_handle);
+
+                 ret = pDevEvo->hal->BindSurfaceDescriptor(pDevEvo,
+                         pDevEvo->head[head].layer[layer],
+                         &surfaceDesc);
+                 if (ret != NVOS_STATUS_SUCCESS) {
+                     goto free_this_handle_and_fail;
+                 }
+            }
+        }
+    }
+
+    *pSurfaceDesc = surfaceDesc;
+
+    return NVOS_STATUS_SUCCESS;
+
+free_this_handle_and_fail:
+    pDevEvo->hal->FreeSurfaceDescriptor(pDevEvo,
+                                        nvEvoGlobal.clientHandle,
+                                        &surfaceDesc);
+    return ret;
 }

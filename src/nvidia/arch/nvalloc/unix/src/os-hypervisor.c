@@ -46,13 +46,14 @@
 #include <nv_ref.h>               // NV_PMC_BOOT_1_VGPU
 #include "nvdevid.h"
 
+#define NV_VFIO_PCI_BAR0_REGION_INDEX 0
 #define NV_VFIO_PCI_BAR1_REGION_INDEX 1
 #define NV_VFIO_PCI_BAR2_REGION_INDEX 2
 #define NV_VFIO_PCI_BAR3_REGION_INDEX 3
 
 static NV_STATUS nv_parse_config_params(const char *, const char *, const char, NvU32 *);
 
-void hypervisorSetHypervVgpuSupported_IMPL(POBJHYPERVISOR pHypervisor)
+void hypervisorSetHypervVgpuSupported_IMPL(OBJHYPERVISOR *pHypervisor)
 {
     pHypervisor->bIsHypervVgpuSupported = NV_TRUE;
 }
@@ -67,14 +68,14 @@ NvBool hypervisorIsAC_IMPL(void)
     return NV_FALSE;
 }
 
-void hypervisorSetACSupported_IMPL(POBJHYPERVISOR pHypervisor)
+void hypervisorSetACSupported_IMPL(OBJHYPERVISOR *pHypervisor)
 {
     pHypervisor->bIsACSupported = NV_TRUE;
 }
 
 NV_STATUS hypervisorInjectInterrupt_IMPL
 (
-    POBJHYPERVISOR pHypervisor,
+    OBJHYPERVISOR *pHypervisor,
     VGPU_NS_INTR   *pVgpuNsIntr
 )
 {
@@ -98,7 +99,7 @@ NV_STATUS hypervisorInjectInterrupt_IMPL
 HYPERVISOR_TYPE NV_API_CALL nv_get_hypervisor_type(void)
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
-    POBJHYPERVISOR pHypervisor = SYS_GET_HYPERVISOR(pSys);
+    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
     return hypervisorGetHypervisorType(pHypervisor);
 }
 
@@ -268,7 +269,7 @@ NV_STATUS  NV_API_CALL nv_vgpu_get_type_info(
                     case VGPU_TYPE_DESCRIPTION:
                          os_snprintf(buffer, MAX_STR_LEN,
                                      "num_heads=%d, frl_config=%d, "
-                                     "framebuffer=%dM, max_resolution=%dx%d, max_instance=%d\n",
+                                     "framebuffer=%lluM, max_resolution=%dx%d, max_instance=%d\n",
                                      vgpuTypeInfo->numHeads, vgpuTypeInfo->frlConfig,
                                      vgpuTypeInfo->profileSize >> 20,
                                      vgpuTypeInfo->maxResolutionX,
@@ -474,13 +475,56 @@ NV_STATUS  NV_API_CALL nv_vgpu_create_request(
     return rmStatus;
 }
 
+static NV_STATUS is_bar_64bit(
+    OBJGPU *pGpu,
+    NvU32 regionIndex,
+    NvBool *isBar64bit
+)
+{
+    NV_STATUS   rmStatus = NV_OK;
+
+    if (pGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "%s GPU handle is not valid \n", __FUNCTION__);
+        rmStatus = NV_ERR_INVALID_STATE;
+        goto exit;
+    }
+
+    switch (regionIndex)
+    {
+        case NV_VFIO_PCI_BAR0_REGION_INDEX:
+            *isBar64bit = pGpu->sriovState.b64bitVFBar0;
+            break;
+
+        case NV_VFIO_PCI_BAR1_REGION_INDEX:
+            *isBar64bit = pGpu->sriovState.b64bitVFBar1;
+            break;
+
+        case NV_VFIO_PCI_BAR2_REGION_INDEX:
+            *isBar64bit = pGpu->sriovState.b64bitVFBar2;
+            break;
+
+        default:
+            NV_PRINTF(LEVEL_ERROR, "BAR%d region doesn't exist!\n", regionIndex);
+            rmStatus = NV_ERR_INVALID_ARGUMENT;
+            goto exit;
+            break;
+    }
+
+    NV_PRINTF(LEVEL_INFO, "BAR%d region is_64bit: %d\n", regionIndex, *isBar64bit);;
+
+exit:
+    return rmStatus;
+}
+
 NV_STATUS NV_API_CALL nv_vgpu_get_bar_info(
     nvidia_stack_t *sp,
     nv_state_t *pNv,
     const NvU8 *pMdevUuid,
     NvU64 *size,
     NvU32 regionIndex,
-    void *pVgpuVfioRef
+    void *pVgpuVfioRef,
+    NvBool *isBar64bit
 )
 {
     REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
@@ -497,6 +541,16 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info(
     NV_ENTER_RM_RUNTIME(sp,fp);
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
+    /*
+     * This function can be used to query both BAR 64bit state and/or BAR size
+     * If neither is queried, return with error.
+     */
+    if ((size == NULL) && (isBar64bit == NULL))
+    {
+        rmStatus = NV_ERR_INVALID_ARGUMENT;
+        goto exit;
+    }
+
     // LOCK: acquire API lock
     NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT, rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR), exit);
 
@@ -507,6 +561,18 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info(
         rmStatus = NV_ERR_INVALID_STATE;
         goto release_lock;
     }
+
+    /* Get input BAR index 64bit state */
+    if (isBar64bit != NULL)
+    {
+        NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
+            is_bar_64bit(pGpu, regionIndex, isBar64bit), release_lock);
+
+        /* Query is only for BAR index 64bit state*/
+        if (size == NULL)
+            goto release_lock;
+    }
+
     pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     *size = kbusGetPciBarSize(pKernelBus, regionIndex);
 
@@ -593,6 +659,71 @@ exit:
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
     NV_EXIT_RM_RUNTIME(sp,fp);
 
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL nv_vgpu_get_hbm_info(
+    nvidia_stack_t *sp,
+    nv_state_t *pNv,
+    const NvU8 *pMdevUuid,
+    NvU64 *hbmAddr,
+    NvU64 *size
+)
+{
+    NV_STATUS    rmStatus = NV_OK;
+    THREAD_STATE_NODE threadState;
+    OBJGPU      *pGpu = NULL;
+    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
+    void         *fp = NULL;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    if ((size == NULL) || (hbmAddr == NULL))
+    {
+        rmStatus = NV_ERR_INVALID_ARGUMENT;
+        goto exit;
+    }
+
+    // LOCK: acquire API lock
+    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT, rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR), exit);
+
+    pGpu = NV_GET_NV_PRIV_PGPU(pNv);
+    if (pGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "%s GPU handle is not valid \n", __FUNCTION__);
+        rmStatus = NV_ERR_INVALID_STATE;
+        goto release_lock;
+    }
+
+    NV_CHECK_OK_OR_GOTO(rmStatus, LEVEL_SILENT,
+                        kvgpumgrGetHostVgpuDeviceFromMdevUuid(pNv->gpu_id,
+                                                              pMdevUuid,
+                                                              &pKernelHostVgpuDevice), release_lock);
+    if (pKernelHostVgpuDevice->numValidHbmRegions > 1)
+    {
+        NV_PRINTF(LEVEL_NOTICE, "non contiguous HBM region is not supported\n");
+        NV_ASSERT(0);
+    }
+
+    if (pKernelHostVgpuDevice->hbmRegionList != NULL)
+    {
+        *hbmAddr = pKernelHostVgpuDevice->hbmRegionList[0].hbmBaseAddr;
+        *size = pKernelHostVgpuDevice->hbmRegionList[0].size;
+    }
+    else
+    {
+        *hbmAddr = 0;
+        *size = 0;
+    }
+
+release_lock:
+    // UNLOCK: release API lock
+    rmapiLockRelease();
+exit:
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+    NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }
 
@@ -686,7 +817,7 @@ NV_STATUS  NV_API_CALL  nv_vgpu_get_sparse_mmap(
     THREAD_STATE_NODE threadState;
     NV_STATUS rmStatus = NV_ERR_INVALID_STATE, status;
     OBJGPU *pGpu = NULL;
-    POBJTMR pTmr = NULL;
+    OBJTMR *pTmr = NULL;
     KernelFifo *pKernelFifo = NULL;
     void *fp = NULL;
     REQUEST_VGPU_INFO_NODE *pRequestVgpu = NULL;
@@ -1038,7 +1169,7 @@ NV_STATUS rm_is_vgpu_supported_device(
 )
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
-    POBJHYPERVISOR pHypervisor = SYS_GET_HYPERVISOR(pSys);
+    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
     NvBool is_sriov_enabled = FLD_TEST_DRF(_PMC, _BOOT_1, _VGPU, _VF, pmc_boot_1);
 
     // if not running in vGPU mode (guest VM) return NV_OK

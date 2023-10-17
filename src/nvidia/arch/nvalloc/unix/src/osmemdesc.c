@@ -72,7 +72,6 @@ osCreateMemFromOsDescriptor
     void *pPrivate;
 
     pClient = serverutilGetClientUnderLock(hClient);
-
     if ((pDescriptor == NvP64_NULL) ||
         (*pLimit == 0) ||
         (pClient == NULL))
@@ -548,6 +547,7 @@ osCreateOsDescriptorFromPhysAddr
 )
 {
     NV_STATUS rmStatus;
+    nv_state_t *nv = NV_GET_NV_STATE(pGpu);
     MEMORY_DESCRIPTOR *pMemDesc;
     NvU64 *pPteArray;
     NvU64  base = 0;
@@ -556,6 +556,7 @@ osCreateOsDescriptorFromPhysAddr
     NvU64 *pPhys_addrs;
     NvU64  num_os_pages;
     NvU32  idx;
+
     // Currently only work with contiguous sysmem allocations
     if (!FLD_TEST_DRF(OS02, _FLAGS, _PHYSICALITY, _CONTIGUOUS, flags))
     {
@@ -566,6 +567,15 @@ osCreateOsDescriptorFromPhysAddr
     {
         // Syncpoint memory is uncached, DMA mapping needs to skip CPU sync.
         cache_type = NV_MEMORY_UNCACHED;
+
+        //
+        // Syncpoint memory is NISO. Don't attempt to IOMMU map if the NISO
+        // IOMMU isn't enabled.
+        //
+        if (!NV_SOC_IS_NISO_IOMMU_PRESENT(nv))
+        {
+            memdescFlags |= MEMDESC_FLAGS_SKIP_IOMMU_MAPPING;
+        }
     }
 
     if (FLD_TEST_DRF(OS02, _FLAGS, _ALLOC_NISO_DISPLAY, _YES, flags))
@@ -597,7 +607,7 @@ osCreateOsDescriptorFromPhysAddr
     num_os_pages = NV_RM_PAGES_TO_OS_PAGES(pMemDesc->PageCount);
     pPhys_addrs  = portMemAllocNonPaged(sizeof(NvU64) * num_os_pages);
     if (pPhys_addrs == NULL)
-        return NV_ERR_NO_MEMORY;
+        goto cleanup_memdesc;
 
     for (idx = 0; idx < num_os_pages; idx++) 
     {
@@ -605,20 +615,51 @@ osCreateOsDescriptorFromPhysAddr
     }
 
     *ppPrivate = NULL;
-    rmStatus = nv_register_phys_pages(NV_GET_NV_STATE(pGpu), pPhys_addrs,
-                                      num_os_pages,
+    rmStatus = nv_register_phys_pages(nv, pPhys_addrs, num_os_pages,
                                       memdescGetCpuCacheAttrib(pMemDesc),
                                       ppPrivate);
     if (rmStatus != NV_OK)
+        goto cleanup_memdesc;
+
+    //
+    // For syncpoint memory, if IOMMU skip flag wasn't set earlier,
+    // create IOVA mapping.
+    //
+    if (FLD_TEST_DRF(OS02, _FLAGS, _ALLOC_TYPE_SYNCPOINT, _APERTURE, flags) &&
+        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_SKIP_IOMMU_MAPPING))
     {
-        memdescDestroy(pMemDesc);
-        goto cleanup;
+        //
+        // memdescMapIommu() requires the OS-private data to be set on the memory
+        // descriptor, but we don't want to wire up the teardown callback just yet:
+        // that callback needs to unpin the pages, but that will already be done
+        // as part of failure handling further up the stack if memdescMapIommu()
+        // fails. So we only set up the priv-data cleanup callback once we're sure
+        // this call will succeed.
+        //
+        memdescSetMemData(pMemDesc, *ppPrivate, NULL);
+
+        rmStatus = memdescMapIommu(pMemDesc, pGpu->busInfo.iovaspaceId);
+        if (rmStatus != NV_OK)
+            goto cleanup_pages;
     }
 
+    // All is well - wire up the cleanup callback now
     memdescSetMemData(pMemDesc, *ppPrivate,
         osDestroyOsDescriptorFromPhysAddr);
 
-cleanup:
+    portMemFree(pPhys_addrs);
+
+    return NV_OK;
+
+cleanup_pages:
+    if (*ppPrivate != NULL)
+    {
+        nv_unregister_phys_pages(NV_GET_NV_STATE(pGpu), *ppPrivate);
+    }
+
+cleanup_memdesc:
+    memdescDestroy(pMemDesc);
+
     portMemFree(pPhys_addrs);
 
     return rmStatus;

@@ -210,4 +210,5 @@
 #define NV_VIRTUAL_FUNCTION_PRIV_DOORBELL                                            0x2200 /* -W-4R */
 #define NV_VIRTUAL_FUNCTION_DOORBELL                                                0x30090 /* -W-4R */
 #define NV_VIRTUAL_FUNCTION_ERR_CONT                         0x30094 /* R--4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL__SIZE_1          6 /*       */
 #endif // __tu102_dev_vm_h__

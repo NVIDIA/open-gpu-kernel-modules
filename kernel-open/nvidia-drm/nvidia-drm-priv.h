@@ -46,11 +46,32 @@
 #define NV_DRM_LOG_ERR(__fmt, ...) \
     DRM_ERROR("[nvidia-drm] " __fmt "\n", ##__VA_ARGS__)
 
+/*
+ * DRM_WARN() was added in v4.9 by kernel commit
+ * 30b0da8d556e65ff935a56cd82c05ba0516d3e4a
+ *
+ * Before this commit, only DRM_INFO and DRM_ERROR were defined and
+ * DRM_INFO(fmt, ...) was defined as
+ * printk(KERN_INFO "[" DRM_NAME "] " fmt, ##__VA_ARGS__). So, if
+ * DRM_WARN is undefined this defines NV_DRM_LOG_WARN following the
+ * same pattern as DRM_INFO.
+ */
+#ifdef DRM_WARN
+#define NV_DRM_LOG_WARN(__fmt, ...) \
+    DRM_WARN("[nvidia-drm] " __fmt "\n", ##__VA_ARGS__)
+#else
+#define NV_DRM_LOG_WARN(__fmt, ...) \
+    printk(KERN_WARNING "[" DRM_NAME "] [nvidia-drm] " __fmt "\n", ##__VA_ARGS__)
+#endif
+
 #define NV_DRM_LOG_INFO(__fmt, ...) \
     DRM_INFO("[nvidia-drm] " __fmt "\n", ##__VA_ARGS__)
 
 #define NV_DRM_DEV_LOG_INFO(__dev, __fmt, ...) \
     NV_DRM_LOG_INFO("[GPU ID 0x%08x] " __fmt, __dev->gpu_info.gpu_id, ##__VA_ARGS__)
+
+#define NV_DRM_DEV_LOG_WARN(__dev, __fmt, ...) \
+    NV_DRM_LOG_WARN("[GPU ID 0x%08x] " __fmt, __dev->gpu_info.gpu_id, ##__VA_ARGS__)
 
 #define NV_DRM_DEV_LOG_ERR(__dev, __fmt, ...) \
     NV_DRM_LOG_ERR("[GPU ID 0x%08x] " __fmt, __dev->gpu_info.gpu_id, ##__VA_ARGS__)
@@ -117,9 +138,26 @@ struct nv_drm_device {
 
 #endif
 
+#if defined(NV_DRM_FENCE_AVAILABLE)
+    NvU64 semsurf_stride;
+    NvU64 semsurf_max_submitted_offset;
+#endif
+
     NvBool hasVideoMemory;
 
     NvBool supportsSyncpts;
+    NvBool subOwnershipGranted;
+    NvBool hasFramebufferConsole;
+
+    /**
+     * @drmMasterChangedSinceLastAtomicCommit:
+     *
+     * This flag is set in nv_drm_master_set and reset after a completed atomic
+     * commit. It is used to restore or recommit state that is lost by the
+     * NvKms modeset owner change, such as the CRTC color management
+     * properties.
+     */
+    NvBool drmMasterChangedSinceLastAtomicCommit;
 
     struct drm_property *nv_out_fence_property;
     struct drm_property *nv_input_colorspace_property;

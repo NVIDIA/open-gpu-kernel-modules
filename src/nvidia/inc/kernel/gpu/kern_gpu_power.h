@@ -1,5 +1,5 @@
  /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,7 @@ typedef enum
 // TODO-SC use mask for the bool variables
 typedef struct
 {
+    NvU32               refCount;
     GPU_GC6_STATE       currentState;
     NvU32               executedStepMask;       // step mask executed during entry sequence
     NvU32               stepMask[NV2080_CTRL_GC6_FLAVOR_ID_MAX];  // step mask cache

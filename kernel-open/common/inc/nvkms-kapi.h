@@ -49,6 +49,8 @@ struct NvKmsKapiDevice;
 struct NvKmsKapiMemory;
 struct NvKmsKapiSurface;
 struct NvKmsKapiChannelEvent;
+struct NvKmsKapiSemaphoreSurface;
+struct NvKmsKapiSemaphoreSurfaceCallback;
 
 typedef NvU32 NvKmsKapiConnector;
 typedef NvU32 NvKmsKapiDisplay;
@@ -66,6 +68,14 @@ typedef NvU32 NvKmsKapiDisplay;
  * deadlock.
  */
 typedef void NvKmsChannelEventProc(void *dataPtr, NvU32 dataU32);
+
+/*
+ * Note: Same as above, this function must not call back into NVKMS-KAPI, nor
+ * directly into RM. Doing so could cause deadlocks given the notification
+ * function will most likely be called from within RM's interrupt handler
+ * callchain.
+ */
+typedef void NvKmsSemaphoreSurfaceCallbackProc(void *pData);
 
 /** @} */
 
@@ -125,6 +135,11 @@ struct NvKmsKapiDeviceResourcesInfo {
     struct {
         NvU32 validCursorCompositionModes;
         NvU64 supportedCursorSurfaceMemoryFormats;
+
+        struct {
+            NvU64 maxSubmittedOffset;
+            NvU64 stride;
+        } semsurf;
 
         struct {
             NvU16 validRRTransforms;
@@ -218,8 +233,10 @@ struct NvKmsKapiLayerConfig {
     struct NvKmsRRParams rrParams;
     struct NvKmsKapiSyncpt syncptParams;
 
-    struct NvKmsHDRStaticMetadata hdrMetadata;
-    NvBool hdrMetadataSpecified;
+    struct {
+        struct NvKmsHDRStaticMetadata val;
+        NvBool enabled;
+    } hdrMetadata;
 
     enum NvKmsOutputTf tf;
 
@@ -233,16 +250,21 @@ struct NvKmsKapiLayerConfig {
     NvU16 dstWidth, dstHeight;
 
     enum NvKmsInputColorSpace inputColorSpace;
+    struct NvKmsCscMatrix csc;
+    NvBool cscUseMain;
 };
 
 struct NvKmsKapiLayerRequestedConfig {
     struct NvKmsKapiLayerConfig config;
     struct {
-        NvBool surfaceChanged : 1;
-        NvBool srcXYChanged   : 1;
-        NvBool srcWHChanged   : 1;
-        NvBool dstXYChanged   : 1;
-        NvBool dstWHChanged   : 1;
+        NvBool surfaceChanged     : 1;
+        NvBool srcXYChanged       : 1;
+        NvBool srcWHChanged       : 1;
+        NvBool dstXYChanged       : 1;
+        NvBool dstWHChanged       : 1;
+        NvBool cscChanged         : 1;
+        NvBool tfChanged          : 1;
+        NvBool hdrMetadataChanged : 1;
     } flags;
 };
 
@@ -286,14 +308,41 @@ struct NvKmsKapiHeadModeSetConfig {
     struct NvKmsKapiDisplayMode mode;
 
     NvBool vrrEnabled;
+
+    struct {
+        NvBool enabled;
+        enum NvKmsInfoFrameEOTF eotf;
+        struct NvKmsHDRStaticMetadata staticMetadata;
+    } hdrInfoFrame;
+
+    enum NvKmsOutputColorimetry colorimetry;
+
+    struct {
+        struct {
+            NvBool specified;
+            NvU32 depth;
+            NvU32 start;
+            NvU32 end;
+            struct NvKmsLutRamps *pRamps;
+        } input;
+
+        struct {
+            NvBool specified;
+            NvBool enabled;
+            struct NvKmsLutRamps *pRamps;
+        } output;
+    } lut;
 };
 
 struct NvKmsKapiHeadRequestedConfig {
     struct NvKmsKapiHeadModeSetConfig modeSetConfig;
     struct {
-        NvBool activeChanged   : 1;
-        NvBool displaysChanged : 1;
-        NvBool modeChanged     : 1;
+        NvBool activeChanged       : 1;
+        NvBool displaysChanged     : 1;
+        NvBool modeChanged         : 1;
+        NvBool hdrInfoFrameChanged : 1;
+        NvBool colorimetryChanged  : 1;
+        NvBool lutChanged      : 1;
     } flags;
 
     struct NvKmsKapiCursorRequestedConfig cursorRequestedConfig;
@@ -318,6 +367,7 @@ struct NvKmsKapiHeadReplyConfig {
 };
 
 struct NvKmsKapiModeSetReplyConfig {
+    enum NvKmsFlipResult flipResult;
     struct NvKmsKapiHeadReplyConfig
         headReplyConfig[NVKMS_KAPI_MAX_HEADS];
 };
@@ -434,6 +484,12 @@ enum NvKmsKapiAllocationType {
     NVKMS_KAPI_ALLOCATION_TYPE_OFFSCREEN = 2,
 };
 
+typedef enum NvKmsKapiRegisterWaiterResultRec {
+    NVKMS_KAPI_REG_WAITER_FAILED,
+    NVKMS_KAPI_REG_WAITER_SUCCESS,
+    NVKMS_KAPI_REG_WAITER_ALREADY_SIGNALLED,
+} NvKmsKapiRegisterWaiterResult;
+
 struct NvKmsKapiFunctionsTable {
 
     /*!
@@ -519,8 +575,8 @@ struct NvKmsKapiFunctionsTable {
     );
 
     /*!
-     * Revoke permissions previously granted. Only one (dispIndex, head,
-     * display) is currently supported.
+     * Revoke modeset permissions previously granted. Only one (dispIndex,
+     * head, display) is currently supported.
      *
      * \param [in]  device     A device returned by allocateDevice().
      *
@@ -535,6 +591,34 @@ struct NvKmsKapiFunctionsTable {
         struct NvKmsKapiDevice *device,
         NvU32 head,
         NvKmsKapiDisplay display
+    );
+
+    /*!
+     * Grant modeset sub-owner permissions to fd. This is used by clients to
+     * convert drm 'master' permissions into nvkms sub-owner permission.
+     *
+     * \param [in]  fd         fd from opening /dev/nvidia-modeset.
+     *
+     * \param [in]  device     A device returned by allocateDevice().
+     *
+     * \return NV_TRUE on success, NV_FALSE on failure.
+     */
+    NvBool (*grantSubOwnership)
+    (
+        NvS32 fd,
+        struct NvKmsKapiDevice *device
+    );
+
+    /*!
+     * Revoke sub-owner permissions previously granted.
+     *
+     * \param [in]  device     A device returned by allocateDevice().
+     *
+     * \return NV_TRUE on success, NV_FALSE on failure.
+     */
+    NvBool (*revokeSubOwnership)
+    (
+        struct NvKmsKapiDevice *device
     );
 
     /*!
@@ -1122,6 +1206,199 @@ struct NvKmsKapiFunctionsTable {
                                        NvP64 dmaBuf,
                                        NvU32 limit);
 
+    /*!
+     * Import a semaphore surface allocated elsewhere to NVKMS and return a
+     * handle to the new object.
+     *
+     * \param [in] device            A device allocated using allocateDevice().
+     *
+     * \param [in] nvKmsParamsUser   Userspace pointer to driver-specific
+     *                               parameters describing the semaphore
+     *                               surface being imported.
+     *
+     * \param [in] nvKmsParamsSize   Size of the driver-specific parameter
+     *                               struct.
+     *
+     * \param [out] pSemaphoreMap    Returns a CPU mapping of the semaphore
+     *                               surface's semaphore memory to the client.
+     *
+     * \param [out] pMaxSubmittedMap Returns a CPU mapping of the semaphore
+     *                               surface's semaphore memory to the client.
+     *
+     * \return struct NvKmsKapiSemaphoreSurface* on success, NULL on failure.
+     */
+    struct NvKmsKapiSemaphoreSurface* (*importSemaphoreSurface)
+    (
+         struct NvKmsKapiDevice *device,
+         NvU64 nvKmsParamsUser,
+         NvU64 nvKmsParamsSize,
+         void **pSemaphoreMap,
+         void **pMaxSubmittedMap
+    );
+
+    /*!
+     * Free an imported semaphore surface.
+     *
+     * \param [in]  device              The device passed to
+     *                                  importSemaphoreSurface() when creating
+     *                                  semaphoreSurface.
+     *
+     * \param [in]  semaphoreSurface    A semaphore surface returned by
+     *                                  importSemaphoreSurface().
+     */
+    void (*freeSemaphoreSurface)
+    (
+        struct NvKmsKapiDevice *device,
+        struct NvKmsKapiSemaphoreSurface *semaphoreSurface
+    );
+
+    /*!
+     * Register a callback to be called when a semaphore reaches a value.
+     *
+     * The callback will be called when the semaphore at index in
+     * semaphoreSurface reaches the value wait_value.  The callback will
+     * be called at most once and is automatically unregistered when called.
+     * It may also be unregistered (i.e., cancelled) explicitly using the
+     * unregisterSemaphoreSurfaceCallback() function. To avoid leaking the
+     * memory used to track the registered callback, callers must ensure one
+     * of these methods of unregistration is used for every successful
+     * callback registration that returns a non-NULL pCallbackHandle.
+     *
+     * \param [in]  device              The device passed to
+     *                                  importSemaphoreSurface() when creating
+     *                                  semaphoreSurface.
+     *
+     * \param [in]  semaphoreSurface    A semaphore surface returned by
+     *                                  importSemaphoreSurface().
+     *
+     * \param [in]  pCallback           A pointer to the function to call when
+     *                                  the specified value is reached. NULL
+     *                                  means no callback.
+     *
+     * \param [in]  pData               Arbitrary data to be passed back to the
+     *                                  callback as its sole parameter.
+     *
+     * \param [in]  index               The index of the semaphore within
+     *                                  semaphoreSurface.
+     *
+     * \param [in]  wait_value          The value the semaphore must reach or
+     *                                  exceed before the callback is called.
+     *
+     * \param [in]  new_value           The value the semaphore will be set to
+     *                                  when it reaches or exceeds <wait_value>.
+     *                                  0 means do not update the value.
+     *
+     * \param [out] pCallbackHandle     On success, the value pointed to will
+     *                                  contain an opaque handle to the
+     *                                  registered callback that may be used to
+     *                                  cancel it if needed. Unused if pCallback
+     *                                  is NULL.
+     *
+     * \return NVKMS_KAPI_REG_WAITER_SUCCESS if the waiter was registered or if
+     *         no callback was requested and the semaphore at <index> has
+     *         already reached or exceeded <wait_value>
+     *
+     *         NVKMS_KAPI_REG_WAITER_ALREADY_SIGNALLED if a callback was
+     *         requested and the semaphore at <index> has already reached or
+     *         exceeded <wait_value>
+     *
+     *         NVKMS_KAPI_REG_WAITER_FAILED if waiter registration failed.
+     */
+    NvKmsKapiRegisterWaiterResult
+    (*registerSemaphoreSurfaceCallback)
+    (
+        struct NvKmsKapiDevice *device,
+        struct NvKmsKapiSemaphoreSurface *semaphoreSurface,
+        NvKmsSemaphoreSurfaceCallbackProc *pCallback,
+        void *pData,
+        NvU64 index,
+        NvU64 wait_value,
+        NvU64 new_value,
+        struct NvKmsKapiSemaphoreSurfaceCallback **pCallbackHandle
+    );
+
+    /*!
+     * Unregister a callback registered via registerSemaphoreSurfaceCallback()
+     *
+     * If the callback has not yet been called, this function will cancel the
+     * callback and free its associated resources.
+     *
+     * Note this function treats the callback handle as a pointer. While this
+     * function does not dereference that pointer itself, the underlying call
+     * to RM does within a properly guarded critical section that first ensures
+     * it is not in the process of being used within a callback. This means
+     * the callstack must take into consideration that pointers are not in
+     * general unique handles if they may have been freed, since a subsequent
+     * malloc could return the same pointer value at that point. This callchain
+     * avoids that by leveraging the behavior of the underlying RM APIs:
+     *
+     * 1) A callback handle is referenced relative to its corresponding
+     *    (semaphore surface, index, wait_value) tuple here and within RM. It
+     *    is not a valid handle outside of that scope.
+     *
+     * 2) A callback can not be registered against an already-reached value
+     *    for a given semaphore surface index.
+     *
+     * 3) A given callback handle can not be registered twice against the same
+     *    (semaphore surface, index, wait_value) tuple, so unregistration will
+     *    never race with registration at the RM level, and would only race at
+     *    a higher level if used incorrectly. Since this is kernel code, we
+     *    can safely assume there won't be malicious clients purposely misuing
+     *    the API, but the burden is placed on the caller to ensure its usage
+     *    does not lead to races at higher levels.
+     *
+     * These factors considered together ensure any valid registered handle is
+     * either still in the relevant waiter list and refers to the same event/
+     * callback as when it was registered, or has been removed from the list
+     * as part of a critical section that also destroys the list itself and
+     * makes future lookups in that list impossible, and hence eliminates the
+     * chance of comparing a stale handle with a new handle of the same value
+     * as part of a lookup.
+     *
+     * \param [in]  device              The device passed to
+     *                                  importSemaphoreSurface() when creating
+     *                                  semaphoreSurface.
+     *
+     * \param [in]  semaphoreSurface    The semaphore surface passed to
+     *                                  registerSemaphoreSurfaceCallback() when
+     *                                  registering the callback.
+     *
+     * \param [in]  index               The index passed to
+     *                                  registerSemaphoreSurfaceCallback() when
+     *                                  registering the callback.
+     *
+     * \param [in]  wait_value          The wait_value passed to
+     *                                  registerSemaphoreSurfaceCallback() when
+     *                                  registering the callback.
+     *
+     * \param [in]  callbackHandle      The callback handle returned by
+     *                                  registerSemaphoreSurfaceCallback().
+     */
+    NvBool
+    (*unregisterSemaphoreSurfaceCallback)
+    (
+        struct NvKmsKapiDevice *device,
+        struct NvKmsKapiSemaphoreSurface *semaphoreSurface,
+        NvU64 index,
+        NvU64 wait_value,
+        struct NvKmsKapiSemaphoreSurfaceCallback *callbackHandle
+    );
+
+    /*!
+     * Update the value of a semaphore surface from the CPU.
+     *
+     * Update the semaphore value at the specified index from the CPU, then
+     * wake up any pending CPU waiters associated with that index that are
+     * waiting on it reaching a value <= the new value.
+     */
+    NvBool
+    (*setSemaphoreSurfaceValue)
+    (
+        struct NvKmsKapiDevice *device,
+        struct NvKmsKapiSemaphoreSurface *semaphoreSurface,
+        NvU64 index,
+        NvU64 new_value
+    );
 };
 
 /** @} */

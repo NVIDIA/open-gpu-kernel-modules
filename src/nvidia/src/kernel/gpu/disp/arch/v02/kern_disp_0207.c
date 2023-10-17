@@ -25,6 +25,8 @@
 
 #include "gpu/gpu.h"
 #include "gpu/disp/kern_disp.h"
+#include "gpu/disp/head/kernel_head.h"
+#include "disp/v02_04/dev_disp.h"
 
 /*!
  * @brief - Compute the value LSR_MIN_TIME to be set for swap barrier
@@ -57,10 +59,10 @@ kdispComputeLsrMinTimeValue_v02_07
 NV_STATUS
 kdispGetRgScanLock_v02_01
 (
-    POBJGPU    pGpu,
+    OBJGPU    *pGpu,
     KernelDisplay  *pKernelDisplay,
     NvU32      head0,
-    POBJGPU    pPeerGpu,
+    OBJGPU    *pPeerGpu,
     NvU32      head1,
     NvBool     *pMasterScanLock,
     NvU32      *pMasterScanLockPin,
@@ -108,4 +110,22 @@ kdispGetRgScanLock_v02_01
     *pSlaveScanLockPin = params.slaveScanLockPin;
 
     return rmStatus;
+}
+
+/*!
+ * @brief Get the LOADV counter
+ *
+ * @param[in]  pGpu                    OBJGPU pointer
+ * @param[in]  pKernelHead             KernelHead object pointer
+ *
+ * @return the current LOADV counter
+ */
+NvU32
+kheadGetLoadVCounter_v02_04
+(
+    OBJGPU                 *pGpu,
+    KernelHead             *pKernelHead
+)
+{
+    return GPU_REG_RD32(pGpu, NV_PDISP_PIPE_IN_LOADV_COUNTER(pKernelHead->PublicId));
 }

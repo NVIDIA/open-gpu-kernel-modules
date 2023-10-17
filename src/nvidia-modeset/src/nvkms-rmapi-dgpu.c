@@ -25,6 +25,7 @@
 #include "nvidia-modeset-os-interface.h"
 
 #include "nvkms-rmapi.h"
+#include "nv_assert.h"
 
 NvU32 nvRmApiAlloc(
     NvU32 hClient,
@@ -99,10 +100,10 @@ NvU32 nvRmApiControl(
     return ops.params.control.status;
 }
 
-NvU32 nvRmApiDupObject(
+NvU32 nvRmApiDupObject2(
     NvU32 hClient,
     NvU32 hParent,
-    NvU32 hObjectDest,
+    NvU32 *hObjectDest,
     NvU32 hClientSrc,
     NvU32 hObjectSrc,
     NvU32 flags)
@@ -113,14 +114,37 @@ NvU32 nvRmApiDupObject(
 
     ops.params.dupObject.hClient    = hClient;
     ops.params.dupObject.hParent    = hParent;
-    ops.params.dupObject.hObject    = hObjectDest;
+    ops.params.dupObject.hObject    = *hObjectDest;
     ops.params.dupObject.hClientSrc = hClientSrc;
     ops.params.dupObject.hObjectSrc = hObjectSrc;
     ops.params.dupObject.flags      = flags;
 
     nvkms_call_rm(&ops);
 
+    *hObjectDest = ops.params.dupObject.hObject;
+
     return ops.params.dupObject.status;
+}
+
+NvU32 nvRmApiDupObject(
+    NvU32 hClient,
+    NvU32 hParent,
+    NvU32 hObjectDest,
+    NvU32 hClientSrc,
+    NvU32 hObjectSrc,
+    NvU32 flags)
+{
+    NvU32 hObjectLocal = hObjectDest;
+    NvU32 ret = nvRmApiDupObject2(hClient,
+                                  hParent,
+                                  &hObjectLocal,
+                                  hClientSrc,
+                                  hObjectSrc,
+                                  flags);
+
+    nvAssert(hObjectLocal == hObjectDest);
+
+    return ret;
 }
 
 NvU32 nvRmApiFree(

@@ -28,6 +28,7 @@
 #include "nvkms-utils-flip.h"
 #include "nvkms-prealloc.h"
 #include "nvkms-private.h"
+#include "nvkms-utils.h"
 #include "nvkms-vrr.h"
 #include "nvkms-dpy.h"
 #include "nvkms-rm.h"
@@ -67,9 +68,11 @@ NvBool nvCheckFlipPermissions(
         layerMask = allLayersMask;
     }
 
-    /* Changing viewPortIn requires permission to alter all layers. */
+    /* Changing viewPortIn or LUT requires permission to alter all layers. */
 
-    if (pParams->viewPortIn.specified && (layerMask != allLayersMask)) {
+    if ((layerMask != allLayersMask) && ((pParams->viewPortIn.specified) ||
+                                         (pParams->lut.input.specified)  ||
+                                         (pParams->lut.output.specified))) {
         return FALSE;
     }
 
@@ -123,27 +126,48 @@ static NvBool UpdateProposedFlipStateOneApiHead(
     const struct NvKmsFlipCommonParams *pParams,
     NVProposedFlipStateOneApiHead *pProposedApiHead)
 {
+    const NVDevEvoRec *pDevEvo = pDispEvo->pDevEvo;
     const NVDispApiHeadStateEvoRec *pApiHeadState =
         &pDispEvo->apiHeadState[apiHead];
+    const NVDpyEvoRec *pDpyEvo =
+        nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
+    NvU32 layer;
 
     if (pParams->tf.specified) {
-        const NVDpyEvoRec *pDpyEvo =
-            nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
-
         pProposedApiHead->dirty.hdr = TRUE;
         pProposedApiHead->hdr.tf = pParams->tf.val;
+    }
 
-        // If enabling HDR...
-        // XXX HDR TODO: Handle other transfer functions
-        if (pParams->tf.val == NVKMS_OUTPUT_TF_PQ) {
+    if (pParams->colorimetry.specified) {
+        pProposedApiHead->dirty.hdr = TRUE;
+        pProposedApiHead->hdr.colorimetry = pParams->colorimetry.val;
+    }
+
+    if (pParams->hdrInfoFrame.specified) {
+        pProposedApiHead->dirty.hdr = TRUE;
+        pProposedApiHead->hdr.infoFrameOverride =
+            pParams->hdrInfoFrame.enabled;
+    }
+
+    for (layer = 0; layer < pDevEvo->apiHead[apiHead].numLayers; layer++) {
+        if (pParams->layer[layer].hdr.specified) {
+            pProposedApiHead->dirty.hdr = TRUE;
+            if (pParams->layer[layer].hdr.enabled) {
+                pProposedApiHead->hdr.staticMetadataLayerMask |=
+                    1 << layer;
+            } else {
+                pProposedApiHead->hdr.staticMetadataLayerMask &=
+                    ~(1 << layer);
+            }
+        }
+    }
+
+    if (pProposedApiHead->dirty.hdr) {
+        // If enabling HDR output TF...
+        if (pProposedApiHead->hdr.tf == NVKMS_OUTPUT_TF_PQ) {
             // Cannot be an SLI configuration.
             // XXX HDR TODO: Test SLI Mosaic + HDR and remove this check
-            if (pDispEvo->pDevEvo->numSubDevices > 1) {
-                return FALSE;
-            }
-
-            // Sink must support HDR.
-            if (!nvIsHDRCapableHead(pDispEvo, apiHead)) {
+            if (pDevEvo->numSubDevices > 1) {
                 return FALSE;
             }
 
@@ -154,7 +178,24 @@ static NvBool UpdateProposedFlipStateOneApiHead(
             }
         }
 
-        if (!nvChooseColorRangeEvo(pParams->tf.val,
+        // If enabling HDR signaling...
+        // XXX HDR TODO: Handle other colorimetries
+        if (pProposedApiHead->hdr.infoFrameOverride ||
+            (pProposedApiHead->hdr.staticMetadataLayerMask != 0) ||
+            (pProposedApiHead->hdr.colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100)) {
+            const NVDpyEvoRec *pDpyEvoIter;
+
+            // All dpys on apiHead must support HDR.
+            FOR_ALL_EVO_DPYS(pDpyEvoIter,
+                             pApiHeadState->activeDpys,
+                             pDispEvo) {
+                if (!nvDpyIsHDRCapable(pDpyEvoIter)) {
+                    return FALSE;
+                }
+            }
+        }
+
+        if (!nvChooseColorRangeEvo(pProposedApiHead->hdr.colorimetry,
                                    pDpyEvo->requestedColorRange,
                                    pProposedApiHead->hdr.colorSpace,
                                    pProposedApiHead->hdr.colorBpc,
@@ -168,56 +209,12 @@ static NvBool UpdateProposedFlipStateOneApiHead(
         pProposedApiHead->viewPortPointIn = pParams->viewPortIn.point;
     }
 
+    if (!nvValidateSetLutCommonParams(pDispEvo->pDevEvo, &pParams->lut)) {
+        return FALSE;
+    }
+    pProposedApiHead->lut = pParams->lut;
+
     return TRUE;
-}
-
-void nvCancelSDRTransitionTimer(NVDispApiHeadStateEvoRec *pApiHeadState)
-{
-    nvkms_free_timer(pApiHeadState->hdrToSdrTransitionTimer);
-    pApiHeadState->hdrToSdrTransitionTimer = NULL;
-}
-
-static void SDRTransition(void *dataPtr, NvU32 apiHead)
-{
-    NvU32 head;
-    NVDispEvoRec *pDispEvo = dataPtr;
-    NVDispApiHeadStateEvoRec *pApiHeadState =
-        &pDispEvo->apiHeadState[apiHead];
-    NVDpyEvoPtr pDpyEvo =
-        nvGetOneArbitraryDpyEvo(pApiHeadState->activeDpys, pDispEvo);
-
-    nvCancelSDRTransitionTimer(pApiHeadState);
-
-    if (pDpyEvo == NULL) {
-        return;
-    }
-
-    nvAssert(pApiHeadState->hwHeadsMask != 0);
-
-    FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
-        NVDispHeadStateEvoRec *pHeadState =
-            &pDispEvo->headState[head];
-        nvAssert(pHeadState->hdr.outputState ==
-                 NVKMS_HDR_OUTPUT_STATE_TRANSITIONING_TO_SDR);
-        pHeadState->hdr.outputState = NVKMS_HDR_OUTPUT_STATE_SDR;
-    }
-
-    nvUpdateInfoFrames(pDpyEvo);
-}
-
-static
-void ScheduleSDRTransitionTimer(NVDispEvoRec *pDispEvo, const NvU32 apiHead)
-{
-    NVDispApiHeadStateEvoRec *pApiHeadState =
-        &pDispEvo->apiHeadState[apiHead];
-
-    nvAssert(!pApiHeadState->hdrToSdrTransitionTimer);
-
-    pApiHeadState->hdrToSdrTransitionTimer =
-        nvkms_alloc_timer(SDRTransition,
-                          pDispEvo,
-                          apiHead,
-                          2000000 /* 2 seconds */);
 }
 
 static NvBool GetAllowVrr(const NVDevEvoRec *pDevEvo,
@@ -339,6 +336,11 @@ static void InitNvKmsFlipWorkArea(const NVDevEvoRec *pDevEvo,
                 &pDispEvo->apiHeadState[apiHead];
 
             pProposedApiHead->hdr.tf = pApiHeadState->tf;
+            pProposedApiHead->hdr.colorimetry = pApiHeadState->colorimetry;
+            pProposedApiHead->hdr.infoFrameOverride =
+                pApiHeadState->hdrInfoFrameOverride;
+            pProposedApiHead->hdr.staticMetadataLayerMask =
+                pApiHeadState->hdrStaticMetadataLayerMask;
             pProposedApiHead->hdr.colorSpace =
                 pApiHeadState->attributes.colorSpace;
             pProposedApiHead->hdr.colorBpc =
@@ -348,6 +350,11 @@ static void InitNvKmsFlipWorkArea(const NVDevEvoRec *pDevEvo,
 
             pProposedApiHead->viewPortPointIn =
                 pApiHeadState->viewPortPointIn;
+
+            pProposedApiHead->lut.input.specified =
+                FALSE;
+            pProposedApiHead->lut.output.specified =
+                FALSE;
         }
     }
 }
@@ -373,6 +380,14 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
 
     nvAssert(nvApiHeadIsActive(pDispEvo, apiHead));
 
+    if (pProposedApiHead->lut.input.specified ||
+        pProposedApiHead->lut.output.specified) {
+        /* Set LUT settings */
+        nvEvoSetLut(pDispEvo, apiHead, FALSE /* kickoff */,
+                    &pProposedApiHead->lut);
+        nvEvoStageLUTNotifier(pDispEvo, apiHead);
+    }
+
     FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
         nvFlipEvoOneHead(pDevEvo, sd, head, pHdrInfo,
                          &pWorkArea->sd[sd].head[head].newState,
@@ -384,9 +399,16 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
             nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
                 pDispEvo,
                 head,
+                pProposedApiHead->hdr.colorimetry,
                 pProposedApiHead->hdr.colorSpace,
                 pProposedApiHead->hdr.colorRange,
                 pUpdateState);
+        }
+
+        if (pProposedApiHead->lut.input.specified ||
+            pProposedApiHead->lut.output.specified) {
+            /* Update current LUT to hardware */
+            nvEvoSetLUTContextDma(pDispEvo, head, pUpdateState);
         }
     }
 
@@ -398,13 +420,14 @@ static void FlipEvoOneApiHead(NVDispEvoRec *pDispEvo,
         pApiHeadState->attributes.colorRange =
             pProposedApiHead->hdr.colorRange;
 
-        if (pProposedApiHead->hdr.tf == NVKMS_OUTPUT_TF_PQ) {
-            nvCancelSDRTransitionTimer(pApiHeadState);
-        } else if (pApiHeadState->tf == NVKMS_OUTPUT_TF_PQ) {
-            ScheduleSDRTransitionTimer(pDispEvo, apiHead);
-        }
-
         pApiHeadState->tf = pProposedApiHead->hdr.tf;
+
+        pApiHeadState->colorimetry = pProposedApiHead->hdr.colorimetry;
+
+        pApiHeadState->hdrInfoFrameOverride =
+            pProposedApiHead->hdr.infoFrameOverride;
+        pApiHeadState->hdrStaticMetadataLayerMask =
+            pProposedApiHead->hdr.staticMetadataLayerMask;
 
         nvUpdateInfoFrames(pDpyEvo);
     }
@@ -488,6 +511,7 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
     NvU32 apiHead, sd;
     NvBool applyAllowVrr = FALSE;
     NvBool ret = FALSE;
+    enum NvKmsFlipResult result = NV_KMS_FLIP_RESULT_INVALID_PARAMS;
     NvBool changed = FALSE;
     NVDispEvoPtr pDispEvo;
     const NvBool allowVrr =
@@ -565,8 +589,46 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
         goto done;
     }
 
+    /* XXX: Fail flip if LUT update in progress.
+     *
+     * Really, we should have a more robust system for this, but currently, the
+     * only user of the LUT parameter to the flip IOCTL is nvidia-drm, which
+     * waits for flips to be complete anyways. We should actually find a way to
+     * properly queue as many LUT-changing flips as we support queued flips in
+     * general.
+     *
+     * This failure returns NV_KMS_FLIP_RESULT_IN_PROGRESS rather than
+     * NV_KMS_FLIP_RESULT_INVALID_PARAMS.
+     *
+     * See bug 4054546 for efforts to update this system.
+     */
+    for (sd = 0; sd < pDevEvo->numSubDevices; sd++) {
+        pDispEvo = pDevEvo->gpus[sd].pDispEvo;
+        for (apiHead = 0; apiHead < pDevEvo->numApiHeads; apiHead++) {
+            const NVProposedFlipStateOneApiHead *pProposedApiHead =
+                &pWorkArea->disp[sd].apiHead[apiHead].proposedFlipState;
+
+            if ((pProposedApiHead->lut.input.specified ||
+                pProposedApiHead->lut.output.specified) &&
+                !nvEvoIsLUTNotifierComplete(pDispEvo, apiHead)) {
+
+                if (commit) {
+                    nvEvoLogDispDebug(
+                        pDispEvo,
+                        EVO_LOG_ERROR,
+                        "Flip request with LUT parameter on API Head %d while LUT update outstanding",
+                        apiHead);
+                }
+
+                result = NV_KMS_FLIP_RESULT_IN_PROGRESS;
+                goto done;
+            }
+        }
+    }
+
     if (!commit) {
         ret = NV_TRUE;
+        result = NV_KMS_FLIP_RESULT_SUCCESS;
         goto done;
     }
 
@@ -582,6 +644,7 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
      */
 
     ret = TRUE;
+    result = NV_KMS_FLIP_RESULT_SUCCESS;
 
     nvPreFlip(pDevEvo, pWorkArea, applyAllowVrr, allowVrr, skipUpdate);
 
@@ -600,6 +663,12 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
         nvkms_memset(&pWorkArea->updateState, 0,
                      sizeof(pWorkArea->updateState));
 
+        /*
+         * Ensure that we only commit the LUT notifiers staged in this
+         * nvFlipEvo call.
+         */
+        nvEvoClearStagedLUTNotifiers(pDispEvo);
+
         for (apiHead = 0; apiHead < NVKMS_MAX_HEADS_PER_DISP; apiHead++) {
             if (!nvApiHeadIsActive(pDispEvo, apiHead) ||
                     ((NVBIT(apiHead) & flip2Heads1OrApiHeadsMask) != 0x0)) {
@@ -611,8 +680,7 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
         }
 
         if (!skipUpdate) {
-            pDevEvo->hal->Update(pDevEvo, &pWorkArea->updateState,
-                                 TRUE /* releaseElv */);
+            nvEvoFlipUpdate(pDispEvo, &pWorkArea->updateState);
         }
     }
 
@@ -626,6 +694,9 @@ NvBool nvFlipEvo(NVDevEvoPtr pDevEvo,
 done:
 
     nvPreallocRelease(pDevEvo, PREALLOC_TYPE_FLIP_WORK_AREA);
+    if (reply) {
+        reply->flipResult = result;
+    }
 
     return ret;
 }
@@ -1023,7 +1094,7 @@ void nvIdleLayerChannels(NVDevEvoRec *pDevEvo,
         }
 
         if (!allIdle) {
-            if (nvExceedsTimeoutUSec(&startTime, timeout)) {
+            if (nvExceedsTimeoutUSec(pDevEvo, &startTime, timeout)) {
                 break;
             }
             nvkms_yield();

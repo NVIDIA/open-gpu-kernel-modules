@@ -1205,34 +1205,27 @@ tmrCallExpiredCallbacks_IMPL
             // Pull from head of list.
             pEvent = _tmrPullCallbackFromHead(pTmr);
 
-            if (pEvent &&
-                ((pEvent->super.pTimeProc != NULL) ||
-                (pEvent->pTimeProc_OBSOLETE != NULL)) )
+            if (pEvent != NULL)
             {
                 // Call callback.  This could insert a new callback into the list.
-                if (pEvent->bLegacy)
+                if (pEvent->bLegacy && pEvent->pTimeProc_OBSOLETE != NULL)
                 {
                     pEvent->pTimeProc_OBSOLETE(pGpu, pTmr, pEvent->super.pUserData);
+                    bProccessedCallback = NV_TRUE;
+                }
+                else if (!pEvent->bLegacy && pEvent->super.pTimeProc != NULL)
+                {
+                    pEvent->super.pTimeProc(pGpu, pTmr, (PTMR_EVENT)pEvent);
+                    bProccessedCallback = NV_TRUE;
                 }
                 else
                 {
-                    pEvent->super.pTimeProc(pGpu, pTmr, (PTMR_EVENT)pEvent);
+                    NV_ASSERT_FAILED("Attempting to execute callback with NULL procedure.");
                 }
-
-                bProccessedCallback = NV_TRUE;
             }
             else
             {
-                //
-                // Bug 372159: Hopefully by checking that the callback procedure
-                // is not NULL in tmrEventScheduleAbs() we should never hit
-                // this point, but this is just to be certain.  If you hit this
-                // assert please update Bug 3721259 with pertinent details
-                // (Swak, !stacks, what you were developing/testing, etc.).
-                //
-                NV_ASSERT_FAILED(
-                    "Attempting to execute callback with NULL procedure.  "
-                    "Please update Bug 372159 with appropriate information.");
+                NV_ASSERT_FAILED("Attempting to execute callback with NULL timer event.");
             }
         }
 

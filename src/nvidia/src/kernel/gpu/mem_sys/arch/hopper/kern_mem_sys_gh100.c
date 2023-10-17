@@ -195,9 +195,7 @@ kmemsysDoCacheOp_GH100
 #ifdef DEBUG
     if (cnt > 1)
     {
-        NvU32 intr0 = 0;
-        intr0 = GPU_REG_RD32(pGpu, NV_XAL_EP_INTR_0);
-        NV_ASSERT(DRF_VAL(_XAL_EP, _INTR_0, _FB_ACK_TIMEOUT, intr0) != NV_XAL_EP_INTR_0_FB_ACK_TIMEOUT_PENDING);
+        NV_ASSERT(kmemsysAssertFbAckTimeoutPending_HAL(pGpu, pKernelMemorySystem) == NV_FALSE);
     }
 #endif // DEBUG
 
@@ -575,6 +573,27 @@ kmemsysSwizzIdToVmmuSegmentsRange_GH100
 
     return NV_OK;
 }
+
+/*
+ * @brief   Function to check if an FB ACK timeout occured. Used only for Debug.
+ */
+NvBool
+kmemsysAssertFbAckTimeoutPending_GH100
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+#ifdef DEBUG
+    NvU32 intr0 = 0;
+    intr0 = GPU_REG_RD32(pGpu, NV_XAL_EP_INTR_0);
+    return DRF_VAL(_XAL_EP, _INTR_0, _FB_ACK_TIMEOUT, intr0) == NV_XAL_EP_INTR_0_FB_ACK_TIMEOUT_PENDING;
+#else
+    return NV_FALSE;
+#endif
+}
+
+
 /*!
  * Utility function used to read registers and ignore PRI errors
  */

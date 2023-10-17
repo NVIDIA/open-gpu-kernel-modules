@@ -113,6 +113,10 @@ static NV_STATUS __nvoc_thunk_Memory_hwresGetMapAddrSpace(struct MemoryHwResourc
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_hwresIsExportAllowed(struct MemoryHwResources *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryHwResources_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_hwresGetRefCount(struct MemoryHwResources *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryHwResources_RsResource.offset));
 }
@@ -243,6 +247,8 @@ static void __nvoc_init_funcTable_MemoryHwResources_1(MemoryHwResources *pThis) 
     pThis->__hwresMapTo__ = &__nvoc_thunk_RsResource_hwresMapTo;
 
     pThis->__hwresGetMapAddrSpace__ = &__nvoc_thunk_Memory_hwresGetMapAddrSpace;
+
+    pThis->__hwresIsExportAllowed__ = &__nvoc_thunk_Memory_hwresIsExportAllowed;
 
     pThis->__hwresGetRefCount__ = &__nvoc_thunk_RsResource_hwresGetRefCount;
 

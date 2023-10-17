@@ -100,6 +100,7 @@ struct GPUInstanceSubscription {
     NvBool PRIVATE_FIELD(bIsDuped);
     NvU64 PRIVATE_FIELD(dupedCapDescriptor);
 };
+
 struct GPUInstanceSubscription_PRIVATE {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -356,6 +357,11 @@ static inline NvBool gisubscriptionIsDeviceProfiling(struct GPUInstanceSubscript
     return pGPUInstanceSubscription_PRIVATE->bDeviceProfiling;
 }
 
+static inline KERNEL_MIG_GPU_INSTANCE *gisubscriptionGetMIGGPUInstance(struct GPUInstanceSubscription *pGPUInstanceSubscription) {
+    struct GPUInstanceSubscription_PRIVATE *pGPUInstanceSubscription_PRIVATE = (struct GPUInstanceSubscription_PRIVATE *)pGPUInstanceSubscription;
+    return pGPUInstanceSubscription_PRIVATE->pKernelMIGGpuInstance;
+}
+
 NV_STATUS gisubscriptionGetGPUInstanceSubscription_IMPL(struct RsClient *arg0, NvHandle arg1, struct GPUInstanceSubscription **arg2);
 
 #define gisubscriptionGetGPUInstanceSubscription(arg0, arg1, arg2) gisubscriptionGetGPUInstanceSubscription_IMPL(arg0, arg1, arg2)
@@ -402,4 +408,5 @@ static inline NvBool gisubscriptionIsDuped(struct GPUInstanceSubscription *arg0)
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_INSTANCE_SUBSCRIPTION_NVOC_H_

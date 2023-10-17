@@ -72,7 +72,9 @@ ctxBufPoolIsSupported
     }
 
     // TODO remove when bug ID 3922001 for ap_sim_compute_uvm test case resolved
-    if (!IS_SILICON(pGpu))
+    if (!IS_SILICON(pGpu) &&
+        memmgrBug3922001DisableCtxBufOnSim(pGpu, pMemoryManager) &&
+        gpuIsSelfHosted(pGpu))
     {
         NV_PRINTF(LEVEL_INFO, "Ctx buffers not supported on simulation/emulation\n");
         return NV_FALSE;
@@ -509,7 +511,7 @@ ctxBufPoolFree
 
         NV_ASSERT_OK_OR_RETURN(
             memmgrMemSet(pMemoryManager, &surf, 0,
-                         pMemDesc->PageCount * RM_PAGE_SIZE,
+                         pMemDesc->Size,
                          TRANSFER_FLAGS_NONE));
     }
     rmMemPoolFree(pPool, (RM_POOL_ALLOC_MEMDESC*)pMemDesc, 0);

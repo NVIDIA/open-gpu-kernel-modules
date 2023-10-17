@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,7 +39,7 @@ vgpuMgrReserveSystemChannelIDs
     NvU32 gfid,
     NvU32 *pChidOffset,
     NvU32 *pChannelCount,
-    NvHandle hClient,
+    Device *pMigDevice,
     NvU32 numChannels,
     NvU32 engineFifoListNumEntries,
     FIFO_ENGINE_LIST *engineFifoList
@@ -55,7 +55,7 @@ vgpuMgrFreeSystemChannelIDs
     NvU32 gfid,
     NvU32 *pChidOffset,
     NvU32 *pChannelCount,
-    NvHandle hClient,
+    Device *pMigDevice,
     NvU32 engineFifoListNumEntries,
     FIFO_ENGINE_LIST *engineFifoList
 )

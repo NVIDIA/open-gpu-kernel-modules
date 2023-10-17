@@ -48,7 +48,7 @@
 
 #include "rmapi/client_resource.h"
 #include "nvlog/nvlog.h"
-#include <nv-ioctl-nvlog.h>
+#include <nv-ioctl-lockless-diag.h>
 
 #include <ctrl/ctrl00fd.h>
 
@@ -70,18 +70,8 @@
     }                                          \
 }
 
-static NvBool RmIsDeviceRefNeeded(NVOS54_PARAMETERS *pApi)
-{
-    switch(pApi->cmd)
-    {
-        case NV00FD_CTRL_CMD_ATTACH_GPU:
-            return NV_TRUE;
-        default:
-            return NV_FALSE;
-    }
-}
-
-static NV_STATUS RmGetDeviceFd(NVOS54_PARAMETERS *pApi, NvS32 *pFd)
+static NV_STATUS RmGetDeviceFd(NVOS54_PARAMETERS *pApi, NvS32 *pFd,
+                               NvBool *pSkipDeviceRef)
 {
     RMAPI_PARAM_COPY paramCopy;
     void *pKernelParams;
@@ -89,6 +79,7 @@ static NV_STATUS RmGetDeviceFd(NVOS54_PARAMETERS *pApi, NvS32 *pFd)
     NV_STATUS status;
 
     *pFd = -1;
+    *pSkipDeviceRef = NV_TRUE;
 
     switch(pApi->cmd)
     {
@@ -96,7 +87,7 @@ static NV_STATUS RmGetDeviceFd(NVOS54_PARAMETERS *pApi, NvS32 *pFd)
             paramSize = sizeof(NV00FD_CTRL_ATTACH_GPU_PARAMS);
             break;
         default:
-            return NV_ERR_INVALID_ARGUMENT;
+            return NV_OK;
     }
 
     RMAPI_PARAM_COPY_INIT(paramCopy, pKernelParams, pApi->params, paramSize, 1);
@@ -108,7 +99,12 @@ static NV_STATUS RmGetDeviceFd(NVOS54_PARAMETERS *pApi, NvS32 *pFd)
     switch(pApi->cmd)
     {
         case NV00FD_CTRL_CMD_ATTACH_GPU:
-            *pFd = (NvS32)((NV00FD_CTRL_ATTACH_GPU_PARAMS *)pKernelParams)->devDescriptor;
+            {
+                NV00FD_CTRL_ATTACH_GPU_PARAMS *pAttachGpuParams = pKernelParams;
+
+                *pSkipDeviceRef = NV_FALSE;
+                 *pFd = (NvS32)pAttachGpuParams->devDescriptor;
+            }
             break;
         default:
             NV_ASSERT(0);
@@ -761,6 +757,7 @@ NV_STATUS RmIoctl(
             void *priv = NULL;
             nv_file_private_t *dev_nvfp = NULL;
             NvS32 fd;
+            NvBool bSkipDeviceRef;
 
             NV_CTL_DEVICE_ONLY(nv);
 
@@ -770,14 +767,14 @@ NV_STATUS RmIoctl(
                 goto done;
             }
 
-            if (RmIsDeviceRefNeeded(pApi))
+            rmStatus = RmGetDeviceFd(pApi, &fd, &bSkipDeviceRef);
+            if (rmStatus != NV_OK)
             {
-                rmStatus = RmGetDeviceFd(pApi, &fd);
-                if (rmStatus != NV_OK)
-                {
-                    goto done;
-                }
+                goto done;
+            }
 
+            if (!bSkipDeviceRef)
+            {
                 dev_nvfp = nv_get_file_private(fd, NV_FALSE, &priv);
                 if (dev_nvfp == NULL)
                 {
@@ -843,9 +840,9 @@ NV_STATUS RmIoctl(
             break;
         }
 
-        case NV_ESC_RM_NVLOG_CTRL:
+        case NV_ESC_RM_LOCKLESS_DIAGNOSTIC:
         {
-            NV_NVLOG_CTRL_PARAMS *pParams = data;
+            NV_LOCKLESS_DIAGNOSTIC_PARAMS *pParams = data;
 
             NV_CTL_DEVICE_ONLY(nv);
 
@@ -856,7 +853,7 @@ NV_STATUS RmIoctl(
                 goto done;
             }
 
-            switch (pParams->ctrl)
+            switch (pParams->cmd)
             {
                 // Do not use NVOC _DISPATCH here as it dereferences NULL RmClientResource*
                 case NV0000_CTRL_CMD_NVD_GET_NVLOG_INFO:

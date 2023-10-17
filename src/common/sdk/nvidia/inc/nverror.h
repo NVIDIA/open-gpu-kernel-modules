@@ -35,7 +35,6 @@
 #include "nvcfg_sdk.h"
 
 #define ROBUST_CHANNEL_GR_EXCEPTION                     (13)
-#define ROBUST_CHANNEL_GR_ERROR_SW_NOTIFY               (13)
 #define ROBUST_CHANNEL_FAKE_ERROR                       (14)
 #define ROBUST_CHANNEL_VBLANK_CALLBACK_TIMEOUT          (16)
 #define ROBUST_CHANNEL_DISP_MISSED_NOTIFIER             (19)
@@ -46,7 +45,7 @@
 #define ROBUST_CHANNEL_VP_ERROR                         (27)
 #define ROBUST_CHANNEL_VP2_ERROR                        (28)
 #define ROBUST_CHANNEL_BSP_ERROR                        (29)
-#define ROBUST_CHANNEL_BAD_ADDR_ACCESS                  (30)
+#define ROBUST_CHANNEL_UNUSED_ERROR_30                  (30)
 #define ROBUST_CHANNEL_FIFO_ERROR_MMU_ERR_FLT           (31)
 #define ROBUST_CHANNEL_PBDMA_ERROR                      (32)
 #define ROBUST_CHANNEL_SEC_ERROR                        (33)
@@ -120,7 +119,6 @@
 #define ALI_TRAINING_FAIL                               (136)
 #define NVLINK_FLA_PRIV_ERR                             (137)
 #define ROBUST_CHANNEL_DLA_ERROR                        (138)
-#define ROBUST_CHANNEL_FAST_PATH_ERROR                  (139)
 #define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
 #define ROBUST_CHANNEL_LAST_ERROR                       (UNRECOVERABLE_ECC_ERROR_ESCAPE)
 
@@ -218,6 +216,15 @@
     ((x == ROBUST_CHANNEL_NVJPG0_ERROR) ?               \
          (x - ROBUST_CHANNEL_NVJPG0_ERROR) :            \
          (x - ROBUST_CHANNEL_NVJPG1_ERROR + 1))
+
+#define ROBUST_CHANNEL_OFA_ERROR(x)                    \
+        (ROBUST_CHANNEL_OFA0_ERROR)
+
+#define ROBUST_CHANNEL_IS_OFA_ERROR(x)                 \
+        (x == ROBUST_CHANNEL_OFA0_ERROR)
+
+#define ROBUST_CHANNEL_OFA_ERROR_IDX(x)                 \
+        (x - ROBUST_CHANNEL_OFA0_ERROR)
 
 // Error Levels
 #define ROBUST_CHANNEL_ERROR_RECOVERY_LEVEL_INFO      (0)

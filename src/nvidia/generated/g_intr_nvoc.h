@@ -69,6 +69,8 @@ extern "C" {
 
 /**
  * @brief Each entry corresponds to a top level interrupt
+ *
+ * This structure will eventually be replaced by #InterruptEntry.
  */
 typedef struct
 {
@@ -91,6 +93,57 @@ typedef struct
 #define INTR_TABLE_MAX_INTRS_PER_ENTRY       6
 
 MAKE_VECTOR(InterruptTable, INTR_TABLE_ENTRY);
+
+
+/*!
+ * Mapping from leaf level interrupt to conceptual interrupt name.
+ *
+ * - The interrupt vector is implicit from the tree / index of an array which
+ *   contains this struct.
+ * - The target is a conceptual name that represents the interrupt identified by
+ *   (MC_ENGINE_IDX*, INTR_KIND*) pair.
+ * - A service routine may or may not be actually registered to handle the
+ *   interrupt.
+ * - Multiple physical vectors can map to the same conceptual interrupt.
+ */
+typedef struct
+{
+    /*!
+     * MC_ENGINE_IDX* value.
+     *
+     * A value of #MC_ENGINE_IDX_NULL means that the vector corresponding to
+     * this entry is unused. Use #interruptEntryIsEmpty to check this.
+     */
+    NvU16 mcEngine;
+
+    /*!
+     * INTR_KIND_* value.
+     *
+     * This allows multiple logically separate interrupts to map to a service
+     * routine via a common mcEngine value.
+     */
+    INTR_KIND intrKind;
+
+    /*!
+     * If the interrupt should be handled.
+     *
+     * If this is false:
+     * - The interrupt may need to be visible for clients, VF, etc (error
+     *   containment).
+     * - It can be an interrupt to be triggered to notify RM running in a
+     *   different environment: doorbell, GSP triggered notifications to CPU.
+     * - The interrupt does not need to be serviced. There should be no
+     *   corresponding entry in the #intrServiceTable.
+     */
+    NvBool bService;
+} InterruptEntry;
+
+static NV_FORCEINLINE NvBool
+interruptEntryIsEmpty(const InterruptEntry *pEntry)
+{
+    return pEntry->mcEngine == MC_ENGINE_IDX_NULL;
+}
+
 
 //
 // Default value for intrStuckThreshold
@@ -170,6 +223,19 @@ typedef struct
 } INTR_MASK_CTX;
 
 
+//!
+//! List of interrupt trees that RM sees.
+//!
+//! Kernel RM should determine number of implemented vectors using the actual
+//! interrupt table fetched.
+//!
+typedef enum
+{
+    INTR_TREE_CPU,
+    INTR_TREE_COUNT
+} INTR_TREE;
+
+
 //
 // IntrMask Locking Flag Defines
 //
@@ -244,10 +310,12 @@ struct Intr {
     NvU32 accessCntrIntrVector;
     NvU32 displayIntrVector;
     NvU64 intrTopEnMask;
-    IntrServiceRecord intrServiceTable[167];
+    InterruptTable intrTable;
+    IntrServiceRecord intrServiceTable[168];
+    InterruptEntry *(vectorToMcIdx[1]);
+    NvLength vectorToMcIdxCounts[1];
     NvBool bDefaultNonstallNotify;
     NvBool bUseLegacyVectorAssignment;
-    InterruptTable intrTable;
     NV2080_INTR_CATEGORY_SUBTREE_MAP subtreeMap[7];
     NvBool bDpcStarted;
     union MC_ENGINE_BITVECTOR pmcIntrPending;
@@ -624,6 +692,40 @@ static inline void intrClearLeafVector(OBJGPU *pGpu, struct Intr *pIntr, NvU32 v
 #endif //__nvoc_intr_h_disabled
 
 #define intrClearLeafVector_HAL(pGpu, pIntr, vector, pThreadState) intrClearLeafVector(pGpu, pIntr, vector, pThreadState)
+
+static inline void intrClearCpuLeafVector_b3696a(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, struct THREAD_STATE_NODE *pThreadState) {
+    return;
+}
+
+void intrClearCpuLeafVector_GH100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, struct THREAD_STATE_NODE *pThreadState);
+
+
+#ifdef __nvoc_intr_h_disabled
+static inline void intrClearCpuLeafVector(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, struct THREAD_STATE_NODE *pThreadState) {
+    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
+}
+#else //__nvoc_intr_h_disabled
+#define intrClearCpuLeafVector(pGpu, pIntr, vector, pThreadState) intrClearCpuLeafVector_b3696a(pGpu, pIntr, vector, pThreadState)
+#endif //__nvoc_intr_h_disabled
+
+#define intrClearCpuLeafVector_HAL(pGpu, pIntr, vector, pThreadState) intrClearCpuLeafVector(pGpu, pIntr, vector, pThreadState)
+
+static inline void intrWriteCpuRegLeaf_b3696a(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2) {
+    return;
+}
+
+void intrWriteCpuRegLeaf_GH100(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2);
+
+
+#ifdef __nvoc_intr_h_disabled
+static inline void intrWriteCpuRegLeaf(OBJGPU *pGpu, struct Intr *pIntr, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
+}
+#else //__nvoc_intr_h_disabled
+#define intrWriteCpuRegLeaf(pGpu, pIntr, arg0, arg1, arg2) intrWriteCpuRegLeaf_b3696a(pGpu, pIntr, arg0, arg1, arg2)
+#endif //__nvoc_intr_h_disabled
+
+#define intrWriteCpuRegLeaf_HAL(pGpu, pIntr, arg0, arg1, arg2) intrWriteCpuRegLeaf(pGpu, pIntr, arg0, arg1, arg2)
 
 NvBool intrIsVectorPending_TU102(OBJGPU *pGpu, struct Intr *pIntr, NvU32 vector, struct THREAD_STATE_NODE *pThreadState);
 
@@ -1696,6 +1798,17 @@ static inline NvU64 intrGetIntrTopCategoryMask(struct Intr *pIntr, NV2080_INTR_C
 #define intrGetIntrTopCategoryMask(pIntr, category) intrGetIntrTopCategoryMask_IMPL(pIntr, category)
 #endif //__nvoc_intr_h_disabled
 
+NV_STATUS intrSetInterruptEntry_IMPL(struct Intr *pIntr, INTR_TREE tree, NvU32 vector, const InterruptEntry *pEntry);
+
+#ifdef __nvoc_intr_h_disabled
+static inline NV_STATUS intrSetInterruptEntry(struct Intr *pIntr, INTR_TREE tree, NvU32 vector, const InterruptEntry *pEntry) {
+    NV_ASSERT_FAILED_PRECOMP("Intr was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_intr_h_disabled
+#define intrSetInterruptEntry(pIntr, tree, vector, pEntry) intrSetInterruptEntry_IMPL(pIntr, tree, vector, pEntry)
+#endif //__nvoc_intr_h_disabled
+
 void intrServiceStallListAllGpusCond_IMPL(OBJGPU *pGpu, struct Intr *pIntr, union MC_ENGINE_BITVECTOR *arg0, NvBool arg1);
 
 #ifdef __nvoc_intr_h_disabled
@@ -1926,4 +2039,5 @@ static inline void intrGetGmmuInterrupts(OBJGPU *pGpu, struct Intr *pIntr, union
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_INTR_NVOC_H_

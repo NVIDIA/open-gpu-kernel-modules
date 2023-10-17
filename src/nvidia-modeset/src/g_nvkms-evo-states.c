@@ -50,9 +50,8 @@ static NvBool EvoLockStateLockHeadsFrameLockServerManyHeads(NVDispEvoPtr, NVEvoS
 static NvBool EvoLockStateLockHeadsFrameLockServerManyHeadsPlusRef(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
 static NvBool EvoLockStateLockHeadsFrameLockServerPlusRef(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
 static NvBool EvoLockStateLockHeadsPlusRef(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
-static NvBool EvoLockStateMergeMode(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
-static NvBool EvoLockStateMergeModeVrr(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
 static NvBool EvoLockStateNoLock(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
+static NvBool EvoLockStateProhibitLock(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
 static NvBool EvoLockStateSliLastSecondary(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
 static NvBool EvoLockStateSliLastSecondaryFrameLockClient(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
 static NvBool EvoLockStateSliLastSecondaryLockHeads(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
@@ -85,7 +84,6 @@ static NvBool EvoLockStateSliSecondaryFrameLockClient(NVDispEvoPtr, NVEvoSubDevP
 static NvBool EvoLockStateSliSecondaryLockHeads(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
 static NvBool EvoLockStateSliSecondaryLockHeadsFrameLockClient(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
 static NvBool EvoLockStateSliSecondaryLockHeadsFrameLockClientManyHeads(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
-static NvBool EvoLockStateVrr(NVDispEvoPtr, NVEvoSubDevPtr, NVEvoLockAction, const NvU32 *pHeads);
 
 static NvBool EvoLockStateFrameLockClient(
     NVDispEvoPtr pDispEvo,
@@ -1409,59 +1407,6 @@ static NvBool EvoLockStateLockHeadsPlusRef(
     }
 }
 
-static NvBool EvoLockStateMergeMode(
-    NVDispEvoPtr pDispEvo,
-    NVEvoSubDevPtr pEvoSubDev,
-    NVEvoLockAction action,
-    const NvU32 *pHeads
-)
-{
-    NvBool queryOnly = pHeads == NULL;
-
-    switch (action) {
-
-    case NV_EVO_DISABLE_MERGE_MODE:
-        if (!queryOnly) {
-            nvEvoLockHWStateNoLock(pDispEvo, pEvoSubDev, pHeads);
-            pEvoSubDev->scanLockState = EvoLockStateNoLock;
-        }
-        return TRUE;
-
-    case NV_EVO_ENABLE_VRR:
-        if (!queryOnly) {
-            nvEvoLockHWStateNoChange(pDispEvo, pEvoSubDev, pHeads);
-            pEvoSubDev->scanLockState = EvoLockStateMergeModeVrr;
-        }
-        return TRUE;
-
-    default:
-        return FALSE;
-    }
-}
-
-static NvBool EvoLockStateMergeModeVrr(
-    NVDispEvoPtr pDispEvo,
-    NVEvoSubDevPtr pEvoSubDev,
-    NVEvoLockAction action,
-    const NvU32 *pHeads
-)
-{
-    NvBool queryOnly = pHeads == NULL;
-
-    switch (action) {
-
-    case NV_EVO_DISABLE_VRR:
-        if (!queryOnly) {
-            nvEvoLockHWStateMergeMode(pDispEvo, pEvoSubDev, pHeads);
-            pEvoSubDev->scanLockState = EvoLockStateMergeMode;
-        }
-        return TRUE;
-
-    default:
-        return FALSE;
-    }
-}
-
 static NvBool EvoLockStateNoLock(
     NVDispEvoPtr pDispEvo,
     NVEvoSubDevPtr pEvoSubDev,
@@ -1472,6 +1417,13 @@ static NvBool EvoLockStateNoLock(
     NvBool queryOnly = pHeads == NULL;
 
     switch (action) {
+
+    case NV_EVO_PROHIBIT_LOCK:
+        if (!queryOnly) {
+            nvEvoLockHWStateNoLock(pDispEvo, pEvoSubDev, pHeads);
+            pEvoSubDev->scanLockState = EvoLockStateProhibitLock;
+        }
+        return TRUE;
 
     case NV_EVO_ADD_FRAME_LOCK_CLIENT:
         if (!queryOnly) {
@@ -1508,13 +1460,6 @@ static NvBool EvoLockStateNoLock(
         }
         return TRUE;
 
-    case NV_EVO_ENABLE_VRR:
-        if (!queryOnly) {
-            nvEvoLockHWStateNoLock(pDispEvo, pEvoSubDev, pHeads);
-            pEvoSubDev->scanLockState = EvoLockStateVrr;
-        }
-        return TRUE;
-
     case NV_EVO_ADD_SLI_SECONDARY:
         if (!queryOnly) {
             nvEvoLockHWStateSliSecondary(pDispEvo, pEvoSubDev, pHeads);
@@ -1522,10 +1467,26 @@ static NvBool EvoLockStateNoLock(
         }
         return TRUE;
 
-    case NV_EVO_ENABLE_MERGE_MODE:
+    default:
+        return FALSE;
+    }
+}
+
+static NvBool EvoLockStateProhibitLock(
+    NVDispEvoPtr pDispEvo,
+    NVEvoSubDevPtr pEvoSubDev,
+    NVEvoLockAction action,
+    const NvU32 *pHeads
+)
+{
+    NvBool queryOnly = pHeads == NULL;
+
+    switch (action) {
+
+    case NV_EVO_PROHIBIT_LOCK_DISABLE:
         if (!queryOnly) {
-            nvEvoLockHWStateMergeMode(pDispEvo, pEvoSubDev, pHeads);
-            pEvoSubDev->scanLockState = EvoLockStateMergeMode;
+            nvEvoLockHWStateNoLock(pDispEvo, pEvoSubDev, pHeads);
+            pEvoSubDev->scanLockState = EvoLockStateNoLock;
         }
         return TRUE;
 
@@ -2848,29 +2809,6 @@ static NvBool EvoLockStateSliSecondaryLockHeadsFrameLockClientManyHeads(
     }
 }
 
-static NvBool EvoLockStateVrr(
-    NVDispEvoPtr pDispEvo,
-    NVEvoSubDevPtr pEvoSubDev,
-    NVEvoLockAction action,
-    const NvU32 *pHeads
-)
-{
-    NvBool queryOnly = pHeads == NULL;
-
-    switch (action) {
-
-    case NV_EVO_DISABLE_VRR:
-        if (!queryOnly) {
-            nvEvoLockHWStateNoLock(pDispEvo, pEvoSubDev, pHeads);
-            pEvoSubDev->scanLockState = EvoLockStateNoLock;
-        }
-        return TRUE;
-
-    default:
-        return FALSE;
-    }
-}
-
 void nvEvoStateStartNoLock(
     NVEvoSubDevPtr pEvoSubDev
 )
@@ -2878,3 +2816,11 @@ void nvEvoStateStartNoLock(
     pEvoSubDev->scanLockState = EvoLockStateNoLock;
 }
 
+#if defined(DEBUG)
+void nvEvoStateAssertNoLock(
+    const NVEvoSubDevRec *pEvoSubDev
+)
+{
+    nvAssert(pEvoSubDev->scanLockState == EvoLockStateNoLock);
+}
+#endif

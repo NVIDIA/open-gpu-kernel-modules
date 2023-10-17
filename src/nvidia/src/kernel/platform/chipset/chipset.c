@@ -65,8 +65,6 @@ void
 clInitPropertiesFromRegistry_IMPL(OBJGPU *pGpu, OBJCL *pCl)
 {
     NvU32  data32;
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJOS *pOS = SYS_GET_OS(pSys);
 
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_DISABLE_BR03_FLOW_CONTROL, &data32) == NV_OK
             && data32)
@@ -82,7 +80,7 @@ clInitPropertiesFromRegistry_IMPL(OBJGPU *pGpu, OBJCL *pCl)
         }
     }
 
-    pOS->osQADbgRegistryInit(pOS);
+    osQADbgRegistryInit();
 }
 
 static void
@@ -804,7 +802,6 @@ void clSyncWithGsp_IMPL(OBJCL *pCl, GspSystemInfo *pGSI)
     CL_SYNC_PDB(PDB_PROP_CL_UPSTREAM_LTR_SUPPORTED);
     CL_SYNC_PDB(PDB_PROP_CL_BUG_1340801_DISABLE_GEN3_ON_GIGABYTE_SNIPER_3);
     CL_SYNC_PDB(PDB_PROP_CL_BUG_1681803_WAR_DISABLE_MSCG);
-    CL_SYNC_PDB(PDB_PROP_CL_ON_HASWELL_HOST_BRIDGE);
     CL_SYNC_PDB(PDB_PROP_CL_PCIE_NON_COHERENT_USE_TC0_ONLY);
     CL_SYNC_PDB(PDB_PROP_CL_UNSUPPORTED_CHIPSET);
     CL_SYNC_PDB(PDB_PROP_CL_IS_CHIPSET_IO_COHERENT);

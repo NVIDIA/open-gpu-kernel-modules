@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020-2022 NVIDIA Corporation
+    Copyright (c) 2020-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -59,12 +59,12 @@ void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     // Physical CE writes to vidmem are non-coherent with respect to the CPU on
     // GH180.
-    parent_gpu->ce_phys_vidmem_write_supported = !uvm_gpu_is_coherent(parent_gpu);
+    parent_gpu->ce_phys_vidmem_write_supported = !uvm_parent_gpu_is_coherent(parent_gpu);
 
     // TODO: Bug 4174553: [HGX-SkinnyJoe][GH180] channel errors discussion/debug
     //                    portion for the uvm tests became nonresponsive after
     //                    some time and then failed even after reboot
-    parent_gpu->peer_copy_mode = uvm_gpu_is_coherent(parent_gpu) ?
+    parent_gpu->peer_copy_mode = uvm_parent_gpu_is_coherent(parent_gpu) ?
                                                            UVM_GPU_PEER_COPY_MODE_VIRTUAL : g_uvm_global.peer_copy_mode;
 
     // All GR context buffers may be mapped to 57b wide VAs. All "compute" units

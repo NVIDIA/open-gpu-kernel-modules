@@ -244,6 +244,21 @@ typedef struct GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY
     GPUMGR_SAVE_GPU_INSTANCE saveGI[GPUMGR_MAX_GPU_INSTANCES];
 } GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY;
 
+typedef struct GPUMGR_CACHED_MIG_GPU_INSTANCE
+{
+    NvBool bValid;
+    NvU32 swizzId;
+    NvBool bValidComputeInstances[GPUMGR_MAX_COMPUTE_INSTANCES];
+} GPUMGR_CACHED_MIG_GPU_INSTANCE;
+
+typedef struct GPUMGR_CACHED_MIG_STATE
+{
+    NvBool bValid;
+    NvBool bMIGEnabled;
+    NvU32 gpuId;
+    GPUMGR_CACHED_MIG_GPU_INSTANCE gpuInstances[GPUMGR_MAX_GPU_INSTANCES];
+} GPUMGR_CACHED_MIG_STATE;
+
 
 #include "containers/list.h"
 typedef struct PCIEP2PCAPSINFO
@@ -284,6 +299,8 @@ struct OBJGPUMGR {
     NVLINK_TOPOLOGY_INFO nvlinkTopologyInfo[32];
     NvU8 nvlinkBwMode;
     GPUMGR_SAVE_MIG_INSTANCE_TOPOLOGY MIGTopologyInfo[32];
+    void *cachedMIGInfoLock;
+    GPUMGR_CACHED_MIG_STATE cachedMIGInfo[32];
     GPU_HANDLE_ID gpuHandleIDList[32];
     NvU32 numGpuHandles;
     CONF_COMPUTE_CAPS ccCaps;
@@ -397,6 +414,24 @@ void gpumgrSetSystemMIGEnabled_IMPL(NvU64 domainBusDevice, NvBool bMIGEnabled);
 void gpumgrUnregisterRmCapsForMIGGI_IMPL(NvU64 gpuDomainBusDevice);
 
 #define gpumgrUnregisterRmCapsForMIGGI(gpuDomainBusDevice) gpumgrUnregisterRmCapsForMIGGI_IMPL(gpuDomainBusDevice)
+void gpumgrCacheCreateGpuInstance_IMPL(struct OBJGPU *pGpu, NvU32 swizzId);
+
+#define gpumgrCacheCreateGpuInstance(pGpu, swizzId) gpumgrCacheCreateGpuInstance_IMPL(pGpu, swizzId)
+void gpumgrCacheDestroyGpuInstance_IMPL(struct OBJGPU *pGpu, NvU32 swizzId);
+
+#define gpumgrCacheDestroyGpuInstance(pGpu, swizzId) gpumgrCacheDestroyGpuInstance_IMPL(pGpu, swizzId)
+void gpumgrCacheCreateComputeInstance_IMPL(struct OBJGPU *pGpu, NvU32 swizzId, NvU32 ciId);
+
+#define gpumgrCacheCreateComputeInstance(pGpu, swizzId, ciId) gpumgrCacheCreateComputeInstance_IMPL(pGpu, swizzId, ciId)
+void gpumgrCacheDestroyComputeInstance_IMPL(struct OBJGPU *pGpu, NvU32 swizzId, NvU32 ciId);
+
+#define gpumgrCacheDestroyComputeInstance(pGpu, swizzId, ciId) gpumgrCacheDestroyComputeInstance_IMPL(pGpu, swizzId, ciId)
+void gpumgrCacheSetMIGEnabled_IMPL(struct OBJGPU *pGpu, NvBool bMIGEnabled);
+
+#define gpumgrCacheSetMIGEnabled(pGpu, bMIGEnabled) gpumgrCacheSetMIGEnabled_IMPL(pGpu, bMIGEnabled)
+NV_STATUS gpumgrCacheGetActiveDeviceIds_IMPL(NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS *pActiveDeviceIdsParams);
+
+#define gpumgrCacheGetActiveDeviceIds(pActiveDeviceIdsParams) gpumgrCacheGetActiveDeviceIds_IMPL(pActiveDeviceIdsParams)
 void gpumgrUpdateBoardId_IMPL(struct OBJGPU *arg0);
 
 #define gpumgrUpdateBoardId(arg0) gpumgrUpdateBoardId_IMPL(arg0)
@@ -557,4 +592,5 @@ gpumgrIsParentGPU(OBJGPU *pGpu)
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_MGR_NVOC_H_

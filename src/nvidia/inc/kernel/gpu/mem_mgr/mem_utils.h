@@ -28,7 +28,6 @@
 
 #define CLEAR_HAL_ATTR(a)                         \
     a = (a &~(DRF_NUM(OS32, _ATTR, _COMPR, 0x3) | \
-              DRF_NUM(OS32, _ATTR, _TILED, 0x3) | \
               DRF_NUM(OS32, _ATTR, _ZCULL, 0x3)));
 
 #define CLEAR_HAL_ATTR2(a)                       \

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -196,20 +196,25 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
         pKernelBus->bP2pMailboxClientAllocated = !!data32;
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RESTORE_BAR1_SIZE_BUG_3249028_WAR, &data32) == NV_OK)
+    {
+        pKernelBus->setProperty(pKernelBus, PDB_PROP_KBUS_RESTORE_BAR1_SIZE_BUG_3249028_WAR, !!data32);
+    }
+
     return NV_OK;
 }
 
 /**
- * @brief  Gets the BAR1 VA range for a client
+ * @brief  Gets the BAR1 VA range for a device
  *
  * @param[in] pGpu
  * @param[in] pKernelBus
- * @param[in] hClient               Client handle
+ * @param[in] pDevice               Device pointer
  * @param[out] pBar1VARange         BAR1 VA range
  */
 
 NV_STATUS
-kbusGetBar1VARangeForClient_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus, NvHandle hClient, NV_RANGE *pBar1VARange)
+kbusGetBar1VARangeForDevice_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus, Device *pDevice, NV_RANGE *pBar1VARange)
 {
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     OBJVASPACE       *pBar1VAS          = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
@@ -219,8 +224,8 @@ kbusGetBar1VARangeForClient_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus, NvHandle h
    *pBar1VARange = rangeMake(vaspaceGetVaStart(pBar1VAS), vaspaceGetVaLimit(pBar1VAS));
 
     if ((pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager) &&
-        !rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_SMC_MONITOR) &&
-        !kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, hClient))
+        !rmclientIsCapableByHandle(RES_GET_CLIENT_HANDLE(pDevice), NV_RM_CAP_SYS_SMC_MONITOR) &&
+        !kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice))
     {
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
         KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
@@ -228,8 +233,8 @@ kbusGetBar1VARangeForClient_IMPL(OBJGPU *pGpu, KernelBus *pKernelBus, NvHandle h
 
        *pBar1VARange = memmgrGetMIGPartitionableBAR1Range(pGpu, pMemoryManager);
 
-        NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                   hClient, &ref));
+        NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                   pDevice, &ref));
         NV_ASSERT_OK_OR_RETURN(kmemsysSwizzIdToMIGMemRange(pGpu, pKernelMemorySystem, ref.pKernelMIGGpuInstance->swizzId,
                                    *pBar1VARange, pBar1VARange));
     }
@@ -329,13 +334,6 @@ kbusSendSysmembar_IMPL
     // Nothing to be done in guest in the paravirtualization case.
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
-        return NV_OK;
-    }
-
-    if (kbusIsFbFlushDisabled(pKernelBus))
-    {
-        // Eliminate FB flushes, but keep mmu invalidates
-        NV_PRINTF(LEVEL_INFO, "disable_fb_flush flag, skipping flush.\n");
         return NV_OK;
     }
 
@@ -887,9 +885,10 @@ kbusCheckEngine_KERNEL
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
                 RM_ENGINE_TYPE_NVDEC(GET_NVDEC_IDX(engDesc)));
 
-        case ENG_OFA:
+   case ENG_OFA(0):
             return !!NVGPU_GET_ENGINE_CAPS_MASK(rmEngineCaps,
-                                                RM_ENGINE_TYPE_OFA);
+                RM_ENGINE_TYPE_OFA(GET_OFA_IDX(engDesc)));
+        
         case ENG_NVJPEG(0):
         case ENG_NVJPEG(1):
         case ENG_NVJPEG(2):
@@ -1233,6 +1232,25 @@ kbusGetNvlinkP2PPeerId_VGPU
 }
 
 /**
+ * @brief     Check if the static bar1 is enabled
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ */
+NvBool
+kbusIsStaticBar1Enabled_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU32 gfid;
+
+    return ((vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK) &&
+            pKernelBus->bar1[gfid].bStaticBar1Enabled);
+}
+
+/**
  * @brief     Check for any P2P references in to remote GPUs
  *            which are still have a P2P api object alive.
  *
@@ -1248,12 +1266,3 @@ kbusIsGpuP2pAlive_IMPL
 {
     return (pKernelBus->totalP2pObjectsAliveRefCount > 0);
 }
-
-/**
- * @brief  Setup VF BAR2 during hibernate resume
- *
- * @param[in] pGpu
- * @param[in] pKernelBus
- * @param[in] flags
- */
-

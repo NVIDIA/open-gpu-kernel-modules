@@ -475,7 +475,7 @@ kceGetMappings_GA100
     }
 
     // Prepare the per-HSHUB/FBHUB available PCE mask
-    status = kceGetAvailableHubPceMask(pGpu, pTopoParams);
+    status = kceGetAvailableHubPceMask(pGpu, pKCe, pTopoParams);
 
     // A. Start with assigning PCEs for "SYSMEM"
     status = kceMapPceLceForSysmemLinks_HAL(pGpu, pKCe,

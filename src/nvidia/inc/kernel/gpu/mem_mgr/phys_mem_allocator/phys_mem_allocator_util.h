@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,6 +40,7 @@ NvU32 findRegionID(PMA *pPma, NvU64 address);
 void pmaPrintBlockStatus(PMA_PAGESTATUS blockStatus);
 void pmaRegionPrint(PMA *pPma, PMA_REGION_DESCRIPTOR *pRegion, void *pMap);
 NvBool pmaStateCheck(PMA *pPma);
+NV_STATUS pmaCheckRangeAgainstRegionDesc(PMA *pPma, NvU64 base, NvU64 size);
 
 // Temporary putting these here. TODO refactor them in the next CL.
 NV_STATUS _pmaEvictContiguous(PMA *pPma, void *pMap, NvU64 evictStart, NvU64 evictEnd,
@@ -182,12 +183,16 @@ void pmaFreeList(PMA *pPma, PRANGELISTTYPE *ppList);
  * @param[in] physAddrBase          The base address of this address tree
  * @param[in] pBlacklistPageBase    Structure that contains the blacklisted pages
  * @param[in] blacklistCount        Number of blacklisted pages
+ * @param[in] bBlacklistFromInforom Whether the blacklisted pages are coming from
+ *                                  inforom (i.e., from heap/PMA init) or not
+ *                                  (i.e., from ECC interrupt handling)
  *
  * @return NV_OK
  *         NV_ERR_NO_MEMORY if memory allocation fails
  */
 NV_STATUS pmaRegisterBlacklistInfo(PMA *pPma, NvU64 physAddrBase,
-                                      PPMA_BLACKLIST_ADDRESS pBlacklistPageBase, NvU32 blacklistCount);
+                                      PPMA_BLACKLIST_ADDRESS pBlacklistPageBase, NvU32 blacklistCount,
+                                      NvBool bBlacklistFromInforom);
 
 /*!
  * @brief Query blacklisting states tracked by PMA

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,6 @@
 #include "nv-pci-types.h"
 #include "nv-pci.h"
 #include "nv-ibmnpu.h"
-#include "nv-frontend.h"
 #include "nv-msi.h"
 #include "nv-hypervisor.h"
 
@@ -80,19 +79,15 @@ static NvBool nv_treat_missing_irq_as_error(void)
 #endif
 }
 
-static void nv_init_dynamic_power_management
+static void nv_get_pci_sysfs_config
 (
-    nvidia_stack_t *sp,
-    struct pci_dev *pci_dev
+    struct pci_dev *pci_dev,
+    nv_linux_state_t *nvl
 )
 {
-    nv_linux_state_t *nvl = pci_get_drvdata(pci_dev);
-    nv_state_t *nv = NV_STATE_PTR(nvl);
+#if NV_FILESYSTEM_ACCESS_AVAILABLE
     char filename[50];
     int ret;
-    NvBool pr3_acpi_method_present = NV_FALSE;
-
-    nvl->sysfs_config_file = NULL;
 
     ret = snprintf(filename, sizeof(filename),
                    "/sys/bus/pci/devices/%04x:%02x:%02x.0/config",
@@ -143,6 +138,22 @@ static void nv_init_dynamic_power_management
 #endif
         }
     }
+#endif
+}
+
+static void nv_init_dynamic_power_management
+(
+    nvidia_stack_t *sp,
+    struct pci_dev *pci_dev
+)
+{
+    nv_linux_state_t *nvl = pci_get_drvdata(pci_dev);
+    nv_state_t *nv = NV_STATE_PTR(nvl);
+    NvBool pr3_acpi_method_present = NV_FALSE;
+
+    nvl->sysfs_config_file = NULL;
+
+    nv_get_pci_sysfs_config(pci_dev, nvl);
 
     if (nv_get_hypervisor_type() != OS_HYPERVISOR_UNKNOWN)
     {
@@ -287,12 +298,29 @@ nv_init_coherent_link_info
     if (!NVCPU_IS_AARCH64)
         return;
 
-    if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-base-pa", &pa) != 0)
-        goto failed;
     if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-start", &pxm_start) != 0)
         goto failed;
     if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-count", &pxm_count) != 0)
         goto failed;
+    if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-base-pa", &pa) != 0)
+    {
+        /*
+         * This implies that the DSD key for PXM start and count is present
+         * while the one for Physical Address (PA) is absent.
+         */
+        if (nv_get_hypervisor_type() == OS_HYPERVISOR_UNKNOWN)
+        {
+            /* Fail for the baremetal case */
+            goto failed;
+        }
+        
+        /*
+         * For the virtualization usecase on SHH, the coherent GPU memory
+         * PA is exposed as BAR1 to the VM and the nvidia,gpu-mem-base-pa
+         * is not present. Set the GPU memory PA to the BAR1 start address.
+         */
+        pa = nv->fb->cpu_address;
+    }
 
     NV_DEV_PRINTF(NV_DBG_INFO, nv, "DSD properties: \n");
     NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU memory PA: 0x%lx \n", pa);
@@ -310,7 +338,7 @@ nv_init_coherent_link_info
         }
     }
 
-    if (NVreg_EnableUserNUMAManagement)
+    if (NVreg_EnableUserNUMAManagement && !os_is_vgx_hyper())
     {
         NV_ATOMIC_SET(nvl->numa_info.status, NV_IOCTL_NUMA_STATUS_OFFLINE);
         nvl->numa_info.use_auto_online = NV_TRUE;
@@ -689,12 +717,13 @@ next_bar:
      */
     LOCK_NV_LINUX_DEVICES();
 
-    nv_linux_add_device_locked(nvl);
+    if (nv_linux_add_device_locked(nvl) != 0)
+    {
+        UNLOCK_NV_LINUX_DEVICES();
+        goto err_zero_dev;
+    }
 
     UNLOCK_NV_LINUX_DEVICES();
-
-    if (nvidia_frontend_add_device((void *)&nv_fops, nvl) != 0)
-        goto err_remove_device;
 
     pm_vt_switch_required(nvl->dev, NV_TRUE);
 
@@ -711,7 +740,6 @@ next_bar:
     if (nvidia_vgpu_vfio_probe(nvl->pci_dev) != NV_OK)
     {
         NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "Failed to register device to vGPU VFIO module");
-        nvidia_frontend_remove_device((void *)&nv_fops, nvl);
         goto err_vgpu_kvm;
     }
 #endif
@@ -741,7 +769,6 @@ err_vgpu_kvm:
     nv_procfs_remove_gpu(nvl);
     rm_cleanup_dynamic_power_management(sp, nv);
     pm_vt_switch_unregister(nvl->dev);
-err_remove_device:
     LOCK_NV_LINUX_DEVICES();
     nv_linux_remove_device_locked(nvl);
     UNLOCK_NV_LINUX_DEVICES();
@@ -873,12 +900,6 @@ nv_pci_remove(struct pci_dev *pci_dev)
     /* Arg 2 == NV_TRUE means that the PCI device should be removed */
     nvidia_vgpu_vfio_remove(pci_dev, NV_TRUE);
 #endif
-
-    /* Update the frontend data structures */
-    if (NV_ATOMIC_READ(nvl->usage_count) == 0)
-    {
-        nvidia_frontend_remove_device((void *)&nv_fops, nvl);
-    }
 
     if ((nv->flags & NV_FLAG_PERSISTENT_SW_STATE) || (nv->flags & NV_FLAG_OPEN))
     {

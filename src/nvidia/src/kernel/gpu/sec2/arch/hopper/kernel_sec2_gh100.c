@@ -22,10 +22,10 @@
  */
 
 #include "gpu/sec2/kernel_sec2.h"
+#include "core/core.h"
+
 #include "gpu/conf_compute/conf_compute.h"
 #include "conf_compute/cc_keystore.h"
-
-#include "core/core.h"
 
 NV_STATUS
 ksec2StateLoad_GH100

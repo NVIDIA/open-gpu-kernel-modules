@@ -48,6 +48,9 @@
 #include "ctrl/ctrl0073/ctrl0073dp.h"
 #include "dp_tracing.h"
 
+#define SET_DP_IMP_ERROR(pErrorCode, errorCode) \
+        if (pErrorCode && *pErrorCode == DP_IMP_ERROR_NONE) *pErrorCode = errorCode;
+
 using namespace DisplayPort;
 
 ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Connector::EventSink * sink)
@@ -55,6 +58,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       auxBus(auxBus),
       timer(timer),
       sink(sink),
+      bOuiCached(false),
       bIgnoreSrcOuiHandshake(false),
       linkPolicy(),
       linkGuessed(false),
@@ -102,6 +106,7 @@ ConnectorImpl::ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Co
       LT2FecLatencyMs(0),
       bFECEnable(false),
       bDscCapBasedOnParent(false),
+      inTransitionHeadMask(0x0),
       ResStatus(this)
 {
     clearTimeslices();
@@ -707,20 +712,65 @@ create:
 
     newDev->applyOUIOverrides();
 
-    if (main->isEDP())
+    if (main->isEDP() && !bOuiCached)
     {
         // Save Source OUI information for eDP.
         hal->getOuiSource(cachedSourceOUI, &cachedSourceModelName[0],
                           sizeof(cachedSourceModelName), cachedSourceChipRevision);
+        bOuiCached = true;
     }
 
     fireEvents();
 }
 
+LinkRates* ConnectorImpl::importDpLinkRates()
+{
+    LinkRate   linkRate;
+    LinkRates  *pConnectorLinkRates = linkPolicy.getLinkRates();
+
+    // Attempt to configure link rate table mode if supported
+    if (hal->isIndexedLinkrateCapable() &&
+        main->configureLinkRateTable(hal->getLinkRateTable(), pConnectorLinkRates))
+    {
+        // Maximal link rate is limited with link rate table
+        hal->overrideOptimalLinkRate(pConnectorLinkRates->getMaxRate());
+        hal->setIndexedLinkrateEnabled(true);
+    }
+    else
+    {
+        // Reset configured link rate table if ever enabled to get RM act right
+        if (hal->isIndexedLinkrateEnabled())
+        {
+            main->configureLinkRateTable(NULL, NULL);
+            hal->setIndexedLinkrateEnabled(false);
+        }
+
+        // Get maximal link rate supported by GPU
+        linkRate = main->maxLinkRateSupported();
+
+        // Insert by order
+        pConnectorLinkRates->clear();
+
+        if (linkRate >= RBR)
+            pConnectorLinkRates->import((NvU8)linkBW_1_62Gbps);
+
+        if (linkRate >= HBR)
+            pConnectorLinkRates->import((NvU8)linkBW_2_70Gbps);
+
+        if (linkRate >= HBR2)
+            pConnectorLinkRates->import((NvU8)linkBW_5_40Gbps);
+
+        if (linkRate >= HBR3)
+            pConnectorLinkRates->import((NvU8)linkBW_8_10Gbps);
+    }
+    return pConnectorLinkRates;
+}
+
 void ConnectorImpl::populateAllDpConfigs()
 {
     LinkRate   linkRate;
-    LinkRates *pConnLinkRates;
+    LinkRates  *pConnectorLinkRates = linkPolicy.getLinkRates();
+
     unsigned   laneCounts[] = {laneCount_1, laneCount_2, laneCount_4};
     unsigned   laneSets = sizeof(laneCounts) / sizeof(laneCounts[0]);
 
@@ -745,48 +795,14 @@ void ConnectorImpl::populateAllDpConfigs()
         numPossibleLnkCfg = 0;
     }
 
-    // Attempt to configure link rate table mode if supported
-    pConnLinkRates = linkPolicy.getLinkRates();
-    if (hal->isIndexedLinkrateCapable() &&
-        main->configureLinkRateTable(hal->getLinkRateTable(), pConnLinkRates))
-    {
-        // Maximal link rate is limited with link rate table
-        hal->overrideOptimalLinkRate(pConnLinkRates->getMaxRate());
-        hal->setIndexedLinkrateEnabled(true);
-    }
-    else
-    {
-        // Reset configured link rate table if ever enabled to get RM act right
-        if (hal->isIndexedLinkrateEnabled())
-        {
-            main->configureLinkRateTable(NULL, NULL);
-            hal->setIndexedLinkrateEnabled(false);
-        }
+    importDpLinkRates();
 
-        // Get maximal link rate supported by GPU
-        linkRate = main->maxLinkRateSupported();
-
-        // Insert by order
-        pConnLinkRates->clear();
-        if (linkRate >= RBR)
-            pConnLinkRates->import(linkBW_1_62Gbps);
-
-        if (linkRate >= HBR)
-            pConnLinkRates->import(linkBW_2_70Gbps);
-
-        if (linkRate >= HBR2)
-            pConnLinkRates->import(linkBW_5_40Gbps);
-
-        if (linkRate >= HBR3)
-            pConnLinkRates->import(linkBW_8_10Gbps);
-    }
-
-    numPossibleLnkCfg = laneSets * pConnLinkRates->getNumLinkRates();
+    numPossibleLnkCfg = laneSets * pConnectorLinkRates->getNumLinkRates();
     if (numPossibleLnkCfg == 0)
     {
         DP_LOG(("DPCONN> %s: lane count %d or link rates %d!",
-                pConnLinkRates->getNumLinkRates(), laneSets, __FUNCTION__));
-        DP_ASSERT(0 && "Invalid lane count %d or link rates %d!");
+                __FUNCTION__, pConnectorLinkRates->getNumLinkRates(), laneSets));
+        DP_ASSERT(0 && "Invalid lane count or link rates!");
         return;
     }
 
@@ -801,14 +817,14 @@ void ConnectorImpl::populateAllDpConfigs()
     }
 
     // Populate all possible link configuration
-    linkRate = pConnLinkRates->getMaxRate();
-    for (unsigned i = 0; i < pConnLinkRates->getNumLinkRates(); i++)
+    linkRate = pConnectorLinkRates->getMaxRate();
+    for (unsigned i = 0; i < pConnectorLinkRates->getNumLinkRates(); i++)
     {
         for (unsigned j = 0; j < laneSets; j++)
         {
             allPossibleLinkCfgs[i * laneSets + j].setLaneRate(linkRate, laneCounts[j]);
         }
-        linkRate = pConnLinkRates->getLowerRate(linkRate);
+        linkRate = pConnectorLinkRates->getLowerRate(linkRate);
     }
 
     // Sort link configurations per bandwidth from low to high
@@ -1005,7 +1021,7 @@ LinkConfiguration ConnectorImpl::getActiveLinkConfig()
     return activeLinkConfig;
 }
 
-void ConnectorImpl::beginCompoundQuery()
+void ConnectorImpl::beginCompoundQuery(const bool bForceEnableFEC)
 {
     if (linkGuessed && (main->getSorIndex() != DP_INVALID_SOR_INDEX))
     {
@@ -1017,6 +1033,7 @@ void ConnectorImpl::beginCompoundQuery()
     compoundQueryCount = 0;
     compoundQueryResult = true;
     compoundQueryLocalLinkPBN = 0;
+    compoundQueryForceEnableFEC = bForceEnableFEC;
 
     for (Device * i = enumDevices(0); i; i=enumDevices(i))
     {
@@ -1075,6 +1092,37 @@ void ConnectorImpl::beginCompoundQuery()
     }
 }
 
+static DP_IMP_ERROR translatePpsErrorToDpImpError(NVT_STATUS ppsErrorCode)
+{
+    switch (ppsErrorCode)
+    {
+        case NVT_STATUS_COLOR_FORMAT_NOT_SUPPORTED:
+            return DP_IMP_ERROR_PPS_COLOR_FORMAT_NOT_SUPPORTED;
+        case NVT_STATUS_INVALID_HBLANK:
+            return DP_IMP_ERROR_PPS_INVALID_HBLANK;
+        case NVT_STATUS_INVALID_BPC:
+            return DP_IMP_ERROR_PPS_INVALID_BPC;
+        case NVT_STATUS_MAX_LINE_BUFFER_ERROR:
+            return DP_IMP_ERROR_PPS_MAX_LINE_BUFFER_ERROR;
+        case NVT_STATUS_OVERALL_THROUGHPUT_ERROR:
+            return DP_IMP_ERROR_PPS_OVERALL_THROUGHPUT_ERROR;
+        case NVT_STATUS_DSC_SLICE_ERROR:
+            return DP_IMP_ERROR_PPS_DSC_SLICE_ERROR;
+        case NVT_STATUS_PPS_SLICE_COUNT_ERROR:
+            return DP_IMP_ERROR_PPS_PPS_SLICE_COUNT_ERROR;
+        case NVT_STATUS_PPS_SLICE_HEIGHT_ERROR:
+            return DP_IMP_ERROR_PPS_PPS_SLICE_HEIGHT_ERROR;
+        case NVT_STATUS_PPS_SLICE_WIDTH_ERROR:
+            return DP_IMP_ERROR_PPS_PPS_SLICE_WIDTH_ERROR;
+        case NVT_STATUS_INVALID_PEAK_THROUGHPUT:
+            return DP_IMP_ERROR_PPS_INVALID_PEAK_THROUGHPUT;
+        case NVT_STATUS_MIN_SLICE_COUNT_ERROR:
+            return DP_IMP_ERROR_PPS_MIN_SLICE_COUNT_ERROR;
+        default:
+            return DP_IMP_ERROR_PPS_GENERIC_ERROR;
+    }
+}
+
 //
 // This call will be deprecated as soon as all clients move to the new API
 //
@@ -1087,23 +1135,25 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                                         unsigned rasterHeight,
                                         unsigned rasterBlankStartX,
                                         unsigned rasterBlankEndX,
-                                        unsigned depth)
+                                        unsigned depth,
+                                        DP_IMP_ERROR *pErrorCode)
 {
     ModesetInfo modesetInfo(twoChannelAudioHz, eightChannelAudioHz, pixelClockHz,
                             rasterWidth, rasterHeight, (rasterBlankStartX - rasterBlankEndX),
                             0/*surfaceHeight*/, depth, rasterBlankStartX, rasterBlankEndX);
 
     DpModesetParams modesetParams(0, modesetInfo);
-    return compoundQueryAttach(target, modesetParams);
+    return compoundQueryAttach(target, modesetParams, NULL, pErrorCode);
 }
 
 bool ConnectorImpl::compoundQueryAttach(Group * target,
                                         const DpModesetParams &modesetParams,         // Modeset info
-                                        DscParams *pDscParams)                        // DSC parameters
+                                        DscParams *pDscParams,                        // DSC parameters
+                                        DP_IMP_ERROR *pErrorCode)
 {
-    DP_ASSERT( compoundQueryActive );
-    ModesetInfo localModesetInfo = modesetParams.modesetInfo;
-    NVT_STATUS result;
+    DP_ASSERT(compoundQueryActive);
+    if (pErrorCode)
+        *pErrorCode = DP_IMP_ERROR_NONE;
 
     compoundQueryCount++;
 
@@ -1111,6 +1161,7 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
     {
         DP_ASSERT(!"DP-CONN> Params with zero value passed to query!");
         compoundQueryResult = false;
+        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_ZERO_VALUE_PARAMS)
         return false;
     }
 
@@ -1124,73 +1175,619 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
         && !(bEnableAudioBeyond48K))
     {
         compoundQueryResult = false;
+        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_AUDIO_BEYOND_48K)
         return false;
     }
+
+    if (linkUseMultistream())
+    {
+        compoundQueryResult = compoundQueryAttachMST(target, modesetParams,
+                                                     pDscParams, pErrorCode);
+    }
+    else    // SingleStream case
+    {
+        compoundQueryResult = compoundQueryAttachSST(target, modesetParams,
+                                                     pDscParams, pErrorCode);
+    }
+
+    return compoundQueryResult;
+}
+
+bool ConnectorImpl::dpLinkIsModePossible(const DpLinkIsModePossibleParams &params)
+{
+    bool bResult;
+    NvU32 numNonDscStreams;
+    bool bEnableFEC = false;
+
+reRunCompoundQuery:
+    bResult = true;
+    numNonDscStreams = 0;
+
+    for (NvU32 i = 0; i < NV_MAX_HEADS; i++)
+    {
+        if (params.head[i].pDscParams != NULL)
+            params.head[i].pDscParams->bEnableDsc = false;
+
+        if (params.head[i].pErrorStatus != NULL)
+            *params.head[i].pErrorStatus = DP_IMP_ERROR_NONE;
+    }
+
+    this->beginCompoundQuery(bEnableFEC /* bForceEnableFEC */);
+
+    for (NvU32 i = 0; i < NV_MAX_HEADS; i++)
+    {
+        if (params.head[i].pTarget == NULL)
+            continue;
+
+        DP_ASSERT(params.head[i].pModesetParams->headIndex == i);
+
+        bResult = this->compoundQueryAttach(params.head[i].pTarget,
+                                            *params.head[i].pModesetParams,
+                                            params.head[i].pDscParams,
+                                            params.head[i].pErrorStatus);
+        if (!bResult)
+            break;
+
+        if ((params.head[i].pDscParams == NULL) ||
+            !params.head[i].pDscParams->bEnableDsc)
+        {
+            numNonDscStreams++;
+            continue;
+        }
+
+        //
+        // When DSC is enabled, FEC also need to be enabled. The previously
+        // attached non-dsc streams needs to consider 3% FEC overhead,
+        // therefore terminate existing compound query, force enable FEC and
+        // re-run the compound query.
+        //
+        if ((numNonDscStreams > 0) && !bEnableFEC)
+        {
+            this->endCompoundQuery();
+            bEnableFEC = true;
+            goto reRunCompoundQuery;
+        }
+
+        bEnableFEC = true;
+    }
+
+    if (!this->endCompoundQuery())
+        bResult = false;
+
+    return bResult;
+}
+
+bool ConnectorImpl::compoundQueryAttachMST(Group * target,
+                                           const DpModesetParams &modesetParams,         // Modeset info
+                                           DscParams *pDscParams,                        // DSC parameters
+                                           DP_IMP_ERROR *pErrorCode)
+{
+    CompoundQueryAttachMSTInfo localInfo;
+    NvBool result = true;
+
+    localInfo.localModesetInfo = modesetParams.modesetInfo;
+    if (this->preferredLinkConfig.isValid())
+        localInfo.lc = preferredLinkConfig;
+    else
+        localInfo.lc = highestAssessedLC;
+
+    if (compoundQueryForceEnableFEC) {
+        localInfo.lc.enableFEC(isFECCapable());
+    }
+
+    if (compoundQueryAttachMSTIsDscPossible(target, modesetParams, pDscParams))
+    {
+        result = compoundQueryAttachMSTDsc(target, modesetParams, &localInfo,
+                                           pDscParams, pErrorCode);
+        if (!result)
+        {
+            return false;
+        }
+
+        if (!pDscParams->bEnableDsc)
+        {
+            DP_LOG(("CompoundQueryAttach failed with DSC, will try non-DSC path"));
+        }
+    }
+
+    return compoundQueryAttachMSTGeneric(target, modesetParams, &localInfo,
+                                         pDscParams, pErrorCode);
+}
+
+bool ConnectorImpl::compoundQueryAttachMSTIsDscPossible
+(
+    Group * target,
+    const DpModesetParams &modesetParams,       // Modeset info
+    DscParams *pDscParams                       // DSC parameters
+)
+{
+    Device     * newDev = target->enumDevices(0);
+    DeviceImpl * dev    = (DeviceImpl *)newDev;
+    bool bFecCapable = false;
+    bool bGpuDscSupported;
+    main->getDscCaps(&bGpuDscSupported);
+
+    if (pDscParams && (pDscParams->forceDsc != DSC_FORCE_DISABLE))
+    {
+        if (dev && dev->isDSCPossible())
+        {
+            if (dev->devDoingDscDecompression != dev)
+            {
+                //
+                // If DSC decoding is going to happen at sink's parent then
+                // we have to make sure the path from source to sink's parent
+                // is fec is capable.
+                // Refer DP 1.4 Spec 5.4.5
+                //
+                if(dev->address.size() == 2)
+                {
+                    //
+                    // if there is only one branch between source and sink then branch
+                    // should be directly connected to source (sst-case) and dpcd cap
+                    // should already be available.
+                    //
+                    bFecCapable = dev->parent->isFECSupported();
+                }
+                else
+                {
+                    //
+                    // If there are multiple branches in the path, we have to check
+                    // fecCapability field in epr reply to sink's parent's parent.
+                    // Epr reply for each branch should already be updated with inferLeafLink.
+                    // fecCapability field being true here means up to sink's parent,
+                    // which is "downstream end of path" for sink's parent's parent,
+                    // is fec capable.
+                    // Refer DP 1.4 Spec 2.11.9.4.1
+                    //
+                    bFecCapable = dev->parent->parent->isFECSupported();
+                }
+            }
+            else
+            {
+                bFecCapable = dev->isFECSupported();
+            }
+        }
+    }
+    else
+    {
+        return false;
+    }
+    // Make sure panel/it's parent & GPU supports DSC and the whole path supports FEC
+    if (bGpuDscSupported &&                                 // If GPU supports DSC
+        this->isFECSupported() &&                           // If GPU supports FEC
+        pDscParams &&                                       // If client sent DSC info
+        pDscParams->bCheckWithDsc &&                        // If client wants to check with DSC
+        (dev && dev->devDoingDscDecompression) &&           // Either device or it's parent supports DSC
+        bFecCapable &&                                      // If path up to dsc decoding device supports FEC
+        (modesetParams.modesetInfo.bitsPerComponent != 6))  // DSC doesn't support bpc = 6
+    {
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+
+bool ConnectorImpl::compoundQueryAttachMSTDsc(Group * target,
+                                              const DpModesetParams &modesetParams,         // Modeset info
+                                              CompoundQueryAttachMSTInfo * localInfo,
+                                              DscParams *pDscParams,                        // DSC parameters
+                                              DP_IMP_ERROR *pErrorCode)
+{
+    NVT_STATUS result;
+
+    Device     * newDev = target->enumDevices(0);
+    DeviceImpl * dev    = (DeviceImpl *)newDev;
 
     bool bGpuDscSupported;
     main->getDscCaps(&bGpuDscSupported);
 
-    if (linkUseMultistream())
+    DSC_INFO dscInfo;
+    MODESET_INFO modesetInfoDSC;
+    WAR_DATA warData;
+    NvU64 availableBandwidthBitsPerSecond = 0;
+    unsigned PPS[DSC_MAX_PPS_SIZE_DWORD];
+    unsigned bitsPerPixelX16 = 0;
+    bool bDscBppForced = false;
+
+    if (!pDscParams->bitsPerPixelX16)
     {
-        LinkConfiguration lc;
-        if (this->preferredLinkConfig.isValid())
-            lc = preferredLinkConfig;
-        else
-            lc = highestAssessedLC;
+        //
+        // For now, we will keep a pre defined value for bitsPerPixel for MST = 10
+        // bitsPerPixelX16 = 160
+        //
+        pDscParams->bitsPerPixelX16 = PREDEFINED_DSC_MST_BPPX16;
+    }
+    else
+    {
+        bDscBppForced = true;
+    }
 
-        if (pDscParams && (pDscParams->forceDsc != DSC_FORCE_DISABLE))
+    bitsPerPixelX16 = pDscParams->bitsPerPixelX16;
+
+    if (!this->preferredLinkConfig.isValid())
+    {
+        localInfo->lc.enableFEC(true);
+    }
+
+    dpMemZero(PPS, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
+    dpMemZero(&dscInfo, sizeof(DSC_INFO));
+
+    // Populate DSC related info for PPS calculations
+    populateDscCaps(&dscInfo, dev->devDoingDscDecompression, pDscParams->forcedParams);
+
+    // populate modeset related info for PPS calculations
+    populateDscModesetInfo(&modesetInfoDSC, &modesetParams);
+
+    // checking for DSC v1.1 and YUV combination
+    if ((dscInfo.sinkCaps.algorithmRevision.versionMajor == 1) &&
+        (dscInfo.sinkCaps.algorithmRevision.versionMinor == 1) &&
+        (modesetParams.colorFormat == dpColorFormat_YCbCr444 ))
+    {
+        DP_LOG(("WARNING: DSC v1.2 or higher is recommended for using YUV444"));
+        DP_LOG(("Current version is 1.1"));
+    }
+
+    if ((dev->devDoingDscDecompression == dev) && dev->parent)
+    {
+        if (dev->parent->bDscPassThroughColorFormatWar)
         {
-            bool bFecCapable = false;
-
-            Device * newDev = target->enumDevices(0);
-            DeviceImpl * dev = (DeviceImpl *)newDev;
-
-            if (dev && dev->isDSCPossible())
+            //
+            // Bug 3692417
+            // Color format should only depend on device doing DSC decompression when DSC is enabled according to DP Spec.
+            // But when Synaptics VMM5320 is the parent of the device doing DSC decompression, if a certain color
+            // format is not supported by Synaptics Virtual Peer Device decoder(parent), even though it is pass through mode
+            // and panel supports the color format, panel cannot light up. Once Synaptics fixes this issue, we will modify
+            // the WAR to be applied only before the firmware version that fixes it.
+            //
+            if ((modesetParams.colorFormat == dpColorFormat_RGB      && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bRgb)      ||
+                (modesetParams.colorFormat == dpColorFormat_YCbCr444 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCr444) ||
+                (modesetParams.colorFormat == dpColorFormat_YCbCr422 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCrSimple422))
             {
-                if (dev->devDoingDscDecompression != dev)
+                if ((pDscParams->forceDsc == DSC_FORCE_ENABLE) ||
+                    (modesetParams.modesetInfo.mode == DSC_DUAL))
                 {
                     //
-                    // If DSC decoding is going to happen at sink's parent then
-                    // we have to make sure the path from source to sink's parent
-                    // is fec is capable.
-                    // Refer DP 1.4 Spec 5.4.5
+                    // If DSC is force enabled or DSC_DUAL mode is requested,
+                    // then return failure here
                     //
-                    if(dev->address.size() == 2)
+                    compoundQueryResult = false;
+                    SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_SYNAPTICS_COLOR_FORMAT)
+                    pDscParams->bEnableDsc = false;
+                    return false;
+                }
+                else
+                {
+                    // We should check if mode is possible without DSC.
+                    pDscParams->bEnableDsc = false;
+                    if (!compoundQueryForceEnableFEC)
                     {
-                        //
-                        // if there is only one branch between source and sink then branch
-                        // should be directly connected to source (sst-case) and dpcd cap
-                        // should already be available.
-                        //
-                        bFecCapable = dev->parent->isFECSupported();
+                        localInfo->lc.enableFEC(false);
                     }
-                    else
+                    return true;
+                }
+            }
+        }
+    }
+
+    availableBandwidthBitsPerSecond = localInfo->lc.minRate * 8 * localInfo->lc.lanes;
+
+    warData.dpData.linkRateHz = localInfo->lc.peakRate;
+    warData.dpData.laneCount = localInfo->lc.lanes;
+    warData.dpData.dpMode = DSC_DP_MST;
+    warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
+    warData.connectorType = DSC_DP;
+
+    DSC_GENERATE_PPS_OPAQUE_WORKAREA *pScratchBuffer = nullptr;
+    pScratchBuffer = (DSC_GENERATE_PPS_OPAQUE_WORKAREA*) dpMalloc(sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA));
+
+    result = DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
+                             &warData, availableBandwidthBitsPerSecond,
+                             (NvU32*)(PPS), (NvU32*)(&bitsPerPixelX16),
+                             pScratchBuffer);
+
+    // Try max dsc compression bpp = 8 once to check if that can support that mode.
+    if (result != NVT_STATUS_SUCCESS && !bDscBppForced)
+    {
+        pDscParams->bitsPerPixelX16 = MAX_DSC_COMPRESSION_BPPX16;
+
+        bitsPerPixelX16 = pDscParams->bitsPerPixelX16;
+
+        result = DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
+                                 &warData, availableBandwidthBitsPerSecond,
+                                 (NvU32*)(PPS), (NvU32*)(&bitsPerPixelX16),
+                                 pScratchBuffer);
+    }
+
+    if (pScratchBuffer)
+    {
+        dpFree(pScratchBuffer);
+        pScratchBuffer = nullptr;
+    }
+
+    if (result != NVT_STATUS_SUCCESS)
+    {
+        //
+        // If generating PPS failed
+        //          AND
+        //    (DSC is force enabled
+        //          OR
+        //    the requested DSC mode = DUAL)
+        //then
+        //    return failure here
+        // Else
+        //    we will check if non DSC path is possible.
+        //
+        // If dsc mode = DUAL failed to generate PPS and if we pursue
+        // non DSC path, DD will still follow 2Head1OR modeset path with
+        // DSC disabled, eventually leading to HW hang. Bug 3632901
+        //
+        if ((pDscParams->forceDsc == DSC_FORCE_ENABLE) ||
+            (modesetParams.modesetInfo.mode == DSC_DUAL))
+        {
+            compoundQueryResult = false;
+            SET_DP_IMP_ERROR(pErrorCode, translatePpsErrorToDpImpError(result))
+            pDscParams->bEnableDsc = false;
+            return false;
+        }
+        else
+        {
+            // If PPS calculation failed then try without DSC
+            pDscParams->bEnableDsc = false;
+            if (!compoundQueryForceEnableFEC)
+            {
+                localInfo->lc.enableFEC(false);
+            }
+            return true;
+        }
+    }
+    else
+    {
+        pDscParams->bEnableDsc = true;
+        compoundQueryResult = true;
+        localInfo->localModesetInfo.bEnableDsc = true;
+        localInfo->localModesetInfo.depth = bitsPerPixelX16;
+
+        if (dev->peerDevice == Dongle && dev->connectorType == connectorHDMI)
+        {
+            //
+            // For DP2HDMI PCON, if FRL BW is available in detailed caps,
+            // we need to check if we have enough BW for the stream on FRL link.
+            //
+            if (dev->pconCaps.maxHdmiLinkBandwidthGbps != 0)
+            {
+                NvU64 requiredBW = (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
+                NvU64 availableBw = (NvU64)(dev->pconCaps.maxHdmiLinkBandwidthGbps * 1000000000);
+                if (requiredBW > availableBw)
+                {
+                    compoundQueryResult = false;
+                    SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_FRL_BANDWIDTH)
+                    pDscParams->bEnableDsc = false;
+                    return false;
+                }
+            }
+            //
+            // If DP2HDMI PCON does not support FRL, but advertises TMDS
+            // Character clock rate on detailed caps, we need to honor that.
+            //
+            else if (dev->pconCaps.maxTmdsClkRate != 0)
+            {
+                NvU64 maxTmdsClkRateU64 = (NvU64)(dev->pconCaps.maxTmdsClkRate);
+                NvU64 requireBw         = (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
+                if (modesetParams.colorFormat == dpColorFormat_YCbCr420)
+                {
+                    if (maxTmdsClkRateU64 < ((requireBw/24)/2))
                     {
-                        //
-                        // If there are multiple branches in the path, we have to check
-                        // fecCapability field in epr reply to sink's parent's parent.
-                        // Epr reply for each branch should already be updated with inferLeafLink.
-                        // fecCapability field being true here means up to sink's parent,
-                        // which is "downstream end of path" for sink's parent's parent,
-                        // is fec capable.
-                        // Refer DP 1.4 Spec 2.11.9.4.1
-                        //
-                        bFecCapable = dev->parent->parent->isFECSupported();
+                        compoundQueryResult = false;
+                        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_HDMI2_BANDWIDTH)
+                        return false;
                     }
                 }
                 else
                 {
-                    bFecCapable = dev->isFECSupported();
+                    if (maxTmdsClkRateU64 < (requireBw/24))
+                    {
+                        compoundQueryResult = false;
+                        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_HDMI2_BANDWIDTH)
+                        return false;
+                    }
                 }
             }
+        }
+        else if (dev->devDoingDscDecompression != dev)
+        {
+            //
+            // Device's parent is doing DSC decompression so we need to check
+            // if device's parent can send uncompressed stream to Sink.
+            //
+            unsigned mode_pbn;
 
-            // Make sure panel/it's parent & GPU supports DSC and the whole path supports FEC
-            if (bGpuDscSupported &&                                 // If GPU supports DSC
+            mode_pbn = pbnForMode(modesetParams.modesetInfo);
+
+            //
+            // As Device's Parent is doing DSC decompression, this is leaf device and
+            // complete available bandwidth at this node is available for requested mode.
+            //
+            if (mode_pbn > dev->bandwidth.enum_path.total)
+            {
+                compoundQueryResult = false;
+                SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_LAST_HOP_BANDWIDTH)
+                pDscParams->bEnableDsc = false;
+                return false;
+            }
+        }
+
+        if (pDscParams->pDscOutParams != NULL)
+        {
+            //
+            // If requested then DP Library is supposed to return if mode is
+            // possible with DSC and calculated PPS and bits per pixel.
+            //
+            dpMemCopy(pDscParams->pDscOutParams->PPS, PPS, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
+            pDscParams->bitsPerPixelX16 = bitsPerPixelX16;
+        }
+        else
+        {
+            //
+            // Client only wants to know if mode is possible or not but doesn't
+            // need all calculated PPS parameters in case DSC is required. Do nothing.
+            //
+        }
+    }
+    return true;
+}
+
+bool ConnectorImpl::compoundQueryAttachMSTGeneric(Group * target,
+                                                  const DpModesetParams &modesetParams,         // Modeset info
+                                                  CompoundQueryAttachMSTInfo * localInfo,
+                                                  DscParams *pDscParams,                        // DSC parameters
+                                                  DP_IMP_ERROR *pErrorCode)
+{
+    // I. Evaluate use of local link bandwidth
+
+    //      Calculate the PBN required
+    unsigned base_pbn, slots, slots_pbn;
+    localInfo->lc.pbnRequired(localInfo->localModesetInfo, base_pbn, slots, slots_pbn);
+
+    //      Accumulate the amount of PBN rounded up to nearest timeslot
+    compoundQueryLocalLinkPBN += slots_pbn;
+    if (compoundQueryLocalLinkPBN > localInfo->lc.pbnTotal())
+    {
+        compoundQueryResult = false;
+        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
+    }
+
+    //      Verify the min blanking, etc
+    Watermark dpinfo;
+
+    if (this->isFECSupported())
+    {
+        if (!isModePossibleMSTWithFEC(localInfo->lc, localInfo->localModesetInfo, &dpinfo))
+        {
+            compoundQueryResult = false;
+            SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_WATERMARK_BLANKING)
+        }
+    }
+    else
+    {
+        if (!isModePossibleMST(localInfo->lc, localInfo->localModesetInfo, &dpinfo))
+        {
+            compoundQueryResult = false;
+            SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_WATERMARK_BLANKING)
+        }
+    }
+
+    for(Device * d = target->enumDevices(0); d; d = target->enumDevices(d))
+    {
+        DeviceImpl * i = (DeviceImpl *)d;
+
+        // Allocate bandwidth for the entire path to the root
+        //   NOTE: Above we're already handle the local link
+        DeviceImpl * tail = i;
+        while (tail && tail->getParent())
+        {
+            // Have we already accounted for this stream?
+            if (!(tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex & (1 << compoundQueryCount)))
+            {
+                tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex |= (1 << compoundQueryCount);
+
+                LinkConfiguration * linkConfig = tail->inferLeafLink(NULL);
+                tail->bandwidth.compound_query_state.timeslots_used_by_query += linkConfig->slotsForPBN(base_pbn);
+
+                if ( tail->bandwidth.compound_query_state.timeslots_used_by_query > tail->bandwidth.compound_query_state.totalTimeSlots)
+                {
+                    compoundQueryResult = false;
+                    SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH)
+                }
+            }
+            tail = (DeviceImpl*)tail->getParent();
+        }
+    }
+    return compoundQueryResult;
+}
+bool ConnectorImpl::compoundQueryAttachSST(Group * target,
+                                           const DpModesetParams &modesetParams,         // Modeset info
+                                           DscParams *pDscParams,                        // DSC parameters
+                                           DP_IMP_ERROR *pErrorCode)
+{
+    ModesetInfo localModesetInfo = modesetParams.modesetInfo;
+    bool bGpuDscSupported;
+    main->getDscCaps(&bGpuDscSupported);
+
+    DeviceImpl * nativeDev = findDeviceInList(Address());
+
+    if (compoundQueryCount != 1)
+    {
+        compoundQueryResult = false;
+        return false;
+    }
+
+    if (nativeDev && (nativeDev->connectorType == connectorHDMI))
+    {
+        if (modesetParams.colorFormat == dpColorFormat_YCbCr420)
+        {
+            if ((nativeDev->maxTmdsClkRate) &&
+                (nativeDev->maxTmdsClkRate <
+                ((modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth /24)/2)))
+            {
+                compoundQueryResult = false;
+                SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_HDMI2_BANDWIDTH)
+                return false;
+            }
+        }
+        else
+        {
+            if ((nativeDev->maxTmdsClkRate) &&
+                (nativeDev->maxTmdsClkRate <
+                (modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth /24)))
+            {
+                compoundQueryResult = false;
+                SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_DSC_PCON_HDMI2_BANDWIDTH)
+                return false;
+            }
+        }
+    }
+
+    LinkConfiguration lc = highestAssessedLC;
+
+    // check if there is a special request from the client
+    if (this->preferredLinkConfig.isValid())
+    {
+        lc = preferredLinkConfig;
+    }
+    else
+    {
+        //
+        // Always check for DP IMP without FEC overhead first before
+        // trying with DSC/FEC
+        //
+        lc.enableFEC(false);
+    }
+
+    // If do not found valid native device the force lagacy DP IMP
+    if (!nativeDev)
+    {
+        compoundQueryResult = this->willLinkSupportModeSST(lc, modesetParams.modesetInfo);
+        if (!compoundQueryResult)
+        {
+            SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_WATERMARK_BLANKING)
+        }
+    }
+    else if ((pDscParams && (pDscParams->forceDsc == DSC_FORCE_ENABLE)) ||      // DD has forced DSC Enable
+                (modesetParams.modesetInfo.mode == DSC_DUAL) ||                    // DD decided to use 2 Head 1 OR mode
+                (!this->willLinkSupportModeSST(lc, modesetParams.modesetInfo)))    // Mode is not possible without DSC
+    {
+        // If DP IMP fails without DSC or client requested to force DSC
+        if (pDscParams && pDscParams->forceDsc != DSC_FORCE_DISABLE)
+        {
+            // Check if panel and GPU both supports DSC or not. Also check if panel supports FEC
+            if (bGpuDscSupported &&                                 // if GPU supports DSC
                 this->isFECSupported() &&                           // If GPU supports FEC
-                pDscParams &&                                       // If client sent DSC info
-                pDscParams->bCheckWithDsc &&                        // If client wants to check with DSC
-                (dev && dev->devDoingDscDecompression) &&           // Either device or it's parent supports DSC
-                bFecCapable &&                                      // If path up to dsc decoding device supports FEC
+                pDscParams &&                                       // if client sent DSC info
+                pDscParams->bCheckWithDsc &&                        // if client wants to check with DSC
+                nativeDev->isDSCPossible() &&                       // if device supports DSC decompression
+                (nativeDev->isFECSupported() || main->isEDP()) &&   // if device supports FEC decoding or is an DSC capable eDP panel which doesn't support FEC
                 (modesetParams.modesetInfo.bitsPerComponent != 6))  // DSC doesn't support bpc = 6
             {
                 DSC_INFO dscInfo;
@@ -1198,25 +1795,9 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                 WAR_DATA warData;
                 NvU64 availableBandwidthBitsPerSecond = 0;
                 unsigned PPS[DSC_MAX_PPS_SIZE_DWORD];
-                unsigned bitsPerPixelX16 = 0;
-                bool bDscBppForced = false;
+                unsigned bitsPerPixelX16 = pDscParams->bitsPerPixelX16;
 
-                if (!pDscParams->bitsPerPixelX16)
-                {
-                    //
-                    // For now, we will keep a pre defined value for bitsPerPixel for MST = 10
-                    // bitsPerPixelX16 = 160
-                    //
-                    pDscParams->bitsPerPixelX16 = PREDEFINED_DSC_MST_BPPX16;
-                }
-                else
-                {
-                    bDscBppForced = true;
-                }
-
-                bitsPerPixelX16 = pDscParams->bitsPerPixelX16;
-
-                if (!this->preferredLinkConfig.isValid())
+                if (!this->preferredLinkConfig.isValid() && nativeDev->isFECSupported())
                 {
                     lc.enableFEC(true);
                 }
@@ -1225,477 +1806,128 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                 dpMemZero(&dscInfo, sizeof(DSC_INFO));
 
                 // Populate DSC related info for PPS calculations
-                populateDscCaps(&dscInfo, dev->devDoingDscDecompression, pDscParams->forcedParams);
+                populateDscCaps(&dscInfo, nativeDev->devDoingDscDecompression, pDscParams->forcedParams);
 
-                // populate modeset related info for PPS calculations
+                // Populate modeset related info for PPS calculations
                 populateDscModesetInfo(&modesetInfoDSC, &modesetParams);
 
                 // checking for DSC v1.1 and YUV combination
                 if ( (dscInfo.sinkCaps.algorithmRevision.versionMajor == 1) &&
-                     (dscInfo.sinkCaps.algorithmRevision.versionMinor == 1) &&
-                     (modesetParams.colorFormat == dpColorFormat_YCbCr444 ))
+                        (dscInfo.sinkCaps.algorithmRevision.versionMinor == 1) &&
+                        (modesetParams.colorFormat == dpColorFormat_YCbCr444 ))
                 {
                     DP_LOG(("WARNING: DSC v1.2 or higher is recommended for using YUV444"));
                     DP_LOG(("Current version is 1.1"));
-                }
-
-                if ((dev->devDoingDscDecompression == dev) && dev->parent)
-                {
-                    if (dev->parent->bDscPassThroughColorFormatWar)
-                    {
-                        //
-                        // Bug 3692417
-                        // Color format should only depend on device doing DSC decompression when DSC is enabled according to DP Spec.
-                        // But when Synaptics VMM5320 is the parent of the device doing DSC decompression, if a certain color
-                        // format is not supported by Synaptics Virtual Peer Device decoder(parent), even though it is pass through mode
-                        // and panel supports the color format, panel cannot light up. Once Synaptics fixes this issue, we will modify
-                        // the WAR to be applied only before the firmware version that fixes it.
-                        //
-                        if ((modesetParams.colorFormat == dpColorFormat_RGB      && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bRgb) ||
-                            (modesetParams.colorFormat == dpColorFormat_YCbCr444 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCr444) ||
-                            (modesetParams.colorFormat == dpColorFormat_YCbCr422 && !dev->parent->dscCaps.dscDecoderColorFormatCaps.bYCbCrSimple422))
-                        {
-                            if ((pDscParams->forceDsc == DSC_FORCE_ENABLE) ||
-                                (modesetParams.modesetInfo.mode == DSC_DUAL))
-                            {
-                                //
-                                // If DSC is force enabled or DSC_DUAL mode is requested,
-                                // then return failure here
-                                //
-                                compoundQueryResult = false;
-                                pDscParams->bEnableDsc = false;
-                                return false;
-                            }
-                            else
-                            {
-                                // We should check if mode is possible without DSC.
-                                pDscParams->bEnableDsc = false;
-                                lc.enableFEC(false);
-                                goto nonDscDpIMP;
-                            }
-                        }
-                    }
                 }
 
                 availableBandwidthBitsPerSecond = lc.minRate * 8 * lc.lanes;
 
                 warData.dpData.linkRateHz = lc.peakRate;
                 warData.dpData.laneCount = lc.lanes;
-                warData.dpData.dpMode = DSC_DP_MST;
                 warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
+                warData.dpData.dpMode = DSC_DP_SST;
                 warData.connectorType = DSC_DP;
 
                 DSC_GENERATE_PPS_OPAQUE_WORKAREA *pScratchBuffer = nullptr;
                 pScratchBuffer = (DSC_GENERATE_PPS_OPAQUE_WORKAREA*) dpMalloc(sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA));
 
-                result = DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
-                                         &warData, availableBandwidthBitsPerSecond,
-                                         (NvU32*)(PPS),
-                                         (NvU32*)(&bitsPerPixelX16), pScratchBuffer);
-
-                // Try max dsc compression bpp = 8 once to check if that can support that mode.
-                if (result != NVT_STATUS_SUCCESS && !bDscBppForced)
-                {
-                    pDscParams->bitsPerPixelX16 = MAX_DSC_COMPRESSION_BPPX16;
-
-                    bitsPerPixelX16 = pDscParams->bitsPerPixelX16;
-
-                    result = DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
-                                             &warData, availableBandwidthBitsPerSecond,
-                                             (NvU32*)(PPS),
-                                             (NvU32*)(&bitsPerPixelX16), pScratchBuffer);
-                }
-
+                NVT_STATUS ppsStatus = DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
+                                        &warData, availableBandwidthBitsPerSecond,
+                                        (NvU32*)(PPS),
+                                        (NvU32*)(&bitsPerPixelX16),
+                                        pScratchBuffer);
                 if (pScratchBuffer)
                 {
                     dpFree(pScratchBuffer);
                     pScratchBuffer = nullptr;
                 }
 
-                if (result != NVT_STATUS_SUCCESS)
+                if (ppsStatus != NVT_STATUS_SUCCESS)
                 {
-                    //
-                    // If generating PPS failed
-                    //          AND
-                    //    (DSC is force enabled
-                    //          OR
-                    //    the requested DSC mode = DUAL)
-                    //then
-                    //    return failure here
-                    // Else
-                    //    we will check if non DSC path is possible.
-                    //
-                    // If dsc mode = DUAL failed to generate PPS and if we pursue
-                    // non DSC path, DD will still follow 2Head1OR modeset path with
-                    // DSC disabled, eventually leading to HW hang. Bug 3632901
-                    //
-                    if ((pDscParams->forceDsc == DSC_FORCE_ENABLE) ||
-                        (modesetParams.modesetInfo.mode == DSC_DUAL))
-                    {
-                        compoundQueryResult = false;
-                        pDscParams->bEnableDsc = false;
-                        return false;
-                    }
-                    else
-                    {
-                        // If PPS calculation failed then try without DSC
-                        pDscParams->bEnableDsc = false;
-                        lc.enableFEC(false);
-                        goto nonDscDpIMP;
-                    }
+                    compoundQueryResult = false;
+                    SET_DP_IMP_ERROR(pErrorCode, translatePpsErrorToDpImpError(ppsStatus))
+                    pDscParams->bEnableDsc = false;
                 }
                 else
                 {
-                    pDscParams->bEnableDsc = true;
-                    compoundQueryResult = true;
                     localModesetInfo.bEnableDsc = true;
                     localModesetInfo.depth = bitsPerPixelX16;
+                    LinkConfiguration lowestSelected;
+                    bool bIsModeSupported = false;
 
-                    if (dev->peerDevice == Dongle && dev->connectorType == connectorHDMI)
+
+                    if (this->preferredLinkConfig.isValid())
                     {
-                        //
-                        // For DP2HDMI PCON, if FRL BW is available in detailed caps,
-                        // we need to check if we have enough BW for the stream on FRL link.
-                        //
-                        if (dev->pconCaps.maxHdmiLinkBandwidthGbps != 0)
-                        {
-                            NvU64 requiredBW = (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
-                            NvU64 availableBw = (NvU64)(dev->pconCaps.maxHdmiLinkBandwidthGbps * 1000000000);
-                            if (requiredBW > availableBw)
-                            {
-                                compoundQueryResult = false;
-                                pDscParams->bEnableDsc = false;
-                                return false;
-                            }
-                        }
-                        //
-                        // If DP2HDMI PCON does not support FRL, but advertises TMDS
-                        // Character clock rate on detailed caps, we need to honor that.
-                        //
-                        else if (dev->pconCaps.maxTmdsClkRate != 0)
-                        {
-                            NvU64 maxTmdsClkRateU64 = (NvU64)(dev->pconCaps.maxTmdsClkRate);
-                            NvU64 requireBw =  (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
-                            if (modesetParams.colorFormat == dpColorFormat_YCbCr420)
-                            {
-                                if (maxTmdsClkRateU64 < ((requireBw/24)/2))
-                                {
-                                    compoundQueryResult = false;
-                                    return false;
-                                }
-                            }
-                            else
-                            {
-                                if (maxTmdsClkRateU64 < (requireBw/24))
-                                {
-                                    compoundQueryResult = false;
-                                    return false;
-                                }
-                            }
-                        }
-                    }
-                    else if (dev->devDoingDscDecompression != dev)
-                    {
-                        //
-                        // Device's parent is doing DSC decompression so we need to check
-                        // if device's parent can send uncompressed stream to Sink.
-                        //
-                        unsigned mode_pbn;
-
-                        mode_pbn = pbnForMode(modesetParams.modesetInfo);
-
-                        //
-                        // As Device's Parent is doing DSC decompression, this is leaf device and
-                        // complete available bandwidth at this node is available for requested mode.
-                        //
-                        if (mode_pbn > dev->bandwidth.enum_path.total)
-                        {
-                            compoundQueryResult = false;
-                            pDscParams->bEnableDsc = false;
-                            return false;
-                        }
-                    }
-
-                    if (pDscParams->pDscOutParams != NULL)
-                    {
-                        //
-                        // If requested then DP Library is supposed to return if mode is
-                        // possible with DSC and calculated PPS and bits per pixel.
-                        //
-                        dpMemCopy(pDscParams->pDscOutParams->PPS, PPS, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
-                        pDscParams->bitsPerPixelX16 = bitsPerPixelX16;
+                        // Check if mode is possible with preferred link config
+                        bIsModeSupported = willLinkSupportModeSST(lc, localModesetInfo);
                     }
                     else
                     {
                         //
-                        // Client only wants to know if mode is possible or not but doesn't
-                        // need all calculated PPS parameters in case DSC is required. Do nothing.
+                        // Check if mode is possible with calculated bits_per_pixel.
+                        // Check with all possible link configs and not just highest
+                        // assessed because with DSC, mode can fail with higher
+                        // link config and pass for lower one. This is because
+                        // if raster parameters are really small and DP bandwidth is
+                        // very high then we may end up with some TU with 0 active
+                        // symbols in SST. This may cause HW hang and so DP IMP rejects
+                        // this mode. Refer Bug 200379426.
                         //
-                    }
-                }
-            }
-        }
-
-nonDscDpIMP:
-        // I. Evaluate use of local link bandwidth
-
-        //      Calculate the PBN required
-        unsigned base_pbn, slots, slots_pbn;
-        lc.pbnRequired(localModesetInfo, base_pbn, slots, slots_pbn);
-
-        //      Accumulate the amount of PBN rounded up to nearest timeslot
-        compoundQueryLocalLinkPBN += slots_pbn;
-        if (compoundQueryLocalLinkPBN > lc.pbnTotal())
-            compoundQueryResult = false;
-
-        //      Verify the min blanking, etc
-        Watermark dpinfo;
-
-        if (this->isFECSupported())
-        {
-            if (!isModePossibleMSTWithFEC(lc, localModesetInfo, &dpinfo))
-            {
-                compoundQueryResult = false;
-            }
-        }
-        else
-        {
-            if (!isModePossibleMST(lc, localModesetInfo, &dpinfo))
-            {
-                compoundQueryResult = false;
-            }
-        }
-
-        for(Device * d = target->enumDevices(0); d; d = target->enumDevices(d))
-        {
-            DeviceImpl * i = (DeviceImpl *)d;
-
-            // Allocate bandwidth for the entire path to the root
-            //   NOTE: Above we're already handle the local link
-            DeviceImpl * tail = i;
-            while (tail && tail->getParent())
-            {
-                // Have we already accounted for this stream?
-                if (!(tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex & (1 << compoundQueryCount)))
-                {
-                    tail->bandwidth.compound_query_state.bandwidthAllocatedForIndex |= (1 << compoundQueryCount);
-
-                    LinkConfiguration * linkConfig = tail->inferLeafLink(NULL);
-                    tail->bandwidth.compound_query_state.timeslots_used_by_query += linkConfig->slotsForPBN(base_pbn);
-
-                    if ( tail->bandwidth.compound_query_state.timeslots_used_by_query > tail->bandwidth.compound_query_state.totalTimeSlots)
-                        compoundQueryResult = false;
-                }
-                tail = (DeviceImpl*)tail->getParent();
-            }
-        }
-    }
-    else    // SingleStream case
-    {
-        DeviceImpl * nativeDev = findDeviceInList(Address());
-
-        if (compoundQueryCount != 1)
-        {
-            compoundQueryResult = false;
-            return false;
-        }
-
-        if (nativeDev && (nativeDev->connectorType == connectorHDMI))
-        {
-            if (modesetParams.colorFormat == dpColorFormat_YCbCr420)
-            {
-                if ((nativeDev->maxTmdsClkRate) &&
-                    (nativeDev->maxTmdsClkRate <
-                    ((modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth /24)/2)))
-                {
-                    compoundQueryResult = false;
-                    return false;
-                }
-            }
-            else
-            {
-                if ((nativeDev->maxTmdsClkRate) &&
-                    (nativeDev->maxTmdsClkRate <
-                    (modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth /24)))
-                {
-                    compoundQueryResult = false;
-                    return false;
-                }
-            }
-        }
-
-        LinkConfiguration lc = highestAssessedLC;
-
-        // check if there is a special request from the client
-        if (this->preferredLinkConfig.isValid())
-        {
-            lc = preferredLinkConfig;
-        }
-        else
-        {
-            //
-            // Always check for DP IMP without FEC overhead first before
-            // trying with DSC/FEC
-            //
-            lc.enableFEC(false);
-        }
-
-        // If do not found valid native device the force lagacy DP IMP
-        if (!nativeDev)
-        {
-            compoundQueryResult = this->willLinkSupportModeSST(lc, modesetParams.modesetInfo);
-        }
-        else if ((pDscParams && (pDscParams->forceDsc == DSC_FORCE_ENABLE)) ||      // DD has forced DSC Enable
-                 (modesetParams.modesetInfo.mode == DSC_DUAL) ||                    // DD decided to use 2 Head 1 OR mode
-                 (!this->willLinkSupportModeSST(lc, modesetParams.modesetInfo)))    // Mode is not possible without DSC
-        {
-            // If DP IMP fails without DSC or client requested to force DSC
-            if (pDscParams && pDscParams->forceDsc != DSC_FORCE_DISABLE)
-            {
-                // Check if panel and GPU both supports DSC or not. Also check if panel supports FEC
-                if (bGpuDscSupported &&                                 // if GPU supports DSC
-                    this->isFECSupported() &&                           // If GPU supports FEC
-                    pDscParams &&                                       // if client sent DSC info
-                    pDscParams->bCheckWithDsc &&                        // if client wants to check with DSC
-                    nativeDev->isDSCPossible() &&                       // if device supports DSC decompression
-                    (nativeDev->isFECSupported() || main->isEDP()) &&   // if device supports FEC decoding or is an DSC capable eDP panel which doesn't support FEC
-                    (modesetParams.modesetInfo.bitsPerComponent != 6))  // DSC doesn't support bpc = 6
-                {
-                    DSC_INFO dscInfo;
-                    MODESET_INFO modesetInfoDSC;
-                    WAR_DATA warData;
-                    NvU64 availableBandwidthBitsPerSecond = 0;
-                    unsigned PPS[DSC_MAX_PPS_SIZE_DWORD];
-                    unsigned bitsPerPixelX16 = pDscParams->bitsPerPixelX16;
-
-                    if (!this->preferredLinkConfig.isValid() && nativeDev->isFECSupported())
-                    {
-                        lc.enableFEC(true);
+                        bIsModeSupported = getValidLowestLinkConfig(lc, lowestSelected, localModesetInfo);
                     }
 
-                    dpMemZero(PPS, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
-                    dpMemZero(&dscInfo, sizeof(DSC_INFO));
-
-                    // Populate DSC related info for PPS calculations
-                    populateDscCaps(&dscInfo, nativeDev->devDoingDscDecompression, pDscParams->forcedParams);
-
-                    // Populate modeset related info for PPS calculations
-                    populateDscModesetInfo(&modesetInfoDSC, &modesetParams);
-
-                    // checking for DSC v1.1 and YUV combination
-                    if ( (dscInfo.sinkCaps.algorithmRevision.versionMajor == 1) &&
-                         (dscInfo.sinkCaps.algorithmRevision.versionMinor == 1) &&
-                         (modesetParams.colorFormat == dpColorFormat_YCbCr444 ))
+                    if (!bIsModeSupported)
                     {
-                        DP_LOG(("WARNING: DSC v1.2 or higher is recommended for using YUV444"));
-                        DP_LOG(("Current version is 1.1"));
-                    }
-
-                    availableBandwidthBitsPerSecond = lc.minRate * 8 * lc.lanes;
-
-                    warData.dpData.linkRateHz = lc.peakRate;
-                    warData.dpData.laneCount = lc.lanes;
-                    warData.dpData.hBlank = modesetParams.modesetInfo.rasterWidth - modesetParams.modesetInfo.surfaceWidth;
-                    warData.dpData.dpMode = DSC_DP_SST;
-                    warData.connectorType = DSC_DP;
-
-                    DSC_GENERATE_PPS_OPAQUE_WORKAREA *pScratchBuffer = nullptr;
-                    pScratchBuffer = (DSC_GENERATE_PPS_OPAQUE_WORKAREA*)dpMalloc(sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA));
-
-                    bool bPpsFailure = ((DSC_GeneratePPS(&dscInfo, &modesetInfoDSC,
-                                                         &warData, availableBandwidthBitsPerSecond,
-                                                         (NvU32*)(PPS),
-                                                         (NvU32*)(&bitsPerPixelX16),
-                                                         pScratchBuffer)) != NVT_STATUS_SUCCESS);
-                    if (pScratchBuffer)
-                    {
-                        dpFree(pScratchBuffer);
-                        pScratchBuffer = nullptr;
-                    }
-
-                    if (bPpsFailure)
-                    {
-                        compoundQueryResult = false;
                         pDscParams->bEnableDsc = false;
+                        SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH_DSC)
+                        compoundQueryResult = false;
                     }
                     else
                     {
-                        localModesetInfo.bEnableDsc = true;
-                        localModesetInfo.depth = bitsPerPixelX16;
-                        LinkConfiguration lowestSelected;
-                        bool bIsModeSupported = false;
+                        pDscParams->bEnableDsc = true;
+                        compoundQueryResult = true;
 
-
-                        if (this->preferredLinkConfig.isValid())
+                        if (pDscParams->pDscOutParams != NULL)
                         {
-                            // Check if mode is possible with preferred link config
-                            bIsModeSupported = willLinkSupportModeSST(lc, localModesetInfo);
+                            //
+                            // If requested then DP Library is supposed to return if mode is
+                            // possible with DSC and calculated PPS and bits per pixel.
+                            //
+                            dpMemCopy(pDscParams->pDscOutParams->PPS, PPS, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
+                            pDscParams->bitsPerPixelX16 = bitsPerPixelX16;
                         }
                         else
                         {
                             //
-                            // Check if mode is possible with calculated bits_per_pixel.
-                            // Check with all possible link configs and not just highest
-                            // assessed because with DSC, mode can fail with higher
-                            // link config and pass for lower one. This is because
-                            // if raster parameters are really small and DP bandwidth is
-                            // very high then we may end up with some TU with 0 active
-                            // symbols in SST. This may cause HW hang and so DP IMP rejects
-                            // this mode. Refer Bug 200379426.
+                            // Client only wants to know if mode is possible or not but doesn't
+                            // need all calculated PPS parameters in case DSC is required. Do nothing.
                             //
-                            bIsModeSupported = getValidLowestLinkConfig(lc, lowestSelected, localModesetInfo);
-                        }
-
-                        if (!bIsModeSupported)
-                        {
-                            pDscParams->bEnableDsc = false;
-                            compoundQueryResult = false;
-                        }
-                        else
-                        {
-                            pDscParams->bEnableDsc = true;
-                            compoundQueryResult = true;
-
-                            if (pDscParams->pDscOutParams != NULL)
-                            {
-                                //
-                                // If requested then DP Library is supposed to return if mode is
-                                // possible with DSC and calculated PPS and bits per pixel.
-                                //
-                                dpMemCopy(pDscParams->pDscOutParams->PPS, PPS, sizeof(unsigned) * DSC_MAX_PPS_SIZE_DWORD);
-                                pDscParams->bitsPerPixelX16 = bitsPerPixelX16;
-                            }
-                            else
-                            {
-                                //
-                                // Client only wants to know if mode is possible or not but doesn't
-                                // need all calculated PPS parameters in case DSC is required. Do nothing.
-                                //
-                            }
                         }
                     }
-                }
-                else
-                {
-                    // Either GPU or Sink doesn't support DSC
-                    compoundQueryResult = false;
                 }
             }
             else
             {
-                // Client hasn't sent DSC params info or has asked to force disable DSC.
+                // Either GPU or Sink doesn't support DSC
                 compoundQueryResult = false;
+                SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH_NO_DSC)
             }
         }
         else
         {
-            // Mode was successful
-            compoundQueryResult = true;
+            // Client hasn't sent DSC params info or has asked to force disable DSC.
+            compoundQueryResult = false;
+            SET_DP_IMP_ERROR(pErrorCode, DP_IMP_ERROR_INSUFFICIENT_BANDWIDTH_NO_DSC)
         }
     }
-
+    else
+    {
+        // Mode was successful
+        compoundQueryResult = true;
+    }
     return compoundQueryResult;
 }
+
 void ConnectorImpl::populateDscModesetInfo(MODESET_INFO* pModesetInfo, const DpModesetParams* pModesetParams)
 {
     pModesetInfo->pixelClockHz = pModesetParams->modesetInfo.pixelClockHz;
@@ -2604,14 +2836,24 @@ bool ConnectorImpl::setDeviceDscState(Device * dev, bool bEnableDsc)
 
     if (bEnableDsc)
     {
+        if (dscEnabledDevices.contains(dev))
+        {
+            DP_LOG(("DP> DSC already enabled on device"));
+            return true;
+        }
         if(!(((DeviceImpl *)dev)->setDscEnable(true /*bEnableDsc*/)))
         {
             DP_ASSERT(!"DP-CONN> Failed to configure DSC on Sink!");
             return false;
         }
+        dscEnabledDevices.insertFront(dev);
     }
     else
     {
+        if (!dscEnabledDevices.contains(dev))
+        {
+            return true;
+        }
         bool bCurrDscEnable = false;
         // Get Current DSC Enable State
         if (!((DeviceImpl *)dev)->getDscEnable(&bCurrDscEnable))
@@ -2621,29 +2863,93 @@ bool ConnectorImpl::setDeviceDscState(Device * dev, bool bEnableDsc)
 
         if (bCurrDscEnable)
         {
-            // Before disabling DSC check if any active device with same parent has DSC enabled or not
+
             bool bDisableDsc = true;
-            for (Device * i = enumDevices(0); i; i = enumDevices(i))
+            // Before disabling DSC check if other device with same parent has DSC enabled or not
+            for (Device * i = dscEnabledDevices.next(NULL); i != NULL; i = dscEnabledDevices.next(i))
             {
-                if((dev != i) && (((DeviceImpl *)i)->parent == ((DeviceImpl *)dev)->parent) &&
-                    (((DeviceImpl *)i)->activeGroup) &&
-                    (((DeviceImpl *)i)->activeGroup->isHeadAttached()) &&
-                    (((DeviceImpl *)i)->activeGroup->lastModesetInfo.bEnableDsc))
+                if ((i != dev) && (((DeviceImpl *)i)->parent == ((DeviceImpl *)dev)->parent))
                 {
-                    DP_LOG(("Parent is shared among devices and other device is active so we can't disable DSC"));
+                    DP_LOG(("Parent is shared among devices and other device has DSC enabled so we can't disable DSC"));
                     bDisableDsc = false;
                     break;
                 }
             }
-
             if(bDisableDsc && !((DeviceImpl *)dev)->setDscEnable(false /*bEnableDsc*/))
             {
                 DP_ASSERT(!"DP-CONN> Failed to configure DSC on Sink!");
                 return false;
             }
         }
+        dscEnabledDevices.remove(dev);
     }
     return true;
+}
+
+bool ConnectorImpl::needToEnableFEC(const DpPreModesetParams &params)
+{
+    for (NvU32 i = 0; i < NV_MAX_HEADS; i++)
+    {
+        if ((params.headMask & NVBIT(i)) == 0x0)
+            continue;
+
+        if ((params.head[i].pTarget == NULL) ||
+            !params.head[i].pModesetParams->modesetInfo.bEnableDsc)
+            continue;
+
+        // eDP can support DSC with and without FEC
+        DeviceImpl * nativeDev = this->findDeviceInList(Address());
+        if (this->main->isEDP() && nativeDev)
+            return nativeDev->getFECSupport();
+        else
+            return true;
+    }
+
+    return false;
+}
+
+void ConnectorImpl::dpPreModeset(const DpPreModesetParams &params)
+{
+    this->bFECEnable |= this->needToEnableFEC(params);
+
+    DP_ASSERT(this->inTransitionHeadMask == 0x0);
+    this->inTransitionHeadMask = 0x0;
+
+    for (NvU32 i = 0; i < NV_MAX_HEADS; i++)
+    {
+        if ((params.headMask & NVBIT(i)) == 0x0)
+            continue;
+
+        this->inTransitionHeadMask |= NVBIT(i);
+
+        if (params.head[i].pTarget != NULL)
+        {
+            DP_ASSERT(params.head[i].pModesetParams->headIndex == i);
+            this->notifyAttachBegin(params.head[i].pTarget,
+                                    *params.head[i].pModesetParams);
+        }
+        else
+        {
+            this->notifyDetachBegin(this->perHeadAttachedGroup[i]);
+        }
+        this->perHeadAttachedGroup[i] = params.head[i].pTarget;
+    }
+}
+
+void ConnectorImpl::dpPostModeset(void)
+{
+    for (NvU32 i = 0; i < NV_MAX_HEADS; i++)
+    {
+        if ((this->inTransitionHeadMask & NVBIT(i)) == 0x0)
+            continue;
+
+        if (this->perHeadAttachedGroup[i] != NULL)
+            this->notifyAttachEnd(false);
+        else
+            this->notifyDetachEnd();
+
+        this->inTransitionHeadMask &= ~NVBIT(i);
+    }
 }
 
 //
@@ -2789,9 +3095,17 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
 
     if (main->isEDP())
     {
-      main->configurePowerState(true);
-      hal->setOuiSource(cachedSourceOUI, &cachedSourceModelName[0], 6 /* string length of ieeeOuiDevId */,
-                        cachedSourceChipRevision);
+        main->configurePowerState(true);
+        if (bOuiCached)
+        {
+            hal->setOuiSource(cachedSourceOUI, &cachedSourceModelName[0],
+                              6 /* string length of ieeeOuiDevId */,
+                              cachedSourceChipRevision);
+        }
+        else
+        {
+            DP_ASSERT("eDP Source OUI is not cached!");
+        }
     }
 
     // if failed, we're guaranteed that assessed link rate didn't meet the mode requirements
@@ -3498,6 +3812,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
 {
     this->bSkipLt = false;  // Assesslink should never skip LT, so let's reset it in case it was set.
     bool bLinkStateToggle = false;
+    LinkConfiguration _maxLinkConfig = getMaxLinkConfig();
 
     if (bSkipAssessLinkForPCon)
     {
@@ -3511,11 +3826,11 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
         return;
     }
 
+
     if (isLinkQuiesced ||
         (firmwareGroup && ((GroupImpl *)firmwareGroup)->headInFirmware))
     {
-        highestAssessedLC = getMaxLinkConfig();
-
+        highestAssessedLC = _maxLinkConfig;
         if (bIsUefiSystem && !hal->getSupportsMultistream())
         {
             //
@@ -3554,7 +3869,7 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
                     linkGuessed = true;
                 }
 
-                if ((getMaxLinkConfig().peakRate == HBR3) &&
+                if ((highestAssessedLC.peakRate == HBR3) &&
                     (linkRate != HBR3))
                 {
                     //
@@ -3646,6 +3961,9 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
             linkState = DP_TRANSPORT_MODE_INIT;
     }
 
+    // linkState might be different from beginning, update _maxLinkConfig to keep it in sync.
+    _maxLinkConfig.multistream = this->linkUseMultistream();
+
     //
     // Bug 1545352: This is done to avoid shutting down a display for freeing up a SOR for LT,
     // when no SOR is assigned properly to the connector. It can happen when more
@@ -3655,14 +3973,14 @@ void ConnectorImpl::assessLink(LinkTrainingType trainType)
     //
     if (main->getSorIndex() == DP_INVALID_SOR_INDEX)
     {
-        highestAssessedLC = getMaxLinkConfig();
+        highestAssessedLC = _maxLinkConfig;
         linkGuessed = true;
         return;
     }
 
-    LinkConfiguration lConfig = getMaxLinkConfig();
+    LinkConfiguration lConfig = _maxLinkConfig;
 
-    LinkConfiguration preFlushModeActiveLinkConfig =  activeLinkConfig;
+    LinkConfiguration preFlushModeActiveLinkConfig = activeLinkConfig;
 
     if (main->isInternalPanelDynamicMuxCapable())
     {
@@ -3913,6 +4231,11 @@ void ConnectorImpl::handleMCCSIRQ()
             sink->notifyMCCSEvent(dev);
         }
     }
+}
+
+void ConnectorImpl::handlePanelReplayError()
+{
+    hal->readPanelReplayError();
 }
 
 //
@@ -4462,7 +4785,8 @@ bool ConnectorImpl::getValidLowestLinkConfig
 
     for (i = 0; i < numPossibleLnkCfg; i++)
     {
-        if ((this->allPossibleLinkCfgs[i].lanes > lConfig.lanes) || (this->allPossibleLinkCfgs[i].peakRate > lConfig.peakRate))
+        if ((this->allPossibleLinkCfgs[i].lanes > lConfig.lanes) ||
+            (this->allPossibleLinkCfgs[i].peakRate > lConfig.peakRate))
         {
             continue;
         }
@@ -5856,7 +6180,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
             discoveryManager = new DiscoveryManager(messageManager, this, timer, hal);
 
             // Check and clear if any pending message here
-            if (hal->clearPendingMsg() || bForceClearPendingMsg)
+            if (hal->clearPendingMsg())
             {
                 DP_LOG(("DP> Stale MSG found: set branch to D3 and back to D0..."));
                 if (hal->isAtLeastVersion(1, 4))
@@ -6351,6 +6675,13 @@ void ConnectorImpl::notifyShortPulse()
         handleHdmiLinkStatusChanged();
     }
 
+    if (hal->isPanelReplayErrorSet())
+    {
+        DP_LOG(("DP> Sink set Panel replay error"));
+        handlePanelReplayError();
+        hal->clearPanelReplayError();
+    }
+
     //
     //  Check to make sure sink is not in D3 low power mode
     //  and interlane alignment is good, etc
@@ -6486,6 +6817,7 @@ bool ConnectorImpl::setPreferredLinkConfig(LinkConfiguration & lc, bool commit,
 bool ConnectorImpl::resetPreferredLinkConfig(bool force)
 {
     preferredLinkConfig = LinkConfiguration();
+
     if (force)
         assessLink();
     return true;
@@ -6730,7 +7062,6 @@ Connector * DisplayPort::createConnector
         main->retrieveRingBuffer(LOG_CALL, MAX_RECORD_COUNT);
         main->retrieveRingBuffer(ASSERT_HIT, MAX_RECORD_COUNT);
     }
-
     return connector;
 }
 
@@ -6940,6 +7271,11 @@ bool ConnectorImpl::updatePsrLinkState(bool bTrainLink)
     return bRet;
 }
 
+bool ConnectorImpl::readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo)
+{
+    return hal->readPrSinkDebugInfo(prDbgInfo);
+}
+
 bool ConnectorImpl::handlePhyPatternRequest()
 {
 
@@ -7081,6 +7417,5 @@ void ConnectorImpl::configInit()
     bNoFallbackInPostLQA = 0;
     LT2FecLatencyMs = 0;
     bDscCapBasedOnParent = false;
-    bForceClearPendingMsg = false;
 }
 

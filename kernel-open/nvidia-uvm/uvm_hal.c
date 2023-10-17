@@ -794,7 +794,7 @@ uvm_membar_t uvm_hal_downgrade_membar_type(uvm_gpu_t *gpu, bool is_local_vidmem)
     // memory, including those from other processors like the CPU or peer GPUs,
     // must come through this GPU's L2. In all current architectures, MEMBAR_GPU
     // is sufficient to resolve ordering at the L2 level.
-    if (is_local_vidmem && !uvm_gpu_is_coherent(gpu->parent) && !uvm_downgrade_force_membar_sys)
+    if (is_local_vidmem && !uvm_parent_gpu_is_coherent(gpu->parent) && !uvm_downgrade_force_membar_sys)
         return UVM_MEMBAR_GPU;
 
     // If the mapped memory was remote, or if a coherence protocol can cache

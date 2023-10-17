@@ -260,6 +260,7 @@ typedef struct tagDPSDP_DP_PR_VSC_SDP_DESCRIPTOR
         NvU8 db6;
         NvU8 db7;
         // DB8 - DB15 are undefined in DP 1.3 spec.
+        NvU8 db8;
         NvU8 db9;
         NvU8 db10;
         NvU8 db11;

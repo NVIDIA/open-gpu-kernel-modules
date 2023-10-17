@@ -1643,6 +1643,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                         NVKMS_MAX_HEADS_PER_DISP);
     NvU32 impOutNumHeads = 0x0;
     NvU32 head;
+    NvU8 hdmiFrlBpc;
     NvBool ret = FALSE;
 
     if (modeName[0] == '\0') {
@@ -1708,6 +1709,7 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
                                   b2Heads1Or,
                                   pParams,
                                   pHdmiFrlConfig,
+                                  &hdmiFrlBpc,
                                   pDscInfo)) {
             LogModeValidationEnd(pDispEvo, pInfoString,
                 "Unable to determine HDMI 2.1 Fixed Rate Link configuration.");

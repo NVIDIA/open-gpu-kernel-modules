@@ -32,6 +32,38 @@ typedef struct ChipHal ChipHal;
 void __nvoc_init_halspec_ChipHal(ChipHal*, NvU32, NvU32, NvU32);
 
 /*
+ * Tegra Chip Type Halspec 
+ *
+ * For Legacy iGPUs, we have two type Tegra chips in Chips.pm
+ *   TEGRA_DGPU : The iGPU Core inside the Tegra Soc Chip with PCIE interface.
+ *                The behavior is more like a dGPU.  Such chip is generally
+ *                added to dGPU (CLASSIC-GPUS) chip family.  E.g. GA10B
+ *                This is generally the test chip used in MODS Arch validation
+ *                that shares the test infrastructure with dGPU.
+ *
+ *   TEGRA      : The SoC chip.  The chips do not share dGPU HAL on PCIE related
+ *                implementation.
+ * 
+ * The Tegra chip after Ampere arch is using PCIE interface which connects
+ * iGPU to SoC for BAR and control accesses (interrupt).
+ * The code between TEGRA_CHIP_TYPE_PCIE and TEGRA_CHIP_TYPE_SOC
+ * shares same dGPU ARCH specific HAL mostly except manual differences due to
+ * latency of manual updates between nvgpu (Standlone iGPU/Full Chip Verification)
+ * and nvmobile (SOC) trees.
+ * */
+typedef enum _TEGRA_CHIP_TYPE {
+    // Default TEGRA_CHIP_TYPE is TEGRA_PCIE
+    TEGRA_CHIP_TYPE_DEFAULT             = 0,
+    TEGRA_CHIP_TYPE_SOC                 = 1,
+} TEGRA_CHIP_TYPE;
+
+struct TegraChipHal {
+    unsigned short __nvoc_HalVarIdx;
+};
+typedef struct TegraChipHal TegraChipHal;
+void __nvoc_init_halspec_TegraChipHal(TegraChipHal*, TEGRA_CHIP_TYPE);
+
+/*
  * RM Runtime Variant Halspec 
  *
  * One group of Hal Variants that presents two perspectives: 
@@ -119,4 +151,5 @@ void __nvoc_init_halspec_DpuIpHal(DpuIpHal*, NvU32);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CHIPS2HALSPEC_NVOC_H_

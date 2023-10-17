@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -771,16 +771,11 @@
 /*
  * Option: OpenRmEnableUnsupportedGpus
  *
- * Open nvidia.ko support for features beyond what is used on Data Center GPUs
- * is still fairly immature, so for now require users to opt into use of open
- * nvidia.ko with a special registry key, if not on a Data Center GPU.
+ * This option to require opt in for use of Open RM on non-Data Center
+ * GPUs is deprecated and no longer required. The kernel module parameter
+ * is left here, though ignored, for backwards compatibility.
  */
-
 #define __NV_OPENRM_ENABLE_UNSUPPORTED_GPUS OpenRmEnableUnsupportedGpus
-#define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS NV_REG_STRING(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS)
-#define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DISABLE 0x00000000
-#define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_ENABLE  0x00000001
-#define NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DEFAULT NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DISABLE
 
 /*
  * Option: NVreg_DmaRemapPeerMmio
@@ -853,7 +848,7 @@ NV_DEFINE_REG_ENTRY(__NV_DYNAMIC_POWER_MANAGEMENT, 3);
 NV_DEFINE_REG_ENTRY(__NV_DYNAMIC_POWER_MANAGEMENT_VIDEO_MEMORY_THRESHOLD, 200);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_GPU_FIRMWARE, NV_REG_ENABLE_GPU_FIRMWARE_DEFAULT_VALUE);
 NV_DEFINE_REG_ENTRY(__NV_ENABLE_GPU_FIRMWARE_LOGS, NV_REG_ENABLE_GPU_FIRMWARE_LOGS_ENABLE_ON_DEBUG);
-NV_DEFINE_REG_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS, NV_REG_OPENRM_ENABLE_UNSUPPORTED_GPUS_DEFAULT);
+NV_DEFINE_REG_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS, 1);
 
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_USER_NUMA_MANAGEMENT, 1);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_MEMORY_POOL_SIZE, 0);

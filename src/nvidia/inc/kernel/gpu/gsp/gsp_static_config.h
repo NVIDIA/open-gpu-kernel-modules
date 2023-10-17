@@ -164,6 +164,8 @@ typedef struct GspSystemInfo
     NvU64 clPdbProperties;
     NvU32 Chipset;
     NvBool bGpuBehindBridge;
+    NvBool bFlrSupported;
+    NvBool b64bBar0Supported;
     NvBool bMnocAvailable;
     NvBool bUpstreamL0sUnsupported;
     NvBool bUpstreamL1Unsupported;

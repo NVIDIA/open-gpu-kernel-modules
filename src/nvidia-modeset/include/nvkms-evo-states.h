@@ -40,6 +40,8 @@ typedef enum NVEvoLockSignal {
 } NVEvoLockSignal;
 
 typedef enum NVEvoLockAction {
+    NV_EVO_PROHIBIT_LOCK,
+    NV_EVO_PROHIBIT_LOCK_DISABLE,
     NV_EVO_LOCK_HEADS,
     NV_EVO_UNLOCK_HEADS,
     NV_EVO_ADD_FRAME_LOCK_SERVER,
@@ -48,10 +50,6 @@ typedef enum NVEvoLockAction {
     NV_EVO_REM_FRAME_LOCK_HOUSE_SYNC,
     NV_EVO_ADD_FRAME_LOCK_CLIENT,
     NV_EVO_REM_FRAME_LOCK_CLIENT,
-    NV_EVO_ENABLE_VRR,
-    NV_EVO_DISABLE_VRR,
-    NV_EVO_ENABLE_MERGE_MODE,
-    NV_EVO_DISABLE_MERGE_MODE,
     NV_EVO_ADD_FRAME_LOCK_REF,
     NV_EVO_REM_FRAME_LOCK_REF,
     NV_EVO_ADD_SLI_SECONDARY,
@@ -74,8 +72,6 @@ NvBool nvEvoUnRefFrameLockSli(NVDispEvoPtr pDispEvo,
 
 /* nvkms-hw-states.c */
 
-NvBool nvEvoLockHWStateNoChange(NVDispEvoPtr, NVEvoSubDevPtr, const NvU32 *pHeads);
-NvBool nvEvoLockHWStateMergeMode(NVDispEvoPtr, NVEvoSubDevPtr, const NvU32 *pHeads);
 NvBool nvEvoLockHWStateNoLock(NVDispEvoPtr, NVEvoSubDevPtr, const NvU32 *pHeads);
 NvBool nvEvoLockHWStateLockHeads(NVDispEvoPtr, NVEvoSubDevPtr, const NvU32 *pHeads);
 NvBool nvEvoLockHWStateFrameLockClient(NVDispEvoPtr, NVEvoSubDevPtr, const NvU32 *pHeads);

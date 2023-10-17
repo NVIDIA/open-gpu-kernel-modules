@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,32 +21,18 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _OS_FIXED_MODE_TIMINGS_PROPS_H_
-#define _OS_FIXED_MODE_TIMINGS_PROPS_H_
+#ifndef _cl90e7_h_
+#define _cl90e7_h_
 
-#include "gpu/disp/kern_disp_max.h"
-#include "nvtypes.h"
-
-typedef struct
-{
-    NvU16 hActive;
-    NvU16 hFrontPorch;
-    NvU16 hSyncWidth;
-    NvU16 hBackPorch;
-
-    NvU16 vActive;
-    NvU16 vFrontPorch;
-    NvU16 vSyncWidth;
-    NvU16 vBackPorch;
-
-    NvU32 pclkKHz;
-    NvU32 rrx1k;
-} OS_MODE_TIMING;
-
-typedef struct
-{
-    OS_MODE_TIMING timingsPerStream[OBJ_MAX_HEADS];
-    NvU8 numTimings;
-} OS_FIXED_MODE_TIMINGS;
-
+#ifdef __cplusplus
+extern "C" {
 #endif
+
+#define GF100_SUBDEVICE_INFOROM                             (0x000090e7)
+
+#ifdef __cplusplus
+};     /* extern "C" */
+#endif
+
+#endif // _cl90e7_h
+

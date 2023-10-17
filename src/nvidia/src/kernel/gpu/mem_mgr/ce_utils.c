@@ -63,6 +63,13 @@ ceutilsConstruct_IMPL
     NvBool bMIGInUse = IS_MIG_IN_USE(pGpu);
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
+    pCeUtils->pGpu = pGpu;
+
+    if (FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _FIFO_LITE, _TRUE, allocFlags))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
     // Allocate channel with RM internal client
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
     RmClient *pClient;
@@ -121,6 +128,17 @@ ceutilsConstruct_IMPL
         pChannel->type = CE_SCRUBBER_CHANNEL;
     }
 
+    // For self-hosted Hopper, we can only use VA copy or faster scrubber
+    if (gpuIsSelfHosted(pGpu))
+    {
+        if (!pChannel->bUseVasForCeCopy &&
+            (pChannel->type != FAST_SCRUBBER_CHANNEL))
+        {
+            status = NV_ERR_NOT_SUPPORTED;
+            goto free_channel;
+        }
+    }
+
     // Set up various channel resources
     status = channelSetupIDs(pChannel, pGpu, pChannel->bUseVasForCeCopy, bMIGInUse);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
@@ -136,8 +154,6 @@ ceutilsConstruct_IMPL
     // Allocate CE states
     status = memmgrMemUtilsCopyEngineInitialize_HAL(pGpu, pMemoryManager, pChannel);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_channel);
-
-    pCeUtils->pGpu = pGpu;
 
     return status;
 
@@ -243,11 +259,7 @@ ceutilsServiceInterrupts_IMPL(CeUtils *pCeUtils)
     // if the lock is held, service any interrupts on the owned CE to make progress.
     // Bug 2527660 is filed to remove this change.
     //
-    // pChannel is null when PMA scrub requests are handled in vGPU plugin.
-    // In this case vGpu plugin allocates scrubber channel in PF domain so
-    // above mention deadlock is not present here.
-    //
-    if ((pChannel != NULL) && (rmDeviceGpuLockIsOwner(pChannel->pGpu->gpuInstance)))
+    if (rmDeviceGpuLockIsOwner(pChannel->pGpu->gpuInstance))
     {
         channelServiceScrubberInterrupts(pChannel);
     }
@@ -344,6 +356,12 @@ _ceutilsSubmitPushBuffer
     }
     else
     {
+        if (gpuIsSelfHosted(pChannel->pGpu))
+        {
+            // Self-hosted Hopper only supports VA copy or fast scrubber
+            NV_ASSERT_OR_RETURN(pChannel->bUseVasForCeCopy, NV_ERR_NOT_SUPPORTED);
+        }
+
         methodsLength = channelFillCePb(pChannel, putIndex, bPipelined, bInsertFinishPayload, pChannelPbInfo);
     }
 
@@ -401,8 +419,7 @@ ceutilsMemset_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if ((memdescGetAddressSpace(pMemDesc) != ADDR_FBMEM) ||
-        (pMemDesc->pGpu != pCeUtils->pChannel->pGpu))
+    if (pMemDesc->pGpu != pCeUtils->pChannel->pGpu)
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid memory descriptor passed.\n");
         return NV_ERR_INVALID_ARGUMENT;
@@ -509,13 +526,6 @@ ceutilsMemcopy_IMPL
     if ((pSrcMemDesc == NULL) || (pDstMemDesc == NULL))
     {
         NV_PRINTF(LEVEL_ERROR, "Src/Dst Memory descriptor should be valid.\n");
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    if ((memdescGetAddressSpace(pSrcMemDesc) != ADDR_FBMEM) &&
-        (memdescGetAddressSpace(pDstMemDesc) != ADDR_FBMEM))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Either Dst or Src memory should be in vidmem.\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
 

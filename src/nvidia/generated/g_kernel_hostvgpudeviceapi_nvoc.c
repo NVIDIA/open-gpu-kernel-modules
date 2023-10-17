@@ -295,7 +295,7 @@ static NV_STATUS __nvoc_thunk_RsResource_kernelhostvgpudeviceapiMapTo(struct Ker
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiGetMapAddrSpace(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+static NV_STATUS __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiGetMapAddrSpace(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
@@ -339,11 +339,11 @@ static NvHandle __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiGetInternalObjec
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_GpuResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiControl(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static NV_STATUS __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiControl(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiUnmap(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+static NV_STATUS __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiUnmap(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
     return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
@@ -387,7 +387,7 @@ static struct NotifShare *__nvoc_thunk_Notifier_kernelhostvgpudeviceapiGetNotifi
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_KernelHostVgpuDeviceApi_Notifier.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiMap(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+static NV_STATUS __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiMap(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
     return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 

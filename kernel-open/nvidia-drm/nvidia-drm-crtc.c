@@ -48,6 +48,11 @@
 #include <linux/host1x-next.h>
 #endif
 
+#if defined(NV_DRM_DRM_COLOR_MGMT_H_PRESENT)
+#include <drm/drm_color_mgmt.h>
+#endif
+
+
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
 static int
 nv_drm_atomic_replace_property_blob_from_id(struct drm_device *dev,
@@ -399,26 +404,24 @@ plane_req_config_update(struct drm_plane *plane,
         }
 
         for (i = 0; i < ARRAY_SIZE(info_frame->display_primaries); i ++) {
-            req_config->config.hdrMetadata.displayPrimaries[i].x =
+            req_config->config.hdrMetadata.val.displayPrimaries[i].x =
                 info_frame->display_primaries[i].x;
-            req_config->config.hdrMetadata.displayPrimaries[i].y =
+            req_config->config.hdrMetadata.val.displayPrimaries[i].y =
                 info_frame->display_primaries[i].y;
         }
 
-        req_config->config.hdrMetadata.whitePoint.x =
+        req_config->config.hdrMetadata.val.whitePoint.x =
             info_frame->white_point.x;
-        req_config->config.hdrMetadata.whitePoint.y =
+        req_config->config.hdrMetadata.val.whitePoint.y =
             info_frame->white_point.y;
-        req_config->config.hdrMetadata.maxDisplayMasteringLuminance =
+        req_config->config.hdrMetadata.val.maxDisplayMasteringLuminance =
             info_frame->max_display_mastering_luminance;
-        req_config->config.hdrMetadata.minDisplayMasteringLuminance =
+        req_config->config.hdrMetadata.val.minDisplayMasteringLuminance =
             info_frame->min_display_mastering_luminance;
-        req_config->config.hdrMetadata.maxCLL =
+        req_config->config.hdrMetadata.val.maxCLL =
             info_frame->max_cll;
-        req_config->config.hdrMetadata.maxFALL =
+        req_config->config.hdrMetadata.val.maxFALL =
             info_frame->max_fall;
-
-        req_config->config.hdrMetadataSpecified = true;
 
         switch (info_frame->eotf) {
             case HDMI_EOTF_SMPTE_ST2084:
@@ -432,10 +435,21 @@ plane_req_config_update(struct drm_plane *plane,
                 NV_DRM_DEV_LOG_ERR(nv_dev, "Unsupported EOTF");
                 return -1;
         }
+
+        req_config->config.hdrMetadata.enabled = true;
     } else {
-        req_config->config.hdrMetadataSpecified = false;
+        req_config->config.hdrMetadata.enabled = false;
         req_config->config.tf = NVKMS_OUTPUT_TF_NONE;
     }
+
+    req_config->flags.hdrMetadataChanged =
+        ((old_config.hdrMetadata.enabled !=
+          req_config->config.hdrMetadata.enabled) ||
+         memcmp(&old_config.hdrMetadata.val,
+                &req_config->config.hdrMetadata.val,
+                sizeof(struct NvKmsHDRStaticMetadata)));
+
+    req_config->flags.tfChanged = (old_config.tf != req_config->config.tf);
 #endif
 
     /*
@@ -692,9 +706,11 @@ static inline void __nv_drm_plane_atomic_destroy_state(
 #endif
 
 #if defined(NV_DRM_HAS_HDR_OUTPUT_METADATA)
-    struct nv_drm_plane_state *nv_drm_plane_state =
-        to_nv_drm_plane_state(state);
-    drm_property_blob_put(nv_drm_plane_state->hdr_output_metadata);
+    {
+        struct nv_drm_plane_state *nv_drm_plane_state =
+            to_nv_drm_plane_state(state);
+        drm_property_blob_put(nv_drm_plane_state->hdr_output_metadata);
+    }
 #endif
 }
 
@@ -800,6 +816,9 @@ nv_drm_atomic_crtc_duplicate_state(struct drm_crtc *crtc)
         &(to_nv_crtc_state(crtc->state)->req_config),
         &nv_state->req_config);
 
+    nv_state->ilut_ramps = NULL;
+    nv_state->olut_ramps = NULL;
+
     return &nv_state->base;
 }
 
@@ -823,6 +842,9 @@ static void nv_drm_atomic_crtc_destroy_state(struct drm_crtc *crtc,
 
     __nv_drm_atomic_helper_crtc_destroy_state(crtc, &nv_state->base);
 
+    nv_drm_free(nv_state->ilut_ramps);
+    nv_drm_free(nv_state->olut_ramps);
+
     nv_drm_free(nv_state);
 }
 
@@ -833,6 +855,9 @@ static struct drm_crtc_funcs nv_crtc_funcs = {
     .destroy                = nv_drm_crtc_destroy,
     .atomic_duplicate_state = nv_drm_atomic_crtc_duplicate_state,
     .atomic_destroy_state   = nv_drm_atomic_crtc_destroy_state,
+#if defined(NV_DRM_ATOMIC_HELPER_LEGACY_GAMMA_SET_PRESENT)
+    .gamma_set = drm_atomic_helper_legacy_gamma_set,
+#endif
 };
 
 /*
@@ -866,6 +891,198 @@ static int head_modeset_config_attach_connector(
     return 0;
 }
 
+#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
+static int color_mgmt_config_copy_lut(struct NvKmsLutRamps *nvkms_lut,
+                                      struct drm_color_lut *drm_lut,
+                                      uint64_t lut_len)
+{
+    uint64_t i = 0;
+    if (lut_len != NVKMS_LUT_ARRAY_SIZE) {
+        return -EINVAL;
+    }
+
+    /*
+     * Both NvKms and drm LUT values are 16-bit linear values. NvKms LUT ramps
+     * are in arrays in a single struct while drm LUT ramps are an array of
+     * structs.
+     */
+    for (i = 0; i < lut_len; i++) {
+        nvkms_lut->red[i]   = drm_lut[i].red;
+        nvkms_lut->green[i] = drm_lut[i].green;
+        nvkms_lut->blue[i]  = drm_lut[i].blue;
+    }
+    return 0;
+}
+
+static void color_mgmt_config_ctm_to_csc(struct NvKmsCscMatrix *nvkms_csc,
+                                         struct drm_color_ctm  *drm_ctm)
+{
+    int y;
+
+    /* CTM is a 3x3 matrix while ours is 3x4. Zero out the last column. */
+    nvkms_csc->m[0][3] = nvkms_csc->m[1][3] = nvkms_csc->m[2][3] = 0;
+
+    for (y = 0; y < 3; y++) {
+        int x;
+
+        for (x = 0; x < 3; x++) {
+            /*
+             * Values in the CTM are encoded in S31.32 sign-magnitude fixed-
+             * point format, while NvKms CSC values are signed 2's-complement
+             * S15.16 (Ssign-extend12-3.16?) fixed-point format.
+             */
+            NvU64 ctmVal = drm_ctm->matrix[y*3 + x];
+            NvU64 signBit = ctmVal & (1ULL << 63);
+            NvU64 magnitude = ctmVal & ~signBit;
+
+            /*
+             * Drop the low 16 bits of the fractional part and the high 17 bits
+             * of the integral part. Drop 17 bits to avoid corner cases where
+             * the highest resulting bit is a 1, causing the `cscVal = -cscVal`
+             * line to result in a positive number.
+             */
+            NvS32 cscVal = (magnitude >> 16) & ((1ULL << 31) - 1);
+            if (signBit) {
+                cscVal = -cscVal;
+            }
+
+            nvkms_csc->m[y][x] = cscVal;
+        }
+    }
+}
+
+static int color_mgmt_config_set(struct nv_drm_crtc_state *nv_crtc_state,
+                                 struct NvKmsKapiHeadRequestedConfig *req_config)
+{
+    struct NvKmsKapiHeadModeSetConfig *modeset_config =
+        &req_config->modeSetConfig;
+    struct drm_crtc_state *crtc_state = &nv_crtc_state->base;
+    int ret = 0;
+
+    struct drm_color_lut *degamma_lut = NULL;
+    struct drm_color_ctm *ctm = NULL;
+    struct drm_color_lut *gamma_lut = NULL;
+    uint64_t degamma_len = 0;
+    uint64_t gamma_len = 0;
+
+    int i;
+    struct drm_plane *plane;
+    struct drm_plane_state *plane_state;
+
+    /*
+     * According to the comment in the Linux kernel's
+     * drivers/gpu/drm/drm_color_mgmt.c, if any of these properties are NULL,
+     * that LUT or CTM needs to be changed to a linear LUT or identity matrix
+     * respectively.
+     */
+
+    req_config->flags.lutChanged = NV_TRUE;
+    if (crtc_state->degamma_lut) {
+        nv_crtc_state->ilut_ramps = nv_drm_calloc(1, sizeof(*nv_crtc_state->ilut_ramps));
+        if (!nv_crtc_state->ilut_ramps) {
+            ret = -ENOMEM;
+            goto fail;
+        }
+
+        degamma_lut = (struct drm_color_lut *)crtc_state->degamma_lut->data;
+        degamma_len = crtc_state->degamma_lut->length /
+                      sizeof(struct drm_color_lut);
+
+        if ((ret = color_mgmt_config_copy_lut(nv_crtc_state->ilut_ramps,
+                                              degamma_lut,
+                                              degamma_len)) != 0) {
+            goto fail;
+        }
+
+        modeset_config->lut.input.specified = NV_TRUE;
+        modeset_config->lut.input.depth     = 30; /* specify the full LUT */
+        modeset_config->lut.input.start     = 0;
+        modeset_config->lut.input.end       = degamma_len - 1;
+        modeset_config->lut.input.pRamps    = nv_crtc_state->ilut_ramps;
+    } else {
+        /* setting input.end to 0 is equivalent to disabling the LUT, which
+         * should be equivalent to a linear LUT */
+        modeset_config->lut.input.specified = NV_TRUE;
+        modeset_config->lut.input.depth     = 30; /* specify the full LUT */
+        modeset_config->lut.input.start     = 0;
+        modeset_config->lut.input.end       = 0;
+        modeset_config->lut.input.pRamps    = NULL;
+    }
+
+    nv_drm_for_each_new_plane_in_state(crtc_state->state, plane,
+                                       plane_state, i) {
+        struct nv_drm_plane *nv_plane = to_nv_plane(plane);
+        uint32_t layer = nv_plane->layer_idx;
+        struct NvKmsKapiLayerRequestedConfig *layer_config;
+
+        if (layer == NVKMS_KAPI_LAYER_INVALID_IDX || plane_state->crtc != crtc_state->crtc) {
+            continue;
+        }
+        layer_config = &req_config->layerRequestedConfig[layer];
+
+        if (layer == NVKMS_KAPI_LAYER_PRIMARY_IDX && crtc_state->ctm) {
+            ctm = (struct drm_color_ctm *)crtc_state->ctm->data;
+
+            color_mgmt_config_ctm_to_csc(&layer_config->config.csc, ctm);
+            layer_config->config.cscUseMain = NV_FALSE;
+        } else {
+            /* When crtc_state->ctm is unset, this also sets the main layer to
+             * the identity matrix.
+             */
+            layer_config->config.csc = NVKMS_IDENTITY_CSC_MATRIX;
+        }
+        layer_config->flags.cscChanged = NV_TRUE;
+    }
+
+    if (crtc_state->gamma_lut) {
+        nv_crtc_state->olut_ramps = nv_drm_calloc(1, sizeof(*nv_crtc_state->olut_ramps));
+        if (!nv_crtc_state->olut_ramps) {
+            ret = -ENOMEM;
+            goto fail;
+        }
+
+        gamma_lut = (struct drm_color_lut *)crtc_state->gamma_lut->data;
+        gamma_len = crtc_state->gamma_lut->length /
+                    sizeof(struct drm_color_lut);
+
+        if ((ret = color_mgmt_config_copy_lut(nv_crtc_state->olut_ramps,
+                                              gamma_lut,
+                                              gamma_len)) != 0) {
+            goto fail;
+        }
+
+        modeset_config->lut.output.specified = NV_TRUE;
+        modeset_config->lut.output.enabled   = NV_TRUE;
+        modeset_config->lut.output.pRamps    = nv_crtc_state->olut_ramps;
+    } else {
+        /* disabling the output LUT should be equivalent to setting a linear
+         * LUT */
+        modeset_config->lut.output.specified = NV_TRUE;
+        modeset_config->lut.output.enabled   = NV_FALSE;
+        modeset_config->lut.output.pRamps    = NULL;
+    }
+
+    return 0;
+
+fail:
+    /* free allocated state */
+    nv_drm_free(nv_crtc_state->ilut_ramps);
+    nv_drm_free(nv_crtc_state->olut_ramps);
+
+    /* remove dangling pointers */
+    nv_crtc_state->ilut_ramps = NULL;
+    nv_crtc_state->olut_ramps = NULL;
+    modeset_config->lut.input.pRamps = NULL;
+    modeset_config->lut.output.pRamps = NULL;
+
+    /* prevent attempts at reading NULLs */
+    modeset_config->lut.input.specified = NV_FALSE;
+    modeset_config->lut.output.specified = NV_FALSE;
+
+    return ret;
+}
+#endif /* NV_DRM_COLOR_MGMT_AVAILABLE */
+
 /**
  * nv_drm_crtc_atomic_check() can fail after it has modified
  * the 'nv_drm_crtc_state::req_config', that is fine because 'nv_drm_crtc_state'
@@ -887,6 +1104,9 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
     struct NvKmsKapiHeadRequestedConfig *req_config =
         &nv_crtc_state->req_config;
     int ret = 0;
+#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
+    struct nv_drm_device *nv_dev = to_nv_device(crtc_state->crtc->dev);
+#endif
 
     if (crtc_state->mode_changed) {
         drm_mode_to_nvkms_display_mode(&crtc_state->mode,
@@ -924,6 +1144,25 @@ static int nv_drm_crtc_atomic_check(struct drm_crtc *crtc,
         req_config->modeSetConfig.bActive = crtc_state->active;
         req_config->flags.activeChanged = NV_TRUE;
     }
+
+#if defined(NV_DRM_CRTC_STATE_HAS_VRR_ENABLED)
+    req_config->modeSetConfig.vrrEnabled = crtc_state->vrr_enabled;
+#endif
+
+#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
+    if (nv_dev->drmMasterChangedSinceLastAtomicCommit &&
+        (crtc_state->degamma_lut ||
+         crtc_state->ctm ||
+         crtc_state->gamma_lut)) {
+
+        crtc_state->color_mgmt_changed = NV_TRUE;
+    }
+    if (crtc_state->color_mgmt_changed) {
+        if ((ret = color_mgmt_config_set(nv_crtc_state, req_config)) != 0) {
+            return ret;
+        }
+    }
+#endif
 
     return ret;
 }
@@ -1156,6 +1395,8 @@ nv_drm_plane_create(struct drm_device *dev,
             plane,
             validLayerRRTransforms);
 
+    nv_drm_free(formats);
+
     return plane;
 
 failed_plane_init:
@@ -1219,6 +1460,22 @@ static struct drm_crtc *__nv_drm_crtc_create(struct nv_drm_device *nv_dev,
     /* Add crtc to drm sub-system */
 
     drm_crtc_helper_add(&nv_crtc->base, &nv_crtc_helper_funcs);
+
+#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
+#if defined(NV_DRM_CRTC_ENABLE_COLOR_MGMT_PRESENT)
+    drm_crtc_enable_color_mgmt(&nv_crtc->base, NVKMS_LUT_ARRAY_SIZE, true,
+                               NVKMS_LUT_ARRAY_SIZE);
+#else
+    drm_helper_crtc_enable_color_mgmt(&nv_crtc->base, NVKMS_LUT_ARRAY_SIZE,
+                                      NVKMS_LUT_ARRAY_SIZE);
+#endif
+    ret = drm_mode_crtc_set_gamma_size(&nv_crtc->base, NVKMS_LUT_ARRAY_SIZE);
+    if (ret != 0) {
+        NV_DRM_DEV_LOG_WARN(
+            nv_dev,
+            "Failed to initialize legacy gamma support for head %u", head);
+    }
+#endif
 
     return &nv_crtc->base;
 
@@ -1328,10 +1585,16 @@ static void NvKmsKapiCrcsToDrm(const struct NvKmsKapiCrcs *crcs,
 {
     drmCrcs->outputCrc32.value = crcs->outputCrc32.value;
     drmCrcs->outputCrc32.supported = crcs->outputCrc32.supported;
+    drmCrcs->outputCrc32.__pad0 = 0;
+    drmCrcs->outputCrc32.__pad1 = 0;
     drmCrcs->rasterGeneratorCrc32.value = crcs->rasterGeneratorCrc32.value;
     drmCrcs->rasterGeneratorCrc32.supported = crcs->rasterGeneratorCrc32.supported;
+    drmCrcs->rasterGeneratorCrc32.__pad0 = 0;
+    drmCrcs->rasterGeneratorCrc32.__pad1 = 0;
     drmCrcs->compositorCrc32.value = crcs->compositorCrc32.value;
     drmCrcs->compositorCrc32.supported = crcs->compositorCrc32.supported;
+    drmCrcs->compositorCrc32.__pad0 = 0;
+    drmCrcs->compositorCrc32.__pad1 = 0;
 }
 
 int nv_drm_get_crtc_crc32_v2_ioctl(struct drm_device *dev,

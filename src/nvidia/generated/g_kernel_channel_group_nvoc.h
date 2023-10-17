@@ -437,4 +437,5 @@ MAKE_INTRUSIVE_MAP(KernelChannelGroupMap, KernelChannelGroup, mapNode);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_CHANNEL_GROUP_NVOC_H_

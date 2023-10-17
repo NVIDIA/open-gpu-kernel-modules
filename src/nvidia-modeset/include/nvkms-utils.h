@@ -91,7 +91,7 @@ static inline NvBool nvHasBitAboveMax(NvU32 bitmask, NvU8 max)
  *          break;
  *      }
  *
- *      if (nvExceedsTimeoutUSec(&startTime, TIMEOUT-IN-USEC)) {
+ *      if (nvExceedsTimeoutUSec(pDevEvo, &startTime, TIMEOUT-IN-USEC)) {
  *          break;
  *      }
  *
@@ -107,10 +107,15 @@ static inline NvBool nvHasBitAboveMax(NvU32 bitmask, NvU8 max)
  * needed).
  */
 static inline NvBool nvExceedsTimeoutUSec(
+    const NVDevEvoRec *pDevEvo,
     NvU64 *pStartTime,
     NvU64 timeoutPeriod)
 {
     const NvU64 currentTime = nvkms_get_usec();
+
+    if (nvIsEmulationEvo(pDevEvo)) {
+        return FALSE;
+    }
 
     if (*pStartTime == 0) {
         *pStartTime = currentTime;

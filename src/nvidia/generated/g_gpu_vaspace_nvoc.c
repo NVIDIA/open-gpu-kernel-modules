@@ -70,8 +70,8 @@ static NV_STATUS __nvoc_thunk_OBJGVASPACE_vaspaceConstruct_(struct OBJVASPACE *p
     return gvaspaceConstruct_((struct OBJGVASPACE *)(((unsigned char *)pGVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset), classId, vaspaceId, vaStart, vaLimit, vaStartInternal, vaLimitInternal, flags);
 }
 
-static NV_STATUS __nvoc_thunk_OBJGVASPACE_vaspaceReserveMempool(struct OBJVASPACE *pGVAS, struct OBJGPU *pGpu, NvHandle hClient, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags) {
-    return gvaspaceReserveMempool((struct OBJGVASPACE *)(((unsigned char *)pGVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset), pGpu, hClient, size, pageSizeLockMask, flags);
+static NV_STATUS __nvoc_thunk_OBJGVASPACE_vaspaceReserveMempool(struct OBJVASPACE *pGVAS, struct OBJGPU *pGpu, struct Device *pDevice, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags) {
+    return gvaspaceReserveMempool((struct OBJGVASPACE *)(((unsigned char *)pGVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset), pGpu, pDevice, size, pageSizeLockMask, flags);
 }
 
 static NV_STATUS __nvoc_thunk_OBJGVASPACE_vaspaceAlloc(struct OBJVASPACE *pVAS, NvU64 size, NvU64 align, NvU64 rangeLo, NvU64 rangeHi, NvU64 pageSizeLockMask, VAS_ALLOC_FLAGS flags, NvU64 *pAddr) {
@@ -168,10 +168,6 @@ static NV_STATUS __nvoc_thunk_OBJGVASPACE_vaspaceGetPteInfo(struct OBJVASPACE *p
 
 static NV_STATUS __nvoc_thunk_OBJGVASPACE_vaspaceSetPteInfo(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, NV0080_CTRL_DMA_SET_PTE_INFO_PARAMS *pParams) {
     return gvaspaceSetPteInfo((struct OBJGVASPACE *)(((unsigned char *)pVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset), pGpu, pParams);
-}
-
-static NvBool __nvoc_thunk_OBJGVASPACE_vaspaceIsInternalVaRestricted(struct OBJVASPACE *pGVAS) {
-    return gvaspaceIsInternalVaRestricted((struct OBJGVASPACE *)(((unsigned char *)pGVAS) - __nvoc_rtti_OBJGVASPACE_OBJVASPACE.offset));
 }
 
 static NV_STATUS __nvoc_thunk_OBJGVASPACE_vaspaceFreeV2(struct OBJVASPACE *pGVAS, NvU64 vAddr, NvU64 *pSize) {
@@ -272,8 +268,6 @@ static void __nvoc_init_funcTable_OBJGVASPACE_1(OBJGVASPACE *pThis) {
 
     pThis->__gvaspaceSetPteInfo__ = &gvaspaceSetPteInfo_IMPL;
 
-    pThis->__gvaspaceIsInternalVaRestricted__ = &gvaspaceIsInternalVaRestricted_IMPL;
-
     pThis->__gvaspaceFreeV2__ = &gvaspaceFreeV2_IMPL;
 
     pThis->__nvoc_base_OBJVASPACE.__vaspaceConstruct___ = &__nvoc_thunk_OBJGVASPACE_vaspaceConstruct_;
@@ -327,8 +321,6 @@ static void __nvoc_init_funcTable_OBJGVASPACE_1(OBJGVASPACE *pThis) {
     pThis->__nvoc_base_OBJVASPACE.__vaspaceGetPteInfo__ = &__nvoc_thunk_OBJGVASPACE_vaspaceGetPteInfo;
 
     pThis->__nvoc_base_OBJVASPACE.__vaspaceSetPteInfo__ = &__nvoc_thunk_OBJGVASPACE_vaspaceSetPteInfo;
-
-    pThis->__nvoc_base_OBJVASPACE.__vaspaceIsInternalVaRestricted__ = &__nvoc_thunk_OBJGVASPACE_vaspaceIsInternalVaRestricted;
 
     pThis->__nvoc_base_OBJVASPACE.__vaspaceFreeV2__ = &__nvoc_thunk_OBJGVASPACE_vaspaceFreeV2;
 

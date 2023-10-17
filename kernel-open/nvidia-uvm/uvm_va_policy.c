@@ -31,6 +31,7 @@
 
 const uvm_va_policy_t uvm_va_policy_default = {
     .preferred_location = UVM_ID_INVALID,
+    .preferred_nid = NUMA_NO_NODE,
     .read_duplication = UVM_READ_DUPLICATION_UNSET,
 };
 

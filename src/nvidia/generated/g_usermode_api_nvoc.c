@@ -97,6 +97,10 @@ static NvBool __nvoc_thunk_UserModeApi_resCanCopy(struct RsResource *pUserModeAp
     return usrmodeCanCopy((struct UserModeApi *)(((unsigned char *)pUserModeApi) - __nvoc_rtti_UserModeApi_RsResource.offset));
 }
 
+static NV_STATUS __nvoc_thunk_UserModeApi_memGetMemInterMapParams(struct Memory *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return usrmodeGetMemInterMapParams((struct UserModeApi *)(((unsigned char *)pMemory) - __nvoc_rtti_UserModeApi_Memory.offset), pParams);
+}
+
 static NV_STATUS __nvoc_thunk_Memory_usrmodeCheckMemInterUnmap(struct UserModeApi *pMemory, NvBool bSubdeviceHandleProvided) {
     return memCheckMemInterUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), bSubdeviceHandleProvided);
 }
@@ -111,6 +115,10 @@ static NV_STATUS __nvoc_thunk_RsResource_usrmodeMapTo(struct UserModeApi *pResou
 
 static NV_STATUS __nvoc_thunk_Memory_usrmodeGetMapAddrSpace(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, mapFlags, pAddrSpace);
+}
+
+static NvBool __nvoc_thunk_Memory_usrmodeIsExportAllowed(struct UserModeApi *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset));
 }
 
 static NvU32 __nvoc_thunk_RsResource_usrmodeGetRefCount(struct UserModeApi *pResource) {
@@ -147,10 +155,6 @@ static NV_STATUS __nvoc_thunk_Memory_usrmodeControl(struct UserModeApi *pMemory,
 
 static NV_STATUS __nvoc_thunk_Memory_usrmodeUnmap(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return memUnmap((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pCallContext, pCpuMapping);
-}
-
-static NV_STATUS __nvoc_thunk_Memory_usrmodeGetMemInterMapParams(struct UserModeApi *pMemory, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
-    return memGetMemInterMapParams((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_UserModeApi_Memory.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_Memory_usrmodeGetMemoryMappingDescriptor(struct UserModeApi *pMemory, MEMORY_DESCRIPTOR **ppMemDesc) {
@@ -233,7 +237,11 @@ static void __nvoc_init_funcTable_UserModeApi_1(UserModeApi *pThis) {
 
     pThis->__usrmodeCanCopy__ = &usrmodeCanCopy_IMPL;
 
+    pThis->__usrmodeGetMemInterMapParams__ = &usrmodeGetMemInterMapParams_IMPL;
+
     pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_UserModeApi_resCanCopy;
+
+    pThis->__nvoc_base_Memory.__memGetMemInterMapParams__ = &__nvoc_thunk_UserModeApi_memGetMemInterMapParams;
 
     pThis->__usrmodeCheckMemInterUnmap__ = &__nvoc_thunk_Memory_usrmodeCheckMemInterUnmap;
 
@@ -242,6 +250,8 @@ static void __nvoc_init_funcTable_UserModeApi_1(UserModeApi *pThis) {
     pThis->__usrmodeMapTo__ = &__nvoc_thunk_RsResource_usrmodeMapTo;
 
     pThis->__usrmodeGetMapAddrSpace__ = &__nvoc_thunk_Memory_usrmodeGetMapAddrSpace;
+
+    pThis->__usrmodeIsExportAllowed__ = &__nvoc_thunk_Memory_usrmodeIsExportAllowed;
 
     pThis->__usrmodeGetRefCount__ = &__nvoc_thunk_RsResource_usrmodeGetRefCount;
 
@@ -260,8 +270,6 @@ static void __nvoc_init_funcTable_UserModeApi_1(UserModeApi *pThis) {
     pThis->__usrmodeControl__ = &__nvoc_thunk_Memory_usrmodeControl;
 
     pThis->__usrmodeUnmap__ = &__nvoc_thunk_Memory_usrmodeUnmap;
-
-    pThis->__usrmodeGetMemInterMapParams__ = &__nvoc_thunk_Memory_usrmodeGetMemInterMapParams;
 
     pThis->__usrmodeGetMemoryMappingDescriptor__ = &__nvoc_thunk_Memory_usrmodeGetMemoryMappingDescriptor;
 

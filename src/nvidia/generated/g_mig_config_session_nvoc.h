@@ -236,4 +236,5 @@ void migconfigsessionDestruct_IMPL(struct MIGConfigSession *pMIGConfigSession);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MIG_CONFIG_SESSION_NVOC_H_

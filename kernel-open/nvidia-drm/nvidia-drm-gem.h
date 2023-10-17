@@ -96,6 +96,16 @@ static inline struct nv_drm_gem_object *to_nv_gem_object(
  */
 
 static inline void
+nv_drm_gem_object_reference(struct nv_drm_gem_object *nv_gem)
+{
+#if defined(NV_DRM_GEM_OBJECT_GET_PRESENT)
+    drm_gem_object_get(&nv_gem->base);
+#else
+    drm_gem_object_reference(&nv_gem->base);
+#endif
+}
+
+static inline void
 nv_drm_gem_object_unreference_unlocked(struct nv_drm_gem_object *nv_gem)
 {
 #if defined(NV_DRM_GEM_OBJECT_GET_PRESENT)

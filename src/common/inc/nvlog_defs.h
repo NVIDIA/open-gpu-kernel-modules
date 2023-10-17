@@ -151,7 +151,7 @@ extern NVLOG_LOGGER NvLogLogger;
  * from certain RmCtrl handlers.
  *
  * Historically in most contexts obtaining RMAPI lock would suffice, and mainLock would optionally
- * be used for certain buffers. Ioctl NV_ESC_RM_NVLOG_CTRL cannot touch RMAPI lock and needs
+ * be used for certain buffers. Ioctl NV_ESC_RM_LOCKLESS_DIAGNOSTIC cannot touch RMAPI lock and needs
  * to access NvLog. The latter operation might race if called at an inopportune time: e.g. if the
  * ioctl is called during RM init when KGSP creates/deletes GSP NvLog buffers. Using buffersLock is
  * thus necessary to resolve the potential race.

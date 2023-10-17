@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -341,7 +341,8 @@ s_allocateUcodeFromBinArchive
             memdescCreate(&pUcode->pUcodeMemDesc, pGpu, pUcode->size,
                           16, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE), out);
 
-        status = memdescAlloc(pUcode->pUcodeMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_57, 
+                    pUcode->pUcodeMemDesc);
         if (status != NV_OK)
         {
             goto out;

@@ -113,6 +113,10 @@ static NV_STATUS __nvoc_thunk_Memory_regmemGetMapAddrSpace(struct RegisterMemory
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_RegisterMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_regmemIsExportAllowed(struct RegisterMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_RegisterMemory_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_regmemGetRefCount(struct RegisterMemory *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RegisterMemory_RsResource.offset));
 }
@@ -242,6 +246,8 @@ static void __nvoc_init_funcTable_RegisterMemory_1(RegisterMemory *pThis) {
     pThis->__regmemMapTo__ = &__nvoc_thunk_RsResource_regmemMapTo;
 
     pThis->__regmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_regmemGetMapAddrSpace;
+
+    pThis->__regmemIsExportAllowed__ = &__nvoc_thunk_Memory_regmemIsExportAllowed;
 
     pThis->__regmemGetRefCount__ = &__nvoc_thunk_RsResource_regmemGetRefCount;
 

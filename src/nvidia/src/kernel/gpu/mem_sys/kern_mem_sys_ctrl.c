@@ -71,7 +71,7 @@ _fbGetFbInfos(OBJGPU *pGpu, RsClient *pClient, Device *pDevice, NvHandle hObject
     if (bIsMIGInUse)
     {
         bIsClientMIGMonitor = !RMCFG_FEATURE_PLATFORM_GSP && rmclientIsCapableByHandle(pClient->hClient, NV_RM_CAP_SYS_SMC_MONITOR);
-        bIsClientMIGProfiler = kmigmgrIsClientUsingDeviceProfiling(pGpu, pKernelMIGManager, pClient->hClient);
+        bIsClientMIGProfiler = kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice);
     }
 
     //
@@ -308,12 +308,21 @@ _fbGetFbInfos(OBJGPU *pGpu, RsClient *pClient, Device *pDevice, NvHandle hObject
                 }
                 else
                 {
-                    const MEMORY_SYSTEM_STATIC_CONFIG *pMemsysConfig = 
-                            kmemsysGetStaticConfig(pGpu, pKernelMemorySystem);
-                    NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbTotalMemSizeMb << 10));
-                    data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10), 
-                                             (pMemoryManager->Ram.fbOverrideSizeMb << 10))
-                                             - pMemsysConfig->fbOverrideStartKb);
+                    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+                    {
+                        data = 0;
+                        NV_PRINTF(LEVEL_INFO,
+                            "[zero-FB, No local RAM] TOTAL_RAM_SIZE = 0\n");
+                    }
+                    else
+                    {
+                        const MEMORY_SYSTEM_STATIC_CONFIG *pMemsysConfig = 
+                                kmemsysGetStaticConfig(pGpu, pKernelMemorySystem);
+                        NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbTotalMemSizeMb << 10));
+                        data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10), 
+                                                 (pMemoryManager->Ram.fbOverrideSizeMb << 10))
+                                                 - pMemsysConfig->fbOverrideStartKb);
+                    }
                     break;
                 }
             }
@@ -341,10 +350,19 @@ _fbGetFbInfos(OBJGPU *pGpu, RsClient *pClient, Device *pDevice, NvHandle hObject
                     data = heapSizeKb;
                     break;
                 }
-                NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbTotalMemSizeMb << 10));
-                data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10),
-                                         (pMemoryManager->Ram.fbOverrideSizeMb << 10))
-                                         - pMemsysConfig->fbOverrideStartKb);
+                if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+                {
+                    data = 0;
+                    NV_PRINTF(LEVEL_INFO,
+                        "[zero-FB, No local RAM] RAM_SIZE = 0\n");
+                }
+                else
+                {
+                    NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbTotalMemSizeMb << 10));
+                    data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbTotalMemSizeMb << 10),
+                                             (pMemoryManager->Ram.fbOverrideSizeMb << 10))
+                                             - pMemsysConfig->fbOverrideStartKb);
+                }
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_USABLE_RAM_SIZE:
@@ -371,10 +389,19 @@ _fbGetFbInfos(OBJGPU *pGpu, RsClient *pClient, Device *pDevice, NvHandle hObject
                     data = heapSizeKb;
                     break;
                 }
-                NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbUsableMemSize >> 10));
-                data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbUsableMemSize >> 10 ),
-                                         (pMemoryManager->Ram.fbOverrideSizeMb << 10))
-                                         - pMemsysConfig->fbOverrideStartKb);
+                if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+                {
+                    data = 0;
+                    NV_PRINTF(LEVEL_INFO,
+                        "[zero-FB, No local RAM] USABLE_RAM_SIZE = 0\n");
+                }
+                else
+                {
+                    NV_ASSERT(0 == NvU64_HI32(pMemoryManager->Ram.fbUsableMemSize >> 10));
+                    data = NvU64_LO32(NV_MIN((pMemoryManager->Ram.fbUsableMemSize >> 10 ),
+                                             (pMemoryManager->Ram.fbOverrideSizeMb << 10))
+                                             - pMemsysConfig->fbOverrideStartKb);
+                }
                 break;
             }
             case NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE:
@@ -390,6 +417,14 @@ _fbGetFbInfos(OBJGPU *pGpu, RsClient *pClient, Device *pDevice, NvHandle hObject
                 else
                 {
                     NvU64 size;
+
+                    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+                    {
+                        data = 0;
+                        NV_PRINTF(LEVEL_INFO,
+                            "[zero-FB, No local RAM HEAP] HEAP_SIZE = 0\n");
+                        break;
+                    }
 
                     heapGetUsableSize(pHeap, &size);
                     NV_ASSERT(NvU64_HI32(size >> 10) == 0);
@@ -430,8 +465,8 @@ _fbGetFbInfos(OBJGPU *pGpu, RsClient *pClient, Device *pDevice, NvHandle hObject
                             data = NvU64_LO32(pMemsysConfig->fbOverrideStartKb);
                             NV_ASSERT(((NvU64) data << 10ULL) == pMemsysConfig->fbOverrideStartKb);
                         }
-                        else
-                        {
+					    else
+				    	{
                             //
                             // Returns start of heap in kbytes. This is zero unless
                             // VGA display memory is reserved.
@@ -537,7 +572,6 @@ _fbGetFbInfos(OBJGPU *pGpu, RsClient *pClient, Device *pDevice, NvHandle hObject
                 }
                 else
                 {
-                    memmgrCalcReservedFbSpace(pGpu, pMemoryManager);
                     // heap size in kbytes
                     data = memmgrGetReservedHeapSizeMb_HAL(pGpu, pMemoryManager) << 10;
                 }
@@ -778,6 +812,18 @@ _fbGetFbInfos(OBJGPU *pGpu, RsClient *pClient, Device *pDevice, NvHandle hObject
                         data = 0;
                         status = NV_ERR_INVALID_ARGUMENT;
                     }
+                }
+                else
+                {
+                    data = 0;
+                }
+                break;
+            }
+            case NV2080_CTRL_FB_INFO_INDEX_IS_ZERO_FB:
+            {
+                if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ZERO_FB))
+                {
+                    data = 1;
                 }
                 else
                 {
@@ -1283,7 +1329,7 @@ subdeviceCtrlCmdFbFlushGpuCache_IMPL
     NvBool              bWriteback = NV_FALSE;
     NvBool              bInvalidate = NV_FALSE;
 
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 
     // Either WriteBack or Invalidate are required for Cache Ops
     if (FLD_TEST_DRF(2080, _CTRL_FB_FLUSH_GPU_CACHE_FLAGS, _WRITE_BACK,

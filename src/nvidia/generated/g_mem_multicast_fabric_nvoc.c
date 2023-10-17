@@ -109,6 +109,10 @@ static NvBool __nvoc_thunk_MemoryMulticastFabric_memIsGpuMapAllowed(struct Memor
     return memorymulticastfabricIsGpuMapAllowed((struct MemoryMulticastFabric *)(((unsigned char *)pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pGpu);
 }
 
+static NvBool __nvoc_thunk_MemoryMulticastFabric_memIsExportAllowed(struct Memory *pMemoryMulticastFabric) {
+    return memorymulticastfabricIsExportAllowed((struct MemoryMulticastFabric *)(((unsigned char *)pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset));
+}
+
 static NV_STATUS __nvoc_thunk_MemoryMulticastFabric_memGetMapAddrSpace(struct Memory *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return memorymulticastfabricGetMapAddrSpace((struct MemoryMulticastFabric *)(((unsigned char *)pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
@@ -326,6 +330,8 @@ static void __nvoc_init_funcTable_MemoryMulticastFabric_1(MemoryMulticastFabric 
 
     pThis->__memorymulticastfabricIsGpuMapAllowed__ = &memorymulticastfabricIsGpuMapAllowed_IMPL;
 
+    pThis->__memorymulticastfabricIsExportAllowed__ = &memorymulticastfabricIsExportAllowed_IMPL;
+
     pThis->__memorymulticastfabricGetMapAddrSpace__ = &memorymulticastfabricGetMapAddrSpace_IMPL;
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
@@ -355,6 +361,8 @@ static void __nvoc_init_funcTable_MemoryMulticastFabric_1(MemoryMulticastFabric 
     pThis->__nvoc_base_Memory.__memControl__ = &__nvoc_thunk_MemoryMulticastFabric_memControl;
 
     pThis->__nvoc_base_Memory.__memIsGpuMapAllowed__ = &__nvoc_thunk_MemoryMulticastFabric_memIsGpuMapAllowed;
+
+    pThis->__nvoc_base_Memory.__memIsExportAllowed__ = &__nvoc_thunk_MemoryMulticastFabric_memIsExportAllowed;
 
     pThis->__nvoc_base_Memory.__memGetMapAddrSpace__ = &__nvoc_thunk_MemoryMulticastFabric_memGetMapAddrSpace;
 

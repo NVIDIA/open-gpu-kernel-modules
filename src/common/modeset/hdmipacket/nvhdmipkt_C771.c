@@ -32,6 +32,8 @@
 
 #include "class/clc771.h"
 
+#define NVHDMIPKT_C771_MAX_PKT_BYTES_AVI    21  // 3 bytes header + 18 bytes payload
+
 extern NVHDMIPKT_RESULT hdmiPacketWrite9171(NVHDMIPKT_CLASS*   pThis,
                                             NvU32              subDevice,
                                             NvU32              displayId,

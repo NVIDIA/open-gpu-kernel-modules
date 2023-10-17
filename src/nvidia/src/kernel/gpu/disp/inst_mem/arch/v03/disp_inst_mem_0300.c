@@ -207,7 +207,8 @@ instmemCommitContextDma_v03_00
         case ADDR_SYSMEM:
         case ADDR_REGMEM:
             // SOC Display always need _PHYSICAL_NVM flag to be set as display is not over PCI
-            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY))
+            if (pGpu->getProperty(pGpu, PDB_PROP_GPU_TEGRA_SOC_NVDISPLAY) ||
+                pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_SOC_SDM))
             {
                 ctxDMAFlag |= SF_DEF(_DMA, _TARGET_NODE, _PHYSICAL_NVM);
             }

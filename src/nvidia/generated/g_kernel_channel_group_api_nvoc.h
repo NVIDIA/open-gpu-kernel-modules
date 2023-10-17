@@ -446,4 +446,5 @@ NV_STATUS CliGetChannelGroup(NvHandle, NvHandle, RsResourceRef**, NvHandle*);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_CHANNEL_GROUP_API_NVOC_H_

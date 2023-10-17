@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -107,8 +107,8 @@
  *         This indicates whether this SOR uses DSI-A, DSI-B or both (ganged mode).
  *       NV0073_CTRL_DFP_FLAGS_DYNAMIC_MUX_CAPABLE
  *         This indicates whether this DFP supports Dynamic MUX
- *   flags2
- *     This parameter returns the extra information specific to this dfp.
+ *   UHBRSupportedByDfp
+ *     Bitmask to specify the UHBR link rates supported by this dfp.
  *
  * Possible status values returned are:
  *   NV_OK
@@ -123,7 +123,7 @@ typedef struct NV0073_CTRL_DFP_GET_INFO_PARAMS {
     NvU32 subDeviceInstance;
     NvU32 displayId;
     NvU32 flags;
-    NvU32 flags2;
+    NvU32 UHBRSupportedByDfp;
 } NV0073_CTRL_DFP_GET_INFO_PARAMS;
 
 /* valid display types */
@@ -942,6 +942,10 @@ typedef struct NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS {
 #define NV0073_CTRL_DFP_DISP_MUX_FLAGS_MUX_SWITCH_IGPU_POWER_TIMING  2:2
 #define NV0073_CTRL_DFP_DISP_MUX_FLAGS_MUX_SWITCH_IGPU_POWER_TIMING_KNOWN   0x00000000
 #define NV0073_CTRL_DFP_DISP_MUX_FLAGS_MUX_SWITCH_IGPU_POWER_TIMING_UNKNOWN 0x00000001
+#define NV0073_CTRL_DFP_DISP_MUX_FLAGS_SKIP_BACKLIGHT_ENABLE         3:3
+#define NV0073_CTRL_DFP_DISP_MUX_FLAGS_SKIP_BACKLIGHT_ENABLE_NO             0x00000000U
+#define NV0073_CTRL_DFP_DISP_MUX_FLAGS_SKIP_BACKLIGHT_ENABLE_YES            0x00000001U
+
 
 #define NV0073_CTRL_DISP_MUX_BACKLIGHT_BRIGHTNESS_MIN                       0U
 #define NV0073_CTRL_DISP_MUX_BACKLIGHT_BRIGHTNESS_MAX                       100U
@@ -1231,13 +1235,23 @@ typedef struct NV0073_CTRL_CMD_DFP_GET_DSI_MODE_TIMING_PARAMS {
  *   Pixel clock frequency in KHz
  * rrx1k (out)
  *   Refresh rate in units of 0.001Hz
+* x (out)
+*   x offset inside superframe at which this view starts
+ * y (out)
+*   y offset inside superframe at which this view starts
+ * width (out)
+*   Horizontal active width in pixels for this view
+* height (out)
+*   Vertical active height in lines for this view
  *
  * Possible status values returned are:
  *   NV_OK
  *   NV_ERR_INVALID_ARGUMENT
  *   NV_ERR_NOT_SUPPORTED
  */
-#define NV0073_CTRL_CMD_DFP_GET_FIXED_MODE_TIMING (0x731172) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8 | NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS_MESSAGE_ID)" */
+#define NV0073_CTRL_CMD_DFP_GET_FIXED_MODE_TIMING              (0x731172) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8 | NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS_MESSAGE_ID)" */
+
+#define NV0073_CTRL_DFP_FIXED_MODE_TIMING_MAX_SUPERFRAME_VIEWS 4U
 
 #define NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS_MESSAGE_ID (0x72U)
 
@@ -1260,6 +1274,18 @@ typedef struct NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS {
 
     NvU32  pclkKHz;
     NvU32  rrx1k;
+
+    struct {
+        NvU8 numViews;
+        struct {
+            NvU16 x;
+            NvU16 y;
+            NvU16 width;
+            NvU16 height;
+        } view[NV0073_CTRL_DFP_FIXED_MODE_TIMING_MAX_SUPERFRAME_VIEWS];
+    } superframeInfo;
 } NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS;
+
+
 
 /* _ctrl0073dfp_h_ */

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -146,8 +146,9 @@ kgraphicsAllocGrGlobalCtxBuffers_TU102
             memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, *ppMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
             NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool));
         }
-        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-            memdescAllocList(*ppMemDesc, pCtxAttr[GR_GLOBALCTX_BUFFER_RTV_CB].pAllocList));
+        memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_113, 
+                    (*ppMemDesc), pCtxAttr[GR_GLOBALCTX_BUFFER_RTV_CB].pAllocList);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
     }
     status = kgraphicsAllocGrGlobalCtxBuffers_GP100(pGpu, pKernelGraphics, gfid, pKernelGraphicsContext);
 

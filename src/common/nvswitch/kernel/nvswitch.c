@@ -30,6 +30,7 @@
 #include "flcn/haldefs_flcnable_nvswitch.h"
 #include "flcn/flcn_nvswitch.h"
 #include "soe/soe_nvswitch.h"
+#include "soe/soeififr.h"
 #include "nvVer.h"
 #include "nvlink_inband_msg.h"
 
@@ -543,7 +544,19 @@ _nvswitch_init_device_regkeys
     NVSWITCH_INIT_REGKEY(_PRIVATE, reference_clock_mode,
                          NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE,
                          NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_DEFAULT);
+    
+    NVSWITCH_INIT_REGKEY(_PRIVATE, debug_level,
+                         NV_SWITCH_REGKEY_DBG_LEVEL,
+                         NV_SWITCH_REGKEY_DBG_LEVEL_DEFAULT);
 }
+
+ct_assert(NVSWITCH_DBG_LEVEL_MMIO == NV_SWITCH_REGKEY_DBG_LEVEL_MMIO);
+ct_assert(NVSWITCH_DBG_LEVEL_NOISY == NV_SWITCH_REGKEY_DBG_LEVEL_NOISY);
+ct_assert(NVSWITCH_DBG_LEVEL_SETUP == NV_SWITCH_REGKEY_DBG_LEVEL_SETUP);
+ct_assert(NVSWITCH_DBG_LEVEL_INFO == NV_SWITCH_REGKEY_DBG_LEVEL_INFO);
+ct_assert(NVSWITCH_DBG_LEVEL_WARN == NV_SWITCH_REGKEY_DBG_LEVEL_WARN);
+ct_assert(NVSWITCH_DBG_LEVEL_ERROR == NV_SWITCH_REGKEY_DBG_LEVEL_ERROR);
+
 NvU64
 nvswitch_lib_deferred_task_dispatcher
 (
@@ -727,12 +740,6 @@ nvswitch_is_soe_supported
     nvswitch_device *device
 )
 {
-    if (device->regkeys.soe_disable == NV_SWITCH_REGKEY_SOE_DISABLE_YES)
-    {
-        NVSWITCH_PRINT(device, INFO, "SOE is disabled via regkey.\n");
-        return NV_FALSE;
-    }
-
     return device->hal.nvswitch_is_soe_supported(device);
 }
 
@@ -743,12 +750,6 @@ nvswitch_init_soe
     nvswitch_device *device
 )
 {
-    if (device->regkeys.soe_disable == NV_SWITCH_REGKEY_SOE_DISABLE_YES)
-    {
-        NVSWITCH_PRINT(device, INFO, "SOE is disabled via regkey.\n");
-        return NV_FALSE;
-    }
-
     return device->hal.nvswitch_init_soe(device);
 }
 
@@ -1335,6 +1336,75 @@ _nvswitch_ctrl_therm_get_temperature_limit
     return device->hal.nvswitch_ctrl_therm_get_temperature_limit(device, pParams);
 }
 
+//
+// Construct an port event log
+//
+// If port_event_log_size > 0 a circular buffer is created to record port events
+//
+NvlStatus
+_nvswitch_construct_port_event_log
+(
+    NVSWITCH_PORT_EVENT_LOG_TYPE *port_events,
+    NvU32 port_event_log_size,
+    NvBool overwritable
+)
+{
+    NvlStatus retval = NVL_SUCCESS;
+
+    NVSWITCH_ASSERT(port_events != NULL);
+
+    port_events->port_event_start = 0;
+    port_events->port_event_count = 0;
+    port_events->port_event_total = 0;
+    port_events->port_event_log_size = 0; 
+    port_events->port_event_log = NULL;
+    port_events->overwritable = overwritable;
+    port_events->bOverflow = NV_FALSE;
+
+    if (port_event_log_size > 0)
+    {
+        port_events->port_event_log = nvswitch_os_malloc(port_event_log_size * sizeof(NVSWITCH_PORT_EVENT_TYPE));
+    }
+
+    if (port_events->port_event_log != NULL)
+    {
+        port_events->port_event_log_size = port_event_log_size;
+        nvswitch_os_memset(port_events->port_event_log, 0, port_events->port_event_log_size * sizeof(NVSWITCH_PORT_EVENT_TYPE));
+    }
+
+    if (port_event_log_size != port_events->port_event_log_size)
+    {
+        retval = -NVL_NO_MEM;
+    }
+
+    return retval;
+}
+
+//
+// Destroy an error log
+//
+void
+_nvswitch_destroy_port_event_log
+(
+    nvswitch_device *device,
+    NVSWITCH_PORT_EVENT_LOG_TYPE *port_events
+)
+{
+    if (port_events == NULL)
+        return;
+
+    port_events->port_event_start = 0;
+    port_events->port_event_count = 0;
+    port_events->port_event_log_size = 0;
+    port_events->bOverflow = NV_FALSE;
+
+    if (port_events->port_event_log != NULL)
+    {
+        nvswitch_os_free(port_events->port_event_log);
+        port_events->port_event_log = NULL;
+    }
+}
+
 NvlStatus
 nvswitch_lib_initialize_device
 (
@@ -1508,16 +1578,9 @@ nvswitch_lib_initialize_device
         nvswitch_reset_persistent_link_hw_state(device, link_num);
 
         //
-        // During Nvswitch initialization, the default L1 thresholds are programmed by the
-        // BIOS from the BIOS tables. Save these L1 Threshold Values in scratch registers
-        // for use when resetting the thresholds to default.
-        //
-        nvswitch_program_l1_scratch_reg(device, link_num);
-
-        //
         // WAR : Initializing the L1 threshold registers at this point as a WAR for
-        // Bug 3963639 where it was discussed that the L1 threshold register should have 
-        // the default value for all available links and not just for active links.
+        // Bug 3963639 where is it was discussed that the L1 threshold register should have 
+        // value the default value for all available links and not just for active links.
         //
         nvswitch_init_lpwr_regs(link);
     }
@@ -1544,6 +1607,13 @@ nvswitch_lib_initialize_device
     {
         NVSWITCH_PRINT(device, ERROR, "Failed to construct log_NONFATAL_ERRORS! rc: %d\n", retval);
         goto nvswitch_construct_error_log_fail;
+    }
+
+    retval = _nvswitch_construct_port_event_log(&device->log_PORT_EVENTS, NVSWITCH_PORT_EVENT_LOG_SIZE, NV_TRUE);
+    if (retval != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR, "Failed to construct log_PORT_EVENTS! rc: %d\n", retval);
+        goto nvswitch_construct_port_event_log_fail;
     }
 
     if (device->regkeys.latency_counter == NV_SWITCH_REGKEY_LATENCY_COUNTER_LOGGING_ENABLE)
@@ -1575,6 +1645,10 @@ nvswitch_construct_error_log_fail:
     //free allocated memory to avoid leaking
     nvswitch_destroy_error_log(device, &device->log_FATAL_ERRORS);
     nvswitch_destroy_error_log(device, &device->log_NONFATAL_ERRORS);
+
+nvswitch_construct_port_event_log_fail:
+    //free allocated memory to avoid leaking
+    _nvswitch_destroy_port_event_log(device, &device->log_PORT_EVENTS);
 
 nvswitch_link_fail:
     // Track down all links that successfully registered.
@@ -1675,7 +1749,7 @@ nvswitch_lib_post_init_device
     }
 
     //
-    // There is an edge case where a hypervisor may not send same number
+    // There is an edge case where a hyperisor may not send same number
     // of reset to switch and GPUs, so try to re-train links in fault
     // if possible
     //
@@ -1928,6 +2002,158 @@ nvswitch_lib_notify_client_events
     return NVL_SUCCESS;
 }
 
+void
+nvswitch_record_port_event
+(
+    nvswitch_device *device, 
+    NVSWITCH_PORT_EVENT_LOG_TYPE *port_events, 
+    NvU32 link_id,
+    NvU8 port_event_type
+)
+{
+    NvU32 idx;
+
+    NVSWITCH_ASSERT(port_events != NULL);
+
+    // If no port events log has been created, then don't log it.
+    if ((port_events->port_event_log_size != 0) && 
+        (port_events->port_event_log != NULL))
+    {
+        idx = (port_events->port_event_start + port_events->port_event_count) 
+                                        % port_events->port_event_log_size;
+
+        if (port_events->port_event_count == port_events->port_event_log_size)
+        {
+            // Error: ring buffer is already full/
+            if (port_events->overwritable)
+            {
+                port_events->port_event_start = (port_events->port_event_start + 1) 
+                                                % port_events->port_event_log_size;
+                port_events->bOverflow = NV_TRUE;
+            }
+            else
+            {
+                // No logging, ring buffer is full
+                return;
+            }
+        }
+        else
+        {
+            port_events->port_event_count++;
+        }
+        // Log port event info
+        port_events->port_event_log[idx].link_id = link_id;
+        port_events->port_event_log[idx].port_event_type = port_event_type;
+
+        // Log tracking info
+        port_events->port_event_log[idx].time = nvswitch_os_get_platform_time();
+        port_events->port_event_log[idx].local_port_event_num = port_events->port_event_total;
+    }
+    port_events->port_event_total++;
+}
+
+/*
+ * @Brief : Retrives a port event entry by index.
+ *
+ * @Description : Retrieves the port_event at index port_event_idx. If index is out 
+ *                of range, returns an empty port event entry with port_event_type = 2
+ *
+ * @param[in] device              NVSwitch device to contain this link
+ * @param[in] port_events         Log of all port events with metadata
+ * @param[in] port_event_idx      Index of entry to retrieve (0 = oldest port event)
+ * @param[out] port_event_count  Clear only non-persistent list
+ */
+void
+nvswitch_get_port_event
+(
+    nvswitch_device *device,
+    NVSWITCH_PORT_EVENT_LOG_TYPE *port_events,
+    NVSWITCH_PORT_EVENT_TYPE *port_event_entry,
+    NvU32 port_event_idx,
+    NvU32 *port_event_count
+)
+{
+    NvU32 idx;
+    NVSWITCH_ASSERT(port_events != NULL);
+
+    if (port_event_entry != NULL)
+    {
+        // Index is out of range
+        if (port_event_idx >= port_events->port_event_count)
+        {
+            nvswitch_os_memset(port_event_entry, 0, sizeof(*port_event_entry));
+            port_event_entry->port_event_type = NVSWITCH_PORT_EVENT_TYPE_INVALID;
+            port_event_entry->time = nvswitch_os_get_platform_time();
+        }
+        else
+        {
+            idx = (port_events->port_event_start + port_event_idx) % port_events->port_event_log_size;
+            *port_event_entry = port_events->port_event_log[idx];
+        }
+    }
+
+    if (port_event_count)
+    {
+        *port_event_count = port_events->port_event_count;
+    }
+}
+
+NvlStatus
+nvswitch_ctrl_get_port_events
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_PORT_EVENTS_PARAMS *p
+)
+{
+    NvU32 index = 0;
+    NvU32 count = 0;
+    NVSWITCH_PORT_EVENT_LOG_TYPE *port_events = &device->log_PORT_EVENTS;
+    NVSWITCH_PORT_EVENT_TYPE port_event;
+
+    nvswitch_os_memset(p->portEvent, 0, sizeof(NVSWITCH_PORT_EVENT)
+                                    *NVSWITCH_PORT_EVENT_COUNT_SIZE);
+    p->nextPortEventIndex = port_events->port_event_total;
+    p->portEventCount = 0;
+    p->bOverflow = port_events->bOverflow;
+
+    // Return if there are no more port events to get
+    nvswitch_get_port_event(device, port_events, &port_event, index, &count);
+    if (count == 0)
+    {
+        return NVL_SUCCESS;
+    }
+
+    // If port event's local_port_Event_num is smaller than the portEventIndex
+    // passed in by the client, fast-forward index by the difference.
+    // This will skip over port events that were previously read by the client.
+    if (port_event.local_port_event_num < p->portEventIndex)
+    {
+        index = (NvU32) (p->portEventIndex - port_event.local_port_event_num);
+    }
+
+    // Return if there are no more events after fast-forwarding.
+    if (index >= count)
+    {
+        return NVL_SUCCESS;
+    }
+
+    while ((p->portEventCount < NVSWITCH_PORT_EVENT_COUNT_SIZE) && (index < count))
+    {
+        nvswitch_get_port_event(device, port_events, &port_event, index, NULL);
+
+        p->portEvent[p->portEventCount].port_event_type = port_event.port_event_type;
+        p->portEvent[p->portEventCount].link_id = port_event.link_id;
+        p->portEvent[p->portEventCount].time = port_event.time;
+
+        p->portEventCount++;
+        index++;
+    }
+
+    p->portEventIndex = port_event.local_port_event_num + 1;
+
+    return NVL_SUCCESS;
+}
+
 /*!
    @brief: Release ROM image from memory.
 */
@@ -1989,6 +2215,8 @@ nvswitch_lib_shutdown_device
     nvswitch_destroy_error_log(device, &device->log_FATAL_ERRORS);
     nvswitch_destroy_error_log(device, &device->log_NONFATAL_ERRORS);
 
+    _nvswitch_destroy_port_event_log(device, &device->log_PORT_EVENTS);
+
     nvswitch_smbpbi_unload(device);
     _nvswitch_destroy_event_list(device);
 
@@ -2012,17 +2240,18 @@ NvlStatus
 nvswitch_lib_get_log_count
 (
     nvswitch_device *device,
-    NvU32 *fatal, NvU32 *nonfatal
+    NvU32 *fatal, NvU32 *nonfatal, NvU32 *portEvent
 )
 {
     if (!NVSWITCH_IS_DEVICE_INITIALIZED(device) ||
-        fatal == NULL || nonfatal == NULL)
+        fatal == NULL || nonfatal == NULL || portEvent == NULL)
     {
         return -NVL_BAD_ARGS;
     }
 
     *fatal = device->log_FATAL_ERRORS.error_count;
     *nonfatal = device->log_NONFATAL_ERRORS.error_count;
+    *portEvent = device->log_PORT_EVENTS.port_event_count;
     // No report of log_INFO currently
 
     return NVL_SUCCESS;
@@ -3476,6 +3705,46 @@ _nvswitch_ctrl_get_inforom_bbx_sxid
 }
 
 static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_sys_info
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_SYS_INFO_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_SYS_INFO, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_time_info
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TIME_INFO_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TIME_INFO, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_temp_data
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TEMP_DATA_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TEMP_DATA, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_temp_samples
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TEMP_SAMPLES_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TEMP_SAMPLES, (void *)params);
+}
+
+static NvlStatus
 _nvswitch_ctrl_get_nvlink_lp_counters
 (
     nvswitch_device *device,
@@ -4656,16 +4925,6 @@ nvswitch_init_lpwr_regs
    device->hal.nvswitch_init_lpwr_regs(link);
 }
 
-void
-nvswitch_program_l1_scratch_reg
-(
-    nvswitch_device *device,
-    NvU32 linkNumber
-)
-{
-   device->hal.nvswitch_program_l1_scratch_reg(device, linkNumber);
-}
-
 NvlStatus
 nvswitch_launch_ALI
 (
@@ -4870,6 +5129,9 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_ERRORS,
                 nvswitch_ctrl_get_errors,
                 NVSWITCH_GET_ERRORS_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_PORT_EVENTS,
+                nvswitch_ctrl_get_port_events,
+                NVSWITCH_GET_PORT_EVENTS_PARAMS);        
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_NVLINK_STATUS,
                 _nvswitch_ctrl_get_nvlink_status,
                 NVSWITCH_GET_NVLINK_STATUS_PARAMS);
@@ -5181,6 +5443,26 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_POWER,
                 _nvswitch_ctrl_therm_read_power,
                 NVSWITCH_GET_POWER_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_SYS_INFO,
+                _nvswitch_ctrl_get_inforom_bbx_sys_info,
+                NVSWITCH_GET_SYS_INFO_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TIME_INFO,
+                _nvswitch_ctrl_get_inforom_bbx_time_info,
+                NVSWITCH_GET_TIME_INFO_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TEMP_DATA,
+                _nvswitch_ctrl_get_inforom_bbx_temp_data,
+                NVSWITCH_GET_TEMP_DATA_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TEMP_SAMPLES,
+                _nvswitch_ctrl_get_inforom_bbx_temp_samples,
+                NVSWITCH_GET_TEMP_SAMPLES_PARAMS,
+                osPrivate, flags);
 
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "unknown ioctl %x\n", cmd);

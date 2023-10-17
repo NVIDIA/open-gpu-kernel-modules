@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -314,7 +314,8 @@ uvmInitAccessCntrBuffer_GV100
         memdescSetGpuCacheAttrib(pUvmAccessCntrBufferDesc, NV_MEMORY_UNCACHED);
     }
 
-    status = memdescAlloc(pUvmAccessCntrBufferDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_44, 
+                    pUvmAccessCntrBufferDesc);
     if (status != NV_OK)
     {
         memdescDestroy(pUvmAccessCntrBufferDesc);

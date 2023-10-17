@@ -36,36 +36,17 @@
 // Each of these stub functions returns a different type. Used to
 // stub out function pointers in OBJOS.
 //
-OSQADbgRegistryInit             stubOsQADbgRegistryInit;
 OSnv_rdcr4                      stubOsnv_rdcr4;
 OSnv_rdxcr0                     stubOsnv_rdxcr0;
 OSnv_cpuid                      stubOsnv_cpuid;
 OSnv_rdmsr                      stubOsnv_rdmsr;
 OSnv_wrmsr                      stubOsnv_wrmsr;
-OSRobustChannelsDefaultState    stubOsRobustChannelsDefaultState;
 OSSpinLoop                      stubOsSpinLoop;
-OSDbgBreakpointEnabled          stubOsDbgBreakpointEnabled;
-OSQueueWorkItem                 stubOsQueueWorkItem;
-OSQueueWorkItemWithFlags        stubOsQueueWorkItemWithFlags;
-OSQueueSystemWorkItem           stubOsQueueSystemWorkItem;
-OSSimEscapeWrite                stubOsSimEscapeWrite;
-OSSimEscapeWriteBuffer          stubOsSimEscapeWriteBuffer;
-OSSimEscapeRead                 stubOsSimEscapeRead;
-OSSimEscapeReadBuffer           stubOsSimEscapeReadBuffer;
 OSSetSurfaceName                stubOsSetSurfaceName;
-OSCallACPI_NVHG_GPUSTA          stubOsCallWMI_NVHG_GPUSTA;
-OSCallACPI_NVHG_MXDS            stubOsCallWMI_NVHG_MXDS;
-OSCallACPI_NVHG_MXMX            stubOsCallWMI_NVHG_MXMX;
-OSCallACPI_NVHG_DOS             stubOsCallWMI_NVHG_DOS;
-OSCallACPI_NVHG_DCS             stubOsCallWMI_NVHG_DCS;
-OSCheckCallback                 stubOsCheckCallback;
-OSRCCallback                    stubOsRCCallback;
 
-OSSetupVBlank                   stubOsSetupVBlank;
 OSObjectEventNotification       stubOsObjectEventNotification;
 OSPageArrayGetPhysAddr          stubOsPageArrayGetPhysAddr;
 OSInternalReserveFreeCallback   stubOsInternalReserveFreeCallback;
 OSInternalReserveAllocCallback  stubOsInternalReserveAllocCallback;
-OSGetUefiVariable               stubOsGetUefiVariable;
 
 #endif // OS_STUB_H

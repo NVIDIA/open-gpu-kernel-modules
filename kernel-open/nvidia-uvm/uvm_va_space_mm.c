@@ -215,7 +215,13 @@ bool uvm_va_space_mm_enabled(uvm_va_space_t *va_space)
 
     static struct mmu_notifier_ops uvm_mmu_notifier_ops_ats =
     {
+#if defined(NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE)
         .invalidate_range = uvm_mmu_notifier_invalidate_range_ats,
+#elif defined(NV_MMU_NOTIFIER_OPS_HAS_ARCH_INVALIDATE_SECONDARY_TLBS)
+        .arch_invalidate_secondary_tlbs = uvm_mmu_notifier_invalidate_range_ats,
+#else
+        #error One of invalidate_range/arch_invalid_secondary must be present
+#endif
     };
 
     static int uvm_mmu_notifier_register(uvm_va_space_mm_t *va_space_mm)
@@ -309,17 +315,6 @@ void uvm_va_space_mm_unregister(uvm_va_space_t *va_space)
     // Only happens if uvm_va_space_mm_register() fails
     if (!va_space_mm->mm)
         return;
-
-    // At this point the mm is still valid because uvm_mm_release()
-    // hasn't yet called mmput(). uvm_hmm_va_space_destroy() will kill
-    // all the va_blocks along with any associated gpu_chunks, so we
-    // need to make sure these chunks are free. However freeing them
-    // requires a valid mm so we can call migrate_vma_setup(), so we
-    // do that here.
-    // TODO: Bug 3902536: [UVM-HMM] add code to migrate GPU memory
-    // without having a va_block
-    if (uvm_hmm_is_enabled(va_space))
-        uvm_hmm_evict_va_blocks(va_space);
 
     if (uvm_va_space_mm_enabled(va_space)) {
         if (UVM_ATS_IBM_SUPPORTED_IN_DRIVER() && g_uvm_global.ats.enabled)

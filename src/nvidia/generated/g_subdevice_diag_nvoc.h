@@ -391,4 +391,5 @@ NV_STATUS diagapiConstruct_IMPL(struct DiagApi *arg_pDiagApi, struct CALL_CONTEX
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_SUBDEVICE_DIAG_NVOC_H_

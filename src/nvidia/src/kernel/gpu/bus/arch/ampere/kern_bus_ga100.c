@@ -21,9 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-// FIXME XXX
-#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
-
 #include "core/core.h"
 #include "gpu/gpu.h"
 
@@ -45,6 +42,7 @@
 #include "mem_mgr/virt_mem_mgr.h"
 #include <os/os.h>
 
+#include "published/ampere/ga100/dev_nv_xve.h"
 #include "published/ampere/ga100/dev_ram.h"  // NV_RAMIN_ALLOC_SIZE
 #include "ctrl/ctrl2080/ctrl2080fla.h" // NV2080_CTRL_CMD_FLA_SETUP_INSTANCE_MEM_BLOCK
 
@@ -925,7 +923,8 @@ kbusConstructFlaInstBlk_GA100
 
     NV_ASSERT(status == NV_OK);
 
-    status = memdescAlloc(pKernelBus->flaInfo.pInstblkMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_89, 
+                        pKernelBus->flaInfo.pInstblkMemDesc);
 
     NV_ASSERT(status == NV_OK);
 
@@ -1042,7 +1041,7 @@ kbusGetNvlinkP2PPeerId_GA100
     // get the peer ID from the table
     //
     if ((knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
-        pKernelNvlink0->bRegistryLinkOverride) && !bEgmPeer)
+        knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0)) && !bEgmPeer)
     {
         if (knvlinkGetPeersNvlinkMaskFromHshub(pGpu0, pKernelNvlink0) != 0)
         {
@@ -1063,8 +1062,18 @@ kbusGetNvlinkP2PPeerId_GA100
     // auto-config.
     //
 
+    //
     // Return if there are no NVLink connections to the remote GPU
-    if (pKernelNvlink0->peerLinkMasks[gpuGetInstance(pGpu1)] == 0)
+    //
+    // skipping this check for knvlinkIsForcedConfig case since
+    // peerLinkMasks is not set for knvlinkIsForcedConfig
+    // this will be skipped only for reserving EGM peerId (bEgmPeer is true)
+    // when client has not provided EGM peerId mask in forced config
+    // tests.
+    //
+    if (!(knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
+          knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0)) &&
+         (knvlinkGetPeerLinkMask(pGpu0, pKernelNvlink0, gpuGetInstance(pGpu1)) == 0))
     {
         return NV_OK;
     }
@@ -1426,4 +1435,80 @@ kbusGetNvlinkPeerId_GA100
 
     LOWESTBITIDX_32(peerId);
     return peerId;
+}
+
+/*!
+* @brief  Cache the value of NV_XVE_RESIZE_BAR1_CTRL_SIZE
+*
+* @param[in] pGpu       OBJGPU pointer
+* @param[in] pKernelBus KernelBus pointer
+*
+*/
+void
+kbusCacheBAR1ResizeSize_WAR_BUG_3249028_GA100
+(
+   OBJGPU    *pGpu,
+   KernelBus *pKernelBus
+)
+{
+   NvU32 regVal = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_RESIZE_BAR1_CTRL);
+   pKernelBus->bar1ResizeSizeIndex = DRF_VAL(_XVE, _RESIZE_BAR1_CTRL, _BAR_SIZE, regVal);
+}
+
+/*!
+* @brief  Restore the value of NV_XVE_RESIZE_BAR1_CTRL_SIZE if different
+*         from the cached value.
+*         Windows has a strict requirement that the PCIE config has to stay
+*         the same across power transitions.
+*         Early SBIOS implementing resize BAR do not restore properly
+*         the value of NV_XVE_RESIZE_BAR1_CTRL_SIZE.
+*         The reason of this WAR is to not crash the systems that have
+*         not been updated - yet.
+*
+* @param[in] pGpu       OBJGPU pointer
+* @param[in] pKernelBus KernelBus pointer
+*
+* @returns      NV_STATUS
+*
+*/
+NV_STATUS
+kbusRestoreBAR1ResizeSize_WAR_BUG_3249028_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU32 regVal;
+    NvU32 bar1ResizeSizeIndex;
+
+    if (!pKernelBus->getProperty(pKernelBus, PDB_PROP_KBUS_RESTORE_BAR1_SIZE_BUG_3249028_WAR))
+    {
+        return NV_OK;
+    }
+
+    NV_ASSERT_OR_RETURN(pKernelBus->bar1ResizeSizeIndex >= NV_XVE_RESIZE_BAR1_CTRL_BAR_SIZE_MIN,
+        NV_ERR_INVALID_DATA);
+
+    NV_ASSERT_OR_RETURN(pKernelBus->bar1ResizeSizeIndex <= NV_XVE_RESIZE_BAR1_CTRL_BAR_SIZE_MAX,
+        NV_ERR_INVALID_DATA);
+
+    regVal = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_RESIZE_BAR1_CTRL);
+    bar1ResizeSizeIndex = DRF_VAL(_XVE, _RESIZE_BAR1_CTRL, _BAR_SIZE, regVal);
+
+    if (bar1ResizeSizeIndex == pKernelBus->bar1ResizeSizeIndex)
+    {
+        // BAR1 size match. Nothing to do
+        return NV_OK;
+    }
+
+    // BAR1 size changed. Warn and update
+    NV_PRINTF(LEVEL_WARNING, "BAR1 size mismatch: current: 0x%x, expected: 0x%x\n",
+        bar1ResizeSizeIndex, pKernelBus->bar1ResizeSizeIndex);
+    NV_PRINTF(LEVEL_WARNING, "Most likely SBIOS did not restore the BAR1 size\n");
+    NV_PRINTF(LEVEL_WARNING, "Please update your SBIOS!\n");
+
+    regVal = FLD_SET_DRF_NUM(_XVE, _RESIZE_BAR1_CTRL, _BAR_SIZE, pKernelBus->bar1ResizeSizeIndex, regVal);
+    GPU_REG_WR32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_RESIZE_BAR1_CTRL, regVal);
+
+    return NV_OK;
 }

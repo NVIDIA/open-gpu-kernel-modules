@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,11 @@
 #include "platform/chipset/chipset.h"
 #include "nvdevid.h"
 
+#include "published/maxwell/gm107/dev_boot.h"
 #include "published/maxwell/gm107/dev_nv_xve.h"
+
+#include "published/maxwell/gm107/dev_nv_pcfg_xve_addendum.h"
+#include "published/maxwell/gm107/dev_nv_pcfg_xve1_addendum.h"
 
 // Defines for C73 chipset registers
 #ifndef NV_XVR_VEND_XP1
@@ -40,6 +44,11 @@
 #define NV_XVR_VEND_XP1_IGNORE_L0S_EN                    0x00000001 /* RW--V */
 #endif
 
+// XVE register map for PCIe config space
+static const NvU32 xveRegMapValid[] = NV_PCFG_XVE_REGISTER_VALID_MAP;
+static const NvU32 xveRegMapWrite[] = NV_PCFG_XVE_REGISTER_WR_MAP;
+static const NvU32 xve1RegMapValid[] = NV_PCFG_XVE1_REGISTER_VALID_MAP;
+static const NvU32 xve1RegMapWrite[] = NV_PCFG_XVE1_REGISTER_WR_MAP;
 
 /* ------------------------ Public Functions -------------------------------- */
 
@@ -663,4 +672,237 @@ kbifDisableSysmemAccess_GM107
 
     return status;
 }
+
+/*!
+ * This function setups the xve register map pointers
+ *
+ * @param[in]  pGpu           GPU object pointer
+ * @param[in]  pKernelBif     Pointer to KernelBif object
+ * @param[in]  func           PCIe function number
+ *
+ * @return  'NV_OK' if successful, an RM error code otherwise.
+ */
+NV_STATUS
+kbifInitXveRegMap_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvU8       func
+)
+{
+    if (func == 0)
+    {
+        pKernelBif->xveRegmapRef[0].nFunc              = 0;
+        pKernelBif->xveRegmapRef[0].xveRegMapValid     = xveRegMapValid;
+        pKernelBif->xveRegmapRef[0].xveRegMapWrite     = xveRegMapWrite;
+        pKernelBif->xveRegmapRef[0].numXveRegMapValid  = sizeof(xveRegMapValid)/sizeof(xveRegMapValid[0]);
+        pKernelBif->xveRegmapRef[0].numXveRegMapWrite  = sizeof(xveRegMapWrite)/sizeof(xveRegMapWrite[0]);
+        pKernelBif->xveRegmapRef[0].bufBootConfigSpace = pKernelBif->cacheData.gpuBootConfigSpace;
+        // No MSIX for this GPU
+        pKernelBif->xveRegmapRef[0].bufMsixTable       = NULL;
+    }
+    else if (func == 1)
+    {
+        pKernelBif->xveRegmapRef[1].nFunc              = 1;
+        pKernelBif->xveRegmapRef[1].xveRegMapValid     = xve1RegMapValid;
+        pKernelBif->xveRegmapRef[1].xveRegMapWrite     = xve1RegMapWrite;
+        pKernelBif->xveRegmapRef[1].numXveRegMapValid  = sizeof(xve1RegMapValid)/sizeof(xve1RegMapValid[0]);
+        pKernelBif->xveRegmapRef[1].numXveRegMapWrite  = sizeof(xve1RegMapWrite)/sizeof(xve1RegMapWrite[0]);
+        pKernelBif->xveRegmapRef[1].bufBootConfigSpace = pKernelBif->cacheData.azaliaBootConfigSpace;
+        // No MSIX for this func
+        pKernelBif->xveRegmapRef[1].bufMsixTable       = NULL;
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid argument, func: %d.\n", func);
+        NV_ASSERT(0);
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Clears Bus Master Enable bit in command register, disabling
+ *  Function 0 - from issuing any new requests to sysmem.
+ *
+ * @param[in] pGpu        GPU object pointer
+ * @param[in] pKernelBif  KernelBif object pointer
+ *
+ * @return NV_OK
+ */
+NV_STATUS
+kbifStopSysMemRequests_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvBool     bStop
+)
+{
+    NvU32 regVal;
+
+    NV_ASSERT_OK_OR_RETURN(GPU_BUS_CFG_RD32(pGpu, NV_XVE_DEV_CTRL, &regVal));
+
+    if (bStop)
+    {
+        regVal = FLD_SET_DRF(_XVE, _DEV_CTRL, _CMD_BUS_MASTER, _DISABLED, regVal);
+    }
+    else
+    {
+        regVal = FLD_SET_DRF(_XVE, _DEV_CTRL, _CMD_BUS_MASTER, _ENABLED, regVal);
+    }
+
+    NV_ASSERT_OK_OR_RETURN(GPU_BUS_CFG_WR32(pGpu, NV_XVE_DEV_CTRL, regVal));
+
+    return NV_OK;
+}
+
+
+/*
+ * @brief Restore the BAR0 register from the given config space buffer
+ * BAR0 register restore has to use the config cycle write.
+ *
+ * @param[in] pGpu              GPU object pointer
+ * @param[in] pKernelBif        Pointer to KernelBif object
+ * @param[in] handle            PCI handle for GPU
+ * @param[in] bufConfigSpace    Stored config space
+ */
+void
+kbifRestoreBar0_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    void      *handle,
+    NvU32     *bufConfigSpace
+)
+{
+    //
+    // Not much ROI in storing BAR offsets for legacy chips since
+    // BAR offsets are not going to change ever for legacy chips
+    //
+    osPciWriteDword(handle, NV_XVE_BAR0,
+                    bufConfigSpace[NV_XVE_BAR0/sizeof(NvU32)]);
+}
+
+
+/*!
+ * @brief Check if any of the BAR register reads returns a valid value.
+ *
+ * @param[in] pGpu          GPU object pointer
+ * @param[in] pKernelBif    KernelBif object pointer
+ *
+ * @returns   NV_TRUE if any BAR register read returns a valid value
+ *            NV_FALSE if all the BAR registers return an invalid values
+ */
+NvBool
+kbifAnyBarsAreValid_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 domain = gpuGetDomain(pGpu);
+    NvU8 bus = gpuGetBus(pGpu);
+    NvU8 device = gpuGetDevice(pGpu);
+    NvU16 vendorId, deviceId;
+    void *handle;
+
+    handle = osPciInitHandle(domain, bus, device, 0, &vendorId, &deviceId);
+
+    if (osPciReadDword(handle, NV_XVE_BAR0) == pKernelBif->cacheData.gpuBootConfigSpace[4])
+    {
+        // BAR0 is valid
+        return NV_TRUE;
+    }
+
+    if ((osPciReadDword(handle, NV_XVE_BAR1_LO) == pKernelBif->cacheData.gpuBootConfigSpace[5]) &&
+        (osPciReadDword(handle, NV_XVE_BAR1_HI) == pKernelBif->cacheData.gpuBootConfigSpace[6]))
+    {
+        // BAR1 is valid
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
+/*!
+ * @brief Try restoring BAR registers and command register using config cycles
+ *
+ * @param[in] pGpu          GPU object pointer
+ * @param[in] pKernelBif    KernelBif object pointer
+ *
+ * @returns    NV_OK on success
+ *             NV_ERR_INVALID_READ if the register read returns unexpected value
+ */
+NV_STATUS
+kbifRestoreBarsAndCommand_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 domain = gpuGetDomain(pGpu);
+    NvU8 bus = gpuGetBus(pGpu);
+    NvU8 device = gpuGetDevice(pGpu);
+    NvU16 vendorId, deviceId;
+    void *handle;
+
+    handle = osPciInitHandle(domain, bus, device, 0, &vendorId, &deviceId);
+
+    osPciWriteDword(handle, NV_XVE_BAR0, pKernelBif->cacheData.gpuBootConfigSpace[4]);
+    osPciWriteDword(handle, NV_XVE_BAR1_LO, pKernelBif->cacheData.gpuBootConfigSpace[5]);
+    osPciWriteDword(handle, NV_XVE_BAR1_HI, pKernelBif->cacheData.gpuBootConfigSpace[6]);
+    osPciWriteDword(handle, NV_XVE_BAR2_LO, pKernelBif->cacheData.gpuBootConfigSpace[7]);
+    osPciWriteDword(handle, NV_XVE_BAR2_HI, pKernelBif->cacheData.gpuBootConfigSpace[8]);
+    osPciWriteDword(handle, NV_XVE_BAR3, pKernelBif->cacheData.gpuBootConfigSpace[9]);
+    osPciWriteDword(handle, NV_XVE_DEV_CTRL, pKernelBif->cacheData.gpuBootConfigSpace[1]);
+
+    if (GPU_REG_RD32(pGpu, NV_PMC_BOOT_0) != pGpu->chipId0)
+    {
+        return NV_ERR_INVALID_READ;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief HAL specific BIF software state initialization
+ *
+ * @param[in] pGpu       GPU object pointer
+ * @param[in] pKernelBif KernelBif object pointer
+ *
+ * @return    NV_OK on success
+ */
+NV_STATUS
+kbifInit_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    // Cache the offsets of BAR registers into an array for subsequent use
+    kbifStoreBarRegOffsets_HAL(pGpu, pKernelBif, NV_XVE_BAR0);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Destructor
+ *
+ * @param[in] pKernelBif
+ *
+ * @returns void
+ */
+void
+kbifDestruct_GM107
+(
+    KernelBif *pKernelBif
+)
+{
+    portMemFree(pKernelBif->xveRegmapRef[0].bufMsixTable);
+    pKernelBif->xveRegmapRef[0].bufMsixTable = NULL;
+}
+
+
+
 

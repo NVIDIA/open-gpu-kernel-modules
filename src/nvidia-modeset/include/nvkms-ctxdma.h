@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2013 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,27 +21,22 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _NV_FRONTEND_H_
-#define _NV_FRONTEND_H_
+#ifndef __NVKMS_CTXDMA_H__
+#define __NVKMS_CTXDMA_H__
 
-#include "nvtypes.h"
-#include "nv-linux.h"
-#include "nv-register-module.h"
+#include "nvkms-types.h"
+#include "nvkms-flip-workarea.h"
 
-#define NV_MAX_MODULE_INSTANCES                 8
+NvBool nvCtxDmaRegisterPreSyncpt(NVDevEvoRec *pDevEvo,
+                                 struct NvKmsFlipWorkArea *pWorkArea);
 
-#define NV_FRONTEND_MINOR_NUMBER(x)             minor((x)->i_rdev)
+void nvCtxDmaFreeSyncptHandle(NVDevEvoRec *pDevEvo, NVEvoSyncpt *pSyncpt);
 
-#define NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX    255
-#define NV_FRONTEND_CONTROL_DEVICE_MINOR_MIN    (NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX - \
-                                                 NV_MAX_MODULE_INSTANCES)
+NvU32 nvCtxDmaBind(NVDevEvoPtr pDevEvo, NVEvoChannelPtr pChannel, NvU32 hCtxDma);
 
-#define NV_FRONTEND_IS_CONTROL_DEVICE(x)        ((x <= NV_FRONTEND_CONTROL_DEVICE_MINOR_MAX) && \
-                                                 (x > NV_FRONTEND_CONTROL_DEVICE_MINOR_MIN))
+void nvCtxDmaFree(NVDevEvoPtr pDevEvo, NvU32 deviceHandle, NvU32 *hDispCtxDma);
 
-int nvidia_frontend_add_device(nvidia_module_t *, nv_linux_state_t *);
-int nvidia_frontend_remove_device(nvidia_module_t *, nv_linux_state_t *);
+NvU32 nvCtxDmaAlloc(NVDevEvoPtr pDevEvo, NvU32 *pCtxDmaHandle,
+                    NvU32  memoryHandle, NvU32 localCtxDmaFlags, NvU64 limit);
 
-extern nvidia_module_t *nv_minor_num_table[];
-
-#endif
+#endif /*  __NVKMS_CTXDMA_H__ */

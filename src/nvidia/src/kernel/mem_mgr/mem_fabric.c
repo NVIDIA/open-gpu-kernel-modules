@@ -52,6 +52,7 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
+#include "kernel/gpu/gpu_fabric_probe.h"
 #include "ctrl/ctrl0041.h"
 
 static NvU32
@@ -940,14 +941,50 @@ memoryfabricCtrlCmdDescribe_IMPL
     NV00F8_CTRL_DESCRIBE_PARAMS   *pParams
 )
 {
+    NV_STATUS status;
     Memory *pMemory = staticCast(pMemoryFabric, Memory);
     NvU64  *pFabricArray;
     NvU64   offset;
     NvU64   pageSize;
     NvU32   i;
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    NvHandle hClient = pCallContext->pClient->hClient;
+    FABRIC_MEMDESC_DATA *pMemdescData;
+    OBJGPU *pGpu;
+
+    if (
+        !rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
+    {
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
 
     if (pMemory->pMemDesc == NULL)
         return NV_ERR_INVALID_ARGUMENT;
+
+    pGpu = pMemory->pMemDesc->pGpu;
+    pMemdescData = (FABRIC_MEMDESC_DATA *)memdescGetMemData(pMemory->pMemDesc);
+
+    pParams->memFlags = pMemdescData->allocFlags;
+    pParams->physAttrs = pMemdescData->physAttrs;
+
+    pParams->attrs.pageSize = memdescGetPageSize(pMemory->pMemDesc, AT_GPU);
+    pParams->attrs.kind = memdescGetPteKind(pMemory->pMemDesc);
+    pParams->attrs.size = memdescGetSize(pMemory->pMemDesc);
+
+    if (gpuFabricProbeIsSupported(pGpu))
+    {
+        status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
+                                                 &pParams->attrs.cliqueId);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "unable to query cliqueId 0x%x\n", status);
+            return status;
+        }
+    }
+    else
+    {
+        pParams->attrs.cliqueId = 0;
+    }
 
     pageSize = memdescGetPageSize(pMemory->pMemDesc, AT_GPU);
 
@@ -958,7 +995,7 @@ memoryfabricCtrlCmdDescribe_IMPL
 
     if (pParams->offset >= pParams->totalPfns)
     {
-        NV_PRINTF(LEVEL_ERROR, "offset: %llx is out of range: %llx \n",
+        NV_PRINTF(LEVEL_ERROR, "offset: 0x%llx is out of range: 0x%llx\n",
                   pParams->offset, pParams->totalPfns);
         return NV_ERR_OUT_OF_RANGE;
     }
@@ -972,9 +1009,8 @@ memoryfabricCtrlCmdDescribe_IMPL
         return NV_ERR_NO_MEMORY;
 
     offset = pParams->offset * pageSize;
-    memdescGetPhysAddrsForGpu(pMemory->pMemDesc, pMemory->pMemDesc->pGpu,
-                              AT_GPU, offset, pageSize, pParams->numPfns,
-                              pFabricArray);
+    memdescGetPhysAddrsForGpu(pMemory->pMemDesc, pGpu, AT_GPU, offset,
+                              pageSize, pParams->numPfns, pFabricArray);
 
     for (i = 0; i < pParams->numPfns; i++)
     {

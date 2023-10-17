@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,6 +35,8 @@ extern "C" {
 #define KERNEL_OFA_CTX_H
 
 #include "kernel/gpu/fifo/channel_descendant.h"
+
+ENGDESCRIPTOR ofaGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassId, void *pAllocParams);
 
 /*!
  * RM internal class representing NVXXXX_VIDEO_OFA
@@ -321,4 +323,5 @@ static inline void __nvoc_ofactxDestruct(struct OfaContext *pOfaContext) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_OFA_CTX_NVOC_H_

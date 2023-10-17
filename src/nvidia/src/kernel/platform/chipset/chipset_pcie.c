@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2000-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2000-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -293,8 +293,8 @@ objClInitPcieChipset(OBJGPU *pGpu, OBJCL *pCl)
         if (clFindFHBAndGetChipsetInfoIndex(pCl, &chipsetInfoIndex) == NV_OK)
         {
             pCl->Chipset = chipsetInfo[chipsetInfoIndex].chipset;
-            // If the chipset info is not found, hipsetInfo[chipsetInfoIndex].setupFunc = NULL
-            if ((!chipsetInfo[chipsetInfoIndex].setupFunc) ||
+            // If the chipset info is not found, chipsetInfo[chipsetInfoIndex].setupFunc = NULL
+            if ((chipsetInfo[chipsetInfoIndex].setupFunc != NULL) &&
                 (chipsetInfo[chipsetInfoIndex].setupFunc(pCl) != NV_OK))
             {
                 NV_PRINTF(LEVEL_ERROR, "*** Chipset Setup Function Error!\n");
@@ -1616,9 +1616,11 @@ objClSetPortCapsOffsets
     PORTDATA     *pPort
 )
 {
-    clSetPortPcieCapOffset(pCl, pPort->addr.handle,
-                           &pPort->PCIECapPtr);
-    objClSetPortPcieEnhancedCapsOffsets(pCl, pPort);
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO, 
+                          clSetPortPcieCapOffset(pCl, pPort->addr.handle,
+                          &pPort->PCIECapPtr));
+    NV_CHECK_OK_OR_RETURN(LEVEL_INFO,
+                          objClSetPortPcieEnhancedCapsOffsets(pCl, pPort));
 
     return NV_OK;
 }
@@ -3642,8 +3644,8 @@ static NvBool scanForRsdtXsdtTables(OBJOS *pOS,
  *
  * @returns NV_OK if RDST or XDST table was found, NV_ERR_* otherwise.
  */
-NV_STATUS
-clGetRsdtXsdtTablesAddr_IMPL
+static NV_STATUS
+GetRsdtXsdtTablesAddr
 (
     OBJCL *pCl,
     NvU32 *pRsdtAddr,
@@ -3666,9 +3668,9 @@ clGetRsdtXsdtTablesAddr_IMPL
 
     //
     // It doesn't make sense to search for the ACPI tables in the BIOS area
-    // on ARM, so just skip that here.
+    // on non-X86 CPUs, so just skip that here.
     //
-    if (NVCPU_IS_FAMILY_ARM)
+    if (!NVCPU_IS_FAMILY_X86)
     {
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -3706,14 +3708,14 @@ clGetRsdtXsdtTablesAddr_IMPL
         status = osGetAcpiRsdpFromUefi(&startAddr);
         if (status != NV_OK)
         {
-            goto clGetRsdtXsdtTablesAddr_exit;
+            goto GetRsdtXsdtTablesAddr_exit;
         }
 
         size = ACPI_RSDP_STRUCT_LEN;
         if (scanForRsdtXsdtTables(pOS , startAddr, size, pRsdtAddr, pXsdtAddr) == NV_TRUE)
         {
             status = NV_OK;
-            goto clGetRsdtXsdtTablesAddr_exit;
+            goto GetRsdtXsdtTablesAddr_exit;
         }
     }
 
@@ -3731,7 +3733,7 @@ clGetRsdtXsdtTablesAddr_IMPL
         if (scanForRsdtXsdtTables(pOS , startAddr, size, pRsdtAddr, pXsdtAddr) == NV_TRUE)
         {
             status = NV_OK;
-            goto clGetRsdtXsdtTablesAddr_exit;
+            goto GetRsdtXsdtTablesAddr_exit;
         }
     }
 
@@ -3743,7 +3745,7 @@ clGetRsdtXsdtTablesAddr_IMPL
         status = NV_OK;
     }
 
-clGetRsdtXsdtTablesAddr_exit:
+GetRsdtXsdtTablesAddr_exit:
     return status;
 }
 
@@ -3756,8 +3758,8 @@ clGetRsdtXsdtTablesAddr_exit:
  *
  * @returns NV_TRUE the RDST or XDST table has been found, NV_FALSE otherwise.
  */
-NvBool
-clGetMcfgTableFromOS_IMPL
+static NvBool
+GetMcfgTableFromOS
 (
     OBJCL   *pCl,
     OBJOS   *pOS,
@@ -3821,8 +3823,8 @@ clGetMcfgTableFromOS_IMPL
  *
  * @returns the address of the DSDT table, or 0 if an error occurred.
  */
-NvU64
-clScanForTable_IMPL
+static NvU64
+ScanForTable
 (
     OBJCL *pCl,
     OBJOS *pOS,
@@ -4098,19 +4100,19 @@ clStorePcieConfigSpaceBaseFromMcfg_IMPL(OBJCL *pCl)
         return NV_ERR_INVALID_DATA;
     }
 
-    if (clGetMcfgTableFromOS(pCl, pOS, (void **)&pData, &len) == NV_FALSE)
+    if (GetMcfgTableFromOS(pCl, pOS, (void **)&pData, &len) == NV_FALSE)
     {
         //
         // If OS api doesn't provide MCFG table then MCFG table address
         // can be found by parsing RSDT/XSDT tables.
         //
-        status = clGetRsdtXsdtTablesAddr(pCl, (NvU32*)&rsdtAddr, &xsdtAddr);
+        status = GetRsdtXsdtTablesAddr(pCl, (NvU32*)&rsdtAddr, &xsdtAddr);
         if (status != NV_OK)
         {
             goto clStorePcieConfigSpaceBaseFromMcfg_exit;
         }
 
-        mcfgAddr = clScanForTable(pCl, pOS, rsdtAddr, xsdtAddr, NV_ACPI_TABLE_SIGNATURE_GFCM);
+        mcfgAddr = ScanForTable(pCl, pOS, rsdtAddr, xsdtAddr, NV_ACPI_TABLE_SIGNATURE_GFCM);
         if (mcfgAddr == 0)
         {
             status = NV_ERR_INSUFFICIENT_RESOURCES;

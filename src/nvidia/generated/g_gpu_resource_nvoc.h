@@ -347,4 +347,5 @@ NV_STATUS gpuresGetByDeviceOrSubdeviceHandle_IMPL(struct RsClient *pClient, NvHa
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_RESOURCE_NVOC_H_

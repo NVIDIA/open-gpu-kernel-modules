@@ -125,7 +125,7 @@ struct KernelHostVgpuDeviceApi {
     NV_STATUS (*__kernelhostvgpudeviceapiCheckMemInterUnmap__)(struct KernelHostVgpuDeviceApi *, NvBool);
     NV_STATUS (*__kernelhostvgpudeviceapiGetOrAllocNotifShare__)(struct KernelHostVgpuDeviceApi *, NvHandle, NvHandle, struct NotifShare **);
     NV_STATUS (*__kernelhostvgpudeviceapiMapTo__)(struct KernelHostVgpuDeviceApi *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__kernelhostvgpudeviceapiGetMapAddrSpace__)(struct KernelHostVgpuDeviceApi *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NV_STATUS (*__kernelhostvgpudeviceapiGetMapAddrSpace__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__kernelhostvgpudeviceapiSetNotificationShare__)(struct KernelHostVgpuDeviceApi *, struct NotifShare *);
     NvU32 (*__kernelhostvgpudeviceapiGetRefCount__)(struct KernelHostVgpuDeviceApi *);
     void (*__kernelhostvgpudeviceapiAddAdditionalDependants__)(struct RsClient *, struct KernelHostVgpuDeviceApi *, RsResourceRef *);
@@ -136,8 +136,8 @@ struct KernelHostVgpuDeviceApi {
     void (*__kernelhostvgpudeviceapiControl_Epilogue__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kernelhostvgpudeviceapiControlLookup__)(struct KernelHostVgpuDeviceApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__kernelhostvgpudeviceapiGetInternalObjectHandle__)(struct KernelHostVgpuDeviceApi *);
-    NV_STATUS (*__kernelhostvgpudeviceapiControl__)(struct KernelHostVgpuDeviceApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__kernelhostvgpudeviceapiUnmap__)(struct KernelHostVgpuDeviceApi *, CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__kernelhostvgpudeviceapiControl__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__kernelhostvgpudeviceapiUnmap__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__kernelhostvgpudeviceapiGetMemInterMapParams__)(struct KernelHostVgpuDeviceApi *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__kernelhostvgpudeviceapiGetMemoryMappingDescriptor__)(struct KernelHostVgpuDeviceApi *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__kernelhostvgpudeviceapiControlFilter__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -148,7 +148,7 @@ struct KernelHostVgpuDeviceApi {
     void (*__kernelhostvgpudeviceapiControlSerialization_Epilogue__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__kernelhostvgpudeviceapiGetNotificationListPtr__)(struct KernelHostVgpuDeviceApi *);
     struct NotifShare *(*__kernelhostvgpudeviceapiGetNotificationShare__)(struct KernelHostVgpuDeviceApi *);
-    NV_STATUS (*__kernelhostvgpudeviceapiMap__)(struct KernelHostVgpuDeviceApi *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
+    NV_STATUS (*__kernelhostvgpudeviceapiMap__)(struct KernelHostVgpuDeviceApi *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__kernelhostvgpudeviceapiAccessCallback__)(struct KernelHostVgpuDeviceApi *, struct RsClient *, void *, RsAccessRight);
     struct KernelHostVgpuDeviceShr *pShared;
     NvU32 notifyActions[7];
@@ -297,7 +297,7 @@ static inline NV_STATUS kernelhostvgpudeviceapiMapTo_DISPATCH(struct KernelHostV
     return pResource->__kernelhostvgpudeviceapiMapTo__(pResource, pParams);
 }
 
-static inline NV_STATUS kernelhostvgpudeviceapiGetMapAddrSpace_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+static inline NV_STATUS kernelhostvgpudeviceapiGetMapAddrSpace_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pGpuResource->__kernelhostvgpudeviceapiGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
@@ -341,11 +341,11 @@ static inline NvHandle kernelhostvgpudeviceapiGetInternalObjectHandle_DISPATCH(s
     return pGpuResource->__kernelhostvgpudeviceapiGetInternalObjectHandle__(pGpuResource);
 }
 
-static inline NV_STATUS kernelhostvgpudeviceapiControl_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS kernelhostvgpudeviceapiControl_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__kernelhostvgpudeviceapiControl__(pGpuResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS kernelhostvgpudeviceapiUnmap_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+static inline NV_STATUS kernelhostvgpudeviceapiUnmap_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
     return pGpuResource->__kernelhostvgpudeviceapiUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
@@ -389,7 +389,7 @@ static inline struct NotifShare *kernelhostvgpudeviceapiGetNotificationShare_DIS
     return pNotifier->__kernelhostvgpudeviceapiGetNotificationShare__(pNotifier);
 }
 
-static inline NV_STATUS kernelhostvgpudeviceapiMap_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+static inline NV_STATUS kernelhostvgpudeviceapiMap_DISPATCH(struct KernelHostVgpuDeviceApi *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
     return pGpuResource->__kernelhostvgpudeviceapiMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
@@ -431,4 +431,5 @@ kernelhostvgpudeviceSetGuestFbInfo(struct OBJGPU *pGpu, KERNEL_HOST_VGPU_DEVICE 
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_HOSTVGPUDEVICEAPI_NVOC_H_

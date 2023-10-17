@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -240,7 +240,8 @@ kmemsysInitFlushSysmemBuffer_GM107
         if (status != NV_OK)
             return status;
 
-        status = memdescAlloc(pKernelMemorySystem->pSysmemFlushBufferMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_140, 
+                    pKernelMemorySystem->pSysmemFlushBufferMemDesc);
 
         //
         // Check if the memory allocation failed (probably due to no available
@@ -300,7 +301,8 @@ kmemsysInitFlushSysmemBuffer_GM107
             osDmaSetAddressSize(pGpu->pOsGpuInfo, flushBufferDmaAddressSize);
         }
 
-        status = memdescAlloc(pKernelMemorySystem->pSysmemFlushBufferMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_141, 
+                        pKernelMemorySystem->pSysmemFlushBufferMemDesc);
 
         // Restore it back to what HW supports
         if (gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM) > flushBufferDmaAddressSize)

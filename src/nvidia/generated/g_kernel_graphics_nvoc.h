@@ -188,12 +188,14 @@ struct KernelGraphics {
     NvU32 PRIVATE_FIELD(instance);
     KGRAPHICS_PRIVATE_DATA *PRIVATE_FIELD(pPrivate);
     NvBool PRIVATE_FIELD(bCollectingDeferredStaticData);
+    NvBool PRIVATE_FIELD(bBug4162646War);
     KGRAPHICS_FECS_TRACE_INFO *PRIVATE_FIELD(pFecsTraceInfo);
     struct KGRAPHICS_GLOBAL_CTX_BUFFERS_INFO PRIVATE_FIELD(globalCtxBuffersInfo);
     struct CTX_BUF_POOL_INFO *PRIVATE_FIELD(pCtxBufPool);
     CTX_BUF_INFO PRIVATE_FIELD(maxCtxBufSize)[9];
     GR_BUFFER_ATTR PRIVATE_FIELD(ctxAttr)[9];
 };
+
 struct KernelGraphics_PRIVATE {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -232,6 +234,7 @@ struct KernelGraphics_PRIVATE {
     NvU32 instance;
     KGRAPHICS_PRIVATE_DATA *pPrivate;
     NvBool bCollectingDeferredStaticData;
+    NvBool bBug4162646War;
     KGRAPHICS_FECS_TRACE_INFO *pFecsTraceInfo;
     struct KGRAPHICS_GLOBAL_CTX_BUFFERS_INFO globalCtxBuffersInfo;
     struct CTX_BUF_POOL_INFO *pCtxBufPool;
@@ -451,9 +454,9 @@ static inline NV_STATUS kgraphicsStatePostLoad_DISPATCH(OBJGPU *arg0, struct Ker
     return arg1->__kgraphicsStatePostLoad__(arg0, arg1, flags);
 }
 
-void kgraphicsRegisterIntrService_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[167]);
+void kgraphicsRegisterIntrService_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[168]);
 
-static inline void kgraphicsRegisterIntrService_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[167]) {
+static inline void kgraphicsRegisterIntrService_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[168]) {
     arg1->__kgraphicsRegisterIntrService__(arg0, arg1, arg2);
 }
 
@@ -821,4 +824,5 @@ static inline NV_STATUS kgraphicsGetCaps(OBJGPU *arg0, struct KernelGraphics *ar
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_GRAPHICS_NVOC_H_

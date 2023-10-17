@@ -288,9 +288,9 @@ NvBool      gsyncAreAllGpusInConfigAttachedToSameGsyncBoard(struct OBJGPU **pGpu
 OBJGSYNC   *gsyncmgrGetGsync(struct OBJGPU *);
 
 #ifdef DEBUG
-void        gsyncDbgPrintGsyncEvents(NvU32 DebugLevel, NvU32 events, NvU32 iface);
+void        gsyncDbgPrintGsyncEvents(NvU32 events, NvU32 iface);
 #else
-#define     gsyncDbgPrintGsyncEvents(DebugLevel, events, iface)
+#define     gsyncDbgPrintGsyncEvents(events, iface)
 #endif
 
 #endif // GSYNC_H_
@@ -298,4 +298,5 @@ void        gsyncDbgPrintGsyncEvents(NvU32 DebugLevel, NvU32 events, NvU32 iface
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GSYNC_NVOC_H_

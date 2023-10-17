@@ -29,43 +29,13 @@
 #ifndef _NV_UTILS_PRINTF_H_
 #define _NV_UTILS_PRINTF_H_
 
+#include "utils/nvprintf_level.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-
-/// @defgroup NV_PRINTF_LEVELS Printf verbosity levels
-/// @{
-/// @brief Prints at this level are discarded
-#define LEVEL_SILENT   0x0
-/// @brief Verbose debug logging level        (e.g. signaling function entry)
-#define LEVEL_INFO     0x1
-/// @brief Standard debug logging level       (e.g. Illegal ctrcall call)
-#define LEVEL_NOTICE   0x2
-/// @brief Warning logging level              (e.g. feature not supported)
-#define LEVEL_WARNING  0x3
-/// @brief Error logging level                (e.g. resource allocation failed)
-#define LEVEL_ERROR    0x4
-/// @brief Recoverable HW error               (e.g. RC events)
-#define LEVEL_HW_ERROR 0x5
-/// @brief Unrecoverable error                (e.g. Bus timeout)
-#define LEVEL_FATAL    0x6
-/// @}
-
-// Used only in nvlogFilterApplyRule()
-#define NV_LEVEL_MAX   LEVEL_FATAL
-
-/**
- * @def NV_PRINTF_LEVEL_ENABLED(level)
- * @brief This macro evaluates to 1 if prints of a given level will be compiled.
- *
- * By default, it is available on all builds that allow strings
- */
-#ifndef NV_PRINTF_LEVEL_ENABLED
-#define NV_PRINTF_LEVEL_ENABLED(level)  ((level) >= NV_PRINTF_LEVEL)
-#endif
-
-#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
+#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 
 /**
  * GSPRM uses a different system for logging.
@@ -89,11 +59,7 @@ extern "C" {
 
 #define NV_PRINTF_STRING_SECTION       LIBOS_SECTION_LOGGING
 
-#define MAKE_NV_PRINTF_STR(str)                                     \
-({                                                                  \
-    static NV_PRINTF_STRING_SECTION const char rm_pvt_str[] = str;  \
-    rm_pvt_str;                                                     \
-})
+#define MAKE_NV_PRINTF_STR MAKE_LIBOS_LOGGING_STR
 
 // NVLOG is not used on GSP-RM.
 #undef  NVLOG_LEVEL
@@ -109,7 +75,7 @@ void log_vgpu_log_entry(const NvU64 n_args, const NvU64 * args);
 #define NV_PRINTF(level, format, ...) do {                                     \
     if (NV_PRINTF_LEVEL_ENABLED(level))                                        \
     {                                                                          \
-        LIBOS_LOG_INTERNAL(log_vgpu_log_entry, LOG_LEVEL_ERROR,                \
+        LIBOS_LOG_INTERNAL(log_vgpu_log_entry, level,                          \
             format, ##__VA_ARGS__);                                            \
     }                                                                          \
 } while (0)
@@ -117,7 +83,7 @@ void log_vgpu_log_entry(const NvU64 n_args, const NvU64 * args);
 #define NV_PRINTF_EX(module, level, format, ...) do {                          \
     if (NV_PRINTF_LEVEL_ENABLED(level))                                        \
     {                                                                          \
-        LIBOS_LOG_INTERNAL(log_vgpu_log_entry, LOG_LEVEL_ERROR,                \
+        LIBOS_LOG_INTERNAL(log_vgpu_log_entry, level,                          \
             format, ##__VA_ARGS__);                                            \
     }                                                                          \
 } while (0)
@@ -131,7 +97,7 @@ void log_rm_log_entry(const NvU64 n_args, const NvU64 * args);
 #define NV_PRINTF(level, format, ...) do {                                     \
     if (NV_PRINTF_LEVEL_ENABLED(level))                                        \
     {                                                                          \
-        LIBOS_LOG_INTERNAL(log_rm_log_entry, LOG_LEVEL_ERROR,                  \
+        LIBOS_LOG_INTERNAL(log_rm_log_entry, level,                            \
             format, ##__VA_ARGS__);                                            \
     }                                                                          \
 } while (0)
@@ -139,14 +105,14 @@ void log_rm_log_entry(const NvU64 n_args, const NvU64 * args);
 #define NV_PRINTF_EX(module, level, format, ...) do {                          \
     if (NV_PRINTF_LEVEL_ENABLED(level))                                        \
     {                                                                          \
-        LIBOS_LOG_INTERNAL(log_rm_log_entry, LOG_LEVEL_ERROR,                  \
+        LIBOS_LOG_INTERNAL(log_rm_log_entry, level,                            \
             format, ##__VA_ARGS__);                                            \
     }                                                                          \
 } while (0)
 
 #endif // NVOC
 
-#else // defined(NVRM) && NVCPU_IS_RISCV64
+#else // defined(NVRM) && NVOS_IS_LIBOS
 
 /**
  * @defgroup NV_UTILS_PRINTF Utility Printing Macros
@@ -365,7 +331,7 @@ void NVRM_PRINTF_FUNCTION(const char *file,
 #define NVLOG_PRINTF(...)
 #endif
 
-#endif // defined(NVRM) && NVCPU_IS_RISCV64
+#endif // defined(NVRM) && NVOS_IS_LIBOS
 
 /**
  * @def NV_PRINTF_COND(condition, leveltrue, levelfalse, format, args...)

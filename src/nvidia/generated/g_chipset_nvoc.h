@@ -285,7 +285,6 @@ struct OBJCL {
     NvBool PDB_PROP_CL_UPSTREAM_LTR_SUPPORTED;
     NvBool PDB_PROP_CL_BUG_1340801_DISABLE_GEN3_ON_GIGABYTE_SNIPER_3;
     NvBool PDB_PROP_CL_BUG_1681803_WAR_DISABLE_MSCG;
-    NvBool PDB_PROP_CL_ON_HASWELL_HOST_BRIDGE;
     NvBool PDB_PROP_CL_PCIE_NON_COHERENT_USE_TC0_ONLY;
     NvBool PDB_PROP_CL_UNSUPPORTED_CHIPSET;
     NvBool PDB_PROP_CL_IS_CHIPSET_IO_COHERENT;
@@ -395,8 +394,6 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJCL;
 #define PDB_PROP_CL_ASPM_L0S_CHIPSET_ENABLED_MOBILE_ONLY_BASE_NAME PDB_PROP_CL_ASPM_L0S_CHIPSET_ENABLED_MOBILE_ONLY
 #define PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR_BASE_CAST
 #define PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR_BASE_NAME PDB_PROP_CL_BUG_3751839_GEN_SPEED_WAR
-#define PDB_PROP_CL_ON_HASWELL_HOST_BRIDGE_BASE_CAST
-#define PDB_PROP_CL_ON_HASWELL_HOST_BRIDGE_BASE_NAME PDB_PROP_CL_ON_HASWELL_HOST_BRIDGE
 #define PDB_PROP_CL_PCIE_NON_COHERENT_USE_TC0_ONLY_BASE_CAST
 #define PDB_PROP_CL_PCIE_NON_COHERENT_USE_TC0_ONLY_BASE_NAME PDB_PROP_CL_PCIE_NON_COHERENT_USE_TC0_ONLY
 #define PDB_PROP_CL_HAS_RESIZABLE_BAR_ISSUE_BASE_CAST
@@ -785,48 +782,6 @@ static inline NV_STATUS clSetPortPcieCapOffset(struct OBJCL *arg0, void *arg1, N
 
 #define clSetPortPcieCapOffset_HAL(arg0, arg1, arg2) clSetPortPcieCapOffset(arg0, arg1, arg2)
 
-NV_STATUS clGetRsdtXsdtTablesAddr_IMPL(struct OBJCL *arg0, NvU32 *arg1, NvU64 *arg2);
-
-
-#ifdef __nvoc_chipset_h_disabled
-static inline NV_STATUS clGetRsdtXsdtTablesAddr(struct OBJCL *arg0, NvU32 *arg1, NvU64 *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_chipset_h_disabled
-#define clGetRsdtXsdtTablesAddr(arg0, arg1, arg2) clGetRsdtXsdtTablesAddr_IMPL(arg0, arg1, arg2)
-#endif //__nvoc_chipset_h_disabled
-
-#define clGetRsdtXsdtTablesAddr_HAL(arg0, arg1, arg2) clGetRsdtXsdtTablesAddr(arg0, arg1, arg2)
-
-NvBool clGetMcfgTableFromOS_IMPL(struct OBJCL *arg0, struct OBJOS *arg1, void **arg2, NvU32 *arg3);
-
-
-#ifdef __nvoc_chipset_h_disabled
-static inline NvBool clGetMcfgTableFromOS(struct OBJCL *arg0, struct OBJOS *arg1, void **arg2, NvU32 *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_chipset_h_disabled
-#define clGetMcfgTableFromOS(arg0, arg1, arg2, arg3) clGetMcfgTableFromOS_IMPL(arg0, arg1, arg2, arg3)
-#endif //__nvoc_chipset_h_disabled
-
-#define clGetMcfgTableFromOS_HAL(arg0, arg1, arg2, arg3) clGetMcfgTableFromOS(arg0, arg1, arg2, arg3)
-
-NvU64 clScanForTable_IMPL(struct OBJCL *arg0, struct OBJOS *arg1, NvU64 arg2, NvU64 arg3, NvU32 arg4);
-
-
-#ifdef __nvoc_chipset_h_disabled
-static inline NvU64 clScanForTable(struct OBJCL *arg0, struct OBJOS *arg1, NvU64 arg2, NvU64 arg3, NvU32 arg4) {
-    NV_ASSERT_FAILED_PRECOMP("OBJCL was disabled!");
-    return 0;
-}
-#else //__nvoc_chipset_h_disabled
-#define clScanForTable(arg0, arg1, arg2, arg3, arg4) clScanForTable_IMPL(arg0, arg1, arg2, arg3, arg4)
-#endif //__nvoc_chipset_h_disabled
-
-#define clScanForTable_HAL(arg0, arg1, arg2, arg3, arg4) clScanForTable(arg0, arg1, arg2, arg3, arg4)
-
 NV_STATUS clStorePcieConfigSpaceBaseFromMcfg_IMPL(struct OBJCL *pCl);
 
 
@@ -1195,4 +1150,5 @@ static inline void clSyncWithGsp(struct OBJCL *arg0, GspSystemInfo *arg1) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CHIPSET_NVOC_H_

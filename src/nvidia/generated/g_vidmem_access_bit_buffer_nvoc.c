@@ -127,7 +127,7 @@ static NV_STATUS __nvoc_thunk_RsResource_vidmemAccessBitBufMapTo(struct VidmemAc
     return resMapTo((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VidmemAccessBitBuffer_RsResource.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufGetMapAddrSpace(struct VidmemAccessBitBuffer *pGpuResource, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufGetMapAddrSpace(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return gpuresGetMapAddrSpace((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
@@ -171,11 +171,11 @@ static NvHandle __nvoc_thunk_GpuResource_vidmemAccessBitBufGetInternalObjectHand
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufControl(struct VidmemAccessBitBuffer *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufControl(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return gpuresControl((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufUnmap(struct VidmemAccessBitBuffer *pGpuResource, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufUnmap(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
     return gpuresUnmap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, pCpuMapping);
 }
 
@@ -223,7 +223,7 @@ static struct NotifShare *__nvoc_thunk_Notifier_vidmemAccessBitBufGetNotificatio
     return notifyGetNotificationShare((struct Notifier *)(((unsigned char *)pNotifier) + __nvoc_rtti_VidmemAccessBitBuffer_Notifier.offset));
 }
 
-static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufMap(struct VidmemAccessBitBuffer *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+static NV_STATUS __nvoc_thunk_GpuResource_vidmemAccessBitBufMap(struct VidmemAccessBitBuffer *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
     return gpuresMap((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_VidmemAccessBitBuffer_GpuResource.offset), pCallContext, pParams, pCpuMapping);
 }
 

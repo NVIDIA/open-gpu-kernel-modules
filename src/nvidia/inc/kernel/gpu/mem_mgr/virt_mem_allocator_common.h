@@ -41,6 +41,7 @@ typedef struct ChannelDescendant ChannelDescendant;
 typedef struct ContextDma ContextDma;
 typedef struct Memory Memory;
 typedef struct EVENTNOTIFICATION EVENTNOTIFICATION;
+typedef struct Device Device;
 
 //---------------------------------------------------------------------------
 //
@@ -87,8 +88,8 @@ void notifyFillNOTIFICATION(OBJGPU       *pGpu,
                             NV_STATUS     CompletionStatus,
                             NvBool        TimeSupplied,
                             NvU64         Time);
-NV_STATUS notifyFillNotifierGPUVA          (OBJGPU*, RsClient*, NvHandle, NvU64, NvV32, NvV16, NV_STATUS, NvU32);
-NV_STATUS notifyFillNotifierGPUVATimestamp (OBJGPU*, RsClient*, NvHandle, NvU64, NvV32, NvV16, NV_STATUS, NvU32, NvU64);
+NV_STATUS notifyFillNotifierGPUVA          (OBJGPU*, Device*, NvHandle, NvU64, NvV32, NvV16, NV_STATUS, NvU32);
+NV_STATUS notifyFillNotifierGPUVATimestamp (OBJGPU*, Device*, NvHandle, NvU64, NvV32, NvV16, NV_STATUS, NvU32, NvU64);
 NV_STATUS notifyFillNotifierMemory         (OBJGPU*, Memory *, NvV32, NvV16, NV_STATUS, NvU32);
 NV_STATUS notifyFillNotifierMemoryTimestamp(OBJGPU*, Memory *, NvV32, NvV16, NV_STATUS, NvU32, NvU64);
 void notifyFillNvNotification(OBJGPU         *pGpu,
@@ -99,8 +100,8 @@ void notifyFillNvNotification(OBJGPU         *pGpu,
                               NvBool          TimeSupplied,
                               NvU64           Time);
 
-NV_STATUS semaphoreFillGPUVA         (OBJGPU*, RsClient*, NvHandle, NvU64, NvV32, NvV32, NvBool);
-NV_STATUS semaphoreFillGPUVATimestamp(OBJGPU*, RsClient*, NvHandle, NvU64, NvV32, NvV32, NvBool, NvU64);
+NV_STATUS semaphoreFillGPUVA         (OBJGPU*, Device*, NvHandle, NvU64, NvV32, NvV32, NvBool);
+NV_STATUS semaphoreFillGPUVATimestamp(OBJGPU*, Device*, NvHandle, NvU64, NvV32, NvV32, NvBool, NvU64);
 
 RM_ATTR_PAGE_SIZE dmaNvos32ToPageSizeAttr(NvU32 attr, NvU32 attr2);
 

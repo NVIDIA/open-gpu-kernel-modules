@@ -342,7 +342,7 @@ knvlinkLogAliDebugMessages_GH100
     FOR_EACH_INDEX_IN_MASK(32, i, pKernelNvlink->postRxDetLinkMask)
     {
         nvErrorLog_va((void *)pGpu, ALI_TRAINING_FAIL,
-                "NVLink: Link training failed for link %u",
+                "NVLink: Link training failed for link %u"
                 "(0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x, 0x%x)",
                 i,
                 nvlinkErrInfoParams->linkErrInfo[i].NVLIPTLnkCtrlLinkStateRequest,
@@ -399,15 +399,14 @@ knvlinkIsBandwidthModeOff_GH100
 NvU32
 knvlinkGetNumLinksToBeReducedPerIoctrl_GH100
 (
+    OBJGPU       *pGpu,
     KernelNvlink *pKernelNvlink
 )
 {
     NvU32 numlinks = 0;
     NvU8 mode;
 
-#if defined(INCLUDE_NVLINK_LIB)
-    numlinks = pKernelNvlink->pNvlinkDev->numActiveLinksPerIoctrl;
-#endif
+    numlinks = knvlinkGetNumActiveLinksPerIoctrl(pGpu, pKernelNvlink);
 
     if (numlinks == 0)
         goto out;
@@ -458,7 +457,8 @@ knvlinkGetEffectivePeerLinkMask_GH100
 {
     NvU32 peerLinkMask, remotePeerLinkMask, effectivePeerLinkMask, peerLinkMaskPerIoctrl;
     NvU32 gpuInstance, remoteGpuInstance;
-    NvU32 numLinksPerIoctrl, numIoctrls;
+    NvU32 numLinksPerIoctrl = 0;
+    NvU32 numIoctrls = 0;
     KernelNvlink *pRemoteKernelNvlink;
     NvU32 numLinksToBeReduced;
     NvU32 linkMaskToBeReduced;
@@ -494,7 +494,7 @@ knvlinkGetEffectivePeerLinkMask_GH100
     NV_ASSERT(nvPopCount32(remotePeerLinkMask) == nvPopCount32(peerLinkMask));
 
     // Find out number of active NVLinks between the two GPUs.
-    numLinksToBeReduced = knvlinkGetNumLinksToBeReducedPerIoctrl_HAL(pKernelNvlink);
+    numLinksToBeReduced = knvlinkGetNumLinksToBeReducedPerIoctrl_HAL(pGpu, pKernelNvlink);
     effectivePeerLinkMask = peerLinkMask;
 
     if (numLinksToBeReduced == 0)
@@ -509,13 +509,9 @@ knvlinkGetEffectivePeerLinkMask_GH100
     // ID, always trim peerLinkMask from the perspective of local GPU.
     // Otherwise, use remote GPU for the same.
     //
-#if defined(INCLUDE_NVLINK_LIB)
-    numIoctrls = pKernelNvlink->pNvlinkDev->numIoctrls;
-    numLinksPerIoctrl = pKernelNvlink->pNvlinkDev->numLinksPerIoctrl;
-#else
-    numIoctrls = 0;
-    numLinksPerIoctrl = 0;
-#endif
+
+    numIoctrls = nvPopCount32(pKernelNvlink->ioctrlMask);
+    numLinksPerIoctrl = knvlinkGetTotalNumLinksPerIoctrl(pGpu, pKernelNvlink);
 
     if (pGpu->gpuId < pRemoteGpu->gpuId)
     {

@@ -40,23 +40,16 @@ conmemConstruct_IMPL
 )
 {
     NV_STATUS          status         = NV_OK;
-    NvHandle           hClient        = pCallContext->pClient->hClient;
     Memory            *pMemory        = staticCast(pConsoleMemory, Memory);
     OBJGPU            *pGpu           = pMemory->pGpu;
     MemoryManager     *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     MEMORY_DESCRIPTOR *pMemDesc       = memmgrGetReservedConsoleMemDesc(pGpu, pMemoryManager);
-    RS_PRIV_LEVEL      privLevel      = pCallContext->secInfo.privLevel;
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
 
     // Copy-construction has already been done by the base Memory class
     if (RS_IS_COPY_CTOR(pParams))
         return NV_OK;
-
-    if (!(rmclientIsAdminByHandle(hClient, privLevel) || hypervisorCheckForObjectAccess(hClient)))
-    {
-        return NV_ERR_INVALID_CLASS;
-    }
 
     if (pMemDesc == NULL)
     {

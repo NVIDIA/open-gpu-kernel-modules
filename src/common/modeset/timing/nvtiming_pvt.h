@@ -46,6 +46,10 @@
 
 #include <stddef.h> // NULL
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 // EDID related private functions
 NvU32      getEdidVersion(NvU8 *pData, NvU32 *pVer);
 NvBool     assignNextAvailableTiming(NVT_EDID_INFO *pInfo, const NVT_TIMING *pTiming);
@@ -70,6 +74,7 @@ void       parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, N
 void       parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCta861VsvdbBlocks(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861HfScdb(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
 void       parseCta861HfEeodb(NVT_EDID_CEA861_INFO *pExt861, NvU32 *pTotalEdidExtensions);
 void       parseEdidMsftVsdbBlock(VSDB_DATA *pVsdb, MSFT_VSDB_PARSED_INFO *vsdbInfo);
@@ -79,8 +84,8 @@ void       getEdidHDM1_4bVsdbTiming(NVT_EDID_INFO *pInfo);
 void       parseEdidHDMILLCTiming(NVT_EDID_INFO *pInfo, VSDB_DATA *pVsdb, NvU32 *pSupported, HDMI3DSUPPORTMAP * pM);
 void       parseEdidNvidiaVSDBBlock(VSDB_DATA *pVsdb, NVDA_VSDB_PARSED_INFO *vsdbInfo);
 void       parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
-void       parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
-void       parseCea861Hdr10PlusDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag);
+void       parseCta861DvStaticMetadataDataBlock(VSVDB_DATA* pVsvdb, NVT_DV_STATIC_METADATA* pDvInfo);
+void       parseCta861Hdr10PlusDataBlock(VSVDB_DATA* pVsvdb, NVT_HDR10PLUS_INFO* pHdr10PlusInfo);
 void       parseCta861DIDType7VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
 void       parseCta861DIDType8VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
 void       parseCta861DIDType10VideoTimingDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo);
@@ -89,6 +94,7 @@ NvBool     isMatchedStandardTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT);
 NvBool     isMatchedEstablishedTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT);
 NvU32      isHdmi3DStereoType(NvU8 StereoStructureType);
 NvU32      getCEA861TimingAspectRatio(NvU32 vic);
+NvU8       getHighestPrioritySVRIdx(NvU8 svr);
 void       SetActiveSpaceForHDMI3DStereo(const NVT_TIMING *pTiming, NVT_EXT_TIMING *pExtTiming);
 void       AddModeToSupportMap(HDMI3DSUPPORTMAP * pMap, NvU8 vic, NvU8 structure, NvU8 Detail);
 void       getMonitorDescriptorString(NvU8 *pEdid, NvU8 tag, char *str, int onceOnly);
@@ -102,12 +108,16 @@ NVT_STATUS getDisplayId20EDIDExtInfo(NvU8* pDisplayid, NvU32 edidSize, NVT_EDID_
 NVT_STATUS parseDisplayId20EDIDExtDataBlocks(NvU8* pDataBlock, NvU8 remainSectionLength, NvU8* pCurrentDBLength, NVT_EDID_INFO* pEdidInfo);
 NVT_STATUS parseDisplayId20Timing7Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 count);
 NVT_STATUS parseDisplayId20Timing8Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 codeType, NvU8 codeSize, NvU8 index, NvU8 count);
+NVT_STATUS parseDisplayId20Timing9Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 count);
 NVT_STATUS parseDisplayId20Timing10Descriptor(const void *pDescriptor, NVT_TIMING *pTiming, NvU8 payloadBytes, NvU8 count);
 void       updateColorFormatForDisplayIdExtnTimings(NVT_EDID_INFO* pInfo, NvU32 timingIdx);
 void       updateColorFormatForDisplayId20ExtnTimings(NVT_EDID_INFO* pInfo, NvU32 timingIdx);
 NvBool     assignNextAvailableDisplayId20Timing(NVT_DISPLAYID_2_0_INFO *pDisplayIdInfo, const NVT_TIMING *pTiming);
 void       updateColorFormatForDisplayId20Timings(NVT_DISPLAYID_2_0_INFO* pDisplayId2Info, NvU32 timingIdx);
 // End DisplayID
+#ifdef __cplusplus
+}
+#endif
 
 NvU32 axb_div_c_old(NvU32 a, NvU32 b, NvU32 c);
 
@@ -151,3 +161,4 @@ NvU32 axb_div_c_old(NvU32 a, NvU32 b, NvU32 c);
 #define NVT_TIMING_SENTINEL {0,0,0,0,0,0,0,0,0,0,0,0,0,0,NVT_TIMINGEXT_SENTINEL}
 
 #endif //__NVTIMING_PVT_H_
+

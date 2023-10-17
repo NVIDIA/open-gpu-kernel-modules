@@ -96,7 +96,7 @@ vgpuMgrReserveSystemChannelIDs(OBJGPU *pGpu,
                                NvU32 gfid,
                                NvU32 *pChidOffset,
                                NvU32 *pChannelCount,
-                               NvHandle hClient,
+                               Device *pMigDevice,
                                NvU32 numChannels,
                                NvU32 engineFifoListNumEntries,
                                FIFO_ENGINE_LIST *engineFifoList);
@@ -106,7 +106,7 @@ vgpuMgrFreeSystemChannelIDs(OBJGPU *pGpu,
                             NvU32 gfid,
                             NvU32 *pChidOffset,
                             NvU32 *pChannelCount,
-                            NvHandle hClient,
+                            Device *pMigDevice,
                             NvU32 engineFifoListNumEntries,
                             FIFO_ENGINE_LIST *engineFifoList);
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,7 +44,7 @@ _krcErrorWriteNotifierCpuMemHelper
 (
     OBJGPU    *pGpu,
     Memory    *pMemory,
-    RsClient  *pClient,
+    Device    *pDevice,
     NvU32      exceptType,
     RM_ENGINE_TYPE localRmEngineType,
     NV_STATUS  notifierStatus
@@ -56,7 +56,7 @@ _krcErrorWriteNotifierCpuMemHelper
     {
         case ADDR_VIRTUAL:
             notifyFillNotifierGPUVA(pGpu,
-                pClient,
+                pDevice,
                 RES_GET_HANDLE(pMemory),
                 memdescGetPhysAddr(pMemory->pMemDesc, AT_GPU_VA, 0),
                 exceptType,
@@ -103,7 +103,7 @@ krcErrorWriteNotifier_CPU
     NV_STATUS   status = NV_OK;
     ContextDma *pContextDma;
     Memory     *pMemory;
-    Device     *pDevice;
+    Device     *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
     //
     // Update the ECC error notifier for exceptTypes related to
     // CONTAINED/UNCONTAINED/DBE errors
@@ -112,14 +112,6 @@ krcErrorWriteNotifier_CPU
         exceptType == ROBUST_CHANNEL_GPU_ECC_DBE ||
         exceptType == ROBUST_CHANNEL_UNCONTAINED_ERROR ||
         exceptType == ROBUST_CHANNEL_CONTAINED_ERROR);
-
-    status = deviceGetByInstance(RES_GET_CLIENT(pKernelChannel),
-                                 gpuGetDeviceInstance(pGpu),
-                                 &pDevice);
-    if (status != NV_OK)
-    {
-        return NV_ERR_INVALID_DEVICE;
-    }
 
     if (hypervisorIsVgxHyper() && bUpdateEccNotifier &&
         pKernelChannel->hEccErrorContext != NV01_NULL_OBJECT)
@@ -147,7 +139,7 @@ krcErrorWriteNotifier_CPU
         {
             status = _krcErrorWriteNotifierCpuMemHelper(pGpu,
                 pMemory,
-                RES_GET_CLIENT(pKernelChannel),
+                pDevice,
                 exceptType,
                 localRmEngineType,
                 notifierStatus);
@@ -199,7 +191,7 @@ krcErrorWriteNotifier_CPU
     {
         status = _krcErrorWriteNotifierCpuMemHelper(pGpu,
             pMemory,
-            RES_GET_CLIENT(pKernelChannel),
+            pDevice,
             exceptType,
             localRmEngineType,
             notifierStatus);
@@ -300,8 +292,8 @@ NV_STATUS krcErrorSetNotifier_IMPL
             KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
             MIG_INSTANCE_REF ref;
 
-            status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                                     RES_GET_CLIENT_HANDLE(pKernelChannel),
+            status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager,
+                                                     GPU_RES_GET_DEVICE(pKernelChannel),
                                                      &ref);
             if (status != NV_OK)
                 goto Error;
@@ -335,7 +327,7 @@ NV_STATUS krcErrorSetNotifier_IMPL
     }
 
     if (flushFlags != 0) {
-        kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), flushFlags | BUS_FLUSH_USE_PCIE_READ);
+        kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), flushFlags);
     }
 
 Error:

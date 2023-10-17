@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -69,7 +69,8 @@ kbusSetupCpuPointerForBusFlush_GV100
     NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
 
     // Allocate memory from reserved heap for flush
-    status = memdescAlloc(pKernelBus->pFlushMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_54, 
+                    pKernelBus->pFlushMemDesc);
     NV_ASSERT_OR_GOTO(status == NV_OK, cleanup);
 
     //
@@ -214,7 +215,7 @@ kbusUnmapCoherentCpuMapping_GV100
     }
 
     // Flush the memory since caller writes to the FB
-    kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), BUS_FLUSH_VIDEO_MEMORY | BUS_FLUSH_USE_PCIE_READ);
+    kbusFlush_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), BUS_FLUSH_VIDEO_MEMORY);
 
     return;
 }
@@ -292,4 +293,96 @@ kbusTeardownCoherentCpuMapping_GV100
     }
 
     pKernelBus->coherentCpuMapping.bCoherentCpuMapping = NV_FALSE;
+}
+
+/*!
+ * @brief Lower level FB flush to push pending writes to FB/sysmem
+ *
+ * NOTE: Must be called inside a SLI loop
+ *
+ * @param[in]   pGpu
+ * @param[in]   KernelBus
+ * @param[in]   flags   Flags to indicate aperture and other behaviors
+ * @return      NV_OK on success
+ *
+ */
+NV_STATUS
+kbusFlushSingle_GV100
+(
+    OBJGPU      *pGpu,
+    KernelBus   *pKernelBus,
+    NvU32        flags
+)
+{
+    NvBool  bCoherentCpuMapping = pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING);
+
+    //
+    // Nothing to be done in the guest in the paravirtualization case or
+    // if guest is running in SRIOV heavy mode.
+    //
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
+        (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu)))
+    {
+        return NV_OK;
+    }
+
+    if (bCoherentCpuMapping)
+    {
+        //
+        // This function issues an HWSYNC. This is needed for synchronizing read/writes
+        // with NVLINK mappings.
+        //
+        portAtomicMemoryFenceFull();
+        return NV_OK;
+    }
+
+    if (flags & BUS_FLUSH_SYSTEM_MEMORY)
+    {
+        portAtomicMemoryFenceFull();
+    }
+
+    if (API_GPU_IN_RESET_SANITY_CHECK(pGpu) || API_GPU_IN_RECOVERY_SANITY_CHECK(pGpu) ||
+        !API_GPU_ATTACHED_SANITY_CHECK(pGpu))
+    {
+        //
+        // When the GPU is in full chip reset or lost
+        // We cannot expect to flush successfully so early return here
+        //
+        return NV_OK;
+    }
+
+    if (kbusIsBarAccessBlocked(pKernelBus))
+    {
+        // If BAR has been blocked, there's nothing to flush for vidmem
+        return NV_OK;
+    }
+
+    if ((flags & BUS_FLUSH_VIDEO_MEMORY) && kbusIsReadCpuPointerToFlushEnabled(pKernelBus))
+    {
+        volatile NvU32 data;
+
+        //
+        // Read the FB address 0 in order to trigger a flush.
+        // This will not work with reflected mappings so only enable on VOLTA+
+        // Note SRIOV guest does not have access to uflush register.
+        //
+        NV_ASSERT(pKernelBus->pReadToFlush != NULL || pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping != NULL);
+
+        if (pKernelBus->pReadToFlush != NULL)
+        {
+            data = MEM_RD32(pKernelBus->pReadToFlush);
+        }
+        else if (pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping != NULL)
+        {
+            //
+            // pReadToFlush is still not ready for use. So, use pCpuMapping
+            // instead which should already be mapped to FB addr 0 as
+            // BAR2 is in physical mode right now.
+            //
+            data = MEM_RD32(pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping);
+        }
+        (void) data;
+    }
+
+    return NV_OK;
 }

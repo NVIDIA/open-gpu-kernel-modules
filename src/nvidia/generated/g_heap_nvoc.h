@@ -381,15 +381,15 @@ static inline NV_STATUS heapAlloc(struct OBJGPU *arg0, NvHandle arg1, struct Hea
 #define heapAlloc(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10) heapAlloc_IMPL(arg0, arg1, arg2, arg3, arg4, arg5, arg6, arg7, arg8, arg9, arg10)
 #endif //__nvoc_heap_h_disabled
 
-NV_STATUS heapFree_IMPL(struct OBJGPU *pGpu, struct Heap *pHeap, NvU32 owner, MEMORY_DESCRIPTOR *pMemDesc);
+NV_STATUS heapFree_IMPL(struct OBJGPU *arg0, struct Heap *arg1, NvHandle hClient, NvHandle hDevice, NvU32 owner, MEMORY_DESCRIPTOR *pMemDesc);
 
 #ifdef __nvoc_heap_h_disabled
-static inline NV_STATUS heapFree(struct OBJGPU *pGpu, struct Heap *pHeap, NvU32 owner, MEMORY_DESCRIPTOR *pMemDesc) {
+static inline NV_STATUS heapFree(struct OBJGPU *arg0, struct Heap *arg1, NvHandle hClient, NvHandle hDevice, NvU32 owner, MEMORY_DESCRIPTOR *pMemDesc) {
     NV_ASSERT_FAILED_PRECOMP("Heap was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_heap_h_disabled
-#define heapFree(pGpu, pHeap, owner, pMemDesc) heapFree_IMPL(pGpu, pHeap, owner, pMemDesc)
+#define heapFree(arg0, arg1, hClient, hDevice, owner, pMemDesc) heapFree_IMPL(arg0, arg1, hClient, hDevice, owner, pMemDesc)
 #endif //__nvoc_heap_h_disabled
 
 NV_STATUS heapReference_IMPL(struct OBJGPU *arg0, struct Heap *arg1, NvU32 arg2, MEMORY_DESCRIPTOR *arg3);
@@ -695,4 +695,5 @@ static inline NV_STATUS heapStorePendingBlackList(struct OBJGPU *arg0, struct He
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_HEAP_NVOC_H_

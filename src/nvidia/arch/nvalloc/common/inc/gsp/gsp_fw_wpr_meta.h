@@ -187,9 +187,12 @@ typedef struct
     // Used during boot to ensure the heap is adequately sized
     NvU8 gspFwHeapVfPartitionCount;
 
+    // Flags to help decide GSP-FW flow.
+    NvU8 flags;
+
     // Pad structure to exactly 256 bytes.  Can replace padding with additional
     // fields without incrementing revision.  Padding initialized to 0.
-    NvU8 padding[7];
+    NvU8 padding[6];
 
     // BL to use for verification (i.e. Booter says OK to boot)
     NvU64 verified;  // 0x0 -> unverified, 0xa0a0a0a0a0a0a0a0 -> verified
@@ -219,5 +222,8 @@ typedef struct
 } GspFwHeapFreeList;
 
 #define GSP_FW_HEAP_FREE_LIST_MAGIC 0x4845415046524545ULL
+
+#define GSP_FW_FLAGS                    8:0
+#define GSP_FW_FLAGS_CLOCK_BOOST        NVBIT(0)
 
 #endif // GSP_FW_WPR_META_H_

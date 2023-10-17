@@ -113,6 +113,7 @@ kfifoConstructUsermodeMemdescs_GH100
             err);
         memdescSetPteKind(*ppMemDesc, memmgrGetMessageKind_HAL(pGpu, pMemoryManager));
         memdescSetFlag(*ppMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1, NV_TRUE);
+        memdescSetPageSize(*ppMemDesc, AT_GPU, RM_PAGE_SIZE);
     }
 
     NV_ASSERT_OK_OR_GOTO(status,

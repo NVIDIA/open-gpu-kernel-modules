@@ -360,4 +360,5 @@ void semsurfDestruct_IMPL(struct SemaphoreSurface *pSemSurf);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_SEM_SURF_NVOC_H_

@@ -278,4 +278,5 @@ static inline void rglcbInvoke(struct RgLineCallback *pRgLineCallback, NvBool bI
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_RG_LINE_CALLBACK_NVOC_H_

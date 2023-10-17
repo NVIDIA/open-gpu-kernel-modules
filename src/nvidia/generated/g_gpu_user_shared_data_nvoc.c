@@ -113,6 +113,10 @@ static NV_STATUS __nvoc_thunk_Memory_gpushareddataGetMapAddrSpace(struct GpuUser
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_GpuUserSharedData_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_gpushareddataIsExportAllowed(struct GpuUserSharedData *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_GpuUserSharedData_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_gpushareddataGetRefCount(struct GpuUserSharedData *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RsResource.offset));
 }
@@ -193,14 +197,39 @@ static NvBool __nvoc_thunk_RmResource_gpushareddataAccessCallback(struct GpuUser
     return rmresAccessCallback((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuUserSharedData_RmResource.offset), pInvokingClient, pAllocParams, accessRight);
 }
 
+#if !defined(NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG)
+#define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(x)      (0)
+#endif
+
+static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GpuUserSharedData[] = 
+{
+    {               /*  [0] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) gpushareddataCtrlCmdRequestDataPoll_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*flags=*/      0x10u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xde0001u,
+        /*paramSize=*/  sizeof(NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_GpuUserSharedData.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "gpushareddataCtrlCmdRequestDataPoll"
+#endif
+    },
+
+};
+
 const struct NVOC_EXPORT_INFO __nvoc_export_info_GpuUserSharedData = 
 {
-    /*numEntries=*/     0,
-    /*pExportEntries=*/  0
+    /*numEntries=*/     1,
+    /*pExportEntries=*/ __nvoc_exported_method_def_GpuUserSharedData
 };
 
 void __nvoc_dtor_Memory(Memory*);
 void __nvoc_dtor_GpuUserSharedData(GpuUserSharedData *pThis) {
+    __nvoc_gpushareddataDestruct(pThis);
     __nvoc_dtor_Memory(&pThis->__nvoc_base_Memory);
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
@@ -233,6 +262,10 @@ static void __nvoc_init_funcTable_GpuUserSharedData_1(GpuUserSharedData *pThis) 
 
     pThis->__gpushareddataCanCopy__ = &gpushareddataCanCopy_IMPL;
 
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    pThis->__gpushareddataCtrlCmdRequestDataPoll__ = &gpushareddataCtrlCmdRequestDataPoll_IMPL;
+#endif
+
     pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_GpuUserSharedData_resCanCopy;
 
     pThis->__gpushareddataCheckMemInterUnmap__ = &__nvoc_thunk_Memory_gpushareddataCheckMemInterUnmap;
@@ -242,6 +275,8 @@ static void __nvoc_init_funcTable_GpuUserSharedData_1(GpuUserSharedData *pThis) 
     pThis->__gpushareddataMapTo__ = &__nvoc_thunk_RsResource_gpushareddataMapTo;
 
     pThis->__gpushareddataGetMapAddrSpace__ = &__nvoc_thunk_Memory_gpushareddataGetMapAddrSpace;
+
+    pThis->__gpushareddataIsExportAllowed__ = &__nvoc_thunk_Memory_gpushareddataIsExportAllowed;
 
     pThis->__gpushareddataGetRefCount__ = &__nvoc_thunk_RsResource_gpushareddataGetRefCount;
 

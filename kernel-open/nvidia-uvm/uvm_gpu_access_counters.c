@@ -985,7 +985,7 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
         return NV_OK;
 
     if (uvm_processor_mask_test(&va_block->resident, processor))
-        residency_mask = uvm_va_block_resident_mask_get(va_block, processor);
+        residency_mask = uvm_va_block_resident_mask_get(va_block, processor, NUMA_NO_NODE);
     else
         residency_mask = NULL;
 
@@ -1036,8 +1036,8 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
 
         // If the underlying VMA is gone, skip HMM migrations.
         if (uvm_va_block_is_hmm(va_block)) {
-            status = uvm_hmm_find_vma(service_context->block_context.mm,
-                                      &service_context->block_context.hmm.vma,
+            status = uvm_hmm_find_vma(service_context->block_context->mm,
+                                      &service_context->block_context->hmm.vma,
                                       address);
             if (status == NV_ERR_INVALID_ADDRESS)
                 continue;
@@ -1048,7 +1048,7 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
         policy = uvm_va_policy_get(va_block, address);
 
         new_residency = uvm_va_block_select_residency(va_block,
-                                                      &service_context->block_context,
+                                                      service_context->block_context,
                                                       page_index,
                                                       processor,
                                                       uvm_fault_access_type_mask_bit(UVM_FAULT_ACCESS_TYPE_PREFETCH),
@@ -1083,7 +1083,7 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
         // Remove pages that are already resident in the destination processors
         for_each_id_in_mask(id, &update_processors) {
             bool migrate_pages;
-            uvm_page_mask_t *residency_mask = uvm_va_block_resident_mask_get(va_block, id);
+            uvm_page_mask_t *residency_mask = uvm_va_block_resident_mask_get(va_block, id, NUMA_NO_NODE);
             UVM_ASSERT(residency_mask);
 
             migrate_pages = uvm_page_mask_andnot(&service_context->per_processor_masks[uvm_id_value(id)].new_residency,
@@ -1101,9 +1101,9 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
 
                 if (uvm_va_block_is_hmm(va_block)) {
                     status = NV_ERR_INVALID_ADDRESS;
-                    if (service_context->block_context.mm) {
+                    if (service_context->block_context->mm) {
                         status = uvm_hmm_find_policy_vma_and_outer(va_block,
-                                                                   &service_context->block_context.hmm.vma,
+                                                                   &service_context->block_context->hmm.vma,
                                                                    first_page_index,
                                                                    &policy,
                                                                    &outer);
@@ -1206,7 +1206,7 @@ static NV_STATUS service_phys_single_va_block(uvm_gpu_t *gpu,
 
         service_context->operation = UVM_SERVICE_OPERATION_ACCESS_COUNTERS;
         service_context->num_retries = 0;
-        service_context->block_context.mm = mm;
+        service_context->block_context->mm = mm;
 
         if (uvm_va_block_is_hmm(va_block)) {
             uvm_hmm_service_context_init(service_context);

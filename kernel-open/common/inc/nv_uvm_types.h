@@ -104,6 +104,10 @@ typedef struct UvmGpuMemoryInfo_tag
     // Out: Set to TRUE, if the allocation is in sysmem.
     NvBool sysmem;
 
+    // Out: Set to TRUE, if this allocation is treated as EGM.
+    //      sysmem is also TRUE when egm is TRUE.
+    NvBool egm;
+
     // Out: Set to TRUE, if the allocation is a constructed
     //      under a Device or Subdevice.
     //      All permutations of sysmem and deviceDescendant are valid.
@@ -125,6 +129,8 @@ typedef struct UvmGpuMemoryInfo_tag
 
     // Out: Uuid of the GPU to which the allocation belongs.
     //      This is only valid if deviceDescendant is NV_TRUE.
+    //      When egm is NV_TRUE, this is also the UUID of the GPU
+    //      for which EGM is local.
     //      Note: If the allocation is owned by a device in
     //      an SLI group and the allocation is broadcast
     //      across the SLI group, this UUID will be any one
@@ -332,7 +338,7 @@ typedef struct UvmGpuPagingChannelAllocParams_tag
 
 // The max number of Copy Engines supported by a GPU.
 // The gpu ops build has a static assert that this is the correct number.
-#define UVM_COPY_ENGINE_COUNT_MAX 10
+#define UVM_COPY_ENGINE_COUNT_MAX 64
 
 typedef struct
 {
@@ -566,11 +572,8 @@ typedef struct UvmPlatformInfo_tag
     // Out: ATS (Address Translation Services) is supported
     NvBool atsSupported;
 
-    // Out: True if HW trusted execution, such as AMD's SEV-SNP or Intel's TDX,
-    // is enabled in the VM, indicating that Confidential Computing must be
-    // also enabled in the GPU(s); these two security features are either both
-    // enabled, or both disabled.
-    NvBool confComputingEnabled;
+    // Out: AMD SEV (Secure Encrypted Virtualization) is enabled
+    NvBool sevEnabled;
 } UvmPlatformInfo;
 
 typedef struct UvmGpuClientInfo_tag
@@ -683,6 +686,10 @@ typedef struct UvmGpuInfo_tag
     // to NVSwitch peers.
     NvBool connectedToSwitch;
     NvU64 nvswitchMemoryWindowStart;
+
+    // local EGM properties
+    NvBool   egmEnabled;
+    NvU8     egmPeerId;
 } UvmGpuInfo;
 
 typedef struct UvmGpuFbInfo_tag

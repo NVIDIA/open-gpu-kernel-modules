@@ -138,4 +138,5 @@ static inline PMODULEDESCRIPTOR objhalGetModuleDescriptor(struct OBJHAL *pHal) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_HAL_NVOC_H_

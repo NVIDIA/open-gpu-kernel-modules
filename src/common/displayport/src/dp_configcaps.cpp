@@ -142,6 +142,7 @@ struct DPCDHALImpl : DPCDHAL
         bool      mccsIRQ;
         bool      downRepMsgRdy;
         bool      upReqMsgRdy;
+        bool      prErrorStatus;                                // DPCD offset 2004h[3]  
         bool      rxCapChanged;                                 // DPCD offset 2005
         bool      linkStatusChanged;                            // DPCD offset 2005
         bool      streamStatusChanged;                          // DPCD offset 2005
@@ -642,12 +643,20 @@ struct DPCDHALImpl : DPCDHAL
         return caps.repeaterCaps.revisionMinor;
     }
 
-    virtual LinkRate getMaxLinkRate()                                          // DPCD offset 1 * 27000000
+    //
+    // Legacy link rates: DPCD offset 1 * 27000000
+    // ILRs: DPCD offset: 0x10~0x1F
+    //
+    virtual LinkRate getMaxLinkRate()
     {
         if (caps.phyRepeaterCount == 0)
+        {
             return caps.maxLinkRate;
+        }
         else
+        {
             return DP_MIN(caps.maxLinkRate, caps.repeaterCaps.maxLinkRate);
+        }
     }
 
     virtual unsigned getMaxLaneCount()                                         // DPCD offset 2
@@ -1621,6 +1630,51 @@ struct DPCDHALImpl : DPCDHAL
         bus.write(NV_DPCD_LINK_SERVICE_IRQ_VECTOR_ESI0, &irqVector, sizeof irqVector);
     }
 
+    virtual bool isPanelReplayErrorSet()
+    {
+        return interrupts.prErrorStatus;
+    }
+
+    virtual void readPanelReplayError()
+    {
+        NvU8 config = 0U;
+        bool bRetVal = (AuxRetry::ack ==
+                bus.read(NV_DPCD20_PANEL_REPLAY_ERROR_STATUS,
+                    &config, sizeof(config)));
+
+        if (bRetVal)
+        {
+            if (FLD_TEST_DRF(_DPCD20_PANEL_REPLAY, _ERROR_STATUS,
+                    _ACTIVE_FRAME_CRC_ERROR, _YES, config))
+            {
+                DP_LOG(("DPHAL> ERROR! Active Frame CRC Error set in PanelReplay status register"));
+            }
+            if (FLD_TEST_DRF(_DPCD20_PANEL_REPLAY, _ERROR_STATUS,
+                    _RFB_STORAGE_ERROR, _YES, config))
+            {
+                DP_LOG(("DPHAL> ERROR! RFB Storage Error set in PanelReplay status register"));
+            }
+            if (FLD_TEST_DRF(_DPCD20_PANEL_REPLAY, _ERROR_STATUS,
+                    _VSC_SDP_UNCORRECTABLE_ERROR, _YES, config))
+            {
+                DP_LOG(("DPHAL> ERROR! VSC SDP Uncorrectable Error set in PanelReplay status register"));
+            }
+        }
+        else
+        {
+            DP_LOG(("DPHAL> readPanelReplayError: Failed to read PanelReplay error status"));
+        }
+    }
+
+    virtual void clearPanelReplayError()
+    {
+        NvU8 irqVector = 0U;
+        irqVector = FLD_SET_DRF(_DPCD, _DEVICE_SERVICE_IRQ_VECTOR_ESI1,
+            _PANEL_REPLAY_ERROR_STATUS, _YES, irqVector);
+        bus.write(NV_DPCD_DEVICE_SERVICE_IRQ_VECTOR_ESI1, &irqVector, 
+            sizeof irqVector);
+    }
+
     virtual bool getLinkStatusChanged()
     {
         return interrupts.linkStatusChanged;
@@ -1727,6 +1781,9 @@ struct DPCDHALImpl : DPCDHAL
         interrupts.downRepMsgRdy               = FLD_TEST_DRF(_DPCD, _DEVICE_SERVICE_IRQ_VECTOR_ESI0, _DOWN_REP_MSG_RDY, _YES, buffer[3]);
         interrupts.upReqMsgRdy                 = FLD_TEST_DRF(_DPCD, _DEVICE_SERVICE_IRQ_VECTOR_ESI0, _UP_REQ_MSG_RDY, _YES, buffer[3]);
 
+        interrupts.prErrorStatus               = FLD_TEST_DRF(_DPCD, 
+            _DEVICE_SERVICE_IRQ_VECTOR_ESI1, _PANEL_REPLAY_ERROR_STATUS, _YES, buffer[4]);
+
         interrupts.rxCapChanged                = FLD_TEST_DRF(_DPCD, _LINK_SERVICE_IRQ_VECTOR_ESI0, _RX_CAP_CHANGED, _YES, buffer[5]);
         interrupts.linkStatusChanged           = FLD_TEST_DRF(_DPCD, _LINK_SERVICE_IRQ_VECTOR_ESI0, _LINK_STATUS_CHANGED, _YES, buffer[5]);
         interrupts.streamStatusChanged         = FLD_TEST_DRF(_DPCD, _LINK_SERVICE_IRQ_VECTOR_ESI0, _STREAM_STATUS_CHANGED, _YES, buffer[5]);
@@ -1761,6 +1818,11 @@ struct DPCDHALImpl : DPCDHAL
         if (interrupts.hdmiLinkStatusChanged)
         {
             this->clearHdmiLinkStatusChanged();
+        }
+
+        if (interrupts.prErrorStatus)
+        {
+            this->clearPanelReplayError();
         }
 
         parseAutomatedTestRequest(automatedTestRequest);
@@ -3135,6 +3197,82 @@ struct DPCDHALImpl : DPCDHAL
         }
         return retVal;
     }
+
+    virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo)
+    {
+        NvU8 config = 0U;
+        bool bRetVal = (AuxRetry::ack ==
+                bus.read(NV_DPCD20_PANEL_REPLAY_ERROR_STATUS,
+                    &config, sizeof(config)));
+
+        if (bRetVal)
+        {
+             prDbgInfo->activeFrameCrcError =
+                 FLD_TEST_DRF(_DPCD20_PANEL_REPLAY, _ERROR_STATUS,
+                         _ACTIVE_FRAME_CRC_ERROR, _YES, config);
+             prDbgInfo->rfbStorageError =
+                 FLD_TEST_DRF(_DPCD20_PANEL_REPLAY, _ERROR_STATUS,
+                         _RFB_STORAGE_ERROR, _YES, config);
+             prDbgInfo->vscSdpUncorrectableError =
+                 FLD_TEST_DRF(_DPCD20_PANEL_REPLAY, _ERROR_STATUS,
+                     _VSC_SDP_UNCORRECTABLE_ERROR, _YES, config);
+             prDbgInfo->adaptiveSyncSdpMissing =
+                 FLD_TEST_DRF(_DPCD20_PANEL_REPLAY, _ERROR_STATUS,
+                     _ADAPTIVE_SYNC_SDP_MISSING, _YES, config);
+        }
+        else
+        {
+            DP_LOG(("DPHAL> readPrSinkDebugInfo: Failed to read PanelReplay error status"));
+            return bRetVal;
+        }
+
+        config = 0U;
+        bRetVal = (AuxRetry::ack ==
+            bus.read(NV_DPCD20_PANEL_REPLAY_AND_FRAME_LOCK_STATUS,
+                &config, sizeof(config)));
+        if (bRetVal)
+        {
+            prDbgInfo->sinkPrStatus = DRF_VAL(_DPCD20, 
+                _PANEL_REPLAY_AND_FRAME_LOCK_STATUS, _PR_STATUS, config);
+
+            prDbgInfo->sinkFramelocked = DRF_VAL(_DPCD20, 
+                _PANEL_REPLAY_AND_FRAME_LOCK_STATUS, _SINK_FRAME_LOCKED, config);
+                
+            prDbgInfo->sinkFrameLockedValid =
+                FLD_TEST_DRF(_DPCD20_PANEL_REPLAY_AND_FRAME_LOCK_STATUS, 
+                    _SINK_FRAME_LOCKED, _VALID, _YES, config);
+        }
+        else
+        {
+            DP_LOG(("DPHAL> readPanelReplayError: Failed to read PanelReplay frame lock status"));
+            return bRetVal;
+        }
+
+        config = 0U;
+        bRetVal = AuxRetry::ack ==
+            bus.read(NV_DPCD20_PANEL_REPLAY_DEBUG_LAST_VSC_SDP_CARRYING_PR_INFO,
+                &config, sizeof(config));
+        if (bRetVal)
+        {
+            prDbgInfo->currentPrState =
+                FLD_TEST_DRF(_DPCD20_PANEL_REPLAY_DEBUG_LAST,
+                    _VSC_SDP_CARRYING_PR_INFO, _STATE, _ACTIVE, config);
+            prDbgInfo->crcValid =
+                FLD_TEST_DRF(_DPCD20_PANEL_REPLAY_DEBUG_LAST,
+                    _VSC_SDP_CARRYING_PR_INFO, _CRC_VALID, _YES, config);
+            prDbgInfo->suCoordinatesValid  =
+                FLD_TEST_DRF(_DPCD20_PANEL_REPLAY_DEBUG_LAST, 
+                    _VSC_SDP_CARRYING_PR_INFO, _SU_COORDINATE_VALID,
+                        _YES, config);
+        }
+        else
+        {
+            DP_LOG(("DPHAL> readPanelReplayError: Failed to read PanelReplay VSC SDP status"));
+            return bRetVal;
+        }
+    return bRetVal;
+    }
+
 };
 
 DPCDHAL * DisplayPort::MakeDPCDHAL(AuxBus *  bus, Timer * timer)

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,7 @@
 #include "diagnostics/tracer.h"
 #include "jt.h"
 #include "ctrl/ctrl2080/ctrl2080power.h"
+#include "gpu/subdevice/subdevice.h"
 
 #include "g_journal_pb.h"
 
@@ -201,7 +202,7 @@ gpuGc6Entry_IMPL_exit:
  *    NV_ERR  Otherwise
  */
 NV_STATUS
-gpuGc6EntryGpuPowerOff(OBJGPU *pGpu)
+gpuGc6EntryGpuPowerOff_IMPL(OBJGPU *pGpu)
 {
     NV_STATUS status = NV_OK;
 
@@ -664,3 +665,49 @@ _gpuGc6ExitStateLoad(OBJGPU *pGpu, NV2080_CTRL_GC6_EXIT_PARAMS *pParams)
     return status;
 }
 
+/*!
+ * @brief: This command executes the steps of GC6 entry sequence
+ *
+ * @param[in]  pSubDevice
+ * @param[in]  pParams
+ *
+ * @return
+ *    NV_OK                     Success
+ *    NV_ERR_INVALID_ARGUMENT   Invalid action
+ *    NV_ERR_NOT_SUPPORTED      Chip doesn't support the feature
+ *    NV_ERR_NOT_READY          Chip not ready to execute operation
+ *    NV_ERR_INVALID_STATE      Chip unable to execute command at current state
+ *    NV_ERR_TIMEOUT            RM timed out when trying to complete call
+ *    NV_ERR_GENERIC            Generic error (bad state or stuck)
+ */
+NV_STATUS
+subdeviceCtrlCmdGc6Entry_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GC6_ENTRY_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    return gpuGc6Entry(pGpu, pParams);
+}
+
+/*!
+ * @brief: This command executes the steps of GC6 exit sequence
+ *
+ * @param[in]  pSubDevice
+ * @param[in]  pParams
+ *
+ * @return
+ *    NV_OK                     Success
+ *    NV_ERR_GENERIC            Generic error (bad state or stuck)
+ */
+NV_STATUS
+subdeviceCtrlCmdGc6Exit_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GC6_EXIT_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    return gpuGc6Exit(pGpu, pParams);
+}

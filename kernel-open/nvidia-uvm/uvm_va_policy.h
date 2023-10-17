@@ -24,6 +24,7 @@
 #ifndef __UVM_VA_POLICY_H__
 #define __UVM_VA_POLICY_H__
 
+#include <linux/numa.h>
 #include "uvm_linux.h"
 #include "uvm_forward_decl.h"
 #include "uvm_processors.h"
@@ -61,6 +62,18 @@ struct uvm_va_policy_struct
     // Processor ID of the preferred location for this VA range.
     // This is set to UVM_ID_INVALID if no preferred location is set.
     uvm_processor_id_t preferred_location;
+
+    // If the preferred location is the CPU, this is either the preferred NUMA
+    // node ID or NUMA_NO_NODE to indicate that there is no preference among
+    // nodes.
+    // If preferred_location is a GPU, preferred_nid will be used if CPU
+    // pages have to be allocated for any staging copies. Otherwise, it is
+    // not used.
+    //
+    // TODO: Bug 4148100 - Preferred_location and preferred_nid should be
+    //       combined into a new type that combines the processor and NUMA node
+    //       ID.
+    int preferred_nid;
 
     // Mask of processors that are accessing this VA range and should have
     // their page tables updated to access the (possibly remote) pages.

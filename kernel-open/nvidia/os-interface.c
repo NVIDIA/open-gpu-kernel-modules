@@ -782,6 +782,8 @@ inline void NV_API_CALL out_string(const char *str)
     printk("%s", str);
 }
 
+#define NV_PRINT_LOCAL_BUFF_LEN_MAX      530
+
 /*
  * nv_printf() prints to the kernel log for the driver.
  * Returns the number of characters written.
@@ -790,11 +792,38 @@ int NV_API_CALL nv_printf(NvU32 debuglevel, const char *printf_format, ...)
 {
     va_list arglist;
     int chars_written = 0;
+    NvBool bForced = (NV_DBG_FORCE_LEVEL(debuglevel) == debuglevel);
+    debuglevel = debuglevel & 0xff;
 
-    if (debuglevel >= ((cur_debuglevel >> 4) & 0x3))
+    // This function is protected by the "_nv_dbg_lock" lock, so it is still
+    // thread-safe to store the print buffer in a static variable, thus
+    // avoiding a problem with kernel stack size.
+    static char buff[NV_PRINT_LOCAL_BUFF_LEN_MAX];
+
+    /*
+     * Print a message if:
+     * 1. Caller indicates that filtering should be skipped, or
+     * 2. debuglevel is at least cur_debuglevel for DBG_MODULE_OS (bits 4:5). Support for print
+     * modules has been removed with DBG_PRINTF, so this check should be cleaned up.
+     */
+    if (bForced ||
+        (debuglevel >= ((cur_debuglevel >> 4) & 0x3)))
     {
-        size_t length;
-        char *temp;
+        size_t loglevel_length = 0, format_length = strlen(printf_format);
+        size_t length = 0;
+        const char *loglevel = "";
+
+        switch (debuglevel)
+        {
+            case NV_DBG_INFO:       loglevel = KERN_DEBUG; break;
+            case NV_DBG_SETUP:      loglevel = KERN_NOTICE; break;
+            case NV_DBG_WARNINGS:   loglevel = KERN_WARNING; break;
+            case NV_DBG_ERRORS:     loglevel = KERN_ERR; break;
+            case NV_DBG_HW_ERRORS:  loglevel = KERN_CRIT; break;
+            case NV_DBG_FATAL:      loglevel = KERN_CRIT; break;
+        }
+
+        loglevel_length = strlen(loglevel);
 
         // When printk is called to extend the output of the previous line
         // (i.e. when the previous line did not end in \n), the printk call
@@ -814,24 +843,19 @@ int NV_API_CALL nv_printf(NvU32 debuglevel, const char *printf_format, ...)
         // string always contains only one \n (at the end) and NV_PRINTF_EX
         // is deleted.  But that is unlikely to ever happen.
 
-        length = strlen(printf_format);
+        length = loglevel_length + format_length + sizeof(KERN_CONT);
         if (length < 1)
-            return 0;
-
-        temp = kmalloc(length + sizeof(KERN_CONT), GFP_ATOMIC);
-        if (!temp)
             return 0;
 
         // KERN_CONT changed in the 3.6 kernel, so we can't assume its
         // composition or size.
-        memcpy(temp, KERN_CONT, sizeof(KERN_CONT) - 1);
-        memcpy(temp + sizeof(KERN_CONT) - 1, printf_format, length + 1);
+        memcpy(buff, KERN_CONT, sizeof(KERN_CONT) - 1);
+        memcpy(buff + sizeof(KERN_CONT) - 1, loglevel, loglevel_length);
+        memcpy(buff + sizeof(KERN_CONT) - 1 + loglevel_length, printf_format, length + 1);
 
         va_start(arglist, printf_format);
-        chars_written = vprintk(temp, arglist);
+        chars_written = vprintk(buff, arglist);
         va_end(arglist);
-
-        kfree(temp);
     }
 
     return chars_written;
@@ -1199,10 +1223,10 @@ NvBool NV_API_CALL os_is_efi_enabled(void)
 
 void NV_API_CALL os_get_screen_info(
     NvU64 *pPhysicalAddress,
-    NvU16 *pFbWidth,
-    NvU16 *pFbHeight,
-    NvU16 *pFbDepth,
-    NvU16 *pFbPitch,
+    NvU32 *pFbWidth,
+    NvU32 *pFbHeight,
+    NvU32 *pFbDepth,
+    NvU32 *pFbPitch,
     NvU64 consoleBar1Address,
     NvU64 consoleBar2Address
 )
@@ -1807,6 +1831,7 @@ NV_STATUS NV_API_CALL os_open_temporary_file
     void **ppFile
 )
 {
+#if NV_FILESYSTEM_ACCESS_AVAILABLE
 #if defined(O_TMPFILE)
     struct file *file;
     const char *default_path = "/tmp";
@@ -1852,6 +1877,9 @@ NV_STATUS NV_API_CALL os_open_temporary_file
 #else
     return NV_ERR_NOT_SUPPORTED;
 #endif
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
 }
 
 void NV_API_CALL os_close_file
@@ -1859,7 +1887,9 @@ void NV_API_CALL os_close_file
     void *pFile
 )
 {
+#if NV_FILESYSTEM_ACCESS_AVAILABLE
     filp_close(pFile, NULL);
+#endif
 }
 
 #define NV_MAX_NUM_FILE_IO_RETRIES 10
@@ -1872,6 +1902,7 @@ NV_STATUS NV_API_CALL os_write_file
     NvU64 offset
 )
 {
+#if NV_FILESYSTEM_ACCESS_AVAILABLE
     loff_t f_pos = offset;
     ssize_t num_written;
     int num_retries = NV_MAX_NUM_FILE_IO_RETRIES;
@@ -1902,6 +1933,9 @@ retry:
     }
 
     return NV_OK;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
 }
 
 NV_STATUS NV_API_CALL os_read_file
@@ -1912,6 +1946,7 @@ NV_STATUS NV_API_CALL os_read_file
     NvU64 offset
 )
 {
+#if NV_FILESYSTEM_ACCESS_AVAILABLE
     loff_t f_pos = offset;
     ssize_t num_read;
     int num_retries = NV_MAX_NUM_FILE_IO_RETRIES;
@@ -1942,6 +1977,9 @@ retry:
     }
 
     return NV_OK;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
 }
 
 NV_STATUS NV_API_CALL os_open_readonly_file
@@ -1950,6 +1988,7 @@ NV_STATUS NV_API_CALL os_open_readonly_file
     void       **ppFile
 )
 {
+#if NV_FILESYSTEM_ACCESS_AVAILABLE
     struct file *file;
 
     /*
@@ -1971,6 +2010,9 @@ NV_STATUS NV_API_CALL os_open_readonly_file
     *ppFile = (void *)file;
 
     return NV_OK;
+#else
+    return NV_ERR_NOT_SUPPORTED;
+#endif
 }
 
 NV_STATUS NV_API_CALL os_open_and_read_file

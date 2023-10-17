@@ -310,7 +310,7 @@ _gpuFilterSubDeviceEventInfo
 )
 {
     MIG_INSTANCE_REF ref;
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice->pDevice);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
     NvU32 engineIdx;
     RM_ENGINE_TYPE rmEngineType;
     RM_ENGINE_TYPE localRmEngineType;
@@ -325,10 +325,12 @@ _gpuFilterSubDeviceEventInfo
     if (!IS_MIG_IN_USE(pGpu))
         return NV_OK;
 
-    // Retrieve instance reference for this client
-    status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref);
+    // Retrieve instance reference for this Device
+    status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref);
     if (status != NV_OK)
     {
+        NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+
         //
         // Privileged or has the mig monitor capability, unsubscribed clients
         // may be notified with no filtering, but other unsubscribed clients
@@ -719,17 +721,35 @@ gpuGetProcWithObject_IMPL
             if ((pKernelMIGManager != NULL) && (pRef->pKernelMIGGpuInstance != NULL))
             {
                 MIG_INSTANCE_REF clientRef = kmigmgrMakeNoMIGReference();
-                if ((kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient,
-                                                     &clientRef) != NV_OK))
-                    continue;
+                RS_ITERATOR it = clientRefIter(pRsClient, NULL, classId(Device), RS_ITERATE_CHILDREN, NV_TRUE);
+                NvBool bClientHasMatchingInstance = NV_FALSE;
 
-                // Check partition subscription against requested partition
-                if ((pRef->pKernelMIGGpuInstance != clientRef.pKernelMIGGpuInstance) ||
-                    ((pRef->pMIGComputeInstance != NULL) &&
-                     (pRef->pMIGComputeInstance != clientRef.pMIGComputeInstance)))
+                // Find matching MIG instance in devices under this Client
+                while (clientRefIterNext(pRsClient, &it))
                 {
-                    continue;
+                    pDevice = dynamicCast(it.pResourceRef->pResource, Device);
+
+                    if ((GPU_RES_GET_GPU(pDevice) != pGpu) || 
+                        (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice,
+                                                         &clientRef) != NV_OK))
+                    {
+                        continue;
+                    }
+
+                    // Check partition subscription against requested partition
+                    if ((pRef->pKernelMIGGpuInstance != clientRef.pKernelMIGGpuInstance) ||
+                        ((pRef->pMIGComputeInstance != NULL) &&
+                         (pRef->pMIGComputeInstance != clientRef.pMIGComputeInstance)))
+                    {
+                        continue;
+                    }
+
+                    bClientHasMatchingInstance = NV_TRUE;
+                    break;
                 }
+
+                if (!bClientHasMatchingInstance)
+                    continue;
             }
         }
 
@@ -966,61 +986,70 @@ gpuFindClientInfoWithPidIterator_IMPL
             ((subPid != 0) && (pClient->ProcID == pid)  && (pClient->SubProcessID == subPid)))
         {
             RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilege(pClient);
+            RS_ITERATOR it;
+
             hClient = pRsClient->hClient;
 
             // Skip reporting of kernel mode and internal RM clients
             if ((privLevel >= RS_PRIV_LEVEL_KERNEL) && rmclientIsAdmin(pClient, privLevel))
                 continue;
 
-            if (deviceGetByGpu(pRsClient, pGpu, NV_TRUE, &pDevice) != NV_OK)
-                continue;
+            it = clientRefIter(pRsClient, NULL, classId(Device), RS_ITERATE_CHILDREN, NV_TRUE);
 
-            if (IS_MIG_IN_USE(pGpu))
+            while (clientRefIterNext(pRsClient, &it))
             {
-                KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
-                MIG_INSTANCE_REF clientRef = kmigmgrMakeNoMIGReference();
+                pDevice = dynamicCast(it.pResourceRef->pResource, Device);
 
-                if (kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient,
-                                                    &clientRef) != NV_OK)
-                {
+                if (GPU_RES_GET_GPU(pDevice) != pGpu)
                     continue;
-                }
 
-                gpuInstanceId = clientRef.pKernelMIGGpuInstance->swizzId;
-                if (clientRef.pMIGComputeInstance != NULL)
+                if (IS_MIG_IN_USE(pGpu))
                 {
-                    computeInstanceId = clientRef.pMIGComputeInstance->id;
+                    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+                    MIG_INSTANCE_REF clientRef = kmigmgrMakeNoMIGReference();
+
+                    if (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice,
+                                                        &clientRef) != NV_OK)
+                    {
+                        continue;
+                    }
+
+                    gpuInstanceId = clientRef.pKernelMIGGpuInstance->swizzId;
+                    if (clientRef.pMIGComputeInstance != NULL)
+                    {
+                        computeInstanceId = clientRef.pMIGComputeInstance->id;
+                    }
+
+                    // Check instance subscription against requested instance reference
+                    if (!bGlobalInfo &&
+                        !kmigmgrAreMIGReferencesSame(pRef, &clientRef))
+                    {
+                        continue;
+                    }
+
+                    if (kmigmgrIsMIGReferenceValid(pRef))
+                    {
+                        pHeap = pRef->pKernelMIGGpuInstance->pMemoryPartitionHeap;
+                    }
                 }
 
-                // Check instance subscription against requested instance reference
-                if (!bGlobalInfo &&
-                    !kmigmgrAreMIGReferencesSame(pRef, &clientRef))
+                hDevice = RES_GET_HANDLE(pDevice);
+
+                switch (internalClassId)
                 {
-                    continue;
+                    case (classId(Memory)):
+                    {
+                        // TODO -
+                        // When single process spanning across multiple GI or CI by creating multiple
+                        // clients, RM needs to provide the unique list being used by the client
+                        _gpuCollectMemInfo(hClient, hDevice, pHeap,
+                                           &pData->vidMemUsage, ((subPid != 0) ? NV_TRUE : NV_FALSE),
+                                           bGlobalInfo);
+                        break;
+                    }
+                    default:
+                        return NV_ERR_INVALID_ARGUMENT;
                 }
-
-                if (kmigmgrIsMIGReferenceValid(pRef))
-                {
-                    pHeap = pRef->pKernelMIGGpuInstance->pMemoryPartitionHeap;
-                }
-            }
-
-            hDevice = RES_GET_HANDLE(pDevice);
-
-            switch (internalClassId)
-            {
-                case (classId(Memory)):
-                {
-                    // TODO -
-                    // When single process spanning across multiple GI or CI by creating multiple
-                    // clients, RM needs to provide the unique list being used by the client
-                    _gpuCollectMemInfo(hClient, hDevice, pHeap,
-                                       &pData->vidMemUsage, ((subPid != 0) ? NV_TRUE : NV_FALSE),
-                                       bGlobalInfo);
-                    break;
-                }
-                default:
-                    return NV_ERR_INVALID_ARGUMENT;
             }
         }
     }

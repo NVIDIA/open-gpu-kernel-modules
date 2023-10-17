@@ -791,13 +791,15 @@ s_vbiosFillFlcnUcodeFromDescV2
         memdescCreate(&pUcode->pDataMemDesc, pGpu, dataSizeAligned,
                       256, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS));
 
-    status = memdescAlloc(pUcode->pCodeMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_9,
+                    pUcode->pCodeMemDesc);
     if (status != NV_OK)
     {
         return status;
     }
 
-    status = memdescAlloc(pUcode->pDataMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_10,
+                    pUcode->pDataMemDesc);
     if (status != NV_OK)
     {
         return status;
@@ -969,7 +971,8 @@ s_vbiosFillFlcnUcodeFromDescV3
         memdescCreate(&pUcode->pUcodeMemDesc, pGpu, pUcode->size,
                       256, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE));
 
-    status = memdescAlloc(pUcode->pUcodeMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_11,
+                    pUcode->pUcodeMemDesc);
     if (status != NV_OK)
     {
         return status;

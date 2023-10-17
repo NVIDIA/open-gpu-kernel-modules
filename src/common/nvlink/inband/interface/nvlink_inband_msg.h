@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,7 +59,8 @@
 #define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REQ     2
 #define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP     3
 #define NVLINK_INBAND_MSG_TYPE_MC_TEAM_RELEASE_REQ   4
-#define NVLINK_INBAND_MSG_TYPE_MAX                   5
+#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REQ_V2  5
+#define NVLINK_INBAND_MSG_TYPE_MAX                   6
 
 /* Nvlink Inband message packet header */
 typedef struct
@@ -106,6 +107,7 @@ typedef struct
 #define NVLINK_INBAND_FM_CAPS_BW_MODE_MIN        NVBIT64(2)
 #define NVLINK_INBAND_FM_CAPS_BW_MODE_HALF       NVBIT64(3)
 #define NVLINK_INBAND_FM_CAPS_BW_MODE_3QUARTER   NVBIT64(4)
+#define NVLINK_INBAND_FM_CAPS_MC_TEAM_SETUP_V2   NVBIT64(5)
 
 typedef struct
 {
@@ -119,7 +121,8 @@ typedef struct
     NvU64  flaAddress;            /* FLA starting address for the GPU */
     NvU64  flaAddressRange;       /* GPU FLA address range */
     NvU32  linkMaskToBeReduced;   /* bit mask of unused NVLink ports for P2P */
-    NvU8   reserved[28];          /* For future use. Must be initialized to zero */
+    NvU32  cliqueId;              /* Fabric Clique Id */
+    NvU8   reserved[24];          /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_rsp_t;
 
 typedef struct
@@ -145,11 +148,40 @@ typedef struct
 
 typedef struct
 {
+    NvU64 mcAllocSize;           /* Multicast allocation size requested */
+    NvU32 flags;                 /* For future use. Must be initialized to zero */
+    NvU8  reserved[8];           /* For future use. Must be initialized to zero */
+    NvU16 numGpuHandles;         /* Number of GPUs in this team */
+    NvU16 numKeys;               /* Number of keys (a.k.a request ID) used by FM to send response */
+    NvU64 gpuHandlesAndKeys[];   /* Array of probed handles and keys, should be last */
+
+    /*
+     * The array will be grouped and ordered as: <allGpuHandlesOfNodeA, allGpuHandlesOfNodeB,...
+     * keyForNodeA, keyForNodeB>. The first group of gpuHandles will belong to the exporter node,
+     * which will be followed by the importer nodes.
+     *
+     * Test case: If the exporter and importer nodes are same, then the message will
+     * have multiple keys belonging to the same node as: <allGpuHandlesOfNodeA,...
+     * key1ForNodeA, key2ForNodeA>. Even though all gpuHandles belong to the same node, the
+     * first key should be considered from the exporter node and the rest from the importer
+     * nodes.
+     */
+} nvlink_inband_mc_team_setup_req_v2_t;
+
+typedef struct
+{
+    nvlink_inband_msg_header_t           msgHdr;
+    nvlink_inband_mc_team_setup_req_v2_t mcTeamSetupReq;
+} nvlink_inband_mc_team_setup_req_v2_msg_t;
+
+typedef struct
+{
     NvU64 mcTeamHandle;          /* Unique handle assigned for this Multicast team */
+                                 /* Should be zero if the response is sent to the importer nodes */
     NvU32 flags;                 /* For future use. Must be initialized to zero */
     NvU8  reserved[8];           /* For future use. Must be initialized to zero */
     NvU64 mcAddressBase;         /* FLA starting address assigned for the Multicast slot */
-    NvU64 mcAddressSize;         /* Size of FLA assigned to the Multicast slot */
+    NvU64 mcAddressSize;         /* Should be same as mcAllocSize */
 } nvlink_inband_mc_team_setup_rsp_t;
 
 typedef struct
@@ -173,6 +205,27 @@ typedef struct
 
 #pragma pack(pop)
 
-/* Don't add any code after this line */
+/********************* Don't add any message structs after this line ******************************/
+
+/* Helpers */
+static NV_INLINE void nvlinkInitInbandMsgHdr
+(
+    nvlink_inband_msg_header_t *pMsgHdr,
+    NvU16                       type,
+    NvU32                       len,
+    NvU64                       requestId
+)
+{
+    NvU8 i;
+
+    pMsgHdr->requestId = requestId;
+    pMsgHdr->magicId = NVLINK_INBAND_MSG_MAGIC_ID_FM;
+    pMsgHdr->type = type;
+    pMsgHdr->length = len;
+    pMsgHdr->status = NV_OK;
+
+    for (i = 0; i < sizeof(pMsgHdr->reserved); i++)
+        pMsgHdr->reserved[i] = 0;
+}
 
 #endif

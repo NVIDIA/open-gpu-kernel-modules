@@ -353,7 +353,7 @@ subdeviceCtrlCmdFbGetMemAlignment_IMPL
     NvHandle                hClient    = RES_GET_CLIENT_HANDLE(pSubdevice);
     Device                 *pDevice    = GPU_RES_GET_DEVICE(pSubdevice);
     NvHandle                hObject    = RES_GET_HANDLE(pSubdevice);
-    Heap                   *pHeap      = vidmemGetHeap(pGpu, pDevice, NV_FALSE);
+    Heap                   *pHeap      = vidmemGetHeap(pGpu, pDevice, NV_FALSE, NV_FALSE);
     HEAP_ALLOC_HINT_PARAMS  AllocHint  = {0};
     NvU32                   i;
     NvU64                   _size, _alignment;
@@ -645,8 +645,6 @@ subdeviceCtrlCmdFbGetFBRegionInfo_IMPL
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
-    memmgrCalcReservedFbSpace(pGpu, pMemoryManager);
-
     pGFBRIParams->numFBRegions = 0;
 
     //
@@ -824,3 +822,4 @@ subdeviceCtrlCmdGbGetSemaphoreSurfaceLayout_IMPL
 
     return NV_OK;
 }
+

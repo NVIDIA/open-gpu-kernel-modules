@@ -45,7 +45,6 @@
 #define NV_CE_NUM_FBPCE                   4
 #define NV_CE_NUM_PCES_NO_LINK_CASE       12
 #define NV_CE_MAX_PCE_PER_GRCE            2
-#define NV_CE_HSHUBNVL_ID_0               2
 
 /*
  * Table for setting the PCE2LCE mapping for WAR configs that cannot be implemented
@@ -893,7 +892,7 @@ kceGetMappings_GH100
     }
 
     //Prepare the per-HSHUB/FBHUB available PCE mask
-    kceGetAvailableHubPceMask(pGpu, pTopoParams);
+    kceGetAvailableHubPceMask(pGpu, pKCe, pTopoParams);
 
     // Assign PCEs to "PEER"s if nvlink is enabled
     if (pKernelNvlink && !knvlinkIsForcedConfig(pGpu, pKernelNvlink))
@@ -930,183 +929,5 @@ kceGetMappings_GH100
     }
 
     NV_PRINTF(LEVEL_INFO, "status = %d, statusC2C = %d\n", status, statusC2C);
-    return NV_OK;
-}
-
-NV_STATUS kceGetP2PCes_GH100(KernelCE *pKCe, OBJGPU *pGpu, NvU32 gpuMask, NvU32 *nvlinkP2PCeMask)
-{
-    //
-    // Currently Bug 4103154 requires an updated algorithm described below
-    // to assign the proper LCE. Cases without MODS enabled can default back
-    // to the previous version.
-    //
-    return kceGetP2PCes_GV100(pKCe, pGpu, gpuMask, nvlinkP2PCeMask);
-
-    NvU32         gpuCount       = gpumgrGetSubDeviceCount(gpuMask);
-    NvU32         minP2PLce      = (NV_CE_EVEN_ASYNC_LCE_MASK | NV_CE_ODD_ASYNC_LCE_MASK) & NV_CE_MAX_LCE_MASK;
-    NvU32         i;
-    KernelNvlink  *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-
-    if (pKernelNvlink == NULL)
-    {
-        return NV_WARN_NOTHING_TO_DO;
-    }
-
-    if (knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
-    {
-        return kceGetP2PCes_GV100(pKCe, pGpu, gpuMask, nvlinkP2PCeMask);
-    }
-
-    LOWESTBITIDX_32(minP2PLce);
-    *nvlinkP2PCeMask  = 0;
-
-    if (gpuCount == 1)
-    {
-        *nvlinkP2PCeMask |= NVBIT(minP2PLce);
-        for (i = minP2PLce; i < gpuGetNumCEs(pGpu); i++)
-        {
-            *nvlinkP2PCeMask |= NVBIT(i);
-
-        }
-    }
-    else if (gpuCount > 2)
-    {
-        // if gpuCount > 2, this is an invalid request. Print warning and return NV_OK
-        NV_PRINTF(LEVEL_INFO, "GPU %d invalid request for gpuCount %d\n", gpuGetInstance(pGpu), gpuCount);
-        return NV_ERR_INVALID_STATE;
-    }
-    else
-    {
-        OBJGPU       *pRemoteGpu        = NULL;
-        KernelCE     *pKCeLoop          = NULL;
-        NvU32         peerLinkMask      = 0;
-        NvU32         gpuInstance       = 0;
-        NvU32         phyLinkId, status, targetPceMask, numPces;
-
-        //
-        // The LCE returned should be the LCE which has the most PCEs mapped
-        // on the given HSHUB. This HSHUB should be determined by
-        // tracking where the majority of links are connected.
-        //
-        NvU32     linksPerHshub[NV_CE_MAX_HSHUBS] = {0};
-        NvU32     maxLinksConnectedHshub = 0;
-        NvU32     maxConnectedHshubId = NV_CE_MAX_HSHUBS;
-        NvU32     lceAssignedMask = 0;
-        KernelCE *maxLcePerHshub[NV_CE_MAX_HSHUBS] = {0};
-
-        NV2080_CTRL_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS_PARAMS params;
-
-        if (pKernelNvlink != NULL)
-        {
-            // Get the remote GPU
-            while ((pRemoteGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
-            {
-                if (pRemoteGpu != pGpu)
-                    break;
-            }
-
-            NV_ASSERT_OR_RETURN(pRemoteGpu != NULL, NV_ERR_INVALID_STATE);
-            gpuInstance = gpuGetInstance(pRemoteGpu);
-
-            peerLinkMask = knvlinkGetLinkMaskToPeer(pGpu, pKernelNvlink, pRemoteGpu);
-        }
-
-        portMemSet(&params, 0, sizeof(params));
-        params.linkMask = peerLinkMask;
-
-        status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                     NV2080_CTRL_CMD_INTERNAL_HSHUB_GET_HSHUB_ID_FOR_LINKS,
-                                     (void *)&params, sizeof(params));
-        NV_ASSERT_OK_OR_RETURN(status);
-
-
-        FOR_EACH_INDEX_IN_MASK(32, phyLinkId, peerLinkMask)
-        {
-            NvU32 hshubId = params.hshubIds[phyLinkId];
-            linksPerHshub[hshubId]++;
-
-            if (linksPerHshub[hshubId] > maxLinksConnectedHshub)
-            {
-                maxLinksConnectedHshub = linksPerHshub[hshubId];
-                maxConnectedHshubId = hshubId;
-            }
-        }
-        FOR_EACH_INDEX_IN_MASK_END;
-
-        //
-        // Iterate through all Async LCEs to track which HSHUB should
-        // be using which LCE. This is decided based on the majority. If
-        // there is a tie, then LCE with the lower index is preferred.
-        //
-        KCE_ITER_ALL_BEGIN(pGpu, pKCeLoop, minP2PLce)
-            NvU32 localMaxPcePerHshub = 0;
-            KernelCE *localMaxLcePerHshub;
-            NvU32 localMaxHshub = NV_CE_MAX_HSHUBS;
-
-            // if LCE is stubbed or LCE is already assigned to another peer
-            if (pKCeLoop->bStubbed)
-            {
-                continue;
-            }
-
-            // LCE is already assigned to this peer
-            if ((pKCeLoop->nvlinkPeerMask & NVBIT(gpuInstance)) != 0)
-            {
-                maxLcePerHshub[maxConnectedHshubId] = pKCeLoop;
-                break;
-            }
-            // LCE is already assigned to another peer
-            else if (pKCeLoop->nvlinkPeerMask != 0)
-            {
-                continue;
-            }
-
-            NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS params = {0};
-
-            params.ceEngineType = NV2080_ENGINE_TYPE_COPY(pKCeLoop->publicID);
-            status = knvlinkExecGspRmRpc(pGpu, pKernelNvlink,
-                                                     NV2080_CTRL_CMD_CE_GET_CE_PCE_MASK,
-                                                     (void *)&params, sizeof(params));
-            NV_ASSERT_OK_OR_RETURN(status);
-
-            //
-            // An LCE may be utilized across several HSHUBs. Loop through all HSHUBs
-            // in order to decide which HSHUB holds the majority of this specific LCE.
-            // To help with this, create a mask of PCEs only on the HSHUB which the peer
-            // is most connected to by shifting the HSHUB PCE mask
-            //
-
-            for (i = NV_CE_HSHUBNVL_ID_0; i < NV_CE_MAX_HSHUBS; i++)
-            {
-                targetPceMask = params.pceMask & ((NVBIT(NV_CE_PCE_PER_HSHUB) - 1) << ((i - NV_CE_HSHUBNVL_ID_0) * NV_CE_PCE_PER_HSHUB));
-                numPces = nvPopCount32(targetPceMask);
-                if (numPces > localMaxPcePerHshub && !(lceAssignedMask & NVBIT(pKCeLoop->publicID)))
-                {
-                    localMaxPcePerHshub = numPces;
-                    localMaxLcePerHshub = pKCeLoop;
-                    localMaxHshub = i;
-                }
-            }
-
-            if (localMaxHshub < NV_CE_MAX_HSHUBS)
-            {
-                maxLcePerHshub[localMaxHshub] = localMaxLcePerHshub;
-                lceAssignedMask |= NVBIT(localMaxLcePerHshub->publicID);
-            }
-
-        KCE_ITER_END
-
-        if (maxLcePerHshub[maxConnectedHshubId] != NULL)
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "GPU %d Assigning Peer %d to LCE %d\n",
-                      gpuGetInstance(pGpu), gpuInstance,
-                      maxLcePerHshub[maxConnectedHshubId]->publicID);
-
-            maxLcePerHshub[maxConnectedHshubId]->nvlinkPeerMask = NVBIT(gpuInstance);
-            *nvlinkP2PCeMask = NVBIT(maxLcePerHshub[maxConnectedHshubId]->publicID);
-        }
-    }
-
     return NV_OK;
 }

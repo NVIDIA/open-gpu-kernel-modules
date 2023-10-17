@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -50,16 +50,21 @@
 #define NV_EP_PCFG_GPU_MSI_64_HEADER_MSI_ENABLE                                                                16:16                /* RWIVF */
 #define NV_EP_PCFG_GPU_DEVICE_CAPABILITIES                                                                     0x00000064           /* R--4R */
 #define NV_EP_PCFG_GPU_DEVICE_CAPABILITIES_EXTENDED_TAG_FIELD_SUPPORTED                                        5:5                  /* R-IVF */
+#define NV_EP_PCFG_GPU_DEVICE_CAPABILITIES_FUNCTION_LEVEL_RESET_CAPABILITY                                     28:28                /* R-IVF */
+#define NV_EP_PCFG_GPU_DEVICE_CAPABILITIES_FUNCTION_LEVEL_RESET_CAPABILITY_NOT_SUPPORTED                       0x00000000           /* R-I-V */
+#define NV_EP_PCFG_GPU_DEVICE_CAPABILITIES_FUNCTION_LEVEL_RESET_CAPABILITY_SUPPORTED                           0x00000001           /* R---V */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS                                                                   0x00000068           /* RW-4R */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_ENABLE_RELAXED_ORDERING                                           4:4                  /* RWIVF */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_ENABLE_RELAXED_ORDERING_INIT                                      0x00000001           /* RWI-V */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_EXTENDED_TAG_FIELD_ENABLE                                         8:8                  /* RWIVF */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_EXTENDED_TAG_FIELD_ENABLE_INIT                                    0x00000001           /* RWI-V */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_ENABLE_NO_SNOOP                                                   11:11                /* RWIVF */
+#define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_INITIATE_FN_LVL_RST                                               15:15                /* RWIVF */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_CORR_ERROR_DETECTED                                               16:16                /* RWIVF */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_NON_FATAL_ERROR_DETECTED                                          17:17                /* RWIVF */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_FATAL_ERROR_DETECTED                                              18:18                /* RWIVF */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_UNSUPP_REQUEST_DETECTED                                           19:19                /* RWIVF */
+#define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_TRANSACTIONS_PENDING                                              21:21                /* R-IVF */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2                                                                 0x00000088           /* RW-4R */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2_ATOMIC_OP_REQUESTER_ENABLE                                      6:6                  /* RWIVF */
 #define NV_EP_PCFG_GPU_DEVICE_CONTROL_STATUS_2_ATOMIC_OP_REQUESTER_ENABLE_DEFAULT                              0x00000000           /* RWI-V */
@@ -69,6 +74,9 @@
 #define NV_EP_PCFG_GPU_MSIX_CAP_HEADER                                                                         0x000000B0           /* RW-4R */
 #define NV_EP_PCFG_GPU_MSIX_CAP_HEADER_ENABLE                                                                  31:31                /* RWIVF */
 #define NV_EP_PCFG_GPU_MSIX_CAP_HEADER_ENABLE_ENABLED                                                          0x00000001           /* RW--V */
+#define NV_EP_PCFG_GPU_PF_RESIZE_BAR_CTRL                                                                      0x0000013C           /* RW-4R */
+#define NV_EP_PCFG_GPU_PF_RESIZE_BAR_CTRL_BAR_SIZE                                                             13:8                 /* RWIVF */
+#define NV_EP_PCFG_GPU_PF_RESIZE_BAR_CTRL_BAR_SIZE_MIN                                                         0x00000006           /* RW--V */
 #define NV_EP_PCFG_GPU_UNCORRECTABLE_ERROR_STATUS                                                              0x000001BC           /* RW-4R */
 #define NV_EP_PCFG_GPU_UNCORRECTABLE_ERROR_STATUS_DL_PROTOCOL_ERROR                                            4:4                  /* RWCVF */
 #define NV_EP_PCFG_GPU_UNCORRECTABLE_ERROR_STATUS_POISONED_TLP_RCVD                                            12:12                /* RWCVF */

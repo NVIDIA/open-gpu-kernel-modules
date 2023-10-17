@@ -313,4 +313,5 @@ static inline void uvmswInitSwMethodState(struct UvmSwObject *pUvmSw) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_UVM_SW_NVOC_H_

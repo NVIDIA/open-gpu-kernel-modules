@@ -119,6 +119,13 @@ static inline pgprot_t pgprot_modify_writecombine(pgprot_t old_prot)
 #define NV_PGPROT_WRITE_COMBINED(old_prot)    old_prot
 #define NV_PGPROT_READ_ONLY(old_prot)                                         \
     __pgprot(pgprot_val((old_prot)) & ~NV_PAGE_RW)
+#elif defined(NVCPU_RISCV64)
+#define NV_PGPROT_WRITE_COMBINED_DEVICE(old_prot)                             \
+    pgprot_writecombine(old_prot)
+/* Don't attempt to mark sysmem pages as write combined on riscv */
+#define NV_PGPROT_WRITE_COMBINED(old_prot)     old_prot
+#define NV_PGPROT_READ_ONLY(old_prot)                                         \
+            __pgprot(pgprot_val((old_prot)) & ~_PAGE_WRITE)
 #else
 /* Writecombine is not supported */
 #undef NV_PGPROT_WRITE_COMBINED_DEVICE(old_prot)

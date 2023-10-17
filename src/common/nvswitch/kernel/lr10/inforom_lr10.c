@@ -32,6 +32,7 @@
 #include "nvVer.h"
 #include "regkey_nvswitch.h"
 #include "inforom/inforom_nvl_v3_nvswitch.h"
+#include "soe/soeififr.h"
 
 //
 // TODO: Split individual object hals to their own respective files
@@ -1275,6 +1276,17 @@ nvswitch_bbx_get_sxid_lr10
 (
     nvswitch_device *device,
     NVSWITCH_GET_SXIDS_PARAMS * params
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_bbx_get_data_lr10
+(
+    nvswitch_device *device,
+    NvU8 dataType,
+    void *params
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;

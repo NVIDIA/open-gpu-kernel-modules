@@ -43,6 +43,7 @@ extern "C" {
 #include "kernel/gpu/eng_state.h"
 #include "kernel/gpu/gpu_halspec.h"
 #include "kernel/gpu/fifo/channel_descendant.h"
+#include "kernel/gpu/fifo/engine_info.h"
 #include "kernel/gpu/gpu_engine_type.h"
 
 #include "containers/eheap_old.h"
@@ -168,7 +169,7 @@ typedef enum
     FIFO_CTX_INST_BLOCK = 1,
 } FIFO_CTX;
 
-typedef struct
+typedef struct _fifo_mmu_exception_data
 {
     NvU32  addrLo;
     NvU32  addrHi;
@@ -206,7 +207,7 @@ typedef struct _fifo_hw_id
 
 DECLARE_INTRUSIVE_MAP(KernelChannelGroupMap);
 
-typedef struct
+typedef struct _chid_mgr
 {
     /*!
      * Runlist managed by this CHID_MGR.
@@ -277,96 +278,6 @@ struct channel_iterator
     CHANNEL_NODE channelNode;
 };
 
-typedef enum
-{
-    /* *************************************************************************
-     * Bug 3820969
-     * THINK BEFORE CHANGING ENUM ORDER HERE.
-     * VGPU-guest uses this same ordering. Because this enum is not versioned,
-     * changing the order here WILL BREAK old-guest-on-newer-host compatibility.
-     * ************************************************************************/
-
-    // *ENG_XYZ, e.g.: ENG_GR, ENG_CE etc.,
-    ENGINE_INFO_TYPE_ENG_DESC = 0,
-
-    // HW engine ID
-    ENGINE_INFO_TYPE_FIFO_TAG,
-
-    // RM_ENGINE_TYPE_*
-    ENGINE_INFO_TYPE_RM_ENGINE_TYPE,
-
-    //
-    // runlist id (meaning varies by GPU)
-    // Valid only for Esched-driven engines
-    //
-    ENGINE_INFO_TYPE_RUNLIST,
-
-    // NV_PFIFO_INTR_MMU_FAULT_ENG_ID_*
-    ENGINE_INFO_TYPE_MMU_FAULT_ID,
-
-    // ROBUST_CHANNEL_*
-    ENGINE_INFO_TYPE_RC_MASK,
-
-    // Reset Bit Position. On Ampere, only valid if not _INVALID
-    ENGINE_INFO_TYPE_RESET,
-
-    // Interrupt Bit Position
-    ENGINE_INFO_TYPE_INTR,
-
-    // log2(MC_ENGINE_*)
-    ENGINE_INFO_TYPE_MC,
-
-    // The DEV_TYPE_ENUM for this engine
-    ENGINE_INFO_TYPE_DEV_TYPE_ENUM,
-
-    // The particular instance of this engine type
-    ENGINE_INFO_TYPE_INSTANCE_ID,
-
-    //
-    // The base address for this engine's NV_RUNLIST. Valid only on Ampere+
-    // Valid only for Esched-driven engines
-    //
-    ENGINE_INFO_TYPE_RUNLIST_PRI_BASE,
-
-    //
-    // If this entry is a host-driven engine.
-    // Update _isEngineInfoTypeValidForOnlyHostDriven when adding any new entry.
-    //
-    ENGINE_INFO_TYPE_IS_HOST_DRIVEN_ENGINE,
-
-    //
-    // The index into the per-engine NV_RUNLIST registers. Valid only on Ampere+
-    // Valid only for Esched-driven engines
-    //
-    ENGINE_INFO_TYPE_RUNLIST_ENGINE_ID,
-
-    //
-    // The base address for this engine's NV_CHRAM registers. Valid only on
-    // Ampere+
-    //
-    // Valid only for Esched-driven engines
-    //
-    ENGINE_INFO_TYPE_CHRAM_PRI_BASE,
-
-    // This entry added to copy data at RMCTRL_EXPORT() call for Kernel RM
-    ENGINE_INFO_TYPE_KERNEL_RM_MAX,
-    // Used for iterating the engine info table by the index passed.
-    ENGINE_INFO_TYPE_INVALID = ENGINE_INFO_TYPE_KERNEL_RM_MAX,
-
-    // Size of FIFO_ENGINE_LIST.engineData
-    ENGINE_INFO_TYPE_ENGINE_DATA_ARRAY_SIZE = ENGINE_INFO_TYPE_INVALID,
-
-    // Input-only parameter for kfifoEngineInfoXlate.
-    ENGINE_INFO_TYPE_PBDMA_ID
-
-    /* *************************************************************************
-     * Bug 3820969
-     * THINK BEFORE CHANGING ENUM ORDER HERE.
-     * VGPU-guest uses this same ordering. Because this enum is not versioned,
-     * changing the order here WILL BREAK old-guest-on-newer-host compatibility.
-     * ************************************************************************/
-} ENGINE_INFO_TYPE;
-
 // Maximum number of pbdma IDs for a given engine
 #define FIFO_ENGINE_MAX_NUM_PBDMA       2
 
@@ -409,7 +320,7 @@ typedef struct _def_engine_info
 } ENGINE_INFO;
 
 // Fully qualified instance block address
-typedef struct
+typedef struct _inst_block_desc
 {
     NvU64   address;        // Physical address or IOVA (unshifted)
     NvU32   aperture;       // INST_BLOCK_APERTURE
@@ -523,6 +434,7 @@ struct KernelFifo {
     NvBool bMixedInstmemApertureDefAllowed;
     NvBool bIsZombieSubctxWarEnabled;
     NvBool bIsSchedSupported;
+    NvBool bGuestGenenratesWorkSubmitToken;
     NvBool bWddmInterleavingPolicyEnabled;
     NvBool bUserdInSystemMemory;
     NvBool bUserdMapDmaSupported;
@@ -536,7 +448,7 @@ struct KernelFifo {
     MEMORY_DESCRIPTOR *pBar1VF;
     MEMORY_DESCRIPTOR *pBar1PrivVF;
     MEMORY_DESCRIPTOR *pRegVF;
-    CTX_BUF_POOL_INFO *pRunlistBufPool[62];
+    CTX_BUF_POOL_INFO *pRunlistBufPool[63];
     MEMORY_DESCRIPTOR ***pppRunlistBufMemDesc;
 };
 
@@ -935,19 +847,19 @@ static inline NV_STATUS kfifoConstructEngineList(struct OBJGPU *pGpu, struct Ker
 
 #define kfifoConstructEngineList_HAL(pGpu, pKernelFifo) kfifoConstructEngineList(pGpu, pKernelFifo)
 
-NV_STATUS kfifoGetHostDeviceInfoTable_KERNEL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO *pEngineInfo, NvHandle hMigClient);
+NV_STATUS kfifoGetHostDeviceInfoTable_KERNEL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO *pEngineInfo, struct Device *pMigDevice);
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoGetHostDeviceInfoTable(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO *pEngineInfo, NvHandle hMigClient) {
+static inline NV_STATUS kfifoGetHostDeviceInfoTable(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, ENGINE_INFO *pEngineInfo, struct Device *pMigDevice) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoGetHostDeviceInfoTable(pGpu, pKernelFifo, pEngineInfo, hMigClient) kfifoGetHostDeviceInfoTable_KERNEL(pGpu, pKernelFifo, pEngineInfo, hMigClient)
+#define kfifoGetHostDeviceInfoTable(pGpu, pKernelFifo, pEngineInfo, pMigDevice) kfifoGetHostDeviceInfoTable_KERNEL(pGpu, pKernelFifo, pEngineInfo, pMigDevice)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoGetHostDeviceInfoTable_HAL(pGpu, pKernelFifo, pEngineInfo, hMigClient) kfifoGetHostDeviceInfoTable(pGpu, pKernelFifo, pEngineInfo, hMigClient)
+#define kfifoGetHostDeviceInfoTable_HAL(pGpu, pKernelFifo, pEngineInfo, pMigDevice) kfifoGetHostDeviceInfoTable(pGpu, pKernelFifo, pEngineInfo, pMigDevice)
 
 void kfifoGetSubctxType_GV100(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, struct KernelChannel *arg0, NvU32 *arg1);
 
@@ -1279,21 +1191,21 @@ static inline NV_STATUS kfifoGetVChIdForSChId(struct OBJGPU *pGpu, struct Kernel
 
 #define kfifoGetVChIdForSChId_HAL(pGpu, pKernelFifo, chId, gfid, engineId, pVChid) kfifoGetVChIdForSChId(pGpu, pKernelFifo, chId, gfid, engineId, pVChid)
 
-static inline NV_STATUS kfifoProgramChIdTable_56cd7a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, NvHandle hMigClient, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
+static inline NV_STATUS kfifoProgramChIdTable_56cd7a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
     return NV_OK;
 }
 
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoProgramChIdTable(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, NvHandle hMigClient, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
+static inline NV_STATUS kfifoProgramChIdTable(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoProgramChIdTable(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, hMigClient, engineFifoListNumEntries, pEngineFifoList) kfifoProgramChIdTable_56cd7a(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, hMigClient, engineFifoListNumEntries, pEngineFifoList)
+#define kfifoProgramChIdTable(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList) kfifoProgramChIdTable_56cd7a(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-#define kfifoProgramChIdTable_HAL(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, hMigClient, engineFifoListNumEntries, pEngineFifoList) kfifoProgramChIdTable(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, hMigClient, engineFifoListNumEntries, pEngineFifoList)
+#define kfifoProgramChIdTable_HAL(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList) kfifoProgramChIdTable(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pMigDevice, engineFifoListNumEntries, pEngineFifoList)
 
 static inline NV_STATUS kfifoRestoreSchedPolicy_56cd7a(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo) {
     return NV_OK;
@@ -1644,37 +1556,37 @@ static inline NV_STATUS kfifoChidMgrFreeChid(struct OBJGPU *pGpu, struct KernelF
 #define kfifoChidMgrFreeChid(pGpu, pKernelFifo, pChidMgr, ChID) kfifoChidMgrFreeChid_IMPL(pGpu, pKernelFifo, pChidMgr, ChID)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoChidMgrReserveSystemChids_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 numChannels, NvU32 flags, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, NvHandle hMigClient, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList);
+NV_STATUS kfifoChidMgrReserveSystemChids_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 numChannels, NvU32 flags, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoChidMgrReserveSystemChids(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 numChannels, NvU32 flags, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, NvHandle hMigClient, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
+static inline NV_STATUS kfifoChidMgrReserveSystemChids(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 numChannels, NvU32 flags, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoChidMgrReserveSystemChids(pGpu, pKernelFifo, pChidMgr, numChannels, flags, gfid, pChidOffset, pChannelCount, hMigClient, engineFifoListNumEntries, pEngineFifoList) kfifoChidMgrReserveSystemChids_IMPL(pGpu, pKernelFifo, pChidMgr, numChannels, flags, gfid, pChidOffset, pChannelCount, hMigClient, engineFifoListNumEntries, pEngineFifoList)
+#define kfifoChidMgrReserveSystemChids(pGpu, pKernelFifo, pChidMgr, numChannels, flags, gfid, pChidOffset, pChannelCount, pMigDevice, engineFifoListNumEntries, pEngineFifoList) kfifoChidMgrReserveSystemChids_IMPL(pGpu, pKernelFifo, pChidMgr, numChannels, flags, gfid, pChidOffset, pChannelCount, pMigDevice, engineFifoListNumEntries, pEngineFifoList)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoChidMgrFreeSystemChids_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, NvHandle hMigClient, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList);
+NV_STATUS kfifoChidMgrFreeSystemChids_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoChidMgrFreeSystemChids(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, NvHandle hMigClient, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
+static inline NV_STATUS kfifoChidMgrFreeSystemChids(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoChidMgrFreeSystemChids(pGpu, pKernelFifo, pChidMgr, gfid, pChidOffset, pChannelCount, hMigClient, engineFifoListNumEntries, pEngineFifoList) kfifoChidMgrFreeSystemChids_IMPL(pGpu, pKernelFifo, pChidMgr, gfid, pChidOffset, pChannelCount, hMigClient, engineFifoListNumEntries, pEngineFifoList)
+#define kfifoChidMgrFreeSystemChids(pGpu, pKernelFifo, pChidMgr, gfid, pChidOffset, pChannelCount, pMigDevice, engineFifoListNumEntries, pEngineFifoList) kfifoChidMgrFreeSystemChids_IMPL(pGpu, pKernelFifo, pChidMgr, gfid, pChidOffset, pChannelCount, pMigDevice, engineFifoListNumEntries, pEngineFifoList)
 #endif //__nvoc_kernel_fifo_h_disabled
 
-NV_STATUS kfifoSetChidOffset_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, NvHandle hMigClient, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList);
+NV_STATUS kfifoSetChidOffset_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList);
 
 #ifdef __nvoc_kernel_fifo_h_disabled
-static inline NV_STATUS kfifoSetChidOffset(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, NvHandle hMigClient, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
+static inline NV_STATUS kfifoSetChidOffset(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr, NvU32 offset, NvU32 numChannels, NvU32 gfid, NvU32 *pChidOffset, NvU32 *pChannelCount, struct Device *pMigDevice, NvU32 engineFifoListNumEntries, FIFO_ENGINE_LIST *pEngineFifoList) {
     NV_ASSERT_FAILED_PRECOMP("KernelFifo was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_fifo_h_disabled
-#define kfifoSetChidOffset(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pChidOffset, pChannelCount, hMigClient, engineFifoListNumEntries, pEngineFifoList) kfifoSetChidOffset_IMPL(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pChidOffset, pChannelCount, hMigClient, engineFifoListNumEntries, pEngineFifoList)
+#define kfifoSetChidOffset(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pChidOffset, pChannelCount, pMigDevice, engineFifoListNumEntries, pEngineFifoList) kfifoSetChidOffset_IMPL(pGpu, pKernelFifo, pChidMgr, offset, numChannels, gfid, pChidOffset, pChannelCount, pMigDevice, engineFifoListNumEntries, pEngineFifoList)
 #endif //__nvoc_kernel_fifo_h_disabled
 
 NvU32 kfifoChidMgrGetNumChannels_IMPL(struct OBJGPU *pGpu, struct KernelFifo *pKernelFifo, CHID_MGR *pChidMgr);
@@ -2072,4 +1984,5 @@ NV_STATUS RmIdleChannels(NvHandle hClient,
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_FIFO_NVOC_H_

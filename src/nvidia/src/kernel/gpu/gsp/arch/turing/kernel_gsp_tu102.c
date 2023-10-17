@@ -37,6 +37,7 @@
 #include "os/os.h"
 #include "nverror.h"
 #include "gsp/gsp_error.h"
+#include "nvrm_registry.h"
 #include "crashcat/crashcat_report.h"
 
 #include "published/turing/tu102/dev_gsp.h"
@@ -126,8 +127,9 @@ kgspAllocBootArgs_TU102
                                        flags),
                         _kgspAllocBootArgs_exit_cleanup);
 
-    NV_ASSERT_OK_OR_GOTO(nvStatus,
-                         memdescAlloc(pKernelGsp->pWprMetaDescriptor),
+    memdescTagAlloc(nvStatus, NV_FB_ALLOC_RM_INTERNAL_OWNER_WPR_METADATA,
+                    pKernelGsp->pWprMetaDescriptor);
+    NV_ASSERT_OK_OR_GOTO(nvStatus, nvStatus,
                          _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
@@ -152,8 +154,9 @@ kgspAllocBootArgs_TU102
                                        flags),
                          _kgspAllocBootArgs_exit_cleanup);
 
-    NV_ASSERT_OK_OR_GOTO(nvStatus,
-                         memdescAlloc(pKernelGsp->pLibosInitArgumentsDescriptor),
+    memdescTagAlloc(nvStatus, NV_FB_ALLOC_RM_INTERNAL_OWNER_LIBOS_ARGS,
+                    pKernelGsp->pLibosInitArgumentsDescriptor);
+    NV_ASSERT_OK_OR_GOTO(nvStatus, nvStatus,
                          _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
@@ -176,8 +179,9 @@ kgspAllocBootArgs_TU102
                                        flags),
                          _kgspAllocBootArgs_exit_cleanup);
 
-    NV_ASSERT_OK_OR_GOTO(nvStatus,
-                         memdescAlloc(pKernelGsp->pGspArgumentsDescriptor),
+    memdescTagAlloc(nvStatus, NV_FB_ALLOC_RM_INTERNAL_OWNER_BOOTLOADER_ARGS,
+                    pKernelGsp->pGspArgumentsDescriptor);
+    NV_ASSERT_OK_OR_GOTO(nvStatus, nvStatus,
                          _kgspAllocBootArgs_exit_cleanup);
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
@@ -514,6 +518,7 @@ kgspCalculateFbLayout_TU102
     NvU64                vbiosReservedOffset;
     NvU64                mmuLockLo, mmuLockHi;
     NvBool               bIsMmuLockValid;
+    NvU32                data;
 
     ct_assert(sizeof(*pWprMeta) == 256);
 
@@ -628,10 +633,21 @@ kgspCalculateFbLayout_TU102
         pWprMeta->sizeOfCrashReportQueue = (NvU32)memdescGetSize(pCrashCatQueueMemDesc);
     }
 
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_BOOT_GSPRM_WITH_BOOST_CLOCKS, &data) == NV_OK) &&
+        (data == NV_REG_STR_RM_BOOT_GSPRM_WITH_BOOST_CLOCKS_DISABLED))
+    {
+        pKernelGsp->bBootGspRmWithBoostClocks = NV_FALSE;
+    }
+
     pWprMeta->bootCount = 0;
     pWprMeta->verified = 0;
     pWprMeta->revision = GSP_FW_WPR_META_REVISION;
     pWprMeta->magic = GSP_FW_WPR_META_MAGIC;
+
+    if (pKernelGsp->bBootGspRmWithBoostClocks)
+    {
+        pWprMeta->flags |= GSP_FW_FLAGS_CLOCK_BOOST;
+    }
 
 #if 0
     NV_PRINTF(LEVEL_ERROR, "WPR meta data offset:     0x%016llx\n", pWprMeta->gspFwWprStart);
@@ -1062,7 +1078,7 @@ kgspSavePowerMgmtState_TU102
     gspfwSRMeta.magic                   = GSP_FW_SR_META_MAGIC;
     gspfwSRMeta.revision                = GSP_FW_SR_META_REVISION;
     gspfwSRMeta.sizeOfSuspendResumeData = pKernelGsp->pWprMeta->gspFwWprEnd - pKernelGsp->pWprMeta->gspFwWprStart;
-
+    gspfwSRMeta.flags                   = pKernelGsp->pWprMeta->flags;
 
     NV_ASSERT_OK_OR_GOTO(nvStatus,
                          kgspCreateRadix3(pGpu,
@@ -1087,8 +1103,9 @@ kgspSavePowerMgmtState_TU102
                                        MEMDESC_FLAGS_NONE),
                          exit_fail_cleanup);
 
-    NV_ASSERT_OK_OR_GOTO(nvStatus,
-                         memdescAlloc(pKernelGsp->pSRMetaDescriptor),
+    memdescTagAlloc(nvStatus, NV_FB_ALLOC_RM_INTERNAL_OWNER_SR_METADATA,
+                    pKernelGsp->pSRMetaDescriptor);
+    NV_ASSERT_OK_OR_GOTO(nvStatus, nvStatus,
                          exit_fail_cleanup);
 
     // Copy SR Metadata Structure

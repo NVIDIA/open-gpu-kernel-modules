@@ -56,7 +56,7 @@ typedef enum
     NVHDMIPKT_TIMEOUT                = 4,
     NVHDMIPKT_ERR_GENERAL            = 5,
     NVHDMIPKT_INSUFFICIENT_BANDWIDTH = 6,
-    NVHDMIPKT_RETRY                  = 7
+    NVHDMIPKT_RETRY                  = 7,
 } NVHDMIPKT_RESULT;
 
 // NVHDMIPKT_TYPE: HDMI Packet Enums
@@ -69,14 +69,13 @@ typedef enum _NVHDMIPKT_TYPE
     NVHDMIPKT_TYPE_GENERAL_CONTROL            = 3,  // GCP
     NVHDMIPKT_TYPE_VENDOR_SPECIFIC_INFOFRAME  = 4,  // VSI
     NVHDMIPKT_TYPE_AUDIO_INFOFRAME            = 5,  // Audio InfoFrame
-    NVHDMIPKT_TYPE_EXTENDED_METADATA_PACKET   = 6,  // Extended Metadata Packet (HDMI 2.1)
-    NVHDMIPKT_TYPE_SHARED_GENERIC1            = 7,  // ADA+ Specifc shared generic infoframe 1~6
-    NVHDMIPKT_TYPE_SHARED_GENERIC2            = 8,
-    NVHDMIPKT_TYPE_SHARED_GENERIC3            = 9,
-    NVHDMIPKT_TYPE_SHARED_GENERIC4            = 10,
-    NVHDMIPKT_TYPE_SHARED_GENERIC5            = 11,
-    NVHDMIPKT_TYPE_SHARED_GENERIC6            = 12,
-    NVHDMIPKT_INVALID_PKT_TYPE                = 13
+    NVHDMIPKT_TYPE_SHARED_GENERIC1            = 6,  // ADA+ Specifc shared generic infoframe 1~6
+    NVHDMIPKT_TYPE_SHARED_GENERIC2            = 7,
+    NVHDMIPKT_TYPE_SHARED_GENERIC3            = 8,
+    NVHDMIPKT_TYPE_SHARED_GENERIC4            = 9,
+    NVHDMIPKT_TYPE_SHARED_GENERIC5            = 10,
+    NVHDMIPKT_TYPE_SHARED_GENERIC6            = 11,
+    NVHDMIPKT_INVALID_PKT_TYPE                = 12
 } NVHDMIPKT_TYPE;
 
 // Hdmi packet TransmitControl defines. These definitions reflect the

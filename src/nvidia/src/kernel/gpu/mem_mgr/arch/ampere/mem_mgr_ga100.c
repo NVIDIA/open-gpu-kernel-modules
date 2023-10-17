@@ -116,7 +116,7 @@ memmgrScrubRegistryOverrides_GA100
          pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VIRTUALIZATION_MODE_HOST_VGPU) ||
          IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
          RMCFG_FEATURE_PLATFORM_GSP ||
-         (pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) && !gpuIsCacheOnlyModeEnabled(pGpu)) ||
+         pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
          IsSLIEnabled(pGpu))
     {
         pMemoryManager->bScrubOnFreeEnabled = NV_FALSE;
@@ -368,8 +368,8 @@ memmgrGetBlackListPages_GA100
 
     while (baseIndex < NV2080_CTRL_FB_DYNAMIC_BLACKLIST_MAX_PAGES)
     {
-        RM_API *pRmApi = IS_GSP_CLIENT(pGpu) ? GPU_GET_PHYSICAL_RMAPI(pGpu)
-                                             : rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
         portMemSet(pBlParams, 0, sizeof(*pBlParams));
 
         pBlParams->baseIndex = baseIndex;
@@ -500,7 +500,16 @@ memmgrIsApertureSupportedByFla_GA100
     NV_ADDRESS_SPACE aperture
 )
 {
-    if (aperture == ADDR_FBMEM)
+    //
+    // TODO: Bug 3802992: ADDR_EGM will be removed once the new design as part
+    // of bug 3802992 is implemented wherein EGM would be represented using
+    // ADDR_SYSMEM itself.
+    //
+    if ((aperture == ADDR_FBMEM)
+         || (aperture == ADDR_EGM) ||
+         ((aperture == ADDR_SYSMEM) &&
+          memmgrIsLocalEgmEnabled(pMemoryManager))
+       )
     {
         return NV_TRUE;
     }

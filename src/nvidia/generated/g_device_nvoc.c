@@ -410,12 +410,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Device[]
 #endif
     },
     {               /*  [14] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x13u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) deviceCtrlCmdGpuGetFindSubDeviceHandle_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x13u)
-        /*flags=*/      0x13u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
+        /*flags=*/      0x813u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x800293u,
         /*paramSize=*/  sizeof(NV0080_CTRL_GPU_FIND_SUBDEVICE_HANDLE_PARAM),
@@ -650,12 +650,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Device[]
 #endif
     },
     {               /*  [30] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2a10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) deviceCtrlCmdFifoGetEngineContextProperties_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
-        /*flags=*/      0x2210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2a10u)
+        /*flags=*/      0x2a10u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x801707u,
         /*paramSize=*/  sizeof(NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_PARAMS),
@@ -860,12 +860,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Device[]
 #endif
     },
     {               /*  [44] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) deviceCtrlCmdDmaGetCaps_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
-        /*flags=*/      0x11u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
+        /*flags=*/      0x811u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x80180du,
         /*paramSize=*/  sizeof(NV0080_CTRL_DMA_GET_CAPS_PARAMS),
@@ -965,12 +965,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Device[]
 #endif
     },
     {               /*  [51] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x810u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) deviceCtrlCmdMsencGetCaps_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x810u)
+        /*flags=*/      0x810u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x801b01u,
         /*paramSize=*/  sizeof(NV0080_CTRL_MSENC_GET_CAPS_PARAMS),
@@ -980,12 +980,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Device[]
 #endif
     },
     {               /*  [52] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xa10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) deviceCtrlCmdBspGetCapsV2_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xa10u)
+        /*flags=*/      0xa10u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x801c02u,
         /*paramSize=*/  sizeof(NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2),
@@ -1182,7 +1182,7 @@ static void __nvoc_init_funcTable_Device_1(Device *pThis) {
     pThis->__deviceCtrlCmdDmaInvalidateTLB__ = &deviceCtrlCmdDmaInvalidateTLB_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x11u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x811u)
     pThis->__deviceCtrlCmdDmaGetCaps__ = &deviceCtrlCmdDmaGetCaps_IMPL;
 #endif
 
@@ -1246,7 +1246,7 @@ static void __nvoc_init_funcTable_Device_1(Device *pThis) {
     pThis->__deviceCtrlCmdFifoStartSelectedChannels__ = &deviceCtrlCmdFifoStartSelectedChannels_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x2a10u)
     pThis->__deviceCtrlCmdFifoGetEngineContextProperties__ = &deviceCtrlCmdFifoGetEngineContextProperties_IMPL;
 #endif
 
@@ -1342,15 +1342,15 @@ static void __nvoc_init_funcTable_Device_1(Device *pThis) {
     pThis->__deviceCtrlCmdGpuGetSriovCaps__ = &deviceCtrlCmdGpuGetSriovCaps_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x13u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x813u)
     pThis->__deviceCtrlCmdGpuGetFindSubDeviceHandle__ = &deviceCtrlCmdGpuGetFindSubDeviceHandle_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x810u)
     pThis->__deviceCtrlCmdMsencGetCaps__ = &deviceCtrlCmdMsencGetCaps_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0xa10u)
     pThis->__deviceCtrlCmdBspGetCapsV2__ = &deviceCtrlCmdBspGetCapsV2_IMPL;
 #endif
 

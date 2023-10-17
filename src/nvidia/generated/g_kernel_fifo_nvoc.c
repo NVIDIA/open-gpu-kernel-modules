@@ -208,6 +208,12 @@ void __nvoc_init_dataField_KernelFifo(KernelFifo *pThis, RmHalspecOwner *pRmhals
         pThis->bIsSchedSupported = ((NvBool)(0 == 0));
     }
 
+    // Hal field -- bGuestGenenratesWorkSubmitToken
+    // default
+    {
+        pThis->bGuestGenenratesWorkSubmitToken = ((NvBool)(0 != 0));
+    }
+
     pThis->pBar1VF = ((void *)0);
 
     pThis->pBar1PrivVF = ((void *)0);

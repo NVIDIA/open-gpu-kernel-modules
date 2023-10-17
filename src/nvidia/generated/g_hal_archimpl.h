@@ -83,6 +83,7 @@ const struct ChipID
     {  NV_PMC_BOOT_0_ARCHITECTURE_AD100, NV_PMC_BOOT_0_IMPLEMENTATION_6,   0x0 } , // AD106 
     {  NV_PMC_BOOT_0_ARCHITECTURE_AD100, NV_PMC_BOOT_0_IMPLEMENTATION_7,   0x0 } , // AD107 
     {  NV_PMC_BOOT_0_ARCHITECTURE_GH100, NV_PMC_BOOT_0_IMPLEMENTATION_0,   0x0 } , // GH100 
+    {                               0x0,                            0x0,   0x0 } , // GH202  (disabled)
     {                               0x0,                            0x0,   0x0 } , // T001_FERMI_NOT_EXIST (disabled)
     {                               0x0,                            0x0,   0x0 } , // T124   (disabled)
     {                               0x0,                            0x0,   0x0 } , // T132   (disabled)
@@ -91,8 +92,8 @@ const struct ChipID
     {                               0x0,                            0x0,   0x0 } , // T194   (disabled)
     {                               0x0,                            0x0,   0x0 } , // T002_TURING_NOT_EXIST (disabled)
     {                               0x0,                            0x0,   0x0 } , // T234   (disabled)
-    {                               0x0,                            0x0,   0x0 } , // T003_HOPPER_NOT_EXIST (disabled)
-    {                               0x0,                            0x0,   0x0 } , // T004_ADA_NOT_EXIST (disabled)
+    {                               0x0,                            0x0,   0x0 } , // T003_ADA_NOT_EXIST (disabled)
+    {                               0x0,                            0x0,   0x0 } , // T004_HOPPER_NOT_EXIST (disabled)
     {                               0x0,                            0x0,   0x0 } , // T234D  (disabled)
     {                               0x0,                            0x0,   0x0 } , // AMODEL (disabled)
 

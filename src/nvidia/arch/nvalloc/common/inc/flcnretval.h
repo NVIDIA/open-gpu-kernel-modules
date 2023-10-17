@@ -160,6 +160,7 @@ typedef NvU8 FLCN_STATUS;
 #define FLCN_ERR_FREQ_NOT_SUPPORTED                                        (0x73U)
 #define FLCN_ERR_INVALID_SOURCE                                            (0x74U)
 #define FLCN_ERR_NOT_INITIALIZED                                           (0x75U)
+#define FLCN_ERR_CLOCK_NOT_SETTLED                                         (0x76U)
 
 // HDCP2.2 Errors
 #define FLCN_ERR_HDCP22_GETDKEY_FAILED                                     (0x80U)
@@ -235,7 +236,8 @@ typedef NvU8 FLCN_STATUS;
 #define FLCN_ERR_HS_APM_SCRATCH_INIT_INVALID                               (0xD0U)
 #define FLCN_ERR_HS_INVALID_KEY                                            (0xD1U)
 #define FLCN_ERR_HS_SWKG_INVALID_SIGNATURE                                 (0xD2U)
-
+#define FLCN_ERR_HS_SCP_LIB_DMHASH_FAILED                                  (0xD3U)
+#define FLCN_ERR_HS_SCP_LIB_AESKDF_FAILED                                  (0xD4U)
 
 //
 // BAR0/CSB Priv Read/Write Error Handling Defines

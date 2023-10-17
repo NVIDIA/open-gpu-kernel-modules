@@ -59,6 +59,7 @@ struct FlaMemory {
     NvBool (*__flamemShareCallback__)(struct FlaMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__flamemMapTo__)(struct FlaMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__flamemGetMapAddrSpace__)(struct FlaMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__flamemIsExportAllowed__)(struct FlaMemory *);
     NvU32 (*__flamemGetRefCount__)(struct FlaMemory *);
     void (*__flamemAddAdditionalDependants__)(struct RsClient *, struct FlaMemory *, RsResourceRef *);
     NV_STATUS (*__flamemControl_Prologue__)(struct FlaMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -118,6 +119,7 @@ NV_STATUS __nvoc_objCreate_FlaMemory(FlaMemory**, Dynamic*, NvU32, CALL_CONTEXT 
 #define flamemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) flamemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define flamemMapTo(pResource, pParams) flamemMapTo_DISPATCH(pResource, pParams)
 #define flamemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) flamemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define flamemIsExportAllowed(pMemory) flamemIsExportAllowed_DISPATCH(pMemory)
 #define flamemGetRefCount(pResource) flamemGetRefCount_DISPATCH(pResource)
 #define flamemAddAdditionalDependants(pClient, pResource, pReference) flamemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define flamemControl_Prologue(pResource, pCallContext, pParams) flamemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -164,6 +166,10 @@ static inline NV_STATUS flamemMapTo_DISPATCH(struct FlaMemory *pResource, RS_RES
 
 static inline NV_STATUS flamemGetMapAddrSpace_DISPATCH(struct FlaMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__flamemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool flamemIsExportAllowed_DISPATCH(struct FlaMemory *pMemory) {
+    return pMemory->__flamemIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 flamemGetRefCount_DISPATCH(struct FlaMemory *pResource) {
@@ -260,4 +266,5 @@ void flamemDestruct_IMPL(struct FlaMemory *pFlaMemory);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_FLA_MEM_NVOC_H_

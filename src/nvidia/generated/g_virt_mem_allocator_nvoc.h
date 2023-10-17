@@ -341,20 +341,6 @@ static inline void dmaUnmapBuffer(struct OBJGPU *pGpu, struct VirtMemAllocator *
 
 #define dmaUnmapBuffer_HAL(pGpu, pDma, pVAS, vaddr) dmaUnmapBuffer(pGpu, pDma, pVAS, vaddr)
 
-NvU64 dmaGetPfnFromPte_GP100(struct VirtMemAllocator *pDma, NvBool bSysMem, NvU64 pPteMem);
-
-
-#ifdef __nvoc_virt_mem_allocator_h_disabled
-static inline NvU64 dmaGetPfnFromPte(struct VirtMemAllocator *pDma, NvBool bSysMem, NvU64 pPteMem) {
-    NV_ASSERT_FAILED_PRECOMP("VirtMemAllocator was disabled!");
-    return 0;
-}
-#else //__nvoc_virt_mem_allocator_h_disabled
-#define dmaGetPfnFromPte(pDma, bSysMem, pPteMem) dmaGetPfnFromPte_GP100(pDma, bSysMem, pPteMem)
-#endif //__nvoc_virt_mem_allocator_h_disabled
-
-#define dmaGetPfnFromPte_HAL(pDma, bSysMem, pPteMem) dmaGetPfnFromPte(pDma, bSysMem, pPteMem)
-
 static inline struct OBJVASPACE *dmaGetPrivateVAS_fa6e19(struct VirtMemAllocator *pDma) {
     return ((void *)0);
 }
@@ -598,4 +584,5 @@ RmPhysAddr dmaPageArrayGetPhysAddr(DMA_PAGE_ARRAY *pPageArray, NvU32 pageIndex);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_VIRT_MEM_ALLOCATOR_NVOC_H_

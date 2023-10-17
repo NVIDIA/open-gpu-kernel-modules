@@ -560,4 +560,5 @@ void      gpuEngineEventNotificationListDestroy(OBJGPU *, GpuEngineEventNotifica
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_EVENT_NVOC_H_

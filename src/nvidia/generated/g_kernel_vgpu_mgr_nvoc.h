@@ -103,12 +103,19 @@ typedef struct VGPU_DEVICE_GUEST_FB_INFO
     NvBool              bValid;
 } VGPU_DEVICE_GUEST_FB_INFO;
 
+typedef struct
+{
+    NvU64 hbmBaseAddr;
+    NvU64 size;
+} HBM_REGION_INFO;
+
 /* This structure represents guest vgpu device's (assigned to VM) information.
    For VGPU-GSP, only KERNEL_HOST_VGPU_DEVICE is avaliable on kernel. */
 typedef struct KERNEL_HOST_VGPU_DEVICE
 {
     NvU32                            vgpuType;
-    NvHandle                         hClient;        /*Internal RM client to dup smcPartition*/
+    NvHandle                         hMigClient;        /*Internal RM client to dup smcPartition*/
+    NvHandle                         hMigDevice;        /*Internal RM device to dup smcPartition*/
     struct KERNEL_VGPU_GUEST        *vgpuGuest;
     NvU32                            gfid;
     NvU32                            swizzId;
@@ -120,6 +127,8 @@ typedef struct KERNEL_HOST_VGPU_DEVICE
     struct REQUEST_VGPU_INFO_NODE   *pRequestVgpuInfoNode;
     struct PhysMemSubAlloc                 *pPhysMemSubAlloc;
     struct HOST_VGPU_DEVICE         *pHostVgpuDevice;
+    HBM_REGION_INFO                 *hbmRegionList;
+    NvU32                            numValidHbmRegions;
     // Legacy fields
     NvHandle                         hPluginFBAllocationClient;
     VGPU_DEVICE_GUEST_FB_INFO        vgpuDeviceGuestFbInfo;
@@ -385,4 +394,5 @@ kvgpuMgrRestoreSmcExecPart(struct OBJGPU *pGpu,KERNEL_HOST_VGPU_DEVICE *pKernelH
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_VGPU_MGR_NVOC_H_

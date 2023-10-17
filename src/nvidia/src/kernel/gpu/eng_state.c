@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,10 +45,14 @@ engstateConstructBase_IMPL
     pEngstate->engDesc      = engDesc;
     pEngstate->currentState = ENGSTATE_STATE_UNDEFINED;
 
+    if (pEngstate->getProperty(pEngstate, PDB_PROP_ENGSTATE_IS_MISSING))
+        return NV_ERR_NOT_SUPPORTED;
+
 #if NV_PRINTF_STRINGS_ALLOWED
     nvDbgSnprintf(pEngstate->name, sizeof(pEngstate->name), "%s:%d",
         objGetClassName(pEngstate), ENGDESC_FIELD(pEngstate->engDesc, _INST));
 #endif
+
     return NV_OK;
 }
 
@@ -151,6 +155,24 @@ engstateGetName_IMPL
     return pEngstate->name;
 #else
     return "";
+#endif
+}
+
+void
+engstateLogStateStatus_IMPL
+(
+    OBJENGSTATE   *pEngstate,
+    ENGSTATE_STATE targetState,
+    NV_STATUS      targetStatus
+)
+{
+    ENGSTATE_STATUS *status = &pEngstate->status[targetState];
+    NV_ASSERT_OR_RETURN_VOID(targetState < ENGSTATE_STATE_COUNT);
+
+    status->engStatus = targetStatus;
+
+#if NV_PRINTF_STRINGS_ALLOWED
+    portStringCopy(status->name, sizeof(status->name), engstateGetName(pEngstate), portStringLength(engstateGetName(pEngstate)) + 1);
 #endif
 }
 

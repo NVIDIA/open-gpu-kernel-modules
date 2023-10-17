@@ -32,6 +32,7 @@
 
 #include "nvtypes.h"
 #include "nvmisc.h"
+#include "nv_common_utils.h"
 #include <nvlimits.h> /* NV_MAX_SUBDEVICES */
 
 typedef struct {
@@ -299,7 +300,7 @@ static inline int nvDpyIdListToNvControlVal(NVDpyIdList dpyIdList)
 static inline NVDpyId nvNvControlValToDpyId(int val)
 {
     NVDpyId dpyId;
-    dpyId.opaqueDpyId = (val == 0) ? 0 : 1 << (__builtin_ffs(val)-1);
+    dpyId.opaqueDpyId = (val == 0) ? 0 : 1 << (nv_ffs(val)-1);
     return dpyId;
 }
 
@@ -316,7 +317,7 @@ static inline NVDpyIdList nvNvControlValToDpyIdList(int val)
 static inline NVDpyId nvNvU32ToDpyId(NvU32 val)
 {
     NVDpyId dpyId;
-    dpyId.opaqueDpyId = (val == 0) ? 0 : 1 << (__builtin_ffs(val)-1);
+    dpyId.opaqueDpyId = (val == 0) ? 0 : 1 << (nv_ffs(val)-1);
     return dpyId;
 }
 
@@ -340,7 +341,7 @@ static inline NvU32 nvDpyIdListToNvU32(NVDpyIdList dpyIdList)
 /* Return the bit position of dpyId: a number in the range [0..31]. */
 static inline NvU32 nvDpyIdToIndex(NVDpyId dpyId)
 {
-    return __builtin_ffs(dpyId.opaqueDpyId) - 1;
+    return nv_ffs(dpyId.opaqueDpyId) - 1;
 }
 
 /* Return a display ID that is not in the list passed in. */
@@ -352,7 +353,7 @@ static inline NVDpyId nvNewDpyId(NVDpyIdList excludeList)
         return nvInvalidDpyId();
     }
     dpyId.opaqueDpyId =
-        1U << (__builtin_ffs(~excludeList.opaqueDpyIdList) - 1);
+        1U << (nv_ffs(~excludeList.opaqueDpyIdList) - 1);
     return dpyId;
 }
 

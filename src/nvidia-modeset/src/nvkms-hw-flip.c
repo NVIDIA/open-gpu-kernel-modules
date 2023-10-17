@@ -36,6 +36,7 @@
 #include "nvkms-dpy.h"
 #include "nvkms-lut.h"
 #include "nvkms-softfloat.h"
+#include "nvkms-ctxdma.h"
 
 #include "nvkms-sync.h"
 
@@ -117,8 +118,16 @@ static NvBool AssignPostSyncptEvoHwState(
     threshold = pChannel->postSyncpt.syncptMaxVal + 1;
 
     /*! each channel associated with one post-syncpt */
-    pFlipSyncObject->u.syncpts.postCtxDma = pChannel->postSyncpt.hCtxDma;
+    pFlipSyncObject->u.syncpts.surfaceDesc =
+        pChannel->postSyncpt.surfaceDesc;
     pFlipSyncObject->u.syncpts.postValue = threshold;
+
+    /*
+     * AllocPostSyncptPerChannel()->AllocSyncpt() sets allocated to TRUE
+     * when postSyncpt is allocated/valid.
+     */
+    pFlipSyncObject->u.syncpts.isPostSyncptSpecified =
+        pChannel->postSyncpt.allocated;
 
     pFlipSyncObject->usingSyncpt = TRUE;
 
@@ -152,102 +161,6 @@ void nvFillPostSyncptReplyOneChannel(
     }
 }
 
-static NvBool GetPreSyncptCtxDma(NVDevEvoRec *pDevEvo,
-                                 NVEvoChannel *pChannel, const NvU32 id)
-{
-    NvU32 hSyncptCtxDma, hSyncpt;
-
-    /*! use id value to check the global table */
-    if (pDevEvo->preSyncptTable[id].hCtxDma == 0) {
-        /*! Register - allocate and bind ctxdma to syncpt*/
-        if (!nvRmEvoAllocAndBindSyncpt(pDevEvo,
-                                       pChannel,
-                                       id,
-                                       &hSyncpt,
-                                       &hSyncptCtxDma)) {
-            nvAssert(!"Failed to register pre-syncpt");
-            return FALSE;
-        }
-
-        /*! Fill the Entry in Global Table */
-        pDevEvo->preSyncptTable[id].hCtxDma = hSyncptCtxDma;
-        pDevEvo->preSyncptTable[id].hSyncpt = hSyncpt;
-        pDevEvo->preSyncptTable[id].channelMask |= pChannel->channelMask;
-        pDevEvo->preSyncptTable[id].id = id;
-    } else {
-        /*!
-         * syncpt found, just bind the context dma of this syncpt
-         * to the window if it is not already.
-         */
-        if ((pDevEvo->preSyncptTable[id].channelMask &
-             pChannel->channelMask) == 0) {
-
-            NvU32 ret =
-                nvRmEvoBindDispContextDMA(pDevEvo,
-                                          pChannel,
-                                          pDevEvo->preSyncptTable[id].hCtxDma);
-            if (ret != NVOS_STATUS_SUCCESS) {
-                nvAssert(!"Failed to bind pre-syncpt with ctxdma");
-            }
-            pDevEvo->preSyncptTable[id].channelMask |= pChannel->channelMask;
-            /*! hSyncpt already allocated for id*/
-        }
-    }
-
-    return TRUE;
-}
-
-static NvBool RegisterPreSyncpt(NVDevEvoRec *pDevEvo,
-                                struct NvKmsFlipWorkArea *pWorkArea)
-{
-    NvU32 sd;
-    NvU32 ret = TRUE;
-    const NVDispEvoRec *pDispEvo;
-
-    pDevEvo->pAllSyncptUsedInCurrentFlip =
-        nvCalloc(1, sizeof(NvBool) * NV_SYNCPT_GLOBAL_TABLE_LENGTH);
-    if (pDevEvo->pAllSyncptUsedInCurrentFlip == NULL) {
-        ret = FALSE;
-        goto done;
-    }
-
-    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        NvU32 head;
-        for (head = 0; head < ARRAY_LEN(pWorkArea->sd[sd].head); head++) {
-            NVFlipEvoHwState *pFlipState =
-                &pWorkArea->sd[sd].head[head].newState;
-            NvU32 layer;
-
-            for (layer = 0; layer < ARRAY_LEN(pFlipState->layer); layer++) {
-                NVFlipSyncObjectEvoHwState *pFlipSyncObject =
-                    &pFlipState->layer[layer].syncObject;
-                NvU32 preSyncpt = pFlipSyncObject->u.syncpts.preSyncpt;
-
-                if (!pFlipState->dirty.layerSyncObjects[layer] ||
-                        !pFlipSyncObject->usingSyncpt ||
-                        !pFlipSyncObject->u.syncpts.isPreSyncptSpecified) {
-                    continue;
-                }
-
-                if (!GetPreSyncptCtxDma(pDevEvo,
-                                        pDevEvo->head[head].layer[layer],
-                                        preSyncpt)) {
-                    ret = FALSE;
-                    goto done;
-                }
-
-                pDevEvo->pAllSyncptUsedInCurrentFlip[preSyncpt] = NV_TRUE;
-            }
-        }
-    }
-
-done:
-    nvFree(pDevEvo->pAllSyncptUsedInCurrentFlip);
-    pDevEvo->pAllSyncptUsedInCurrentFlip = NULL;
-
-    return ret;
-}
-
 void nvClearFlipEvoHwState(
     NVFlipEvoHwState *pFlipState)
 {
@@ -271,6 +184,8 @@ void nvInitFlipEvoHwState(
 {
     NVDispEvoRec *pDispEvo = pDevEvo->gpus[sd].pDispEvo;
     const NVEvoSubDevHeadStateRec *pSdHeadState;
+    const NVDispHeadStateEvoRec *pHeadState;
+
     NvU32 i;
 
     nvClearFlipEvoHwState(pFlipState);
@@ -280,6 +195,7 @@ void nvInitFlipEvoHwState(
     }
 
     pSdHeadState = &pDevEvo->gpus[sd].headState[head];
+    pHeadState = &pDispEvo->headState[head];
 
     pFlipState->viewPortPointIn = pSdHeadState->viewPortPointIn;
     pFlipState->cursor = pSdHeadState->cursor;
@@ -304,6 +220,15 @@ void nvInitFlipEvoHwState(
 
     pFlipState->disableMidFrameAndDWCFWatermark =
         pSdHeadState->targetDisableMidFrameAndDWCFWatermark;
+
+    pFlipState->tf = pHeadState->tf;
+
+    pFlipState->hdrInfoFrame.enabled = pHeadState->hdrInfoFrameOverride.enabled;
+    pFlipState->hdrInfoFrame.eotf = pHeadState->hdrInfoFrameOverride.eotf;
+    pFlipState->hdrInfoFrame.staticMetadata =
+        pHeadState->hdrInfoFrameOverride.staticMetadata;
+
+    pFlipState->colorimetry = pHeadState->colorimetry;
 }
 
 
@@ -319,7 +244,7 @@ NvBool nvIsLayerDirty(const struct NvKmsFlipCommonParams *pParams,
            pParams->layer[layer].compositionParams.specified ||
            pParams->layer[layer].csc.specified ||
            pParams->layer[layer].hdr.specified ||
-           pParams->layer[layer].colorspace.specified;
+           pParams->layer[layer].colorSpace.specified;
 }
 
 /*!
@@ -608,7 +533,7 @@ static NvBool FlipTimeStampValidForChannel(
     return TRUE;
 }
 
-static NvBool UpdateFlipEvoHwStateHDRStaticMetadata(
+static NvBool UpdateLayerFlipEvoHwStateHDRStaticMetadata(
     const NVDevEvoRec *pDevEvo,
     const struct NvKmsFlipCommonParams *pParams,
     NVFlipEvoHwState *pFlipState,
@@ -804,15 +729,19 @@ static NvBool UpdateLayerFlipEvoHwStateCommon(
             pParams->layer[layer].compositionParams.val;
     }
 
-    if (!UpdateFlipEvoHwStateHDRStaticMetadata(
+    if (!UpdateLayerFlipEvoHwStateHDRStaticMetadata(
             pDevEvo, pParams, pFlipState,
             pHwState, head, layer)) {
         return FALSE;
     }
 
-    if (pParams->layer[layer].colorspace.specified) {
-        pHwState->colorspace =
-            pParams->layer[layer].colorspace.val;
+    if (pParams->layer[layer].colorRange.specified) {
+        pHwState->colorRange = pParams->layer[layer].colorRange.val;
+    }
+
+    if (pParams->layer[layer].colorSpace.specified) {
+        pHwState->colorSpace =
+            pParams->layer[layer].colorSpace.val;
     }
 
     if (pHwState->composition.depth == 0) {
@@ -918,6 +847,19 @@ static NvBool UpdateMainLayerFlipEvoHwState(
     }
 
     pHwState->tearing = pParams->layer[NVKMS_MAIN_LAYER].tearing;
+
+    /*
+     * XXX: Cludge. Ideally, this would be handled by FlipRequiresNonTearingMode
+     * recognizing a difference in HW state. However, the new HW LUT state is
+     * not computed until later, when nvEvoSetLut() and nvEvoSetLUTContextDma()
+     * are called. See bug 4054546.
+     */
+    if ((pParams->lut.input.specified ||
+        pParams->lut.output.specified) &&
+        !pDevEvo->hal->caps.supportsCoreLut) {
+
+        pHwState->tearing = FALSE;
+    }
 
     if (!ApplyBaseFlipOverrides(pDevEvo,
                                 sd, head, &pFlipState->layer[NVKMS_MAIN_LAYER],
@@ -1064,6 +1006,24 @@ NvBool nvUpdateFlipEvoHwState(
     if (pParams->tf.specified) {
         pFlipState->dirty.tf = TRUE;
         pFlipState->tf = pParams->tf.val;
+    }
+
+    if (pParams->colorimetry.specified) {
+        pFlipState->dirty.colorimetry = TRUE;
+        pFlipState->colorimetry = pParams->colorimetry.val;
+    }
+
+    if (pParams->hdrInfoFrame.specified) {
+        pFlipState->dirty.hdrStaticMetadata = TRUE;
+
+        if (pParams->hdrInfoFrame.enabled) {
+            pFlipState->hdrInfoFrame.eotf =
+                pParams->hdrInfoFrame.eotf;
+            pFlipState->hdrInfoFrame.staticMetadata =
+                pParams->hdrInfoFrame.staticMetadata;
+        }
+        pFlipState->hdrInfoFrame.enabled =
+            pParams->hdrInfoFrame.enabled;
     }
 
     for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
@@ -1314,7 +1274,7 @@ ValidateHDR(const NVDevEvoRec *pDevEvo,
             const NvU32 head,
             const NVFlipEvoHwState *pFlipState)
 {
-    NvU32 staticMetadataCount = 0;
+    NvU32 layerStaticMetadataCount = 0;
     NvU32 layerSupportedCount = 0;
 
     NvU32 layer;
@@ -1325,7 +1285,7 @@ ValidateHDR(const NVDevEvoRec *pDevEvo,
         }
 
         if (pFlipState->layer[layer].hdrStaticMetadata.enabled) {
-            staticMetadataCount++;
+            layerStaticMetadataCount++;
 
             /*
              * If HDR static metadata is enabled, we may need TMO. CSC11 will be
@@ -1337,26 +1297,31 @@ ValidateHDR(const NVDevEvoRec *pDevEvo,
                 return FALSE;
             }
 
-            // Already checked in UpdateFlipEvoHwStateHDRStaticMetadata()
+            // Already checked in UpdateLayerFlipEvoHwStateHDRStaticMetadata()
             nvAssert(pDevEvo->caps.layerCaps[layer].supportsHDR);
         }
     }
 
-    // If enabling HDR...
+    // If enabling HDR TF...
     // XXX HDR TODO: Handle other transfer functions
     if (pFlipState->tf == NVKMS_OUTPUT_TF_PQ) {
-        // At least one layer must have static metadata.
-        if (staticMetadataCount == 0) {
+        // At least one layer must support HDR.
+        if (layerSupportedCount == 0) {
             return FALSE;
         }
 
-        // At least one layer must support HDR, implied above.
-        nvAssert(layerSupportedCount != 0);
+        // If HDR metadata is not overridden for the head...
+        if (!pFlipState->hdrInfoFrame.enabled) {
+            // At least one layer must have static metadata.
+            if (layerStaticMetadataCount == 0) {
+                return FALSE;
+            }
+        }
     }
 
     // Only one layer can specify HDR static metadata.
     // XXX HDR TODO: Support multiple layers with HDR static metadata
-    if (staticMetadataCount > 1) {
+    if (layerStaticMetadataCount > 1) {
         return FALSE;
     }
 
@@ -1371,7 +1336,7 @@ ValidateColorspace(const NVDevEvoRec *pDevEvo,
     NvU32 layer;
 
     for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-        if ((pFlipState->layer[layer].colorspace !=
+        if ((pFlipState->layer[layer].colorSpace !=
              NVKMS_INPUT_COLORSPACE_NONE)) {
 
             NVSurfaceEvoPtr pSurfaceEvo =
@@ -1386,7 +1351,7 @@ ValidateColorspace(const NVDevEvoRec *pDevEvo,
             }
 
             // FP16 is only for use with scRGB.
-            if ((pFlipState->layer[layer].colorspace !=
+            if ((pFlipState->layer[layer].colorSpace !=
                  NVKMS_INPUT_COLORSPACE_SCRGB_LINEAR) &&
                 ((pSurfaceEvo->format ==
                   NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) ||
@@ -1396,7 +1361,7 @@ ValidateColorspace(const NVDevEvoRec *pDevEvo,
             }
 
             // scRGB is only compatible with FP16.
-            if ((pFlipState->layer[layer].colorspace ==
+            if ((pFlipState->layer[layer].colorSpace ==
                  NVKMS_INPUT_COLORSPACE_SCRGB_LINEAR) &&
                 !((pSurfaceEvo->format ==
                    NvKmsSurfaceMemoryFormatRF16GF16BF16AF16) ||
@@ -1547,6 +1512,10 @@ static void UpdateUpdateFlipLockState(NVDevEvoPtr pDevEvo,
 // Adjust from EDID-encoded maxCLL/maxFALL to actual values in units of 1 cd/m2
 static inline NvU32 MaxCvToVal(NvU32 cv)
 {
+    if (cv == 0) {
+        return 0;
+    }
+
     // 50*2^(cv/32)
     return f64_to_ui32(
         f64_mul(ui32_to_f64(50),
@@ -1581,73 +1550,128 @@ static void UpdateHDR(NVDevEvoPtr pDevEvo,
     NvBool dirty = FALSE;
 
     if (pFlipState->dirty.tf) {
-        // XXX HDR TODO: Handle other transfer functions
-        if (pFlipState->tf == NVKMS_OUTPUT_TF_PQ) {
-            pHeadState->hdr.outputState = NVKMS_HDR_OUTPUT_STATE_HDR;
-        } else if (pHeadState->hdr.outputState == NVKMS_HDR_OUTPUT_STATE_HDR) {
-            pHeadState->hdr.outputState =
-                NVKMS_HDR_OUTPUT_STATE_TRANSITIONING_TO_SDR;
-        }
         pHeadState->tf = pFlipState->tf;
 
         dirty = TRUE;
     }
 
     if (pFlipState->dirty.hdrStaticMetadata) {
-        NvU32 layer;
         NvBool found = FALSE;
-        for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
-            // Populate head with updated static metadata.
-            if (pFlipState->layer[layer].hdrStaticMetadata.enabled) {
-                NvU32 targetMaxCLL = MaxCvToVal(pHdrInfo->max_cll);
 
-                // Send this layer's metadata to the display.
-                pHeadState->hdr.staticMetadata =
-                    pFlipState->layer[layer].hdrStaticMetadata.val;
+        /*
+         * Track if HDR static metadata is overridden for the head in order to
+         * initialize subsequent instances of NVFlipEvoHwState.
+         */
+        pHeadState->hdrInfoFrameOverride.enabled =
+            pFlipState->hdrInfoFrame.enabled;
+        pHeadState->hdrInfoFrameOverride.eotf =
+            pFlipState->hdrInfoFrame.eotf;
+        pHeadState->hdrInfoFrameOverride.staticMetadata =
+            pFlipState->hdrInfoFrame.staticMetadata;
 
-                /*
-                 * Prepare for tone mapping. If we expect to tone map and the
-                 * EDID has valid lum values, mirror EDID lum values to prevent
-                 * redundant tone mapping by the display. We will tone map to
-                 * the specified maxCLL.
-                 */
-                if (nvNeedsTmoLut(pDevEvo, pDevEvo->head[head].layer[layer],
-                                  &pFlipState->layer[layer],
-                                  nvGetHDRSrcMaxLum(
-                                      &pFlipState->layer[layer]),
-                                  targetMaxCLL)) {
-                    NvU32 targetMaxFALL = MaxCvToVal(pHdrInfo->max_fall);
-                    if ((targetMaxCLL > 0) &&
-                        (targetMaxCLL <= 10000) &&
-                        (targetMaxCLL >= targetMaxFALL)) {
+        // Populate head with updated static metadata.
 
-                        NvU32 targetMinCLL = MinCvToVal(pHdrInfo->min_cll,
-                                                        targetMaxCLL);
+        if (pFlipState->hdrInfoFrame.enabled) {
+            // If HDR static metadata is overridden for the head, use that.
+            pHeadState->hdrInfoFrame.staticMetadata =
+                pFlipState->hdrInfoFrame.staticMetadata;
+            pHeadState->hdrInfoFrame.eotf =
+                pFlipState->hdrInfoFrame.eotf;
 
-                        pHeadState->hdr.staticMetadata.
-                            maxDisplayMasteringLuminance = targetMaxCLL;
-                        pHeadState->hdr.staticMetadata.
-                            minDisplayMasteringLuminance = targetMinCLL;
-                        pHeadState->hdr.staticMetadata.maxCLL  = targetMaxCLL;
-                        pHeadState->hdr.staticMetadata.maxFALL = targetMaxFALL;
+            pHeadState->hdrInfoFrame.state = NVKMS_HDR_INFOFRAME_STATE_ENABLED;
+            found = TRUE;
+        } else {
+            NvU32 layer;
+
+            /*
+             * If HDR static metadata is specified for layer(s), construct the
+             * head's HDR static metadata using those.
+             */
+            for (layer = 0; layer < pDevEvo->head[head].numLayers; layer++) {
+                if (pFlipState->layer[layer].hdrStaticMetadata.enabled) {
+                    NvU32 targetMaxCLL = MaxCvToVal(pHdrInfo->max_cll);
+
+                    /*
+                     * Only one layer can currently specify static metadata,
+                     * verified by ValidateHDR().
+                     *
+                     * XXX HDR TODO: Combine metadata from multiple layers.
+                     */
+                    nvAssert(!found);
+
+                    // Send this layer's metadata to the display.
+                    pHeadState->hdrInfoFrame.staticMetadata =
+                        pFlipState->layer[layer].hdrStaticMetadata.val;
+
+                    // Infer metadata eotf from output tf
+                    // XXX HDR TODO: Handle other transfer functions
+                    switch (pHeadState->tf) {
+                        default:
+                            nvAssert(!"Unrecognized output TF");
+                            // Fall through
+                        case NVKMS_OUTPUT_TF_TRADITIONAL_GAMMA_SDR:
+                        case NVKMS_OUTPUT_TF_NONE:
+                            pHeadState->hdrInfoFrame.eotf =
+                                NVKMS_INFOFRAME_EOTF_SDR_GAMMA;
+                            break;
+                        case NVKMS_OUTPUT_TF_PQ:
+                            pHeadState->hdrInfoFrame.eotf =
+                                NVKMS_INFOFRAME_EOTF_ST2084;
+                            break;
+                    }
+
+                    pHeadState->hdrInfoFrame.state =
+                        NVKMS_HDR_INFOFRAME_STATE_ENABLED;
+                    found = TRUE;
+
+                    /*
+                     * Prepare for tone mapping. If we expect to tone map and
+                     * the EDID has valid lum values, mirror EDID lum values to
+                     * prevent redundant tone mapping by the display. We will
+                     * tone map to the specified maxCLL.
+                     */
+                    if (nvNeedsTmoLut(pDevEvo, pDevEvo->head[head].layer[layer],
+                                      &pFlipState->layer[layer],
+                                      nvGetHDRSrcMaxLum(
+                                          &pFlipState->layer[layer]),
+                                      targetMaxCLL)) {
+                        NvU32 targetMaxFALL = MaxCvToVal(pHdrInfo->max_fall);
+                        if ((targetMaxCLL > 0) &&
+                            (targetMaxCLL <= 10000) &&
+                            (targetMaxCLL >= targetMaxFALL)) {
+
+                            NvU32 targetMinCLL = MinCvToVal(pHdrInfo->min_cll,
+                                                            targetMaxCLL);
+
+                            pHeadState->hdrInfoFrame.staticMetadata.
+                                maxDisplayMasteringLuminance = targetMaxCLL;
+                            pHeadState->hdrInfoFrame.staticMetadata.
+                                minDisplayMasteringLuminance = targetMinCLL;
+                            pHeadState->hdrInfoFrame.staticMetadata.maxCLL =
+                                targetMaxCLL;
+                            pHeadState->hdrInfoFrame.staticMetadata.maxFALL =
+                                targetMaxFALL;
+                        }
                     }
                 }
-
-                /*
-                 * Only one layer can currently specify static metadata,
-                 * verified by ValidateHDR().
-                 *
-                 * XXX HDR TODO: Combine metadata from multiple layers.
-                 */
-                nvAssert(!found);
-                found = TRUE;
             }
         }
+
         if (!found) {
-            nvkms_memset(&pHeadState->hdr.staticMetadata, 0,
+            nvkms_memset(&pHeadState->hdrInfoFrame.staticMetadata, 0,
                          sizeof(struct NvKmsHDRStaticMetadata));
+            if (pHeadState->hdrInfoFrame.state ==
+                    NVKMS_HDR_INFOFRAME_STATE_ENABLED) {
+                pHeadState->hdrInfoFrame.state =
+                    NVKMS_HDR_INFOFRAME_STATE_TRANSITIONING;
+            }
         }
 
+        dirty = TRUE;
+    }
+
+    if (pFlipState->dirty.colorimetry) {
+        pHeadState->colorimetry = pFlipState->colorimetry;
         dirty = TRUE;
     }
 
@@ -1745,6 +1769,8 @@ void nvFlipEvoOneHead(
             continue;
         }
 
+        nvPushEvoSubDevMask(pDevEvo, subDeviceMask);
+
         if (pFlipState->dirty.layerPosition[layer]) {
             /* Ensure position updates are supported on this layer. */
             nvAssert(pDevEvo->caps.layerCaps[layer].supportsWindowMode);
@@ -1761,8 +1787,6 @@ void nvFlipEvoOneHead(
                                            pDevEvo->head[head].layer[layer]);
             }
         }
-
-        nvPushEvoSubDevMask(pDevEvo, subDeviceMask);
 
         /* Inform DIFR about the upcoming flip. */
         if (pDevEvo->pDifrState) {
@@ -1796,7 +1820,7 @@ static void ChangeSurfaceFlipRefCount(
         if (increase) {
             nvEvoIncrementSurfaceRefCnts(pSurfaceEvo);
         } else {
-            nvEvoDecrementSurfaceRefCnts(pSurfaceEvo);
+            nvEvoDecrementSurfaceRefCnts(pDevEvo, pSurfaceEvo);
         }
     }
 }
@@ -2674,6 +2698,98 @@ void nvPostFlip(NVDevEvoRec *pDevEvo,
     }
 }
 
+static NvBool AllocPreSyncpt(NVDevEvoRec *pDevEvo,
+                             NVEvoChannel *pChannel, const NvU32 id)
+{
+    NVSurfaceDescriptor surfaceDesc;
+
+    /*! use id value to check the global table */
+    if (!pDevEvo->preSyncptTable[id].allocated) {
+        /*! Register - allocate and bind surface descriptor for syncpt*/
+        if (!nvRmEvoAllocAndBindSyncpt(pDevEvo,
+                                       pChannel,
+                                       id,
+                                       &surfaceDesc,
+                                       &pDevEvo->preSyncptTable[id])) {
+            nvAssert(!"Failed to register pre-syncpt");
+            return FALSE;
+        }
+
+        /*! Fill the Entry in Global Table */
+        pDevEvo->preSyncptTable[id].channelMask |= pChannel->channelMask;
+    } else {
+        /*!
+         * syncpt found, just bind the surface descriptor of this syncpt
+         * to the window if it is not already.
+         */
+        if ((pDevEvo->preSyncptTable[id].channelMask &
+             pChannel->channelMask) == 0) {
+
+            NvU32 ret =
+                pDevEvo->hal->BindSurfaceDescriptor(pDevEvo,
+                    pChannel, &pDevEvo->preSyncptTable[id].surfaceDesc);
+            if (ret != NVOS_STATUS_SUCCESS) {
+                nvAssert(!"Failed to bind surface descriptor for pre-syncpt");
+            }
+
+            pDevEvo->preSyncptTable[id].channelMask |= pChannel->channelMask;
+            /*! hSyncpt already allocated for id*/
+        }
+    }
+
+    return TRUE;
+}
+
+static NvBool RegisterPreSyncpt(NVDevEvoRec *pDevEvo,
+                                struct NvKmsFlipWorkArea *pWorkArea)
+{
+    NvU32 sd;
+    NvU32 ret = TRUE;
+    const NVDispEvoRec *pDispEvo;
+
+    pDevEvo->pAllSyncptUsedInCurrentFlip =
+        nvCalloc(1, sizeof(NvBool) * NV_SYNCPT_GLOBAL_TABLE_LENGTH);
+    if (pDevEvo->pAllSyncptUsedInCurrentFlip == NULL) {
+        ret = FALSE;
+        goto done;
+    }
+
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+        NvU32 head;
+        for (head = 0; head < ARRAY_LEN(pWorkArea->sd[sd].head); head++) {
+            NVFlipEvoHwState *pFlipState =
+                &pWorkArea->sd[sd].head[head].newState;
+            NvU32 layer;
+
+            for (layer = 0; layer < ARRAY_LEN(pFlipState->layer); layer++) {
+                NVFlipSyncObjectEvoHwState *pFlipSyncObject =
+                    &pFlipState->layer[layer].syncObject;
+                NvU32 preSyncpt = pFlipSyncObject->u.syncpts.preSyncpt;
+
+                if (!pFlipState->dirty.layerSyncObjects[layer] ||
+                    !pFlipSyncObject->usingSyncpt ||
+                    !pFlipSyncObject->u.syncpts.isPreSyncptSpecified) {
+                    continue;
+                }
+
+                if (!AllocPreSyncpt(pDevEvo, pDevEvo->head[head].layer[layer],
+                                    preSyncpt)) {
+                    ret = FALSE;
+                    goto done;
+                }
+
+                pDevEvo->pAllSyncptUsedInCurrentFlip[preSyncpt] = NV_TRUE;
+            }
+        }
+    }
+
+done:
+    nvFree(pDevEvo->pAllSyncptUsedInCurrentFlip);
+    pDevEvo->pAllSyncptUsedInCurrentFlip = NULL;
+
+    return ret;
+}
+
 NvBool nvPrepareToDoPreFlip(NVDevEvoRec *pDevEvo,
                             struct NvKmsFlipWorkArea *pWorkArea)
 {
@@ -2788,7 +2904,7 @@ void nvIdleMainLayerChannels(
         }
 
         /* Break out of the loop if we exceed the timeout. */
-        if (nvExceedsTimeoutUSec(&startTime, timeout)) {
+        if (nvExceedsTimeoutUSec(pDevEvo, &startTime, timeout)) {
             break;
         }
 
@@ -2869,7 +2985,6 @@ void nvToggleFlipLockPerDisp(NVDispEvoRec *pDispEvo, const NvU32 headMask,
 
             if (!nvUpdateFlipLockEvoOneHead(pDispEvo, head, &setEnable,
                                             TRUE /* set */,
-                                            NULL /* needsEarlyUpdate */,
                                             &updateState)) {
                 nvEvoLogDev(pDevEvo, EVO_LOG_WARN,
                     "Failed to toggle fliplock for swapgroups.");

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,8 @@
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/fsp/kern_fsp_retval.h"
 #include "gpu/gsp/kernel_gsp.h"
+#include "gpu/mem_mgr/mem_mgr.h"
+#include "gpu/pmu/kern_pmu.h"
 
 #include "published/hopper/gh100/dev_fsp_pri.h"
 #include "published/hopper/gh100/dev_fsp_addendum.h"
@@ -844,10 +846,11 @@ kfspSetupGspImages
     pGspImageMapSize = NV_ALIGN_UP(pGspImageSize, 0x1000);
 
     status = memdescCreate(&pKernelFsp->pGspFmcMemdesc, pGpu, pGspImageMapSize,
-                           0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED, flags);
+                           0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, flags);
     NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
-    status = memdescAlloc(pKernelFsp->pGspFmcMemdesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_7,
+                    pKernelFsp->pGspFmcMemdesc);
     NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
     status = memdescMap(pKernelFsp->pGspFmcMemdesc, 0, pGspImageMapSize, NV_TRUE,
@@ -972,6 +975,8 @@ kfspDumpDebugState_GH100
                   DRF_VAL(_GFW, _FSP_UCODE_VERSION, _MINOR, fspUcodeVersion));
     }
 
+    NV_PRINTF(LEVEL_ERROR, "GPU %04x:%02x:%02x\n",
+              gpuGetDomain(pGpu), gpuGetBus(pGpu), gpuGetDevice(pGpu));
     NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0) = 0x%x\n",
               GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)));
     NV_PRINTF(LEVEL_ERROR, "NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1) = 0x%x\n",
@@ -1097,10 +1102,11 @@ kfspSendBootCommands_GH100
         //
         flags = MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
         status = memdescCreate(&pKernelFsp->pSysmemFrtsMemdesc, pGpu, frtsSize,
-                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED, flags);
+                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED, flags);
         NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
-        status = memdescAlloc(pKernelFsp->pSysmemFrtsMemdesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_8,
+                        pKernelFsp->pSysmemFrtsMemdesc);
         NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
         // Set up a kernel mapping for future use in RM
@@ -1129,10 +1135,12 @@ kfspSendBootCommands_GH100
         // future, this code will need to be updated.
         // Bug 200711957 has more info and tracks longer term improvements.
         //
-        const NvU32 ESTIMATED_RESERVE_FB = 0x200000;
 
         // Offset from end of FB to be used by FSP
-        pCotPayload->frtsVidmemOffset = ESTIMATED_RESERVE_FB;
+        NvU32 FRTS_OFFSET_FROM_END =
+            memmgrGetFBEndReserveSizeEstimate_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu));
+
+        pCotPayload->frtsVidmemOffset = FRTS_OFFSET_FROM_END;
         pCotPayload->frtsVidmemSize = frtsSize;
     }
 

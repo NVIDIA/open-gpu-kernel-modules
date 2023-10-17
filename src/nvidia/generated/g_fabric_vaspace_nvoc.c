@@ -114,10 +114,6 @@ static NvBool __nvoc_thunk_OBJVASPACE_fabricvaspaceIsExternallyOwned(struct FABR
     return vaspaceIsExternallyOwned((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset));
 }
 
-static NvBool __nvoc_thunk_OBJVASPACE_fabricvaspaceIsInternalVaRestricted(struct FABRIC_VASPACE *pVAS) {
-    return vaspaceIsInternalVaRestricted((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset));
-}
-
 static NvU32 __nvoc_thunk_OBJVASPACE_fabricvaspaceGetFlags(struct FABRIC_VASPACE *pVAS) {
     return vaspaceGetFlags((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset));
 }
@@ -182,8 +178,8 @@ static NV_STATUS __nvoc_thunk_OBJVASPACE_fabricvaspaceGetPageTableInfo(struct FA
     return vaspaceGetPageTableInfo((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_OBJVASPACE_fabricvaspaceReserveMempool(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, NvHandle hClient, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags) {
-    return vaspaceReserveMempool((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset), pGpu, hClient, size, pageSizeLockMask, flags);
+static NV_STATUS __nvoc_thunk_OBJVASPACE_fabricvaspaceReserveMempool(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, struct Device *pDevice, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags) {
+    return vaspaceReserveMempool((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_FABRIC_VASPACE_OBJVASPACE.offset), pGpu, pDevice, size, pageSizeLockMask, flags);
 }
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_FABRIC_VASPACE = 
@@ -263,8 +259,6 @@ static void __nvoc_init_funcTable_FABRIC_VASPACE_1(FABRIC_VASPACE *pThis) {
     pThis->__fabricvaspaceIsMirrored__ = &__nvoc_thunk_OBJVASPACE_fabricvaspaceIsMirrored;
 
     pThis->__fabricvaspaceIsExternallyOwned__ = &__nvoc_thunk_OBJVASPACE_fabricvaspaceIsExternallyOwned;
-
-    pThis->__fabricvaspaceIsInternalVaRestricted__ = &__nvoc_thunk_OBJVASPACE_fabricvaspaceIsInternalVaRestricted;
 
     pThis->__fabricvaspaceGetFlags__ = &__nvoc_thunk_OBJVASPACE_fabricvaspaceGetFlags;
 

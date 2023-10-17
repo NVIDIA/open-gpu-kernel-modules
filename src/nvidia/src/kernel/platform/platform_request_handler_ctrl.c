@@ -254,7 +254,6 @@ pfmreqhndlrOperatingLimitUpdate_IMPL
 {
     NV_STATUS status = NV_OK;
     OBJGPU   *pGpu   = pfmreqhndlrGetGpu(pPlatformRequestHandler);
-    OBJOS    *pOs    = GPU_GET_OS(pGpu);
 
     if (id >= PFM_REQ_HNDLR_PSHAREPARAMS_COUNT)
     {
@@ -302,7 +301,7 @@ pfmreqhndlrOperatingLimitUpdate_IMPL
     //
     if (!pPlatformRequestHandler->sysControlData.bWorkItemPending)
     {
-        status = pOs->osQueueWorkItem(pGpu,
+        status = osQueueWorkItem(pGpu,
             _pfmreqhndlrUpdateSystemParamLimitWorkItem, NULL);
 
         if (status != NV_OK)
@@ -722,10 +721,9 @@ cliresCtrlCmdSystemPfmreqhndlrCtrl_IMPL
             status = NV_ERR_BUSY_RETRY;
             if (!pPlatformRequestHandler->ppmData.bWorkItemPending)
             {
-                OBJOS  *pOS       = GPU_GET_OS(pGpu);
                 pPlatformRequestHandler->ppmData.ppmIdxRequested = clientPpmIdx;
                 // Create a workItem to change Platform Power Mode
-                status = pOS->osQueueWorkItem(pGpu, _pfmreqhndlrUpdatePlatformPowerModeWorkItem, NULL);
+                status = osQueueWorkItem(pGpu, _pfmreqhndlrUpdatePlatformPowerModeWorkItem, NULL);
                 if (status == NV_OK)
                 {
                     // Queing workitem succeeded, mark it as pending.
@@ -1336,6 +1334,7 @@ pfmreqhndlrSampleCounter
             case PFM_REQ_HNDLR_VPS_PS20_SUPPORT:
             {
                 _pfmreqhndlrUpdateCounter(pPfmreqhndlrData, PFM_REQ_HNDLR_VPS_PS20_SUPPORT, NV_TRUE, pPlatformRequestHandler->vPstateCache.bVpsPs20Supported, timeStamp);
+                break;
             }
             case PFM_REQ_HNDLR_TC_ENABLE:
             {
@@ -1762,10 +1761,8 @@ pfmreqhndlrHandlePlatformSetEdppLimitInfo_IMPL
 
     if (!pEdppLimit->bWorkItemPending)
     {
-        OBJOS  *pOS    = GPU_GET_OS(pGpu);
-
         // Queue workitem to send the EDP limit info to platform
-        status = pOS->osQueueWorkItem(pGpu,
+        status = osQueueWorkItem(pGpu,
                     _pfmreqhndlrHandlePlatformSetEdppLimitInfoWorkItem, NULL);
         if(status == NV_OK)
         {

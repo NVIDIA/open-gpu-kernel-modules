@@ -86,6 +86,7 @@
 #define NV_PCI_SUBID_VENDOR_SONY          0x104D
 #define NV_PCI_SUBID_VENDOR_BITLAND       0x1642
 #define NV_PCI_SUBID_VENDOR_PC_PARTNER    0x174B
+#define NV_PCI_SUBID_VENDOR_CAVIUM        0x177D
 #define NV_PCI_SUBID_VENDOR_NZXT          0x1D96
 
 // XXX CKEANUP TO REMOVE IN FAVOR OF NV_PCI_SUBID_VENDOR_*
@@ -288,10 +289,6 @@
 // Intel Ivy Bridge E definitions
 #define DEVICE_ID_INTEL_0E00_HOST_BRIDGE    0x0E00
 
-// Intel Haswell definitions
-#define DEVICE_ID_INTEL_0C00_HASWELL_HOST_BRIDGE        0x0C00
-#define DEVICE_ID_INTEL_0C04_HASWELL_HOST_BRIDGE        0x0C04
-
 // Intel PCH definitions
 #define DEVICE_ID_INTEL_9D10_PCH_BRIDGE     0x9d10
 #define DEVICE_ID_INTEL_9D18_PCH_BRIDGE     0x9d18
@@ -445,6 +442,9 @@
 // Foxconn Einstein 64 [8086:a1c1][105b:7270]
 #define FOXCONN_EINSTEIN_64_DEVID           0xA1C1
 #define FOXCONN_EINSTEIN_64_SSDEVID         0x7270
+
+// Cavium, Inc. CN99xx [ThunderX2]  [177d:af00]
+#define CAVIUM_X2_DEVID                     0xAF00
 
 // Lenovo Tomcat Workstation
 #define LENOVO_TOMCAT_DEVID                 0x1B81

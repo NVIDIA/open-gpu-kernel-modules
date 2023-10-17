@@ -294,4 +294,5 @@ void confComputeApiDestruct_IMPL(struct ConfidentialComputeApi *pConfComputeApi)
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CONF_COMPUTE_API_NVOC_H_

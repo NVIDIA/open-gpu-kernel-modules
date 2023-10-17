@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -313,6 +313,7 @@ extern OsInfoMap g_osInfoList;
 //
 RS_PRIV_LEVEL rmclientGetCachedPrivilegeByHandle(NvHandle hClient);
 NvBool rmclientIsAdminByHandle(NvHandle hClient, RS_PRIV_LEVEL privLevel);
+NvBool rmclientIsKernelOnlyByHandle(NvHandle hClient);
 NvBool rmclientSetClientFlagsByHandle(NvHandle hClient, NvU32 clientFlags);
 void rmclientPromoteDebuggerStateByHandle(NvHandle hClient, NvU32 newMinimumState);
 void *rmclientGetSecurityTokenByHandle(NvHandle hClient);
@@ -325,4 +326,5 @@ NvBool rmclientIsCapableByHandle(NvHandle hClient, NvU32 capability);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CLIENT_NVOC_H_

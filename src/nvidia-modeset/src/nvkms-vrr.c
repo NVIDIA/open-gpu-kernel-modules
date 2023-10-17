@@ -779,8 +779,6 @@ static NvBool RmEnableVrr(NVDevEvoPtr pDevEvo)
     }
     nvAssert(pDevEvo->hal->caps.supportsDisplayRate);
     return TRUE;
-
-    return FALSE;
 }
 
 void nvGetDpyMinRefreshRateValidValues(

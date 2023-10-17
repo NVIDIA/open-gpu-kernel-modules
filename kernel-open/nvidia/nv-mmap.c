@@ -648,6 +648,16 @@ int nvidia_mmap_helper(
             ret = nvidia_mmap_peer_io(vma, at, page_index, pages);
 
             BUG_ON(NV_VMA_PRIVATE(vma));
+
+            if (ret)
+            {
+                return ret;
+            }
+
+            NV_PRINT_AT(NV_DBG_MEMINFO, at);
+
+            nv_vm_flags_set(vma, VM_IO);
+            nv_vm_flags_set(vma, VM_DONTEXPAND | VM_DONTDUMP);
         }
         else
         {
@@ -661,17 +671,21 @@ int nvidia_mmap_helper(
             NV_VMA_PRIVATE(vma) = at;
 
             ret = nvidia_mmap_sysmem(vma, at, page_index, pages);
+
+            if (ret)
+            {
+                return ret;
+            }
+
+            NV_PRINT_AT(NV_DBG_MEMINFO, at);
+
+            //
+            // VM_MIXEDMAP will be set by vm_insert_page() in nvidia_mmap_sysmem().
+            // VM_SHARED is added to avoid any undesired copy-on-write effects.
+            //
+            nv_vm_flags_set(vma, VM_SHARED);
+            nv_vm_flags_set(vma, VM_DONTEXPAND | VM_DONTDUMP);
         }
-
-        if (ret)
-        {
-            return ret;
-        }
-
-        NV_PRINT_AT(NV_DBG_MEMINFO, at);
-
-        nv_vm_flags_set(vma, VM_IO | VM_LOCKED | VM_RESERVED);
-        nv_vm_flags_set(vma, VM_DONTEXPAND | VM_DONTDUMP);
     }
 
     if ((prot & NV_PROTECT_WRITEABLE) == 0)
@@ -706,11 +720,16 @@ int nvidia_mmap(
         return -EINVAL;
     }
 
-    sp = nv_nvlfp_get_sp(nvlfp, NV_FOPS_STACK_INDEX_MMAP);
+    status = nv_kmem_cache_alloc_stack(&sp);
+    if (status != 0)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: Unable to allocate altstack for mmap\n");
+        return status;
+    }
 
     status = nvidia_mmap_helper(nv, nvlfp, sp, vma, NULL);
 
-    nv_nvlfp_put_sp(nvlfp, NV_FOPS_STACK_INDEX_MMAP);
+    nv_kmem_cache_free_stack(sp);
 
     return status;
 }

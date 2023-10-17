@@ -133,8 +133,6 @@ uvmchanrtnrIsAllocationAllowed_IMPL
 )
 
 {
-    NvBool bIsAllowed = NV_FALSE;
-    RS_PRIV_LEVEL privLevel = pCallContext->secInfo.privLevel;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pUvmChannelRetainer);
 
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_FALSE);
@@ -145,18 +143,9 @@ uvmchanrtnrIsAllocationAllowed_IMPL
         NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK, NV_FALSE);
         if (IS_GFID_VF(gfid))
         {
-            bIsAllowed = (gfid == kchannelGetGfid(pKernelChannel));
-        }
-        else
-        {
-            NvHandle hClient = pCallContext->pClient->hClient;
-            bIsAllowed = rmclientIsAdminByHandle(hClient, privLevel) || hypervisorCheckForObjectAccess(hClient);
+            return (gfid == kchannelGetGfid(pKernelChannel));
         }
     }
-    else
-    {
-        bIsAllowed = ((privLevel >= RS_PRIV_LEVEL_KERNEL) &&
-                      (pCallContext->secInfo.paramLocation == PARAM_LOCATION_KERNEL));
-    }
-    return bIsAllowed;
+
+    return NV_TRUE;
 }

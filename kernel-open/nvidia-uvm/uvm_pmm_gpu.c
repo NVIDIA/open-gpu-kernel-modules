@@ -3377,76 +3377,47 @@ uvm_gpu_id_t uvm_pmm_devmem_page_to_gpu_id(struct page *page)
     return gpu->id;
 }
 
-static void evict_orphan_pages(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
-{
-    NvU32 i;
-
-    UVM_ASSERT(chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT);
-    UVM_ASSERT(chunk->suballoc);
-
-    for (i = 0; i < num_subchunks(chunk); i++) {
-        uvm_gpu_chunk_t *subchunk = chunk->suballoc->subchunks[i];
-
-        uvm_spin_lock(&pmm->list_lock);
-
-        if (subchunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT) {
-            uvm_spin_unlock(&pmm->list_lock);
-
-            evict_orphan_pages(pmm, subchunk);
-            continue;
-        }
-
-        if (subchunk->state == UVM_PMM_GPU_CHUNK_STATE_ALLOCATED && subchunk->is_referenced) {
-            unsigned long pfn = uvm_pmm_gpu_devmem_get_pfn(pmm, subchunk);
-
-            // TODO: Bug 3368756: add support for large GPU pages.
-            UVM_ASSERT(uvm_gpu_chunk_get_size(subchunk) == PAGE_SIZE);
-            uvm_spin_unlock(&pmm->list_lock);
-
-            // The above check for subchunk state is racy because the
-            // chunk may be freed after the lock is dropped. It is
-            // still safe to proceed in that case because the struct
-            // page reference will have dropped to zero and cannot
-            // have been re-allocated as this is only called during
-            // GPU teardown. Therefore migrate_device_range() will
-            // simply fail.
-            uvm_hmm_pmm_gpu_evict_pfn(pfn);
-            continue;
-        }
-
-        uvm_spin_unlock(&pmm->list_lock);
-    }
-}
-
-// Free any orphan pages.
-// This should be called as part of removing a GPU: after all work is stopped
-// and all va_blocks have been destroyed. There normally won't be any
-// device private struct page references left but there can be cases after
-// fork() where a child process still holds a reference. This function searches
-// for pages that still have a reference and migrates the page to the GPU in
-// order to release the reference in the CPU page table.
-static void uvm_pmm_gpu_free_orphan_pages(uvm_pmm_gpu_t *pmm)
+// Check there are no orphan pages. This should be only called as part of
+// removing a GPU: after all work is stopped and all va_blocks have been
+// destroyed. By now there should be no device-private page references left as
+// there are no va_space's left on this GPU and orphan pages should be removed
+// by va_space destruction or unregistration from the GPU.
+static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
 {
     size_t i;
+    bool ret = true;
+    unsigned long pfn;
+    struct range range = pmm->devmem.pagemap.range;
 
-    if (!pmm->initialized)
-        return;
-
-    // This is only safe to call during GPU teardown where chunks
-    // cannot be re-allocated.
-    UVM_ASSERT(uvm_gpu_retained_count(uvm_pmm_to_gpu(pmm)) == 0);
+    if (!pmm->initialized || !uvm_hmm_is_enabled_system_wide())
+        return ret;
 
     // Scan all the root chunks looking for subchunks which are still
-    // referenced. This is slow, but we only do this when unregistering a GPU
-    // and is not critical for performance.
+    // referenced.
     for (i = 0; i < pmm->root_chunks.count; i++) {
         uvm_gpu_root_chunk_t *root_chunk = &pmm->root_chunks.array[i];
 
         root_chunk_lock(pmm, root_chunk);
         if (root_chunk->chunk.state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT)
-            evict_orphan_pages(pmm, &root_chunk->chunk);
+            ret = false;
         root_chunk_unlock(pmm, root_chunk);
     }
+
+    for (pfn = __phys_to_pfn(range.start); pfn <= __phys_to_pfn(range.end); pfn++) {
+        struct page *page = pfn_to_page(pfn);
+
+        if (!is_device_private_page(page)) {
+            ret = false;
+            break;
+        }
+
+        if (page_count(page)) {
+            ret = false;
+            break;
+        }
+    }
+
+    return ret;
 }
 
 static void devmem_page_free(struct page *page)
@@ -3479,7 +3450,7 @@ static vm_fault_t devmem_fault(struct vm_fault *vmf)
 {
     uvm_va_space_t *va_space = vmf->page->zone_device_data;
 
-    if (!va_space || va_space->va_space_mm.mm != vmf->vma->vm_mm)
+    if (!va_space)
         return VM_FAULT_SIGBUS;
 
     return uvm_va_space_cpu_fault_hmm(va_space, vmf->vma, vmf);
@@ -3568,8 +3539,9 @@ static void devmem_deinit(uvm_pmm_gpu_t *pmm)
 {
 }
 
-static void uvm_pmm_gpu_free_orphan_pages(uvm_pmm_gpu_t *pmm)
+static bool uvm_pmm_gpu_check_orphan_pages(uvm_pmm_gpu_t *pmm)
 {
+    return true;
 }
 #endif // UVM_IS_CONFIG_HMM()
 
@@ -3744,7 +3716,7 @@ void uvm_pmm_gpu_deinit(uvm_pmm_gpu_t *pmm)
 
     gpu = uvm_pmm_to_gpu(pmm);
 
-    uvm_pmm_gpu_free_orphan_pages(pmm);
+    UVM_ASSERT(uvm_pmm_gpu_check_orphan_pages(pmm));
     nv_kthread_q_flush(&gpu->parent->lazy_free_q);
     UVM_ASSERT(list_empty(&pmm->root_chunks.va_block_lazy_free));
     release_free_root_chunks(pmm);

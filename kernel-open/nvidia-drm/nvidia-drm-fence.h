@@ -41,6 +41,22 @@ int nv_drm_prime_fence_context_create_ioctl(struct drm_device *dev,
 int nv_drm_gem_prime_fence_attach_ioctl(struct drm_device *dev,
                                         void *data, struct drm_file *filep);
 
+int nv_drm_semsurf_fence_ctx_create_ioctl(struct drm_device *dev,
+                                          void *data,
+                                          struct drm_file *filep);
+
+int nv_drm_semsurf_fence_create_ioctl(struct drm_device *dev,
+                                      void *data,
+                                      struct drm_file *filep);
+
+int nv_drm_semsurf_fence_wait_ioctl(struct drm_device *dev,
+                                    void *data,
+                                    struct drm_file *filep);
+
+int nv_drm_semsurf_fence_attach_ioctl(struct drm_device *dev,
+                                      void *data,
+                                      struct drm_file *filep);
+
 #endif /* NV_DRM_FENCE_AVAILABLE */
 
 #endif /* NV_DRM_AVAILABLE */

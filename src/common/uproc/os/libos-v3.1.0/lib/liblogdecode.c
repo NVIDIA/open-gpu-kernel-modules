@@ -29,7 +29,8 @@
 #    include <core/core.h>
 #    include <stddef.h> // size_t
 
-#    define printf(fmt, ...) portDbgExPrintfLevel(LEVEL_ERROR, fmt, ##__VA_ARGS__)
+#define LIBOS_LOG_DECODE_PRINTF(level, fmt, ...) portDbgExPrintfLevel(level, fmt, ##__VA_ARGS__)
+
 #    define snprintf         nvDbgSnprintf
 
 #else // NVRM
@@ -56,24 +57,29 @@
 
 #    if defined(PROTODMP_BUILD)
 int logPrintf(const char *, ...); // Forward declaration. TODO: allow libos code to #include protodmp headers?
-#        define printf(fmt, ...) logPrintf(fmt, ##__VA_ARGS__)
+#        define LIBOS_LOG_DECODE_PRINTF(level, fmt, ...) logPrintf(fmt, ##__VA_ARGS__)
 #    elif defined(NVSYM_STANDALONE)
-#        define printf(fmt, ...) fprintf(logDecode->fout, fmt, ##__VA_ARGS__)
+#        define LIBOS_LOG_DECODE_PRINTF(level, fmt, ...) fprintf(logDecode->fout, fmt, ##__VA_ARGS__)
 #    elif defined(NVWATCH)
 #        pragma warning(push)
 #        pragma warning(disable : 4200)
 #        pragma warning(disable : 4244)
 #        pragma warning(disable : 4267)
 #        define snprintf  _snprintf
-#        define printf(fmt, ...) do { logDecode->dest += sprintf(logDecode->dest, fmt, ##__VA_ARGS__); } while (NV_FALSE)
+#        define LIBOS_LOG_DECODE_PRINTF(level, fmt, ...) do { logDecode->dest += sprintf(logDecode->dest, fmt, ##__VA_ARGS__); } while (NV_FALSE)
 #    endif
 
 #endif // NVRM
+
+#ifndef LIBOS_LOG_DECODE_PRINTF
+#define LIBOS_LOG_DECODE_PRINTF(level, fmt, ...) printf(fmt, ...)
+#endif
 
 #include <stddef.h>
 
 #include "nvtypes.h"
 #include "liblogdecode.h"
+#include "utils/nvprintf_level.h"
 
 #if LIBOS_LOG_DECODE_ENABLE
 
@@ -305,9 +311,18 @@ static void flush_line_buffer(LIBOS_LOG_DECODE *logDecode)
 {
     if (logDecode->curLineBufPtr != logDecode->lineBuffer)
     {
+        NvU8 logLevel = logDecode->lineLogLevel;
+
         /* Make sure line is NULL terminated */
         *logDecode->curLineBufPtr = 0;
-        printf("%s", logDecode->lineBuffer);
+
+#if defined(NVRM)
+        // Sanitize log level for live decoding from RM.
+        if (logLevel > NV_LEVEL_MAX)
+            logLevel = NV_LEVEL_MAX;
+#endif
+
+        LIBOS_LOG_DECODE_PRINTF(logLevel, "%s", logDecode->lineBuffer);
         logDecode->curLineBufPtr = logDecode->lineBuffer;
     }
 }
@@ -440,6 +455,32 @@ static int getint(char **s)
         i = 10 * i + (**s - '0');
     return i;
 }
+
+#if !defined(NVRM)
+static const char* printfLevelToString(NvU32 level)
+{
+    switch (level)
+    {
+        case LEVEL_SILENT:
+            return " SILENT ";
+        case LEVEL_INFO:
+            return " INFO ";
+        case LEVEL_NOTICE:
+            return " NOTICE ";
+        case LEVEL_WARNING:
+            return " WARNING ";
+        case LEVEL_ERROR:
+            return " ERROR ";
+        case LEVEL_HW_ERROR:
+            return " HW_ERROR ";
+        case LEVEL_FATAL:
+            return " FATAL ";
+        default:
+            return " ";
+    }
+}
+#endif
+
 static int libos_printf_a(
     LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DECODE_RECORD *pRec, const char *fmt, const char *filename)
 {
@@ -522,8 +563,9 @@ static int libos_printf_a(
 
             snprintf(
                 logDecode->curLineBufPtr, LIBOS_LOG_LINE_BUFFER_SIZE - 1,
-                "GPU%u %s-%s: %s(%u): ",
-                pRec->log->gpuInstance, logDecode->sourceName, pRec->log->taskPrefix,
+                "GPU%u%s%s-%s: %s(%u): ",
+                pRec->log->gpuInstance, printfLevelToString(pRec->meta->printLevel),
+                 logDecode->sourceName, pRec->log->taskPrefix,
                 filename, pRec->meta->lineNumber);
             logDecode->curLineBufPtr += portStringLength(logDecode->curLineBufPtr);
         }
@@ -763,7 +805,7 @@ static int libos_printf_a(
             }
             goto print_string;
         case 's':
-            a = (char *)LibosElfMapVirtualString(&pRec->log->elfImage, (NvUPtr)arg.p, logDecode->bDecodeStrFmt);
+            a = (char *)LibosElfMapVirtualString(&pRec->log->elfImage, (NvUPtr)arg.p, logDecode->bDecodeStrShdr);
             if (!a)
                 a = (char *)"(bad-pointer)";
         print_string:
@@ -863,11 +905,13 @@ static void libosPrintLogRecords(LIBOS_LOG_DECODE *logDecode, NvU64 *scratchBuff
 
         if (pRec->meta == NULL)
         {
-            printf(
+            LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
                 "**** Bad metadata.  Lost %lld entries from %s ****\n", valid_elements - index,
                 logDecode->sourceName);
             return;
         }
+
+        logDecode->lineLogLevel = pRec->meta->printLevel;
 
         // Locate format string
         format = LibosElfMapVirtualString(&pRec->log->elfImage, (NvU64)(NvUPtr)pRec->meta->format, NV_TRUE);
@@ -1004,7 +1048,7 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
     // Sanity check meta data.
     if (pLog->record.meta == NULL || pLog->record.meta->argumentCount > LIBOS_LOG_MAX_ARGS)
     {
-        printf(
+        LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
             "**** Bad metadata.  Lost %lld entries from %s-%s ****\n", pLog->putIter - previousPut,
             logDecode->sourceName, pLog->taskPrefix);
         goto error_ret;
@@ -1040,7 +1084,7 @@ static void libosExtractLog_ReadRecord(LIBOS_LOG_DECODE *logDecode, LIBOS_LOG_DE
 
 buffer_wrapped:
     // Put pointer wrapped and caught up to us.  This means we lost entries.
-    printf(
+    LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING,
         "**** Buffer wrapped. Lost %lld entries from %s-%s ****\n", pLog->putIter - pLog->previousPut,
         logDecode->sourceName, pLog->taskPrefix);
 
@@ -1075,7 +1119,7 @@ static void libosExtractLogs_decode(LIBOS_LOG_DECODE *logDecode)
 
         if (!pLog->physicLogBuffer)
         {
-            printf("logDecode->physicLogBuffer is NULL\n");
+            LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR, "logDecode->physicLogBuffer is NULL\n");
             return;
         }
 
@@ -1118,7 +1162,7 @@ static void libosExtractLogs_decode(LIBOS_LOG_DECODE *logDecode)
             // Record is not identical to previous record.
             if (dst < recSize)
             {
-                printf("**** scratch buffer overflow.  lost entries ****\n");
+                LIBOS_LOG_DECODE_PRINTF(LEVEL_WARNING, "**** scratch buffer overflow.  lost entries ****\n");
                 break;
             }
 
@@ -1346,11 +1390,11 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
 
     if (logDecode->numLogBuffers >= LIBOS_LOG_MAX_LOGS)
     {
-        printf("LIBOS_LOG_DECODE::log array is too small. Increase LIBOS_LOG_MAX_LOGS.\n");
+        LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR, "LIBOS_LOG_DECODE::log array is too small. Increase LIBOS_LOG_MAX_LOGS.\n");
         return;
     }
 
-    i                          = logDecode->numLogBuffers++;
+    i                          = (NvU32)(logDecode->numLogBuffers++);
     pLog                       = &logDecode->log[i];
     pLog->physicLogBuffer      = (volatile NvU64 *)buffer;
     pLog->logBufferSize        = bufferSize;
@@ -1420,7 +1464,7 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
         }
         else
         {
-            printf("nvlogAllocBuffer nowrap failed\n");
+            LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR, "nvlogAllocBuffer nowrap failed\n");
         }
     }
     else
@@ -1458,7 +1502,7 @@ void libosLogAddLogEx(LIBOS_LOG_DECODE *logDecode, void *buffer, NvU64 bufferSiz
     }
     else
     {
-        printf("nvlogAllocBuffer wrap failed\n");
+        LIBOS_LOG_DECODE_PRINTF(LEVEL_ERROR, "nvlogAllocBuffer wrap failed\n");
     }
 #endif // LIBOS_LOG_TO_NVLOG
 }
@@ -1573,12 +1617,12 @@ void libosLogInit(LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvU64 elfS
 
 void libosLogInitEx(
     LIBOS_LOG_DECODE *logDecode, LibosElf64Header *elf, NvBool bSynchronousBuffer,
-    NvBool bPtrSymbolResolve, NvBool bDecodeStrFmt, NvU64 elfSize)
+    NvBool bPtrSymbolResolve, NvBool bDecodeStrShdr, NvU64 elfSize)
 {
     // Set extended config
     logDecode->bSynchronousBuffer = bSynchronousBuffer;
     logDecode->bPtrSymbolResolve = bPtrSymbolResolve;
-    logDecode->bDecodeStrFmt = bDecodeStrFmt;
+    logDecode->bDecodeStrShdr = bDecodeStrShdr;
 
     // Complete init
     libosLogInit(logDecode, elf, elfSize);
@@ -1590,7 +1634,7 @@ void libosLogInit(LIBOS_LOG_DECODE *logDecode, void *elf, NvU64 elfSize) {}
 
 void libosLogInitEx(
     LIBOS_LOG_DECODE *logDecode, void *elf,
-    NvBool bSynchronousBuffer, NvBool bPtrSymbolResolve, NvBool bDecodeStrFmt, NvU64 elfSize)
+    NvBool bSynchronousBuffer, NvBool bPtrSymbolResolve, NvBool bDecodeStrShdr, NvU64 elfSize)
 {
     // No extended config to set when decode is disabled
 }

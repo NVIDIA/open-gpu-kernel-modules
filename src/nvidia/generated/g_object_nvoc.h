@@ -188,4 +188,5 @@ static inline struct Object *objGetDirectParent(struct Object *pObj) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_OBJECT_NVOC_H_

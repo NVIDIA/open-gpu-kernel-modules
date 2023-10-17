@@ -284,4 +284,5 @@ void crashcatEnginePrintf(struct CrashCatEngine *, NvBool, const char *, ...);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CRASHCAT_ENGINE_NVOC_H_

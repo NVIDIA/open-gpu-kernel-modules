@@ -226,4 +226,5 @@ static inline void pfmUpdateDeviceAcpiId(struct OBJPFM *arg0, OBJGPU *arg1, NvU3
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_PLATFORM_NVOC_H_

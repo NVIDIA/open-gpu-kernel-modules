@@ -968,60 +968,41 @@ void parseCea861HdrStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861,
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-void parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag)
+void parseCta861DvStaticMetadataDataBlock(VSVDB_DATA* pVsvdb, NVT_DV_STATIC_METADATA *pDvInfo)
 {
     NvU32 vsvdbVersion = 0;
+
     NVT_DV_STATIC_METADATA_TYPE0   *pDvType0 = NULL;
     NVT_DV_STATIC_METADATA_TYPE1   *pDvType1 = NULL;
     NVT_DV_STATIC_METADATA_TYPE1_1 *pvDvType1_1 = NULL;
     NVT_DV_STATIC_METADATA_TYPE2   *pDvType2 = NULL;
 
-    NVT_EDID_INFO           *pInfo         = NULL;
-    NVT_DISPLAYID_2_0_INFO  *pDisplayID20  = NULL;
-    NVT_DV_STATIC_METADATA  *pDvInfo       = NULL;
-
-    if (pExt861 == NULL || pRawInfo == NULL)
+    if (pVsvdb == NULL || pDvInfo == NULL)
     {
         return;
     }
 
-    if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
-    {
-        pInfo = (NVT_EDID_INFO *)pRawInfo;
-        pDvInfo = &pInfo->dv_static_metadata_info;
-    }
-    else if (flag == FROM_DISPLAYID_20_DATA_BLOCK)
-    {
-        pDisplayID20 = (NVT_DISPLAYID_2_0_INFO *)pRawInfo;
-        pDvInfo = &pDisplayID20->cta.dvInfo;
-    }
-    else
+    if(pVsvdb->ieee_id != NVT_CEA861_DV_IEEE_ID)
     {
         return;
     }
-
-    if(pExt861->vsvdb.ieee_id != NVT_CEA861_DV_IEEE_ID)
-    {
-        return;
-    }
-
 
     //init
     NVMISC_MEMSET(pDvInfo, 0, sizeof(NVT_DV_STATIC_METADATA));
 
     // copy ieee id
-    pDvInfo->ieee_id = pExt861->vsvdb.ieee_id;
+    pDvInfo->ieee_id = pVsvdb->ieee_id;
 
-    vsvdbVersion = (pExt861->vsvdb.vendor_data[0] & NVT_CEA861_VSVDB_VERSION_MASK) >> NVT_CEA861_VSVDB_VERSION_MASK_SHIFT;
+    vsvdbVersion = (pVsvdb->vendor_data[0] & NVT_CEA861_VSVDB_VERSION_MASK) >> NVT_CEA861_VSVDB_VERSION_MASK_SHIFT;
 
     switch (vsvdbVersion)
     {
         case 0:
-            if (pExt861->vsvdb.vendor_data_size < sizeof(NVT_DV_STATIC_METADATA_TYPE0))
+            if (pVsvdb->vendor_data_size < sizeof(NVT_DV_STATIC_METADATA_TYPE0))
             {
                 return;
             }
-            pDvType0 = (NVT_DV_STATIC_METADATA_TYPE0 *)(&pExt861->vsvdb.vendor_data);
+            pDvType0 = (NVT_DV_STATIC_METADATA_TYPE0 *)(&pVsvdb->vendor_data);
             // copy the data
             pDvInfo->VSVDB_version               = pDvType0->VSVDB_version;
             pDvInfo->supports_2160p60hz          = pDvType0->supports_2160p60hz;
@@ -1045,9 +1026,9 @@ void parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *p
             pDvInfo->supports_10b_12b_444        = 0;
             break;
         case 1:
-            if (pExt861->vsvdb.vendor_data_size == sizeof(NVT_DV_STATIC_METADATA_TYPE1))
+            if (pVsvdb->vendor_data_size == sizeof(NVT_DV_STATIC_METADATA_TYPE1))
             {
-                pDvType1 = (NVT_DV_STATIC_METADATA_TYPE1 *)(&pExt861->vsvdb.vendor_data);
+                pDvType1 = (NVT_DV_STATIC_METADATA_TYPE1 *)(&pVsvdb->vendor_data);
                 // copy the data
                 pDvInfo->VSVDB_version                  = pDvType1->VSVDB_version;
                 pDvInfo->supports_2160p60hz             = pDvType1->supports_2160p60hz;
@@ -1070,9 +1051,9 @@ void parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *p
                 pDvInfo->cc_white_x                     = 0;
                 pDvInfo->cc_white_y                     = 0;
             }
-            else if (pExt861->vsvdb.vendor_data_size == sizeof(NVT_DV_STATIC_METADATA_TYPE1_1))
+            else if (pVsvdb->vendor_data_size == sizeof(NVT_DV_STATIC_METADATA_TYPE1_1))
             {
-                pvDvType1_1 = (NVT_DV_STATIC_METADATA_TYPE1_1 *)(&pExt861->vsvdb.vendor_data);
+                pvDvType1_1 = (NVT_DV_STATIC_METADATA_TYPE1_1 *)(&pVsvdb->vendor_data);
                 // copy the data
                 pDvInfo->VSVDB_version                  = pvDvType1_1->VSVDB_version;
                 pDvInfo->supports_2160p60hz             = pvDvType1_1->supports_2160p60hz;
@@ -1102,11 +1083,11 @@ void parseCea861DvStaticMetadataDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *p
             
             break;
         case 2:
-            if (pExt861->vsvdb.vendor_data_size < sizeof(NVT_DV_STATIC_METADATA_TYPE2))
+            if (pVsvdb->vendor_data_size < sizeof(NVT_DV_STATIC_METADATA_TYPE2))
             {
                 return;
             }
-            pDvType2 = (NVT_DV_STATIC_METADATA_TYPE2 *)(&pExt861->vsvdb.vendor_data);
+            pDvType2 = (NVT_DV_STATIC_METADATA_TYPE2 *)(&pVsvdb->vendor_data);
             // copy the data
             pDvInfo->VSVDB_version               = pDvType2->VSVDB_version;
             pDvInfo->supports_backlight_control  = pDvType2->supports_backlight_control;
@@ -1232,6 +1213,67 @@ void parseCta861VsdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
                                             MIN(pHdmiLlc->max_tmds_clock, 0x44);
     }
 
+}
+
+// parse vendor specific video data block (VSVDB) information
+CODE_SEGMENT(PAGE_DD_CODE)
+void parseCta861VsvdbBlocks(NVT_EDID_CEA861_INFO *pExt861,
+                           void *pRawInfo, 
+                           NVT_CTA861_ORIGIN flag
+    )
+{
+    NvU32 i;
+    
+    NVT_EDID_INFO           *pInfo          = NULL;
+    NVT_DISPLAYID_2_0_INFO  *pDisplayID20   = NULL;
+    NVT_DV_STATIC_METADATA  *pDvInfo        = NULL;
+    NVT_HDR10PLUS_INFO      *pHdr10PlusInfo = NULL;
+    
+    if (pExt861 == NULL || pRawInfo == NULL)
+    {
+        return;
+    }
+    
+    if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
+    {
+        pInfo     = (NVT_EDID_INFO *)pRawInfo;
+        pDvInfo = &pInfo->dv_static_metadata_info;
+        pHdr10PlusInfo = &pInfo->hdr10PlusInfo;
+    }
+    else if (flag == FROM_DISPLAYID_20_DATA_BLOCK)
+    {
+        pDisplayID20 = (NVT_DISPLAYID_2_0_INFO *)pRawInfo;
+        pDvInfo = &pDisplayID20->cta.dvInfo;
+        pHdr10PlusInfo = &pDisplayID20->cta.hdr10PlusInfo;
+    }
+    else 
+    {
+        return;
+    }
+
+    if (pDvInfo == NULL || pHdr10PlusInfo == NULL || (pExt861->total_vsvdb == 0))
+    {
+        return;
+    }
+
+    for (i = 0; i < pExt861->total_vsvdb; i++)
+    {
+        // Assumes each vsvdb is unique for this CEA block, e.g., no two HDMI_IEEE_ID
+        switch (pExt861->vsvdb[i].ieee_id)
+        {
+            case NVT_CEA861_DV_IEEE_ID:
+                // parse Dolby Vision related information from the DV vendor specific video data block
+                parseCta861DvStaticMetadataDataBlock(&pExt861->vsvdb[i], pDvInfo);
+                pExt861->valid.dv_static_metadata = 1;
+                break;
+                
+            case NVT_CEA861_HDR10PLUS_IEEE_ID:
+                // parse HDR10+ related information from the HDR10+ LLC Vendor Specific Video Data Block
+                parseCta861Hdr10PlusDataBlock(&pExt861->vsvdb[i], pHdr10PlusInfo);
+                pExt861->valid.hdr10Plus = 1;
+                break;
+        }
+    }
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
@@ -1378,6 +1420,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
     NvU32 audio_index      = 0;
     NvU32 speaker_index    = 0;
     NvU32 vendor_index     = 0;
+    NvU32 vsvdb_index      = 0;
     NvU32 yuv420vdb_index  = 0;
     NvU32 yuv420cmdb_index = 0;
     NvU8  didT7_index      = 0;
@@ -1638,42 +1681,48 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                 }
                 else if(ext_tag == NVT_CEA861_EXT_TAG_VENDOR_SPECIFIC_VIDEO)
                 {
-                    ieee_id  =  p[i + 1];           //IEEE ID low byte
-                    ieee_id |= (p[i + 2]) << 8;     //IEEE ID middle byte
-                    ieee_id |= (p[i + 3]) << 16;    //IEEE ID high byte
-
-                    if ((ieee_id == NVT_CEA861_DV_IEEE_ID) || (ieee_id == NVT_CEA861_HDR10PLUS_IEEE_ID))
+                    if (vsvdb_index < NVT_CEA861_VSVDB_MAX_BLOCKS)
                     {
-                        // exclude the extended tag
-                        i++; payload--;
+                        ieee_id  =  p[i + 1];           //IEEE ID low byte
+                        ieee_id |= (p[i + 2]) << 8;     //IEEE ID middle byte
+                        ieee_id |= (p[i + 3]) << 16;    //IEEE ID high byte
 
-                        p861info->vsvdb.ieee_id = ieee_id;
-                        p861info->vsvdb.vendor_data_size = payload - 3;
-
-                        // move the pointer to the payload
-                        i += 3;
-
-                        // get the other vendor specific video data
-                        for (j = 0; j < payload - 3; j++, i++)
+                        if ((ieee_id == NVT_CEA861_DV_IEEE_ID) || (ieee_id == NVT_CEA861_HDR10PLUS_IEEE_ID))
                         {
-                            if (j < NVT_CEA861_VSVDB_PAYLOAD_MAX_LENGTH)
+                            // exclude the extended tag
+                            i++; payload--;
+
+                            p861info->vsvdb[vsvdb_index].ieee_id = ieee_id;
+                            p861info->vsvdb[vsvdb_index].vendor_data_size = payload - 3;
+
+                            // move the pointer to the payload
+                            i += 3;
+
+                            // get the other vendor specific video data
+                            for (j = 0; j < payload - 3; j++, i++)
                             {
-                                p861info->vsvdb.vendor_data[j] = p[i];
+                                if (j < NVT_CEA861_VSVDB_PAYLOAD_MAX_LENGTH)
+                                {
+                                    p861info->vsvdb[vsvdb_index].vendor_data[j] = p[i];
+                                }
                             }
+
+                            vsvdb_index++;
+
+                            p861info->total_vsvdb = (NvU8)vsvdb_index;
+
                         }
-                        
-                        if (p861info->vsvdb.ieee_id == NVT_CEA861_DV_IEEE_ID)
+                        else
                         {
-                            p861info->valid.dv_static_metadata = 1;
-                        }
-                        else if (p861info->vsvdb.ieee_id == NVT_CEA861_HDR10PLUS_IEEE_ID)
-                        {
-                            p861info->valid.hdr10Plus = 1;
+                            // skip the unsupported extended block
+                            i += payload;
                         }
                     }
                     else
                     {
-                        // skip the unsupported extended block
+                        // skip the extended block that we don't have a room for,
+                        // the NVT_CEA861_VSVDB_MAX_BLOCKS should be incremented for new VSVDB types 
+                        nvt_assert(vsvdb_index >= NVT_CEA861_VSVDB_MAX_BLOCKS);
                         i += payload;
                     }
                 }
@@ -2509,7 +2558,7 @@ NVT_STATUS NvTiming_ConstructExtendedMetadataPacketInfoframe(
     pInfoFrame->Header.firstLast = NVT_EMP_HEADER_FIRST_LAST;
     pInfoFrame->Header.sequenceIndex = 0x00;
 
-    if (pCtrl->EnableQMS)
+    if (pCtrl->Sync)
     {
         nvt_nvu8_set_bits(pInfoFrame->Data.byte1, NVT_HDMI_EMP_BYTE1_SYNC_ENABLE,
                                                   NVT_HDMI_EMP_BYTE1_SYNC_MASK,
@@ -2577,6 +2626,14 @@ NVT_STATUS NvTiming_ConstructExtendedMetadataPacketInfoframe(
                               pCtrl->ReducedBlanking,
                               NVT_HDMI_EMP_BYTE8_MD2_RB_MASK,
                               NVT_HDMI_EMP_BYTE8_MD2_RB_SHIFT);
+        }
+
+        if (pCtrl->version == NVT_EXTENDED_METADATA_PACKET_INFOFRAME_VER_HDMI21A && pCtrl->EnableQMS)
+        {
+            nvt_nvu8_set_bits(pInfoFrame->Data.metadataBytes[2],
+                              pCtrl->NextTFR,
+                              NVT_HDMI_EMP_BYTE8_MD2_NEXT_TFR_MASK,
+                              NVT_HDMI_EMP_BYTE8_MD2_NEXT_TFR_SHIFT);
         }
 
         // MSB for Base Refresh Rate
@@ -3354,39 +3411,20 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)
-void parseCea861Hdr10PlusDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo, NVT_CTA861_ORIGIN flag)
+void parseCta861Hdr10PlusDataBlock(VSVDB_DATA* pVsvdb, NVT_HDR10PLUS_INFO* pHdr10PlusInfo)
 {
-    NVT_EDID_INFO           *pInfo          = NULL;
-    NVT_DISPLAYID_2_0_INFO  *pDisplayID20   = NULL;
-    NVT_HDR10PLUS_INFO      *pHdr10PlusInfo = NULL;
-
-    if (pExt861 == NULL || pRawInfo == NULL)
+    if (pVsvdb == NULL || pHdr10PlusInfo == NULL)
         return;
 
-    if(pExt861->vsvdb.ieee_id != NVT_CEA861_HDR10PLUS_IEEE_ID) 
+    if(pVsvdb->ieee_id != NVT_CEA861_HDR10PLUS_IEEE_ID) 
         return;
-
-    if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
-    {
-        pInfo = (NVT_EDID_INFO *)pRawInfo;
-        pHdr10PlusInfo = &pInfo->hdr10PlusInfo;
-    }
-    else if (flag == FROM_DISPLAYID_20_DATA_BLOCK)
-    {
-        pDisplayID20 = (NVT_DISPLAYID_2_0_INFO *)pRawInfo;
-        pHdr10PlusInfo = &pDisplayID20->cta.hdr10PlusInfo;
-    }
-    else
-    {
-        return;
-    }
 
     NVMISC_MEMSET(pHdr10PlusInfo, 0, sizeof(NVT_HDR10PLUS_INFO));
 
-    if (pExt861->vsvdb.vendor_data_size < sizeof(NVT_HDR10PLUS_INFO))
+    if (pVsvdb->vendor_data_size < sizeof(NVT_HDR10PLUS_INFO))
         return;
 
-    NVMISC_MEMCPY(pHdr10PlusInfo, &pExt861->vsvdb.vendor_data, sizeof(NVT_HDR10PLUS_INFO));
+    NVMISC_MEMCPY(pHdr10PlusInfo, &pVsvdb->vendor_data, sizeof(NVT_HDR10PLUS_INFO));
 }
 
 CODE_SEGMENT(PAGE_DD_CODE)

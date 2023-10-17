@@ -27,6 +27,8 @@
  *       This file contains the functions managing the memory multicast fabric
  *
  *****************************************************************************/
+#define NVOC_MEM_MULTICAST_FABRIC_H_PRIVATE_ACCESS_ALLOWED
+
 #include "os/os.h"
 #include "core/locks.h"
 #include "nvport/nvport.h"
@@ -45,6 +47,111 @@
 
 #include "gpu/gpu_fabric_probe.h"
 
+typedef struct mem_multicast_fabric_attach_mem_info_node
+{
+    MEMORY_DESCRIPTOR *pPhysMemDesc;
+    NvHandle           hDupedPhysMem;
+    NvU64              physMapLength;
+    NODE               node;
+} MEM_MULTICAST_FABRIC_ATTACH_MEM_INFO_NODE;
+
+typedef struct mem_multicast_fabric_client_info
+{
+    void   *pOsEvent;
+    Memory *pMemory;
+} MEM_MULTICAST_FABRIC_CLIENT_INFO;
+
+typedef struct mem_multicast_fabric_gpu_info
+{
+    void   *pGpuOsInfo;
+    OBJGPU *pGpu;
+    NvU64   gpuProbeHandle;
+    NvU32   cliqueId;
+    NvBool  bMcflaAlloc;
+
+    // Tracks memory attached using NV00FD_CTRL_CMD_ATTACH_MEM
+    PNODE pAttachMemInfoTree;
+} MEM_MULTICAST_FABRIC_GPU_INFO;
+
+MAKE_LIST(MemMulticastFabricClientInfoList, MEM_MULTICAST_FABRIC_CLIENT_INFO);
+
+MAKE_LIST(MemMulticastFabricGpuInfoList, MEM_MULTICAST_FABRIC_GPU_INFO);
+
+typedef enum
+{
+    MEM_MULTICAST_FABRIC_TEAM_SETUP_REQUEST = 0,
+    MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST,
+} MEM_MULTICAST_FABRIC_REQUEST_TYPE;
+
+typedef struct mem_multicast_fabric_descriptor
+{
+    // Refcount to keep this descriptor alive
+    NvU64 refCount;
+
+    // List of clients waiting on this object to be ready
+    MemMulticastFabricClientInfoList waitingClientsList;
+
+    // Mask representing the list of attached GPUs
+    NvU32 localAttachedGpusMask;
+
+    // List of attached GPU info
+    MemMulticastFabricGpuInfoList gpuInfoList;
+
+    // Boolean to be set when pMemDesc is installed
+    NvBool bMemdescInstalled;
+
+    // Memory descriptor associated with the multicast object
+    MEMORY_DESCRIPTOR *pMemDesc;
+
+    // Unique handle assigned for the multicast team by FM
+    NvU64 mcTeamHandle;
+
+    // Status of the multicast team
+    NV_STATUS mcTeamStatus;
+
+    //
+    // Boolean to be set when an Inband request has been sent to FM
+    // and is currently in progress
+    //
+    NvBool bInbandReqInProgress;
+
+    //
+    // Request Id associated with the Inband request in progress when
+    // bInbandReqSent is set to true
+    //
+    NvU64 inbandReqId;
+
+    // Alignment for the multicast FLA allocation
+    NvU64 alignment;
+
+    // Multicast FLA allocation size
+    NvU64 allocSize;
+
+    // Page size for the multicast FLA
+    NvU64 pageSize;
+
+    // Multicast FLA allocation flags
+    NvU32 allocFlags;
+
+    // Max. number of unique GPUs associated with the multicast object
+    NvU32 numMaxGpus;
+
+    // No. of unique GPUs currently attached to the multicast object
+    NvU32 numAttachedGpus;
+
+} MEM_MULTICAST_FABRIC_DESCRIPTOR;
+
+static NvBool
+_memMulticastFabricIsPrime
+(
+    NvU32 allocFlags
+)
+{
+    NvBool bPrime = NV_TRUE;
+
+    return bPrime;
+}
+
 static
 NV_STATUS
 _memMulticastFabricValidateAllocParams
@@ -52,20 +159,23 @@ _memMulticastFabricValidateAllocParams
     NV00FD_ALLOCATION_PARAMETERS *pAllocParams
 )
 {
+    // Nothing to verify in this case..
+    if (!_memMulticastFabricIsPrime(pAllocParams->allocFlags))
+        return NV_OK;
+
     // Only page size 512MB is supported
     if (pAllocParams->pageSize != NV_MEMORY_MULTICAST_FABRIC_PAGE_SIZE_512M)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Unsupported pageSize: 0x%x. Only 512MB pagesize is supported\n",
-                  pAllocParams->pageSize);
+            "Unsupported pageSize: 0x%x. Only 512MB pagesize is supported\n",
+            pAllocParams->pageSize);
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    // Alignment should be pageSize aligned
-    if (!NV_IS_ALIGNED64(pAllocParams->alignment, pAllocParams->pageSize))
+    if (pAllocParams->alignment != pAllocParams->pageSize)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Alignment should be pageSize aligned\n");
+                  "Alignment must be pageSize for now\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
 
@@ -77,17 +187,11 @@ _memMulticastFabricValidateAllocParams
         return NV_ERR_INVALID_ARGUMENT;
     }
 
-    if (pAllocParams->numGpus == 0)
+    // NV_U32_MAX is reserved as a special value for non-prime MCFLA objects.
+    if ((pAllocParams->numGpus == 0) ||
+        (pAllocParams->numGpus == NV_U32_MAX))
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Number of GPUs to attach must be non-zero\n");
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    // Allocation flags must be zero
-    if (pAllocParams->allocFlags != 0)
-    {
-        NV_PRINTF(LEVEL_ERROR, "allocFlags must be zero\n");
+        NV_PRINTF(LEVEL_ERROR, "Invalid number of GPUs to attach\n");
         return NV_ERR_INVALID_ARGUMENT;
     }
 
@@ -104,11 +208,13 @@ _memMulticastFabricDescriptorAllocUnderLock
 {
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc;
 
-    pMulticastFabricDesc = portMemAllocNonPaged(sizeof(MEM_MULTICAST_FABRIC_DESCRIPTOR));
+    pMulticastFabricDesc = portMemAllocNonPaged(
+                                sizeof(MEM_MULTICAST_FABRIC_DESCRIPTOR));
     if (pMulticastFabricDesc == NULL)
         return NULL;
 
-    portMemSet(pMulticastFabricDesc, 0, sizeof(MEM_MULTICAST_FABRIC_DESCRIPTOR));
+    portMemSet(pMulticastFabricDesc, 0,
+               sizeof(MEM_MULTICAST_FABRIC_DESCRIPTOR));
 
     listInit(&pMulticastFabricDesc->waitingClientsList,
              portMemAllocatorGetGlobalNonPaged());
@@ -118,12 +224,13 @@ _memMulticastFabricDescriptorAllocUnderLock
 
     pMulticastFabricDesc->refCount = 1;
     pMulticastFabricDesc->mcTeamStatus = NV_ERR_NOT_READY;
-    pMulticastFabricDesc->attachedGpusMask = 0;
+    pMulticastFabricDesc->localAttachedGpusMask = 0;
     pMulticastFabricDesc->alignment  = pAllocParams->alignment;
     pMulticastFabricDesc->allocSize  = pAllocParams->allocSize;
     pMulticastFabricDesc->pageSize   = pAllocParams->pageSize;
     pMulticastFabricDesc->allocFlags = pAllocParams->allocFlags;
     pMulticastFabricDesc->numMaxGpus = pAllocParams->numGpus;
+    pMulticastFabricDesc->inbandReqId = osGetTimestamp();
 
     return pMulticastFabricDesc;
 }
@@ -136,7 +243,8 @@ _memMulticastFabricDescriptorFlushClientsUnderLock
 {
     MEM_MULTICAST_FABRIC_CLIENT_INFO *pNode;
 
-    while ((pNode = listHead(&pMulticastFabricDesc->waitingClientsList)) != NULL)
+    while ((pNode =
+            listHead(&pMulticastFabricDesc->waitingClientsList)) != NULL)
     {
         if (pNode->pOsEvent != NULL)
         {
@@ -165,7 +273,8 @@ _memMulticastFabricDescriptorEnqueueWaitUnderLock
 
     if (pOsEvent != NULL)
     {
-        status = osUserHandleToKernelPtr(hClient, pOsEvent, &pValidatedOsEvent);
+        status = osUserHandleToKernelPtr(hClient, pOsEvent,
+                                         &pValidatedOsEvent);
         if (status != NV_OK)
             return status;
     }
@@ -182,9 +291,15 @@ _memMulticastFabricDescriptorEnqueueWaitUnderLock
     pNode->pOsEvent = pValidatedOsEvent;
     pNode->pMemory = pMemory;
 
-    // In case the multicast object's memdesc is ready, unblock clients waiting on it
+    //
+    // In case the multicast object's memdesc is ready, unblock
+    // clients waiting on it
+    //
     if (pMulticastFabricDesc->bMemdescInstalled)
-        _memMulticastFabricDescriptorFlushClientsUnderLock(pMulticastFabricDesc);
+    {
+        _memMulticastFabricDescriptorFlushClientsUnderLock(
+                                        pMulticastFabricDesc);
+    }
 
     return NV_OK;
 }
@@ -250,7 +365,7 @@ _memMulticastFabricGpuInfoAddUnderLock
         {
            NV_PRINTF(LEVEL_ERROR, "GPU %x has already attached\n",
                                    pGpu->gpuInstance);
-           return NV_ERR_IN_USE;
+           return NV_ERR_INSERT_DUPLICATE_NAME;
         }
     }
 
@@ -280,15 +395,101 @@ _memMulticastFabricGpuInfoRemoveUnderLock
 
     while ((pNode = listHead(&pMulticastFabricDesc->gpuInfoList)) != NULL)
     {
+
         freeCallback.pCb = osReleaseGpuOsInfo;
         freeCallback.pCbData = (void *)pNode->pGpuOsInfo;
 
-        NV_ASSERT_OK(threadStateEnqueueCallbackOnFree(pThreadNode, &freeCallback));
+        NV_ASSERT_OK(threadStateEnqueueCallbackOnFree(pThreadNode,
+                                                      &freeCallback));
         listRemove(&pMulticastFabricDesc->gpuInfoList, pNode);
     }
 
-    pMulticastFabricDesc->attachedGpusMask = 0;
+    pMulticastFabricDesc->localAttachedGpusMask = 0;
     pMulticastFabricDesc->numAttachedGpus = 0;
+}
+
+NV_STATUS
+_memMulticastFabricSendInbandTeamSetupRequestV2UnderLock
+(
+    OBJGPU                          *pGpu,
+    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc
+)
+{
+    NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS *sendDataParams;
+    nvlink_inband_mc_team_setup_req_v2_msg_t *pMcTeamSetupReqMsg = NULL;
+    nvlink_inband_mc_team_setup_req_v2_t *pMcTeamSetupReq = NULL;
+    MEM_MULTICAST_FABRIC_GPU_INFO *pNode;
+    NvU32 idx = 0;
+    NvU32 payloadSize;
+    NvU32 sendDataSize;
+    NV_STATUS status = NV_OK;
+    NvU16 numKeys = 1;
+
+    sendDataParams =
+        (NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS *)
+        portMemAllocNonPaged(sizeof(NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS));
+
+    if (sendDataParams == NULL)
+        return NV_ERR_NO_MEMORY;
+
+    pMcTeamSetupReqMsg =
+        (nvlink_inband_mc_team_setup_req_v2_msg_t *)&sendDataParams->buffer[0];
+
+    pMcTeamSetupReq =
+        (nvlink_inband_mc_team_setup_req_v2_t *)&pMcTeamSetupReqMsg->mcTeamSetupReq;
+
+    payloadSize = (NvU32)(sizeof(nvlink_inband_mc_team_setup_req_v2_t) +
+                         (sizeof(pMcTeamSetupReq->gpuHandlesAndKeys[0]) *
+                                 (pMulticastFabricDesc->numMaxGpus + numKeys)));
+
+    sendDataSize = (NvU32)(sizeof(nvlink_inband_msg_header_t) + payloadSize);
+
+    if ((NvU32)sendDataSize > sizeof(sendDataParams->buffer))
+    {
+        NV_ASSERT(0);
+        status = NV_ERR_INSUFFICIENT_RESOURCES;
+        goto done;
+    }
+
+    portMemSet(sendDataParams, 0, sendDataSize);
+
+    pMcTeamSetupReq->mcAllocSize = pMulticastFabricDesc->allocSize;
+    pMcTeamSetupReq->numGpuHandles = pMulticastFabricDesc->numMaxGpus;
+    pMcTeamSetupReq->numKeys = numKeys;
+
+    // Fill local GPUs
+    for (pNode = listHead(&pMulticastFabricDesc->gpuInfoList);
+         pNode != NULL;
+         pNode = listNext(&pMulticastFabricDesc->gpuInfoList, pNode))
+        pMcTeamSetupReq->gpuHandlesAndKeys[idx++] = pNode->gpuProbeHandle;
+
+    // Fill local key
+    pMcTeamSetupReq->gpuHandlesAndKeys[idx++] = pMulticastFabricDesc->inbandReqId;
+
+    if (idx != (pMcTeamSetupReq->numGpuHandles + numKeys))
+    {
+        NV_ASSERT(0);
+        status = NV_ERR_INVALID_STATE;
+        goto done;
+    }
+
+    sendDataParams->dataSize = sendDataSize;
+
+    nvlinkInitInbandMsgHdr(&pMcTeamSetupReqMsg->msgHdr,
+                           NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REQ_V2,
+                           payloadSize, pMulticastFabricDesc->inbandReqId);
+
+    status = knvlinkSendInbandData(pGpu, GPU_GET_KERNEL_NVLINK(pGpu),
+                                   sendDataParams);
+    if (status != NV_OK)
+        goto done;
+
+    pMulticastFabricDesc->bInbandReqInProgress = NV_TRUE;
+
+done:
+    portMemFree(sendDataParams);
+
+    return status;
 }
 
 NV_STATUS
@@ -298,12 +499,10 @@ _memMulticastFabricSendInbandTeamSetupRequestV1UnderLock
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc
 )
 {
-    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
     NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS *sendDataParams;
     nvlink_inband_mc_team_setup_req_msg_t *pMcTeamSetupReqMsg = NULL;
     nvlink_inband_mc_team_setup_req_t *pMcTeamSetupReq = NULL;
     MEM_MULTICAST_FABRIC_GPU_INFO *pNode;
-    NvU64 requestId;
     NvU32 idx = 0;
     NvU32 payloadSize;
     NvU32 sendDataSize;
@@ -323,7 +522,8 @@ _memMulticastFabricSendInbandTeamSetupRequestV1UnderLock
         (nvlink_inband_mc_team_setup_req_t *)&pMcTeamSetupReqMsg->mcTeamSetupReq;
 
     payloadSize = (NvU32)(sizeof(nvlink_inband_mc_team_setup_req_t) + \
-                      (sizeof(pMcTeamSetupReq->gpuHandles[0]) * pMulticastFabricDesc->numMaxGpus));
+                         (sizeof(pMcTeamSetupReq->gpuHandles[0]) * \
+                                 pMulticastFabricDesc->numMaxGpus));
 
     sendDataSize = (NvU32)(sizeof(nvlink_inband_msg_header_t) + payloadSize);
 
@@ -343,30 +543,16 @@ _memMulticastFabricSendInbandTeamSetupRequestV1UnderLock
 
     sendDataParams->dataSize = sendDataSize;
 
-    status = fabricInitInbandMsgHdr(&pMcTeamSetupReqMsg->msgHdr,
-                                    NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REQ,
-                                    payloadSize);
+    nvlinkInitInbandMsgHdr(&pMcTeamSetupReqMsg->msgHdr,
+                           NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REQ,
+                           payloadSize, pMulticastFabricDesc->inbandReqId);
 
+    status = knvlinkSendInbandData(pGpu, GPU_GET_KERNEL_NVLINK(pGpu),
+                                   sendDataParams);
     if (status != NV_OK)
         goto done;
-
-    requestId = pMcTeamSetupReqMsg->msgHdr.requestId;
-
-    status = fabricMulticastSetupCacheInsertUnderLock_IMPL(pFabric,
-                                                           requestId,
-                                                           pMulticastFabricDesc);
-    if (status != NV_OK)
-        goto done;
-
-    status = knvlinkSendInbandData(pGpu, GPU_GET_KERNEL_NVLINK(pGpu), sendDataParams);
-    if (status != NV_OK)
-    {
-        fabricMulticastSetupCacheDeleteUnderLock_IMPL(pFabric, requestId);
-        goto done;
-    }
 
     pMulticastFabricDesc->bInbandReqInProgress = NV_TRUE;
-    pMulticastFabricDesc->inbandReqId = requestId;
 
 done:
     portMemFree(sendDataParams);
@@ -386,19 +572,19 @@ _memMulticastFabricSendInbandTeamReleaseRequestV1UnderLock
     nvlink_inband_mc_team_release_req_t *pMcTeamReleaseReq = NULL;
     NvU32 payloadSize;
     NvU32 sendDataSize;
-    NV_STATUS status = NV_OK;
+    NV_STATUS status;
 
-    sendDataParams = \
-        (NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS *)portMemAllocNonPaged(sizeof(NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS));
+    sendDataParams = (NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS *)
+        portMemAllocNonPaged(sizeof(NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS));
 
     if (sendDataParams == NULL)
         return NV_ERR_NO_MEMORY;
 
-    pMcTeamReleaseReqMsg = \
-        (nvlink_inband_mc_team_release_req_msg_t *)&sendDataParams->buffer[0];
+    pMcTeamReleaseReqMsg = (nvlink_inband_mc_team_release_req_msg_t *) \
+                           &sendDataParams->buffer[0];
 
-    pMcTeamReleaseReq = \
-        (nvlink_inband_mc_team_release_req_t *)&pMcTeamReleaseReqMsg->mcTeamReleaseReq;
+    pMcTeamReleaseReq = (nvlink_inband_mc_team_release_req_t *) \
+                        &pMcTeamReleaseReqMsg->mcTeamReleaseReq;
 
     payloadSize = (NvU32)(sizeof(nvlink_inband_mc_team_release_req_t));
 
@@ -408,17 +594,15 @@ _memMulticastFabricSendInbandTeamReleaseRequestV1UnderLock
 
     pMcTeamReleaseReq->mcTeamHandle = mcTeamHandle;
 
-    status = fabricInitInbandMsgHdr(&pMcTeamReleaseReqMsg->msgHdr,
-                                    NVLINK_INBAND_MSG_TYPE_MC_TEAM_RELEASE_REQ,
-                                    payloadSize);
-    if (status != NV_OK)
-        goto done;
+    nvlinkInitInbandMsgHdr(&pMcTeamReleaseReqMsg->msgHdr,
+                           NVLINK_INBAND_MSG_TYPE_MC_TEAM_RELEASE_REQ,
+                           payloadSize, osGetTimestamp());
 
     sendDataParams->dataSize = sendDataSize;
 
-    status = knvlinkSendInbandData(pGpu, GPU_GET_KERNEL_NVLINK(pGpu), sendDataParams);
+    status = knvlinkSendInbandData(pGpu, GPU_GET_KERNEL_NVLINK(pGpu),
+                                   sendDataParams);
 
-done:
     portMemFree(sendDataParams);
 
     return status;
@@ -434,15 +618,25 @@ _memMulticastFabricSendInbandTeamSetupRequestUnderlock
     NvU64 fmCaps;
     NV_STATUS status = NV_OK;
 
-    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps);
+    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel,
+                                     &fmCaps);
     if (status != NV_OK)
         return status;
 
-    if (!(fmCaps & NVLINK_INBAND_FM_CAPS_MC_TEAM_SETUP_V1))
+    if (fmCaps & NVLINK_INBAND_FM_CAPS_MC_TEAM_SETUP_V2)
+    {
+        return _memMulticastFabricSendInbandTeamSetupRequestV2UnderLock(pGpu,
+                                                        pMulticastFabricDesc);
+    }
+    else if (fmCaps & NVLINK_INBAND_FM_CAPS_MC_TEAM_SETUP_V1)
+    {
+        return _memMulticastFabricSendInbandTeamSetupRequestV1UnderLock(pGpu,
+                                                        pMulticastFabricDesc);
+    }
+    else
+    {
         return NV_ERR_NOT_SUPPORTED;
-
-    return _memMulticastFabricSendInbandTeamSetupRequestV1UnderLock(pGpu,
-                                                                    pMulticastFabricDesc);
+    }
 }
 
 NV_STATUS
@@ -455,7 +649,12 @@ _memMulticastFabricSendInbandTeamReleaseRequestUnderLock
     NvU64 fmCaps;
     NV_STATUS status = NV_OK;
 
-    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps);
+    // If mcTeamHandle is zero, nothing to do...
+    if (mcTeamHandle == 0)
+        return NV_OK;
+
+    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel,
+                                     &fmCaps);
     if (status != NV_OK)
         return status;
 
@@ -463,7 +662,7 @@ _memMulticastFabricSendInbandTeamReleaseRequestUnderLock
         return NV_ERR_NOT_SUPPORTED;
 
     return _memMulticastFabricSendInbandTeamReleaseRequestV1UnderLock(pGpu,
-                                                                      mcTeamHandle);
+                                                                mcTeamHandle);
 }
 
 NV_STATUS
@@ -480,15 +679,22 @@ _memMulticastFabricSendInbandRequestUnderLock
     if (pGpu == NULL)
         pGpu = listHead(&pMulticastFabricDesc->gpuInfoList)->pGpu;
 
+    // If nothing is attached locally...
+    if (pGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "No locally attached GPU found\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
     switch (requestType)
     {
         case MEM_MULTICAST_FABRIC_TEAM_SETUP_REQUEST:
             status = _memMulticastFabricSendInbandTeamSetupRequestUnderlock(pGpu,
-                                                                pMulticastFabricDesc);
+                                            pMulticastFabricDesc);
             break;
         case MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST:
             status = _memMulticastFabricSendInbandTeamReleaseRequestUnderLock(pGpu,
-                                                   pMulticastFabricDesc->mcTeamHandle);
+                                            pMulticastFabricDesc->mcTeamHandle);
             break;
         default:
             status = NV_ERR_NOT_SUPPORTED;
@@ -551,7 +757,8 @@ _memorymulticastfabricBatchDetachMem
         btreeEnumStart(0, &pMemNode, pGpuNode->pAttachMemInfoTree);
         while (pMemNode != NULL)
         {
-            _memorymulticastfabricDetachMem(pFabricVAS, pFabricMemDesc, pMemNode);
+            _memorymulticastfabricDetachMem(pFabricVAS, pFabricMemDesc,
+                                            pMemNode);
 
             btreeUnlink(pMemNode, &pGpuNode->pAttachMemInfoTree);
             portMemFree(pMemNode->Data);
@@ -575,65 +782,79 @@ _memMulticastFabricDescriptorFreeUnderLock
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc
 )
 {
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    NvU32 allocFlags;
+
     if (pMulticastFabricDesc == NULL)
         return;
 
     pMulticastFabricDesc->refCount--;
 
-    if (pMulticastFabricDesc->refCount == 0)
+    if (pMulticastFabricDesc->refCount != 0)
+        return;
+
+    allocFlags = pMulticastFabricDesc->allocFlags;
+
+    if (pMulticastFabricDesc->pMemDesc != NULL)
     {
-        if (pMulticastFabricDesc->pMemDesc != NULL)
+        NV_ASSERT(pMulticastFabricDesc->bMemdescInstalled);
+
+        _memorymulticastfabricBatchDetachMem(pMulticastFabricDesc);
+
+        if (_memMulticastFabricIsPrime(allocFlags))
         {
-            NV_ASSERT(pMulticastFabricDesc->bMemdescInstalled);
-
-            _memorymulticastfabricBatchDetachMem(pMulticastFabricDesc);
-
-            _memMulticastFabricSendInbandRequestUnderLock(NULL, pMulticastFabricDesc,
-                                                          MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST);
+            _memMulticastFabricSendInbandRequestUnderLock(
+                                NULL, pMulticastFabricDesc,
+                                MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST);
         }
-
-        if (pMulticastFabricDesc->bInbandReqInProgress)
-        {
-            Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
-            OS_WAIT_QUEUE *pWq;
-            THREAD_STATE_NODE *pThreadNode = NULL;
-            THREAD_STATE_FREE_CALLBACK freeCallback;
-
-            fabricMulticastSetupCacheDeleteUnderLock_IMPL(pFabric,
-                                                          pMulticastFabricDesc->inbandReqId);
-
-            NV_ASSERT_OK(osAllocWaitQueue(&pWq));
-
-            if (pWq != NULL)
-            {
-                NV_ASSERT_OK(fabricMulticastCleanupCacheInsertUnderLock_IMPL(pFabric,
-                                                                             pMulticastFabricDesc->inbandReqId,
-                                                                             pWq));
-
-                NV_ASSERT_OK(threadStateGetCurrent(&pThreadNode, NULL));
-
-                freeCallback.pCb = fabricMulticastWaitOnTeamCleanupCallback;
-                freeCallback.pCbData = (void *)pMulticastFabricDesc->inbandReqId;
-
-                NV_ASSERT_OK(threadStateEnqueueCallbackOnFree(pThreadNode, &freeCallback));
-            }
-        }
-
-        _memMulticastFabricGpuInfoRemoveUnderLock(pMulticastFabricDesc);
-
-        NV_ASSERT(listCount(&pMulticastFabricDesc->gpuInfoList) == 0);
-        listDestroy(&pMulticastFabricDesc->gpuInfoList);
-
-        NV_ASSERT(pMulticastFabricDesc->numAttachedGpus == 0);
-        NV_ASSERT(pMulticastFabricDesc->attachedGpusMask == 0);
-
-        NV_ASSERT(listCount(&pMulticastFabricDesc->waitingClientsList) == 0);
-        listDestroy(&pMulticastFabricDesc->waitingClientsList);
-
-        memdescDestroy(pMulticastFabricDesc->pMemDesc);
-
-        portMemFree(pMulticastFabricDesc);
     }
+
+    if (!_memMulticastFabricIsPrime(allocFlags))
+    {
+    }
+
+    fabricMulticastSetupCacheDeleteUnderLock_IMPL(pFabric,
+                                    pMulticastFabricDesc->inbandReqId);
+
+    if (pMulticastFabricDesc->bInbandReqInProgress)
+    {
+        OS_WAIT_QUEUE *pWq;
+        THREAD_STATE_NODE *pThreadNode = NULL;
+        THREAD_STATE_FREE_CALLBACK freeCallback;
+
+        NV_ASSERT_OK(osAllocWaitQueue(&pWq));
+
+        if (pWq != NULL)
+        {
+            NV_ASSERT_OK(fabricMulticastCleanupCacheInsertUnderLock_IMPL(
+                                        pFabric,
+                                        pMulticastFabricDesc->inbandReqId,
+                                        pWq));
+
+            NV_ASSERT_OK(threadStateGetCurrent(&pThreadNode, NULL));
+
+            freeCallback.pCb = fabricMulticastWaitOnTeamCleanupCallback;
+            freeCallback.pCbData = (void *)pMulticastFabricDesc->inbandReqId;
+
+            NV_ASSERT_OK(threadStateEnqueueCallbackOnFree(pThreadNode,
+                                                          &freeCallback));
+        }
+    }
+
+    _memMulticastFabricGpuInfoRemoveUnderLock(pMulticastFabricDesc);
+
+    NV_ASSERT(listCount(&pMulticastFabricDesc->gpuInfoList) == 0);
+    listDestroy(&pMulticastFabricDesc->gpuInfoList);
+
+    NV_ASSERT(pMulticastFabricDesc->numAttachedGpus == 0);
+    NV_ASSERT(pMulticastFabricDesc->localAttachedGpusMask == 0);
+
+    NV_ASSERT(listCount(&pMulticastFabricDesc->waitingClientsList) == 0);
+    listDestroy(&pMulticastFabricDesc->waitingClientsList);
+
+    memdescDestroy(pMulticastFabricDesc->pMemDesc);
+
+    portMemFree(pMulticastFabricDesc);
 }
 
 NV_STATUS
@@ -644,21 +865,40 @@ _memMulticastFabricConstructUnderLock
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    Memory                           *pMemory       = staticCast(pMemoryMulticastFabric, Memory);
-    NV00FD_ALLOCATION_PARAMETERS     *pAllocParams  = pParams->pAllocParams;
-    MEM_MULTICAST_FABRIC_DESCRIPTOR  *pMulticastFabricDesc;
-    NV_STATUS                         status        = NV_OK;
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    Memory *pMemory = staticCast(pMemoryMulticastFabric, Memory);
+    NV00FD_ALLOCATION_PARAMETERS *pAllocParams = pParams->pAllocParams;
+    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc;
+    NV_STATUS status = NV_OK;
 
-    pMulticastFabricDesc = _memMulticastFabricDescriptorAllocUnderLock(pMemoryMulticastFabric,
-                                                                       pAllocParams);
+    {
+        pMulticastFabricDesc =
+            _memMulticastFabricDescriptorAllocUnderLock(
+                                                pMemoryMulticastFabric,
+                                                pAllocParams);
+    }
 
     if (pMulticastFabricDesc == NULL)
         return NV_ERR_NO_MEMORY;
 
-    status = _memMulticastFabricDescriptorEnqueueWaitUnderLock(pParams->hClient,
-                                                               pMulticastFabricDesc,
-                                                               pAllocParams->pOsEvent,
-                                                               pMemory);
+    // Track pMulticastFabricDesc if freshly allocated...
+    if (pMulticastFabricDesc->refCount == 1)
+    {
+        status = fabricMulticastSetupCacheInsertUnderLock_IMPL(pFabric,
+                                            pMulticastFabricDesc->inbandReqId,
+                                            pMulticastFabricDesc);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to track memdesc 0x%x", status);
+            goto fail;
+        }
+    }
+
+    status = _memMulticastFabricDescriptorEnqueueWaitUnderLock(
+                                                pParams->hClient,
+                                                pMulticastFabricDesc,
+                                                pAllocParams->pOsEvent,
+                                                pMemory);
     if (status != NV_OK)
         goto fail;
 
@@ -683,19 +923,22 @@ _memMulticastFabricCreateMemDescUnderLock
     NV_STATUS status;
     MEMORY_DESCRIPTOR *pTempMemDesc = NULL;
 
-    status = memdescCreate(&pTempMemDesc, NULL, pMulticastFabricDesc->allocSize,
-                           0, NV_TRUE, ADDR_FABRIC_MC, NV_MEMORY_UNCACHED,
+    status = memdescCreate(&pTempMemDesc, NULL,
+                           pMulticastFabricDesc->allocSize,
+                           0, NV_TRUE, ADDR_FABRIC_MC,
+                           NV_MEMORY_UNCACHED,
                            MEMDESC_FLAGS_NONE);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "Failed to allocate memory descriptor for multicast object\n");
+            "Failed to allocate memory descriptor for multicast object\n");
         return status;
     }
 
     memdescSetPte(pTempMemDesc, AT_GPU, 0, mcAddressBase);
 
-    memdescSetPageSize(pTempMemDesc, AT_GPU, pMulticastFabricDesc->pageSize);
+    memdescSetPageSize(pTempMemDesc, AT_GPU,
+                       pMulticastFabricDesc->pageSize);
 
     pTempMemDesc->_pteKind = NV_MMU_PTE_KIND_SMSKED_MESSAGE;
 
@@ -803,7 +1046,7 @@ cleanup:
     return status;
 }
 
-NV_STATUS
+static void
 _memMulticastFabricAttachGpuPostProcessorUnderLock
 (
     OBJGPU                          *pGpu,
@@ -823,8 +1066,19 @@ _memMulticastFabricAttachGpuPostProcessorUnderLock
     //
     NV_ASSERT(mcTeamStatus != NV_ERR_NOT_READY);
 
+    // Initial value is not NV_ERR_NOT_READY, means a failure was observed.
+    if (pMulticastFabricDesc->mcTeamStatus != NV_ERR_NOT_READY)
+    {
+        status = pMulticastFabricDesc->mcTeamStatus;
+        NV_ASSERT((status != NV_OK));
+        goto installMemDesc;
+    }
+
     if (mcTeamStatus != NV_OK)
         goto installMemDesc;
+
+    if (!_memMulticastFabricIsPrime(pMulticastFabricDesc->allocFlags))
+        pMulticastFabricDesc->allocSize = mcAddressSize;
 
     if (mcAddressSize < pMulticastFabricDesc->allocSize)
     {
@@ -834,7 +1088,8 @@ _memMulticastFabricAttachGpuPostProcessorUnderLock
         goto installMemDesc;
     }
 
-    if (!NV_IS_ALIGNED64(mcAddressBase, NV_MEMORY_MULTICAST_FABRIC_PAGE_SIZE_512M))
+    if (!NV_IS_ALIGNED64(mcAddressBase,
+                         NV_MEMORY_MULTICAST_FABRIC_PAGE_SIZE_512M))
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Insufficient mcAddressSize returned from Fabric Manager\n");
@@ -843,7 +1098,7 @@ _memMulticastFabricAttachGpuPostProcessorUnderLock
     }
 
     status = _memMulticastFabricCreateMemDescUnderLock(pMulticastFabricDesc,
-                                                       mcAddressBase, &pMemDesc);
+                                                    mcAddressBase, &pMemDesc);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Failed to allocate fabric memdesc\n");
@@ -867,10 +1122,9 @@ installMemDesc:
                                                status);
 
      if ((status != NV_OK) && (mcTeamStatus == NV_OK))
-         _memMulticastFabricSendInbandRequestUnderLock(pGpu, pMulticastFabricDesc,
-                                        MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST);
-
-    return status;
+         _memMulticastFabricSendInbandRequestUnderLock(pGpu,
+                                pMulticastFabricDesc,
+                                MEM_MULTICAST_FABRIC_TEAM_RELEASE_REQUEST);
 }
 
 void
@@ -886,7 +1140,8 @@ _memorymulticastfabricDestructUnderLock
 
     memDestructCommon(pMemory);
 
-    _memMulticastFabricDescriptorDequeueWaitUnderLock(pMulticastFabricDesc, pMemory);
+    _memMulticastFabricDescriptorDequeueWaitUnderLock(pMulticastFabricDesc,
+                                                      pMemory);
 
     _memMulticastFabricDescriptorFreeUnderLock(pMulticastFabricDesc);
 }
@@ -951,24 +1206,23 @@ memorymulticastfabricTeamSetupResponseCallback
     {
         pMulticastFabricDesc->bInbandReqInProgress = NV_FALSE;
 
-        pMulticastFabricDesc->inbandReqId = 0;
-
         fabricMulticastSetupCacheDeleteUnderLock_IMPL(pFabric, requestId);
 
-        (void)_memMulticastFabricAttachGpuPostProcessorUnderLock(pGpu,
-                                                                 pMulticastFabricDesc,
-                                                                 mcTeamStatus,
-                                                                 mcTeamHandle,
-                                                                 mcAddressBase,
-                                                                 mcAddressSize);
+        _memMulticastFabricAttachGpuPostProcessorUnderLock(pGpu,
+                                                        pMulticastFabricDesc,
+                                                        mcTeamStatus,
+                                                        mcTeamHandle,
+                                                        mcAddressBase,
+                                                        mcAddressSize);
     }
     else
     {
         OS_WAIT_QUEUE *pWq;
 
         if (mcTeamStatus == NV_OK)
-            (void)_memMulticastFabricSendInbandTeamReleaseRequestUnderLock(pGpu,
-                                                                    mcTeamHandle);
+            (void)_memMulticastFabricSendInbandTeamReleaseRequestUnderLock(
+                                                                pGpu,
+                                                                mcTeamHandle);
 
         //
         // Check if there is any thread waiting for team release and
@@ -983,8 +1237,9 @@ memorymulticastfabricTeamSetupResponseCallback
         // is received and a subsequent team release request is sent.
         //
 
-        pWq = (OS_WAIT_QUEUE *)fabricMulticastCleanupCacheGetUnderLock_IMPL(pFabric,
-                                                                            requestId);
+        pWq = (OS_WAIT_QUEUE *)fabricMulticastCleanupCacheGetUnderLock_IMPL(
+                                                                pFabric,
+                                                                requestId);
 
         if (pWq != NULL)
              osWakeUp(pWq);
@@ -1003,9 +1258,9 @@ memorymulticastfabricConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    Fabric                       *pFabric      = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
     NV00FD_ALLOCATION_PARAMETERS *pAllocParams = pParams->pAllocParams;
-    NV_STATUS                     status       = NV_OK;
+    NV_STATUS status = NV_OK;
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -1014,7 +1269,8 @@ memorymulticastfabricConstruct_IMPL
                                                        pParams);
     }
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _memMulticastFabricValidateAllocParams(pAllocParams));
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                _memMulticastFabricValidateAllocParams(pAllocParams));
 
     fabricMulticastFabricOpsMutexAcquire(pFabric);
 
@@ -1034,14 +1290,13 @@ _memorymulticastfabricCtrlAttachGpu
     NV00FD_CTRL_ATTACH_GPU_PARAMS *pParams
 )
 {
-    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc = \
+    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc =
                                 pMemoryMulticastFabric->pMulticastFabricDesc;
     NV_STATUS status = NV_OK;
     Subdevice *pSubdevice;
     OBJGPU *pGpu;
     FABRIC_VASPACE *pFabricVAS;
-    NvU64 gpuProbeHandle;
-    MEM_MULTICAST_FABRIC_GPU_INFO *pNode = NULL;
+    MEM_MULTICAST_FABRIC_GPU_INFO *pNode;
     CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
 
     if (pParams->flags != 0)
@@ -1051,15 +1306,26 @@ _memorymulticastfabricCtrlAttachGpu
     }
 
     // Check if the Multicast FLA object has any additional slots for GPUs
-    if (pMulticastFabricDesc->numAttachedGpus == pMulticastFabricDesc->numMaxGpus)
+    if (pMulticastFabricDesc->numAttachedGpus ==
+                                pMulticastFabricDesc->numMaxGpus)
     {
         NV_PRINTF(LEVEL_ERROR, "Max no. of GPUs have already attached!\n");
         return NV_ERR_INVALID_OPERATION;
     }
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
-        subdeviceGetByHandle(RES_GET_CLIENT(pMemoryMulticastFabric),
-            pParams->hSubdevice, &pSubdevice));
+    if (pMulticastFabricDesc->bMemdescInstalled)
+    {
+        NV_PRINTF(LEVEL_ERROR, "The object is already ready.\n");
+        return NV_ERR_STATE_IN_USE;
+    }
+
+    status = subdeviceGetByHandle(RES_GET_CLIENT(pMemoryMulticastFabric),
+                                  pParams->hSubdevice, &pSubdevice);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Unable to query subdevice\n");
+        return status;
+    }
 
     pGpu = GPU_RES_GET_GPU(pSubdevice);
 
@@ -1083,11 +1349,20 @@ _memorymulticastfabricCtrlAttachGpu
     pNode = listTail(&pMulticastFabricDesc->gpuInfoList);
 
     status = gpuFabricProbeGetGpuFabricHandle(pGpu->pGpuFabricProbeInfoKernel,
-                                              &gpuProbeHandle);
+                                              &pNode->gpuProbeHandle);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Attaching GPU does not have a valid probe handle\n");
+        goto fail;
+    }
+
+    status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
+                                              &pNode->cliqueId);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Attaching GPU does not have a valid clique ID\n");
         goto fail;
     }
 
@@ -1101,22 +1376,22 @@ _memorymulticastfabricCtrlAttachGpu
         goto fail;
     }
 
-    pNode->gpuProbeHandle = gpuProbeHandle;
-
-    if ((pMulticastFabricDesc->numAttachedGpus + 1)  == pMulticastFabricDesc->numMaxGpus)
+    if ((pMulticastFabricDesc->numAttachedGpus + 1)
+                                    == pMulticastFabricDesc->numMaxGpus)
     {
-        status = _memMulticastFabricSendInbandRequestUnderLock(NULL, pMulticastFabricDesc,
-                                            MEM_MULTICAST_FABRIC_TEAM_SETUP_REQUEST);
+        status = _memMulticastFabricSendInbandRequestUnderLock(NULL,
+                                    pMulticastFabricDesc,
+                                    MEM_MULTICAST_FABRIC_TEAM_SETUP_REQUEST);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "Inband request submission to FM for Multicast Team Setup failed!\n");
+                      "Inband request Multicast Team Setup failed!\n");
             goto fail;
         }
     }
 
     pMulticastFabricDesc->numAttachedGpus++;
-    pMulticastFabricDesc->attachedGpusMask |= NVBIT32(pGpu->gpuInstance);
+    pMulticastFabricDesc->localAttachedGpusMask |= NVBIT32(pGpu->gpuInstance);
 
     return NV_OK;
 
@@ -1252,8 +1527,9 @@ _memorymulticastfabricValidatePhysMem
     NV_STATUS status;
     Memory *pMemory;
 
-    status = serverutilGetResourceRef(RES_GET_CLIENT_HANDLE(pMemoryMulticastFabric),
-                                      hPhysMem, &pPhysmemRef);
+    status = serverutilGetResourceRef(
+                            RES_GET_CLIENT_HANDLE(pMemoryMulticastFabric),
+                            hPhysMem, &pPhysmemRef);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
@@ -1465,9 +1741,9 @@ memorymulticastfabricCopyConstruct_IMPL
 
     pMulticastFabricDesc = pSourceMemoryMulticastFabric->pMulticastFabricDesc;
 
-    pMemoryMulticastFabric->pMulticastFabricDesc = pMulticastFabricDesc;
-
     pMulticastFabricDesc->refCount++;
+
+    pMemoryMulticastFabric->pMulticastFabricDesc = pMulticastFabricDesc;
 
     fabricMulticastFabricOpsMutexRelease(pFabric);
 
@@ -1597,8 +1873,12 @@ memorymulticastfabricControl_IMPL
 {
     NV_STATUS status = NV_OK;
 
-    if (pParams->cmd != NV00FD_CTRL_CMD_ATTACH_GPU)
-        status = memorymulticastfabricIsReady(pMemoryMulticastFabric, NV_FALSE);
+    if (
+        (pParams->cmd != NV00FD_CTRL_CMD_ATTACH_GPU))
+    {
+        status = memorymulticastfabricIsReady(pMemoryMulticastFabric,
+                                              NV_FALSE);
+    }
 
     //
     // If clients try to register when the multicast object
@@ -1635,6 +1915,28 @@ memorymulticastfabricControl_IMPL
 }
 
 NvBool
+memorymulticastfabricIsExportAllowed_IMPL
+(
+    MemoryMulticastFabric *pMemoryMulticastFabric
+)
+{
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc;
+    NvBool bAllowed;
+
+    fabricMulticastFabricOpsMutexAcquire(pFabric);
+
+    pMulticastFabricDesc = pMemoryMulticastFabric->pMulticastFabricDesc;
+
+    bAllowed = (pMulticastFabricDesc != NULL) &&
+               _memMulticastFabricIsPrime(pMulticastFabricDesc->allocFlags);
+
+    fabricMulticastFabricOpsMutexRelease(pFabric);
+
+    return bAllowed;
+}
+
+NvBool
 memorymulticastfabricIsGpuMapAllowed_IMPL
 (
     MemoryMulticastFabric *pMemoryMulticastFabric,
@@ -1643,17 +1945,17 @@ memorymulticastfabricIsGpuMapAllowed_IMPL
 {
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc;
-    NvU32 attachedGpusMask;
+    NvU32 localAttachedGpusMask;
 
     fabricMulticastFabricOpsMutexAcquire(pFabric);
 
     pMulticastFabricDesc = pMemoryMulticastFabric->pMulticastFabricDesc;
 
-    attachedGpusMask = pMulticastFabricDesc->attachedGpusMask;
+    localAttachedGpusMask = pMulticastFabricDesc->localAttachedGpusMask;
 
     fabricMulticastFabricOpsMutexRelease(pFabric);
 
-    return ((attachedGpusMask & NVBIT32(pGpu->gpuInstance)) != 0U);
+    return ((localAttachedGpusMask & NVBIT32(pGpu->gpuInstance)) != 0U);
 }
 
 NV_STATUS
@@ -1668,3 +1970,4 @@ memorymulticastfabricGetMapAddrSpace_IMPL
     *pAddrSpace = ADDR_FABRIC_MC;
     return NV_OK;
 }
+

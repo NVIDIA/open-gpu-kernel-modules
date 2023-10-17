@@ -245,4 +245,5 @@ NV_STATUS hdacodecConstruct_IMPL(struct Hdacodec *arg_pHdacodecApi, struct CALL_
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_HDA_CODEC_API_NVOC_H_

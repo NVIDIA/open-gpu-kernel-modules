@@ -174,10 +174,11 @@ _ksmdbgssnInitClient
     {
         NVC637_ALLOCATION_PARAMETERS nvC637AllocParams;
         MIG_INSTANCE_REF ref;
+        Device *pDevice = GPU_RES_GET_DEVICE(pKernelSMDebuggerSession);
 
         portMemSet(&nvC637AllocParams, 0, sizeof(nvC637AllocParams));
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, pKernelSMDebuggerSession->hDebuggerClient, &ref),
+            kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref),
             failed);
 
         NV_ASSERT_OK_OR_GOTO(status,
@@ -228,6 +229,7 @@ ksmdbgssnConstruct_IMPL
     NvHandle                  hSubdevice;
     NV_STATUS                 status = NV_OK;
     RsClient                 *pAppClient;
+    Device                   *pAppDevice;
     Subdevice                *pSubdevice;
     RsResourceRef            *pGrResourceRef;
     RsResourceRef            *pParentRef;
@@ -316,7 +318,13 @@ ksmdbgssnConstruct_IMPL
     NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu == GPU_RES_GET_GPU(pKernelSMDebuggerSession->pObject),
                            NV_ERR_INVALID_ARGUMENT);
 
-    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, subdeviceGetByGpu(pAppClient, pGpu, &pSubdevice));
+    pAppDevice = GPU_RES_GET_DEVICE(pKernelSMDebuggerSession->pObject);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+        subdeviceGetByInstance(pAppClient,
+                               RES_GET_HANDLE(pAppDevice),
+                               gpumgrGetSubDeviceInstanceFromGpu(pGpu),
+                               &pSubdevice));
 
     GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
@@ -330,7 +338,7 @@ ksmdbgssnConstruct_IMPL
     pKernelSMDebuggerSession->hSubdevice      = hSubdevice;
 
     // Insert it into this Object's debugger list
-    if (listAppendValue(&pKernelSMDebuggerSession->pObject->activeDebuggers, &pKernelSMDebuggerSession) == NULL)
+    if (!kgrctxRegisterKernelSMDebuggerSession(pGpu, kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject), pKernelSMDebuggerSession))
     {
         NV_PRINTF(LEVEL_ERROR,
                   "Failed to insert Debugger into channel list, handle = 0x%x\n",
@@ -440,12 +448,13 @@ ksmdbgssnFreeCallback_IMPL
 )
 {
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
 
     // This should free the entire hierarchy of objects.
     pRmApi->Free(pRmApi, pKernelSMDebuggerSession->hInternalClient, pKernelSMDebuggerSession->hInternalClient);
 
     // Remove it from the pObject debugger list
-    listRemoveFirstByValue(&pKernelSMDebuggerSession->pObject->activeDebuggers, &pKernelSMDebuggerSession);
+    kgrctxDeregisterKernelSMDebuggerSession(pGpu, kgrobjGetKernelGraphicsContext(pGpu, pKernelSMDebuggerSession->pObject), pKernelSMDebuggerSession);
 
 }
 

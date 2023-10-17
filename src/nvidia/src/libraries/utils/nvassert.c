@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -35,9 +35,6 @@
 #include "os/os.h"
 #include "nvrm_registry.h"
 #include "rmconfig.h"
-#include "gpu/gpu.h"
-#include "gpu/gpu_user_shared_data.h"
-#include "class/cl00de.h"
 #elif !defined(RMCFG_FEATURE_ENABLED)
 #define RMCFG_FEATURE_x 0
 #endif
@@ -55,44 +52,26 @@ void rcdbRmAssertStatus(NvU32 status, NvU32 lineNum, NvU64 ip);
 #define NV_JOURNAL_ASSERT_FAILURE_STATUS(lineNum, ip, status)   ((void)0)
 #endif /* NV_JOURNAL_ASSERT_ENABLE*/
 
-#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
+#if defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 
 #if NV_JOURNAL_ASSERT_ENABLE
-static void
-_logAssertCount(void)
-{
-    static NvU32 assertCount = 0;
-    NV00DE_SHARED_DATA *pSharedData;
-
-    if (g_pGpu == NULL)
-    {
-        return;
-    }
-
-    pSharedData = gpushareddataWriteStart(g_pGpu);
-    pSharedData->gspAssertCount = ++assertCount;
-    gpushareddataWriteFinish(g_pGpu);
-}
-
 /*
  * Helper function for NV_ASSERT_FAILED
  */
 void
 nvAssertFailed(void)
 {
-    _logAssertCount();
     NV_JOURNAL_ASSERT_FAILURE(NV_RM_ASSERT_UNKNOWN_LINE_NUM, portUtilGetReturnAddress());
 }
 
 void
 nvAssertOkFailed(NvU32 status)
 {
-    _logAssertCount();
     NV_JOURNAL_ASSERT_FAILURE_STATUS(NV_RM_ASSERT_UNKNOWN_LINE_NUM, portUtilGetReturnAddress(), status);
 }
 #endif
 
-#else //defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
+#else //defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 
 #if NV_ASSERT_FAILED_USES_STRINGS
 #define NV_ASSERT_FAILED_PRINTF_FMT                  "%s @ %s:%d\n"
@@ -277,7 +256,7 @@ nvCheckOkFailedNoLog
         nvAssertStatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
 }
 
-#endif // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
+#endif // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 #endif // NV_PRINTF_ENABLED || NV_JOURNAL_ASSERT_ENABLE
 
 /*
@@ -290,11 +269,11 @@ nvCheckOkFailedNoLog
  */
 
 #if !defined(NV_PRINTF_STRING_SECTION)
-#if defined(NVRM) && NVCPU_IS_RISCV64
-#define NV_PRINTF_STRING_SECTION         __attribute__ ((section (".logging")))
-#else // defined(NVRM) && NVCPU_IS_RISCV64
+#if defined(NVRM) && NVOS_IS_LIBOS
+#define NV_PRINTF_STRING_SECTION LIBOS_SECTION_LOGGING
+#else // defined(NVRM) && NVOS_IS_LIBOS
 #define NV_PRINTF_STRING_SECTION
-#endif // defined(NVRM) && NVCPU_IS_RISCV64
+#endif // defined(NVRM) && NVOS_IS_LIBOS
 #endif // !defined(NV_PRINTF_STRING_SECTION)
 
 #undef NV_STATUS_CODE

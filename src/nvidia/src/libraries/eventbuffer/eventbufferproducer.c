@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -170,7 +170,7 @@ eventBufferProducerAddEvent
     EVENT_BUFFER_PRODUCER_INFO *info,
     NvU16 eventType,
     NvU16 eventSubtype,
-    EVENT_BUFFER_PRODUCER_DATA* pData
+    EVENT_BUFFER_PRODUCER_DATA *pData
 )
 {
     NV_EVENT_BUFFER_RECORD *record;
@@ -180,6 +180,10 @@ eventBufferProducerAddEvent
         record = _eventBufferGetFreeRecord(info);
         if (record)
         {
+            RECORD_BUFFER_INFO *pRecInfo = &info->recordBuffer;
+            NV_EVENT_BUFFER_HEADER *pHeader = pRecInfo->pHeader;
+            NvU32 putNext = (pHeader->recordPut + 1) % pRecInfo->totalRecordCount;
+
             record->recordHeader.type = eventType;
             record->recordHeader.subtype = eventSubtype;
 
@@ -188,22 +192,21 @@ eventBufferProducerAddEvent
                              NvP64_VALUE(pData->pPayload), pData->payloadSize);
 
             _eventBufferAddVardata(info, pData->pVardata, pData->vardataSize, &record->recordHeader);
+
+            pHeader->recordPut = putNext;
         }
     }
 }
 
-NV_EVENT_BUFFER_RECORD*
+NV_EVENT_BUFFER_RECORD *
 _eventBufferGetFreeRecord(EVENT_BUFFER_PRODUCER_INFO *info)
 {
-    RECORD_BUFFER_INFO* pRecInfo = &info->recordBuffer;
-    NV_EVENT_BUFFER_HEADER* pHeader = pRecInfo->pHeader;
+    RECORD_BUFFER_INFO *pRecInfo = &info->recordBuffer;
+    NV_EVENT_BUFFER_HEADER *pHeader = pRecInfo->pHeader;
     NvU32 recordOffset = 0;
-    NV_EVENT_BUFFER_RECORD* pFreeRecord = NULL;
+    NV_EVENT_BUFFER_RECORD *pFreeRecord = NULL;
 
-    NvU32 putNext = pHeader->recordPut + 1;
-
-    if (putNext == pRecInfo->totalRecordCount)
-        putNext = 0;
+    NvU32 putNext = (pHeader->recordPut + 1) % pRecInfo->totalRecordCount;
 
     if ((!info->isKeepNewest) && (putNext == pHeader->recordGet))
     {
@@ -212,10 +215,7 @@ _eventBufferGetFreeRecord(EVENT_BUFFER_PRODUCER_INFO *info)
     else
     {
         recordOffset = pHeader->recordPut * pRecInfo->recordSize;
-        pFreeRecord = (NV_EVENT_BUFFER_RECORD*)((NvUPtr)pRecInfo->recordBuffAddr + recordOffset);
-
-        pHeader->recordCount++;
-        pHeader->recordPut = putNext;
+        pFreeRecord = (NV_EVENT_BUFFER_RECORD *)((NvUPtr)pRecInfo->recordBuffAddr + recordOffset);
     }
     return pFreeRecord;
 }

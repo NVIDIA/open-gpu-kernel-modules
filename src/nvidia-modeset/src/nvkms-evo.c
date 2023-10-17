@@ -80,30 +80,35 @@
 
 /*
  * This struct is used to describe a single set of GPUs to lock together by
- * GetRasterLockTopologies().
+ * GetRasterLockGroups().
  */
-typedef struct _NVEvoRasterLockTopology {
+typedef struct _NVEvoRasterLockGroup {
     NvU32 numDisps;
     NVDispEvoPtr pDispEvoOrder[NVKMS_MAX_SUBDEVICES];
-} RasterLockTopology;
+} RasterLockGroup;
 
 /*
  * These are used hold additional state for each DispEvo during building of
- * topologies.
+ * RasterLockGroups.
  */
 typedef struct
 {
     NVDispEvoPtr pDispEvo;
     NvU32 gpuId;
-    RasterLockTopology *topo;
+    RasterLockGroup *pRasterLockGroup;
 } DispEntry;
 
 typedef struct
 {
-    /* Array of DispEvos and their assigned topologies. */
+    /* Array of DispEvos and their assigned RasterLockGroups. */
     NvU32 numDisps;
     DispEntry disps[NVKMS_MAX_SUBDEVICES];
 } DispEvoList;
+
+struct _NVLockGroup {
+    RasterLockGroup rasterLockGroup;
+    NvBool flipLockEnabled;
+};
 
 static void EvoSetViewportPointIn(NVDispEvoPtr pDispEvo, NvU32 head,
                                   NvU16 x, NvU16 y,
@@ -120,11 +125,12 @@ static void EvoUpdateHeadParams(const NVDispEvoRec *pDispEvo, NvU32 head,
 static void SetRefClk(NVDevEvoPtr pDevEvo,
                       NvU32 sd, NvU32 head, NvBool external,
                       NVEvoUpdateState *updateState);
-static void UnlockRasterLockGroup(NVDevEvoPtr pDevEvo);
 static NvBool ApplyLockActionIfPossible(NVDispEvoPtr pDispEvo,
                                         NVEvoSubDevPtr pEvoSubDev,
                                         NVEvoLockAction action);
-static void FinishModesetOneTopology(RasterLockTopology *topo);
+static void FinishModesetOneDev(NVDevEvoRec *pDevEvo);
+static void FinishModesetOneGroup(RasterLockGroup *pRasterLockGroup);
+static void EnableFlipLockIfRequested(NVLockGroup *pLockGroup);
 
 static void SyncEvoLockState(void);
 static void UpdateEvoLockState(void);
@@ -132,6 +138,11 @@ static void UpdateEvoLockState(void);
 static void ScheduleLutUpdate(NVDispEvoRec *pDispEvo,
                               const NvU32 apiHead, const NvU32 data,
                               const NvU64 usec);
+
+static NvBool DowngradeColorBpc(
+    const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
+    enum NvKmsDpyAttributeColorBpcValue *pColorBpc,
+    enum NvKmsDpyAttributeColorRangeValue *pColorRange);
 
 NVEvoGlobal nvEvoGlobal = {
     .clientHandle = 0,
@@ -141,9 +152,28 @@ NVEvoGlobal nvEvoGlobal = {
     .debugMemoryAllocationList =
         NV_LIST_INIT(&nvEvoGlobal.debugMemoryAllocationList),
 #endif /* DEBUG */
-    .globalTopologies = NULL,
-    .numGlobalTopos = 0
 };
+
+static RasterLockGroup *globalRasterLockGroups = NULL;
+static NvU32 numGlobalRasterLockGroups = 0;
+
+/*
+ * Keep track of groups of HW heads which the modeset owner has requested to be
+ * fliplocked together.  All of the heads specified here are guaranteed to be
+ * active.  A given head can only be in one group at a time.  Fliplock is not
+ * guaranteed to be enabled in the hardware for these groups.
+ */
+typedef struct _FlipLockRequestedGroup {
+    struct {
+        NVDispEvoPtr pDispEvo;
+        NvU32 flipLockHeads;
+    } disp[NV_MAX_SUBDEVICES];
+
+    NVListRec listEntry;
+} FlipLockRequestedGroup;
+
+static NVListRec requestedFlipLockGroups =
+    NV_LIST_INIT(&requestedFlipLockGroups);
 
 /*
  * The dummy infoString should be used in paths that take an
@@ -496,6 +526,28 @@ void nvDoIMPUpdateEvo(NVDispEvoPtr pDispEvo,
     pDevEvo->hal->PrePostIMP(pDispEvo, FALSE /* isPre */);
 }
 
+void nvEvoFlipUpdate(NVDispEvoPtr pDispEvo,
+                     NVEvoUpdateState *updateState)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    int notifier = -1;
+
+    if (nvEvoLUTNotifiersNeedCommit(pDispEvo)) {
+        notifier = nvEvoCommitLUTNotifiers(pDispEvo);
+    }
+
+    if (notifier >= 0) {
+        EvoUpdateAndKickOffWithNotifier(pDispEvo,
+                                        TRUE /* notify */,
+                                        FALSE /* sync */,
+                                        notifier,
+                                        updateState,
+                                        TRUE /* releaseElv */);
+    } else {
+        pDevEvo->hal->Update(pDevEvo, updateState, TRUE /* releaseElv */);
+    }
+}
+
 /*!
  * Tell RM not to expect anything other than a stall lock change during the next
  * update.
@@ -778,17 +830,63 @@ static void TweakTimingsForGsync(const NVDpyEvoRec *pDpyEvo,
     nvEvoLogModeValidationModeTimings(pInfoString, &modeTimings);
 }
 
+static NvBool HeadStateIsHdmiTmdsDeepColor(const NVDispHeadStateEvoRec *pHeadState)
+{
+    nvAssert(pHeadState->pConnectorEvo != NULL);
 
+    // Check for HDMI TMDS.
+    if (pHeadState->pConnectorEvo->isHdmiEnabled &&
+        (pHeadState->timings.protocol != NVKMS_PROTOCOL_SOR_HDMI_FRL)) {
+        // Check for pixelDepth >= 30.
+        switch (pHeadState->pixelDepth) {
+            case NVKMS_PIXEL_DEPTH_18_444:
+            case NVKMS_PIXEL_DEPTH_24_444:
+            case NVKMS_PIXEL_DEPTH_20_422:
+            case NVKMS_PIXEL_DEPTH_16_422:
+                return FALSE;
+            case NVKMS_PIXEL_DEPTH_30_444:
+                return TRUE;
+        }
+    }
+
+    return FALSE;
+}
 
 /*!
- * Check whether rasterlock is possible between the two sets of rastertimings.
+ * Check whether rasterlock is possible between the two head states.
  * Note that we don't compare viewports, but I don't believe the viewport size
  * affects whether it is possible to rasterlock.
  */
 
-static NvBool RasterLockPossible(const NVHwModeTimingsEvo *pTimings1,
-                                 const NVHwModeTimingsEvo *pTimings2)
+static NvBool RasterLockPossible(const NVDispHeadStateEvoRec *pHeadState1,
+                                 const NVDispHeadStateEvoRec *pHeadState2)
 {
+    const NVHwModeTimingsEvo *pTimings1 = &pHeadState1->timings;
+    const NVHwModeTimingsEvo *pTimings2 = &pHeadState2->timings;
+
+    /*
+     * XXX Bug 4235728: With HDMI TMDS signaling >= 10 BPC, display requires a
+     * higher VPLL clock multiplier varying by pixel depth, which can cause
+     * rasterlock to fail between heads with differing multipliers. So, if a
+     * head is using HDMI TMDS >= 10 BPC, it can only rasterlock with heads that
+     * that are using HDMI TMDS with the same pixel depth.
+     */
+
+    // If either head is HDMI TMDS DeepColor (10+ BPC)...
+    if (HeadStateIsHdmiTmdsDeepColor(pHeadState1) ||
+        HeadStateIsHdmiTmdsDeepColor(pHeadState2)) {
+        // The other head must also be HDMI TMDS DeepColor.
+        if (!HeadStateIsHdmiTmdsDeepColor(pHeadState1) ||
+            !HeadStateIsHdmiTmdsDeepColor(pHeadState2)) {
+            return FALSE;
+        }
+
+        // Both heads must have identical pixel depth.
+        if (pHeadState1->pixelDepth != pHeadState2->pixelDepth) {
+            return FALSE;
+        }
+    }
+
     return ((pTimings1->rasterSize.x       == pTimings2->rasterSize.x) &&
             (pTimings1->rasterSize.y       == pTimings2->rasterSize.y) &&
             (pTimings1->rasterSyncEnd.x    == pTimings2->rasterSyncEnd.x) &&
@@ -898,84 +996,89 @@ void nvEvoSetTimings(NVDispEvoPtr pDispEvo,
 }
 
 /*
- * growTopologies() - Increase the size of the provided raster lock topology by
- * 1.
+ * Increase the size of the provided raster lock group by 1.
  *
- * This involves incrementing *numTopologies, reallocating the topos array, and
- * initializing the new entry.
+ * This involves incrementing *pNumRasterLockGroups, reallocating the
+ * pRasterLockGroups array, and initializing the new entry.
  */
-static RasterLockTopology *GrowTopologies(RasterLockTopology *topos,
-                                          unsigned int *numTopologies)
+static RasterLockGroup *GrowRasterLockGroup(RasterLockGroup *pRasterLockGroups,
+                                            unsigned int *pNumRasterLockGroups)
 {
-    RasterLockTopology *newTopos, *topo;
-    unsigned int numTopos;
+    RasterLockGroup *pNewRasterLockGroups, *pRasterLockGroup;
+    unsigned int numRasterLockGroups;
 
-    numTopos = *numTopologies;
+    numRasterLockGroups = *pNumRasterLockGroups;
 
-    numTopos++;
-    newTopos = nvRealloc(topos, numTopos * sizeof(RasterLockTopology));
-    if (!newTopos) {
-        nvFree(topos);
-        *numTopologies = 0;
+    numRasterLockGroups++;
+    pNewRasterLockGroups =
+        nvRealloc(pRasterLockGroups,
+                  numRasterLockGroups * sizeof(RasterLockGroup));
+    if (!pNewRasterLockGroups) {
+        nvFree(pRasterLockGroups);
+        *pNumRasterLockGroups = 0;
         return NULL;
     }
 
-    topo = &newTopos[numTopos - 1];
-    topo->numDisps = 0;
+    pRasterLockGroup = &pNewRasterLockGroups[numRasterLockGroups - 1];
+    pRasterLockGroup->numDisps = 0;
 
-    *numTopologies = numTopos;
+    *pNumRasterLockGroups = numRasterLockGroups;
 
-    return newTopos;
-
-} /* GrowTopologies() */
-
-static RasterLockTopology *CopyAndAppendTopology(RasterLockTopology *topos,
-                                                 unsigned int *numTopos,
-                                                 const RasterLockTopology *source)
-{
-    RasterLockTopology *dest;
-
-    topos = GrowTopologies(topos, numTopos);
-    if (topos) {
-        dest = &topos[*numTopos - 1];
-        nvkms_memcpy(dest, source, sizeof(RasterLockTopology));
-    }
-
-    return topos;
+    return pNewRasterLockGroups;
 }
 
-static void AddDispEvoIntoTopology(RasterLockTopology *topo, NVDispEvoPtr pDispEvo)
+static RasterLockGroup *CopyAndAppendRasterLockGroup(
+    RasterLockGroup *pRasterLockGroups,
+    unsigned int *pNumRasterLockGroups,
+    const RasterLockGroup *source)
+{
+    RasterLockGroup *dest;
+
+    pRasterLockGroups = GrowRasterLockGroup(pRasterLockGroups,
+                                            pNumRasterLockGroups);
+    if (pRasterLockGroups) {
+        dest = &pRasterLockGroups[*pNumRasterLockGroups - 1];
+        nvkms_memcpy(dest, source, sizeof(RasterLockGroup));
+    }
+
+    return pRasterLockGroups;
+}
+
+static void AddDispEvoIntoRasterLockGroup(RasterLockGroup *pRasterLockGroup,
+                                          NVDispEvoPtr pDispEvo)
 {
     NvU32 i;
 
     /*
-     * The extent of a topology is the largest number of GPUs that can be
-     * linked together.
+     * The extent of a RasterLockGroup is the largest number of GPUs that can
+     * be linked together.
      */
-    nvAssert(topo->numDisps < NVKMS_MAX_SUBDEVICES);
+    nvAssert(pRasterLockGroup->numDisps < NVKMS_MAX_SUBDEVICES);
 
     /* Caller should keep track of not adding duplicate entries. */
-    for (i = 0; i < topo->numDisps; i++) {
-        nvAssert(topo->pDispEvoOrder[i] != pDispEvo);
+    for (i = 0; i < pRasterLockGroup->numDisps; i++) {
+        nvAssert(pRasterLockGroup->pDispEvoOrder[i] != pDispEvo);
     }
 
     /* Add to the end of the array. */
-    topo->pDispEvoOrder[topo->numDisps] = pDispEvo;
-    topo->numDisps++;
+    pRasterLockGroup->pDispEvoOrder[pRasterLockGroup->numDisps] = pDispEvo;
+    pRasterLockGroup->numDisps++;
 }
 
-static const RasterLockTopology *FindTopologyForDispEvo(
-    const RasterLockTopology *topos,
-    unsigned int numTopologies,
+static const RasterLockGroup *FindRasterLockGroupForDispEvo(
+    const RasterLockGroup *pRasterLockGroups,
+    unsigned int numRasterLockGroups,
     const NVDispEvoPtr pDispEvo)
 {
-    const RasterLockTopology *topo;
+    const RasterLockGroup *pRasterLockGroup;
     NvU32 i;
 
-    for (topo = topos; topo < topos + numTopologies; topo++) {
-        for (i = 0; i < topo->numDisps; i++) {
-            if (topo->pDispEvoOrder[i] == pDispEvo) {
-                return topo;
+    for (pRasterLockGroup = pRasterLockGroups;
+         pRasterLockGroup < pRasterLockGroups + numRasterLockGroups;
+         pRasterLockGroup++) {
+        for (i = 0; i < pRasterLockGroup->numDisps; i++) {
+            if (pRasterLockGroup->pDispEvoOrder[i] == pDispEvo) {
+                return pRasterLockGroup;
             }
         }
     }
@@ -1009,7 +1112,7 @@ static void DispEvoListAppend(DispEvoList *list, NVDispEvoPtr pDispEvo)
     nvAssert(list->numDisps < ARRAY_LEN(list->disps));
     list->disps[list->numDisps].pDispEvo = pDispEvo;
     list->disps[list->numDisps].gpuId = nvGpuIdOfDispEvo(pDispEvo);
-    list->disps[list->numDisps].topo = NULL;
+    list->disps[list->numDisps].pRasterLockGroup = NULL;
     list->numDisps++;
 }
 
@@ -1036,10 +1139,11 @@ static NV0000_CTRL_GPU_VIDEO_LINKS *FindLinksForGpuId(
     return NULL;
 }
 
-static void BuildTopologyFromVideoLinks(DispEvoList *list,
-                                        RasterLockTopology *topo,
-                                        NvU32 gpuId,
-                                        NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *vidLinksParams)
+static void BuildRasterLockGroupFromVideoLinks(
+    DispEvoList *list,
+    RasterLockGroup *pRasterLockGroup,
+    NvU32 gpuId,
+    NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *vidLinksParams)
 {
     DispEntry *dispEntry;
     NV0000_CTRL_GPU_VIDEO_LINKS *links;
@@ -1054,13 +1158,13 @@ static void BuildTopologyFromVideoLinks(DispEvoList *list,
     }
 
     /*
-     * Unless we've seen this gpuId already add into current topology and
-     * try to discover bridged GPUs.
+     * Unless we've seen this gpuId already add into current RasterLockGroup
+     * and try to discover bridged GPUs.
      */
-    if (!dispEntry->topo) {
-        /* Assign in the current topology. */
-        AddDispEvoIntoTopology(topo, dispEntry->pDispEvo);
-        dispEntry->topo = topo;
+    if (!dispEntry->pRasterLockGroup) {
+        /* Assign in the current RasterLockGroup. */
+        AddDispEvoIntoRasterLockGroup(pRasterLockGroup, dispEntry->pDispEvo);
+        dispEntry->pRasterLockGroup = pRasterLockGroup;
 
         /* First, get the links for this gpuId. */
         links = FindLinksForGpuId(vidLinksParams, gpuId);
@@ -1072,10 +1176,10 @@ static void BuildTopologyFromVideoLinks(DispEvoList *list,
                     break;
                 }
 
-                BuildTopologyFromVideoLinks(list,
-                                            topo,
-                                            links->connectedGpuIds[i],
-                                            vidLinksParams);
+                BuildRasterLockGroupFromVideoLinks(list,
+                                                   pRasterLockGroup,
+                                                   links->connectedGpuIds[i],
+                                                   vidLinksParams);
             }
         }
     }
@@ -1083,34 +1187,35 @@ static void BuildTopologyFromVideoLinks(DispEvoList *list,
 
 /*
  * Stateless (RM SLI/client SLI agnostic) discovery of bridged GPUs: build
- * topologies for all non-RM SLI devices based on the found GPU links.
+ * RasterLockGroups for all non-RM SLI devices based on the found GPU links.
  *
- * This function and BuildTopologyFromVideoLinks() implement a simple
- * algorithm that puts clusters of bridged GPUs into distinct topologies.
- * Here's an outline of how we basically generate the final topologies:
+ * This function and BuildRasterLockGroupFromVideoLinks() implement a simple
+ * algorithm that puts clusters of bridged GPUs into distinct RasterLockGroups.
+ * Here's an outline of how we basically generate the final RasterLockGroups:
  *
- * 1. Create a DispEvoList array to hold topology state for all the DispEvo
- *    objects in the system.
+ * 1. Create a DispEvoList array to hold RasterLockGroup state for all the
+ *    DispEvo objects in the system.
  *
  * 2. Query RM for an array of video links for each GPU.
  *
  * 3. As long as the DispEvoList contains DispEvos of the given pDevEvo
- *    without a topology, find the first occurrence of such, create a new
- *    topology, and populate it by recursively adding the DispEvo and all
- *    its connected DispEvos into the new topology.
+ *    without a group, find the first occurrence of such, create a new
+ *    group, and populate it by recursively adding the DispEvo and all
+ *    its connected DispEvos into the new group.
  *
  * 4. Once all known DispEvos are assigned the result will be a list of
- *    global RasterLockTopologies, each of which hosts <N> DispEvos that are
+ *    global RasterLockGroups, each of which hosts <N> DispEvos that are
  *    connected together.
  *
  * The result of this function should be cached once and later used to
- * cheaply look up the appropriate, immutable topology for a DispEvo.
+ * cheaply look up the appropriate, immutable RasterLockGroup for a DispEvo.
  *
  */
-static RasterLockTopology *GetGpuTopologyStateless(unsigned int *numTopologies)
+static RasterLockGroup *GetRasterLockGroupsStateless(
+    unsigned int *pNumRasterLockGroups)
 {
-    RasterLockTopology *topos = NULL;
-    RasterLockTopology *topo;
+    RasterLockGroup *pRasterLockGroups = NULL;
+    RasterLockGroup *pRasterLockGroup;
     DispEvoList evoList;
     NVDevEvoPtr pCurDev;
     NVDispEvoPtr pCurDisp;
@@ -1152,50 +1257,51 @@ static RasterLockTopology *GetGpuTopologyStateless(unsigned int *numTopologies)
 
         for (i = 0; i < evoList.numDisps; i++) {
             /*
-             * Create a new topology starting from the first DispEvo not yet
-             * assigned into a topology, and all GPUs possibly reachable
+             * Create a new group starting from the first DispEvo not yet
+             * assigned into a RasterLockGroup, and all GPUs possibly reachable
              * from it through bridges.
              *
-             * TODO: Consider if we should only ever start a new topology
-             * with a GPU that has only one connection and not two. Then the
-             * topology's pDispEvoOrder would always start from a "leaf" GPU
-             * of a linkage graph. But will the GPU links always be linear
-             * and non-branching? NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS
+             * TODO: Consider if we should only ever start a new
+             * RasterLockGroup with a GPU that has only one connection and not
+             * two. Then the group's pDispEvoOrder would always start from a
+             * "leaf" GPU of a linkage graph. But will the GPU links always be
+             * linear and non-branching? NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS
              * makes it possible to represent GPUs with any number of links.
-             * Either FinishModesetOneTopology() must be able to handle that
+             * Either FinishModesetOneGroup() must be able to handle that
              * (in which case this is not a concern) or we must be able to
              * trust that only 0-2 links will be reported per GPU.
              */
-            if (evoList.disps[i].topo) {
+            if (evoList.disps[i].pRasterLockGroup) {
                 continue;
             }
 
-            topos = GrowTopologies(topos, numTopologies);
-            if (!topos) {
+            pRasterLockGroups = GrowRasterLockGroup(pRasterLockGroups,
+                                                    pNumRasterLockGroups);
+            if (!pRasterLockGroups) {
                 nvFree(vidLinksParams);
                 return NULL;
             }
 
-            topo = &topos[*numTopologies - 1];
+            pRasterLockGroup = &pRasterLockGroups[*pNumRasterLockGroups - 1];
 
-            BuildTopologyFromVideoLinks(&evoList,
-                                        topo,
-                                        evoList.disps[i].gpuId,
-                                        vidLinksParams);
+            BuildRasterLockGroupFromVideoLinks(&evoList,
+                                               pRasterLockGroup,
+                                               evoList.disps[i].gpuId,
+                                               vidLinksParams);
         }
 
         nvFree(vidLinksParams);
-        nvAssert(*numTopologies > 0);
-        return topos;
+        nvAssert(*pNumRasterLockGroups > 0);
+        return pRasterLockGroups;
     }
 
     nvFree(vidLinksParams);
-    nvFree(topos);
+    nvFree(pRasterLockGroups);
     return NULL;
 }
 
 /*
- * GetRasterLockTopologies() - Determine which GPUs to consider for locking (or
+ * GetRasterLockGroups() - Determine which GPUs to consider for locking (or
  * unlocking) displays.  This is one of the following:
  * 1. SLI video bridge order, if SLI is enabled;
  * 2. GPUs linked through rasterlock pins, no SLI (like in clientSLI);
@@ -1205,13 +1311,14 @@ static RasterLockTopology *GetGpuTopologyStateless(unsigned int *numTopologies)
  * Note that we still go through the same codepaths for the last degenerate
  * case, in order to potentially lock heads on the same GPU together.
  */
-static RasterLockTopology *GetRasterLockTopologies(NVDevEvoPtr pDevEvo,
-                                                   unsigned int *numTopologies)
+static RasterLockGroup *GetRasterLockGroups(
+    NVDevEvoPtr pDevEvo,
+    unsigned int *pNumRasterLockGroups)
 {
     unsigned int i;
-    RasterLockTopology *topos = NULL;
+    RasterLockGroup *pRasterLockGroups = NULL;
 
-    *numTopologies = 0;
+    *pNumRasterLockGroups = 0;
 
     if (pDevEvo->numSubDevices > 1 && pDevEvo->sli.bridge.present) {
         NV0080_CTRL_GPU_GET_VIDLINK_ORDER_PARAMS params = { 0 };
@@ -1231,14 +1338,15 @@ static RasterLockTopology *GetRasterLockTopologies(NVDevEvoPtr pDevEvo,
         }
 
         if (params.ConnectionCount > 0) {
-            RasterLockTopology *topo;
-            topos = GrowTopologies(topos, numTopologies);
+            RasterLockGroup *pRasterLockGroup;
+            pRasterLockGroups = GrowRasterLockGroup(pRasterLockGroups,
+                                                    pNumRasterLockGroups);
 
-            if (!topos) {
+            if (!pRasterLockGroups) {
                 return NULL;
             }
 
-            topo = &topos[*numTopologies - 1];
+            pRasterLockGroup = &pRasterLockGroups[*pNumRasterLockGroups - 1];
 
             /*
              * For some reason this interface returns a mask instead of an
@@ -1258,47 +1366,51 @@ static RasterLockTopology *GetRasterLockTopologies(NVDevEvoPtr pDevEvo,
                 nvAssert(pDevEvo->pDispEvo[sd] != NULL);
 
                 /* SLI Mosaic. */
-                AddDispEvoIntoTopology(topo, pDevEvo->pDispEvo[sd]);
+                AddDispEvoIntoRasterLockGroup(pRasterLockGroup,
+                                              pDevEvo->pDispEvo[sd]);
             }
         }
 
-        if (*numTopologies > 0) {
-            return topos;
+        if (*pNumRasterLockGroups > 0) {
+            return pRasterLockGroups;
         }
     }
 
     /*
-     * Client SLI: Create a RasterLockTopology from pDevEvo's only DispEvo
+     * Client SLI: Create a RasterLockGroup from pDevEvo's only DispEvo
      * and other DispEvos potentially bridged to that.
      */
 
     if (pDevEvo->numSubDevices == 1) {
-        /* Get-or-create cached rasterlock topology for this device. */
-        if (!nvEvoGlobal.globalTopologies) {
-            nvEvoGlobal.globalTopologies =
-                GetGpuTopologyStateless(&nvEvoGlobal.numGlobalTopos);
+        /* Get-or-create cached RasterLockGroup for this device. */
+        if (!globalRasterLockGroups) {
+            globalRasterLockGroups =
+                GetRasterLockGroupsStateless(&numGlobalRasterLockGroups);
         }
 
-        /* Look for a cached topo containing this device's DispEvo. */
-        if (nvEvoGlobal.globalTopologies && nvEvoGlobal.numGlobalTopos > 0) {
-            const RasterLockTopology *foundTopo =
-                FindTopologyForDispEvo(nvEvoGlobal.globalTopologies,
-                                       nvEvoGlobal.numGlobalTopos,
-                                       pDevEvo->pDispEvo[0]);
+        /* Look for a cached group containing this device's DispEvo. */
+        if (globalRasterLockGroups && numGlobalRasterLockGroups > 0) {
+            const RasterLockGroup *pRasterLockGroup =
+                FindRasterLockGroupForDispEvo(globalRasterLockGroups,
+                                              numGlobalRasterLockGroups,
+                                              pDevEvo->pDispEvo[0]);
 
-            /* Make a copy of it and add to 'topos'. */
-            if (foundTopo) {
-                topos = CopyAndAppendTopology(topos, numTopologies, foundTopo);
+            /* Make a copy of it and add to 'pRasterLockGroups'. */
+            if (pRasterLockGroup) {
+                pRasterLockGroups =
+                    CopyAndAppendRasterLockGroup(pRasterLockGroups,
+                                                 pNumRasterLockGroups,
+                                                 pRasterLockGroup);
             }
         }
 
-        if (*numTopologies > 0) {
-            return topos;
+        if (*pNumRasterLockGroups > 0) {
+            return pRasterLockGroups;
         }
     }
 
     /*
-     * Single GPU or bridgeless SLI. We create a topology for each
+     * Single GPU or bridgeless SLI. We create a group for each
      * individual DispEvo.
      */
 
@@ -1306,21 +1418,21 @@ static RasterLockTopology *GetRasterLockTopologies(NVDevEvoPtr pDevEvo,
     unsigned int sd;
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
-        RasterLockTopology *topo;
-        topos = GrowTopologies(topos, numTopologies);
+        RasterLockGroup *pRasterLockGroup;
+        pRasterLockGroups = GrowRasterLockGroup(pRasterLockGroups,
+                                                pNumRasterLockGroups);
 
-        if (!topos) {
+        if (!pRasterLockGroups) {
             return NULL;
         }
 
-        topo = &topos[*numTopologies - 1];
+        pRasterLockGroup = &pRasterLockGroups[*pNumRasterLockGroups - 1];
 
-        AddDispEvoIntoTopology(topo, pDispEvo);
+        AddDispEvoIntoRasterLockGroup(pRasterLockGroup, pDispEvo);
     }
 
-    return topos;
-
-} // GetRasterLockTopologies()
+    return pRasterLockGroups;
+}
 
 /*
  * ApplyLockActionIfPossible() - Check if the given action is a valid
@@ -1331,134 +1443,231 @@ static NvBool ApplyLockActionIfPossible(NVDispEvoPtr pDispEvo,
                                         NVEvoSubDevPtr pEvoSubDev,
                                         NVEvoLockAction action)
 {
-    NvBool changed = FALSE;
-    NvU32 head;
-
     if (!pEvoSubDev) {
         return FALSE;
     }
 
-    for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
-        if (!nvHeadIsActive(pDispEvo, head)) {
-            continue;
-        }
+    if (pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev,
+                                  action, NULL)) {
+        unsigned int i = 0;
+        NvU32 pHeads[NVKMS_MAX_HEADS_PER_DISP + 1] = { NV_INVALID_HEAD, };
+        NvU32 head;
 
-        if (pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev,
-                                      action, NULL)) {
-            NvU32 otherHead;
-            unsigned int i = 0;
-            NvU32 pHeads[NVKMS_MAX_HEADS_PER_DISP + 1];
-
-            pHeads[i++] = head;
-            for (otherHead = 0; otherHead < NVKMS_MAX_HEADS_PER_DISP;
-                 otherHead++) {
-                if (!nvHeadIsActive(pDispEvo, otherHead)) {
-                    continue;
-                }
-                if (otherHead == head) {
-                    continue;
-                }
-
-                pHeads[i++] = otherHead;
+        for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
+            if (nvHeadIsActive(pDispEvo, head)) {
+                pHeads[i++] = head;
             }
-            nvAssert(i <= NVKMS_MAX_HEADS_PER_DISP);
-            pHeads[i] = NV_INVALID_HEAD;
+        }
+        nvAssert(i <= NVKMS_MAX_HEADS_PER_DISP);
+        pHeads[i] = NV_INVALID_HEAD;
 
-            pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev, action, pHeads);
+        pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev, action, pHeads);
+
+        return TRUE;
+    }
+
+    return FALSE;
+
+} // ApplyLockActionIfPossible()
+
+/*
+ * Disable any intra-GPU lock state set up in FinishModesetOneDisp().
+ * This assumes that any cross-GPU locking which may have been set up on this
+ * GPU was already torn down.
+ */
+static void UnlockRasterLockOneDisp(NVDispEvoPtr pDispEvo)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NvU32 sd = pDispEvo->displayOwner;
+    NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
+    NvBool changed = FALSE;
+
+    /* Initialize the assembly state */
+    SyncEvoLockState();
+
+    /* We want to evaluate all of these, so don't use || */
+    changed |= ApplyLockActionIfPossible(pDispEvo, pEvoSubDev,
+                                         NV_EVO_PROHIBIT_LOCK_DISABLE);
+    changed |= ApplyLockActionIfPossible(pDispEvo, pEvoSubDev,
+                                         NV_EVO_UNLOCK_HEADS);
+
+    /* Update the hardware if anything has changed */
+    if (changed) {
+        UpdateEvoLockState();
+    }
+
+    pDispEvo->rasterLockPossible = FALSE;
+}
+
+/*
+ * Call UnlockRasterLockOneDisp() for each disp on this device to tear down
+ * intra-GPU locking on each.
+ */
+static void UnlockRasterLockOneDev(NVDevEvoPtr pDevEvo)
+{
+    NVDispEvoPtr pDispEvo;
+    NvU32 sd;
+
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+        UnlockRasterLockOneDisp(pDispEvo);
+    }
+}
+
+static void DisableLockGroupFlipLock(NVLockGroup *pLockGroup)
+{
+
+    const RasterLockGroup *pRasterLockGroup = &pLockGroup->rasterLockGroup;
+    NvU32 i;
+
+    if (!pLockGroup->flipLockEnabled) {
+        return;
+    }
+
+    for (i = 0; i < pRasterLockGroup->numDisps; i++) {
+        NVEvoUpdateState updateState = { };
+        NVDispEvoPtr pDispEvo = pRasterLockGroup->pDispEvoOrder[i];
+        NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+        NvU32 sd = pDispEvo->displayOwner;
+        NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
+        NvU32 head;
+        NvBool changed = FALSE;
+
+        for (head = 0; head < pDevEvo->numHeads; head++) {
+            NvBool headChanged = FALSE;
+            if (!nvHeadIsActive(pDispEvo, head)) {
+                continue;
+            }
 
             /*
              * scanLockState transitions (such as nvEvoLockHWStateLockHeads)
              * will update headControlAssy values for all heads, so we should
              * update flipLock and flipLockPin for all heads as well.
              */
-            for (i = 0; pHeads[i] != NV_INVALID_HEAD; i++) {
-                NVEvoHeadControlPtr pHC = &pEvoSubDev->headControlAssy[pHeads[i]];
-                /*
-                 * Reset the fliplock pin, if it's not in use for framelock,
-                 * and unregister our use of the fliplock pin
-                 */
-                if (!HEAD_MASK_QUERY(pEvoSubDev->flipLockPinSetForFrameLockHeadMask,
-                                     pHeads[i])) {
+            NVEvoHeadControlPtr pHC = &pEvoSubDev->headControlAssy[head];
+            /*
+             * Reset the fliplock pin, if it's not in use for framelock,
+             * and unregister our use of the fliplock pin
+             */
+            if (!HEAD_MASK_QUERY(pEvoSubDev->flipLockPinSetForFrameLockHeadMask,
+                                 head)) {
+                if (pHC->flipLockPin != NV_EVO_LOCK_PIN_INTERNAL(0)) {
                     pHC->flipLockPin = NV_EVO_LOCK_PIN_INTERNAL(0);
+                    headChanged = TRUE;
                 }
-                pEvoSubDev->flipLockPinSetForSliHeadMask =
-                    HEAD_MASK_UNSET(pEvoSubDev->flipLockPinSetForSliHeadMask,
-                                    pHeads[i]);
-
-                /*
-                 * Disable fliplock, if it's not in use for framelock, and
-                 * unregister our need for fliplock to be enabled
-                 */
-                if (!HEAD_MASK_QUERY(pEvoSubDev->flipLockEnabledForFrameLockHeadMask,
-                                     pHeads[i])) {
-                    pHC->flipLock = FALSE;
-                }
-                pEvoSubDev->flipLockEnabledForSliHeadMask =
-                    HEAD_MASK_UNSET(pEvoSubDev->flipLockEnabledForSliHeadMask,
-                                    pHeads[i]);
             }
+            pEvoSubDev->flipLockPinSetForSliHeadMask =
+                HEAD_MASK_UNSET(pEvoSubDev->flipLockPinSetForSliHeadMask,
+                                head);
 
-            changed = TRUE;
+            /*
+             * Disable fliplock, if it's not in use for framelock, and
+             * unregister our need for fliplock to be enabled
+             */
+            if (!HEAD_MASK_QUERY(pEvoSubDev->flipLockEnabledForFrameLockHeadMask,
+                                 head)) {
+                if (pHC->flipLock) {
+                    pHC->flipLock = FALSE;
+                    headChanged = TRUE;
+                }
+            }
+            pEvoSubDev->flipLockEnabledForSliHeadMask =
+                HEAD_MASK_UNSET(pEvoSubDev->flipLockEnabledForSliHeadMask,
+                                head);
+            if (headChanged) {
+                EvoUpdateHeadParams(pDispEvo, head, &updateState);
+            }
+        }
+        if (changed) {
+            nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState,
+                                  TRUE /* releaseElv */);
         }
     }
 
-    return changed;
-
-} // ApplyLockActionIfPossible()
-
+    pLockGroup->flipLockEnabled = FALSE;
+}
 
 /*
- * UnlockRasterLockGroup() - Unlock all GPUs in the rasterlock group associated
- * with the given device.
+ * Unlock cross-GPU locking in the given lock group.
  */
+static void UnlockLockGroup(NVLockGroup *pLockGroup)
+{
+    RasterLockGroup *pRasterLockGroup;
+    int i;
 
-static void UnlockRasterLockGroup(NVDevEvoPtr pDevEvo) {
-    RasterLockTopology *topos, *topo;
-    unsigned int numTopos;
-    NvBool changed = FALSE;
-
-    topos = GetRasterLockTopologies(pDevEvo, &numTopos);
-    if (!topos) {
+    if (pLockGroup == NULL) {
         return;
     }
 
-    for (topo = topos; topo < topos + numTopos; topo++) {
-        int i;
+    pRasterLockGroup = &pLockGroup->rasterLockGroup;
 
-        for (i = (int)topo->numDisps - 1; i >= 0; i--) {
-            NVDispEvoPtr pDispEvo = topo->pDispEvoOrder[i];
-            NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-            NvU32 sd = pDispEvo->displayOwner;
-            NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
+    DisableLockGroupFlipLock(pLockGroup);
 
-            /* Initialize the assembly state */
-            SyncEvoLockState();
+    for (i = (int)pRasterLockGroup->numDisps - 1; i >= 0; i--) {
+        NVDispEvoPtr pDispEvo = pRasterLockGroup->pDispEvoOrder[i];
+        NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+        NvU32 sd = pDispEvo->displayOwner;
+        NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
 
-            /* We want to evaluate all of these, so don't use || */
-            changed |= ApplyLockActionIfPossible(pDispEvo, pEvoSubDev,
-                                                 NV_EVO_DISABLE_VRR);
-            changed |= ApplyLockActionIfPossible(pDispEvo, pEvoSubDev,
-                                                 NV_EVO_REM_SLI);
-            changed |= ApplyLockActionIfPossible(pDispEvo, pEvoSubDev,
-                                                 NV_EVO_UNLOCK_HEADS);
+        /* Initialize the assembly state */
+        SyncEvoLockState();
 
-            /* Finally, update the hardware if anything has changed */
-            if (changed) {
-                UpdateEvoLockState();
-                changed = FALSE;
-            }
-
-            pEvoSubDev->flipLockProhibitedHeadMask = 0x0;
+        if (ApplyLockActionIfPossible(pDispEvo, pEvoSubDev,
+                                      NV_EVO_REM_SLI)) {
+            /* Update the hardware if anything has changed */
+            UpdateEvoLockState();
         }
+
+        pEvoSubDev->flipLockProhibitedHeadMask = 0x0;
+
+        nvAssert(pDispEvo->pLockGroup == pLockGroup);
+        pDispEvo->pLockGroup = NULL;
     }
 
-    /* Disable any SLI video bridge features we may have enabled for locking. */
-    pDevEvo->sli.bridge.powerNeededForRasterLock = FALSE;
-    nvEvoUpdateSliVideoBridge(pDevEvo);
+    /*
+     * Disable any SLI video bridge features we may have enabled for locking.
+     * This is a separate loop from the above in order to handle both cases:
+     *
+     * a) Multiple pDispEvos on the same pDevEvo (linked RM-SLI): all disps in
+     *    the lock group will share the same pDevEvo.  In that case we should
+     *    not call RM to disable the video bridge power across the entire
+     *    device until we've disabled locking on all GPUs).  This loop will
+     *    call nvEvoUpdateSliVideoBridge() redundantly for the same pDevEvo,
+     *    but those calls will be filtered out.  (If we did this in the loop
+     *    above, RM would broadcast the video bridge disable call to all pDisps
+     *    on the first call, even before we've disabled locking on them.)
+     *
+     * b) Each pDispEvo on a separate pDevEvo (client-side SLI or no SLI, when
+     *    a video bridge is present): in that case each pDispEvo has a separate
+     *    pDevEvo, and we need to call nvEvoUpdateSliVideoBridge() on each.
+     *    (It would be okay in this case to call nvEvoUpdateSliVideoBridge() in
+     *    the loop above since it will only disable the video bridge power for
+     *    one GPU at a time.)
+     */
+    for (i = (int)pRasterLockGroup->numDisps - 1; i >= 0; i--) {
+        NVDispEvoPtr pDispEvo = pRasterLockGroup->pDispEvoOrder[i];
+        NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
 
-    nvFree(topos);
+        pDevEvo->sli.bridge.powerNeededForRasterLock = FALSE;
+        nvEvoUpdateSliVideoBridge(pDevEvo);
+    }
 
-} // UnlockRasterLockGroup()
+    nvFree(pLockGroup);
+}
+
+/*
+ * Unlock all any cross-GPU locking in the rasterlock group(s) associated with
+ * the given device.
+ */
+static void UnlockLockGroupsForDevice(NVDevEvoPtr pDevEvo)
+{
+    NVDispEvoPtr pDispEvo;
+    NvU32 sd;
+
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+        UnlockLockGroup(pDispEvo->pLockGroup);
+        nvAssert(pDispEvo->pLockGroup == NULL);
+    }
+}
 
 void nvAssertAllDpysAreInactive(NVDevEvoPtr pDevEvo)
 {
@@ -1476,55 +1685,37 @@ void nvAssertAllDpysAreInactive(NVDevEvoPtr pDevEvo)
 /*!
  * Disable locking-related state.
  */
-static void DisableLockState(NVDevEvoPtr pDevEvo,
-                             NvU32 *dispNeedsUpdate,
-                             NVEvoUpdateState *updateState)
+static void DisableLockState(NVDevEvoPtr pDevEvo)
 {
     NvU32 dispIndex;
     NVDispEvoPtr pDispEvo;
 
-    *dispNeedsUpdate = 0;
-
-    /* Disable flip lock. */
+    /* Disable flip lock as requested by swap groups/framelock. */
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
-        NvU32 head;
-        for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
-            if (!nvHeadIsActive(pDispEvo, head)) {
-                continue;
-            }
-            NvU32 flipLockEnable = 0;
-            NvBool needsUpdate;
-
-            if (!nvUpdateFlipLockEvoOneHead(pDispEvo, head,
-                                            &flipLockEnable, TRUE /* set */,
-                                            &needsUpdate,
-                                            updateState)) {
-                nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
-                             "Unable to update fliplock");
-            }
-
-            if (needsUpdate) {
-                *dispNeedsUpdate |= (1 << dispIndex);
-            }
-        }
+        nvToggleFlipLockPerDisp(pDispEvo,
+                                nvGetActiveHeadMask(pDispEvo),
+                                FALSE /* enable */);
     }
 
-    /* Disable raster lock. */
+    /* Disable any locking across GPUs. */
 
-    UnlockRasterLockGroup(pDevEvo);
+    UnlockLockGroupsForDevice(pDevEvo);
+
+    /* Disable intra-GPU rasterlock on this pDevEvo. */
+    UnlockRasterLockOneDev(pDevEvo);
 
     /* Reset the EVO locking state machine. */
 
     FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+        nvEvoStateAssertNoLock(&pDevEvo->gpus[pDispEvo->displayOwner]);
         nvEvoStateStartNoLock(&pDevEvo->gpus[pDispEvo->displayOwner]);
     }
 }
 
-void nvEvoLockStatePreModeset(NVDevEvoPtr pDevEvo, NvU32 *dispNeedsEarlyUpdate,
-                              NVEvoUpdateState *updateState)
+void nvEvoLockStatePreModeset(NVDevEvoPtr pDevEvo)
 {
-    DisableLockState(pDevEvo, dispNeedsEarlyUpdate, updateState);
+    DisableLockState(pDevEvo);
 }
 
 /*!
@@ -1532,52 +1723,27 @@ void nvEvoLockStatePreModeset(NVDevEvoPtr pDevEvo, NvU32 *dispNeedsEarlyUpdate,
  */
 void nvEvoLockStatePostModeset(NVDevEvoPtr pDevEvo, const NvBool doRasterLock)
 {
-    RasterLockTopology *topos, *topo;
-    unsigned int numTopos;
-
-    /*
-     * Always unlock everything on this rasterlock group to begin with a clean
-     * slate.  We'll relock below, if possible.
-     */
-
-    UnlockRasterLockGroup(pDevEvo);
+    RasterLockGroup *pRasterLockGroups, *pRasterLockGroup;
+    unsigned int numRasterLockGroups;
 
     if (!doRasterLock) {
         return;
     }
 
-    topos = GetRasterLockTopologies(pDevEvo, &numTopos);
-    if (!topos) {
+    FinishModesetOneDev(pDevEvo);
+
+    pRasterLockGroups = GetRasterLockGroups(pDevEvo, &numRasterLockGroups);
+    if (!pRasterLockGroups) {
         return;
     }
 
-    for (topo = topos; topo < topos + numTopos; topo++) {
-        FinishModesetOneTopology(topo);
+    for (pRasterLockGroup = pRasterLockGroups;
+         pRasterLockGroup < pRasterLockGroups + numRasterLockGroups;
+         pRasterLockGroup++) {
+        FinishModesetOneGroup(pRasterLockGroup);
     }
 
-    nvFree(topos);
-
-}
-
-static NvBool EnableVrr(NVDispEvoPtr pDispEvo,
-                        NVEvoSubDevPtr pEvoSubDev,
-                        const NvU32 *pHeads)
-{
-    NvBool ret;
-
-    SyncEvoLockState();
-
-    ret = pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev, NV_EVO_ENABLE_VRR,
-                                    pHeads);
-    if (!ret) {
-        nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
-                          "Failed to enable VRR frame lock");
-        return FALSE;
-    }
-
-    UpdateEvoLockState();
-
-    return TRUE;
+    nvFree(pRasterLockGroups);
 }
 
 /*!
@@ -1614,134 +1780,283 @@ void nvEvoUpdateSliVideoBridge(NVDevEvoPtr pDevEvo)
     pDevEvo->sli.bridge.powered = enable;
 }
 
-void nvEvoLockStateSetMergeMode(NVDispEvoPtr pDispEvo)
+/*
+ * Check if VRR or MergeMode are enabled; if so, go into the special "prohibit
+ * lock" mode which prevents other scanlock states from being reached.
+ *
+ * Return TRUE iff VRR or MergeMode is in use on this GPU.
+ */
+static NvBool ProhibitLockIfNecessary(NVDispEvoRec *pDispEvo)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[pDispEvo->displayOwner];
-    NvU32 activeHeads[NVKMS_MAX_HEADS_PER_DISP + 1];
-    NvU32 mergeModeHeads[NVKMS_MAX_HEADS_PER_DISP + 1];
-    NvU32 numMergeModeHeads = 0;
+    NvU32 activeHeads[NVKMS_MAX_HEADS_PER_DISP + 1] = { NV_INVALID_HEAD, };
+    NvBool prohibitLock = FALSE;
     NvU32 numActiveHeads = 0;
-    NvBool needUpdate = FALSE;
+    NvU32 head;
 
-    for (NvU32 head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
+    for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
         if (nvHeadIsActive(pDispEvo, head)) {
+            activeHeads[numActiveHeads++] = head;
+            if ((pDispEvo->headState[head].timings.vrr.type !=
+                 NVKMS_DPY_VRR_TYPE_NONE)) {
+                prohibitLock = TRUE;
+            }
+
             if (pDispEvo->headState[head].mergeMode !=
                     NV_EVO_MERGE_MODE_DISABLED) {
-                mergeModeHeads[numMergeModeHeads++] = head;
+                prohibitLock = TRUE;
             }
-            activeHeads[numActiveHeads++] = head;
         }
     }
-    mergeModeHeads[numMergeModeHeads] = NV_INVALID_HEAD;
-    activeHeads[numActiveHeads] = NV_INVALID_HEAD;
 
-    SyncEvoLockState();
 
-    if (pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev,
-                                  NV_EVO_DISABLE_MERGE_MODE, NULL)) {
-        pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev,
-                                  NV_EVO_DISABLE_MERGE_MODE, activeHeads);
-        needUpdate = TRUE;
-    }
+    if (prohibitLock) {
+        activeHeads[numActiveHeads] = NV_INVALID_HEAD;
 
-    if (numMergeModeHeads > 0) {
-        nvAssert(pDevEvo->hal->caps.supportsMergeMode);
-        if (pEvoSubDev->scanLockState(pDispEvo,
-                                      pEvoSubDev,
-                                      NV_EVO_ENABLE_MERGE_MODE,
-                                      mergeModeHeads)) {
-            needUpdate = TRUE;
-        } else {
+        SyncEvoLockState();
+
+        if (!pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev,
+                                       NV_EVO_PROHIBIT_LOCK,
+                                       activeHeads)) {
             nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
-                              "Failed to enable lock state merge mode");
+                              "Failed to prohibit lock");
+            return FALSE;
         }
+
+        UpdateEvoLockState();
+
+        return TRUE;
+    }
+    return FALSE;
+}
+
+
+/*
+ * Set up rasterlock between heads on a single GPU, if certain conditions are met:
+ * - Locking is not prohibited due to the active configuration
+ * - All active heads have identical mode timings
+ *
+ * Set pDispEvo->pRasterLockPossible to indicate whether rasterlock is possible
+ * on this GPU, which will be used to determine if rasterlock is possible
+ * between this GPU and other GPUs.
+ * Note that this isn't the same as whether heads were locked: if fewer than
+ * two heads were active, heads will not be locked but rasterlock with other
+ * GPUs may still be possible.
+ */
+static void FinishModesetOneDisp(
+    NVDispEvoRec *pDispEvo)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    NVEvoSubDevPtr pEvoSubDev;
+    const NVDispHeadStateEvoRec *pPrevHeadState = NULL;
+    NvU32 head, usedHeads = 0;
+    NvU32 headsToLock[NVKMS_MAX_HEADS_PER_DISP + 1] = { NV_INVALID_HEAD, };
+
+    if (pDevEvo->gpus == NULL) {
+        return;
     }
 
-    if (needUpdate) {
+    pEvoSubDev = &pDevEvo->gpus[pDispEvo->displayOwner];
+
+    pDispEvo->rasterLockPossible = FALSE;
+
+    if (ProhibitLockIfNecessary(pDispEvo)) {
+        /* If locking is prohibited, do not attempt to lock heads. */
+        return;
+    }
+
+    /*
+     * Determine if rasterlock is possible: check each active display for
+     * rasterlock compatibility with the previous one we looked at.  If any of
+     * them aren't compatible, rasterlock is not possible.
+     */
+    pDispEvo->rasterLockPossible = TRUE;
+    for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
+        const NVDispHeadStateEvoRec *pHeadState =
+            &pDispEvo->headState[head];
+
+        if (!nvHeadIsActive(pDispEvo, head)) {
+            continue;
+        }
+
+        if (pPrevHeadState &&
+            !RasterLockPossible(pHeadState, pPrevHeadState)) {
+            pDispEvo->rasterLockPossible = FALSE;
+            break;
+        }
+
+        pPrevHeadState = pHeadState;
+
+        headsToLock[usedHeads] = head;
+        usedHeads++;
+    }
+
+    if (!pDispEvo->rasterLockPossible) {
+        return;
+    }
+
+    if (usedHeads > 1) {
+        /* Terminate array */
+        headsToLock[usedHeads] = NV_INVALID_HEAD;
+
+        /* Initialize the assembly state */
+        SyncEvoLockState();
+
+        /* Set up rasterlock between heads on this disp. */
+        nvAssert(headsToLock[0] != NV_INVALID_HEAD);
+        if (!pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev,
+                                       NV_EVO_LOCK_HEADS,
+                                       headsToLock)) {
+            nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
+                              "Unable to lock heads");
+            pDispEvo->rasterLockPossible = FALSE;
+        }
+
+        /* Update the hardware with the new state */
         UpdateEvoLockState();
     }
 }
 
-/*
- * FinishModesetOneTopology() - Set up raster lock between GPUs, if applicable,
- * for one RasterLockTopology.  Called in a loop from nvFinishModesetEvo().
- */
-
-static void FinishModesetOneTopology(RasterLockTopology *topo)
+/* Call FinishModesetOneDisp() for each disp on this device to set up intra-GPU
+ * locking on each. */
+static void FinishModesetOneDev(
+    NVDevEvoRec *pDevEvo)
 {
-    NVDispEvoPtr *pDispEvoOrder = topo->pDispEvoOrder;
-    NvU32 numUsedGpus = 0;
-    const NVHwModeTimingsEvo *pPrevTimings = NULL;
-    NvBool headInUse[NVKMS_MAX_SUBDEVICES][NVKMS_MAX_HEADS_PER_DISP];
-    NvBool lockPossible = TRUE, foundUnused = FALSE;
-    NvBool vrrInUse = FALSE;
-    NvBool flipLockPossible = TRUE;
-    unsigned int i, j;
-    NvU8 allowFlipLockGroup = 0;
-    NVDevEvoPtr pDevEvoFlipLockGroup = NULL;
-    NvBool mergeModeInUse = FALSE;
+    NVDispEvoPtr pDispEvo;
+    NvU32 sd;
 
-    /*
-     * First, look for devices with VRR enabled. If we find any, go into the
-     * special VRR framelock mode.
-     *
-     * If we find devices with VRR or merge mode enabled, don't try to
-     * rasterlock any other heads.
-     */
-    for (i = 0; i < topo->numDisps; i++) {
-        NVDispEvoPtr pDispEvo = pDispEvoOrder[i];
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+        FinishModesetOneDisp(pDispEvo);
+    }
+}
+
+/*
+ * Enable fliplock for the specified pLockGroup.
+ * This assumes that rasterlock was already enabled.
+ */
+static void EnableLockGroupFlipLock(NVLockGroup *pLockGroup)
+{
+    const RasterLockGroup *pRasterLockGroup = &pLockGroup->rasterLockGroup;
+    NvU32 i;
+
+    if (pRasterLockGroup->numDisps < 2) {
+        /* TODO: enable fliplock for single GPUs */
+        return;
+    }
+
+    pLockGroup->flipLockEnabled = TRUE;
+
+    for (i = 0; i < pRasterLockGroup->numDisps; i++) {
+        NVEvoUpdateState updateState = { };
+        NVDispEvoPtr pDispEvo = pRasterLockGroup->pDispEvoOrder[i];
         NvU32 sd = pDispEvo->displayOwner;
         NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-        NvU32 vrrHeads[NVKMS_MAX_HEADS_PER_DISP + 1];
-        unsigned int numVrrHeads = 0;
         NvU32 head;
 
-        if (!pDevEvo->gpus) {
-            continue;
-        }
+        for (head = 0; head < pDevEvo->numHeads; head++) {
+            NvU64 startTime = 0;
 
-        for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
-            if (nvHeadIsActive(pDispEvo, head)) {
-                if (pDispEvo->headState[head].mergeMode !=
-                        NV_EVO_MERGE_MODE_DISABLED) {
-                    mergeModeInUse = TRUE;
-                }
+            if (!nvHeadIsActive(pDispEvo, head)) {
+                continue;
             }
-        }
 
-        if (!pDevEvo->vrr.enabled) {
-            continue;
-        }
+            NVEvoLockPin pin =
+                nvEvoGetPinForSignal(pDispEvo, &pDevEvo->gpus[sd],
+                                     NV_EVO_LOCK_SIGNAL_FLIP_LOCK);
 
-        for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
-            if (nvHeadIsActive(pDispEvo, head) &&
-                (pDispEvo->headState[head].timings.vrr.type !=
-                 NVKMS_DPY_VRR_TYPE_NONE)) {
-                vrrHeads[numVrrHeads++] = head;
+            /* Wait for the raster lock to sync in.. */
+            if (pin == NV_EVO_LOCK_PIN_ERROR ||
+                !EvoWaitForLock(pDevEvo, sd, head, EVO_RASTER_LOCK,
+                                &startTime)) {
+                nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+                    "Timed out waiting for rasterlock; not enabling fliplock.");
+                goto fail;
             }
+
+            /*
+             * Enable fliplock, and register that we've enabled
+             * fliplock for SLI to ensure it doesn't get disabled
+             * later.
+             */
+            pDevEvo->gpus[sd].headControl[head].flipLockPin = pin;
+            pDevEvo->gpus[sd].flipLockPinSetForSliHeadMask =
+                HEAD_MASK_SET(pDevEvo->gpus[sd].flipLockPinSetForSliHeadMask, head);
+
+            pDevEvo->gpus[sd].headControl[head].flipLock = TRUE;
+            pDevEvo->gpus[sd].flipLockEnabledForSliHeadMask =
+                HEAD_MASK_SET(pDevEvo->gpus[sd].flipLockEnabledForSliHeadMask, head);
+
+            EvoUpdateHeadParams(pDispEvo, head, &updateState);
         }
 
-        if (numVrrHeads > 0) {
-            vrrHeads[numVrrHeads] = NV_INVALID_HEAD;
-            if (EnableVrr(pDispEvo, &pDevEvo->gpus[sd], vrrHeads)) {
-                vrrInUse = TRUE;
+         /*
+         * This must be synchronous as EVO reports lock success if
+         * locking isn't enabled, so we could race through the
+         * WaitForLock check below otherwise.
+         */
+        nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState,
+                              TRUE /* releaseElv */);
+
+        /*
+         * Wait for flip lock sync.  I'm not sure this is really
+         * necessary, but the docs say to do this before attempting any
+         * flips in the base channel.
+         */
+        for (head = 0; head < pDevEvo->numHeads; head++) {
+            NvU64 startTime = 0;
+
+            if (!nvHeadIsActive(pDispEvo, head)) {
+                continue;
+            }
+
+            if (!EvoWaitForLock(pDevEvo, sd, head, EVO_FLIP_LOCK,
+                                &startTime)) {
+                nvEvoLogDisp(pDispEvo, EVO_LOG_ERROR,
+                    "Timed out waiting for fliplock.");
+                goto fail;
             }
         }
     }
 
-    if (vrrInUse || mergeModeInUse) {
-        return;
+    return;
+fail:
+    DisableLockGroupFlipLock(pLockGroup);
+}
+
+/*
+ * FinishModesetOneGroup() - Set up raster lock between GPUs, if applicable,
+ * for one RasterLockGroup.  Called in a loop from nvFinishModesetEvo().
+ */
+
+static void FinishModesetOneGroup(RasterLockGroup *pRasterLockGroup)
+{
+    NVDispEvoPtr *pDispEvoOrder = pRasterLockGroup->pDispEvoOrder;
+    NvU32 numUsedGpus = 0;
+    const NVDispHeadStateEvoRec *pPrevHeadState = NULL;
+    NvBool headInUse[NVKMS_MAX_SUBDEVICES][NVKMS_MAX_HEADS_PER_DISP];
+    NvBool rasterLockPossible = TRUE, foundUnused = FALSE;
+    unsigned int i, j;
+    NVLockGroup *pLockGroup = NULL;
+
+    /* Don't attempt locking across GPUs if, on any individual GPU, rasterlock
+     * isn't possible. */
+    for (i = 0; i < pRasterLockGroup->numDisps; i++) {
+        NVDispEvoPtr pDispEvo = pDispEvoOrder[i];
+
+        if (!pDispEvo->rasterLockPossible) {
+            return;
+        }
     }
 
     nvkms_memset(headInUse, 0, sizeof(headInUse));
 
     /*
-     * Next, figure out if we can perform locking and which GPUs/heads we can
-     * use.  For now, only attempt locking if all heads on the device have
-     * compatible timings and consecutive in the video bridge order.
+     * Next, figure out if we can perform cross-GPU locking and which
+     * GPUs/heads we can use.  Only attempt locking if all heads across GPUs
+     * have compatible timings and are consecutive in the video bridge order.
      */
-    for (i = 0; i < topo->numDisps; i++) {
+    for (i = 0; i < pRasterLockGroup->numDisps; i++) {
         NVDispEvoPtr pDispEvo = pDispEvoOrder[i];
         NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
         NvU32 head;
@@ -1758,7 +2073,7 @@ static void FinishModesetOneTopology(RasterLockTopology *topo)
             continue;
         } else {
             if (foundUnused) {
-                lockPossible = FALSE;
+                rasterLockPossible = FALSE;
                 break;
             }
 
@@ -1772,68 +2087,65 @@ static void FinishModesetOneTopology(RasterLockTopology *topo)
         for (head = 0; head < NVKMS_MAX_HEADS_PER_DISP; head++) {
             const NVDispHeadStateEvoRec *pHeadState =
                 &pDispEvo->headState[head];
-            const NVHwModeTimingsEvo *pTimings = &pHeadState->timings;
 
             if (!nvHeadIsActive(pDispEvo, head)) {
                 continue;
             }
 
-            /*
-             * Only flip lock if all of the heads are in the same
-             * allowFlipLockGroup.
-             *
-             * Also, for now, only allow fliplocking if all heads are on
-             * GPUs with the same pDevEvo (i.e., single GPU or RM-linked
-             * SLI).
-             */
-            if (allowFlipLockGroup == 0) {
-                allowFlipLockGroup = pHeadState->allowFlipLockGroup;
-                pDevEvoFlipLockGroup = pDevEvo;
-            } else if (allowFlipLockGroup != pHeadState->allowFlipLockGroup ||
-                       pDevEvoFlipLockGroup != pDevEvo) {
-                flipLockPossible = FALSE;
-            }
-
-            if (pPrevTimings &&
-                !RasterLockPossible(pTimings, pPrevTimings)) {
-                lockPossible = FALSE;
+            if (pPrevHeadState &&
+                !RasterLockPossible(pHeadState, pPrevHeadState)) {
+                rasterLockPossible = FALSE;
                 goto exitHeadLoop;
             }
 
             headInUse[i][head] = TRUE;
 
-            pPrevTimings = pTimings;
+            pPrevHeadState = pHeadState;
         }
 
 exitHeadLoop:
-        if (!lockPossible) {
+        if (!rasterLockPossible) {
             break;
         }
     }
 
-    if (!lockPossible) {
+    if (!rasterLockPossible || numUsedGpus == 0) {
         return;
     }
+
+    /* Create a new lock group to store the current configuration */
+    pLockGroup = nvCalloc(1, sizeof(*pLockGroup));
+
+    if (pLockGroup == NULL) {
+        return;
+    }
+
+    pLockGroup->rasterLockGroup = *pRasterLockGroup;
 
     /*
      * Finally, actually set up locking: go through the video bridge order
      * setting it up.
      */
-    for (i = 0; i < topo->numDisps; i++) {
+    for (i = 0; i < pRasterLockGroup->numDisps; i++) {
         NVDispEvoPtr pDispEvo = pDispEvoOrder[i];
         NvU32 sd = pDispEvo->displayOwner;
         NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-        NvU32 head[NVKMS_MAX_HEADS_PER_DISP + 1];
+        NvU32 head[NVKMS_MAX_HEADS_PER_DISP + 1] = { NV_INVALID_HEAD, };
         unsigned int usedHeads = 0;
-        NvBool headsLocked = FALSE, gpusLocked = FALSE;
+        NvBool gpusLocked = FALSE;
+
+        /* Remember that we've enabled this lock group on this GPU. */
+        nvAssert(pDispEvo->pLockGroup == NULL);
+        pDispEvo->pLockGroup = pLockGroup;
+
+        /* If we're past the end of the chain, stop applying locking below, but
+         * continue this loop to assign pDispEvo->pLockGroup above. */
+        if (i >= numUsedGpus) {
+            continue;
+        }
 
         /* Initialize the assembly state */
         SyncEvoLockState();
-
-        /* If we're past the end of the chain, we're done. */
-        if (i == numUsedGpus) {
-            break;
-        }
 
         for (j = 0; j < NVKMS_MAX_HEADS_PER_DISP; j++) {
             if (headInUse[i][j]) {
@@ -1844,22 +2156,6 @@ exitHeadLoop:
             }
         }
         head[usedHeads] = NV_INVALID_HEAD;
-
-        nvAssert(head[0] != NV_INVALID_HEAD);
-
-        /* First lock the heads together, if we have enough heads */
-        if (usedHeads > 1) {
-            NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
-
-            if (!pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev,
-                                           NV_EVO_LOCK_HEADS,
-                                           head)) {
-                nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
-                                  "Unable to lock heads");
-            } else {
-                headsLocked = TRUE;
-            }
-        }
 
         /* Then set up cross-GPU locking, if we have enough active GPUs */
         if (numUsedGpus > 1) {
@@ -1917,21 +2213,6 @@ exitHeadLoop:
                                  NULL, pClientPin);
             }
 
-            /*
-             * Normally, the scanlock state machine can determine the client
-             * lockout window most appropriate for the given configuration.
-             * However, if we are driving pixels over the DR bus (rather than
-             * driving a monitor directly via an OR), then the RM programs the
-             * VPLL with a multiplier that is double the rate of the DR primary.
-             * This can be inexact, so we may need to crash lock more often than
-             * when the VPLL settings are identical; not doing so may cause
-             * rasterlock to fail.  Frequent crash locking when driving pixels
-             * over the DR bus is okay, since they are cleaned up before being
-             * sent to a non-DR OR.
-             */
-            pDevEvo->gpus[sd].forceZeroClientLockoutWindow =
-                (sd != pDispEvo->displayOwner);
-
             if (!pDevEvo->gpus[sd].scanLockState(pDispEvo, &pDevEvo->gpus[sd],
                                                  action, head)) {
                 nvEvoLogDispDebug(pDispEvo, EVO_LOG_ERROR,
@@ -1954,81 +2235,250 @@ exitHeadLoop:
         }
 
         /* If anything changed, update the hardware */
-        if (headsLocked || gpusLocked) {
-
+        if (gpusLocked) {
             UpdateEvoLockState();
+        }
+    }
+
+    /* Enable fliplock, if we can */
+    EnableFlipLockIfRequested(pLockGroup);
+}
+
+/*
+ * Check if the given LockGroup matches the given FlipLockRequestedGroup.
+ * This is true if the flip lock heads match the currently-active
+ * heads on all pDispEvos.
+ */
+static NvBool CheckLockGroupMatchFlipLockRequestedGroup(
+    const NVLockGroup *pLockGroup,
+    const FlipLockRequestedGroup *pFLRG)
+{
+    const RasterLockGroup *pRasterLockGroup = &pLockGroup->rasterLockGroup;
+    NvU32 disp, requestedDisp;
+
+    /* Verify the number of disps is the same. */
+    NvU32 numRequestedDisps = 0;
+    for (requestedDisp = 0;
+         requestedDisp < ARRAY_LEN(pFLRG->disp);
+         requestedDisp++) {
+        const NVDispEvoRec *pRequestedDispEvo =
+            pFLRG->disp[requestedDisp].pDispEvo;
+        if (pRequestedDispEvo == NULL) {
+            break;
+        }
+        numRequestedDisps++;
+    }
+    if (numRequestedDisps != pRasterLockGroup->numDisps) {
+        return FALSE;
+    }
+
+    /*
+     * For each disp in the rasterlock group:
+     * - If there is no matching disp in the pFLRG, no match
+     * - If the disp's active head mask doesn't match the pFLRG's requested
+     *   head mask for that disp, no match
+     * If none of the conditions above failed, then we have a match.
+     */
+    for (disp = 0; disp < pRasterLockGroup->numDisps; disp++) {
+        const NVDispEvoRec *pDispEvo = pRasterLockGroup->pDispEvoOrder[disp];
+        NvBool found = FALSE;
+        for (requestedDisp = 0;
+             requestedDisp < ARRAY_LEN(pFLRG->disp);
+             requestedDisp++) {
+            const NVDispEvoRec *pRequestedDispEvo =
+                pFLRG->disp[requestedDisp].pDispEvo;
+            if (pRequestedDispEvo == NULL) {
+                break;
+            }
+            if (pRequestedDispEvo == pDispEvo) {
+                if (pFLRG->disp[requestedDisp].flipLockHeads !=
+                    nvGetActiveHeadMask(pDispEvo)) {
+                    return FALSE;
+                }
+                found = TRUE;
+                break;
+            }
+        }
+        if (!found) {
+            return FALSE;
+        }
+    }
+
+    return TRUE;
+}
+
+/*
+ * Check if any requested fliplock groups match this lockgroup; if so, enable
+ * fliplock on the lockgroup.
+ */
+static void EnableFlipLockIfRequested(NVLockGroup *pLockGroup)
+{
+    FlipLockRequestedGroup *pFLRG;
+    nvListForEachEntry(pFLRG, &requestedFlipLockGroups, listEntry) {
+        if (CheckLockGroupMatchFlipLockRequestedGroup(pLockGroup, pFLRG)) {
+            EnableLockGroupFlipLock(pLockGroup);
+            break;
+        }
+    }
+}
+
+/*
+ * Check if there is an active NVLockGroup that matches the given
+ * FlipLockRequestedGroup.
+ * "Matches" means that the NVLockGroup extends to the exact same GPUs as the
+ * FlipLockRequestedGroup, and that the *active* heads on those GPUs exactly
+ * match the heads requested in the FlipLockRequestedGroup.
+ */
+static NVLockGroup *FindMatchingLockGroup(const FlipLockRequestedGroup *pFLRG)
+{
+    /* If there is an active lock group that matches this pFLRG, it must also
+     * be active on the first disp, so we don't need to bother looping over
+     * all disps. */
+    NVLockGroup *pLockGroup = pFLRG->disp[0].pDispEvo->pLockGroup;
+
+    if (pLockGroup != NULL &&
+        CheckLockGroupMatchFlipLockRequestedGroup(pLockGroup, pFLRG)) {
+        return pLockGroup;
+    }
+    return NULL;
+}
+
+/* Disable any currently-active lock groups that match the given pFLRG */
+static void
+DisableRequestedFlipLockGroup(const FlipLockRequestedGroup *pFLRG)
+{
+    NVLockGroup *pLockGroup = FindMatchingLockGroup(pFLRG);
+    if (pLockGroup != NULL) {
+        DisableLockGroupFlipLock(pLockGroup);
+
+        nvAssert(!pLockGroup->flipLockEnabled);
+    }
+}
+
+/*
+ * Check if there is a currently-active rasterlock group that matches the
+ * disps/heads of this FlipLockRequestedGroup.  If so, enable flip lock between
+ * those heads.
+ */
+static void
+EnableRequestedFlipLockGroup(const FlipLockRequestedGroup *pFLRG)
+{
+    NVLockGroup *pLockGroup = FindMatchingLockGroup(pFLRG);
+    if (pLockGroup != NULL) {
+        EnableLockGroupFlipLock(pLockGroup);
+    }
+}
+
+/*
+ * Convert the given API head mask to a HW head mask, using the
+ * currently-active API head->HW head mapping.
+ */
+static NvU32 ApiHeadMaskToHwHeadMask(
+    const NVDispEvoRec *pDispEvo,
+    const NvU32 apiHeadMask)
+{
+    const NvU32 numHeads = pDispEvo->pDevEvo->numHeads;
+    NvU32 apiHead;
+    NvU32 hwHeadMask = 0;
+
+    for (apiHead = 0; apiHead < numHeads; apiHead++) {
+        if ((apiHeadMask & (1 << apiHead)) != 0) {
+            const NVDispApiHeadStateEvoRec *pApiHeadState =
+                &pDispEvo->apiHeadState[apiHead];
+            if (nvApiHeadIsActive(pDispEvo, apiHead)) {
+                hwHeadMask |= pApiHeadState->hwHeadsMask;
+            }
+        }
+    }
+
+    return hwHeadMask;
+}
+
+/*
+ * Return true if all main channels are idle on the heads specified in the
+ * FlipLockRequestedGroup.
+ */
+static NvBool CheckFlipLockGroupIdle(
+    const FlipLockRequestedGroup *pFLRG)
+{
+    NvU32 i;
+
+    for (i = 0; i < ARRAY_LEN(pFLRG->disp); i++) {
+        NVDispEvoPtr pDispEvo = pFLRG->disp[i].pDispEvo;
+        if (pDispEvo != NULL) {
+            NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+            const NvU32 sd = pDispEvo->displayOwner;
+            const NvU32 numHeads = pDevEvo->numHeads;
+            NvU32 head;
+
+            for (head = 0; head < numHeads; head++) {
+                NvBool isMethodPending;
+                if (!nvHeadIsActive(pDispEvo, head)) {
+                    continue;
+                }
+                if (!pDevEvo->hal->IsChannelMethodPending(
+                        pDevEvo,
+                        pDevEvo->head[head].layer[NVKMS_MAIN_LAYER],
+                        sd,
+                        &isMethodPending) || isMethodPending) {
+                    return FALSE;
+                }
+            }
+        }
+    }
+
+    return TRUE;
+}
+
+/*
+ * Return true if all main channels are idle on each head in overlapping flip
+ * lock groups.
+ */
+static NvBool CheckOverlappingFlipLockRequestGroupsIdle(
+    NVDevEvoRec *pDevEvo[NV_MAX_SUBDEVICES],
+    const struct NvKmsSetFlipLockGroupRequest *pRequest)
+{
+    NvU32 dev;
+
+    /* Loop over the GPUs specified in this FlipLockGroupRequest */
+    for (dev = 0; dev < NV_MAX_SUBDEVICES && pDevEvo[dev] != NULL; dev++) {
+        NVDispEvoPtr pDispEvo;
+        NvU32 sd;
+
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo[dev]) {
+            FlipLockRequestedGroup *pFLRG;
+
+            if ((pRequest->dev[dev].requestedDispsBitMask & (1 << sd)) == 0) {
+                continue;
+            }
 
             /*
-             * Enable fliplock, if we can
+             * For each specified GPU, search through existing requested
+             * fliplock groups and find any that overlap with heads in this
+             * request.
              *
-             * XXX this should arguably be done in the state machine proper.
-             * However, in order to guarantee that we get rasterlock before
-             * attempting fliplock (and to be symmetric with framelock, which
-             * turns on and off fliplock from GLS), do it here for now.
+             * Return FALSE if any overlapping fliplock groups are not idle.
              */
-            if (gpusLocked && flipLockPossible) {
-                NVEvoUpdateState updateState = { };
-
-                /*
-                 * Before turning on flip lock, we're supposed to wait for
-                 * raster lock sync.  The update performed in
-                 * UpdateEvoLockState() to kick off and apply the rasterlock
-                 * params must be synchronous as EVO reports lock success if
-                 * locking isn't enabled, so we could race through the
-                 * WaitForLock check below otherwise.
-                 */
-
-                for (j = 0; j < usedHeads; j++) {
-                    NvU32 tmpHead = head[j];
-                    NvU64 startTime = 0;
-
-                    NVEvoLockPin pin =
-                        nvEvoGetPinForSignal(pDispEvo, &pDevEvo->gpus[sd],
-                                             NV_EVO_LOCK_SIGNAL_FLIP_LOCK);
-
-                    /* Wait for the raster lock to sync in.. */
-                    if (pin == NV_EVO_LOCK_PIN_ERROR ||
-                        !EvoWaitForLock(pDevEvo, sd, tmpHead, EVO_RASTER_LOCK,
-                                        &startTime)) {
-                        flipLockPossible = FALSE;
+            nvListForEachEntry(pFLRG, &requestedFlipLockGroups, listEntry) {
+                NvU32 i;
+                for (i = 0; i < ARRAY_LEN(pFLRG->disp); i++) {
+                    if (pFLRG->disp[i].pDispEvo == NULL) {
                         break;
                     }
+                    if (pFLRG->disp[i].pDispEvo == pDispEvo) {
+                        /* API heads requested for this disp by the client */
+                        const NvU32 requestedApiHeadMask =
+                            pRequest->dev[dev].disp[sd].requestedHeadsBitMask;
+                        const NvU32 requestedHwHeadMask =
+                            ApiHeadMaskToHwHeadMask(pDispEvo, requestedApiHeadMask);
 
-                    /*
-                     * Enable fliplock, and register that we've enabled
-                     * fliplock for SLI to ensure it doesn't get disabled
-                     * later.
-                     */
-                    pDevEvo->gpus[sd].headControl[tmpHead].flipLockPin = pin;
-                    pDevEvo->gpus[sd].flipLockPinSetForSliHeadMask =
-                        HEAD_MASK_SET(pDevEvo->gpus[sd].flipLockPinSetForSliHeadMask, tmpHead);
-
-                    pDevEvo->gpus[sd].headControl[tmpHead].flipLock = TRUE;
-                    pDevEvo->gpus[sd].flipLockEnabledForSliHeadMask =
-                        HEAD_MASK_SET(pDevEvo->gpus[sd].flipLockEnabledForSliHeadMask, tmpHead);
-
-                    EvoUpdateHeadParams(pDispEvo, tmpHead, &updateState);
-                }
-
-                 /*
-                 * This must be synchronous as EVO reports lock success if
-                 * locking isn't enabled, so we could race through the
-                 * WaitForLock check below otherwise.
-                 */
-                nvEvoUpdateAndKickOff(pDispEvo, TRUE, &updateState,
-                                      TRUE /* releaseElv */);
-
-                /*
-                 * Wait for flip lock sync.  I'm not sure this is really
-                 * necessary, but the docs say to do this before attempting any
-                 * flips in the base channel.
-                 */
-                for (j = 0; j < usedHeads; j++) {
-                    NvU64 startTime = 0;
-                    if (flipLockPossible &&
-                        !EvoWaitForLock(pDevEvo, sd, head[j], EVO_FLIP_LOCK,
-                                        &startTime)) {
-                        flipLockPossible = FALSE;
+                        if ((requestedHwHeadMask &
+                             pFLRG->disp[i].flipLockHeads) != 0) {
+                            /* Match */
+                            if (!CheckFlipLockGroupIdle(pFLRG)) {
+                                return FALSE;
+                            }
+                        }
                         break;
                     }
                 }
@@ -2036,7 +2486,192 @@ exitHeadLoop:
         }
     }
 
-} /* FinishModesetOneTopology() */
+    return TRUE;
+}
+
+/*
+ * Disable and remove any FlipLockRequestGroups that contain any of the heads
+ * in 'hwHeadsMask' on the given pDispEvo.
+ */
+static void
+RemoveOverlappingFlipLockRequestGroupsOneDisp(
+    NVDispEvoRec *pDispEvo,
+    NvU32 hwHeadMask)
+{
+    FlipLockRequestedGroup *pFLRG, *tmp;
+
+    /*
+     * For each specified GPU, search through existing requested
+     * fliplock groups and find any that overlap with heads in this
+     * request.
+     *
+     * For any that are found, disable fliplock and remove the
+     * requested flip lock group.
+     */
+    nvListForEachEntry_safe(pFLRG, tmp, &requestedFlipLockGroups, listEntry) {
+        NvU32 i;
+
+        for (i = 0; i < ARRAY_LEN(pFLRG->disp); i++) {
+            if (pFLRG->disp[i].pDispEvo == NULL) {
+                break;
+            }
+            if (pFLRG->disp[i].pDispEvo == pDispEvo) {
+
+                if ((hwHeadMask &
+                     pFLRG->disp[i].flipLockHeads) != 0) {
+                    /* Match */
+                    DisableRequestedFlipLockGroup(pFLRG);
+
+                    /* Remove from global list */
+                    nvListDel(&pFLRG->listEntry);
+                    nvFree(pFLRG);
+                }
+                break;
+            }
+        }
+    }
+}
+
+/*
+ * Disable and remove any FlipLockRequestGroups that contain any of the heads
+ * specified in 'pRequest'.
+ */
+static void
+RemoveOverlappingFlipLockRequestGroups(
+    NVDevEvoRec *pDevEvo[NV_MAX_SUBDEVICES],
+    const struct NvKmsSetFlipLockGroupRequest *pRequest)
+{
+    NvU32 dev;
+
+    /* Loop over the GPUs specified in this FlipLockGroupRequest */
+    for (dev = 0; dev < NV_MAX_SUBDEVICES && pDevEvo[dev] != NULL; dev++) {
+        NVDispEvoPtr pDispEvo;
+        NvU32 sd;
+
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo[dev]) {
+            NvU32 requestedApiHeadMask, requestedHwHeadMask;
+
+            if ((pRequest->dev[dev].requestedDispsBitMask & (1 << sd)) == 0) {
+                continue;
+            }
+
+            /* API heads requested for this disp by the client */
+            requestedApiHeadMask =
+                pRequest->dev[dev].disp[sd].requestedHeadsBitMask;
+            requestedHwHeadMask =
+                ApiHeadMaskToHwHeadMask(pDispEvo, requestedApiHeadMask);
+
+            RemoveOverlappingFlipLockRequestGroupsOneDisp(pDispEvo,
+                                                          requestedHwHeadMask);
+        }
+    }
+}
+
+/*
+ * Disable and remove any FlipLockRequestGroups that contain any of the heads
+ * specified in 'pRequest'.
+ */
+void nvEvoRemoveOverlappingFlipLockRequestGroupsForModeset(
+    NVDevEvoPtr pDevEvo,
+    const struct NvKmsSetModeRequest *pRequest)
+{
+    NVDispEvoPtr pDispEvo;
+    NvU32 sd;
+
+    FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+        NvU32 requestedApiHeadMask, requestedHwHeadMask;
+
+        if ((pRequest->requestedDispsBitMask & (1 << sd)) == 0) {
+            continue;
+        }
+
+        /* API heads requested for this disp by the client */
+        requestedApiHeadMask =
+            pRequest->disp[sd].requestedHeadsBitMask;
+        requestedHwHeadMask =
+            ApiHeadMaskToHwHeadMask(pDispEvo, requestedApiHeadMask);
+
+        RemoveOverlappingFlipLockRequestGroupsOneDisp(pDispEvo,
+                                                      requestedHwHeadMask);
+    }
+}
+
+/*!
+ * Handle a NVKMS_IOCTL_SET_FLIPLOCK_GROUP request.  This assumes that the
+ * request was already validated by nvkms.c:SetFlipLockGroup().
+ *
+ * param[in]  pDevEvo  Array of NVDevEvoPtr pointers, in the same order as
+ *                     the deviceHandle were specified in the request.
+ * param[in]  pRequest The ioctl request.
+ */
+NvBool
+nvSetFlipLockGroup(NVDevEvoRec *pDevEvo[NV_MAX_SUBDEVICES],
+                   const struct NvKmsSetFlipLockGroupRequest *pRequest)
+{
+    FlipLockRequestedGroup *pFLRG = NULL;
+
+    /* Construct the new RequestedFlipLockGroup first, so if it fails we can
+     * return before removing overlapping groups. */
+    if (pRequest->enable) {
+        NvU32 dev, disp;
+
+        pFLRG = nvCalloc(1, sizeof(*pFLRG));
+        if (pFLRG == NULL) {
+            goto fail;
+        }
+
+        disp = 0;
+        for (dev = 0; dev < NV_MAX_SUBDEVICES && pDevEvo[dev] != NULL; dev++) {
+            NVDispEvoPtr pDispEvo;
+            NvU32 sd;
+
+            FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo[dev]) {
+                const NvU32 requestedApiHeads =
+                    pRequest->dev[dev].disp[sd].requestedHeadsBitMask;
+
+                if ((pRequest->dev[dev].requestedDispsBitMask & (1 << sd)) == 0) {
+                    continue;
+                }
+
+                if (disp >= ARRAY_LEN(pFLRG->disp)) {
+                    nvAssert(!"FlipLockRequestedGroup::disp too short?");
+                    goto fail;
+                }
+
+                pFLRG->disp[disp].pDispEvo = pDispEvo;
+                pFLRG->disp[disp].flipLockHeads =
+                    ApiHeadMaskToHwHeadMask(pDispEvo, requestedApiHeads);
+                disp++;
+            }
+        }
+
+        if (!CheckFlipLockGroupIdle(pFLRG)) {
+            nvEvoLogDebug(EVO_LOG_ERROR,
+                          "Failed to request flip lock: group not idle");
+            goto fail;
+        }
+    }
+
+    if (!CheckOverlappingFlipLockRequestGroupsIdle(pDevEvo, pRequest)) {
+        nvEvoLogDebug(EVO_LOG_ERROR,
+                      "Failed to request flip lock: overlapping group(s) not idle");
+        goto fail;
+    }
+
+    RemoveOverlappingFlipLockRequestGroups(pDevEvo, pRequest);
+
+    if (pFLRG) {
+        nvListAdd(&pFLRG->listEntry, &requestedFlipLockGroups);
+
+        EnableRequestedFlipLockGroup(pFLRG);
+    }
+
+    return TRUE;
+
+fail:
+    nvFree(pFLRG);
+    return FALSE;
+}
 
 NvBool nvSetUsageBoundsEvo(
     NVDevEvoPtr pDevEvo,
@@ -2112,7 +2747,7 @@ NvBool nvGetDefaultColorSpace(
 }
 
 NvBool nvChooseColorRangeEvo(
-    enum NvKmsOutputTf tf,
+    enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
     const enum NvKmsDpyAttributeColorBpcValue colorBpc,
@@ -2125,16 +2760,16 @@ NvBool nvChooseColorRangeEvo(
     if ((colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) &&
             (colorBpc == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6)) {
         /* At depth 18 only RGB and full range are allowed */
-        if (tf == NVKMS_OUTPUT_TF_PQ) {
-            /* NVKMS_OUTPUT_TF_PQ requires limited color range */
+        if (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
+            /* BT2100 requires limited color range */
             return FALSE;
         }
         *pColorRange = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_FULL;
     } else if ((colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr444) ||
                (colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr422) ||
                (colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420) ||
-               (tf == NVKMS_OUTPUT_TF_PQ)) {
-        /* Both YUV and NVKMS_OUTPUT_TF_PQ requires limited color range. */
+               (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100)) {
+        /* Both YUV and BT2100 colorimetry require limited color range. */
         *pColorRange = NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED;
     } else {
         *pColorRange = requestedColorRange;
@@ -2157,8 +2792,9 @@ NvBool nvChooseColorRangeEvo(
  */
 NvBool nvChooseCurrentColorSpaceAndRangeEvo(
     const NVDpyEvoRec *pDpyEvo,
-    enum NvYuv420Mode yuv420Mode,
-    enum NvKmsOutputTf tf,
+    const NVHwModeTimingsEvo *pHwTimings,
+    NvU8 hdmiFrlBpc,
+    enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeRequestedColorSpaceValue requestedColorSpace,
     const enum NvKmsDpyAttributeColorRangeValue requestedColorRange,
     enum NvKmsDpyAttributeCurrentColorSpaceValue *pCurrentColorSpace,
@@ -2174,30 +2810,21 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
     const NVColorFormatInfoRec colorFormatsInfo =
         nvGetColorFormatInfo(pDpyEvo);
 
-    // XXX HDR TODO: Handle other transfer functions
+    // XXX HDR TODO: Handle other colorimetries
     // XXX HDR TODO: Handle YUV
-    if (tf == NVKMS_OUTPUT_TF_PQ) {
+    if (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
         /*
-         * If the head is currently in PQ output mode, we override the
+         * If the head currently has BT2100 colorimetry, we override the
          * requested color space with RGB.  We cannot support yuv420Mode in
          * that configuration, so fail in that case.
          */
-        if (yuv420Mode != NV_YUV420_MODE_NONE) {
+        if (pHwTimings->yuv420Mode != NV_YUV420_MODE_NONE) {
             return FALSE;
         }
 
-        /*
-         * At depth 18 only RGB and full range are allowed.  Also,
-         * NVKMS_OUTPUT_TF_PQ requires limited range, which we can't do at
-         * depth 18; fail in that case.
-         */
-        if (colorFormatsInfo.rgb444.maxBpc ==
-                NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_6) {
-            return FALSE;
-        }
         newColorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB;
         newColorBpc = colorFormatsInfo.rgb444.maxBpc;
-    } else if (yuv420Mode != NV_YUV420_MODE_NONE) {
+    } else if (pHwTimings->yuv420Mode != NV_YUV420_MODE_NONE) {
         /*
          * If the current mode timing requires YUV420 compression, we override the
          * requested color space with YUV420.
@@ -2238,9 +2865,29 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
         }
     }
 
-    if (!nvChooseColorRangeEvo(tf, requestedColorRange, newColorSpace,
-                               newColorBpc, &newColorRange)) {
+    /*
+     * Downgrade BPC if HDMI configuration does not support current selection
+     * with TMDS or FRL.
+     */
+    if (nvDpyIsHdmiEvo(pDpyEvo) &&
+        nvHdmiTimingsNeedFrl(pDpyEvo, pHwTimings, newColorBpc) &&
+        (newColorBpc > hdmiFrlBpc))  {
+
+        newColorBpc =
+            hdmiFrlBpc ? hdmiFrlBpc : NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+        nvAssert(newColorBpc >= NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8);
+    }
+
+    // 10 BPC required for HDR
+    // XXX HDR TODO: Handle other colorimetries
+    // XXX HDR TODO: Handle YUV
+    if ((colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) &&
+        (newColorBpc < NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_10)) {
         return FALSE;
+    }
+
+    if (!nvChooseColorRangeEvo(colorimetry, requestedColorRange, newColorSpace,
+                               newColorBpc, &newColorRange)) {
     }
 
     *pCurrentColorSpace = newColorSpace;
@@ -2253,6 +2900,7 @@ NvBool nvChooseCurrentColorSpaceAndRangeEvo(
 void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
     NVDispEvoPtr pDispEvo,
     const NvU32 head,
+    enum NvKmsOutputColorimetry colorimetry,
     const enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace,
     const enum NvKmsDpyAttributeColorRangeValue colorRange,
     NVEvoUpdateState *pUpdateState)
@@ -2263,7 +2911,8 @@ void nvUpdateCurrentHardwareColorSpaceAndRangeEvo(
 
     nvAssert(pConnectorEvo != NULL);
 
-    if (pHeadState->tf == NVKMS_OUTPUT_TF_PQ) {
+    // XXX HDR TODO: Support more output colorimetries
+    if (colorimetry == NVKMS_OUTPUT_COLORIMETRY_BT2100) {
         nvAssert(pHeadState->timings.yuv420Mode == NV_YUV420_MODE_NONE);
         nvAssert(colorSpace == NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB);
         nvAssert(colorRange == NV_KMS_DPY_ATTRIBUTE_COLOR_RANGE_LIMITED);
@@ -2752,11 +3401,33 @@ static NvU32 GpuIndex(const NVDevEvoRec *pDevEvo, NvU32 sd)
     return 0;
 }
 
+NvU32 nvGetRefreshRate10kHz(const NVHwModeTimingsEvo *pTimings)
+{
+    const NvU32 totalPixels = pTimings->rasterSize.x * pTimings->rasterSize.y;
+
+    /*
+     * pTimings->pixelClock is in 1000/s
+     * we want 0.0001/s
+     * factor = 1000/0.0001 = 10000000.
+     */
+    NvU32 factor = 10000000;
+
+    if (pTimings->doubleScan) factor /= 2;
+    if (pTimings->interlaced) factor *= 2;
+
+    if (totalPixels == 0) {
+        return 0;
+    }
+
+    return axb_div_c(pTimings->pixelClock, factor, totalPixels);
+}
+
 /*!
  * Get the current refresh rate for the heads in headMask, in 0.0001 Hz units.
  * All heads in headMask are expected to have the same refresh rate.
  */
-static NvU32 GetRefreshRate10kHz(const NVDispEvoRec *pDispEvo, NvU32 headMask)
+static NvU32 GetRefreshRateHeadMask10kHz(const NVDispEvoRec *pDispEvo,
+                                         NvU32 headMask)
 {
     const NVHwModeTimingsEvo *pTimings = NULL;
     NvU32 head;
@@ -2787,18 +3458,7 @@ static NvU32 GetRefreshRate10kHz(const NVDispEvoRec *pDispEvo, NvU32 headMask)
         return 0;
     }
 
-    /*
-     * pTimings->pixelClock is in 1000/s
-     * we want 0.0001/s
-     * factor = 1000/0.0001 = 10000000.
-     */
-    NvU32 factor = 10000000;
-    NvU32 totalPixels = pTimings->rasterSize.x * pTimings->rasterSize.y;
-
-    if (pTimings->doubleScan) factor /= 2;
-    if (pTimings->interlaced) factor *= 2;
-
-    return axb_div_c(pTimings->pixelClock, factor, totalPixels);
+    return nvGetRefreshRate10kHz(pTimings);
 }
 
 /*!
@@ -2840,7 +3500,8 @@ static NvBool FramelockSetControlSync(NVDispEvoPtr pDispEvo, const NvU32 headMas
         return FALSE;
     }
 
-    gsyncSetControlSyncParams.refresh = GetRefreshRate10kHz(pDispEvo, headMask);
+    gsyncSetControlSyncParams.refresh =
+        GetRefreshRateHeadMask10kHz(pDispEvo, headMask);
 
     ret = nvRmApiControl(nvEvoGlobal.clientHandle,
                          pFrameLockEvo->device,
@@ -3317,7 +3978,7 @@ static NvU32 applyActionForHeads(NVDispEvoPtr pDispEvo,
     NvU32 head;
 
     FOR_ALL_HEADS(head, headMask) {
-        NvU32 pHeads[NVKMS_MAX_HEADS_PER_DISP + 1];
+        NvU32 pHeads[NVKMS_MAX_HEADS_PER_DISP + 1] = { NV_INVALID_HEAD, };
         unsigned int i = 0;
         NvU32 tmpHead, usedHeadMask = 0;
 
@@ -3552,13 +4213,13 @@ NvBool nvQueryRasterLockEvo(const NVDpyEvoRec *pDpyEvo, NvS64 *val)
     return TRUE;
 }
 
-void nvInvalidateTopologiesEvo(void)
+void nvInvalidateRasterLockGroupsEvo(void)
 {
-    if (nvEvoGlobal.globalTopologies) {
-        nvFree(nvEvoGlobal.globalTopologies);
+    if (globalRasterLockGroups) {
+        nvFree(globalRasterLockGroups);
 
-        nvEvoGlobal.globalTopologies = NULL;
-        nvEvoGlobal.numGlobalTopos = 0;
+        globalRasterLockGroups = NULL;
+        numGlobalRasterLockGroups = 0;
     }
 }
 
@@ -3626,24 +4287,11 @@ NvU64 nvEvoGetFormatsWithEqualOrLowerUsageBound(
 
 NvBool nvUpdateFlipLockEvoOneHead(NVDispEvoPtr pDispEvo, const NvU32 head,
                                   NvU32 *val, NvBool set,
-                                  NvBool *needsEarlyUpdate,
                                   NVEvoUpdateState *updateState)
 {
     NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
     NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[pDispEvo->displayOwner];
     NVEvoHeadControlPtr pHC = &pEvoSubDev->headControl[head];
-
-    /*
-     * XXX: [2Heads1OR] If head is locked in the merge mode then its flip-lock
-     * state can not be changed.
-     */
-    if (pHC->mergeMode) {
-        return FALSE;
-    }
-
-    if (needsEarlyUpdate) {
-        *needsEarlyUpdate = FALSE;
-    }
 
     if (set) {
         // make sure we're dealing with a bool
@@ -3651,6 +4299,7 @@ NvBool nvUpdateFlipLockEvoOneHead(NVDispEvoPtr pDispEvo, const NvU32 head,
 
         if (setVal ^ pHC->flipLock) {
             NvBool isMethodPending;
+            NvBool changed = FALSE;
 
             if (!pDevEvo->hal->
                     IsChannelMethodPending(pDevEvo,
@@ -3663,35 +4312,37 @@ NvBool nvUpdateFlipLockEvoOneHead(NVDispEvoPtr pDispEvo, const NvU32 head,
             }
 
             if (setVal) {
-                // make sure flip lock is not prohibited and raster lock is enabled
+                /* make sure flip lock is not prohibited and raster lock is enabled
+                 *
+                 * XXX: [2Heads1OR] If head is locked in the merge mode then
+                 * its flip-lock state can not be changed.
+                 */
                 if ((pHC->serverLock == NV_EVO_NO_LOCK &&
                      pHC->clientLock == NV_EVO_NO_LOCK) ||
                     HEAD_MASK_QUERY(pEvoSubDev->flipLockProhibitedHeadMask,
-                                    head)) {
+                                    head) ||
+                    pHC->mergeMode) {
                     return FALSE;
                 }
                 pHC->flipLock = TRUE;
+                changed = TRUE;
             } else {
-                /* Only actually disable fliplock if it's not needed for SLI */
-                if (!HEAD_MASK_QUERY(pEvoSubDev->flipLockEnabledForSliHeadMask,
+                /* Only actually disable fliplock if it's not needed for SLI.
+                 *
+                 * XXX: [2Heads1OR] If head is locked in the merge mode then
+                 * its flip-lock state can not be changed.
+                 */
+                if (!pHC->mergeMode &&
+                    !HEAD_MASK_QUERY(pEvoSubDev->flipLockEnabledForSliHeadMask,
                                      head)) {
                     pHC->flipLock = FALSE;
-
-                    /*
-                     * When disabling fliplock during a modeset, the core
-                     * channel needs to be updated before issuing further
-                     * base flips.  Notify the caller that fliplock has
-                     * been disabled in the core channel's assembly state,
-                     * and needs to be committed before issuing non-fliplocked
-                     * base flips.
-                     */
-                    if (needsEarlyUpdate) {
-                        *needsEarlyUpdate = TRUE;
-                    }
+                    changed = TRUE;
                 }
             }
 
-            EvoUpdateHeadParams(pDispEvo, head, updateState);
+            if (changed) {
+                EvoUpdateHeadParams(pDispEvo, head, updateState);
+            }
         }
 
         /* Remember if we currently need fliplock enabled for framelock */
@@ -3721,23 +4372,11 @@ static NvBool UpdateFlipLock50(const NVDpyEvoRec *pDpyEvo,
     NVEvoUpdateState updateState = { };
     NvBool ret;
 
-    /*
-     * XXX[2Heads1OR] The EVO lock state machine is not currently supported with
-     * 2Heads1OR, the api head is expected to be mapped onto a single
-     * hardware head (which is the primary hardware head) if 2Heads1OR is not
-     * active and the EVO lock state machine is in use.
-     */
-    if ((apiHead == NV_INVALID_HEAD) ||
-            (nvPopCount32(pDispEvo->apiHeadState[apiHead].hwHeadsMask) != 1)) {
-        return FALSE;
-    }
-
     if (head == NV_INVALID_HEAD) {
         return FALSE;
     }
 
     ret = nvUpdateFlipLockEvoOneHead(pDispEvo, head, val, set,
-                                     NULL /* needsEarlyUpdate */,
                                      &updateState);
 
     if (set && ret) {
@@ -3980,12 +4619,6 @@ static void EvoSetViewportPointIn(NVDispEvoPtr pDispEvo, const NvU32 head,
     nvPopEvoSubDevMask(pDevEvo);
 }
 
-static inline NvU32 LUTNotifierForApiHead(const NvU32 apiHead)
-{
-    nvAssert(apiHead != NV_INVALID_HEAD);
-    return 1 + apiHead;
-}
-
 void nvEvoSetLUTContextDma(NVDispEvoPtr pDispEvo,
                            const NvU32 head, NVEvoUpdateState *pUpdateState)
 {
@@ -4020,17 +4653,39 @@ static void EvoUpdateCurrentPalette(NVDispEvoPtr pDispEvo, const NvU32 apiHead)
      * state to kickoff.
      */
     if (!nvIsUpdateStateEmpty(pDevEvo, &updateState)) {
+        int notifier;
+        NvBool notify;
+
+        nvEvoStageLUTNotifier(pDispEvo, apiHead);
+        notifier = nvEvoCommitLUTNotifiers(pDispEvo);
+
+        nvAssert(notifier >= 0);
+
+        /*
+         * XXX: The notifier index returned by nvEvoCommitLUTNotifiers here
+         * shouldn't be < 0 because this function shouldn't have been called
+         * while a previous LUT update is outstanding. If
+         * nvEvoCommitLUTNotifiers ever returns -1 for one reason or another,
+         * using notify and setting notifier to 0 in this manner to avoid
+         * setting an invalid notifier in the following Update call prevents
+         * potential kernel panics and Xids.
+         */
+        notify = notifier >= 0;
+        if (!notify) {
+            notifier = 0;
+        }
+
         // Clear the completion notifier and kick off an update.  Wait for it
         // here if NV_CTRL_SYNCHRONOUS_PALETTE_UPDATES is enabled.  Otherwise,
         // don't wait for the notifier -- it'll be checked the next time a LUT
         // change request comes in.
         EvoUpdateAndKickOffWithNotifier(pDispEvo,
-                                        TRUE, /* notify */
+                                        notify, /* notify */
                                         FALSE, /* sync */
-                                        LUTNotifierForApiHead(apiHead),
+                                        notifier,
                                         &updateState,
                                         TRUE /* releaseElv */);
-        pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate = TRUE;
+        pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate |= notify;
     }
 }
 
@@ -4855,7 +5510,10 @@ NvBool nvResumeDevEvo(NVDevEvoRec *pDevEvo)
          * restore the assignment, might be in use by the boot display setup
          * by vbios/gop driver.
          */
-        nvShutDownApiHeads(pDevEvo, NULL /* pTestFunc, shut down all heads */);
+        nvShutDownApiHeads(pDevEvo, pDevEvo->pNvKmsOpenDev,
+                           NULL /* pTestFunc, shut down all heads */,
+                           NULL /* pData */,
+                           TRUE /* doRasterLock */);
 
         FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
             RestoreSorAssignList(pDispEvo, disp[dispIndex].sorAssignList);
@@ -5120,6 +5778,7 @@ static void LayerSetPositionOneApiHead(NVDispEvoRec *pDispEvo,
     const NvU32 sd = pDispEvo->displayOwner;
     NvU32 head;
 
+    nvPushEvoSubDevMaskDisp(pDispEvo);
     FOR_EACH_EVO_HW_HEAD_IN_MASK(pApiHeadState->hwHeadsMask, head) {
         NVEvoSubDevHeadStateRec *pSdHeadState =
             &pDevEvo->gpus[sd].headState[head];
@@ -5136,6 +5795,7 @@ static void LayerSetPositionOneApiHead(NVDispEvoRec *pDispEvo,
                                          x, y);
         }
     }
+    nvPopEvoSubDevMask(pDevEvo);
 }
 
 NvBool nvLayerSetPositionEvo(
@@ -5824,9 +6484,14 @@ void nvAssignDefaultUsageBounds(const NVDispEvoRec *pDispEvo,
     for (i = 0; i < ARRAY_LEN(pPossible->layer); i++) {
         struct NvKmsScalingUsageBounds *pScaling = &pPossible->layer[i].scaling;
 
-        pPossible->layer[i].usable = TRUE;
         pPossible->layer[i].supportedSurfaceMemoryFormats =
             pDevEvo->caps.layerCaps[i].supportedSurfaceMemoryFormats;
+        pPossible->layer[i].usable =
+            (pPossible->layer[i].supportedSurfaceMemoryFormats != 0);
+        if (!pPossible->layer[i].usable) {
+            continue;
+        }
+
         nvInitScalingUsageBounds(pDevEvo, pScaling);
 
         if (pDevEvo->hal->GetWindowScalingCaps) {
@@ -5978,10 +6643,12 @@ ConstructHwModeTimingsViewPort(const NVDispEvoRec *pDispEvo,
  */
 
 static NvBool GetDfpProtocol(const NVDpyEvoRec *pDpyEvo,
+                             const struct NvKmsModeValidationParams *pParams,
                              NVHwModeTimingsEvoPtr pTimings)
 {
     NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
     const NvU32 rmProtocol = pConnectorEvo->or.protocol;
+    const NvU32 overrides = pParams->overrides;
     enum nvKmsTimingsProtocol timingsProtocol;
 
     nvAssert(pConnectorEvo->legacyType ==
@@ -5990,10 +6657,20 @@ static NvBool GetDfpProtocol(const NVDpyEvoRec *pDpyEvo,
     if (pConnectorEvo->or.type == NV0073_CTRL_SPECIFIC_OR_TYPE_SOR) {
         /* Override protocol if this mode requires HDMI FRL. */
         if (nvDpyIsHdmiEvo(pDpyEvo) &&
-                nvHdmiTimingsNeedFrl(pDpyEvo, pTimings)) {
+            /* If we don't require boot clocks... */
+            ((overrides & NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS) == 0) &&
+            /* If FRL is supported, use it for 10 BPC if needed. */
+            ((nvHdmiDpySupportsFrl(pDpyEvo) &&
+              nvDpyIsHdmiDepth30Evo(pDpyEvo) &&
+              nvHdmiTimingsNeedFrl(pDpyEvo, pTimings, HDMI_BPC10)) ||
+            /* Fall back to 8 BPC, use FRL if needed. */
+             nvHdmiTimingsNeedFrl(pDpyEvo, pTimings, HDMI_BPC8))) {
+
+            /* If FRL is needed for 8 BPC, but not supported, fail. */
             if (!nvHdmiDpySupportsFrl(pDpyEvo)) {
                 return FALSE;
             }
+
             nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
             nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
                      rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B);
@@ -6113,7 +6790,7 @@ static NvBool ConstructHwModeTimingsEvoDfp(const NVDpyEvoRec *pDpyEvo,
 
     ConstructHwModeTimingsFromNvModeTimings(pModeTimings, pTimings);
 
-    ret = GetDfpProtocol(pDpyEvo, pTimings);
+    ret = GetDfpProtocol(pDpyEvo, pParams, pTimings);
 
     if (!ret) {
         return ret;
@@ -7098,26 +7775,26 @@ static NvBool FrameLockSli(NVDevEvoPtr pDevEvo,
                            NvU32 action,
                            NvBool queryOnly)
 {
-    RasterLockTopology *topos;
+    RasterLockGroup *pRasterLockGroups;
     NVEvoSubDevPtr pEvoSubDev;
     NVDispEvoPtr pDispEvo;
-    unsigned int numTopos;
+    unsigned int numRasterLockGroups;
 
-    topos = GetRasterLockTopologies(pDevEvo, &numTopos);
-    if (!topos) {
+    pRasterLockGroups = GetRasterLockGroups(pDevEvo, &numRasterLockGroups);
+    if (!pRasterLockGroups) {
         return FALSE;
     }
 
-    nvAssert(numTopos == 1);
-    if (numTopos != 1) {
-        nvFree(topos);
+    nvAssert(numRasterLockGroups == 1);
+    if (numRasterLockGroups != 1) {
+        nvFree(pRasterLockGroups);
         return FALSE;
     }
 
     /* Want to be framelock server */
-    pDispEvo = topos[0].pDispEvoOrder[0];
+    pDispEvo = pRasterLockGroups[0].pDispEvoOrder[0];
 
-    nvFree(topos);
+    nvFree(pRasterLockGroups);
 
     if (!pDispEvo) {
         return FALSE;
@@ -7130,7 +7807,7 @@ static NvBool FrameLockSli(NVDevEvoPtr pDevEvo,
     if (queryOnly) {
         return pEvoSubDev->scanLockState(pDispEvo, pEvoSubDev, action, NULL);
     } else {
-        NvU32 pHeads[NVKMS_MAX_HEADS_PER_DISP + 1];
+        NvU32 pHeads[NVKMS_MAX_HEADS_PER_DISP + 1] = { NV_INVALID_HEAD, };
         NvU32 i = 0;
         NvU32 head;
 
@@ -7241,6 +7918,193 @@ static void GetRasterLockPin(NVDispEvoPtr pDispEvo0, NvU32 head0,
     }
 } /* GetRasterLockPin */
 
+static void UpdateLUTNotifierTracking(
+    NVDispEvoPtr pDispEvo)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    const int dispIndex = pDispEvo->displayOwner;
+    NvU32 i;
+
+    for (i = 0; i < ARRAY_LEN(pDevEvo->lut.notifierState.sd[dispIndex].notifiers); i++) {
+        int notifier = pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].notifier;
+
+        if (!pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting) {
+            continue;
+        }
+
+        if (!pDevEvo->hal->IsCompNotifierComplete(pDevEvo->pDispEvo[dispIndex],
+                                                  notifier)) {
+            continue;
+        }
+
+        pDevEvo->lut.notifierState.sd[dispIndex].waitingApiHeadMask &=
+            ~pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].apiHeadMask;
+        pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting = FALSE;
+    }
+}
+
+/*
+ * Check whether there are any staged API head LUT notifiers that need to be
+ * committed.
+ */
+NvBool nvEvoLUTNotifiersNeedCommit(
+    NVDispEvoPtr pDispEvo)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    const int dispIndex = pDispEvo->displayOwner;
+    NvU32 apiHeadMask = pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask;
+
+    return apiHeadMask != 0;
+}
+
+/*
+ * Set up tracking for a LUT Notifier for the apiHeads in stagedApiHeadMask.
+ *
+ * The notifier returned by this function must be passed to a subsequent call to
+ * EvoUpdateAndKickOffWithNotifier.
+ *
+ * Returns -1 if an error occurs or no apiHeads need a new LUT notifier. Passing
+ * the -1 to EvoUpdateAndKickOffWithNotifier with its notify parameter set may
+ * result in kernel panics.
+ */
+int nvEvoCommitLUTNotifiers(
+    NVDispEvoPtr pDispEvo)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    const int dispIndex = pDispEvo->displayOwner;
+    NvU32 apiHeadMask = pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask;
+    int i;
+
+    pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask = 0;
+
+    UpdateLUTNotifierTracking(pDispEvo);
+
+    if (apiHeadMask == 0) {
+        return -1;
+    }
+
+    if (pDevEvo->lut.notifierState.sd[dispIndex].waitingApiHeadMask &
+        apiHeadMask) {
+        /*
+         * an apiHead in the requested list is already waiting on a
+         * notifier
+         */
+        nvEvoLogDisp(pDispEvo, EVO_LOG_WARN, "A requested API head is already waiting on a notifier");
+        return -1;
+    }
+
+    for (i = 0; i < ARRAY_LEN(pDevEvo->lut.notifierState.sd[dispIndex].notifiers); i++) {
+        int notifier = (dispIndex * NVKMS_MAX_HEADS_PER_DISP) + i + 1;
+
+        if (pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting) {
+            continue;
+        }
+
+        /* use this notifier */
+        pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].notifier = notifier;
+        pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting = TRUE;
+        pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].apiHeadMask = apiHeadMask;
+
+        pDevEvo->lut.notifierState.sd[dispIndex].waitingApiHeadMask |=
+            apiHeadMask;
+
+        return notifier;
+    }
+
+    /* slot not found */
+    nvEvoLogDisp(pDispEvo, EVO_LOG_WARN, "No remaining LUT notifier slots");
+    return -1;
+}
+
+/*
+ * Unstage any staged API Heads' notifiers.
+ */
+void nvEvoClearStagedLUTNotifiers(
+    NVDispEvoPtr pDispEvo)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    const int dispIndex = pDispEvo->displayOwner;
+
+    pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask = 0;
+}
+
+/*
+ * Stage the API Head's notifier for tracking. In order to kickoff the staged
+ * notifier, nvEvoCommitLUTNotifiers must be called and its return value
+ * passed to EvoUpdateAndKickoffWithNotifier.
+ *
+ * This function and its siblings nvEvoIsLUTNotifierComplete and
+ * nvEvoWaitForLUTNotifier can be used by callers of nvEvoSetLut to ensure the
+ * triple-buffer for the color LUT is not overflowed even when nvEvoSetLut is
+ * called with kickoff = FALSE.
+ */
+void nvEvoStageLUTNotifier(
+    NVDispEvoPtr pDispEvo,
+    NvU32 apiHead)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    const int dispIndex = pDispEvo->displayOwner;
+
+    nvAssert((pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask &
+             NVBIT(apiHead)) == 0);
+
+    pDevEvo->lut.notifierState.sd[dispIndex].stagedApiHeadMask |=
+        NVBIT(apiHead);
+}
+
+/*
+ * Check if the api head's LUT Notifier is complete.
+ */
+
+NvBool nvEvoIsLUTNotifierComplete(
+    NVDispEvoPtr pDispEvo,
+    NvU32 apiHead)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    const int dispIndex = pDispEvo->displayOwner;
+
+    UpdateLUTNotifierTracking(pDispEvo);
+
+    return (pDevEvo->lut.notifierState.sd[dispIndex].waitingApiHeadMask &
+            NVBIT(apiHead)) == 0;
+}
+
+/*
+ * Wait for the api head's LUT Notifier to complete.
+ *
+ * This function blocks while waiting for the notifier.
+ */
+
+void nvEvoWaitForLUTNotifier(
+    const NVDispEvoPtr pDispEvo,
+    NvU32 apiHead)
+{
+    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
+    const int dispIndex = pDispEvo->displayOwner;
+    int i;
+
+    if (nvEvoIsLUTNotifierComplete(pDispEvo, apiHead)) {
+        return;
+    }
+
+    for (i = 0; i < ARRAY_LEN(pDevEvo->lut.notifierState.sd[dispIndex].notifiers); i++) {
+        int notifier = pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].notifier;
+
+        if (!pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].waiting) {
+            continue;
+        }
+
+        if ((pDevEvo->lut.notifierState.sd[dispIndex].notifiers[i].apiHeadMask &
+            NVBIT(apiHead)) == 0) {
+
+            continue;
+        }
+
+        pDevEvo->hal->WaitForCompNotifier(pDispEvo, notifier);
+        return;
+    }
+}
+
 static void EvoIncrementCurrentLutIndex(NVDispEvoRec *pDispEvo,
                                         const NvU32 apiHead,
                                         const NvBool baseLutEnabled,
@@ -7278,10 +8142,7 @@ static NvU32 UpdateLUTTimer(NVDispEvoPtr pDispEvo,
                             const NvBool baseLutEnabled,
                             const NvBool outputLutEnabled)
 {
-    NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
-
-    if (!pDevEvo->hal->IsCompNotifierComplete(pDispEvo,
-                                              LUTNotifierForApiHead(apiHead))) {
+    if (!nvEvoIsLUTNotifierComplete(pDispEvo, apiHead)) {
         // If the notifier is still pending, then the previous update is still
         // pending and further LUT changes should continue to go into the third
         // buffer.  Reschedule the timer for another 10 ms.
@@ -7499,10 +8360,14 @@ void nvEvoSetLut(NVDispEvoPtr pDispEvo, NvU32 apiHead, NvBool kickoff,
     // update is complete, or if we need to guarantee that this update
     // is synchronous.
     NvBool previousUpdateComplete =
-        pDevEvo->hal->IsCompNotifierComplete(pDispEvo,
-                                             LUTNotifierForApiHead(apiHead));
+        nvEvoIsLUTNotifierComplete(pDispEvo, apiHead);
     if (!waitForPreviousUpdate || previousUpdateComplete ||
         pParams->synchronous) {
+
+        if (!previousUpdateComplete) {
+            nvEvoWaitForLUTNotifier(pDispEvo, apiHead);
+        }
+
         // Kick off an update now.
         EvoIncrementCurrentLutIndex(pDispEvo, apiHead, baseLutEnabled,
                                     outputLutEnabled);
@@ -7512,8 +8377,7 @@ void nvEvoSetLut(NVDispEvoPtr pDispEvo, NvU32 apiHead, NvBool kickoff,
         if (pParams->synchronous &&
             pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate) {
 
-            pDevEvo->hal->WaitForCompNotifier(pDispEvo,
-                                              LUTNotifierForApiHead(apiHead));
+            nvEvoWaitForLUTNotifier(pDispEvo, apiHead);
             pDevEvo->lut.apiHead[apiHead].disp[dispIndex].waitForPreviousUpdate =
                 FALSE;
         }
@@ -7979,7 +8843,7 @@ static NvBool EvoWaitForLock(const NVDevEvoRec *pDevEvo, const NvU32 sd,
             break;
         }
 
-        if (nvExceedsTimeoutUSec(pStartTime, LOCK_TIMEOUT)) {
+        if (nvExceedsTimeoutUSec(pDevEvo, pStartTime, LOCK_TIMEOUT)) {
             nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
                         "SLI lock timeout exceeded (type %d)", type);
             return FALSE;
@@ -8059,12 +8923,12 @@ NvBool nvReadCRC32Evo(NVDispEvoPtr pDispEvo, NvU32 head,
         return FALSE;
     }
 
-    // Bind the CRC32 notifier ctxDma
-    ret = nvRmEvoBindDispContextDMA(pDevEvo, pDevEvo->core, dma->ctxHandle);
+    // Bind the CRC32 notifier surface descriptor
+    ret = pDevEvo->hal->BindSurfaceDescriptor(pDevEvo, pDevEvo->core, &dma->surfaceDesc);
     if (ret != NVOS_STATUS_SUCCESS) {
         nvEvoLogDevDebug(pDevEvo, EVO_LOG_ERROR,
-                         "Failed to bind display engine CRC32 notify context "
-                         "DMA: 0x%x (%s)", ret, nvstatusToString(ret));
+                         "Failed to bind display engine CRC32 notify surface descriptor "
+                         ": 0x%x (%s)", ret, nvstatusToString(ret));
         res = FALSE;
         goto done;
     }
@@ -8189,7 +9053,7 @@ NvBool nvEvoPollForNoMethodPending(NVDevEvoPtr pDevEvo,
             break;
         }
 
-        if (nvExceedsTimeoutUSec(pStartTime, timeout)) {
+        if (nvExceedsTimeoutUSec(pDevEvo, pStartTime, timeout)) {
             return FALSE;
         }
 
@@ -8379,60 +9243,6 @@ void nvDPSerializerPostSetMode(NVDispEvoPtr pDispEvo,
     }
 }
 
-NvBool nvIsHDRCapableHead(const NVDispEvoRec *pDispEvo,
-                          NvU32 apiHead)
-{
-    const NVDpyEvoRec *pDpyEvo;
-    NvU32 primaryHwHead = nvGetPrimaryHwHead(pDispEvo, apiHead);
-    NvU32 activeDpyCount = 0;
-
-    if (primaryHwHead != NV_INVALID_HEAD) {
-        const NVDispHeadStateEvoRec *pHeadState =
-            &pDispEvo->headState[primaryHwHead];
-        const NVConnectorEvoRec *pConnectorEvo = pHeadState->pConnectorEvo;
-
-        if (pConnectorEvo == NULL) {
-            return FALSE;
-        }
-
-        // XXX HDR TODO: Currently only DP is supported, not HDMI.
-        if (!nvConnectorUsesDPLib(pConnectorEvo)) {
-            return FALSE;
-        }
-    } else {
-        return FALSE;
-    }
-
-    FOR_ALL_EVO_DPYS(pDpyEvo,
-                     pDispEvo->apiHeadState[apiHead].activeDpys,
-                     pDispEvo) {
-        const NVT_EDID_INFO *pInfo = &pDpyEvo->parsedEdid.info;
-        const NVT_HDR_STATIC_METADATA *pHdrInfo =
-            &pInfo->hdr_static_metadata_info;
-
-        if (!pDpyEvo->parsedEdid.valid) {
-            return FALSE;
-        }
-
-        // Sink should support ST2084 EOTF.
-        if (!pHdrInfo->supported_eotf.smpte_st_2084_eotf) {
-            return FALSE;
-        }
-
-        /*
-         * Sink should support static metadata type1. Nvtiming sets
-         * static_metadata_type to 1 if the sink supports static metadata type1.
-         */
-        if (pHdrInfo->static_metadata_type != 1) {
-            return FALSE;
-        }
-
-        activeDpyCount++;
-    }
-
-    return (activeDpyCount > 0);
-}
-
 NvU32 nvGetHDRSrcMaxLum(const NVFlipChannelEvoHwState *pHwState)
 {
     if (!pHwState->hdrStaticMetadata.enabled) {
@@ -8455,13 +9265,11 @@ NvBool nvNeedsTmoLut(NVDevEvoPtr pDevEvo,
     const NvU32 win = NV_EVO_CHANNEL_MASK_WINDOW_NUMBER(pChannel->channelMask);
     const NvU32 head = pDevEvo->headForWindow[win];
     const NvU32 sdMask = nvPeekEvoSubDevMask(pDevEvo);
-    const NvU32 sd = (sdMask == 0) ? 0 : __builtin_ffs(sdMask) - 1;
+    const NvU32 sd = (sdMask == 0) ? 0 : nv_ffs(sdMask) - 1;
     const NVDispHeadStateEvoRec *pHeadState =
         &pDevEvo->pDispEvo[sd]->headState[head];
-#if defined(DEBUG)
     const NVEvoWindowCaps *pWinCaps =
         &pDevEvo->gpus[sd].capabilities.window[pChannel->instance];
-#endif
 
     // Don't tone map if flipped to NULL.
     if (!pHwState->pSurfaceEvo[NVKMS_LEFT]) {
@@ -8474,14 +9282,16 @@ NvBool nvNeedsTmoLut(NVDevEvoPtr pDevEvo,
         return FALSE;
     }
 
-    // Don't tone map if output isn't HDR.
+    // Don't tone map if HDR infoframe isn't enabled
     // XXX HDR TODO: Support tone mapping HDR surfaces to SDR
-    if (pHeadState->hdr.outputState != NVKMS_HDR_OUTPUT_STATE_HDR) {
+    if (pHeadState->hdrInfoFrame.state != NVKMS_HDR_INFOFRAME_STATE_ENABLED) {
         return FALSE;
     }
 
-    // Don't tone map if TMO not present, implied by NVKMS_HDR_OUTPUT_STATE_HDR.
-    nvAssert(pWinCaps->tmoPresent);
+    // Don't tone map if TMO not present
+    if (!pWinCaps->tmoPresent) {
+        return FALSE;
+    }
 
     // Don't tone map if source or target max luminance is unspecified.
     if ((srcMaxLum == 0) || (targetMaxCLL == 0)) {
@@ -8586,6 +9396,7 @@ void nvEvoEnableMergeModePreModeset(NVDispEvoRec *pDispEvo,
         nvAssert((pHC->serverLock == NV_EVO_NO_LOCK) &&
                     (pHC->clientLock == NV_EVO_NO_LOCK));
 
+        pHC->mergeMode = TRUE;
         if (head == primaryHead) {
             pHC->serverLock = NV_EVO_RASTER_LOCK;
             pHC->serverLockPin = NV_EVO_LOCK_PIN_INTERNAL(primaryHead);
@@ -8672,6 +9483,7 @@ void nvEvoDisableMergeMode(NVDispEvoRec *pDispEvo,
         pDevEvo->hal->SetMergeMode(pDispEvo, head, pHeadState->mergeMode,
                                    pUpdateState);
 
+        pHC->mergeMode = FALSE;
         pHC->serverLock = NV_EVO_NO_LOCK;
         pHC->serverLockPin = NV_EVO_LOCK_PIN_INTERNAL(0);
         pHC->clientLock = NV_EVO_NO_LOCK;

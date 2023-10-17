@@ -106,10 +106,6 @@ static NvBool __nvoc_thunk_OBJVASPACE_iovaspaceIsExternallyOwned(struct OBJIOVAS
     return vaspaceIsExternallyOwned((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset));
 }
 
-static NvBool __nvoc_thunk_OBJVASPACE_iovaspaceIsInternalVaRestricted(struct OBJIOVASPACE *pVAS) {
-    return vaspaceIsInternalVaRestricted((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset));
-}
-
 static NvU32 __nvoc_thunk_OBJVASPACE_iovaspaceGetFlags(struct OBJIOVASPACE *pVAS) {
     return vaspaceGetFlags((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset));
 }
@@ -178,8 +174,8 @@ static NV_STATUS __nvoc_thunk_OBJVASPACE_iovaspaceGetPageTableInfo(struct OBJIOV
     return vaspaceGetPageTableInfo((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset), pParams);
 }
 
-static NV_STATUS __nvoc_thunk_OBJVASPACE_iovaspaceReserveMempool(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, NvHandle hClient, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags) {
-    return vaspaceReserveMempool((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset), pGpu, hClient, size, pageSizeLockMask, flags);
+static NV_STATUS __nvoc_thunk_OBJVASPACE_iovaspaceReserveMempool(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, struct Device *pDevice, NvU64 size, NvU64 pageSizeLockMask, NvU32 flags) {
+    return vaspaceReserveMempool((struct OBJVASPACE *)(((unsigned char *)pVAS) + __nvoc_rtti_OBJIOVASPACE_OBJVASPACE.offset), pGpu, pDevice, size, pageSizeLockMask, flags);
 }
 
 static NV_STATUS __nvoc_thunk_OBJVASPACE_iovaspaceMap(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, const NvU64 vaLo, const NvU64 vaHi, const MMU_MAP_TARGET *pTarget, const VAS_MAP_FLAGS flags) {
@@ -255,8 +251,6 @@ static void __nvoc_init_funcTable_OBJIOVASPACE_1(OBJIOVASPACE *pThis) {
     pThis->__iovaspaceIsMirrored__ = &__nvoc_thunk_OBJVASPACE_iovaspaceIsMirrored;
 
     pThis->__iovaspaceIsExternallyOwned__ = &__nvoc_thunk_OBJVASPACE_iovaspaceIsExternallyOwned;
-
-    pThis->__iovaspaceIsInternalVaRestricted__ = &__nvoc_thunk_OBJVASPACE_iovaspaceIsInternalVaRestricted;
 
     pThis->__iovaspaceGetFlags__ = &__nvoc_thunk_OBJVASPACE_iovaspaceGetFlags;
 

@@ -258,12 +258,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 #endif
     },
     {               /*  [3] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) gsyncapiCtrlCmdGsyncSetControlParams_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x30f10104u,
         /*paramSize=*/  sizeof(NV30F1_CTRL_GSYNC_SET_CONTROL_PARAMS_PARAMS),
@@ -318,12 +318,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 #endif
     },
     {               /*  [7] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) gsyncapiCtrlCmdGsyncSetControlSync_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x30f10111u,
         /*paramSize=*/  sizeof(NV30F1_CTRL_GSYNC_SET_CONTROL_SYNC_PARAMS),
@@ -333,12 +333,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 #endif
     },
     {               /*  [8] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) gsyncapiCtrlCmdGsyncSetControlUnsync_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x30f10112u,
         /*paramSize=*/  sizeof(NV30F1_CTRL_GSYNC_SET_CONTROL_UNSYNC_PARAMS),
@@ -438,12 +438,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 #endif
     },
     {               /*  [15] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) gsyncapiCtrlCmdGsyncSetControlInterlaceMode_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x30f10141u,
         /*paramSize=*/  sizeof(NV30F1_CTRL_GSYNC_SET_CONTROL_INTERLACE_MODE_PARAMS),
@@ -528,12 +528,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 #endif
     },
     {               /*  [21] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) gsyncapiCtrlCmdGsyncSetControlStereoLockMode_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x30f10172u,
         /*paramSize=*/  sizeof(NV30F1_CTRL_CMD_GSYNC_SET_CONTROL_STEREO_LOCK_MODE_PARAMS),
@@ -558,12 +558,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 #endif
     },
     {               /*  [23] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) gsyncapiCtrlCmdGsyncReadRegister_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x30f10180u,
         /*paramSize=*/  sizeof(NV30F1_CTRL_GSYNC_READ_REGISTER_PARAMS),
@@ -588,12 +588,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 #endif
     },
     {               /*  [25] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) gsyncapiCtrlCmdGsyncSetLocalSync_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x30f10185u,
         /*paramSize=*/  sizeof(NV30F1_CTRL_GSYNC_SET_LOCAL_SYNC_PARAMS),
@@ -603,12 +603,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 #endif
     },
     {               /*  [26] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) gsyncapiCtrlCmdGsyncConfigFlash_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x30f10186u,
         /*paramSize=*/  sizeof(NV30F1_CTRL_CMD_GSYNC_CONFIG_FLASH_PARAMS),
@@ -633,12 +633,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GSyncApi
 #endif
     },
     {               /*  [28] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) gsyncapiCtrlCmdGsyncSetHouseSyncMode_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
-        /*flags=*/      0x10u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
+        /*flags=*/      0x4u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x30f10188u,
         /*paramSize=*/  sizeof(NV30F1_CTRL_GSYNC_HOUSE_SYNC_MODE_PARAMS),
@@ -713,7 +713,7 @@ static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
     pThis->__gsyncapiCtrlCmdGsyncGetControlParams__ = &gsyncapiCtrlCmdGsyncGetControlParams_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncSetControlParams__ = &gsyncapiCtrlCmdGsyncSetControlParams_IMPL;
 #endif
 
@@ -721,11 +721,11 @@ static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
     pThis->__gsyncapiCtrlCmdGsyncGetControlSync__ = &gsyncapiCtrlCmdGsyncGetControlSync_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncSetControlSync__ = &gsyncapiCtrlCmdGsyncSetControlSync_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncSetControlUnsync__ = &gsyncapiCtrlCmdGsyncSetControlUnsync_IMPL;
 #endif
 
@@ -753,7 +753,7 @@ static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
     pThis->__gsyncapiCtrlCmdGsyncGetControlInterlaceMode__ = &gsyncapiCtrlCmdGsyncGetControlInterlaceMode_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncSetControlInterlaceMode__ = &gsyncapiCtrlCmdGsyncSetControlInterlaceMode_IMPL;
 #endif
 
@@ -785,11 +785,11 @@ static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
     pThis->__gsyncapiCtrlCmdGsyncGetControlStereoLockMode__ = &gsyncapiCtrlCmdGsyncGetControlStereoLockMode_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncSetControlStereoLockMode__ = &gsyncapiCtrlCmdGsyncSetControlStereoLockMode_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncReadRegister__ = &gsyncapiCtrlCmdGsyncReadRegister_IMPL;
 #endif
 
@@ -797,11 +797,11 @@ static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
     pThis->__gsyncapiCtrlCmdGsyncWriteRegister__ = &gsyncapiCtrlCmdGsyncWriteRegister_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncSetLocalSync__ = &gsyncapiCtrlCmdGsyncSetLocalSync_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncConfigFlash__ = &gsyncapiCtrlCmdGsyncConfigFlash_IMPL;
 #endif
 
@@ -809,7 +809,7 @@ static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
     pThis->__gsyncapiCtrlCmdGsyncGetHouseSyncMode__ = &gsyncapiCtrlCmdGsyncGetHouseSyncMode_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x4u)
     pThis->__gsyncapiCtrlCmdGsyncSetHouseSyncMode__ = &gsyncapiCtrlCmdGsyncSetHouseSyncMode_IMPL;
 #endif
 

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -73,6 +73,7 @@ struct VaSpaceApi {
     NV_STATUS (*__vaspaceapiCtrlCmdVaspaceReserveEntries__)(struct VaSpaceApi *, NV90F1_CTRL_VASPACE_RESERVE_ENTRIES_PARAMS *);
     NV_STATUS (*__vaspaceapiCtrlCmdVaspaceReleaseEntries__)(struct VaSpaceApi *, NV90F1_CTRL_VASPACE_RELEASE_ENTRIES_PARAMS *);
     NV_STATUS (*__vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes__)(struct VaSpaceApi *, NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS *);
+    NV_STATUS (*__vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize__)(struct VaSpaceApi *, NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *);
     NvBool (*__vaspaceapiShareCallback__)(struct VaSpaceApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__vaspaceapiCheckMemInterUnmap__)(struct VaSpaceApi *, NvBool);
     NV_STATUS (*__vaspaceapiMapTo__)(struct VaSpaceApi *, RS_RES_MAP_TO_PARAMS *);
@@ -135,6 +136,7 @@ NV_STATUS __nvoc_objCreate_VaSpaceApi(VaSpaceApi**, Dynamic*, NvU32, struct CALL
 #define vaspaceapiCtrlCmdVaspaceReserveEntries(pVaspaceApi, pReserveEntriesParams) vaspaceapiCtrlCmdVaspaceReserveEntries_DISPATCH(pVaspaceApi, pReserveEntriesParams)
 #define vaspaceapiCtrlCmdVaspaceReleaseEntries(pVaspaceApi, pReleaseEntriesParams) vaspaceapiCtrlCmdVaspaceReleaseEntries_DISPATCH(pVaspaceApi, pReleaseEntriesParams)
 #define vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes(pVaspaceApi, pCopyServerReservedPdesParams) vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_DISPATCH(pVaspaceApi, pCopyServerReservedPdesParams)
+#define vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize(pVaspaceApi, pVaspaceGetHostRmManagedSizeParams) vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_DISPATCH(pVaspaceApi, pVaspaceGetHostRmManagedSizeParams)
 #define vaspaceapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) vaspaceapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define vaspaceapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vaspaceapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define vaspaceapiMapTo(pResource, pParams) vaspaceapiMapTo_DISPATCH(pResource, pParams)
@@ -193,6 +195,12 @@ NV_STATUS vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_IMPL(struct VaSpaceApi 
 
 static inline NV_STATUS vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes_DISPATCH(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS *pCopyServerReservedPdesParams) {
     return pVaspaceApi->__vaspaceapiCtrlCmdVaspaceCopyServerReservedPdes__(pVaspaceApi, pCopyServerReservedPdesParams);
+}
+
+NV_STATUS vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_IMPL(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *pVaspaceGetHostRmManagedSizeParams);
+
+static inline NV_STATUS vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_DISPATCH(struct VaSpaceApi *pVaspaceApi, NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *pVaspaceGetHostRmManagedSizeParams) {
+    return pVaspaceApi->__vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize__(pVaspaceApi, pVaspaceGetHostRmManagedSizeParams);
 }
 
 static inline NvBool vaspaceapiShareCallback_DISPATCH(struct VaSpaceApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -316,4 +324,5 @@ void vaspaceapiDestruct_IMPL(struct VaSpaceApi *pResource);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_VASPACE_API_NVOC_H_

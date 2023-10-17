@@ -77,6 +77,7 @@ struct KernelHead {
     void (*__kheadProcessVblankCallbacks__)(struct OBJGPU *, struct KernelHead *, NvU32);
     void (*__kheadResetPendingVblank__)(struct OBJGPU *, struct KernelHead *, THREAD_STATE_NODE *);
     NvBool (*__kheadReadPendingVblank__)(struct OBJGPU *, struct KernelHead *, NvU32 *, THREAD_STATE_NODE *);
+    NvU32 (*__kheadGetLoadVCounter__)(struct OBJGPU *, struct KernelHead *);
     struct __nvoc_inner_struc_KernelHead_1__ Vblank;
     NvU32 PublicId;
 };
@@ -121,6 +122,8 @@ NV_STATUS __nvoc_objCreate_KernelHead(KernelHead**, Dynamic*, NvU32);
 #define kheadResetPendingVblank_HAL(pGpu, pKernelHead, arg0) kheadResetPendingVblank_DISPATCH(pGpu, pKernelHead, arg0)
 #define kheadReadPendingVblank(pGpu, pKernelHead, pCachedIntr, pThreadState) kheadReadPendingVblank_DISPATCH(pGpu, pKernelHead, pCachedIntr, pThreadState)
 #define kheadReadPendingVblank_HAL(pGpu, pKernelHead, pCachedIntr, pThreadState) kheadReadPendingVblank_DISPATCH(pGpu, pKernelHead, pCachedIntr, pThreadState)
+#define kheadGetLoadVCounter(pGpu, pKernelHead) kheadGetLoadVCounter_DISPATCH(pGpu, pKernelHead)
+#define kheadGetLoadVCounter_HAL(pGpu, pKernelHead) kheadGetLoadVCounter_DISPATCH(pGpu, pKernelHead)
 NvU32 kheadGetVblankTotalCounter_IMPL(struct KernelHead *pKernelHead);
 
 
@@ -293,6 +296,16 @@ static inline NvBool kheadReadPendingVblank_DISPATCH(struct OBJGPU *pGpu, struct
     return pKernelHead->__kheadReadPendingVblank__(pGpu, pKernelHead, pCachedIntr, pThreadState);
 }
 
+NvU32 kheadGetLoadVCounter_v03_00(struct OBJGPU *pGpu, struct KernelHead *pKernelHead);
+
+static inline NvU32 kheadGetLoadVCounter_4a4dee(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
+    return 0;
+}
+
+static inline NvU32 kheadGetLoadVCounter_DISPATCH(struct OBJGPU *pGpu, struct KernelHead *pKernelHead) {
+    return pKernelHead->__kheadGetLoadVCounter__(pGpu, pKernelHead);
+}
+
 NV_STATUS kheadConstruct_IMPL(struct KernelHead *arg_pKernelHead);
 
 #define __nvoc_kheadConstruct(arg_pKernelHead) kheadConstruct_IMPL(arg_pKernelHead)
@@ -356,4 +369,5 @@ static inline void kheadWriteVblankIntrState(struct OBJGPU *pGpu, struct KernelH
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_HEAD_NVOC_H_

@@ -122,6 +122,10 @@ static NV_STATUS __nvoc_thunk_Memory_virtmemGetMapAddrSpace(struct VirtualMemory
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_virtmemIsExportAllowed(struct VirtualMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_VirtualMemory_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_virtmemGetRefCount(struct VirtualMemory *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_VirtualMemory_RsResource.offset));
 }
@@ -254,6 +258,8 @@ static void __nvoc_init_funcTable_VirtualMemory_1(VirtualMemory *pThis) {
     pThis->__virtmemShareCallback__ = &__nvoc_thunk_RmResource_virtmemShareCallback;
 
     pThis->__virtmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_virtmemGetMapAddrSpace;
+
+    pThis->__virtmemIsExportAllowed__ = &__nvoc_thunk_Memory_virtmemIsExportAllowed;
 
     pThis->__virtmemGetRefCount__ = &__nvoc_thunk_RsResource_virtmemGetRefCount;
 

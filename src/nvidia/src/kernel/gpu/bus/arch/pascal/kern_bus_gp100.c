@@ -21,9 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-// FIXME XXX
-#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
-
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "mem_mgr/vaspace.h"
@@ -515,8 +512,8 @@ _kbusRemoveNvlinkPeerMapping
                                           PDB_PROP_KBUS_NVLINK_DECONFIG_HSHUB_ON_NO_MAPPING))
         {
             // Before removing the NVLink peer mapping in HSHUB flush both ends
-            kbusFlush_HAL(pGpu0, pKernelBus0, BUS_FLUSH_VIDEO_MEMORY | BUS_FLUSH_USE_PCIE_READ);
-            kbusFlush_HAL(pGpu1, GPU_GET_KERNEL_BUS(pGpu1), BUS_FLUSH_VIDEO_MEMORY | BUS_FLUSH_USE_PCIE_READ);
+            kbusFlush_HAL(pGpu0, pKernelBus0, BUS_FLUSH_VIDEO_MEMORY);
+            kbusFlush_HAL(pGpu1, GPU_GET_KERNEL_BUS(pGpu1), BUS_FLUSH_VIDEO_MEMORY);
         }
 
         if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu0))
@@ -586,7 +583,7 @@ _kbusRemoveNvlinkPeerMapping
                 return status;
             }
 
-            bBufferReady = ((pKernelNvlink0->initializedLinks & pKernelNvlink0->peerLinkMasks[peerId]) != 0) ? NV_TRUE : NV_FALSE;
+            bBufferReady = ((knvlinkGetInitializedLinkMask(pGpu0, pKernelNvlink0) & knvlinkGetPeerLinkMask(pGpu0, pKernelNvlink0, peerId)) != 0) ? NV_TRUE : NV_FALSE;
             if (!pKernelNvlink0->getProperty(pKernelNvlink0, PDB_PROP_KNVLINK_CONFIG_REQUIRE_INITIALIZED_LINKS_CHECK) ||
                 !bBufferReady)
             {
@@ -816,7 +813,7 @@ kbusGetNvlinkP2PPeerId_GP100
         (knvlinkGetPeersNvlinkMaskFromHshub(pGpu0, pKernelNvlink0) != 0))
     {
         if (knvlinkIsForcedConfig(pGpu0, pKernelNvlink0) ||
-            pKernelNvlink0->bRegistryLinkOverride)
+            knvlinkAreLinksRegistryOverriden(pGpu0, pKernelNvlink0))
         {
             *nvlinkPeer = kbusGetPeerIdFromTable_HAL(pGpu0, pKernelBus0,
                                                      pGpu0->gpuInstance,

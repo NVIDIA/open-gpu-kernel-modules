@@ -82,6 +82,13 @@ void vectDestroy_IMPL(Vector *pVector)
     pVector->size     = 0;
 }
 
+void vectClear_IMPL(Vector *pVector)
+{
+    NV_ASSERT_OR_RETURN_VOID(pVector != NULL);
+    NV_CHECKED_ONLY(pVector->versionNumber++);
+    pVector->size = 0;
+}
+
 void *vectAt_IMPL
 (
     Vector *pVector,
@@ -279,6 +286,8 @@ VectorIterBase vectIterRange_IMPL
     }
 
     NV_CHECKED_ONLY(it.versionNumber = pVector->versionNumber);
+    NV_CHECKED_ONLY(it.bValid = NV_TRUE);
+
     if ((pVector->size == 0) || (pFirst == NULL) || (first >= pVector->size) ||
         (pLast == NULL) || (last >= pVector->size))
     {
@@ -315,7 +324,14 @@ NvBool vectIterNext_IMPL
         return NV_FALSE;
     }
 
-    NV_ASSERT_CHECKED(pIter->versionNumber == pIter->pVector->versionNumber);
+#if PORT_IS_CHECKED_BUILD
+    if (pIter->bValid && !CONT_ITER_IS_VALID(pIter->pVector, pIter))
+    {
+        NV_ASSERT(CONT_ITER_IS_VALID(pIter->pVector, pIter));
+        PORT_DUMP_STACK();
+        pIter->bValid = NV_FALSE;
+    }
+#endif
 
     *ppValue = (void *)((NvU8 *)pIter->pVector->pHead +
                         pIter->nextIndex * pIter->pVector->valueSize);
@@ -350,7 +366,14 @@ NvBool vectIterPrev_IMPL
         return NV_FALSE;
     }
 
-    NV_ASSERT_CHECKED(pIter->versionNumber == pIter->pVector->versionNumber);
+#if PORT_IS_CHECKED_BUILD
+    if (pIter->bValid && !CONT_ITER_IS_VALID(pIter->pVector, pIter))
+    {
+        NV_ASSERT(CONT_ITER_IS_VALID(pIter->pVector, pIter));
+        PORT_DUMP_STACK();
+        pIter->bValid = NV_FALSE;
+    }
+#endif
 
     *ppValue = (void *)((NvU8 *)pIter->pVector->pHead +
                         pIter->prevIndex * pIter->pVector->valueSize);

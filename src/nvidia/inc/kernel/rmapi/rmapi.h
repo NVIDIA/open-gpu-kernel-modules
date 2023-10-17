@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,7 @@ typedef struct CALL_CONTEXT CALL_CONTEXT;
 typedef struct MEMORY_DESCRIPTOR MEMORY_DESCRIPTOR;
 typedef struct RS_RES_FREE_PARAMS_INTERNAL RS_RES_FREE_PARAMS_INTERNAL;
 typedef struct RS_LOCK_INFO RS_LOCK_INFO;
+typedef struct NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS; 
 typedef NvU32 NV_ADDRESS_SPACE;
 
 extern RsServer    g_resServ;
@@ -90,6 +91,15 @@ void rmapiLockRelease(void);
  */
 NvBool rmapiLockIsOwner(void);
 
+/**
+ * Check if current thread owns the RW API lock
+ */
+NvBool rmapiLockIsWriteOwner(void);
+
+/**
+ * Retrieve total RM API lock wait and hold times
+ */
+void rmapiLockGetTimes(NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *);
 
 /**
  * Type of RM API client interface
@@ -309,12 +319,13 @@ rmapiEpilogue
     RM_API_CONTEXT    *pContext
 );
 
-void
+NV_STATUS
 rmapiInitLockInfo
 (
-    RM_API            *pRmApi,
-    NvHandle           hClient,
-    RS_LOCK_INFO      *pLockInfo
+    RM_API       *pRmApi,
+    NvHandle      hClient,
+    NvHandle      hSecondClient,
+    RS_LOCK_INFO *pLockInfo
 );
 
 //

@@ -168,6 +168,35 @@ static NvBool _pmaCheckFreeFramesToSkipReclaim(PMA *pPma)
 }
 
 /*!
+ * Translate a page returned by kernel to internal PMA page offset.
+ * @return NV_OK if the translation is successful.
+ *         NV_ERR_INVALID_STATE if the address is out of bound of PMA region
+ */
+static NV_STATUS
+_pmaTranslateKernelPage
+(
+    PMA   *pPma,
+    NvU64  sysPhysAddr,
+    NvU64  pageSize,
+    NvU64 *pGpaPhysAddr
+)
+{
+    NV_ASSERT_OR_RETURN(pGpaPhysAddr != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Check returned page against online region
+    if ((sysPhysAddr < pPma->coherentCpuFbBase) ||
+        ((sysPhysAddr + pageSize) > (pPma->coherentCpuFbBase + pPma->coherentCpuFbSize)))
+    {
+        return NV_ERR_INVALID_STATE;
+    }
+
+    *pGpaPhysAddr = sysPhysAddr - pPma->coherentCpuFbBase;
+
+    // Check returned page against internal PMA structures
+    return pmaCheckRangeAgainstRegionDesc(pPma, *pGpaPhysAddr, pageSize);
+}
+
+/*!
  * @brief  Allocate contiguous memory for Numa
  *
  */
@@ -209,8 +238,15 @@ NV_STATUS _pmaNumaAllocateRange
         // Skip the first page as it is refcounted at allocation.
         osAllocAcquirePage(sysPhysAddr + (1 << osPageShift), (actualSize >> osPageShift) - 1);
 
-        gpaPhysAddr = sysPhysAddr - pPma->coherentCpuFbBase;
-        NV_ASSERT(gpaPhysAddr < pPma->coherentCpuFbBase);
+        // GPA needs to be acquired by shifting by the ATS aperture base address
+        status = _pmaTranslateKernelPage(pPma, sysPhysAddr, actualSize, &gpaPhysAddr);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Alloc from OS invalid for sysPhysAddr = 0x%llx actualSize = 0x%llx!\n",
+                                   sysPhysAddr, actualSize);
+            goto exit;
+        }
+
         *allocatedCount = 1;
 
         if (bScrubOnAlloc)
@@ -246,6 +282,7 @@ scrub_exit:
         goto allocated;
     }
 
+exit:
     portSyncSpinlockAcquire(pPma->pPmaLock);
 
     NV_PRINTF(LEVEL_INFO, "Allocate from OS failed for allocation size = %lld!\n",
@@ -350,14 +387,19 @@ static NV_STATUS _pmaNumaAllocatePages
         status = osAllocPagesNode((int)numaNodeId, (NvLength) pageSize, flags, &sysPhysAddr);
         if (status != NV_OK)
         {
-            NV_PRINTF(LEVEL_INFO, "Alloc from OS failed for i= %lld allocationCount = %lld pageSize = %lld!\n",
+            NV_PRINTF(LEVEL_ERROR, "Alloc from OS failed for i= %lld allocationCount = %lld pageSize = %lld!\n",
                                    i, (NvU64) allocationCount, (NvU64) pageSize);
             break;
         }
 
         // GPA needs to be acquired by shifting by the ATS aperture base address
-        NV_ASSERT(sysPhysAddr >= pPma->coherentCpuFbBase);
-        pPages[i] = sysPhysAddr - pPma->coherentCpuFbBase;
+        status = _pmaTranslateKernelPage(pPma, sysPhysAddr, pageSize, &pPages[i]);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Alloc from OS invalid for i= %lld allocationCount = %lld pageSize = %lld!\n",
+                                   i, (NvU64) allocationCount, (NvU64) pageSize);
+            break;
+        }
 
         // Skip the first page as it is refcounted at allocation.
         osAllocAcquirePage(sysPhysAddr + (1 << osPageShift), (pageSize >> osPageShift) - 1);
@@ -507,7 +549,8 @@ NV_STATUS pmaNumaAllocate
 
     if (contigFlag)
     {
-        if (((NvU64)allocationCount) * ((NvU64) pageSize) > NV_U32_MAX)
+        NvU64 contigTotal;
+        if (!portSafeMulU64(allocationCount, pageSize, &contigTotal) || contigTotal > NV_U32_MAX)
         {
             NV_PRINTF(LEVEL_FATAL, "Cannot allocate more than 4GB contiguous memory in one call.\n");
             return NV_ERR_INVALID_ARGUMENT;

@@ -1467,44 +1467,6 @@ typedef struct NV2080_CTRL_BUS_SYSMEM_ACCESS_PARAMS {
     NvBool bDisable;
 } NV2080_CTRL_BUS_SYSMEM_ACCESS_PARAMS;
 
-/*
- * NV2080_CTRL_CMD_BUS_GET_C2C_ERR_INFO
- *
- * This command returns the C2C error info for a C2C links.
- *
- * errCnts[OUT]
- *  Array of structure that contains the error counts for
- *  number of times one of C2C fatal error interrupt has happened.
- *  The array size should be NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_NUM_C2C_INSTANCES
- *  * NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_C2C_LINKS_PER_INSTANCE.
- *
- *  nrCrcErrIntr[OUT]
- *   Number of times CRC error interrupt triggered.
- *  nrReplayErrIntr[OUT]
- *   Number of times REPLAY error interrupt triggered.
- *  nrReplayB2bErrIntr[OUT]
- *   Number of times REPLAY_B2B error interrupt triggered.
- *
- * Possible status values returned are:
- *  NV_OK
- *  NV_ERR_INVALID_STATE
- *  NV_ERR_NOT_SUPPORTED
- */
-
-#define NV2080_CTRL_CMD_BUS_GET_C2C_ERR_INFO                        (0x2080182d) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BUS_INTERFACE_ID << 8) | NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS_MESSAGE_ID" */
-
-#define NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_NUM_C2C_INSTANCES      2
-#define NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_C2C_LINKS_PER_INSTANCE 5
-
-#define NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS_MESSAGE_ID (0x2DU)
-
-typedef struct NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS {
-    struct {
-        NvU32 nrCrcErrIntr;
-        NvU32 nrReplayErrIntr;
-        NvU32 nrReplayB2bErrIntr;
-    } errCnts[NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_NUM_C2C_INSTANCES * NV2080_CTRL_BUS_GET_C2C_ERR_INFO_MAX_C2C_LINKS_PER_INSTANCE];
-} NV2080_CTRL_BUS_GET_C2C_ERR_INFO_PARAMS;
 
 
 /*

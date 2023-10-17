@@ -1613,8 +1613,7 @@ gvaspaceAlloc_IMPL
 
             // Invalidate TLB to apply new sparse state.
             kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY  |
-                                            BUS_FLUSH_SYSTEM_MEMORY |
-                                            BUS_FLUSH_USE_PCIE_READ);
+                                            BUS_FLUSH_SYSTEM_MEMORY);
             gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_UPGRADE);
         }
         FOR_EACH_GPU_IN_MASK_UC_END
@@ -1641,8 +1640,7 @@ gvaspaceAlloc_IMPL
                 gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
                 // Invalidate TLB to apply new sparse state.
                 kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY  |
-                                         BUS_FLUSH_SYSTEM_MEMORY |
-                                         BUS_FLUSH_USE_PCIE_READ);
+                                         BUS_FLUSH_SYSTEM_MEMORY);
                 gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_UPGRADE);
             }
             FOR_EACH_GPU_IN_MASK_UC_END
@@ -1780,8 +1778,7 @@ _gvaspaceInternalFree
         {
             KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
             kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY  |
-                                            BUS_FLUSH_SYSTEM_MEMORY |
-                                            BUS_FLUSH_USE_PCIE_READ);
+                                            BUS_FLUSH_SYSTEM_MEMORY);
         }
         FOR_EACH_GPU_IN_MASK_UC_END
     }
@@ -1836,8 +1833,7 @@ _gvaspaceInternalFree
         {
             KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
             kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_VIDEO_MEMORY  |
-                                            BUS_FLUSH_SYSTEM_MEMORY |
-                                            BUS_FLUSH_USE_PCIE_READ);
+                                            BUS_FLUSH_SYSTEM_MEMORY);
             gvaspaceInvalidateTlb(pGVAS, pGpu, PTE_DOWNGRADE);
         }
         FOR_EACH_GPU_IN_MASK_UC_END
@@ -3403,7 +3399,7 @@ gvaspaceResize_IMPL
     }
     else
     {
-        vaLimitNew = pParams->vaSpaceSize - 1;
+        vaLimitNew = pVAS->vasStart + pParams->vaSpaceSize - 1;
     }
 
     // Abort early if not changing the size.
@@ -4026,6 +4022,7 @@ gvaspaceGetPageLevelInfo_IMPL
                 NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
         }
 
+        pParams->levels[level].entryIndex = mmuFmtVirtAddrToEntryIndex(pLevelFmt, pParams->virtAddress);
         pLevelFmt = mmuFmtGetNextLevel(pLevelFmt, pTargetFmt);
     }
 
@@ -4233,9 +4230,12 @@ vaspaceapiCtrlCmdVaspaceGetPageLevelInfo_IMPL
     OBJGVASPACE *pGVAS = NULL;
     OBJGPU      *pGpu  = NULL;
 
+    NV_ASSERT_OR_RETURN(pPageLevelInfoParams->flags <=
+                NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_FLAG_BAR1, NV_ERR_INVALID_ARGUMENT);
+
     NV_ASSERT_OK_OR_RETURN(
-        _gvaspaceControl_Prolog(pVaspaceApi, pPageLevelInfoParams->hSubDevice,
-                                pPageLevelInfoParams->subDeviceId, &pGVAS, &pGpu));
+            _gvaspaceControl_Prolog(pVaspaceApi, pPageLevelInfoParams->hSubDevice,
+                                    pPageLevelInfoParams->subDeviceId, &pGVAS, &pGpu));
 
     if (NULL == pGVAS->pGpuStates)
     {
@@ -4260,6 +4260,21 @@ vaspaceapiCtrlCmdVaspaceGetPageLevelInfo_IMPL
                               status);
             return status;
         }
+    }
+
+    if (pPageLevelInfoParams->flags & NV90F1_CTRL_VASPACE_GET_PAGE_LEVEL_INFO_FLAG_BAR1)
+    {
+        KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+        RsCpuMapping *pCpuMapping = NULL;
+        NvU64 offset;
+        // switch the vaspace API pointer to bar1 ptr
+        pGVAS = dynamicCast(kbusGetBar1VASpace_HAL(pGpu, pKernelBus), OBJGVASPACE);
+        NV_ASSERT_OR_RETURN(pGVAS != NULL, NV_ERR_INVALID_ARGUMENT);
+        pCpuMapping = CliFindMappingInClient(RES_GET_CLIENT_HANDLE(pVaspaceApi),
+                                             RES_GET_PARENT_HANDLE(pVaspaceApi),
+                                             (NvP64)pPageLevelInfoParams->virtAddress);
+        offset = pPageLevelInfoParams->virtAddress - (NvU64)pCpuMapping->pLinearAddress;
+        pPageLevelInfoParams->virtAddress = pCpuMapping->pPrivate->gpuAddress + offset;
     }
 
     return gvaspaceGetPageLevelInfo(pGVAS, pGpu, pPageLevelInfoParams);
@@ -4513,6 +4528,33 @@ gvaspaceCopyServerReservedPdes_IMPL
 done:
     gvaspaceWalkUserCtxRelease(pGVAS, &userCtx);
     return status;
+}
+
+NV_STATUS
+vaspaceapiCtrlCmdVaspaceGetHostRmManagedSize_IMPL
+(
+    VaSpaceApi *pVaspaceApi,
+    NV90F1_CTRL_VASPACE_GET_HOST_RM_MANAGED_SIZE_PARAMS *pVaspaceGetHostRmManagedSizeParams
+)
+{
+    OBJGVASPACE      *pGVAS   = NULL;
+    OBJGPU           *pGpu    = NULL;
+
+    NV_ASSERT_OK_OR_RETURN(
+        _gvaspaceControl_Prolog(pVaspaceApi, pVaspaceGetHostRmManagedSizeParams->hSubDevice,
+                                pVaspaceGetHostRmManagedSizeParams->subDeviceId, &pGVAS, &pGpu));
+
+    // If GSP or guest-managed VA space are enabled, then RM requires extra VA range
+    if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL_WITH_FULL_SRIOV(pGpu))
+    {
+        pVaspaceGetHostRmManagedSizeParams->requiredVaRange = VA_SIZE_FULL_SRIOV_OR_GSP;
+    }
+    else
+    {
+        pVaspaceGetHostRmManagedSizeParams->requiredVaRange = 0;
+    }
+
+    return NV_OK;
 }
 
 /********************Local routines used in this file alone*******************/
@@ -5156,7 +5198,7 @@ gvaspaceReserveMempool_IMPL
 (
     OBJGVASPACE *pGVAS,
     OBJGPU      *pGpu,
-    NvHandle     hClient,
+    Device      *pDevice,
     NvU64        size,
     NvU64        pageSizeLockMask,
     NvU32        flags
@@ -5209,7 +5251,7 @@ gvaspaceReserveMempool_IMPL
                          kgmmuGetSizeOfPageTables(pGpu, pKernelGmmu, pFmt, 0, size - 1,
                                                   pageSizeLockMask);
 
-        NV_ASSERT_OK_OR_RETURN(memmgrPageLevelPoolsGetInfo(pGpu, pMemoryManager, hClient, &pMemPool));
+        NV_ASSERT_OK_OR_RETURN(memmgrPageLevelPoolsGetInfo(pGpu, pMemoryManager, pDevice, &pMemPool));
         status = rmMemPoolReserve(pMemPool, poolSize, pGVAS->flags);
         if ((pGVAS->flags & VASPACE_FLAGS_RETRY_PTE_ALLOC_IN_SYS) &&
             (status == NV_ERR_NO_MEMORY))

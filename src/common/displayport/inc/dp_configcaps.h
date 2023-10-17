@@ -454,6 +454,10 @@ namespace DisplayPort
         virtual bool             getLinkStatusChanged() = 0;
         virtual void             clearLinkStatusChanged() = 0;
 
+        virtual bool             isPanelReplayErrorSet() = 0;
+        virtual void             clearPanelReplayError() = 0;
+        virtual void             readPanelReplayError() = 0;
+
         virtual bool             getHdmiLinkStatusChanged() = 0;
         virtual void             clearHdmiLinkStatusChanged() = 0;
 
@@ -523,6 +527,8 @@ namespace DisplayPort
         virtual bool readPsrErrorStatus(vesaPsrErrorStatus *psrErr) = 0;
         virtual bool writePsrEvtIndicator(vesaPsrEventIndicator psrErr) = 0;
         virtual bool readPsrEvtIndicator(vesaPsrEventIndicator *psrErr) = 0;
+        virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo) = 0;
+
         virtual ~DPCDHAL() {}
 
     };

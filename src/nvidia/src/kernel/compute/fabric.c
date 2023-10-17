@@ -260,14 +260,17 @@ fabricConstruct_IMPL
 {
     NV_STATUS status = NV_OK;
 
-    pFabric->pMulticastFabricOpsMutex = portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
+    pFabric->pMulticastFabricOpsMutex =
+        portSyncMutexCreate(portMemAllocatorGetGlobalNonPaged());
+
     if (pFabric->pMulticastFabricOpsMutex == NULL)
     {
         status = NV_ERR_NO_MEMORY;
         goto fail;
     }
 
-    multimapInit(&pFabric->fabricMulticastCache, portMemAllocatorGetGlobalNonPaged());
+    multimapInit(&pFabric->fabricMulticastCache,
+        portMemAllocatorGetGlobalNonPaged());
 
     return NV_OK;
 
@@ -293,32 +296,6 @@ fabricDestruct_IMPL
 
 }
 
-NV_STATUS
-fabricInitInbandMsgHdr
-(
-    nvlink_inband_msg_header_t *pMsgHdr,
-    NvU32 type,
-    NvU32 len
-)
-{
-    NV_STATUS status;
-
-    portMemSet(pMsgHdr, 0, sizeof(*pMsgHdr));
-
-    status = osGetRandomBytes((NvU8 *)&pMsgHdr->requestId,
-                              sizeof(pMsgHdr->requestId));
-    if (status != NV_OK)
-    {
-        return status;
-    }
-
-    pMsgHdr->magicId = NVLINK_INBAND_MSG_MAGIC_ID_FM;
-    pMsgHdr->type = type;
-    pMsgHdr->length = len;
-
-    return NV_OK;
-}
-
 void
 fabricMulticastWaitOnTeamCleanupCallback
 (
@@ -332,7 +309,7 @@ fabricMulticastWaitOnTeamCleanupCallback
     fabricMulticastFabricOpsMutexAcquire(pFabric);
 
     pWq = (OS_WAIT_QUEUE *)fabricMulticastCleanupCacheGetUnderLock_IMPL(pFabric,
-                                                                        inbandReqId);
+                                                                inbandReqId);
     fabricMulticastFabricOpsMutexRelease(pFabric);
 
     if (pWq == NULL)

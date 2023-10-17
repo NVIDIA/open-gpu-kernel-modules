@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -110,7 +110,8 @@ kmemsysInitFlushSysmemBuffer_GA100
         if (status != NV_OK)
             return status;
 
-        status = memdescAlloc(pKernelMemorySystem->pSysmemFlushBufferMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_139, 
+                        pKernelMemorySystem->pSysmemFlushBufferMemDesc);
 
         if (status != NV_OK)
         {

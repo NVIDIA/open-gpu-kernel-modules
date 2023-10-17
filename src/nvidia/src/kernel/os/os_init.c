@@ -100,21 +100,12 @@ static void
 initCommonMiscOSFunctionPointers(OBJOS *pOS)
 {
     // Common OS function pointers.
-    pOS->osGetSimulationMode             = osGetSimulationMode;
 }
 
 static void
 initStubMiscOSFunctionPointers(OBJOS *pOS)
 {
     // Stubbed OS function pointers.
-    pOS->osSimEscapeWrite               = stubOsSimEscapeWrite;
-    pOS->osSimEscapeWriteBuffer         = stubOsSimEscapeWriteBuffer;
-    pOS->osSimEscapeRead                = stubOsSimEscapeRead;
-    pOS->osSimEscapeReadBuffer          = stubOsSimEscapeReadBuffer;
-
-    pOS->osCheckCallback                = stubOsCheckCallback;
-    pOS->osRCCallback                   = stubOsRCCallback;
-
     pOS->osPageArrayGetPhysAddr         = stubOsPageArrayGetPhysAddr;
 
     pOS->osInternalReserveAllocCallback = stubOsInternalReserveAllocCallback;
@@ -124,17 +115,6 @@ initStubMiscOSFunctionPointers(OBJOS *pOS)
 static void
 initWinNTStubOSFunctionPointers(OBJOS *pOS)
 {
-    pOS->osQADbgRegistryInit         = stubOsQADbgRegistryInit;
-    pOS->osQueueWorkItem             = stubOsQueueWorkItem;
-    pOS->osQueueWorkItemWithFlags    = stubOsQueueWorkItemWithFlags;
-    pOS->osQueueSystemWorkItem       = stubOsQueueSystemWorkItem;
-    pOS->osCallACPI_NVHG_GPUSTA      = stubOsCallWMI_NVHG_GPUSTA;
-    pOS->osCallACPI_NVHG_MXDS        = stubOsCallWMI_NVHG_MXDS;
-    pOS->osCallACPI_NVHG_MXMX        = stubOsCallWMI_NVHG_MXMX;
-    pOS->osCallACPI_NVHG_DOS         = stubOsCallWMI_NVHG_DOS;
-    pOS->osCallACPI_NVHG_DCS         = stubOsCallWMI_NVHG_DCS;
-    pOS->osSetupVBlank               = stubOsSetupVBlank;
-    pOS->osGetUefiVariable           = stubOsGetUefiVariable;
 }
 
 static void
@@ -145,8 +125,6 @@ initMacOSCoreOSFunctionPointers(OBJOS *pOS)
     pOS->osNv_cpuid                      = stubOsnv_cpuid;
     pOS->osNv_rdmsr                      = stubOsnv_rdmsr;
     pOS->osNv_wrmsr                      = stubOsnv_wrmsr;
-    pOS->osRobustChannelsDefaultState    = stubOsRobustChannelsDefaultState;
-    pOS->osGetUefiVariable               = stubOsGetUefiVariable;
 }
 
 static void

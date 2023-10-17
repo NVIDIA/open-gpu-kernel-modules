@@ -112,7 +112,7 @@ enum
  */
 LibosStatus LibosDebugResolverConstruct(LibosDebugResolver *pThis, LibosElfImage * image)
 {
-   
+
     LibosElf64SectionHeader * debugLine = LibosElfFindSectionByName(image, ".debug_line");
     if (!debugLine || LibosOk != LibosElfMapSection(image, debugLine, &pThis->debugLineStart, &pThis->debugLineEnd))
         pThis->debugLineStart = pThis->debugLineEnd = 0;
@@ -855,7 +855,7 @@ static void dwarfBuildARangeTable(LibosDebugResolver *pThis)
                         // Table has been allocated -- fill it in.
                         DwarfARangeTuple *pEntry = &pThis->arangeTable[nARangeEntries];
                         pEntry->address      = combAddress;
-                        pEntry->length       = combLength;
+                        pEntry->length       = (NvU32)combLength;
                         pEntry->arangeUnit   = nUnit;
                     }
                     nARangeEntries++;
@@ -919,6 +919,6 @@ static void dwarfSetARangeTableLineUnit(LibosDebugResolver *pThis, DwarfStream u
     for (; foundUnit == pThis->arangeTable[i].arangeUnit; i++)
     {
         pThis->arangeTable[i].lineUnitBuffer = unit.buffer;
-        pThis->arangeTable[i].lineUnitSize   = unit.size;
+        pThis->arangeTable[i].lineUnitSize   = (NvU32)unit.size;
     }
 }

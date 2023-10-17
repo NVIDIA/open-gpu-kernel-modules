@@ -376,4 +376,5 @@ NV_STATUS rmresConstruct_IMPL(struct RmResource *arg_pResource, struct CALL_CONT
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_RESOURCE_NVOC_H_

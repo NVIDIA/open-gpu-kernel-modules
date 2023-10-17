@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -76,28 +76,6 @@ typedef struct nv_work_item_s
 #define NV_WORK_ITEM_FLAGS_NONE             0x0
 #define NV_WORK_ITEM_FLAGS_REQUIRES_GPU     0x1
 #define NV_WORK_ITEM_FLAGS_DONT_FREE_DATA   0x2
-
-/*
- * pseudo-registry data structure
- */
-
-typedef enum
-{
-    NV_REGISTRY_ENTRY_TYPE_UNKNOWN = 0,
-    NV_REGISTRY_ENTRY_TYPE_DWORD,
-    NV_REGISTRY_ENTRY_TYPE_BINARY,
-    NV_REGISTRY_ENTRY_TYPE_STRING
-} nv_reg_type_t;
-
-typedef struct nv_reg_entry_s
-{
-    char *regParmStr;
-    NvU32 type;
-    NvU32 data;   // used when type == NV_REGISTRY_ENTRY_TYPE_DWORD
-    NvU8 *pdata;  // used when type == NV_REGISTRY_ENTRY_TYPE_{BINARY,STRING}
-    NvU32 len;    // used when type == NV_REGISTRY_ENTRY_TYPE_{BINARY,STRING}
-    struct nv_reg_entry_s *next;
-} nv_reg_entry_t;
 
 #define INVALID_DISP_ID 0xFFFFFFFF
 #define MAX_DISP_ID_PER_ADAPTER 0x2

@@ -1114,6 +1114,7 @@ typedef struct
     NvlStatus              status;
     nvlink_link_state      endStates[NVLINK_MAX_DEVICE_CONN];
     NvU32                  endStatesCount;
+    NvU64                  time;
 } nvlink_get_device_link_states;
 
 /* 

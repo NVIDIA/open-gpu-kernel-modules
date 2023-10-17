@@ -141,11 +141,10 @@ typedef struct
     char lineBuffer[LIBOS_LOG_LINE_BUFFER_SIZE];
     NvBool bSynchronousBuffer;
     NvBool bPtrSymbolResolve;
+    NvU8 lineLogLevel;
 
-    // Attempt to decode %s format arguments
-    // This requires all %s libos log arguments to be present in the logging elf, otherwise
-    // garbage output may be produced.
-    NvBool bDecodeStrFmt;
+    // Fall back to SHDR when a PDHR with %s argument is not found.
+    NvBool bDecodeStrShdr;
 #endif // LIBOS_LOG_DECODE_ENABLE
 
 #if defined(NVSYM_STANDALONE) && !defined(PROTODMP_BUILD)

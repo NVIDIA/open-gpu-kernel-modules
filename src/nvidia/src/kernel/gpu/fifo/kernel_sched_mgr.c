@@ -102,7 +102,7 @@ kschedmgrConstructPolicy_IMPL
 
         portDbgPrintf("NVRM: GPU at %04x:%02x:%02x.0 has software scheduler %s with policy %s.\n",
                       domain, bus, device,
-                      pKernelSchedMgr->bIsSchedSwEnabled ? "ENABLED" : "DISABLED",
+                      pKernelSchedMgr->bIsSchedSwEnabled ? MAKE_NV_PRINTF_STR("ENABLED") : MAKE_NV_PRINTF_STR("DISABLED"),
                       schedPolicyName);
     }
     else
@@ -111,7 +111,7 @@ kschedmgrConstructPolicy_IMPL
         NV_PRINTF(LEVEL_INFO,
                   "GPU at %04x:%02x:%02x.0 has software scheduler %s with policy %s.\n",
                   domain, bus, device,
-                  pKernelSchedMgr->bIsSchedSwEnabled ? "ENABLED" : "DISABLED",
+                  pKernelSchedMgr->bIsSchedSwEnabled ? MAKE_NV_PRINTF_STR("ENABLED") : MAKE_NV_PRINTF_STR("DISABLED"),
                   schedPolicyName);
     }
 

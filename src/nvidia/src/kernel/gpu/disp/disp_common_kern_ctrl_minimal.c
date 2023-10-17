@@ -37,6 +37,7 @@
 #include "gpu/disp/disp_objs.h"
 #include "rmapi/rs_utils.h"
 #include "rmapi/rmapi.h"
+#include "gpu/disp/head/kernel_head.h"
 
 NV_STATUS
 dispcmnCtrlCmdSystemGetHotplugUnplugState_IMPL
@@ -217,7 +218,7 @@ NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_IMPL
     NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams
 )
 {
-    POBJGPU   pGpu   = DISPAPI_GET_GPU(pDispCommon);
+    OBJGPU   *pGpu   = DISPAPI_GET_GPU(pDispCommon);
     NvHandle  hClient = RES_GET_CLIENT_HANDLE(pDispCommon);
     NvHandle  hParent = RES_GET_PARENT_HANDLE(pDispCommon);
     RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(DISPAPI_GET_GPU(pDispCommon));
@@ -263,4 +264,28 @@ NV_STATUS dispcmnCtrlCmdVRRSetRgLineActive_IMPL
     }
 
     return status;
+}
+
+NV_STATUS
+dispcmnCtrlCmdSystemGetVblankCounter_IMPL
+(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_SYSTEM_GET_VBLANK_COUNTER_PARAMS *pVBCounterParams
+)
+{
+    OBJGPU        *pGpu = DISPAPI_GET_GPU(pDispCommon);
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+    KernelHead    *pKernelHead;
+
+    pKernelHead = KDISP_GET_HEAD(pKernelDisplay, pVBCounterParams->head);
+
+    if (pKernelHead == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "invalid head number!\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pVBCounterParams->verticalBlankCounter = kheadGetLoadVCounter_HAL(pGpu, pKernelHead);
+
+    return NV_OK;
 }

@@ -48,6 +48,10 @@
 #define DRM_NVIDIA_GET_CONNECTOR_ID_FOR_DPY_ID      0x11
 #define DRM_NVIDIA_GRANT_PERMISSIONS                0x12
 #define DRM_NVIDIA_REVOKE_PERMISSIONS               0x13
+#define DRM_NVIDIA_SEMSURF_FENCE_CTX_CREATE         0x14
+#define DRM_NVIDIA_SEMSURF_FENCE_CREATE             0x15
+#define DRM_NVIDIA_SEMSURF_FENCE_WAIT               0x16
+#define DRM_NVIDIA_SEMSURF_FENCE_ATTACH             0x17
 
 #define DRM_IOCTL_NVIDIA_GEM_IMPORT_NVKMS_MEMORY                           \
     DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_GEM_IMPORT_NVKMS_MEMORY),      \
@@ -133,6 +137,26 @@
     DRM_IOWR((DRM_COMMAND_BASE + DRM_NVIDIA_REVOKE_PERMISSIONS),        \
              struct drm_nvidia_revoke_permissions_params)
 
+#define DRM_IOCTL_NVIDIA_SEMSURF_FENCE_CTX_CREATE                       \
+    DRM_IOWR((DRM_COMMAND_BASE +                                        \
+              DRM_NVIDIA_SEMSURF_FENCE_CTX_CREATE),                     \
+              struct drm_nvidia_semsurf_fence_ctx_create_params)
+
+#define DRM_IOCTL_NVIDIA_SEMSURF_FENCE_CREATE                           \
+    DRM_IOWR((DRM_COMMAND_BASE +                                        \
+              DRM_NVIDIA_SEMSURF_FENCE_CREATE),                         \
+              struct drm_nvidia_semsurf_fence_create_params)
+
+#define DRM_IOCTL_NVIDIA_SEMSURF_FENCE_WAIT                             \
+    DRM_IOW((DRM_COMMAND_BASE +                                         \
+              DRM_NVIDIA_SEMSURF_FENCE_WAIT),                           \
+              struct drm_nvidia_semsurf_fence_wait_params)
+
+#define DRM_IOCTL_NVIDIA_SEMSURF_FENCE_ATTACH                           \
+    DRM_IOW((DRM_COMMAND_BASE +                                         \
+              DRM_NVIDIA_SEMSURF_FENCE_ATTACH),                         \
+              struct drm_nvidia_semsurf_fence_attach_params)
+
 struct drm_nvidia_gem_import_nvkms_memory_params {
     uint64_t mem_size;           /* IN */
 
@@ -158,6 +182,8 @@ struct drm_nvidia_get_dev_info_params {
     uint32_t generic_page_kind;    /* OUT */
     uint32_t page_kind_generation; /* OUT */
     uint32_t sector_layout;        /* OUT */
+    uint32_t supports_sync_fd;     /* OUT */
+    uint32_t supports_semsurf;     /* OUT */
 };
 
 struct drm_nvidia_prime_fence_context_create_params {
@@ -179,6 +205,7 @@ struct drm_nvidia_gem_prime_fence_attach_params {
     uint32_t handle;                /* IN GEM handle to attach fence to */
     uint32_t fence_context_handle;  /* IN GEM handle to fence context on which fence is run on */
     uint32_t sem_thresh;            /* IN Semaphore value to reach before signal */
+    uint32_t __pad;
 };
 
 struct drm_nvidia_get_client_capability_params {
@@ -190,6 +217,8 @@ struct drm_nvidia_get_client_capability_params {
 struct drm_nvidia_crtc_crc32 {
     uint32_t value; /* Read value, undefined if supported is false */
     uint8_t supported; /* Supported boolean, true if readable by hardware */
+    uint8_t __pad0;
+    uint16_t __pad1;
 };
 
 struct drm_nvidia_crtc_crc32_v2_out {
@@ -229,10 +258,11 @@ struct drm_nvidia_gem_alloc_nvkms_memory_params {
     uint32_t handle;              /* OUT */
     uint8_t  block_linear;        /* IN */
     uint8_t  compressible;        /* IN/OUT */
-    uint16_t __pad;
+    uint16_t __pad0;
 
     uint64_t memory_size;         /* IN */
     uint32_t flags;               /* IN */
+    uint32_t __pad1;
 };
 
 struct drm_nvidia_gem_export_dmabuf_memory_params {
@@ -266,13 +296,90 @@ struct drm_nvidia_get_connector_id_for_dpy_id_params {
     uint32_t connectorId; /* OUT */
 };
 
+enum drm_nvidia_permissions_type {
+    NV_DRM_PERMISSIONS_TYPE_MODESET = 2,
+    NV_DRM_PERMISSIONS_TYPE_SUB_OWNER = 3
+};
+
 struct drm_nvidia_grant_permissions_params {
     int32_t fd;           /* IN */
     uint32_t dpyId;       /* IN */
+    uint32_t type;        /* IN */
 };
 
 struct drm_nvidia_revoke_permissions_params {
     uint32_t dpyId;       /* IN */
+    uint32_t type;        /* IN */
+};
+
+struct drm_nvidia_semsurf_fence_ctx_create_params {
+    uint64_t index;             /* IN Index of the desired semaphore in the
+                                 * fence context's semaphore surface */
+
+    /* Params for importing userspace semaphore surface */
+    uint64_t nvkms_params_ptr;  /* IN */
+    uint64_t nvkms_params_size; /* IN */
+
+    uint32_t handle;            /* OUT GEM handle to fence context */
+    uint32_t __pad;
+};
+
+struct drm_nvidia_semsurf_fence_create_params {
+    uint32_t fence_context_handle;  /* IN GEM handle to fence context on which
+                                     * fence is run on */
+
+    uint32_t timeout_value_ms;      /* IN Timeout value in ms for the fence
+                                     * after which the fence will be signaled
+                                     * with its error status set to -ETIMEDOUT.
+                                     * Default timeout value is 5000ms */
+
+    uint64_t wait_value;            /* IN Semaphore value to reach before signal */
+
+    int32_t  fd;                    /* OUT sync FD object representing the
+                                     * semaphore at the specified index reaching
+                                     * a value >= wait_value */
+    uint32_t __pad;
+};
+
+/*
+ * Note there is no provision for timeouts in this ioctl. The kernel
+ * documentation asserts timeouts should be handled by fence producers, and
+ * that waiters should not second-guess their logic, as it is producers rather
+ * than consumers that have better information when it comes to determining a
+ * reasonable timeout for a given workload.
+ */
+struct drm_nvidia_semsurf_fence_wait_params {
+    uint32_t fence_context_handle;  /* IN GEM handle to fence context which will
+                                     * be used to wait on the sync FD.  Need not
+                                     * be the fence context used to create the
+                                     * sync FD. */
+
+    int32_t  fd;                    /* IN sync FD object to wait on */
+
+    uint64_t pre_wait_value;        /* IN Wait for the semaphore represented by
+                                     * fence_context to reach this value before
+                                     * waiting for the sync file. */
+
+    uint64_t post_wait_value;       /* IN Signal the semaphore represented by
+                                     * fence_context to this value after waiting
+                                     * for the sync file */
+};
+
+struct drm_nvidia_semsurf_fence_attach_params {
+    uint32_t handle;                /* IN GEM handle of buffer */
+
+    uint32_t fence_context_handle;  /* IN GEM handle of fence context */
+
+    uint32_t timeout_value_ms;      /* IN Timeout value in ms for the fence
+                                     * after which the fence will be signaled
+                                     * with its error status set to -ETIMEDOUT.
+                                     * Default timeout value is 5000ms */
+
+    uint32_t shared;                /* IN If true, fence will reserve shared
+                                     * access to the buffer, otherwise it will
+                                     * reserve exclusive access */
+
+    uint64_t wait_value;            /* IN Semaphore value to reach before signal */
 };
 
 #endif /* _UAPI_NVIDIA_DRM_IOCTL_H_ */

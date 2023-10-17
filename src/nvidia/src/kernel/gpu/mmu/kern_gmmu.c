@@ -219,9 +219,6 @@ _kgmmuCreateGlobalVASpace
 
     // Allow PTE in SYS
     constructFlags |= VASPACE_FLAGS_RETRY_PTE_ALLOC_IN_SYS;
-
-    constructFlags |= VASPACE_FLAGS_DEFAULT_PARAMS;
-    constructFlags |= VASPACE_FLAGS_DEFAULT_SIZE;
     constructFlags |= DRF_DEF(_VASPACE, _FLAGS, _BIG_PAGE_SIZE, _DEFAULT);
 
     pGpuGrp = gpumgrGetGpuGrpFromGpu(pGpu);
@@ -1089,7 +1086,8 @@ kgmmuFaultBufferAlloc_IMPL
         return status;
     }
 
-    status = memdescAlloc(pMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_31, 
+                    pMemDesc);
     if (status != NV_OK)
     {
         memdescDestroy(pMemDesc);
@@ -1417,7 +1415,8 @@ _kgmmuClientShadowFaultBufferQueueAllocate
         return status;
     }
 
-    status = memdescAlloc(pQueueMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_32, 
+                    pQueueMemDesc);
     if (status != NV_OK)
     {
         memdescDestroy(pQueueMemDesc);
@@ -1514,7 +1513,8 @@ _kgmmuClientShadowFaultBufferPagesAllocate
         return status;
     }
 
-    status = memdescAlloc(pMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_33, 
+                    pMemDesc);
     if (status != NV_OK)
     {
         memdescDestroy(pMemDesc);
@@ -2059,8 +2059,7 @@ kgmmuInstBlkInit_IMPL
 
     if (!pInstBlkParams->bDeferFlush)
     {
-        kbusFlush_HAL(pGpu, pKernelBus, BUS_FLUSH_USE_PCIE_READ
-                                        | kbusGetFlushAperture(pKernelBus, memdescGetAddressSpace(pInstBlkDesc)));
+        kbusFlush_HAL(pGpu, pKernelBus, kbusGetFlushAperture(pKernelBus, memdescGetAddressSpace(pInstBlkDesc)));
     }
 
     return NV_OK;
@@ -2202,7 +2201,12 @@ kgmmuServiceInterrupt_IMPL
         }
         case MC_ENGINE_IDX_NON_REPLAYABLE_FAULT_CPU:
         {
-            osQueueMMUFaultHandler(pGpu);
+            //
+            // This interrupt vector is used to enqueue the UVM top half so any outstanding Non-Replayable
+            // faults can get processed by UVM. However, since the GSP notification mechanism is interrupt based
+            // and the top half of the RM interrupt routine will always call into UVM's top half, it is safe to NOP here
+            // knowing that UVM handling already gets invoked whenever the RM top half is executed.
+            //
             status = 0;
             break;
         }

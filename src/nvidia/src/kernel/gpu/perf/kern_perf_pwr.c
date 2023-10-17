@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -180,6 +180,9 @@ subdeviceCtrlCmdPerfSetAuxPowerState_KERNEL
     }
 
     _kperfSendPostPowerStateCallback(pGpu, pKernelPerf);
+
+    // Notify clients about Dx State event
+    gpuNotifySubDeviceEvent(pGpu, NV2080_NOTIFIERS_AUX_POWER_EVENT, NULL, 0, 0, 0);
 
     return status;
 }

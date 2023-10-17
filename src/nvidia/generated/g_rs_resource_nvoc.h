@@ -888,4 +888,5 @@ NvBool    refPendingFree(RsResourceRef *pResourceRef, struct RsClient *pClient);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_RS_RESOURCE_NVOC_H_

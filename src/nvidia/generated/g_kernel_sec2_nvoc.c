@@ -106,7 +106,7 @@ static NV_STATUS __nvoc_thunk_KernelSec2_engstateConstructEngine(struct OBJGPU *
     return ksec2ConstructEngine(pGpu, (struct KernelSec2 *)(((unsigned char *)pKernelSec2) - __nvoc_rtti_KernelSec2_OBJENGSTATE.offset), arg0);
 }
 
-static void __nvoc_thunk_KernelSec2_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelSec2, IntrServiceRecord pRecords[167]) {
+static void __nvoc_thunk_KernelSec2_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelSec2, IntrServiceRecord pRecords[168]) {
     ksec2RegisterIntrService(pGpu, (struct KernelSec2 *)(((unsigned char *)pKernelSec2) - __nvoc_rtti_KernelSec2_IntrService.offset), pRecords);
 }
 

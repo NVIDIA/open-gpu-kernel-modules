@@ -240,4 +240,5 @@ void mpsApiDestruct_IMPL(struct MpsApi *pMpsApi);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MPS_API_NVOC_H_

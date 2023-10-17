@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -171,7 +171,9 @@ egmmemConstruct_IMPL
 
     memdescSetGpuCacheAttrib(pMemDesc, gpuCacheAttrib);
 
-    NV_ASSERT_OK_OR_GOTO(rmStatus, memdescAlloc(pMemDesc), mem_construct_failed);
+    memdescTagAlloc(rmStatus, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_45, 
+                    pMemDesc);
+    NV_ASSERT_OK_OR_GOTO(rmStatus, rmStatus, mem_construct_failed);
 
     NV_ASSERT_OK_OR_GOTO(rmStatus, memConstructCommon(pMemory,
                                                       pAllocRequest->classNum,

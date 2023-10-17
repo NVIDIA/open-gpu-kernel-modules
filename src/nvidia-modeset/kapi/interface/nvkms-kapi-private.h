@@ -58,4 +58,10 @@ struct NvKmsKapiPrivExportMemoryParams {
     int memFd;
 };
 
+struct NvKmsKapiPrivImportSemaphoreSurfaceParams {
+    NvHandle hClient;
+    NvHandle hSemaphoreSurface;
+    NvU64 semaphoreSurfaceSize;
+};
+
 #endif /* !defined(__NVKMS_KAPI_PRIVATE_H__) */

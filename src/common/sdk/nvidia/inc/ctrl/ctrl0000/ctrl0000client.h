@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -178,6 +178,8 @@ typedef struct NV0000_CTRL_CLIENT_OBJECTS_ARE_DUPLICATES_PARAMS {
     NvHandle hObject2;   /* [in]  - Handle of object to be checked */
     NvBool   bDuplicates;     /* [out] - Returns true if duplicates     */
 } NV0000_CTRL_CLIENT_OBJECTS_ARE_DUPLICATES_PARAMS;
+
+
 
 /* _ctrl0000client_h_ */
 

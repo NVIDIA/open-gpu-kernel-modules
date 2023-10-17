@@ -167,4 +167,5 @@ void NVOC_PRIVATE_FUNCTION(crashcatWayfinderSetWFL0)(struct CrashCatWayfinder *a
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CRASHCAT_WAYFINDER_NVOC_H_

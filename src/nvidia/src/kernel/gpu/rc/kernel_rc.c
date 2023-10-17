@@ -203,6 +203,13 @@ _krcInitRegistryOverrides
 #endif
         }
     }
+
+    //
+    // Do RC on BAR faults by default (For bug 1842228).
+    // Only applicable to Volta+ chips.
+    //
+    pKernelRc->bRcOnBar2Fault = NV_TRUE;
+
 }
 
 

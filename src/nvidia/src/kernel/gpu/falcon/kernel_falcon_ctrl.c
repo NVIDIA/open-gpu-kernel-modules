@@ -36,7 +36,7 @@ NV_STATUS subdeviceCtrlCmdFlcnGetCtxBufferInfo_IMPL
     NV2080_CTRL_FLCN_GET_CTX_BUFFER_INFO_PARAMS *pParams
 )
 {
-    POBJGPU pGpu = GPU_RES_GET_GPU(pSubdevice);
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     PMEMORY_DESCRIPTOR pMemDesc, pRootMemDesc;
     RsClient *pUserClient;
     KernelChannel *pKernelChannel = NULL;
@@ -164,7 +164,7 @@ subdeviceCtrlCmdFlcnGetCtxBufferSize_IMPL
     NV2080_CTRL_FLCN_GET_CTX_BUFFER_SIZE_PARAMS *pParams
 )
 {
-    POBJGPU pGpu = GPU_RES_GET_GPU(pSubdevice);
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     PMEMORY_DESCRIPTOR pMemDesc;
     KernelChannel *pKernelChannel = NULL;
     NV_STATUS status = NV_OK;

@@ -255,4 +255,5 @@ NV_STATUS dispcapConstruct_IMPL(struct DispCapabilities *arg_pDispCapabilities, 
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_DISP_CAPABILITIES_NVOC_H_

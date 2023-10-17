@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -267,6 +267,7 @@ enum NvKmsIoctlCommand {
     NVKMS_IOCTL_ENABLE_VBLANK_SYNC_OBJECT,
     NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT,
     NVKMS_IOCTL_NOTIFY_VBLANK,
+    NVKMS_IOCTL_SET_FLIPLOCK_GROUP,
 };
 
 
@@ -291,8 +292,6 @@ enum NvKmsIoctlCommand {
 #define NVKMS_3DVISION_DONGLE_PARAM_BYTES                             20
 #define NVKMS_GPU_STRING_SIZE                                         80
 
-#define NVKMS_LOG2_LUT_ARRAY_SIZE                                     10
-#define NVKMS_LUT_ARRAY_SIZE                                          (1 << NVKMS_LOG2_LUT_ARRAY_SIZE)
 #define NVKMS_VRR_SEMAPHORE_SURFACE_SIZE                              1024
 
 /*
@@ -525,16 +524,6 @@ struct NvKmsMoveCursorCommonParams {
 };
 
 /*!
- * Per-component arrays of NvU16s describing the LUT; used for both the input
- * LUT and output LUT.
- */
-struct NvKmsLutRamps {
-    NvU16 red[NVKMS_LUT_ARRAY_SIZE];   /*! in */
-    NvU16 green[NVKMS_LUT_ARRAY_SIZE]; /*! in */
-    NvU16 blue[NVKMS_LUT_ARRAY_SIZE];  /*! in */
-};
-
-/*!
  * Description of the main layer LUT on a single head; this is used by any NVKMS
  * request that needs to specify the LUT.
  */
@@ -730,13 +719,12 @@ struct NvKmsFlipCommonParams {
     /*
      * Set the output transfer function.
      *
-     * If output transfer function is HDR and staticMetadata is disabled
-     * for all the layers, flip request will be rejected.
+     * If output transfer function is HDR and no staticMetadata is specified
+     * for the head or layers, flip request will be rejected.
      *
-     * If output transfer function is HDR and staticMetadata is enabled
-     * for any of the layers, HDR output will be enabled. In this case,
-     * output lut values specified during modeset will be ignored and
-     * output lut will be set with the specified HDR transfer function.
+     * If output transfer is set, output lut values specified during modeset
+     * will be ignored and output lut will be set with the specified HDR
+     * transfer function.
      *
      * If output transfer function is SDR and staticMetadata is enabled,
      * HDR content for that layer will be tonemapped to the SDR output
@@ -746,6 +734,32 @@ struct NvKmsFlipCommonParams {
         enum NvKmsOutputTf val;
         NvBool specified;
     } tf;
+
+    /*!
+     * Describe the LUT to be used with the modeset or flip.
+     */
+    struct NvKmsSetLutCommonParams lut;
+
+    struct {
+        NvBool specified;
+        /*!
+         * If TRUE, override HDR static metadata for the head, instead of
+         * calculating it from HDR layer(s). If FALSE, do not override.
+         *
+         * Note that “specified” serves to mark the field as being changed in
+         * this flip request, rather than as specified for this frame.  So to
+         * disable HDR static metadata, set hdrStaticMetadata.specified = TRUE
+         * and hdrStaticMetadata.enabled = FALSE.
+         */
+        NvBool enabled;
+        enum NvKmsInfoFrameEOTF eotf;
+        struct NvKmsHDRStaticMetadata staticMetadata;
+    } hdrInfoFrame;
+
+    struct {
+        NvBool specified;
+        enum NvKmsOutputColorimetry val;
+    } colorimetry;
 
     struct {
         struct {
@@ -910,11 +924,17 @@ struct NvKmsFlipCommonParams {
             struct NvKmsHDRStaticMetadata staticMetadata;
         } hdr;
 
+        /* Specifies whether the input color range is FULL or LIMITED. */
+        struct {
+            enum NvKmsInputColorRange val;
+            NvBool specified;
+        } colorRange;
+
         /* This field has no effect right now. */
         struct {
             enum NvKmsInputColorSpace val;
             NvBool specified;
-        } colorspace;
+        } colorSpace;
     } layer[NVKMS_MAX_LAYERS_PER_HEAD];
 };
 
@@ -1450,6 +1470,8 @@ struct NvKmsQueryDpyDynamicDataReply {
          */
         char infoString[NVKMS_EDID_INFO_STRING_LENGTH];
     } edid;
+
+    struct NvKmsSuperframeInfo superframeInfo;
 };
 
 struct NvKmsQueryDpyDynamicDataParams {
@@ -1783,11 +1805,6 @@ struct NvKmsSetModeOneHeadRequest {
     struct NvKmsSize viewPortSizeIn;
 
     /*!
-     * Describe the LUT to be used with the modeset.
-     */
-    struct NvKmsSetLutCommonParams lut;
-
-    /*!
      * Describe the surfaces to present on this head.
      */
     struct NvKmsFlipCommonParams flip;
@@ -1798,14 +1815,6 @@ struct NvKmsSetModeOneHeadRequest {
     struct NvKmsSetModeHeadSurfaceParams headSurface;
 
     NvBool viewPortOutSpecified; /*! Whether to use viewPortOut. */
-
-    /*!
-     * Allow this head to be flipLocked to any other heads, set as
-     * part of this NVKMS_IOCTL_SET_MODE, who also have allowFlipLock
-     * set.  FlipLock will only be enabled if additional criteria,
-     * such as identical modetimings, are also met.
-     */
-    NvBool allowFlipLock;
 
     /*!
      * Allow G-SYNC to be enabled on this head if it is supported by the GPU
@@ -2179,6 +2188,11 @@ struct NvKmsFlipReply {
      * displays.
      */
     enum NvKmsVrrFlipType vrrFlipType;
+
+    /*!
+     * Indicates either success or the reason the flip request failed.
+     */
+    enum NvKmsFlipResult flipResult;
 
     /*!
      * Entries correspond to the heads specified in
@@ -3181,6 +3195,11 @@ struct NvKmsSetLayerPositionParams {
  *
  * Releasing modeset ownership enables console hotplug handling. See the
  * explanation in the comment for enableConsoleHotplugHandling above.
+ *
+ * If modeset ownership is held by nvidia-drm, then NVKMS_IOCTL_GRAB_OWNERSHIP
+ * will fail. Clients should open the corresponding DRM device node, acquire
+ * 'master' on it, and then use DRM_NVIDIA_GRANT_PERMISSIONS with permission
+ * type NV_DRM_PERMISSIONS_TYPE_SUB_OWNER to acquire sub-owner permission.
  */
 
 struct NvKmsGrabOwnershipRequest {
@@ -3219,8 +3238,9 @@ struct NvKmsReleaseOwnershipParams {
  * successfully called NVKMS_IOCTL_GRAB_OWNERSHIP) is allowed to flip
  * or set modes.
  *
- * However, the modeset owner can grant various permissions to other
- * clients through the following steps:
+ * However, the modeset owner or another NVKMS client with
+ * NV_KMS_PERMISSIONS_TYPE_SUB_OWNER permission can grant various
+ * permissions to other clients through the following steps:
  *
  * - The modeset owner should open /dev/nvidia-modeset, and call
  *   NVKMS_IOCTL_GRANT_PERMISSIONS to define a set of permissions
@@ -3248,6 +3268,8 @@ struct NvKmsReleaseOwnershipParams {
  * - The modeset owner can optionally revoke any previously granted
  *   permissions with NVKMS_IOCTL_REVOKE_PERMISSIONS. This can be 
  *   device-scope for all of a type, or just a set of permissions.
+ *   Note that _REVOKE_PERMISSIONS to revoke a set of modeset permissions
+ *   will cause the revoked heads to be shut down.
  *
  * Notes:
  *
@@ -3269,6 +3291,7 @@ struct NvKmsReleaseOwnershipParams {
 enum NvKmsPermissionsType {
     NV_KMS_PERMISSIONS_TYPE_FLIPPING = 1,
     NV_KMS_PERMISSIONS_TYPE_MODESET = 2,
+    NV_KMS_PERMISSIONS_TYPE_SUB_OWNER = 3,
 };
 
 struct NvKmsFlipPermissions {
@@ -4014,6 +4037,46 @@ struct NvKmsNotifyVblankReply {
 struct NvKmsNotifyVblankParams {
     struct NvKmsNotifyVblankRequest request; /*! in */
     struct NvKmsNotifyVblankReply reply;     /*! out */
+};
+
+/*!
+ * NVKMS_IOCTL_SET_FLIPLOCK_GROUP:
+ *
+ * This ioctl specifies a set of active heads on which fliplock is allowed.
+ * The heads can span devices.
+ * The requested state for this group will be maintained until:
+ * a) A subsequent SetFlipLockGroup ioctl that specifies any of the heads
+ * b) A subsequent ModeSet ioctl that specifies any of the heads
+ * If either of those occurs, the requested state will be destroyed for *all*
+ * of the heads.
+ *
+ * Note that a successful call with 'enable = TRUE' only indicates that the
+ * request to enable fliplock is registered, not that fliplock was actually
+ * enabled.  Fliplock may not be enabled due to incompatible modetimings, for
+ * example.
+ */
+
+struct NvKmsSetFlipLockGroupOneDev {
+    NvKmsDeviceHandle deviceHandle;
+
+    NvU32 requestedDispsBitMask;
+    struct {
+        NvU32 requestedHeadsBitMask;
+    } disp[NVKMS_MAX_SUBDEVICES];
+};
+
+struct NvKmsSetFlipLockGroupRequest {
+    NvBool enable;
+    struct NvKmsSetFlipLockGroupOneDev dev[NV_MAX_SUBDEVICES];
+};
+
+struct NvKmsSetFlipLockGroupReply {
+    NvU32 padding;
+};
+
+struct NvKmsSetFlipLockGroupParams {
+    struct NvKmsSetFlipLockGroupRequest request; /*! in */
+    struct NvKmsSetFlipLockGroupReply reply;     /*! out */
 };
 
 #endif /* NVKMS_API_H */

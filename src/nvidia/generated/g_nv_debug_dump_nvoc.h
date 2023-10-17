@@ -395,4 +395,5 @@ static inline NV_STATUS nvdFindEngine(struct OBJGPU *pGpu, struct NvDebugDump *p
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_NV_DEBUG_DUMP_NVOC_H_

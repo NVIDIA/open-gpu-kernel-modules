@@ -288,4 +288,5 @@ void i2capiDestruct_IMPL(struct I2cApi *pI2cApi);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_I2C_API_NVOC_H_

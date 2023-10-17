@@ -59,6 +59,7 @@ struct NoDeviceMemory {
     NV_STATUS (*__nodevicememCheckMemInterUnmap__)(struct NoDeviceMemory *, NvBool);
     NvBool (*__nodevicememShareCallback__)(struct NoDeviceMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__nodevicememMapTo__)(struct NoDeviceMemory *, RS_RES_MAP_TO_PARAMS *);
+    NvBool (*__nodevicememIsExportAllowed__)(struct NoDeviceMemory *);
     NvU32 (*__nodevicememGetRefCount__)(struct NoDeviceMemory *);
     void (*__nodevicememAddAdditionalDependants__)(struct RsClient *, struct NoDeviceMemory *, RsResourceRef *);
     NV_STATUS (*__nodevicememControl_Prologue__)(struct NoDeviceMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -114,6 +115,7 @@ NV_STATUS __nvoc_objCreate_NoDeviceMemory(NoDeviceMemory**, Dynamic*, NvU32, CAL
 #define nodevicememCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) nodevicememCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define nodevicememShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) nodevicememShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define nodevicememMapTo(pResource, pParams) nodevicememMapTo_DISPATCH(pResource, pParams)
+#define nodevicememIsExportAllowed(pMemory) nodevicememIsExportAllowed_DISPATCH(pMemory)
 #define nodevicememGetRefCount(pResource) nodevicememGetRefCount_DISPATCH(pResource)
 #define nodevicememAddAdditionalDependants(pClient, pResource, pReference) nodevicememAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define nodevicememControl_Prologue(pResource, pCallContext, pParams) nodevicememControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -151,6 +153,10 @@ static inline NvBool nodevicememShareCallback_DISPATCH(struct NoDeviceMemory *pR
 
 static inline NV_STATUS nodevicememMapTo_DISPATCH(struct NoDeviceMemory *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
     return pResource->__nodevicememMapTo__(pResource, pParams);
+}
+
+static inline NvBool nodevicememIsExportAllowed_DISPATCH(struct NoDeviceMemory *pMemory) {
+    return pMemory->__nodevicememIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 nodevicememGetRefCount_DISPATCH(struct NoDeviceMemory *pResource) {
@@ -251,4 +257,5 @@ void nodevicememDestruct_IMPL(struct NoDeviceMemory *pNoDeviceMemory);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_NO_DEVICE_MEM_NVOC_H_

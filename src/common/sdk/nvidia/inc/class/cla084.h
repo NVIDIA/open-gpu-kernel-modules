@@ -54,6 +54,7 @@
  * numGuestFbHandles -> number of guest memory handles, the client handle is hPluginClient
  * guestFbHandleList -> handle list to guest memory
  * hPluginHeapMemory -> plugin heap memory handle, the client handle is hPluginClient
+ * hMigRmHeapMemory -> MIG-RM heap memory handle
  * bDeviceProfilingEnabled -> If set to true, profiling is allowed
  */
 #define NVA084_ALLOC_PARAMETERS_MESSAGE_ID (0xa084U)
@@ -74,6 +75,7 @@ typedef struct NVA084_ALLOC_PARAMETERS {
     NvU32      numGuestFbHandles;
     NvHandle   guestFbHandleList[NVA084_MAX_VMMU_SEGMENTS];
     NvHandle   hPluginHeapMemory;
+    NvHandle   hMigRmHeapMemory;
     NV_DECLARE_ALIGNED(NvU64 ctrlBuffOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffOffset, 8);
     NV_DECLARE_ALIGNED(NvU64 initTaskLogBuffSize, 8);

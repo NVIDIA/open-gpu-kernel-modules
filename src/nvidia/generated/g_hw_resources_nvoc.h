@@ -58,6 +58,7 @@ struct MemoryHwResources {
     NvBool (*__hwresShareCallback__)(struct MemoryHwResources *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__hwresMapTo__)(struct MemoryHwResources *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__hwresGetMapAddrSpace__)(struct MemoryHwResources *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__hwresIsExportAllowed__)(struct MemoryHwResources *);
     NvU32 (*__hwresGetRefCount__)(struct MemoryHwResources *);
     void (*__hwresAddAdditionalDependants__)(struct RsClient *, struct MemoryHwResources *, RsResourceRef *);
     NV_STATUS (*__hwresControl_Prologue__)(struct MemoryHwResources *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -113,6 +114,7 @@ NV_STATUS __nvoc_objCreate_MemoryHwResources(MemoryHwResources**, Dynamic*, NvU3
 #define hwresShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) hwresShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define hwresMapTo(pResource, pParams) hwresMapTo_DISPATCH(pResource, pParams)
 #define hwresGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) hwresGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define hwresIsExportAllowed(pMemory) hwresIsExportAllowed_DISPATCH(pMemory)
 #define hwresGetRefCount(pResource) hwresGetRefCount_DISPATCH(pResource)
 #define hwresAddAdditionalDependants(pClient, pResource, pReference) hwresAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define hwresControl_Prologue(pResource, pCallContext, pParams) hwresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -153,6 +155,10 @@ static inline NV_STATUS hwresMapTo_DISPATCH(struct MemoryHwResources *pResource,
 
 static inline NV_STATUS hwresGetMapAddrSpace_DISPATCH(struct MemoryHwResources *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__hwresGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool hwresIsExportAllowed_DISPATCH(struct MemoryHwResources *pMemory) {
+    return pMemory->__hwresIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 hwresGetRefCount_DISPATCH(struct MemoryHwResources *pResource) {
@@ -249,4 +255,5 @@ void hwresDestruct_IMPL(struct MemoryHwResources *pMemoryHwResources);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_HW_RESOURCES_NVOC_H_

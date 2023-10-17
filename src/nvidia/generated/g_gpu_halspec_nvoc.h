@@ -46,6 +46,7 @@ struct RmHalspecOwner {
     struct RmHalspecOwner *__nvoc_pbase_RmHalspecOwner;
     struct ChipHal chipHal;
     struct RmVariantHal rmVariantHal;
+    struct TegraChipHal tegraChipHal;
     struct DispIpHal dispIpHal;
 };
 
@@ -76,9 +77,10 @@ NV_STATUS __nvoc_objCreateDynamic_RmHalspecOwner(RmHalspecOwner**, Dynamic*, NvU
 NV_STATUS __nvoc_objCreate_RmHalspecOwner(RmHalspecOwner**, Dynamic*, NvU32,
         NvU32 ChipHal_arch, NvU32 ChipHal_impl, NvU32 ChipHal_hidrev,
         RM_RUNTIME_VARIANT RmVariantHal_rmVariant,
+        TEGRA_CHIP_TYPE TegraChipHal_tegraType,
         NvU32 DispIpHal_ipver);
-#define __objCreate_RmHalspecOwner(ppNewObj, pParent, createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, DispIpHal_ipver) \
-    __nvoc_objCreate_RmHalspecOwner((ppNewObj), staticCast((pParent), Dynamic), (createFlags), ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, DispIpHal_ipver)
+#define __objCreate_RmHalspecOwner(ppNewObj, pParent, createFlags, ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, TegraChipHal_tegraType, DispIpHal_ipver) \
+    __nvoc_objCreate_RmHalspecOwner((ppNewObj), staticCast((pParent), Dynamic), (createFlags), ChipHal_arch, ChipHal_impl, ChipHal_hidrev, RmVariantHal_rmVariant, TegraChipHal_tegraType, DispIpHal_ipver)
 
 #undef PRIVATE_FIELD
 
@@ -88,4 +90,5 @@ NV_STATUS __nvoc_objCreate_RmHalspecOwner(RmHalspecOwner**, Dynamic*, NvU32,
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_HALSPEC_NVOC_H_

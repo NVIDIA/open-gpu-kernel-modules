@@ -159,12 +159,14 @@ struct Memory {
     NV_STATUS (*__memCheckCopyPermissions__)(struct Memory *, struct OBJGPU *, struct Device *);
     NV_STATUS (*__memIsReady__)(struct Memory *, NvBool);
     NvBool (*__memIsGpuMapAllowed__)(struct Memory *, struct OBJGPU *);
+    NvBool (*__memIsExportAllowed__)(struct Memory *);
     NV_STATUS (*__memCtrlCmdGetSurfaceCompressionCoverageLvm__)(struct Memory *, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *);
     NV_STATUS (*__memCtrlCmdGetSurfaceInfoLvm__)(struct Memory *, NV0041_CTRL_GET_SURFACE_INFO_PARAMS *);
     NV_STATUS (*__memCtrlCmdSurfaceFlushGpuCache__)(struct Memory *, NV0041_CTRL_SURFACE_FLUSH_GPU_CACHE_PARAMS *);
     NV_STATUS (*__memCtrlCmdGetMemPageSize__)(struct Memory *, NV0041_CTRL_GET_MEM_PAGE_SIZE_PARAMS *);
     NV_STATUS (*__memCtrlCmdSetTag__)(struct Memory *, NV0041_CTRL_CMD_SET_TAG_PARAMS *);
     NV_STATUS (*__memCtrlCmdGetTag__)(struct Memory *, NV0041_CTRL_CMD_GET_TAG_PARAMS *);
+    NV_STATUS (*__memCtrlCmdGetSurfacePhysAttrLvm__)(struct Memory *, NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS *);
     NvBool (*__memShareCallback__)(struct Memory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NvU32 (*__memGetRefCount__)(struct Memory *);
     NV_STATUS (*__memControlFilter__)(struct Memory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -247,12 +249,14 @@ NV_STATUS __nvoc_objCreate_Memory(Memory**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define memCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) memCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define memIsReady(pMemory, bCopyConstructorContext) memIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define memIsGpuMapAllowed(pMemory, pGpu) memIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
+#define memIsExportAllowed(pMemory) memIsExportAllowed_DISPATCH(pMemory)
 #define memCtrlCmdGetSurfaceCompressionCoverageLvm(pMemory, pParams) memCtrlCmdGetSurfaceCompressionCoverageLvm_DISPATCH(pMemory, pParams)
 #define memCtrlCmdGetSurfaceInfoLvm(pMemory, pSurfaceInfoParams) memCtrlCmdGetSurfaceInfoLvm_DISPATCH(pMemory, pSurfaceInfoParams)
 #define memCtrlCmdSurfaceFlushGpuCache(pMemory, pCacheFlushParams) memCtrlCmdSurfaceFlushGpuCache_DISPATCH(pMemory, pCacheFlushParams)
 #define memCtrlCmdGetMemPageSize(pMemory, pPageSizeParams) memCtrlCmdGetMemPageSize_DISPATCH(pMemory, pPageSizeParams)
 #define memCtrlCmdSetTag(pMemory, pParams) memCtrlCmdSetTag_DISPATCH(pMemory, pParams)
 #define memCtrlCmdGetTag(pMemory, pParams) memCtrlCmdGetTag_DISPATCH(pMemory, pParams)
+#define memCtrlCmdGetSurfacePhysAttrLvm(pMemory, pGPAP) memCtrlCmdGetSurfacePhysAttrLvm_DISPATCH(pMemory, pGPAP)
 #define memShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define memGetRefCount(pResource) memGetRefCount_DISPATCH(pResource)
 #define memControlFilter(pResource, pCallContext, pParams) memControlFilter_DISPATCH(pResource, pCallContext, pParams)
@@ -339,6 +343,14 @@ static inline NvBool memIsGpuMapAllowed_DISPATCH(struct Memory *pMemory, struct 
     return pMemory->__memIsGpuMapAllowed__(pMemory, pGpu);
 }
 
+static inline NvBool memIsExportAllowed_0c883b(struct Memory *pMemory) {
+    return ((NvBool)(0 == 0));
+}
+
+static inline NvBool memIsExportAllowed_DISPATCH(struct Memory *pMemory) {
+    return pMemory->__memIsExportAllowed__(pMemory);
+}
+
 NV_STATUS memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *pParams);
 
 static inline NV_STATUS memCtrlCmdGetSurfaceCompressionCoverageLvm_DISPATCH(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_COMPRESSION_COVERAGE_PARAMS *pParams) {
@@ -373,6 +385,12 @@ NV_STATUS memCtrlCmdGetTag_IMPL(struct Memory *pMemory, NV0041_CTRL_CMD_GET_TAG_
 
 static inline NV_STATUS memCtrlCmdGetTag_DISPATCH(struct Memory *pMemory, NV0041_CTRL_CMD_GET_TAG_PARAMS *pParams) {
     return pMemory->__memCtrlCmdGetTag__(pMemory, pParams);
+}
+
+NV_STATUS memCtrlCmdGetSurfacePhysAttrLvm_IMPL(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS *pGPAP);
+
+static inline NV_STATUS memCtrlCmdGetSurfacePhysAttrLvm_DISPATCH(struct Memory *pMemory, NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS *pGPAP) {
+    return pMemory->__memCtrlCmdGetSurfacePhysAttrLvm__(pMemory, pGPAP);
 }
 
 static inline NvBool memShareCallback_DISPATCH(struct Memory *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -501,4 +519,5 @@ NV_STATUS memGetByHandleAndGroupedGpu_IMPL(struct RsClient *pClient, NvHandle hM
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MEM_NVOC_H_

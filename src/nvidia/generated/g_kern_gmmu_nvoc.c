@@ -95,7 +95,7 @@ static void __nvoc_thunk_KernelGmmu_engstateStateDestroy(OBJGPU *pGpu, struct OB
     kgmmuStateDestroy(pGpu, (struct KernelGmmu *)(((unsigned char *)pKernelGmmu) - __nvoc_rtti_KernelGmmu_OBJENGSTATE.offset));
 }
 
-static void __nvoc_thunk_KernelGmmu_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceRecord arg0[167]) {
+static void __nvoc_thunk_KernelGmmu_intrservRegisterIntrService(OBJGPU *pGpu, struct IntrService *pKernelGmmu, IntrServiceRecord arg0[168]) {
     kgmmuRegisterIntrService(pGpu, (struct KernelGmmu *)(((unsigned char *)pKernelGmmu) - __nvoc_rtti_KernelGmmu_IntrService.offset), arg0);
 }
 

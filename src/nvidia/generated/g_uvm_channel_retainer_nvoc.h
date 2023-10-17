@@ -279,4 +279,5 @@ void uvmchanrtnrDestruct_IMPL(struct UvmChannelRetainer *pUvmChannelRetainer);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_UVM_CHANNEL_RETAINER_NVOC_H_

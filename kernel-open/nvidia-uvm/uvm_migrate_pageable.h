@@ -51,7 +51,7 @@ typedef struct
 #if defined(CONFIG_MIGRATE_VMA_HELPER)
 #define UVM_MIGRATE_VMA_SUPPORTED 1
 #else
-#if NV_IS_EXPORT_SYMBOL_PRESENT_migrate_vma_setup
+#if defined(CONFIG_DEVICE_PRIVATE) && defined(NV_MIGRATE_VMA_SETUP_PRESENT)
 #define UVM_MIGRATE_VMA_SUPPORTED 1
 #endif
 #endif

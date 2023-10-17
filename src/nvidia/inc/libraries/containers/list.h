@@ -143,6 +143,7 @@ struct ListIterBase
     ListNode *pLast;
 #if PORT_IS_CHECKED_BUILD
     NvU32 versionNumber;
+    NvBool bValid;
 #endif
 };
 

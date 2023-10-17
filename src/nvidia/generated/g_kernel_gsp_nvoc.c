@@ -106,7 +106,7 @@ static NV_STATUS __nvoc_thunk_KernelGsp_engstateConstructEngine(struct OBJGPU *p
     return kgspConstructEngine(pGpu, (struct KernelGsp *)(((unsigned char *)pKernelGsp) - __nvoc_rtti_KernelGsp_OBJENGSTATE.offset), arg0);
 }
 
-static void __nvoc_thunk_KernelGsp_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelGsp, IntrServiceRecord pRecords[167]) {
+static void __nvoc_thunk_KernelGsp_intrservRegisterIntrService(struct OBJGPU *pGpu, struct IntrService *pKernelGsp, IntrServiceRecord pRecords[168]) {
     kgspRegisterIntrService(pGpu, (struct KernelGsp *)(((unsigned char *)pKernelGsp) - __nvoc_rtti_KernelGsp_IntrService.offset), pRecords);
 }
 
@@ -302,17 +302,15 @@ void __nvoc_init_dataField_KernelGsp(KernelGsp *pThis, RmHalspecOwner *pRmhalspe
         pThis->fwHeapParamBaseSize = (14 << 20);
     }
 
-    // Hal field -- fwHeapParamOsCarveoutSize
-    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* RmVariantHal: PF_KERNEL_ONLY */ 
+    // Hal field -- bBootGspRmWithBoostClocks
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {
-        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
-        {
-            pThis->fwHeapParamOsCarveoutSize = (0 << 20);
-        }
-        else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
-        {
-            pThis->fwHeapParamOsCarveoutSize = (20 << 20);
-        }
+        pThis->bBootGspRmWithBoostClocks = ((NvBool)(0 == 0));
+    }
+    // default
+    else
+    {
+        pThis->bBootGspRmWithBoostClocks = ((NvBool)(0 != 0));
     }
 }
 
@@ -724,7 +722,7 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
     }
     else
     {
-        pThis->__kgspGetMinWprHeapSizeMB__ = &kgspGetMinWprHeapSizeMB_907c84;
+        pThis->__kgspGetMinWprHeapSizeMB__ = &kgspGetMinWprHeapSizeMB_cc88c3;
     }
 
     // Hal function -- kgspGetMaxWprHeapSizeMB
@@ -734,7 +732,17 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
     }
     else
     {
-        pThis->__kgspGetMaxWprHeapSizeMB__ = &kgspGetMaxWprHeapSizeMB_5839e2;
+        pThis->__kgspGetMaxWprHeapSizeMB__ = &kgspGetMaxWprHeapSizeMB_55728f;
+    }
+
+    // Hal function -- kgspGetFwHeapParamOsCarveoutSize
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    {
+        pThis->__kgspGetFwHeapParamOsCarveoutSize__ = &kgspGetFwHeapParamOsCarveoutSize_397f70;
+    }
+    else
+    {
+        pThis->__kgspGetFwHeapParamOsCarveoutSize__ = &kgspGetFwHeapParamOsCarveoutSize_4b5307;
     }
 
     // Hal function -- kgspInitVgpuPartitionLogging

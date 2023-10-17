@@ -153,4 +153,5 @@ NV_STATUS   gpudbSetShutdownState(const NvU8 *pUuid);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_DB_NVOC_H_

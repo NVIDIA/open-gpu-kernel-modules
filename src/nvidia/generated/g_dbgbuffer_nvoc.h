@@ -264,4 +264,5 @@ void dbgbufDestruct_IMPL(struct DebugBufferApi *pDebugBufferApi);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_DBGBUFFER_NVOC_H_

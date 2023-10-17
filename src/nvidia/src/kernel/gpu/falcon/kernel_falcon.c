@@ -30,6 +30,7 @@
 #include "gpu/fifo/kernel_channel_group_api.h"
 #include "gpu/intr/intr.h"
 #include "gpu/subdevice/subdevice.h"
+#include "gpu/device/device.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "mem_mgr/gpu_vaspace.h"
@@ -134,9 +135,9 @@ static NV_STATUS _kflcnAllocAndMapCtxBuffer
     NV_ASSERT_OK_OR_GOTO(status,
         memdescSetCtxBufPool(pCtxMemDesc, pCtxBufPool),
         done);
-    NV_ASSERT_OK_OR_GOTO(status,
-        memdescAllocList(pCtxMemDesc, memdescU32ToAddrSpaceList(pKernelFalcon->addrSpaceList)),
-        done);
+    memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_115, 
+                        pCtxMemDesc, memdescU32ToAddrSpaceList(pKernelFalcon->addrSpaceList));
+    NV_ASSERT_OK_OR_GOTO(status, status, done);
 
     NV_ASSERT_OK_OR_GOTO(status,
         memmgrMemDescMemSet(GPU_GET_MEMORY_MANAGER(pGpu), pCtxMemDesc, 0,
@@ -173,14 +174,15 @@ static NV_STATUS _kflcnPromoteContext
 {
     RM_API                *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     RsClient              *pClient = RES_GET_CLIENT(pKernelChannel);
+    Device                *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
     Subdevice             *pSubdevice;
     RM_ENGINE_TYPE         rmEngineType;
     ENGINE_CTX_DESCRIPTOR *pEngCtx;
     NV2080_CTRL_GPU_PROMOTE_CTX_PARAMS rmCtrlParams = {0};
     OBJGVASPACE           *pGVAS = dynamicCast(pKernelChannel->pVAS, OBJGVASPACE);
 
-    NV_ASSERT_OK_OR_RETURN(subdeviceGetByGpu(pClient, pGpu, &pSubdevice));
     NV_ASSERT_OR_RETURN(gpumgrGetSubDeviceInstanceFromGpu(pGpu) == 0, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OK_OR_RETURN(subdeviceGetByInstance(pClient, RES_GET_HANDLE(pDevice), 0, &pSubdevice));
 
     pEngCtx = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->ppEngCtxDesc[0];
     NV_ASSERT_OR_RETURN(pEngCtx != NULL, NV_ERR_INVALID_ARGUMENT);
@@ -286,6 +288,7 @@ NV_STATUS kflcnFreeContext_IMPL
     NvU32          classNum
 )
 {
+    NV_STATUS status = NV_OK;
     MEMORY_DESCRIPTOR *pCtxMemDesc = NULL;
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_CHANNEL);
 
@@ -308,11 +311,12 @@ NV_STATUS kflcnFreeContext_IMPL
     }
 
     kchannelUnmapEngineCtxBuf(pGpu, pKernelChannel, pKernelFalcon->physEngDesc);
-    kchannelSetEngineContextMemDesc(pGpu, pKernelChannel, pKernelFalcon->physEngDesc, NULL);
+    NV_ASSERT_OK_OR_CAPTURE_FIRST_ERROR(status,
+        kchannelSetEngineContextMemDesc(pGpu, pKernelChannel, pKernelFalcon->physEngDesc, NULL));
     memdescFree(pCtxMemDesc);
     memdescDestroy(pCtxMemDesc);
 
-    return NV_OK;
+    return status;
 }
 
 NV_STATUS gkflcnConstruct_IMPL
@@ -344,7 +348,7 @@ void gkflcnRegisterIntrService_IMPL(OBJGPU *pGpu, GenericKernelFalcon *pGenericK
     NV_PRINTF(LEVEL_INFO, "physEngDesc 0x%x\n", pKernelFalcon->physEngDesc);
 
     if (!IS_NVDEC(pKernelFalcon->physEngDesc) &&
-        pKernelFalcon->physEngDesc != ENG_OFA &&
+        !IS_OFA(pKernelFalcon->physEngDesc) &&
         !IS_NVJPEG(pKernelFalcon->physEngDesc) &&
         !IS_MSENC(pKernelFalcon->physEngDesc))
         return;
@@ -381,9 +385,11 @@ NV_STATUS gkflcnServiceNotificationInterrupt_IMPL(OBJGPU *pGpu, GenericKernelFal
         NvU32 nvdecIdx = idxMc - MC_ENGINE_IDX_NVDECn(0);
         rmEngineType = RM_ENGINE_TYPE_NVDEC(nvdecIdx);
     }
-    else if (idxMc == MC_ENGINE_IDX_OFA0)
+    else if (MC_ENGINE_IDX_OFA(0) <= idxMc &&
+             idxMc < MC_ENGINE_IDX_OFA(RM_ENGINE_TYPE_OFA_SIZE))
     {
-        rmEngineType = RM_ENGINE_TYPE_OFA;
+        NvU32 ofaIdx = idxMc - MC_ENGINE_IDX_OFA(0);
+        rmEngineType = RM_ENGINE_TYPE_OFA(ofaIdx);
     }
     else if (MC_ENGINE_IDX_NVJPEGn(0) <= idxMc &&
              idxMc < MC_ENGINE_IDX_NVJPEGn(RM_ENGINE_TYPE_NVJPEG_SIZE))
@@ -391,10 +397,10 @@ NV_STATUS gkflcnServiceNotificationInterrupt_IMPL(OBJGPU *pGpu, GenericKernelFal
         NvU32 nvjpgIdx = idxMc - MC_ENGINE_IDX_NVJPEGn(0);
         rmEngineType = RM_ENGINE_TYPE_NVJPEG(nvjpgIdx);
     }
-    else if (MC_ENGINE_IDX_MSENCn(0) <= idxMc &&
-             idxMc < MC_ENGINE_IDX_MSENCn(RM_ENGINE_TYPE_NVENC_SIZE))
+    else if (MC_ENGINE_IDX_NVENCn(0) <= idxMc &&
+             idxMc < MC_ENGINE_IDX_NVENCn(RM_ENGINE_TYPE_NVENC_SIZE))
     {
-        NvU32 msencIdx = idxMc - MC_ENGINE_IDX_MSENCn(0);
+        NvU32 msencIdx = idxMc - MC_ENGINE_IDX_NVENCn(0);
         rmEngineType = RM_ENGINE_TYPE_NVENC(msencIdx);
     }
 

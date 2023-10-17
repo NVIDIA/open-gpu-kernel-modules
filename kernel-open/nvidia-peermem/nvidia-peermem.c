@@ -249,8 +249,8 @@ static int nv_dma_map(struct sg_table *sg_head, void *context,
     nv_mem_context->sg_allocated = 1;
     for_each_sg(sg_head->sgl, sg, nv_mem_context->npages, i) {
         sg_set_page(sg, NULL, nv_mem_context->page_size, 0);
-        sg->dma_address = dma_mapping->dma_addresses[i];
-        sg->dma_length = nv_mem_context->page_size;
+        sg_dma_address(sg) = dma_mapping->dma_addresses[i];
+        sg_dma_len(sg) = nv_mem_context->page_size;
     }
     nv_mem_context->sg_head = *sg_head;
     *nmap = nv_mem_context->npages;
@@ -304,8 +304,13 @@ static void nv_mem_put_pages_common(int nc,
         return;
 
     if (nc) {
+#ifdef NVIDIA_P2P_CAP_GET_PAGES_PERSISTENT_API
         ret = nvidia_p2p_put_pages_persistent(nv_mem_context->page_virt_start,
                                               nv_mem_context->page_table, 0);
+#else
+        ret = nvidia_p2p_put_pages(0, 0, nv_mem_context->page_virt_start,
+                                   nv_mem_context->page_table);
+#endif
     } else {
         ret = nvidia_p2p_put_pages(0, 0, nv_mem_context->page_virt_start,
                                    nv_mem_context->page_table);
@@ -412,9 +417,15 @@ static int nv_mem_get_pages_nc(unsigned long addr,
     nv_mem_context->core_context = core_context;
     nv_mem_context->page_size = GPU_PAGE_SIZE;
 
+#ifdef NVIDIA_P2P_CAP_GET_PAGES_PERSISTENT_API
     ret = nvidia_p2p_get_pages_persistent(nv_mem_context->page_virt_start,
                                           nv_mem_context->mapped_size,
                                           &nv_mem_context->page_table, 0);
+#else
+    ret = nvidia_p2p_get_pages(0, 0, nv_mem_context->page_virt_start, nv_mem_context->mapped_size,
+                               &nv_mem_context->page_table, NULL, NULL);
+#endif
+
     if (ret < 0) {
         peer_err("error %d while calling nvidia_p2p_get_pages() with NULL callback\n", ret);
         return ret;
@@ -459,8 +470,6 @@ static int __init nv_mem_client_init(void)
     }
 
 #if defined (NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT)
-    int status = 0;
-
     // off by one, to leave space for the trailing '1' which is flagging
     // the new client type
     BUG_ON(strlen(DRV_NAME) > IB_PEER_MEMORY_NAME_MAX-1);
@@ -489,7 +498,7 @@ static int __init nv_mem_client_init(void)
                          &mem_invalidate_callback);
     if (!reg_handle) {
         peer_err("nv_mem_client_init -- error while registering traditional client\n");
-        status = -EINVAL;
+        rc = -EINVAL;
         goto out;
     }
 
@@ -499,12 +508,12 @@ static int __init nv_mem_client_init(void)
     reg_handle_nc = ib_register_peer_memory_client(&nv_mem_client_nc, NULL);
     if (!reg_handle_nc) {
         peer_err("nv_mem_client_init -- error while registering nc client\n");
-        status = -EINVAL;
+        rc = -EINVAL;
         goto out;
     }
 
 out:
-    if (status) {
+    if (rc) {
         if (reg_handle) {
             ib_unregister_peer_memory_client(reg_handle);
             reg_handle = NULL;
@@ -516,7 +525,7 @@ out:
         }
     }
 
-    return status;
+    return rc;
 #else
     return -EINVAL;
 #endif

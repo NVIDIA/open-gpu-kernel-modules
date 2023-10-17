@@ -293,4 +293,5 @@ void gpuacctProcessGpuUtil(GPUACCT_GPU_INSTANCE_INFO *, NV2080_CTRL_PERF_GPUMON_
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_ACCT_NVOC_H_

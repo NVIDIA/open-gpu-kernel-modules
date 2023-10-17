@@ -32,6 +32,7 @@
 
 #include "gpu/gpu.h"
 #include "gpu/disp/kern_disp.h"
+#include "gpu/disp/head/kernel_head.h"
 #include "gpu/external_device/gsync.h"
 
 #include "disp/v03_00/dev_disp.h"
@@ -379,4 +380,22 @@ kdispSetSwapBarrierLsrMinTime_v03_00
     }
 
     GPU_REG_WR32(pGpu, NV_PDISP_FE_FLIPLOCK, dsiFliplock);
+}
+
+/*!
+ * @brief Get the LOADV counter
+ *
+ * @param[in]  pGpu                    OBJGPU pointer
+ * @param[in]  pKernelHead             KernelHead object pointer
+ *
+ * @return the current LOADV counter
+ */
+NvU32
+kheadGetLoadVCounter_v03_00
+(
+    OBJGPU                 *pGpu,
+    KernelHead             *pKernelHead
+)
+{
+    return GPU_REG_RD32(pGpu, NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER(pKernelHead->PublicId));
 }

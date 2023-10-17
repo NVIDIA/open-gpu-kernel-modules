@@ -102,9 +102,9 @@ FrameLockHandleSyncEvent(void *dataPtr, NvU32 dataU32)
  * This function is registered as a kernel callback function from
  * resman.
  *
- * However, it is called with resman's context (alternate stack,
- * resman locks held, etc).  Schedule deferred work, so that we can
- * process the event without resman's encumbrances.
+ * However, it is called with resman's context (resman locks held, etc).
+ * Schedule deferred work, so that we can process the event without resman's
+ * encumbrances.
  */
 static void FrameLockEvent(void *arg, void *pEventDataVoid,
                            NvU32 hEvent,

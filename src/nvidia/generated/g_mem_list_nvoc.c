@@ -113,6 +113,10 @@ static NV_STATUS __nvoc_thunk_Memory_memlistGetMapAddrSpace(struct MemoryList *p
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_memlistIsExportAllowed(struct MemoryList *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_MemoryList_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_memlistGetRefCount(struct MemoryList *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryList_RsResource.offset));
 }
@@ -242,6 +246,8 @@ static void __nvoc_init_funcTable_MemoryList_1(MemoryList *pThis) {
     pThis->__memlistMapTo__ = &__nvoc_thunk_RsResource_memlistMapTo;
 
     pThis->__memlistGetMapAddrSpace__ = &__nvoc_thunk_Memory_memlistGetMapAddrSpace;
+
+    pThis->__memlistIsExportAllowed__ = &__nvoc_thunk_Memory_memlistIsExportAllowed;
 
     pThis->__memlistGetRefCount__ = &__nvoc_thunk_RsResource_memlistGetRefCount;
 

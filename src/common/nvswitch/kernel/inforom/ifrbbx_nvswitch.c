@@ -130,3 +130,21 @@ nvswitch_inforom_bbx_get_sxid
     return status;
 }
 
+NvlStatus
+nvswitch_inforom_bbx_get_data
+(
+    nvswitch_device *device,
+    NvU8 dataType,
+    void *params
+)
+{
+    NvlStatus status;
+
+    status = device->hal.nvswitch_bbx_get_data(device, dataType, params);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: (type=%d) failed, status=%d\n", __FUNCTION__, dataType, status);
+    }
+
+    return status;
+}

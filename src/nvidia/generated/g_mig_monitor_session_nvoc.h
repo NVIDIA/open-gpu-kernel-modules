@@ -237,4 +237,5 @@ void migmonitorsessionDestruct_IMPL(struct MIGMonitorSession *pMIGMonitorSession
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MIG_MONITOR_SESSION_NVOC_H_

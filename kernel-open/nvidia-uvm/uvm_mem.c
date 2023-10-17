@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -93,9 +93,8 @@ static bool sysmem_can_be_mapped_on_gpu(uvm_mem_t *sysmem)
 {
     UVM_ASSERT(uvm_mem_is_sysmem(sysmem));
 
-    // In Confidential Computing, only unprotected memory can be mapped on the
-    // GPU
-    if (g_uvm_global.conf_computing_enabled)
+    // If SEV is enabled, only unprotected memory can be mapped
+    if (g_uvm_global.sev_enabled)
         return uvm_mem_is_sysmem_dma(sysmem);
 
     return true;
@@ -738,7 +737,7 @@ static NV_STATUS mem_map_cpu_to_sysmem_kernel(uvm_mem_t *mem)
             pages[page_index] = mem_cpu_page(mem, page_index * PAGE_SIZE);
     }
 
-    if (g_uvm_global.conf_computing_enabled && uvm_mem_is_sysmem_dma(mem))
+    if (g_uvm_global.sev_enabled && uvm_mem_is_sysmem_dma(mem))
         prot = uvm_pgprot_decrypted(PAGE_KERNEL_NOENC);
 
     mem->kernel.cpu_addr = vmap(pages, num_pages, VM_MAP, prot);

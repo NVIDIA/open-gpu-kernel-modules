@@ -175,6 +175,21 @@ static NvBool __nvoc_thunk_RmResource_memAccessCallback(struct Memory *pResource
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Memory[] = 
 {
     {               /*  [0] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) memCtrlCmdGetSurfacePhysAttrLvm_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+        /*flags=*/      0x0u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x410103u,
+        /*paramSize=*/  sizeof(NV0041_CTRL_GET_SURFACE_PHYS_ATTR_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_Memory.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "memCtrlCmdGetSurfacePhysAttrLvm"
+#endif
+    },
+    {               /*  [1] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -189,7 +204,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Memory[]
         /*func=*/       "memCtrlCmdGetSurfaceInfoLvm"
 #endif
     },
-    {               /*  [1] */
+    {               /*  [2] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -204,7 +219,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Memory[]
         /*func=*/       "memCtrlCmdGetSurfaceCompressionCoverageLvm"
 #endif
     },
-    {               /*  [2] */
+    {               /*  [3] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -219,7 +234,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Memory[]
         /*func=*/       "memCtrlCmdSurfaceFlushGpuCache"
 #endif
     },
-    {               /*  [3] */
+    {               /*  [4] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -234,7 +249,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Memory[]
         /*func=*/       "memCtrlCmdGetMemPageSize"
 #endif
     },
-    {               /*  [4] */
+    {               /*  [5] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -249,7 +264,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Memory[]
         /*func=*/       "memCtrlCmdSetTag"
 #endif
     },
-    {               /*  [5] */
+    {               /*  [6] */
 #if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
@@ -269,7 +284,7 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Memory[]
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_Memory = 
 {
-    /*numEntries=*/     6,
+    /*numEntries=*/     7,
     /*pExportEntries=*/ __nvoc_exported_method_def_Memory
 };
 
@@ -328,6 +343,8 @@ static void __nvoc_init_funcTable_Memory_1(Memory *pThis) {
 
     pThis->__memIsGpuMapAllowed__ = &memIsGpuMapAllowed_0c883b;
 
+    pThis->__memIsExportAllowed__ = &memIsExportAllowed_0c883b;
+
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__memCtrlCmdGetSurfaceCompressionCoverageLvm__ = &memCtrlCmdGetSurfaceCompressionCoverageLvm_IMPL;
 #endif
@@ -350,6 +367,10 @@ static void __nvoc_init_funcTable_Memory_1(Memory *pThis) {
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
     pThis->__memCtrlCmdGetTag__ = &memCtrlCmdGetTag_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+    pThis->__memCtrlCmdGetSurfacePhysAttrLvm__ = &memCtrlCmdGetSurfacePhysAttrLvm_IMPL;
 #endif
 
     pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__resIsDuplicate__ = &__nvoc_thunk_Memory_resIsDuplicate;

@@ -94,6 +94,45 @@ struct ComputeInstanceSubscription {
     NvU64 PRIVATE_FIELD(dupedCapDescriptor);
 };
 
+struct ComputeInstanceSubscription_PRIVATE {
+    const struct NVOC_RTTI *__nvoc_rtti;
+    struct GpuResource __nvoc_base_GpuResource;
+    struct Object *__nvoc_pbase_Object;
+    struct RsResource *__nvoc_pbase_RsResource;
+    struct RmResourceCommon *__nvoc_pbase_RmResourceCommon;
+    struct RmResource *__nvoc_pbase_RmResource;
+    struct GpuResource *__nvoc_pbase_GpuResource;
+    struct ComputeInstanceSubscription *__nvoc_pbase_ComputeInstanceSubscription;
+    NvBool (*__cisubscriptionCanCopy__)(struct ComputeInstanceSubscription *);
+    NV_STATUS (*__cisubscriptionCtrlCmdGetUuid__)(struct ComputeInstanceSubscription *, NVC638_CTRL_GET_UUID_PARAMS *);
+    NvBool (*__cisubscriptionShareCallback__)(struct ComputeInstanceSubscription *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__cisubscriptionCheckMemInterUnmap__)(struct ComputeInstanceSubscription *, NvBool);
+    NV_STATUS (*__cisubscriptionMapTo__)(struct ComputeInstanceSubscription *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__cisubscriptionGetMapAddrSpace__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__cisubscriptionGetRefCount__)(struct ComputeInstanceSubscription *);
+    void (*__cisubscriptionAddAdditionalDependants__)(struct RsClient *, struct ComputeInstanceSubscription *, RsResourceRef *);
+    NV_STATUS (*__cisubscriptionControl_Prologue__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__cisubscriptionGetRegBaseOffsetAndSize__)(struct ComputeInstanceSubscription *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__cisubscriptionInternalControlForward__)(struct ComputeInstanceSubscription *, NvU32, void *, NvU32);
+    NV_STATUS (*__cisubscriptionUnmapFrom__)(struct ComputeInstanceSubscription *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__cisubscriptionControl_Epilogue__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__cisubscriptionControlLookup__)(struct ComputeInstanceSubscription *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NvHandle (*__cisubscriptionGetInternalObjectHandle__)(struct ComputeInstanceSubscription *);
+    NV_STATUS (*__cisubscriptionControl__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__cisubscriptionUnmap__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RsCpuMapping *);
+    NV_STATUS (*__cisubscriptionGetMemInterMapParams__)(struct ComputeInstanceSubscription *, RMRES_MEM_INTER_MAP_PARAMS *);
+    NV_STATUS (*__cisubscriptionGetMemoryMappingDescriptor__)(struct ComputeInstanceSubscription *, struct MEMORY_DESCRIPTOR **);
+    NV_STATUS (*__cisubscriptionControlFilter__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__cisubscriptionControlSerialization_Prologue__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    void (*__cisubscriptionPreDestruct__)(struct ComputeInstanceSubscription *);
+    NV_STATUS (*__cisubscriptionIsDuplicate__)(struct ComputeInstanceSubscription *, NvHandle, NvBool *);
+    void (*__cisubscriptionControlSerialization_Epilogue__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__cisubscriptionMap__)(struct ComputeInstanceSubscription *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
+    NvBool (*__cisubscriptionAccessCallback__)(struct ComputeInstanceSubscription *, struct RsClient *, void *, RsAccessRight);
+    MIG_COMPUTE_INSTANCE *pMIGComputeInstance;
+    NvU64 dupedCapDescriptor;
+};
+
 #ifndef __NVOC_CLASS_ComputeInstanceSubscription_TYPEDEF__
 #define __NVOC_CLASS_ComputeInstanceSubscription_TYPEDEF__
 typedef struct ComputeInstanceSubscription ComputeInstanceSubscription;
@@ -256,6 +295,11 @@ static inline NvBool cisubscriptionAccessCallback_DISPATCH(struct ComputeInstanc
     return pResource->__cisubscriptionAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
 }
 
+static inline MIG_COMPUTE_INSTANCE *cisubscriptionGetMIGComputeInstance(struct ComputeInstanceSubscription *pComputeInstanceSubscription) {
+    struct ComputeInstanceSubscription_PRIVATE *pComputeInstanceSubscription_PRIVATE = (struct ComputeInstanceSubscription_PRIVATE *)pComputeInstanceSubscription;
+    return pComputeInstanceSubscription_PRIVATE->pMIGComputeInstance;
+}
+
 NV_STATUS cisubscriptionGetComputeInstanceSubscription_IMPL(struct RsClient *arg0, NvHandle arg1, struct ComputeInstanceSubscription **arg2);
 
 #define cisubscriptionGetComputeInstanceSubscription(arg0, arg1, arg2) cisubscriptionGetComputeInstanceSubscription_IMPL(arg0, arg1, arg2)
@@ -285,4 +329,5 @@ void cisubscriptionDestruct_IMPL(struct ComputeInstanceSubscription *arg0);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_COMPUTE_INSTANCE_SUBSCRIPTION_NVOC_H_

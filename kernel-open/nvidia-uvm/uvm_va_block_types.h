@@ -30,6 +30,7 @@
 #include "uvm_forward_decl.h"
 
 #include <linux/migrate.h>
+#include <linux/nodemask.h>
 
 // UVM_VA_BLOCK_BITS is 21, meaning the maximum block size is 2MB. Rationale:
 // - 2MB matches the largest Pascal GPU page size so it's a natural fit
@@ -145,6 +146,18 @@ typedef struct
     unsigned count;
 } uvm_prot_page_mask_array_t[UVM_PROT_MAX - 1];
 
+typedef struct
+{
+    // A per-NUMA-node array of page masks (size num_possible_nodes()) that hold
+    // the set of CPU pages used by the migration operation.
+    uvm_page_mask_t **node_masks;
+
+    // Node mask used to iterate over the page masks above.
+    // If a node's bit is set, it means that the page mask given by
+    // node_to_index() in node_masks has set pages.
+    nodemask_t nodes;
+} uvm_make_resident_page_tracking_t;
+
 // In the worst case some VA block operations require more state than we should
 // reasonably store on the stack. Instead, we dynamically allocate VA block
 // contexts. These are used for almost all operations on VA blocks.
@@ -158,6 +171,9 @@ typedef struct
     // save register: it shouldn't be used across function calls which also take
     // this block_context.
     uvm_page_mask_t scratch_page_mask;
+
+    // Scratch node mask. This follows the same rules as scratch_page_mask;
+    nodemask_t scratch_node_mask;
 
     // State used by uvm_va_block_make_resident
     struct uvm_make_resident_context_struct
@@ -181,9 +197,23 @@ typedef struct
         // Used to perform ECC checks after the migration is done.
         uvm_processor_mask_t all_involved_processors;
 
+        // Page mask used to compute the set of CPU pages for each CPU node.
+        uvm_page_mask_t node_pages_mask;
+
         // Final residency for the data. This is useful for callees to know if
         // a migration is part of a staging copy
         uvm_processor_id_t dest_id;
+
+        // Final residency NUMA node if the migration destination is the CPU.
+        int dest_nid;
+
+        // This structure is used to track CPU pages used for migrations on
+        // a per-NUMA node basis.
+        //
+        // The pages could be used for either migrations to the CPU (used to
+        // track the destination CPU pages) or staging copies (used to track
+        // the CPU pages used for the staging).
+        uvm_make_resident_page_tracking_t cpu_pages_used;
 
         // Event that triggered the call
         uvm_make_resident_cause_t cause;

@@ -305,4 +305,5 @@ NV_STATUS eventBufferAdd(struct EventBuffer *pEventBuffer, void* pEventData, NvU
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_EVENT_BUFFER_NVOC_H_

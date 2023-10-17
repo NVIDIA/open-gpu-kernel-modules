@@ -363,4 +363,5 @@ static inline NV_STATUS kccuMemDescGetForComputeInst(OBJGPU *arg0, struct Kernel
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_CCU_NVOC_H_

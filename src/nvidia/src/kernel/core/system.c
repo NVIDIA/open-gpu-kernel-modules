@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -153,6 +153,7 @@ sysConstruct_IMPL(OBJSYS *pSys)
     return NV_OK;
 
 failed:
+
     _sysDeleteChildObjects(pSys);
 
     g_pSys = NULL;
@@ -168,6 +169,7 @@ failed:
 void
 sysDestruct_IMPL(OBJSYS *pSys)
 {
+
     //
     // Any of these operations might fail but go ahead and
     // attempt to free remaining resources before complaining.
@@ -328,6 +330,12 @@ _sysRegistryOverrideResourceServer
         pSys->setProperty(pSys, PDB_PROP_SYS_CLIENT_HANDLE_LOOKUP, !!data32);
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_LOCK_TIME_COLLECT,
+                            &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT, !!data32);
+    }
+
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_LIST_DEFERRED_FREE,
                             &data32) == NV_OK)
     {
@@ -339,6 +347,7 @@ _sysRegistryOverrideResourceServer
     {
         pSys->clientListDeferredFreeLimit = data32;
     }
+
 }
 
 static void

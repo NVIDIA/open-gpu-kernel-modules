@@ -414,7 +414,6 @@ kheadProcessVblankCallbacks_IMPL
     VBLANKCALLBACK   *pNext     = NULL;
     VBLANKCALLBACK  **ppPrev    = NULL;
     NvBool            done      = NV_FALSE;
-    NvBool            removed   = NV_FALSE;
     NvBool            bQueueDpc = NV_FALSE;
     NvU32             newstate;
     NvU32             Count     = 0;
@@ -519,18 +518,10 @@ kheadProcessVblankCallbacks_IMPL
                     {
                         pCallback->VBlankCount = Count;
 
-                        removed = NV_FALSE;
-
                         //
-                        // If this is not a persistent callback, unlink it before we call it.
-                        // Otherwise, it may try to add itself again, and wont be able to.
+                        // If this is not a persistent callback, unlink it.
+                        // Otherwise, it may try to add itself again, and wont be able to add.
                         //
-                        if ( !(pCallback->Flags & VBLANK_CALLBACK_FLAG_PERSISTENT) )
-                        {
-                            pCallback->Next = NULL;
-                            *ppPrev  = pNext;
-                            removed  = NV_TRUE;
-                        }
 
                         // Call the function now
                         if (pCallback->Proc)
@@ -599,17 +590,13 @@ kheadProcessVblankCallbacks_IMPL
                         }
                         else
                         {
-                            if (!removed)
-                            {
-                                //
-                                // Yes, the proper way to terminate a persistent callback from within a callback is
-                                // to make it non-persistant.  This is what the cursor functions do, and so we should
-                                // check again after the callback.
-                                //
-                                pCallback->Next = NULL;
-                                *ppPrev  = pNext;
-                                removed = NV_TRUE;
-                            }
+                            //
+                            // Yes, the proper way to terminate a persistent callback from within a callback is
+                            // to make it non-persistant.  This is what the cursor functions do, and so we should
+                            // check again after the callback.
+                            //
+                            pCallback->Next = NULL;
+                            *ppPrev  = pNext;
                         }
                     }
                        // This condition arises at wrap time which is about every 331 days at 150 Hz

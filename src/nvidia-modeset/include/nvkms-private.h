@@ -68,8 +68,6 @@ NVEvoApiHandlesRec *nvGetSurfaceHandlesFromOpenDev(
     struct NvKmsPerOpenDev *pOpenDev);
 const NVEvoApiHandlesRec *nvGetSurfaceHandlesFromOpenDevConst(
     const struct NvKmsPerOpenDev *pOpenDev);
-NVDevEvoPtr nvGetDevEvoFromOpenDev(
-    const struct NvKmsPerOpenDev *pOpenDev);
 
 void nvKmsServiceNonStallInterrupt(void *dataPtr, NvU32 dataU32);
 

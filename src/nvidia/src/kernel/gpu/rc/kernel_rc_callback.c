@@ -232,7 +232,6 @@ krcErrorInvokeCallback_IMPL
 {
     OBJSYS             *pSys              = SYS_GET_INSTANCE();
     Journal            *pRcDB             = SYS_GET_RCDB(pSys);
-    OBJOS              *pOS               = SYS_GET_OS(pSys);
     KernelMIGManager   *pKernelMigManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     RmClient           *pClient           = NULL;
     RC_CALLBACK_STATUS  clientAction;
@@ -256,9 +255,9 @@ krcErrorInvokeCallback_IMPL
         kmigmgrIsEnginePartitionable(pGpu, pKernelMigManager, rmEngineType))
     {
         MIG_INSTANCE_REF ref;
-        status = kmigmgrGetInstanceRefFromClient(pGpu,
+        status = kmigmgrGetInstanceRefFromDevice(pGpu,
                                                  pKernelMigManager,
-                                                 RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                                 GPU_RES_GET_DEVICE(pKernelChannel),
                                                  &ref);
         if (status != NV_OK)
             return bReturn;
@@ -281,17 +280,12 @@ krcErrorInvokeCallback_IMPL
             return bReturn;
     }
 
-    if (pOS->osCheckCallback(pGpu))
+    if (osCheckCallback(pGpu))
     {
-        NvHandle          hDevice, hFifo;
         RC_ERROR_CONTEXT *pRcErrorContext = NULL;
-        Device           *pDevice;
-
-        NV_ASSERT_OK_OR_RETURN(
-            deviceGetByGpu(RES_GET_CLIENT(pKernelChannel), pGpu, NV_TRUE, &pDevice));
-
-        hDevice = RES_GET_HANDLE(pDevice);
-
+        Device           *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
+        NvHandle          hDevice = RES_GET_HANDLE(pDevice);
+        NvHandle          hFifo;
 
         if (!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup
                  ->bAllocatedByRm)
@@ -327,15 +321,15 @@ krcErrorInvokeCallback_IMPL
             }
         }
 
-        clientAction = pOS->osRCCallback(pGpu,
-                                         RES_GET_CLIENT_HANDLE(pKernelChannel),
-                                         hDevice,
-                                         hFifo,
-                                         RES_GET_HANDLE(pKernelChannel),
-                                         exceptLevel,
-                                         exceptType,
-                                         (NvU32 *)pRcErrorContext,
-                                         &krcResetCallback);
+        clientAction = osRCCallback(pGpu,
+                                    RES_GET_CLIENT_HANDLE(pKernelChannel),
+                                    hDevice,
+                                    hFifo,
+                                    RES_GET_HANDLE(pKernelChannel),
+                                    exceptLevel,
+                                    exceptType,
+                                    (NvU32 *)pRcErrorContext,
+                                    &krcResetCallback);
 
         if (clientAction == RC_CALLBACK_IGNORE ||
             clientAction == RC_CALLBACK_ISOLATE_NO_RESET)

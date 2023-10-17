@@ -1,6 +1,6 @@
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1116,6 +1116,36 @@ cliresCtrlCmdSystemSetMemorySize_IMPL
     return NV_OK;
 }
 
+//
+// cliresCtrlCmdSystemGetLockTimes
+//
+// Get API and GPU lock hold/wait times.
+//
+// Lock Requirements:
+//      None
+//
+NV_STATUS
+cliresCtrlCmdSystemGetLockTimes_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *pParams
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+
+    // Check if lock time collection is enabled first
+    if (!pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
+        return NV_ERR_NOT_SUPPORTED;
+
+    // Fetch API lock hold/wait times
+    rmapiLockGetTimes(pParams);
+
+    // Fetch GPU lock hold/wait times
+    rmGpuLockGetTimes(pParams);
+
+    return NV_OK;
+}
+
 static NV_STATUS
 classGetSystemClasses(NV0000_CTRL_SYSTEM_GET_CLASSLIST_PARAMS *pParams)
 {
@@ -1401,6 +1431,25 @@ cliresCtrlCmdGpuGetDeviceIds_IMPL
     pDeviceIdsParams->deviceIds = gpumgrGetDeviceInstanceMask();
 
     return NV_OK;
+}
+
+//
+// cliresCtrlCmdGpuGetActiveDeviceIds
+//
+// Lock Requirements:
+//      Assert that API lock held on entry
+//      No GPUs lock
+//
+NV_STATUS
+cliresCtrlCmdGpuGetActiveDeviceIds_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS *pActiveDeviceIdsParams
+)
+{
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+
+    return gpumgrCacheGetActiveDeviceIds(pActiveDeviceIdsParams);
 }
 
 //
@@ -1941,7 +1990,6 @@ cliresCtrlCmdGpuAcctGetAccountingPids_IMPL
 
     return gpuacctGetAcctPids(pGpuAcct, pAcctPidsParams);
 }
-
 
 NV_STATUS
 cliresCtrlCmdSystemPfmreqhndlrControl_IMPL
@@ -2575,7 +2623,7 @@ _validateConfigStaticTable_2x
 {
     NV_STATUS  status    = NV_OK;
     NvU8       checkSum;
-    NvU8       idx;
+    NvU16       idx;
 
     NV_ASSERT_OR_RETURN(pData     != NULL, NV_ERR_INVALID_POINTER);
     NV_ASSERT_OR_RETURN(pDataSize != NULL, NV_ERR_INVALID_POINTER);
@@ -2756,7 +2804,7 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
             DYNAMIC_PARAMS_HEADER_2X   headerOut     = { 0 };
             DYNAMIC_PARAMS_COMMON_2X   commonOut     = { 0 };
             DYNAMIC_PARAMS_ENTRY_2X    entriesOut    = { 0 };
-            NvU8 idx;
+            NvU32 idx;
 
             const char  *pSzHeaderFmt     =
                 NVPCF_DYNAMIC_PARAMS_2X_HEADER_FMT_SIZE_05;
@@ -4385,7 +4433,7 @@ cliresCtrlCmdNvdGetRcerrRpt_IMPL
                 // Note that this will result in clients receivinga rptIdx value
                 // larger than MAX_RCDB_RCDIAG_WRAP_BUFF.
                 //
-                NvU16 indexOffset = gpuIdx * MAX_RCDB_RCDIAG_WRAP_BUFF;
+                NvU16 indexOffset = pGpu->gpuInstance * MAX_RCDB_RCDIAG_WRAP_BUFF;
 
                 *pParams = *pLocalParams;
                 pParams->startIdx += indexOffset;
@@ -4616,4 +4664,3 @@ cliresCtrlCmdSystemGetExtendedPerfSensorCounters_IMPL
 {
     return NV_OK;
 }
-

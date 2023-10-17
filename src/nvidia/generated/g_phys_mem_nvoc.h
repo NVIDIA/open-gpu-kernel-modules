@@ -60,6 +60,7 @@ struct PhysicalMemory {
     NvBool (*__physmemShareCallback__)(struct PhysicalMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__physmemMapTo__)(struct PhysicalMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__physmemGetMapAddrSpace__)(struct PhysicalMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__physmemIsExportAllowed__)(struct PhysicalMemory *);
     NvU32 (*__physmemGetRefCount__)(struct PhysicalMemory *);
     void (*__physmemAddAdditionalDependants__)(struct RsClient *, struct PhysicalMemory *, RsResourceRef *);
     NV_STATUS (*__physmemControl_Prologue__)(struct PhysicalMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -115,6 +116,7 @@ NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, CAL
 #define physmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) physmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define physmemMapTo(pResource, pParams) physmemMapTo_DISPATCH(pResource, pParams)
 #define physmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) physmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define physmemIsExportAllowed(pMemory) physmemIsExportAllowed_DISPATCH(pMemory)
 #define physmemGetRefCount(pResource) physmemGetRefCount_DISPATCH(pResource)
 #define physmemAddAdditionalDependants(pClient, pResource, pReference) physmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define physmemControl_Prologue(pResource, pCallContext, pParams) physmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -155,6 +157,10 @@ static inline NV_STATUS physmemMapTo_DISPATCH(struct PhysicalMemory *pResource, 
 
 static inline NV_STATUS physmemGetMapAddrSpace_DISPATCH(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__physmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool physmemIsExportAllowed_DISPATCH(struct PhysicalMemory *pMemory) {
+    return pMemory->__physmemIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 physmemGetRefCount_DISPATCH(struct PhysicalMemory *pResource) {
@@ -248,4 +254,5 @@ NV_STATUS physmemConstruct_IMPL(struct PhysicalMemory *arg_pPhysicalMemory, CALL
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_PHYS_MEM_NVOC_H_

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -157,10 +157,14 @@ dmaAllocMap_IMPL
 
     if ((pKernelMIGManager != NULL) && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager))
     {
-        NvHandle hClient = RES_GET_CLIENT_HANDLE(pVirtualMemory);
+        RsClient *pClient = RES_GET_CLIENT(pVirtualMemory);
+        NvHandle hDevice = RES_GET_PARENT_HANDLE(pVirtualMemory);
         MIG_INSTANCE_REF ref;
+        Device *pDevice;
 
-        NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager, hClient, &ref));
+        NV_ASSERT_OK_OR_RETURN(deviceGetByHandle(pClient, hDevice, &pDevice));
+
+        NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref));
         swizzId = ref.pKernelMIGGpuInstance->swizzId;
     }
 

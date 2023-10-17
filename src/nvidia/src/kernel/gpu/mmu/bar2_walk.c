@@ -611,7 +611,8 @@ _bar2WalkCBLevelAlloc
                 break;
 
             case ADDR_SYSMEM:
-                status = memdescAlloc(pMemDesc);
+                memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_142, 
+                                pMemDesc);
                 NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
                 break;
         }
@@ -700,7 +701,8 @@ _bar2WalkCBLevelAlloc
                 break;
 
             case ADDR_SYSMEM:
-                status = memdescAlloc(pMemDesc);
+                memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_143, 
+                                pMemDesc);
                 NV_ASSERT_OR_GOTO(NV_OK == status, cleanup);
                 break;
         }

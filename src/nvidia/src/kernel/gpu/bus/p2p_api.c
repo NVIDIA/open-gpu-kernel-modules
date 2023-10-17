@@ -23,6 +23,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "gpu/subdevice/subdevice.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
 #include "gpu/bus/third_party_p2p.h"
@@ -585,7 +586,8 @@ p2papiConstruct_IMPL
                                                            DRF_DEF(_P2PAPI, _ATTRIBUTES, _REMOTE_EGM, _YES)));
         }
 
-        if (p2pConnectionType == P2P_CONNECTIVITY_PCIE_BAR1)
+        if ((p2pConnectionType == P2P_CONNECTIVITY_PCIE_BAR1) &&
+            (pCallContext->secInfo.privLevel >= RS_PRIV_LEVEL_KERNEL))
         {
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                                   kbusGetBar1P2PDmaInfo_HAL(pLocalGpu, pRemoteGpu,

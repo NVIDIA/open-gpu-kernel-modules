@@ -285,4 +285,5 @@ NV_STATUS memmapperConstruct_IMPL(struct MemoryMapper *arg_pMemoryMapper, struct
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_MEM_MAPPER_NVOC_H_

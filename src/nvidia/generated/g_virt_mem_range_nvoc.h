@@ -62,6 +62,7 @@ struct VirtualMemoryRange {
     NV_STATUS (*__vmrangeMapTo__)(struct VirtualMemoryRange *, struct RS_RES_MAP_TO_PARAMS *);
     NvBool (*__vmrangeShareCallback__)(struct VirtualMemoryRange *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__vmrangeGetMapAddrSpace__)(struct VirtualMemoryRange *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__vmrangeIsExportAllowed__)(struct VirtualMemoryRange *);
     NvU32 (*__vmrangeGetRefCount__)(struct VirtualMemoryRange *);
     void (*__vmrangeAddAdditionalDependants__)(struct RsClient *, struct VirtualMemoryRange *, RsResourceRef *);
     NV_STATUS (*__vmrangeControl_Prologue__)(struct VirtualMemoryRange *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -117,6 +118,7 @@ NV_STATUS __nvoc_objCreate_VirtualMemoryRange(VirtualMemoryRange**, Dynamic*, Nv
 #define vmrangeMapTo(pVirtualMemory, pParams) vmrangeMapTo_DISPATCH(pVirtualMemory, pParams)
 #define vmrangeShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) vmrangeShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define vmrangeGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) vmrangeGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define vmrangeIsExportAllowed(pMemory) vmrangeIsExportAllowed_DISPATCH(pMemory)
 #define vmrangeGetRefCount(pResource) vmrangeGetRefCount_DISPATCH(pResource)
 #define vmrangeAddAdditionalDependants(pClient, pResource, pReference) vmrangeAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define vmrangeControl_Prologue(pResource, pCallContext, pParams) vmrangeControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -152,6 +154,10 @@ static inline NvBool vmrangeShareCallback_DISPATCH(struct VirtualMemoryRange *pR
 
 static inline NV_STATUS vmrangeGetMapAddrSpace_DISPATCH(struct VirtualMemoryRange *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__vmrangeGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool vmrangeIsExportAllowed_DISPATCH(struct VirtualMemoryRange *pMemory) {
+    return pMemory->__vmrangeIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 vmrangeGetRefCount_DISPATCH(struct VirtualMemoryRange *pResource) {
@@ -249,4 +255,5 @@ NV_STATUS vmrangeConstruct_IMPL(struct VirtualMemoryRange *arg_pVmRange, CALL_CO
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_VIRT_MEM_RANGE_NVOC_H_

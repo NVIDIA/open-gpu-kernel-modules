@@ -347,7 +347,7 @@ nvlink_core_get_device_by_devinfo
 {
     nvlink_device *tmpDev = NULL;
 
-    if ((devInfo == NULL) || (devInfo == NULL))
+    if ((devInfo == NULL) || (dev == NULL))
     {
         return;
     }

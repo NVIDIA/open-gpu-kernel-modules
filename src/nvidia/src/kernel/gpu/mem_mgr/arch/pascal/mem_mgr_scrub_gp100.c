@@ -31,53 +31,21 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 
-static NV_STATUS _memmgrPostSchedulingEnableHandler_GP100(OBJGPU *, void *);
-static NV_STATUS _memmgrPreSchedulingDisableHandler_GP100(OBJGPU *, void *);
-
-/*!
- * Scrub initialization routine
- *
- * @returns NV_OK on success, NV_ERR_GENERIC on failure
- */
-NV_STATUS
-memmgrScrubInit_GP100
-(
-    OBJGPU        *pGpu,
-    MemoryManager *pMemoryManager
-)
-{
-    if (memmgrIsScrubOnFreeEnabled(pMemoryManager))
-    {
-        NV_ASSERT_OK_OR_RETURN(kfifoAddSchedulingHandler(pGpu,
-                    GPU_GET_KERNEL_FIFO(pGpu),
-                    _memmgrPostSchedulingEnableHandler_GP100, NULL,
-                    _memmgrPreSchedulingDisableHandler_GP100, NULL));
-    }
-
-    return NV_OK;
-}
-
 /*!
  * Performs initialization that is dependant on work done in gpuStateLoad() such
  * as channel initialization.
- *
- * @param[in] pGpu        OBJGPU pointer
- * @param[in] pUnusedData Callback data which is unused
- *
- * @returns  NV_OK on success, NV_ERR_GENERIC on failure
  */
-static NV_STATUS
-_memmgrPostSchedulingEnableHandler_GP100
+NV_STATUS
+memmgrScrubHandlePostSchedulingEnable_GP100
 (
-    OBJGPU *pGpu,
-    void   *pUnusedData
+    OBJGPU        *pGpu,
+    MemoryManager *pMemoryManager
 )
 {
     Heap            *pHeap     = GPU_GET_HEAP(pGpu);
     NvBool           bIsMIGEnabled = IS_MIG_ENABLED(pGpu);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool bIsVgpuLegacyPolicy = (pKernelMIGManager != NULL) && kmigmgrUseLegacyVgpuPolicy(pGpu, pKernelMIGManager);
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     //
     // Disabling scrub on free for SLI, waiting on the bug:1915380
@@ -94,36 +62,20 @@ _memmgrPostSchedulingEnableHandler_GP100
     return NV_OK;
 }
 
+/*!
+ * Performs cleanup on resources that need to be freed before StateUnload routes
+ * are called
+ */
 NV_STATUS
-memmgrScrubHandlePostSchedulingEnable_GP100
+memmgrScrubHandlePreSchedulingDisable_GP100
 (
     OBJGPU        *pGpu,
     MemoryManager *pMemoryManager
 )
 {
-    return _memmgrPostSchedulingEnableHandler_GP100(pGpu, NULL);
-}
-
-/*!
- * Performs cleanup on resources that need to be freed before StateUnload routes
- * are called
- *
- * @param[in] pGpu        OBJGPU pointer
- * @param[in] pUnusedData Unused callback data
- *
- * @returns NV_OK
- */
-static NV_STATUS
-_memmgrPreSchedulingDisableHandler_GP100
-(
-    OBJGPU *pGpu,
-    void   *pUnusedData
-)
-{
     Heap             *pHeap               = GPU_GET_HEAP(pGpu);
     OBJMEMSCRUB      *pMemscrub           = NULL;
     NvBool            bIsMIGEnabled       = IS_MIG_ENABLED(pGpu);
-    MemoryManager    *pMemoryManager      = GPU_GET_MEMORY_MANAGER(pGpu);
     NvBool            bIsMIGInUse         = IS_MIG_IN_USE(pGpu);
     KernelMIGManager *pKernelMIGManager   = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool            bIsVgpuLegacyPolicy = (pKernelMIGManager != NULL) && kmigmgrUseLegacyVgpuPolicy(pGpu, pKernelMIGManager);
@@ -151,34 +103,4 @@ _memmgrPreSchedulingDisableHandler_GP100
     }
 
     return NV_OK;
-}
-
-NV_STATUS
-memmgrScrubHandlePreSchedulingDisable_GP100
-(
-    OBJGPU        *pGpu,
-    MemoryManager *pMemoryManager
-)
-{
-    return _memmgrPreSchedulingDisableHandler_GP100(pGpu, NULL);
-}
-
-/*!
- * FB scrub cleanup routine. Deallocates any dynamic memory used.
- *
- * @returns NV_OK on success, NV_ERR_GENERIC on failure
- */
-void
-memmgrScrubDestroy_GP100
-(
-    OBJGPU        *pGpu,
-    MemoryManager *pMemoryManager
-)
-{
-    if (memmgrIsScrubOnFreeEnabled(pMemoryManager))
-    {
-        kfifoRemoveSchedulingHandler(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
-            _memmgrPostSchedulingEnableHandler_GP100, NULL,
-            _memmgrPreSchedulingDisableHandler_GP100, NULL);
-    }
 }

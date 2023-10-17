@@ -407,4 +407,5 @@ NV_STATUS mthdNoOperation(OBJGPU *, struct ChannelDescendant *, NvU32, NvU32);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CHANNEL_DESCENDANT_NVOC_H_

@@ -384,7 +384,7 @@ kbusInitVirtualBar2_VBAR2
 
     pMemDesc = pKernelBus->virtualBar2[gfid].pPageLevelsMemDesc;
 
-    if (KBUS_BAR2_TUNNELLED(pKernelBus) || kbusIsBarAccessBlocked(pKernelBus))
+    if (kbusIsBarAccessBlocked(pKernelBus))
     {
         return NV_OK;
     }
@@ -441,7 +441,7 @@ kbusPreInitVirtualBar2_VBAR2
 
     pMemDesc = pKernelBus->virtualBar2[gfid].pPageLevelsMemDescForBootstrap;
 
-    if (KBUS_BAR2_TUNNELLED(pKernelBus) || kbusIsBarAccessBlocked(pKernelBus))
+    if (kbusIsBarAccessBlocked(pKernelBus))
     {
         return NV_OK;
     }
@@ -486,7 +486,7 @@ _freeRmApertureMap_VBAR2
 
     listRemove(&pKernelBus->virtualBar2[GPU_GFID_PF].cachedMapList, pMap);
 
-    if (!KBUS_BAR2_TUNNELLED(pKernelBus) && pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping)
+    if (pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping)
     {
         pBlockFree = pVASpaceHeap->eheapGetBlock(pVASpaceHeap, pMap->vAddr, NV_FALSE);
 
@@ -689,8 +689,7 @@ kbusMapBar2ApertureCached_VBAR2
 
     // Update the page tables
     if (pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping == NULL ||
-        (!KBUS_BAR2_TUNNELLED(pKernelBus) &&
-         NV_OK != kbusUpdateRmAperture_HAL(pGpu, pKernelBus, pMemDesc, vAddr,
+        (NV_OK != kbusUpdateRmAperture_HAL(pGpu, pKernelBus, pMemDesc, vAddr,
             pMemDesc->PageCount * pMemDesc->pageArrayGranularity,
             UPDATE_RM_APERTURE_FLAGS_INVALIDATE)))
     {
@@ -988,7 +987,7 @@ kbusUnmapBar2ApertureWithFlags_SCRATCH
 )
 {
     portMemFree(*pCpuPtr);
-    kbusFlush_HAL(pGpu, pKernelBus, kbusGetFlushAperture(pKernelBus, memdescGetAddressSpace(pMemDesc)) | BUS_FLUSH_USE_PCIE_READ);
+    kbusFlush_HAL(pGpu, pKernelBus, kbusGetFlushAperture(pKernelBus, memdescGetAddressSpace(pMemDesc)));
 }
 
 /*!

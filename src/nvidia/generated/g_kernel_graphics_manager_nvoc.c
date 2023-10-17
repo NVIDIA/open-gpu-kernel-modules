@@ -17,10 +17,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJENGSTATE;
 
-void __nvoc_init_KernelGraphicsManager(KernelGraphicsManager*);
-void __nvoc_init_funcTable_KernelGraphicsManager(KernelGraphicsManager*);
-NV_STATUS __nvoc_ctor_KernelGraphicsManager(KernelGraphicsManager*);
-void __nvoc_init_dataField_KernelGraphicsManager(KernelGraphicsManager*);
+void __nvoc_init_KernelGraphicsManager(KernelGraphicsManager*, RmHalspecOwner* );
+void __nvoc_init_funcTable_KernelGraphicsManager(KernelGraphicsManager*, RmHalspecOwner* );
+NV_STATUS __nvoc_ctor_KernelGraphicsManager(KernelGraphicsManager*, RmHalspecOwner* );
+void __nvoc_init_dataField_KernelGraphicsManager(KernelGraphicsManager*, RmHalspecOwner* );
 void __nvoc_dtor_KernelGraphicsManager(KernelGraphicsManager*);
 extern const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelGraphicsManager;
 
@@ -66,7 +66,7 @@ const struct NVOC_CLASS_DEF __nvoc_class_def_KernelGraphicsManager =
     /*pExportInfo=*/        &__nvoc_export_info_KernelGraphicsManager
 };
 
-static NV_STATUS __nvoc_thunk_KernelGraphicsManager_engstateConstructEngine(struct OBJGPU *arg0, struct OBJENGSTATE *arg1, ENGDESCRIPTOR arg2) {
+static NV_STATUS __nvoc_thunk_KernelGraphicsManager_engstateConstructEngine(OBJGPU *arg0, struct OBJENGSTATE *arg1, ENGDESCRIPTOR arg2) {
     return kgrmgrConstructEngine(arg0, (struct KernelGraphicsManager *)(((unsigned char *)arg1) - __nvoc_rtti_KernelGraphicsManager_OBJENGSTATE.offset), arg2);
 }
 
@@ -135,16 +135,21 @@ void __nvoc_dtor_KernelGraphicsManager(KernelGraphicsManager *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_KernelGraphicsManager(KernelGraphicsManager *pThis) {
+void __nvoc_init_dataField_KernelGraphicsManager(KernelGraphicsManager *pThis, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(chipHal);
+    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
-NV_STATUS __nvoc_ctor_KernelGraphicsManager(KernelGraphicsManager *pThis) {
+NV_STATUS __nvoc_ctor_KernelGraphicsManager(KernelGraphicsManager *pThis, RmHalspecOwner *pRmhalspecowner) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
     if (status != NV_OK) goto __nvoc_ctor_KernelGraphicsManager_fail_OBJENGSTATE;
-    __nvoc_init_dataField_KernelGraphicsManager(pThis);
+    __nvoc_init_dataField_KernelGraphicsManager(pThis, pRmhalspecowner);
     goto __nvoc_ctor_KernelGraphicsManager_exit; // Success
 
 __nvoc_ctor_KernelGraphicsManager_fail_OBJENGSTATE:
@@ -153,10 +158,26 @@ __nvoc_ctor_KernelGraphicsManager_exit:
     return status;
 }
 
-static void __nvoc_init_funcTable_KernelGraphicsManager_1(KernelGraphicsManager *pThis) {
+static void __nvoc_init_funcTable_KernelGraphicsManager_1(KernelGraphicsManager *pThis, RmHalspecOwner *pRmhalspecowner) {
+    ChipHal *chipHal = &pRmhalspecowner->chipHal;
+    const unsigned long chipHal_HalVarIdx = (unsigned long)chipHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(chipHal);
+    PORT_UNREFERENCED_VARIABLE(chipHal_HalVarIdx);
 
     pThis->__kgrmgrConstructEngine__ = &kgrmgrConstructEngine_IMPL;
+
+    // Hal function -- kgrmgrGetVeidsFromGpcCount
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */ 
+    {
+        pThis->__kgrmgrGetVeidsFromGpcCount__ = &kgrmgrGetVeidsFromGpcCount_GA100;
+    }
+    // default
+    else
+    {
+        pThis->__kgrmgrGetVeidsFromGpcCount__ = &kgrmgrGetVeidsFromGpcCount_46f6a7;
+    }
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelGraphicsManager_engstateConstructEngine;
 
@@ -187,23 +208,24 @@ static void __nvoc_init_funcTable_KernelGraphicsManager_1(KernelGraphicsManager 
     pThis->__kgrmgrIsPresent__ = &__nvoc_thunk_OBJENGSTATE_kgrmgrIsPresent;
 }
 
-void __nvoc_init_funcTable_KernelGraphicsManager(KernelGraphicsManager *pThis) {
-    __nvoc_init_funcTable_KernelGraphicsManager_1(pThis);
+void __nvoc_init_funcTable_KernelGraphicsManager(KernelGraphicsManager *pThis, RmHalspecOwner *pRmhalspecowner) {
+    __nvoc_init_funcTable_KernelGraphicsManager_1(pThis, pRmhalspecowner);
 }
 
 void __nvoc_init_OBJENGSTATE(OBJENGSTATE*);
-void __nvoc_init_KernelGraphicsManager(KernelGraphicsManager *pThis) {
+void __nvoc_init_KernelGraphicsManager(KernelGraphicsManager *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_pbase_KernelGraphicsManager = pThis;
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object;
     pThis->__nvoc_pbase_OBJENGSTATE = &pThis->__nvoc_base_OBJENGSTATE;
     __nvoc_init_OBJENGSTATE(&pThis->__nvoc_base_OBJENGSTATE);
-    __nvoc_init_funcTable_KernelGraphicsManager(pThis);
+    __nvoc_init_funcTable_KernelGraphicsManager(pThis, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelGraphicsManager(KernelGraphicsManager **ppThis, Dynamic *pParent, NvU32 createFlags) {
     NV_STATUS status;
     Object *pParentObj;
     KernelGraphicsManager *pThis;
+    RmHalspecOwner *pRmhalspecowner;
 
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelGraphicsManager), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
@@ -225,8 +247,12 @@ NV_STATUS __nvoc_objCreate_KernelGraphicsManager(KernelGraphicsManager **ppThis,
         pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_KernelGraphicsManager(pThis);
-    status = __nvoc_ctor_KernelGraphicsManager(pThis);
+    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    __nvoc_init_KernelGraphicsManager(pThis, pRmhalspecowner);
+    status = __nvoc_ctor_KernelGraphicsManager(pThis, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelGraphicsManager_cleanup;
 
     *ppThis = pThis;

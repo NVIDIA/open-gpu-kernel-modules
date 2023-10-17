@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -414,6 +414,7 @@ typedef struct rpc_timed_semaphore_release_v01_00
     NvU32      releaseValue;
     NvU32      completionStatus;
     NvHandle   hClient;
+    NvHandle   hDevice;
 } rpc_timed_semaphore_release_v01_00;
 
 typedef rpc_timed_semaphore_release_v01_00 rpc_timed_semaphore_release_v;
@@ -480,13 +481,6 @@ typedef struct rpc_nvlink_is_gpu_degraded_v17_00
 } rpc_nvlink_is_gpu_degraded_v17_00;
 
 typedef rpc_nvlink_is_gpu_degraded_v17_00 rpc_nvlink_is_gpu_degraded_v;
-
-typedef struct rpc_gsp_send_user_shared_data_v17_00
-{
-    NvU32      data;
-} rpc_gsp_send_user_shared_data_v17_00;
-
-typedef rpc_gsp_send_user_shared_data_v17_00 rpc_gsp_send_user_shared_data_v;
 
 typedef struct rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 {
@@ -2290,6 +2284,13 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_timed_semaphore_release_v01_00[] = {
         #endif
     },
     {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_timed_semaphore_release_v01_00, hDevice),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hDevice"
+        #endif
+    },
+    {
         .vtype        = vt_end
     }
 };
@@ -2507,29 +2508,6 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_is_gpu_degraded_v17_00 = {
     #endif
     .header_length = sizeof(rpc_nvlink_is_gpu_degraded_v17_00),
     .fdesc = vmiopd_fdesc_t_rpc_nvlink_is_gpu_degraded_v17_00
-};
-#endif
-
-#ifndef SKIP_PRINT_rpc_gsp_send_user_shared_data_v17_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_send_user_shared_data_v17_00[] = {
-    {
-        .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_gsp_send_user_shared_data_v17_00, data),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "data"
-        #endif
-    },
-    {
-        .vtype        = vt_end
-    }
-};
-
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_send_user_shared_data_v17_00 = {
-    #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_gsp_send_user_shared_data",
-    #endif
-    .header_length = sizeof(rpc_gsp_send_user_shared_data_v17_00),
-    .fdesc = vmiopd_fdesc_t_rpc_gsp_send_user_shared_data_v17_00
 };
 #endif
 
@@ -3104,13 +3082,6 @@ vmiopd_mdesc_t *rpcdebugNvlinkIsGpuDegraded_v17_00(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_gsp_send_user_shared_data_v17_00
-vmiopd_mdesc_t *rpcdebugGspSendUserSharedData_v17_00(void)
-{
-    return &vmiopd_mdesc_t_rpc_gsp_send_user_shared_data_v17_00;
-}
-#endif
-
 #ifndef SKIP_PRINT_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
 vmiopd_mdesc_t *rpcdebugSetSysmemDirtyPageTrackingBuffer_v20_00(void)
 {
@@ -3250,8 +3221,6 @@ typedef union rpc_generic_union {
     rpc_nvlink_inband_received_data_4096_v nvlink_inband_received_data_4096_v;
     rpc_nvlink_is_gpu_degraded_v17_00 nvlink_is_gpu_degraded_v17_00;
     rpc_nvlink_is_gpu_degraded_v nvlink_is_gpu_degraded_v;
-    rpc_gsp_send_user_shared_data_v17_00 gsp_send_user_shared_data_v17_00;
-    rpc_gsp_send_user_shared_data_v gsp_send_user_shared_data_v;
     rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 set_sysmem_dirty_page_tracking_buffer_v20_00;
     rpc_set_sysmem_dirty_page_tracking_buffer_v set_sysmem_dirty_page_tracking_buffer_v;
     rpc_extdev_intr_service_v17_00 extdev_intr_service_v17_00;

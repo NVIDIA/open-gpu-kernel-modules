@@ -91,7 +91,7 @@ static NV_STATUS __nvoc_thunk_KernelCE_engstateStateUnload(OBJGPU *pGpu, struct 
     return kceStateUnload(pGpu, (struct KernelCE *)(((unsigned char *)pKCe) - __nvoc_rtti_KernelCE_OBJENGSTATE.offset), flags);
 }
 
-static void __nvoc_thunk_KernelCE_intrservRegisterIntrService(OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[167]) {
+static void __nvoc_thunk_KernelCE_intrservRegisterIntrService(OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[168]) {
     kceRegisterIntrService(arg0, (struct KernelCE *)(((unsigned char *)arg1) - __nvoc_rtti_KernelCE_IntrService.offset), arg2);
 }
 
@@ -220,16 +220,6 @@ static void __nvoc_init_funcTable_KernelCE_1(KernelCE *pThis, RmHalspecOwner *pR
     pThis->__kceRegisterIntrService__ = &kceRegisterIntrService_IMPL;
 
     pThis->__kceServiceNotificationInterrupt__ = &kceServiceNotificationInterrupt_IMPL;
-
-    // Hal function -- kceGetP2PCes
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-    {
-        pThis->__kceGetP2PCes__ = &kceGetP2PCes_GH100;
-    }
-    else
-    {
-        pThis->__kceGetP2PCes__ = &kceGetP2PCes_GV100;
-    }
 
     // Hal function -- kceGetNvlinkAutoConfigCeValues
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 

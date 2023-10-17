@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1394,6 +1394,12 @@ typedef struct NV0073_CTRL_CMD_DP_TOPOLOGY_FREE_DISPLAYID_PARAMS {
  *   linkBW
  *     The BW of each lane that the DP transmitter hardware is set up to drive.
  *     The values returned will be according to the DP specifications.
+ *   dp2LinkBW
+ *     Current BW of each lane that the DP transmitter hardware is set up to drive is UHBR.
+ *     The values returned will be using 10M convention.
+ *
+ *   Note:
+ *   linkBW and dp2LinkBw are mutual exclusive. Only one of the value will be non-zero.
  *
  */
 #define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG (0x731360U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS_MESSAGE_ID" */
@@ -1405,16 +1411,37 @@ typedef struct NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS {
     NvU32 displayId;
     NvU32 laneCount;
     NvU32 linkBW;
+    NvU32 dp2LinkBW;
 } NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS;
 
 #define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT                          3:0
-#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_0     (0x00000000U)
-#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_1     (0x00000001U)
-#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_2     (0x00000002U)
-#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_4     (0x00000004U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_0        (0x00000000U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_1        (0x00000001U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_2        (0x00000002U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LANE_COUNT_4        (0x00000004U)
 #define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW                             3:0
-#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_1_62GBPS (0x00000006U)
-#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_2_70GBPS (0x0000000aU)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_1_62GBPS    (0x00000006U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_2_70GBPS    (0x0000000aU)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_5_40GBPS    (0x00000014U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_8_10GBPS    (0x0000001EU)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_2_16GBPS    (0x00000008U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_2_43GBPS    (0x00000009U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_3_24GBPS    (0x0000000CU)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_4_32GBPS    (0x00000010U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_LINK_BW_6_75GBPS    (0x00000019U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW                         15:0
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_1_62GBPS (0x000000A2U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_2_70GBPS (0x0000010EU)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_5_40GBPS (0x0000021CU)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_8_10GBPS (0x0000032AU)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_2_16GBPS (0x000000D8U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_2_43GBPS (0x000000F3U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_3_24GBPS (0x00000114U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_4_32GBPS (0x000001B0U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_6_75GBPS (0x000002A3U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_10_0GBPS (0x000003E8U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_13_5GBPS (0x00000546U)
+#define NV0073_CTRL_CMD_DP_GET_LINK_CONFIG_DP2LINK_BW_20_0GBPS (0x000007D0U)
 
 /*
  * NV0073_CTRL_CMD_DP_GET_EDP_DATA
@@ -1455,7 +1482,7 @@ typedef struct NV0073_CTRL_DP_GET_LINK_CONFIG_PARAMS {
  *            NV0073_CTRL_DP_GET_EDP_DATA_DPCD_SET_POWER_D3
  *              This eDP panel is current standby.
  */
-#define NV0073_CTRL_CMD_DP_GET_EDP_DATA                     (0x731361U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_GET_EDP_DATA_PARAMS_MESSAGE_ID" */
+#define NV0073_CTRL_CMD_DP_GET_EDP_DATA                        (0x731361U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_DP_GET_EDP_DATA_PARAMS_MESSAGE_ID" */
 
 #define NV0073_CTRL_DP_GET_EDP_DATA_PARAMS_MESSAGE_ID (0x61U)
 
@@ -1751,6 +1778,8 @@ typedef struct NV0073_CTRL_CMD_DP_SEND_ACT_PARAMS {
  *     Specifies the SOR index.
  *   dpVersionsSupported
  *     Specified the DP versions supported by the GPU
+ *   UHBRSupportedByGpu
+ *     Bitmask to specify the UHBR link rates supported by the GPU.
  *   bIsMultistreamSupported
  *     Returns NV_TRUE if MST is supported by the GPU else NV_FALSE
  *   bIsSCEnabled
@@ -1787,7 +1816,7 @@ typedef struct NV0073_CTRL_CMD_DP_GET_CAPS_PARAMS {
     NvU32                          sorIndex;
     NvU32                          maxLinkRate;
     NvU32                          dpVersionsSupported;
-    NvU32                          UHBRSupported;
+    NvU32                          UHBRSupportedByGpu;
     NvBool                         bIsMultistreamSupported;
     NvBool                         bIsSCEnabled;
     NvBool                         bHasIncreasedWatermarkLimits;
@@ -2212,7 +2241,7 @@ typedef struct NV0073_CTRL_CMD_DP_GET_AUXLOGGER_BUFFER_DATA_PARAMS {
  * linkRateTbl
  *    Link rates in 200KHz as native granularity from eDP 1.4
  * linkBwTbl
- *    Link rates in 270MHz and valid for client to apply to
+ *    Link rates valid for client to apply to
  * linkBwCount
  *    Total valid link rates
  *
@@ -2235,7 +2264,7 @@ typedef struct NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES_PARAMS {
     NvU16 linkRateTbl[NV0073_CTRL_DP_MAX_INDEXED_LINK_RATES];
 
     // Out
-    NvU8  linkBwTbl[NV0073_CTRL_DP_MAX_INDEXED_LINK_RATES];
+    NvU16 linkBwTbl[NV0073_CTRL_DP_MAX_INDEXED_LINK_RATES];
     NvU8  linkBwCount;
 } NV0073_CTRL_CMD_DP_CONFIG_INDEXED_LINK_RATES_PARAMS;
 
@@ -2786,4 +2815,245 @@ typedef struct NV0073_CTRL_DP_EXECUTE_OVERDRIVE_POLICY_PARAMS {
     NvU16 manfId;
     NvU16 prodId;
 } NV0073_CTRL_DP_EXECUTE_OVERDRIVE_POLICY_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL
+ *
+ * This command is used to trigger link training on DP2.x device with 128b132b channel encoding.
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior.
+ *
+ *   displayId
+ *     This parameter specifies the ID of the display for which the dfp
+ *     caps should be returned.  The display ID must a dfp display.
+ *     If more than one displayId bit is set or the displayId is not a dfp,
+ *     this call will return NV_ERR_INVALID_ARGUMENT.
+ *
+ *   cmd
+ *     This parameter is an input to this command.
+ *     Here are the current defined fields:
+ *        1.Ask RM to enter specific stage
+ *          NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SETTING
+ *          NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET_CHNL_EQ
+ *                                                _CDS
+ *          _SET_* only valid if _SETTING_TRUE
+ *
+ *        2.Ask RM to check the completion of specific stage
+ *          NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLLING
+ *          NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL_CHNL_EQ_DONE
+ *                                                 _CHNL_EQ_INTERLANE_ALIGN
+ *                                                 _CDS
+ *          _POLL_* only valid if _POLLING_TRUE
+ *
+ *        _SETTING_TRUE and _POLLING_TRUE are mutual exclusive.
+ *        RM will return NV_ERR_INVALID_ARGUMENT if both bit are set.
+ *
+ *        3.Downspread configuration
+ *          NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD
+ *            Specifies whether RM should be forced to enable or disable the DP
+ *            Downspread setting. This can be used along with the Fake link
+ *            training option so that we can configure the GPU to enable/disable
+ *            spread when a real display is not connected.
+ *
+ *              NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD_NO (default behavior)
+ *                  RM will enable Downspread when the display supports it.
+ *              NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD_YES
+ *                  RM will enable/disable Downspread according to _SET_DOWNSPREAD field.
+ *
+ *          NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD
+ *            Specifies if RM should enable or disable downspread.
+ *            Only valid when _FORCED_DOWNSPREAD is set to _YES
+ *
+ *              NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD_ENABLE
+ *                  RM will enable Downspread even if the display does not support it.
+ *              NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD_DISABLE
+ *                  RM will not enable Downspread even if the display does support it.
+ *
+ *        4.NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING
+ *          This field specifies if fake link training is to be done. This will
+ *          program enough of the hardware to avoid any hardware hangs and
+ *          depending upon option chosen by the client, OR will be enabled for
+ *          transmisssion.
+ *
+ *              NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_NO
+ *                  No Fake LT will be performed
+ *              NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_DONOT_TOGGLE_TRANSMISSION
+ *                  SOR will be not powered up during Fake LT
+ *              NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_TOGGLE_TRANSMISSION_ON
+ *                  SOR will be powered up during Fake LT
+ *
+ *        5.NV0073_CTRL_DP2X_CMD_FALLBACK_CONFIG
+ *
+ *        6.NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING
+ *          Specifies whether RM should skip HW training of the link.
+ *          If this is the case then RM only updates its SW state without actually
+ *          touching any HW registers. Clients should use this ONLY if it has determined -
+ *              a. link is trained and not lost
+ *              b. desired link config is same as current trained link config
+ *              c. link is not in D3 (should be in D0)
+ *
+ *           NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING_NO
+ *              RM doesn't skip HW LT as the current Link Config is not the same as the
+ *              requested Link Config.
+ *           NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING_YES
+ *              RM skips HW LT and only updates its SW state as client has determined that
+ *              the current state of the link and the requested Link Config is the same.
+ *   data
+ *     This parameter is an input and output to this command.
+ *     Here are the current defined fields:
+ *          NV0073_CTRL_DP2X_DATA_LANE_COUNT
+ *              Valid values: 0, 1, 2, 4
+ *          NV0073_CTRL_DP2X_DATA_LINK_BW
+ *              Valid values: all standard link rates defined in DP2.x and ILRs defined in eDP spec.
+ *
+ *   pollingInfo
+ *     This parameter is an output to this command.
+ *     Here are the current defined fields:
+ *
+ *     NV0073_CTRL_DP2X_POLLING_INFO_CHNL_EQ_INTERVAL
+ *       For Channel equalization, the polling interval is defined in DPCD 0x2216.
+ *       RM report to DPLib when _SET_STAGE is set to _CHNL_EQ.
+ *       (For CDS stage, the polling interval is fixed at 3ms.)
+ *
+ *     NV0073_CTRL_DP2X_POLLING_INFO_RESULT
+ *       _DONE:     if the specified stage is done.
+ *       _PENDING:  if the specified stage is still pending.
+ *
+ *   err
+ *     This parameter specifies provides info regarding the outcome
+ *     of this calling control call.  If zero, no errors were found.
+ *     Otherwise, this parameter will specify the error detected.
+ *     The valid parameter is broken down as follows:
+ *          NV0073_CTRL_DP2X_ERR_CHANNEL_EQ_DONE
+ *              If set to _ERR, link training failed at channel equalization phase.
+ *          NV0073_CTRL_DP2X_ERR_CDS_DONE
+ *              If set to _ERR, link training failed at CDS phase.
+ *          NV0073_CTRL_DP2X_ERR_TIMEOUT
+ *              If set to _ERR, link training failed because of timeout.
+ *          NV0073_CTRL_DP2X_ERR_LT_FAILED
+ *              If set to _ERR, link training failed.
+ *          NV0073_CTRL_DP2X_ERR_INVALID_PARAMETER
+ *              If set to _ERR, link configuration or displayID is invalid.
+ *          NV0073_CTRL_DP2X_ERR_SET_LANE_COUNT
+ *              If set to _ERR, link training failed when setting lane count.
+ *          NV0073_CTRL_DP2X_ERR_SET_LINK_BW
+ *              If set to _ERR, link training failed when setting link rate.
+ *          NV0073_CTRL_DP2X_ERR_ENABLE_FEC
+ *              If set to _ERR, link training failed when enabling FEC.
+ *          NV0073_CTRL_DP2X_ERR_CONFIG_LTTPR
+ *              If set to _ERR, link training failed when setting LTTPR.
+ *          NV0073_CTRL_DP2X_ERR_PRE_LT
+ *              If set to _ERR, link training failed before link training start.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NVOS_STATUS_ERROR
+ */
+
+#define NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL (0x731383U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DP_INTERFACE_ID << 8) | NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS_MESSAGE_ID (0x83U)
+
+typedef struct NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+    NvU32 cmd;
+    NvU32 data;
+    NvU32 pollingInfo;
+    NvU32 err;
+} NV0073_CTRL_CMD_DP2X_LINK_TRAINING_CTRL_PARAMS;
+
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SETTING                                        0:0
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SETTING_FALSE                  (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SETTING_TRUE                   (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET                                            1:1
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET_CHNL_EQ                    (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_SET_CDS                        (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLLING                                        8:8
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLLING_FALSE                  (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLLING_TRUE                   (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL                                          10:9
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL_CHNL_EQ_DONE              (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL_CHNL_EQ_INTERLANE_ALIGN   (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_LINK_TRAINING_POLL_CDS                       (0x00000002U)
+
+// Flags for link training.
+#define NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD                                          16:16
+#define NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD_NO                         (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_FORCED_DOWNSPREAD_YES                        (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD                                             17:17
+#define NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD_DISABLE                       (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_SET_DOWNSPREAD_ENABLE                        (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING                                        18:18
+#define NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING_NO                       (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_SKIP_HW_PROGRAMMING_YES                      (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING                                         20:19
+#define NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_NO                        (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_DONOT_TOGGLE_TRANSMISSION (0x00000001U)
+#define NV0073_CTRL_DP2X_CMD_FAKE_LINK_TRAINING_TOGGLE_TRANSMISSION_ON    (0x00000002U)
+#define NV0073_CTRL_DP2X_CMD_FALLBACK_CONFIG                                            21:21
+#define NV0073_CTRL_DP2X_CMD_FALLBACK_CONFIG_FALSE                        (0x00000000U)
+#define NV0073_CTRL_DP2X_CMD_FALLBACK_CONFIG_TRUE                         (0x00000001U)
+
+// Basic Data for Link training: Lane count and bandwidth.
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT                               3:0
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT_0                                (0x00000000U)
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT_1                                (0x00000001U)
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT_2                                (0x00000002U)
+#define NV0073_CTRL_DP2X_DATA_LANE_COUNT_4                                (0x00000004U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW                                  7:4
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_1_62GBPS                            (0x00000001U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_2_16GBPS                            (0x00000002U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_2_43GBPS                            (0x00000003U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_2_70GBPS                            (0x00000004U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_3_24GBPS                            (0x00000005U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_4_32GBPS                            (0x00000006U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_5_40GBPS                            (0x00000007U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_6_75GBPS                            (0x00000008U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_8_10GBPS                            (0x00000009U)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_UHBR10_0                            (0x0000000AU)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_UHBR13_5                            (0x0000000BU)
+#define NV0073_CTRL_DP2X_DATA_LINK_BW_UHBR20_0                            (0x0000000CU)
+
+#define NV0073_CTRL_DP2X_ERR_CHANNEL_EQ                                0:0
+#define NV0073_CTRL_DP2X_ERR_CHANNEL_EQ_DONE                              (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_CHANNEL_EQ_FAILED                            (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_CDS                                       1:1
+#define NV0073_CTRL_DP2X_ERR_CDS_DONE                                     (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_CDS_FAILED                                   (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_TIMEOUT                                   2:2
+#define NV0073_CTRL_DP2X_ERR_TIMEOUT_NO                                   (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_TIMEOUT_YES                                  (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_LT_FAILED                                 3:3
+#define NV0073_CTRL_DP2X_ERR_LT_FAILED_NO                                 (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_LT_FAILED_YES                                (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_INVALID_PARAMETER                         4:4
+#define NV0073_CTRL_DP2X_ERR_INVALID_PARAMETER_NOERR                      (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_INVALID_PARAMETER_ERR                        (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_SET_LANE_COUNT                            5:5
+#define NV0073_CTRL_DP2X_ERR_SET_LANE_COUNT_NOERR                         (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_SET_LANE_COUNT_ERR                           (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_SET_LINK_BW                               6:6
+#define NV0073_CTRL_DP2X_ERR_SET_LINK_BW_NOERR                            (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_SET_LINK_BW_ERR                              (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_ENABLE_FEC                                7:7
+#define NV0073_CTRL_DP2X_ERR_ENABLE_FEC_NOERR                             (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_ENABLE_FEC_ERR                               (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_CONFIG_LTTPR                              8:8
+#define NV0073_CTRL_DP2X_ERR_CONFIG_LTTPR_NOERR                           (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_CONFIG_LTTPR_ERR                             (0x00000001U)
+#define NV0073_CTRL_DP2X_ERR_PRE_LT                                    9:9
+#define NV0073_CTRL_DP2X_ERR_PRE_LT_NOERR                                 (0x00000000U)
+#define NV0073_CTRL_DP2X_ERR_PRE_LT_ERR                                   (0x00000001U)
+
+#define NV0073_CTRL_DP2X_POLLING_INFO_CHNL_EQ_INTERVAL                     7:0
+#define NV0073_CTRL_DP2X_POLLING_INFO_RESULT                             31:31
+#define NV0073_CTRL_DP2X_POLLING_INFO_RESULT_PENDING                      (0x00000001U)
+#define NV0073_CTRL_DP2X_POLLING_INFO_RESULT_DONE                         (0x00000000U)
 /* _ctrl0073dp_h_ */

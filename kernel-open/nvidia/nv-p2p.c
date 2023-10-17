@@ -640,7 +640,6 @@ int nvidia_p2p_put_pages(
     status = nv_p2p_put_pages(NV_P2P_PAGE_TABLE_TYPE_NON_PERSISTENT,
                               sp, p2p_token, va_space,
                               virtual_address, &page_table);
-
     nv_kmem_cache_free_stack(sp);
 
     return nvidia_p2p_map_status(status);

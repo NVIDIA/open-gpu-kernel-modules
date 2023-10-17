@@ -58,6 +58,7 @@ struct ConsoleMemory {
     NvBool (*__conmemShareCallback__)(struct ConsoleMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__conmemMapTo__)(struct ConsoleMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__conmemGetMapAddrSpace__)(struct ConsoleMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__conmemIsExportAllowed__)(struct ConsoleMemory *);
     NvU32 (*__conmemGetRefCount__)(struct ConsoleMemory *);
     void (*__conmemAddAdditionalDependants__)(struct RsClient *, struct ConsoleMemory *, RsResourceRef *);
     NV_STATUS (*__conmemControl_Prologue__)(struct ConsoleMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -113,6 +114,7 @@ NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory**, Dynamic*, NvU32, CALL_
 #define conmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) conmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define conmemMapTo(pResource, pParams) conmemMapTo_DISPATCH(pResource, pParams)
 #define conmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) conmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define conmemIsExportAllowed(pMemory) conmemIsExportAllowed_DISPATCH(pMemory)
 #define conmemGetRefCount(pResource) conmemGetRefCount_DISPATCH(pResource)
 #define conmemAddAdditionalDependants(pClient, pResource, pReference) conmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define conmemControl_Prologue(pResource, pCallContext, pParams) conmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -153,6 +155,10 @@ static inline NV_STATUS conmemMapTo_DISPATCH(struct ConsoleMemory *pResource, RS
 
 static inline NV_STATUS conmemGetMapAddrSpace_DISPATCH(struct ConsoleMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__conmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool conmemIsExportAllowed_DISPATCH(struct ConsoleMemory *pMemory) {
+    return pMemory->__conmemIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 conmemGetRefCount_DISPATCH(struct ConsoleMemory *pResource) {
@@ -246,4 +252,5 @@ NV_STATUS conmemConstruct_IMPL(struct ConsoleMemory *arg_pConsoleMemory, CALL_CO
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CONSOLE_MEM_NVOC_H_

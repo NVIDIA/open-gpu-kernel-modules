@@ -834,7 +834,6 @@ extdevService_P2060
     NvBool             rmStatus
 )
 {
-    OBJOS   *pOS    = GPU_GET_OS(pGpu);
     EXTDEV_INTR_DATA intrData;
 
     if (!rmStatus)
@@ -862,10 +861,10 @@ extdevService_P2060
         }
 
         // Attempt to queue a work item.
-        if (NV_OK != pOS->osQueueWorkItemWithFlags(pGpu,
-                                                   _extdevService,
-                                                   (void *)workerThreadData,
-                                                   OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW))
+        if (NV_OK != osQueueWorkItemWithFlags(pGpu,
+                                              _extdevService,
+                                              (void *)workerThreadData,
+                                              OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW))
         {
             portMemFree((void *)workerThreadData);
         }
@@ -3219,7 +3218,8 @@ gsyncSetMosaic_P2060
     PDACP2060EXTERNALDEVICE pThis = (PDACP2060EXTERNALDEVICE)pExtDev;
     NV_STATUS rmStatus = NV_OK;
     OBJGPU *pTempGpu = NULL;
-    NvU8 mosaicReg, i;
+    NvU8 mosaicReg;
+    NvU32 i;
     NvU32 mosaicGroup = pParams->mosaicGroupNumber;
 
     if (mosaicGroup >= NV_P2060_MAX_MOSAIC_GROUPS)
@@ -3355,23 +3355,23 @@ gsyncSetMosaic_P2060
  * register informations in a human readable form.
  */
 static void
-DbgPrintP2060StatusRegister(NvU32 DebugLevel, NvU32 regStatus)
+DbgPrintP2060StatusRegister(NvU32 regStatus)
 {
     if (DRF_VAL(_P2060, _STATUS, _SYNC_LOSS, regStatus))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "SYNC_LOSS ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "SYNC_LOSS ");
     if (DRF_VAL(_P2060, _STATUS, _STEREO, regStatus))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "STEREO_LOCK ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "STEREO_LOCK ");
     if (NV_P2060_STATUS_VCXO_LOCK == DRF_VAL(_P2060, _STATUS, _VCXO, regStatus))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "VCXO_LOCK ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "VCXO_LOCK ");
     if (NV_P2060_STATUS_VCXO_NOLOCK_TOO_FAST == DRF_VAL(_P2060, _STATUS, _VCXO, regStatus))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "VCXO_NOLOCK_TOO_FAST ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "VCXO_NOLOCK_TOO_FAST ");
     if (NV_P2060_STATUS_VCXO_NOLOCK_TOO_SLOW == DRF_VAL(_P2060, _STATUS, _VCXO, regStatus))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "VCXO_NOLOCK_TOO_SLOW ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "VCXO_NOLOCK_TOO_SLOW ");
     if (NV_P2060_STATUS_VCXO_NOT_SERVO == DRF_VAL(_P2060, _STATUS, _VCXO, regStatus))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "VCXO_NOT_SERVO ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "VCXO_NOT_SERVO ");
 }
 #else
-#define DbgPrintP2060StatusRegister(DebugLevel, regStatus)
+#define DbgPrintP2060StatusRegister(regStatus)
 #endif
 
 static NV_STATUS
@@ -3548,9 +3548,9 @@ gsyncUpdateGsyncStatusSnapshot_P2060
 
                 NV_PRINTF(LEVEL_INFO, "Update P2060[%d] settled from 0x%x ( ",
                           iface, oldStatus);
-                DbgPrintP2060StatusRegister(LEVEL_INFO, oldStatus);
+                DbgPrintP2060StatusRegister(oldStatus);
                 NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, ") to 0x%x ( ", newStatus);
-                DbgPrintP2060StatusRegister(LEVEL_INFO, newStatus);
+                DbgPrintP2060StatusRegister(newStatus);
                 NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, ")\n");
 
                 diffStatus = (oldStatus ^ newStatus);
@@ -3650,7 +3650,7 @@ gsyncUpdateGsyncStatusSnapshot_P2060
         {
             NV_PRINTF(LEVEL_INFO, "Event P2060[%d]: 0x%x (", iface,
                       ifaceEvents[iface]);
-            gsyncDbgPrintGsyncEvents(LEVEL_INFO, ifaceEvents[iface], iface);
+            gsyncDbgPrintGsyncEvents(ifaceEvents[iface], iface);
             NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, ")\n");
 
             // notify clients that something has happened!

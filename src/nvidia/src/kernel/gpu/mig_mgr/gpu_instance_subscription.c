@@ -28,10 +28,6 @@
  *
  *****************************************************************************/
 
-// FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
-#define NVOC_COMPUTE_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
-
 #define NVOC_GPU_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
 
 #include "core/core.h"
@@ -61,12 +57,14 @@ _gisubscriptionClientSharesVASCrossPartition
     NvU32 targetedSwizzId
 )
 {
-    NV_STATUS status = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pGPUInstanceSubscription);
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    RsClient *pRsClientShare;
     RsResourceRef *pDeviceRef;
     Device *pDevice;
     MIG_INSTANCE_REF shareRef;
+    RS_ITERATOR it;
+    NvBool bClientShareHasMatchingInstance = NV_FALSE;
 
     NV_ASSERT_OR_RETURN(pGPUInstanceSubscription != NULL, NV_TRUE);
 
@@ -92,12 +90,30 @@ _gisubscriptionClientSharesVASCrossPartition
     // is subscribed to a different GPU instance than the subscription request, or
     // if the sharing client isn't subscribed to any GPU instance.
     //
-    status = kmigmgrGetInstanceRefFromClient(pGpu, pKernelMIGManager,
-                                             pDevice->hClientShare,
-                                             &shareRef);
+    NV_ASSERT_OK_OR_RETURN(
+        serverGetClientUnderLock(&g_resServ, pDevice->hClientShare, &pRsClientShare));
 
+    it = clientRefIter(pRsClientShare, NULL, classId(Device), RS_ITERATE_CHILDREN, NV_TRUE);
 
-    return (status != NV_OK) || (shareRef.pKernelMIGGpuInstance->swizzId != targetedSwizzId);
+    while (clientRefIterNext(pRsClientShare, &it))
+    {
+        pDevice = dynamicCast(it.pResourceRef->pResource, Device);
+
+        if ((pGpu != GPU_RES_GET_GPU(pDevice)) ||
+            (kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice,
+                                             &shareRef) != NV_OK))
+        {
+            continue;
+        }
+
+        if (shareRef.pKernelMIGGpuInstance->swizzId == targetedSwizzId)
+        {
+            bClientShareHasMatchingInstance = NV_TRUE;
+            break;
+        }
+    }
+
+    return !bClientShareHasMatchingInstance;
 }
 
 NV_STATUS
@@ -438,6 +454,16 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
         {
             return NV_ERR_NOT_SUPPORTED;
         }
+
+        {
+            NvU32 i;
+
+            for (i = 0; i < pParams->execPartCount; i++)
+            {
+                gpumgrCacheCreateComputeInstance(pGpu, pKernelMIGGpuInstance->swizzId,
+                                                 pParams->execPartId[i]);
+            }
+        }
     }
     else
     {
@@ -473,6 +499,9 @@ gisubscriptionCtrlCmdExecPartitionsCreate_IMPL
             NV_ASSERT_OK_OR_RETURN(
                 kmigmgrCreateComputeInstances_HAL(pGpu, pKernelMIGManager, pKernelMIGGpuInstance,
                                                   NV_FALSE, restore, &pParams->execPartId[i], NV_TRUE));
+
+            gpumgrCacheCreateComputeInstance(pGpu, pKernelMIGGpuInstance->swizzId,
+                                             pParams->execPartId[i]);
         }
     }
 
@@ -560,6 +589,8 @@ gisubscriptionCtrlCmdExecPartitionsDelete_IMPL
         {
             return NV_ERR_NOT_SUPPORTED;
         }
+        gpumgrCacheDestroyComputeInstance(pGpu, pKernelMIGGpuInstance->swizzId,
+                                          pParams->execPartId[execPartIdx]);
     }
 
     //
@@ -628,7 +659,7 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
     (void)cisubscriptionGetComputeInstanceSubscription(RES_GET_CLIENT(pGPUInstanceSubscription), RES_GET_HANDLE(pGPUInstanceSubscription), &pComputeInstanceSubscription);
     if (pComputeInstanceSubscription != NULL)
     {
-        pTargetComputeInstanceInfo = pComputeInstanceSubscription->pMIGComputeInstance;
+        pTargetComputeInstanceInfo = cisubscriptionGetMIGComputeInstance(pComputeInstanceSubscription);
     }
     else if (!bEnumerateAll)
     {
@@ -666,7 +697,7 @@ gisubscriptionCtrlCmdExecPartitionsGet_IMPL
         pOutInfo->nvJpgCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
                                                       RM_ENGINE_TYPE_NVJPG);
         pOutInfo->ofaCount = kmigmgrCountEnginesOfType(&pMIGComputeInstance->resourceAllocation.engines,
-                                                      RM_ENGINE_TYPE_OFA);
+                                                      RM_ENGINE_TYPE_OFA(0));
         pOutInfo->sharedEngFlag = pMIGComputeInstance->sharedEngFlag;
         pOutInfo->veidStartOffset = pMIGComputeInstance->resourceAllocation.veidOffset;
         pOutInfo->smCount = pMIGComputeInstance->resourceAllocation.smCount;
@@ -1132,13 +1163,13 @@ gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kmigmgrGetComputeProfileFromSize(pGpu, pKernelMIGManager, pParams->computeSize, &profile));
         NV_ASSERT_OK_OR_RETURN(
-            kgrmgrGetMaxVeidsPerGpc(pGpu, pKernelGraphicsManager, &veidStepSize));
+            kgrmgrGetVeidStepSize(pGpu, pKernelGraphicsManager, &veidStepSize));
 
         // Create a mask for VEIDs associated with this GPU instance
         veidMask = DRF_SHIFTMASK64(profile.veidCount - 1:0);
         GPUInstanceVeidEnd = pKernelMIGGpuInstance->resourceAllocation.veidOffset + pKernelMIGGpuInstance->resourceAllocation.veidCount - 1;
         GPUInstanceVeidMask = DRF_SHIFTMASK64(GPUInstanceVeidEnd:pKernelMIGGpuInstance->resourceAllocation.veidOffset);
-        GPUInstanceFreeVeidMask = GPUInstanceVeidMask & ~pKernelGraphicsManager->veidInUseMask;
+        GPUInstanceFreeVeidMask = GPUInstanceVeidMask &~ (kgrmgrGetVeidInUseMask(pGpu, pKernelGraphicsManager));
         GPUInstancePseudoMask = GPUInstanceFreeVeidMask;
         veidSlotCount = 0;
         availableSpanCount = 0;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2018 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -971,7 +971,7 @@ static NvU32 GetSetObjectHandle(NvPushChannelPtr pChannel, NvU32 handle,
 }
 
 // Issue a SET_OBJECT method on the specified subchannel.
-void nvPushSetObject(NvPushChannelPtr p, NvU32 subch, NvU32 object[NV_MAX_SUBDEVICES])
+void nvPushSetObject(NvPushChannelPtr p, NvU32 subch, NvU32 *object)
 {
     const NvPushDeviceRec *pDevice = p->pDevice;
     const NvU32 oldSubDevMask = p->currentSubDevMask;

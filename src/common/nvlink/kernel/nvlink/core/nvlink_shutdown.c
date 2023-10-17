@@ -965,6 +965,7 @@ nvlink_core_powerdown_floorswept_conns_to_off
 
     if (visitedConns == NULL)
     {
+        nvlink_free(connsToShutdown);
         return NVL_NO_MEM;
     }
 

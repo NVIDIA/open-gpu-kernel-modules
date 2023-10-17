@@ -164,7 +164,7 @@ typedef struct
 
         uvm_spinlock_t                          lock;
 
-        uvm_va_block_context_t      va_block_context;
+        uvm_va_block_context_t      *va_block_context;
 
         // Flag used to avoid scheduling delayed unpinning operations after
         // uvm_perf_thrashing_stop has been called.
@@ -601,6 +601,14 @@ static va_space_thrashing_info_t *va_space_thrashing_info_create(uvm_va_space_t 
 
     va_space_thrashing = uvm_kvmalloc_zero(sizeof(*va_space_thrashing));
     if (va_space_thrashing) {
+        uvm_va_block_context_t *block_context = uvm_va_block_context_alloc(NULL);
+
+        if (!block_context) {
+            uvm_kvfree(va_space_thrashing);
+            return NULL;
+        }
+
+        va_space_thrashing->pinned_pages.va_block_context = block_context;
         va_space_thrashing->va_space = va_space;
 
         va_space_thrashing_info_init_params(va_space_thrashing);
@@ -621,6 +629,7 @@ static void va_space_thrashing_info_destroy(uvm_va_space_t *va_space)
 
     if (va_space_thrashing) {
         uvm_perf_module_type_unset_data(va_space->perf_modules_data, UVM_PERF_MODULE_TYPE_THRASHING);
+        uvm_va_block_context_free(va_space_thrashing->pinned_pages.va_block_context);
         uvm_kvfree(va_space_thrashing);
     }
 }
@@ -1104,7 +1113,7 @@ static NV_STATUS unmap_remote_pinned_pages(uvm_va_block_t *va_block,
                    !uvm_processor_mask_test(&policy->accessed_by, processor_id));
 
         if (uvm_processor_mask_test(&va_block->resident, processor_id)) {
-            const uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, processor_id);
+            const uvm_page_mask_t *resident_mask = uvm_va_block_resident_mask_get(va_block, processor_id, NUMA_NO_NODE);
 
             if (!uvm_page_mask_andnot(&va_block_context->caller_page_mask,
                                       &block_thrashing->pinned_pages.mask,
@@ -1312,9 +1321,8 @@ void thrashing_event_cb(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_
 
         if (block_thrashing->last_time_stamp == 0 ||
             uvm_id_equal(block_thrashing->last_processor, processor_id) ||
-            time_stamp - block_thrashing->last_time_stamp > va_space_thrashing->params.lapse_ns) {
+            time_stamp - block_thrashing->last_time_stamp > va_space_thrashing->params.lapse_ns)
             goto done;
-        }
 
         num_block_pages = uvm_va_block_size(va_block) / PAGE_SIZE;
 
@@ -1803,7 +1811,7 @@ static void thrashing_unpin_pages(struct work_struct *work)
     struct delayed_work *dwork = to_delayed_work(work);
     va_space_thrashing_info_t *va_space_thrashing = container_of(dwork, va_space_thrashing_info_t, pinned_pages.dwork);
     uvm_va_space_t *va_space = va_space_thrashing->va_space;
-    uvm_va_block_context_t *va_block_context = &va_space_thrashing->pinned_pages.va_block_context;
+    uvm_va_block_context_t *va_block_context = va_space_thrashing->pinned_pages.va_block_context;
 
     // Take the VA space lock so that VA blocks don't go away during this
     // operation.
@@ -1937,7 +1945,6 @@ void uvm_perf_thrashing_unload(uvm_va_space_t *va_space)
 
     // Make sure that there are not pending work items
     if (va_space_thrashing) {
-        UVM_ASSERT(va_space_thrashing->pinned_pages.in_va_space_teardown);
         UVM_ASSERT(list_empty(&va_space_thrashing->pinned_pages.list));
 
         va_space_thrashing_info_destroy(va_space);

@@ -27,6 +27,7 @@ NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_rm_mem.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_channel.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_lock.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_hal.c
+NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_processors.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_range_tree.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_rb_tree.c
 NVIDIA_UVM_SOURCES += nvidia-uvm/uvm_range_allocator.c

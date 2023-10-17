@@ -171,10 +171,11 @@ knvlinkIsP2pLoopbackSupportedPerLink_IMPL
     // Check the link connected to the same GPU (loopback)
     if (pKernelNvlink->nvlinkLinks[link].remoteEndInfo.bConnected)
     {
-        if ((pKernelNvlink->nvlinkLinks[link].remoteEndInfo.domain   == gpuGetDomain(pGpu)) &&
+        if (((pKernelNvlink->nvlinkLinks[link].remoteEndInfo.domain   == gpuGetDomain(pGpu)) &&
             (pKernelNvlink->nvlinkLinks[link].remoteEndInfo.bus      == gpuGetBus(pGpu))    &&
             (pKernelNvlink->nvlinkLinks[link].remoteEndInfo.device   == gpuGetDevice(pGpu)) &&
-            (pKernelNvlink->nvlinkLinks[link].remoteEndInfo.function == 0))
+            (pKernelNvlink->nvlinkLinks[link].remoteEndInfo.function == 0)) ||
+                pKernelNvlink->PDB_PROP_KNVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE_ENABLED)
         {
             return NV_TRUE;
         }
@@ -225,6 +226,44 @@ knvlinkIsNvlinkP2pSupported_IMPL
     return NV_FALSE;
 }
 
+static NvBool
+_knvlinkCheckFabricCliqueId
+(
+    OBJGPU       *pGpu,
+    OBJGPU       *pPeerGpu
+)
+{
+    NvU32 cliqueId, peerCliqueId;
+    NV_STATUS status;
+
+    status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
+                                             &cliqueId);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU %d failed to get fabric clique Id: 0x%x\n",
+                                gpuGetInstance(pGpu), status);
+        return NV_FALSE;
+    }
+
+    status = gpuFabricProbeGetFabricCliqueId(pPeerGpu->pGpuFabricProbeInfoKernel,
+                                             &peerCliqueId);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU %d failed to get fabric clique Id 0x%x\n",
+                                gpuGetInstance(pPeerGpu), status);
+        return NV_FALSE;
+    }
+
+    if (cliqueId != peerCliqueId)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU %d and Peer GPU %d cliqueId doesn't match\n",
+                  gpuGetInstance(pGpu), gpuGetInstance(pPeerGpu));
+        return NV_FALSE;
+    }
+
+    return NV_TRUE;
+}
+
 /*!
  * @brief Checks whether necessary the config setup is done to
  *        support P2P over NVSwitch
@@ -255,6 +294,14 @@ knvlinkCheckNvswitchP2pConfig_IMPL
         {
             // currently vgpu + switch doesn't support GPA addresing.
             return NV_TRUE;
+        }
+
+        if (gpuFabricProbeIsSupported(pGpu) && gpuFabricProbeIsSupported(pPeerGpu))
+        {
+            if (!_knvlinkCheckFabricCliqueId(pGpu, pPeerGpu))
+            {
+                return NV_FALSE;
+            }
         }
 
         if (knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink) ==
@@ -318,7 +365,7 @@ knvlinkGetP2pConnectionStatus_IMPL
 
     if (pGpu1 == NULL)
     {
-        NV_PRINTF(LEVEL_ERROR, "Invalid pPeerGpu.\n");
+        NV_PRINTF(LEVEL_INFO, "Invalid pPeerGpu.\n");
 
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -338,7 +385,7 @@ knvlinkGetP2pConnectionStatus_IMPL
 
     if (pKernelNvlink1 == NULL)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "Input mask contains a GPU on which NVLink is disabled.\n");
 
         return NV_ERR_INVALID_ARGUMENT;
@@ -434,14 +481,17 @@ knvlinkGetP2pConnectionStatus_IMPL
         }
 
         // Peers should have the same number of links pointing back at us
-        NV_ASSERT_OR_RETURN(knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0) ==
-            numPeerLinks, NV_ERR_INVALID_STATE);
-
-        NV_ASSERT_OR_RETURN(knvlinkCheckNvswitchP2pConfig(pGpu0, pKernelNvlink0, pGpu1),
+        NV_CHECK_OR_RETURN(LEVEL_INFO,
+            (knvlinkGetNumLinksToPeer(pGpu1, pKernelNvlink1, pGpu0) == numPeerLinks),
             NV_ERR_INVALID_STATE);
 
-        NV_ASSERT_OR_RETURN(knvlinkCheckNvswitchP2pConfig(pGpu1, pKernelNvlink1, pGpu0),
-            NV_ERR_INVALID_STATE);
+        NV_CHECK_OR_RETURN(LEVEL_INFO,
+                knvlinkCheckNvswitchP2pConfig(pGpu0, pKernelNvlink0, pGpu1),
+                NV_ERR_INVALID_STATE);
+
+        NV_CHECK_OR_RETURN(LEVEL_INFO,
+                knvlinkCheckNvswitchP2pConfig(pGpu1, pKernelNvlink1, pGpu0),
+                NV_ERR_INVALID_STATE);
 
         NV_PRINTF(LEVEL_INFO,
                   "NVLink P2P is supported between GPU%d and GPU%d\n",
@@ -677,7 +727,6 @@ knvlinkInbandMsgCallbackDispatcher_IMPL
     nvlink_inband_msg_header_t *pHeader;
     NVLINK_INBAND_MSG_CALLBACK *pParams;
     NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pData = NULL;
-    OBJOS     *pOS = GPU_GET_OS(pGpu);
 
     pHeader = (nvlink_inband_msg_header_t *)pMessage;
 
@@ -704,8 +753,8 @@ knvlinkInbandMsgCallbackDispatcher_IMPL
     pData->dataSize = dataSize;
     portMemCopy(pData->data, pData->dataSize, pMessage, dataSize);
 
-    status = pOS->osQueueWorkItemWithFlags(pGpu, knvlinkInbandMsgCallbackDispatcher_WORKITEM, pData,
-                                           pParams->wqItemFlags);
+    status = osQueueWorkItemWithFlags(pGpu, knvlinkInbandMsgCallbackDispatcher_WORKITEM, pData,
+                                      pParams->wqItemFlags);
      if (status != NV_OK)
      {
         portMemFree(pData);
@@ -841,7 +890,7 @@ knvlinkGetLinkMaskToPeer_IMPL
 
     if (pKernelNvlink1 == NULL)
     {
-        NV_PRINTF(LEVEL_ERROR,
+        NV_PRINTF(LEVEL_INFO,
                   "on GPU%d NVLink is disabled.\n", gpuGetInstance(pGpu1));
 
         return 0;

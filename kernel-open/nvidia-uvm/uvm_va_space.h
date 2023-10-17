@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -253,17 +253,6 @@ struct uvm_va_space_struct
     // corrupting state.
     uvm_processor_mask_t gpu_unregister_in_progress;
 
-    // On VMA destruction, the fault buffer needs to be flushed for all the GPUs
-    // registered in the VA space to avoid leaving stale entries of the VA range
-    // that is going to be destroyed. Otherwise, these fault entries can be
-    // attributed to new VA ranges reallocated at the same addresses. However,
-    // uvm_vm_close is called with mm->mmap_lock taken and we cannot take the
-    // ISR lock. Therefore, we use a flag to notify the GPU fault handler that
-    // the fault buffer needs to be flushed, before servicing the faults that
-    // belong to the va_space. The bits are set and cleared atomically so no
-    // va_space lock is required.
-    uvm_processor_mask_t needs_fault_buffer_flush;
-
     // Mask of processors that are participating in system-wide atomics
     uvm_processor_mask_t system_wide_atomics_enabled_processors;
 
@@ -335,7 +324,7 @@ struct uvm_va_space_struct
     // Block context used for GPU unmap operations so that allocation is not
     // required on the teardown path. This can only be used while the VA space
     // lock is held in write mode. Access using uvm_va_space_block_context().
-    uvm_va_block_context_t va_block_context;
+    uvm_va_block_context_t *va_block_context;
 
     NvU64 initialization_flags;
 
@@ -541,7 +530,7 @@ void uvm_va_space_detach_all_user_channels(uvm_va_space_t *va_space, struct list
 
 // Returns whether peer access between these two GPUs has been enabled in this
 // VA space. Both GPUs must be registered in the VA space.
-bool uvm_va_space_peer_enabled(uvm_va_space_t *va_space, uvm_gpu_t *gpu1, uvm_gpu_t *gpu2);
+bool uvm_va_space_peer_enabled(uvm_va_space_t *va_space, const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1);
 
 // Returns the va_space this file points to. Returns NULL if this file
 // does not point to a va_space.
@@ -575,8 +564,8 @@ static uvm_va_block_context_t *uvm_va_space_block_context(uvm_va_space_t *va_spa
     if (mm)
         uvm_assert_mmap_lock_locked(mm);
 
-    uvm_va_block_context_init(&va_space->va_block_context, mm);
-    return &va_space->va_block_context;
+    uvm_va_block_context_init(va_space->va_block_context, mm);
+    return va_space->va_block_context;
 }
 
 // Retains the GPU VA space memory object. destroy_gpu_va_space and

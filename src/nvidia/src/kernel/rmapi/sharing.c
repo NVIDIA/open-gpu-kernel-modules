@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -118,22 +118,11 @@ rmapiDupObjectWithSecInfo
     }
 
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
-
-    if (pRmApi->bApiLockInternal)
+    status = rmapiInitLockInfo(pRmApi, hClient, hClientSrc, &lockInfo);
+    if (status != NV_OK)
     {
-        //
-        // DupObject requires taking two client locks, but internal calls have probably
-        // already taken one client lock. Taking a second would require unlocking
-        // the first lock in the middle of the API call, which could mess with the client.
-        // In such cases, we need an exclusive API lock, then skip taking client locks.
-        //
-        if (lockInfo.pClient != NULL)
-        {
-            NV_ASSERT(rmapiLockIsOwner());
-            // RS-TODO assert RW api lock
-            lockInfo.flags |= RM_LOCK_FLAGS_NO_CLIENT_LOCK;
-        }
+        rmapiEpilogue(pRmApi, &rmApiContext);
+        return NV_OK;
     }
 
     status = _RmDupObject(hClient, hParent, phObject, hClientSrc, hObjectSrc, flags, pSecInfo, &lockInfo);
@@ -236,6 +225,7 @@ rmapiShareWithSecInfo
     NV_STATUS status;
     RM_API_CONTEXT rmApiContext = {0};
     RS_LOCK_INFO lockInfo;
+    NvHandle hSecondClient = NV01_NULL_OBJECT;
 
     NV_PRINTF(LEVEL_INFO,
               "Nv04Share: hClient:0x%x hObject:0x%x pSharePolicy:%p\n",
@@ -247,8 +237,19 @@ rmapiShareWithSecInfo
         return status;
     }
 
+    if ((pSecInfo->paramLocation == PARAM_LOCATION_KERNEL) &&
+        (pSharePolicy->type == RS_SHARE_TYPE_CLIENT))
+    {
+        hSecondClient = pSharePolicy->target;
+    }
+
     portMemSet(&lockInfo, 0, sizeof(lockInfo));
-    rmapiInitLockInfo(pRmApi, hClient, &lockInfo);
+    status = rmapiInitLockInfo(pRmApi, hClient, hSecondClient, &lockInfo);
+    if (status != NV_OK)
+    {
+        rmapiEpilogue(pRmApi, &rmApiContext);
+        return NV_OK;
+    }
 
     //
     // Currently, Share should have no internal callers.

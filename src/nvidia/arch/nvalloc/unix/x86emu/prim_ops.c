@@ -1794,20 +1794,20 @@ u8 sbb_byte(u8 d, u8 s)
     register u32 res;   /* all operands in native machine order */
     register u32 bc;
 
-        if (ACCESS_FLAG(F_CF))
-                res = d - s - 1;
-        else
-                res = d - s;
-        CONDITIONAL_SET_FLAG(res & 0x80, F_SF);
-        CONDITIONAL_SET_FLAG((res & 0xff) == 0, F_ZF);
-        CONDITIONAL_SET_FLAG(PARITY(res & 0xff), F_PF);
+    if (ACCESS_FLAG(F_CF))
+        res = d - s - 1;
+    else
+        res = d - s;
+    CONDITIONAL_SET_FLAG(res & 0x80, F_SF);
+    CONDITIONAL_SET_FLAG((res & 0xff) == 0, F_ZF);
+    CONDITIONAL_SET_FLAG(PARITY(res & 0xff), F_PF);
 
-        /* calculate the borrow chain.  See note at top */
-        bc = (res & (~d | s)) | (~d & s);
-        CONDITIONAL_SET_FLAG(bc & 0x80, F_CF);
-        CONDITIONAL_SET_FLAG(XOR2(bc >> 6), F_OF);
-        CONDITIONAL_SET_FLAG(bc & 0x8, F_AF);
-        return (u8)res;
+    /* calculate the borrow chain.  See note at top */
+    bc = (res & (~d | s)) | (~d & s);
+    CONDITIONAL_SET_FLAG(bc & 0x80, F_CF);
+    CONDITIONAL_SET_FLAG(XOR2(bc >> 6), F_OF);
+    CONDITIONAL_SET_FLAG(bc & 0x8, F_AF);
+    return (u8)res;
 }
 
 /****************************************************************************
@@ -1819,20 +1819,20 @@ u16 sbb_word(u16 d, u16 s)
     register u32 res;   /* all operands in native machine order */
     register u32 bc;
 
-        if (ACCESS_FLAG(F_CF))
+    if (ACCESS_FLAG(F_CF))
         res = d - s - 1;
     else
         res = d - s;
-        CONDITIONAL_SET_FLAG(res & 0x8000, F_SF);
-        CONDITIONAL_SET_FLAG((res & 0xffff) == 0, F_ZF);
-        CONDITIONAL_SET_FLAG(PARITY(res & 0xff), F_PF);
+    CONDITIONAL_SET_FLAG(res & 0x8000, F_SF);
+    CONDITIONAL_SET_FLAG((res & 0xffff) == 0, F_ZF);
+    CONDITIONAL_SET_FLAG(PARITY(res & 0xff), F_PF);
 
-        /* calculate the borrow chain.  See note at top */
-        bc = (res & (~d | s)) | (~d & s);
-        CONDITIONAL_SET_FLAG(bc & 0x8000, F_CF);
-        CONDITIONAL_SET_FLAG(XOR2(bc >> 14), F_OF);
-        CONDITIONAL_SET_FLAG(bc & 0x8, F_AF);
-        return (u16)res;
+    /* calculate the borrow chain.  See note at top */
+    bc = (res & (~d | s)) | (~d & s);
+    CONDITIONAL_SET_FLAG(bc & 0x8000, F_CF);
+    CONDITIONAL_SET_FLAG(XOR2(bc >> 14), F_OF);
+    CONDITIONAL_SET_FLAG(bc & 0x8, F_AF);
+    return (u16)res;
 }
 
 /****************************************************************************
@@ -1841,23 +1841,23 @@ Implements the SBB instruction and side effects.
 ****************************************************************************/
 u32 sbb_long(u32 d, u32 s)
 {
-        register u32 res;   /* all operands in native machine order */
-        register u32 bc;
+    register u32 res;   /* all operands in native machine order */
+    register u32 bc;
 
-        if (ACCESS_FLAG(F_CF))
+    if (ACCESS_FLAG(F_CF))
         res = d - s - 1;
     else
         res = d - s;
-        CONDITIONAL_SET_FLAG(res & 0x80000000, F_SF);
-        CONDITIONAL_SET_FLAG((res & 0xffffffff) == 0, F_ZF);
-        CONDITIONAL_SET_FLAG(PARITY(res & 0xff), F_PF);
+    CONDITIONAL_SET_FLAG(res & 0x80000000, F_SF);
+    CONDITIONAL_SET_FLAG((res & 0xffffffff) == 0, F_ZF);
+    CONDITIONAL_SET_FLAG(PARITY(res & 0xff), F_PF);
 
-        /* calculate the borrow chain.  See note at top */
-        bc = (res & (~d | s)) | (~d & s);
-        CONDITIONAL_SET_FLAG(bc & 0x80000000, F_CF);
-        CONDITIONAL_SET_FLAG(XOR2(bc >> 30), F_OF);
-        CONDITIONAL_SET_FLAG(bc & 0x8, F_AF);
-        return res;
+    /* calculate the borrow chain.  See note at top */
+    bc = (res & (~d | s)) | (~d & s);
+    CONDITIONAL_SET_FLAG(bc & 0x80000000, F_CF);
+    CONDITIONAL_SET_FLAG(XOR2(bc >> 30), F_OF);
+    CONDITIONAL_SET_FLAG(bc & 0x8, F_AF);
+    return res;
 }
 
 /****************************************************************************

@@ -96,6 +96,20 @@ void __nvoc_init_halspec_ChipHal(ChipHal *pChipHal, NvU32 arch, NvU32 impl, NvU3
     }
 }
 
+void __nvoc_init_halspec_TegraChipHal(TegraChipHal *pTegraChipHal, TEGRA_CHIP_TYPE tegraType)
+{
+    // TEGRA_PCIE
+    if(tegraType == 0x0)
+    {
+        pTegraChipHal->__nvoc_HalVarIdx = 0;
+    }
+    // TEGRA_SOC
+    else if(tegraType == 0x1)
+    {
+        pTegraChipHal->__nvoc_HalVarIdx = 1;
+    }
+}
+
 void __nvoc_init_halspec_RmVariantHal(RmVariantHal *pRmVariantHal, RM_RUNTIME_VARIANT rmVariant)
 {
     // PF_KERNEL_ONLY

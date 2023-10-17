@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -167,7 +167,7 @@ struct uvm_service_block_context_struct
     } per_processor_masks[UVM_ID_MAX_PROCESSORS];
 
     // State used by the VA block routines called by the servicing routine
-    uvm_va_block_context_t block_context;
+    uvm_va_block_context_t *block_context;
 
     // Prefetch state hint
     uvm_perf_prefetch_hint_t prefetch_hint;
@@ -263,7 +263,10 @@ struct uvm_fault_service_batch_context_struct
 
     NvU32 num_coalesced_faults;
 
-    bool has_fatal_faults;
+    // One of the VA spaces in this batch which had fatal faults. If NULL, no
+    // faults were fatal. More than one VA space could have fatal faults, but we
+    // pick one to be the target of the cancel sequence.
+    uvm_va_space_t *fatal_va_space;
 
     bool has_throttled_faults;
 
@@ -825,8 +828,6 @@ struct uvm_gpu_struct
     {
         NvU32 swizz_id;
 
-        uvmGpuSessionHandle rm_session_handle;
-
         // RM device handle used in many of the UVM/RM APIs.
         //
         // Do not read this field directly, use uvm_gpu_device_handle instead.
@@ -1162,6 +1163,16 @@ struct uvm_parent_gpu_struct
         NvU64 memory_window_start;
         NvU64 memory_window_end;
     } system_bus;
+
+    // WAR to issue ATS TLB invalidation commands ourselves.
+    struct
+    {
+        uvm_mutex_t smmu_lock;
+        struct page *smmu_cmdq;
+        void __iomem *smmu_cmdqv_base;
+        unsigned long smmu_prod;
+        unsigned long smmu_cons;
+    } smmu_war;
 };
 
 static const char *uvm_gpu_name(uvm_gpu_t *gpu)
@@ -1336,7 +1347,7 @@ static NvU64 uvm_gpu_retained_count(uvm_gpu_t *gpu)
 void uvm_parent_gpu_kref_put(uvm_parent_gpu_t *gpu);
 
 // Calculates peer table index using GPU ids.
-NvU32 uvm_gpu_peer_table_index(uvm_gpu_id_t gpu_id1, uvm_gpu_id_t gpu_id2);
+NvU32 uvm_gpu_peer_table_index(const uvm_gpu_id_t gpu_id0, const uvm_gpu_id_t gpu_id1);
 
 // Either retains an existing PCIe peer entry or creates a new one. In both
 // cases the two GPUs are also each retained.
@@ -1355,7 +1366,7 @@ uvm_aperture_t uvm_gpu_peer_aperture(uvm_gpu_t *local_gpu, uvm_gpu_t *remote_gpu
 uvm_processor_id_t uvm_gpu_get_processor_id_by_address(uvm_gpu_t *gpu, uvm_gpu_phys_address_t addr);
 
 // Get the P2P capabilities between the gpus with the given indexes
-uvm_gpu_peer_t *uvm_gpu_index_peer_caps(uvm_gpu_id_t gpu_id1, uvm_gpu_id_t gpu_id2);
+uvm_gpu_peer_t *uvm_gpu_index_peer_caps(const uvm_gpu_id_t gpu_id0, const uvm_gpu_id_t gpu_id1);
 
 // Get the P2P capabilities between the given gpus
 static uvm_gpu_peer_t *uvm_gpu_peer_caps(const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1)
@@ -1363,10 +1374,10 @@ static uvm_gpu_peer_t *uvm_gpu_peer_caps(const uvm_gpu_t *gpu0, const uvm_gpu_t 
     return uvm_gpu_index_peer_caps(gpu0->id, gpu1->id);
 }
 
-static bool uvm_gpus_are_nvswitch_connected(uvm_gpu_t *gpu1, uvm_gpu_t *gpu2)
+static bool uvm_gpus_are_nvswitch_connected(const uvm_gpu_t *gpu0, const uvm_gpu_t *gpu1)
 {
-    if (gpu1->parent->nvswitch_info.is_nvswitch_connected && gpu2->parent->nvswitch_info.is_nvswitch_connected) {
-        UVM_ASSERT(uvm_gpu_peer_caps(gpu1, gpu2)->link_type >= UVM_GPU_LINK_NVLINK_2);
+    if (gpu0->parent->nvswitch_info.is_nvswitch_connected && gpu1->parent->nvswitch_info.is_nvswitch_connected) {
+        UVM_ASSERT(uvm_gpu_peer_caps(gpu0, gpu1)->link_type >= UVM_GPU_LINK_NVLINK_2);
         return true;
     }
 
@@ -1511,7 +1522,7 @@ bool uvm_gpu_can_address_kernel(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
 // addresses.
 NvU64 uvm_parent_gpu_canonical_address(uvm_parent_gpu_t *parent_gpu, NvU64 addr);
 
-static bool uvm_gpu_is_coherent(const uvm_parent_gpu_t *parent_gpu)
+static bool uvm_parent_gpu_is_coherent(const uvm_parent_gpu_t *parent_gpu)
 {
     return parent_gpu->system_bus.memory_window_end > parent_gpu->system_bus.memory_window_start;
 }

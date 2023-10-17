@@ -113,6 +113,10 @@ static NV_STATUS __nvoc_thunk_Memory_physmemGetMapAddrSpace(struct PhysicalMemor
     return memGetMapAddrSpace((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset), pCallContext, mapFlags, pAddrSpace);
 }
 
+static NvBool __nvoc_thunk_Memory_physmemIsExportAllowed(struct PhysicalMemory *pMemory) {
+    return memIsExportAllowed((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_PhysicalMemory_Memory.offset));
+}
+
 static NvU32 __nvoc_thunk_RsResource_physmemGetRefCount(struct PhysicalMemory *pResource) {
     return resGetRefCount((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PhysicalMemory_RsResource.offset));
 }
@@ -242,6 +246,8 @@ static void __nvoc_init_funcTable_PhysicalMemory_1(PhysicalMemory *pThis) {
     pThis->__physmemMapTo__ = &__nvoc_thunk_RsResource_physmemMapTo;
 
     pThis->__physmemGetMapAddrSpace__ = &__nvoc_thunk_Memory_physmemGetMapAddrSpace;
+
+    pThis->__physmemIsExportAllowed__ = &__nvoc_thunk_Memory_physmemIsExportAllowed;
 
     pThis->__physmemGetRefCount__ = &__nvoc_thunk_RsResource_physmemGetRefCount;
 

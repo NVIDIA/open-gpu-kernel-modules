@@ -566,6 +566,11 @@ nvswitch_init_lpwr_regs_lr10
     NvU8  softwareDesired, hardwareDisable;
     NvBool bLpEnable;
 
+    if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
+    {
+        return;
+    }
+
     if (device->regkeys.enable_pm == NV_SWITCH_REGKEY_ENABLE_PM_NO)
     {
         return;
@@ -681,15 +686,6 @@ nvswitch_init_lpwr_regs_lr10
                     tempRegVal);
 }
 
-void
-nvswitch_program_l1_scratch_reg_lr10
-(
-    nvswitch_device *device,
-    NvU32 linkNumber
-)
-{
-    // Not Implemented for LR10
-}
 
 void
 nvswitch_init_buffer_ready_lr10
@@ -1020,6 +1016,7 @@ nvswitch_corelib_set_dl_link_mode_lr10
                 NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify PORT_DOWN event\n",
                              __FUNCTION__);
             }
+            nvswitch_record_port_event(device, &(device->log_PORT_EVENTS), link->linkNumber, NVSWITCH_PORT_EVENT_TYPE_DOWN);
 
             break;
         }
@@ -2006,6 +2003,7 @@ nvswitch_corelib_training_complete_lr10
         NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify PORT_UP event\n",
                      __FUNCTION__);
     }
+    nvswitch_record_port_event(device, &(device->log_PORT_EVENTS), link->linkNumber, NVSWITCH_PORT_EVENT_TYPE_UP);
 
 }
 

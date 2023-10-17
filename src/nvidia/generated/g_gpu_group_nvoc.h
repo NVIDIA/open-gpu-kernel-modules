@@ -317,4 +317,5 @@ static inline NV_STATUS gpugrpGetGpuFromSubDeviceInstance(struct OBJGPUGRP *pGpu
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_GROUP_NVOC_H_

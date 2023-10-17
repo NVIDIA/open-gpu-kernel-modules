@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -136,10 +136,10 @@ struct KernelDisplay {
     NvBool PDB_PROP_KDISP_BUG_2089053_SERIALIZE_AGGRESSIVE_VBLANKS_ONLY_ON_HMD_ACTIVE;
     NvBool PDB_PROP_KDISP_IN_AWAKEN_INTR;
     struct DisplayInstanceMemory *pInst;
-    struct KernelHead *pKernelHead[4];
+    struct KernelHead *pKernelHead[8];
     const KernelDisplayStaticInfo *pStaticInfo;
     NvBool bWarPurgeSatellitesOnCoreFree;
-    struct RgLineCallback *rgLineCallbackPerHead[4][2];
+    struct RgLineCallback *rgLineCallbackPerHead[8][2];
     NvU32 isrVblankHeads;
     NvBool bExtdevIntrSupported;
     NvU32 numHeads;
@@ -233,6 +233,19 @@ NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay**, Dynamic*, NvU32);
 #define kdispClearInterrupt(pGpu, pIntrService, pParams) kdispClearInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define kdispStatePostLoad(pGpu, pEngstate, arg0) kdispStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kdispIsPresent(pGpu, pEngstate) kdispIsPresent_DISPATCH(pGpu, pEngstate)
+void kdispServiceVblank_KERNEL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2);
+
+
+#ifdef __nvoc_kern_disp_h_disabled
+static inline void kdispServiceVblank(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelDisplay was disabled!");
+}
+#else //__nvoc_kern_disp_h_disabled
+#define kdispServiceVblank(pGpu, pKernelDisplay, arg0, arg1, arg2) kdispServiceVblank_KERNEL(pGpu, pKernelDisplay, arg0, arg1, arg2)
+#endif //__nvoc_kern_disp_h_disabled
+
+#define kdispServiceVblank_HAL(pGpu, pKernelDisplay, arg0, arg1, arg2) kdispServiceVblank(pGpu, pKernelDisplay, arg0, arg1, arg2)
+
 NV_STATUS kdispConstructInstMem_IMPL(struct KernelDisplay *pKernelDisplay);
 
 
@@ -407,19 +420,6 @@ static inline void kdispInvokeRgLineCallback(struct KernelDisplay *pKernelDispla
 #endif //__nvoc_kern_disp_h_disabled
 
 #define kdispInvokeRgLineCallback_HAL(pKernelDisplay, head, rgIntrLine, bIsIrqlIsr) kdispInvokeRgLineCallback(pKernelDisplay, head, rgIntrLine, bIsIrqlIsr)
-
-void kdispServiceVblank_KERNEL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2);
-
-
-#ifdef __nvoc_kern_disp_h_disabled
-static inline void kdispServiceVblank(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 arg0, NvU32 arg1, struct THREAD_STATE_NODE *arg2) {
-    NV_ASSERT_FAILED_PRECOMP("KernelDisplay was disabled!");
-}
-#else //__nvoc_kern_disp_h_disabled
-#define kdispServiceVblank(pGpu, pKernelDisplay, arg0, arg1, arg2) kdispServiceVblank_KERNEL(pGpu, pKernelDisplay, arg0, arg1, arg2)
-#endif //__nvoc_kern_disp_h_disabled
-
-#define kdispServiceVblank_HAL(pGpu, pKernelDisplay, arg0, arg1, arg2) kdispServiceVblank(pGpu, pKernelDisplay, arg0, arg1, arg2)
 
 NvU32 kdispReadPendingVblank_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, struct THREAD_STATE_NODE *arg0);
 
@@ -604,9 +604,9 @@ static inline NV_STATUS kdispStateUnload_DISPATCH(OBJGPU *pGpu, struct KernelDis
     return pKernelDisplay->__kdispStateUnload__(pGpu, pKernelDisplay, flags);
 }
 
-void kdispRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[167]);
+void kdispRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[168]);
 
-static inline void kdispRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[167]) {
+static inline void kdispRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[168]) {
     pKernelDisplay->__kdispRegisterIntrService__(pGpu, pKernelDisplay, pRecords);
 }
 
@@ -921,4 +921,5 @@ kdispGetDispCommonHandle(struct KernelDisplay *pKernelDisplay)
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERN_DISP_NVOC_H_

@@ -24,11 +24,11 @@
 #include "nvstatus.h"
 
 #if !defined(NV_PRINTF_STRING_SECTION)
-#if defined(NVRM) && NVCPU_IS_RISCV64
+#if defined(NVRM) && NVOS_IS_LIBOS
 #define NV_PRINTF_STRING_SECTION         __attribute__ ((section (".logging")))
-#else // defined(NVRM) && NVCPU_IS_RISCV64
+#else // defined(NVRM) && NVOS_IS_LIBOS
 #define NV_PRINTF_STRING_SECTION
-#endif // defined(NVRM) && NVCPU_IS_RISCV64
+#endif // defined(NVRM) && NVOS_IS_LIBOS
 #endif // !defined(NV_PRINTF_STRING_SECTION)
 
 /*

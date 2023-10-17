@@ -674,9 +674,9 @@ static inline NV_STATUS uvmStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJUV
     return pUvm->__uvmStateInitUnlocked__(pGpu, pUvm);
 }
 
-void uvmRegisterIntrService_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[167]);
+void uvmRegisterIntrService_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[168]);
 
-static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[167]) {
+static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[168]) {
     pUvm->__uvmRegisterIntrService__(arg0, pUvm, arg1);
 }
 
@@ -750,4 +750,5 @@ static inline NvBool uvmIsPresent_DISPATCH(POBJGPU pGpu, struct OBJUVM *pEngstat
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_UVM_NVOC_H_

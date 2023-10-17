@@ -71,10 +71,6 @@ static NV_STATUS _memUtilsMapUserd_GM107(OBJGPU *pGpu, MemoryManager *pMemoryMan
                            OBJCHANNEL *pChannel, NvHandle hClientId, NvHandle hDeviceId,
                            NvHandle hChannelId, NvBool bUseRmApiForBar1);
 static NV_STATUS _memUtilsAllocateReductionSema(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJCHANNEL *pChannel);
-static NvU32     _ceChannelScheduleBatchWork_GM107(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJCHANNEL *pChannel,
-    RmPhysAddr src, NV_ADDRESS_SPACE srcAddressSpace, NvU32 srcCpuCacheAttrib,
-    RmPhysAddr dst, NV_ADDRESS_SPACE dstAddressSpace, NvU32 dstCpuCacheAttrib,
-    NvU64 size, NvBool bMemcopy);
 static NvU32 _ceChannelScheduleWork_GM107(OBJGPU *pGpu, MemoryManager *pMemoryManager, OBJCHANNEL *pChannel,
                                           RmPhysAddr src, NV_ADDRESS_SPACE srcAddressSpace, NvU32 srcCpuCacheAttrib,
                                           RmPhysAddr dst, NV_ADDRESS_SPACE dstAddressSpace, NvU32 dstCpuCacheAttrib,
@@ -219,6 +215,7 @@ _memUtilsChannelAllocatePB_GM107
     NvHandle                    hVirtMem;
     NvU32                       hClass;
     NvU32                       attr;
+    NvU32                       flags        = 0;
     NvU32                       attrNotifier = NVOS32_ATTR_NONE;
     RM_API                     *pRmApi       = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
@@ -229,6 +226,8 @@ _memUtilsChannelAllocatePB_GM107
             hClass = NV01_MEMORY_LOCAL_USER;
             attr   = DRF_DEF(OS32, _ATTR, _LOCATION,  _VIDMEM)     |
                      DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
+
+            flags = NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM;
             attrNotifier = attr;
             break;
 
@@ -277,7 +276,7 @@ _memUtilsChannelAllocatePB_GM107
     memAllocParams.size      = size;
     memAllocParams.attr      = attr;
     memAllocParams.attr2     = NVOS32_ATTR2_NONE;
-    memAllocParams.flags     = 0;
+    memAllocParams.flags     = flags;
     memAllocParams.internalflags = NVOS32_ALLOC_INTERNAL_FLAGS_SKIP_SCRUB;
 
     //
@@ -1508,168 +1507,6 @@ memmgrMemUtilsMemSetBlocking_GM107
 }
 
 /*!
- * Do a Blocking Memset
- *
- * @param[in]     pCHannel   OBJCHANNEL pointer
- * @param[in]     base       Offset in FB
- * @param[in]     size       size to scrub
- * @returns NV_STATUS
- */
-
-NV_STATUS
-memmgrMemUtilsMemSetBatched_GM107
-(
-    OBJGPU        *pGpu,
-    MemoryManager *pMemoryManager,
-    OBJCHANNEL    *pChannel,
-    RmPhysAddr     base,
-    NvU64          size
-)
-{
-    NvU32 blocksPushed = 0;
-
-    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, NV_ERR_GENERIC);
-    NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_GENERIC);
-
-    blocksPushed = _ceChannelScheduleBatchWork_GM107(pGpu, pMemoryManager, pChannel,
-                       0, 0, 0,                          // src parameters
-                       base, ADDR_FBMEM, 0,              // dst parameters
-                       size,
-                       NV_FALSE);                        // memcopy
-
-    if (blocksPushed > 0)
-    {
-        NvU8     *semAddr       = pChannel->pbCpuVA + pChannel->finishPayloadOffset;
-        NV_STATUS timeoutStatus = NV_OK;
-        RMTIMEOUT timeout;
-
-        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-
-        while(MEM_RD32(semAddr) != pChannel->finishPayload)
-        {
-            NV_PRINTF(LEVEL_INFO, "Semaphore Payload is 0x%x last is 0x%x\n",
-                      MEM_RD32(semAddr), pChannel->finishPayload);
-
-            if (timeoutStatus == NV_ERR_TIMEOUT)
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                          "Timed Out waiting for CE semaphore!\n");
-
-                NV_PRINTF(LEVEL_ERROR,
-                          "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
-                          MEM_RD32(&pChannel->pControlGPFifo->Get),
-                          MEM_RD32(&pChannel->pControlGPFifo->Put),
-                          MEM_RD32(&pChannel->pControlGPFifo->GPGet),
-                          MEM_RD32(&pChannel->pControlGPFifo->GPPut));
-
-                DBG_BREAKPOINT_REASON(NV_ERR_TIMEOUT);
-                return NV_ERR_GENERIC;
-            }
-
-            //
-            // mcServiceList() can be enabled for debugging purposes
-            // mcServiceListPgSafe(pGpu, GPU_GET_MC(pGpu), MC_ENGINES_ALL, NV_FALSE);
-            //
-
-            osSpinLoop();
-            timeoutStatus = gpuCheckTimeout(pGpu, &timeout);
-         }
-    }
-
-    return NV_OK;
-}
-
-/*!
- * Do a Blocking Memcopy
- *
- * @param[in]     pChannel          OBJCHANNEL pointer
- * @param[in]     src               Offset of src to copy from
- * @param[in]     srcAddressSpace   source surface address space type
- * @param[in]     srcCpuCacheAttrib source surface address space attributes
- * @param[in]     dst               Offset of dst to scrub/copy to
- * @param[in]     dstAddressSpace   destination surface address space type
- * @param[in]     dstCpuCacheAttrib destination surface address space attributes
- * @param[in]     size       size to scrub
- * @returns NV_STATUS
- */
-NV_STATUS
-memmgrMemUtilsMemCopyBatched_GM107
-(
-    OBJGPU          *pGpu,
-    MemoryManager   *pMemoryManager,
-    OBJCHANNEL      *pChannel,
-    RmPhysAddr       src,
-    NV_ADDRESS_SPACE srcAddressSpace,
-    NvU32            srcCpuCacheAttrib,
-    RmPhysAddr       dst,
-    NV_ADDRESS_SPACE dstAddressSpace,
-    NvU32            dstCpuCacheAttrib,
-    NvU64            size
-)
-{
-    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, NV_ERR_GENERIC);
-    NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, NV_ERR_GENERIC);
-
-    NvU32 blocksPushed = _ceChannelScheduleBatchWork_GM107(pGpu, pMemoryManager, pChannel,
-                            src, srcAddressSpace, srcCpuCacheAttrib, // src parameters
-                            dst, dstAddressSpace, dstCpuCacheAttrib, // dst parameters
-                            size,
-                            NV_TRUE);                                // memcopy;
-
-    if (blocksPushed > 0)
-    {
-        NvU8     *semAddr       = pChannel->pbCpuVA + pChannel->finishPayloadOffset;
-        NV_STATUS timeoutStatus = NV_OK;
-        RMTIMEOUT timeout;
-
-        //
-        // Originally the flag is 0, but to WAR bug 2441762, add flag
-        // GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE to bypass using threadStateCheckTimeout
-        //
-        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
-
-        while (MEM_RD32(semAddr) != pChannel->finishPayload)
-        {
-            NV_PRINTF(LEVEL_INFO, "Semaphore Payload is 0x%x last is 0x%x\n",
-                      MEM_RD32(semAddr), pChannel->finishPayload);
-
-            NV_PRINTF(LEVEL_INFO,
-                      "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
-                      MEM_RD32(&pChannel->pControlGPFifo->Get),
-                      MEM_RD32(&pChannel->pControlGPFifo->Put),
-                      MEM_RD32(&pChannel->pControlGPFifo->GPGet),
-                      MEM_RD32(&pChannel->pControlGPFifo->GPPut));
-
-            if (timeoutStatus == NV_ERR_TIMEOUT)
-            {
-                NV_PRINTF(LEVEL_ERROR,
-                          "Timed Out waiting for CE semaphore\n");
-
-                NV_PRINTF(LEVEL_ERROR,
-                          "GET=0x%x, PUT=0x%x, GPGET=0x%x, GPPUT=0x%x\n",
-                          MEM_RD32(&pChannel->pControlGPFifo->Get),
-                          MEM_RD32(&pChannel->pControlGPFifo->Put),
-                          MEM_RD32(&pChannel->pControlGPFifo->GPGet),
-                          MEM_RD32(&pChannel->pControlGPFifo->GPPut));
-
-                DBG_BREAKPOINT_REASON(NV_ERR_TIMEOUT);
-                return NV_ERR_GENERIC;
-            }
-
-            //
-            // mcServiceList() can be enabled for debugging purposes
-            // mcServiceListPgSafe(pGpu, GPU_GET_MC(pGpu), MC_ENGINES_ALL, NV_FALSE);
-            //
-
-            osSpinLoop();
-            timeoutStatus = gpuCheckTimeout(pGpu, &timeout);
-        }
-    }
-
-    return NV_OK;
-}
-
-/*!
  * This function allocates the ECC scrubber
  *
  * @param[in]     pChannel   OBJCHANNEL pointer
@@ -1804,91 +1641,6 @@ _getSpaceInPb(OBJCHANNEL *pChannel)
 
     return avlblSpace;
 
-}
-
-/*!
- * This function allows batch mode of submitting work.
- * The work is submitted to Host only when the pushbuffer runs out of space.
- *
- * @param[in]     pChannel          OBJCHANNEL pointer
- * @param[in]     src               Offset of src to copy from
- * @param[in]     srcAddressSpace   source surface address space type
- * @param[in]     srcCpuCacheAttrib source surface address space attributes
- * @param[in]     dst               Offset of dst to scrub/copy to
- * @param[in]     dstAddressSpace   destination surface address space type
- * @param[in]     dstCpuCacheAttrib destination surface address space attributes
- * @param[in]     size              size to scrub/copy
- * @param[in]     bMemcopy          NV_TRUE for memory copy / NV_FALSE for scrubbing
- * @returns Bool
- */
-static NvU32
-_ceChannelScheduleBatchWork_GM107
-(
-    OBJGPU          *pGpu,
-    MemoryManager   *pMemoryManager,
-    OBJCHANNEL      *pChannel,
-    RmPhysAddr       src,
-    NV_ADDRESS_SPACE srcAddressSpace,
-    NvU32            srcCpuCacheAttrib,
-    RmPhysAddr       dst,
-    NV_ADDRESS_SPACE dstAddressSpace,
-    NvU32            dstCpuCacheAttrib,
-    NvU64            size,
-    NvBool           bMemcopy
-)
-{
-    NvU32  spaceInPb;
-    NvU32  bytesPushed;
-    NvU32 *ptr;
-    NvU32  blocksPushed = 0;
-
-    spaceInPb = pChannel->channelPbSize - pChannel->channelPutOffset;
-    NV_ASSERT_OR_RETURN(spaceInPb >= pChannel->methodSizePerBlock, 0);
-    NV_ASSERT_OR_RETURN(pChannel->pbCpuVA != NULL, 0);
-    NV_ASSERT_OR_RETURN(pChannel->pControlGPFifo != NULL, 0);
-
-    // Support for sending semaphore release only work.
-    if (size > 0)
-    {
-        NV_PRINTF(LEVEL_INFO, "Space in PB is %d and starting fill at 0x%x\n",
-                  spaceInPb, pChannel->channelPutOffset);
-
-        ptr = (NvU32 *)(pChannel->pbCpuVA + pChannel->channelPutOffset);
-
-        bytesPushed = _ceChannelPushMethodsBlock_GM107(pGpu, pMemoryManager, pChannel,
-            src, srcAddressSpace, srcCpuCacheAttrib, // src parameters
-            dst, dstAddressSpace, dstCpuCacheAttrib, // dst parameters
-            size, &ptr, NV_FALSE, NV_FALSE, NV_FALSE, bMemcopy);
-        pChannel->finishPayload += NvU64_LO32(size);
-        NV_ASSERT(NvU64_HI32(size) == 0);
-        NV_ASSERT(bytesPushed != 0);
-    }
-
-    spaceInPb = pChannel->channelPbSize - pChannel->channelPutOffset;
-
-    //
-    // Submit a semaphore release only work followed by a GPFIFO update.
-    // We do this in the following cases:
-    // 1. We run out of pushbuffer space
-    // 2. Flush remaining/last work
-    //
-    if (spaceInPb < pChannel->methodSizePerBlock || (pChannel->channelPutOffset && !size))
-    {
-        ptr = (NvU32 *)(pChannel->pbCpuVA + pChannel->channelPutOffset);
-
-        bytesPushed = _ceChannelPushMethodsBlock_GM107(pGpu, pMemoryManager, pChannel,
-            0, 0, 0, // src parameters
-            0, 0, 0, // dst parameters
-            0, &ptr, NV_FALSE, NV_FALSE, NV_TRUE, bMemcopy);
-
-         NV_ASSERT(bytesPushed != 0);
-
-         _ceChannelUpdateGpFifo_GM107(pGpu, pMemoryManager, pChannel, 0, pChannel->channelPutOffset);
-         blocksPushed = 1;
-         pChannel->channelPutOffset = 0;
-    }
-
-    return blocksPushed;
 }
 
 /*!

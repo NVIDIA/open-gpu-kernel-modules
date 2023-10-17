@@ -129,6 +129,9 @@ struct nv_drm_crtc_state {
      */
     struct NvKmsKapiHeadRequestedConfig req_config;
 
+    struct NvKmsLutRamps *ilut_ramps;
+    struct NvKmsLutRamps *olut_ramps;
+
     /**
      * @nv_flip:
      *

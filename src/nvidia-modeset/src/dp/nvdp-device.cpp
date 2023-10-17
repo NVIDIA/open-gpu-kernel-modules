@@ -155,3 +155,15 @@ NvBool nvDPDpyIsDscPossible(const NVDpyEvoRec *pDpyEvo)
     }
     return pDpyEvo->dp.pDpLibDevice->device->isDSCPossible();
 }
+
+NvBool nvDPDpyGetDpcdRevision(const NVDpyEvoRec *pDpyEvo,
+                              unsigned int *major,
+                              unsigned int *minor)
+{
+    if (!nvDpyUsesDPLib(pDpyEvo) ||
+        (pDpyEvo->dp.pDpLibDevice == NULL)) {
+        return FALSE;
+    }
+
+    return pDpyEvo->dp.pDpLibDevice->device->getDpcdRevision(major, minor);
+}

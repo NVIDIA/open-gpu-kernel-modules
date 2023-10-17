@@ -30,9 +30,6 @@
 
 #define NVOC_COMPUTE_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
 
-// FIXME XXX
-#define NVOC_GPU_INSTANCE_SUBSCRIPTION_H_PRIVATE_ACCESS_ALLOWED
-
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "core/system.h"
@@ -79,10 +76,10 @@ cisubscriptionConstruct_IMPL
     }
 
     NV_CHECK_OR_RETURN(LEVEL_SILENT, pUserParams->execPartitionId < KMIGMGR_MAX_COMPUTE_INSTANCES, NV_ERR_INVALID_ARGUMENT);
-    NV_CHECK_OR_RETURN(LEVEL_SILENT, pGPUInstanceSubscription->pKernelMIGGpuInstance != NULL, NV_ERR_INVALID_STATE);
-    NV_CHECK_OR_RETURN(LEVEL_SILENT, pGPUInstanceSubscription->pKernelMIGGpuInstance->bValid, NV_ERR_INVALID_STATE);
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, gisubscriptionGetMIGGPUInstance(pGPUInstanceSubscription) != NULL, NV_ERR_INVALID_STATE);
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, gisubscriptionGetMIGGPUInstance(pGPUInstanceSubscription)->bValid, NV_ERR_INVALID_STATE);
 
-    pMIGComputeInstance = &pGPUInstanceSubscription->pKernelMIGGpuInstance->MIGComputeInstance[pUserParams->execPartitionId];
+    pMIGComputeInstance = &gisubscriptionGetMIGGPUInstance(pGPUInstanceSubscription)->MIGComputeInstance[pUserParams->execPartitionId];
     NV_CHECK_OR_RETURN(LEVEL_SILENT, pMIGComputeInstance->bValid, NV_ERR_INVALID_ARGUMENT);
 
     //

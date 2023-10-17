@@ -185,4 +185,5 @@ static inline NV_STATUS refcntReset(POBJREFCNT pRefcnt, NvBool arg0) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_REF_COUNT_NVOC_H_

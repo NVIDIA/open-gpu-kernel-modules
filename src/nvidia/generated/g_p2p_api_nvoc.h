@@ -248,4 +248,5 @@ void p2papiDestruct_IMPL(struct P2PApi *pResource);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_P2P_API_NVOC_H_

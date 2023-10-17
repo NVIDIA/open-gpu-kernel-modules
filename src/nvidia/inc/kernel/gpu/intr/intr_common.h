@@ -26,7 +26,13 @@
 /*! Common defines used by both Intr and OBJINTRABLE */
 
 
-/*! Kinds of interrupts that a unit can have. */
+/*! Kinds of interrupts that a unit can have.
+ *
+ * Different interrupt vectors can route to the same MC_ENGINE_IDX_* (and its
+ * associated #IntrService).
+ * This enum is used to disambiguate which handler function within an
+ * #IntrService should be called depending on the actual interrupt vector.
+ */
 typedef enum {
     /*!
      * Legacy concept of "stalling" interrupts.

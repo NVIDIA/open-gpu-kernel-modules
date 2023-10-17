@@ -459,7 +459,7 @@ _portMemCallerInfoInitTracking
     _portMemCallerInfoInitMem(pMem, PORT_MEM_CALLERINFO_PARAM)
 
 #if PORT_MEM_TRACK_USE_CALLERINFO_IP
-#if NVCPU_IS_RISCV64
+#if NVOS_IS_LIBOS
 //
 // Libos has custom %a format specifier that decodes an instruction pointer into
 // a function / file / line reference when the binary output is decoded.
@@ -467,7 +467,7 @@ _portMemCallerInfoInitTracking
 #define PORT_MEM_CALLERINFO_PRINT_ARGS(x)  "@ %a\n", x
 #else
 #define PORT_MEM_CALLERINFO_PRINT_ARGS(x)  "@ 0x%016x\n", x
-#endif // NVCPU_IS_RISCV64
+#endif // NVOS_IS_LIBOS
 #else
 #define PORT_MEM_CALLERINFO_PRINT_ARGS(x)  "@ %s:%u (%s)\n", x.file, x.line, x.func
 #endif // PORT_MEM_TRACK_USE_CALLERINFO_IP

@@ -186,7 +186,7 @@ halmgrGetHalForGpu_IMPL
 #else // NV_PRINTF_STRINGS_ALLOWED
             NV_PRINTF(LEVEL_INFO,
                       "Matching 0x%x to %u\n",
-                      pPmcBoot42 ? "PMC_BOOT_42" : "PMC_BOOT_0",
+                      pPmcBoot42 ? pPmcBoot42 : pPmcBoot0,
                       halImpl);
 #endif // NV_PRINTF_STRINGS_ALLOWED
 

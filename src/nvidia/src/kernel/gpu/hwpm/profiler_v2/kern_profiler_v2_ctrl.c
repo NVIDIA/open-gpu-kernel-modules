@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -298,6 +298,7 @@ profilerBaseCtrlCmdAllocPmaStream_IMPL
                         &internalParams, sizeof(internalParams)), fail);
 
     pParams->pmaChannelIdx = internalParams.pmaChannelIdx;
+
     if (serverutilGetResourceRef(hClient, pParams->hMemPmaBytesAvailable, &pMemoryRef) == NV_OK &&
         serverutilGetResourceRef(hClient, pParams->hMemPmaBuffer, &pMemoryRef) == NV_OK)
     {

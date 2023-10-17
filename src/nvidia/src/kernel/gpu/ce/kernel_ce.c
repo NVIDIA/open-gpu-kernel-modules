@@ -62,7 +62,10 @@ NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR en
     }
 
     // OBJCE::isPresent would compute this first
-    pGpu->numCEs++;
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        pGpu->numCEs++;
+    }
 
     return NV_OK;
 }
@@ -107,7 +110,7 @@ static void printCaps(OBJGPU *pGpu, KernelCE *pKCe, RM_ENGINE_TYPE rmEngineType,
     PRINT_CAP(_CE_CC_SECURE);
 }
 
-void kceGetNvlinkCaps(OBJGPU *pGpu, KernelCE *pKCe, NvU8 *pKCeCaps)
+void kceGetNvlinkCaps_IMPL(OBJGPU *pGpu, KernelCE *pKCe, NvU8 *pKCeCaps)
 {
     if (kceIsCeSysmemRead_HAL(pGpu, pKCe))
         RMCTRL_SET_CAP(pKCeCaps, NV2080_CTRL_CE_CAPS, _CE_SYSMEM_READ);
@@ -238,7 +241,7 @@ NV_STATUS kceUpdateClassDB_KERNEL(OBJGPU *pGpu, KernelCE *pKCe)
         // If this CE has no PCEs assigned, remove it from classDB
         if (stubbed)
         {
-            NV_PRINTF(LEVEL_INFO, "Stubbing CE %d\n", kceInst);
+            NV_PRINTF(LEVEL_INFO, "Stubbing KCE %d\n", kceInst);
             pKCe->bStubbed = NV_TRUE;
 
             status = gpuDeleteClassFromClassDBByEngTag(pGpu, ENG_CE(kceInst));
@@ -246,7 +249,7 @@ NV_STATUS kceUpdateClassDB_KERNEL(OBJGPU *pGpu, KernelCE *pKCe)
         else
         {
             // If a new CE needs to be added because of the new mappings
-            NV_PRINTF(LEVEL_INFO, "Unstubbing CE %d\n", kceInst);
+            NV_PRINTF(LEVEL_INFO, "Unstubbing KCE %d\n", kceInst);
             pKCe->bStubbed = NV_FALSE;
 
             status = gpuAddClassToClassDBByEngTag(pGpu, ENG_CE(kceInst));
@@ -441,6 +444,7 @@ NV_STATUS
 kceGetAvailableHubPceMask_IMPL
 (
     OBJGPU *pGpu,
+    KernelCE *pKCe,
     NVLINK_TOPOLOGY_PARAMS *pTopoParams
 )
 {

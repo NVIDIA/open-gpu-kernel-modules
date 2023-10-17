@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -253,7 +253,8 @@ fbsrInit_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
             goto fail;
         }
 
-        status = memdescAlloc(pFbsr->pSysMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_126, 
+                        pFbsr->pSysMemDesc);
         if (status != NV_OK)
         {
             NV_ASSERT(status == NV_OK);
@@ -417,7 +418,8 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
                         break;
                     }
 
-                    status = memdescAlloc(pFbsr->pSysMemDesc);
+                    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_127, 
+                                    pFbsr->pSysMemDesc);
                     if (status != NV_OK)
                     {
                         NV_ASSERT(status == NV_OK);
@@ -796,6 +798,7 @@ fbsrEnd_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
 void
 fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVidMemDesc)
 {
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     NV_STATUS  status = NV_OK;
 
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
@@ -867,7 +870,8 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
                                                MEMDESC_FLAGS_NONE);
                         if (status == NV_OK)
                         {
-                            status = memdescAlloc(pStandbyBuffer);
+                            memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_128, 
+                                            pStandbyBuffer);
                             if (status != NV_OK )
                             {
                                 memdescDestroy(pStandbyBuffer);
@@ -901,8 +905,17 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
             case FBSR_TYPE_PAGED_DMA:
             case FBSR_TYPE_DMA:
                 {
+                    TRANSFER_SURFACE   vidSurface = {0};
+                    TRANSFER_SURFACE   sysSurface = {0};
+
+                    vidSurface.pMemDesc = pVidMemDesc;
+                    sysSurface.pMemDesc = pFbsr->pSysMemDesc;
+                    sysSurface.offset   = pFbsr->sysOffset;
+
                     if (pFbsr->op == FBSR_OP_RESTORE)
                     {
+                        NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, pVidMemDesc->Size,
+                                                   TRANSFER_FLAGS_PREFER_CE | TRANSFER_FLAGS_CE_PRI_DEFER_FLUSH));
                     }
                     else
                     {
@@ -912,16 +925,31 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
                                 pFbsr->sysOffset, pVidMemDesc, 0,
                                 pVidMemDesc->Size);
                         }
+                        else
+                        {
+                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, pVidMemDesc->Size,
+                                                   TRANSFER_FLAGS_PREFER_CE | TRANSFER_FLAGS_CE_PRI_DEFER_FLUSH));
+                        }
                     }
                     break;
                 }
             case FBSR_TYPE_PERSISTENT:
                 {
+                    TRANSFER_SURFACE   vidSurface = {0};
+                    TRANSFER_SURFACE   sysSurface = {0};
+
+                    vidSurface.pMemDesc = pVidMemDesc;
+                    sysSurface.pMemDesc = memdescGetStandbyBuffer(pVidMemDesc);
+
                     if (pFbsr->op == FBSR_OP_RESTORE)
                     {
+                        NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, pVidMemDesc->Size,
+                                                   TRANSFER_FLAGS_PREFER_CE | TRANSFER_FLAGS_CE_PRI_DEFER_FLUSH));
                     }
                     else
                     {
+                        NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, pVidMemDesc->Size,
+                                                   TRANSFER_FLAGS_PREFER_CE | TRANSFER_FLAGS_CE_PRI_DEFER_FLUSH));
                     }
                     break;
                 }
@@ -976,11 +1004,20 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
                             }
                         }
 
+                        TRANSFER_SURFACE vidSurface = {0};
+                        vidSurface.pMemDesc = pVidMemDesc;
+                        vidSurface.offset   = vidOffset;
+
+                        TRANSFER_SURFACE sysSurface = {0};
+                        sysSurface.pMemDesc = pFbsr->pSysMemDesc;
+
                         if (pFbsr->op == FBSR_OP_RESTORE)
                         {
+                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
                         }
                         else
                         {
+                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
                         }
 
                         if (pFbsr->op == FBSR_OP_SAVE)
@@ -1071,11 +1108,20 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
                             }
                         }
 
+                        TRANSFER_SURFACE vidSurface = {0};
+                        vidSurface.pMemDesc = pVidMemDesc;
+                        vidSurface.offset   = vidOffset;
+
+                        TRANSFER_SURFACE sysSurface = {0};
+                        sysSurface.pMemDesc = pFbsr->pSysMemDesc;
+
                         if (pFbsr->op == FBSR_OP_RESTORE)
                         {
+                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
                         }
                         else
                         {
+                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
                         }
 
                         if (pFbsr->op == FBSR_OP_SAVE)
@@ -1123,11 +1169,20 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
                             }
                         }
 
+                        TRANSFER_SURFACE vidSurface = {0};
+                        vidSurface.pMemDesc = pVidMemDesc;
+                        vidSurface.offset   = vidOffset;
+
+                        TRANSFER_SURFACE sysSurface = {0};
+                        sysSurface.pMemDesc = pFbsr->pSysMemDesc;
+
                         if (pFbsr->op == FBSR_OP_RESTORE)
                         {
+                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &vidSurface, &sysSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
                         }
                         else
                         {
+                            NV_ASSERT_OK(memmgrMemCopy(pMemoryManager, &sysSurface, &vidSurface, copySize, TRANSFER_FLAGS_PREFER_CE));
                         }
 
                         if (pFbsr->op == FBSR_OP_SAVE)

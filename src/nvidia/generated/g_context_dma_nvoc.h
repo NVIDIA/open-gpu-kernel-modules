@@ -375,4 +375,5 @@ NV_STATUS CliGetContextDma(NvHandle hClient, NvHandle hContextDma, struct Contex
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CONTEXT_DMA_NVOC_H_

@@ -31,7 +31,6 @@ extern "C" {
 /* ------------------------ Includes --------------------------------------- */
 #include "mmu/mmu_walk.h"
 #include "containers/btree.h"
-#include "containers/list.h"
 
 /* --------------------------- Macros ---------------------------------------- */
 #define HI_PRI_SUBLEVEL_INDEX     0
@@ -42,9 +41,6 @@ extern "C" {
 typedef struct MMU_WALK_LEVEL_INST     MMU_WALK_LEVEL_INST;
 typedef struct MMU_WALK_LEVEL          MMU_WALK_LEVEL;
 typedef struct MMU_WALK_OP_PARAMS      MMU_WALK_OP_PARAMS;
-
-typedef struct MMU_WALK_PROCESS_PDES_ENTRY MMU_WALK_PROCESS_PDES_ENTRY;
-typedef struct MMU_WALK_RELEASE_PDES_ENTRY MMU_WALK_RELEASE_PDES_ENTRY;
 
 /*!
  * Higher-level PDE/PTE states.
@@ -98,6 +94,32 @@ typedef struct
 } MMU_ENTRY_INFO;
 
 /*!
+ * Information about the current level iteration state.
+ * Used for converting the MMU walker to be iterative.
+ */
+typedef struct
+{
+    /*!
+     * Variables cached for traversal/pdeRelease.
+     */
+    MMU_WALK_LEVEL_INST *pLevelInst;
+    NvU64 vaLo;
+    NvU64 vaHi;
+    NvU64 vaLevelBase;
+    NvU32 entryIndexHi;
+    NvU32 entryIndex;
+    NvU32 entryIndexFillStart;
+    NvU32 entryIndexFillEnd;
+    NvU32 pendingFillCount;
+    /*!
+     * Variable only cached for pdeRelease and not restored
+     * on the stack
+     */
+    NvU64 entryVaLo;
+} MMU_WALK_ITER_INFO;
+
+
+/*!
  * Describes an entire (horizontal) level of an MMU level hiearchy.
  */
 struct MMU_WALK_LEVEL
@@ -121,6 +143,11 @@ struct MMU_WALK_LEVEL
      * Level instance tree keyed by VA range.
      */
     MMU_WALK_LEVEL_INST  *pInstances;
+
+    /*!
+     * Struct storing all variables needed for iterative MMU walker
+     */
+    MMU_WALK_ITER_INFO    iterInfo;
 
     /*!
      * Tree tracking ranges of VA that are reserved (locked down)
@@ -290,28 +317,6 @@ typedef struct
 
 extern const MMU_WALK_OP_PARAMS g_opParamsSparsify;
 extern const MMU_WALK_OP_PARAMS g_opParamsUnmap;
-
-struct MMU_WALK_PROCESS_PDES_ENTRY
-{
-    MMU_WALK_LEVEL      *pLevel;
-    MMU_WALK_LEVEL_INST *pLevelInst;
-    NvU64 vaLo;
-    NvU64 vaHi;
-    NvU64 vaLevelBase;
-    NvU32 entryIndexHi;
-    NvU32 entryIndex;
-};
-MAKE_LIST(PROCESS_PDES_STACK, MMU_WALK_PROCESS_PDES_ENTRY);
-
-struct MMU_WALK_RELEASE_PDES_ENTRY
-{
-    MMU_WALK_LEVEL      *pLevel;
-    MMU_WALK_LEVEL_INST *pLevelInst;
-    NvU64 entryVaLo;
-    NvU32 entryIndexHi;
-    NvU32 entryIndex;
-};
-MAKE_LIST(RELEASE_PDES_STACK, MMU_WALK_RELEASE_PDES_ENTRY);
 
 /*----------------------------Private Interface--------------------------------*/
 const MMU_WALK_LEVEL *

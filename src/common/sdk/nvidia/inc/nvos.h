@@ -995,13 +995,6 @@ typedef struct
 #define NVOS32_ATTR_AA_SAMPLES_8_VIRTUAL_16             0x00000009
 #define NVOS32_ATTR_AA_SAMPLES_8_VIRTUAL_32             0x0000000A
 
-// Tiled region
-#define NVOS32_ATTR_TILED                                      9:8
-#define NVOS32_ATTR_TILED_NONE                          0x00000000
-#define NVOS32_ATTR_TILED_REQUIRED                      0x00000001
-#define NVOS32_ATTR_TILED_ANY                           0x00000002
-#define NVOS32_ATTR_TILED_DEFERRED                      0x00000003
-
 // Zcull region (NV40 and up)
 // If ATTR_ZCULL is REQUIRED or ANY and ATTR_DEPTH is UNKNOWN, the
 // allocation will fail.
@@ -1025,6 +1018,14 @@ typedef struct
 #define NVOS32_ATTR_COMPR_PLC_REQUIRED                  NVOS32_ATTR_COMPR_REQUIRED
 #define NVOS32_ATTR_COMPR_PLC_ANY                       NVOS32_ATTR_COMPR_ANY
 #define NVOS32_ATTR_COMPR_DISABLE_PLC_ANY               0x00000003
+
+//
+// Force the allocation to go to the reserved heap.
+// This flag is used for KMD allocations when MIG is enabled.
+//
+#define NVOS32_ATTR_ALLOCATE_FROM_RESERVED_HEAP              14:14
+#define NVOS32_ATTR_ALLOCATE_FROM_RESERVED_HEAP_NO      0x00000000
+#define NVOS32_ATTR_ALLOCATE_FROM_RESERVED_HEAP_YES     0x00000001
 
 // Format
 // _BLOCK_LINEAR is only available for nv50+.
@@ -1169,12 +1170,15 @@ typedef struct
 #define NVOS32_ATTR2_32BIT_POINTER_ENABLE               0x00000001
 
 //
-// Indicates address conversion to be used, which affects what
-// pitch alignment needs to be used
+// Whether or not a NUMA Node ID has been specified.
+// If yes, the NUMA node ID specified in numaNode will be used.
+// If no, memory can be allocated from any socket (numaNode will be ignored).
+// Specified numaNode must be of a CPU's memory
 //
-#define NVOS32_ATTR2_TILED_TYPE                                7:7
-#define NVOS32_ATTR2_TILED_TYPE_LINEAR                  0x00000000
-#define NVOS32_ATTR2_TILED_TYPE_XY                      0x00000001
+
+#define NVOS32_ATTR2_FIXED_NUMA_NODE_ID                        7:7
+#define NVOS32_ATTR2_FIXED_NUMA_NODE_ID_NO              0x00000000
+#define NVOS32_ATTR2_FIXED_NUMA_NODE_ID_YES             0x00000001
 
 //
 // Force SMMU mapping on GPU physical allocation in Tegra
@@ -1315,6 +1319,14 @@ typedef struct
 #define NVOS32_ATTR2_ALLOCATE_FROM_SUBHEAP                   27:27
 #define NVOS32_ATTR2_ALLOCATE_FROM_SUBHEAP_NO           0x00000000
 #define NVOS32_ATTR2_ALLOCATE_FROM_SUBHEAP_YES          0x00000001
+
+//
+// When allocating memory, register the memory descriptor to GSP-RM
+// so that GSP-RM is aware of and can access it
+//
+#define NVOS32_ATTR2_REGISTER_MEMDESC_TO_PHYS_RM            31:31
+#define NVOS32_ATTR2_REGISTER_MEMDESC_TO_PHYS_RM_FALSE      0x00000000
+#define NVOS32_ATTR2_REGISTER_MEMDESC_TO_PHYS_RM_TRUE       0x00000001
 
 /**
  * NVOS32 ALLOC_FLAGS
@@ -1631,6 +1643,8 @@ typedef struct
     NvU32     internalflags;                // [IN]  - internal flags to change allocation behaviors from internal paths
 
     NvU32     tag;                          // [IN] - memory tag used for debugging
+
+    NvS32     numaNode;                     // [IN] - CPU NUMA node from which memory should be allocated
 } NV_MEMORY_ALLOCATION_PARAMS;
 
 /*
@@ -1776,7 +1790,7 @@ typedef struct
 // - Used for controlling CPU addresses in CUDA's unified CPU+GPU virtual
 //   address space
 // - Only valid on NvRmMapMemory
-// - Only implemented on Linux
+// - Implemented on Unix but not VMware
 #define NVOS33_FLAGS_MAP_FIXED                                     18:18
 #define NVOS33_FLAGS_MAP_FIXED_DISABLE                             (0x00000000)
 #define NVOS33_FLAGS_MAP_FIXED_ENABLE                              (0x00000001)
@@ -1794,9 +1808,10 @@ typedef struct
 // - When combined with MAP_FIXED, this allows the client to exert
 //   significant control over the CPU heap
 // - Used in CUDA's unified CPU+GPU virtual address space
-// - Only valid on NvRmMapMemory (specifies RM's behavior whenever the
+// - Valid in nvRmUnmapMemory
+// - Valid on NvRmMapMemory (specifies RM's behavior whenever the
 //   mapping is destroyed, regardless of mechanism)
-// - Only implemented on Linux
+// - Implemented on Unix but not VMware
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP                              19:19
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP_DISABLE                      (0x00000000)
 #define NVOS33_FLAGS_RESERVE_ON_UNMAP_ENABLE                       (0x00000001)
@@ -2551,6 +2566,7 @@ typedef struct
 {
     NvU32 size;
     NvU32 prohibitMultipleInstances;  // Prohibit multiple allocations of OFA?
+    NvU32 engineInstance;
 } NV_OFA_ALLOCATION_PARAMETERS;
 
 #define NV04_ADD_VBLANK_CALLBACK                          (0x0000003D)

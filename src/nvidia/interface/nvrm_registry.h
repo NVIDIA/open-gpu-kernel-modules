@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1997-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1997-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -833,6 +833,14 @@
 #define NV_REG_STR_RM_ENABLE_ADDRTREE_YES   (0x00000001)
 #define NV_REG_STR_RM_ENABLE_ADDRTREE_NO    (0x00000000)
 
+//
+// Type DWORD
+// Disable global CeUtils instance creation after fifo scheduling enablement
+//
+#define NV_REG_STR_DISABLE_GLOBAL_CE_UTILS             "RmDisableGlobalCeUtils"
+#define NV_REG_STR_DISABLE_GLOBAL_CE_UTILS_YES         (0x00000001)
+#define NV_REG_STR_DISABLE_GLOBAL_CE_UTILS_NO          (0x00000000)
+
 #define  NV_REG_STR_RM_SCRUB_BLOCK_SHIFT               "RMScrubBlockShift"
 // Type DWORD
 // Encoding Numeric Value
@@ -959,6 +967,15 @@
 // Type DWORD:
 // Encoding -- NvS32
 // Override GPU NUMA Node ID assigned by OS
+
+#define NV_REG_STR_RESTORE_BAR1_SIZE_BUG_3249028_WAR         "RMBar1RestoreSize"
+#define NV_REG_STR_RESTORE_BAR1_SIZE_BUG_3249028_TRUE        (0x00000001)
+#define NV_REG_STR_RESTORE_BAR1_SIZE_BUG_3249028_FALSE       (0x00000000)
+// Type DWORD:
+// Encoding -- Boolean
+// Check if BAR1 size has been restored correctly by SBIOS across power transitions
+// Default: enabled for Ampere and up
+//
 
 //
 // Type DWORD
@@ -1144,6 +1161,26 @@
 #define NV_REG_STR_RM_CTXSW_LOG_ENABLE_INTR                   0x00000002
 #define NV_REG_STR_RM_CTXSW_LOG_ENABLE_INTR_APC               0x00000003
 #define NV_REG_STR_RM_CTXSW_LOG_DEFAULT                       NV_REG_STR_RM_CTXSW_LOG_DISABLE
+
+// Type DWORD: Indicates if enabling video event tracing
+//
+// 0    - Disables Video event trace usage (default)
+// > 0  - Enable video event trace and define sizes for different buffers
+//        bit 0  - 15: sizes of the hardware staging buffer in 4K pages
+//        bit 16 - 30: sizes of the event buffer in 4K pages
+//        bit 31 - 31: Enable always logging:
+//                     By default, video engines only log video events when there is
+//                     at least one eventbuffer bound and enabled. If this flag is set,
+//                     video engines will always log events even without a consumer. This
+//                     is helpful for debugging purposes.
+//        Example: 0x01000008 means a 32K staging buffer and a 1M event buffer.
+#define NV_REG_STR_RM_VIDEO_EVENT_TRACE                                 "RmVideoEventTrace"
+#define NV_REG_STR_RM_VIDEO_EVENT_TRACE_DISABLED                        (0x00000000)
+#define NV_REG_STR_RM_VIDEO_EVENT_TRACE_STAGING_BUFFER_SIZE_IN_4k       15:0
+#define NV_REG_STR_RM_VIDEO_EVENT_TRACE_EVENT_BUFFER_SIZE_IN_4k         30:16
+#define NV_REG_STR_RM_VIDEO_EVENT_TRACE_ALWAYS_LOG                      31:31
+#define NV_REG_STR_RM_VIDEO_EVENT_TRACE_ALWAYS_LOG_DISABLED             0x00000000
+#define NV_REG_STR_RM_VIDEO_EVENT_TRACE_ALWAYS_LOG_ENABLED              0x00000001
 
 //
 // Type: DWORD
@@ -1744,6 +1781,13 @@
 // 1 - Store active RM clients in a multimap to speed up lookups (currently only in thirdpartyp2p)
 // 0 - (Default) Linear list search for clients
 
+//
+// Type DWORD (Boolean)
+// 1 - Measure API and GPU lock hold/wait times which can be retrieved with the
+//     NV0000_CTRL_CMD_SYSTEM_GET_LOCK_TIMES control call
+// 0 - (Default) Don't measure lock hold/wait times
+//
+#define NV_REG_STR_RM_LOCK_TIME_COLLECT                            "RmLockTimeCollect"
 
 //
 // Type: DWORD (Boolean)
@@ -1879,6 +1923,15 @@
 #define NV_REG_STR_RM_GSPRM_PROFILING_ENABLE  1
 
 //
+// Controls, GSP-RM start with boost clocks.
+// 0 : disabled
+// 1 : enabled (default)
+//
+#define NV_REG_STR_RM_BOOT_GSPRM_WITH_BOOST_CLOCKS "RmBootGspRmWithBoostClocks"
+#define NV_REG_STR_RM_BOOT_GSPRM_WITH_BOOST_CLOCKS_DISABLED 0
+#define NV_REG_STR_RM_BOOT_GSPRM_WITH_BOOST_CLOCKS_ENABLED  1
+
+//
 // Enable Local EGM HW verification using RM/SW stack.
 // Must be specified with a peerID corresponding to local EGM
 //
@@ -1925,5 +1978,113 @@
 #define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3 "RmDmaAdjustPeerMmioBF3"
 #define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_DISABLE 0
 #define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_ENABLE  1
+
+#define NV_REG_STR_RM_NVLINK_FORCED_LOOPBACK_ON_SWITCH                  "RMNvLinkForcedLoopbackOnSwitch"
+#define NV_REG_STR_RM_NVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE             0:0
+#define NV_REG_STR_RM_NVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE_DEFAULT     (0x00000000)
+#define NV_REG_STR_RM_NVLINK_FORCED_LOOPBACK_ON_SWITCH_MODE_ENABLED     (0x00000001)
+
+//
+// Type: Dword
+// Encoding:
+// 0 - Iterative MMU Walker is not enabled. Normal recursive implementation is used. (default)
+// 1 - Iterative MMU Walker is used
+//
+#define NV_REG_STR_RM_ITERATIVE_MMU_WALKER           "RMUseIterativeMMUWalker"
+#define NV_REG_STR_RM_ITERATIVE_MMU_WALKER_DISABLED   0x00000000
+#define NV_REG_STR_RM_ITERATIVE_MMU_WALKER_ENABLED    0x00000001
+#define NV_REG_STR_RM_ITERATIVE_MMU_WALKER_DEFAULT    NV_REG_STR_RM_ITERATIVE_MMU_WALKER_DISABLED
+
+//
+// Type DWORD
+// This set of MIG regkeys specifies a set of allocation requests to be issued to the GPU on boot.
+// MIG configuration contained within GPUMGR always supersedes these regkeys, if present and valid.
+// The entire configuration specified by these regkeys is validated before being applied. An error
+// reflected in whole or in part on these regkeys will cause them to be discarded entirely.
+//
+// RmMIGBootConfigurationGI is used to encode a series of GPU instance allocations. These are applied in order.
+// RmMIGBootConfigurationCI is used to encode a series of CI instance allocations.
+//   The GI associated with each CI allocation entry is specified by RmMIGBootConfigurationCIAssignment.
+//   It is an error to specify a CI via RmMIGBootConfigurationCI without specifying the associated GPU
+//   instance entry via RmMIGBootConfigurationCIAssignment. The values for any CI assignment for a CI
+//   entry left unspecified must be 0.
+//
+// RmMIGBootConfigurationGI_N
+//                           _FLAGS               - determines granularity of GPU partitioning. See NV2080_CTRL_CMD_GPU_SET_PARTITIONS
+//                           _PLACEMENT_LO        - Optional placement span to allocate the partition into. Unused if HI<LO
+//                           _PLACEMENT_HI        - Optional placement span to allocate the partition into. Unused if HI<LO
+//                           _REQ_DEC_JPG_OFA     - For single slice instances, request at least 1 video decode, jpeg, and optical flow engine
+//
+// RmMIGBootConfigurationCI_N
+//                           _FLAGS               - determines granularity of GPU partitioning. Subset of the GI flags - only the compute size flags are used here. See NV2080_CTRL_CMD_GPU_SET_PARTITIONS
+//                           _PLACEMENT_LO        - Starting slice in GPU instance
+//                           _CES                 - # Copy engines to share with other CIs in this GI. 0 denotes all available.
+//                           _DECS                - # video decoder engines to share with other CIs in this GI. 0 denotes all available.
+//                           _ENCS                - # video decoder engines to share with other CIs in this GI. 0 denotes all available.
+//                           _JPGS                - # jpeg engines to share with other CIs in this GI. 0 denotes all available.
+//                           _OFAS                - # optical flow engines to share with other CIs in this GI. 0 denotes all available.
+//
+// RmMIGBootConfigurationCIAssignment
+//                                   _GI(n)       - Assign Compute instance n to GPU instance entry according to this value
+//
+// RmMIGBootConfigurationFeatureFlags
+//                                   _AUTO_UPDATE - Windows only. RM updates the regkeys at runtime as MIG configuration changes.
+//
+
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_GI(n)                               "RmMIGBootConfigurationGI_" #n
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_GI__SIZE                            8
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_GI_FLAGS                            7:0
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_GI_PLACEMENT_LO                     15:8
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_GI_PLACEMENT_HI                     23:16
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_GI_REQ_DEC_JPG_OFA                  31:31
+
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI(n)                               "RmMIGBootConfigurationCI_" #n
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI__SIZE                            8
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_FLAGS                            7:0
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_PLACEMENT_LO                     11:8
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_CES                              15:12
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_DECS                             19:16
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_ENCS                             23:20
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_JPGS                             27:24
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_OFAS                             31:28
+
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_ASSIGNMENT                       "RmMIGBootConfigurationCIAssignment"
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_ASSIGNMENT_GI(n)                 ((4 * ((n) + 1)) - 1):(4 * (n))
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_CI_ASSIGNMENT_GI__SIZE              8
+
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS                       "RmMIGBootConfigurationFeatureFlags"
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_SUPPORTED             0:0
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_SUPPORTED_DEFAULT     0x0
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_SUPPORTED_FALSE       0x0
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_SUPPORTED_TRUE        0x1
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_AUTO_UPDATE           1:1
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_AUTO_UPDATE_DEFAULT   0x0
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_AUTO_UPDATE_DISABLED  0x0
+#define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_AUTO_UPDATE_ENABLED   0x1
+
+//
+// This regkey controls the GPU load failure test.
+// Supported only on DEBUG, DEVELOP, or RELEASE drivers built with the parameter INSTRUMENT_RM=true
+// This is an input/output registry key.
+// NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_START: input - start the text at the specified stage and engine index. 
+//   Typically when the test starts, it is with NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE_PREINIT + ENGINEINDEX = 0
+// NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_RUNNING: output - the test is running.
+//   The next stage and engine index are specified 
+//   The test executable just needs to change NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_NEXT to _START for the next step
+// NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_FINISHED: output - there is no morre stages and engines to test
+//
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST                    "RmGpuLoadFailureTest"
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS             1:0
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_NONE        0x00000000
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_START       0x00000001
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_RUNNING     0x00000002
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_FINISHED    0x00000003
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE              4:2
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE_PREINIT      0x00000000
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE_INIT         0x00000001
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE_PRELOAD      0x00000002
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE_LOAD         0x00000003
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE_POSTLOAD     0x00000004
+#define NV_REG_STR_GPU_LOAD_FAILURE_TEST_ENGINEINDEX        31:5
 
 #endif // NVRM_REGISTRY_H

@@ -184,6 +184,7 @@ NvlStatus nvswitch_inforom_bbx_add_sxid(nvswitch_device *device,
                                     NvU32 data1, NvU32 data2);
 NvlStatus nvswitch_inforom_bbx_get_sxid(nvswitch_device *device,
                             NVSWITCH_GET_SXIDS_PARAMS *params);
+NvlStatus nvswitch_inforom_bbx_get_data(nvswitch_device *device, NvU8 dataType, void *params);
 
 // InfoROM DEM APIs
 NvlStatus nvswitch_inforom_dem_load(nvswitch_device *device);

@@ -1509,7 +1509,7 @@ NV_STATUS CliGetKernelChannel(struct RsClient       *pClient,
  * @brief Helper to get type and memdesc of a channel notifier (memory/ctxdma)
  */
 NV_STATUS kchannelGetNotifierInfo(struct OBJGPU *pGpu,
-                                  struct RsClient *pRsClient,
+                                  Device *pDevice,
                                   NvHandle hErrorContext,
                                   MEMORY_DESCRIPTOR **ppMemDesc,
                                   ErrorNotifierType *pNotifierType,
@@ -1549,4 +1549,5 @@ void kchannelSetRunlistSet(struct OBJGPU *pGpu, struct KernelChannel *pKernelCha
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_CHANNEL_NVOC_H_

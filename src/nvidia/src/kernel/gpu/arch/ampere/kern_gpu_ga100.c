@@ -52,15 +52,13 @@ gpuFuseSupportsDisplay_GA100
  * @return NV_OK if success, else appropriate NV_STATUS code
  */
 NV_STATUS
-gpuClearFbhubPoisonIntrForBug2924523_GA100_KERNEL
+gpuClearFbhubPoisonIntrForBug2924523_GA100
 (
     OBJGPU *pGpu
 )
 {
+    // INTR module is not stateloaded at gpuPostConstruct, so use HW default
     NvU32 intrVector = NV_PFB_FBHUB_POISON_INTR_VECTOR_HW_INIT;
-    NvU32 reg = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(intrVector);
-    NvU32 bit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(intrVector);
-    NvV32 intr = 0;
 
     if (pGpu == NULL)
         return NV_OK;
@@ -70,20 +68,10 @@ gpuClearFbhubPoisonIntrForBug2924523_GA100_KERNEL
     // to VBIOS IFR on GA100. If yes, clear the FBHUB Interrupt. This WAR is
     // required for Bug 2924523 as VBIOS IFR causes FBHUB Poison intr.
     //
-    intr = GPU_VREG_RD32_EX(pGpu,
-                            NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(reg),
-                            NULL) &
-                            NVBIT(bit);
-
-    if (intr != 0)
+    if (intrIsVectorPending_HAL(pGpu, GPU_GET_INTR(pGpu), intrVector, NULL))
     {
-        NV_PRINTF(LEVEL_ERROR, "FBHUB Interrupt detected = 0x%X. Clearing it.\n", intr);
-
-        // Clear FBHUB Poison interrupt
-        GPU_VREG_WR32_EX(pGpu,
-                         NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(reg),
-                         NVBIT(bit),
-                         NULL);
+        NV_PRINTF(LEVEL_ERROR, "FBHUB Interrupt detected. Clearing it.\n");
+        intrClearLeafVector_HAL(pGpu, GPU_GET_INTR(pGpu), intrVector, NULL);
     }
 
     return NV_OK;

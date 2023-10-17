@@ -162,6 +162,7 @@ typedef struct NV0080_CTRL_FB_GET_COMPBIT_STORE_INFO_PARAMS {
     NvU32 backingStoreCbcBase;
     NvU32 comptaglineAllocationPolicy;
     NV_DECLARE_ALIGNED(NvU64 privRegionStartOffset, 8);
+    NvU32 cbcCoveragePerSlice;
 } NV0080_CTRL_FB_GET_COMPBIT_STORE_INFO_PARAMS;
 
 #define NV0080_CTRL_CMD_FB_GET_COMPBIT_STORE_INFO_ADDRESS_SPACE_UNKNOWN 0 // ADDR_UNKNOWN

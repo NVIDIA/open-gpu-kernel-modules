@@ -396,6 +396,7 @@ struct KernelGmmu {
     NvBool PRIVATE_FIELD(bBug2720120WarEnabled);
     NvBool PRIVATE_FIELD(bVaspaceInteropSupported);
 };
+
 struct KernelGmmu_PRIVATE {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -1086,9 +1087,9 @@ static inline void kgmmuStateDestroy_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *p
     pKernelGmmu->__kgmmuStateDestroy__(pGpu, pKernelGmmu);
 }
 
-void kgmmuRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg0[167]);
+void kgmmuRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg0[168]);
 
-static inline void kgmmuRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg0[167]) {
+static inline void kgmmuRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, IntrServiceRecord arg0[168]) {
     pKernelGmmu->__kgmmuRegisterIntrService__(pGpu, pKernelGmmu, arg0);
 }
 
@@ -1843,4 +1844,5 @@ void       gmmuMemDescCacheFree(GVAS_GPU_STATE *pGpuState);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERN_GMMU_NVOC_H_

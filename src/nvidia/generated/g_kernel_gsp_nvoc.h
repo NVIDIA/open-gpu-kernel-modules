@@ -292,6 +292,7 @@ struct KernelGsp {
     const BINDATA_ARCHIVE *(*__kgspGetBinArchiveBooterUnloadUcode__)(struct KernelGsp *);
     NvU64 (*__kgspGetMinWprHeapSizeMB__)(struct OBJGPU *, struct KernelGsp *);
     NvU64 (*__kgspGetMaxWprHeapSizeMB__)(struct OBJGPU *, struct KernelGsp *);
+    NvU32 (*__kgspGetFwHeapParamOsCarveoutSize__)(struct OBJGPU *, struct KernelGsp *);
     NV_STATUS (*__kgspInitVgpuPartitionLogging__)(struct OBJGPU *, struct KernelGsp *, NvU32, NvU64, NvU64, NvU64, NvU64);
     NV_STATUS (*__kgspFreeVgpuPartitionLogging__)(struct OBJGPU *, struct KernelGsp *, NvU32);
     const char *(*__kgspGetSignatureSectionNamePrefix__)(struct OBJGPU *, struct KernelGsp *);
@@ -380,7 +381,7 @@ struct KernelGsp {
     NvBool bPartitionedFmc;
     NvBool bScrubberUcodeSupported;
     NvU32 fwHeapParamBaseSize;
-    NvU32 fwHeapParamOsCarveoutSize;
+    NvBool bBootGspRmWithBoostClocks;
 };
 
 #ifndef __NVOC_CLASS_KernelGsp_TYPEDEF__
@@ -480,6 +481,8 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 #define kgspGetMinWprHeapSizeMB_HAL(pGpu, pKernelGsp) kgspGetMinWprHeapSizeMB_DISPATCH(pGpu, pKernelGsp)
 #define kgspGetMaxWprHeapSizeMB(pGpu, pKernelGsp) kgspGetMaxWprHeapSizeMB_DISPATCH(pGpu, pKernelGsp)
 #define kgspGetMaxWprHeapSizeMB_HAL(pGpu, pKernelGsp) kgspGetMaxWprHeapSizeMB_DISPATCH(pGpu, pKernelGsp)
+#define kgspGetFwHeapParamOsCarveoutSize(pGpu, pKernelGsp) kgspGetFwHeapParamOsCarveoutSize_DISPATCH(pGpu, pKernelGsp)
+#define kgspGetFwHeapParamOsCarveoutSize_HAL(pGpu, pKernelGsp) kgspGetFwHeapParamOsCarveoutSize_DISPATCH(pGpu, pKernelGsp)
 #define kgspInitVgpuPartitionLogging(pGpu, pKernelGsp, gfid, initTaskLogBUffOffset, initTaskLogBUffSize, vgpuTaskLogBUffOffset, vgpuTaskLogBuffSize) kgspInitVgpuPartitionLogging_DISPATCH(pGpu, pKernelGsp, gfid, initTaskLogBUffOffset, initTaskLogBUffSize, vgpuTaskLogBUffOffset, vgpuTaskLogBuffSize)
 #define kgspInitVgpuPartitionLogging_HAL(pGpu, pKernelGsp, gfid, initTaskLogBUffOffset, initTaskLogBUffSize, vgpuTaskLogBUffOffset, vgpuTaskLogBuffSize) kgspInitVgpuPartitionLogging_DISPATCH(pGpu, pKernelGsp, gfid, initTaskLogBUffOffset, initTaskLogBUffSize, vgpuTaskLogBUffOffset, vgpuTaskLogBuffSize)
 #define kgspFreeVgpuPartitionLogging(pGpu, pKernelGsp, gfid) kgspFreeVgpuPartitionLogging_DISPATCH(pGpu, pKernelGsp, gfid)
@@ -634,9 +637,9 @@ static inline NV_STATUS kgspConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct
     return pKernelGsp->__kgspConstructEngine__(pGpu, pKernelGsp, arg0);
 }
 
-void kgspRegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[167]);
+void kgspRegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[168]);
 
-static inline void kgspRegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[167]) {
+static inline void kgspRegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, IntrServiceRecord pRecords[168]) {
     pKernelGsp->__kgspRegisterIntrService__(pGpu, pKernelGsp, pRecords);
 }
 
@@ -958,8 +961,8 @@ static inline NvU64 kgspGetMinWprHeapSizeMB_7185bf(struct OBJGPU *pGpu, struct K
     return (64U);
 }
 
-static inline NvU64 kgspGetMinWprHeapSizeMB_907c84(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return pGpu->bVgpuGspPluginOffloadEnabled ? (549U) : (84U);
+static inline NvU64 kgspGetMinWprHeapSizeMB_cc88c3(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return pGpu->bVgpuGspPluginOffloadEnabled ? (565U) : (86U);
 }
 
 static inline NvU64 kgspGetMinWprHeapSizeMB_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
@@ -970,12 +973,24 @@ static inline NvU64 kgspGetMaxWprHeapSizeMB_ad4e6a(struct OBJGPU *pGpu, struct K
     return (256U);
 }
 
-static inline NvU64 kgspGetMaxWprHeapSizeMB_5839e2(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
-    return pGpu->bVgpuGspPluginOffloadEnabled ? (1024U) : (276U);
+static inline NvU64 kgspGetMaxWprHeapSizeMB_55728f(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return pGpu->bVgpuGspPluginOffloadEnabled ? (1040U) : (278U);
 }
 
 static inline NvU64 kgspGetMaxWprHeapSizeMB_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
     return pKernelGsp->__kgspGetMaxWprHeapSizeMB__(pGpu, pKernelGsp);
+}
+
+static inline NvU32 kgspGetFwHeapParamOsCarveoutSize_397f70(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return (0 << 20);
+}
+
+static inline NvU32 kgspGetFwHeapParamOsCarveoutSize_4b5307(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return pGpu->bVgpuGspPluginOffloadEnabled ? (36 << 20) : (22 << 20);
+}
+
+static inline NvU32 kgspGetFwHeapParamOsCarveoutSize_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    return pKernelGsp->__kgspGetFwHeapParamOsCarveoutSize__(pGpu, pKernelGsp);
 }
 
 static inline NV_STATUS kgspInitVgpuPartitionLogging_395e98(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp, NvU32 gfid, NvU64 initTaskLogBUffOffset, NvU64 initTaskLogBUffSize, NvU64 vgpuTaskLogBUffOffset, NvU64 vgpuTaskLogBuffSize) {
@@ -1344,4 +1359,5 @@ void kgspFreeFlcnUcode(KernelGspFlcnUcode *pFlcnUcode);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_GSP_NVOC_H_

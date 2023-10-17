@@ -761,17 +761,6 @@ NV_STATUS deviceConstruct_IMPL(struct Device *arg_pResource, struct CALL_CONTEXT
 void deviceDestruct_IMPL(struct Device *pResource);
 
 #define __nvoc_deviceDestruct(pResource) deviceDestruct_IMPL(pResource)
-NV_STATUS deviceInit_IMPL(struct Device *pDevice, struct CALL_CONTEXT *pCallContext, NvHandle hClient, NvHandle hDevice, NvU32 deviceInst, NvHandle hClientShare, NvHandle hTargetClient, NvHandle hTargetDevice, NvU64 vaSize, NvU64 vaStartInternal, NvU64 vaLimitInternal, NvU32 allocFlags, NvU32 vaMode);
-
-#ifdef __nvoc_device_h_disabled
-static inline NV_STATUS deviceInit(struct Device *pDevice, struct CALL_CONTEXT *pCallContext, NvHandle hClient, NvHandle hDevice, NvU32 deviceInst, NvHandle hClientShare, NvHandle hTargetClient, NvHandle hTargetDevice, NvU64 vaSize, NvU64 vaStartInternal, NvU64 vaLimitInternal, NvU32 allocFlags, NvU32 vaMode) {
-    NV_ASSERT_FAILED_PRECOMP("Device was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_device_h_disabled
-#define deviceInit(pDevice, pCallContext, hClient, hDevice, deviceInst, hClientShare, hTargetClient, hTargetDevice, vaSize, vaStartInternal, vaLimitInternal, allocFlags, vaMode) deviceInit_IMPL(pDevice, pCallContext, hClient, hDevice, deviceInst, hClientShare, hTargetClient, hTargetDevice, vaSize, vaStartInternal, vaLimitInternal, allocFlags, vaMode)
-#endif //__nvoc_device_h_disabled
-
 NV_STATUS deviceGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDevice, struct Device **ppDevice);
 
 #define deviceGetByHandle(pClient, hDevice, ppDevice) deviceGetByHandle_IMPL(pClient, hDevice, ppDevice)
@@ -872,4 +861,5 @@ OBJGPU *CliGetGpuFromHandle(NvHandle hClient, NvHandle hResource, NvBool *pbBroa
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_DEVICE_NVOC_H_

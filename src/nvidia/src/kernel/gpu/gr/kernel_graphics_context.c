@@ -21,9 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-// FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_OBJECT_H_PRIVATE_ACCESS_ALLOWED
-
 #define NVOC_KERNEL_GRAPHICS_CONTEXT_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/gpu/gr/kernel_graphics_context.h"
@@ -671,6 +668,43 @@ kgrctxRecordMmuFault_IMPL
 }
 
 /*!
+ * @brief getter for active debugger interator
+ */
+KernelSMDebuggerSessionListIter
+kgrctxGetDebuggerSessionIter_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext
+) 
+{
+    return listIterAll(&pKernelGraphicsContext->pShared->activeDebuggers);
+}
+
+/*! add active debugger session */
+NvBool
+kgrctxRegisterKernelSMDebuggerSession_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    KernelSMDebuggerSession *pKernelSMDebuggerSession
+)
+{
+    return listAppendValue(&pKernelGraphicsContext->pShared->activeDebuggers, &pKernelSMDebuggerSession) != NULL;
+}
+
+/*! remove active debugger session */
+void
+kgrctxDeregisterKernelSMDebuggerSession_IMPL
+(
+    OBJGPU *pGpu,
+    KernelGraphicsContext *pKernelGraphicsContext,
+    KernelSMDebuggerSession *pKernelSMDebuggerSession
+)
+{
+    listRemoveFirstByValue(&pKernelGraphicsContext->pShared->activeDebuggers, &pKernelSMDebuggerSession);
+}
+
+/*!
  * @brief Determine whether channels in this context are associated with GR engine
  *
  * @returns NV_TRUE if passed channel is allocated on GR, and is on GR runlist
@@ -1130,8 +1164,10 @@ kgrctxAllocMainCtxBuffer_IMPL
         memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pGrCtxBufferMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB));
 
     NV_ASSERT_OK_OR_RETURN(memdescSetCtxBufPool(pGrCtxBufferMemDesc, pCtxBufPool));
-    NV_ASSERT_OK_OR_RETURN(
-        memdescAllocList(pGrCtxBufferMemDesc, pAttr->pAllocList));
+
+    NV_STATUS status;
+    memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_CONTEXT_BUFFER, pGrCtxBufferMemDesc, pAttr->pAllocList);
+    NV_ASSERT_OK_OR_RETURN(status);
 
     NV_ASSERT_OK_OR_RETURN(
         kchannelSetEngineContextMemDesc(pGpu, pKernelChannel,
@@ -1196,8 +1232,10 @@ kgrctxAllocPatchBuffer_IMPL
         memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool),
         failed);
 
+    memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_117, 
+                        (*ppMemDesc), pAttr->pAllocList);
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-        memdescAllocList(*ppMemDesc, pAttr->pAllocList),
+        status,
         failed);
 
     return NV_OK;
@@ -1280,8 +1318,10 @@ kgrctxAllocPmBuffer_IMPL
 
     NV_ASSERT_OK_OR_GOTO(status, memdescSetCtxBufPool(*ppMemDesc, pCtxBufPool), error);
 
+    memdescTagAllocList(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_118, 
+                        (*ppMemDesc), pAttr->pAllocList);
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-        memdescAllocList(*ppMemDesc, pAttr->pAllocList),
+        status,
         error);
 
     return NV_OK;
@@ -1317,11 +1357,11 @@ kgrctxAllocCtxBuffers_IMPL
 
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
 
-    NV_ASSERT_OR_RETURN(pKernelGraphicsObject->pKernelGraphicsContext != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(kgrobjGetKernelGraphicsContext(pGpu, pKernelGraphicsObject) != NULL, NV_ERR_INVALID_STATE);
 
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
         kgrctxGetUnicast(pGpu,
-                         pKernelGraphicsObject->pKernelGraphicsContext,
+                         kgrobjGetKernelGraphicsContext(pGpu, pKernelGraphicsObject),
                          &pKernelGraphicsContextUnicast));
 
     // Allocate the GR ctx buffer if required
@@ -1360,7 +1400,7 @@ kgrctxAllocCtxBuffers_IMPL
     if (kgrctxShouldPreAllocPmBuffer_HAL(pGpu, pKernelGraphicsContext, pChannelDescendant->pKernelChannel))
     {
         NV_ASSERT_OK_OR_RETURN(
-            kgrctxAllocPmBuffer(pGpu, pKernelGraphicsObject->pKernelGraphicsContext,
+            kgrctxAllocPmBuffer(pGpu, kgrobjGetKernelGraphicsContext(pGpu, pKernelGraphicsObject),
                                 pKernelGraphics,
                                 pChannelDescendant->pKernelChannel));
     }
@@ -1374,7 +1414,7 @@ kgrctxAllocCtxBuffers_IMPL
     {
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kgraphicsAllocGrGlobalCtxBuffers_HAL(pGpu, pKernelGraphics, gfid,
-                                                 pKernelGraphicsObject->pKernelGraphicsContext));
+                                                 kgrobjGetKernelGraphicsContext(pGpu, pKernelGraphicsObject)));
     }
 
     // Allocate global context for this gfid if they haven't been already
@@ -1554,7 +1594,7 @@ kgrctxMapCtxBuffers_IMPL
     NV_ASSERT(!gpumgrGetBcEnabledStatus(pGpu));
 
     NV_ASSERT_OK_OR_RETURN(
-        kgrctxGetUnicast(pGpu, pKernelGraphicsObject->pKernelGraphicsContext, &pKernelGraphicsContextUnicast));
+        kgrctxGetUnicast(pGpu, kgrobjGetKernelGraphicsContext(pGpu, pKernelGraphicsObject), &pKernelGraphicsContextUnicast));
 
     pGVAS = dynamicCast(pKernelChannel->pVAS, OBJGVASPACE);
     if (gvaspaceIsExternallyOwned(pGVAS))
@@ -2000,10 +2040,15 @@ kgrctxSetupDeferredPmBuffer_IMPL
     KernelGraphicsContextUnicast *pKernelGraphicsContextUnicast;
     OBJGVASPACE *pGVAS = dynamicCast(pKernelChannel->pVAS, OBJGVASPACE);
     NV_STATUS status = NV_OK;
+    Device *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
     Subdevice *pSubdevice;
 
     NV_ASSERT_OK_OR_RETURN(
-            subdeviceGetByGpu(RES_GET_CLIENT(pKernelChannel), pGpu, &pSubdevice));
+        subdeviceGetByInstance(
+            RES_GET_CLIENT(pKernelChannel),
+            RES_GET_HANDLE(pDevice),
+            gpumgrGetSubDeviceInstanceFromGpu(pGpu),
+            &pSubdevice));
 
     GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
 
@@ -2343,27 +2388,24 @@ kgrctxUnmapAssociatedCtxBuffers_IMPL
     // channels could be using these mappings, and we must wait for both
     // channels to be detached before we remove them.
     //
-    if (pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->pChanList != NULL)
     {
-        CHANNEL_NODE *pChanNode;
-        CHANNEL_LIST *pChanList;
+        RS_ORDERED_ITERATOR it;
+        RsResourceRef *pScopeRef = RES_GET_REF(pKernelChannel);
 
-        pChanList = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->pChanList;
+        // Iterate over all channels in this TSG and check for duplicate VAS
+        if (!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm)
+            pScopeRef = RES_GET_REF(pKernelChannel->pKernelChannelGroupApi);
 
-        for (pChanNode = pChanList->pHead; pChanNode; pChanNode = pChanNode->pNext)
+        it = kchannelGetIter(RES_GET_CLIENT(pKernelChannel), pScopeRef);
+        while (clientRefOrderedIterNext(it.pClient, &it))
         {
-            // Skip the channel we are looking to unmap
-            if (kchannelGetDebugTag(pKernelChannel) == kchannelGetDebugTag(pChanNode->pKernelChannel))
+            KernelChannel *pLoopKernelChannel = dynamicCast(it.pResourceRef->pResource, KernelChannel);
+            NV_ASSERT_OR_RETURN_VOID(pLoopKernelChannel != NULL);
+
+            if (pLoopKernelChannel == pKernelChannel)
                 continue;
-            
-            if (pKernelChannel->pVAS == pChanNode->pKernelChannel->pVAS)
-            {
-                NV_PRINTF(LEVEL_INFO, "TSG %d Channel %d shares a pVAS with channel %d\n",
-                          pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->grpID,
-                          kchannelGetDebugTag(pKernelChannel), 
-                          kchannelGetDebugTag(pChanNode->pKernelChannel));
-                return;
-            }
+
+            NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, pLoopKernelChannel->pVAS != pKernelChannel->pVAS);
         }
     }
 
@@ -2567,13 +2609,13 @@ void kgrctxUnmapBuffers_KERNEL
     NV_STATUS status;
     NV2080_CTRL_GR_ROUTE_INFO grRouteInfo;
     KernelGraphics *pKernelGraphics;
-    NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelGraphicsContext);
+    Device *pDevice = GPU_RES_GET_DEVICE(pKernelGraphicsContext);
     NvHandle hParent = RES_GET_PARENT_HANDLE(pKernelGraphicsContext);
 
     portMemSet(&grRouteInfo, 0, sizeof(grRouteInfo));
     kgrmgrCtrlSetChannelHandle(hParent, &grRouteInfo);
     NV_ASSERT_OK_OR_ELSE(status,
-        kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &grRouteInfo, &pKernelGraphics),
+        kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &grRouteInfo, &pKernelGraphics),
         return; );
 
     kgrctxUnmapAssociatedCtxBuffers(pGpu, pKernelGraphicsContext, pKernelGraphics, pKernelChannel);
@@ -2606,7 +2648,8 @@ kgrctxUnmapMainCtxBuffer_IMPL
     {
         // TODO remove Channel, ENG_GR dependencies
         kchannelUnmapEngineCtxBuf(pGpu, pKernelChannel, ENG_GR(kgraphicsGetInstance(pGpu, pKernelGraphics)));
-        kchannelSetEngineContextMemDesc(pGpu, pKernelChannel, ENG_GR(kgraphicsGetInstance(pGpu, pKernelGraphics)), NULL);
+        NV_ASSERT_OR_RETURN_VOID(
+            kchannelSetEngineContextMemDesc(pGpu, pKernelChannel, ENG_GR(kgraphicsGetInstance(pGpu, pKernelGraphics)), NULL) == NV_OK);
     }
 }
 
@@ -2984,7 +3027,7 @@ kgrctxUnmapCtxBuffers_IMPL
 
     NV_ASSERT_OK_OR_RETURN(
         kgrctxGetUnicast(pGpu,
-                         pKernelGraphicsObject->pKernelGraphicsContext,
+                         kgrobjGetKernelGraphicsContext(pGpu, pKernelGraphicsObject),
                          &pKernelGraphicsContextUnicast));
 
     kgrmgrGetGrObjectType(classNum, &objType);
@@ -3389,14 +3432,14 @@ shrkgrctxInit_IMPL
         KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
         KernelGraphics *pKernelGraphics;
         NV2080_CTRL_GR_ROUTE_INFO grRouteInfo;
-        NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelGraphicsContext);
+        Device *pDevice = GPU_RES_GET_DEVICE(pKernelGraphicsContext);
         NvHandle hParent = RES_GET_PARENT_HANDLE(pKernelGraphicsContext);
 
         portMemSet(&grRouteInfo, 0, sizeof(grRouteInfo));
         kgrmgrCtrlSetChannelHandle(hParent, &grRouteInfo);
 
         NV_CHECK_OK_OR_CAPTURE_FIRST_ERROR(status, LEVEL_ERROR,
-            kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &grRouteInfo, &pKernelGraphics));
+            kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &grRouteInfo, &pKernelGraphics));
 
         if (status != NV_OK)
             SLI_LOOP_BREAK;
@@ -3411,6 +3454,8 @@ shrkgrctxInit_IMPL
         }
     }
     SLI_LOOP_END;
+
+    listInit(&pKernelGraphicsContextShared->activeDebuggers, portMemAllocatorGetGlobalNonPaged());
 
     if (status != NV_OK)
         shrkgrctxTeardown_IMPL(pGpu, pKernelGraphicsContextShared, pKernelGraphicsContext);
@@ -3459,12 +3504,13 @@ shrkgrctxConstructUnicast_IMPL
 }
 
 /*!
- * @brief Destruct shared kernel graphics context. (Does nothing)
+ * @brief Destruct shared kernel graphics context.
  */
 void
 shrkgrctxDestruct_IMPL(KernelGraphicsContextShared *pKernelGraphicsContextShared)
 {
-    return;
+    NV_ASSERT(listCount(&pKernelGraphicsContextShared->activeDebuggers) == 0);
+    listDestroy(&pKernelGraphicsContextShared->activeDebuggers);
 }
 
 /*!
@@ -3559,14 +3605,14 @@ void shrkgrctxDetach_IMPL
     {
         OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelChannel);
         KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
-        NvHandle hClient = RES_GET_CLIENT_HANDLE(pKernelChannel);
+        Device *pDevice = GPU_RES_GET_DEVICE(pKernelChannel);
         NV2080_CTRL_GR_ROUTE_INFO grRouteInfo = {0};
         KernelGraphics *pKernelGraphics;
         NV_STATUS status;
 
         kgrmgrCtrlSetChannelHandle(RES_GET_HANDLE(pKernelChannel), &grRouteInfo);
         NV_ASSERT_OK_OR_ELSE(status,
-            kgrmgrCtrlRouteKGR(pGpu, pKernelGraphicsManager, hClient, &grRouteInfo, &pKernelGraphics),
+            kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &grRouteInfo, &pKernelGraphics),
             return;);
 
         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)

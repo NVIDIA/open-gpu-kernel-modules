@@ -56,7 +56,7 @@ extern "C" {
 
 // NV_DBG_BREAKPOINT_ALLOWED can be overridden through CFLAGS
 #if !defined(NV_DBG_BREAKPOINT_ALLOWED)
-#if defined(DEBUG) || defined(ASSERT_BUILD) || defined(NV_MODS) || defined(QA_BUILD) || (defined(NVRM) && NVCPU_IS_RISCV64)
+#if defined(DEBUG) || defined(ASSERT_BUILD) || defined(NV_MODS) || defined(QA_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 #define NV_DBG_BREAKPOINT_ALLOWED 1
 #else
 #define NV_DBG_BREAKPOINT_ALLOWED 0
@@ -116,7 +116,7 @@ void osFlushLog(void);
 
 #if NV_DBG_BREAKPOINT_ALLOWED
 
-#if !NVCPU_IS_RISCV64
+#if !NVOS_IS_LIBOS
 
 #define DBG_BREAKPOINT_EX(PGPU, LEVEL)                                          \
     do                                                                          \
@@ -126,7 +126,7 @@ void osFlushLog(void);
         DBG_ROUTINE();                                                          \
     } while (0)
 
-#else // !NVCPU_IS_RISCV64
+#else // !NVOS_IS_LIBOS
 
 #define DBG_BREAKPOINT_EX(PGPU, LEVEL)                                         \
     do                                                                         \
@@ -134,7 +134,7 @@ void osFlushLog(void);
         NV_ASSERT_FAILED("DBG_BREAKPOINT");                                    \
     } while (0)
 
-#endif // !NVCPU_IS_RISCV64
+#endif // !NVOS_IS_LIBOS
 
 #define DBG_BREAKPOINT() DBG_BREAKPOINT_EX(NULL, 0)
 

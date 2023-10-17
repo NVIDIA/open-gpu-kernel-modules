@@ -66,7 +66,7 @@ struct KernelCeContext {
     NvBool (*__kcectxShareCallback__)(struct KernelCeContext *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NvBool (*__kcectxAccessCallback__)(struct KernelCeContext *, struct RsClient *, void *, RsAccessRight);
     NV_STATUS (*__kcectxMapTo__)(struct KernelCeContext *, RS_RES_MAP_TO_PARAMS *);
-    NV_STATUS (*__kcectxGetMapAddrSpace__)(struct KernelCeContext *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NV_STATUS (*__kcectxGetMapAddrSpace__)(struct KernelCeContext *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     void (*__kcectxSetNotificationShare__)(struct KernelCeContext *, struct NotifShare *);
     NvU32 (*__kcectxGetRefCount__)(struct KernelCeContext *);
     void (*__kcectxAddAdditionalDependants__)(struct RsClient *, struct KernelCeContext *, RsResourceRef *);
@@ -78,8 +78,8 @@ struct KernelCeContext {
     NV_STATUS (*__kcectxControlLookup__)(struct KernelCeContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__kcectxGetSwMethods__)(struct KernelCeContext *, const METHOD **, NvU32 *);
     NvHandle (*__kcectxGetInternalObjectHandle__)(struct KernelCeContext *);
-    NV_STATUS (*__kcectxControl__)(struct KernelCeContext *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__kcectxUnmap__)(struct KernelCeContext *, CALL_CONTEXT *, RsCpuMapping *);
+    NV_STATUS (*__kcectxControl__)(struct KernelCeContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__kcectxUnmap__)(struct KernelCeContext *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__kcectxGetMemInterMapParams__)(struct KernelCeContext *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__kcectxGetMemoryMappingDescriptor__)(struct KernelCeContext *, struct MEMORY_DESCRIPTOR **);
     NvBool (*__kcectxIsSwMethodStalling__)(struct KernelCeContext *, NvU32);
@@ -92,7 +92,7 @@ struct KernelCeContext {
     void (*__kcectxControlSerialization_Epilogue__)(struct KernelCeContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__kcectxGetNotificationListPtr__)(struct KernelCeContext *);
     struct NotifShare *(*__kcectxGetNotificationShare__)(struct KernelCeContext *);
-    NV_STATUS (*__kcectxMap__)(struct KernelCeContext *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
+    NV_STATUS (*__kcectxMap__)(struct KernelCeContext *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NV_STATUS (*__kcectxGetOrAllocNotifShare__)(struct KernelCeContext *, NvHandle, NvHandle, struct NotifShare **);
 };
 
@@ -172,7 +172,7 @@ static inline NV_STATUS kcectxMapTo_DISPATCH(struct KernelCeContext *pResource, 
     return pResource->__kcectxMapTo__(pResource, pParams);
 }
 
-static inline NV_STATUS kcectxGetMapAddrSpace_DISPATCH(struct KernelCeContext *pGpuResource, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+static inline NV_STATUS kcectxGetMapAddrSpace_DISPATCH(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pGpuResource->__kcectxGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
 }
 
@@ -220,11 +220,11 @@ static inline NvHandle kcectxGetInternalObjectHandle_DISPATCH(struct KernelCeCon
     return pGpuResource->__kcectxGetInternalObjectHandle__(pGpuResource);
 }
 
-static inline NV_STATUS kcectxControl_DISPATCH(struct KernelCeContext *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+static inline NV_STATUS kcectxControl_DISPATCH(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__kcectxControl__(pGpuResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS kcectxUnmap_DISPATCH(struct KernelCeContext *pGpuResource, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
+static inline NV_STATUS kcectxUnmap_DISPATCH(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
     return pGpuResource->__kcectxUnmap__(pGpuResource, pCallContext, pCpuMapping);
 }
 
@@ -276,7 +276,7 @@ static inline struct NotifShare *kcectxGetNotificationShare_DISPATCH(struct Kern
     return pNotifier->__kcectxGetNotificationShare__(pNotifier);
 }
 
-static inline NV_STATUS kcectxMap_DISPATCH(struct KernelCeContext *pGpuResource, CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
+static inline NV_STATUS kcectxMap_DISPATCH(struct KernelCeContext *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
     return pGpuResource->__kcectxMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
 }
 
@@ -298,4 +298,5 @@ void kcectxDestruct_IMPL(struct KernelCeContext *pKCeContext);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_CE_CONTEXT_NVOC_H_

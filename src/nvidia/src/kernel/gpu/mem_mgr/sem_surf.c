@@ -903,7 +903,8 @@ semsurfDestruct_IMPL
             pNextValueListeners = listNext(&pIndexListeners->listeners,
                                            pValueListeners);
 
-            if (!pValueListeners->pListeners)
+            if (!pValueListeners->pListeners &&
+                (pValueListeners->newValue == 0))
             {
                 listRemove(&pIndexListeners->listeners, pValueListeners);
                 portMemFree(pValueListeners);
@@ -1559,7 +1560,8 @@ _semsurfDelWaiter
               ", value %" NvU64_fmtu ".\n",
               hClient, hSemaphoreSurf, notificationHandle, index, waitValue);
 
-    if (!pValueListeners->pListeners)
+    if (!pValueListeners->pListeners &&
+        (pValueListeners->newValue == 0))
     {
         listRemove(&pIndexListeners->listeners, pValueListeners);
         portMemFree(pValueListeners);

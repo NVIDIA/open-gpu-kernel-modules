@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,6 +44,11 @@
 #define NVKMS_DP_ADDRESS_STRING_LENGTH        64
 
 #define NVKMS_DEVICE_ID_TEGRA                 0x0000ffff
+
+#define NVKMS_MAX_SUPERFRAME_VIEWS            4
+
+#define NVKMS_LOG2_LUT_ARRAY_SIZE             10
+#define NVKMS_LUT_ARRAY_SIZE                  (1 << NVKMS_LOG2_LUT_ARRAY_SIZE)
 
 typedef NvU32 NvKmsDeviceHandle;
 typedef NvU32 NvKmsDispHandle;
@@ -179,6 +184,14 @@ enum NvKmsEventType {
     NVKMS_EVENT_TYPE_FLIP_OCCURRED,
 };
 
+enum NvKmsFlipResult {
+    NV_KMS_FLIP_RESULT_SUCCESS = 0,    /* Success */
+    NV_KMS_FLIP_RESULT_INVALID_PARAMS, /* Parameter validation failed */
+    NV_KMS_FLIP_RESULT_IN_PROGRESS,    /* Flip would fail because an outstanding
+                                          flip containing changes that cannot be
+                                          queued is in progress */
+};
+
 typedef enum {
     NV_EVO_SCALER_1TAP      = 0,
     NV_EVO_SCALER_2TAPS     = 1,
@@ -219,6 +232,16 @@ struct NvKmsUsageBounds {
         struct NvKmsScalingUsageBounds scaling;
         NvU64 supportedSurfaceMemoryFormats NV_ALIGN_BYTES(8);
     } layer[NVKMS_MAX_LAYERS_PER_HEAD];
+};
+
+/*!
+ * Per-component arrays of NvU16s describing the LUT; used for both the input
+ * LUT and output LUT.
+ */
+struct NvKmsLutRamps {
+    NvU16 red[NVKMS_LUT_ARRAY_SIZE];   /*! in */
+    NvU16 green[NVKMS_LUT_ARRAY_SIZE]; /*! in */
+    NvU16 blue[NVKMS_LUT_ARRAY_SIZE];  /*! in */
 };
 
 /*
@@ -531,6 +554,18 @@ typedef struct {
     NvBool noncoherent;
 } NvKmsDispIOCoherencyModes;
 
+enum NvKmsInputColorRange {
+    /*
+     * If DEFAULT is provided, driver will assume full range for RGB formats
+     * and limited range for YUV formats.
+     */
+    NVKMS_INPUT_COLORRANGE_DEFAULT = 0,
+
+    NVKMS_INPUT_COLORRANGE_LIMITED = 1,
+
+    NVKMS_INPUT_COLORRANGE_FULL = 2,
+};
+
 enum NvKmsInputColorSpace {
     /* Unknown colorspace; no de-gamma will be applied */
     NVKMS_INPUT_COLORSPACE_NONE = 0,
@@ -542,6 +577,12 @@ enum NvKmsInputColorSpace {
     NVKMS_INPUT_COLORSPACE_BT2100_PQ = 2,
 };
 
+enum NvKmsOutputColorimetry {
+    NVKMS_OUTPUT_COLORIMETRY_DEFAULT = 0,
+
+    NVKMS_OUTPUT_COLORIMETRY_BT2100 = 1,
+};
+
 enum NvKmsOutputTf {
     /*
      * NVKMS itself won't apply any OETF (clients are still
@@ -550,6 +591,17 @@ enum NvKmsOutputTf {
     NVKMS_OUTPUT_TF_NONE = 0,
     NVKMS_OUTPUT_TF_TRADITIONAL_GAMMA_SDR = 1,
     NVKMS_OUTPUT_TF_PQ = 2,
+};
+
+/*!
+ * EOTF Data Byte 1 as per CTA-861-G spec.
+ * This is expected to match exactly with the spec.
+ */
+enum NvKmsInfoFrameEOTF {
+    NVKMS_INFOFRAME_EOTF_SDR_GAMMA = 0,
+    NVKMS_INFOFRAME_EOTF_HDR_GAMMA = 1,
+    NVKMS_INFOFRAME_EOTF_ST2084 = 2,
+    NVKMS_INFOFRAME_EOTF_HLG = 3,
 };
 
 /*!
@@ -603,6 +655,31 @@ struct NvKmsHDRStaticMetadata {
      * where 0x0001 represents 1 cd/m2 and 0xFFFF represents 65535 cd/m2.
      */
     NvU16 maxFALL;
+};
+
+/*!
+ * A superframe is made of two or more video streams that are combined in
+ * a specific way. A DP serializer (an external device connected to a Tegra
+ * ARM SOC over DP or HDMI) can receive a video stream comprising multiple
+ * videos combined into a single frame and then split it into multiple
+ * video streams. The following structure describes the number of views
+ * and dimensions of each view inside a superframe.
+ */
+struct NvKmsSuperframeInfo {
+    NvU8 numViews;
+    struct {
+        /* x offset inside superframe at which this view starts */
+        NvU16 x;
+
+        /* y offset inside superframe at which this view starts */
+        NvU16 y;
+
+        /* Horizontal active width in pixels for this view */
+        NvU16 width;
+
+        /* Vertical active height in lines for this view */
+        NvU16 height;
+    } view[NVKMS_MAX_SUPERFRAME_VIEWS];
 };
 
 #endif /* NVKMS_API_TYPES_H */

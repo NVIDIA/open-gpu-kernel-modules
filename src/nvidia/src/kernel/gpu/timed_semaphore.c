@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -104,7 +104,7 @@ _9074TimedSemRelease
 (
     OBJGPU     *pGpu,
     ChannelDescendant *pObject,
-    RsClient   *pClient,
+    Device     *pDevice,
     NvU64       notifierGPUVA,
     NvU64       semaphoreGPUVA,
     NvU64       time,
@@ -122,7 +122,7 @@ _9074TimedSemRelease
                               pObject->pKernelChannel->hVASpace,
                               releaseValue,
                               notifierStatus,
-                              pClient);
+                              pDevice);
 
     // timedSemaphoreRelease_HAL will print errors on its own
     if (status != NV_OK)
@@ -183,7 +183,7 @@ _9074TimedSemRequest
         {
             status = _9074TimedSemRelease(pGpu,
                         pObject,
-                        RES_GET_CLIENT(pTimedSemSw),
+                        GPU_RES_GET_DEVICE(pTimedSemSw),
                         notifierGPUVA,
                         semaphoreGPUVA,
                         currentTime,
@@ -568,7 +568,7 @@ static NV_STATUS _class9074TimerCallback
 
         status = _9074TimedSemRelease(pGpu,
                     pObject,
-                    RES_GET_CLIENT(pTimedSemSw),
+                    GPU_RES_GET_DEVICE(pTimedSemSw),
                     pTimedSemEntry->NotifierGPUVA,
                     pTimedSemEntry->SemaphoreGPUVA,
                     currentTime,
@@ -625,7 +625,7 @@ tsemaRelease_KERNEL
     NvU32 hVASpace,
     NvU32 releaseValue,
     NvU32 completionStatus,
-    RsClient *pClient
+    Device *pDevice
 )
 {
     OBJTMR   *pTmr = GPU_GET_TIMER(pGpu);
@@ -636,7 +636,7 @@ tsemaRelease_KERNEL
     tmrGetCurrentTime(pTmr, &currentTime);
 
     status = semaphoreFillGPUVATimestamp(pGpu,
-                                         pClient,
+                                         pDevice,
                                          hVASpace,
                                          semaphoreVA,
                                          releaseValue,
@@ -652,7 +652,7 @@ tsemaRelease_KERNEL
     }
 
     status = notifyFillNotifierGPUVATimestamp(pGpu,
-                                              pClient,
+                                              pDevice,
                                               hVASpace,
                                               notifierVA,
                                               0, /* Info32 */

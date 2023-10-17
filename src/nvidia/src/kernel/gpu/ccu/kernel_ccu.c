@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -130,7 +130,8 @@ _kccuAllocMemory
     }
 
     // Allocate physical storage for the memory descriptor
-    status = memdescAlloc(pMemDesc);
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_55, 
+                    pMemDesc);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "CCU memdescAlloc failed for(%u) with status: 0x%x\n", idx, status);

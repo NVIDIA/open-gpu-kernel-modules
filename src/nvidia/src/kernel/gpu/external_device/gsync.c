@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1365,7 +1365,7 @@ gsyncSetLocalSync(OBJGSYNC *pGsync,
 {
     OBJGPU *pSourceGpu = NULL;
     OBJGPU *pTempGpu = NULL;
-    NvU8 i;
+    NvU32 i;
     NV_STATUS status = NV_OK;
 
     NV_ASSERT_OR_RETURN(pGsync && pGsync->pExtDev, NV_ERR_INVALID_DEVICE);
@@ -2665,24 +2665,24 @@ gsyncConvertNewEventToOldEventNum
 
 #ifdef DEBUG
 void
-gsyncDbgPrintGsyncEvents(NvU32 DebugLevel, NvU32 events, NvU32 iface)
+gsyncDbgPrintGsyncEvents(NvU32 events, NvU32 iface)
 {
     if (events & NVBIT(NV30F1_GSYNC_NOTIFIERS_SYNC_LOSS(iface)))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "SYNC_LOSS ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "SYNC_LOSS ");
     if (events & NVBIT(NV30F1_GSYNC_NOTIFIERS_SYNC_GAIN(iface)))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "SYNC_GAIN ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "SYNC_GAIN ");
     if (events & NVBIT(NV30F1_GSYNC_NOTIFIERS_STEREO_LOSS(iface)))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "STEREO_LOSS ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "STEREO_LOSS ");
     if (events & NVBIT(NV30F1_GSYNC_NOTIFIERS_STEREO_GAIN(iface)))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "STEREO_GAIN ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "STEREO_GAIN ");
     if (events & NVBIT(NV30F1_GSYNC_NOTIFIERS_HOUSE_GAIN))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "HOUSE_GAIN ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "HOUSE_GAIN ");
     if (events & NVBIT(NV30F1_GSYNC_NOTIFIERS_HOUSE_LOSS))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "HOUSE LOSS ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "HOUSE LOSS ");
     if (events & NVBIT(NV30F1_GSYNC_NOTIFIERS_RJ45_GAIN))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "RJ45 GAIN ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "RJ45 GAIN ");
     if (events & NVBIT(NV30F1_GSYNC_NOTIFIERS_RJ45_LOSS))
-        NV_PRINTF_EX(NV_PRINTF_MODULE, DebugLevel, "RJ45 LOSS ");
+        NV_PRINTF_EX(NV_PRINTF_MODULE, LEVEL_INFO, "RJ45 LOSS ");
 }
 #endif // DEBUG
 

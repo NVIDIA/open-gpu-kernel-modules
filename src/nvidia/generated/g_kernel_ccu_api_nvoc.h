@@ -291,4 +291,5 @@ void kccuapiDestruct_IMPL(struct KernelCcuApi *pKernelCcuApi);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_CCU_API_NVOC_H_

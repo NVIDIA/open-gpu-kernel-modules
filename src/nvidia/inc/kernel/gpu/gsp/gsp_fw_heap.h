@@ -24,9 +24,13 @@
 #ifndef GSP_FW_HEAP_H
 #define GSP_FW_HEAP_H
 
+#include "rmconfig.h"
+
+
 // Static defines for the GSP FW WPR Heap
 #define GSP_FW_HEAP_PARAM_OS_SIZE_LIBOS2                   (0 << 20)   // No FB heap usage
-#define GSP_FW_HEAP_PARAM_OS_SIZE_LIBOS3                  (20 << 20)
+#define GSP_FW_HEAP_PARAM_OS_SIZE_LIBOS3_BAREMETAL        (22 << 20)
+#define GSP_FW_HEAP_PARAM_OS_SIZE_LIBOS3_VGPU             (36 << 20)
 
 //
 // Calibrated by observing RM init heap usage - the amount of GSP-RM heap memory
@@ -64,16 +68,18 @@
 //
 #define GSP_FW_HEAP_PARAM_CLIENT_ALLOC_SIZE      ((48 << 10) * 2048)   // Support 2048 channels
 
-#define GSP_FW_HEAP_SIZE_VGPU_DEFAULT                    (549 << 20)   // Default for all VGPU configs
+#define GSP_FW_HEAP_SIZE_VGPU_DEFAULT                    (565 << 20)   // Default for all VGPU configs
+
+
 
 // Min/max bounds for heap size override by regkey
 #define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS2_MIN_MB                (64u)
 #define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS2_MAX_MB               (256u)
 
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MIN_MB      (84u)
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MAX_MB     (276u)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MIN_MB      (86u)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_BAREMETAL_MAX_MB     (278u)
 
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MIN_MB          (549u)
-#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MAX_MB         (1024u)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MIN_MB          (565u)
+#define GSP_FW_HEAP_SIZE_OVERRIDE_LIBOS3_VGPU_MAX_MB         (1040u)
 
 #endif // GSP_FW_HEAP_H

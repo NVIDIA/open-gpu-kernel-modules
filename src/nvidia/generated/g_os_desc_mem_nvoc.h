@@ -58,6 +58,7 @@ struct OsDescMemory {
     NvBool (*__osdescShareCallback__)(struct OsDescMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__osdescMapTo__)(struct OsDescMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__osdescGetMapAddrSpace__)(struct OsDescMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__osdescIsExportAllowed__)(struct OsDescMemory *);
     NvU32 (*__osdescGetRefCount__)(struct OsDescMemory *);
     void (*__osdescAddAdditionalDependants__)(struct RsClient *, struct OsDescMemory *, RsResourceRef *);
     NV_STATUS (*__osdescControl_Prologue__)(struct OsDescMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -113,6 +114,7 @@ NV_STATUS __nvoc_objCreate_OsDescMemory(OsDescMemory**, Dynamic*, NvU32, CALL_CO
 #define osdescShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) osdescShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define osdescMapTo(pResource, pParams) osdescMapTo_DISPATCH(pResource, pParams)
 #define osdescGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) osdescGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define osdescIsExportAllowed(pMemory) osdescIsExportAllowed_DISPATCH(pMemory)
 #define osdescGetRefCount(pResource) osdescGetRefCount_DISPATCH(pResource)
 #define osdescAddAdditionalDependants(pClient, pResource, pReference) osdescAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define osdescControl_Prologue(pResource, pCallContext, pParams) osdescControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -153,6 +155,10 @@ static inline NV_STATUS osdescMapTo_DISPATCH(struct OsDescMemory *pResource, RS_
 
 static inline NV_STATUS osdescGetMapAddrSpace_DISPATCH(struct OsDescMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__osdescGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool osdescIsExportAllowed_DISPATCH(struct OsDescMemory *pMemory) {
+    return pMemory->__osdescIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 osdescGetRefCount_DISPATCH(struct OsDescMemory *pResource) {
@@ -246,4 +252,5 @@ NV_STATUS osdescConstruct_IMPL(struct OsDescMemory *arg_pOsDescMemory, CALL_CONT
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_OS_DESC_MEM_NVOC_H_

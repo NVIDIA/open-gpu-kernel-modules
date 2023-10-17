@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,6 +38,7 @@ extern "C" {
 #include "mem_mgr/mem.h"
 #include "gpu/gpu.h"
 #include "nvoc/utility.h"
+#include "ctrl/ctrl00de.h"
 
 // ****************************************************************************
 //                          Type definitions
@@ -61,10 +62,12 @@ struct GpuUserSharedData {
     struct Memory *__nvoc_pbase_Memory;
     struct GpuUserSharedData *__nvoc_pbase_GpuUserSharedData;
     NvBool (*__gpushareddataCanCopy__)(struct GpuUserSharedData *);
+    NV_STATUS (*__gpushareddataCtrlCmdRequestDataPoll__)(struct GpuUserSharedData *, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *);
     NV_STATUS (*__gpushareddataCheckMemInterUnmap__)(struct GpuUserSharedData *, NvBool);
     NvBool (*__gpushareddataShareCallback__)(struct GpuUserSharedData *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__gpushareddataMapTo__)(struct GpuUserSharedData *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__gpushareddataGetMapAddrSpace__)(struct GpuUserSharedData *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__gpushareddataIsExportAllowed__)(struct GpuUserSharedData *);
     NvU32 (*__gpushareddataGetRefCount__)(struct GpuUserSharedData *);
     void (*__gpushareddataAddAdditionalDependants__)(struct RsClient *, struct GpuUserSharedData *, RsResourceRef *);
     NV_STATUS (*__gpushareddataControl_Prologue__)(struct GpuUserSharedData *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -85,6 +88,7 @@ struct GpuUserSharedData {
     void (*__gpushareddataControlSerialization_Epilogue__)(struct GpuUserSharedData *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__gpushareddataMap__)(struct GpuUserSharedData *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__gpushareddataAccessCallback__)(struct GpuUserSharedData *, struct RsClient *, void *, RsAccessRight);
+    NvU64 polledDataMask;
 };
 
 #ifndef __NVOC_CLASS_GpuUserSharedData_TYPEDEF__
@@ -116,10 +120,12 @@ NV_STATUS __nvoc_objCreate_GpuUserSharedData(GpuUserSharedData**, Dynamic*, NvU3
     __nvoc_objCreate_GpuUserSharedData((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
 #define gpushareddataCanCopy(pData) gpushareddataCanCopy_DISPATCH(pData)
+#define gpushareddataCtrlCmdRequestDataPoll(pData, pParams) gpushareddataCtrlCmdRequestDataPoll_DISPATCH(pData, pParams)
 #define gpushareddataCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) gpushareddataCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define gpushareddataShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) gpushareddataShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define gpushareddataMapTo(pResource, pParams) gpushareddataMapTo_DISPATCH(pResource, pParams)
 #define gpushareddataGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) gpushareddataGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define gpushareddataIsExportAllowed(pMemory) gpushareddataIsExportAllowed_DISPATCH(pMemory)
 #define gpushareddataGetRefCount(pResource) gpushareddataGetRefCount_DISPATCH(pResource)
 #define gpushareddataAddAdditionalDependants(pClient, pResource, pReference) gpushareddataAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define gpushareddataControl_Prologue(pResource, pCallContext, pParams) gpushareddataControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -146,6 +152,12 @@ static inline NvBool gpushareddataCanCopy_DISPATCH(struct GpuUserSharedData *pDa
     return pData->__gpushareddataCanCopy__(pData);
 }
 
+NV_STATUS gpushareddataCtrlCmdRequestDataPoll_IMPL(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams);
+
+static inline NV_STATUS gpushareddataCtrlCmdRequestDataPoll_DISPATCH(struct GpuUserSharedData *pData, NV00DE_CTRL_REQUEST_DATA_POLL_PARAMS *pParams) {
+    return pData->__gpushareddataCtrlCmdRequestDataPoll__(pData, pParams);
+}
+
 static inline NV_STATUS gpushareddataCheckMemInterUnmap_DISPATCH(struct GpuUserSharedData *pMemory, NvBool bSubdeviceHandleProvided) {
     return pMemory->__gpushareddataCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
 }
@@ -160,6 +172,10 @@ static inline NV_STATUS gpushareddataMapTo_DISPATCH(struct GpuUserSharedData *pR
 
 static inline NV_STATUS gpushareddataGetMapAddrSpace_DISPATCH(struct GpuUserSharedData *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__gpushareddataGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool gpushareddataIsExportAllowed_DISPATCH(struct GpuUserSharedData *pMemory) {
+    return pMemory->__gpushareddataIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 gpushareddataGetRefCount_DISPATCH(struct GpuUserSharedData *pResource) {
@@ -245,13 +261,16 @@ static inline NvBool gpushareddataAccessCallback_DISPATCH(struct GpuUserSharedDa
 NV_STATUS gpushareddataConstruct_IMPL(struct GpuUserSharedData *arg_pData, CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 
 #define __nvoc_gpushareddataConstruct(arg_pData, arg_pCallContext, arg_pParams) gpushareddataConstruct_IMPL(arg_pData, arg_pCallContext, arg_pParams)
+void gpushareddataDestruct_IMPL(struct GpuUserSharedData *pData);
+
+#define __nvoc_gpushareddataDestruct(pData) gpushareddataDestruct_IMPL(pData)
 #undef PRIVATE_FIELD
 
 
 #endif // GPU_USER_SHARED_DATA_H
 
-
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_USER_SHARED_DATA_NVOC_H_

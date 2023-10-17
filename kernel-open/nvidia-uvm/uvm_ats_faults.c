@@ -114,6 +114,8 @@ static void flush_tlb_write_faults(uvm_gpu_va_space_t *gpu_va_space,
 {
     uvm_ats_fault_invalidate_t *ats_invalidate;
 
+    uvm_ats_smmu_invalidate_tlbs(gpu_va_space, addr, size);
+
     if (client_type == UVM_FAULT_CLIENT_TYPE_GPC)
         ats_invalidate = &gpu_va_space->gpu->parent->fault_buffer_info.replayable.ats_invalidate;
     else
@@ -588,4 +590,3 @@ NV_STATUS uvm_ats_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space,
 
     return status;
 }
-

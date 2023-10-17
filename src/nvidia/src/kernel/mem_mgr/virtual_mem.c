@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -316,41 +316,21 @@ virtmemConstruct_IMPL
     NvBool                       bRpcAlloc             = NV_FALSE;
     NvBool                       bResAllocated         = NV_FALSE;
     NvU32                        gpuMask               = 0;
-    NvU32                        gpuMaskInitial        = 0;
     FB_ALLOC_INFO               *pFbAllocInfo          = NULL;
     FB_ALLOC_PAGE_FORMAT        *pFbAllocPageFormat    = NULL;
 
     // Bulk of copy-construction is done by Memory class. Handle our members.
     if (RS_IS_COPY_CTOR(pParams))
     {
-        if (!rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_ALL, &gpuMask))
-        {
-            //
-            // If we hold some GPU locks already then acquiring more GPU locks
-            // may violate lock ordering and cause dead-lock. To avoid dead-lock in this case,
-            // attempt to take the locks with a conditional acquire.
-            //
-            gpuMaskInitial = rmGpuLocksGetOwnedMask();
-            NvU32 lockFlag = (gpuMaskInitial == 0)
-                ? GPUS_LOCK_FLAGS_NONE
-                : GPU_LOCK_FLAGS_COND_ACQUIRE;
-
-            NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
-                                                         GPU_LOCK_GRP_ALL,
-                                                         lockFlag,
-                                                         RM_LOCK_MODULES_MEM,
-                                                         &gpuMask));
-
-            bLockAcquired = NV_TRUE;
-        }
+        NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                                     GPU_LOCK_GRP_ALL,
+                                                     GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE,
+                                                     RM_LOCK_MODULES_MEM,
+                                                     &gpuMask));
 
         status = _virtmemCopyConstruct(pVirtualMemory, pCallContext, pParams);
 
-        if (bLockAcquired)
-        {
-            bLockAcquired = NV_FALSE;
-            rmGpuGroupLockRelease(gpuMask & (~gpuMaskInitial), GPUS_LOCK_FLAGS_NONE);
-        }
+        rmGpuGroupLockRelease(gpuMask, GPUS_LOCK_FLAGS_NONE);
 
         goto done;
     }
@@ -397,6 +377,11 @@ virtmemConstruct_IMPL
         NvU64 size;
         NvU64 align;
         NvU64 pageSizeLockMask;
+        Device *pDevice;
+
+        NV_ASSERT_OK_OR_GOTO(status,
+            deviceGetByHandle(pRsClient, hParent, &pDevice),
+            done);
 
         SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY | SLI_LOOP_FLAGS_IGNORE_REENTRANCY)
 
@@ -411,7 +396,7 @@ virtmemConstruct_IMPL
         if (NV_OK != status)
             SLI_LOOP_GOTO(done);
 
-        status = vaspaceReserveMempool(pVAS, pGpu, hClient,
+        status = vaspaceReserveMempool(pVAS, pGpu, pDevice,
                                        size, pageSizeLockMask,
                                        VASPACE_RESERVE_FLAGS_NONE);
         if (NV_OK != status)
@@ -944,7 +929,7 @@ NV_STATUS virtmemReserveMempool_IMPL
 (
     VirtualMemory *pVirtualMemory,
     OBJGPU        *pGpu,
-    NvHandle       hDevice,
+    Device        *pDevice,
     NvU64          size,
     NvU64          pageSizeMask
 )
@@ -968,10 +953,10 @@ NV_STATUS virtmemReserveMempool_IMPL
     }
 
     NV_ASSERT_OK_OR_RETURN(
-        vaspaceGetByHandleOrDeviceDefault(pClient, hDevice,
+        vaspaceGetByHandleOrDeviceDefault(pClient, RES_GET_HANDLE(pDevice),
                                           pVirtualMemory->hVASpace, &pVAS));
 
-    return vaspaceReserveMempool(pVAS, pGpu, RES_GET_CLIENT_HANDLE(pVirtualMemory),
+    return vaspaceReserveMempool(pVAS, pGpu, pDevice,
                                  size, pageSizeMask, mempoolFlags);
 }
 

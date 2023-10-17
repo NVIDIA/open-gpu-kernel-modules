@@ -153,13 +153,16 @@ typedef NVXXXX_CTRL_XXX_INFO NV0080_CTRL_GR_INFO;
 
 #define NV0080_CTRL_GR_INFO_INDEX_DUMMY                             (0x00000033)
 #define NV0080_CTRL_GR_INFO_INDEX_GFX_CAPABILITIES                  (0x00000034)
+#define NV0080_CTRL_GR_INFO_INDEX_MAX_MIG_ENGINES                   (0x00000035)
+#define NV0080_CTRL_GR_INFO_INDEX_MAX_PARTITIONABLE_GPCS            (0x00000036)
+#define NV0080_CTRL_GR_INFO_INDEX_LITTER_MIN_SUBCTX_PER_SMC_ENG     (0x00000037)
 
 /* When adding a new INDEX, please update MAX_SIZE accordingly
  * NOTE: 0080 functionality is merged with 2080 functionality, so this max size
  * reflects that.
  */
-#define NV0080_CTRL_GR_INFO_INDEX_MAX                               (0x00000034)
-#define NV0080_CTRL_GR_INFO_MAX_SIZE                                (0x35) /* finn: Evaluated from "(NV0080_CTRL_GR_INFO_INDEX_MAX + 1)" */
+#define NV0080_CTRL_GR_INFO_INDEX_MAX                               (0x00000037)
+#define NV0080_CTRL_GR_INFO_MAX_SIZE                                (0x38) /* finn: Evaluated from "(NV0080_CTRL_GR_INFO_INDEX_MAX + 1)" */
 
 /*
  * NV0080_CTRL_CMD_GR_GET_INFO

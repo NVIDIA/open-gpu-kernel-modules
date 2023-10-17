@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2022 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -162,9 +162,7 @@ static uvm_va_range_t *uvm_va_range_alloc_managed(uvm_va_space_t *va_space, NvU6
         goto error;
 
     va_range->type = UVM_VA_RANGE_TYPE_MANAGED;
-
-    uvm_va_range_get_policy(va_range)->read_duplication = UVM_READ_DUPLICATION_UNSET;
-    uvm_va_range_get_policy(va_range)->preferred_location = UVM_ID_INVALID;
+    va_range->managed.policy = uvm_va_policy_default;
 
     va_range->blocks = uvm_kvmalloc_zero(uvm_va_range_num_blocks(va_range) * sizeof(va_range->blocks[0]));
     if (!va_range->blocks) {
@@ -376,7 +374,7 @@ NV_STATUS uvm_va_range_create_semaphore_pool(uvm_va_space_t *va_space,
         if (status != NV_OK)
             goto error;
 
-        if (i == 0 && g_uvm_global.conf_computing_enabled)
+        if (i == 0 && g_uvm_global.sev_enabled)
             mem_alloc_params.dma_owner = gpu;
 
         if (attrs.is_cacheable) {
@@ -835,7 +833,7 @@ static void uvm_va_range_disable_peer_external(uvm_va_range_t *va_range,
     range_tree = uvm_ext_gpu_range_tree(va_range, mapping_gpu);
     uvm_mutex_lock(&range_tree->lock);
     uvm_ext_gpu_map_for_each_safe(ext_map, ext_map_next, va_range, mapping_gpu) {
-        if (ext_map->owning_gpu == owning_gpu && !ext_map->is_sysmem) {
+        if (ext_map->owning_gpu == owning_gpu && (!ext_map->is_sysmem || ext_map->is_egm)) {
             UVM_ASSERT(deferred_free_list);
             uvm_ext_gpu_map_destroy(va_range, ext_map, deferred_free_list);
         }
@@ -1807,7 +1805,7 @@ NV_STATUS uvm_api_alloc_semaphore_pool(UVM_ALLOC_SEMAPHORE_POOL_PARAMS *params, 
     if (params->gpuAttributesCount > UVM_MAX_GPUS)
         return NV_ERR_INVALID_ARGUMENT;
 
-    if (g_uvm_global.conf_computing_enabled && params->gpuAttributesCount == 0)
+    if (g_uvm_global.sev_enabled && params->gpuAttributesCount == 0)
         return NV_ERR_INVALID_ARGUMENT;
 
     // The mm needs to be locked in order to remove stale HMM va_blocks.

@@ -116,6 +116,7 @@
 #include <class/clb0cc.h>               // MAXWELL_PROFILER
 #include <class/clb2cc.h>               // MAXWELL_PROFILER_DEVICE
 #include <class/cl90e6.h>               // GF100_SUBDEVICE_MASTER
+#include <class/cl90e7.h>               // GF100_SUBDEVICE_INFOROM
 #include <class/cl9096.h>               // GF100_ZBC_CLEAR
 #include <class/cl9072.h>               // GF100_DISP_SW
 #include <class/cl9074.h>               // GF100_TIMED_SEMAPHORE_SW
@@ -583,6 +584,10 @@
 
 #ifndef GF100_SUBDEVICE_MASTER
 #define GF100_SUBDEVICE_MASTER                   (0x000090e6)
+#endif
+
+#ifndef GF100_SUBDEVICE_INFOROM
+#define GF100_SUBDEVICE_INFOROM                  (0x000090e7)
 #endif
 
 #ifndef GF100_ZBC_CLEAR

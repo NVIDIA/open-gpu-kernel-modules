@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -134,8 +134,7 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
     NvU32     releasevalue,
     NvU32     flags,
     NvU32     completionStatus,
-    RsClient *pClient,
-    NvHandle  hEvent
+    Device   *pDevice
 )
 {
     CLI_DMA_MAPPING_INFO *pDmaMappingInfo;
@@ -144,8 +143,8 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
 
     if (flags & F_SEMAPHORE_ADDR_VALID)
     {
-        bFound = CliGetDmaMappingInfo(pClient,
-                                      hEvent,
+        bFound = CliGetDmaMappingInfo(RES_GET_CLIENT(pDevice),
+                                      RES_GET_HANDLE(pDevice),
                                       vaSpace,
                                       gpuVA,
                                       gpumgrGetDeviceGpuMask(pGpu->deviceInstance),
@@ -156,7 +155,7 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
     else if (flags & F_SEMAPHORE_RELEASE)
     {
         status =  semaphoreFillGPUVA(pGpu,
-                                     pClient,
+                                     pDevice,
                                      vaSpace,
                                      gpuVA,
                                      releasevalue,
@@ -167,7 +166,7 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill
     else if (flags & F_NOTIFIER_FILL)
     {
         status = notifyFillNotifierGPUVA(pGpu,
-                                         pClient,
+                                         pDevice,
                                          vaSpace,
                                          gpuVA,
                                          releasevalue, /* Info32 */

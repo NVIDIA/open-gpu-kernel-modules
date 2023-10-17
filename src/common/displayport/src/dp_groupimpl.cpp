@@ -196,7 +196,6 @@ void GroupImpl::destroy()
                 if (group == this)
                 {
                     parent->activeGroups.remove(this);
-                    DP_LOG(("DP-GRP> Deleted group 0x%x from active group!", this));
                     break;
                 }
             }
@@ -211,7 +210,6 @@ void GroupImpl::destroy()
                 if (group == this)
                 {
                     parent->inactiveGroups.remove(this);
-                    DP_LOG(("DP-GRP> Deleted group 0x%x from inactive group!", this));
                     break;
                 }
             }
@@ -220,13 +218,11 @@ void GroupImpl::destroy()
         if (parent->intransitionGroups.contains(this))
         {
             parent->intransitionGroups.remove(this);
-            DP_LOG(("DP-GRP> Deleted group 0x%x from intransition group!", this));
         }
 
         if (parent->addStreamMSTIntransitionGroups.contains(this))
         {
             parent->addStreamMSTIntransitionGroups.remove(this);
-            DP_LOG(("DP-GRP> Deleted group 0x%x from addStreamMSTIntransitionGroups group!", this));
         }
     }
 

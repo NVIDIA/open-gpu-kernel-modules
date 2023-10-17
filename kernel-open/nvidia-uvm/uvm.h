@@ -216,6 +216,10 @@ NV_STATUS UvmDeinitialize(void);
 // Note that it is not required to release VA ranges that were reserved with
 // UvmReserveVa().
 //
+// This is useful for per-process checkpoint and restore, where kernel-mode
+// state needs to be reconfigured to match the expectations of a pre-existing
+// user-mode process.
+//
 // UvmReopen() closes the open file returned by UvmGetFileDescriptor() and
 // replaces it with a new open file with the same name.
 //

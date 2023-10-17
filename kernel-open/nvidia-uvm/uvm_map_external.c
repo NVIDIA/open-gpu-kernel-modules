@@ -355,6 +355,7 @@ static uvm_membar_t va_range_downgrade_membar(uvm_va_range_t *va_range, uvm_ext_
     if (!ext_gpu_map->mem_handle)
         return UVM_MEMBAR_GPU;
 
+    // EGM uses the same barriers as sysmem.
     return uvm_hal_downgrade_membar_type(ext_gpu_map->gpu,
                                          !ext_gpu_map->is_sysmem && ext_gpu_map->gpu == ext_gpu_map->owning_gpu);
 }
@@ -633,6 +634,8 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
                                           const UvmGpuMemoryInfo *mem_info)
 {
     uvm_gpu_t *owning_gpu;
+    if (mem_info->egm)
+        UVM_ASSERT(mem_info->sysmem);
 
     if (!mem_info->deviceDescendant && !mem_info->sysmem) {
         ext_gpu_map->owning_gpu = NULL;
@@ -641,6 +644,7 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
     }
     // This is a local or peer allocation, so the owning GPU must have been
     // registered.
+    // This also checks for if EGM owning GPU is registered.
     owning_gpu = uvm_va_space_get_gpu_by_uuid(va_space, &mem_info->uuid);
     if (!owning_gpu)
         return NV_ERR_INVALID_DEVICE;
@@ -651,13 +655,10 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
     // crashes when it's eventually freed.
     // TODO: Bug 1811006: Bug tracking the RM issue, its fix might change the
     // semantics of sysmem allocations.
-    if (mem_info->sysmem) {
-        ext_gpu_map->owning_gpu = owning_gpu;
-        ext_gpu_map->is_sysmem = true;
-        return NV_OK;
-    }
 
-    if (owning_gpu != mapping_gpu) {
+    // Check if peer access for peer memory is enabled.
+    // This path also handles EGM allocations.
+    if (owning_gpu != mapping_gpu && (!mem_info->sysmem || mem_info->egm)) {
         // TODO: Bug 1757136: In SLI, the returned UUID may be different but a
         //       local mapping must be used. We need to query SLI groups to know
         //       that.
@@ -666,7 +667,9 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
     }
 
     ext_gpu_map->owning_gpu = owning_gpu;
-    ext_gpu_map->is_sysmem = false;
+    ext_gpu_map->is_sysmem = mem_info->sysmem;
+    ext_gpu_map->is_egm = mem_info->egm;
+
     return NV_OK;
 }
 
@@ -719,6 +722,7 @@ static NV_STATUS uvm_ext_gpu_map_split(uvm_range_tree_t *tree,
     new->gpu = existing_map->gpu;
     new->owning_gpu = existing_map->owning_gpu;
     new->is_sysmem = existing_map->is_sysmem;
+    new->is_egm = existing_map->is_egm;
 
     // Initialize the new ext_gpu_map tracker as a copy of the existing_map tracker.
     // This way, any operations on any of the two ext_gpu_maps will be able to

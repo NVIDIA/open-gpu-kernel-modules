@@ -180,6 +180,7 @@
 --undefined=nv_vgpu_create_request
 --undefined=nv_vgpu_delete
 --undefined=nv_vgpu_get_bar_info
+--undefined=nv_vgpu_get_hbm_info
 --undefined=nv_vgpu_start
 --undefined=nv_vgpu_get_type_ids
 --undefined=nv_vgpu_get_type_info

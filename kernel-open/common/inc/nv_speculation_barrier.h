@@ -86,7 +86,7 @@
  /* Not currently implemented for MSVC/ARM64. See bug 3366890. */
 #   define nv_speculation_barrier()
 #   define speculation_barrier() nv_speculation_barrier()
-#elif defined(NVCPU_NVRISCV64) && NVOS_IS_LIBOS
+#elif defined(NVCPU_IS_RISCV64)
 #   define nv_speculation_barrier()
 #else
  #error "Unknown compiler/chip family"

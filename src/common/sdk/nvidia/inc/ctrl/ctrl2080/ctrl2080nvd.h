@@ -281,6 +281,7 @@ typedef struct NV2080_CTRL_NVD_GET_NOCAT_JOURNAL_PARAMS {
 #define NV2080_CTRL_NOCAT_JOURNAL_DATA_TYPE_TDR_REASON    1
 #define NV2080_CTRL_NOCAT_JOURNAL_DATA_TYPE_INSERT_RECORD 2
 #define NV2080_CTRL_NOCAT_JOURNAL_DATA_TYPE_SET_TAG       3
+#define NV2080_CTRL_NOCAT_JOURNAL_DATA_TYPE_RCLOG         4
 
 #define NV2080_CTRL_NOCAT_TDR_TYPE_NONE                   0
 #define NV2080_CTRL_NOCAT_TDR_TYPE_LEGACY                 1
@@ -324,6 +325,16 @@ typedef struct NV2080CtrlNocatJournalSetTag {
     NvU8  tag[NV2080_NOCAT_JOURNAL_MAX_STR_LEN];
 } NV2080CtrlNocatJournalSetTag;
 
+typedef struct NV2080CtrlNocatJournalRclog {
+    NvU32 flags;
+    NvU32 rclogSize;        // rclog size
+    NvU32 rmGpuId;        // RMGpuId associated with the adapter
+    NvU32 APIType;        // API Type (dx9, dx1x, ogl, etc.)
+    NvU32 contextType;        // Context type (OGL, DX, etc.)
+    NvU32 exceptType;        // ROBUST_CHANNEL_* error identifier
+    NvU8  processImageName[NV2080_NOCAT_JOURNAL_MAX_STR_LEN];    // process image name (without path)
+} NV2080CtrlNocatJournalRclog;
+
 #define NV2080_CTRL_NVD_SET_NOCAT_JOURNAL_DATA_PARAMS_MESSAGE_ID (0xBU)
 
 typedef struct NV2080_CTRL_NVD_SET_NOCAT_JOURNAL_DATA_PARAMS {
@@ -333,6 +344,7 @@ typedef struct NV2080_CTRL_NVD_SET_NOCAT_JOURNAL_DATA_PARAMS {
         NV_DECLARE_ALIGNED(NV2080CtrlNocatJournalDataTdrReason tdrReason, 8);
         NV_DECLARE_ALIGNED(NV2080CtrlNocatJournalInsertRecord insertData, 8);
         NV2080CtrlNocatJournalSetTag tagData;
+        NV2080CtrlNocatJournalRclog  rclog;
     } nocatJournalData;
 } NV2080_CTRL_NVD_SET_NOCAT_JOURNAL_DATA_PARAMS;
 /* _ctr2080nvd_h_ */

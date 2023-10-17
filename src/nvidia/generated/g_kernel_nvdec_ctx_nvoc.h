@@ -323,4 +323,5 @@ static inline void __nvoc_nvdecctxDestruct(struct NvdecContext *pNvdecContext) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_NVDEC_CTX_NVOC_H_

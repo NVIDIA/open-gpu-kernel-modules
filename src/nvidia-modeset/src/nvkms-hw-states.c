@@ -245,28 +245,6 @@
  * change the pin here, prior to enabling flip lock.
  */
 
-NvBool nvEvoLockHWStateNoChange(NVDispEvoPtr pDispEvo, NVEvoSubDevPtr pEvoSubDev,
-                                const NvU32 *pHeads)
-{
-    return TRUE;
-}
-
-NvBool nvEvoLockHWStateMergeMode(NVDispEvoPtr pDispEvo, NVEvoSubDevPtr pEvoSubDev,
-                                 const NvU32 *pHeads)
-{
-    unsigned int i;
-
-    nvAssert(pHeads != NULL && pHeads[0] != NV_INVALID_HEAD);
-
-    for (i = 0; pHeads[i] != NV_INVALID_HEAD; i++) {
-        const int head = pHeads[i];
-        NVEvoHeadControlPtr pHC = &pEvoSubDev->headControlAssy[head];
-        pHC->mergeMode = TRUE;
-    }
-
-    return TRUE;
-}
-
 NvBool nvEvoLockHWStateNoLock(NVDispEvoPtr pDispEvo, NVEvoSubDevPtr pEvoSubDev,
                               const NvU32 *pHeads)
 {
@@ -278,13 +256,22 @@ NvBool nvEvoLockHWStateNoLock(NVDispEvoPtr pDispEvo, NVEvoSubDevPtr pEvoSubDev,
         const int head = pHeads[i];
         NVEvoHeadControlPtr pHC = &pEvoSubDev->headControlAssy[head];
 
+        if (pHC->mergeMode) {
+            /* MergeMode is currently handled outside of the scanlock state
+             * machine, so don't touch the HeadControl state for heads with
+             * mergeMode enabled.  (The state machine will be transitioned to
+             * the 'ProhibitLock' state to prevent other states from being
+             * reached, so this should be the only HWState function that needs
+             * this special case.) */
+            continue;
+        }
+
         /* Disable scan lock on this head */
         pHC->serverLock = NV_EVO_NO_LOCK;
         pHC->serverLockPin = NV_EVO_LOCK_PIN_INTERNAL(0);
         pHC->clientLock = NV_EVO_NO_LOCK;
         pHC->clientLockPin = NV_EVO_LOCK_PIN_INTERNAL(0);
         pHC->clientLockoutWindow = 0;
-        pHC->mergeMode = FALSE;
         pHC->setLockOffsetX = FALSE;
         pHC->useStallLockPin = FALSE;
         pHC->stallLockPin = NV_EVO_LOCK_PIN_INTERNAL(0);
@@ -748,7 +735,7 @@ NvBool nvEvoLockHWStateSliSecondary(NVDispEvoPtr pDispEvo,
 {
     NVEvoLockPin serverPin = pEvoSubDev->sliServerLockPin;
     NVEvoLockPin clientPin = pEvoSubDev->sliClientLockPin;
-    NvU32 clientLockoutWindow = pEvoSubDev->forceZeroClientLockoutWindow ? 0 : 2;
+    const NvU32 clientLockoutWindow = 2;
     NVEvoLockPin flPin = nvEvoGetPinForSignal(pDispEvo, pEvoSubDev,
                                               NV_EVO_LOCK_SIGNAL_FLIP_LOCK);
 
@@ -803,7 +790,7 @@ NvBool nvEvoLockHWStateSliLastSecondary(NVDispEvoPtr pDispEvo,
                                         const NvU32 *pHeads)
 {
     NVEvoLockPin clientPin = pEvoSubDev->sliClientLockPin;
-    NvU32 clientLockoutWindow = pEvoSubDev->forceZeroClientLockoutWindow ? 0 : 2;
+    const NvU32 clientLockoutWindow = 2;
     NVEvoLockPin flPin = nvEvoGetPinForSignal(pDispEvo, pEvoSubDev,
                                               NV_EVO_LOCK_SIGNAL_FLIP_LOCK);
 
@@ -854,7 +841,7 @@ NvBool nvEvoLockHWStateSliSecondaryLockHeads(NVDispEvoPtr pDispEvo,
 {
     NVEvoLockPin serverPin = pEvoSubDev->sliServerLockPin;
     NVEvoLockPin clientPin = pEvoSubDev->sliClientLockPin;
-    NvU32 clientLockoutWindow = pEvoSubDev->forceZeroClientLockoutWindow ? 0 : 2;
+    const NvU32 clientLockoutWindow = 2;
     NVEvoLockPin flPin = nvEvoGetPinForSignal(pDispEvo, pEvoSubDev,
                                               NV_EVO_LOCK_SIGNAL_FLIP_LOCK);
     unsigned int i;
@@ -918,7 +905,7 @@ NvBool nvEvoLockHWStateSliLastSecondaryLockHeads(NVDispEvoPtr pDispEvo,
                                                  const NvU32 *pHeads)
 {
     NVEvoLockPin clientPin = pEvoSubDev->sliClientLockPin;
-    NvU32 clientLockoutWindow = pEvoSubDev->forceZeroClientLockoutWindow ? 0 : 2;
+    const NvU32 clientLockoutWindow = 2;
     NVEvoLockPin flPin = nvEvoGetPinForSignal(pDispEvo, pEvoSubDev,
                                               NV_EVO_LOCK_SIGNAL_FLIP_LOCK);
     unsigned int i;

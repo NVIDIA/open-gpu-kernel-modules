@@ -50,10 +50,14 @@ NvBool nvSetDispModeEvo(NVDevEvoPtr pDevEvo,
 
 typedef NvBool (*NVShutDownApiHeadsTestFunc)(
     const NVDispEvoRec *pDispEvo,
-    const NvU32 apiHead);
+    const NvU32 apiHead,
+    void *pData);
 
 void nvShutDownApiHeads(NVDevEvoPtr pDevEvo,
-                        NVShutDownApiHeadsTestFunc pTestFunc);
+                        struct NvKmsPerOpenDev *pOpenDev,
+                        NVShutDownApiHeadsTestFunc pTestFunc,
+                        void *pData,
+                        NvBool doRasterLock);
 
 NVVBlankCallbackPtr
 nvApiHeadRegisterVBlankCallback(NVDispEvoPtr pDispEvo,

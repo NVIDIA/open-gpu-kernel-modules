@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -91,3 +91,4 @@
 #define NV_VF_SCRATCH_REGISTER_GUEST_RPC_HI                                     0x3
 
 #define MAX_PARTITIONS_WITH_GFID                                                (32)
+#define MAX_PARTITIONS_WITH_GFID_MIG_ENABLED                                    (7)

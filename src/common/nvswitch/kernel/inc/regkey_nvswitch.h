@@ -620,4 +620,21 @@
 #define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_NON_COMMON_NO_SS  0x2
 #define NV_SWITCH_REGKEY_REFERENCE_CLOCK_MODE_NON_COMMON_SS     0x3
 
+/*
+ * NV_SWITCH_REGKEY_DBG_LEVEL - Adjusts the amount of debug prints that will be generated
+ *
+ * Prints will be generated at the specified level and above. Eg. Debug level 0 will 
+ *  enable all prints  
+ *
+ * Private: Debug use only
+ */
+#define NV_SWITCH_REGKEY_DBG_LEVEL                              "DebugLevel"
+#define NV_SWITCH_REGKEY_DBG_LEVEL_DEFAULT                      NV_SWITCH_REGKEY_DBG_LEVEL_INFO
+#define NV_SWITCH_REGKEY_DBG_LEVEL_MMIO                         0x0
+#define NV_SWITCH_REGKEY_DBG_LEVEL_NOISY                        0x1
+#define NV_SWITCH_REGKEY_DBG_LEVEL_INFO                         0x2
+#define NV_SWITCH_REGKEY_DBG_LEVEL_SETUP                        0x3
+#define NV_SWITCH_REGKEY_DBG_LEVEL_WARN                         0x4
+#define NV_SWITCH_REGKEY_DBG_LEVEL_ERROR                        0x5
+
 #endif //_REGKEY_NVSWITCH_H_

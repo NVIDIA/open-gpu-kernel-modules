@@ -41,20 +41,6 @@ extern "C" {
 #include "utils/nv_enum.h"
 #include "kernel/gpu/gr/kernel_graphics_context.h"
 
-struct KernelSMDebuggerSession;
-
-#ifndef __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__
-#define __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__
-typedef struct KernelSMDebuggerSession KernelSMDebuggerSession;
-#endif /* __NVOC_CLASS_KernelSMDebuggerSession_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_KernelSMDebuggerSession
-#define __nvoc_class_id_KernelSMDebuggerSession 0x4adc81
-#endif /* __nvoc_class_id_KernelSMDebuggerSession */
-
-
-MAKE_LIST(KernelSMDebuggerSessionList, KernelSMDebuggerSession *);
-
 /*!
  * RM internal class representing 3D and compute graphics classes, e.g.: <arch>_A,
  * <arch>_COMPUTE_A, etc
@@ -109,7 +95,54 @@ struct KernelGraphicsObject {
     NV_STATUS (*__kgrobjMap__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NV_STATUS (*__kgrobjGetOrAllocNotifShare__)(struct KernelGraphicsObject *, NvHandle, NvHandle, struct NotifShare **);
     MEMORY_DESCRIPTOR *PRIVATE_FIELD(pMmioMemDesc);
-    KernelSMDebuggerSessionList activeDebuggers;
+    struct KernelGraphicsContext *PRIVATE_FIELD(pKernelGraphicsContext);
+};
+
+struct KernelGraphicsObject_PRIVATE {
+    const struct NVOC_RTTI *__nvoc_rtti;
+    struct ChannelDescendant __nvoc_base_ChannelDescendant;
+    struct Object *__nvoc_pbase_Object;
+    struct RsResource *__nvoc_pbase_RsResource;
+    struct RmResourceCommon *__nvoc_pbase_RmResourceCommon;
+    struct RmResource *__nvoc_pbase_RmResource;
+    struct GpuResource *__nvoc_pbase_GpuResource;
+    struct INotifier *__nvoc_pbase_INotifier;
+    struct Notifier *__nvoc_pbase_Notifier;
+    struct ChannelDescendant *__nvoc_pbase_ChannelDescendant;
+    struct KernelGraphicsObject *__nvoc_pbase_KernelGraphicsObject;
+    NV_STATUS (*__kgrobjGetMemInterMapParams__)(struct KernelGraphicsObject *, RMRES_MEM_INTER_MAP_PARAMS *);
+    NV_STATUS (*__kgrobjCheckMemInterUnmap__)(struct KernelGraphicsObject *, NvBool);
+    NvBool (*__kgrobjShareCallback__)(struct KernelGraphicsObject *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NvBool (*__kgrobjAccessCallback__)(struct KernelGraphicsObject *, struct RsClient *, void *, RsAccessRight);
+    NV_STATUS (*__kgrobjMapTo__)(struct KernelGraphicsObject *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__kgrobjGetMapAddrSpace__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    void (*__kgrobjSetNotificationShare__)(struct KernelGraphicsObject *, struct NotifShare *);
+    NvU32 (*__kgrobjGetRefCount__)(struct KernelGraphicsObject *);
+    void (*__kgrobjAddAdditionalDependants__)(struct RsClient *, struct KernelGraphicsObject *, RsResourceRef *);
+    NV_STATUS (*__kgrobjControl_Prologue__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__kgrobjGetRegBaseOffsetAndSize__)(struct KernelGraphicsObject *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__kgrobjInternalControlForward__)(struct KernelGraphicsObject *, NvU32, void *, NvU32);
+    NV_STATUS (*__kgrobjUnmapFrom__)(struct KernelGraphicsObject *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__kgrobjControl_Epilogue__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__kgrobjControlLookup__)(struct KernelGraphicsObject *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NV_STATUS (*__kgrobjGetSwMethods__)(struct KernelGraphicsObject *, const METHOD **, NvU32 *);
+    NvHandle (*__kgrobjGetInternalObjectHandle__)(struct KernelGraphicsObject *);
+    NV_STATUS (*__kgrobjControl__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__kgrobjUnmap__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RsCpuMapping *);
+    NV_STATUS (*__kgrobjGetMemoryMappingDescriptor__)(struct KernelGraphicsObject *, struct MEMORY_DESCRIPTOR **);
+    NvBool (*__kgrobjIsSwMethodStalling__)(struct KernelGraphicsObject *, NvU32);
+    NV_STATUS (*__kgrobjControlFilter__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__kgrobjUnregisterEvent__)(struct KernelGraphicsObject *, NvHandle, NvHandle, NvHandle, NvHandle);
+    NV_STATUS (*__kgrobjControlSerialization_Prologue__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__kgrobjCanCopy__)(struct KernelGraphicsObject *);
+    void (*__kgrobjPreDestruct__)(struct KernelGraphicsObject *);
+    NV_STATUS (*__kgrobjIsDuplicate__)(struct KernelGraphicsObject *, NvHandle, NvBool *);
+    void (*__kgrobjControlSerialization_Epilogue__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    PEVENTNOTIFICATION *(*__kgrobjGetNotificationListPtr__)(struct KernelGraphicsObject *);
+    struct NotifShare *(*__kgrobjGetNotificationShare__)(struct KernelGraphicsObject *);
+    NV_STATUS (*__kgrobjMap__)(struct KernelGraphicsObject *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
+    NV_STATUS (*__kgrobjGetOrAllocNotifShare__)(struct KernelGraphicsObject *, NvHandle, NvHandle, struct NotifShare **);
+    MEMORY_DESCRIPTOR *pMmioMemDesc;
     struct KernelGraphicsContext *pKernelGraphicsContext;
 };
 
@@ -357,6 +390,11 @@ static inline NV_STATUS kgrobjGetOrAllocNotifShare_DISPATCH(struct KernelGraphic
     return pNotifier->__kgrobjGetOrAllocNotifShare__(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare);
 }
 
+static inline struct KernelGraphicsContext *kgrobjGetKernelGraphicsContext(struct OBJGPU *pGpu, struct KernelGraphicsObject *pKernelGraphicsObject) {
+    struct KernelGraphicsObject_PRIVATE *pKernelGraphicsObject_PRIVATE = (struct KernelGraphicsObject_PRIVATE *)pKernelGraphicsObject;
+    return pKernelGraphicsObject_PRIVATE->pKernelGraphicsContext;
+}
+
 NV_STATUS kgrobjConstruct_IMPL(struct KernelGraphicsObject *arg_pKernelGraphicsObject, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 
 #define __nvoc_kgrobjConstruct(arg_pKernelGraphicsObject, arg_pCallContext, arg_pParams) kgrobjConstruct_IMPL(arg_pKernelGraphicsObject, arg_pCallContext, arg_pParams)
@@ -382,4 +420,5 @@ static inline NV_STATUS kgrobjPromoteContext(struct OBJGPU *arg0, struct KernelG
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_GRAPHICS_OBJECT_NVOC_H_

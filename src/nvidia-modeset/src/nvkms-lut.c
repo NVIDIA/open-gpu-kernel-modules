@@ -52,8 +52,10 @@ static void FreeLutSurfaceEvoInVidmem(NVLutSurfaceEvoPtr pSurfEvo)
     nvRmEvoUnMapVideoMemory(pDevEvo, pSurfEvo->handle,
                             pSurfEvo->subDeviceAddress);
 
-    /* Free display context dmas for the surface, if any */
-    nvRmEvoFreeDispContextDMA(pDevEvo, &pSurfEvo->dispCtxDma);
+    /* Free surface descriptor */
+    pDevEvo->hal->FreeSurfaceDescriptor(pDevEvo,
+                                        nvEvoGlobal.clientHandle,
+                                        &pSurfEvo->surfaceDesc);
 
     /* Free the surface */
     if (pSurfEvo->handle) {
@@ -131,14 +133,15 @@ static NVLutSurfaceEvoPtr AllocLutSurfaceEvoInVidmem(NVDevEvoPtr pDevEvo)
         goto fail;
     }
 
-    /* Allocate a display context dma */
-    pSurfEvo->dispCtxDma =
-        nvRmEvoAllocateAndBindDispContextDMA(pDevEvo,
-                                             pSurfEvo->handle,
-                                             NvKmsSurfaceMemoryLayoutPitch,
-                                             pSurfEvo->size - 1);
-
-    if (!pSurfEvo->dispCtxDma) {
+    /* Allocate and bind surface descriptor */
+    ret =
+        nvRmAllocAndBindSurfaceDescriptor(
+                pDevEvo,
+                pSurfEvo->handle,
+                NvKmsSurfaceMemoryLayoutPitch,
+                pSurfEvo->size - 1,
+                &pSurfEvo->surfaceDesc);
+    if (ret != NVOS_STATUS_SUCCESS) {
         goto fail;
     }
 
@@ -188,8 +191,10 @@ static void FreeLutSurfaceEvoInSysmem(NVLutSurfaceEvoPtr pSurfEvo)
 
     pDevEvo = pSurfEvo->pDevEvo;
 
-    /* Free display context dmas for the surface, if any */
-    nvRmEvoFreeDispContextDMA(pDevEvo, &pSurfEvo->dispCtxDma);
+    /* Free surface descriptor */
+    pDevEvo->hal->FreeSurfaceDescriptor(pDevEvo,
+                                        nvEvoGlobal.clientHandle,
+                                        &pSurfEvo->surfaceDesc);
 
     /* Free the surface */
     if (pSurfEvo->handle) {
@@ -232,6 +237,7 @@ static NVLutSurfaceEvoPtr AllocLutSurfaceEvoInSysmem(NVDevEvoPtr pDevEvo)
     void *pBase = NULL;
     NvU64 size = 0;
     NVLutSurfaceEvoPtr pSurfEvo;
+    NvU32 ret;
 
     pSurfEvo = nvCalloc(1, sizeof(*pSurfEvo));
     if (pSurfEvo == NULL) {
@@ -261,13 +267,16 @@ static NVLutSurfaceEvoPtr AllocLutSurfaceEvoInSysmem(NVDevEvoPtr pDevEvo)
 
     pSurfEvo->handle = memoryHandle;
 
-    /* Allocate and bind a display context dma */
-    pSurfEvo->dispCtxDma =
-        nvRmEvoAllocateAndBindDispContextDMA(pDevEvo,
-                                             pSurfEvo->handle,
-                                             NvKmsSurfaceMemoryLayoutPitch,
-                                             pSurfEvo->size - 1);
-    if (!pSurfEvo->dispCtxDma) {
+    /* Allocate and bind surface descriptor */
+    ret =
+        nvRmAllocAndBindSurfaceDescriptor(
+                pDevEvo,
+                pSurfEvo->handle,
+                NvKmsSurfaceMemoryLayoutPitch,
+                pSurfEvo->size - 1,
+                &pSurfEvo->surfaceDesc);
+
+    if (ret != NVOS_STATUS_SUCCESS) {
         goto fail;
     }
 
@@ -404,6 +413,10 @@ NvBool nvAllocLutSurfacesEvo(NVDevEvoPtr pDevEvo)
             pDevEvo->lut.apiHead[apiHead].disp[dispIndex].curOutputLutEnabled = FALSE;
         }
     }
+
+    // Zero-initalize the LUT notifier state - ensure there's no stale data
+    nvkms_memset(&pDevEvo->lut.notifierState, 0,
+                 sizeof(pDevEvo->lut.notifierState));
 
     if (pDevEvo->hal->caps.needDefaultLutSurface) {
         pDevEvo->lut.defaultLut = AllocLutSurfaceEvo(pDevEvo);

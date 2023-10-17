@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -99,8 +99,7 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill(struct OBJGPU *pGpu,
                                                 NvU32 releasevalue,
                                                 NvU32 flags,
                                                 NvU32 completionStatus,
-                                                struct RsClient *pClient,
-                                                NvHandle hEvent);
+                                                struct Device *pDevice);
 
 /*!
  * RM internal class representing GF100_DISP_SW
@@ -375,4 +374,5 @@ void dispswDestruct_IMPL(struct DispSwObject *pDispSw);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_DISPSW_NVOC_H_

@@ -32,7 +32,7 @@
 
 #include <stddef.h>
 
-#define VERBOSE_MMIO_DISCOVERY      1
+#define VERBOSE_MMIO_DISCOVERY      0
 
 #define MAKE_DISCOVERY_LS10(_engine)                \
     {                                               \

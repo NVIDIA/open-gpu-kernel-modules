@@ -329,7 +329,7 @@ RS_ENTRY(
     /* Parents                */ RS_LIST(classId(Device), classId(KernelChannelGroupApi)),
     /* Alloc Param Info       */ RS_REQUIRED(NV_UVM_CHANNEL_RETAINER_ALLOC_PARAMS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_HIGH,
-    /* Flags                  */ RS_FLAGS_ALLOC_KERNEL_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK | RS_FLAGS_ALLOC_RPC_TO_ALL | RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC,
+    /* Flags                  */ RS_FLAGS_ALLOC_KERNEL_PRIVILEGED | RS_FLAGS_ALLOC_ALL_VGPU_PLUGINS | RS_FLAGS_ACQUIRE_GPUS_LOCK | RS_FLAGS_ALLOC_RPC_TO_ALL | RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
@@ -429,7 +429,7 @@ RS_ENTRY(
     /* Parents                */ RS_LIST(classId(Device)),
     /* Alloc Param Info       */ RS_REQUIRED(NV_PHYSICAL_MEMORY_ALLOCATION_PARAMS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
-    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
+    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV | RS_FLAGS_ACQUIRE_GPUS_LOCK,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
@@ -529,7 +529,7 @@ RS_ENTRY(
     /* Parents                */ RS_LIST(classId(Device), classId(Subdevice)),
     /* Alloc Param Info       */ RS_REQUIRED(NV_MEMORY_LIST_ALLOCATION_PARAMS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
-    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
+    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV | RS_FLAGS_ACQUIRE_GPUS_LOCK,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
@@ -539,7 +539,7 @@ RS_ENTRY(
     /* Parents                */ RS_LIST(classId(Device), classId(Subdevice)),
     /* Alloc Param Info       */ RS_REQUIRED(NV_MEMORY_LIST_ALLOCATION_PARAMS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
-    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK,
+    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV | RS_FLAGS_ACQUIRE_GPUS_LOCK,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
@@ -621,6 +621,16 @@ RS_ENTRY(
     /* Alloc Param Info       */ RS_NONE,
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
     /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_CHANNEL_DESCENDANT_COMMON | RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
+RS_ENTRY(
+    /* External Class         */ GF100_SUBDEVICE_INFOROM,
+    /* Internal Class         */ GenericEngineApi,
+    /* Multi-Instance         */ NV_TRUE,
+    /* Parents                */ RS_LIST(classId(Subdevice)),
+    /* Alloc Param Info       */ RS_NONE,
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK | RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC | RS_FLAGS_ALLOC_RPC_TO_PHYS_RM,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
@@ -780,7 +790,7 @@ RS_ENTRY(
     /* Parents                */ RS_LIST(classId(Subdevice)),
     /* Alloc Param Info       */ RS_REQUIRED(NV_VIDMEM_ACCESS_BIT_ALLOCATION_PARAMS),
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
-    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK | RS_FLAGS_ALLOC_RPC_TO_PHYS_RM,
+    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_VGPU_GSP | RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP | RS_FLAGS_ACQUIRE_GPUS_LOCK | RS_FLAGS_ALLOC_RPC_TO_PHYS_RM,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
@@ -1062,7 +1072,7 @@ RS_ENTRY(
     /* Parents                */ RS_LIST(classId(KernelChannel)),
     /* Alloc Param Info       */ RS_NONE,
     /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
-    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_CHANNEL_DESCENDANT_COMMON,
+    /* Flags                  */ RS_FLAGS_ALLOC_PRIVILEGED | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV | RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP | RS_FLAGS_CHANNEL_DESCENDANT_COMMON,
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(

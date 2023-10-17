@@ -713,10 +713,6 @@ rcdbGetRcDiagRecBoundaries_IMPL
                     foundEnd = foundStart;
                 }
                 break;
-
-            default:    // should not happen....
-                return NV_ERR_GENERIC;
-                break;
             }
         }
         // checking end is sufficient, because end can't be set w/o start being set first.
@@ -2827,7 +2823,6 @@ rcdbAddRmGpuDump
         // from the interrupt context anyway, so queue a work item to come back
         // later and try again.
         //
-        OBJOS *pOS = SYS_GET_OS(pSys);
         NvU32 *pGpuInstance = NULL;
 
         //
@@ -2859,8 +2854,8 @@ rcdbAddRmGpuDump
         }
 
         *pGpuInstance = gpuGetInstance(pGpu);
-        status = pOS->osQueueSystemWorkItem(_rcdbAddRmGpuDumpCallback,
-                                            pGpuInstance);
+        status = osQueueSystemWorkItem(_rcdbAddRmGpuDumpCallback,
+                                       pGpuInstance);
         if (status != NV_OK)
         {
             portMemFree(pGpuInstance);
@@ -3630,7 +3625,9 @@ void rcdbInitNocatGpuCache_IMPL(OBJGPU *pGpu)
     Journal                *pRcdb = SYS_GET_RCDB(pSys);
 #if NOCAT_PROBE_FB_MEMORY
     NvU8                   *pCpuPtr;
+    NV_STATUS              status;
 #endif
+
     if (pGpu == NULL)
     {
         return;
@@ -3647,7 +3644,9 @@ void rcdbInitNocatGpuCache_IMPL(OBJGPU *pGpu)
     {
         memdescCreateExisting(&pGpu->nocatGpuCache.fbTestMemDesc,
             pGpu, NOCAT_FBSIZETESTED, ADDR_FBMEM, NV_MEMORY_UNCACHED, MEMDESC_FLAGS_NONE);
-        if (memdescAlloc(&pGpu->nocatGpuCache.fbTestMemDesc) != NV_OK)
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_102, 
+                        (&pGpu->nocatGpuCache.fbTestMemDesc));
+        if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR, "Could not allocate vidmem for NOCAT bar2 testing\n");
             return;

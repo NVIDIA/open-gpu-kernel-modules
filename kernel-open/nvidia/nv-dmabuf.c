@@ -107,7 +107,7 @@ nv_dma_buf_free_file_private(
 
     if (priv->handles != NULL)
     {
-        NV_KFREE(priv->handles, priv->total_objects * sizeof(priv->handles[0]));
+        os_free_mem(priv->handles);
         priv->handles = NULL;
     }
 
@@ -122,6 +122,8 @@ nv_dma_buf_alloc_file_private(
 )
 {
     nv_dma_buf_file_private_t *priv = NULL;
+    NvU64 handles_size = num_handles * sizeof(priv->handles[0]);
+    NV_STATUS status;
 
     NV_KZALLOC(priv, sizeof(nv_dma_buf_file_private_t));
     if (priv == NULL)
@@ -131,11 +133,12 @@ nv_dma_buf_alloc_file_private(
 
     mutex_init(&priv->lock);
 
-    NV_KZALLOC(priv->handles, num_handles * sizeof(priv->handles[0]));
-    if (priv->handles == NULL)
+    status = os_alloc_mem((void **) &priv->handles, handles_size);
+    if (status != NV_OK)
     {
         goto failed;
     }
+    os_mem_set(priv->handles, 0, handles_size);
 
     return priv;
 
@@ -1065,6 +1068,7 @@ nv_dma_buf_create(
 
     status = rm_dma_buf_get_client_and_device(sp, priv->nv,
                                               params->hClient,
+                                              params->handles[0],
                                               &priv->h_client,
                                               &priv->h_device,
                                               &priv->h_subdevice,

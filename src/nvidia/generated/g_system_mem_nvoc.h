@@ -58,6 +58,7 @@ struct SystemMemory {
     NvBool (*__sysmemShareCallback__)(struct SystemMemory *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__sysmemMapTo__)(struct SystemMemory *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__sysmemGetMapAddrSpace__)(struct SystemMemory *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvBool (*__sysmemIsExportAllowed__)(struct SystemMemory *);
     NvU32 (*__sysmemGetRefCount__)(struct SystemMemory *);
     void (*__sysmemAddAdditionalDependants__)(struct RsClient *, struct SystemMemory *, RsResourceRef *);
     NV_STATUS (*__sysmemControl_Prologue__)(struct SystemMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -115,6 +116,7 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory**, Dynamic*, NvU32, CALL_CO
 #define sysmemShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) sysmemShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define sysmemMapTo(pResource, pParams) sysmemMapTo_DISPATCH(pResource, pParams)
 #define sysmemGetMapAddrSpace(pMemory, pCallContext, mapFlags, pAddrSpace) sysmemGetMapAddrSpace_DISPATCH(pMemory, pCallContext, mapFlags, pAddrSpace)
+#define sysmemIsExportAllowed(pMemory) sysmemIsExportAllowed_DISPATCH(pMemory)
 #define sysmemGetRefCount(pResource) sysmemGetRefCount_DISPATCH(pResource)
 #define sysmemAddAdditionalDependants(pClient, pResource, pReference) sysmemAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define sysmemControl_Prologue(pResource, pCallContext, pParams) sysmemControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
@@ -176,6 +178,10 @@ static inline NV_STATUS sysmemMapTo_DISPATCH(struct SystemMemory *pResource, RS_
 
 static inline NV_STATUS sysmemGetMapAddrSpace_DISPATCH(struct SystemMemory *pMemory, CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
     return pMemory->__sysmemGetMapAddrSpace__(pMemory, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvBool sysmemIsExportAllowed_DISPATCH(struct SystemMemory *pMemory) {
+    return pMemory->__sysmemIsExportAllowed__(pMemory);
 }
 
 static inline NvU32 sysmemGetRefCount_DISPATCH(struct SystemMemory *pResource) {
@@ -277,4 +283,5 @@ NV_STATUS sysmemAllocResources(OBJGPU *pGpu, struct MemoryManager *pMemoryManage
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_SYSTEM_MEM_NVOC_H_

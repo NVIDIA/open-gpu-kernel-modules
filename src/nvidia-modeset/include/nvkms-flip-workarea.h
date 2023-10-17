@@ -29,12 +29,16 @@
 typedef struct {
     struct {
         enum NvKmsOutputTf tf;
+        enum NvKmsOutputColorimetry colorimetry;
+        NvBool infoFrameOverride;
+        NvU32 staticMetadataLayerMask;
         enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
         enum NvKmsDpyAttributeColorBpcValue colorBpc;
         enum NvKmsDpyAttributeColorRangeValue colorRange;
     } hdr;
 
     struct NvKmsPoint viewPortPointIn;
+    struct NvKmsSetLutCommonParams lut;
 
     struct {
         NvU32 viewPortPointIn  : 1;

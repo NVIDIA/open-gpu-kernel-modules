@@ -91,7 +91,7 @@
 // Not implemented yet
 #define NV_SPIN_LOOP_HINT()
 
-#elif defined(NVCPU_FAMILY_ARM) || defined(NVCPU_PPC64LE)
+#elif defined(NVCPU_FAMILY_ARM) || defined(NVCPU_PPC64LE) || defined(NVCPU_RISCV64)
 
 // Not implemented yet
 #define NV_SPIN_LOOP_HINT()

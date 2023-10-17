@@ -144,4 +144,5 @@ void crashcatQueueDestruct_IMPL(struct CrashCatQueue *arg0);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_CRASHCAT_QUEUE_NVOC_H_

@@ -247,6 +247,11 @@ int nv_kthread_q_init_on_node(nv_kthread_q_t *q, const char *q_name, int preferr
     return 0;
 }
 
+int nv_kthread_q_init(nv_kthread_q_t *q, const char *qname)
+{
+    return nv_kthread_q_init_on_node(q, qname, NV_KTHREAD_NO_NODE);
+}
+
 // Returns true (non-zero) if the item was actually scheduled, and false if the
 // item was already pending in a queue.
 static int _raw_q_schedule(nv_kthread_q_t *q, nv_kthread_q_item_t *q_item)

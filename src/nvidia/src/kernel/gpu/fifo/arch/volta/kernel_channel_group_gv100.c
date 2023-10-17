@@ -112,7 +112,8 @@ kchangrpAllocFaultMethodBuffers_GV100
             goto fail;
         }
 
-        status = memdescAlloc(pFaultMthdBuf->pMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_34, 
+                    pFaultMthdBuf->pMemDesc);
         if (status != NV_OK)
         {
             DBG_BREAKPOINT();

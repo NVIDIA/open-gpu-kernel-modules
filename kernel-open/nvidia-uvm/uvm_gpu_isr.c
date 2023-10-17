@@ -292,6 +292,7 @@ NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status = NV_OK;
     char kthread_name[TASK_COMM_LEN + 1];
+    uvm_va_block_context_t *block_context;
 
     if (parent_gpu->replayable_faults_supported) {
         status = uvm_gpu_fault_buffer_init(parent_gpu);
@@ -310,6 +311,12 @@ NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
             uvm_kvmalloc_zero(sizeof(*parent_gpu->isr.replayable_faults.stats.cpu_exec_count) * num_possible_cpus());
         if (!parent_gpu->isr.replayable_faults.stats.cpu_exec_count)
             return NV_ERR_NO_MEMORY;
+
+        block_context = uvm_va_block_context_alloc(NULL);
+        if (!block_context)
+            return NV_ERR_NO_MEMORY;
+
+        parent_gpu->fault_buffer_info.replayable.block_service_context.block_context = block_context;
 
         parent_gpu->isr.replayable_faults.handling = true;
 
@@ -333,6 +340,12 @@ NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
             if (!parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count)
                 return NV_ERR_NO_MEMORY;
 
+            block_context = uvm_va_block_context_alloc(NULL);
+            if (!block_context)
+                return NV_ERR_NO_MEMORY;
+
+            parent_gpu->fault_buffer_info.non_replayable.block_service_context.block_context = block_context;
+
             parent_gpu->isr.non_replayable_faults.handling = true;
 
             snprintf(kthread_name, sizeof(kthread_name), "UVM GPU%u KC", uvm_id_value(parent_gpu->id));
@@ -355,6 +368,13 @@ NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
                               parent_gpu->name);
                 return status;
             }
+
+            block_context = uvm_va_block_context_alloc(NULL);
+            if (!block_context)
+                return NV_ERR_NO_MEMORY;
+
+            parent_gpu->access_counter_buffer_info.batch_service_context.block_service_context.block_context =
+                block_context;
 
             nv_kthread_q_item_init(&parent_gpu->isr.access_counters.bottom_half_q_item,
                                    access_counters_isr_bottom_half_entry,
@@ -410,6 +430,8 @@ void uvm_gpu_disable_isr(uvm_parent_gpu_t *parent_gpu)
 
 void uvm_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
 {
+    uvm_va_block_context_t *block_context;
+
     // Return ownership to RM:
     if (parent_gpu->isr.replayable_faults.was_handling) {
         // No user threads could have anything left on
@@ -439,8 +461,18 @@ void uvm_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
         // It is safe to deinitialize access counters even if they have not been
         // successfully initialized.
         uvm_gpu_deinit_access_counters(parent_gpu);
+        block_context =
+            parent_gpu->access_counter_buffer_info.batch_service_context.block_service_context.block_context;
+        uvm_va_block_context_free(block_context);
     }
 
+    if (parent_gpu->non_replayable_faults_supported) {
+        block_context = parent_gpu->fault_buffer_info.non_replayable.block_service_context.block_context;
+        uvm_va_block_context_free(block_context);
+    }
+
+    block_context = parent_gpu->fault_buffer_info.replayable.block_service_context.block_context;
+    uvm_va_block_context_free(block_context);
     uvm_kvfree(parent_gpu->isr.replayable_faults.stats.cpu_exec_count);
     uvm_kvfree(parent_gpu->isr.non_replayable_faults.stats.cpu_exec_count);
     uvm_kvfree(parent_gpu->isr.access_counters.stats.cpu_exec_count);

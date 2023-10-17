@@ -561,6 +561,22 @@ typedef struct
 // user_pages_allocation_retry_force_count, but the injection point simulates
 // driver metadata allocation failure.
 //
+// cpu_chunk_allocation_target_id and cpu_chunk_allocation_actual_id are used
+// to control the NUMA node IDs for CPU chunk allocations, specifically for
+// testing overlapping CPU chunk allocations.
+//
+// Currently, uvm_api_migrate() does not pass the preferred CPU NUMA node to for
+// managed memory so it is not possible to request a specific node.
+// cpu_chunk_allocation_target_id is used to request the allocation be made on
+// specific node. On the other hand, cpu_chunk_allocation_actual_id is the node
+// on which the allocation will actually be made.
+//
+// The two parameters can be used to force a CPU chunk allocation to overlap a
+// previously allocated chunk.
+//
+// Please note that even when specifying cpu_cpu_allocation_actual_id, the
+// kernel may end up allocating on a different node.
+//
 // Error returns:
 // NV_ERR_INVALID_ADDRESS
 //  - lookup_address doesn't match a UVM range
@@ -571,6 +587,8 @@ typedef struct
     NvU32     page_table_allocation_retry_force_count;  // In
     NvU32     user_pages_allocation_retry_force_count;  // In
     NvU32     cpu_chunk_allocation_size_mask;           // In
+    NvS32     cpu_chunk_allocation_target_id;           // In
+    NvS32     cpu_chunk_allocation_actual_id;           // In
     NvU32     cpu_pages_allocation_error_count;         // In
     NvBool    eviction_error;                           // In
     NvBool    populate_error;                           // In
@@ -603,6 +621,10 @@ typedef struct
     // lookup_address.
     NvProcessorUuid                 resident_on[UVM_MAX_PROCESSORS];                    // Out
     NvU32                           resident_on_count;                                  // Out
+
+    // If the memory is resident on the CPU, the NUMA node on which the page
+    // is resident. Otherwise, -1.
+    NvS32                           resident_nid;                                       // Out
 
     // The size of the physical allocation backing lookup_address. Only the
     // system-page-sized portion of this allocation which contains
@@ -1167,19 +1189,6 @@ typedef struct
 
     NV_STATUS                       rmStatus;                                           // Out
 } UVM_TEST_PMM_QUERY_PMA_STATS_PARAMS;
-
-#define UVM_TEST_NUMA_GET_CLOSEST_CPU_NODE_TO_GPU        UVM_TEST_IOCTL_BASE(77)
-typedef struct
-{
-    NvProcessorUuid                 gpu_uuid;                                           // In
-    NvHandle                        client;                                             // In
-    NvHandle                        smc_part_ref;                                       // In
-
-    // On kernels with NUMA support, this entry contains the closest CPU NUMA
-    // node to this GPU. Otherwise, the value will be -1.
-    NvS32                           node_id;                                            // Out
-    NV_STATUS                       rmStatus;                                           // Out
-} UVM_TEST_NUMA_GET_CLOSEST_CPU_NODE_TO_GPU_PARAMS;
 
 // Test whether the bottom halves have run on the correct CPUs based on the
 // NUMA node locality of the GPU.

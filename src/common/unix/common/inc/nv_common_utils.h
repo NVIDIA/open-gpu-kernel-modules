@@ -25,6 +25,7 @@
 #define __NV_COMMON_UTILS_H__
 
 #include "nvtypes.h"
+#include "nvmisc.h"
 
 #if !defined(TRUE)
 #define TRUE NV_TRUE
@@ -94,5 +95,26 @@ static inline unsigned short PALETTE_DEPTH_SHIFT(unsigned short val, int depth)
 {
     return NV_UNDER_REPLICATE(val, depth, 8);
 }
+
+/*
+ *  Use __builtin_ffs where it is supported, or provide an equivalent
+ *  implementation for platforms like riscv where it is not.
+ */
+#if defined(__GNUC__) && !NVCPU_IS_RISCV64
+static inline int nv_ffs(int x)
+{
+    return __builtin_ffs(x);
+}
+#else
+static inline int nv_ffs(int x)
+{
+    if (x == 0)
+        return 0;
+
+    LOWESTBITIDX_32(x);
+
+    return 1 + x;
+}
+#endif
 
 #endif /* __NV_COMMON_UTILS_H__ */

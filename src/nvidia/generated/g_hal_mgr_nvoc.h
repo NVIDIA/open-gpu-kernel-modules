@@ -63,7 +63,7 @@ struct OBJHALMGR {
     struct Object __nvoc_base_Object;
     struct Object *__nvoc_pbase_Object;
     struct OBJHALMGR *__nvoc_pbase_OBJHALMGR;
-    struct OBJHAL *pHalList[68];
+    struct OBJHAL *pHalList[69];
 };
 
 #ifndef __NVOC_CLASS_OBJHALMGR_TYPEDEF__
@@ -141,4 +141,5 @@ static inline struct OBJHAL *halmgrGetHal(struct OBJHALMGR *arg0, NvU32 arg1) {
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_HAL_MGR_NVOC_H_

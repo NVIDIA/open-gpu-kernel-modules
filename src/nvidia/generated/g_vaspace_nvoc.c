@@ -114,8 +114,6 @@ static void __nvoc_init_funcTable_OBJVASPACE_1(OBJVASPACE *pThis) {
 
     pThis->__vaspaceGetFlags__ = &vaspaceGetFlags_edd98b;
 
-    pThis->__vaspaceIsInternalVaRestricted__ = &vaspaceIsInternalVaRestricted_IMPL;
-
     pThis->__vaspaceMap__ = &vaspaceMap_b7902c;
 
     pThis->__vaspaceUnmap__ = &vaspaceUnmap_8b86a5;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,7 +25,6 @@
  * @file
  * @brief ENGINE_TYPE controls
  */
-
 
 #include "kernel/gpu/gpu.h"
 #include "kernel/gpu/nvbitmask.h"
@@ -105,7 +104,7 @@ RM_ENGINE_TYPE gpuGetRmEngineType_IMPL(NvU32 index)
         case NV2080_ENGINE_TYPE_NVJPEG5:    return RM_ENGINE_TYPE_NVJPEG5;
         case NV2080_ENGINE_TYPE_NVJPEG6:    return RM_ENGINE_TYPE_NVJPEG6;
         case NV2080_ENGINE_TYPE_NVJPEG7:    return RM_ENGINE_TYPE_NVJPEG7;
-        case NV2080_ENGINE_TYPE_OFA:        return RM_ENGINE_TYPE_OFA;
+        case NV2080_ENGINE_TYPE_OFA0:       return RM_ENGINE_TYPE_OFA0;
         default: break;
     }
 
@@ -179,7 +178,7 @@ NvU32 gpuGetNv2080EngineType_IMPL(RM_ENGINE_TYPE index)
         case RM_ENGINE_TYPE_NVJPEG5:    return NV2080_ENGINE_TYPE_NVJPEG5;
         case RM_ENGINE_TYPE_NVJPEG6:    return NV2080_ENGINE_TYPE_NVJPEG6;
         case RM_ENGINE_TYPE_NVJPEG7:    return NV2080_ENGINE_TYPE_NVJPEG7;
-        case RM_ENGINE_TYPE_OFA:        return NV2080_ENGINE_TYPE_OFA;
+        case RM_ENGINE_TYPE_OFA0:       return NV2080_ENGINE_TYPE_OFA0;
         default: break;
     }
 

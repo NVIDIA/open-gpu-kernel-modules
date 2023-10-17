@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,7 +57,7 @@ typedef enum
 //
 // Statics
 //
-static NV_STATUS _heapBlockFree(OBJGPU *, Heap *, MEM_BLOCK *);
+static NV_STATUS _heapBlockFree(OBJGPU *, Heap *, NvHandle, NvHandle, MEM_BLOCK *);
 static void      _heapSetTexturePlacement(Heap *, NvU32, NvU32, NvBool*,
                                           NvU32*, NvU8*);
 static NV_STATUS _heapGetMaxFree(Heap *, NvU64 *, NvU64 *);
@@ -737,7 +737,7 @@ heapDestruct_IMPL
                 pBlock->allocedMemDesc = NV_FALSE;
             }
 
-            _heapBlockFree(pGpu, pHeap, pBlock);
+            _heapBlockFree(pGpu, pHeap, NV01_NULL_OBJECT, NV01_NULL_OBJECT, pBlock);
 
             // restart scanning the list, if the heap->pBlockList changed
             if (pBlockFirst != pHeap->pBlockList)
@@ -1218,7 +1218,8 @@ _heapBlacklistSingleChunk
         // Allocate memory for this page. This is marked as an internal RM allocation
         // and will be saved/restored during suspend/resume
         //
-        status = memdescAlloc(pBlacklistChunk->pMemDesc);
+        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_78, 
+                    pBlacklistChunk->pMemDesc);
         if (NV_OK != status)
         {
             // no use for the memdesc if page couldn't be allocated
@@ -1932,6 +1933,8 @@ static NV_STATUS _heapBlockFree
 (
     OBJGPU      *pGpu,
     Heap        *pHeap,
+    NvHandle     hClient,
+    NvHandle     hDevice,
     MEM_BLOCK   *pBlock
 )
 {
@@ -1999,6 +2002,8 @@ static NV_STATUS _heapBlockFree
         pFbAllocInfo->pageFormat->attr  = pBlock->hwResource.attr;
         pFbAllocInfo->pageFormat->attr2 = pBlock->hwResource.attr2;
         pFbAllocInfo->ctagOffset = pBlock->hwResource.ctagOffset;
+        pFbAllocInfo->hClient = hClient;
+        pFbAllocInfo->hDevice = hDevice;
 
         memmgrFreeHwResources(pGpu, pMemoryManager, pFbAllocInfo);
 
@@ -2271,6 +2276,8 @@ heapFree_IMPL
 (
     OBJGPU             *pGpu,
     Heap               *pHeap,
+    NvHandle            hClient,
+    NvHandle            hDevice,
     NvU32               owner,
     MEMORY_DESCRIPTOR  *pMemDesc
 )
@@ -2352,7 +2359,7 @@ heapFree_IMPL
             // pMemDesc->PteKind = 0;
         }
 
-        if ((status = _heapBlockFree(pGpu, pHeap, pBlock)) != NV_OK)
+        if ((status = _heapBlockFree(pGpu, pHeap, hClient, hDevice, pBlock)) != NV_OK)
         {
             NV_ASSERT(0);
         }
@@ -2417,7 +2424,7 @@ heapFree_IMPL
                 continue;
             }
 
-            if (NV_OK != (status = _heapBlockFree(pGpu, pHeap, pBlock)))
+            if (NV_OK != (status = _heapBlockFree(pGpu, pHeap, hClient, hDevice, pBlock)))
                 return status;
 
             // check if we need to dynamically blacklist the page
@@ -2755,7 +2762,6 @@ NV_STATUS heapAllocHint_IMPL
     NvU64                   pageSize            = 0;
     NvU32                   flags;
     NvU32                   owner;
-    NvU32                   tiledAttr;
 
     // Check for valid size.
     NV_ASSERT_OR_RETURN((pAllocHint->pSize != NULL), NV_ERR_INVALID_ARGUMENT);
@@ -2936,28 +2942,7 @@ NV_STATUS heapAllocHint_IMPL
     *pAllocHint->pHeight = pFbAllocInfo->height;
     pAllocHint->pad = pFbAllocInfo->pad;
 
-    // Special Case for Tiled Allocations
-    // Adjust the size so we don't use the partial tile areas
-    tiledAttr = DRF_VAL(OS32, _ATTR, _TILED, *pAllocHint->pAttr);
-    if (tiledAttr)
-    {
-        *pAllocHint->pSize = pFbAllocInfo->pitch * pFbAllocInfo->height;
-        if (pFbAllocInfo->size > *pAllocHint->pSize)
-        {
-            pAllocHint->pad += (pFbAllocInfo->size - *pAllocHint->pSize);
-        }
-        else if (pFbAllocInfo->size != *pAllocHint->pSize)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "nvrm: Hint Allocation Size Error %llx %llx\n",
-                      pFbAllocInfo->size, *pAllocHint->pSize);
-            DBG_BREAKPOINT();
-        }
-    }
-    else
-    {
-        *pAllocHint->pSize       = pFbAllocInfo->size;           // returned to caller
-    }
+    *pAllocHint->pSize = pFbAllocInfo->size;           // returned to caller
 
     pAllocHint->alignAdjust = 0;
 
@@ -2984,7 +2969,6 @@ NV_STATUS heapHwAlloc_IMPL
     NV_STATUS               status = NV_OK;
     FB_ALLOC_INFO          *pFbAllocInfo = NULL;
     FB_ALLOC_PAGE_FORMAT   *pFbAllocPageFormat = NULL;
-    NvU32                   tiledAttr;
     NvU64                   pageSize = 0;
     NV_MEMORY_HW_RESOURCES_ALLOCATION_PARAMS *pUserParams = pHwAlloc->pUserParams;
 
@@ -3129,28 +3113,7 @@ NV_STATUS heapHwAlloc_IMPL
     pUserParams->kind = pFbAllocInfo->pageFormat->kind;
     pHwAlloc->hwResId = pFbAllocInfo->hwResId;
 
-    // Special Case for Tiled Allocations
-    // Adjust the size so we don't use the partial tile areas
-    tiledAttr = DRF_VAL(OS32, _ATTR, _TILED, pFbAllocInfo->pageFormat->attr);
-    if (tiledAttr)
-    {
-        pUserParams->size = pFbAllocInfo->pitch * pFbAllocInfo->height;
-        if (pFbAllocInfo->size > pUserParams->size)
-        {
-            pHwAlloc->pad += (NvU64_LO32(pFbAllocInfo->size) - pUserParams->size);
-        }
-        else if (pFbAllocInfo->size != pUserParams->size)
-        {
-            NV_PRINTF(LEVEL_ERROR,
-                      "nvrm: Hint Allocation Size Error %llx %llx\n",
-                      pFbAllocInfo->size, pUserParams->size);
-            DBG_BREAKPOINT();
-        }
-    }
-    else
-    {
-        pUserParams->size       = pFbAllocInfo->size;           // returned to caller
-    }
+    pUserParams->size = pFbAllocInfo->size;           // returned to caller
 
     pHwAlloc->hwResource.attr = pFbAllocInfo->retAttr;
     pHwAlloc->hwResource.attr2 = pFbAllocInfo->retAttr2;
@@ -3204,6 +3167,8 @@ void heapHwFree_IMPL
     pFbAllocInfo->size = pMemory->Length;
     pFbAllocInfo->format = memdescGetPteKind(pMemory->pMemDesc);
     pFbAllocInfo->offset = ~0;
+    pFbAllocInfo->hClient = RES_GET_CLIENT_HANDLE(pMemory);
+    pFbAllocInfo->hDevice = RES_GET_HANDLE(pMemory->pDevice);
 
     //
     // vGPU:
@@ -4107,7 +4072,7 @@ unwind_and_exit:
 
             pCurrBlock = pSavedAllocList->noncontigAllocListNext;
 
-            unwindStatus = _heapBlockFree(pGpu, pHeap, pSavedAllocList);
+            unwindStatus = _heapBlockFree(pGpu, pHeap, hClient, pFbAllocInfo->hDevice, pSavedAllocList);
 
             if (unwindStatus != NV_OK)
             {
@@ -4326,7 +4291,8 @@ heapBlackListPages_IMPL
             // Allocate memory for this page. This is marked as an internal RM
             // allocation and WILL be saved/restored during suspend/resume.
             //
-            status = memdescAlloc(pBlackList->pBlacklistChunks[j].pMemDesc);
+            memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_79, 
+                    pBlackList->pBlacklistChunks[j].pMemDesc);
             if (NV_OK != status)
             {
                 // No use for the memdesc if the page couldn't be allocated

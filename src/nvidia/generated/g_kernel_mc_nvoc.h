@@ -241,4 +241,5 @@ static inline NvBool kmcIsPresent_DISPATCH(POBJGPU pGpu, struct KernelMc *pEngst
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERNEL_MC_NVOC_H_

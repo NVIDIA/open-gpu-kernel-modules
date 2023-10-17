@@ -26,9 +26,6 @@
  * @brief   GSP Client (CPU RM) specific GPU routines reside in this file.
  */
 
-// FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
-
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "ctrl/ctrl2080.h"
@@ -310,8 +307,8 @@ gpuGetLitterValues_FWCLIENT
     const NV2080_CTRL_INTERNAL_STATIC_GR_INFO *pGrInfo;
     NvU32 i;
 
-    NV_ASSERT_OR_RETURN(pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized, 0);
-    pGrInfo = pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo;
+    NV_ASSERT_OR_RETURN(kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->bInitialized, 0);
+    pGrInfo = kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo;
     NV_ASSERT_OR_RETURN(pGrInfo != NULL, 0);
 
     for (i = 0; i < NV_ARRAY_ELEMENTS(pGrInfo->infoList); i++)

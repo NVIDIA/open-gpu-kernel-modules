@@ -288,6 +288,15 @@
 #define IsGH10XorBetter(pGpu)          rmcfg_IsGH10XorBetter(pGpu)
 
 
+// GH20X
+#define IsGH202(pGpu)                  ((0) && (pGpu))
+#define IsGH202orBetter(pGpu)          ((0) && (pGpu))
+
+// Any GH20X chip?
+#define IsGH20X(pGpu)                  (0 && (pGpu))
+#define IsGH20XorBetter(pGpu)          (0 && (pGpu))
+
+
 // T12X
 #define IsT001_FERMI_NOT_EXIST(pGpu)   ((0) && (pGpu))
 #define IsT001_FERMI_NOT_EXISTorBetter(pGpu) ((0) && (pGpu))
@@ -343,11 +352,11 @@
 #define IsT234(pGpu)                   ((0) && (pGpu))
 #define IsT234orBetter(pGpu)           ((0) && (pGpu))
 
-#define IsT003_HOPPER_NOT_EXIST(pGpu)  ((0) && (pGpu))
-#define IsT003_HOPPER_NOT_EXISTorBetter(pGpu) ((0) && (pGpu))
+#define IsT003_ADA_NOT_EXIST(pGpu)     ((0) && (pGpu))
+#define IsT003_ADA_NOT_EXISTorBetter(pGpu) ((0) && (pGpu))
 
-#define IsT004_ADA_NOT_EXIST(pGpu)     ((0) && (pGpu))
-#define IsT004_ADA_NOT_EXISTorBetter(pGpu) ((0) && (pGpu))
+#define IsT004_HOPPER_NOT_EXIST(pGpu)  ((0) && (pGpu))
+#define IsT004_HOPPER_NOT_EXISTorBetter(pGpu) ((0) && (pGpu))
 
 // Any T23XG chip?
 #define IsT23XG(pGpu)                  (0 && (pGpu))
@@ -528,6 +537,11 @@
 #define IsHOPPER_CLASSIC_GPUSorBetter(pGpu) rmcfg_IsHOPPER_CLASSIC_GPUSorBetter(pGpu)
 
 
+// Any TEGRA_DISP chip?
+#define IsTEGRA_DISP(pGpu)             (IsTEGRA_DISP_CLASSIC_GPUS(pGpu) || IsTEGRA_DISP_TEGRA_BIG_GPUS(pGpu) || IsTEGRA_DISP_TEGRA_NVDISP_GPUS(pGpu))
+#define IsTEGRA_DISPorBetter(pGpu)     (IsTEGRA_DISP_CLASSIC_GPUSorBetter(pGpu) || IsTEGRA_DISP_TEGRA_BIG_GPUSorBetter(pGpu) || IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(pGpu))
+
+
 // Any TEGRA_BIG_GPUS chip?
 #define IsTEGRA_BIG_GPUS(pGpu)         (0 && (pGpu))
 #define IsTEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
@@ -588,6 +602,11 @@
 #define IsVOLTA_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
 
 
+// Any TEGRA_DISP_TEGRA_BIG_GPUS chip?
+#define IsTEGRA_DISP_TEGRA_BIG_GPUS(pGpu) (0 && (pGpu))
+#define IsTEGRA_DISP_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
+
+
 // Any TURING_TEGRA_BIG_GPUS chip?
 #define IsTURING_TEGRA_BIG_GPUS(pGpu)  (0 && (pGpu))
 #define IsTURING_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
@@ -613,14 +632,14 @@
 #define IsAMPERE_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
 
 
-// Any HOPPER_TEGRA_BIG_GPUS chip?
-#define IsHOPPER_TEGRA_BIG_GPUS(pGpu)  (0 && (pGpu))
-#define IsHOPPER_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
-
-
 // Any ADA_TEGRA_BIG_GPUS chip?
 #define IsADA_TEGRA_BIG_GPUS(pGpu)     (0 && (pGpu))
 #define IsADA_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
+
+
+// Any HOPPER_TEGRA_BIG_GPUS chip?
+#define IsHOPPER_TEGRA_BIG_GPUS(pGpu)  (0 && (pGpu))
+#define IsHOPPER_TEGRA_BIG_GPUSorBetter(pGpu) (0 && (pGpu))
 
 
 // Any TEGRA_NVDISP_GPUS chip?
@@ -636,6 +655,11 @@
 // Any TEGRA_TEGRA_NVDISP_GPUS chip?
 #define IsTEGRA_TEGRA_NVDISP_GPUS(pGpu) (0 && (pGpu))
 #define IsTEGRA_TEGRA_NVDISP_GPUSorBetter(pGpu) (0 && (pGpu))
+
+
+// Any TEGRA_DISP_TEGRA_NVDISP_GPUS chip?
+#define IsTEGRA_DISP_TEGRA_NVDISP_GPUS(pGpu) (0 && (pGpu))
+#define IsTEGRA_DISP_TEGRA_NVDISP_GPUSorBetter(pGpu) (0 && (pGpu))
 
 
 // Any SIMULATION_GPUS chip?

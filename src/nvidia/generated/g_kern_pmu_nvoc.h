@@ -65,12 +65,12 @@ struct KernelPmu {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct KernelPmu *__nvoc_pbase_KernelPmu;
     NV_STATUS (*__kpmuConstructEngine__)(struct OBJGPU *, struct KernelPmu *, ENGDESCRIPTOR);
+    void (*__kpmuStateDestroy__)(struct OBJGPU *, struct KernelPmu *);
     NV_STATUS (*__kpmuStateInitLocked__)(struct OBJGPU *, struct KernelPmu *);
     NV_STATUS (*__kpmuStateLoad__)(POBJGPU, struct KernelPmu *, NvU32);
     NV_STATUS (*__kpmuStateUnload__)(POBJGPU, struct KernelPmu *, NvU32);
     NV_STATUS (*__kpmuStatePreLoad__)(POBJGPU, struct KernelPmu *, NvU32);
     NV_STATUS (*__kpmuStatePostUnload__)(POBJGPU, struct KernelPmu *, NvU32);
-    void (*__kpmuStateDestroy__)(POBJGPU, struct KernelPmu *);
     NV_STATUS (*__kpmuStatePreUnload__)(POBJGPU, struct KernelPmu *, NvU32);
     NV_STATUS (*__kpmuStateInitUnlocked__)(POBJGPU, struct KernelPmu *);
     void (*__kpmuInitMissing__)(POBJGPU, struct KernelPmu *);
@@ -78,6 +78,7 @@ struct KernelPmu {
     NV_STATUS (*__kpmuStatePreInitUnlocked__)(POBJGPU, struct KernelPmu *);
     NV_STATUS (*__kpmuStatePostLoad__)(POBJGPU, struct KernelPmu *, NvU32);
     NvBool (*__kpmuIsPresent__)(POBJGPU, struct KernelPmu *);
+    MEMORY_DESCRIPTOR *pPmuRsvdMemdesc;
     LIBOS_LOG_DECODE logDecode;
     NvU32 printBufSize;
     NvU8 *pPrintBuf;
@@ -116,12 +117,12 @@ NV_STATUS __nvoc_objCreate_KernelPmu(KernelPmu**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelPmu((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 #define kpmuConstructEngine(pGpu, pKernelPmu, engDesc) kpmuConstructEngine_DISPATCH(pGpu, pKernelPmu, engDesc)
+#define kpmuStateDestroy(pGpu, pKernelPmu) kpmuStateDestroy_DISPATCH(pGpu, pKernelPmu)
 #define kpmuStateInitLocked(pGpu, pKernelPmu) kpmuStateInitLocked_DISPATCH(pGpu, pKernelPmu)
 #define kpmuStateLoad(pGpu, pEngstate, arg0) kpmuStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kpmuStateUnload(pGpu, pEngstate, arg0) kpmuStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kpmuStatePreLoad(pGpu, pEngstate, arg0) kpmuStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kpmuStatePostUnload(pGpu, pEngstate, arg0) kpmuStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
-#define kpmuStateDestroy(pGpu, pEngstate) kpmuStateDestroy_DISPATCH(pGpu, pEngstate)
 #define kpmuStatePreUnload(pGpu, pEngstate, arg0) kpmuStatePreUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kpmuStateInitUnlocked(pGpu, pEngstate) kpmuStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kpmuInitMissing(pGpu, pEngstate) kpmuInitMissing_DISPATCH(pGpu, pEngstate)
@@ -133,6 +134,12 @@ NV_STATUS kpmuConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKerne
 
 static inline NV_STATUS kpmuConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu, ENGDESCRIPTOR engDesc) {
     return pKernelPmu->__kpmuConstructEngine__(pGpu, pKernelPmu, engDesc);
+}
+
+void kpmuStateDestroy_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
+
+static inline void kpmuStateDestroy_DISPATCH(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu) {
+    pKernelPmu->__kpmuStateDestroy__(pGpu, pKernelPmu);
 }
 
 NV_STATUS kpmuStateInitLocked_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
@@ -155,10 +162,6 @@ static inline NV_STATUS kpmuStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelPmu
 
 static inline NV_STATUS kpmuStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg0) {
     return pEngstate->__kpmuStatePostUnload__(pGpu, pEngstate, arg0);
-}
-
-static inline void kpmuStateDestroy_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate) {
-    pEngstate->__kpmuStateDestroy__(pGpu, pEngstate);
 }
 
 static inline NV_STATUS kpmuStatePreUnload_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEngstate, NvU32 arg0) {
@@ -192,6 +195,28 @@ static inline NvBool kpmuIsPresent_DISPATCH(POBJGPU pGpu, struct KernelPmu *pEng
 void kpmuDestruct_IMPL(struct KernelPmu *pKernelPmu);
 
 #define __nvoc_kpmuDestruct(pKernelPmu) kpmuDestruct_IMPL(pKernelPmu)
+NvU32 kpmuReservedMemorySizeGet_IMPL(struct KernelPmu *pKernelPmu);
+
+#ifdef __nvoc_kern_pmu_h_disabled
+static inline NvU32 kpmuReservedMemorySizeGet(struct KernelPmu *pKernelPmu) {
+    NV_ASSERT_FAILED_PRECOMP("KernelPmu was disabled!");
+    return 0;
+}
+#else //__nvoc_kern_pmu_h_disabled
+#define kpmuReservedMemorySizeGet(pKernelPmu) kpmuReservedMemorySizeGet_IMPL(pKernelPmu)
+#endif //__nvoc_kern_pmu_h_disabled
+
+NvU64 kpmuReservedMemoryOffsetGet_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
+
+#ifdef __nvoc_kern_pmu_h_disabled
+static inline NvU64 kpmuReservedMemoryOffsetGet(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu) {
+    NV_ASSERT_FAILED_PRECOMP("KernelPmu was disabled!");
+    return 0;
+}
+#else //__nvoc_kern_pmu_h_disabled
+#define kpmuReservedMemoryOffsetGet(pGpu, pKernelPmu) kpmuReservedMemoryOffsetGet_IMPL(pGpu, pKernelPmu)
+#endif //__nvoc_kern_pmu_h_disabled
+
 NV_STATUS kpmuInitLibosLoggingStructures_IMPL(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu);
 
 #ifdef __nvoc_kern_pmu_h_disabled
@@ -231,4 +256,5 @@ static inline void kpmuLogBuf(struct OBJGPU *pGpu, struct KernelPmu *pKernelPmu,
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERN_PMU_NVOC_H_

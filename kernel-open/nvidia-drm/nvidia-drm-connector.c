@@ -349,10 +349,125 @@ nv_drm_connector_best_encoder(struct drm_connector *connector)
     return NULL;
 }
 
+#if defined(NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG)
+static const NvU32 __nv_drm_connector_supported_colorspaces =
+    BIT(DRM_MODE_COLORIMETRY_BT2020_RGB) |
+    BIT(DRM_MODE_COLORIMETRY_BT2020_YCC);
+#endif
+
+#if defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT)
+static int
+__nv_drm_connector_atomic_check(struct drm_connector *connector,
+                                struct drm_atomic_state *state)
+{
+    struct drm_connector_state *new_connector_state =
+        drm_atomic_get_new_connector_state(state, connector);
+    struct drm_connector_state *old_connector_state =
+        drm_atomic_get_old_connector_state(state, connector);
+    struct nv_drm_device *nv_dev = to_nv_device(connector->dev);
+
+    struct drm_crtc *crtc = new_connector_state->crtc;
+    struct drm_crtc_state *crtc_state;
+    struct nv_drm_crtc_state *nv_crtc_state;
+    struct NvKmsKapiHeadRequestedConfig *req_config;
+
+    if (!crtc) {
+        return 0;
+    }
+
+    crtc_state = drm_atomic_get_new_crtc_state(state, crtc);
+    nv_crtc_state = to_nv_crtc_state(crtc_state);
+    req_config = &nv_crtc_state->req_config;
+
+    /*
+     * Override metadata for the entire head instead of allowing NVKMS to derive
+     * it from the layers' metadata.
+     *
+     * This is the metadata that will sent to the display, and if applicable,
+     * layers will be tone mapped to this metadata rather than that of the
+     * display.
+     */
+    req_config->flags.hdrInfoFrameChanged =
+        !drm_connector_atomic_hdr_metadata_equal(old_connector_state,
+                                                 new_connector_state);
+    if (new_connector_state->hdr_output_metadata &&
+        new_connector_state->hdr_output_metadata->data) {
+
+        /*
+         * Note that HDMI definitions are used here even though we might not
+         * be using HDMI. While that seems odd, it is consistent with
+         * upstream behavior.
+         */
+
+        struct hdr_output_metadata *hdr_metadata =
+            new_connector_state->hdr_output_metadata->data;
+        struct hdr_metadata_infoframe *info_frame =
+            &hdr_metadata->hdmi_metadata_type1;
+        unsigned int i;
+
+        if (hdr_metadata->metadata_type != HDMI_STATIC_METADATA_TYPE1) {
+            return -EINVAL;
+        }
+
+        for (i = 0; i < ARRAY_SIZE(info_frame->display_primaries); i++) {
+            req_config->modeSetConfig.hdrInfoFrame.staticMetadata.displayPrimaries[i].x =
+                info_frame->display_primaries[i].x;
+            req_config->modeSetConfig.hdrInfoFrame.staticMetadata.displayPrimaries[i].y =
+                info_frame->display_primaries[i].y;
+        }
+
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.whitePoint.x =
+            info_frame->white_point.x;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.whitePoint.y =
+            info_frame->white_point.y;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.maxDisplayMasteringLuminance =
+            info_frame->max_display_mastering_luminance;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.minDisplayMasteringLuminance =
+            info_frame->min_display_mastering_luminance;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.maxCLL =
+            info_frame->max_cll;
+        req_config->modeSetConfig.hdrInfoFrame.staticMetadata.maxFALL =
+            info_frame->max_fall;
+
+        req_config->modeSetConfig.hdrInfoFrame.eotf = info_frame->eotf;
+
+        req_config->modeSetConfig.hdrInfoFrame.enabled = NV_TRUE;
+    } else {
+        req_config->modeSetConfig.hdrInfoFrame.enabled = NV_FALSE;
+    }
+
+    req_config->flags.colorimetryChanged =
+        (old_connector_state->colorspace != new_connector_state->colorspace);
+    // When adding a case here, also add to __nv_drm_connector_supported_colorspaces
+    switch (new_connector_state->colorspace) {
+        case DRM_MODE_COLORIMETRY_DEFAULT:
+            req_config->modeSetConfig.colorimetry =
+                NVKMS_OUTPUT_COLORIMETRY_DEFAULT;
+            break;
+        case DRM_MODE_COLORIMETRY_BT2020_RGB:
+        case DRM_MODE_COLORIMETRY_BT2020_YCC:
+            // Ignore RGB/YCC
+            // See https://patchwork.freedesktop.org/patch/525496/?series=111865&rev=4
+            req_config->modeSetConfig.colorimetry =
+                NVKMS_OUTPUT_COLORIMETRY_BT2100;
+            break;
+        default:
+            // XXX HDR TODO: Add support for more color spaces
+            NV_DRM_DEV_LOG_ERR(nv_dev, "Unsupported color space");
+            return -EINVAL;
+    }
+
+    return 0;
+}
+#endif /* defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT) */
+
 static const struct drm_connector_helper_funcs nv_connector_helper_funcs = {
     .get_modes    = nv_drm_connector_get_modes,
     .mode_valid   = nv_drm_connector_mode_valid,
     .best_encoder = nv_drm_connector_best_encoder,
+#if defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT)
+    .atomic_check = __nv_drm_connector_atomic_check,
+#endif
 };
 
 static struct drm_connector*
@@ -404,6 +519,32 @@ nv_drm_connector_new(struct drm_device *dev,
         nv_connector->base.polled =
             DRM_CONNECTOR_POLL_CONNECT | DRM_CONNECTOR_POLL_DISCONNECT;
     }
+
+#if defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT)
+    if (nv_connector->type == NVKMS_CONNECTOR_TYPE_HDMI) {
+#if defined(NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG)
+        if (drm_mode_create_hdmi_colorspace_property(
+                &nv_connector->base,
+                __nv_drm_connector_supported_colorspaces) == 0) {
+#else
+        if (drm_mode_create_hdmi_colorspace_property(&nv_connector->base) == 0) {
+#endif
+            drm_connector_attach_colorspace_property(&nv_connector->base);
+        }
+        drm_connector_attach_hdr_output_metadata_property(&nv_connector->base);
+    } else if (nv_connector->type == NVKMS_CONNECTOR_TYPE_DP) {
+#if defined(NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG)
+        if (drm_mode_create_dp_colorspace_property(
+                &nv_connector->base,
+                __nv_drm_connector_supported_colorspaces) == 0) {
+#else
+        if (drm_mode_create_dp_colorspace_property(&nv_connector->base) == 0) {
+#endif
+            drm_connector_attach_colorspace_property(&nv_connector->base);
+        }
+        drm_connector_attach_hdr_output_metadata_property(&nv_connector->base);
+    }
+#endif /* defined(NV_DRM_CONNECTOR_ATTACH_HDR_OUTPUT_METADATA_PROPERTY_PRESENT) */
 
     /* Register connector with DRM subsystem */
 

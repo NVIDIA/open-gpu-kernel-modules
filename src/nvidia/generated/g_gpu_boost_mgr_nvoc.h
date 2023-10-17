@@ -263,4 +263,5 @@ static inline NvBool gpuboostmgrIsBoostGrpActive(struct OBJGPUBOOSTMGR *pBoostMg
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_GPU_BOOST_MGR_NVOC_H_

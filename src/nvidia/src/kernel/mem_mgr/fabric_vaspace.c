@@ -508,8 +508,7 @@ fabricvaspaceFree_IMPL
     NV_ASSERT(vaspaceFreeV2(pFabricVAS->pGVAS, vAddr, &blockSize) == NV_OK);
 
     kbusFlush_HAL(pGpu, pKernelBus, (BUS_FLUSH_VIDEO_MEMORY |
-                                     BUS_FLUSH_SYSTEM_MEMORY |
-                                     BUS_FLUSH_USE_PCIE_READ));
+                                     BUS_FLUSH_SYSTEM_MEMORY));
 
     fabricvaspaceInvalidateTlb(pFabricVAS, pGpu, PTE_DOWNGRADE);
 
@@ -645,8 +644,7 @@ fabricvaspaceBatchFree_IMPL
     }
 
     kbusFlush_HAL(pGpu, pKernelBus, (BUS_FLUSH_VIDEO_MEMORY |
-                                     BUS_FLUSH_SYSTEM_MEMORY |
-                                     BUS_FLUSH_USE_PCIE_READ));
+                                     BUS_FLUSH_SYSTEM_MEMORY));
 
     fabricvaspaceInvalidateTlb(pFabricVAS, pGpu, PTE_DOWNGRADE);
 
@@ -1061,6 +1059,7 @@ fabricvaspaceMapPhysMemdesc_IMPL
     NvU32 numRegions;
     MEMORY_DESCRIPTOR *pTempMemdesc;
     NvU32 aperture;
+    NvU32 peerNumber = BUS_INVALID_PEER;
 
     NV_ASSERT_OR_RETURN(pFabricMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(pPhysMemDesc != NULL,   NV_ERR_INVALID_ARGUMENT);
@@ -1092,6 +1091,16 @@ fabricvaspaceMapPhysMemdesc_IMPL
     if (memdescGetAddressSpace(pPhysMemDesc) == ADDR_FBMEM)
     {
         aperture = NV_MMU_PTE_APERTURE_VIDEO_MEMORY;
+    }
+    else if (memdescIsEgm(pPhysMemDesc))
+    {
+        aperture = NV_MMU_PTE_APERTURE_PEER_MEMORY;
+        //
+        // Make sure that we receive a mapping request for EGM memory
+        // only if local EGM is enabled.
+        //
+        NV_ASSERT_OR_RETURN(pMemoryManager->bLocalEgmEnabled, NV_ERR_INVALID_STATE);
+        peerNumber = pMemoryManager->localEgmPeerId;
     }
     else if (memdescGetAddressSpace(pPhysMemDesc) == ADDR_SYSMEM)
     {
@@ -1175,7 +1184,7 @@ fabricvaspaceMapPhysMemdesc_IMPL
                                       mapFlags, &pageArray, 0, &comprInfo, 0,
                                       NV_MMU_PTE_VALID_TRUE,
                                       aperture,
-                                      BUS_INVALID_PEER, NVLINK_INVALID_FABRIC_ADDR,
+                                      peerNumber, NVLINK_INVALID_FABRIC_ADDR,
                                       DMA_DEFER_TLB_INVALIDATE, NV_FALSE,
                                       memdescGetPageSize(pTempMemdesc, AT_GPU));
 

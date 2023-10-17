@@ -539,4 +539,5 @@ NV_STATUS rcdbNocatJournalReportTestFill(void);
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_JOURNAL_NVOC_H_

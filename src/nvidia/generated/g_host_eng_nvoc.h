@@ -103,4 +103,5 @@ static inline NV_STATUS hostengHaltAndReset_DISPATCH(struct OBJGPU *pGpu, struct
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_HOST_ENG_NVOC_H_

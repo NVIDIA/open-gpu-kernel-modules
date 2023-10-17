@@ -423,4 +423,5 @@ struct ACCESS_CONTROL
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_RESSERV_NVOC_H_

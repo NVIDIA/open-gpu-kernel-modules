@@ -29,9 +29,6 @@
  *        File contains ctrls related to general GPU
  */
 
-// FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
-
 #include "core/core.h"
 #include "core/locks.h"
 #include "gpu/subdevice/subdevice.h"
@@ -225,8 +222,8 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
 
                 if ((pKernelGraphicsManager == NULL) ||
-                    !pKernelGraphicsManager->legacyKgraphicsStaticInfo.bInitialized ||
-                    (pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo == NULL))
+                    !kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->bInitialized ||
+                    (kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo == NULL))
                 {
                     NV_PRINTF(LEVEL_ERROR, "Unable to retrieve SM version!\n");
                     data = NV2080_CTRL_GR_INFO_SM_VERSION_NONE;
@@ -234,7 +231,7 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
                 }
                 else
                 {
-                    data = pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo->infoList[NV2080_CTRL_GR_INFO_INDEX_SM_VERSION].data;
+                    data = kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo->infoList[NV2080_CTRL_GR_INFO_INDEX_SM_VERSION].data;
                 }
                 break;
             }
@@ -729,11 +726,19 @@ subdeviceCtrlCmdGpuGetEncoderCapacity_IMPL
 )
 {
     NV_STATUS rmStatus = NV_OK;
+    OBJGPU *pGpu    =   GPU_RES_GET_GPU(pSubdevice);
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
-    if ((pEncoderCapacityParams->queryType != NV2080_CTRL_GPU_GET_ENCODER_CAPACITY_H264) &&
-        (pEncoderCapacityParams->queryType != NV2080_CTRL_GPU_GET_ENCODER_CAPACITY_HEVC))
+    if (pEncoderCapacityParams->queryType == NV2080_CTRL_GPU_GET_ENCODER_CAPACITY_AV1)
+    {
+        if (pGpu->bGpuNvEncAv1Supported == NV_FALSE)
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+    else if ((pEncoderCapacityParams->queryType != NV2080_CTRL_GPU_GET_ENCODER_CAPACITY_H264) &&
+             (pEncoderCapacityParams->queryType != NV2080_CTRL_GPU_GET_ENCODER_CAPACITY_HEVC))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -2663,6 +2668,11 @@ _convertGpuFabricProbeInfoCaps
                 fabricCaps |= NV2080_CTRL_GPU_FABRIC_PROBE_CAP_MC_SUPPORTED;
                 break;
             }
+            case NVLINK_INBAND_FM_CAPS_MC_TEAM_SETUP_V2:
+            {
+                fabricCaps |= NV2080_CTRL_GPU_FABRIC_PROBE_CAP_MC_SUPPORTED;
+                break;
+            }
             default:
             {
                 break;
@@ -2725,6 +2735,9 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
 
         NV_ASSERT_OK(gpuFabricProbeGetFabricPartitionId(pGpu->pGpuFabricProbeInfoKernel,
                      &pParams->fabricPartitionId));
+
+        NV_ASSERT_OK(gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
+                     &pParams->fabricCliqueId));
 
         NV_ASSERT_OK(gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps));
 

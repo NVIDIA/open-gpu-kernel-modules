@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2006-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2006-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -266,6 +266,8 @@
  *   NV2080_CTRL_FB_INFO_INDEX_ECC_STATUS_SIZE
  *     Returns the ECC status size (corresponds to subpartitions or channels
  *     depending on architecture/memory type).
+ *   NV2080_CTRL_FB_INFO_INDEX_IS_ZERO_FB
+ *      Returns true if FB is not present on this chip
  */
 typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_FB_INFO;
 
@@ -328,9 +330,10 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_FB_INFO;
 #define NV2080_CTRL_FB_INFO_INDEX_PROTECTED_MEM_SIZE_TOTAL_KB      (0x00000033U)
 #define NV2080_CTRL_FB_INFO_INDEX_PROTECTED_MEM_SIZE_FREE_KB       (0x00000034U)
 #define NV2080_CTRL_FB_INFO_INDEX_ECC_STATUS_SIZE                  (0x00000035U)
-#define NV2080_CTRL_FB_INFO_MAX_LIST_SIZE                          (0x00000036U)
+#define NV2080_CTRL_FB_INFO_INDEX_IS_ZERO_FB                       (0x00000036U)
+#define NV2080_CTRL_FB_INFO_MAX_LIST_SIZE                          (0x00000037U)
 
-#define NV2080_CTRL_FB_INFO_INDEX_MAX                              (0x35U) /* finn: Evaluated from "(NV2080_CTRL_FB_INFO_MAX_LIST_SIZE - 1)" */
+#define NV2080_CTRL_FB_INFO_INDEX_MAX                              (0x36U) /* finn: Evaluated from "(NV2080_CTRL_FB_INFO_MAX_LIST_SIZE - 1)" */
 
 /* valid fb RAM type values */
 #define NV2080_CTRL_FB_INFO_RAM_TYPE_UNKNOWN                       (0x00000000U)
@@ -2328,7 +2331,7 @@ typedef struct NV2080_CTRL_FB_FS_INFO_QUERY {
 } NV2080_CTRL_FB_FS_INFO_QUERY;
 
 // Max number of queries that can be batched in a single call to NV2080_CTRL_CMD_FB_GET_FS_INFO
-#define NV2080_CTRL_FB_FS_INFO_MAX_QUERIES 96U
+#define NV2080_CTRL_FB_FS_INFO_MAX_QUERIES 120U
 
 #define NV2080_CTRL_FB_GET_FS_INFO_PARAMS_MESSAGE_ID (0x46U)
 
@@ -2650,5 +2653,59 @@ typedef struct NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 size, 8);
     NvU32 caps;
 } NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_PARAMS;
+
+typedef struct NV2080_CTRL_CMD_FB_STATS_ENTRY {
+    //! Total physical memory available (accounts row-remapping)
+    NV_DECLARE_ALIGNED(NvU64 totalSize, 8);
+
+    //! Total reserved memory (includes both Region 1 and region 2)
+    NV_DECLARE_ALIGNED(NvU64 rsvdSize, 8);
+
+    //! Total usable memory (Region 0) for OS/KMD
+    NV_DECLARE_ALIGNED(NvU64 osSize, 8);
+
+    //! Region 1 (RM Internal) memory
+    NV_DECLARE_ALIGNED(NvU64 r1Size, 8);
+
+    //! Region 2 (Reserved) memory
+    NV_DECLARE_ALIGNED(NvU64 r2Size, 8);
+
+    //! Free memory (reserved but not allocated)
+    NV_DECLARE_ALIGNED(NvU64 freeSize, 8);
+} NV2080_CTRL_CMD_FB_STATS_ENTRY;
+
+typedef struct NV2080_CTRL_CMD_FB_STATS_OWNER_INFO {
+    //! Total allocated size for this owner
+    NV_DECLARE_ALIGNED(NvU64 allocSize, 8);
+
+    //! Total memory blocks belonging this owner
+    NvU32 numBlocks;
+
+    //! Total reserved size for this owner
+    NV_DECLARE_ALIGNED(NvU64 rsvdSize, 8);
+} NV2080_CTRL_CMD_FB_STATS_OWNER_INFO;
+
+#define NV2080_CTRL_CMD_FB_STATS_MAX_OWNER 200U
+
+/*
+ * NV2080_CTRL_CMD_FB_STATS_GET
+ *
+ * Get the FB allocations info.
+ */
+#define NV2080_CTRL_CMD_FB_STATS_GET       (0x2080132a) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_CMD_FB_STATS_GET_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_FB_STATS_GET_PARAMS_MESSAGE_ID (0x2AU)
+
+typedef struct NV2080_CTRL_CMD_FB_STATS_GET_PARAMS {
+
+    //! Version id for driver and tool matching
+    NV_DECLARE_ALIGNED(NvU64 version, 8);
+
+    //! All sizes info
+    NV_DECLARE_ALIGNED(NV2080_CTRL_CMD_FB_STATS_ENTRY fbSizeInfo, 8);
+
+    //! Level 2 owner info table
+    NV_DECLARE_ALIGNED(NV2080_CTRL_CMD_FB_STATS_OWNER_INFO fbBlockInfo[NV2080_CTRL_CMD_FB_STATS_MAX_OWNER], 8);
+} NV2080_CTRL_CMD_FB_STATS_GET_PARAMS;
 
 /* _ctrl2080fb_h_ */

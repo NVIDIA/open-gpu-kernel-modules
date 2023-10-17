@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -132,6 +132,10 @@ typedef struct THREAD_STATE_DB
      * sequencer id via @ref threadStateInitXYZ().
      */
     NvU32   threadSeqCntr;
+    /*!
+     * Thread state sequencer id counter for only GSP task_interrupt.
+     */
+    NvU32   gspIsrThreadSeqCntr;
     PORT_SPINLOCK *spinlock;
     ThreadStateNodeMap  dbRoot;
     ThreadStateNodeMap  dbRootPreempted;

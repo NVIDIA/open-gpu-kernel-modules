@@ -307,10 +307,10 @@ typedef struct
                                      uvm_migrate_mode_t mode,
                                      uvm_tracker_t *out_tracker);
 
-    // Evicts all va_blocks in the va_space to the CPU. Unlike the
-    // other va_block eviction functions this is based on virtual
-    // address and therefore takes mmap_lock for read.
-    void uvm_hmm_evict_va_blocks(uvm_va_space_t *va_space);
+    // Handle a fault to a device-private page from a process other than the
+    // process which created the va_space that originally allocated the
+    // device-private page.
+    NV_STATUS uvm_hmm_remote_cpu_fault(struct vm_fault *vmf);
 
     // This sets the va_block_context->hmm.src_pfns[] to the ZONE_DEVICE private
     // PFN for the GPU chunk memory.
@@ -342,14 +342,6 @@ typedef struct
                                                     uvm_va_block_context_t *va_block_context,
                                                     const uvm_page_mask_t *pages_to_evict,
                                                     uvm_va_block_region_t region);
-
-    // Migrate a GPU device-private page to system memory. This is
-    // called to remove CPU page table references to device private
-    // struct pages for the given GPU after all other references in
-    // va_blocks have been released and the GPU is in the process of
-    // being removed/torn down. Note that there is no mm, VMA,
-    // va_block or any user channel activity on this GPU.
-    NV_STATUS uvm_hmm_pmm_gpu_evict_pfn(unsigned long pfn);
 
     // This returns what would be the intersection of va_block start/end and
     // VMA start/end-1 for the given 'lookup_address' if
@@ -592,8 +584,10 @@ typedef struct
         return NV_ERR_INVALID_ADDRESS;
     }
 
-    static void uvm_hmm_evict_va_blocks(uvm_va_space_t *va_space)
+    static NV_STATUS uvm_hmm_remote_cpu_fault(struct vm_fault *vmf)
     {
+        UVM_ASSERT(0);
+        return NV_ERR_INVALID_ADDRESS;
     }
 
     static NV_STATUS uvm_hmm_va_block_evict_chunk_prep(uvm_va_block_t *va_block,
@@ -618,11 +612,6 @@ typedef struct
                                                            uvm_va_block_context_t *va_block_context,
                                                            const uvm_page_mask_t *pages_to_evict,
                                                            uvm_va_block_region_t region)
-    {
-        return NV_OK;
-    }
-
-    static NV_STATUS uvm_hmm_pmm_gpu_evict_pfn(unsigned long pfn)
     {
         return NV_OK;
     }

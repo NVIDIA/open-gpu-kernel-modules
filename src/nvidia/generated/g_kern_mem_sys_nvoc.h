@@ -222,6 +222,7 @@ struct KernelMemorySystem {
     void (*__kmemsysNumaRemoveAllMemory__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysSetupAllAtsPeers__)(OBJGPU *, struct KernelMemorySystem *);
     void (*__kmemsysRemoveAllAtsPeers__)(OBJGPU *, struct KernelMemorySystem *);
+    NvBool (*__kmemsysAssertFbAckTimeoutPending__)(OBJGPU *, struct KernelMemorySystem *);
     void (*__kmemsysCheckEccCounts__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysClearEccCounts__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysStateLoad__)(POBJGPU, struct KernelMemorySystem *, NvU32);
@@ -325,6 +326,8 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysSetupAllAtsPeers_HAL(pGpu, pKernelMemorySystem) kmemsysSetupAllAtsPeers_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysRemoveAllAtsPeers(pGpu, pKernelMemorySystem) kmemsysRemoveAllAtsPeers_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysRemoveAllAtsPeers_HAL(pGpu, pKernelMemorySystem) kmemsysRemoveAllAtsPeers_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysAssertFbAckTimeoutPending(pGpu, pKernelMemorySystem) kmemsysAssertFbAckTimeoutPending_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysAssertFbAckTimeoutPending_HAL(pGpu, pKernelMemorySystem) kmemsysAssertFbAckTimeoutPending_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysCheckEccCounts(pGpu, pKernelMemorySystem) kmemsysCheckEccCounts_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysCheckEccCounts_HAL(pGpu, pKernelMemorySystem) kmemsysCheckEccCounts_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysClearEccCounts(pGpu, pKernelMemorySystem) kmemsysClearEccCounts_DISPATCH(pGpu, pKernelMemorySystem)
@@ -739,6 +742,16 @@ static inline void kmemsysRemoveAllAtsPeers_DISPATCH(OBJGPU *pGpu, struct Kernel
     pKernelMemorySystem->__kmemsysRemoveAllAtsPeers__(pGpu, pKernelMemorySystem);
 }
 
+NvBool kmemsysAssertFbAckTimeoutPending_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+static inline NvBool kmemsysAssertFbAckTimeoutPending_491d52(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool kmemsysAssertFbAckTimeoutPending_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return pKernelMemorySystem->__kmemsysAssertFbAckTimeoutPending__(pGpu, pKernelMemorySystem);
+}
+
 void kmemsysCheckEccCounts_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
 
 static inline void kmemsysCheckEccCounts_b3696a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
@@ -930,4 +943,5 @@ static inline NV_STATUS kmemsysInitMIGGPUInstanceMemConfigForSwizzId(OBJGPU *arg
 #ifdef __cplusplus
 } // extern "C"
 #endif
+
 #endif // _G_KERN_MEM_SYS_NVOC_H_
