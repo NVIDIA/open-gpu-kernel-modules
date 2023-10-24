@@ -815,6 +815,7 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x20B6, 0x1492, 0x10de, "NVIDIA PG506-232" },
     { 0x20B7, 0x1532, 0x10de, "NVIDIA A30" },
     { 0x20B7, 0x1804, 0x10de, "NVIDIA A30" },
+    { 0x20B7, 0x1852, 0x10de, "NVIDIA A30" },
     { 0x20BD, 0x17f4, 0x10de, "NVIDIA A800-SXM4-40GB" },
     { 0x20F1, 0x145f, 0x10de, "NVIDIA A100-PCIE-40GB" },
     { 0x20F3, 0x179b, 0x10de, "NVIDIA A800-SXM4-80GB" },
