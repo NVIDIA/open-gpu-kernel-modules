@@ -887,10 +887,6 @@ typedef struct NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_LOCK_WINDOW_PARAMS {
  *   This parameter is set by the client to indicate the 
  *   gpuId of the GPU to which the display to be optimized
  *   is attached.
- * display
- *   This parameter is not used by RM currently.
- *   Clients can ignore this parameter.  Note that this
- *   parameter will be removed in future.
  * output
  *   This parameter is set by the client to indicate the 
  *   output resource type of the display to be optimized.
@@ -1033,6 +1029,12 @@ typedef struct NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_LOCK_WINDOW_PARAMS {
  *   optimal pixel clock to use with the adjusted mode, 
  *   in units of Hz. 
  *
+ *
+ * bOptimized[out]
+ *   This is set to NV_TRUE if the timings were successfully optimized, and
+ *   NV_FALSE otherwise.
+ *
+ *
  * Progressive Raster Structure
  *
  *                 hSyncEnd                            hTotal
@@ -1145,28 +1147,29 @@ typedef struct NV30F1_CTRL_GSYNC_GET_CONTROL_SWAP_LOCK_WINDOW_PARAMS {
 #define NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS_MESSAGE_ID (0x60U)
 
 typedef struct NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS {
-    NvU32 gpuId;
-    NvU32 display;
-    NvU32 output;
-    NvU32 protocol;
-    NvU32 structure;
-    NvU32 adjust;
-    NvU32 hDeltaStep;
-    NvU32 hDeltaMax;
-    NvU32 vDeltaStep;
-    NvU32 vDeltaMax;
-    NvU32 hSyncEnd;
-    NvU32 hBlankEnd;
-    NvU32 hBlankStart;
-    NvU32 hTotal;
-    NvU32 vSyncEnd;
-    NvU32 vBlankEnd;
-    NvU32 vBlankStart;
-    NvU32 vInterlacedBlankEnd;
-    NvU32 vInterlacedBlankStart;
-    NvU32 vTotal;
-    NvU32 refreshX10K;
-    NvU32 pixelClockHz;
+    NvU32  gpuId;
+    NvU32  output;
+    NvU32  protocol;
+    NvU32  structure;
+    NvU32  adjust;
+    NvU32  hDeltaStep;
+    NvU32  hDeltaMax;
+    NvU32  vDeltaStep;
+    NvU32  vDeltaMax;
+    NvU32  hSyncEnd;
+    NvU32  hBlankEnd;
+    NvU32  hBlankStart;
+    NvU32  hTotal;
+    NvU32  vSyncEnd;
+    NvU32  vBlankEnd;
+    NvU32  vBlankStart;
+    NvU32  vInterlacedBlankEnd;
+    NvU32  vInterlacedBlankStart;
+    NvU32  vTotal;
+    NvU32  refreshX10K;
+    NvU32  pixelClockHz;
+
+    NvBool bOptimized;
 } NV30F1_CTRL_GSYNC_GET_OPTIMIZED_TIMING_PARAMS;
 
 /* output values */

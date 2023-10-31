@@ -729,6 +729,7 @@ static int nv_drm_get_dev_info_ioctl(struct drm_device *dev,
 
     params->gpu_id = nv_dev->gpu_info.gpu_id;
     params->primary_index = dev->primary->index;
+    params->supports_alloc = false;
     params->generic_page_kind = 0;
     params->page_kind_generation = 0;
     params->sector_layout = 0;
@@ -736,15 +737,20 @@ static int nv_drm_get_dev_info_ioctl(struct drm_device *dev,
     params->supports_semsurf = false;
 
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
-    params->generic_page_kind = nv_dev->genericPageKind;
-    params->page_kind_generation = nv_dev->pageKindGeneration;
-    params->sector_layout = nv_dev->sectorLayout;
-    /* Semaphore surfaces are only supported if the modeset = 1 parameter is set */
-    if ((nv_dev->pDevice) != NULL && (nv_dev->semsurf_stride != 0)) {
-        params->supports_semsurf = true;
+    /* Memory allocation and semaphore surfaces are only supported
+     * if the modeset = 1 parameter is set */
+    if (nv_dev->pDevice != NULL) {
+        params->supports_alloc = true;
+        params->generic_page_kind = nv_dev->genericPageKind;
+        params->page_kind_generation = nv_dev->pageKindGeneration;
+        params->sector_layout = nv_dev->sectorLayout;
+
+        if (nv_dev->semsurf_stride != 0) {
+            params->supports_semsurf = true;
 #if defined(NV_SYNC_FILE_GET_FENCE_PRESENT)
-        params->supports_sync_fd = true;
+            params->supports_sync_fd = true;
 #endif /* defined(NV_SYNC_FILE_GET_FENCE_PRESENT) */
+        }
     }
 #endif /* defined(NV_DRM_ATOMIC_MODESET_AVAILABLE) */
 

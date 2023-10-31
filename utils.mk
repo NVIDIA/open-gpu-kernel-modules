@@ -575,8 +575,14 @@ LD_TARGET_EMULATION_FLAG_SunOS_x86_64   = elf_x86_64_sol2
 LD_TARGET_EMULATION_FLAG_FreeBSD_x86    = elf_i386_fbsd
 LD_TARGET_EMULATION_FLAG_FreeBSD_x86_64 = elf_x86_64_fbsd
 
+# Different linkers (GNU ld versus ld.lld versus ld.gold) expect different
+# target architecture values for '-m'.  Empirically, only ld.lld appears to
+# actually need it, so only add the option when linking with ld.lld.  Example
+# `ld.lld -v` output: "LLD 15.0.7 (compatible with GNU linkers)".
+LD_IS_LLD := $(if $(filter LLD,$(shell $(LD) -v)),1)
+
 ifdef LD_TARGET_EMULATION_FLAG_$(TARGET_OS)_$(TARGET_ARCH)
-  LD_TARGET_EMULATION_FLAG = -m $(LD_TARGET_EMULATION_FLAG_$(TARGET_OS)_$(TARGET_ARCH))
+  LD_TARGET_EMULATION_FLAG = $(if $(LD_IS_LLD), -m $(LD_TARGET_EMULATION_FLAG_$(TARGET_OS)_$(TARGET_ARCH)))
 endif
 
 define READ_ONLY_OBJECT_FROM_FILE_RULE

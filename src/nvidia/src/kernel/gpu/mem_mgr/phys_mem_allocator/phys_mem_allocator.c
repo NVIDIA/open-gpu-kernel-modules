@@ -97,7 +97,7 @@ _pmaRollback
 
             for (j = 0; j < framesPerPage; j++)
             {
-                pPma->pMapInfo->pmaMapChangeState(pPma->pRegions[regId], (frameNum + j), oldState);
+                pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + j), oldState, STATE_MASK);
             }
         }
     }
@@ -110,7 +110,7 @@ _pmaRollback
         frameNum = PMA_ADDR2FRAME(pPages[failCount], addrBase);
         for(i = 0; i < failFrame; i++)
         {
-            pPma->pMapInfo->pmaMapChangeState(pPma->pRegions[regId], (frameNum + i), oldState);
+            pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + i), oldState, STATE_MASK);
         }
     }
 }
@@ -208,10 +208,9 @@ pmaInitialize(PMA *pPma, NvU32 initFlags)
     //
     pMapInfo->pmaMapInit = pmaRegmapInit;
     pMapInfo->pmaMapDestroy = pmaRegmapDestroy;
-    pMapInfo->pmaMapChangeState = pmaRegmapChangeState;
-    pMapInfo->pmaMapChangeStateAttrib = pmaRegmapChangeStateAttrib;
     pMapInfo->pmaMapChangeStateAttribEx = pmaRegmapChangeStateAttribEx;
-    pMapInfo->pmaMapChangePageStateAttrib = pmaRegmapChangePageStateAttrib;
+    pMapInfo->pmaMapChangePageStateAttribEx = pmaRegmapChangePageStateAttribEx;
+    pMapInfo->pmaMapChangeBlockStateAttrib = pmaRegmapChangeBlockStateAttrib;
     pMapInfo->pmaMapRead = pmaRegmapRead;
     pMapInfo->pmaMapScanContiguous = pmaRegmapScanContiguous;
     pMapInfo->pmaMapScanDiscontiguous = pmaRegmapScanDiscontiguous;
@@ -246,10 +245,9 @@ pmaInitialize(PMA *pPma, NvU32 initFlags)
         {
             pMapInfo->pmaMapInit = pmaAddrtreeInit;
             pMapInfo->pmaMapDestroy = pmaAddrtreeDestroy;
-            pMapInfo->pmaMapChangeState = pmaAddrtreeChangeState;
-            pMapInfo->pmaMapChangeStateAttrib = pmaAddrtreeChangeStateAttrib;
             pMapInfo->pmaMapChangeStateAttribEx = pmaAddrtreeChangeStateAttribEx;
-            pMapInfo->pmaMapChangePageStateAttrib = pmaAddrtreeChangePageStateAttrib;
+            pMapInfo->pmaMapChangePageStateAttribEx = pmaAddrtreeChangePageStateAttribEx;
+            pMapInfo->pmaMapChangeBlockStateAttrib = pmaAddrtreeChangeBlockStateAttrib;
             pMapInfo->pmaMapRead = pmaAddrtreeRead;
             pMapInfo->pmaMapScanContiguous = pmaAddrtreeScanContiguous;
             pMapInfo->pmaMapScanDiscontiguous = pmaAddrtreeScanDiscontiguous;
@@ -1084,11 +1082,8 @@ pmaAllocatePages_retry:
                                   frameBase,
                                   frameBase + numFramesAllocated - 1);
 
-            for (i = 0; i < numPagesAllocatedSoFar; i++)
-            {
-                pPma->pMapInfo->pmaMapChangePageStateAttrib(pMap, frameBase + (i * framesPerPage),
-                                                            pageSize, pinOption, NV_TRUE);
-            }
+            pPma->pMapInfo->pmaMapChangeBlockStateAttrib(pMap, frameBase, numPagesAllocatedSoFar * framesPerPage,
+                                                         pinOption, MAP_MASK);
 
             if (blacklistOffFlag && blacklistOffPerRegion[regId])
             {
@@ -1134,8 +1129,8 @@ pmaAllocatePages_retry:
                 }
                 lastFrameRangeEnd = frameBase + framesPerPage - 1;
 
-                pPma->pMapInfo->pmaMapChangePageStateAttrib(pMap, PMA_ADDR2FRAME(pPages[i], addrBase),
-                                                            pageSize, pinOption, NV_TRUE);
+                pPma->pMapInfo->pmaMapChangePageStateAttribEx(pMap, PMA_ADDR2FRAME(pPages[i], addrBase),
+                                                            pageSize, pinOption, MAP_MASK);
 
             }
             NV_PRINTF(LEVEL_INFO, "0x%llx through 0x%llx \n",
@@ -1267,7 +1262,7 @@ pmaPinPages
             }
             else
             {
-                pPma->pMapInfo->pmaMapChangeState(pPma->pRegions[regId], (frameNum + j), STATE_PIN);
+                pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + j), STATE_PIN, STATE_MASK);
             }
         }
     }
@@ -1320,7 +1315,7 @@ pmaUnpinPages
             }
             else
             {
-                pPma->pMapInfo->pmaMapChangeState(pPma->pRegions[regId], (frameNum + j), STATE_UNPIN);
+                pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + j), STATE_UNPIN, STATE_MASK);
             }
         }
     }
