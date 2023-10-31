@@ -151,11 +151,28 @@ void pmaAddrtreePrintTree(void *pMap, const char* str);
  *
  * @return void
  */
-void pmaAddrtreeChangeState(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState);
-void pmaAddrtreeChangeStateAttrib(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState, NvBool writeAttrib);
-void pmaAddrtreeChangeStateAttribEx(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState,PMA_PAGESTATUS newStateMask);
-void pmaAddrtreeChangePageStateAttrib(void * pMap, NvU64 startFrame, NvU64 pageSize,
-                                      PMA_PAGESTATUS newState, NvBool writeAttrib);
+void pmaAddrtreeChangeStateAttribEx(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
+void pmaAddrtreeChangePageStateAttribEx(void * pMap, NvU64 startFrame, NvU64 pageSize,
+                                        PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
+
+/*!
+ * @brief Changes the state & attrib bits specified by mask
+ *
+ * Changes the state of the bits given the physical frame number
+ * and the number of frames to change
+ *
+ * @param[in]   pMap         The addrtree to change
+ * @param[in]   frameNum     The frame number to change
+ * @param[in]   numFrames    The number of frames to change
+ * @param[in]   newState     The new state to change to
+ * @param[in]   newStateMask Specific bits to write
+ *
+ * @return void
+ */
+void pmaAddrtreeChangeBlockStateAttrib(void *pMap, NvU64 frameNum,
+                                     NvU64 numFrames,
+                                     PMA_PAGESTATUS newState,
+                                     PMA_PAGESTATUS newStateMask);
 
 /*!
  * @brief Read the page state & attrib bits

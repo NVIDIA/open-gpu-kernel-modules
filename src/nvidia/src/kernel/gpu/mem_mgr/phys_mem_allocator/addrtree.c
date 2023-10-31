@@ -1890,8 +1890,8 @@ __pmaAddrtreeChangePageStateAttribEx
 // This function wraps the real __pmaAddrtreeChangePageStateAttribEx
 // to allow addrtree to set 128KB page size
 //
-static void
-_pmaAddrtreeChangePageStateAttribEx
+void
+pmaAddrtreeChangePageStateAttribEx
 (
     void           *pMap,
     NvU64           frameNumStart,
@@ -1939,35 +1939,24 @@ pmaAddrtreeChangeStateAttribEx
     PMA_PAGESTATUS  newStateMask
 )
 {
-    _pmaAddrtreeChangePageStateAttribEx(pMap, frameNum, _PMA_64KB, newState, newStateMask);
+    pmaAddrtreeChangePageStateAttribEx(pMap, frameNum, _PMA_64KB, newState, newStateMask);
 }
 
-// TODO: merge this on PMA level
-void pmaAddrtreeChangeState(void *pTree, NvU64 frameNum, PMA_PAGESTATUS newState)
-{
-    pmaAddrtreeChangeStateAttribEx(pTree, frameNum, newState, STATE_MASK);
-}
-
-// TODO: merge this on PMA level
-void pmaAddrtreeChangeStateAttrib(void *pTree, NvU64 frameNum, PMA_PAGESTATUS newState, NvBool writeAttrib)
-{
-    PMA_PAGESTATUS mask = writeAttrib ? MAP_MASK : STATE_MASK;
-    pmaAddrtreeChangeStateAttribEx(pTree, frameNum, newState, mask);
-}
-
-// TODO: merge this on PMA level
 void
-pmaAddrtreeChangePageStateAttrib
+pmaAddrtreeChangeBlockStateAttrib
 (
-    void * pTree,
-    NvU64 frameNumStart,
-    NvU64 pageSize,
+    void *pMap,
+    NvU64 frame,
+    NvU64 len,
     PMA_PAGESTATUS newState,
-    NvBool writeAttrib
+    PMA_PAGESTATUS writeMask
 )
 {
-    PMA_PAGESTATUS mask = writeAttrib ? MAP_MASK : STATE_MASK;
-    _pmaAddrtreeChangePageStateAttribEx(pTree, frameNumStart, pageSize, newState, mask);
+    while (len != 0)
+    {
+        len--;
+        pmaAddrtreeChangeStateAttribEx(pMap, frame + len, newState, writeMask);
+    }
 }
 
 PMA_PAGESTATUS pmaAddrtreeRead

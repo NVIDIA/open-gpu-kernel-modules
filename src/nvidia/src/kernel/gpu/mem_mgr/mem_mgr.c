@@ -390,8 +390,8 @@ memmgrInitInternalChannels_IMPL
         IS_MIG_ENABLED(pGpu) ||
         gpuIsCCorApmFeatureEnabled(pGpu) ||
         IsSLIEnabled(pGpu) ||
-        RMCFG_FEATURE_ARCH_PPC64LE ||
-        RMCFG_FEATURE_ARCH_AARCH64)
+        NVCPU_IS_PPC64LE ||
+        NVCPU_IS_AARCH64)
     {
         // BUG 4167899: Temporarily skip CeUtils creation on platforms where it fails
         NV_PRINTF(LEVEL_INFO, "Skipping global CeUtils creation\n");

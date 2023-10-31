@@ -178,10 +178,9 @@ typedef NV_STATUS (*pmaEvictRangeCb_t)(void *ctxPtr, NvU64 physBegin, NvU64 phys
  */
 typedef void *(*pmaMapInit_t)(NvU64 numFrames, NvU64 addrBase, PMA_STATS *pPmaStats, NvBool bProtected);
 typedef void  (*pmaMapDestroy_t)(void *pMap);
-typedef void  (*pmaMapChangeState_t)(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState);
-typedef void  (*pmaMapChangeStateAttrib_t)(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState, NvBool writeAttrib);
 typedef void  (*pmaMapChangeStateAttribEx_t)(void *pMap, NvU64 frameNum, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
-typedef void  (*pmaMapChangePageStateAttrib_t)(void *pMap, NvU64 startFrame, NvU64 pageSize, PMA_PAGESTATUS newState, NvBool writeAttrib);
+typedef void  (*pmaMapChangePageStateAttribEx_t)(void *pMap, NvU64 startFrame, NvU64 pageSize, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
+typedef void  (*pmaMapChangeBlockStateAttrib_t)(void *pMap, NvU64 frameNum, NvU64 numFrames, PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
 typedef PMA_PAGESTATUS (*pmaMapRead_t)(void *pMap, NvU64 frameNum, NvBool readAttrib);
 typedef NV_STATUS (*pmaMapScanContiguous_t)(void *pMap, NvU64 addrBase, NvU64 rangeStart, NvU64 rangeEnd,
                                             NvU64 numPages, NvU64 *freelist, NvU64 pageSize, NvU64 alignment,
@@ -201,10 +200,9 @@ struct _PMA_MAP_INFO
     NvU32                       mode;
     pmaMapInit_t                pmaMapInit;
     pmaMapDestroy_t             pmaMapDestroy;
-    pmaMapChangeState_t         pmaMapChangeState;
-    pmaMapChangeStateAttrib_t   pmaMapChangeStateAttrib;
     pmaMapChangeStateAttribEx_t pmaMapChangeStateAttribEx;
-    pmaMapChangePageStateAttrib_t pmaMapChangePageStateAttrib;
+    pmaMapChangePageStateAttribEx_t pmaMapChangePageStateAttribEx;
+    pmaMapChangeBlockStateAttrib_t pmaMapChangeBlockStateAttrib;
     pmaMapRead_t                pmaMapRead;
     pmaMapScanContiguous_t      pmaMapScanContiguous;
     pmaMapScanDiscontiguous_t   pmaMapScanDiscontiguous;
