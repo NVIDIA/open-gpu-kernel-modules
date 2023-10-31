@@ -2404,8 +2404,6 @@ kbusUpdateRmAperture_GM107
     {
         pFmt = pKernelBus->bar2[gfid].pFmt;
 
-        NV_CHECK_OR_RETURN(LEVEL_ERROR, pFmt != NULL, NV_ERR_INVALID_ARGUMENT);
-
         // MMU_MAP_CTX
         mapTarget.pLevelFmt      = mmuFmtFindLevelWithPageShift(pFmt->pRoot,
                                                                 BIT_IDX_64(pageSize));

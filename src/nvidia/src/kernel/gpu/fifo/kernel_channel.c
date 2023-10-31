@@ -2776,10 +2776,6 @@ kchannelCtrlCmdGetClassEngineid_IMPL
         return NV_ERR_OBJECT_NOT_FOUND;
     }
 
-    NV_CHECK_OR_RETURN(LEVEL_ERROR,
-                       pParams->hObject != RES_GET_CLIENT_HANDLE(pKernelChannel),
-                       NV_ERR_INVALID_ARGUMENT);
-
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
         (IS_VIRTUAL_WITH_SRIOV(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu)))
     {

@@ -1738,9 +1738,8 @@ kgraphicsCreateGoldenImageChannel_IMPL
     NvU32                                  classNum;
     MIG_INSTANCE_REF                       ref;
     NvU32                                  objectType;
-    NvU32                                  primarySliSubDeviceInstance;
 
-    // XXX This should be removed when broadcast SLI support is deprecated
+    // XXX This should be removed when braodcast SLI support is deprecated
     if (!gpumgrIsParentGPU(pGpu))
     {
         return NV_OK;
@@ -1751,8 +1750,6 @@ kgraphicsCreateGoldenImageChannel_IMPL
     // FIXME these allocations corrupt BC state
     NV_ASSERT_OK_OR_RETURN(
         rmapiutilAllocClientAndDeviceHandles(pRmApi, pGpu, &hClientId, &hDeviceId, &hSubdeviceId));
-    // rmapiutilAllocClientAndDeviceHandles allocates a subdevice object for this subDeviceInstance
-    primarySliSubDeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
     NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClientId, &pClientId));
 
@@ -1768,11 +1765,6 @@ kgraphicsCreateGoldenImageChannel_IMPL
     {
         NvHandle hSecondary;
         NV2080_ALLOC_PARAMETERS nv2080AllocParams;
-        NvU32 thisSubDeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
-
-        // Skip if already allocated by rmapiutilAllocClientAndDeviceHandles()
-        if (thisSubDeviceInstance == primarySliSubDeviceInstance)
-            SLI_LOOP_CONTINUE;
 
         // Allocate a subDevice
         NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
@@ -1780,7 +1772,7 @@ kgraphicsCreateGoldenImageChannel_IMPL
             cleanup);
 
         portMemSet(&nv2080AllocParams, 0, sizeof(nv2080AllocParams));
-        nv2080AllocParams.subDeviceId = thisSubDeviceInstance;
+        nv2080AllocParams.subDeviceId = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
         NV_CHECK_OK(status, LEVEL_SILENT,
             pRmApi->AllocWithHandle(pRmApi,

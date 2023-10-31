@@ -651,7 +651,7 @@ NV_STATUS pmaNumaAllocate
                     status = NV_ERR_NO_MEMORY;
                     break;
                 }
-                pPma->pMapInfo->pmaMapChangeStateAttribEx(pMap, frameOffset, allocOption, MAP_MASK);
+                pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, frameOffset, allocOption, NV_TRUE);
             }
             if (status != NV_OK)
                 break;

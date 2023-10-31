@@ -2068,13 +2068,11 @@ void DeviceImpl::setDscDecompressionDevice(bool bDscCapBasedOnParent)
                     }
                 }
             }
-            else if (this->parent && this->parent->isDSCDecompressionSupported() &&
-                     !(this->isLogical()))
+            else if (this->parent && this->parent->isDSCDecompressionSupported())
             {
                 //
                 // This condition takes care of sink devices not capable of DSC
-                // but parent is capable of DSC decompression. We need to skip this
-                // if sink is at logical port.
+                // but parent is capable of DSC decompression.
                 //
                 this->bDSCPossible = true;
                 this->devDoingDscDecompression = this->parent;

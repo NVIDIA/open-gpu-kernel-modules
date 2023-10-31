@@ -156,7 +156,7 @@ NvS32 NV_API_CALL nv_request_msix_irq(nv_linux_state_t *nvl)
         {
             for( j = 0; j < i; j++)
             {
-                free_irq(nvl->msix_entries[j].vector, (void *)nvl);
+                free_irq(nvl->msix_entries[i].vector, (void *)nvl);
             }
             break;
         }

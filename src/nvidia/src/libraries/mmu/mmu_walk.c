@@ -177,7 +177,6 @@ mmuWalkSetUserCtx
     MMU_WALK_USER_CTX *pUserCtx
 )
 {
-    NV_ASSERT_OR_RETURN(NULL != pWalk, NV_ERR_INVALID_STATE);
 
     pWalk->pUserCtx = pUserCtx;
     return NV_OK;
@@ -224,12 +223,9 @@ mmuWalkFindLevel
 )
 {
     const MMU_WALK_LEVEL *pLevel = &pWalk->root;
-    while (pLevel != NULL && pLevel->pFmt != pLevelFmt)
+    while (pLevel->pFmt != pLevelFmt)
     {
         NvU32 subLevel;
-
-        NV_ASSERT_OR_RETURN(pLevel->pFmt != NULL, NULL);
-
         // Single sub-level always continues.
         if (1 == pLevel->pFmt->numSubLevels)
         {

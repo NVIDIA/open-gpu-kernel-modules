@@ -506,13 +506,8 @@ static int nv_p2p_get_pages(
     (*page_table)->page_size = page_size_index;
 
     os_free_mem(physical_addresses);
-    physical_addresses = NULL;
-
     os_free_mem(wreqmb_h);
-    wreqmb_h = NULL;
-
     os_free_mem(rreqmb_h);
-    rreqmb_h = NULL;
 
     if (free_callback != NULL)
     {
