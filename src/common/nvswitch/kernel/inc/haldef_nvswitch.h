@@ -52,6 +52,7 @@
     _op(void,      nvswitch_destroy_device_state,    (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_determine_platform,      (nvswitch_device *device), _arch)  \
     _op(NvU32,     nvswitch_get_num_links,           (nvswitch_device *device), _arch)  \
+    _op(NvU8,      nvswitch_get_num_links_per_nvlipt,(nvswitch_device *device), _arch)  \
     _op(NvBool,    nvswitch_is_link_valid,           (nvswitch_device *device, NvU32 link_id), _arch)  \
     _op(void,      nvswitch_set_fatal_error,         (nvswitch_device *device, NvBool device_fatal, NvU32 link_id), _arch)  \
     _op(NvU32,     nvswitch_get_swap_clk_default,    (nvswitch_device *device), _arch)  \
@@ -138,6 +139,9 @@
     _op(NvlStatus, nvswitch_inforom_nvl_update_link_correctable_error_info, (nvswitch_device *device, void *pNvlGeneric, void *pData, NvU8 linkId, NvU8 nvliptInstance, NvU8 localLinkIdx, void *pErrorCounts, NvBool *bDirty), _arch)  \
     _op(NvlStatus, nvswitch_inforom_nvl_get_max_correctable_error_rate,  (nvswitch_device *device, NVSWITCH_GET_NVLINK_MAX_CORRECTABLE_ERROR_RATES_PARAMS *p), _arch)  \
     _op(NvlStatus, nvswitch_inforom_nvl_get_errors,  (nvswitch_device *device, NVSWITCH_GET_NVLINK_ERROR_COUNTS_PARAMS *p), _arch)  \
+    _op(NvlStatus, nvswitch_inforom_nvl_setL1Threshold, (nvswitch_device *device, void *pNvlGeneric, NvU32 word1, NvU32 word2), _arch)  \
+    _op(NvlStatus, nvswitch_inforom_nvl_getL1Threshold, (nvswitch_device *device, void *pNvlGeneric, NvU32 *word1, NvU32 *word2), _arch)  \
+    _op(NvlStatus, nvswitch_inforom_nvl_setup_nvlink_state, (nvswitch_device *device, INFOROM_NVLINK_STATE *pNvlinkState, NvU8 version), _arch)  \
     _op(NvlStatus, nvswitch_inforom_ecc_get_errors,  (nvswitch_device *device, NVSWITCH_GET_ECC_ERROR_COUNTS_PARAMS *p), _arch)  \
     _op(void,      nvswitch_load_uuid,              (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_i2c_set_hw_speed_mode,  (nvswitch_device *device, NvU32 port, NvU32 speedMode), _arch)  \
@@ -153,6 +157,7 @@
     _op(NvlStatus, nvswitch_bbx_unload, (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_bbx_load, (nvswitch_device *device, NvU64 time_ns, NvU8 osType, NvU32 osVersion), _arch)  \
     _op(NvlStatus, nvswitch_bbx_get_sxid, (nvswitch_device *device, NVSWITCH_GET_SXIDS_PARAMS * params), _arch)  \
+    _op(NvlStatus, nvswitch_bbx_get_data, (nvswitch_device *device, NvU8 dataType, void * params), _arch)  \
     _op(NvlStatus, nvswitch_smbpbi_alloc,           (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_smbpbi_post_init_hal,   (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_smbpbi_destroy_hal,     (nvswitch_device *device), _arch)  \
@@ -208,6 +213,7 @@
     _op(void,      nvswitch_reset_persistent_link_hw_state, (nvswitch_device *device, NvU32 linkNumber), _arch)\
     _op(void,      nvswitch_store_topology_information, (nvswitch_device *device, nvlink_link *link), _arch) \
     _op(void,      nvswitch_init_lpwr_regs, (nvlink_link *link), _arch) \
+    _op(void,      nvswitch_program_l1_scratch_reg, (nvswitch_device *device, NvU32 linkNumber), _arch) \
     _op(NvlStatus, nvswitch_set_training_mode, (nvswitch_device *device), _arch) \
     _op(NvU32,     nvswitch_get_sublink_width, (nvswitch_device *device, NvU32 linkNumber), _arch) \
     _op(NvBool,    nvswitch_i2c_is_device_access_allowed, (nvswitch_device *device, NvU32 port, NvU8 addr, NvBool bIsRead), _arch) \
@@ -228,6 +234,7 @@
     _op(NvlStatus, nvswitch_ctrl_get_board_part_number, (nvswitch_device *device, NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p), _arch) \
     _op(NvBool,    nvswitch_does_link_need_termination_enabled, (nvswitch_device *device, nvlink_link *link), _arch) \
     _op(NvlStatus, nvswitch_link_termination_setup, (nvswitch_device *device, nvlink_link *link), _arch) \
+    _op(NvlStatus, nvswitch_check_io_sanity, (nvswitch_device *device), _arch) \
 
 #define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \
     _op(NvlStatus, nvswitch_launch_ALI, (nvswitch_device *device), _arch) \

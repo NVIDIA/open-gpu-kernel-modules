@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -262,6 +262,7 @@ typedef NvU8 FLCN_STATUS;
 // Warnings.
 #define FLCN_WARN_NOTHING_TO_DO                                            (0xD0U)
 #define FLCN_WARN_NOT_QUERIED                                              (0xD1U)
+#define FLCN_WARN_DATA_NOT_AVAILABLE                                       (0xD2U)
 
 // Queue handling Errors
 #define FLCN_ERR_QUEUE_MGMT_INVALID_UNIT_ID                                (0xE0U)

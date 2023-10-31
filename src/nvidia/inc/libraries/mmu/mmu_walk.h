@@ -834,7 +834,7 @@ mmuWalkGetUserCtx
 /*!
  * Set the user context of a walker state.
  */
-void
+NV_STATUS
 mmuWalkSetUserCtx
 (
     MMU_WALK          *pWalk,

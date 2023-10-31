@@ -92,6 +92,7 @@ _memoryfabricValidatePhysMem
     MEMORY_DESCRIPTOR *pPhysMemDesc;
     NvU32 physPageSize;
     NV_STATUS status;
+    Memory *pMemory;
 
     if (hPhysMem == 0)
     {
@@ -109,7 +110,19 @@ _memoryfabricValidatePhysMem
         return status;
     }
 
-    pPhysMemDesc = (dynamicCast(pPhysmemRef->pResource, Memory))->pMemDesc;
+    pMemory = dynamicCast(pPhysmemRef->pResource, Memory);
+    if (pMemory == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid memory handle\n");
+        return NV_ERR_INVALID_OBJECT_HANDLE;
+    }
+
+    pPhysMemDesc = pMemory->pMemDesc;
+    if (pPhysMemDesc == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid memory handle\n");
+        return NV_ERR_INVALID_OBJECT_HANDLE;
+    }
 
     if ((memdescGetAddressSpace(pPhysMemDesc) != ADDR_FBMEM) ||
         (pOwnerGpu != pPhysMemDesc->pGpu))

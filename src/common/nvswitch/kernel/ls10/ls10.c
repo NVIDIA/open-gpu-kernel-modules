@@ -41,6 +41,7 @@
 #include "ls10/gfw_ls10.h"
 
 #include "nvswitch/ls10/dev_nvs_top.h"
+#include "nvswitch/ls10/ptop_discovery_ip.h"
 #include "nvswitch/ls10/dev_pri_masterstation_ip.h"
 #include "nvswitch/ls10/dev_pri_hub_sys_ip.h"
 #include "nvswitch/ls10/dev_nvlw_ip.h"
@@ -914,7 +915,7 @@ nvswitch_ctrl_get_sw_info_ls10
         switch (p->index[i])
         {
             case NVSWITCH_GET_SW_INFO_INDEX_INFOROM_NVL_SUPPORTED:
-                p->info[i] = NV_FALSE; //TODO: Enable once NVL support is present (CTK-4163)
+                p->info[i] = NV_TRUE;
                 break;
             case NVSWITCH_GET_SW_INFO_INDEX_INFOROM_BBX_SUPPORTED:
                 p->info[i] = NV_TRUE;
@@ -1350,7 +1351,53 @@ nvswitch_init_warm_reset_ls10
 )
 {
     NVSWITCH_PRINT(device, WARN, "%s: Function not implemented\n", __FUNCTION__);
- }
+}
+
+//
+// Helper funcction to query MINION to see if DL clocks are on
+// return NV_TRUE if the clocks are on
+//        NV_FALSE if the clocks are off
+static
+NvBool
+_nvswitch_are_dl_clocks_on
+(
+    nvswitch_device *device,
+    NvU32            linkNumber
+)
+{
+    NvU32 link_state;
+    NvU32 stat_data;
+    NvlStatus status = NVL_SUCCESS;
+    nvlink_link * link= nvswitch_get_link(device, linkNumber);
+
+    if (link == NULL)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: invalid link %d\n",
+                       __FUNCTION__, linkNumber);
+        return NV_FALSE;
+    }
+
+    status = nvswitch_minion_get_dl_status(device, linkNumber,
+                NV_NVLSTAT_UC01, 0, &stat_data);
+    if (status != NVL_SUCCESS)
+    {
+        return NV_FALSE;
+    }
+
+    link_state = DRF_VAL(_NVLSTAT, _UC01, _LINK_STATE, stat_data);
+    switch(link_state)
+    {
+        case LINKSTATUS_RESET:
+        case LINKSTATUS_UNINIT:
+            return NV_FALSE;
+        case LINKSTATUS_LANESHUTDOWN:
+        case LINKSTATUS_ACTIVE_PENDING:
+            return nvswitch_are_link_clocks_on_ls10(device, link,
+                    NVSWITCH_PER_LINK_CLOCK_SET(RXCLK) | NVSWITCH_PER_LINK_CLOCK_SET(TXCLK));
+    }
+
+    return NV_TRUE;
+}
 
 //
 // Implement reset and drain sequence for ls10
@@ -1582,10 +1629,10 @@ nvswitch_reset_and_drain_links_ls10
         nvswitch_soe_restore_nport_state_ls10(device, link);
 
         // Step 7.0 : Re-program the routing table for DBEs
-  
+
         // Step 8.0 : Reset NVLW and NPORT interrupt state
         _nvswitch_link_reset_interrupts_ls10(device, link);
-  
+
         // Re-register links.
         status = nvlink_lib_register_link(device->nvlink_device, link_info);
         if (status != NVL_SUCCESS)
@@ -1621,21 +1668,9 @@ nvswitch_reset_and_drain_links_ls10
         do
         {
             bKeepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
+            bAreDlClocksOn = _nvswitch_are_dl_clocks_on(device, link);
 
-            status = nvswitch_minion_get_dl_status(device, link_info->linkNumber,
-                        NV_NVLSTAT_UC01, 0, &stat_data);
-
-            if (status != NVL_SUCCESS)
-            {
-                continue;
-            }
-
-            link_state = DRF_VAL(_NVLSTAT, _UC01, _LINK_STATE, stat_data);
-
-            bAreDlClocksOn = (link_state != LINKSTATUS_INITPHASE1) ?
-                                            NV_TRUE:NV_FALSE;
-
-            if (bAreDlClocksOn == NV_TRUE)
+            if (bAreDlClocksOn)
             {
                 break;
             }
@@ -2740,6 +2775,15 @@ nvswitch_get_num_links_ls10
     return NVSWITCH_NUM_LINKS_LS10;
 }
 
+static NvU8
+nvswitch_get_num_links_per_nvlipt_ls10
+(
+    nvswitch_device *device
+)
+{
+    return NVSWITCH_LINKS_PER_NVLIPT_LS10;
+}
+
 NvlStatus
 nvswitch_ctrl_get_fom_values_ls10
 (
@@ -3039,8 +3083,17 @@ NvlStatus nvswitch_get_link_public_id_ls10
     NvU32 *publicId
 )
 {
-    NVSWITCH_PRINT(device, WARN, "%s: Function not implemented\n", __FUNCTION__);
-    return -NVL_ERR_NOT_IMPLEMENTED;
+    if (!device->hal.nvswitch_is_link_valid(device, linkId) ||
+        (publicId == NULL))
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    *publicId = NVSWITCH_NVLIPT_GET_PUBLIC_ID_LS10(linkId);
+
+
+    return (NVSWITCH_ENG_VALID_LS10(device, NVLIPT, *publicId)) ?
+                NVL_SUCCESS : -NVL_BAD_ARGS;
 }
 
 /*
@@ -5740,6 +5793,104 @@ nvswitch_ctrl_get_nvlink_error_threshold_ls10
             link->errorThreshold.bInterruptTrigerred;
     }
     FOR_EACH_INDEX_IN_MASK_END;
+
+    return NVL_SUCCESS;
+}
+
+NvlStatus
+nvswitch_check_io_sanity_ls10
+(
+    nvswitch_device *device
+)
+{
+    NvBool keepPolling;
+    NVSWITCH_TIMEOUT timeout;
+    NvU32   val;
+    NvBool error = NV_FALSE;
+    NvU32 sxid;
+    const char *sxid_desc = NULL;
+
+    //
+    // NOTE: MMIO discovery has not been performed so only constant BAR0 offset
+    // addressing can be performed.
+    //
+
+    // BAR0 offset 0 should always contain valid data -- unless it doesn't
+    val = NVSWITCH_OFF_RD32(device, 0);
+    if (val == 0)
+    {
+        error = NV_TRUE;
+        sxid = NVSWITCH_ERR_HW_HOST_FIRMWARE_RECOVERY_MODE;
+        sxid_desc = "Firmware recovery mode";
+    }
+    else if ((val == 0xFFFFFFFF) || ((val & 0xFFFF0000) == 0xBADF0000))
+    {
+        error = NV_TRUE;
+        sxid = NVSWITCH_ERR_HW_HOST_IO_FAILURE;
+        sxid_desc = "IO failure";
+    }
+    else if (!IS_FMODEL(device))
+    {
+        // check if FSP successfully started
+        nvswitch_timeout_create(10 * NVSWITCH_INTERVAL_1SEC_IN_NS, &timeout);
+        do
+        {
+            keepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
+
+            val = NVSWITCH_REG_RD32(device, _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS);
+            if (FLD_TEST_DRF(_GFW_GLOBAL, _BOOT_PARTITION_PROGRESS, _VALUE, _SUCCESS, val))
+            {
+                break;
+            }
+
+            nvswitch_os_sleep(1);
+        }
+        while (keepPolling);
+        if (!FLD_TEST_DRF(_GFW_GLOBAL, _BOOT_PARTITION_PROGRESS, _VALUE, _SUCCESS, val))
+        {
+            error = NV_TRUE;
+            sxid = NVSWITCH_ERR_HW_HOST_FIRMWARE_INITIALIZATION_FAILURE;
+            sxid_desc = "Firmware initialization failure";
+        }
+    }
+
+    if (error)
+    {
+        NVSWITCH_RAW_ERROR_LOG_TYPE report = { 0, { 0 } };
+        NVSWITCH_RAW_ERROR_LOG_TYPE report_saw = {0, { 0 }};
+        NvU32 report_idx = 0;
+        NvU32 i;
+
+        val = NVSWITCH_REG_RD32(device, _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS);
+        report.data[report_idx++] = val;
+        NVSWITCH_PRINT(device, ERROR, "%s: -- _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS (0x%x) != _SUCCESS --\n",
+            __FUNCTION__, val);
+
+        for (i = 0; i <= 15; i++)
+        {
+            val = NVSWITCH_OFF_RD32(device,
+                NV_PTOP_UNICAST_SW_DEVICE_BASE_SAW_0 + NV_NVLSAW_SW_SCRATCH(i));
+            report_saw.data[i] = val;
+            NVSWITCH_PRINT(device, ERROR, "%s: -- NV_NVLSAW_SW_SCRATCH(%d) = 0x%08x\n",
+                __FUNCTION__, i, val);
+        }
+
+        for (i = 0; i < NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2__SIZE_1; i++)
+        {
+            val = NVSWITCH_REG_RD32(device, _PFSP, _FALCON_COMMON_SCRATCH_GROUP_2(i));
+            report.data[report_idx++] = val;
+                NVSWITCH_PRINT(device, ERROR, "%s: -- NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(%d) = 0x%08x\n",
+                __FUNCTION__, i, val);
+        }
+
+        // Include useful scratch information for triage
+        NVSWITCH_PRINT_SXID_NO_BBX(device, sxid,
+            "Fatal, %s (0x%x/0x%x, 0x%x, 0x%x, 0x%x/0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", sxid_desc,
+            report.data[0], report.data[1], report.data[2], report.data[3], report.data[4],
+            report_saw.data[0], report_saw.data[1], report_saw.data[12], report_saw.data[14], report_saw.data[15]);
+
+        return -NVL_INITIALIZATION_TOTAL_FAILURE;
+    }
 
     return NVL_SUCCESS;
 }

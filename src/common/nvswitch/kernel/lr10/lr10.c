@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -3655,6 +3655,15 @@ nvswitch_initialize_device_state_lr10
         goto nvswitch_initialize_device_state_exit;
     }
 
+    retval = nvswitch_check_io_sanity(device);
+    if (NVL_SUCCESS != retval)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: IO sanity test failed\n",
+            __FUNCTION__);
+        goto nvswitch_initialize_device_state_exit;
+    }
+
     NVSWITCH_PRINT(device, SETUP,
         "%s: MMIO discovery\n",
         __FUNCTION__);
@@ -4577,15 +4586,6 @@ _nvswitch_get_info_revision_minor_ext
     NvU32 val = NVSWITCH_REG_RD32(device, _PSMC, _BOOT_42);
 
     return (DRF_VAL(_PSMC, _BOOT_42, _MINOR_EXTENDED_REVISION, val));
-}
-
-static NvBool
-_nvswitch_inforom_nvl_supported
-(
-    nvswitch_device *device
-)
-{
-    return NV_FALSE;
 }
 
 static NvBool
@@ -6370,6 +6370,15 @@ nvswitch_get_num_links_lr10
     return num_links;
 }
 
+static NvU8
+nvswitch_get_num_links_per_nvlipt_lr10
+(
+    nvswitch_device *device
+)
+{
+    return NVSWITCH_LINKS_PER_NVLIPT;
+}
+
 NvBool
 nvswitch_is_link_valid_lr10
 (
@@ -7647,7 +7656,7 @@ nvswitch_ctrl_get_sw_info_lr10
         switch (p->index[i])
         {
             case NVSWITCH_GET_SW_INFO_INDEX_INFOROM_NVL_SUPPORTED:
-                p->info[i] = (NvU32)_nvswitch_inforom_nvl_supported(device);
+                p->info[i] = NV_TRUE;
                 break;
             case NVSWITCH_GET_SW_INFO_INDEX_INFOROM_BBX_SUPPORTED:
                 p->info[i] = (NvU32)_nvswitch_inforom_bbx_supported(device);
@@ -7828,6 +7837,15 @@ nvswitch_ctrl_get_nvlink_error_threshold_lr10
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_check_io_sanity_lr10
+(
+    nvswitch_device *device
+)
+{
+    return NVL_SUCCESS;
 }
 
 //

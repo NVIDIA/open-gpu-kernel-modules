@@ -100,7 +100,7 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
             bNvswitchProxyPresent = knvlinkIsNvswitchProxyPresent(pGpu, pKernelNvlink);
         }
 
-        if (pKernelNvlink->bEnableAli)
+        if (pKernelNvlink->disconnectedLinkMask && pKernelNvlink->bEnableAli)
         {
             // Update the post Rx Det link Mask for the GPU
             knvlinkUpdatePostRxDetectLinkMask(pGpu, pKernelNvlink);

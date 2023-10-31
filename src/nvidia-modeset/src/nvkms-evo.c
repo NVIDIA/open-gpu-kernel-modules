@@ -5486,6 +5486,8 @@ NvBool nvConstructHwModeTimingsEvo(const NVDpyEvoRec *pDpyEvo,
                 } else {
                     pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_24_444;
                 }
+            } else {
+                pTimings->pixelDepth = NVKMS_PIXEL_DEPTH_24_444;
             }
         } else {
             /* TMDS default */

@@ -1538,12 +1538,6 @@ intrServiceStallList_IMPL
         NV_ASSERT_FAILED("intrServiceStallList_IMPL is expected to be unicast! Please post a stacktrace in bug 2003060!");
     }
 
-    if (IS_GSP_CLIENT(pGpu))
-    {
-        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-        kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
-    }
-
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
         //

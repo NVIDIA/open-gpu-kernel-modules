@@ -439,6 +439,11 @@ NvlStatus nvlink_lib_register_link(nvlink_device *dev, nvlink_link *link);
  */
 NvlStatus nvlink_lib_unregister_link(nvlink_link *link);
 
+/*
+* Gets number of devices with type deviceType
+*/
+NvlStatus nvlink_lib_return_device_count_by_type(NvU32 deviceType, NvU32 *numDevices);
+
 
 /************************************************************************************************/
 /******************************* NVLink link management functions *******************************/

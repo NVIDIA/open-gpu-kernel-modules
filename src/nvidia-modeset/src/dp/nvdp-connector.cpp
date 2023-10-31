@@ -267,6 +267,10 @@ static void SetDPMSATiming(const NVDispEvoRec *pDispEvo,
                            NV0073_CTRL_CMD_DP_SET_MSA_PROPERTIES_PARAMS *msaParams,
                            const NVHwModeTimingsEvo *pTimings)
 {
+    NV0073_CTRL_DP_MSA_PROPERTIES_MASK *featureMask = &msaParams->featureMask;
+    NV0073_CTRL_DP_MSA_PROPERTIES_VALUES *featureValues =
+        &msaParams->featureValues;
+
     nvkms_memset(msaParams, 0, sizeof(*msaParams));
 
     /*
@@ -279,12 +283,16 @@ static void SetDPMSATiming(const NVDispEvoRec *pDispEvo,
     msaParams->subDeviceInstance = pDispEvo->displayOwner;
     msaParams->displayId = displayId;
 
-    if ((pTimings->yuv420Mode == NV_YUV420_MODE_SW) && displayId != 0) {
-        NV0073_CTRL_DP_MSA_PROPERTIES_MASK *featureMask = &msaParams->featureMask;
-        NV0073_CTRL_DP_MSA_PROPERTIES_VALUES *featureValues = &msaParams->featureValues;
+    if ((displayId == 0x0) ||
+        ((pTimings->yuv420Mode != NV_YUV420_MODE_SW) &&
+         !nvIsAdaptiveSyncDpyVrrType(pTimings->vrr.type))) {
+        return;
+    }
 
-        msaParams->bEnableMSA = 1;
-        msaParams->bCacheMsaOverrideForNextModeset = 1;
+    msaParams->bEnableMSA = 1;
+    msaParams->bCacheMsaOverrideForNextModeset = 1;
+
+    if (pTimings->yuv420Mode == NV_YUV420_MODE_SW) {
         featureMask->bRasterTotalHorizontal   = true;
         featureMask->bActiveStartHorizontal   = true;
         featureMask->bSurfaceTotalHorizontal  = true;
@@ -293,6 +301,15 @@ static void SetDPMSATiming(const NVDispEvoRec *pDispEvo,
         featureValues->activeStartHorizontal  = 2 * (pTimings->rasterBlankEnd.x + 1);
         featureValues->surfaceTotalHorizontal = 2 * nvEvoVisibleWidth(pTimings);
         featureValues->syncWidthHorizontal    = 2 * (pTimings->rasterSyncEnd.x + 1);
+    }
+
+    /*
+     * In case of Adaptive-Sync VRR, override VTotal field of MSA (Main Stream
+     * Attributes) to workaround bug 4164132.
+     */
+    if (nvIsAdaptiveSyncDpyVrrType(pTimings->vrr.type)) {
+        featureMask->bRasterTotalVertical  = true;
+        featureValues->rasterTotalVertical = pTimings->rasterSize.y;
     }
 }
 

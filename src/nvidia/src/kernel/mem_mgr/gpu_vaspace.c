@@ -3837,7 +3837,7 @@ gvaspaceWalkUserCtxAcquire_IMPL
 
     // If current context is non-NULL, a previous release was missed.
     NV_ASSERT(NULL == mmuWalkGetUserCtx(pUserCtx->pGpuState->pWalk));
-    mmuWalkSetUserCtx(pUserCtx->pGpuState->pWalk, pUserCtx);
+    NV_ASSERT_OK(mmuWalkSetUserCtx(pUserCtx->pGpuState->pWalk, pUserCtx));
 }
 
 void
@@ -3851,7 +3851,7 @@ gvaspaceWalkUserCtxRelease_IMPL
     NV_ASSERT_OR_RETURN_VOID(pUserCtx->pGpuState);
     NV_ASSERT_OR_RETURN_VOID(pUserCtx->pGpuState->pWalk);
     NV_ASSERT(pUserCtx == mmuWalkGetUserCtx(pUserCtx->pGpuState->pWalk));
-    mmuWalkSetUserCtx(pUserCtx->pGpuState->pWalk, NULL);
+    NV_ASSERT_OK(mmuWalkSetUserCtx(pUserCtx->pGpuState->pWalk, NULL));
 }
 
 NV_STATUS

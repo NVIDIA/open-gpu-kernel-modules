@@ -118,7 +118,9 @@
 #define SPI_PMU_RPC_ERASE_FAIL                          (124)
 #define INFOROM_FS_ERROR                                (125)
 #define ALI_TRAINING_FAIL                               (136)
-#define ROBUST_CHANNEL_LAST_ERROR                       (ALI_TRAINING_FAIL)
+#define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
+#define GPU_INIT_ERROR                                  (143)
+#define ROBUST_CHANNEL_LAST_ERROR                       (GPU_INIT_ERROR)
 
 
 

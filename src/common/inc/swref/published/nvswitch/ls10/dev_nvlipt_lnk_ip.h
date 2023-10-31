@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -635,4 +635,7 @@
 #define NV_NVLIPT_LNK_CTRL_CAP_LOCAL_LINK_CHANNEL_ALI_SUPPORT 28:28           /* RWIVF */
 #define NV_NVLIPT_LNK_CTRL_CAP_LOCAL_LINK_CHANNEL_ALI_SUPPORT_SUPPORTED 0x00000001 /* RWI-V */
 #define NV_NVLIPT_LNK_CTRL_CAP_LOCAL_LINK_CHANNEL_ALI_SUPPORT_NOT_SUPPORTED 0x00000000 /* RW--V */
+#define NV_NVLIPT_LNK_SCRATCH_WARM                            0x000007c0      /* RW-4R */
+#define NV_NVLIPT_LNK_SCRATCH_WARM_DATA                       31:0            /* RWEVF */
+#define NV_NVLIPT_LNK_SCRATCH_WARM_DATA_INIT                  0xdeadbaad      /* RWE-V */
 #endif // __ls10_dev_nvlipt_lnk_ip_h__

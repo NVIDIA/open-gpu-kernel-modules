@@ -30,6 +30,7 @@
 #include "published/hopper/gh100/dev_pmc.h"
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 #include "published/hopper/gh100/pri_nv_xal_ep.h"
+#include "published/hopper/gh100/dev_xtl_ep_pri.h"
 
 #include "gpu/gsp/gsp_static_config.h"
 
@@ -71,6 +72,28 @@ gpuReadBusConfigReg_GH100
 )
 {
     return gpuReadBusConfigCycle(pGpu, index, pData);
+}
+
+/*!
+ * @brief Read the non-private registers on vGPU through mirror space
+ *
+ * @param[in]  pGpu   GPU object pointer
+ * @param[in]  index  Register offset in PCIe config space
+ * @param[out] pData  Value of the register
+ *
+ * @returns    NV_OK on success
+ */
+NV_STATUS
+gpuReadVgpuConfigReg_GH100
+(
+    OBJGPU    *pGpu,
+    NvU32      index,
+    NvU32     *pData
+)
+{
+    *pData = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_EP_PCFGM) + index);
+
+    return NV_OK;
 }
 
 /*!

@@ -337,6 +337,11 @@ RmLogGpuCrash(OBJGPU *pGpu)
             "NVRM: A GPU crash dump has been created. If possible, please run\n"
             "NVRM: nvidia-bug-report.sh as root to collect this data before\n"
             "NVRM: the NVIDIA kernel module is unloaded.\n");
+        if (hypervisorIsVgxHyper())
+        {
+            nv_printf(NV_DBG_ERRORS, "NVRM: Dumping nvlogs buffers\n");
+            nvlogDumpToKernelLog(NV_FALSE);
+        }
     }
 
     // Restore the disconnected properties, if they were reset

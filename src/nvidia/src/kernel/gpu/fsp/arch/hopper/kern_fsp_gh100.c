@@ -38,6 +38,7 @@
 #include "published/hopper/gh100/dev_therm_addendum.h"
 #include "os/os.h"
 #include "nvRmReg.h"
+#include "nverror.h"
 
 #if RMCFG_MODULE_ENABLED (FSP)
 #include "hopper/gh100/dev_gsp.h"
@@ -625,9 +626,13 @@ kfspWaitForSecureBoot_GH100
         status = gpuCheckTimeout(pGpu, &timeout);
         if (status == NV_ERR_TIMEOUT)
         {
-            NV_PRINTF(LEVEL_ERROR,
-                      "Timout while polling for FSP boot complete I2CS_SCRATCH : %x\n",
-                      GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE));
+            nvErrorLog_va((void*) pGpu, GPU_INIT_ERROR, "Timeout while polling for FSP boot complete, "
+                           "0x%x, 0x%x, 0x%x, 0x%x, 0x%x",
+                           GPU_REG_RD32(pGpu, NV_THERM_I2CS_SCRATCH_FSP_BOOT_COMPLETE),
+                           GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(0)),
+                           GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(1)),
+                           GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(2)),
+                           GPU_REG_RD32(pGpu, NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(3)));
             break;
         }
     }
@@ -808,7 +813,7 @@ kfspSetupGspImages
     pGspImageMapSize = NV_ALIGN_UP(pGspImageSize, 0x1000);
 
     status = memdescCreate(&pKernelFsp->pGspFmcMemdesc, pGpu, pGspImageMapSize,
-                           0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED,
+                           0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
                            MEMDESC_FLAGS_NONE);
     NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 
@@ -1083,7 +1088,7 @@ kfspSendBootCommands_GH100
     if (!pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_SYSMEM))
     {
         status = memdescCreate(&pKernelFsp->pSysmemFrtsMemdesc, pGpu, frtsSize,
-                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_UNCACHED,
+                               0, NV_TRUE, ADDR_SYSMEM, NV_MEMORY_CACHED,
                                MEMDESC_FLAGS_NONE);
         NV_ASSERT_OR_GOTO(status == NV_OK, failed);
 

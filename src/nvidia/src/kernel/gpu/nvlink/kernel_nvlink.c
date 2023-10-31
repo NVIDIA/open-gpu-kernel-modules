@@ -1021,9 +1021,25 @@ knvlinkPrepareForXVEReset_IMPL
         // initializations in between, without hanging up the GPU trying to
         // flush data over links that aren't available anymore.
         //
-        status = knvlinkRemoveMapping_HAL(pRemoteGpu, pRemoteKernelNvlink, NV_FALSE,
-                                          ((1 << NVLINK_MAX_PEERS_SW) - 1),
-                                          NV_FALSE /* bL2Entry */);
+        // Starting from Ampere single GPU reset is supported and hence remove
+        // only the nvlink's of the remote GPU's which are connected to the
+        // current GPU.
+        //
+
+        if (IsAMPEREorBetter(pGpu))
+        {
+            NvU32 remPeerId = kbusGetPeerId_HAL(pRemoteGpu, GPU_GET_KERNEL_BUS(pRemoteGpu), pGpu);
+            if (remPeerId != BUS_INVALID_PEER)
+                status = knvlinkRemoveMapping_HAL(pRemoteGpu, pRemoteKernelNvlink, NV_FALSE,
+                                                  NVBIT(remPeerId),
+                                                  NV_FALSE /* bL2Entry */);
+        }
+        else
+        {
+            status = knvlinkRemoveMapping_HAL(pRemoteGpu, pRemoteKernelNvlink, NV_FALSE,
+                                              ((1 << NVLINK_MAX_PEERS_SW) - 1),
+                                              NV_FALSE /* bL2Entry */);
+        }
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,

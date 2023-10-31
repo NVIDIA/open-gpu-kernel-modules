@@ -225,7 +225,6 @@ NV_STATUS  NV_API_CALL nv_vgpu_get_type_info(
 {
     THREAD_STATE_NODE threadState;
     OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJGPU *pGpu = NULL;
     KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
     NV_STATUS rmStatus = NV_OK;
     VGPU_TYPE *vgpuTypeInfo;
@@ -238,14 +237,6 @@ NV_STATUS  NV_API_CALL nv_vgpu_get_type_info(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_HYPERVISOR)) == NV_OK)
     {
-        pGpu = NV_GET_NV_PRIV_PGPU(pNv);
-        if (pGpu == NULL)
-        {
-            NV_PRINTF(LEVEL_ERROR, "%s GPU handle is not valid \n", __FUNCTION__);
-            rmStatus = NV_ERR_INVALID_STATE;
-            goto exit;
-        }
-
         if ((rmStatus = kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pNv->gpu_id, &pgpuIndex)) ==
             NV_OK)
         {
@@ -912,7 +903,7 @@ NV_STATUS osVgpuRegisterMdev
 )
 {
     NV_STATUS status = NV_OK;
-    vgpu_vfio_info vgpu_info;
+    vgpu_vfio_info vgpu_info = {0};
     OBJSYS *pSys = SYS_GET_INSTANCE();
     KernelVgpuMgr *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
     KERNEL_PHYS_GPU_INFO *pPhysGpuInfo;
@@ -930,12 +921,22 @@ NV_STATUS osVgpuRegisterMdev
     status = os_alloc_mem((void **)&vgpu_info.vgpuTypeIds,
                           ((vgpu_info.numVgpuTypes) * sizeof(NvU32)));
     if (status != NV_OK)
-        return status;
+        goto free_mem;
+
+    status = os_alloc_mem((void **)&vgpu_info.vgpuNames,
+                          ((vgpu_info.numVgpuTypes) * sizeof(char *)));
+    if (status != NV_OK)
+        goto free_mem;
 
     vgpu_info.nv = pOsGpuInfo;
     for (i = 0; i < pPhysGpuInfo->numVgpuTypes; i++)
     {
+        status = os_alloc_mem((void *)&vgpu_info.vgpuNames[i], (VGPU_STRING_BUFFER_SIZE * sizeof(char)));
+        if (status != NV_OK)
+            goto free_mem;
+
         vgpu_info.vgpuTypeIds[i] = pPhysGpuInfo->vgpuTypes[i]->vgpuTypeId;
+        os_snprintf((char *) vgpu_info.vgpuNames[i], VGPU_STRING_BUFFER_SIZE, "%s\n", pPhysGpuInfo->vgpuTypes[i]->vgpuName);
     }
 
     if ((!pPhysGpuInfo->sriovEnabled) || 
@@ -965,7 +966,22 @@ NV_STATUS osVgpuRegisterMdev
         }
     }
 
-    os_free_mem(vgpu_info.vgpuTypeIds);
+free_mem:
+    if (vgpu_info.vgpuTypeIds)
+        os_free_mem(vgpu_info.vgpuTypeIds);
+
+    if (vgpu_info.vgpuNames)
+    {
+        for (i = 0; i < pPhysGpuInfo->numVgpuTypes; i++)
+        {
+            if (vgpu_info.vgpuNames[i])
+            {
+                os_free_mem(vgpu_info.vgpuNames[i]);
+            }
+        }
+        os_free_mem(vgpu_info.vgpuNames);
+    }
+
     return status;
 }
 

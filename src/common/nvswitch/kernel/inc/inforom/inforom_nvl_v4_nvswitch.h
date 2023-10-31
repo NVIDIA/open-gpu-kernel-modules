@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -20,10 +20,18 @@
  * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
  * DEALINGS IN THE SOFTWARE.
  */
-#define NV_CHIP_EXTENDED_SYSTEM_PHYSICAL_ADDRESS_BITS              52
-#define NV_LTC_PRI_STRIDE                            8192
-#define NV_LTS_PRI_STRIDE                             512
-#define NV_FBPA_PRI_STRIDE                      16384
-#define NV_SCAL_LITTER_NUM_FBPAS                       24
-#define NV_XPL_BASE_ADDRESS                    540672
-#define NV_XTL_BASE_ADDRESS                    593920
+ 
+#ifndef _INFOROM_NVL_V4_NVSWITCH_H_
+#define _INFOROM_NVL_V4_NVSWITCH_H_
+
+#include "inforom/inforom_nvswitch.h"
+
+void
+inforom_nvl_v4_update_correctable_error_rates
+(
+    INFOROM_NVL_CORRECTABLE_ERROR_RATE_STATE_V4S *pState,
+    NvU8 link,
+    INFOROM_NVLINK_CORRECTABLE_ERROR_COUNTS *pCounts
+);
+
+#endif //_INFOROM_NVL_V4_NVSWITCH_H_

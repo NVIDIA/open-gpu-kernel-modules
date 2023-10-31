@@ -30,6 +30,7 @@
 #include "flcn/haldefs_flcnable_nvswitch.h"
 #include "flcn/flcn_nvswitch.h"
 #include "soe/soe_nvswitch.h"
+#include "soe/soeififr.h"
 #include "nvVer.h"
 #include "nvlink_inband_msg.h"
 
@@ -1512,9 +1513,16 @@ nvswitch_lib_initialize_device
         }
 
         //
+        // During Nvswitch initialization, the default L1 thresholds are programmed by the
+        // BIOS from the BIOS tables. Save these L1 Threshold Values in scratch registers
+        // for use when resetting the thresholds to default.
+        //
+        nvswitch_program_l1_scratch_reg(device, link_num);
+
+        //
         // WAR : Initializing the L1 threshold registers at this point as a WAR for
-        // Bug 3963639 where is it was discussed that the L1 threshold register should have 
-        // value the default value for all available links and not just for active links.
+        // Bug 3963639 where it was discussed that the L1 threshold register should have 
+        // the default value for all available links and not just for active links.
         //
         nvswitch_init_lpwr_regs(link);
     }
@@ -3430,6 +3438,46 @@ _nvswitch_ctrl_get_inforom_bbx_sxid
 }
 
 static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_sys_info
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_SYS_INFO_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_SYS_INFO, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_time_info
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TIME_INFO_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TIME_INFO, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_temp_data
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TEMP_DATA_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TEMP_DATA, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_temp_samples
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TEMP_SAMPLES_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TEMP_SAMPLES, (void *)params);
+}
+
+static NvlStatus
 _nvswitch_ctrl_get_nvlink_lp_counters
 (
     nvswitch_device *device,
@@ -4610,6 +4658,25 @@ nvswitch_init_lpwr_regs
    device->hal.nvswitch_init_lpwr_regs(link);
 }
 
+void
+nvswitch_program_l1_scratch_reg
+(
+    nvswitch_device *device,
+    NvU32 linkNumber
+)
+{
+   device->hal.nvswitch_program_l1_scratch_reg(device, linkNumber);
+}
+
+NvlStatus
+nvswitch_check_io_sanity
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_check_io_sanity(device);
+}
+
 NvlStatus
 nvswitch_launch_ALI
 (
@@ -5123,6 +5190,26 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_POWER,
                 _nvswitch_ctrl_therm_read_power,
                 NVSWITCH_GET_POWER_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_SYS_INFO,
+                _nvswitch_ctrl_get_inforom_bbx_sys_info,
+                NVSWITCH_GET_SYS_INFO_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TIME_INFO,
+                _nvswitch_ctrl_get_inforom_bbx_time_info,
+                NVSWITCH_GET_TIME_INFO_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TEMP_DATA,
+                _nvswitch_ctrl_get_inforom_bbx_temp_data,
+                NVSWITCH_GET_TEMP_DATA_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TEMP_SAMPLES,
+                _nvswitch_ctrl_get_inforom_bbx_temp_samples,
+                NVSWITCH_GET_TEMP_SAMPLES_PARAMS,
+                osPrivate, flags);
 
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "unknown ioctl %x\n", cmd);

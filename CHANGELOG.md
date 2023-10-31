@@ -2,7 +2,13 @@
 
 ## Release 525 Entries
 
+### [525.147.05] 2023-10-31
+
 ### [525.125.06] 2023-06-26
+
+#### Fixed
+
+- Fix nvidia_p2p_get_pages(): Fix double-free in register-callback error path, [#557](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/557) by @BrendanCunningham
 
 ### [525.116.04] 2023-05-09
 

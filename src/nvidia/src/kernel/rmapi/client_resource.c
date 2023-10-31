@@ -3008,9 +3008,14 @@ cliresCtrlCmdNvdGetNvlogInfo_IMPL
                 if (IS_GSP_CLIENT(pGpu))
                 {
                     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-                    kgspDumpGspLogs(pGpu, pKernelGsp, NV_TRUE);
+                    kgspDumpGspLogs(pKernelGsp, NV_TRUE);
                 }
             }
+        }
+        else
+        {
+            // Flush any nvlog buffers if needed
+            nvlogRunFlushCbs();
         }
 
         pParams->version    = NvLogLogger.version;

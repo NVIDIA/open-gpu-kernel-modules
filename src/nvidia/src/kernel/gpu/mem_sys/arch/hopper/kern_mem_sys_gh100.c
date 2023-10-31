@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,15 +23,24 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "nvtypes.h"
 #include "os/os.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/bus/kern_bus.h"
+#include "kernel/gpu/intr/intr.h"
+#include "nverror.h"
 
 #include "published/hopper/gh100/dev_fb.h"
+#include "published/hopper/gh100/dev_ltc.h"
+#include "published/hopper/gh100/dev_fbpa.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/pri_nv_xal_ep.h"
 #include "published/hopper/gh100/dev_nv_xal_addendum.h"
+#include "published/hopper/gh100/dev_nv_xpl.h"
+#include "published/hopper/gh100/dev_xtl_ep_pri.h"
+#include "published/hopper/gh100/hwproject.h"
+#include "published/ampere/ga100/dev_fb.h"
 
 NV_STATUS
 kmemsysDoCacheOp_GH100
@@ -429,6 +438,171 @@ kmemsysSwizzIdToVmmuSegmentsRange_GH100
 
     NV_ASSERT_OK_OR_RETURN(
         kmemsysInitMIGGPUInstanceMemConfigForSwizzId(pGpu, pKernelMemorySystem, swizzId, startingVmmuSegment, memSizeInVmmuSegment));
+
+    return NV_OK;
+}
+/*!
+ * Utility function used to read registers and ignore PRI errors
+ */
+static NvU32
+_kmemsysReadRegAndMaskPriError
+(
+    OBJGPU *pGpu,
+    NvU32 regAddr
+)
+{
+    NvU32 regVal;
+
+    regVal = osGpuReadReg032(pGpu, regAddr);
+    if ((regVal & GPU_READ_PRI_ERROR_MASK) == GPU_READ_PRI_ERROR_CODE)
+    {
+        return 0;
+    }
+
+    return regVal;
+}
+/*
+ * @brief Function that checks if ECC error occurred by reading various count
+ * registers/interrupt registers. This function is not floorsweeping-aware so
+ * PRI errors are ignored
+ */
+void
+kmemsysCheckEccCounts_GH100
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    NvU32 dramCount = 0;
+    NvU32 mmuCount = 0;
+    NvU32 ltcCount = 0;
+    NvU32 pcieCount = 0;
+    NvU32 regVal;
+    for (NvU32 i = 0; i < NV_SCAL_LITTER_NUM_FBPAS; i++)
+    {
+        for (NvU32 j = 0; j < NV_PFB_FBPA_0_ECC_DED_COUNT__SIZE_1; j++)
+        {
+            // DRAM count read
+            dramCount += _kmemsysReadRegAndMaskPriError(pGpu, NV_PFB_FBPA_0_ECC_DED_COUNT(j) + (i * NV_FBPA_PRI_STRIDE));
+
+            // LTC count read
+            regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT +
+                    (i * NV_LTC_PRI_STRIDE) + (j * NV_LTS_PRI_STRIDE));
+            ltcCount += DRF_VAL(_PLTCG_LTC0_LTS0, _L2_CACHE_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+        }
+    }
+
+    // L2TLB
+    regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_PFB_PRI_MMU_L2TLB_ECC_UNCORRECTED_ERR_COUNT);
+    mmuCount += DRF_VAL(_PFB_PRI_MMU, _L2TLB_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    // HUBTLB
+    regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_PFB_PRI_MMU_HUBTLB_ECC_UNCORRECTED_ERR_COUNT);
+    mmuCount += DRF_VAL(_PFB_PRI_MMU, _HUBTLB_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    // FILLUNIT
+    regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_PFB_PRI_MMU_FILLUNIT_ECC_UNCORRECTED_ERR_COUNT);
+    mmuCount += DRF_VAL(_PFB_PRI_MMU, _FILLUNIT_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    // PCIE RBUF
+    regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_COUNT_RBUF);
+    pcieCount += DRF_VAL(_XPL_DL, _ERR_COUNT_RBUF, _UNCORR_ERR, regVal);
+
+    // PCIE SEQ_LUT
+    regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_COUNT_SEQ_LUT);
+    pcieCount += DRF_VAL(_XPL_DL, _ERR_COUNT_SEQ_LUT, _UNCORR_ERR, regVal);
+
+    // PCIE RE ORDER
+    regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT);
+    pcieCount += DRF_VAL(_XAL_EP, _REORDER_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    // PCIE P2PREQ
+    regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT);
+    pcieCount += DRF_VAL(_XAL_EP, _P2PREQ_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    // PCIE XTL
+    regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_DED_ERROR_STATUS);
+    if (regVal != 0)
+    {
+        pcieCount += 1;
+    }
+
+    // PCIE XTL
+    regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_RAM_ERROR_INTR_STATUS);
+    if (regVal != 0)
+    {
+        pcieCount += 1;
+    }
+
+    // If counts > 0 or if poison interrupt pending, ECC error has occurred.
+    if (((dramCount + ltcCount + mmuCount + pcieCount) != 0) ||
+        intrIsVectorPending_HAL(pGpu, GPU_GET_INTR(pGpu), NV_PFB_FBHUB_POISON_INTR_VECTOR_HW_INIT, NULL))
+    {
+        nvErrorLog_va((void *)pGpu, UNRECOVERABLE_ECC_ERROR_ESCAPE,
+                      "An uncorrectable ECC error detected "
+                      "(possible firmware handling failure) "
+                      "DRAM:%d, LTC:%d, MMU:%d, PCIE:%d", dramCount, ltcCount, mmuCount, pcieCount);
+    }
+}
+
+/*
+ * @brief  Function that clears ECC error count registers.
+ */
+NV_STATUS
+kmemsysClearEccCounts_GH100
+(
+    OBJGPU *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    NvU32 regVal = 0;
+    RMTIMEOUT timeout;
+    NV_STATUS status = NV_OK;
+
+    gpuClearFbhubPoisonIntrForBug2924523_HAL(pGpu);
+
+    for (NvU32 i = 0; i < NV_SCAL_LITTER_NUM_FBPAS; i++)
+    {
+        for (NvU32 j = 0; j < NV_PFB_FBPA_0_ECC_DED_COUNT__SIZE_1; j++)
+        {
+            osGpuWriteReg032(pGpu, NV_PFB_FBPA_0_ECC_DED_COUNT(j) + (i * NV_FBPA_PRI_STRIDE), 0);
+            osGpuWriteReg032(pGpu, NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT + (i * NV_LTC_PRI_STRIDE) + (j * NV_LTS_PRI_STRIDE), 0);
+        }
+    }
+
+    // Reset MMU counts
+    osGpuWriteReg032(pGpu, NV_PFB_PRI_MMU_L2TLB_ECC_UNCORRECTED_ERR_COUNT, 0);
+    osGpuWriteReg032(pGpu, NV_PFB_PRI_MMU_HUBTLB_ECC_UNCORRECTED_ERR_COUNT, 0);
+    osGpuWriteReg032(pGpu, NV_PFB_PRI_MMU_FILLUNIT_ECC_UNCORRECTED_ERR_COUNT, 0);
+
+    // Reset XAL-EP counts
+    osGpuWriteReg032(pGpu, NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT, 0);
+    osGpuWriteReg032(pGpu, NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT, 0);
+
+    // Reset XTL-EP status registers
+    osGpuWriteReg032(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_DED_ERROR_STATUS, ~0);
+    osGpuWriteReg032(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_RAM_ERROR_INTR_STATUS, ~0);
+
+    // Reset XPL-EP error counters
+    regVal = DRF_DEF(_XPL, _DL_ERR_RESET, _RBUF_UNCORR_ERR_COUNT, _PENDING) |
+             DRF_DEF(_XPL, _DL_ERR_RESET, _SEQ_LUT_UNCORR_ERR_COUNT, _PENDING);
+    osGpuWriteReg032(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_RESET, regVal);
+
+    // Wait for the error counter reset to complete
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    for (;;)
+    {
+        status = gpuCheckTimeout(pGpu, &timeout);
+
+        regVal = osGpuReadReg032(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_RESET);
+
+        if (FLD_TEST_DRF(_XPL, _DL_ERR_RESET, _RBUF_UNCORR_ERR_COUNT, _DONE, regVal) &&
+            FLD_TEST_DRF(_XPL, _DL_ERR_RESET, _SEQ_LUT_UNCORR_ERR_COUNT, _DONE, regVal))
+            break;
+
+        if (status != NV_OK)
+            return status;
+    }
 
     return NV_OK;
 }

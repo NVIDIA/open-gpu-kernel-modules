@@ -24,4 +24,7 @@
 #ifndef __gh100_dev_xtl_ep_pri_h__
 #define __gh100_dev_xtl_ep_pri_h__
 #define NV_EP_PCFGM                                                              0x92FFF:0x92000        /* RW--D */
+
+#define NV_XTL_EP_PRI_DED_ERROR_STATUS                                           0x0000043C    /* RW-4R */
+#define NV_XTL_EP_PRI_RAM_ERROR_INTR_STATUS                                      0x000003C8    /* RW-4R */
 #endif // __gh100_dev_xtl_ep_pri_h__

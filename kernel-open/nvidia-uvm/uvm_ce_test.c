@@ -179,7 +179,7 @@ static NV_STATUS test_membar(uvm_gpu_t *gpu)
 
     for (i = 0; i < REDUCTIONS; ++i) {
         uvm_push_set_flag(&push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
-        gpu->parent->ce_hal->semaphore_reduction_inc(&push, host_mem_gpu_va, REDUCTIONS + 1);
+        gpu->parent->ce_hal->semaphore_reduction_inc(&push, host_mem_gpu_va, REDUCTIONS);
     }
 
     // Without a sys membar the channel tracking semaphore can and does complete
@@ -528,7 +528,7 @@ static NV_STATUS test_semaphore_reduction_inc(uvm_gpu_t *gpu)
 
     for (i = 0; i < REDUCTIONS; i++) {
         uvm_push_set_flag(&push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
-        gpu->parent->ce_hal->semaphore_reduction_inc(&push, gpu_va, i+1);
+        gpu->parent->ce_hal->semaphore_reduction_inc(&push, gpu_va, REDUCTIONS);
     }
 
     status = uvm_push_end_and_wait(&push);

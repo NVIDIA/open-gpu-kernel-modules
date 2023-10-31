@@ -103,8 +103,10 @@ kfspInitRegistryOverrides
         }
     }
 
-    // Inst-in-sys must only set up FRTS in SYSMEM. This includes FB broken.
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM))
+    // Inst-in-sys must only set up FRTS in SYSMEM. This includes FB broken and cache only.
+    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM) ||
+        pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
+        gpuIsCacheOnlyModeEnabled(pGpu))
     {
         pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_FRTS_VIDMEM, NV_TRUE);
     }

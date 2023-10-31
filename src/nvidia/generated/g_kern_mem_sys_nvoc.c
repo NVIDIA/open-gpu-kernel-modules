@@ -396,6 +396,28 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
         pThis->__kmemsysSwizzIdToVmmuSegmentsRange__ = &kmemsysSwizzIdToVmmuSegmentsRange_GH100;
     }
 
+    // Hal function -- kmemsysCheckEccCounts
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kmemsysCheckEccCounts__ = &kmemsysCheckEccCounts_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__kmemsysCheckEccCounts__ = &kmemsysCheckEccCounts_b3696a;
+    }
+
+    // Hal function -- kmemsysClearEccCounts
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kmemsysClearEccCounts__ = &kmemsysClearEccCounts_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__kmemsysClearEccCounts__ = &kmemsysClearEccCounts_56cd7a;
+    }
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelMemorySystem_engstateConstructEngine;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelMemorySystem_engstateStateInitLocked;

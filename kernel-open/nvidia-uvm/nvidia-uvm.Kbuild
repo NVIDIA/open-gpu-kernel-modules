@@ -81,7 +81,6 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += set_memory_uc
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += set_pages_uc
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ktime_get_raw_ts64
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ioasid_get
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += migrate_vma_setup
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mmget_not_zero
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += backing_dev_info
@@ -104,3 +103,4 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += make_device_exclusive_range
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_migrate_vma_setup

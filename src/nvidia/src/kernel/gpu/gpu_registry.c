@@ -222,25 +222,6 @@ gpuInitInstLocOverrides_IMPL
         pGpu->instLocOverrides2 = NV_REG_STR_RM_INST_LOC_ALL_COH;
         pGpu->instLocOverrides3 = NV_REG_STR_RM_INST_LOC_ALL_COH;
         // Leave instLocOverrides4 as _DEFAULT until all flavors are tested.
-
-        if (gpuIsCacheOnlyModeEnabled(pGpu))
-        {
-            //
-            // If cache only mode is enabled then we will override
-            // userD and bar page tables to vidmem(l2 cache).
-            // This is to avoid deadlocks on platforms
-            // that don't support reflected accesses.
-            // Such platforms will need to enable cache only mode to
-            // run test zeroFb
-            // NOTE: Since this puts USERD in vidmem, you probably also want to
-            // reduce the number of channels to allocate, or else
-            // fifoPreAllocUserD_GF100 will fail due to the limited amount of
-            // L2 available as "vidmem".  (Use the RmNumFifos regkey.)
-            //
-            pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PTE, _VID, pGpu->instLocOverrides);
-            pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _USERD,   _VID, pGpu->instLocOverrides);
-            pGpu->instLocOverrides = FLD_SET_DRF(_REG, _STR_RM_INST_LOC, _BAR_PDE, _VID, pGpu->instLocOverrides);
-        }
     }
 
     //
@@ -287,6 +268,7 @@ gpuInitInstLocOverrides_IMPL
     // SMs) are fine.
     //
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM) &&
+        !gpuIsCacheOnlyModeEnabled(pGpu) &&
         !(FLD_TEST_DRF(_REG_STR_RM, _INST_LOC, _BAR_PTE, _DEFAULT, pGpu->instLocOverrides) &&
           FLD_TEST_DRF(_REG_STR_RM, _INST_LOC, _BAR_PDE, _DEFAULT, pGpu->instLocOverrides)))
     {

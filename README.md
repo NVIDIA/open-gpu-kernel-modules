@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 525.125.06.
+version 525.147.05.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-525.125.06 driver release.  This can be achieved by installing
+525.147.05 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -167,7 +167,7 @@ for the target kernel.
 ## Compatible GPUs
 
 The open-gpu-kernel-modules can be used on any Turing or later GPU
-(see the table below). However, in the 525.125.06 release,
+(see the table below). However, in the 525.147.05 release,
 GeForce and Workstation support is still considered alpha-quality.
 
 To enable use of the open kernel modules on GeForce and Workstation GPUs,
@@ -175,7 +175,7 @@ set the "NVreg_OpenRmEnableUnsupportedGpus" nvidia.ko kernel module
 parameter to 1. For more details, see the NVIDIA GPU driver end user
 README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/525.125.06/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/525.147.05/README/kernel_open.html
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -645,12 +645,15 @@ Subsystem Device ID.
 | NVIDIA A100-SXM4-80GB                           | 20B2 10DE 147F |
 | NVIDIA A100-SXM4-80GB                           | 20B2 10DE 1622 |
 | NVIDIA A100-SXM4-80GB                           | 20B2 10DE 1623 |
+| NVIDIA PG509-210                                | 20B2 10DE 1625 |
 | NVIDIA A100-SXM-64GB                            | 20B3 10DE 14A7 |
 | NVIDIA A100-SXM-64GB                            | 20B3 10DE 14A8 |
 | NVIDIA A100 80GB PCIe                           | 20B5 10DE 1533 |
 | NVIDIA A100 80GB PCIe                           | 20B5 10DE 1642 |
 | NVIDIA PG506-232                                | 20B6 10DE 1492 |
 | NVIDIA A30                                      | 20B7 10DE 1532 |
+| NVIDIA A30                                      | 20B7 10DE 1804 |
+| NVIDIA A30                                      | 20B7 10DE 1852 |
 | NVIDIA A100-PCIE-40GB                           | 20F1 10DE 145F |
 | NVIDIA A800-SXM4-80GB                           | 20F3 10DE 179B |
 | NVIDIA A800-SXM4-80GB                           | 20F3 10DE 179C |
@@ -821,6 +824,7 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 4090 Laptop GPU              | 2717           |
 | NVIDIA RTX 5000 Ada Generation Laptop GPU       | 2730           |
 | NVIDIA GeForce RTX 4090 Laptop GPU              | 2757           |
+| NVIDIA RTX 5000 Ada Generation Embedded GPU     | 2770           |
 | NVIDIA GeForce RTX 4070 Ti                      | 2782           |
 | NVIDIA GeForce RTX 4070                         | 2786           |
 | NVIDIA GeForce RTX 4080 Laptop GPU              | 27A0           |
@@ -834,11 +838,14 @@ Subsystem Device ID.
 | NVIDIA RTX 3500 Ada Generation Laptop GPU       | 27BB           |
 | NVIDIA GeForce RTX 4080 Laptop GPU              | 27E0           |
 | NVIDIA GeForce RTX 4060 Ti                      | 2803           |
+| NVIDIA GeForce RTX 4060 Ti                      | 2805           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2820           |
 | NVIDIA RTX 3000 Ada Generation Laptop GPU       | 2838           |
 | NVIDIA GeForce RTX 4070 Laptop GPU              | 2860           |
+| NVIDIA GeForce RTX 4060                         | 2882           |
 | NVIDIA GeForce RTX 4060 Laptop GPU              | 28A0           |
 | NVIDIA GeForce RTX 4050 Laptop GPU              | 28A1           |
 | NVIDIA RTX 2000 Ada Generation Laptop GPU       | 28B8           |
 | NVIDIA GeForce RTX 4060 Laptop GPU              | 28E0           |
 | NVIDIA GeForce RTX 4050 Laptop GPU              | 28E1           |
+| NVIDIA RTX 2000 Ada Generation Embedded GPU     | 28F8           |

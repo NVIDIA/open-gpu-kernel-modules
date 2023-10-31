@@ -65,6 +65,9 @@
 static bool output_rounding_fix = true;
 module_param_named(output_rounding_fix, output_rounding_fix, bool, 0400);
 
+static bool disable_vrr_memclk_switch = false;
+module_param_named(disable_vrr_memclk_switch, disable_vrr_memclk_switch, bool, 0400);
+
 /* These parameters are used for fault injection tests.  Normally the defaults
  * should be used. */
 MODULE_PARM_DESC(fail_malloc, "Fail the Nth call to nvkms_alloc");
@@ -80,6 +83,11 @@ static atomic_t nvkms_alloc_called_count;
 NvBool nvkms_output_rounding_fix(void)
 {
     return output_rounding_fix;
+}
+
+NvBool nvkms_disable_vrr_memclk_switch(void)
+{
+    return disable_vrr_memclk_switch;
 }
 
 #define NVKMS_SYNCPT_STUBS_NEEDED

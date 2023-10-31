@@ -1165,8 +1165,12 @@ bool EvoMainLink::train(const LinkConfiguration & link, bool force,
                 // 1. CR or EQ phase failed.
                 // 2. The request link bandwidth is NOT RBR
                 //
+                if (!requestRmLC.lowerConfig())
+                {
+                    // If no valid link config could be found, break here. 
+                    break;
+                }
                 fallback = true;
-                requestRmLC.lowerConfig();
             }
             else
             {

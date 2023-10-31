@@ -1328,6 +1328,12 @@ typedef struct _NVHwModeTimingsEvo {
     } stereo;
 } NVHwModeTimingsEvo;
 
+static inline NvBool nvIsAdaptiveSyncDpyVrrType(enum NvKmsDpyVRRType type)
+{
+    return ((type == NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_DEFAULTLISTED) ||
+            (type == NVKMS_DPY_VRR_TYPE_ADAPTIVE_SYNC_NON_DEFAULTLISTED));
+}
+
 static inline NvU64 nvEvoFrametimeUsFromTimings(const NVHwModeTimingsEvo *pTimings)
 {
     NvU64 pixelsPerFrame = pTimings->rasterSize.x * pTimings->rasterSize.y;

@@ -30,6 +30,9 @@ extern "C" {
 
 #include "nvlink_common.h"
 
+#define TOP_LEVEL_LOCKING_DISABLED 1 
+#define PER_LINK_LOCKING_DISABLED 1 
+
 #define NVLINK_FREE(x) nvlink_free((void *)x)
 
 // Memory management functions

@@ -57,6 +57,7 @@ typedef struct
     void  *waitQueue;
     void  *nv;
     NvU32 *vgpuTypeIds;
+    NvU8 **vgpuNames;
     NvU32  numVgpuTypes;
     NvU32  domain;
     NvU8   bus;

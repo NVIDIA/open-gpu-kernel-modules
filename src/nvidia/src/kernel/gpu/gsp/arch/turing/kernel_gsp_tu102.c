@@ -774,31 +774,46 @@ kgspHealthCheck_TU102
     NvU32 mb0 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0));
 
     //
-    // Check for an error message in the GSP mailbox.  Any error here is severe
-    // enough that it should be reported as an Xid.  Clear the error so more can
-    // potentially be reported by GSP, if it was able to recover.  In that case,
-    // it's possible that GSP will skip reporting some more errors that happened
-    // before the clear, and it will just update the "skipped" count.
+    // Check for an error message in the GSP mailbox.  Any error reported here is
+    // almost certainly fatal.
     //
     if (FLD_TEST_DRF(_GSP, _ERROR, _TAG, _VAL, mb0))
     {
         NvU32 mb1 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(1));
+        NvU32 skipped = DRF_VAL(_GSP, _ERROR, _SKIPPED, mb0);
 
+        pKernelGsp->bFatalError = NV_TRUE;
+
+        // Clear the mailbox
         GPU_REG_WR32(pGpu, NV_PGSP_MAILBOX(0), 0);
 
-        NV_PRINTF(LEVEL_NOTICE,
+        NV_PRINTF(LEVEL_ERROR,
                   "********************************* GSP Failure **********************************\n");
 
         nvErrorLog_va((void*)pGpu, GSP_ERROR,
-                      "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x (%d more errors skipped)",
+                      "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x.  The GPU likely needs to be reset.",
                       DRF_VAL(_GSP, _ERROR, _TASK, mb0),
                       DRF_VAL(_GSP, _ERROR, _CODE, mb0),
                       DRF_VAL(_GSP, _ERROR, _REASON, mb0),
-                      mb1,
-                      DRF_VAL(_GSP, _ERROR, _SKIPPED, mb0));
+                      mb1);
+        NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR, NV_PRINTF_ADD_PREFIX
+                     ("GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x"),
+                     DRF_VAL(_GSP, _ERROR, _TASK, mb0),
+                     DRF_VAL(_GSP, _ERROR, _CODE, mb0),
+                     DRF_VAL(_GSP, _ERROR, _REASON, mb0),
+                     mb1);
 
-        NV_PRINTF(LEVEL_NOTICE,
+        // Check if GSP had more errors to report (unlikely)
+        if (skipped)
+        {
+            NV_PRINTF(LEVEL_ERROR, "%d more errors skipped\n", skipped);
+        }
+
+        NV_PRINTF(LEVEL_ERROR,
                   "********************************************************************************\n");
+
+        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+        kmemsysCheckEccCounts_HAL(pGpu, pKernelMemorySystem);
     }
 }
 
@@ -844,7 +859,7 @@ kgspService_TU102
         // provides RM a chance to handle it so we have better debugability
         // into GSP-RISCV issues.
         //
-        kgspDumpGspLogs(pGpu, pKernelGsp, NV_FALSE);
+        kgspDumpGspLogs(pKernelGsp, NV_FALSE);
         kgspHealthCheck_HAL(pGpu, pKernelGsp);
     }
     if (intrStatus & DRF_DEF(_PFALCON, _FALCON_IRQSTAT, _SWGEN0, _TRUE))

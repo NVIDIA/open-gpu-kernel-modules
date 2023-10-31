@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -124,9 +124,27 @@ nvswitch_inforom_bbx_get_sxid
     status = device->hal.nvswitch_bbx_get_sxid(device, params);
     if (status != NVL_SUCCESS)
     {
-        NVSWITCH_PRINT(device, ERROR, "nvswitch_inforom_bbx_load failed, status=%d\n", status);
+        NVSWITCH_PRINT(device, ERROR, "nvswitch_bbx_get_sxid failed, status=%d\n", status);
     }
 
     return status;
 }
 
+NvlStatus
+nvswitch_inforom_bbx_get_data
+(
+    nvswitch_device *device,
+    NvU8 dataType,
+    void *params
+)
+{
+    NvlStatus status;
+
+    status = device->hal.nvswitch_bbx_get_data(device, dataType, params);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR, "%s: (type=%d) failed, status=%d\n", __FUNCTION__, dataType, status);
+    }
+
+    return status;
+}

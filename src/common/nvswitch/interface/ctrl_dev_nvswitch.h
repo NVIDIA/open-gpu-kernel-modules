@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -830,6 +830,7 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_HOST_THERMAL_SHUTDOWN                              = 10006,
     NVSWITCH_ERR_HW_HOST_IO_FAILURE                                    = 10007,
     NVSWITCH_ERR_HW_HOST_FIRMWARE_INITIALIZATION_FAILURE               = 10008,
+    NVSWITCH_ERR_HW_HOST_FIRMWARE_RECOVERY_MODE                        = 10009,
     NVSWITCH_ERR_HW_HOST_LAST,
 
 
@@ -2968,6 +2969,197 @@ typedef struct
 } NVSWITCH_GET_SXIDS_PARAMS;
 
 /*
+ * CTRL_NVSWITCH_GET_SYS_INFO
+ *
+ * Control to get the NVSwitch system version information from inforom cache 
+ *
+ * Parameters:
+ *    driverLo [OUT]
+ *      The driver version low 32 bits. Example: driverLo = 54531 (Driver 545.31)
+ *    driverHi [OUT]
+ *      The driver version high 16 bits
+ *    vbiosVersion [OUT]
+ *      The vbios version number. Example: vbiosVersion=0x96104100 (release 96.10.41.00)
+ *    vbiosVersionOem [OUT]
+ *      The vbios OEM version byte.
+ *    osType [OUT]
+ *      The OS type. Example:  osType=0x05 (UNIX)
+ *    osVersion [OUT]
+ *      The OS version number. [BUILD[31:16]|MINOR[15:8]|MAJOR[7:0]]
+ */
+
+typedef struct
+{
+    NvU32 driverLo;
+    NvU16 driverHi;
+    NvU32 vbiosVersion;
+    NvU8  vbiosVersionOem;
+    NvU8  osType;
+    NvU32 osVersion;
+} NVSWITCH_GET_SYS_INFO_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_GET_TIME_INFO
+ *
+ * Control to get the NVSwitch time information from inforom cache 
+ *
+ * Parameters:
+ *    timeStart [OUT]
+ *      The timestamp (EPOCH) when driver load onto the NVSwitch for the 1st time
+ *    timeEnd [OUT]
+ *      The timestamp (EPOCH) when the data was last flushed
+ *    timeRun [OUT]
+ *      The amount of time (in seconds) driver was loaded/running
+ *    time24Hours [OUT]
+ *      The timestamp (EPOCH) when the first 24 operational hours is hit
+ *    time100Hours [OUT]
+ *      The timestamp (EPOCH) when the first 100 operational hours is hit
+ */
+
+typedef struct
+{
+    NvU32 timeStart;
+    NvU32 timeEnd;
+    NvU32 timeRun;
+    NvU32 time24Hours;
+    NvU32 time100Hours;
+} NVSWITCH_GET_TIME_INFO_PARAMS;
+
+#define NVSWITCH_TEMP_DAY_ENTRIES               5
+#define NVSWITCH_TEMP_WEEK_ENTRIES              5
+#define NVSWITCH_TEMP_MNT_ENTRIES               5
+#define NVSWITCH_TEMP_ALL_ENTRIES               5
+#define NVSWITCH_TEMP_SUM_HOUR_ENTRIES          23
+#define NVSWITCH_TEMP_SUM_DAY_ENTRIES           5
+#define NVSWITCH_TEMP_SUM_MNT_ENTRIES           3
+#define NVSWITCH_TEMP_HISTOGRAM_THLD_ENTRIES    20
+#define NVSWITCH_TEMP_HISTOGRAM_TIME_ENTRIES    21
+#define NVSWITCH_TEMP_HOURLY_MAX_ENTRIES        168
+
+/*
+ * NVSWITCH_TEMP_ENTRY
+ *
+ * This structure represents the NVSwitch TEMP with its timestamp.
+ *
+ *   value
+ *     This parameter specifies the NVSwitch Temperature
+ *     (SFXP 9.7 format in Celsius).
+ *
+ *   timestamp
+ *     This parameter specifies the timestamp (EPOCH) of the entry.
+ */
+typedef struct
+{
+    NvU16 value;
+    NvU32 timestamp;
+} NVSWITCH_TEMP_ENTRY;
+
+/*
+ * CTRL_NVSWITCH_GET_TEMP_DATA
+ *
+ * Control to get the NVSwitch device historical temperature information from inforom cache 
+ *
+ * Parameters:
+ *    tempMaxDayIdx [OUT]
+ *      The current index to the maximum day temperature array
+ *    tempMaxDay[] [OUT]
+ *      The maximum temperature array for last NVSWITCH_TEMP_DAY_ENTRIES days
+ *    tempMaxWeekIdx [OUT]
+ *      The current index to the maximum week temperature array
+ *    tempMaxWeek[] [OUT]
+ *      The maximum temperature array for last NVSWITCH_TEMP_WEEK_ENTRIES weeks
+ *    tempMaxMntIdx [OUT]
+ *      The current index to the maximum month temperature array
+ *    tempMaxMnt[] [OUT]
+ *      The maximum temperature array for last NVSWITCH_TEMP_MNT_ENTRIES months
+ *    tempMaxAllIdx [OUT]
+ *      The current index to the maximum temperature array
+ *    tempMaxAll[] [OUT]
+ *      The maximum temperature array for the device 
+ *    tempMinDayIdx [OUT]
+ *      The current index to the minimum day temperature array
+ *    tempMinDay[] [OUT]
+ *      The minimum temperature array for last NVSWITCH_TEMP_DAY_ENTRIES days
+ *    tempMinWeekIdx [OUT]
+ *      The current index to the minimum week temperature array
+ *    tempMinWeek[] [OUT]
+ *      The minimum temperature array for last NVSWITCH_TEMP_WEEK_ENTRIES weeks
+ *    tempMinMntIdx [OUT]
+ *      The current index to the minimum month temperature array
+ *    tempMinMnt[] [OUT]
+ *      The minimum temperature array for last NVSWITCH_TEMP_MNT_ENTRIES months
+ *    tempMinAllIdx [OUT]
+ *      The current index to the minimum temperature array
+ *    tempMinAll[] [OUT]
+ *      The minimum temperature array for the device
+ *    tempSumDelta [OUT]
+ *      The total sum of temperature change in 0.1C granularity
+ *    tempSumHour[] [OUT]
+ *      The moving average of temperature per hour, for last NVSWITCH_TEMP_SUM_HOUR_ENTRIES hours
+ *    tempSumDay[] [OUT]
+ *      The moving average of temperature per day, for last NVSWITCH_TEMP_SUM_DAY_ENTRIES days
+ *    tempSumMnt[] [OUT]
+ *      The moving average of temperature per month, for last NVSWITCH_TEMP_SUM_MNT_ENTRIES months
+ *    tempHistogramThld[] [OUT]
+ *      The histogram of temperature crossing various thresholds (5/10/15/.../95/100)
+ *    tempHistogramTime[] [OUT]
+ *      The histogram of time was in various temperature ranges (0..5/5..10/.../100..)
+ *    tempHourlyMaxSample[] [OUT]
+ *      The maximum hourly temperature array for the device
+ */
+
+typedef struct
+{
+    NvU32               tempMaxDayIdx;
+    NVSWITCH_TEMP_ENTRY tempMaxDay[NVSWITCH_TEMP_DAY_ENTRIES];
+    NvU32               tempMaxWeekIdx;
+    NVSWITCH_TEMP_ENTRY tempMaxWeek[NVSWITCH_TEMP_WEEK_ENTRIES];
+    NvU32               tempMaxMntIdx;
+    NVSWITCH_TEMP_ENTRY tempMaxMnt[NVSWITCH_TEMP_MNT_ENTRIES];
+    NvU32               tempMaxAllIdx;
+    NVSWITCH_TEMP_ENTRY tempMaxAll[NVSWITCH_TEMP_ALL_ENTRIES];
+    NvU32               tempMinDayIdx;
+    NVSWITCH_TEMP_ENTRY tempMinDay[NVSWITCH_TEMP_DAY_ENTRIES];
+    NvU32               tempMinWeekIdx;
+    NVSWITCH_TEMP_ENTRY tempMinWeek[NVSWITCH_TEMP_WEEK_ENTRIES];
+    NvU32               tempMinMntIdx;
+    NVSWITCH_TEMP_ENTRY tempMinMnt[NVSWITCH_TEMP_MNT_ENTRIES];
+    NvU32               tempMinAllIdx;
+    NVSWITCH_TEMP_ENTRY tempMinAll[NVSWITCH_TEMP_ALL_ENTRIES];
+    NvU32               tempSumDelta;
+    NvU32               tempSumHour[NVSWITCH_TEMP_SUM_HOUR_ENTRIES];
+    NvU32               tempSumDay[NVSWITCH_TEMP_SUM_DAY_ENTRIES];
+    NvU32               tempSumMnt[NVSWITCH_TEMP_SUM_MNT_ENTRIES];
+    NvU32               tempHistogramThld[NVSWITCH_TEMP_HISTOGRAM_THLD_ENTRIES];
+    NvU32               tempHistogramTime[NVSWITCH_TEMP_HISTOGRAM_TIME_ENTRIES];
+    NVSWITCH_TEMP_ENTRY tempHourlyMaxSample[NVSWITCH_TEMP_HOURLY_MAX_ENTRIES];
+} NVSWITCH_GET_TEMP_DATA_PARAMS;
+
+#define NVSWITCH_TEMP_COMPRESS_BUFFER_ENTRIES   1096
+#define NVSWITCH_NUM_COMPRESSION_PERIODS        8
+
+/*
+ * CTRL_NVSWITCH_GET_TEMP_DATA
+ *
+ * Control to get the NVSwitch device temperature information from inforom cache 
+ *
+ * Parameters:
+ *    compressionPeriodIdx [OUT]
+ *      The current index to the sample period array
+ *    compressionPeriod[] [OUT]
+ *      The samples period array (seconds)
+ *    tempCompressionBuffer[] [OUT]
+ *      The temperature array sampling at a specific period in compressionPeriod[]
+ */
+
+typedef struct
+{
+    NvU32               compressionPeriodIdx;
+    NvU32               compressionPeriod[NVSWITCH_NUM_COMPRESSION_PERIODS];
+    NVSWITCH_TEMP_ENTRY tempCompressionBuffer[NVSWITCH_TEMP_COMPRESS_BUFFER_ENTRIES];
+} NVSWITCH_GET_TEMP_SAMPLES_PARAMS;
+
+/*
  * CTRL_NVSWITCH_GET_FOM_VALUES
  *   This command gives the FOM values to MODS
  *
@@ -3841,6 +4033,10 @@ typedef struct
 #define CTRL_NVSWITCH_GET_VOLTAGE                           0x54
 #define CTRL_NVSWITCH_GET_BOARD_PART_NUMBER                 0x55
 #define CTRL_NVSWITCH_GET_POWER                             0x56
+#define CTRL_NVSWITCH_GET_SYS_INFO                          0x57
+#define CTRL_NVSWITCH_GET_TIME_INFO                         0x58
+#define CTRL_NVSWITCH_GET_TEMP_DATA                         0x59
+#define CTRL_NVSWITCH_GET_TEMP_SAMPLES                      0x60
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,6 +45,12 @@
     (destName)[1] = (srcName)[1];                    \
     (destName)[2] = (srcName)[2];                    \
 }
+
+#define m_inforom_nvl_get_new_errors_per_minute(value, pSum)    \
+    do                                                          \
+    {                                                           \
+        *pSum = (*pSum - (*pSum / 60)) + value;                 \
+    } while (NV_FALSE)                                          \
 
 //
 // OS type defines.
@@ -99,6 +105,7 @@ struct inforom
         INFOROM_IMG_OBJECT_V1_00    object;
     } IMG;
 
+    INFOROM_NVLINK_STATE               *pNvlinkState;
     INFOROM_ECC_STATE                  *pEccState;
     INFOROM_OMS_STATE                  *pOmsState;
 
@@ -149,6 +156,8 @@ NvlStatus nvswitch_inforom_nvlink_get_max_correctable_error_rate(nvswitch_device
                 NVSWITCH_GET_NVLINK_MAX_CORRECTABLE_ERROR_RATES_PARAMS *params);
 NvlStatus nvswitch_inforom_nvlink_get_errors(nvswitch_device *device,
                                 NVSWITCH_GET_NVLINK_ERROR_COUNTS_PARAMS *params);
+NvlStatus nvswitch_inforom_nvlink_setL1Threshold(nvswitch_device *device, NvU32 word1, NvU32 word2);
+NvlStatus nvswitch_inforom_nvlink_getL1Threshold(nvswitch_device *device, NvU32 *word1, NvU32 *word2);
 
 // InfoROM ECC APIs
 NvlStatus nvswitch_inforom_ecc_load(nvswitch_device *device);
@@ -175,6 +184,7 @@ NvlStatus nvswitch_inforom_bbx_add_sxid(nvswitch_device *device,
                                     NvU32 data1, NvU32 data2);
 NvlStatus nvswitch_inforom_bbx_get_sxid(nvswitch_device *device,
                             NVSWITCH_GET_SXIDS_PARAMS *params);
+NvlStatus nvswitch_inforom_bbx_get_data(nvswitch_device *device, NvU8 dataType, void *params);
 
 // InfoROM DEM APIs
 NvlStatus nvswitch_inforom_dem_load(nvswitch_device *device);

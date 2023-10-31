@@ -112,23 +112,12 @@ struct _NVLOG_BUFFER
 #endif // NVOS_IS_UNIX
 
 
-//
 // Due to this file's peculiar location, NvPort may or may not be includable
-// This hack will go away when NvLog is moved into common/shared
-//
-#if NVOS_IS_MACINTOSH
-
-#if !PORT_IS_KERNEL_BUILD
 typedef struct PORT_SPINLOCK PORT_SPINLOCK;
 typedef struct PORT_MUTEX PORT_MUTEX;
-#else
-#include "nvport/nvport.h"
-#endif
+typedef struct PORT_RWLOCK PORT_RWLOCK;
 
-#elif !defined(PORT_IS_KERNEL_BUILD)
-typedef struct PORT_SPINLOCK PORT_SPINLOCK;
-typedef struct PORT_MUTEX PORT_MUTEX;
-#else
+#if PORT_IS_KERNEL_BUILD
 #include "nvport/nvport.h"
 #endif
 
@@ -149,6 +138,8 @@ typedef struct _NVLOG_LOGGER
     PORT_SPINLOCK*  mainLock;
     /** Lock for creating/deleting pBuffers and accessing them from RmCtrls */
     PORT_MUTEX*  buffersLock;
+    /** Lock for registering/deregistering flush callbacks */
+    PORT_RWLOCK  *flushCbsLock;
 } NVLOG_LOGGER;
 extern NVLOG_LOGGER NvLogLogger;
 
