@@ -886,6 +886,7 @@ struct OBJGPU {
     NvU32 (*__gpuGetPhysAddrWidth__)(struct OBJGPU *, NV_ADDRESS_SPACE);
     NvBool (*__gpuFuseSupportsDisplay__)(struct OBJGPU *);
     NV_STATUS (*__gpuClearFbhubPoisonIntrForBug2924523__)(struct OBJGPU *);
+    NvBool (*__gpuCheckIfFbhubPoisonIntrPending__)(struct OBJGPU *);
     void (*__gpuReadDeviceId__)(struct OBJGPU *, NvU32 *, NvU32 *);
     NvU64 (*__gpuGetFlaVasSize__)(struct OBJGPU *, NvBool);
     void (*__gpuDetermineSelfHostedMode__)(struct OBJGPU *);
@@ -895,6 +896,8 @@ struct OBJGPU {
     NvBool (*__gpuIsCCEnabledInHw__)(struct OBJGPU *);
     NvBool (*__gpuIsDevModeEnabledInHw__)(struct OBJGPU *);
     NvBool (*__gpuIsCtxBufAllocInPmaSupported__)(struct OBJGPU *);
+    void (*__gpuCheckEccCounts__)(struct OBJGPU *);
+    NV_STATUS (*__gpuClearEccCounts__)(struct OBJGPU *);
     NvBool PDB_PROP_GPU_HIGH_SPEED_BRIDGE_CONNECTED;
     NvBool bVideoLinkDisabled;
     GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel;
@@ -1449,6 +1452,8 @@ NV_STATUS __nvoc_objCreate_OBJGPU(OBJGPU**, Dynamic*, NvU32,
 #define gpuFuseSupportsDisplay_HAL(pGpu) gpuFuseSupportsDisplay_DISPATCH(pGpu)
 #define gpuClearFbhubPoisonIntrForBug2924523(pGpu) gpuClearFbhubPoisonIntrForBug2924523_DISPATCH(pGpu)
 #define gpuClearFbhubPoisonIntrForBug2924523_HAL(pGpu) gpuClearFbhubPoisonIntrForBug2924523_DISPATCH(pGpu)
+#define gpuCheckIfFbhubPoisonIntrPending(pGpu) gpuCheckIfFbhubPoisonIntrPending_DISPATCH(pGpu)
+#define gpuCheckIfFbhubPoisonIntrPending_HAL(pGpu) gpuCheckIfFbhubPoisonIntrPending_DISPATCH(pGpu)
 #define gpuReadDeviceId(pGpu, arg0, arg1) gpuReadDeviceId_DISPATCH(pGpu, arg0, arg1)
 #define gpuReadDeviceId_HAL(pGpu, arg0, arg1) gpuReadDeviceId_DISPATCH(pGpu, arg0, arg1)
 #define gpuGetFlaVasSize(pGpu, bNvswitchVirtualization) gpuGetFlaVasSize_DISPATCH(pGpu, bNvswitchVirtualization)
@@ -1467,6 +1472,10 @@ NV_STATUS __nvoc_objCreate_OBJGPU(OBJGPU**, Dynamic*, NvU32,
 #define gpuIsDevModeEnabledInHw_HAL(pGpu) gpuIsDevModeEnabledInHw_DISPATCH(pGpu)
 #define gpuIsCtxBufAllocInPmaSupported(pGpu) gpuIsCtxBufAllocInPmaSupported_DISPATCH(pGpu)
 #define gpuIsCtxBufAllocInPmaSupported_HAL(pGpu) gpuIsCtxBufAllocInPmaSupported_DISPATCH(pGpu)
+#define gpuCheckEccCounts(pGpu) gpuCheckEccCounts_DISPATCH(pGpu)
+#define gpuCheckEccCounts_HAL(pGpu) gpuCheckEccCounts_DISPATCH(pGpu)
+#define gpuClearEccCounts(pGpu) gpuClearEccCounts_DISPATCH(pGpu)
+#define gpuClearEccCounts_HAL(pGpu) gpuClearEccCounts_DISPATCH(pGpu)
 static inline NV_STATUS gpuConstructPhysical_56cd7a(struct OBJGPU *pGpu) {
     return NV_OK;
 }
@@ -3095,6 +3104,16 @@ static inline NV_STATUS gpuClearFbhubPoisonIntrForBug2924523_DISPATCH(struct OBJ
     return pGpu->__gpuClearFbhubPoisonIntrForBug2924523__(pGpu);
 }
 
+NvBool gpuCheckIfFbhubPoisonIntrPending_GA100(struct OBJGPU *pGpu);
+
+static inline NvBool gpuCheckIfFbhubPoisonIntrPending_491d52(struct OBJGPU *pGpu) {
+    return ((NvBool)(0 != 0));
+}
+
+static inline NvBool gpuCheckIfFbhubPoisonIntrPending_DISPATCH(struct OBJGPU *pGpu) {
+    return pGpu->__gpuCheckIfFbhubPoisonIntrPending__(pGpu);
+}
+
 void gpuReadDeviceId_GM107(struct OBJGPU *pGpu, NvU32 *arg0, NvU32 *arg1);
 
 void gpuReadDeviceId_GH100(struct OBJGPU *pGpu, NvU32 *arg0, NvU32 *arg1);
@@ -3187,6 +3206,26 @@ static inline NvBool gpuIsCtxBufAllocInPmaSupported_491d52(struct OBJGPU *pGpu) 
 
 static inline NvBool gpuIsCtxBufAllocInPmaSupported_DISPATCH(struct OBJGPU *pGpu) {
     return pGpu->__gpuIsCtxBufAllocInPmaSupported__(pGpu);
+}
+
+static inline void gpuCheckEccCounts_d44104(struct OBJGPU *pGpu) {
+    return;
+}
+
+void gpuCheckEccCounts_TU102(struct OBJGPU *pGpu);
+
+static inline void gpuCheckEccCounts_DISPATCH(struct OBJGPU *pGpu) {
+    pGpu->__gpuCheckEccCounts__(pGpu);
+}
+
+static inline NV_STATUS gpuClearEccCounts_ac1694(struct OBJGPU *pGpu) {
+    return NV_OK;
+}
+
+NV_STATUS gpuClearEccCounts_TU102(struct OBJGPU *pGpu);
+
+static inline NV_STATUS gpuClearEccCounts_DISPATCH(struct OBJGPU *pGpu) {
+    return pGpu->__gpuClearEccCounts__(pGpu);
 }
 
 static inline PENGDESCRIPTOR gpuGetInitEngineDescriptors(struct OBJGPU *pGpu) {

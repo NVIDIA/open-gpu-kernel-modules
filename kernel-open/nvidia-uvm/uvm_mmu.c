@@ -338,7 +338,7 @@ static void pde_fill_cpu(uvm_page_tree_t *tree,
     UVM_ASSERT(sizeof(pde_data) >= entry_size);
 
     for (i = 0; i < pde_count; i++) {
-        tree->hal->make_pde(pde_data, phys_addr, directory->depth, directory->entries[start_index + i]);
+        tree->hal->make_pde(pde_data, phys_addr, directory, start_index + i);
 
         if (entry_size == sizeof(pde_data[0]))
             uvm_mmu_page_table_cpu_memset_8(tree->gpu, &directory->phys_alloc, start_index + i, pde_data[0], 1);
@@ -393,7 +393,7 @@ static void pde_fill_gpu(uvm_page_tree_t *tree,
 
         uvm_push_inline_data_begin(push, &inline_data);
         for (j = 0; j < entry_count; j++) {
-            tree->hal->make_pde(pde_data, phys_addr, directory->depth, directory->entries[start_index + i + j]);
+            tree->hal->make_pde(pde_data, phys_addr, directory, start_index + i + j);
             uvm_push_inline_data_add(&inline_data, pde_data, entry_size);
         }
         inline_data_addr = uvm_push_inline_data_end(&inline_data);
@@ -407,9 +407,7 @@ static void pde_fill_gpu(uvm_page_tree_t *tree,
 
 // pde_fill() populates pde_count PDE entries (starting at start_index) with
 // the same mapping, i.e., with the same physical address (phys_addr).
-// pde_fill() is optimized for pde_count == 1, which is the common case. The
-// map_remap() function is the only case where pde_count > 1, only used on GA100
-// GPUs for 512MB page size mappings.
+// pde_fill() is optimized for pde_count == 1, which is the common case.
 static void pde_fill(uvm_page_tree_t *tree,
                      uvm_page_directory_t *directory,
                      NvU32 start_index,
@@ -428,21 +426,26 @@ static void pde_fill(uvm_page_tree_t *tree,
 static void phys_mem_init(uvm_page_tree_t *tree, NvU32 page_size, uvm_page_directory_t *dir, uvm_push_t *push)
 {
     NvU32 entries_count = uvm_mmu_page_tree_entries(tree, dir->depth, page_size);
+    NvU8 max_pde_depth = tree->hal->page_table_depth(UVM_PAGE_SIZE_AGNOSTIC) - 1;
 
     // Passing in NULL for the phys_allocs will mark the child entries as
     // invalid.
     uvm_mmu_page_table_alloc_t *phys_allocs[2] = {NULL, NULL};
 
     // Init with an invalid PTE or clean PDE. Only Maxwell PDEs can have more
-    // than 512 entries. We initialize them all with the same clean PDE.
-    // Additionally, only ATS systems may require clean PDEs bit settings based
-    // on the mapping VA.
-    if (dir->depth == tree->hal->page_table_depth(page_size) || (entries_count > 512 && !g_uvm_global.ats.enabled)) {
+    // than 512 entries. In this case, we initialize them all with the same
+    // clean PDE. ATS systems may require clean PDEs with
+    // ATS_ALLOWED/ATS_NOT_ALLOWED bit settings based on the mapping VA.
+    // We only clean_bits to 0 at the lowest page table level (PTE table), i.e.,
+    // when depth is greater than the max_pde_depth.
+    if ((dir->depth > max_pde_depth) || (entries_count > 512 && !g_uvm_global.ats.enabled)) {
         NvU64 clear_bits[2];
 
         // If it is not a PTE, make a clean PDE.
         if (dir->depth != tree->hal->page_table_depth(page_size)) {
-            tree->hal->make_pde(clear_bits, phys_allocs, dir->depth, dir->entries[0]);
+            // make_pde() child index is zero/ignored, since it is only used in
+            // PDEs on ATS-enabled systems where pde_fill() is preferred.
+            tree->hal->make_pde(clear_bits, phys_allocs, dir, 0);
 
             // Make sure that using only clear_bits[0] will work.
             UVM_ASSERT(tree->hal->entry_size(dir->depth) == sizeof(clear_bits[0]) || clear_bits[0] == clear_bits[1]);
@@ -816,7 +819,6 @@ static void free_unused_directories(uvm_page_tree_t *tree,
             }
         }
     }
-
 }
 
 static NV_STATUS allocate_page_table(uvm_page_tree_t *tree, NvU32 page_size, uvm_mmu_page_table_alloc_t *out)
@@ -825,6 +827,86 @@ static NV_STATUS allocate_page_table(uvm_page_tree_t *tree, NvU32 page_size, uvm
     NvLength alloc_size = tree->hal->allocation_size(depth, page_size);
 
     return phys_mem_allocate(tree, alloc_size, tree->location, UVM_PMM_ALLOC_FLAGS_EVICT, out);
+}
+
+static bool page_tree_ats_init_required(uvm_page_tree_t *tree)
+{
+    // We have full control of the kernel page tables mappings, no ATS address
+    // aliases is expected.
+    if (tree->type == UVM_PAGE_TREE_TYPE_KERNEL)
+        return false;
+
+    // Enable uvm_page_tree_init() from the page_tree test.
+    if (uvm_enable_builtin_tests && tree->gpu_va_space == NULL)
+        return false;
+
+    if (!tree->gpu_va_space->ats.enabled)
+        return false;
+
+    return tree->gpu->parent->no_ats_range_required;
+}
+
+static NV_STATUS page_tree_ats_init(uvm_page_tree_t *tree)
+{
+    NV_STATUS status;
+    NvU64 min_va_upper, max_va_lower;
+    NvU32 page_size;
+
+    if (!page_tree_ats_init_required(tree))
+        return NV_OK;
+
+    page_size = uvm_mmu_biggest_page_size(tree);
+
+    uvm_cpu_get_unaddressable_range(&max_va_lower, &min_va_upper);
+
+    // Potential violation of the UVM internal get/put_ptes contract. get_ptes()
+    // creates and initializes enough PTEs to populate all PDEs covering the
+    // no_ats_ranges. We store the no_ats_ranges in the tree, so they can be
+    // put_ptes()'ed on deinit(). It doesn't preclude the range to be used by a
+    // future get_ptes(), since we don't write to the PTEs (range->table) from
+    // the tree->no_ats_ranges.
+    //
+    // Lower half
+    status = uvm_page_tree_get_ptes(tree,
+                                    page_size,
+                                    max_va_lower,
+                                    page_size,
+                                    UVM_PMM_ALLOC_FLAGS_EVICT,
+                                    &tree->no_ats_ranges[0]);
+    if (status != NV_OK)
+        return status;
+
+    UVM_ASSERT(tree->no_ats_ranges[0].entry_count == 1);
+
+    if (uvm_platform_uses_canonical_form_address()) {
+        // Upper half
+        status = uvm_page_tree_get_ptes(tree,
+                                        page_size,
+                                        min_va_upper - page_size,
+                                        page_size,
+                                        UVM_PMM_ALLOC_FLAGS_EVICT,
+                                        &tree->no_ats_ranges[1]);
+        if (status != NV_OK)
+            return status;
+
+        UVM_ASSERT(tree->no_ats_ranges[1].entry_count == 1);
+    }
+
+    return NV_OK;
+}
+
+static void page_tree_ats_deinit(uvm_page_tree_t *tree)
+{
+    size_t i;
+
+    if (page_tree_ats_init_required(tree)) {
+        for (i = 0; i < ARRAY_SIZE(tree->no_ats_ranges); i++) {
+            if (tree->no_ats_ranges[i].entry_count)
+                uvm_page_tree_put_ptes(tree, &tree->no_ats_ranges[i]);
+        }
+
+        memset(tree->no_ats_ranges, 0, sizeof(tree->no_ats_ranges));
+    }
 }
 
 static void map_remap_deinit(uvm_page_tree_t *tree)
@@ -1032,11 +1114,22 @@ NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
         return status;
 
     phys_mem_init(tree, UVM_PAGE_SIZE_AGNOSTIC, tree->root, &push);
-    return page_tree_end_and_wait(tree, &push);
+
+    status = page_tree_end_and_wait(tree, &push);
+    if (status != NV_OK)
+        return status;
+
+    status = page_tree_ats_init(tree);
+    if (status != NV_OK)
+        return status;
+
+    return NV_OK;
 }
 
 void uvm_page_tree_deinit(uvm_page_tree_t *tree)
 {
+    page_tree_ats_deinit(tree);
+
     UVM_ASSERT(tree->root->ref_count == 0);
 
     // Take the tree lock only to avoid assertions. It is not required for
@@ -1275,7 +1368,6 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
         UVM_ASSERT(uvm_gpu_can_address_kernel(tree->gpu, start, size));
 
     while (true) {
-
         // index of the entry, for the first byte of the range, within its
         // containing directory
         NvU32 start_index;
@@ -1307,7 +1399,8 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
                 if (dir_cache[dir->depth] == NULL) {
                     *cur_depth = dir->depth;
 
-                    // Undo the changes to the tree so that the dir cache remains private to the thread
+                    // Undo the changes to the tree so that the dir cache
+                    // remains private to the thread.
                     for (i = 0; i < used_count; i++)
                         host_pde_clear(tree, dirs_used[i]->host_parent, dirs_used[i]->index_in_parent, page_size);
 
@@ -1405,7 +1498,8 @@ NV_STATUS uvm_page_tree_get_ptes_async(uvm_page_tree_t *tree,
                                   dir_cache)) == NV_ERR_MORE_PROCESSING_REQUIRED) {
         uvm_mutex_unlock(&tree->lock);
 
-        // try_get_ptes never needs depth 0, so store a directory at its parent's depth
+        // try_get_ptes never needs depth 0, so store a directory at its
+        // parent's depth.
         // TODO: Bug 1766655: Allocate everything below cur_depth instead of
         //       retrying for every level.
         dir_cache[cur_depth] = allocate_directory(tree, page_size, cur_depth + 1, pmm_flags);
@@ -1688,8 +1782,12 @@ NV_STATUS uvm_page_table_range_vec_init(uvm_page_tree_t *tree,
                                               range);
         if (status != NV_OK) {
             UVM_ERR_PRINT("Failed to get PTEs for subrange %zd [0x%llx, 0x%llx) size 0x%llx, part of [0x%llx, 0x%llx)\n",
-                    i, range_start, range_start + range_size, range_size,
-                    start, size);
+                          i,
+                          range_start,
+                          range_start + range_size,
+                          range_size,
+                          start,
+                          size);
             goto out;
         }
     }

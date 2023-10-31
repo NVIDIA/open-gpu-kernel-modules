@@ -589,7 +589,9 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         if (pNextElement == NULL)
         {
             pMQI->txBufferFull++;
-            NV_PRINTF_COND(pMQI->txBufferFull == 1, LEVEL_ERROR, LEVEL_INFO, "buffer is full\n");
+            NV_PRINTF_COND(pMQI->txBufferFull == 1, LEVEL_ERROR, LEVEL_INFO,
+                           "buffer is full (waiting for %d free elements, got %d)\n",
+                           pCQE->elemCount, i);
             nvStatus = NV_ERR_BUSY_RETRY;
             goto done;
         }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -555,5 +555,37 @@ typedef struct NVB0CC_CTRL_RELEASE_HES_PARAMS {
      */
     NVB0CC_CTRL_HES_TYPE type;
 } NVB0CC_CTRL_RELEASE_HES_PARAMS;
+
+/*!
+ * NVB0CC_CTRL_CMD_DISABLE_DYNAMIC_MMA_BOOST
+ * 
+ * Disable the Dynamic MMA clock boost during profiler lifetime.
+ *
+ */
+#define NVB0CC_CTRL_CMD_DISABLE_DYNAMIC_MMA_BOOST (0xb0cc0117) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS_MESSAGE_ID" */
+#define NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS_MESSAGE_ID (0x17U)
+
+typedef struct NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS {
+    /*!
+     * [in]: En/Disable Dynamic MMA Boost.  True = disable Boost; False = re-enable Boost.
+     */
+    NvBool disable;
+} NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS;
+
+/*!
+ * NVB0CC_CTRL_CMD_GET_DYNAMIC_MMA_BOOST_STATUS
+ * 
+ * Request the Dynamic MMA clock boost feature enablement status.
+ *
+ */
+#define NVB0CC_CTRL_CMD_GET_DYNAMIC_MMA_BOOST_STATUS (0xb0cc0118) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_PROFILER_INTERFACE_ID << 8) | NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS_MESSAGE_ID" */
+#define NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS_MESSAGE_ID (0x18U)
+
+typedef struct NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS {
+    /*!
+     * [out]: Dynamic MMA Boost status: true = boost enabled/available; False = Boost disabled/unavailable.
+     */
+    NvBool enabled;
+} NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS;
 
 /* _ctrlb0ccprofiler_h_ */

@@ -967,8 +967,10 @@ typedef struct
     NvU8 isFromCpu;
 
     NvU8 veId;
-    NvU8 onManaged;         // The access counter notification was triggered on
-                            // a managed memory region
+
+    // The physical access counter notification was triggered on a managed
+    // memory region. This is not set for virtual access counter notifications.
+    NvU8 physOnManaged;
 
     NvU32 value;
     NvU32 subGranularity;

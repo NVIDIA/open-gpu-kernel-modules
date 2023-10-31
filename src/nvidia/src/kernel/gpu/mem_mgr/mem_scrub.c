@@ -713,7 +713,7 @@ _scrubCheckAndSubmit
         goto exit;
     }
 
-    _scrubWaitAndSave(pScrubber, pList, pagesToScrubCheck);
+    _scrubWaitAndSave(pScrubber, pScrubListCopy, pagesToScrubCheck);
 
     for (iter = 0; iter < pageCount; iter++)
     {

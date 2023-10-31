@@ -251,19 +251,6 @@ _memmgrInitRegistryOverrides(OBJGPU *pGpu, MemoryManager *pMemoryManager)
         }
     }
 
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_ENABLE_ADDRTREE, &data32) == NV_OK)
-    {
-        if (data32 == NV_REG_STR_RM_ENABLE_ADDRTREE_YES)
-        {
-            pMemoryManager->bPmaAddrTree = NV_TRUE;
-            NV_PRINTF(LEVEL_ERROR, "Enabled address tree for PMA via regkey.\n");
-        }
-    }
-    else if (RMCFG_FEATURE_PLATFORM_MODS)
-    {
-        pMemoryManager->bPmaAddrTree = NV_TRUE;
-        NV_PRINTF(LEVEL_ERROR, "Enabled address tree for PMA for MODS.\n");
-    }
 }
 
 NV_STATUS
@@ -2295,17 +2282,6 @@ memmgrAllocMIGGPUInstanceMemory_PF
             NvS32 numaNodeId;
             NvU64 partitionBaseAddr = pAddrRange->lo;
             NvU64 partitionSize = rangeLength(*pAddrRange);
-            NvU64 unalignedPartitionBaseAddr = partitionBaseAddr;
-            NvU64 memblockSize = 0;
-
-            NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
-            //
-            // Align the partition base and size to memblock size
-            // Some FB memory is wasted here if it is not already aligned.
-            //
-            partitionBaseAddr = NV_ALIGN_UP64(unalignedPartitionBaseAddr, memblockSize);
-            partitionSize -= (partitionBaseAddr - unalignedPartitionBaseAddr);
-            partitionSize = NV_ALIGN_DOWN64(partitionSize, memblockSize);
 
             if (kmigmgrGetSwizzIdInUseMask(pGpu, pKernelMIGManager) == 0x0)
             {
@@ -2768,11 +2744,6 @@ memmgrPmaInitialize_IMPL
     {
         NV_PRINTF(LEVEL_INFO, "Initializing PMA with NUMA_AUTO_ONLINE flag.\n");
         pmaInitFlags |= PMA_INIT_NUMA_AUTO_ONLINE;
-    }
-
-    if (memmgrIsPmaAddrTree(pMemoryManager))
-    {
-        pmaInitFlags |= PMA_INIT_ADDRTREE;
     }
 
     status = pmaInitialize(pPma, pmaInitFlags);

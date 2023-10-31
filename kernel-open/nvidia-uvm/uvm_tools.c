@@ -1082,25 +1082,19 @@ void uvm_tools_broadcast_replay(uvm_gpu_t *gpu,
 }
 
 
-void uvm_tools_broadcast_replay_sync(uvm_gpu_t *gpu,
-                                     NvU32 batch_id,
-                                     uvm_fault_client_type_t client_type)
+void uvm_tools_broadcast_replay_sync(uvm_gpu_t *gpu, NvU32 batch_id, uvm_fault_client_type_t client_type)
 {
     UVM_ASSERT(!gpu->parent->has_clear_faulted_channel_method);
 
     if (!tools_is_event_enabled_in_any_va_space(UvmEventTypeGpuFaultReplay))
         return;
 
-    record_replay_event_helper(gpu->id,
-                               batch_id,
-                               client_type,
-                               NV_GETTIME(),
-                               gpu->parent->host_hal->get_time(gpu));
+    record_replay_event_helper(gpu->id, batch_id, client_type, NV_GETTIME(), gpu->parent->host_hal->get_time(gpu));
 }
 
 void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
                                         const uvm_access_counter_buffer_entry_t *buffer_entry,
-                                        bool on_managed)
+                                        bool on_managed_phys)
 {
     UvmEventEntry entry;
     UvmEventTestAccessCounterInfo *info = &entry.testEventData.accessCounter;
@@ -1119,6 +1113,7 @@ void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
     info->srcIndex            = uvm_id_value(gpu->id);
     info->address             = buffer_entry->address.address;
     info->isVirtual           = buffer_entry->address.is_virtual? 1: 0;
+
     if (buffer_entry->address.is_virtual) {
         info->instancePtr         = buffer_entry->virtual_info.instance_ptr.address;
         info->instancePtrAperture = g_hal_to_tools_aperture_table[buffer_entry->virtual_info.instance_ptr.aperture];
@@ -1126,9 +1121,10 @@ void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
     }
     else {
         info->aperture            = g_hal_to_tools_aperture_table[buffer_entry->address.aperture];
+        info->physOnManaged       = on_managed_phys? 1 : 0;
     }
+
     info->isFromCpu           = buffer_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MOMC? 1: 0;
-    info->onManaged           = on_managed? 1 : 0;
     info->value               = buffer_entry->counter_value;
     info->subGranularity      = buffer_entry->sub_granularity;
     info->bank                = buffer_entry->bank;

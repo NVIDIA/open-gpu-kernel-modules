@@ -1540,7 +1540,6 @@ static void remove_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space,
     atomic_inc(&va_space->gpu_va_space_deferred_free.num_pending);
 
     uvm_processor_mask_clear(&va_space->registered_gpu_va_spaces, gpu_va_space->gpu->id);
-    uvm_processor_mask_clear_atomic(&va_space->needs_fault_buffer_flush, gpu_va_space->gpu->id);
     va_space->gpu_va_spaces[uvm_id_gpu_index(gpu_va_space->gpu->id)] = NULL;
     gpu_va_space->state = UVM_GPU_VA_SPACE_STATE_DEAD;
 }

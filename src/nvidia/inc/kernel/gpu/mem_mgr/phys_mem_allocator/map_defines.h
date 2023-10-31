@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,7 +22,7 @@
  */
 
 /*!
- *  @brief Contains common defines between addrtree and regmap
+ *  @brief Contains common defines for regmap
  */
 
 #ifndef MAP_DEFINES_H

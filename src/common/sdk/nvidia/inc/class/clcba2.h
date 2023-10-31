@@ -118,6 +118,7 @@ typedef volatile struct _clcba2_tag0 {
 
 // Class definitions
 #define NVCBA2_DECRYPT_COPY_SIZE_MAX_BYTES                                      (2*1024*1024)
+#define NVCBA2_DECRYPT_SCRUB_SIZE_MAX_BYTES                                     (1024*1024*1024)
 
 // Errors
 #define NVCBA2_ERROR_NONE                                                       (0x00000000)
@@ -149,6 +150,7 @@ typedef volatile struct _clcba2_tag0 {
 #define NVCBA2_ERROR_SCRUBBER_INVALD_ADDRESS                                    (0x0000001a)
 #define NVCBA2_ERROR_SCRUBBER_INSUFFICIENT_PERMISSIONS                          (0x0000001b)
 #define NVCBA2_ERROR_SCRUBBER_MUTEX_ACQUIRE_FAILURE                             (0x0000001c)
+#define NVCBA2_ERROR_SCRUB_SIZE_MAX_EXCEEDED                                    (0x0000001d)
 
 #ifdef __cplusplus
 };     /* extern "C" */

@@ -177,6 +177,7 @@ mmuWalkSetUserCtx
     MMU_WALK_USER_CTX *pUserCtx
 )
 {
+    NV_ASSERT_OR_RETURN(NULL != pWalk, NV_ERR_INVALID_STATE);
 
     pWalk->pUserCtx = pUserCtx;
     return NV_OK;

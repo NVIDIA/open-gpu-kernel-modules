@@ -218,6 +218,9 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args);
 NV_STATUS uvm_migrate_pageable_init(void);
 
 void uvm_migrate_pageable_exit(void);
+
+NV_STATUS uvm_test_skip_migrate_vma(UVM_TEST_SKIP_MIGRATE_VMA_PARAMS *params, struct file *filp);
+
 #else // UVM_MIGRATE_VMA_SUPPORTED
 
 static NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
@@ -251,6 +254,10 @@ static void uvm_migrate_pageable_exit(void)
 {
 }
 
+static inline NV_STATUS uvm_test_skip_migrate_vma(UVM_TEST_SKIP_MIGRATE_VMA_PARAMS *params, struct file *filp)
+{
+    return NV_OK;
+}
 #endif // UVM_MIGRATE_VMA_SUPPORTED
 
 #endif

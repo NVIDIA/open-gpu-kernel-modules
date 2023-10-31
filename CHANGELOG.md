@@ -2,6 +2,8 @@
 
 ## Release 535 Entries
 
+### [535.129.03] 2023-10-31
+
 ### [535.113.01] 2023-09-21
 
 #### Fixed
@@ -49,6 +51,10 @@
 - Support for power management features like Suspend, Hibernate and Resume.
 
 ## Release 525 Entries
+
+#### Fixed
+
+- Fix nvidia_p2p_get_pages(): Fix double-free in register-callback error path, [#557](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/557) by @BrendanCunningham
 
 ### [525.116.04] 2023-05-09
 

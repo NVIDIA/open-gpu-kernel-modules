@@ -826,13 +826,6 @@
 
 //
 // Type DWORD
-// Controls enable of Address Tree memory tracking instead of regmap
-// for the PMA memory manager.
-//
-#define NV_REG_STR_RM_ENABLE_ADDRTREE       "RMEnableAddrtree"
-#define NV_REG_STR_RM_ENABLE_ADDRTREE_YES   (0x00000001)
-#define NV_REG_STR_RM_ENABLE_ADDRTREE_NO    (0x00000000)
-
 #define  NV_REG_STR_RM_SCRUB_BLOCK_SHIFT               "RMScrubBlockShift"
 // Type DWORD
 // Encoding Numeric Value

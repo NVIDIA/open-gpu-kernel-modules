@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2021 NVIDIA Corporation
+    Copyright (c) 2017-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -93,4 +93,6 @@ void uvm_hal_turing_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->smc.supported = false;
 
     parent_gpu->plc_supported = true;
+
+    parent_gpu->no_ats_range_required = false;
 }

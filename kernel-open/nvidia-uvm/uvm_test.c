@@ -36,6 +36,7 @@
 #include "uvm_mmu.h"
 #include "uvm_gpu_access_counters.h"
 #include "uvm_pmm_sysmem.h"
+#include "uvm_migrate_pageable.h"
 
 static NV_STATUS uvm_test_get_gpu_ref_count(UVM_TEST_GET_GPU_REF_COUNT_PARAMS *params, struct file *filp)
 {
@@ -331,6 +332,7 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED, uvm_test_cgroup_accounting_supported);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SPLIT_INVALIDATE_DELAY, uvm_test_split_invalidate_delay);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_CPU_CHUNK_API, uvm_test_cpu_chunk_api);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SKIP_MIGRATE_VMA, uvm_test_skip_migrate_vma);
     }
 
     return -EINVAL;

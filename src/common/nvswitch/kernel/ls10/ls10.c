@@ -42,6 +42,7 @@
 #include "ls10/gfw_ls10.h"
 
 #include "nvswitch/ls10/dev_nvs_top.h"
+#include "nvswitch/ls10/ptop_discovery_ip.h"
 #include "nvswitch/ls10/dev_pri_masterstation_ip.h"
 #include "nvswitch/ls10/dev_pri_hub_sys_ip.h"
 #include "nvswitch/ls10/dev_nvlw_ip.h"
@@ -5835,6 +5836,104 @@ nvswitch_ctrl_get_nvlink_error_threshold_ls10
             link->errorThreshold.bInterruptTrigerred;
     }
     FOR_EACH_INDEX_IN_MASK_END;
+
+    return NVL_SUCCESS;
+}
+
+NvlStatus
+nvswitch_check_io_sanity_ls10
+(
+    nvswitch_device *device
+)
+{
+    NvBool keepPolling;
+    NVSWITCH_TIMEOUT timeout;
+    NvU32   val;
+    NvBool error = NV_FALSE;
+    NvU32 sxid;
+    const char *sxid_desc = NULL;
+
+    //
+    // NOTE: MMIO discovery has not been performed so only constant BAR0 offset
+    // addressing can be performed.
+    //
+
+    // BAR0 offset 0 should always contain valid data -- unless it doesn't
+    val = NVSWITCH_OFF_RD32(device, 0);
+    if (val == 0)
+    {
+        error = NV_TRUE;
+        sxid = NVSWITCH_ERR_HW_HOST_FIRMWARE_RECOVERY_MODE;
+        sxid_desc = "Firmware recovery mode";
+    }
+    else if ((val == 0xFFFFFFFF) || ((val & 0xFFFF0000) == 0xBADF0000))
+    {
+        error = NV_TRUE;
+        sxid = NVSWITCH_ERR_HW_HOST_IO_FAILURE;
+        sxid_desc = "IO failure";
+    }
+    else if (!IS_FMODEL(device))
+    {
+        // check if FSP successfully started
+        nvswitch_timeout_create(10 * NVSWITCH_INTERVAL_1SEC_IN_NS, &timeout);
+        do
+        {
+            keepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
+
+            val = NVSWITCH_REG_RD32(device, _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS);
+            if (FLD_TEST_DRF(_GFW_GLOBAL, _BOOT_PARTITION_PROGRESS, _VALUE, _SUCCESS, val))
+            {
+                break;
+            }
+
+            nvswitch_os_sleep(1);
+        }
+        while (keepPolling);
+        if (!FLD_TEST_DRF(_GFW_GLOBAL, _BOOT_PARTITION_PROGRESS, _VALUE, _SUCCESS, val))
+        {
+            error = NV_TRUE;
+            sxid = NVSWITCH_ERR_HW_HOST_FIRMWARE_INITIALIZATION_FAILURE;
+            sxid_desc = "Firmware initialization failure";
+        }
+    }
+
+    if (error)
+    {
+        NVSWITCH_RAW_ERROR_LOG_TYPE report = { 0, { 0 } };
+        NVSWITCH_RAW_ERROR_LOG_TYPE report_saw = {0, { 0 }};
+        NvU32 report_idx = 0;
+        NvU32 i;
+
+        val = NVSWITCH_REG_RD32(device, _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS);
+        report.data[report_idx++] = val;
+        NVSWITCH_PRINT(device, ERROR, "%s: -- _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS (0x%x) != _SUCCESS --\n",
+            __FUNCTION__, val);
+
+        for (i = 0; i <= 15; i++)
+        {
+            val = NVSWITCH_OFF_RD32(device,
+                NV_PTOP_UNICAST_SW_DEVICE_BASE_SAW_0 + NV_NVLSAW_SW_SCRATCH(i));
+            report_saw.data[i] = val;
+            NVSWITCH_PRINT(device, ERROR, "%s: -- NV_NVLSAW_SW_SCRATCH(%d) = 0x%08x\n",
+                __FUNCTION__, i, val);
+        }
+
+        for (i = 0; i < NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2__SIZE_1; i++)
+        {
+            val = NVSWITCH_REG_RD32(device, _PFSP, _FALCON_COMMON_SCRATCH_GROUP_2(i));
+            report.data[report_idx++] = val;
+                NVSWITCH_PRINT(device, ERROR, "%s: -- NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(%d) = 0x%08x\n",
+                __FUNCTION__, i, val);
+        }
+
+        // Include useful scratch information for triage
+        NVSWITCH_PRINT_SXID_NO_BBX(device, sxid,
+            "Fatal, %s (0x%x/0x%x, 0x%x, 0x%x, 0x%x/0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", sxid_desc,
+            report.data[0], report.data[1], report.data[2], report.data[3], report.data[4],
+            report_saw.data[0], report_saw.data[1], report_saw.data[12], report_saw.data[14], report_saw.data[15]);
+
+        return -NVL_INITIALIZATION_TOTAL_FAILURE;
+    }
 
     return NVL_SUCCESS;
 }

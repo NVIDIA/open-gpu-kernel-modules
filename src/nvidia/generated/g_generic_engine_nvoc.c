@@ -229,12 +229,27 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_GenericE
         /*func=*/       "genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask"
 #endif
     },
+    {               /*  [2] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x250u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) genapiCtrlCmdBBXGetLastFlushTime_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x250u)
+        /*flags=*/      0x250u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0x90e70113u,
+        /*paramSize=*/  sizeof(NV90E7_CTRL_BBX_GET_LAST_FLUSH_TIME_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_GenericEngineApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "genapiCtrlCmdBBXGetLastFlushTime"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_GenericEngineApi = 
 {
-    /*numEntries=*/     2,
+    /*numEntries=*/     3,
     /*pExportEntries=*/ __nvoc_exported_method_def_GenericEngineApi
 };
 
@@ -283,6 +298,10 @@ static void __nvoc_init_funcTable_GenericEngineApi_1(GenericEngineApi *pThis) {
 
 #if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
     pThis->__genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask__ = &genapiCtrlCmdMasterGetVirtualFunctionErrorContIntrMask_IMPL;
+#endif
+
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x250u)
+    pThis->__genapiCtrlCmdBBXGetLastFlushTime__ = &genapiCtrlCmdBBXGetLastFlushTime_IMPL;
 #endif
 
     pThis->__nvoc_base_GpuResource.__gpuresMap__ = &__nvoc_thunk_GenericEngineApi_gpuresMap;

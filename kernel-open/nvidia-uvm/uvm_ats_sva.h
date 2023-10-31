@@ -53,6 +53,17 @@
         #define UVM_ATS_SVA_SUPPORTED() 0
     #endif
 
+// If NV_ARCH_INVALIDATE_SECONDARY_TLBS is defined it means the upstream fix is
+// in place so no need for the WAR from Bug 4130089: [GH180][r535] WAR for
+// kernel not issuing SMMU TLB invalidates on read-only
+#if defined(NV_ARCH_INVALIDATE_SECONDARY_TLBS)
+    #define UVM_ATS_SMMU_WAR_REQUIRED() 0
+#elif NVCPU_IS_AARCH64
+    #define UVM_ATS_SMMU_WAR_REQUIRED() 1
+#else
+    #define UVM_ATS_SMMU_WAR_REQUIRED() 0
+#endif
+
 typedef struct
 {
     int placeholder;
@@ -81,6 +92,17 @@ typedef struct
 
     // LOCKING: None
     void uvm_ats_sva_unregister_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space);
+
+    // Fix for Bug 4130089: [GH180][r535] WAR for kernel not issuing SMMU
+    // TLB invalidates on read-only to read-write upgrades
+    #if UVM_ATS_SMMU_WAR_REQUIRED()
+        void uvm_ats_smmu_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space, NvU64 addr, size_t size);
+    #else
+        static void uvm_ats_smmu_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space, NvU64 addr, size_t size)
+        {
+
+        }
+    #endif
 #else
     static NV_STATUS uvm_ats_sva_add_gpu(uvm_parent_gpu_t *parent_gpu)
     {
@@ -108,6 +130,11 @@ typedef struct
     }
 
     static void uvm_ats_sva_unregister_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space)
+    {
+
+    }
+
+    static void uvm_ats_smmu_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space, NvU64 addr, size_t size)
     {
 
     }

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -184,6 +184,7 @@ NvlStatus nvswitch_inforom_bbx_add_sxid(nvswitch_device *device,
                                     NvU32 data1, NvU32 data2);
 NvlStatus nvswitch_inforom_bbx_get_sxid(nvswitch_device *device,
                             NVSWITCH_GET_SXIDS_PARAMS *params);
+NvlStatus nvswitch_inforom_bbx_get_data(nvswitch_device *device, NvU8 dataType, void *params);
 
 // InfoROM DEM APIs
 NvlStatus nvswitch_inforom_dem_load(nvswitch_device *device);

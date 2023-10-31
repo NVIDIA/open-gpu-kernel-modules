@@ -419,18 +419,21 @@ kchangrpDestroy_IMPL
     kfifoChannelListDestroy(pGpu, pKernelFifo, pKernelChannelGroup->pChanList);
     pKernelChannelGroup->pChanList= NULL;
 
-    // Remove this from the <grIPD, PCHGRP> that we maintain in OBJFIFO
-    pKernelChannelGroupTemp = mapFind(pChidMgr->pChanGrpTree, pKernelChannelGroup->grpID);
-    if (pKernelChannelGroupTemp == NULL)
+    if (pChidMgr != NULL)
     {
-        NV_PRINTF(LEVEL_ERROR, "Could not find channel group %d\n",
-                  pKernelChannelGroup->grpID);
-        return NV_ERR_OBJECT_NOT_FOUND;
-    }
-    mapRemove(pChidMgr->pChanGrpTree, pKernelChannelGroupTemp);
+        // Remove this from the <grIPD, PCHGRP> that we maintain in OBJFIFO
+        pKernelChannelGroupTemp = mapFind(pChidMgr->pChanGrpTree, pKernelChannelGroup->grpID);
+        if (pKernelChannelGroupTemp == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Could not find channel group %d\n",
+                      pKernelChannelGroup->grpID);
+            return NV_ERR_OBJECT_NOT_FOUND;
+        }
+        mapRemove(pChidMgr->pChanGrpTree, pKernelChannelGroupTemp);
 
-    // Release the free grpID
-    kfifoChidMgrFreeChannelGroupHwID(pGpu, pKernelFifo, pChidMgr, pKernelChannelGroup->grpID);
+        // Release the free grpID
+        kfifoChidMgrFreeChannelGroupHwID(pGpu, pKernelFifo, pChidMgr, pKernelChannelGroup->grpID);
+    }
 
     //
     // Free the method buffer if applicable

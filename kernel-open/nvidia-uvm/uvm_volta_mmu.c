@@ -147,14 +147,18 @@ static NvU64 small_half_pde_volta(uvm_mmu_page_table_alloc_t *phys_alloc)
 
 static void make_pde_volta(void *entry,
                            uvm_mmu_page_table_alloc_t **phys_allocs,
-                           NvU32 depth,
-                           uvm_page_directory_t *child_dir)
+                           uvm_page_directory_t *dir,
+                           NvU32 child_index)
 {
-    NvU32 entry_count = entries_per_index_volta(depth);
+    NvU32 entry_count;
     NvU64 *entry_bits = (NvU64 *)entry;
 
+    UVM_ASSERT(dir);
+
+    entry_count = entries_per_index_volta(dir->depth);
+
     if (entry_count == 1) {
-        *entry_bits = single_pde_volta(*phys_allocs, depth);
+        *entry_bits = single_pde_volta(*phys_allocs, dir->depth);
     }
     else if (entry_count == 2) {
         entry_bits[MMU_BIG] = big_half_pde_volta(phys_allocs[MMU_BIG]);

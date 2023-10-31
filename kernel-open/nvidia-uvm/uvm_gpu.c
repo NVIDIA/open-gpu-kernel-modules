@@ -218,19 +218,12 @@ static bool gpu_supports_uvm(uvm_parent_gpu_t *parent_gpu)
     return parent_gpu->rm_info.subdeviceCount == 1;
 }
 
-static bool platform_uses_canonical_form_address(void)
-{
-    if (NVCPU_IS_PPC64LE)
-        return false;
-
-    return true;
-}
-
 bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size)
 {
     // Lower and upper address spaces are typically found in platforms that use
     // the canonical address form.
     NvU64 max_va_lower;
+    NvU64 min_va_upper;
     NvU64 addr_end = addr + size - 1;
     NvU8 gpu_addr_shift;
     NvU8 cpu_addr_shift;
@@ -243,7 +236,7 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size)
     UVM_ASSERT(size > 0);
 
     gpu_addr_shift = gpu->address_space_tree.hal->num_va_bits();
-    cpu_addr_shift = fls64(TASK_SIZE - 1) + 1;
+    cpu_addr_shift = uvm_cpu_num_va_bits();
     addr_shift = gpu_addr_shift;
 
     // Pascal+ GPUs are capable of accessing kernel pointers in various modes
@@ -279,9 +272,7 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size)
     //               0 +----------------+               0 +----------------+
 
     // On canonical form address platforms and Pascal+ GPUs.
-    if (platform_uses_canonical_form_address() && gpu_addr_shift > 40) {
-        NvU64 min_va_upper;
-
+    if (uvm_platform_uses_canonical_form_address() && gpu_addr_shift > 40) {
         // On x86, when cpu_addr_shift > gpu_addr_shift, it means the CPU uses
         // 5-level paging and the GPU is pre-Hopper. On Pascal-Ada GPUs (49b
         // wide VA) we set addr_shift to match a 4-level paging x86 (48b wide).
@@ -292,15 +283,11 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size)
             addr_shift = gpu_addr_shift;
         else
             addr_shift = cpu_addr_shift;
+    }
 
-        min_va_upper = (NvU64)((NvS64)(1ULL << 63) >> (64 - addr_shift));
-        max_va_lower = 1ULL << (addr_shift - 1);
-        return (addr_end < max_va_lower) || (addr >= min_va_upper);
-    }
-    else {
-        max_va_lower = 1ULL << addr_shift;
-        return addr_end < max_va_lower;
-    }
+    uvm_get_unaddressable_range(addr_shift, &max_va_lower, &min_va_upper);
+
+    return (addr_end < max_va_lower) || (addr >= min_va_upper);
 }
 
 // The internal UVM VAS does not use canonical form addresses.
@@ -326,14 +313,14 @@ NvU64 uvm_parent_gpu_canonical_address(uvm_parent_gpu_t *parent_gpu, NvU64 addr)
     NvU8 addr_shift;
     NvU64 input_addr = addr;
 
-    if (platform_uses_canonical_form_address()) {
+    if (uvm_platform_uses_canonical_form_address()) {
         // When the CPU VA width is larger than GPU's, it means that:
         // On ARM: the CPU is on LVA mode and the GPU is pre-Hopper.
         // On x86: the CPU uses 5-level paging and the GPU is pre-Hopper.
         // We sign-extend on the 48b on ARM and on the 47b on x86 to mirror the
         // behavior of CPUs with smaller (than GPU) VA widths.
         gpu_addr_shift = parent_gpu->arch_hal->mmu_mode_hal(UVM_PAGE_SIZE_64K)->num_va_bits();
-        cpu_addr_shift = fls64(TASK_SIZE - 1) + 1;
+        cpu_addr_shift = uvm_cpu_num_va_bits();
 
         if (cpu_addr_shift > gpu_addr_shift)
             addr_shift = NVCPU_IS_X86_64 ? 48 : 49;

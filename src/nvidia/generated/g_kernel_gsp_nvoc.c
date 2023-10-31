@@ -118,6 +118,10 @@ static NV_STATUS __nvoc_thunk_KernelGsp_kflcnResetHw(struct OBJGPU *pGpu, struct
     return kgspResetHw(pGpu, (struct KernelGsp *)(((unsigned char *)pKernelGsp) - __nvoc_rtti_KernelGsp_KernelFalcon.offset));
 }
 
+static void __nvoc_thunk_KernelGsp_kcrashcatEngineReadEmem(struct KernelCrashCatEngine *pKernelGsp, NvU64 offset, NvU64 size, void *pBuf) {
+    kgspReadEmem((struct KernelGsp *)(((unsigned char *)pKernelGsp) - __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset, size, pBuf);
+}
+
 static NvBool __nvoc_thunk_KernelCrashCatEngine_kgspConfigured(struct KernelGsp *arg0) {
     return kcrashcatEngineConfigured((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset));
 }
@@ -164,10 +168,6 @@ static NvU32 __nvoc_thunk_KernelFalcon_kgspRegRead(struct OBJGPU *pGpu, struct K
 
 static NvBool __nvoc_thunk_OBJENGSTATE_kgspIsPresent(POBJGPU pGpu, struct KernelGsp *pEngstate) {
     return engstateIsPresent(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelGsp_OBJENGSTATE.offset));
-}
-
-static void __nvoc_thunk_KernelCrashCatEngine_kgspReadEmem(struct KernelGsp *arg0, NvU64 offset, NvU64 size, void *pBuf) {
-    kcrashcatEngineReadEmem((struct KernelCrashCatEngine *)(((unsigned char *)arg0) + __nvoc_rtti_KernelGsp_KernelCrashCatEngine.offset), offset, size, pBuf);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kgspStateLoad(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
@@ -313,6 +313,21 @@ void __nvoc_init_dataField_KernelGsp(KernelGsp *pThis, RmHalspecOwner *pRmhalspe
         {
             pThis->fwHeapParamOsCarveoutSize = (20 << 20);
         }
+    }
+
+    // Hal field -- ememPort
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->ememPort = 6;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0fc00UL) )) /* ChipHal: GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    {
+        pThis->ememPort = 2;
+    }
+    // default
+    else
+    {
+        pThis->ememPort = 0;
     }
 }
 
@@ -779,6 +794,9 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
         pThis->__kgspSetupGspFmcArgs__ = &kgspSetupGspFmcArgs_5baef9;
     }
 
+    // Hal function -- kgspReadEmem
+    pThis->__kgspReadEmem__ = &kgspReadEmem_TU102;
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelGsp_engstateConstructEngine;
 
     pThis->__nvoc_base_IntrService.__intrservRegisterIntrService__ = &__nvoc_thunk_KernelGsp_intrservRegisterIntrService;
@@ -786,6 +804,8 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
     pThis->__nvoc_base_IntrService.__intrservServiceInterrupt__ = &__nvoc_thunk_KernelGsp_intrservServiceInterrupt;
 
     pThis->__nvoc_base_KernelFalcon.__kflcnResetHw__ = &__nvoc_thunk_KernelGsp_kflcnResetHw;
+
+    pThis->__nvoc_base_KernelFalcon.__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineReadEmem__ = &__nvoc_thunk_KernelGsp_kcrashcatEngineReadEmem;
 
     pThis->__kgspConfigured__ = &__nvoc_thunk_KernelCrashCatEngine_kgspConfigured;
 
@@ -810,8 +830,6 @@ static void __nvoc_init_funcTable_KernelGsp_1(KernelGsp *pThis, RmHalspecOwner *
     pThis->__kgspRegRead__ = &__nvoc_thunk_KernelFalcon_kgspRegRead;
 
     pThis->__kgspIsPresent__ = &__nvoc_thunk_OBJENGSTATE_kgspIsPresent;
-
-    pThis->__kgspReadEmem__ = &__nvoc_thunk_KernelCrashCatEngine_kgspReadEmem;
 
     pThis->__kgspStateLoad__ = &__nvoc_thunk_OBJENGSTATE_kgspStateLoad;
 

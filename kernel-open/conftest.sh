@@ -4468,6 +4468,24 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE" "" "types"
         ;;
 
+        mmu_notifier_ops_arch_invalidate_secondary_tlbs)
+            #
+            # Determine if the mmu_notifier_ops struct has the
+            # 'arch_invalidate_secondary_tlbs' member.
+            #
+            # struct mmu_notifier_ops.invalidate_range was renamed to
+            # arch_invalidate_secondary_tlbs by commit 1af5a8109904
+            # ("mmu_notifiers: rename invalidate_range notifier") due to be
+            # added in v6.6
+           CODE="
+            #include <linux/mmu_notifier.h>
+            int conftest_mmu_notifier_ops_arch_invalidate_secondary_tlbs(void) {
+                return offsetof(struct mmu_notifier_ops, arch_invalidate_secondary_tlbs);
+            }"
+
+            compile_check_conftest "$CODE" "NV_MMU_NOTIFIER_OPS_HAS_ARCH_INVALIDATE_SECONDARY_TLBS" "" "types"
+        ;;
+
         drm_format_num_planes)
             #
             # Determine if drm_format_num_planes() function is present.
@@ -6681,18 +6699,9 @@ case "$5" in
                 VFIO_PCI_CORE_PRESENT=1
             fi
 
-            # When this sanity check is run via nvidia-installer, it sets ARCH as aarch64.
-            # But, when it is run via Kbuild, ARCH is set as arm64
-            if [ "$ARCH" = "aarch64" ]; then
-                ARCH="arm64"
-            fi
-
             if [ "$VFIO_IOMMU_PRESENT" != "0" ] && [ "$KVM_PRESENT" != "0" ] ; then
-
-                # On x86_64, vGPU requires MDEV framework to be present.
-                # On aarch64, vGPU requires MDEV or vfio-pci-core framework to be present.
-                if ([ "$ARCH" = "arm64" ] && ([ "$VFIO_MDEV_PRESENT" != "0" ] || [ "$VFIO_PCI_CORE_PRESENT" != "0" ])) ||
-                   ([ "$ARCH" = "x86_64" ] && [ "$VFIO_MDEV_PRESENT" != "0" ];) then
+                # vGPU requires either MDEV or vfio-pci-core framework to be present.
+                if [ "$VFIO_MDEV_PRESENT" != "0" ] || [ "$VFIO_PCI_CORE_PRESENT" != "0" ]; then
                     exit 0
                 fi
             fi
@@ -6703,12 +6712,8 @@ case "$5" in
                 echo "CONFIG_VFIO_IOMMU_TYPE1";
             fi
 
-            if [ "$ARCH" = "arm64" ] && [ "$VFIO_MDEV_PRESENT" = "0" ] && [ "$VFIO_PCI_CORE_PRESENT" = "0" ]; then
+            if [ "$VFIO_MDEV_PRESENT" = "0" ] && [ "$VFIO_PCI_CORE_PRESENT" = "0" ]; then
                 echo "either CONFIG_VFIO_MDEV or CONFIG_VFIO_PCI_CORE";
-            fi
-
-            if [ "$ARCH" = "x86_64" ] && [ "$VFIO_MDEV_PRESENT" = "0" ]; then
-                echo "CONFIG_VFIO_MDEV";
             fi
 
             if [ "$KVM_PRESENT" = "0" ]; then

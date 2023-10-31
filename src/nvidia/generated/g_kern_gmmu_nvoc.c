@@ -493,6 +493,28 @@ static void __nvoc_init_funcTable_KernelGmmu_1(KernelGmmu *pThis, RmHalspecOwner
         pThis->__kgmmuReadShadowBufPutIndex__ = &kgmmuReadShadowBufPutIndex_4a4dee;
     }
 
+    // Hal function -- kgmmuGetEccCounts
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000420UL) )) /* ChipHal: TU102 | GA100 | GH100 */ 
+    {
+        pThis->__kgmmuGetEccCounts__ = &kgmmuGetEccCounts_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kgmmuGetEccCounts__ = &kgmmuGetEccCounts_4a4dee;
+    }
+
+    // Hal function -- kgmmuClearEccCounts
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000420UL) )) /* ChipHal: TU102 | GA100 | GH100 */ 
+    {
+        pThis->__kgmmuClearEccCounts__ = &kgmmuClearEccCounts_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__kgmmuClearEccCounts__ = &kgmmuClearEccCounts_b3696a;
+    }
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelGmmu_engstateConstructEngine;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelGmmu_engstateStateInitLocked;

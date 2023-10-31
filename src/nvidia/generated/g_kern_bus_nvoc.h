@@ -381,6 +381,8 @@ struct KernelBus {
     NvU8 *(*__kbusMapCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, PMEMORY_DESCRIPTOR);
     void (*__kbusUnmapCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, PMEMORY_DESCRIPTOR);
     void (*__kbusTeardownCoherentCpuMapping__)(OBJGPU *, struct KernelBus *, NvBool);
+    NvU32 (*__kbusGetEccCounts__)(OBJGPU *, struct KernelBus *);
+    void (*__kbusClearEccCounts__)(OBJGPU *, struct KernelBus *);
     NV_STATUS (*__kbusStatePostUnload__)(POBJGPU, struct KernelBus *, NvU32);
     NV_STATUS (*__kbusStateInitUnlocked__)(POBJGPU, struct KernelBus *);
     void (*__kbusInitMissing__)(POBJGPU, struct KernelBus *);
@@ -607,6 +609,10 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusUnmapCoherentCpuMapping_HAL(pGpu, pKernelBus, arg0) kbusUnmapCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusTeardownCoherentCpuMapping(pGpu, pKernelBus, arg0) kbusTeardownCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
 #define kbusTeardownCoherentCpuMapping_HAL(pGpu, pKernelBus, arg0) kbusTeardownCoherentCpuMapping_DISPATCH(pGpu, pKernelBus, arg0)
+#define kbusGetEccCounts(pGpu, pKernelBus) kbusGetEccCounts_DISPATCH(pGpu, pKernelBus)
+#define kbusGetEccCounts_HAL(pGpu, pKernelBus) kbusGetEccCounts_DISPATCH(pGpu, pKernelBus)
+#define kbusClearEccCounts(pGpu, pKernelBus) kbusClearEccCounts_DISPATCH(pGpu, pKernelBus)
+#define kbusClearEccCounts_HAL(pGpu, pKernelBus) kbusClearEccCounts_DISPATCH(pGpu, pKernelBus)
 #define kbusStatePostUnload(pGpu, pEngstate, arg0) kbusStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kbusStateInitUnlocked(pGpu, pEngstate) kbusStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kbusInitMissing(pGpu, pEngstate) kbusInitMissing_DISPATCH(pGpu, pEngstate)
@@ -2213,6 +2219,26 @@ static inline void kbusTeardownCoherentCpuMapping_d44104(OBJGPU *pGpu, struct Ke
 
 static inline void kbusTeardownCoherentCpuMapping_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus, NvBool arg0) {
     pKernelBus->__kbusTeardownCoherentCpuMapping__(pGpu, pKernelBus, arg0);
+}
+
+NvU32 kbusGetEccCounts_GH100(OBJGPU *pGpu, struct KernelBus *pKernelBus);
+
+static inline NvU32 kbusGetEccCounts_4a4dee(OBJGPU *pGpu, struct KernelBus *pKernelBus) {
+    return 0;
+}
+
+static inline NvU32 kbusGetEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus) {
+    return pKernelBus->__kbusGetEccCounts__(pGpu, pKernelBus);
+}
+
+void kbusClearEccCounts_GH100(OBJGPU *pGpu, struct KernelBus *pKernelBus);
+
+static inline void kbusClearEccCounts_b3696a(OBJGPU *pGpu, struct KernelBus *pKernelBus) {
+    return;
+}
+
+static inline void kbusClearEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelBus *pKernelBus) {
+    pKernelBus->__kbusClearEccCounts__(pGpu, pKernelBus);
 }
 
 static inline NV_STATUS kbusStatePostUnload_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate, NvU32 arg0) {

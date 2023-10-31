@@ -734,6 +734,9 @@ static void TweakTimingsForGsync(const NVDpyEvoRec *pDpyEvo,
             return;
     }
 
+    nvEvoLogInfoString(pInfoString,
+            "Adjusting Mode Timings for Quadro Sync Compatibility");
+
     ret = nvRmApiControl(nvEvoGlobal.clientHandle,
                          pDispEvo->pFrameLockEvo->device,
                          NV30F1_CTRL_CMD_GSYNC_GET_OPTIMIZED_TIMING,
@@ -744,12 +747,13 @@ static void TweakTimingsForGsync(const NVDpyEvoRec *pDpyEvo,
         nvAssert(!"Failed to convert to Quadro Sync safe timing");
         /* do not apply the timings returned by RM if the call failed */
         return;
+    } else if (!gsyncOptTimingParams.bOptimized) {
+        nvEvoLogInfoString(pInfoString, " Timings Unchanged.");
+        return;
     }
 
     nvConstructNvModeTimingsFromHwModeTimings(pTimings, &modeTimings);
 
-    nvEvoLogInfoString(pInfoString,
-            "Adjusting Mode Timings for Quadro Sync Compatibility");
     nvEvoLogInfoString(pInfoString, " Old Timings:");
     nvEvoLogModeValidationModeTimings(pInfoString, &modeTimings);
 
@@ -5263,13 +5267,6 @@ NvBool nvConstructHwModeTimingsImpCheckEvo(
                                   NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS);
     NvU32 ret;
 
-    /* bypass this checking if the user disabled IMP */
-
-    if ((pParams->overrides &
-         NVKMS_MODE_VALIDATION_NO_EXTENDED_GPU_CAPABILITIES_CHECK) != 0) {
-        return TRUE;
-    }
-
     activeRmId = nvRmAllocDisplayId(pConnectorEvo->pDispEvo,
                     nvAddDpyIdToEmptyDpyIdList(pConnectorEvo->displayId));
     if (activeRmId == 0x0) {
@@ -5294,11 +5291,18 @@ NvBool nvConstructHwModeTimingsImpCheckEvo(
         timingsParams[head].pUsage = &timings[head].viewPort.guaranteedUsage;
     }
 
-    ret = nvValidateImpOneDispDowngrade(pConnectorEvo->pDispEvo, timingsParams,
-                                        requireBootClocks,
-                                        NV_EVO_REALLOCATE_BANDWIDTH_MODE_NONE,
-                                        /* downgradePossibleHeadsBitMask */
-                                        (NVBIT(NVKMS_MAX_HEADS_PER_DISP) - 1UL));
+    /* bypass this checking if the user disabled IMP */
+    if ((pParams->overrides &
+         NVKMS_MODE_VALIDATION_NO_EXTENDED_GPU_CAPABILITIES_CHECK) != 0) {
+        ret = TRUE;
+    } else {
+        ret = nvValidateImpOneDispDowngrade(pConnectorEvo->pDispEvo, timingsParams,
+                                            requireBootClocks,
+                                            NV_EVO_REALLOCATE_BANDWIDTH_MODE_NONE,
+                                            /* downgradePossibleHeadsBitMask */
+                                            (NVBIT(NVKMS_MAX_HEADS_PER_DISP) - 1UL));
+    }
+
     if (ret) {
         *pNumHeads = numHeads;
     } else {

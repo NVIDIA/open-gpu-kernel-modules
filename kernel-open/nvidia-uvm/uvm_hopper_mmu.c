@@ -33,6 +33,7 @@
 
 #include "uvm_types.h"
 #include "uvm_global.h"
+#include "uvm_common.h"
 #include "uvm_hal.h"
 #include "uvm_hal_types.h"
 #include "uvm_hopper_fault_buffer.h"
@@ -41,6 +42,10 @@
 
 #define MMU_BIG 0
 #define MMU_SMALL 1
+
+// Used in pde_pcf().
+#define ATS_ALLOWED 0
+#define ATS_NOT_ALLOWED 1
 
 uvm_mmu_engine_type_t uvm_hal_hopper_mmu_engine_id_to_type(NvU16 mmu_engine_id)
 {
@@ -260,7 +265,108 @@ static NvU64 poisoned_pte_hopper(void)
     return WRITE_HWCONST64(pte_bits, _MMU_VER3, PTE, PCF, PRIVILEGE_RO_NO_ATOMIC_UNCACHED_ACD);
 }
 
-static NvU64 single_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc, NvU32 depth)
+typedef enum
+{
+    PDE_TYPE_SINGLE,
+    PDE_TYPE_DUAL_BIG,
+    PDE_TYPE_DUAL_SMALL,
+    PDE_TYPE_COUNT,
+} pde_type_t;
+
+static const NvU8 valid_pcf[][2] = { { NV_MMU_VER3_PDE_PCF_VALID_UNCACHED_ATS_ALLOWED,
+                                       NV_MMU_VER3_PDE_PCF_VALID_UNCACHED_ATS_NOT_ALLOWED },
+                                     { NV_MMU_VER3_DUAL_PDE_PCF_BIG_VALID_UNCACHED_ATS_ALLOWED,
+                                       NV_MMU_VER3_DUAL_PDE_PCF_BIG_VALID_UNCACHED_ATS_NOT_ALLOWED },
+                                     { NV_MMU_VER3_DUAL_PDE_PCF_SMALL_VALID_UNCACHED_ATS_ALLOWED,
+                                       NV_MMU_VER3_DUAL_PDE_PCF_SMALL_VALID_UNCACHED_ATS_NOT_ALLOWED } };
+
+static const NvU8 invalid_pcf[][2] = { { NV_MMU_VER3_PDE_PCF_INVALID_ATS_ALLOWED,
+                                         NV_MMU_VER3_PDE_PCF_INVALID_ATS_NOT_ALLOWED },
+                                       { NV_MMU_VER3_DUAL_PDE_PCF_BIG_INVALID_ATS_ALLOWED,
+                                         NV_MMU_VER3_DUAL_PDE_PCF_BIG_INVALID_ATS_NOT_ALLOWED },
+                                       { NV_MMU_VER3_DUAL_PDE_PCF_SMALL_INVALID_ATS_ALLOWED,
+                                         NV_MMU_VER3_DUAL_PDE_PCF_SMALL_INVALID_ATS_NOT_ALLOWED } };
+
+static const NvU8 va_base[] = { 56, 47, 38, 29, 21 };
+
+static bool is_ats_range_valid(uvm_page_directory_t *dir, NvU32 child_index)
+{
+    NvU64 pde_base_va;
+    NvU64 min_va_upper;
+    NvU64 max_va_lower;
+    NvU32 index_in_dir;
+
+    uvm_cpu_get_unaddressable_range(&max_va_lower, &min_va_upper);
+
+    UVM_ASSERT(dir->depth < ARRAY_SIZE(va_base));
+
+    // We can use UVM_PAGE_SIZE_AGNOSTIC because page_size is only used in
+    // index_bits_hopper() for PTE table, i.e., depth 5+, which does not use a
+    // PDE PCF or an ATS_ALLOWED/NOT_ALLOWED setting.
+    UVM_ASSERT(child_index < (1ull << index_bits_hopper(dir->depth, UVM_PAGE_SIZE_AGNOSTIC)));
+
+    pde_base_va = 0;
+    index_in_dir = child_index;
+    while (dir) {
+        pde_base_va += index_in_dir * (1ull << va_base[dir->depth]);
+        index_in_dir = dir->index_in_parent;
+        dir = dir->host_parent;
+    }
+    pde_base_va = (NvU64)((NvS64)(pde_base_va << (64 - num_va_bits_hopper())) >> (64 - num_va_bits_hopper()));
+
+    if (pde_base_va < max_va_lower || pde_base_va >= min_va_upper)
+        return true;
+
+    return false;
+}
+
+// PDE Permission Control Flags
+static NvU32 pde_pcf(bool valid, pde_type_t pde_type, uvm_page_directory_t *dir, NvU32 child_index)
+{
+    const NvU8 (*pcf)[2] = valid ? valid_pcf : invalid_pcf;
+    NvU8 depth = dir->depth;
+
+    UVM_ASSERT(pde_type < PDE_TYPE_COUNT);
+    UVM_ASSERT(depth < 5);
+
+    // On non-ATS systems, PDE PCF only sets the valid and volatile/cache bits.
+    if (!g_uvm_global.ats.enabled)
+        return pcf[pde_type][ATS_ALLOWED];
+
+    // We assume all supported ATS platforms use canonical form address.
+    // See comments in uvm_gpu.c:uvm_gpu_can_address() and in
+    // uvm_mmu.c:page_tree_ats_init();
+    UVM_ASSERT(uvm_platform_uses_canonical_form_address());
+
+    // Hopper GPUs on ATS-enabled systems, perform a parallel lookup on both
+    // ATS and GMMU page tables. For managed memory we need to prevent this
+    // parallel lookup since we would not get any GPU fault if the CPU has
+    // a valid mapping. Also, for external ranges that are known to be
+    // mapped entirely on the GMMU page table we can skip the ATS lookup
+    // for performance reasons. Parallel ATS lookup is disabled in PDE1
+    // (depth 3) and, therefore, it applies to the underlying 512MB VA
+    // range.
+    //
+    // UVM sets ATS_NOT_ALLOWED for all Hopper+ mappings on ATS systems.
+    // This is fine because CUDA ensures that all managed and external
+    // allocations are properly compartmentalized in 512MB-aligned VA
+    // regions. For cudaHostRegister CUDA cannot control the VA range, but
+    // we rely on ATS for those allocations so they can't choose the
+    // ATS_NOT_ALLOWED mode.
+    // TODO: Bug 3254055: Relax the NO_ATS setting from 512MB (pde1) range to
+    //                    PTEs.
+    // HW complies with the leaf PDE's ATS_ALLOWED/ATS_NOT_ALLOWED settings,
+    // enabling us to treat any upper-level PDE as a don't care as long as there
+    // are leaf PDEs for the entire upper-level PDE range. We assume PDE4
+    // entries (depth == 0) are always ATS enabled, and the no_ats_range is in
+    // PDE3 or lower.
+    if (depth == 0 || (!valid && is_ats_range_valid(dir, child_index)))
+        return pcf[pde_type][ATS_ALLOWED];
+
+    return pcf[pde_type][ATS_NOT_ALLOWED];
+}
+
+static NvU64 single_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc, uvm_page_directory_t *dir, NvU32 child_index)
 {
     NvU64 pde_bits = 0;
 
@@ -280,38 +386,17 @@ static NvU64 single_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc, NvU32 dep
                 break;
         }
 
-        // PCF (permission control flags) 5:3
-        // Hopper GPUs on ATS-enabled systems, perform a parallel lookup on both
-        // ATS and GMMU page tables. For managed memory we need to prevent this
-        // parallel lookup since we would not get any GPU fault if the CPU has
-        // a valid mapping. Also, for external ranges that are known to be
-        // mapped entirely on the GMMU page table we can skip the ATS lookup
-        // for performance reasons. Parallel ATS lookup is disabled in PDE1
-        // (depth 3) and, therefore, it applies to the underlying 512MB VA
-        // range.
-        //
-        // UVM sets ATS_NOT_ALLOWED for all Hopper+ mappings on ATS systems.
-        // This is fine because CUDA ensures that all managed and external
-        // allocations are properly compartmentalized in 512MB-aligned VA
-        // regions. For cudaHostRegister CUDA cannot control the VA range, but
-        // we rely on ATS for those allocations so they can't choose the
-        // ATS_NOT_ALLOWED mode.
-        //
-        // TODO: Bug 3254055: Relax the NO_ATS setting from 512MB (pde1) range
-        // to PTEs.
-        if (depth == 3 && g_uvm_global.ats.enabled)
-            pde_bits |= HWCONST64(_MMU_VER3, PDE, PCF, VALID_UNCACHED_ATS_NOT_ALLOWED);
-        else
-            pde_bits |= HWCONST64(_MMU_VER3, PDE, PCF, VALID_UNCACHED_ATS_ALLOWED);
-
         // address 51:12
         pde_bits |= HWVALUE64(_MMU_VER3, PDE, ADDRESS, address);
     }
 
+    // PCF (permission control flags) 5:3
+    pde_bits |= HWVALUE64(_MMU_VER3, PDE, PCF, pde_pcf(phys_alloc != NULL, PDE_TYPE_SINGLE, dir, child_index));
+
     return pde_bits;
 }
 
-static NvU64 big_half_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc)
+static NvU64 big_half_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc, uvm_page_directory_t *dir, NvU32 child_index)
 {
     NvU64 pde_bits = 0;
 
@@ -330,17 +415,20 @@ static NvU64 big_half_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc)
                 break;
         }
 
-        // PCF (permission control flags) 5:3
-        pde_bits |= HWCONST64(_MMU_VER3, DUAL_PDE, PCF_BIG, VALID_UNCACHED_ATS_NOT_ALLOWED);
-
         // address 51:8
         pde_bits |= HWVALUE64(_MMU_VER3, DUAL_PDE, ADDRESS_BIG, address);
     }
 
+    // PCF (permission control flags) 5:3
+    pde_bits |= HWVALUE64(_MMU_VER3,
+                          DUAL_PDE,
+                          PCF_BIG,
+                          pde_pcf(phys_alloc != NULL, PDE_TYPE_DUAL_BIG, dir, child_index));
+
     return pde_bits;
 }
 
-static NvU64 small_half_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc)
+static NvU64 small_half_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc, uvm_page_directory_t *dir, NvU32 child_index)
 {
     NvU64 pde_bits = 0;
 
@@ -359,32 +447,40 @@ static NvU64 small_half_pde_hopper(uvm_mmu_page_table_alloc_t *phys_alloc)
                 break;
         }
 
-        // PCF (permission control flags) 69:67 [5:3]
-        pde_bits |= HWCONST64(_MMU_VER3, DUAL_PDE, PCF_SMALL, VALID_UNCACHED_ATS_NOT_ALLOWED);
-
         // address 115:76 [51:12]
         pde_bits |= HWVALUE64(_MMU_VER3, DUAL_PDE, ADDRESS_SMALL, address);
     }
+
+    // PCF (permission control flags) 69:67 [5:3]
+    pde_bits |= HWVALUE64(_MMU_VER3,
+                          DUAL_PDE,
+                          PCF_SMALL,
+                          pde_pcf(phys_alloc != NULL, PDE_TYPE_DUAL_SMALL, dir, child_index));
+
     return pde_bits;
 }
 
 static void make_pde_hopper(void *entry,
                             uvm_mmu_page_table_alloc_t **phys_allocs,
-                            NvU32 depth,
-                            uvm_page_directory_t *child_dir)
+                            uvm_page_directory_t *dir,
+                            NvU32 child_index)
 {
-    NvU32 entry_count = entries_per_index_hopper(depth);
+    NvU32 entry_count;
     NvU64 *entry_bits = (NvU64 *)entry;
 
+    UVM_ASSERT(dir);
+
+    entry_count = entries_per_index_hopper(dir->depth);
+
     if (entry_count == 1) {
-        *entry_bits = single_pde_hopper(*phys_allocs, depth);
+        *entry_bits = single_pde_hopper(*phys_allocs, dir, child_index);
     }
     else if (entry_count == 2) {
-        entry_bits[MMU_BIG] = big_half_pde_hopper(phys_allocs[MMU_BIG]);
-        entry_bits[MMU_SMALL] = small_half_pde_hopper(phys_allocs[MMU_SMALL]);
+        entry_bits[MMU_BIG] = big_half_pde_hopper(phys_allocs[MMU_BIG], dir, child_index);
+        entry_bits[MMU_SMALL] = small_half_pde_hopper(phys_allocs[MMU_SMALL], dir, child_index);
 
         // This entry applies to the whole dual PDE but is stored in the lower
-        // bits
+        // bits.
         entry_bits[MMU_BIG] |= HWCONST64(_MMU_VER3, DUAL_PDE, IS_PTE, FALSE);
     }
     else {

@@ -788,13 +788,9 @@ kgspHealthCheck_TU102
         {
             bHealthy = NV_FALSE;
 
-            pKernelGsp->bFatalError = NV_TRUE;
-
             NV_PRINTF(LEVEL_ERROR,
                 "****************************** GSP-CrashCat Report *******************************\n");
             crashcatReportLog(pReport);
-            NV_PRINTF(LEVEL_ERROR,
-                "**********************************************************************************\n");
 
             objDelete(pReport);
         }
@@ -812,9 +808,8 @@ kgspHealthCheck_TU102
     {
         NvU32 mb1 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(1));
         NvU32 skipped = DRF_VAL(_GSP, _ERROR, _SKIPPED, mb0);
-        bHealthy = NV_FALSE;
 
-        pKernelGsp->bFatalError = NV_TRUE;
+        bHealthy = NV_FALSE;
 
         // Clear the mailbox
         GPU_REG_WR32(pGpu, NV_PGSP_MAILBOX(0), 0);
@@ -822,14 +817,8 @@ kgspHealthCheck_TU102
         NV_PRINTF(LEVEL_ERROR,
                   "********************************* GSP Failure **********************************\n");
 
-        nvErrorLog_va((void*)pGpu, GSP_ERROR,
-                      "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x.  The GPU likely needs to be reset.",
-                      DRF_VAL(_GSP, _ERROR, _TASK, mb0),
-                      DRF_VAL(_GSP, _ERROR, _CODE, mb0),
-                      DRF_VAL(_GSP, _ERROR, _REASON, mb0),
-                      mb1);
-        NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR, NV_PRINTF_ADD_PREFIX
-                     ("GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x"),
+        NV_ERROR_LOG(pGpu, GSP_ERROR,
+                     "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x.  The GPU likely needs to be reset.",
                      DRF_VAL(_GSP, _ERROR, _TASK, mb0),
                      DRF_VAL(_GSP, _ERROR, _CODE, mb0),
                      DRF_VAL(_GSP, _ERROR, _REASON, mb0),
@@ -840,16 +829,20 @@ kgspHealthCheck_TU102
         {
             NV_PRINTF(LEVEL_ERROR, "%d more errors skipped\n", skipped);
         }
-
-        NV_PRINTF(LEVEL_ERROR,
-                  "********************************************************************************\n");
     }
 
 exit_health_check:
     if (!bHealthy)
     {
-        KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-        kmemsysCheckEccCounts_HAL(pGpu, pKernelMemorySystem);
+        pKernelGsp->bFatalError = NV_TRUE;
+
+        if (pKernelGsp->pRpc)
+            kgspLogRpcDebugInfo(pGpu, pKernelGsp->pRpc, GSP_ERROR, pKernelGsp->bPollingForRpcResponse);
+
+        gpuCheckEccCounts_HAL(pGpu);
+
+        NV_PRINTF(LEVEL_ERROR,
+                  "**********************************************************************************\n");
     }
     return bHealthy;
 }
@@ -1141,4 +1134,37 @@ kgspRestorePowerMgmtState_TU102
 exit_cleanup:
     kgspFreeSuspendResumeData_HAL(pGpu, pKernelGsp);
     return nvStatus;
+}
+
+void
+kgspReadEmem_TU102
+(
+    KernelGsp *pKernelGsp,
+    NvU64      offset,
+    NvU64      size,
+    void      *pBuf
+)
+{
+    NvU32 ememMask = DRF_SHIFTMASK(NV_PGSP_EMEMC_OFFS) | DRF_SHIFTMASK(NV_PGSP_EMEMC_BLK);
+    OBJGPU *pGpu = ENG_GET_GPU(pKernelGsp);
+    NvU32 limit = size - NVBIT(DRF_SHIFT(NV_PGSP_EMEMC_OFFS));
+    NvU32 *pBuffer = pBuf;
+
+    portMemSet(pBuf, 0, size);
+
+#if defined(DEBUG) || defined(DEVELOP)
+    NV_ASSERT_OR_RETURN_VOID((offset & ~ememMask) == 0);
+    NV_ASSERT_OR_RETURN_VOID(limit <= ememMask);
+    NV_ASSERT_OR_RETURN_VOID(offset + limit <= ememMask);
+#else
+    NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, (offset & ~ememMask) == 0);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, limit <= ememMask);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, offset + limit <= ememMask);
+#endif
+
+    GPU_REG_WR32(pGpu, NV_PGSP_EMEMC(pKernelGsp->ememPort),
+                 offset | DRF_DEF(_PGSP, _EMEMC, _AINCR, _TRUE));
+
+    for (NvU32 idx = 0; idx < size / sizeof(NvU32); idx++)
+        pBuffer[idx] = GPU_REG_RD32(pGpu, NV_PGSP_EMEMD(pKernelGsp->ememPort));
 }

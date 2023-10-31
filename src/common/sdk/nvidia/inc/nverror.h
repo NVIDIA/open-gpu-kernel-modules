@@ -122,7 +122,8 @@
 #define ROBUST_CHANNEL_DLA_ERROR                        (138)
 #define ROBUST_CHANNEL_FAST_PATH_ERROR                  (139)
 #define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
-#define ROBUST_CHANNEL_LAST_ERROR                       (UNRECOVERABLE_ECC_ERROR_ESCAPE)
+#define GPU_INIT_ERROR                                  (143)
+#define ROBUST_CHANNEL_LAST_ERROR                       (GPU_INIT_ERROR)
 
 
 // Indexed CE reference

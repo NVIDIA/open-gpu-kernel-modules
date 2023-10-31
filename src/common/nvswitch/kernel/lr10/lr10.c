@@ -3656,6 +3656,15 @@ nvswitch_initialize_device_state_lr10
         goto nvswitch_initialize_device_state_exit;
     }
 
+    retval = nvswitch_check_io_sanity(device);
+    if (NVL_SUCCESS != retval)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: IO sanity test failed\n",
+            __FUNCTION__);
+        goto nvswitch_initialize_device_state_exit;
+    }
+
     NVSWITCH_PRINT(device, SETUP,
         "%s: MMIO discovery\n",
         __FUNCTION__);
@@ -7848,6 +7857,15 @@ nvswitch_ctrl_get_nvlink_error_threshold_lr10
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_check_io_sanity_lr10
+(
+    nvswitch_device *device
+)
+{
+    return NVL_SUCCESS;
 }
 
 //

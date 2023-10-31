@@ -447,3 +447,40 @@ kgmmuClearReplayableFaultIntr_TU102
     Intr *pIntr = GPU_GET_INTR(pGpu);
     intrClearLeafVector_HAL(pGpu, pIntr, NV_PFB_PRI_MMU_INT_VECTOR_FAULT_NOTIFY_REPLAYABLE, pThreadState);
 }
+
+NvU32
+kgmmuGetEccCounts_TU102
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu
+)
+{
+    NvU32 mmuCount = 0;
+    NvU32 regVal;
+
+    // L2TLB
+    regVal = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_L2TLB_ECC_UNCORRECTED_ERR_COUNT);
+    mmuCount += DRF_VAL(_PFB_PRI_MMU, _L2TLB_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    // HUBTLB
+    regVal = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_HUBTLB_ECC_UNCORRECTED_ERR_COUNT);
+    mmuCount += DRF_VAL(_PFB_PRI_MMU, _HUBTLB_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    // FILLUNIT
+    regVal = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_FILLUNIT_ECC_UNCORRECTED_ERR_COUNT);
+    mmuCount += DRF_VAL(_PFB_PRI_MMU, _FILLUNIT_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    return mmuCount;
+}
+
+void
+kgmmuClearEccCounts_TU102
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu
+)
+{
+    GPU_REG_WR32(pGpu, NV_PFB_PRI_MMU_L2TLB_ECC_UNCORRECTED_ERR_COUNT, 0);
+    GPU_REG_WR32(pGpu, NV_PFB_PRI_MMU_HUBTLB_ECC_UNCORRECTED_ERR_COUNT, 0);
+    GPU_REG_WR32(pGpu, NV_PFB_PRI_MMU_FILLUNIT_ECC_UNCORRECTED_ERR_COUNT, 0);
+}

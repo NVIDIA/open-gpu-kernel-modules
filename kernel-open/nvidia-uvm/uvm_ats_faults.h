@@ -52,7 +52,7 @@ NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
 bool uvm_ats_check_in_gmmu_region(uvm_va_space_t *va_space, NvU64 address, uvm_va_range_t *next);
 
 // This function performs pending TLB invalidations for ATS and clears the
-// ats_invalidate->write_faults_in_batch flag
+// ats_invalidate->tlb_batch_pending flag
 NV_STATUS uvm_ats_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space,
                                   uvm_ats_fault_invalidate_t *ats_invalidate,
                                   uvm_tracker_t *out_tracker);

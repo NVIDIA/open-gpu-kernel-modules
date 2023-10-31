@@ -404,36 +404,33 @@ static NV_STATUS setNumaPrivData
     NV_STATUS rmStatus = NV_OK;
     void *pAllocPrivate = NULL;
     NvU64 *addrArray = NULL;
-    NvU64 numOsPages = pMemDesc->PageCount;
+    NvU64 numPages = pMemDesc->PageCount;
+    NvU64 i;
 
-    addrArray = pMemDesc->_pteArray;
+    addrArray = portMemAllocNonPaged(numPages * sizeof(NvU64));
+    if (addrArray == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    portMemCopy((void*)addrArray,
+                (numPages * sizeof(NvU64)),
+                (void*)memdescGetPteArray(pMemDesc, AT_CPU),
+                (numPages * sizeof(NvU64)));
 
     if (NV_RM_PAGE_SIZE < os_page_size)
     {
-        NvU64 numPages;
-        NvU64 i;
-
-        numPages = pMemDesc->PageCount;
-        addrArray = portMemAllocNonPaged(numPages * sizeof(NvU64));
-        if (addrArray == NULL)
-        {
-            return NV_ERR_NO_MEMORY;
-        }
-
-        portMemCopy((void*)addrArray,
-                    (numPages * sizeof(NvU64)), (void*)pMemDesc->_pteArray,
-                    (numPages * sizeof(NvU64)));
         RmDeflateRmToOsPageArray(addrArray, numPages);
-        numOsPages = NV_RM_PAGES_TO_OS_PAGES(numPages);
-
-        for (i = 0; i < numOsPages; i++)
-        {
-            // Update GPA to system physical address
-            addrArray[i] += pKernelMemorySystem->coherentCpuFbBase;
-        }
+        numPages = NV_RM_PAGES_TO_OS_PAGES(numPages);
     }
 
-    rmStatus = nv_register_phys_pages(nv, addrArray, numOsPages, NV_MEMORY_CACHED, &pAllocPrivate);
+    for (i = 0; i < numPages; i++)
+    {
+        // Update GPA to system physical address
+        addrArray[i] += pKernelMemorySystem->coherentCpuFbBase;
+    }
+
+    rmStatus = nv_register_phys_pages(nv, addrArray, numPages, NV_MEMORY_CACHED, &pAllocPrivate);
     if (rmStatus != NV_OK)
     {
         goto errors;
@@ -442,10 +439,7 @@ static NV_STATUS setNumaPrivData
     memdescSetMemData(pMemDesc, pAllocPrivate, NULL);
 
 errors:
-    if (NV_RM_PAGE_SIZE < os_page_size)
-    {
-        portMemFree(addrArray);
-    }
+    portMemFree(addrArray);
 
     return rmStatus;
 }

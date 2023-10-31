@@ -21,8 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef __gh100_dev_ltc_h_
-#define __gh100_dev_ltc_h_
+#ifndef __tu102_dev_ltc_h_
+#define __tu102_dev_ltc_h_
 
 #define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT                  0x001404f8 /* RW-4R */
 #define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_TOTAL                  15:0 /* RWIVF */
@@ -30,4 +30,4 @@
 #define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_UNIQUE                31:16 /* RWIVF */
 #define NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT_UNIQUE_INIT          0x0000 /* RWI-V */
 
-#endif // __gh100_dev_ltc_h_
+#endif // __tu102_dev_ltc_h_

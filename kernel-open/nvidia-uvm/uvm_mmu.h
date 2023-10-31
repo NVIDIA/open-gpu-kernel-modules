@@ -215,11 +215,14 @@ struct uvm_mmu_mode_hal_struct
     // memory out-of-range error so we can immediately identify bad PTE usage.
     NvU64 (*poisoned_pte)(void);
 
-    // write a PDE bit-pattern to entry based on the data in entries (which may
+    // Write a PDE bit-pattern to entry based on the data in allocs (which may
     // point to two items for dual PDEs).
-    // any of allocs are allowed to be NULL, in which case they are to be
-    // treated as empty.
-    void (*make_pde)(void *entry, uvm_mmu_page_table_alloc_t **allocs, NvU32 depth, uvm_page_directory_t *child_dir);
+    // Any of allocs are allowed to be NULL, in which case they are to be
+    // treated as empty. make_pde() uses dir and child_index to compute the
+    // mapping PDE VA. On ATS-enabled systems, we may set PDE's PCF as
+    // ATS_ALLOWED or ATS_NOT_ALLOWED based on the mapping PDE VA, even for
+    // invalid/clean PDE entries.
+    void (*make_pde)(void *entry, uvm_mmu_page_table_alloc_t **allocs, uvm_page_directory_t *dir, NvU32 child_index);
 
     // size of an entry in a directory/table.  Generally either 8 or 16 bytes.
     // (in the case of Pascal dual PDEs)
@@ -298,6 +301,12 @@ struct uvm_page_tree_struct
         // pde0 is used on Pascal+ GPUs, i.e., they have the same PDE format.
         uvm_page_directory_t *pde0;
     } map_remap;
+
+    // On ATS-enabled systems where the CPU VA width is smaller than the GPU VA
+    // width, the excess address range is set with ATS_NOT_ALLOWED on all  leaf
+    // PDEs covering that range. We have at most 2 no_ats_ranges, due to
+    // canonical form address systems.
+    uvm_page_table_range_t no_ats_ranges[2];
 
     // Tracker for all GPU operations on the tree
     uvm_tracker_t tracker;

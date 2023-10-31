@@ -31,7 +31,9 @@
 #include "ctrl/ctrl2080/ctrl2080bus.h"
 
 #include "published/hopper/gh100/dev_fb.h"
+#include "published/hopper/gh100/hwproject.h"
 #include "published/hopper/gh100/dev_xtl_ep_pri.h"
+#include "published/hopper/gh100/dev_nv_xpl.h"
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 #include "published/hopper/gh100/hwproject.h"
 
@@ -870,3 +872,76 @@ kbifCacheVFInfo_GH100
     pGpu->sriovState.b64bitVFBar2         = barIs64Bit;
 }
 
+NvU32
+kbifGetEccCounts_GH100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32 regVal;
+    NvU32 count = 0;
+
+    // PCIE RBUF
+    regVal = GPU_REG_RD32(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_COUNT_RBUF);
+    count += DRF_VAL(_XPL_DL, _ERR_COUNT_RBUF, _UNCORR_ERR, regVal);
+
+    // PCIE SEQ_LUT
+    regVal = GPU_REG_RD32(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_COUNT_SEQ_LUT);
+    count += DRF_VAL(_XPL_DL, _ERR_COUNT_SEQ_LUT, _UNCORR_ERR, regVal);
+
+    // PCIE XTL
+    regVal = GPU_REG_RD32(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_DED_ERROR_STATUS);
+    if (regVal != 0)
+    {
+        count += 1;
+    }
+
+    // PCIE XTL
+    regVal = GPU_REG_RD32(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_RAM_ERROR_INTR_STATUS);
+    if (regVal != 0)
+    {
+        count += 1;
+    }
+
+    return count;
+}
+
+NV_STATUS
+kbifClearEccCounts_GH100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NV_STATUS status = NV_OK;
+    RMTIMEOUT timeout;
+    NvU32 regVal;
+
+    // Reset XTL-EP status registers
+    GPU_REG_WR32(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_DED_ERROR_STATUS, ~0);
+    GPU_REG_WR32(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_RAM_ERROR_INTR_STATUS, ~0);
+
+    // Reset XPL-EP error counters
+    regVal = DRF_DEF(_XPL, _DL_ERR_RESET, _RBUF_UNCORR_ERR_COUNT, _PENDING) |
+             DRF_DEF(_XPL, _DL_ERR_RESET, _SEQ_LUT_UNCORR_ERR_COUNT, _PENDING);
+    GPU_REG_WR32(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_RESET, regVal);
+
+    // Wait for the error counter reset to complete
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    for (;;)
+    {
+        status = gpuCheckTimeout(pGpu, &timeout);
+
+        regVal = GPU_REG_RD32(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_RESET);
+
+        if (FLD_TEST_DRF(_XPL, _DL_ERR_RESET, _RBUF_UNCORR_ERR_COUNT, _DONE, regVal) &&
+            FLD_TEST_DRF(_XPL, _DL_ERR_RESET, _SEQ_LUT_UNCORR_ERR_COUNT, _DONE, regVal))
+            break;
+
+        if (status != NV_OK)
+            return status;
+    }
+
+    return NV_OK;
+}

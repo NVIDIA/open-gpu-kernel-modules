@@ -624,6 +624,16 @@ RS_ENTRY(
     /* Required Access Rights */ RS_ACCESS_NONE
 )
 RS_ENTRY(
+    /* External Class         */ GF100_SUBDEVICE_INFOROM,
+    /* Internal Class         */ GenericEngineApi,
+    /* Multi-Instance         */ NV_TRUE,
+    /* Parents                */ RS_LIST(classId(Subdevice)),
+    /* Alloc Param Info       */ RS_NONE,
+    /* Resource Free Priority */ RS_FREE_PRIORITY_DEFAULT,
+    /* Flags                  */ RS_FLAGS_ALLOC_NON_PRIVILEGED | RS_FLAGS_ACQUIRE_GPUS_LOCK | RS_FLAGS_ACQUIRE_RO_API_LOCK_ON_ALLOC | RS_FLAGS_ALLOC_RPC_TO_PHYS_RM,
+    /* Required Access Rights */ RS_ACCESS_NONE
+)
+RS_ENTRY(
     /* External Class         */ NV01_TIMER,
     /* Internal Class         */ TimerApi,
     /* Multi-Instance         */ NV_FALSE,

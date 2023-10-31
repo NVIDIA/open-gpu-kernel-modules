@@ -672,14 +672,6 @@ static NV_STATUS nv_migrate_vma(struct migrate_vma *args, migrate_vma_state_t *s
         .finalize_and_map = uvm_migrate_vma_finalize_and_map_helper,
     };
 
-    // WAR for Bug 4130089: [GH180][r535] WAR for kernel not issuing SMMU TLB
-    // invalidates on read-only to read-write upgrades
-    //
-    // This code path isn't used on GH180 but we need to maintain consistent
-    // behaviour on systems that do.
-    if (!vma_is_anonymous(args->vma))
-        return NV_WARN_NOTHING_TO_DO;
-
     ret = migrate_vma(&uvm_migrate_vma_ops, args->vma, args->start, args->end, args->src, args->dst, state);
     if (ret < 0)
         return errno_to_nv_status(ret);
@@ -692,24 +684,6 @@ static NV_STATUS nv_migrate_vma(struct migrate_vma *args, migrate_vma_state_t *s
     ret = migrate_vma_setup(args);
     if (ret < 0)
         return errno_to_nv_status(ret);
-
-    // TODO: Bug 2419180: support file-backed pages in migrate_vma, when
-    //       support for it is added to the Linux kernel
-    //
-    // A side-effect of migrate_vma_setup() is it calls mmu notifiers even if a
-    // page can't be migrated (eg. because it's a non-anonymous mapping). We
-    // need this side-effect for SMMU on GH180 to ensure any cached read-only
-    // entries are flushed from SMMU on permission upgrade.
-    //
-    // TODO: Bug 4130089: [GH180][r535] WAR for kernel not issuing SMMU TLB
-    // invalidates on read-only to read-write upgrades
-    //
-    // The above WAR doesn't work for HugeTLBfs mappings because
-    // migrate_vma_setup() will fail in that case.
-    if (!vma_is_anonymous(args->vma)) {
-        migrate_vma_finalize(args);
-        return NV_WARN_NOTHING_TO_DO;
-    }
 
     uvm_migrate_vma_alloc_and_copy(args, state);
     if (state->status == NV_OK) {
@@ -862,6 +836,17 @@ static NV_STATUS migrate_pageable_vma_region(struct vm_area_struct *vma,
     return NV_OK;
 }
 
+NV_STATUS uvm_test_skip_migrate_vma(UVM_TEST_SKIP_MIGRATE_VMA_PARAMS *params, struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+
+    uvm_va_space_down_write(va_space);
+    va_space->test.skip_migrate_vma = params->skip;
+    uvm_va_space_up_write(va_space);
+
+    return NV_OK;
+}
+
 static NV_STATUS migrate_pageable_vma(struct vm_area_struct *vma,
                                       unsigned long start,
                                       unsigned long outer,
@@ -884,13 +869,12 @@ static NV_STATUS migrate_pageable_vma(struct vm_area_struct *vma,
     start = max(start, vma->vm_start);
     outer = min(outer, vma->vm_end);
 
-    // migrate_vma only supports anonymous VMAs. We check for those after
-    // calling migrate_vma_setup() to workaround Bug 4130089. We need to check
-    // for HugeTLB VMAs here because migrate_vma_setup() will return a fatal
-    // error for those.
-    // TODO: Bug 4130089: [GH180][r535] WAR for kernel not issuing SMMU TLB
-    // invalidates on read-only to read-write upgrades
-    if (is_vm_hugetlb_page(vma))
+    if (va_space->test.skip_migrate_vma)
+        return NV_WARN_NOTHING_TO_DO;
+
+    // TODO: Bug 2419180: support file-backed pages in migrate_vma, when
+    //       support for it is added to the Linux kernel
+    if (!vma_is_anonymous(vma))
         return NV_WARN_NOTHING_TO_DO;
 
     if (uvm_processor_mask_empty(&va_space->registered_gpus))
@@ -950,7 +934,9 @@ static NV_STATUS migrate_pageable(migrate_vma_state_t *state)
             bool touch = uvm_migrate_args->touch;
             uvm_populate_permissions_t populate_permissions = uvm_migrate_args->populate_permissions;
 
-            UVM_ASSERT(!vma_is_anonymous(vma) || uvm_processor_mask_empty(&va_space->registered_gpus));
+            UVM_ASSERT(va_space->test.skip_migrate_vma ||
+                       !vma_is_anonymous(vma) ||
+                       uvm_processor_mask_empty(&va_space->registered_gpus));
 
             // We can't use migrate_vma to move the pages as desired. Normally
             // this fallback path is supposed to populate the memory then inform

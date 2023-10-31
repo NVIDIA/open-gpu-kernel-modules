@@ -30,6 +30,7 @@
 #include "flcn/haldefs_flcnable_nvswitch.h"
 #include "flcn/flcn_nvswitch.h"
 #include "soe/soe_nvswitch.h"
+#include "soe/soeififr.h"
 #include "nvVer.h"
 #include "nvlink_inband_msg.h"
 
@@ -3476,6 +3477,46 @@ _nvswitch_ctrl_get_inforom_bbx_sxid
 }
 
 static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_sys_info
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_SYS_INFO_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_SYS_INFO, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_time_info
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TIME_INFO_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TIME_INFO, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_temp_data
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TEMP_DATA_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TEMP_DATA, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_temp_samples
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TEMP_SAMPLES_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TEMP_SAMPLES, (void *)params);
+}
+
+static NvlStatus
 _nvswitch_ctrl_get_nvlink_lp_counters
 (
     nvswitch_device *device,
@@ -4667,6 +4708,15 @@ nvswitch_program_l1_scratch_reg
 }
 
 NvlStatus
+nvswitch_check_io_sanity
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_check_io_sanity(device);
+}
+
+NvlStatus
 nvswitch_launch_ALI
 (
     nvswitch_device *device
@@ -5181,6 +5231,26 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_POWER,
                 _nvswitch_ctrl_therm_read_power,
                 NVSWITCH_GET_POWER_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_SYS_INFO,
+                _nvswitch_ctrl_get_inforom_bbx_sys_info,
+                NVSWITCH_GET_SYS_INFO_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TIME_INFO,
+                _nvswitch_ctrl_get_inforom_bbx_time_info,
+                NVSWITCH_GET_TIME_INFO_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TEMP_DATA,
+                _nvswitch_ctrl_get_inforom_bbx_temp_data,
+                NVSWITCH_GET_TEMP_DATA_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TEMP_SAMPLES,
+                _nvswitch_ctrl_get_inforom_bbx_temp_samples,
+                NVSWITCH_GET_TEMP_SAMPLES_PARAMS,
+                osPrivate, flags);
 
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "unknown ioctl %x\n", cmd);

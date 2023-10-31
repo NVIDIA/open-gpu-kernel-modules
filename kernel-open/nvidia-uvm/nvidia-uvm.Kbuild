@@ -99,6 +99,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += kmem_cache_has_kobj_remove_work
 NV_CONFTEST_TYPE_COMPILE_TESTS += sysfs_slab_unlink
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_fault_t
 NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_notifier_ops_invalidate_range
+NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_notifier_ops_arch_invalidate_secondary_tlbs
 NV_CONFTEST_TYPE_COMPILE_TESTS += proc_ops
 NV_CONFTEST_TYPE_COMPILE_TESTS += timespec64
 NV_CONFTEST_TYPE_COMPILE_TESTS += mm_has_mmap_lock

@@ -1411,6 +1411,15 @@ gpuDestruct_IMPL
     memdescFree(pGpu->userSharedData.pMemDesc);
     memdescDestroy(pGpu->userSharedData.pMemDesc);
 
+    //
+    // If device instance is unassigned, we haven't initialized far enough to
+    // do any accounting with it
+    //
+    if (gpuGetDeviceInstance(pGpu) != NV_MAX_DEVICES)
+    {
+        rmapiReportLeakedDevices(gpuGetGpuMask(pGpu));
+    }
+
     // Free children in reverse order from construction
     for (typeNum = GPU_NUM_CHILD_TYPES - 1; typeNum >= 0; typeNum--)
     {
@@ -1429,15 +1438,6 @@ gpuDestruct_IMPL
             objDelete(*pChildPtr);
             *pChildPtr = NULL;
         }
-    }
-
-    //
-    // If device instance is unassigned, we haven't initialized far enough to
-    // do any accounting with it
-    //
-    if (gpuGetDeviceInstance(pGpu) != NV_MAX_DEVICES)
-    {
-        rmapiReportLeakedDevices(gpuGetGpuMask(pGpu));
     }
 
     _gpuFreeEngineOrderList(pGpu);
@@ -4936,12 +4936,15 @@ gpuReadBusConfigCycle_IMPL
     NvU32   *pData
 )
 {
-    NvU32 domain   = gpuGetDomain(pGpu);
-    NvU8  bus      = gpuGetBus(pGpu);
-    NvU8  device   = gpuGetDevice(pGpu);
-    NvU8  function = 0;
+    NvU32  domain              = gpuGetDomain(pGpu);
+    NvU8   bus                 = gpuGetBus(pGpu);
+    NvU8   device              = gpuGetDevice(pGpu);
+    NvU8   function            = 0;
+    NvBool bIsCCFeatureEnabled = NV_FALSE;
 
-    if (IS_PASSTHRU(pGpu))
+    bIsCCFeatureEnabled = gpuIsCCFeatureEnabled(pGpu);
+
+    if (IS_PASSTHRU(pGpu) && !bIsCCFeatureEnabled)
     {
         gpuReadVgpuConfigReg_HAL(pGpu, index, pData);
     }

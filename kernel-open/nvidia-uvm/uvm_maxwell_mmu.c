@@ -108,11 +108,14 @@ static NvU64 small_half_pde_maxwell(uvm_mmu_page_table_alloc_t *phys_alloc)
 
 static void make_pde_maxwell(void *entry,
                              uvm_mmu_page_table_alloc_t **phys_allocs,
-                             NvU32 depth,
-                             uvm_page_directory_t *child_dir)
+                             uvm_page_directory_t *dir,
+                             NvU32 child_index)
 {
     NvU64 pde_bits = 0;
-    UVM_ASSERT(depth == 0);
+
+    UVM_ASSERT(dir);
+    UVM_ASSERT(dir->depth == 0);
+
     pde_bits |= HWCONST64(_MMU, PDE, SIZE, FULL);
     pde_bits |= big_half_pde_maxwell(phys_allocs[MMU_BIG]) | small_half_pde_maxwell(phys_allocs[MMU_SMALL]);
 

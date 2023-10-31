@@ -566,6 +566,11 @@ nvswitch_init_lpwr_regs_lr10
     NvU8  softwareDesired, hardwareDisable;
     NvBool bLpEnable;
 
+    if (nvswitch_is_link_in_reset(device, link))
+    {
+        return;
+    }
+
     if (device->regkeys.enable_pm == NV_SWITCH_REGKEY_ENABLE_PM_NO)
     {
         return;

@@ -53,7 +53,13 @@ static int peerdirect_support = NV_MEM_PEERDIRECT_SUPPORT_DEFAULT;
 module_param(peerdirect_support, int, S_IRUGO);
 MODULE_PARM_DESC(peerdirect_support, "Set level of support for Peer-direct, 0 [default] or 1 [legacy, for example MLNX_OFED 4.9 LTS]");
 
-#define peer_err(FMT, ARGS...) printk(KERN_ERR "nvidia-peermem" " %s:%d " FMT, __FUNCTION__, __LINE__, ## ARGS)
+
+#define peer_err(FMT, ARGS...) printk(KERN_ERR "nvidia-peermem" " %s:%d ERROR " FMT, __FUNCTION__, __LINE__, ## ARGS)
+#ifdef NV_MEM_DEBUG
+#define peer_trace(FMT, ARGS...) printk(KERN_DEBUG "nvidia-peermem" " %s:%d TRACE " FMT, __FUNCTION__, __LINE__, ## ARGS)
+#else
+#define peer_trace(FMT, ARGS...) do {} while (0)
+#endif
 
 #if defined(NV_MLNX_IB_PEER_MEM_SYMBOLS_PRESENT)
 
@@ -74,7 +80,10 @@ invalidate_peer_memory mem_invalidate_callback;
 static void *reg_handle = NULL;
 static void *reg_handle_nc = NULL;
 
+#define NV_MEM_CONTEXT_MAGIC ((u64)0xF1F4F1D0FEF0DAD0ULL)
+
 struct nv_mem_context {
+    u64 pad1;
     struct nvidia_p2p_page_table *page_table;
     struct nvidia_p2p_dma_mapping *dma_mapping;
     u64 core_context;
@@ -86,8 +95,22 @@ struct nv_mem_context {
     struct task_struct *callback_task;
     int sg_allocated;
     struct sg_table sg_head;
+    u64 pad2;
 };
 
+#define NV_MEM_CONTEXT_CHECK_OK(MC) ({                                  \
+    struct nv_mem_context *mc = (MC);                                   \
+    int rc = ((0 != mc) &&                                              \
+              (READ_ONCE(mc->pad1) == NV_MEM_CONTEXT_MAGIC) &&          \
+              (READ_ONCE(mc->pad2) == NV_MEM_CONTEXT_MAGIC));           \
+    if (!rc) {                                                          \
+        peer_trace("invalid nv_mem_context=%px pad1=%016llx pad2=%016llx\n", \
+                   mc,                                                  \
+                   mc?mc->pad1:0,                                       \
+                   mc?mc->pad2:0);                                      \
+    }                                                                   \
+    rc;                                                                 \
+})
 
 static void nv_get_p2p_free_callback(void *data)
 {
@@ -97,8 +120,9 @@ static void nv_get_p2p_free_callback(void *data)
     struct nvidia_p2p_dma_mapping *dma_mapping = NULL;
 
     __module_get(THIS_MODULE);
-    if (!nv_mem_context) {
-        peer_err("nv_get_p2p_free_callback -- invalid nv_mem_context\n");
+
+    if (!NV_MEM_CONTEXT_CHECK_OK(nv_mem_context)) {
+        peer_err("detected invalid context, skipping further processing\n");
         goto out;
     }
 
@@ -169,9 +193,11 @@ static int nv_mem_acquire(unsigned long addr, size_t size, void *peer_mem_privat
         /* Error case handled as not mine */
         return 0;
 
+    nv_mem_context->pad1 = NV_MEM_CONTEXT_MAGIC;
     nv_mem_context->page_virt_start = addr & GPU_PAGE_MASK;
     nv_mem_context->page_virt_end   = (addr + size + GPU_PAGE_SIZE - 1) & GPU_PAGE_MASK;
     nv_mem_context->mapped_size  = nv_mem_context->page_virt_end - nv_mem_context->page_virt_start;
+    nv_mem_context->pad2 = NV_MEM_CONTEXT_MAGIC;
 
     ret = nvidia_p2p_get_pages(0, 0, nv_mem_context->page_virt_start, nv_mem_context->mapped_size,
                                &nv_mem_context->page_table, nv_mem_dummy_callback, nv_mem_context);
@@ -195,6 +221,7 @@ static int nv_mem_acquire(unsigned long addr, size_t size, void *peer_mem_privat
     return 1;
 
 err:
+    memset(nv_mem_context, 0, sizeof(*nv_mem_context));
     kfree(nv_mem_context);
 
     /* Error case handled as not mine */
@@ -342,6 +369,7 @@ static void nv_mem_release(void *context)
         sg_free_table(&nv_mem_context->sg_head);
         nv_mem_context->sg_allocated = 0;
     }
+    memset(nv_mem_context, 0, sizeof(*nv_mem_context));
     kfree(nv_mem_context);
     module_put(THIS_MODULE);
     return;

@@ -524,7 +524,6 @@ kgspBootstrapRiscvOSEarly_GH100
 {
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
-    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NV_STATUS     status        = NV_OK;
 
     // Only for GSP client builds
@@ -535,7 +534,7 @@ kgspBootstrapRiscvOSEarly_GH100
     }
 
     // Clear ECC errors before attempting to load GSP
-    status = kmemsysClearEccCounts_HAL(pGpu, pKernelMemorySystem);
+    status = gpuClearEccCounts_HAL(pGpu);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Issue clearing ECC counts! Status:0x%x\n", status);
@@ -654,7 +653,7 @@ exit:
     // If GSP fails to boot, check if there's any DED error.
     if (status != NV_OK)
     {
-        kmemsysCheckEccCounts_HAL(pGpu, pKernelMemorySystem);
+        gpuCheckEccCounts_HAL(pGpu);
     }
     NV_ASSERT(status == NV_OK);
 

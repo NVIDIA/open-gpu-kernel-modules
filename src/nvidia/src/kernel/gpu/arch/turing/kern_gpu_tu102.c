@@ -24,6 +24,10 @@
 #include "gpu/gpu_child_class_defs.h"
 #include "published/turing/tu102/dev_vm.h"
 #include "published/turing/tu102/hwproject.h"
+#include "gpu/mem_sys/kern_mem_sys.h"
+#include "gpu/bus/kern_bus.h"
+#include "gpu/bif/kernel_bif.h"
+#include "nverror.h"
 #include "jt.h"
 
 /*!
@@ -256,4 +260,63 @@ gpuJtVersionSanityCheck_TU102
 
 gpuJtVersionSanityCheck_TU102_EXIT:
     return status;
+}
+
+/*
+ * @brief Function that checks if ECC error occurred by reading various count
+ * registers/interrupt registers. This function is not floorsweeping-aware so
+ * PRI errors are ignored
+ */
+void
+gpuCheckEccCounts_TU102
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 dramCount = 0;
+    NvU32 ltcCount = 0;
+    NvU32 mmuCount = 0;
+    NvU32 pcieCount = 0;
+
+    kmemsysGetEccCounts_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu), &dramCount, &ltcCount);
+    mmuCount += kgmmuGetEccCounts_HAL(pGpu, GPU_GET_KERNEL_GMMU(pGpu));
+    pcieCount += kbifGetEccCounts_HAL(pGpu, GPU_GET_KERNEL_BIF(pGpu));
+    pcieCount += kbusGetEccCounts_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu));
+
+    // If counts > 0 or if poison interrupt pending, ECC error has occurred.
+    if (((dramCount + ltcCount + mmuCount + pcieCount) != 0) || gpuCheckIfFbhubPoisonIntrPending_HAL(pGpu))
+    {
+        NV_ERROR_LOG(pGpu, UNRECOVERABLE_ECC_ERROR_ESCAPE,
+                      "An uncorrectable ECC error detected "
+                      "(possible firmware handling failure) "
+                      "DRAM:%d, LTC:%d, MMU:%d, PCIE:%d", dramCount, ltcCount, mmuCount, pcieCount);
+    }
+}
+
+/*
+ * @brief  Function that clears ECC error count registers.
+ */
+NV_STATUS
+gpuClearEccCounts_TU102
+(
+    OBJGPU *pGpu
+)
+{
+    NV_STATUS status = NV_OK;
+
+    gpuClearFbhubPoisonIntrForBug2924523_HAL(pGpu);
+
+    kmemsysClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+
+    kgmmuClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_GMMU(pGpu));
+
+    kbusClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu));
+
+    status = kbifClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_BIF(pGpu));
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    return NV_OK;
 }

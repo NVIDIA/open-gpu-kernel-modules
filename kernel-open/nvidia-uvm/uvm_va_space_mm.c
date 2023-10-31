@@ -215,7 +215,13 @@ bool uvm_va_space_mm_enabled(uvm_va_space_t *va_space)
 
     static struct mmu_notifier_ops uvm_mmu_notifier_ops_ats =
     {
+#if defined(NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE)
         .invalidate_range = uvm_mmu_notifier_invalidate_range_ats,
+#elif defined(NV_MMU_NOTIFIER_OPS_HAS_ARCH_INVALIDATE_SECONDARY_TLBS)
+        .arch_invalidate_secondary_tlbs = uvm_mmu_notifier_invalidate_range_ats,
+#else
+        #error One of invalidate_range/arch_invalid_secondary must be present
+#endif
     };
 
     static int uvm_mmu_notifier_register(uvm_va_space_mm_t *va_space_mm)
