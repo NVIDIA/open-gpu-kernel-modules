@@ -65,6 +65,7 @@ else
                                     $(NV_KERNEL_MODULES))
   NV_VERBOSE ?=
   SPECTRE_V2_RETPOLINE ?= 0
+  INSTALL_MOD_DIR ?= kernel/drivers/video
 
   ifeq ($(NV_VERBOSE),1)
     KBUILD_PARAMS += V=1
@@ -74,7 +75,7 @@ else
   KBUILD_PARAMS += NV_KERNEL_SOURCES=$(KERNEL_SOURCES)
   KBUILD_PARAMS += NV_KERNEL_OUTPUT=$(KERNEL_OUTPUT)
   KBUILD_PARAMS += NV_KERNEL_MODULES="$(NV_KERNEL_MODULES)"
-  KBUILD_PARAMS += INSTALL_MOD_DIR=kernel/drivers/video
+  KBUILD_PARAMS += INSTALL_MOD_DIR="$(INSTALL_MOD_DIR)"
   KBUILD_PARAMS += NV_SPECTRE_V2=$(SPECTRE_V2_RETPOLINE)
 
   .PHONY: modules module clean clean_conftest modules_install
