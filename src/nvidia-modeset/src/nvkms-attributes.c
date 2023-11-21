@@ -67,6 +67,7 @@ static NvBool DpySetBacklightBrightness(NVDpyEvoRec *pDpyEvo, NvS64 brightness)
     params.subDeviceInstance = pDispEvo->displayOwner;
     params.displayId = nvDpyEvoGetConnectorId(pDpyEvo);
     params.brightness = brightness;
+    params.brightnessType = NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT100;
 
     ret = nvRmApiControl(
             nvEvoGlobal.clientHandle,
@@ -97,6 +98,7 @@ static NvBool DpyGetBacklightBrightness(const NVDpyEvoRec *pDpyEvo,
 
     params.subDeviceInstance = pDispEvo->displayOwner;
     params.displayId = nvDpyEvoGetConnectorId(pDpyEvo);
+    params.brightnessType = NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT100;
 
     ret = nvRmApiControl(
             nvEvoGlobal.clientHandle,

@@ -5467,6 +5467,7 @@ void nvRmRegisterBacklight(NVDispEvoRec *pDispEvo)
 
         params.subDeviceInstance = pDispEvo->displayOwner;
         params.displayId         = displayId;
+        params.brightnessType = NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT100;
 
         status = nvRmApiControl(nvEvoGlobal.clientHandle,
                                 pDevEvo->displayCommonHandle,

@@ -43,18 +43,18 @@
 #endif
 
 #if defined(NV_LINUX) || defined(NV_BSD) || defined(NV_SUNOS)
-#define NV_BUILD_BRANCH_VERSION         "rel/gpu_drv/r545/r545_96-120"
-#define NV_BUILD_CHANGELIST_NUM         (33457372)
+#define NV_BUILD_BRANCH_VERSION         "rel/gpu_drv/r545/r545_96-124"
+#define NV_BUILD_CHANGELIST_NUM         (33538619)
 #define NV_BUILD_TYPE                   "Official"
-#define NV_BUILD_NAME                   "rel/gpu_drv/r545/r545_96-120"
-#define NV_LAST_OFFICIAL_CHANGELIST_NUM (33457372)
+#define NV_BUILD_NAME                   "rel/gpu_drv/r545/r545_96-124"
+#define NV_LAST_OFFICIAL_CHANGELIST_NUM (33538619)
 
 #else     /* Windows builds */
-#define NV_BUILD_BRANCH_VERSION         "r545_96-2"
-#define NV_BUILD_CHANGELIST_NUM         (33457372)
+#define NV_BUILD_BRANCH_VERSION         "r545_96-8"
+#define NV_BUILD_CHANGELIST_NUM         (33517029)
 #define NV_BUILD_TYPE                   "Official"
-#define NV_BUILD_NAME                   "546.01"
-#define NV_LAST_OFFICIAL_CHANGELIST_NUM (33457372)
+#define NV_BUILD_NAME                   "546.17"
+#define NV_LAST_OFFICIAL_CHANGELIST_NUM (33517029)
 #define NV_BUILD_BRANCH_BASE_VERSION    R545
 #endif
 // End buildmeister python edited section

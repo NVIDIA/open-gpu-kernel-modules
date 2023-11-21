@@ -277,6 +277,8 @@ NV_STATUS kflcnAllocContext_IMPL
 
     NV_ASSERT_OK_OR_RETURN(_kflcnAllocAndMapCtxBuffer(pGpu, pKernelFalcon, pKernelChannel));
 
+    NV_CHECK(LEVEL_ERROR, videoEventTraceCtxInit(pGpu, pKernelChannel, pKernelFalcon->physEngDesc) == NV_OK);
+
     return _kflcnPromoteContext(pGpu, pKernelFalcon, pKernelChannel);
 }
 

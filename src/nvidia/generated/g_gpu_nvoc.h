@@ -99,6 +99,8 @@ typedef struct GPUATTACHARG GPUATTACHARG;
 #include "kernel/gpu/gr/fecs_event_list.h"
 #include "class/cl90cdfecs.h"
 
+#include "gpuvideo/videoeventlist.h"
+
 #include "gpu/gpu_fabric_probe.h"
 
 #include "nv_arch.h"
@@ -1199,6 +1201,8 @@ struct OBJGPU {
     EventBufferMap vgpuFecsTraceStagingBindings;
     FecsEventBufferBindMultiMap fecsEventBufferBindingsUid;
     TMR_EVENT *pFecsTimerEvent;
+    VideoEventBufferBindMultiMap videoEventBufferBindingsUid;
+    TMR_EVENT *pVideoTimerEvent;
     struct OBJVASPACE *pFabricVAS;
     NvBool bPipelinedPteMemEnabled;
     NvBool bIsBarPteInSysmemSupported;
@@ -1231,7 +1235,6 @@ struct OBJGPU {
     NvBool bGpuNvEncAv1Supported;
     _GPU_SLI_PEER peer[2];
     NvBool bIsGspOwnedFaultBuffersEnabled;
-    NvBool bVideoTraceLogSupported;
     _GPU_GC6_STATE gc6State;
 };
 
@@ -4071,17 +4074,6 @@ static inline NV_STATUS gpuGetConstructedFalcon(struct OBJGPU *pGpu, NvU32 arg0,
 }
 #else //__nvoc_gpu_h_disabled
 #define gpuGetConstructedFalcon(pGpu, arg0, arg1) gpuGetConstructedFalcon_IMPL(pGpu, arg0, arg1)
-#endif //__nvoc_gpu_h_disabled
-
-NvBool gpuIsVideoTraceLogSupported_IMPL(struct OBJGPU *pGpu);
-
-#ifdef __nvoc_gpu_h_disabled
-static inline NvBool gpuIsVideoTraceLogSupported(struct OBJGPU *pGpu) {
-    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_gpu_h_disabled
-#define gpuIsVideoTraceLogSupported(pGpu) gpuIsVideoTraceLogSupported_IMPL(pGpu)
 #endif //__nvoc_gpu_h_disabled
 
 NV_STATUS gpuGetSparseTextureComputeMode_IMPL(struct OBJGPU *pGpu, NvU32 *arg0, NvU32 *arg1, NvU32 *arg2);

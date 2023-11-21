@@ -445,6 +445,7 @@ SRCS += src/kernel/gpu/gpu_suspend.c
 SRCS += src/kernel/gpu/gpu_timeout.c
 SRCS += src/kernel/gpu/gpu_user_shared_data.c
 SRCS += src/kernel/gpu/gpu_uuid.c
+SRCS += src/kernel/gpu/gpuvideo/videoeventlist.c
 SRCS += src/kernel/gpu/gr/arch/ampere/kgrmgr_ga100.c
 SRCS += src/kernel/gpu/gr/arch/maxwell/kgraphics_gm200.c
 SRCS += src/kernel/gpu/gr/arch/pascal/kgraphics_gp100.c

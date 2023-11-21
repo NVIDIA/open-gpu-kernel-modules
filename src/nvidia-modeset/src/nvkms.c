@@ -6451,6 +6451,7 @@ NvBool nvKmsGetBacklight(NvU32 display_id, void *drv_priv, NvU32 *brightness)
 
     params.subDeviceInstance = pDispEvo->displayOwner;
     params.displayId = display_id;
+    params.brightnessType = NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT100;
 
     status = nvRmApiControl(nvEvoGlobal.clientHandle,
                             pDevEvo->displayCommonHandle,
@@ -6474,6 +6475,7 @@ NvBool nvKmsSetBacklight(NvU32 display_id, void *drv_priv, NvU32 brightness)
     params.subDeviceInstance = pDispEvo->displayOwner;
     params.displayId  = display_id;
     params.brightness = brightness;
+    params.brightnessType = NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_TYPE_PERCENT100;
 
     status = nvRmApiControl(nvEvoGlobal.clientHandle,
                             pDevEvo->displayCommonHandle,

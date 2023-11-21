@@ -2,6 +2,12 @@
 
 ## Release 545 Entries
 
+### [545.29.06] 2023-11-22
+
+#### Fixed
+
+- The brightness control of NVIDIA seems to be broken, [#573](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/573)
+
 ### [545.29.02] 2023-10-31
 
 ### [545.23.06] 2023-10-17
@@ -15,6 +21,8 @@
 - Added beta-quality support for GeForce and Workstation GPUs. Please see the "Open Linux Kernel Modules" chapter in the NVIDIA GPU driver end user README for details.
 
 ## Release 535 Entries
+
+### [535.129.03] 2023-10-31
 
 ### [535.113.01] 2023-09-21
 
@@ -64,9 +72,13 @@
 
 ## Release 525 Entries
 
+### [525.147.05] 2023-10-31
+
 #### Fixed
 
 - Fix nvidia_p2p_get_pages(): Fix double-free in register-callback error path, [#557](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/557) by @BrendanCunningham
+
+### [525.125.06] 2023-06-26
 
 ### [525.116.04] 2023-05-09
 

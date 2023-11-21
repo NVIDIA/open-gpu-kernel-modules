@@ -512,6 +512,8 @@ NV_STATUS gpuConstruct_IMPL
     // allocate OS-specific GPU extension area
     osInitOSHwInfo(pGpu);
 
+    multimapInit(&pGpu->videoEventBufferBindingsUid, portMemAllocatorGetGlobalNonPaged());
+
     return gpuConstructPhysical(pGpu);
 }
 
@@ -1494,6 +1496,8 @@ gpuDestruct_IMPL
     pGpu->pSubdeviceBackReferences = NULL;
     pGpu->numSubdeviceBackReferences = 0;
     pGpu->maxSubdeviceBackReferences = 0;
+
+    multimapDestroy(&pGpu->videoEventBufferBindingsUid);
 
     gpuDestructPhysical(pGpu);
 }
@@ -4548,15 +4552,6 @@ void gpuDestroyGenericKernelFalconList_IMPL(OBJGPU *pGpu)
     pGpu->numGenericKernelFalcons = 0;
 }
 
-NvBool
-gpuIsVideoTraceLogSupported
-(
-    OBJGPU *pGpu
-)
-{
-    return !RMCFG_FEATURE_PLATFORM_MODS && !IS_SIMULATION(pGpu) && pGpu->bVideoTraceLogSupported;
-}
-
 NV_STATUS gpuBuildKernelVideoEngineList_IMPL(OBJGPU *pGpu)
 {
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
@@ -4635,6 +4630,9 @@ void gpuFreeVideoLogging_IMPL(OBJGPU *pGpu)
 void gpuDestroyKernelVideoEngineList_IMPL(OBJGPU *pGpu)
 {
     NvU32 i;
+
+    videoRemoveAllBindpointsForGpu(pGpu);
+
     for (i = 0; i < NV_ARRAY_ELEMENTS(pGpu->kernelVideoEngines); i++)
     {
         objDelete(pGpu->kernelVideoEngines[i]);

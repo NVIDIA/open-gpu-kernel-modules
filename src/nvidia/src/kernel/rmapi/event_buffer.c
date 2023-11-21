@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -475,6 +475,8 @@ eventbufferDestruct_IMPL
         osDereferenceObjectCount(notificationHandle);
     }
 
+    // Clean-up all bind points
+    videoRemoveAllBindpoints(pEventBuffer);
     fecsRemoveAllBindpoints(pEventBuffer);
 
     _unmapAndFreeMemory(pEventBuffer->pHeaderDesc, bKernel, pKernelMap->headerAddr,
@@ -584,6 +586,7 @@ eventbuffertBufferCtrlCmdFlush_IMPL
     while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex)) != NULL)
     {
         nvEventBufferFecsCallback(pGpu, NULL);
+        nvEventBufferVideoCallback(pGpu, NULL);
     }
     return NV_OK;
 }

@@ -36,6 +36,8 @@ extern "C" {
 
 #include "kernel/core/core.h"
 #include "kernel/gpu/eng_desc.h"
+#include "kernel/gpu/gpu.h"
+#include "kernel/gpu/gpu_halspec.h"
 #include "kernel/mem_mgr/mem.h"
 #include "kernel/gpuvideo/video_event.h"
 
@@ -115,10 +117,14 @@ NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine**, Dynamic*, NvU3
 #define __objCreate_KernelVideoEngine(ppNewObj, pParent, createFlags, arg_pGpu, arg_physEngDesc) \
     __nvoc_objCreate_KernelVideoEngine((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_physEngDesc)
 
-NV_STATUS kvidengConstruct_IMPL(struct KernelVideoEngine *arg_pKernelVideoEngine, struct OBJGPU *arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
+NvBool kvidengIsVideoTraceLogSupported_IMPL(struct OBJGPU *pGpu);
 
-#define __nvoc_kvidengConstruct(arg_pKernelVideoEngine, arg_pGpu, arg_physEngDesc) kvidengConstruct_IMPL(arg_pKernelVideoEngine, arg_pGpu, arg_physEngDesc)
-NV_STATUS kvidengInitLogging_IMPL(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine);
+
+#define kvidengIsVideoTraceLogSupported(pGpu) kvidengIsVideoTraceLogSupported_IMPL(pGpu)
+#define kvidengIsVideoTraceLogSupported_HAL(pGpu) kvidengIsVideoTraceLogSupported(pGpu)
+
+NV_STATUS kvidengInitLogging_KERNEL(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine);
+
 
 #ifdef __nvoc_kernel_video_engine_h_disabled
 static inline NV_STATUS kvidengInitLogging(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine) {
@@ -126,17 +132,56 @@ static inline NV_STATUS kvidengInitLogging(struct OBJGPU *pGpu, struct KernelVid
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_kernel_video_engine_h_disabled
-#define kvidengInitLogging(pGpu, pKernelVideoEngine) kvidengInitLogging_IMPL(pGpu, pKernelVideoEngine)
+#define kvidengInitLogging(pGpu, pKernelVideoEngine) kvidengInitLogging_KERNEL(pGpu, pKernelVideoEngine)
 #endif //__nvoc_kernel_video_engine_h_disabled
 
-void kvidengFreeLogging_IMPL(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine);
+#define kvidengInitLogging_HAL(pGpu, pKernelVideoEngine) kvidengInitLogging(pGpu, pKernelVideoEngine)
+
+void kvidengFreeLogging_KERNEL(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine);
+
 
 #ifdef __nvoc_kernel_video_engine_h_disabled
 static inline void kvidengFreeLogging(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine) {
     NV_ASSERT_FAILED_PRECOMP("KernelVideoEngine was disabled!");
 }
 #else //__nvoc_kernel_video_engine_h_disabled
-#define kvidengFreeLogging(pGpu, pKernelVideoEngine) kvidengFreeLogging_IMPL(pGpu, pKernelVideoEngine)
+#define kvidengFreeLogging(pGpu, pKernelVideoEngine) kvidengFreeLogging_KERNEL(pGpu, pKernelVideoEngine)
+#endif //__nvoc_kernel_video_engine_h_disabled
+
+#define kvidengFreeLogging_HAL(pGpu, pKernelVideoEngine) kvidengFreeLogging(pGpu, pKernelVideoEngine)
+
+NV_STATUS kvidengRingbufferMakeSpace_IMPL(struct OBJGPU *pGpu, NvU32 oldReadPtr, NvU32 size, VIDEO_TRACE_RING_BUFFER *pTraceBuffer);
+
+#define kvidengRingbufferMakeSpace(pGpu, oldReadPtr, size, pTraceBuffer) kvidengRingbufferMakeSpace_IMPL(pGpu, oldReadPtr, size, pTraceBuffer)
+NvU32 kvidengRingbufferGetDataSize_IMPL(struct OBJGPU *pGpu, VIDEO_TRACE_RING_BUFFER *arg0);
+
+#define kvidengRingbufferGetDataSize(pGpu, arg0) kvidengRingbufferGetDataSize_IMPL(pGpu, arg0)
+struct KernelVideoEngine *kvidengFromEngDesc_IMPL(struct OBJGPU *pGpu, NvU32 engDesc);
+
+#define kvidengFromEngDesc(pGpu, engDesc) kvidengFromEngDesc_IMPL(pGpu, engDesc)
+NV_STATUS kvidengConstruct_IMPL(struct KernelVideoEngine *arg_pKernelVideoEngine, struct OBJGPU *arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
+
+#define __nvoc_kvidengConstruct(arg_pKernelVideoEngine, arg_pGpu, arg_physEngDesc) kvidengConstruct_IMPL(arg_pKernelVideoEngine, arg_pGpu, arg_physEngDesc)
+NvU32 kvidengRingbufferGet_IMPL(struct OBJGPU *arg0, struct KernelVideoEngine *arg1, NvU8 *pDataOut, NvU32 sizeOut, VIDEO_TRACE_RING_BUFFER *arg2);
+
+#ifdef __nvoc_kernel_video_engine_h_disabled
+static inline NvU32 kvidengRingbufferGet(struct OBJGPU *arg0, struct KernelVideoEngine *arg1, NvU8 *pDataOut, NvU32 sizeOut, VIDEO_TRACE_RING_BUFFER *arg2) {
+    NV_ASSERT_FAILED_PRECOMP("KernelVideoEngine was disabled!");
+    return 0;
+}
+#else //__nvoc_kernel_video_engine_h_disabled
+#define kvidengRingbufferGet(arg0, arg1, pDataOut, sizeOut, arg2) kvidengRingbufferGet_IMPL(arg0, arg1, pDataOut, sizeOut, arg2)
+#endif //__nvoc_kernel_video_engine_h_disabled
+
+NvU32 kvidengEventbufferGetRecord_IMPL(struct OBJGPU *arg0, struct KernelVideoEngine *arg1, VIDEO_TRACE_RING_BUFFER *pTraceBuffer, VIDEO_ENGINE_EVENT__RECORD *pRecord, NvU32 magic_hi, NvU32 magic_lo);
+
+#ifdef __nvoc_kernel_video_engine_h_disabled
+static inline NvU32 kvidengEventbufferGetRecord(struct OBJGPU *arg0, struct KernelVideoEngine *arg1, VIDEO_TRACE_RING_BUFFER *pTraceBuffer, VIDEO_ENGINE_EVENT__RECORD *pRecord, NvU32 magic_hi, NvU32 magic_lo) {
+    NV_ASSERT_FAILED_PRECOMP("KernelVideoEngine was disabled!");
+    return 0;
+}
+#else //__nvoc_kernel_video_engine_h_disabled
+#define kvidengEventbufferGetRecord(arg0, arg1, pTraceBuffer, pRecord, magic_hi, magic_lo) kvidengEventbufferGetRecord_IMPL(arg0, arg1, pTraceBuffer, pRecord, magic_hi, magic_lo)
 #endif //__nvoc_kernel_video_engine_h_disabled
 
 #undef PRIVATE_FIELD

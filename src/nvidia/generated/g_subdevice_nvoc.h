@@ -427,6 +427,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdEventSetMemoryNotifies__)(struct Subdevice *, NV2080_CTRL_EVENT_SET_MEMORY_NOTIFIES_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdEventSetSemaphoreMemory__)(struct Subdevice *, NV2080_CTRL_EVENT_SET_SEMAPHORE_MEMORY_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdEventSetSemaMemValidation__)(struct Subdevice *, NV2080_CTRL_EVENT_SET_SEMA_MEM_VALIDATION_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdEventVideoBindEvtbuf__)(struct Subdevice *, NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdTimerCancel__)(struct Subdevice *);
     NV_STATUS (*__subdeviceCtrlCmdTimerSchedule__)(struct Subdevice *, NV2080_CTRL_CMD_TIMER_SCHEDULE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdTimerGetTime__)(struct Subdevice *, NV2080_CTRL_TIMER_GET_TIME_PARAMS *);
@@ -470,6 +471,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdFlcnGetCtxBufferInfo__)(struct Subdevice *, NV2080_CTRL_FLCN_GET_CTX_BUFFER_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFlcnGetCtxBufferSize__)(struct Subdevice *, NV2080_CTRL_FLCN_GET_CTX_BUFFER_SIZE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalFlcnSetVideoEventBufferFlags__)(struct Subdevice *, NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_FLAGS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalFlcnSetVideoEventBufferMemory__)(struct Subdevice *, NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdEccGetClientExposedCounters__)(struct Subdevice *, NV2080_CTRL_ECC_GET_CLIENT_EXPOSED_COUNTERS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuQueryEccConfiguration__)(struct Subdevice *, NV2080_CTRL_GPU_QUERY_ECC_CONFIGURATION_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuSetEccConfiguration__)(struct Subdevice *, NV2080_CTRL_GPU_SET_ECC_CONFIGURATION_PARAMS *);
@@ -1028,6 +1030,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdEventSetMemoryNotifies(pSubdevice, pSetMemoryNotifiesParams) subdeviceCtrlCmdEventSetMemoryNotifies_DISPATCH(pSubdevice, pSetMemoryNotifiesParams)
 #define subdeviceCtrlCmdEventSetSemaphoreMemory(pSubdevice, pSetSemMemoryParams) subdeviceCtrlCmdEventSetSemaphoreMemory_DISPATCH(pSubdevice, pSetSemMemoryParams)
 #define subdeviceCtrlCmdEventSetSemaMemValidation(pSubdevice, pSetSemaMemValidationParams) subdeviceCtrlCmdEventSetSemaMemValidation_DISPATCH(pSubdevice, pSetSemaMemValidationParams)
+#define subdeviceCtrlCmdEventVideoBindEvtbuf(pSubdevice, pBindParams) subdeviceCtrlCmdEventVideoBindEvtbuf_DISPATCH(pSubdevice, pBindParams)
 #define subdeviceCtrlCmdTimerCancel(pSubdevice) subdeviceCtrlCmdTimerCancel_DISPATCH(pSubdevice)
 #define subdeviceCtrlCmdTimerSchedule(pSubdevice, pParams) subdeviceCtrlCmdTimerSchedule_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdTimerGetTime(pSubdevice, pParams) subdeviceCtrlCmdTimerGetTime_DISPATCH(pSubdevice, pParams)
@@ -1071,6 +1074,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdFlcnGetCtxBufferInfo(pSubdevice, pParams) subdeviceCtrlCmdFlcnGetCtxBufferInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdFlcnGetCtxBufferSize(pSubdevice, pParams) subdeviceCtrlCmdFlcnGetCtxBufferSize_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalFlcnSetVideoEventBufferFlags(pSubdevice, pParams) subdeviceCtrlCmdInternalFlcnSetVideoEventBufferFlags_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalFlcnSetVideoEventBufferMemory(pSubdevice, pParams) subdeviceCtrlCmdInternalFlcnSetVideoEventBufferMemory_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdEccGetClientExposedCounters(pSubdevice, pParams) subdeviceCtrlCmdEccGetClientExposedCounters_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuQueryEccConfiguration(pSubdevice, pConfig) subdeviceCtrlCmdGpuQueryEccConfiguration_DISPATCH(pSubdevice, pConfig)
 #define subdeviceCtrlCmdGpuSetEccConfiguration(pSubdevice, pConfig) subdeviceCtrlCmdGpuSetEccConfiguration_DISPATCH(pSubdevice, pConfig)
@@ -3125,6 +3129,12 @@ static inline NV_STATUS subdeviceCtrlCmdEventSetSemaMemValidation_DISPATCH(struc
     return pSubdevice->__subdeviceCtrlCmdEventSetSemaMemValidation__(pSubdevice, pSetSemaMemValidationParams);
 }
 
+NV_STATUS subdeviceCtrlCmdEventVideoBindEvtbuf_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS *pBindParams);
+
+static inline NV_STATUS subdeviceCtrlCmdEventVideoBindEvtbuf_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS *pBindParams) {
+    return pSubdevice->__subdeviceCtrlCmdEventVideoBindEvtbuf__(pSubdevice, pBindParams);
+}
+
 NV_STATUS subdeviceCtrlCmdTimerCancel_IMPL(struct Subdevice *pSubdevice);
 
 static inline NV_STATUS subdeviceCtrlCmdTimerCancel_DISPATCH(struct Subdevice *pSubdevice) {
@@ -3381,6 +3391,12 @@ NV_STATUS subdeviceCtrlCmdInternalFlcnSetVideoEventBufferFlags_IMPL(struct Subde
 
 static inline NV_STATUS subdeviceCtrlCmdInternalFlcnSetVideoEventBufferFlags_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_FLAGS_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdInternalFlcnSetVideoEventBufferFlags__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalFlcnSetVideoEventBufferMemory_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalFlcnSetVideoEventBufferMemory_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalFlcnSetVideoEventBufferMemory__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdEccGetClientExposedCounters_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_ECC_GET_CLIENT_EXPOSED_COUNTERS_PARAMS *pParams);

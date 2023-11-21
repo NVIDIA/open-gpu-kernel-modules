@@ -15,10 +15,10 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_KernelVideoEngine;
 
 extern const struct NVOC_CLASS_DEF __nvoc_class_def_Object;
 
-void __nvoc_init_KernelVideoEngine(KernelVideoEngine*);
-void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine*);
-NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine*, struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
-void __nvoc_init_dataField_KernelVideoEngine(KernelVideoEngine*);
+void __nvoc_init_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner* );
+void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner* );
+NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner* , struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc);
+void __nvoc_init_dataField_KernelVideoEngine(KernelVideoEngine*, RmHalspecOwner* );
 void __nvoc_dtor_KernelVideoEngine(KernelVideoEngine*);
 extern const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelVideoEngine;
 
@@ -69,16 +69,21 @@ void __nvoc_dtor_KernelVideoEngine(KernelVideoEngine *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 }
 
-void __nvoc_init_dataField_KernelVideoEngine(KernelVideoEngine *pThis) {
+void __nvoc_init_dataField_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 }
 
 NV_STATUS __nvoc_ctor_Object(Object* );
-NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine *pThis, struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc) {
+NV_STATUS __nvoc_ctor_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner, struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc) {
     NV_STATUS status = NV_OK;
     status = __nvoc_ctor_Object(&pThis->__nvoc_base_Object);
     if (status != NV_OK) goto __nvoc_ctor_KernelVideoEngine_fail_Object;
-    __nvoc_init_dataField_KernelVideoEngine(pThis);
+    __nvoc_init_dataField_KernelVideoEngine(pThis, pRmhalspecowner);
 
     status = __nvoc_kvidengConstruct(pThis, arg_pGpu, arg_physEngDesc);
     if (status != NV_OK) goto __nvoc_ctor_KernelVideoEngine_fail__init;
@@ -92,26 +97,32 @@ __nvoc_ctor_KernelVideoEngine_exit:
     return status;
 }
 
-static void __nvoc_init_funcTable_KernelVideoEngine_1(KernelVideoEngine *pThis) {
+static void __nvoc_init_funcTable_KernelVideoEngine_1(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
+    RmVariantHal *rmVariantHal = &pRmhalspecowner->rmVariantHal;
+    const unsigned long rmVariantHal_HalVarIdx = (unsigned long)rmVariantHal->__nvoc_HalVarIdx;
     PORT_UNREFERENCED_VARIABLE(pThis);
+    PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal);
+    PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 }
 
-void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine *pThis) {
-    __nvoc_init_funcTable_KernelVideoEngine_1(pThis);
+void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
+    __nvoc_init_funcTable_KernelVideoEngine_1(pThis, pRmhalspecowner);
 }
 
 void __nvoc_init_Object(Object*);
-void __nvoc_init_KernelVideoEngine(KernelVideoEngine *pThis) {
+void __nvoc_init_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
     pThis->__nvoc_pbase_KernelVideoEngine = pThis;
     pThis->__nvoc_pbase_Object = &pThis->__nvoc_base_Object;
     __nvoc_init_Object(&pThis->__nvoc_base_Object);
-    __nvoc_init_funcTable_KernelVideoEngine(pThis);
+    __nvoc_init_funcTable_KernelVideoEngine(pThis, pRmhalspecowner);
 }
 
 NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic *pParent, NvU32 createFlags, struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc) {
     NV_STATUS status;
     Object *pParentObj;
     KernelVideoEngine *pThis;
+    RmHalspecOwner *pRmhalspecowner;
 
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelVideoEngine), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
@@ -133,8 +144,12 @@ NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic
         pThis->__nvoc_base_Object.pParent = NULL;
     }
 
-    __nvoc_init_KernelVideoEngine(pThis);
-    status = __nvoc_ctor_KernelVideoEngine(pThis, arg_pGpu, arg_physEngDesc);
+    if ((pRmhalspecowner = dynamicCast(pParent, RmHalspecOwner)) == NULL)
+        pRmhalspecowner = objFindAncestorOfType(RmHalspecOwner, pParent);
+    NV_ASSERT_OR_RETURN(pRmhalspecowner != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    __nvoc_init_KernelVideoEngine(pThis, pRmhalspecowner);
+    status = __nvoc_ctor_KernelVideoEngine(pThis, pRmhalspecowner, arg_pGpu, arg_physEngDesc);
     if (status != NV_OK) goto __nvoc_objCreate_KernelVideoEngine_cleanup;
 
     *ppThis = pThis;

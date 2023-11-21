@@ -28,6 +28,32 @@
 #include "kernel/os/os.h"
 #include "nvrm_registry.h"
 
+KernelVideoEngine *
+kvidengFromEngDesc
+(
+    OBJGPU *pGpu,
+    NvU32 engDesc
+)
+{
+    NvU32 i;
+    for (i = 0; i < pGpu->numKernelVideoEngines; i++)
+    {
+        if (engDesc == pGpu->kernelVideoEngines[i]->physEngDesc)
+            return pGpu->kernelVideoEngines[i];
+    }
+
+    return NULL;
+}
+
+NvBool
+kvidengIsVideoTraceLogSupported_IMPL
+(
+    OBJGPU *pGpu
+)
+{
+    return !IS_VIRTUAL(pGpu) && !RMCFG_FEATURE_PLATFORM_MODS && !IS_SIMULATION(pGpu);
+}
+
 NV_STATUS kvidengConstruct_IMPL
 (
     KernelVideoEngine *pKernelVideoEngine,
@@ -36,10 +62,11 @@ NV_STATUS kvidengConstruct_IMPL
 )
 {
     pKernelVideoEngine->physEngDesc = physEngDesc;
+    pKernelVideoEngine->bVideoTraceEnabled = NV_FALSE;
     return NV_OK;
 }
 
-NV_STATUS kvidengInitLogging_IMPL
+NV_STATUS kvidengInitLogging_KERNEL
 (
     OBJGPU *pGpu,
     KernelVideoEngine *pKernelVideoEngine
@@ -47,12 +74,10 @@ NV_STATUS kvidengInitLogging_IMPL
 {
     NV_STATUS status;
     NvU32 data = NV_REG_STR_RM_VIDEO_EVENT_TRACE_DISABLED;
-    NvBool alwaysLogging;
+    NvBool bAlwaysLogging;
 
-    if (!gpuIsVideoTraceLogSupported(pGpu))
+    if (!kvidengIsVideoTraceLogSupported(pGpu))
         return NV_OK;
-
-    NV_ASSERT_OR_RETURN(pKernelVideoEngine != NULL, NV_ERR_INVALID_STATE);
 
     status = osReadRegistryDword(pGpu, NV_REG_STR_RM_VIDEO_EVENT_TRACE, &data);
     if (status != NV_OK)
@@ -63,7 +88,7 @@ NV_STATUS kvidengInitLogging_IMPL
                DRF_NUM(_REG_STR, _RM_VIDEO_EVENT_TRACE, _EVENT_BUFFER_SIZE_IN_4k, 0x8);
     }
 
-    alwaysLogging = DRF_VAL(_REG_STR, _RM_VIDEO_EVENT_TRACE, _ALWAYS_LOG, (data)) ==
+    bAlwaysLogging = DRF_VAL(_REG_STR, _RM_VIDEO_EVENT_TRACE, _ALWAYS_LOG, (data)) ==
                     NV_REG_STR_RM_VIDEO_EVENT_TRACE_ALWAYS_LOG_ENABLED;
 
     if (data != NV_REG_STR_RM_VIDEO_EVENT_TRACE_DISABLED)
@@ -72,7 +97,7 @@ NV_STATUS kvidengInitLogging_IMPL
         VIDEO_TRACE_RING_BUFFER *pTraceBuf;
         NvU64 seed;
         NvBool bIsFbBroken = NV_FALSE;
-        NV_ADDRESS_SPACE videoBufferAddressSpace = ADDR_FBMEM;
+        NV_ADDRESS_SPACE addressSpace = ADDR_FBMEM;
 
         eventBufferSize = DRF_VAL(_REG_STR, _RM_VIDEO_EVENT_TRACE, _EVENT_BUFFER_SIZE_IN_4k, (data)) * 0x1000;
 
@@ -80,7 +105,7 @@ NV_STATUS kvidengInitLogging_IMPL
                       pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM);
 
         if (bIsFbBroken)
-            videoBufferAddressSpace = ADDR_SYSMEM;
+            addressSpace = ADDR_SYSMEM;
 
         // Allocate the staging buffer
         NV_ASSERT_OK_OR_GOTO(
@@ -90,7 +115,7 @@ NV_STATUS kvidengInitLogging_IMPL
                           eventBufferSize,
                           0,
                           NV_TRUE,
-                          videoBufferAddressSpace,
+                          addressSpace,
                           NV_MEMORY_UNCACHED,
                           MEMDESC_FLAGS_NONE),
             exit);
@@ -108,13 +133,42 @@ NV_STATUS kvidengInitLogging_IMPL
 
         // clear trace buffer
         portMemSet(pTraceBuf, 0, eventBufferSize);
-
         pTraceBuf->bufferSize = eventBufferSize - sizeof(VIDEO_TRACE_RING_BUFFER);
         pTraceBuf->readPtr = 0;
         pTraceBuf->writePtr = 0;
-        pTraceBuf->flags = alwaysLogging ? VIDEO_TRACE_FLAG__LOGGING_ENABLED : 0;
+        pTraceBuf->flags = bAlwaysLogging ? VIDEO_TRACE_FLAG__LOGGING_ENABLED : 0;
 
         pKernelVideoEngine->videoTraceInfo.pTraceBufferEngine = pTraceBuf;
+
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+            NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS params = {0};
+
+            params.memDescInfo.base = memdescGetPhysAddr(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc, AT_GPU, 0);
+            params.memDescInfo.size = pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc->ActualSize;
+            params.memDescInfo.alignment = pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc->Alignment;
+            params.memDescInfo.addressSpace = addressSpace;
+            params.memDescInfo.cpuCacheAttrib = NV_MEMORY_UNCACHED;
+
+            params.engDesc = pKernelVideoEngine->physEngDesc;
+
+            NV_ASSERT_OK_OR_GOTO(
+                status,
+                pRmApi->Control(pRmApi,
+                                pGpu->hInternalClient,
+                                pGpu->hInternalSubdevice,
+                                NV2080_CTRL_CMD_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY,
+                                &params,
+                                sizeof(params)),
+                exit);
+
+            if (!params.bEngineFound)
+            {
+                kvidengFreeLogging(pGpu, pKernelVideoEngine);
+                goto exit;
+            }
+        }
 
         // Allocate allocate scratch pad for variable data
         pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData = portMemAllocNonPaged(RM_VIDEO_TRACE_MAX_VARIABLE_DATA_SIZE);
@@ -131,25 +185,20 @@ NV_STATUS kvidengInitLogging_IMPL
          */
         osGetCurrentTick(&seed);
         pKernelVideoEngine->videoTraceInfo.pVideoLogPrng = portCryptoPseudoRandomGeneratorCreate(seed);
+
+        pKernelVideoEngine->bVideoTraceEnabled = NV_TRUE;
     }
 
 exit:
     if (status != NV_OK)
     {
         kvidengFreeLogging(pGpu, pKernelVideoEngine);
-
-        if (status == NV_WARN_NOTHING_TO_DO)
-            status = NV_OK;
-    }
-    else
-    {
-        pKernelVideoEngine->bVideoTraceEnabled = NV_TRUE;
     }
 
     return status;
 }
 
-void kvidengFreeLogging_IMPL
+void kvidengFreeLogging_KERNEL
 (
     OBJGPU *pGpu,
     KernelVideoEngine *pKernelVideoEngine
@@ -163,12 +212,9 @@ void kvidengFreeLogging_IMPL
         pKernelVideoEngine->videoTraceInfo.pTraceBufferEngine = NULL;
     }
 
-    if (pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc != NULL)
-    {
-        memdescFree(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc);
-        memdescDestroy(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc);
-        pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc = NULL;
-    }
+    memdescFree(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc);
+    memdescDestroy(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc);
+    pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc = NULL;
 
     portMemFree(pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData);
     pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData = NULL;
@@ -180,4 +226,371 @@ void kvidengFreeLogging_IMPL
     pKernelVideoEngine->videoTraceInfo.pVideoLogPrng = NULL;
 
     pKernelVideoEngine->bVideoTraceEnabled = NV_FALSE;
+}
+
+/*!
+ * This helper function is responsible for freeing the space from ringbuffer by advancing the read pointer.
+ *
+ * @param[in]  pGpu
+ * @param[in]  oldReadPtr    read pointer of the starting point for free
+ * @param[in]  size          size to be freed in NvU32
+ * @param[in]  pTraceBuffer  pointer to ringbuffer to get data from.
+ *
+ * @return NV_STATUS to indicate if free is successful.
+ */
+NV_STATUS
+kvidengRingbufferMakeSpace
+(
+    OBJGPU                  *pGpu,
+    NvU32                    oldReadPtr,
+    NvU32                    size,
+    VIDEO_TRACE_RING_BUFFER *pTraceBuffer
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 hasSize = 0;
+    NvU32 oldWritePtr;
+    NvU64 adjustedReadPtr;
+
+    NV_ASSERT_OR_RETURN(pTraceBuffer != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Read in writePtr first so that we don't need to worry about sync between driver and uCode.
+    oldWritePtr = pTraceBuffer->writePtr;
+    adjustedReadPtr = (NvU64)oldReadPtr;
+
+    if (oldWritePtr < oldReadPtr)
+    {
+        // Cross over 32bit boundary
+        hasSize = (0xFFFFFFFF - oldReadPtr) + oldWritePtr + 1;
+    }
+    else
+    {
+        hasSize = oldWritePtr - oldReadPtr;
+    }
+    if (hasSize > pTraceBuffer->bufferSize)
+    {
+        hasSize = pTraceBuffer->bufferSize;
+    }
+
+    // Make sure we are not free pass over the write pointer.
+    if (size > hasSize)
+        size = hasSize;
+
+    // Get newly adjusted readPtr in 64bits
+    adjustedReadPtr += size;
+
+    if (oldReadPtr != pTraceBuffer->readPtr)
+    {
+        NvU64 newReadPtr = 0;
+        if (oldReadPtr > pTraceBuffer->readPtr)
+        {
+            // 32bit turn over
+            newReadPtr = (NvU64)(pTraceBuffer->readPtr) + 0x100000000ULL;
+        }
+        // Only adjust the read pointer if newly freed space by other readers is not enough.
+        if (adjustedReadPtr > newReadPtr)
+        {
+            pTraceBuffer->readPtr = oldReadPtr + size;
+        }
+    }
+    else
+    {
+        pTraceBuffer->readPtr += size;
+    }
+
+    return status;
+}
+
+/*!
+ * This function is responsible for reading data from ringbuffer
+ *
+ * @param[in]  pGpu
+ * @param[in]  pKernelVideoEngine
+ * @param[in]  pDataOut           output data pointer
+ * @param[in]  sizeOut            output size in NvU32
+ * @param[in]  pTraceBuffer       pointer to ringbuffer to get data from.
+ *
+ * @return size of data read successfully.
+ */
+NvU32
+kvidengRingbufferGet_IMPL
+(
+    OBJGPU                  *pGpu,
+    KernelVideoEngine       *pKernelVideoEngine,
+    NvU8                    *pDataOut,
+    NvU32                    sizeOut,
+    VIDEO_TRACE_RING_BUFFER *pTraceBuffer
+)
+{
+    NV_ASSERT_OR_RETURN(pDataOut != NULL, 0);
+    NV_ASSERT_OR_RETURN(pTraceBuffer != NULL, 0);
+
+    // Read in writePtr first so that we don't need to worry about sync between driver and uCode.
+    NvU32 oldWritePtr = pTraceBuffer->writePtr;
+    NvU32 oldReadPtr = pTraceBuffer->readPtr;
+    NvU32 usedReadPtr = pTraceBuffer->readPtr;
+
+    NvU32 writeOffset = 0;
+    NvU32 readOffset = 0;
+    NvU32 size2Top = 0;
+
+    NvU32 hasSize = 0;
+
+    if (oldWritePtr < oldReadPtr)
+    {
+        // Cross over 32bit boundary
+        hasSize = (0xFFFFFFFF - oldReadPtr) + oldWritePtr + 1;
+    }
+    else
+    {
+        hasSize = oldWritePtr - oldReadPtr;
+    }
+
+    if (hasSize >= pTraceBuffer->bufferSize)
+    {
+        // The reader is too far behind, the data is over-written and invalid. Adjust read pointer used.
+        hasSize = pTraceBuffer->bufferSize;
+        if (oldWritePtr >= pTraceBuffer->bufferSize)
+        {
+            usedReadPtr = oldWritePtr - pTraceBuffer->bufferSize;
+        }
+        else
+        {
+            usedReadPtr = (0xFFFFFFFF - (pTraceBuffer->bufferSize - oldWritePtr)) + 1;
+        }
+    }
+
+    if ((sizeOut > hasSize) || (oldWritePtr == usedReadPtr))
+    {
+        // Not enough data.
+        return 0;
+    }
+
+    writeOffset = oldWritePtr % pTraceBuffer->bufferSize;
+    readOffset = usedReadPtr % pTraceBuffer->bufferSize;
+    size2Top = pTraceBuffer->bufferSize - readOffset;
+    if ((writeOffset > readOffset) || ((writeOffset <= readOffset) && (sizeOut <= size2Top)))
+    {
+        portMemCopy(pDataOut, sizeOut, &(pTraceBuffer->pData[readOffset]), sizeOut);
+
+        // Update read pointer, however we need to make sure read pointer is not updated by "free" call
+        // so that the data got was validated. If the read pointer is changed by free call,
+        // we can not guarantee the data read is valid. Therefore, 0 will be returned
+        // to indicate the data read is not valid.
+        if (pTraceBuffer->readPtr == oldReadPtr)
+        {
+            pTraceBuffer->readPtr = usedReadPtr + sizeOut;
+        }
+        else
+        {
+            // Output data could be corrupted. Invalidate the output by return 0.
+            sizeOut = 0;
+        }
+    }
+    else if ((writeOffset <= readOffset) && (sizeOut > size2Top))
+    {
+        // Has data accross top of the buffer, do 2 chunk read.
+        kvidengRingbufferGet(pGpu, pKernelVideoEngine, pDataOut, size2Top, pTraceBuffer);
+        kvidengRingbufferGet(pGpu, pKernelVideoEngine, &(pDataOut[size2Top]), sizeOut - size2Top, pTraceBuffer);
+    }
+
+    return sizeOut;
+}
+
+/*!
+ * This helper function is looking for starting point of an event record.
+ *
+ * @param[in]  pGpu
+ * @param[in]  pKernelVideoEngine
+ * @param[in]  magic_hi           magic Hi identifying types of records
+ * @param[in]  magic_lo           magic Lo identifying types of records
+ * @param[in]  pTraceBuffer       pointer to ringbuffer to get data from.
+ *
+ * @return NV_STATUS to indicate if free is successful.
+ */
+static NV_STATUS
+_eventbufferGotoNextRecord
+(
+    OBJGPU                  *pGpu,
+    KernelVideoEngine       *pKernelVideoEngine,
+    NvU32                    magic_hi,
+    NvU32                    magic_lo,
+    VIDEO_TRACE_RING_BUFFER *pTraceBuffer
+)
+{
+    NV_ASSERT_OR_RETURN(pTraceBuffer != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    NvU32 i = 0;
+    NvU32 oldReadPtr = pTraceBuffer->readPtr;
+    NvU32 offset = oldReadPtr;
+    NvU32 hasSize = kvidengRingbufferGetDataSize(pGpu, pTraceBuffer);
+
+    if (hasSize < 8)
+    {
+        // Not enough for record magic, empty the buffer!
+        offset += hasSize;
+    }
+    else
+    {
+        union {
+            struct {
+                NvU32 lo;
+                NvU32 hi;
+            };
+            NvU64 val64bits;
+        } magic;
+
+        magic.hi =
+            (pTraceBuffer->pData[(offset + 7) % pTraceBuffer->bufferSize] << 24) +
+            (pTraceBuffer->pData[(offset + 6) % pTraceBuffer->bufferSize] << 16) +
+            (pTraceBuffer->pData[(offset + 5) % pTraceBuffer->bufferSize] << 8) +
+            (pTraceBuffer->pData[(offset + 4) % pTraceBuffer->bufferSize]);
+        magic.lo =
+            (pTraceBuffer->pData[(offset + 3) % pTraceBuffer->bufferSize] << 24) +
+            (pTraceBuffer->pData[(offset + 2) % pTraceBuffer->bufferSize] << 16) +
+            (pTraceBuffer->pData[(offset + 1) % pTraceBuffer->bufferSize] << 8) +
+            (pTraceBuffer->pData[offset % pTraceBuffer->bufferSize]);
+
+        for (i = 0; i < hasSize - 8; i++)
+        {
+            if ((magic.lo == magic_lo) && (magic.hi == magic_hi))
+            {
+                break;
+            }
+
+            magic.val64bits = (magic.val64bits >> 8) | (((NvU64)(pTraceBuffer->pData[(offset + i + 8) % pTraceBuffer->bufferSize])) << 56);
+        }
+
+        offset += i;
+        if (i == (hasSize - 8))
+        {
+            // Did not find magic. Empty the buffer
+            offset += 8;
+        }
+    }
+
+    if (offset != oldReadPtr)
+    {
+        NvU32 skipSize = 0;
+        if (offset < pTraceBuffer->readPtr)
+        {
+            // 32bit turn over
+            skipSize = offset + (0xFFFFFFFFUL - oldReadPtr) + 1UL;
+        }
+        else
+        {
+            skipSize = offset - oldReadPtr;
+        }
+        kvidengRingbufferMakeSpace(pGpu, oldReadPtr, skipSize, pTraceBuffer);
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * This function is to get one record from a trace buffer.
+ *
+ * @param[in]  pGpu
+ * @param[in]  pKernelVideoEngine
+ * @param[in]  pTraceBuffer       pointer to source ringbuffer to get data from.
+ * @param[in]  pRecord            pointer to a trace record to copy data to.
+ * @param[in]  magic_hi           magic Hi identifying types of records
+ * @param[in]  magic_lo           magic Lo identifying types of records
+ *
+ * @return size of data copied successfully.
+ */
+NvU32
+kvidengEventbufferGetRecord_IMPL
+(
+    OBJGPU                     *pGpu,
+    KernelVideoEngine          *pKernelVideoEngine,
+    VIDEO_TRACE_RING_BUFFER    *pTraceBuffer,
+    VIDEO_ENGINE_EVENT__RECORD *pRecord,
+    NvU32                       magic_hi,
+    NvU32                       magic_lo
+)
+{
+    if (!pKernelVideoEngine->bVideoTraceEnabled)
+    {
+        return 0;
+    }
+
+    NV_ASSERT_OR_RETURN(pTraceBuffer != NULL, 0);
+    NV_ASSERT_OR_RETURN(pRecord != NULL, 0);
+    NV_ASSERT_OR_RETURN(pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData != NULL, 0);
+
+    NvU32 size = 0;
+
+    _eventbufferGotoNextRecord(pGpu, pKernelVideoEngine, magic_hi, magic_lo, pTraceBuffer);
+
+    size = kvidengRingbufferGet(pGpu, pKernelVideoEngine, (NvU8*)pRecord, sizeof(VIDEO_ENGINE_EVENT__RECORD), pTraceBuffer);
+
+    if (size != sizeof(VIDEO_ENGINE_EVENT__RECORD))
+    {
+        return 0;
+    }
+
+    if (pRecord->event_id == VIDEO_ENGINE_EVENT_ID__LOG_DATA)
+    {
+        NvU32 dataSize = 0;
+
+        if (pRecord->event_log_data.size > RM_VIDEO_TRACE_MAX_VARIABLE_DATA_SIZE)
+        {
+            // Corrupted size.
+            return 0;
+        }
+
+        dataSize = kvidengRingbufferGet(pGpu, pKernelVideoEngine, pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData, pRecord->event_log_data.size, pTraceBuffer);
+        if (dataSize != pRecord->event_log_data.size)
+        {
+            // Corrupted data
+            return 0;
+        }
+        size += dataSize;
+    }
+
+    // Got a record and return total size of the data;
+    return size;
+}
+
+/*!
+ * This function gets the data size of a ringbuffer for external caller to peek data size of a ringbugger
+ *
+ * @param[in]  pGpu
+ * @param[in]  pKernelVideoEngine
+ * @param[in]  pTraceBuffer        pointer to a ringbuffer
+ *
+ * @return size of data in the ringbuffer
+ */
+NvU32
+kvidengRingbufferGetDataSize_IMPL
+(
+    OBJGPU                  *pGpu,
+    VIDEO_TRACE_RING_BUFFER *pTraceBuffer
+)
+{
+    NV_ASSERT_OR_RETURN(pTraceBuffer != NULL, 0);
+
+    // Read in read/write Ptrs first so that we don't need to worry about sync between driver and uCode.
+    NvU32 oldReadPtr = pTraceBuffer->readPtr;
+    NvU32 oldWritePtr = pTraceBuffer->writePtr;
+
+    NvU32 hasSize = 0;
+
+    if (oldWritePtr < oldReadPtr)
+    {
+        // Cross over 32bit boundary
+        hasSize = (0xFFFFFFFF - oldReadPtr) + oldWritePtr + 1;
+    }
+    else
+    {
+        hasSize = oldWritePtr - oldReadPtr;
+    }
+
+    if (hasSize > pTraceBuffer->bufferSize)
+    {
+        hasSize = pTraceBuffer->bufferSize;
+    }
+
+    return hasSize;
 }

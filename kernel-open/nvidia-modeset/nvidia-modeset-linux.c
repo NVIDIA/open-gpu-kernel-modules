@@ -218,9 +218,23 @@ static inline int nvkms_read_trylock_pm_lock(void)
 
 static inline void nvkms_read_lock_pm_lock(void)
 {
-    while (!down_read_trylock(&nvkms_pm_lock)) {
-        try_to_freeze();
-        cond_resched();
+    if ((current->flags & PF_NOFREEZE)) {
+        /*
+         * Non-freezable tasks (i.e. kthreads in this case) don't have to worry
+         * about being frozen during system suspend, but do need to block so
+         * that the CPU can go idle during s2idle. Do a normal uninterruptible
+         * blocking wait for the PM lock.
+         */
+        down_read(&nvkms_pm_lock);
+    } else {
+        /*
+         * For freezable tasks, make sure we give the kernel an opportunity to
+         * freeze if taking the PM lock fails.
+         */
+        while (!down_read_trylock(&nvkms_pm_lock)) {
+            try_to_freeze();
+            cond_resched();
+        }
     }
 }
 

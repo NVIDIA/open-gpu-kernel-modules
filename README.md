@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 545.29.02.
+version 545.29.06.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-545.29.02 driver release.  This can be achieved by installing
+545.29.06 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -188,7 +188,7 @@ encountered specific to them.
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/545.29.02/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/545.29.06/README/kernel_open.html
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -750,8 +750,8 @@ Subsystem Device ID.
 | NVIDIA H100 PCIe                                | 2331 10DE 1626 |
 | NVIDIA H100                                     | 2339 10DE 17FC |
 | NVIDIA H800 NVL                                 | 233A 10DE 183A |
-| GH200 120GB                                     | 2342 10DE 16EB |
-| GH200 480GB                                     | 2342 10DE 1809 |
+| NVIDIA GH200 120GB                              | 2342 10DE 16EB |
+| NVIDIA GH200 480GB                              | 2342 10DE 1809 |
 | NVIDIA GeForce RTX 3060 Ti                      | 2414           |
 | NVIDIA GeForce RTX 3080 Ti Laptop GPU           | 2420           |
 | NVIDIA RTX A5500 Laptop GPU                     | 2438           |

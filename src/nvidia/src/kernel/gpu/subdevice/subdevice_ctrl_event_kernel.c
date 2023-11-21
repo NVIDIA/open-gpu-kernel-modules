@@ -277,3 +277,33 @@ subdeviceCtrlCmdEventSetSemaMemValidation_IMPL
     return rmStatus;
 }
 
+NV_STATUS
+subdeviceCtrlCmdEventVideoBindEvtbuf_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS *pParams
+)
+{
+    NV_STATUS status;
+    RsClient *pClient = RES_GET_CLIENT(pSubdevice);
+    RsResourceRef *pEventBufferRef = NULL;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    NvHandle hNotifier = RES_GET_HANDLE(pSubdevice);
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+
+    NV_ASSERT_OK_OR_RETURN(serverutilGetResourceRefWithType(hClient,
+                                                            pParams->hEventBuffer,
+                                                            classId(EventBuffer),
+                                                            &pEventBufferRef));
+
+    status = videoAddBindpoint(pGpu,
+                               pClient,
+                               pEventBufferRef,
+                               hNotifier,
+                               pParams->bAllUsers,
+                               pParams->levelOfDetail,
+                               pParams->eventFilter);
+    return status;
+}

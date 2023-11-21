@@ -404,6 +404,45 @@ typedef struct NV2080_CTRL_KGR_GET_CTX_BUFFER_PTES_PARAMS {
 } NV2080_CTRL_KGR_GET_CTX_BUFFER_PTES_PARAMS;
 
 /*!
+ * NV2080_CTRL_INTERNAL_MEMDESC_INFO
+ *
+ * A generic container structure representing a memory region to be used as a
+ * component of other control call parameters.
+ *
+ */
+typedef struct NV2080_CTRL_INTERNAL_MEMDESC_INFO {
+    NV_DECLARE_ALIGNED(NvU64 base, 8);
+    NV_DECLARE_ALIGNED(NvU64 size, 8);
+    NV_DECLARE_ALIGNED(NvU64 alignment, 8);
+    NvU32 addressSpace;
+    NvU32 cpuCacheAttrib;
+} NV2080_CTRL_INTERNAL_MEMDESC_INFO;
+
+/*
+ * NV2080_CTRL_CMD_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY
+ *
+ * Set memory for use by the video event buffer
+ *
+ * memDescInfo
+ *  Information to set up memory descriptor on GSP
+ *
+ * engDesc
+ *  Video engdesc to find correct engine
+ *
+ * bEngineFound
+ *  Bool for whether or not the engine is actually assigned to a video object
+ */
+#define NV2080_CTRL_CMD_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY (0x20800a29) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS_MESSAGE_ID (0x29U)
+
+typedef struct NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS {
+    NV_DECLARE_ALIGNED(NV2080_CTRL_INTERNAL_MEMDESC_INFO memDescInfo, 8);
+    NvU32  engDesc;
+    NvBool bEngineFound;
+} NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS;
+
+/*!
  * @ref NV0080_CTRL_CMD_GR_GET_INFO
  * @ref NV0080_CTRL_CMD_GR_GET_INFO_V2
  * @ref NV2080_CTRL_CMD_GR_GET_INFO
@@ -1070,22 +1109,6 @@ typedef struct NV2080_CTRL_INTERNAL_MEMSYS_SET_PARTITIONABLE_MEM_PARAMS {
 typedef struct NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_PARTITIONABLE_ENGINES_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 engineMask, 8);
 } NV2080_CTRL_INTERNAL_STATIC_MIGMGR_GET_PARTITIONABLE_ENGINES_PARAMS;
-
-
-/*!
- * NV2080_CTRL_INTERNAL_MEMDESC_INFO
- *
- * A generic container structure representing a memory region to be used as a
- * component of other control call parameters.
- *
- */
-typedef struct NV2080_CTRL_INTERNAL_MEMDESC_INFO {
-    NV_DECLARE_ALIGNED(NvU64 base, 8);
-    NV_DECLARE_ALIGNED(NvU64 size, 8);
-    NV_DECLARE_ALIGNED(NvU64 alignment, 8);
-    NvU32 addressSpace;
-    NvU32 cpuCacheAttrib;
-} NV2080_CTRL_INTERNAL_MEMDESC_INFO;
 
 #define NV2080_CTRL_INTERNAL_FIFO_MAX_RUNLIST_BUFFERS         2
 #define NV2080_CTRL_INTERNAL_FIFO_MAX_RUNLIST_ID              64
