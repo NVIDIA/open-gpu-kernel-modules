@@ -28,7 +28,7 @@ else
   else
     KERNEL_UNAME ?= $(shell uname -r)
     KERNEL_MODLIB := /lib/modules/$(KERNEL_UNAME)
-    KERNEL_SOURCES := $(shell test -d $(KERNEL_MODLIB)/source && echo $(KERNEL_MODLIB)/source || echo $(KERNEL_MODLIB)/build)
+    KERNEL_SOURCES := $(shell test -d $(KERNEL_MODLIB)/source && echo $(KERNEL_MODLIB)/source || $(shell test -d $(KERNEL_MODLIB)/build/source && echo $(KERNEL_MODLIB)/build/source || echo $(KERNEL_MODLIB)/build)
   endif
 
   KERNEL_OUTPUT := $(KERNEL_SOURCES)
@@ -43,6 +43,10 @@ else
     KERNEL_UNAME ?= $(shell uname -r)
     KERNEL_MODLIB := /lib/modules/$(KERNEL_UNAME)
     ifeq ($(KERNEL_SOURCES), $(KERNEL_MODLIB)/source)
+      KERNEL_OUTPUT := $(KERNEL_MODLIB)/build
+      KBUILD_PARAMS := KBUILD_OUTPUT=$(KERNEL_OUTPUT)
+    endif
+    ifeq ($(KERNEL_SOURCES), $(KERNEL_MODLIB)/build/source)
       KERNEL_OUTPUT := $(KERNEL_MODLIB)/build
       KBUILD_PARAMS := KBUILD_OUTPUT=$(KERNEL_OUTPUT)
     endif
