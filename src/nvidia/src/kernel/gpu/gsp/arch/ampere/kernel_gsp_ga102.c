@@ -68,8 +68,7 @@ kgspConfigureFalcon_GA102
 
     //
     // No CrashCat queue when CC is enabled, as it's not encrypted.
-    // Don't bother enabling the host-side decoding either, as CrashCat
-    // currently only supports sysmem queue reporting on GA10x+.
+    // Don't bother enabling the host-side decoding either.
     //
     if (pCC == NULL || !pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
     {
@@ -77,7 +76,6 @@ kgspConfigureFalcon_GA102
         falconConfig.crashcatEngConfig.bEnable = NV_TRUE;
         falconConfig.crashcatEngConfig.pName = MAKE_NV_PRINTF_STR("GSP");
         falconConfig.crashcatEngConfig.errorId = GSP_ERROR;
-        falconConfig.crashcatEngConfig.allocQueueSize = RM_PAGE_SIZE;
     }
 
     kflcnConfigureEngine(pGpu, staticCast(pKernelGsp, KernelFalcon), &falconConfig);

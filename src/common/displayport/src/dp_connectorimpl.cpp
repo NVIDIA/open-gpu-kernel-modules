@@ -1360,7 +1360,7 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                         if (dev->pconCaps.maxHdmiLinkBandwidthGbps != 0)
                         {
                             NvU64 requiredBW = (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
-                            NvU64 availableBw = (NvU64)(dev->pconCaps.maxHdmiLinkBandwidthGbps * 1000000000);
+                            NvU64 availableBw = (NvU64)(dev->pconCaps.maxHdmiLinkBandwidthGbps * (NvU64)1000000000);
                             if (requiredBW > availableBw)
                             {
                                 compoundQueryResult = false;
@@ -1375,10 +1375,10 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                         else if (dev->pconCaps.maxTmdsClkRate != 0)
                         {
                             NvU64 maxTmdsClkRateU64 = (NvU64)(dev->pconCaps.maxTmdsClkRate);
-                            NvU64 requireBw =  (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
+                            NvU64 requiredBw =  (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
                             if (modesetParams.colorFormat == dpColorFormat_YCbCr420)
                             {
-                                if (maxTmdsClkRateU64 < ((requireBw/24)/2))
+                                if (maxTmdsClkRateU64 < ((requiredBw/24)/2))
                                 {
                                     compoundQueryResult = false;
                                     return false;
@@ -1386,7 +1386,7 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                             }
                             else
                             {
-                                if (maxTmdsClkRateU64 < (requireBw/24))
+                                if (maxTmdsClkRateU64 < (requiredBw/24))
                                 {
                                     compoundQueryResult = false;
                                     return false;

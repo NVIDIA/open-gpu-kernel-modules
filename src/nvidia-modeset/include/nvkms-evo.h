@@ -182,6 +182,8 @@ NvBool nvDowngradeColorSpaceAndBpc(
 
 NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
                            NVHwModeTimingsEvoPtr pTimings,
+                           enum NvKmsDpyAttributeCurrentColorSpaceValue *pColorSpace,
+                           enum NvKmsDpyAttributeColorBpcValue *pColorBpc,
                            const NvBool b2Heads1Or,
                            NVDscInfoEvoRec *pDscInfo,
                            const struct NvKmsModeValidationParams *pParams);

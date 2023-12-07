@@ -362,7 +362,8 @@ static NV_STATUS push_cancel_on_gpu(uvm_gpu_t *gpu,
                                         "Cancel targeting instance_ptr {0x%llx:%s}\n",
                                         instance_ptr.address,
                                         uvm_aperture_string(instance_ptr.aperture));
-    } else {
+    }
+    else {
         status = uvm_push_begin_acquire(gpu->channel_manager,
                                         UVM_CHANNEL_TYPE_MEMOPS,
                                         &replayable_faults->replay_tracker,
@@ -1679,7 +1680,8 @@ static NV_STATUS service_fault_batch_ats_sub_vma(uvm_gpu_va_space_t *gpu_va_spac
         if (access_type <= UVM_FAULT_ACCESS_TYPE_READ) {
             cancel_va_mode = UVM_FAULT_CANCEL_VA_MODE_ALL;
         }
-        else if (access_type >= UVM_FAULT_ACCESS_TYPE_WRITE) {
+	else {
+            UVM_ASSERT(access_type >= UVM_FAULT_ACCESS_TYPE_WRITE);
             if (uvm_fault_access_type_mask_test(current_entry->access_type_mask, UVM_FAULT_ACCESS_TYPE_READ) &&
                 !uvm_page_mask_test(reads_serviced_mask, page_index))
                 cancel_va_mode = UVM_FAULT_CANCEL_VA_MODE_ALL;

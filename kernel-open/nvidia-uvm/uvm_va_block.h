@@ -1000,7 +1000,7 @@ NV_STATUS uvm_va_block_check_logical_permissions(uvm_va_block_t *va_block,
                                                  uvm_va_block_context_t *va_block_context,
                                                  uvm_processor_id_t processor_id,
                                                  uvm_page_index_t page_index,
-                                                 uvm_fault_type_t access_type,
+                                                 uvm_fault_access_type_t access_type,
                                                  bool allow_migration);
 
 // API for access privilege revocation

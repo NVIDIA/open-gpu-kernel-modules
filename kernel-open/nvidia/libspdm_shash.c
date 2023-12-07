@@ -23,10 +23,16 @@
 
 #include "internal_crypt_lib.h"
 
+#ifdef USE_LKCA
+#ifndef NV_CRYPTO_TFM_CTX_ALIGNED_PRESENT
+#include <crypto/internal/hash.h>
+#endif
+#endif
+
 void *lkca_hash_new(const char* alg_name)
 {
 #ifndef USE_LKCA
-    return false;
+    return NULL;
 #else
     //XXX: can we reuse crypto_shash part and just allocate desc
     struct crypto_shash *alg;
@@ -87,9 +93,24 @@ bool lkca_hmac_duplicate(struct shash_desc *dst, struct shash_desc const *src)
 
         struct crypto_shash *src_tfm = src->tfm;
         struct crypto_shash *dst_tfm = dst->tfm;
+        int ss = crypto_shash_statesize(dst_tfm);
+
+#ifdef NV_CRYPTO_TFM_CTX_ALIGNED_PRESENT
         char *src_ipad = crypto_tfm_ctx_aligned(&src_tfm->base);
         char *dst_ipad = crypto_tfm_ctx_aligned(&dst_tfm->base);
-        int ss = crypto_shash_statesize(dst_tfm);
+#else
+        int ctx_size = crypto_shash_alg(dst_tfm)->base.cra_ctxsize;
+        char *src_ipad = crypto_shash_ctx(src_tfm);
+        char *dst_ipad = crypto_shash_ctx(dst_tfm);
+        /*
+         * Actual struct definition is hidden, so I assume data we need is at
+         * the end. In 6.0 the struct has a pointer to crpyto_shash followed by: 
+         * 'u8 ipad[statesize];', then 'u8 opad[statesize];'
+         */
+        src_ipad += ctx_size - 2 * ss;
+        dst_ipad += ctx_size - 2 * ss;
+#endif
+
         memcpy(dst_ipad, src_ipad, crypto_shash_blocksize(src->tfm));
         memcpy(dst_ipad + ss, src_ipad + ss, crypto_shash_blocksize(src->tfm));
         crypto_shash_clear_flags(dst->tfm, CRYPTO_TFM_NEED_KEY);

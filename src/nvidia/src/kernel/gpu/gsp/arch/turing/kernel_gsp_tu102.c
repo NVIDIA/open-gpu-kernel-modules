@@ -956,9 +956,6 @@ kgspIsWpr2Up_TU102
     return (wpr2HiVal != 0);
 }
 
-#define FWSECLIC_PROG_START_TIMEOUT     50000    // 50ms
-#define FWSECLIC_PROG_COMPLETE_TIMEOUT  2000000  // 2s
-
 NV_STATUS
 kgspWaitForGfwBootOk_TU102
 (
@@ -966,50 +963,15 @@ kgspWaitForGfwBootOk_TU102
     KernelGsp *pKernelGsp
 )
 {
-    NvU32 timeoutUs = FWSECLIC_PROG_START_TIMEOUT + FWSECLIC_PROG_COMPLETE_TIMEOUT;
-    RMTIMEOUT timeout;
     NV_STATUS status = NV_OK;
 
-    // Use the OS timer since the GPU timer is not ready yet
-    gpuSetTimeout(pGpu, gpuScaleTimeout(pGpu, timeoutUs), &timeout,
-                  GPU_TIMEOUT_FLAGS_OSTIMER);
-
-    while (status == NV_OK)
+    status = gpuWaitForGfwBootComplete_HAL(pGpu);
+    if (status != NV_OK)
     {
-        //
-        // Before reading the actual GFW_BOOT status register,
-        // we want to check that FWSEC has lowered its PLM first.
-        // If not then obviously it has not completed.
-        //
-        if (GPU_FLD_TEST_DRF_DEF(pGpu,
-                _PGC6,
-                _AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK,
-                _READ_PROTECTION_LEVEL0,
-                _ENABLE)
-            )
-        {
-            if (GPU_FLD_TEST_DRF_DEF(pGpu,
-                    _PGC6,
-                    _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
-                    _PROGRESS,
-                    _COMPLETED)
-                )
-            {
-                return NV_OK;
-            }
-        }
-
-        status = gpuCheckTimeout(pGpu, &timeout);
+        NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW boot complete: 0x%x VBIOS version %s\n",
+                  status, pKernelGsp->vbiosVersionStr);
+        NV_PRINTF(LEVEL_ERROR, "(the GPU may be in a bad state and may need to be reset)\n");
     }
-
-    // The wait failed if we reach here (as above loop returns upon success).
-    NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: 0x%x (progress 0x%x, VBIOS version %s)\n",
-              status, GPU_REG_RD_DRF(pGpu,
-                        _PGC6,
-                        _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
-                        _PROGRESS),
-              pKernelGsp->vbiosVersionStr);
-    NV_PRINTF(LEVEL_ERROR, "(the GPU may be in a bad state and may need to be reset)\n");
 
     return status;
 }

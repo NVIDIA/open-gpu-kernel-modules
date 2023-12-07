@@ -1344,9 +1344,11 @@ serverControl
     }
     pLockInfo->pContextRef = pResourceRef->pParentRef;
 
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_GOTO(status,
+        resservSwapTlsCallContext(&pOldContext, &callContext), done);
+
     status = resControl(pResourceRef->pResource, &callContext, pParams);
-    resservRestoreTlsCallContext(pOldContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
 done:
 
@@ -1521,7 +1523,8 @@ _serverShareResourceAccessClient
     callContext.pResourceRef = pResourceRef;
     callContext.secInfo = *pParams->pSecInfo;
     callContext.pLockInfo = pParams->pLockInfo;
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_GOTO(status,
+        resservSwapTlsCallContext(&pOldContext, &callContext), done);
 
     if (hClientOwner == hClientTarget)
     {
@@ -1544,7 +1547,7 @@ _serverShareResourceAccessClient
         goto restore_context;
 
 restore_context:
-    resservRestoreTlsCallContext(pOldContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
     // NV_PRINTF(LEVEL_INFO, "hClientOwner %x: Shared hResource: %x with hClientTarget: %x\n",
     //           hClientOwner, pParams->hResource, hClientTarget);
@@ -1631,9 +1634,11 @@ serverShareResourceAccess
     callContext.secInfo = *pParams->pSecInfo;
     callContext.pLockInfo = pParams->pLockInfo;
 
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_GOTO(status,
+        resservSwapTlsCallContext(&pOldContext, &callContext), done);
+
     status = clientShareResource(pClient, pResourceRef, pParams->pSharePolicy, &callContext);
-    resservRestoreTlsCallContext(pOldContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
     if (status != NV_OK)
         goto done;
 
@@ -1735,9 +1740,11 @@ serverMap
     if (pParams->pSecInfo != NULL)
         callContext.secInfo = *pParams->pSecInfo;
 
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_GOTO(status,
+        resservSwapTlsCallContext(&pOldContext, &callContext), done);
+
     status = resMap(pResource, &callContext, pParams, pCpuMapping);
-    resservRestoreTlsCallContext(pOldContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
     if (status != NV_OK)
         goto done;
@@ -1910,7 +1917,9 @@ serverInterMap
     if (pParams->pSecInfo != NULL)
         callContext.secInfo = *pParams->pSecInfo;
 
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_GOTO(status,
+        resservSwapTlsCallContext(&pOldContext, &callContext), done);
+
     bRestoreCallContext = NV_TRUE;
 
     status = refAddInterMapping(pMapperRef, pMappableRef, pContextRef, &pMapping);
@@ -1934,7 +1943,7 @@ done:
     serverInterMap_Epilogue(pServer, pParams, &releaseFlags);
 
     if (bRestoreCallContext)
-        resservRestoreTlsCallContext(pOldContext);
+        NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
     if (status != NV_OK)
     {
@@ -2024,7 +2033,9 @@ serverInterUnmap
     if (pLockInfo->pContextRef == NULL)
         pLockInfo->pContextRef = pContextRef;
 
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_GOTO(status,
+        resservSwapTlsCallContext(&pOldContext, &callContext), done);
+
     bRestoreCallContext = NV_TRUE;
 
     status = serverResLock_Prologue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
@@ -2045,7 +2056,7 @@ done:
     serverResLock_Epilogue(pServer, LOCK_ACCESS_WRITE, pLockInfo, &releaseFlags);
 
     if (bRestoreCallContext)
-        resservRestoreTlsCallContext(pOldContext);
+        NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
     _serverUnlockClientWithLockInfo(pServer, LOCK_ACCESS_WRITE, pParams->hClient, pLockInfo, &releaseFlags);
     serverTopLock_Epilogue(pServer, topLockAccess, pLockInfo, &releaseFlags);

@@ -6282,6 +6282,21 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMORY_FAILURE_MF_SW_SIMULATED_DEFINED" "" "types"
         ;;
 
+        crypto_tfm_ctx_aligned)
+            # Determine if 'crypto_tfm_ctx_aligned' is defined.
+            #
+            # Removed by commit 25c74a39e0f6 ("crypto: hmac - remove unnecessary
+            # alignment logic") in v6.7.
+            #
+            CODE="
+            #include <crypto/algapi.h>
+            void conftest_crypto_tfm_ctx_aligned(void) {
+                  (void)crypto_tfm_ctx_aligned();
+            }"
+
+            compile_check_conftest "$CODE" "NV_CRYPTO_TFM_CTX_ALIGNED_PRESENT" "" "functions"
+        ;;
+
         crypto)
             #
             # Determine if we support various crypto functions.

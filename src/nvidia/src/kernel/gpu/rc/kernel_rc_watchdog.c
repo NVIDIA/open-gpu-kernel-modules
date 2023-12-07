@@ -52,7 +52,6 @@
 #include "deprecated/rmapi_deprecated.h"
 #include "nvRmReg.h"
 
-
 //
 // Watchdog object ids
 //
@@ -106,7 +105,6 @@
 #define WATCHDOG_PUSHBUFFER_OFFSET(pbBytes, pbnum) ((pbBytes) * (pbnum))
 
 #define SUBDEVICE_MASK_ALL DRF_MASK(NV906F_DMA_SET_SUBDEVICE_MASK_VALUE)
-
 
 NV_STATUS
 krcWatchdogChangeState_IMPL
@@ -402,7 +400,7 @@ krcWatchdogShutdown_IMPL
 
     //
     // Make sure to clear any old watchdog data this also clears
-    // WATCHDOG_FLAGS_INITIALIZED
+    // WATCHDOG_FLAGS_INITIALIZED, bHandleValid, and hClient
     //
     portMemSet(&pKernelRc->watchdog, 0, sizeof pKernelRc->watchdog);
     portMemSet(&pKernelRc->watchdogChannelInfo, 0,
@@ -519,6 +517,8 @@ krcWatchdogInit_IMPL
             status = NV_ERR_NO_MEMORY;
             goto error;
         }
+        pKernelRc->watchdog.hClient = hClient;
+        pKernelRc->watchdog.bHandleValid = NV_TRUE;
     }
 
     if (bAcquireLock)
@@ -1178,6 +1178,7 @@ error:
     if (status != NV_OK)
     {
         pRmApi->Free(pRmApi, hClient, hClient);
+        pKernelRc->watchdog.bHandleValid = NV_FALSE;
     }
 
     portMemFree(pParams);
@@ -1417,4 +1418,11 @@ krcWatchdogWriteNotifierToGpfifo_IMPL
     SLI_LOOP_END;
 }
 
+NV_STATUS krcWatchdogGetClientHandle(KernelRc *pKernelRc, NvHandle *phClient)
+{
+    if (!pKernelRc->watchdog.bHandleValid)
+        return NV_ERR_INVALID_STATE;
 
+    *phClient = pKernelRc->watchdog.hClient;
+    return NV_OK;
+}

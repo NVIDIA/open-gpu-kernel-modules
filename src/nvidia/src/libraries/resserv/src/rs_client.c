@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -523,7 +523,7 @@ clientCopyResource_IMPL
     callContext.secInfo = *pParams->pSecInfo;
     callContext.pLockInfo = pParams->pLockInfo;
 
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_RETURN(resservSwapTlsCallContext(&pOldContext, &callContext));
 
     //
     // Kernel clients are allowed to dup anything, unless they request otherwise.
@@ -560,7 +560,7 @@ clientCopyResource_IMPL
         }
     }
 
-    resservRestoreTlsCallContext(pOldContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
     if (status != NV_OK)
         return status;
@@ -668,9 +668,11 @@ _clientAllocResourceHelper
     }
     callContext.secInfo = *pParams->pSecInfo;
 
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_GOTO(status,
+        resservSwapTlsCallContext(&pOldContext, &callContext), fail);
+
     status = resservResourceFactory(pServer->pAllocator, &callContext, pParams, &pResource);
-    resservRestoreTlsCallContext(pOldContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
     if (status != NV_OK)
         goto fail;
@@ -724,6 +726,8 @@ _clientAllocResourceHelper
 fail:
     if (pResource != NULL)
     {
+        NV_STATUS callContextStatus;
+
         RS_RES_FREE_PARAMS_INTERNAL params;
         pOldContext = NULL;
 
@@ -738,11 +742,20 @@ fail:
         callContext.pResourceRef = pResourceRef;
         callContext.pLockInfo = pParams->pLockInfo;
 
-        resservSwapTlsCallContext(&pOldContext, &callContext);
-        resSetFreeParams(pResource, &callContext, &params);
+        callContextStatus = resservSwapTlsCallContext(&pOldContext, &callContext);
+        if (callContextStatus == NV_OK)
+        {
+            resSetFreeParams(pResource, &callContext, &params);
 
-        objDelete(pResource);
-        resservRestoreTlsCallContext(pOldContext);
+            objDelete(pResource);
+            NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failed to set call context! Error: 0x%x\n",
+                callContextStatus);
+        }
+
     }
 
     if (pResourceRef != NULL)
@@ -798,7 +811,9 @@ clientFreeResource_IMPL
     if (pParams->pSecInfo != NULL)
         callContext.secInfo = *pParams->pSecInfo;
 
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_GOTO(status,
+        resservSwapTlsCallContext(&pOldContext, &callContext), done);
+
     resSetFreeParams(pResource, &callContext, pParams);
 
     resPreDestruct(pResource);
@@ -825,7 +840,7 @@ clientFreeResource_IMPL
 
     pResourceRef->pResource = NULL;
 
-    resservRestoreTlsCallContext(pOldContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
 done:
     if (!pParams->bInvalidateOnly)
@@ -872,9 +887,10 @@ clientUnmapMemory_IMPL
     if (pSecInfo != NULL)
         callContext.secInfo = *pSecInfo;
 
-    resservSwapTlsCallContext(&pOldContext, &callContext);
+    NV_ASSERT_OK_OR_RETURN(resservSwapTlsCallContext(&pOldContext, &callContext));
+
     status = resUnmap(pResourceRef->pResource, &callContext, pCpuMapping);
-    resservRestoreTlsCallContext(pOldContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
     if (status != NV_OK)
     {

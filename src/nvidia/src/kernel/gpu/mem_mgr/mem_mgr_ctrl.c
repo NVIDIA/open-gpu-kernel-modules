@@ -250,6 +250,44 @@ deviceCtrlCmdFbGetCapsV2_IMPL
 }
 
 //
+// deviceCtrlCmdSetDefaultVidmemPhysicality
+//
+// Lock Requirements:
+//      Assert that API lock held on entry
+//
+NV_STATUS
+deviceCtrlCmdSetDefaultVidmemPhysicality_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS *pParams
+)
+{
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NvU32 override;
+
+    switch (pParams->value)
+    {
+        case NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_DEFAULT:
+            override = NVOS32_ATTR_PHYSICALITY_DEFAULT;
+            break;
+        case NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_CONTIGUOUS:
+            override = NVOS32_ATTR_PHYSICALITY_CONTIGUOUS;
+            break;
+        case NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_NONCONTIGUOUS:
+            override = NVOS32_ATTR_PHYSICALITY_NONCONTIGUOUS;
+            break;
+        case NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_ALLOW_NONCONTIGUOUS:
+            override = NVOS32_ATTR_PHYSICALITY_ALLOW_NONCONTIGUOUS;
+            break;
+        default:
+            return NV_ERR_INVALID_ARGUMENT;
+    }
+    pDevice->defaultVidmemPhysicalityOverride = override;
+
+    return NV_OK;
+}
+
+//
 // subdeviceCtrlCmdFbGetBar1Offset
 //
 // Lock Requirements:

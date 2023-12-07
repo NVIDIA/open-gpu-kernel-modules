@@ -381,6 +381,7 @@ gpuresControl_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
+    NV_ASSERT_OR_RETURN(pGpuResource->pGpu != NULL, NV_ERR_INVALID_STATE);
     gpuresControlSetup(pParams, pGpuResource);
 
     return resControl_IMPL(staticCast(pGpuResource, RsResource),

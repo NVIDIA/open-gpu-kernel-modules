@@ -1645,6 +1645,10 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
     NvU32 head;
     NvBool ret = FALSE;
 
+    const NVColorFormatInfoRec supportedColorFormats = nvGetColorFormatInfo(pDpyEvo);
+    enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
+    enum NvKmsDpyAttributeColorBpcValue colorBpc;
+
     if (modeName[0] == '\0') {
         nvBuildModeName(pModeTimings->hVisible, pModeTimings->vVisible,
                         localModeName, sizeof(localModeName));
@@ -1701,6 +1705,16 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
 
     b2Heads1Or = nvEvoUse2Heads1OR(pDpyEvo, pTimingsEvo, pParams);
 
+    if (pTimingsEvo->yuv420Mode != NV_YUV420_MODE_NONE) {
+        colorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420;
+        colorBpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
+    } else if (!nvGetDefaultColorSpace(&supportedColorFormats, &colorSpace,
+                                       &colorBpc)) {
+        LogModeValidationEnd(pDispEvo, pInfoString,
+                             "Failed to get default color space and Bpc");
+        goto done;
+    }
+
     if (nvDpyIsHdmiEvo(pDpyEvo)) {
         if (!nvHdmiFrlQueryConfig(pDpyEvo,
                                   &pKmsMode->timings,
@@ -1714,8 +1728,8 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
             goto done;
         }
     } else {
-        if (!nvDPValidateModeEvo(pDpyEvo, pTimingsEvo, b2Heads1Or, pDscInfo,
-                                 pParams)) {
+        if (!nvDPValidateModeEvo(pDpyEvo, pTimingsEvo, &colorSpace, &colorBpc,
+                                 b2Heads1Or, pDscInfo, pParams)) {
             LogModeValidationEnd(pDispEvo,
                                  pInfoString, "DP Bandwidth check failed");
             goto done;
@@ -1734,28 +1748,20 @@ static NvBool ValidateMode(NVDpyEvoPtr pDpyEvo,
 
 
     /* Run the raster timings through IMP checking. */
-    {
-        const NVColorFormatInfoRec colorFormats =
-            nvGetColorFormatInfo(pDpyEvo);
-        enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
-        enum NvKmsDpyAttributeColorBpcValue colorBpc;
-
-        if (!nvGetDefaultColorSpace(&colorFormats, &colorSpace, &colorBpc) ||
-                !nvConstructHwModeTimingsImpCheckEvo(pDpyEvo->pConnectorEvo,
-                                                     pTimingsEvo,
-                                                     (pDscInfo->type !=
-                                                        NV_DSC_INFO_EVO_TYPE_DISABLED),
-                                                     b2Heads1Or,
-                                                     colorSpace,
-                                                     colorBpc,
-                                                     pParams,
-                                                     impOutTimings,
-                                                     &impOutNumHeads,
-                                                     pInfoString)) {
-            LogModeValidationEnd(pDispEvo, pInfoString,
-                                 "GPU extended capability check failed");
-            goto done;
-        }
+    if (!nvConstructHwModeTimingsImpCheckEvo(pDpyEvo->pConnectorEvo,
+                                             pTimingsEvo,
+                                             (pDscInfo->type !=
+                                                NV_DSC_INFO_EVO_TYPE_DISABLED),
+                                             b2Heads1Or,
+                                             colorSpace,
+                                             colorBpc,
+                                             pParams,
+                                             impOutTimings,
+                                             &impOutNumHeads,
+                                             pInfoString)) {
+        LogModeValidationEnd(pDispEvo, pInfoString,
+                             "GPU extended capability check failed");
+        goto done;
     }
 
     nvAssert(impOutNumHeads > 0);

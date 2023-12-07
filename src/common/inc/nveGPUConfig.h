@@ -39,48 +39,63 @@ extern "C" {
 #endif  //NV_UNIX
 #endif  //!__cplusplus
 
-// Surprise removal capable TB3 and TB2 BUS Device ID
-#define BUS_DEVICE_ID_TB3_ALPINE_RIDGE_01          0x1578
-#define BUS_DEVICE_ID_TB3_02                       0x1576
-#define BUS_DEVICE_ID_TB3_03                       0x15C0
-#define BUS_DEVICE_ID_TB3_04                       0x15D3
-#define BUS_DEVICE_ID_TB3_05                       0x15DA
-#define BUS_DEVICE_ID_TB3_06                       0x15EA
-#define BUS_DEVICE_ID_TB3_07                       0x15E7
-#define BUS_DEVICE_ID_TB3_08                       0x15EF
-#define BUS_DEVICE_ID_TB3_09                       0x1133
-#define BUS_DEVICE_ID_TB3_10                       0x1136
+#define PARENT_EGPU_BUS_DEVICE_43           0x57A4
+#define PARENT_EGPU_BUS_DEVICE_42           0x5786
+#define PARENT_EGPU_BUS_DEVICE_41           0x1578
+#define PARENT_EGPU_BUS_DEVICE_40           0x1576
+#define PARENT_EGPU_BUS_DEVICE_39           0x15C0
+#define PARENT_EGPU_BUS_DEVICE_38           0x15D3
+#define PARENT_EGPU_BUS_DEVICE_37           0x15DA
+#define PARENT_EGPU_BUS_DEVICE_36           0x15EA
+#define PARENT_EGPU_BUS_DEVICE_35           0x15E7
+#define PARENT_EGPU_BUS_DEVICE_34           0x15EF
+#define PARENT_EGPU_BUS_DEVICE_33           0x1133
+#define PARENT_EGPU_BUS_DEVICE_32           0x1136
 
-// IceLake-U TB3 device ids. Below TB3 would be integrated to CPU.
-#define BUS_DEVICE_ID_ICELAKE_TB3_01               0x8A1D
-#define BUS_DEVICE_ID_ICELAKE_TB3_02               0x8A1F
-#define BUS_DEVICE_ID_ICELAKE_TB3_03               0x8A21
-#define BUS_DEVICE_ID_ICELAKE_TB3_04               0x8A23
-#define BUS_DEVICE_ID_ICELAKE_TB3_05               0x8A0D
-#define BUS_DEVICE_ID_ICELAKE_TB3_06               0x8A17
+#define PARENT_EGPU_BUS_DEVICE_31           0x8A1D
+#define PARENT_EGPU_BUS_DEVICE_30           0x8A1F
+#define PARENT_EGPU_BUS_DEVICE_29           0x8A21
+#define PARENT_EGPU_BUS_DEVICE_28           0x8A23
+#define PARENT_EGPU_BUS_DEVICE_27           0x8A0D
+#define PARENT_EGPU_BUS_DEVICE_26           0x8A17
 
-// TigerLake Thunderbolt device ids.
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_01             0x9A1B
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_02             0x9A1D
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_03             0x9A1F
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_04             0x9A21
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_05             0x9A23
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_06             0x9A25
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_07             0x9A27
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_08             0x9A29
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_09             0x9A2B
-#define BUS_DEVICE_ID_TIGERLAKE_TB3_10             0x9A2D
 
-//#define BUS_DEVICE_ID_TB2_FALCON_RIDGE_DSL5520_01  0X156C   // obsolete
-#define BUS_DEVICE_ID_TB2_FALCON_RIDGE_DSL5520_02  0X156D
-#define BUS_DEVICE_ID_TB2_03                       0x157E
-#define BUS_DEVICE_ID_TB2_04                       0x156B
-#define BUS_DEVICE_ID_TB2_05                       0x1567
-#define BUS_DEVICE_ID_TB2_06                       0x1569
-//#define BUS_DEVICE_ID_TB2_07                       0x1548   // obsolete
-#define BUS_DEVICE_ID_TB2_08                       0x151B
-#define BUS_DEVICE_ID_TB2_09                       0x1549
-#define BUS_DEVICE_ID_TB2_10                       0x1513
+#define PARENT_EGPU_BUS_DEVICE_25           0x9A1B
+#define PARENT_EGPU_BUS_DEVICE_24           0x9A1D
+#define PARENT_EGPU_BUS_DEVICE_23           0x9A1F
+#define PARENT_EGPU_BUS_DEVICE_22           0x9A21
+#define PARENT_EGPU_BUS_DEVICE_21           0x9A23
+#define PARENT_EGPU_BUS_DEVICE_20           0x9A25
+#define PARENT_EGPU_BUS_DEVICE_19           0x9A27
+#define PARENT_EGPU_BUS_DEVICE_18           0x9A29
+#define PARENT_EGPU_BUS_DEVICE_17           0x9A2B
+#define PARENT_EGPU_BUS_DEVICE_16           0x9A2D
+
+#define PARENT_EGPU_BUS_DEVICE_15           0x7EB2
+#define PARENT_EGPU_BUS_DEVICE_14           0x7EC2
+#define PARENT_EGPU_BUS_DEVICE_13           0x7EC3
+#define PARENT_EGPU_BUS_DEVICE_12           0x7EB4
+#define PARENT_EGPU_BUS_DEVICE_11           0x7EC4
+#define PARENT_EGPU_BUS_DEVICE_10           0x7EB5
+#define PARENT_EGPU_BUS_DEVICE_09           0x7EC5
+#define PARENT_EGPU_BUS_DEVICE_08           0x7EC6
+#define PARENT_EGPU_BUS_DEVICE_07           0x7EC7
+
+#define PARENT_EGPU_BUS_DEVICE_06           0xA73E
+#define PARENT_EGPU_BUS_DEVICE_05           0xA76D
+#define PARENT_EGPU_BUS_DEVICE_04           0x466E
+#define PARENT_EGPU_BUS_DEVICE_03           0x463F
+#define PARENT_EGPU_BUS_DEVICE_02           0x462F
+#define PARENT_EGPU_BUS_DEVICE_01           0x461F
+
+#define PARENT_EGPU_BUS_DEVICE_02_08        0X156D
+#define PARENT_EGPU_BUS_DEVICE_02_07        0x157E
+#define PARENT_EGPU_BUS_DEVICE_02_06        0x156B
+#define PARENT_EGPU_BUS_DEVICE_02_05        0x1567
+#define PARENT_EGPU_BUS_DEVICE_02_04        0x1569
+#define PARENT_EGPU_BUS_DEVICE_02_03        0x151B
+#define PARENT_EGPU_BUS_DEVICE_02_02        0x1549
+#define PARENT_EGPU_BUS_DEVICE_02_01        0x1513
 
 //*****************************************************************************
 // Function:  isTB3DeviceID
@@ -103,33 +118,51 @@ extern "C" {
 EGPU_INLINE NvBool isTB3DeviceID(NvU16 deviceID)
 {
     NvU32   index;
-    NvU16   tb3DeviceIDList[]={ BUS_DEVICE_ID_TB3_ALPINE_RIDGE_01,
-                                BUS_DEVICE_ID_TB3_02,
-                                BUS_DEVICE_ID_TB3_03,
-                                BUS_DEVICE_ID_TB3_04,
-                                BUS_DEVICE_ID_TB3_05,
-                                BUS_DEVICE_ID_TB3_06,
-                                BUS_DEVICE_ID_TB3_07,
-                                BUS_DEVICE_ID_TB3_08,
-                                BUS_DEVICE_ID_TB3_09,
-                                BUS_DEVICE_ID_TB3_10,
-                                BUS_DEVICE_ID_ICELAKE_TB3_01,
-                                BUS_DEVICE_ID_ICELAKE_TB3_02,
-                                BUS_DEVICE_ID_ICELAKE_TB3_03,
-                                BUS_DEVICE_ID_ICELAKE_TB3_04,
-                                BUS_DEVICE_ID_ICELAKE_TB3_05,
-                                BUS_DEVICE_ID_ICELAKE_TB3_06,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_01,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_02,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_03,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_04,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_05,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_06,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_07,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_08,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_09,
-                                BUS_DEVICE_ID_TIGERLAKE_TB3_10
-                              };
+    NvU16   tb3DeviceIDList[]={ PARENT_EGPU_BUS_DEVICE_01,
+                                PARENT_EGPU_BUS_DEVICE_02,
+                                PARENT_EGPU_BUS_DEVICE_03,
+                                PARENT_EGPU_BUS_DEVICE_04,
+                                PARENT_EGPU_BUS_DEVICE_05,
+                                PARENT_EGPU_BUS_DEVICE_06,
+                                PARENT_EGPU_BUS_DEVICE_07,
+                                PARENT_EGPU_BUS_DEVICE_08,
+                                PARENT_EGPU_BUS_DEVICE_09,
+                                PARENT_EGPU_BUS_DEVICE_10,
+                                PARENT_EGPU_BUS_DEVICE_11,
+								PARENT_EGPU_BUS_DEVICE_12,
+                                PARENT_EGPU_BUS_DEVICE_13,
+								PARENT_EGPU_BUS_DEVICE_14,
+                                PARENT_EGPU_BUS_DEVICE_15,
+                                PARENT_EGPU_BUS_DEVICE_16,
+                                PARENT_EGPU_BUS_DEVICE_17,
+                                PARENT_EGPU_BUS_DEVICE_18,
+                                PARENT_EGPU_BUS_DEVICE_19,
+                                PARENT_EGPU_BUS_DEVICE_20,
+                                PARENT_EGPU_BUS_DEVICE_21,
+                                PARENT_EGPU_BUS_DEVICE_22,
+                                PARENT_EGPU_BUS_DEVICE_23,
+                                PARENT_EGPU_BUS_DEVICE_24,
+                                PARENT_EGPU_BUS_DEVICE_25,
+                                PARENT_EGPU_BUS_DEVICE_26,
+                                PARENT_EGPU_BUS_DEVICE_27,
+                                PARENT_EGPU_BUS_DEVICE_28,
+                                PARENT_EGPU_BUS_DEVICE_29,
+                                PARENT_EGPU_BUS_DEVICE_30,
+                                PARENT_EGPU_BUS_DEVICE_31,
+                                PARENT_EGPU_BUS_DEVICE_32,
+                                PARENT_EGPU_BUS_DEVICE_33,
+                                PARENT_EGPU_BUS_DEVICE_34,
+                                PARENT_EGPU_BUS_DEVICE_35,
+                                PARENT_EGPU_BUS_DEVICE_36,
+                                PARENT_EGPU_BUS_DEVICE_37,
+                                PARENT_EGPU_BUS_DEVICE_38,
+                                PARENT_EGPU_BUS_DEVICE_39,
+                                PARENT_EGPU_BUS_DEVICE_40,
+                                PARENT_EGPU_BUS_DEVICE_41,
+                                PARENT_EGPU_BUS_DEVICE_42,
+                                PARENT_EGPU_BUS_DEVICE_43
+							};
+
     for (index = 0; index < (sizeof(tb3DeviceIDList)/sizeof(NvU16)); index++)
     {
         if (deviceID == tb3DeviceIDList[index])
@@ -161,11 +194,14 @@ EGPU_INLINE NvBool isTB3DeviceID(NvU16 deviceID)
 EGPU_INLINE NvBool isTB2DeviceID(NvU16 deviceID)
 {
     NvU32   index;
-    NvU16   tb2DeviceIDList[]={ BUS_DEVICE_ID_TB2_FALCON_RIDGE_DSL5520_02,
-                                BUS_DEVICE_ID_TB2_03, BUS_DEVICE_ID_TB2_04,
-                                BUS_DEVICE_ID_TB2_05, BUS_DEVICE_ID_TB2_06,
-                                BUS_DEVICE_ID_TB2_08, BUS_DEVICE_ID_TB2_09,
-                                BUS_DEVICE_ID_TB2_10
+    NvU16   tb2DeviceIDList[]={ PARENT_EGPU_BUS_DEVICE_02_01,
+                                PARENT_EGPU_BUS_DEVICE_02_02,
+                                PARENT_EGPU_BUS_DEVICE_02_03,
+                                PARENT_EGPU_BUS_DEVICE_02_04,
+                                PARENT_EGPU_BUS_DEVICE_02_05,
+                                PARENT_EGPU_BUS_DEVICE_02_06,
+                                PARENT_EGPU_BUS_DEVICE_02_07,
+                                PARENT_EGPU_BUS_DEVICE_02_08
                               };
     for (index = 0; index < (sizeof(tb2DeviceIDList)/sizeof(NvU16)); index++)
     {

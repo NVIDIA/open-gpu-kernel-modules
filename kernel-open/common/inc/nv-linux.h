@@ -2067,4 +2067,6 @@ typedef enum
 #include <linux/clk-provider.h>
 #endif
 
+#define NV_EXPORT_SYMBOL(symbol) EXPORT_SYMBOL_GPL(symbol)
+
 #endif  /* _NV_LINUX_H_ */

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,6 +22,7 @@
  */
 
 #include "core/core.h"
+#include "core/locks.h"
 #include "os/os.h"
 #include "gpu/gpu.h"
 #include "vgpu/vgpu_version.h"
@@ -39,7 +40,7 @@ vgpuCreateObject
     OBJGPU *pGpu
 )
 {
-    NV_STATUS rmStatus = NV_OK;
+    NV_STATUS  rmStatus = NV_OK;
     return rmStatus;
 }
 

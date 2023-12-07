@@ -898,6 +898,7 @@ struct OBJGPU {
     NvBool (*__gpuIsCtxBufAllocInPmaSupported__)(struct OBJGPU *);
     void (*__gpuCheckEccCounts__)(struct OBJGPU *);
     NV_STATUS (*__gpuClearEccCounts__)(struct OBJGPU *);
+    NV_STATUS (*__gpuWaitForGfwBootComplete__)(struct OBJGPU *);
     NvBool PDB_PROP_GPU_HIGH_SPEED_BRIDGE_CONNECTED;
     NvBool bVideoLinkDisabled;
     GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel;
@@ -1476,6 +1477,8 @@ NV_STATUS __nvoc_objCreate_OBJGPU(OBJGPU**, Dynamic*, NvU32,
 #define gpuCheckEccCounts_HAL(pGpu) gpuCheckEccCounts_DISPATCH(pGpu)
 #define gpuClearEccCounts(pGpu) gpuClearEccCounts_DISPATCH(pGpu)
 #define gpuClearEccCounts_HAL(pGpu) gpuClearEccCounts_DISPATCH(pGpu)
+#define gpuWaitForGfwBootComplete(pGpu) gpuWaitForGfwBootComplete_DISPATCH(pGpu)
+#define gpuWaitForGfwBootComplete_HAL(pGpu) gpuWaitForGfwBootComplete_DISPATCH(pGpu)
 static inline NV_STATUS gpuConstructPhysical_56cd7a(struct OBJGPU *pGpu) {
     return NV_OK;
 }
@@ -3228,6 +3231,16 @@ static inline NV_STATUS gpuClearEccCounts_DISPATCH(struct OBJGPU *pGpu) {
     return pGpu->__gpuClearEccCounts__(pGpu);
 }
 
+NV_STATUS gpuWaitForGfwBootComplete_TU102(struct OBJGPU *pGpu);
+
+static inline NV_STATUS gpuWaitForGfwBootComplete_5baef9(struct OBJGPU *pGpu) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS gpuWaitForGfwBootComplete_DISPATCH(struct OBJGPU *pGpu) {
+    return pGpu->__gpuWaitForGfwBootComplete__(pGpu);
+}
+
 static inline PENGDESCRIPTOR gpuGetInitEngineDescriptors(struct OBJGPU *pGpu) {
     return pGpu->engineOrder.pEngineInitDescriptors;
 }
@@ -4706,6 +4719,13 @@ VGPU_STATIC_INFO *gpuGetStaticInfo(struct OBJGPU *pGpu);
 #define GPU_GET_STATIC_INFO(pGpu) gpuGetStaticInfo(pGpu)
 GspStaticConfigInfo *gpuGetGspStaticInfo(struct OBJGPU *pGpu);
 #define GPU_GET_GSP_STATIC_INFO(pGpu) gpuGetGspStaticInfo(pGpu)
+
+//
+// This function needs to be called when OBJGPU is not created. HAL
+// infrastructure can’t be used for this case, so it has been added manually.
+// It will be invoked directly by gpumgrIsDeviceMsixAllowed().
+//
+NvBool gpuIsMsixAllowed_TU102(RmPhysAddr bar0BaseAddr);
 
 #endif // _OBJGPU_H_
 

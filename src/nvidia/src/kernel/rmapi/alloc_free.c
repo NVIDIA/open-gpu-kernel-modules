@@ -913,7 +913,8 @@ serverAllocResourceUnderLock
             callContext.pLockInfo = pRmAllocParams->pLockInfo;
             callContext.secInfo = *pRmAllocParams->pSecInfo;
 
-            resservSwapTlsCallContext(&pOldContext, &callContext);
+            NV_ASSERT_OK_OR_GOTO(status,
+                resservSwapTlsCallContext(&pOldContext, &callContext), done);
             NV_RM_RPC_ALLOC_OBJECT(pGpu,
                                    pRmAllocParams->hClient,
                                    pRmAllocParams->hParent,
@@ -922,7 +923,7 @@ serverAllocResourceUnderLock
                                    pRmAllocParams->pAllocParams,
                                    pRmAllocParams->paramsSize,
                                    status);
-            resservRestoreTlsCallContext(pOldContext);
+            NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
             if (status != NV_OK)
                 goto done;

@@ -446,9 +446,13 @@
 #define FOXCONN_EINSTEIN_64_DEVID           0xA1C1
 #define FOXCONN_EINSTEIN_64_SSDEVID         0x7270
 
-// Lenovo Tomcat Workstation
+// Lenovo Tomcat/Falcon/Hornet Workstations
 #define LENOVO_TOMCAT_DEVID                 0x1B81
 #define LENOVO_TOMCAT_SSDEVID               0x104e
+#define LENOVO_FALCON_DEVID                 0x7A8A
+#define LENOVO_FALCON_SSDEVID               0x1055
+#define LENOVO_HORNET_DEVID                 0x7A8A
+#define LENOVO_HORNET_SSDEVID               0x1056
 
 // NVIDIA C51
 #define NVIDIA_C51_DEVICE_ID_MIN                        0x2F0

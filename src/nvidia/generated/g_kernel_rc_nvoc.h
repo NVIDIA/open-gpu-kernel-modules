@@ -527,6 +527,17 @@ static inline void krcWatchdogCallbackVblankRecovery(struct OBJGPU *pGpu, struct
 #define krcWatchdogCallbackVblankRecovery(pGpu, pKernelRc) krcWatchdogCallbackVblankRecovery_IMPL(pGpu, pKernelRc)
 #endif //__nvoc_kernel_rc_h_disabled
 
+NV_STATUS krcWatchdogGetClientHandle_IMPL(struct KernelRc *arg0, NvHandle *arg1);
+
+#ifdef __nvoc_kernel_rc_h_disabled
+static inline NV_STATUS krcWatchdogGetClientHandle(struct KernelRc *arg0, NvHandle *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_rc_h_disabled
+#define krcWatchdogGetClientHandle(arg0, arg1) krcWatchdogGetClientHandle_IMPL(arg0, arg1)
+#endif //__nvoc_kernel_rc_h_disabled
+
 #undef PRIVATE_FIELD
 
 

@@ -529,6 +529,7 @@ void        gpumgrSetGpuRelease(void);
 NvU8        gpumgrGetGpuBridgeType(void);
 NvBool      gpumgrAreAllGpusInOffloadMode(void);
 NvBool      gpumgrIsSafeToReadGpuInfo(void);
+NvBool      gpumgrIsDeviceMsixAllowed(RmPhysAddr bar0BaseAddr, NvU32 pmcBoot1, NvU32 pmcBoot42);
 
 //
 // gpumgrIsSubDeviceCountOne

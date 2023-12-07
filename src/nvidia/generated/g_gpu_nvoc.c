@@ -765,6 +765,17 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
     {
         pThis->__gpuClearEccCounts__ = &gpuClearEccCounts_ac1694;
     }
+
+    // Hal function -- gpuWaitForGfwBootComplete
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    {
+        pThis->__gpuWaitForGfwBootComplete__ = &gpuWaitForGfwBootComplete_TU102;
+    }
+    // default
+    else
+    {
+        pThis->__gpuWaitForGfwBootComplete__ = &gpuWaitForGfwBootComplete_5baef9;
+    }
 }
 
 void __nvoc_init_funcTable_OBJGPU(OBJGPU *pThis) {

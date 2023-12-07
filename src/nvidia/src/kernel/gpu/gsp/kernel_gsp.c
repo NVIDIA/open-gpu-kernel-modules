@@ -1409,10 +1409,18 @@ _tsDiffToDuration
 
     duration /= tsFreqUs;
 
+    // 999999us then 1000ms
     if (duration >= 1000000)
     {
         duration /= 1000;
         *pDurationUnitsChar = 'm';
+    }
+
+    // 9999ms then 10s
+    if (duration >= 10000)
+    {
+        duration /= 1000;
+        *pDurationUnitsChar = ' '; // so caller can always just append 's'
     }
 
     return duration;
@@ -1467,7 +1475,7 @@ _kgspLogRpcHistoryEntry
             duration = _tsDiffToDuration(duration, &durationUnitsChar);
 
             NV_ERROR_LOG_DATA(pGpu, errorNum,
-                              "    %c%-4d %-4d %-21.21s 0x%016llx 0x%016llx 0x%016llx 0x%016llx %6lld%cs %c\n",
+                              "    %c%-4d %-4d %-21.21s 0x%016llx 0x%016llx 0x%016llx 0x%016llx %6llu%cs %c\n",
                               ((historyIndex == 0) ? ' ' : '-'),
                               historyIndex,
                               pEntry->function,
@@ -1556,23 +1564,32 @@ _kgspLogXid119
     NvU32 expectedFunc
 )
 {
-    NvU32 historyEntry = pRpc->rpcHistoryCurrent;
+    RpcHistoryEntry *pHistoryEntry = &pRpc->rpcHistory[pRpc->rpcHistoryCurrent];
+    NvU64 ts_end = osGetTimestamp();
+    NvU64 duration;
+    char  durationUnitsChar;
 
     if (pRpc->timeoutCount == 1)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "********************************* GSP Failure **********************************\n");
+                  "********************************* GSP Timeout **********************************\n");
+        NV_PRINTF(LEVEL_ERROR,
+                  "Note: Please also check logs above.\n");
     }
 
-    NV_ASSERT(expectedFunc == pRpc->rpcHistory[historyEntry].function);
+    NV_ASSERT(expectedFunc == pHistoryEntry->function);
+
+    NV_ASSERT(ts_end > pHistoryEntry->ts_start);
+    duration = _tsDiffToDuration(ts_end - pHistoryEntry->ts_start, &durationUnitsChar);
 
     NV_ERROR_LOG(pGpu, GSP_RPC_TIMEOUT,
-                 "Timeout waiting for RPC from GPU%d GSP! Expected function %d (%s) (0x%x 0x%x).",
+                 "Timeout after %llus of waiting for RPC response from GPU%d GSP! Expected function %d (%s) (0x%x 0x%x).",
+                 (durationUnitsChar == 'm' ? duration / 1000 : duration),
                  gpuGetInstance(pGpu),
                  expectedFunc,
                  _getRpcName(expectedFunc),
-                 pRpc->rpcHistory[historyEntry].data[0],
-                 pRpc->rpcHistory[historyEntry].data[1]);
+                 pHistoryEntry->data[0],
+                 pHistoryEntry->data[1]);
 
     if (pRpc->timeoutCount == 1)
     {

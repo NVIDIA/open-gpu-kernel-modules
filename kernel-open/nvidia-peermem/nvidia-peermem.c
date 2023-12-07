@@ -1,20 +1,25 @@
-/* SPDX-License-Identifier: Linux-OpenIB */
 /*
  * Copyright (c) 2006, 2007 Cisco Systems, Inc. All rights reserved.
  * Copyright (c) 2007, 2008 Mellanox Technologies. All rights reserved.
  *
- * Redistribution and use in source and binary forms, with or
- * without modification, are permitted provided that the following
- * conditions are met:
+ * This software is available to you under a choice of one of two
+ * licenses.  You may choose to be licensed under the terms of the GNU
+ * General Public License (GPL) Version 2, available from the file
+ * COPYING in the main directory of this source tree, or the
+ * OpenIB.org BSD license below:
  *
- *  - Redistributions of source code must retain the above
- *    copyright notice, this list of conditions and the following
- *    disclaimer.
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
  *
- *  - Redistributions in binary form must reproduce the above
- *    copyright notice, this list of conditions and the following
- *    disclaimer in the documentation and/or other materials
- *    provided with the distribution.
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
  *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
  * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
@@ -43,7 +48,9 @@
 
 MODULE_AUTHOR("Yishai Hadas");
 MODULE_DESCRIPTION("NVIDIA GPU memory plug-in");
-MODULE_LICENSE("Linux-OpenIB");
+
+MODULE_LICENSE("Dual BSD/GPL");
+
 MODULE_VERSION(DRV_VERSION);
 enum {
         NV_MEM_PEERDIRECT_SUPPORT_DEFAULT = 0,

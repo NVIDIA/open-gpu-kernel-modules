@@ -618,7 +618,7 @@ static NV_STATUS _gpuRmApiControl
         callCtx.pControlParams = &rmCtrlParams;
         callCtx.pLockInfo      = rmCtrlParams.pLockInfo;
 
-        resservSwapTlsCallContext(&oldCtx, &callCtx);
+        NV_ASSERT_OK_OR_RETURN(resservSwapTlsCallContext(&oldCtx, &callCtx));
 
         if (pEntry->paramSize == 0)
         {
@@ -629,7 +629,7 @@ static NV_STATUS _gpuRmApiControl
             status = ((NV_STATUS(*)(void*,void*))pEntry->pFunc)(pGpu->pCachedSubdevice, pParams);
         }
 
-        resservRestoreTlsCallContext(oldCtx);
+        NV_ASSERT_OK(resservRestoreTlsCallContext(oldCtx));
     }
     else
     {

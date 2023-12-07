@@ -3446,8 +3446,6 @@ NV_STATUS nvGpuOpsGetExternalAllocPtes(struct gpuAddressSpace *vaSpace,
         (memdescGetAddressSpace(pAdjustedMemDesc) == ADDR_FABRIC_MC) ||
         (memdescGetAddressSpace(pAdjustedMemDesc) == ADDR_FABRIC_V2))
     {
-        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
-
         isPeerSupported = NV_TRUE;
         pPeerGpu        = pAdjustedMemDesc->pGpu;
         peerId          = BUS_INVALID_PEER;
@@ -3462,10 +3460,21 @@ NV_STATUS nvGpuOpsGetExternalAllocPtes(struct gpuAddressSpace *vaSpace,
 
         if (pPeerGpu != NULL)
         {
-            if ((pKernelNvlink != NULL) &&
-                knvlinkIsNvlinkP2pSupported(pMappingGpu, pKernelNvlink, pPeerGpu))
+            if (IS_VIRTUAL_WITH_SRIOV(pMappingGpu) &&
+            !gpuIsWarBug200577889SriovHeavyEnabled(pMappingGpu))
             {
-                peerId = kbusGetPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu), pPeerGpu);
+                peerId = kbusGetNvlinkPeerId_HAL(pMappingGpu,
+                                                 GPU_GET_KERNEL_BUS(pMappingGpu),
+                                                 pPeerGpu);
+            }
+            else
+            {
+                KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pMappingGpu);
+                if ((pKernelNvlink != NULL) &&
+                    knvlinkIsNvlinkP2pSupported(pMappingGpu, pKernelNvlink, pPeerGpu))
+                {
+                    peerId = kbusGetPeerId_HAL(pMappingGpu, GPU_GET_KERNEL_BUS(pMappingGpu), pPeerGpu);
+                }
             }
         }
         else

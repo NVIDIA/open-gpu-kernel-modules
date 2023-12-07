@@ -1433,7 +1433,13 @@ static void UnlockRasterLockGroup(NVDevEvoPtr pDevEvo) {
             NVDispEvoPtr pDispEvo = topo->pDispEvoOrder[i];
             NVDevEvoPtr pDevEvo = pDispEvo->pDevEvo;
             NvU32 sd = pDispEvo->displayOwner;
-            NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[sd];
+            NVEvoSubDevPtr pEvoSubDev;
+
+            if (pDevEvo->gpus == NULL) {
+                continue;
+            }
+
+            pEvoSubDev = &pDevEvo->gpus[sd];
 
             /* Initialize the assembly state */
             SyncEvoLockState();
@@ -1669,7 +1675,8 @@ void nvEvoLockStateSetMergeMode(NVDispEvoPtr pDispEvo)
 
 /*
  * FinishModesetOneTopology() - Set up raster lock between GPUs, if applicable,
- * for one RasterLockTopology.  Called in a loop from nvFinishModesetEvo().
+ * unless disabled via kernel module parameter, for one RasterLockTopology.
+ * Called in a loop from nvFinishModesetEvo().
  */
 
 static void FinishModesetOneTopology(RasterLockTopology *topo)
@@ -1685,6 +1692,11 @@ static void FinishModesetOneTopology(RasterLockTopology *topo)
     NvU8 allowFlipLockGroup = 0;
     NVDevEvoPtr pDevEvoFlipLockGroup = NULL;
     NvBool mergeModeInUse = FALSE;
+
+    if (!nvkms_opportunistic_display_sync()) {
+        /* If opportunistic display sync is disabled, do not attempt rasterlock. */
+        return;
+    }
 
     /*
      * First, look for devices with VRR enabled. If we find any, go into the
@@ -6197,13 +6209,15 @@ NvBool nvDowngradeColorSpaceAndBpc(
 
 NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
                            NVHwModeTimingsEvoPtr pTimings,
+                           enum NvKmsDpyAttributeCurrentColorSpaceValue *pColorSpace,
+                           enum NvKmsDpyAttributeColorBpcValue *pColorBpc,
                            const NvBool b2Heads1Or,
                            NVDscInfoEvoRec *pDscInfo,
                            const struct NvKmsModeValidationParams *pParams)
 {
     NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
-    enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
-    enum NvKmsDpyAttributeColorBpcValue colorBpc;
+    enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace = *pColorSpace;
+    enum NvKmsDpyAttributeColorBpcValue colorBpc = *pColorBpc;
     enum NvKmsDpyAttributeColorRangeValue colorRange;
     const NVColorFormatInfoRec supportedColorFormats =
         nvGetColorFormatInfo(pDpyEvo);
@@ -6216,14 +6230,6 @@ NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
     if ((pParams->overrides &
          NVKMS_MODE_VALIDATION_NO_DISPLAYPORT_BANDWIDTH_CHECK) != 0) {
         return TRUE;
-    }
-
-    if (pTimings->yuv420Mode != NV_YUV420_MODE_NONE) {
-        colorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420;
-        colorBpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
-    } else if (!nvGetDefaultColorSpace(&supportedColorFormats, &colorSpace,
-                                       &colorBpc)) {
-        return FALSE;
     }
 
     if (colorSpace != NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) {
@@ -6251,6 +6257,8 @@ NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
         return FALSE;
     }
 
+    *pColorSpace = colorSpace;
+    *pColorBpc = colorBpc;
     return TRUE;
 }
 

@@ -1283,7 +1283,7 @@ done:
 // RmMsgPrefix - Add the RmMsg prefix to the passed in string, returning
 // the length of the formatted string.
 //
-// Format: "NVRM file linenum function timestamp: "
+// Format: "NVRM: file linenum function timestamp: "
 //
 NvU32
 RmMsgPrefix
@@ -1306,7 +1306,8 @@ RmMsgPrefix
     {
         portStringCopy(str + len, totalLen - len, NV_PRINTF_PREFIX, sizeof(NV_PRINTF_PREFIX));
         len += sizeof(NV_PRINTF_PREFIX) - 1;
-        space = " ";
+        portStringCopy(str + len, totalLen - len, NV_PRINTF_PREFIX_SEPARATOR, sizeof(NV_PRINTF_PREFIX_SEPARATOR));
+        len += sizeof(NV_PRINTF_PREFIX_SEPARATOR) - 1;
     }
 
     if (prefix & NVRM_MSG_PREFIX_FILE)
