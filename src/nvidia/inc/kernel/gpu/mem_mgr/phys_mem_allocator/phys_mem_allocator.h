@@ -42,7 +42,6 @@
 
 #include "nvport/nvport.h"
 #include "regmap.h"
-#include "addrtree.h"
 #include "nvmisc.h"
 
 #if defined(SRT_BUILD)
@@ -72,7 +71,7 @@ typedef struct SCRUB_NODE SCRUB_NODE;
 #define PMA_INIT_NUMA                   NVBIT(2)
 #define PMA_INIT_INTERNAL               NVBIT(3) // Used after heap is removed
 #define PMA_INIT_FORCE_PERSISTENCE      NVBIT(4)
-#define PMA_INIT_ADDRTREE               NVBIT(5)
+// unused
 #define PMA_INIT_NUMA_AUTO_ONLINE       NVBIT(6)
 
 // These flags are used for querying PMA's config and/or state.

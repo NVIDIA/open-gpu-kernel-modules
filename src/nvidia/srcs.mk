@@ -522,7 +522,6 @@ SRCS += src/kernel/gpu/mem_mgr/mem_scrub.c
 SRCS += src/kernel/gpu/mem_mgr/mem_utils.c
 SRCS += src/kernel/gpu/mem_mgr/method_notification.c
 SRCS += src/kernel/gpu/mem_mgr/objheap.c
-SRCS += src/kernel/gpu/mem_mgr/phys_mem_allocator/addrtree.c
 SRCS += src/kernel/gpu/mem_mgr/phys_mem_allocator/numa.c
 SRCS += src/kernel/gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator.c
 SRCS += src/kernel/gpu/mem_mgr/phys_mem_allocator/phys_mem_allocator_util.c

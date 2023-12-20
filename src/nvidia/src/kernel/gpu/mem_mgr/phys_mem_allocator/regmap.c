@@ -1074,8 +1074,6 @@ pmaRegmapScanDiscontiguous
     PMA_PAGESTATUS startStatus, endStatus;
     PMA_REGMAP *pRegmap = (PMA_REGMAP *)pMap;
 
-    NV_ASSERT(alignment == pageSize);
-
     framesPerPage = pageSize >> PMA_PAGE_SHIFT;
 
     //

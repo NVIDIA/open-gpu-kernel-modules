@@ -460,7 +460,6 @@ struct MemoryManager {
     NvBool bPmaEnabled;
     NvBool bPmaInitialized;
     NvBool bPmaForcePersistence;
-    NvBool bPmaAddrTree;
     NvBool bClientPageTablesPmaManaged;
     NvBool bScanoutSysmem;
     NvBool bMixedDensityFbp;
@@ -2148,10 +2147,6 @@ static inline NvBool memmgrAreClientPageTablesPmaManaged(struct MemoryManager *p
 
 static inline void memmgrSetClientPageTablesPmaManaged(struct MemoryManager *pMemoryManager, NvBool val) {
     pMemoryManager->bClientPageTablesPmaManaged = val;
-}
-
-static inline NvBool memmgrIsPmaAddrTree(struct MemoryManager *pMemoryManager) {
-    return pMemoryManager->bPmaAddrTree;
 }
 
 static inline NvU64 memmgrGetRsvdMemoryBase(struct MemoryManager *pMemoryManager) {

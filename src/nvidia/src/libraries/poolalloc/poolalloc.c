@@ -262,9 +262,12 @@ poolReserve
     NvU64     numPages
 )
 {
-    NvU64            i, freeLength;
+    NvU64            i, freeLength, totalAlloc;
+    NV_STATUS status = NV_ERR_NO_MEMORY;
     allocCallback_t  allocCb;
-    POOLALLOC_HANDLE pageHandle;
+    POOLALLOC_HANDLE *pPageHandle = NULL;
+    POOLNODE *pNode = NULL;
+
 
     if (pPool == NULL || (pPool->callBackInfo).allocCb == NULL)
     {
@@ -277,32 +280,45 @@ poolReserve
         return NV_OK;
     }
 
+    totalAlloc = numPages - freeLength;
+
     allocCb = (pPool->callBackInfo).allocCb;
 
-    for (i = 0; i < (numPages - freeLength); i++)
+    pPageHandle = PORT_ALLOC(pPool->pAllocator, totalAlloc * sizeof(POOLALLOC_HANDLE));
+    NV_ASSERT_OR_GOTO(pPageHandle != NULL, free_none);
+
+    NV_ASSERT_OK_OR_GOTO(status, 
+        allocCb(pPool->callBackInfo.pUpstreamCtx, pPool->upstreamPageSize,
+            totalAlloc, pPageHandle),
+        free_page);
+
+    status = NV_ERR_NO_MEMORY;
+
+    for (i = 0; i < totalAlloc; i++)
     {
-        if ((*allocCb)((pPool->callBackInfo).pUpstreamCtx,
-              pPool->upstreamPageSize, &pageHandle) == NV_OK)
-        {
-            POOLNODE *pNode;
+        pNode = PORT_ALLOC(pPool->pAllocator, sizeof(POOLNODE));
+        NV_ASSERT_OR_GOTO(pNode != NULL, free_alloc);
 
-            pNode = PORT_ALLOC(pPool->pAllocator, sizeof(*pNode));
-            listPrependExisting(&pPool->freeList, pNode);
-
-            pNode->pageAddr = pageHandle.address;
-            pNode->bitmap = NV_U64_MAX;
-            pNode->pParent = pageHandle.pMetadata;
-        }
-        else
-        {
-            return NV_ERR_NO_MEMORY;
-        }
+        listPrependExisting(&pPool->freeList, pNode);
+        pNode->pageAddr = pPageHandle[i].address;
+        pNode->bitmap = NV_U64_MAX;
+        pNode->pParent = pPageHandle[i].pMetadata;
     }
 
+    status = NV_OK;
     freeLength = listCount(&pPool->freeList);
     NV_ASSERT(freeLength == numPages);
-
-    return NV_OK;
+    goto free_page;
+free_alloc:
+    for(; i < totalAlloc; i++)
+    {
+        pPool->callBackInfo.freeCb(pPool->callBackInfo.pUpstreamCtx,
+            pPool->upstreamPageSize, &pPageHandle[i]);
+    }
+free_page:
+    PORT_FREE(pPool->pAllocator, pPageHandle);
+free_none:
+    return status;
 }
 
 
@@ -383,7 +399,7 @@ poolAllocate
     //
     if (FLD_TEST_DRF(_RMPOOL, _FLAGS, _AUTO_POPULATE, _ENABLE, pPool->flags))
     {
-        if ((*allocCb)(pPool->callBackInfo.pUpstreamCtx, pPool->upstreamPageSize, pPageHandle) == NV_OK)
+        if ((*allocCb)(pPool->callBackInfo.pUpstreamCtx, pPool->upstreamPageSize, 1, pPageHandle) == NV_OK)
         {
             POOLNODE *pNode;
 

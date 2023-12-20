@@ -240,26 +240,6 @@ pmaInitialize(PMA *pPma, NvU32 initFlags)
         pPma->bNuma = !!(initFlags & PMA_INIT_NUMA);
 
         pPma->bNumaAutoOnline = !!(initFlags & PMA_INIT_NUMA_AUTO_ONLINE);
-
-        // If we want to run with address tree instead of regmap
-        if (initFlags & PMA_INIT_ADDRTREE)
-        {
-            pMapInfo->pmaMapInit = pmaAddrtreeInit;
-            pMapInfo->pmaMapDestroy = pmaAddrtreeDestroy;
-            pMapInfo->pmaMapChangeState = pmaAddrtreeChangeState;
-            pMapInfo->pmaMapChangeStateAttrib = pmaAddrtreeChangeStateAttrib;
-            pMapInfo->pmaMapChangeStateAttribEx = pmaAddrtreeChangeStateAttribEx;
-            pMapInfo->pmaMapChangePageStateAttrib = pmaAddrtreeChangePageStateAttrib;
-            pMapInfo->pmaMapRead = pmaAddrtreeRead;
-            pMapInfo->pmaMapScanContiguous = pmaAddrtreeScanContiguous;
-            pMapInfo->pmaMapScanDiscontiguous = pmaAddrtreeScanDiscontiguous;
-            pMapInfo->pmaMapGetSize = pmaAddrtreeGetSize;
-            pMapInfo->pmaMapGetLargestFree = pmaAddrtreeGetLargestFree;
-            pMapInfo->pmaMapScanContiguousNumaEviction = pmaAddrtreeScanContiguousNumaEviction;
-            pMapInfo->pmaMapGetEvictingFrames = pmaAddrtreeGetEvictingFrames;
-            pMapInfo->pmaMapSetEvictingFrames = pmaAddrtreeSetEvictingFrames;
-            NV_PRINTF(LEVEL_WARNING, "Going to use addrtree for PMA init!!\n");
-        }
     }
     pPma->pMapInfo = pMapInfo;
 
@@ -589,22 +569,12 @@ pmaAllocatePages
 
     const NvU64 numFramesToAllocateTotal = framesPerPage * allocationCount;
 
-    if (pPma == NULL || pPages == NULL || allocationCount == 0
-        || (pageSize != _PMA_64KB && pageSize != _PMA_128KB && pageSize != _PMA_2MB && pageSize != _PMA_512MB)
-        || allocationOptions == NULL)
-    {
-        if (pPma == NULL)
-            NV_PRINTF(LEVEL_ERROR, "NULL PMA object\n");
-        if (pPages == NULL)
-            NV_PRINTF(LEVEL_ERROR, "NULL page list pointer\n");
-        if (allocationCount == 0)
-            NV_PRINTF(LEVEL_ERROR, "count == 0\n");
-        if (pageSize != _PMA_64KB && pageSize != _PMA_128KB && pageSize != _PMA_2MB && pageSize != _PMA_512MB)
-            NV_PRINTF(LEVEL_ERROR, "pageSize=0x%llx (not 64K, 128K, 2M, or 512M)\n", pageSize);
-        if (allocationOptions == NULL)
-            NV_PRINTF(LEVEL_ERROR, "NULL allocationOptions\n");
-        return NV_ERR_INVALID_ARGUMENT;
-    }
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pPma != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pPages != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, allocationCount != 0, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, allocationOptions != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, portUtilIsPowerOfTwo(pageSize), NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pageSize >= _PMA_64KB, NV_ERR_INVALID_ARGUMENT);
 
     flags = allocationOptions->flags;
     evictFlag   = !(flags & PMA_ALLOCATE_DONT_EVICT);
@@ -673,23 +643,14 @@ pmaAllocatePages
     //
     if (alignFlag)
     {
-        if (!NV_IS_ALIGNED(allocationOptions->alignment, _PMA_64KB) ||
-            !portUtilIsPowerOfTwo(allocationOptions->alignment))
-        {
-            NV_PRINTF(LEVEL_WARNING,
-                "alignment [%llx] is not aligned to 64KB or is not power of two.",
-                alignment);
-            return NV_ERR_INVALID_ARGUMENT;
-        }
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            portUtilIsPowerOfTwo(allocationOptions->alignment),
+            NV_ERR_INVALID_ARGUMENT);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR,
+            allocationOptions->alignment >= _PMA_64KB,
+            NV_ERR_INVALID_ARGUMENT);
 
-        alignment = NV_MAX(pageSize, allocationOptions->alignment);
-        if (!contigFlag && alignment > pageSize)
-        {
-            NV_PRINTF(LEVEL_WARNING,
-                "alignment [%llx] larger than the pageSize [%llx] not supported for non-contiguous allocs\n",
-                alignment, pageSize);
-            return NV_ERR_INVALID_ARGUMENT;
-        }
+        alignment = allocationOptions->alignment;
     }
 
     pinOption = pinFlag ? STATE_PIN : STATE_UNPIN;
@@ -835,15 +796,6 @@ pmaAllocatePages_retry:
         numPagesAllocatedSoFar += numPagesAllocatedThisTime;
         curPages += numPagesAllocatedThisTime;
         numPagesLeftToAllocate -= numPagesAllocatedThisTime;
-
-        //
-        // PMA must currently catch addrtree shortcomings and fail the request
-        // Just follow the no memory path for now to properly release locks
-        //
-        if (status == NV_ERR_INVALID_ARGUMENT)
-        {
-            status = NV_ERR_NO_MEMORY;
-        }
 
         if (status == NV_ERR_IN_USE && !tryEvict)
         {
@@ -1193,13 +1145,6 @@ pmaAllocatePagesBroadcast
 )
 {
 
-    if (pPma == NULL || pmaCount == 0 || allocationCount == 0
-        || (pageSize != _PMA_64KB && pageSize != _PMA_128KB && pageSize != _PMA_2MB && pageSize != _PMA_512MB)
-        || pPages == NULL)
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
     return NV_ERR_GENERIC;
 }
 
@@ -1218,11 +1163,9 @@ pmaPinPages
     PMA_PAGESTATUS state;
     framesPerPage  = (NvU32)(pageSize >> PMA_PAGE_SHIFT);
 
-    if (pPma == NULL || pageCount == 0 || pPages == NULL
-        || (pageSize != _PMA_64KB && pageSize != _PMA_128KB && pageSize != _PMA_2MB && pageSize != _PMA_512MB))
-    {
-        return NV_ERR_INVALID_ARGUMENT;
-    }
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        (pPma != NULL) && (pageCount != 0) && (pPages != NULL),
+        NV_ERR_INVALID_ARGUMENT);
 
     portSyncSpinlockAcquire(pPma->pPmaLock);
 
@@ -1350,14 +1293,6 @@ pmaFreePages
     NV_ASSERT(pPma != NULL);
     NV_ASSERT(pageCount != 0);
     NV_ASSERT(pPages != NULL);
-
-    if (pageCount != 1)
-    {
-        NV_ASSERT((size == _PMA_64KB)  ||
-                  (size == _PMA_128KB) ||
-                  (size == _PMA_2MB)   ||
-                  (size == _PMA_512MB));
-    }
 
     // Fork out new code path for NUMA sub-allocation from OS
     if (pPma->bNuma)

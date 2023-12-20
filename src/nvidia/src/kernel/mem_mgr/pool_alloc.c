@@ -1,4 +1,4 @@
-/*
+ /*
  * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
@@ -193,7 +193,7 @@ struct RM_POOL_ALLOC_MEM_RESERVE_INFO
  *        pool.
  *
  * @param[in] pCtx     Context for upstream allocator.
- * @param[in] pageSize Only for debugging.
+ * @param[in] pageSize Page size to use when allocating from PMA
  * @param[in] pPage    Output page handle from upstream.
  *
  * @return NV_STATUS
@@ -203,20 +203,23 @@ allocUpstreamTopPool
 (
     void             *pCtx,
     NvU64             pageSize,
+    NvU64             numPages, 
     POOLALLOC_HANDLE *pPage
 )
 {
     PMA_ALLOCATION_OPTIONS      allocOptions = {0};
     RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInfo;
-    NV_STATUS                   status;
+    NvU64 i;
+    NvU64 *pPageStore = portMemAllocNonPaged(sizeof(NvU64) * numPages);
+    NV_STATUS status = NV_OK;
 
     NV_ASSERT_OR_RETURN(NULL != pCtx, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(NULL != pPage, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(NULL != pPageStore, NV_ERR_NO_MEMORY);
 
-    // TODO: Replace the direct call to PMA with function pointer.
     pMemReserveInfo = (RM_POOL_ALLOC_MEM_RESERVE_INFO *)pCtx;
-    allocOptions.flags = PMA_ALLOCATE_PINNED | PMA_ALLOCATE_PERSISTENT |
-                         PMA_ALLOCATE_CONTIGUOUS;
+    allocOptions.flags = PMA_ALLOCATE_PINNED | PMA_ALLOCATE_PERSISTENT | PMA_ALLOCATE_FORCE_ALIGNMENT;
+    allocOptions.alignment = PMA_CHUNK_SIZE_64K;
 
     if (pMemReserveInfo->bSkipScrub)
     {
@@ -227,20 +230,24 @@ allocUpstreamTopPool
     {
         allocOptions.flags |= PMA_ALLOCATE_PROTECTED_REGION;
     }
+        
+    NV_ASSERT_OK_OR_GOTO(status,
+        pmaAllocatePages(pMemReserveInfo->pPma,
+            numPages,
+            pageSize,
+            &allocOptions,
+            pPageStore),
+        free_mem);
 
-    status = pmaAllocatePages(pMemReserveInfo->pPma,
-                              pMemReserveInfo->pmaChunkSize/PMA_CHUNK_SIZE_64K,
-                              PMA_CHUNK_SIZE_64K,
-                              &allocOptions,
-                              &pPage->address);
-    if (status != NV_OK)
+    for (i = 0; i < numPages; i++)
     {
-        return status;
+        pPage[i].address = pPageStore[i];
+        pPage[i].pMetadata = NULL;
     }
-
-    pPage->pMetadata = NULL;
-
+free_mem:
+    portMemFree(pPageStore);
     return status;
+
 }
 
 /*!
@@ -258,17 +265,28 @@ allocUpstreamLowerPools
 (
     void             *pCtx,
     NvU64             pageSize,
+    NvU64             numPages,
     POOLALLOC_HANDLE *pPage
 )
 {
     NV_STATUS status;
+    NvU64 i;
 
     NV_ASSERT_OR_RETURN(NULL != pCtx, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(NULL != pPage, NV_ERR_INVALID_ARGUMENT);
 
-    status = poolAllocate((POOLALLOC *)pCtx, pPage);
-    NV_ASSERT_OR_RETURN(status == NV_OK, status);
-
+    for(i = 0; i < numPages; i++)
+    {
+        NV_ASSERT_OK_OR_GOTO(status,
+            poolAllocate((POOLALLOC *)pCtx, &pPage[i]),
+            cleanup);
+    }
+    return NV_OK;
+cleanup:
+    for(;i > 0; i--)
+    {
+        poolFree((POOLALLOC *)pCtx, &pPage[i-1]);
+    }
     return status;
 }
 
