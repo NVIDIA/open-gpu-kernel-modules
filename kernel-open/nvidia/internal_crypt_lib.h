@@ -68,7 +68,6 @@
 #endif
 
 #ifdef USE_LKCA
-#include <linux/version.h>
 #include <linux/crypto.h>
 #include <linux/scatterlist.h>
 #include <crypto/aead.h>
@@ -80,15 +79,6 @@
 // This value is accurate as of 6.1
 #ifndef HASH_MAX_DIGESTSIZE
 #define HASH_MAX_DIGESTSIZE 64
-#endif
-
-// crypto_tfm_ctx_aligned got removed in 6.7
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 7, 0)
-// Code copied include/crypto/algapi.h from 6.6
-static inline void *crypto_tfm_ctx_aligned(struct crypto_tfm *tfm)
-{
-	return crypto_tfm_ctx_align(tfm, crypto_tfm_alg_alignmask(tfm) + 1);
-}
 #endif
 
 #else
