@@ -1919,4 +1919,14 @@
 #define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_DISABLE 0
 #define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3_ENABLE  1
 
+//
+// Type DWORD
+// This regkey force-disables write-combine iomap allocations, used for chipsets where
+// write-combine is broken.
+//
+#define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC             "RmForceDisableIomapWC"
+#define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_YES         0x00000001
+#define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_NO          0x00000000
+#define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_DEFAULT     NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_NO
+
 #endif // NVRM_REGISTRY_H

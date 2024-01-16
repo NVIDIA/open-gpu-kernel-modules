@@ -316,7 +316,7 @@ export_symbol_present_conftest() {
     SYMBOL="$1"
     TAB='	'
 
-    if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_SYMBOL.*\$" \
+    if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_SYMBOL\(_GPL\)\?\s*\$" \
                "$OUTPUT/Module.symvers" >/dev/null 2>&1; then
         echo "#define NV_IS_EXPORT_SYMBOL_PRESENT_$SYMBOL 1" |
             append_conftest "symbols"
@@ -337,7 +337,7 @@ export_symbol_gpl_conftest() {
     SYMBOL="$1"
     TAB='	'
 
-    if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_\(UNUSED_\)*SYMBOL_GPL\$" \
+    if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_\(UNUSED_\)*SYMBOL_GPL\s*\$" \
                "$OUTPUT/Module.symvers" >/dev/null 2>&1; then
         echo "#define NV_IS_EXPORT_SYMBOL_GPL_$SYMBOL 1" |
             append_conftest "symbols"
@@ -6388,6 +6388,21 @@ compile_test() {
             "
 
             compile_check_conftest "$CODE" "NV_MMU_INTERVAL_NOTIFIER" "" "types"
+        ;;
+
+        drm_unlocked_ioctl_flag_present)
+            # Determine if DRM_UNLOCKED IOCTL flag is present.
+            #
+            # DRM_UNLOCKED was removed by commit 2798ffcc1d6a ("drm: Remove
+            # locking for legacy ioctls and DRM_UNLOCKED") in Linux
+            # next-20231208.
+            CODE="
+            #if defined(NV_DRM_DRM_IOCTL_H_PRESENT)
+            #include <drm/drm_ioctl.h>
+            #endif
+            int flags = DRM_UNLOCKED;"
+
+            compile_check_conftest "$CODE" "NV_DRM_UNLOCKED_IOCTL_FLAG_PRESENT" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for

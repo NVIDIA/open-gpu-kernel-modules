@@ -630,6 +630,7 @@ enum {
 ,     CS_INTEL_1B81
 ,     CS_INTEL_18DC
 ,     CS_INTEL_7A04
+,     CS_AMPERE_AMPEREONE
 ,     CS_MAX_PCIE
 };
 

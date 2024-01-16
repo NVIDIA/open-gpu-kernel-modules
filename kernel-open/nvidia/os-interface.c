@@ -1247,9 +1247,12 @@ void NV_API_CALL os_get_screen_info(
      * SYSFB_SIMPLEFB registers a dummy framebuffer which does not contain the
      * information required by os_get_screen_info(), therefore you need to
      * fall back onto the screen_info structure.
+     *
+     * After commit b8466fe82b79 ("efi: move screen_info into efi init code")
+     * in v6.7, 'screen_info' is exported as GPL licensed symbol for ARM64.
      */
 
-#if NV_IS_EXPORT_SYMBOL_PRESENT_screen_info
+#if NV_CHECK_EXPORT_SYMBOL(screen_info)
     /*
      * If there is not a framebuffer console, return 0 size.
      *
