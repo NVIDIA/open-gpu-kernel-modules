@@ -78,6 +78,13 @@ bool lkca_hash_duplicate(struct shash_desc *dst, struct shash_desc const *src)
 #endif
 }
 
+#ifdef USE_LKCA
+static inline void *nv_crypto_tfm_ctx_aligned(struct crypto_tfm *tfm)
+{
+    return crypto_tfm_ctx_align(tfm, crypto_tfm_alg_alignmask(tfm) + 1);
+}
+#endif
+
 bool lkca_hmac_duplicate(struct shash_desc *dst, struct shash_desc const *src)
 {
 #ifndef USE_LKCA
@@ -87,8 +94,8 @@ bool lkca_hmac_duplicate(struct shash_desc *dst, struct shash_desc const *src)
 
         struct crypto_shash *src_tfm = src->tfm;
         struct crypto_shash *dst_tfm = dst->tfm;
-        char *src_ipad = crypto_tfm_ctx_aligned(&src_tfm->base);
-        char *dst_ipad = crypto_tfm_ctx_aligned(&dst_tfm->base);
+        char *src_ipad = nv_crypto_tfm_ctx_aligned(&src_tfm->base);
+        char *dst_ipad = nv_crypto_tfm_ctx_aligned(&dst_tfm->base);
         int ss = crypto_shash_statesize(dst_tfm);
         memcpy(dst_ipad, src_ipad, crypto_shash_blocksize(src->tfm));
         memcpy(dst_ipad + ss, src_ipad + ss, crypto_shash_blocksize(src->tfm));
