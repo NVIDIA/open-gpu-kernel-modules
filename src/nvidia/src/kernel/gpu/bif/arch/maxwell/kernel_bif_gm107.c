@@ -30,6 +30,7 @@
 
 #include "published/maxwell/gm107/dev_boot.h"
 #include "published/maxwell/gm107/dev_nv_xve.h"
+#include "published/maxwell/gm107/dev_nv_xve1.h"
 
 #include "published/maxwell/gm107/dev_nv_pcfg_xve_addendum.h"
 #include "published/maxwell/gm107/dev_nv_pcfg_xve1_addendum.h"
@@ -49,6 +50,9 @@ static const NvU32 xveRegMapValid[] = NV_PCFG_XVE_REGISTER_VALID_MAP;
 static const NvU32 xveRegMapWrite[] = NV_PCFG_XVE_REGISTER_WR_MAP;
 static const NvU32 xve1RegMapValid[] = NV_PCFG_XVE1_REGISTER_VALID_MAP;
 static const NvU32 xve1RegMapWrite[] = NV_PCFG_XVE1_REGISTER_WR_MAP;
+
+static NV_STATUS _kbifSavePcieConfigRegisters_GM107(OBJGPU *pGpu, KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef);
+static NV_STATUS _kbifRestorePcieConfigRegisters_GM107(OBJGPU *pGpu, KernelBif *pKernelBif, const PKBIF_XVE_REGMAP_REF pRegmapRef);
 
 /* ------------------------ Public Functions -------------------------------- */
 
@@ -300,6 +304,355 @@ kbifPcieConfigDisableRelaxedOrdering_GM107
                                            _ENABLE_RELAXED_ORDERING, 0, xveDevCtrlStatus);
         GPU_BUS_CFG_WR32(pGpu, NV_XVE_DEVICE_CONTROL_STATUS, xveDevCtrlStatus);
     }
+}
+
+/*!
+ * Helper function for bifSavePcieConfigRegisters_GM107()
+ *
+ * @param[in]  pGpu           GPU object pointer
+ * @param[in]  pKernelBif     Kernel Bif object pointer
+ * @param[in]  pRegmapRef     XVE Register map structure pointer
+ *
+ * @return  'NV_OK' if successful, an RM error code otherwise.
+ */
+static NV_STATUS
+_kbifSavePcieConfigRegisters_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    const PKBIF_XVE_REGMAP_REF pRegmapRef
+)
+{
+    NV_STATUS status;
+    NvU16     index;
+
+    // Read and save config space offset based on the bit map
+    for (index = 0; index < pRegmapRef->numXveRegMapValid; index++)
+    {
+        NvU16 i, regOffset, bufOffset;
+        NvU32 mask = 1;
+
+        for (i = 0; i < sizeof(pRegmapRef->xveRegMapValid[0]) * 8; i++)
+        {
+            mask = 1 << i;
+            NV_ASSERT((pRegmapRef->xveRegMapWrite[index] & mask) == 0 ||
+                      (pRegmapRef->xveRegMapValid[index] & mask) != 0);
+
+            if ((pRegmapRef->xveRegMapValid[index] & mask) == 0)
+            {
+                continue;
+            }
+
+            bufOffset = (index * sizeof(pRegmapRef->xveRegMapValid[0]) * 8) + i;
+            regOffset = bufOffset * sizeof(pRegmapRef->bufBootConfigSpace[0]);
+
+            status = PCI_FUNCTION_BUS_CFG_RD32(pGpu, pRegmapRef->nFunc,
+                                               regOffset, &pRegmapRef->bufBootConfigSpace[bufOffset]);
+            if (status != NV_OK)
+            {
+                return status;
+            }
+        }
+    }
+
+    pKernelBif->setProperty(pKernelBif, PDB_PROP_KBIF_SECONDARY_BUS_RESET_SUPPORTED, NV_TRUE);
+
+    return NV_OK;
+}
+
+/*!
+ * Save boot time PCIe Config space
+ *
+ * @param[in]  pGpu           GPU object pointer
+ * @param[in]  pKernelBif     Kernel Bif object pointer
+ *
+ * @return  'NV_OK' if successful, an RM error code otherwise.
+ */
+NV_STATUS
+kbifSavePcieConfigRegisters_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NV_STATUS status;
+
+    //
+    // Save config space if GPU is about to enter Function Level Reset
+    // OR if GPU is about to enter GC6 state
+    // OR if on non-windows platform, FORCE_PCIE_CONFIG_SAVE is set and SBR is snabled
+    // OR if on windows platform, SBR is enabled
+    //
+    if (!pKernelBif->bPreparingFunctionLevelReset &&
+        !IS_GPU_GC6_STATE_ENTERING(pGpu) &&
+        !((RMCFG_FEATURE_PLATFORM_WINDOWS ||
+           pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FORCE_PCIE_CONFIG_SAVE)) &&
+          pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_SECONDARY_BUS_RESET_ENABLED)))
+    {
+        return NV_OK;
+    }
+
+    // save pcie config space for function 0
+    status = _kbifSavePcieConfigRegisters_GM107(pGpu, pKernelBif,
+                                                &pKernelBif->xveRegmapRef[0]);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Saving PCIe config space failed for gpu.\n");
+        NV_ASSERT(0);
+        return status;
+    }
+
+    // No need to save/restore azalia config space if gpu is in GC6 cycle or if it is in FLR
+    if (IS_GPU_GC6_STATE_ENTERING(pGpu) ||
+        pKernelBif->bPreparingFunctionLevelReset)
+    {
+        return NV_OK;
+    }
+
+    // Return early if device is not multifunction (azalia is disabled or not present)
+    if (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION))
+    {
+        return NV_OK;
+    }
+
+    // Save pcie config space for function 1
+    status = _kbifSavePcieConfigRegisters_GM107(pGpu, pKernelBif,
+                                                &pKernelBif->xveRegmapRef[1]);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Saving PCIe config space failed for azalia.\n");
+        NV_ASSERT(0);
+    }
+
+    return status;
+}
+
+/*!
+ * Helper function for bifRestorePcieConfigRegisters_GM107()
+ *
+ * @param[in]  pGpu           GPU object pointer
+ * @param[in]  pKernelBif     Kernel Bif object pointer
+ * @param[in]  pRegmapRef     XVE Register map structure pointer
+ *
+ * @return  'NV_OK' if successful, an RM error code otherwise.
+ */
+static NV_STATUS
+_kbifRestorePcieConfigRegisters_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    const PKBIF_XVE_REGMAP_REF pRegmapRef
+)
+{
+    NvU32      domain = gpuGetDomain(pGpu);
+    NvU8       bus    = gpuGetBus(pGpu);
+    NvU8       device = gpuGetDevice(pGpu);
+    NvU16      vendorId;
+    NvU16      deviceId;
+    NvU32      val;
+    NV_STATUS  status;
+    void      *handle;
+    NvU16      index;
+    RMTIMEOUT  timeout;
+    NvBool     bGcxPmuCfgRestore;
+
+    bGcxPmuCfgRestore = pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_GCX_PMU_CFG_SPACE_RESTORE);
+
+    handle = osPciInitHandle(domain, bus, device, pRegmapRef->nFunc,
+                             &vendorId, &deviceId);
+    NV_ASSERT_OR_RETURN(handle, NV_ERR_INVALID_POINTER);
+
+    if (IS_GPU_GC6_STATE_EXITING(pGpu) &&
+        bGcxPmuCfgRestore)
+    {
+        //
+        // PMU Will Restore the config Space
+        // As a last step PMU should set CMD_MEMORY_SPACE ENABLED after it restores the config space
+        // Poll This register to see if PMU is finished or not otherwise timeout.
+        //
+        gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+        do
+        {
+            val = osPciReadDword(handle, NV_XVE_DEV_CTRL);
+            status = gpuCheckTimeout(pGpu, &timeout);
+            if (status == NV_ERR_TIMEOUT)
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                          "Timeout waiting for PCIE Config Space Restore from PMU, RM takes over\n");
+                DBG_BREAKPOINT();
+
+                NvU32 *pReg = NULL;
+                pReg  = &pRegmapRef->bufBootConfigSpace[NV_XVE_DEV_CTRL /
+                                                sizeof(pRegmapRef->bufBootConfigSpace[0])];
+                *pReg = FLD_SET_DRF(_XVE, _DEV_CTRL, _CMD_MEMORY_SPACE, _ENABLED, *pReg);
+                osPciWriteDword(handle, NV_XVE_DEV_CTRL, pRegmapRef->bufBootConfigSpace[1]);
+                osPciWriteDword(handle, NV_XVE_BAR0, pRegmapRef->bufBootConfigSpace[4]);
+
+                break;
+            }
+        } while (FLD_TEST_DRF(_XVE, _DEV_CTRL, _CMD_MEMORY_SPACE, _DISABLED, val));
+
+        return NV_OK;
+    }
+
+    // Enable BAR0 accesses so we can restore config space more quickly.
+    kbifRestoreBar0_HAL(pGpu, pKernelBif, handle, pRegmapRef->bufBootConfigSpace);
+
+    // Enable required fields of NV_XVE_DEV_CTRL
+    val = osPciReadDword(handle, NV_XVE_DEV_CTRL);
+    val = FLD_SET_DRF(_XVE, _DEV_CTRL, _CMD_MEMORY_SPACE, _ENABLED, val) |
+          FLD_SET_DRF(_XVE, _DEV_CTRL, _CMD_BUS_MASTER, _ENABLED, val);
+    osPciWriteDword(handle, NV_XVE_DEV_CTRL, val);
+
+    // Restore only the valid config space offsets based on bit map
+    for (index = 0; index < pRegmapRef->numXveRegMapValid; index++)
+    {
+        NvU16 i, regOffset, bufOffset;
+
+        for (i = 0; i < sizeof(pRegmapRef->xveRegMapValid[0]) * 8; i++)
+        {
+            if ((pRegmapRef->xveRegMapWrite[index] & (1 << i)) == 0)
+            {
+                continue;
+            }
+
+            bufOffset = (index * sizeof(pRegmapRef->xveRegMapValid[0]) * 8) + i;
+            regOffset = bufOffset * sizeof(pRegmapRef->bufBootConfigSpace[0]);
+            if (regOffset == NV_XVE_DEV_CTRL)
+            {
+                continue;
+            }
+
+            //
+            // This is a special case where we don't use the standard macro to write a register.
+            // The macro will not allow access when PDB_PROP_GPU_IS_LOST is true.
+            // This check is required to keep other accesses from touching the GPU for now.
+            //
+            osGpuWriteReg032(pGpu,
+                             ((pRegmapRef->nFunc == 0) ? DEVICE_BASE(NV_PCFG) : DEVICE_BASE(NV_PCFG1)) + regOffset,
+                             pRegmapRef->bufBootConfigSpace[bufOffset]);
+
+            if (pRegmapRef->nFunc != 0)
+            {
+                status = PCI_FUNCTION_BUS_CFG_WR32(pGpu, pRegmapRef->nFunc, regOffset,
+                                                   pRegmapRef->bufBootConfigSpace[bufOffset]);
+                if (status != NV_OK)
+                {
+                    return status;
+                }
+            }
+        }
+    }
+
+    //
+    // Restore saved value of NV_XVE_DEV_CTRL, the second register saved in the buffer.
+    // If we reach this point, it's RM-CPU restoration path.
+    // Check if PMU_CFG_SPACE_RESTORE property was enabled
+    // to confirm it's a debugging parallel restoration and
+    // set back to _ENABLE before restoration
+    //
+    if (bGcxPmuCfgRestore)
+    {
+        NvU32 *pReg = NULL;
+        pReg  = &pRegmapRef->bufBootConfigSpace[NV_XVE_DEV_CTRL /
+                                                sizeof(pRegmapRef->bufBootConfigSpace[0])];
+        *pReg = FLD_SET_DRF(_XVE, _DEV_CTRL, _CMD_MEMORY_SPACE, _ENABLED, *pReg);
+
+    }
+
+    osPciWriteDword(handle, NV_XVE_DEV_CTRL, pRegmapRef->bufBootConfigSpace[1]);
+
+    return NV_OK;
+}
+
+/*!
+ * Restore boot time PCIe Config space
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelBif  Kernel Bif object pointer
+ *
+ * @return  'NV_OK' if successful, an RM error code otherwise.
+ */
+NV_STATUS
+kbifRestorePcieConfigRegisters_GM107
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NV_STATUS status;
+    RMTIMEOUT timeout;
+    NvU64     timeStampStart;
+    NvU64     timeStampEnd;
+
+    // Restore pcie config space for function 0
+    status = _kbifRestorePcieConfigRegisters_GM107(pGpu, pKernelBif,
+                                                   &pKernelBif->xveRegmapRef[0]);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Restoring PCIe config space failed for gpu.\n");
+        NV_ASSERT(0);
+        return status;
+    }
+
+    // No need to save/restore azalia config space if gpu is in GC6 cycle or if it is in FLR
+    if (IS_GPU_GC6_STATE_EXITING(pGpu) ||
+        pKernelBif->bInFunctionLevelReset)
+    {
+        //
+        // Check that GPU is really accessible.
+        // Skip on pre-silicon because there can be timing issues in the test between device ready and this code.
+        // Todo: find a safe timeout for pre-silicon runs
+        //
+        if (IS_SILICON(pGpu))
+        {
+            // Check if GPU is actually accessible before continue
+            osGetPerformanceCounter(&timeStampStart);
+            gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+            NvU32 pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+
+            while (pmcBoot0 != pGpu->chipId0)
+            {
+                NV_PRINTF(LEVEL_INFO,
+                          "GPU not back on the bus after %s, 0x%x != 0x%x!\n",
+                          pKernelBif->bInFunctionLevelReset?"FLR":"GC6 exit", pmcBoot0, pGpu->chipId0);
+                pmcBoot0 = GPU_REG_RD32(pGpu, NV_PMC_BOOT_0);
+                NV_ASSERT(0);
+                status = gpuCheckTimeout(pGpu, &timeout);
+                if (status == NV_ERR_TIMEOUT)
+                {
+                    NV_PRINTF(LEVEL_ERROR,
+                              "Timeout GPU not back on the bus after %s,\n", pKernelBif->bInFunctionLevelReset?"FLR":"GC6 exit");
+                    DBG_BREAKPOINT();
+                    return status;
+                }
+            }
+
+            osGetPerformanceCounter(&timeStampEnd);
+            NV_PRINTF(LEVEL_ERROR,
+                      "Time spend on GPU back on bus is 0x%x ns,\n",
+                      (NvU32)NV_MIN(NV_U32_MAX, timeStampEnd - timeStampStart));
+        }
+
+        return NV_OK;
+    }
+
+    // Return early if device is not multifunction (azalia is disabled or not present)
+    if (!pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_DEVICE_IS_MULTIFUNCTION))
+    {
+        return NV_OK;
+    }
+
+    // Restore pcie config space for function 1
+    status = _kbifRestorePcieConfigRegisters_GM107(pGpu, pKernelBif,
+                                                   &pKernelBif->xveRegmapRef[1]);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Restoring PCIe config space failed for azalia.\n");
+        NV_ASSERT(0);
+    }
+
+    return status;
 }
 
 /*!
@@ -626,11 +979,17 @@ kbifGetBusOptionsAddr_GM107
         case BUS_OPTIONS_DEV_CONTROL_STATUS:
             *addrReg = NV_XVE_DEVICE_CONTROL_STATUS;
             break;
+        case BUS_OPTIONS_DEV_CONTROL_STATUS_2:
+            *addrReg = NV_XVE_DEVICE_CONTROL_STATUS_2;
+            break;
         case BUS_OPTIONS_LINK_CONTROL_STATUS:
             *addrReg = NV_XVE_LINK_CONTROL_STATUS;
             break;
         case BUS_OPTIONS_LINK_CAPABILITIES:
             *addrReg = NV_XVE_LINK_CAPABILITIES;
+            break;
+        case BUS_OPTIONS_L1_PM_SUBSTATES_CTRL_1:
+            *addrReg = NV_XVE_L1_PM_SUBSTATES_CTRL1;
             break;
         default:
             NV_PRINTF(LEVEL_ERROR, "Invalid register type passed 0x%x\n",
@@ -654,7 +1013,7 @@ kbifDisableSysmemAccess_GM107
     NV2080_CTRL_INTERNAL_BIF_DISABLE_SYSTEM_MEMORY_ACCESS_PARAMS params = {0};
 
     // Only support on Windows
-    NV_ASSERT_OR_RETURN(RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM, NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(RMCFG_FEATURE_PLATFORM_WINDOWS, NV_ERR_NOT_SUPPORTED);
 
     params.bDisable = bDisable;
     status = pRmApi->Control(pRmApi,

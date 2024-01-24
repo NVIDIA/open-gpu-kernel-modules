@@ -249,14 +249,24 @@ static void __nvoc_init_funcTable_Intr_1(Intr *pThis, RmHalspecOwner *pRmhalspec
         pThis->__intrDecodeStallIntrEn__ = &intrDecodeStallIntrEn_4a4dee;
     }
 
-    // Hal function -- intrGetNonStallBaseVector
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    // Hal function -- intrServiceVirtual
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__intrGetNonStallBaseVector__ = &intrGetNonStallBaseVector_TU102;
+        pThis->__intrServiceVirtual__ = &intrServiceVirtual_f2d351;
     }
     else
     {
-        pThis->__intrGetNonStallBaseVector__ = &intrGetNonStallBaseVector_c067f9;
+        pThis->__intrServiceVirtual__ = &intrServiceVirtual_TU102;
+    }
+
+    // Hal function -- intrTriggerPrivDoorbell
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__intrTriggerPrivDoorbell__ = &intrTriggerPrivDoorbell_5baef9;
+    }
+    else
+    {
+        pThis->__intrTriggerPrivDoorbell__ = &intrTriggerPrivDoorbell_TU102;
     }
 
     // Hal function -- intrGetUvmSharedLeafEnDisableMask
@@ -283,31 +293,31 @@ static void __nvoc_init_funcTable_Intr_1(Intr *pThis, RmHalspecOwner *pRmhalspec
     // Hal function -- intrReadRegTopEnSet
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
     {
-        pThis->__intrReadRegTopEnSet__ = &intrReadRegTopEnSet_TU102;
+        pThis->__intrReadRegTopEnSet__ = &intrReadRegTopEnSet_CPU_TU102;
     }
     else
     {
-        pThis->__intrReadRegTopEnSet__ = &intrReadRegTopEnSet_GA102;
+        pThis->__intrReadRegTopEnSet__ = &intrReadRegTopEnSet_CPU_GA102;
     }
 
     // Hal function -- intrWriteRegTopEnSet
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
     {
-        pThis->__intrWriteRegTopEnSet__ = &intrWriteRegTopEnSet_TU102;
+        pThis->__intrWriteRegTopEnSet__ = &intrWriteRegTopEnSet_CPU_TU102;
     }
     else
     {
-        pThis->__intrWriteRegTopEnSet__ = &intrWriteRegTopEnSet_GA102;
+        pThis->__intrWriteRegTopEnSet__ = &intrWriteRegTopEnSet_CPU_GA102;
     }
 
     // Hal function -- intrWriteRegTopEnClear
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
     {
-        pThis->__intrWriteRegTopEnClear__ = &intrWriteRegTopEnClear_TU102;
+        pThis->__intrWriteRegTopEnClear__ = &intrWriteRegTopEnClear_CPU_TU102;
     }
     else
     {
-        pThis->__intrWriteRegTopEnClear__ = &intrWriteRegTopEnClear_GA102;
+        pThis->__intrWriteRegTopEnClear__ = &intrWriteRegTopEnClear_CPU_GA102;
     }
 
     // Hal function -- intrGetNumLeaves
@@ -375,6 +385,33 @@ static void __nvoc_init_funcTable_Intr_1(Intr *pThis, RmHalspecOwner *pRmhalspec
 
     // Hal function -- intrStateUnload
     pThis->__intrStateUnload__ = &intrStateUnload_TU102;
+
+    // Hal function -- intrInitSubtreeMap
+    if (((( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x11f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 | GH100 */  && (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ ))
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+        {
+            pThis->__intrInitSubtreeMap__ = &intrInitSubtreeMap_GH100;
+        }
+        else
+        {
+            pThis->__intrInitSubtreeMap__ = &intrInitSubtreeMap_TU102;
+        }
+    }
+    else
+    {
+        pThis->__intrInitSubtreeMap__ = &intrInitSubtreeMap_395e98;
+    }
+
+    // Hal function -- intrInitInterruptTable
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__intrInitInterruptTable__ = &intrInitInterruptTable_VIRTUAL;
+    }
+    else
+    {
+        pThis->__intrInitInterruptTable__ = &intrInitInterruptTable_KERNEL;
+    }
 
     // Hal function -- intrSetIntrMask
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
@@ -448,23 +485,31 @@ void __nvoc_init_Intr(Intr *pThis, RmHalspecOwner *pRmhalspecowner) {
     __nvoc_init_funcTable_Intr(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_Intr(Intr **ppThis, Dynamic *pParent, NvU32 createFlags) {
+NV_STATUS __nvoc_objCreate_Intr(Intr **ppThis, Dynamic *pParent, NvU32 createFlags)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     Intr *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(Intr), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(Intr));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_Intr);
 
     pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
@@ -482,16 +527,25 @@ NV_STATUS __nvoc_objCreate_Intr(Intr **ppThis, Dynamic *pParent, NvU32 createFla
     status = __nvoc_ctor_Intr(pThis, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_Intr_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_Intr_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(Intr));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

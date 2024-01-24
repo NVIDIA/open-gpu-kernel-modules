@@ -30,6 +30,7 @@
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "kernel/gpu/bif/kernel_bif.h"
 #include "kernel/os/os.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl0000.h" // NV01_NULL_OBJECT
 #include "class/cl0002.h" // NV01_CONTEXT_DMA
@@ -52,7 +53,6 @@
 
 #include "deprecated/rmapi_deprecated.h"
 #include "nvRmReg.h"
-
 
 //
 // Watchdog object ids
@@ -107,7 +107,6 @@
 #define WATCHDOG_PUSHBUFFER_OFFSET(pbBytes, pbnum) ((pbBytes) * (pbnum))
 
 #define SUBDEVICE_MASK_ALL DRF_MASK(NV906F_DMA_SET_SUBDEVICE_MASK_VALUE)
-
 
 NV_STATUS
 krcWatchdogChangeState_IMPL
@@ -392,9 +391,7 @@ krcWatchdogShutdown_IMPL
         return NV_OK;
 
     krcWatchdogDisable(pKernelRc);
-    osRemove1SecondRepeatingCallback(pGpu,
-                                     krcWatchdogTimerProc,
-                                     NULL /* pData */);
+    osRemove1HzCallback(pGpu, krcWatchdogTimerProc, NULL /* pData */);
 
     // This should free the client and all associated resources
     pRmApi->Free(pRmApi,
@@ -403,7 +400,7 @@ krcWatchdogShutdown_IMPL
 
     //
     // Make sure to clear any old watchdog data this also clears
-    // WATCHDOG_FLAGS_INITIALIZED
+    // WATCHDOG_FLAGS_INITIALIZED, bHandleValid, and hClient
     //
     portMemSet(&pKernelRc->watchdog, 0, sizeof pKernelRc->watchdog);
     portMemSet(&pKernelRc->watchdogChannelInfo, 0,
@@ -480,11 +477,23 @@ krcWatchdogInit_IMPL
 
     if (bClientUserd)
     {
-        Heap *pHeap = GPU_GET_HEAP(pGpu);
-        if (pHeap->pmaObject.bNuma)
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+        if (memmgrIsPmaInitialized(pMemoryManager))
         {
-            // PMA can't be used until it's onlined
-            bClientUserd = NV_FALSE;
+            Heap *pHeap = GPU_GET_HEAP(pGpu);
+            NvU32 pmaConfig = PMA_QUERY_NUMA_ENABLED | PMA_QUERY_NUMA_ONLINED;
+
+            if (pmaQueryConfigs(&pHeap->pmaObject, &pmaConfig) == NV_OK)
+            {
+                // PMA can't be used until it's onlined
+                if (pmaConfig & PMA_QUERY_NUMA_ENABLED)
+                {
+                    // PMA can't be used until it's onlined
+                    if (!(pmaConfig & PMA_QUERY_NUMA_ONLINED))
+                        bClientUserd = NV_FALSE;
+                }
+            }
         }
     }
 
@@ -520,6 +529,8 @@ krcWatchdogInit_IMPL
             status = NV_ERR_NO_MEMORY;
             goto error;
         }
+        pKernelRc->watchdog.hClient = hClient;
+        pKernelRc->watchdog.bHandleValid = NV_TRUE;
     }
 
     if (bAcquireLock)
@@ -1165,10 +1176,10 @@ krcWatchdogInit_IMPL
     pKernelRc->watchdog.flags |= WATCHDOG_FLAGS_INITIALIZED;
 
     // Hook into the 1 Hz OS timer
-    osSchedule1SecondCallback(pGpu,
-                              krcWatchdogTimerProc,
-                              NULL /* pData */,
-                              NV_OS_1HZ_REPEAT);
+    osSchedule1HzCallback(pGpu,
+                          krcWatchdogTimerProc,
+                          NULL /* pData */,
+                          NV_OS_1HZ_REPEAT);
 
     // Schedule next interval to run immediately
     pKernelRc->watchdogPersistent.nextRunTime = 0;
@@ -1179,6 +1190,7 @@ error:
     if (status != NV_OK)
     {
         pRmApi->Free(pRmApi, hClient, hClient);
+        pKernelRc->watchdog.bHandleValid = NV_FALSE;
     }
 
     portMemFree(pParams);
@@ -1418,4 +1430,11 @@ krcWatchdogWriteNotifierToGpfifo_IMPL
     SLI_LOOP_END;
 }
 
+NV_STATUS krcWatchdogGetClientHandle(KernelRc *pKernelRc, NvHandle *phClient)
+{
+    if (!pKernelRc->watchdog.bHandleValid)
+        return NV_ERR_INVALID_STATE;
 
+    *phClient = pKernelRc->watchdog.hClient;
+    return NV_OK;
+}

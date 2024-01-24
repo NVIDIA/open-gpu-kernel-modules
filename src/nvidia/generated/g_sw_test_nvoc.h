@@ -40,11 +40,16 @@ extern "C" {
 /*!
  * RM internal class representing NV04_SOFTWARE_TEST
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_SW_TEST_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct SoftwareMethodTest {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -71,7 +76,6 @@ struct SoftwareMethodTest {
     NV_STATUS (*__swtestInternalControlForward__)(struct SoftwareMethodTest *, NvU32, void *, NvU32);
     NV_STATUS (*__swtestUnmapFrom__)(struct SoftwareMethodTest *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__swtestControl_Epilogue__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__swtestControlLookup__)(struct SoftwareMethodTest *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__swtestGetInternalObjectHandle__)(struct SoftwareMethodTest *);
     NV_STATUS (*__swtestControl__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__swtestUnmap__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -82,6 +86,7 @@ struct SoftwareMethodTest {
     NV_STATUS (*__swtestUnregisterEvent__)(struct SoftwareMethodTest *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__swtestControlSerialization_Prologue__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__swtestCanCopy__)(struct SoftwareMethodTest *);
+    NvBool (*__swtestIsPartialUnmapSupported__)(struct SoftwareMethodTest *);
     void (*__swtestPreDestruct__)(struct SoftwareMethodTest *);
     NV_STATUS (*__swtestIsDuplicate__)(struct SoftwareMethodTest *, NvHandle, NvBool *);
     void (*__swtestControlSerialization_Epilogue__)(struct SoftwareMethodTest *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -133,7 +138,6 @@ NV_STATUS __nvoc_objCreate_SoftwareMethodTest(SoftwareMethodTest**, Dynamic*, Nv
 #define swtestInternalControlForward(pGpuResource, command, pParams, size) swtestInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define swtestUnmapFrom(pResource, pParams) swtestUnmapFrom_DISPATCH(pResource, pParams)
 #define swtestControl_Epilogue(pResource, pCallContext, pParams) swtestControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define swtestControlLookup(pResource, pParams, ppEntry) swtestControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define swtestGetInternalObjectHandle(pGpuResource) swtestGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define swtestControl(pGpuResource, pCallContext, pParams) swtestControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define swtestUnmap(pGpuResource, pCallContext, pCpuMapping) swtestUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -144,6 +148,7 @@ NV_STATUS __nvoc_objCreate_SoftwareMethodTest(SoftwareMethodTest**, Dynamic*, Nv
 #define swtestUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) swtestUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define swtestControlSerialization_Prologue(pResource, pCallContext, pParams) swtestControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define swtestCanCopy(pResource) swtestCanCopy_DISPATCH(pResource)
+#define swtestIsPartialUnmapSupported(pResource) swtestIsPartialUnmapSupported_DISPATCH(pResource)
 #define swtestPreDestruct(pResource) swtestPreDestruct_DISPATCH(pResource)
 #define swtestIsDuplicate(pResource, hMemory, pDuplicate) swtestIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define swtestControlSerialization_Epilogue(pResource, pCallContext, pParams) swtestControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -209,10 +214,6 @@ static inline void swtestControl_Epilogue_DISPATCH(struct SoftwareMethodTest *pR
     pResource->__swtestControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS swtestControlLookup_DISPATCH(struct SoftwareMethodTest *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__swtestControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle swtestGetInternalObjectHandle_DISPATCH(struct SoftwareMethodTest *pGpuResource) {
     return pGpuResource->__swtestGetInternalObjectHandle__(pGpuResource);
 }
@@ -251,6 +252,10 @@ static inline NV_STATUS swtestControlSerialization_Prologue_DISPATCH(struct Soft
 
 static inline NvBool swtestCanCopy_DISPATCH(struct SoftwareMethodTest *pResource) {
     return pResource->__swtestCanCopy__(pResource);
+}
+
+static inline NvBool swtestIsPartialUnmapSupported_DISPATCH(struct SoftwareMethodTest *pResource) {
+    return pResource->__swtestIsPartialUnmapSupported__(pResource);
 }
 
 static inline void swtestPreDestruct_DISPATCH(struct SoftwareMethodTest *pResource) {

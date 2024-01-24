@@ -141,10 +141,6 @@ static void __nvoc_thunk_RmResource_conmemControl_Epilogue(struct ConsoleMemory 
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_conmemControlLookup(struct ConsoleMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset), pParams, ppEntry);
-}
-
 static NV_STATUS __nvoc_thunk_Memory_conmemControl(struct ConsoleMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_ConsoleMemory_Memory.offset), pCallContext, pParams);
 }
@@ -167,6 +163,10 @@ static NV_STATUS __nvoc_thunk_RsResource_conmemControlFilter(struct ConsoleMemor
 
 static NV_STATUS __nvoc_thunk_RmResource_conmemControlSerialization_Prologue(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RmResource.offset), pCallContext, pParams);
+}
+
+static NvBool __nvoc_thunk_RsResource_conmemIsPartialUnmapSupported(struct ConsoleMemory *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ConsoleMemory_RsResource.offset));
 }
 
 static NV_STATUS __nvoc_thunk_Memory_conmemIsReady(struct ConsoleMemory *pMemory, NvBool bCopyConstructorContext) {
@@ -261,8 +261,6 @@ static void __nvoc_init_funcTable_ConsoleMemory_1(ConsoleMemory *pThis) {
 
     pThis->__conmemControl_Epilogue__ = &__nvoc_thunk_RmResource_conmemControl_Epilogue;
 
-    pThis->__conmemControlLookup__ = &__nvoc_thunk_RsResource_conmemControlLookup;
-
     pThis->__conmemControl__ = &__nvoc_thunk_Memory_conmemControl;
 
     pThis->__conmemUnmap__ = &__nvoc_thunk_Memory_conmemUnmap;
@@ -274,6 +272,8 @@ static void __nvoc_init_funcTable_ConsoleMemory_1(ConsoleMemory *pThis) {
     pThis->__conmemControlFilter__ = &__nvoc_thunk_RsResource_conmemControlFilter;
 
     pThis->__conmemControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_conmemControlSerialization_Prologue;
+
+    pThis->__conmemIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_conmemIsPartialUnmapSupported;
 
     pThis->__conmemIsReady__ = &__nvoc_thunk_Memory_conmemIsReady;
 
@@ -306,21 +306,26 @@ void __nvoc_init_ConsoleMemory(ConsoleMemory *pThis) {
     __nvoc_init_funcTable_ConsoleMemory(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     ConsoleMemory *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(ConsoleMemory), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(ConsoleMemory));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ConsoleMemory);
 
     pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -335,16 +340,25 @@ NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory **ppThis, Dynamic *pParen
     status = __nvoc_ctor_ConsoleMemory(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_ConsoleMemory_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_ConsoleMemory_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(ConsoleMemory));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

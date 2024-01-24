@@ -72,7 +72,7 @@ kgraphicsInitFecsRegistryOverrides_GP100
     // CTXSW logging is not supported when HCC prod settings are enabled.
     // However, the same is supported when HCC is enabled in devtools mode
     //
-    if (gpuIsCCFeatureEnabled(pGpu))
+    if (gpuIsCCFeatureEnabled(pGpu) && !gpuIsCCDevToolsModeEnabled(pGpu))
     {
         kgraphicsSetCtxswLoggingSupported(pGpu, pKernelGraphics, NV_FALSE);
     }
@@ -248,6 +248,7 @@ kgraphicsServiceInterrupt_GP100
 )
 {
     NvU32 grIdx = pKernelGraphics->instance;
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
 
     NV_ASSERT_OR_RETURN(pParams != NULL, 0);
     NV_ASSERT_OR_RETURN(pParams->engineIdx == MC_ENGINE_IDX_GRn_FECS_LOG(grIdx), 0);
@@ -259,7 +260,7 @@ kgraphicsServiceInterrupt_GP100
         return 0;
     }
 
-    if ((pGpu->fecsCtxswLogConsumerCount > 0) &&
+    if ((fecsGetCtxswLogConsumerCount(pGpu, pKernelGraphicsManager) > 0) &&
         (kgraphicsIsIntrDrivenCtxswLoggingEnabled(pGpu, pKernelGraphics)))
     {
         if (fecsClearIntrPendingIfPending(pGpu, pKernelGraphics))

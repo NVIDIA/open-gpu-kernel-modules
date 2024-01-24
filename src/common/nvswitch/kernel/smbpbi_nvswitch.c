@@ -85,7 +85,6 @@ nvswitch_smbpbi_post_init
     {
         return -NVL_ERR_NOT_SUPPORTED;
     }
-
     status = device->hal.nvswitch_smbpbi_post_init_hal(device);
 
     if (status == NVL_SUCCESS)

@@ -127,6 +127,8 @@ typedef struct CONF_COMPUTE_CAPS
     NvBool bCCFeatureEnabled;
     NvBool bDevToolsModeEnabled;
     NvBool bAcceptClientRequest;
+    NvBool bMultiGpuProtectedPcieModeEnabled;
+    NvBool bFatalFailure;
 } CONF_COMPUTE_CAPS;
 
 //
@@ -139,14 +141,6 @@ typedef struct CONF_COMPUTE_CAPS
 #define SLI_MAX_BRIDGE_TYPES    2
 #define SLI_BT_VIDLINK          0
 #define SLI_BT_NVLINK           1
-
-/*!
- * SLI link detection HAL flag defines for Sli/Vid/NvLink link detection HAL functions.
- */
-#define GPU_LINK_DETECTION_HAL_STUB  0
-#define GPU_LINK_DETECTION_HAL_GK104 1
-#define GPU_LINK_DETECTION_HAL_GP100 2
-#define GPU_LINK_DETECTION_HAL_GP102 3
 
 //
 // GPU NVLINK reduced bandwidth mode
@@ -271,11 +265,16 @@ typedef struct PCIEP2PCAPSINFO
 } PCIEP2PCAPSINFO;
 MAKE_INTRUSIVE_LIST(pcieP2PCapsInfoList, PCIEP2PCAPSINFO, node);
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_GPU_MGR_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJGPUMGR {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -476,6 +475,7 @@ typedef struct GPUATTACHARG
     NvU32       socChipId0;
     NvU32       iovaspaceId;
     NvBool      bRequestFwClientRm;
+    NvS32       cpuNumaNodeId;
 
     //
     // The SOC-specific fields above are legacy fields that were added for
@@ -488,6 +488,10 @@ typedef struct GPUATTACHARG
     //
     SOCGPUATTACHARG socDeviceArgs;
 } GPUATTACHARG;
+
+NV_STATUS   gpumgrThreadEnableExpandedGpuVisibility(void);
+void        gpumgrThreadDisableExpandedGpuVisibility(void);
+NvBool      gpumgrThreadHasExpandedGpuVisibility(void);
 
 NV_STATUS   gpumgrGetGpuAttachInfo(NvU32 *pGpuCnt, NvU32 *pGpuMask);
 NV_STATUS   gpumgrGetProbedGpuIds(NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *);
@@ -517,6 +521,7 @@ void        gpumgrGetRmFirmwarePolicy(NvU32 chipId, NvU32 pmcBoot42, NvBool bIsS
 NvBool      gpumgrGetRmFirmwareLogsEnabled(NvU32 enableFirmwareLogsRegVal);
 NvBool      gpumgrIsDeviceRmFirmwareCapable(NvU16 devId, NvU32 pmcBoot42,
                                             NvBool bIsSoc, NvBool *pbEnableByDefault);
+NvBool      gpumgrIsVgxRmFirmwareCapableChip(NvU32 pmcBoot42);
 NV_STATUS   gpumgrAttachGpu(NvU32 deviceInstance, GPUATTACHARG *);
 NV_STATUS   gpumgrDetachGpu(NvU32 deviceInstance);
 OBJGPU*     gpumgrGetNextGpu(NvU32 gpuMask, NvU32 *pStartIndex);
@@ -556,6 +561,7 @@ struct OBJGPUGRP*  gpumgrGetGpuGrpFromInstance(NvU32 gpugrpInstance);
 NV_STATUS   gpumgrModifyGpuDrainState(NvU32 gpuId, NvBool bEnable, NvBool bRemove, NvBool bLinkDisable);
 NV_STATUS   gpumgrQueryGpuDrainState(NvU32 gpuId, NvBool *pBEnable, NvBool *pBRemove);
 NvBool      gpumgrIsGpuPointerValid(OBJGPU *pGpu);
+NvBool      gpumgrIsGpuPointerAttached(OBJGPU *pGpu);
 NvU32       gpumgrGetGrpMaskFromGpuInst(NvU32 gpuInst);
 void        gpumgrAddDeviceMaskToGpuInstTable(NvU32 gpuMask);
 void        gpumgrClearDeviceMaskFromGpuInstTable(NvU32 gpuMask);
@@ -564,6 +570,7 @@ void        gpumgrSetGpuRelease(void);
 NvU8        gpumgrGetGpuBridgeType(void);
 NvBool      gpumgrAreAllGpusInOffloadMode(void);
 NvBool      gpumgrIsSafeToReadGpuInfo(void);
+NvBool      gpumgrIsDeviceMsixAllowed(RmPhysAddr bar0BaseAddr, NvU32 pmcBoot1, NvU32 pmcBoot42);
 
 //
 // gpumgrIsSubDeviceCountOne

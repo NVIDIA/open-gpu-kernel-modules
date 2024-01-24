@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -72,7 +72,7 @@ struct uvm_gpu_semaphore_pool_page_struct
 
 static bool gpu_semaphore_pool_is_secure(uvm_gpu_semaphore_pool_t *pool)
 {
-    return uvm_conf_computing_mode_enabled(pool->gpu) && (pool->aperture == UVM_APERTURE_VID);
+    return g_uvm_global.conf_computing_enabled && (pool->aperture == UVM_APERTURE_VID);
 }
 
 static bool gpu_semaphore_is_secure(uvm_gpu_semaphore_t *semaphore)
@@ -366,7 +366,7 @@ NV_STATUS uvm_gpu_semaphore_secure_pool_create(uvm_gpu_t *gpu, uvm_gpu_semaphore
 {
     NV_STATUS status;
 
-    UVM_ASSERT(uvm_conf_computing_mode_enabled(gpu));
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
     status = uvm_gpu_semaphore_pool_create(gpu, pool_out);
     if (status == NV_OK)
@@ -498,7 +498,7 @@ static bool tracking_semaphore_check_gpu(uvm_gpu_tracking_semaphore_t *tracking_
     // those cases.
     //
     // But if a pointer is in the table it must match.
-    table_gpu = uvm_gpu_get(gpu->global_id);
+    table_gpu = uvm_gpu_get(gpu->id);
     if (table_gpu)
         UVM_ASSERT(table_gpu == gpu);
 
@@ -509,15 +509,10 @@ static bool tracking_semaphore_check_gpu(uvm_gpu_tracking_semaphore_t *tracking_
 
 bool tracking_semaphore_uses_mutex(uvm_gpu_tracking_semaphore_t *tracking_semaphore)
 {
-    uvm_gpu_t *gpu = tracking_semaphore->semaphore.page->pool->gpu;
-
     UVM_ASSERT(tracking_semaphore_check_gpu(tracking_semaphore));
-    if (uvm_conf_computing_mode_enabled(gpu))
-        return true;
 
-    return false;
+    return g_uvm_global.conf_computing_enabled;
 }
-
 
 NV_STATUS uvm_gpu_tracking_semaphore_alloc(uvm_gpu_semaphore_pool_t *pool, uvm_gpu_tracking_semaphore_t *tracking_sem)
 {
@@ -532,7 +527,7 @@ NV_STATUS uvm_gpu_tracking_semaphore_alloc(uvm_gpu_semaphore_pool_t *pool, uvm_g
 
     UVM_ASSERT(uvm_gpu_semaphore_get_payload(&tracking_sem->semaphore) == 0);
 
-    if (uvm_conf_computing_mode_enabled(pool->gpu))
+    if (g_uvm_global.conf_computing_enabled)
         order = UVM_LOCK_ORDER_SECURE_SEMAPHORE;
 
     if (tracking_semaphore_uses_mutex(tracking_sem))
@@ -579,9 +574,8 @@ static void uvm_gpu_semaphore_encrypted_payload_update(uvm_channel_t *channel, u
     void *auth_tag_cpu_addr = uvm_rm_mem_get_cpu_va(semaphore->conf_computing.auth_tag);
     NvU32 *gpu_notifier_cpu_addr = (NvU32 *)uvm_rm_mem_get_cpu_va(semaphore->conf_computing.notifier);
     NvU32 *payload_cpu_addr = (NvU32 *)uvm_rm_mem_get_cpu_va(semaphore->conf_computing.encrypted_payload);
-    uvm_gpu_t *gpu = uvm_channel_get_gpu(channel);
 
-    UVM_ASSERT(uvm_conf_computing_mode_enabled(gpu));
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
     UVM_ASSERT(uvm_channel_is_ce(channel));
 
     last_observed_notifier = semaphore->conf_computing.last_observed_notifier;
@@ -695,7 +689,7 @@ static NvU64 update_completed_value_locked(uvm_gpu_tracking_semaphore_t *trackin
     // Check for unexpected large jumps of the semaphore value
     UVM_ASSERT_MSG_RELEASE(new_value - old_value <= UVM_GPU_SEMAPHORE_MAX_JUMP,
                            "GPU %s unexpected semaphore (CPU VA 0x%llx) jump from 0x%llx to 0x%llx\n",
-                           tracking_semaphore->semaphore.page->pool->gpu->parent->name,
+                           uvm_gpu_name(tracking_semaphore->semaphore.page->pool->gpu),
                            (NvU64)(uintptr_t)tracking_semaphore->semaphore.payload,
                            old_value, new_value);
 

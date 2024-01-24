@@ -268,11 +268,16 @@ typedef struct
     NvU32     queuedCounterMask;
 } PFM_REQ_HNDLR_SYS_CONTROL_DATA;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_PLATFORM_REQUEST_HANDLER_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct PlatformRequestHandler {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;

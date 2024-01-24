@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -98,11 +98,16 @@ typedef enum
 
 typedef struct OBJUVM *POBJUVM;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_UVM_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJUVM {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -113,6 +118,8 @@ struct OBJUVM {
     struct OBJUVM *__nvoc_pbase_OBJUVM;
     void (*__uvmStateDestroy__)(OBJGPU *, struct OBJUVM *);
     NV_STATUS (*__uvmStateInitUnlocked__)(OBJGPU *, struct OBJUVM *);
+    NV_STATUS (*__uvmAccessCntrBufferUnregister__)(OBJGPU *, struct OBJUVM *, NvU32);
+    NV_STATUS (*__uvmAccessCntrBufferRegister__)(OBJGPU *, struct OBJUVM *, NvU32, NvU32, RmPhysAddr *);
     void (*__uvmRegisterIntrService__)(OBJGPU *, struct OBJUVM *, IntrServiceRecord *);
     NvU32 (*__uvmServiceInterrupt__)(OBJGPU *, struct OBJUVM *, IntrServiceServiceInterruptArguments *);
     NV_STATUS (*__uvmStateLoad__)(POBJGPU, struct OBJUVM *, NvU32);
@@ -168,6 +175,10 @@ NV_STATUS __nvoc_objCreate_OBJUVM(OBJUVM**, Dynamic*, NvU32);
 
 #define uvmStateDestroy(pGpu, pUvm) uvmStateDestroy_DISPATCH(pGpu, pUvm)
 #define uvmStateInitUnlocked(pGpu, pUvm) uvmStateInitUnlocked_DISPATCH(pGpu, pUvm)
+#define uvmAccessCntrBufferUnregister(arg0, arg1, accessCounterIndex) uvmAccessCntrBufferUnregister_DISPATCH(arg0, arg1, accessCounterIndex)
+#define uvmAccessCntrBufferUnregister_HAL(arg0, arg1, accessCounterIndex) uvmAccessCntrBufferUnregister_DISPATCH(arg0, arg1, accessCounterIndex)
+#define uvmAccessCntrBufferRegister(arg0, arg1, accessCounterIndex, arg2, arg3) uvmAccessCntrBufferRegister_DISPATCH(arg0, arg1, accessCounterIndex, arg2, arg3)
+#define uvmAccessCntrBufferRegister_HAL(arg0, arg1, accessCounterIndex, arg2, arg3) uvmAccessCntrBufferRegister_DISPATCH(arg0, arg1, accessCounterIndex, arg2, arg3)
 #define uvmRegisterIntrService(arg0, pUvm, arg1) uvmRegisterIntrService_DISPATCH(arg0, pUvm, arg1)
 #define uvmServiceInterrupt(arg0, pUvm, arg1) uvmServiceInterrupt_DISPATCH(arg0, pUvm, arg1)
 #define uvmStateLoad(pGpu, pEngstate, arg0) uvmStateLoad_DISPATCH(pGpu, pEngstate, arg0)
@@ -239,38 +250,6 @@ static inline NV_STATUS uvmDestroyAccessCntrBuffer(OBJGPU *pGpu, struct OBJUVM *
 #endif //__nvoc_uvm_h_disabled
 
 #define uvmDestroyAccessCntrBuffer_HAL(pGpu, pUvm, pAccessCounterBuffer) uvmDestroyAccessCntrBuffer(pGpu, pUvm, pAccessCounterBuffer)
-
-static inline NV_STATUS uvmAccessCntrBufferUnregister_ac1694(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex) {
-    return NV_OK;
-}
-
-
-#ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmAccessCntrBufferUnregister(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex) {
-    NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_uvm_h_disabled
-#define uvmAccessCntrBufferUnregister(arg0, arg1, accessCounterIndex) uvmAccessCntrBufferUnregister_ac1694(arg0, arg1, accessCounterIndex)
-#endif //__nvoc_uvm_h_disabled
-
-#define uvmAccessCntrBufferUnregister_HAL(arg0, arg1, accessCounterIndex) uvmAccessCntrBufferUnregister(arg0, arg1, accessCounterIndex)
-
-static inline NV_STATUS uvmAccessCntrBufferRegister_ac1694(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex, NvU32 arg2, RmPhysAddr *arg3) {
-    return NV_OK;
-}
-
-
-#ifdef __nvoc_uvm_h_disabled
-static inline NV_STATUS uvmAccessCntrBufferRegister(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex, NvU32 arg2, RmPhysAddr *arg3) {
-    NV_ASSERT_FAILED_PRECOMP("OBJUVM was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_uvm_h_disabled
-#define uvmAccessCntrBufferRegister(arg0, arg1, accessCounterIndex, arg2, arg3) uvmAccessCntrBufferRegister_ac1694(arg0, arg1, accessCounterIndex, arg2, arg3)
-#endif //__nvoc_uvm_h_disabled
-
-#define uvmAccessCntrBufferRegister_HAL(arg0, arg1, accessCounterIndex, arg2, arg3) uvmAccessCntrBufferRegister(arg0, arg1, accessCounterIndex, arg2, arg3)
 
 NV_STATUS uvmUnloadAccessCntrBuffer_GV100(OBJGPU *pGpu, struct OBJUVM *pUvm, NvU32 accessCounterIndex);
 
@@ -674,9 +653,29 @@ static inline NV_STATUS uvmStateInitUnlocked_DISPATCH(OBJGPU *pGpu, struct OBJUV
     return pUvm->__uvmStateInitUnlocked__(pGpu, pUvm);
 }
 
-void uvmRegisterIntrService_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[168]);
+NV_STATUS uvmAccessCntrBufferUnregister_IMPL(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex);
 
-static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[168]) {
+static inline NV_STATUS uvmAccessCntrBufferUnregister_ac1694(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex) {
+    return NV_OK;
+}
+
+static inline NV_STATUS uvmAccessCntrBufferUnregister_DISPATCH(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex) {
+    return arg1->__uvmAccessCntrBufferUnregister__(arg0, arg1, accessCounterIndex);
+}
+
+NV_STATUS uvmAccessCntrBufferRegister_IMPL(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex, NvU32 arg2, RmPhysAddr *arg3);
+
+static inline NV_STATUS uvmAccessCntrBufferRegister_ac1694(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex, NvU32 arg2, RmPhysAddr *arg3) {
+    return NV_OK;
+}
+
+static inline NV_STATUS uvmAccessCntrBufferRegister_DISPATCH(OBJGPU *arg0, struct OBJUVM *arg1, NvU32 accessCounterIndex, NvU32 arg2, RmPhysAddr *arg3) {
+    return arg1->__uvmAccessCntrBufferRegister__(arg0, arg1, accessCounterIndex, arg2, arg3);
+}
+
+void uvmRegisterIntrService_IMPL(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[171]);
+
+static inline void uvmRegisterIntrService_DISPATCH(OBJGPU *arg0, struct OBJUVM *pUvm, IntrServiceRecord arg1[171]) {
     pUvm->__uvmRegisterIntrService__(arg0, pUvm, arg1);
 }
 

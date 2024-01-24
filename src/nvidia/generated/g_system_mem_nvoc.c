@@ -146,10 +146,6 @@ static void __nvoc_thunk_RmResource_sysmemControl_Epilogue(struct SystemMemory *
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_SystemMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_sysmemControlLookup(struct SystemMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SystemMemory_RsResource.offset), pParams, ppEntry);
-}
-
 static NV_STATUS __nvoc_thunk_Memory_sysmemControl(struct SystemMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_SystemMemory_Memory.offset), pCallContext, pParams);
 }
@@ -176,6 +172,10 @@ static NV_STATUS __nvoc_thunk_RmResource_sysmemControlSerialization_Prologue(str
 
 static NvBool __nvoc_thunk_StandardMemory_sysmemCanCopy(struct SystemMemory *pStandardMemory) {
     return stdmemCanCopy((struct StandardMemory *)(((unsigned char *)pStandardMemory) + __nvoc_rtti_SystemMemory_StandardMemory.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_sysmemIsPartialUnmapSupported(struct SystemMemory *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_SystemMemory_RsResource.offset));
 }
 
 static NV_STATUS __nvoc_thunk_Memory_sysmemIsReady(struct SystemMemory *pMemory, NvBool bCopyConstructorContext) {
@@ -213,12 +213,12 @@ static NvBool __nvoc_thunk_RmResource_sysmemAccessCallback(struct SystemMemory *
 static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_SystemMemory[] = 
 {
     {               /*  [0] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x801u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
-        /*flags=*/      0x0u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x801u)
+        /*flags=*/      0x801u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x3e0102u,
         /*paramSize=*/  sizeof(NV003E_CTRL_GET_SURFACE_NUM_PHYS_PAGES_PARAMS),
@@ -228,12 +228,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_SystemMe
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x801u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) sysmemCtrlCmdGetSurfacePhysPages_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
-        /*flags=*/      0x0u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x801u)
+        /*flags=*/      0x801u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x3e0103u,
         /*paramSize=*/  sizeof(NV003E_CTRL_GET_SURFACE_PHYS_PAGES_PARAMS),
@@ -283,11 +283,11 @@ __nvoc_ctor_SystemMemory_exit:
 static void __nvoc_init_funcTable_SystemMemory_1(SystemMemory *pThis) {
     PORT_UNREFERENCED_VARIABLE(pThis);
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x801u)
     pThis->__sysmemCtrlCmdGetSurfaceNumPhysPages__ = &sysmemCtrlCmdGetSurfaceNumPhysPages_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x0u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x801u)
     pThis->__sysmemCtrlCmdGetSurfacePhysPages__ = &sysmemCtrlCmdGetSurfacePhysPages_IMPL;
 #endif
 
@@ -313,8 +313,6 @@ static void __nvoc_init_funcTable_SystemMemory_1(SystemMemory *pThis) {
 
     pThis->__sysmemControl_Epilogue__ = &__nvoc_thunk_RmResource_sysmemControl_Epilogue;
 
-    pThis->__sysmemControlLookup__ = &__nvoc_thunk_RsResource_sysmemControlLookup;
-
     pThis->__sysmemControl__ = &__nvoc_thunk_Memory_sysmemControl;
 
     pThis->__sysmemUnmap__ = &__nvoc_thunk_Memory_sysmemUnmap;
@@ -328,6 +326,8 @@ static void __nvoc_init_funcTable_SystemMemory_1(SystemMemory *pThis) {
     pThis->__sysmemControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_sysmemControlSerialization_Prologue;
 
     pThis->__sysmemCanCopy__ = &__nvoc_thunk_StandardMemory_sysmemCanCopy;
+
+    pThis->__sysmemIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_sysmemIsPartialUnmapSupported;
 
     pThis->__sysmemIsReady__ = &__nvoc_thunk_Memory_sysmemIsReady;
 
@@ -361,21 +361,26 @@ void __nvoc_init_SystemMemory(SystemMemory *pThis) {
     __nvoc_init_funcTable_SystemMemory(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     SystemMemory *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(SystemMemory), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(SystemMemory));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_SystemMemory);
 
     pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -390,16 +395,25 @@ NV_STATUS __nvoc_objCreate_SystemMemory(SystemMemory **ppThis, Dynamic *pParent,
     status = __nvoc_ctor_SystemMemory(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_SystemMemory_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_SystemMemory_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_StandardMemory.__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(SystemMemory));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

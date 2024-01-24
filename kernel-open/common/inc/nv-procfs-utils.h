@@ -92,6 +92,24 @@ typedef struct file_operations nv_proc_ops_t;
 #endif
 
 #define NV_DEFINE_SINGLE_PROCFS_FILE_HELPER(name, lock)                     \
+    static ssize_t nv_procfs_read_lock_##name(                              \
+        struct file *file,                                                  \
+        char __user *buf,                                                   \
+        size_t size,                                                        \
+        loff_t *ppos                                                        \
+    )                                                                       \
+    {                                                                       \
+        int ret;                                                            \
+        ret = nv_down_read_interruptible(&lock);                            \
+        if (ret < 0)                                                        \
+        {                                                                   \
+            return ret;                                                     \
+        }                                                                   \
+        size = seq_read(file, buf, size, ppos);                             \
+        up_read(&lock);                                                     \
+        return size;                                                        \
+    }                                                                       \
+                                                                            \
     static int nv_procfs_open_##name(                                       \
         struct inode *inode,                                                \
         struct file *filep                                                  \
@@ -104,11 +122,6 @@ typedef struct file_operations nv_proc_ops_t;
         {                                                                   \
             return ret;                                                     \
         }                                                                   \
-        ret = nv_down_read_interruptible(&lock);                            \
-        if (ret < 0)                                                        \
-        {                                                                   \
-            single_release(inode, filep);                                   \
-        }                                                                   \
         return ret;                                                         \
     }                                                                       \
                                                                             \
@@ -117,7 +130,6 @@ typedef struct file_operations nv_proc_ops_t;
         struct file *filep                                                  \
     )                                                                       \
     {                                                                       \
-        up_read(&lock);                                                     \
         return single_release(inode, filep);                                \
     }
 
@@ -127,46 +139,7 @@ typedef struct file_operations nv_proc_ops_t;
     static const nv_proc_ops_t nv_procfs_##name##_fops = {                  \
         NV_PROC_OPS_SET_OWNER()                                             \
         .NV_PROC_OPS_OPEN    = nv_procfs_open_##name,                       \
-        .NV_PROC_OPS_READ    = seq_read,                                    \
-        .NV_PROC_OPS_LSEEK   = seq_lseek,                                   \
-        .NV_PROC_OPS_RELEASE = nv_procfs_release_##name,                    \
-    };
-
-
-#define NV_DEFINE_SINGLE_PROCFS_FILE_READ_WRITE(name, lock,                 \
-write_callback)                                                             \
-    NV_DEFINE_SINGLE_PROCFS_FILE_HELPER(name, lock)                         \
-                                                                            \
-    static ssize_t nv_procfs_write_##name(                                  \
-        struct file *file,                                                  \
-        const char __user *buf,                                             \
-        size_t size,                                                        \
-        loff_t *ppos                                                        \
-    )                                                                       \
-    {                                                                       \
-        ssize_t ret;                                                        \
-        struct seq_file *s;                                                 \
-                                                                            \
-        s = file->private_data;                                             \
-        if (s == NULL)                                                      \
-        {                                                                   \
-            return -EIO;                                                    \
-        }                                                                   \
-                                                                            \
-        ret = write_callback(s, buf + *ppos, size - *ppos);                 \
-        if (ret == 0)                                                       \
-        {                                                                   \
-            /* avoid infinite loop */                                       \
-            ret = -EIO;                                                     \
-        }                                                                   \
-        return ret;                                                         \
-    }                                                                       \
-                                                                            \
-    static const nv_proc_ops_t nv_procfs_##name##_fops = {                  \
-        NV_PROC_OPS_SET_OWNER()                                             \
-        .NV_PROC_OPS_OPEN    = nv_procfs_open_##name,                       \
-        .NV_PROC_OPS_READ    = seq_read,                                    \
-        .NV_PROC_OPS_WRITE   = nv_procfs_write_##name,                      \
+        .NV_PROC_OPS_READ    = nv_procfs_read_lock_##name,                  \
         .NV_PROC_OPS_LSEEK   = seq_lseek,                                   \
         .NV_PROC_OPS_RELEASE = nv_procfs_release_##name,                    \
     };

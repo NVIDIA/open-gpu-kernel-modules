@@ -56,7 +56,7 @@ fbsrSendMemsysProgramRawCompressionMode_GA100
 NV_STATUS
 fbsrBegin_GA100(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
 {
-    if (op == FBSR_OP_RESTORE)
+    if (op == FBSR_OP_RESTORE && !IS_VIRTUAL(pGpu))
     {
         const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
                 kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
@@ -91,7 +91,7 @@ fbsrEnd_GA100(OBJGPU *pGpu, OBJFBSR *pFbsr)
 {
     NV_STATUS status = fbsrEnd_GM107(pGpu, pFbsr);
 
-    if (pFbsr->op == FBSR_OP_RESTORE && pFbsr->bRawModeWasEnabled)
+    if (pFbsr->op == FBSR_OP_RESTORE && pFbsr->bRawModeWasEnabled && !IS_VIRTUAL(pGpu))
     {
         /*
          * Reenable raw mode if it was disabled by fbsrBegin_GA100.

@@ -67,6 +67,7 @@
 
 // pull in private headers for each engine
 #include "g_rpc_private.h"
+#include "g_rpcstructurecopy_private.h"
 
 
 //
@@ -81,6 +82,7 @@ NV_STATUS registerHalModule(NvU32, const HAL_IFACE_SETUP *);
 static const HAL_IFACE_SETUP halIface_TU102 = {
 
     rpcHalIfacesSetup_TU102,
+    rpcstructurecopyHalIfacesSetup_TU102,
 
 };
 
@@ -96,6 +98,7 @@ NV_STATUS registerHalModule_TU102(void)
 static const HAL_IFACE_SETUP halIface_TU104 = {
 
     rpcHalIfacesSetup_TU104,
+    rpcstructurecopyHalIfacesSetup_TU104,
 
 };
 
@@ -111,6 +114,7 @@ NV_STATUS registerHalModule_TU104(void)
 static const HAL_IFACE_SETUP halIface_TU106 = {
 
     rpcHalIfacesSetup_TU106,
+    rpcstructurecopyHalIfacesSetup_TU106,
 
 };
 
@@ -126,6 +130,7 @@ NV_STATUS registerHalModule_TU106(void)
 static const HAL_IFACE_SETUP halIface_TU116 = {
 
     rpcHalIfacesSetup_TU116,
+    rpcstructurecopyHalIfacesSetup_TU116,
 
 };
 
@@ -141,6 +146,7 @@ NV_STATUS registerHalModule_TU116(void)
 static const HAL_IFACE_SETUP halIface_TU117 = {
 
     rpcHalIfacesSetup_TU117,
+    rpcstructurecopyHalIfacesSetup_TU117,
 
 };
 
@@ -156,6 +162,7 @@ NV_STATUS registerHalModule_TU117(void)
 static const HAL_IFACE_SETUP halIface_GA100 = {
 
     rpcHalIfacesSetup_GA100,
+    rpcstructurecopyHalIfacesSetup_GA100,
 
 };
 
@@ -171,6 +178,7 @@ NV_STATUS registerHalModule_GA100(void)
 static const HAL_IFACE_SETUP halIface_GA102 = {
 
     rpcHalIfacesSetup_GA102,
+    rpcstructurecopyHalIfacesSetup_GA102,
 
 };
 
@@ -186,6 +194,7 @@ NV_STATUS registerHalModule_GA102(void)
 static const HAL_IFACE_SETUP halIface_GA103 = {
 
     rpcHalIfacesSetup_GA103,
+    rpcstructurecopyHalIfacesSetup_GA103,
 
 };
 
@@ -201,6 +210,7 @@ NV_STATUS registerHalModule_GA103(void)
 static const HAL_IFACE_SETUP halIface_GA104 = {
 
     rpcHalIfacesSetup_GA104,
+    rpcstructurecopyHalIfacesSetup_GA104,
 
 };
 
@@ -216,6 +226,7 @@ NV_STATUS registerHalModule_GA104(void)
 static const HAL_IFACE_SETUP halIface_GA106 = {
 
     rpcHalIfacesSetup_GA106,
+    rpcstructurecopyHalIfacesSetup_GA106,
 
 };
 
@@ -231,6 +242,7 @@ NV_STATUS registerHalModule_GA106(void)
 static const HAL_IFACE_SETUP halIface_GA107 = {
 
     rpcHalIfacesSetup_GA107,
+    rpcstructurecopyHalIfacesSetup_GA107,
 
 };
 
@@ -246,6 +258,7 @@ NV_STATUS registerHalModule_GA107(void)
 static const HAL_IFACE_SETUP halIface_AD102 = {
 
     rpcHalIfacesSetup_AD102,
+    rpcstructurecopyHalIfacesSetup_AD102,
 
 };
 
@@ -261,6 +274,7 @@ NV_STATUS registerHalModule_AD102(void)
 static const HAL_IFACE_SETUP halIface_AD103 = {
 
     rpcHalIfacesSetup_AD103,
+    rpcstructurecopyHalIfacesSetup_AD103,
 
 };
 
@@ -276,6 +290,7 @@ NV_STATUS registerHalModule_AD103(void)
 static const HAL_IFACE_SETUP halIface_AD104 = {
 
     rpcHalIfacesSetup_AD104,
+    rpcstructurecopyHalIfacesSetup_AD104,
 
 };
 
@@ -291,6 +306,7 @@ NV_STATUS registerHalModule_AD104(void)
 static const HAL_IFACE_SETUP halIface_AD106 = {
 
     rpcHalIfacesSetup_AD106,
+    rpcstructurecopyHalIfacesSetup_AD106,
 
 };
 
@@ -306,6 +322,7 @@ NV_STATUS registerHalModule_AD106(void)
 static const HAL_IFACE_SETUP halIface_AD107 = {
 
     rpcHalIfacesSetup_AD107,
+    rpcstructurecopyHalIfacesSetup_AD107,
 
 };
 
@@ -321,6 +338,7 @@ NV_STATUS registerHalModule_AD107(void)
 static const HAL_IFACE_SETUP halIface_GH100 = {
 
     rpcHalIfacesSetup_GH100,
+    rpcstructurecopyHalIfacesSetup_GH100,
 
 };
 

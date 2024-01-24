@@ -105,11 +105,16 @@ typedef ENGDESCRIPTOR PARAM_TO_ENGDESC_FUNCTION(OBJGPU *pGpu, NvU32 externalClas
 /*!
  * Abstract base class for descendants of XXX_CHANNEL_DMA (Channel)
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CHANNEL_DESCENDANT_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct ChannelDescendant {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -137,7 +142,6 @@ struct ChannelDescendant {
     NV_STATUS (*__chandesInternalControlForward__)(struct ChannelDescendant *, NvU32, void *, NvU32);
     NV_STATUS (*__chandesUnmapFrom__)(struct ChannelDescendant *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__chandesControl_Epilogue__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__chandesControlLookup__)(struct ChannelDescendant *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__chandesGetInternalObjectHandle__)(struct ChannelDescendant *);
     NV_STATUS (*__chandesControl__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__chandesUnmap__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -147,6 +151,7 @@ struct ChannelDescendant {
     NV_STATUS (*__chandesUnregisterEvent__)(struct ChannelDescendant *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__chandesControlSerialization_Prologue__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__chandesCanCopy__)(struct ChannelDescendant *);
+    NvBool (*__chandesIsPartialUnmapSupported__)(struct ChannelDescendant *);
     void (*__chandesPreDestruct__)(struct ChannelDescendant *);
     NV_STATUS (*__chandesIsDuplicate__)(struct ChannelDescendant *, NvHandle, NvBool *);
     void (*__chandesControlSerialization_Epilogue__)(struct ChannelDescendant *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -204,7 +209,6 @@ NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant**, Dynamic*, NvU3
 #define chandesInternalControlForward(pGpuResource, command, pParams, size) chandesInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define chandesUnmapFrom(pResource, pParams) chandesUnmapFrom_DISPATCH(pResource, pParams)
 #define chandesControl_Epilogue(pResource, pCallContext, pParams) chandesControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define chandesControlLookup(pResource, pParams, ppEntry) chandesControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define chandesGetInternalObjectHandle(pGpuResource) chandesGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define chandesControl(pGpuResource, pCallContext, pParams) chandesControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define chandesUnmap(pGpuResource, pCallContext, pCpuMapping) chandesUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -214,6 +218,7 @@ NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant**, Dynamic*, NvU3
 #define chandesUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) chandesUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define chandesControlSerialization_Prologue(pResource, pCallContext, pParams) chandesControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define chandesCanCopy(pResource) chandesCanCopy_DISPATCH(pResource)
+#define chandesIsPartialUnmapSupported(pResource) chandesIsPartialUnmapSupported_DISPATCH(pResource)
 #define chandesPreDestruct(pResource) chandesPreDestruct_DISPATCH(pResource)
 #define chandesIsDuplicate(pResource, hMemory, pDuplicate) chandesIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define chandesControlSerialization_Epilogue(pResource, pCallContext, pParams) chandesControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -317,10 +322,6 @@ static inline void chandesControl_Epilogue_DISPATCH(struct ChannelDescendant *pR
     pResource->__chandesControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS chandesControlLookup_DISPATCH(struct ChannelDescendant *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__chandesControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle chandesGetInternalObjectHandle_DISPATCH(struct ChannelDescendant *pGpuResource) {
     return pGpuResource->__chandesGetInternalObjectHandle__(pGpuResource);
 }
@@ -355,6 +356,10 @@ static inline NV_STATUS chandesControlSerialization_Prologue_DISPATCH(struct Cha
 
 static inline NvBool chandesCanCopy_DISPATCH(struct ChannelDescendant *pResource) {
     return pResource->__chandesCanCopy__(pResource);
+}
+
+static inline NvBool chandesIsPartialUnmapSupported_DISPATCH(struct ChannelDescendant *pResource) {
+    return pResource->__chandesIsPartialUnmapSupported__(pResource);
 }
 
 static inline void chandesPreDestruct_DISPATCH(struct ChannelDescendant *pResource) {

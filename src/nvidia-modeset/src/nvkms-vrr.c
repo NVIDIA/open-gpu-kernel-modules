@@ -262,19 +262,10 @@ void nvAdjustHwModeTimingsForVrrEvo(NVHwModeTimingsEvoPtr pTimings,
                                     const NvU32 vrrOverrideMinRefreshRate,
                                     const NvBool needsSwFramePacing)
 {
+    NvU32 timeoutMicroseconds;
+
     if (vrrType == NVKMS_DPY_VRR_TYPE_NONE) {
         return;
-    }
-
-    /*
-     * On G-SYNC panels, the back porch extension is used to indicate to
-     * the monitor that VRR is enabled.  It is not necessary on
-     * Adaptive-Sync displays.
-     */
-    if (vrrType == NVKMS_DPY_VRR_TYPE_GSYNC) {
-        pTimings->rasterSize.y += 2;
-        pTimings->rasterBlankEnd.y += 2;
-        pTimings->rasterBlankStart.y += 2;
     }
 
     // Allow overriding the EDID min refresh rate on Adaptive-Sync
@@ -295,11 +286,30 @@ void nvAdjustHwModeTimingsForVrrEvo(NVHwModeTimingsEvoPtr pTimings,
         clampedMinRefreshRate =
             NV_MIN(clampedMinRefreshRate, maxMinRefreshRate);
 
-        pTimings->vrr.timeoutMicroseconds = 1000000 /
-            clampedMinRefreshRate;
+        timeoutMicroseconds = 1000000 / clampedMinRefreshRate;
     } else {
-        pTimings->vrr.timeoutMicroseconds = edidTimeoutMicroseconds;
+        timeoutMicroseconds = edidTimeoutMicroseconds;
     }
+
+    // Disallow VRR if the refresh rate is less than 110% of the VRR minimum
+    // refresh rate.
+    if (nvGetRefreshRate10kHz(pTimings) <
+        (((NvU64) 1000000 * 11000) / timeoutMicroseconds)) {
+        return;
+    }
+
+    /*
+     * On G-SYNC panels, the back porch extension is used to indicate to
+     * the monitor that VRR is enabled.  It is not necessary on
+     * Adaptive-Sync displays.
+     */
+    if (vrrType == NVKMS_DPY_VRR_TYPE_GSYNC) {
+        pTimings->rasterSize.y += 2;
+        pTimings->rasterBlankEnd.y += 2;
+        pTimings->rasterBlankStart.y += 2;
+    }
+
+    pTimings->vrr.timeoutMicroseconds = timeoutMicroseconds;
     pTimings->vrr.needsSwFramePacing = needsSwFramePacing;
     pTimings->vrr.type = vrrType;
 }

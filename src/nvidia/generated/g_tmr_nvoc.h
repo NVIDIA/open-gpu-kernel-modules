@@ -80,11 +80,16 @@ typedef NV_STATUS (*TIMEPROC_COUNTDOWN)(OBJGPU *, THREAD_STATE_NODE *);
 /*!
  * RM internal class representing NV01_TIMER (child of SubDevice)
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_TMR_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct TimerApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -111,7 +116,6 @@ struct TimerApi {
     NV_STATUS (*__tmrapiInternalControlForward__)(struct TimerApi *, NvU32, void *, NvU32);
     NV_STATUS (*__tmrapiUnmapFrom__)(struct TimerApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__tmrapiControl_Epilogue__)(struct TimerApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__tmrapiControlLookup__)(struct TimerApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__tmrapiGetInternalObjectHandle__)(struct TimerApi *);
     NV_STATUS (*__tmrapiControl__)(struct TimerApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__tmrapiUnmap__)(struct TimerApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -121,6 +125,7 @@ struct TimerApi {
     NV_STATUS (*__tmrapiUnregisterEvent__)(struct TimerApi *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__tmrapiControlSerialization_Prologue__)(struct TimerApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__tmrapiCanCopy__)(struct TimerApi *);
+    NvBool (*__tmrapiIsPartialUnmapSupported__)(struct TimerApi *);
     void (*__tmrapiPreDestruct__)(struct TimerApi *);
     NV_STATUS (*__tmrapiIsDuplicate__)(struct TimerApi *, NvHandle, NvBool *);
     void (*__tmrapiControlSerialization_Epilogue__)(struct TimerApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -172,7 +177,6 @@ NV_STATUS __nvoc_objCreate_TimerApi(TimerApi**, Dynamic*, NvU32, struct CALL_CON
 #define tmrapiInternalControlForward(pGpuResource, command, pParams, size) tmrapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define tmrapiUnmapFrom(pResource, pParams) tmrapiUnmapFrom_DISPATCH(pResource, pParams)
 #define tmrapiControl_Epilogue(pResource, pCallContext, pParams) tmrapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define tmrapiControlLookup(pResource, pParams, ppEntry) tmrapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define tmrapiGetInternalObjectHandle(pGpuResource) tmrapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define tmrapiControl(pGpuResource, pCallContext, pParams) tmrapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define tmrapiUnmap(pGpuResource, pCallContext, pCpuMapping) tmrapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -182,6 +186,7 @@ NV_STATUS __nvoc_objCreate_TimerApi(TimerApi**, Dynamic*, NvU32, struct CALL_CON
 #define tmrapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) tmrapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define tmrapiControlSerialization_Prologue(pResource, pCallContext, pParams) tmrapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define tmrapiCanCopy(pResource) tmrapiCanCopy_DISPATCH(pResource)
+#define tmrapiIsPartialUnmapSupported(pResource) tmrapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define tmrapiPreDestruct(pResource) tmrapiPreDestruct_DISPATCH(pResource)
 #define tmrapiIsDuplicate(pResource, hMemory, pDuplicate) tmrapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define tmrapiControlSerialization_Epilogue(pResource, pCallContext, pParams) tmrapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -249,10 +254,6 @@ static inline void tmrapiControl_Epilogue_DISPATCH(struct TimerApi *pResource, s
     pResource->__tmrapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS tmrapiControlLookup_DISPATCH(struct TimerApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__tmrapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle tmrapiGetInternalObjectHandle_DISPATCH(struct TimerApi *pGpuResource) {
     return pGpuResource->__tmrapiGetInternalObjectHandle__(pGpuResource);
 }
@@ -287,6 +288,10 @@ static inline NV_STATUS tmrapiControlSerialization_Prologue_DISPATCH(struct Time
 
 static inline NvBool tmrapiCanCopy_DISPATCH(struct TimerApi *pResource) {
     return pResource->__tmrapiCanCopy__(pResource);
+}
+
+static inline NvBool tmrapiIsPartialUnmapSupported_DISPATCH(struct TimerApi *pResource) {
+    return pResource->__tmrapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void tmrapiPreDestruct_DISPATCH(struct TimerApi *pResource) {

@@ -147,15 +147,35 @@
  *     (On older post-Volta products, clients may set other
  *      NVC372_CTRL_IMP_LUT_USAGE_xxx values, but they map to
  *      NVC372_CTRL_IMP_LUT_USAGE_HW_MAX in RM-SW.)
-
  *
  *   head.cursorSize32p
  *     This parameter specifies the width of the cursor, in units of 32 pixels.
  *     So, for example, "8" would mean 8 * 32 = 256, for a 256x256 cursor.  Zero
  *     means the cursor is disabled.
  *
+ *   head.tileMask
+ *     This parameter specifies the number of tiles which will be assigned to
+ *     the head.  Normally, this parameter is set to zero, allowing IMP to
+ *     calculate the number of tiles, but the number of tiles may be specified
+ *     explicitly for test or debug.  If the mode is not possible with the
+ *     specified number of tiles, IMP will report the result as such; the
+ *     number of tiles will not be adjusted.
+ * 
+ *     If tiles are forced for only a subset of active heads, IMP will
+ *     calculate the tiles for the remaining heads (if possible).
+ * 
+ *     If head.bEnableDsc is enabled, head.possibleDscSliceCountMask may
+ *     optionally be used to force the number of DSC slices.
+ *
  *   head.bEnableDsc
  *     bEnableDsc indicates whether or not DSC is enabled
+ *
+ *   head.dscTargetBppX16
+ *     dscTargetBppX16 is the DSC encoder's target bits per pixel, multiplied
+ *     by 16.
+ *
+ *     This field is required only on systems that support tiling, and only if
+ *     head.bEnableDsc is true.
  *
  *   head.possibleDscSliceCountMask
  *     This is a bit mask indicating how many DSC slices are allowed in a
@@ -584,7 +604,11 @@ typedef struct NVC372_CTRL_IMP_HEAD {
     NvU8   lut;
     NvU8   cursorSize32p;
 
+    NvU8   tileMask;
+
     NvBool bEnableDsc;
+
+    NvU16  dscTargetBppX16;
 
     NvU32  possibleDscSliceCountMask;
 

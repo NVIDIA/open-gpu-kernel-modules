@@ -35,10 +35,12 @@
 #include "kernel/core/locks.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "vgpu/rpc.h"
+#include "gpu/device/device.h"
 #include "kernel/gpu/subdevice/subdevice.h"
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "gpu/mmu/kern_gmmu.h"
+#include "platform/sli/sli.h"
 #include "rmapi/client.h"
 
 /*!
@@ -287,6 +289,9 @@ kgrctxCtxBufferToFifoEngineId_IMPL
             break;
         case GR_CTX_BUFFER_PATCH:
             *pFifoEngineId = NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_PATCH;
+            break;
+        case GR_CTX_BUFFER_SETUP:
+            *pFifoEngineId = NV0080_CTRL_FIFO_GET_ENGINE_CONTEXT_PROPERTIES_ENGINE_ID_GRAPHICS_SETUP;
             break;
         // No default case - Compiler enforces switch update if enum is changed
     }
@@ -2388,24 +2393,21 @@ kgrctxUnmapAssociatedCtxBuffers_IMPL
     // channels could be using these mappings, and we must wait for both
     // channels to be detached before we remove them.
     //
+    if ((!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm) &&
+        (pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->pChanList != NULL))
     {
-        RS_ORDERED_ITERATOR it;
-        RsResourceRef *pScopeRef = RES_GET_REF(pKernelChannel);
+        CHANNEL_NODE *pChanNode;
+        CHANNEL_LIST *pChanList;
 
-        // Iterate over all channels in this TSG and check for duplicate VAS
-        if (!pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->bAllocatedByRm)
-            pScopeRef = RES_GET_REF(pKernelChannel->pKernelChannelGroupApi);
+        pChanList = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup->pChanList;
 
-        it = kchannelGetIter(RES_GET_CLIENT(pKernelChannel), pScopeRef);
-        while (clientRefOrderedIterNext(it.pClient, &it))
+        for (pChanNode = pChanList->pHead; pChanNode; pChanNode = pChanNode->pNext)
         {
-            KernelChannel *pLoopKernelChannel = dynamicCast(it.pResourceRef->pResource, KernelChannel);
-            NV_ASSERT_OR_RETURN_VOID(pLoopKernelChannel != NULL);
-
-            if (pLoopKernelChannel == pKernelChannel)
+            // Skip the channel we are looking to unmap
+            if (kchannelGetDebugTag(pKernelChannel) == kchannelGetDebugTag(pChanNode->pKernelChannel))
                 continue;
 
-            NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, pLoopKernelChannel->pVAS != pKernelChannel->pVAS);
+            NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, pChanNode->pKernelChannel->pVAS != pKernelChannel->pVAS);
         }
     }
 
@@ -2560,6 +2562,20 @@ kgrctxShouldPreAllocPmBuffer_VF
     //    created later with an rm ctrl.
     // 2. For full SRIOV vGPU guests with Profiling capability enabled
     //
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu) && !gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+        NvBool bProfilingEnabledVgpuGuest = NV_FALSE;
+
+        if (pVSI != NULL)
+        {
+            bProfilingEnabledVgpuGuest = pVSI->vgpuStaticProperties.bProfilingTracingEnabled;
+            if (bProfilingEnabledVgpuGuest)
+            {
+                return NV_TRUE;
+            }
+        }
+    }
 
     return kgrctxShouldPreAllocPmBuffer_PF(pGpu, pKernelGraphicsContext, pKernelChannel);
 }

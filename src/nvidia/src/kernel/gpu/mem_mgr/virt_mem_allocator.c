@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,7 +29,6 @@
 
 #include "core/core.h"
 #include "core/hal.h"
-#include "core/info_block.h"
 #include "nvrm_registry.h"
 #include "os/os.h"
 #include "vgpu/rpc.h"
@@ -74,6 +73,9 @@ dmaInitRegistryOverrides(OBJGPU *pGpu, VirtMemAllocator *pDma)
     NV_STATUS rmStatus = NV_OK;
     NvU32     data32;
 
+#if defined(DEBUG) || defined (DEVELOP)
+    pDma->bMemoryMapperApiEnabled = NV_TRUE;
+#endif
     if (osReadRegistryDword(pGpu, NV_REG_ENABLE_MEMORY_MAPPER_API, &data32) == NV_OK &&
         data32 == NV_REG_ENABLE_MEMORY_MAPPER_API_TRUE)
     {

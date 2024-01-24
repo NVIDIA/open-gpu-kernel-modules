@@ -46,11 +46,16 @@ extern "C" {
 /*!
  * RM internal class representing NVXXXX_DISP_SF_USER
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISP_SF_USER_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DispSfUser {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -71,7 +76,6 @@ struct DispSfUser {
     NV_STATUS (*__dispsfInternalControlForward__)(struct DispSfUser *, NvU32, void *, NvU32);
     NV_STATUS (*__dispsfUnmapFrom__)(struct DispSfUser *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__dispsfControl_Epilogue__)(struct DispSfUser *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__dispsfControlLookup__)(struct DispSfUser *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__dispsfGetInternalObjectHandle__)(struct DispSfUser *);
     NV_STATUS (*__dispsfControl__)(struct DispSfUser *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispsfUnmap__)(struct DispSfUser *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -80,6 +84,7 @@ struct DispSfUser {
     NV_STATUS (*__dispsfControlFilter__)(struct DispSfUser *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispsfControlSerialization_Prologue__)(struct DispSfUser *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispsfCanCopy__)(struct DispSfUser *);
+    NvBool (*__dispsfIsPartialUnmapSupported__)(struct DispSfUser *);
     void (*__dispsfPreDestruct__)(struct DispSfUser *);
     NV_STATUS (*__dispsfIsDuplicate__)(struct DispSfUser *, NvHandle, NvBool *);
     void (*__dispsfControlSerialization_Epilogue__)(struct DispSfUser *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -128,7 +133,6 @@ NV_STATUS __nvoc_objCreate_DispSfUser(DispSfUser**, Dynamic*, NvU32, struct CALL
 #define dispsfInternalControlForward(pGpuResource, command, pParams, size) dispsfInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dispsfUnmapFrom(pResource, pParams) dispsfUnmapFrom_DISPATCH(pResource, pParams)
 #define dispsfControl_Epilogue(pResource, pCallContext, pParams) dispsfControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispsfControlLookup(pResource, pParams, ppEntry) dispsfControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispsfGetInternalObjectHandle(pGpuResource) dispsfGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define dispsfControl(pGpuResource, pCallContext, pParams) dispsfControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define dispsfUnmap(pGpuResource, pCallContext, pCpuMapping) dispsfUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -137,6 +141,7 @@ NV_STATUS __nvoc_objCreate_DispSfUser(DispSfUser**, Dynamic*, NvU32, struct CALL
 #define dispsfControlFilter(pResource, pCallContext, pParams) dispsfControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define dispsfControlSerialization_Prologue(pResource, pCallContext, pParams) dispsfControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispsfCanCopy(pResource) dispsfCanCopy_DISPATCH(pResource)
+#define dispsfIsPartialUnmapSupported(pResource) dispsfIsPartialUnmapSupported_DISPATCH(pResource)
 #define dispsfPreDestruct(pResource) dispsfPreDestruct_DISPATCH(pResource)
 #define dispsfIsDuplicate(pResource, hMemory, pDuplicate) dispsfIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispsfControlSerialization_Epilogue(pResource, pCallContext, pParams) dispsfControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -188,10 +193,6 @@ static inline void dispsfControl_Epilogue_DISPATCH(struct DispSfUser *pResource,
     pResource->__dispsfControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS dispsfControlLookup_DISPATCH(struct DispSfUser *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispsfControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle dispsfGetInternalObjectHandle_DISPATCH(struct DispSfUser *pGpuResource) {
     return pGpuResource->__dispsfGetInternalObjectHandle__(pGpuResource);
 }
@@ -222,6 +223,10 @@ static inline NV_STATUS dispsfControlSerialization_Prologue_DISPATCH(struct Disp
 
 static inline NvBool dispsfCanCopy_DISPATCH(struct DispSfUser *pResource) {
     return pResource->__dispsfCanCopy__(pResource);
+}
+
+static inline NvBool dispsfIsPartialUnmapSupported_DISPATCH(struct DispSfUser *pResource) {
+    return pResource->__dispsfIsPartialUnmapSupported__(pResource);
 }
 
 static inline void dispsfPreDestruct_DISPATCH(struct DispSfUser *pResource) {

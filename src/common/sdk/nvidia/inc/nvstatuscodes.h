@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2014-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2014-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -150,6 +150,7 @@ NV_STATUS_CODE(NV_ERR_NVLINK_CONFIGURATION_ERROR,      0x00000078, "Nvlink Confi
 NV_STATUS_CODE(NV_ERR_RISCV_ERROR,                     0x00000079, "Generic RISC-V assert or halt")
 NV_STATUS_CODE(NV_ERR_FABRIC_MANAGER_NOT_PRESENT,      0x0000007A, "Fabric Manager is not loaded")
 NV_STATUS_CODE(NV_ERR_ALREADY_SIGNALLED,               0x0000007B, "Semaphore Surface value already >= requested wait value")
+NV_STATUS_CODE(NV_ERR_QUEUE_TASK_SLOT_NOT_AVAILABLE,   0x0000007C, "PMU RPC error due to no queue slot available for this event")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")

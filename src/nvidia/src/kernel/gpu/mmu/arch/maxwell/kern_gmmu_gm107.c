@@ -80,6 +80,7 @@ kgmmuInvalidateTlb_GM107
     TLB_INVALIDATE_PARAMS params;
     NvU32                 flushCount     = 0;
     NvBool                bDoVgpuRpc     = NV_FALSE;
+    OBJVGPU              *pVgpu          = NULL;
 
     //
     // Bail out early if
@@ -105,6 +106,18 @@ kgmmuInvalidateTlb_GM107
         NV_PRINTF(LEVEL_INFO,
                   "disable_mmu_invalidate flag, skipping hub invalidate.\n");
         return;
+    }
+
+    pVgpu = GPU_GET_VGPU(pGpu);
+    if (pVgpu && pVgpu->bGspBuffersInitialized)
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+        if  (pVSI &&
+             FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG,
+                          _PARAMS_VGPU_DEV_CAPS_VF_INVALIDATE_TLB_TRAP_ENABLED,
+                          _TRUE, pVSI->vgpuConfig.vgpuDeviceCapsBits))
+            bDoVgpuRpc = NV_TRUE;
     }
 
     if (!bDoVgpuRpc)
@@ -185,6 +198,11 @@ kgmmuInvalidateTlb_GM107
 
     if (bDoVgpuRpc)
     {
+        NV_RM_RPC_INVALIDATE_TLB(pGpu, status, params.pdbAddress, params.regVal);
+        if (status != NV_OK)
+        {
+            return;
+        }
     }
     else
     {

@@ -147,6 +147,8 @@
 #define PCI_VENDOR_ID_ARM           0x13B5
 #define PCI_VENDOR_ID_HYGON         0x1D94
 #define PCI_VENDOR_ID_ALIBABA       0x1DED
+#define PCI_VENDOR_ID_SIFIVE        0xF15E
+#define PCI_VENDOR_ID_PLDA          0x1556
 
 #define NV_PCI_DEVID_DEVICE                    31:16  /* RW--F */
 #define NV_PCI_SUBID_DEVICE                    31:16  /* RW--F */
@@ -626,6 +628,9 @@ enum {
 ,     CS_INTEL_1B81
 ,     CS_INTEL_18DC
 ,     CS_INTEL_7A04
+,     CS_SIFIVE_FU740_C000
+,     CS_PLDA_XPRESSRICH_AXI_REF
+,     CS_AMPERE_AMPEREONE
 ,     CS_MAX_PCIE
 };
 

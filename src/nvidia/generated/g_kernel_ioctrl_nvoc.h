@@ -51,11 +51,20 @@ extern "C" {
  * any interfaces which do not manage the underlying Ioctrl hardware
  * can be managed by this object.
  */
+
+ // Link Conversion Macros
+#define KIOCTRL_LINK_GLOBAL_TO_LOCAL_MASK(mask)  (mask  >> pKernelIoctrl->localGlobalLinkOffset)
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_IOCTRL_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelIoctrl {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -88,6 +97,40 @@ struct KernelIoctrl {
     NvU32 PRIVATE_FIELD(ipVerMinion);
     NvU32 PRIVATE_FIELD(ioctrlDiscoverySize);
     NvU8 PRIVATE_FIELD(numDevices);
+};
+
+struct KernelIoctrl_PRIVATE {
+    const struct NVOC_RTTI *__nvoc_rtti;
+    struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
+    struct Object *__nvoc_pbase_Object;
+    struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
+    struct KernelIoctrl *__nvoc_pbase_KernelIoctrl;
+    NV_STATUS (*__kioctrlConstructEngine__)(struct OBJGPU *, struct KernelIoctrl *, NvU32);
+    NvBool (*__kioctrlGetMinionEnableDefault__)(struct OBJGPU *, struct KernelIoctrl *);
+    NV_STATUS (*__kioctrlMinionConstruct__)(struct OBJGPU *, struct KernelIoctrl *);
+    NV_STATUS (*__kioctrlStateLoad__)(POBJGPU, struct KernelIoctrl *, NvU32);
+    NV_STATUS (*__kioctrlStateUnload__)(POBJGPU, struct KernelIoctrl *, NvU32);
+    NV_STATUS (*__kioctrlStateInitLocked__)(POBJGPU, struct KernelIoctrl *);
+    NV_STATUS (*__kioctrlStatePreLoad__)(POBJGPU, struct KernelIoctrl *, NvU32);
+    NV_STATUS (*__kioctrlStatePostUnload__)(POBJGPU, struct KernelIoctrl *, NvU32);
+    void (*__kioctrlStateDestroy__)(POBJGPU, struct KernelIoctrl *);
+    NV_STATUS (*__kioctrlStatePreUnload__)(POBJGPU, struct KernelIoctrl *, NvU32);
+    NV_STATUS (*__kioctrlStateInitUnlocked__)(POBJGPU, struct KernelIoctrl *);
+    void (*__kioctrlInitMissing__)(POBJGPU, struct KernelIoctrl *);
+    NV_STATUS (*__kioctrlStatePreInitLocked__)(POBJGPU, struct KernelIoctrl *);
+    NV_STATUS (*__kioctrlStatePreInitUnlocked__)(POBJGPU, struct KernelIoctrl *);
+    NV_STATUS (*__kioctrlStatePostLoad__)(POBJGPU, struct KernelIoctrl *, NvU32);
+    NvBool (*__kioctrlIsPresent__)(POBJGPU, struct KernelIoctrl *);
+    NvBool PDB_PROP_KIOCTRL_MINION_AVAILABLE;
+    NvBool PDB_PROP_KIOCTRL_MINION_FORCE_BOOT;
+    NvBool PDB_PROP_KIOCTRL_MINION_CACHE_SEEDS;
+    NvU32 PublicId;
+    NvU32 localDiscoveredLinks;
+    NvU32 localGlobalLinkOffset;
+    NvU32 ipVerIoctrl;
+    NvU32 ipVerMinion;
+    NvU32 ioctrlDiscoverySize;
+    NvU8 numDevices;
 };
 
 #ifndef __NVOC_CLASS_KernelIoctrl_TYPEDEF__
@@ -222,6 +265,21 @@ static inline NvBool kioctrlIsPresent_DISPATCH(POBJGPU pGpu, struct KernelIoctrl
     return pEngstate->__kioctrlIsPresent__(pGpu, pEngstate);
 }
 
+static inline NvU32 kioctrlGetLocalDiscoveredLinks(struct OBJGPU *pGpu, struct KernelIoctrl *pKernelIoctrl) {
+    struct KernelIoctrl_PRIVATE *pKernelIoctrl_PRIVATE = (struct KernelIoctrl_PRIVATE *)pKernelIoctrl;
+    return pKernelIoctrl_PRIVATE->localDiscoveredLinks;
+}
+
+static inline NvU32 kioctrlGetGlobalToLocalMask(struct OBJGPU *pGpu, struct KernelIoctrl *pKernelIoctrl, NvU32 mask) {
+    struct KernelIoctrl_PRIVATE *pKernelIoctrl_PRIVATE = (struct KernelIoctrl_PRIVATE *)pKernelIoctrl;
+    return (mask >> pKernelIoctrl_PRIVATE->localGlobalLinkOffset);
+}
+
+static inline NvU32 kioctrlGetPublicId(struct OBJGPU *pGpu, struct KernelIoctrl *pKernelIoctrl) {
+    struct KernelIoctrl_PRIVATE *pKernelIoctrl_PRIVATE = (struct KernelIoctrl_PRIVATE *)pKernelIoctrl;
+    return pKernelIoctrl_PRIVATE->PublicId;
+}
+
 void kioctrlDestructEngine_IMPL(struct KernelIoctrl *arg0);
 
 #ifdef __nvoc_kernel_ioctrl_h_disabled
@@ -234,9 +292,6 @@ static inline void kioctrlDestructEngine(struct KernelIoctrl *arg0) {
 
 #undef PRIVATE_FIELD
 
-
-// Link Conversion Macros
-#define KIOCTRL_LINK_GLOBAL_TO_LOCAL_MASK(mask)  (mask  >> pKernelIoctrl->localGlobalLinkOffset)
 
 #endif // _KERNEL_IOCTRL_H_
 

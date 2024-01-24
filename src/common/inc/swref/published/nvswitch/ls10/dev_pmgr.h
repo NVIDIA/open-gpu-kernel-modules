@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -82,4 +82,18 @@
 #define NV_PMGR_GPIO_INPUT_CNTL_BYPASS_FILTER                    10:10 /*       */
 #define NV_PMGR_GPIO_INPUT_CNTL_BYPASS_FILTER_NO            0x00000000 /*       */
 #define NV_PMGR_GPIO_INPUT_CNTL_BYPASS_FILTER_YES           0x00000001 /*       */
+#define NV_GPIO_OUTPUT_CNTL(i)                                          (0x00021200 +((i) * 0x4)) /* RW-4A */
+#define NV_GPIO_OUTPUT_CNTL_IO_OUTPUT                                   12:12 /* RWIVF */
+#define NV_GPIO_OUTPUT_CNTL_IO_OUTPUT_INIT                              0x00000000 /* R-I-V */
+#define NV_GPIO_OUTPUT_CNTL_IO_OUTPUT_0                                 0x00000000 /* RW--V */
+#define NV_GPIO_OUTPUT_CNTL_IO_OUTPUT_1                                 0x00000001 /* RW--V */
+#define NV_GPIO_RM_INTR_MSK_GPIO_LIST_1                                 0x00021644 /* RWI4R */
+#define NV_GPIO_RM_INTR_MSK_GPIO_LIST_1_GPIO15_RISING                       15:15 /* RWIVF */
+#define NV_GPIO_RM_INTR_MSK_GPIO_LIST_1_GPIO15_RISING_INIT             0x00000001 /* RWI-V */
+#define NV_GPIO_RM_INTR_MSK_GPIO_LIST_1_GPIO15_RISING_DISABLED         0x00000000 /* RW--V */
+#define NV_GPIO_RM_INTR_MSK_GPIO_LIST_1_GPIO15_RISING_ENABLED          0x00000001 /* RW--V */
+#define NV_GPIO_RM_INTR_MSK_GPIO_LIST_1_GPIO15_FALLING                      31:31 /* RWIVF */
+#define NV_GPIO_RM_INTR_MSK_GPIO_LIST_1_GPIO15_FALLING_INIT            0x00000001 /* RWI-V */
+#define NV_GPIO_RM_INTR_MSK_GPIO_LIST_1_GPIO15_FALLING_DISABLED        0x00000000 /* RW--V */
+#define NV_GPIO_RM_INTR_MSK_GPIO_LIST_1_GPIO15_FALLING_ENABLED         0x00000001 /* RW--V */
 #endif // __ls10_dev_pmgr_h__

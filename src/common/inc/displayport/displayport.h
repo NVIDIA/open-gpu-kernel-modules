@@ -23,6 +23,7 @@
 
 #ifndef _DISPLAYPORT_H_
 #define _DISPLAYPORT_H_
+#include "nvcfg_sdk.h"
 
 #include "nvmisc.h"
 #include "dpcd.h"
@@ -161,7 +162,7 @@ typedef enum
     trainingPattern_1               = 0x1,
     trainingPattern_2               = 0x2,
     trainingPattern_3               = 0x3,
-    trainingPattern_4               = 0xB
+    trainingPattern_4               = 0xB,
 } DP_TRAININGPATTERN;
 
 typedef enum
@@ -245,6 +246,8 @@ typedef struct DscCaps
 {
     NvBool bDSCSupported;
     NvBool bDSCDecompressionSupported;
+    NvBool bDynamicPPSSupported;
+    NvBool bDynamicDscToggleSupported;
     NvBool bDSCPassThroughSupported;
     unsigned versionMajor, versionMinor;
     unsigned rcBufferBlockSize;

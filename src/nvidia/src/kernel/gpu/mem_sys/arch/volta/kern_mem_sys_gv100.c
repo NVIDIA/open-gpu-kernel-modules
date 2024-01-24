@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,12 +48,13 @@ kmemsysGetFbNumaInfo_GV100
     OBJGPU             *pGpu,
     KernelMemorySystem *pKernelMemorySystem,
     NvU64              *physAddr,
+    NvU64              *rsvdPhysAddr,
     NvS32              *numaNodeId
 )
 {
     NV_STATUS     status;
 
-    status = osGetFbNumaInfo(pGpu, physAddr, numaNodeId);
+    status = osGetFbNumaInfo(pGpu, physAddr, rsvdPhysAddr, numaNodeId);
     if (status == NV_OK)
     {
         NV_PRINTF(LEVEL_INFO, "NUMA FB Physical address: 0x%llx Node ID: 0x%x\n",
@@ -343,7 +344,7 @@ kmemsysSetupAllAtsPeers_GV100
     NvU32 gpuAttachCnt, gpuAttachMask, gpuInstance = 0;
 
     NV_STATUS status     = NV_OK;
-    POBJGPU   pRemoteGpu = NULL;
+    OBJGPU   *pRemoteGpu = NULL;
 
     NV_CHECK_OR_RETURN(LEVEL_WARNING, pKernelNvlink != NULL, status);
 
@@ -384,7 +385,7 @@ kmemsysRemoveAllAtsPeers_GV100
     NvU32 gpuAttachCnt, gpuAttachMask, gpuInstance = 0;
 
     NV_STATUS status     = NV_OK;
-    POBJGPU   pRemoteGpu = NULL;
+    OBJGPU   *pRemoteGpu = NULL;
 
     // loop over all possible GPU pairs and remove the ATS config
     gpumgrGetGpuAttachInfo(&gpuAttachCnt, &gpuAttachMask);

@@ -25,11 +25,11 @@
 #include "gpu/ce/kernel_ce.h"
 #include "gpu/ce/kernel_ce_private.h"
 #include "gpu/eng_desc.h"
-#include "gpu/subdevice/subdevice.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/intr/intr_service.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/common_nvlink.h"
+#include "vgpu/sdk-structures.h"
 #include "nvRmReg.h"
 
 NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR engDesc)
@@ -62,7 +62,7 @@ NV_STATUS kceConstructEngine_IMPL(OBJGPU *pGpu, KernelCE *pKCe, ENGDESCRIPTOR en
     }
 
     // OBJCE::isPresent would compute this first
-    if (IS_GSP_CLIENT(pGpu))
+    if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
     {
         pGpu->numCEs++;
     }
@@ -423,6 +423,17 @@ NV_STATUS kceGetFaultMethodBufferSize_IMPL(OBJGPU *pGpu, NvU32 *size)
 {
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_CE_GET_FAULT_METHOD_BUFFER_SIZE_PARAMS params = {0};
+
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+        NV_ASSERT_OR_RETURN(pVSI, NV_ERR_INVALID_STATE);
+
+        *size = pVSI->ceFaultMethodBufferDepth;
+
+        return NV_OK;
+    }
 
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
             NV2080_CTRL_CMD_CE_GET_FAULT_METHOD_BUFFER_SIZE, &params, sizeof(params)));

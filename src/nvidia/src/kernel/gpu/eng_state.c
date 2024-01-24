@@ -24,7 +24,6 @@
 #include "gpu/gpu.h"
 #include "gpu/eng_state.h"
 #include "core/hal.h"
-#include "core/info_block.h"
 #include "core/locks.h"
 
 #include "gpu/bus/kern_bus.h"

@@ -24,14 +24,6 @@
 #include "core/core.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
-#include "gpu/mem_mgr/heap.h"
-#include "gpu/mem_mgr/mem_desc.h"
-
-#include "nvRmReg.h"
-
-#include "kernel/gpu/intr/intr.h"
-#include "gpu/subdevice/subdevice.h"
-#include "vgpu/vgpu_events.h"
 
 /*!
  *  Returns the max context size

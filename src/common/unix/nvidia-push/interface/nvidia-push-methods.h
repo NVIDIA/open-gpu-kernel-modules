@@ -72,6 +72,18 @@ static inline void nvPushSetMethodDataU64(NvPushChannelPtr p, const NvU64 data)
     __nvPushSetMethodDataSegmentU64(&p->main, data);
 }
 
+/* Little-endian: least significant bits first. */
+static inline void __nvPushSetMethodDataSegmentU64LE(NvPushChannelSegmentPtr s, const NvU64 data)
+{
+    __nvPushSetMethodDataSegment(s, NvU64_LO32(data));
+    __nvPushSetMethodDataSegment(s, NvU64_HI32(data));
+}
+
+static inline void nvPushSetMethodDataU64LE(NvPushChannelPtr p, const NvU64 data)
+{
+    __nvPushSetMethodDataSegmentU64LE(&p->main, data);
+}
+
 void __nvPushMoveDWORDS(NvU32* dst, const NvU32* src, int dwords);
 
 static inline void

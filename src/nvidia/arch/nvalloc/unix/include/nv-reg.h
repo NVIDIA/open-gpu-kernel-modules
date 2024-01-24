@@ -822,6 +822,23 @@
 #define __NV_RM_NVLINK_BW RmNvlinkBandwidth
 #define NV_RM_NVLINK_BW NV_REG_STRING(__NV_RM_NVLINK_BW)
 
+/*
+ * Option: NVreg_EnableNonblockingOpen
+ *
+ * Description:
+ *
+ * When this option is enabled, the NVIDIA driver will try to perform any
+ * required device initialization in the background when /dev/nvidiaN devices
+ * are opened with the flag O_NONBLOCK.
+ *
+ * Possible Values:
+ *  0 = O_NONBLOCK flag when opening devices is ignored
+ *  1 = O_NONBLOCK flag when opening devices results in background device
+ *      initialization (default)
+ */
+#define __NV_ENABLE_NONBLOCKING_OPEN EnableNonblockingOpen
+#define NV_ENABLE_NONBLOCKING_OPEN NV_REG_STRING(__NV_ENABLE_NONBLOCKING_OPEN)
+
 #if defined(NV_DEFINE_REGISTRY_KEY_TABLE)
 
 /*
@@ -860,6 +877,7 @@ NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_PCIE_RELAXED_ORDERING_MODE, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_REGISTER_PCI_DRIVER, 1);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_RESIZABLE_BAR, 0);
 NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_DBG_BREAKPOINT, 0);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_ENABLE_NONBLOCKING_OPEN, 1);
 
 NV_DEFINE_REG_STRING_ENTRY(__NV_REGISTRY_DWORDS, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_REGISTRY_DWORDS_PER_DEVICE, NULL);

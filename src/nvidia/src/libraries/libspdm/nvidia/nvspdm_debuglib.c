@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,4 +55,15 @@ libspdm_debug_assert
     NV_PRINTF (LEVEL_ERROR, "libspdm assertion hit!\n");
     g_libspdmAssertHit = NV_TRUE;
     DBG_BREAKPOINT();
+}
+
+void
+libspdm_debug_print
+(
+    size_t      error_level,
+    const char *format,
+    ...
+)
+{
+    return;
 }

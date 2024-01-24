@@ -62,16 +62,22 @@ struct CrashCatReportHal {
 typedef struct CrashCatReportHal CrashCatReportHal;
 void __nvoc_init_halspec_CrashCatReportHal(CrashCatReportHal*, NV_CRASHCAT_PACKET_FORMAT_VERSION, CrashCatImplementer);
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CRASHCAT_REPORT_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct __nvoc_inner_struc_CrashCatReport_1__ {
     NvCrashCatReport_V1 report;
     NvCrashCatRiscv64CsrState_V1 riscv64CsrState;
     NvCrashCatRiscv64GprState_V1 riscv64GprState;
-    NvCrashCatRiscv64Trace_V1 *pRiscv64Trace;
+    NvCrashCatRiscv64Trace_V1 *pRiscv64StackTrace;
+    NvCrashCatRiscv64Trace_V1 *pRiscv64PcTrace;
     NvCrashCatIo32State_V1 *pIo32State;
 };
 
@@ -236,18 +242,18 @@ static inline void crashcatReportLogRiscv64GprState(struct CrashCatReport *arg0)
 
 #define crashcatReportLogRiscv64GprState_HAL(arg0) crashcatReportLogRiscv64GprState(arg0)
 
-void crashcatReportLogRiscv64Trace_V1(struct CrashCatReport *arg0);
+void crashcatReportLogRiscv64Traces_V1(struct CrashCatReport *arg0);
 
 
 #ifdef __nvoc_crashcat_report_h_disabled
-static inline void crashcatReportLogRiscv64Trace(struct CrashCatReport *arg0) {
+static inline void crashcatReportLogRiscv64Traces(struct CrashCatReport *arg0) {
     NV_ASSERT_FAILED_PRECOMP("CrashCatReport was disabled!");
 }
 #else //__nvoc_crashcat_report_h_disabled
-#define crashcatReportLogRiscv64Trace(arg0) crashcatReportLogRiscv64Trace_V1(arg0)
+#define crashcatReportLogRiscv64Traces(arg0) crashcatReportLogRiscv64Traces_V1(arg0)
 #endif //__nvoc_crashcat_report_h_disabled
 
-#define crashcatReportLogRiscv64Trace_HAL(arg0) crashcatReportLogRiscv64Trace(arg0)
+#define crashcatReportLogRiscv64Traces_HAL(arg0) crashcatReportLogRiscv64Traces(arg0)
 
 void crashcatReportLogIo32State_V1(struct CrashCatReport *arg0);
 
@@ -266,6 +272,8 @@ void crashcatReportLogReporter_V1_GENERIC(struct CrashCatReport *arg0);
 
 void crashcatReportLogReporter_V1_LIBOS2(struct CrashCatReport *arg0);
 
+void crashcatReportLogReporter_V1_LIBOS3(struct CrashCatReport *arg0);
+
 static inline void crashcatReportLogReporter_DISPATCH(struct CrashCatReport *arg0) {
     arg0->__crashcatReportLogReporter__(arg0);
 }
@@ -273,6 +281,8 @@ static inline void crashcatReportLogReporter_DISPATCH(struct CrashCatReport *arg
 void crashcatReportLogSource_V1_GENERIC(struct CrashCatReport *arg0);
 
 void crashcatReportLogSource_V1_LIBOS2(struct CrashCatReport *arg0);
+
+void crashcatReportLogSource_V1_LIBOS3(struct CrashCatReport *arg0);
 
 static inline void crashcatReportLogSource_DISPATCH(struct CrashCatReport *arg0) {
     arg0->__crashcatReportLogSource__(arg0);
@@ -347,8 +357,8 @@ void NVOC_PRIVATE_FUNCTION(crashcatReportLogRiscv64GprState)(struct CrashCatRepo
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled
-#undef crashcatReportLogRiscv64Trace
-void NVOC_PRIVATE_FUNCTION(crashcatReportLogRiscv64Trace)(struct CrashCatReport *arg0);
+#undef crashcatReportLogRiscv64Traces
+void NVOC_PRIVATE_FUNCTION(crashcatReportLogRiscv64Traces)(struct CrashCatReport *arg0);
 #endif //__nvoc_crashcat_report_h_disabled
 
 #ifndef __nvoc_crashcat_report_h_disabled

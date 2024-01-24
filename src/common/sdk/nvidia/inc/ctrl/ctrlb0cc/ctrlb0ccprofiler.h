@@ -591,4 +591,6 @@ typedef struct NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS {
     NvBool enabled;
 } NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS;
 
+
+
 /* _ctrlb0ccprofiler_h_ */

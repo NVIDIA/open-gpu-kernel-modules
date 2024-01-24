@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,10 +25,12 @@
 #include "rmapi/client.h"
 #include "rmapi/resource.h"
 #include "rmapi/rmapi.h"
+#include "rmapi/rmapi_utils.h"
 #include "rmapi/control.h"
 #include "ctrl/ctrlxxxx.h"
 #include "gpu/gpu_resource.h"
 #include "gpu/gpu.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "vgpu/rpc.h"
 #include "core/locks.h"
 
@@ -171,27 +173,6 @@ void serverControl_InitCookie
     // One time initialization of a const variable
     *(NvU32 *)&pRmCtrlExecuteCookie->rightsRequired.limbs[0]
                                     = exportedEntry->accessRight;
-}
-
-//
-// This routine searches through the Resource's NVOC exported methods for an entry
-// that matches the specified command.
-//
-// Same logic as rmControlCmdLookup() in legacy RMCTRL path
-//
-NV_STATUS rmresControlLookup_IMPL
-(
-    RmResource                     *pResource,
-    RS_RES_CONTROL_PARAMS_INTERNAL *pRsParams,
-    const struct NVOC_EXPORTED_METHOD_DEF **ppEntry
-)
-{
-    NvU32 cmd = pRsParams->cmd;
-
-    if (RMCTRL_IS_NULL_CMD(cmd))
-        return NV_WARN_NOTHING_TO_DO;
-
-    return resControlLookup_IMPL(staticCast(pResource, RsResource), pRsParams, ppEntry);
 }
 
 NV_STATUS

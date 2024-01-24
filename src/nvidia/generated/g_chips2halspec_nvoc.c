@@ -112,8 +112,13 @@ void __nvoc_init_halspec_TegraChipHal(TegraChipHal *pTegraChipHal, TEGRA_CHIP_TY
 
 void __nvoc_init_halspec_RmVariantHal(RmVariantHal *pRmVariantHal, RM_RUNTIME_VARIANT rmVariant)
 {
+    // VF
+    if(rmVariant == 0x1)
+    {
+        pRmVariantHal->__nvoc_HalVarIdx = 0;
+    }
     // PF_KERNEL_ONLY
-    if(rmVariant == 0x2)
+    else if(rmVariant == 0x2)
     {
         pRmVariantHal->__nvoc_HalVarIdx = 1;
     }

@@ -69,11 +69,16 @@ MAKE_LIST(AccessBackRefList, AccessBackRef);
 /**
  * Information about a client
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_RS_CLIENT_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RsClient {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -86,7 +91,7 @@ struct RsClient {
     NV_STATUS (*__clientDestructResourceRef__)(struct RsClient *, RsServer *, struct RsResourceRef *);
     NV_STATUS (*__clientUnmapMemory__)(struct RsClient *, struct RsResourceRef *, struct RS_LOCK_INFO *, struct RsCpuMapping **, API_SECURITY_INFO *);
     NV_STATUS (*__clientInterMap__)(struct RsClient *, struct RsResourceRef *, struct RsResourceRef *, struct RS_INTER_MAP_PARAMS *);
-    void (*__clientInterUnmap__)(struct RsClient *, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);
+    NV_STATUS (*__clientInterUnmap__)(struct RsClient *, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);
     NV_STATUS (*__clientValidateNewResourceHandle__)(struct RsClient *, NvHandle, NvBool);
     NV_STATUS (*__clientPostProcessPendingFreeList__)(struct RsClient *, struct RsResourceRef **);
     NV_STATUS (*__clientShareResource__)(struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *, struct CALL_CONTEXT *);
@@ -188,10 +193,10 @@ static inline NV_STATUS clientInterMap_DISPATCH(struct RsClient *pClient, struct
     return pClient->__clientInterMap__(pClient, pMapperRef, pMappableRef, pParams);
 }
 
-void clientInterUnmap_IMPL(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams);
+NV_STATUS clientInterUnmap_IMPL(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams);
 
-static inline void clientInterUnmap_DISPATCH(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams) {
-    pClient->__clientInterUnmap__(pClient, pMapperRef, pParams);
+static inline NV_STATUS clientInterUnmap_DISPATCH(struct RsClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams) {
+    return pClient->__clientInterUnmap__(pClient, pMapperRef, pParams);
 }
 
 NV_STATUS clientValidateNewResourceHandle_IMPL(struct RsClient *pClient, NvHandle hResource, NvBool bRestrict);
@@ -461,11 +466,16 @@ NV_STATUS clientUnmapResourceRefMappings(struct RsClient *pClient, CALL_CONTEXT 
  * proxy resource.
  *
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_RS_CLIENT_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RsClientResource {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RsResource __nvoc_base_RsResource;
@@ -482,12 +492,12 @@ struct RsClientResource {
     NV_STATUS (*__clientresControlSerialization_Prologue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__clientresCanCopy__)(struct RsClientResource *);
     NV_STATUS (*__clientresControl_Prologue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__clientresIsPartialUnmapSupported__)(struct RsClientResource *);
     void (*__clientresPreDestruct__)(struct RsClientResource *);
     NV_STATUS (*__clientresUnmapFrom__)(struct RsClientResource *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__clientresIsDuplicate__)(struct RsClientResource *, NvHandle, NvBool *);
     void (*__clientresControlSerialization_Epilogue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__clientresControl_Epilogue__)(struct RsClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__clientresControlLookup__)(struct RsClientResource *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__clientresMap__)(struct RsClientResource *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__clientresAccessCallback__)(struct RsClientResource *, struct RsClient *, void *, RsAccessRight);
     struct RsClient *pClient;
@@ -531,12 +541,12 @@ NV_STATUS __nvoc_objCreate_RsClientResource(RsClientResource**, Dynamic*, NvU32,
 #define clientresControlSerialization_Prologue(pResource, pCallContext, pParams) clientresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define clientresCanCopy(pResource) clientresCanCopy_DISPATCH(pResource)
 #define clientresControl_Prologue(pResource, pCallContext, pParams) clientresControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define clientresIsPartialUnmapSupported(pResource) clientresIsPartialUnmapSupported_DISPATCH(pResource)
 #define clientresPreDestruct(pResource) clientresPreDestruct_DISPATCH(pResource)
 #define clientresUnmapFrom(pResource, pParams) clientresUnmapFrom_DISPATCH(pResource, pParams)
 #define clientresIsDuplicate(pResource, hMemory, pDuplicate) clientresIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define clientresControlSerialization_Epilogue(pResource, pCallContext, pParams) clientresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define clientresControl_Epilogue(pResource, pCallContext, pParams) clientresControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define clientresControlLookup(pResource, pParams, ppEntry) clientresControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define clientresMap(pResource, pCallContext, pParams, pCpuMapping) clientresMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define clientresAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) clientresAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 static inline NvBool clientresShareCallback_DISPATCH(struct RsClientResource *pResource, struct RsClient *pInvokingClient, RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -579,6 +589,10 @@ static inline NV_STATUS clientresControl_Prologue_DISPATCH(struct RsClientResour
     return pResource->__clientresControl_Prologue__(pResource, pCallContext, pParams);
 }
 
+static inline NvBool clientresIsPartialUnmapSupported_DISPATCH(struct RsClientResource *pResource) {
+    return pResource->__clientresIsPartialUnmapSupported__(pResource);
+}
+
 static inline void clientresPreDestruct_DISPATCH(struct RsClientResource *pResource) {
     pResource->__clientresPreDestruct__(pResource);
 }
@@ -597,10 +611,6 @@ static inline void clientresControlSerialization_Epilogue_DISPATCH(struct RsClie
 
 static inline void clientresControl_Epilogue_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     pResource->__clientresControl_Epilogue__(pResource, pCallContext, pParams);
-}
-
-static inline NV_STATUS clientresControlLookup_DISPATCH(struct RsClientResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__clientresControlLookup__(pResource, pParams, ppEntry);
 }
 
 static inline NV_STATUS clientresMap_DISPATCH(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

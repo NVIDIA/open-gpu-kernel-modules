@@ -36,7 +36,6 @@
 #include "uvm_tracker.h"
 #include "uvm_pmm_gpu.h"
 #include "uvm_perf_thrashing.h"
-#include "uvm_perf_utils.h"
 #include "uvm_va_block_types.h"
 #include "uvm_range_tree.h"
 #include "uvm_mmu.h"
@@ -1035,7 +1034,7 @@ NV_STATUS uvm_va_block_check_logical_permissions(uvm_va_block_t *va_block,
                                                  uvm_va_block_context_t *va_block_context,
                                                  uvm_processor_id_t processor_id,
                                                  uvm_page_index_t page_index,
-                                                 uvm_fault_type_t access_type,
+                                                 uvm_fault_access_type_t access_type,
                                                  bool allow_migration);
 
 // API for access privilege revocation
@@ -1282,6 +1281,10 @@ NV_STATUS uvm_va_block_cpu_fault(uvm_va_block_t *va_block,
 // and the performance heuristics logic decided to throttle execution.
 // Any other error code different than NV_OK indicates OOM or a global fatal
 // error.
+// NV_WARN_MISMATCHED_TARGET is a special case of GPU fault handling when a
+// GPU is chosen as the destination and the source is a HMM CPU page that can't
+// be migrated. In that case, uvm_va_block_select_residency() should be called
+// with 'hmm_migratable' set to true so that system memory will be selected.
 NV_STATUS uvm_va_block_service_locked(uvm_processor_id_t processor_id,
                                       uvm_va_block_t *va_block,
                                       uvm_va_block_retry_t *block_retry,
@@ -2150,6 +2153,14 @@ void uvm_va_block_unmap_cpu_chunk_on_gpus(uvm_va_block_t *va_block,
 // Locking: The va_block lock must be held.
 void uvm_va_block_remove_cpu_chunks(uvm_va_block_t *va_block, uvm_va_block_region_t region);
 
+// Get the size of the physical allocation backing the page at page_index on the
+// specified processor in the block. Returns 0 if the address is not resident on
+// the specified processor.
+// Locking: The va_block lock must be held.
+NvU32 uvm_va_block_get_physical_size(uvm_va_block_t *block,
+                                     uvm_processor_id_t processor,
+                                     uvm_page_index_t page_index);
+
 // Get CPU page size or 0 if it is not mapped
 NvU32 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block,
                                  uvm_page_index_t page_index);
@@ -2208,12 +2219,14 @@ size_t uvm_va_block_big_page_index(uvm_va_block_t *va_block, uvm_page_index_t pa
 
 // Returns the new residency for a page that faulted or triggered access counter
 // notifications. The read_duplicate output parameter indicates if the page
-// meets the requirements to be read-duplicated va_block_context must not be
+// meets the requirements to be read-duplicated. va_block_context must not be
 // NULL, and if the va_block is a HMM block, va_block_context->hmm.vma must be
 // valid which also means the va_block_context->mm is not NULL, retained, and
 // locked for at least read. See the comments for
 // uvm_va_block_check_policy_is_valid() and uvm_hmm_check_context_vma_is_valid()
-// in uvm_hmm.h.  Locking: the va_block lock must be held.
+// in uvm_hmm.h. hmm_migratable should be true if the residency should be forced
+// to be system memory.
+// Locking: the va_block lock must be held.
 uvm_processor_id_t uvm_va_block_select_residency(uvm_va_block_t *va_block,
                                                  uvm_va_block_context_t *va_block_context,
                                                  uvm_page_index_t page_index,
@@ -2222,6 +2235,7 @@ uvm_processor_id_t uvm_va_block_select_residency(uvm_va_block_t *va_block,
                                                  const uvm_va_policy_t *policy,
                                                  const uvm_perf_thrashing_hint_t *thrashing_hint,
                                                  uvm_service_operation_t operation,
+                                                 const bool hmm_migratable,
                                                  bool *read_duplicate);
 
 // Return the maximum mapping protection for processor_id that will not require
@@ -2229,6 +2243,13 @@ uvm_processor_id_t uvm_va_block_select_residency(uvm_va_block_t *va_block,
 uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block,
                                                         uvm_processor_id_t processor_id,
                                                         uvm_page_index_t page_index);
+
+// Allocates a page for the given page_index in the va_block and maps
+// it to the GPU.
+// Locking: the va_block lock must be held.
+NV_STATUS uvm_va_block_populate_page_cpu(uvm_va_block_t *va_block,
+                                         uvm_page_index_t page_index,
+                                         uvm_va_block_context_t *block_context);
 
 // A helper macro for handling allocation-retry
 //

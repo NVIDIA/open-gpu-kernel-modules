@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -22,6 +22,7 @@
 *******************************************************************************/
 
 #include "uvm_rm_mem.h"
+#include "uvm_global.h"
 #include "uvm_test.h"
 #include "uvm_test_ioctl.h"
 #include "uvm_va_space.h"
@@ -86,7 +87,7 @@ static NV_STATUS map_gpu_owner(uvm_rm_mem_t *rm_mem, NvU64 alignment)
     // In SR-IOV heavy, there are two VA spaces per GPU, so there are two
     // mappings for a single rm_mem object on a GPU, even if the memory is
     // located in vidmem.
-    if (uvm_gpu_uses_proxy_channel_pool(gpu)) {
+    if (uvm_parent_gpu_needs_proxy_channel_pool(gpu->parent)) {
         TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
 
         gpu_proxy_va = uvm_rm_mem_get_gpu_proxy_va(rm_mem, gpu);
@@ -103,7 +104,7 @@ static NV_STATUS map_gpu_owner(uvm_rm_mem_t *rm_mem, NvU64 alignment)
 
     TEST_CHECK_RET(gpu_uvm_va == uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu));
 
-    if (uvm_gpu_uses_proxy_channel_pool(gpu))
+    if (uvm_parent_gpu_needs_proxy_channel_pool(gpu->parent))
         TEST_CHECK_RET(gpu_proxy_va == uvm_rm_mem_get_gpu_proxy_va(rm_mem, gpu));
 
     // Unmapping the GPU owner is a no-op
@@ -112,7 +113,7 @@ static NV_STATUS map_gpu_owner(uvm_rm_mem_t *rm_mem, NvU64 alignment)
     TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu(rm_mem, gpu));
     TEST_CHECK_RET(gpu_uvm_va == uvm_rm_mem_get_gpu_uvm_va(rm_mem, gpu));
 
-    if (uvm_gpu_uses_proxy_channel_pool(gpu)) {
+    if (uvm_parent_gpu_needs_proxy_channel_pool(gpu->parent)) {
         TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu));
         TEST_CHECK_RET(gpu_proxy_va == uvm_rm_mem_get_gpu_proxy_va(rm_mem, gpu));
     }
@@ -140,7 +141,8 @@ static NV_STATUS map_other_gpus(uvm_rm_mem_t *rm_mem, uvm_va_space_t *va_space, 
 
         // The previous GPU map calls added mappings to the proxy VA space
         // when in SR-IOV heavy mode
-        TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu) == uvm_gpu_uses_proxy_channel_pool(gpu));
+        TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu) ==
+                       uvm_parent_gpu_needs_proxy_channel_pool(gpu->parent));
 
         // Unmapping removes all mappings
         uvm_rm_mem_unmap_gpu(rm_mem, gpu);
@@ -156,7 +158,8 @@ static NV_STATUS map_other_gpus(uvm_rm_mem_t *rm_mem, uvm_va_space_t *va_space, 
         TEST_NV_CHECK_RET(uvm_rm_mem_map_gpu(rm_mem, gpu, alignment));
         TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu(rm_mem, gpu));
 
-        TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu) == uvm_gpu_uses_proxy_channel_pool(gpu));
+        TEST_CHECK_RET(uvm_rm_mem_mapped_on_gpu_proxy(rm_mem, gpu) ==
+                       uvm_parent_gpu_needs_proxy_channel_pool(gpu->parent));
 
         TEST_NV_CHECK_RET(check_alignment(rm_mem, gpu, alignment));
     }
@@ -194,14 +197,13 @@ static NV_STATUS test_all_gpus_in_va(uvm_va_space_t *va_space)
 
         for (i = 0; i < ARRAY_SIZE(sizes); ++i) {
             for (j = 0; j < ARRAY_SIZE(mem_types); ++j) {
+                bool test_cpu_mappings = (mem_types[j] == UVM_RM_MEM_TYPE_SYS) || !g_uvm_global.conf_computing_enabled;
+
                 for (k = 0; k < ARRAY_SIZE(alignments); ++k) {
-                    bool test_cpu_mappings = true;
 
                     // Create an allocation in the GPU's address space
                     TEST_NV_CHECK_RET(uvm_rm_mem_alloc(gpu, mem_types[j], sizes[i], alignments[k], &rm_mem));
 
-                    test_cpu_mappings = mem_types[j] == UVM_RM_MEM_TYPE_SYS ||
-                                        !uvm_conf_computing_mode_enabled(gpu);
                     // Test CPU mappings
                     if (test_cpu_mappings)
                         TEST_NV_CHECK_GOTO(map_cpu(rm_mem), error);

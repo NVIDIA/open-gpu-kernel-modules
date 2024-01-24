@@ -34,9 +34,11 @@
 #include "rmapi/rs_utils.h"
 #include "rmapi/rmapi_utils.h"
 #include "kernel/gpu/gr/fecs_event_list.h"
+#include "gpu/bus/kern_bus.h"
 #include "mem_mgr/no_device_mem.h"
 #include "class/cl90ce.h"
 #include "class/cl0040.h"
+#include "gpu/gsp/gsp_trace_rats_macro.h"
 
 static NV_STATUS _allocAndMapMemory(CALL_CONTEXT *pCallContext, NvP64 pAddress, MEMORY_DESCRIPTOR** ppMemDesc, NvU64 size, NvBool bKernel,
     NvP64* pKernelAddr, NvP64* pKernelPriv, NvP64* pUserAddr, NvP64* pUserPriv);
@@ -136,7 +138,7 @@ eventbufferConstruct_IMPL
 
     pEventBuffer->hClient = pCallContext->pClient->hClient;
     pEventBuffer->hSubDevice = pAllocParams->hSubDevice;
-    if (pEventBuffer->hSubDevice)
+    if (pEventBuffer->hSubDevice != 0)
     {
         status = subdeviceGetByHandle(pCallContext->pClient, pEventBuffer->hSubDevice, &pSubdevice);
         if (status != NV_OK)
@@ -185,6 +187,23 @@ eventbufferConstruct_IMPL
     {
         Memory *pMemory;
         NvBool bRequireReadOnly = bUsingVgpuStagingBuffer || !bKernel;
+        NvU32 flags = 0;
+
+        // Allow the mapping to succeed when HCC is enabled in devtools mode
+        if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pGpu)) &&
+            gpuIsCCDevToolsModeEnabled(pGpu))
+        {
+            flags = FLD_SET_DRF(OS33, _FLAGS, _ALLOW_MAPPING_ON_HCC, _YES, flags);
+        }
+
+        if (bUsingVgpuStagingBuffer)
+        {
+            flags = FLD_SET_DRF(OS33, _FLAGS, _ACCESS, _READ_ONLY, flags);
+        }
+        else
+        {
+            flags = FLD_SET_DRF(OS33, _FLAGS, _ACCESS, _READ_WRITE, flags);
+        }
 
         //
         // Buffer header
@@ -208,7 +227,8 @@ eventbufferConstruct_IMPL
             RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
             NvHandle hMemory = RES_GET_HANDLE(pMemory);
 
-            if ((!bKernel) && bUsingVgpuStagingBuffer)
+            // Dup memory object under CPU-RM's hClient
+            if (!bKernel)
             {
                 status = pRmApi->DupObject(pRmApi,
                                            hMapperClient,
@@ -229,9 +249,7 @@ eventbufferConstruct_IMPL
                                       0,
                                       pMemory->Length,
                                       &pKernelMap->headerAddr,
-                                      bUsingVgpuStagingBuffer
-                                          ? DRF_DEF(OS33, _FLAGS, _ACCESS, _READ_ONLY)
-                                          : DRF_DEF(OS33, _FLAGS, _ACCESS, _READ_WRITE));
+                                      flags);
 
             if (status != NV_OK)
             {
@@ -269,7 +287,8 @@ eventbufferConstruct_IMPL
             RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
             NvHandle hMemory = RES_GET_HANDLE(pMemory);
 
-            if ((!bKernel) && bUsingVgpuStagingBuffer)
+            // Dup memory object under CPU-RM's hClient
+            if (!bKernel)
             {
                 status = pRmApi->DupObject(pRmApi,
                                            hMapperClient,
@@ -290,9 +309,7 @@ eventbufferConstruct_IMPL
                                       0,
                                       pMemory->Length,
                                       &pKernelMap->recordBuffAddr,
-                                      bUsingVgpuStagingBuffer
-                                          ? DRF_DEF(OS33, _FLAGS, _ACCESS, _READ_ONLY)
-                                          : DRF_DEF(OS33, _FLAGS, _ACCESS, _READ_WRITE));
+                                      flags);
             if (status != NV_OK)
             {
                 goto cleanup;
@@ -330,7 +347,8 @@ eventbufferConstruct_IMPL
                 RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
                 NvHandle hMemory = RES_GET_HANDLE(pMemory);
 
-                if ((!bKernel) && bUsingVgpuStagingBuffer)
+                // Dup memory object under CPU-RM's hClient
+                if (!bKernel)
                 {
                     status = pRmApi->DupObject(pRmApi,
                                                hMapperClient,
@@ -351,9 +369,7 @@ eventbufferConstruct_IMPL
                                           0,
                                           pMemory->Length,
                                           &pKernelMap->recordBuffAddr,
-                                          bUsingVgpuStagingBuffer
-                                            ? DRF_DEF(OS33, _FLAGS, _ACCESS, _READ_ONLY)
-                                            : DRF_DEF(OS33, _FLAGS, _ACCESS, _READ_WRITE));
+                                          flags);
                 if (status != NV_OK)
                 {
                     goto cleanup;
@@ -478,6 +494,9 @@ eventbufferDestruct_IMPL
     // Clean-up all bind points
     videoRemoveAllBindpoints(pEventBuffer);
     fecsRemoveAllBindpoints(pEventBuffer);
+#if KERNEL_GSP_TRACING_RATS_ENABLED
+    gspTraceRemoveAllBindpoints(pEventBuffer);
+#endif
 
     _unmapAndFreeMemory(pEventBuffer->pHeaderDesc, bKernel, pKernelMap->headerAddr,
         pKernelMap->headerPriv, pClientMap->headerAddr, pClientMap->headerPriv);

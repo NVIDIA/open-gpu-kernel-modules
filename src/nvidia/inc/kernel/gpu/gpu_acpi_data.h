@@ -33,6 +33,14 @@
 
 #define MAX_DSM_SUPPORTED_FUNCS_RTN_LEN 8 // # bytes to store supported functions
 
+/* Indicates the current state of mux */
+typedef enum
+{
+    dispMuxState_None = 0,
+    dispMuxState_IntegratedGPU,
+    dispMuxState_DiscreteGPU,
+} DISPMUXSTATE;
+
 typedef struct {
     // supported function status and cache
     NvU32  suppFuncStatus;
@@ -88,6 +96,7 @@ typedef struct MUX_METHOD_DATA
     NvU32                       tableLen;
     MUX_METHOD_DATA_ELEMENT     acpiIdMuxModeTable[NV0073_CTRL_SYSTEM_ACPI_ID_MAP_MAX_DISPLAYS];
     MUX_METHOD_DATA_ELEMENT     acpiIdMuxPartTable[NV0073_CTRL_SYSTEM_ACPI_ID_MAP_MAX_DISPLAYS];
+    MUX_METHOD_DATA_ELEMENT     acpiIdMuxStateTable[NV0073_CTRL_SYSTEM_ACPI_ID_MAP_MAX_DISPLAYS];    
 } MUX_METHOD_DATA;
 
 typedef struct CAPS_METHOD_DATA

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -88,11 +88,16 @@ typedef struct _def_dma_bar1p2p_mapping_params
 } DMA_BAR1P2P_MAPPING_PRARAMS;
 
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_VIRT_MEM_ALLOCATOR_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct VirtMemAllocator {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -513,6 +518,12 @@ struct DMA_PAGE_ARRAY
 
 // page array operations
 void dmaPageArrayInit(DMA_PAGE_ARRAY *pPageArray, void *pPageData, NvU32 pageCount);
+
+#define DMA_PAGE_ARRAY_FLAGS_NONE       0ULL
+
+void dmaPageArrayInitWithFlags(DMA_PAGE_ARRAY *pPageArray, void *pPageData, NvU32 pageCount,
+                               NvU64 flags);
+
 void dmaPageArrayInitFromMemDesc(DMA_PAGE_ARRAY *pPageArray,
                                  MEMORY_DESCRIPTOR *pMemDesc,
                                  ADDRESS_TRANSLATION addressTranslation);

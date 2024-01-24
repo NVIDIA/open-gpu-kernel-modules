@@ -52,6 +52,7 @@
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/bus/kern_bus.h"
+#include "platform/sli/sli.h"
 
 /*!
  * @brief Allocate mapping.
@@ -1136,6 +1137,23 @@ dmaPageArrayInit
 }
 
 /*!
+ * Initialize an abstracted page array with opaque page array data.
+ *
+ *  TODO: Deprecate dmaPageArrayInit once moving all the use cases.
+ */
+void
+dmaPageArrayInitWithFlags
+(
+    DMA_PAGE_ARRAY *pPageArray,    //!< [out] Abstracted page array.
+    void           *pPageData,     //!< [in] Opaque page array data.
+    NvU32           pageCount,     //!< [in] Number of pages represented
+    NvU64           pageArrayFlags //!< [in] Flags of type DMA_PAGE_ARRARY_FLAGS
+)
+{
+    dmaPageArrayInit(pPageArray, pPageData, pageCount);
+}
+
+/*!
  * Initialize an abstracted page array from a memory descriptor.
  */
 void
@@ -1184,7 +1202,9 @@ dmaPageArrayGetPhysAddr
     else
     {
         RmPhysAddr *pPteArray = pPageArray->pData;
-        addr = pPteArray[pPageArray->startIndex + pageIndex];
+        {
+            addr = pPteArray[pPageArray->startIndex + pageIndex];
+        }
     }
 
     addr |= pPageArray->orMask;

@@ -186,7 +186,7 @@ NvU32 uvm_hal_maxwell_ce_plc_mode(void)
 }
 
 // Noop, since COPY_TYPE doesn't exist in Maxwell.
-NvU32 uvm_hal_maxwell_ce_memcopy_copy_type(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
+NvU32 uvm_hal_maxwell_ce_memcopy_copy_type(uvm_gpu_address_t dst, uvm_gpu_address_t src)
 {
     return 0;
 }
@@ -212,7 +212,7 @@ void uvm_hal_maxwell_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu
 
     launch_dma_src_dst_type = gpu->parent->ce_hal->phys_mode(push, dst, src);
     launch_dma_plc_mode = gpu->parent->ce_hal->plc_mode();
-    copy_type_value = gpu->parent->ce_hal->memcopy_copy_type(push, dst, src);
+    copy_type_value = gpu->parent->ce_hal->memcopy_copy_type(dst, src);
 
     if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED))
         pipelined_value = HWCONST(B0B5, LAUNCH_DMA, DATA_TRANSFER_TYPE, PIPELINED);

@@ -3585,15 +3585,12 @@ EvoProgramSemaphore6(NVDevEvoPtr pDevEvo,
     const NVFlipNIsoSurfaceEvoHwState *pNIso;
 
     /*! Program Acq-only semaphore */
+    pSurfaceDesc = NULL;
     offset = acqMode = relMode = value = 0;
-    if (pHwState->syncObject.usingSyncpt) {
-        if (pHwState->syncObject.u.syncpts.isPreSyncptSpecified) {
-            NvU32 id = pHwState->syncObject.u.syncpts.preSyncpt;
-            pSurfaceDesc = &pDevEvo->preSyncptTable[id].surfaceDesc;
-        } else {
-            pSurfaceDesc = NULL;
-        }
-        offset = 0;
+    if (pHwState->syncObject.usingSyncpt &&
+        pHwState->syncObject.u.syncpts.isPreSyncptSpecified) {
+        NvU32 id = pHwState->syncObject.u.syncpts.preSyncpt;
+        pSurfaceDesc = &pDevEvo->preSyncptTable[id].surfaceDesc;
         acqMode = DRF_DEF(C67E, _SET_ACQ_SEMAPHORE_CONTROL, _ACQ_MODE, _CGEQ);
         value = pHwState->syncObject.u.syncpts.preValue;
     } else {
@@ -3617,16 +3614,14 @@ EvoProgramSemaphore6(NVDevEvoPtr pDevEvo,
     /*! Program Rel-only semaphore */
     pSurfaceDesc = NULL;
     offset = acqMode = relMode = value = 0;
-    if (pHwState->syncObject.usingSyncpt) {
+    if (pHwState->syncObject.usingSyncpt &&
+        pHwState->syncObject.u.syncpts.isPostSyncptSpecified) {
         pSurfaceDesc = &pHwState->syncObject.u.syncpts.surfaceDesc;
-        offset = 0;
         acqMode = DRF_DEF(C67E, _SET_SEMAPHORE_CONTROL, _SKIP_ACQ, _TRUE);
         relMode = DRF_DEF(C67E, _SET_SEMAPHORE_CONTROL, _REL_MODE, _WRITE);
         value = pHwState->syncObject.u.syncpts.postValue;
         /*! increase local max val as well */
-        if (pHwState->syncObject.u.syncpts.isPostSyncptSpecified) {
-            pChannel->postSyncpt.syncptMaxVal++;
-        }
+        pChannel->postSyncpt.syncptMaxVal++;
     } else {
         if (pHwState->syncObject.u.semaphores.releaseSurface.pSurfaceEvo != NULL) {
             pNIso = &pHwState->syncObject.u.semaphores.releaseSurface;
@@ -6771,12 +6766,19 @@ static void EvoSetStallLockC3(NVDispEvoPtr pDispEvo, const int head,
     NVEvoChannelPtr pChannel = pDevEvo->core;
     NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[pDispEvo->displayOwner];
     NVEvoHeadControlPtr pHC = &pEvoSubDev->headControl[head];
+    NvU32 data = 0x0;
 
     nvUpdateUpdateState(pDevEvo, updateState, pChannel);
 
+    if (pHC->crashLockUnstallMode) {
+        data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _UNSTALL_MODE, _CRASH_LOCK);
+    } else {
+        data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _UNSTALL_MODE, _LINE_LOCK);
+    }
+
     if (enable) {
-        NvU32 data = DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _ENABLE, _TRUE) |
-                     DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _MODE, _ONE_SHOT);
+        data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _ENABLE, _TRUE) |
+                DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _MODE, _ONE_SHOT);
 
         if (!pHC->useStallLockPin) {
             data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _LOCK_PIN, _LOCK_PIN_NONE);
@@ -6789,20 +6791,12 @@ static void EvoSetStallLockC3(NVDispEvoPtr pDispEvo, const int head,
             data |= DRF_NUM(C37D, _HEAD_SET_STALL_LOCK, _LOCK_PIN,
                             NVC37D_HEAD_SET_STALL_LOCK_LOCK_PIN_LOCK_PIN(pin));
         }
-
-        if (pHC->crashLockUnstallMode) {
-            data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _UNSTALL_MODE, _CRASH_LOCK);
-        } else {
-            data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _UNSTALL_MODE, _LINE_LOCK);
-        }
-
-        nvDmaSetStartEvoMethod(pChannel, NVC37D_HEAD_SET_STALL_LOCK(head), 1);
-        nvDmaSetEvoMethodData(pChannel, data);
     } else {
-        nvDmaSetStartEvoMethod(pChannel, NVC37D_HEAD_SET_STALL_LOCK(head), 1);
-        nvDmaSetEvoMethodData(pChannel,
-            DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _ENABLE, _FALSE));
+        data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _ENABLE, _FALSE);
     }
+
+    nvDmaSetStartEvoMethod(pChannel, NVC37D_HEAD_SET_STALL_LOCK(head), 1);
+    nvDmaSetEvoMethodData(pChannel, data);
 }
 
 static NvBool GetChannelState(NVDevEvoPtr pDevEvo,

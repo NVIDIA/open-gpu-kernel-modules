@@ -35,6 +35,7 @@
 #include "os-interface.h"
 #include "nv-timer.h"
 #include "nv-time.h"
+#include "nv-chardev-numbers.h"
 
 #define NV_KERNEL_NAME "Linux"
 
@@ -404,37 +405,6 @@ extern int nv_pat_mode;
 #define NV_GFP_DMA32 (NV_GFP_KERNEL | GFP_DMA32)
 #else
 #define NV_GFP_DMA32 (NV_GFP_KERNEL)
-#endif
-
-extern NvBool nvos_is_chipset_io_coherent(void);
-
-#if defined(NVCPU_X86_64)
-#define CACHE_FLUSH()  asm volatile("wbinvd":::"memory")
-#define WRITE_COMBINE_FLUSH() asm volatile("sfence":::"memory")
-#elif defined(NVCPU_AARCH64)
-    static inline void nv_flush_cache_cpu(void *info)
-    {
-        if (!nvos_is_chipset_io_coherent())
-        {
-#if defined(NV_FLUSH_CACHE_ALL_PRESENT)
-            flush_cache_all();
-#else
-            WARN_ONCE(0, "NVRM: kernel does not support flush_cache_all()\n");
-#endif
-        }
-    }
-#define CACHE_FLUSH()            nv_flush_cache_cpu(NULL)
-#define CACHE_FLUSH_ALL()        on_each_cpu(nv_flush_cache_cpu, NULL, 1)
-#define WRITE_COMBINE_FLUSH()    mb()
-#elif defined(NVCPU_PPC64LE)
-#define CACHE_FLUSH()            asm volatile("sync;  \n" \
-                                              "isync; \n" ::: "memory")
-#define WRITE_COMBINE_FLUSH()    CACHE_FLUSH()
-#elif defined(NVCPU_RISCV64)
-#define CACHE_FLUSH()            mb()
-#define WRITE_COMBINE_FLUSH()    CACHE_FLUSH()
-#else
-#error "CACHE_FLUSH() and WRITE_COMBINE_FLUSH() need to be defined for this architecture."
 #endif
 
 typedef enum
@@ -1380,7 +1350,19 @@ typedef struct nv_dma_map_s {
          i < dm->mapping.discontig.submap_count;                              \
          i++, sm = &dm->mapping.discontig.submaps[i])
 
+/*
+ * On 4K ARM kernels, use max submap size a multiple of 64K to keep nv-p2p happy.
+ * Despite 4K OS pages, we still use 64K P2P pages due to dependent modules still using 64K.
+ * Instead of using (4G-4K), use max submap size as (4G-64K) since the mapped IOVA range
+ * must be aligned at 64K boundary.
+ */
+#if defined(CONFIG_ARM64_4K_PAGES)
+#define NV_DMA_U32_MAX_4K_PAGES           ((NvU32)((NV_U32_MAX >> PAGE_SHIFT) + 1))
+#define NV_DMA_SUBMAP_MAX_PAGES           ((NvU32)(NV_DMA_U32_MAX_4K_PAGES - 16))
+#else
 #define NV_DMA_SUBMAP_MAX_PAGES           ((NvU32)(NV_U32_MAX >> PAGE_SHIFT))
+#endif
+
 #define NV_DMA_SUBMAP_IDX_TO_PAGE_IDX(s)  (s * NV_DMA_SUBMAP_MAX_PAGES)
 
 /*
@@ -1460,6 +1442,11 @@ typedef struct coherent_link_info_s {
      * baremetal OS environment it is System Physical Address(SPA) and in the case
      * of virutalized OS environment it is Intermediate Physical Address(IPA) */
     NvU64 gpu_mem_pa;
+
+    /* Physical address of the reserved portion of the GPU memory, applicable
+     * only in Grace Hopper self hosted passthrough virtualizatioan platform. */
+    NvU64 rsvd_mem_pa;
+
     /* Bitmap of NUMA node ids, corresponding to the reserved PXMs,
      * available for adding GPU memory to the kernel as system RAM */
     DECLARE_BITMAP(free_node_bitmap, MAX_NUMNODES);
@@ -1607,6 +1594,26 @@ typedef struct nv_linux_state_s {
 
     struct nv_dma_device dma_dev;
     struct nv_dma_device niso_dma_dev;
+
+    /*
+     * Background kthread for handling deferred open operations
+     * (e.g. from O_NONBLOCK).
+     *
+     * Adding to open_q and reading/writing is_accepting_opens
+     * are protected by nvl->open_q_lock (not nvl->ldata_lock).
+     * This allows new deferred open operations to be enqueued without
+     * blocking behind previous ones (which hold nvl->ldata_lock).
+     *
+     * Adding to open_q is only safe if is_accepting_opens is true.
+     * This prevents open operations from racing with device removal.
+     *
+     * Stopping open_q is only safe after setting is_accepting_opens to false.
+     * This ensures that the open_q (and the larger nvl structure) will
+     * outlive any of the open operations enqueued.
+     */
+    nv_kthread_q_t open_q;
+    NvBool is_accepting_opens;
+    struct semaphore open_q_lock;
 } nv_linux_state_t;
 
 extern nv_linux_state_t *nv_linux_devices;
@@ -1656,7 +1663,7 @@ typedef struct
 
     nvidia_stack_t *sp;
     nv_alloc_t *free_list;
-    void *nvptr;
+    nv_linux_state_t *nvptr;
     nvidia_event_t *event_data_head, *event_data_tail;
     NvBool dataless_event_pending;
     nv_spinlock_t fp_lock;
@@ -1667,12 +1674,33 @@ typedef struct
     nv_alloc_mapping_context_t mmap_context;
     struct address_space mapping;
 
+    nv_kthread_q_item_t open_q_item;
+    struct completion open_complete;
+    nv_linux_state_t *deferred_open_nvl;
+    int open_rc;
+    NV_STATUS adapter_status;
+
     struct list_head entry;
 } nv_linux_file_private_t;
 
 static inline nv_linux_file_private_t *nv_get_nvlfp_from_nvfp(nv_file_private_t *nvfp)
 {
     return container_of(nvfp, nv_linux_file_private_t, nvfp);
+}
+
+static inline int nv_wait_open_complete_interruptible(nv_linux_file_private_t *nvlfp)
+{
+    return wait_for_completion_interruptible(&nvlfp->open_complete);
+}
+
+static inline void nv_wait_open_complete(nv_linux_file_private_t *nvlfp)
+{
+    wait_for_completion(&nvlfp->open_complete);
+}
+
+static inline NvBool nv_is_open_complete(nv_linux_file_private_t *nvlfp)
+{
+    return completion_done(&nvlfp->open_complete);
 }
 
 #define NV_SET_FILE_PRIVATE(filep,data) ((filep)->private_data = (data))
@@ -1756,11 +1784,17 @@ static inline NV_STATUS nv_check_gpu_state(nv_state_t *nv)
 extern NvU32 NVreg_EnableUserNUMAManagement;
 extern NvU32 NVreg_RegisterPCIDriver;
 extern NvU32 NVreg_EnableResizableBar;
+extern NvU32 NVreg_EnableNonblockingOpen;
 
 extern NvU32 num_probed_nv_devices;
 extern NvU32 num_nv_devices;
 
 #define NV_FILE_INODE(file) (file)->f_inode
+
+static inline int nv_is_control_device(struct inode *inode)
+{
+    return (minor((inode)->i_rdev) == NV_MINOR_DEVICE_NUMBER_CONTROL_DEVICE);
+}
 
 #if defined(NV_DOM0_KERNEL_PRESENT) || defined(NV_VGPU_KVM_BUILD)
 #define NV_VGX_HYPER
@@ -2039,5 +2073,8 @@ typedef enum
 #if defined(NV_LINUX_CLK_PROVIDER_H_PRESENT)
 #include <linux/clk-provider.h>
 #endif
+
+#define NV_EXPORT_SYMBOL(symbol)        EXPORT_SYMBOL_GPL(symbol)
+#define NV_CHECK_EXPORT_SYMBOL(symbol)  NV_IS_EXPORT_SYMBOL_PRESENT_##symbol
 
 #endif  /* _NV_LINUX_H_ */

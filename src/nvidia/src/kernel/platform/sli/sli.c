@@ -125,8 +125,14 @@ rmSliSearchForSliCombination(OBJGPU *pGpu, NvU32 nWay, NvU32 numFoundValidConfig
     do
     {
 
+        gpuMask = NVBIT(pGpu->gpuInstance) | mask;
+
+        //
         // Look for a mask contained in the GPU mask,
-        if ((mask & gpuAttachMask) != mask)
+        // and check that GPUs are initialized
+        //
+        if (((mask & gpuAttachMask) != mask) ||
+            (!gpumgrAreGpusInitialized(gpuMask)))
         {
             // Last mask. Exit loop.
             if (mask == largestMask)
@@ -137,8 +143,6 @@ rmSliSearchForSliCombination(OBJGPU *pGpu, NvU32 nWay, NvU32 numFoundValidConfig
             NV_ASSERT(mask);
             continue;
         }
-
-        gpuMask = NVBIT(pGpu->gpuInstance) | mask;
 
         // Do Sli link detection
         gpumgrDetectSliLinkFromGpus(NV_TRUE, nWay, gpuMask,

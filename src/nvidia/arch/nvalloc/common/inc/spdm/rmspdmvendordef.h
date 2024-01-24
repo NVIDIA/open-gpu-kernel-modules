@@ -33,16 +33,23 @@
 
 
 /* ------------------------- Macros ----------------------------------------- */
-#define SPDM_ATTESTATION_REPORT_MAX_SIZE    (0x2000)
-#define SPDM_MAX_MESSAGE_BUFFER_SIZE        (0x1000)
-#define SPDM_MAX_EXCHANGE_BUFFER_SIZE       (2 * SPDM_MAX_MESSAGE_BUFFER_SIZE)
-#define SPDM_MAX_CERT_CHAIN_SIZE            (SPDM_MAX_MESSAGE_BUFFER_SIZE)
-#define SPDM_CERT_DEFAULT_SLOT_ID           (0)
-#define SPDM_CAPABILITIES_CT_EXPONENT_MAX   (0xFF)
-#define BIN_STR_CONCAT_BUFFER_MAX_BYTES     (128)
+#define SPDM_MAX_MEASUREMENT_BLOCK_COUNT     (64)
+#define SPDM_CERT_DEFAULT_SLOT_ID            (0)
+#define SPDM_CAPABILITIES_CT_EXPONENT_MAX    (0x1F)
+#define SPDM_DEFAULT_HEARTBEAT_PERIOD_IN_SEC (4)
 
 #define NV_BYTE_TO_BIT_OVERFLOW_MASK_UINT32 (0xE0000000)
 #define IS_BYTE_TO_BIT_OVERFLOW_UINT32(a) \
         ((a & NV_BYTE_TO_BIT_OVERFLOW_MASK_UINT32) != 0)
+
+/* ---------------------- Public defines ------------------------------------- */
+#define NV_KEY_UPDATE_TRIGGER_THRESHOLD                 (0x10000000)
+
+#define NV_KEY_UPDATE_TRIGGER_ID_INVALID                (0)
+#define NV_KEY_UPDATE_TRIGGER_ID_GET_MEASUREMENTS       (1)
+#define NV_KEY_UPDATE_TRIGGER_ID_HEARTBEAT              (2)
+#define NV_KEY_UPDATE_TRIGGER_ID_LAST                   (3)
+
+#define NV_SPDM_ENCAP_CERT_SIZE_IN_BYTE                 (578)
 
 #endif // _RMSPDMVENDORDEF_H_

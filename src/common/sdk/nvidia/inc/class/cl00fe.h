@@ -41,6 +41,7 @@
 #define NV_MEMORY_MAPPER_ALLOCATION_PARAMS_MESSAGE_ID (0x00FEU)
 
 typedef struct NV_MEMORY_MAPPER_ALLOCATION_PARAMS {
-    NvBool unused;
+    NvHandle hSemaphoreSurface;
+    NvU32    maxQueueSize;
 } NV_MEMORY_MAPPER_ALLOCATION_PARAMS;
 

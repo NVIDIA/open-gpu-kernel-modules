@@ -25,7 +25,6 @@
 #include "os/os.h"
 #include "gpu/gpu.h"
 #include "gpu/subdevice/generic_engine.h"
-#include "gpu/subdevice/subdevice.h"
 #include "rmapi/client.h"
 
 #include <class/cl90e6.h>

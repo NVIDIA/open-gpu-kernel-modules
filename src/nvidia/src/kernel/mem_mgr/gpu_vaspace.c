@@ -54,6 +54,7 @@
 #include "deprecated/rmapi_deprecated.h"
 #include "rmapi/rs_utils.h"
 #include "gpu/mem_mgr/vaspace_api.h"
+#include "platform/sli/sli.h"
 
 
 
@@ -120,7 +121,7 @@ _gvaspaceFreeVASBlock
 (
     OBJEHEAP  *pHeap,
     void      *pEnv,
-    PEMEMBLOCK pMemBlock,
+    EMEMBLOCK *pMemBlock,
     NvU32     *pContinue,
     NvU32     *pInvalCursor
 );
@@ -1980,7 +1981,7 @@ gvaspaceIncAllocRefCnt_IMPL
     return NV_OK;
 }
 
-POBJEHEAP
+OBJEHEAP *
 gvaspaceGetHeap_IMPL(OBJGVASPACE *pGVAS)
 {
     return pGVAS->pHeap;
@@ -2075,7 +2076,11 @@ gvaspaceGetPasid_IMPL(OBJGVASPACE *pGVAS, NvU32 *pPasid)
               pGVAS->bIsAtsEnabled, pGVAS->processAddrSpaceId);
 
     NV_ASSERT_OR_RETURN(pGVAS->bIsAtsEnabled, NV_ERR_INVALID_STATE);
-    NV_ASSERT_OR_RETURN(pGVAS->processAddrSpaceId != NV_U32_MAX, NV_ERR_INVALID_STATE);
+    if (pGVAS->processAddrSpaceId == NV_U32_MAX)
+    {
+        return NV_ERR_NOT_READY;
+    }
+
     *pPasid = pGVAS->processAddrSpaceId;
     return NV_OK;
 }
@@ -4628,7 +4633,7 @@ _gvaspacePinLazyPageTables
 )
 {
     NV_STATUS     status = NV_OK;
-    PEMEMBLOCK    pMemBlock;
+    EMEMBLOCK    *pMemBlock;
     PGVAS_BLOCK   pVASBlock;
 
     // Search for the VA block, abort if not found.
@@ -4699,7 +4704,7 @@ _gvaspaceFreeVASBlock
 (
     OBJEHEAP  *pHeap,
     void      *pEnv,
-    PEMEMBLOCK pMemBlock,
+    EMEMBLOCK *pMemBlock,
     NvU32     *pContinue,
     NvU32     *pInvalCursor
 )
@@ -4824,6 +4829,12 @@ _gvaspaceMappingRemove
     NV_STATUS     status    = NV_OK;
     GVAS_MAPPING *pMapNode  = NULL;
     const NvU32   gpuMask   = NVBIT(pGpu->gpuInstance);
+    NvU64 nodeVaLo;
+    NvU64 nodeVaHi;
+    const VAS_MAP_FLAGS flags = { 0 };
+    NvBool bPartialUnmap = NV_FALSE;
+    NvBool bLoEntryAdded = NV_FALSE;
+    NvBool bHiEntryAdded = NV_FALSE;
 
     // Search for existing mapping.
     status = btreeSearch(vaLo, (NODE**)&pMapNode, &pVASBlock->pMapTree->node);
@@ -4831,19 +4842,79 @@ _gvaspaceMappingRemove
 
     // Check for consistency.
     NV_ASSERT_OR_RETURN(gpuMask == (pMapNode->gpuMask & gpuMask), NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pMapNode->node.keyStart == vaLo,          NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pMapNode->node.keyEnd   == vaHi,          NV_ERR_INVALID_ARGUMENT);
+    if (pMapNode->node.keyStart != vaLo ||
+        pMapNode->node.keyEnd   != vaHi)
+    {
+        // check the entire range falls within the existing mapping
+        NV_ASSERT_OR_RETURN(pMapNode->node.keyStart <= vaLo &&
+                            pMapNode->node.keyEnd >= vaHi, NV_ERR_INVALID_ARGUMENT);
+        // Allow partial unmap only when the mapping is not shared
+        NV_ASSERT_OR_RETURN(pMapNode->gpuMask == gpuMask,
+                            NV_ERR_INVALID_ARGUMENT);
+        NV_PRINTF(LEVEL_INFO, "Partial unmap: Removing vaLo: 0x%llx vaHi: 0x%llx.\n",
+                  vaLo, vaHi);
+        bPartialUnmap = NV_TRUE;
+    }
 
     // Remove GPU from mapping mask.
     pMapNode->gpuMask &= ~gpuMask;
 
+    nodeVaLo = pMapNode->node.keyStart;
+    nodeVaHi = pMapNode->node.keyEnd;
     // Remove mapping if unused.
     if (0 == pMapNode->gpuMask)
     {
         btreeUnlink(&pMapNode->node, (NODE**)&pVASBlock->pMapTree);
-        portMemFree(pMapNode);
     }
 
+    if (nodeVaLo < vaLo)
+    {
+        status = _gvaspaceMappingInsert(pGVAS, pGpu, pVASBlock, nodeVaLo, vaLo - 1, flags);
+        NV_ASSERT_OR_GOTO(NV_OK == status, done);
+        NV_PRINTF(LEVEL_INFO, "Partial unmap: Inserting partial vaLo: 0x%llx "
+                  "vaHi: 0x%llx. status: 0x%x\n", nodeVaLo, vaLo - 1, status);
+        bLoEntryAdded = NV_TRUE;
+    }
+    if (nodeVaHi > vaHi)
+    {
+        status = _gvaspaceMappingInsert(pGVAS, pGpu, pVASBlock, vaHi + 1, nodeVaHi, flags);
+        NV_ASSERT_OR_GOTO(NV_OK == status, done);
+        NV_PRINTF(LEVEL_INFO, "Partial unmap: Inserting partial vaLo: 0x%llx "
+                  "vaHi: 0x%llx. status: 0x%x\n",
+                  vaHi + 1, nodeVaHi, status);
+        bHiEntryAdded = NV_TRUE;
+    }
+
+done:
+    if (bPartialUnmap &&
+        (status != NV_OK))
+    {
+        if (bLoEntryAdded)
+        {
+            NV_ASSERT_OK(_gvaspaceMappingRemove(pGVAS, pGpu, pVASBlock,
+                                                nodeVaLo, vaLo - 1));
+        }
+        if (bHiEntryAdded)
+        {
+            NV_ASSERT_OK(_gvaspaceMappingRemove(pGVAS, pGpu, pVASBlock,
+                                                vaHi + 1, nodeVaHi));
+        }
+
+        // Add the original mapping back
+        portMemSet(pMapNode, 0, sizeof(*pMapNode));
+        pMapNode->node.keyStart = nodeVaLo;
+        pMapNode->node.keyEnd   = nodeVaHi;
+        pMapNode->gpuMask       = gpuMask;
+        NV_ASSERT_OK(btreeInsert(&pMapNode->node, (NODE**)&pVASBlock->pMapTree));
+
+        return status;
+    }
+
+    // Free if unused.
+    if (0 == pMapNode->gpuMask)
+    {
+        portMemFree(pMapNode);
+    }
     return status;
 }
 

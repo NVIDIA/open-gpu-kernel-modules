@@ -35,12 +35,13 @@
 #include <linux/list.h>
 #include <linux/rwsem.h>
 #include <linux/freezer.h>
+#include <linux/poll.h>
+#include <linux/cdev.h>
 
 #include <acpi/video.h>
 
 #include "nvstatus.h"
 
-#include "nv-register-module.h"
 #include "nv-modeset-interface.h"
 #include "nv-kref.h"
 
@@ -53,6 +54,7 @@
 #include "nv-kthread-q.h"
 #include "nv-time.h"
 #include "nv-lock.h"
+#include "nv-chardev-numbers.h"
 
 #if !defined(CONFIG_RETPOLINE)
 #include "nv-retpoline.h"
@@ -73,6 +75,12 @@ module_param_named(disable_vrr_memclk_switch, disable_vrr_memclk_switch, bool, 0
 
 static bool hdmi_deepcolor = false;
 module_param_named(hdmi_deepcolor, hdmi_deepcolor, bool, 0400);
+
+static bool vblank_sem_control = false;
+module_param_named(vblank_sem_control, vblank_sem_control, bool, 0400);
+
+static bool opportunistic_display_sync = true;
+module_param_named(opportunistic_display_sync, opportunistic_display_sync, bool, 0400);
 
 /* These parameters are used for fault injection tests.  Normally the defaults
  * should be used. */
@@ -115,6 +123,16 @@ NvBool nvkms_disable_vrr_memclk_switch(void)
 NvBool nvkms_hdmi_deepcolor(void)
 {
     return hdmi_deepcolor;
+}
+
+NvBool nvkms_vblank_sem_control(void)
+{
+    return vblank_sem_control;
+}
+
+NvBool nvkms_opportunistic_display_sync(void)
+{
+    return opportunistic_display_sync;
 }
 
 #define NVKMS_SYNCPT_STUBS_NEEDED
@@ -482,6 +500,7 @@ nvkms_event_queue_changed(nvkms_per_open_handle_t *pOpenKernel,
 static void nvkms_suspend(NvU32 gpuId)
 {
     if (gpuId == 0) {
+        nvKmsKapiSuspendResume(NV_TRUE /* suspend */);
         nvkms_write_lock_pm_lock();
     }
 
@@ -498,6 +517,7 @@ static void nvkms_resume(NvU32 gpuId)
 
     if (gpuId == 0) {
         nvkms_write_unlock_pm_lock();
+        nvKmsKapiSuspendResume(NV_FALSE /* suspend */);
     }
 }
 
@@ -825,49 +845,6 @@ void nvkms_free_timer(nvkms_timer_handle_t *handle)
     }
 
     timer->cancel = NV_TRUE;
-}
-
-void* nvkms_get_per_open_data(int fd)
-{
-    struct file *filp = fget(fd);
-    struct nvkms_per_open *popen = NULL;
-    dev_t rdev = 0;
-    void *data = NULL;
-
-    if (filp == NULL) {
-        return NULL;
-    }
-
-    if (filp->f_inode == NULL) {
-        goto done;
-    }
-    rdev = filp->f_inode->i_rdev;
-
-    if ((MAJOR(rdev) != NVKMS_MAJOR_DEVICE_NUMBER) ||
-        (MINOR(rdev) != NVKMS_MINOR_DEVICE_NUMBER)) {
-        goto done;
-    }
-
-    popen = filp->private_data;
-    if (popen == NULL) {
-        goto done;
-    }
-
-    data = popen->data;
-
-done:
-    /*
-     * fget() incremented the struct file's reference count, which
-     * needs to be balanced with a call to fput().  It is safe to
-     * decrement the reference count before returning
-     * filp->private_data because core NVKMS is currently holding the
-     * nvkms_lock, which prevents the nvkms_close() => nvKmsClose()
-     * call chain from freeing the file out from under the caller of
-     * nvkms_get_per_open_data().
-     */
-    fput(filp);
-
-    return data;
 }
 
 NvBool nvkms_fd_is_nvidia_chardev(int fd)
@@ -1621,6 +1598,12 @@ static int nvkms_ioctl(struct inode *inode, struct file *filp,
     return status;
 }
 
+static long nvkms_unlocked_ioctl(struct file *filp, unsigned int cmd,
+                                 unsigned long arg)
+{
+    return nvkms_ioctl(filp->f_inode, filp, cmd, arg);
+}
+
 static unsigned int nvkms_poll(struct file *filp, poll_table *wait)
 {
     unsigned int mask = 0;
@@ -1648,16 +1631,72 @@ static unsigned int nvkms_poll(struct file *filp, poll_table *wait)
  * Module loading support code.
  *************************************************************************/
 
-static nvidia_module_t nvidia_modeset_module = {
+#define NVKMS_RDEV  (MKDEV(NV_MAJOR_DEVICE_NUMBER, \
+                           NV_MINOR_DEVICE_NUMBER_MODESET_DEVICE))
+
+static struct file_operations nvkms_fops = {
     .owner       = THIS_MODULE,
-    .module_name = "nvidia-modeset",
-    .instance    = 1, /* minor number: 255-1=254 */
-    .open        = nvkms_open,
-    .close       = nvkms_close,
-    .mmap        = nvkms_mmap,
-    .ioctl       = nvkms_ioctl,
     .poll        = nvkms_poll,
+    .unlocked_ioctl = nvkms_unlocked_ioctl,
+#if NVCPU_IS_X86_64 || NVCPU_IS_AARCH64
+    .compat_ioctl = nvkms_unlocked_ioctl,
+#endif
+    .mmap        = nvkms_mmap,
+    .open        = nvkms_open,
+    .release     = nvkms_close,
 };
+
+static struct cdev nvkms_device_cdev;
+
+static int __init nvkms_register_chrdev(void)
+{
+    int ret;
+
+    ret = register_chrdev_region(NVKMS_RDEV, 1, "nvidia-modeset");
+    if (ret < 0) {
+        return ret;
+    }
+
+    cdev_init(&nvkms_device_cdev, &nvkms_fops);
+    ret = cdev_add(&nvkms_device_cdev, NVKMS_RDEV, 1);
+    if (ret < 0) {
+        unregister_chrdev_region(NVKMS_RDEV, 1);
+        return ret;
+    }
+
+    return ret;
+}
+
+static void nvkms_unregister_chrdev(void)
+{
+    cdev_del(&nvkms_device_cdev);
+    unregister_chrdev_region(NVKMS_RDEV, 1);
+}
+
+void* nvkms_get_per_open_data(int fd)
+{
+    struct file *filp = fget(fd);
+    void *data = NULL;
+
+    if (filp) {
+        if (filp->f_op == &nvkms_fops && filp->private_data) {
+            struct nvkms_per_open *popen = filp->private_data;
+            data = popen->data;
+        }
+
+        /*
+         * fget() incremented the struct file's reference count, which needs to
+         * be balanced with a call to fput().  It is safe to decrement the
+         * reference count before returning filp->private_data because core
+         * NVKMS is currently holding the nvkms_lock, which prevents the
+         * nvkms_close() => nvKmsClose() call chain from freeing the file out
+         * from under the caller of nvkms_get_per_open_data().
+         */
+        fput(filp);
+    }
+
+    return data;
+}
 
 static int __init nvkms_init(void)
 {
@@ -1689,10 +1728,9 @@ static int __init nvkms_init(void)
     INIT_LIST_HEAD(&nvkms_timers.list);
     spin_lock_init(&nvkms_timers.lock);
 
-    ret = nvidia_register_module(&nvidia_modeset_module);
-
+    ret = nvkms_register_chrdev();
     if (ret != 0) {
-        goto fail_register_module;
+        goto fail_register_chrdev;
     }
 
     down(&nvkms_lock);
@@ -1711,8 +1749,8 @@ static int __init nvkms_init(void)
     return 0;
 
 fail_module_load:
-    nvidia_unregister_module(&nvidia_modeset_module);
-fail_register_module:
+    nvkms_unregister_chrdev();
+fail_register_chrdev:
     nv_kthread_q_stop(&nvkms_deferred_close_kthread_q);
 fail_deferred_close_kthread:
     nv_kthread_q_stop(&nvkms_kthread_q);
@@ -1776,7 +1814,7 @@ restart:
     nv_kthread_q_stop(&nvkms_deferred_close_kthread_q);
     nv_kthread_q_stop(&nvkms_kthread_q);
 
-    nvidia_unregister_module(&nvidia_modeset_module);
+    nvkms_unregister_chrdev();
     nvkms_free_rm();
 
     if (malloc_verbose) {

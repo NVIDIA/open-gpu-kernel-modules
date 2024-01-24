@@ -43,6 +43,7 @@
 #include "gpu/mem_mgr/context_dma.h"
 #include "gpu/gpu.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
 #include "vgpu/rpc.h"
 
 static void
@@ -773,6 +774,10 @@ kdispSetPushBufferParamsToPhysical_IMPL
         // Generate PUSHBUFFER_ADDR. Shift the addr to get the size in 4KB
         pushBufferParams.physicalAddr = memdescGetPhysAddr(memdescGetMemDescFromGpu(pBufferContextDma->pMemDesc, pGpu), AT_GPU, 0);
         pushBufferParams.cacheSnoop= pBufferContextDma->CacheSnoop;
+        pushBufferParams.pbTargetAperture = kdispGetPBTargetAperture_HAL(pGpu,
+                                                                         pKernelDisplay,
+                                                                         pushBufferParams.addressSpace,
+                                                                         pushBufferParams.cacheSnoop);
         pushBufferParams.valid = NV_TRUE;
     }
     else

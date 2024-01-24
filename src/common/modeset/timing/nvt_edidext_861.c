@@ -40,7 +40,6 @@ PUSH_SEGMENTS
     {hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',(ip)=='i' ? NVT_INTERLACED:NVT_PROGRESSIVE,\
     0,{0,((rrx1k)+500)/1000,rrx1k,((1?aspect)<<16)|(0?aspect),rep,{0},{0},{0},{0},NVT_STATUS_EDID_861STn(format),"CEA-861B:#"#format""}}
 
-
 #define NVT_TIMING(hv,hfp,hsw,ht,hsp,vv,vfp,vsw,vt,vsp,rrx1k,ip,aspect,rep,format,name) \
     {hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',(ip)=='i' ? NVT_INTERLACED:NVT_PROGRESSIVE,\
     0,{0,((rrx1k)+500)/1000,rrx1k,((1?aspect)<<16)|(0?aspect),rep,{0},{0},{0},{0},NVT_TYPE_NV_PREDEFINEDn(format),name}}
@@ -49,6 +48,8 @@ PUSH_SEGMENTS
     {hv,0,hfp,hsw,ht,(hsp)=='-',vv,0,vfp,vsw,vt,(vsp)=='-',(ip)=='i' ? NVT_INTERLACED:NVT_PROGRESSIVE,\
     0,{0,((rrx1k)+500)/1000,rrx1k,((1?aspect)<<16)|(0?aspect),rep,{0},{0},{0},{0},NVT_STATUS_HDMI_EXTn(format),name}}
 
+#define RID_MODE(hv, hsp, vv, vsp, ip, aspect, rid) \
+    {hv, (hsp)=='-', vv, (vsp)=='-',(ip)=='i'? NVT_INTERLACED:NVT_PROGRESSIVE,((1?aspect)<<16)|(0?aspect), rid}
 DATA_SEGMENT(PAGE_DATA)
 CONS_SEGMENT(PAGE_CONS)
 
@@ -280,7 +281,7 @@ static const NVT_TIMING EIA861B[]=
     EIA_TIMING( 4096, 800, 88, 5280,'+',2160, 8,10,2250,'+',100000,'p',256:135,0x1,218),// 4096 x 2160p @100        (Format 218)
     EIA_TIMING( 4096,  88, 88, 4400,'+',2160, 8,10,2250,'+',119880,'p',256:135,0x1,219),// 4096 x 2160p @119.88/120 (Format 219)
     // 220-255 Reserved for the Future
-    // the end                                                         
+    // the end
     EIA_TIMING(0,0,0,0,'-',0,0,0,0,'-',0,'p',4:3,0,0)
 };
 static NvU32 MAX_CEA861B_FORMAT = sizeof(EIA861B)/sizeof(EIA861B[0]) - 1;
@@ -338,6 +339,81 @@ static const NvU32 EIA861B_DUAL_ASPECT_VICS[][2] =
 };
 static NvU32 MAX_EIA861B_DUAL_ASPECT_VICS = sizeof(EIA861B_DUAL_ASPECT_VICS) / sizeof(EIA861B_DUAL_ASPECT_VICS[0]);
 
+static const NVT_RID_CODES RID[] =
+{
+    RID_MODE(    0, '+',    0, '+', 'p',  16:9 , 0),   // No Resolution Identification Available
+    RID_MODE( 1280, '+',  720, '+', 'p',  16:9 , 1),   // HD, 720p
+    RID_MODE( 1280, '+',  720, '+', 'p',  64:27, 2),   // HD, 720p, 21:9 anamorphic
+    RID_MODE( 1680, '+',  720, '+', 'p',  64:27, 3),   // 21:9 "1.5k"
+    RID_MODE( 1920, '+', 1080, '+', 'p',  16:9 , 4),   // Full HD, 1080p
+    RID_MODE( 1929, '+', 1080, '+', 'p',  64:27, 5),   // Full HD, 1080p, 21:9 anamorphic
+    RID_MODE( 2560, '+', 1080, '+', 'p',  64:27, 6),   // 21:9 "2.5k"
+    RID_MODE( 3840, '+', 1080, '+', 'p',  32:9 , 7),   // 32:9 "4K"
+    RID_MODE( 2560, '+', 1440, '+', 'p',  16:9 , 8),   // QHD, 1440p
+    RID_MODE( 3440, '+', 1440, '+', 'p',  64:27, 9),   // WQHD
+    RID_MODE( 5120, '+', 1440, '+', 'p',  32:9 ,10),   // 32:9 5k
+    RID_MODE( 3840, '+', 2160, '+', 'p',  16:9 ,11),   // HD "4K", 2160p
+    RID_MODE( 3840, '+', 2160, '+', 'p',  64:27,12),   // UHD "4K", 2160p, 21:9 anamorphic
+    RID_MODE( 5120, '+', 2160, '+', 'p',  64:27,13),   // 21:9 "5K"
+    RID_MODE( 7680, '+', 2160, '+', 'p',  32:9 ,14),   // 32:9 "8K"
+    RID_MODE( 5120, '+', 2880, '+', 'p',  16:9 ,15),   // 2880p
+    RID_MODE( 5120, '+', 2880, '+', 'p',  64:27,16),   // 2880p, 21:9 anamorphic
+    RID_MODE( 6880, '+', 2880, '+', 'p',  64:27,17),   // 21:9 "6K"
+    RID_MODE(10240, '+', 2880, '+', 'p',  32:9 ,18),   // 32:9 "10K"
+    RID_MODE( 7680, '+', 4320, '+', 'p',  16:9 ,19),   // UHD "8K", 4320p
+    RID_MODE( 7680, '+', 4320, '+', 'p',  64:27,20),   // UHD "8K", 4320p, 21:9 anamorphic
+    RID_MODE(10240, '+', 4320, '+', 'p',  64:27,21),   // 21:9 "10K"
+    RID_MODE(15360, '+', 4320, '+', 'p',  32:9 ,22),   // 32:9 "15K"
+    RID_MODE(11520, '+', 6480, '+', 'p',  16:9 ,23),   // UHD "12K", 6480p
+    RID_MODE(11520, '+', 6480, '+', 'p',  64:27,24),   // UHD "12K", 6480p, 21:9 anamorphic
+    RID_MODE(15360, '+', 6480, '+', 'p',  64:27,25),   // 21:9 "15K"
+    RID_MODE(15360, '+', 8640, '+', 'p',  16:9 ,26),   // UHD "16K", 8640p
+    RID_MODE(15360, '+', 8640, '+', 'p',  64:27,27),   // UHD "16K", 8640p, 21:9 anamorphic
+    RID_MODE(20480, '+', 8640, '+', 'p',  64:27,28)    // 21:9 "20K"
+    // 29...63 Reserved for future
+};
+static NvU32 MAX_RID_CODES_COUNT = sizeof(RID) / sizeof(RID[0]) - 1;
+
+// RID to VIC Mapping
+static const NvU8 RID_VIC_MAP[][8] = 
+{
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {  60,  61,  62, 108,  19,   4,  41,  47 }, // RID 01
+    {  65,  66,  67, 109,  68,  69,  70,  71 }, // RID 02
+    {  79,  80,  81, 110,  82,  83,  84,  85 }, // RID 03
+    {  32,  33,  34, 111,  31,  16,  64,  63 }, // RID 04
+    {  72,  73,  74, 112,  75,  76,  77,  78 }, // RID 05
+    {  86,  87,  88, 113,  89,  90,  91,  92 }, // RID 06
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {  93,  94,  95, 114,  96,  97, 117, 118 }, // RID 11
+    { 103, 104, 105, 116, 106, 107, 119, 120 }, // RID 12
+    { 121, 122, 123, 124, 125, 126, 127, 193 }, // RID 13
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    { 194, 195, 196, 197, 198, 199, 200, 201 }, // RID 19
+    { 202, 203, 204, 205, 206, 207, 208, 209 }, // RID 20
+    { 210, 211, 212, 213, 214, 215, 216, 217 }, // RID 21
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 },
+    {   0,   0,   0,   0,   0,   0,   0,   0 }
+};
+
+// All the frame rate supported in VF
+static const NvU16 VF_FRAME_RATE[] = 
+{
+    0, 24, 25, 30, 48, 50, 60, 100, 120, 144, 200, 240, 300, 360, 400, 480
+};
+static NvU8 MAX_VF_FRAME_RATE_COUNT = sizeof(VF_FRAME_RATE) / sizeof (VF_FRAME_RATE[0])-1;
+
 static const NVT_TIMING PSF_TIMING[]=
 {
     NVT_TIMING( 1920,600, 88,2750,'+', 540, 2,5,562,'+',47952,'i',16:9,       0x1, 1, "ITU-R BT.709-5:1080i/24Psf"),//1920x1080i @47.952Hz  | 24/PsF | ITU-R BT.709-5
@@ -371,7 +447,7 @@ static const HDMI3DDETAILS   HDMI_MANDATORY_3D_FORMATS[] =
     {20, NVT_HDMI_3D_SUPPORTED_SIDEBYSIDEHALF_MASK, NVT_HDMI_VS_BYTE_OPT1_HDMI_3DEX_SSH}        // 1920 x 1080i @ 50 Hz
 };
 static NvU32 MAX_HDMI_MANDATORY_3D_FORMAT = sizeof(HDMI_MANDATORY_3D_FORMATS) / sizeof(HDMI_MANDATORY_3D_FORMATS[0]);
-static const NVT_VIDEO_INFOFRAME DEFAULT_VIDEO_INFOFRAME = {/*header*/2,2,13, /*byte1*/0, /*byte2*/0x8, /*byte3*/0, /*byte4*/0, /*byte5*/0, /*byte6~13*/0,0,0,0,0,0,0,0};
+static const NVT_VIDEO_INFOFRAME DEFAULT_VIDEO_INFOFRAME = {/*header*/2,2,13, /*byte1*/0, /*byte2*/0x8, /*byte3*/0, /*byte4*/0, /*byte5*/0, /*byte6~13*/0,0,0,0,0,0,0,0, /*byte14~15*/0,0};
 static const NVT_AUDIO_INFOFRAME DEFAULT_AUDIO_INFOFRAME = {/*header*/4,1,10, /*byte1*/0, /*byte2*/0,   /*byte3*/0, /*byte*/0,  /*byte5*/0, /*byte6~10*/0,0,0,0,0};
 
 CODE_SEGMENT(PAGE_DD_CODE)
@@ -388,6 +464,7 @@ getExistedCTATimingSeqNumber(
     case NVT_TYPE_CTA861_DID_T7:
     case NVT_TYPE_CTA861_DID_T8:
     case NVT_TYPE_CTA861_DID_T10:
+    case NVT_TYPE_EDID_861ST:
         break;
     default:
         return count;
@@ -395,11 +472,77 @@ getExistedCTATimingSeqNumber(
 
     for (i = 0; i< pInfo->total_timings; i++)
     {
-        if (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[i].etc.status) == timingType)
+        if (timingType == NVT_TYPE_EDID_861ST)
+        {
+            if (NVT_TIMING_IS_OVT(pInfo->timing[i].etc.flag))
+                ++count;
+        }
+        else if (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[i].etc.status) == timingType)
+        {
             ++count;
+        }
     }
 
     return count;
+}
+
+CODE_SEGMENT(PAGE_DD_CODE)
+static NvBool isVFDRefreshRate(NvU8 vfdSize, NvU8 *vfd, NvU8 rateIdx)
+{
+    NvU8 rid, factor, i;
+    NvU16 rr;
+    NvBool bFR24, bFR48, bBFR50, bBFR60, bFR144, bFRFactor;
+
+    // frame rate factor {0.5x, 1x, 2x, 4x, 6x, 8x} x 2
+    const NvU8 frame_rate_factors[6] = { 1, 2, 4, 8, 12, 16 };
+
+    rr = VF_FRAME_RATE[rateIdx];
+    factor = 0;
+
+    rid = ((const VFD_ONE_BYTE*)vfd)->rid;
+    if (rid == 0) return NV_FALSE;
+    
+    bBFR50    = ((const VFD_ONE_BYTE*)vfd)->bfr50;
+    // frame rate factor
+    // If Byte 2 is not present in the VFD, flags 0.5X, 1X and BFR60 shall be considered set
+    bBFR60    = vfdSize > 1 ? ((const VFD_TWO_BYTE*)vfd)->bfr60  : 1;
+    bFRFactor = vfdSize > 1 ? ((const VFD_TWO_BYTE*)vfd)->frRate : 3;
+
+    // individual frame rate
+    bFR24  = ((const VFD_ONE_BYTE*)vfd)->fr24;
+    if (rr == 24) return bFR24;
+    
+    // individual frame rate
+    bFR48  = vfdSize > 2 ? ((const VFD_THREE_BYTE*)vfd)->fr48 : 0;
+    if (rr == 48) return bFR48;
+    
+    // individual frame rate
+    bFR144 = vfdSize > 1 ? ((const VFD_TWO_BYTE*)vfd)->fr144  : 0;
+    if (rr == 144) return bFR144;
+    
+    if (rr % (50/2) == 0)
+    {
+        if (!bBFR50) return NV_FALSE;
+        factor = rr / 25;
+    }
+    else if (rr % (60/2) == 0)
+    {
+        if (!bBFR60) return NV_FALSE;
+        factor = rr / 30;
+    }
+
+    for (i = 0; i < COUNT(frame_rate_factors); i++)
+    {
+        if (frame_rate_factors[i] == factor)
+        {
+            if (bFRFactor & (1 << i))
+                return NV_TRUE;
+            else
+                break;
+        }
+    }
+        
+    return NV_FALSE;
 }
 
 // parse the 861 detailed timing info
@@ -485,7 +628,7 @@ void parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861,
 
     for (i = 0; i < total_svd; i++)
     {
-        vic = NVT_GET_CTA_8BIT_VIC(pVic[i]);        
+        vic = NVT_GET_CTA_8BIT_VIC(pVic[i]);
         
         if (vic == 0 || vic > MAX_CEA861B_FORMAT)
             continue;
@@ -563,6 +706,120 @@ void parse861bShortTiming(NVT_EDID_CEA861_INFO *pExt861,
     }
 }
 
+CODE_SEGMENT(PAGE_DD_CODE)
+void parseCta861VideoFormatDataBlock(NVT_EDID_CEA861_INFO *pExt861, void *pRawInfo)
+{
+    NvU8 i              = 0;
+    NvU8 rateIdx        = 0;
+    NvU8 vfdb_idx       = 0;
+    NvU8 startSeqNum    = 0;
+    NvU8 eachOfDescSize = 0;
+    NvU32 width         = 0;
+    NvU32 height        = 0;
+    
+    const VFD_ONE_BYTE *pVFDOneByte = 0 ;
+
+    NVT_TIMING newTiming;
+    NVT_EDID_INFO *pInfo = (NVT_EDID_INFO *)pRawInfo;
+
+    for (vfdb_idx = 0; vfdb_idx < pExt861->total_vfdb; vfdb_idx++)
+    {
+        eachOfDescSize =  pExt861->vfdb[vfdb_idx].info.vfd_len + 1;
+
+        if (eachOfDescSize == 0)
+        {
+            nvt_assert(0 && "Video Format Descriptor length is 0!\n");
+            return;
+        }
+
+        for (i = 0; i < pExt861->vfdb[vfdb_idx].total_vfd; i++)
+        {
+            // data block value sanity check:
+            if (eachOfDescSize > 2 && (((const VFD_THREE_BYTE*)&pExt861->vfdb[vfdb_idx].video_format_desc[i*eachOfDescSize])->f31_37 != 0))
+                nvt_assert(0 && "F31-F37 bits does not be 0 in Byte3!.\n");
+
+            if (eachOfDescSize > 3 && ((const VFD_FOUR_BYTE*)&pExt861->vfdb[vfdb_idx].video_format_desc[i*eachOfDescSize])->f40_47 !=0)
+                nvt_assert(0 && "It is not support yet in Byte4!");
+
+            pVFDOneByte = (const VFD_ONE_BYTE *)&pExt861->vfdb[vfdb_idx].video_format_desc[i*eachOfDescSize];
+
+            /* 
+             * If any of the following is true, then the RID shall be set to 0:
+             * 1. If a Video Format not listed in "Table 12 - Resolution Identification (RID) is sent
+             * 2. if a Video Format with Frame Rates not listed in "Table 13 - AVI InfoFrame Video Format Frame Rate" is sent
+             * 3. if a Video Format listed in "Table 14 - RID To VIC Mapping" is sent.
+             */
+            // For 1. 
+            if ((pVFDOneByte->rid & NVT_CTA861_VF_RID_MASK) == 0 || pVFDOneByte->rid > MAX_RID_CODES_COUNT)
+            {
+                nvt_assert(0 && "shall have a non-zero RID value or RID code value larger than 28");
+                continue;
+            }
+
+            width  = RID[pVFDOneByte->rid].HVisible;
+            height = RID[pVFDOneByte->rid].VVisible;
+
+            // If the Source is sending a Video Format that can be indicated by RID and FR, 
+            // and is not listed in Table 14 (RID to VIC), then it shall set the RID and FR fields to the proper codes
+            for (rateIdx = 1; rateIdx <= MAX_VF_FRAME_RATE_COUNT; rateIdx++)
+            {
+                // For 2.
+                if (!isVFDRefreshRate(eachOfDescSize, &pExt861->vfdb[vfdb_idx].video_format_desc[i*eachOfDescSize], rateIdx))
+                {
+                    continue;
+                }
+
+                // For 3.
+                if (VF_FRAME_RATE[rateIdx] < 144 && RID_VIC_MAP[pVFDOneByte->rid][rateIdx-1])
+                {
+                    nvt_assert(0 && "RID not allowed since it maps to VIC!");
+                    continue;
+                }
+
+                startSeqNum = getExistedCTATimingSeqNumber(pInfo, NVT_TYPE_EDID_861ST);
+
+                NVMISC_MEMSET(&newTiming, 0, sizeof(newTiming));
+
+                if (NvTiming_CalcOVT(width, height, VF_FRAME_RATE[rateIdx], &newTiming) == NVT_STATUS_SUCCESS)
+                {
+                    if (pExt861->vfdb[vfdb_idx].info.y420 && newTiming.pclk > NVT_HDMI_YUV_420_PCLK_SUPPORTED_MIN)
+                    {                 
+                        UPDATE_BPC_FOR_COLORFORMAT(newTiming.etc.yuv420, 0, 1, 
+                                                   pInfo->hdmiForumInfo.dc_30bit_420, 
+                                                   pInfo->hdmiForumInfo.dc_36bit_420, 0,
+                                                   pInfo->hdmiForumInfo.dc_48bit_420);
+                    }
+
+                    newTiming.etc.flag |= NVT_FLAG_CTA_OVT_TIMING;
+                    if (pExt861->vfdb[vfdb_idx].info.ntsc)
+                    {
+                        newTiming.etc.flag |= NVT_FLAG_CTA_OVT_FRR_TIMING;
+                    }
+
+                    newTiming.etc.status = NVT_STATUS_EDID_861STn(++startSeqNum);
+                    NVT_SNPRINTF((char *)newTiming.etc.name, sizeof(newTiming.etc.name), "CTA861-OVT%d:#%3d:%dx%dx%3d.%03dHz/%s",
+                                                                                        (int)pVFDOneByte->rid,
+                                                                                        (int)NVT_GET_TIMING_STATUS_SEQ(newTiming.etc.status),
+                                                                                        (int)newTiming.HVisible,
+                                                                                        (int)newTiming.VVisible,
+                                                                                        (int)newTiming.etc.rrx1k/1000,
+                                                                                        (int)newTiming.etc.rrx1k%1000,
+                                                                                        (newTiming.interlaced ? "I":"P"));
+                    newTiming.etc.name[sizeof(newTiming.etc.name) - 1] = '\0';
+                    if (!assignNextAvailableTiming(pInfo, &newTiming))  
+                    {
+                        continue;
+                    }
+                }
+                else
+                {
+                    continue;
+                }
+            }
+        }
+    }
+}
+
 // parse the 861B short Yuv420 timing descriptor
 CODE_SEGMENT(PAGE_DD_CODE)
 void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
@@ -602,7 +859,6 @@ void parse861bShortYuv420Timing(NVT_EDID_CEA861_INFO *pExt861,
     {
         return;
     }
-
 
     for (i = 0; i < total_y420vdb; i++)
     {
@@ -735,6 +991,7 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
     NvU8                     extDTDCount   = 0;
     NvU8                     DIDT7Count    = 0;
     NvU8                     DIDT10Count   = 0;
+    NvU8                     OVTCount      = 0;
 
     if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
     {
@@ -765,10 +1022,11 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
             else if (NVT_IS_EXT_DTD(pInfo->timing[j].etc.status))         extDTDCount++;
             else if (NVT_IS_CTA861_DID_T7(pInfo->timing[j].etc.status))   DIDT7Count++;
             else if (NVT_IS_CTA861_DID_T10(pInfo->timing[j].etc.status))  DIDT10Count++;
+            else if (NVT_TIMING_IS_OVT(pInfo->timing[j].etc.flag))        OVTCount++;
         }
     }
 
-    // this only handle single SVR right now
+    // this only handles single SVR
     for (i = 0; i < totalSvr; i++)
     {
         NvU8 svr = 0;
@@ -804,17 +1062,12 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
                             break;
                     }
                 }
-
-                if (pExt861->valid.NVRDB == 1)
-                    pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_NATIVE_TIMING;
-                else  
-                    pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_PREFERRED_TIMING;
             }
         }
         else if (svr >= 145 && svr <= 160)
         {
             // Interpret as the Nth 20-byte DTD or 6- or 7-byte CVT-based descriptor
-            // where N = SVR – 144 (for N = 1 to 16)
+            // where N = SVR - 144 (for N = 1 to 16)
             kth = svr - 144;
 
             if (flag == FROM_CTA861_EXTENSION)
@@ -833,18 +1086,24 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
                             break;
                     } 
                 }
-
-                if (pExt861->valid.NVRDB == 1)
-                    pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_NATIVE_TIMING;
-                else  
-                    pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_PREFERRED_TIMING;
-            }            
+            }
         }
         else if (svr >= 161 && svr <= 175)
         {
             // Interpret as the video format indicated by the first VFD of the first VFDB with Frame Rates of Rate Index N
             // where N = SVR - 160 (for N = 1 to 15)
-            break;
+            kth = svr - 160;
+            if (flag == FROM_CTA861_EXTENSION)
+            {
+                for (j = 0; j < pInfo->total_timings; j++)
+                {
+                    if (kth <= OVTCount)
+                    {
+                        if (NVT_IS_CTA861_OVT_Tn(pInfo->timing[j].etc.flag, pInfo->timing[j].etc.status, kth))
+                            break;
+                    }
+                }
+            }
         }
         else if (svr == 254)
         {
@@ -855,15 +1114,11 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
                 {
                     if (NVT_IS_CTA861_DID_T8_1(pInfo->timing[j].etc.status))
                     {
-                        if (pExt861->valid.NVRDB == 1)
-                            pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_NATIVE_TIMING;
-                        else  
-                            pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_PREFERRED_TIMING;
+                        kth = 1;
                         break;
                     }
                 }
             }
-            break;
         }
         else // assign corresponding CEA format's timing from pre-defined CE timing table, EIA861B
         {    
@@ -877,13 +1132,7 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
                 {            
                     isMatch = NvTiming_IsTimingExactEqual(&pInfo->timing[j], &preferTiming);
                     if (isMatch && (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[j].etc.status) == NVT_TYPE_EDID_861ST))
-                    {
-                        if (pExt861->valid.NVRDB == 1)
-                            pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_NATIVE_TIMING;
-                        else  
-                            pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_PREFERRED_TIMING;
                         break;
-                    }
                 }    
             }
             else if (flag == FROM_DISPLAYID_20_DATA_BLOCK) 
@@ -892,15 +1141,24 @@ void parseCta861NativeOrPreferredTiming(NVT_EDID_CEA861_INFO *pExt861,
                 {
                     isMatch = NvTiming_IsTimingExactEqual(&pDisplayID20->timing[j], &preferTiming);
                     if (isMatch && (NVT_GET_TIMING_STATUS_TYPE(pDisplayID20->timing[j].etc.status) == NVT_TYPE_EDID_861ST))
-                    {
-                        if (pExt861->valid.NVRDB == 1)
-                            pDisplayID20->timing[j].etc.flag |= NVT_FLAG_CTA_NATIVE_TIMING | NVT_FLAG_DISPLAYID_2_0_TIMING;
-                        else  
-                            pDisplayID20->timing[j].etc.flag |= NVT_FLAG_CTA_PREFERRED_TIMING | NVT_FLAG_DISPLAYID_2_0_TIMING;
                         break;
-                    }
                 }
             }
+        }
+
+        if (flag == FROM_CTA861_EXTENSION || flag == FROM_DISPLAYID_13_DATA_BLOCK)
+        {
+            if (pExt861->valid.NVRDB == 1)
+                pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_NATIVE_TIMING;
+            else if (vic != 0 || kth != 0)
+                pInfo->timing[j].etc.flag |= NVT_FLAG_CTA_PREFERRED_TIMING;
+        }
+        else if (flag == FROM_DISPLAYID_20_DATA_BLOCK)
+        {
+            if (pExt861->valid.NVRDB == 1)
+                pDisplayID20->timing[j].etc.flag |= NVT_FLAG_CTA_NATIVE_TIMING | NVT_FLAG_DISPLAYID_2_0_TIMING;
+            else if (vic !=0 || kth != 0)
+                pDisplayID20->timing[j].etc.flag |= NVT_FLAG_CTA_PREFERRED_TIMING | NVT_FLAG_DISPLAYID_2_0_TIMING;
         }
     }
 }
@@ -1423,6 +1681,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
     NvU32 vsvdb_index      = 0;
     NvU32 yuv420vdb_index  = 0;
     NvU32 yuv420cmdb_index = 0;
+    NvU8  vfd_index        = 0;
     NvU8  didT7_index      = 0;
     NvU8  didT8_index      = 0;
     NvU8  didT10_index     = 0;
@@ -1455,6 +1714,9 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                 case NVT_CEA861_TAG_SPEAKER_ALLOC:
                 case NVT_CEA861_TAG_VESA_DTC:
                 case NVT_CEA861_TAG_RSVD:
+                break;
+                case NVT_CTA861_TAG_VIDEO_FORMAT:
+                    if (payload < 2) return NVT_STATUS_ERR; // no VFD
                 break;
                 case NVT_CEA861_TAG_VENDOR:
                     if (payload < 3) return NVT_STATUS_ERR;
@@ -1504,7 +1766,7 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                     }
                 break;
                 default:
-                break;       
+                break;
             }
             return NVT_STATUS_SUCCESS;
         }
@@ -1591,6 +1853,22 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                 }
                 vendor_index++;
             }
+        }
+        else if (tag == NVT_CTA861_TAG_VIDEO_FORMAT)
+        {
+            p861info->vfdb[vfd_index].info.vfd_len =  p[i] & 0x03;
+            p861info->vfdb[vfd_index].info.ntsc    = (p[i] & 0x40) >> 6;
+            p861info->vfdb[vfd_index].info.y420    = (p[i] & 0x80) >> 7;
+            p861info->vfdb[vfd_index].total_vfd    = (NvU8)(payload - 1) / (p861info->vfdb[vfd_index].info.vfd_len + 1);
+
+            i++; payload--;
+
+            for (j = 0; j < payload; j++, i++)
+            {
+                p861info->vfdb[vfd_index].video_format_desc[j] = p[i];
+            }      
+
+            p861info->total_vfdb = ++vfd_index;
         }
         else if (tag == NVT_CEA861_TAG_EXTENDED_FLAG)
         {
@@ -2025,6 +2303,7 @@ NVT_STATUS NvTiming_ConstructVideoInfoframeCtrl(const NVT_TIMING *pTiming, NVT_V
         {
             // Prior RFE 543088
             if (pCtrl->video_format_id == 0 &&
+                !(NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag) || NVT_TIMING_IS_OVT(pTiming->etc.flag)) && 
                 NVT_GET_TIMING_STATUS_TYPE(pTiming->etc.status) == NVT_TYPE_EDID_861ST)
             {
                 pCtrl->video_format_id = (NvU8)NVT_GET_TIMING_STATUS_SEQ(pTiming->etc.status);
@@ -2037,6 +2316,129 @@ NVT_STATUS NvTiming_ConstructVideoInfoframeCtrl(const NVT_TIMING *pTiming, NVT_V
             {
                 pCtrl->video_format_id = NVT_CEA861_640X480P_59940HZ_4X3;
             }
+        }
+    }
+
+    // setup RID code 
+    if (pCtrl->rid == NVT_INFOFRAME_CTRL_DONTCARE)
+    {
+        if (NVT_TYPE_EDID_861ST == NVT_GET_TIMING_STATUS_TYPE(pTiming->etc.status) && 
+            NVT_TIMING_IS_OVT(pTiming->etc.flag))
+        {
+            NvU8 ridIdx = 0;
+
+            // get the correct rid from the name string = CTA861-OVT'%d':xxx
+            // %d value shall included two digital or one digital character
+            if (pTiming->etc.name[11] == ':')
+            {
+                ridIdx = pTiming->etc.name[10] - '0';
+            }
+            else
+            {
+                ridIdx = 10 * (pTiming->etc.name[10] - '0') + (pTiming->etc.name[11] - '0');
+            }
+
+            if (ridIdx > NVT_CTA861_RID_1280x720p_16x9 && 
+                ridIdx < NVT_CTA861_RID_20480x8640p_64x27)
+            {
+                pCtrl->rid = ridIdx;
+            }
+            else
+            {
+                pCtrl->rid = NVT_INFOFRAME_CTRL_DONTCARE;
+            }
+        }
+    }
+
+    // setup Video Format Frame Rate
+    if (pCtrl->rid != NVT_INFOFRAME_CTRL_DONTCARE)
+    {
+        switch (pTiming->etc.rr)
+        {
+        case 24:
+            pCtrl->frame_rate = NVT_CTA861_FR_2400;
+            if (NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag))
+            {
+                pCtrl->frame_rate = NVT_CTA861_FR_2398;
+            }
+            break;
+        case 25:
+            pCtrl->frame_rate = NVT_CTA861_FR_2500;
+        break;
+        case 30:
+            pCtrl->frame_rate = NVT_CTA861_FR_3000;
+            if (NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag))
+            {
+                pCtrl->frame_rate = NVT_CTA861_FR_2997;
+            }
+        break;
+        case 48:
+            pCtrl->frame_rate = NVT_CTA861_FR_48000;
+            if (NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag))
+            {
+                pCtrl->frame_rate = NVT_CTA861_FR_4795;
+            }
+        break;
+        case 50:
+            pCtrl->frame_rate = NVT_CTA861_FR_5000;
+        break;
+        case 60:
+            pCtrl->frame_rate = NVT_CTA861_FR_6000;
+            if (NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag))
+            {
+                pCtrl->frame_rate = NVT_CTA861_FR_5994;
+            }
+        break;
+        case 100:
+            pCtrl->frame_rate = NVT_CTA861_FR_10000;
+        break;
+        case 120:
+            pCtrl->frame_rate = NVT_CTA861_FR_12000;
+            if (NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag))
+            {
+                pCtrl->frame_rate = NVT_CTA861_FR_11988;
+            }
+        break;
+        case 144:
+            pCtrl->frame_rate = NVT_CTA861_FR_14400;
+            if (NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag))
+            {
+                pCtrl->frame_rate = NVT_CTA861_FR_14386;
+            }
+        break;
+        case 200:
+            pCtrl->frame_rate = NVT_CTA861_FR_20000;
+        break;
+        case 240:
+            pCtrl->frame_rate = NVT_CTA861_FR_24000;
+            if (NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag))
+            {
+                pCtrl->frame_rate = NVT_CTA861_FR_23976;
+            }
+        break;
+        case 300:
+            pCtrl->frame_rate = NVT_CTA861_FR_30000;
+        break;
+        case 360:
+            pCtrl->frame_rate = NVT_CTA861_FR_36000;
+            if (NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag))
+            {
+                pCtrl->frame_rate = NVT_CTA861_FR_35964;
+            }
+        break;
+        case 400:
+            pCtrl->frame_rate = NVT_CTA861_FR_40000;
+        break;
+        case 480:
+            pCtrl->frame_rate = NVT_CTA861_FR_48000;
+            if (NVT_FRR_TIMING_IS_OVT(pTiming->etc.flag))
+            {
+                pCtrl->frame_rate = NVT_CTA861_FR_47952;
+            }
+        break;
+        default:
+            pCtrl->frame_rate = NVT_INFOFRAME_CTRL_DONTCARE;
+            break;
         }
     }
 
@@ -2125,47 +2527,42 @@ NVT_STATUS NvTiming_ConstructVideoInfoframe(NVT_EDID_INFO *pEdidInfo, NVT_VIDEO_
     // init the header
     pInfoFrame->type = NVT_INFOFRAME_TYPE_VIDEO;
     
-    // TODO : This is just to check the version, we still need to change lots of structure
-    //        "NVT_VIDEO_INFOFRAME" / "VIDEO_INFOFRAME" / "DEFAULT_VIDEO_INFOFRAME" / "NVM_DISP_STATE" etc..
-    //        to accept the new ACE0-3 bits supported in the future. Right now no any sink to support this.
-    //
-    // Based on the latest CTA-861-H.pdf file, we need to do following logic to get the correct CTA861 version
-    // When Y=7, the IDO defines the C, EC and ACE fields, it shall use AVI InfoFrame Version 4.
-    // When Y < 7, the following algorithm shall be used for AVI InfoFrame version selection:
-    // if (C=3 and EC=7)
-    //     Sources shall use AVI InfoFrame Version 4.
-    // Else if (VIC>=128)
-    //     Sources shall use AVI InfoFrame Version 3.
-    // Else
-    //     Sources shall use AVI InfoFrame Version 2.
-    // End if
-    //
+    // see 6.4 Format of Version 2, 3, and 4 AVI InfoFrames in CTA861-I
     if (pCtrl)
     {
-        if (nvt_get_bits(pInfoFrame->byte1, NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_MASK, NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_SHIFT) == NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_IDODEFINED)
+        if (nvt_get_bits(pInfoFrame->byte1, NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_MASK, NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_SHIFT) <= NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_YCbCr420)  // this shall be as 0 always.
         {
-            pInfoFrame->version = NVT_VIDEO_INFOFRAME_VERSION_4;
-        }
-        else if (nvt_get_bits(pInfoFrame->byte1, NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_MASK, NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_SHIFT) < NVT_VIDEO_INFOFRAME_BYTE1_Y2Y1Y0_IDODEFINED)
-        {
+            if ((pCtrl->rid != NVT_CTA861_RID_NONE) || (pCtrl->frame_rate != NVT_CTA861_FR_NO_DATA))
+            {
+                pInfoFrame->version = NVT_VIDEO_INFOFRAME_VERSION_4; // just put the logic to get the correct version 4, but it shall not be used at currently stage.
+                pInfoFrame->length  = sizeof(NVT_VIDEO_INFOFRAME) - sizeof(NVT_INFOFRAME_HEADER); // Length == 15
+            }
+            else
             if ((nvt_get_bits(pInfoFrame->byte2, NVT_VIDEO_INFOFRAME_BYTE2_C1C0_MASK, NVT_VIDEO_INFOFRAME_BYTE2_C1C0_SHIFT) == NVT_VIDEO_INFOFRAME_BYTE2_C1C0_EXT_COLORIMETRY) &&
                 //EC2-0 is based on the 7.5.5 at CTA861-G which DCI-P3 bit defined or notat byte4
                 (nvt_get_bits(pInfoFrame->byte3, NVT_VIDEO_INFOFRAME_BYTE3_EC_MASK, NVT_VIDEO_INFOFRAME_BYTE3_EC_SHIFT)     == NVT_VIDEO_INFOFRAME_BYTE3_EC_AdditionalColorExt))  
             {
-                 pInfoFrame->version = NVT_VIDEO_INFOFRAME_VERSION_4; // just put the logic to get the correct version 4, but it shall not be used at currently stage.
+                pInfoFrame->version = NVT_VIDEO_INFOFRAME_VERSION_4; // just put the logic to get the correct version 4, but it shall not be used at currently stage.
+                pInfoFrame->length  = 14;
             }
             else
             {
-                pInfoFrame->version = (((pCtrl->video_format_id & NVT_VIDEO_INFOFRAME_BYTE4_VIC7) == NVT_VIDEO_INFOFRAME_BYTE4_VIC7) ? NVT_VIDEO_INFOFRAME_VERSION_3 : 
+                pInfoFrame->version = (((pCtrl->video_format_id & NVT_VIDEO_INFOFRAME_BYTE4_VIC7) != 0) ? NVT_VIDEO_INFOFRAME_VERSION_3 : 
                                        ((pEdidInfo->ext861.revision >= NVT_CEA861_REV_B) ? NVT_VIDEO_INFOFRAME_VERSION_2 : NVT_VIDEO_INFOFRAME_VERSION_1));
+                pInfoFrame->length  = 13;
             }
+        }
+        else // Y=7, the IDO defineds the C, EC, ACE fileds. In the case the Source shall set the AVI InforFrame Version filed to no less than 3
+        {
+            pInfoFrame->version = NVT_VIDEO_INFOFRAME_VERSION_4;
+            pInfoFrame->length  = 14;
         }
     }
     else
     {
         pInfoFrame->version = (pEdidInfo->ext861.revision >= NVT_CEA861_REV_B) ? NVT_VIDEO_INFOFRAME_VERSION_2 : NVT_VIDEO_INFOFRAME_VERSION_1;
+        pInfoFrame->length  = 13;
     }
-    pInfoFrame->length = sizeof(NVT_VIDEO_INFOFRAME) - sizeof(NVT_INFOFRAME_HEADER);
     
     if (pInfoFrame->version < NVT_VIDEO_INFOFRAME_VERSION_3)
     {
@@ -2286,6 +2683,34 @@ NVT_STATUS NvTiming_ConstructVideoInfoframe(NVT_EDID_INFO *pEdidInfo, NVT_VIDEO_
         {
             pInfoFrame->right_bar_low  = (NvU8)(pCtrl->right_bar % 0x100);
             pInfoFrame->right_bar_high = (NvU8)(pCtrl->right_bar / 0x100);
+        }
+
+        // byte 14-15
+        if (pInfoFrame->version >= NVT_VIDEO_INFOFRAME_VERSION_4)
+        {
+            if (pCtrl->addition_colorimetry_ext != NVT_INFOFRAME_CTRL_DONTCARE)
+            {
+                nvt_nvu8_set_bits(pInfoFrame->byte14, pCtrl->addition_colorimetry_ext, NVT_VIDEO_INFOFRAME_BYTE14_ACE0_3_MASK, NVT_VIDEO_INFOFRAME_BYTE14_ACE0_3_SHIFT);
+            }
+            
+            if (pCtrl->frame_rate != NVT_INFOFRAME_CTRL_DONTCARE)
+            {
+                // Frame rate
+                nvt_nvu8_set_bits(pInfoFrame->byte14, pCtrl->frame_rate, NVT_VIDEO_INFOFRAME_BYTE14_FR0_FR3_MASK, NVT_VIDEO_INFOFRAME_BYTE14_FR0_FR3_SHIFT);
+                pInfoFrame->byte15 &= NVT_VIDEO_INFOFRAME_BYTE15_FR4_MASK^0xFFU;
+                pInfoFrame->byte15 |= ((pCtrl->frame_rate & NVT_VIDEO_INFOFRAME_BYTE14_FR4_ONE_BIT_MASK) << NVT_VIDEO_INFOFRAME_BYTE15_FR4_SHIFT) & NVT_VIDEO_INFOFRAME_BYTE15_FR4_MASK;                    
+            }
+
+            if (pCtrl->rid != NVT_INFOFRAME_CTRL_DONTCARE)
+            {
+                // RID
+                nvt_nvu8_set_bits(pInfoFrame->byte15, pCtrl->rid, NVT_VIDEO_INFOFRAME_BYTE15_RID_MASK, NVT_VIDEO_INFOFRAME_BYTE15_RID_SHIFT);
+            }
+        }
+        else // version 2 or 3
+        {
+            pInfoFrame->byte14 = 0;
+            pInfoFrame->byte15 = 0;
         }
     }
 
@@ -2602,7 +3027,7 @@ NVT_STATUS NvTiming_ConstructExtendedMetadataPacketInfoframe(
     }
     else if (pCtrl->EnableQMS)
     {
-        nvt_nvu8_set_bits(pInfoFrame->Data.metadataBytes[0], 1,
+        nvt_nvu8_set_bits(pInfoFrame->Data.metadataBytes[0], pCtrl->MConst,
                           NVT_HDMI_EMP_BYTE8_MD0_M_CONST_MASK,
                           NVT_HDMI_EMP_BYTE8_MD0_M_CONST_SHIFT);
         nvt_nvu8_set_bits(pInfoFrame->Data.metadataBytes[0],
@@ -2710,6 +3135,16 @@ void NvTiming_ConstructAdaptiveSyncSDP(
         nvt_nvu8_set_bits(pSdp->payload.db4, NVT_DP_ADAPTIVE_SYNC_SDP_DB4_TARGET_RR_DIVIDER_ENABLE,
                                     NVT_DP_ADAPTIVE_SYNC_SDP_DB4_TARGET_RR_DIVIDER_MASK,
                                     NVT_DP_ADAPTIVE_SYNC_SDP_DB4_TARGET_RR_DIVIDER_SHIFT);
+    }
+
+    if (pCtrl->srCoastingVTotal)
+    {
+        nvt_nvu8_set_bits(pSdp->payload.db7, pCtrl->srCoastingVTotal & 0xff,
+                                    NVT_DP_ADAPTIVE_SYNC_SDP_DB7_PR_COASTING_VTOTAL_LSB_MASK,
+                                    NVT_DP_ADAPTIVE_SYNC_SDP_DB7_PR_COASTING_VTOTAL_LSB_SHIFT);
+        nvt_nvu8_set_bits(pSdp->payload.db8, (pCtrl->srCoastingVTotal & 0xff00) >> 8,
+                                    NVT_DP_ADAPTIVE_SYNC_SDP_DB8_PR_COASTING_VTOTAL_MSB_MASK,
+                                    NVT_DP_ADAPTIVE_SYNC_SDP_DB8_PR_COASTING_VTOTAL_MSB_SHIFT);
     }
 }
 
@@ -3406,7 +3841,6 @@ void parseEdidHdmiForumVSDB(VSDB_DATA *pVsdb, NVT_HDMI_FORUM_INFO *pHdmiInfo)
 
         default:
             break;
-
     }    
 }
 

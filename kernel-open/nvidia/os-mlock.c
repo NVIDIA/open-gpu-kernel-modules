@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -243,7 +243,7 @@ NV_STATUS NV_API_CALL os_lock_user_pages(
 
     nv_mmap_read_lock(mm);
     ret = NV_PIN_USER_PAGES((unsigned long)address,
-                            page_count, gup_flags, user_pages, NULL);
+                            page_count, gup_flags, user_pages);
     nv_mmap_read_unlock(mm);
     pinned = ret;
 

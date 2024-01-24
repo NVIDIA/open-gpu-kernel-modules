@@ -39,9 +39,7 @@
 #include "mem_mgr/vaspace.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_utils.h"
-#include "gpu/mem_mgr/heap.h"
 #include "gpu/device/device.h"
-#include "gpu/subdevice/subdevice.h"
 #include "os/os.h"
 #include "compute/fabric.h"
 #include "gpu/mem_mgr/mem_desc.h"
@@ -83,52 +81,31 @@ _memoryfabricMemDescGetNumAddr
 static NV_STATUS
 _memoryfabricValidatePhysMem
 (
-    NvHandle           hClient,
+    RsClient          *pRsClient,
     NvHandle           hPhysMem,
     OBJGPU            *pOwnerGpu,
     MEMORY_DESCRIPTOR **ppPhysMemDesc
 )
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pOwnerGpu);
-    RsResourceRef *pPhysmemRef;
     MEMORY_DESCRIPTOR *pPhysMemDesc;
     NvU64 physPageSize;
     NV_STATUS status;
     Memory *pMemory;
 
-    if (hPhysMem == 0)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Invalid physmem handle\n");
-
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    status = serverutilGetResourceRef(hClient, hPhysMem, &pPhysmemRef);
+    status = memGetByHandle(pRsClient, hPhysMem, &pMemory);
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Failed to get resource in resserv for physmem handle\n");
-
+        NV_PRINTF(LEVEL_ERROR, "Invalid object handle passed\n");
         return status;
     }
 
-    pMemory = dynamicCast(pPhysmemRef->pResource, Memory);
-    if (pMemory == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Invalid memory handle\n");
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-    }
-
     pPhysMemDesc = pMemory->pMemDesc;
-    if (pPhysMemDesc == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Invalid memory handle\n");
-        return NV_ERR_INVALID_OBJECT_HANDLE;
-    }
 
     if ((pOwnerGpu != pPhysMemDesc->pGpu) ||
-        !memmgrIsApertureSupportedByFla_HAL(pOwnerGpu, pMemoryManager,
-                                        memdescGetAddressSpace(pPhysMemDesc)))
+        !memmgrIsMemDescSupportedByFla_HAL(pOwnerGpu,
+                                           pMemoryManager,
+                                           pPhysMemDesc))
     {
         NV_PRINTF(LEVEL_ERROR, "Invalid physmem handle passed\n");
 
@@ -245,7 +222,7 @@ _memoryFabricAttachMem
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    status = _memoryfabricValidatePhysMem(RES_GET_CLIENT_HANDLE(pMemory),
+    status = _memoryfabricValidatePhysMem(RES_GET_CLIENT(pMemory),
                                           pAttachInfo->hMemory,
                                           pGpu, &pPhysMemDesc);
 
@@ -632,7 +609,7 @@ memoryfabricConstruct_IMPL
     }
     else if (!bFlexible)
     {
-        status = _memoryfabricValidatePhysMem(pCallContext->pClient->hClient,
+        status = _memoryfabricValidatePhysMem(pCallContext->pClient,
                                               hPhysMem, pGpu, &pPhysMemDesc);
         if (status != NV_OK)
             return status;
@@ -762,7 +739,7 @@ memoryfabricConstruct_IMPL
         NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParam = {0};
 
         surfaceInfo[0].index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
-        surfaceInfo[1].index = NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE;
+        surfaceInfo[1].index = NV0041_CTRL_SURFACE_INFO_INDEX_ATTRS;
         surfaceInfoParam.surfaceInfoListSize = 2;
         surfaceInfoParam.surfaceInfoList = NvP64_VALUE(&surfaceInfo);
 
@@ -779,7 +756,14 @@ memoryfabricConstruct_IMPL
         }
 
         pMemdescData->physAttrs.addressSpace = surfaceInfo[0].data;
-        pMemdescData->physAttrs.compressionCoverage = surfaceInfo[1].data;
+        //
+        // TODO: Bug 4322867: use NV0041_CTRL_SURFACE_INFO_ATTRS_COMPR
+        // instead of NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE.
+        // NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE is buggy and
+        // will be removed soon.
+        //
+        pMemdescData->physAttrs.compressionCoverage =
+            (surfaceInfo[1].data & NV0041_CTRL_SURFACE_INFO_ATTRS_COMPR) ?  0x1 : 0x0;
 
         mapFlags |= bReadOnly ? FABRIC_VASPACE_MAP_FLAGS_READ_ONLY : 0;
 
@@ -953,6 +937,7 @@ memoryfabricCtrlCmdDescribe_IMPL
     OBJGPU *pGpu;
 
     if (
+        !rmclientIsCapableByHandle(hClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT) &&
         !rmclientIsAdminByHandle(hClient, pCallContext->secInfo.privLevel))
     {
         return NV_ERR_INSUFFICIENT_PERMISSIONS;

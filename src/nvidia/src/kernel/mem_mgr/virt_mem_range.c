@@ -25,7 +25,6 @@
 #include "mem_mgr/virt_mem_range.h"
 #include "os/os.h"
 #include "vgpu/rpc.h"
-#include "gpu/device/device.h"
 #include "gpu/mem_mgr/vaspace_api.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "class/cl0070.h"

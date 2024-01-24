@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,8 +38,7 @@ ksec2ConstructEngine_IMPL
     ENGDESCRIPTOR engDesc
 )
 {
-    ksec2ConfigureFalcon_HAL(pGpu, pKernelSec2);
-    return NV_OK;
+    return ksec2ConfigureFalcon_HAL(pGpu, pKernelSec2);
 }
 
 void
@@ -93,3 +92,4 @@ ksec2ServiceNotificationInterrupt_IMPL
     engineNonStallIntrNotify(pGpu, RM_ENGINE_TYPE_SEC2);
     return NV_OK;
 }
+

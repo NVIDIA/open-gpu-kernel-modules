@@ -160,5 +160,7 @@
 #define NV_XVE_AER_CORR_ERR_ADVISORY_NONFATAL_NOT_ACTIVE         0x00000000 /* R-C-V */
 #define NV_XVE_AER_CORR_ERR_ADVISORY_NONFATAL_ACTIVE             0x00000001 /* R---V */
 #define NV_XVE_AER_CORR_ERR_ADVISORY_NONFATAL_CLEAR              0x00000001 /* -W--C */
-#define NV_XVE_CYA_2                                        0x00000704 /* RW-4R */
+#define NV_XVE_CYA_2                                             0x00000704 /* RW-4R */
+#define NV_XVE_DEVICE_CONTROL_STATUS_2                           0x000000A0 /* RWI4R */
+#define NV_XVE_L1_PM_SUBSTATES_CTRL1                             0x00000260 /* RW-4R */
 #endif // __gm107_dev_nv_xve_h__

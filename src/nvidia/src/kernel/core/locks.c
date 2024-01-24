@@ -36,11 +36,33 @@
 #include "objtmr.h"
 #include <os/os.h>
 #include <nv_ref.h>
+#include "gpu_mgr/gpu_mgr.h"
 #include <gpu/gpu.h>
 #include "kernel/gpu/intr/intr.h"
 #include <gpu/bif/kernel_bif.h>
 #include "gpu/disp/kern_disp.h"
 #include "ctrl/ctrl0000/ctrl0000system.h"
+
+//
+// These values were chosen based on some performance testing data
+// for a particular use case that should be a good example of multiple
+// threads contending for the GPU lock. See bug 4035405.
+//
+static const NvU32 MIDPATH_RETRIES = 20;
+static const NvU32 MIDPATH_DELAY_USEC = 30;
+
+//
+// An invalid gpuInst value representing the absence of a GPU lock.
+// - Loops over gpuInst values should terminate upon seeing this value.
+// - maxLockableGpuInst will have this value when there are no GPU locks.
+//
+static const NvU32 GPU_INST_INVALID = (NvU32) (-1);
+
+//
+// A placeholder gpuInst value representing the GPU alloc lock in loops over
+// gpuInst values.
+//
+static const NvU32 GPU_INST_ALLOC_LOCK = 0xff;
 
 //
 // GPU lock
@@ -109,6 +131,9 @@ typedef struct
     // Tracks largest valid gpuInstance for which a lock has been allocated.
     // This is useful to pare down the # of loop iterations we need to make
     // when searching for lockable GPUs.
+    //
+    // When there are no lockable GPUs, this will GPU_INST_INVALID.
+    //
     // Requires holding API, pLock or any GPU to read, API+pLock+GPUs to write.
     //
     NvU32               maxLockableGpuInst;
@@ -117,6 +142,17 @@ typedef struct
     // Array of per-GPU locks indexed by gpuInstance.
     //
     GPULOCK             gpuLocks[NV_MAX_DEVICES];
+
+    //
+    // GPU alloc lock
+    //
+    // Taken by rmGpuLockAlloc as well as _rmGpuLocksAcquire for GPUS_LOCK_ALL
+    // or when given flag GPUS_LOCK_FLAG_LOCK_ALLOC to prevent new GPU locks
+    // from being added from underneath the thread holding the locks.
+    //
+    // Ordered before all per-GPU locks in gpuLocks.
+    //
+    GPULOCK             gpuAllocLock;
 
     //
     // Lock call trace info.
@@ -136,9 +172,116 @@ typedef struct
 
 static GPULOCKINFO rmGpuLockInfo;
 
+static NV_STATUS _rmGpuLockInit(GPULOCK *pGpuLock);
+static void      _rmGpuLockDestroy(GPULOCK *pGpuLock);
+
 static NV_STATUS _rmGpuLocksAcquire(NvU32, NvU32, NvU32, void *, NvU32 *);
 static NvU32     _rmGpuLocksRelease(NvU32, NvU32, OBJGPU *, void *);
+
+static NvBool    _rmGpuAllocLockIsOwner(void);
 static NvBool    _rmGpuLockIsOwner(NvU32);
+
+
+//
+// Determines the gpuInst value for the first iteration of a loop
+// iterating forwards over gpuInst values. Loop iterations look like:
+// - GPU_INST_ALLOC_LOCK, 0, ..., max  (normally)
+// - GPU_INST_ALLOC_LOCK               (if max == GPU_INST_INVALID)
+//
+static inline NvU32 _gpuInstLoopHead(NvU32 max)
+{
+    //
+    // Note: given the ordering of the GPU alloc lock before the per-GPU locks,
+    // the "max" parameter of this function is not technically needed, however
+    // it is kept for consistency with _gpuInstLoopTail.
+    //
+
+    return GPU_INST_ALLOC_LOCK;
+}
+
+//
+// Determines the gpuInst value for the next iteration of a loop
+// iterating forwards over gpuInst values. Loop iterations look like:
+// - GPU_INST_ALLOC_LOCK, 0, ..., max  (normally)
+// - GPU_INST_ALLOC_LOCK               (if max == GPU_INST_INVALID)
+//
+static inline NvU32 _gpuInstLoopNext(NvU32 i, NvU32 max)
+{
+    if (i == GPU_INST_ALLOC_LOCK)
+    {
+        if (max == GPU_INST_INVALID)
+        {
+            return GPU_INST_INVALID;
+        }
+        else
+        {
+            return 0;
+        }
+    }
+    else if (i == max)
+    {
+        return GPU_INST_INVALID;
+    }
+    else
+    {
+        return i + 1;
+    }
+}
+
+//
+// Determines the gpuInst value for the first iteration of a loop
+// iterating backwards over gpuInst values. Loop iterations look like:
+// - max, ..., 0, GPU_INST_ALLOC_LOCK  (normally)
+// - GPU_INST_ALLOC_LOCK               (if max == GPU_INST_INVALID)
+//
+static inline NvU32 _gpuInstLoopTail(NvU32 max)
+{
+    if (max == GPU_INST_INVALID)
+    {
+        return GPU_INST_ALLOC_LOCK;
+    }
+    else
+    {
+        return max;
+    }
+}
+
+//
+// Determines the gpuInst value for the next iteration of a loop
+// iterating backwards over gpuInst values. Loop iterations look like:
+// - max, ..., 0, GPU_INST_ALLOC_LOCK  (normally)
+// - GPU_INST_ALLOC_LOCK               (if max == GPU_INST_INVALID)
+//
+static inline NvU32 _gpuInstLoopPrev(NvU32 i, NvU32 max)
+{
+    //
+    // Note: given the ordering of the GPU alloc lock before the per-GPU locks,
+    // the "max" parameter of this function is not technically needed, however
+    // it is kept for consistency with _gpuInstLoopNext.
+    //
+
+    if (i == 0)
+    {
+        return GPU_INST_ALLOC_LOCK;
+    }
+    else if (i == GPU_INST_ALLOC_LOCK)
+    {
+        return GPU_INST_INVALID;
+    }
+    else
+    {
+        return i - 1;
+    }
+}
+
+//
+// Determines whether a loop iterating over gpuInst values using
+// _gpuInstLoopNext or _gpuInstLoopPrev should continue.
+//
+static inline NvBool _gpuInstLoopShouldContinue(NvU32 i)
+{
+    return (i != GPU_INST_INVALID);
+}
 
 //
 // rmGpuLockInfoInit
@@ -148,15 +291,30 @@ static NvBool    _rmGpuLockIsOwner(NvU32);
 NV_STATUS
 rmGpuLockInfoInit(void)
 {
+    NV_STATUS status;
+
     portMemSet(&rmGpuLockInfo, 0, sizeof(rmGpuLockInfo));
 
     rmGpuLockInfo.pLock = portSyncSpinlockCreate(portMemAllocatorGetGlobalNonPaged());
     if (rmGpuLockInfo.pLock == NULL)
         return NV_ERR_INSUFFICIENT_RESOURCES;
 
-    rmGpuLockInfo.maxLockableGpuInst = (NvU32)-1;
+    rmGpuLockInfo.maxLockableGpuInst = GPU_INST_INVALID;
+
+    // Initialize the GPU alloc lock
+    status = _rmGpuLockInit(&rmGpuLockInfo.gpuAllocLock);
+    if (status != NV_OK)
+    {
+        goto err_out;
+    }
 
     return NV_OK;
+
+err_out:
+    if (rmGpuLockInfo.pLock != NULL)
+        portSyncSpinlockDestroy(rmGpuLockInfo.pLock);
+
+    return status;
 }
 
 //
@@ -174,6 +332,94 @@ rmGpuLockInfoDestroy(void)
 
     if (rmGpuLockInfo.pLock != NULL)
         portSyncSpinlockDestroy(rmGpuLockInfo.pLock);
+
+    //
+    // Destroy the GPU alloc lock
+    // Note: this operation wakes all threads still waiting on the semaphore.
+    //
+    _rmGpuLockDestroy(&rmGpuLockInfo.gpuAllocLock);
+}
+
+//
+// _rmGpuLockInit
+//
+// Initialize a GPULOCK struct.
+//
+// This operation is common between:
+// - GPU alloc lock (performed in rmGpuLockInfoInit)
+// - Per-GPU locks (performed in rmGpuLockAlloc)
+//
+static NV_STATUS
+_rmGpuLockInit(GPULOCK *pGpuLock)
+{
+    // clear struct for good measure and then init everything
+    portMemSet(pGpuLock, 0, sizeof(*pGpuLock));
+
+    pGpuLock->pWaitSema = portSyncSemaphoreCreate(portMemAllocatorGetGlobalNonPaged(), 0);
+    if (pGpuLock->pWaitSema == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    pGpuLock->count = 1;
+    pGpuLock->bRunning = NV_FALSE;
+    pGpuLock->bSignaled = NV_FALSE;
+    pGpuLock->threadId = ~(NvU64)0;
+
+    return NV_OK;
+}
+
+//
+// _rmGpuLockDestroy
+//
+// Destroy/cleanup a GPULOCK struct.
+//
+// For the per-GPU locks, this function must only be called after
+// the GPU has been removed from the lockable mask (otherwise another thread
+// could come in and take the lock).
+//
+// Note: this operation wakes all threads still waiting on the semaphore.
+//
+// This operation is common between:
+// - GPU alloc lock (performed in rmGpuLockInfoDestroy)
+// - Per-GPU locks (performed in rmGpuLockFree)
+//
+static void
+_rmGpuLockDestroy(GPULOCK *pGpuLock)
+{
+    if (pGpuLock->pWaitSema != NULL)
+    {
+        //
+        // At this point, we may still have threads waiting on the semaphore,
+        // and possibly one thread holding the lock.
+        // Wake up all threads that are waiting, and wait until the holding one
+        // is done.
+        //
+        while (pGpuLock->count <= 0) // volatile read
+        {
+            portSyncSemaphoreRelease(pGpuLock->pWaitSema);
+            osSchedule(); // Yield execution
+            portSyncSemaphoreAcquire(pGpuLock->pWaitSema);
+        }
+        portSyncSemaphoreDestroy(pGpuLock->pWaitSema);
+        pGpuLock->pWaitSema = NULL;
+    }
+
+    portMemSet(pGpuLock, 0, sizeof(*pGpuLock));
+}
+
+//
+// _rmGpuAllocLockIsOwner
+//
+// Returns NV_TRUE if calling thread currently owns the GPU alloc lock.
+//
+static NvBool
+_rmGpuAllocLockIsOwner(void)
+{
+    GPULOCK *pAllocLock = &rmGpuLockInfo.gpuAllocLock;
+    OS_THREAD_HANDLE threadId;
+    osGetCurrentThread(&threadId);
+    return pAllocLock->threadId == threadId;
 }
 
 //
@@ -185,7 +431,6 @@ NV_STATUS
 rmGpuLockAlloc(NvU32 gpuInst)
 {
     GPULOCK *pGpuLock;
-    NvU32 gpuMask, gpuLockedMask;
     NV_STATUS status;
     NvU64 threadId = ~0;
     NvU64 timestamp;
@@ -207,47 +452,38 @@ rmGpuLockAlloc(NvU32 gpuInst)
     if (status != NV_OK)
         return status;
 
-    // clear struct for good measure and then init everything
-    portMemSet(pGpuLock, 0, sizeof(*pGpuLock));
-
-    pGpuLock->pWaitSema = portSyncSemaphoreCreate(portMemAllocatorGetGlobalNonPaged(), 0);
-    if (pGpuLock->pWaitSema == NULL)
-    {
-        status = NV_ERR_NO_MEMORY;
-        goto done;
-    }
-
-    pGpuLock->count = 1;
-    pGpuLock->bRunning = NV_FALSE;
-    pGpuLock->bSignaled = NV_FALSE;
-    pGpuLock->threadId = ~(NvU64)0;
-
-    //
-    // Before updating the gpusLockableMask value we need to grab the
-    // locks for all *other* GPUs.  This ensures that the gpusLockableMask
-    // value cannot change in between acquire/release calls issued by
-    // a different thread. Reading this is safe under API lock.
-    //
-    gpuMask = rmGpuLockInfo.gpusLockableMask;
-
-    // LOCK: acquire GPU locks
-    status = _rmGpuLocksAcquire(gpuMask, GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT,
-                                NV_RETURN_ADDRESS(), &gpuLockedMask);
-    if (status == NV_WARN_NOTHING_TO_DO)
-    {
-        // Verify that this is a valid case - i.e. we're attaching first GPU.
-        NV_ASSERT(gpuMask == 0);
-        status = NV_OK;
-    }
+    // initialize GPULOCK structure for this lock
+    status = _rmGpuLockInit(pGpuLock);
     if (status != NV_OK)
+    {
         goto done;
+    }
+
+    //
+    // Before updating the gpusLockableMask value we need to grab
+    // the GPU alloc lock.
+    //
+    // This ensures that the gpusLockableMask value cannot change in between
+    // acquire/release calls issued by a different thread. Reading this is safe
+    // under API lock.
+    //
+
+    // LOCK: acquire GPU alloc lock
+    // (only the GPU alloc lock is needed, so gpuMask is passed as zero)
+    status = _rmGpuLocksAcquire(0x0, GPU_LOCK_FLAGS_LOCK_ALLOC, RM_LOCK_MODULES_INIT,
+                                NV_RETURN_ADDRESS(), NULL);
+    if (status != NV_OK)
+    {
+        NV_ASSERT_FAILED("failed to acquire GPU alloc lock");
+        goto done;
+    }
 
     portSyncSpinlockAcquire(rmGpuLockInfo.pLock);
     // add the GPU to the lockable mask
     rmGpuLockInfo.gpusLockableMask |= NVBIT(gpuInst);
 
     // save this gpuInst if it's the largest we've seen so far
-    if (rmGpuLockInfo.maxLockableGpuInst == (NvU32)-1)
+    if (rmGpuLockInfo.maxLockableGpuInst == GPU_INST_INVALID)
     {
         rmGpuLockInfo.maxLockableGpuInst = gpuInst;
     }
@@ -270,14 +506,17 @@ rmGpuLockAlloc(NvU32 gpuInst)
 
     portSyncSpinlockRelease(rmGpuLockInfo.pLock);
 
-    // UNLOCK: release GPU locks
-    _rmGpuLocksRelease(gpuLockedMask, GPUS_LOCK_FLAGS_NONE, NULL, NV_RETURN_ADDRESS());
+    // UNLOCK: release GPU alloc lock
+    _rmGpuLocksRelease(0x0, GPU_LOCK_FLAGS_LOCK_ALLOC, NULL, NV_RETURN_ADDRESS());
 
 done:
     if (status != NV_OK)
     {
         if (pGpuLock->pWaitSema)
+        {
             portSyncSemaphoreDestroy(pGpuLock->pWaitSema);
+            pGpuLock->pWaitSema = NULL;
+        }
 
         // free intr mask lock
         rmIntrMaskLockFree(gpuInst);
@@ -327,6 +566,12 @@ rmGpuLockFree(NvU32 gpuInst)
     if (status != NV_OK && status != NV_WARN_NOTHING_TO_DO)
         return;
 
+    //
+    // Note: we don't need the GPU alloc lock here, as we will hold both:
+    // - pLock (the spinlock) which locks out rmGpuLockAlloc
+    // - all other per-GPU locks which locks out anyone taking any per-GPU lock
+    //
+
     portSyncSpinlockAcquire(rmGpuLockInfo.pLock);
     // remove the GPU from the lockable mask
     rmGpuLockInfo.gpusLockableMask &= ~NVBIT(gpuInst);
@@ -359,7 +604,7 @@ rmGpuLockFree(NvU32 gpuInst)
         else
         {
             // no locks left so start over
-            rmGpuLockInfo.maxLockableGpuInst = (NvU32)-1;
+            rmGpuLockInfo.maxLockableGpuInst = GPU_INST_INVALID;
         }
     }
     portSyncSpinlockRelease(rmGpuLockInfo.pLock);
@@ -367,24 +612,11 @@ rmGpuLockFree(NvU32 gpuInst)
     // UNLOCK: release GPU locks
     _rmGpuLocksRelease(gpuLockedMask, GPUS_LOCK_FLAGS_NONE, NULL, NV_RETURN_ADDRESS());
 
-    if (pGpuLock->pWaitSema)
-    {
-        //
-        // At this point, we may still have threads waiting on the semaphore,
-        // and possibly one thread holding the lock.
-        // Wake up all threads that are waiting, and wait until the holding one
-        // is done.
-        //
-        while (pGpuLock->count <= 0) // volatile read
-        {
-            portSyncSemaphoreRelease(pGpuLock->pWaitSema);
-            osSchedule(); // Yield execution
-            portSyncSemaphoreAcquire(pGpuLock->pWaitSema);
-        }
-        portSyncSemaphoreDestroy(pGpuLock->pWaitSema);
-    }
-
-    portMemSet(pGpuLock, 0, sizeof(*pGpuLock));
+    //
+    // cleanup GPULOCK structure for this lock
+    // note: this operations wakes all threads still waiting on the semaphore
+    //
+    _rmGpuLockDestroy(pGpuLock);
 
     // free intr mask lock
     rmIntrMaskLockFree(gpuInst);
@@ -488,6 +720,7 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     NV_STATUS status = NV_OK;
     NvU32     gpuInst;
     NvU32     gpuMaskLocked = 0;
+    GPULOCK   *pAllocLock = &rmGpuLockInfo.gpuAllocLock;
     GPULOCK   *pGpuLock;
     NvBool    bHighIrql, bCondAcquireCheck;
     NvU32     maxLockableGpuInst;
@@ -497,6 +730,8 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     NvU64     timestamp;
     NvU64     startWaitTime;
     NvBool    bLockAll = NV_FALSE;
+    NvBool    bAcquireAllocLock = NV_FALSE;
+    NvU32     loopCount;
 
     bHighIrql = (portSyncExSafeToSleep() == NV_FALSE);
     bCondAcquireCheck = ((flags & GPU_LOCK_FLAGS_COND_ACQUIRE) != 0);
@@ -511,16 +746,30 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     // If caller wishes to lock all GPUs then convert incoming  mask
     // to set that are actually lockable.
     //
+    // Also acquire the GPU alloc lock to ensure that the set of
+    // lockable GPUs will not change from underneath caller.
+    //
     if (gpuMask == GPUS_LOCK_ALL)
     {
         gpuMask = rmGpuLockInfo.gpusLockableMask;
         bLockAll = NV_TRUE;
+        bAcquireAllocLock = NV_TRUE;
     }
 
     //
-    // We may get a gpuMask of zero during setup of the first GPU attached.
+    // If GPU alloc lock was explicitly requested then acquire it.
     //
-    if (gpuMask == 0)
+    // Callers may acquire just the GPU alloc lock (and not any per-GPU locks)
+    // by passing a gpuMask of zero. Notably, rmGpuLockAlloc does this.
+    //
+    // Otherwise, if we get a gpuMask of zero, it is because the acquire is
+    // occurring before the first GPU is attached, so just return early.
+    //
+    if (flags & GPU_LOCK_FLAGS_LOCK_ALLOC)
+    {
+        bAcquireAllocLock = NV_TRUE;
+    }
+    else if (gpuMask == 0)
     {
         status = NV_WARN_NOTHING_TO_DO;
         goto done;
@@ -551,9 +800,14 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
             goto done;
         }
     }
-    // Cache global variable so it doesn't change in the middle of the loop.
+
+    //
+    // Cache global variable maxLockableGpuInst so it doesn't change in the
+    // middle of the loop. If any per-GPU locks (not just the GPU alloc lock)
+    // is being acquired, sanity check against NV_MAX_DEVICES.
+    //
     maxLockableGpuInst = rmGpuLockInfo.maxLockableGpuInst;
-    if (maxLockableGpuInst >= NV_MAX_DEVICES)
+    if ((gpuMask != 0) && (maxLockableGpuInst >= NV_MAX_DEVICES))
     {
         DBG_BREAKPOINT();
         status = NV_ERR_INVALID_STATE;
@@ -566,22 +820,37 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
 
         // In safe mode, we never attempt to acquire locks we already own..
         gpuMask &= ~ownedMask;
+
+        if (_rmGpuAllocLockIsOwner())
+        {
+            bAcquireAllocLock = NV_FALSE;
+        }
+
         // If we already own everything we need, just bail early.
-        if (gpuMask == 0)
+        if ((!bAcquireAllocLock) && (gpuMask == 0))
         {
             status = NV_WARN_NOTHING_TO_DO;
             goto done;
         }
 
-        // If we own a higher order lock than one of the needed ones, we are
-        // violating the locking order and need to do a conditional acquire
-        // clz32(0) == ctz(0) == 32:
-        //    owned=0b00001100, needed=0b00110000: ((32-28) >  4), bCond=FALSE
-        //    owned=0b00001100, needed=0b00110010: ((32-28) >  1), bCond=TRUE
-        //    owned=0b11000011, needed=0b00010000: ((32-24) >  4), bCond=TRUE
-        //    owned=0b00000000, needed=0b00000001: ((32-32) >  0), bCond=FALSE
-        if ((32-portUtilCountLeadingZeros32(ownedMask)) > portUtilCountTrailingZeros32(gpuMask))
+        if (bAcquireAllocLock && (ownedMask != 0))
         {
+            // If we need the GPU alloc lock and already own any per-GPU lock,
+            // we need to do conditional acquire as the GPU alloc lock is
+            // ordered before all per-GPU locks.
+
+            bCondAcquireCheck = NV_TRUE;
+        }
+        else if ((32-portUtilCountLeadingZeros32(ownedMask)) > portUtilCountTrailingZeros32(gpuMask))
+        {
+            // If we own a higher order lock than one of the needed ones, we are
+            // violating the locking order and need to do a conditional acquire
+            // clz32(0) == ctz(0) == 32:
+            //    owned=0b00001100, needed=0b00110000: ((32-28) >  4), bCond=FALSE
+            //    owned=0b00001100, needed=0b00110010: ((32-28) >  1), bCond=TRUE
+            //    owned=0b11000011, needed=0b00010000: ((32-24) >  4), bCond=TRUE
+            //    owned=0b00000000, needed=0b00000001: ((32-32) >  0), bCond=FALSE
+
             bCondAcquireCheck = NV_TRUE;
         }
     }
@@ -597,14 +866,25 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     //
     if (bCondAcquireCheck || bHighIrql)
     {
-        for (gpuInst = 0;
-             gpuInst <= maxLockableGpuInst;
-             gpuInst++)
+        // Iterate over gpuInst: GPU_INST_ALLOC_LOCK, 0, ..., maxLockableGpuInst
+        for (gpuInst = _gpuInstLoopHead(maxLockableGpuInst);
+             _gpuInstLoopShouldContinue(gpuInst);
+             gpuInst = _gpuInstLoopNext(gpuInst, maxLockableGpuInst))
         {
-            if ((gpuMask & NVBIT(gpuInst)) == 0)
-                continue;
+            if (gpuInst == GPU_INST_ALLOC_LOCK)
+            {
+                if (!bAcquireAllocLock)
+                    continue;
 
-            pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+                pGpuLock = pAllocLock;
+            }
+            else
+            {
+                if ((gpuMask & NVBIT(gpuInst)) == 0)
+                    continue;
+
+                pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+            }
 
             //
             // The conditional check takes precedence here.
@@ -635,27 +915,39 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     //
     // Now (attempt) to acquire the locks...
     //
-    for (gpuInst = 0;
-         gpuInst <= maxLockableGpuInst;
-         gpuInst++)
+
+    // Iterate over gpuInst: GPU_INST_ALLOC_LOCK, 0, ..., maxLockableGpuInst
+    for (gpuInst = _gpuInstLoopHead(maxLockableGpuInst);
+         _gpuInstLoopShouldContinue(gpuInst);
+         gpuInst = _gpuInstLoopNext(gpuInst, maxLockableGpuInst))
     {
-        // skip any not in the mask
-        if ((gpuMask & NVBIT(gpuInst)) == 0)
-            continue;
-
-        //
-        // We might have released the spinlock while sleeping on a previous
-        // semaphore, so check if current GPU wasn't deleted during that time
-        //
-        if ((NVBIT(gpuInst) & rmGpuLockInfo.gpusLockableMask) == 0)
+        if (gpuInst == GPU_INST_ALLOC_LOCK)
         {
-            NV_PRINTF(LEVEL_NOTICE,
-                "GPU lock %d freed while we were waiting on a previous lock\n",
-                gpuInst);
-            continue;
-        }
+            if (!bAcquireAllocLock)
+                continue;
 
-        pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+            pGpuLock = pAllocLock;
+        }
+        else
+        {
+            // skip any not in the mask
+            if ((gpuMask & NVBIT(gpuInst)) == 0)
+                continue;
+
+            //
+            // We might have released the spinlock while sleeping on a previous
+            // semaphore, so check if current GPU wasn't deleted during that time
+            //
+            if ((NVBIT(gpuInst) & rmGpuLockInfo.gpusLockableMask) == 0)
+            {
+                NV_PRINTF(LEVEL_NOTICE,
+                    "GPU lock %d freed while we were waiting on a previous lock\n",
+                    gpuInst);
+                continue;
+            }
+
+            pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+        }
 
         //
         // Check to see if the lock is not free...we should only fall into this
@@ -688,16 +980,68 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
             // assert, happens with the stack trace:
             // osTimerCallback->osRun1HzCallbacksNow->>rmGpuLocksAcquire)
             //
-            if (_rmGpuLockIsOwner(NVBIT(gpuInst)))
+            if (gpuInst == GPU_INST_ALLOC_LOCK)
             {
-                NV_PRINTF(LEVEL_INFO,
-                          "GPU lock is already acquired by this thread\n");
-                NV_ASSERT(0);
-                //
-                // TODO: RM-1493 undo previous acquires
-                //
-                status = NV_ERR_STATE_IN_USE;
-                goto done;
+                if (_rmGpuAllocLockIsOwner())
+                {
+                    NV_ASSERT_FAILED("GPU alloc lock already acquired by this thread");
+                    // TODO: RM-1493 undo previous acquires
+                    status = NV_ERR_STATE_IN_USE;
+                    goto done;
+                }
+            }
+            else
+            {
+                if (_rmGpuLockIsOwner(NVBIT(gpuInst)))
+                {
+                    NV_ASSERT_FAILED("GPU lock already acquired by this thread");
+                    // TODO: RM-1493 undo previous acquires
+                    status = NV_ERR_STATE_IN_USE;
+                    goto done;
+                }
+            }
+
+            //
+            // There are 3 possible paths when taking the GPU locks:
+            //
+            // 1. Fast path: Use the spinlock to check if the GPU lock is
+            //               available. If so, acquire the GPU lock via the
+            //               spinlock, and avoid a blocking (sleeping)
+            //               wait on the GPU lock semaphore.
+            //
+            // 2. Middle path: Loop and retry the fast path (above), with a
+            //                 short delay (but *without* sleeping) between
+            //                 retries. This provides a significant performance
+            //                 boost for some use cases, such as those in
+            //                 Bug 4035405.
+            //
+            // 3. Slow path: Block on the semaphore and wait for the lock.
+            //
+            if (pSys->getProperty(pSys, PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED))
+            {
+                for (loopCount = 0; loopCount < MIDPATH_RETRIES; ++loopCount)
+                {
+                    portSyncSpinlockRelease(rmGpuLockInfo.pLock);
+                    osDelayUs(MIDPATH_DELAY_USEC);
+                    portSyncSpinlockAcquire(rmGpuLockInfo.pLock);
+
+                    // gpu lock could be freed while we're out of the spinlock.
+                    if ((gpuInst != GPU_INST_ALLOC_LOCK) &&
+                        ((rmGpuLockInfo.gpusLockableMask & NVBIT(gpuInst)) == 0))
+                    {
+                        NV_PRINTF(LEVEL_WARNING,
+                                "GPU lock %d freed while threads were still waiting.\n",
+                                gpuInst);
+                        // Skip this GPU, keep trying any others.
+                        goto next_gpu_instance;
+                    }
+
+                    if (!pGpuLock->bRunning)
+                    {
+                        portAtomicDecrementS32(&pGpuLock->count);
+                        goto per_gpu_lock_acquired;
+                    }
+                }
             }
 
             portAtomicDecrementS32(&pGpuLock->count);
@@ -707,7 +1051,8 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
                 portSyncSemaphoreAcquire(pGpuLock->pWaitSema);
                 portSyncSpinlockAcquire(rmGpuLockInfo.pLock);
 
-                if ((rmGpuLockInfo.gpusLockableMask & NVBIT(gpuInst)) == 0)
+                if ((gpuInst != GPU_INST_ALLOC_LOCK) &&
+                    ((rmGpuLockInfo.gpusLockableMask & NVBIT(gpuInst)) == 0))
                 {
                     NV_PRINTF(LEVEL_WARNING,
                               "GPU lock %d freed while threads were still waiting.\n",
@@ -729,18 +1074,21 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
         {
             portAtomicDecrementS32(&pGpuLock->count);
         }
-
+per_gpu_lock_acquired:
         // indicate that we are running
         pGpuLock->bRunning = NV_TRUE;
 
         // save off thread that owns this GPUs lock
         osGetCurrentThread(&pGpuLock->threadId);
 
-        // now disable interrupts
-        _gpuLocksAcquireDisableInterrupts(gpuInst, flags);
+        if (gpuInst != GPU_INST_ALLOC_LOCK)
+        {
+            // now disable interrupts
+            _gpuLocksAcquireDisableInterrupts(gpuInst, flags);
 
-        // mark this one as locked
-        gpuMaskLocked |= NVBIT(gpuInst);
+            // mark this one as locked
+            gpuMaskLocked |= NVBIT(gpuInst);
+        }
 
         // add acquire record to GPUs lock trace
         osGetCurrentTick(&timestamp);
@@ -792,6 +1140,11 @@ next_gpu_instance:
         NV_ASSERT(gpuMaskLocked == rmGpuLockInfo.gpusLockableMask);
     }
 
+    if (bAcquireAllocLock)
+    {
+        NV_ASSERT(_rmGpuAllocLockIsOwner());
+    }
+
     if (pGpuLockedMask)
         *pGpuLockedMask = gpuMaskLocked;
 
@@ -806,7 +1159,12 @@ done:
         return status;
     }
 
-    return (gpuMaskLocked == 0) ? NV_WARN_NOTHING_TO_DO : NV_OK;
+    if ((gpuMaskLocked == 0) && !(flags & GPU_LOCK_FLAGS_LOCK_ALLOC))
+    {
+        return NV_WARN_NOTHING_TO_DO;
+    }
+
+    return NV_OK;
 }
 
 //
@@ -1224,7 +1582,9 @@ static NvU32
 _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
 {
     static volatile NvU32 bug200413011_WAR_WakeUpMask;
+    static volatile NvU32 bug200413011_WAR_AllocLockWakeUp;
     OBJSYS *pSys = SYS_GET_INSTANCE();
+    GPULOCK *pAllocLock = &rmGpuLockInfo.gpuAllocLock;
     GPULOCK *pGpuLock;
     NvU32   gpuMaskWakeup = 0;
     NvU32   gpuInst;
@@ -1236,12 +1596,24 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
     NvU64   priorityPrev = 0;
     NvU64   timestamp;
     NvU64   startHoldTime = 0;
+    NvBool  bReleaseAllocLock = NV_FALSE;
+    NvBool  bAllocLockWakeup = NV_FALSE;
     NV_STATUS status;
+
+    //
+    // If the GPU alloc lock is held, release it after releasing any GPU lock.
+    // Releasing any GPU lock means the thread no longer needs "all" GPUs, so
+    // rmGpuLockAlloc should be allowed to add new GPU locks again.
+    //
+    if (_rmGpuAllocLockIsOwner())
+    {
+        bReleaseAllocLock = NV_TRUE;
+    }
 
     //
     // We may get a gpuMask of zero during setup of the first GPU attached.
     //
-    if (gpuMask == 0)
+    if ((gpuMask == 0) && (!bReleaseAllocLock))
         return NV_OK;
 
     //
@@ -1256,9 +1628,12 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
     // In some error recovery cases we want to be able to force release a lock.
     // Log all such issues, but don't bail early to enable recovery paths.
     //
-    NV_ASSERT(_rmGpuLockIsOwner(gpuMask));
+    if (gpuMask != 0)
+    {
+        NV_ASSERT(_rmGpuLockIsOwner(gpuMask));
 
-    _gpuLocksReleaseHandleDeferredWork(gpuMask);
+        _gpuLocksReleaseHandleDeferredWork(gpuMask);
+    }
 
     threadPriorityBoost(&priority, &priorityPrev);
     portSyncSpinlockAcquire(rmGpuLockInfo.pLock);
@@ -1286,11 +1661,26 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
     }
 
     // Find the highest GPU instance that's locked, to be used for loop bounds
-    highestInstanceInGpuMask = 31 - portUtilCountLeadingZeros32(gpuMask);
-    if (highestInstanceInGpuMask > rmGpuLockInfo.maxLockableGpuInst)
+    if (gpuMask == 0)
     {
-        NV_PRINTF(LEVEL_WARNING, "GPU mask for release (0x%08x) has higher instance that maxLockableGpuIns (%d)\n",
-            highestInstanceInGpuMask, rmGpuLockInfo.maxLockableGpuInst);
+        //
+        // rmGpuLockAlloc may release the GPU alloc lock while passing
+        // a gpuMask of 0.
+        //
+        // In that case, restrict the gpuInst loops below to one iteration over
+        // GPU_INST_ALLOC_LOCK by setting highestInstanceInGpuMask to
+        // GPU_INST_INVALID.
+        //
+        highestInstanceInGpuMask = GPU_INST_INVALID;
+    }
+    else
+    {
+        highestInstanceInGpuMask = 31 - portUtilCountLeadingZeros32(gpuMask);
+        if (highestInstanceInGpuMask > rmGpuLockInfo.maxLockableGpuInst)
+        {
+            NV_PRINTF(LEVEL_WARNING, "GPU mask for release (0x%08x) has higher instance that maxLockableGpuIns (%d)\n",
+                highestInstanceInGpuMask, rmGpuLockInfo.maxLockableGpuInst);
+        }
     }
 
     //
@@ -1300,14 +1690,26 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
     // have something waiting.  If any of them do, then we queue up a DPC
     // to handle the release of all of them.
     //
-    for (gpuInst = highestInstanceInGpuMask;
-         gpuInst != (NvU32)-1;
-         gpuInst--)
-    {
-        if ((gpuMask & NVBIT(gpuInst)) == 0)
-            continue;
 
-        pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+    // Iterate over gpuInst: highestInstanceInGpuMask, ..., 0, GPU_INST_ALLOC_LOCK
+    for (gpuInst = _gpuInstLoopTail(highestInstanceInGpuMask);
+         _gpuInstLoopShouldContinue(gpuInst);
+         gpuInst = _gpuInstLoopPrev(gpuInst, highestInstanceInGpuMask))
+    {
+        if (gpuInst == GPU_INST_ALLOC_LOCK)
+        {
+            if (!bReleaseAllocLock)
+                continue;
+
+            pGpuLock = pAllocLock;
+        }
+        else
+        {
+            if ((gpuMask & NVBIT(gpuInst)) == 0)
+                continue;
+
+            pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+        }
 
         // Start of GPU lock hold time is the first acquired GPU lock
         if (pSys->getProperty(pSys, PDB_PROP_SYS_RM_LOCK_TIME_COLLECT))
@@ -1317,7 +1719,15 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
         {
             if (!pGpuLock->bSignaled)
             {
-                gpuMaskWakeup |= NVBIT(gpuInst);
+                if (gpuInst == GPU_INST_ALLOC_LOCK)
+                {
+                    bAllocLockWakeup = NV_TRUE;
+                }
+                else
+                {
+                    gpuMaskWakeup |= NVBIT(gpuInst);
+                }
+
                 if (bSemaCanWake)
                     pGpuLock->bSignaled = NV_TRUE;
             }
@@ -1335,19 +1745,30 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
     // is waiting and we are running at an elevated processor level (i.e.
     // we're here from a call in our ISR).
     //
-    if (gpuMaskWakeup == 0 || bSemaCanWake)
+    if (((gpuMaskWakeup == 0) && (!bAllocLockWakeup)) || bSemaCanWake)
     {
-        for (gpuInst = highestInstanceInGpuMask;
-             gpuInst != (NvU32)-1;
-             gpuInst--)
+        // Iterate over gpuInst: highestInstanceInGpuMask, ..., 0, GPU_INST_ALLOC_LOCK
+        for (gpuInst = _gpuInstLoopTail(highestInstanceInGpuMask);
+             _gpuInstLoopShouldContinue(gpuInst);
+             gpuInst = _gpuInstLoopPrev(gpuInst, highestInstanceInGpuMask))
         {
-            if ((gpuMask & NVBIT(gpuInst)) == 0)
-                continue;
+            if (gpuInst == GPU_INST_ALLOC_LOCK)
+            {
+                if (!bReleaseAllocLock)
+                    continue;
 
-            pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+                pGpuLock = pAllocLock;
+            }
+            else
+            {
+                if ((gpuMask & NVBIT(gpuInst)) == 0)
+                    continue;
 
-            // now enable interrupts
-            _gpuLocksReleaseEnableInterrupts(gpuInst, flags);
+                pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+
+                // now enable interrupts
+                _gpuLocksReleaseEnableInterrupts(gpuInst, flags);
+            }
 
             // indicate that the API is not running
             NV_ASSERT(pGpuLock->threadId == threadId);
@@ -1357,8 +1778,11 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
             portAtomicIncrementS32(&pGpuLock->count);
             NV_ASSERT(pGpuLock->count <= 1);
 
-            // update gpusLockedMask
-            rmGpuLockInfo.gpusLockedMask &= ~NVBIT(gpuInst);
+            if (gpuInst != GPU_INST_ALLOC_LOCK)
+            {
+                // update gpusLockedMask
+                rmGpuLockInfo.gpusLockedMask &= ~NVBIT(gpuInst);
+            }
 
             // add release record to GPUs lock trace
             osGetCurrentTick(&timestamp);
@@ -1379,27 +1803,45 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
 
     if (bSemaCanWake)
     {
-        NvU32 extraWakeUp;
+        NvU32 extraWakeUp, allocLockWakeUp;
         do { extraWakeUp = bug200413011_WAR_WakeUpMask; }
         while (!portAtomicCompareAndSwapU32(&bug200413011_WAR_WakeUpMask, 0, extraWakeUp));
+        do { allocLockWakeUp = bug200413011_WAR_AllocLockWakeUp; }
+        while (!portAtomicCompareAndSwapU32(&bug200413011_WAR_AllocLockWakeUp, 0, allocLockWakeUp));
         gpuMaskWakeup |= extraWakeUp;
+        if (allocLockWakeUp != 0)
+        {
+            bAllocLockWakeup = NV_TRUE;
+        }
     }
 
     //
     // Handle wake up(s).
     //
-    if (gpuMaskWakeup != 0)
+    if ((gpuMaskWakeup != 0) || bAllocLockWakeup)
     {
         if (bSemaCanWake)
         {
-            for (gpuInst = highestInstanceInGpuMask;
-                 gpuInst != (NvU32)-1;
-                 gpuInst--)
+            // Iterate over gpuInst: highestInstanceInGpuMask, ..., 0, GPU_INST_ALLOC_LOCK
+            for (gpuInst = _gpuInstLoopTail(highestInstanceInGpuMask);
+                 _gpuInstLoopShouldContinue(gpuInst);
+                 gpuInst = _gpuInstLoopPrev(gpuInst, highestInstanceInGpuMask))
             {
-                if ((gpuMaskWakeup & NVBIT(gpuInst)) == 0)
-                    continue;
+                if (gpuInst == GPU_INST_ALLOC_LOCK)
+                {
+                    if (!bAllocLockWakeup)
+                        continue;
 
-                pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+                    pGpuLock = pAllocLock;
+                }
+                else
+                {
+                    if ((gpuMaskWakeup & NVBIT(gpuInst)) == 0)
+                        continue;
+
+                    pGpuLock = &rmGpuLockInfo.gpuLocks[gpuInst];
+                }
+
                 if (pGpuLock->pWaitSema)
                     portSyncSemaphoreRelease(pGpuLock->pWaitSema);
                 else
@@ -1410,26 +1852,58 @@ _rmGpuLocksRelease(NvU32 gpuMask, NvU32 flags, OBJGPU *pDpcGpu, void *ra)
         }
         else
         {
+            NvBool bDpcReleaseAll = NV_FALSE;
+
             if (pDpcGpu == NULL)
             {
                 NV_PRINTF(LEVEL_ERROR,
                     "Releasing GPU locks (mask:0x%08x) at raised IRQL without a DPC GPU at %p. Attempting to recover..\n",
                     gpuMask, ra);
                 portAtomicOrU32(&bug200413011_WAR_WakeUpMask, gpuMaskWakeup);
+                if (bAllocLockWakeup)
+                {
+                    portAtomicOrU32(&bug200413011_WAR_AllocLockWakeUp, 0x1);
+                }
                 status = NV_SEMA_RELEASE_FAILED;
                 goto done;
             }
+
+            //
             // Use a dpc to release the locks.
-            NV_ASSERT((gpuMask == gpumgrGetGpuMask(pDpcGpu)) ||
-                      (gpuMask == rmGpuLockInfo.gpusLockedMask));
-            if (gpuMask == gpumgrGetGpuMask(pDpcGpu))
+            //
+            // This path can handle either:
+            // - releasing a single GPU lock
+            // - releasing all locked GPU locks
+            //
+
+            if (_rmGpuAllocLockIsOwner())
             {
-                status = osGpuLocksQueueRelease(pDpcGpu, DPC_RELEASE_SINGLE_GPU_LOCK);
+                //
+                // If GPU alloc lock is held, caller should have locked all
+                // GPUs, so dpc should release all. This ensures ownership of
+                // the GPU alloc lock is transferred properly.
+                //
+                bDpcReleaseAll = NV_TRUE;
+            }
+            if (gpuMask != gpumgrGetGpuMask(pDpcGpu))
+            {
+                //
+                // If the mask being released is not a single GPU, caller
+                // should have locked all GPUs, so dpc should release all.
+                //
+                bDpcReleaseAll = NV_TRUE;
+            }
+
+            if (bDpcReleaseAll)
+            {
+                NV_ASSERT(gpuMask == rmGpuLockInfo.gpusLockedMask);
+                status = osGpuLocksQueueRelease(pDpcGpu, DPC_RELEASE_ALL_GPU_LOCKS);
                 goto done;
             }
             else
             {
-                status = osGpuLocksQueueRelease(pDpcGpu, DPC_RELEASE_ALL_GPU_LOCKS);
+                NV_ASSERT(gpuMask == gpumgrGetGpuMask(pDpcGpu));
+                status = osGpuLocksQueueRelease(pDpcGpu, DPC_RELEASE_SINGLE_GPU_LOCK);
                 goto done;
             }
         }
@@ -1740,6 +2214,7 @@ rmDeviceGpuLockIsOwner(NvU32 gpuInst)
 NV_STATUS
 rmGpuLockSetOwner(OS_THREAD_HANDLE threadId)
 {
+    GPULOCK *pAllocLock = &rmGpuLockInfo.gpuAllocLock;
     GPULOCK *pGpuLock;
     NvU32 gpuInst;
     NvU32 maxLockableGpuInst;
@@ -1766,6 +2241,13 @@ rmGpuLockSetOwner(OS_THREAD_HANDLE threadId)
         pGpuLock->threadId = threadId;
     }
 
+    // also set owner of the GPU alloc lock (which should have also been acquired)
+    if (threadId != GPUS_LOCK_OWNER_PENDING_DPC_REFRESH)
+    {
+        NV_ASSERT_OR_RETURN(pAllocLock->threadId == GPUS_LOCK_OWNER_PENDING_DPC_REFRESH, NV_ERR_INVALID_STATE);
+    }
+    pAllocLock->threadId = threadId;
+
     return NV_OK;
 }
 
@@ -1791,6 +2273,8 @@ rmGpuLockGetTimes(NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *pParams)
 NV_STATUS
 rmDeviceGpuLockSetOwner(OBJGPU *pGpu, OS_THREAD_HANDLE threadId)
 {
+    GPULOCK *pAllocLock = &rmGpuLockInfo.gpuAllocLock;
+    NvBool bSetAllocLockOwner = NV_FALSE;
     GPULOCK *pGpuLock;
     NvU32 gpuInst;
     NvU32 gpuMask;
@@ -1799,6 +2283,12 @@ rmDeviceGpuLockSetOwner(OBJGPU *pGpu, OS_THREAD_HANDLE threadId)
 
     if (pSys->getProperty(pSys, PDB_PROP_SYS_IS_GSYNC_ENABLED))
     {
+        if (_rmGpuAllocLockIsOwner() ||
+            ((threadId != GPUS_LOCK_OWNER_PENDING_DPC_REFRESH) &&
+             (pAllocLock->threadId == GPUS_LOCK_OWNER_PENDING_DPC_REFRESH)))
+        {
+            bSetAllocLockOwner = NV_TRUE;
+        }
         gpuMask = rmGpuLockInfo.gpusLockedMask;
     }
     else
@@ -1826,6 +2316,16 @@ rmDeviceGpuLockSetOwner(OBJGPU *pGpu, OS_THREAD_HANDLE threadId)
             NV_ASSERT_OR_RETURN(pGpuLock->threadId == GPUS_LOCK_OWNER_PENDING_DPC_REFRESH, NV_ERR_INVALID_STATE);
         }
         pGpuLock->threadId = threadId;
+    }
+
+    // also set owner of the GPU alloc lock if needed
+    if (bSetAllocLockOwner)
+    {
+        if (threadId != GPUS_LOCK_OWNER_PENDING_DPC_REFRESH)
+        {
+            NV_ASSERT_OR_RETURN(pAllocLock->threadId == GPUS_LOCK_OWNER_PENDING_DPC_REFRESH, NV_ERR_INVALID_STATE);
+        }
+        pAllocLock->threadId = threadId;
     }
 
     return NV_OK;

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -44,11 +44,16 @@ extern "C" {
 /*!
  * RM internal class representing NV20_SUBDEVICE_DIAG
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_SUBDEVICE_DIAG_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DiagApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -89,7 +94,6 @@ struct DiagApi {
     NV_STATUS (*__diagapiInternalControlForward__)(struct DiagApi *, NvU32, void *, NvU32);
     NV_STATUS (*__diagapiUnmapFrom__)(struct DiagApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__diagapiControl_Epilogue__)(struct DiagApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__diagapiControlLookup__)(struct DiagApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__diagapiGetInternalObjectHandle__)(struct DiagApi *);
     NV_STATUS (*__diagapiUnmap__)(struct DiagApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__diagapiGetMemInterMapParams__)(struct DiagApi *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -97,6 +101,7 @@ struct DiagApi {
     NV_STATUS (*__diagapiUnregisterEvent__)(struct DiagApi *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__diagapiControlSerialization_Prologue__)(struct DiagApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__diagapiCanCopy__)(struct DiagApi *);
+    NvBool (*__diagapiIsPartialUnmapSupported__)(struct DiagApi *);
     void (*__diagapiPreDestruct__)(struct DiagApi *);
     NV_STATUS (*__diagapiIsDuplicate__)(struct DiagApi *, NvHandle, NvBool *);
     void (*__diagapiControlSerialization_Epilogue__)(struct DiagApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -163,7 +168,6 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi**, Dynamic*, NvU32, struct CALL_CONTE
 #define diagapiInternalControlForward(pGpuResource, command, pParams, size) diagapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define diagapiUnmapFrom(pResource, pParams) diagapiUnmapFrom_DISPATCH(pResource, pParams)
 #define diagapiControl_Epilogue(pResource, pCallContext, pParams) diagapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define diagapiControlLookup(pResource, pParams, ppEntry) diagapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define diagapiGetInternalObjectHandle(pGpuResource) diagapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define diagapiUnmap(pGpuResource, pCallContext, pCpuMapping) diagapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define diagapiGetMemInterMapParams(pRmResource, pParams) diagapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -171,6 +175,7 @@ NV_STATUS __nvoc_objCreate_DiagApi(DiagApi**, Dynamic*, NvU32, struct CALL_CONTE
 #define diagapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) diagapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define diagapiControlSerialization_Prologue(pResource, pCallContext, pParams) diagapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define diagapiCanCopy(pResource) diagapiCanCopy_DISPATCH(pResource)
+#define diagapiIsPartialUnmapSupported(pResource) diagapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define diagapiPreDestruct(pResource) diagapiPreDestruct_DISPATCH(pResource)
 #define diagapiIsDuplicate(pResource, hMemory, pDuplicate) diagapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define diagapiControlSerialization_Epilogue(pResource, pCallContext, pParams) diagapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -320,10 +325,6 @@ static inline void diagapiControl_Epilogue_DISPATCH(struct DiagApi *pResource, s
     pResource->__diagapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS diagapiControlLookup_DISPATCH(struct DiagApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__diagapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle diagapiGetInternalObjectHandle_DISPATCH(struct DiagApi *pGpuResource) {
     return pGpuResource->__diagapiGetInternalObjectHandle__(pGpuResource);
 }
@@ -350,6 +351,10 @@ static inline NV_STATUS diagapiControlSerialization_Prologue_DISPATCH(struct Dia
 
 static inline NvBool diagapiCanCopy_DISPATCH(struct DiagApi *pResource) {
     return pResource->__diagapiCanCopy__(pResource);
+}
+
+static inline NvBool diagapiIsPartialUnmapSupported_DISPATCH(struct DiagApi *pResource) {
+    return pResource->__diagapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void diagapiPreDestruct_DISPATCH(struct DiagApi *pResource) {

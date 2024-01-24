@@ -1110,7 +1110,7 @@ _acpiCacheMethodData
     NV_STATUS status;
     NvU32 inOut = 0;
     NvU16 rtnSize = sizeof(inOut);
-    NvU32 tableLen = 0, acpiidIndex = 0, mode = 0, muxPartId = 0;
+    NvU32 tableLen = 0, acpiidIndex = 0, mode = 0, muxPartId = 0, state = 0;
 
     // This bit is used for checking if pGpu::acpiMethodData need to be used or not.
     pGpu->acpiMethodData.bValid = NV_TRUE;
@@ -1133,6 +1133,7 @@ _acpiCacheMethodData
     // Fill in the MUX Method Data.
     portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable));
     portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable));
+    portMemSet(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable, 0, sizeof(pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable));    
     if (pGpu->acpiMethodData.dodMethodData.status == NV_OK)
     {
         tableLen = pGpu->acpiMethodData.dodMethodData.acpiIdListLen / sizeof(NvU32);
@@ -1148,7 +1149,12 @@ _acpiCacheMethodData
             pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable[acpiidIndex].acpiId = pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex];
             pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable[acpiidIndex].mode = muxPartId;
             pGpu->acpiMethodData.muxMethodData.acpiIdMuxPartTable[acpiidIndex].status = status;
-            mode = muxPartId = 0;
+
+            status = osCallACPI_MXDS(pGpu, pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex], &state);
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable[acpiidIndex].acpiId = pGpu->acpiMethodData.dodMethodData.acpiIdList[acpiidIndex];
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable[acpiidIndex].mode = state;
+            pGpu->acpiMethodData.muxMethodData.acpiIdMuxStateTable[acpiidIndex].status = status;
+            mode = muxPartId = state = 0;
         }
     }
 

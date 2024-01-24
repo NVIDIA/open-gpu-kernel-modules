@@ -335,4 +335,39 @@ typedef struct NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS {
     NvBool                                  bAllUsers;
 } NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS;
 
+
+/*
+ * NV2080_CTRL_CMD_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_FOR_UID
+ *
+ * This command is used to create a RATS tracing bindpoint to eventbuffer.
+ *
+ *  hEventBuffer[IN]
+ *      The event buffer to bind to
+ *
+ *  tracepointMask[IN]
+ *      Bitmask for selecting tracepoints
+ *
+ *  gspLoggingBufferSize[IN]
+ *      User defined size of GSP owned event logging buffer
+ *
+ *  gspLoggingBufferWatermark[IN]
+ *      User defined watermark that triggers RPC to kernel of traces
+ *      HINT: set higher for more frequent trace updates
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_NOT_SUPPORTED
+ */
+#define NV2080_CTRL_CMD_EVENT_RATS_GSP_TRACE_BIND_EVTBUF (0x2080030a) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_EVENT_INTERFACE_ID << 8) | NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS_MESSAGE_ID (0xAU)
+
+typedef struct NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS {
+    NvHandle hEventBuffer;
+    NV_DECLARE_ALIGNED(NvU64 tracepointMask, 8);
+    NvU32    gspLoggingBufferSize;
+    NvU32    gspLoggingBufferWatermark;
+} NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS;
+
 /* _ctrl2080event_h_ */

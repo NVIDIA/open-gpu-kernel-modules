@@ -37,11 +37,14 @@
 #include "ls10/pmgr_ls10.h"
 #include "ls10/therm_ls10.h"
 #include "ls10/smbpbi_ls10.h"
+#include "ls10/cci_ls10.h"
+#include "cci/cci_nvswitch.h"
 #include "ls10/multicast_ls10.h"
 #include "ls10/soe_ls10.h"
 #include "ls10/gfw_ls10.h"
 
 #include "nvswitch/ls10/dev_nvs_top.h"
+#include "nvswitch/ls10/ptop_discovery_ip.h"
 #include "nvswitch/ls10/dev_pri_masterstation_ip.h"
 #include "nvswitch/ls10/dev_pri_hub_sys_ip.h"
 #include "nvswitch/ls10/dev_nvlw_ip.h"
@@ -1405,10 +1408,12 @@ static NvlStatus
 _nvswitch_reset_and_drain_links_ls10
 (
     nvswitch_device *device,
-    NvU64 link_mask
+    NvU64 link_mask,
+    NvBool bForced
 )
 {
     NvlStatus    status    = NVL_SUCCESS;
+    ls10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
     nvlink_link *link_info = NULL;
     NvU32        link;
     NvU32        data32;
@@ -1465,6 +1470,11 @@ _nvswitch_reset_and_drain_links_ls10
             continue;
         }
 
+        if (nvswitch_is_link_in_reset(device, link_info))
+        {
+            continue;
+        }
+
         // Unregister links to make them unusable while reset is in progress.
         nvlink_lib_unregister_link(link_info);
 
@@ -1503,46 +1513,54 @@ _nvswitch_reset_and_drain_links_ls10
         // Step 3.0 :
         // Prior to starting port reset, ensure the links is in emergency shutdown
         //
-        bIsLinkInEmergencyShutdown = NV_FALSE;
-        nvswitch_timeout_create(10 * NVSWITCH_INTERVAL_1MSEC_IN_NS, &timeout);
-        do
+        // Forcibly shutdown links if requested
+        //
+        if (bForced)
         {
-            bKeepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
-
-            status = nvswitch_minion_get_dl_status(device, link_info->linkNumber,
-                        NV_NVLSTAT_UC01, 0, &stat_data);
-
-            if (status != NVL_SUCCESS)
+            nvswitch_execute_unilateral_link_shutdown_ls10(link_info);
+        }
+        else
+        {
+            bIsLinkInEmergencyShutdown = NV_FALSE;
+            nvswitch_timeout_create(10 * NVSWITCH_INTERVAL_1MSEC_IN_NS, &timeout);
+            do
             {
+                bKeepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
+
+                status = nvswitch_minion_get_dl_status(device, link_info->linkNumber,
+                            NV_NVLSTAT_UC01, 0, &stat_data);
+
+                if (status != NVL_SUCCESS)
+                {
+                    continue;
+                }
+
+                link_state = DRF_VAL(_NVLSTAT, _UC01, _LINK_STATE, stat_data);
+
+                bIsLinkInEmergencyShutdown = (link_state == LINKSTATUS_EMERGENCY_SHUTDOWN) ?
+                                                NV_TRUE:NV_FALSE;
+
+                if (bIsLinkInEmergencyShutdown == NV_TRUE)
+                {
+                    break;
+                }
+            }
+            while(bKeepPolling);
+
+            if (bIsLinkInEmergencyShutdown == NV_FALSE)
+            {
+                NVSWITCH_PRINT(device, ERROR,
+                    "%s: link %d failed to enter emergency shutdown\n",
+                    __FUNCTION__, link);
+                    
+                // Re-register links.
+                status = nvlink_lib_register_link(device->nvlink_device, link_info);
+                if (status != NVL_SUCCESS)
+                {
+                    nvswitch_destroy_link(link_info);
+                }
                 continue;
             }
-
-            link_state = DRF_VAL(_NVLSTAT, _UC01, _LINK_STATE, stat_data);
-
-            bIsLinkInEmergencyShutdown = (link_state == LINKSTATUS_EMERGENCY_SHUTDOWN) ?
-                                            NV_TRUE:NV_FALSE;
-
-            if (bIsLinkInEmergencyShutdown == NV_TRUE)
-            {
-                break;
-            }
-        }
-        while(bKeepPolling);
-
-        if (bIsLinkInEmergencyShutdown == NV_FALSE)
-        {
-            NVSWITCH_PRINT(device, ERROR,
-                "%s: link %d failed to enter emergency shutdown\n",
-                __FUNCTION__, link);
-            
-            // Re-register links.
-            status = nvlink_lib_register_link(device->nvlink_device, link_info);
-            if (status != NVL_SUCCESS)
-            {
-                nvswitch_destroy_link(link_info);
-            }
-            
-            continue;
         }
 
         nvswitch_corelib_clear_link_state_ls10(link_info);
@@ -1585,30 +1603,25 @@ _nvswitch_reset_and_drain_links_ls10
                                   NV_NVLSTAT_MN00, 0, &stat_data) == NVL_SUCCESS)
                 {
                     link_intr_subcode = DRF_VAL(_NVLSTAT, _MN00, _LINK_INTR_SUBCODE, stat_data);
-                }
-                else
-                {
-                    continue;
-                }
 
-                if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
-                    (link_intr_subcode == MINION_ALARM_BUSY))
-                {
+                    if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
+                        (link_intr_subcode == MINION_ALARM_BUSY))
+                    {
 
-                    status = nvswitch_request_tl_link_state_ls10(link_info,
-                             NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_RESET, NV_TRUE);
-
-                    //
-                    // We retry the shutdown sequence 3 times when we see a MINION_REQUEST_FAIL
-                    // or MINION_ALARM_BUSY
-                    //
-                    retry_count--;
+                        //
+                        // We retry the reset sequence when we see a MINION_REQUEST_FAIL
+                        // or MINION_ALARM_BUSY
+                        //
+                    }
+                    else
+                    {
+                        break;
+                    }
                 }
-                else
-                {
-                    break;
-                }
+       
+                retry_count--;
             }
+
         } while(retry_count);
 
         if (status != NVL_SUCCESS)
@@ -1651,6 +1664,9 @@ _nvswitch_reset_and_drain_links_ls10
             continue;
         }
 
+        // Initialize select scratch registers to 0x0
+        device->hal.nvswitch_init_scratch(device);
+
         //
         // Step 9.0: Launch ALI training to re-initialize and train the links
         // nvswitch_launch_ALI_link_training(device, link_info);
@@ -1658,6 +1674,8 @@ _nvswitch_reset_and_drain_links_ls10
         // Request active, but don't block. FM will come back and check
         // active link status by blocking on this TLREQ's completion
         //
+        // CCI will re-train links
+        if (!cciIsLinkManaged(device, link)) 
         {
             status = nvswitch_request_tl_link_state_ls10(link_info,
                         NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_ACTIVE,
@@ -1698,6 +1716,8 @@ _nvswitch_reset_and_drain_links_ls10
     }
     FOR_EACH_INDEX_IN_MASK_END;
 
+    chip_device->deferredLinkErrors[link].state.lastRetrainTime = nvswitch_os_get_platform_time();
+
     return NVL_SUCCESS;
 }
 
@@ -1708,12 +1728,25 @@ NvlStatus
 nvswitch_reset_and_drain_links_ls10
 (
     nvswitch_device *device,
-    NvU64 link_mask
+    NvU64 link_mask,
+    NvBool bForced
 )
 {
     NvlStatus    status    = NVL_SUCCESS;
     
-    status = _nvswitch_reset_and_drain_links_ls10(device, link_mask);
+    NvU32        link;
+    
+    // CCI will call reset and drain separately
+    FOR_EACH_INDEX_IN_MASK(64, link, link_mask)
+    {
+        if (cciIsLinkManaged(device, link))
+        {
+            link_mask = link_mask & ~NVBIT64(link);
+        }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    status = _nvswitch_reset_and_drain_links_ls10(device, link_mask, bForced);
     if (status != NVL_SUCCESS)
     {
         return status;
@@ -5163,6 +5196,10 @@ nvswitch_launch_ALI_ls10
             continue;
         }
 
+        if (cciIsLinkManaged(device, i))
+        {
+            continue;
+        }
         nvswitch_launch_ALI_link_training(device, link, NV_FALSE);
     }
     FOR_EACH_INDEX_IN_MASK_END;
@@ -5512,7 +5549,7 @@ nvswitch_ctrl_inband_send_data_ls10
     NvlStatus status;
     nvswitch_inband_send_data inBandData;
 
-    // ct_assert(NVLINK_INBAND_MAX_MSG_SIZE >= NVSWITCH_INBAND_DATA_SIZE);
+    ct_assert(NVLINK_INBAND_MAX_MSG_SIZE == NVSWITCH_INBAND_DATA_SIZE);
 
     if (p->dataSize == 0 || p->dataSize > NVSWITCH_INBAND_DATA_SIZE)
     {
@@ -5859,6 +5896,514 @@ nvswitch_ctrl_get_nvlink_error_threshold_ls10
 }
 
 NvlStatus
+nvswitch_get_board_id_ls10
+(
+    nvswitch_device *device,
+    NvU16 *pBoardId
+)
+{
+    NvlStatus ret;
+    NvU32 biosOemVersionBytes;
+
+    if (pBoardId == NULL)
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    // Check if bios valid
+    ret = nvswitch_lib_get_bios_version(device, NULL);
+    if (ret != NVL_SUCCESS)
+    {
+        return ret;
+    }
+
+    biosOemVersionBytes = NVSWITCH_SAW_RD32_LS10(device, _NVLSAW_SW, 
+                                                 _OEM_BIOS_VERSION);
+    *pBoardId = DRF_VAL(_NVLSAW_SW, _OEM_BIOS_VERSION, _BOARD_ID, biosOemVersionBytes);
+
+    return NVL_SUCCESS;
+}
+
+NvlStatus
+nvswitch_check_io_sanity_ls10
+(
+    nvswitch_device *device
+)
+{
+    NvBool keepPolling;
+    NVSWITCH_TIMEOUT timeout;
+    NvU32   val;
+    NvBool error = NV_FALSE;
+    NvU32 sxid;
+    const char *sxid_desc = NULL;
+
+    //
+    // NOTE: MMIO discovery has not been performed so only constant BAR0 offset
+    // addressing can be performed.
+    //
+
+    // BAR0 offset 0 should always contain valid data -- unless it doesn't
+    val = NVSWITCH_OFF_RD32(device, 0);
+    if (val == 0)
+    {
+        error = NV_TRUE;
+        sxid = NVSWITCH_ERR_HW_HOST_FIRMWARE_RECOVERY_MODE;
+        sxid_desc = "Firmware recovery mode";
+    }
+    else if ((val == 0xFFFFFFFF) || ((val & 0xFFFF0000) == 0xBADF0000))
+    {
+        error = NV_TRUE;
+        sxid = NVSWITCH_ERR_HW_HOST_IO_FAILURE;
+        sxid_desc = "IO failure";
+    }
+    else if (!IS_FMODEL(device))
+    {
+        // check if FSP successfully started
+        nvswitch_timeout_create(10 * NVSWITCH_INTERVAL_1SEC_IN_NS, &timeout);
+        do
+        {
+            keepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
+
+            val = NVSWITCH_REG_RD32(device, _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS);
+            if (FLD_TEST_DRF(_GFW_GLOBAL, _BOOT_PARTITION_PROGRESS, _VALUE, _SUCCESS, val))
+            {
+                break;
+            }
+
+            nvswitch_os_sleep(1);
+        }
+        while (keepPolling);
+        if (!FLD_TEST_DRF(_GFW_GLOBAL, _BOOT_PARTITION_PROGRESS, _VALUE, _SUCCESS, val))
+        {
+            error = NV_TRUE;
+            sxid = NVSWITCH_ERR_HW_HOST_FIRMWARE_INITIALIZATION_FAILURE;
+            sxid_desc = "Firmware initialization failure";
+        }
+    }
+
+    if (error)
+    {
+        NVSWITCH_RAW_ERROR_LOG_TYPE report = { 0, { 0 } };
+        NVSWITCH_RAW_ERROR_LOG_TYPE report_saw = {0, { 0 }};
+        NvU32 report_idx = 0;
+        NvU32 i;
+
+        val = NVSWITCH_REG_RD32(device, _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS);
+        report.data[report_idx++] = val;
+        NVSWITCH_PRINT(device, ERROR, "%s: -- _GFW_GLOBAL, _BOOT_PARTITION_PROGRESS (0x%x) != _SUCCESS --\n",
+            __FUNCTION__, val);
+
+        for (i = 0; i <= 15; i++)
+        {
+            val = NVSWITCH_OFF_RD32(device,
+                NV_PTOP_UNICAST_SW_DEVICE_BASE_SAW_0 + NV_NVLSAW_SW_SCRATCH(i));
+            report_saw.data[i] = val;
+            NVSWITCH_PRINT(device, ERROR, "%s: -- NV_NVLSAW_SW_SCRATCH(%d) = 0x%08x\n",
+                __FUNCTION__, i, val);
+        }
+
+        for (i = 0; i < NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2__SIZE_1; i++)
+        {
+            val = NVSWITCH_REG_RD32(device, _PFSP, _FALCON_COMMON_SCRATCH_GROUP_2(i));
+            report.data[report_idx++] = val;
+                NVSWITCH_PRINT(device, ERROR, "%s: -- NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2(%d) = 0x%08x\n",
+                __FUNCTION__, i, val);
+        }
+
+        // Include useful scratch information for triage
+        NVSWITCH_PRINT_SXID_NO_BBX(device, sxid,
+            "Fatal, %s (0x%x/0x%x, 0x%x, 0x%x, 0x%x/0x%x, 0x%x, 0x%x, 0x%x, 0x%x\n", sxid_desc,
+            report.data[0], report.data[1], report.data[2], report.data[3], report.data[4],
+            report_saw.data[0], report_saw.data[1], report_saw.data[12], report_saw.data[14], report_saw.data[15]);
+
+        return -NVL_INITIALIZATION_TOTAL_FAILURE;
+    }
+
+    return NVL_SUCCESS;
+}
+
+/*
+ * @brief: This function returns the current value of the SOE heartbeat gpio
+ * @params[in]   device       reference to current nvswitch device
+ * @params[in]   p            NVSWITCH_GET_SOE_HEARTBEAT_PARAMS
+ */
+NvlStatus
+nvswitch_ctrl_get_soe_heartbeat_ls10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_SOE_HEARTBEAT_PARAMS *p
+)
+{
+    NvU32 gpioVal = 0;
+    NvU64 hi = 0;
+    NvU64 lo = 0;
+    NvU64 test = 0;
+
+    if (!nvswitch_is_cci_supported(device))
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    // Read status of heartbeat gpio
+    gpioVal = NVSWITCH_REG_RD32(device, _GPIO, _OUTPUT_CNTL(3));
+
+    // Record timestamp of gpio read from PTIMER
+    do
+    {
+        hi = NVSWITCH_ENG_RD32(device, PTIMER, , 0, _PTIMER, _TIME_1);
+        lo = NVSWITCH_ENG_RD32(device, PTIMER, , 0, _PTIMER, _TIME_0);
+        test = NVSWITCH_ENG_RD32(device, PTIMER, , 0, _PTIMER, _TIME_1);
+    }
+    while (hi != test);
+    p->timestampNs = (hi << 32) | lo;
+
+    if (FLD_TEST_DRF(_GPIO, _OUTPUT_CNTL, _IO_OUTPUT, _1, gpioVal))
+    {
+        p->gpioVal = 1;
+    }
+    else if (FLD_TEST_DRF(_GPIO, _OUTPUT_CNTL, _IO_OUTPUT, _0, gpioVal))
+    {
+        p->gpioVal = 0;
+    }
+
+    return NVL_SUCCESS;
+}
+
+static NvlStatus
+nvswitch_cci_reset_and_drain_links_ls10
+(
+    nvswitch_device *device,
+    NvU64 link_mask,
+    NvBool bForced
+)
+{
+    NvU32 link;
+
+    FOR_EACH_INDEX_IN_MASK(64, link, link_mask)
+    {
+        if (!cciIsLinkManaged(device, link))
+        {
+            link_mask = link_mask & ~NVBIT64(link);
+        }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    return _nvswitch_reset_and_drain_links_ls10(device, link_mask, bForced);
+}
+
+/*
+ * @brief Set the next LED state
+ *        The HW will reflect this state on the next iteration of link 
+ *        state update.   
+ */
+static void
+_nvswitch_set_next_led_state_ls10
+(
+    nvswitch_device *device,
+    NvU8             nextLedState
+)
+{
+    device->next_led_state = nextLedState;
+}
+
+/*
+ *  Returns the CPLD register value assigned to a particular LED state
+ *  confluence page ID: 1011518154
+ */
+static NvU8
+_nvswitch_get_led_state_regval_ls10
+(
+    nvswitch_device *device,
+    NvU8 ledState
+)
+{
+    switch (ledState)
+    {
+        case ACCESS_LINK_LED_STATE_OFF:
+        {
+            return CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED_REG_STATE_OFF;
+        }
+        case ACCESS_LINK_LED_STATE_UP_WARM:
+        {
+            return CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED_REG_STATE_GREEN;
+        } 
+        case ACCESS_LINK_LED_STATE_INITIALIZE:
+        {
+            return CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED_REG_STATE_3HZ_AMBER;
+        } 
+        case ACCESS_LINK_LED_STATE_UP_ACTIVE:
+        {
+            return CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED_REG_STATE_3HZ_GREEN;
+        }
+        case ACCESS_LINK_LED_STATE_FAULT:
+        {
+            return CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED_REG_STATE_6HZ_AMBER;
+        }
+        default:
+        {
+            NVSWITCH_ASSERT(0);
+            return CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED_REG_STATE_OFF;
+        }
+    }
+}
+
+/*
+ * @brief Set HW LED state using CPLD write
+ *
+ */
+static NvlStatus
+_nvswitch_set_led_state_ls10
+(
+    nvswitch_device *device
+)
+{
+    NvlStatus retval;
+    NvU8 ledState;
+    NvU8 nextLedState;
+    NvU8 regVal = 0;
+
+    nextLedState = device->next_led_state;
+    ledState = REF_VAL(ACCESS_LINK_LED_STATE, nextLedState);
+
+    regVal = FLD_SET_REF_NUM(CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED,
+                             _nvswitch_get_led_state_regval_ls10(device, ledState),
+                             regVal);
+    
+    // Set state for LED
+    retval = nvswitch_cci_ports_cpld_write(device, CPLD_MACHXO3_ACCESS_LINK_LED_CTL, regVal);
+    if (retval != NVL_SUCCESS)
+    {
+        return retval;
+    }
+
+    // save HW state
+    device->current_led_state = REF_NUM(ACCESS_LINK_LED_STATE, ledState);
+
+    return NVL_SUCCESS;
+}
+
+static NvBool
+_nvswitch_check_for_link_traffic
+(
+    nvswitch_device *device,
+    NvU64 linkMask
+)
+{
+    NVSWITCH_GET_THROUGHPUT_COUNTERS_PARAMS *pCounterParams = NULL;
+    NvU64 *pCounterValues;
+    NvU64 tpCounterPreviousSum;
+    NvU64 tpCounterCurrentSum;
+    NvBool bTraffic = NV_FALSE;
+    NvU8 linkNum;
+
+    pCounterParams = nvswitch_os_malloc(sizeof(*pCounterParams));
+    if (pCounterParams == NULL)
+        goto out;
+
+    pCounterParams->counterMask = NVSWITCH_THROUGHPUT_COUNTERS_TYPE_DATA_TX |
+                                  NVSWITCH_THROUGHPUT_COUNTERS_TYPE_DATA_RX;
+    pCounterParams->linkMask = linkMask;
+    if (nvswitch_ctrl_get_throughput_counters(device,
+        pCounterParams) != NVL_SUCCESS)
+    {
+        goto out;
+    }
+
+    // Sum TX/RX traffic for each link
+    FOR_EACH_INDEX_IN_MASK(64, linkNum, linkMask)
+    {
+        pCounterValues = pCounterParams->counters[linkNum].values;
+
+        tpCounterPreviousSum = device->tp_counter_previous_sum[linkNum];
+
+        // Sum taken to save space as it is unlikely to overflow before system is reset
+        tpCounterCurrentSum = pCounterValues[NVSWITCH_THROUGHPUT_COUNTERS_TYPE_DATA_TX] +
+                              pCounterValues[NVSWITCH_THROUGHPUT_COUNTERS_TYPE_DATA_RX];
+
+        device->tp_counter_previous_sum[linkNum] = tpCounterCurrentSum;
+
+        if (tpCounterCurrentSum > tpCounterPreviousSum)
+        {
+            bTraffic = NV_TRUE;
+        }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+out:
+    nvswitch_os_free(pCounterParams);
+    return bTraffic;
+}
+
+static NvU8
+_nvswitch_resolve_led_state_ls10
+(
+    nvswitch_device *device,
+    NvU8  ledState0,
+    NvU8  ledState1
+)
+{
+    // Used to resolve link state discrepancies between partner links
+    ct_assert(ACCESS_LINK_LED_STATE_FAULT < ACCESS_LINK_LED_STATE_OFF);
+    ct_assert(ACCESS_LINK_LED_STATE_OFF < ACCESS_LINK_LED_STATE_INITIALIZE);
+    ct_assert(ACCESS_LINK_LED_STATE_INITIALIZE < ACCESS_LINK_LED_STATE_UP_WARM);
+
+    return (ledState0 < ledState1 ? ledState0 : ledState1);
+}
+
+static NvU8
+_nvswitch_get_next_led_state_link_ls10
+(
+    nvswitch_device *device,
+    NvU8            currentLedState,   
+    NvU8            linkNum
+)
+{
+    nvlink_link *link;
+    NvU64 linkState;
+
+    link = nvswitch_get_link(device, linkNum);
+
+    if ((link == NULL) ||
+        (device->hal.nvswitch_corelib_get_dl_link_mode(link, &linkState) != NVL_SUCCESS))
+    {
+        return ACCESS_LINK_LED_STATE_OFF;
+    }
+
+    switch (linkState)
+    {
+        case NVLINK_LINKSTATE_OFF:
+        {
+            return ACCESS_LINK_LED_STATE_OFF;
+        }
+        case NVLINK_LINKSTATE_HS:
+        case NVLINK_LINKSTATE_RECOVERY:
+        case NVLINK_LINKSTATE_SLEEP:
+        {
+            return ACCESS_LINK_LED_STATE_UP_WARM;
+        }
+        case NVLINK_LINKSTATE_FAULT:
+        {
+            return ACCESS_LINK_LED_STATE_FAULT;
+        }
+        default:
+        {
+            if (currentLedState == ACCESS_LINK_LED_STATE_INITIALIZE)
+            {
+                return ACCESS_LINK_LED_STATE_INITIALIZE;
+            }
+            return ACCESS_LINK_LED_STATE_OFF;
+        }
+    }
+}
+
+static NvU8
+_nvswitch_get_next_led_state_links_ls10
+(
+    nvswitch_device *device,
+    NvU8             currentLedState,   
+    NvU64            linkMask
+)
+{
+    NvU8  linkNum;
+    NvU8  ledState;
+    NvU8  nextLedState;
+
+    nextLedState = ACCESS_LINK_NUM_LED_STATES;
+
+    NVSWITCH_ASSERT(linkMask != 0);
+    FOR_EACH_INDEX_IN_MASK(64, linkNum, linkMask)
+    {
+        ledState = _nvswitch_get_next_led_state_link_ls10(device, currentLedState, linkNum);
+        nextLedState = _nvswitch_resolve_led_state_ls10(device, nextLedState, ledState);
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    if (nextLedState == ACCESS_LINK_LED_STATE_UP_WARM)
+    {
+        // Only tells us that one of the links has activity
+        if (_nvswitch_check_for_link_traffic(device, linkMask))
+        {
+            nextLedState = ACCESS_LINK_LED_STATE_UP_ACTIVE;
+        }
+    }
+
+    return nextLedState;
+}
+
+static NvU8
+_nvswitch_get_next_led_state_ls10
+(
+    nvswitch_device *device
+)
+{
+    NvU8  linkNum;
+    NvU8  ledNextState = 0;
+    NvU8  currentLedState;
+    NvU64 enabledLinkMask;
+
+    enabledLinkMask = nvswitch_get_enabled_link_mask(device);
+
+    FOR_EACH_INDEX_IN_MASK(64, linkNum, enabledLinkMask)
+    {
+        if (cciIsLinkManaged(device, linkNum))
+        {
+            enabledLinkMask = enabledLinkMask & ~NVBIT64(linkNum);
+        }
+    }
+    FOR_EACH_INDEX_IN_MASK_END;
+
+    currentLedState = device->current_led_state;
+    currentLedState = REF_VAL(ACCESS_LINK_LED_STATE, currentLedState);
+
+    ledNextState = FLD_SET_REF_NUM(ACCESS_LINK_LED_STATE,
+                                   _nvswitch_get_next_led_state_links_ls10(device,
+                                                                         currentLedState,
+                                                                         enabledLinkMask),
+                                    ledNextState);
+
+    return ledNextState;
+}
+
+void
+nvswitch_update_link_state_led_ls10
+(
+    nvswitch_device *device
+)
+{
+    NvU8  currentLedState;
+    NvU8  nextLedState;
+
+    currentLedState = device->current_led_state;
+
+    currentLedState = REF_VAL(ACCESS_LINK_LED_STATE, currentLedState);
+    nextLedState = _nvswitch_get_next_led_state_ls10(device);
+
+    // This is the next state that the LED will be set to
+    _nvswitch_set_next_led_state_ls10(device, nextLedState);
+
+    // Only update HW if required
+    if (currentLedState != nextLedState)
+    {
+        _nvswitch_set_led_state_ls10(device);
+    }
+}
+
+void
+nvswitch_led_shutdown_ls10
+(
+    nvswitch_device *device
+)
+{
+    NvU8 ledState = 0;
+    ledState = FLD_SET_REF_NUM(ACCESS_LINK_LED_STATE,
+                                ACCESS_LINK_LED_STATE_OFF, ledState);
+
+    // This is the next state that the LED will be set to
+    _nvswitch_set_next_led_state_ls10(device, ledState);
+    _nvswitch_set_led_state_ls10(device);
+}
+
+NvlStatus
 nvswitch_read_vbios_link_entries_ls10
 (
     nvswitch_device *device,
@@ -6007,6 +6552,27 @@ nvswitch_ctrl_get_inforom_version_ls10
                                  NVSWITCH_INFOROM_VERSION_LEN);
 
     return NVL_SUCCESS;
+}
+
+/*
+ * @Brief : Initializes an NvSwitch hardware state
+ *
+ * @Description :
+ *
+ * @param[in] device        a reference to the device to initialize
+ *
+ * @returns                 NVL_SUCCESS if the action succeeded
+ *                          -NVL_BAD_ARGS if bad arguments provided
+ *                          -NVL_PCI_ERROR if bar info unable to be retrieved
+ */
+NvlStatus
+nvswitch_initialize_device_state_ls10
+(
+    nvswitch_device *device
+)
+{
+    device->bModeContinuousALI = NV_TRUE;
+    return nvswitch_initialize_device_state_lr10(device);
 }
 
 //

@@ -59,11 +59,16 @@ extern "C" {
 #define REG_WR32_UC(ap, addr, val)  regaprtWriteReg32Uc(staticCast(ap, RegisterAperture), addr, val)
 #define REG_VALID(ap, addr)         regaprtIsRegValid  (staticCast(ap, RegisterAperture), addr)
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_IOACCESS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RegisterAperture {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RegisterAperture *__nvoc_pbase_RegisterAperture;

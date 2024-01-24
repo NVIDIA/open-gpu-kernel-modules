@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,15 +22,31 @@
  */
 
 #include "core/core.h"
+#include "core/locks.h"
 #include "os/os.h"
 #include "gpu/gpu.h"
 #include "vgpu/vgpu_version.h"
 #include "gpu/device/device.h"
+#include "gpu/mem_mgr/mem_scrub.h"
 #include "rmapi/rs_utils.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "virtualization/kernel_vgpu_mgr.h"
+#include "vgpu/vgpu_events.h"
+#include "vgpu/rpc.h"
+#include "vgpu/vgpu_util.h"
 
 #include "nvRmReg.h"
+
+OBJVGPU *NvVGPU_Table[NV_VGPU_MAX_INSTANCES];
+
+static void vgpuGetUsmType(OBJGPU *pGpu, OBJVGPU *pVGpu)
+{
+    // Cache NV_VGPU_CONFIG_USM_TYPE field
+    {
+        // From GSP response buffer
+        pVGpu->vgpuConfigUsmType = pVGpu->gspResponseBuf->v1.usmType;
+    }
+}
 
 // Create vGpu object and initialize RPC infrastructure
 NV_STATUS
@@ -39,7 +55,80 @@ vgpuCreateObject
     OBJGPU *pGpu
 )
 {
-    NV_STATUS rmStatus = NV_OK;
+    NV_STATUS  rmStatus = NV_OK;
+    OBJVGPU   *pVGpu;
+    NvU32      gpuMaskRelease = 0;
+    NvBool     bLockAcquired = NV_FALSE;
+
+    if (gpuGetInstance(pGpu) >= NV_VGPU_MAX_INSTANCES)
+    {
+        rmStatus = NV_ERR_NOT_SUPPORTED;
+        NV_PRINTF(LEVEL_ERROR,
+                  "vGPU instances more than %d are not supported\n",
+                  NV_VGPU_MAX_INSTANCES);
+        goto error_exit;
+    }
+
+    if (NvVGPU_Table[gpuGetInstance(pGpu)] != NULL)
+    {
+        rmStatus = NV_ERR_INVALID_DEVICE;
+        NV_PRINTF(LEVEL_ERROR, ": %d vGPU instance already allocated\n",
+                  gpuGetInstance(pGpu));
+        goto error_exit;
+    }
+
+    if (hypervisorIsType(OS_HYPERVISOR_HYPERV))
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_SRIOV_SYSMEM_DIRTY_PAGE_TRACKING_ENABLED, NV_FALSE);
+    }
+
+    pVGpu = portMemAllocNonPaged(sizeof(OBJVGPU));
+    if (pVGpu == NULL)
+    {
+        rmStatus = NV_ERR_NO_MEMORY;
+        NV_PRINTF(LEVEL_ERROR,
+                  "cannot allocate memory for OBJVGPU (instance %d)\n",
+                  gpuGetInstance(pGpu));
+        goto error_exit;
+    }
+
+    NvVGPU_Table[gpuGetInstance(pGpu)] = pVGpu;
+
+    rmStatus = initRpcInfrastructure_VGPU(pGpu);
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVRM_RPC: _initRpcInfrastructure: failed.\n");
+        NV_ASSERT(0);
+        goto error_exit;
+    }
+
+    if (!rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMaskRelease))
+    {
+        // Acquire lock
+        NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                                     GPU_LOCK_GRP_SUBDEVICE,
+                                                     GPUS_LOCK_FLAGS_NONE,
+                                                     RM_LOCK_MODULES_RPC,
+                                                     &gpuMaskRelease));
+        bLockAcquired = NV_TRUE;
+    }
+
+    NV_RM_RPC_GET_STATIC_DATA(pGpu, rmStatus);
+
+    if (bLockAcquired && gpuMaskRelease != 0)
+    {
+        rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+    }
+
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVRM_RPC: GET_STATIC_DATA : failed.\n");
+        goto error_exit;
+    }
+
+    vgpuGetUsmType(pGpu, pVGpu);
+
+error_exit:
     return rmStatus;
 }
 
@@ -50,6 +139,30 @@ vgpuDestructObject
     OBJGPU *pGpu
 )
 {
+    OBJVGPU       *pVGpu = GPU_GET_VGPU(pGpu);
+    NV_STATUS      rmStatus = NV_OK;
+
+    // Sysmem PFN Bitmap teardown invokes RPC for GSP enabled
+    // case. Hence this needs to happen before RPC teardown
+    if (pVGpu != NULL)
+        teardownSysmemPfnBitMap(pGpu, pVGpu);
+
+    NV_RM_RPC_UNLOADING_GUEST_DRIVER(pGpu, rmStatus, NV_FALSE, NV_FALSE, 0);
+
+    {
+        rmStatus = freeRpcInfrastructure_VGPU(pGpu);
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "NVRM_RPC: _freeRpcInfrastructure: failed.\n");
+            NV_ASSERT(0);
+        }
+    }
+
+    vgpuGspTeardownBuffers(pGpu);
+
+    portMemFree(pVGpu);
+    NvVGPU_Table[gpuGetInstance(pGpu)] = NULL;
 }
 
 // Overwrite registry keys
@@ -76,6 +189,17 @@ vgpuInitRegistryOverWrite
         {
             pGpu->setProperty(pGpu, PDB_PROP_GPU_VGPU_BIG_PAGE_SIZE_64K, NV_TRUE);
         }
+    }
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        if (NV_OK != osReadRegistryDword(pGpu,
+                                         NV_REG_STR_RM_WATCHDOG_TIMEOUT,
+                                         &data))
+        {
+            osWriteRegistryDword(pGpu, NV_REG_STR_RM_WATCHDOG_TIMEOUT, 2);
+        }
+
     }
 
     NvU32 min = 0, max = 0;
@@ -152,8 +276,41 @@ vgpuGetCallingContextHostVgpuDevice
 {
     *ppHostVgpuDevice = NULL;
 
+    Device *pDevice = NULL;
+    KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
+
     if (IS_GSP_CLIENT(pGpu))
         return NV_ERR_NOT_SUPPORTED;
+
+    // This check is needed to handle cases where this function was called
+    // without client (for example, during adapter initialization).
+    if (resservGetTlsCallContext() == NULL)
+    {
+        return NV_OK;
+    }
+
+    pDevice = vgpuGetCallingContextDevice(pGpu);
+    if (pDevice == NULL)
+    {
+        // There are several places where this function can be called without TLS call context
+        // in SRIOV-heavy mode. Return error only for SRIOV-full.
+        NV_ASSERT_OR_RETURN(!gpuIsSriovEnabled(pGpu) || IS_SRIOV_HEAVY(pGpu), NV_ERR_OBJECT_NOT_FOUND);
+        return NV_OK;
+    }
+
+    pKernelHostVgpuDevice = pDevice->pKernelHostVgpuDevice;
+
+    NV_ASSERT_OR_RETURN((pKernelHostVgpuDevice != NULL) ==
+            !!(pDevice->deviceAllocFlags & NV_DEVICE_ALLOCATION_FLAGS_HOST_VGPU_DEVICE),
+            NV_ERR_INVALID_STATE);
+
+    if (pKernelHostVgpuDevice != NULL)
+    {
+        if (pKernelHostVgpuDevice->pHostVgpuDevice == NULL)
+            return NV_ERR_INVALID_STATE;
+
+        *ppHostVgpuDevice = pKernelHostVgpuDevice->pHostVgpuDevice;
+    }
 
     return NV_OK;
 }

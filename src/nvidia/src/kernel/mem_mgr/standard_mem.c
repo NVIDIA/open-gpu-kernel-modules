@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,7 +26,6 @@
 #include "vgpu/rpc.h"
 #include "rmapi/client.h"
 #include "gpu/mem_mgr/mem_mgr.h"
-#include "gpu/device/device.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "resserv/rs_server.h"
 #include "rmapi/rs_utils.h"

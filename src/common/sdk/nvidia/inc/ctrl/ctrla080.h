@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,7 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-
 #pragma once
 
 #include <nvtypes.h>
@@ -30,6 +29,29 @@
 // This file was generated with FINN, an NVIDIA coding tool.
 // Source file:      ctrl/ctrla080.finn
 //
+
+#include "ctrl/ctrlxxxx.h"
+/* KEPLER_DEVICE_VGPU control commands and parameters */
+
+#define NVA080_CTRL_CMD(cat,idx)             NVXXXX_CTRL_CMD(0xA080, NVA080_CTRL_##cat, idx)
+
+/* Command categories (6bits) */
+#define NVA080_CTRL_RESERVED     (0x00)
+#define NVA080_CTRL_VGPU_DISPLAY (0x01)
+#define NVA080_CTRL_VGPU_MEMORY  (0x02)
+#define NVA080_CTRL_VGPU_OTHERS  (0x03)
+
+/*
+ * NVA080_CTRL_CMD_NULL
+ *
+ * This command does nothing.
+ * This command does not take any parameters.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ */
+
+#define NVA080_CTRL_CMD_NULL     (0xa0800000) /* finn: Evaluated from "(FINN_KEPLER_DEVICE_VGPU_RESERVED_INTERFACE_ID << 8) | 0x0" */
 
 
 
@@ -181,142 +203,7 @@ typedef struct NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS {
     NvU32 blankingEnabled;
 } NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS;
 
-/*
- * NVA080_CTRL_CMD_VGPU_DISPLAY_GET_POINTER_ADDRESS
- *
- * This command returns CPU virtual address of the mouse pointer mapping for VGPU.
- * The address returned by this command is the pointer address for the head 0.
- * VGPU_POINTER_OFFSET_HEAD(i) should be added to this address to get the address of head i.
- * VGPU mouse pointer is a 32 bit value, X location of the mouse pointer is stored in
- * 15:0 and Y location is stored in 31:16 bits. X location value of the mouse pointer is
- * negative if bit 15 is set. Similarly, Y location value is negative if bit 31 is set.
- *
- * Parameters:
- *   pPointerAddress
- *     CPU virtual address of the mouse pointer mapping for VGPU
- * 
- * Possible status values returned are:
- *      NV_OK
- *      NV_ERR_INVALID_ARGUMENT
- *      NVOS_STATUS_NOT_SUPPORTED
- */
 
-#define NVA080_CTRL_CMD_VGPU_DISPLAY_GET_POINTER_ADDRESS (0xa0800105) /* finn: Evaluated from "(FINN_KEPLER_DEVICE_VGPU_VGPU_DISPLAY_INTERFACE_ID << 8) | NVA080_CTRL_VGPU_DISPLAY_GET_POINTER_ADDRESS_PARAMS_MESSAGE_ID" */
-
-#define NVA080_CTRL_VGPU_DISPLAY_GET_POINTER_ADDRESS_PARAMS_MESSAGE_ID (0x5U)
-
-typedef struct NVA080_CTRL_VGPU_DISPLAY_GET_POINTER_ADDRESS_PARAMS {
-    NV_DECLARE_ALIGNED(NvP64 pPointerAddress, 8);
-} NVA080_CTRL_VGPU_DISPLAY_GET_POINTER_ADDRESS_PARAMS;
-
-#define VGPU_POINTER_OFFSET_HEAD0_VALUE 0x00000000
-#define VGPU_POINTER_OFFSET_HEAD0_FLAG  0x00000004
-#define VGPU_POINTER_OFFSET_HEAD1_VALUE 0x00000008
-#define VGPU_POINTER_OFFSET_HEAD1_FLAG  0x0000000c
-#define VGPU_POINTER_OFFSET_HEAD2_VALUE 0x00000010
-#define VGPU_POINTER_OFFSET_HEAD2_FLAG  0x00000014
-#define VGPU_POINTER_OFFSET_HEAD3_VALUE 0x00000018
-#define VGPU_POINTER_OFFSET_HEAD3_FLAG  0x0000001c
-#define VGPU_POINTER_OFFSET_HEAD_VALUE(i)   (i * 8)
-#define VGPU_POINTER_OFFSET_HEAD_FLAG(i)    (4 + i * 8)
-#define VGPU_POINTER_OFFSET_HEAD_SIZE   4
-
-/*
- * NVA080_CTRL_CMD_GET_MAPPABLE_VIDEO_SIZE
- *
- * This command returns mappable video size to be used by each VM.
- *
- * Parameters:
- *   mappableVideoSize
- *     This parameter returns mappable video size in bytes.
- *
- *  Possible status values returned are:
- *    NV_OK
- *    NV_ERR_INVALID_ARGUMENT
- *    NVOS_STATUS_NOT_SUPPORTED
- */
-
-
-#define NV_VGPU_POINTER_X_LOCATION    15:0
-#define NV_VGPU_POINTER_Y_LOCATION    31:16
-#define NVA080_CTRL_CMD_GET_MAPPABLE_VIDEO_SIZE (0xa0800201) /* finn: Evaluated from "(FINN_KEPLER_DEVICE_VGPU_VGPU_MEMORY_INTERFACE_ID << 8) | NVA080_CTRL_GET_MAPPABLE_VIDEO_SIZE_PARAMS_MESSAGE_ID" */
-
-#define NVA080_CTRL_GET_MAPPABLE_VIDEO_SIZE_PARAMS_MESSAGE_ID (0x1U)
-
-typedef struct NVA080_CTRL_GET_MAPPABLE_VIDEO_SIZE_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 mappableVideoSize, 8);
-} NVA080_CTRL_GET_MAPPABLE_VIDEO_SIZE_PARAMS;
-
-/*
- *  NVA080_CTRL_CMD_MAP_SEMA_MEM
- *
- *  This command returns GPU VA for the channel with 'hCtxDma' handle
- *  where per VM semaphore memory is mapped which is used for tracking
- *  non-stall interrupt of each VM.
- *
- * Parameters:
- *   hClient [in]
- *     This parameter specifies the handle to the NV01_ROOT object of
- *     the client.  This object should be the parent of the object
- *     specified by hDevice.
- *   hDevice [in]
- *     This parameter specifies the handle of the NV01_DEVICE object
- *     representing the desired GPU.
- *   hMemory [in]
- *     This parameter specifies the handle for semaphore memory
- *   hCtxDma [in]
- *     This parameter specifies the handle of the NV01_CONTEXT_DMA
- *     object through which bufferId is written in semaphore memory for
- *     non-stall interrupt tracking.
- *   semaAddress [out]
- *     This parameter returns the GPU virtual address of the semaphore
- *     memory.
- *
- *  Possible status values returned are:
- *    NV_OK
- *    NVOS_STATUS_INVALID_DATA
- *    NV_ERR_INVALID_CLIENT
- *    NV_ERR_INVALID_OBJECT_HANDLE
- *
- */
-
-#define NVA080_CTRL_CMD_MAP_SEMA_MEM (0xa0800202) /* finn: Evaluated from "(FINN_KEPLER_DEVICE_VGPU_VGPU_MEMORY_INTERFACE_ID << 8) | NVA080_CTRL_MAP_SEMA_MEM_PARAMS_MESSAGE_ID" */
-
-typedef struct NVA080_CTRL_SEMA_MEM_PARAMS {
-    NvHandle hClient;
-    NvHandle hDevice;
-    NvHandle hMemory;
-    NvHandle hCtxDma;
-    NV_DECLARE_ALIGNED(NvU64 semaAddress, 8);
-} NVA080_CTRL_SEMA_MEM_PARAMS;
-
-#define NVA080_CTRL_MAP_SEMA_MEM_PARAMS_MESSAGE_ID (0x2U)
-
-typedef NVA080_CTRL_SEMA_MEM_PARAMS NVA080_CTRL_MAP_SEMA_MEM_PARAMS;
-
-/*
- *  NVA080_CTRL_CMD_UNMAP_SEMA_MEM
- *
- *  This command unmaps per VM semaphore memory from GPU VA space, mapped by
- *  NVA080_CTRL_CMD_MAP_SEMA_MEM command.
- *
- * Parameters:
- *  Same as NVA080_CTRL_MAP_SEMA_MEM_PARAMS, except semaAddress is input
- *  parameter here.
- *
- *  Possible status values returned are:
- *    NV_OK
- *    NVOS_STATUS_INVALID_DATA
- *    NV_ERR_INVALID_CLIENT
- *    NV_ERR_INVALID_OBJECT_HANDLE
- *
- */
-
-#define NVA080_CTRL_CMD_UNMAP_SEMA_MEM (0xa0800203) /* finn: Evaluated from "(FINN_KEPLER_DEVICE_VGPU_VGPU_MEMORY_INTERFACE_ID << 8) | NVA080_CTRL_UNMAP_SEMA_MEM_PARAMS_MESSAGE_ID" */
-
-#define NVA080_CTRL_UNMAP_SEMA_MEM_PARAMS_MESSAGE_ID (0x3U)
-
-typedef NVA080_CTRL_SEMA_MEM_PARAMS NVA080_CTRL_UNMAP_SEMA_MEM_PARAMS;
 
 /*!
  * NVA080_CTRL_CMD_SET_FB_USAGE
@@ -338,140 +225,6 @@ typedef struct NVA080_CTRL_SET_FB_USAGE_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 fbUsed, 8);
 } NVA080_CTRL_SET_FB_USAGE_PARAMS;
 
-/*!
-* NVA080_CTRL_CMD_MAP_PER_ENGINE_SEMA_MEM
-*
-* This command allocates the per engine vGPU semaphore memory and map it to
-* GPU/CPU VA.
-*
-* Calculate engine's semaphore GPU VA =
-*               semaAddress + semaStride * NV2080_ENGINE_TYPE_ of that engine
-*
-* Parameters:
-*    hClient [in]
-*       This parameter specifies the handle to the NV01_ROOT object of
-*       the client.  This object should be the parent of the object
-*       specified by hDevice.
-*   hDevice [in]
-*       This parameter specifies the handle of the NV01_DEVICE object
-*       representing the desired GPU.
-*   hMemory [in]
-*       This parameter specifies the handle for semaphore memory
-*   hCtxDma [in]
-*       This parameter specifies the handle of the NV01_CONTEXT_DMA
-*       object through which bufferId is written in semaphore memory for
-*       non-stall interrupt tracking.
-*   semaAddress [out]
-*       This parameter returns the GPU VA of the per engine semaphore memory.
-*   semaStride [out]
-*       This parameter specifies the stride of each engine's semaphore offset within this memory.
-*
-* Possible status values returned are:
-*   NV_OK
-*/
-
-#define NVA080_CTRL_CMD_MAP_PER_ENGINE_SEMA_MEM (0xa0800205) /* finn: Evaluated from "(FINN_KEPLER_DEVICE_VGPU_VGPU_MEMORY_INTERFACE_ID << 8) | NVA080_CTRL_MAP_PER_ENGINE_SEMA_MEM_PARAMS_MESSAGE_ID" */
-
-typedef struct NVA080_CTRL_PER_ENGINE_SEMA_MEM_PARAMS {
-    NvU32    hClient;
-    NvU32    hDevice;
-    NvHandle hMemory;
-    NvU32    hCtxDma;
-    NV_DECLARE_ALIGNED(NvU64 semaAddress, 8);
-    NvU32    semaStride;
-} NVA080_CTRL_PER_ENGINE_SEMA_MEM_PARAMS;
-
-#define NVA080_CTRL_MAP_PER_ENGINE_SEMA_MEM_PARAMS_MESSAGE_ID (0x5U)
-
-typedef NVA080_CTRL_PER_ENGINE_SEMA_MEM_PARAMS NVA080_CTRL_MAP_PER_ENGINE_SEMA_MEM_PARAMS;
-
-/*!
-* NVA080_CTRL_CMD_UNMAP_PER_ENGINE_SEMA_MEM
-*
-* This command unmaps and frees the per engine vGPU semaphore memory.
-*
-* Parameters:
-*   Same as NVA080_CTRL_MAP_PER_ENGINE_SEMA_MEM_PARAMS, except semaAddress is input
-*   parameter here.
-*
-*  Possible status values returned are:
-*    NV_OK
-*/
-
-#define NVA080_CTRL_CMD_UNMAP_PER_ENGINE_SEMA_MEM (0xa0800206) /* finn: Evaluated from "(FINN_KEPLER_DEVICE_VGPU_VGPU_MEMORY_INTERFACE_ID << 8) | NVA080_CTRL_UNMAP_PER_ENGINE_SEMA_MEM_PARAMS_MESSAGE_ID" */
-
-#define NVA080_CTRL_UNMAP_PER_ENGINE_SEMA_MEM_PARAMS_MESSAGE_ID (0x6U)
-
-typedef NVA080_CTRL_PER_ENGINE_SEMA_MEM_PARAMS NVA080_CTRL_UNMAP_PER_ENGINE_SEMA_MEM_PARAMS;
-
-/*
- *  NVA080_CTRL_CMD_UPDATE_SYSMEM_BITMAP
- *
- *  This command provides the guest RM with PFN information, so that it can
- *  update the shared memory with the plugin, which keeps track of guest sysmem.
- *
- *  Parameters:
- *   destPhysAddr
- *     Start address of the segment to be tracked
- *
- *   pageCount
- *     Number of pages in the segment
- *
- *   pageSize
- *     Size of pages in the segment
- *
- *   isValid:
- *     TRUE : Set bits corresponding to PFNs in bitmap and increase segment refcount
- *     FALSE: Decrease segment refcount and then unset bits if refcount is 0
- *
- *   pfnList
- *     List of PFNs in the segment
- *
- *   flags
- *     FLAGS_DST_PHYS_ADDR_BAR1_OFFSET
- *       Flag set to TRUE if pteMem is CPU VA pointing to BAR1 and
- *       dstPhysAddr contains BAR1 offset.
- *
- * Possible status values returned are:
- *   NVOS_STATUS_SUCCESS
- */
-
-#define NVA080_CTRL_CMD_UPDATE_SYSMEM_BITMAP                                          (0xa0800207) /* finn: Evaluated from "(FINN_KEPLER_DEVICE_VGPU_VGPU_MEMORY_INTERFACE_ID << 8) | NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS_MESSAGE_ID" */
-
-#define NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS_FLAGS_DST_PHYS_ADDR_BAR1_OFFSET       0:0
-#define NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS_FLAGS_DST_PHYS_ADDR_BAR1_OFFSET_FALSE (0x00000000)
-#define NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS_FLAGS_DST_PHYS_ADDR_BAR1_OFFSET_TRUE  (0x00000001)
-
-#define NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS_MESSAGE_ID (0x7U)
-
-typedef struct NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS {
-    NV_DECLARE_ALIGNED(NvU64 destPhysAddr, 8);
-    NvU32  pageCount;
-    NvU32  pageSize;
-    NvBool isValid;
-    NV_DECLARE_ALIGNED(NvP64 pfnList, 8);
-    NvU32  flags;
-} NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS;
-
-/*
- * Blit semaphore offset location
- */
-#define VGPU_BLIT_RESTORE_SEMA_MEM_OFFSET            0x200
-#define VGPU_BLIT_RESTORE_SEMA_MEM_ADDR(addr)               (((NvU64)addr) + VGPU_BLIT_RESTORE_SEMA_MEM_OFFSET)
-
-#define VGPU_BLIT_SEMA_MEM_OFFSET                    0x400
-#define VGPU_BLIT_SEMA_MEM_ADDR(addr)                       (((NvU64)addr) + VGPU_BLIT_SEMA_MEM_OFFSET)
-
-#define VGPU_FBMEMCE_PUSH_SEMA_MEM_OFFSET            0x800
-#define VGPU_FBMEMCE_PUSH_SEMA_MEM_ADDR(addr)               (((NvU64)addr) + VGPU_FBMEMCE_PUSH_SEMA_MEM_OFFSET)
-
-#define VGPU_FBMEMCE_SEMA_MEM_OFFSET                 0x810
-#define VGPU_FBMEMCE_SEMA_MEM_ADDR(addr)                    (((NvU64)addr) + VGPU_FBMEMCE_SEMA_MEM_OFFSET)
-
-#define VGPU_FBMEMCE_PIPELINED_SEMA_MEM_LOWER_OFFSET 0x820
-#define VGPU_FBMEMCE_PIPELINED_SEMA_MEM_LOWER_ADDR(addr)    (((NvU64)addr) + VGPU_FBMEMCE_PIPELINED_SEMA_MEM_LOWER_OFFSET)
-
-#define VGPU_FBMEMCE_PIPELINED_SEMA_MEM_UPPER_OFFSET 0x824
 
 /*
  *  NVA080_CTRL_CMD_VGPU_GET_CONFIG
@@ -571,7 +324,7 @@ typedef struct NVA080_CTRL_UPDATE_SYSMEM_BITMAP_PARAMS {
  *   NV_ERR_INVALID_PARAM_STRUCT
  *   NV_ERR_INVALID_ARGUMENT
  */
-#define VGPU_FBMEMCE_PIPELINED_SEMA_MEM_UPPER_ADDR(addr)    (((NvU64)addr) + VGPU_FBMEMCE_PIPELINED_SEMA_MEM_UPPER_OFFSET)
+
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG                                                                 (0xa0800301) /* finn: Evaluated from "(FINN_KEPLER_DEVICE_VGPU_VGPU_OTHERS_INTERFACE_ID << 8) | NVA080_CTRL_VGPU_GET_CONFIG_PARAMS_MESSAGE_ID" */
 
 #define NVA080_CTRL_CMD_VGPU_GET_CONFIG_PARAMS_VGPU_DEV_CAPS_SW_VSYNC_ENABLED                            0:0

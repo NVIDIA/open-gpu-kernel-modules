@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,7 +22,7 @@
  */
 
 /*!
- *  @brief Contains common defines between addrtree and regmap
+ *  @brief Contains common defines for regmap
  */
 
 #ifndef MAP_DEFINES_H
@@ -44,30 +44,11 @@ extern "C" {
 #define PMA_GRANULARITY 0x10000
 #define PMA_PAGE_SHIFT 16
 
-//
-// _PMA_1GB will cause overflows with an NvU32. It's bigger than NvU32 can store,
-// but compilation still fails when using a NvU64 instead
-// So just use bitshift.
-// 1 << _TREE_64KB == sizeof(1 frame)
-//
-
-#define _TREE_64KB               16
-#define _TREE_128KB              17
-#define _TREE_2MB                21
-#define _TREE_128MB              27
-#define _TREE_512MB              29
-#define _TREE_32GB               35
-#define _TREE_2TB                40
-
 // Defines shared between pma.c and regmap.c
-#define _PMA_64KB               (64 * 1024)
-#define _PMA_128KB              (128 * 1024)
-#define _PMA_2MB                (2 * 1024 * 1024)
-#define _PMA_512MB              (512 * 1024 * 1024)
-
-// Scanning function return code
-#define EVICTABLE -2
-#define ALL_FREE  -3
+#define _PMA_64KB               (64ULL  * 1024)
+#define _PMA_128KB              (128ULL * 1024)
+#define _PMA_2MB                (2ULL   * 1024 * 1024)
+#define _PMA_512MB              (512ULL * 1024 * 1024)
 
 typedef NvU32 PMA_PAGESTATUS;
 

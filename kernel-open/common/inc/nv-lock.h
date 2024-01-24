@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,6 +37,7 @@
 
 #if defined(CONFIG_PREEMPT_RT) || defined(CONFIG_PREEMPT_RT_FULL)
 typedef raw_spinlock_t            nv_spinlock_t;
+#define NV_DEFINE_SPINLOCK(lock)  DEFINE_RAW_SPINLOCK(lock)
 #define NV_SPIN_LOCK_INIT(lock)   raw_spin_lock_init(lock)
 #define NV_SPIN_LOCK_IRQ(lock)    raw_spin_lock_irq(lock)
 #define NV_SPIN_UNLOCK_IRQ(lock)  raw_spin_unlock_irq(lock)
@@ -47,6 +48,7 @@ typedef raw_spinlock_t            nv_spinlock_t;
 #define NV_SPIN_UNLOCK_WAIT(lock) raw_spin_unlock_wait(lock)
 #else
 typedef spinlock_t                nv_spinlock_t;
+#define NV_DEFINE_SPINLOCK(lock)  DEFINE_SPINLOCK(lock)
 #define NV_SPIN_LOCK_INIT(lock)   spin_lock_init(lock)
 #define NV_SPIN_LOCK_IRQ(lock)    spin_lock_irq(lock)
 #define NV_SPIN_UNLOCK_IRQ(lock)  spin_unlock_irq(lock)

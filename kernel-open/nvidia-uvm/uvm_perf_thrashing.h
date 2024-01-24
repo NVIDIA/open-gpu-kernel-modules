@@ -96,7 +96,7 @@ void uvm_perf_thrashing_remove_gpu(uvm_gpu_t *gpu);
 // VA space Initialization/cleanup functions. See comments in
 // uvm_perf_heuristics.h
 NV_STATUS uvm_perf_thrashing_load(uvm_va_space_t *va_space);
-NV_STATUS uvm_perf_thrashing_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu);
+void uvm_perf_thrashing_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu);
 void uvm_perf_thrashing_stop(uvm_va_space_t *va_space);
 void uvm_perf_thrashing_unload(uvm_va_space_t *va_space);
 

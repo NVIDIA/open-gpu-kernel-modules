@@ -275,9 +275,9 @@ public:
      * @param[in]       pParams
      * @param[out]      ppEntry
      */
-    virtual NV_STATUS resControlLookup(RsResource *pResource,
-                                       RS_RES_CONTROL_PARAMS_INTERNAL *pParams,
-                                       const struct NVOC_EXPORTED_METHOD_DEF **ppEntry);
+    NV_STATUS resControlLookup(RsResource *pResource,
+                               RS_RES_CONTROL_PARAMS_INTERNAL *pParams,
+                               const struct NVOC_EXPORTED_METHOD_DEF **ppEntry);
 
     /**
      * Dispatch resource control call
@@ -368,6 +368,12 @@ public:
      * @param[in]   pCpuMapping
      */
     virtual NV_STATUS resUnmap(RsResource *pResource, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping);
+
+    /**
+     * Returns true if partial unmap is supported by the resource
+     * If true, resUnmapFrom() can be called to unmap a mapping partially
+     */
+    virtual NvBool resIsPartialUnmapSupported(RsResource *pResource) { return NV_FALSE; }
 
      /**
      * Maps to this resource from another resource
@@ -547,13 +553,14 @@ struct RS_INTER_UNMAP_PARAMS
 {
     NvHandle        hClient;
     NvHandle        hMapper;
-    NvHandle        hMappable;
     NvHandle        hDevice;
     NvU32           flags;
     NvU64           dmaOffset;              ///< [in] RS-TODO rename this
-    void           *pMemDesc;               ///< MEMORY_DESCRIPTOR *
+    NvU64           size;
 
     // Internal use only
+    NvHandle        hMappable;
+    void           *pMemDesc;               ///< MEMORY_DESCRIPTOR *
     RS_LOCK_INFO   *pLockInfo;              ///< [inout] Locking flags and state
     API_SECURITY_INFO *pSecInfo;            ///< [in] Security Info
 
@@ -571,6 +578,7 @@ struct RsInterMapping
     RsResourceRef *pContextRef;      ///< A resource used to provide additional context for the mapping (e.g. hDevice)
     NvU32 flags;                     ///< Flags passed when mapping, same flags also passed when unmapping
     NvU64 dmaOffset;
+    NvU64 size;
     void *pMemDesc;
 };
 MAKE_LIST(RsInterMappingList, RsInterMapping);
@@ -828,7 +836,6 @@ void refRemoveDependant(RsResourceRef *pResourceRef, RsResourceRef *pDependantRe
  * @param[inout] ppMapping Writes the resulting inter-mapping, if successfully created (Add) or found (Find)
  * @param[in] pMapping The inter-mapping to remove (Remove)
  */
-NV_STATUS refFindInterMapping(RsResourceRef *pMapperRef, RsResourceRef *pMappableRef, RsResourceRef *pContextRef, NvU64 dmaOffset, RsInterMapping **ppMapping);
 NV_STATUS refAddInterMapping(RsResourceRef *pMapperRef, RsResourceRef *pMappableRef, RsResourceRef *pContextRef, RsInterMapping **ppMapping);
 void      refRemoveInterMapping(RsResourceRef *pMapperRef, RsInterMapping *pMapping);
 

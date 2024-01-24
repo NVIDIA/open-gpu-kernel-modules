@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -36,6 +36,7 @@
 #include "uvm_mmu.h"
 #include "uvm_gpu_access_counters.h"
 #include "uvm_pmm_sysmem.h"
+#include "uvm_migrate_pageable.h"
 
 static NV_STATUS uvm_test_get_gpu_ref_count(UVM_TEST_GET_GPU_REF_COUNT_PARAMS *params, struct file *filp)
 {
@@ -148,27 +149,27 @@ static NV_STATUS uvm_test_numa_check_affinity(UVM_TEST_NUMA_CHECK_AFFINITY_PARAM
     }
 
     if (gpu->parent->replayable_faults_supported) {
-        uvm_gpu_replayable_faults_isr_lock(gpu->parent);
+        uvm_parent_gpu_replayable_faults_isr_lock(gpu->parent);
         status = uvm_test_verify_bh_affinity(&gpu->parent->isr.replayable_faults,
                                               gpu->parent->closest_cpu_numa_node);
-        uvm_gpu_replayable_faults_isr_unlock(gpu->parent);
+        uvm_parent_gpu_replayable_faults_isr_unlock(gpu->parent);
         if (status != NV_OK)
             goto release;
 
         if (gpu->parent->non_replayable_faults_supported) {
-            uvm_gpu_non_replayable_faults_isr_lock(gpu->parent);
+            uvm_parent_gpu_non_replayable_faults_isr_lock(gpu->parent);
             status = uvm_test_verify_bh_affinity(&gpu->parent->isr.non_replayable_faults,
                                                   gpu->parent->closest_cpu_numa_node);
-            uvm_gpu_non_replayable_faults_isr_unlock(gpu->parent);
+            uvm_parent_gpu_non_replayable_faults_isr_unlock(gpu->parent);
             if (status != NV_OK)
                 goto release;
         }
 
         if (gpu->parent->access_counters_supported) {
-            uvm_gpu_access_counters_isr_lock(gpu->parent);
+            uvm_parent_gpu_access_counters_isr_lock(gpu->parent);
             status = uvm_test_verify_bh_affinity(&gpu->parent->isr.access_counters,
                                                   gpu->parent->closest_cpu_numa_node);
-            uvm_gpu_access_counters_isr_unlock(gpu->parent);
+            uvm_parent_gpu_access_counters_isr_unlock(gpu->parent);
         }
     }
 release:
@@ -309,6 +310,10 @@ long uvm_test_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
         UVM_ROUTE_CMD_STACK_NO_INIT_CHECK(UVM_TEST_CGROUP_ACCOUNTING_SUPPORTED, uvm_test_cgroup_accounting_supported);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SPLIT_INVALIDATE_DELAY, uvm_test_split_invalidate_delay);
         UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_CPU_CHUNK_API, uvm_test_cpu_chunk_api);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_FORCE_CPU_TO_CPU_COPY_WITH_CE, uvm_test_force_cpu_to_cpu_copy_with_ce);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_VA_SPACE_ALLOW_MOVABLE_ALLOCATIONS,
+                                       uvm_test_va_space_allow_movable_allocations);
+        UVM_ROUTE_CMD_STACK_INIT_CHECK(UVM_TEST_SKIP_MIGRATE_VMA, uvm_test_skip_migrate_vma);
     }
 
     return -EINVAL;

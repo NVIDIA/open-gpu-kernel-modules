@@ -383,9 +383,6 @@ static NvBool KmsAllocateDevice(struct NvKmsKapiDevice *device)
     device->caps.maxHeightInPixels     = paramsAlloc->reply.maxHeightInPixels;
     device->caps.maxCursorSizeInPixels = paramsAlloc->reply.maxCursorSize;
     device->caps.requiresVrrSemaphores = paramsAlloc->reply.requiresVrrSemaphores;
-    /* The generic page kind was determined during RM device allocation,
-     * but it should match what NVKMS reports */
-    nvAssert(device->caps.genericPageKind == paramsAlloc->reply.genericPageKind);
 
     /* XXX Add LUT support */
 
@@ -3436,6 +3433,30 @@ static NvBool GetCRC32
     return NV_TRUE;
 }
 
+static NvKmsKapiSuspendResumeCallbackFunc *pSuspendResumeFunc;
+
+void nvKmsKapiSuspendResume
+(
+    NvBool suspend
+)
+{
+    if (pSuspendResumeFunc) {
+        pSuspendResumeFunc(suspend);
+    }
+}
+
+static void nvKmsKapiSetSuspendResumeCallback
+(
+    NvKmsKapiSuspendResumeCallbackFunc *function
+)
+{
+    if (pSuspendResumeFunc && function) {
+        nvKmsKapiLogDebug("Kapi suspend/resume callback function already registered");
+    }
+
+    pSuspendResumeFunc = function;
+}
+
 NvBool nvKmsKapiGetFunctionsTableInternal
 (
     struct NvKmsKapiFunctionsTable *funcsTable
@@ -3514,6 +3535,7 @@ NvBool nvKmsKapiGetFunctionsTableInternal
         nvKmsKapiUnregisterSemaphoreSurfaceCallback;
     funcsTable->setSemaphoreSurfaceValue =
         nvKmsKapiSetSemaphoreSurfaceValue;
+    funcsTable->setSuspendResumeCallback = nvKmsKapiSetSuspendResumeCallback;
 
     return NV_TRUE;
 }

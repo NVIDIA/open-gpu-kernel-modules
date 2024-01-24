@@ -644,7 +644,8 @@ _class5080DeferredApiV2
                 callContext.secInfo.pProcessToken = (void *)(NvU64) gfid;
             }
 
-            resservSwapTlsCallContext(&pOldContext, &callContext);
+            NV_ASSERT_OK_OR_GOTO(rmStatus,
+                resservSwapTlsCallContext(&pOldContext, &callContext), cleanup);
 
             rmStatus = serverControl_Prologue(&g_resServ, &rmCtrlParams, &access, &releaseFlags);
 
@@ -664,7 +665,7 @@ _class5080DeferredApiV2
                 }
             }
 
-            resservRestoreTlsCallContext(pOldContext);
+            NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
             rmStatus = serverControl_Epilogue(&g_resServ, &rmCtrlParams, access, &releaseFlags, rmStatus);
         }
 

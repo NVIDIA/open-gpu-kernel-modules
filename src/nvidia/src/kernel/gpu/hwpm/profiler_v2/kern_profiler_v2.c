@@ -22,6 +22,7 @@
  */
 
 #include "gpu/hwpm/profiler_v2.h"
+#include "gpu/hwpm/kern_hwpm.h"
 #include "vgpu/rpc.h"
 
 static NV_INLINE NvBool
@@ -77,6 +78,22 @@ profilerBaseConstruct_IMPL
     return profilerBaseConstructState_HAL(pProf, pCallContext, pParams);
 }
 
+NV_STATUS
+profilerBaseConstructState_IMPL
+(
+    ProfilerBase *pProf,
+    CALL_CONTEXT *pCallContext,
+    RS_RES_ALLOC_PARAMS_INTERNAL *pParams
+)
+{
+    RsClient *pRsClient = pCallContext->pClient;
+
+    pProf->profilerId = NV_REQUESTER_CLIENT_OBJECT(pRsClient->hClient, pCallContext->pResourceRef->hResource);
+    pProf->bMmaBoostDisabled = NV_FALSE;
+
+    return NV_OK;
+}
+
 void
 profilerBaseDestruct_IMPL
 (
@@ -84,6 +101,167 @@ profilerBaseDestruct_IMPL
 )
 {
     profilerBaseDestructState_HAL(pProf);
+}
+
+static NV_STATUS
+_profilerPollForUpdatedMembytes(ProfilerBase *pProfBase, OBJGPU *pGpu, KernelHwpm *pKernelHwpm, NvU32 pmaChIdx)
+{
+    NV_STATUS status = NV_OK;
+    RMTIMEOUT timeout = {0};
+    volatile NvU32 *pMemBytesAddr = NvP64_VALUE(pProfBase->pPmaStreamList[pmaChIdx].pNumBytesCpuAddr);
+
+    if (pMemBytesAddr == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid MEM_BYTES_ADDR.\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    threadStateResetTimeout(pGpu);
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+
+    while (*pMemBytesAddr == NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE)
+    {
+        if (status == NV_ERR_TIMEOUT)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "timeout occurred while waiting for PM streamout to idle.\n");
+            break;
+        }
+        osSpinLoop();
+        status = gpuCheckTimeout(pGpu, &timeout);
+    }
+
+    NV_PRINTF(LEVEL_INFO, "status=0x%08x, *MEM_BYTES_ADDR=0x%08x.\n", status,
+              *pMemBytesAddr);
+
+    return status;
+}
+
+/*
+ * This function does the following:
+ * 1. Initialize membytes buffer on guest, ensuring no membytes streamout is in progress.
+ * 2. Issue RPC to vGPU host to idle PMA channel and trigger membytes streaming.
+ * 3. If required, wait on guest until updated membytes value is received
+ */
+NV_STATUS profilerBaseQuiesceStreamout_IMPL(ProfilerBase *pProf, OBJGPU *pGpu, KernelHwpm *pKernelHwpm, NvU32 pmaChIdx)
+{
+    NV_STATUS rmStatus = NV_OK;
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS pmaIdleParams = {0};
+
+    if (pProf->pPmaStreamList == NULL)
+        return NV_ERR_INVALID_STATE;
+
+    volatile NvU32 *pMemBytesAddr = NvP64_VALUE(pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddr);
+
+    if (pMemBytesAddr == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid MEM_BYTES_ADDR.\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    // Check if any membytes streamout is in progress
+    if (*pMemBytesAddr == NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE)
+    {
+        // Complete any pending membytes streamout
+        rmStatus = _profilerPollForUpdatedMembytes(pProf, pGpu, pKernelHwpm, pmaChIdx);
+    }
+
+    *pMemBytesAddr = NVB0CC_AVAILABLE_BYTES_DEFAULT_VALUE;
+
+    pmaIdleParams.pmaChannelIdx = pmaChIdx;
+
+    // Issue RPC to quiesce PMA channel
+    NV_RM_RPC_CONTROL(pGpu,
+                      pCallContext->pClient->hClient,
+                      pCallContext->pResourceRef->hResource,
+                      NVB0CC_CTRL_CMD_INTERNAL_QUIESCE_PMA_CHANNEL,
+                      &pmaIdleParams, sizeof(NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS),
+                      rmStatus);
+
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Waiting for PMA to be idle failed with error 0x%x\n",
+                  rmStatus);
+        return rmStatus;
+    }
+
+    // If membytes streaming was triggered, wait on guest for it to complete
+    if (pmaIdleParams.bMembytesPollingRequired)
+    {
+        rmStatus = _profilerPollForUpdatedMembytes(pProf, pGpu, pKernelHwpm, pmaChIdx);
+    }
+
+    return rmStatus;
+}
+
+void
+profilerBaseDestructState_VF
+(
+    ProfilerBase *pProf
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pProf);
+    KernelHwpm *pKernelHwpm = GPU_GET_KERNEL_HWPM(pGpu);
+    NvU32 pmaChIdx;
+    CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+    NV_STATUS rmStatus = NV_OK;
+
+    if (pProf->pPmaStreamList == NULL)
+        return;
+
+    // Handle quiesce streamout on guest, then issue RPC to free Profiler
+    // object on host, which will handle rest of the teardown
+    for (pmaChIdx = 0; pmaChIdx < pKernelHwpm->maxPmaChannels; pmaChIdx++)
+    {
+        if (!pProf->pPmaStreamList[pmaChIdx].bValid)
+        {
+            continue;
+        }
+
+        rmStatus = profilerBaseQuiesceStreamout(pProf, pGpu, pKernelHwpm, pmaChIdx);
+    }
+
+    // Issue RPC to vGPU host to free Profiler object allocated on host
+    NV_RM_RPC_FREE(pGpu,
+                   pCallContext->pClient->hClient,
+                   pCallContext->pResourceRef->pParentRef->hResource,
+                   pCallContext->pResourceRef->hResource,
+                   rmStatus);
+
+    // Free membytes CPU mapping on guest
+    for (pmaChIdx = 0; pmaChIdx < pKernelHwpm->maxPmaChannels; pmaChIdx++)
+    {
+        if (!pProf->pPmaStreamList[pmaChIdx].bValid)
+        {
+            continue;
+        }
+
+        if (IS_SRIOV_FULL_GUEST(pGpu))
+        {
+            khwpmStreamoutFreePmaStream(pGpu, pKernelHwpm, pProf->profilerId,
+                                        &pProf->pPmaStreamList[pmaChIdx], pmaChIdx);
+            continue;
+        }
+
+        if (pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddr != NvP64_NULL )
+        {
+            memdescUnmap(pProf->pPmaStreamList[pmaChIdx].pNumBytesBufDesc, NV_TRUE, osGetCurrentProcess(),
+                         pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddr,
+                         pProf->pPmaStreamList[pmaChIdx].pNumBytesCpuAddrPriv);
+        }
+
+        if (pProf->pPmaStreamList[pmaChIdx].pNumBytesBufDesc != NULL )
+        {
+            memdescFree(pProf->pPmaStreamList[pmaChIdx].pNumBytesBufDesc);
+            memdescDestroy(pProf->pPmaStreamList[pmaChIdx].pNumBytesBufDesc);
+        }
+
+        pProf->pPmaStreamList[pmaChIdx].bValid = NV_FALSE;
+    }
+
+    portMemFree(pProf->pPmaStreamList);
+    portMemFree(pProf->pBindPointAllocated);
 }
 
 NV_STATUS
@@ -117,7 +295,7 @@ profilerDevQueryCapabilities_IMPL
     OBJGPU              *pGpu                   = GPU_RES_GET_GPU(pProfDev);
     ProfilerBase        *pProfBase              = staticCast(pProfDev, ProfilerBase);
     API_SECURITY_INFO   *pSecInfo               = pParams->pSecInfo;
-    NvBool              bAnyProfilingPermitted  = NV_FALSE;
+    NvBool               bAnyProfilingPermitted = NV_FALSE;
 
     pClientPermissions->bMemoryProfilingPermitted =
         _isMemoryProfilingPermitted(pGpu, pProfBase);
@@ -138,6 +316,78 @@ profilerDevQueryCapabilities_IMPL
     }
 
     return bAnyProfilingPermitted;
+}
+
+/*
+ * To be called on vGPU guest only
+ * Profiler object will not be fully initialized on vGPU guest,
+ * this request will be passed on to vGPU host.
+ * Initialize pPmaStreamList on guest to store details PMA stream
+ */
+static NV_STATUS
+_profilerDevConstructVgpuGuest
+(
+    ProfilerBase *pProfBase,
+    RS_RES_ALLOC_PARAMS_INTERNAL *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pProfBase);
+    HWPM_PMA_STREAM *pPmaStreamList = NULL;
+    NvBool *pBindPointAllocated = NULL;
+
+    // Allocate the pPmaStreamList to store info about memaddr buffer CPU mapping
+    pPmaStreamList = portMemAllocNonPaged(sizeof(HWPM_PMA_STREAM) * pGpu->pKernelHwpm->maxPmaChannels);
+    if (pPmaStreamList == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    portMemSet(pPmaStreamList, 0, sizeof(HWPM_PMA_STREAM) * pGpu->pKernelHwpm->maxPmaChannels);
+
+    pBindPointAllocated = portMemAllocNonPaged(sizeof(NvBool) * pGpu->pKernelHwpm->maxPmaChannels);
+    if (pBindPointAllocated == NULL)
+    {
+        portMemFree(pPmaStreamList);
+        return NV_ERR_NO_MEMORY;
+    }
+
+    portMemSet(pBindPointAllocated, NV_FALSE, sizeof(NvBool) * pGpu->pKernelHwpm->maxPmaChannels);
+
+    pProfBase->pPmaStreamList = pPmaStreamList;
+    pProfBase->pBindPointAllocated = pBindPointAllocated;
+
+    return NV_OK;
+}
+
+NV_STATUS
+profilerDevConstructState_VF
+(
+    ProfilerDev *pProfDev,
+    CALL_CONTEXT *pCallContext,
+    RS_RES_ALLOC_PARAMS_INTERNAL *pParams,
+    PROFILER_CLIENT_PERMISSIONS clientPermissions
+)
+{
+    OBJGPU          *pGpu       = GPU_RES_GET_GPU(pProfDev);
+    ProfilerBase    *pProfBase  = staticCast(pProfDev, ProfilerBase);
+    NV_STATUS        rmStatus   = NV_OK;
+
+    NV_ASSERT_OK_OR_GOTO(rmStatus,
+                         _profilerDevConstructVgpuGuest(pProfBase, pParams),
+                         profilerDevConstruct_VF_exit);
+
+    // Issue RPC to allocate Profiler object on vGPU host as well
+    NV_RM_RPC_ALLOC_OBJECT(pGpu,
+                           pCallContext->pClient->hClient,
+                           pCallContext->pResourceRef->pParentRef->hResource,
+                           pCallContext->pResourceRef->hResource,
+                           MAXWELL_PROFILER_DEVICE,
+                           pParams->pAllocParams,
+                           pParams->paramsSize,
+                           rmStatus);
+
+profilerDevConstruct_VF_exit:
+    return rmStatus;
 }
 
 NV_STATUS
@@ -169,7 +419,7 @@ profilerDevConstructStatePrologue_FWCLIENT
     RS_RES_ALLOC_PARAMS_INTERNAL *pAllocParams
 )
 {
-    OBJGPU      *pGpu       = GPU_RES_GET_GPU(pProfDev);
+    OBJGPU     *pGpu        = GPU_RES_GET_GPU(pProfDev);
     NvHandle    hClient     = RES_GET_CLIENT_HANDLE(pProfDev);
     NvHandle    hParent     = RES_GET_PARENT_HANDLE(pProfDev);
     NvHandle    hObject     = RES_GET_HANDLE(pProfDev);
@@ -191,8 +441,8 @@ profilerDevConstructStateInterlude_IMPL
     PROFILER_CLIENT_PERMISSIONS clientPermissions
 )
 {
-    OBJGPU          *pGpu       = GPU_RES_GET_GPU(pProfDev);
-    RM_API          *pRmApi     = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    OBJGPU         *pGpu        = GPU_RES_GET_GPU(pProfDev);
+    RM_API         *pRmApi      = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NvHandle        hClient     = RES_GET_CLIENT_HANDLE(pProfDev);
     NvHandle        hObject     = RES_GET_HANDLE(pProfDev);
 
@@ -224,13 +474,13 @@ profilerDevDestructState_FWCLIENT
     ProfilerDev *pProfDev
 )
 {
-    NvHandle                    hClient;
-    NvHandle                    hParent;
-    NvHandle                    hObject;
+    NvHandle                     hClient;
+    NvHandle                     hParent;
+    NvHandle                     hObject;
     RS_RES_FREE_PARAMS_INTERNAL *pParams;
     CALL_CONTEXT                *pCallContext;
-    OBJGPU                      *pGpu           = GPU_RES_GET_GPU(pProfDev);
-    NV_STATUS                   status          = NV_OK;
+    OBJGPU                      *pGpu            = GPU_RES_GET_GPU(pProfDev);
+    NV_STATUS                    status          = NV_OK;
 
     resGetFreeParams(staticCast(pProfDev, RsResource), &pCallContext, &pParams);
     hClient = pCallContext->pClient->hClient;

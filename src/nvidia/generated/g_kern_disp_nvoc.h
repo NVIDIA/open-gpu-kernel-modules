@@ -54,6 +54,11 @@ extern "C" {
 
 typedef NV2080_CTRL_INTERNAL_DISPLAY_GET_STATIC_INFO_PARAMS KernelDisplayStaticInfo;
 
+typedef struct
+{
+    NvU32 kHeadVblankCount[OBJ_MAX_HEADS];
+} KernelDisplaySharedMem;
+
 struct DispChannel;
 
 #ifndef __NVOC_CLASS_DispChannel_TYPEDEF__
@@ -87,11 +92,16 @@ typedef struct RgLineCallback RgLineCallback;
  * interfaces which do not manage the underlying Display hardware can be
  * managed by this object.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERN_DISP_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelDisplay {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -121,6 +131,7 @@ struct KernelDisplay {
     NV_STATUS (*__kdispGetRgScanLock__)(OBJGPU *, struct KernelDisplay *, NvU32, OBJGPU *, NvU32, NvBool *, NvU32 *, NvBool *, NvU32 *);
     NV_STATUS (*__kdispDetectSliLink__)(struct KernelDisplay *, OBJGPU *, OBJGPU *, NvU32, NvU32);
     void (*__kdispInitRegistryOverrides__)(OBJGPU *, struct KernelDisplay *);
+    NvU32 (*__kdispGetPBTargetAperture__)(OBJGPU *, struct KernelDisplay *, NvU32, NvU32);
     NV_STATUS (*__kdispServiceNotificationInterrupt__)(OBJGPU *, struct KernelDisplay *, IntrServiceServiceNotificationInterruptArguments *);
     NV_STATUS (*__kdispStatePreLoad__)(POBJGPU, struct KernelDisplay *, NvU32);
     NV_STATUS (*__kdispStatePostUnload__)(POBJGPU, struct KernelDisplay *, NvU32);
@@ -148,6 +159,8 @@ struct KernelDisplay {
     NvHandle hInternalDevice;
     NvHandle hInternalSubdevice;
     NvHandle hDispCommonHandle;
+    MEMORY_DESCRIPTOR *pSharedMemDesc;
+    KernelDisplaySharedMem *pSharedData;
 };
 
 #ifndef __NVOC_CLASS_KernelDisplay_TYPEDEF__
@@ -223,6 +236,8 @@ NV_STATUS __nvoc_objCreate_KernelDisplay(KernelDisplay**, Dynamic*, NvU32);
 #define kdispDetectSliLink_HAL(pKernelDisplay, pParentGpu, pChildGpu, ParentDrPort, ChildDrPort) kdispDetectSliLink_DISPATCH(pKernelDisplay, pParentGpu, pChildGpu, ParentDrPort, ChildDrPort)
 #define kdispInitRegistryOverrides(pGpu, pKernelDisplay) kdispInitRegistryOverrides_DISPATCH(pGpu, pKernelDisplay)
 #define kdispInitRegistryOverrides_HAL(pGpu, pKernelDisplay) kdispInitRegistryOverrides_DISPATCH(pGpu, pKernelDisplay)
+#define kdispGetPBTargetAperture(pGpu, pKernelDisplay, memAddrSpace, cacheSnoop) kdispGetPBTargetAperture_DISPATCH(pGpu, pKernelDisplay, memAddrSpace, cacheSnoop)
+#define kdispGetPBTargetAperture_HAL(pGpu, pKernelDisplay, memAddrSpace, cacheSnoop) kdispGetPBTargetAperture_DISPATCH(pGpu, pKernelDisplay, memAddrSpace, cacheSnoop)
 #define kdispServiceNotificationInterrupt(pGpu, pIntrService, pParams) kdispServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
 #define kdispStatePreLoad(pGpu, pEngstate, arg0) kdispStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kdispStatePostUnload(pGpu, pEngstate, arg0) kdispStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -568,6 +583,33 @@ static inline void kdispDestroyCommonHandle(struct KernelDisplay *pKernelDisplay
 
 #define kdispDestroyCommonHandle_HAL(pKernelDisplay) kdispDestroyCommonHandle(pKernelDisplay)
 
+NV_STATUS kdispAllocateSharedMem_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay);
+
+
+#ifdef __nvoc_kern_disp_h_disabled
+static inline NV_STATUS kdispAllocateSharedMem(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay) {
+    NV_ASSERT_FAILED_PRECOMP("KernelDisplay was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kern_disp_h_disabled
+#define kdispAllocateSharedMem(pGpu, pKernelDisplay) kdispAllocateSharedMem_IMPL(pGpu, pKernelDisplay)
+#endif //__nvoc_kern_disp_h_disabled
+
+#define kdispAllocateSharedMem_HAL(pGpu, pKernelDisplay) kdispAllocateSharedMem(pGpu, pKernelDisplay)
+
+void kdispFreeSharedMem_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay);
+
+
+#ifdef __nvoc_kern_disp_h_disabled
+static inline void kdispFreeSharedMem(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay) {
+    NV_ASSERT_FAILED_PRECOMP("KernelDisplay was disabled!");
+}
+#else //__nvoc_kern_disp_h_disabled
+#define kdispFreeSharedMem(pGpu, pKernelDisplay) kdispFreeSharedMem_IMPL(pGpu, pKernelDisplay)
+#endif //__nvoc_kern_disp_h_disabled
+
+#define kdispFreeSharedMem_HAL(pGpu, pKernelDisplay) kdispFreeSharedMem(pGpu, pKernelDisplay)
+
 NV_STATUS kdispConstructEngine_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, ENGDESCRIPTOR engDesc);
 
 static inline NV_STATUS kdispConstructEngine_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, ENGDESCRIPTOR engDesc) {
@@ -604,9 +646,9 @@ static inline NV_STATUS kdispStateUnload_DISPATCH(OBJGPU *pGpu, struct KernelDis
     return pKernelDisplay->__kdispStateUnload__(pGpu, pKernelDisplay, flags);
 }
 
-void kdispRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[168]);
+void kdispRegisterIntrService_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[171]);
 
-static inline void kdispRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[168]) {
+static inline void kdispRegisterIntrService_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, IntrServiceRecord pRecords[171]) {
     pKernelDisplay->__kdispRegisterIntrService__(pGpu, pKernelDisplay, pRecords);
 }
 
@@ -753,6 +795,16 @@ static inline void kdispInitRegistryOverrides_DISPATCH(OBJGPU *pGpu, struct Kern
     pKernelDisplay->__kdispInitRegistryOverrides__(pGpu, pKernelDisplay);
 }
 
+NvU32 kdispGetPBTargetAperture_v03_00(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 memAddrSpace, NvU32 cacheSnoop);
+
+static inline NvU32 kdispGetPBTargetAperture_15a734(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 memAddrSpace, NvU32 cacheSnoop) {
+    return 0U;
+}
+
+static inline NvU32 kdispGetPBTargetAperture_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 memAddrSpace, NvU32 cacheSnoop) {
+    return pKernelDisplay->__kdispGetPBTargetAperture__(pGpu, pKernelDisplay, memAddrSpace, cacheSnoop);
+}
+
 static inline NV_STATUS kdispServiceNotificationInterrupt_DISPATCH(OBJGPU *pGpu, struct KernelDisplay *pIntrService, IntrServiceServiceNotificationInterruptArguments *pParams) {
     return pIntrService->__kdispServiceNotificationInterrupt__(pGpu, pIntrService, pParams);
 }
@@ -828,6 +880,16 @@ static inline NV_STATUS kdispGetIntChnClsForHwCls(struct KernelDisplay *pKernelD
 #define kdispGetIntChnClsForHwCls(pKernelDisplay, hwClass, pDispChnClass) kdispGetIntChnClsForHwCls_IMPL(pKernelDisplay, hwClass, pDispChnClass)
 #endif //__nvoc_kern_disp_h_disabled
 
+void kdispNotifyCommonEvent_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 notifyIndex, void *pNotifyParams);
+
+#ifdef __nvoc_kern_disp_h_disabled
+static inline void kdispNotifyCommonEvent(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 notifyIndex, void *pNotifyParams) {
+    NV_ASSERT_FAILED_PRECOMP("KernelDisplay was disabled!");
+}
+#else //__nvoc_kern_disp_h_disabled
+#define kdispNotifyCommonEvent(pGpu, pKernelDisplay, notifyIndex, pNotifyParams) kdispNotifyCommonEvent_IMPL(pGpu, pKernelDisplay, notifyIndex, pNotifyParams)
+#endif //__nvoc_kern_disp_h_disabled
+
 void kdispNotifyEvent_IMPL(OBJGPU *pGpu, struct KernelDisplay *pKernelDisplay, NvU32 notifyIndex, void *pNotifyParams, NvU32 notifyParamsSize, NvV32 info32, NvV16 info16);
 
 #ifdef __nvoc_kern_disp_h_disabled
@@ -862,6 +924,15 @@ dispdeviceFillVgaSavedDisplayState( OBJGPU *pGpu,
     NvBool  baseValid,
     NvBool  workspaceBaseValid
 );
+
+/*! PushBuffer Target Aperture Types */
+typedef enum
+{
+    IOVA,
+    PHYS_NVM,
+    PHYS_PCI,
+    PHYS_PCI_COHERENT
+} PBTARGETAPERTURE;
 
 static NV_INLINE struct KernelHead*
 kdispGetHead

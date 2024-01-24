@@ -1468,8 +1468,8 @@ typedef struct NV0073_CTRL_SYSTEM_ARM_LIGHTWEIGHT_SUPERVISOR_PARAMS {
 *
 *   bVrrDirty
 *     When set to NV_TRUE, indicates that vrr configuration has been changed
-*     When set to NV_FALSE, this will indicate transitions from One shot mode to 
-*     Continuous mode and vice versa 
+*     When set to NV_FALSE, this will indicate transitions from One shot mode to
+*     Continuous mode and vice versa
 *
 *   bVrrEnabled
 *     When set to NV_TRUE, indicates that vrr has been enabled, i.e. vBp extended by 2 lines
@@ -1541,7 +1541,7 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_QUERY_DISPLAY_IDS_WITH_MUX_PARAMS {
  * because it exceeds the total bandwidth available to the system, or because
  * too much bandwidth is already allocated to other clients), the call will
  * fail and NV_ERR_INSUFFICIENT_RESOURCES will be returned.
- * 
+ *
  * If bandwidth has already been allocated via a prior call, and a new
  * allocation is requested, the new allocation will replace the old one.  (If
  * the new allocation fails, the old allocation remains in effect.)
@@ -1718,7 +1718,7 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_I2C_SUPPORT_PARAMS {
  *        This parameter inputs the displayId of the active display. A value
  *        of zero indicates no display is active.
  *    bIsSidebandSrSupported
- *        If it is true, it means that sideband is supported and not PSR API. 
+ *        If it is true, it means that sideband is supported and not PSR API.
  *
  * Possible status values returned are:
  *    NV_OK
@@ -1755,7 +1755,7 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_CHECK_SIDEBAND_SR_SUPPORT_PARAMS {
  *    NV_ERR_GENERIC
  */
 
-/* 
+/*
  * This is the shared structure that will be used to communicate between
  * Physical RM and clients. As of now the access relies on single source of
  * truth operation, i.e. only Physical RM writes into the shared location
@@ -1790,6 +1790,154 @@ typedef struct NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS {
     NvU32    minFrameTime;
     NvHandle hMemory;
 } NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL
+ *
+ * The VBlank Semaphore Control API ("VBlank Sem Control") allows clients to
+ * register for a semaphore release to be performed on the specified memory.
+ *
+ * One or more clients may register a memory allocation + offset by specifying
+ * _PARAMS::bEnabled = NV_TRUE and describing a video memory object with
+ * _PARAMS::hMemory and an offset within that memory object
+ * (_PARAMS::memoryOffset).  Until the hMemory + memoryOffset combination is
+ * disabled by a subsequent call with bEnabled = NV_FALSE, during each vblank on
+ * the specified head, RM will interpret the specified memory location as an
+ * NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA data structure.
+ *
+ * _PARAMS::memoryOffset must be a multiple of 8, so that GPU semaphore releases
+ * and GSP can write to 8-byte fields within
+ * NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA with natural alignment.
+ *
+ * During vblank, the _CONTROL_DATA::control field will be read, and the
+ * following pseudocode will be performed:
+ *
+ *   swapInterval      = DRF_VAL(data->flags)
+ *   useMinimumGpuTime = DRV_VAL(data->flags)
+ *
+ *   if (data->requestCounter == prevRequestCounter)
+ *       return
+ *
+ *   if (currentVblankCount < (prevVBlankCount + swapInterval))
+ *       return
+ *
+ *   if (useMinimumGpuTime && (data->minimumGpuTime < currentGpuTime))
+ *       return
+ *
+ *   data->vblankCount    = currentVblankCount
+ *   data->releaseGpuTime = currentGpuTime
+ *   data->semaphore      = data->requestCounter
+ *
+ *   prevRequestCounter   = data->requestCounter
+ *   previousVblankCount  = currentVblankCount
+ *
+ * I.e., if the client-described conditions are met, the RM will write
+ * _CONTROL_DATA::semaphore to the client-requested 'requestCounter' along with
+ * several informational fields (vblankCount, releaseGpuTime).
+ *
+ * The intent is for clients to use semaphore releases to write:
+ *
+ *   _CONTROL_DATA::minimumGpuTime (if desired)
+ *   _CONTROL_DATA::swapInterval
+ *   _CONTROL_DATA::requestCounter
+ *
+ * and then perform a semaphore acquire on _CONTROL_DATA::semaphore >=
+ * requestCounter (using the ACQ_GEQ semaphore operation).  This will block any
+ * following methods in the client's channel (e.g., a blit) until the requested
+ * conditions are met.  Note the ::requestCounter should be written last,
+ * because the change in value of ::requestCounter is what causes RM, during a
+ * vblank callback, to inspect the other fields.
+ *
+ * Additionally, clients should use the CPU (not semaphore releases in their
+ * channel) to write the field _CONTROL_DATA::requestCounterAccel at the same
+ * time that they enqueue the semaphore release to write to
+ * _CONTROL_DATA::requestCounter.  ::requestCounterAccel will be used by resman
+ * to "accelerate" the vblank sem control by copying the value from
+ * ::requestCounterAccel to ::semaphore.  This will be done when the vblank sem
+ * control is disabled, and when a client calls
+ * NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS.  It is important for resman
+ * to have access to the value in ::requestCounterAccel, and not just
+ * ::requestCounter.  The latter is only the last value released so far by the
+ * client's channel (further releases to ::requestCounter may still be inflight,
+ * perhaps blocked on pending semaphore acquires).  The former should be the
+ * most recent value enqueued in the channel.  This is also why it is important
+ * for clients to acquire with ACQ_GEQ (greater-than-or-equal-to), rather than
+ * just ACQUIRE.
+ *
+ * The same hMemory (with difference memoryOffsets) may be used by multiple
+ * VBlank Sem Controls.
+ */
+
+/* Fields within NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA::flags */
+#define NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_SWAP_INTERVAL          15:0
+#define NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_USE_MINIMUM_GPU_TIME   16:16
+
+typedef struct NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA {
+    NvU32 requestCounterAccel;
+    NvU32 requestCounter;
+    NvU32 flags;
+    NV_DECLARE_ALIGNED(NvU64 minimumGpuTime, 8);
+
+    NvU32 semaphore;
+    NV_DECLARE_ALIGNED(NvU64 vblankCount, 8);
+    NV_DECLARE_ALIGNED(NvU64 releaseGpuTime, 8);
+} NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA;
+
+#define NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL (0x73019fU) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS_MESSAGE_ID (0x9FU)
+
+typedef struct NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS {
+    NvU32    subDeviceInstance;
+    NvBool   bEnable;
+    NvU32    head;
+    NvHandle hMemory;
+    NV_DECLARE_ALIGNED(NvU64 memoryOffset, 8);
+} NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS;
+
+/*
+ * Accelerate all VBlank Sem Controls on the specified heads.
+ *
+ * For all enabled vblank sem controls on the specified heads, immediate set
+ * their pending ::semaphore fields to the value in their ::requestCounterAccel
+ * field.
+ */
+#define NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS (0x7301a2U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS_MESSAGE_ID (0xA2U)
+
+typedef struct NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 headMask;
+} NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS;
+
+/*
+ * Maps the memory allocated in Kernel RM into Physical RM using the
+ * memory descriptor information provided.
+ *
+ * Possible status values returned are:
+ *    NV_OK
+ *    NV_ERR_INVALID_ARGUMENT
+ *    NV_ERR_NOT_SUPPORTED
+ */
+
+typedef struct NV0073_CTRL_SHARED_MEMDESC_INFO {
+    NV_DECLARE_ALIGNED(NvU64 base, 8);
+    NV_DECLARE_ALIGNED(NvU64 size, 8);
+    NV_DECLARE_ALIGNED(NvU64 alignment, 8);
+    NvU32 addressSpace;
+    NvU32 cpuCacheAttrib;
+} NV0073_CTRL_SHARED_MEMDESC_INFO;
+
+#define NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA (0x7301a3U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_SYSTEM_INTERFACE_ID << 8) | NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA_PARAMS_MESSAGE_ID (0xA3U)
+
+typedef struct NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA_PARAMS {
+    NV_DECLARE_ALIGNED(NV0073_CTRL_SHARED_MEMDESC_INFO memDescInfo, 8);
+    NvU32  subDeviceInstance;
+    NvBool bMap;
+} NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA_PARAMS;
 
 /* _ctrl0073system_h_ */
 

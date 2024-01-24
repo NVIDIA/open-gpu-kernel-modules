@@ -299,6 +299,52 @@
 #define NV_SWITCH_REGKEY_SOE_DMA_SELFTEST_ENABLE                 0x01
 
 /*
+ * CCI Control
+ *  
+ * This regkey controls enablement of CCI on LS10 systems.
+ *
+ * Public: Available in release drivers
+ */
+#define NV_SWITCH_REGKEY_CCI_CONTROL                            "CCIControl"
+#define NV_SWITCH_REGKEY_CCI_CONTROL_DEFAULT                    0x1
+#define NV_SWITCH_REGKEY_CCI_CONTROL_ENABLE                     0:0
+#define NV_SWITCH_REGKEY_CCI_CONTROL_ENABLE_FALSE               0x00
+#define NV_SWITCH_REGKEY_CCI_CONTROL_ENABLE_TRUE                0x01
+
+/*
+ * CCI Link Train Disable Mask 
+ *
+ * These regkeys will disable link training for CCI managed links.
+ *
+ * Mask  contains links  0-31
+ * Mask2 contains links 32-63
+ *
+ * Private: Will only be applied on debug/develop drivers and MODS
+ */
+#define NV_SWITCH_REGKEY_CCI_DISABLE_LINK_TRAIN_MASK                       "CCILinkTrainDisableMask"
+#define NV_SWITCH_REGKEY_CCI_DISABLE_LINK_TRAIN_MASK2                      "CCILinkTrainDisableMask2"
+#define NV_SWITCH_REGKEY_CCI_DISABLE_LINK_TRAIN_MASK_DEFAULT               0x0
+#define NV_SWITCH_REGKEY_CCI_DISABLE_LINK_TRAIN_MASK2_DEFAULT              0x0
+
+/*
+ * CCI Max Onboard Attempts 
+ *  
+ * Public: Available in release drivers
+ */
+#define NV_SWITCH_REGKEY_CCI_MAX_ONBOARD_ATTEMPTS               "CCIMaxOnboardAttempts"
+#define NV_SWITCH_REGKEY_CCI_MAX_ONBOARD_ATTEMPTS_DEFAULT       0x5
+
+/*
+ * CCI Error Log Enable 
+ *
+ * This regkey will enable emission of CCI module onboarding SXids errors. 
+ *  
+ * Public: Available in release drivers
+ */
+#define NV_SWITCH_REGKEY_CCI_ERROR_LOG_ENABLE                   "CCIErrorLogEnable"
+#define NV_SWITCH_REGKEY_CCI_ERROR_LOG_ENABLE_DEFAULT           0x1
+
+/*
  * Disables logging of latency counters
  *
  * Private: Debug use only

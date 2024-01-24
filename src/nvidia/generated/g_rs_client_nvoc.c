@@ -131,21 +131,26 @@ void __nvoc_init_RsClient(RsClient *pThis) {
     __nvoc_init_funcTable_RsClient(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_RsClient(RsClient **ppThis, Dynamic *pParent, NvU32 createFlags, struct PORT_MEM_ALLOCATOR * arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_RsClient(RsClient **ppThis, Dynamic *pParent, NvU32 createFlags, struct PORT_MEM_ALLOCATOR * arg_pAllocator, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     RsClient *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(RsClient), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(RsClient));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RsClient);
 
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -160,16 +165,25 @@ NV_STATUS __nvoc_objCreate_RsClient(RsClient **ppThis, Dynamic *pParent, NvU32 c
     status = __nvoc_ctor_RsClient(pThis, arg_pAllocator, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_RsClient_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_RsClient_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(RsClient));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;
@@ -284,6 +298,10 @@ static NV_STATUS __nvoc_thunk_RsResource_clientresControl_Prologue(struct RsClie
     return resControl_Prologue((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
 }
 
+static NvBool __nvoc_thunk_RsResource_clientresIsPartialUnmapSupported(struct RsClientResource *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
+}
+
 static void __nvoc_thunk_RsResource_clientresPreDestruct(struct RsClientResource *pResource) {
     resPreDestruct((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset));
 }
@@ -302,10 +320,6 @@ static void __nvoc_thunk_RsResource_clientresControlSerialization_Epilogue(struc
 
 static void __nvoc_thunk_RsResource_clientresControl_Epilogue(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     resControl_Epilogue((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pCallContext, pParams);
-}
-
-static NV_STATUS __nvoc_thunk_RsResource_clientresControlLookup(struct RsClientResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RsClientResource_RsResource.offset), pParams, ppEntry);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_clientresMap(struct RsClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -375,6 +389,8 @@ static void __nvoc_init_funcTable_RsClientResource_1(RsClientResource *pThis) {
 
     pThis->__clientresControl_Prologue__ = &__nvoc_thunk_RsResource_clientresControl_Prologue;
 
+    pThis->__clientresIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_clientresIsPartialUnmapSupported;
+
     pThis->__clientresPreDestruct__ = &__nvoc_thunk_RsResource_clientresPreDestruct;
 
     pThis->__clientresUnmapFrom__ = &__nvoc_thunk_RsResource_clientresUnmapFrom;
@@ -384,8 +400,6 @@ static void __nvoc_init_funcTable_RsClientResource_1(RsClientResource *pThis) {
     pThis->__clientresControlSerialization_Epilogue__ = &__nvoc_thunk_RsResource_clientresControlSerialization_Epilogue;
 
     pThis->__clientresControl_Epilogue__ = &__nvoc_thunk_RsResource_clientresControl_Epilogue;
-
-    pThis->__clientresControlLookup__ = &__nvoc_thunk_RsResource_clientresControlLookup;
 
     pThis->__clientresMap__ = &__nvoc_thunk_RsResource_clientresMap;
 
@@ -405,21 +419,26 @@ void __nvoc_init_RsClientResource(RsClientResource *pThis) {
     __nvoc_init_funcTable_RsClientResource(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_RsClientResource(RsClientResource **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_RsClientResource(RsClientResource **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     RsClientResource *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(RsClientResource), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(RsClientResource));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RsClientResource);
 
     pThis->__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -434,16 +453,25 @@ NV_STATUS __nvoc_objCreate_RsClientResource(RsClientResource **ppThis, Dynamic *
     status = __nvoc_ctor_RsClientResource(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_RsClientResource_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_RsClientResource_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(RsClientResource));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

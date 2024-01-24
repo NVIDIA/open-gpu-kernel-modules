@@ -44,7 +44,7 @@ void uvm_perf_heuristics_remove_gpu(uvm_gpu_t *gpu);
 NV_STATUS uvm_perf_heuristics_load(uvm_va_space_t *va_space);
 
 // This function is called when a GPU is registered on a VA space
-NV_STATUS uvm_perf_heuristics_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu);
+void uvm_perf_heuristics_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu);
 
 // The following two functions are called during VA space teardown.
 // uvm_perf_heuristics_stop is called first with no lock taken on the VA space.

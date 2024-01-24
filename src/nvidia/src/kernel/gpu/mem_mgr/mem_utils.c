@@ -94,12 +94,29 @@ memmgrGetMemTransferType
         //
         transferType = TRANSFER_TYPE_PROCESSOR;
     }
-    else if (kbusIsBarAccessBlocked(pKernelBus))
+    else if (kbusIsBarAccessBlocked(pKernelBus) &&
+            (!gpuIsCCDevToolsModeEnabled(pGpu) || !(flags & TRANSFER_FLAGS_PREFER_PROCESSOR)))
     {
         transferType = TRANSFER_TYPE_GSP_DMA;
     }
 
     return transferType;
+}
+
+static NV_STATUS
+memmgrCheckSurfaceBounds
+(
+    TRANSFER_SURFACE *pSurface,
+    NvU64             size
+)
+{
+    NV_ASSERT_OR_RETURN(pSurface != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pSurface->pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(size != 0, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pSurface->offset <= pSurface->pMemDesc->Size, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pSurface->offset + size <= pSurface->pMemDesc->Size, NV_ERR_INVALID_ARGUMENT);
+
+    return NV_OK;
 }
 
 static NV_STATUS
@@ -125,7 +142,7 @@ _memmgrAllocAndMapSurface
         memdescCreate(ppMemDesc, pGpu, size, RM_PAGE_SIZE, NV_TRUE,
                       ADDR_SYSMEM, NV_MEMORY_UNCACHED, flags));
 
-    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_77, 
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_77,
                     (*ppMemDesc));
     NV_ASSERT_OK_OR_GOTO(status, status, failed);
 
@@ -189,12 +206,6 @@ _memmgrMemReadOrWriteWithGsp
     void *pStagingBufPriv = NULL;
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
-    if (gpuIsCCFeatureEnabled(pGpu))
-    {
-        NV_ASSERT_OR_RETURN(pConfCompute->getProperty(pCC,
-                                    PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED),
-                            NV_ERR_INVALID_STATE);
-    }
 
     // Do not expect GSP to be used for reading/writing from/to sysmem
     if (memdescGetAddressSpace(pDst->pMemDesc) == ADDR_SYSMEM)
@@ -213,10 +224,18 @@ _memmgrMemReadOrWriteWithGsp
     {
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            NV_ASSERT_OK_OR_GOTO(status,
-                ccslEncrypt_HAL(pConfCompute->pDmaCcslCtx, size, pBuf, NULL, 0,
-                                pStagingBufMap, gspParams.authTag),
-                failed);
+            status = ccslEncrypt_HAL(pConfCompute->pDmaCcslCtx, size, pBuf, NULL, 0,
+                                     pStagingBufMap, gspParams.authTag);
+            if (status != NV_OK)
+            {
+                if (status == NV_ERR_INSUFFICIENT_RESOURCES)
+                {
+                    // We hit potential IV overflow, this is fatal.
+                    NV_PRINTF(LEVEL_ERROR, "Fatal error detected in GSP-DMA encrypt: IV Overflow!\n");
+                    confComputeSetErrorState(pGpu, pConfCompute);
+                }
+                goto failed;
+            }
         }
         else
         {
@@ -275,10 +294,15 @@ _memmgrMemReadOrWriteWithGsp
     {
         if (gpuIsCCFeatureEnabled(pGpu))
         {
-            NV_ASSERT_OK_OR_GOTO(status,
-                ccslDecrypt_HAL(pConfCompute->pDmaCcslCtx, size, pStagingBufMap,
-                                NULL, NULL, 0, pBuf, gspParams.authTag),
-                failed);
+            status = ccslDecrypt_HAL(pConfCompute->pDmaCcslCtx, size, pStagingBufMap,
+                                     NULL, NULL, 0, pBuf, gspParams.authTag);
+            if (status != NV_OK)
+            {
+                // Failure in GSP-DMA decrypt is considered fatal.
+                NV_PRINTF(LEVEL_ERROR, "Fatal error detected in GSP-DMA decrypt: 0x%x!\n", status);
+                confComputeSetErrorState(pGpu, pConfCompute);
+                goto failed;
+            }
         }
         else
         {
@@ -316,6 +340,7 @@ _memmgrMemcpyWithGsp
     NvU8 *pMap = NULL;
     void *pPriv = NULL;
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
     //
     // Do not expect GSP to be used for copying data b/w two surfaces
@@ -347,10 +372,29 @@ _memmgrMemcpyWithGsp
                           NV_PROTECT_READ_WRITE, (void**)&pMap, &pPriv),
             failed);
 
-        // Copy to staging buffer
-        portMemCopy(pStagingBufMap, size, pMap + pSrc->offset, size);
+        // Copy to staging buffer, encrypting first if CC mode
+        if (gpuIsCCFeatureEnabled(pGpu))
+        {
+            status = ccslEncrypt_HAL(pConfCompute->pDmaCcslCtx, size, pMap + pSrc->offset,
+                                NULL, 0, pStagingBufMap, gspParams.authTag);
+            if (status == NV_ERR_INSUFFICIENT_RESOURCES)
+            {
+                //
+                // We hit potential IV overflow, this is fatal.
+                // Status is checked below, make sure we unmap memory first.
+                //
+                NV_PRINTF(LEVEL_ERROR, "Fatal error detected in GSP-DMA encrypt: IV Overflow!\n");
+                confComputeSetErrorState(pGpu, pConfCompute);
+            }
+        }
+        else
+        {
+            portMemCopy(pStagingBufMap, size, pMap + pSrc->offset, size);
+        }
 
+        // Be sure to unmap memory before potentially taking cleanup path
         memdescUnmapOld(pSrc->pMemDesc, NV_TRUE, 0, (void*)pMap, pPriv);
+        NV_ASSERT_OK_OR_GOTO(status, status, failed);
 
         // Source surface in unprotected sysmem
         gspParams.src.baseAddr = memdescGetPhysAddr(pStagingBuf, AT_GPU, 0);
@@ -413,9 +457,29 @@ _memmgrMemcpyWithGsp
                           NV_PROTECT_READ_WRITE, (void**)&pMap, &pPriv),
             failed);
 
-        portMemCopy(pMap + pDst->offset, size, pStagingBufMap, size);
+        if (gpuIsCCFeatureEnabled(pGpu))
+        {
+            status = ccslDecrypt_HAL(pConfCompute->pDmaCcslCtx, size, pStagingBufMap,
+                                NULL, NULL, 0, pMap + pDst->offset, gspParams.authTag);
+            if (status != NV_OK)
+            {
+                //
+                // Failure in GSP-DMA decrypt is considered fatal.
+                // Just print and set fatal state here, status is checked below after
+                // unmappin memory.
+                //
+                NV_PRINTF(LEVEL_ERROR, "Fatal error detected in GSP-DMA decrypt: 0x%x!\n", status);
+                confComputeSetErrorState(pGpu, pConfCompute);
+            }
+        }
+        else
+        {
+            portMemCopy(pMap + pDst->offset, size, pStagingBufMap, size);
+        }
 
+        // Be sure to unmap memory before potentially taking cleanup path
         memdescUnmapOld(pDst->pMemDesc, NV_TRUE, 0, (void*)pMap, pPriv);
+        NV_ASSERT_OK_OR_GOTO(status, status, failed);
     }
 
 failed:
@@ -489,10 +553,8 @@ memmgrMemCopyWithTransferType
     NvU8 *pDst;
 
     // Sanitize the input
-    NV_ASSERT_OR_RETURN(pDstInfo != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pSrcInfo != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pDstInfo->pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pSrcInfo->pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OK_OR_RETURN(memmgrCheckSurfaceBounds(pDstInfo, size));
+    NV_ASSERT_OK_OR_RETURN(memmgrCheckSurfaceBounds(pSrcInfo, size));
     NV_ASSERT_OR_RETURN(!memdescDescIsEqual(pDstInfo->pMemDesc, pSrcInfo->pMemDesc),
                         NV_ERR_INVALID_ARGUMENT);
 
@@ -618,10 +680,7 @@ memmgrMemSetWithTransferType
     NvU8 *pDst;
 
     // Sanitize the input
-    NV_ASSERT_OR_RETURN(pDstInfo != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pDstInfo->pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(size > 0, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pDstInfo->offset + size <= pDstInfo->pMemDesc->Size, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OK_OR_RETURN(memmgrCheckSurfaceBounds(pDstInfo, size));
 
     switch (transferType)
     {
@@ -779,11 +838,8 @@ memmgrMemWriteWithTransferType
     OBJGPU *pGpu = ENG_GET_GPU(pMemoryManager);
 
     // Sanitize the input
-    NV_ASSERT_OR_RETURN(pDstInfo != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pDstInfo->pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OK_OR_RETURN(memmgrCheckSurfaceBounds(pDstInfo, size));
     NV_ASSERT_OR_RETURN(pBuf != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(size > 0, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pDstInfo->offset + size <= pDstInfo->pMemDesc->Size, NV_ERR_INVALID_ARGUMENT);
 
     if (pMapping != NULL)
     {
@@ -854,11 +910,8 @@ memmgrMemReadWithTransferType
 
 
     // Sanitize the input
-    NV_ASSERT_OR_RETURN(pSrcInfo != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pSrcInfo->pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OK_OR_RETURN(memmgrCheckSurfaceBounds(pSrcInfo, size));
     NV_ASSERT_OR_RETURN(pBuf != NULL, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(size > 0, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(pSrcInfo->offset + size <= pSrcInfo->pMemDesc->Size, NV_ERR_INVALID_ARGUMENT);
 
     if (pMapping != NULL)
     {
@@ -1173,13 +1226,10 @@ memmgrMemBeginTransfer_IMPL
     NvU64              offset       = pTransferInfo->offset;
     OBJGPU            *pGpu         = ENG_GET_GPU(pMemoryManager);
     NvU8              *pPtr         = NULL;
-    NvU64              memSz        = 0;
+    NvU64              memSz        = shadowBufSize;
 
-    NV_ASSERT_OR_RETURN(pMemDesc != NULL, NULL);
-    NV_ASSERT_OR_RETURN((memSz = memdescGetSize(pMemDesc)) >= shadowBufSize, NULL);
+    NV_ASSERT_OR_RETURN(memmgrCheckSurfaceBounds(pTransferInfo, memSz) == NV_OK, NULL);
     NV_ASSERT_OR_RETURN(memdescGetKernelMapping(pMemDesc) == NULL, NULL);
-
-    memSz = shadowBufSize == 0 ? memSz : shadowBufSize;
 
     switch (transferType)
     {
@@ -1246,16 +1296,13 @@ memmgrMemEndTransfer_IMPL
     TRANSFER_TYPE      transferType = memmgrGetMemTransferType(pMemoryManager,
                                                                pTransferInfo, NULL, flags);
     MEMORY_DESCRIPTOR *pMemDesc     = pTransferInfo->pMemDesc;
-    NvU64              offset       = pTransferInfo->offset;
     OBJGPU            *pGpu         = ENG_GET_GPU(pMemoryManager);
-    NvU64              memSz        = 0;
     NvU8              *pMapping     = NULL;
+    NvU64              memSz        = shadowBufSize;
 
-    NV_ASSERT_OR_RETURN_VOID(pMemDesc != NULL);
+    NV_ASSERT_OR_RETURN_VOID(memmgrCheckSurfaceBounds(pTransferInfo, memSz) == NV_OK);
+
     pMapping = memdescGetKernelMapping(pMemDesc);
-
-    NV_ASSERT_OR_RETURN_VOID((memSz = memdescGetSize(pMemDesc)) >= (shadowBufSize + offset) );
-    memSz = shadowBufSize == 0 ? memSz : shadowBufSize;
 
     memdescSetKernelMapping(pMemDesc, NULL);
 
@@ -1552,6 +1599,11 @@ memUtilsAllocMemDesc
     if (pAllocRequest->pMemDesc == NULL)
     {
         NvU64 memDescFlags = MEMDESC_FLAGS_SKIP_RESOURCE_COMPUTE;
+
+        if (FLD_TEST_DRF(OS32, _ATTR2, _USE_EGM, _TRUE, pFbAllocInfo->retAttr2))
+        {
+            memDescFlags |= MEMDESC_FLAGS_ALLOC_FROM_EGM;
+        }
 
         //
         // Allocate a contig vidmem descriptor now; if needed we'll

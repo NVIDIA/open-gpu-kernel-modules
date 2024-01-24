@@ -85,4 +85,3 @@ _kbifPreOsCheckErotGrantAllowed_AD102
 
     return FLD_TEST_DRF(_PBUS, _SW_GLOBAL_EROT_GRANT, _ALLOW, _YES, reg);
 }
-

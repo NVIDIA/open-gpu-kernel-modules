@@ -114,7 +114,7 @@ void kgmmuFmtInitLevels_GH10X(KernelGmmu    *pKernelGmmu,
     pLevels[6].virtAddrBitLo  = 12;
     pLevels[6].entrySize      = NV_MMU_VER3_PTE__SIZE;
     pLevels[6].bPageTable     = NV_TRUE;
-    pLevels[5].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_4K;
+    pLevels[6].pageLevelIdTag = MMU_FMT_PT_SURF_ID_PT_4K;
 }
 
 void kgmmuFmtInitPdeMulti_GH10X(KernelGmmu                *pKernelGmmu,

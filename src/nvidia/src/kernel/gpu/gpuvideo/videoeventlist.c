@@ -34,6 +34,7 @@
 #include "rmapi/event.h"
 #include "rmapi/event_buffer.h"
 #include "resserv/rs_server.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "core/locks.h"
 #include "os/os.h"
 #include "gpuvideo/video_event.h"

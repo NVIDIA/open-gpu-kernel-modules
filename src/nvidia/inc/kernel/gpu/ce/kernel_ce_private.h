@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,7 +28,8 @@
 #include "gpu_mgr/gpu_mgr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
-#define CE_GET_LOWEST_AVAILABLE_IDX(x) portUtilCountTrailingZeros32(x)
+#define CE_GET_LOWEST_AVAILABLE_IDX(x) \
+    (x == 0 || x == 0xFFFFFFFF) ? 0xFFFFFFFF : portUtilCountTrailingZeros32(x)
 
 /*!
  * @brief Obtain relative CE index.
@@ -55,14 +56,17 @@ NV_STATUS ceIndexFromType(OBJGPU *pGpu, Device *pDevice, RM_ENGINE_TYPE rmEngine
     {
         KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
         MIG_INSTANCE_REF ref;
+        NvBool bEnginePresent;
 
         status = kmigmgrGetInstanceRefFromDevice(pGpu, pKernelMIGManager, pDevice, &ref);
-
         if (status != NV_OK)
             return status;
 
-        status = kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref, rmEngineType, &localRmEngType);
+        bEnginePresent = kmigmgrIsLocalEngineInInstance(pGpu, pKernelMIGManager, rmEngineType, ref);
+        if (!bEnginePresent)
+            return NV_ERR_INVALID_ARGUMENT;
 
+        status = kmigmgrGetLocalToGlobalEngineType(pGpu, pKernelMIGManager, ref, rmEngineType, &localRmEngType);
         if (status != NV_OK)
             return status;
     }

@@ -199,6 +199,9 @@ static NvBool QueryGpuCapabilities(NVDevEvoPtr pDevEvo)
     /* TODO: This cap bit should be queried from RM */
     pDevEvo->requiresAllAllocationsInSysmem = pDevEvo->isSOCDisplay;
 
+    pDevEvo->supportsVblankSemControl =
+        !pDevEvo->isSOCDisplay && nvkms_vblank_sem_control();
+
     /* ctxDma{,Non}CoherentAllowed */
 
     if (!pDevEvo->isSOCDisplay) {
@@ -4250,9 +4253,10 @@ NvBool nvRmAllocDeviceEvo(NVDevEvoPtr pDevEvo,
         goto failure;
     }
 
-    if (!nvInitUnixRmHandleAllocator(&pDevEvo->handleAllocator,
-                                     nvEvoGlobal.clientHandle,
-                                     pRequest->deviceId + 1)) {
+    if (!nvInitUnixRmHandleAllocator(
+            &pDevEvo->handleAllocator,
+            nvEvoGlobal.clientHandle,
+            NVKMS_RM_HANDLE_SPACE_DEVICE(pRequest->deviceId))) {
         nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "Failed to initialize handles");
         goto failure;
     }

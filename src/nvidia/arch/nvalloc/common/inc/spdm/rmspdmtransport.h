@@ -24,51 +24,70 @@
 #ifndef _RM_SPDM_TRANSPORT_H_
 #define _RM_SPDM_TRANSPORT_H_
 
-#ifdef NVRM
-
-#include "gpu/mem_mgr/mem_desc.h"
-
-#else
-
-#ifndef ADDR_SYSMEM
-#define ADDR_SYSMEM     (1)         // System memory (PCI)
-#endif // ADDR_SYSMEM
-
-#endif //NVRM
-
 /* ------------------------- Macros and Defines ----------------------------- */
-// TODO CONFCOMP-1277: All these defines should be reviewed and simplified or removed.
 //
 // The following defines and macros are shared for any message-related constants
 // shared between RM and endpoint.
 //
+
+// Defines used for polling-based communication between Kernel-RM and GSP.
+#define NV_SPDM_PARTITION_BOOT_SUCCESS           (0x59D3B007)
+#define NV_SPDM_REQUESTER_SECRETS_DERIVED        (0x59D35DED)
+#define NV_SPDM_NO_MESSAGE_PENDING_TOKEN         (0x00000000)
+#define NV_SPDM_REQUESTER_MESSAGE_PENDING_TOKEN  (0xAFAFAFAF)
+#define NV_SPDM_RESPONDER_MESSAGE_PENDING_TOKEN  (0xFAFAFAFA)
+#define NV_SPDM_SECRET_TEARDOWN_SUCCESS          (0x59D35EDE)
+#define NV_SPDM_SECRET_TEARDOWN_FAILURE          (0x59D35EFA)
+#define NV_SPDM_SECRET_TEARDOWN_ACK              (0x59D35EAC)
+
+//
+// The SPDM communication between Kernel-RM and GSP utilizes a buffer in sysmem accessible
+// to both endpoints. The sysmem buffer will contain both a custom NV-defined header
+// describing the message type and size, and the SPDM payload itself.
+//
+
+//
+// Size of the full transportation buffer (header + SPDM payload) allocated in sysmem.
+// We need to align sysmem allocations with page size, but need less space. So we
+// over-allocate and tell GSP we only have the size we actually need.
+//
+#define NV_SPDM_SYSMEM_SURFACE_SIZE_PAGE_ALIGNED  (0x2000)
+#define NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES      (0x1200)
+#define NV_SPDM_SYSMEM_SURFACE_ALIGNMENT_IN_BYTES (256)
+
+// Struct and defines for the header which prepends the SPDM payload.
 #pragma pack(1)
-
-#define NV_SPDM_MESSAGE_TYPE_NORMAL             (0)
-#define NV_SPDM_MESSAGE_TYPE_SECURED            (1)
-
-#define CC_SPDM_ENDPOINT_ID_INVALID (0xFFFFFFFF)
-#define CC_SPDM_GUEST_ID_INVALID    (0xFFFFFFFF)
-
-#define NV_SPDM_DESC_HEADER_SIZE_IN_BYTE        (NvU32)sizeof(NV_SPDM_DESC_HEADER)
-#define NV_SPDM_DESC_HEADER_VERSION_1_0         (0x10)
-#define NV_SPDM_DESC_HEADER_VERSION_CURRENT     NV_SPDM_DESC_HEADER_VERSION_1_0
-#define NV_SPDM_DESC_HEADER_ALIGNMENT           (256)
-#define NV_SPDM_RM_SURFACE_SIZE_IN_BYTE         (0x2000)
-#define NV_RM_BUFFER_SIZE_IN_BYTE               (NV_SPDM_RM_SURFACE_SIZE_IN_BYTE - NV_SPDM_DESC_HEADER_SIZE_IN_BYTE)
-// Limited by the transport size, do not increase without increasing transport buffer.
-#define NV_SPDM_MAX_RANDOM_MSG_BYTES            (0x80)
-
 typedef struct _NV_SPDM_DESC_HEADER
 {
     NvU32 msgType;
     NvU32 msgSizeByte;
+    NvU32 version;
 } NV_SPDM_DESC_HEADER, *PNV_SPDM_DESC_HEADER;
+#pragma pack()
 
+#define NV_SPDM_MESSAGE_TYPE_NORMAL               (0)
+#define NV_SPDM_MESSAGE_TYPE_SECURED              (1)
+#define NV_SPDM_DESC_HEADER_VERSION_1_0           (0x10)
+#define NV_SPDM_DESC_HEADER_VERSION_CURRENT       (NV_SPDM_DESC_HEADER_VERSION_1_0)
+#define NV_SPDM_DESC_HEADER_ALIGNMENT_IN_BYTES    (NV_SPDM_SYSMEM_SURFACE_ALIGNMENT_IN_BYTES)
+
+// Define utilized to determine size available for SPDM payload
+#define NV_SPDM_MAX_SPDM_PAYLOAD_SIZE             (NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES - sizeof(NV_SPDM_DESC_HEADER))
+#define NV_SPDM_MAX_TRANSCRIPT_BUFFER_SIZE        (2 * NV_SPDM_MAX_SPDM_PAYLOAD_SIZE)
+
+// Limited by the transport size, do not increase without increasing transport buffer.
+#define NV_SPDM_MAX_RANDOM_MSG_BYTES              (0x80)
+
+#ifdef NVRM
+#include "gpu/mem_mgr/mem_desc.h"
+#else
+#ifndef ADDR_SYSMEM
+// System memory (PCI)
+#define ADDR_SYSMEM                    (1)
+#endif // ADDR_SYSMEM
+#endif //NVRM
 
 #define NV_SPDM_DMA_ADDR_SPACE_DEFAULT (ADDR_SYSMEM)
 #define NV_SPDM_DMA_REGION_ID_DEFAULT  (0)
-
-#pragma pack()
 
 #endif // _RM_SPDM_TRANSPORT_H_

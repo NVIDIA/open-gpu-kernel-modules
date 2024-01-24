@@ -50,9 +50,7 @@ static NvU32 get_push_begin_size(uvm_channel_t *channel)
 // This is the storage required by a semaphore release.
 static NvU32 get_push_end_min_size(uvm_channel_t *channel)
 {
-    uvm_gpu_t *gpu = uvm_channel_get_gpu(channel);
-
-    if (uvm_conf_computing_mode_enabled(gpu)) {
+    if (g_uvm_global.conf_computing_enabled) {
         if (uvm_channel_is_ce(channel)) {
             // Space (in bytes) used by uvm_push_end() on a CE channel when
             // the Confidential Computing feature is enabled.
@@ -132,11 +130,11 @@ static NV_STATUS test_push_end_size(uvm_va_space_t *va_space)
             NvU32 push_end_size_expected[2];
 
             // SEC2 is only available when Confidential Computing is enabled
-            if ((type == UVM_CHANNEL_TYPE_SEC2) && !uvm_conf_computing_mode_enabled(gpu))
+            if ((type == UVM_CHANNEL_TYPE_SEC2) && !g_uvm_global.conf_computing_enabled)
                 continue;
 
             // WLC is only available when Confidential Computing is enabled
-            if ((type == UVM_CHANNEL_TYPE_WLC) && !uvm_conf_computing_mode_enabled(gpu))
+            if ((type == UVM_CHANNEL_TYPE_WLC) && !g_uvm_global.conf_computing_enabled)
                 continue;
 
             // LCIC doesn't accept pushes
@@ -195,7 +193,7 @@ static NV_STATUS test_push_inline_data_gpu(uvm_gpu_t *gpu)
 
     // TODO: Bug 3839176: test is waived on Confidential Computing because
     // it assumes that GPU can access system memory without using encryption.
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     status = uvm_mem_alloc_sysmem_and_map_cpu_kernel(UVM_PUSH_INLINE_DATA_MAX_SIZE, current->mm, &mem);
@@ -305,9 +303,7 @@ static NV_STATUS test_concurrent_pushes(uvm_va_space_t *va_space)
     // the start of a push cannot be reserved again until that push ends. The
     // test is waived, because the number of pushes it starts per pool exceeds
     // the number of channels in the pool, so it would block indefinitely.
-    gpu = uvm_va_space_find_first_gpu(va_space);
-
-    if ((gpu != NULL) && uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     uvm_tracker_init(&tracker);
@@ -384,7 +380,7 @@ static NV_STATUS test_push_interleaving_on_gpu(uvm_gpu_t* gpu)
 
     // TODO: Bug 3839176: test is waived on Confidential Computing because
     // it assumes that GPU can access system memory without using encryption.
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     // This test issues virtual memcopies/memsets, which in SR-IOV heavy cannot
@@ -602,13 +598,12 @@ static NV_STATUS test_max_pushes_on_gpu(uvm_gpu_t *gpu)
     TEST_CHECK_GOTO(status == NV_OK, done);
 
     uvm_gpu_semaphore_set_payload(&sema, 0);
-    if (uvm_conf_computing_mode_enabled(gpu)) {
-        // Use SEC2 channel when Confidential Compute is enabled
-        // since all other channel types need extra space for
-        // work launch, and the channel type really doesn't
-        // matter for this test.
+
+    // Use SEC2 channel when Confidential Compute is enabled since all other
+    // channel types need extra space for work launch, and the channel type
+    // really doesn't matter for this test.
+    if (g_uvm_global.conf_computing_enabled)
         channel_type = UVM_CHANNEL_TYPE_SEC2;
-    }
 
     // Need to wait for all channels to completely idle so that the pushbuffer
     // is in completely idle state when we begin.
@@ -681,13 +676,11 @@ static NV_STATUS test_idle_chunks_on_gpu(uvm_gpu_t *gpu)
     NvU32 i;
     uvm_channel_type_t channel_type = UVM_CHANNEL_TYPE_GPU_INTERNAL;
 
-    if (uvm_conf_computing_mode_enabled(gpu)) {
-        // Use SEC2 channel when Confidential Compute is enabled
-        // since all other channel types need extra space for
-        // work launch, and the channel type really doesn't
-        // matter for this test.
+    // Use SEC2 channel when Confidential Compute is enabled since all other
+    // channel types need extra space for work launch, and the channel type
+    // really doesn't matter for this test.
+    if (g_uvm_global.conf_computing_enabled)
         channel_type = UVM_CHANNEL_TYPE_SEC2;
-    }
 
     uvm_tracker_init(&tracker);
 
@@ -880,17 +873,17 @@ static NV_STATUS test_push_gpu_to_gpu(uvm_va_space_t *va_space)
     NvU32 i;
     NV_STATUS status;
     uvm_gpu_t *gpu, *gpu_a, *gpu_b;
-    uvm_mem_t *mem[UVM_ID_MAX_PROCESSORS] = {NULL};
+    uvm_mem_t **mem;
     NvU32 *host_ptr;
     const size_t size = 1024 * 1024;
     bool waive = true;
 
-    for_each_va_space_gpu(gpu_a, va_space) {
+    // TODO: Bug 3839176: the test is waived on Confidential Computing because
+    // it assumes that GPU can access system memory without using encryption.
+    if (g_uvm_global.conf_computing_enabled)
+        return NV_OK;
 
-        // TODO: Bug 3839176: the test is waived on Confidential Computing because
-        // it assumes that GPU can access system memory without using encryption.
-        if (uvm_conf_computing_mode_enabled(gpu_a))
-            return NV_OK;
+    for_each_va_space_gpu(gpu_a, va_space) {
         for_each_va_space_gpu(gpu_b, va_space) {
             if (can_do_peer_copies(va_space, gpu_a, gpu_b)) {
                 waive = false;
@@ -901,6 +894,10 @@ static NV_STATUS test_push_gpu_to_gpu(uvm_va_space_t *va_space)
 
     if (waive)
         return NV_OK;
+
+    mem = uvm_kvmalloc_zero(sizeof(*mem) * UVM_ID_MAX_PROCESSORS);
+    if (!mem)
+        return NV_ERR_NO_MEMORY;
 
     // Alloc and initialize host buffer
     status = uvm_mem_alloc_sysmem_and_map_cpu_kernel(size, current->mm, &mem[UVM_ID_CPU_VALUE]);
@@ -969,6 +966,7 @@ static NV_STATUS test_push_gpu_to_gpu(uvm_va_space_t *va_space)
         uvm_mem_free(mem[uvm_id_value(gpu->id)]);
 
     uvm_mem_free(mem[UVM_ID_CPU_VALUE]);
+    uvm_kvfree(mem);
 
     return status;
 }

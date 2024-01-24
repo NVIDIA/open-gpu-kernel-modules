@@ -45,7 +45,6 @@ extern "C" {
 #include "core/core.h"
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/gpu_vaspace.h"
-#include "gpu/mem_mgr/heap.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "ctrl/ctrl0080/ctrl0080dma.h"
 #include "ctrl/ctrl90f1.h"
@@ -67,11 +66,16 @@ typedef struct
 /*!
  * RM-registered/managed Fabric virtual address space.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_FABRIC_VASPACE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct FABRIC_VASPACE {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJVASPACE __nvoc_base_OBJVASPACE;
@@ -97,7 +101,7 @@ struct FABRIC_VASPACE {
     NvU64 (*__fabricvaspaceGetVaLimit__)(struct FABRIC_VASPACE *);
     PMEMORY_DESCRIPTOR (*__fabricvaspaceGetPageDirBase__)(struct FABRIC_VASPACE *, struct OBJGPU *);
     PMEMORY_DESCRIPTOR (*__fabricvaspaceGetKernelPageDirBase__)(struct FABRIC_VASPACE *, struct OBJGPU *);
-    NvU64 (*__fabricvaspaceGetMapPageSize__)(struct FABRIC_VASPACE *, struct OBJGPU *, EMEMBLOCK *);
+    NvU64 (*__fabricvaspaceGetMapPageSize__)(struct FABRIC_VASPACE *, struct OBJGPU *, struct EMEMBLOCK *);
     struct OBJEHEAP *(*__fabricvaspaceGetHeap__)(struct FABRIC_VASPACE *);
     NvBool (*__fabricvaspaceIsFaultCapable__)(struct FABRIC_VASPACE *);
     NvU64 (*__fabricvaspaceGetVaStart__)(struct FABRIC_VASPACE *);
@@ -273,7 +277,7 @@ static inline PMEMORY_DESCRIPTOR fabricvaspaceGetKernelPageDirBase_DISPATCH(stru
     return pVAS->__fabricvaspaceGetKernelPageDirBase__(pVAS, pGpu);
 }
 
-static inline NvU64 fabricvaspaceGetMapPageSize_DISPATCH(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
+static inline NvU64 fabricvaspaceGetMapPageSize_DISPATCH(struct FABRIC_VASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
     return pVAS->__fabricvaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 

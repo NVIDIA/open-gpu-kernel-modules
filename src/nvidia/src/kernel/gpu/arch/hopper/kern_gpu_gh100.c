@@ -25,6 +25,7 @@
 #include "gpu/gpu_child_class_defs.h"
 #include "os/os.h"
 #include "nverror.h"
+#include "vgpu/rpc.h"
 
 #include "published/hopper/gh100/hwproject.h"
 #include "published/hopper/gh100/dev_gc6_island.h"
@@ -32,6 +33,7 @@
 #include "published/hopper/gh100/dev_pmc.h"
 #include "published/hopper/gh100/dev_xtl_ep_pcfg_gpu.h"
 #include "published/hopper/gh100/pri_nv_xal_ep.h"
+#include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/dev_xtl_ep_pri.h"
 
 #include "ctrl/ctrl2080/ctrl2080mc.h"
@@ -189,47 +191,6 @@ NvBool gpuIsAtsSupportedWithSmcMemPartitioning_GH100(OBJGPU *pGpu)
     }
 
     return NV_FALSE;
-}
-
-/*!
- * @brief Read back device ID and subsystem ID
- *
- * @note This function is designed to avoid OBJBIF dependence for the case that
- *       RM need to get device id and subsystem id early in the init process,
- *       before OBJBIF is initialized.
- *
- * @param[in]  pGpu   GPU object pointer
- * @param[out] pDevId Return value of device ID
- * @param[out] pSsId  Return value of subsystem ID
- */
-void
-gpuReadDeviceId_GH100
-(
-    OBJGPU *pGpu,
-    NvU32   *pDevId,
-    NvU32   *pSsId
-)
-{
-    NvU32   deviceId;
-    NvU32   ssId;
-
-    if (pDevId == NULL || pSsId == NULL) return;
-
-    if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_ID, &deviceId) != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Unable to read NV_EP_PCFG_GPU_ID\n");
-        return;
-    }
-    *pDevId = deviceId;
-
-    if (GPU_BUS_CFG_CYCLE_RD32(pGpu, NV_EP_PCFG_GPU_SUBSYSTEM_ID, &ssId) != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR,
-                  "Unable to read NV_EP_PCFG_GPU_SUBSYSTEM_ID\n");
-        return;
-    }
-    *pSsId = ssId;
 }
 
 /*!
@@ -412,6 +373,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GH100[] =
     GPU_CHILD_PRESENT(KernelFifo, 1),
     GPU_CHILD_PRESENT(KernelGmmu, 1),
     GPU_CHILD_PRESENT(KernelGraphics, 8),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
     GPU_CHILD_PRESENT(KernelMc, 1),
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelNvlink, 1),
@@ -446,6 +408,15 @@ gpuDetermineSelfHostedMode_KERNEL_GH100
     OBJGPU *pGpu
 )
 {
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+        if (pVSI->bSelfHostedMode)
+        {
+            pGpu->bIsSelfHosted = NV_TRUE;
+            NV_PRINTF(LEVEL_INFO, "SELF HOSTED mode detected after reading VGPU static info.\n");
+        }
+    }
     if (IS_GSP_CLIENT(pGpu))
     {
         GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
@@ -511,3 +482,37 @@ gpuIsDevModeEnabledInHw_GH100
     return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_20_CC, _DEV_ENABLED, _TRUE, val);
 }
 
+/*!
+ * @brief Check if register being accessed is within guest BAR0 space.
+ *
+ * @param[in] pGpu   OBJGPU pointer
+ * @param[in] addr   Address being validated
+ */
+NV_STATUS
+gpuSanityCheckVirtRegAccess_GH100
+(
+    OBJGPU *pGpu,
+    NvU32   addr
+)
+{
+    // Not applicable in PV mode
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        return NV_OK;
+    }
+
+    if ((addr >= DEVICE_BASE(NV_EP_PCFGM)) &&
+        (addr < DEVICE_EXTENT(NV_EP_PCFGM)))
+    {
+        return NV_OK;
+    }
+
+    // Check if address in NV_VIRTUAL_FUNCTION range, if not error out.
+    if ((addr < DRF_EXTENT(NV_VIRTUAL_FUNCTION_PRIV)) ||
+        ((addr >= DRF_BASE(NV_VIRTUAL_FUNCTION)) && (addr < DRF_EXTENT(NV_VIRTUAL_FUNCTION))))
+    {
+        return NV_OK;
+    }
+
+    return NV_ERR_INVALID_ADDRESS;
+}

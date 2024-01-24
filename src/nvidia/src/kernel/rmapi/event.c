@@ -38,9 +38,7 @@
 
 #include "ctrl/ctrl0000/ctrl0000event.h" // NV0000_CTRL_EVENT_SET_NOTIFICATION_ACTION_*
 
-#if (!NV_RM_STUB_RPC)
 static NV_STATUS _eventRpcForType(NvHandle hClient, NvHandle hObject);
-#endif
 
 NV_STATUS
 eventConstruct_IMPL
@@ -89,7 +87,6 @@ eventConstruct_IMPL
         }
     }
 
-#if (!NV_RM_STUB_RPC)
     if (_eventRpcForType(hParentClient, pNv0050AllocParams->hSrcResource))
     {
         RsResourceRef *pSrcRef;
@@ -112,7 +109,6 @@ eventConstruct_IMPL
             }
         }
     }
-#endif
 
     NV_ASSERT_OK_OR_RETURN(clientGetResourceRef(pRsClient, pRsClient->hClient, &pClientRef));
 
@@ -264,7 +260,6 @@ NV_STATUS notifyUnregisterEvent_IMPL
     if (*ppEventNotification != NULL)
     {
 
-#if (!NV_RM_STUB_RPC)
         if (_eventRpcForType(hNotifierClient, hNotifierResource))
         {
             OBJGPU *pGpu = CliGetGpuFromHandle(hNotifierClient, hNotifierResource, NULL);
@@ -309,7 +304,6 @@ NV_STATUS notifyUnregisterEvent_IMPL
                           hNotifierClient, hNotifierResource);
             }
         }
-#endif
 
         unregisterEventNotification(ppEventNotification,
                           hEventClient,
@@ -643,7 +637,6 @@ void CliAddSystemEvent(
     return;
 }
 
-#if (!NV_RM_STUB_RPC)
 static NV_STATUS
 _eventRpcForType(NvHandle hClient, NvHandle hObject)
 {
@@ -670,4 +663,50 @@ _eventRpcForType(NvHandle hClient, NvHandle hObject)
 
     return NV_FALSE;
 }
-#endif
+
+NV_STATUS
+eventGetByHandle_IMPL
+(
+    RsClient *pClient,
+    NvHandle hEvent,
+    NvU32 *pNotifyIndex
+)
+{
+    RsResourceRef  *pEventResourceRef;
+    NV_STATUS status;
+    Event *pEvent;
+    NotifShare *pNotifierShare;
+    PEVENTNOTIFICATION  pEventNotification;
+
+    *pNotifyIndex = NV2080_NOTIFIERS_MAXCOUNT;
+
+    status = clientGetResourceRef(pClient, hEvent, &pEventResourceRef);
+    if (status != NV_OK)
+        return status;
+
+    pEvent = dynamicCast(pEventResourceRef->pResource, Event);
+    if (pEvent == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Event is null \n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    // TODO: Check existing notifiers in that event
+    pNotifierShare = pEvent->pNotifierShare;
+    if ((pNotifierShare == NULL) || (pNotifierShare->pNotifier == NULL))
+    {
+        NV_PRINTF(LEVEL_ERROR, "pNotifierShare or pNotifier is NULL \n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pEventNotification = inotifyGetNotificationList(pNotifierShare->pNotifier);
+    if (pEventNotification == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "pEventNotification is NULL \n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    *pNotifyIndex = pEventNotification->NotifyIndex;
+
+    return status;
+}

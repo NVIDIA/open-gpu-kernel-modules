@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -243,44 +243,10 @@ subdeviceCtrlCmdNvdSetNocatJournalData_IMPL
         rcdbSetNocatTdrReason(&pReportParams->nocatJournalData.tdrReason);
         break;
 
-    case NV2080_CTRL_NOCAT_JOURNAL_DATA_TYPE_INSERT_RECORD:
-        portMemSet(&newEntry, 0, sizeof(newEntry));
-
-        // fill in the newEntry structure with the data from the insertData.
-        newEntry.recType = pReportParams->nocatJournalData.insertData.recType;
-        newEntry.pSource = (char *)pReportParams->nocatJournalData.insertData.source;
-        newEntry.bugcheck = pReportParams->nocatJournalData.insertData.bugcheck;
-        newEntry.subsystem = pReportParams->nocatJournalData.insertData.subsystem;
-        newEntry.errorCode = pReportParams->nocatJournalData.insertData.errorCode;
-
-        // for now we are not supporting external events with diag buffers.
-        newEntry.pDiagBuffer = NULL;
-        newEntry.diagBufferLen = 0;
-        newEntry.pFaultingEngine = (char *)pReportParams->nocatJournalData.insertData.faultingEngine;
-
-        // do we want to allow NULL strings?
-        if (FLD_TEST_DRF(2080_CTRL, _NOCAT_INSERT, _ALLOW_NULL_STR, _NO,
-            pReportParams->nocatJournalData.insertData.flags))
-        {
-            if (pReportParams->nocatJournalData.insertData.source[0] != '\0')
-            {
-                // don't pass in a pointer to null source string.
-                newEntry.pSource = NULL;
-            }
-            if (pReportParams->nocatJournalData.insertData.faultingEngine[0] != '\0')
-            {
-                // don't pass in a pointer to null faulting engine string.
-                newEntry.pFaultingEngine = NULL;
-            }
-        }
-        pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_INSERT_RECORDS_IDX]++;
-        rcdbNocatInsertNocatError(NULL, &newEntry);
-        break;
-
     case NV2080_CTRL_NOCAT_JOURNAL_DATA_TYPE_SET_TAG:
         if ((pReportParams->nocatJournalData.tagData.tag[0] == '\0') ||
             FLD_TEST_DRF(2080_CTRL, _NOCAT_TAG, _CLEAR, _YES,
-                pReportParams->nocatJournalData.insertData.flags))
+                pReportParams->nocatJournalData.tagData.flags))
         {
             // clear the tag
             portMemSet(pRcdb->nocatJournalDescriptor.tag, 0,
@@ -314,6 +280,44 @@ subdeviceCtrlCmdNvdSetNocatJournalData_IMPL
     default:
         break;
     }
+    return NV_OK;
+}
+
+/*!
+* @brief Set the NOCAT TDR data collected by KMD in the NOCAT journal record
+*
+* @returns NV_OK on success
+*/
+NV_STATUS
+subdeviceCtrlCmdNvdInsertNocatJournalRecord_IMPL
+(
+    Subdevice                       *pSubdevice,
+    NV2080_CTRL_CMD_NVD_INSERT_NOCAT_JOURNAL_RECORD_PARAMS* pRecordParams
+)
+{
+    OBJSYS       *pSys = SYS_GET_INSTANCE();
+    Journal      *pRcdb = SYS_GET_RCDB(pSys);
+    OBJGPU       *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    NOCAT_JOURNAL_PARAMS    newEntry;
+
+    portMemSet(&newEntry, 0, sizeof(newEntry));
+
+    // fill in the newEntry structure with the data from the insertData.
+    newEntry.timestamp          = pRecordParams->nocatJournalRecord.timestamp;
+    newEntry.recType            = pRecordParams->nocatJournalRecord.recType;
+    newEntry.bugcheck           = pRecordParams->nocatJournalRecord.bugcheck;
+    newEntry.pSource            = (char *)pRecordParams->nocatJournalRecord.source;
+    newEntry.subsystem          = pRecordParams->nocatJournalRecord.subsystem;
+    newEntry.errorCode          = pRecordParams->nocatJournalRecord.errorCode;
+    newEntry.pDiagBuffer        = pRecordParams->nocatJournalRecord.diagBuffer;
+    newEntry.diagBufferLen      = pRecordParams->nocatJournalRecord.diagBufferLen;
+    newEntry.pFaultingEngine    = (char *)pRecordParams->nocatJournalRecord.faultingEngine;
+    newEntry.tdrReason          = pRecordParams->nocatJournalRecord.tdrReason;
+
+    pRcdb->nocatJournalDescriptor.nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_RPC_INSERT_RECORDS_IDX]++;
+    rcdbNocatInsertNocatError(pGpu, &newEntry);
+
     return NV_OK;
 }
 

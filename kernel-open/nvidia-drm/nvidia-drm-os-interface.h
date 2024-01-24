@@ -33,7 +33,7 @@
 #include "nvidia-dma-fence-helper.h"
 #endif
 
-#if defined(NV_LINUX)
+#if defined(NV_LINUX) || defined(NV_BSD)
 #include "nv-kthread-q.h"
 #include "linux/spinlock.h"
 
@@ -45,18 +45,18 @@ typedef struct nv_drm_workthread {
 
 typedef nv_kthread_q_item_t nv_drm_work;
 
-#else /* defined(NV_LINUX) */
+#else
 #error "Need to define deferred work primitives for this OS"
-#endif /* else defined(NV_LINUX) */
+#endif
 
-#if defined(NV_LINUX)
+#if defined(NV_LINUX) || defined(NV_BSD)
 #include "nv-timer.h"
 
 typedef struct nv_timer nv_drm_timer;
 
-#else /* defined(NV_LINUX) */
+#else
 #error "Need to define kernel timer callback primitives for this OS"
-#endif /* else defined(NV_LINUX) */
+#endif
 
 #if defined(NV_DRM_FBDEV_GENERIC_SETUP_PRESENT) && defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_PRESENT)
 #define NV_DRM_FBDEV_GENERIC_AVAILABLE

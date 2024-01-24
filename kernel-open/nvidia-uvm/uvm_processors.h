@@ -28,22 +28,21 @@
 #include "uvm_common.h"
 #include <linux/numa.h>
 
-#define UVM_MAX_UNIQUE_GPU_PAIRS SUM_FROM_0_TO_N(UVM_MAX_GPUS - 1)
-
 // Processor identifiers
 // =====================
 //
 // UVM uses its own identifiers to refer to the processors in the system. For
 // simplicity (and performance), integers are used. However, in order to
-// provide type safety, they are wrapped within the uvm_processor_id_t struct.
+// provide type safety, they are wrapped within the uvm_parent_processor_id_t
+// struct.
 // The range of valid identifiers needs to cover the maximum number of
 // supported GPUs on a system plus the CPU. CPU is assigned value 0, and GPUs
 // range: [1, UVM_PARENT_ID_MAX_GPUS].
 //
 // There are some functions that only expect GPU identifiers and, in order to
 // make it clearer, the uvm_parent_gpu_id_t alias type is provided. However, as
-// this type is just a typedef of uvm_processor_id_t, there is no type checking
-// performed by the compiler.
+// this type is just a typedef of uvm_parent_processor_id_t, there is no type
+// checking performed by the compiler.
 //
 // Identifier value vs index
 // -------------------------
@@ -63,40 +62,30 @@
 // In the diagram below, MAX_SUB is used to abbreviate
 // UVM_PARENT_ID_MAX_SUB_PROCESSORS.
 //
-// TODO: Bug 4195538: uvm_parent_processor_id_t is currently but temporarily the
-//                    same as uvm_processor_id_t.
-//
-//            |-------------------------- uvm_parent_processor_id_t ----------------------|
-//            |                                                                           |
-//            |     |----------------------- uvm_parent_gpu_id_t ------------------------||
-//            |     |                                                                    ||
-// Proc type  | CPU | GPU          ...          GPU   ... GPU                            ||
-//            |     |                                                                    ||
-// ID values  |  0  |  1           ...          i+1   ... UVM_PARENT_ID_MAX_PROCESSORS-1 ||
-//
-// GPU index           0           ...           i    ... UVM_PARENT_ID_MAX_GPUS-1
-//                  |     |                   |     |
-//                  |     |                   |     |
-//                  |     |-------------|     |     |------------------------------------|
-//                  |                   |     |                                          |
-//                  |                   |     |                                          |
-// GPU index           0  ... MAX_SUB-1   ...    i*MAX_SUB    ... (i+1)*MAX_SUB-1   ... UVM_GLOBAL_ID_MAX_GPUS-1
-//
-// ID values  |  0  |  1  ... MAX_SUB     ...   (i*MAX_SUB)+1 ... (i+1)*MAX_SUB     ... UVM_GLOBAL_ID_MAX_PROCESSORS-1 ||
-//            |     |                                                                                                  ||
-// Proc type  | CPU | GPU ... GPU         ...   GPU           ... GPU               ... GPU                            ||
-//            |     |                                                                                                  ||
-//            |     |-------------------------------------- uvm_global_gpu_id_t ---------------------------------------||
-//            |                                                                                                         |
-//            |----------------------------------------- uvm_global_processor_id_t -------------------------------------|
+//            |-------------------------- uvm_parent_processor_id_t ---------------------------------------------|
+//            |                                                                                                  |
+//            |     |----------------------- uvm_parent_gpu_id_t -----------------------------------------------||
+//            |     |                                                                                           ||
+// Proc type  | CPU | GPU |        ...        | GPU | ... GPU                                                   ||
+//            |     |     |                   |     |                                                           ||
+// ID values  |  0  |  1  |        ...        | i+1 | ... UVM_PARENT_ID_MAX_PROCESSORS-1                        ||
+//            |     |     |                   |     |                                                           ||
+// GPU index  |     |  0  |        ...        |  i  | ... UVM_PARENT_ID_MAX_GPUS-1                              ||
+//            |     |     |                   |     |                                                           ||
+//            +     +     +                   +     +                                                           ++
+//            |     |     |-------------|     |     |-----------------------------|                             ||
+//            |     |                   |     |                                   |                             ||
+// GPU index  |     |  0  ... MAX_SUB-1 | ... |  i*MAX_SUB    ... (i+1)*MAX_SUB-1 | ... UVM_ID_MAX_GPUS-1       ||
+//            |     |                   |     |                                   |                             ||
+// ID values  |  0  |  1  ... MAX_SUB   | ... | (i*MAX_SUB)+1 ... (i+1)*MAX_SUB   | ... UVM_ID_MAX_PROCESSORS-1 ||
+//            |     |                   |     |                                   |                             ||
+// Proc type  | CPU | GPU ... GPU       | ... | GPU           ... GPU             | ... GPU                     ||
+//            |     |                                                                                           ||
+//            |     |-------------------------------------- uvm_gpu_id_t ---------------------------------------||
+//            |                                                                                                  |
+//            |----------------------------------------- uvm_processor_id_t -------------------------------------|
 //
 // When SMC is enabled, each GPU partition gets its own uvm_gpu_t object.
-// However, there can only be a single partition per GPU in a VA space, so
-// uvm_processor_id_t/uvm_processor_mask_t can still be used when operating
-// in the context of a VA space. In the global context, types that can refer
-// to all individual partitions need to be used, though. Therefore, we
-// provide the uvm_global_gpu_id_t/uvm_global_processor_mask_t types and the
-// corresponding uvm_global_gpu_id*/uvm_global_processor_mask* helpers.
 
 #define UVM_PROCESSOR_MASK(mask_t,                                                                           \
                            prefix_fn_mask,                                                                   \
@@ -232,7 +221,7 @@ static proc_id_t prefix_fn_mask##_find_first_unset_id(const mask_t *mask)       
     return proc_id_ctor(find_first_zero_bit(mask->bitmap, (maxval)));                                        \
 }                                                                                                            \
                                                                                                              \
-static proc_id_t  prefix_fn_mask##_find_next_unset_id(const mask_t *mask, proc_id_t min_id)                  \
+static proc_id_t prefix_fn_mask##_find_next_unset_id(const mask_t *mask, proc_id_t min_id)                   \
 {                                                                                                            \
     return proc_id_ctor(find_next_zero_bit(mask->bitmap, (maxval), min_id.val));                             \
 }                                                                                                            \
@@ -270,10 +259,10 @@ typedef struct
 typedef struct
 {
     NvU32 val;
-} uvm_global_processor_id_t;
+} uvm_processor_id_t;
 
 typedef uvm_parent_processor_id_t uvm_parent_gpu_id_t;
-typedef uvm_global_processor_id_t uvm_global_gpu_id_t;
+typedef uvm_processor_id_t uvm_gpu_id_t;
 
 // Static value assigned to the CPU
 #define UVM_PARENT_ID_CPU_VALUE      0
@@ -281,26 +270,27 @@ typedef uvm_global_processor_id_t uvm_global_gpu_id_t;
 
 // ID values for the CPU and first GPU, respectively; the values for both types
 // of IDs must match to enable sharing of UVM_PROCESSOR_MASK().
-#define UVM_GLOBAL_ID_CPU_VALUE  UVM_PARENT_ID_CPU_VALUE
-#define UVM_GLOBAL_ID_GPU0_VALUE UVM_PARENT_ID_GPU0_VALUE
+#define UVM_ID_CPU_VALUE  UVM_PARENT_ID_CPU_VALUE
+#define UVM_ID_GPU0_VALUE UVM_PARENT_ID_GPU0_VALUE
 
 // Maximum number of GPUs/processors that can be represented with the id types
-#define UVM_PARENT_ID_MAX_GPUS       UVM_MAX_GPUS
-#define UVM_PARENT_ID_MAX_PROCESSORS UVM_MAX_PROCESSORS
+#define UVM_PARENT_ID_MAX_GPUS       NV_MAX_DEVICES
+#define UVM_PARENT_ID_MAX_PROCESSORS (UVM_PARENT_ID_MAX_GPUS + 1)
 
 #define UVM_PARENT_ID_MAX_SUB_PROCESSORS 8
 
-#define UVM_GLOBAL_ID_MAX_GPUS       (UVM_PARENT_ID_MAX_GPUS * UVM_PARENT_ID_MAX_SUB_PROCESSORS)
-#define UVM_GLOBAL_ID_MAX_PROCESSORS (UVM_GLOBAL_ID_MAX_GPUS + 1)
+#define UVM_ID_MAX_GPUS       (UVM_PARENT_ID_MAX_GPUS * UVM_PARENT_ID_MAX_SUB_PROCESSORS)
+#define UVM_ID_MAX_PROCESSORS (UVM_ID_MAX_GPUS + 1)
+#define UVM_MAX_UNIQUE_GPU_PAIRS SUM_FROM_0_TO_N(UVM_ID_MAX_GPUS - 1)
 
 #define UVM_PARENT_ID_CPU     ((uvm_parent_processor_id_t) { .val = UVM_PARENT_ID_CPU_VALUE })
 #define UVM_PARENT_ID_INVALID ((uvm_parent_processor_id_t) { .val = UVM_PARENT_ID_MAX_PROCESSORS })
-#define UVM_GLOBAL_ID_CPU     ((uvm_global_processor_id_t) { .val = UVM_GLOBAL_ID_CPU_VALUE })
-#define UVM_GLOBAL_ID_INVALID ((uvm_global_processor_id_t) { .val = UVM_GLOBAL_ID_MAX_PROCESSORS })
+#define UVM_ID_CPU     ((uvm_processor_id_t) { .val = UVM_ID_CPU_VALUE })
+#define UVM_ID_INVALID ((uvm_processor_id_t) { .val = UVM_ID_MAX_PROCESSORS })
 
 #define UVM_PARENT_ID_CHECK_BOUNDS(id) UVM_ASSERT_MSG(id.val <= UVM_PARENT_ID_MAX_PROCESSORS, "id %u\n", id.val)
 
-#define UVM_GLOBAL_ID_CHECK_BOUNDS(id) UVM_ASSERT_MSG(id.val <= UVM_GLOBAL_ID_MAX_PROCESSORS, "id %u\n", id.val)
+#define UVM_ID_CHECK_BOUNDS(id) UVM_ASSERT_MSG(id.val <= UVM_ID_MAX_PROCESSORS, "id %u\n", id.val)
 
 static int uvm_parent_id_cmp(uvm_parent_processor_id_t id1, uvm_parent_processor_id_t id2)
 {
@@ -318,18 +308,18 @@ static bool uvm_parent_id_equal(uvm_parent_processor_id_t id1, uvm_parent_proces
     return id1.val == id2.val;
 }
 
-static int uvm_global_id_cmp(uvm_global_processor_id_t id1, uvm_global_processor_id_t id2)
+static int uvm_id_cmp(uvm_processor_id_t id1, uvm_processor_id_t id2)
 {
-    UVM_GLOBAL_ID_CHECK_BOUNDS(id1);
-    UVM_GLOBAL_ID_CHECK_BOUNDS(id2);
+    UVM_ID_CHECK_BOUNDS(id1);
+    UVM_ID_CHECK_BOUNDS(id2);
 
     return UVM_CMP_DEFAULT(id1.val, id2.val);
 }
 
-static bool uvm_global_id_equal(uvm_global_processor_id_t id1, uvm_global_processor_id_t id2)
+static bool uvm_id_equal(uvm_processor_id_t id1, uvm_processor_id_t id2)
 {
-    UVM_GLOBAL_ID_CHECK_BOUNDS(id1);
-    UVM_GLOBAL_ID_CHECK_BOUNDS(id2);
+    UVM_ID_CHECK_BOUNDS(id1);
+    UVM_ID_CHECK_BOUNDS(id2);
 
     return id1.val == id2.val;
 }
@@ -339,10 +329,10 @@ static bool uvm_global_id_equal(uvm_global_processor_id_t id1, uvm_global_proces
 #define UVM_PARENT_ID_IS_VALID(id)   (!UVM_PARENT_ID_IS_INVALID(id))
 #define UVM_PARENT_ID_IS_GPU(id)     (!UVM_PARENT_ID_IS_CPU(id) && !UVM_PARENT_ID_IS_INVALID(id))
 
-#define UVM_GLOBAL_ID_IS_CPU(id)     uvm_global_id_equal(id, UVM_GLOBAL_ID_CPU)
-#define UVM_GLOBAL_ID_IS_INVALID(id) uvm_global_id_equal(id, UVM_GLOBAL_ID_INVALID)
-#define UVM_GLOBAL_ID_IS_VALID(id)   (!UVM_GLOBAL_ID_IS_INVALID(id))
-#define UVM_GLOBAL_ID_IS_GPU(id)     (!UVM_GLOBAL_ID_IS_CPU(id) && !UVM_GLOBAL_ID_IS_INVALID(id))
+#define UVM_ID_IS_CPU(id)     uvm_id_equal(id, UVM_ID_CPU)
+#define UVM_ID_IS_INVALID(id) uvm_id_equal(id, UVM_ID_INVALID)
+#define UVM_ID_IS_VALID(id)   (!UVM_ID_IS_INVALID(id))
+#define UVM_ID_IS_GPU(id)     (!UVM_ID_IS_CPU(id) && !UVM_ID_IS_INVALID(id))
 
 static uvm_parent_processor_id_t uvm_parent_id_from_value(NvU32 val)
 {
@@ -362,20 +352,20 @@ static uvm_parent_gpu_id_t uvm_parent_gpu_id_from_value(NvU32 val)
     return ret;
 }
 
-static uvm_global_processor_id_t uvm_global_id_from_value(NvU32 val)
+static uvm_processor_id_t uvm_id_from_value(NvU32 val)
 {
-    uvm_global_processor_id_t ret = { .val = val };
+    uvm_processor_id_t ret = { .val = val };
 
-    UVM_GLOBAL_ID_CHECK_BOUNDS(ret);
+    UVM_ID_CHECK_BOUNDS(ret);
 
     return ret;
 }
 
-static uvm_global_gpu_id_t uvm_global_gpu_id_from_value(NvU32 val)
+static uvm_gpu_id_t uvm_gpu_id_from_value(NvU32 val)
 {
-    uvm_global_gpu_id_t ret = uvm_global_id_from_value(val);
+    uvm_gpu_id_t ret = uvm_id_from_value(val);
 
-    UVM_ASSERT(!UVM_GLOBAL_ID_IS_CPU(ret));
+    UVM_ASSERT(!UVM_ID_IS_CPU(ret));
 
     return ret;
 }
@@ -407,28 +397,28 @@ static uvm_parent_gpu_id_t uvm_parent_gpu_id_next(uvm_parent_gpu_id_t id)
     return id;
 }
 
-// Same as uvm_parent_gpu_id_from_index but for uvm_global_processor_id_t
-static uvm_global_gpu_id_t uvm_global_gpu_id_from_index(NvU32 index)
+// Same as uvm_parent_gpu_id_from_index but for uvm_processor_id_t
+static uvm_gpu_id_t uvm_gpu_id_from_index(NvU32 index)
 {
-    return uvm_global_gpu_id_from_value(index + UVM_GLOBAL_ID_GPU0_VALUE);
+    return uvm_gpu_id_from_value(index + UVM_ID_GPU0_VALUE);
 }
 
-static uvm_global_processor_id_t uvm_global_id_next(uvm_global_processor_id_t id)
+static uvm_processor_id_t uvm_id_next(uvm_processor_id_t id)
 {
     ++id.val;
 
-    UVM_GLOBAL_ID_CHECK_BOUNDS(id);
+    UVM_ID_CHECK_BOUNDS(id);
 
     return id;
 }
 
-static uvm_global_gpu_id_t uvm_global_gpu_id_next(uvm_global_gpu_id_t id)
+static uvm_gpu_id_t uvm_gpu_id_next(uvm_gpu_id_t id)
 {
-    UVM_ASSERT(UVM_GLOBAL_ID_IS_GPU(id));
+    UVM_ASSERT(UVM_ID_IS_GPU(id));
 
     ++id.val;
 
-    UVM_GLOBAL_ID_CHECK_BOUNDS(id);
+    UVM_ID_CHECK_BOUNDS(id);
 
     return id;
 }
@@ -443,10 +433,10 @@ static NvU32 uvm_parent_id_value(uvm_parent_processor_id_t id)
 }
 
 // This function returns the numerical value within
-// [0, UVM_GLOBAL_ID_MAX_PROCESSORS) of the given processor id
-static NvU32 uvm_global_id_value(uvm_global_processor_id_t id)
+// [0, UVM_ID_MAX_PROCESSORS) of the given processor id
+static NvU32 uvm_id_value(uvm_processor_id_t id)
 {
-    UVM_ASSERT(UVM_GLOBAL_ID_IS_VALID(id));
+    UVM_ASSERT(UVM_ID_IS_VALID(id));
 
     return id.val;
 }
@@ -461,122 +451,124 @@ static NvU32 uvm_parent_id_gpu_index(uvm_parent_gpu_id_t id)
 }
 
 // This function returns the index of the given GPU id within the GPU id space
-// [0, UVM_GLOBAL_ID_MAX_GPUS)
-static NvU32 uvm_global_id_gpu_index(const uvm_global_gpu_id_t id)
+// [0, UVM_ID_MAX_GPUS)
+static NvU32 uvm_id_gpu_index(const uvm_gpu_id_t id)
 {
-    UVM_ASSERT(UVM_GLOBAL_ID_IS_GPU(id));
+    UVM_ASSERT(UVM_ID_IS_GPU(id));
 
-    return id.val - UVM_GLOBAL_ID_GPU0_VALUE;
+    return id.val - UVM_ID_GPU0_VALUE;
 }
 
-static NvU32 uvm_global_id_gpu_index_from_parent_gpu_id(const uvm_parent_gpu_id_t id)
+static NvU32 uvm_id_gpu_index_from_parent_gpu_id(const uvm_parent_gpu_id_t id)
 {
     UVM_ASSERT(UVM_PARENT_ID_IS_GPU(id));
 
     return uvm_parent_id_gpu_index(id) * UVM_PARENT_ID_MAX_SUB_PROCESSORS;
 }
 
-static NvU32 uvm_parent_id_gpu_index_from_global_gpu_id(const uvm_global_gpu_id_t id)
+// This function returns the numerical value of the parent processor ID from the
+// given processor id.
+static NvU32 uvm_parent_id_value_from_processor_id(const uvm_processor_id_t id)
 {
-    UVM_ASSERT(UVM_GLOBAL_ID_IS_GPU(id));
+    if (UVM_ID_IS_CPU(id))
+        return UVM_PARENT_ID_CPU_VALUE;
 
-    return uvm_global_id_gpu_index(id) / UVM_PARENT_ID_MAX_SUB_PROCESSORS;
+    return (uvm_id_gpu_index(id) / UVM_PARENT_ID_MAX_SUB_PROCESSORS) + UVM_PARENT_ID_GPU0_VALUE;
 }
 
-static uvm_global_gpu_id_t uvm_global_gpu_id_from_parent_gpu_id(const uvm_parent_gpu_id_t id)
+static NvU32 uvm_parent_id_gpu_index_from_gpu_id(const uvm_gpu_id_t id)
+{
+    UVM_ASSERT(UVM_ID_IS_GPU(id));
+
+    return uvm_id_gpu_index(id) / UVM_PARENT_ID_MAX_SUB_PROCESSORS;
+}
+
+static uvm_gpu_id_t uvm_gpu_id_from_parent_gpu_id(const uvm_parent_gpu_id_t id)
 {
     UVM_ASSERT(UVM_PARENT_ID_IS_GPU(id));
 
-    return uvm_global_gpu_id_from_index(uvm_global_id_gpu_index_from_parent_gpu_id(id));
+    return uvm_gpu_id_from_index(uvm_id_gpu_index_from_parent_gpu_id(id));
 }
 
-static uvm_global_gpu_id_t uvm_global_gpu_id_from_parent_index(NvU32 index)
+static uvm_gpu_id_t uvm_gpu_id_from_sub_processor_index(NvU32 index, NvU32 sub_index)
 {
     UVM_ASSERT(index < UVM_PARENT_ID_MAX_GPUS);
-
-    return uvm_global_gpu_id_from_parent_gpu_id(uvm_parent_gpu_id_from_value(index + UVM_GLOBAL_ID_GPU0_VALUE));
-}
-
-static uvm_global_gpu_id_t uvm_global_gpu_id_from_sub_processor_index(const uvm_parent_gpu_id_t id, NvU32 sub_index)
-{
-    NvU32 index;
-
     UVM_ASSERT(sub_index < UVM_PARENT_ID_MAX_SUB_PROCESSORS);
 
-    index = uvm_global_id_gpu_index_from_parent_gpu_id(id) + sub_index;
-    return uvm_global_gpu_id_from_index(index);
+    return uvm_gpu_id_from_index(index * UVM_PARENT_ID_MAX_SUB_PROCESSORS + sub_index);
 }
 
-static uvm_parent_gpu_id_t uvm_parent_gpu_id_from_global_gpu_id(const uvm_global_gpu_id_t id)
+static uvm_parent_gpu_id_t uvm_parent_gpu_id_from_gpu_id(const uvm_gpu_id_t id)
 {
-    UVM_ASSERT(UVM_GLOBAL_ID_IS_GPU(id));
+    UVM_ASSERT(UVM_ID_IS_GPU(id));
 
-    return uvm_parent_gpu_id_from_index(uvm_parent_id_gpu_index_from_global_gpu_id(id));
+    return uvm_parent_gpu_id_from_index(uvm_parent_id_gpu_index_from_gpu_id(id));
 }
 
-static NvU32 uvm_global_id_sub_processor_index(const uvm_global_gpu_id_t id)
+static NvU32 uvm_id_sub_processor_index(const uvm_gpu_id_t id)
 {
-    return uvm_global_id_gpu_index(id) % UVM_PARENT_ID_MAX_SUB_PROCESSORS;
+    return uvm_id_gpu_index(id) % UVM_PARENT_ID_MAX_SUB_PROCESSORS;
 }
 
-UVM_PROCESSOR_MASK(uvm_processor_mask_t,              \
-                   uvm_processor_mask,                \
+UVM_PROCESSOR_MASK(uvm_parent_processor_mask_t,       \
+                   uvm_parent_processor_mask,         \
                    UVM_PARENT_ID_MAX_PROCESSORS,      \
                    uvm_parent_processor_id_t,         \
                    uvm_parent_id_from_value)
 
-UVM_PROCESSOR_MASK(uvm_global_processor_mask_t,       \
-                   uvm_global_processor_mask,         \
-                   UVM_GLOBAL_ID_MAX_PROCESSORS,      \
-                   uvm_global_processor_id_t,         \
-                   uvm_global_id_from_value)
+UVM_PROCESSOR_MASK(uvm_processor_mask_t,              \
+                   uvm_processor_mask,                \
+                   UVM_ID_MAX_PROCESSORS,             \
+                   uvm_processor_id_t,                \
+                   uvm_id_from_value)
 
-// Like uvm_processor_mask_subset but ignores the CPU in both masks. Returns
-// whether the GPUs in subset are a subset of the GPUs in mask.
-static bool uvm_processor_mask_gpu_subset(const uvm_processor_mask_t *subset, const uvm_processor_mask_t *mask)
-{
-    uvm_processor_mask_t subset_gpus;
-    uvm_processor_mask_copy(&subset_gpus, subset);
-    uvm_processor_mask_clear(&subset_gpus, UVM_PARENT_ID_CPU);
-    return uvm_processor_mask_subset(&subset_gpus, mask);
-}
+// Like uvm_processor_mask_subset() but ignores the CPU in the subset mask.
+// Returns whether the GPUs in subset are a subset of the GPUs in mask.
+bool uvm_processor_mask_gpu_subset(const uvm_processor_mask_t *subset,
+                                   const uvm_processor_mask_t *mask);
 
-#define for_each_id_in_mask(id, mask)                                                                 \
-    for ((id) = uvm_processor_mask_find_first_id(mask);                                               \
+// Compress a uvm_processor_mask_t down to a uvm_parent_processor_mask_t
+// by only copying the first subprocessor bit and ignoring the CPU bit.
+void uvm_parent_gpus_from_processor_mask(uvm_parent_processor_mask_t *parent_mask,
+                                         const uvm_processor_mask_t *mask);
+
+#define for_each_parent_id_in_mask(id, mask)                                                          \
+    for ((id) = uvm_parent_processor_mask_find_first_id(mask);                                        \
          UVM_PARENT_ID_IS_VALID(id);                                                                  \
-         (id) = uvm_processor_mask_find_next_id((mask), uvm_parent_id_next(id)))
+         (id) = uvm_parent_processor_mask_find_next_id((mask), uvm_parent_id_next(id)))
 
-#define for_each_gpu_id_in_mask(gpu_id, mask)                                                         \
-    for ((gpu_id) = uvm_processor_mask_find_first_gpu_id((mask));                                     \
+#define for_each_parent_gpu_id_in_mask(gpu_id, mask)                                                  \
+    for ((gpu_id) = uvm_parent_processor_mask_find_first_gpu_id((mask));                              \
          UVM_PARENT_ID_IS_VALID(gpu_id);                                                              \
-         (gpu_id) = uvm_processor_mask_find_next_id((mask), uvm_parent_gpu_id_next(gpu_id)))
+         (gpu_id) = uvm_parent_processor_mask_find_next_id((mask), uvm_parent_gpu_id_next(gpu_id)))
 
-#define for_each_global_id_in_mask(id, mask)                                                          \
-    for ((id) = uvm_global_processor_mask_find_first_id(mask);                                        \
-         UVM_GLOBAL_ID_IS_VALID(id);                                                                  \
-         (id) = uvm_global_processor_mask_find_next_id((mask), uvm_global_id_next(id)))
+#define for_each_id_in_mask(id, mask)                                                          \
+    for ((id) = uvm_processor_mask_find_first_id(mask);                                        \
+         UVM_ID_IS_VALID(id);                                                                  \
+         (id) = uvm_processor_mask_find_next_id((mask), uvm_id_next(id)))
 
-#define for_each_global_gpu_id_in_mask(gpu_id, mask)                                                  \
-    for ((gpu_id) = uvm_global_processor_mask_find_first_gpu_id((mask));                              \
-         UVM_GLOBAL_ID_IS_VALID(gpu_id);                                                              \
-         (gpu_id) = uvm_global_processor_mask_find_next_id((mask), uvm_global_gpu_id_next(gpu_id)))
+#define for_each_gpu_id_in_mask(gpu_id, mask)                                                  \
+    for ((gpu_id) = uvm_processor_mask_find_first_gpu_id((mask));                              \
+         UVM_ID_IS_VALID(gpu_id);                                                              \
+         (gpu_id) = uvm_processor_mask_find_next_id((mask), uvm_gpu_id_next(gpu_id)))
 
-// Helper to iterate over all valid gpu ids
-#define for_each_gpu_id(i)       \
+// Helper to iterate over all valid parent gpu ids.
+#define for_each_parent_gpu_id(i)  \
     for (i = uvm_parent_gpu_id_from_value(UVM_PARENT_ID_GPU0_VALUE); UVM_PARENT_ID_IS_VALID(i); i = uvm_parent_gpu_id_next(i))
-#define for_each_global_gpu_id(i)  \
-    for (i = uvm_global_gpu_id_from_value(UVM_GLOBAL_ID_GPU0_VALUE); UVM_GLOBAL_ID_IS_VALID(i); i = uvm_global_gpu_id_next(i))
 
-#define for_each_global_sub_processor_id_in_gpu(id, i) \
-    for (i = uvm_global_gpu_id_from_parent_gpu_id(id); \
-         UVM_GLOBAL_ID_IS_VALID(i) && \
-         (uvm_global_id_value(i) < uvm_global_id_value(uvm_global_gpu_id_from_parent_gpu_id(id)) + UVM_PARENT_ID_MAX_SUB_PROCESSORS); \
-         i = uvm_global_gpu_id_next(i))
+// Helper to iterate over all valid gpu ids.
+#define for_each_gpu_id(i)  \
+    for (i = uvm_gpu_id_from_value(UVM_ID_GPU0_VALUE); UVM_ID_IS_VALID(i); i = uvm_gpu_id_next(i))
 
-// Helper to iterate over all valid gpu ids
-#define for_each_processor_id(i) for (i = UVM_PARENT_ID_CPU; UVM_PARENT_ID_IS_VALID(i); i = uvm_parent_id_next(i))
+// Helper to iterate over all gpu ids in a given parent id.
+#define for_each_sub_processor_id_in_parent_gpu(i, id) \
+    for (i = uvm_gpu_id_from_parent_gpu_id(id); \
+         UVM_ID_IS_VALID(i) && \
+         (uvm_id_value(i) < uvm_id_value(uvm_gpu_id_from_parent_gpu_id(id)) + UVM_PARENT_ID_MAX_SUB_PROCESSORS); \
+         i = uvm_gpu_id_next(i))
 
-#define for_each_global_id(i) for (i = UVM_GLOBAL_ID_CPU; UVM_GLOBAL_ID_IS_VALID(i); i = uvm_global_id_next(i))
+// Helper to iterate over all valid processor ids.
+#define for_each_id(i) for (i = UVM_ID_CPU; UVM_ID_IS_VALID(i); i = uvm_id_next(i))
 
 // Find the node in mask with the shorted distance (as returned by
 // node_distance) for src.
@@ -593,89 +585,32 @@ int uvm_find_closest_node_mask(int src, const nodemask_t *mask);
 
 #define for_each_possible_uvm_node(nid) for_each_node_mask((nid), node_possible_map)
 
-static bool uvm_processor_uuid_eq(const NvProcessorUuid *uuid1, const NvProcessorUuid *uuid2)
+// Compare two NUMA node IDs for equality.
+// The main purpose of this helper is to correctly compare
+// in situations when the system has only a single NUMA node
+// (which is also the case when NUMA support is disabled).
+bool uvm_numa_id_eq(int nid0, int nid1);
+
+static bool uvm_uuid_eq(const NvProcessorUuid *uuid0, const NvProcessorUuid *uuid1)
 {
-    return memcmp(uuid1, uuid2, sizeof(*uuid1)) == 0;
+    return memcmp(uuid0, uuid1, sizeof(*uuid0)) == 0;
 }
 
 // Copies a UUID from source (src) to destination (dst).
-static void uvm_processor_uuid_copy(NvProcessorUuid *dst, const NvProcessorUuid *src)
+static void uvm_uuid_copy(NvProcessorUuid *dst, const NvProcessorUuid *src)
 {
     memcpy(dst, src, sizeof(*dst));
 }
 
-// TODO: Bug 4195538: [uvm][multi-SMC] Get UVM internal data structures ready to
-// meet multi-SMC requirements. Temporary aliases, they must be removed once
-// the data structures are converted.
-typedef uvm_parent_processor_id_t uvm_processor_id_t;
-typedef uvm_parent_gpu_id_t uvm_gpu_id_t;
-
-#define UVM_ID_CPU_VALUE                 UVM_PARENT_ID_CPU_VALUE
-#define UVM_ID_GPU0_VALUE                UVM_PARENT_ID_GPU0_VALUE
-#define UVM_ID_MAX_GPUS                  UVM_PARENT_ID_MAX_GPUS
-#define UVM_ID_MAX_PROCESSORS            UVM_PARENT_ID_MAX_PROCESSORS
-#define UVM_ID_MAX_SUB_PROCESSORS        UVM_PARENT_ID_MAX_SUB_PROCESSORS
-#define UVM_ID_CPU                       UVM_PARENT_ID_CPU
-#define UVM_ID_INVALID                   UVM_PARENT_ID_INVALID
-
-static int uvm_id_cmp(uvm_parent_processor_id_t id1, uvm_parent_processor_id_t id2)
+static inline NvBool uvm_uuid_is_cpu(const NvProcessorUuid *uuid)
 {
-    return UVM_CMP_DEFAULT(id1.val, id2.val);
+    return memcmp(uuid, &NV_PROCESSOR_UUID_CPU_DEFAULT, sizeof(*uuid)) == 0;
 }
 
-static bool uvm_id_equal(uvm_parent_processor_id_t id1, uvm_parent_processor_id_t id2)
-{
-    return uvm_parent_id_equal(id1, id2);
-}
-
-#define UVM_ID_IS_CPU(id)     uvm_id_equal(id, UVM_ID_CPU)
-#define UVM_ID_IS_INVALID(id) uvm_id_equal(id, UVM_ID_INVALID)
-#define UVM_ID_IS_VALID(id)   (!UVM_ID_IS_INVALID(id))
-#define UVM_ID_IS_GPU(id)     (!UVM_ID_IS_CPU(id) && !UVM_ID_IS_INVALID(id))
-
-static uvm_parent_gpu_id_t uvm_gpu_id_from_value(NvU32 val)
-{
-    return uvm_parent_gpu_id_from_value(val);
-}
-
-static NvU32 uvm_id_value(uvm_parent_processor_id_t id)
-{
-    return uvm_parent_id_value(id);
-}
-
-static NvU32 uvm_id_gpu_index(uvm_parent_gpu_id_t id)
-{
-    return uvm_parent_id_gpu_index(id);
-}
-
-static NvU32 uvm_id_gpu_index_from_global_gpu_id(const uvm_global_gpu_id_t id)
-{
-    return uvm_parent_id_gpu_index_from_global_gpu_id(id);
-}
-
-static uvm_parent_gpu_id_t uvm_gpu_id_from_index(NvU32 index)
-{
-    return uvm_parent_gpu_id_from_index(index);
-}
-
-static uvm_parent_gpu_id_t uvm_gpu_id_next(uvm_parent_gpu_id_t id)
-{
-    return uvm_parent_gpu_id_next(id);
-}
-
-static uvm_parent_gpu_id_t uvm_gpu_id_from_global_gpu_id(const uvm_global_gpu_id_t id)
-{
-    return uvm_parent_gpu_id_from_global_gpu_id(id);
-}
-
-static NvU32 uvm_global_id_gpu_index_from_gpu_id(const uvm_parent_gpu_id_t id)
-{
-    return uvm_global_id_gpu_index_from_parent_gpu_id(id);
-}
-
-static uvm_global_gpu_id_t uvm_global_gpu_id_from_gpu_id(const uvm_parent_gpu_id_t id)
-{
-    return uvm_global_gpu_id_from_parent_gpu_id(id);
-}
+// Dynamic uvm_processor_mask_t object allocation/maintenance.
+NV_STATUS uvm_processor_mask_cache_init(void);
+void uvm_processor_mask_cache_exit(void);
+uvm_processor_mask_t *uvm_processor_mask_cache_alloc(void);
+void uvm_processor_mask_cache_free(uvm_processor_mask_t *mask);
 
 #endif

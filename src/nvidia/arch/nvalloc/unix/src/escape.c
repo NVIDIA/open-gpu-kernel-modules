@@ -52,6 +52,8 @@
 
 #include <ctrl/ctrl00fd.h>
 
+#include <ctrl/ctrl00e0.h>
+
 #define NV_CTL_DEVICE_ONLY(nv)                 \
 {                                              \
     if (((nv)->flags & NV_FLAG_CONTROL) == 0)  \
@@ -86,6 +88,9 @@ static NV_STATUS RmGetDeviceFd(NVOS54_PARAMETERS *pApi, NvS32 *pFd,
         case NV00FD_CTRL_CMD_ATTACH_GPU:
             paramSize = sizeof(NV00FD_CTRL_ATTACH_GPU_PARAMS);
             break;
+        case NV00E0_CTRL_CMD_EXPORT_MEM:
+            paramSize = sizeof(NV00E0_CTRL_EXPORT_MEM_PARAMS);
+            break;
         default:
             return NV_OK;
     }
@@ -104,6 +109,15 @@ static NV_STATUS RmGetDeviceFd(NVOS54_PARAMETERS *pApi, NvS32 *pFd,
 
                 *pSkipDeviceRef = NV_FALSE;
                  *pFd = (NvS32)pAttachGpuParams->devDescriptor;
+            }
+            break;
+        case NV00E0_CTRL_CMD_EXPORT_MEM:
+            {
+                NV00E0_CTRL_EXPORT_MEM_PARAMS *pExportMemParams = pKernelParams;
+
+                // If hParent is client, no need to reference device.
+                *pSkipDeviceRef = (pExportMemParams->hParent == pApi->hClient);
+                *pFd = (NvS32)pExportMemParams->devDescriptor;
             }
             break;
         default:

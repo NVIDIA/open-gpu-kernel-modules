@@ -51,7 +51,12 @@ kvidengIsVideoTraceLogSupported_IMPL
     OBJGPU *pGpu
 )
 {
-    return !IS_VIRTUAL(pGpu) && !RMCFG_FEATURE_PLATFORM_MODS && !IS_SIMULATION(pGpu);
+    NvBool bSupported = !IS_VIRTUAL(pGpu) && !RMCFG_FEATURE_PLATFORM_MODS &&
+                        !IS_SIMULATION(pGpu);
+
+    bSupported &= !gpuIsCCFeatureEnabled(pGpu);
+
+    return bSupported;
 }
 
 NV_STATUS kvidengConstruct_IMPL
@@ -73,121 +78,117 @@ NV_STATUS kvidengInitLogging_KERNEL
 )
 {
     NV_STATUS status;
-    NvU32 data = NV_REG_STR_RM_VIDEO_EVENT_TRACE_DISABLED;
+    NvU32 eventBufferSize;
+    VIDEO_TRACE_RING_BUFFER *pTraceBuf;
+    NvU64 seed;
+    NvBool bIsFbBroken = NV_FALSE;
+    NV_ADDRESS_SPACE addressSpace = ADDR_FBMEM;
     NvBool bAlwaysLogging;
+    NvU32 data;
 
-    if (!kvidengIsVideoTraceLogSupported(pGpu))
-        return NV_OK;
+    NV_CHECK_OR_RETURN(LEVEL_INFO, kvidengIsVideoTraceLogSupported(pGpu), NV_OK);
 
-    status = osReadRegistryDword(pGpu, NV_REG_STR_RM_VIDEO_EVENT_TRACE, &data);
-    if (status != NV_OK)
-    {
-        // When GLOBAL_FEATURE_GR2069_VIDEO_EVENT is enabled and the registry is not set,
-        // default eventbuffer size to 32K and staging buffer to 4K.
-        data = DRF_NUM(_REG_STR, _RM_VIDEO_EVENT_TRACE, _STAGING_BUFFER_SIZE_IN_4k, 1) |
-               DRF_NUM(_REG_STR, _RM_VIDEO_EVENT_TRACE, _EVENT_BUFFER_SIZE_IN_4k, 0x8);
-    }
+    data = pKernelVideoEngine->videoTraceInfo.eventTraceRegkeyData;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO, (data != NV_REG_STR_RM_VIDEO_EVENT_TRACE_DISABLED), NV_OK);
 
     bAlwaysLogging = DRF_VAL(_REG_STR, _RM_VIDEO_EVENT_TRACE, _ALWAYS_LOG, (data)) ==
                     NV_REG_STR_RM_VIDEO_EVENT_TRACE_ALWAYS_LOG_ENABLED;
 
-    if (data != NV_REG_STR_RM_VIDEO_EVENT_TRACE_DISABLED)
+    eventBufferSize = DRF_VAL(_REG_STR, _RM_VIDEO_EVENT_TRACE, _EVENT_BUFFER_SIZE_IN_4k, (data)) * 0x1000;
+
+    bIsFbBroken = pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
+                  pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM);
+
+    if (bIsFbBroken)
+        addressSpace = ADDR_SYSMEM;
+
+    // Allocate the staging buffer
+    NV_ASSERT_OK_OR_GOTO(
+        status,
+        memdescCreate(&pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc,
+                      pGpu,
+                      eventBufferSize,
+                      0,
+                      NV_TRUE,
+                      addressSpace,
+                      NV_MEMORY_UNCACHED,
+                      MEMDESC_FLAGS_NONE),
+        exit);
+
+    NV_ASSERT_OK_OR_GOTO(
+        status,
+        memdescAlloc(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc),
+        exit);
+
+    pTraceBuf = (VIDEO_TRACE_RING_BUFFER *)kbusMapRmAperture_HAL(pGpu,
+                                                        pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc);
+
+    NV_ASSERT_OR_ELSE(pTraceBuf != NULL,
+        status = NV_ERR_INSUFFICIENT_RESOURCES;
+        goto exit;);
+
+    // clear trace buffer
+    portMemSet(pTraceBuf, 0, eventBufferSize);
+    pTraceBuf->bufferSize = eventBufferSize - sizeof(VIDEO_TRACE_RING_BUFFER);
+    pTraceBuf->readPtr = 0;
+    pTraceBuf->writePtr = 0;
+    pTraceBuf->flags = bAlwaysLogging ? VIDEO_TRACE_FLAG__LOGGING_ENABLED : 0;
+
+    pKernelVideoEngine->videoTraceInfo.pTraceBufferEngine = pTraceBuf;
+
+    if (IS_GSP_CLIENT(pGpu))
     {
-        NvU32 eventBufferSize;
-        VIDEO_TRACE_RING_BUFFER *pTraceBuf;
-        NvU64 seed;
-        NvBool bIsFbBroken = NV_FALSE;
-        NV_ADDRESS_SPACE addressSpace = ADDR_FBMEM;
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS params = {0};
 
-        eventBufferSize = DRF_VAL(_REG_STR, _RM_VIDEO_EVENT_TRACE, _EVENT_BUFFER_SIZE_IN_4k, (data)) * 0x1000;
+        params.memDescInfo.base = memdescGetPhysAddr(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc,
+                                                     AT_GPU,
+                                                     0);
+        params.memDescInfo.size = pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc->ActualSize;
+        params.memDescInfo.alignment = pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc->Alignment;
+        params.memDescInfo.addressSpace = addressSpace;
+        params.memDescInfo.cpuCacheAttrib = NV_MEMORY_UNCACHED;
 
-        bIsFbBroken = pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
-                      pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM);
-
-        if (bIsFbBroken)
-            addressSpace = ADDR_SYSMEM;
-
-        // Allocate the staging buffer
-        NV_ASSERT_OK_OR_GOTO(
-            status,
-            memdescCreate(&pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc,
-                          pGpu,
-                          eventBufferSize,
-                          0,
-                          NV_TRUE,
-                          addressSpace,
-                          NV_MEMORY_UNCACHED,
-                          MEMDESC_FLAGS_NONE),
-            exit);
+        params.engDesc = pKernelVideoEngine->physEngDesc;
 
         NV_ASSERT_OK_OR_GOTO(
             status,
-            memdescAlloc(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc),
+            pRmApi->Control(pRmApi,
+                            pGpu->hInternalClient,
+                            pGpu->hInternalSubdevice,
+                            NV2080_CTRL_CMD_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY,
+                            &params,
+                            sizeof(params)),
             exit);
 
-        pTraceBuf = (VIDEO_TRACE_RING_BUFFER *)kbusMapRmAperture_HAL(pGpu, pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc);
-
-        NV_ASSERT_OR_ELSE(pTraceBuf != NULL,
-            status = NV_ERR_INSUFFICIENT_RESOURCES;
-            goto exit;);
-
-        // clear trace buffer
-        portMemSet(pTraceBuf, 0, eventBufferSize);
-        pTraceBuf->bufferSize = eventBufferSize - sizeof(VIDEO_TRACE_RING_BUFFER);
-        pTraceBuf->readPtr = 0;
-        pTraceBuf->writePtr = 0;
-        pTraceBuf->flags = bAlwaysLogging ? VIDEO_TRACE_FLAG__LOGGING_ENABLED : 0;
-
-        pKernelVideoEngine->videoTraceInfo.pTraceBufferEngine = pTraceBuf;
-
-        if (IS_GSP_CLIENT(pGpu))
+        if (!params.bEngineFound)
         {
-            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-            NV2080_CTRL_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY_PARAMS params = {0};
-
-            params.memDescInfo.base = memdescGetPhysAddr(pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc, AT_GPU, 0);
-            params.memDescInfo.size = pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc->ActualSize;
-            params.memDescInfo.alignment = pKernelVideoEngine->videoTraceInfo.pTraceBufferEngineMemDesc->Alignment;
-            params.memDescInfo.addressSpace = addressSpace;
-            params.memDescInfo.cpuCacheAttrib = NV_MEMORY_UNCACHED;
-
-            params.engDesc = pKernelVideoEngine->physEngDesc;
-
-            NV_ASSERT_OK_OR_GOTO(
-                status,
-                pRmApi->Control(pRmApi,
-                                pGpu->hInternalClient,
-                                pGpu->hInternalSubdevice,
-                                NV2080_CTRL_CMD_INTERNAL_FLCN_SET_VIDEO_EVENT_BUFFER_MEMORY,
-                                &params,
-                                sizeof(params)),
-                exit);
-
-            if (!params.bEngineFound)
-            {
-                kvidengFreeLogging(pGpu, pKernelVideoEngine);
-                goto exit;
-            }
-        }
-
-        // Allocate allocate scratch pad for variable data
-        pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData = portMemAllocNonPaged(RM_VIDEO_TRACE_MAX_VARIABLE_DATA_SIZE);
-
-        if (pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData == NULL)
-        {
-            status = NV_ERR_NO_MEMORY;
+            kvidengFreeLogging(pGpu, pKernelVideoEngine);
             goto exit;
         }
-        portMemSet(pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData, 0x00, RM_VIDEO_TRACE_MAX_VARIABLE_DATA_SIZE);
-
-        /*!
-         * Random number generator used for generate noisy timestamp
-         */
-        osGetCurrentTick(&seed);
-        pKernelVideoEngine->videoTraceInfo.pVideoLogPrng = portCryptoPseudoRandomGeneratorCreate(seed);
-
-        pKernelVideoEngine->bVideoTraceEnabled = NV_TRUE;
     }
+
+    // Allocate allocate scratch pad for variable data
+    pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData =
+        portMemAllocNonPaged(RM_VIDEO_TRACE_MAX_VARIABLE_DATA_SIZE);
+
+    if (pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto exit;
+    }
+    portMemSet(pKernelVideoEngine->videoTraceInfo.pTraceBufferVariableData,
+               0x00,
+               RM_VIDEO_TRACE_MAX_VARIABLE_DATA_SIZE);
+
+    /*!
+     * Random number generator used for generate noisy timestamp
+     */
+    osGetCurrentTick(&seed);
+    pKernelVideoEngine->videoTraceInfo.pVideoLogPrng = portCryptoPseudoRandomGeneratorCreate(seed);
+
+    pKernelVideoEngine->bVideoTraceEnabled = NV_TRUE;
 
 exit:
     if (status != NV_OK)

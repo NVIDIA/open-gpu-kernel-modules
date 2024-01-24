@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2022 NVIDIA Corporation
+    Copyright (c) 2017-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -196,7 +196,7 @@ static NV_STATUS fetch_non_replayable_fault_buffer_entries(uvm_parent_gpu_t *par
     if (status != NV_OK) {
         UVM_ERR_PRINT("nvUvmInterfaceGetNonReplayableFaults() failed: %s, GPU %s\n",
                       nvstatusToString(status),
-                      parent_gpu->name);
+                      uvm_parent_gpu_name(parent_gpu));
 
         uvm_global_set_fatal_error(status);
         return status;
@@ -235,17 +235,27 @@ static NV_STATUS fetch_non_replayable_fault_buffer_entries(uvm_parent_gpu_t *par
     return NV_OK;
 }
 
-// In SRIOV, the UVM (guest) driver does not have access to the privileged
-// registers used to clear the faulted bit. Instead, UVM requests host RM to do
-// the clearing on its behalf, using a SW method.
 static bool use_clear_faulted_channel_sw_method(uvm_gpu_t *gpu)
 {
-    if (uvm_gpu_is_virt_mode_sriov(gpu)) {
-        UVM_ASSERT(gpu->parent->has_clear_faulted_channel_sw_method);
-        return true;
-    }
+    // If true, UVM uses a SW method to request RM to do the clearing on its
+    // behalf.
+    bool use_sw_method = false;
 
-    return false;
+    // In SRIOV, the UVM (guest) driver does not have access to the privileged
+    // registers used to clear the faulted bit.
+    if (uvm_parent_gpu_is_virt_mode_sriov(gpu->parent))
+        use_sw_method = true;
+
+    // In Confidential Computing access to the privileged registers is blocked,
+    // in order to prevent interference between guests, or between the
+    // (untrusted) host and the guests.
+    if (g_uvm_global.conf_computing_enabled)
+        use_sw_method = true;
+
+    if (use_sw_method)
+        UVM_ASSERT(gpu->parent->has_clear_faulted_channel_sw_method);
+
+    return use_sw_method;
 }
 
 static NV_STATUS clear_faulted_method_on_gpu(uvm_gpu_t *gpu,
@@ -334,7 +344,8 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
                                                        uvm_va_block_t *va_block,
                                                        uvm_va_block_retry_t *va_block_retry,
                                                        uvm_fault_buffer_entry_t *fault_entry,
-                                                       uvm_service_block_context_t *service_context)
+                                                       uvm_service_block_context_t *service_context,
+                                                       const bool hmm_migratable)
 {
     NV_STATUS status = NV_OK;
     uvm_page_index_t page_index;
@@ -400,6 +411,7 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
                                                   policy,
                                                   &thrashing_hint,
                                                   UVM_SERVICE_OPERATION_NON_REPLAYABLE_FAULTS,
+                                                  hmm_migratable,
                                                   &read_duplicate);
 
     // Initialize the minimum necessary state in the fault service context
@@ -431,7 +443,8 @@ static NV_STATUS service_managed_fault_in_block_locked(uvm_gpu_t *gpu,
 
 static NV_STATUS service_managed_fault_in_block(uvm_gpu_t *gpu,
                                                 uvm_va_block_t *va_block,
-                                                uvm_fault_buffer_entry_t *fault_entry)
+                                                uvm_fault_buffer_entry_t *fault_entry,
+                                                const bool hmm_migratable)
 {
     NV_STATUS status, tracker_status;
     uvm_va_block_retry_t va_block_retry;
@@ -440,10 +453,8 @@ static NV_STATUS service_managed_fault_in_block(uvm_gpu_t *gpu,
     service_context->operation = UVM_SERVICE_OPERATION_NON_REPLAYABLE_FAULTS;
     service_context->num_retries = 0;
 
-    if (uvm_va_block_is_hmm(va_block)) {
-        uvm_hmm_service_context_init(service_context);
+    if (uvm_va_block_is_hmm(va_block))
         uvm_hmm_migrate_begin_wait(va_block);
-    }
 
     uvm_mutex_lock(&va_block->lock);
 
@@ -452,7 +463,8 @@ static NV_STATUS service_managed_fault_in_block(uvm_gpu_t *gpu,
                                                                              va_block,
                                                                              &va_block_retry,
                                                                              fault_entry,
-                                                                             service_context));
+                                                                             service_context,
+                                                                             hmm_migratable));
 
     tracker_status = uvm_tracker_add_tracker_safe(&gpu->parent->fault_buffer_info.non_replayable.fault_service_tracker,
                                                   &va_block->tracker);
@@ -570,7 +582,7 @@ static NV_STATUS service_non_managed_fault(uvm_gpu_va_space_t *gpu_va_space,
 
         ats_context->client_type = UVM_FAULT_CLIENT_TYPE_HUB;
 
-        ats_invalidate->write_faults_in_batch = false;
+        ats_invalidate->tlb_batch_pending = false;
 
         va_range_next = uvm_va_space_iter_first(gpu_va_space->va_space, fault_entry->fault_address, ~0ULL);
 
@@ -619,7 +631,7 @@ static NV_STATUS service_non_managed_fault(uvm_gpu_va_space_t *gpu_va_space,
     return status;
 }
 
-static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_entry)
+static NV_STATUS service_fault_once(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_entry, const bool hmm_migratable)
 {
     NV_STATUS status;
     uvm_user_channel_t *user_channel;
@@ -631,7 +643,7 @@ static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_e
     uvm_va_block_context_t *va_block_context =
         gpu->parent->fault_buffer_info.non_replayable.block_service_context.block_context;
 
-    status = uvm_gpu_fault_entry_to_va_space(gpu, fault_entry, &va_space);
+    status = uvm_parent_gpu_fault_entry_to_va_space(gpu->parent, fault_entry, &va_space);
     if (status != NV_OK) {
         // The VA space lookup will fail if we're running concurrently with
         // removal of the channel from the VA space (channel unregister, GPU VA
@@ -691,7 +703,7 @@ static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_e
                                                       &va_block);
         }
         if (status == NV_OK)
-            status = service_managed_fault_in_block(gpu_va_space->gpu, va_block, fault_entry);
+            status = service_managed_fault_in_block(gpu_va_space->gpu, va_block, fault_entry, hmm_migratable);
         else
             status = service_non_managed_fault(gpu_va_space, mm, fault_entry, status);
 
@@ -708,17 +720,42 @@ static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_e
     }
 
     if (fault_entry->is_fatal)
-        uvm_tools_record_gpu_fatal_fault(gpu->parent->id, fault_entry->va_space, fault_entry, fault_entry->fatal_reason);
+        uvm_tools_record_gpu_fatal_fault(gpu->id, fault_entry->va_space, fault_entry, fault_entry->fatal_reason);
 
-    if (status != NV_OK || fault_entry->is_fatal)
+    if (fault_entry->is_fatal ||
+        (status != NV_OK &&
+         status != NV_WARN_MORE_PROCESSING_REQUIRED &&
+         status != NV_WARN_MISMATCHED_TARGET))
         schedule_kill_channel(gpu, fault_entry, user_channel);
 
 exit_no_channel:
     uvm_va_space_up_read(va_space);
     uvm_va_space_mm_release_unlock(va_space, mm);
 
-    if (status != NV_OK)
+    if (status != NV_OK &&
+        status != NV_WARN_MORE_PROCESSING_REQUIRED &&
+        status != NV_WARN_MISMATCHED_TARGET)
         UVM_DBG_PRINT("Error servicing non-replayable faults on GPU: %s\n", uvm_gpu_name(gpu));
+
+    return status;
+}
+
+static NV_STATUS service_fault(uvm_gpu_t *gpu, uvm_fault_buffer_entry_t *fault_entry)
+{
+    uvm_service_block_context_t *service_context =
+        &gpu->parent->fault_buffer_info.non_replayable.block_service_context;
+    NV_STATUS status;
+    bool hmm_migratable = true;
+
+    service_context->num_retries = 0;
+
+    do {
+        status = service_fault_once(gpu, fault_entry, hmm_migratable);
+        if (status == NV_WARN_MISMATCHED_TARGET) {
+            hmm_migratable = false;
+            status = NV_WARN_MORE_PROCESSING_REQUIRED;
+        }
+    } while (status == NV_WARN_MORE_PROCESSING_REQUIRED);
 
     return status;
 }

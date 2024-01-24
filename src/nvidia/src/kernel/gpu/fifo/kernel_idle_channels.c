@@ -24,7 +24,6 @@
 #include "rmapi/rmapi.h"
 #include "core/locks.h"
 #include "gpu/device/device.h"
-#include "gpu/subdevice/subdevice.h"
 #include "vgpu/rpc.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 

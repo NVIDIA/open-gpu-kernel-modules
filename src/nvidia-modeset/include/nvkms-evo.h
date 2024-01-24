@@ -188,6 +188,8 @@ NvBool nvDowngradeColorSpaceAndBpc(
 
 NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
                            NVHwModeTimingsEvoPtr pTimings,
+                           enum NvKmsDpyAttributeCurrentColorSpaceValue *pColorSpace,
+                           enum NvKmsDpyAttributeColorBpcValue *pColorBpc,
                            const NvBool b2Heads1Or,
                            NVDscInfoEvoRec *pDscInfo,
                            const struct NvKmsModeValidationParams *pParams);
@@ -401,6 +403,10 @@ NvBool nvEvoUse2Heads1OR(const NVDpyEvoRec *pDpyEvo,
                          const struct NvKmsModeValidationParams *pParams);
 
 NvU32 nvGetRefreshRate10kHz(const NVHwModeTimingsEvo *pTimings);
+
+NvBool nvIsLockGroupFlipLocked(const NVLockGroup *pLockGroup);
+
+NvBool nvEvoIsConsoleActive(const NVDevEvoRec *pDevEvo);
 
 #ifdef __cplusplus
 };

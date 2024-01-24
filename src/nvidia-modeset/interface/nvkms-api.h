@@ -268,6 +268,9 @@ enum NvKmsIoctlCommand {
     NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT,
     NVKMS_IOCTL_NOTIFY_VBLANK,
     NVKMS_IOCTL_SET_FLIPLOCK_GROUP,
+    NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL,
+    NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL,
+    NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS,
 };
 
 
@@ -1122,12 +1125,6 @@ struct NvKmsAllocDeviceReply {
     NvU32 maxCursorSize;
 
     /*!
-     * The page kind used by the GPU's MMU for uncompressed block-linear color
-     * formats.
-     */
-    NvU8 genericPageKind;
-
-    /*!
      * Describes the supported Color Key selects and blending modes for match
      * and nomatch cursor pixels.
      */
@@ -1180,6 +1177,18 @@ struct NvKmsAllocDeviceReply {
      * generator sync objects that signal at vblank.
      */
     NvBool supportsVblankSyncObjects;
+
+    /*!
+     * 'supportsVblankSemControl' indicates whether the VBlank Semaphore Control
+     * interface:
+     *
+     *   NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL,
+     *   NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL,
+     *   NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS,
+     *
+     * is supported.
+     */
+    NvBool supportsVblankSemControl;
 };
 
 struct NvKmsAllocDeviceParams {
@@ -2739,7 +2748,6 @@ enum NvKmsDispAttribute {
     NV_KMS_DISP_ATTRIBUTE_FRAMELOCK_TEST_SIGNAL,
     NV_KMS_DISP_ATTRIBUTE_FRAMELOCK_RESET,
     NV_KMS_DISP_ATTRIBUTE_FRAMELOCK_SET_SWAP_BARRIER,
-    NV_KMS_DISP_ATTRIBUTE_ALLOW_FLIPLOCK,
     NV_KMS_DISP_ATTRIBUTE_QUERY_DP_AUX_LOG,
 };
 
@@ -4077,6 +4085,81 @@ struct NvKmsSetFlipLockGroupReply {
 struct NvKmsSetFlipLockGroupParams {
     struct NvKmsSetFlipLockGroupRequest request; /*! in */
     struct NvKmsSetFlipLockGroupReply reply;     /*! out */
+};
+
+/*
+ * NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL
+ * NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL
+ * NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS
+ *
+ * Enable or disable vblank semaphore control for the given head using the
+ * specified surface and surface offset.  The memory at that location is
+ * interpreted as an NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA.  See the
+ * RMAPI documentation for NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA for
+ * details of the semantics of that interface.
+ *
+ * It is the responsibility of the nvkms client(s) to coordinate at modeset
+ * time: the mapping of nvkms apiHeads to underlying hwHeads may change during a
+ * modeset, such that a registered vblank sem control will no longer receive
+ * vblank callbacks if the head is shutdown.  Before a modeset shuts down a
+ * head, nvkms clients should ensure that all in-flight semaphore acquires are
+ * satisfied, and then after the modeset the vblank sem controls should be
+ * re-enabled.
+ *
+ * NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS can be used, specifying a particular
+ * set of heads, to set all vblank sem controls on those heads to have their
+ * semaphore set to the value in their respective
+ * NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA::requestCounterAccel fields.
+ *
+ * These ioctls are only available when
+ * NvKmsAllocDeviceReply::supportsVblankSemControl is true.
+ */
+
+struct NvKmsEnableVblankSemControlRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvU32 head;
+    NvKmsSurfaceHandle surfaceHandle;
+    NvU64 surfaceOffset NV_ALIGN_BYTES(8);
+};
+
+struct NvKmsEnableVblankSemControlReply {
+    NvKmsVblankSemControlHandle vblankSemControlHandle;
+};
+
+struct NvKmsEnableVblankSemControlParams {
+    struct NvKmsEnableVblankSemControlRequest request;
+    struct NvKmsEnableVblankSemControlReply reply;
+};
+
+struct NvKmsDisableVblankSemControlRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvKmsVblankSemControlHandle vblankSemControlHandle;
+};
+
+struct NvKmsDisableVblankSemControlReply {
+    NvU32 padding;
+};
+
+struct NvKmsDisableVblankSemControlParams {
+    struct NvKmsDisableVblankSemControlRequest request;
+    struct NvKmsDisableVblankSemControlReply reply;
+};
+
+struct NvKmsAccelVblankSemControlsRequest {
+    NvKmsDeviceHandle deviceHandle;
+    NvKmsDispHandle dispHandle;
+    NvU32 headMask;
+};
+
+struct NvKmsAccelVblankSemControlsReply {
+    NvU32 padding;
+};
+
+struct NvKmsAccelVblankSemControlsParams {
+    struct NvKmsAccelVblankSemControlsRequest request;
+    struct NvKmsAccelVblankSemControlsReply reply;
 };
 
 #endif /* NVKMS_API_H */

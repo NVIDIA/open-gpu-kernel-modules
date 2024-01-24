@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -213,6 +213,13 @@ gpuConstructUserRegisterAccessMap_IMPL(OBJGPU *pGpu)
     NvU32        profilingRangesSize = 0;
     const NvU8  *compressedData      = NULL;
     const NvU32 *profilingRangesArr  = NULL;
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        // Usermode access maps unused in Guest RM. Initialize this boolean and leave.
+        pGpu->bRmProfilingPrivileged = _getIsProfilingPrivileged(pGpu);
+        return NV_OK;
+    }
 
     NV_ASSERT(pGpu->userRegisterAccessMapSize == 0);
 

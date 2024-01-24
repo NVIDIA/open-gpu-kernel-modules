@@ -41,6 +41,7 @@
 #include "mem_mgr/fabric_vaspace.h"
 #include "mem_mgr/virt_mem_mgr.h"
 #include <os/os.h>
+#include "platform/sli/sli.h"
 
 #include "published/ampere/ga100/dev_nv_xve.h"
 #include "published/ampere/ga100/dev_ram.h"  // NV_RAMIN_ALLOC_SIZE

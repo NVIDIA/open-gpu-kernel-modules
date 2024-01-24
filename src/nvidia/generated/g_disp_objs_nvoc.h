@@ -55,6 +55,7 @@ extern "C" {
 #include "ctrl/ctrlc370/ctrlc370chnc.h"
 #include "ctrl/ctrlc370/ctrlc370event.h"
 #include "ctrl/ctrlc370/ctrlc370rg.h"
+#include "ctrl/ctrlc370/ctrlc370or.h"
 #include "ctrl/ctrlc370/ctrlc370verif.h"
 #include "ctrl/ctrlc372/ctrlc372base.h"
 #include "ctrl/ctrlc372/ctrlc372chnc.h"
@@ -88,11 +89,16 @@ typedef struct DispChannel DispChannel;
 /*!
  * Base class for many of display's RsResource subclasses
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISP_OBJS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DisplayApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RmResource __nvoc_base_RmResource;
@@ -115,7 +121,6 @@ struct DisplayApi {
     NvU32 (*__dispapiGetRefCount__)(struct DisplayApi *);
     void (*__dispapiAddAdditionalDependants__)(struct RsClient *, struct DisplayApi *, RsResourceRef *);
     NV_STATUS (*__dispapiUnmapFrom__)(struct DisplayApi *, RS_RES_UNMAP_FROM_PARAMS *);
-    NV_STATUS (*__dispapiControlLookup__)(struct DisplayApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__dispapiUnmap__)(struct DisplayApi *, struct CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__dispapiGetMemInterMapParams__)(struct DisplayApi *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__dispapiGetMemoryMappingDescriptor__)(struct DisplayApi *, struct MEMORY_DESCRIPTOR **);
@@ -123,6 +128,7 @@ struct DisplayApi {
     NV_STATUS (*__dispapiUnregisterEvent__)(struct DisplayApi *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__dispapiControlSerialization_Prologue__)(struct DisplayApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispapiCanCopy__)(struct DisplayApi *);
+    NvBool (*__dispapiIsPartialUnmapSupported__)(struct DisplayApi *);
     void (*__dispapiPreDestruct__)(struct DisplayApi *);
     NV_STATUS (*__dispapiIsDuplicate__)(struct DisplayApi *, NvHandle, NvBool *);
     void (*__dispapiControlSerialization_Epilogue__)(struct DisplayApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -178,7 +184,6 @@ NV_STATUS __nvoc_objCreate_DisplayApi(DisplayApi**, Dynamic*, NvU32, struct CALL
 #define dispapiGetRefCount(pResource) dispapiGetRefCount_DISPATCH(pResource)
 #define dispapiAddAdditionalDependants(pClient, pResource, pReference) dispapiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define dispapiUnmapFrom(pResource, pParams) dispapiUnmapFrom_DISPATCH(pResource, pParams)
-#define dispapiControlLookup(pResource, pParams, ppEntry) dispapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispapiUnmap(pResource, pCallContext, pCpuMapping) dispapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define dispapiGetMemInterMapParams(pRmResource, pParams) dispapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define dispapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) dispapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
@@ -186,6 +191,7 @@ NV_STATUS __nvoc_objCreate_DisplayApi(DisplayApi**, Dynamic*, NvU32, struct CALL
 #define dispapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define dispapiControlSerialization_Prologue(pResource, pCallContext, pParams) dispapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispapiCanCopy(pResource) dispapiCanCopy_DISPATCH(pResource)
+#define dispapiIsPartialUnmapSupported(pResource) dispapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define dispapiPreDestruct(pResource) dispapiPreDestruct_DISPATCH(pResource)
 #define dispapiIsDuplicate(pResource, hMemory, pDuplicate) dispapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispapiControlSerialization_Epilogue(pResource, pCallContext, pParams) dispapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -257,10 +263,6 @@ static inline NV_STATUS dispapiUnmapFrom_DISPATCH(struct DisplayApi *pResource, 
     return pResource->__dispapiUnmapFrom__(pResource, pParams);
 }
 
-static inline NV_STATUS dispapiControlLookup_DISPATCH(struct DisplayApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS dispapiUnmap_DISPATCH(struct DisplayApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return pResource->__dispapiUnmap__(pResource, pCallContext, pCpuMapping);
 }
@@ -287,6 +289,10 @@ static inline NV_STATUS dispapiControlSerialization_Prologue_DISPATCH(struct Dis
 
 static inline NvBool dispapiCanCopy_DISPATCH(struct DisplayApi *pResource) {
     return pResource->__dispapiCanCopy__(pResource);
+}
+
+static inline NvBool dispapiIsPartialUnmapSupported_DISPATCH(struct DisplayApi *pResource) {
+    return pResource->__dispapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void dispapiPreDestruct_DISPATCH(struct DisplayApi *pResource) {
@@ -344,11 +350,16 @@ static inline NV_STATUS dispapiCtrlCmdEventSetNotification(struct DisplayApi *pD
  * Only one instance of this class is allowed per-GPU. Multi-instance restrictions
  * are enforced by resource_list.h
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISP_OBJS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DispObject {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct DisplayApi __nvoc_base_DisplayApi;
@@ -399,7 +410,6 @@ struct DispObject {
     NV_STATUS (*__dispobjControl_Prologue__)(struct DispObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispobjUnmapFrom__)(struct DispObject *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__dispobjControl_Epilogue__)(struct DispObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__dispobjControlLookup__)(struct DispObject *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__dispobjControl__)(struct DispObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispobjUnmap__)(struct DispObject *, struct CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__dispobjGetMemInterMapParams__)(struct DispObject *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -408,6 +418,7 @@ struct DispObject {
     NV_STATUS (*__dispobjUnregisterEvent__)(struct DispObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__dispobjControlSerialization_Prologue__)(struct DispObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispobjCanCopy__)(struct DispObject *);
+    NvBool (*__dispobjIsPartialUnmapSupported__)(struct DispObject *);
     void (*__dispobjPreDestruct__)(struct DispObject *);
     NV_STATUS (*__dispobjIsDuplicate__)(struct DispObject *, NvHandle, NvBool *);
     void (*__dispobjControlSerialization_Epilogue__)(struct DispObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -485,7 +496,6 @@ NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL
 #define dispobjControl_Prologue(pDisplayApi, pCallContext, pRsParams) dispobjControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
 #define dispobjUnmapFrom(pResource, pParams) dispobjUnmapFrom_DISPATCH(pResource, pParams)
 #define dispobjControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispobjControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispobjControlLookup(pResource, pParams, ppEntry) dispobjControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispobjControl(pDisplayApi, pCallContext, pParams) dispobjControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define dispobjUnmap(pResource, pCallContext, pCpuMapping) dispobjUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define dispobjGetMemInterMapParams(pRmResource, pParams) dispobjGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -494,6 +504,7 @@ NV_STATUS __nvoc_objCreate_DispObject(DispObject**, Dynamic*, NvU32, struct CALL
 #define dispobjUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispobjUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define dispobjControlSerialization_Prologue(pResource, pCallContext, pParams) dispobjControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispobjCanCopy(pResource) dispobjCanCopy_DISPATCH(pResource)
+#define dispobjIsPartialUnmapSupported(pResource) dispobjIsPartialUnmapSupported_DISPATCH(pResource)
 #define dispobjPreDestruct(pResource) dispobjPreDestruct_DISPATCH(pResource)
 #define dispobjIsDuplicate(pResource, hMemory, pDuplicate) dispobjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispobjControlSerialization_Epilogue(pResource, pCallContext, pParams) dispobjControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -729,10 +740,6 @@ static inline void dispobjControl_Epilogue_DISPATCH(struct DispObject *pDisplayA
     pDisplayApi->__dispobjControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
 }
 
-static inline NV_STATUS dispobjControlLookup_DISPATCH(struct DispObject *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispobjControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS dispobjControl_DISPATCH(struct DispObject *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pDisplayApi->__dispobjControl__(pDisplayApi, pCallContext, pParams);
 }
@@ -763,6 +770,10 @@ static inline NV_STATUS dispobjControlSerialization_Prologue_DISPATCH(struct Dis
 
 static inline NvBool dispobjCanCopy_DISPATCH(struct DispObject *pResource) {
     return pResource->__dispobjCanCopy__(pResource);
+}
+
+static inline NvBool dispobjIsPartialUnmapSupported_DISPATCH(struct DispObject *pResource) {
+    return pResource->__dispobjIsPartialUnmapSupported__(pResource);
 }
 
 static inline void dispobjPreDestruct_DISPATCH(struct DispObject *pResource) {
@@ -833,11 +844,16 @@ static inline NvBool dispobjGetRmFreeFlags(struct DispObject *pDispObject) {
  * Only one instance of this class is allowed per-GPU. Multi-instance restrictions
  * are enforced by resource_list.h
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISP_OBJS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct NvDispApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct DispObject __nvoc_base_DispObject;
@@ -867,7 +883,6 @@ struct NvDispApi {
     NV_STATUS (*__nvdispapiControl_Prologue__)(struct NvDispApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__nvdispapiUnmapFrom__)(struct NvDispApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__nvdispapiControl_Epilogue__)(struct NvDispApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__nvdispapiControlLookup__)(struct NvDispApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__nvdispapiControl__)(struct NvDispApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__nvdispapiUnmap__)(struct NvDispApi *, struct CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__nvdispapiGetMemInterMapParams__)(struct NvDispApi *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -876,6 +891,7 @@ struct NvDispApi {
     NV_STATUS (*__nvdispapiUnregisterEvent__)(struct NvDispApi *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__nvdispapiControlSerialization_Prologue__)(struct NvDispApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__nvdispapiCanCopy__)(struct NvDispApi *);
+    NvBool (*__nvdispapiIsPartialUnmapSupported__)(struct NvDispApi *);
     void (*__nvdispapiPreDestruct__)(struct NvDispApi *);
     NV_STATUS (*__nvdispapiIsDuplicate__)(struct NvDispApi *, NvHandle, NvBool *);
     void (*__nvdispapiControlSerialization_Epilogue__)(struct NvDispApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -930,7 +946,6 @@ NV_STATUS __nvoc_objCreate_NvDispApi(NvDispApi**, Dynamic*, NvU32, struct CALL_C
 #define nvdispapiControl_Prologue(pDisplayApi, pCallContext, pRsParams) nvdispapiControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
 #define nvdispapiUnmapFrom(pResource, pParams) nvdispapiUnmapFrom_DISPATCH(pResource, pParams)
 #define nvdispapiControl_Epilogue(pDisplayApi, pCallContext, pRsParams) nvdispapiControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define nvdispapiControlLookup(pResource, pParams, ppEntry) nvdispapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define nvdispapiControl(pDisplayApi, pCallContext, pParams) nvdispapiControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define nvdispapiUnmap(pResource, pCallContext, pCpuMapping) nvdispapiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define nvdispapiGetMemInterMapParams(pRmResource, pParams) nvdispapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -939,6 +954,7 @@ NV_STATUS __nvoc_objCreate_NvDispApi(NvDispApi**, Dynamic*, NvU32, struct CALL_C
 #define nvdispapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) nvdispapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define nvdispapiControlSerialization_Prologue(pResource, pCallContext, pParams) nvdispapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define nvdispapiCanCopy(pResource) nvdispapiCanCopy_DISPATCH(pResource)
+#define nvdispapiIsPartialUnmapSupported(pResource) nvdispapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define nvdispapiPreDestruct(pResource) nvdispapiPreDestruct_DISPATCH(pResource)
 #define nvdispapiIsDuplicate(pResource, hMemory, pDuplicate) nvdispapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define nvdispapiControlSerialization_Epilogue(pResource, pCallContext, pParams) nvdispapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -1028,10 +1044,6 @@ static inline void nvdispapiControl_Epilogue_DISPATCH(struct NvDispApi *pDisplay
     pDisplayApi->__nvdispapiControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
 }
 
-static inline NV_STATUS nvdispapiControlLookup_DISPATCH(struct NvDispApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__nvdispapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS nvdispapiControl_DISPATCH(struct NvDispApi *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pDisplayApi->__nvdispapiControl__(pDisplayApi, pCallContext, pParams);
 }
@@ -1062,6 +1074,10 @@ static inline NV_STATUS nvdispapiControlSerialization_Prologue_DISPATCH(struct N
 
 static inline NvBool nvdispapiCanCopy_DISPATCH(struct NvDispApi *pResource) {
     return pResource->__nvdispapiCanCopy__(pResource);
+}
+
+static inline NvBool nvdispapiIsPartialUnmapSupported_DISPATCH(struct NvDispApi *pResource) {
+    return pResource->__nvdispapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void nvdispapiPreDestruct_DISPATCH(struct NvDispApi *pResource) {
@@ -1108,11 +1124,16 @@ NV_STATUS nvdispapiConstruct_IMPL(struct NvDispApi *arg_pNvdispApi, struct CALL_
  *
  * Multi-instance restrictions are enforced by resource_list.h
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISP_OBJS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DispSwObj {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct DisplayApi __nvoc_base_DisplayApi;
@@ -1138,7 +1159,6 @@ struct DispSwObj {
     NV_STATUS (*__dispswobjControl_Prologue__)(struct DispSwObj *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispswobjUnmapFrom__)(struct DispSwObj *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__dispswobjControl_Epilogue__)(struct DispSwObj *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__dispswobjControlLookup__)(struct DispSwObj *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__dispswobjControl__)(struct DispSwObj *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispswobjUnmap__)(struct DispSwObj *, struct CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__dispswobjGetMemInterMapParams__)(struct DispSwObj *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -1147,6 +1167,7 @@ struct DispSwObj {
     NV_STATUS (*__dispswobjUnregisterEvent__)(struct DispSwObj *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__dispswobjControlSerialization_Prologue__)(struct DispSwObj *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispswobjCanCopy__)(struct DispSwObj *);
+    NvBool (*__dispswobjIsPartialUnmapSupported__)(struct DispSwObj *);
     void (*__dispswobjPreDestruct__)(struct DispSwObj *);
     NV_STATUS (*__dispswobjIsDuplicate__)(struct DispSwObj *, NvHandle, NvBool *);
     void (*__dispswobjControlSerialization_Epilogue__)(struct DispSwObj *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -1198,7 +1219,6 @@ NV_STATUS __nvoc_objCreate_DispSwObj(DispSwObj**, Dynamic*, NvU32, struct CALL_C
 #define dispswobjControl_Prologue(pDisplayApi, pCallContext, pRsParams) dispswobjControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
 #define dispswobjUnmapFrom(pResource, pParams) dispswobjUnmapFrom_DISPATCH(pResource, pParams)
 #define dispswobjControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispswobjControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispswobjControlLookup(pResource, pParams, ppEntry) dispswobjControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispswobjControl(pDisplayApi, pCallContext, pParams) dispswobjControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define dispswobjUnmap(pResource, pCallContext, pCpuMapping) dispswobjUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define dispswobjGetMemInterMapParams(pRmResource, pParams) dispswobjGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -1207,6 +1227,7 @@ NV_STATUS __nvoc_objCreate_DispSwObj(DispSwObj**, Dynamic*, NvU32, struct CALL_C
 #define dispswobjUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispswobjUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define dispswobjControlSerialization_Prologue(pResource, pCallContext, pParams) dispswobjControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispswobjCanCopy(pResource) dispswobjCanCopy_DISPATCH(pResource)
+#define dispswobjIsPartialUnmapSupported(pResource) dispswobjIsPartialUnmapSupported_DISPATCH(pResource)
 #define dispswobjPreDestruct(pResource) dispswobjPreDestruct_DISPATCH(pResource)
 #define dispswobjIsDuplicate(pResource, hMemory, pDuplicate) dispswobjIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispswobjControlSerialization_Epilogue(pResource, pCallContext, pParams) dispswobjControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -1278,10 +1299,6 @@ static inline void dispswobjControl_Epilogue_DISPATCH(struct DispSwObj *pDisplay
     pDisplayApi->__dispswobjControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
 }
 
-static inline NV_STATUS dispswobjControlLookup_DISPATCH(struct DispSwObj *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispswobjControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS dispswobjControl_DISPATCH(struct DispSwObj *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pDisplayApi->__dispswobjControl__(pDisplayApi, pCallContext, pParams);
 }
@@ -1312,6 +1329,10 @@ static inline NV_STATUS dispswobjControlSerialization_Prologue_DISPATCH(struct D
 
 static inline NvBool dispswobjCanCopy_DISPATCH(struct DispSwObj *pResource) {
     return pResource->__dispswobjCanCopy__(pResource);
+}
+
+static inline NvBool dispswobjIsPartialUnmapSupported_DISPATCH(struct DispSwObj *pResource) {
+    return pResource->__dispswobjIsPartialUnmapSupported__(pResource);
 }
 
 static inline void dispswobjPreDestruct_DISPATCH(struct DispSwObj *pResource) {
@@ -1354,11 +1375,16 @@ NV_STATUS dispswobjConstruct_IMPL(struct DispSwObj *arg_pDispSwObj, struct CALL_
  * Only one instance of this class is allowed per-GPU. Multi-instance restrictions
  * are enforced by resource_list.h
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISP_OBJS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DispCommon {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct DisplayApi __nvoc_base_DisplayApi;
@@ -1379,6 +1405,9 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdSystemVrrDisplayInfo__)(struct DispCommon *, NV0073_CTRL_SYSTEM_VRR_DISPLAY_INFO_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdVRRSetRgLineActive__)(struct DispCommon *, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdInternalVRRSetRgLineActive__)(struct DispCommon *, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdVblankSemControl__)(struct DispCommon *, NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdInternalVblankSemControl__)(struct DispCommon *, NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdAccelVblankSemControl__)(struct DispCommon *, NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpEnableVrr__)(struct DispCommon *, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdClearELVBlock__)(struct DispCommon *, NV0073_CTRL_SYSTEM_CLEAR_ELV_BLOCK_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificDisplayChange__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_DISPLAY_CHANGE_PARAMS *);
@@ -1394,9 +1423,11 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdSpecificSetBacklightBrightness__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_BACKLIGHT_BRIGHTNESS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdPsrGetSrPanelInfo__)(struct DispCommon *, NV0073_CTRL_PSR_GET_SR_PANEL_INFO_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpSwitchDispMux__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdInternalDfpSwitchDispMux__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpRunPreDispMuxOperations__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpRunPostDispMuxOperations__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_RUN_POST_DISP_MUX_OPERATIONS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetDispMuxStatus__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdInternalDfpGetDispMuxStatus__)(struct DispCommon *, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpInternalLcdOverdrive__)(struct DispCommon *, NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpExecuteInternalLcdOverDrivePolicy__)(struct DispCommon *, NV0073_CTRL_DP_EXECUTE_OVERDRIVE_POLICY_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSystemExecuteAcpiMethod__)(struct DispCommon *, NV0073_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *);
@@ -1450,6 +1481,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdSpecificDispI2cReadWrite__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_DISP_I2C_READ_WRITE_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment__)(struct DispCommon *, NV0073_CTRL_SPECIFIC_GET_VALID_HEAD_WINDOW_ASSIGNMENT_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdSpecificSetHdmiAudioMutestream__)(struct DispCommon *, NV0073_CTRL_CMD_SPECIFIC_SET_HDMI_AUDIO_MUTESTREAM_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdDfpEdpDriverUnload__)(struct DispCommon *, NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetInfo__)(struct DispCommon *, NV0073_CTRL_DFP_GET_INFO_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpGetDisplayportDongleInfo__)(struct DispCommon *, NV0073_CTRL_DFP_GET_DISPLAYPORT_DONGLE_INFO_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDfpSetEldAudioCaps__)(struct DispCommon *, NV0073_CTRL_DFP_SET_ELD_AUDIO_CAP_PARAMS *);
@@ -1491,6 +1523,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnCtrlCmdDpConfigureFec__)(struct DispCommon *, NV0073_CTRL_CMD_DP_CONFIGURE_FEC_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpGetGenericInfoframe__)(struct DispCommon *, NV0073_CTRL_DP_GET_GENERIC_INFOFRAME_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpGetMsaAttributes__)(struct DispCommon *, NV0073_CTRL_DP_GET_MSA_ATTRIBUTES_PARAMS *);
+    NV_STATUS (*__dispcmnCtrlCmdFrlConfigMacroPad__)(struct DispCommon *, NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpConfigMacroPad__)(struct DispCommon *, NV0073_CTRL_CMD_DP_CONFIG_MACRO_PAD_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data__)(struct DispCommon *, NV0073_CTRL_DP_SET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *);
     NV_STATUS (*__dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data__)(struct DispCommon *, NV0073_CTRL_DP_GET_PREEMPHASIS_DRIVECURRENT_POSTCURSOR2_DATA_PARAMS *);
@@ -1504,7 +1537,6 @@ struct DispCommon {
     NV_STATUS (*__dispcmnControl_Prologue__)(struct DispCommon *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispcmnUnmapFrom__)(struct DispCommon *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__dispcmnControl_Epilogue__)(struct DispCommon *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__dispcmnControlLookup__)(struct DispCommon *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__dispcmnControl__)(struct DispCommon *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispcmnUnmap__)(struct DispCommon *, struct CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__dispcmnGetMemInterMapParams__)(struct DispCommon *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -1513,6 +1545,7 @@ struct DispCommon {
     NV_STATUS (*__dispcmnUnregisterEvent__)(struct DispCommon *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__dispcmnControlSerialization_Prologue__)(struct DispCommon *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispcmnCanCopy__)(struct DispCommon *);
+    NvBool (*__dispcmnIsPartialUnmapSupported__)(struct DispCommon *);
     void (*__dispcmnPreDestruct__)(struct DispCommon *);
     NV_STATUS (*__dispcmnIsDuplicate__)(struct DispCommon *, NvHandle, NvBool *);
     void (*__dispcmnControlSerialization_Epilogue__)(struct DispCommon *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -1561,6 +1594,9 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdSystemVrrDisplayInfo(pDispCommon, pParams) dispcmnCtrlCmdSystemVrrDisplayInfo_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdVRRSetRgLineActive_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdInternalVRRSetRgLineActive(pDispCommon, pParams) dispcmnCtrlCmdInternalVRRSetRgLineActive_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdVblankSemControl(pDispCommon, pParams) dispcmnCtrlCmdVblankSemControl_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdInternalVblankSemControl(pDispCommon, pParams) dispcmnCtrlCmdInternalVblankSemControl_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdAccelVblankSemControl(pDispCommon, pParams) dispcmnCtrlCmdAccelVblankSemControl_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpEnableVrr(pDispCommon, pParams) dispcmnCtrlCmdDpEnableVrr_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdClearELVBlock(pDispCommon, pParams) dispcmnCtrlCmdClearELVBlock_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificDisplayChange(pDispCommon, pParams) dispcmnCtrlCmdSpecificDisplayChange_DISPATCH(pDispCommon, pParams)
@@ -1576,9 +1612,11 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdSpecificSetBacklightBrightness(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetBacklightBrightness_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdPsrGetSrPanelInfo(pDispCommon, pParams) dispcmnCtrlCmdPsrGetSrPanelInfo_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpSwitchDispMux(pDispCommon, pParams) dispcmnCtrlCmdDfpSwitchDispMux_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdInternalDfpSwitchDispMux(pDispCommon, pParams) dispcmnCtrlCmdInternalDfpSwitchDispMux_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpRunPreDispMuxOperations(pDispCommon, pParams) dispcmnCtrlCmdDfpRunPreDispMuxOperations_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpRunPostDispMuxOperations(pDispCommon, pParams) dispcmnCtrlCmdDfpRunPostDispMuxOperations_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetDispMuxStatus(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDispMuxStatus_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdInternalDfpGetDispMuxStatus(pDispCommon, pParams) dispcmnCtrlCmdInternalDfpGetDispMuxStatus_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpInternalLcdOverdrive(pDispCommon, pParams) dispcmnCtrlCmdDfpInternalLcdOverdrive_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpExecuteInternalLcdOverDrivePolicy(pDispCommon, pParams) dispcmnCtrlCmdDfpExecuteInternalLcdOverDrivePolicy_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSystemExecuteAcpiMethod(pDispCommon, pAcpiMethodParams) dispcmnCtrlCmdSystemExecuteAcpiMethod_DISPATCH(pDispCommon, pAcpiMethodParams)
@@ -1632,6 +1670,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdSpecificDispI2cReadWrite(pDispCommon, pParams) dispcmnCtrlCmdSpecificDispI2cReadWrite_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment(pDispCommon, pParams) dispcmnCtrlCmdSpecificGetValidHeadWindowAssignment_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdSpecificSetHdmiAudioMutestream(pDispCommon, pParams) dispcmnCtrlCmdSpecificSetHdmiAudioMutestream_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdDfpEdpDriverUnload(pDispCommon, pParams) dispcmnCtrlCmdDfpEdpDriverUnload_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetInfo_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpGetDisplayportDongleInfo(pDispCommon, pParams) dispcmnCtrlCmdDfpGetDisplayportDongleInfo_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDfpSetEldAudioCaps(pDispCommon, pEldAudioCapsParams) dispcmnCtrlCmdDfpSetEldAudioCaps_DISPATCH(pDispCommon, pEldAudioCapsParams)
@@ -1673,6 +1712,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnCtrlCmdDpConfigureFec(pDispCommon, pParams) dispcmnCtrlCmdDpConfigureFec_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpGetGenericInfoframe(pDispCommon, pParams) dispcmnCtrlCmdDpGetGenericInfoframe_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpGetMsaAttributes(pDispCommon, pParams) dispcmnCtrlCmdDpGetMsaAttributes_DISPATCH(pDispCommon, pParams)
+#define dispcmnCtrlCmdFrlConfigMacroPad(pDispCommon, pParams) dispcmnCtrlCmdFrlConfigMacroPad_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpConfigMacroPad(pDispCommon, pParams) dispcmnCtrlCmdDpConfigMacroPad_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data(pDispCommon, pParams) dispcmnCtrlCmdDpSetPreemphasisDrivecurrentPostcursor2Data_DISPATCH(pDispCommon, pParams)
 #define dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data(pDispCommon, pParams) dispcmnCtrlCmdDpGetPreemphasisDrivecurrentPostcursor2Data_DISPATCH(pDispCommon, pParams)
@@ -1686,7 +1726,6 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnControl_Prologue(pDisplayApi, pCallContext, pRsParams) dispcmnControl_Prologue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
 #define dispcmnUnmapFrom(pResource, pParams) dispcmnUnmapFrom_DISPATCH(pResource, pParams)
 #define dispcmnControl_Epilogue(pDisplayApi, pCallContext, pRsParams) dispcmnControl_Epilogue_DISPATCH(pDisplayApi, pCallContext, pRsParams)
-#define dispcmnControlLookup(pResource, pParams, ppEntry) dispcmnControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispcmnControl(pDisplayApi, pCallContext, pParams) dispcmnControl_DISPATCH(pDisplayApi, pCallContext, pParams)
 #define dispcmnUnmap(pResource, pCallContext, pCpuMapping) dispcmnUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define dispcmnGetMemInterMapParams(pRmResource, pParams) dispcmnGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -1695,6 +1734,7 @@ NV_STATUS __nvoc_objCreate_DispCommon(DispCommon**, Dynamic*, NvU32, struct CALL
 #define dispcmnUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispcmnUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define dispcmnControlSerialization_Prologue(pResource, pCallContext, pParams) dispcmnControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispcmnCanCopy(pResource) dispcmnCanCopy_DISPATCH(pResource)
+#define dispcmnIsPartialUnmapSupported(pResource) dispcmnIsPartialUnmapSupported_DISPATCH(pResource)
 #define dispcmnPreDestruct(pResource) dispcmnPreDestruct_DISPATCH(pResource)
 #define dispcmnIsDuplicate(pResource, hMemory, pDuplicate) dispcmnIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispcmnControlSerialization_Epilogue(pResource, pCallContext, pParams) dispcmnControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -1754,6 +1794,24 @@ NV_STATUS dispcmnCtrlCmdInternalVRRSetRgLineActive_IMPL(struct DispCommon *pDisp
 
 static inline NV_STATUS dispcmnCtrlCmdInternalVRRSetRgLineActive_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VRR_SET_RGLINE_ACTIVE_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdInternalVRRSetRgLineActive__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdVblankSemControl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdVblankSemControl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdVblankSemControl__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdInternalVblankSemControl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdInternalVblankSemControl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_INTERNAL_VBLANK_SEM_CONTROL_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdInternalVblankSemControl__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdAccelVblankSemControl_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdAccelVblankSemControl_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdAccelVblankSemControl__(pDispCommon, pParams);
 }
 
 NV_STATUS dispcmnCtrlCmdDpEnableVrr_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_ENABLE_VRR_PARAMS *pParams);
@@ -1846,6 +1904,12 @@ static inline NV_STATUS dispcmnCtrlCmdDfpSwitchDispMux_DISPATCH(struct DispCommo
     return pDispCommon->__dispcmnCtrlCmdDfpSwitchDispMux__(pDispCommon, pParams);
 }
 
+NV_STATUS dispcmnCtrlCmdInternalDfpSwitchDispMux_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdInternalDfpSwitchDispMux_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdInternalDfpSwitchDispMux__(pDispCommon, pParams);
+}
+
 NV_STATUS dispcmnCtrlCmdDfpRunPreDispMuxOperations_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS *pParams);
 
 static inline NV_STATUS dispcmnCtrlCmdDfpRunPreDispMuxOperations_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS *pParams) {
@@ -1862,6 +1926,12 @@ NV_STATUS dispcmnCtrlCmdDfpGetDispMuxStatus_IMPL(struct DispCommon *pDispCommon,
 
 static inline NV_STATUS dispcmnCtrlCmdDfpGetDispMuxStatus_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams) {
     return pDispCommon->__dispcmnCtrlCmdDfpGetDispMuxStatus__(pDispCommon, pParams);
+}
+
+NV_STATUS dispcmnCtrlCmdInternalDfpGetDispMuxStatus_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdInternalDfpGetDispMuxStatus_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdInternalDfpGetDispMuxStatus__(pDispCommon, pParams);
 }
 
 NV_STATUS dispcmnCtrlCmdDfpInternalLcdOverdrive_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_AUXCH_OD_CTRL_PARAMS *pParams);
@@ -2182,6 +2252,12 @@ static inline NV_STATUS dispcmnCtrlCmdSpecificSetHdmiAudioMutestream_DISPATCH(st
     return pDispCommon->__dispcmnCtrlCmdSpecificSetHdmiAudioMutestream__(pDispCommon, pParams);
 }
 
+NV_STATUS dispcmnCtrlCmdDfpEdpDriverUnload_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdDfpEdpDriverUnload_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdDfpEdpDriverUnload__(pDispCommon, pParams);
+}
+
 NV_STATUS dispcmnCtrlCmdDfpGetInfo_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_INFO_PARAMS *pParams);
 
 static inline NV_STATUS dispcmnCtrlCmdDfpGetInfo_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_DFP_GET_INFO_PARAMS *pParams) {
@@ -2428,6 +2504,12 @@ static inline NV_STATUS dispcmnCtrlCmdDpGetMsaAttributes_DISPATCH(struct DispCom
     return pDispCommon->__dispcmnCtrlCmdDpGetMsaAttributes__(pDispCommon, pParams);
 }
 
+NV_STATUS dispcmnCtrlCmdFrlConfigMacroPad_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS *pParams);
+
+static inline NV_STATUS dispcmnCtrlCmdFrlConfigMacroPad_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS *pParams) {
+    return pDispCommon->__dispcmnCtrlCmdFrlConfigMacroPad__(pDispCommon, pParams);
+}
+
 NV_STATUS dispcmnCtrlCmdDpConfigMacroPad_IMPL(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_MACRO_PAD_PARAMS *pParams);
 
 static inline NV_STATUS dispcmnCtrlCmdDpConfigMacroPad_DISPATCH(struct DispCommon *pDispCommon, NV0073_CTRL_CMD_DP_CONFIG_MACRO_PAD_PARAMS *pParams) {
@@ -2486,10 +2568,6 @@ static inline void dispcmnControl_Epilogue_DISPATCH(struct DispCommon *pDisplayA
     pDisplayApi->__dispcmnControl_Epilogue__(pDisplayApi, pCallContext, pRsParams);
 }
 
-static inline NV_STATUS dispcmnControlLookup_DISPATCH(struct DispCommon *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispcmnControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS dispcmnControl_DISPATCH(struct DispCommon *pDisplayApi, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pDisplayApi->__dispcmnControl__(pDisplayApi, pCallContext, pParams);
 }
@@ -2520,6 +2598,10 @@ static inline NV_STATUS dispcmnControlSerialization_Prologue_DISPATCH(struct Dis
 
 static inline NvBool dispcmnCanCopy_DISPATCH(struct DispCommon *pResource) {
     return pResource->__dispcmnCanCopy__(pResource);
+}
+
+static inline NvBool dispcmnIsPartialUnmapSupported_DISPATCH(struct DispCommon *pResource) {
+    return pResource->__dispcmnIsPartialUnmapSupported__(pResource);
 }
 
 static inline void dispcmnPreDestruct_DISPATCH(struct DispCommon *pResource) {

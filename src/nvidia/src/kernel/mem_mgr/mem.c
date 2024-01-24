@@ -25,6 +25,7 @@
 
 #include "mem_mgr/fla_mem.h"
 
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/disp/disp_objs.h"
@@ -34,6 +35,7 @@
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "vgpu/rpc.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl0041.h" // NV04_MEMORY
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
@@ -737,15 +739,25 @@ memGetByHandleAndGroupedGpu_IMPL
     Memory   **ppMemory
 )
 {
-    Device      *pDevice;
+    Memory      *pMemory;
     NV_STATUS    status;
+    Device      *pDevice;
 
-    // Get device handle
-    status = deviceGetByInstance(pClient, gpuGetDeviceInstance(pGpu), &pDevice);
+    status = memGetByHandle(pClient, hMemory, &pMemory);
     if (status != NV_OK)
-        return NV_ERR_INVALID_OBJECT_HANDLE;
+        return status;
 
-    return memGetByHandleAndDevice(pClient, hMemory, RES_GET_HANDLE(pDevice), ppMemory);
+    pDevice = pMemory->pDevice;
+
+    if ((pDevice == NULL) ||
+        (gpumgrGetParentGPU(pGpu) != GPU_RES_GET_GPU(pDevice)))
+    {
+        *ppMemory = NULL;
+        return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
+    *ppMemory = pMemory;
+    return NV_OK;
 }
 
 NV_STATUS
@@ -1016,19 +1028,6 @@ memGetMemInterMapParams_IMPL
     // device, but a unicast mapping was desired).
     //
     gpumgrSetBcEnabledStatus(pGpu, bcState);
-
-    //
-    // Mapping Guest allocated memory in PF is not supported
-    //
-    if (pSrcMemDesc->pGpu != pGpu && gpuIsSriovEnabled(pGpu) &&
-        !(memdescGetFlag(pSrcMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED)))
-    {
-        //
-        // Memory allocated by pSrcMemDesc->pGpu needs to be
-        // remapped for pGpu as requested by client.
-        //
-        pParams->bDmaMapNeeded = NV_TRUE;
-    }
 
     pParams->pSrcMemDesc = pSrcMemDesc;
 

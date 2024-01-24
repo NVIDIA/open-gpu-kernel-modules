@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -353,6 +353,8 @@ typedef struct NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS {
  *    This field returns the sku for the current chip.
  *  chipSKUMod
  *    This field returns the SKU modifier.
+ *  skuConfigVersion
+ *    Version number for the SKU configuration detailing pstate, thermal, VF curve and so on.
  *  project
  *    This field returns the Project (Board) number.
  *  projectSKU
@@ -369,15 +371,13 @@ typedef struct NV2080_CTRL_BIOS_GET_NBSI_OBJ_PARAMS {
  */
 #define NV2080_CTRL_CMD_BIOS_GET_SKU_INFO (0x20800808) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_BIOS_INTERFACE_ID << 8) | NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS_MESSAGE_ID" */
 
-/* maximum length of parameter strings */
-
-
 #define NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS_MESSAGE_ID (0x8U)
 
 typedef struct NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS {
     NvU32 BoardID;
-    char  chipSKU[4];
-    char  chipSKUMod[2];
+    char  chipSKU[9];
+    char  chipSKUMod[5];
+    NvU32 skuConfigVersion;
     char  project[5];
     char  projectSKU[5];
     char  CDP[6];

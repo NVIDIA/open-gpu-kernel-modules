@@ -39,6 +39,7 @@
 #include "os/os.h"
 #include "containers/map.h"
 #include "nvrm_registry.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/gpu_timeout.h"
 

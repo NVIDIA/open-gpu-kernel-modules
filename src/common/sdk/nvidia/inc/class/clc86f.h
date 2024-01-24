@@ -52,6 +52,7 @@ typedef volatile struct Nvc86fControl_struct {
 #define NVC86F_SEM_PAYLOAD_HI                                      (0x00000068)
 #define NVC86F_SEM_EXECUTE                                         (0x0000006c)
 #define NVC86F_SEM_EXECUTE_OPERATION                                       2:0
+#define NVC86F_SEM_EXECUTE_OPERATION_ACQUIRE                        0x00000000
 #define NVC86F_SEM_EXECUTE_OPERATION_RELEASE                        0x00000001
 #define NVC86F_SEM_EXECUTE_RELEASE_WFI                                   20:20
 #define NVC86F_SEM_EXECUTE_RELEASE_WFI_DIS                          0x00000000

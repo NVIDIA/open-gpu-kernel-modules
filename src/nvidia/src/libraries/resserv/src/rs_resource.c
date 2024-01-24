@@ -630,44 +630,6 @@ refFreeCpuMappingPrivate
 #endif /* RS_STANDALONE */
 
 NV_STATUS
-refFindInterMapping
-(
-    RsResourceRef *pMapperRef,
-    RsResourceRef *pMappableRef,
-    RsResourceRef *pContextRef,
-    NvU64 dmaOffset,
-    RsInterMapping **ppMapping
-)
-{
-    RsInterMappingListIter it;
-    NV_STATUS status = NV_ERR_OBJECT_NOT_FOUND;
-    RsInterMapping *pMapping = NULL;
-
-    NV_ASSERT(pMapperRef != NULL);
-
-    it = listIterAll(&pMapperRef->interMappings);
-    while (listIterNext(&it))
-    {
-        pMapping = it.pValue;
-        if ((pMapping->pMappableRef == pMappableRef) &&
-            (pMapping->pContextRef == pContextRef) &&
-            (pMapping->dmaOffset == dmaOffset))
-        {
-            status = NV_OK;
-            break;
-        }
-    }
-
-    if (status != NV_OK)
-        pMapping = NULL;
-
-    if (pMapping != NULL)
-        *ppMapping = pMapping;
-
-    return status;
-}
-
-NV_STATUS
 refAddInterMapping
 (
     RsResourceRef *pMapperRef,

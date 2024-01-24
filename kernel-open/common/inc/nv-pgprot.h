@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -60,6 +60,7 @@ static inline pgprot_t pgprot_modify_writecombine(pgprot_t old_prot)
 #endif /* !defined(NV_VMWARE) */
 
 #if defined(NVCPU_AARCH64)
+extern NvBool nvos_is_chipset_io_coherent(void);
 /*
  * Don't rely on the kernel's definition of pgprot_noncached(), as on 64-bit
  * ARM that's not for system memory, but device memory instead. For I/O cache

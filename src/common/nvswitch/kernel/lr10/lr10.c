@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,6 +36,7 @@
 #include "lr10/smbpbi_lr10.h"
 #include "flcn/flcnable_nvswitch.h"
 #include "soe/soe_nvswitch.h"
+#include "lr10/cci_lr10.h"
 
 #include "nvswitch/lr10/dev_nvs_top.h"
 #include "nvswitch/lr10/dev_pri_ringmaster.h"
@@ -3656,6 +3657,15 @@ nvswitch_initialize_device_state_lr10
         goto nvswitch_initialize_device_state_exit;
     }
 
+    retval = nvswitch_check_io_sanity(device);
+    if (NVL_SUCCESS != retval)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: IO sanity test failed\n",
+            __FUNCTION__);
+        goto nvswitch_initialize_device_state_exit;
+    }
+
     NVSWITCH_PRINT(device, SETUP,
         "%s: MMIO discovery\n",
         __FUNCTION__);
@@ -5974,7 +5984,8 @@ NvlStatus
 nvswitch_reset_and_drain_links_lr10
 (
     nvswitch_device *device,
-    NvU64 link_mask
+    NvU64 link_mask,
+    NvBool bForced
 )
 {
     NvlStatus status = -NVL_ERR_GENERIC;
@@ -7854,6 +7865,250 @@ nvswitch_ctrl_get_nvlink_error_threshold_lr10
 )
 {
     return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_get_board_id_lr10
+(
+    nvswitch_device *device,
+    NvU16 *pBoardId
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_ctrl_get_soe_heartbeat_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_SOE_HEARTBEAT_PARAMS *p
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+static NvlStatus
+nvswitch_cci_reset_and_drain_links_lr10
+(
+    nvswitch_device *device,
+    NvU64 link_mask,
+    NvBool bForced
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+void
+nvswitch_update_link_state_led_lr10
+(
+    nvswitch_device *device
+)
+{
+    return;
+}
+
+void
+nvswitch_led_shutdown_lr10
+(
+    nvswitch_device *device
+)
+{
+    return;
+}
+
+NvlStatus
+nvswitch_check_io_sanity_lr10
+(
+    nvswitch_device *device
+)
+{
+    return NVL_SUCCESS;
+}
+
+void
+nvswitch_fsp_update_cmdq_head_tail_lr10
+(
+    nvswitch_device *device,
+    NvU32 queueHead,
+    NvU32 queueTail
+)
+{
+    return; // -NVL_ERR_NOT_SUPPORTED;
+}
+
+void
+nvswitch_fsp_get_cmdq_head_tail_lr10
+(
+    nvswitch_device *device,
+    NvU32 *pQueueHead,
+    NvU32 *pQueueTail
+)
+{
+    return; // -NVL_ERR_NOT_SUPPORTED;
+}
+
+void
+nvswitch_fsp_update_msgq_head_tail_lr10
+(
+    nvswitch_device *device,
+    NvU32 msgqHead,
+    NvU32 msgqTail
+)
+{
+    return; // -NVL_ERR_NOT_SUPPORTED;
+}
+
+void
+nvswitch_fsp_get_msgq_head_tail_lr10
+(
+    nvswitch_device *device,
+    NvU32 *pMsgqHead,
+    NvU32 *pMsgqTail
+)
+{
+   return; // -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvU32
+nvswitch_fsp_get_channel_size_lr10
+(
+    nvswitch_device *device
+)
+{
+    return 0; // -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvU8
+nvswitch_fsp_nvdm_to_seid_lr10
+(
+    nvswitch_device *device,
+    NvU8 nvdmType
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvU32
+nvswitch_fsp_create_mctp_header_lr10
+(
+    nvswitch_device *device,
+    NvU8 som,
+    NvU8 eom,
+    NvU8 seid,
+    NvU8 seq
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvU32
+nvswitch_fsp_create_nvdm_header_lr10
+(
+    nvswitch_device *device,
+    NvU32 nvdmType
+)
+{
+    return 0; // -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_fsp_get_packet_info_lr10
+(
+    nvswitch_device *device,
+    NvU8 *pBuffer,
+    NvU32 size,
+    NvU8 *pPacketState,
+    NvU8 *pTag
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_fsp_validate_mctp_payload_header_lr10
+(
+    nvswitch_device  *device,
+    NvU8 *pBuffer,
+    NvU32 size
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_fsp_process_nvdm_msg_lr10
+(
+    nvswitch_device *device,
+    NvU8 *pBuffer,
+    NvU32 size
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_fsp_process_cmd_response_lr10
+(
+    nvswitch_device *device,
+    NvU8 *pBuffer,
+    NvU32 size
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_fsp_config_ememc_lr10
+(
+    nvswitch_device *device,
+    NvU32 offset,
+    NvBool bAincw,
+    NvBool bAincr
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_fsp_write_to_emem_lr10
+(
+    nvswitch_device *device,
+    NvU8 *pBuffer,
+    NvU32 size
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_fsp_read_from_emem_lr10
+(
+    nvswitch_device *device,
+    NvU8 *pBuffer,
+    NvU32 size
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_fsp_error_code_to_nvlstatus_map_lr10
+(
+    nvswitch_device *device,
+    NvU32 errorCode
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED; 
+}
+
+NvlStatus
+nvswitch_fsprpc_get_caps_lr10
+(
+    nvswitch_device *device,
+    NVSWITCH_FSPRPC_GET_CAPS_PARAMS *params
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED; 
 }
 
 //

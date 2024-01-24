@@ -21,8 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-// FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_CONTEXT_H_PRIVATE_ACCESS_ALLOWED
 #define NVOC_KERNEL_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/gpu/fifo/kernel_channel.h"
@@ -49,6 +47,7 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "objtmr.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl0090.h"   // KERNEL_GRAPHICS_CONTEXT
 #include "class/cl906fsw.h" // GF100_GPFIFO
@@ -1098,7 +1097,7 @@ kchannelDestruct_IMPL
         if ((kgrctxFromKernelChannel(pKernelChannel, &pKernelGraphicsContext) == NV_OK) &&
             kgrctxIsValid(pGpu, pKernelGraphicsContext, pKernelChannel))
         {
-            shrkgrctxDetach(pGpu, pKernelGraphicsContext->pShared, pKernelGraphicsContext, pKernelChannel);
+            shrkgrctxDetach(pGpu, kgrctxGetShared(pGpu, pKernelGraphicsContext), pKernelGraphicsContext, pKernelChannel);
         }
     }
 
@@ -1131,6 +1130,7 @@ kchannelDestruct_IMPL
     }
 
     kchannelFreeHwID_HAL(pGpu, pKernelChannel);
+    kchannelFreeMmuExceptionInfo(pKernelChannel);
 
     NV_ASSERT(pKernelChannel->refCount == 1);
 }
@@ -1745,7 +1745,6 @@ kchannelCtrlCmdStopChannel_IMPL
 
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
-
         NV_RM_RPC_CONTROL(pGpu,
                           pRmCtrlParams->hClient,
                           RES_GET_HANDLE(pKernelChannel),
@@ -2830,6 +2829,42 @@ kchannelCtrlCmdGetClassEngineid_IMPL
 }
 
 NV_STATUS
+kchannelCtrlCmdResetIsolatedChannel_IMPL
+(
+    KernelChannel *pKernelChannel,
+    NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS *pResetIsolatedChannelParams
+)
+{
+    NV_STATUS  status    = NV_OK;
+    OBJGPU    *pGpu      = GPU_RES_GET_GPU(pKernelChannel);
+    RM_API    *pRmApi    = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+
+    // This ctrl sets bIsRcPending in the KernelChannel object. Because Kernel-RM is
+    // the source of truth on this, it's important that this ctrl is called from CPU-RM
+    NV_ASSERT_OR_RETURN(!RMCFG_FEATURE_PLATFORM_GSP, NV_ERR_INVALID_OPERATION);
+
+    // Call internal RMCTRL on physical-RM, kchannelFwdToInternalCtrl() is not
+    // used because no conversion from KernelChannel to Channel is required
+    status = pRmApi->Control(pRmApi,
+                             resservGetTlsCallContext()->pControlParams->hClient,
+                             RES_GET_HANDLE(pKernelChannel),
+                             NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL,
+                             pResetIsolatedChannelParams,
+                             sizeof(NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS));
+
+    // If physical RM successfully reset the isolated channel,
+    // mark that the RC is no longer pending
+    if (status == NV_OK)
+        pKernelChannel->bIsRcPending[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] = NV_FALSE;
+
+    return status;
+}
+
+// This ctrl accesses bIsRcPending in the KernelChannel object to populate
+// information required by physical RM. Because Kernel-RM is the source of
+// truth on this, it's important that this ctrl be called originally from CPU-RM.
+NV_STATUS
 kchannelCtrlCmdResetChannel_IMPL
 (
     KernelChannel *pKernelChannel,
@@ -2847,6 +2882,10 @@ kchannelCtrlCmdResetChannel_IMPL
     {
         return NV_ERR_INVALID_PARAMETER;
     }
+
+    // Send physical RM info on if an RC is pending
+    pResetChannelParams->bIsRcPending =
+        pKernelChannel->bIsRcPending[gpumgrGetSubDeviceInstanceFromGpu(pGpu)];
 
     //
     // All real hardware management is done in the host.
@@ -2934,7 +2973,6 @@ kchannelCtrlCmdGpFifoSchedule_IMPL
     //
     if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
     {
-
         NV_RM_RPC_CONTROL(pGpu,
                           RES_GET_CLIENT_HANDLE(pKernelChannel),
                           RES_GET_HANDLE(pKernelChannel),
@@ -4418,6 +4456,36 @@ kchannelCtrlCmdGetKmb_KERNEL
     portMemCopy((void*)(&pGetKmbParams->kmb), sizeof(CC_KMB),
                 (const void*)(&pKernelChannel->clientKmb), sizeof(CC_KMB));
 
+    if (pKernelChannel->pEncStatsBufMemDesc == NULL)
+    {
+        RsClient          *pRsClient      = NULL;
+        RsResourceRef     *pResourceRef   = NULL;
+        Memory            *pMemory        = NULL;
+        MEMORY_DESCRIPTOR *pMemDesc       = NULL;
+        OBJGPU            *pGpu           = GPU_RES_GET_GPU(pKernelChannel);
+        NvHandle           hClient        = RES_GET_CLIENT_HANDLE(pKernelChannel);
+
+        NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
+        if (clientGetResourceRef(pRsClient, pGetKmbParams->hMemory, &pResourceRef) != NV_OK)
+        {
+            // TODO: Make this fatal once all cients move to using hMemory
+            return NV_OK;
+        } 
+        pMemory = dynamicCast(pResourceRef->pResource, Memory);
+        pMemDesc = pMemory->pMemDesc;
+        NV_ASSERT_OR_RETURN(pMemDesc != NULL, NV_ERR_INVALID_ARGUMENT);
+        pKernelChannel->pEncStatsBufMemDesc = pMemDesc;
+
+        // Reset statistics to init the buffer
+        MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+        TRANSFER_SURFACE surf = {0};
+        surf.pMemDesc = pMemory->pMemDesc;
+        surf.offset = 0;
+        CC_CRYPTOBUNDLE_STATS *pEncStats = (CC_CRYPTOBUNDLE_STATS*)memmgrMemBeginTransfer(pMemoryManager, &surf,
+                                                                       sizeof(CC_CRYPTOBUNDLE_STATS), TRANSFER_FLAGS_SHADOW_ALLOC);
+        portMemSet(pEncStats, 0, sizeof(CC_CRYPTOBUNDLE_STATS));
+        memmgrMemEndTransfer(pMemoryManager, &surf, sizeof(CC_CRYPTOBUNDLE_STATS), 0);
+    }
     return NV_OK;
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -4529,4 +4597,123 @@ kchannelCtrlRotateSecureChannelIv_PHYSICAL
     }
 
     return NV_OK;
+}
+
+/*!
+ * Fill in per-channel MMU exception data and allocate memory for this data if
+ * necessary
+ *
+ * @param[inout]    pKernelChannel
+ * @param[in]       pMmuExceptionData MMU exception data to be copied
+ */
+void
+kchannelFillMmuExceptionInfo_IMPL
+(
+    KernelChannel           *pKernelChannel,
+    FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData
+)
+{
+    NV_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN_VOID(pKernelChannel);
+
+    if (pKernelChannel->pMmuExceptionData == NULL)
+    {
+        pKernelChannel->pMmuExceptionData = portMemAllocNonPaged(sizeof(FIFO_MMU_EXCEPTION_DATA));
+        if (pKernelChannel->pMmuExceptionData == NULL)
+            status = NV_ERR_NO_MEMORY;
+    }
+
+    if (status == NV_OK)
+    {
+        portMemCopy(pKernelChannel->pMmuExceptionData,
+                    sizeof(FIFO_MMU_EXCEPTION_DATA),
+                    pMmuExceptionData,
+                    sizeof(FIFO_MMU_EXCEPTION_DATA));
+    }
+}
+
+/*!
+ * Free per-channel MMU exception data if it exists
+ *
+ * @param[inout]    pKernelChannel
+ */
+void
+kchannelFreeMmuExceptionInfo_IMPL
+(
+    KernelChannel           *pKernelChannel
+)
+{
+    portMemFree(pKernelChannel->pMmuExceptionData);
+    pKernelChannel->pMmuExceptionData = NULL;
+}
+
+/*!
+ * Check if channel is disabled for key rotation
+ */
+NvBool kchannelIsDisabledForKeyRotation
+(
+    OBJGPU *pGpu,
+    KernelChannel *pKernelChannel
+)
+{
+    return !!(pKernelChannel->swState[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] &
+              KERNEL_CHANNEL_SW_STATE_DISABLED_FOR_KEY_ROTATION);
+}
+
+/*!
+ * Mark channel disabled for key rotation
+ */
+void kchannelDisableForKeyRotation
+(
+    OBJGPU *pGpu,
+    KernelChannel *pKernelChannel,
+    NvBool bDisable
+)
+{
+    if (bDisable)
+    {
+        pKernelChannel->swState[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] |=
+        KERNEL_CHANNEL_SW_STATE_DISABLED_FOR_KEY_ROTATION;
+    }
+    else
+    {
+        pKernelChannel->swState[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] &=
+        ~KERNEL_CHANNEL_SW_STATE_DISABLED_FOR_KEY_ROTATION;
+    }
+}
+
+/*!
+ * Check if channel needs to be enabled after key rotation
+ */
+NvBool kchannelIsEnableAfterKeyRotation
+(
+    OBJGPU *pGpu,
+    KernelChannel *pKernelChannel
+)
+{
+    return !!(pKernelChannel->swState[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] &
+              KERNEL_CHANNEL_SW_STATE_ENABLE_AFTER_KEY_ROTATION);
+}
+
+/*!
+ * Mark channel to be re-enabled after key rotation completes
+ */
+void kchannelEnableAfterKeyRotation
+(
+    OBJGPU *pGpu,
+    KernelChannel *pKernelChannel,
+    NvBool bEnable
+)
+{
+    if (bEnable)
+    {
+        pKernelChannel->swState[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] |=
+        KERNEL_CHANNEL_SW_STATE_ENABLE_AFTER_KEY_ROTATION;
+    }
+    else
+    {
+        pKernelChannel->swState[gpumgrGetSubDeviceInstanceFromGpu(pGpu)] &=
+        ~KERNEL_CHANNEL_SW_STATE_ENABLE_AFTER_KEY_ROTATION;
+    }
 }

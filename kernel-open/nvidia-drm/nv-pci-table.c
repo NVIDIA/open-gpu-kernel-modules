@@ -25,6 +25,15 @@
 #include <linux/module.h>
 
 #include "nv-pci-table.h"
+#include "cpuopsys.h"
+
+#if defined(NV_BSD)
+/* Define PCI classes that FreeBSD's linuxkpi is missing */
+#define PCI_VENDOR_ID_NVIDIA 0x10de
+#define PCI_CLASS_DISPLAY_VGA 0x0300
+#define PCI_CLASS_DISPLAY_3D 0x0302
+#define PCI_CLASS_BRIDGE_OTHER 0x0680
+#endif
 
 /* Devices supported by RM */
 struct pci_device_id nv_pci_table[] = {
@@ -48,7 +57,7 @@ struct pci_device_id nv_pci_table[] = {
 };
 
 /* Devices supported by all drivers in nvidia.ko */
-struct pci_device_id nv_module_device_table[] = {
+struct pci_device_id nv_module_device_table[4] = {
     {
         .vendor      = PCI_VENDOR_ID_NVIDIA,
         .device      = PCI_ANY_ID,
@@ -76,4 +85,6 @@ struct pci_device_id nv_module_device_table[] = {
     { }
 };
 
+#if defined(NV_LINUX)
 MODULE_DEVICE_TABLE(pci, nv_module_device_table);
+#endif

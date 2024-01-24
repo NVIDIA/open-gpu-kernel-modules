@@ -32,6 +32,7 @@
 #include "objtmr.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu_fabric_probe.h"
+#include "platform/sli/sli.h"
 
 /*!
  * @brief Check if ALI is supported for the given device

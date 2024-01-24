@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -137,6 +137,8 @@ _rmVidHeapControlAllocCommon
 
     if (pUserParams->flags & NVOS32_ALLOC_FLAGS_VIRTUAL)
         externalClassId = NV50_MEMORY_VIRTUAL;
+    else if (FLD_TEST_DRF(OS32, _ATTR2, _USE_EGM, _TRUE, pUserParams->attr2))
+        externalClassId = NV_MEMORY_EXTENDED_USER;
     else if (FLD_TEST_DRF(OS32, _ATTR, _LOCATION, _VIDMEM, pUserParams->attr))
         externalClassId = NV01_MEMORY_LOCAL_USER;
     else
@@ -181,6 +183,7 @@ _nvos32FunctionAllocSize
     _IN(width, AllocSize.width) \
     _IN_OUT(size, AllocSize.size) \
     _IN(alignment, AllocSize.alignment) \
+    _IN(numaNode, AllocSize.numaNode) \
     _IN_OUT(offset, AllocSize.offset) \
     _IN_OUT(attr, AllocSize.attr) \
     _IN_OUT(attr2, AllocSize.attr2) \
@@ -226,6 +229,7 @@ _nvos32FunctionAllocSizeRange
     _IN(rangeHi, AllocSizeRange.rangeEnd) \
     _IN_OUT(size, AllocSizeRange.size) \
     _IN(alignment, AllocSizeRange.alignment) \
+    _IN(numaNode, AllocSizeRange.numaNode) \
     _IN_OUT(offset, AllocSizeRange.offset) \
     _IN_OUT(attr, AllocSizeRange.attr) \
     _IN_OUT(attr2, AllocSizeRange.attr2) \
@@ -287,6 +291,7 @@ _nvos32FunctionAllocTiledPitchHeight
     _IN(pitch, AllocTiledPitchHeight.pitch) \
     _IN_OUT(size, AllocTiledPitchHeight.size) \
     _IN(alignment, AllocTiledPitchHeight.alignment) \
+    _IN(numaNode, AllocTiledPitchHeight.numaNode) \
     _IN_OUT(offset, AllocTiledPitchHeight.offset) \
     _IN_OUT(attr, AllocTiledPitchHeight.attr) \
     _IN_OUT(attr2, AllocTiledPitchHeight.attr2) \
@@ -341,8 +346,7 @@ _nvos32FunctionInfo
     NVOS32_PARAMETERS  *pArgs
 )
 {
-    NV2080_CTRL_FB_GET_INFO_PARAMS  fbInfoParams = {0};
-    NV2080_CTRL_FB_INFO             fbInfoEntries[6] = {{0}};
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS  fbInfoParams = {0};
     NV_STATUS                       status;
     NvHandle                        hSubDevice;
     NvBool                          bMustFreeSubDevice;
@@ -356,26 +360,25 @@ _nvos32FunctionInfo
         return status;
 
     fbInfoParams.fbInfoListSize = 6;
-    fbInfoParams.fbInfoList = NV_PTR_TO_NvP64(&fbInfoEntries);
 
-    fbInfoEntries[0].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_FREE;
-    fbInfoEntries[1].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE;
-    fbInfoEntries[2].index = NV2080_CTRL_FB_INFO_INDEX_FB_TAX_SIZE_KB;
-    fbInfoEntries[3].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_BASE_KB;
-    fbInfoEntries[4].index = NV2080_CTRL_FB_INFO_INDEX_LARGEST_FREE_REGION_SIZE_KB;
-    fbInfoEntries[5].index = NV2080_CTRL_FB_INFO_INDEX_LARGEST_FREE_REGION_BASE_KB;
+    fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_FREE;
+    fbInfoParams.fbInfoList[1].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE;
+    fbInfoParams.fbInfoList[2].index = NV2080_CTRL_FB_INFO_INDEX_FB_TAX_SIZE_KB;
+    fbInfoParams.fbInfoList[3].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_BASE_KB;
+    fbInfoParams.fbInfoList[4].index = NV2080_CTRL_FB_INFO_INDEX_LARGEST_FREE_REGION_SIZE_KB;
+    fbInfoParams.fbInfoList[5].index = NV2080_CTRL_FB_INFO_INDEX_LARGEST_FREE_REGION_BASE_KB;
 
     status = pContext->RmControl(pContext, hClient, hSubDevice,
-                                 NV2080_CTRL_CMD_FB_GET_INFO,
+                                 NV2080_CTRL_CMD_FB_GET_INFO_V2,
                                  &fbInfoParams,
                                  sizeof(fbInfoParams));
 
-    pArgs->free = ((NvU64)fbInfoEntries[0].data << 10);
-    pArgs->total = ((NvU64)fbInfoEntries[1].data << 10);
-    pArgs->total += ((NvU64)fbInfoEntries[2].data << 10); // For vGPU, add FB tax incurred by host RM
-    pArgs->data.Info.base = ((NvU64)fbInfoEntries[3].data << 10);
-    pArgs->data.Info.size = ((NvU64)fbInfoEntries[4].data << 10);
-    pArgs->data.Info.offset = ((NvU64)fbInfoEntries[5].data << 10);
+    pArgs->free = ((NvU64)fbInfoParams.fbInfoList[0].data << 10);
+    pArgs->total = ((NvU64)fbInfoParams.fbInfoList[1].data << 10);
+    pArgs->total += ((NvU64)fbInfoParams.fbInfoList[2].data << 10); // For vGPU, add FB tax incurred by host RM
+    pArgs->data.Info.base = ((NvU64)fbInfoParams.fbInfoList[3].data << 10);
+    pArgs->data.Info.size = ((NvU64)fbInfoParams.fbInfoList[4].data << 10);
+    pArgs->data.Info.offset = ((NvU64)fbInfoParams.fbInfoList[5].data << 10);
 
     if (bMustFreeSubDevice)
     {

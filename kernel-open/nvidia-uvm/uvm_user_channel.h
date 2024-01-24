@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -131,7 +131,7 @@ struct uvm_user_channel_struct
 
     // If in_subctx is true, subctx_info will point at a per-TSG data structure
     // that contains the VA spaces of all the subcontexts in the TSG. This value
-    // is assigned in uvm_gpu_add_user_channel.
+    // is assigned in uvm_parent_gpu_add_user_channel.
     uvm_user_channel_subctx_info_t *subctx_info;
 
     // Number of resources reported by RM. This is the size of both the

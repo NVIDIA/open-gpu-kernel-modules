@@ -131,6 +131,8 @@ typedef struct UvmGpuMemoryInfo_tag
     //      This is only valid if deviceDescendant is NV_TRUE.
     //      When egm is NV_TRUE, this is also the UUID of the GPU
     //      for which EGM is local.
+    //      If the GPU has SMC enabled, the UUID is the GI UUID.
+    //      Otherwise, it is the UUID for the physical GPU.
     //      Note: If the allocation is owned by a device in
     //      an SLI group and the allocation is broadcast
     //      across the SLI group, this UUID will be any one
@@ -544,6 +546,10 @@ typedef struct UvmGpuP2PCapsParams_tag
     // the GPUs are direct peers.
     NvU32 peerIds[2];
 
+    // Out: peerId[i] contains gpu[i]'s EGM peer id of gpu[1 - i]. Only defined
+    // if the GPUs are direct peers and EGM enabled in the system.
+    NvU32 egmPeerIds[2];
+
     // Out: UVM_LINK_TYPE
     NvU32 p2pLink;
 
@@ -572,8 +578,11 @@ typedef struct UvmPlatformInfo_tag
     // Out: ATS (Address Translation Services) is supported
     NvBool atsSupported;
 
-    // Out: AMD SEV (Secure Encrypted Virtualization) is enabled
-    NvBool sevEnabled;
+    // Out: True if HW trusted execution, such as AMD's SEV-SNP or Intel's TDX,
+    // is enabled in the VM, indicating that Confidential Computing must be
+    // also enabled in the GPU(s); these two security features are either both
+    // enabled, or both disabled.
+    NvBool confComputingEnabled;
 } UvmPlatformInfo;
 
 typedef struct UvmGpuClientInfo_tag
@@ -604,7 +613,8 @@ typedef struct UvmGpuInfo_tag
     // Printable gpu name
     char name[UVM_GPU_NAME_LENGTH];
 
-    // Uuid of this gpu
+    // Uuid of the physical GPU or GI UUID if nvUvmInterfaceGetGpuInfo()
+    // requested information for a valid SMC partition.
     NvProcessorUuid uuid;
 
     // Gpu architecture; NV2080_CTRL_MC_ARCH_INFO_ARCHITECTURE_*
@@ -688,8 +698,12 @@ typedef struct UvmGpuInfo_tag
     NvU64 nvswitchMemoryWindowStart;
 
     // local EGM properties
+    // NV_TRUE if EGM is enabled
     NvBool   egmEnabled;
+    // Peer ID to reach local EGM when EGM is enabled
     NvU8     egmPeerId;
+    // EGM base address to offset in the GMMU PTE entry for EGM mappings
+    NvU64    egmBaseAddr;
 } UvmGpuInfo;
 
 typedef struct UvmGpuFbInfo_tag
@@ -778,21 +792,21 @@ typedef NV_STATUS (*uvmEventResume_t) (void);
 /*******************************************************************************
     uvmEventStartDevice
     This function will be called by the GPU driver once it has finished its
-    initialization to tell the UVM driver that this GPU has come up.
+    initialization to tell the UVM driver that this physical GPU has come up.
 */
 typedef NV_STATUS (*uvmEventStartDevice_t) (const NvProcessorUuid *pGpuUuidStruct);
 
 /*******************************************************************************
     uvmEventStopDevice
-    This function will be called by the GPU driver to let UVM know that a GPU
-    is going down.
+    This function will be called by the GPU driver to let UVM know that a
+    physical GPU is going down.
 */
 typedef NV_STATUS (*uvmEventStopDevice_t) (const NvProcessorUuid *pGpuUuidStruct);
 
 /*******************************************************************************
     uvmEventIsrTopHalf_t
     This function will be called by the GPU driver to let UVM know
-    that an interrupt has occurred.
+    that an interrupt has occurred on the given physical GPU.
 
     Returns:
         NV_OK if the UVM driver handled the interrupt
@@ -894,11 +908,6 @@ typedef struct UvmGpuFaultInfo_tag
         // CSL context used for performing decryption of replayable faults when
         // Confidential Computing is enabled.
         UvmCslContext cslCtx;
-
-        // Indicates whether UVM owns the replayable fault buffer.
-        // The value of this field is always NV_TRUE When Confidential Computing
-        // is disabled.
-        NvBool bUvmOwnsHwFaultBuffer;
     } replayable;
     struct
     {

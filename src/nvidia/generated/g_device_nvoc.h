@@ -42,6 +42,7 @@ extern "C" {
 #include "rmapi/control.h"
 #include "containers/btree.h"
 
+#include "gpu/gpu_halspec.h"
 #include "gpu/gpu_resource.h"
 #include "mem_mgr/vaspace.h"
 
@@ -67,11 +68,16 @@ typedef struct OBJVASPACE OBJVASPACE;
  *  semantics; that is, operations involving a device are applied to all GPUs
  *  in the device.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DEVICE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct Device {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -109,6 +115,7 @@ struct Device {
     NV_STATUS (*__deviceCtrlCmdFbGetCompbitStoreInfo__)(struct Device *, NV0080_CTRL_FB_GET_COMPBIT_STORE_INFO_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFbGetCaps__)(struct Device *, NV0080_CTRL_FB_GET_CAPS_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFbGetCapsV2__)(struct Device *, NV0080_CTRL_FB_GET_CAPS_V2_PARAMS *);
+    NV_STATUS (*__deviceCtrlCmdSetDefaultVidmemPhysicality__)(struct Device *, NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFifoGetCaps__)(struct Device *, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFifoGetCapsV2__)(struct Device *, NV0080_CTRL_FIFO_GET_CAPS_V2_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFifoStartSelectedChannels__)(struct Device *, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *);
@@ -121,9 +128,9 @@ struct Device {
     NV_STATUS (*__deviceCtrlCmdFifoIdleChannels__)(struct Device *, NV0080_CTRL_FIFO_IDLE_CHANNELS_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdHostGetCaps__)(struct Device *, NV0080_CTRL_HOST_GET_CAPS_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdHostGetCapsV2__)(struct Device *, NV0080_CTRL_HOST_GET_CAPS_V2_PARAMS *);
+    NV_STATUS (*__deviceCtrlCmdKPerfCudaLimitSetControl__)(struct Device *, NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdInternalPerfCudaLimitSetControl__)(struct Device *, NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdInternalPerfCudaLimitDisable__)(struct Device *);
-    NV_STATUS (*__deviceCtrlCmdInternalPerfGetUnderpoweredGpuCount__)(struct Device *, NV0080_CTRL_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdGpuGetClasslist__)(struct Device *, NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdGpuGetClasslistV2__)(struct Device *, NV0080_CTRL_GPU_GET_CLASSLIST_V2_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdGpuGetNumSubdevices__)(struct Device *, NV0080_CTRL_GPU_GET_NUM_SUBDEVICES_PARAMS *);
@@ -135,9 +142,12 @@ struct Device {
     NV_STATUS (*__deviceCtrlCmdGpuSetSparseTextureComputeMode__)(struct Device *, NV0080_CTRL_GPU_SET_SPARSE_TEXTURE_COMPUTE_MODE_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdGpuGetVgxCaps__)(struct Device *, NV0080_CTRL_GPU_GET_VGX_CAPS_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdGpuGetBrandCaps__)(struct Device *, NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *);
+    NV_STATUS (*__deviceCtrlCmdGpuVirtualizationSwitchToVga__)(struct Device *);
+    NV_STATUS (*__deviceCtrlCmdGpuSetVgpuHeterogeneousMode__)(struct Device *, NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS *);
+    NV_STATUS (*__deviceCtrlCmdGpuGetVgpuHeterogeneousMode__)(struct Device *, NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdGpuGetSriovCaps__)(struct Device *, NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdGpuGetFindSubDeviceHandle__)(struct Device *, NV0080_CTRL_GPU_FIND_SUBDEVICE_HANDLE_PARAM *);
-    NV_STATUS (*__deviceCtrlCmdMsencGetCaps__)(struct Device *, NV0080_CTRL_MSENC_GET_CAPS_PARAMS *);
+    NV_STATUS (*__deviceCtrlCmdMsencGetCapsV2__)(struct Device *, NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdBspGetCapsV2__)(struct Device *, NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2 *);
     NV_STATUS (*__deviceCtrlCmdNvjpgGetCapsV2__)(struct Device *, NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdOsUnixVTSwitch__)(struct Device *, NV0080_CTRL_OS_UNIX_VT_SWITCH_PARAMS *);
@@ -152,7 +162,6 @@ struct Device {
     NV_STATUS (*__deviceGetRegBaseOffsetAndSize__)(struct Device *, struct OBJGPU *, NvU32 *, NvU32 *);
     NV_STATUS (*__deviceUnmapFrom__)(struct Device *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__deviceControl_Epilogue__)(struct Device *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__deviceControlLookup__)(struct Device *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__deviceGetInternalObjectHandle__)(struct Device *);
     NV_STATUS (*__deviceUnmap__)(struct Device *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__deviceGetMemInterMapParams__)(struct Device *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -160,6 +169,7 @@ struct Device {
     NV_STATUS (*__deviceControlFilter__)(struct Device *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__deviceControlSerialization_Prologue__)(struct Device *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__deviceCanCopy__)(struct Device *);
+    NvBool (*__deviceIsPartialUnmapSupported__)(struct Device *);
     void (*__devicePreDestruct__)(struct Device *);
     NV_STATUS (*__deviceIsDuplicate__)(struct Device *, NvHandle, NvBool *);
     void (*__deviceControlSerialization_Epilogue__)(struct Device *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -182,6 +192,7 @@ struct Device {
     NvU64 vaLimitInternal;
     NvU64 vaSize;
     NvU32 vaMode;
+    NvU32 defaultVidmemPhysicalityOverride;
     struct KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
 };
 
@@ -224,6 +235,7 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceCtrlCmdDmaSetPageDirectory(pDevice, pParams) deviceCtrlCmdDmaSetPageDirectory_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdDmaUnsetPageDirectory(pDevice, pParams) deviceCtrlCmdDmaUnsetPageDirectory_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdDmaFlush(pDevice, flushParams) deviceCtrlCmdDmaFlush_DISPATCH(pDevice, flushParams)
+#define deviceCtrlCmdDmaFlush_HAL(pDevice, flushParams) deviceCtrlCmdDmaFlush_DISPATCH(pDevice, flushParams)
 #define deviceCtrlCmdDmaAdvSchedGetVaCaps(pDevice, pParams) deviceCtrlCmdDmaAdvSchedGetVaCaps_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdDmaGetPdeInfo(pDevice, pParams) deviceCtrlCmdDmaGetPdeInfo_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdDmaSetPteInfo(pDevice, pParams) deviceCtrlCmdDmaSetPteInfo_DISPATCH(pDevice, pParams)
@@ -241,6 +253,7 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceCtrlCmdFbGetCompbitStoreInfo(pDevice, pCompbitStoreParams) deviceCtrlCmdFbGetCompbitStoreInfo_DISPATCH(pDevice, pCompbitStoreParams)
 #define deviceCtrlCmdFbGetCaps(pDevice, pFbCapsParams) deviceCtrlCmdFbGetCaps_DISPATCH(pDevice, pFbCapsParams)
 #define deviceCtrlCmdFbGetCapsV2(pDevice, pFbCapsParams) deviceCtrlCmdFbGetCapsV2_DISPATCH(pDevice, pFbCapsParams)
+#define deviceCtrlCmdSetDefaultVidmemPhysicality(pDevice, pParams) deviceCtrlCmdSetDefaultVidmemPhysicality_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdFifoGetCaps(pDevice, pFifoCapsParams) deviceCtrlCmdFifoGetCaps_DISPATCH(pDevice, pFifoCapsParams)
 #define deviceCtrlCmdFifoGetCapsV2(pDevice, pFifoCapsParams) deviceCtrlCmdFifoGetCapsV2_DISPATCH(pDevice, pFifoCapsParams)
 #define deviceCtrlCmdFifoStartSelectedChannels(pDevice, pStartSel) deviceCtrlCmdFifoStartSelectedChannels_DISPATCH(pDevice, pStartSel)
@@ -253,9 +266,9 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceCtrlCmdFifoIdleChannels(pDevice, pParams) deviceCtrlCmdFifoIdleChannels_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdHostGetCaps(pDevice, pHostCapsParams) deviceCtrlCmdHostGetCaps_DISPATCH(pDevice, pHostCapsParams)
 #define deviceCtrlCmdHostGetCapsV2(pDevice, pHostCapsParamsV2) deviceCtrlCmdHostGetCapsV2_DISPATCH(pDevice, pHostCapsParamsV2)
+#define deviceCtrlCmdKPerfCudaLimitSetControl(pDevice, pParams) deviceCtrlCmdKPerfCudaLimitSetControl_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdInternalPerfCudaLimitSetControl(pDevice, pParams) deviceCtrlCmdInternalPerfCudaLimitSetControl_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdInternalPerfCudaLimitDisable(pDevice) deviceCtrlCmdInternalPerfCudaLimitDisable_DISPATCH(pDevice)
-#define deviceCtrlCmdInternalPerfGetUnderpoweredGpuCount(pDevice, pParams) deviceCtrlCmdInternalPerfGetUnderpoweredGpuCount_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdGpuGetClasslist(pDevice, pClassListParams) deviceCtrlCmdGpuGetClasslist_DISPATCH(pDevice, pClassListParams)
 #define deviceCtrlCmdGpuGetClasslistV2(pDevice, pParams) deviceCtrlCmdGpuGetClasslistV2_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdGpuGetNumSubdevices(pDevice, pSubDeviceCountParams) deviceCtrlCmdGpuGetNumSubdevices_DISPATCH(pDevice, pSubDeviceCountParams)
@@ -267,11 +280,17 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceCtrlCmdGpuSetSparseTextureComputeMode(pDevice, pModeParams) deviceCtrlCmdGpuSetSparseTextureComputeMode_DISPATCH(pDevice, pModeParams)
 #define deviceCtrlCmdGpuGetVgxCaps(pDevice, pParams) deviceCtrlCmdGpuGetVgxCaps_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdGpuGetBrandCaps(pDevice, pParams) deviceCtrlCmdGpuGetBrandCaps_DISPATCH(pDevice, pParams)
+#define deviceCtrlCmdGpuVirtualizationSwitchToVga(pDevice) deviceCtrlCmdGpuVirtualizationSwitchToVga_DISPATCH(pDevice)
+#define deviceCtrlCmdGpuSetVgpuHeterogeneousMode(pDevice, pParams) deviceCtrlCmdGpuSetVgpuHeterogeneousMode_DISPATCH(pDevice, pParams)
+#define deviceCtrlCmdGpuGetVgpuHeterogeneousMode(pDevice, pParams) deviceCtrlCmdGpuGetVgpuHeterogeneousMode_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdGpuGetSriovCaps(pDevice, pParams) deviceCtrlCmdGpuGetSriovCaps_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdGpuGetFindSubDeviceHandle(pDevice, pParams) deviceCtrlCmdGpuGetFindSubDeviceHandle_DISPATCH(pDevice, pParams)
-#define deviceCtrlCmdMsencGetCaps(pDevice, pMsencCapsParams) deviceCtrlCmdMsencGetCaps_DISPATCH(pDevice, pMsencCapsParams)
+#define deviceCtrlCmdMsencGetCapsV2(pDevice, pMsencCapsParams) deviceCtrlCmdMsencGetCapsV2_DISPATCH(pDevice, pMsencCapsParams)
+#define deviceCtrlCmdMsencGetCapsV2_HAL(pDevice, pMsencCapsParams) deviceCtrlCmdMsencGetCapsV2_DISPATCH(pDevice, pMsencCapsParams)
 #define deviceCtrlCmdBspGetCapsV2(pDevice, pBspCapParams) deviceCtrlCmdBspGetCapsV2_DISPATCH(pDevice, pBspCapParams)
+#define deviceCtrlCmdBspGetCapsV2_HAL(pDevice, pBspCapParams) deviceCtrlCmdBspGetCapsV2_DISPATCH(pDevice, pBspCapParams)
 #define deviceCtrlCmdNvjpgGetCapsV2(pDevice, pNvjpgCapsParams) deviceCtrlCmdNvjpgGetCapsV2_DISPATCH(pDevice, pNvjpgCapsParams)
+#define deviceCtrlCmdNvjpgGetCapsV2_HAL(pDevice, pNvjpgCapsParams) deviceCtrlCmdNvjpgGetCapsV2_DISPATCH(pDevice, pNvjpgCapsParams)
 #define deviceCtrlCmdOsUnixVTSwitch(pDevice, pParams) deviceCtrlCmdOsUnixVTSwitch_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdOsUnixVTGetFBInfo(pDevice, pParams) deviceCtrlCmdOsUnixVTGetFBInfo_DISPATCH(pDevice, pParams)
 #define deviceShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) deviceShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
@@ -284,7 +303,6 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) deviceGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
 #define deviceUnmapFrom(pResource, pParams) deviceUnmapFrom_DISPATCH(pResource, pParams)
 #define deviceControl_Epilogue(pResource, pCallContext, pParams) deviceControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define deviceControlLookup(pResource, pParams, ppEntry) deviceControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define deviceGetInternalObjectHandle(pGpuResource) deviceGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define deviceUnmap(pGpuResource, pCallContext, pCpuMapping) deviceUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define deviceGetMemInterMapParams(pRmResource, pParams) deviceGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -292,6 +310,7 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceControlFilter(pResource, pCallContext, pParams) deviceControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define deviceControlSerialization_Prologue(pResource, pCallContext, pParams) deviceControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define deviceCanCopy(pResource) deviceCanCopy_DISPATCH(pResource)
+#define deviceIsPartialUnmapSupported(pResource) deviceIsPartialUnmapSupported_DISPATCH(pResource)
 #define devicePreDestruct(pResource) devicePreDestruct_DISPATCH(pResource)
 #define deviceIsDuplicate(pResource, hMemory, pDuplicate) deviceIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define deviceControlSerialization_Epilogue(pResource, pCallContext, pParams) deviceControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -357,7 +376,11 @@ static inline NV_STATUS deviceCtrlCmdDmaUnsetPageDirectory_DISPATCH(struct Devic
     return pDevice->__deviceCtrlCmdDmaUnsetPageDirectory__(pDevice, pParams);
 }
 
-NV_STATUS deviceCtrlCmdDmaFlush_IMPL(struct Device *pDevice, NV0080_CTRL_DMA_FLUSH_PARAMS *flushParams);
+NV_STATUS deviceCtrlCmdDmaFlush_VF(struct Device *pDevice, NV0080_CTRL_DMA_FLUSH_PARAMS *flushParams);
+
+static inline NV_STATUS deviceCtrlCmdDmaFlush_5baef9(struct Device *pDevice, NV0080_CTRL_DMA_FLUSH_PARAMS *flushParams) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
 
 static inline NV_STATUS deviceCtrlCmdDmaFlush_DISPATCH(struct Device *pDevice, NV0080_CTRL_DMA_FLUSH_PARAMS *flushParams) {
     return pDevice->__deviceCtrlCmdDmaFlush__(pDevice, flushParams);
@@ -465,6 +488,12 @@ static inline NV_STATUS deviceCtrlCmdFbGetCapsV2_DISPATCH(struct Device *pDevice
     return pDevice->__deviceCtrlCmdFbGetCapsV2__(pDevice, pFbCapsParams);
 }
 
+NV_STATUS deviceCtrlCmdSetDefaultVidmemPhysicality_IMPL(struct Device *pDevice, NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS *pParams);
+
+static inline NV_STATUS deviceCtrlCmdSetDefaultVidmemPhysicality_DISPATCH(struct Device *pDevice, NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS *pParams) {
+    return pDevice->__deviceCtrlCmdSetDefaultVidmemPhysicality__(pDevice, pParams);
+}
+
 NV_STATUS deviceCtrlCmdFifoGetCaps_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *pFifoCapsParams);
 
 static inline NV_STATUS deviceCtrlCmdFifoGetCaps_DISPATCH(struct Device *pDevice, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *pFifoCapsParams) {
@@ -537,6 +566,12 @@ static inline NV_STATUS deviceCtrlCmdHostGetCapsV2_DISPATCH(struct Device *pDevi
     return pDevice->__deviceCtrlCmdHostGetCapsV2__(pDevice, pHostCapsParamsV2);
 }
 
+NV_STATUS deviceCtrlCmdKPerfCudaLimitSetControl_IMPL(struct Device *pDevice, NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS *pParams);
+
+static inline NV_STATUS deviceCtrlCmdKPerfCudaLimitSetControl_DISPATCH(struct Device *pDevice, NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS *pParams) {
+    return pDevice->__deviceCtrlCmdKPerfCudaLimitSetControl__(pDevice, pParams);
+}
+
 NV_STATUS deviceCtrlCmdInternalPerfCudaLimitSetControl_IMPL(struct Device *pDevice, NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS *pParams);
 
 static inline NV_STATUS deviceCtrlCmdInternalPerfCudaLimitSetControl_DISPATCH(struct Device *pDevice, NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS *pParams) {
@@ -547,12 +582,6 @@ NV_STATUS deviceCtrlCmdInternalPerfCudaLimitDisable_IMPL(struct Device *pDevice)
 
 static inline NV_STATUS deviceCtrlCmdInternalPerfCudaLimitDisable_DISPATCH(struct Device *pDevice) {
     return pDevice->__deviceCtrlCmdInternalPerfCudaLimitDisable__(pDevice);
-}
-
-NV_STATUS deviceCtrlCmdInternalPerfGetUnderpoweredGpuCount_IMPL(struct Device *pDevice, NV0080_CTRL_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT_PARAMS *pParams);
-
-static inline NV_STATUS deviceCtrlCmdInternalPerfGetUnderpoweredGpuCount_DISPATCH(struct Device *pDevice, NV0080_CTRL_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT_PARAMS *pParams) {
-    return pDevice->__deviceCtrlCmdInternalPerfGetUnderpoweredGpuCount__(pDevice, pParams);
 }
 
 NV_STATUS deviceCtrlCmdGpuGetClasslist_IMPL(struct Device *pDevice, NV0080_CTRL_GPU_GET_CLASSLIST_PARAMS *pClassListParams);
@@ -621,6 +650,24 @@ static inline NV_STATUS deviceCtrlCmdGpuGetBrandCaps_DISPATCH(struct Device *pDe
     return pDevice->__deviceCtrlCmdGpuGetBrandCaps__(pDevice, pParams);
 }
 
+NV_STATUS deviceCtrlCmdGpuVirtualizationSwitchToVga_IMPL(struct Device *pDevice);
+
+static inline NV_STATUS deviceCtrlCmdGpuVirtualizationSwitchToVga_DISPATCH(struct Device *pDevice) {
+    return pDevice->__deviceCtrlCmdGpuVirtualizationSwitchToVga__(pDevice);
+}
+
+NV_STATUS deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL(struct Device *pDevice, NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams);
+
+static inline NV_STATUS deviceCtrlCmdGpuSetVgpuHeterogeneousMode_DISPATCH(struct Device *pDevice, NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams) {
+    return pDevice->__deviceCtrlCmdGpuSetVgpuHeterogeneousMode__(pDevice, pParams);
+}
+
+NV_STATUS deviceCtrlCmdGpuGetVgpuHeterogeneousMode_IMPL(struct Device *pDevice, NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams);
+
+static inline NV_STATUS deviceCtrlCmdGpuGetVgpuHeterogeneousMode_DISPATCH(struct Device *pDevice, NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams) {
+    return pDevice->__deviceCtrlCmdGpuGetVgpuHeterogeneousMode__(pDevice, pParams);
+}
+
 NV_STATUS deviceCtrlCmdGpuGetSriovCaps_IMPL(struct Device *pDevice, NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS *pParams);
 
 static inline NV_STATUS deviceCtrlCmdGpuGetSriovCaps_DISPATCH(struct Device *pDevice, NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS *pParams) {
@@ -633,19 +680,31 @@ static inline NV_STATUS deviceCtrlCmdGpuGetFindSubDeviceHandle_DISPATCH(struct D
     return pDevice->__deviceCtrlCmdGpuGetFindSubDeviceHandle__(pDevice, pParams);
 }
 
-NV_STATUS deviceCtrlCmdMsencGetCaps_IMPL(struct Device *pDevice, NV0080_CTRL_MSENC_GET_CAPS_PARAMS *pMsencCapsParams);
+NV_STATUS deviceCtrlCmdMsencGetCapsV2_VF(struct Device *pDevice, NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *pMsencCapsParams);
 
-static inline NV_STATUS deviceCtrlCmdMsencGetCaps_DISPATCH(struct Device *pDevice, NV0080_CTRL_MSENC_GET_CAPS_PARAMS *pMsencCapsParams) {
-    return pDevice->__deviceCtrlCmdMsencGetCaps__(pDevice, pMsencCapsParams);
+static inline NV_STATUS deviceCtrlCmdMsencGetCapsV2_5baef9(struct Device *pDevice, NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *pMsencCapsParams) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
-NV_STATUS deviceCtrlCmdBspGetCapsV2_IMPL(struct Device *pDevice, NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2 *pBspCapParams);
+static inline NV_STATUS deviceCtrlCmdMsencGetCapsV2_DISPATCH(struct Device *pDevice, NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *pMsencCapsParams) {
+    return pDevice->__deviceCtrlCmdMsencGetCapsV2__(pDevice, pMsencCapsParams);
+}
+
+NV_STATUS deviceCtrlCmdBspGetCapsV2_VF(struct Device *pDevice, NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2 *pBspCapParams);
+
+static inline NV_STATUS deviceCtrlCmdBspGetCapsV2_5baef9(struct Device *pDevice, NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2 *pBspCapParams) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
 
 static inline NV_STATUS deviceCtrlCmdBspGetCapsV2_DISPATCH(struct Device *pDevice, NV0080_CTRL_BSP_GET_CAPS_PARAMS_V2 *pBspCapParams) {
     return pDevice->__deviceCtrlCmdBspGetCapsV2__(pDevice, pBspCapParams);
 }
 
-NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_IMPL(struct Device *pDevice, NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *pNvjpgCapsParams);
+NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_VF(struct Device *pDevice, NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *pNvjpgCapsParams);
+
+static inline NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_c04480(struct Device *pDevice, NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *pNvjpgCapsParams) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
 
 static inline NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_DISPATCH(struct Device *pDevice, NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *pNvjpgCapsParams) {
     return pDevice->__deviceCtrlCmdNvjpgGetCapsV2__(pDevice, pNvjpgCapsParams);
@@ -703,10 +762,6 @@ static inline void deviceControl_Epilogue_DISPATCH(struct Device *pResource, str
     pResource->__deviceControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS deviceControlLookup_DISPATCH(struct Device *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__deviceControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle deviceGetInternalObjectHandle_DISPATCH(struct Device *pGpuResource) {
     return pGpuResource->__deviceGetInternalObjectHandle__(pGpuResource);
 }
@@ -733,6 +788,10 @@ static inline NV_STATUS deviceControlSerialization_Prologue_DISPATCH(struct Devi
 
 static inline NvBool deviceCanCopy_DISPATCH(struct Device *pResource) {
     return pResource->__deviceCanCopy__(pResource);
+}
+
+static inline NvBool deviceIsPartialUnmapSupported_DISPATCH(struct Device *pResource) {
+    return pResource->__deviceIsPartialUnmapSupported__(pResource);
 }
 
 static inline void devicePreDestruct_DISPATCH(struct Device *pResource) {

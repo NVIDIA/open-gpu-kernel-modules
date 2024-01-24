@@ -188,6 +188,18 @@
 
 #define SOE_VBIOS_VERSION_MASK                        0xFF0000
 #define SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR    0x370000
+#define SOE_VBIOS_REVLOCK_ISSUE_INGRESS_STOP          0x440000
+
+// LS10 Saved LED state
+#define ACCESS_LINK_LED_STATE CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED
+
+// Access link LED states on LS10 Systems
+#define ACCESS_LINK_LED_STATE_FAULT      0U
+#define ACCESS_LINK_LED_STATE_OFF        1U
+#define ACCESS_LINK_LED_STATE_INITIALIZE 2U
+#define ACCESS_LINK_LED_STATE_UP_WARM    3U
+#define ACCESS_LINK_LED_STATE_UP_ACTIVE  4U
+#define ACCESS_LINK_NUM_LED_STATES       5U
 
 //
 // Helpful IO wrappers
@@ -503,7 +515,8 @@ typedef struct
               NV_NPORT_PORTSTAT_LS10(_block, _reg, _idx, ), _data);                 \
     }
 
-#define NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS (12 * NVSWITCH_INTERVAL_1SEC_IN_NS)
+#define NVSWITCH_DEFERRED_LINK_STATE_CHECK_INTERVAL_NS ((device->bModeContinuousALI ? 12 : 30) *\
+                                                        NVSWITCH_INTERVAL_1SEC_IN_NS)
 #define NVSWITCH_DEFERRED_FAULT_UP_CHECK_INTERVAL_NS   (12 * NVSWITCH_INTERVAL_1MSEC_IN_NS)
 
 // Struct used for passing around error masks in error handling functions
@@ -788,7 +801,6 @@ typedef const struct
 #define nvswitch_is_link_valid_ls10                 nvswitch_is_link_valid_lr10
 #define nvswitch_is_link_in_use_ls10                nvswitch_is_link_in_use_lr10
 
-#define nvswitch_initialize_device_state_ls10       nvswitch_initialize_device_state_lr10
 #define nvswitch_deassert_link_reset_ls10           nvswitch_deassert_link_reset_lr10
 #define nvswitch_determine_platform_ls10            nvswitch_determine_platform_lr10
 #define nvswitch_get_swap_clk_default_ls10          nvswitch_get_swap_clk_default_lr10
@@ -938,6 +950,7 @@ void   nvswitch_corelib_clear_link_state_lr10(nvlink_link *link);
 NvlStatus nvswitch_corelib_set_dl_link_mode_ls10(nvlink_link *link, NvU64 mode, NvU32 flags);
 NvlStatus nvswitch_corelib_set_tx_mode_ls10(nvlink_link *link, NvU64 mode, NvU32 flags);
 void nvswitch_init_lpwr_regs_ls10(nvlink_link *link);
+void nvswitch_program_l1_scratch_reg_ls10(nvswitch_device *device, NvU32 linkNumber);
 
 NvlStatus nvswitch_minion_service_falcon_interrupts_ls10(nvswitch_device *device, NvU32 instance);
 
@@ -987,15 +1000,16 @@ void      nvswitch_execute_unilateral_link_shutdown_ls10(nvlink_link *link);
 void      nvswitch_setup_link_system_registers_ls10(nvswitch_device *device, nvlink_link *link);
 void      nvswitch_load_link_disable_settings_ls10(nvswitch_device *device, nvlink_link *link);
 void      nvswitch_link_disable_interrupts_ls10(nvswitch_device *device, NvU32 link);
-
 void      nvswitch_init_dlpl_interrupts_ls10(nvlink_link *link);
 void      nvswitch_set_dlpl_interrupts_ls10(nvlink_link *link);
-NvlStatus nvswitch_reset_and_drain_links_ls10(nvswitch_device *device, NvU64 link_mask);
-
 void      nvswitch_service_minion_all_links_ls10(nvswitch_device *device);
 NvlStatus nvswitch_ctrl_get_board_part_number_ls10(nvswitch_device *device, NVSWITCH_GET_BOARD_PART_NUMBER_VECTOR *p);
 void      nvswitch_create_deferred_link_state_check_task_ls10(nvswitch_device *device, NvU32 nvlipt_instance, NvU32 link);
 NvlStatus nvswitch_request_tl_link_state_ls10(nvlink_link *link, NvU32 tlLinkState, NvBool bSync);
+NvlStatus nvswitch_ctrl_get_link_l1_capability_ls10(nvswitch_device *device, NvU32 linkId, NvBool *isL1Capable);
+NvlStatus nvswitch_ctrl_get_link_l1_threshold_ls10(nvswitch_device *device, NvU32 linkNum, NvU32 *lpThreshold);
+NvlStatus nvswitch_ctrl_set_link_l1_threshold_ls10(nvlink_link *link, NvU32 lpEntryThreshold);
+NvlStatus nvswitch_get_board_id_ls10(nvswitch_device *device, NvU16 *boardId);
 
 //
 // SU generated functions
@@ -1020,6 +1034,30 @@ NvBool    nvswitch_are_link_clocks_on_ls10(nvswitch_device *device, nvlink_link 
 NvBool    nvswitch_does_link_need_termination_enabled_ls10(nvswitch_device *device, nvlink_link *link);
 NvlStatus nvswitch_link_termination_setup_ls10(nvswitch_device *device, nvlink_link* link);
 void      nvswitch_get_error_rate_threshold_ls10(nvlink_link *link);
+void      nvswitch_fsp_update_cmdq_head_tail_ls10(nvswitch_device  *device, NvU32 queueHead, NvU32 queueTail);
+void      nvswitch_fsp_get_cmdq_head_tail_ls10(nvswitch_device  *device, NvU32 *pQueueHead, NvU32 *pQueueTail);
+void      nvswitch_fsp_update_msgq_head_tail_ls10(nvswitch_device *device, NvU32 msgqHead, NvU32 msgqTail);
+void      nvswitch_fsp_get_msgq_head_tail_ls10(nvswitch_device *device, NvU32 *pMsgqHead, NvU32 *pMsgqTail);
+NvU32     nvswitch_fsp_get_channel_size_ls10(nvswitch_device *device);
+NvU8      nvswitch_fsp_nvdm_to_seid_ls10(nvswitch_device *device, NvU8 nvdmType);
+NvU32     nvswitch_fsp_create_mctp_header_ls10(nvswitch_device *device, NvU8 som, NvU8 eom, NvU8 seid, NvU8 seq);
+NvU32     nvswitch_fsp_create_nvdm_header_ls10(nvswitch_device *device, NvU32 nvdmType);
+NvlStatus nvswitch_fsp_get_packet_info_ls10(nvswitch_device *device, NvU8 *pBuffer, NvU32 size, NvU8 *pPacketState, NvU8 *pTag);
+NvlStatus nvswitch_fsp_validate_mctp_payload_header_ls10(nvswitch_device *device, NvU8 *pBuffer, NvU32 size);
+NvlStatus nvswitch_fsp_process_nvdm_msg_ls10(nvswitch_device  *device, NvU8 *pBuffer, NvU32 size);
+NvlStatus nvswitch_fsp_process_cmd_response_ls10(nvswitch_device *device, NvU8 *pBuffer, NvU32 size);
+NvlStatus nvswitch_fsp_config_ememc_ls10(nvswitch_device *device, NvU32 offset, NvBool bAincw, NvBool bAincr);
+NvlStatus nvswitch_fsp_write_to_emem_ls10(nvswitch_device *device, NvU8 *pBuffer, NvU32 size);
+NvlStatus nvswitch_fsp_read_from_emem_ls10(nvswitch_device *device, NvU8 *pBuffer, NvU32 size);
+NvlStatus nvswitch_fsp_error_code_to_nvlstatus_map_ls10(nvswitch_device *device, NvU32 errorCode);
+NvlStatus nvswitch_fsprpc_get_caps_ls10(nvswitch_device *device, NVSWITCH_FSPRPC_GET_CAPS_PARAMS *params);
+
+NvlStatus nvswitch_ctrl_get_soe_heartbeat_ls10(nvswitch_device *device, NVSWITCH_GET_SOE_HEARTBEAT_PARAMS *p);
+NvlStatus nvswitch_cci_enable_iobist_ls10(nvswitch_device *device, NvU32 linkNumber, NvBool bEnable);
+NvlStatus nvswitch_cci_initialization_sequence_ls10(nvswitch_device *device, NvU32 linkNumber);
+NvlStatus nvswitch_cci_deinitialization_sequence_ls10(nvswitch_device *device, NvU32 linkNumber);
+void      nvswitch_update_link_state_led_ls10(nvswitch_device *device);
+void      nvswitch_led_shutdown_ls10(nvswitch_device *device);
 
 #endif //_LS10_H_
 

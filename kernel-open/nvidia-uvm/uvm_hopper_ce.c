@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2020-2022 NVIDIA Corporation
+    Copyright (c) 2020-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -22,6 +22,7 @@
 *******************************************************************************/
 
 #include "uvm_hal.h"
+#include "uvm_global.h"
 #include "uvm_push.h"
 #include "uvm_mem.h"
 #include "uvm_conf_computing.h"
@@ -154,7 +155,8 @@ static NvU32 hopper_memset_push_phys_mode(uvm_push_t *push, uvm_gpu_address_t ds
 
 static bool va_is_flat_vidmem(uvm_gpu_t *gpu, NvU64 va)
 {
-    return (uvm_mmu_gpu_needs_static_vidmem_mapping(gpu) || uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu)) &&
+    return (uvm_mmu_parent_gpu_needs_static_vidmem_mapping(gpu->parent) ||
+            uvm_mmu_parent_gpu_needs_dynamic_vidmem_mapping(gpu->parent)) &&
            va >= gpu->parent->flat_vidmem_va_base &&
            va < gpu->parent->flat_vidmem_va_base + UVM_GPU_MAX_PHYS_MEM;
 }
@@ -180,17 +182,18 @@ static bool hopper_scrub_enable(uvm_gpu_t *gpu, uvm_gpu_address_t *dst, size_t s
     return !dst->is_virtual && dst->aperture == UVM_APERTURE_VID;
 }
 
-static NvU32 hopper_memset_copy_type(uvm_push_t *push, uvm_gpu_address_t dst)
+static NvU32 hopper_memset_copy_type(uvm_gpu_address_t dst)
 {
-    if (uvm_conf_computing_mode_enabled(uvm_push_get_gpu(push)) && dst.is_unprotected)
+    if (g_uvm_global.conf_computing_enabled && dst.is_unprotected)
         return HWCONST(C8B5, LAUNCH_DMA, COPY_TYPE, NONPROT2NONPROT);
     return HWCONST(C8B5, LAUNCH_DMA, COPY_TYPE, DEFAULT);
 }
 
-NvU32 uvm_hal_hopper_ce_memcopy_copy_type(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src)
+NvU32 uvm_hal_hopper_ce_memcopy_copy_type(uvm_gpu_address_t dst, uvm_gpu_address_t src)
 {
-    if (uvm_conf_computing_mode_enabled(uvm_push_get_gpu(push)) && dst.is_unprotected && src.is_unprotected)
+    if (g_uvm_global.conf_computing_enabled && dst.is_unprotected && src.is_unprotected)
         return HWCONST(C8B5, LAUNCH_DMA, COPY_TYPE, NONPROT2NONPROT);
+
     return HWCONST(C8B5, LAUNCH_DMA, COPY_TYPE, DEFAULT);
 }
 
@@ -210,7 +213,7 @@ static void hopper_memset_common(uvm_push_t *push,
     NvU32 launch_dma_remap_enable;
     NvU32 launch_dma_scrub_enable;
     NvU32 flush_value = HWCONST(C8B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE);
-    NvU32 copy_type_value = hopper_memset_copy_type(push, dst);
+    NvU32 copy_type_value = hopper_memset_copy_type(dst);
     bool is_scrub = hopper_scrub_enable(gpu, &dst, num_elements * memset_element_size);
 
     UVM_ASSERT_MSG(gpu->parent->ce_hal->memset_is_valid(push, dst, num_elements, memset_element_size),

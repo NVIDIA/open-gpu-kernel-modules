@@ -146,10 +146,6 @@ static void __nvoc_thunk_RmResource_gsyncapiControl_Epilogue(struct GSyncApi *pR
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GSyncApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_gsyncapiControlLookup(struct GSyncApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GSyncApi_RsResource.offset), pParams, ppEntry);
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_gsyncapiUnmap(struct GSyncApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GSyncApi_RsResource.offset), pCallContext, pCpuMapping);
 }
@@ -176,6 +172,10 @@ static NV_STATUS __nvoc_thunk_RmResource_gsyncapiControlSerialization_Prologue(s
 
 static NvBool __nvoc_thunk_RsResource_gsyncapiCanCopy(struct GSyncApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GSyncApi_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_gsyncapiIsPartialUnmapSupported(struct GSyncApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GSyncApi_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_gsyncapiPreDestruct(struct GSyncApi *pResource) {
@@ -835,8 +835,6 @@ static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
 
     pThis->__gsyncapiControl_Epilogue__ = &__nvoc_thunk_RmResource_gsyncapiControl_Epilogue;
 
-    pThis->__gsyncapiControlLookup__ = &__nvoc_thunk_RsResource_gsyncapiControlLookup;
-
     pThis->__gsyncapiUnmap__ = &__nvoc_thunk_RsResource_gsyncapiUnmap;
 
     pThis->__gsyncapiGetMemInterMapParams__ = &__nvoc_thunk_RmResource_gsyncapiGetMemInterMapParams;
@@ -850,6 +848,8 @@ static void __nvoc_init_funcTable_GSyncApi_1(GSyncApi *pThis) {
     pThis->__gsyncapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_gsyncapiControlSerialization_Prologue;
 
     pThis->__gsyncapiCanCopy__ = &__nvoc_thunk_RsResource_gsyncapiCanCopy;
+
+    pThis->__gsyncapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_gsyncapiIsPartialUnmapSupported;
 
     pThis->__gsyncapiPreDestruct__ = &__nvoc_thunk_RsResource_gsyncapiPreDestruct;
 
@@ -885,21 +885,26 @@ void __nvoc_init_GSyncApi(GSyncApi *pThis) {
     __nvoc_init_funcTable_GSyncApi(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_GSyncApi(GSyncApi **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_GSyncApi(GSyncApi **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     GSyncApi *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(GSyncApi), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(GSyncApi));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_GSyncApi);
 
     pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -914,16 +919,25 @@ NV_STATUS __nvoc_objCreate_GSyncApi(GSyncApi **ppThis, Dynamic *pParent, NvU32 c
     status = __nvoc_ctor_GSyncApi(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_GSyncApi_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_GSyncApi_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(GSyncApi));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

@@ -72,11 +72,16 @@ typedef struct OBJHYPERVISOR OBJHYPERVISOR;
 
 typedef struct HOST_VGPU_DEVICE HOST_VGPU_DEVICE;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_HYPERVISOR_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJHYPERVISOR {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -88,7 +93,6 @@ struct OBJHYPERVISOR {
     HYPERVISOR_TYPE type;
     NvBool bIsHypervHost;
     NvBool bIsHypervVgpuSupported;
-    NvBool bIsACSupported;
 };
 
 #ifndef __NVOC_CLASS_OBJHYPERVISOR_TYPEDEF__
@@ -153,25 +157,6 @@ static inline void hypervisorSetHypervVgpuSupported(struct OBJHYPERVISOR *arg0) 
 #endif //__nvoc_hypervisor_h_disabled
 
 #define hypervisorSetHypervVgpuSupported_HAL(arg0) hypervisorSetHypervVgpuSupported(arg0)
-
-NvBool hypervisorIsAC_IMPL(void);
-
-
-#define hypervisorIsAC() hypervisorIsAC_IMPL()
-#define hypervisorIsAC_HAL() hypervisorIsAC()
-
-void hypervisorSetACSupported_IMPL(struct OBJHYPERVISOR *arg0);
-
-
-#ifdef __nvoc_hypervisor_h_disabled
-static inline void hypervisorSetACSupported(struct OBJHYPERVISOR *arg0) {
-    NV_ASSERT_FAILED_PRECOMP("OBJHYPERVISOR was disabled!");
-}
-#else //__nvoc_hypervisor_h_disabled
-#define hypervisorSetACSupported(arg0) hypervisorSetACSupported_IMPL(arg0)
-#endif //__nvoc_hypervisor_h_disabled
-
-#define hypervisorSetACSupported_HAL(arg0) hypervisorSetACSupported(arg0)
 
 NvBool hypervisorCheckForObjectAccess_IMPL(NvHandle hClient);
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -26,6 +26,7 @@
 #include "kernel/gpu/fifo/kernel_sched_mgr.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 
+#include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
 
 #include "nvRmReg.h"
@@ -64,6 +65,56 @@ kfifoConstructEngine_IMPL
              portMemAllocatorGetGlobalNonPaged());
     listInit(&pKernelFifo->preSchedulingDisableHandlerList,
              portMemAllocatorGetGlobalNonPaged());
+
+    return NV_OK;
+}
+
+NV_STATUS
+kfifoStateLoad_IMPL
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32 flags
+)
+{
+    if (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) && (flags & GPU_STATE_FLAGS_PRESERVING))
+    {
+        NV_STATUS rmStatus = NV_OK;
+
+        NV_RM_RPC_DISABLE_CHANNELS(pGpu, NV_FALSE, rmStatus);
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "RPC to enable all channels failed, status 0x%x\n", rmStatus);
+            DBG_BREAKPOINT();
+            return rmStatus;
+        }
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+kfifoStateUnload_IMPL
+(
+    OBJGPU *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32 flags
+)
+{
+    if (IS_VIRTUAL_WITH_FULL_SRIOV(pGpu) && (flags & GPU_STATE_FLAGS_PRESERVING))
+    {
+        NV_STATUS rmStatus = NV_OK;
+
+        NV_RM_RPC_DISABLE_CHANNELS(pGpu, NV_TRUE, rmStatus);
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "RPC to disable all channels failed, status 0x%x\n", rmStatus);
+            DBG_BREAKPOINT();
+            return rmStatus;
+        }
+    }
 
     return NV_OK;
 }
@@ -135,6 +186,14 @@ kfifoStateInitLocked_IMPL
         // only on host RM for SR-IOV capable SKUs (See gpuInitRegistryOverrides).
         // On MODS, the tests use the regkey to turn on SR-IOV
         //
+        if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+        {
+            VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+            pKernelFifo->bUsePerRunlistChram = pVSI->bPerRunlistChannelRamEnabled;
+            NV_PRINTF(LEVEL_INFO, "%s per runlist channel RAM in guest RM\n",
+                      pVSI->bPerRunlistChannelRamEnabled ? "Enabling" : "Disabling");
+        }
+        else
         {
             if (gpuIsSriovEnabled(pGpu))
             {

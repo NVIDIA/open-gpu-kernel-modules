@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2002-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2002-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -225,11 +225,7 @@ _nvDbgPrepareString
 #if PORT_IS_FUNC_SUPPORTED(portDbgExPrintfLevel)
 static NvU32 _nvDbgLevelToPlatformLevel(NvBool bForce,  NvU32 level)
 {
-#if   NVOS_IS_UNIX
-    return level;
-#else
     return bForce ? LEVEL_FATAL : level;
-#endif
 }
 #endif
 
@@ -1287,7 +1283,7 @@ done:
 // RmMsgPrefix - Add the RmMsg prefix to the passed in string, returning
 // the length of the formatted string.
 //
-// Format: "NVRM file linenum function timestamp: "
+// Format: "NVRM: file linenum function timestamp: "
 //
 NvU32
 RmMsgPrefix
@@ -1310,7 +1306,8 @@ RmMsgPrefix
     {
         portStringCopy(str + len, totalLen - len, NV_PRINTF_PREFIX, sizeof(NV_PRINTF_PREFIX));
         len += sizeof(NV_PRINTF_PREFIX) - 1;
-        space = " ";
+        portStringCopy(str + len, totalLen - len, NV_PRINTF_PREFIX_SEPARATOR, sizeof(NV_PRINTF_PREFIX_SEPARATOR));
+        len += sizeof(NV_PRINTF_PREFIX_SEPARATOR) - 1;
     }
 
     if (prefix & NVRM_MSG_PREFIX_FILE)

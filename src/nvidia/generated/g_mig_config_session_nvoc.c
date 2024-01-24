@@ -116,10 +116,6 @@ static void __nvoc_thunk_RsResource_migconfigsessionAddAdditionalDependants(stru
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RsResource.offset), pReference);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migconfigsessionUnmapFrom(struct MIGConfigSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RsResource.offset), pParams);
-}
-
 static NV_STATUS __nvoc_thunk_RmResource_migconfigsessionControlSerialization_Prologue(struct MIGConfigSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RmResource.offset), pCallContext, pParams);
 }
@@ -134,6 +130,10 @@ static NvBool __nvoc_thunk_RsResource_migconfigsessionCanCopy(struct MIGConfigSe
 
 static NV_STATUS __nvoc_thunk_RsResource_migconfigsessionUnmap(struct MIGConfigSession *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RsResource.offset), pCallContext, pCpuMapping);
+}
+
+static NvBool __nvoc_thunk_RsResource_migconfigsessionIsPartialUnmapSupported(struct MIGConfigSession *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_migconfigsessionPreDestruct(struct MIGConfigSession *pResource) {
@@ -156,8 +156,8 @@ static void __nvoc_thunk_RmResource_migconfigsessionControl_Epilogue(struct MIGC
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_migconfigsessionControlLookup(struct MIGConfigSession *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RsResource.offset), pParams, ppEntry);
+static NV_STATUS __nvoc_thunk_RsResource_migconfigsessionUnmapFrom(struct MIGConfigSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MIGConfigSession_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_migconfigsessionMap(struct MIGConfigSession *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -223,8 +223,6 @@ static void __nvoc_init_funcTable_MIGConfigSession_1(MIGConfigSession *pThis) {
 
     pThis->__migconfigsessionAddAdditionalDependants__ = &__nvoc_thunk_RsResource_migconfigsessionAddAdditionalDependants;
 
-    pThis->__migconfigsessionUnmapFrom__ = &__nvoc_thunk_RsResource_migconfigsessionUnmapFrom;
-
     pThis->__migconfigsessionControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_migconfigsessionControlSerialization_Prologue;
 
     pThis->__migconfigsessionControl_Prologue__ = &__nvoc_thunk_RmResource_migconfigsessionControl_Prologue;
@@ -232,6 +230,8 @@ static void __nvoc_init_funcTable_MIGConfigSession_1(MIGConfigSession *pThis) {
     pThis->__migconfigsessionCanCopy__ = &__nvoc_thunk_RsResource_migconfigsessionCanCopy;
 
     pThis->__migconfigsessionUnmap__ = &__nvoc_thunk_RsResource_migconfigsessionUnmap;
+
+    pThis->__migconfigsessionIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_migconfigsessionIsPartialUnmapSupported;
 
     pThis->__migconfigsessionPreDestruct__ = &__nvoc_thunk_RsResource_migconfigsessionPreDestruct;
 
@@ -243,7 +243,7 @@ static void __nvoc_init_funcTable_MIGConfigSession_1(MIGConfigSession *pThis) {
 
     pThis->__migconfigsessionControl_Epilogue__ = &__nvoc_thunk_RmResource_migconfigsessionControl_Epilogue;
 
-    pThis->__migconfigsessionControlLookup__ = &__nvoc_thunk_RsResource_migconfigsessionControlLookup;
+    pThis->__migconfigsessionUnmapFrom__ = &__nvoc_thunk_RsResource_migconfigsessionUnmapFrom;
 
     pThis->__migconfigsessionMap__ = &__nvoc_thunk_RsResource_migconfigsessionMap;
 
@@ -265,21 +265,26 @@ void __nvoc_init_MIGConfigSession(MIGConfigSession *pThis) {
     __nvoc_init_funcTable_MIGConfigSession(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_MIGConfigSession(MIGConfigSession **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_MIGConfigSession(MIGConfigSession **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     MIGConfigSession *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(MIGConfigSession), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(MIGConfigSession));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_MIGConfigSession);
 
     pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -294,16 +299,25 @@ NV_STATUS __nvoc_objCreate_MIGConfigSession(MIGConfigSession **ppThis, Dynamic *
     status = __nvoc_ctor_MIGConfigSession(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_MIGConfigSession_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_MIGConfigSession_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(MIGConfigSession));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

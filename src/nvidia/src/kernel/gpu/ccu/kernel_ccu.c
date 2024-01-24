@@ -34,42 +34,11 @@
 #include "ctrl/ctrl2080/ctrl2080perf_cf.h"
 #include "utils/nvassert.h"
 
-/*!
- * Constrcutor for kccu class.
- *
- * @param[in] pGpu          GPU object pointer.
- * @param[in] pKernelCcu    KernelCcu object pointer
- * @param[in] engDesc       KernelCcu Engine descriptor
- *
- * @return  NV_OK  If successfully constructed.
- */
-NV_STATUS
-kccuConstructEngine_IMPL
-(
-   OBJGPU        *pGpu,
-   KernelCcu     *pKernelCcu,
-   ENGDESCRIPTOR engDesc
-)
+NV_STATUS kccuConstructEngine_IMPL(OBJGPU *pGpu,
+                                   KernelCcu *pKernelCcu,
+                                   ENGDESCRIPTOR engDesc)
 {
-    NV_PRINTF(LEVEL_INFO, "KernelCcu: Constructor\n");
-
     return NV_OK;
-}
-
-/*!
- * Destructor
- *
- * @param[in]  pKernelCcu  KernelCcu object pointer
- */
-void
-kccuDestruct_IMPL
-(
-    KernelCcu *pKernelCcu
-)
-{
-    NV_PRINTF(LEVEL_INFO, "KernelCcu: Destructor\n");
-
-    return;
 }
 
 /*!
@@ -399,11 +368,6 @@ NV_STATUS kccuStateLoad_IMPL
 
     NV_PRINTF(LEVEL_INFO, "KernelCcu: State load \n");
 
-    if (IS_VIRTUAL(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
     // Create device shared buffer
     status = _kccuInitDevSharedBuffer(pGpu, pKernelCcu);
     if (status != NV_OK)
@@ -480,11 +444,6 @@ NV_STATUS kccuMemDescGetForShrBufId_IMPL
 {
     NV_PRINTF(LEVEL_INFO, "KernelCcu: Get memdesc for idx(%u) \n", idx);
 
-    if (IS_VIRTUAL(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
     if (idx >= CCU_SHRBUF_COUNT_MAX)
     {
         NV_PRINTF(LEVEL_ERROR, "CCU memdesc get failed for input idx(%u). Invalid index.\n",
@@ -518,11 +477,6 @@ NV_STATUS kccuMemDescGetForSwizzId_IMPL
 )
 {
     NvU32 idx = 0;
-
-    if (IS_VIRTUAL(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
 
     for (idx = CCU_MIG_SHRBUF_ID_START; idx < CCU_SHRBUF_COUNT_MAX; idx++)
     {
@@ -686,11 +640,6 @@ NV_STATUS kccuMemDescGetForComputeInst_IMPL
 )
 {
     NvU32 idx;
-
-    if (IS_VIRTUAL(pGpu))
-    {
-        return NV_ERR_NOT_SUPPORTED;
-    }
 
     for (idx = CCU_MIG_SHRBUF_ID_START; idx < CCU_SHRBUF_COUNT_MAX; idx++)
     {

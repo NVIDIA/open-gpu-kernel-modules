@@ -75,4 +75,6 @@
 
 #define RS_FLAGS_ALLOC_ALL_VGPU_PLUGINS           (RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_VGPU_GSP | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_SRIOV | RS_FLAGS_ALLOC_CPU_PLUGIN_FOR_LEGACY | RS_FLAGS_ALLOC_GSP_PLUGIN_FOR_VGPU_GSP)
 
+#define RS_FLAGS_DUAL_CLIENT_LOCK                 NVBIT(15)  ///< Class needs to lock two clients when being allocated, must update serverAllocLookupSecondClient in order to use
+
 #endif // _RESOURCE_DESC_FLAGS_H_

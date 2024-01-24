@@ -490,6 +490,8 @@ typedef enum NvKmsKapiRegisterWaiterResultRec {
     NVKMS_KAPI_REG_WAITER_ALREADY_SIGNALLED,
 } NvKmsKapiRegisterWaiterResult;
 
+typedef void NvKmsKapiSuspendResumeCallbackFunc(NvBool suspend);
+
 struct NvKmsKapiFunctionsTable {
 
     /*!
@@ -1398,6 +1400,15 @@ struct NvKmsKapiFunctionsTable {
         struct NvKmsKapiSemaphoreSurface *semaphoreSurface,
         NvU64 index,
         NvU64 new_value
+    );
+
+    /*!
+     * Set the callback function for suspending and resuming the display system.
+     */
+    void
+    (*setSuspendResumeCallback)
+    (
+        NvKmsKapiSuspendResumeCallbackFunc *function
     );
 };
 

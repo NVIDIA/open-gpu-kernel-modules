@@ -30,7 +30,6 @@
 #include "core/prelude.h"
 #include "core/locks.h"
 #include "gpu/mem_mgr/sec2_utils.h"
-#include "gpu/subdevice/subdevice.h"
 #include "kernel/gpu/mem_mgr/ce_utils_sizes.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "nvrm_registry.h"
@@ -287,8 +286,8 @@ sec2utilsDestruct_IMPL
 {
     OBJCHANNEL *pChannel = pSec2Utils->pChannel;
     OBJGPU *pGpu = pSec2Utils->pGpu;
-    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    MemoryManager *pMemoryManager = NULL;
+    RM_API *pRmApi = NULL;
 
     // Sanity checks
     if ((pGpu == NULL) || (pChannel == NULL))
@@ -301,6 +300,9 @@ sec2utilsDestruct_IMPL
         NV_PRINTF(LEVEL_ERROR, "Bad state during sec2Utils teardown!\n");
         return;
     }
+
+    pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
 
     ccslContextClear(pSec2Utils->pCcslCtx);
 
@@ -591,7 +593,7 @@ sec2utilsMemset_IMPL
     do
     {
         NvU64 maxContigSize = bContiguous ? memsetLength : (pageGranularity - offset % pageGranularity);
-        NvU32 memsetSizeContig = (NvU32)NV_MIN(NV_MIN(memsetLength, maxContigSize), NVCBA2_DECRYPT_COPY_SIZE_MAX_BYTES);
+        NvU32 memsetSizeContig = (NvU32)NV_MIN(NV_MIN(memsetLength, maxContigSize), NVCBA2_DECRYPT_SCRUB_SIZE_MAX_BYTES);
 
         channelPbInfo.dstAddr = memdescGetPhysAddr(pMemDesc, AT_GPU, offset);
 

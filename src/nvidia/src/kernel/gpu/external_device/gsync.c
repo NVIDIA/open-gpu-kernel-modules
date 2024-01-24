@@ -35,6 +35,7 @@
 #include "core/system.h"
 #include "core/locks.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
 #include "gpu/external_device/gsync.h"
 #include "os/os.h"
 #include "rmapi/control.h"

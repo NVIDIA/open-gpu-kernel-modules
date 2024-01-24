@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,6 +57,14 @@ intrInitSubtreeMap_GH100
     pCategoryRunlistLocked->subtreeStart = NV_CPU_INTR_STALL_SUBTREE_LAST_SWRL;
     pCategoryRunlistLocked->subtreeEnd   = NV_CPU_INTR_STALL_SUBTREE_LAST_SWRL;
 
+    //
+    // Don't reprogram NV_RUNLIST_INTR_TREE_LOCKLESS (runlist notification)
+    // vectors to a different subtree than their init values in Hopper unlike
+    // Ampere. INTR_TOP is covered with a "nonstall" mask corresponding to these
+    // leaf ranges.
+    // It is okay to reprogram the vectors for individual runlists within the
+    // same subtree.
+    //
     NV2080_INTR_CATEGORY_SUBTREE_MAP *pCategoryRunlistNotification =
         &pIntr->subtreeMap[NV2080_INTR_CATEGORY_RUNLIST_NOTIFICATION];
     pCategoryRunlistNotification->subtreeStart = NV_CPU_INTR_STALL_SUBTREE_LAST;

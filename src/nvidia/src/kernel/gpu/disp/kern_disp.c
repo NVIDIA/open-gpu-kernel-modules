@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,6 +47,7 @@
 #include "ctrl/ctrl402c.h"
 #include "platform/acpi_common.h"
 #include "nvrm_registry.h"
+#include "gpu/mem_mgr/mem_mgr.h"
 
 #include "kernel/gpu/intr/engine_idx.h"
 
@@ -506,6 +507,110 @@ kdispStateDestroy_IMPL(OBJGPU *pGpu,
 }
 
 NV_STATUS
+kdispAllocateSharedMem_IMPL
+(
+    OBJGPU *pGpu,
+    KernelDisplay *pKernelDisplay
+)
+{
+    NV_STATUS rmStatus;
+    void *address = NULL;
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV_ADDRESS_SPACE addressSpace = ADDR_FBMEM;
+    struct NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA_PARAMS params = {0};
+    NvBool bIsFbBroken = NV_FALSE;
+
+    NV_ASSERT_OR_RETURN(pKernelDisplay->pSharedData == NULL, NV_ERR_INVALID_STATE);
+
+    bIsFbBroken = pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB) ||
+                    pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_ALL_INST_IN_SYSMEM);
+    if (bIsFbBroken)
+        addressSpace = ADDR_SYSMEM;
+
+    rmStatus = memdescCreate(&pKernelDisplay->pSharedMemDesc,
+                             pGpu,
+                             sizeof(KernelDisplaySharedMem),
+                             RM_PAGE_SIZE,
+                             NV_TRUE,
+                             addressSpace,
+                             NV_MEMORY_UNCACHED,
+                             MEMDESC_FLAGS_NONE);
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed to create memdesc from FB!\n");
+        return rmStatus;
+    }
+
+    rmStatus = memdescAlloc(pKernelDisplay->pSharedMemDesc);
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed to allocate memory from FB!\n");
+        goto exit;
+    }
+
+    address = memdescMapInternal(pGpu, pKernelDisplay->pSharedMemDesc, 0);
+    if (address == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed to map memory!\n");
+        goto exit;
+    }
+    pKernelDisplay->pSharedData = (KernelDisplaySharedMem *)address;
+
+    params.memDescInfo.base = memdescGetPhysAddr(pKernelDisplay->pSharedMemDesc, AT_GPU, 0);
+    params.memDescInfo.size = sizeof(KernelDisplaySharedMem);
+    params.memDescInfo.alignment = pKernelDisplay->pSharedMemDesc->Alignment;
+    params.memDescInfo.addressSpace = addressSpace;
+    params.memDescInfo.cpuCacheAttrib = NV_MEMORY_UNCACHED;
+    params.bMap = NV_TRUE;
+    rmStatus = pRmApi->Control(pRmApi,
+                               kdispGetInternalClientHandle(pKernelDisplay),
+                               kdispGetDispCommonHandle(pKernelDisplay),
+                               NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA,
+                               &params, sizeof(params));
+    if (rmStatus != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA RM control failed!\n");
+        goto exit;
+    }
+
+    return rmStatus;
+
+exit:
+    kdispFreeSharedMem(pGpu, pKernelDisplay);
+    return rmStatus;
+}
+
+void
+kdispFreeSharedMem_IMPL
+(
+    OBJGPU *pGpu,
+    KernelDisplay *pKernelDisplay
+)
+{
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);;
+    struct NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA_PARAMS params = {0};
+
+    if (pKernelDisplay->pSharedData != NULL)
+    {
+        params.bMap = NV_FALSE;
+        pRmApi->Control(pRmApi, kdispGetInternalClientHandle(pKernelDisplay),
+                        kdispGetDispCommonHandle(pKernelDisplay),
+                        NV0073_CTRL_CMD_SYSTEM_MAP_SHARED_DATA,
+                        &params, sizeof(params));
+ 
+        memdescUnmapInternal(pGpu, pKernelDisplay->pSharedMemDesc, 0);
+        pKernelDisplay->pSharedData = NULL;
+    }
+
+    if (pKernelDisplay->pSharedMemDesc != NULL)
+    {
+        memdescFree(pKernelDisplay->pSharedMemDesc);
+        memdescDestroy(pKernelDisplay->pSharedMemDesc);
+        pKernelDisplay->pSharedMemDesc = NULL;
+    }
+}
+
+NV_STATUS
 kdispStateLoad_IMPL
 (
     OBJGPU        *pGpu,
@@ -517,6 +622,8 @@ kdispStateLoad_IMPL
 
     if (pKernelDisplay->pInst != NULL)
         status = instmemStateLoad(pGpu, pKernelDisplay->pInst, flags);
+
+    kdispAllocateSharedMem_HAL(pGpu, pKernelDisplay);
 
     return status;
 }
@@ -533,6 +640,8 @@ kdispStateUnload_IMPL
 
     if (pKernelDisplay->pInst != NULL)
         status = instmemStateUnload(pGpu, pKernelDisplay->pInst, flags);
+
+    kdispFreeSharedMem_HAL(pGpu, pKernelDisplay);
 
     return status;
 }
@@ -641,6 +750,102 @@ kdispGetIntChnClsForHwCls_IMPL
 }
 
 void
+kdispNotifyCommonEvent_IMPL
+(
+    OBJGPU        *pGpu,
+    KernelDisplay *pKernelDisplay,
+    NvU32          notifyIndex,
+    void          *pNotifyParams
+)
+{
+    PEVENTNOTIFICATION pEventNotifications;
+    NvU32             *pNotifyActions;
+    NvU32              disableCmd, singleCmd;
+    NvU32              subDeviceInst;
+    NOTIFICATION      *pParams = (NOTIFICATION *)pNotifyParams;
+    RS_SHARE_ITERATOR  it = serverutilShareIter(classId(NotifShare));
+
+    // search notifiers with events hooked up for this gpu
+    while (serverutilShareIterNext(&it))
+    {
+        RsShared   *pShared = it.pShared;
+        DispCommon *pDispCommon;
+        DisplayApi *pDisplayApi;
+        Device     *pDevice;
+        INotifier  *pNotifier;
+        NotifShare *pNotifierShare = dynamicCast(pShared, NotifShare);
+
+        if ((pNotifierShare == NULL) || (pNotifierShare->pNotifier == NULL))
+            continue;
+
+        pNotifier = pNotifierShare->pNotifier;
+        pDispCommon = dynamicCast(pNotifier, DispCommon);
+
+        // Only notify matching GPUs
+        if (pDispCommon == NULL)
+            continue;
+
+        pDevice = dynamicCast(RES_GET_REF(pDispCommon)->pParentRef->pResource, Device);
+        if (GPU_RES_GET_GPU(pDevice) != pGpu)
+            continue;
+        pDisplayApi = staticCast(pDispCommon, DisplayApi);
+
+        gpuSetThreadBcState(GPU_RES_GET_GPU(pDevice), pDisplayApi->bBcResource);
+
+        disableCmd = NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_DISABLE;
+        singleCmd = NV0073_CTRL_EVENT_SET_NOTIFICATION_ACTION_SINGLE;
+
+        // get notify actions list
+        subDeviceInst = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
+        pNotifyActions = pDisplayApi->pNotifyActions[subDeviceInst];
+        if (pNotifyActions == NULL)
+        {
+            continue;
+        }
+
+        // get event list
+        pEventNotifications = inotifyGetNotificationList(pNotifier);
+        if (pEventNotifications == NULL)
+        {
+            continue;
+        }
+
+        // skip if client not "listening" to events of this type
+        if (pNotifyActions[notifyIndex] == disableCmd)
+        {
+            continue;
+        }
+
+        if (pDisplayApi->hNotifierMemory != NV01_NULL_OBJECT &&
+            pDisplayApi->pNotifierMemory != NULL)
+        {
+            NvV32 Info32 = 0;
+            NvV16 Info16 = 0;
+
+            if (pParams != NULL)
+            {
+                Info32 = pParams->OtherInfo32;
+                Info16 = pParams->Info16Status.Info16Status_16.OtherInfo16;
+            }
+
+            notifyFillNotifierMemory(pGpu, pDisplayApi->pNotifierMemory, Info32, Info16,
+                                     NV0073_NOTIFICATION_STATUS_DONE_SUCCESS, notifyIndex);
+        }
+
+        // ping events bound to subdevice associated with pGpu
+        osEventNotification(pGpu, pEventNotifications,
+                            (notifyIndex | OS_EVENT_NOTIFICATION_INDEX_MATCH_SUBDEV),
+                            pParams, sizeof(*pParams));
+
+        // reset if single shot notify action
+        if (pNotifyActions[notifyIndex] == singleCmd)
+        {
+            pNotifyActions[notifyIndex] = disableCmd;
+        }
+    }
+}
+
+void
 kdispNotifyEvent_IMPL
 (
     OBJGPU        *pGpu,
@@ -662,6 +867,7 @@ kdispNotifyEvent_IMPL
     while (serverutilShareIterNext(&it))
     {
         RsShared   *pShared = it.pShared;
+        DispObject *pDispObject;
         DisplayApi *pDisplayApi;
         INotifier  *pNotifier;
         Device     *pDevice;
@@ -671,16 +877,18 @@ kdispNotifyEvent_IMPL
             continue;
 
         pNotifier = pNotifierShare->pNotifier;
-        pDisplayApi = dynamicCast(pNotifier, DisplayApi);
+        pDispObject = dynamicCast(pNotifier, DispObject);
 
         // Only notify matching GPUs
-        if (pDisplayApi == NULL)
+        if (pDispObject == NULL)
             continue;
 
-        pDevice = dynamicCast(RES_GET_REF(pDisplayApi)->pParentRef->pResource, Device);
+        pDevice = dynamicCast(RES_GET_REF(pDispObject)->pParentRef->pResource, Device);
 
         if (GPU_RES_GET_GPU(pDevice) != pGpu)
             continue;
+
+        pDisplayApi = staticCast(pDispObject, DisplayApi);
 
         gpuSetThreadBcState(GPU_RES_GET_GPU(pDevice), pDisplayApi->bBcResource);
 

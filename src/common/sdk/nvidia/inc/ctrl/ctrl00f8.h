@@ -205,7 +205,8 @@ typedef struct NV00F8_CTRL_ATTACH_MEM_INFO {
  *
  *  Restrictions:
  *  a. Physical memory with 2MB pagesize is allowed
- *  b. Only vidmem physical memory handle can be attached
+ *  b. vidmem and sysmem with fixed node ID can be attached.
+ *     sysmem with fixed node ID is supported only if EGM is enabled.
  *  c. Supported only for flexible fabric objects.
  */
 #define NV00F8_CTRL_CMD_ATTACH_MEM      (0xf80103) /* finn: Evaluated from "(FINN_NV_MEMORY_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00F8_CTRL_ATTACH_MEM_PARAMS_MESSAGE_ID" */

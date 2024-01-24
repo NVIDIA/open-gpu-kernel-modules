@@ -23,9 +23,6 @@
 
 #define NVOC_KERNEL_IOCTRL_H_PRIVATE_ACCESS_ALLOWED
 
-// FIXME XXX
-#define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
-
 #include "os/os.h"
 #include "nvRmReg.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
@@ -60,15 +57,17 @@ kioctrlMinionConstruct_GV100
                       "NVLink MINION is not supported on this platform, disabling.\n");
         }
 
+        NvU32 minionControl = knvlinkGetMinionControl(pGpu, pKernelNvlink);
+
         // Read in any MINION registry overrides.
         if (NV_OK == osReadRegistryDword(pGpu,
-                    NV_REG_STR_RM_NVLINK_MINION_CONTROL, &pKernelNvlink->minionControl))
+                    NV_REG_STR_RM_NVLINK_MINION_CONTROL, &minionControl))
         {
             NV_PRINTF(LEVEL_INFO, "%s: 0x%x\n",
-                      NV_REG_STR_RM_NVLINK_MINION_CONTROL, pKernelNvlink->minionControl);
+                      NV_REG_STR_RM_NVLINK_MINION_CONTROL, minionControl);
 
             // Select requested enable state
-            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _ENABLE, pKernelNvlink->minionControl))
+            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _ENABLE, minionControl))
             {
                 case NV_REG_STR_RM_NVLINK_MINION_CONTROL_ENABLE_FORCE_ON:
                     NV_PRINTF(LEVEL_INFO,
@@ -85,7 +84,7 @@ kioctrlMinionConstruct_GV100
                     break;
             }
 
-            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _CACHE_SEEDS, pKernelNvlink->minionControl))
+            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _CACHE_SEEDS, minionControl))
             {
                 case NV_REG_STR_RM_NVLINK_MINION_CONTROL_CACHE_SEEDS_ENABLE:
                 {
@@ -103,7 +102,7 @@ kioctrlMinionConstruct_GV100
                 }
             }
 
-            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _ALI_TRAINING, pKernelNvlink->minionControl))
+            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _ALI_TRAINING, minionControl))
             {
                 case NV_REG_STR_RM_NVLINK_MINION_CONTROL_ALI_TRAINING_ENABLE:
                 {
@@ -129,7 +128,7 @@ kioctrlMinionConstruct_GV100
                 }
             }
 
-            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _GFW_BOOT_DISABLE, pKernelNvlink->minionControl))
+            switch (DRF_VAL(_REG_STR_RM, _NVLINK_MINION_CONTROL, _GFW_BOOT_DISABLE, minionControl))
             {
                 case NV_REG_STR_RM_NVLINK_MINION_CONTROL_GFW_BOOT_DISABLE_DISABLE:
                 {

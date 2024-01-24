@@ -52,11 +52,16 @@ extern "C" {
 //                          Type Definitions
 // ****************************************************************************
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_MEM_FABRIC_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct MemoryFabric {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Memory __nvoc_base_Memory;
@@ -87,12 +92,12 @@ struct MemoryFabric {
     NvBool (*__memoryfabricIsGpuMapAllowed__)(struct MemoryFabric *, struct OBJGPU *);
     NV_STATUS (*__memoryfabricUnmapFrom__)(struct MemoryFabric *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__memoryfabricControl_Epilogue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__memoryfabricControlLookup__)(struct MemoryFabric *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__memoryfabricUnmap__)(struct MemoryFabric *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__memoryfabricGetMemInterMapParams__)(struct MemoryFabric *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__memoryfabricGetMemoryMappingDescriptor__)(struct MemoryFabric *, MEMORY_DESCRIPTOR **);
     NV_STATUS (*__memoryfabricControlFilter__)(struct MemoryFabric *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memoryfabricControlSerialization_Prologue__)(struct MemoryFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__memoryfabricIsPartialUnmapSupported__)(struct MemoryFabric *);
     NV_STATUS (*__memoryfabricIsReady__)(struct MemoryFabric *, NvBool);
     NV_STATUS (*__memoryfabricCheckCopyPermissions__)(struct MemoryFabric *, struct OBJGPU *, struct Device *);
     void (*__memoryfabricPreDestruct__)(struct MemoryFabric *);
@@ -151,12 +156,12 @@ NV_STATUS __nvoc_objCreate_MemoryFabric(MemoryFabric**, Dynamic*, NvU32, CALL_CO
 #define memoryfabricIsGpuMapAllowed(pMemory, pGpu) memoryfabricIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define memoryfabricUnmapFrom(pResource, pParams) memoryfabricUnmapFrom_DISPATCH(pResource, pParams)
 #define memoryfabricControl_Epilogue(pResource, pCallContext, pParams) memoryfabricControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memoryfabricControlLookup(pResource, pParams, ppEntry) memoryfabricControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define memoryfabricUnmap(pMemory, pCallContext, pCpuMapping) memoryfabricUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define memoryfabricGetMemInterMapParams(pMemory, pParams) memoryfabricGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define memoryfabricGetMemoryMappingDescriptor(pMemory, ppMemDesc) memoryfabricGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define memoryfabricControlFilter(pResource, pCallContext, pParams) memoryfabricControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define memoryfabricControlSerialization_Prologue(pResource, pCallContext, pParams) memoryfabricControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define memoryfabricIsPartialUnmapSupported(pResource) memoryfabricIsPartialUnmapSupported_DISPATCH(pResource)
 #define memoryfabricIsReady(pMemory, bCopyConstructorContext) memoryfabricIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define memoryfabricCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) memoryfabricCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define memoryfabricPreDestruct(pResource) memoryfabricPreDestruct_DISPATCH(pResource)
@@ -268,10 +273,6 @@ static inline void memoryfabricControl_Epilogue_DISPATCH(struct MemoryFabric *pR
     pResource->__memoryfabricControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS memoryfabricControlLookup_DISPATCH(struct MemoryFabric *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__memoryfabricControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS memoryfabricUnmap_DISPATCH(struct MemoryFabric *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return pMemory->__memoryfabricUnmap__(pMemory, pCallContext, pCpuMapping);
 }
@@ -290,6 +291,10 @@ static inline NV_STATUS memoryfabricControlFilter_DISPATCH(struct MemoryFabric *
 
 static inline NV_STATUS memoryfabricControlSerialization_Prologue_DISPATCH(struct MemoryFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__memoryfabricControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool memoryfabricIsPartialUnmapSupported_DISPATCH(struct MemoryFabric *pResource) {
+    return pResource->__memoryfabricIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS memoryfabricIsReady_DISPATCH(struct MemoryFabric *pMemory, NvBool bCopyConstructorContext) {

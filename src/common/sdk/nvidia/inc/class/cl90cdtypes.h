@@ -36,8 +36,10 @@ extern "C" {
 #define NV_EVENT_BUFFER_RECORD_TYPE_VIDEO_TRACE                               (1)
 #define NV_EVENT_BUFFER_RECORD_TYPE_FECS_CTX_SWITCH_V2                        (2)
 #define NV_EVENT_BUFFER_RECORD_TYPE_NVTELEMETRY_REPORT_EVENT_SYSTEM           (4)
+#define NV_EVENT_BUFFER_RECORD_TYPE_RATS_GSP_TRACE                            (8)
 #define NV_EVENT_BUFFER_RECORD_TYPE_NVTELEMETRY_REPORT_EVENT_SUBDEVICE        (132)
 #define NV_EVENT_BUFFER_RECORD_TYPE_FECS_CTX_SWITCH                           (134)
+
 
 #ifdef __cplusplus
 };     /* extern "C" */

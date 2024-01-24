@@ -34,8 +34,11 @@
 #include "core/locks.h"
 #include "gpu/gpu.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "virtualization/hypervisor/hypervisor.h"
+#include "kernel/virtualization/kernel_vgpu_mgr.h"
+#include "vgpu/rpc.h"
 
 
 
@@ -247,6 +250,34 @@ deviceCtrlCmdGpuGetVirtualizationMode_IMPL
 }
 
 /*!
+ * @brief   This Command issues an RPC call to the host to switch the "backdoor
+ *          VNC" view to the console.
+ *
+ * @return  Returns NV_STATUS
+ *          NV_ERR_NOT_SUPPORTED      If GPU is not present under host hypervisor.
+ *          NV_OK                     If GPU is present under host hypervisor.
+ *          NV_ERR_INVALID_ARGUMENT   If GPU is not present.
+ *
+ */
+NV_STATUS
+deviceCtrlCmdGpuVirtualizationSwitchToVga_IMPL
+(
+    Device *pDevice
+)
+{
+    OBJGPU   *pGpu   = GPU_RES_GET_GPU(pDevice);
+    NV_STATUS status = NV_OK;
+
+    if (pGpu == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    NV_RM_RPC_SWITCH_TO_VGA(pGpu, status);
+    return status;
+}
+
+/*!
  * @brief   This Command is used to get GPU SRIOV capabilities
  *
  * @return NV_OK
@@ -289,6 +320,90 @@ deviceCtrlCmdGpuGetFindSubDeviceHandle_IMPL
     }
 
     return status;
+}
+
+NV_STATUS
+deviceCtrlCmdGpuSetVgpuHeterogeneousMode_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams
+)
+{
+    OBJGPU                  *pGpu           = GPU_RES_GET_GPU(pDevice);
+    OBJSYS                  *pSys           = SYS_GET_INSTANCE();
+    KernelVgpuMgr           *pKernelVgpuMgr = SYS_GET_KERNEL_VGPUMGR(pSys);
+    NvU32                    pgpuIndex;
+    KERNEL_PHYS_GPU_INFO    *pPgpuInfo;
+    NvU32                    i;
+    VGPU_TYPE               *pVgpuTypeInfo;
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    if (IS_MIG_ENABLED(pGpu))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Call not supported with SMC enabled\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pGpu->gpuId, &pgpuIndex));
+
+    pPgpuInfo = &pKernelVgpuMgr->pgpuInfo[pgpuIndex];
+
+    if (pPgpuInfo->heterogeneousTimesliceSizesSupported == NV_FALSE)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU does not support heterogenenous vGPU mode\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (pPgpuInfo->numActiveVgpu != 0)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Failed to set heterogeneous vGPU mode as vGPU instance is active\n");
+        return NV_ERR_IN_USE;
+    }
+
+    pGpu->setProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE, pParams->bHeterogeneousMode);
+
+    if (pParams->bHeterogeneousMode)
+    {
+        for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
+        {
+            pVgpuTypeInfo = pPgpuInfo->vgpuTypes[i];
+
+            if (pVgpuTypeInfo == NULL)
+                continue;
+
+            /*
+             * When heterogeneous vGPU mode is enabled, initially all
+             * supported placement IDs are creatable placement IDs
+             */
+            portMemCopy(pPgpuInfo->creatablePlacementIds[i],
+                        sizeof(pPgpuInfo->creatablePlacementIds[i]),
+                        pVgpuTypeInfo->supportedPlacementIds,
+                        sizeof(pVgpuTypeInfo->supportedPlacementIds));
+        }
+
+        /* No vGPU instances running, so placement region is empty. */
+        bitVectorClrAll(&pPgpuInfo->usedPlacementRegionMap);
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+deviceCtrlCmdGpuGetVgpuHeterogeneousMode_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    pParams->bHeterogeneousMode = pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_VGPU_HETEROGENEOUS_MODE);
+
+    return NV_OK;
 }
 
 /*!
@@ -384,7 +499,9 @@ deviceCtrlCmdGpuGetVgxCaps_IMPL
     NV0080_CTRL_GPU_GET_VGX_CAPS_PARAMS *pParams
 )
 {
-    pParams->isVgx = NV_FALSE;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+
+    pParams->isVgx = gpuIsVgxBranded(pGpu);
 
     return NV_OK;
 }

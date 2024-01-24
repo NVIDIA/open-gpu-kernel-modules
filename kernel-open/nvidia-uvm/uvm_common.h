@@ -21,8 +21,8 @@
 
 *******************************************************************************/
 
-#ifndef _UVM_COMMON_H
-#define _UVM_COMMON_H
+#ifndef __UVM_COMMON_H__
+#define __UVM_COMMON_H__
 
 #ifdef DEBUG
     #define UVM_IS_DEBUG() 1
@@ -204,13 +204,6 @@ extern bool uvm_release_asserts_set_global_error_for_tests;
 #define UVM_ASSERT_MSG_RELEASE(expr, fmt, ...)  _UVM_ASSERT_MSG_RELEASE(expr, #expr, ": " fmt, ##__VA_ARGS__)
 #define UVM_ASSERT_RELEASE(expr)                _UVM_ASSERT_MSG_RELEASE(expr, #expr, "\n")
 
-// Provide a short form of UUID's, typically for use in debug printing:
-#define ABBREV_UUID(uuid) (unsigned)(uuid)
-
-static inline NvBool uvm_uuid_is_cpu(const NvProcessorUuid *uuid)
-{
-    return memcmp(uuid, &NV_PROCESSOR_UUID_CPU_DEFAULT, sizeof(*uuid)) == 0;
-}
 #define UVM_SIZE_1KB (1024ULL)
 #define UVM_SIZE_1MB (1024 * UVM_SIZE_1KB)
 #define UVM_SIZE_1GB (1024 * UVM_SIZE_1MB)
@@ -409,4 +402,40 @@ static inline void uvm_touch_page(struct page *page)
 // Return true if the VMA is one used by UVM managed allocations.
 bool uvm_vma_is_managed(struct vm_area_struct *vma);
 
-#endif /* _UVM_COMMON_H */
+static bool uvm_platform_uses_canonical_form_address(void)
+{
+    if (NVCPU_IS_PPC64LE)
+        return false;
+
+    return true;
+}
+
+// Similar to the GPU MMU HAL num_va_bits(), it returns the CPU's num_va_bits().
+static NvU32 uvm_cpu_num_va_bits(void)
+{
+    return fls64(TASK_SIZE - 1) + 1;
+}
+
+// Return the unaddressable range in a num_va_bits-wide VA space, [first, outer)
+static void uvm_get_unaddressable_range(NvU32 num_va_bits, NvU64 *first, NvU64 *outer)
+{
+    UVM_ASSERT(num_va_bits < 64);
+    UVM_ASSERT(first);
+    UVM_ASSERT(outer);
+
+    if (uvm_platform_uses_canonical_form_address()) {
+        *first = 1ULL << (num_va_bits - 1);
+        *outer = (NvU64)((NvS64)(1ULL << 63) >> (64 - num_va_bits));
+    }
+    else {
+        *first = 1ULL << num_va_bits;
+        *outer = ~0Ull;
+    }
+}
+
+static void uvm_cpu_get_unaddressable_range(NvU64 *first, NvU64 *outer)
+{
+    return uvm_get_unaddressable_range(uvm_cpu_num_va_bits(), first, outer);
+}
+
+#endif /* __UVM_COMMON_H__ */

@@ -78,11 +78,16 @@ typedef struct KernelGraphicsObject KernelGraphicsObject;
 // invalidating the debugger object when underlying objects that it
 // relies on are freed before it.
 //
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_SM_DEBUGGER_SESSION_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RmDebuggerSession {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RsSession __nvoc_base_RsSession;
@@ -139,11 +144,16 @@ static inline void dbgSessionRemoveDependency_DISPATCH(struct RmDebuggerSession 
 #undef PRIVATE_FIELD
 
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_SM_DEBUGGER_SESSION_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelSMDebuggerSession {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -199,7 +209,6 @@ struct KernelSMDebuggerSession {
     NV_STATUS (*__ksmdbgssnGetRegBaseOffsetAndSize__)(struct KernelSMDebuggerSession *, struct OBJGPU *, NvU32 *, NvU32 *);
     NV_STATUS (*__ksmdbgssnUnmapFrom__)(struct KernelSMDebuggerSession *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__ksmdbgssnControl_Epilogue__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__ksmdbgssnControlLookup__)(struct KernelSMDebuggerSession *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__ksmdbgssnControl__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__ksmdbgssnUnmap__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__ksmdbgssnGetMemInterMapParams__)(struct KernelSMDebuggerSession *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -208,6 +217,7 @@ struct KernelSMDebuggerSession {
     NV_STATUS (*__ksmdbgssnUnregisterEvent__)(struct KernelSMDebuggerSession *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__ksmdbgssnControlSerialization_Prologue__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__ksmdbgssnCanCopy__)(struct KernelSMDebuggerSession *);
+    NvBool (*__ksmdbgssnIsPartialUnmapSupported__)(struct KernelSMDebuggerSession *);
     void (*__ksmdbgssnPreDestruct__)(struct KernelSMDebuggerSession *);
     NV_STATUS (*__ksmdbgssnIsDuplicate__)(struct KernelSMDebuggerSession *, NvHandle, NvBool *);
     void (*__ksmdbgssnControlSerialization_Epilogue__)(struct KernelSMDebuggerSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -300,7 +310,6 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 #define ksmdbgssnGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) ksmdbgssnGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
 #define ksmdbgssnUnmapFrom(pResource, pParams) ksmdbgssnUnmapFrom_DISPATCH(pResource, pParams)
 #define ksmdbgssnControl_Epilogue(pResource, pCallContext, pParams) ksmdbgssnControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define ksmdbgssnControlLookup(pResource, pParams, ppEntry) ksmdbgssnControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define ksmdbgssnControl(pGpuResource, pCallContext, pParams) ksmdbgssnControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define ksmdbgssnUnmap(pGpuResource, pCallContext, pCpuMapping) ksmdbgssnUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define ksmdbgssnGetMemInterMapParams(pRmResource, pParams) ksmdbgssnGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -309,6 +318,7 @@ NV_STATUS __nvoc_objCreate_KernelSMDebuggerSession(KernelSMDebuggerSession**, Dy
 #define ksmdbgssnUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ksmdbgssnUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define ksmdbgssnControlSerialization_Prologue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ksmdbgssnCanCopy(pResource) ksmdbgssnCanCopy_DISPATCH(pResource)
+#define ksmdbgssnIsPartialUnmapSupported(pResource) ksmdbgssnIsPartialUnmapSupported_DISPATCH(pResource)
 #define ksmdbgssnPreDestruct(pResource) ksmdbgssnPreDestruct_DISPATCH(pResource)
 #define ksmdbgssnIsDuplicate(pResource, hMemory, pDuplicate) ksmdbgssnIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define ksmdbgssnControlSerialization_Epilogue(pResource, pCallContext, pParams) ksmdbgssnControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -586,10 +596,6 @@ static inline void ksmdbgssnControl_Epilogue_DISPATCH(struct KernelSMDebuggerSes
     pResource->__ksmdbgssnControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS ksmdbgssnControlLookup_DISPATCH(struct KernelSMDebuggerSession *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__ksmdbgssnControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS ksmdbgssnControl_DISPATCH(struct KernelSMDebuggerSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pGpuResource->__ksmdbgssnControl__(pGpuResource, pCallContext, pParams);
 }
@@ -620,6 +626,10 @@ static inline NV_STATUS ksmdbgssnControlSerialization_Prologue_DISPATCH(struct K
 
 static inline NvBool ksmdbgssnCanCopy_DISPATCH(struct KernelSMDebuggerSession *pResource) {
     return pResource->__ksmdbgssnCanCopy__(pResource);
+}
+
+static inline NvBool ksmdbgssnIsPartialUnmapSupported_DISPATCH(struct KernelSMDebuggerSession *pResource) {
+    return pResource->__ksmdbgssnIsPartialUnmapSupported__(pResource);
 }
 
 static inline void ksmdbgssnPreDestruct_DISPATCH(struct KernelSMDebuggerSession *pResource) {

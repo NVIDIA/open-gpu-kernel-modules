@@ -25,8 +25,8 @@
 
 #include "os/os.h"
 #include "core/hal.h"
-#include "core/info_block.h"
 #include "core/locks.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 
 #include "kernel/gpu/nvlink/kernel_nvlink.h"

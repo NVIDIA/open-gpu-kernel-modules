@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -45,11 +45,16 @@ extern "C" {
 // Virtual GPU configuration information
 //
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_VGPUCONFIGAPI_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct VgpuConfigApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -68,8 +73,10 @@ struct VgpuConfigApi {
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigGetSupportedVgpuTypes__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_GET_VGPU_TYPES_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigGetCreatableVgpuTypes__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_GET_VGPU_TYPES_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigEventSetNotification__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_EVENT_SET_NOTIFICATION_PARAMS *);
+    NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigSetCapability__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_SET_CAPABILITY_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigNotifyStart__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS *);
-    NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigMdevRegister__)(struct VgpuConfigApi *);
+    NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigGetCreatablePlacements__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_GET_CREATABLE_PLACEMENTS_PARAMS *);
+    NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigUpdatePgpuInfo__)(struct VgpuConfigApi *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigSetVgpuInstanceEncoderCapacity__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_VGPU_INSTANCE_ENCODER_CAPACITY_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigGetVgpuFbUsage__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_GET_VGPU_FB_USAGE_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigGetMigrationCap__)(struct VgpuConfigApi *, NVA081_CTRL_CMD_VGPU_CONFIG_GET_MIGRATION_CAP_PARAMS *);
@@ -78,9 +85,11 @@ struct VgpuConfigApi {
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigGetDoorbellEmulationSupport__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_GET_DOORBELL_EMULATION_SUPPORT_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigGetFreeSwizzId__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_GET_FREE_SWIZZID_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdPgpuGetMultiVgpuSupportInfo__)(struct VgpuConfigApi *, NVA081_CTRL_PGPU_GET_MULTI_VGPU_SUPPORT_INFO_PARAMS *);
+    NV_STATUS (*__vgpuconfigapiCtrlCmdPgpuGetVgpuStreamingCapability__)(struct VgpuConfigApi *, NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdGetVgpuDriversCaps__)(struct VgpuConfigApi *, NVA081_CTRL_GET_VGPU_DRIVER_CAPS_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_SET_PGPU_INFO_PARAMS *);
     NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS *);
+    NV_STATUS (*__vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo__)(struct VgpuConfigApi *, NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS *);
     NvBool (*__vgpuconfigapiShareCallback__)(struct VgpuConfigApi *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__vgpuconfigapiCheckMemInterUnmap__)(struct VgpuConfigApi *, NvBool);
     NV_STATUS (*__vgpuconfigapiGetOrAllocNotifShare__)(struct VgpuConfigApi *, NvHandle, NvHandle, struct NotifShare **);
@@ -94,7 +103,6 @@ struct VgpuConfigApi {
     NV_STATUS (*__vgpuconfigapiInternalControlForward__)(struct VgpuConfigApi *, NvU32, void *, NvU32);
     NV_STATUS (*__vgpuconfigapiUnmapFrom__)(struct VgpuConfigApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__vgpuconfigapiControl_Epilogue__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__vgpuconfigapiControlLookup__)(struct VgpuConfigApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__vgpuconfigapiGetInternalObjectHandle__)(struct VgpuConfigApi *);
     NV_STATUS (*__vgpuconfigapiControl__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vgpuconfigapiUnmap__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -104,6 +112,7 @@ struct VgpuConfigApi {
     NV_STATUS (*__vgpuconfigapiUnregisterEvent__)(struct VgpuConfigApi *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__vgpuconfigapiControlSerialization_Prologue__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__vgpuconfigapiCanCopy__)(struct VgpuConfigApi *);
+    NvBool (*__vgpuconfigapiIsPartialUnmapSupported__)(struct VgpuConfigApi *);
     void (*__vgpuconfigapiPreDestruct__)(struct VgpuConfigApi *);
     NV_STATUS (*__vgpuconfigapiIsDuplicate__)(struct VgpuConfigApi *, NvHandle, NvBool *);
     void (*__vgpuconfigapiControlSerialization_Epilogue__)(struct VgpuConfigApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -148,8 +157,10 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struc
 #define vgpuconfigapiCtrlCmdVgpuConfigGetSupportedVgpuTypes(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigGetSupportedVgpuTypes_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigGetCreatableVgpuTypes(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigGetCreatableVgpuTypes_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigEventSetNotification(pVgpuConfigApi, pSetEventParams) vgpuconfigapiCtrlCmdVgpuConfigEventSetNotification_DISPATCH(pVgpuConfigApi, pSetEventParams)
+#define vgpuconfigapiCtrlCmdVgpuConfigSetCapability(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigSetCapability_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigNotifyStart(pVgpuConfigApi, pNotifyParams) vgpuconfigapiCtrlCmdVgpuConfigNotifyStart_DISPATCH(pVgpuConfigApi, pNotifyParams)
-#define vgpuconfigapiCtrlCmdVgpuConfigMdevRegister(pVgpuConfigApi) vgpuconfigapiCtrlCmdVgpuConfigMdevRegister_DISPATCH(pVgpuConfigApi)
+#define vgpuconfigapiCtrlCmdVgpuConfigGetCreatablePlacements(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigGetCreatablePlacements_DISPATCH(pVgpuConfigApi, pParams)
+#define vgpuconfigapiCtrlCmdVgpuConfigUpdatePgpuInfo(pVgpuConfigApi) vgpuconfigapiCtrlCmdVgpuConfigUpdatePgpuInfo_DISPATCH(pVgpuConfigApi)
 #define vgpuconfigapiCtrlCmdVgpuConfigSetVgpuInstanceEncoderCapacity(pVgpuConfigApi, pEncoderParams) vgpuconfigapiCtrlCmdVgpuConfigSetVgpuInstanceEncoderCapacity_DISPATCH(pVgpuConfigApi, pEncoderParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigGetVgpuFbUsage(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigGetVgpuFbUsage_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigGetMigrationCap(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigGetMigrationCap_DISPATCH(pVgpuConfigApi, pParams)
@@ -158,9 +169,11 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struc
 #define vgpuconfigapiCtrlCmdVgpuConfigGetDoorbellEmulationSupport(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigGetDoorbellEmulationSupport_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigGetFreeSwizzId(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigGetFreeSwizzId_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdPgpuGetMultiVgpuSupportInfo(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdPgpuGetMultiVgpuSupportInfo_DISPATCH(pVgpuConfigApi, pParams)
+#define vgpuconfigapiCtrlCmdPgpuGetVgpuStreamingCapability(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdPgpuGetVgpuStreamingCapability_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdGetVgpuDriversCaps(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdGetVgpuDriversCaps_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigSetPgpuInfo_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_DISPATCH(pVgpuConfigApi, pParams)
+#define vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo(pVgpuConfigApi, pParams) vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo_DISPATCH(pVgpuConfigApi, pParams)
 #define vgpuconfigapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) vgpuconfigapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define vgpuconfigapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) vgpuconfigapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define vgpuconfigapiGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) vgpuconfigapiGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
@@ -174,7 +187,6 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struc
 #define vgpuconfigapiInternalControlForward(pGpuResource, command, pParams, size) vgpuconfigapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define vgpuconfigapiUnmapFrom(pResource, pParams) vgpuconfigapiUnmapFrom_DISPATCH(pResource, pParams)
 #define vgpuconfigapiControl_Epilogue(pResource, pCallContext, pParams) vgpuconfigapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define vgpuconfigapiControlLookup(pResource, pParams, ppEntry) vgpuconfigapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define vgpuconfigapiGetInternalObjectHandle(pGpuResource) vgpuconfigapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define vgpuconfigapiControl(pGpuResource, pCallContext, pParams) vgpuconfigapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define vgpuconfigapiUnmap(pGpuResource, pCallContext, pCpuMapping) vgpuconfigapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -184,6 +196,7 @@ NV_STATUS __nvoc_objCreate_VgpuConfigApi(VgpuConfigApi**, Dynamic*, NvU32, struc
 #define vgpuconfigapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) vgpuconfigapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define vgpuconfigapiControlSerialization_Prologue(pResource, pCallContext, pParams) vgpuconfigapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define vgpuconfigapiCanCopy(pResource) vgpuconfigapiCanCopy_DISPATCH(pResource)
+#define vgpuconfigapiIsPartialUnmapSupported(pResource) vgpuconfigapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define vgpuconfigapiPreDestruct(pResource) vgpuconfigapiPreDestruct_DISPATCH(pResource)
 #define vgpuconfigapiIsDuplicate(pResource, hMemory, pDuplicate) vgpuconfigapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define vgpuconfigapiControlSerialization_Epilogue(pResource, pCallContext, pParams) vgpuconfigapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -227,16 +240,28 @@ static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigEventSetNotification_DISPA
     return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigEventSetNotification__(pVgpuConfigApi, pSetEventParams);
 }
 
+NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigSetCapability_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_SET_CAPABILITY_PARAMS *pParams);
+
+static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigSetCapability_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_SET_CAPABILITY_PARAMS *pParams) {
+    return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigSetCapability__(pVgpuConfigApi, pParams);
+}
+
 NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigNotifyStart_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS *pNotifyParams);
 
 static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigNotifyStart_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_NOTIFY_START_PARAMS *pNotifyParams) {
     return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigNotifyStart__(pVgpuConfigApi, pNotifyParams);
 }
 
-NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigMdevRegister_IMPL(struct VgpuConfigApi *pVgpuConfigApi);
+NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigGetCreatablePlacements_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_GET_CREATABLE_PLACEMENTS_PARAMS *pParams);
 
-static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigMdevRegister_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi) {
-    return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigMdevRegister__(pVgpuConfigApi);
+static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigGetCreatablePlacements_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_GET_CREATABLE_PLACEMENTS_PARAMS *pParams) {
+    return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigGetCreatablePlacements__(pVgpuConfigApi, pParams);
+}
+
+NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigUpdatePgpuInfo_IMPL(struct VgpuConfigApi *pVgpuConfigApi);
+
+static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigUpdatePgpuInfo_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi) {
+    return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigUpdatePgpuInfo__(pVgpuConfigApi);
 }
 
 NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigSetVgpuInstanceEncoderCapacity_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_VGPU_INSTANCE_ENCODER_CAPACITY_PARAMS *pEncoderParams);
@@ -287,6 +312,12 @@ static inline NV_STATUS vgpuconfigapiCtrlCmdPgpuGetMultiVgpuSupportInfo_DISPATCH
     return pVgpuConfigApi->__vgpuconfigapiCtrlCmdPgpuGetMultiVgpuSupportInfo__(pVgpuConfigApi, pParams);
 }
 
+NV_STATUS vgpuconfigapiCtrlCmdPgpuGetVgpuStreamingCapability_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS *pParams);
+
+static inline NV_STATUS vgpuconfigapiCtrlCmdPgpuGetVgpuStreamingCapability_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_PGPU_GET_VGPU_STREAMING_CAPABILITY_PARAMS *pParams) {
+    return pVgpuConfigApi->__vgpuconfigapiCtrlCmdPgpuGetVgpuStreamingCapability__(pVgpuConfigApi, pParams);
+}
+
 NV_STATUS vgpuconfigapiCtrlCmdGetVgpuDriversCaps_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_GET_VGPU_DRIVER_CAPS_PARAMS *pParams);
 
 static inline NV_STATUS vgpuconfigapiCtrlCmdGetVgpuDriversCaps_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_GET_VGPU_DRIVER_CAPS_PARAMS *pParams) {
@@ -303,6 +334,12 @@ NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_IMPL(struct VgpuConfigAp
 
 static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_VALIDATE_SWIZZID_PARAMS *pParams) {
     return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigValidateSwizzId__(pVgpuConfigApi, pParams);
+}
+
+NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo_IMPL(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS *pParams);
+
+static inline NV_STATUS vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo_DISPATCH(struct VgpuConfigApi *pVgpuConfigApi, NVA081_CTRL_VGPU_CONFIG_UPDATE_HETEROGENEOUS_INFO_PARAMS *pParams) {
+    return pVgpuConfigApi->__vgpuconfigapiCtrlCmdVgpuConfigUpdateHeterogeneousInfo__(pVgpuConfigApi, pParams);
 }
 
 static inline NvBool vgpuconfigapiShareCallback_DISPATCH(struct VgpuConfigApi *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -357,10 +394,6 @@ static inline void vgpuconfigapiControl_Epilogue_DISPATCH(struct VgpuConfigApi *
     pResource->__vgpuconfigapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS vgpuconfigapiControlLookup_DISPATCH(struct VgpuConfigApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__vgpuconfigapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle vgpuconfigapiGetInternalObjectHandle_DISPATCH(struct VgpuConfigApi *pGpuResource) {
     return pGpuResource->__vgpuconfigapiGetInternalObjectHandle__(pGpuResource);
 }
@@ -395,6 +428,10 @@ static inline NV_STATUS vgpuconfigapiControlSerialization_Prologue_DISPATCH(stru
 
 static inline NvBool vgpuconfigapiCanCopy_DISPATCH(struct VgpuConfigApi *pResource) {
     return pResource->__vgpuconfigapiCanCopy__(pResource);
+}
+
+static inline NvBool vgpuconfigapiIsPartialUnmapSupported_DISPATCH(struct VgpuConfigApi *pResource) {
+    return pResource->__vgpuconfigapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void vgpuconfigapiPreDestruct_DISPATCH(struct VgpuConfigApi *pResource) {

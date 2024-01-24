@@ -24,7 +24,6 @@
 #define RM_STRICT_CONFIG_EMIT_DISP_ENGINE_DEFINITIONS     0
 
 #include "class/cl5070.h"
-#include "gpu/device/device.h"
 #include "gpu/disp/disp_objs.h"
 #include "gpu/disp/kern_disp.h"
 #include "gpu/gpu.h"

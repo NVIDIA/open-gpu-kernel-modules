@@ -61,6 +61,7 @@
 #define ROBUST_CHANNEL_PREEMPTIVE_REMOVAL               (45)
 #define ROBUST_CHANNEL_NVENC0_ERROR                     (47)
 #define ROBUST_CHANNEL_GPU_ECC_DBE                      (48)
+#define FB_MEMORY_ERROR                                 (58)
 #define PMU_ERROR                                       (59)
 #define ROBUST_CHANNEL_SEC2_ERROR                       (60)
 #define PMU_BREAKPOINT                                  (61)
@@ -108,6 +109,7 @@
 #define ROBUST_CHANNEL_NVJPG5_ERROR                     (103)
 #define ROBUST_CHANNEL_NVJPG6_ERROR                     (104)
 #define ROBUST_CHANNEL_NVJPG7_ERROR                     (105)
+#define DESTINATION_FLA_TRANSLATION_ERROR               (108)
 #define SEC_FAULT_ERROR                                 (110)
 #define GSP_RPC_TIMEOUT                                 (119)
 #define GSP_ERROR                                       (120)
@@ -120,7 +122,9 @@
 #define NVLINK_FLA_PRIV_ERR                             (137)
 #define ROBUST_CHANNEL_DLA_ERROR                        (138)
 #define UNRECOVERABLE_ECC_ERROR_ESCAPE                  (140)
-#define ROBUST_CHANNEL_LAST_ERROR                       (UNRECOVERABLE_ECC_ERROR_ESCAPE)
+#define ROBUST_CHANNEL_FAST_PATH_ERROR                  (141)
+#define GPU_INIT_ERROR                                  (143)
+#define ROBUST_CHANNEL_LAST_ERROR                       (GPU_INIT_ERROR)
 
 
 // Indexed CE reference

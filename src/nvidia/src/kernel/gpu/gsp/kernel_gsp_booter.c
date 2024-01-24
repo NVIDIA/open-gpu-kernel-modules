@@ -136,7 +136,7 @@ s_patchBooterUcodeSignature
     NvU8 *pImage,
     NvU32 sigDestOffset,
     NvU32 imageSize,
-    NvU32 *pSignatures,
+    const void *pSignatures,
     NvU32 signaturesTotalSize,
     NvU32 numSigs
 )
@@ -203,7 +203,7 @@ s_allocateUcodeFromBinArchive
     NvU32 patchSig;
     NvU32 numSigs;
     NvU32 signaturesTotalSize;
-    NvU32 *pSignatures = NULL;
+    const void *pSignatures = NULL;
 
     const BINDATA_STORAGE *pBinImage;
     const BINDATA_STORAGE *pBinHeader;
@@ -302,15 +302,8 @@ s_allocateUcodeFromBinArchive
         goto out;
     }
 
-    pSignatures = portMemAllocNonPaged(signaturesTotalSize);
-    if (pSignatures == NULL)
-    {
-        status = NV_ERR_NO_MEMORY;
-        goto out;
-    }
-
     NV_ASSERT_OK_OR_GOTO(status,
-        bindataWriteToBuffer(pBinSig, (NvU8 *) pSignatures, signaturesTotalSize),
+        bindataStorageAcquireData(pBinSig, &pSignatures),
         out);
 
     // Populate KernelGspFlcnUcode structure
@@ -401,6 +394,9 @@ s_allocateUcodeFromBinArchive
             goto out;
         }
 
+        // We are not using zero copy api bindataStorageAcquireData here because s_patchBooterUcodeSignature
+        // writes to pUcode->pImage to patch the signatures. Since this path is taken once, the risk
+        // of accidentally overwriting original bindata buffer may not be worth the performance gains.
         // Copy in the whole image
         NV_ASSERT_OK_OR_GOTO(status,
             bindataWriteToBuffer(pBinImage, pUcode->pImage, pUcode->size),
@@ -416,7 +412,7 @@ s_allocateUcodeFromBinArchive
     }
 
 out:
-    portMemFree(pSignatures);
+    bindataStorageReleaseData((void*)pSignatures);
     pSignatures = NULL;
 
     if (status == NV_OK)

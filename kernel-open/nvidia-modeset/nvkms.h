@@ -103,6 +103,8 @@ NvBool nvKmsKapiGetFunctionsTableInternal
     struct NvKmsKapiFunctionsTable *funcsTable
 );
 
+void nvKmsKapiSuspendResume(NvBool suspend);
+
 NvBool nvKmsGetBacklight(NvU32 display_id, void *drv_priv, NvU32 *brightness);
 NvBool nvKmsSetBacklight(NvU32 display_id, void *drv_priv, NvU32 brightness);
 

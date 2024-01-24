@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2005-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2005-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -137,10 +137,25 @@ typedef struct
 typedef struct
 {
     NvU32                           id;                 // record id
+    volatile NvS32                  inUse;              // indicates the record is actively being used.
     NV2080_NOCAT_JOURNAL_GPU_STATE  nocatGpuState;      // contains the state of the
                                                         // associated GPU if there is one,
     NV2080_NOCAT_JOURNAL_ENTRY      nocatJournalEntry;  // the NOCAT report data -- IDs, diag data etc.
 } RM_NOCAT_JOURNAL_ENTRY;
+
+typedef struct
+{
+    NvU64       timestamp           NV_ALIGN_BYTES(8);
+    NvU8        recType;
+    NvU32       bugcheck;
+    const char *pSource;
+    NvU32       subsystem;
+    NvU64       errorCode           NV_ALIGN_BYTES(8);
+    NvU32       diagBufferLen;
+    const NvU8 *pDiagBuffer;
+    const char *pFaultingEngine;
+    NvU32       tdrReason;
+} NOCAT_JOURNAL_PARAMS;
 
 #define ASSERT_CALL_STACK_SIZE 10
 #define NOCAT_CACHE_FRESHNESS_PERIOD_MS 10ULL
@@ -156,7 +171,7 @@ typedef struct _nocatQueueDescriptor
     NvU32   nextRecordId;
     NvU32   nextReportedId;
     NvU32   nocatLastRecordType;
-    NvBool  journalLocked;
+    NvU64   lockTimestamp;
     NvU32   lastRecordId[NV2080_NOCAT_JOURNAL_REC_TYPE_COUNT];
     RM_NOCAT_ASSERT_DIAG_BUFFER   lastAssertData;
     NvU8    tag[NV2080_NOCAT_JOURNAL_MAX_STR_LEN];
@@ -167,11 +182,16 @@ typedef struct _nocatQueueDescriptor
     NvU32   nocatEventCounters[NV2080_NOCAT_JOURNAL_REPORT_ACTIVITY_COUNTER_COUNT];
 } nocatQueueDescriptor;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_JOURNAL_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJRCDB {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -346,25 +366,26 @@ static inline void rcdbDestroyRingBuffer(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE
 #define rcdbDestroyRingBuffer(pRcdb, type) rcdbDestroyRingBuffer_IMPL(pRcdb, type)
 #endif //__nvoc_journal_h_disabled
 
-void rcdbAddRecToRingBuffer_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord);
+RmRCCommonJournal_RECORD *rcdbAddRecToRingBuffer_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord);
 
 #ifdef __nvoc_journal_h_disabled
-static inline void rcdbAddRecToRingBuffer(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord) {
+static inline RmRCCommonJournal_RECORD *rcdbAddRecToRingBuffer(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
+    return NULL;
 }
 #else //__nvoc_journal_h_disabled
 #define rcdbAddRecToRingBuffer(pGpu, pRcdb, type, recordSize, pRecord) rcdbAddRecToRingBuffer_IMPL(pGpu, pRcdb, type, recordSize, pRecord)
 #endif //__nvoc_journal_h_disabled
 
-NvU32 rcdbGetOcaRecordSize_IMPL(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type);
+NvU32 rcdbGetOcaRecordSizeWithHeader_IMPL(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type);
 
 #ifdef __nvoc_journal_h_disabled
-static inline NvU32 rcdbGetOcaRecordSize(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type) {
+static inline NvU32 rcdbGetOcaRecordSizeWithHeader(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
     return 0;
 }
 #else //__nvoc_journal_h_disabled
-#define rcdbGetOcaRecordSize(pRcdb, type) rcdbGetOcaRecordSize_IMPL(pRcdb, type)
+#define rcdbGetOcaRecordSizeWithHeader(pRcdb, type) rcdbGetOcaRecordSizeWithHeader_IMPL(pRcdb, type)
 #endif //__nvoc_journal_h_disabled
 
 NvU32 rcdbDumpJournal_IMPL(struct OBJRCDB *pRcdb, struct OBJGPU *pGpu, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, const PRB_FIELD_DESC *pFieldDesc);
@@ -433,15 +454,26 @@ static inline NV_STATUS rcdbGetRcDiagRecBoundaries(struct OBJRCDB *pRcdb, NvU16 
 #define rcdbGetRcDiagRecBoundaries(pRcdb, arg0, arg1, arg2, arg3) rcdbGetRcDiagRecBoundaries_IMPL(pRcdb, arg0, arg1, arg2, arg3)
 #endif //__nvoc_journal_h_disabled
 
-NV_STATUS rcdbAddRcDiagRec_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0);
+RmRCCommonJournal_RECORD *rcdbAddRcDiagRec_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0);
 
 #ifdef __nvoc_journal_h_disabled
-static inline NV_STATUS rcdbAddRcDiagRec(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0) {
+static inline RmRCCommonJournal_RECORD *rcdbAddRcDiagRec(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
+    return NULL;
 }
 #else //__nvoc_journal_h_disabled
 #define rcdbAddRcDiagRec(pGpu, pRcdb, arg0) rcdbAddRcDiagRec_IMPL(pGpu, pRcdb, arg0)
+#endif //__nvoc_journal_h_disabled
+
+RmRCCommonJournal_RECORD *rcdbAddRcDiagRecFromGsp_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRCCommonJournal_RECORD *arg0, RmRcDiag_RECORD *arg1);
+
+#ifdef __nvoc_journal_h_disabled
+static inline RmRCCommonJournal_RECORD *rcdbAddRcDiagRecFromGsp(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRCCommonJournal_RECORD *arg0, RmRcDiag_RECORD *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
+    return NULL;
+}
+#else //__nvoc_journal_h_disabled
+#define rcdbAddRcDiagRecFromGsp(pGpu, pRcdb, arg0, arg1) rcdbAddRcDiagRecFromGsp_IMPL(pGpu, pRcdb, arg0, arg1)
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbGetRcDiagRec_IMPL(struct OBJRCDB *pRcdb, NvU16 arg0, RmRCCommonJournal_RECORD **arg1, NvU32 arg2, NvU32 arg3);
@@ -475,18 +507,6 @@ void rcdbCleanupNocatGpuCache_IMPL(struct OBJGPU *pGpu);
 #undef PRIVATE_FIELD
 
 
-typedef struct
-{
-    NvU8        recType;
-    NvU32       bugcheck;
-    const char *pSource;
-    NvU32       subsystem;
-    NvU64       errorCode NV_ALIGN_BYTES(8);
-    NvU32       diagBufferLen;
-    NvU8       *pDiagBuffer;
-    const char *pFaultingEngine;
-    NvU32       tdrReason;
-} NOCAT_JOURNAL_PARAMS;
 
 NV_STATUS rcdbAddRmDclMsg(void* msg, NvU16 size, const PRB_FIELD_DESC *fieldDesc);
 NV_STATUS rcdbAddRmEngDump(struct OBJGPU *pGpu, NvU32 component);
@@ -496,9 +516,11 @@ void rcdbAddCrashedFalcon(struct Falcon *pFlcn);
 
 NV_STATUS rcdbAddAssertJournalRec(void* pGpu, void** ppRec, NvU8 jGroup,
     NvU8 type, NvU16 size, NvU32 level, NvU64 key);
+
 NV_STATUS rcdbAddAssertJournalRecWithLine(void *pVoidGpu, NvU32 lineNum,
     void** ppRec, NvU8 jGroup, NvU8 type, NvU16 size, NvU32 level, NvU64 key);
 
+/*! insert a record into the NOCAT Journal */
 NvU32 rcdbNocatInsertNocatError(struct OBJGPU *pGpu,
     NOCAT_JOURNAL_PARAMS *nocatJournalEntry);
 
@@ -519,12 +541,6 @@ NvU32 rcdbNocatInsertTDRError(struct OBJGPU *pGpu,
     NvU32 tdrBucket,
     NvU8 *pDiagBuffer, NvU32 diagBufferLen,
     NvU32 tdrReason, const char *pFaultingApp);
-
-NV_STATUS rcdbNocatInitRCErrorEvent(NOCAT_JOURNAL_PARAMS *nocatJournalEntry);
-NvU32 rcdbNocatInsertRCError(struct OBJGPU* pGpu,
-    NvU32 subsystem, NvU64 errorCode,
-    NvU32 rcDiagRecStartIdx, NvU32 rcDiagRecEndIdx,
-    void* pAppId);
 
 NV_STATUS rcdbReportNextNocatJournalEntry(NV2080_NOCAT_JOURNAL_RECORD* pReport);
 

@@ -82,12 +82,12 @@ NV_CONFTEST_FUNCTION_COMPILE_TESTS += set_pages_uc
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ktime_get_raw_ts64
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += ioasid_get
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mm_pasid_drop
-NV_CONFTEST_FUNCTION_COMPILE_TESTS += migrate_vma_setup
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mmget_not_zero
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += mmgrab
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_sva_bind_device_has_drvdata_arg
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += vm_fault_to_errno
 NV_CONFTEST_FUNCTION_COMPILE_TESTS += find_next_bit_wrap
+NV_CONFTEST_FUNCTION_COMPILE_TESTS += iommu_is_dma_domain
 
 NV_CONFTEST_TYPE_COMPILE_TESTS += backing_dev_info
 NV_CONFTEST_TYPE_COMPILE_TESTS += mm_context_t
@@ -116,3 +116,4 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += mpol_preferred_many_present
 NV_CONFTEST_TYPE_COMPILE_TESTS += mmu_interval_notifier
 
 NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_int_active_memcg
+NV_CONFTEST_SYMBOL_COMPILE_TESTS += is_export_symbol_present_migrate_vma_setup

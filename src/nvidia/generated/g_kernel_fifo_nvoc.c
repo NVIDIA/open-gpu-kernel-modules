@@ -70,6 +70,14 @@ static NV_STATUS __nvoc_thunk_KernelFifo_engstateConstructEngine(struct OBJGPU *
     return kfifoConstructEngine(pGpu, (struct KernelFifo *)(((unsigned char *)pKernelFifo) - __nvoc_rtti_KernelFifo_OBJENGSTATE.offset), engDesc);
 }
 
+static NV_STATUS __nvoc_thunk_KernelFifo_engstateStateLoad(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelFifo, NvU32 flags) {
+    return kfifoStateLoad(pGpu, (struct KernelFifo *)(((unsigned char *)pKernelFifo) - __nvoc_rtti_KernelFifo_OBJENGSTATE.offset), flags);
+}
+
+static NV_STATUS __nvoc_thunk_KernelFifo_engstateStateUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelFifo, NvU32 flags) {
+    return kfifoStateUnload(pGpu, (struct KernelFifo *)(((unsigned char *)pKernelFifo) - __nvoc_rtti_KernelFifo_OBJENGSTATE.offset), flags);
+}
+
 static NV_STATUS __nvoc_thunk_KernelFifo_engstateStateInitLocked(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelFifo) {
     return kfifoStateInitLocked(pGpu, (struct KernelFifo *)(((unsigned char *)pKernelFifo) - __nvoc_rtti_KernelFifo_OBJENGSTATE.offset));
 }
@@ -84,14 +92,6 @@ static NV_STATUS __nvoc_thunk_KernelFifo_engstateStatePostLoad(struct OBJGPU *pG
 
 static NV_STATUS __nvoc_thunk_KernelFifo_engstateStatePreUnload(struct OBJGPU *pGpu, struct OBJENGSTATE *pKernelFifo, NvU32 flags) {
     return kfifoStatePreUnload(pGpu, (struct KernelFifo *)(((unsigned char *)pKernelFifo) - __nvoc_rtti_KernelFifo_OBJENGSTATE.offset), flags);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kfifoStateLoad(POBJGPU pGpu, struct KernelFifo *pEngstate, NvU32 arg0) {
-    return engstateStateLoad(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelFifo_OBJENGSTATE.offset), arg0);
-}
-
-static NV_STATUS __nvoc_thunk_OBJENGSTATE_kfifoStateUnload(POBJGPU pGpu, struct KernelFifo *pEngstate, NvU32 arg0) {
-    return engstateStateUnload(pGpu, (struct OBJENGSTATE *)(((unsigned char *)pEngstate) + __nvoc_rtti_KernelFifo_OBJENGSTATE.offset), arg0);
 }
 
 static NV_STATUS __nvoc_thunk_OBJENGSTATE_kfifoStatePreLoad(POBJGPU pGpu, struct KernelFifo *pEngstate, NvU32 arg0) {
@@ -249,6 +249,28 @@ static void __nvoc_init_funcTable_KernelFifo_1(KernelFifo *pThis, RmHalspecOwner
 
     pThis->__kfifoConstructEngine__ = &kfifoConstructEngine_IMPL;
 
+    // Hal function -- kfifoStateLoad
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kfifoStateLoad__ = &kfifoStateLoad_IMPL;
+    }
+    // default
+    else
+    {
+        pThis->__kfifoStateLoad__ = &kfifoStateLoad_56cd7a;
+    }
+
+    // Hal function -- kfifoStateUnload
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kfifoStateUnload__ = &kfifoStateUnload_IMPL;
+    }
+    // default
+    else
+    {
+        pThis->__kfifoStateUnload__ = &kfifoStateUnload_56cd7a;
+    }
+
     pThis->__kfifoStateInitLocked__ = &kfifoStateInitLocked_IMPL;
 
     pThis->__kfifoStateDestroy__ = &kfifoStateDestroy_IMPL;
@@ -345,6 +367,16 @@ static void __nvoc_init_funcTable_KernelFifo_1(KernelFifo *pThis, RmHalspecOwner
         pThis->__kfifoRunlistGetBaseShift__ = &kfifoRunlistGetBaseShift_GA102;
     }
 
+    // Hal function -- kfifoGetUserdBar1MapStartOffset
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kfifoGetUserdBar1MapStartOffset__ = &kfifoGetUserdBar1MapStartOffset_VF;
+    }
+    else
+    {
+        pThis->__kfifoGetUserdBar1MapStartOffset__ = &kfifoGetUserdBar1MapStartOffset_4a4dee;
+    }
+
     // Hal function -- kfifoGetMaxCeChannelGroups
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
     {
@@ -355,7 +387,138 @@ static void __nvoc_init_funcTable_KernelFifo_1(KernelFifo *pThis, RmHalspecOwner
         pThis->__kfifoGetMaxCeChannelGroups__ = &kfifoGetMaxCeChannelGroups_GA100;
     }
 
+    // Hal function -- kfifoGetVChIdForSChId
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kfifoGetVChIdForSChId__ = &kfifoGetVChIdForSChId_c04480;
+    }
+    else
+    {
+        pThis->__kfifoGetVChIdForSChId__ = &kfifoGetVChIdForSChId_FWCLIENT;
+    }
+
+    // Hal function -- kfifoProgramChIdTable
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kfifoProgramChIdTable__ = &kfifoProgramChIdTable_c04480;
+    }
+    else
+    {
+        pThis->__kfifoProgramChIdTable__ = &kfifoProgramChIdTable_56cd7a;
+    }
+
+    // Hal function -- kfifoRecoverAllChannels
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kfifoRecoverAllChannels__ = &kfifoRecoverAllChannels_56cd7a;
+    }
+    else
+    {
+        pThis->__kfifoRecoverAllChannels__ = &kfifoRecoverAllChannels_92bfc3;
+    }
+
+    // Hal function -- kfifoGetEnginePbdmaFaultIds
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kfifoGetEnginePbdmaFaultIds__ = &kfifoGetEnginePbdmaFaultIds_5baef9;
+    }
+    else
+    {
+        pThis->__kfifoGetEnginePbdmaFaultIds__ = &kfifoGetEnginePbdmaFaultIds_GA100;
+    }
+
+    // Hal function -- kfifoGetNumPBDMAs
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kfifoGetNumPBDMAs__ = &kfifoGetNumPBDMAs_GM200;
+    }
+    else
+    {
+        pThis->__kfifoGetNumPBDMAs__ = &kfifoGetNumPBDMAs_GA100;
+    }
+
+    // Hal function -- kfifoPrintPbdmaId
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kfifoPrintPbdmaId__ = &kfifoPrintPbdmaId_TU102;
+    }
+    else
+    {
+        pThis->__kfifoPrintPbdmaId__ = &kfifoPrintPbdmaId_GA100;
+    }
+
+    // Hal function -- kfifoPrintInternalEngine
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kfifoPrintInternalEngine__ = &kfifoPrintInternalEngine_GH100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kfifoPrintInternalEngine__ = &kfifoPrintInternalEngine_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    {
+        pThis->__kfifoPrintInternalEngine__ = &kfifoPrintInternalEngine_AD102;
+    }
+    else
+    {
+        pThis->__kfifoPrintInternalEngine__ = &kfifoPrintInternalEngine_GA100;
+    }
+
+    // Hal function -- kfifoPrintInternalEngineCheck
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x100003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GH100 */ 
+    {
+        pThis->__kfifoPrintInternalEngineCheck__ = &kfifoPrintInternalEngineCheck_fa6e19;
+    }
+    else
+    {
+        pThis->__kfifoPrintInternalEngineCheck__ = &kfifoPrintInternalEngineCheck_GA100;
+    }
+
+    // Hal function -- kfifoGetClientIdStringCommon
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kfifoGetClientIdStringCommon__ = &kfifoGetClientIdStringCommon_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__kfifoGetClientIdStringCommon__ = &kfifoGetClientIdStringCommon_95626c;
+    }
+
+    // Hal function -- kfifoGetClientIdString
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__kfifoGetClientIdString__ = &kfifoGetClientIdString_GH100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kfifoGetClientIdString__ = &kfifoGetClientIdString_TU102;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f00000UL) )) /* ChipHal: AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    {
+        pThis->__kfifoGetClientIdString__ = &kfifoGetClientIdString_AD102;
+    }
+    else
+    {
+        pThis->__kfifoGetClientIdString__ = &kfifoGetClientIdString_GA100;
+    }
+
+    // Hal function -- kfifoGetClientIdStringCheck
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kfifoGetClientIdStringCheck__ = &kfifoGetClientIdStringCheck_da47da;
+    }
+    else
+    {
+        pThis->__kfifoGetClientIdStringCheck__ = &kfifoGetClientIdStringCheck_GA100;
+    }
+
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelFifo_engstateConstructEngine;
+
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateLoad__ = &__nvoc_thunk_KernelFifo_engstateStateLoad;
+
+    pThis->__nvoc_base_OBJENGSTATE.__engstateStateUnload__ = &__nvoc_thunk_KernelFifo_engstateStateUnload;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelFifo_engstateStateInitLocked;
 
@@ -364,10 +527,6 @@ static void __nvoc_init_funcTable_KernelFifo_1(KernelFifo *pThis, RmHalspecOwner
     pThis->__nvoc_base_OBJENGSTATE.__engstateStatePostLoad__ = &__nvoc_thunk_KernelFifo_engstateStatePostLoad;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreUnload__ = &__nvoc_thunk_KernelFifo_engstateStatePreUnload;
-
-    pThis->__kfifoStateLoad__ = &__nvoc_thunk_OBJENGSTATE_kfifoStateLoad;
-
-    pThis->__kfifoStateUnload__ = &__nvoc_thunk_OBJENGSTATE_kfifoStateUnload;
 
     pThis->__kfifoStatePreLoad__ = &__nvoc_thunk_OBJENGSTATE_kfifoStatePreLoad;
 
@@ -397,23 +556,31 @@ void __nvoc_init_KernelFifo(KernelFifo *pThis, RmHalspecOwner *pRmhalspecowner) 
     __nvoc_init_funcTable_KernelFifo(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_KernelFifo(KernelFifo **ppThis, Dynamic *pParent, NvU32 createFlags) {
+NV_STATUS __nvoc_objCreate_KernelFifo(KernelFifo **ppThis, Dynamic *pParent, NvU32 createFlags)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     KernelFifo *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelFifo), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(KernelFifo));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelFifo);
 
     pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
@@ -431,16 +598,25 @@ NV_STATUS __nvoc_objCreate_KernelFifo(KernelFifo **ppThis, Dynamic *pParent, NvU
     status = __nvoc_ctor_KernelFifo(pThis, pRmhalspecowner);
     if (status != NV_OK) goto __nvoc_objCreate_KernelFifo_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_KernelFifo_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_OBJENGSTATE.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(KernelFifo));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

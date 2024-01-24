@@ -722,6 +722,7 @@ typedef struct
           NvU64     rangeEnd   NV_ALIGN_BYTES(8); // [IN]  - from rangeBegin to rangeEnd, inclusive.
           NvU32     attr2;              // [IN/OUT] - surface attributes requested, and surface attributes allocated
           NvU32     ctagOffset;         // [IN] - comptag offset for this surface (see NVOS32_ALLOC_COMPTAG_OFFSET)
+          NvS32     numaNode;           // [IN] - NUMA node from which memory should be allocated
       } AllocSize;
 
       // NVOS32_FUNCTION_ALLOC_TILED_PITCH_HEIGHT
@@ -748,6 +749,7 @@ typedef struct
           NvU64     rangeEnd   NV_ALIGN_BYTES(8); // [IN]  - from rangeBegin to rangeEnd, inclusive.
           NvU32     attr2;              // [IN/OUT] - surface attributes requested, and surface attributes allocated
           NvU32     ctagOffset;         // [IN] - comptag offset for this surface (see NVOS32_ALLOC_COMPTAG_OFFSET)
+          NvS32     numaNode;           // [IN] - NUMA node from which memory should be allocated
       } AllocTiledPitchHeight;
 
       // NVOS32_FUNCTION_FREE
@@ -823,6 +825,7 @@ typedef struct
           NvP64     address NV_ALIGN_BYTES(8);// [OUT] - returned address
           NvU32     attr2;              // [IN/OUT] - surface attributes requested, and surface attributes allocated
           NvU32     ctagOffset;         // [IN] - comptag offset for this surface (see NVOS32_ALLOC_COMPTAG_OFFSET)
+          NvS32     numaNode;           // [IN] - NUMA node from which memory should be allocated
       } AllocSizeRange;
 
       // additions for Longhorn
@@ -1299,6 +1302,11 @@ typedef struct
 #define NVOS32_ATTR2_PROTECTION_DEVICE                        23:23
 #define NVOS32_ATTR2_PROTECTION_DEVICE_READ_WRITE        0x00000000
 #define NVOS32_ATTR2_PROTECTION_DEVICE_READ_ONLY         0x00000001
+
+// Deprecated. To be deleted once client code has removed references.
+#define NVOS32_ATTR2_USE_EGM                                 24:24
+#define NVOS32_ATTR2_USE_EGM_FALSE                      0x00000000
+#define NVOS32_ATTR2_USE_EGM_TRUE                       0x00000001
 
 //
 // Allow client allocations to go to protected/unprotected video/system memory.
@@ -1834,6 +1842,18 @@ typedef struct
 #define NVOS33_FLAGS_CACHING_TYPE_DEFAULT                          6
 #define NVOS33_FLAGS_CACHING_TYPE_UNCACHED_WEAK                    7
 
+//
+// For use when Hopper Confidential Compute is operating in devtools mode
+// BAR1 access to CPR vidmem is blocked to CPU-RM by default when HCC is
+// enabled in both devtools and prod modes. However, certain mappings are
+// allowed to go through successfully only in devtools mode. For example,
+// CPU mappings made on behalf of devtools, event buffer mappings are allowed
+// to happen in devtools mode
+//
+#define NVOS33_FLAGS_ALLOW_MAPPING_ON_HCC                     26:26
+#define NVOS33_FLAGS_ALLOW_MAPPING_ON_HCC_NO                  (0x00000000)
+#define NVOS33_FLAGS_ALLOW_MAPPING_ON_HCC_YES                 (0x00000001)
+
 /* parameters */
 typedef struct
 {
@@ -2159,6 +2179,7 @@ typedef struct
     NvHandle hMemory;                // [IN] memory handle for mapping
     NvV32    flags;                  // [IN] flags
     NvU64    dmaOffset NV_ALIGN_BYTES(8);  // [IN] dma offset from NV04_MAP_MEMORY_DMA
+    NvU64    size NV_ALIGN_BYTES(8);       // [IN] size to unmap, 0 to unmap entire mapping
     NvV32    status;                 // [OUT] status
 } NVOS47_PARAMETERS;
 
@@ -2423,7 +2444,8 @@ typedef struct {
 
 #define NV_CHANNELGPFIFO_NOTIFICATION_TYPE_ERROR                0x00000000
 #define NV_CHANNELGPFIFO_NOTIFICATION_TYPE_WORK_SUBMIT_TOKEN    0x00000001
-#define NV_CHANNELGPFIFO_NOTIFICATION_TYPE__SIZE_1              2
+#define NV_CHANNELGPFIFO_NOTIFICATION_TYPE_KEY_ROTATION_STATUS  0x00000002
+#define NV_CHANNELGPFIFO_NOTIFICATION_TYPE__SIZE_1              3
 #define NV_CHANNELGPFIFO_NOTIFICATION_STATUS_VALUE              14:0
 #define NV_CHANNELGPFIFO_NOTIFICATION_STATUS_IN_PROGRESS        15:15
 #define NV_CHANNELGPFIFO_NOTIFICATION_STATUS_IN_PROGRESS_TRUE   0x1
@@ -2727,6 +2749,7 @@ typedef struct
 #define NV_VASPACE_ALLOCATION_FLAGS_SKIP_SCRUB_MEMPOOL                    BIT(10)
 #define NV_VASPACE_ALLOCATION_FLAGS_OPTIMIZE_PTETABLE_MEMPOOL_USAGE       BIT(11)
 #define NV_VASPACE_ALLOCATION_FLAGS_REQUIRE_FIXED_OFFSET                  BIT(12)
+#define NV_VASPACE_ALLOCATION_FLAGS_PTETABLE_HEAP_MANAGED                 BIT(13)
 
 #define NV_VASPACE_ALLOCATION_INDEX_GPU_NEW                                 0x00 //<! Create new VASpace, by default
 #define NV_VASPACE_ALLOCATION_INDEX_GPU_HOST                                0x01 //<! Acquire reference to BAR1 VAS.

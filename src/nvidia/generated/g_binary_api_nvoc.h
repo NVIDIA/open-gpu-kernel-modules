@@ -40,11 +40,16 @@ extern "C" {
 #include "resserv/rs_resource.h"
 #include "rmapi/control.h"
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_BINARY_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct BinaryApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -66,7 +71,6 @@ struct BinaryApi {
     NV_STATUS (*__binapiInternalControlForward__)(struct BinaryApi *, NvU32, void *, NvU32);
     NV_STATUS (*__binapiUnmapFrom__)(struct BinaryApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__binapiControl_Epilogue__)(struct BinaryApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__binapiControlLookup__)(struct BinaryApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__binapiGetInternalObjectHandle__)(struct BinaryApi *);
     NV_STATUS (*__binapiUnmap__)(struct BinaryApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__binapiGetMemInterMapParams__)(struct BinaryApi *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -74,6 +78,7 @@ struct BinaryApi {
     NV_STATUS (*__binapiControlFilter__)(struct BinaryApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__binapiControlSerialization_Prologue__)(struct BinaryApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__binapiCanCopy__)(struct BinaryApi *);
+    NvBool (*__binapiIsPartialUnmapSupported__)(struct BinaryApi *);
     void (*__binapiPreDestruct__)(struct BinaryApi *);
     NV_STATUS (*__binapiIsDuplicate__)(struct BinaryApi *, NvHandle, NvBool *);
     void (*__binapiControlSerialization_Epilogue__)(struct BinaryApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -121,7 +126,6 @@ NV_STATUS __nvoc_objCreate_BinaryApi(BinaryApi**, Dynamic*, NvU32, struct CALL_C
 #define binapiInternalControlForward(pGpuResource, command, pParams, size) binapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define binapiUnmapFrom(pResource, pParams) binapiUnmapFrom_DISPATCH(pResource, pParams)
 #define binapiControl_Epilogue(pResource, pCallContext, pParams) binapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiControlLookup(pResource, pParams, ppEntry) binapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define binapiGetInternalObjectHandle(pGpuResource) binapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define binapiUnmap(pGpuResource, pCallContext, pCpuMapping) binapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define binapiGetMemInterMapParams(pRmResource, pParams) binapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -129,6 +133,7 @@ NV_STATUS __nvoc_objCreate_BinaryApi(BinaryApi**, Dynamic*, NvU32, struct CALL_C
 #define binapiControlFilter(pResource, pCallContext, pParams) binapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define binapiControlSerialization_Prologue(pResource, pCallContext, pParams) binapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define binapiCanCopy(pResource) binapiCanCopy_DISPATCH(pResource)
+#define binapiIsPartialUnmapSupported(pResource) binapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define binapiPreDestruct(pResource) binapiPreDestruct_DISPATCH(pResource)
 #define binapiIsDuplicate(pResource, hMemory, pDuplicate) binapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define binapiControlSerialization_Epilogue(pResource, pCallContext, pParams) binapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -184,10 +189,6 @@ static inline void binapiControl_Epilogue_DISPATCH(struct BinaryApi *pResource, 
     pResource->__binapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS binapiControlLookup_DISPATCH(struct BinaryApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__binapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle binapiGetInternalObjectHandle_DISPATCH(struct BinaryApi *pGpuResource) {
     return pGpuResource->__binapiGetInternalObjectHandle__(pGpuResource);
 }
@@ -216,6 +217,10 @@ static inline NvBool binapiCanCopy_DISPATCH(struct BinaryApi *pResource) {
     return pResource->__binapiCanCopy__(pResource);
 }
 
+static inline NvBool binapiIsPartialUnmapSupported_DISPATCH(struct BinaryApi *pResource) {
+    return pResource->__binapiIsPartialUnmapSupported__(pResource);
+}
+
 static inline void binapiPreDestruct_DISPATCH(struct BinaryApi *pResource) {
     pResource->__binapiPreDestruct__(pResource);
 }
@@ -242,11 +247,16 @@ NV_STATUS binapiConstruct_IMPL(struct BinaryApi *arg_pResource, struct CALL_CONT
 #undef PRIVATE_FIELD
 
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_BINARY_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct BinaryApiPrivileged {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct BinaryApi __nvoc_base_BinaryApi;
@@ -269,7 +279,6 @@ struct BinaryApiPrivileged {
     NV_STATUS (*__binapiprivInternalControlForward__)(struct BinaryApiPrivileged *, NvU32, void *, NvU32);
     NV_STATUS (*__binapiprivUnmapFrom__)(struct BinaryApiPrivileged *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__binapiprivControl_Epilogue__)(struct BinaryApiPrivileged *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__binapiprivControlLookup__)(struct BinaryApiPrivileged *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__binapiprivGetInternalObjectHandle__)(struct BinaryApiPrivileged *);
     NV_STATUS (*__binapiprivUnmap__)(struct BinaryApiPrivileged *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__binapiprivGetMemInterMapParams__)(struct BinaryApiPrivileged *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -277,6 +286,7 @@ struct BinaryApiPrivileged {
     NV_STATUS (*__binapiprivControlFilter__)(struct BinaryApiPrivileged *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__binapiprivControlSerialization_Prologue__)(struct BinaryApiPrivileged *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__binapiprivCanCopy__)(struct BinaryApiPrivileged *);
+    NvBool (*__binapiprivIsPartialUnmapSupported__)(struct BinaryApiPrivileged *);
     void (*__binapiprivPreDestruct__)(struct BinaryApiPrivileged *);
     NV_STATUS (*__binapiprivIsDuplicate__)(struct BinaryApiPrivileged *, NvHandle, NvBool *);
     void (*__binapiprivControlSerialization_Epilogue__)(struct BinaryApiPrivileged *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -324,7 +334,6 @@ NV_STATUS __nvoc_objCreate_BinaryApiPrivileged(BinaryApiPrivileged**, Dynamic*, 
 #define binapiprivInternalControlForward(pGpuResource, command, pParams, size) binapiprivInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define binapiprivUnmapFrom(pResource, pParams) binapiprivUnmapFrom_DISPATCH(pResource, pParams)
 #define binapiprivControl_Epilogue(pResource, pCallContext, pParams) binapiprivControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define binapiprivControlLookup(pResource, pParams, ppEntry) binapiprivControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define binapiprivGetInternalObjectHandle(pGpuResource) binapiprivGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define binapiprivUnmap(pGpuResource, pCallContext, pCpuMapping) binapiprivUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define binapiprivGetMemInterMapParams(pRmResource, pParams) binapiprivGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -332,6 +341,7 @@ NV_STATUS __nvoc_objCreate_BinaryApiPrivileged(BinaryApiPrivileged**, Dynamic*, 
 #define binapiprivControlFilter(pResource, pCallContext, pParams) binapiprivControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define binapiprivControlSerialization_Prologue(pResource, pCallContext, pParams) binapiprivControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define binapiprivCanCopy(pResource) binapiprivCanCopy_DISPATCH(pResource)
+#define binapiprivIsPartialUnmapSupported(pResource) binapiprivIsPartialUnmapSupported_DISPATCH(pResource)
 #define binapiprivPreDestruct(pResource) binapiprivPreDestruct_DISPATCH(pResource)
 #define binapiprivIsDuplicate(pResource, hMemory, pDuplicate) binapiprivIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define binapiprivControlSerialization_Epilogue(pResource, pCallContext, pParams) binapiprivControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -387,10 +397,6 @@ static inline void binapiprivControl_Epilogue_DISPATCH(struct BinaryApiPrivilege
     pResource->__binapiprivControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS binapiprivControlLookup_DISPATCH(struct BinaryApiPrivileged *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__binapiprivControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle binapiprivGetInternalObjectHandle_DISPATCH(struct BinaryApiPrivileged *pGpuResource) {
     return pGpuResource->__binapiprivGetInternalObjectHandle__(pGpuResource);
 }
@@ -417,6 +423,10 @@ static inline NV_STATUS binapiprivControlSerialization_Prologue_DISPATCH(struct 
 
 static inline NvBool binapiprivCanCopy_DISPATCH(struct BinaryApiPrivileged *pResource) {
     return pResource->__binapiprivCanCopy__(pResource);
+}
+
+static inline NvBool binapiprivIsPartialUnmapSupported_DISPATCH(struct BinaryApiPrivileged *pResource) {
+    return pResource->__binapiprivIsPartialUnmapSupported__(pResource);
 }
 
 static inline void binapiprivPreDestruct_DISPATCH(struct BinaryApiPrivileged *pResource) {

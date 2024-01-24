@@ -62,6 +62,42 @@
 #define COHERENT_CPU_MAPPING_RM_RESV_REGION   COHERENT_CPU_MAPPING_REGION_1
 
 /*!
+ * @brief Tear Down BAR1 Mailbox
+ *
+ * Destroys Bar1 VA Space.
+ *
+ * @param[in] pGpu       OBJGPU pointer
+ * @param[in] pKernelBus KernelBus pointer
+ *
+ * @returns void
+ */
+void
+kbusTeardownMailbox_GH100
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU32 bar1Block = 0;
+
+    // set bar1 mode to physical and vidmem so we don't accidentally corrupt sysmem
+    bar1Block = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR);
+    bar1Block = FLD_SET_DRF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_LOW_ADDR, _MODE, _PHYSICAL, bar1Block);
+    bar1Block = FLD_SET_DRF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_LOW_ADDR, _TARGET, _VID_MEM, bar1Block);
+
+    //
+    // override the aperture to sysmem if FB is not present.
+    //
+    if ((pGpu->getProperty(pGpu, PDB_PROP_GPU_BROKEN_FB)) && RMCFG_FEATURE_MODS_FEATURES)
+    {
+        bar1Block = FLD_SET_DRF(
+                        _VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_LOW_ADDR, _TARGET, _SYS_MEM_NONCOHERENT, bar1Block);
+    }
+
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR, bar1Block);
+}
+
+/*!
  * @brief Gets the P2P write mailbox address size (NV_XAL_EP_P2P_WMBOX_ADDR_ADDR)
  *
  * @returns P2P write mailbox address size (NV_XAL_EP_P2P_WMBOX_ADDR_ADDR)
@@ -577,7 +613,7 @@ kbusTeardownBar2CpuAperture_GH100
 
     kbusFlushVirtualBar2_HAL(pGpu, pKernelBus, NV_FALSE, gfid);
 
-    if (pKernelBus->virtualBar2[gfid].pCpuMapping)
+    if (pKernelBus->virtualBar2[gfid].pCpuMapping != NULL)
     {
         osUnmapPciMemoryKernelOld(pGpu, (void*)pKernelBus->virtualBar2[gfid].pCpuMapping);
         // Mark the BAR as un-initialized so that a later call
@@ -876,8 +912,8 @@ kbusCreateCoherentCpuMapping_GH100
     KernelBif          *pKernelBif                 = GPU_GET_KERNEL_BIF(pGpu);
     NvP64               pCpuMapping                = NvP64_NULL;
     NvU64               fbSize;
-    NvU64               busAddrStart;
-    NvU64               busAddrSize;
+    NvU64               busAddrStart[COHERENT_CPU_MAPPING_TOTAL_REGIONS];
+    NvU64               busAddrSize[COHERENT_CPU_MAPPING_TOTAL_REGIONS];
     NvU32               i;
     NvU64               memblockSize;
     NvU32               cachingMode[COHERENT_CPU_MAPPING_TOTAL_REGIONS];
@@ -906,8 +942,25 @@ kbusCreateCoherentCpuMapping_GH100
     pKernelBus->coherentCpuMapping.size[COHERENT_CPU_MAPPING_RM_RESV_REGION] =
         fbSize - pKernelBus->coherentCpuMapping.size[COHERENT_CPU_MAPPING_REGION_0];
 
+    for (i = COHERENT_CPU_MAPPING_REGION_0; i < pKernelBus->coherentCpuMapping.nrMapping; ++i)
+    {
+        busAddrStart[i] = pKernelMemorySystem->coherentCpuFbBase +
+            pKernelBus->coherentCpuMapping.physAddr[i];
+        busAddrSize[i]  = pKernelBus->coherentCpuMapping.size[i];
+    }
+
     if (pKernelMemorySystem->bBug3656943WAR)
     {
+        if (IS_PASSTHRU(pGpu))
+        {
+            //
+            // For passthrough case, reserved memory guest physical address
+            // comes from BAR1 address.
+            //
+            busAddrStart[COHERENT_CPU_MAPPING_RM_RESV_REGION] =
+                pKernelMemorySystem->coherentRsvdFbBase;
+        }
+
         //
         // RM reserved region should be mapped as Normal Non-cacheable as a SW WAR
         // for the bug 3656943. NV_MEMORY_WRITECOMBINED translates to linux
@@ -923,13 +976,11 @@ kbusCreateCoherentCpuMapping_GH100
 
     for (i = COHERENT_CPU_MAPPING_REGION_0; i < pKernelBus->coherentCpuMapping.nrMapping; ++i)
     {
-        busAddrStart = pKernelMemorySystem->coherentCpuFbBase + pKernelBus->coherentCpuMapping.physAddr[i];
-        busAddrSize  = pKernelBus->coherentCpuMapping.size[i];
 
         // In SHH, CPU uses coherent C2C link to access GPU memory and hence it can be accessed cached.
         status = osMapPciMemoryKernel64(pGpu,
-                                        (NvUPtr)busAddrStart,
-                                        (NvU64)busAddrSize,
+                                        (NvUPtr)busAddrStart[i],
+                                        (NvU64)busAddrSize[i],
                                         NV_PROTECT_READ_WRITE,
                                         &(pCpuMapping),
                                         cachingMode[i]);
@@ -937,7 +988,8 @@ kbusCreateCoherentCpuMapping_GH100
         NV_ASSERT_OR_RETURN(status == NV_OK, NV_ERR_GENERIC);
 
         pKernelBus->coherentCpuMapping.pCpuMapping[i] = (NvP64)pCpuMapping;
-        pKernelBus->coherentCpuMapping.size[i] = busAddrSize;
+        NV_PRINTF(LEVEL_INFO, "coherent link mapping. i: %d base: 0x%llx size: 0x%llx \n",
+                  i, busAddrStart[i], busAddrSize[i]);
 
         NV_ASSERT_OR_RETURN(bFlush == NV_FALSE, NV_ERR_NOT_SUPPORTED);
 
@@ -1004,17 +1056,23 @@ kbusVerifyCoherentLink_GH100
     // Ensure the writes are flushed out of the CPU caches.
     osFlushGpuCoherentCpuCacheRange(pGpu->pOsGpuInfo, (NvUPtr)pOffset, size);
 
-    flagsClean = NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_FLAGS_ALL |
-                 NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_FLAGS_CLEAN;
-    if (kmemsysIsL2CleanFbPull(pKernelMemorySystem))
+    // L2 invalidate registers are not present in VF BAR0. PF driver should have tested this on host so
+    // skipping this on SRIOV guest
+    if (!IS_VIRTUAL(pGpu))
     {
-        flagsClean |= NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_FLAGS_WAIT_FB_PULL;
-    }
-    status = kmemsysSendL2InvalidateEvict(pGpu, pKernelMemorySystem, flagsClean);
-    if (NV_OK != status)
-    {
-        NV_PRINTF(LEVEL_ERROR, "L2 evict failed\n");
-        goto busVerifyCoherentLink_failed;
+        flagsClean = NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_FLAGS_ALL |
+                     NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_FLAGS_CLEAN;
+        if (kmemsysIsL2CleanFbPull(pKernelMemorySystem))
+        {
+            flagsClean |= NV2080_CTRL_INTERNAL_MEMSYS_L2_INVALIDATE_EVICT_FLAGS_WAIT_FB_PULL;
+        }
+
+        status = kmemsysSendL2InvalidateEvict(pGpu, pKernelMemorySystem, flagsClean);
+        if (NV_OK != status)
+        {
+            NV_PRINTF(LEVEL_ERROR, "L2 evict failed\n");
+            goto busVerifyCoherentLink_failed;
+        }
     }
 
     for(index = 0; index < size; index += 4)
@@ -2209,26 +2267,6 @@ kbusAllocateFlaVaspace_GH100
                   "failed binding instblk for FLA, status=0x%x\n", status);
         goto free_instblk;
     }
-    if (GPU_GET_KERNEL_NVLINK(pGpu) != NULL)
-    {
-        NVLINK_INBAND_MSG_CALLBACK inbandMsgCbParams;
-
-        inbandMsgCbParams.messageType = NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP;
-        inbandMsgCbParams.pCallback = &memorymulticastfabricTeamSetupResponseCallback;
-        inbandMsgCbParams.wqItemFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
-                                        OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW;
-
-        status = knvlinkRegisterInbandCallback(pGpu,
-                                               GPU_GET_KERNEL_NVLINK(pGpu),
-                                               &inbandMsgCbParams);
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "GPU (ID: %d) Registering Inband Cb failed\n",
-                    gpuGetInstance(pGpu));
-            goto free_instblk;
-        }
-
-    }
 
     // setup Unicast FLA range in Fabric VAS object
     if (!GPU_IS_NVSWITCH_DETECTED(pGpu))
@@ -2303,12 +2341,6 @@ kbusDestroyFla_GH100
             // TODO: Remove this once legacy FLA  VAS support is deprecated
             pRmApi->Free(pRmApi, pKernelBus->flaInfo.hClient, pKernelBus->flaInfo.hClient);
             portMemSet(&pKernelBus->flaInfo, 0, sizeof(pKernelBus->flaInfo));
-            if (GPU_GET_KERNEL_NVLINK(pGpu) != NULL)
-             {
-                // Unregister the receive callback
-                NV_ASSERT_OK(knvlinkUnregisterInbandCallback(pGpu, GPU_GET_KERNEL_NVLINK(pGpu),
-                                NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP));
-             }
         }
     }
 }
@@ -2559,4 +2591,277 @@ kbusRestoreBAR1ResizeSize_WAR_BUG_3249028_GH100
     GPU_BUS_CFG_CYCLE_WR32(pGpu, NV_EP_PCFG_GPU_PF_RESIZE_BAR_CTRL, regVal);
 
     return NV_OK;
+}
+
+/*!
+ * @brief Bind BAR2
+ *
+ * @param[in] pGpu        OBJGPU pointer
+ * @param[in] pKernelBus  KernelBus pointer
+ * @param[in] bar2Mode    BAR2 binding mode
+ *
+ * @returns NV_OK on success.
+ */
+NV_STATUS
+kbusBindBar2_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus,
+    BAR2_MODE  bar2Mode
+)
+{
+    NvU32             gfid;
+    RMTIMEOUT         timeout;
+    NvU32             temp;
+    NvU32             valueLowAddr;
+    NvU32             valueHighAddr;
+    NvU32             instBlkAperture = 0;
+    NvU64             instBlkAddr     = 0;
+    NV_STATUS         status          = NV_OK;
+    NvBool            bIsModePhysical;
+    MEMORY_DESCRIPTOR *pMemDesc;
+
+    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+
+    if (pKernelBus->bar2[gfid].bBootstrap &&
+        (NULL != pKernelBus->bar2[gfid].pInstBlkMemDescForBootstrap) &&
+        kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
+    {
+        pMemDesc = pKernelBus->bar2[gfid].pInstBlkMemDescForBootstrap;
+    }
+    else
+    {
+        pMemDesc = pKernelBus->bar2[gfid].pInstBlkMemDesc;
+    }
+
+    //
+    // Bind BAR2 to virtual. Carefully.  We have not initialized PTEs yet. We will first
+    // map the BAR2 PTEs into BAR2. This allows us to use the BAR2 interface to invalidate
+    // the rest of the BAR2 PTEs.  WC memory writes are faster than single BAR0 writes
+    // and this matters for RTL sim and emulation.
+    //
+    bIsModePhysical = (BAR2_MODE_PHYSICAL == bar2Mode);
+
+    if (!bIsModePhysical)
+    {
+        instBlkAperture = kgmmuGetHwPteApertureFromMemdesc(GPU_GET_KERNEL_GMMU(pGpu), pMemDesc);
+        instBlkAddr     = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
+    }
+
+    valueLowAddr =
+            ((bIsModePhysical ? DRF_DEF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR2_BLOCK_LOW_ADDR, _TARGET, _VID_MEM) :
+                                DRF_NUM(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR2_BLOCK_LOW_ADDR, _TARGET, instBlkAperture)) |
+             (bIsModePhysical ? DRF_DEF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR2_BLOCK_LOW_ADDR, _MODE, _PHYSICAL) :
+                                DRF_DEF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR2_BLOCK_LOW_ADDR, _MODE, _VIRTUAL)) |
+             (bIsModePhysical ? DRF_NUM(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR2_BLOCK_LOW_ADDR, _PTR, 0x0) :
+                                DRF_NUM(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR2_BLOCK_LOW_ADDR, _PTR,
+                                NvU64_LO32(instBlkAddr >> NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_PTR_SHIFT))));
+
+    valueHighAddr = NvU64_HI32(instBlkAddr);
+
+    //
+    // For BAR1 and BAR2 binds, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR should be written
+    // first followed with the HIGH. Write to the HIGH register triggers the bind.
+    //
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR, valueLowAddr);
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_HIGH_ADDR, valueHighAddr);
+
+    osFlushCpuWriteCombineBuffer();
+
+    // Skip the wait if we are in the reset path (GPU most likely in a bad state)
+    if (!IS_VIRTUAL(pGpu) && API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+    {
+        return status;
+    }
+
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    do
+    {
+        //
+        // To avoid deadlocks and non-deterministic virtual address
+        // translation behavior, after writing BAR2_BLOCK to bind BAR2 to a
+        // virtual address space, SW must ensure that the bind has completed
+        // prior to issuing any further BAR2 requests by polling for both
+        // NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_PENDING to return to EMPTY and
+        // NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_OUTSTANDING to return to NV_FALSE.
+        //
+        // BAR2_PENDING indicates a Bar2 bind is waiting to be sent.
+        // BAR2_OUTSTANDING indicates a Bar2 bind is outstanding to FB.
+        //
+        temp = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR);
+
+        if (FLD_TEST_DRF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR2_BLOCK_LOW_ADDR, _BAR2_PENDING, _EMPTY, temp) &&
+            FLD_TEST_DRF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR2_BLOCK_LOW_ADDR, _BAR2_OUTSTANDING, _FALSE, temp))
+        {
+            status = NV_OK;
+            break;
+        }
+
+        if (status == NV_ERR_TIMEOUT)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "timed out waiting for bar2 binding to complete\n");
+            DBG_BREAKPOINT();
+            break;
+        }
+
+        status = gpuCheckTimeout(pGpu, &timeout);
+        osSpinLoop();
+    } while (1);
+
+    return status;
+}
+
+/*!
+ * @brief Bind BAR1 instance block
+ *
+ * @param[in] pGpu        OBJGPU pointer
+ * @param[in] pKernelBus  KernelBus pointer
+ *
+ * @returns NV_OK on success.
+ */
+NV_STATUS
+kbusBar1InstBlkBind_GH100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    KernelGmmu       *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    NvU32             gfid;
+    NvU32             target;
+    NvU32             temp;
+    NvU32             ptrLow;
+    NvU32             ptrHigh;
+    RMTIMEOUT         timeout;
+    NV_STATUS         status = NV_OK;
+    NvU32             blockMode = 0;
+
+    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+
+    // Nothing to be done in guest in the paravirtualization case.
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        return NV_OK;
+    }
+
+    switch (kgmmuGetMemAperture(pKernelGmmu, pKernelBus->bar1[gfid].pInstBlkMemDesc))
+    {
+        case GMMU_APERTURE_VIDEO:
+            target = NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_TARGET_VID_MEM;
+            break;
+        case GMMU_APERTURE_SYS_COH:
+            target = NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_TARGET_SYS_MEM_COHERENT;
+            break;
+        case GMMU_APERTURE_SYS_NONCOH:
+            target = NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_TARGET_SYS_MEM_NONCOHERENT;
+            break;
+        default:
+            NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_STATE);
+    }
+
+    //
+    // BAR1 address is 4K-aligned, we do not need to specify the lower 12 bit (11:0) of address.
+    // Thus we are storing the upper 32-bit of the 64-bit address pointer as BAR1_BLOCK_HIGH_ADDR[31:0],
+    // and the lower 20-bit of the 64-bit pointer as BAR1_BLOCK_LOW_ADDR[31:12].
+    //
+    ptrLow = NvU64_LO32(pKernelBus->bar1[gfid].instBlockBase >> NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_PTR_SHIFT);
+    ptrHigh = NvU64_HI32(pKernelBus->bar1[gfid].instBlockBase);
+
+    if (kbusIsBar1PhysicalModeEnabled(pKernelBus))
+    {
+        blockMode = DRF_DEF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_LOW_ADDR, _MODE, _PHYSICAL);
+    }
+    else
+    {
+        blockMode = DRF_DEF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_LOW_ADDR, _MODE, _VIRTUAL);
+    }
+
+    //
+    // For BAR1 and BAR2 binds, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR should be written
+    // first followed with the HIGH. Write to the HIGH register triggers the bind.
+    //
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR,
+            DRF_NUM(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_LOW_ADDR, _TARGET, target) | blockMode |
+            DRF_NUM(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_LOW_ADDR, _PTR, ptrLow));
+
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_HIGH_ADDR,
+            DRF_NUM(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_HIGH_ADDR, _PTR, ptrHigh));
+
+    osFlushCpuWriteCombineBuffer();
+
+    // Skip the wait if we are in the reset path (GPU most likely in a bad state)
+    if (!IS_VIRTUAL(pGpu) && API_GPU_IN_RESET_SANITY_CHECK(pGpu))
+    {
+        return status;
+    }
+
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    do
+    {
+        //
+        // To avoid deadlocks and non-deterministic virtual address
+        // translation behavior, after writing BAR1_BLOCK to bind BAR1 to a
+        // virtual address space, SW must ensure that the bind has completed
+        // prior to issuing any further BAR1 requests by polling for both
+        // NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_PENDING to return to EMPTY and
+        // NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_OUTSTANDING to return to NV_FALSE.
+        //
+        // BAR1_PENDING indicates a Bar1 bind is waiting to be sent.
+        // BAR1_OUTSTANDING indicates a Bar1 bind is outstanding to FB.
+        //
+        temp = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR);
+
+        if (FLD_TEST_DRF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_LOW_ADDR, _BAR1_PENDING, _EMPTY, temp) &&
+            FLD_TEST_DRF(_VIRTUAL_FUNCTION_PRIV_FUNC, _BAR1_BLOCK_LOW_ADDR, _BAR1_OUTSTANDING, _FALSE, temp))
+        {
+            status = NV_OK;
+            break;
+        }
+
+        if (status == NV_ERR_TIMEOUT)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "timed out waiting for bar1 binding to complete\n");
+            DBG_BREAKPOINT();
+            break;
+        }
+        status = gpuCheckTimeout(pGpu, &timeout);
+        osSpinLoop();
+    } while (1);
+
+    return status;
+}
+
+NvU32
+kbusGetEccCounts_GH100
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU32 regVal;
+    NvU32 count = 0;
+
+    // PCIE RE ORDER
+    regVal = GPU_REG_RD32(pGpu, NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT);
+    count += DRF_VAL(_XAL_EP, _REORDER_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    // PCIE P2PREQ
+    regVal = GPU_REG_RD32(pGpu, NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT);
+    count += DRF_VAL(_XAL_EP, _P2PREQ_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    return count;
+}
+
+void
+kbusClearEccCounts_GH100
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    // Reset XAL-EP counts
+    GPU_REG_WR32(pGpu, NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT, 0);
+    GPU_REG_WR32(pGpu, NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT, 0);
 }

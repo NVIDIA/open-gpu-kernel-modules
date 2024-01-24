@@ -1,4 +1,3 @@
-
 /*
  * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
@@ -44,6 +43,7 @@
 #include "nvsecurityinfo.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "resource_desc.h"
+#include "platform/sli/sli.h"
 
 #include "mem_mgr/fla_mem.h"
 
@@ -89,6 +89,27 @@
  */
 #define NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_EMWA                           (0)
 #define NVPCF0100_CTRL_CONTROLLER_FILTER_TYPE_MOVING_MAX                     (1)
+
+ct_assert(NV_GPU_UUID_LEN == VM_UUID_SIZE);
+
+static NV_STATUS
+CliGetSystemP2pCaps_GSPCLIENT
+(
+    NvU32 *gpuIds,
+    NvU32 gpuCount,
+    NvU32 *p2pCaps,
+    NvU32 *p2pOptimalReadCEs,
+    NvU32 *p2pOptimalWriteCEs,
+    NvU8  *p2pCapsStatus,
+    NvU32 *busPeerIds
+);
+
+static
+NV_STATUS
+CliGetSystemP2pCapsMatrix_GSPCLIENT
+(
+    NV0000_CTRL_SYSTEM_GET_P2P_CAPS_MATRIX_PARAMS *pP2PParams
+);
 
 NV_STATUS
 cliresConstruct_IMPL
@@ -344,7 +365,8 @@ CliGetSystemP2pCaps
     NvU32  *p2pOptimalReadCEs,
     NvU32  *p2pOptimalWriteCEs,
     NvU8   *p2pCapsStatus,
-    NvU32  *pBusPeerIds
+    NvU32  *pBusPeerIds,
+    NvU32  *pBusEgmPeerIds
 )
 {
     OBJGPU       *pGpuLocal          = NULL;
@@ -412,6 +434,11 @@ CliGetSystemP2pCaps
                 pBusPeerIds[(localGpuIndex * gpuCount) + peerGpuIndex] =
                     kbusGetPeerId_HAL(pGpuLocalLoop, GPU_GET_KERNEL_BUS(pGpuLocalLoop), pGpuPeer);
             }
+            if (pBusEgmPeerIds != NULL)
+            {
+                pBusEgmPeerIds[(localGpuIndex * gpuCount) + peerGpuIndex] =
+                    kbusGetEgmPeerId_HAL(pGpuLocalLoop, GPU_GET_KERNEL_BUS(pGpuLocalLoop), pGpuPeer);
+            }
         }
     }
 
@@ -473,7 +500,8 @@ CliGetSystemP2pCaps
                 p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_LOOPBACK] = NV0000_P2P_CAPS_STATUS_OK;
         }
     }
-    else if ((connectivity == P2P_CONNECTIVITY_PCIE_BAR1) || (connectivity == P2P_CONNECTIVITY_PCIE))
+    else if ((connectivity == P2P_CONNECTIVITY_PCIE_BAR1) ||
+             (connectivity == P2P_CONNECTIVITY_PCIE_PROPRIETARY))
     {
         if (p2pCaps != NULL)
         {
@@ -481,7 +509,7 @@ CliGetSystemP2pCaps
                 REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_READS_SUPPORTED, _TRUE) : 0;
             *p2pCaps |= (p2pWriteCapStatus == NV0000_P2P_CAPS_STATUS_OK) ?
                 REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_WRITES_SUPPORTED, _TRUE) : 0;
-            *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PROP_SUPPORTED, _TRUE);
+            *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PCI_SUPPORTED, _TRUE);
 
             if (connectivity == P2P_CONNECTIVITY_PCIE_BAR1)
             {
@@ -489,13 +517,13 @@ CliGetSystemP2pCaps
             }
             else
             {
-                *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PCI_SUPPORTED, _TRUE);
+                *p2pCaps |= REF_DEF(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PROP_SUPPORTED, _TRUE);
             }
         }
 
         if (p2pCapsStatus != NULL)
         {
-            p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_PROP] = NV0000_P2P_CAPS_STATUS_OK;
+            p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_PCI] = NV0000_P2P_CAPS_STATUS_OK;
 
             if (connectivity == P2P_CONNECTIVITY_PCIE_BAR1)
             {
@@ -503,11 +531,11 @@ CliGetSystemP2pCaps
             }
             else
             {
-                p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_PCI] = NV0000_P2P_CAPS_STATUS_OK;
+                p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_PROP] = NV0000_P2P_CAPS_STATUS_OK;
             }
         }
 
-        if ((gpuCount == 1) && (connectivity == P2P_CONNECTIVITY_PCIE))
+        if ((gpuCount == 1) && (connectivity == P2P_CONNECTIVITY_PCIE_PROPRIETARY))
         {
             if (p2pCaps != NULL)
             {
@@ -784,6 +812,12 @@ cliresCtrlCmdSystemGetFeatures_IMPL
             _IS_EFI_INIT, _TRUE, featuresMask);
     }
 
+    if (pSys->bSysUuidBasedMemExportSupport)
+    {
+        featuresMask = FLD_SET_DRF(0000, _CTRL_SYSTEM_GET_FEATURES,
+            _UUID_BASED_MEM_SHARING, _TRUE, featuresMask);
+    }
+
     pFeaturesParams->featuresMask = featuresMask;
 
     return NV_OK;
@@ -1011,7 +1045,7 @@ cliresCtrlCmdSystemGetCpuInfo_IMPL
     pCpuInfoParams->family = pSys->cpuInfo.family;
     pCpuInfoParams->model = pSys->cpuInfo.model;
     pCpuInfoParams->stepping = pSys->cpuInfo.stepping;
-    pCpuInfoParams->bSEVEnabled = (sysGetStaticConfig(pSys))->bOsCCEnabled;
+    pCpuInfoParams->bCCEnabled = (sysGetStaticConfig(pSys))->bOsCCEnabled;
     portMemCopy(pCpuInfoParams->name,
                 sizeof (pCpuInfoParams->name), pSys->cpuInfo.name,
                 sizeof (pCpuInfoParams->name));
@@ -1087,31 +1121,6 @@ cliresCtrlCmdSystemGetChipsetInfo_IMPL
     {
         pChipsetInfo->flags = FLD_SET_DRF(0000, _CTRL_SYSTEM_CHIPSET_FLAG, _HAS_RESIZABLE_BAR_ISSUE, _NO, pChipsetInfo->flags);
     }
-
-    return NV_OK;
-}
-
-//
-// cliresCtrlCmdSystemSetMemorySize
-//
-// Set system memory size in pages.
-//
-// Lock Requirements:
-//      Assert that API and GPUs locks held on entry
-//
-NV_STATUS
-cliresCtrlCmdSystemSetMemorySize_IMPL
-(
-    RmClientResource *pRmCliRes,
-    NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS *pParams
-)
-{
-    OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJOS *pOS = SYS_GET_OS(pSys);
-
-    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
-
-    pOS->SystemMemorySize = pParams->memorySize;
 
     return NV_OK;
 }
@@ -1502,6 +1511,32 @@ cliresCtrlCmdGpuGetProbedIds_IMPL
 }
 
 //
+// _cliresValidateGpuIdAgainstProbed
+//
+// Lock Requirements: none (only operates on arguments)
+//
+static NV_STATUS
+_cliresValidateGpuIdAgainstProbed
+(
+    NvU32 gpuId,
+    const NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *pGpuProbedIds
+)
+{
+    NvU32 j;
+
+    for (j = 0; j < NV0000_CTRL_GPU_MAX_PROBED_GPUS; j++)
+    {
+        if (pGpuProbedIds->gpuIds[j] == NV0000_CTRL_GPU_INVALID_ID)
+            break;
+
+        if (gpuId == pGpuProbedIds->gpuIds[j])
+            return NV_OK;
+    }
+
+    return NV_ERR_INVALID_ARGUMENT;
+}
+
+//
 // cliresCtrlCmdGpuAttachIds
 //
 // Lock Requirements:
@@ -1516,7 +1551,7 @@ cliresCtrlCmdGpuAttachIds_IMPL
 )
 {
     NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *pGpuProbedIds = NULL;
-    NvU32 i, j;
+    NvU32 i;
     NV_STATUS status = NV_OK;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
@@ -1544,25 +1579,93 @@ cliresCtrlCmdGpuAttachIds_IMPL
     for (i = 0; (i < NV0000_CTRL_GPU_MAX_PROBED_GPUS) &&
                 (pGpuAttachIds->gpuIds[i] != NV0000_CTRL_GPU_INVALID_ID); i++)
     {
-        for (j = 0; (j < NV0000_CTRL_GPU_MAX_PROBED_GPUS) &&
-                    (pGpuProbedIds->gpuIds[j] != NV0000_CTRL_GPU_INVALID_ID); j++)
-        {
-            if (pGpuAttachIds->gpuIds[i] == pGpuProbedIds->gpuIds[j])
-                break;
-        }
-
-        if ((j == NV0000_CTRL_GPU_MAX_PROBED_GPUS) ||
-            (pGpuProbedIds->gpuIds[j] == NV0000_CTRL_GPU_INVALID_ID))
-        {
-            status = NV_ERR_INVALID_ARGUMENT;
+        status = _cliresValidateGpuIdAgainstProbed(pGpuAttachIds->gpuIds[i],
+                                                   pGpuProbedIds);
+        if (status != NV_OK)
             break;
-        }
     }
 
     // XXX add callback to attach logic on Windows
 done:
     portMemFree(pGpuProbedIds);
     return status;
+}
+
+//
+// cliresCtrlCmdGpuAsyncAttachId
+//
+// Lock Requirements:
+//      Assert that API lock held on entry
+//      No GPUs lock
+//
+NV_STATUS
+cliresCtrlCmdGpuAsyncAttachId_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_GPU_ASYNC_ATTACH_ID_PARAMS *pAsyncAttachIdParams
+)
+{
+    //
+    // Similar to non-async attach, async attach is mostly handled by
+    // libnvrmapi in userspace. Here, Core RM just does validation.
+    //
+
+    NV_STATUS status = NV_OK;
+    NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *pGpuProbedIds = NULL;
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+
+    pGpuProbedIds = portMemAllocNonPaged(sizeof(*pGpuProbedIds));
+    if (pGpuProbedIds == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto done;
+    }
+
+    status = gpumgrGetProbedGpuIds(pGpuProbedIds);
+    if (status != NV_OK)
+    {
+        goto done;
+    }
+
+    status = _cliresValidateGpuIdAgainstProbed(pAsyncAttachIdParams->gpuId,
+                                               pGpuProbedIds);
+    if (status != NV_OK)
+    {
+        goto done;
+    }
+
+done:
+    portMemFree(pGpuProbedIds);
+    return status;
+}
+
+//
+// cliresCtrlCmdGpuWaitAttachId
+//
+// Lock Requirements: none
+//
+NV_STATUS
+cliresCtrlCmdGpuWaitAttachId_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_GPU_WAIT_ATTACH_ID_PARAMS *pWaitAttachIdParams
+)
+{
+    //
+    // Similar to non-async attach, async attach is mostly handled by
+    // libnvrmapi in userspace. That includes the logic for waiting for
+    // background attach operations to complete.
+    //
+    // Since background attach operations are not tracked by Core RM
+    // (that is the responsibility of libnvrmapi and the kernel interface
+    // layer), there is nothing to do here.
+    //
+    // Note: libnvrmapi on UNIX skips calling into Core RM entirely for this
+    // command, so this path (and the unneeded API lock acquire) is not taken.
+    //
+
+    return NV_OK;
 }
 
 //
@@ -1715,6 +1818,7 @@ cliresCtrlCmdGpuAcctGetProcAccountingInfo_IMPL
     NV_STATUS      status = NV_OK;
     CALL_CONTEXT  *pCallContext;
     RmCtrlParams  *pRmCtrlParams;
+    RM_API        *pRmApi;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
@@ -1743,15 +1847,14 @@ cliresCtrlCmdGpuAcctGetProcAccountingInfo_IMPL
     {
         pCallContext  = resservGetTlsCallContext();
         pRmCtrlParams = pCallContext->pControlParams;
+        pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-        return status;
+        return pRmApi->Control(pRmApi,
+                               pRmCtrlParams->hClient,
+                               pRmCtrlParams->hObject,
+                               pRmCtrlParams->cmd,
+                               pRmCtrlParams->pParams,
+                               pRmCtrlParams->paramsSize);
     }
 
     return gpuacctGetProcAcctInfo(pGpuAcct, pAcctInfoParams);
@@ -1768,6 +1871,7 @@ cliresCtrlCmdGpuAcctSetAccountingState_IMPL
     NV_STATUS     status = NV_OK;
     CALL_CONTEXT *pCallContext;
     RmCtrlParams *pRmCtrlParams;
+    RM_API       *pRmApi;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
@@ -1798,14 +1902,15 @@ cliresCtrlCmdGpuAcctSetAccountingState_IMPL
     {
         pCallContext  = resservGetTlsCallContext();
         pRmCtrlParams = pCallContext->pControlParams;
+        pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
+        status = pRmApi->Control(pRmApi,
+                                 pRmCtrlParams->hClient,
+                                 pRmCtrlParams->hObject,
+                                 pRmCtrlParams->cmd,
+                                 pRmCtrlParams->pParams,
+                                 pRmCtrlParams->paramsSize);
+
         if (status != NV_OK)
             return status;
     }
@@ -1841,6 +1946,7 @@ cliresCtrlCmdGpuAcctClearAccountingData_IMPL
     CALL_CONTEXT   *pCallContext;
     RmCtrlParams   *pRmCtrlParams;
     NV_STATUS       status = NV_OK;
+    RM_API         *pRmApi;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
@@ -1868,15 +1974,14 @@ cliresCtrlCmdGpuAcctClearAccountingData_IMPL
     {
         pCallContext  = resservGetTlsCallContext();
         pRmCtrlParams = pCallContext->pControlParams;
+        pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-        return status;
+        return pRmApi->Control(pRmApi,
+                               pRmCtrlParams->hClient,
+                               pRmCtrlParams->hObject,
+                               pRmCtrlParams->cmd,
+                               pRmCtrlParams->pParams,
+                               pRmCtrlParams->paramsSize);
     }
 
     return gpuacctClearAccountingData(pGpuAcct, pGpu->gpuInstance, pParams);
@@ -1895,6 +2000,7 @@ cliresCtrlCmdGpuAcctGetAccountingState_IMPL
     CALL_CONTEXT   *pCallContext;
     RmCtrlParams   *pRmCtrlParams;
     NV_STATUS       status = NV_OK;
+    RM_API         *pRmApi;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
@@ -1922,15 +2028,14 @@ cliresCtrlCmdGpuAcctGetAccountingState_IMPL
     {
         pCallContext  = resservGetTlsCallContext();
         pRmCtrlParams = pCallContext->pControlParams;
+        pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-        return status;
+        return pRmApi->Control(pRmApi,
+                               pRmCtrlParams->hClient,
+                               pRmCtrlParams->hObject,
+                               pRmCtrlParams->cmd,
+                               pRmCtrlParams->pParams,
+                               pRmCtrlParams->paramsSize);
     }
 
     return gpuacctGetAccountingMode(pGpuAcct, pGpu->gpuInstance, pParams);
@@ -1949,6 +2054,7 @@ cliresCtrlCmdGpuAcctGetAccountingPids_IMPL
     CALL_CONTEXT   *pCallContext;
     RmCtrlParams   *pRmCtrlParams;
     NV_STATUS       status = NV_OK;
+    RM_API         *pRmApi;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
@@ -1977,15 +2083,14 @@ cliresCtrlCmdGpuAcctGetAccountingPids_IMPL
     {
         pCallContext  = resservGetTlsCallContext();
         pRmCtrlParams = pCallContext->pControlParams;
+        pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-        return status;
+        return pRmApi->Control(pRmApi,
+                               pRmCtrlParams->hClient,
+                               pRmCtrlParams->hObject,
+                               pRmCtrlParams->cmd,
+                               pRmCtrlParams->pParams,
+                               pRmCtrlParams->paramsSize);
     }
 
     return gpuacctGetAcctPids(pGpuAcct, pAcctPidsParams);
@@ -1998,7 +2103,7 @@ cliresCtrlCmdSystemPfmreqhndlrControl_IMPL
     NV0000_CTRL_SYSTEM_PFM_REQ_HNDLR_CONTROL_PARAMS *controlParams
 )
 {
-    OBJSYS    				*pSys  				     = NULL;
+    OBJSYS                  *pSys                    = NULL;
     PlatformRequestHandler  *pPlatformRequestHandler = NULL;
     NV_STATUS  ret   = NV_OK;
     NvU32      data  = 0;
@@ -2353,8 +2458,8 @@ _controllerParseStaticTable_v20
             {
                 _controllerBuildConfig_StaticTable_v20(&entry, pParams);
                 _controllerBuildQboostConfig_StaticTable_v20(&entry, pParams);
-				break;
-			}
+                break;
+            }
             case NVPCF_CONTROLLER_STATIC_TABLE_ENTRY_V20_FLAGS0_CLASS_CTGP:
             {
                 _controllerBuildCtgpConfig_StaticTable_2x(pParams);
@@ -2506,10 +2611,10 @@ _sysDeviceParseStaticTable_2x
     NV_STATUS                       status              = NV_OK;
     NvU32                           deviceTableOffset   = 0;
     SYSDEV_STATIC_TABLE_HEADER_2X   sysdevHeader        = { 0 };
-	SYSDEV_STATIC_TABLE_COMMON_2X   common              = { 0 };
+    SYSDEV_STATIC_TABLE_COMMON_2X   common              = { 0 };
     const char                     *pSzSysDevHeaderFmt  =
         NVPCF_SYSDEV_STATIC_TABLE_HEADER_2X_FMT_SIZE_03;
-	const char                     *pSzCommonFmt        =
+    const char                     *pSzCommonFmt        =
         NVPCF_SYSDEV_STATIC_TABLE_COMMON_2X_FMT_SIZE_01;
 
     // Unpack the table header
@@ -2535,7 +2640,7 @@ _sysDeviceParseStaticTable_2x
                         deviceTableOffset + sysdevHeader.headerSize,
                         pSzCommonFmt);
 
-	pParams->cpuType = (DRF_VAL(PCF_SYSDEV_STATIC_TABLE_COMMON_2X, _PARAM0, _CPU_TYPE,
+    pParams->cpuType = (DRF_VAL(PCF_SYSDEV_STATIC_TABLE_COMMON_2X, _PARAM0, _CPU_TYPE,
                        common.param0));
 
     pParams->gpuType = (DRF_VAL(PCF_SYSDEV_STATIC_TABLE_COMMON_2X, _PARAM0, _GPU_TYPE,
@@ -2687,10 +2792,6 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
 
     switch (pParams->subFunc)
     {
-        case NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED_CASE:
-            acpiDsmFunction    = ACPI_DSM_FUNCTION_NVPCF;
-            acpiDsmSubFunction = NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED;
-            /* fallthrough */
         case NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED_CASE:
         {
             NvU32       supportedFuncs;
@@ -2721,40 +2822,6 @@ cliresCtrlCmdSystemNVPCFGetPowerModeInfo_IMPL
             }
             break;
 
-        }
-
-        case NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_CASE:
-        {
-            CONTROLLER_DYNAMIC_TABLE_1X_ACPI dynamicTable_1x;
-            portMemSet(&dynamicTable_1x, 0, sizeof(dynamicTable_1x));
-
-            dynamicTable_1x.header.version = NVPCF0100_CTRL_DYNAMIC_TABLE_1X_VERSION;
-            dynamicTable_1x.header.size = sizeof(NVPCF0100_CTRL_DYNAMIC_TABLE_1X_HEADER);
-            dynamicTable_1x.header.entryCnt = 2;
-            dynamicTable_1x.header.reserved = 0;
-
-            dynamicTable_1x.entries[0] = NVPCF0100_CTRL_DYNAMIC_TABLE_1X_INPUT_CMD_GET_TPP;
-            dsmDataSize = sizeof(dynamicTable_1x);
-
-            if ((rc = osCallACPI_DSM(pGpu,
-                                     ACPI_DSM_FUNCTION_NVPCF,
-                                     NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_PARAMS,
-                                     (NvU32*)(&dynamicTable_1x),
-                                     &dsmDataSize)) != NV_OK)
-            {
-                NV_PRINTF(LEVEL_WARNING,
-                    "Unable to retrieve NVPCF dynamic data. Possibly not supported by SBIOS "
-                    "rc = %x\n", rc);
-                status =  NV_ERR_NOT_SUPPORTED;
-            }
-            else
-            {
-                // bit [0:15] is TPP, bit [16:31] is rated TGP
-                pParams->tpp = dynamicTable_1x.entries[1] & 0xFFFF;
-                pParams->ratedTgp = (dynamicTable_1x.entries[1] & 0xFFFF0000) >> 16;
-            }
-
-            break;
         }
 
         case NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_CASE:
@@ -3288,6 +3355,408 @@ cliresCtrlCmdNvdGetNvlog_IMPL
     return status;
 }
 
+static NV_STATUS
+CliGetSystemP2pCaps_GSPCLIENT
+(
+    NvU32 *gpuIds,
+    NvU32 gpuCount,
+    NvU32 *p2pCaps,
+    NvU32 *p2pOptimalReadCEs,
+    NvU32 *p2pOptimalWriteCEs,
+    NvU8  *p2pCapsStatus,
+    NvU32 *busPeerIds
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 i;
+    NV2080_CTRL_GET_P2P_CAPS_PARAMS *pGetParams = NULL;
+
+    if ((gpuIds == NULL) ||
+        (gpuCount == 0) ||
+        (gpuCount > NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS) ||
+        (p2pOptimalReadCEs == NULL) ||
+        (p2pOptimalWriteCEs == NULL))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pGetParams = portMemAllocNonPaged(sizeof *pGetParams);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pGetParams != NULL, NV_ERR_NO_MEMORY);
+
+    // Initialize caps to empty
+    *p2pOptimalReadCEs = 0;
+    *p2pOptimalWriteCEs = 0;
+    if (p2pCaps != NULL)
+    {
+        *p2pCaps = 0;
+    }
+
+    if (p2pCapsStatus != NULL)
+    {
+        for (i = 0; i < NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE; i++)
+        {
+            p2pCapsStatus[i] = NV0000_P2P_CAPS_STATUS_NOT_SUPPORTED;
+        }
+    }
+
+    if (busPeerIds != NULL)
+    {
+        for (i = 0; i < (gpuCount * gpuCount); i++)
+        {
+            busPeerIds[i] = NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INVALID_PEER;
+        }
+    }
+
+    // Initialize internal call params
+    pGetParams->bAllCaps = NV_FALSE;
+    pGetParams->bUseUuid = NV_TRUE;
+    pGetParams->peerGpuCount = gpuCount;
+    for (i = 0; i < gpuCount; i++)
+    {
+        OBJGPU *pGpu = gpumgrGetGpuFromId(gpuIds[i]);
+
+        NV_CHECK_OR_ELSE(LEVEL_INFO, pGpu != NULL,
+                         status = NV_ERR_INVALID_ARGUMENT; goto done);
+
+        portMemCopy(pGetParams->peerGpuCaps[i].gpuUuid,
+                    VM_UUID_SIZE,
+                    pGpu->gpuUuid.uuid,
+                    NV_GPU_UUID_LEN);
+    }
+
+    // Retrieve caps and peer IDs
+    for (i = 0; i < gpuCount; i++)
+    {
+        NvU32 j;
+        NvU32 gpuMaskRelease = 0;
+        NvBool bLockAcquired = NV_FALSE;
+        OBJGPU *pGpu = gpumgrGetGpuFromId(gpuIds[i]);
+
+        NV_CHECK_OR_ELSE(LEVEL_INFO, pGpu != NULL,
+                         status = NV_ERR_INVALID_ARGUMENT; goto done);
+
+        if (!rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMaskRelease))
+        {
+            // Acquire lock
+            NV_ASSERT_OK_OR_GOTO(status,
+                                 rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                                       GPU_LOCK_GRP_SUBDEVICE,
+                                                       GPUS_LOCK_FLAGS_NONE,
+                                                       RM_LOCK_MODULES_RPC,
+                                                       &gpuMaskRelease),
+                                 done);
+
+            bLockAcquired = NV_TRUE;
+        }
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          pGpu->hInternalClient,
+                          pGpu->hInternalSubdevice,
+                          NV2080_CTRL_CMD_GET_P2P_CAPS,
+                          pGetParams,
+                          sizeof *pGetParams,
+                          status);
+
+        // Release lock
+        if (bLockAcquired && gpuMaskRelease != 0)
+        {
+            rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+        }
+
+        if (status != NV_OK)
+            goto done;
+
+        //
+        // Populate caps only once and according to local gpu's view.
+        // If gpuCount == 1, retrieve gpu caps of local gpu (allows read of loopback cap).
+        // When gpuCount > 1, retrieve gpu caps of one other remote:
+        //     Don't use caps of local gpu as it may contain loopback cap.
+        //     All local-to-remote pairs have identical caps except CEs data.
+        //
+        if (i == 0)
+        {
+            NvU32 ref = gpuCount > 1 ? 1 : 0;
+            NV2080_CTRL_GPU_P2P_PEER_CAPS_PEER_INFO localGpuCaps = pGetParams->peerGpuCaps[ref];
+
+            if (p2pCaps != NULL)
+            {
+                *p2pCaps = localGpuCaps.p2pCaps;
+            }
+
+            // Retrieve CEs only for a pair of GPUs (local to itself or to a remote)
+            if (gpuCount <= 2)
+            {
+                *p2pOptimalReadCEs = localGpuCaps.p2pOptimalReadCEs;
+                *p2pOptimalWriteCEs = localGpuCaps.p2pOptimalWriteCEs;
+            }
+
+            if (p2pCapsStatus != NULL)
+            {
+                portMemCopy(p2pCapsStatus,
+                            NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE * sizeof(p2pCapsStatus[0]),
+                            &localGpuCaps.p2pCapsStatus,
+                            NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE * sizeof(localGpuCaps.p2pCapsStatus[0]));
+            }
+        }
+
+        // Fill out gpu peerId matrix
+        if (busPeerIds != NULL)
+        {
+            for (j = 0; j < gpuCount; ++j)
+                busPeerIds[i * gpuCount + j] = pGetParams->peerGpuCaps[j].busPeerId;
+        }
+    }
+
+done:
+    portMemFree(pGetParams);
+
+    return status;
+}
+
+static NV_STATUS
+CliGetSystemP2pCapsMatrix_GSPCLIENT
+(
+    NV0000_CTRL_SYSTEM_GET_P2P_CAPS_MATRIX_PARAMS *pP2PParams
+)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 i;
+    NvBool bReflexive = NV_FALSE;
+    NV2080_CTRL_GET_P2P_CAPS_PARAMS *pGetParams = NULL;
+
+    if ((pP2PParams == NULL) ||
+        (pP2PParams->grpACount == 0) ||
+        (pP2PParams->grpACount > NV0000_CTRL_SYSTEM_MAX_P2P_GROUP_GPUS) ||
+        (pP2PParams->grpBCount > NV0000_CTRL_SYSTEM_MAX_P2P_GROUP_GPUS))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pGetParams = portMemAllocNonPaged(sizeof *pGetParams);
+    NV_CHECK_OR_RETURN(LEVEL_INFO, pGetParams != NULL, NV_ERR_NO_MEMORY);
+
+    if (pP2PParams->grpBCount == 0)
+    {
+        bReflexive = NV_TRUE;
+    }
+
+    // Initialize output to empty
+    portMemSet(&pP2PParams->p2pCaps, 0, sizeof(pP2PParams->p2pCaps));
+    portMemSet(&pP2PParams->a2bOptimalReadCes, 0, sizeof(pP2PParams->a2bOptimalReadCes));
+    portMemSet(&pP2PParams->a2bOptimalWriteCes, 0, sizeof(pP2PParams->a2bOptimalWriteCes));
+    portMemSet(&pP2PParams->b2aOptimalReadCes, 0, sizeof(pP2PParams->b2aOptimalReadCes));
+    portMemSet(&pP2PParams->b2aOptimalWriteCes, 0, sizeof(pP2PParams->b2aOptimalWriteCes));
+
+    // Initialize internal call params for group A
+    pGetParams->bAllCaps = NV_FALSE;
+    pGetParams->bUseUuid = NV_TRUE;
+    for (i = 0; bReflexive ? i < (pP2PParams->grpACount) : (i < pP2PParams->grpBCount); i++)
+    {
+        if (bReflexive)
+        {
+            OBJGPU *pGpu = gpumgrGetGpuFromId(pP2PParams->gpuIdGrpA[i]);
+
+            NV_CHECK_OR_ELSE(LEVEL_INFO, pGpu != NULL,
+                             status = NV_ERR_INVALID_ARGUMENT; goto done);
+
+            portMemCopy(pGetParams->peerGpuCaps[i].gpuUuid,
+                        VM_UUID_SIZE,
+                        pGpu->gpuUuid.uuid,
+                        NV_GPU_UUID_LEN);
+        }
+        else
+        {
+            OBJGPU *pGpu = gpumgrGetGpuFromId(pP2PParams->gpuIdGrpB[i]);
+
+            NV_CHECK_OR_ELSE(LEVEL_INFO, pGpu != NULL,
+                             status = NV_ERR_INVALID_ARGUMENT; goto done);
+
+            portMemCopy(pGetParams->peerGpuCaps[i].gpuUuid,
+                        VM_UUID_SIZE,
+                        pGpu->gpuUuid.uuid,
+                        NV_GPU_UUID_LEN);
+        }
+    }
+
+    // Cycle through group A to set caps and A2B CEs
+    for (i = 0; i < pP2PParams->grpACount; i++)
+    {
+        NvU32 b;
+        NvU32 gpuMaskRelease = 0;
+        NvBool bLockAcquired = NV_FALSE;
+        OBJGPU *pGpu;
+
+        if (bReflexive)
+        {
+            // Set gpuCount equal to (i + 1) to get # GPUs up to and including matrix diag
+            pGetParams->peerGpuCount = i + 1;
+        }
+        else
+        {
+            pGetParams->peerGpuCount = pP2PParams->grpBCount;
+        }
+
+        pGpu = gpumgrGetGpuFromId(pP2PParams->gpuIdGrpA[i]);
+
+        NV_CHECK_OR_ELSE(LEVEL_INFO, pGpu != NULL,
+                         status = NV_ERR_INVALID_ARGUMENT; goto done);
+
+        if (!rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMaskRelease))
+        {
+            // Acquire lock
+            NV_ASSERT_OK_OR_GOTO(status,
+                                 rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                                       GPU_LOCK_GRP_SUBDEVICE,
+                                                       GPUS_LOCK_FLAGS_NONE,
+                                                       RM_LOCK_MODULES_RPC,
+                                                       &gpuMaskRelease),
+                                 done);
+
+            bLockAcquired = NV_TRUE;
+        }
+
+        NV_RM_RPC_CONTROL(pGpu,
+                          pGpu->hInternalClient,
+                          pGpu->hInternalSubdevice,
+                          NV2080_CTRL_CMD_GET_P2P_CAPS,
+                          pGetParams,
+                          sizeof *pGetParams,
+                          status);
+
+        // Release lock
+        if (bLockAcquired && gpuMaskRelease != 0)
+        {
+            rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+        }
+
+        if (status != NV_OK)
+            goto done;
+
+        // Set Caps and A2B CEs for this row of the matrix
+        for (b = 0; b < pGetParams->peerGpuCount; ++b)
+        {
+            pP2PParams->p2pCaps[i][b] = pGetParams->peerGpuCaps[b].p2pCaps;
+            pP2PParams->a2bOptimalReadCes[i][b] = pGetParams->peerGpuCaps[b].p2pOptimalReadCEs;
+            pP2PParams->a2bOptimalWriteCes[i][b] = pGetParams->peerGpuCaps[b].p2pOptimalWriteCEs;
+
+            // If reflexive (including identity) mirror A2B results to B2A
+            if (bReflexive)
+            {
+                pP2PParams->p2pCaps[b][i] = pP2PParams->p2pCaps[i][b];
+                pP2PParams->b2aOptimalReadCes[b][i] = pP2PParams->a2bOptimalReadCes[i][b];
+                pP2PParams->b2aOptimalWriteCes[b][i] = pP2PParams->a2bOptimalWriteCes[i][b];
+            }
+        }
+    }
+
+    //
+    // Initialize internal call params for group B.
+    // Regardless of bReflexive, logically always should use grpACount and gpuIdGrpA here.
+    //
+    portMemSet(pGetParams, 0, sizeof *pGetParams);
+    pGetParams->bAllCaps = NV_FALSE;
+    pGetParams->bUseUuid = NV_TRUE;
+    for (i = 0; i < pP2PParams->grpACount; i++)
+    {
+        OBJGPU *pGpu = gpumgrGetGpuFromId(pP2PParams->gpuIdGrpA[i]);
+
+        NV_CHECK_OR_ELSE(LEVEL_INFO, pGpu != NULL,
+                         status = NV_ERR_INVALID_ARGUMENT; goto done);
+
+        portMemCopy(pGetParams->peerGpuCaps[i].gpuUuid,
+                    VM_UUID_SIZE,
+                    pGpu->gpuUuid.uuid,
+                    NV_GPU_UUID_LEN);
+    }
+
+    // Cycle through group B and set B2A CEs
+    for (i = 0; bReflexive ? (i < pP2PParams->grpACount) : (i < pP2PParams->grpBCount); i++)
+    {
+        NvU32 a;
+        NvU32 gpuMaskRelease = 0;
+        NvBool bLockAcquired = NV_FALSE;
+        OBJGPU *pGpu;
+
+        if (bReflexive)
+        {
+            // set count to number of elems up to and including diagonal.
+            pGetParams->peerGpuCount = i + 1;
+            pGpu = gpumgrGetGpuFromId(pP2PParams->gpuIdGrpA[i]);
+        }
+        else
+        {
+            pGetParams->peerGpuCount = pP2PParams->grpACount;
+            pGpu = gpumgrGetGpuFromId(pP2PParams->gpuIdGrpB[i]);
+        }
+
+        NV_CHECK_OR_ELSE(LEVEL_INFO, pGpu != NULL,
+                         status = NV_ERR_INVALID_ARGUMENT; goto done);
+
+        if (!rmGpuGroupLockIsOwner(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE, &gpuMaskRelease))
+        {
+            // Acquire lock
+            NV_ASSERT_OK_OR_GOTO(status,
+                                 rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                                       GPU_LOCK_GRP_SUBDEVICE,
+                                                       GPUS_LOCK_FLAGS_NONE,
+                                                       RM_LOCK_MODULES_RPC,
+                                                       &gpuMaskRelease),
+                                  done);
+
+            bLockAcquired = NV_TRUE;
+        }
+
+        // Retrieve B2A optimal CEs
+        NV_RM_RPC_CONTROL(pGpu,
+                          pGpu->hInternalClient,
+                          pGpu->hInternalSubdevice,
+                          NV2080_CTRL_CMD_GET_P2P_CAPS,
+                          pGetParams,
+                          sizeof *pGetParams,
+                          status);
+
+        // Release lock
+        if (bLockAcquired && gpuMaskRelease != 0)
+        {
+            rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+        }
+
+        if (status != NV_OK)
+            goto done;
+
+        // Set B2A CEs
+        for (a = 0; a < pGetParams->peerGpuCount; ++a)
+        {
+            if (bReflexive)
+            {
+                if (a == i)
+                {
+                    // Identity work all done in A loop.
+                    continue;
+                }
+
+                // Set B->A CEs (which are a2bOptimal*Ces for GPU i in group B)
+                pP2PParams->a2bOptimalReadCes[a][i] = pGetParams->peerGpuCaps[a].p2pOptimalReadCEs;
+                pP2PParams->a2bOptimalWriteCes[a][i] = pGetParams->peerGpuCaps[a].p2pOptimalWriteCEs;
+
+                // Set A->B CEs (which are b2aOptimal*Ces for GPU i in group A)
+                pP2PParams->b2aOptimalReadCes[i][a] = pP2PParams->a2bOptimalReadCes[a][i];
+                pP2PParams->b2aOptimalWriteCes[i][a] = pP2PParams->a2bOptimalWriteCes[a][i];
+            }
+            else
+            {
+                pP2PParams->b2aOptimalReadCes[a][i] = pGetParams->peerGpuCaps[a].p2pOptimalReadCEs;
+                pP2PParams->b2aOptimalWriteCes[a][i] = pGetParams->peerGpuCaps[a].p2pOptimalWriteCEs;
+            }
+        }
+    }
+
+done:
+    portMemFree(pGetParams);
+
+    return status;
+}
+
 NV_STATUS
 cliresCtrlCmdSystemGetP2pCaps_IMPL
 (
@@ -3315,13 +3784,35 @@ cliresCtrlCmdSystemGetP2pCaps_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+    //
+    // vGPU:
+    //
+    // Since vGPU does all real hardware management in the
+    // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
+    // do an RPC to the host to get blacklist information from host RM
+    //
+    if (IS_VIRTUAL(pGpu))
+    {
+        if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+        {
+            return CliGetSystemP2pCaps_GSPCLIENT(pP2PParams->gpuIds,
+                                                 pP2PParams->gpuCount,
+                                                 &pP2PParams->p2pCaps,
+                                                 &pP2PParams->p2pOptimalReadCEs,
+                                                 &pP2PParams->p2pOptimalWriteCEs,
+                                                 pP2PParams->p2pCapsStatus,
+                                                 pP2PParams->busPeerIds);
+        }
+    }
+
     return CliGetSystemP2pCaps(pP2PParams->gpuIds,
                                pP2PParams->gpuCount,
                                &pP2PParams->p2pCaps,
                                &pP2PParams->p2pOptimalReadCEs,
                                &pP2PParams->p2pOptimalWriteCEs,
                                NvP64_VALUE(pP2PParams->p2pCapsStatus),
-                               NvP64_VALUE(pP2PParams->busPeerIds));
+                               NvP64_VALUE(pP2PParams->busPeerIds),
+                               NvP64_VALUE(pP2PParams->busEgmPeerIds));
 }
 
 NV_STATUS
@@ -3352,13 +3843,39 @@ cliresCtrlCmdSystemGetP2pCapsV2_IMPL
         return NV_ERR_INVALID_ARGUMENT;
     }
 
+    //
+    // vGPU:
+    //
+    // Since vGPU does all real hardware management in the
+    // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
+    // do an RPC to the host to get blacklist information from host RM
+    //
+    if (IS_VIRTUAL(pGpu))
+    {
+        if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+        {
+            //
+            // NOTE: If in the future we'd like to enable this path for baremetal,
+            // the guest GPU ID to UUID conversion needs to be extracted to here.
+            //
+            return CliGetSystemP2pCaps_GSPCLIENT(pP2PParams->gpuIds,
+                                                 pP2PParams->gpuCount,
+                                                 &pP2PParams->p2pCaps,
+                                                 &pP2PParams->p2pOptimalReadCEs,
+                                                 &pP2PParams->p2pOptimalWriteCEs,
+                                                 pP2PParams->p2pCapsStatus,
+                                                 pP2PParams->busPeerIds);
+        }
+    }
+
     return CliGetSystemP2pCaps(pP2PParams->gpuIds,
                                bLoopback ? 1 : pP2PParams->gpuCount,
                               &pP2PParams->p2pCaps,
                               &pP2PParams->p2pOptimalReadCEs,
                               &pP2PParams->p2pOptimalWriteCEs,
                                NvP64_VALUE(pP2PParams->p2pCapsStatus),
-                               NvP64_VALUE(pP2PParams->busPeerIds));
+                               NvP64_VALUE(pP2PParams->busPeerIds),
+                               NvP64_VALUE(pP2PParams->busEgmPeerIds));
 }
 
 NV_STATUS
@@ -3392,6 +3909,21 @@ cliresCtrlCmdSystemGetP2pCapsMatrix_IMPL
     if (pGpu == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    //
+    // vGPU:
+    //
+    // Since vGPU does all real hardware management in the
+    // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
+    // do an RPC to the host to get blacklist information from host RM
+    //
+    if (IS_VIRTUAL(pGpu))
+    {
+        if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+        {
+            return CliGetSystemP2pCapsMatrix_GSPCLIENT(pP2PParams);
+        }
     }
 
     groupA = pP2PParams->gpuIdGrpA;
@@ -3430,6 +3962,7 @@ cliresCtrlCmdSystemGetP2pCapsMatrix_IMPL
                                          &pP2PParams->a2bOptimalReadCes[grpAIdx][grpBIdx],
                                          &pP2PParams->a2bOptimalWriteCes[grpAIdx][grpBIdx],
                                          NULL,
+                                         NULL,
                                          NULL);
             if (status != NV_OK)
             {
@@ -3453,6 +3986,7 @@ cliresCtrlCmdSystemGetP2pCapsMatrix_IMPL
                                          NULL, // Skip p2pCaps
                                          &pP2PParams->b2aOptimalReadCes[grpAIdx][grpBIdx],
                                          &pP2PParams->b2aOptimalWriteCes[grpAIdx][grpBIdx],
+                                         NULL,
                                          NULL,
                                          NULL);
             if (status != NV_OK)
@@ -3479,6 +4013,37 @@ cliresCtrlCmdSystemGetP2pCapsMatrix_IMPL
     return status;
 }
 
+NV_STATUS
+cliresCtrlCmdSystemGetVgxSystemInfo_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS *pParams
+)
+{
+    NV_STATUS         status = NV_OK;
+    OBJGPU           *pGpu   = NULL;
+    VGPU_STATIC_INFO *pVSI;
+
+    // Get the pGpu object
+    pGpu = gpumgrGetSomeGpu();
+    if (pGpu == NULL)
+    {
+        return NV_ERR_INVALID_REQUEST;
+    }
+
+    pVSI = GPU_GET_STATIC_INFO(pGpu);
+    if (pVSI)
+    {
+        portMemCopy(pParams, sizeof(pVSI->vgxSystemInfo), &pVSI->vgxSystemInfo, sizeof(pVSI->vgxSystemInfo));
+    }
+    else
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+    }
+
+    return status;
+}
+
 /*!
  * @brief get the GPUs Power status.
  *
@@ -3492,36 +4057,16 @@ cliresCtrlCmdSystemGetGpusPowerStatus_IMPL
     NV0000_CTRL_SYSTEM_GET_GPUS_POWER_STATUS_PARAMS *pGpusPowerStatus
 )
 {
-    NV_STATUS  status   = NV_OK;
-    OBJSYS    *pSys     = SYS_GET_INSTANCE();
-    OBJGPUMGR *pGpuMgr  = SYS_GET_GPUMGR(pSys);
-    OBJGPU    *pGpu     = NULL;
-    NvU32      gpuAttachCnt = 0, gpuAttachMask = 0, i = 0;
-    NvU32      gpuIndex     = 0;
-    RM_API    *pRmApi;
-    NV0080_CTRL_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT_PARAMS params = {0};
+    NV_STATUS status = NV_OK;
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPU    *pGpu = NULL;
+    NvU32      gpuAttachCnt = 0;
+    NvU32      gpuAttachMask = 0;
+    NvU32      i = 0;
+    NvU32      gpuIndex = 0;
 
-
-    pGpu = gpumgrGetSomeGpu();
-
-    if (pGpu == NULL)
-    {
-        return NV_ERR_INVALID_REQUEST;
-    }
-
-    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV_CHECK_OK_OR_RETURN(
-        LEVEL_INFO,
-        pRmApi->Control(pRmApi,
-                        pGpu->hInternalClient,
-                        pGpu->hInternalDevice,
-                        NV0080_CTRL_CMD_INTERNAL_PERF_GET_UNDERPOWERED_GPU_COUNT,
-                        &params,
-                        sizeof(params)));
-
-    pGpuMgr->powerDisconnectedGpuCount = params.powerDisconnectedGpuCount;
-    portMemCopy(pGpuMgr->powerDisconnectedGpuBus, sizeof(*pGpuMgr->powerDisconnectedGpuBus) * NV_MAX_DEVICES,
-            &params.powerDisconnectedGpuBus, sizeof(*params.powerDisconnectedGpuBus) * NV_MAX_DEVICES);
+    portMemSet(pGpusPowerStatus, 0, sizeof(*pGpusPowerStatus));
 
     // Loop though the GPUs with power disconnected
     for (gpuIndex = 0; gpuIndex < pGpuMgr->powerDisconnectedGpuCount; gpuIndex++)
@@ -4196,9 +4741,10 @@ cliresCtrlCmdClientShareObject_IMPL
     callContext.pResourceRef = pObjectRef;
     callContext.secInfo = pCallContext->secInfo;
 
-    resservSwapTlsCallContext(&pOldCallContext, &callContext);
+    NV_ASSERT_OK_OR_RETURN(resservSwapTlsCallContext(&pOldCallContext, &callContext));
+
     status = clientShareResource(pClient, pObjectRef, pSharePolicy, &callContext);
-    resservRestoreTlsCallContext(pOldCallContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldCallContext));
     if (status != NV_OK)
         return status;
 
@@ -4270,6 +4816,22 @@ cliresCtrlCmdObjectsAreDuplicates_IMPL
     NV_CHECK_OK_OR_RETURN(LEVEL_SILENT,
         resIsDuplicate(pResRef->pResource, pParams->hObject2,
                        &pParams->bDuplicates));
+
+    return NV_OK;
+}
+
+NV_STATUS
+cliresCtrlCmdClientSubscribeToImexChannel_IMPL
+(
+    RmClientResource *pRmCliRes,
+    NV0000_CTRL_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL_PARAMS *pParams
+)
+{
+    //
+    // TODO: Implement channel validation. For now, return success to keep
+    // userspace happy.
+    //
+    pParams->channel = 0;
 
     return NV_OK;
 }
@@ -4362,7 +4924,6 @@ cliresCtrlCmdNvdGetRcerrRpt_IMPL
     NvU32     gpuAttachCount = 0;
     NvU32     gpuIdx         = 0;
     OBJGPU   *pGpu           = NULL;
-    NvU32     processId      = osGetCurrentProcess();
 
     NV_ASSERT_OK_OR_RETURN(gpumgrGetGpuAttachInfo(&gpuAttachCount, &gpuMask));
 
@@ -4377,7 +4938,7 @@ cliresCtrlCmdNvdGetRcerrRpt_IMPL
     pParams->flags     = 0;
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
-        pParams->processId = processId;
+        pParams->processId = osGetCurrentProcess();
     }
 
     if ((status = krcCliresCtrlNvdGetRcerrRptCheckPermissions_HAL(
@@ -4388,75 +4949,66 @@ cliresCtrlCmdNvdGetRcerrRpt_IMPL
         return status;
     }
 
-    if (IS_GSP_CLIENT(pGpu))
     {
-        NV0000_CTRL_CMD_NVD_GET_RCERR_RPT_PARAMS *pLocalParams =
-            portMemAllocNonPaged(sizeof *pLocalParams);
+        Journal                  *pRcDB = SYS_GET_RCDB(SYS_GET_INSTANCE());
+        RmRCCommonJournal_RECORD *pCommon;
 
-        NV_CHECK_OR_RETURN(LEVEL_INFO, pLocalParams != NULL, NV_ERR_NO_MEMORY);
-
-        //
-        // Pre-GSP, RcDiagRec from all GPUs were stored in kernel sysmem in a
-        // single RING_BUFFER_LOG.
-        //
-        // With GSP, each GPU its own separate RING_BUFFER_LOG. We need to
-        // search in all of them.
-        //
-        // However, we will always return only the first matching record in all
-        // cases (similar to pre-GSP behavior)
-        //
-        for (; pGpu != NULL ; pGpu = gpumgrGetNextGpu(gpuMask, &gpuIdx))
+        status = rcdbGetRcDiagRecBoundaries(pRcDB,
+                                            &pParams->startIdx,
+                                            &pParams->endIdx,
+                                            pParams->owner,
+                                            pParams->processId);
+        if (status != NV_OK)
         {
-            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-            portMemSet(pLocalParams, 0, sizeof(*pLocalParams));
-            pLocalParams->reqIdx    = pParams->reqIdx;
-            pLocalParams->owner     = pParams->owner;
-            pLocalParams->processId = pParams->processId;
+            return status;
+        }
 
-            status = pRmApi->Control(pRmApi,
-                                     RES_GET_CLIENT_HANDLE(pRmCliRes),
-                                     RES_GET_HANDLE(pRmCliRes),
-                                     NV0000_CTRL_CMD_NVD_GET_RCERR_RPT,
-                                     pLocalParams,
-                                     sizeof *pLocalParams);
-            if (status == NV_OK &&
-                (pLocalParams->flags &
-                 NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_DATA_VALID))
+        pParams->flags |= NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_RANGE_VALID;
+
+        {
+            NV_STATUS localStatus = rcdbGetRcDiagRec(pRcDB,
+                                                     pParams->reqIdx,
+                                                     &pCommon,
+                                                     pParams->owner,
+                                                     pParams->processId);
+            switch (localStatus)
             {
-                //
-                // Each RING_BUFFER_LOG can contain MAX_RCDB_RCDIAG_WRAP_BUFF
-                // RmRcDiag_RECORD. We will multiply indices returned to the
-                // client by this value so the GPU can be uniquely identified
-                // (in addition to GPUTag) from
-                // NV0000_CTRL_CMD_NVD_GET_RCERR_RPT_PARAMS.rptIdx
-                //
-                // Note that this will result in clients receivinga rptIdx value
-                // larger than MAX_RCDB_RCDIAG_WRAP_BUFF.
-                //
-                NvU16 indexOffset = pGpu->gpuInstance * MAX_RCDB_RCDIAG_WRAP_BUFF;
-
-                *pParams = *pLocalParams;
-                pParams->startIdx += indexOffset;
-                pParams->endIdx   += indexOffset;
-                pParams->rptIdx   += indexOffset;
-
-                break;
-            }
-
-            if (status == NV_ERR_BUSY_RETRY)
-            {
-                //
-                // To avoid the case where we silently fail to find a record
-                // because we skipped over to the next Gpu on getting a
-                // BUSY_RETRY on one of the Gpus (which might have contained the
-                // record).
-                //
-                break;
+                case NV_OK:
+                    break;
+                case NV_ERR_BUSY_RETRY:
+                    return localStatus;
+                default:
+                    return status;
             }
         }
 
-        portMemFree(pLocalParams);
-        pLocalParams = NULL;
+        if (pCommon != NULL)
+        {
+            NvU32            i       = 0;
+            RmRcDiag_RECORD *pRecord = (RmRcDiag_RECORD *)&pCommon[1];
+
+            pParams->GPUTag   = pCommon->GPUTag;
+            pParams->rptIdx   = pRecord->idx;
+            pParams->rptTime  = pRecord->timeStamp;
+            pParams->rptType  = pRecord->type;
+            pParams->rptCount = pRecord->count;
+            pParams->flags |= pRecord->flags;
+
+            for (i = 0; i < pRecord->count; ++i)
+            {
+                pParams->report[i].tag       = pRecord->data[i].tag;
+                pParams->report[i].value     = pRecord->data[i].value;
+                pParams->report[i].attribute = pRecord->data[i].attribute;
+            }
+            for (; i < NV0000_CTRL_CMD_NVD_RCERR_RPT_MAX_ENTRIES; ++i)
+            {
+                pParams->report[i].tag =
+                    NV0000_CTRL_CMD_NVD_RCERR_RPT_REG_EMPTY;
+                pParams->report[i].value     = 0;
+                pParams->report[i].attribute = 0;
+            }
+            pParams->flags |= NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_DATA_VALID;
+        }
     }
 
     return status;

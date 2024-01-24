@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-20221 NVIDIA Corporation
+    Copyright (c) 2018-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -38,10 +38,12 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->utlb_per_gpc_count = uvm_ampere_get_utlbs_per_gpc(parent_gpu);
 
-    parent_gpu->fault_buffer_info.replayable.utlb_count = parent_gpu->rm_info.maxGpcCount * parent_gpu->utlb_per_gpc_count;
+    parent_gpu->fault_buffer_info.replayable.utlb_count = parent_gpu->rm_info.maxGpcCount *
+                                                          parent_gpu->utlb_per_gpc_count;
     {
         uvm_fault_buffer_entry_t *dummy;
-        UVM_ASSERT(parent_gpu->fault_buffer_info.replayable.utlb_count <= (1 << (sizeof(dummy->fault_source.utlb_id) * 8)));
+        UVM_ASSERT(parent_gpu->fault_buffer_info.replayable.utlb_count <= (1 <<
+                                                                           (sizeof(dummy->fault_source.utlb_id) * 8)));
     }
 
     // A single top level PDE on Ampere covers 128 TB and that's the minimum
@@ -53,7 +55,7 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
 
     // See uvm_mmu.h for mapping placement
-    parent_gpu->flat_vidmem_va_base = 136 * UVM_SIZE_1TB;
+    parent_gpu->flat_vidmem_va_base = 160 * UVM_SIZE_1TB;
     parent_gpu->flat_sysmem_va_base = 256 * UVM_SIZE_1TB;
 
     parent_gpu->ce_phys_vidmem_write_supported = true;
@@ -81,6 +83,8 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->access_counters_supported = true;
 
+    parent_gpu->access_counters_can_use_physical_addresses = false;
+
     parent_gpu->fault_cancel_va_supported = true;
 
     parent_gpu->scoped_atomics_supported = true;
@@ -101,4 +105,6 @@ void uvm_hal_ampere_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
         parent_gpu->map_remap_larger_page_promotion = false;
 
     parent_gpu->plc_supported = true;
+
+    parent_gpu->no_ats_range_required = false;
 }

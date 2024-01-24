@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVidia Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -151,6 +151,22 @@ static NV_STATUS verify_mapping_info(uvm_va_space_t *va_space,
     return NV_OK;
 }
 
+static void fix_memory_info_uuid(uvm_va_space_t *va_space, UvmGpuMemoryInfo *mem_info)
+{
+    uvm_gpu_t *gpu;
+
+    // TODO: Bug 4351121: RM will return the GI UUID, but
+    // uvm_va_space_get_gpu_by_uuid() currently matches on physical GPU UUIDs.
+    // Match on GI UUID until the UVM user level API has been updated to use
+    // the GI UUID.
+    for_each_va_space_gpu(gpu, va_space) {
+        if (uvm_uuid_eq(&gpu->uuid, &mem_info->uuid)) {
+            mem_info->uuid = gpu->parent->uuid;
+            break;
+        }
+    }
+}
+
 static NV_STATUS test_get_rm_ptes_single_gpu(uvm_va_space_t *va_space, UVM_TEST_GET_RM_PTES_PARAMS *params)
 {
     NV_STATUS status = NV_OK;
@@ -168,7 +184,8 @@ static NV_STATUS test_get_rm_ptes_single_gpu(uvm_va_space_t *va_space, UVM_TEST_
     client = params->hClient;
     memory = params->hMemory;
 
-    // Note: This check is safe as single GPU test does not run on SLI enabled devices.
+    // Note: This check is safe as single GPU test does not run on SLI enabled
+    // devices.
     memory_mapping_gpu = uvm_va_space_get_gpu_by_uuid_with_gpu_va_space(va_space, &params->gpu_uuid);
     if (!memory_mapping_gpu)
         return NV_ERR_INVALID_DEVICE;
@@ -180,7 +197,12 @@ static NV_STATUS test_get_rm_ptes_single_gpu(uvm_va_space_t *va_space, UVM_TEST_
     if (status != NV_OK)
         return status;
 
-    TEST_CHECK_GOTO(uvm_processor_uuid_eq(&memory_info.uuid, &params->gpu_uuid), done);
+    // TODO: Bug 4351121: RM will return the GI UUID. Replace it with the
+    // physical GPU UUID until the UVM user level has been updated to use
+    // the GI UUID.
+    fix_memory_info_uuid(va_space, &memory_info);
+
+    TEST_CHECK_GOTO(uvm_uuid_eq(&memory_info.uuid, &params->gpu_uuid), done);
 
     TEST_CHECK_GOTO((memory_info.size == params->size), done);
 
@@ -286,6 +308,11 @@ static NV_STATUS test_get_rm_ptes_multi_gpu(uvm_va_space_t *va_space, UVM_TEST_G
                                                        &memory_info));
    if (status != NV_OK)
        return status;
+
+    // TODO: Bug 4351121: RM will return the GI UUID. Replace it with the
+    // physical GPU UUID until the UVM user level has been updated to use
+    // the GI UUID.
+    fix_memory_info_uuid(va_space, &memory_info);
 
     memset(&ext_mapping_info, 0, sizeof(ext_mapping_info));
 

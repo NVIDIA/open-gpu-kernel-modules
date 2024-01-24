@@ -23,6 +23,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "gpu/device/device.h"
 #include "os/os.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
@@ -37,10 +38,10 @@
 #include "nvRmReg.h"
 #include "rmapi/rs_utils.h"
 #include "mem_mgr/ctx_buf_pool.h"
-#include "gpu/subdevice/subdevice.h"
 #include "vgpu/rpc.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "platform/chipset/chipset.h"
+#include "platform/sli/sli.h"
 
 #include "class/clc0b5sw.h"
 #include "class/cla06fsubch.h" // NVA06F_SUBCHANNEL_COPY_ENGINE
@@ -228,6 +229,10 @@ _memUtilsChannelAllocatePB_GM107
                      DRF_DEF(OS32, _ATTR, _COHERENCY, _UNCACHED);
 
             flags = NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM;
+            if (!IS_MIG_IN_USE(pGpu))
+            {
+                attr |= DRF_DEF(OS32, _ATTR, _ALLOCATE_FROM_RESERVED_HEAP, _YES);
+            }
             attrNotifier = attr;
             break;
 
@@ -638,6 +643,11 @@ memmgrMemUtilsChannelInitialize_GM107
             pVa->flags |= NV_VASPACE_ALLOCATION_FLAGS_ALLOW_ZERO_ADDRESS |
                           NV_VASPACE_ALLOCATION_FLAGS_SKIP_SCRUB_MEMPOOL |
                           NV_VASPACE_ALLOCATION_FLAGS_OPTIMIZE_PTETABLE_MEMPOOL_USAGE;
+
+            if (!IS_MIG_IN_USE(pGpu))
+            {
+                pVa->flags |= NV_VASPACE_ALLOCATION_FLAGS_PTETABLE_HEAP_MANAGED;
+            }
 
             if (rmDeviceGpuLockIsOwner(pGpu->gpuInstance))
             {
@@ -1222,6 +1232,10 @@ _memUtilsAllocateUserD
             userdMemClass = NV01_MEMORY_LOCAL_USER;
             memAllocParams.attr = DRF_DEF(OS32, _ATTR, _LOCATION, _VIDMEM);
             memAllocParams.flags |= NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM;
+            if (!IS_MIG_IN_USE(pGpu))
+            {
+                memAllocParams.attr |= DRF_DEF(OS32, _ATTR, _ALLOCATE_FROM_RESERVED_HEAP, _YES);
+            }
             break;
     }
 
@@ -1683,7 +1697,6 @@ _ceChannelScheduleWork_GM107
     RMTIMEOUT        timeout;
     NvU32            spaceInPb;
     NvU32            numBytes;
-    NvU32            bytesPushed;
     NvU32            *ptr;
     NvU32            gpBase;
     NvU32            semaCount = 0;
@@ -1723,7 +1736,6 @@ _ceChannelScheduleWork_GM107
                 ptr = (NvU32 *)(pChannel->pbCpuVA + pChannel->channelPutOffset);
                 gpBase = 0;
                 numBytes = 0;
-                bytesPushed = 0;
                 // update the available space
                 spaceInPb = _getSpaceInPb(pChannel);
                 NV_PRINTF(LEVEL_INFO, "Wrapping PB around\n");
@@ -1755,7 +1767,7 @@ _ceChannelScheduleWork_GM107
             }
             if(_checkSynchronization(pGpu, pMemoryManager, pChannel, BLOCK_INDEX_FROM_ADDR(dst, pChannel->blockShift)))
             {
-                bytesPushed = _ceChannelPushMethodsBlock_GM107(pGpu, pMemoryManager, pChannel,
+                NvU32 bytesPushed = _ceChannelPushMethodsBlock_GM107(pGpu, pMemoryManager, pChannel,
                     src, srcAddressSpace, srcCpuCacheAttrib, // src parameters
                     dst, dstAddressSpace, dstCpuCacheAttrib, // dst parameters
                     blockSize, &ptr, NV_TRUE, (addNonStallIntr && !blocking),

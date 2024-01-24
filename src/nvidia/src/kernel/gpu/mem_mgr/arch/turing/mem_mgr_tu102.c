@@ -246,7 +246,7 @@ memmgrChooseKind_TU102
                 case NVOS32_TYPE_RESERVED:
                 case NVOS32_TYPE_PMA:
                 {
-                    if (comprAttr == NVOS32_ATTR_COMPR_NONE)
+                    if (comprAttr == NVOS32_ATTR_COMPR_NONE || pMemorySystemConfig->bDisableCompbitBacking)
                     {
                         kind = NV_MMU_PTE_KIND_GENERIC_MEMORY;
                     }

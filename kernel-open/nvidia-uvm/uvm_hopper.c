@@ -55,7 +55,7 @@ void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->uvm_mem_va_size = UVM_MEM_VA_SIZE;
 
     // See uvm_mmu.h for mapping placement
-    parent_gpu->flat_vidmem_va_base = (64 * UVM_SIZE_1PB) + (8 * UVM_SIZE_1TB);
+    parent_gpu->flat_vidmem_va_base = (64 * UVM_SIZE_1PB) + (32 * UVM_SIZE_1TB);
 
     // Physical CE writes to vidmem are non-coherent with respect to the CPU on
     // GH180.
@@ -88,6 +88,8 @@ void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 
     parent_gpu->access_counters_supported = true;
 
+    parent_gpu->access_counters_can_use_physical_addresses = false;
+
     parent_gpu->fault_cancel_va_supported = true;
 
     parent_gpu->scoped_atomics_supported = true;
@@ -103,5 +105,6 @@ void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->map_remap_larger_page_promotion = false;
 
     parent_gpu->plc_supported = true;
-}
 
+    parent_gpu->no_ats_range_required = true;
+}

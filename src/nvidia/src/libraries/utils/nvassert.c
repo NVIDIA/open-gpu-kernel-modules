@@ -140,7 +140,7 @@ nvAssertOkFailed
 
     NV_ASSERT_PRINTF(LEVEL_ERROR,
         "Assertion failed: %s (0x%08X) returned from " NV_ASSERT_FAILED_PRINTF_FMT,
-        nvAssertStatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
+        nvstatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
     NV_ASSERT_LOG(LEVEL_ERROR, "Assertion failed: 0x%08X returned from 0x%016llx",
         status, ip);
     NV_JOURNAL_ASSERT_FAILURE_STATUS(lineNum, ip, status);
@@ -180,7 +180,7 @@ nvCheckOkFailed
 
     NV_ASSERT_PRINTF(level,
         "Check failed: %s (0x%08X) returned from " NV_ASSERT_FAILED_PRINTF_FMT,
-        nvAssertStatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
+        nvstatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
     NV_ASSERT_LOG(level, "Check failed: 0x%08X returned from 0x%016llx", status, ip);
 }
 
@@ -216,7 +216,7 @@ nvAssertOkFailedNoLog
 
     NV_ASSERT_PRINTF(LEVEL_ERROR,
         "Assertion failed: %s (0x%08X) returned from " NV_ASSERT_FAILED_PRINTF_FMT,
-        nvAssertStatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
+        nvstatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
     NV_JOURNAL_ASSERT_FAILURE_STATUS(lineNum, ip, status);
 }
 
@@ -253,73 +253,11 @@ nvCheckOkFailedNoLog
 
     NV_ASSERT_PRINTF(level,
         "Check failed: %s (0x%08X) returned from " NV_ASSERT_FAILED_PRINTF_FMT,
-        nvAssertStatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
+        nvstatusToString(status), status, NV_ASSERT_FAILED_PRINTF_PARAM);
 }
 
 #endif // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)
 #endif // NV_PRINTF_ENABLED || NV_JOURNAL_ASSERT_ENABLE
-
-/*
- * Temporarily duplicate the nvstatusToString code to nvAssertStatusToString.
- *
- * Ideally, nvassert.c and nvstatus.c should both be included in shared.nvmk.
- * But nvstatus.c is already directly included in projects from multiple module
- * branches that also include shared.nvmk.  It is going to take some serious
- * cross-module magic to move it.
- */
-
-#if !defined(NV_PRINTF_STRING_SECTION)
-#if defined(NVRM) && NVOS_IS_LIBOS
-#define NV_PRINTF_STRING_SECTION LIBOS_SECTION_LOGGING
-#else // defined(NVRM) && NVOS_IS_LIBOS
-#define NV_PRINTF_STRING_SECTION
-#endif // defined(NVRM) && NVOS_IS_LIBOS
-#endif // !defined(NV_PRINTF_STRING_SECTION)
-
-#undef NV_STATUS_CODE
-#undef SDK_NVSTATUSCODES_H
-#define NV_STATUS_CODE( name, code, string ) static NV_PRINTF_STRING_SECTION   \
-    const char rm_pvt_##name##_str[] = string " [" #name "]";
-#include "nvstatuscodes.h"
-
-#undef NV_STATUS_CODE
-#undef SDK_NVSTATUSCODES_H
-#define NV_STATUS_CODE( name, code, string ) { name, rm_pvt_##name##_str },
-static struct NvStatusCodeString
-{
-    NV_STATUS   statusCode;
-    const char *statusString;
-} g_StatusCodeList[] = {
-   #include "nvstatuscodes.h"
-   { 0xffffffff, "Unknown error code!" } // Some compilers don't like the trailing ','
-};
-#undef NV_STATUS_CODE
-
-/*!
- * @brief Given an NV_STATUS code, returns the corresponding status string.
- *
- * @param[in]   nvStatusIn                  NV_STATUS code for which the string is required
- *
- * @returns     Corresponding status string from the nvstatuscodes.h
- *
- * TODO: Bug 200025711: convert this to an array-indexed lookup, instead of a linear search
- *
-*/
-const char *nvAssertStatusToString(NV_STATUS nvStatusIn)
-{
-    static NV_PRINTF_STRING_SECTION const char rm_pvt_UNKNOWN_str[] = "Unknown error code!";
-    NvU32 i;
-    NvU32 n = ((NvU32)(sizeof(g_StatusCodeList))/(NvU32)(sizeof(g_StatusCodeList[0])));
-    for (i = 0; i < n; i++)
-    {
-        if (g_StatusCodeList[i].statusCode == nvStatusIn)
-        {
-            return g_StatusCodeList[i].statusString;
-        }
-    }
-
-    return rm_pvt_UNKNOWN_str;
-}
 
 #if defined(NV_ASSERT_FAILED_BACKTRACE)
 MAKE_MAP(AssertedIPMap, NvU8);

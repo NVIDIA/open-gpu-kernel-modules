@@ -67,11 +67,16 @@ typedef enum {
 /*!
  * Kernel interface for RC (Robust Channels) and Watchdog
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_RC_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelRc {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -79,6 +84,7 @@ struct KernelRc {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct KernelRc *__nvoc_pbase_KernelRc;
     NV_STATUS (*__krcConstructEngine__)(struct OBJGPU *, struct KernelRc *, ENGDESCRIPTOR);
+    void (*__krcWatchdogRecovery__)(struct OBJGPU *, struct KernelRc *);
     NV_STATUS (*__krcStateLoad__)(POBJGPU, struct KernelRc *, NvU32);
     NV_STATUS (*__krcStateUnload__)(POBJGPU, struct KernelRc *, NvU32);
     NV_STATUS (*__krcStateInitLocked__)(POBJGPU, struct KernelRc *);
@@ -134,6 +140,8 @@ NV_STATUS __nvoc_objCreate_KernelRc(KernelRc**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelRc((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 #define krcConstructEngine(pGpu, pKernelRc, engDescriptor) krcConstructEngine_DISPATCH(pGpu, pKernelRc, engDescriptor)
+#define krcWatchdogRecovery(pGpu, pKernelRc) krcWatchdogRecovery_DISPATCH(pGpu, pKernelRc)
+#define krcWatchdogRecovery_HAL(pGpu, pKernelRc) krcWatchdogRecovery_DISPATCH(pGpu, pKernelRc)
 #define krcStateLoad(pGpu, pEngstate, arg0) krcStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define krcStateUnload(pGpu, pEngstate, arg0) krcStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define krcStateInitLocked(pGpu, pEngstate) krcStateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -298,19 +306,6 @@ static inline void krcWatchdog(struct OBJGPU *pGpu, struct KernelRc *pKernelRc) 
 
 #define krcWatchdog_HAL(pGpu, pKernelRc) krcWatchdog(pGpu, pKernelRc)
 
-void krcWatchdogRecovery_KERNEL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc);
-
-
-#ifdef __nvoc_kernel_rc_h_disabled
-static inline void krcWatchdogRecovery(struct OBJGPU *pGpu, struct KernelRc *pKernelRc) {
-    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
-}
-#else //__nvoc_kernel_rc_h_disabled
-#define krcWatchdogRecovery(pGpu, pKernelRc) krcWatchdogRecovery_KERNEL(pGpu, pKernelRc)
-#endif //__nvoc_kernel_rc_h_disabled
-
-#define krcWatchdogRecovery_HAL(pGpu, pKernelRc) krcWatchdogRecovery(pGpu, pKernelRc)
-
 static inline void krcWatchdogCallbackPerf_b3696a(struct OBJGPU *pGpu, struct KernelRc *pKernelRc) {
     return;
 }
@@ -330,6 +325,16 @@ NV_STATUS krcConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelRc *pKernelR
 
 static inline NV_STATUS krcConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc, ENGDESCRIPTOR engDescriptor) {
     return pKernelRc->__krcConstructEngine__(pGpu, pKernelRc, engDescriptor);
+}
+
+static inline void krcWatchdogRecovery_f2d351(struct OBJGPU *pGpu, struct KernelRc *pKernelRc) {
+    NV_ASSERT_PRECOMP(0);
+}
+
+void krcWatchdogRecovery_KERNEL(struct OBJGPU *pGpu, struct KernelRc *pKernelRc);
+
+static inline void krcWatchdogRecovery_DISPATCH(struct OBJGPU *pGpu, struct KernelRc *pKernelRc) {
+    pKernelRc->__krcWatchdogRecovery__(pGpu, pKernelRc);
 }
 
 static inline NV_STATUS krcStateLoad_DISPATCH(POBJGPU pGpu, struct KernelRc *pEngstate, NvU32 arg0) {
@@ -540,6 +545,17 @@ static inline void krcWatchdogCallbackVblankRecovery(struct OBJGPU *pGpu, struct
 }
 #else //__nvoc_kernel_rc_h_disabled
 #define krcWatchdogCallbackVblankRecovery(pGpu, pKernelRc) krcWatchdogCallbackVblankRecovery_IMPL(pGpu, pKernelRc)
+#endif //__nvoc_kernel_rc_h_disabled
+
+NV_STATUS krcWatchdogGetClientHandle_IMPL(struct KernelRc *arg0, NvHandle *arg1);
+
+#ifdef __nvoc_kernel_rc_h_disabled
+static inline NV_STATUS krcWatchdogGetClientHandle(struct KernelRc *arg0, NvHandle *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("KernelRc was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_rc_h_disabled
+#define krcWatchdogGetClientHandle(arg0, arg1) krcWatchdogGetClientHandle_IMPL(arg0, arg1)
 #endif //__nvoc_kernel_rc_h_disabled
 
 #undef PRIVATE_FIELD

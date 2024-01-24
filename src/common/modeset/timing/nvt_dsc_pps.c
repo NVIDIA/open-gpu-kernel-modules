@@ -38,19 +38,10 @@
 
 /* ------------------------ Macros ----------------------------------------- */
 
-//
-// DSC_Print macro was for debugging purposes in early development of 
-// DSC PPS library. The print statements no longer get logged 
-// inside any client logger. But the lines of print in this file are useful 
-// for browsing code, hence this DSC_Print is left as a stub
-// definition intentionally to help reader understand the PPS code.
-//
-#define DSC_Print(...) do { } while(0)
-
-#define MIN_CHECK(s,a,b)     { if((a)<(b)) { DSC_Print("%s (=%u) needs to be larger than %u",s,a,b); return (NVT_STATUS_ERR);} }
-#define RANGE_CHECK(s,a,b,c) { if((((NvS32)(a))<(NvS32)(b))||(((NvS32)(a))>(NvS32)(c))) { DSC_Print("%s (=%u) needs to be between %u and %u",s,a,b,c); return (NVT_STATUS_ERR);} }
-#define ENUM2_CHECK(s,a,b,c) { if(((a)!=(b))&&((a)!=(c))) { DSC_Print("%s (=%u) needs to be %u or %u",s,a,b,c); return (NVT_STATUS_ERR);} }
-#define ENUM3_CHECK(s,a,b,c,d) { if(((a)!=(b))&&((a)!=(c))&&((a)!=(d))) { DSC_Print("%s (=%u) needs to be %u, %u or %u",s,a,b,c,d); return (NVT_STATUS_ERR);} }
+#define MIN_CHECK(s,a,b)     { if((a)<(b)) { return (NVT_STATUS_ERR);} }
+#define RANGE_CHECK(s,a,b,c) { if((((NvS32)(a))<(NvS32)(b))||(((NvS32)(a))>(NvS32)(c))) { return (NVT_STATUS_ERR);} }
+#define ENUM2_CHECK(s,a,b,c) { if(((a)!=(b))&&((a)!=(c))) { return (NVT_STATUS_ERR);} }
+#define ENUM3_CHECK(s,a,b,c,d) { if(((a)!=(b))&&((a)!=(c))&&((a)!=(d))) { return (NVT_STATUS_ERR);} }
 #define MAX(a,b)    (((a)>=(b) || (b == 0xffffffff))?(a):(b))
 #define MIN(a,b)    ((a)>=(b)?(b):(a))
 #define CLAMP(a,b,c) ((a)<=(b)?(b):((a)>(c)?(c):(a)))
@@ -182,7 +173,7 @@ typedef struct _DSC_GENERATE_PPS_WORKAREA
 } DSC_GENERATE_PPS_WORKAREA;
 
 // Compile time check to ensure Opaque workarea buffer size always covers required work area. 
-ct_assert(sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA) >= sizeof(DSC_GENERATE_PPS_WORKAREA));
+ct_assert(sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA) == sizeof(DSC_GENERATE_PPS_WORKAREA));
 
 /* ------------------------ Global Variables ------------------------------- */
 
@@ -406,13 +397,11 @@ static const NvU32 rcBufThresh[] = { 896, 1792, 2688, 3584, 4480, 5376, 6272, 67
 
 /* ------------------------ Static Variables ------------------------------- */
 /* ------------------------ Private Functions Prototype--------------------- */
-
 static NvU32
 DSC_GetHigherSliceCount
 (
     NvU32 common_slice_count_mask, 
     NvU32 desired_slice_num, 
-    NvU32 dual_mode, 
     NvU32 *new_slice_num
 );
 static NvU32 DSC_AlignDownForBppPrecision(NvU32 bitsPerPixelX16, NvU32 bitsPerPixelPrecision);
@@ -422,6 +411,21 @@ DSC_GetPeakThroughputMps(NvU32 peak_throughput);
 
 static NvU32 
 DSC_SliceCountMaskforSliceNum (NvU32 slice_num);
+
+static NvU32
+DSC_GetSliceCountMask(NvU32 maxSliceNum, NvBool bInclusive);
+
+static NVT_STATUS
+DSC_GetMinSliceCountForMode
+(
+    NvU32  picWidth,
+    NvU32  pixelClkMhz,
+    NvU32  maxSliceWidth,
+    NvU32  peakThroughPutMps,
+    NvU32  maxSliceCount,
+    NvU32  commonSliceCountMask,
+    NvU32 *pMinSliceCount
+);
 
 /* ------------------------ Private Functions ------------------------------ */
 
@@ -1037,6 +1041,11 @@ DSC_PpsConstruct
     NvU32 i;
     NvU32 pps[96];
 
+    if (data == NULL)
+    {
+        return;
+    }
+
     pps[0] = (in->dsc_version_major << 4) | (in->dsc_version_minor & 0xF);
     pps[1] = in->pps_identifier;
     pps[2] = 0;
@@ -1220,6 +1229,59 @@ DSC_GetPeakThroughputMps(NvU32 peak_throughput)
 }
 
 /*
+ * @brief       Get minimum slice count needed to support the mode.
+ *
+ * @param[in]   picWidth              active width of the mode. 
+ * @param[in]   pixelClkMhz           pixel clock in Mhz of the mode. 
+ * @param[in]   maxSliceWidth         Max slice with considering gpu and sink 
+ * @param[in]   peakThroughPutMps     Max throughput supported by the sink dsc decoder. 
+ * @param[in]   maxSliceCount         Max slice count considering gpu and sink
+ * @param[in]   bInclusive            maximum slice count should be included in mask or not
+   @param[in]   commonSliceCountMask  Slice count mask to be considered 
+   @param[out]  minSliceCount         Minimum slice count to be used for the mode.
+ *
+ * @returns     minimum slice count to be used for the mode. 
+ */
+static NVT_STATUS
+DSC_GetMinSliceCountForMode
+(
+    NvU32  picWidth,
+    NvU32  pixelClkMhz,
+    NvU32  maxSliceWidth,
+    NvU32  peakThroughPutMps,
+    NvU32  maxSliceCount,
+    NvU32  commonSliceCountMask,
+    NvU32 *pMinSliceCount
+)
+{
+    NvU32 minSliceCountLocal = 0U;
+    NvU32 minSliceCountPicWidth =  (picWidth + maxSliceWidth - 1) / maxSliceWidth;
+    NvU32 minsliceCountThroughput = (pixelClkMhz + peakThroughPutMps - 1) / peakThroughPutMps;
+    minSliceCountLocal = MAX(minSliceCountPicWidth, minsliceCountThroughput);
+    if (maxSliceCount < minSliceCountLocal)
+    {
+        return NVT_STATUS_MIN_SLICE_COUNT_ERROR;
+    }
+    if ((DSC_SliceCountMaskforSliceNum(minSliceCountLocal) & commonSliceCountMask) == 0x0)
+    {
+        //
+        // It is possible that the mininum slice count calculated from pic width and 
+        // pixel clock criteria is not a valid slice count supported by both GPU and
+        // sink. In those cases, we need to find next valid slice count for the 
+        // combo.
+        // 
+        NvU32 newMinSliceCount = 0U;
+        if (DSC_GetHigherSliceCount(commonSliceCountMask, minSliceCountLocal, &newMinSliceCount) != NVT_STATUS_SUCCESS)
+        {
+            return NVT_STATUS_MIN_SLICE_COUNT_ERROR;
+        }
+        minSliceCountLocal = newMinSliceCount;
+    }
+    *pMinSliceCount = minSliceCountLocal;
+    return NVT_STATUS_SUCCESS;
+}
+
+/*
  * @brief       Get slice count mask upto max slice count.
  *
  * @param[in]   max_slice_num   max slice number to be considered while generating mask
@@ -1235,24 +1297,24 @@ DSC_GetSliceCountMask
 )
 {
     // Below are the valid slice counts according to DP2.0 spec. 
-    NvU32 validSliceNum[] = {1,2,4,6,8,10,12,16,20,24};
-    NvU32 sliceCountMask = 0;
+    NvU32 validSliceNum[] = {1U,2U,4U,6U,8U,10U,12U,16U,20U,24U};
+    NvU32 sliceCountMask = 0U;
     NvU32 sliceArrayCount;
     NvU32 i;
 
     sliceArrayCount = sizeof(validSliceNum)/sizeof(NvU32);
 
-    if (maxSliceNum == 0)
-        return 0;
+    if (maxSliceNum == 0U)
+        return 0U;
 
-    for(i = 0; ((i < sliceArrayCount) && (validSliceNum[i] < maxSliceNum)); i++)
+    for(i = 0U; ((i < sliceArrayCount) && (validSliceNum[i] < maxSliceNum)); i++)
     {
-        sliceCountMask |= NVBIT(validSliceNum[i] - 1);
+        sliceCountMask |= DSC_SliceCountMaskforSliceNum(validSliceNum[i]);
     }
 
     if (bInclusive && (i < sliceArrayCount))
     {
-        sliceCountMask |= NVBIT(validSliceNum[i] - 1);
+        sliceCountMask |= DSC_SliceCountMaskforSliceNum(validSliceNum[i]);
     }
 
     return sliceCountMask;
@@ -1261,10 +1323,16 @@ DSC_GetSliceCountMask
 /*
  * @brief       Get the next higher valid slice count.
  *
- * @param[in]   common_slice_count_mask   Includes slice counts supported by both.
- * @param[in]   desired_slice_num         desired slice count
- * @param[in]   dual_mode                 if dual mode or not
- * @param[in]   new_slice_num             new slice count if one was found. 
+ * Note each bit position in the mask represents corresponding slice count as   
+ * per validSliceNum. The function compares the bit position of the each set   
+ * bits in the mask against the passed current slice count. If it finds a slice   
+ * count that is more than the current slice count, that is returned as next  
+ * higher slice count. 
+ *
+ * @param[in]   commonSliceCountMask   Includes slice counts supported by both
+ *                                     GPU and sink                    
+ * @param[in]   currentSliceCount      Current slice count
+ * @param[in]   newSliceCount          Higher slice count if one was found. 
  *
  * @returns NVT_STATUS_SUCCESS if successful;
  *          NVT_STATUS_ERR if unsuccessful;
@@ -1272,36 +1340,42 @@ DSC_GetSliceCountMask
 static NvU32
 DSC_GetHigherSliceCount
 (
-    NvU32 common_slice_count_mask, 
-    NvU32 desired_slice_num, 
-    NvU32 dual_mode, 
-    NvU32 *new_slice_num
+    NvU32 commonSliceCountMask, 
+    NvU32 currentSliceCount,
+    NvU32 *newSliceCount
 )
 {
+    NvU32 i = 0U;
+    NvU32 sliceMask = commonSliceCountMask;
     //
-    // slice num = 6 won't exist in common_slice_count_mask, but 
-    // still keeping it to align mask bits and valid_slice_num index.
+    // Below are the valid slice counts according to DP2.0 spec. 
+    // Refer DPCD 64h & 6Dh. Note validSliceNum[2] is kept 0 to 
+    // indicate DPCD 64[2] which is kept reserved according to spec.
     //
-    NvU32 valid_slice_num[6] = {1,2,0,4,6,8};
-    NvU32 i = 0;
-    NvU32 slice_mask = common_slice_count_mask;
-    NvU32 max_slice_num_index = dual_mode ? 5 : 3;
+    NvU32 validSliceNum[] = {1U,2U,0U,4U,6U,8U,10U,12U,16U,20U,24U};
+    NvU32 sliceArrayCount;
 
-    while (slice_mask && i <= max_slice_num_index)
+    sliceArrayCount = sizeof(validSliceNum)/sizeof(NvU32);
+
+    //
+    // We need to decode the slice count mask and find out if there is a slice  
+    // count in the mask that is higher than the passed in currentSliceCount.
+    // 
+    while (sliceMask != 0U && i < sliceArrayCount)
     {
-        if (slice_mask & 0x1)
+        if (sliceMask & 0x1)
         {
-            if (valid_slice_num[i] > desired_slice_num)
+            if (validSliceNum[i] > currentSliceCount)
             {
-                *new_slice_num = valid_slice_num[i];
+                *newSliceCount = validSliceNum[i];
                 return NVT_STATUS_SUCCESS;
             }
         }
-        slice_mask = slice_mask >> 1;
+        sliceMask = sliceMask >> 1;
         i++;
     }
 
-    return NVT_STATUS_ERR;
+    return NVT_STATUS_PPS_SLICE_COUNT_ERROR;
 }
 
 /*
@@ -1345,74 +1419,64 @@ DSC_PpsCalcSliceParams
     NvU32  peak_throughput_mps;
     NvU32  common_slice_count_mask;
     NvU32  gpu_slice_count_mask;
+    NVT_STATUS status;
 
     gpu_slice_count_mask = DSC_GetSliceCountMask(max_slice_num, NV_TRUE /*bInclusive*/);
 
     if (dual_mode)
     {
-        // remove slice count 1 as it is not valid for 2Head1OR case.
-        gpu_slice_count_mask &= ~(0x1);
+        //
+        // Dual mode will be set until Ada which supports upto 8 slices with 2 heads
+        // So minimum slice count to be used in this mode is 2 (1 slice on each head)
+        // Also slice count 6 is not supported until Ada. So we need to remove both 
+        // slice counts from the mask. 
+        //
+        gpu_slice_count_mask &= ~(DSC_SliceCountMaskforSliceNum(1) | 
+                                  DSC_SliceCountMaskforSliceNum(6));
     }
 
     common_slice_count_mask = gpu_slice_count_mask & slice_count_mask;
 
     if (!common_slice_count_mask)
     {
-        DSC_Print("DSC cannot be supported since no common supported slice count\n");
+        // DSC cannot be supported since no common supported slice count
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
     peak_throughput_mps = DSC_GetPeakThroughputMps(peak_throughput);
     if (!peak_throughput_mps)
     {
-        DSC_Print("Peak throughput cannot be zero.\n");
+        // Peak throughput cannot be zero
         return NVT_STATUS_INVALID_PEAK_THROUGHPUT;
     }
 
     if (out->slice_num == 0 && out->slice_width == 0)
     {
-        NvU32 new_slice_num = 0;
-        NvU32 min_slice_num_1 =  (out->pic_width + max_slice_width - 1) / max_slice_width;
-        NvU32 min_slice_num_2 = (pixel_clkMHz + peak_throughput_mps - 1) / peak_throughput_mps;
-        min_slice_num = MAX(min_slice_num_1, min_slice_num_2);
-
-        if (max_slice_num < min_slice_num)
+        status = DSC_GetMinSliceCountForMode(out->pic_width, pixel_clkMHz, 
+                                             max_slice_width, peak_throughput_mps, 
+                                             max_slice_num, 
+                                             common_slice_count_mask,
+                                             &min_slice_num);
+        if (status != NVT_STATUS_SUCCESS)
         {
-            DSC_Print("Requested mode cannot be supported with DSC\n");
-            return NVT_STATUS_MIN_SLICE_COUNT_ERROR;
+            return status;
         }
 
-        if (!(DSC_SliceCountMaskforSliceNum(min_slice_num) & common_slice_count_mask))
-        {
-            if (DSC_GetHigherSliceCount(common_slice_count_mask, min_slice_num, dual_mode, &new_slice_num) == NVT_STATUS_ERR)
-            {
-                DSC_Print("DSC cannot be enabled for this mode\n");
-                return NVT_STATUS_MIN_SLICE_COUNT_ERROR;
-            }
-            else
-            {
-                out->slice_num = new_slice_num;
-            }
-        }
-        else
-        {
-            out->slice_num = min_slice_num;
-        }
-
+        out->slice_num = min_slice_num;
         out->slice_width = (out->pic_width + out->slice_num - 1) / out->slice_num;
     }
     else if (out->slice_num == 0)
     {
         if (out->slice_width > max_slice_width)
         {
-            DSC_Print("Error! Max Supported Slice Width = %u\n", max_slice_width);
+            // Error! Calculated slice width exceeds max Supported Slice Width
             return NVT_STATUS_PPS_SLICE_WIDTH_ERROR;
         }
 
         out->slice_num = (out->pic_width + out->slice_width - 1) / out->slice_width;
         if (!(DSC_SliceCountMaskforSliceNum(out->slice_num) & common_slice_count_mask))
         {
-            DSC_Print("Slice count corresponding to requested slice_width is not supported\n");
+            // Slice count corresponding to requested slice_width is not supported
             return NVT_STATUS_PPS_SLICE_COUNT_ERROR;
         }
     }
@@ -1420,7 +1484,7 @@ DSC_PpsCalcSliceParams
     {
         if (!(DSC_SliceCountMaskforSliceNum(out->slice_num) & common_slice_count_mask))
         {
-            DSC_Print("Slice count requested is not supported\n");
+            // Slice count requested is not supported
             return NVT_STATUS_PPS_SLICE_COUNT_ERROR;
         }
 
@@ -1433,7 +1497,7 @@ DSC_PpsCalcSliceParams
 
         if (out->slice_width > max_slice_width)
         {
-            DSC_Print("Slice width corresponding to the requested slice count is not supported\n");
+            // Slice width corresponding to the requested slice count is not supported
             return NVT_STATUS_PPS_SLICE_WIDTH_ERROR;
         }
     }
@@ -1441,37 +1505,37 @@ DSC_PpsCalcSliceParams
     {
         if (!(DSC_SliceCountMaskforSliceNum(out->slice_num) & common_slice_count_mask))
         {
-            DSC_Print("Requested slice count is not supported\n");
+            // Requested slice count is not supported
             return NVT_STATUS_PPS_SLICE_COUNT_ERROR;
         }
 
         if (out->slice_width > max_slice_width)
         {
-            DSC_Print("Requested slice width cannot be supported\n");
+            // Requested slice width cannot be supported
             return NVT_STATUS_PPS_SLICE_WIDTH_ERROR;
         }
 
         if (out->slice_width != (out->pic_width + out->slice_num  - 1) / out->slice_num)
         {
-            DSC_Print("slice_width must equal CEIL(pic_width/slice_num) \n");
+            // slice_width must equal CEIL(pic_width/slice_num) 
             return NVT_STATUS_PPS_SLICE_WIDTH_ERROR;
         }
     }
 
     if((pixel_clkMHz / out->slice_num) > peak_throughput_mps)
     {
-        DSC_Print("Sink DSC decoder does not support minimum throughout required for this DSC config \n");
+        // Sink DSC decoder does not support minimum throughout required for this DSC config 
         return NVT_STATUS_ERR;
     }
 
     if (max_slice_width < SINK_MAX_SLICE_WIDTH_DEFAULT)
     {
-        DSC_Print("Sink has to support a max slice width of at least 2560 as per DP1.4 spec. Ignoring for now.");
+        // Sink has to support a max slice width of at least 2560 as per DP1.4 spec. Ignoring for now.
     }
 
     if (out->slice_width < 32)
     {
-        DSC_Print("slice_width must >= 32\n");
+        // slice_width must >= 32
         return NVT_STATUS_PPS_SLICE_WIDTH_ERROR;
     }
 
@@ -1485,7 +1549,8 @@ DSC_PpsCalcSliceParams
     //
     if ((out->chunk_size + 3) / 4 * out->slice_num > out->pic_width)
     {
-        DSC_Print("Error! bpp too high, RG will overflow, normally, this error is also caused by padding (pic_width<slice_width*slice_num or chunk_size%4!=0)");
+        // Error! bpp too high, RG will overflow, normally, this error is also caused by padding
+        // (pic_width<slice_width*slice_num or chunk_size%4!=0)
         return NVT_STATUS_ERR;
     }
 
@@ -1538,7 +1603,7 @@ Dsc_PpsCalcHeight(DSC_OUTPUT_PARAMS *out)
             if (DSC_PpsCheckSliceHeight(out) == NVT_STATUS_SUCCESS)
                 return NVT_STATUS_SUCCESS;
         }
-        DSC_Print("Error! can't find valid slice_height");
+        // Error! can't find valid slice_height
         return NVT_STATUS_PPS_SLICE_HEIGHT_ERROR;
     }
 
@@ -1546,13 +1611,13 @@ Dsc_PpsCalcHeight(DSC_OUTPUT_PARAMS *out)
 
     if (out->pic_height % out->slice_height != 0)
     {
-        DSC_Print("Error! pic_height %% slice_height must be 0");
+        // Error! pic_height % slice_height must be 0
         return NVT_STATUS_PPS_SLICE_HEIGHT_ERROR;
     }
 
     if(DSC_PpsCheckSliceHeight(out) != NVT_STATUS_SUCCESS)
     {
-        DSC_Print("Error! slice_height not valid");
+        // Error! slice_height not valid
         return NVT_STATUS_PPS_SLICE_HEIGHT_ERROR;
     }
     return NVT_STATUS_SUCCESS;
@@ -1614,6 +1679,7 @@ DSC_PpsCalc
  *        then pack pps parameters into 32bit data array. 
  *
  * @param[in]   in   DSC input parameter
+ * @param[in]   pPpsOut A preallocated work-area buffer for calculations
  * @param[out]  out  DSC output parameter
  *                   NvU32[32] to return the pps data.
  *                   The data can be send to SetDscPpsData* methods directly.
@@ -1626,7 +1692,7 @@ DSC_PpsDataGen
 (
     const DSC_INPUT_PARAMS *in,
     DSC_OUTPUT_PARAMS      *pPpsOut,
-    NvU32                   out[DSC_MAX_PPS_SIZE_DWORD]
+    NvU32 out[DSC_MAX_PPS_SIZE_DWORD]
 )
 {
     NVT_STATUS ret;
@@ -1635,7 +1701,6 @@ DSC_PpsDataGen
     ret = DSC_PpsCalc(in, pPpsOut);
     if (ret != NVT_STATUS_SUCCESS)
     {
-        DSC_Print("ERROR - Invalid parameter.");
         goto done;
     }
 
@@ -1643,6 +1708,7 @@ DSC_PpsDataGen
 
     /* fall through */
 done:
+
     return ret;
 }
 
@@ -1668,177 +1734,177 @@ _validateInput
 )
 {
     // Validate DSC Info
-    if (pDscInfo->sinkCaps.decoderColorFormatMask == 0)
+    if (pDscInfo->sinkCaps.decoderColorFormatMask == 0U)
     {
-        DSC_Print("ERROR - At least one of the color format decoding needs to be supported by Sink.");
+        // ERROR - At least one of the color format decoding needs to be supported by Sink.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
     if (!ONEBITSET(pDscInfo->sinkCaps.bitsPerPixelPrecision))
     {
-        DSC_Print("ERROR - Only one of Bits Per Pixel Precision should be set");
+        // ERROR - Only one of Bits Per Pixel Precision should be set
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if ((pDscInfo->sinkCaps.bitsPerPixelPrecision != 1) &&
-        (pDscInfo->sinkCaps.bitsPerPixelPrecision != 2) &&
-        (pDscInfo->sinkCaps.bitsPerPixelPrecision != 4) &&
-        (pDscInfo->sinkCaps.bitsPerPixelPrecision != 8) &&
-        (pDscInfo->sinkCaps.bitsPerPixelPrecision != 16))
+    if ((pDscInfo->sinkCaps.bitsPerPixelPrecision != 1U) &&
+        (pDscInfo->sinkCaps.bitsPerPixelPrecision != 2U) &&
+        (pDscInfo->sinkCaps.bitsPerPixelPrecision != 4U) &&
+        (pDscInfo->sinkCaps.bitsPerPixelPrecision != 8U) &&
+        (pDscInfo->sinkCaps.bitsPerPixelPrecision != 16U))
     {
-        DSC_Print("ERROR - Bits Per Pixel Precision should be 1/16, 1/8, 1/4, 1/2 or 1 bpp.");
+        // ERROR - Bits Per Pixel Precision should be 1/16, 1/8, 1/4, 1/2 or 1 bpp.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->sinkCaps.maxSliceWidth == 0)
+    if (pDscInfo->sinkCaps.maxSliceWidth == 0U)
     {
-        DSC_Print("ERROR - Invalid max slice width supported by sink.");
+        // ERROR - Invalid max slice width supported by sink.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->sinkCaps.maxNumHztSlices == 0)
+    if (pDscInfo->sinkCaps.maxNumHztSlices == 0U)
     {
-        DSC_Print("ERROR - Invalid max number of horizontal slices supported by sink.");
+        // ERROR - Invalid max number of horizontal slices supported by sink.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->sinkCaps.lineBufferBitDepth == 0)
+    if (pDscInfo->sinkCaps.lineBufferBitDepth == 0U)
     {
-        DSC_Print("ERROR - Invalid line buffer bit depth supported by sink.");
+        // ERROR - Invalid line buffer bit depth supported by sink.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->sinkCaps.algorithmRevision.versionMinor == 0)
+    if (pDscInfo->sinkCaps.algorithmRevision.versionMinor == 0U)
     {
-        DSC_Print("ERROR - Invalid DSC algorithm revision supported by sink.");
+        // ERROR - Invalid DSC algorithm revision supported by sink.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->gpuCaps.encoderColorFormatMask == 0)
+    if (pDscInfo->gpuCaps.encoderColorFormatMask == 0U)
     {
-        DSC_Print("ERROR - At least one of the color format encoding needs to be supported by GPU.");
+        // ERROR - At least one of the color format encoding needs to be supported by GPU.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->gpuCaps.lineBufferSize == 0)
+    if (pDscInfo->gpuCaps.lineBufferSize == 0U)
     {
-        DSC_Print("ERROR - Invalid Line buffer size supported by GPU.");
+        // ERROR - Invalid Line buffer size supported by GPU.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->gpuCaps.maxNumHztSlices == 0)
+    if (pDscInfo->gpuCaps.maxNumHztSlices == 0U)
     {
-        DSC_Print("ERROR - Invalid max number of horizontal slices supported by GPU.");
+        // ERROR - Invalid max number of horizontal slices supported by GPU.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->gpuCaps.lineBufferBitDepth == 0)
+    if (pDscInfo->gpuCaps.lineBufferBitDepth == 0U)
     {
-        DSC_Print("ERROR - Invalid line buffer bit depth supported by GPU.");
+        // ERROR - Invalid line buffer bit depth supported by GPU.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
     if (pDscInfo->forcedDscParams.sliceCount > pDscInfo->sinkCaps.maxNumHztSlices)
     {
-        DSC_Print("ERROR - Client can't specify forced slice count greater than what sink supports.");
+        // ERROR - Client can't specify forced slice count greater than what sink supports.
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
     if ((pDscInfo->forcedDscParams.sliceCount / (pModesetInfo->bDualMode ? 2 : 1)) > pDscInfo->gpuCaps.maxNumHztSlices)
     {
-        DSC_Print("ERROR - Client can't specify forced slice count greater than what GPU supports.");
+        // ERROR - Client can't specify forced slice count greater than what GPU supports.
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
     if (pDscInfo->forcedDscParams.sliceWidth > pDscInfo->sinkCaps.maxSliceWidth)
     {
-        DSC_Print("ERROR - Client can't specify forced slice width greater than what sink supports.");
+        // ERROR - Client can't specify forced slice width greater than what sink supports.
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
-    if ((pDscInfo->forcedDscParams.sliceCount > 0) &&
-        (pDscInfo->forcedDscParams.sliceWidth != 0))
+    if ((pDscInfo->forcedDscParams.sliceCount > 0U) &&
+        (pDscInfo->forcedDscParams.sliceWidth != 0U))
     {
-        DSC_Print("ERROR - Client can't specify both forced slice count and slice width.");
+        // ERROR - Client can't specify both forced slice count and slice width.
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
-    if ((pDscInfo->forcedDscParams.sliceCount != 0) &&
-        (pDscInfo->forcedDscParams.sliceCount != 1) &&
-        (pDscInfo->forcedDscParams.sliceCount != 2) &&
-        (pDscInfo->forcedDscParams.sliceCount != 4) &&
-        (pDscInfo->forcedDscParams.sliceCount != 8))
+    if ((pDscInfo->forcedDscParams.sliceCount != 0U) &&
+        (pDscInfo->forcedDscParams.sliceCount != 1U) &&
+        (pDscInfo->forcedDscParams.sliceCount != 2U) &&
+        (pDscInfo->forcedDscParams.sliceCount != 4U) &&
+        (pDscInfo->forcedDscParams.sliceCount != 8U))
     {
-        DSC_Print("ERROR - Forced Slice Count has to be 1/2/4/8.");
+        // ERROR - Forced Slice Count has to be 1/2/4/8.
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
     if (pDscInfo->forcedDscParams.sliceWidth > pModesetInfo->activeWidth)
     {
-        DSC_Print("ERROR - Forced Slice Width can't be more than Active Width.");
+        // ERROR - Forced Slice Width can't be more than Active Width.
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
     if (pDscInfo->forcedDscParams.sliceHeight > pModesetInfo->activeHeight)
     {
-        DSC_Print("ERROR - Forced Slice Height can't be more than Active Height.");
+        // ERROR - Forced Slice Height can't be more than Active Height.
         return NVT_STATUS_DSC_SLICE_ERROR;
     }
 
     if (pDscInfo->forcedDscParams.dscRevision.versionMinor > 
         pDscInfo->sinkCaps.algorithmRevision.versionMinor)
     {
-        DSC_Print("ERROR - Forced DSC Algorithm Revision is greater than Sink Supported value.");
+        // ERROR - Forced DSC Algorithm Revision is greater than Sink Supported value.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->forcedDscParams.dscRevision.versionMinor > 2)
+    if (pDscInfo->forcedDscParams.dscRevision.versionMinor > 2U)
     {
-        DSC_Print("ERROR - Forced DSC Algorithm Revision is greater than 1.2");
+        // ERROR - Forced DSC Algorithm Revision is greater than 1.2
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pModesetInfo->pixelClockHz == 0)
+    if (pModesetInfo->pixelClockHz == 0U)
     {
-        DSC_Print("ERROR - Invalid pixel Clock for mode.");
+        // ERROR - Invalid pixel Clock for mode.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if ((pDscInfo->branchCaps.overallThroughputMode0 != 0) && 
+    if ((pDscInfo->branchCaps.overallThroughputMode0 != 0U) && 
         (pModesetInfo->pixelClockHz > pDscInfo->branchCaps.overallThroughputMode0 * MHZ_TO_HZ))
     {
-        DSC_Print("ERROR - Pixel clock cannot be greater than Branch DSC Overall Throughput Mode 0");
+        // ERROR - Pixel clock cannot be greater than Branch DSC Overall Throughput Mode 0
         return NVT_STATUS_OVERALL_THROUGHPUT_ERROR;
     }
 
-    if (pModesetInfo->activeWidth == 0)
+    if (pModesetInfo->activeWidth == 0U)
     {
-        DSC_Print("ERROR - Invalid active width for mode.");
+        // ERROR - Invalid active width for mode.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pDscInfo->branchCaps.maxLineBufferWidth != 0 &&
+    if (pDscInfo->branchCaps.maxLineBufferWidth != 0U &&
         pModesetInfo->activeWidth > pDscInfo->branchCaps.maxLineBufferWidth)
     {
-        DSC_Print("ERROR - Active width cannot be greater than DSC Decompressor max line buffer width");
+        // ERROR - Active width cannot be greater than DSC Decompressor max line buffer width
         return NVT_STATUS_MAX_LINE_BUFFER_ERROR;
     }
 
-    if (pModesetInfo->activeHeight == 0)
+    if (pModesetInfo->activeHeight == 0U)
     {
-        DSC_Print("ERROR - Invalid active height for mode.");
+        // ERROR - Invalid active height for mode.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (pModesetInfo->bitsPerComponent == 0)
+    if (pModesetInfo->bitsPerComponent == 0U)
     {
-        DSC_Print("ERROR - Invalid bits per component for mode.");
+        // ERROR - Invalid bits per component for mode.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
-    if (availableBandwidthBitsPerSecond == 0)
+    if (availableBandwidthBitsPerSecond == 0U)
     {
-        DSC_Print("ERROR - Invalid available bandwidth in Bits Per Second.");
+        // ERROR - Invalid available bandwidth in Bits Per Second.
         return NVT_STATUS_INVALID_PARAMETER;
     }
 
@@ -1853,7 +1919,7 @@ _validateInput
             (!((pDscInfo->gpuCaps.encoderColorFormatMask & DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_NATIVE_422) &&
                 (pDscInfo->sinkCaps.decoderColorFormatMask & DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_422))))
         {
-            DSC_Print("ERROR - Can't enable YCbCr422 with current GPU and Sink DSC config.");
+            // ERROR - Can't enable YCbCr422 with current GPU and Sink DSC config.
             return NVT_STATUS_COLOR_FORMAT_NOT_SUPPORTED;
         }
     }
@@ -1866,22 +1932,22 @@ _validateInput
         if (!((pDscInfo->gpuCaps.encoderColorFormatMask & DSC_ENCODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420) &&
             (pDscInfo->sinkCaps.decoderColorFormatMask & DSC_DECODER_COLOR_FORMAT_Y_CB_CR_NATIVE_420)))
         {
-            DSC_Print("ERROR - Can't enable YCbCr420 with current GPU and Sink DSC config.");
+            // ERROR - Can't enable YCbCr420 with current GPU and Sink DSC config.
             return NVT_STATUS_COLOR_FORMAT_NOT_SUPPORTED;
         }
     }
 
-    if ((pDscInfo->sinkCaps.algorithmRevision.versionMajor == 1) &&
-        (pDscInfo->sinkCaps.algorithmRevision.versionMinor == 1) &&
+    if ((pDscInfo->sinkCaps.algorithmRevision.versionMajor == 1U) &&
+        (pDscInfo->sinkCaps.algorithmRevision.versionMinor == 1U) &&
         (pModesetInfo->colorFormat == NVT_COLOR_FORMAT_YCbCr420))
     {
-        DSC_Print("WARNING: DSC v1.2 or higher is recommended for using YUV444");
-        DSC_Print("Current version is 1.1");
+        // WARNING: DSC v1.2 or higher is recommended for using YUV444
+        // Current version is 1.1
     }
 
     if (pDscInfo->sinkCaps.maxBitsPerPixelX16 > 1024U)
     {
-            DSC_Print("ERROR - Max bits per pixel can't be greater than 1024");
+            // ERROR - Max bits per pixel can't be greater than 1024
             return NVT_STATUS_INVALID_PARAMETER;
     }
 
@@ -1892,33 +1958,33 @@ _validateInput
         case 12:
             if (!(pDscInfo->sinkCaps.decoderColorDepthMask & DSC_DECODER_COLOR_DEPTH_CAPS_12_BITS))
             {
-                DSC_Print("ERROR - Sink DSC Decoder does not support 12 bpc");
+                // ERROR - Sink DSC Decoder does not support 12 bpc
                 return NVT_STATUS_INVALID_BPC;
             }
             break;
         case 10:
             if (!(pDscInfo->sinkCaps.decoderColorDepthMask & DSC_DECODER_COLOR_DEPTH_CAPS_10_BITS))
             {
-                DSC_Print("ERROR - Sink DSC Decoder does not support 10 bpc");
+                // ERROR - Sink DSC Decoder does not support 10 bpc
                 return NVT_STATUS_INVALID_BPC;
             }
             break;
         case 8:
             if (!(pDscInfo->sinkCaps.decoderColorDepthMask & DSC_DECODER_COLOR_DEPTH_CAPS_8_BITS))
             {
-                DSC_Print("ERROR - Sink DSC Decoder does not support 8 bpc");
+                // ERROR - Sink DSC Decoder does not support 8 bpc
                 return NVT_STATUS_INVALID_BPC;
             }
             break;
 
         default:
-            DSC_Print("ERROR - Invalid bits per component specified");
+            // ERROR - Invalid bits per component specified
             return NVT_STATUS_INVALID_PARAMETER;
         }
     }
     else
     {
-        DSC_Print("WARNING - Decoder Color Depth Mask was not provided. Assuming that decoder supports all depths.");
+        // WARNING - Decoder Color Depth Mask was not provided. Assuming that decoder supports all depths.
     }
 
     // Validate WAR data
@@ -1926,7 +1992,7 @@ _validateInput
     {
         if ((pWARData->connectorType != DSC_DP) && (pWARData->connectorType != DSC_HDMI))
         {
-            DSC_Print("WARNING - Incorrect connector info sent with WAR data");
+            // WARNING - Incorrect connector info sent with WAR data
             return NVT_STATUS_INVALID_PARAMETER;
         }
 
@@ -1934,25 +2000,25 @@ _validateInput
         {
             if (!IS_VALID_LANECOUNT(pWARData->dpData.laneCount))
             {
-                DSC_Print("ERROR - Incorrect DP Lane count info sent with WAR data");
+                // ERROR - Incorrect DP Lane count info sent with WAR data
                 return NVT_STATUS_INVALID_PARAMETER;
             }
 
             if (!IS_VALID_LINKBW(pWARData->dpData.linkRateHz / DP_LINK_BW_FREQ_MULTI_MBPS))
             {
-                DSC_Print("ERROR - Incorrect DP Link rate info sent with WAR data");
+                // ERROR - Incorrect DP Link rate info sent with WAR data
                 return NVT_STATUS_INVALID_PARAMETER;
             }
 
             if (pWARData->dpData.hBlank > MAX_HBLANK_PIXELS)
             {
-                DSC_Print("ERROR - Incorrect DP HBlank info sent with WAR data");
+                // ERROR - Incorrect DP HBlank info sent with WAR data
                 return NVT_STATUS_INVALID_HBLANK;
             }
 
             if ((pWARData->dpData.dpMode != DSC_DP_SST) && (pWARData->dpData.dpMode != DSC_DP_MST))
             {
-                DSC_Print("ERROR - Incorrect DP Stream mode sent with WAR data");
+                // ERROR - Incorrect DP Stream mode sent with WAR data
                 return NVT_STATUS_INVALID_PARAMETER;
             }
         }
@@ -1964,6 +2030,158 @@ _validateInput
 /* ------------------------ Public Functions ------------------------------- */
 
 /*
+ * @brief       Calculate PPS parameters and slice count mask based on passed down 
+ *              Sink, GPU capability and modeset info
+ *
+ *
+ * @param[in]   pDscInfo       Includes Sink and GPU DSC capabilities
+ * @param[in]   pModesetInfo   Modeset related information
+ * @param[in]   pWARData       Data required for providing WAR for issues
+ * @param[in]   availableBandwidthBitsPerSecond      Available bandwidth for video
+ *                                                   transmission(After FEC/Downspread overhead consideration)
+ * @param[out]  pps                 Calculated PPS parameter.
+ *                                  The data can be sent to SetDscPpsData* methods directly.
+ * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
+ * @param[out]  pSliceCountMask     Mask of all slice counts supported by the mode.
+ *
+ * @returns NVT_STATUS_SUCCESS if successful;
+ *          NVT_STATUS_DSC_SLICE_ERROR if no common slice count could be found;
+ *          NVT_STATUS_INVALID_PEAK_THROUGHPUT if peak through put is invalid;
+ *          NVT_STATUS_PPS_SLICE_COUNT_ERROR if there is no slice count possible for the mode.
+ *          In case this returns failure consider that PPS is not possible.
+ */
+NVT_STATUS
+DSC_GeneratePPSWithSliceCountMask
+(
+    const DSC_INFO *pDscInfo,
+    const MODESET_INFO *pModesetInfo,
+    const WAR_DATA *pWARData,
+    NvU64 availableBandwidthBitsPerSecond,
+    NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
+    NvU32 *pBitsPerPixelX16,
+    NvU32 *pSliceCountMask
+)
+{
+    NvU32 commonSliceCountMask;
+    NvU32 gpuSliceCountMask;
+    NvU32 rejectSliceCountMask;
+    NvU32 possibleSliceCountMask;
+    NvU32 validSliceCountMask = 0x0;
+    NvU32 peakThroughPutIndex = 0U;
+    NvU32 peakThroughPutMps = 0U;
+    NvU32 maxSliceCount;
+    NvU32 maxSliceWidth;
+    NvU32 minSliceCount;
+    NvU32 sliceArrayCount;
+    NvU32 i;
+    DSC_INFO localDscInfo;
+    NvU32* ppsOut = NULL;
+    NVT_STATUS status;
+    DSC_GENERATE_PPS_OPAQUE_WORKAREA scratchBuffer;
+
+    // Below are the valid slice counts according to DP2.0 spec. 
+    NvU32 validSliceNum[] = {1U,2U,4U,6U,8U,10U,12U,16U,20U,24U};
+
+    // if any slice parameters are forced, just return PPS.
+    if (pDscInfo->forcedDscParams.sliceWidth != 0U || 
+        pDscInfo->forcedDscParams.sliceCount != 0U)
+    {
+        return DSC_GeneratePPS(pDscInfo, pModesetInfo, pWARData, 
+                               availableBandwidthBitsPerSecond,  
+                               &scratchBuffer, pps, pBitsPerPixelX16);
+    }
+
+    sliceArrayCount = sizeof(validSliceNum)/sizeof(NvU32);
+
+    maxSliceCount = MIN(pDscInfo->sinkCaps.maxNumHztSlices, pDscInfo->gpuCaps.maxNumHztSlices);
+
+    // lineBufferSize is reported in 1024 units by HW, so need to multiply by 1024 to get pixels.
+    maxSliceWidth = MIN(pDscInfo->sinkCaps.maxSliceWidth, pDscInfo->gpuCaps.lineBufferSize * 1024);
+
+    gpuSliceCountMask = DSC_GetSliceCountMask(maxSliceCount, NV_TRUE /*bInclusive*/);
+
+    commonSliceCountMask = gpuSliceCountMask & pDscInfo->sinkCaps.sliceCountSupportedMask;
+
+    if (commonSliceCountMask == 0x0)
+    {
+        return NVT_STATUS_DSC_SLICE_ERROR;
+    }
+
+    if (pModesetInfo->colorFormat == NVT_COLOR_FORMAT_YCbCr422 ||
+        pModesetInfo->colorFormat == NVT_COLOR_FORMAT_YCbCr420)
+    {
+        peakThroughPutIndex = pDscInfo->sinkCaps.peakThroughputMode1;
+    }
+    else
+    {
+        peakThroughPutIndex = pDscInfo->sinkCaps.peakThroughputMode0;
+    }
+
+    peakThroughPutMps = DSC_GetPeakThroughputMps(peakThroughPutIndex);
+    if (peakThroughPutMps == 0U)
+    {
+        return NVT_STATUS_INVALID_PEAK_THROUGHPUT;
+    }
+
+    status = DSC_GetMinSliceCountForMode(pModesetInfo->activeWidth, 
+                                         (NvU32)(pModesetInfo->pixelClockHz / 1000000L),
+                                         maxSliceWidth,
+                                         peakThroughPutMps,
+                                         maxSliceCount,
+                                         commonSliceCountMask,
+                                         &minSliceCount);
+    if (status != NVT_STATUS_SUCCESS)
+        return status;
+
+    // Find mask of slice counts which are less than min slice count 
+    rejectSliceCountMask   = DSC_GetSliceCountMask(minSliceCount, NV_FALSE /*bInclusive*/);
+
+    // Now find mask of slice counts that can be supported by the mode
+    possibleSliceCountMask = commonSliceCountMask & (~rejectSliceCountMask);
+
+    //
+    // If we have mask of all possible slice counts, loop to generate PPS with 
+    // each of those slice counts forced.
+    //
+    if (possibleSliceCountMask)
+    {
+        localDscInfo = *pDscInfo;
+
+        for(i = 0U ; i < sliceArrayCount; i++)
+        {
+            if (possibleSliceCountMask & NVBIT(validSliceNum[i] - 1))
+            {
+                ppsOut = NULL;
+                localDscInfo.forcedDscParams.sliceCount = validSliceNum[i];
+                if (localDscInfo.forcedDscParams.sliceCount == minSliceCount)
+                {
+                    //
+                    // We need to return PPS with minimum slice count if client 
+                    // has not forced any slice count even though we generate 
+                    // pps with all other possible slice counts to validate them. 
+                    //
+                    ppsOut = pps;
+                }
+                if (DSC_GeneratePPS(&localDscInfo, pModesetInfo, pWARData, 
+                                    availableBandwidthBitsPerSecond, &scratchBuffer,
+                                    ppsOut, pBitsPerPixelX16) == NVT_STATUS_SUCCESS)
+                {
+                    validSliceCountMask |=  NVBIT(validSliceNum[i] - 1);
+                }
+            }
+        }
+    }
+    else
+    {
+        return NVT_STATUS_PPS_SLICE_COUNT_ERROR;
+    }
+
+    *pSliceCountMask = validSliceCountMask;
+
+    return NVT_STATUS_SUCCESS;
+}
+
+/*
  * @brief Calculate PPS parameters based on passed down Sink,
  *        GPU capability and modeset info
  *
@@ -1972,6 +2190,8 @@ _validateInput
  * @param[in]   pWARData       Data required for providing WAR for issues
  * @param[in]   availableBandwidthBitsPerSecond      Available bandwidth for video
  *                                                   transmission(After FEC/Downspread overhead consideration)
+ * @param[in]   pOpaqueWorkarea  Scratch buffer of sufficient size pre-allocated
+                                 by client for DSC PPS calculations internal use
  * @param[out]  pps                 Calculated PPS parameter.
  *                                  The data can be send to SetDscPpsData* methods directly.
  * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
@@ -1987,9 +2207,9 @@ DSC_GeneratePPS
     const MODESET_INFO *pModesetInfo,
     const WAR_DATA *pWARData,
     NvU64 availableBandwidthBitsPerSecond,
+    DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea,
     NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
-    NvU32 *pBitsPerPixelX16,
-    DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea
+    NvU32 *pBitsPerPixelX16
 )
 {
     DSC_INPUT_PARAMS  *in  = NULL;
@@ -1997,9 +2217,8 @@ DSC_GeneratePPS
     DSC_GENERATE_PPS_WORKAREA *pWorkarea = NULL;
     NVT_STATUS ret = NVT_STATUS_ERR;
 
-    if ((!pDscInfo) || (!pModesetInfo) || (!pBitsPerPixelX16) || (!pOpaqueWorkarea))
+    if ((!pDscInfo) || (!pModesetInfo) || (!pOpaqueWorkarea) || (!pBitsPerPixelX16))
     {
-        DSC_Print("ERROR - Invalid parameter.");
         ret = NVT_STATUS_INVALID_PARAMETER;
         goto done;
     }
@@ -2011,8 +2230,6 @@ DSC_GeneratePPS
     ret = _validateInput(pDscInfo, pModesetInfo, pWARData, availableBandwidthBitsPerSecond);
     if (ret != NVT_STATUS_SUCCESS)
     {
-        DSC_Print("ERROR - Invalid parameter.");
-        ret = NVT_STATUS_INVALID_PARAMETER;
         goto done;
     }
 
@@ -2045,7 +2262,7 @@ DSC_GeneratePPS
         }
         else
         {
-            DSC_Print("ERROR - YCbCr422 is not possible with current config.");
+            // ERROR - YCbCr422 is not possible with current config.
             ret = NVT_STATUS_COLOR_FORMAT_NOT_SUPPORTED;
             goto done;
         }
@@ -2060,14 +2277,14 @@ DSC_GeneratePPS
         }
         else
         {
-            DSC_Print("ERROR - YCbCr420 is not possible with current config.");
+            // ERROR - YCbCr420 is not possible with current config.
             ret = NVT_STATUS_COLOR_FORMAT_NOT_SUPPORTED;
             goto done;
         }
         break;
 
     default:
-        DSC_Print("ERROR - Invalid color Format specified.");
+        // ERROR - Invalid color Format specified.
         ret = NVT_STATUS_COLOR_FORMAT_NOT_SUPPORTED;
         goto done;
     }
@@ -2167,14 +2384,16 @@ DSC_GeneratePPS
     {
         *pBitsPerPixelX16 = DSC_AlignDownForBppPrecision(*pBitsPerPixelX16, pDscInfo->sinkCaps.bitsPerPixelPrecision);
 
+        //
         // The calculation of in->bits_per_pixel here in PPSlib, which is the maximum bpp that is allowed by available bandwidth, 
         // which is applicable to DP alone and not to HDMI FRL. 
         // Before calling PPS lib to generate PPS data, HDMI library has done calculation according to HDMI2.1 spec 
         // to determine if FRL rate is sufficient for the requested bpp. So restricting the condition to DP alone.
+        //
         if ((pWARData && (pWARData->connectorType == DSC_DP)) &&
             (*pBitsPerPixelX16 > in->bits_per_pixel))
         {
-            DSC_Print("ERROR - Invalid bits per pixel value specified.");
+            // ERROR - Invalid bits per pixel value specified.
             ret = NVT_STATUS_INVALID_BPP;
             goto done;
         }
@@ -2183,17 +2402,21 @@ DSC_GeneratePPS
             in->bits_per_pixel = *pBitsPerPixelX16;
         }
 
-        // For DSC Dual Mode, because of architectural limitation we can't use bits_per_pixel more than 16.
-        if (pModesetInfo->bDualMode && (in->bits_per_pixel > 256 /*bits_per_pixel = 16*/))
+        //
+        // For DSC Dual Mode or Multi-tile configs (NVD 5.0 and later), 
+        // because of architectural limitation we can't use bits_per_pixel 
+        // more than 16.
+        //
+        if ((pModesetInfo->bDualMode || (pDscInfo->gpuCaps.maxNumHztSlices > 4U)) && 
+            (in->bits_per_pixel > 256 /*bits_per_pixel = 16*/))
         {
-            DSC_Print("ERROR - DSC Dual Mode, because of architectural limitation we can't use bits_per_pixel more than 16.");
             ret = NVT_STATUS_INVALID_BPP;
             goto done;
         }
 
         if ((pDscInfo->sinkCaps.maxBitsPerPixelX16 != 0) && (*pBitsPerPixelX16 > pDscInfo->sinkCaps.maxBitsPerPixelX16))
         {
-            DSC_Print("ERROR - bits per pixel value specified by user is greater than what DSC decompressor can support.");
+            // ERROR - bits per pixel value specified by user is greater than what DSC decompressor can support.
             ret = NVT_STATUS_INVALID_BPP;
             goto done;
         }
@@ -2201,33 +2424,35 @@ DSC_GeneratePPS
     else
     {
         //
-        // For DSC Dual Mode, because of architectural limitation we can't use bits_per_pixel more than 16.
-        // Forcing it to 16.
+        // For DSC Dual Mode or for multi-tile configs (NVD 5.0 and later), 
+        // because of architectural limitation we can't use bits_per_pixel more 
+        // than 16. So forcing it to 16.
         //
-        if (pModesetInfo->bDualMode && (in->bits_per_pixel > 256 /*bits_per_pixel = 16*/))
+        if ((pModesetInfo->bDualMode || (pDscInfo->gpuCaps.maxNumHztSlices > 4U)) && 
+            (in->bits_per_pixel > 256 /*bits_per_pixel = 16*/))
         {
-            DSC_Print("ERROR - DSC Dual Mode, because of architectural limitation we can't use bits_per_pixel more than 16.");
-            DSC_Print("ERROR - Forcing it to 16.");
+            // ERROR - DSC Dual Mode, because of architectural limitation we can't use bits_per_pixel more than 16.
+            // ERROR - Forcing it to 16.
             in->bits_per_pixel = 256;
         }
 
         // If calculated  bits_per_pixel is 126 or 127, we need to use 128 value. Bug 2686078
         if ((in->bits_per_pixel == 126) || (in->bits_per_pixel == 127))
         {
-            DSC_Print("WARNING: bits_per_pixel is forced to 128 because calculated value was 126 or 127");
+            // WARNING: bits_per_pixel is forced to 128 because calculated value was 126 or 127
             in->bits_per_pixel = 128;
         }
 
         if ((pDscInfo->sinkCaps.maxBitsPerPixelX16 != 0) && (in->bits_per_pixel > pDscInfo->sinkCaps.maxBitsPerPixelX16))
         {
-            DSC_Print("WARNING - Optimal bits per pixel value calculated is greater than what DSC decompressor can support. Forcing it to max that decompressor can support");
+            // WARNING - Optimal bits per pixel value calculated is greater than what DSC decompressor can support. Forcing it to max that decompressor can support
             in->bits_per_pixel = pDscInfo->sinkCaps.maxBitsPerPixelX16;
         }
     }
 
     if (pModesetInfo->bDualMode &&  (pDscInfo->gpuCaps.maxNumHztSlices > 4U))
     {
-        DSC_Print("ERROR - Dual Mode should not be set when GPU can support more than 4 slices per head.");
+        // ERROR - Dual Mode should not be set when GPU can support more than 4 slices per head.
         ret = NVT_STATUS_INVALID_PARAMETER;
         goto done;
     }
@@ -2254,7 +2479,7 @@ DSC_GeneratePPS
     {
         if (in->dsc_version_minor == 1)
         {
-            DSC_Print("Error! DSC1.1 can't support native422!\n");
+            // Error! DSC1.1 can't support native422!
             ret = NVT_STATUS_COLOR_FORMAT_NOT_SUPPORTED;
             goto done;
         }
@@ -2262,8 +2487,7 @@ DSC_GeneratePPS
         if((((NvS32)(in->bits_per_pixel)) < (NvS32)(2*6*BPP_UNIT)) ||
            (((NvS32)(in->bits_per_pixel)) > (NvS32)(2*32*BPP_UNIT-1)))
         {
-            DSC_Print("bits_per_pixelx16 (=%u) needs to be between %u and %u",
-                      in->bits_per_pixel, 2*6*BPP_UNIT, 2*32*BPP_UNIT-1);
+            // ERROR - bits_per_pixelx16 outside valid range
             ret = NVT_STATUS_INVALID_BPP;
             goto done;
         }
@@ -2273,8 +2497,7 @@ DSC_GeneratePPS
         if ((((NvS32)(in->bits_per_pixel)) < (NvS32)(8*BPP_UNIT)) ||
             (((NvS32)(in->bits_per_pixel)) > (NvS32)(32*BPP_UNIT)))
         {
-            DSC_Print("bits_per_pixelx16 (=%u) needs to be between %u and %u",
-                      in->bits_per_pixel, 8*BPP_UNIT, 32*BPP_UNIT);
+            // ERROR - bits_per_pixelx16 outside valid range
             ret = NVT_STATUS_INVALID_BPP;
             goto done;
         }

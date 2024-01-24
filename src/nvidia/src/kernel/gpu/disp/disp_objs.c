@@ -40,6 +40,7 @@
 #include "gpu/disp/disp_channel.h"
 #include "gpu/disp/kern_disp.h"
 #include "gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
 
 #include "kernel/gpu/intr/intr.h"
 

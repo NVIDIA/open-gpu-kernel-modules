@@ -41,11 +41,16 @@ ENGDESCRIPTOR nvdecGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClas
 /*!
  * RM internal class representing NVXXXX_VIDEO_DECODER
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_NVDEC_CTX_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct NvdecContext {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -71,7 +76,6 @@ struct NvdecContext {
     NV_STATUS (*__nvdecctxInternalControlForward__)(struct NvdecContext *, NvU32, void *, NvU32);
     NV_STATUS (*__nvdecctxUnmapFrom__)(struct NvdecContext *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__nvdecctxControl_Epilogue__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__nvdecctxControlLookup__)(struct NvdecContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__nvdecctxGetSwMethods__)(struct NvdecContext *, const METHOD **, NvU32 *);
     NvHandle (*__nvdecctxGetInternalObjectHandle__)(struct NvdecContext *);
     NV_STATUS (*__nvdecctxControl__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -83,6 +87,7 @@ struct NvdecContext {
     NV_STATUS (*__nvdecctxUnregisterEvent__)(struct NvdecContext *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__nvdecctxControlSerialization_Prologue__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__nvdecctxCanCopy__)(struct NvdecContext *);
+    NvBool (*__nvdecctxIsPartialUnmapSupported__)(struct NvdecContext *);
     void (*__nvdecctxPreDestruct__)(struct NvdecContext *);
     NV_STATUS (*__nvdecctxIsDuplicate__)(struct NvdecContext *, NvHandle, NvBool *);
     void (*__nvdecctxControlSerialization_Epilogue__)(struct NvdecContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -133,7 +138,6 @@ NV_STATUS __nvoc_objCreate_NvdecContext(NvdecContext**, Dynamic*, NvU32, struct 
 #define nvdecctxInternalControlForward(pGpuResource, command, pParams, size) nvdecctxInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define nvdecctxUnmapFrom(pResource, pParams) nvdecctxUnmapFrom_DISPATCH(pResource, pParams)
 #define nvdecctxControl_Epilogue(pResource, pCallContext, pParams) nvdecctxControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define nvdecctxControlLookup(pResource, pParams, ppEntry) nvdecctxControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define nvdecctxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) nvdecctxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
 #define nvdecctxGetInternalObjectHandle(pGpuResource) nvdecctxGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define nvdecctxControl(pGpuResource, pCallContext, pParams) nvdecctxControl_DISPATCH(pGpuResource, pCallContext, pParams)
@@ -145,6 +149,7 @@ NV_STATUS __nvoc_objCreate_NvdecContext(NvdecContext**, Dynamic*, NvU32, struct 
 #define nvdecctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) nvdecctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define nvdecctxControlSerialization_Prologue(pResource, pCallContext, pParams) nvdecctxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define nvdecctxCanCopy(pResource) nvdecctxCanCopy_DISPATCH(pResource)
+#define nvdecctxIsPartialUnmapSupported(pResource) nvdecctxIsPartialUnmapSupported_DISPATCH(pResource)
 #define nvdecctxPreDestruct(pResource) nvdecctxPreDestruct_DISPATCH(pResource)
 #define nvdecctxIsDuplicate(pResource, hMemory, pDuplicate) nvdecctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define nvdecctxControlSerialization_Epilogue(pResource, pCallContext, pParams) nvdecctxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -231,10 +236,6 @@ static inline void nvdecctxControl_Epilogue_DISPATCH(struct NvdecContext *pResou
     pResource->__nvdecctxControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS nvdecctxControlLookup_DISPATCH(struct NvdecContext *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__nvdecctxControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS nvdecctxGetSwMethods_DISPATCH(struct NvdecContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__nvdecctxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
@@ -277,6 +278,10 @@ static inline NV_STATUS nvdecctxControlSerialization_Prologue_DISPATCH(struct Nv
 
 static inline NvBool nvdecctxCanCopy_DISPATCH(struct NvdecContext *pResource) {
     return pResource->__nvdecctxCanCopy__(pResource);
+}
+
+static inline NvBool nvdecctxIsPartialUnmapSupported_DISPATCH(struct NvdecContext *pResource) {
+    return pResource->__nvdecctxIsPartialUnmapSupported__(pResource);
 }
 
 static inline void nvdecctxPreDestruct_DISPATCH(struct NvdecContext *pResource) {

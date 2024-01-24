@@ -45,6 +45,7 @@ int nv_drm_init(void)
         return -EINVAL;
     }
 
+    nvKms->setSuspendResumeCallback(nv_drm_suspend_resume);
     return nv_drm_probe_devices();
 #else
     return 0;
@@ -54,6 +55,7 @@ int nv_drm_init(void)
 void nv_drm_exit(void)
 {
 #if defined(NV_DRM_AVAILABLE)
+    nvKms->setSuspendResumeCallback(NULL);
     nv_drm_remove_devices();
 #endif
 }

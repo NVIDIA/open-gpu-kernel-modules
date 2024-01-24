@@ -72,11 +72,16 @@ typedef struct DispObject DispObject;
 /*!
  * Base class for display channels
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISP_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DispChannel {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -102,7 +107,6 @@ struct DispChannel {
     NV_STATUS (*__dispchnInternalControlForward__)(struct DispChannel *, NvU32, void *, NvU32);
     NV_STATUS (*__dispchnUnmapFrom__)(struct DispChannel *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__dispchnControl_Epilogue__)(struct DispChannel *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__dispchnControlLookup__)(struct DispChannel *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__dispchnGetInternalObjectHandle__)(struct DispChannel *);
     NV_STATUS (*__dispchnControl__)(struct DispChannel *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispchnUnmap__)(struct DispChannel *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -112,6 +116,7 @@ struct DispChannel {
     NV_STATUS (*__dispchnUnregisterEvent__)(struct DispChannel *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__dispchnControlSerialization_Prologue__)(struct DispChannel *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispchnCanCopy__)(struct DispChannel *);
+    NvBool (*__dispchnIsPartialUnmapSupported__)(struct DispChannel *);
     void (*__dispchnPreDestruct__)(struct DispChannel *);
     NV_STATUS (*__dispchnIsDuplicate__)(struct DispChannel *, NvHandle, NvBool *);
     void (*__dispchnControlSerialization_Epilogue__)(struct DispChannel *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -170,7 +175,6 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel**, Dynamic*, NvU32, struct CA
 #define dispchnInternalControlForward(pGpuResource, command, pParams, size) dispchnInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dispchnUnmapFrom(pResource, pParams) dispchnUnmapFrom_DISPATCH(pResource, pParams)
 #define dispchnControl_Epilogue(pResource, pCallContext, pParams) dispchnControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispchnControlLookup(pResource, pParams, ppEntry) dispchnControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispchnGetInternalObjectHandle(pGpuResource) dispchnGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define dispchnControl(pGpuResource, pCallContext, pParams) dispchnControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define dispchnUnmap(pGpuResource, pCallContext, pCpuMapping) dispchnUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -180,6 +184,7 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel**, Dynamic*, NvU32, struct CA
 #define dispchnUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispchnUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define dispchnControlSerialization_Prologue(pResource, pCallContext, pParams) dispchnControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispchnCanCopy(pResource) dispchnCanCopy_DISPATCH(pResource)
+#define dispchnIsPartialUnmapSupported(pResource) dispchnIsPartialUnmapSupported_DISPATCH(pResource)
 #define dispchnPreDestruct(pResource) dispchnPreDestruct_DISPATCH(pResource)
 #define dispchnIsDuplicate(pResource, hMemory, pDuplicate) dispchnIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispchnControlSerialization_Epilogue(pResource, pCallContext, pParams) dispchnControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -241,10 +246,6 @@ static inline void dispchnControl_Epilogue_DISPATCH(struct DispChannel *pResourc
     pResource->__dispchnControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS dispchnControlLookup_DISPATCH(struct DispChannel *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispchnControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle dispchnGetInternalObjectHandle_DISPATCH(struct DispChannel *pGpuResource) {
     return pGpuResource->__dispchnGetInternalObjectHandle__(pGpuResource);
 }
@@ -279,6 +280,10 @@ static inline NV_STATUS dispchnControlSerialization_Prologue_DISPATCH(struct Dis
 
 static inline NvBool dispchnCanCopy_DISPATCH(struct DispChannel *pResource) {
     return pResource->__dispchnCanCopy__(pResource);
+}
+
+static inline NvBool dispchnIsPartialUnmapSupported_DISPATCH(struct DispChannel *pResource) {
+    return pResource->__dispchnIsPartialUnmapSupported__(pResource);
 }
 
 static inline void dispchnPreDestruct_DISPATCH(struct DispChannel *pResource) {
@@ -364,11 +369,16 @@ NV_STATUS dispchnGetByHandle_IMPL(struct RsClient *pClient, NvHandle hDisplayCha
 /*!
  * RM internal class representing XXX_XXX_CHANNEL_PIO
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISP_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DispChannelPio {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct DispChannel __nvoc_base_DispChannel;
@@ -394,7 +404,6 @@ struct DispChannelPio {
     NV_STATUS (*__dispchnpioInternalControlForward__)(struct DispChannelPio *, NvU32, void *, NvU32);
     NV_STATUS (*__dispchnpioUnmapFrom__)(struct DispChannelPio *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__dispchnpioControl_Epilogue__)(struct DispChannelPio *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__dispchnpioControlLookup__)(struct DispChannelPio *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__dispchnpioGetInternalObjectHandle__)(struct DispChannelPio *);
     NV_STATUS (*__dispchnpioControl__)(struct DispChannelPio *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispchnpioUnmap__)(struct DispChannelPio *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -404,6 +413,7 @@ struct DispChannelPio {
     NV_STATUS (*__dispchnpioUnregisterEvent__)(struct DispChannelPio *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__dispchnpioControlSerialization_Prologue__)(struct DispChannelPio *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispchnpioCanCopy__)(struct DispChannelPio *);
+    NvBool (*__dispchnpioIsPartialUnmapSupported__)(struct DispChannelPio *);
     void (*__dispchnpioPreDestruct__)(struct DispChannelPio *);
     NV_STATUS (*__dispchnpioIsDuplicate__)(struct DispChannelPio *, NvHandle, NvBool *);
     void (*__dispchnpioControlSerialization_Epilogue__)(struct DispChannelPio *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -454,7 +464,6 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio**, Dynamic*, NvU32, str
 #define dispchnpioInternalControlForward(pGpuResource, command, pParams, size) dispchnpioInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dispchnpioUnmapFrom(pResource, pParams) dispchnpioUnmapFrom_DISPATCH(pResource, pParams)
 #define dispchnpioControl_Epilogue(pResource, pCallContext, pParams) dispchnpioControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispchnpioControlLookup(pResource, pParams, ppEntry) dispchnpioControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispchnpioGetInternalObjectHandle(pGpuResource) dispchnpioGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define dispchnpioControl(pGpuResource, pCallContext, pParams) dispchnpioControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define dispchnpioUnmap(pGpuResource, pCallContext, pCpuMapping) dispchnpioUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -464,6 +473,7 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio**, Dynamic*, NvU32, str
 #define dispchnpioUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispchnpioUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define dispchnpioControlSerialization_Prologue(pResource, pCallContext, pParams) dispchnpioControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispchnpioCanCopy(pResource) dispchnpioCanCopy_DISPATCH(pResource)
+#define dispchnpioIsPartialUnmapSupported(pResource) dispchnpioIsPartialUnmapSupported_DISPATCH(pResource)
 #define dispchnpioPreDestruct(pResource) dispchnpioPreDestruct_DISPATCH(pResource)
 #define dispchnpioIsDuplicate(pResource, hMemory, pDuplicate) dispchnpioIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispchnpioControlSerialization_Epilogue(pResource, pCallContext, pParams) dispchnpioControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -523,10 +533,6 @@ static inline void dispchnpioControl_Epilogue_DISPATCH(struct DispChannelPio *pR
     pResource->__dispchnpioControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS dispchnpioControlLookup_DISPATCH(struct DispChannelPio *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispchnpioControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle dispchnpioGetInternalObjectHandle_DISPATCH(struct DispChannelPio *pGpuResource) {
     return pGpuResource->__dispchnpioGetInternalObjectHandle__(pGpuResource);
 }
@@ -561,6 +567,10 @@ static inline NV_STATUS dispchnpioControlSerialization_Prologue_DISPATCH(struct 
 
 static inline NvBool dispchnpioCanCopy_DISPATCH(struct DispChannelPio *pResource) {
     return pResource->__dispchnpioCanCopy__(pResource);
+}
+
+static inline NvBool dispchnpioIsPartialUnmapSupported_DISPATCH(struct DispChannelPio *pResource) {
+    return pResource->__dispchnpioIsPartialUnmapSupported__(pResource);
 }
 
 static inline void dispchnpioPreDestruct_DISPATCH(struct DispChannelPio *pResource) {
@@ -600,11 +610,16 @@ NV_STATUS dispchnpioConstruct_IMPL(struct DispChannelPio *arg_pDispChannelPio, s
 /*!
  * RM internal class representing XXX_XXX_CHANNEL_DMA
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISP_CHANNEL_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DispChannelDma {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct DispChannel __nvoc_base_DispChannel;
@@ -630,7 +645,6 @@ struct DispChannelDma {
     NV_STATUS (*__dispchndmaInternalControlForward__)(struct DispChannelDma *, NvU32, void *, NvU32);
     NV_STATUS (*__dispchndmaUnmapFrom__)(struct DispChannelDma *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__dispchndmaControl_Epilogue__)(struct DispChannelDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__dispchndmaControlLookup__)(struct DispChannelDma *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__dispchndmaGetInternalObjectHandle__)(struct DispChannelDma *);
     NV_STATUS (*__dispchndmaControl__)(struct DispChannelDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispchndmaUnmap__)(struct DispChannelDma *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -640,6 +654,7 @@ struct DispChannelDma {
     NV_STATUS (*__dispchndmaUnregisterEvent__)(struct DispChannelDma *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__dispchndmaControlSerialization_Prologue__)(struct DispChannelDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispchndmaCanCopy__)(struct DispChannelDma *);
+    NvBool (*__dispchndmaIsPartialUnmapSupported__)(struct DispChannelDma *);
     void (*__dispchndmaPreDestruct__)(struct DispChannelDma *);
     NV_STATUS (*__dispchndmaIsDuplicate__)(struct DispChannelDma *, NvHandle, NvBool *);
     void (*__dispchndmaControlSerialization_Epilogue__)(struct DispChannelDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -690,7 +705,6 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma**, Dynamic*, NvU32, str
 #define dispchndmaInternalControlForward(pGpuResource, command, pParams, size) dispchndmaInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dispchndmaUnmapFrom(pResource, pParams) dispchndmaUnmapFrom_DISPATCH(pResource, pParams)
 #define dispchndmaControl_Epilogue(pResource, pCallContext, pParams) dispchndmaControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispchndmaControlLookup(pResource, pParams, ppEntry) dispchndmaControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispchndmaGetInternalObjectHandle(pGpuResource) dispchndmaGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define dispchndmaControl(pGpuResource, pCallContext, pParams) dispchndmaControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define dispchndmaUnmap(pGpuResource, pCallContext, pCpuMapping) dispchndmaUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -700,6 +714,7 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma**, Dynamic*, NvU32, str
 #define dispchndmaUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispchndmaUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define dispchndmaControlSerialization_Prologue(pResource, pCallContext, pParams) dispchndmaControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispchndmaCanCopy(pResource) dispchndmaCanCopy_DISPATCH(pResource)
+#define dispchndmaIsPartialUnmapSupported(pResource) dispchndmaIsPartialUnmapSupported_DISPATCH(pResource)
 #define dispchndmaPreDestruct(pResource) dispchndmaPreDestruct_DISPATCH(pResource)
 #define dispchndmaIsDuplicate(pResource, hMemory, pDuplicate) dispchndmaIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispchndmaControlSerialization_Epilogue(pResource, pCallContext, pParams) dispchndmaControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -759,10 +774,6 @@ static inline void dispchndmaControl_Epilogue_DISPATCH(struct DispChannelDma *pR
     pResource->__dispchndmaControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS dispchndmaControlLookup_DISPATCH(struct DispChannelDma *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispchndmaControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle dispchndmaGetInternalObjectHandle_DISPATCH(struct DispChannelDma *pGpuResource) {
     return pGpuResource->__dispchndmaGetInternalObjectHandle__(pGpuResource);
 }
@@ -797,6 +808,10 @@ static inline NV_STATUS dispchndmaControlSerialization_Prologue_DISPATCH(struct 
 
 static inline NvBool dispchndmaCanCopy_DISPATCH(struct DispChannelDma *pResource) {
     return pResource->__dispchndmaCanCopy__(pResource);
+}
+
+static inline NvBool dispchndmaIsPartialUnmapSupported_DISPATCH(struct DispChannelDma *pResource) {
+    return pResource->__dispchndmaIsPartialUnmapSupported__(pResource);
 }
 
 static inline void dispchndmaPreDestruct_DISPATCH(struct DispChannelDma *pResource) {

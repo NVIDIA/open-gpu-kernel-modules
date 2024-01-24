@@ -623,6 +623,35 @@ typedef struct NV2080_CTRL_GR_CTXSW_PM_BIND_PARAMS {
 /* valid pmMode values same as above NV2080_CTRL_CTXSW_PM_MODE */
 
 /*
+ * NV2080_CTRL_CMD_GR_CTXSW_SETUP_BIND
+ *
+ * This command is used to set the Setup context switch mode and virtual address
+ * for the specified channel. A value of NV_ERR_NOT_SUPPORTED is
+ * returned if the target channel does not support setup context switch mode
+ * changes.
+ *
+ *   hClient
+ *     This parameter specifies the client handle of
+ *     that owns the Setup context buffer. This field must match
+ *     the hClient used in the control call for non-kernel clients.
+ *   hChannel
+ *     This parameter specifies the channel handle of
+ *     the channel that is to have its Setup context switch mode changed.
+ *   vMemPtr
+ *     This parameter specifies the 64 bit virtual address
+ *     for the allocated Setup context buffer.
+ */
+#define NV2080_CTRL_CMD_GR_CTXSW_SETUP_BIND (0x2080123aU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GR_INTERFACE_ID << 8) | NV2080_CTRL_GR_CTXSW_SETUP_BIND_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GR_CTXSW_SETUP_BIND_PARAMS_MESSAGE_ID (0x3AU)
+
+typedef struct NV2080_CTRL_GR_CTXSW_SETUP_BIND_PARAMS {
+    NvHandle hClient;
+    NvHandle hChannel;
+    NV_DECLARE_ALIGNED(NvU64 vMemPtr, 8);
+} NV2080_CTRL_GR_CTXSW_SETUP_BIND_PARAMS;
+
+/*
  * NV2080_CTRL_CMD_GR_SET_GPC_TILE_MAP
  *
  * Send a list of values used to describe GPC/TPC tile mapping tables.
@@ -1067,10 +1096,10 @@ typedef struct NV2080_CTRL_GR_GET_CTX_BUFFER_INFO_PARAMS {
     NV_DECLARE_ALIGNED(NV2080_CTRL_GR_CTX_BUFFER_INFO ctxBufferInfo[NV2080_CTRL_GR_MAX_CTX_BUFFER_COUNT], 8);
 } NV2080_CTRL_GR_GET_CTX_BUFFER_INFO_PARAMS;
 
-// Aperture flags
-#define NV2080_CTRL_GR_CTX_BUFFER_INFO_APERTURE_UNKNWON ADDR_UNKNOWN
-#define NV2080_CTRL_GR_CTX_BUFFER_INFO_APERTURE_SYSMEM ADDR_SYSMEM
-#define NV2080_CTRL_GR_CTX_BUFFER_INFO_APERTURE_FBMEM ADDR_FBMEM
+// Aperture flags. The defines should match the defines in mem_desc.h
+#define NV2080_CTRL_GR_CTX_BUFFER_INFO_APERTURE_UNKNOWN 0
+#define NV2080_CTRL_GR_CTX_BUFFER_INFO_APERTURE_SYSMEM  1
+#define NV2080_CTRL_GR_CTX_BUFFER_INFO_APERTURE_FBMEM   2
 
 /*
  * NV2080_CTRL_CMD_GR_GET_GLOBAL_SM_ORDER

@@ -449,6 +449,8 @@ namespace DisplayPort
         NvBool getDSCSupport();
         bool getFECSupport();
         NvBool isDSCPassThroughSupported();
+        NvBool isDynamicPPSSupported();
+        NvBool isDynamicDscToggleSupported();
         NvBool isDSCSupported();
         NvBool isDSCDecompressionSupported();
         NvBool isDSCPossible();

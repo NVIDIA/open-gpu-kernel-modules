@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,6 +46,8 @@
  * swizzId [IN] -> Used only when MIG mode is enabled otherwise set
  *                     to NV2080_CTRL_GPU_PARTITION_ID_INVALID.
  * numChannels -> Used only when SRIOV is enabled. Must be a power of 2.
+ * placementId [IN] -> Used to provide placement ID of with heterogeneous timesliced vGPUs.
+ *                     Otherwise set to NVA081_PLACEMENT_ID_INVALID.
  * bDisableDefaultSmcExecPartRestore - If set to true, SMC default execution partition
  *                                     save/restore will not be done in host-RM
  * vgpuDeviceInstanceId -> Specifies the vGPU device instance per VM to be used
@@ -67,6 +69,7 @@ typedef struct NVA084_ALLOC_PARAMETERS {
     NvU32      vmPid;
     NvU32      numChannels;
     NvU32      numPluginChannels;
+    NvU16      placementId;
     VM_ID_TYPE vmIdType;
     NV_DECLARE_ALIGNED(VM_ID guestVmId, 8);
     NvBool     bDisableDefaultSmcExecPartRestore;

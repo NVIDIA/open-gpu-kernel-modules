@@ -13,6 +13,7 @@
 
 // pull in private headers for each engine
 #include "g_rpc_private.h"
+#include "g_rpcstructurecopy_private.h"
 
 
 #include "g_hal.h"
@@ -493,44 +494,6 @@ NvBool gpioIsFeatureAvailableHal_MISSING(
     return NV_FALSE;
 }
 
-// GPIO:hal:GET_PWM_CONTROL_HAL  -  GPIO disabled
-NV_STATUS gpioGetPwmControlHal_MISSING(
-    POBJGPIO      pGpio,
-    NvU32         gpioPin,
-    NvU32        *pFlags,
-    NvU32        *pPeriod,
-    NvU32        *pDutyCycle,
-    NvU32         halIndex
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-// GPIO:hal:SET_PWM_CONTROL_HAL  -  GPIO disabled
-NV_STATUS gpioSetPwmControlHal_MISSING(
-    POBJGPIO      pGpio,
-    NvU32         gpioPin,
-    NvU32        *pFlags,
-    NvU32        *pPeriod,
-    NvU32        *pDutyCycle,
-    NvU32         halIndex,
-    NvBool        bSkipPinInit
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-// GPIO:hal:GET_PWM_PARAMETERS_HAL  -  GPIO disabled
-NV_STATUS gpioGetPwmParametersHal_MISSING(
-    POBJGPIO      pGpio,
-    NvU32         gpioPin,
-    NvU32        *pMaxPeriod,
-    NvU32         halIndex
-)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 // GPIO:hal:GET_FUNC_PWM_SENSE  -  GPIO disabled
 NvU32 gpioGetFuncPwmSense_MISSING(
     POBJGPIO      pGpio,
@@ -676,6 +639,18 @@ NvU32 gpioInitAndGetPinNum_FWCLIENT(
     return (NvU32) 0;
 }
 
+// RPC:hal:CTRL_FIFO_SETUP_VF_ZOMBIE_SUBCTX_PDB  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlFifoSetupVfZombieSubctxPdb_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
 // RPC:hal:VGPU_PF_REG_READ32  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 NV_STATUS rpcVgpuPfRegRead32_STUB(
     POBJGPU       pGpu,
@@ -683,6 +658,18 @@ NV_STATUS rpcVgpuPfRegRead32_STUB(
     NvU64         arg3,
     NvU32        *pArg4,
     NvU32         arg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_BUS_UNSET_P2P_MAPPING  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlBusUnsetP2pMapping_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
@@ -724,6 +711,28 @@ NV_STATUS rpcAllocMemory_STUB(
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
+// RPC:hal:CTRL_DBG_READ_SINGLE_SM_ERROR_STATE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgReadSingleSmErrorState_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:DISABLE_CHANNELS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcDisableChannels_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvU32         arg3
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
 // RPC:hal:GPU_EXEC_REG_OPS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 NV_STATUS rpcGpuExecRegOps_STUB(
     POBJGPU       pGpu,
@@ -737,11 +746,230 @@ NV_STATUS rpcGpuExecRegOps_STUB(
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
-// RPC:hal:RMFS_INIT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
-NV_STATUS rpcRmfsInit_STUB(
+// RPC:hal:CTRL_GPU_PROMOTE_CTX  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpuPromoteCtx_STUB(
     POBJGPU       pGpu,
     POBJRPC       pRpc,
-    PMEMORY_DESCRIPTOR  arg3
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_SET_NEXT_STOP_TRIGGER_TYPE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgSetNextStopTriggerType_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:ALLOC_SHARE_DEVICE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcAllocShareDevice_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvHandle      arg5,
+    NvHandle      arg6,
+    NvHandle      arg7,
+    NvU32         arg8,
+    NvU32         arg9,
+    NvU64         arg10,
+    NvU32         arg11
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_PREEMPT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlPreempt_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GPU_INITIALIZE_CTX  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpuInitializeCtx_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_RESERVE_PM_AREA_SMPC  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlReservePmAreaSmpc_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GPU_MIGRATABLE_OPS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpuMigratableOps_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_SET_MODE_ERRBAR_DEBUG  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgSetModeErrbarDebug_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_PMA_STREAM_UPDATE_GET_PUT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlPmaStreamUpdateGetPut_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_FABRIC_MEMORY_DESCRIBE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlFabricMemoryDescribe_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:ALLOC_CHANNEL_DMA  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcAllocChannelDma_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvHandle      arg5,
+    NvU32         arg6,
+    NV_CHANNEL_ALLOC_PARAMS *pArg7,
+    NvU32        *pArg8
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_SET_ZBC_DEPTH_CLEAR  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlSetZbcDepthClear_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_RESET_ISOLATED_CHANNEL  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlResetIsolatedChannel_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DMA_SET_DEFAULT_VASPACE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDmaSetDefaultVaspace_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:ALLOC_SUBDEVICE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcAllocSubdevice_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvHandle      arg5,
+    NvU32         arg6,
+    NvU32         arg7
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:FREE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcFree_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvHandle      arg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:DMA_CONTROL  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcDmaControl_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvU32         arg5,
+    void         *pArg6,
+    NvU32         arg7
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_CLEAR_SINGLE_SM_ERROR_STATE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgClearSingleSmErrorState_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
@@ -768,6 +996,30 @@ NV_STATUS rpcGetGspStaticInfo_STUB(
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
+// RPC:hal:SAVE_HIBERNATION_DATA  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcSaveHibernationData_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:DUP_OBJECT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcDupObject_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvHandle      arg5,
+    NvHandle      arg6,
+    NvHandle      arg7,
+    NvU32         arg8
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
 // RPC:hal:GSP_SET_SYSTEM_INFO  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 NV_STATUS rpcGspSetSystemInfo_STUB(
     POBJGPU       pGpu,
@@ -777,10 +1029,306 @@ NV_STATUS rpcGspSetSystemInfo_STUB(
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
-// RPC:hal:RMFS_CLEANUP  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
-NV_STATUS rpcRmfsCleanup_STUB(
+// RPC:hal:CTRL_PM_AREA_PC_SAMPLER  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlPmAreaPcSampler_STUB(
     POBJGPU       pGpu,
-    POBJRPC       pRpc
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvU32         arg5,
+    void         *pArg6
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_SET_EXCEPTION_MASK  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgSetExceptionMask_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_VASPACE_COPY_SERVER_RESERVED_PDES  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlVaspaceCopyServerReservedPdes_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GR_CTXSW_PREEMPTION_BIND  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGrCtxswPreemptionBind_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_ALLOC_PMA_STREAM  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlAllocPmaStream_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_RESERVE_HWPM_LEGACY  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlReserveHwpmLegacy_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_INTERNAL_QUIESCE_PMA_CHANNEL  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlInternalQuiescePmaChannel_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_PERF_RATED_TDP_GET_STATUS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlPerfRatedTdpGetStatus_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_BUS_SET_P2P_MAPPING  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlBusSetP2pMapping_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GPU_GET_INFO_V2  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpuGetInfoV2_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GET_HS_CREDITS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetHsCredits_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GR_SET_CTXSW_PREEMPTION_MODE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGrSetCtxswPreemptionMode_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_B0CC_EXEC_REG_OPS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlB0ccExecRegOps_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GRMGR_GET_GR_FS_INFO  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGrmgrGetGrFsInfo_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GET_ZBC_CLEAR_TABLE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetZbcClearTable_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CLEANUP_SURFACE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCleanupSurface_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS *pArg3
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_SET_TIMESLICE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlSetTimeslice_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GPU_QUERY_ECC_STATUS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpuQueryEccStatus_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_GET_MODE_MMU_DEBUG  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgGetModeMmuDebug_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_CLEAR_ALL_SM_ERROR_STATES  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgClearAllSmErrorStates_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:VGPU_GSP_RING_DOORBELL  -  TU10X, GA100
+NV_STATUS rpcVgpuGspRingDoorbell_STUB(
+    POBJGPU       pGpu,
+    NvU32         arg2
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GR_SET_TPC_PARTITION_MODE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGrSetTpcPartitionMode_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GET_TOTAL_HS_CREDITS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetTotalHsCredits_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlInternalPromoteFaultMethodBuffers_STUB(
+    OBJGPU       *pArg1,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_FB_GET_INFO_V2  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlFbGetInfoV2_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:VGPU_GSP_WRITE_SCRATCH_REGISTER  -  TU10X, GA100
+NV_STATUS rpcVgpuGspWriteScratchRegister_STUB(
+    POBJGPU       pGpu,
+    NvU64         arg2
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
@@ -798,6 +1346,99 @@ NV_STATUS rpcSetPageDirectory_STUB(
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
+// RPC:hal:CTRL_GET_P2P_CAPS_V2  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetP2pCapsV2_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    void         *pArg3
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_NVLINK_GET_INBAND_RECEIVED_DATA  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlNvlinkGetInbandReceivedData_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pArg3,
+    NvU16         arg4,
+    NvBool       *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GET_CE_PCE_MASK  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetCePceMask_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GET_NVLINK_PEER_ID_MASK  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetNvlinkPeerIdMask_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GPU_EVICT_CTX  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpuEvictCtx_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GET_MMU_DEBUG_MODE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetMmuDebugMode_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:INVALIDATE_TLB  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcInvalidateTlb_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvU64         arg3,
+    NvU32         arg4
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_SET_SINGLE_SM_SINGLE_STEP  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgSetSingleSmSingleStep_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
 // RPC:hal:UNLOADING_GUEST_DRIVER  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 NV_STATUS rpcUnloadingGuestDriver_STUB(
     POBJGPU       pGpu,
@@ -805,6 +1446,49 @@ NV_STATUS rpcUnloadingGuestDriver_STUB(
     NvBool        arg3,
     NvBool        arg4,
     NvU32         arg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:GET_CONSOLIDATED_GR_STATIC_INFO  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcGetConsolidatedGrStaticInfo_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:SWITCH_TO_VGA  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcSwitchToVga_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_RESET_CHANNEL  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlResetChannel_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GPFIFO_SCHEDULE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpfifoSchedule_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvU32         arg5,
+    void         *pArg6
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
@@ -819,8 +1503,20 @@ NV_STATUS rpcSetRegistry_STUB(
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
-// RPC:hal:RMFS_CLOSE_QUEUE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
-NV_STATUS rpcRmfsCloseQueue_STUB(
+// RPC:hal:CTRL_GET_NVLINK_STATUS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetNvlinkStatus_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:GET_STATIC_DATA  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcGetStaticData_STUB(
     POBJGPU       pGpu,
     POBJRPC       pRpc
 )
@@ -828,10 +1524,274 @@ NV_STATUS rpcRmfsCloseQueue_STUB(
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
-// RPC:hal:GET_STATIC_INFO  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
-NV_STATUS rpcGetStaticInfo_STUB(
+// RPC:hal:CTRL_GR_GET_TPC_PARTITION_MODE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGrGetTpcPartitionMode_STUB(
     POBJGPU       pGpu,
-    POBJRPC       pRpc
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_STOP_CHANNEL  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlStopChannel_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:SET_SURFACE_PROPERTIES  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcSetSurfaceProperties_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES *pArg4,
+    NvBool        arg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GPFIFO_SET_WORK_SUBMIT_TOKEN_NOTIF_INDEX  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_TIMER_SET_GR_TICK_FREQ  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlTimerSetGrTickFreq_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:ALLOC_EVENT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcAllocEvent_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvHandle      arg5,
+    NvHandle      arg6,
+    NvHandle      arg7,
+    NvU32         arg8,
+    NvU32         arg9
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GR_PC_SAMPLING_MODE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGrPcSamplingMode_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_MC_SERVICE_INTERRUPTS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlMcServiceInterrupts_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_READ_ALL_SM_ERROR_STATES  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgReadAllSmErrorStates_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_SET_ZBC_COLOR_CLEAR  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlSetZbcColorClear_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:GET_ENCODER_CAPACITY  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcGetEncoderCapacity_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvU32        *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GET_P2P_CAPS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetP2pCaps_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:PERF_GET_LEVEL_INFO  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcPerfGetLevelInfo_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NV2080_CTRL_PERF_GET_LEVEL_INFO_PARAMS *pArg5,
+    NV2080_CTRL_PERF_GET_CLK_INFO *pArg6
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:ALLOC_OBJECT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcAllocObject_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvHandle      arg5,
+    NvU32         arg6,
+    void         *pArg7
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GPU_HANDLE_VF_PRI_FAULT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpuHandleVfPriFault_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:RM_API_CONTROL  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcRmApiControl_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvU32         arg5,
+    void         *pArg6,
+    NvU32         arg7
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_FABRIC_MEM_STATS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlFabricMemStats_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GR_CTXSW_ZCULL_BIND  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGrCtxswZcullBind_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlInternalMemsysSetZbcReferenced_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_PERF_RATED_TDP_SET_CONTROL  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlPerfRatedTdpSetControl_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_EXEC_PARTITIONS_CREATE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlExecPartitionsCreate_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GPFIFO_GET_WORK_SUBMIT_TOKEN  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGpfifoGetWorkSubmitToken_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
@@ -852,6 +1812,313 @@ NV_STATUS rpcIdleChannels_STUB(
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
+// RPC:hal:CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlCmdInternalGpuStartFabricProbe_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS *pArg3
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:GET_BRAND_CAPS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcGetBrandCaps_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvU32         arg5,
+    void         *pArg6,
+    NvU32         arg7
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:RESTORE_HIBERNATION_DATA  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcRestoreHibernationData_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlFlaSetupInstanceMemBlock_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlInternalSriovPromotePmaStream_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_FB_GET_FS_INFO  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlFbGetFsInfo_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_SET_CHANNEL_INTERLEAVE_LEVEL  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlSetChannelInterleaveLevel_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_RESUME_CONTEXT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgResumeContext_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:ALLOC_ROOT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcAllocRoot_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_FIFO_DISABLE_CHANNELS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlFifoDisableChannels_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_SET_HS_CREDITS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlSetHsCredits_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:GET_ENGINE_UTILIZATION  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcGetEngineUtilization_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    NvU32         arg5,
+    void         *pArg6,
+    NvU32         arg7
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GET_ZBC_CLEAR_TABLE_ENTRY  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetZbcClearTableEntry_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_NVENC_SW_SESSION_UPDATE_INFO  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlNvencSwSessionUpdateInfo_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_SUSPEND_CONTEXT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgSuspendContext_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_GET_P2P_CAPS_MATRIX  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlGetP2pCapsMatrix_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_EXEC_REG_OPS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgExecRegOps_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_FREE_PMA_STREAM  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlFreePmaStream_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_SET_TSG_INTERLEAVE_LEVEL  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlSetTsgInterleaveLevel_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:LOG  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcLog_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    const char   *pArg3,
+    NvU32         arg4
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_EXEC_PARTITIONS_DELETE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlExecPartitionsDelete_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_PERF_BOOST  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlPerfBoost_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_DBG_SET_MODE_MMU_DEBUG  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlDbgSetModeMmuDebug_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_FIFO_SET_CHANNEL_PROPERTIES  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlFifoSetChannelProperties_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_SUBDEVICE_GET_P2P_CAPS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlSubdeviceGetP2pCaps_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4,
+    void         *pArg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
 // RPC:hal:UPDATE_BAR_PDE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 NV_STATUS rpcUpdateBarPde_STUB(
     POBJGPU       pGpu,
@@ -859,6 +2126,17 @@ NV_STATUS rpcUpdateBarPde_STUB(
     NV_RPC_UPDATE_PDE_BAR_TYPE  arg3,
     NvU64         arg4,
     NvU64         arg5
+)
+{
+    return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
+}
+
+// RPC:hal:CTRL_BIND_PM_RESOURCES  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcCtrlBindPmResources_STUB(
+    POBJGPU       pGpu,
+    POBJRPC       pRpc,
+    NvHandle      arg3,
+    NvHandle      arg4
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
@@ -896,20 +2174,60 @@ NV_STATUS rpcUnmapMemoryDma_STUB(
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
-// RPC:hal:RMFS_TEST  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
-NV_STATUS rpcRmfsTest_STUB(
+// RPC:hal:SET_GUEST_SYSTEM_INFO_EXT  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS rpcSetGuestSystemInfoExt_STUB(
     POBJGPU       pGpu,
-    POBJRPC       pRpc,
-    NvU32         arg3,
-    NvU32         arg4,
-    NvU32         arg5,
-    NvU32         arg6
+    POBJRPC       pRpc
 )
 {
     return NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION;
 }
 
-// RPCSTRUCTURECOPY:hal:NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS  -  RPCSTRUCTURECOPY disabled
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS_STUB(
+    NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_MEMSYS_GET_STATIC_CONFIG_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS_STUB(
+    NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:VGPU_P2P_CAPABILITY_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_VGPU_P2P_CAPABILITY_PARAMS_STUB(
+    VGPU_P2P_CAPABILITY_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 NV_STATUS deserialize_NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_STUB(
     NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS *data,
     NvU8         *stream,
@@ -920,7 +2238,249 @@ NV_STATUS deserialize_NV2080_CTRL_CMD_BUS_GET_C2C_INFO_PARAMS_STUB(
     return NV_OK;
 }
 
-// RPCSTRUCTURECOPY:hal:NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS  -  RPCSTRUCTURECOPY disabled
+// RPCSTRUCTURECOPY:hal:NVA080_CTRL_VGPU_GET_CONFIG_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NVA080_CTRL_VGPU_GET_CONFIG_PARAMS_STUB(
+    NVA080_CTRL_VGPU_GET_CONFIG_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS_STUB(
+    NV2080_CTRL_FB_GET_LTC_INFO_FOR_FBP_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_GLOBAL_SM_ORDER_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_GET_DEVICE_INFO_TABLE_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS_STUB(
+    NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_GPU_GET_GID_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_GPU_GET_GID_INFO_PARAMS_STUB(
+    NV2080_CTRL_GPU_GET_GID_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS_STUB(
+    NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS_STUB(
+    NVC637_CTRL_EXEC_PARTITIONS_GET_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES_STUB(
+    VGPU_FB_GET_DYNAMIC_BLACKLISTED_PAGES *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:VGPU_FB_GET_LTC_INFO_FOR_FBP  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_VGPU_FB_GET_LTC_INFO_FOR_FBP_STUB(
+    VGPU_FB_GET_LTC_INFO_FOR_FBP *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:VGPU_STATIC_DATA  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_VGPU_STATIC_DATA_STUB(
+    VGPU_STATIC_DATA *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_PDB_PROPERTIES_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS_STUB(
+    NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_TRACE_DEFINES_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_PPC_MASKS_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_PPC_MASKS_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_PPC_MASKS_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS_STUB(
+    NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_GR_GET_ZCULL_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_GR_GET_ZCULL_INFO_PARAMS_STUB(
+    NV2080_CTRL_GR_GET_ZCULL_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_FLOORSWEEPING_MASKS_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_ZCULL_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:VGPU_FIFO_GET_DEVICE_INFO_TABLE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_VGPU_FIFO_GET_DEVICE_INFO_TABLE_STUB(
+    VGPU_FIFO_GET_DEVICE_INFO_TABLE *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 NV_STATUS deserialize_NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS_STUB(
     NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS *data,
     NvU8         *stream,
@@ -931,12 +2491,213 @@ NV_STATUS deserialize_NV2080_CTRL_CE_GET_ALL_CAPS_PARAMS_STUB(
     return NV_OK;
 }
 
-// RPCSTRUCTURECOPY:hal:IGRP_IP_VERSIONS_GET_INFO  -  RPCSTRUCTURECOPY disabled
-NV_STATUS rpcstructurecopy_iGrp_ipVersions_getInfo_STUB(
-    IGRP_IP_VERSIONS_TABLE_INFO *pArg1
+// RPCSTRUCTURECOPY:hal:VGPU_BSP_GET_CAPS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_VGPU_BSP_GET_CAPS_STUB(
+    VGPU_BSP_GET_CAPS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS_STUB(
+    NV2080_CTRL_CMD_BUS_GET_PCIE_SUPPORTED_GPU_ATOMICS_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:GPU_PARTITION_INFO  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_GPU_PARTITION_INFO_STUB(
+    GPU_PARTITION_INFO *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS_STUB(
+    NV2080_CTRL_MC_GET_STATIC_INTR_TABLE_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS_STUB(
+    NV2080_CTRL_MC_GET_ENGINE_NOTIFICATION_INTR_VECTORS_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_ROP_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS_STUB(
+    NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_FECS_RECORD_SIZE_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS_STUB(
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_CAPS_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:VGPU_STATIC_PROPERTIES  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_VGPU_STATIC_PROPERTIES_STUB(
+    VGPU_STATIC_PROPERTIES *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_BUS_GET_INFO_V2_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_BUS_GET_INFO_V2_PARAMS_STUB(
+    NV2080_CTRL_BUS_GET_INFO_V2_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS_STUB(
+    NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS_STUB(
+    NV2080_CTRL_INTERNAL_STATIC_GR_GET_CONTEXT_BUFFERS_INFO_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_FLA_GET_RANGE_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_FLA_GET_RANGE_PARAMS_STUB(
+    NV2080_CTRL_FLA_GET_RANGE_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS_STUB(
+    NV2080_CTRL_GR_GET_SM_ISSUE_RATE_MODIFIER_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS_STUB(
+    NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:VGPU_CE_GET_CAPS_V2  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_VGPU_CE_GET_CAPS_V2_STUB(
+    VGPU_CE_GET_CAPS_V2 *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:VGPU_GET_LATENCY_BUFFER_SIZE  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_VGPU_GET_LATENCY_BUFFER_SIZE_STUB(
+    VGPU_GET_LATENCY_BUFFER_SIZE *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
+}
+
+// RPCSTRUCTURECOPY:hal:NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS  -  TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+NV_STATUS deserialize_NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS_STUB(
+    NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *data,
+    NvU8         *stream,
+    NvU32         streamSize,
+    NvU32        *offset
+)
+{
+    return NV_OK;
 }
 
 

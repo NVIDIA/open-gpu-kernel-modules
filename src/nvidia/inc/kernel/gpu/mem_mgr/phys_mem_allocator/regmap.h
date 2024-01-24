@@ -103,8 +103,8 @@ void pmaRegmapSetEvictingFrames(void *pMap, NvU64 frameEvictionsInProcess);
  *
  * @return void
  */
-void pmaRegmapChangePageStateAttribEx(void * pMap, NvU64 frameNumStart, NvU64 pageSize,
-                                      PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
+void pmaRegmapChangePageStateAttrib(void * pMap, NvU64 startFrame, NvU64 pageSize,
+                                    PMA_PAGESTATUS newState, PMA_PAGESTATUS newStateMask);
 
 /*!
  * @brief Changes the state & attrib bits specified by mask
@@ -118,9 +118,9 @@ void pmaRegmapChangePageStateAttribEx(void * pMap, NvU64 frameNumStart, NvU64 pa
  *
  * @return void
  */
-void pmaRegmapChangeStateAttribEx(void *pMap, NvU64 frameNum,
-                                  PMA_PAGESTATUS newState,
-                                  PMA_PAGESTATUS newStateMask);
+void pmaRegmapChangeStateAttrib(void *pMap, NvU64 frameNum,
+                                PMA_PAGESTATUS newState,
+                                PMA_PAGESTATUS newStateMask);
 
 /*!
  * @brief Changes the state & attrib bits specified by mask

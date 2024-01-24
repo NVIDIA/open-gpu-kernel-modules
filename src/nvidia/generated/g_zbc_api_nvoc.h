@@ -42,11 +42,16 @@ extern "C" {
 /*!
  * RM internal class representing GF100_ZBC_CLEAR
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_ZBC_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct ZbcApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -74,7 +79,6 @@ struct ZbcApi {
     NV_STATUS (*__zbcapiInternalControlForward__)(struct ZbcApi *, NvU32, void *, NvU32);
     NV_STATUS (*__zbcapiUnmapFrom__)(struct ZbcApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__zbcapiControl_Epilogue__)(struct ZbcApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__zbcapiControlLookup__)(struct ZbcApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__zbcapiGetInternalObjectHandle__)(struct ZbcApi *);
     NV_STATUS (*__zbcapiControl__)(struct ZbcApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__zbcapiUnmap__)(struct ZbcApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -83,6 +87,7 @@ struct ZbcApi {
     NV_STATUS (*__zbcapiControlFilter__)(struct ZbcApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__zbcapiControlSerialization_Prologue__)(struct ZbcApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__zbcapiCanCopy__)(struct ZbcApi *);
+    NvBool (*__zbcapiIsPartialUnmapSupported__)(struct ZbcApi *);
     void (*__zbcapiPreDestruct__)(struct ZbcApi *);
     NV_STATUS (*__zbcapiIsDuplicate__)(struct ZbcApi *, NvHandle, NvBool *);
     void (*__zbcapiControlSerialization_Epilogue__)(struct ZbcApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -125,6 +130,7 @@ NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define zbcapiCtrlCmdSetZbcClearTable(pZbcApi, pSetZBCClearTableParams) zbcapiCtrlCmdSetZbcClearTable_DISPATCH(pZbcApi, pSetZBCClearTableParams)
 #define zbcapiCtrlCmdSetZbcStencilClear(pZbcApi, pSetZBCClearParams) zbcapiCtrlCmdSetZbcStencilClear_DISPATCH(pZbcApi, pSetZBCClearParams)
 #define zbcapiCtrlCmdGetZbcClearTableSize(pZbcApi, pGetZBCClearTableSizeParams) zbcapiCtrlCmdGetZbcClearTableSize_DISPATCH(pZbcApi, pGetZBCClearTableSizeParams)
+#define zbcapiCtrlCmdGetZbcClearTableSize_HAL(pZbcApi, pGetZBCClearTableSizeParams) zbcapiCtrlCmdGetZbcClearTableSize_DISPATCH(pZbcApi, pGetZBCClearTableSizeParams)
 #define zbcapiCtrlCmdGetZbcClearTableEntry(pZbcApi, pGetZBCClearTableEntryParams) zbcapiCtrlCmdGetZbcClearTableEntry_DISPATCH(pZbcApi, pGetZBCClearTableEntryParams)
 #define zbcapiShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) zbcapiShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define zbcapiCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) zbcapiCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
@@ -137,7 +143,6 @@ NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define zbcapiInternalControlForward(pGpuResource, command, pParams, size) zbcapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define zbcapiUnmapFrom(pResource, pParams) zbcapiUnmapFrom_DISPATCH(pResource, pParams)
 #define zbcapiControl_Epilogue(pResource, pCallContext, pParams) zbcapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define zbcapiControlLookup(pResource, pParams, ppEntry) zbcapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define zbcapiGetInternalObjectHandle(pGpuResource) zbcapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define zbcapiControl(pGpuResource, pCallContext, pParams) zbcapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define zbcapiUnmap(pGpuResource, pCallContext, pCpuMapping) zbcapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -146,6 +151,7 @@ NV_STATUS __nvoc_objCreate_ZbcApi(ZbcApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define zbcapiControlFilter(pResource, pCallContext, pParams) zbcapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define zbcapiControlSerialization_Prologue(pResource, pCallContext, pParams) zbcapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define zbcapiCanCopy(pResource) zbcapiCanCopy_DISPATCH(pResource)
+#define zbcapiIsPartialUnmapSupported(pResource) zbcapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define zbcapiPreDestruct(pResource) zbcapiPreDestruct_DISPATCH(pResource)
 #define zbcapiIsDuplicate(pResource, hMemory, pDuplicate) zbcapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define zbcapiControlSerialization_Epilogue(pResource, pCallContext, pParams) zbcapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -203,7 +209,11 @@ static inline NV_STATUS zbcapiCtrlCmdSetZbcStencilClear_DISPATCH(struct ZbcApi *
     return pZbcApi->__zbcapiCtrlCmdSetZbcStencilClear__(pZbcApi, pSetZBCClearParams);
 }
 
-NV_STATUS zbcapiCtrlCmdGetZbcClearTableSize_IMPL(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS *pGetZBCClearTableSizeParams);
+NV_STATUS zbcapiCtrlCmdGetZbcClearTableSize_VF(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS *pGetZBCClearTableSizeParams);
+
+static inline NV_STATUS zbcapiCtrlCmdGetZbcClearTableSize_5baef9(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS *pGetZBCClearTableSizeParams) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
 
 static inline NV_STATUS zbcapiCtrlCmdGetZbcClearTableSize_DISPATCH(struct ZbcApi *pZbcApi, NV9096_CTRL_GET_ZBC_CLEAR_TABLE_SIZE_PARAMS *pGetZBCClearTableSizeParams) {
     return pZbcApi->__zbcapiCtrlCmdGetZbcClearTableSize__(pZbcApi, pGetZBCClearTableSizeParams);
@@ -259,10 +269,6 @@ static inline void zbcapiControl_Epilogue_DISPATCH(struct ZbcApi *pResource, str
     pResource->__zbcapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS zbcapiControlLookup_DISPATCH(struct ZbcApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__zbcapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle zbcapiGetInternalObjectHandle_DISPATCH(struct ZbcApi *pGpuResource) {
     return pGpuResource->__zbcapiGetInternalObjectHandle__(pGpuResource);
 }
@@ -293,6 +299,10 @@ static inline NV_STATUS zbcapiControlSerialization_Prologue_DISPATCH(struct ZbcA
 
 static inline NvBool zbcapiCanCopy_DISPATCH(struct ZbcApi *pResource) {
     return pResource->__zbcapiCanCopy__(pResource);
+}
+
+static inline NvBool zbcapiIsPartialUnmapSupported_DISPATCH(struct ZbcApi *pResource) {
+    return pResource->__zbcapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void zbcapiPreDestruct_DISPATCH(struct ZbcApi *pResource) {

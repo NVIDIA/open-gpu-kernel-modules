@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 //******************************************************************************
 
 #include "gpu/gpu.h"
+#include "gpu/device/device.h"
 #include "vgpu/rpc.h"
 #include "os/os.h"
 
@@ -94,6 +95,17 @@ OBJRPC *initRpcObject(OBJGPU *pGpu)
 
     rpcRmApiSetup(pGpu);
 
+    if (
+        !IS_GSP_CLIENT(pGpu))
+    {
+        if (NV_OK != rpcConstruct(pGpu, pRpc))
+        {
+            NV_PRINTF(LEVEL_ERROR, "rpcConstruct failed\n");
+            portMemFree(pRpc);
+            return NULL;
+        }
+    }
+
     return pRpc;
 }
 
@@ -109,7 +121,10 @@ NV_STATUS rpcWriteCommonHeader(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 func, NvU32 par
         return NV_ERR_INVALID_STATE;
     }
 
-    portMemSet(pRpc->message_buffer, 0, pRpc->maxRpcSize);
+    if (func == NV_VGPU_MSG_FUNCTION_RM_API_CONTROL)
+        portMemSet(pRpc->message_buffer, 0, pRpc->largeRpcSize);
+    else
+        portMemSet(pRpc->message_buffer, 0, pRpc->maxRpcSize);
 
     vgpu_rpc_message_header_v->header_version     = DRF_DEF(_VGPU, _MSG_HEADER_VERSION, _MAJOR, _TOT) |
                                                     DRF_DEF(_VGPU, _MSG_HEADER_VERSION, _MINOR, _TOT);

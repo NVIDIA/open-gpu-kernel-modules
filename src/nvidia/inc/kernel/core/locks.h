@@ -111,6 +111,9 @@ typedef struct
 // Attempt acquire even if it potentially violates the locking order
 // But do not block in a way that could cause a deadlock
 #define GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE                NVBIT(2)
+// Additionally acquire the GPU alloc lock (implied if locking all GPUs)
+// to prevent the set of lockable GPUs from changing
+#define GPU_LOCK_FLAGS_LOCK_ALLOC                       NVBIT(3)
 
 //
 // RM Lock Related Functions

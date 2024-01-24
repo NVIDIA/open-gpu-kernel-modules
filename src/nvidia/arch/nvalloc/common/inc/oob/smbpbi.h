@@ -238,6 +238,8 @@
                                                                 0x00000013
 #define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_PMGR_PWR_MODULE_LIMIT_INFO_GET     \
                                                                 0x00000014
+#define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_MEMORY_CAPACITY_UTILIZATION_GET    \
+                                                                0x00000015
 #define NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_POLL                   0x000000ff
 
 
@@ -635,7 +637,7 @@
 /* MSGBOX data, capability dword structure */
 
 #define NV_MSGBOX_DATA_REG                                                    31:0
-#define NV_MSGBOX_DATA_CAP_COUNT                                                 5
+#define NV_MSGBOX_DATA_CAP_COUNT                                                 6
 
 #define NV_MSGBOX_DATA_CAP_0                                                     0
 #define NV_MSGBOX_DATA_CAP_0_TEMP_GPU_0                                        0:0
@@ -960,6 +962,11 @@
 #define NV_MSGBOX_DATA_CAP_4_MAX_DRAM_CAPACITY_V1                                        31:31
 #define NV_MSGBOX_DATA_CAP_4_MAX_DRAM_CAPACITY_V1_NOT_AVAILABLE                     0x00000000
 #define NV_MSGBOX_DATA_CAP_4_MAX_DRAM_CAPACITY_V1_AVAILABLE                         0x00000001
+
+#define NV_MSGBOX_DATA_CAP_5                                                                 5
+#define NV_MSGBOX_DATA_CAP_5_MEMORY_CAPACITY_UTILIZATION                                   6:6
+#define NV_MSGBOX_DATA_CAP_5_MEMORY_CAPACITY_UTILIZATION_NOT_AVAILABLE              0x00000000
+#define NV_MSGBOX_DATA_CAP_5_MEMORY_CAPACITY_UTILIZATION_AVAILABLE                  0x00000001
 
 /* ECC counters */
 #define NV_MSGBOX_DATA_ECC_CNT_16BIT_DBE                             31:16
@@ -2034,6 +2041,16 @@ typedef struct
     NvU32 clkMinFreqMHz;
     NvU32 clkMaxFreqMHz;
 } NV_MSGBOX_OOB_CLOCK_LIMIT_CTRL_PARAMS;
+
+/*!
+ * This structure is used to hold parameters for
+ * NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_MEMORY_CAPACITY_UTILIZATION_GET
+ */
+typedef struct
+{
+    NvU32 capacityReservedMiB; //<! Device memory (in MiB) reserved for system use.
+    NvU32 capacityUsedMiB;     //<! Allocated device memory (in MiB).
+} NV_MSGBOX_MEMORY_CAPACITY_UTILIZATION_PARAMS;
 
 /*
  * Parameters for NV_MSGBOX_CMD_ARG1_ASYNC_REQUEST_TEST_MESSAGE_SEND

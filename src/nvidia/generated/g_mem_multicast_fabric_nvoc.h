@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-23 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -56,11 +56,16 @@ extern "C" {
 
 typedef struct mem_multicast_fabric_descriptor MEM_MULTICAST_FABRIC_DESCRIPTOR;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_MEM_MULTICAST_FABRIC_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct MemoryMulticastFabric {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Memory __nvoc_base_Memory;
@@ -82,6 +87,8 @@ struct MemoryMulticastFabric {
     NV_STATUS (*__memorymulticastfabricCtrlDetachMem__)(struct MemoryMulticastFabric *, NV00FD_CTRL_DETACH_MEM_PARAMS *);
     NV_STATUS (*__memorymulticastfabricCtrlAttachGpu__)(struct MemoryMulticastFabric *, NV00FD_CTRL_ATTACH_GPU_PARAMS *);
     NV_STATUS (*__memorymulticastfabricCtrlRegisterEvent__)(struct MemoryMulticastFabric *, NV00FD_CTRL_REGISTER_EVENT_PARAMS *);
+    NV_STATUS (*__memorymulticastfabricCtrlAttachRemoteGpu__)(struct MemoryMulticastFabric *, NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS *);
+    NV_STATUS (*__memorymulticastfabricCtrlSetFailure__)(struct MemoryMulticastFabric *, NV00FD_CTRL_SET_FAILURE_PARAMS *);
     NV_STATUS (*__memorymulticastfabricCheckMemInterUnmap__)(struct MemoryMulticastFabric *, NvBool);
     NvBool (*__memorymulticastfabricShareCallback__)(struct MemoryMulticastFabric *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__memorymulticastfabricMapTo__)(struct MemoryMulticastFabric *, RS_RES_MAP_TO_PARAMS *);
@@ -90,18 +97,20 @@ struct MemoryMulticastFabric {
     NV_STATUS (*__memorymulticastfabricControl_Prologue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memorymulticastfabricUnmapFrom__)(struct MemoryMulticastFabric *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__memorymulticastfabricControl_Epilogue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__memorymulticastfabricControlLookup__)(struct MemoryMulticastFabric *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__memorymulticastfabricUnmap__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__memorymulticastfabricGetMemInterMapParams__)(struct MemoryMulticastFabric *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__memorymulticastfabricGetMemoryMappingDescriptor__)(struct MemoryMulticastFabric *, MEMORY_DESCRIPTOR **);
     NV_STATUS (*__memorymulticastfabricControlFilter__)(struct MemoryMulticastFabric *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memorymulticastfabricControlSerialization_Prologue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__memorymulticastfabricIsPartialUnmapSupported__)(struct MemoryMulticastFabric *);
     NV_STATUS (*__memorymulticastfabricCheckCopyPermissions__)(struct MemoryMulticastFabric *, struct OBJGPU *, struct Device *);
     void (*__memorymulticastfabricPreDestruct__)(struct MemoryMulticastFabric *);
     NV_STATUS (*__memorymulticastfabricIsDuplicate__)(struct MemoryMulticastFabric *, NvHandle, NvBool *);
     void (*__memorymulticastfabricControlSerialization_Epilogue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memorymulticastfabricMap__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__memorymulticastfabricAccessCallback__)(struct MemoryMulticastFabric *, struct RsClient *, void *, RsAccessRight);
+    NvU16 expNodeId;
+    NvBool bImported;
     MEM_MULTICAST_FABRIC_DESCRIPTOR *PRIVATE_FIELD(pMulticastFabricDesc);
 };
 
@@ -145,6 +154,8 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
 #define memorymulticastfabricCtrlDetachMem(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlDetachMem_DISPATCH(pMemoryMulticastFabric, pParams)
 #define memorymulticastfabricCtrlAttachGpu(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlAttachGpu_DISPATCH(pMemoryMulticastFabric, pParams)
 #define memorymulticastfabricCtrlRegisterEvent(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlRegisterEvent_DISPATCH(pMemoryMulticastFabric, pParams)
+#define memorymulticastfabricCtrlAttachRemoteGpu(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlAttachRemoteGpu_DISPATCH(pMemoryMulticastFabric, pParams)
+#define memorymulticastfabricCtrlSetFailure(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlSetFailure_DISPATCH(pMemoryMulticastFabric, pParams)
 #define memorymulticastfabricCheckMemInterUnmap(pMemory, bSubdeviceHandleProvided) memorymulticastfabricCheckMemInterUnmap_DISPATCH(pMemory, bSubdeviceHandleProvided)
 #define memorymulticastfabricShareCallback(pResource, pInvokingClient, pParentRef, pSharePolicy) memorymulticastfabricShareCallback_DISPATCH(pResource, pInvokingClient, pParentRef, pSharePolicy)
 #define memorymulticastfabricMapTo(pResource, pParams) memorymulticastfabricMapTo_DISPATCH(pResource, pParams)
@@ -153,12 +164,12 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
 #define memorymulticastfabricControl_Prologue(pResource, pCallContext, pParams) memorymulticastfabricControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define memorymulticastfabricUnmapFrom(pResource, pParams) memorymulticastfabricUnmapFrom_DISPATCH(pResource, pParams)
 #define memorymulticastfabricControl_Epilogue(pResource, pCallContext, pParams) memorymulticastfabricControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memorymulticastfabricControlLookup(pResource, pParams, ppEntry) memorymulticastfabricControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define memorymulticastfabricUnmap(pMemory, pCallContext, pCpuMapping) memorymulticastfabricUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define memorymulticastfabricGetMemInterMapParams(pMemory, pParams) memorymulticastfabricGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define memorymulticastfabricGetMemoryMappingDescriptor(pMemory, ppMemDesc) memorymulticastfabricGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define memorymulticastfabricControlFilter(pResource, pCallContext, pParams) memorymulticastfabricControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define memorymulticastfabricControlSerialization_Prologue(pResource, pCallContext, pParams) memorymulticastfabricControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define memorymulticastfabricIsPartialUnmapSupported(pResource) memorymulticastfabricIsPartialUnmapSupported_DISPATCH(pResource)
 #define memorymulticastfabricCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) memorymulticastfabricCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define memorymulticastfabricPreDestruct(pResource) memorymulticastfabricPreDestruct_DISPATCH(pResource)
 #define memorymulticastfabricIsDuplicate(pMemory, hMemory, pDuplicate) memorymulticastfabricIsDuplicate_DISPATCH(pMemory, hMemory, pDuplicate)
@@ -237,6 +248,18 @@ static inline NV_STATUS memorymulticastfabricCtrlRegisterEvent_DISPATCH(struct M
     return pMemoryMulticastFabric->__memorymulticastfabricCtrlRegisterEvent__(pMemoryMulticastFabric, pParams);
 }
 
+NV_STATUS memorymulticastfabricCtrlAttachRemoteGpu_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS *pParams);
+
+static inline NV_STATUS memorymulticastfabricCtrlAttachRemoteGpu_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS *pParams) {
+    return pMemoryMulticastFabric->__memorymulticastfabricCtrlAttachRemoteGpu__(pMemoryMulticastFabric, pParams);
+}
+
+NV_STATUS memorymulticastfabricCtrlSetFailure_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_SET_FAILURE_PARAMS *pParams);
+
+static inline NV_STATUS memorymulticastfabricCtrlSetFailure_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, NV00FD_CTRL_SET_FAILURE_PARAMS *pParams) {
+    return pMemoryMulticastFabric->__memorymulticastfabricCtrlSetFailure__(pMemoryMulticastFabric, pParams);
+}
+
 static inline NV_STATUS memorymulticastfabricCheckMemInterUnmap_DISPATCH(struct MemoryMulticastFabric *pMemory, NvBool bSubdeviceHandleProvided) {
     return pMemory->__memorymulticastfabricCheckMemInterUnmap__(pMemory, bSubdeviceHandleProvided);
 }
@@ -269,10 +292,6 @@ static inline void memorymulticastfabricControl_Epilogue_DISPATCH(struct MemoryM
     pResource->__memorymulticastfabricControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS memorymulticastfabricControlLookup_DISPATCH(struct MemoryMulticastFabric *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__memorymulticastfabricControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS memorymulticastfabricUnmap_DISPATCH(struct MemoryMulticastFabric *pMemory, CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return pMemory->__memorymulticastfabricUnmap__(pMemory, pCallContext, pCpuMapping);
 }
@@ -291,6 +310,10 @@ static inline NV_STATUS memorymulticastfabricControlFilter_DISPATCH(struct Memor
 
 static inline NV_STATUS memorymulticastfabricControlSerialization_Prologue_DISPATCH(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__memorymulticastfabricControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool memorymulticastfabricIsPartialUnmapSupported_DISPATCH(struct MemoryMulticastFabric *pResource) {
+    return pResource->__memorymulticastfabricIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS memorymulticastfabricCheckCopyPermissions_DISPATCH(struct MemoryMulticastFabric *pMemory, struct OBJGPU *pDstGpu, struct Device *pDstDevice) {
@@ -323,10 +346,20 @@ NV_STATUS memorymulticastfabricConstruct_IMPL(struct MemoryMulticastFabric *arg_
 void memorymulticastfabricDestruct_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
 
 #define __nvoc_memorymulticastfabricDestruct(pMemoryMulticastFabric) memorymulticastfabricDestruct_IMPL(pMemoryMulticastFabric)
+void memorymulticastfabricRemoveFromCache_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric);
+
+#ifdef __nvoc_mem_multicast_fabric_h_disabled
+static inline void memorymulticastfabricRemoveFromCache(struct MemoryMulticastFabric *pMemoryMulticastFabric) {
+    NV_ASSERT_FAILED_PRECOMP("MemoryMulticastFabric was disabled!");
+}
+#else //__nvoc_mem_multicast_fabric_h_disabled
+#define memorymulticastfabricRemoveFromCache(pMemoryMulticastFabric) memorymulticastfabricRemoveFromCache_IMPL(pMemoryMulticastFabric)
+#endif //__nvoc_mem_multicast_fabric_h_disabled
+
 #undef PRIVATE_FIELD
 
 
-NV_STATUS memorymulticastfabricTeamSetupResponseCallback(NvU32 gpuInstance,
+NV_STATUS memorymulticastfabricTeamSetupResponseCallback(NvU32 gpuInstance, NvU64 *pNotifyGfIdMask,
                                         NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pMessage);
 
 #endif // _MEMORYMULTICASTFABRIC_H_

@@ -463,7 +463,7 @@ pmaRegmapDestroy(void *pMap)
 //      STATE_MASK, ATTRIB_MASK
 //
 void
-pmaRegmapChangeStateAttribEx
+pmaRegmapChangeStateAttrib
 (
     void          *pMap,
     NvU64          frameNum,
@@ -475,7 +475,7 @@ pmaRegmapChangeStateAttribEx
 }
 
 void
-pmaRegmapChangePageStateAttribEx
+pmaRegmapChangePageStateAttrib
 (
     void * pMap,
     NvU64 startFrame,

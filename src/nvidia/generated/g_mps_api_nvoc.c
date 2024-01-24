@@ -116,10 +116,6 @@ static void __nvoc_thunk_RsResource_mpsApiAddAdditionalDependants(struct RsClien
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pReference);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_mpsApiUnmapFrom(struct MpsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pParams);
-}
-
 static NV_STATUS __nvoc_thunk_RmResource_mpsApiControlSerialization_Prologue(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
 }
@@ -134,6 +130,10 @@ static NvBool __nvoc_thunk_RsResource_mpsApiCanCopy(struct MpsApi *pResource) {
 
 static NV_STATUS __nvoc_thunk_RsResource_mpsApiUnmap(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return resUnmap((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pCallContext, pCpuMapping);
+}
+
+static NvBool __nvoc_thunk_RsResource_mpsApiIsPartialUnmapSupported(struct MpsApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_mpsApiPreDestruct(struct MpsApi *pResource) {
@@ -156,8 +156,8 @@ static void __nvoc_thunk_RmResource_mpsApiControl_Epilogue(struct MpsApi *pResou
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_mpsApiControlLookup(struct MpsApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pParams, ppEntry);
+static NV_STATUS __nvoc_thunk_RsResource_mpsApiUnmapFrom(struct MpsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MpsApi_RsResource.offset), pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_mpsApiMap(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -223,8 +223,6 @@ static void __nvoc_init_funcTable_MpsApi_1(MpsApi *pThis) {
 
     pThis->__mpsApiAddAdditionalDependants__ = &__nvoc_thunk_RsResource_mpsApiAddAdditionalDependants;
 
-    pThis->__mpsApiUnmapFrom__ = &__nvoc_thunk_RsResource_mpsApiUnmapFrom;
-
     pThis->__mpsApiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_mpsApiControlSerialization_Prologue;
 
     pThis->__mpsApiControl_Prologue__ = &__nvoc_thunk_RmResource_mpsApiControl_Prologue;
@@ -232,6 +230,8 @@ static void __nvoc_init_funcTable_MpsApi_1(MpsApi *pThis) {
     pThis->__mpsApiCanCopy__ = &__nvoc_thunk_RsResource_mpsApiCanCopy;
 
     pThis->__mpsApiUnmap__ = &__nvoc_thunk_RsResource_mpsApiUnmap;
+
+    pThis->__mpsApiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_mpsApiIsPartialUnmapSupported;
 
     pThis->__mpsApiPreDestruct__ = &__nvoc_thunk_RsResource_mpsApiPreDestruct;
 
@@ -243,7 +243,7 @@ static void __nvoc_init_funcTable_MpsApi_1(MpsApi *pThis) {
 
     pThis->__mpsApiControl_Epilogue__ = &__nvoc_thunk_RmResource_mpsApiControl_Epilogue;
 
-    pThis->__mpsApiControlLookup__ = &__nvoc_thunk_RsResource_mpsApiControlLookup;
+    pThis->__mpsApiUnmapFrom__ = &__nvoc_thunk_RsResource_mpsApiUnmapFrom;
 
     pThis->__mpsApiMap__ = &__nvoc_thunk_RsResource_mpsApiMap;
 
@@ -265,21 +265,26 @@ void __nvoc_init_MpsApi(MpsApi *pThis) {
     __nvoc_init_funcTable_MpsApi(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_MpsApi(MpsApi **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_MpsApi(MpsApi **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     MpsApi *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(MpsApi), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(MpsApi));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_MpsApi);
 
     pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -294,16 +299,25 @@ NV_STATUS __nvoc_objCreate_MpsApi(MpsApi **ppThis, Dynamic *pParent, NvU32 creat
     status = __nvoc_ctor_MpsApi(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_MpsApi_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_MpsApi_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(MpsApi));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

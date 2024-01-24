@@ -21,8 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef _FSP_NVDM_FORMAT_H_
-#define _FSP_NVDM_FORMAT_H_
+#ifndef FSP_NVDM_FORMAT_H
+#define FSP_NVDM_FORMAT_H
 
 #include "fsp/fsp_mctp_format.h"
 #include "fsp/fsp_emem_channels.h"
@@ -35,12 +35,15 @@
 
 #define NVDM_TYPE_HULK                  0x11
 #define NVDM_TYPE_FIRMWARE_UPDATE       0x12
+#define NVDM_TYPE_PRC                   0x13
 #define NVDM_TYPE_COT                   0x14
 #define NVDM_TYPE_FSP_RESPONSE          0x15
+#define NVDM_TYPE_CAPS_QUERY            0x16
 #define NVDM_TYPE_INFOROM               0x17
 #define NVDM_TYPE_SMBPBI                0x18
 #define NVDM_TYPE_ROMREAD               0x1A
 #define NVDM_TYPE_UEFI_RM               0x1C
 #define NVDM_TYPE_UEFI_XTL_DEBUG_INTR   0x1D
+#define NVDM_TYPE_TNVL                  0x1F
 
-#endif // _FSP_NVDM_FORMAT_H_
+#endif // FSP_NVDM_FORMAT_H

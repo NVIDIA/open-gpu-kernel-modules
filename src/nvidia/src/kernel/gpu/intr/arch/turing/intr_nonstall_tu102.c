@@ -48,15 +48,9 @@ intrGetNonStallEnable_TU102
     NvU64 nonStallMask;
     NvU32 maskLo;
     NvU32 maskHi;
-    NvU32 isNonStallEnabled = 0;
 
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
-        if (vgpuShmIsNonStallEnabled(pGpu, &isNonStallEnabled) == NV_OK)
-        {
-            if (isNonStallEnabled)
-                return INTERRUPT_TYPE_MULTI;
-        }
         return INTERRUPT_TYPE_DISABLED;
     }
 
@@ -104,6 +98,11 @@ intrEnableTopNonstall_TU102
 {
     NvU64 nonStallMask;
 
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        return;
+    }
+
     nonStallMask = intrGetIntrTopNonStallMask_HAL(pGpu, pIntr);
 
     if (NvU64_LO32(nonStallMask) != 0)
@@ -133,6 +132,11 @@ intrDisableTopNonstall_TU102
 {
     NvU64 nonStallMask;
 
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        return;
+    }
+
     nonStallMask = intrGetIntrTopNonStallMask_HAL(pGpu, pIntr);
 
     if (NvU64_LO32(nonStallMask) != 0)
@@ -161,6 +165,11 @@ intrRestoreNonStall_TU102
 )
 {
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_ALTERNATE_TREE_ENABLED))
+    {
+        return;
+    }
+
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
         return;
     }
@@ -223,7 +232,7 @@ intrGetPendingNonStall_TU102
 
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
-        return vgpuIsNonStallPending(pGpu, pEngines);
+        return NV_ERR_NOT_SUPPORTED;
     }
 
     NV_ASSERT_OK_OR_RETURN(intrGetInterruptTable_HAL(pGpu, pIntr, &pIntrTable));
@@ -269,6 +278,14 @@ intrGetPendingNonStall_TU102
                 if (intr & NVBIT(NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(intrVector)))
                 {
                     bitVectorSet(pEngines, pEntry->mcEngine);
+                    //
+                    // Don't break here. We can have multiple non stall
+                    // interrupts on the same vector in case of MIG
+                    // partitioning.
+                    //
+                    // Although most of them will be GFID filtered to VFs, the
+                    // PF also uses engines assigned to a partition.
+                    //
                 }
             }
         }
@@ -420,9 +437,8 @@ intrServiceNonStall_TU102
 
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
-        return vgpuServiceNonStall(pGpu, pEngines);
+        return NV_ERR_NOT_SUPPORTED;
     }
-
     FOR_EACH_INDEX_IN_MASK(64, i, intrGetIntrTopNonStallMask_HAL(pGpu, pIntr))
     {
         NvU32 j = NV_CTRL_INTR_SUBTREE_TO_TOP_IDX(i);

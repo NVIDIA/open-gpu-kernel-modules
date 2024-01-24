@@ -399,3 +399,30 @@ kheadGetLoadVCounter_v03_00
 {
     return GPU_REG_RD32(pGpu, NV_PDISP_POSTCOMP_HEAD_LOADV_COUNTER(pKernelHead->PublicId));
 }
+
+NvU32
+kdispGetPBTargetAperture_v03_00
+(
+    OBJGPU        *pGpu,
+    KernelDisplay *pKernelDisplay,
+    NvU32         memAddrSpace,
+    NvU32         cacheSnoop
+)
+{
+    NvU32 pbTargetAperture = PHYS_NVM;
+
+    if ((memAddrSpace == ADDR_SYSMEM) && (cacheSnoop != 0U))
+    {
+        pbTargetAperture = PHYS_PCI_COHERENT;
+    }
+    else if (memAddrSpace == ADDR_SYSMEM)
+    {
+        pbTargetAperture = PHYS_PCI;
+    }
+    else
+    {
+        pbTargetAperture = PHYS_NVM;
+    }
+
+    return pbTargetAperture;
+}

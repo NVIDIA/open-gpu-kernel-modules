@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,7 @@
 //
 
 NvU32
-intrReadRegTopEnSet_GA102
+intrReadRegTopEnSet_CPU_GA102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -54,7 +54,7 @@ intrReadRegTopEnSet_GA102
 }
 
 void
-intrWriteRegTopEnSet_GA102
+intrWriteRegTopEnSet_CPU_GA102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -76,7 +76,7 @@ intrWriteRegTopEnSet_GA102
 }
 
 void
-intrWriteRegTopEnClear_GA102
+intrWriteRegTopEnClear_CPU_GA102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,

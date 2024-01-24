@@ -23,12 +23,14 @@
 
 #include "core/core.h"
 #include "os/os.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/fbsr.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "published/maxwell/gm107/dev_ram.h"
 #include "core/thread_state.h"
+#include "nvrm_registry.h"
 
 //
 // Implementation notes:
@@ -341,14 +343,38 @@ NV_STATUS
 fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
 {
     NV_STATUS status = NV_OK;
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     pFbsr->op = op;
     pFbsr->bOperationFailed = NV_FALSE;
     if (op != FBSR_OP_SIZE_BUF && op != FBSR_OP_DESTROY)
     {
-        if (IS_GSP_CLIENT(pGpu))
+        if (IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu))
         {
             pFbsr->pCe = NULL;
+        }
+
+        //
+        // On guest, force re-initialize CeUtils with inst-in-sys.
+        // See bug 4414361 for details.
+        //
+        if (IS_VIRTUAL(pGpu))
+        {
+            NvU32 instLocOverrides = pGpu->instLocOverrides;
+            NvU32 instLocOverrides4 = pGpu->instLocOverrides4;
+
+            if (pMemoryManager->pCeUtils != NULL)
+            {
+                memmgrDestroyCeUtils(pMemoryManager, NV_FALSE);
+            }
+
+            pGpu->instLocOverrides = FLD_SET_DRF(_REG_STR, _RM_INST_LOC, _USERD, _NCOH, pGpu->instLocOverrides);
+            pGpu->instLocOverrides4 = FLD_SET_DRF(_REG_STR_RM, _INST_LOC_4, _CHANNEL_PUSHBUFFER, _NCOH, pGpu->instLocOverrides4);
+
+            NV_ASSERT_OK_OR_RETURN(memmgrInitCeUtils(pMemoryManager, NV_FALSE));
+
+            pGpu->instLocOverrides = instLocOverrides;
+            pGpu->instLocOverrides4 = instLocOverrides4;
         }
 
         NV_PRINTF(LEVEL_INFO, "%s %lld bytes of data\n",
@@ -454,7 +480,7 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
                         break;
                     }
 
-                    if(bIommuEnabled)
+                    if (bIommuEnabled)
                     {
                         status = osSrPinSysmem(pGpu->pOsGpuInfo,
                                                     pFbsr->length,
@@ -545,7 +571,7 @@ fbsrBegin_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, FBSR_OP_TYPE op)
         }
 
         // Initialize FBSR on GSP
-        if (IS_GSP_CLIENT(pGpu) && (pFbsr->pSysMemDesc != NULL))
+        if ((status == NV_OK) && IS_GSP_CLIENT(pGpu) && (pFbsr->pSysMemDesc != NULL))
         {
             NV_ASSERT_OK_OR_RETURN(_fbsrInitGsp(pGpu, pFbsr));
         }
@@ -659,9 +685,15 @@ fbsrEnd_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr)
 {
     NvBool bIommuEnabled = pGpu->getProperty(pGpu, PDB_PROP_GPU_ENABLE_IOMMU_SUPPORT);
     NV_STATUS status = NV_OK;
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     if (pFbsr->op != FBSR_OP_SIZE_BUF && pFbsr->op != FBSR_OP_DESTROY)
     {
+
+        if (IS_VIRTUAL(pGpu) && pMemoryManager->pCeUtils != NULL)
+        {
+            memmgrDestroyCeUtils(pMemoryManager, NV_FALSE);
+        }
     }
 
     if (pFbsr->op == FBSR_OP_RESTORE || pFbsr->bOperationFailed || pFbsr->op == FBSR_OP_DESTROY)
@@ -1209,4 +1241,3 @@ fbsrCopyMemoryMemDesc_GM107(OBJGPU *pGpu, OBJFBSR *pFbsr, MEMORY_DESCRIPTOR *pVi
 
 #ifdef DEBUG
 #endif
-

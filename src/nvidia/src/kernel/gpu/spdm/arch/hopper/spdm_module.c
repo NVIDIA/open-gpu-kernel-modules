@@ -32,6 +32,8 @@
 #include "rmapi/client_resource.h"
 #include "gpu/conf_compute/ccsl.h"
 #include "gpu/conf_compute/conf_compute.h"
+#include "spdm/rmspdmvendordef.h"
+#include "objtmr.h"
 /* ------------------------- Macros and Defines ----------------------------- */
 
 /* ------------------------- Static Functions ------------------------------ */

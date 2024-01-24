@@ -126,6 +126,7 @@ struct nv_drm_device {
     NvU64 modifiers[6 /* block linear */ + 1 /* linear */ + 1 /* terminator */];
 #endif
 
+    struct delayed_work hotplug_event_work;
     atomic_t enable_event_handling;
 
     /**

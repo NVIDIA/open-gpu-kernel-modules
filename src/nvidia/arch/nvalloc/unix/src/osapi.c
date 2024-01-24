@@ -737,7 +737,10 @@ static NV_STATUS RmAccessRegistry(
                     RM_LOCK_MODULES_GPU, 
                     &gpuMask); 
             if (RmStatus != NV_OK)
-                return RmStatus;
+            {
+                gpuMask = 0;
+                goto done;
+            }
 
             GPU_RES_SET_THREAD_BC_STATE(pSubdevice);
             pGpu = GPU_RES_GET_GPU(pSubdevice);
@@ -750,7 +753,10 @@ static NV_STATUS RmAccessRegistry(
                     RM_LOCK_MODULES_GPU, 
                     &gpuMask); 
             if (RmStatus != NV_OK)
-                return RmStatus;
+            {
+                gpuMask = 0;
+                goto done;
+            }
 
             GPU_RES_SET_THREAD_BC_STATE(pDevice);
             pGpu = GPU_RES_GET_GPU(pDevice);
@@ -1442,6 +1448,117 @@ RmDmabufPutClientAndDevice(
     NV_ASSERT_OK(kmigmgrDecRefCount(pKernelMIGGpuInstance->pShare));
 }
 
+static NV_STATUS RmP2PDmaMapPagesCoherent(
+    nv_dma_device_t *peer,
+    NvU64            pageSize,
+    NvU32            pageCount,
+    NvU64           *pDmaAddresses,
+    void           **ppPriv
+)
+{
+    NV_STATUS status;
+    NvU64 *pOsDmaAddresses = NULL;
+    NvU32 osPagesPerP2PPage, osPageCount, count;
+    NvBool bDmaMapped = NV_FALSE;
+    NvU32 i, j, index;
+
+    NV_ASSERT_OR_RETURN((pageSize >= os_page_size), NV_ERR_INVALID_ARGUMENT);
+
+    if (pageSize == os_page_size)
+    {
+        return nv_dma_map_alloc(peer, pageCount, pDmaAddresses, NV_FALSE, ppPriv);
+    }
+
+    //
+    // If P2P page_size returned from nvidia_p2p_get_pages is bigger than
+    // OS page size, the page array need to be inflated to correctly do the DMA mapping.
+    // For example, if page_size = 64K and OS page size = 4K,
+    // there are 16 OS pages to this 64K P2P page.
+    //
+
+    osPagesPerP2PPage = pageSize / os_page_size;
+    osPageCount = osPagesPerP2PPage * pageCount;
+
+    status = os_alloc_mem((void **)&pOsDmaAddresses,
+                          (osPageCount * sizeof(NvU64)));
+    if (status != NV_OK)
+    {
+        goto failed;
+    }
+
+    index = 0;
+    for (i = 0; i < pageCount; i++)
+    {
+        pOsDmaAddresses[index] = pDmaAddresses[i];
+        index++;
+
+        for (j = 1; j < osPagesPerP2PPage; j++)
+        {
+            pOsDmaAddresses[index] = pOsDmaAddresses[index - 1] + os_page_size;
+            index++;
+        }
+    }
+
+    status = nv_dma_map_alloc(peer, osPageCount, pOsDmaAddresses, NV_FALSE, ppPriv);
+    if (status != NV_OK)
+    {
+        goto failed;
+    }
+    bDmaMapped = NV_TRUE;
+
+    //
+    // The driver breaks down the size into submaps and dma-maps those individually.
+    // This may result in non-contiguous IOVA segments allocated to each submap.
+    // We check for OS page contiguity within the bigger pageSize since we need to
+    // return IOVA chunks at pageSize granularity.
+    //
+    count = 0;
+    for (i = 1; i < osPageCount; i++)
+    {
+        count++;
+        if (count == osPagesPerP2PPage)
+        {
+            count = 0;
+            continue;
+        }
+
+        if (pOsDmaAddresses[i] != (pOsDmaAddresses[i - 1] + os_page_size))
+        {
+            status = NV_ERR_INVALID_STATE;
+            goto failed;
+        }
+    }
+
+    //
+    // Fill pDmaAddresses at pageSize granularity
+    // from expanded pOsDmaAddresses.
+    //
+    index = 0;
+    for (i = 0; i < pageCount; i++)
+    {
+        pDmaAddresses[i] = pOsDmaAddresses[index];
+        index += osPagesPerP2PPage;
+    }
+
+    os_free_mem(pOsDmaAddresses);
+
+    return NV_OK;
+
+failed:
+    if (bDmaMapped)
+    {
+        NV_ASSERT_OK(nv_dma_unmap_alloc(peer, osPageCount,
+                                        pOsDmaAddresses, ppPriv));
+    }
+
+    if (pOsDmaAddresses != NULL)
+    {
+        os_free_mem(pOsDmaAddresses);
+    }
+
+    return status;
+}
+
 static void
 RmHandleNvpcfEvents(
     nv_state_t *pNv
@@ -1913,13 +2030,13 @@ static NV_STATUS RmSetUserMapAccessRange(
     return status;
 }
 
-static NV_STATUS RmGetAllocPrivate(NvU32, NvU32, NvU64, NvU64, NvU32 *, void **,
+static NV_STATUS RmGetAllocPrivate(RmClient *, NvU32, NvU64, NvU64, NvU32 *, void **,
                                    NvU64 *);
 static NV_STATUS RmValidateMmapRequest(nv_state_t *, NvU64, NvU64, NvU32 *);
 
 static NV_STATUS RmGetMmapPteArray(
     KernelMemorySystem         *pKernelMemorySystem,
-    NvHandle                    hClient,
+    RsClient                   *pClient,
     NvHandle                    hMemory,
     nv_usermap_access_params_t *nvuap
 )
@@ -1942,12 +2059,14 @@ static NV_STATUS RmGetMmapPteArray(
     // If we're mapping a memory handle, we can get the data from the
     // descriptor (required if the allocation being mapped is discontiguous).
     //
-    if (serverutilGetResourceRefWithType(hClient, hMemory, classId(Memory),
-                                        &pResourceRef) == NV_OK)
+    if (clientGetResourceRef(pClient, hMemory, &pResourceRef) == NV_OK)
     {
         pMemory = dynamicCast(pResourceRef->pResource, Memory);
-        pMemDesc = pMemory->pMemDesc;
-        nvuap->contig = memdescGetContiguity(pMemDesc, AT_CPU);
+        if (pMemory != NULL)
+        {
+            pMemDesc = pMemory->pMemDesc;
+            nvuap->contig = memdescGetContiguity(pMemDesc, AT_CPU);
+        }
     }
 
     //
@@ -2018,7 +2137,7 @@ static NV_STATUS RmGetMmapPteArray(
 
 /* Must be called with the API lock and the GPU locks */
 static NV_STATUS RmCreateMmapContextLocked(
-    NvHandle    hClient,
+    RmClient   *pRmClient,
     NvHandle    hDevice,
     NvHandle    hMemory,
     NvP64       address,
@@ -2031,6 +2150,7 @@ static NV_STATUS RmCreateMmapContextLocked(
     NV_STATUS status = NV_OK;
     void *pAllocPriv = NULL;
     OBJGPU *pGpu = NULL;
+    RsClient *pClient = staticCast(pRmClient, RsClient);
     KernelMemorySystem *pKernelMemorySystem = NULL;
     NvBool bCoherentAtsCpuOffset = NV_FALSE;
     nv_state_t *pNv = NULL;
@@ -2038,18 +2158,13 @@ static NV_STATUS RmCreateMmapContextLocked(
     NvU32 prot = 0;
     NvU64 pageIndex = 0;
     nv_usermap_access_params_t *nvuap = NULL;
-    NvBool bClientMap = (hClient == hDevice);
+    NvBool bClientMap = (pClient->hClient == hDevice);
 
     if (!bClientMap)
     {
-        if (CliSetGpuContext(hClient, hDevice, &pGpu, NULL) != NV_OK)
+        if (CliSetGpuContext(pClient->hClient, hDevice, &pGpu, NULL) != NV_OK)
         {
-            RsClient *pClient;
             Subdevice *pSubdevice;
-
-            status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-            if (status != NV_OK)
-                return status;
 
             status = subdeviceGetByHandle(pClient, hDevice, &pSubdevice);
             if (status != NV_OK)
@@ -2104,7 +2219,7 @@ static NV_STATUS RmCreateMmapContextLocked(
         // Validate the mapping request by looking up the underlying sysmem
         // allocation.
         //
-        status = RmGetAllocPrivate(hClient, hMemory, addr, size, &prot, &pAllocPriv,
+        status = RmGetAllocPrivate(pRmClient, hMemory, addr, size, &prot, &pAllocPriv,
                                    &pageIndex);
 
         if (status != NV_OK)
@@ -2119,7 +2234,7 @@ static NV_STATUS RmCreateMmapContextLocked(
         //
         if (bCoherentAtsCpuOffset)
         {
-            status = RmGetMmapPteArray(pKernelMemorySystem, hClient, hMemory, nvuap);
+            status = RmGetMmapPteArray(pKernelMemorySystem, pClient, hMemory, nvuap);
             if (status != NV_OK)
             {
                 goto done;
@@ -2170,25 +2285,30 @@ NV_STATUS rm_create_mmap_context(
     // LOCK: acquire API lock
     if ((rmStatus = rmapiLockAcquire(RMAPI_LOCK_FLAGS_READ, RM_LOCK_MODULES_OSAPI)) == NV_OK)
     {
-        RmClient *pClient;
+        RmClient *pRmClient;
 
-        if (NV_OK != serverutilAcquireClient(hClient, LOCK_ACCESS_READ, &pClient))
+        if (NV_OK != serverutilAcquireClient(hClient, LOCK_ACCESS_READ, &pRmClient))
+        {
+            // UNLOCK: release API lock
+            rmapiLockRelease();
             return NV_ERR_INVALID_CLIENT;
+        }
 
-        if (pClient->ProcID != osGetCurrentProcess())
+        if (pRmClient->ProcID != osGetCurrentProcess())
         {
             rmStatus = NV_ERR_INVALID_CLIENT;
         }
         // LOCK: acquire GPUs lock
         else if ((rmStatus = rmGpuLocksAcquire(GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_OSAPI)) == NV_OK)
         {
-            rmStatus = RmCreateMmapContextLocked(hClient, hDevice, hMemory,
-                                                 address, size, offset, cachingType, fd);
+            rmStatus = RmCreateMmapContextLocked(pRmClient, hDevice,
+                                                 hMemory, address, size, offset,
+                                                 cachingType, fd);
             // UNLOCK: release GPUs lock
             rmGpuLocksRelease(GPUS_LOCK_FLAGS_NONE, NULL);
         }
 
-        serverutilReleaseClient(LOCK_ACCESS_READ, pClient);
+        serverutilReleaseClient(LOCK_ACCESS_READ, pRmClient);
 
         // UNLOCK: release API lock
         rmapiLockRelease();
@@ -2198,7 +2318,7 @@ NV_STATUS rm_create_mmap_context(
 }
 
 static NV_STATUS RmGetAllocPrivate(
-    NvU32       hClient,
+    RmClient   *pRmClient,
     NvU32       hMemory,
     NvU64       offset,
     NvU64       length,
@@ -2207,7 +2327,6 @@ static NV_STATUS RmGetAllocPrivate(
     NvU64      *pPageIndex
 )
 {
-    RmClient *pClient;
     NV_STATUS rmStatus;
     PMEMORY_DESCRIPTOR pMemDesc;
     NvU32 pageOffset;
@@ -2226,10 +2345,8 @@ static NV_STATUS RmGetAllocPrivate(
 
     NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
 
-    if (NV_OK != serverutilAcquireClient(hClient, LOCK_ACCESS_READ, &pClient))
-        return NV_ERR_INVALID_CLIENT;
-
-    rmStatus = clientGetResourceRef(staticCast(pClient, RsClient), hMemory, &pResourceRef);
+    rmStatus = clientGetResourceRef(staticCast(pRmClient, RsClient),
+        hMemory, &pResourceRef);
     if (rmStatus != NV_OK)
         goto done;
 
@@ -2301,8 +2418,6 @@ static NV_STATUS RmGetAllocPrivate(
     *ppPrivate = pMemData;
 
 done:
-    serverutilReleaseClient(LOCK_ACCESS_READ, pClient);
-
     return rmStatus;
 }
 
@@ -2354,6 +2469,26 @@ NV_STATUS rm_get_adapter_status(
         // UNLOCK: release API lock
         rmapiLockRelease();
     }
+
+    return rmStatus;
+}
+
+NV_STATUS NV_API_CALL rm_get_adapter_status_external(
+    nvidia_stack_t *sp,
+    nv_state_t     *pNv
+)
+{
+    NV_STATUS rmStatus;
+    void *fp;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+
+    if (rm_get_adapter_status(pNv, &rmStatus) != NV_OK)
+    {
+        rmStatus = NV_ERR_OPERATING_SYSTEM;
+    }
+
+    NV_EXIT_RM_RUNTIME(sp,fp);
 
     return rmStatus;
 }
@@ -3388,27 +3523,55 @@ NV_STATUS NV_API_CALL rm_is_supported_device(
                                                              NULL);
         if (!bIsFirmwareCapable)
         {
-            nv_printf(NV_DBG_ERRORS,
-               "NVRM: The NVIDIA GPU %04x:%02x:%02x.%x (PCI ID: %04x:%04x)\n"
-               "NVRM: installed in this system is not supported by open\n"
-               "NVRM: nvidia.ko because it does not include the required GPU\n"
-               "NVRM: System Processor (GSP).\n"
-               "NVRM: Please see the 'Open Linux Kernel Modules' and 'GSP\n"
-               "NVRM: Firmware' sections in the driver README, available on\n"
-               "NVRM: the Linux graphics driver download page at\n"
-               "NVRM: www.nvidia.com.\n",
-               pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
-               pNv->pci_info.function, pNv->pci_info.vendor_id,
-               pNv->pci_info.device_id, NV_VERSION_STRING);
+            if (hypervisorIsVgxHyper())
+            {
+                nv_printf(NV_DBG_ERRORS,
+                        "NVRM: The NVIDIA GPU %04x:%02x:%02x.%x (PCI ID: %04x:%04x)\n"
+                        "NVRM: installed in this vGPU host system is not supported by\n"
+                        "NVRM: open nvidia.ko.\n"
+                        "NVRM: Please see the 'Open Linux Kernel Modules' and 'GSP\n"
+                        "NVRM: Firmware' sections in the NVIDIA Virtual GPU (vGPU)\n"
+                        "NVRM: Software documentation, available at docs.nvidia.com.\n",
+                        pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
+                        pNv->pci_info.function, pNv->pci_info.vendor_id,
+                        pNv->pci_info.device_id, NV_VERSION_STRING);
+            }
+            else
+            {
+                nv_printf(NV_DBG_ERRORS,
+                        "NVRM: The NVIDIA GPU %04x:%02x:%02x.%x (PCI ID: %04x:%04x)\n"
+                        "NVRM: installed in this system is not supported by open\n"
+                        "NVRM: nvidia.ko because it does not include the required GPU\n"
+                        "NVRM: System Processor (GSP).\n"
+                        "NVRM: Please see the 'Open Linux Kernel Modules' and 'GSP\n"
+                        "NVRM: Firmware' sections in the driver README, available on\n"
+                        "NVRM: the Linux graphics driver download page at\n"
+                        "NVRM: www.nvidia.com.\n",
+                        pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
+                        pNv->pci_info.function, pNv->pci_info.vendor_id,
+                        pNv->pci_info.device_id, NV_VERSION_STRING);
+            }
             goto threadfree;
         }
         goto print_unsupported;
     }
 
-    rmStatus = rm_is_vgpu_supported_device(pNv, pmc_boot_1);
+    rmStatus = rm_is_vgpu_supported_device(pNv, pmc_boot_1, pmc_boot_42);
 
     if (rmStatus != NV_OK)
-        goto print_unsupported;
+    {
+        nv_printf(NV_DBG_ERRORS,
+                "NVRM: The NVIDIA vGPU %04x:%02x:%02x.%x (PCI ID: %04x:%04x)\n"
+                "NVRM: installed in this system is not supported by open\n"
+                "NVRM: nvidia.ko.\n"
+                "NVRM: Please see the 'Open Linux Kernel Modules' and 'GSP\n"
+                "NVRM: Firmware' sections in the NVIDIA Virtual GPU (vGPU)\n"
+                "NVRM: Software documentation, available at docs.nvidia.com.\n",
+                pNv->pci_info.domain, pNv->pci_info.bus, pNv->pci_info.slot,
+                pNv->pci_info.function, pNv->pci_info.vendor_id,
+                pNv->pci_info.device_id, NV_VERSION_STRING);
+        goto threadfree;
+    }
     goto threadfree;
 
 print_unsupported:
@@ -3855,7 +4018,11 @@ void RmI2cAddGpuPorts(nv_state_t * pNv)
     RM_API    *pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
     NvU32      displayMask;
     NV_STATUS  status;
+    OBJGPU    *pGpu = NV_GET_NV_PRIV_PGPU(pNv);
     NV0073_CTRL_SYSTEM_GET_SUPPORTED_PARAMS systemGetSupportedParams = { 0 };
+
+    if (IS_VIRTUAL(pGpu))
+        return;
 
     // Make displayId as Invalid.
     for (x = 0; x < MAX_I2C_ADAPTERS; x++)
@@ -4233,10 +4400,8 @@ NV_STATUS NV_API_CALL rm_p2p_dma_map_pages(
 
             if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
             {
-                NV_ASSERT(pageSize == os_page_size);
-
-                rmStatus = nv_dma_map_alloc(peer, pageCount, pDmaAddresses,
-                                            NV_FALSE, ppPriv);
+                rmStatus = RmP2PDmaMapPagesCoherent(peer, pageSize, pageCount,
+                                                    pDmaAddresses, ppPriv);
             }
             else
             {
@@ -4611,6 +4776,47 @@ static void rm_set_firmware_logs(
     NV_EXIT_RM_RUNTIME(sp,fp);
 }
 
+static NvBool rm_get_is_gsp_capable_vgpu(
+    nvidia_stack_t *sp,
+    nv_state_t *nv
+)
+{
+    void *fp;
+    THREAD_STATE_NODE threadState;
+    NvBool isVgpu = NV_FALSE;
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    if ((pHypervisor != NULL) && pHypervisor->bIsHVMGuest)
+    {
+        GPUHWREG *reg_mapping;
+        reg_mapping = osMapKernelSpace(nv->regs->cpu_address,
+                                       os_page_size,
+                                       NV_MEMORY_UNCACHED,
+                                       NV_PROTECT_READABLE);
+
+        if (reg_mapping != NULL)
+        {
+            NvU32 pmc_boot_1 = NV_PRIV_REG_RD32(reg_mapping, NV_PMC_BOOT_1);
+            NvU32 pmc_boot_42 = NV_PRIV_REG_RD32(reg_mapping, NV_PMC_BOOT_42);
+
+            osUnmapKernelSpace(reg_mapping, os_page_size);
+
+            if (FLD_TEST_DRF(_PMC, _BOOT_1, _VGPU, _VF, pmc_boot_1) &&
+                gpumgrIsVgxRmFirmwareCapableChip(pmc_boot_42))
+            {
+                isVgpu = NV_TRUE;
+            }
+        }
+    }
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return isVgpu;
+}
+
 void NV_API_CALL rm_set_rm_firmware_requested(
     nvidia_stack_t *sp,
     nv_state_t *nv
@@ -4618,6 +4824,10 @@ void NV_API_CALL rm_set_rm_firmware_requested(
 {
     nv->request_firmware = NV_TRUE;
     nv->allow_fallback_to_monolithic_rm = NV_FALSE;
+    if (rm_get_is_gsp_capable_vgpu(sp, nv))
+    {
+        nv->request_firmware = NV_FALSE;
+    }
 
     // Check if we want firmware logs
     if (nv->request_firmware)

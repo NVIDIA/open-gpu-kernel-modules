@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,8 +28,6 @@
 #include "gpu/gpu.h"
 #include "platform/chipset/chipset.h"
 
-#define NV_VGPU_EMU                           0x0000FFFF:0x0000F000 /* RW--D */
-
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "virtualization/hypervisor/hypervisor.h"
 
@@ -37,6 +35,9 @@
 #include "published/turing/tu102/dev_vm.h"
 
 #include "published/turing/tu102/dev_nv_pcfg_xve_regmap.h"
+#include "published/turing/tu102/dev_boot.h"
+
+#define RTLSIM_DELAY_SCALE_US          8
 
 // XVE register map for PCIe config space
 static const NvU32 xveRegMapValid[] = NV_PCFG_XVE_REGISTER_VALID_MAP;
@@ -131,12 +132,6 @@ kbifGetVFSparseMmapRegions_TU102
         pSizes = portMemAllocStackOrHeap(NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_MAX_BAR_MAPPING_RANGES * sizeof(pSizes[0]));
     }
 
-    // For SRIOV heavy, trap BOOT_0 page
-    if (gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
-    {
-        offsetStart = osPageSize;
-    }
-
     // For VF TLB emulation, trap MMU FAULT BUFFER page
     if ((maxInstance > 1) && pGpu->getProperty(pGpu, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE))
     {
@@ -148,24 +143,9 @@ kbifGetVFSparseMmapRegions_TU102
         offsetStart = NV_VIRTUAL_FUNCTION_PRIV_MMU_FAULT_BUFFER_LO(0) + osPageSize;
     }
 
-    // For non-GSP, trap VGPU_EMU page
-    if (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    // Trap MSI-X table page
+    if (!hypervisorIsType(OS_HYPERVISOR_HYPERV))
     {
-        offsetEnd = DRF_BASE(NV_VGPU_EMU);
-        pOffsets[idx] = offsetStart;
-        pSizes[idx] = offsetEnd - offsetStart;
-        idx++;
-
-        offsetStart = DRF_BASE(NV_VGPU_EMU) + osPageSize;
-    }
-
-    // Trap MSI-X table page for non-Hyperv and Hyperv non-GSP cases
-    if (!hypervisorIsType(OS_HYPERVISOR_HYPERV)
-       )
-    {
-        // Assert whenever the MSI-X table page is not immediately after
-        // the NV_VGPU_EMU page, as it will break the current assumption.
-        ct_assert((DRF_BASE(NV_VGPU_EMU) + DRF_SIZE(NV_VGPU_EMU)) == NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0));
 
         offsetEnd = NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_ADDR_LO(0);
 
@@ -429,10 +409,323 @@ kbifInitXveRegMap_TU102
 NvU32
 kbifGetMSIXTableVectorControlSize_TU102
 (
-    OBJGPU *pGpu,
+    OBJGPU    *pGpu,
     KernelBif *pKernelBif
 )
 {
     return NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL__SIZE_1;
 }
 
+/*!
+ * This function saves MSIX vector control masks which can later be restored
+ * using bifRestoreMSIXVectorControlMasks_HAL.
+ *
+ * @param[in]   pGpu            GPU object pointer
+ * @param[in]   pKernelBif      Pointer to KernelBif object
+ * @param[out] *msixVectorMask  MSIX vector control mask state for all
+ *                              MSIX table entries
+ * @return  'NV_OK' if successful, an RM error code otherwise.
+ */
+NV_STATUS
+kbifSaveMSIXVectorControlMasks_TU102
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvU32     *msixVectorMask
+)
+{
+    NvU32     i;
+    NvU32     regVal;
+    NV_STATUS status = NV_OK;
+    NvU32     controlSize = kbifGetMSIXTableVectorControlSize_HAL(pGpu, pKernelBif);
+
+    //Sanity check for size
+    if (controlSize > 32U)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Size of MSIX vector control exceeds maximum assumed size!!\n");
+        DBG_BREAKPOINT();
+
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        goto kbifSaveMSIXVectorControlMasks_TU102_exit;
+    }
+
+    // Set the bits in msixVectorMask if NV_MSIX_TABLE_VECTOR_CONTROL(i) is masked
+    *msixVectorMask = 0U;
+    for (i = 0U; i < controlSize; i++)
+    {
+        regVal = GPU_VREG_RD32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL(i));
+
+        if (FLD_TEST_DRF(_VIRTUAL_FUNCTION_PRIV, _MSIX_TABLE_VECTOR_CONTROL,
+                         _MASK_BIT, _MASKED, regVal))
+        {
+            (*msixVectorMask) |= NVBIT(i);
+        }
+    }
+
+kbifSaveMSIXVectorControlMasks_TU102_exit:
+    return status;
+}
+
+/*!
+ * This function restores MSIX vector control masks to the saved state. Vector
+ * control mask needs to be saved using bifSaveMSIXVectorControlMasks_HAL.
+ *
+ * @param[in]  pGpu            GPU object pointer
+ * @param[in]  pKernelBif      Pointer to KernelBif object
+ * @param[in]  msixVectorMask  State of MSIX vector control masks
+ *
+ * @return  'NV_OK' if successful, an RM error code otherwise.
+ */
+NV_STATUS
+kbifRestoreMSIXVectorControlMasks_TU102
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif,
+    NvU32      msixVectorMask
+)
+{
+    NvU32     i;
+    NV_STATUS status      = NV_OK;
+    NvU32     controlSize = kbifGetMSIXTableVectorControlSize_HAL(pGpu, pKernelBif);
+
+    // Initialize the base offset for the virtual registers for physical function
+    NvU32 vRegOffset = pGpu->sriovState.virtualRegPhysOffset;
+
+    //Sanity check for size
+    if (controlSize > 32U)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Size of MSIX vector control exceeds maximum assumed size!!\n");
+        DBG_BREAKPOINT();
+        status = NV_ERR_BUFFER_TOO_SMALL;
+        goto kbifRestoreMSIXVectorControlMasks_TU102_exit;
+    }
+
+    //
+    // Restore NV_MSIX_TABLE_VECTOR_CONTROL(i) based on msixVectorMask
+    // In FLR path, we don't want to use usual register r/w macros
+    //
+    for (i = 0U; i < controlSize; i++)
+    {
+        if ((NVBIT(i) & msixVectorMask) != 0U)
+        {
+            osGpuWriteReg032(pGpu,
+                vRegOffset + NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL(i),
+                NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL_MASK_BIT_MASKED);
+        }
+        else
+        {
+            osGpuWriteReg032(pGpu,
+                vRegOffset + NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL(i),
+                NV_VIRTUAL_FUNCTION_PRIV_MSIX_TABLE_VECTOR_CONTROL_MASK_BIT_UNMASKED);
+        }
+    }
+
+kbifRestoreMSIXVectorControlMasks_TU102_exit:
+    return status;
+}
+
+
+/**
+ *
+ * Do function level reset for Fn0.
+ *
+ */
+NV_STATUS
+kbifDoFunctionLevelReset_TU102
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    NvU32      domain     = gpuGetDomain(pGpu);
+    NvU8       bus        = gpuGetBus(pGpu);
+    NvU8       device     = gpuGetDevice(pGpu);
+    void       *handle    = NULL;
+    NV_STATUS  status     = NV_OK;
+    NvU32      i;
+    NvU32      tempRegVal;
+    NvU16      vendorId;
+    NvU16      deviceId;
+    // 'i'th bit set to 1 indicates NV_MSIX_TABLE_VECTOR_CONTROL(i) is masked
+    NvU32      msixVectorMask;
+    NvBool     bMSIXEnabled;
+    // volatile is required to prevent any compiler optimizations
+    volatile  NvU32 tempRegValSwReset;
+
+    //
+    // From the experimental data: We need to get the handle before asserting FLR
+    // GPU is always at function 0
+    //
+    handle = osPciInitHandle(domain, bus, device, 0, &vendorId, &deviceId);
+
+    pKernelBif->bPreparingFunctionLevelReset = NV_TRUE;
+
+    status = kbifSavePcieConfigRegisters_HAL(pGpu, pKernelBif);
+    if (status != NV_OK)
+    {
+        DBG_BREAKPOINT();
+        NV_PRINTF(LEVEL_ERROR, "Config registers save failed!\n");
+        goto bifDoFunctionLevelReset_TU102_exit;
+    }
+
+    bMSIXEnabled = kbifIsMSIXEnabledInHW_HAL(pGpu, pKernelBif);
+    if (bMSIXEnabled)
+    {
+        status = kbifSaveMSIXVectorControlMasks_HAL(pGpu, pKernelBif, &msixVectorMask);
+        if (status != NV_OK)
+        {
+            DBG_BREAKPOINT();
+            NV_PRINTF(LEVEL_ERROR, "MSIX vector control registers save failed!\n");
+            goto bifDoFunctionLevelReset_TU102_exit;
+        }
+    }
+
+    pKernelBif->bPreparingFunctionLevelReset = NV_FALSE;
+    if (pKernelBif->getProperty(pKernelBif, PDB_PROP_KBIF_FLR_PRE_CONDITIONING_REQUIRED))
+    {
+        //
+        // SW WARs required for Function Level Reset -
+        // Clear Bus Master Enable bit in command register so that no more requests to sysmem are made by Fn0
+        // Executing these WARs after save config space so that restore config space does not restore-
+        // incorrect command register
+        // For other WARs which are executed in bifPrepareForFullChipReset_HAL, gpu re-init sequence after FLR makes
+        // sure to revert these WARs
+        //
+        if (kbifStopSysMemRequests_HAL(pGpu, pKernelBif, NV_TRUE) != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "BIF Stop Sys Mem requests failed.\n");
+            DBG_BREAKPOINT();
+        }
+        // Wait for number of sysmem transactions pending to go to 0
+        if (kbifWaitForTransactionsComplete_HAL(pGpu, pKernelBif) != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "BIF Wait for Transactions complete failed.\n");
+            DBG_BREAKPOINT();
+        }
+    }
+
+    // Trigger FLR now
+    kbifTriggerFlr_HAL(pGpu, pKernelBif);
+
+    pKernelBif->bInFunctionLevelReset = NV_TRUE;
+
+    // wait a bit to make sure reset is propagated properly
+    if (IS_RTLSIM(pGpu))
+    {
+        //
+        // On RTL sims the OS delay functions don't scale well.
+        // Instead we use reg reads as approximate delays
+        //
+        NV_PRINTF(LEVEL_ERROR,
+                  "Do config reads of NV_XVE_SW_RESET to add delay\n");
+        // Set 1ms/1000us delay - this would be acceptable delay for RTL sim
+        for( i = 0; i < (1000 * RTLSIM_DELAY_SCALE_US) ; i++)
+        {
+            // Only config reads and that too of sticky registers are supposed to work while Fn0 is under reset
+            tempRegValSwReset = osPciReadDword(handle, NV_XVE_SW_RESET);
+        }
+        // Printing tempRegValSwReset in order to use it and suppress compiler warnings(of variable set but not used)
+        NV_PRINTF(LEVEL_ERROR, "NV_XVE_SW_RESET read returned %x\n",
+                  tempRegValSwReset);
+    }
+    else
+    {
+        // Wait for 100 ms before attempting to read PCI config space
+        osDelayUs(100000);
+    }
+
+    status = kbifRestorePcieConfigRegisters_HAL(pGpu, pKernelBif);
+    if (status != NV_OK)
+    {
+        DBG_BREAKPOINT();
+        NV_PRINTF(LEVEL_ERROR, "Config registers restore failed!\n");
+        goto bifDoFunctionLevelReset_TU102_exit;
+    }
+
+    // As of GA10X, miata rom cannot be run on simulation.
+    if (IS_SILICON(pGpu) || IS_EMULATION(pGpu))
+    {
+        // On emulation VBIOS boot can take long so add prints for better visibility
+        if (IS_EMULATION(pGpu))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Entering secure boot completion wait.\n");
+        }
+        status = NV_ERR_NOT_SUPPORTED;
+        if (status != NV_OK)
+        {
+            DBG_BREAKPOINT();
+            NV_PRINTF(LEVEL_ERROR, "VBIOS boot failed!!\n");
+            goto bifDoFunctionLevelReset_TU102_exit;
+        }
+        if (IS_EMULATION(pGpu))
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Exited secure boot completion wait with status = NV_OK.\n");
+        }
+    }
+
+    if (bMSIXEnabled)
+    {
+        // TODO-NM: Check if this needed for other NVPM flows like GC6
+        status = kbifRestoreMSIXVectorControlMasks_HAL(pGpu, pKernelBif, msixVectorMask);
+        if (status != NV_OK)
+        {
+            DBG_BREAKPOINT();
+            NV_PRINTF(LEVEL_ERROR, "MSIX vector control restore failed!\n");
+            goto bifDoFunctionLevelReset_TU102_exit;
+        }
+    }
+
+    // Re-init handle as well since gpu is reset
+    handle = osPciInitHandle(domain, bus, device, 0, &vendorId, &deviceId);
+    tempRegVal = osPciReadDword(handle, NV_XVE_ID);
+    if (!FLD_TEST_DRF(_XVE, _ID, _VENDOR, _NVIDIA, tempRegVal))
+    {
+        status = NV_ERR_GENERIC;
+        goto bifDoFunctionLevelReset_TU102_exit;
+    }
+
+bifDoFunctionLevelReset_TU102_exit:
+    pKernelBif->bPreparingFunctionLevelReset = NV_FALSE;
+    pKernelBif->bInFunctionLevelReset        = NV_FALSE;
+    return status;
+}
+
+/*!
+ * @brief  Get the PMC bit of the valid Engines to reset.
+ *
+ * @return All valid engines
+ */
+NvU32
+kbifGetValidEnginesToReset_TU102
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    return (DRF_DEF(_PMC, _ENABLE, _PGRAPH, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _PMEDIA, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _CE0, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _CE1, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _CE2, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _CE3, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _CE4, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _CE5, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _CE6, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _CE7, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _CE8, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _PFIFO, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _PWR, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _PDISP, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _NVDEC0, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _NVDEC1, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _NVDEC2, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _NVENC0, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _NVENC1, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _SEC, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _PERFMON, _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _NVJPG0, _ENABLED));
+}

@@ -43,11 +43,16 @@ extern "C" {
  *                                                                           *
  ****************************************************************************/
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_CCU_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelCcuApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -75,13 +80,13 @@ struct KernelCcuApi {
     NV_STATUS (*__kccuapiInternalControlForward__)(struct KernelCcuApi *, NvU32, void *, NvU32);
     NV_STATUS (*__kccuapiUnmapFrom__)(struct KernelCcuApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__kccuapiControl_Epilogue__)(struct KernelCcuApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__kccuapiControlLookup__)(struct KernelCcuApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__kccuapiGetInternalObjectHandle__)(struct KernelCcuApi *);
     NV_STATUS (*__kccuapiControl__)(struct KernelCcuApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kccuapiGetMemInterMapParams__)(struct KernelCcuApi *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__kccuapiControlFilter__)(struct KernelCcuApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kccuapiControlSerialization_Prologue__)(struct KernelCcuApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__kccuapiCanCopy__)(struct KernelCcuApi *);
+    NvBool (*__kccuapiIsPartialUnmapSupported__)(struct KernelCcuApi *);
     void (*__kccuapiPreDestruct__)(struct KernelCcuApi *);
     NV_STATUS (*__kccuapiIsDuplicate__)(struct KernelCcuApi *, NvHandle, NvBool *);
     void (*__kccuapiControlSerialization_Epilogue__)(struct KernelCcuApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -134,13 +139,13 @@ NV_STATUS __nvoc_objCreate_KernelCcuApi(KernelCcuApi**, Dynamic*, NvU32, struct 
 #define kccuapiInternalControlForward(pGpuResource, command, pParams, size) kccuapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define kccuapiUnmapFrom(pResource, pParams) kccuapiUnmapFrom_DISPATCH(pResource, pParams)
 #define kccuapiControl_Epilogue(pResource, pCallContext, pParams) kccuapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kccuapiControlLookup(pResource, pParams, ppEntry) kccuapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define kccuapiGetInternalObjectHandle(pGpuResource) kccuapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define kccuapiControl(pGpuResource, pCallContext, pParams) kccuapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define kccuapiGetMemInterMapParams(pRmResource, pParams) kccuapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
 #define kccuapiControlFilter(pResource, pCallContext, pParams) kccuapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define kccuapiControlSerialization_Prologue(pResource, pCallContext, pParams) kccuapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define kccuapiCanCopy(pResource) kccuapiCanCopy_DISPATCH(pResource)
+#define kccuapiIsPartialUnmapSupported(pResource) kccuapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define kccuapiPreDestruct(pResource) kccuapiPreDestruct_DISPATCH(pResource)
 #define kccuapiIsDuplicate(pResource, hMemory, pDuplicate) kccuapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define kccuapiControlSerialization_Epilogue(pResource, pCallContext, pParams) kccuapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -233,10 +238,6 @@ static inline void kccuapiControl_Epilogue_DISPATCH(struct KernelCcuApi *pResour
     pResource->__kccuapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS kccuapiControlLookup_DISPATCH(struct KernelCcuApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__kccuapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle kccuapiGetInternalObjectHandle_DISPATCH(struct KernelCcuApi *pGpuResource) {
     return pGpuResource->__kccuapiGetInternalObjectHandle__(pGpuResource);
 }
@@ -259,6 +260,10 @@ static inline NV_STATUS kccuapiControlSerialization_Prologue_DISPATCH(struct Ker
 
 static inline NvBool kccuapiCanCopy_DISPATCH(struct KernelCcuApi *pResource) {
     return pResource->__kccuapiCanCopy__(pResource);
+}
+
+static inline NvBool kccuapiIsPartialUnmapSupported_DISPATCH(struct KernelCcuApi *pResource) {
+    return pResource->__kccuapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void kccuapiPreDestruct_DISPATCH(struct KernelCcuApi *pResource) {

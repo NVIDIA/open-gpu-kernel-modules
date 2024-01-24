@@ -53,10 +53,11 @@
         #define UVM_ATS_SVA_SUPPORTED() 0
     #endif
 
-// If NV_ARCH_INVALIDATE_SECONDARY_TLBS is defined it means the upstream fix is
-// in place so no need for the WAR from Bug 4130089: [GH180][r535] WAR for
-// kernel not issuing SMMU TLB invalidates on read-only
-#if defined(NV_ARCH_INVALIDATE_SECONDARY_TLBS)
+// If NV_MMU_NOTIFIER_OPS_HAS_ARCH_INVALIDATE_SECONDARY_TLBS is defined it
+// means the upstream fix is in place so no need for the WAR from
+// Bug 4130089: [GH180][r535] WAR for  kernel not issuing SMMU TLB
+// invalidates on read-only
+#if defined(NV_MMU_NOTIFIER_OPS_HAS_ARCH_INVALIDATE_SECONDARY_TLBS)
     #define UVM_ATS_SMMU_WAR_REQUIRED() 0
 #elif NVCPU_IS_AARCH64
     #define UVM_ATS_SMMU_WAR_REQUIRED() 1

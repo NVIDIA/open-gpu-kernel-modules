@@ -71,7 +71,7 @@
  *
  * 'warning: suggest parentheses around arithmetic in operand of |'
  */
-#if defined(NV_LINUX)
+#if defined(NV_LINUX) || defined(NV_BSD)
 #define DRM_IOCTL_NVIDIA_FENCE_SUPPORTED                         \
     DRM_IO(DRM_COMMAND_BASE + DRM_NVIDIA_FENCE_SUPPORTED)
 #define DRM_IOCTL_NVIDIA_DMABUF_SUPPORTED                        \

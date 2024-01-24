@@ -26,6 +26,7 @@
 #include "gpu/subdevice/subdevice.h"
 #include "rmapi/rmapi.h"
 #include "rmapi/rs_utils.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/perf/kern_perf_pm.h"
 

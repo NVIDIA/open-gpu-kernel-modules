@@ -71,12 +71,42 @@ static int __nv_drm_gem_dma_buf_create_mmap_offset(
 static int __nv_drm_gem_dma_buf_mmap(struct nv_drm_gem_object *nv_gem,
                                      struct vm_area_struct *vma)
 {
+#if defined(NV_LINUX)
     struct dma_buf_attachment *attach = nv_gem->base.import_attach;
     struct dma_buf *dma_buf = attach->dmabuf;
+#endif
     struct file *old_file;
     int ret;
 
     /* check if buffer supports mmap */
+#if defined(NV_BSD)
+    /*
+     * Most of the FreeBSD DRM code refers to struct file*, which is actually
+     * a struct linux_file*. The dmabuf code in FreeBSD is not actually plumbed
+     * through the same linuxkpi bits it seems (probably so it can be used
+     * elsewhere), so dma_buf->file really is a native FreeBSD struct file...
+     */
+    if (!nv_gem->base.filp->f_op->mmap)
+        return -EINVAL;
+
+    /* readjust the vma */
+    get_file(nv_gem->base.filp);
+    old_file = vma->vm_file;
+    vma->vm_file = nv_gem->base.filp;
+    vma->vm_pgoff -= drm_vma_node_start(&nv_gem->base.vma_node);
+
+    ret = nv_gem->base.filp->f_op->mmap(nv_gem->base.filp, vma);
+
+    if (ret) {
+        /* restore old parameters on failure */
+        vma->vm_file = old_file;
+        vma->vm_pgoff += drm_vma_node_start(&nv_gem->base.vma_node);
+        fput(nv_gem->base.filp);
+    } else {
+        if (old_file)
+            fput(old_file);
+    }
+#else
     if (!dma_buf->file->f_op->mmap)
         return -EINVAL;
 
@@ -84,18 +114,20 @@ static int __nv_drm_gem_dma_buf_mmap(struct nv_drm_gem_object *nv_gem,
     get_file(dma_buf->file);
     old_file = vma->vm_file;
     vma->vm_file = dma_buf->file;
-    vma->vm_pgoff -= drm_vma_node_start(&nv_gem->base.vma_node);;
+    vma->vm_pgoff -= drm_vma_node_start(&nv_gem->base.vma_node);
 
     ret = dma_buf->file->f_op->mmap(dma_buf->file, vma);
 
     if (ret) {
         /* restore old parameters on failure */
         vma->vm_file = old_file;
+        vma->vm_pgoff += drm_vma_node_start(&nv_gem->base.vma_node);
         fput(dma_buf->file);
     } else {
         if (old_file)
             fput(old_file);
     }
+#endif
 
     return ret;
 }

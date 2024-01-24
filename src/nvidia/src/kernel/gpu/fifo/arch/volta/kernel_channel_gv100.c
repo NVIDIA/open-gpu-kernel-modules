@@ -24,6 +24,7 @@
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/mem_mgr/mem.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
+#include "platform/sli/sli.h"
 
 #include "published/volta/gv100/dev_pbdma.h"
 #include "rmapi/rs_utils.h"

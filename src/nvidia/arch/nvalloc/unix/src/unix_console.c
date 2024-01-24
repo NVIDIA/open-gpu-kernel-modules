@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -29,6 +29,7 @@
 #include <nv.h>
 #include <osapi.h>
 #include <gpu/mem_mgr/mem_mgr.h>
+#include <platform/sli/sli.h>
 
 #include <vgpu/rpc.h>
 #include "vgpu/vgpu_events.h"
@@ -83,28 +84,28 @@ RmSaveDisplayState
     NvBool          use_vbios      = NV_PRIMARY_VGA(nv) && RmGpuHasIOSpaceEnabled(nv);
     NvU32           eax, ebx;
     NV_STATUS       status;
-    NV2080_CTRL_CMD_INTERNAL_DISPLAY_UNIX_CONSOLE_PARAMS  unixConsoleParams = {0};
-
+    NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE_PARAMS  preUnixConsoleParams = {0};
+    NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE_PARAMS  postUnixConsoleParams = {0};
 
     if (IS_VIRTUAL(pGpu) || pKernelDisplay == NULL)
     {
         return;
     }
 
-    os_disable_console_access();
-
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_UEFI))
     {
         NV_PRINTF(LEVEL_INFO, "RM fallback doesn't support saving of efifb console\n");
-        goto done;
+        return;
     }
 
-    unixConsoleParams.bSaveOrRestore = NV_TRUE;
-    unixConsoleParams.bUseVbios      = use_vbios;
+    os_disable_console_access();
+
+    preUnixConsoleParams.bSave     = NV_TRUE;
+    preUnixConsoleParams.bUseVbios = use_vbios;
 
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,pRmApi->Control(pRmApi, nv->rmapi.hClient, nv->rmapi.hSubDevice,
-                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_UNIX_CONSOLE,
-                        &unixConsoleParams, sizeof(unixConsoleParams)), done);
+                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE,
+                        &preUnixConsoleParams, sizeof(preUnixConsoleParams)), done);
 
     if (use_vbios)
     {
@@ -124,6 +125,14 @@ RmSaveDisplayState
         }
     }
 
+    postUnixConsoleParams.bSave     = NV_TRUE;
+    postUnixConsoleParams.bUseVbios = use_vbios;
+
+    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient,
+                        nv->rmapi.hSubDevice,
+                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE,
+                        &postUnixConsoleParams, sizeof(postUnixConsoleParams)), done);
+
 done:
     os_enable_console_access();
 }
@@ -140,8 +149,8 @@ static void RmRestoreDisplayState
     KernelDisplay  *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
     NV_STATUS       status;
     NvU32           eax, ebx;
-    NV2080_CTRL_CMD_INTERNAL_DISPLAY_UNIX_CONSOLE_PARAMS  unixConsoleParams = {0};
-    NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_RESTORE_PARAMS  restoreParams = {0};
+    NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE_PARAMS  preUnixConsoleParams   = {0};
+    NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE_PARAMS  postUnixConsoleParams = {0};
 
     NV_ASSERT_OR_RETURN_VOID(pKernelDisplay != NULL);
 
@@ -160,8 +169,6 @@ static void RmRestoreDisplayState
         return;
     }
 
-    os_disable_console_access();
-
     //
     // Fix up DCB index VBIOS scratch registers.
     // The strategies employed are:
@@ -175,34 +182,39 @@ static void RmRestoreDisplayState
     if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_UEFI))
     {
         NV_PRINTF(LEVEL_INFO, "RM fallback doesn't support efifb console restore\n");
-        goto done;
+        return;
     }
 
-    unixConsoleParams.bUseVbios = use_vbios;
-    unixConsoleParams.bSaveOrRestore = NV_FALSE;
+    os_disable_console_access();
+
+    preUnixConsoleParams.bUseVbios = use_vbios;
+    preUnixConsoleParams.bSave = NV_FALSE;
 
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient,
                         nv->rmapi.hSubDevice,
-                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_UNIX_CONSOLE,
-                        &unixConsoleParams, sizeof(unixConsoleParams)), done);
+                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_PRE_UNIX_CONSOLE,
+                        &preUnixConsoleParams, sizeof(preUnixConsoleParams)), done);
 
-    eax = 0x4f02;
-    ebx = nvp->vga.vesaMode;
-
-    if (NV_OK == unixCallVideoBIOS(pGpu, &eax, &ebx))
+    if (use_vbios)
     {
-        restoreParams.bWriteCr = NV_TRUE;
+        eax = 0x4f02;
+        ebx = nvp->vga.vesaMode;
+
+        if (NV_OK == unixCallVideoBIOS(pGpu, &eax, &ebx))
+        {
+            postUnixConsoleParams.bVbiosCallSuccessful = NV_TRUE;
+        }
     }
+
+    postUnixConsoleParams.bSave = NV_FALSE;
+    postUnixConsoleParams.bUseVbios = use_vbios;
 
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, pRmApi->Control(pRmApi, nv->rmapi.hClient,
                         nv->rmapi.hSubDevice,
-                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_RESTORE,
-                        &restoreParams, sizeof(restoreParams)), done);
+                        NV2080_CTRL_CMD_INTERNAL_DISPLAY_POST_UNIX_CONSOLE,
+                        &postUnixConsoleParams, sizeof(postUnixConsoleParams)), done);
 
 done:
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_IS_UEFI))
-    {
-    }
     os_enable_console_access();
 }
 

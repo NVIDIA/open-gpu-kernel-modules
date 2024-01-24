@@ -296,7 +296,7 @@ public:
      * @param[in]  pMapperRef The reference that was was used to create the mapping
      * @param[in]  pParams parameters describing the unmapping
      */
-    virtual void clientInterUnmap(RsClient *pClient, RsResourceRef *pMapperRef, RS_INTER_UNMAP_PARAMS *pParams);
+    virtual NV_STATUS clientInterUnmap(RsClient *pClient, RsResourceRef *pMapperRef, RS_INTER_UNMAP_PARAMS *pParams);
 
     /**
      * Generate an unused handle for a resource. The handle will be generated in the white-listed range that was

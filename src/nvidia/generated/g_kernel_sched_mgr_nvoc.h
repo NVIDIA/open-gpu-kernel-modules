@@ -48,17 +48,28 @@ extern "C" {
 
 /* ------------------------------- Datatypes  --------------------------------*/
 
-#define SCHED_POLICY_DEFAULT 0
-typedef NvU32 SCHED_POLICY;
+enum __SCHED_POLICY
+{
+    SCHED_POLICY_DEFAULT = 0,
+    SCHED_POLICY_BEST_EFFORT = 1,
+    SCHED_POLICY_VGPU_EQUAL_SHARE = 2,
+    SCHED_POLICY_VGPU_FIXED_SHARE = 3,
+};
+typedef enum __SCHED_POLICY SCHED_POLICY;
 
 /*!
  * Class of scheduling manager for all the runlists.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_SCHED_MGR_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelSchedMgr {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -105,7 +116,7 @@ static inline NvU32 kschedmgrGetSchedPolicy(struct KernelSchedMgr *pKernelSchedM
 }
 
 static inline NvBool kschedmgrIsPvmrlEnabled(struct KernelSchedMgr *pKernelSchedMgr) {
-    return ((NvBool)(0 != 0));
+    return (pKernelSchedMgr->bIsSchedSwEnabled && ((pKernelSchedMgr->configSchedPolicy == SCHED_POLICY_VGPU_EQUAL_SHARE) || (pKernelSchedMgr->configSchedPolicy == SCHED_POLICY_VGPU_FIXED_SHARE)));
 }
 
 void kschedmgrConstructPolicy_IMPL(struct KernelSchedMgr *pKernelSchedMgr, struct OBJGPU *pGpu);

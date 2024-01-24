@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -141,8 +141,17 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 #define _RMCTRL_PREP_ACCESS_ARG(x)     | NVBIT(NV_CONCATENATE(RS_ACCESS_, x))
 #define ACCESS_RIGHTS(...)             (0 NV_FOREACH_ARG_NOCOMMA(_RMCTRL_PREP_ACCESS_ARG, __VA_ARGS__))
 
+// This define is currently unused.
+// In the future it will be used by NVOC to validate control flags.
+// 1. PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST should be set only if ROUTE_TO_PHYSICAL is set
+// 2. PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST and ROUTE_TO_VGPU_HOST shouldn't be set at the same time
+#define NVOC_EXPORTED_METHOD_FLAGS_VALID(ctrlFlags) \
+    ((ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL) || !(ctrlFlags & RMCTRL_FLAGS_PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST)) && \
+    (!(ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_VGPU_HOST) || !(ctrlFlags & RMCTRL_FLAGS_PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST))
+
 #define NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(ctrlFlags) \
-    (ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL)
+    ((ctrlFlags & RMCTRL_FLAGS_ROUTE_TO_PHYSICAL) && \
+     (!(ctrlFlags & RMCTRL_FLAGS_PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST)))
 
 //
 // 'FLAGS' Attribute
@@ -296,8 +305,24 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY  *pParamCopy, RmCtrlParams *pRmC
 //
 #define RMCTRL_FLAGS_CACHEABLE_BY_INPUT                       0x000200000
 
+
+// This flag specifies that ROUTE_TO_PHYSICAL control is implemented on vGPU Guest RM.
+// If a ROUTE_TO_PHYSICAL control is supported within vGPU Guest RM,
+// it should either have this flag set (indicating the implementation in the vGPU Guest RM) or
+// the ROUTE_TO_VGPU_HOST flag set (indicating the implementation in vGPU Host RM).
+// Without either of these flags set, the control will return NV_ERR_NOT_SUPPORTED.
+//
+#define RMCTRL_FLAGS_PHYSICAL_IMPLEMENTED_ON_VGPU_GUEST       0x000400000
+
 // The combination of cacheable flags
 #define RMCTRL_FLAGS_CACHEABLE_ANY (RMCTRL_FLAGS_CACHEABLE | RMCTRL_FLAGS_CACHEABLE_BY_INPUT)
+
+//
+// This flag specifies that two client handles need to be locked.
+// An entry is required for any control calls that set this in
+// serverControlLookupSecondClient or Resource Server will NV_ASSERT(0).
+//
+#define RMCTRL_FLAGS_DUAL_CLIENT_LOCK                         0x000800000
 
 //
 //  'ACCESS_RIGHTS' Attribute

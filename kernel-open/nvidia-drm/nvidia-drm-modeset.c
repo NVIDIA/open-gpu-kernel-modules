@@ -321,6 +321,24 @@ int nv_drm_atomic_check(struct drm_device *dev,
 {
     int ret = 0;
 
+#if defined(NV_DRM_COLOR_MGMT_AVAILABLE)
+    struct drm_crtc *crtc;
+    struct drm_crtc_state *crtc_state;
+    int i;
+
+    nv_drm_for_each_crtc_in_state(state, crtc, crtc_state, i) {
+        /*
+         * if the color management changed on the crtc, we need to update the
+         * crtc's plane's CSC matrices, so add the crtc's planes to the commit
+         */
+        if (crtc_state->color_mgmt_changed) {
+            if ((ret = drm_atomic_add_affected_planes(state, crtc)) != 0) {
+                goto done;
+            }
+        }
+    }
+#endif /* NV_DRM_COLOR_MGMT_AVAILABLE */
+
     if ((ret = drm_atomic_helper_check(dev, state)) != 0) {
         goto done;
     }

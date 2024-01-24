@@ -300,7 +300,7 @@ void nv_drm_handle_display_change(struct nv_drm_device *nv_dev,
 
     nv_drm_connector_mark_connection_status_dirty(nv_encoder->nv_connector);
 
-    drm_kms_helper_hotplug_event(dev);
+    schedule_delayed_work(&nv_dev->hotplug_event_work, 0);
 }
 
 void nv_drm_handle_dynamic_display_connected(struct nv_drm_device *nv_dev,
@@ -347,6 +347,6 @@ void nv_drm_handle_dynamic_display_connected(struct nv_drm_device *nv_dev,
     drm_reinit_primary_mode_group(dev);
 #endif
 
-    drm_kms_helper_hotplug_event(dev);
+    schedule_delayed_work(&nv_dev->hotplug_event_work, 0);
 }
 #endif

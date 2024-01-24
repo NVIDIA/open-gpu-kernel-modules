@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -78,6 +78,12 @@ clInitPropertiesFromRegistry_IMPL(OBJGPU *pGpu, OBJCL *pCl)
         {
             pCl->setProperty(pCl, PDB_PROP_CL_PCIE_FORCE_GEN2_ENABLE, NV_TRUE);
         }
+    }
+
+    if ((osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC, &data32) == NV_OK)
+            && (data32 == NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_YES))
+    {
+        pCl->setProperty(pCl, PDB_PROP_CL_DISABLE_IOMAP_WC, NV_TRUE);
     }
 
     osQADbgRegistryInit();

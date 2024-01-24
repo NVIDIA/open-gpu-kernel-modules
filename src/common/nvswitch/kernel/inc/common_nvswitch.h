@@ -39,6 +39,9 @@
 #include "spi_nvswitch.h"
 #include "smbpbi_nvswitch.h"
 #include "nvCpuUuid.h"
+#include "fsprpc_nvswitch.h"
+
+#include "soe/cci/cpld_machx03.h"
 
 #define NVSWITCH_GET_BIT(v, p)       (((v) >> (p)) & 1)
 #define NVSWITCH_SET_BIT(v, p)       ((v) |  NVBIT(p))
@@ -120,6 +123,9 @@ static NV_INLINE void nvswitch_clear_flags(NvU32 *val, NvU32 flags)
 #define nvswitch_os_malloc(_size)                           \
     nvswitch_os_malloc_trace(_size, NULL, 0)
 #endif
+
+// LS10 Saved LED state
+#define ACCESS_LINK_LED_STATE CPLD_MACHXO3_ACCESS_LINK_LED_CTL_NVL_CABLE_LED
 
 //
 // This macro should be used to check assertion statements and print Error messages.
@@ -248,6 +254,11 @@ typedef struct
     NvU32 soe_disable;
     NvU32 soe_enable;
     NvU32 soe_boot_core;
+    NvU32 cci_control;
+    NvU32 cci_link_train_disable_mask;
+    NvU32 cci_link_train_disable_mask2;
+    NvU32 cci_max_onboard_attempts;
+    NvU32 cci_error_log_enable;
     NvU32 latency_counter;
     NvU32 nvlink_speed_control;
     NvU32 inforom_bbx_periodic_flush;
@@ -404,6 +415,12 @@ struct nvswitch_device
 
     // SOE
     FLCNABLE *pSoe;
+    // CCI
+    struct CCI *pCci;
+
+    NvU8   current_led_state;
+    NvU8   next_led_state;
+    NvU64  tp_counter_previous_sum[NVSWITCH_NVLINK_MAX_LINKS];
 
     // DMA
     NvU32 dma_addr_width;
@@ -418,6 +435,7 @@ struct nvswitch_device
     struct smbpbi                       *pSmbpbi;
 
     // NVSWITCH_LINK_TYPE
+    NvBool                              bModeContinuousALI;
     NVSWITCH_LINK_TYPE                  link[NVSWITCH_MAX_LINK_COUNT];
 
     // PLL
@@ -565,6 +583,14 @@ do                                                              \
         while (!nvswitch_timeout_check(&timeout));              \
     }                                                           \
 } while(0)
+
+// Access link LED states on LS10 Systems
+#define ACCESS_LINK_LED_STATE_FAULT      0U
+#define ACCESS_LINK_LED_STATE_OFF        1U
+#define ACCESS_LINK_LED_STATE_INITIALIZE 2U
+#define ACCESS_LINK_LED_STATE_UP_WARM    3U
+#define ACCESS_LINK_LED_STATE_UP_ACTIVE  4U
+#define ACCESS_LINK_NUM_LED_STATES       5U
 
 #define NVSWITCH_GET_CAP(tbl,cap,field) (((NvU8)tbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)]) & (0?cap##field))
 #define NVSWITCH_SET_CAP(tbl,cap,field) ((tbl[((1?cap##field)>=cap##_TBL_SIZE) ? 0/0 : (1?cap##field)]) |= (0?cap##field))

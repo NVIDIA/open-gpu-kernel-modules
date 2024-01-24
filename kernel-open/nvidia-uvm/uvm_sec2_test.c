@@ -21,14 +21,15 @@
 
 *******************************************************************************/
 
-#include <uvm_common.h>
-#include <uvm_gpu.h>
-#include <uvm_mem.h>
-#include <uvm_push.h>
-#include <uvm_hal.h>
-#include <uvm_test.h>
-#include <uvm_va_space.h>
-#include <uvm_kvmalloc.h>
+#include "uvm_common.h"
+#include "uvm_global.h"
+#include "uvm_gpu.h"
+#include "uvm_mem.h"
+#include "uvm_push.h"
+#include "uvm_hal.h"
+#include "uvm_test.h"
+#include "uvm_va_space.h"
+#include "uvm_kvmalloc.h"
 #include <linux/string.h>
 #include "nv_uvm_interface.h"
 
@@ -514,8 +515,6 @@ static NV_STATUS test_sec2(uvm_va_space_t *va_space)
     uvm_gpu_t *gpu;
 
     for_each_va_space_gpu(gpu, va_space) {
-        TEST_CHECK_RET(uvm_conf_computing_mode_enabled(gpu));
-
         TEST_NV_CHECK_RET(test_semaphore_release(gpu));
         TEST_NV_CHECK_RET(test_semaphore_timestamp(gpu));
         TEST_NV_CHECK_RET(test_encryption_decryption(gpu));
@@ -529,13 +528,12 @@ NV_STATUS uvm_test_sec2_sanity(UVM_TEST_SEC2_SANITY_PARAMS *params, struct file 
     NV_STATUS status;
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
 
+    TEST_CHECK_RET(g_uvm_global.conf_computing_enabled);
+
     uvm_va_space_down_read_rm(va_space);
 
     status = test_sec2(va_space);
-    if (status != NV_OK)
-        goto done;
 
-done:
     uvm_va_space_up_read_rm(va_space);
 
     return status;
@@ -547,11 +545,11 @@ NV_STATUS uvm_test_sec2_cpu_gpu_roundtrip(UVM_TEST_SEC2_CPU_GPU_ROUNDTRIP_PARAMS
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
     uvm_gpu_t *gpu;
 
+    TEST_CHECK_RET(g_uvm_global.conf_computing_enabled);
+
     uvm_va_space_down_read(va_space);
 
     for_each_va_space_gpu(gpu, va_space) {
-        TEST_CHECK_RET(uvm_conf_computing_mode_enabled(gpu));
-
         // To exercise certain SEC2 context save/restore races, do a looped
         // decrypt with smaller copy sizes instead of larger copy sizes since we
         // need SEC2 to context switch with pending work in different channels

@@ -28,9 +28,13 @@
 extern "C" {
 #endif
 
+#include <nvlimits.h>
 #include "nvkms-types.h"
 #include <class/cl0092.h> /* NV0092_REGISTER_RG_LINE_CALLBACK_FN */
 #include <class/cl9010.h> /* OSVBLANKCALLBACKPROC */
+
+#define NVKMS_RM_HANDLE_SPACE_DEVICE(_i)    ((_i) + 1)
+#define NVKMS_RM_HANDLE_SPACE_FRAMELOCK(_i) (NV_MAX_DEVICES + (_i) + 1)
 
 NvBool nvWriteDPCDReg(NVConnectorEvoPtr pConnectorEvo,
                       NvU32 dpcdAddr,

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2013-2022 NVIDIA Corporation
+    Copyright (c) 2013-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -45,16 +45,20 @@
 //     #endif
 // 3) Do the same thing for the function definition, and for any structs that
 //    are taken as arguments to these functions.
-// 4) Let this change propagate over to cuda_a, so that the CUDA driver can
-//    start using the new API by bumping up the API version number its using.
-//    This can be found in gpgpu/cuda/cuda.nvmk.
-// 5) Once the cuda_a changes have made it back into chips_a, remove the old API
-//    declaration, definition, and any old structs that were in use.
+// 4) Let this change propagate over to cuda_a and dev_a, so that the CUDA and
+//    nvidia-cfg libraries can start using the new API by bumping up the API
+//    version number it's using.
+//    Places where UVM_API_REVISION is defined are:
+//      drivers/gpgpu/cuda/cuda.nvmk (cuda_a)
+//      drivers/setup/linux/nvidia-cfg/makefile.nvmk (dev_a)
+// 5) Once the dev_a and cuda_a changes have made it back into chips_a,
+//    remove the old API declaration, definition, and any old structs that were
+//    in use.
 
 #ifndef _UVM_H_
 #define _UVM_H_
 
-#define UVM_API_LATEST_REVISION 8
+#define UVM_API_LATEST_REVISION 9
 
 #if !defined(UVM_API_REVISION)
 #error "please define UVM_API_REVISION macro to a desired version number or UVM_API_LATEST_REVISION macro"
@@ -180,12 +184,8 @@ NV_STATUS UvmSetDriverVersion(NvU32 major, NvU32 changelist);
 //         because it is not very informative.
 //
 //------------------------------------------------------------------------------
-#if UVM_API_REV_IS_AT_MOST(4)
-NV_STATUS UvmInitialize(UvmFileDescriptor fd);
-#else
 NV_STATUS UvmInitialize(UvmFileDescriptor fd,
                         NvU64             flags);
-#endif
 
 //------------------------------------------------------------------------------
 // UvmDeinitialize
@@ -329,7 +329,11 @@ NV_STATUS UvmIsPageableMemoryAccessSupportedOnGpu(const NvProcessorUuid *gpuUuid
 //
 // Arguments:
 //     gpuUuid: (INPUT)
-//         UUID of the GPU to register.
+//         UUID of the physical GPU to register.
+//
+//     platformParams: (INPUT)
+//         User handles identifying the GPU partition to register.
+//         This should be NULL if the GPU is not SMC capable or SMC enabled.
 //
 // Error codes:
 //     NV_ERR_NO_MEMORY:
@@ -364,27 +368,31 @@ NV_STATUS UvmIsPageableMemoryAccessSupportedOnGpu(const NvProcessorUuid *gpuUuid
 //         OS state required to register the GPU is not present.
 //
 //     NV_ERR_INVALID_STATE:
-//         OS state required to register the GPU is malformed.
+//         OS state required to register the GPU is malformed, or the partition
+//         identified by the user handles or its configuration changed.
 //
 //     NV_ERR_GENERIC:
 //         Unexpected error. We try hard to avoid returning this error code,
 //         because it is not very informative.
 //
 //------------------------------------------------------------------------------
+#if UVM_API_REV_IS_AT_MOST(8)
 NV_STATUS UvmRegisterGpu(const NvProcessorUuid *gpuUuid);
+#else
+NV_STATUS UvmRegisterGpu(const NvProcessorUuid *gpuUuid,
+                         const UvmGpuPlatformParams *platformParams);
+#endif
 
+#if UVM_API_REV_IS_AT_MOST(8)
 //------------------------------------------------------------------------------
 // UvmRegisterGpuSmc
 //
 // The same as UvmRegisterGpu, but takes additional parameters to specify the
 // GPU partition being registered if SMC is enabled.
 //
-// TODO: Bug 2844714: Merge UvmRegisterGpuSmc() with UvmRegisterGpu() once
-//       the initial SMC support is in place.
-//
 // Arguments:
 //     gpuUuid: (INPUT)
-//         UUID of the parent GPU of the SMC partition to register.
+//         UUID of the physical GPU of the SMC partition to register.
 //
 //     platformParams: (INPUT)
 //         User handles identifying the partition to register.
@@ -397,6 +405,7 @@ NV_STATUS UvmRegisterGpu(const NvProcessorUuid *gpuUuid);
 //
 NV_STATUS UvmRegisterGpuSmc(const NvProcessorUuid *gpuUuid,
                             const UvmGpuPlatformParams *platformParams);
+#endif
 
 //------------------------------------------------------------------------------
 // UvmUnregisterGpu
@@ -1416,8 +1425,7 @@ NV_STATUS UvmAllocSemaphorePool(void                          *base,
 //
 //     preferredCpuMemoryNode: (INPUT)
 //         Preferred CPU NUMA memory node used if the destination processor is
-//         the CPU. This argument is ignored if the given virtual address range
-//         corresponds to managed memory.
+//         the CPU.
 //
 // Error codes:
 //     NV_ERR_INVALID_ADDRESS:
@@ -1456,16 +1464,10 @@ NV_STATUS UvmAllocSemaphorePool(void                          *base,
 //         pages were associated with a non-migratable range group.
 //
 //------------------------------------------------------------------------------
-#if UVM_API_REV_IS_AT_MOST(5)
-NV_STATUS UvmMigrate(void                  *base,
-                     NvLength               length,
-                     const NvProcessorUuid *destinationUuid);
-#else
 NV_STATUS UvmMigrate(void                  *base,
                      NvLength               length,
                      const NvProcessorUuid *destinationUuid,
                      NvS32                  preferredCpuMemoryNode);
-#endif
 
 //------------------------------------------------------------------------------
 // UvmMigrateAsync
@@ -1547,20 +1549,12 @@ NV_STATUS UvmMigrate(void                  *base,
 //         pages were associated with a non-migratable range group.
 //
 //------------------------------------------------------------------------------
-#if UVM_API_REV_IS_AT_MOST(5)
-NV_STATUS UvmMigrateAsync(void                  *base,
-                          NvLength               length,
-                          const NvProcessorUuid *destinationUuid,
-                          void                  *semaphoreAddress,
-                          NvU32                  semaphorePayload);
-#else
 NV_STATUS UvmMigrateAsync(void                  *base,
                           NvLength               length,
                           const NvProcessorUuid *destinationUuid,
                           NvS32                  preferredCpuMemoryNode,
                           void                  *semaphoreAddress,
                           NvU32                  semaphorePayload);
-#endif
 
 //------------------------------------------------------------------------------
 // UvmMigrateRangeGroup
@@ -1568,9 +1562,7 @@ NV_STATUS UvmMigrateAsync(void                  *base,
 // Migrates the backing of all virtual address ranges associated with the given
 // range group to the specified destination processor. The behavior of this API
 // is equivalent to calling UvmMigrate on each VA range associated with this
-// range group. The value for the preferredCpuMemoryNode is irrelevant in this
-// case as it only applies to migrations of pageable address, which cannot be
-// used to create range groups.
+// range group.
 //
 // Any errors encountered during migration are returned immediately. No attempt
 // is made to migrate the remaining unmigrated ranges and the ranges that are
@@ -2303,13 +2295,10 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 //     preferredLocationUuid: (INPUT)
 //         UUID of the preferred location.
 //
-//     preferredCpuNumaNode: (INPUT)
+//     preferredCpuMemoryNode: (INPUT)
 //         Preferred CPU NUMA memory node used if preferredLocationUuid is the
 //         UUID of the CPU. -1 is a special value which indicates all CPU nodes
-//         allowed by the global and thread memory policies. This argument is
-//         ignored if preferredLocationUuid refers to a GPU or the given virtual
-//         address range corresponds to managed memory. If NUMA is not enabled,
-//         only 0 or -1 is allowed.
+//         allowed by the global and thread memory policies.
 //
 // Errors:
 //     NV_ERR_INVALID_ADDRESS:
@@ -2339,10 +2328,11 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 //
 //      NV_ERR_INVALID_ARGUMENT:
 //         One of the following occured:
-//         - preferredLocationUuid is the UUID of a CPU and preferredCpuNumaNode
-//           refers to a registered GPU.
-//         - preferredCpuNumaNode is invalid and preferredLocationUuid is the
-//           UUID of the CPU.
+//         - preferredLocationUuid is the UUID of the CPU and
+//           preferredCpuMemoryNode is either:
+//              - not a valid NUMA node,
+//              - not a possible NUMA node, or
+//              - a NUMA node ID corresponding to a registered GPU.
 //
 //     NV_ERR_NOT_SUPPORTED:
 //         The UVM file descriptor is associated with another process and the
@@ -2353,16 +2343,10 @@ NV_STATUS UvmDisableReadDuplication(void     *base,
 //         because it is not very informative.
 //
 //------------------------------------------------------------------------------
-#if UVM_API_REV_IS_AT_MOST(7)
-NV_STATUS UvmSetPreferredLocation(void                  *base,
-                                  NvLength               length,
-                                  const NvProcessorUuid *preferredLocationUuid);
-#else
 NV_STATUS UvmSetPreferredLocation(void                  *base,
                                   NvLength               length,
                                   const NvProcessorUuid *preferredLocationUuid,
-                                  NvS32                  preferredCpuNumaNode);
-#endif
+                                  NvS32                  preferredCpuMemoryNode);
 
 //------------------------------------------------------------------------------
 // UvmUnsetPreferredLocation

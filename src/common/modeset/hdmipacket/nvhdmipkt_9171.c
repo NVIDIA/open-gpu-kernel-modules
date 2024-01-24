@@ -36,7 +36,6 @@
 #include "ctrl/ctrl0073/ctrl0073specific.h"
 
 #define NVHDMIPKT_9171_INVALID_PKT_TYPE  ((NV9171_SF_HDMI_INFO_IDX_VSI) + 1)
-#define NVHDMIPKT_CTAIF_MAX_PKT_BYTES       31  // 3 bytes header + 28 bytes data (CTA infoframe max payload size)
 #define NVHDMIPKT_9171_MAX_PKT_BYTES_AVI    17  // 3 bytes header + 14 bytes data
 
 NVHDMIPKT_RESULT 
@@ -157,8 +156,7 @@ hdmiWriteAviPacket9171(NVHDMIPKT_CLASS*   pThis,
 
     if (packetLen > NVHDMIPKT_9171_MAX_PKT_BYTES_AVI)
     {
-        NvHdmiPkt_Print(pThis, "ERROR - input AVI packet length incorrect. Write will be capped to max allowable bytes");
-        NvHdmiPkt_Assert(0);
+        NvHdmiPkt_Print(pThis, "WARNING - input AVI packet length incorrect. Write will be capped to max allowable bytes");
     }
 
     data = REG_RD32(pBaseReg, NV9171_SF_HDMI_AVI_INFOFRAME_HEADER(head));

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,7 +53,6 @@ struct RMRES_MEM_INTER_MAP_PARAMS
     OBJGPU                   *pSrcGpu;
     struct MEMORY_DESCRIPTOR *pSrcMemDesc;
     NvHandle                  hMemoryDevice;
-    NvBool                    bDmaMapNeeded;
     // This flag will be set when this is FLA mapping
     NvBool                    bFlaMapping;
 };
@@ -73,7 +72,6 @@ struct RS_RES_MAP_TO_PARAMS
     NvU32      flags;                      ///< [in]
     NvU64     *pDmaOffset;                 ///< [inout]
     NvBool     bSubdeviceHandleProvided;   ///< [in]
-    NvBool     bDmaMapNeeded;              ///< [in]
     NvBool     bFlaMapping;                ///< [in]
 };
 
@@ -85,6 +83,7 @@ struct RS_RES_UNMAP_FROM_PARAMS
     NvU32      gpuMask;                   ///< [in]
     NvU32      flags;                     ///< [in]
     NvU64      dmaOffset;                 ///< [in]
+    NvU64      size;                      ///< [in]
     struct MEMORY_DESCRIPTOR *pMemDesc;   ///< [in]
     NvBool     bSubdeviceHandleProvided;  ///< [in]
 };
@@ -98,7 +97,6 @@ struct RS_INTER_MAP_PRIVATE
     NvHandle   hMemoryDevice;
     NvU32      gpuMask;
     NvBool     bSubdeviceHandleProvided;
-    NvBool     bDmaMapNeeded;
     NvBool     bFlaMapping;
 };
 
@@ -127,11 +125,16 @@ typedef struct RMRES_MEM_INTER_MAP_PARAMS RMRES_MEM_INTER_MAP_PARAMS;
 /*!
  * All RsResource subclasses in RM must inherit from this class
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_RESOURCE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RmResourceCommon {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RmResourceCommon *__nvoc_pbase_RmResourceCommon;
@@ -175,11 +178,16 @@ NV_STATUS rmrescmnConstruct_IMPL(struct RmResourceCommon *arg_pResourceCommmon);
  * Utility base class for all RsResource subclasses in by RM. Doesn't have to be
  * used but if it isn't used RmResourceCommon must be inherited manually
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_RESOURCE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RmResource {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RsResource __nvoc_base_RsResource;
@@ -204,10 +212,10 @@ struct RmResource {
     NV_STATUS (*__rmresControlFilter__)(struct RmResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__rmresAddAdditionalDependants__)(struct RsClient *, struct RmResource *, RsResourceRef *);
     NvBool (*__rmresCanCopy__)(struct RmResource *);
+    NvBool (*__rmresIsPartialUnmapSupported__)(struct RmResource *);
     void (*__rmresPreDestruct__)(struct RmResource *);
     NV_STATUS (*__rmresUnmapFrom__)(struct RmResource *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__rmresIsDuplicate__)(struct RmResource *, NvHandle, NvBool *);
-    NV_STATUS (*__rmresControlLookup__)(struct RmResource *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__rmresMap__)(struct RmResource *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvU32 rpcGpuInstance;
     NvBool bRpcFree;
@@ -257,10 +265,10 @@ NV_STATUS __nvoc_objCreate_RmResource(RmResource**, Dynamic*, NvU32, struct CALL
 #define rmresControlFilter(pResource, pCallContext, pParams) rmresControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define rmresAddAdditionalDependants(pClient, pResource, pReference) rmresAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define rmresCanCopy(pResource) rmresCanCopy_DISPATCH(pResource)
+#define rmresIsPartialUnmapSupported(pResource) rmresIsPartialUnmapSupported_DISPATCH(pResource)
 #define rmresPreDestruct(pResource) rmresPreDestruct_DISPATCH(pResource)
 #define rmresUnmapFrom(pResource, pParams) rmresUnmapFrom_DISPATCH(pResource, pParams)
 #define rmresIsDuplicate(pResource, hMemory, pDuplicate) rmresIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
-#define rmresControlLookup(pResource, pParams, ppEntry) rmresControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define rmresMap(pResource, pCallContext, pParams, pCpuMapping) rmresMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 NvBool rmresAccessCallback_IMPL(struct RmResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);
 
@@ -344,6 +352,10 @@ static inline NvBool rmresCanCopy_DISPATCH(struct RmResource *pResource) {
     return pResource->__rmresCanCopy__(pResource);
 }
 
+static inline NvBool rmresIsPartialUnmapSupported_DISPATCH(struct RmResource *pResource) {
+    return pResource->__rmresIsPartialUnmapSupported__(pResource);
+}
+
 static inline void rmresPreDestruct_DISPATCH(struct RmResource *pResource) {
     pResource->__rmresPreDestruct__(pResource);
 }
@@ -354,10 +366,6 @@ static inline NV_STATUS rmresUnmapFrom_DISPATCH(struct RmResource *pResource, RS
 
 static inline NV_STATUS rmresIsDuplicate_DISPATCH(struct RmResource *pResource, NvHandle hMemory, NvBool *pDuplicate) {
     return pResource->__rmresIsDuplicate__(pResource, hMemory, pDuplicate);
-}
-
-static inline NV_STATUS rmresControlLookup_DISPATCH(struct RmResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__rmresControlLookup__(pResource, pParams, ppEntry);
 }
 
 static inline NV_STATUS rmresMap_DISPATCH(struct RmResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

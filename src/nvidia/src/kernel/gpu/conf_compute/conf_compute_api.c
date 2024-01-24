@@ -89,6 +89,7 @@ confComputeApiCtrlCmdSystemGetCapabilities_IMPL
     pParams->environment = NV_CONF_COMPUTE_SYSTEM_ENVIRONMENT_UNAVAILABLE;
     pParams->ccFeature = NV_CONF_COMPUTE_SYSTEM_FEATURE_DISABLED;
     pParams->devToolsMode = NV_CONF_COMPUTE_SYSTEM_DEVTOOLS_MODE_DISABLED;
+    pParams->multiGpuMode = NV_CONF_COMPUTE_SYSTEM_MULTI_GPU_MODE_NONE;
 
     if (pCcCaps->bApmFeatureCapable)
     {
@@ -111,14 +112,20 @@ confComputeApiCtrlCmdSystemGetCapabilities_IMPL
         }
     }
 
+    if (pParams->ccFeature != NV_CONF_COMPUTE_SYSTEM_FEATURE_DISABLED)
+    {
+        pParams->environment = NV_CONF_COMPUTE_SYSTEM_ENVIRONMENT_PROD;
+    }
+
     if (pCcCaps->bDevToolsModeEnabled)
     {
         pParams->devToolsMode = NV_CONF_COMPUTE_SYSTEM_DEVTOOLS_MODE_ENABLED;
+        pParams->environment = NV_CONF_COMPUTE_SYSTEM_ENVIRONMENT_SIM;
     }
 
-    if (pParams->ccFeature != NV_CONF_COMPUTE_SYSTEM_FEATURE_DISABLED)
+    if (pCcCaps->bMultiGpuProtectedPcieModeEnabled)
     {
-        pParams->environment = NV_CONF_COMPUTE_SYSTEM_ENVIRONMENT_SIM;
+        pParams->multiGpuMode = NV_CONF_COMPUTE_SYSTEM_MULTI_GPU_MODE_PROTECTED_PCIE;
     }
 
     return NV_OK;
@@ -145,11 +152,47 @@ confComputeApiCtrlCmdSystemSetGpusState_IMPL
     NV_CONF_COMPUTE_CTRL_CMD_SYSTEM_SET_GPUS_STATE_PARAMS *pParams
 )
 {
+    OBJGPU    *pGpu;
+    NvU32      gpuMask;
+    NvU32      gpuInstance = 0;
+    RM_API    *pRmApi      = NULL;
+    NV_STATUS  status = NV_OK;
+    NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS params = {0};
+
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
-    pConfComputeApi->pCcCaps->bAcceptClientRequest = pParams->bAcceptClientRequest;
+    // Make sure 'ready state' can't be set after being set to false once.
+    if (pConfComputeApi->pCcCaps->bFatalFailure)
+        return NV_ERR_INVALID_ARGUMENT;
 
-    return NV_OK;
+    if (pConfComputeApi->pCcCaps->bAcceptClientRequest && !pParams->bAcceptClientRequest)
+    {
+        pConfComputeApi->pCcCaps->bFatalFailure = NV_TRUE;
+        pConfComputeApi->pCcCaps->bAcceptClientRequest = NV_FALSE;
+    }
+
+    params.bAcceptClientRequest = pParams->bAcceptClientRequest;
+    (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        if (IS_VIRTUAL(pGpu))
+            return NV_ERR_NOT_SUPPORTED;
+
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+        status = pRmApi->Control(pRmApi,
+                                pGpu->hInternalClient,
+                                pGpu->hInternalSubdevice,
+                                NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE,
+                                &params,
+                                sizeof(params));
+        if (status != NV_OK)
+            return status;
+    }
+
+    pConfComputeApi->pCcCaps->bAcceptClientRequest = pParams->bAcceptClientRequest;
+    return status;
 }
 
 NV_STATUS
@@ -226,6 +269,7 @@ confComputeApiCtrlCmdGetGpuCertificate_IMPL
     Subdevice           *pSubdevice   = NULL;
     OBJGPU              *pGpu         = NULL;
     ConfidentialCompute *pConfCompute = NULL;
+    NV_STATUS            status       = NV_OK;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
@@ -235,18 +279,26 @@ confComputeApiCtrlCmdGetGpuCertificate_IMPL
     pGpu         = GPU_RES_GET_GPU(pSubdevice);
     pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
-    if (pConfCompute != NULL)
+    if (pConfCompute != NULL && pConfCompute->pSpdm != NULL &&
+        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
     {
         // Set max size of certificate buffers before calling SPDM.
         pParams->certChainSize            = NV_CONF_COMPUTE_CERT_CHAIN_MAX_SIZE;
         pParams->attestationCertChainSize = NV_CONF_COMPUTE_ATTESTATION_CERT_CHAIN_MAX_SIZE;
 
-        return spdmGetCertChains_HAL(pGpu,
-                                 pConfCompute->pSpdm,
-                                 pParams->certChain,
-                                 &pParams->certChainSize,
-                                 pParams->attestationCertChain,
-                                 &pParams->attestationCertChainSize);
+        status = spdmGetCertChains_HAL(pGpu,
+                                       pConfCompute->pSpdm,
+                                       pParams->certChain,
+                                       &pParams->certChainSize,
+                                       pParams->attestationCertChain,
+                                       &pParams->attestationCertChainSize);
+        if (status != NV_OK)
+        {
+            // Attestation failure, tear down the CC system.
+            confComputeSetErrorState(pGpu, pConfCompute);
+        }
+
+        return status;
     }
 
     return NV_ERR_OBJECT_NOT_FOUND;
@@ -262,6 +314,7 @@ confComputeApiCtrlCmdGetGpuAttestationReport_IMPL
     Subdevice           *pSubdevice   = NULL;
     OBJGPU              *pGpu         = NULL;
     ConfidentialCompute *pConfCompute = NULL;
+    NV_STATUS            status       = NV_OK;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
@@ -271,20 +324,28 @@ confComputeApiCtrlCmdGetGpuAttestationReport_IMPL
     pGpu         = GPU_RES_GET_GPU(pSubdevice);
     pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
 
-    if (pConfCompute != NULL)
+    if (pConfCompute != NULL && pConfCompute->pSpdm != NULL &&
+        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
     {
         // Set max size of report buffers before calling SPDM.
         pParams->attestationReportSize    = NV_CONF_COMPUTE_GPU_ATTESTATION_REPORT_MAX_SIZE;
         pParams->cecAttestationReportSize = NV_CONF_COMPUTE_GPU_CEC_ATTESTATION_REPORT_MAX_SIZE;
 
-        return spdmGetAttestationReport(pGpu,
-                                        pConfCompute->pSpdm,
-                                        pParams->nonce,
-                                        pParams->attestationReport,
-                                        &pParams->attestationReportSize,
-                                        &pParams->isCecAttestationReportPresent,
-                                        pParams->cecAttestationReport,
-                                        &pParams->cecAttestationReportSize);
+        status = spdmGetAttestationReport(pGpu,
+                                          pConfCompute->pSpdm,
+                                          pParams->nonce,
+                                          pParams->attestationReport,
+                                          &pParams->attestationReportSize,
+                                          &pParams->isCecAttestationReportPresent,
+                                          pParams->cecAttestationReport,
+                                          &pParams->cecAttestationReportSize);
+        if (status != NV_OK)
+        {
+            // Attestation failure, tear down the CC system.
+            confComputeSetErrorState(pGpu, pConfCompute);
+        }
+
+        return status;
     }
 
     return NV_ERR_OBJECT_NOT_FOUND;
@@ -315,3 +376,24 @@ confComputeApiCtrlCmdGpuGetNumSecureChannels_IMPL
 
     return NV_OK;
 }
+
+NV_STATUS
+confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL
+(
+    ConfidentialComputeApi                          *pConfComputeApi,
+    NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS *pParams
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
+confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL
+(
+    ConfidentialComputeApi                          *pConfComputeApi,
+    NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *pParams
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+

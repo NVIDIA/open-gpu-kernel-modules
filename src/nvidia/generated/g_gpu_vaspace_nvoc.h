@@ -210,11 +210,16 @@ struct MMU_WALK_USER_CTX
 /*!
  * RM-registered/managed GPU virtual address space.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_GPU_VASPACE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJGVASPACE {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJVASPACE __nvoc_base_OBJVASPACE;
@@ -230,7 +235,7 @@ struct OBJGVASPACE {
     NV_STATUS (*__gvaspaceMap__)(struct OBJGVASPACE *, struct OBJGPU *, const NvU64, const NvU64, const MMU_MAP_TARGET *, const VAS_MAP_FLAGS);
     void (*__gvaspaceUnmap__)(struct OBJGVASPACE *, struct OBJGPU *, const NvU64, const NvU64);
     struct OBJEHEAP *(*__gvaspaceGetHeap__)(struct OBJGVASPACE *);
-    NvU64 (*__gvaspaceGetMapPageSize__)(struct OBJGVASPACE *, struct OBJGPU *, EMEMBLOCK *);
+    NvU64 (*__gvaspaceGetMapPageSize__)(struct OBJGVASPACE *, struct OBJGPU *, struct EMEMBLOCK *);
     NvU64 (*__gvaspaceGetBigPageSize__)(struct OBJGVASPACE *);
     NvU32 (*__gvaspaceGetFlags__)(struct OBJGVASPACE *);
     NvBool (*__gvaspaceIsMirrored__)(struct OBJGVASPACE *);
@@ -386,9 +391,9 @@ static inline struct OBJEHEAP *gvaspaceGetHeap_DISPATCH(struct OBJGVASPACE *pVAS
     return pVAS->__gvaspaceGetHeap__(pVAS);
 }
 
-NvU64 gvaspaceGetMapPageSize_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock);
+NvU64 gvaspaceGetMapPageSize_IMPL(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock);
 
-static inline NvU64 gvaspaceGetMapPageSize_DISPATCH(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
+static inline NvU64 gvaspaceGetMapPageSize_DISPATCH(struct OBJGVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
     return pVAS->__gvaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 

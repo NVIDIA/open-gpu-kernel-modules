@@ -82,8 +82,9 @@ typedef struct {
     NvHandle hSubDevice;
     NvHandle hSemaphoreMem;
     NvHandle hMaxSubmittedMem;
-    NvHandle hEvent;
+    NvHandle *phEvents;
     NVOS10_EVENT_KERNEL_CALLBACK_EX callback;
+    NvU32 numEvents;
 
     /* The client-mappable semaphore memory region and associated data */
     NV2080_CTRL_FB_GET_SEMAPHORE_SURFACE_LAYOUT_PARAMS layout;
@@ -93,6 +94,7 @@ typedef struct {
     NvP64 maxSubmittedKernAddr;
     NvU8 *pSem;
     NvU8 *pMaxSubmitted;
+    NvU64 slotCount;
 
     /* Client active CPU waiters list XXX Should be per (offset,value) pair */
     SEM_INDEX_LISTENERS listenerMap;
@@ -107,11 +109,16 @@ typedef struct {
     NvBool bHasMonitoredFence;
 } SEM_SHARED_DATA;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_SEM_SURF_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct SemaphoreSurface {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -138,7 +145,6 @@ struct SemaphoreSurface {
     NV_STATUS (*__semsurfInternalControlForward__)(struct SemaphoreSurface *, NvU32, void *, NvU32);
     NV_STATUS (*__semsurfUnmapFrom__)(struct SemaphoreSurface *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__semsurfControl_Epilogue__)(struct SemaphoreSurface *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__semsurfControlLookup__)(struct SemaphoreSurface *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__semsurfGetInternalObjectHandle__)(struct SemaphoreSurface *);
     NV_STATUS (*__semsurfControl__)(struct SemaphoreSurface *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__semsurfUnmap__)(struct SemaphoreSurface *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -146,6 +152,7 @@ struct SemaphoreSurface {
     NV_STATUS (*__semsurfGetMemoryMappingDescriptor__)(struct SemaphoreSurface *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__semsurfControlFilter__)(struct SemaphoreSurface *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__semsurfControlSerialization_Prologue__)(struct SemaphoreSurface *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__semsurfIsPartialUnmapSupported__)(struct SemaphoreSurface *);
     void (*__semsurfPreDestruct__)(struct SemaphoreSurface *);
     NV_STATUS (*__semsurfIsDuplicate__)(struct SemaphoreSurface *, NvHandle, NvBool *);
     void (*__semsurfControlSerialization_Epilogue__)(struct SemaphoreSurface *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -199,7 +206,6 @@ NV_STATUS __nvoc_objCreate_SemaphoreSurface(SemaphoreSurface**, Dynamic*, NvU32,
 #define semsurfInternalControlForward(pGpuResource, command, pParams, size) semsurfInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define semsurfUnmapFrom(pResource, pParams) semsurfUnmapFrom_DISPATCH(pResource, pParams)
 #define semsurfControl_Epilogue(pResource, pCallContext, pParams) semsurfControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define semsurfControlLookup(pResource, pParams, ppEntry) semsurfControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define semsurfGetInternalObjectHandle(pGpuResource) semsurfGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define semsurfControl(pGpuResource, pCallContext, pParams) semsurfControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define semsurfUnmap(pGpuResource, pCallContext, pCpuMapping) semsurfUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -207,6 +213,7 @@ NV_STATUS __nvoc_objCreate_SemaphoreSurface(SemaphoreSurface**, Dynamic*, NvU32,
 #define semsurfGetMemoryMappingDescriptor(pRmResource, ppMemDesc) semsurfGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define semsurfControlFilter(pResource, pCallContext, pParams) semsurfControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define semsurfControlSerialization_Prologue(pResource, pCallContext, pParams) semsurfControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define semsurfIsPartialUnmapSupported(pResource) semsurfIsPartialUnmapSupported_DISPATCH(pResource)
 #define semsurfPreDestruct(pResource) semsurfPreDestruct_DISPATCH(pResource)
 #define semsurfIsDuplicate(pResource, hMemory, pDuplicate) semsurfIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define semsurfControlSerialization_Epilogue(pResource, pCallContext, pParams) semsurfControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -294,10 +301,6 @@ static inline void semsurfControl_Epilogue_DISPATCH(struct SemaphoreSurface *pRe
     pResource->__semsurfControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS semsurfControlLookup_DISPATCH(struct SemaphoreSurface *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__semsurfControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle semsurfGetInternalObjectHandle_DISPATCH(struct SemaphoreSurface *pGpuResource) {
     return pGpuResource->__semsurfGetInternalObjectHandle__(pGpuResource);
 }
@@ -326,6 +329,10 @@ static inline NV_STATUS semsurfControlSerialization_Prologue_DISPATCH(struct Sem
     return pResource->__semsurfControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
 
+static inline NvBool semsurfIsPartialUnmapSupported_DISPATCH(struct SemaphoreSurface *pResource) {
+    return pResource->__semsurfIsPartialUnmapSupported__(pResource);
+}
+
 static inline void semsurfPreDestruct_DISPATCH(struct SemaphoreSurface *pResource) {
     pResource->__semsurfPreDestruct__(pResource);
 }
@@ -352,6 +359,28 @@ NV_STATUS semsurfConstruct_IMPL(struct SemaphoreSurface *arg_semaphoreSurf, CALL
 void semsurfDestruct_IMPL(struct SemaphoreSurface *pSemSurf);
 
 #define __nvoc_semsurfDestruct(pSemSurf) semsurfDestruct_IMPL(pSemSurf)
+NvU64 semsurfGetValue_IMPL(struct SemaphoreSurface *pSemSurf, NvU64 index);
+
+#ifdef __nvoc_sem_surf_h_disabled
+static inline NvU64 semsurfGetValue(struct SemaphoreSurface *pSemSurf, NvU64 index) {
+    NV_ASSERT_FAILED_PRECOMP("SemaphoreSurface was disabled!");
+    return 0;
+}
+#else //__nvoc_sem_surf_h_disabled
+#define semsurfGetValue(pSemSurf, index) semsurfGetValue_IMPL(pSemSurf, index)
+#endif //__nvoc_sem_surf_h_disabled
+
+NvBool semsurfValidateIndex_IMPL(struct SemaphoreSurface *pSemSurf, NvU64 index);
+
+#ifdef __nvoc_sem_surf_h_disabled
+static inline NvBool semsurfValidateIndex(struct SemaphoreSurface *pSemSurf, NvU64 index) {
+    NV_ASSERT_FAILED_PRECOMP("SemaphoreSurface was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_sem_surf_h_disabled
+#define semsurfValidateIndex(pSemSurf, index) semsurfValidateIndex_IMPL(pSemSurf, index)
+#endif //__nvoc_sem_surf_h_disabled
+
 #undef PRIVATE_FIELD
 
 

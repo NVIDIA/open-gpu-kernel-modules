@@ -137,10 +137,6 @@ static void __nvoc_thunk_RmResource_perfbufferControl_Epilogue(struct PerfBuffer
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_perfbufferControlLookup(struct PerfBuffer *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_perfbufferGetInternalObjectHandle(struct PerfBuffer *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_PerfBuffer_GpuResource.offset));
 }
@@ -171,6 +167,10 @@ static NV_STATUS __nvoc_thunk_RmResource_perfbufferControlSerialization_Prologue
 
 static NvBool __nvoc_thunk_RsResource_perfbufferCanCopy(struct PerfBuffer *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_perfbufferIsPartialUnmapSupported(struct PerfBuffer *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_PerfBuffer_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_perfbufferPreDestruct(struct PerfBuffer *pResource) {
@@ -242,6 +242,16 @@ static void __nvoc_init_funcTable_PerfBuffer_1(PerfBuffer *pThis, RmHalspecOwner
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
+    // Hal function -- perfbufferConstructHal
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__perfbufferConstructHal__ = &perfbufferConstructHal_46f6a7;
+    }
+    else
+    {
+        pThis->__perfbufferConstructHal__ = &perfbufferConstructHal_KERNEL;
+    }
+
     pThis->__perfbufferShareCallback__ = &__nvoc_thunk_GpuResource_perfbufferShareCallback;
 
     pThis->__perfbufferCheckMemInterUnmap__ = &__nvoc_thunk_RmResource_perfbufferCheckMemInterUnmap;
@@ -264,8 +274,6 @@ static void __nvoc_init_funcTable_PerfBuffer_1(PerfBuffer *pThis, RmHalspecOwner
 
     pThis->__perfbufferControl_Epilogue__ = &__nvoc_thunk_RmResource_perfbufferControl_Epilogue;
 
-    pThis->__perfbufferControlLookup__ = &__nvoc_thunk_RsResource_perfbufferControlLookup;
-
     pThis->__perfbufferGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_perfbufferGetInternalObjectHandle;
 
     pThis->__perfbufferControl__ = &__nvoc_thunk_GpuResource_perfbufferControl;
@@ -281,6 +289,8 @@ static void __nvoc_init_funcTable_PerfBuffer_1(PerfBuffer *pThis, RmHalspecOwner
     pThis->__perfbufferControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_perfbufferControlSerialization_Prologue;
 
     pThis->__perfbufferCanCopy__ = &__nvoc_thunk_RsResource_perfbufferCanCopy;
+
+    pThis->__perfbufferIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_perfbufferIsPartialUnmapSupported;
 
     pThis->__perfbufferPreDestruct__ = &__nvoc_thunk_RsResource_perfbufferPreDestruct;
 
@@ -309,23 +319,31 @@ void __nvoc_init_PerfBuffer(PerfBuffer *pThis, RmHalspecOwner *pRmhalspecowner) 
     __nvoc_init_funcTable_PerfBuffer(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     PerfBuffer *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(PerfBuffer), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(PerfBuffer));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_PerfBuffer);
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -343,16 +361,25 @@ NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer **ppThis, Dynamic *pParent, NvU
     status = __nvoc_ctor_PerfBuffer(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_PerfBuffer_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_PerfBuffer_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(PerfBuffer));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

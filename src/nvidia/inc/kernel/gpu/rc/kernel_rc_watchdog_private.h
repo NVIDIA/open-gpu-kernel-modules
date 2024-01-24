@@ -79,6 +79,7 @@ typedef struct {
     NvNotification *notifiers[NV_MAX_SUBDEVICES];
     NvNotification *errorContext;
     NvNotification *notifierToken;
+    NvBool bHandleValid;
 } KernelWatchdog;
 
 

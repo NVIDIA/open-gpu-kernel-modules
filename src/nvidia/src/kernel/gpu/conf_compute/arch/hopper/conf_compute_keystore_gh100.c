@@ -142,47 +142,33 @@ confComputeKeyStoreDeriveKey_GH100(ConfidentialCompute *pConfCompute, NvU32 glob
 {
     const NvU32    slotIndex = getKeySlotFromGlobalKeyId(globalKeyId);
     cryptoBundle_t (*pKeyStore)[];
+    uint8_t * pKey = NULL;
+    size_t keySize = 0;
 
     pKeyStore = pConfCompute->m_keySlot;
 
     NV_PRINTF(LEVEL_INFO, "Deriving key for global key ID %x.\n", globalKeyId);
 
-    // SEC2 HMAC keys are not generated from the EMK but from the encryption/decryption key.
     if ((globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_USER)) ||
         (globalKeyId == CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_HMAC_KERN)))
     {
-        NvU32 sourceSlotIndex = 0;
-
-        switch (CC_GKEYID_GET_LKEYID(globalKeyId))
-        {
-            case CC_LKEYID_CPU_SEC2_HMAC_USER:
-                sourceSlotIndex = getKeySlotFromGlobalKeyId(
-                    CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_USER));
-                break;
-            case CC_LKEYID_CPU_SEC2_HMAC_KERN:
-                sourceSlotIndex = getKeySlotFromGlobalKeyId(
-                    CC_GKEYID_GEN(CC_KEYSPACE_SEC2, CC_LKEYID_CPU_SEC2_DATA_KERN));
-                break;
-        }
-
-        if (!libspdm_sha256_hash_all((const void *)(*pKeyStore)[sourceSlotIndex].cryptBundle.key,
-                                     sizeof((*pKeyStore)[sourceSlotIndex].cryptBundle.key),
-                                     (uint8_t *)(*pKeyStore)[slotIndex].hmacBundle.key))
-        {
-            return NV_ERR_FATAL_ERROR;
-        }
+        pKey = (uint8_t *)(*pKeyStore)[slotIndex].hmacBundle.key;
+        keySize = sizeof((*pKeyStore)[slotIndex].hmacBundle.key);
     }
     else
     {
-        if (!libspdm_hkdf_sha256_expand(pConfCompute->m_exportMasterKey,
-                                        sizeof(pConfCompute->m_exportMasterKey),
-                                        (const uint8_t *)(CC_GKEYID_GET_STR(globalKeyId)),
-                                        (size_t)portStringLength(CC_GKEYID_GET_STR(globalKeyId)),
-                                        (uint8_t *)(*pKeyStore)[slotIndex].cryptBundle.key,
-                                        sizeof((*pKeyStore)[slotIndex].cryptBundle.key)))
-        {
-            return NV_ERR_FATAL_ERROR;
-        }
+        pKey = (uint8_t *)(*pKeyStore)[slotIndex].cryptBundle.key;
+        keySize = sizeof((*pKeyStore)[slotIndex].cryptBundle.key);
+    }
+
+    if (!libspdm_hkdf_sha256_expand(pConfCompute->m_exportMasterKey,
+                                sizeof(pConfCompute->m_exportMasterKey),
+                                (const uint8_t *)(CC_GKEYID_GET_STR(globalKeyId)),
+                                (size_t)portStringLength(CC_GKEYID_GET_STR(globalKeyId)),
+                                pKey,
+                                keySize))
+    {
+        return NV_ERR_FATAL_ERROR;
     }
 
     // LCEs will return an error / interrupt if the key is all 0s.
@@ -378,7 +364,34 @@ confComputeKeyStoreRetrieveViaKeyId_GH100
 NV_STATUS
 confComputeKeyStoreUpdateKey_GH100(ConfidentialCompute *pConfCompute, NvU32 globalKeyId)
 {
-    return NV_ERR_NOT_SUPPORTED;
+    const NvU32    slotIndex = getKeySlotFromGlobalKeyId(globalKeyId);
+    cryptoBundle_t (*pKeyStore)[];
+    NvU8           tempMem[CC_AES_256_GCM_KEY_SIZE_BYTES];
+
+    pKeyStore = pConfCompute->m_keySlot;
+
+    NV_PRINTF(LEVEL_INFO, "Updating key with global key ID %x.\n", globalKeyId);
+
+    if (!libspdm_sha256_hash_all((const void *)(*pKeyStore)[slotIndex].cryptBundle.key,
+                                 sizeof((*pKeyStore)[slotIndex].cryptBundle.key),
+                                 tempMem))
+    {
+        return NV_ERR_FATAL_ERROR;
+    }
+
+    if (!libspdm_hkdf_sha256_expand(tempMem,
+                                    sizeof(tempMem),
+                                    (const uint8_t *)(CC_GKEYID_GET_STR(globalKeyId)),
+                                    (size_t)portStringLength(CC_GKEYID_GET_STR(globalKeyId)),
+                                    (uint8_t *)(*pKeyStore)[slotIndex].cryptBundle.key,
+                                    sizeof((*pKeyStore)[slotIndex].cryptBundle.key)))
+    {
+        return NV_ERR_FATAL_ERROR;
+    }
+
+    portMemSet(tempMem, 0, (NvLength) sizeof(tempMem));
+
+    return NV_OK;
 }
 
 //

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -670,7 +670,7 @@ static NV_STATUS uvm_register_channel(uvm_va_space_t *va_space,
 
     // Tell the GPU page fault handler about this instance_ptr -> user_channel
     // mapping
-    status = uvm_gpu_add_user_channel(gpu, user_channel);
+    status = uvm_parent_gpu_add_user_channel(gpu->parent, user_channel);
     if (status != NV_OK)
         goto error_under_read;
 
@@ -806,7 +806,7 @@ void uvm_user_channel_detach(uvm_user_channel_t *user_channel, struct list_head 
         // that this only prevents new faults from being serviced. It doesn't
         // flush out faults currently being serviced, nor prior faults still
         // pending in the fault buffer. Those are handled separately.
-        uvm_gpu_remove_user_channel(user_channel->gpu_va_space->gpu, user_channel);
+        uvm_parent_gpu_remove_user_channel(user_channel->gpu->parent, user_channel);
 
         // We can't release the channel back to RM here because leftover state
         // for this channel (such as the instance pointer) could still be in the
@@ -1035,7 +1035,7 @@ NV_STATUS uvm_test_check_channel_va_space(UVM_TEST_CHECK_CHANNEL_VA_SPACE_PARAMS
     // the provided channel + VEID matches the provided VA space. In all of the
     // non-NV_OK cases the translation will fail and we should return
     // NV_ERR_INVALID_CHANNEL. channel_va_space == NULL for all such cases.
-    (void)uvm_gpu_fault_entry_to_va_space(gpu, &fault_entry, &channel_va_space);
+    (void)uvm_parent_gpu_fault_entry_to_va_space(gpu->parent, &fault_entry, &channel_va_space);
 
     if (channel_va_space == va_space)
         status = NV_OK;

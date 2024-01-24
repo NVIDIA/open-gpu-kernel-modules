@@ -145,7 +145,12 @@ typedef   signed short     NvS16; /* -32768 to 32767                         */
 #endif
 
 // Macro to build an NvU32 from four bytes, listed from msb to lsb
-#define NvU32_BUILD(a, b, c, d) (((a) << 24) | ((b) << 16) | ((c) << 8) | (d))
+#define NvU32_BUILD(a, b, c, d) \
+    ((NvU32)( \
+     (((NvU32)(a) & 0xff) << 24) | \
+     (((NvU32)(b) & 0xff) << 16) | \
+     (((NvU32)(c) & 0xff) << 8)  | \
+     (((NvU32)(d) & 0xff))))
 
 #if NVTYPES_USE_STDINT
 typedef uint32_t           NvV32; /* "void": enumerated or multiple fields   */

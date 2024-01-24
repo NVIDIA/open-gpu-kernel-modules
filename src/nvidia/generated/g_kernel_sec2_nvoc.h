@@ -44,11 +44,16 @@ extern "C" {
 struct _def_rm_flcn_bl_desc;
 typedef struct _def_rm_flcn_bl_desc RM_FLCN_BL_DESC;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_SEC2_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelSec2 {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -64,7 +69,7 @@ struct KernelSec2 {
     NV_STATUS (*__ksec2ConstructEngine__)(struct OBJGPU *, struct KernelSec2 *, ENGDESCRIPTOR);
     void (*__ksec2RegisterIntrService__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceRecord *);
     NV_STATUS (*__ksec2ServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelSec2 *, IntrServiceServiceNotificationInterruptArguments *);
-    void (*__ksec2ConfigureFalcon__)(struct OBJGPU *, struct KernelSec2 *);
+    NV_STATUS (*__ksec2ConfigureFalcon__)(struct OBJGPU *, struct KernelSec2 *);
     NV_STATUS (*__ksec2ResetHw__)(struct OBJGPU *, struct KernelSec2 *);
     NV_STATUS (*__ksec2StateLoad__)(struct OBJGPU *, struct KernelSec2 *, NvU32);
     NvU32 (*__ksec2ReadUcodeFuseVersion__)(struct OBJGPU *, struct KernelSec2 *, NvU32);
@@ -189,9 +194,9 @@ static inline NV_STATUS ksec2ConstructEngine_DISPATCH(struct OBJGPU *pGpu, struc
     return pKernelSec2->__ksec2ConstructEngine__(pGpu, pKernelSec2, arg0);
 }
 
-void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[168]);
+void ksec2RegisterIntrService_IMPL(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[171]);
 
-static inline void ksec2RegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[168]) {
+static inline void ksec2RegisterIntrService_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, IntrServiceRecord pRecords[171]) {
     pKernelSec2->__ksec2RegisterIntrService__(pGpu, pKernelSec2, pRecords);
 }
 
@@ -201,17 +206,21 @@ static inline NV_STATUS ksec2ServiceNotificationInterrupt_DISPATCH(struct OBJGPU
     return arg1->__ksec2ServiceNotificationInterrupt__(arg0, arg1, arg2);
 }
 
-void ksec2ConfigureFalcon_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
+NV_STATUS ksec2ConfigureFalcon_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-void ksec2ConfigureFalcon_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
+NV_STATUS ksec2ConfigureFalcon_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-void ksec2ConfigureFalcon_GA102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
+NV_STATUS ksec2ConfigureFalcon_GA102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
 
-static inline void ksec2ConfigureFalcon_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
-    pKernelSec2->__ksec2ConfigureFalcon__(pGpu, pKernelSec2);
+static inline NV_STATUS ksec2ConfigureFalcon_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
+    return pKernelSec2->__ksec2ConfigureFalcon__(pGpu, pKernelSec2);
 }
 
 NV_STATUS ksec2ResetHw_TU102(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2);
+
+static inline NV_STATUS ksec2ResetHw_5baef9(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
 
 static inline NV_STATUS ksec2ResetHw_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2) {
     return pKernelSec2->__ksec2ResetHw__(pGpu, pKernelSec2);
@@ -232,6 +241,10 @@ static inline NvU32 ksec2ReadUcodeFuseVersion_b2b553(struct OBJGPU *pGpu, struct
 }
 
 NvU32 ksec2ReadUcodeFuseVersion_GA100(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId);
+
+static inline NvU32 ksec2ReadUcodeFuseVersion_474d46(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
 
 static inline NvU32 ksec2ReadUcodeFuseVersion_DISPATCH(struct OBJGPU *pGpu, struct KernelSec2 *pKernelSec2, NvU32 ucodeId) {
     return pKernelSec2->__ksec2ReadUcodeFuseVersion__(pGpu, pKernelSec2, ucodeId);

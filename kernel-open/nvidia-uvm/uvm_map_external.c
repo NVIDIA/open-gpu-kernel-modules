@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -633,10 +633,17 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
                                           uvm_gpu_t *mapping_gpu,
                                           const UvmGpuMemoryInfo *mem_info)
 {
-    uvm_gpu_t *owning_gpu;
+    uvm_gpu_t *owning_gpu = NULL;
+    uvm_gpu_t *gpu;
+
     if (mem_info->egm)
         UVM_ASSERT(mem_info->sysmem);
 
+    // !mem_info->deviceDescendant && !mem_info->sysmem imply fabric allocation.
+    // !mem_info->deviceDescendant also means that mem_info->uuid is invalid. In
+    // this case the owning GPU is NULL, meaning that UVM is oblivious to the
+    // topology and relies on RM and/or the fabric manager (FM) for memory
+    // lifetime management and GPU ref counting.
     if (!mem_info->deviceDescendant && !mem_info->sysmem) {
         ext_gpu_map->owning_gpu = NULL;
         ext_gpu_map->is_sysmem = false;
@@ -645,7 +652,17 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
     // This is a local or peer allocation, so the owning GPU must have been
     // registered.
     // This also checks for if EGM owning GPU is registered.
-    owning_gpu = uvm_va_space_get_gpu_by_uuid(va_space, &mem_info->uuid);
+
+    // TODO: Bug 4351121: RM will return the GI UUID, but
+    // uvm_va_space_get_gpu_by_uuid() currently matches on physical GPU UUIDs.
+    // Match on GI UUID until the UVM user level API has been updated to use
+    // the GI UUID.
+    for_each_va_space_gpu(gpu, va_space) {
+        if (uvm_uuid_eq(&gpu->uuid, &mem_info->uuid)) {
+            owning_gpu = gpu;
+            break;
+        }
+    }
     if (!owning_gpu)
         return NV_ERR_INVALID_DEVICE;
 
@@ -1343,7 +1360,9 @@ static NV_STATUS uvm_free(uvm_va_space_t *va_space, NvU64 base, NvU64 length)
 {
     uvm_va_range_t *va_range;
     NV_STATUS status = NV_OK;
-    uvm_global_processor_mask_t retained_mask;
+    // TODO: Bug 4351121: retained_mask should be pre-allocated, not on the
+    // stack.
+    uvm_processor_mask_t retained_mask;
     LIST_HEAD(deferred_free_list);
 
     if (uvm_api_range_invalid_4k(base, length))
@@ -1379,14 +1398,14 @@ static NV_STATUS uvm_free(uvm_va_space_t *va_space, NvU64 base, NvU64 length)
         // External ranges may have deferred free work, so the GPUs may have to
         // be retained. Construct the mask of all the GPUs that need to be
         // retained.
-        uvm_va_space_global_gpus_in_mask(va_space, &retained_mask, &va_range->external.mapped_gpus);
+        uvm_processor_mask_and(&retained_mask, &va_range->external.mapped_gpus, &va_space->registered_gpus);
     }
 
     uvm_va_range_destroy(va_range, &deferred_free_list);
 
     // If there is deferred work, retain the required GPUs.
     if (!list_empty(&deferred_free_list))
-        uvm_global_mask_retain(&retained_mask);
+        uvm_global_gpu_retain(&retained_mask);
 
 out:
     uvm_va_space_up_write(va_space);
@@ -1394,7 +1413,7 @@ out:
     if (!list_empty(&deferred_free_list)) {
         UVM_ASSERT(status == NV_OK);
         uvm_deferred_free_object_list(&deferred_free_list);
-        uvm_global_mask_release(&retained_mask);
+        uvm_global_gpu_release(&retained_mask);
     }
 
     return status;

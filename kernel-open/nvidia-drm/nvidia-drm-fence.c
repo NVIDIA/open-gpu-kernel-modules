@@ -1638,7 +1638,7 @@ int nv_drm_semsurf_fence_wait_ioctl(struct drm_device *dev,
     if (p->pre_wait_value >= p->post_wait_value) {
         NV_DRM_DEV_LOG_ERR(
             nv_dev,
-            "Non-monotonic wait values specified to fence wait: 0x%llu, 0x%llu",
+            "Non-monotonic wait values specified to fence wait: 0x%" NvU64_fmtu ", 0x%" NvU64_fmtu,
             p->pre_wait_value, p->post_wait_value);
         goto done;
     }

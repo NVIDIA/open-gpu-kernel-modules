@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -29,6 +29,7 @@
 #include "uvm_tracker.h"
 #include "uvm_gpu.h"
 #include "uvm_va_space_mm.h"
+#include "uvm_processors.h"
 
 static bool uvm_is_valid_vma_range(struct mm_struct *mm, NvU64 start, NvU64 length)
 {
@@ -143,14 +144,19 @@ static NV_STATUS split_span_as_needed(uvm_va_space_t *va_space,
     return split_as_needed(va_space, end_addr, split_needed_cb, data);
 }
 
-static bool preferred_location_is_split_needed(const uvm_va_policy_t *policy, void *data)
+typedef struct
 {
     uvm_processor_id_t processor_id;
+    int nid;
+} preferred_location_split_params_t;
 
-    UVM_ASSERT(data);
+static bool preferred_location_is_split_needed(const uvm_va_policy_t *policy, void *data)
+{
+    preferred_location_split_params_t *params = (preferred_location_split_params_t *)data;
 
-    processor_id = *(uvm_processor_id_t*)data;
-    return !uvm_id_equal(processor_id, policy->preferred_location);
+    UVM_ASSERT(params);
+
+    return !uvm_va_policy_preferred_location_equal(policy, params->processor_id, params->nid);
 }
 
 static NV_STATUS preferred_location_unmap_remote_pages(uvm_va_block_t *va_block,
@@ -221,12 +227,14 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
                                         NvU64 base,
                                         NvU64 length,
                                         uvm_processor_id_t preferred_location,
+                                        int preferred_cpu_nid,
                                         uvm_va_range_t **first_va_range_to_migrate,
                                         uvm_tracker_t *out_tracker)
 {
     uvm_va_range_t *va_range, *va_range_last;
     const NvU64 last_address = base + length - 1;
     bool preferred_location_is_faultable_gpu = false;
+    preferred_location_split_params_t split_params;
     NV_STATUS status;
 
     uvm_assert_rwsem_locked_write(&va_space->lock);
@@ -238,11 +246,13 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
                                                                       preferred_location);
     }
 
+    split_params.processor_id = preferred_location;
+    split_params.nid = preferred_cpu_nid;
     status = split_span_as_needed(va_space,
                                   base,
                                   last_address + 1,
                                   preferred_location_is_split_needed,
-                                  &preferred_location);
+                                  &split_params);
     if (status != NV_OK)
         return status;
 
@@ -266,7 +276,7 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
                 return NV_ERR_INVALID_DEVICE;
         }
 
-        status = uvm_va_range_set_preferred_location(va_range, preferred_location, mm, out_tracker);
+        status = uvm_va_range_set_preferred_location(va_range, preferred_location, preferred_cpu_nid, mm, out_tracker);
         if (status != NV_OK)
             return status;
 
@@ -284,7 +294,12 @@ static NV_STATUS preferred_location_set(uvm_va_space_t *va_space,
     if (!mm)
         return NV_ERR_INVALID_ADDRESS;
 
-    return uvm_hmm_set_preferred_location(va_space, preferred_location, base, last_address, out_tracker);
+    return uvm_hmm_set_preferred_location(va_space,
+                                          preferred_location,
+                                          preferred_cpu_nid,
+                                          base,
+                                          last_address,
+                                          out_tracker);
 }
 
 NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS *params, struct file *filp)
@@ -297,6 +312,7 @@ NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS
     uvm_va_range_t *first_va_range_to_migrate = NULL;
     struct mm_struct *mm;
     uvm_processor_id_t preferred_location_id;
+    int preferred_cpu_nid = NUMA_NO_NODE;
     bool has_va_space_write_lock;
     const NvU64 start = params->requestedBase;
     const NvU64 length = params->length;
@@ -318,6 +334,15 @@ NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS
     // If the CPU is the preferred location, we don't have to find the associated uvm_gpu_t
     if (uvm_uuid_is_cpu(&params->preferredLocation)) {
         preferred_location_id = UVM_ID_CPU;
+        preferred_cpu_nid = params->preferredCpuNumaNode;
+
+        if (preferred_cpu_nid != -1 &&
+            (!nv_numa_node_has_memory(preferred_cpu_nid) ||
+             !node_isset(preferred_cpu_nid, node_possible_map) ||
+             uvm_va_space_find_gpu_with_memory_node_id(va_space, preferred_cpu_nid))) {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done;
+        }
     }
     else {
         // Translate preferredLocation into a live GPU ID, and check that this
@@ -355,7 +380,14 @@ NV_STATUS uvm_api_set_preferred_location(const UVM_SET_PREFERRED_LOCATION_PARAMS
         goto done;
     }
 
-    status = preferred_location_set(va_space, mm, start, length, preferred_location_id, &first_va_range_to_migrate, &local_tracker);
+    status = preferred_location_set(va_space,
+                                    mm,
+                                    start,
+                                    length,
+                                    preferred_location_id,
+                                    preferred_cpu_nid,
+                                    &first_va_range_to_migrate,
+                                    &local_tracker);
     if (status != NV_OK)
         goto done;
 
@@ -429,6 +461,7 @@ NV_STATUS uvm_api_unset_preferred_location(const UVM_UNSET_PREFERRED_LOCATION_PA
                                     params->requestedBase,
                                     params->length,
                                     UVM_ID_INVALID,
+                                    NUMA_NO_NODE,
                                     NULL,
                                     &local_tracker);
 

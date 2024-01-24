@@ -946,7 +946,6 @@ typedef struct NV0073_CTRL_CMD_DFP_RUN_PRE_DISP_MUX_OPERATIONS_PARAMS {
 #define NV0073_CTRL_DFP_DISP_MUX_FLAGS_SKIP_BACKLIGHT_ENABLE_NO             0x00000000U
 #define NV0073_CTRL_DFP_DISP_MUX_FLAGS_SKIP_BACKLIGHT_ENABLE_YES            0x00000001U
 
-
 #define NV0073_CTRL_DISP_MUX_BACKLIGHT_BRIGHTNESS_MIN                       0U
 #define NV0073_CTRL_DISP_MUX_BACKLIGHT_BRIGHTNESS_MAX                       100U
 
@@ -1287,5 +1286,34 @@ typedef struct NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS {
 } NV0073_CTRL_DFP_GET_FIXED_MODE_TIMING_PARAMS;
 
 
+
+/*
+ * NV0073_CTRL_CMD_DFP_EDP_DRIVER_UNLOAD
+ *
+ * This command is called when we want to inform RM of driver
+ * unload.
+ *
+ *    subDeviceInstance (in)
+ *        This parameter specifies the subdevice instance within the
+ *        NV04_DISPLAY_COMMON parent device to which the operation
+ *        should be directed.
+ *    displayId (in)
+ *        This parameter inputs the displayId of the active display. A value
+ *        of zero indicates no display is active.
+ *
+ * Possible status values returned are:
+ *    NV_OK
+ *    NV_ERR_INVALID_PARAM_STRUCT
+ *    NV_ERR_INVALID_ARGUMENT
+ *    NV_ERR_NOT_SUPPORTED
+ */
+#define NV0073_CTRL_CMD_DFP_EDP_DRIVER_UNLOAD (0x731174U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_DFP_INTERFACE_ID << 8) | NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS_MESSAGE_ID (0x74U)
+
+typedef struct NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 displayId;
+} NV0073_CTRL_DFP_EDP_DRIVER_UNLOAD_PARAMS;
 
 /* _ctrl0073dfp_h_ */

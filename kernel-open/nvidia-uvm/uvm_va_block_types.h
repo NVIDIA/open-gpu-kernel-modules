@@ -272,13 +272,6 @@ typedef struct
             struct page *pages[PAGES_PER_UVM_VA_BLOCK];
         };
 
-        // This flag indicates that at least one page in range being migrated
-        // or process for a GPU fault (i.e, faulted or prefetched), then
-        // the whole range will be migrated or remote mapped to system memory.
-        // TODO: Bug 4050579: Remove this when swap cached pages can be
-        // migrated.
-        bool swap_cached;
-
         // Cached VMA pointer. This is only valid while holding the mmap_lock.
         struct vm_area_struct *vma;
 

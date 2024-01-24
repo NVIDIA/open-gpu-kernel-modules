@@ -203,23 +203,6 @@ nvlinkCtrlCmdBusGetNvlinkCaps
     KernelMIGManager *pKernelMIGManager      = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvBool            bMIGNvLinkP2PSupported = ((pKernelMIGManager != NULL) &&
                                                 kmigmgrIsMIGNvlinkP2PSupported(pGpu, pKernelMIGManager));
-    //
-    // vGPU:
-    //
-    // Since vGPU does all real hardware management in the
-    // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
-    // do an RPC to the host to get blacklist information from host RM
-    //
-    if (IS_VIRTUAL(pGpu))
-    {
-        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
-        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-        NV_STATUS     status = NV_OK;
-
-        NV_RM_RPC_CONTROL(pGpu, pRmCtrlParams->hClient, pRmCtrlParams->hObject, pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams, pRmCtrlParams->paramsSize, status);
-        return status;
-    }
 
     // Initialize link masks to 0
     pParams->enabledLinkMask    = 0;
@@ -633,6 +616,8 @@ subdeviceCtrlCmdBusGetNvlinkStatus_IMPL
                 FOR_EACH_INDEX_IN_MASK(32, i, pParams->enabledLinkMask)
                 {
                     NV2080_CTRL_NVLINK_DEVICE_INFO *pDeviceInfo = &pParams->linkInfo[i].remoteDeviceInfo;
+                    if (pDeviceInfo->deviceType == NV2080_CTRL_NVLINK_DEVICE_INFO_DEVICE_TYPE_SWITCH)
+                    	continue;
                     OBJGPU *pLoopGpu = gpumgrGetGpuFromUuid(pDeviceInfo->deviceUUID,
                                                             DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _TYPE, _SHA1) |
                                                             DRF_DEF(2080_GPU_CMD, _GPU_GET_GID_FLAGS, _FORMAT, _BINARY));

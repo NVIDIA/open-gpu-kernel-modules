@@ -66,16 +66,16 @@ static NV_STATUS test_tracker_completion(uvm_va_space_t *va_space)
     NV_STATUS status = NV_OK;
     uvm_spin_loop_t spin;
 
-    gpu = uvm_va_space_find_first_gpu(va_space);
-    TEST_CHECK_RET(gpu != NULL);
-
     // TODO: Bug 4008734: [UVM][HCC] Extend secure tracking semaphore mechanism
     //                     to all semaphore
     // This test allocates semaphore in vidmem and then releases it from the CPU
     // SEC2 channels cannot target semaphores in vidmem. Moreover, CPU cannot
     // directly release values to vidmem for CE channels.
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
+
+    gpu = uvm_va_space_find_first_gpu(va_space);
+    TEST_CHECK_RET(gpu != NULL);
 
     TEST_NV_CHECK_RET(uvm_gpu_semaphore_alloc(gpu->semaphore_pool, &sema));
 

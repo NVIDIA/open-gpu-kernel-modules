@@ -55,6 +55,11 @@ struct SOE
 
     /*! The event descriptor for the Thermal event handler */
     NvU32                   thermEvtDesc;
+    /*! The event descriptor for the CCI event handler */
+    NvU32                   cciEvtDesc;
+
+    /*! The event descriptor for the Heartbeat event handler */
+    NvU32                   heartbeatEvtDesc;
 };
 
 #endif //_SOE_PRIV_NVSWITCH_H_

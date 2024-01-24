@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,7 +48,10 @@
 namespace DisplayPort
 {
     class EvoInterface;
- 
+
+#define SET_DP_IMP_ERROR(pErrorCode, errorCode) \
+        if (pErrorCode && *pErrorCode == DP_IMP_ERROR_NONE) *pErrorCode = errorCode;
+
     typedef enum
     {
         DP_IMP_ERROR_NONE,
@@ -497,8 +500,8 @@ namespace DisplayPort
 
         virtual bool compoundQueryAttach(Group * target,
                                          const DpModesetParams &modesetParams,      // Modeset info
-                                         DscParams *pDscParams,				     // DSC parameters
-                                         DP_IMP_ERROR *errorStatus = NULL) = 0;     // Error Status code     
+                                         DscParams *pDscParams,                     // DSC parameters
+                                         DP_IMP_ERROR *errorStatus = NULL) = 0;     // Error Status code
 
         virtual bool endCompoundQuery() = 0;
 
@@ -729,7 +732,7 @@ namespace DisplayPort
     virtual bool readPsrErrorStatus(vesaPsrErrorStatus *psrErr) = 0;
     virtual bool writePsrEvtIndicator(vesaPsrEventIndicator psrErr) = 0;
     virtual bool readPsrEvtIndicator(vesaPsrEventIndicator *psrErr) = 0;
-    virtual bool updatePsrLinkState(bool bTrainLink) = 0;
+    virtual bool updatePsrLinkState(bool bTurnOnLink) = 0;
 
     virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo) = 0;
 

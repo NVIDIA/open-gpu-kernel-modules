@@ -56,11 +56,16 @@ extern "C" {
 #define NV_P2PAPI_ATTRIBUTES_REMOTE_EGM_NO                       0x0
 #define NV_P2PAPI_ATTRIBUTES_REMOTE_EGM_YES                      0x1
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_P2P_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct P2PApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RmResource __nvoc_base_RmResource;
@@ -77,17 +82,17 @@ struct P2PApi {
     NvU32 (*__p2papiGetRefCount__)(struct P2PApi *);
     NV_STATUS (*__p2papiControlFilter__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__p2papiAddAdditionalDependants__)(struct RsClient *, struct P2PApi *, RsResourceRef *);
-    NV_STATUS (*__p2papiUnmapFrom__)(struct P2PApi *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__p2papiControlSerialization_Prologue__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__p2papiControl_Prologue__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__p2papiCanCopy__)(struct P2PApi *);
     NV_STATUS (*__p2papiUnmap__)(struct P2PApi *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NvBool (*__p2papiIsPartialUnmapSupported__)(struct P2PApi *);
     void (*__p2papiPreDestruct__)(struct P2PApi *);
     NV_STATUS (*__p2papiMapTo__)(struct P2PApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__p2papiIsDuplicate__)(struct P2PApi *, NvHandle, NvBool *);
     void (*__p2papiControlSerialization_Epilogue__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__p2papiControl_Epilogue__)(struct P2PApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__p2papiControlLookup__)(struct P2PApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NV_STATUS (*__p2papiUnmapFrom__)(struct P2PApi *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__p2papiMap__)(struct P2PApi *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__p2papiAccessCallback__)(struct P2PApi *, struct RsClient *, void *, RsAccessRight);
     struct OBJGPU *peer1;
@@ -137,17 +142,17 @@ NV_STATUS __nvoc_objCreate_P2PApi(P2PApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define p2papiGetRefCount(pResource) p2papiGetRefCount_DISPATCH(pResource)
 #define p2papiControlFilter(pResource, pCallContext, pParams) p2papiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiAddAdditionalDependants(pClient, pResource, pReference) p2papiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define p2papiUnmapFrom(pResource, pParams) p2papiUnmapFrom_DISPATCH(pResource, pParams)
 #define p2papiControlSerialization_Prologue(pResource, pCallContext, pParams) p2papiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiControl_Prologue(pResource, pCallContext, pParams) p2papiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiCanCopy(pResource) p2papiCanCopy_DISPATCH(pResource)
 #define p2papiUnmap(pResource, pCallContext, pCpuMapping) p2papiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define p2papiIsPartialUnmapSupported(pResource) p2papiIsPartialUnmapSupported_DISPATCH(pResource)
 #define p2papiPreDestruct(pResource) p2papiPreDestruct_DISPATCH(pResource)
 #define p2papiMapTo(pResource, pParams) p2papiMapTo_DISPATCH(pResource, pParams)
 #define p2papiIsDuplicate(pResource, hMemory, pDuplicate) p2papiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define p2papiControlSerialization_Epilogue(pResource, pCallContext, pParams) p2papiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define p2papiControl_Epilogue(pResource, pCallContext, pParams) p2papiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define p2papiControlLookup(pResource, pParams, ppEntry) p2papiControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define p2papiUnmapFrom(pResource, pParams) p2papiUnmapFrom_DISPATCH(pResource, pParams)
 #define p2papiMap(pResource, pCallContext, pParams, pCpuMapping) p2papiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define p2papiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) p2papiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 static inline NvBool p2papiShareCallback_DISPATCH(struct P2PApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -182,10 +187,6 @@ static inline void p2papiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__p2papiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NV_STATUS p2papiUnmapFrom_DISPATCH(struct P2PApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__p2papiUnmapFrom__(pResource, pParams);
-}
-
 static inline NV_STATUS p2papiControlSerialization_Prologue_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__p2papiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
@@ -200,6 +201,10 @@ static inline NvBool p2papiCanCopy_DISPATCH(struct P2PApi *pResource) {
 
 static inline NV_STATUS p2papiUnmap_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return pResource->__p2papiUnmap__(pResource, pCallContext, pCpuMapping);
+}
+
+static inline NvBool p2papiIsPartialUnmapSupported_DISPATCH(struct P2PApi *pResource) {
+    return pResource->__p2papiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void p2papiPreDestruct_DISPATCH(struct P2PApi *pResource) {
@@ -222,8 +227,8 @@ static inline void p2papiControl_Epilogue_DISPATCH(struct P2PApi *pResource, str
     pResource->__p2papiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS p2papiControlLookup_DISPATCH(struct P2PApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__p2papiControlLookup__(pResource, pParams, ppEntry);
+static inline NV_STATUS p2papiUnmapFrom_DISPATCH(struct P2PApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__p2papiUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS p2papiMap_DISPATCH(struct P2PApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

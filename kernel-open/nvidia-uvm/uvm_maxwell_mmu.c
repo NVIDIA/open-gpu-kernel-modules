@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -106,10 +106,16 @@ static NvU64 small_half_pde_maxwell(uvm_mmu_page_table_alloc_t *phys_alloc)
     return pde_bits;
 }
 
-static void make_pde_maxwell(void *entry, uvm_mmu_page_table_alloc_t **phys_allocs, NvU32 depth)
+static void make_pde_maxwell(void *entry,
+                             uvm_mmu_page_table_alloc_t **phys_allocs,
+                             uvm_page_directory_t *dir,
+                             NvU32 child_index)
 {
     NvU64 pde_bits = 0;
-    UVM_ASSERT(depth == 0);
+
+    UVM_ASSERT(dir);
+    UVM_ASSERT(dir->depth == 0);
+
     pde_bits |= HWCONST64(_MMU, PDE, SIZE, FULL);
     pde_bits |= big_half_pde_maxwell(phys_allocs[MMU_BIG]) | small_half_pde_maxwell(phys_allocs[MMU_SMALL]);
 

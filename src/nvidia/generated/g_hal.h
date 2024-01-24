@@ -25,6 +25,7 @@ typedef struct RPCSTRUCTURECOPY_HAL_IFACES *PRPCSTRUCTURECOPY_HAL_IFACES;
 typedef struct {
 
     void (*rpcHalIfacesSetupFn)(PRPC_HAL_IFACES pRpcHal);
+    void (*rpcstructurecopyHalIfacesSetupFn)(PRPCSTRUCTURECOPY_HAL_IFACES pRpcstructurecopyHal);
 
 } HAL_IFACE_SETUP, *PHAL_IFACE_SETUP;
 

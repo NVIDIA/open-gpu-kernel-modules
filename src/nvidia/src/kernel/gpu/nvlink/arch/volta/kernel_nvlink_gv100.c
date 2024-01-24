@@ -29,6 +29,7 @@
 #include "kernel/gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
 #include "core/thread_state.h"
+#include "platform/sli/sli.h"
 
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"

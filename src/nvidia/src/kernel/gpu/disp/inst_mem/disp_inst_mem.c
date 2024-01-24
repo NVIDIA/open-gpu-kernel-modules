@@ -32,6 +32,7 @@
 #include "gpu/disp/kern_disp.h"
 #include "gpu/disp/disp_channel.h"
 #include "gpu/disp/inst_mem/disp_inst_mem.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/mem_mgr/context_dma.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "os/nv_memory_type.h"

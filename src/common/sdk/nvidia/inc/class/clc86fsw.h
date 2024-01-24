@@ -35,7 +35,8 @@
 #define NVC86F_NOTIFIERS_SW                                         (6)
 #define NVC86F_NOTIFIERS_GR_DEBUG_INTR                              (7)
 #define NVC86F_NOTIFIERS_REPLAYABLE_FAULT                           (8)
-#define NVC86F_NOTIFIERS_MAXCOUNT                                   (9)
+#define NVC86F_NOTIFIERS_KEY_ROTATION                               (9)
+#define NVC86F_NOTIFIERS_MAXCOUNT                                   (10)
 
 /* NvNotification[] fields and values */
 #define NVC86F_NOTIFICATION_STATUS_ERROR_BAD_ARGUMENT              (0x2000)

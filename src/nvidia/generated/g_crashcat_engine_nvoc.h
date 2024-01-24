@@ -79,11 +79,16 @@ MAKE_INTRUSIVE_MAP(CrashCatRegisteredBufferMap, CrashCatBufferDescriptor, regist
 MAKE_INTRUSIVE_MAP(CrashCatMappedBufferMap, CrashCatBufferDescriptor, mappedBufferMapNode);
 
 // Base class for engine-specific accessors - must be implemented by the host codebase.
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CRASHCAT_ENGINE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct CrashCatEngine {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct CrashCatEngine *__nvoc_pbase_CrashCatEngine;

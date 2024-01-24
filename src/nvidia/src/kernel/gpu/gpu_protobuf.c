@@ -23,6 +23,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "platform/sli/sli.h"
 
 #include "diagnostics/nv_debug_dump.h"
 

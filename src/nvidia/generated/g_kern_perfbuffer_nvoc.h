@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,11 +41,16 @@ extern "C" {
 /*!
  * Definition of PerfBuffer resource class
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERN_PERFBUFFER_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct PerfBuffer {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -55,6 +60,7 @@ struct PerfBuffer {
     struct RmResource *__nvoc_pbase_RmResource;
     struct GpuResource *__nvoc_pbase_GpuResource;
     struct PerfBuffer *__nvoc_pbase_PerfBuffer;
+    NV_STATUS (*__perfbufferConstructHal__)(struct PerfBuffer *, struct CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
     NvBool (*__perfbufferShareCallback__)(struct PerfBuffer *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__perfbufferCheckMemInterUnmap__)(struct PerfBuffer *, NvBool);
     NV_STATUS (*__perfbufferMapTo__)(struct PerfBuffer *, RS_RES_MAP_TO_PARAMS *);
@@ -66,7 +72,6 @@ struct PerfBuffer {
     NV_STATUS (*__perfbufferInternalControlForward__)(struct PerfBuffer *, NvU32, void *, NvU32);
     NV_STATUS (*__perfbufferUnmapFrom__)(struct PerfBuffer *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__perfbufferControl_Epilogue__)(struct PerfBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__perfbufferControlLookup__)(struct PerfBuffer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__perfbufferGetInternalObjectHandle__)(struct PerfBuffer *);
     NV_STATUS (*__perfbufferControl__)(struct PerfBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__perfbufferUnmap__)(struct PerfBuffer *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -75,6 +80,7 @@ struct PerfBuffer {
     NV_STATUS (*__perfbufferControlFilter__)(struct PerfBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__perfbufferControlSerialization_Prologue__)(struct PerfBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__perfbufferCanCopy__)(struct PerfBuffer *);
+    NvBool (*__perfbufferIsPartialUnmapSupported__)(struct PerfBuffer *);
     void (*__perfbufferPreDestruct__)(struct PerfBuffer *);
     NV_STATUS (*__perfbufferIsDuplicate__)(struct PerfBuffer *, NvHandle, NvBool *);
     void (*__perfbufferControlSerialization_Epilogue__)(struct PerfBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -111,6 +117,8 @@ NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer**, Dynamic*, NvU32, struct CALL
 #define __objCreate_PerfBuffer(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_PerfBuffer((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
+#define perfbufferConstructHal(pResource, pCallContext, pParams) perfbufferConstructHal_DISPATCH(pResource, pCallContext, pParams)
+#define perfbufferConstructHal_HAL(pResource, pCallContext, pParams) perfbufferConstructHal_DISPATCH(pResource, pCallContext, pParams)
 #define perfbufferShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) perfbufferShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define perfbufferCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) perfbufferCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define perfbufferMapTo(pResource, pParams) perfbufferMapTo_DISPATCH(pResource, pParams)
@@ -122,7 +130,6 @@ NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer**, Dynamic*, NvU32, struct CALL
 #define perfbufferInternalControlForward(pGpuResource, command, pParams, size) perfbufferInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define perfbufferUnmapFrom(pResource, pParams) perfbufferUnmapFrom_DISPATCH(pResource, pParams)
 #define perfbufferControl_Epilogue(pResource, pCallContext, pParams) perfbufferControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define perfbufferControlLookup(pResource, pParams, ppEntry) perfbufferControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define perfbufferGetInternalObjectHandle(pGpuResource) perfbufferGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define perfbufferControl(pGpuResource, pCallContext, pParams) perfbufferControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define perfbufferUnmap(pGpuResource, pCallContext, pCpuMapping) perfbufferUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -131,31 +138,28 @@ NV_STATUS __nvoc_objCreate_PerfBuffer(PerfBuffer**, Dynamic*, NvU32, struct CALL
 #define perfbufferControlFilter(pResource, pCallContext, pParams) perfbufferControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define perfbufferControlSerialization_Prologue(pResource, pCallContext, pParams) perfbufferControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define perfbufferCanCopy(pResource) perfbufferCanCopy_DISPATCH(pResource)
+#define perfbufferIsPartialUnmapSupported(pResource) perfbufferIsPartialUnmapSupported_DISPATCH(pResource)
 #define perfbufferPreDestruct(pResource) perfbufferPreDestruct_DISPATCH(pResource)
 #define perfbufferIsDuplicate(pResource, hMemory, pDuplicate) perfbufferIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define perfbufferControlSerialization_Epilogue(pResource, pCallContext, pParams) perfbufferControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define perfbufferMap(pGpuResource, pCallContext, pParams, pCpuMapping) perfbufferMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define perfbufferAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) perfbufferAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-NV_STATUS perfbufferConstructHal_KERNEL(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
-
-
-#ifdef __nvoc_kern_perfbuffer_h_disabled
-static inline NV_STATUS perfbufferConstructHal(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
-    NV_ASSERT_FAILED_PRECOMP("PerfBuffer was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kern_perfbuffer_h_disabled
-#define perfbufferConstructHal(pResource, pCallContext, pParams) perfbufferConstructHal_KERNEL(pResource, pCallContext, pParams)
-#endif //__nvoc_kern_perfbuffer_h_disabled
-
-#define perfbufferConstructHal_HAL(pResource, pCallContext, pParams) perfbufferConstructHal(pResource, pCallContext, pParams)
-
 static inline void perfbufferDestruct_b3696a(struct PerfBuffer *pResource) {
     return;
 }
 
 
 #define __nvoc_perfbufferDestruct(pResource) perfbufferDestruct_b3696a(pResource)
+NV_STATUS perfbufferConstructHal_KERNEL(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams);
+
+static inline NV_STATUS perfbufferConstructHal_46f6a7(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS perfbufferConstructHal_DISPATCH(struct PerfBuffer *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *pParams) {
+    return pResource->__perfbufferConstructHal__(pResource, pCallContext, pParams);
+}
+
 static inline NvBool perfbufferShareCallback_DISPATCH(struct PerfBuffer *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
     return pGpuResource->__perfbufferShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
 }
@@ -200,10 +204,6 @@ static inline void perfbufferControl_Epilogue_DISPATCH(struct PerfBuffer *pResou
     pResource->__perfbufferControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS perfbufferControlLookup_DISPATCH(struct PerfBuffer *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__perfbufferControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle perfbufferGetInternalObjectHandle_DISPATCH(struct PerfBuffer *pGpuResource) {
     return pGpuResource->__perfbufferGetInternalObjectHandle__(pGpuResource);
 }
@@ -234,6 +234,10 @@ static inline NV_STATUS perfbufferControlSerialization_Prologue_DISPATCH(struct 
 
 static inline NvBool perfbufferCanCopy_DISPATCH(struct PerfBuffer *pResource) {
     return pResource->__perfbufferCanCopy__(pResource);
+}
+
+static inline NvBool perfbufferIsPartialUnmapSupported_DISPATCH(struct PerfBuffer *pResource) {
+    return pResource->__perfbufferIsPartialUnmapSupported__(pResource);
 }
 
 static inline void perfbufferPreDestruct_DISPATCH(struct PerfBuffer *pResource) {

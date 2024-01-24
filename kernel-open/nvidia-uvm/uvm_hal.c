@@ -22,6 +22,7 @@
 *******************************************************************************/
 
 #include "uvm_hal.h"
+#include "uvm_global.h"
 #include "uvm_kvmalloc.h"
 
 #include "cla16f.h"
@@ -680,7 +681,9 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
 
     class_ops = ops_find_by_id(ce_table, ARRAY_SIZE(ce_table), gpu_info->ceClass);
     if (class_ops == NULL) {
-        UVM_ERR_PRINT("Unsupported ce class: 0x%X, GPU %s\n", gpu_info->ceClass, parent_gpu->name);
+        UVM_ERR_PRINT("Unsupported ce class: 0x%X, GPU %s\n",
+                      gpu_info->ceClass,
+                      uvm_parent_gpu_name(parent_gpu));
         return NV_ERR_INVALID_CLASS;
     }
 
@@ -688,7 +691,9 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
 
     class_ops = ops_find_by_id(host_table, ARRAY_SIZE(host_table), gpu_info->hostClass);
     if (class_ops == NULL) {
-        UVM_ERR_PRINT("Unsupported host class: 0x%X, GPU %s\n", gpu_info->hostClass, parent_gpu->name);
+        UVM_ERR_PRINT("Unsupported host class: 0x%X, GPU %s\n",
+                      gpu_info->hostClass,
+                      uvm_parent_gpu_name(parent_gpu));
         return NV_ERR_INVALID_CLASS;
     }
 
@@ -696,7 +701,9 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
 
     class_ops = ops_find_by_id(arch_table, ARRAY_SIZE(arch_table), gpu_info->gpuArch);
     if (class_ops == NULL) {
-        UVM_ERR_PRINT("Unsupported GPU architecture: 0x%X, GPU %s\n", gpu_info->gpuArch, parent_gpu->name);
+        UVM_ERR_PRINT("Unsupported GPU architecture: 0x%X, GPU %s\n",
+                      gpu_info->gpuArch,
+                      uvm_parent_gpu_name(parent_gpu));
         return NV_ERR_INVALID_CLASS;
     }
 
@@ -704,7 +711,9 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
 
     class_ops = ops_find_by_id(fault_buffer_table, ARRAY_SIZE(fault_buffer_table), gpu_info->gpuArch);
     if (class_ops == NULL) {
-        UVM_ERR_PRINT("Fault buffer HAL not found, GPU %s, arch: 0x%X\n", parent_gpu->name, gpu_info->gpuArch);
+        UVM_ERR_PRINT("Fault buffer HAL not found, GPU %s, arch: 0x%X\n",
+                      uvm_parent_gpu_name(parent_gpu),
+                      gpu_info->gpuArch);
         return NV_ERR_INVALID_CLASS;
     }
 
@@ -714,7 +723,9 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
                                ARRAY_SIZE(access_counter_buffer_table),
                                gpu_info->gpuArch);
     if (class_ops == NULL) {
-        UVM_ERR_PRINT("Access counter HAL not found, GPU %s, arch: 0x%X\n", parent_gpu->name, gpu_info->gpuArch);
+        UVM_ERR_PRINT("Access counter HAL not found, GPU %s, arch: 0x%X\n",
+                      uvm_parent_gpu_name(parent_gpu),
+                      gpu_info->gpuArch);
         return NV_ERR_INVALID_CLASS;
     }
 
@@ -722,7 +733,9 @@ NV_STATUS uvm_hal_init_gpu(uvm_parent_gpu_t *parent_gpu)
 
     class_ops = ops_find_by_id(sec2_table, ARRAY_SIZE(sec2_table), gpu_info->gpuArch);
     if (class_ops == NULL) {
-        UVM_ERR_PRINT("SEC2 HAL not found, GPU %s, arch: 0x%X\n", parent_gpu->name, gpu_info->gpuArch);
+        UVM_ERR_PRINT("SEC2 HAL not found, GPU %s, arch: 0x%X\n",
+                      uvm_parent_gpu_name(parent_gpu),
+                      gpu_info->gpuArch);
         return NV_ERR_INVALID_CLASS;
     }
 
@@ -736,11 +749,16 @@ static void hal_override_properties(uvm_parent_gpu_t *parent_gpu)
     // Access counters are currently not supported in vGPU.
     //
     // TODO: Bug 200692962: Add support for access counters in vGPU
-    if (parent_gpu->virt_mode != UVM_VIRT_MODE_NONE)
+    if (parent_gpu->virt_mode != UVM_VIRT_MODE_NONE) {
         parent_gpu->access_counters_supported = false;
-    // Access counters are not supported in CC.
-    else if (uvm_conf_computing_mode_enabled_parent(parent_gpu))
+        parent_gpu->access_counters_can_use_physical_addresses = false;
+    }
+
+    // Access counters are not supported in Confidential Computing.
+    else if (g_uvm_global.conf_computing_enabled) {
         parent_gpu->access_counters_supported = false;
+        parent_gpu->access_counters_can_use_physical_addresses = false;
+    }
 }
 
 void uvm_hal_init_properties(uvm_parent_gpu_t *parent_gpu)

@@ -199,7 +199,7 @@
     GPU_CHILD_SINGLE_INST( OBJRC,                GPU_GET_RC,                          1,                NV_FALSE,        pRC              )
 #endif
 #if GPU_CHILD_MODULE(STEREO)
-    GPU_CHILD_SINGLE_INST( OBJSTEREO,            GPU_GET_STEREO,                      1,                NV_FALSE,        pStereo          )
+    GPU_CHILD_SINGLE_INST( Stereo,            GPU_GET_STEREO,                      1,                NV_FALSE,        pStereo          )
 #endif
 #if GPU_CHILD_MODULE(INTR)
     GPU_CHILD_SINGLE_INST( Intr,                 GPU_GET_INTR,                        1,                NV_FALSE,        pIntr            )
@@ -276,6 +276,9 @@
 #if GPU_CHILD_MODULE(HWPM)
     GPU_CHILD_SINGLE_INST( OBJHWPM,              GPU_GET_HWPM,                        1,                NV_FALSE,        pHwpm            )
 #endif
+#if GPU_CHILD_MODULE(KERNEL_HWPM)
+    GPU_CHILD_SINGLE_INST( KernelHwpm,           GPU_GET_KERNEL_HWPM,                 1,                NV_FALSE,        pKernelHwpm      )
+#endif
 #if GPU_CHILD_MODULE(GRIDDISPLAYLESS)
     GPU_CHILD_SINGLE_INST( OBJGRIDDISPLAYLESS,   GPU_GET_GRIDDISPLAYLESS,             1,                NV_FALSE,        pGridDisplayless )
 #endif
@@ -295,7 +298,7 @@
     GPU_CHILD_SINGLE_INST( KernelFsp,            GPU_GET_KERNEL_FSP,                  1,                NV_FALSE,        pKernelFsp       )
 #endif
 #if GPU_CHILD_MODULE(OFA)
-    GPU_CHILD_MULTI_INST( OBJOFA,                GPU_GET_OFA,                         GPU_MAX_OFAS,      NV_FALSE,        pOfa             )
+    GPU_CHILD_MULTI_INST( OBJOFA,                GPU_GET_OFA,                         GPU_MAX_OFAS,     NV_FALSE,        pOfa             )
 #endif
 #if RMCFG_MODULE_CONF_COMPUTE && GPU_CHILD_MODULE(CONF_COMPUTE)
     GPU_CHILD_SINGLE_INST( ConfidentialCompute,  GPU_GET_CONF_COMPUTE,                1,                NV_TRUE,         pConfCompute      )

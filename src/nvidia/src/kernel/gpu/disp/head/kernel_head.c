@@ -405,6 +405,7 @@ kheadWriteVblankIntrState_IMPL
     if (updatehw)
     {
         kheadWriteVblankIntrEnable_HAL(pGpu, pKernelHead, enablehw);
+
     }
 }
 

@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "core/locks.h"
 #include "gpu/gpu.h"
+#include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/bus/third_party_p2p.h"
 #include "platform/p2p/p2p_caps.h"

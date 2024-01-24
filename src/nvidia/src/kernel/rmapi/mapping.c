@@ -31,6 +31,7 @@
 #include "rmapi/rs_utils.h"
 
 #include "entry_points.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/mem_mgr/mem_mgr.h"
@@ -152,7 +153,6 @@ serverInterMap_Prologue
 
     pPrivate->pSrcGpu = memInterMapParams.pSrcGpu;
     pPrivate->hMemoryDevice = memInterMapParams.hMemoryDevice;
-    pPrivate->bDmaMapNeeded = memInterMapParams.bDmaMapNeeded;
     pPrivate->bFlaMapping   = memInterMapParams.bFlaMapping;
 
     // Check length for overflow and against the physical memory size.
@@ -284,38 +284,30 @@ _rmapiRmUnmapMemoryDma
     NvHandle            hClient,
     NvHandle            hDevice,
     NvHandle            hMemCtx,
-    NvHandle            hMemory,
     NvU32               flags,
     NvU64               dmaOffset,
+    NvU64               size,
     RS_LOCK_INFO       *pLockInfo,
     API_SECURITY_INFO  *pSecInfo
 )
 {
     RsClient           *pRsClient   = NULL;
-    MEMORY_DESCRIPTOR  *pMemDesc    = NULL;
-    Memory             *pMemory     = NULL;
 
     RS_INTER_UNMAP_PARAMS params;
     RS_INTER_UNMAP_PRIVATE private;
 
     NV_ASSERT_OK_OR_RETURN(serverGetClientUnderLock(&g_resServ, hClient, &pRsClient));
 
-    // Translate hMemory to pMemDesc
-    if (memGetByHandle(pRsClient, hMemory, &pMemory) == NV_OK)
-    {
-        pMemDesc = pMemory->pMemDesc;
-    }
-
     portMemSet(&params, 0, sizeof(params));
     params.hClient = hClient;
     params.hMapper = hMemCtx;
     params.hDevice = hDevice;
-    params.hMappable = hMemory;
     params.flags = flags;
     params.dmaOffset = dmaOffset;
-    params.pMemDesc = pMemDesc;
     params.pLockInfo = pLockInfo;
     params.pSecInfo = pSecInfo;
+
+    params.size = size;
 
     portMemSet(&private, 0, sizeof(private));
     params.pPrivate = &private;
@@ -463,16 +455,16 @@ rmapiUnmap
     NvHandle  hClient,
     NvHandle  hDevice,
     NvHandle  hMemCtx,
-    NvHandle  hMemory,
     NvU32     flags,
-    NvU64     dmaOffset
+    NvU64     dmaOffset,
+    NvU64     size
 )
 {
     if (!pRmApi->bHasDefaultSecInfo)
         return NV_ERR_NOT_SUPPORTED;
 
-    return pRmApi->UnmapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, hMemory,
-                                    flags, dmaOffset, &pRmApi->defaultSecInfo);
+    return pRmApi->UnmapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx,
+                                    flags, dmaOffset, size, &pRmApi->defaultSecInfo);
 }
 
 NV_STATUS
@@ -482,9 +474,9 @@ rmapiUnmapWithSecInfo
     NvHandle           hClient,
     NvHandle           hDevice,
     NvHandle           hMemCtx,
-    NvHandle           hMemory,
     NvU32              flags,
     NvU64              dmaOffset,
+    NvU64              size,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -493,10 +485,10 @@ rmapiUnmapWithSecInfo
     RS_LOCK_INFO                  lockInfo;
 
     NV_PRINTF(LEVEL_INFO,
-              "Nv04Unmap: client:0x%x device:0x%x context:0x%x memory:0x%x\n",
-              hClient, hDevice, hMemCtx, hMemory);
-    NV_PRINTF(LEVEL_INFO, "Nv04Unmap:  flags:0x%x dmaOffset:0x%08llx\n",
-              flags, dmaOffset);
+              "Nv04Unmap: client:0x%x device:0x%x context:0x%x\n",
+              hClient, hDevice, hMemCtx);
+    NV_PRINTF(LEVEL_INFO, "Nv04Unmap:  flags:0x%x dmaOffset:0x%08llx size:0x%llx\n",
+              flags, dmaOffset, size);
 
     status = rmapiPrologue(pRmApi, &rmApiContext);
     if (status != NV_OK)
@@ -515,8 +507,8 @@ rmapiUnmapWithSecInfo
     LOCK_METER_DATA(UNMAPMEM_DMA, flags, 0, 0);
 
     // Unmap DMA memory
-    status = _rmapiRmUnmapMemoryDma(hClient, hDevice, hMemCtx, hMemory, flags,
-                                    dmaOffset, &lockInfo, pSecInfo);
+    status = _rmapiRmUnmapMemoryDma(hClient, hDevice, hMemCtx, flags,
+                                    dmaOffset, size, &lockInfo, pSecInfo);
 
     rmapiEpilogue(pRmApi, &rmApiContext);
 
@@ -541,9 +533,9 @@ rmapiUnmapWithSecInfoTls
     NvHandle           hClient,
     NvHandle           hDevice,
     NvHandle           hMemCtx,
-    NvHandle           hMemory,
     NvU32              flags,
     NvU64              dmaOffset,
+    NvU64              size,
     API_SECURITY_INFO *pSecInfo
 )
 {
@@ -552,7 +544,7 @@ rmapiUnmapWithSecInfoTls
 
     threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
 
-    status = rmapiUnmapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, hMemory, flags, dmaOffset, pSecInfo);
+    status = rmapiUnmapWithSecInfo(pRmApi, hClient, hDevice, hMemCtx, flags, dmaOffset, size, pSecInfo);
 
     threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
 

@@ -104,11 +104,16 @@ NV_STATUS dispswReleaseSemaphoreAndNotifierFill(struct OBJGPU *pGpu,
 /*!
  * RM internal class representing GF100_DISP_SW
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DISPSW_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DispSwObject {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -136,7 +141,6 @@ struct DispSwObject {
     NV_STATUS (*__dispswInternalControlForward__)(struct DispSwObject *, NvU32, void *, NvU32);
     NV_STATUS (*__dispswUnmapFrom__)(struct DispSwObject *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__dispswControl_Epilogue__)(struct DispSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__dispswControlLookup__)(struct DispSwObject *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__dispswGetInternalObjectHandle__)(struct DispSwObject *);
     NV_STATUS (*__dispswControl__)(struct DispSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__dispswUnmap__)(struct DispSwObject *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -147,6 +151,7 @@ struct DispSwObject {
     NV_STATUS (*__dispswUnregisterEvent__)(struct DispSwObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__dispswControlSerialization_Prologue__)(struct DispSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__dispswCanCopy__)(struct DispSwObject *);
+    NvBool (*__dispswIsPartialUnmapSupported__)(struct DispSwObject *);
     void (*__dispswPreDestruct__)(struct DispSwObject *);
     NV_STATUS (*__dispswIsDuplicate__)(struct DispSwObject *, NvHandle, NvBool *);
     void (*__dispswControlSerialization_Epilogue__)(struct DispSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -204,7 +209,6 @@ NV_STATUS __nvoc_objCreate_DispSwObject(DispSwObject**, Dynamic*, NvU32, CALL_CO
 #define dispswInternalControlForward(pGpuResource, command, pParams, size) dispswInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define dispswUnmapFrom(pResource, pParams) dispswUnmapFrom_DISPATCH(pResource, pParams)
 #define dispswControl_Epilogue(pResource, pCallContext, pParams) dispswControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define dispswControlLookup(pResource, pParams, ppEntry) dispswControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define dispswGetInternalObjectHandle(pGpuResource) dispswGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define dispswControl(pGpuResource, pCallContext, pParams) dispswControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define dispswUnmap(pGpuResource, pCallContext, pCpuMapping) dispswUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -215,6 +219,7 @@ NV_STATUS __nvoc_objCreate_DispSwObject(DispSwObject**, Dynamic*, NvU32, CALL_CO
 #define dispswUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) dispswUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define dispswControlSerialization_Prologue(pResource, pCallContext, pParams) dispswControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define dispswCanCopy(pResource) dispswCanCopy_DISPATCH(pResource)
+#define dispswIsPartialUnmapSupported(pResource) dispswIsPartialUnmapSupported_DISPATCH(pResource)
 #define dispswPreDestruct(pResource) dispswPreDestruct_DISPATCH(pResource)
 #define dispswIsDuplicate(pResource, hMemory, pDuplicate) dispswIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define dispswControlSerialization_Epilogue(pResource, pCallContext, pParams) dispswControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -288,10 +293,6 @@ static inline void dispswControl_Epilogue_DISPATCH(struct DispSwObject *pResourc
     pResource->__dispswControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS dispswControlLookup_DISPATCH(struct DispSwObject *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__dispswControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle dispswGetInternalObjectHandle_DISPATCH(struct DispSwObject *pGpuResource) {
     return pGpuResource->__dispswGetInternalObjectHandle__(pGpuResource);
 }
@@ -330,6 +331,10 @@ static inline NV_STATUS dispswControlSerialization_Prologue_DISPATCH(struct Disp
 
 static inline NvBool dispswCanCopy_DISPATCH(struct DispSwObject *pResource) {
     return pResource->__dispswCanCopy__(pResource);
+}
+
+static inline NvBool dispswIsPartialUnmapSupported_DISPATCH(struct DispSwObject *pResource) {
+    return pResource->__dispswIsPartialUnmapSupported__(pResource);
 }
 
 static inline void dispswPreDestruct_DISPATCH(struct DispSwObject *pResource) {

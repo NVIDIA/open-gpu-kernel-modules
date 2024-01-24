@@ -54,15 +54,62 @@ _kschedmgrGetSchedulerPolicy
 )
 {
     NvU32   schedPolicy         = SCHED_POLICY_DEFAULT;
+    NvU32   regkey              = 0;
+
+    if (hypervisorIsVgxHyper() || (RMCFG_FEATURE_PLATFORM_GSP && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu)))
+    {
+        //  Disable OBJSCHED_SW_ENABLE when GPU is older than Pascal.
+        //  This is true for WDDM and vGPU scheduling
+        if (!IsPASCALorBetter(pGpu))
+        {
+            schedPolicy = SCHED_POLICY_DEFAULT;
+        }
+        else if (IS_MIG_ENABLED(pGpu))
+        {
+            schedPolicy = SCHED_POLICY_DEFAULT;
+            portDbgPrintf("NVRM: Software Scheduler is not supported in MIG mode\n");
+        }
+        // Check the PVMRL regkey
+        else if (osReadRegistryDword(pGpu, NV_REG_STR_RM_PVMRL, &regkey) == NV_OK &&
+                 FLD_TEST_REF(NV_REG_STR_RM_PVMRL_ENABLE, _YES, regkey) )
+        {
+            NvU32 configSchedPolicy = REF_VAL(NV_REG_STR_RM_PVMRL_SCHED_POLICY, regkey);
+
+            switch (configSchedPolicy)
+            {
+                case NV_REG_STR_RM_PVMRL_SCHED_POLICY_VGPU_EQUAL_SHARE:
+                    schedPolicy = SCHED_POLICY_VGPU_EQUAL_SHARE;
+                    break;
+                case NV_REG_STR_RM_PVMRL_SCHED_POLICY_VGPU_FIXED_SHARE:
+                    schedPolicy = SCHED_POLICY_VGPU_FIXED_SHARE;
+                    break;
+                default:
+                    NV_PRINTF(LEVEL_INFO,
+                              "Invalid scheduling policy %d specified by regkey.\n",
+                              configSchedPolicy);
+                    break;
+            }
+        }
+        else
+        {
+            schedPolicy = SCHED_POLICY_BEST_EFFORT;
+        }
+    }
 
     *pSchedPolicy = schedPolicy;
 
     switch (schedPolicy)
     {
+        case SCHED_POLICY_BEST_EFFORT:
+            return MAKE_NV_PRINTF_STR("BEST_EFFORT");
+        case SCHED_POLICY_VGPU_EQUAL_SHARE:
+            return MAKE_NV_PRINTF_STR("EQUAL_SHARE");
+        case SCHED_POLICY_VGPU_FIXED_SHARE:
+            return MAKE_NV_PRINTF_STR("FIXED_SHARE");
         case SCHED_POLICY_DEFAULT:
         default:
             // For baremetal and PT
-            return "NONE";
+            return MAKE_NV_PRINTF_STR("NONE");
     }
 }
 
@@ -74,6 +121,25 @@ void kschedmgrSetConfigPolicyFromUser_IMPL
 )
 {
     NvU32 schedSwPolicyLocal = SCHED_POLICY_DEFAULT;
+    switch (schedSwPolicy)
+    {
+        case NV2080_CTRL_CMD_VGPU_SCHEDULER_POLICY_BEST_EFFORT:
+            schedSwPolicyLocal = SCHED_POLICY_BEST_EFFORT;
+            break;
+        case NV2080_CTRL_CMD_VGPU_SCHEDULER_POLICY_EQUAL_SHARE:
+            schedSwPolicyLocal =  SCHED_POLICY_VGPU_EQUAL_SHARE;
+            break;
+        case NV2080_CTRL_CMD_VGPU_SCHEDULER_POLICY_FIXED_SHARE:
+            schedSwPolicyLocal =  SCHED_POLICY_VGPU_FIXED_SHARE;
+            break;
+        case NV2080_CTRL_CMD_VGPU_SCHEDULER_POLICY_OTHER:
+            schedSwPolicyLocal =  SCHED_POLICY_DEFAULT;
+            break;
+        default:
+            NV_PRINTF(LEVEL_WARNING, "Unknown vGPU scheduler policy %u\n", schedSwPolicy);
+            schedSwPolicyLocal =  SCHED_POLICY_DEFAULT;
+            break;
+    }
     pKernelSchedMgr->configSchedPolicy = schedSwPolicyLocal;
     pKernelSchedMgr->bIsSchedSwEnabled = (schedSwPolicyLocal != SCHED_POLICY_DEFAULT);
 }

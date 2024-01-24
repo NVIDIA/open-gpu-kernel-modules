@@ -25,7 +25,6 @@
 
 #include "gpu/disp/rg_line_callback/rg_line_callback.h"
 #include "gpu/disp/kern_disp.h"
-#include "gpu/device/device.h"
 #include "gpu/disp/disp_objs.h"
 #include "rmapi/client.h"
 #include "gpu/gpu.h"

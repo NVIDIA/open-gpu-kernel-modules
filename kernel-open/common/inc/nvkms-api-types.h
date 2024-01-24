@@ -58,6 +58,7 @@ typedef NvU32 NvKmsFrameLockHandle;
 typedef NvU32 NvKmsDeferredRequestFifoHandle;
 typedef NvU32 NvKmsSwapGroupHandle;
 typedef NvU32 NvKmsVblankSyncObjectHandle;
+typedef NvU32 NvKmsVblankSemControlHandle;
 
 struct NvKmsSize {
     NvU16 width;

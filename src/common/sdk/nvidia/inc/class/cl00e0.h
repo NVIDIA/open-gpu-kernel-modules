@@ -30,10 +30,16 @@
 // Source file:      class/cl00e0.finn
 //
 
-#include "nvcfg_sdk.h"
 #include "cl0080.h"
 
-
+/*
+ * Class definition for exporting memory handles to a different RM client on the
+ * same or another node (OS).
+ *
+ * No memory is allocated or mapped using this class.
+ * Parented by hClient.
+ * NvRmDupObject() is not supported. Use NV_MEM_EXPORT_FLAGS_DUP_BY_UUID instead.
+ */
 
 #define NV_MEMORY_EXPORT           (0xe0U) /* finn: Evaluated from "NV00E0_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
@@ -49,7 +55,47 @@ typedef struct NV_EXPORT_MEM_PACKET {
 #define NV_MEM_EXPORT_FLAGS_DEFAULT     0x00000000
 #define NV_MEM_EXPORT_FLAGS_DUP_BY_UUID 0x00000001
 
-
+/*
+ * imexChannel [IN]
+ * Used to associated export object with an IMEX channel.
+ * When duping,
+ * - If the caller is not the privileged IMEX daemon, validate the caller
+ *   is subscribed to the channel.
+ * - Validate that the imexChannel matches with that of the export object being
+ *   duped.
+ *
+ *  packet [IN/OUT]
+ *    Bag of bits which uniquely identifies this object universally.
+ *    - When a new object is allocated, "packet" is returned as output.
+ *    - If NV_MEM_EXPORT_FLAGS_DUP_BY_UUID is provided, "packet" is used as
+ *      input to duplicate the existing object.
+ *
+ *  numMaxHandles [IN/OUT]
+ *    Max number of memory handles to be attached to the export object.
+ *    - Input when a new object is allocated.
+ *    - Output When duplicating.
+ *
+ *  flags [IN/OUT]
+ *    One of NV_MEM_EXPORT_FLAGS_*
+ *    - Input when a new object is allocated or duplicated.
+ *    - Output when duplicating. The flags at the time of allocation are
+ *      returned.
+ *
+ *  metadata [IN/OUT]
+ *    Private data about the export object (opaque to kernel mode)
+ *    - Input when a new object is allocated.
+ *    - Output When duplicating.
+ *
+ *  deviceInstanceMask [OUT]
+ *    Attached device instance mask
+ *
+ *  giIdMasks [OUT]
+ *    Attached GPU instance ID mask (MIG is currently not supported)
+ *    Must be indexed using deviceInstanceMask.
+ *
+ *  numCurHandles [OUT]
+ *    Number of memory handles currently attached to the export object.
+ */
 
 #define NV00E0_ALLOCATION_PARAMETERS_MESSAGE_ID (0x00e0U)
 

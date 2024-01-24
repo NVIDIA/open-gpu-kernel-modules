@@ -40,7 +40,7 @@
 */
 
 NV_STATUS
-prbEncGpuRegs(POBJGPU pGpu, IoAperture *pAperture, NvU64 offset, NvU32 numRegs,
+prbEncGpuRegs(OBJGPU *pGpu, IoAperture *pAperture, NvU64 offset, NvU32 numRegs,
               PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc)
 {
     NV_STATUS status;
@@ -94,7 +94,7 @@ done:
 */
 
 NV_STATUS
-prbEncGpuRegImm(POBJGPU pGpu, NvU64 offset, NvU32 reg,
+prbEncGpuRegImm(OBJGPU *pGpu, NvU64 offset, NvU32 reg,
                 PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc)
 {
     NV_STATUS status;
@@ -137,7 +137,7 @@ done:
 */
 
 NV_STATUS
-prbEncGpuRegSliceTbl(POBJGPU pGpu, IoAperture *pAperture, const PRB_GPU_REG_TABLE *pTbl, NvU32 numEntries, NvU32 base,
+prbEncGpuRegSliceTbl(OBJGPU *pGpu, IoAperture *pAperture, const PRB_GPU_REG_TABLE *pTbl, NvU32 numEntries, NvU32 base,
                 PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc)
 {
     NV_STATUS status = NV_OK; // Init keeps the Mac compiler quiet
@@ -228,7 +228,7 @@ done:
 */
 
 NV_STATUS
-prbEncGpuRegSliceIndexedTbl(POBJGPU pGpu, IoAperture *pAperture, const PRB_GPU_REG_INDEXED_TABLE *pTbl, NvU32 numEntries,
+prbEncGpuRegSliceIndexedTbl(OBJGPU *pGpu, IoAperture *pAperture, const PRB_GPU_REG_INDEXED_TABLE *pTbl, NvU32 numEntries,
                             NvU32 base, NvU32 index, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc)
 {
     NV_STATUS status = NV_OK; // Init keeps the Mac compiler quiet
@@ -316,7 +316,7 @@ done:
 */
 
 NV_STATUS
-prbEncGpuRegSliceOffset(POBJGPU pGpu, IoAperture *pAperture, const NvU32 *pOffset, NvU32 numEntries,
+prbEncGpuRegSliceOffset(OBJGPU *pGpu, IoAperture *pAperture, const NvU32 *pOffset, NvU32 numEntries,
         NvU32 base, PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *pFieldDesc)
 {
     NV_STATUS status  = NV_OK;  // if numEntries == 0
@@ -388,7 +388,7 @@ done:
 */
 
 NV_STATUS
-prbEncGpuRegOffset(POBJGPU pGpu, IoAperture *pAperture, const NvU32 *pOffset, NvU32 numEntries,
+prbEncGpuRegOffset(OBJGPU *pGpu, IoAperture *pAperture, const NvU32 *pOffset, NvU32 numEntries,
                 PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *pFieldDesc)
 {
     return prbEncGpuRegSliceOffset(pGpu, pAperture, pOffset, numEntries, 0, pPrbEnc, pFieldDesc);
@@ -406,7 +406,7 @@ prbEncGpuRegOffset(POBJGPU pGpu, IoAperture *pAperture, const NvU32 *pOffset, Nv
 */
 
 NV_STATUS
-prbEncGpuRegTbl(POBJGPU pGpu, IoAperture *pAperture, const PRB_GPU_REG_TABLE *pTbl, NvU32 numEntries,
+prbEncGpuRegTbl(OBJGPU *pGpu, IoAperture *pAperture, const PRB_GPU_REG_TABLE *pTbl, NvU32 numEntries,
                 PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc)
 {
     return prbEncGpuRegSliceTbl(pGpu, pAperture, pTbl, numEntries, 0, pPrbEnc, fieldDesc);
@@ -564,7 +564,7 @@ done:
 */
 
 NV_STATUS
-prbEncPciConfigRegs(POBJGPU pGpu, NvU64 index, NvU32 numRegs,
+prbEncPciConfigRegs(OBJGPU *pGpu, NvU64 index, NvU32 numRegs,
                     PRB_ENCODER *pPrbEnc, const PRB_FIELD_DESC *fieldDesc)
 {
     NV_STATUS status;
@@ -651,7 +651,7 @@ done:
 */
 
 NV_STATUS
-prbEncGenExData(PRB_ENCODER *pPrbEnc, POBJGPU pGpu, NvU32 chId, const PRB_FIELD_DESC *fieldDesc)
+prbEncGenExData(PRB_ENCODER *pPrbEnc, OBJGPU *pGpu, NvU32 chId, const PRB_FIELD_DESC *fieldDesc)
 {
     NV_STATUS    status;
     NV_STATUS    statusEnd;

@@ -32,6 +32,7 @@
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/fifo/kernel_channel_group.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl0020.h"
 

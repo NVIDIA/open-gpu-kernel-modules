@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -27,6 +27,7 @@
 #include "uvm_gpu_replayable_faults.h"
 #include "uvm_mem.h"
 #include "uvm_perf_events.h"
+#include "uvm_processors.h"
 #include "uvm_procfs.h"
 #include "uvm_thread_context.h"
 #include "uvm_va_range.h"
@@ -69,11 +70,6 @@ static void uvm_unregister_callbacks(void)
         uvm_rm_locked_call_void(nvUvmInterfaceDeRegisterUvmOps());
         g_ops_registered = false;
     }
-}
-
-static void sev_init(const UvmPlatformInfo *platform_info)
-{
-    g_uvm_global.sev_enabled = platform_info->sevEnabled;
 }
 
 NV_STATUS uvm_global_init(void)
@@ -124,8 +120,13 @@ NV_STATUS uvm_global_init(void)
 
     uvm_ats_init(&platform_info);
     g_uvm_global.num_simulated_devices = 0;
+    g_uvm_global.conf_computing_enabled = platform_info.confComputingEnabled;
 
-    sev_init(&platform_info);
+    status = uvm_processor_mask_cache_init();
+    if (status != NV_OK) {
+        UVM_ERR_PRINT("uvm_processor_mask_cache_init() failed: %s\n", nvstatusToString(status));
+        goto error;
+    }
 
     status = uvm_gpu_init();
     if (status != NV_OK) {
@@ -229,6 +230,7 @@ void uvm_global_exit(void)
     uvm_mem_global_exit();
     uvm_pmm_sysmem_exit();
     uvm_gpu_exit();
+    uvm_processor_mask_cache_exit();
 
     if (g_uvm_global.rm_session_handle != 0)
         uvm_rm_locked_call_void(nvUvmInterfaceSessionDestroy(g_uvm_global.rm_session_handle));
@@ -247,19 +249,19 @@ void uvm_global_exit(void)
 
 // Signal to the top-half ISR whether calls from the RM's top-half ISR are to
 // be completed without processing.
-static void uvm_gpu_set_isr_suspended(uvm_gpu_t *gpu, bool is_suspended)
+static void uvm_parent_gpu_set_isr_suspended(uvm_parent_gpu_t *parent_gpu, bool is_suspended)
 {
-    uvm_spin_lock_irqsave(&gpu->parent->isr.interrupts_lock);
+    uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
 
-    gpu->parent->isr.is_suspended = is_suspended;
+    parent_gpu->isr.is_suspended = is_suspended;
 
-    uvm_spin_unlock_irqrestore(&gpu->parent->isr.interrupts_lock);
+    uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
 }
 
 static NV_STATUS uvm_suspend(void)
 {
     uvm_va_space_t *va_space = NULL;
-    uvm_global_gpu_id_t gpu_id;
+    uvm_gpu_id_t gpu_id;
     uvm_gpu_t *gpu;
 
     // Upon entry into this function, the following is true:
@@ -293,7 +295,7 @@ static NV_STATUS uvm_suspend(void)
     // Though global_lock isn't held here, pm.lock indirectly prevents the
     // addition and removal of GPUs, since these operations can currently
     // only occur in response to ioctl() calls.
-    for_each_global_gpu_id_in_mask(gpu_id, &g_uvm_global.retained_gpus) {
+    for_each_gpu_id_in_mask(gpu_id, &g_uvm_global.retained_gpus) {
         gpu = uvm_gpu_get(gpu_id);
 
         // Since fault buffer state may be lost across sleep cycles, UVM must
@@ -314,7 +316,7 @@ static NV_STATUS uvm_suspend(void)
         // notifications have been handled.
         uvm_gpu_access_counters_set_ignore(gpu, true);
 
-        uvm_gpu_set_isr_suspended(gpu, true);
+        uvm_parent_gpu_set_isr_suspended(gpu->parent, true);
 
         nv_kthread_q_flush(&gpu->parent->isr.bottom_half_q);
 
@@ -347,7 +349,7 @@ NV_STATUS uvm_suspend_entry(void)
 static NV_STATUS uvm_resume(void)
 {
     uvm_va_space_t *va_space = NULL;
-    uvm_global_gpu_id_t gpu_id;
+    uvm_gpu_id_t gpu_id;
     uvm_gpu_t *gpu;
 
     g_uvm_global.pm.is_suspended = false;
@@ -366,14 +368,14 @@ static NV_STATUS uvm_resume(void)
     uvm_mutex_unlock(&g_uvm_global.va_spaces.lock);
 
     // pm.lock is held in lieu of global_lock to prevent GPU addition/removal
-    for_each_global_gpu_id_in_mask(gpu_id, &g_uvm_global.retained_gpus) {
+    for_each_gpu_id_in_mask(gpu_id, &g_uvm_global.retained_gpus) {
         gpu = uvm_gpu_get(gpu_id);
 
         // Bring the fault buffer software state back in sync with the
         // hardware state.
         uvm_gpu_fault_buffer_resume(gpu->parent);
 
-        uvm_gpu_set_isr_suspended(gpu, false);
+        uvm_parent_gpu_set_isr_suspended(gpu->parent, false);
 
         // Reenable access counter interrupt processing unless notifications
         // have been set to be suppressed.
@@ -431,35 +433,36 @@ NV_STATUS uvm_global_reset_fatal_error(void)
     return nv_atomic_xchg(&g_uvm_global.fatal_error, NV_OK);
 }
 
-void uvm_global_mask_retain(const uvm_global_processor_mask_t *mask)
+void uvm_global_gpu_retain(const uvm_processor_mask_t *mask)
 {
     uvm_gpu_t *gpu;
-    for_each_global_gpu_in_mask(gpu, mask)
+
+    for_each_gpu_in_mask(gpu, mask)
         uvm_gpu_retain(gpu);
 }
 
-void uvm_global_mask_release(const uvm_global_processor_mask_t *mask)
+void uvm_global_gpu_release(const uvm_processor_mask_t *mask)
 {
-    uvm_global_gpu_id_t gpu_id;
+    uvm_gpu_id_t gpu_id;
 
-    if (uvm_global_processor_mask_empty(mask))
+    if (uvm_processor_mask_empty(mask))
         return;
 
     uvm_mutex_lock(&g_uvm_global.global_lock);
 
-    // Do not use for_each_global_gpu_in_mask as it reads the GPU state and it
-    // might get destroyed
-    for_each_global_gpu_id_in_mask(gpu_id, mask)
+    // Do not use for_each_gpu_in_mask as it reads the GPU state and it
+    // might get destroyed.
+    for_each_gpu_id_in_mask(gpu_id, mask)
         uvm_gpu_release_locked(uvm_gpu_get(gpu_id));
 
     uvm_mutex_unlock(&g_uvm_global.global_lock);
 }
 
-NV_STATUS uvm_global_mask_check_ecc_error(uvm_global_processor_mask_t *gpus)
+NV_STATUS uvm_global_gpu_check_ecc_error(uvm_processor_mask_t *gpus)
 {
     uvm_gpu_t *gpu;
 
-    for_each_global_gpu_in_mask(gpu, gpus) {
+    for_each_gpu_in_mask(gpu, gpus) {
         NV_STATUS status = uvm_gpu_check_ecc_error(gpu);
         if (status != NV_OK)
             return status;

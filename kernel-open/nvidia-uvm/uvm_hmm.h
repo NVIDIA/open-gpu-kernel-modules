@@ -114,11 +114,6 @@ typedef struct
                                             struct vm_area_struct *vma,
                                             uvm_va_block_region_t region);
 
-    // Initialize the HMM portion of the service_context.
-    // This should be called one time before any retry loops calling
-    // uvm_va_block_service_locked().
-    void uvm_hmm_service_context_init(uvm_service_block_context_t *service_context);
-
     // Begin a migration critical section. When calling into the kernel it is
     // sometimes necessary to drop the va_block lock. This function returns
     // NV_OK when no other thread has started a migration critical section.
@@ -183,6 +178,7 @@ typedef struct
     // and the va_space lock must be held in write mode.
     NV_STATUS uvm_hmm_set_preferred_location(uvm_va_space_t *va_space,
                                              uvm_processor_id_t preferred_location,
+                                             int preferred_cpu_nid,
                                              NvU64 base,
                                              NvU64 last_address,
                                              uvm_tracker_t *out_tracker);
@@ -271,6 +267,18 @@ typedef struct
                                             NvU64 addr);
 
     // This is called to service a GPU fault.
+    // processor_id is the faulting processor.
+    // new_residency is the processor where the data should be migrated to.
+    // Special return values (besides things like NV_ERR_NO_MEMORY):
+    // NV_WARN_MORE_PROCESSING_REQUIRED indicates that one or more pages could
+    // not be migrated and that a retry might succeed after unlocking the
+    // va_block lock, va_space lock, and mmap lock.
+    // NV_WARN_MISMATCHED_TARGET is a special case of GPU fault handling when a
+    // GPU is chosen as the destination and the source is a HMM CPU page that
+    // can't be migrated (i.e., must remain in system memory). In that case,
+    // uvm_va_block_select_residency() should be called with 'hmm_migratable'
+    // set to false so that system memory will be selected. Then this call can
+    // be retried to service the GPU fault by migrating to system memory.
     // Locking: the va_space->va_space_mm.mm mmap_lock must be locked,
     // the va_space read lock must be held, and the va_block lock held.
     NV_STATUS uvm_hmm_va_block_service_locked(uvm_processor_id_t processor_id,
@@ -282,8 +290,10 @@ typedef struct
     // This is called to migrate a region within a HMM va_block.
     // va_block_context must not be NULL and va_block_context->hmm.vma
     // must be valid.
-    // Locking: the va_space->va_space_mm.mm must be retained, mmap_lock must be
-    // locked, and the va_block lock held.
+    // Special return values (besides things like NV_ERR_NO_MEMORY):
+    // NV_WARN_MORE_PROCESSING_REQUIRED indicates that one or more pages could
+    // not be migrated and that a retry might succeed after unlocking the
+    // va_block lock, va_space lock, and mmap lock.
     NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                               uvm_va_block_retry_t *va_block_retry,
                                               uvm_va_block_context_t *va_block_context,
@@ -382,7 +392,7 @@ typedef struct
     // va_block, the va_block_context->mm must be retained and locked for least
     // read.
     bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
-                                 uvm_va_block_context_t *va_block_context);
+                                 struct vm_area_struct *vma);
 
 #else // UVM_IS_CONFIG_HMM()
 
@@ -441,10 +451,6 @@ typedef struct
         return true;
     }
 
-    static void uvm_hmm_service_context_init(uvm_service_block_context_t *service_context)
-    {
-    }
-
     static NV_STATUS uvm_hmm_migrate_begin(uvm_va_block_t *va_block)
     {
         return NV_OK;
@@ -485,6 +491,7 @@ typedef struct
 
     static NV_STATUS uvm_hmm_set_preferred_location(uvm_va_space_t *va_space,
                                                     uvm_processor_id_t preferred_location,
+                                                    int preferred_cpu_nid,
                                                     NvU64 base,
                                                     NvU64 last_address,
                                                     uvm_tracker_t *out_tracker)
@@ -648,7 +655,7 @@ typedef struct
     }
 
     static bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
-                                        uvm_va_block_context_t *va_block_context)
+                                        struct vm_area_struct *vma)
     {
         return false;
     }

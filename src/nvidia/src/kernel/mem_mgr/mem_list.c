@@ -263,11 +263,7 @@ continue_alloc_object:
     {
         NvU32 attr2 = 0;
 
-        if ((src_pMemDesc != NULL) || bContig)
-        {
-            NV_ASSERT(0);
-            return NV_ERR_NOT_SUPPORTED;
-        }
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, src_pMemDesc == NULL, NV_ERR_NOT_SUPPORTED);
 
         status = memdescCreate(&pMemDesc, pGpu, memSize, 0,
                                bContig, addressSpace, Cache,

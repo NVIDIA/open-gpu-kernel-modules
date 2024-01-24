@@ -58,6 +58,7 @@ extern NvlStatus knvlinkCoreReadDiscoveryTokenCallback(struct nvlink_link *, NvU
 extern NvlStatus knvlinkCoreWriteDiscoveryTokenCallback(struct nvlink_link *, NvU64);
 extern void      knvlinkCoreTrainingCompleteCallback(struct nvlink_link *);
 extern void      knvlinkCoreGetUphyLoadCallback(struct nvlink_link *, NvBool*);
+extern NvlStatus knvlinkCoreGetCciLinkModeCallback(struct nvlink_link *, NvU64 *);
 
 /*!
  * @brief Helper to allocate an alternate stack from within core RM.
@@ -665,6 +666,15 @@ static NvlStatus NV_API_CALL rm_nvlink_ops_ali_training
     return status;
 }
 
+static NvlStatus NV_API_CALL rm_nvlink_ops_get_cci_link_mode
+(
+    struct nvlink_link *link,
+    NvU64 *mode
+)
+{
+    return NVL_SUCCESS;
+}
+
 #endif /* defined(INCLUDE_NVLINK_LIB) */
 
 const struct nvlink_link_handlers* osGetNvlinkLinkCallbacks(void)
@@ -691,6 +701,7 @@ const struct nvlink_link_handlers* osGetNvlinkLinkCallbacks(void)
         .read_discovery_token       = rm_nvlink_ops_read_link_discovery_token,
         .training_complete          = rm_nvlink_ops_training_complete,
         .get_uphy_load              = rm_nvlink_get_uphy_load,
+        .get_cci_link_mode          = rm_nvlink_ops_get_cci_link_mode,
         .ali_training               = rm_nvlink_ops_ali_training,
     };
 

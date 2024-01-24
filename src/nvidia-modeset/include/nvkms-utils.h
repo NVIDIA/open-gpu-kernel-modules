@@ -55,6 +55,11 @@ static inline NvBool A_plus_B_greater_than_C_U16(NvU16 a, NvU16 b, NvU16 c)
     return (NV_U16_MAX - a < b) || ((a + b) > c);
 }
 
+static inline NvBool A_plus_B_greater_than_C_U64(NvU64 a, NvU64 b, NvU64 c)
+{
+    return (NV_U64_MAX - a < b) || ((a + b) > c);
+}
+
 static inline NvS32 clamp_S32(NvS32 val, NvS32 lo, NvS32 hi)
 {
     if (val < lo) {

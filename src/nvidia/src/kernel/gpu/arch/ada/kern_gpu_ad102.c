@@ -66,6 +66,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_AD102[] =
     GPU_CHILD_PRESENT(KernelFifo, 1),
     GPU_CHILD_PRESENT(KernelGmmu, 1),
     GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
     GPU_CHILD_PRESENT(KernelMc, 1),
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelNvlink, 1),

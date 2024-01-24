@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -24,6 +24,7 @@
 /*!
  * @brief  All functions related to the Cuda Safe feature.
  */
+#include "gpu/device/device.h"
 #include "gpu/perf/kern_cuda_limit.h"
 #include "rmapi/rmapi.h"
 #include "gpu/gpu.h"
@@ -52,6 +53,11 @@ deviceKPerfCudaLimitCliDisable
 {
     RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV_STATUS  status = NV_OK;
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        return NV_OK;
+    }
 
     if (pDevice->nCudaLimitRefCnt > 0)
     {
@@ -98,6 +104,10 @@ deviceCtrlCmdKPerfCudaLimitSetControl_IMPL
     NvBool     bCudaLimitAfter;
     NV_STATUS  status = NV_OK;
 
+    if (IS_VIRTUAL(pGpu))
+    {
+        return NV_OK;
+    }
 
     // Obtain current Cuda limit activation setting.
     NV_ASSERT_OK_OR_RETURN(kperfCudaLimitCliGet(pDevice, &bCudaLimitBefore));

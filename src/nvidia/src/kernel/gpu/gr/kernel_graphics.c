@@ -41,6 +41,7 @@
 #include "kernel/gpu/intr/engine_idx.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "gpu/mmu/kern_gmmu.h"
+#include "platform/sli/sli.h"
 #include "rmapi/rs_utils.h"
 #include "rmapi/client.h"
 
@@ -95,10 +96,6 @@ static NV_STATUS _kgraphicsMapGlobalCtxBuffer(OBJGPU *pGpu, KernelGraphics *pKer
                                        KernelGraphicsContext *, GR_GLOBALCTX_BUFFER, NvBool bIsReadOnly);
 static NV_STATUS _kgraphicsPostSchedulingEnableHandler(OBJGPU *, void *);
 
-static void _kgraphicsInitProdRegistryOverrides(OBJGPU *pGpu, KernelGraphics *pKernelGraphics)
-{
-}
-
 NV_STATUS
 kgraphicsConstructEngine_IMPL
 (
@@ -136,7 +133,7 @@ kgraphicsConstructEngine_IMPL
             NvU32 override;
         } instlocOverrides[] =
         {
-            { GR_CTX_BUFFER_MAIN,      DRF_VAL(_REG_STR_RM, _INST_LOC, _GRCTX, pGpu->instLocOverrides) },
+            { GR_CTX_BUFFER_MAIN,      DRF_VAL(_REG_STR_RM, _INST_LOC,   _GRCTX, pGpu->instLocOverrides) },
             { GR_CTX_BUFFER_PATCH,     DRF_VAL(_REG_STR_RM, _INST_LOC_2, _CTX_PATCH, pGpu->instLocOverrides2) },
             { GR_CTX_BUFFER_ZCULL,     DRF_VAL(_REG_STR_RM, _INST_LOC_2, _ZCULLCTX, pGpu->instLocOverrides2) },
             { GR_CTX_BUFFER_PM,        DRF_VAL(_REG_STR_RM, _INST_LOC_2, _PMCTX, pGpu->instLocOverrides2) },
@@ -144,7 +141,8 @@ kgraphicsConstructEngine_IMPL
             { GR_CTX_BUFFER_BETA_CB,   DRF_VAL(_REG_STR_RM, _INST_LOC_3, _GFXP_BETACB_BUFFER, pGpu->instLocOverrides3) },
             { GR_CTX_BUFFER_PAGEPOOL,  DRF_VAL(_REG_STR_RM, _INST_LOC_3, _GFXP_PAGEPOOL_BUFFER, pGpu->instLocOverrides3) },
             { GR_CTX_BUFFER_SPILL,     DRF_VAL(_REG_STR_RM, _INST_LOC_3, _GFXP_SPILL_BUFFER, pGpu->instLocOverrides3) },
-            { GR_CTX_BUFFER_RTV_CB,    DRF_VAL(_REG_STR_RM, _INST_LOC_3, _GFXP_RTVCB_BUFFER, pGpu->instLocOverrides3) }
+            { GR_CTX_BUFFER_RTV_CB,    DRF_VAL(_REG_STR_RM, _INST_LOC_3, _GFXP_RTVCB_BUFFER, pGpu->instLocOverrides3) },
+            { GR_CTX_BUFFER_SETUP,     DRF_VAL(_REG_STR_RM, _INST_LOC_4, _GFXP_SETUP_BUFFER, pGpu->instLocOverrides4) }
         };
 
         for (idx = 0; idx < NV_ARRAY_ELEMENTS(instlocOverrides); ++idx)
@@ -217,7 +215,6 @@ kgraphicsConstructEngine_IMPL
 
     NV_ASSERT_OK_OR_RETURN(fecsCtxswLoggingInit(pGpu, pKernelGraphics, &pKernelGraphics->pFecsTraceInfo));
 
-    _kgraphicsInitProdRegistryOverrides(pGpu, pKernelGraphics);
     return NV_OK;
 }
 
@@ -338,7 +335,9 @@ kgraphicsStateLoad_IMPL
     NvU32 flags
 )
 {
-    if (pGpu->fecsCtxswLogConsumerCount > 0)
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+
+    if (fecsGetCtxswLogConsumerCount(pGpu, pKernelGraphicsManager) > 0)
     {
         fecsBufferMap(pGpu, pKernelGraphics);
         fecsBufferReset(pGpu, pKernelGraphics);
@@ -747,6 +746,266 @@ cleanup:
             NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
                 kgraphicsAllocGrGlobalCtxBuffers_HAL(pGpu, pKernelGraphics, gfid, NULL));
         }
+    }
+
+    return status;
+}
+
+NV_STATUS
+kgraphicsLoadStaticInfo_VGPUSTUB
+(
+    OBJGPU *pGpu,
+    KernelGraphics *pKernelGraphics,
+    NvU32 swizzId
+)
+{
+    KGRAPHICS_PRIVATE_DATA *pPrivate = pKernelGraphics->pPrivate;
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NvU32 grIdx = pKernelGraphics->instance;
+    NVOS_STATUS status = NV_OK;
+
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+    NV_ASSERT_OR_RETURN(pPrivate != NULL, NV_ERR_INVALID_STATE);
+
+    if (pPrivate->bInitialized)
+        return status;
+
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+
+        //
+        // Delay initialization to GPU instance configuration, unless MODS is using
+        // legacy VGPU mode, in which case the guest never receives a
+        // configuration call
+        //
+        if ((swizzId == KMIGMGR_SWIZZID_INVALID) && !kmigmgrUseLegacyVgpuPolicy(pGpu, pKernelMIGManager))
+            return status;
+
+        pPrivate->staticInfo.pGrInfo = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pGrInfo));
+        if (pPrivate->staticInfo.pGrInfo == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pGrInfo->infoList,
+                    NV0080_CTRL_GR_INFO_MAX_SIZE * sizeof(*pPrivate->staticInfo.pGrInfo->infoList),
+                    pVSI->grInfoParams.engineInfo[grIdx].infoList,
+                    NV0080_CTRL_GR_INFO_MAX_SIZE * sizeof(*pVSI->grInfoParams.engineInfo[grIdx].infoList));
+
+        portMemCopy(&pPrivate->staticInfo.globalSmOrder, sizeof(pPrivate->staticInfo.globalSmOrder),
+                    &pVSI->globalSmOrder.globalSmOrder[grIdx], sizeof(pVSI->globalSmOrder.globalSmOrder[grIdx]));
+
+        // grCaps are the same for all GR and can be copied from VGPU static info
+        portMemCopy(pPrivate->staticInfo.grCaps.capsTbl, sizeof(pPrivate->staticInfo.grCaps.capsTbl),
+                    pVSI->grCapsBits, sizeof(pVSI->grCapsBits));
+
+        // Initialize PDB properties synchronized with physical RM
+        pPrivate->staticInfo.pdbTable.bPerSubCtxheaderSupported = pVSI->bPerSubCtxheaderSupported;
+        kgraphicsSetPerSubcontextContextHeaderSupported(pGpu, pKernelGraphics, pPrivate->staticInfo.pdbTable.bPerSubCtxheaderSupported);
+
+        pPrivate->staticInfo.pSmIssueRateModifier =
+                portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pSmIssueRateModifier));
+        if (pPrivate->staticInfo.pSmIssueRateModifier == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pSmIssueRateModifier, sizeof(*pPrivate->staticInfo.pSmIssueRateModifier),
+                    &pVSI->smIssueRateModifier.smIssueRateModifier[grIdx], sizeof(pVSI->smIssueRateModifier.smIssueRateModifier[grIdx]));
+
+        pPrivate->staticInfo.pPpcMasks = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pPpcMasks));
+        if (pPrivate->staticInfo.pPpcMasks == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pPpcMasks, sizeof(*pPrivate->staticInfo.pPpcMasks),
+                    &pVSI->ppcMaskParams.enginePpcMasks[grIdx], sizeof(pVSI->ppcMaskParams.enginePpcMasks[grIdx]));
+
+        portMemCopy(&pPrivate->staticInfo.floorsweepingMasks, sizeof(pPrivate->staticInfo.floorsweepingMasks),
+                    &pVSI->floorsweepMaskParams.floorsweepingMasks[grIdx], sizeof(pVSI->floorsweepMaskParams.floorsweepingMasks[grIdx]));
+
+        pPrivate->staticInfo.pContextBuffersInfo =
+            portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pContextBuffersInfo));
+
+        if (pPrivate->staticInfo.pContextBuffersInfo == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pContextBuffersInfo,
+                    sizeof(*pPrivate->staticInfo.pContextBuffersInfo),
+                    &pVSI->ctxBuffInfo.engineContextBuffersInfo[grIdx],
+                    sizeof(pVSI->ctxBuffInfo.engineContextBuffersInfo[grIdx]));
+
+        pPrivate->staticInfo.fecsRecordSize.fecsRecordSize = pVSI->fecsRecordSize.fecsRecordSize[grIdx].fecsRecordSize;
+
+        pPrivate->staticInfo.pFecsTraceDefines =
+                portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pFecsTraceDefines));
+
+        if (pPrivate->staticInfo.pFecsTraceDefines == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pFecsTraceDefines,
+                    sizeof(*pPrivate->staticInfo.pFecsTraceDefines),
+                    &pVSI->fecsTraceDefines.fecsTraceDefines[grIdx],
+                    sizeof(pVSI->fecsTraceDefines.fecsTraceDefines[grIdx]));
+
+        portMemCopy(&pPrivate->staticInfo.pdbTable, sizeof(pPrivate->staticInfo.pdbTable),
+                    &pVSI->pdbTableParams.pdbTable[grIdx], sizeof(pVSI->pdbTableParams.pdbTable[grIdx]));
+    }
+    else if (grIdx == 0)
+    {
+        portMemCopy(pPrivate->staticInfo.grCaps.capsTbl, sizeof(pPrivate->staticInfo.grCaps.capsTbl),
+                    pVSI->grCapsBits, sizeof(pVSI->grCapsBits));
+
+        pPrivate->staticInfo.pGrInfo = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pGrInfo));
+        if (pPrivate->staticInfo.pGrInfo == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pGrInfo->infoList,
+                    NV0080_CTRL_GR_INFO_MAX_SIZE * sizeof(*pPrivate->staticInfo.pGrInfo->infoList),
+                    pVSI->grInfoParams.engineInfo[grIdx].infoList,
+                    NV0080_CTRL_GR_INFO_MAX_SIZE * sizeof(*pVSI->grInfoParams.engineInfo[grIdx].infoList));
+
+        // Initialize PDB properties synchronized with physical RM
+        pPrivate->staticInfo.pdbTable.bPerSubCtxheaderSupported = pVSI->bPerSubCtxheaderSupported;
+        kgraphicsSetPerSubcontextContextHeaderSupported(pGpu, pKernelGraphics, pPrivate->staticInfo.pdbTable.bPerSubCtxheaderSupported);
+
+        portMemCopy(&pPrivate->staticInfo.globalSmOrder, sizeof(pPrivate->staticInfo.globalSmOrder),
+                    &pVSI->globalSmOrder.globalSmOrder[grIdx], sizeof(pVSI->globalSmOrder.globalSmOrder[grIdx]));
+
+        pPrivate->staticInfo.pSmIssueRateModifier =
+                portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pSmIssueRateModifier));
+        if (pPrivate->staticInfo.pSmIssueRateModifier == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pSmIssueRateModifier, sizeof(*pPrivate->staticInfo.pSmIssueRateModifier),
+                    &pVSI->smIssueRateModifier.smIssueRateModifier[grIdx], sizeof(pVSI->smIssueRateModifier.smIssueRateModifier[grIdx]));
+
+        pPrivate->staticInfo.pPpcMasks = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pPpcMasks));
+        if (pPrivate->staticInfo.pPpcMasks == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pPpcMasks, sizeof(*pPrivate->staticInfo.pPpcMasks),
+                    &pVSI->ppcMaskParams.enginePpcMasks[grIdx], sizeof(pVSI->ppcMaskParams.enginePpcMasks[grIdx]));
+
+        pPrivate->staticInfo.pContextBuffersInfo =
+            portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pContextBuffersInfo));
+
+        if (pPrivate->staticInfo.pContextBuffersInfo == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pContextBuffersInfo,
+                    sizeof(*pPrivate->staticInfo.pContextBuffersInfo),
+                    &pVSI->ctxBuffInfo.engineContextBuffersInfo[grIdx],
+                    sizeof(pVSI->ctxBuffInfo.engineContextBuffersInfo[grIdx]));
+
+        portMemCopy(&pPrivate->staticInfo.floorsweepingMasks, sizeof(pPrivate->staticInfo.floorsweepingMasks),
+                    &pVSI->floorsweepMaskParams.floorsweepingMasks[grIdx], sizeof(pVSI->floorsweepMaskParams.floorsweepingMasks[grIdx]));
+
+        pPrivate->staticInfo.pRopInfo = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pRopInfo));
+        if (pPrivate->staticInfo.pRopInfo == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pRopInfo, sizeof(*pPrivate->staticInfo.pRopInfo),
+                    &pVSI->ropInfoParams.engineRopInfo[grIdx], sizeof(pVSI->ropInfoParams.engineRopInfo[grIdx]));
+
+        pPrivate->staticInfo.pZcullInfo = portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pZcullInfo));
+        if (pPrivate->staticInfo.pZcullInfo == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pZcullInfo, sizeof(*pPrivate->staticInfo.pZcullInfo),
+                    &pVSI->zcullInfoParams.engineZcullInfo[grIdx], sizeof(pVSI->zcullInfoParams.engineZcullInfo[grIdx]));
+
+        pPrivate->staticInfo.fecsRecordSize.fecsRecordSize = pVSI->fecsRecordSize.fecsRecordSize[grIdx].fecsRecordSize;
+
+        pPrivate->staticInfo.pFecsTraceDefines =
+                portMemAllocNonPaged(sizeof(*pPrivate->staticInfo.pFecsTraceDefines));
+        if (pPrivate->staticInfo.pFecsTraceDefines == NULL)
+        {
+            status = NV_ERR_NO_MEMORY;
+            goto cleanup;
+        }
+
+        portMemCopy(pPrivate->staticInfo.pFecsTraceDefines,
+                    sizeof(*pPrivate->staticInfo.pFecsTraceDefines),
+                    &pVSI->fecsTraceDefines.fecsTraceDefines[grIdx],
+                    sizeof(pVSI->fecsTraceDefines.fecsTraceDefines[grIdx]));
+
+        portMemCopy(&pPrivate->staticInfo.pdbTable, sizeof(pPrivate->staticInfo.pdbTable),
+                    &pVSI->pdbTableParams.pdbTable[grIdx], sizeof(pVSI->pdbTableParams.pdbTable[grIdx]));
+    }
+    else
+    {
+        // if MIG disabled, only GR0 static data needs to be published
+        return status;
+    }
+
+    if (status == NV_OK)
+    {
+        // Publish static configuration
+        pPrivate->bInitialized = NV_TRUE;
+    }
+
+    if (!IS_MIG_IN_USE(pGpu) && (grIdx == 0))
+    {
+        KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+
+        // Cache legacy GR mask info (i.e. GR0 with MIG disabled) to pKernelGraphicsManager->legacyFsMaskState
+        kgrmgrSetLegacyKgraphicsStaticInfo(pGpu, pKernelGraphicsManager, pKernelGraphics);
+    }
+
+cleanup :
+
+    if (status != NV_OK)
+    {
+        portMemFree(pPrivate->staticInfo.pGrInfo);
+        pPrivate->staticInfo.pGrInfo = NULL;
+
+        portMemFree(pPrivate->staticInfo.pPpcMasks);
+        pPrivate->staticInfo.pPpcMasks = NULL;
+
+        portMemFree(pPrivate->staticInfo.pZcullInfo);
+        pPrivate->staticInfo.pZcullInfo = NULL;
+
+        portMemFree(pPrivate->staticInfo.pRopInfo);
+        pPrivate->staticInfo.pRopInfo = NULL;
+
+        portMemFree(pPrivate->staticInfo.pContextBuffersInfo);
+        pPrivate->staticInfo.pContextBuffersInfo = NULL;
+
+        portMemFree(pPrivate->staticInfo.pSmIssueRateModifier);
+        pPrivate->staticInfo.pSmIssueRateModifier = NULL;
+
+        portMemFree(pPrivate->staticInfo.pFecsTraceDefines);
+        pPrivate->staticInfo.pFecsTraceDefines = NULL;
     }
 
     return status;
@@ -1386,6 +1645,8 @@ kgraphicsAllocKgraphicsBuffers_KERNEL
     if (kgraphicsIsCtxswLoggingSupported(pGpu, pKernelGraphics) &&
         (kgraphicsGetGlobalCtxBuffers(pGpu, pKernelGraphics, gfid)->memDesc[GR_GLOBALCTX_BUFFER_FECS_EVENT] != NULL))
     {
+        KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+
         if (!gvaspaceIsExternallyOwned(pGVAS) && !IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
         {
             //
@@ -1402,7 +1663,7 @@ kgraphicsAllocKgraphicsBuffers_KERNEL
             fecsBufferMap(pGpu, pKernelGraphics);
         }
 
-        if (pGpu->fecsCtxswLogConsumerCount > 0)
+        if (fecsGetCtxswLogConsumerCount(pGpu, pKernelGraphicsManager) > 0)
             fecsBufferReset(pGpu, pKernelGraphics);
     }
 
@@ -2110,12 +2371,14 @@ void kgraphicsFreeGlobalCtxBuffers_IMPL
 
     pCtxBuffers = &pKernelGraphics->globalCtxBuffersInfo.pGlobalCtxBuffers[gfid];
 
+    if (!pCtxBuffers->bAllocated)
+        return;
+
     FOR_EACH_IN_ENUM(GR_GLOBALCTX_BUFFER, buff)
     {
+        if (pCtxBuffers->memDesc[buff] != NULL)
         {
-
-            if (pCtxBuffers->memDesc[buff] != NULL)
-                bEvict = NV_TRUE;
+            bEvict = NV_TRUE;
 
             memdescFree(pCtxBuffers->memDesc[buff]);
             memdescDestroy(pCtxBuffers->memDesc[buff]);
@@ -2331,9 +2594,8 @@ _kgraphicsCtrlCmdGrGetInfoV2
     NV_STATUS status = NV_OK;
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
     NvU32 grInfoListSize = pParams->grInfoListSize;
-    KernelGraphics *pKernelGraphics;
-    const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
     KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NV2080_CTRL_INTERNAL_STATIC_GR_INFO *pGrInfo;
     NvU32 i;
 
     if (pKernelGraphicsManager == NULL)
@@ -2350,31 +2612,30 @@ _kgraphicsCtrlCmdGrGetInfoV2
 
     if (kmigmgrIsDeviceUsingDeviceProfiling(pGpu, pKernelMIGManager, pDevice))
     {
-        NvU32 grIdx;
-        for (grIdx = 0; grIdx < GPU_MAX_GRS; grIdx++)
-        {
-            pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, grIdx);
-            if (pKernelGraphics != NULL)
-                break;
-        }
-        if (pKernelGraphics == NULL)
-            return NV_ERR_INVALID_STATE;
+        NV_ASSERT_OR_RETURN(kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->bInitialized, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo != NULL, NV_ERR_NOT_SUPPORTED);
+
+        pGrInfo = kgrmgrGetLegacyKGraphicsStaticInfo(pGpu, pKernelGraphicsManager)->pGrInfo;
     }
     else
     {
+        KernelGraphics *pKernelGraphics;
+        const KGRAPHICS_STATIC_INFO *pKernelGraphicsStaticInfo;
+
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &pParams->grRouteInfo, &pKernelGraphics));
-    }
 
-    pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
-    NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo != NULL, NV_ERR_INVALID_STATE);
-    NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo->pGrInfo != NULL, NV_ERR_NOT_SUPPORTED);
+        pKernelGraphicsStaticInfo = kgraphicsGetStaticInfo(pGpu, pKernelGraphics);
+        NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo != NULL, NV_ERR_INVALID_STATE);
+        NV_ASSERT_OR_RETURN(pKernelGraphicsStaticInfo->pGrInfo != NULL, NV_ERR_NOT_SUPPORTED);
+
+        pGrInfo = pKernelGraphicsStaticInfo->pGrInfo;
+    }
 
     for (i = 0; i < grInfoListSize; i++)
     {
         NV_CHECK_OR_RETURN(LEVEL_ERROR, pParams->grInfoList[i].index < NV2080_CTRL_GR_INFO_MAX_SIZE, NV_ERR_INVALID_ARGUMENT);
-        pParams->grInfoList[i].data =
-            pKernelGraphicsStaticInfo->pGrInfo->infoList[pParams->grInfoList[i].index].data;
+        pParams->grInfoList[i].data = pGrInfo->infoList[pParams->grInfoList[i].index].data;
     }
 
     return status;

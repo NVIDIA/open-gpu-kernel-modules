@@ -34,7 +34,7 @@
 
 #include "rmflcnbl.h"
 
-void
+NV_STATUS
 ksec2ConfigureFalcon_TU102
 (
     OBJGPU *pGpu,
@@ -57,6 +57,7 @@ ksec2ConfigureFalcon_TU102
     falconConfig.addrSpaceList      = memdescAddrSpaceListToU32(ADDRLIST_FBMEM_PREFERRED);
 
     kflcnConfigureEngine(pGpu, staticCast(pKernelSec2, KernelFalcon), &falconConfig);
+    return NV_OK;
 }
 
 NV_STATUS

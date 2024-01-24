@@ -23,6 +23,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "gpu/device/device.h"
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/io_vaspace.h"
 #include "mem_mgr/gpu_vaspace.h"
@@ -33,9 +34,9 @@
 #include "kernel/gpu/nvbitmask.h"
 #include "platform/chipset/chipset.h"
 #include "rmapi/client.h"
+#include "platform/sli/sli.h"
 #include "nvdevid.h"
 
-#include "gpu/subdevice/subdevice.h"
 #include "gpu/gsp/gsp_static_config.h"
 #include "vgpu/rpc.h"
 
@@ -181,7 +182,7 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
             break;
     }
 
-    if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS && !pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))
     {
         //
         // Aligns to unlinked SLI: Volta and up
@@ -199,6 +200,12 @@ kbusInitRegistryOverrides(OBJGPU *pGpu, KernelBus *pKernelBus)
     if (osReadRegistryDword(pGpu, NV_REG_STR_RESTORE_BAR1_SIZE_BUG_3249028_WAR, &data32) == NV_OK)
     {
         pKernelBus->setProperty(pKernelBus, PDB_PROP_KBUS_RESTORE_BAR1_SIZE_BUG_3249028_WAR, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC, &data32) == NV_OK &&
+        data32 == NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC_YES  && gpuIsCCDevToolsModeEnabled(pGpu))
+    {
+        pKernelBus->bForceBarAccessOnHcc = NV_TRUE;
     }
 
     return NV_OK;
@@ -312,11 +319,30 @@ kbusDestruct_IMPL(KernelBus *pKernelBus)
 {
     OBJGPU *pGpu = ENG_GET_GPU(pKernelBus);
 
+    memdescFree(pKernelBus->bar1[GPU_GFID_PF].pInstBlkMemDesc);
+    memdescDestroy(pKernelBus->bar1[GPU_GFID_PF].pInstBlkMemDesc);
+    pKernelBus->bar1[GPU_GFID_PF].pInstBlkMemDesc = NULL;
+    memdescFree(pKernelBus->bar2[GPU_GFID_PF].pInstBlkMemDesc);
+    memdescDestroy(pKernelBus->bar2[GPU_GFID_PF].pInstBlkMemDesc);
+    pKernelBus->bar2[GPU_GFID_PF].pInstBlkMemDesc = NULL;
+
     //
     // We need to clean-up the memory resources for BAR2 as late as possible,
     // and after all memory descriptors have been reclaimed.
     //
     kbusDestructVirtualBar2_HAL(pGpu, pKernelBus, NV_TRUE, GPU_GFID_PF);
+
+    // Unmap BAR2 mapping that was retained for RPC
+    if (IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) &&
+        IS_VIRTUAL_WITH_SRIOV(pGpu) &&
+        pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping != NULL)
+    {
+        // vgpuDestructObject should have been run
+        OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
+        NV_ASSERT(pVGpu == NULL);
+
+        osUnmapPciMemoryKernelOld(pGpu, pKernelBus->virtualBar2[GPU_GFID_PF].pCpuMapping);
+    }
 
     return;
 }
@@ -613,7 +639,7 @@ kbusCpuOffsetInBar2WindowGet_IMPL
  * @return VA limit of BAR2
  */
 NvU64
-kbusGetVaLimitForBar2_KERNEL
+kbusGetVaLimitForBar2_FWCLIENT
 (
     OBJGPU    *pGpu,
     KernelBus *pKernelBus
@@ -628,6 +654,56 @@ kbusGetVaLimitForBar2_KERNEL
     // Assert to ensure that this value doesn't get changed.
     //
     NV_ASSERT(pKernelBus->bar2[GPU_GFID_PF].vaLimit == 0 || pKernelBus->bar2[GPU_GFID_PF].vaLimit == limit);
+
+    return limit;
+}
+
+/*!
+ * @brief Calculates the BAR2 VA limit (in Byte units)
+ * Can be safely called only after kbusSetBarsApertureSize_HAL is executed.
+ */
+NvU64 kbusGetVaLimitForBar2_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU64 limit = 0;
+    NvU32 gfid;
+
+    NV_ASSERT_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid) == NV_OK, 0);
+
+    //
+    // Return zero from the guest in the paravirtualization case or
+    // if guest is running in SRIOV heavy mode.
+    //
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
+        (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu)))
+    {
+        return 0;
+    }
+
+    kbusCalcCpuInvisibleBar2Range_HAL(pGpu, pKernelBus, gfid);
+
+    //
+    // we are just accounting here for possibility that
+    // we are on pre_PASCAL and so we set the va limit
+    // to account only for the cpuVisible Aperture
+    //
+    if (pKernelBus->bar2[gfid].cpuInvisibleLimit > pKernelBus->bar2[gfid].cpuInvisibleBase)
+    {
+        limit = pKernelBus->bar2[gfid].cpuInvisibleLimit;
+    }
+    else
+    {
+        limit = pKernelBus->bar2[gfid].cpuVisibleLimit;
+    }
+    NV_PRINTF(LEVEL_INFO, "va limit: 0x%llx\n", limit);
+    //
+    // pKernelBus->bar2.vaLimit is set by this function.
+    // Assert to ensure that this value doesn't get changed.
+    //
+    NV_ASSERT(pKernelBus->bar2[gfid].vaLimit == 0 || pKernelBus->bar2[gfid].vaLimit == limit);
 
     return limit;
 }
@@ -655,7 +731,7 @@ kbusPatchBar1Pdb_GSPCLIENT
     MEMORY_DESCRIPTOR   *pMemDesc  = NULL;
     GVAS_GPU_STATE      *pGpuState = gvaspaceGetGpuState(pGVAS, pGpu);
     const MMU_FMT_LEVEL *pRootFmt  = pGpuState->pFmt->pRoot;
-    NvU32                rootSize  = pRootFmt->entrySize;
+    NvU32                rootSize  = mmuFmtLevelSize(pRootFmt);
     MMU_WALK_USER_CTX    userCtx   = {0};
     GspStaticConfigInfo *pGSCI     = GPU_GET_GSP_STATIC_INFO(pGpu);
 
@@ -676,7 +752,7 @@ kbusPatchBar1Pdb_GSPCLIENT
                                         pRootFmt,
                                         vaspaceGetVaStart(pKernelBus->bar1[GPU_GFID_PF].pVAS),
                                         (MMU_WALK_MEMDESC*)pMemDesc,
-                                        mmuFmtLevelSize(pRootFmt),
+                                        rootSize,
                                         NV_TRUE,
                                         NV_TRUE,
                                         NV_FALSE);
@@ -767,6 +843,16 @@ kbusPatchBar2Pdb_GSPCLIENT
     return NV_OK;
 }
 
+NvBool
+kbusCheckEngine_KERNEL
+(
+    OBJGPU        *pGpu,
+    KernelBus     *pKernelBus,
+    ENGDESCRIPTOR  engDesc
+)
+{
+    return kbusCheckEngineWithOrderList_KERNEL(pGpu, pKernelBus, engDesc, NV_TRUE);
+}
 
 /*!
  * @brief Checks whether an engine is available or not.
@@ -776,23 +862,25 @@ kbusPatchBar2Pdb_GSPCLIENT
  * rely on timeouts after a read of a register in the reg space for engine.
  * Instead, it
  *  - Return TRUE for all engines which are must present in GPU.
- *  - Get information about CE, MSENC, NVJPG and OFA engines from plugin.
- *  - Rest engines are determined from HAL creation data.
+ *  - Get information about CE, MSENC, NVJPG and OFA engines from plugin or GSP-RM.
+ *  - If bCheckEngineOrder is true, the remaining engines are searched for in gpuChildOrderList_HAL.
  *
  * @param[in] pGpu       OBJGPU pointer
  * @param[in] pKernelBus KernelBus pointer
  * @param[in] engDesc    ENGDESCRIPTOR pointer used to check Engine presence
+ * @param[in] bCheckEngineOrder If true, check gpuChildOrderList_HAL for engDesc as well
  *
  * @returns NV_TRUE if engine is available.
  *          NV_FALSE if engine is not available or floorswept.
  *
  */
 NvBool
-kbusCheckEngine_KERNEL
+kbusCheckEngineWithOrderList_KERNEL
 (
     OBJGPU        *pGpu,
     KernelBus     *pKernelBus,
-    ENGDESCRIPTOR  engDesc
+    ENGDESCRIPTOR  engDesc,
+    NvBool         bCheckEngineOrder
 )
 {
     NvU32     rmEngineCaps[NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX] = {0};
@@ -800,6 +888,21 @@ kbusCheckEngine_KERNEL
     NvBool    bSupported;
     NV_STATUS status;
 
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+        if (pVSI == NULL)
+        {
+            return NV_FALSE;
+        }
+
+        ct_assert(RM_ENGINE_TYPE_LAST <= 64);
+        ct_assert(NVGPU_ENGINE_CAPS_MASK_ARRAY_MAX == 2);
+
+        nv2080EngineCaps[0] = NvU64_LO32(pVSI->engineList);
+        nv2080EngineCaps[1] = NvU64_HI32(pVSI->engineList);
+    }
+    else
     {
         NvU32 i;
         GspStaticConfigInfo *pGSCI = GPU_GET_GSP_STATIC_INFO(pGpu);
@@ -929,15 +1032,23 @@ kbusCheckEngine_KERNEL
         // HAL lists of GPU. So Add ASSERT there.
         //
         default:
-            bSupported = gpuIsEngDescSupported(pGpu, engDesc);
-
-            if (!bSupported)
+        {
+            if (bCheckEngineOrder)
             {
-                NV_PRINTF(LEVEL_ERROR, "Unable to check engine ID: %d\n",
-                          engDesc);
-                NV_ASSERT(bSupported);
+                bSupported = gpuIsEngDescSupported(pGpu, engDesc);
+
+                if (!bSupported)
+                {
+                    NV_PRINTF(LEVEL_ERROR, "Unable to check engine ID: 0x%x\n",
+                              engDesc);
+                    NV_ASSERT(bSupported);
+                }
             }
+            else
+                bSupported = NV_FALSE;
+
             return bSupported;
+        }
     }
 }
 
@@ -1265,4 +1376,20 @@ kbusIsGpuP2pAlive_IMPL
 )
 {
     return (pKernelBus->totalP2pObjectsAliveRefCount > 0);
+}
+
+/**
+ * @brief     Gets BAR0 size in bytes for VF
+ *
+ * @param[in] pGpu
+ * @param[in] pKernelBus
+ */
+NvU64 kbusGetVfBar0SizeBytes_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    // Bar 0 size for VF is always 16MB
+    return 16llu << 20;
 }

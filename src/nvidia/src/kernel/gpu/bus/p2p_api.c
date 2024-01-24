@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,6 +23,7 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"
@@ -411,8 +412,8 @@ p2papiConstruct_IMPL
         p2pConnectionType = P2P_CONNECTIVITY_NVLINK;
     else if (REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PCI_BAR1_SUPPORTED, p2pCaps))
         p2pConnectionType = P2P_CONNECTIVITY_PCIE_BAR1;
-    else if (REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PCI_SUPPORTED, p2pCaps))
-        p2pConnectionType = P2P_CONNECTIVITY_PCIE;
+    else if (REF_VAL(NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PROP_SUPPORTED, p2pCaps))
+        p2pConnectionType = P2P_CONNECTIVITY_PCIE_PROPRIETARY;
     else
     {
         NV_PRINTF(LEVEL_ERROR, "Unknown connection type\n");
@@ -424,9 +425,8 @@ p2papiConstruct_IMPL
     // - P2P reads or/and writes are supported
     // - The P2P connection is PCIE Mailbox based
     //
-
     if ((bP2PWriteCapable || bP2PReadCapable) &&
-        p2pConnectionType == P2P_CONNECTIVITY_PCIE)
+        p2pConnectionType == P2P_CONNECTIVITY_PCIE_PROPRIETARY)
     {
         status = kbusSetP2PMailboxBar1Area_HAL(pLocalGpu, pLocalKernelBus,
                                                pNv503bAllocParams->mailboxBar1Addr,

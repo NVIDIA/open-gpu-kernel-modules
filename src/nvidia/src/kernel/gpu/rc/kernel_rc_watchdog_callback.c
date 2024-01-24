@@ -29,6 +29,7 @@
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "kernel/gpu/gpu.h"
 #include "kernel/gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
 
 #include "ctrl/ctrl906f.h"
 

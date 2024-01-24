@@ -526,10 +526,24 @@ extern NV_STATUS serverAllocApiCopyOut(RsServer *pServer, NV_STATUS status, API_
  * Obtain a second client handle to lock if required for the allocation.
  * @param[in]   externalClassId External class ID of resource
  * @param[in]   pAllocParams    Class-specific allocation parameters
+ * @param[out]  phSecondClient  Second client handle to lock on success
  *
- * @return Second client to lock, if any
+ * @return NV_OK on success
+           NV_ERR_INVALID_STATE if allocation is incorrectly configured with RS_FLAGS_DUAL_CLIENT_LOCK without having updated this function.
  */
-extern NvHandle serverAllocLookupSecondClient(NvU32 externalClassId, void *pAllocParams);
+extern NV_STATUS serverAllocLookupSecondClient(NvU32 externalClassId, void *pAllocParams, NvHandle *phSecondClient);
+
+/**
+ * Obtain a second client handle to lock if required for the control (DISCOURAGED).
+ * @param[in]    cmd            Control call ID
+ * @param[in]    pControlParams Control-specific parameters
+ * @param[in]    pCookie        Control call cookie to check flags for
+ * @param[out]   phSecondClient Second client handle to lock on success
+ *
+ * @return NV_OK on success
+           NV_ERR_INVALID_STATE if allocation is incorrectly configured with RMCTRL_FLAGS_DUAL_CLIENT_LOCK without having updated this function.
+ */
+extern NV_STATUS serverControlLookupSecondClient(NvU32 cmd, void *pControlParams, RS_CONTROL_COOKIE *pCookie, NvHandle *phSecondClient);
 
 /**
  * Acquires a top-level lock. User-implemented.

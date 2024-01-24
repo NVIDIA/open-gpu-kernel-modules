@@ -42,7 +42,6 @@
 #define DSC_MAX_PPS_SIZE_DWORD 32
 
 /* ------------------------ Datatypes -------------------------------------- */
-
 typedef struct
 {
     NvU32 versionMajor;
@@ -257,14 +256,8 @@ typedef struct
     }dpData;
 } WAR_DATA;
 
-//
-// DSC PPS calculations need large scratch buffer to work with, which can be too
-// big for some platforms. These buffers need to be allocated on heap rather 
-// than local stack variable. Clients are expected to pre-allocate
-// this buffer and pass it in to DSC PPS interface 
-//
 typedef struct {
-    NvU8 data[512U]; // an upper bound of total size of DSC_IN/OUTPUT_PARAMS
+    NvU8 data[492U]; // total size of DSC_IN/OUTPUT_PARAMS
 } DSC_GENERATE_PPS_OPAQUE_WORKAREA;
 
 /*
@@ -281,6 +274,7 @@ typedef struct {
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 /*
  * @brief Calculate PPS parameters based on passed down Sink,
  *        GPU capability and modeset info
@@ -290,6 +284,8 @@ extern "C" {
  * @param[in]   pWARData       Data required for providing WAR for issues
  * @param[in]   availableBandwidthBitsPerSecond      Available bandwidth for video
  *                                                   transmission(After FEC/Downspread overhead consideration)
+ * @param[in]   pOpaqueWorkarea  Scratch buffer of sufficient size pre-allocated
+                                 by client for DSC PPS calculations use
  * @param[out]  pps                 Calculated PPS parameter.
  *                                  The data can be send to SetDscPpsData* methods directly.
  * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
@@ -301,9 +297,40 @@ NVT_STATUS DSC_GeneratePPS(const DSC_INFO *pDscInfo,
                            const MODESET_INFO *pModesetInfo,
                            const WAR_DATA *pWARData,
                            NvU64 availableBandwidthBitsPerSecond,
+                           DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea,
                            NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
-                           NvU32 *pBitsPerPixelX16,
-                           DSC_GENERATE_PPS_OPAQUE_WORKAREA *pOpaqueWorkarea);
+                           NvU32 *pBitsPerPixelX16);
+
+/*
+ * @brief       Calculate PPS parameters and slice count mask based on passed down 
+ *              Sink, GPU capability and modeset info
+ *
+ *
+ * @param[in]   pDscInfo       Includes Sink and GPU DSC capabilities
+ * @param[in]   pModesetInfo   Modeset related information
+ * @param[in]   pWARData       Data required for providing WAR for issues
+ * @param[in]   availableBandwidthBitsPerSecond      Available bandwidth for video
+ *                                                   transmission(After FEC/Downspread overhead consideration)
+ * @param[out]  pps                 Calculated PPS parameter.
+ *                                  The data can be send to SetDscPpsData* methods directly.
+ * @param[out]  pBitsPerPixelX16    Bits per pixel multiplied by 16
+ * @param[out]  pSliceCountMask     Mask of all slice counts supported by the mode.
+ *
+ * @returns NVT_STATUS_SUCCESS if successful;
+ *          NVT_STATUS_ERR if unsuccessful;
+ *          In case this returns failure consider that PPS is not possible.
+ */
+NVT_STATUS
+DSC_GeneratePPSWithSliceCountMask
+(
+    const DSC_INFO *pDscInfo,
+    const MODESET_INFO *pModesetInfo,
+    const WAR_DATA *pWARData,
+    NvU64 availableBandwidthBitsPerSecond,
+    NvU32 pps[DSC_MAX_PPS_SIZE_DWORD],
+    NvU32 *pBitsPerPixelX16,
+    NvU32 *sliceCountMask
+);
 
 #ifdef __cplusplus
 }

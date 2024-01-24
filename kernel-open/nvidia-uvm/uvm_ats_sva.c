@@ -30,6 +30,7 @@
 #include "uvm_va_space_mm.h"
 
 #include <asm/io.h>
+#include <linux/log2.h>
 #include <linux/iommu.h>
 #include <linux/mm_types.h>
 #include <linux/acpi.h>
@@ -49,6 +50,12 @@
 #else
 #define UVM_IOMMU_SVA_BIND_DEVICE(dev, mm) iommu_sva_bind_device(dev, mm)
 #endif
+
+// Type to represent a 128-bit SMMU command queue command.
+struct smmu_cmd {
+    NvU64 low;
+    NvU64 high;
+};
 
 // Base address of SMMU CMDQ-V for GSMMU0.
 #define SMMU_CMDQV_BASE_ADDR(smmu_base) (smmu_base + 0x200000)
@@ -101,9 +108,9 @@
 // Base address offset for the VCMDQ registers.
 #define SMMU_VCMDQ_CMDQ_BASE 0x10000
 
-// Size of the command queue. Each command is 8 bytes and we can't
-// have a command queue greater than one page.
-#define SMMU_VCMDQ_CMDQ_BASE_LOG2SIZE 9
+// Size of the command queue. Each command is 16 bytes and we can't
+// have a command queue greater than one page in size.
+#define SMMU_VCMDQ_CMDQ_BASE_LOG2SIZE (PAGE_SHIFT - ilog2(sizeof(struct smmu_cmd)))
 #define SMMU_VCMDQ_CMDQ_ENTRIES (1UL << SMMU_VCMDQ_CMDQ_BASE_LOG2SIZE)
 
 // We always use VINTF63 for the WAR
@@ -175,7 +182,6 @@ static NV_STATUS uvm_ats_smmu_war_init(uvm_parent_gpu_t *parent_gpu)
     iowrite32((VINTF << SMMU_CMDQV_CMDQ_ALLOC_MAP_VIRT_INTF_INDX_SHIFT) | SMMU_CMDQV_CMDQ_ALLOC_MAP_ALLOC,
               smmu_cmdqv_base + SMMU_CMDQV_CMDQ_ALLOC_MAP(VCMDQ));
 
-    BUILD_BUG_ON((SMMU_VCMDQ_CMDQ_BASE_LOG2SIZE + 3) > PAGE_SHIFT);
     smmu_vcmdq_write64(smmu_cmdqv_base, SMMU_VCMDQ_CMDQ_BASE,
                        page_to_phys(parent_gpu->smmu_war.smmu_cmdq) | SMMU_VCMDQ_CMDQ_BASE_LOG2SIZE);
     smmu_vcmdq_write32(smmu_cmdqv_base, SMMU_VCMDQ_CONS, 0);

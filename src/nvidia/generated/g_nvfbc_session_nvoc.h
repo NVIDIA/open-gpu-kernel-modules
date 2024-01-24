@@ -1,0 +1,302 @@
+#ifndef _G_NVFBC_SESSION_NVOC_H_
+#define _G_NVFBC_SESSION_NVOC_H_
+#include "nvoc/runtime.h"
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
+
+#include "g_nvfbc_session_nvoc.h"
+
+#ifndef _NVFBCSESSION_H_
+#define _NVFBCSESSION_H_
+
+#include "core/core.h"
+
+#include "rmapi/client.h"
+#include "gpu/gpu_resource.h"
+#include "class/cla0bd.h"
+#include "ctrl/ctrla0bd.h"
+
+#include "rmapi/control.h"
+
+#define SESSION_UPDATE_TIMESTAMP_UNINITIALIZED  0
+
+typedef struct NvfbcSession NvfbcSession;
+typedef struct NVFBC_SESSION_LIST_ITEM
+{
+    NvHandle      hClient;
+    NvfbcSession *sessionPtr;
+} NVFBC_SESSION_LIST_ITEM, *PNVFBC_SESSION_LIST_ITEM;
+
+MAKE_LIST(NVFBC_SESSION_LIST, NVFBC_SESSION_LIST_ITEM);
+
+typedef struct NVFBC_SESSION_ENTRY
+{
+    NvU32               processId;
+    NvU32               vgpuInstanceId;
+    NvU32               sessionId;
+    NvU32               displayOrdinal;
+    NvU32               sessionType;
+    NvU32               sessionFlags;
+    NvU32               hMaxResolution;
+    NvU32               vMaxResolution;
+    NvU32               hResolution;
+    NvU32               vResolution;
+    NvU32               totalGrabCalls;
+    NvU32               averageFPS;
+    NvU32               averageLatency;             // average over last 60 samples if FPS exceeds 60
+    NvU64               lastUpdateTimeStamp;        // timestamp of last session update call
+} NVFBC_SESSION_ENTRY, *PNVFBC_SESSION_ENTRY;
+
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
+#ifdef NVOC_NVFBC_SESSION_H_PRIVATE_ACCESS_ALLOWED
+#define PRIVATE_FIELD(x) x
+#else
+#define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
+#endif
+
+struct NvfbcSession {
+    const struct NVOC_RTTI *__nvoc_rtti;
+    struct GpuResource __nvoc_base_GpuResource;
+    struct Object *__nvoc_pbase_Object;
+    struct RsResource *__nvoc_pbase_RsResource;
+    struct RmResourceCommon *__nvoc_pbase_RmResourceCommon;
+    struct RmResource *__nvoc_pbase_RmResource;
+    struct GpuResource *__nvoc_pbase_GpuResource;
+    struct NvfbcSession *__nvoc_pbase_NvfbcSession;
+    NV_STATUS (*__nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo__)(struct NvfbcSession *, NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS *);
+    NvBool (*__nvfbcsessionShareCallback__)(struct NvfbcSession *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
+    NV_STATUS (*__nvfbcsessionCheckMemInterUnmap__)(struct NvfbcSession *, NvBool);
+    NV_STATUS (*__nvfbcsessionMapTo__)(struct NvfbcSession *, RS_RES_MAP_TO_PARAMS *);
+    NV_STATUS (*__nvfbcsessionGetMapAddrSpace__)(struct NvfbcSession *, struct CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
+    NvU32 (*__nvfbcsessionGetRefCount__)(struct NvfbcSession *);
+    void (*__nvfbcsessionAddAdditionalDependants__)(struct RsClient *, struct NvfbcSession *, RsResourceRef *);
+    NV_STATUS (*__nvfbcsessionControl_Prologue__)(struct NvfbcSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__nvfbcsessionGetRegBaseOffsetAndSize__)(struct NvfbcSession *, struct OBJGPU *, NvU32 *, NvU32 *);
+    NV_STATUS (*__nvfbcsessionInternalControlForward__)(struct NvfbcSession *, NvU32, void *, NvU32);
+    NV_STATUS (*__nvfbcsessionUnmapFrom__)(struct NvfbcSession *, RS_RES_UNMAP_FROM_PARAMS *);
+    void (*__nvfbcsessionControl_Epilogue__)(struct NvfbcSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvHandle (*__nvfbcsessionGetInternalObjectHandle__)(struct NvfbcSession *);
+    NV_STATUS (*__nvfbcsessionControl__)(struct NvfbcSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__nvfbcsessionUnmap__)(struct NvfbcSession *, struct CALL_CONTEXT *, struct RsCpuMapping *);
+    NV_STATUS (*__nvfbcsessionGetMemInterMapParams__)(struct NvfbcSession *, RMRES_MEM_INTER_MAP_PARAMS *);
+    NV_STATUS (*__nvfbcsessionGetMemoryMappingDescriptor__)(struct NvfbcSession *, struct MEMORY_DESCRIPTOR **);
+    NV_STATUS (*__nvfbcsessionControlFilter__)(struct NvfbcSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__nvfbcsessionControlSerialization_Prologue__)(struct NvfbcSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__nvfbcsessionCanCopy__)(struct NvfbcSession *);
+    NvBool (*__nvfbcsessionIsPartialUnmapSupported__)(struct NvfbcSession *);
+    void (*__nvfbcsessionPreDestruct__)(struct NvfbcSession *);
+    NV_STATUS (*__nvfbcsessionIsDuplicate__)(struct NvfbcSession *, NvHandle, NvBool *);
+    void (*__nvfbcsessionControlSerialization_Epilogue__)(struct NvfbcSession *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NV_STATUS (*__nvfbcsessionMap__)(struct NvfbcSession *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
+    NvBool (*__nvfbcsessionAccessCallback__)(struct NvfbcSession *, struct RsClient *, void *, RsAccessRight);
+    NVFBC_SESSION_ENTRY nvfbcSessionEntry;
+};
+
+#ifndef __NVOC_CLASS_NvfbcSession_TYPEDEF__
+#define __NVOC_CLASS_NvfbcSession_TYPEDEF__
+typedef struct NvfbcSession NvfbcSession;
+#endif /* __NVOC_CLASS_NvfbcSession_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_NvfbcSession
+#define __nvoc_class_id_NvfbcSession 0xcbde75
+#endif /* __nvoc_class_id_NvfbcSession */
+
+extern const struct NVOC_CLASS_DEF __nvoc_class_def_NvfbcSession;
+
+#define __staticCast_NvfbcSession(pThis) \
+    ((pThis)->__nvoc_pbase_NvfbcSession)
+
+#ifdef __nvoc_nvfbc_session_h_disabled
+#define __dynamicCast_NvfbcSession(pThis) ((NvfbcSession*)NULL)
+#else //__nvoc_nvfbc_session_h_disabled
+#define __dynamicCast_NvfbcSession(pThis) \
+    ((NvfbcSession*)__nvoc_dynamicCast(staticCast((pThis), Dynamic), classInfo(NvfbcSession)))
+#endif //__nvoc_nvfbc_session_h_disabled
+
+
+NV_STATUS __nvoc_objCreateDynamic_NvfbcSession(NvfbcSession**, Dynamic*, NvU32, va_list);
+
+NV_STATUS __nvoc_objCreate_NvfbcSession(NvfbcSession**, Dynamic*, NvU32, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams);
+#define __objCreate_NvfbcSession(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
+    __nvoc_objCreate_NvfbcSession((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
+
+#define nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo(pNvfbcSession, pParams) nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_DISPATCH(pNvfbcSession, pParams)
+#define nvfbcsessionShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) nvfbcsessionShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
+#define nvfbcsessionCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) nvfbcsessionCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
+#define nvfbcsessionMapTo(pResource, pParams) nvfbcsessionMapTo_DISPATCH(pResource, pParams)
+#define nvfbcsessionGetMapAddrSpace(pGpuResource, pCallContext, mapFlags, pAddrSpace) nvfbcsessionGetMapAddrSpace_DISPATCH(pGpuResource, pCallContext, mapFlags, pAddrSpace)
+#define nvfbcsessionGetRefCount(pResource) nvfbcsessionGetRefCount_DISPATCH(pResource)
+#define nvfbcsessionAddAdditionalDependants(pClient, pResource, pReference) nvfbcsessionAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define nvfbcsessionControl_Prologue(pResource, pCallContext, pParams) nvfbcsessionControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define nvfbcsessionGetRegBaseOffsetAndSize(pGpuResource, pGpu, pOffset, pSize) nvfbcsessionGetRegBaseOffsetAndSize_DISPATCH(pGpuResource, pGpu, pOffset, pSize)
+#define nvfbcsessionInternalControlForward(pGpuResource, command, pParams, size) nvfbcsessionInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
+#define nvfbcsessionUnmapFrom(pResource, pParams) nvfbcsessionUnmapFrom_DISPATCH(pResource, pParams)
+#define nvfbcsessionControl_Epilogue(pResource, pCallContext, pParams) nvfbcsessionControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define nvfbcsessionGetInternalObjectHandle(pGpuResource) nvfbcsessionGetInternalObjectHandle_DISPATCH(pGpuResource)
+#define nvfbcsessionControl(pGpuResource, pCallContext, pParams) nvfbcsessionControl_DISPATCH(pGpuResource, pCallContext, pParams)
+#define nvfbcsessionUnmap(pGpuResource, pCallContext, pCpuMapping) nvfbcsessionUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
+#define nvfbcsessionGetMemInterMapParams(pRmResource, pParams) nvfbcsessionGetMemInterMapParams_DISPATCH(pRmResource, pParams)
+#define nvfbcsessionGetMemoryMappingDescriptor(pRmResource, ppMemDesc) nvfbcsessionGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
+#define nvfbcsessionControlFilter(pResource, pCallContext, pParams) nvfbcsessionControlFilter_DISPATCH(pResource, pCallContext, pParams)
+#define nvfbcsessionControlSerialization_Prologue(pResource, pCallContext, pParams) nvfbcsessionControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define nvfbcsessionCanCopy(pResource) nvfbcsessionCanCopy_DISPATCH(pResource)
+#define nvfbcsessionIsPartialUnmapSupported(pResource) nvfbcsessionIsPartialUnmapSupported_DISPATCH(pResource)
+#define nvfbcsessionPreDestruct(pResource) nvfbcsessionPreDestruct_DISPATCH(pResource)
+#define nvfbcsessionIsDuplicate(pResource, hMemory, pDuplicate) nvfbcsessionIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
+#define nvfbcsessionControlSerialization_Epilogue(pResource, pCallContext, pParams) nvfbcsessionControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
+#define nvfbcsessionMap(pGpuResource, pCallContext, pParams, pCpuMapping) nvfbcsessionMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
+#define nvfbcsessionAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) nvfbcsessionAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
+NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_IMPL(struct NvfbcSession *pNvfbcSession, NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS *pParams);
+
+static inline NV_STATUS nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo_DISPATCH(struct NvfbcSession *pNvfbcSession, NVA0BD_CTRL_NVFBC_SW_SESSION_UPDATE_INFO_PARAMS *pParams) {
+    return pNvfbcSession->__nvfbcsessionCtrlCmdNvFBCSwSessionUpdateInfo__(pNvfbcSession, pParams);
+}
+
+static inline NvBool nvfbcsessionShareCallback_DISPATCH(struct NvfbcSession *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
+    return pGpuResource->__nvfbcsessionShareCallback__(pGpuResource, pInvokingClient, pParentRef, pSharePolicy);
+}
+
+static inline NV_STATUS nvfbcsessionCheckMemInterUnmap_DISPATCH(struct NvfbcSession *pRmResource, NvBool bSubdeviceHandleProvided) {
+    return pRmResource->__nvfbcsessionCheckMemInterUnmap__(pRmResource, bSubdeviceHandleProvided);
+}
+
+static inline NV_STATUS nvfbcsessionMapTo_DISPATCH(struct NvfbcSession *pResource, RS_RES_MAP_TO_PARAMS *pParams) {
+    return pResource->__nvfbcsessionMapTo__(pResource, pParams);
+}
+
+static inline NV_STATUS nvfbcsessionGetMapAddrSpace_DISPATCH(struct NvfbcSession *pGpuResource, struct CALL_CONTEXT *pCallContext, NvU32 mapFlags, NV_ADDRESS_SPACE *pAddrSpace) {
+    return pGpuResource->__nvfbcsessionGetMapAddrSpace__(pGpuResource, pCallContext, mapFlags, pAddrSpace);
+}
+
+static inline NvU32 nvfbcsessionGetRefCount_DISPATCH(struct NvfbcSession *pResource) {
+    return pResource->__nvfbcsessionGetRefCount__(pResource);
+}
+
+static inline void nvfbcsessionAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct NvfbcSession *pResource, RsResourceRef *pReference) {
+    pResource->__nvfbcsessionAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS nvfbcsessionControl_Prologue_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__nvfbcsessionControl_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS nvfbcsessionGetRegBaseOffsetAndSize_DISPATCH(struct NvfbcSession *pGpuResource, struct OBJGPU *pGpu, NvU32 *pOffset, NvU32 *pSize) {
+    return pGpuResource->__nvfbcsessionGetRegBaseOffsetAndSize__(pGpuResource, pGpu, pOffset, pSize);
+}
+
+static inline NV_STATUS nvfbcsessionInternalControlForward_DISPATCH(struct NvfbcSession *pGpuResource, NvU32 command, void *pParams, NvU32 size) {
+    return pGpuResource->__nvfbcsessionInternalControlForward__(pGpuResource, command, pParams, size);
+}
+
+static inline NV_STATUS nvfbcsessionUnmapFrom_DISPATCH(struct NvfbcSession *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__nvfbcsessionUnmapFrom__(pResource, pParams);
+}
+
+static inline void nvfbcsessionControl_Epilogue_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__nvfbcsessionControl_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NvHandle nvfbcsessionGetInternalObjectHandle_DISPATCH(struct NvfbcSession *pGpuResource) {
+    return pGpuResource->__nvfbcsessionGetInternalObjectHandle__(pGpuResource);
+}
+
+static inline NV_STATUS nvfbcsessionControl_DISPATCH(struct NvfbcSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pGpuResource->__nvfbcsessionControl__(pGpuResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS nvfbcsessionUnmap_DISPATCH(struct NvfbcSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RsCpuMapping *pCpuMapping) {
+    return pGpuResource->__nvfbcsessionUnmap__(pGpuResource, pCallContext, pCpuMapping);
+}
+
+static inline NV_STATUS nvfbcsessionGetMemInterMapParams_DISPATCH(struct NvfbcSession *pRmResource, RMRES_MEM_INTER_MAP_PARAMS *pParams) {
+    return pRmResource->__nvfbcsessionGetMemInterMapParams__(pRmResource, pParams);
+}
+
+static inline NV_STATUS nvfbcsessionGetMemoryMappingDescriptor_DISPATCH(struct NvfbcSession *pRmResource, struct MEMORY_DESCRIPTOR **ppMemDesc) {
+    return pRmResource->__nvfbcsessionGetMemoryMappingDescriptor__(pRmResource, ppMemDesc);
+}
+
+static inline NV_STATUS nvfbcsessionControlFilter_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__nvfbcsessionControlFilter__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS nvfbcsessionControlSerialization_Prologue_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__nvfbcsessionControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool nvfbcsessionCanCopy_DISPATCH(struct NvfbcSession *pResource) {
+    return pResource->__nvfbcsessionCanCopy__(pResource);
+}
+
+static inline NvBool nvfbcsessionIsPartialUnmapSupported_DISPATCH(struct NvfbcSession *pResource) {
+    return pResource->__nvfbcsessionIsPartialUnmapSupported__(pResource);
+}
+
+static inline void nvfbcsessionPreDestruct_DISPATCH(struct NvfbcSession *pResource) {
+    pResource->__nvfbcsessionPreDestruct__(pResource);
+}
+
+static inline NV_STATUS nvfbcsessionIsDuplicate_DISPATCH(struct NvfbcSession *pResource, NvHandle hMemory, NvBool *pDuplicate) {
+    return pResource->__nvfbcsessionIsDuplicate__(pResource, hMemory, pDuplicate);
+}
+
+static inline void nvfbcsessionControlSerialization_Epilogue_DISPATCH(struct NvfbcSession *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    pResource->__nvfbcsessionControlSerialization_Epilogue__(pResource, pCallContext, pParams);
+}
+
+static inline NV_STATUS nvfbcsessionMap_DISPATCH(struct NvfbcSession *pGpuResource, struct CALL_CONTEXT *pCallContext, struct RS_CPU_MAP_PARAMS *pParams, struct RsCpuMapping *pCpuMapping) {
+    return pGpuResource->__nvfbcsessionMap__(pGpuResource, pCallContext, pParams, pCpuMapping);
+}
+
+static inline NvBool nvfbcsessionAccessCallback_DISPATCH(struct NvfbcSession *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
+    return pResource->__nvfbcsessionAccessCallback__(pResource, pInvokingClient, pAllocParams, accessRight);
+}
+
+NV_STATUS nvfbcsessionConstruct_IMPL(struct NvfbcSession *arg_pNvfbcSession, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
+
+#define __nvoc_nvfbcsessionConstruct(arg_pNvfbcSession, arg_pCallContext, arg_pParams) nvfbcsessionConstruct_IMPL(arg_pNvfbcSession, arg_pCallContext, arg_pParams)
+void nvfbcsessionDestruct_IMPL(struct NvfbcSession *pNvfbcSession);
+
+#define __nvoc_nvfbcsessionDestruct(pNvfbcSession) nvfbcsessionDestruct_IMPL(pNvfbcSession)
+#undef PRIVATE_FIELD
+
+
+NV_STATUS nvA0BDCtrlCmdNvFBCSwSessionUpdateInfo(RmCtrlParams *pRmCtrlParams);
+NvBool    nvfbcIsSessionDataStale(NvU64 lastUpdateTimeStamp);
+
+#endif // _NVFBCSESSION_H_
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
+
+#endif // _G_NVFBC_SESSION_NVOC_H_

@@ -51,11 +51,16 @@ typedef struct LATENCY_TIMER_CONTROL
     NvU32 LatencyTimerValue;        // Requested value for PCI latency timer.
 } LATENCY_TIMER_CONTROL;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_MC_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelMc {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -173,6 +178,8 @@ NV_STATUS kmcWritePmcEnableReg_GK104(struct OBJGPU *pGpu, struct KernelMc *pKern
 
 NV_STATUS kmcWritePmcEnableReg_GA100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0, NvBool arg1, NvBool arg2);
 
+NV_STATUS kmcWritePmcEnableReg_GH100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0, NvBool arg1, NvBool arg2);
+
 static inline NV_STATUS kmcWritePmcEnableReg_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvU32 arg0, NvBool arg1, NvBool arg2) {
     return pKernelMc->__kmcWritePmcEnableReg__(pGpu, pKernelMc, arg0, arg1, arg2);
 }
@@ -180,6 +187,8 @@ static inline NV_STATUS kmcWritePmcEnableReg_DISPATCH(struct OBJGPU *pGpu, struc
 NvU32 kmcReadPmcEnableReg_GK104(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvBool arg0);
 
 NvU32 kmcReadPmcEnableReg_GA100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvBool arg0);
+
+NvU32 kmcReadPmcEnableReg_GH100(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvBool arg0);
 
 static inline NvU32 kmcReadPmcEnableReg_DISPATCH(struct OBJGPU *pGpu, struct KernelMc *pKernelMc, NvBool arg0) {
     return pKernelMc->__kmcReadPmcEnableReg__(pGpu, pKernelMc, arg0);

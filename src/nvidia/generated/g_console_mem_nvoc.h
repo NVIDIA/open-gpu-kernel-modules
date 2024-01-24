@@ -39,11 +39,16 @@ extern "C" {
 /*!
  * This class is used to create hMemory referencing reserved console memory
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CONSOLE_MEM_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct ConsoleMemory {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Memory __nvoc_base_Memory;
@@ -65,13 +70,13 @@ struct ConsoleMemory {
     NvBool (*__conmemIsGpuMapAllowed__)(struct ConsoleMemory *, struct OBJGPU *);
     NV_STATUS (*__conmemUnmapFrom__)(struct ConsoleMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__conmemControl_Epilogue__)(struct ConsoleMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__conmemControlLookup__)(struct ConsoleMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__conmemControl__)(struct ConsoleMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__conmemUnmap__)(struct ConsoleMemory *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__conmemGetMemInterMapParams__)(struct ConsoleMemory *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__conmemGetMemoryMappingDescriptor__)(struct ConsoleMemory *, MEMORY_DESCRIPTOR **);
     NV_STATUS (*__conmemControlFilter__)(struct ConsoleMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__conmemControlSerialization_Prologue__)(struct ConsoleMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__conmemIsPartialUnmapSupported__)(struct ConsoleMemory *);
     NV_STATUS (*__conmemIsReady__)(struct ConsoleMemory *, NvBool);
     NV_STATUS (*__conmemCheckCopyPermissions__)(struct ConsoleMemory *, struct OBJGPU *, struct Device *);
     void (*__conmemPreDestruct__)(struct ConsoleMemory *);
@@ -121,13 +126,13 @@ NV_STATUS __nvoc_objCreate_ConsoleMemory(ConsoleMemory**, Dynamic*, NvU32, CALL_
 #define conmemIsGpuMapAllowed(pMemory, pGpu) conmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define conmemUnmapFrom(pResource, pParams) conmemUnmapFrom_DISPATCH(pResource, pParams)
 #define conmemControl_Epilogue(pResource, pCallContext, pParams) conmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define conmemControlLookup(pResource, pParams, ppEntry) conmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define conmemControl(pMemory, pCallContext, pParams) conmemControl_DISPATCH(pMemory, pCallContext, pParams)
 #define conmemUnmap(pMemory, pCallContext, pCpuMapping) conmemUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define conmemGetMemInterMapParams(pMemory, pParams) conmemGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define conmemGetMemoryMappingDescriptor(pMemory, ppMemDesc) conmemGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define conmemControlFilter(pResource, pCallContext, pParams) conmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define conmemControlSerialization_Prologue(pResource, pCallContext, pParams) conmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define conmemIsPartialUnmapSupported(pResource) conmemIsPartialUnmapSupported_DISPATCH(pResource)
 #define conmemIsReady(pMemory, bCopyConstructorContext) conmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define conmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) conmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define conmemPreDestruct(pResource) conmemPreDestruct_DISPATCH(pResource)
@@ -185,10 +190,6 @@ static inline void conmemControl_Epilogue_DISPATCH(struct ConsoleMemory *pResour
     pResource->__conmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS conmemControlLookup_DISPATCH(struct ConsoleMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__conmemControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS conmemControl_DISPATCH(struct ConsoleMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pMemory->__conmemControl__(pMemory, pCallContext, pParams);
 }
@@ -211,6 +212,10 @@ static inline NV_STATUS conmemControlFilter_DISPATCH(struct ConsoleMemory *pReso
 
 static inline NV_STATUS conmemControlSerialization_Prologue_DISPATCH(struct ConsoleMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__conmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool conmemIsPartialUnmapSupported_DISPATCH(struct ConsoleMemory *pResource) {
+    return pResource->__conmemIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS conmemIsReady_DISPATCH(struct ConsoleMemory *pMemory, NvBool bCopyConstructorContext) {

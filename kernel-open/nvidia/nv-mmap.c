@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -705,9 +705,9 @@ int nvidia_mmap(
     struct vm_area_struct *vma
 )
 {
-    nv_linux_state_t *nvl = NV_GET_NVL_FROM_FILEP(file);
-    nv_state_t *nv = NV_STATE_PTR(nvl);
     nv_linux_file_private_t *nvlfp = NV_GET_LINUX_FILE_PRIVATE(file);
+    nv_linux_state_t *nvl;
+    nv_state_t *nv;
     nvidia_stack_t *sp = NULL;
     int status;
 
@@ -719,6 +719,19 @@ int nvidia_mmap(
     {
         return -EINVAL;
     }
+
+    if (!nv_is_control_device(NV_FILE_INODE(file)))
+    {
+        status = nv_wait_open_complete_interruptible(nvlfp);
+        if (status != 0)
+            return status;
+    }
+
+    nvl = nvlfp->nvptr;
+    if (nvl == NULL)
+        return -EIO;
+
+    nv = NV_STATE_PTR(nvl);
 
     status = nv_kmem_cache_alloc_stack(&sp);
     if (status != 0)

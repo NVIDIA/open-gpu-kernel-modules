@@ -34,8 +34,8 @@
 #include "core/prelude.h"
 #include "core/locks.h"
 #include "gpu/mem_mgr/ce_utils.h"
-#include "gpu/subdevice/subdevice.h"
 #include "kernel/gpu/mem_mgr/ce_utils_sizes.h"
+#include "vgpu/rpc_headers.h"
 
 #include "class/clb0b5.h" // MAXWELL_DMA_COPY_A
 #include "class/clc0b5.h" // PASCAL_DMA_COPY_A
@@ -98,8 +98,21 @@ ceutilsConstruct_IMPL
     status = serverGetClientUnderLock(&g_resServ, pChannel->hClient, &pChannel->pRsClient);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
 
-    status = clientSetHandleGenerator(staticCast(pClient, RsClient), 1U, ~0U - 1U);
-    NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
+    if (IS_VIRTUAL(pGpu))
+    {
+        NV_ASSERT_OK_OR_GOTO(
+            status,
+            clientSetHandleGenerator(staticCast(pClient, RsClient), RS_UNIQUE_HANDLE_BASE,
+                                     RS_UNIQUE_HANDLE_RANGE/2 - VGPU_RESERVED_HANDLE_RANGE),
+            free_client);
+    }
+    else
+    {
+        NV_ASSERT_OK_OR_GOTO(
+            status,
+            clientSetHandleGenerator(staticCast(pClient, RsClient), 1U, ~0U - 1U),
+            free_client);
+    }
 
     pChannel->bClientAllocated = NV_TRUE;
     pChannel->pGpu = pGpu;
@@ -129,7 +142,7 @@ ceutilsConstruct_IMPL
     }
 
     // For self-hosted Hopper, we can only use VA copy or faster scrubber
-    if (gpuIsSelfHosted(pGpu))
+    if (pMemoryManager->bCePhysicalVidmemAccessNotSupported)
     {
         if (!pChannel->bUseVasForCeCopy &&
             (pChannel->type != FAST_SCRUBBER_CHANNEL))
@@ -186,18 +199,6 @@ ceutilsDestruct_IMPL
     OBJGPU *pGpu = pCeUtils->pGpu;
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-
-    // Sanity checks
-    if ((pGpu == NULL) || (pChannel == NULL))
-    {
-        NV_PRINTF(LEVEL_WARNING, "Possible double-free of CeUtils!\n");
-        return;
-    }
-    else if (pGpu != pChannel->pGpu)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Bad state during ceUtils teardown!\n");
-        return;
-    }
 
     if ((pChannel->bClientUserd) && (pChannel->pControlGPFifo != NULL))
     {
@@ -273,7 +274,7 @@ ceutilsServiceInterrupts_IMPL(CeUtils *pCeUtils)
 static NvBool
 _ceUtilsFastScrubEnabled
 (
-    POBJCHANNEL      pChannel,
+    OBJCHANNEL      *pChannel,
     CHANNEL_PB_INFO *pChannelPbInfo
 )
 {
@@ -311,7 +312,7 @@ _ceUtilsFastScrubEnabled
 static NV_STATUS
 _ceutilsSubmitPushBuffer
 (
-    POBJCHANNEL       pChannel,
+    OBJCHANNEL       *pChannel,
     NvBool            bPipelined,
     NvBool            bInsertFinishPayload,
     CHANNEL_PB_INFO * pChannelPbInfo
@@ -356,7 +357,7 @@ _ceutilsSubmitPushBuffer
     }
     else
     {
-        if (gpuIsSelfHosted(pChannel->pGpu))
+        if (pMemoryManager->bCePhysicalVidmemAccessNotSupported)
         {
             // Self-hosted Hopper only supports VA copy or fast scrubber
             NV_ASSERT_OR_RETURN(pChannel->bUseVasForCeCopy, NV_ERR_NOT_SUPPORTED);
@@ -659,7 +660,6 @@ ceutilsUpdateProgress_IMPL
     return swLastCompletedPayload;
 }
 
-#if defined(DEBUG) || defined (DEVELOP)
 NV_STATUS
 ceutilsapiCtrlCmdCheckProgress_IMPL
 (
@@ -795,4 +795,3 @@ ceutilsapiCtrlCmdMemcopy_IMPL
 
     return status;
 }
-#endif // defined(DEBUG) || defined (DEVELOP)

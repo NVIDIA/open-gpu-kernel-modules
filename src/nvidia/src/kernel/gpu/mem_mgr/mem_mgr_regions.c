@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/heap.h"
 
@@ -407,6 +408,27 @@ memmgrRegionSetupCommon_IMPL
 
     for (i = 0; i < pMemoryManager->Ram.numFBRegions; i++)
     {
+        //
+        // In NUMA systems unreserved FB memory Block is onlined to the
+        // kernel after aligning to memblock size. If we have leftover
+        // memory after the alignment this memory will just be unused.
+        // Hence adding this memory to the reserved heap to avoid
+        // assigning unused memory later to PMA and to keep both the
+        // NUMA size and the PMA size same.
+        //
+        if (osNumaOnliningEnabled(pGpu->pOsGpuInfo) &&
+            (pMemoryManager->Ram.fbRegion[i].bRsvdRegion == NV_FALSE) &&
+            (pMemoryManager->Ram.fbRegion[i].bInternalHeap == NV_FALSE))
+        {
+            NvU64 unusedBlockSize = 0;
+            NvU64 memblockSize = 0;
+            NvU64 regionSize = pMemoryManager->Ram.fbRegion[i].limit - pMemoryManager->Ram.fbRegion[i].base + 1;
+            NvU64 usableBlockSize = regionSize - pMemoryManager->Ram.fbRegion[i].rsvdSize;
+
+            NV_ASSERT_OR_RETURN_VOID(osNumaMemblockSize(&memblockSize) == NV_OK);
+            unusedBlockSize = usableBlockSize - NV_ALIGN_DOWN64(usableBlockSize, memblockSize);
+            pMemoryManager->Ram.fbRegion[i].rsvdSize += unusedBlockSize;
+        }
         //
         // if the region has an RM reserved block and is not already reserved, subdivide it.
         //

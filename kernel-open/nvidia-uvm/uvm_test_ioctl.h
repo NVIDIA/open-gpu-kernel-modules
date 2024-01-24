@@ -191,6 +191,7 @@ typedef struct
     NvU64                           va_range_end                     NV_ALIGN_BYTES(8); // Out, inclusive
     NvU32                           read_duplication;                                   // Out (UVM_TEST_READ_DUPLICATION_POLICY)
     NvProcessorUuid                 preferred_location;                                 // Out
+    NvS32                           preferred_cpu_nid;                                  // Out
     NvProcessorUuid                 accessed_by[UVM_MAX_PROCESSORS];                    // Out
     NvU32                           accessed_by_count;                                  // Out
     NvU32                           type;                                               // Out (UVM_TEST_VA_RANGE_TYPE)
@@ -1443,6 +1444,28 @@ typedef struct
 {
     NV_STATUS rmStatus;                                  // Out
 } UVM_TEST_CPU_CHUNK_API_PARAMS;
+
+#define UVM_TEST_FORCE_CPU_TO_CPU_COPY_WITH_CE          UVM_TEST_IOCTL_BASE(101)
+typedef struct
+{
+    NvBool force_copy_with_ce;                          // In
+    NV_STATUS rmStatus;                                 // Out
+} UVM_TEST_FORCE_CPU_TO_CPU_COPY_WITH_CE_PARAMS;
+
+#define UVM_TEST_VA_SPACE_ALLOW_MOVABLE_ALLOCATIONS     UVM_TEST_IOCTL_BASE(102)
+typedef struct
+{
+    NvBool allow_movable;                               // In
+    NV_STATUS rmStatus;                                 // Out
+} UVM_TEST_VA_SPACE_ALLOW_MOVABLE_ALLOCATIONS_PARAMS;
+
+#define UVM_TEST_SKIP_MIGRATE_VMA                        UVM_TEST_IOCTL_BASE(103)
+typedef struct
+{
+    NvBool skip;                                         // In
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SKIP_MIGRATE_VMA_PARAMS;
+
 #ifdef __cplusplus
 }
 #endif

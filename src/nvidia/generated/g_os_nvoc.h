@@ -451,10 +451,6 @@ NV_STATUS  osCallACPI_NVHG_ROM(OBJGPU *, NvU32 *, NvU32 *);
 NV_STATUS  osCallACPI_NVHG_DCS(OBJGPU *, NvU32, NvU32 *);
 NV_STATUS  osCallACPI_DOD(OBJGPU *, NvU32 *, NvU32 *);
 
-// Tegra ACPI calls
-NV_STATUS  osCallACPI_ON(OBJGPU *, NvU32);
-NV_STATUS  osCallACPI_OFF(OBJGPU *, NvU32);
-
 // Optimus WMI ACPI calls
 NV_STATUS  osCallACPI_OPTM_GPUON(OBJGPU *);
 
@@ -625,11 +621,16 @@ NvBool          osCheckCallback_v2(OBJGPU *);
 typedef NV_STATUS       OSReadPFPciConfigInVF(NvU32, NvU32*);
 
 // Actual definition of the OBJOS structure
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_OS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJOS {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -657,7 +658,6 @@ struct OBJOS {
     OSPexRecoveryCallback *osPexRecoveryCallback;
     OSInternalReserveAllocCallback *osInternalReserveAllocCallback;
     OSInternalReserveFreeCallback *osInternalReserveFreeCallback;
-    NvU32 SystemMemorySize;
     OSPageArrayGetPhysAddr *osPageArrayGetPhysAddr;
     NvU32 dynamicPowerSupportGpuMask;
     NvBool bIsSimMods;
@@ -824,6 +824,7 @@ NV_STATUS osGetAtsTargetAddressRange(OBJGPU *pGpu,
                                      NvU32   peerIndex);
 NV_STATUS osGetFbNumaInfo(OBJGPU *pGpu,
                           NvU64  *pAddrPhys,
+                          NvU64  *pAddrRsvdPhys,
                           NvS32  *pNodeId);
 NV_STATUS osGetEgmInfo(OBJGPU *pGpu,
                        NvU64  *pPhysAddr,
@@ -849,7 +850,8 @@ NV_STATUS osVgpuInjectInterrupt(void *pArg1);
 NV_STATUS osVgpuRegisterMdev(OS_GPU_INFO  *pArg1);
 NV_STATUS osIsVgpuVfioPresent(void);
 NV_STATUS osIsVfioPciCorePresent(void);
-NV_STATUS rm_is_vgpu_supported_device(OS_GPU_INFO *pNv, NvU32 pmc_boot_1);
+NV_STATUS rm_is_vgpu_supported_device(OS_GPU_INFO *pNv, NvU32 pmc_boot_1,
+                                      NvU32 pmc_boot_42);
 NV_STATUS osLockPageableDataSection(RM_PAGEABLE_SECTION   *pSection);
 NV_STATUS osUnlockPageableDataSection(RM_PAGEABLE_SECTION   *pSection);
 
@@ -985,19 +987,6 @@ void* osMapKernelSpace(RmPhysAddr Start,
 
 void osUnmapKernelSpace(void *addr, NvU64 size);
 
-
-void *osMapIOSpace(RmPhysAddr start,
-                   NvU64 size_bytes,
-                   void ** priv,
-                   NvU32 user,
-                   NvU32 mode,
-                   NvU32 Protect);
-
-void osUnmapIOSpace(void *pAddress,
-                    NvU64 Size,
-                    void *pData,
-                    NvU32 User);
-
 NvBool osTestPcieExtendedConfigAccess(void *handle, NvU32 offset);
 
 NvU32 osGetCpuFrequency(void);
@@ -1058,12 +1047,6 @@ NV_STATUS osGetValidWindowHeadMask(OS_GPU_INFO *pArg1,
                                    NvU64 *pWindowHeadMask);
 
 NV_STATUS osSchedule(void);
-
-NV_STATUS osDmaMapPages(OS_GPU_INFO *pArg1,
-                        MEMORY_DESCRIPTOR *pMemDesc);
-
-NV_STATUS osDmaUnmapPages(OS_GPU_INFO *pArg1,
-                          MEMORY_DESCRIPTOR *pMemDesc);
 
 void osDmaSetAddressSize(OS_GPU_INFO *pArg1,
                          NvU32 bits);
@@ -1153,6 +1136,12 @@ NV_STATUS osSetTegraBrightnessLevel(OS_GPU_INFO *pArg1,
 
 NvBool osTegraSocGetHdcpEnabled(OS_GPU_INFO *pOsGpuInfo);
 
+void osTegraGetDispSMMUStreamIds(
+        OS_GPU_INFO *pOsGpuInfo,
+        NvU32       *dispIsoStreamId,
+        NvU32       *dispNisoStreamId
+);
+
 NvBool osIsVga(OS_GPU_INFO *pArg1,
                NvBool bIsGpuPrimaryDevice);
 
@@ -1240,6 +1229,8 @@ NV_STATUS osSanityTestIsr(OBJGPU *pGpu);
 
 void osAllocatedRmClient(void* pOSInfo);
 
+NvBool osTegraSocIsSimNetlistNet07(OS_GPU_INFO *pArg1);
+
 NV_STATUS osConfigurePcieReqAtomics(OS_GPU_INFO *pOsGpuInfo, NvU32 *pMask);
 
 NvBool osDmabufIsSupported(void);
@@ -1285,9 +1276,10 @@ NV_STATUS osOfflinePageAtAddress(NvU64 address);
 // Os 1Hz timer callback functions
 NV_STATUS osInit1HzCallbacks(OBJTMR *pTmr);
 NV_STATUS osDestroy1HzCallbacks(OBJTMR *pTmr);
-NV_STATUS osSchedule1SecondCallback(OBJGPU *pGpu, OS1HZPROC callback, void *pData, NvU32 flags);
-void      osRemove1SecondRepeatingCallback(OBJGPU *pGpu, OS1HZPROC callback, void *pData);
+NV_STATUS osSchedule1HzCallback(OBJGPU *pGpu, OS1HZPROC callback, void *pData, NvU32 flags);
+void      osRemove1HzCallback(OBJGPU *pGpu, OS1HZPROC callback, void *pData);
 NvBool    osRun1HzCallbacksNow(OBJGPU *pGpu);
+
 NV_STATUS osDoFunctionLevelReset(OBJGPU *pGpu);
 
 void vgpuDevWriteReg032(

@@ -27,15 +27,18 @@
 
 #include "rmconfig.h"
 #include "gpu/conf_compute/conf_compute.h"
+#include "spdm/rmspdmtransport.h"
 #include "gpu/fsp/kern_fsp.h"
 #include "gpu/gsp/kernel_gsp.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gsp/gspifpub.h"
 #include "vgpu/rpc.h"
+#include "os/os.h"
 
 #include "published/hopper/gh100/dev_falcon_v4.h"
 #include "published/hopper/gh100/dev_gsp.h"
 #include "published/hopper/gh100/dev_riscv_pri.h"
+#include "published/hopper/gh100/dev_vm.h"
 
 #define RISCV_BR_ADDR_ALIGNMENT                 (8)
 
@@ -412,6 +415,32 @@ kgspSetupGspFmcArgs_GH100
     pGspFmcBootParams->gspRmParams.bootArgsOffset = memdescGetPhysAddr(pKernelGsp->pLibosInitArgumentsDescriptor, AT_GPU, 0);
     pGspFmcBootParams->gspRmParams.target = _kgspMemdescToDmaTarget(pKernelGsp->pLibosInitArgumentsDescriptor);
 
+    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED))
+    {
+        NV_STATUS  status = NV_OK;
+        Spdm      *pSpdm  = pCC->pSpdm;
+
+        // If SPDM is NULL, we failed to initialize
+        if (pCC->pSpdm == NULL)
+        {
+            return NV_ERR_INVALID_STATE;
+        }
+
+        // Perform required pre-GSP-RM boot setup that could not be done on Spdm object creation.
+        status = spdmSetupCommunicationBuffers(pGpu, pSpdm);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "Failure when initializing SPDM messaging infrastructure. Status:0x%x\n", status);
+            return status;
+        }
+
+        // Target will always be GSP_DMA_TARGET_COHERENT_SYSTEM
+        pGspFmcBootParams->gspSpdmParams.target               = GSP_DMA_TARGET_COHERENT_SYSTEM;
+        pGspFmcBootParams->gspSpdmParams.payloadBufferOffset  = memdescGetPhysAddr(pSpdm->pPayloadBufferMemDesc,
+                                                                                   AT_GPU, 0);
+        pGspFmcBootParams->gspSpdmParams.payloadBufferSize    = pSpdm->payloadBufferSize;
+    }
+
     return NV_OK;
 }
 
@@ -434,8 +463,113 @@ _kgspIsLockdownReleased
                         _UNLOCK, reg);
 }
 
+/*!
+ * Determine if SPDM partition has booted.
+ */
+static NvBool
+_kgspHasSpdmBooted
+(
+    OBJGPU  *pGpu,
+    void    *pVoid
+)
+{
+    NvU32         spdmBootStatus = 0;
+    KernelFalcon *pKernelFalcon  = (KernelFalcon *)pVoid;
 
+    spdmBootStatus = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0);
 
+    return (spdmBootStatus == NV_SPDM_PARTITION_BOOT_SUCCESS);
+}
+
+/*!
+ * Establish session with SPDM Responder on GSP in Confidential Compute scenario.
+ * GSP-RM boot is blocked until session establishment completes.
+ *
+ * NOTE: This function currently requires the API lock (for at least the async init
+ * RPCs and libspdm synchronization) and as such does NOT support parallel init.
+ */
+static NV_STATUS
+_kgspEstablishSpdmSession
+(
+    OBJGPU              *pGpu,
+    KernelGsp           *pKernelGsp,
+    ConfidentialCompute *pConfCompute
+)
+{
+    NV_STATUS     status        = NV_OK;
+    KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
+
+    // Ensure SPDM Responder has booted before attempting to establish session.
+    status = gpuTimeoutCondWait(pGpu, _kgspHasSpdmBooted, (void *)pKernelFalcon, NULL);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Timeout waiting for SPDM Responder to initialize!\n");
+        goto exit;
+    }
+
+    status = confComputeEstablishSpdmSessionAndKeys_HAL(pGpu, pConfCompute);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "SPDM handshake with Responder failed.\n");
+        goto exit;
+    }
+
+    //
+    // Now we can send the async init messages that will be run before OBJGPU is created.
+    // SPDM will not continue with boot until we send ack after sending these RPCs, else
+    // we create a race condition where GSP-RM may skip these RPCs if not sent in time.
+    //
+    status = kgspQueueAsyncInitRpcs(pGpu, pKernelGsp);
+    if (status != NV_OK)
+    {
+        goto exit;
+    }
+
+    // Tell SPDM that it can continue with boot
+    kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0, NV_SPDM_REQUESTER_SECRETS_DERIVED);
+
+exit:
+    if (status != NV_OK)
+    {
+        KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+
+        NV_PRINTF(LEVEL_ERROR, "Failed to establish session with SPDM Responder!\n");
+        if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM))
+        {
+            kfspDumpDebugState_HAL(pGpu, pKernelFsp);
+        }
+        NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX0 = 0x%x\n",
+            kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0));
+        NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX1 = 0x%x\n",
+            kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX1));
+    }
+
+    return status;
+}
+
+/*!
+ * Determine if GSP has performed CC partition cleanup.
+ * Success or failure will be determined by the value in Mailbox1
+ */
+static NvBool
+_kgspHasCcCleanupFinished
+(
+    OBJGPU  *pGpu,
+    void    *pVoid
+)
+{
+    NvU32         ccCleanupStatus = 0;
+    KernelFalcon *pKernelFalcon   = (KernelFalcon *)pVoid;
+
+    ccCleanupStatus = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX1);
+
+    //
+    // To avoid a timing issue and issues with pre-existing values in Mailbox1
+    // we check for explicit success or failure statuses.
+    //
+    return (ccCleanupStatus == NV_SPDM_SECRET_TEARDOWN_SUCCESS ||
+            ccCleanupStatus == NV_SPDM_SECRET_TEARDOWN_FAILURE);
+}
 
 static void
 _kgspBootstrapGspFmc_GH100
@@ -498,36 +632,30 @@ _kgspBootstrapGspFmc_GH100
 }
 
 /*!
- * Boot GSP-RM.
+ * Prepare to boot GSP-RM
  *
- * This routine handles the following:
- *   - prepares RISCV core to run GSP-RM
- *   - prepares libos initialization args
- *   - prepares GSP-RM initialization message
- *   - starts the RISCV core and passes control to boot binary image
- *   - waits for GSP-RM to complete initialization
- *
- * Note that this routine is based on flcnBootstrapRiscvOS_GA102().
+ * This routine handles the prequesites to booting GSP-RM that requires the API LOCK:
+ *   - Clear ECC errors
+ *   - Prepare GSP-FMC arguments
+ *   - Prepare FSP boot commands
  *
  * @param[in]   pGpu            GPU object pointer
  * @param[in]   pKernelGsp      GSP object pointer
  * @param[in]   pGspFw          GSP_FIRMWARE image pointer
  *
- * @return NV_OK if GSP-RM RISCV boot was successful.
+ * @return NV_OK if GSP-RM RISCV preparation to boot was successful.
  *         Appropriate NV_ERR_xxx value otherwise.
  */
 NV_STATUS
-kgspBootstrapRiscvOSEarly_GH100
+kgspPrepareForBootstrap_GH100
 (
     OBJGPU         *pGpu,
     KernelGsp      *pKernelGsp,
     GSP_FIRMWARE   *pGspFw
 )
 {
-    KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
-    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
-    NV_STATUS     status        = NV_OK;
+    NV_STATUS  status     = NV_OK;
 
     // Only for GSP client builds
     if (!IS_GSP_CLIENT(pGpu))
@@ -537,49 +665,67 @@ kgspBootstrapRiscvOSEarly_GH100
     }
 
     // Clear ECC errors before attempting to load GSP
-    status = kmemsysClearEccCounts_HAL(pGpu, pKernelMemorySystem);
+    status = gpuClearEccCounts_HAL(pGpu);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Issue clearing ECC counts! Status:0x%x\n", status);
     }
 
     // Setup the descriptors that GSP-FMC needs to boot GSP-RM
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            kgspSetupGspFmcArgs_HAL(pGpu, pKernelGsp, pGspFw), exit);
-
-    kgspSetupLibosInitArgs(pGpu, pKernelGsp);
-
-    // Fill in the GSP-RM message queue init parameters
-    kgspPopulateGspRmInitArgs(pGpu, pKernelGsp, NULL);
-
-    //
-    // Stuff the message queue with async init messages that will be run
-    // before OBJGPU is created.
-    //
-    NV_RM_RPC_GSP_SET_SYSTEM_INFO(pGpu, status);
-    if (status != NV_OK)
-    {
-        NV_ASSERT_OK_FAILED("NV_RM_RPC_GSP_SET_SYSTEM_INFO", status);
-        goto exit;
-    }
-
-    NV_RM_RPC_SET_REGISTRY(pGpu, status);
-    if (status != NV_OK)
-    {
-        NV_ASSERT_OK_FAILED("NV_RM_RPC_SET_REGISTRY", status);
-        goto exit;
-    }
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kgspSetupGspFmcArgs_HAL(pGpu, pKernelGsp, pGspFw));
 
     if (pKernelFsp != NULL && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_GSPFMC))
     {
-        NV_PRINTF(LEVEL_NOTICE, "Starting to boot GSP via FSP.\n");
         pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM, NV_TRUE);
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                kfspSendBootCommands_HAL(pGpu, pKernelFsp), exit);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kfspPrepareBootCommands_HAL(pGpu, pKernelFsp));
     }
     else
     {
         _kgspBootstrapGspFmc_GH100(pGpu, pKernelGsp);
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * Boot GSP-RM.
+ *
+ * This routine handles the following:
+ *   - sends FSP boot commands
+ *   - waits for GSP-RM to complete initialization
+ *
+ * Note that this routine is based on flcnBootstrapRiscvOS_GA102().
+ *
+ * Note that this routine can be called without the API lock for
+ * parllel initialization.
+ *
+ * @param[in]   pGpu            GPU object pointer
+ * @param[in]   pKernelGsp      GSP object pointer
+ * @param[in]   pGspFw          GSP_FIRMWARE image pointer
+ *
+ * @return NV_OK if GSP-RM RISCV boot was successful.
+ *         Appropriate NV_ERR_xxx value otherwise.
+ */
+NV_STATUS
+kgspBootstrap_GH100
+(
+    OBJGPU         *pGpu,
+    KernelGsp      *pKernelGsp,
+    GSP_FIRMWARE   *pGspFw
+)
+{
+    KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
+    KernelFsp    *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
+    NV_STATUS     status = NV_OK;
+    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+
+    if (pKernelFsp != NULL && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_GSPFMC))
+    {
+        NV_PRINTF(LEVEL_NOTICE, "Starting to boot GSP via FSP.\n");
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                kfspSendBootCommands_HAL(pGpu, pKernelFsp), exit);
     }
 
     // Wait for target mask to be released.
@@ -598,6 +744,27 @@ kgspBootstrapRiscvOSEarly_GH100
                 kfspDumpDebugState_HAL(pGpu, pKernelFsp);
             }
 
+            goto exit;
+        }
+    }
+
+    //
+    // In Confidential Compute, SPDM session will be established before GSP-RM boots.
+    // Wait until after target mask is released by ACR to minimize busy wait time.
+    // NOTE: This is incompatible with parallel initialization. See function
+    // description for more details.
+    //
+    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
+    {
+        if (!rmapiLockIsOwner())
+        {
+            NV_ASSERT(0);
+            status = NV_ERR_INVALID_LOCK_STATE;
+            goto exit;
+        }
+        status = _kgspEstablishSpdmSession(pGpu, pKernelGsp, pCC);
+        if (status != NV_OK)
+        {
             goto exit;
         }
     }
@@ -656,7 +823,12 @@ exit:
     // If GSP fails to boot, check if there's any DED error.
     if (status != NV_OK)
     {
-        kmemsysCheckEccCounts_HAL(pGpu, pKernelMemorySystem);
+        if (pKernelFsp != NULL)
+        {
+            kfspCleanupBootState(pGpu, pKernelFsp);
+        }
+
+        gpuCheckEccCounts_HAL(pGpu);
     }
     NV_ASSERT(status == NV_OK);
 
@@ -692,4 +864,134 @@ kgspGetGspRmBootUcodeStorage_GH100
             return;
         }
     kgspGetGspRmBootUcodeStorage_GA102(pGpu, pKernelGsp, ppBinStorageImage, ppBinStorageDesc);
+}
+
+NV_STATUS
+kgspIssueNotifyOp_GH100
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    NvU32 opCode,
+    NvU32 *pArgs,
+    NvU32 argc
+)
+{
+    NV_STATUS status = NV_OK;
+    NotifyOpSharedSurface *pNotifyOpSharedSurface;
+    volatile NvU32 *pInUse;
+    volatile NvU32 *pSeqAddr;
+    volatile NvU32 *pStatusAddr;
+    NvU32 *pOpCodeAddr;
+    NvU32 *pArgsAddr;
+    NvU32 *pArgcAddr;
+
+    NvU32 seqValue;
+    NvU32 i;
+    RMTIMEOUT timeout;
+
+    // 1. Validate the arguments.
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, opCode < GSP_NOTIFY_OP_OPCODE_MAX, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, argc <= GSP_NOTIFY_OP_MAX_ARGUMENT_COUNT, NV_ERR_INVALID_ARGUMENT);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, (argc == 0 || pArgs != NULL), NV_ERR_INVALID_ARGUMENT);
+
+    // 2. Set up ptrs to the shared memory.
+    NV_ASSERT_OR_RETURN(pKernelGsp->pNotifyOpSurf != NULL, NV_ERR_INVALID_STATE);
+
+    pNotifyOpSharedSurface = pKernelGsp->pNotifyOpSurf;
+
+    pInUse      = (NvU32*) &(pNotifyOpSharedSurface->inUse);
+    pSeqAddr    = (NvU32*) &(pNotifyOpSharedSurface->seqNum);
+    pOpCodeAddr = (NvU32*) &(pNotifyOpSharedSurface->opCode);
+    pStatusAddr = (NvU32*) &(pNotifyOpSharedSurface->status);
+    pArgcAddr   = (NvU32*) &(pNotifyOpSharedSurface->argc);
+    pArgsAddr   = (NvU32*) pNotifyOpSharedSurface->args;
+
+    while (!portAtomicCompareAndSwapU32(pInUse, 1, 0))
+    {
+        // We're not going to sleep, but safe to sleep also means safe to spin..
+        NV_ASSERT_OR_RETURN(portSyncExSafeToSleep(), NV_ERR_INVALID_STATE);
+        osSpinLoop();
+    }
+
+    // 3. Read current sequence counter value.
+    seqValue = *pSeqAddr;
+
+    // 4. Populate the opcode and arguments.
+    *pOpCodeAddr = opCode;
+    *pArgcAddr = argc;
+    for (i = 0; i < argc; i++)
+    {
+        pArgsAddr[i] = pArgs[i];
+    }
+
+    //
+    // Issue a store fence to ensure that the parameters have made it to memory
+    // before the interrupt is triggered.
+    //
+    portAtomicMemoryFenceStore();
+
+    // 5. Trigger notification interrupt to GSP.
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
+    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_DOORBELL, NV_DOORBELL_NOTIFY_LEAF_SERVICE_LOCKLESS_OP_HANDLE);
+
+    // 6. Poll on the sequence number to ensure the op completed.
+    while (seqValue + 1 != *pSeqAddr)
+    {
+        status = gpuCheckTimeout(pGpu, &timeout);
+
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "gpuCheckTimeout failed, status = 0x%x\n", status);
+            goto error_ret;
+        }
+        osSpinLoop();
+    }
+
+    status = *pStatusAddr;
+
+error_ret:
+    portAtomicSetU32(pInUse, 0);
+
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, status);
+    return status;
+}
+
+NV_STATUS
+kgspCheckGspRmCcCleanup_GH100
+(
+    OBJGPU    *pGpu,
+    KernelGsp *pKernelGsp
+)
+{
+    KernelFalcon *pKernelFalcon   = staticCast(pKernelGsp, KernelFalcon);
+    NvU32         ccCleanupStatus = 0;
+    NV_STATUS     status          = NV_OK;
+
+    // Wait for GSP to explicitly state we have completed CC cleanup.
+    status = gpuTimeoutCondWait(pGpu, _kgspHasCcCleanupFinished, (void *)pKernelFalcon, NULL);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "CC secret cleanup failed due to timeout!\n");
+        goto exit;
+    }
+
+    // Now, check whether or not CC cleanup was successful.
+    ccCleanupStatus = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX1);
+    if (ccCleanupStatus == NV_SPDM_SECRET_TEARDOWN_SUCCESS)
+    {
+        // FIPS: Make status clear to user.
+        NV_PRINTF(LEVEL_ERROR, "CC secret cleanup successful!\n");
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "CC secret cleanup failed! Status 0x%x\n",
+                  ccCleanupStatus);
+    }
+
+exit:
+
+    // Regardless of success or failure, write ack to GSP.
+    kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX1, NV_SPDM_SECRET_TEARDOWN_ACK);
+
+    return status;
 }

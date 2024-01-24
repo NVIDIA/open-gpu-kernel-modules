@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2008-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2008-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -48,6 +48,25 @@ typedef struct rpc_set_guest_system_info_v03_00
 
 typedef rpc_set_guest_system_info_v03_00 rpc_set_guest_system_info_v;
 
+typedef struct rpc_set_guest_system_info_ext_v15_02
+{
+    char       guestDriverBranch[0x100];
+    NvU32      domain;
+    NvU16      bus;
+    NvU16      device;
+} rpc_set_guest_system_info_ext_v15_02;
+
+typedef rpc_set_guest_system_info_ext_v15_02 rpc_set_guest_system_info_ext_v;
+
+typedef struct rpc_alloc_root_v07_00
+{
+    NvHandle   hClient;
+    NvU32      processID;
+    char       processName[0x64];
+} rpc_alloc_root_v07_00;
+
+typedef rpc_alloc_root_v07_00 rpc_alloc_root_v;
+
 typedef struct rpc_alloc_memory_v13_01
 {
     NvHandle   hClient;
@@ -64,12 +83,46 @@ typedef struct rpc_alloc_memory_v13_01
 
 typedef rpc_alloc_memory_v13_01 rpc_alloc_memory_v;
 
+typedef struct rpc_alloc_channel_dma_v1F_04
+{
+    NvHandle   hClient;
+    NvHandle   hDevice;
+    NvHandle   hChannel;
+    NvU32      hClass;
+    NvU32      flags;
+    NV_CHANNEL_ALLOC_PARAMS_v1F_04 params;
+    NvU32      chid;
+} rpc_alloc_channel_dma_v1F_04;
+
+typedef rpc_alloc_channel_dma_v1F_04 rpc_alloc_channel_dma_v;
+
+typedef struct rpc_alloc_object_v25_08
+{
+    NvHandle   hClient;
+    NvHandle   hParent;
+    NvHandle   hObject;
+    NvU32      hClass;
+    NvU32      param_len;
+    alloc_object_params_v25_08 params;
+} rpc_alloc_object_v25_08;
+
+typedef rpc_alloc_object_v25_08 rpc_alloc_object_v;
+
 typedef struct rpc_free_v03_00
 {
     NVOS00_PARAMETERS_v03_00 params;
 } rpc_free_v03_00;
 
 typedef rpc_free_v03_00 rpc_free_v;
+
+typedef struct rpc_log_v03_00
+{
+    NvU32      level;
+    NvU32      log_len;
+    char       log_msg[];
+} rpc_log_v03_00;
+
+typedef rpc_log_v03_00 rpc_log_v;
 
 typedef struct rpc_map_memory_dma_v03_00
 {
@@ -84,6 +137,14 @@ typedef struct rpc_unmap_memory_dma_v03_00
 } rpc_unmap_memory_dma_v03_00;
 
 typedef rpc_unmap_memory_dma_v03_00 rpc_unmap_memory_dma_v;
+
+typedef struct rpc_alloc_subdevice_v08_01
+{
+    NvU32      subDeviceInst;
+    NVOS21_PARAMETERS_v03_00 params;
+} rpc_alloc_subdevice_v08_01;
+
+typedef rpc_alloc_subdevice_v08_01 rpc_alloc_subdevice_v;
 
 typedef struct rpc_dup_object_v03_00
 {
@@ -101,6 +162,117 @@ typedef struct rpc_idle_channels_v03_00
 } rpc_idle_channels_v03_00;
 
 typedef rpc_idle_channels_v03_00 rpc_idle_channels_v;
+
+typedef struct rpc_alloc_event_v03_00
+{
+    NvHandle   hClient;
+    NvHandle   hParentClient;
+    NvHandle   hChannel;
+    NvHandle   hObject;
+    NvHandle   hEvent;
+    NvU32      hClass;
+    NvU32      notifyIndex;
+} rpc_alloc_event_v03_00;
+
+typedef rpc_alloc_event_v03_00 rpc_alloc_event_v;
+
+typedef struct rpc_rm_api_control_v25_0D
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_0D;
+
+typedef struct rpc_rm_api_control_v25_0F
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_0F;
+
+typedef struct rpc_rm_api_control_v25_10
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_10;
+
+typedef struct rpc_rm_api_control_v25_14
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_14;
+
+typedef struct rpc_rm_api_control_v25_15
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_15;
+
+typedef struct rpc_rm_api_control_v25_16
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_16;
+
+typedef struct rpc_rm_api_control_v25_17
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_17;
+
+typedef struct rpc_rm_api_control_v25_18
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_18;
+
+typedef rpc_rm_api_control_v25_18 rpc_rm_api_control_v;
+
+typedef struct rpc_alloc_share_device_v03_00
+{
+    NvHandle   hClient;
+    NvHandle   hDevice;
+    NvU32      hClass;
+    NV_DEVICE_ALLOCATION_PARAMETERS_v03_00 params;
+} rpc_alloc_share_device_v03_00;
+
+typedef rpc_alloc_share_device_v03_00 rpc_alloc_share_device_v;
+
+typedef struct rpc_get_engine_utilization_v1F_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NvU32      cmd;
+    vgpuGetEngineUtilization_data_v1F_0E params;
+} rpc_get_engine_utilization_v1F_0E;
+
+typedef rpc_get_engine_utilization_v1F_0E rpc_get_engine_utilization_v;
+
+typedef struct rpc_perf_get_level_info_v03_00
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NvU32      level;
+    NvU32      flags;
+    NvU32      perfGetClkInfoListSize;
+    NvU32      param_size;
+    NvU32      params[];
+} rpc_perf_get_level_info_v03_00;
+
+typedef rpc_perf_get_level_info_v03_00 rpc_perf_get_level_info_v;
+
+typedef struct rpc_set_surface_properties_v07_07
+{
+    NvHandle   hClient;
+    NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_v07_07 params;
+} rpc_set_surface_properties_v07_07;
+
+typedef rpc_set_surface_properties_v07_07 rpc_set_surface_properties_v;
+
+typedef struct rpc_cleanup_surface_v03_00
+{
+    NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS_v03_00 params;
+} rpc_cleanup_surface_v03_00;
+
+typedef rpc_cleanup_surface_v03_00 rpc_cleanup_surface_v;
 
 typedef struct rpc_unloading_guest_driver_v1F_07
 {
@@ -120,12 +292,23 @@ typedef struct rpc_gpu_exec_reg_ops_v12_01
 
 typedef rpc_gpu_exec_reg_ops_v12_01 rpc_gpu_exec_reg_ops_v;
 
-typedef struct rpc_set_page_directory_v03_00
+typedef struct rpc_get_static_data_v25_0E
 {
-    NvHandle   hClient;
-    NvHandle   hDevice;
-    NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS_v03_00 params;
-} rpc_set_page_directory_v03_00;
+    NvU32      offset;
+    NvU32      size;
+    NvU8       payload[];
+} rpc_get_static_data_v25_0E;
+
+typedef rpc_get_static_data_v25_0E rpc_get_static_data_v;
+
+typedef struct rpc_get_consolidated_gr_static_info_v1B_04
+{
+    NvU32      offset;
+    NvU32      size;
+    NvU8       payload[];
+} rpc_get_consolidated_gr_static_info_v1B_04;
+
+typedef rpc_get_consolidated_gr_static_info_v1B_04 rpc_get_consolidated_gr_static_info_v;
 
 typedef struct rpc_set_page_directory_v1E_05
 {
@@ -136,13 +319,6 @@ typedef struct rpc_set_page_directory_v1E_05
 } rpc_set_page_directory_v1E_05;
 
 typedef rpc_set_page_directory_v1E_05 rpc_set_page_directory_v;
-
-typedef struct rpc_unset_page_directory_v03_00
-{
-    NvHandle   hClient;
-    NvHandle   hDevice;
-    NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS_v03_00 params;
-} rpc_unset_page_directory_v03_00;
 
 typedef struct rpc_unset_page_directory_v1E_05
 {
@@ -167,6 +343,15 @@ typedef struct rpc_update_bar_pde_v15_00
 
 typedef rpc_update_bar_pde_v15_00 rpc_update_bar_pde_v;
 
+typedef struct rpc_get_encoder_capacity_v07_00
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NvU32      encoderCapacity;
+} rpc_get_encoder_capacity_v07_00;
+
+typedef rpc_get_encoder_capacity_v07_00 rpc_get_encoder_capacity_v;
+
 typedef struct rpc_vgpu_pf_reg_read32_v15_00
 {
     NvU64      address NV_ALIGN_BYTES(8);
@@ -176,12 +361,601 @@ typedef struct rpc_vgpu_pf_reg_read32_v15_00
 
 typedef rpc_vgpu_pf_reg_read32_v15_00 rpc_vgpu_pf_reg_read32_v;
 
+typedef struct rpc_ctrl_nvenc_sw_session_update_info_v1A_09
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS_v06_01 nvencSessionUpdate;
+} rpc_ctrl_nvenc_sw_session_update_info_v1A_09;
+
+typedef rpc_ctrl_nvenc_sw_session_update_info_v1A_09 rpc_ctrl_nvenc_sw_session_update_info_v;
+
+typedef struct rpc_ctrl_reset_channel_v1A_09
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS_v10_01 resetChannel;
+} rpc_ctrl_reset_channel_v1A_09;
+
+typedef rpc_ctrl_reset_channel_v1A_09 rpc_ctrl_reset_channel_v;
+
+typedef struct rpc_ctrl_reset_isolated_channel_v1A_09
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS_v03_00 resetIsolatedChannel;
+} rpc_ctrl_reset_isolated_channel_v1A_09;
+
+typedef rpc_ctrl_reset_isolated_channel_v1A_09 rpc_ctrl_reset_isolated_channel_v;
+
+typedef struct rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_CMD_GPU_HANDLE_VF_PRI_FAULT_PARAMS_v18_09 handleVfPriFault;
+} rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09;
+
+typedef rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09 rpc_ctrl_gpu_handle_vf_pri_fault_v;
+
+typedef struct rpc_ctrl_perf_boost_v1A_09
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_PERF_BOOST_PARAMS_v03_00 perfBoost;
+} rpc_ctrl_perf_boost_v1A_09;
+
+typedef rpc_ctrl_perf_boost_v1A_09 rpc_ctrl_perf_boost_v;
+
+typedef struct rpc_ctrl_get_zbc_clear_table_v1A_09
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV9096_CTRL_GET_ZBC_CLEAR_TABLE_PARAMS_v04_00 getZbcClearTable;
+} rpc_ctrl_get_zbc_clear_table_v1A_09;
+
+typedef rpc_ctrl_get_zbc_clear_table_v1A_09 rpc_ctrl_get_zbc_clear_table_v;
+
+typedef struct rpc_ctrl_set_zbc_color_clear_v1A_09
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV9096_CTRL_SET_ZBC_COLOR_CLEAR_PARAMS_v03_00 setZbcColorClr;
+} rpc_ctrl_set_zbc_color_clear_v1A_09;
+
+typedef rpc_ctrl_set_zbc_color_clear_v1A_09 rpc_ctrl_set_zbc_color_clear_v;
+
+typedef struct rpc_ctrl_set_zbc_depth_clear_v1A_09
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS_v03_00 setZbcDepthClr;
+} rpc_ctrl_set_zbc_depth_clear_v1A_09;
+
+typedef rpc_ctrl_set_zbc_depth_clear_v1A_09 rpc_ctrl_set_zbc_depth_clear_v;
+
+typedef struct rpc_ctrl_gpfifo_schedule_v1A_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NvU32      cmd;
+    NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS_v03_00 gpfifoSchedule;
+} rpc_ctrl_gpfifo_schedule_v1A_0A;
+
+typedef rpc_ctrl_gpfifo_schedule_v1A_0A rpc_ctrl_gpfifo_schedule_v;
+
+typedef struct rpc_ctrl_set_timeslice_v1A_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVA06C_CTRL_TIMESLICE_PARAMS_v06_00 setTimeSlice;
+} rpc_ctrl_set_timeslice_v1A_0A;
+
+typedef rpc_ctrl_set_timeslice_v1A_0A rpc_ctrl_set_timeslice_v;
+
+typedef struct rpc_ctrl_fifo_disable_channels_v1A_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS_v06_00 fifoDisableChannels;
+} rpc_ctrl_fifo_disable_channels_v1A_0A;
+
+typedef rpc_ctrl_fifo_disable_channels_v1A_0A rpc_ctrl_fifo_disable_channels_v;
+
+typedef struct rpc_ctrl_preempt_v1A_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVA06C_CTRL_PREEMPT_PARAMS_v09_0A cmdPreempt;
+} rpc_ctrl_preempt_v1A_0A;
+
+typedef rpc_ctrl_preempt_v1A_0A rpc_ctrl_preempt_v;
+
+typedef struct rpc_ctrl_set_tsg_interleave_level_v1A_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVA06C_CTRL_INTERLEAVE_LEVEL_PARAMS_v17_02 interleaveLevelTSG;
+} rpc_ctrl_set_tsg_interleave_level_v1A_0A;
+
+typedef rpc_ctrl_set_tsg_interleave_level_v1A_0A rpc_ctrl_set_tsg_interleave_level_v;
+
+typedef struct rpc_ctrl_set_channel_interleave_level_v1A_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVA06F_CTRL_INTERLEAVE_LEVEL_PARAMS_v17_02 interleaveLevelChannel;
+} rpc_ctrl_set_channel_interleave_level_v1A_0A;
+
+typedef rpc_ctrl_set_channel_interleave_level_v1A_0A rpc_ctrl_set_channel_interleave_level_v;
+
+typedef struct rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v12_01 ctrlParams;
+} rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E;
+
+typedef rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E rpc_ctrl_gr_ctxsw_preemption_bind_v;
+
+typedef struct rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GR_SET_CTXSW_PREEMPTION_MODE_PARAMS_v12_01 ctrlParams;
+} rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E;
+
+typedef rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E rpc_ctrl_gr_set_ctxsw_preemption_mode_v;
+
+typedef struct rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GR_CTXSW_ZCULL_BIND_PARAMS_v03_00 ctrlParams;
+} rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E;
+
+typedef rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E rpc_ctrl_gr_ctxsw_zcull_bind_v;
+
+typedef struct rpc_ctrl_gpu_initialize_ctx_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GPU_INITIALIZE_CTX_PARAMS_v03_00 ctrlParams;
+} rpc_ctrl_gpu_initialize_ctx_v1A_0E;
+
+typedef rpc_ctrl_gpu_initialize_ctx_v1A_0E rpc_ctrl_gpu_initialize_ctx_v;
+
+typedef struct rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS_v1E_04 ctrlParams;
+} rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04;
+
+typedef rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04 rpc_ctrl_vaspace_copy_server_reserved_pdes_v;
+
+typedef struct rpc_ctrl_mc_service_interrupts_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_MC_SERVICE_INTERRUPTS_PARAMS_v15_01 ctrlParams;
+} rpc_ctrl_mc_service_interrupts_v1A_0E;
+
+typedef rpc_ctrl_mc_service_interrupts_v1A_0E rpc_ctrl_mc_service_interrupts_v;
+
+typedef struct rpc_ctrl_get_p2p_caps_v2_v1F_0D
+{
+    NvU8       iter;
+    NvU32      gpuIds[NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS];
+    NvU32      gpuCount;
+    NvU32      p2pCaps;
+    NvU32      p2pOptimalReadCEs;
+    NvU32      p2pOptimalWriteCEs;
+    NvU8       p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE_v1F_0D];
+    NvU32      busPeerIds[VGPU_RPC_GET_P2P_CAPS_V2_MAX_GPUS_SQUARED_PER_RPC];
+} rpc_ctrl_get_p2p_caps_v2_v1F_0D;
+
+typedef rpc_ctrl_get_p2p_caps_v2_v1F_0D rpc_ctrl_get_p2p_caps_v2_v;
+
 typedef struct rpc_ctrl_subdevice_get_p2p_caps_v21_02
 {
     NV2080_CTRL_GET_P2P_CAPS_PARAMS_v21_02 ctrlParams;
 } rpc_ctrl_subdevice_get_p2p_caps_v21_02;
 
 typedef rpc_ctrl_subdevice_get_p2p_caps_v21_02 rpc_ctrl_subdevice_get_p2p_caps_v;
+
+typedef struct rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_CLEAR_ALL_SM_ERROR_STATES_PARAMS_v03_00 ctrlParams;
+} rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C;
+
+typedef rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C rpc_ctrl_dbg_clear_all_sm_error_states_v;
+
+typedef struct rpc_ctrl_dbg_read_all_sm_error_states_v21_06
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PARAMS_v21_06 ctrlParams;
+} rpc_ctrl_dbg_read_all_sm_error_states_v21_06;
+
+typedef rpc_ctrl_dbg_read_all_sm_error_states_v21_06 rpc_ctrl_dbg_read_all_sm_error_states_v;
+
+typedef struct rpc_ctrl_dbg_set_exception_mask_v1A_0C
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_PARAMS_v03_00 ctrlParams;
+} rpc_ctrl_dbg_set_exception_mask_v1A_0C;
+
+typedef rpc_ctrl_dbg_set_exception_mask_v1A_0C rpc_ctrl_dbg_set_exception_mask_v;
+
+typedef struct rpc_ctrl_gpu_promote_ctx_v1A_20
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GPU_PROMOTE_CTX_PARAMS_v1A_20 promoteCtx;
+} rpc_ctrl_gpu_promote_ctx_v1A_20;
+
+typedef rpc_ctrl_gpu_promote_ctx_v1A_20 rpc_ctrl_gpu_promote_ctx_v;
+
+typedef struct rpc_ctrl_dbg_suspend_context_v1A_10
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_CMD_DEBUG_SUSPEND_CONTEXT_PARAMS_v1A_06 ctrlParams;
+} rpc_ctrl_dbg_suspend_context_v1A_10;
+
+typedef rpc_ctrl_dbg_suspend_context_v1A_10 rpc_ctrl_dbg_suspend_context_v;
+
+typedef struct rpc_ctrl_dbg_resume_context_v1A_10
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+} rpc_ctrl_dbg_resume_context_v1A_10;
+
+typedef rpc_ctrl_dbg_resume_context_v1A_10 rpc_ctrl_dbg_resume_context_v;
+
+typedef struct rpc_ctrl_dbg_exec_reg_ops_v1A_10
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS_v1A_06 ctrlParams;
+} rpc_ctrl_dbg_exec_reg_ops_v1A_10;
+
+typedef rpc_ctrl_dbg_exec_reg_ops_v1A_10 rpc_ctrl_dbg_exec_reg_ops_v;
+
+typedef struct rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS_v1A_06 ctrlParams;
+} rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10;
+
+typedef rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10 rpc_ctrl_dbg_set_mode_mmu_debug_v;
+
+typedef struct rpc_ctrl_dbg_read_single_sm_error_state_v21_06
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_READ_SINGLE_SM_ERROR_STATE_PARAMS_v21_06 ctrlParams;
+} rpc_ctrl_dbg_read_single_sm_error_state_v21_06;
+
+typedef rpc_ctrl_dbg_read_single_sm_error_state_v21_06 rpc_ctrl_dbg_read_single_sm_error_state_v;
+
+typedef struct rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_CLEAR_SINGLE_SM_ERROR_STATE_PARAMS_v1A_06 ctrlParams;
+} rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10;
+
+typedef rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10 rpc_ctrl_dbg_clear_single_sm_error_state_v;
+
+typedef struct rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_SET_MODE_ERRBAR_DEBUG_PARAMS_v1A_06 ctrlParams;
+} rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10;
+
+typedef rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10 rpc_ctrl_dbg_set_mode_errbar_debug_v;
+
+typedef struct rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_SET_NEXT_STOP_TRIGGER_TYPE_PARAMS_v1A_06 ctrlParams;
+} rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10;
+
+typedef rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10 rpc_ctrl_dbg_set_next_stop_trigger_type_v;
+
+typedef struct rpc_ctrl_dma_set_default_vaspace_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV0080_CTRL_DMA_SET_DEFAULT_VASPACE_PARAMS_v03_00 ctrlParams;
+} rpc_ctrl_dma_set_default_vaspace_v1A_0E;
+
+typedef rpc_ctrl_dma_set_default_vaspace_v1A_0E rpc_ctrl_dma_set_default_vaspace_v;
+
+typedef struct rpc_ctrl_get_ce_pce_mask_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS_v1A_07 ctrlParams;
+} rpc_ctrl_get_ce_pce_mask_v1A_0E;
+
+typedef rpc_ctrl_get_ce_pce_mask_v1A_0E rpc_ctrl_get_ce_pce_mask_v;
+
+typedef struct rpc_ctrl_get_zbc_clear_table_entry_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV9096_CTRL_GET_ZBC_CLEAR_TABLE_ENTRY_PARAMS_v1A_07 ctrlParams;
+} rpc_ctrl_get_zbc_clear_table_entry_v1A_0E;
+
+typedef rpc_ctrl_get_zbc_clear_table_entry_v1A_0E rpc_ctrl_get_zbc_clear_table_entry_v;
+
+typedef struct rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_BUS_GET_NVLINK_PEER_ID_MASK_PARAMS_v14_00 ctrlParams;
+} rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E;
+
+typedef rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E rpc_ctrl_get_nvlink_peer_id_mask_v;
+
+typedef struct rpc_ctrl_get_nvlink_status_v23_04
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v23_04 ctrlParams;
+} rpc_ctrl_get_nvlink_status_v23_04;
+
+typedef rpc_ctrl_get_nvlink_status_v23_04 rpc_ctrl_get_nvlink_status_v;
+
+typedef struct rpc_ctrl_get_p2p_caps_v1F_0D
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS_v1F_0D ctrlParams;
+} rpc_ctrl_get_p2p_caps_v1F_0D;
+
+typedef rpc_ctrl_get_p2p_caps_v1F_0D rpc_ctrl_get_p2p_caps_v;
+
+typedef struct rpc_ctrl_get_p2p_caps_matrix_v1A_0E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV0000_CTRL_SYSTEM_GET_P2P_CAPS_MATRIX_PARAMS_v18_0A ctrlParams;
+} rpc_ctrl_get_p2p_caps_matrix_v1A_0E;
+
+typedef rpc_ctrl_get_p2p_caps_matrix_v1A_0E rpc_ctrl_get_p2p_caps_matrix_v;
+
+typedef struct rpc_ctrl_reserve_pm_area_smpc_v1A_0F
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS_v1A_0F params;
+} rpc_ctrl_reserve_pm_area_smpc_v1A_0F;
+
+typedef rpc_ctrl_reserve_pm_area_smpc_v1A_0F rpc_ctrl_reserve_pm_area_smpc_v;
+
+typedef struct rpc_ctrl_reserve_hwpm_legacy_v1A_0F
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS_v1A_0F params;
+} rpc_ctrl_reserve_hwpm_legacy_v1A_0F;
+
+typedef rpc_ctrl_reserve_hwpm_legacy_v1A_0F rpc_ctrl_reserve_hwpm_legacy_v;
+
+typedef struct rpc_ctrl_b0cc_exec_reg_ops_v1A_0F
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_EXEC_REG_OPS_PARAMS_v1A_0F params;
+} rpc_ctrl_b0cc_exec_reg_ops_v1A_0F;
+
+typedef rpc_ctrl_b0cc_exec_reg_ops_v1A_0F rpc_ctrl_b0cc_exec_reg_ops_v;
+
+typedef struct rpc_ctrl_bind_pm_resources_v1A_0F
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+} rpc_ctrl_bind_pm_resources_v1A_0F;
+
+typedef rpc_ctrl_bind_pm_resources_v1A_0F rpc_ctrl_bind_pm_resources_v;
+
+typedef struct rpc_ctrl_alloc_pma_stream_v1A_14
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS_v1A_14 params;
+} rpc_ctrl_alloc_pma_stream_v1A_14;
+
+typedef rpc_ctrl_alloc_pma_stream_v1A_14 rpc_ctrl_alloc_pma_stream_v;
+
+typedef struct rpc_ctrl_pma_stream_update_get_put_v1A_14
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v1A_14 params;
+} rpc_ctrl_pma_stream_update_get_put_v1A_14;
+
+typedef rpc_ctrl_pma_stream_update_get_put_v1A_14 rpc_ctrl_pma_stream_update_get_put_v;
+
+typedef struct rpc_ctrl_fb_get_info_v2_v25_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A ctrlParams;
+} rpc_ctrl_fb_get_info_v2_v25_0A;
+
+typedef rpc_ctrl_fb_get_info_v2_v25_0A rpc_ctrl_fb_get_info_v2_v;
+
+typedef struct rpc_ctrl_fifo_set_channel_properties_v1A_16
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00 ctrlParams;
+} rpc_ctrl_fifo_set_channel_properties_v1A_16;
+
+typedef rpc_ctrl_fifo_set_channel_properties_v1A_16 rpc_ctrl_fifo_set_channel_properties_v;
+
+typedef struct rpc_ctrl_gpu_evict_ctx_v1A_1C
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GPU_EVICT_CTX_PARAMS_v03_00 params;
+} rpc_ctrl_gpu_evict_ctx_v1A_1C;
+
+typedef rpc_ctrl_gpu_evict_ctx_v1A_1C rpc_ctrl_gpu_evict_ctx_v;
+
+typedef struct rpc_ctrl_fb_get_fs_info_v24_00
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_FB_GET_FS_INFO_PARAMS_v24_00 params;
+} rpc_ctrl_fb_get_fs_info_v24_00;
+
+typedef rpc_ctrl_fb_get_fs_info_v24_00 rpc_ctrl_fb_get_fs_info_v;
+
+typedef struct rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GRMGR_GET_GR_FS_INFO_PARAMS_v1A_1D params;
+} rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D;
+
+typedef rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D rpc_ctrl_grmgr_get_gr_fs_info_v;
+
+typedef struct rpc_ctrl_stop_channel_v1A_1E
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVA06F_CTRL_STOP_CHANNEL_PARAMS_v1A_1E params;
+} rpc_ctrl_stop_channel_v1A_1E;
+
+typedef rpc_ctrl_stop_channel_v1A_1E rpc_ctrl_stop_channel_v;
+
+typedef struct rpc_ctrl_gr_pc_sampling_mode_v1A_1F
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GR_PC_SAMPLING_MODE_PARAMS_v1A_1F params;
+} rpc_ctrl_gr_pc_sampling_mode_v1A_1F;
+
+typedef rpc_ctrl_gr_pc_sampling_mode_v1A_1F rpc_ctrl_gr_pc_sampling_mode_v;
+
+typedef struct rpc_ctrl_perf_rated_tdp_get_status_v1A_1F
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_PERF_RATED_TDP_STATUS_PARAMS_v1A_1F params;
+} rpc_ctrl_perf_rated_tdp_get_status_v1A_1F;
+
+typedef rpc_ctrl_perf_rated_tdp_get_status_v1A_1F rpc_ctrl_perf_rated_tdp_get_status_v;
+
+typedef struct rpc_ctrl_perf_rated_tdp_set_control_v1A_1F
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_PERF_RATED_TDP_CONTROL_PARAMS_v1A_1F params;
+} rpc_ctrl_perf_rated_tdp_set_control_v1A_1F;
+
+typedef rpc_ctrl_perf_rated_tdp_set_control_v1A_1F rpc_ctrl_perf_rated_tdp_set_control_v;
+
+typedef struct rpc_ctrl_timer_set_gr_tick_freq_v1A_1F
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_CMD_TIMER_SET_GR_TICK_FREQ_PARAMS_v1A_1F params;
+} rpc_ctrl_timer_set_gr_tick_freq_v1A_1F;
+
+typedef rpc_ctrl_timer_set_gr_tick_freq_v1A_1F rpc_ctrl_timer_set_gr_tick_freq_v;
+
+typedef struct rpc_ctrl_free_pma_stream_v1A_1F
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS_v1A_1F params;
+} rpc_ctrl_free_pma_stream_v1A_1F;
+
+typedef rpc_ctrl_free_pma_stream_v1A_1F rpc_ctrl_free_pma_stream_v;
+
+typedef struct rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_FIFO_SETUP_VF_ZOMBIE_SUBCTX_PDB_PARAMS_v1A_23 params;
+} rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23;
+
+typedef rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23 rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v;
+
+typedef struct rpc_ctrl_dbg_set_single_sm_single_step_v1C_02
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_SET_SINGLE_SM_SINGLE_STEP_PARAMS_v1C_02 params;
+} rpc_ctrl_dbg_set_single_sm_single_step_v1C_02;
+
+typedef rpc_ctrl_dbg_set_single_sm_single_step_v1C_02 rpc_ctrl_dbg_set_single_sm_single_step_v;
+
+typedef struct rpc_ctrl_gr_get_tpc_partition_mode_v1C_04
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV0080_CTRL_GR_TPC_PARTITION_MODE_PARAMS_v1C_04 params;
+} rpc_ctrl_gr_get_tpc_partition_mode_v1C_04;
+
+typedef rpc_ctrl_gr_get_tpc_partition_mode_v1C_04 rpc_ctrl_gr_get_tpc_partition_mode_v;
+
+typedef struct rpc_ctrl_gr_set_tpc_partition_mode_v1C_04
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV0080_CTRL_GR_TPC_PARTITION_MODE_PARAMS_v1C_04 params;
+} rpc_ctrl_gr_set_tpc_partition_mode_v1C_04;
+
+typedef rpc_ctrl_gr_set_tpc_partition_mode_v1C_04 rpc_ctrl_gr_set_tpc_partition_mode_v;
+
+typedef struct rpc_ctrl_internal_promote_fault_method_buffers_v1E_07
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVA06C_CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS_PARAMS_v1E_07 params;
+} rpc_ctrl_internal_promote_fault_method_buffers_v1E_07;
+
+typedef rpc_ctrl_internal_promote_fault_method_buffers_v1E_07 rpc_ctrl_internal_promote_fault_method_buffers_v;
+
+typedef struct rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_v1F_05 params;
+} rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05;
+
+typedef rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05 rpc_ctrl_internal_memsys_set_zbc_referenced_v;
+
+typedef struct rpc_ctrl_fabric_memory_describe_v1E_0C
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV00F8_CTRL_DESCRIBE_PARAMS_v1E_0C params;
+} rpc_ctrl_fabric_memory_describe_v1E_0C;
+
+typedef rpc_ctrl_fabric_memory_describe_v1E_0C rpc_ctrl_fabric_memory_describe_v;
+
+typedef struct rpc_ctrl_fabric_mem_stats_v1E_0C
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_FLA_GET_FABRIC_MEM_STATS_PARAMS_v1E_0C params;
+} rpc_ctrl_fabric_mem_stats_v1E_0C;
+
+typedef rpc_ctrl_fabric_mem_stats_v1E_0C rpc_ctrl_fabric_mem_stats_v;
 
 typedef struct rpc_ctrl_bus_set_p2p_mapping_v21_03
 {
@@ -201,22 +975,179 @@ typedef struct rpc_ctrl_bus_unset_p2p_mapping_v21_03
 
 typedef rpc_ctrl_bus_unset_p2p_mapping_v21_03 rpc_ctrl_bus_unset_p2p_mapping_v;
 
-typedef struct rpc_rmfs_init_v15_00
+typedef struct rpc_ctrl_gpu_get_info_v2_v25_11
 {
-    NvU64      statusQueuePhysAddr NV_ALIGN_BYTES(8);
-} rpc_rmfs_init_v15_00;
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v25_11 params;
+} rpc_ctrl_gpu_get_info_v2_v25_11;
 
-typedef rpc_rmfs_init_v15_00 rpc_rmfs_init_v;
+typedef rpc_ctrl_gpu_get_info_v2_v25_11 rpc_ctrl_gpu_get_info_v2_v;
 
-typedef struct rpc_rmfs_test_v15_00
+typedef struct rpc_ctrl_internal_quiesce_pma_channel_v1C_08
 {
-    NvU32      numReps;
-    NvU32      flags;
-    NvU32      testData1;
-    NvU32      testData2;
-} rpc_rmfs_test_v15_00;
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS_v1C_08 params;
+} rpc_ctrl_internal_quiesce_pma_channel_v1C_08;
 
-typedef rpc_rmfs_test_v15_00 rpc_rmfs_test_v;
+typedef rpc_ctrl_internal_quiesce_pma_channel_v1C_08 rpc_ctrl_internal_quiesce_pma_channel_v;
+
+typedef struct rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM_PARAMS_v1C_0C params;
+} rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C;
+
+typedef rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C rpc_ctrl_internal_sriov_promote_pma_stream_v;
+
+typedef struct rpc_ctrl_exec_partitions_create_v24_05
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NvU32      status;
+    NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS_v24_05 execPartitionsCreate;
+} rpc_ctrl_exec_partitions_create_v24_05;
+
+typedef rpc_ctrl_exec_partitions_create_v24_05 rpc_ctrl_exec_partitions_create_v;
+
+typedef struct rpc_ctrl_fla_setup_instance_mem_block_v21_05
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS_v13_04 params;
+} rpc_ctrl_fla_setup_instance_mem_block_v21_05;
+
+typedef rpc_ctrl_fla_setup_instance_mem_block_v21_05 rpc_ctrl_fla_setup_instance_mem_block_v;
+
+typedef struct rpc_ctrl_get_total_hs_credits_v21_08
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS_v21_08 params;
+} rpc_ctrl_get_total_hs_credits_v21_08;
+
+typedef rpc_ctrl_get_total_hs_credits_v21_08 rpc_ctrl_get_total_hs_credits_v;
+
+typedef struct rpc_ctrl_get_hs_credits_v21_08
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_GET_HS_CREDITS_PARAMS_v21_08 params;
+} rpc_ctrl_get_hs_credits_v21_08;
+
+typedef rpc_ctrl_get_hs_credits_v21_08 rpc_ctrl_get_hs_credits_v;
+
+typedef struct rpc_ctrl_set_hs_credits_v21_08
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_v21_08 params;
+} rpc_ctrl_set_hs_credits_v21_08;
+
+typedef rpc_ctrl_set_hs_credits_v21_08 rpc_ctrl_set_hs_credits_v;
+
+typedef struct rpc_ctrl_pm_area_pc_sampler_v21_0B
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NvU32      cmd;
+} rpc_ctrl_pm_area_pc_sampler_v21_0B;
+
+typedef rpc_ctrl_pm_area_pc_sampler_v21_0B rpc_ctrl_pm_area_pc_sampler_v;
+
+typedef struct rpc_ctrl_exec_partitions_delete_v1F_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVC637_CTRL_EXEC_PARTITIONS_DELETE_PARAMS_v18_05 execPartitionsDelete;
+} rpc_ctrl_exec_partitions_delete_v1F_0A;
+
+typedef rpc_ctrl_exec_partitions_delete_v1F_0A rpc_ctrl_exec_partitions_delete_v;
+
+typedef struct rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVC36F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS_v08_00 workSubmitToken;
+} rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A;
+
+typedef rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A rpc_ctrl_gpfifo_get_work_submit_token_v;
+
+typedef struct rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NVC36F_CTRL_GPFIFO_SET_WORK_SUBMIT_TOKEN_NOTIF_INDEX_PARAMS_v16_04 setWorkSubmitTokenIndex;
+} rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A;
+
+typedef rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v;
+
+typedef struct rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS_v18_0B vfErrContIntrMask;
+} rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D;
+
+typedef rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v;
+
+typedef struct rpc_save_hibernation_data_v1E_0E
+{
+    NvU32      remainedBytes;
+    NvU8       payload[];
+} rpc_save_hibernation_data_v1E_0E;
+
+typedef rpc_save_hibernation_data_v1E_0E rpc_save_hibernation_data_v;
+
+typedef struct rpc_restore_hibernation_data_v1E_0E
+{
+    NvU32      remainedBytes;
+    NvU8       payload[];
+} rpc_restore_hibernation_data_v1E_0E;
+
+typedef rpc_restore_hibernation_data_v1E_0E rpc_restore_hibernation_data_v;
+
+typedef struct rpc_ctrl_get_mmu_debug_mode_v1E_06
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS_v1E_06 params;
+} rpc_ctrl_get_mmu_debug_mode_v1E_06;
+
+typedef rpc_ctrl_get_mmu_debug_mode_v1E_06 rpc_ctrl_get_mmu_debug_mode_v;
+
+typedef struct rpc_disable_channels_v1E_0B
+{
+    NvU32      bDisable;
+} rpc_disable_channels_v1E_0B;
+
+typedef rpc_disable_channels_v1E_0B rpc_disable_channels_v;
+
+typedef struct rpc_ctrl_gpu_migratable_ops_v21_07
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS_v21_07 ctrlParams;
+} rpc_ctrl_gpu_migratable_ops_v21_07;
+
+typedef rpc_ctrl_gpu_migratable_ops_v21_07 rpc_ctrl_gpu_migratable_ops_v;
+
+typedef struct rpc_invalidate_tlb_v23_03
+{
+    NvU64      pdbAddress NV_ALIGN_BYTES(8);
+    NvU32      regVal;
+} rpc_invalidate_tlb_v23_03;
+
+typedef rpc_invalidate_tlb_v23_03 rpc_invalidate_tlb_v;
+
+typedef struct rpc_get_brand_caps_v25_12
+{
+    NvU32      brands;
+} rpc_get_brand_caps_v25_12;
+
+typedef rpc_get_brand_caps_v25_12 rpc_get_brand_caps_v;
 
 typedef struct rpc_gsp_set_system_info_v17_00
 {
@@ -298,6 +1229,8 @@ typedef struct rpc_rc_triggered_v17_02
     NvU32      exceptType;
     NvU32      scope;
     NvU16      partitionAttributionId;
+    NvU32      rcJournalBufferSize;
+    NvU8       rcJournalBuffer[];
 } rpc_rc_triggered_v17_02;
 
 typedef rpc_rc_triggered_v17_02 rpc_rc_triggered_v;
@@ -329,12 +1262,12 @@ typedef struct rpc_display_modeset_v01_00
 
 typedef rpc_display_modeset_v01_00 rpc_display_modeset_v;
 
-typedef struct rpc_gpuacct_perfmon_util_samples_v17_00
+typedef struct rpc_gpuacct_perfmon_util_samples_v1F_0E
 {
-    NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2_PARAMS_v17_00 params;
-} rpc_gpuacct_perfmon_util_samples_v17_00;
+    NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2_PARAMS_v1F_0E params;
+} rpc_gpuacct_perfmon_util_samples_v1F_0E;
 
-typedef rpc_gpuacct_perfmon_util_samples_v17_00 rpc_gpuacct_perfmon_util_samples_v;
+typedef rpc_gpuacct_perfmon_util_samples_v1F_0E rpc_gpuacct_perfmon_util_samples_v;
 
 typedef struct rpc_vgpu_gsp_plugin_triggered_v17_00
 {
@@ -482,14 +1415,20 @@ typedef struct rpc_nvlink_is_gpu_degraded_v17_00
 
 typedef rpc_nvlink_is_gpu_degraded_v17_00 rpc_nvlink_is_gpu_degraded_v;
 
-typedef struct rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
+typedef struct rpc_update_gsp_trace_v01_00
 {
-    NvU32      sysmemPfnBitmapRing;
-    NvU32      sysmemPfnBitmapRingHi;
-    NvU32      sysmemPfnBitmap;
-} rpc_set_sysmem_dirty_page_tracking_buffer_v20_00;
+    NvU32      records;
+    NvU32      data;
+} rpc_update_gsp_trace_v01_00;
 
-typedef rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 rpc_set_sysmem_dirty_page_tracking_buffer_v;
+typedef rpc_update_gsp_trace_v01_00 rpc_update_gsp_trace_v;
+
+typedef struct rpc_gsp_post_nocat_record_v01_00
+{
+    NvU32      data;
+} rpc_gsp_post_nocat_record_v01_00;
+
+typedef rpc_gsp_post_nocat_record_v01_00 rpc_gsp_post_nocat_record_v;
 
 typedef struct rpc_extdev_intr_service_v17_00
 {
@@ -524,6 +1463,40 @@ typedef struct rpc_gsp_lockdown_notice_v17_00
 } rpc_gsp_lockdown_notice_v17_00;
 
 typedef rpc_gsp_lockdown_notice_v17_00 rpc_gsp_lockdown_notice_v;
+
+typedef struct rpc_ctrl_gpu_query_ecc_status_v24_06
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV2080_CTRL_GPU_QUERY_ECC_STATUS_DEPRECATED_RPC_PARAMS_v24_06 params;
+} rpc_ctrl_gpu_query_ecc_status_v24_06;
+
+typedef rpc_ctrl_gpu_query_ecc_status_v24_06 rpc_ctrl_gpu_query_ecc_status_v;
+
+typedef struct rpc_ctrl_dbg_get_mode_mmu_debug_v25_04
+{
+    NvHandle   hClient;
+    NvHandle   hObject;
+    NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS_v25_04 ctrlParams;
+} rpc_ctrl_dbg_get_mode_mmu_debug_v25_04;
+
+typedef rpc_ctrl_dbg_get_mode_mmu_debug_v25_04 rpc_ctrl_dbg_get_mode_mmu_debug_v;
+
+typedef struct rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09
+{
+    NvU8       bwMode;
+} rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09;
+
+typedef rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09 rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v;
+
+typedef struct rpc_ctrl_nvlink_get_inband_received_data_v25_0C
+{
+    NvU16      message_type;
+    NvBool     more;
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS_v25_0C payload;
+} rpc_ctrl_nvlink_get_inband_received_data_v25_0C;
+
+typedef rpc_ctrl_nvlink_get_inband_received_data_v25_0C rpc_ctrl_nvlink_get_inband_received_data_v;
 
 
 #endif
@@ -631,6 +1604,89 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_guest_system_info_v03_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_set_guest_system_info_ext_v15_02
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_guest_system_info_ext_v15_02[] = {
+    {
+        .vtype                = vtype_char_array,
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_ext_v15_02, guestDriverBranch),
+        .array_length         = 0x100,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "guestDriverBranch"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_ext_v15_02, domain),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "domain"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU16,
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_ext_v15_02, bus),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "bus"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU16,
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_ext_v15_02, device),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "device"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_guest_system_info_ext_v15_02 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_set_guest_system_info_ext",
+    #endif
+    .header_length = sizeof(rpc_set_guest_system_info_ext_v15_02),
+    .fdesc = vmiopd_fdesc_t_rpc_set_guest_system_info_ext_v15_02
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_alloc_root_v07_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_root_v07_00[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_root_v07_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_root_v07_00, processID),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "processID"
+        #endif
+    },
+    {
+        .vtype                = vtype_char_array,
+        .offset               = NV_OFFSETOF(rpc_alloc_root_v07_00, processName),
+        .array_length         = 0x64,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "processName"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_root_v07_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_alloc_root",
+    #endif
+    .header_length = sizeof(rpc_alloc_root_v07_00),
+    .fdesc = vmiopd_fdesc_t_rpc_alloc_root_v07_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_alloc_memory_v13_01
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_memory_v13_01[] = {
     {
@@ -717,6 +1773,130 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_memory_v13_01 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_alloc_channel_dma_v1F_04
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_channel_dma_v1F_04[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_channel_dma_v1F_04, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_channel_dma_v1F_04, hDevice),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hDevice"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_channel_dma_v1F_04, hChannel),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hChannel"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_channel_dma_v1F_04, hClass),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClass"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_channel_dma_v1F_04, flags),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "flags"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV_CHANNEL_ALLOC_PARAMS_v1F_04,
+        .offset               = NV_OFFSETOF(rpc_alloc_channel_dma_v1F_04, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_channel_dma_v1F_04, chid),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "chid"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_channel_dma_v1F_04 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_alloc_channel_dma",
+    #endif
+    .header_length = sizeof(rpc_alloc_channel_dma_v1F_04),
+    .fdesc = vmiopd_fdesc_t_rpc_alloc_channel_dma_v1F_04
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_alloc_object_v25_08
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_object_v25_08[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_object_v25_08, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_object_v25_08, hParent),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hParent"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_object_v25_08, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_object_v25_08, hClass),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClass"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_object_v25_08, param_len),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "param_len"
+        #endif
+    },
+    {
+        .vtype                = vtype_alloc_object_params_v25_08,
+        .offset               = NV_OFFSETOF(rpc_alloc_object_v25_08, params),
+        .union_member_index_fn = get_union_member_index_rpc_alloc_object_v25_08_params,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_object_v25_08 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_alloc_object",
+    #endif
+    .header_length = sizeof(rpc_alloc_object_v25_08),
+    .fdesc = vmiopd_fdesc_t_rpc_alloc_object_v25_08
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_free_v03_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_free_v03_00[] = {
     {
@@ -737,6 +1917,44 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_free_v03_00 = {
     #endif
     .header_length = sizeof(rpc_free_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_free_v03_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_log_v03_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_log_v03_00[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_log_v03_00, level),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "level"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_log_v03_00, log_len),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "log_len"
+        #endif
+    },
+    {
+        .vtype                = vtype_char_array,
+        .offset               = NV_OFFSETOF(rpc_log_v03_00, log_msg),
+        .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "log_msg"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_log_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_log",
+    #endif
+    .header_length = sizeof(rpc_log_v03_00),
+    .fdesc = vmiopd_fdesc_t_rpc_log_v03_00
 };
 #endif
 
@@ -783,6 +2001,36 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unmap_memory_dma_v03_00 = {
     #endif
     .header_length = sizeof(rpc_unmap_memory_dma_v03_00),
     .fdesc = vmiopd_fdesc_t_rpc_unmap_memory_dma_v03_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_alloc_subdevice_v08_01
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_subdevice_v08_01[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_subdevice_v08_01, subDeviceInst),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "subDeviceInst"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVOS21_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_alloc_subdevice_v08_01, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_subdevice_v08_01 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_alloc_subdevice",
+    #endif
+    .header_length = sizeof(rpc_alloc_subdevice_v08_01),
+    .fdesc = vmiopd_fdesc_t_rpc_alloc_subdevice_v08_01
 };
 #endif
 
@@ -855,18 +2103,516 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_idle_channels_v03_00 = {
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_unloading_guest_driver_v03_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unloading_guest_driver_v03_00[] = {
+#ifndef SKIP_PRINT_rpc_alloc_event_v03_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_event_v03_00[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_event_v03_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_event_v03_00, hParentClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hParentClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_event_v03_00, hChannel),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hChannel"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_event_v03_00, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_event_v03_00, hEvent),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hEvent"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_event_v03_00, hClass),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClass"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_event_v03_00, notifyIndex),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "notifyIndex"
+        #endif
+    },
     {
         .vtype        = vt_end
     }
 };
 
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_driver_v03_00 = {
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_event_v03_00 = {
     #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_unloading_guest_driver",
+    .name = "rpc_alloc_event",
     #endif
-    .fdesc = vmiopd_fdesc_t_rpc_unloading_guest_driver_v03_00
+    .header_length = sizeof(rpc_alloc_event_v03_00),
+    .fdesc = vmiopd_fdesc_t_rpc_alloc_event_v03_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_0F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_0F[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_0F, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_0F, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_0F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_0F),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_0F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_16
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_16[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_16, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_16, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_16 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_16),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_16
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_10
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_10[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_10, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_10, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_10 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_10),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_10
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_15
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_15[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_15, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_15, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_15 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_15),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_15
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_0D
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_0D[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_0D, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_0D, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_0D = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_0D),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_0D
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_17
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_17[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_17, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_17, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_17 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_17),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_17
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_18
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_18[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_18, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_18, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_18 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_18),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_18
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_14
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_14[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_14, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_14, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_14 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_14),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_14
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_alloc_share_device_v03_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_alloc_share_device_v03_00[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_share_device_v03_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_alloc_share_device_v03_00, hDevice),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hDevice"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_alloc_share_device_v03_00, hClass),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClass"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV_DEVICE_ALLOCATION_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_alloc_share_device_v03_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_share_device_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_alloc_share_device",
+    #endif
+    .header_length = sizeof(rpc_alloc_share_device_v03_00),
+    .fdesc = vmiopd_fdesc_t_rpc_alloc_share_device_v03_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_engine_utilization_v1F_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_get_engine_utilization_v1F_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_get_engine_utilization_v1F_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_get_engine_utilization_v1F_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_get_engine_utilization_v1F_0E, cmd),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "cmd"
+        #endif
+    },
+    {
+        .vtype                = vtype_vgpuGetEngineUtilization_data_v1F_0E,
+        .offset               = NV_OFFSETOF(rpc_get_engine_utilization_v1F_0E, params),
+        .union_member_index_fn = get_union_member_index_rpc_get_engine_utilization_v1F_0E_params,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_get_engine_utilization_v1F_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_get_engine_utilization",
+    #endif
+    .header_length = sizeof(rpc_get_engine_utilization_v1F_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_get_engine_utilization_v1F_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_perf_get_level_info_v03_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_perf_get_level_info_v03_00[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_perf_get_level_info_v03_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_perf_get_level_info_v03_00, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_perf_get_level_info_v03_00, level),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "level"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_perf_get_level_info_v03_00, flags),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "flags"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_perf_get_level_info_v03_00, perfGetClkInfoListSize),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "perfGetClkInfoListSize"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_perf_get_level_info_v03_00, param_size),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "param_size"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32_array,
+        .offset               = NV_OFFSETOF(rpc_perf_get_level_info_v03_00, params),
+        .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_perf_get_level_info_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_perf_get_level_info",
+    #endif
+    .header_length = sizeof(rpc_perf_get_level_info_v03_00),
+    .fdesc = vmiopd_fdesc_t_rpc_perf_get_level_info_v03_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_set_surface_properties_v07_07
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_surface_properties_v07_07[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_set_surface_properties_v07_07, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_v07_07,
+        .offset               = NV_OFFSETOF(rpc_set_surface_properties_v07_07, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_surface_properties_v07_07 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_set_surface_properties",
+    #endif
+    .header_length = sizeof(rpc_set_surface_properties_v07_07),
+    .fdesc = vmiopd_fdesc_t_rpc_set_surface_properties_v07_07
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_cleanup_surface_v03_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_cleanup_surface_v03_00[] = {
+    {
+        .vtype                = vtype_NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_cleanup_surface_v03_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_cleanup_surface_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_cleanup_surface",
+    #endif
+    .header_length = sizeof(rpc_cleanup_surface_v03_00),
+    .fdesc = vmiopd_fdesc_t_rpc_cleanup_surface_v03_00
 };
 #endif
 
@@ -907,6 +2653,21 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unloading_guest_driver_v1F_07 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_switch_to_vga_v03_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_switch_to_vga_v03_00[] = {
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_switch_to_vga_v03_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_switch_to_vga",
+    #endif
+    .fdesc = vmiopd_fdesc_t_rpc_switch_to_vga_v03_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_gpu_exec_reg_ops_v12_01
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpu_exec_reg_ops_v12_01[] = {
     {
@@ -941,6 +2702,82 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gpu_exec_reg_ops_v12_01 = {
     #endif
     .header_length = sizeof(rpc_gpu_exec_reg_ops_v12_01),
     .fdesc = vmiopd_fdesc_t_rpc_gpu_exec_reg_ops_v12_01
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_static_data_v25_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_get_static_data_v25_0E[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_get_static_data_v25_0E, offset),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "offset"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_get_static_data_v25_0E, size),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "size"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_get_static_data_v25_0E, payload),
+        .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "payload"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_get_static_data_v25_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_get_static_data",
+    #endif
+    .header_length = sizeof(rpc_get_static_data_v25_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_get_static_data_v25_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_consolidated_gr_static_info_v1B_04
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_get_consolidated_gr_static_info_v1B_04[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_get_consolidated_gr_static_info_v1B_04, offset),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "offset"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_get_consolidated_gr_static_info_v1B_04, size),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "size"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_get_consolidated_gr_static_info_v1B_04, payload),
+        .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "payload"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_get_consolidated_gr_static_info_v1B_04 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_get_consolidated_gr_static_info",
+    #endif
+    .header_length = sizeof(rpc_get_consolidated_gr_static_info_v1B_04),
+    .fdesc = vmiopd_fdesc_t_rpc_get_consolidated_gr_static_info_v1B_04
 };
 #endif
 
@@ -988,43 +2825,6 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_page_directory_v1E_05 = {
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_set_page_directory_v03_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_page_directory_v03_00[] = {
-    {
-        .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_set_page_directory_v03_00, hClient),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "hClient"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_set_page_directory_v03_00, hDevice),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "hDevice"
-        #endif
-    },
-    {
-        .vtype                = vtype_NV0080_CTRL_DMA_SET_PAGE_DIRECTORY_PARAMS_v03_00,
-        .offset               = NV_OFFSETOF(rpc_set_page_directory_v03_00, params),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "params"
-        #endif
-    },
-    {
-        .vtype        = vt_end
-    }
-};
-
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_page_directory_v03_00 = {
-    #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_set_page_directory",
-    #endif
-    .header_length = sizeof(rpc_set_page_directory_v03_00),
-    .fdesc = vmiopd_fdesc_t_rpc_set_page_directory_v03_00
-};
-#endif
-
 #ifndef SKIP_PRINT_rpc_unset_page_directory_v1E_05
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unset_page_directory_v1E_05[] = {
     {
@@ -1059,43 +2859,6 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unset_page_directory_v1E_05 = {
     #endif
     .header_length = sizeof(rpc_unset_page_directory_v1E_05),
     .fdesc = vmiopd_fdesc_t_rpc_unset_page_directory_v1E_05
-};
-#endif
-
-#ifndef SKIP_PRINT_rpc_unset_page_directory_v03_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_unset_page_directory_v03_00[] = {
-    {
-        .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_unset_page_directory_v03_00, hClient),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "hClient"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvHandle,
-        .offset               = NV_OFFSETOF(rpc_unset_page_directory_v03_00, hDevice),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "hDevice"
-        #endif
-    },
-    {
-        .vtype                = vtype_NV0080_CTRL_DMA_UNSET_PAGE_DIRECTORY_PARAMS_v03_00,
-        .offset               = NV_OFFSETOF(rpc_unset_page_directory_v03_00, params),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "params"
-        #endif
-    },
-    {
-        .vtype        = vt_end
-    }
-};
-
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_unset_page_directory_v03_00 = {
-    #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_unset_page_directory",
-    #endif
-    .header_length = sizeof(rpc_unset_page_directory_v03_00),
-    .fdesc = vmiopd_fdesc_t_rpc_unset_page_directory_v03_00
 };
 #endif
 
@@ -1145,6 +2908,43 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_update_bar_pde_v15_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_get_encoder_capacity_v07_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_get_encoder_capacity_v07_00[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_get_encoder_capacity_v07_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_get_encoder_capacity_v07_00, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_get_encoder_capacity_v07_00, encoderCapacity),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "encoderCapacity"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_get_encoder_capacity_v07_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_get_encoder_capacity",
+    #endif
+    .header_length = sizeof(rpc_get_encoder_capacity_v07_00),
+    .fdesc = vmiopd_fdesc_t_rpc_get_encoder_capacity_v07_00
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_vgpu_pf_reg_read32_v15_00
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_vgpu_pf_reg_read32_v15_00[] = {
     {
@@ -1182,6 +2982,828 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_pf_reg_read32_v15_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_nvenc_sw_session_update_info_v1A_09
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_nvenc_sw_session_update_info_v1A_09[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_nvenc_sw_session_update_info_v1A_09, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_nvenc_sw_session_update_info_v1A_09, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS_v06_01,
+        .offset               = NV_OFFSETOF(rpc_ctrl_nvenc_sw_session_update_info_v1A_09, nvencSessionUpdate),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "nvencSessionUpdate"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_nvenc_sw_session_update_info_v1A_09 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_nvenc_sw_session_update_info",
+    #endif
+    .header_length = sizeof(rpc_ctrl_nvenc_sw_session_update_info_v1A_09),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_nvenc_sw_session_update_info_v1A_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_reset_channel_v1A_09
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_reset_channel_v1A_09[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reset_channel_v1A_09, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reset_channel_v1A_09, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS_v10_01,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reset_channel_v1A_09, resetChannel),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "resetChannel"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_reset_channel_v1A_09 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_reset_channel",
+    #endif
+    .header_length = sizeof(rpc_ctrl_reset_channel_v1A_09),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_reset_channel_v1A_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_reset_isolated_channel_v1A_09
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_reset_isolated_channel_v1A_09[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reset_isolated_channel_v1A_09, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reset_isolated_channel_v1A_09, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reset_isolated_channel_v1A_09, resetIsolatedChannel),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "resetIsolatedChannel"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_reset_isolated_channel_v1A_09 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_reset_isolated_channel",
+    #endif
+    .header_length = sizeof(rpc_ctrl_reset_isolated_channel_v1A_09),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_reset_isolated_channel_v1A_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_CMD_GPU_HANDLE_VF_PRI_FAULT_PARAMS_v18_09,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09, handleVfPriFault),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "handleVfPriFault"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpu_handle_vf_pri_fault",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_perf_boost_v1A_09
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_perf_boost_v1A_09[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_perf_boost_v1A_09, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_perf_boost_v1A_09, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_PERF_BOOST_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_perf_boost_v1A_09, perfBoost),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "perfBoost"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_perf_boost_v1A_09 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_perf_boost",
+    #endif
+    .header_length = sizeof(rpc_ctrl_perf_boost_v1A_09),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_perf_boost_v1A_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_zbc_clear_table_v1A_09
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_zbc_clear_table_v1A_09[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_zbc_clear_table_v1A_09, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_zbc_clear_table_v1A_09, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV9096_CTRL_GET_ZBC_CLEAR_TABLE_PARAMS_v04_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_zbc_clear_table_v1A_09, getZbcClearTable),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "getZbcClearTable"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_zbc_clear_table_v1A_09 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_zbc_clear_table",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_zbc_clear_table_v1A_09),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_zbc_clear_table_v1A_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_zbc_color_clear_v1A_09
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_set_zbc_color_clear_v1A_09[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_zbc_color_clear_v1A_09, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_zbc_color_clear_v1A_09, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV9096_CTRL_SET_ZBC_COLOR_CLEAR_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_zbc_color_clear_v1A_09, setZbcColorClr),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "setZbcColorClr"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_set_zbc_color_clear_v1A_09 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_set_zbc_color_clear",
+    #endif
+    .header_length = sizeof(rpc_ctrl_set_zbc_color_clear_v1A_09),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_set_zbc_color_clear_v1A_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_zbc_depth_clear_v1A_09
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_set_zbc_depth_clear_v1A_09[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_zbc_depth_clear_v1A_09, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_zbc_depth_clear_v1A_09, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV9096_CTRL_SET_ZBC_DEPTH_CLEAR_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_zbc_depth_clear_v1A_09, setZbcDepthClr),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "setZbcDepthClr"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_set_zbc_depth_clear_v1A_09 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_set_zbc_depth_clear",
+    #endif
+    .header_length = sizeof(rpc_ctrl_set_zbc_depth_clear_v1A_09),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_set_zbc_depth_clear_v1A_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpfifo_schedule_v1A_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpfifo_schedule_v1A_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_schedule_v1A_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_schedule_v1A_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_schedule_v1A_0A, cmd),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "cmd"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVA06F_CTRL_GPFIFO_SCHEDULE_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_schedule_v1A_0A, gpfifoSchedule),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "gpfifoSchedule"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpfifo_schedule_v1A_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpfifo_schedule",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpfifo_schedule_v1A_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpfifo_schedule_v1A_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_timeslice_v1A_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_set_timeslice_v1A_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_timeslice_v1A_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_timeslice_v1A_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVA06C_CTRL_TIMESLICE_PARAMS_v06_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_timeslice_v1A_0A, setTimeSlice),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "setTimeSlice"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_set_timeslice_v1A_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_set_timeslice",
+    #endif
+    .header_length = sizeof(rpc_ctrl_set_timeslice_v1A_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_set_timeslice_v1A_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fifo_disable_channels_v1A_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fifo_disable_channels_v1A_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fifo_disable_channels_v1A_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fifo_disable_channels_v1A_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_FIFO_DISABLE_CHANNELS_PARAMS_v06_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fifo_disable_channels_v1A_0A, fifoDisableChannels),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "fifoDisableChannels"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fifo_disable_channels_v1A_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_fifo_disable_channels",
+    #endif
+    .header_length = sizeof(rpc_ctrl_fifo_disable_channels_v1A_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_fifo_disable_channels_v1A_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_preempt_v1A_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_preempt_v1A_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_preempt_v1A_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_preempt_v1A_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVA06C_CTRL_PREEMPT_PARAMS_v09_0A,
+        .offset               = NV_OFFSETOF(rpc_ctrl_preempt_v1A_0A, cmdPreempt),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "cmdPreempt"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_preempt_v1A_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_preempt",
+    #endif
+    .header_length = sizeof(rpc_ctrl_preempt_v1A_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_preempt_v1A_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_tsg_interleave_level_v1A_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_set_tsg_interleave_level_v1A_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_tsg_interleave_level_v1A_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_tsg_interleave_level_v1A_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVA06C_CTRL_INTERLEAVE_LEVEL_PARAMS_v17_02,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_tsg_interleave_level_v1A_0A, interleaveLevelTSG),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "interleaveLevelTSG"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_set_tsg_interleave_level_v1A_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_set_tsg_interleave_level",
+    #endif
+    .header_length = sizeof(rpc_ctrl_set_tsg_interleave_level_v1A_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_set_tsg_interleave_level_v1A_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_channel_interleave_level_v1A_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_set_channel_interleave_level_v1A_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_channel_interleave_level_v1A_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_channel_interleave_level_v1A_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVA06F_CTRL_INTERLEAVE_LEVEL_PARAMS_v17_02,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_channel_interleave_level_v1A_0A, interleaveLevelChannel),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "interleaveLevelChannel"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_set_channel_interleave_level_v1A_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_set_channel_interleave_level",
+    #endif
+    .header_length = sizeof(rpc_ctrl_set_channel_interleave_level_v1A_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_set_channel_interleave_level_v1A_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GR_CTXSW_PREEMPTION_BIND_PARAMS_v12_01,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gr_ctxsw_preemption_bind",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GR_SET_CTXSW_PREEMPTION_MODE_PARAMS_v12_01,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gr_set_ctxsw_preemption_mode",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GR_CTXSW_ZCULL_BIND_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gr_ctxsw_zcull_bind",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_initialize_ctx_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpu_initialize_ctx_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_initialize_ctx_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_initialize_ctx_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GPU_INITIALIZE_CTX_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_initialize_ctx_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpu_initialize_ctx_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpu_initialize_ctx",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpu_initialize_ctx_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpu_initialize_ctx_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS_v1E_04,
+        .offset               = NV_OFFSETOF(rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_vaspace_copy_server_reserved_pdes",
+    #endif
+    .header_length = sizeof(rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_mc_service_interrupts_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_mc_service_interrupts_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_mc_service_interrupts_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_mc_service_interrupts_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_MC_SERVICE_INTERRUPTS_PARAMS_v15_01,
+        .offset               = NV_OFFSETOF(rpc_ctrl_mc_service_interrupts_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_mc_service_interrupts_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_mc_service_interrupts",
+    #endif
+    .header_length = sizeof(rpc_ctrl_mc_service_interrupts_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_mc_service_interrupts_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_p2p_caps_v2_v1F_0D
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_p2p_caps_v2_v1F_0D[] = {
+    {
+        .vtype                = vtype_NvU8,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v2_v1F_0D, iter),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "iter"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32_array,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v2_v1F_0D, gpuIds),
+        .array_length         = NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "gpuIds"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v2_v1F_0D, gpuCount),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "gpuCount"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v2_v1F_0D, p2pCaps),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "p2pCaps"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v2_v1F_0D, p2pOptimalReadCEs),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "p2pOptimalReadCEs"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v2_v1F_0D, p2pOptimalWriteCEs),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "p2pOptimalWriteCEs"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v2_v1F_0D, p2pCapsStatus),
+        .array_length         = NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE_v1F_0D,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "p2pCapsStatus"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32_array,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v2_v1F_0D, busPeerIds),
+        .array_length         = VGPU_RPC_GET_P2P_CAPS_V2_MAX_GPUS_SQUARED_PER_RPC,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "busPeerIds"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_p2p_caps_v2_v1F_0D = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_p2p_caps_v2",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_p2p_caps_v2_v1F_0D),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_p2p_caps_v2_v1F_0D
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_ctrl_subdevice_get_p2p_caps_v21_02
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02[] = {
     {
@@ -1202,6 +3824,1620 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02 = {
     #endif
     .header_length = sizeof(rpc_ctrl_subdevice_get_p2p_caps_v21_02),
     .fdesc = vmiopd_fdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_CLEAR_ALL_SM_ERROR_STATES_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_clear_all_sm_error_states",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_read_all_sm_error_states_v21_06
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_read_all_sm_error_states_v21_06[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_read_all_sm_error_states_v21_06, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_read_all_sm_error_states_v21_06, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_READ_ALL_SM_ERROR_STATES_PARAMS_v21_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_read_all_sm_error_states_v21_06, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_read_all_sm_error_states_v21_06 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_read_all_sm_error_states",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_read_all_sm_error_states_v21_06),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_read_all_sm_error_states_v21_06
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_exception_mask_v1A_0C
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_set_exception_mask_v1A_0C[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_exception_mask_v1A_0C, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_exception_mask_v1A_0C, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_SET_EXCEPTION_MASK_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_exception_mask_v1A_0C, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_set_exception_mask_v1A_0C = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_set_exception_mask",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_set_exception_mask_v1A_0C),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_set_exception_mask_v1A_0C
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_promote_ctx_v1A_20
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpu_promote_ctx_v1A_20[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_promote_ctx_v1A_20, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_promote_ctx_v1A_20, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GPU_PROMOTE_CTX_PARAMS_v1A_20,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_promote_ctx_v1A_20, promoteCtx),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "promoteCtx"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpu_promote_ctx_v1A_20 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpu_promote_ctx",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpu_promote_ctx_v1A_20),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpu_promote_ctx_v1A_20
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_suspend_context_v1A_10
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_suspend_context_v1A_10[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_suspend_context_v1A_10, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_suspend_context_v1A_10, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_CMD_DEBUG_SUSPEND_CONTEXT_PARAMS_v1A_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_suspend_context_v1A_10, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_suspend_context_v1A_10 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_suspend_context",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_suspend_context_v1A_10),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_suspend_context_v1A_10
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_resume_context_v1A_10
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_resume_context_v1A_10[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_resume_context_v1A_10, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_resume_context_v1A_10, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_resume_context_v1A_10 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_resume_context",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_resume_context_v1A_10),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_resume_context_v1A_10
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_exec_reg_ops_v1A_10
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_exec_reg_ops_v1A_10[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_exec_reg_ops_v1A_10, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_exec_reg_ops_v1A_10, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_EXEC_REG_OPS_PARAMS_v1A_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_exec_reg_ops_v1A_10, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_exec_reg_ops_v1A_10 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_exec_reg_ops",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_exec_reg_ops_v1A_10),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_exec_reg_ops_v1A_10
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_SET_MODE_MMU_DEBUG_PARAMS_v1A_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_set_mode_mmu_debug",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_read_single_sm_error_state_v21_06
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_read_single_sm_error_state_v21_06[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_read_single_sm_error_state_v21_06, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_read_single_sm_error_state_v21_06, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_READ_SINGLE_SM_ERROR_STATE_PARAMS_v21_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_read_single_sm_error_state_v21_06, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_read_single_sm_error_state_v21_06 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_read_single_sm_error_state",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_read_single_sm_error_state_v21_06),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_read_single_sm_error_state_v21_06
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_CLEAR_SINGLE_SM_ERROR_STATE_PARAMS_v1A_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_clear_single_sm_error_state",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_SET_MODE_ERRBAR_DEBUG_PARAMS_v1A_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_set_mode_errbar_debug",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_SET_NEXT_STOP_TRIGGER_TYPE_PARAMS_v1A_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_set_next_stop_trigger_type",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dma_set_default_vaspace_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dma_set_default_vaspace_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dma_set_default_vaspace_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dma_set_default_vaspace_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV0080_CTRL_DMA_SET_DEFAULT_VASPACE_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dma_set_default_vaspace_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dma_set_default_vaspace_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dma_set_default_vaspace",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dma_set_default_vaspace_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dma_set_default_vaspace_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_ce_pce_mask_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_ce_pce_mask_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_ce_pce_mask_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_ce_pce_mask_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_CE_GET_CE_PCE_MASK_PARAMS_v1A_07,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_ce_pce_mask_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_ce_pce_mask_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_ce_pce_mask",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_ce_pce_mask_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_ce_pce_mask_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_zbc_clear_table_entry_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_zbc_clear_table_entry_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_zbc_clear_table_entry_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_zbc_clear_table_entry_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV9096_CTRL_GET_ZBC_CLEAR_TABLE_ENTRY_PARAMS_v1A_07,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_zbc_clear_table_entry_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_zbc_clear_table_entry_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_zbc_clear_table_entry",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_zbc_clear_table_entry_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_zbc_clear_table_entry_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_BUS_GET_NVLINK_PEER_ID_MASK_PARAMS_v14_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_nvlink_peer_id_mask",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_nvlink_status_v23_04
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_nvlink_status_v23_04[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_nvlink_status_v23_04, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_nvlink_status_v23_04, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_CMD_NVLINK_GET_NVLINK_STATUS_PARAMS_v23_04,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_nvlink_status_v23_04, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_nvlink_status_v23_04 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_nvlink_status",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_nvlink_status_v23_04),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_nvlink_status_v23_04
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_p2p_caps_v1F_0D
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_p2p_caps_v1F_0D[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v1F_0D, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v1F_0D, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS_v1F_0D,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_v1F_0D, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_p2p_caps_v1F_0D = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_p2p_caps",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_p2p_caps_v1F_0D),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_p2p_caps_v1F_0D
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_p2p_caps_matrix_v1A_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_p2p_caps_matrix_v1A_0E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_matrix_v1A_0E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_matrix_v1A_0E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV0000_CTRL_SYSTEM_GET_P2P_CAPS_MATRIX_PARAMS_v18_0A,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_p2p_caps_matrix_v1A_0E, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_p2p_caps_matrix_v1A_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_p2p_caps_matrix",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_p2p_caps_matrix_v1A_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_p2p_caps_matrix_v1A_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_reserve_pm_area_smpc_v1A_0F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_reserve_pm_area_smpc_v1A_0F[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reserve_pm_area_smpc_v1A_0F, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reserve_pm_area_smpc_v1A_0F, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_RESERVE_PM_AREA_SMPC_PARAMS_v1A_0F,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reserve_pm_area_smpc_v1A_0F, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_reserve_pm_area_smpc_v1A_0F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_reserve_pm_area_smpc",
+    #endif
+    .header_length = sizeof(rpc_ctrl_reserve_pm_area_smpc_v1A_0F),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_reserve_pm_area_smpc_v1A_0F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_reserve_hwpm_legacy_v1A_0F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_reserve_hwpm_legacy_v1A_0F[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reserve_hwpm_legacy_v1A_0F, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reserve_hwpm_legacy_v1A_0F, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_RESERVE_HWPM_LEGACY_PARAMS_v1A_0F,
+        .offset               = NV_OFFSETOF(rpc_ctrl_reserve_hwpm_legacy_v1A_0F, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_reserve_hwpm_legacy_v1A_0F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_reserve_hwpm_legacy",
+    #endif
+    .header_length = sizeof(rpc_ctrl_reserve_hwpm_legacy_v1A_0F),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_reserve_hwpm_legacy_v1A_0F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_b0cc_exec_reg_ops_v1A_0F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_b0cc_exec_reg_ops_v1A_0F[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_b0cc_exec_reg_ops_v1A_0F, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_b0cc_exec_reg_ops_v1A_0F, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_EXEC_REG_OPS_PARAMS_v1A_0F,
+        .offset               = NV_OFFSETOF(rpc_ctrl_b0cc_exec_reg_ops_v1A_0F, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_b0cc_exec_reg_ops_v1A_0F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_b0cc_exec_reg_ops",
+    #endif
+    .header_length = sizeof(rpc_ctrl_b0cc_exec_reg_ops_v1A_0F),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_b0cc_exec_reg_ops_v1A_0F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_bind_pm_resources_v1A_0F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_bind_pm_resources_v1A_0F[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_bind_pm_resources_v1A_0F, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_bind_pm_resources_v1A_0F, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_bind_pm_resources_v1A_0F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_bind_pm_resources",
+    #endif
+    .header_length = sizeof(rpc_ctrl_bind_pm_resources_v1A_0F),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_bind_pm_resources_v1A_0F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_alloc_pma_stream_v1A_14
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_alloc_pma_stream_v1A_14[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_alloc_pma_stream_v1A_14, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_alloc_pma_stream_v1A_14, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS_v1A_14,
+        .offset               = NV_OFFSETOF(rpc_ctrl_alloc_pma_stream_v1A_14, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_alloc_pma_stream_v1A_14 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_alloc_pma_stream",
+    #endif
+    .header_length = sizeof(rpc_ctrl_alloc_pma_stream_v1A_14),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_alloc_pma_stream_v1A_14
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_pma_stream_update_get_put_v1A_14
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_pma_stream_update_get_put_v1A_14[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_pma_stream_update_get_put_v1A_14, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_pma_stream_update_get_put_v1A_14, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_PMA_STREAM_UPDATE_GET_PUT_PARAMS_v1A_14,
+        .offset               = NV_OFFSETOF(rpc_ctrl_pma_stream_update_get_put_v1A_14, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_pma_stream_update_get_put_v1A_14 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_pma_stream_update_get_put",
+    #endif
+    .header_length = sizeof(rpc_ctrl_pma_stream_update_get_put_v1A_14),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_pma_stream_update_get_put_v1A_14
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fb_get_info_v2_v25_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fb_get_info_v2_v25_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fb_get_info_v2_v25_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fb_get_info_v2_v25_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_FB_GET_INFO_V2_PARAMS_v25_0A,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fb_get_info_v2_v25_0A, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fb_get_info_v2_v25_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_fb_get_info_v2",
+    #endif
+    .header_length = sizeof(rpc_ctrl_fb_get_info_v2_v25_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_fb_get_info_v2_v25_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fifo_set_channel_properties_v1A_16
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fifo_set_channel_properties_v1A_16[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fifo_set_channel_properties_v1A_16, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fifo_set_channel_properties_v1A_16, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV0080_CTRL_FIFO_SET_CHANNEL_PROPERTIES_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fifo_set_channel_properties_v1A_16, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fifo_set_channel_properties_v1A_16 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_fifo_set_channel_properties",
+    #endif
+    .header_length = sizeof(rpc_ctrl_fifo_set_channel_properties_v1A_16),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_fifo_set_channel_properties_v1A_16
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_evict_ctx_v1A_1C
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpu_evict_ctx_v1A_1C[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_evict_ctx_v1A_1C, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_evict_ctx_v1A_1C, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GPU_EVICT_CTX_PARAMS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_evict_ctx_v1A_1C, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpu_evict_ctx_v1A_1C = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpu_evict_ctx",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpu_evict_ctx_v1A_1C),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpu_evict_ctx_v1A_1C
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fb_get_fs_info_v24_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fb_get_fs_info_v24_00[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fb_get_fs_info_v24_00, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fb_get_fs_info_v24_00, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_FB_GET_FS_INFO_PARAMS_v24_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fb_get_fs_info_v24_00, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fb_get_fs_info_v24_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_fb_get_fs_info",
+    #endif
+    .header_length = sizeof(rpc_ctrl_fb_get_fs_info_v24_00),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_fb_get_fs_info_v24_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GRMGR_GET_GR_FS_INFO_PARAMS_v1A_1D,
+        .offset               = NV_OFFSETOF(rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_grmgr_get_gr_fs_info",
+    #endif
+    .header_length = sizeof(rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_stop_channel_v1A_1E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_stop_channel_v1A_1E[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_stop_channel_v1A_1E, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_stop_channel_v1A_1E, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVA06F_CTRL_STOP_CHANNEL_PARAMS_v1A_1E,
+        .offset               = NV_OFFSETOF(rpc_ctrl_stop_channel_v1A_1E, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_stop_channel_v1A_1E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_stop_channel",
+    #endif
+    .header_length = sizeof(rpc_ctrl_stop_channel_v1A_1E),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_stop_channel_v1A_1E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_pc_sampling_mode_v1A_1F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gr_pc_sampling_mode_v1A_1F[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_pc_sampling_mode_v1A_1F, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_pc_sampling_mode_v1A_1F, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GR_PC_SAMPLING_MODE_PARAMS_v1A_1F,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_pc_sampling_mode_v1A_1F, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gr_pc_sampling_mode_v1A_1F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gr_pc_sampling_mode",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gr_pc_sampling_mode_v1A_1F),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gr_pc_sampling_mode_v1A_1F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_perf_rated_tdp_get_status_v1A_1F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_perf_rated_tdp_get_status_v1A_1F[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_perf_rated_tdp_get_status_v1A_1F, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_perf_rated_tdp_get_status_v1A_1F, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_PERF_RATED_TDP_STATUS_PARAMS_v1A_1F,
+        .offset               = NV_OFFSETOF(rpc_ctrl_perf_rated_tdp_get_status_v1A_1F, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_perf_rated_tdp_get_status_v1A_1F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_perf_rated_tdp_get_status",
+    #endif
+    .header_length = sizeof(rpc_ctrl_perf_rated_tdp_get_status_v1A_1F),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_perf_rated_tdp_get_status_v1A_1F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_perf_rated_tdp_set_control_v1A_1F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_perf_rated_tdp_set_control_v1A_1F[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_perf_rated_tdp_set_control_v1A_1F, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_perf_rated_tdp_set_control_v1A_1F, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_PERF_RATED_TDP_CONTROL_PARAMS_v1A_1F,
+        .offset               = NV_OFFSETOF(rpc_ctrl_perf_rated_tdp_set_control_v1A_1F, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_perf_rated_tdp_set_control_v1A_1F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_perf_rated_tdp_set_control",
+    #endif
+    .header_length = sizeof(rpc_ctrl_perf_rated_tdp_set_control_v1A_1F),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_perf_rated_tdp_set_control_v1A_1F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_timer_set_gr_tick_freq_v1A_1F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_timer_set_gr_tick_freq_v1A_1F[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_timer_set_gr_tick_freq_v1A_1F, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_timer_set_gr_tick_freq_v1A_1F, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_CMD_TIMER_SET_GR_TICK_FREQ_PARAMS_v1A_1F,
+        .offset               = NV_OFFSETOF(rpc_ctrl_timer_set_gr_tick_freq_v1A_1F, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_timer_set_gr_tick_freq_v1A_1F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_timer_set_gr_tick_freq",
+    #endif
+    .header_length = sizeof(rpc_ctrl_timer_set_gr_tick_freq_v1A_1F),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_timer_set_gr_tick_freq_v1A_1F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_free_pma_stream_v1A_1F
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_free_pma_stream_v1A_1F[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_free_pma_stream_v1A_1F, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_free_pma_stream_v1A_1F, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_FREE_PMA_STREAM_PARAMS_v1A_1F,
+        .offset               = NV_OFFSETOF(rpc_ctrl_free_pma_stream_v1A_1F, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_free_pma_stream_v1A_1F = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_free_pma_stream",
+    #endif
+    .header_length = sizeof(rpc_ctrl_free_pma_stream_v1A_1F),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_free_pma_stream_v1A_1F
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_FIFO_SETUP_VF_ZOMBIE_SUBCTX_PDB_PARAMS_v1A_23,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb",
+    #endif
+    .header_length = sizeof(rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_single_sm_single_step_v1C_02
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_set_single_sm_single_step_v1C_02[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_single_sm_single_step_v1C_02, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_single_sm_single_step_v1C_02, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_SET_SINGLE_SM_SINGLE_STEP_PARAMS_v1C_02,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_set_single_sm_single_step_v1C_02, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_set_single_sm_single_step_v1C_02 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_set_single_sm_single_step",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_set_single_sm_single_step_v1C_02),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_set_single_sm_single_step_v1C_02
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_get_tpc_partition_mode_v1C_04
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gr_get_tpc_partition_mode_v1C_04[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_get_tpc_partition_mode_v1C_04, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_get_tpc_partition_mode_v1C_04, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV0080_CTRL_GR_TPC_PARTITION_MODE_PARAMS_v1C_04,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_get_tpc_partition_mode_v1C_04, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gr_get_tpc_partition_mode_v1C_04 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gr_get_tpc_partition_mode",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gr_get_tpc_partition_mode_v1C_04),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gr_get_tpc_partition_mode_v1C_04
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_set_tpc_partition_mode_v1C_04
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gr_set_tpc_partition_mode_v1C_04[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_set_tpc_partition_mode_v1C_04, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_set_tpc_partition_mode_v1C_04, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV0080_CTRL_GR_TPC_PARTITION_MODE_PARAMS_v1C_04,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gr_set_tpc_partition_mode_v1C_04, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gr_set_tpc_partition_mode_v1C_04 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gr_set_tpc_partition_mode",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gr_set_tpc_partition_mode_v1C_04),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gr_set_tpc_partition_mode_v1C_04
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_internal_promote_fault_method_buffers_v1E_07
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_internal_promote_fault_method_buffers_v1E_07[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_promote_fault_method_buffers_v1E_07, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_promote_fault_method_buffers_v1E_07, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVA06C_CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS_PARAMS_v1E_07,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_promote_fault_method_buffers_v1E_07, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_internal_promote_fault_method_buffers_v1E_07 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_internal_promote_fault_method_buffers",
+    #endif
+    .header_length = sizeof(rpc_ctrl_internal_promote_fault_method_buffers_v1E_07),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_internal_promote_fault_method_buffers_v1E_07
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_CMD_INTERNAL_MEMSYS_SET_ZBC_REFERENCED_v1F_05,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_internal_memsys_set_zbc_referenced",
+    #endif
+    .header_length = sizeof(rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fabric_memory_describe_v1E_0C
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fabric_memory_describe_v1E_0C[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fabric_memory_describe_v1E_0C, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fabric_memory_describe_v1E_0C, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV00F8_CTRL_DESCRIBE_PARAMS_v1E_0C,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fabric_memory_describe_v1E_0C, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fabric_memory_describe_v1E_0C = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_fabric_memory_describe",
+    #endif
+    .header_length = sizeof(rpc_ctrl_fabric_memory_describe_v1E_0C),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_fabric_memory_describe_v1E_0C
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fabric_mem_stats_v1E_0C
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fabric_mem_stats_v1E_0C[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fabric_mem_stats_v1E_0C, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fabric_mem_stats_v1E_0C, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_FLA_GET_FABRIC_MEM_STATS_PARAMS_v1E_0C,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fabric_mem_stats_v1E_0C, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fabric_mem_stats_v1E_0C = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_fabric_mem_stats",
+    #endif
+    .header_length = sizeof(rpc_ctrl_fabric_mem_stats_v1E_0C),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_fabric_mem_stats_v1E_0C
 };
 #endif
 
@@ -1279,13 +5515,667 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_bus_unset_p2p_mapping_v21_03 = {
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_rmfs_init_v15_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_init_v15_00[] = {
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_get_info_v2_v25_11
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpu_get_info_v2_v25_11[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_get_info_v2_v25_11, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_get_info_v2_v25_11, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GPU_GET_INFO_V2_PARAMS_v25_11,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_get_info_v2_v25_11, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpu_get_info_v2_v25_11 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpu_get_info_v2",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpu_get_info_v2_v25_11),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpu_get_info_v2_v25_11
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_internal_quiesce_pma_channel_v1C_08
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_internal_quiesce_pma_channel_v1C_08[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_quiesce_pma_channel_v1C_08, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_quiesce_pma_channel_v1C_08, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS_v1C_08,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_quiesce_pma_channel_v1C_08, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_internal_quiesce_pma_channel_v1C_08 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_internal_quiesce_pma_channel",
+    #endif
+    .header_length = sizeof(rpc_ctrl_internal_quiesce_pma_channel_v1C_08),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_internal_quiesce_pma_channel_v1C_08
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM_PARAMS_v1C_0C,
+        .offset               = NV_OFFSETOF(rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_internal_sriov_promote_pma_stream",
+    #endif
+    .header_length = sizeof(rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_exec_partitions_create_v24_05
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_exec_partitions_create_v24_05[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_create_v24_05, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_create_v24_05, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_create_v24_05, status),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "status"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVC637_CTRL_EXEC_PARTITIONS_CREATE_PARAMS_v24_05,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_create_v24_05, execPartitionsCreate),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "execPartitionsCreate"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_exec_partitions_create_v24_05 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_exec_partitions_create",
+    #endif
+    .header_length = sizeof(rpc_ctrl_exec_partitions_create_v24_05),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_exec_partitions_create_v24_05
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fla_setup_instance_mem_block_v21_05
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_fla_setup_instance_mem_block_v21_05[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fla_setup_instance_mem_block_v21_05, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fla_setup_instance_mem_block_v21_05, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK_PARAMS_v13_04,
+        .offset               = NV_OFFSETOF(rpc_ctrl_fla_setup_instance_mem_block_v21_05, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_fla_setup_instance_mem_block_v21_05 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_fla_setup_instance_mem_block",
+    #endif
+    .header_length = sizeof(rpc_ctrl_fla_setup_instance_mem_block_v21_05),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_fla_setup_instance_mem_block_v21_05
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_total_hs_credits_v21_08
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_total_hs_credits_v21_08[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_total_hs_credits_v21_08, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_total_hs_credits_v21_08, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_GET_TOTAL_HS_CREDITS_PARAMS_v21_08,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_total_hs_credits_v21_08, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_total_hs_credits_v21_08 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_total_hs_credits",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_total_hs_credits_v21_08),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_total_hs_credits_v21_08
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_hs_credits_v21_08
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_hs_credits_v21_08[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_hs_credits_v21_08, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_hs_credits_v21_08, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_GET_HS_CREDITS_PARAMS_v21_08,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_hs_credits_v21_08, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_hs_credits_v21_08 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_hs_credits",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_hs_credits_v21_08),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_hs_credits_v21_08
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_hs_credits_v21_08
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_set_hs_credits_v21_08[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_hs_credits_v21_08, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_hs_credits_v21_08, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVB0CC_CTRL_SET_HS_CREDITS_PARAMS_v21_08,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_hs_credits_v21_08, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_set_hs_credits_v21_08 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_set_hs_credits",
+    #endif
+    .header_length = sizeof(rpc_ctrl_set_hs_credits_v21_08),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_set_hs_credits_v21_08
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_pm_area_pc_sampler_v21_0B
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_pm_area_pc_sampler_v21_0B[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_pm_area_pc_sampler_v21_0B, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_pm_area_pc_sampler_v21_0B, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_ctrl_pm_area_pc_sampler_v21_0B, cmd),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "cmd"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_pm_area_pc_sampler_v21_0B = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_pm_area_pc_sampler",
+    #endif
+    .header_length = sizeof(rpc_ctrl_pm_area_pc_sampler_v21_0B),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_pm_area_pc_sampler_v21_0B
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_exec_partitions_delete_v1F_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_exec_partitions_delete_v1F_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_delete_v1F_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_delete_v1F_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVC637_CTRL_EXEC_PARTITIONS_DELETE_PARAMS_v18_05,
+        .offset               = NV_OFFSETOF(rpc_ctrl_exec_partitions_delete_v1F_0A, execPartitionsDelete),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "execPartitionsDelete"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_exec_partitions_delete_v1F_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_exec_partitions_delete",
+    #endif
+    .header_length = sizeof(rpc_ctrl_exec_partitions_delete_v1F_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_exec_partitions_delete_v1F_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVC36F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS_v08_00,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A, workSubmitToken),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "workSubmitToken"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpfifo_get_work_submit_token",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NVC36F_CTRL_GPFIFO_SET_WORK_SUBMIT_TOKEN_NOTIF_INDEX_PARAMS_v16_04,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A, setWorkSubmitTokenIndex),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "setWorkSubmitTokenIndex"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpfifo_set_work_submit_token_notif_index",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV90E6_CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK_PARAMS_v18_0B,
+        .offset               = NV_OFFSETOF(rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D, vfErrContIntrMask),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "vfErrContIntrMask"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_master_get_virtual_function_error_cont_intr_mask",
+    #endif
+    .header_length = sizeof(rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_save_hibernation_data_v1E_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_save_hibernation_data_v1E_0E[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_save_hibernation_data_v1E_0E, remainedBytes),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "remainedBytes"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_save_hibernation_data_v1E_0E, payload),
+        .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "payload"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_save_hibernation_data_v1E_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_save_hibernation_data",
+    #endif
+    .header_length = sizeof(rpc_save_hibernation_data_v1E_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_save_hibernation_data_v1E_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_restore_hibernation_data_v1E_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_restore_hibernation_data_v1E_0E[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_restore_hibernation_data_v1E_0E, remainedBytes),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "remainedBytes"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_restore_hibernation_data_v1E_0E, payload),
+        .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "payload"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_restore_hibernation_data_v1E_0E = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_restore_hibernation_data",
+    #endif
+    .header_length = sizeof(rpc_restore_hibernation_data_v1E_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_restore_hibernation_data_v1E_0E
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_mmu_debug_mode_v1E_06
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_get_mmu_debug_mode_v1E_06[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_mmu_debug_mode_v1E_06, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_mmu_debug_mode_v1E_06, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV0090_CTRL_GET_MMU_DEBUG_MODE_PARAMS_v1E_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_get_mmu_debug_mode_v1E_06, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_get_mmu_debug_mode_v1E_06 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_get_mmu_debug_mode",
+    #endif
+    .header_length = sizeof(rpc_ctrl_get_mmu_debug_mode_v1E_06),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_get_mmu_debug_mode_v1E_06
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_disable_channels_v1E_0B
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_disable_channels_v1E_0B[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_disable_channels_v1E_0B, bDisable),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "bDisable"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_disable_channels_v1E_0B = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_disable_channels",
+    #endif
+    .header_length = sizeof(rpc_disable_channels_v1E_0B),
+    .fdesc = vmiopd_fdesc_t_rpc_disable_channels_v1E_0B
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_migratable_ops_v21_07
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpu_migratable_ops_v21_07[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_migratable_ops_v21_07, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_migratable_ops_v21_07, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GPU_MIGRATABLE_OPS_PARAMS_v21_07,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_migratable_ops_v21_07, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpu_migratable_ops_v21_07 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpu_migratable_ops",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpu_migratable_ops_v21_07),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpu_migratable_ops_v21_07
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_invalidate_tlb_v23_03
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_invalidate_tlb_v23_03[] = {
     {
         .vtype                = vtype_NvU64,
-        .offset               = NV_OFFSETOF(rpc_rmfs_init_v15_00, statusQueuePhysAddr),
+        .offset               = NV_OFFSETOF(rpc_invalidate_tlb_v23_03, pdbAddress),
         #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "statusQueuePhysAddr"
+        .name                 = "pdbAddress"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_invalidate_tlb_v23_03, regVal),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "regVal"
         #endif
     },
     {
@@ -1293,86 +6183,12 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_init_v15_00[] = {
     }
 };
 
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_init_v15_00 = {
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_invalidate_tlb_v23_03 = {
     #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_rmfs_init",
+    .name = "rpc_invalidate_tlb",
     #endif
-    .header_length = sizeof(rpc_rmfs_init_v15_00),
-    .fdesc = vmiopd_fdesc_t_rpc_rmfs_init_v15_00
-};
-#endif
-
-#ifndef SKIP_PRINT_rpc_rmfs_close_queue_v15_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_close_queue_v15_00[] = {
-    {
-        .vtype        = vt_end
-    }
-};
-
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_close_queue_v15_00 = {
-    #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_rmfs_close_queue",
-    #endif
-    .fdesc = vmiopd_fdesc_t_rpc_rmfs_close_queue_v15_00
-};
-#endif
-
-#ifndef SKIP_PRINT_rpc_rmfs_cleanup_v15_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_cleanup_v15_00[] = {
-    {
-        .vtype        = vt_end
-    }
-};
-
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_cleanup_v15_00 = {
-    #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_rmfs_cleanup",
-    #endif
-    .fdesc = vmiopd_fdesc_t_rpc_rmfs_cleanup_v15_00
-};
-#endif
-
-#ifndef SKIP_PRINT_rpc_rmfs_test_v15_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rmfs_test_v15_00[] = {
-    {
-        .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_rmfs_test_v15_00, numReps),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "numReps"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_rmfs_test_v15_00, flags),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "flags"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_rmfs_test_v15_00, testData1),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "testData1"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_rmfs_test_v15_00, testData2),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "testData2"
-        #endif
-    },
-    {
-        .vtype        = vt_end
-    }
-};
-
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rmfs_test_v15_00 = {
-    #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_rmfs_test",
-    #endif
-    .header_length = sizeof(rpc_rmfs_test_v15_00),
-    .fdesc = vmiopd_fdesc_t_rpc_rmfs_test_v15_00
+    .header_length = sizeof(rpc_invalidate_tlb_v23_03),
+    .fdesc = vmiopd_fdesc_t_rpc_invalidate_tlb_v23_03
 };
 #endif
 
@@ -1388,6 +6204,29 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ecc_notifier_write_ack_v23_05 = {
     .name = "rpc_ecc_notifier_write_ack",
     #endif
     .fdesc = vmiopd_fdesc_t_rpc_ecc_notifier_write_ack_v23_05
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_brand_caps_v25_12
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_get_brand_caps_v25_12[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_get_brand_caps_v25_12, brands),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "brands"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_get_brand_caps_v25_12 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_get_brand_caps",
+    #endif
+    .header_length = sizeof(rpc_get_brand_caps_v25_12),
+    .fdesc = vmiopd_fdesc_t_rpc_get_brand_caps_v25_12
 };
 #endif
 
@@ -1806,6 +6645,21 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rc_triggered_v17_02[] = {
         #endif
     },
     {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, rcJournalBufferSize),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rcJournalBufferSize"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, rcJournalBuffer),
+        .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rcJournalBuffer"
+        #endif
+    },
+    {
         .vtype        = vt_end
     }
 };
@@ -1931,11 +6785,11 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_display_modeset_v01_00 = {
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_gpuacct_perfmon_util_samples_v17_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00[] = {
+#ifndef SKIP_PRINT_rpc_gpuacct_perfmon_util_samples_v1F_0E
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v1F_0E[] = {
     {
-        .vtype                = vtype_NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2_PARAMS_v17_00,
-        .offset               = NV_OFFSETOF(rpc_gpuacct_perfmon_util_samples_v17_00, params),
+        .vtype                = vtype_NV2080_CTRL_PERF_GET_GPUMON_PERFMON_UTIL_SAMPLES_V2_PARAMS_v1F_0E,
+        .offset               = NV_OFFSETOF(rpc_gpuacct_perfmon_util_samples_v1F_0E, params),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "params"
         #endif
@@ -1945,12 +6799,12 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00[] =
     }
 };
 
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00 = {
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gpuacct_perfmon_util_samples_v1F_0E = {
     #if (defined(DEBUG) || defined(DEVELOP))
     .name = "rpc_gpuacct_perfmon_util_samples",
     #endif
-    .header_length = sizeof(rpc_gpuacct_perfmon_util_samples_v17_00),
-    .fdesc = vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00
+    .header_length = sizeof(rpc_gpuacct_perfmon_util_samples_v1F_0E),
+    .fdesc = vmiopd_fdesc_t_rpc_gpuacct_perfmon_util_samples_v1F_0E
 };
 #endif
 
@@ -2511,27 +7365,20 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_nvlink_is_gpu_degraded_v17_00 = {
 };
 #endif
 
-#ifndef SKIP_PRINT_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
-static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00[] = {
+#ifndef SKIP_PRINT_rpc_update_gsp_trace_v01_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_update_gsp_trace_v01_00[] = {
     {
         .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00, sysmemPfnBitmapRing),
+        .offset               = NV_OFFSETOF(rpc_update_gsp_trace_v01_00, records),
         #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "sysmemPfnBitmapRing"
+        .name                 = "records"
         #endif
     },
     {
         .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00, sysmemPfnBitmapRingHi),
+        .offset               = NV_OFFSETOF(rpc_update_gsp_trace_v01_00, data),
         #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "sysmemPfnBitmapRingHi"
-        #endif
-    },
-    {
-        .vtype                = vtype_NvU32,
-        .offset               = NV_OFFSETOF(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00, sysmemPfnBitmap),
-        #if (defined(DEBUG) || defined(DEVELOP))
-        .name                 = "sysmemPfnBitmap"
+        .name                 = "data"
         #endif
     },
     {
@@ -2539,12 +7386,35 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v
     }
 };
 
-static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 = {
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_update_gsp_trace_v01_00 = {
     #if (defined(DEBUG) || defined(DEVELOP))
-    .name = "rpc_set_sysmem_dirty_page_tracking_buffer",
+    .name = "rpc_update_gsp_trace",
     #endif
-    .header_length = sizeof(rpc_set_sysmem_dirty_page_tracking_buffer_v20_00),
-    .fdesc = vmiopd_fdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
+    .header_length = sizeof(rpc_update_gsp_trace_v01_00),
+    .fdesc = vmiopd_fdesc_t_rpc_update_gsp_trace_v01_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_gsp_post_nocat_record_v01_00
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_gsp_post_nocat_record_v01_00[] = {
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_gsp_post_nocat_record_v01_00, data),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "data"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_post_nocat_record_v01_00 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_gsp_post_nocat_record",
+    #endif
+    .header_length = sizeof(rpc_gsp_post_nocat_record_v01_00),
+    .fdesc = vmiopd_fdesc_t_rpc_gsp_post_nocat_record_v01_00
 };
 #endif
 
@@ -2683,6 +7553,140 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_gsp_lockdown_notice_v17_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_query_ecc_status_v24_06
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_gpu_query_ecc_status_v24_06[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_query_ecc_status_v24_06, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_query_ecc_status_v24_06, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_GPU_QUERY_ECC_STATUS_DEPRECATED_RPC_PARAMS_v24_06,
+        .offset               = NV_OFFSETOF(rpc_ctrl_gpu_query_ecc_status_v24_06, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_gpu_query_ecc_status_v24_06 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_gpu_query_ecc_status",
+    #endif
+    .header_length = sizeof(rpc_ctrl_gpu_query_ecc_status_v24_06),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_gpu_query_ecc_status_v24_06
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_get_mode_mmu_debug_v25_04
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_dbg_get_mode_mmu_debug_v25_04[] = {
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_get_mode_mmu_debug_v25_04, hClient),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hClient"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvHandle,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_get_mode_mmu_debug_v25_04, hObject),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "hObject"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS_v25_04,
+        .offset               = NV_OFFSETOF(rpc_ctrl_dbg_get_mode_mmu_debug_v25_04, ctrlParams),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "ctrlParams"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_dbg_get_mode_mmu_debug_v25_04 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_dbg_get_mode_mmu_debug",
+    #endif
+    .header_length = sizeof(rpc_ctrl_dbg_get_mode_mmu_debug_v25_04),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_dbg_get_mode_mmu_debug_v25_04
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09[] = {
+    {
+        .vtype                = vtype_NvU8,
+        .offset               = NV_OFFSETOF(rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09, bwMode),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "bwMode"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_cmd_internal_gpu_start_fabric_probe",
+    #endif
+    .header_length = sizeof(rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_nvlink_get_inband_received_data_v25_0C
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_nvlink_get_inband_received_data_v25_0C[] = {
+    {
+        .vtype                = vtype_NvU16,
+        .offset               = NV_OFFSETOF(rpc_ctrl_nvlink_get_inband_received_data_v25_0C, message_type),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "message_type"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvBool,
+        .offset               = NV_OFFSETOF(rpc_ctrl_nvlink_get_inband_received_data_v25_0C, more),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "more"
+        #endif
+    },
+    {
+        .vtype                = vtype_NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS_v25_0C,
+        .offset               = NV_OFFSETOF(rpc_ctrl_nvlink_get_inband_received_data_v25_0C, payload),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "payload"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_nvlink_get_inband_received_data_v25_0C = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_nvlink_get_inband_received_data",
+    #endif
+    .header_length = sizeof(rpc_ctrl_nvlink_get_inband_received_data_v25_0C),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_nvlink_get_inband_received_data_v25_0C
+};
+#endif
+
 #endif
 
 #ifdef RPC_DEBUG_PRINT_FUNCTIONS
@@ -2704,6 +7708,20 @@ vmiopd_mdesc_t *rpcdebugSetGuestSystemInfo_v03_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_set_guest_system_info_ext_v15_02
+vmiopd_mdesc_t *rpcdebugSetGuestSystemInfoExt_v15_02(void)
+{
+    return &vmiopd_mdesc_t_rpc_set_guest_system_info_ext_v15_02;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_alloc_root_v07_00
+vmiopd_mdesc_t *rpcdebugAllocRoot_v07_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_alloc_root_v07_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_alloc_memory_v13_01
 vmiopd_mdesc_t *rpcdebugAllocMemory_v13_01(void)
 {
@@ -2711,10 +7729,31 @@ vmiopd_mdesc_t *rpcdebugAllocMemory_v13_01(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_alloc_channel_dma_v1F_04
+vmiopd_mdesc_t *rpcdebugAllocChannelDma_v1F_04(void)
+{
+    return &vmiopd_mdesc_t_rpc_alloc_channel_dma_v1F_04;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_alloc_object_v25_08
+vmiopd_mdesc_t *rpcdebugAllocObject_v25_08(void)
+{
+    return &vmiopd_mdesc_t_rpc_alloc_object_v25_08;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_free_v03_00
 vmiopd_mdesc_t *rpcdebugFree_v03_00(void)
 {
     return &vmiopd_mdesc_t_rpc_free_v03_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_log_v03_00
+vmiopd_mdesc_t *rpcdebugLog_v03_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_log_v03_00;
 }
 #endif
 
@@ -2732,6 +7771,13 @@ vmiopd_mdesc_t *rpcdebugUnmapMemoryDma_v03_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_alloc_subdevice_v08_01
+vmiopd_mdesc_t *rpcdebugAllocSubdevice_v08_01(void)
+{
+    return &vmiopd_mdesc_t_rpc_alloc_subdevice_v08_01;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_dup_object_v03_00
 vmiopd_mdesc_t *rpcdebugDupObject_v03_00(void)
 {
@@ -2746,10 +7792,101 @@ vmiopd_mdesc_t *rpcdebugIdleChannels_v03_00(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_unloading_guest_driver_v03_00
-vmiopd_mdesc_t *rpcdebugUnloadingGuestDriver_v03_00(void)
+#ifndef SKIP_PRINT_rpc_alloc_event_v03_00
+vmiopd_mdesc_t *rpcdebugAllocEvent_v03_00(void)
 {
-    return &vmiopd_mdesc_t_rpc_unloading_guest_driver_v03_00;
+    return &vmiopd_mdesc_t_rpc_alloc_event_v03_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_0F
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_0F(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_0F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_16
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_16(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_16;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_10
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_10(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_10;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_15
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_15(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_15;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_0D
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_0D(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_0D;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_17
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_17(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_17;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_18
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_18(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_18;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_14
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_14(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_14;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_alloc_share_device_v03_00
+vmiopd_mdesc_t *rpcdebugAllocShareDevice_v03_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_alloc_share_device_v03_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_engine_utilization_v1F_0E
+vmiopd_mdesc_t *rpcdebugGetEngineUtilization_v1F_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_get_engine_utilization_v1F_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_perf_get_level_info_v03_00
+vmiopd_mdesc_t *rpcdebugPerfGetLevelInfo_v03_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_perf_get_level_info_v03_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_set_surface_properties_v07_07
+vmiopd_mdesc_t *rpcdebugSetSurfaceProperties_v07_07(void)
+{
+    return &vmiopd_mdesc_t_rpc_set_surface_properties_v07_07;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_cleanup_surface_v03_00
+vmiopd_mdesc_t *rpcdebugCleanupSurface_v03_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_cleanup_surface_v03_00;
 }
 #endif
 
@@ -2760,10 +7897,31 @@ vmiopd_mdesc_t *rpcdebugUnloadingGuestDriver_v1F_07(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_switch_to_vga_v03_00
+vmiopd_mdesc_t *rpcdebugSwitchToVga_v03_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_switch_to_vga_v03_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_gpu_exec_reg_ops_v12_01
 vmiopd_mdesc_t *rpcdebugGpuExecRegOps_v12_01(void)
 {
     return &vmiopd_mdesc_t_rpc_gpu_exec_reg_ops_v12_01;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_static_data_v25_0E
+vmiopd_mdesc_t *rpcdebugGetStaticData_v25_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_get_static_data_v25_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_consolidated_gr_static_info_v1B_04
+vmiopd_mdesc_t *rpcdebugGetConsolidatedGrStaticInfo_v1B_04(void)
+{
+    return &vmiopd_mdesc_t_rpc_get_consolidated_gr_static_info_v1B_04;
 }
 #endif
 
@@ -2774,24 +7932,10 @@ vmiopd_mdesc_t *rpcdebugSetPageDirectory_v1E_05(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_set_page_directory_v03_00
-vmiopd_mdesc_t *rpcdebugSetPageDirectory_v03_00(void)
-{
-    return &vmiopd_mdesc_t_rpc_set_page_directory_v03_00;
-}
-#endif
-
 #ifndef SKIP_PRINT_rpc_unset_page_directory_v1E_05
 vmiopd_mdesc_t *rpcdebugUnsetPageDirectory_v1E_05(void)
 {
     return &vmiopd_mdesc_t_rpc_unset_page_directory_v1E_05;
-}
-#endif
-
-#ifndef SKIP_PRINT_rpc_unset_page_directory_v03_00
-vmiopd_mdesc_t *rpcdebugUnsetPageDirectory_v03_00(void)
-{
-    return &vmiopd_mdesc_t_rpc_unset_page_directory_v03_00;
 }
 #endif
 
@@ -2809,6 +7953,13 @@ vmiopd_mdesc_t *rpcdebugUpdateBarPde_v15_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_get_encoder_capacity_v07_00
+vmiopd_mdesc_t *rpcdebugGetEncoderCapacity_v07_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_get_encoder_capacity_v07_00;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_vgpu_pf_reg_read32_v15_00
 vmiopd_mdesc_t *rpcdebugVgpuPfRegRead32_v15_00(void)
 {
@@ -2816,10 +7967,465 @@ vmiopd_mdesc_t *rpcdebugVgpuPfRegRead32_v15_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_nvenc_sw_session_update_info_v1A_09
+vmiopd_mdesc_t *rpcdebugCtrlNvencSwSessionUpdateInfo_v1A_09(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_nvenc_sw_session_update_info_v1A_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_reset_channel_v1A_09
+vmiopd_mdesc_t *rpcdebugCtrlResetChannel_v1A_09(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_reset_channel_v1A_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_reset_isolated_channel_v1A_09
+vmiopd_mdesc_t *rpcdebugCtrlResetIsolatedChannel_v1A_09(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_reset_isolated_channel_v1A_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09
+vmiopd_mdesc_t *rpcdebugCtrlGpuHandleVfPriFault_v1A_09(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_perf_boost_v1A_09
+vmiopd_mdesc_t *rpcdebugCtrlPerfBoost_v1A_09(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_perf_boost_v1A_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_zbc_clear_table_v1A_09
+vmiopd_mdesc_t *rpcdebugCtrlGetZbcClearTable_v1A_09(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_zbc_clear_table_v1A_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_zbc_color_clear_v1A_09
+vmiopd_mdesc_t *rpcdebugCtrlSetZbcColorClear_v1A_09(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_set_zbc_color_clear_v1A_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_zbc_depth_clear_v1A_09
+vmiopd_mdesc_t *rpcdebugCtrlSetZbcDepthClear_v1A_09(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_set_zbc_depth_clear_v1A_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpfifo_schedule_v1A_0A
+vmiopd_mdesc_t *rpcdebugCtrlGpfifoSchedule_v1A_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpfifo_schedule_v1A_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_timeslice_v1A_0A
+vmiopd_mdesc_t *rpcdebugCtrlSetTimeslice_v1A_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_set_timeslice_v1A_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fifo_disable_channels_v1A_0A
+vmiopd_mdesc_t *rpcdebugCtrlFifoDisableChannels_v1A_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_fifo_disable_channels_v1A_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_preempt_v1A_0A
+vmiopd_mdesc_t *rpcdebugCtrlPreempt_v1A_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_preempt_v1A_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_tsg_interleave_level_v1A_0A
+vmiopd_mdesc_t *rpcdebugCtrlSetTsgInterleaveLevel_v1A_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_set_tsg_interleave_level_v1A_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_channel_interleave_level_v1A_0A
+vmiopd_mdesc_t *rpcdebugCtrlSetChannelInterleaveLevel_v1A_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_set_channel_interleave_level_v1A_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlGrCtxswPreemptionBind_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlGrSetCtxswPreemptionMode_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlGrCtxswZcullBind_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_initialize_ctx_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlGpuInitializeCtx_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpu_initialize_ctx_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04
+vmiopd_mdesc_t *rpcdebugCtrlVaspaceCopyServerReservedPdes_v1E_04(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_mc_service_interrupts_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlMcServiceInterrupts_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_mc_service_interrupts_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_p2p_caps_v2_v1F_0D
+vmiopd_mdesc_t *rpcdebugCtrlGetP2pCapsV2_v1F_0D(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_p2p_caps_v2_v1F_0D;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_ctrl_subdevice_get_p2p_caps_v21_02
 vmiopd_mdesc_t *rpcdebugCtrlSubdeviceGetP2pCaps_v21_02(void)
 {
     return &vmiopd_mdesc_t_rpc_ctrl_subdevice_get_p2p_caps_v21_02;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C
+vmiopd_mdesc_t *rpcdebugCtrlDbgClearAllSmErrorStates_v1A_0C(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_read_all_sm_error_states_v21_06
+vmiopd_mdesc_t *rpcdebugCtrlDbgReadAllSmErrorStates_v21_06(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_read_all_sm_error_states_v21_06;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_exception_mask_v1A_0C
+vmiopd_mdesc_t *rpcdebugCtrlDbgSetExceptionMask_v1A_0C(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_set_exception_mask_v1A_0C;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_promote_ctx_v1A_20
+vmiopd_mdesc_t *rpcdebugCtrlGpuPromoteCtx_v1A_20(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpu_promote_ctx_v1A_20;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_suspend_context_v1A_10
+vmiopd_mdesc_t *rpcdebugCtrlDbgSuspendContext_v1A_10(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_suspend_context_v1A_10;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_resume_context_v1A_10
+vmiopd_mdesc_t *rpcdebugCtrlDbgResumeContext_v1A_10(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_resume_context_v1A_10;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_exec_reg_ops_v1A_10
+vmiopd_mdesc_t *rpcdebugCtrlDbgExecRegOps_v1A_10(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_exec_reg_ops_v1A_10;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10
+vmiopd_mdesc_t *rpcdebugCtrlDbgSetModeMmuDebug_v1A_10(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_read_single_sm_error_state_v21_06
+vmiopd_mdesc_t *rpcdebugCtrlDbgReadSingleSmErrorState_v21_06(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_read_single_sm_error_state_v21_06;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10
+vmiopd_mdesc_t *rpcdebugCtrlDbgClearSingleSmErrorState_v1A_10(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10
+vmiopd_mdesc_t *rpcdebugCtrlDbgSetModeErrbarDebug_v1A_10(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10
+vmiopd_mdesc_t *rpcdebugCtrlDbgSetNextStopTriggerType_v1A_10(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dma_set_default_vaspace_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlDmaSetDefaultVaspace_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dma_set_default_vaspace_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_ce_pce_mask_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlGetCePceMask_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_ce_pce_mask_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_zbc_clear_table_entry_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlGetZbcClearTableEntry_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_zbc_clear_table_entry_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlGetNvlinkPeerIdMask_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_nvlink_status_v23_04
+vmiopd_mdesc_t *rpcdebugCtrlGetNvlinkStatus_v23_04(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_nvlink_status_v23_04;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_p2p_caps_v1F_0D
+vmiopd_mdesc_t *rpcdebugCtrlGetP2pCaps_v1F_0D(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_p2p_caps_v1F_0D;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_p2p_caps_matrix_v1A_0E
+vmiopd_mdesc_t *rpcdebugCtrlGetP2pCapsMatrix_v1A_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_p2p_caps_matrix_v1A_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_reserve_pm_area_smpc_v1A_0F
+vmiopd_mdesc_t *rpcdebugCtrlReservePmAreaSmpc_v1A_0F(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_reserve_pm_area_smpc_v1A_0F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_reserve_hwpm_legacy_v1A_0F
+vmiopd_mdesc_t *rpcdebugCtrlReserveHwpmLegacy_v1A_0F(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_reserve_hwpm_legacy_v1A_0F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_b0cc_exec_reg_ops_v1A_0F
+vmiopd_mdesc_t *rpcdebugCtrlB0ccExecRegOps_v1A_0F(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_b0cc_exec_reg_ops_v1A_0F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_bind_pm_resources_v1A_0F
+vmiopd_mdesc_t *rpcdebugCtrlBindPmResources_v1A_0F(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_bind_pm_resources_v1A_0F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_alloc_pma_stream_v1A_14
+vmiopd_mdesc_t *rpcdebugCtrlAllocPmaStream_v1A_14(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_alloc_pma_stream_v1A_14;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_pma_stream_update_get_put_v1A_14
+vmiopd_mdesc_t *rpcdebugCtrlPmaStreamUpdateGetPut_v1A_14(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_pma_stream_update_get_put_v1A_14;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fb_get_info_v2_v25_0A
+vmiopd_mdesc_t *rpcdebugCtrlFbGetInfoV2_v25_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_fb_get_info_v2_v25_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fifo_set_channel_properties_v1A_16
+vmiopd_mdesc_t *rpcdebugCtrlFifoSetChannelProperties_v1A_16(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_fifo_set_channel_properties_v1A_16;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_evict_ctx_v1A_1C
+vmiopd_mdesc_t *rpcdebugCtrlGpuEvictCtx_v1A_1C(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpu_evict_ctx_v1A_1C;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fb_get_fs_info_v24_00
+vmiopd_mdesc_t *rpcdebugCtrlFbGetFsInfo_v24_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_fb_get_fs_info_v24_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D
+vmiopd_mdesc_t *rpcdebugCtrlGrmgrGetGrFsInfo_v1A_1D(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_stop_channel_v1A_1E
+vmiopd_mdesc_t *rpcdebugCtrlStopChannel_v1A_1E(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_stop_channel_v1A_1E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_pc_sampling_mode_v1A_1F
+vmiopd_mdesc_t *rpcdebugCtrlGrPcSamplingMode_v1A_1F(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gr_pc_sampling_mode_v1A_1F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_perf_rated_tdp_get_status_v1A_1F
+vmiopd_mdesc_t *rpcdebugCtrlPerfRatedTdpGetStatus_v1A_1F(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_perf_rated_tdp_get_status_v1A_1F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_perf_rated_tdp_set_control_v1A_1F
+vmiopd_mdesc_t *rpcdebugCtrlPerfRatedTdpSetControl_v1A_1F(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_perf_rated_tdp_set_control_v1A_1F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_timer_set_gr_tick_freq_v1A_1F
+vmiopd_mdesc_t *rpcdebugCtrlTimerSetGrTickFreq_v1A_1F(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_timer_set_gr_tick_freq_v1A_1F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_free_pma_stream_v1A_1F
+vmiopd_mdesc_t *rpcdebugCtrlFreePmaStream_v1A_1F(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_free_pma_stream_v1A_1F;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23
+vmiopd_mdesc_t *rpcdebugCtrlFifoSetupVfZombieSubctxPdb_v1A_23(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_set_single_sm_single_step_v1C_02
+vmiopd_mdesc_t *rpcdebugCtrlDbgSetSingleSmSingleStep_v1C_02(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_set_single_sm_single_step_v1C_02;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_get_tpc_partition_mode_v1C_04
+vmiopd_mdesc_t *rpcdebugCtrlGrGetTpcPartitionMode_v1C_04(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gr_get_tpc_partition_mode_v1C_04;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gr_set_tpc_partition_mode_v1C_04
+vmiopd_mdesc_t *rpcdebugCtrlGrSetTpcPartitionMode_v1C_04(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gr_set_tpc_partition_mode_v1C_04;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_internal_promote_fault_method_buffers_v1E_07
+vmiopd_mdesc_t *rpcdebugCtrlInternalPromoteFaultMethodBuffers_v1E_07(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_internal_promote_fault_method_buffers_v1E_07;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05
+vmiopd_mdesc_t *rpcdebugCtrlInternalMemsysSetZbcReferenced_v1F_05(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fabric_memory_describe_v1E_0C
+vmiopd_mdesc_t *rpcdebugCtrlFabricMemoryDescribe_v1E_0C(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_fabric_memory_describe_v1E_0C;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fabric_mem_stats_v1E_0C
+vmiopd_mdesc_t *rpcdebugCtrlFabricMemStats_v1E_0C(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_fabric_mem_stats_v1E_0C;
 }
 #endif
 
@@ -2837,31 +8443,136 @@ vmiopd_mdesc_t *rpcdebugCtrlBusUnsetP2pMapping_v21_03(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_rmfs_init_v15_00
-vmiopd_mdesc_t *rpcdebugRmfsInit_v15_00(void)
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_get_info_v2_v25_11
+vmiopd_mdesc_t *rpcdebugCtrlGpuGetInfoV2_v25_11(void)
 {
-    return &vmiopd_mdesc_t_rpc_rmfs_init_v15_00;
+    return &vmiopd_mdesc_t_rpc_ctrl_gpu_get_info_v2_v25_11;
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_rmfs_close_queue_v15_00
-vmiopd_mdesc_t *rpcdebugRmfsCloseQueue_v15_00(void)
+#ifndef SKIP_PRINT_rpc_ctrl_internal_quiesce_pma_channel_v1C_08
+vmiopd_mdesc_t *rpcdebugCtrlInternalQuiescePmaChannel_v1C_08(void)
 {
-    return &vmiopd_mdesc_t_rpc_rmfs_close_queue_v15_00;
+    return &vmiopd_mdesc_t_rpc_ctrl_internal_quiesce_pma_channel_v1C_08;
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_rmfs_cleanup_v15_00
-vmiopd_mdesc_t *rpcdebugRmfsCleanup_v15_00(void)
+#ifndef SKIP_PRINT_rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C
+vmiopd_mdesc_t *rpcdebugCtrlInternalSriovPromotePmaStream_v1C_0C(void)
 {
-    return &vmiopd_mdesc_t_rpc_rmfs_cleanup_v15_00;
+    return &vmiopd_mdesc_t_rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C;
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_rmfs_test_v15_00
-vmiopd_mdesc_t *rpcdebugRmfsTest_v15_00(void)
+#ifndef SKIP_PRINT_rpc_ctrl_exec_partitions_create_v24_05
+vmiopd_mdesc_t *rpcdebugCtrlExecPartitionsCreate_v24_05(void)
 {
-    return &vmiopd_mdesc_t_rpc_rmfs_test_v15_00;
+    return &vmiopd_mdesc_t_rpc_ctrl_exec_partitions_create_v24_05;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_fla_setup_instance_mem_block_v21_05
+vmiopd_mdesc_t *rpcdebugCtrlFlaSetupInstanceMemBlock_v21_05(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_fla_setup_instance_mem_block_v21_05;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_total_hs_credits_v21_08
+vmiopd_mdesc_t *rpcdebugCtrlGetTotalHsCredits_v21_08(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_total_hs_credits_v21_08;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_hs_credits_v21_08
+vmiopd_mdesc_t *rpcdebugCtrlGetHsCredits_v21_08(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_hs_credits_v21_08;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_hs_credits_v21_08
+vmiopd_mdesc_t *rpcdebugCtrlSetHsCredits_v21_08(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_set_hs_credits_v21_08;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_pm_area_pc_sampler_v21_0B
+vmiopd_mdesc_t *rpcdebugCtrlPmAreaPcSampler_v21_0B(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_pm_area_pc_sampler_v21_0B;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_exec_partitions_delete_v1F_0A
+vmiopd_mdesc_t *rpcdebugCtrlExecPartitionsDelete_v1F_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_exec_partitions_delete_v1F_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A
+vmiopd_mdesc_t *rpcdebugCtrlGpfifoGetWorkSubmitToken_v1F_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A
+vmiopd_mdesc_t *rpcdebugCtrlGpfifoSetWorkSubmitTokenNotifIndex_v1F_0A(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D
+vmiopd_mdesc_t *rpcdebugCtrlMasterGetVirtualFunctionErrorContIntrMask_v1F_0D(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_save_hibernation_data_v1E_0E
+vmiopd_mdesc_t *rpcdebugSaveHibernationData_v1E_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_save_hibernation_data_v1E_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_restore_hibernation_data_v1E_0E
+vmiopd_mdesc_t *rpcdebugRestoreHibernationData_v1E_0E(void)
+{
+    return &vmiopd_mdesc_t_rpc_restore_hibernation_data_v1E_0E;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_get_mmu_debug_mode_v1E_06
+vmiopd_mdesc_t *rpcdebugCtrlGetMmuDebugMode_v1E_06(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_get_mmu_debug_mode_v1E_06;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_disable_channels_v1E_0B
+vmiopd_mdesc_t *rpcdebugDisableChannels_v1E_0B(void)
+{
+    return &vmiopd_mdesc_t_rpc_disable_channels_v1E_0B;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_migratable_ops_v21_07
+vmiopd_mdesc_t *rpcdebugCtrlGpuMigratableOps_v21_07(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpu_migratable_ops_v21_07;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_invalidate_tlb_v23_03
+vmiopd_mdesc_t *rpcdebugInvalidateTlb_v23_03(void)
+{
+    return &vmiopd_mdesc_t_rpc_invalidate_tlb_v23_03;
 }
 #endif
 
@@ -2869,6 +8580,13 @@ vmiopd_mdesc_t *rpcdebugRmfsTest_v15_00(void)
 vmiopd_mdesc_t *rpcdebugEccNotifierWriteAck_v23_05(void)
 {
     return &vmiopd_mdesc_t_rpc_ecc_notifier_write_ack_v23_05;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_get_brand_caps_v25_12
+vmiopd_mdesc_t *rpcdebugGetBrandCaps_v25_12(void)
+{
+    return &vmiopd_mdesc_t_rpc_get_brand_caps_v25_12;
 }
 #endif
 
@@ -2949,10 +8667,10 @@ vmiopd_mdesc_t *rpcdebugDisplayModeset_v01_00(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_gpuacct_perfmon_util_samples_v17_00
-vmiopd_mdesc_t *rpcdebugGpuacctPerfmonUtilSamples_v17_00(void)
+#ifndef SKIP_PRINT_rpc_gpuacct_perfmon_util_samples_v1F_0E
+vmiopd_mdesc_t *rpcdebugGpuacctPerfmonUtilSamples_v1F_0E(void)
 {
-    return &vmiopd_mdesc_t_rpc_gpuacct_perfmon_util_samples_v17_00;
+    return &vmiopd_mdesc_t_rpc_gpuacct_perfmon_util_samples_v1F_0E;
 }
 #endif
 
@@ -3082,10 +8800,17 @@ vmiopd_mdesc_t *rpcdebugNvlinkIsGpuDegraded_v17_00(void)
 }
 #endif
 
-#ifndef SKIP_PRINT_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00
-vmiopd_mdesc_t *rpcdebugSetSysmemDirtyPageTrackingBuffer_v20_00(void)
+#ifndef SKIP_PRINT_rpc_update_gsp_trace_v01_00
+vmiopd_mdesc_t *rpcdebugUpdateGspTrace_v01_00(void)
 {
-    return &vmiopd_mdesc_t_rpc_set_sysmem_dirty_page_tracking_buffer_v20_00;
+    return &vmiopd_mdesc_t_rpc_update_gsp_trace_v01_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_gsp_post_nocat_record_v01_00
+vmiopd_mdesc_t *rpcdebugGspPostNocatRecord_v01_00(void)
+{
+    return &vmiopd_mdesc_t_rpc_gsp_post_nocat_record_v01_00;
 }
 #endif
 
@@ -3117,6 +8842,34 @@ vmiopd_mdesc_t *rpcdebugGspLockdownNotice_v17_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_ctrl_gpu_query_ecc_status_v24_06
+vmiopd_mdesc_t *rpcdebugCtrlGpuQueryEccStatus_v24_06(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_gpu_query_ecc_status_v24_06;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_dbg_get_mode_mmu_debug_v25_04
+vmiopd_mdesc_t *rpcdebugCtrlDbgGetModeMmuDebug_v25_04(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_dbg_get_mode_mmu_debug_v25_04;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09
+vmiopd_mdesc_t *rpcdebugCtrlCmdInternalGpuStartFabricProbe_v25_09(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_nvlink_get_inband_received_data_v25_0C
+vmiopd_mdesc_t *rpcdebugCtrlNvlinkGetInbandReceivedData_v25_0C(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_nvlink_get_inband_received_data_v25_0C;
+}
+#endif
+
 
 #endif
 
@@ -3125,44 +8878,247 @@ vmiopd_mdesc_t *rpcdebugGspLockdownNotice_v17_00(void)
 typedef union rpc_generic_union {
     rpc_set_guest_system_info_v03_00 set_guest_system_info_v03_00;
     rpc_set_guest_system_info_v set_guest_system_info_v;
+    rpc_set_guest_system_info_ext_v15_02 set_guest_system_info_ext_v15_02;
+    rpc_set_guest_system_info_ext_v set_guest_system_info_ext_v;
+    rpc_alloc_root_v07_00 alloc_root_v07_00;
+    rpc_alloc_root_v alloc_root_v;
     rpc_alloc_memory_v13_01 alloc_memory_v13_01;
     rpc_alloc_memory_v alloc_memory_v;
+    rpc_alloc_channel_dma_v1F_04 alloc_channel_dma_v1F_04;
+    rpc_alloc_channel_dma_v alloc_channel_dma_v;
+    rpc_alloc_object_v25_08 alloc_object_v25_08;
+    rpc_alloc_object_v alloc_object_v;
     rpc_free_v03_00 free_v03_00;
     rpc_free_v free_v;
+    rpc_log_v03_00 log_v03_00;
+    rpc_log_v log_v;
     rpc_map_memory_dma_v03_00 map_memory_dma_v03_00;
     rpc_map_memory_dma_v map_memory_dma_v;
     rpc_unmap_memory_dma_v03_00 unmap_memory_dma_v03_00;
     rpc_unmap_memory_dma_v unmap_memory_dma_v;
+    rpc_alloc_subdevice_v08_01 alloc_subdevice_v08_01;
+    rpc_alloc_subdevice_v alloc_subdevice_v;
     rpc_dup_object_v03_00 dup_object_v03_00;
     rpc_dup_object_v dup_object_v;
     rpc_idle_channels_v03_00 idle_channels_v03_00;
     rpc_idle_channels_v idle_channels_v;
+    rpc_alloc_event_v03_00 alloc_event_v03_00;
+    rpc_alloc_event_v alloc_event_v;
+    rpc_rm_api_control_v25_0F rm_api_control_v25_0F;
+    rpc_rm_api_control_v25_16 rm_api_control_v25_16;
+    rpc_rm_api_control_v25_10 rm_api_control_v25_10;
+    rpc_rm_api_control_v25_15 rm_api_control_v25_15;
+    rpc_rm_api_control_v25_0D rm_api_control_v25_0D;
+    rpc_rm_api_control_v25_17 rm_api_control_v25_17;
+    rpc_rm_api_control_v25_18 rm_api_control_v25_18;
+    rpc_rm_api_control_v25_14 rm_api_control_v25_14;
+    rpc_rm_api_control_v rm_api_control_v;
+    rpc_alloc_share_device_v03_00 alloc_share_device_v03_00;
+    rpc_alloc_share_device_v alloc_share_device_v;
+    rpc_get_engine_utilization_v1F_0E get_engine_utilization_v1F_0E;
+    rpc_get_engine_utilization_v get_engine_utilization_v;
+    rpc_perf_get_level_info_v03_00 perf_get_level_info_v03_00;
+    rpc_perf_get_level_info_v perf_get_level_info_v;
+    rpc_set_surface_properties_v07_07 set_surface_properties_v07_07;
+    rpc_set_surface_properties_v set_surface_properties_v;
+    rpc_cleanup_surface_v03_00 cleanup_surface_v03_00;
+    rpc_cleanup_surface_v cleanup_surface_v;
     rpc_unloading_guest_driver_v1F_07 unloading_guest_driver_v1F_07;
     rpc_unloading_guest_driver_v unloading_guest_driver_v;
     rpc_gpu_exec_reg_ops_v12_01 gpu_exec_reg_ops_v12_01;
     rpc_gpu_exec_reg_ops_v gpu_exec_reg_ops_v;
+    rpc_get_static_data_v25_0E get_static_data_v25_0E;
+    rpc_get_static_data_v get_static_data_v;
+    rpc_get_consolidated_gr_static_info_v1B_04 get_consolidated_gr_static_info_v1B_04;
+    rpc_get_consolidated_gr_static_info_v get_consolidated_gr_static_info_v;
     rpc_set_page_directory_v1E_05 set_page_directory_v1E_05;
-    rpc_set_page_directory_v03_00 set_page_directory_v03_00;
     rpc_set_page_directory_v set_page_directory_v;
     rpc_unset_page_directory_v1E_05 unset_page_directory_v1E_05;
-    rpc_unset_page_directory_v03_00 unset_page_directory_v03_00;
     rpc_unset_page_directory_v unset_page_directory_v;
     rpc_get_gsp_static_info_v14_00 get_gsp_static_info_v14_00;
     rpc_get_gsp_static_info_v get_gsp_static_info_v;
     rpc_update_bar_pde_v15_00 update_bar_pde_v15_00;
     rpc_update_bar_pde_v update_bar_pde_v;
+    rpc_get_encoder_capacity_v07_00 get_encoder_capacity_v07_00;
+    rpc_get_encoder_capacity_v get_encoder_capacity_v;
     rpc_vgpu_pf_reg_read32_v15_00 vgpu_pf_reg_read32_v15_00;
     rpc_vgpu_pf_reg_read32_v vgpu_pf_reg_read32_v;
+    rpc_ctrl_nvenc_sw_session_update_info_v1A_09 ctrl_nvenc_sw_session_update_info_v1A_09;
+    rpc_ctrl_nvenc_sw_session_update_info_v ctrl_nvenc_sw_session_update_info_v;
+    rpc_ctrl_reset_channel_v1A_09 ctrl_reset_channel_v1A_09;
+    rpc_ctrl_reset_channel_v ctrl_reset_channel_v;
+    rpc_ctrl_reset_isolated_channel_v1A_09 ctrl_reset_isolated_channel_v1A_09;
+    rpc_ctrl_reset_isolated_channel_v ctrl_reset_isolated_channel_v;
+    rpc_ctrl_gpu_handle_vf_pri_fault_v1A_09 ctrl_gpu_handle_vf_pri_fault_v1A_09;
+    rpc_ctrl_gpu_handle_vf_pri_fault_v ctrl_gpu_handle_vf_pri_fault_v;
+    rpc_ctrl_perf_boost_v1A_09 ctrl_perf_boost_v1A_09;
+    rpc_ctrl_perf_boost_v ctrl_perf_boost_v;
+    rpc_ctrl_get_zbc_clear_table_v1A_09 ctrl_get_zbc_clear_table_v1A_09;
+    rpc_ctrl_get_zbc_clear_table_v ctrl_get_zbc_clear_table_v;
+    rpc_ctrl_set_zbc_color_clear_v1A_09 ctrl_set_zbc_color_clear_v1A_09;
+    rpc_ctrl_set_zbc_color_clear_v ctrl_set_zbc_color_clear_v;
+    rpc_ctrl_set_zbc_depth_clear_v1A_09 ctrl_set_zbc_depth_clear_v1A_09;
+    rpc_ctrl_set_zbc_depth_clear_v ctrl_set_zbc_depth_clear_v;
+    rpc_ctrl_gpfifo_schedule_v1A_0A ctrl_gpfifo_schedule_v1A_0A;
+    rpc_ctrl_gpfifo_schedule_v ctrl_gpfifo_schedule_v;
+    rpc_ctrl_set_timeslice_v1A_0A ctrl_set_timeslice_v1A_0A;
+    rpc_ctrl_set_timeslice_v ctrl_set_timeslice_v;
+    rpc_ctrl_fifo_disable_channels_v1A_0A ctrl_fifo_disable_channels_v1A_0A;
+    rpc_ctrl_fifo_disable_channels_v ctrl_fifo_disable_channels_v;
+    rpc_ctrl_preempt_v1A_0A ctrl_preempt_v1A_0A;
+    rpc_ctrl_preempt_v ctrl_preempt_v;
+    rpc_ctrl_set_tsg_interleave_level_v1A_0A ctrl_set_tsg_interleave_level_v1A_0A;
+    rpc_ctrl_set_tsg_interleave_level_v ctrl_set_tsg_interleave_level_v;
+    rpc_ctrl_set_channel_interleave_level_v1A_0A ctrl_set_channel_interleave_level_v1A_0A;
+    rpc_ctrl_set_channel_interleave_level_v ctrl_set_channel_interleave_level_v;
+    rpc_ctrl_gr_ctxsw_preemption_bind_v1A_0E ctrl_gr_ctxsw_preemption_bind_v1A_0E;
+    rpc_ctrl_gr_ctxsw_preemption_bind_v ctrl_gr_ctxsw_preemption_bind_v;
+    rpc_ctrl_gr_set_ctxsw_preemption_mode_v1A_0E ctrl_gr_set_ctxsw_preemption_mode_v1A_0E;
+    rpc_ctrl_gr_set_ctxsw_preemption_mode_v ctrl_gr_set_ctxsw_preemption_mode_v;
+    rpc_ctrl_gr_ctxsw_zcull_bind_v1A_0E ctrl_gr_ctxsw_zcull_bind_v1A_0E;
+    rpc_ctrl_gr_ctxsw_zcull_bind_v ctrl_gr_ctxsw_zcull_bind_v;
+    rpc_ctrl_gpu_initialize_ctx_v1A_0E ctrl_gpu_initialize_ctx_v1A_0E;
+    rpc_ctrl_gpu_initialize_ctx_v ctrl_gpu_initialize_ctx_v;
+    rpc_ctrl_vaspace_copy_server_reserved_pdes_v1E_04 ctrl_vaspace_copy_server_reserved_pdes_v1E_04;
+    rpc_ctrl_vaspace_copy_server_reserved_pdes_v ctrl_vaspace_copy_server_reserved_pdes_v;
+    rpc_ctrl_mc_service_interrupts_v1A_0E ctrl_mc_service_interrupts_v1A_0E;
+    rpc_ctrl_mc_service_interrupts_v ctrl_mc_service_interrupts_v;
+    rpc_ctrl_get_p2p_caps_v2_v1F_0D ctrl_get_p2p_caps_v2_v1F_0D;
+    rpc_ctrl_get_p2p_caps_v2_v ctrl_get_p2p_caps_v2_v;
     rpc_ctrl_subdevice_get_p2p_caps_v21_02 ctrl_subdevice_get_p2p_caps_v21_02;
     rpc_ctrl_subdevice_get_p2p_caps_v ctrl_subdevice_get_p2p_caps_v;
+    rpc_ctrl_dbg_clear_all_sm_error_states_v1A_0C ctrl_dbg_clear_all_sm_error_states_v1A_0C;
+    rpc_ctrl_dbg_clear_all_sm_error_states_v ctrl_dbg_clear_all_sm_error_states_v;
+    rpc_ctrl_dbg_read_all_sm_error_states_v21_06 ctrl_dbg_read_all_sm_error_states_v21_06;
+    rpc_ctrl_dbg_read_all_sm_error_states_v ctrl_dbg_read_all_sm_error_states_v;
+    rpc_ctrl_dbg_set_exception_mask_v1A_0C ctrl_dbg_set_exception_mask_v1A_0C;
+    rpc_ctrl_dbg_set_exception_mask_v ctrl_dbg_set_exception_mask_v;
+    rpc_ctrl_gpu_promote_ctx_v1A_20 ctrl_gpu_promote_ctx_v1A_20;
+    rpc_ctrl_gpu_promote_ctx_v ctrl_gpu_promote_ctx_v;
+    rpc_ctrl_dbg_suspend_context_v1A_10 ctrl_dbg_suspend_context_v1A_10;
+    rpc_ctrl_dbg_suspend_context_v ctrl_dbg_suspend_context_v;
+    rpc_ctrl_dbg_resume_context_v1A_10 ctrl_dbg_resume_context_v1A_10;
+    rpc_ctrl_dbg_resume_context_v ctrl_dbg_resume_context_v;
+    rpc_ctrl_dbg_exec_reg_ops_v1A_10 ctrl_dbg_exec_reg_ops_v1A_10;
+    rpc_ctrl_dbg_exec_reg_ops_v ctrl_dbg_exec_reg_ops_v;
+    rpc_ctrl_dbg_set_mode_mmu_debug_v1A_10 ctrl_dbg_set_mode_mmu_debug_v1A_10;
+    rpc_ctrl_dbg_set_mode_mmu_debug_v ctrl_dbg_set_mode_mmu_debug_v;
+    rpc_ctrl_dbg_read_single_sm_error_state_v21_06 ctrl_dbg_read_single_sm_error_state_v21_06;
+    rpc_ctrl_dbg_read_single_sm_error_state_v ctrl_dbg_read_single_sm_error_state_v;
+    rpc_ctrl_dbg_clear_single_sm_error_state_v1A_10 ctrl_dbg_clear_single_sm_error_state_v1A_10;
+    rpc_ctrl_dbg_clear_single_sm_error_state_v ctrl_dbg_clear_single_sm_error_state_v;
+    rpc_ctrl_dbg_set_mode_errbar_debug_v1A_10 ctrl_dbg_set_mode_errbar_debug_v1A_10;
+    rpc_ctrl_dbg_set_mode_errbar_debug_v ctrl_dbg_set_mode_errbar_debug_v;
+    rpc_ctrl_dbg_set_next_stop_trigger_type_v1A_10 ctrl_dbg_set_next_stop_trigger_type_v1A_10;
+    rpc_ctrl_dbg_set_next_stop_trigger_type_v ctrl_dbg_set_next_stop_trigger_type_v;
+    rpc_ctrl_dma_set_default_vaspace_v1A_0E ctrl_dma_set_default_vaspace_v1A_0E;
+    rpc_ctrl_dma_set_default_vaspace_v ctrl_dma_set_default_vaspace_v;
+    rpc_ctrl_get_ce_pce_mask_v1A_0E ctrl_get_ce_pce_mask_v1A_0E;
+    rpc_ctrl_get_ce_pce_mask_v ctrl_get_ce_pce_mask_v;
+    rpc_ctrl_get_zbc_clear_table_entry_v1A_0E ctrl_get_zbc_clear_table_entry_v1A_0E;
+    rpc_ctrl_get_zbc_clear_table_entry_v ctrl_get_zbc_clear_table_entry_v;
+    rpc_ctrl_get_nvlink_peer_id_mask_v1A_0E ctrl_get_nvlink_peer_id_mask_v1A_0E;
+    rpc_ctrl_get_nvlink_peer_id_mask_v ctrl_get_nvlink_peer_id_mask_v;
+    rpc_ctrl_get_nvlink_status_v23_04 ctrl_get_nvlink_status_v23_04;
+    rpc_ctrl_get_nvlink_status_v ctrl_get_nvlink_status_v;
+    rpc_ctrl_get_p2p_caps_v1F_0D ctrl_get_p2p_caps_v1F_0D;
+    rpc_ctrl_get_p2p_caps_v ctrl_get_p2p_caps_v;
+    rpc_ctrl_get_p2p_caps_matrix_v1A_0E ctrl_get_p2p_caps_matrix_v1A_0E;
+    rpc_ctrl_get_p2p_caps_matrix_v ctrl_get_p2p_caps_matrix_v;
+    rpc_ctrl_reserve_pm_area_smpc_v1A_0F ctrl_reserve_pm_area_smpc_v1A_0F;
+    rpc_ctrl_reserve_pm_area_smpc_v ctrl_reserve_pm_area_smpc_v;
+    rpc_ctrl_reserve_hwpm_legacy_v1A_0F ctrl_reserve_hwpm_legacy_v1A_0F;
+    rpc_ctrl_reserve_hwpm_legacy_v ctrl_reserve_hwpm_legacy_v;
+    rpc_ctrl_b0cc_exec_reg_ops_v1A_0F ctrl_b0cc_exec_reg_ops_v1A_0F;
+    rpc_ctrl_b0cc_exec_reg_ops_v ctrl_b0cc_exec_reg_ops_v;
+    rpc_ctrl_bind_pm_resources_v1A_0F ctrl_bind_pm_resources_v1A_0F;
+    rpc_ctrl_bind_pm_resources_v ctrl_bind_pm_resources_v;
+    rpc_ctrl_alloc_pma_stream_v1A_14 ctrl_alloc_pma_stream_v1A_14;
+    rpc_ctrl_alloc_pma_stream_v ctrl_alloc_pma_stream_v;
+    rpc_ctrl_pma_stream_update_get_put_v1A_14 ctrl_pma_stream_update_get_put_v1A_14;
+    rpc_ctrl_pma_stream_update_get_put_v ctrl_pma_stream_update_get_put_v;
+    rpc_ctrl_fb_get_info_v2_v25_0A ctrl_fb_get_info_v2_v25_0A;
+    rpc_ctrl_fb_get_info_v2_v ctrl_fb_get_info_v2_v;
+    rpc_ctrl_fifo_set_channel_properties_v1A_16 ctrl_fifo_set_channel_properties_v1A_16;
+    rpc_ctrl_fifo_set_channel_properties_v ctrl_fifo_set_channel_properties_v;
+    rpc_ctrl_gpu_evict_ctx_v1A_1C ctrl_gpu_evict_ctx_v1A_1C;
+    rpc_ctrl_gpu_evict_ctx_v ctrl_gpu_evict_ctx_v;
+    rpc_ctrl_fb_get_fs_info_v24_00 ctrl_fb_get_fs_info_v24_00;
+    rpc_ctrl_fb_get_fs_info_v ctrl_fb_get_fs_info_v;
+    rpc_ctrl_grmgr_get_gr_fs_info_v1A_1D ctrl_grmgr_get_gr_fs_info_v1A_1D;
+    rpc_ctrl_grmgr_get_gr_fs_info_v ctrl_grmgr_get_gr_fs_info_v;
+    rpc_ctrl_stop_channel_v1A_1E ctrl_stop_channel_v1A_1E;
+    rpc_ctrl_stop_channel_v ctrl_stop_channel_v;
+    rpc_ctrl_gr_pc_sampling_mode_v1A_1F ctrl_gr_pc_sampling_mode_v1A_1F;
+    rpc_ctrl_gr_pc_sampling_mode_v ctrl_gr_pc_sampling_mode_v;
+    rpc_ctrl_perf_rated_tdp_get_status_v1A_1F ctrl_perf_rated_tdp_get_status_v1A_1F;
+    rpc_ctrl_perf_rated_tdp_get_status_v ctrl_perf_rated_tdp_get_status_v;
+    rpc_ctrl_perf_rated_tdp_set_control_v1A_1F ctrl_perf_rated_tdp_set_control_v1A_1F;
+    rpc_ctrl_perf_rated_tdp_set_control_v ctrl_perf_rated_tdp_set_control_v;
+    rpc_ctrl_timer_set_gr_tick_freq_v1A_1F ctrl_timer_set_gr_tick_freq_v1A_1F;
+    rpc_ctrl_timer_set_gr_tick_freq_v ctrl_timer_set_gr_tick_freq_v;
+    rpc_ctrl_free_pma_stream_v1A_1F ctrl_free_pma_stream_v1A_1F;
+    rpc_ctrl_free_pma_stream_v ctrl_free_pma_stream_v;
+    rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23 ctrl_fifo_setup_vf_zombie_subctx_pdb_v1A_23;
+    rpc_ctrl_fifo_setup_vf_zombie_subctx_pdb_v ctrl_fifo_setup_vf_zombie_subctx_pdb_v;
+    rpc_ctrl_dbg_set_single_sm_single_step_v1C_02 ctrl_dbg_set_single_sm_single_step_v1C_02;
+    rpc_ctrl_dbg_set_single_sm_single_step_v ctrl_dbg_set_single_sm_single_step_v;
+    rpc_ctrl_gr_get_tpc_partition_mode_v1C_04 ctrl_gr_get_tpc_partition_mode_v1C_04;
+    rpc_ctrl_gr_get_tpc_partition_mode_v ctrl_gr_get_tpc_partition_mode_v;
+    rpc_ctrl_gr_set_tpc_partition_mode_v1C_04 ctrl_gr_set_tpc_partition_mode_v1C_04;
+    rpc_ctrl_gr_set_tpc_partition_mode_v ctrl_gr_set_tpc_partition_mode_v;
+    rpc_ctrl_internal_promote_fault_method_buffers_v1E_07 ctrl_internal_promote_fault_method_buffers_v1E_07;
+    rpc_ctrl_internal_promote_fault_method_buffers_v ctrl_internal_promote_fault_method_buffers_v;
+    rpc_ctrl_internal_memsys_set_zbc_referenced_v1F_05 ctrl_internal_memsys_set_zbc_referenced_v1F_05;
+    rpc_ctrl_internal_memsys_set_zbc_referenced_v ctrl_internal_memsys_set_zbc_referenced_v;
+    rpc_ctrl_fabric_memory_describe_v1E_0C ctrl_fabric_memory_describe_v1E_0C;
+    rpc_ctrl_fabric_memory_describe_v ctrl_fabric_memory_describe_v;
+    rpc_ctrl_fabric_mem_stats_v1E_0C ctrl_fabric_mem_stats_v1E_0C;
+    rpc_ctrl_fabric_mem_stats_v ctrl_fabric_mem_stats_v;
     rpc_ctrl_bus_set_p2p_mapping_v21_03 ctrl_bus_set_p2p_mapping_v21_03;
     rpc_ctrl_bus_set_p2p_mapping_v ctrl_bus_set_p2p_mapping_v;
     rpc_ctrl_bus_unset_p2p_mapping_v21_03 ctrl_bus_unset_p2p_mapping_v21_03;
     rpc_ctrl_bus_unset_p2p_mapping_v ctrl_bus_unset_p2p_mapping_v;
-    rpc_rmfs_init_v15_00 rmfs_init_v15_00;
-    rpc_rmfs_init_v rmfs_init_v;
-    rpc_rmfs_test_v15_00 rmfs_test_v15_00;
-    rpc_rmfs_test_v rmfs_test_v;
+    rpc_ctrl_gpu_get_info_v2_v25_11 ctrl_gpu_get_info_v2_v25_11;
+    rpc_ctrl_gpu_get_info_v2_v ctrl_gpu_get_info_v2_v;
+    rpc_ctrl_internal_quiesce_pma_channel_v1C_08 ctrl_internal_quiesce_pma_channel_v1C_08;
+    rpc_ctrl_internal_quiesce_pma_channel_v ctrl_internal_quiesce_pma_channel_v;
+    rpc_ctrl_internal_sriov_promote_pma_stream_v1C_0C ctrl_internal_sriov_promote_pma_stream_v1C_0C;
+    rpc_ctrl_internal_sriov_promote_pma_stream_v ctrl_internal_sriov_promote_pma_stream_v;
+    rpc_ctrl_exec_partitions_create_v24_05 ctrl_exec_partitions_create_v24_05;
+    rpc_ctrl_exec_partitions_create_v ctrl_exec_partitions_create_v;
+    rpc_ctrl_fla_setup_instance_mem_block_v21_05 ctrl_fla_setup_instance_mem_block_v21_05;
+    rpc_ctrl_fla_setup_instance_mem_block_v ctrl_fla_setup_instance_mem_block_v;
+    rpc_ctrl_get_total_hs_credits_v21_08 ctrl_get_total_hs_credits_v21_08;
+    rpc_ctrl_get_total_hs_credits_v ctrl_get_total_hs_credits_v;
+    rpc_ctrl_get_hs_credits_v21_08 ctrl_get_hs_credits_v21_08;
+    rpc_ctrl_get_hs_credits_v ctrl_get_hs_credits_v;
+    rpc_ctrl_set_hs_credits_v21_08 ctrl_set_hs_credits_v21_08;
+    rpc_ctrl_set_hs_credits_v ctrl_set_hs_credits_v;
+    rpc_ctrl_pm_area_pc_sampler_v21_0B ctrl_pm_area_pc_sampler_v21_0B;
+    rpc_ctrl_pm_area_pc_sampler_v ctrl_pm_area_pc_sampler_v;
+    rpc_ctrl_exec_partitions_delete_v1F_0A ctrl_exec_partitions_delete_v1F_0A;
+    rpc_ctrl_exec_partitions_delete_v ctrl_exec_partitions_delete_v;
+    rpc_ctrl_gpfifo_get_work_submit_token_v1F_0A ctrl_gpfifo_get_work_submit_token_v1F_0A;
+    rpc_ctrl_gpfifo_get_work_submit_token_v ctrl_gpfifo_get_work_submit_token_v;
+    rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A ctrl_gpfifo_set_work_submit_token_notif_index_v1F_0A;
+    rpc_ctrl_gpfifo_set_work_submit_token_notif_index_v ctrl_gpfifo_set_work_submit_token_notif_index_v;
+    rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D ctrl_master_get_virtual_function_error_cont_intr_mask_v1F_0D;
+    rpc_ctrl_master_get_virtual_function_error_cont_intr_mask_v ctrl_master_get_virtual_function_error_cont_intr_mask_v;
+    rpc_save_hibernation_data_v1E_0E save_hibernation_data_v1E_0E;
+    rpc_save_hibernation_data_v save_hibernation_data_v;
+    rpc_restore_hibernation_data_v1E_0E restore_hibernation_data_v1E_0E;
+    rpc_restore_hibernation_data_v restore_hibernation_data_v;
+    rpc_ctrl_get_mmu_debug_mode_v1E_06 ctrl_get_mmu_debug_mode_v1E_06;
+    rpc_ctrl_get_mmu_debug_mode_v ctrl_get_mmu_debug_mode_v;
+    rpc_disable_channels_v1E_0B disable_channels_v1E_0B;
+    rpc_disable_channels_v disable_channels_v;
+    rpc_ctrl_gpu_migratable_ops_v21_07 ctrl_gpu_migratable_ops_v21_07;
+    rpc_ctrl_gpu_migratable_ops_v ctrl_gpu_migratable_ops_v;
+    rpc_invalidate_tlb_v23_03 invalidate_tlb_v23_03;
+    rpc_invalidate_tlb_v invalidate_tlb_v;
+    rpc_get_brand_caps_v25_12 get_brand_caps_v25_12;
+    rpc_get_brand_caps_v get_brand_caps_v;
     rpc_gsp_set_system_info_v17_00 gsp_set_system_info_v17_00;
     rpc_gsp_set_system_info_v gsp_set_system_info_v;
     rpc_gsp_rm_alloc_v03_00 gsp_rm_alloc_v03_00;
@@ -3183,7 +9139,7 @@ typedef union rpc_generic_union {
     rpc_rg_line_intr_v rg_line_intr_v;
     rpc_display_modeset_v01_00 display_modeset_v01_00;
     rpc_display_modeset_v display_modeset_v;
-    rpc_gpuacct_perfmon_util_samples_v17_00 gpuacct_perfmon_util_samples_v17_00;
+    rpc_gpuacct_perfmon_util_samples_v1F_0E gpuacct_perfmon_util_samples_v1F_0E;
     rpc_gpuacct_perfmon_util_samples_v gpuacct_perfmon_util_samples_v;
     rpc_vgpu_gsp_plugin_triggered_v17_00 vgpu_gsp_plugin_triggered_v17_00;
     rpc_vgpu_gsp_plugin_triggered_v vgpu_gsp_plugin_triggered_v;
@@ -3221,8 +9177,10 @@ typedef union rpc_generic_union {
     rpc_nvlink_inband_received_data_4096_v nvlink_inband_received_data_4096_v;
     rpc_nvlink_is_gpu_degraded_v17_00 nvlink_is_gpu_degraded_v17_00;
     rpc_nvlink_is_gpu_degraded_v nvlink_is_gpu_degraded_v;
-    rpc_set_sysmem_dirty_page_tracking_buffer_v20_00 set_sysmem_dirty_page_tracking_buffer_v20_00;
-    rpc_set_sysmem_dirty_page_tracking_buffer_v set_sysmem_dirty_page_tracking_buffer_v;
+    rpc_update_gsp_trace_v01_00 update_gsp_trace_v01_00;
+    rpc_update_gsp_trace_v update_gsp_trace_v;
+    rpc_gsp_post_nocat_record_v01_00 gsp_post_nocat_record_v01_00;
+    rpc_gsp_post_nocat_record_v gsp_post_nocat_record_v;
     rpc_extdev_intr_service_v17_00 extdev_intr_service_v17_00;
     rpc_extdev_intr_service_v extdev_intr_service_v;
     rpc_pfm_req_hndlr_state_sync_callback_v21_04 pfm_req_hndlr_state_sync_callback_v21_04;
@@ -3231,6 +9189,14 @@ typedef union rpc_generic_union {
     rpc_vgpu_gsp_mig_ci_config_v vgpu_gsp_mig_ci_config_v;
     rpc_gsp_lockdown_notice_v17_00 gsp_lockdown_notice_v17_00;
     rpc_gsp_lockdown_notice_v gsp_lockdown_notice_v;
+    rpc_ctrl_gpu_query_ecc_status_v24_06 ctrl_gpu_query_ecc_status_v24_06;
+    rpc_ctrl_gpu_query_ecc_status_v ctrl_gpu_query_ecc_status_v;
+    rpc_ctrl_dbg_get_mode_mmu_debug_v25_04 ctrl_dbg_get_mode_mmu_debug_v25_04;
+    rpc_ctrl_dbg_get_mode_mmu_debug_v ctrl_dbg_get_mode_mmu_debug_v;
+    rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v25_09 ctrl_cmd_internal_gpu_start_fabric_probe_v25_09;
+    rpc_ctrl_cmd_internal_gpu_start_fabric_probe_v ctrl_cmd_internal_gpu_start_fabric_probe_v;
+    rpc_ctrl_nvlink_get_inband_received_data_v25_0C ctrl_nvlink_get_inband_received_data_v25_0C;
+    rpc_ctrl_nvlink_get_inband_received_data_v ctrl_nvlink_get_inband_received_data_v;
 } rpc_generic_union;
 
 #endif
@@ -3239,6 +9205,24 @@ typedef union rpc_generic_union {
 #define SDK_UNION_MEMBER_NAME_FUNCTIONS_CMD
 #include "g_sdk-structures.h"
 #undef SDK_UNION_MEMBER_NAME_FUNCTIONS_CMD
+static NV_STATUS get_union_member_index_rpc_alloc_object_v25_08_params(void *msg, NvS32 bytes_remaining, uint32_t* index)
+{
+    rpc_alloc_object_v25_08 *param = msg;
+
+    if ((NvS32)(NV_OFFSETOF(rpc_alloc_object_v25_08, hClass) + sizeof(param->hClass)) > bytes_remaining)
+        return NV_ERR_BUFFER_TOO_SMALL;
+    *index = _get_union_member_index_alloc_object_params_v25_08(param->hClass);
+    return NV_OK;
+}
+static NV_STATUS get_union_member_index_rpc_get_engine_utilization_v1F_0E_params(void *msg, NvS32 bytes_remaining, uint32_t* index)
+{
+    rpc_get_engine_utilization_v1F_0E *param = msg;
+
+    if ((NvS32)(NV_OFFSETOF(rpc_get_engine_utilization_v1F_0E, cmd) + sizeof(param->cmd)) > bytes_remaining)
+        return NV_ERR_BUFFER_TOO_SMALL;
+    *index = _get_union_member_index_vgpuGetEngineUtilization_data_v1F_0E(param->cmd);
+    return NV_OK;
+}
 
 #endif
 
@@ -3262,6 +9246,6 @@ static NV_STATUS get_array_length_rpc_idle_channels_v03_00_channel_list(void *ms
 #endif
 
 #ifdef AUTOGENERATE_RPC_MIN_SUPPORTED_VERSION_INFORMATION
-#define NV_VGPU_GRIDSW_VERSION_MIN_SUPPORTED_INTERNAL_MAJOR 0x18
-#define NV_VGPU_GRIDSW_VERSION_MIN_SUPPORTED_INTERNAL_MINOR 0x00
+#define NV_VGPU_GRIDSW_VERSION_MIN_SUPPORTED_INTERNAL_MAJOR 0x25
+#define NV_VGPU_GRIDSW_VERSION_MIN_SUPPORTED_INTERNAL_MINOR 0x0E
 #endif

@@ -43,11 +43,16 @@ extern "C" {
 /*!
  * RM internal class representing XXX_FAULT_BUFFER
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_MMU_FAULT_BUFFER_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct MmuFaultBuffer {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -81,7 +86,6 @@ struct MmuFaultBuffer {
     NV_STATUS (*__faultbufInternalControlForward__)(struct MmuFaultBuffer *, NvU32, void *, NvU32);
     NV_STATUS (*__faultbufUnmapFrom__)(struct MmuFaultBuffer *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__faultbufControl_Epilogue__)(struct MmuFaultBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__faultbufControlLookup__)(struct MmuFaultBuffer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__faultbufGetInternalObjectHandle__)(struct MmuFaultBuffer *);
     NV_STATUS (*__faultbufControl__)(struct MmuFaultBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__faultbufGetMemInterMapParams__)(struct MmuFaultBuffer *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -90,6 +94,7 @@ struct MmuFaultBuffer {
     NV_STATUS (*__faultbufUnregisterEvent__)(struct MmuFaultBuffer *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__faultbufControlSerialization_Prologue__)(struct MmuFaultBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__faultbufCanCopy__)(struct MmuFaultBuffer *);
+    NvBool (*__faultbufIsPartialUnmapSupported__)(struct MmuFaultBuffer *);
     void (*__faultbufPreDestruct__)(struct MmuFaultBuffer *);
     NV_STATUS (*__faultbufIsDuplicate__)(struct MmuFaultBuffer *, NvHandle, NvBool *);
     void (*__faultbufControlSerialization_Epilogue__)(struct MmuFaultBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -147,7 +152,6 @@ NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer**, Dynamic*, NvU32, str
 #define faultbufInternalControlForward(pGpuResource, command, pParams, size) faultbufInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define faultbufUnmapFrom(pResource, pParams) faultbufUnmapFrom_DISPATCH(pResource, pParams)
 #define faultbufControl_Epilogue(pResource, pCallContext, pParams) faultbufControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define faultbufControlLookup(pResource, pParams, ppEntry) faultbufControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define faultbufGetInternalObjectHandle(pGpuResource) faultbufGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define faultbufControl(pGpuResource, pCallContext, pParams) faultbufControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define faultbufGetMemInterMapParams(pRmResource, pParams) faultbufGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -156,6 +160,7 @@ NV_STATUS __nvoc_objCreate_MmuFaultBuffer(MmuFaultBuffer**, Dynamic*, NvU32, str
 #define faultbufUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) faultbufUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define faultbufControlSerialization_Prologue(pResource, pCallContext, pParams) faultbufControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define faultbufCanCopy(pResource) faultbufCanCopy_DISPATCH(pResource)
+#define faultbufIsPartialUnmapSupported(pResource) faultbufIsPartialUnmapSupported_DISPATCH(pResource)
 #define faultbufPreDestruct(pResource) faultbufPreDestruct_DISPATCH(pResource)
 #define faultbufIsDuplicate(pResource, hMemory, pDuplicate) faultbufIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define faultbufControlSerialization_Epilogue(pResource, pCallContext, pParams) faultbufControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -264,10 +269,6 @@ static inline void faultbufControl_Epilogue_DISPATCH(struct MmuFaultBuffer *pRes
     pResource->__faultbufControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS faultbufControlLookup_DISPATCH(struct MmuFaultBuffer *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__faultbufControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle faultbufGetInternalObjectHandle_DISPATCH(struct MmuFaultBuffer *pGpuResource) {
     return pGpuResource->__faultbufGetInternalObjectHandle__(pGpuResource);
 }
@@ -298,6 +299,10 @@ static inline NV_STATUS faultbufControlSerialization_Prologue_DISPATCH(struct Mm
 
 static inline NvBool faultbufCanCopy_DISPATCH(struct MmuFaultBuffer *pResource) {
     return pResource->__faultbufCanCopy__(pResource);
+}
+
+static inline NvBool faultbufIsPartialUnmapSupported_DISPATCH(struct MmuFaultBuffer *pResource) {
+    return pResource->__faultbufIsPartialUnmapSupported__(pResource);
 }
 
 static inline void faultbufPreDestruct_DISPATCH(struct MmuFaultBuffer *pResource) {

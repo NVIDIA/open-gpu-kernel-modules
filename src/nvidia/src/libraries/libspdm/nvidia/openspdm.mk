@@ -31,7 +31,7 @@ NV_USE_LIBSPDM   := 0
 
 # Set some common path defines for readability.
 LIBSPDM_SOURCE_DIR := src/libraries/libspdm
-LIBSPDM_VERSION    := 2.3.1
+LIBSPDM_VERSION    := 3.1.1
 
 # List all files which depend on libspdm headers under LIBSPDM_SOURCES.
 
@@ -48,6 +48,7 @@ LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_debuglib.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_malloclib.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_rng.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_memlib.c
+LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/nvidia/nvspdm_rsa.c
 
 # libspdm source files
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_common_lib/libspdm_com_context_data.c
@@ -76,6 +77,13 @@ LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_request
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_get_version.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_handle_error_response.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_key_exchange.c
+LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_encap_certificate.c
+LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_encap_challenge_auth.c
+LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_encap_digests.c
+LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_encap_error.c
+LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_encap_key_update.c
+LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_encap_request.c
+LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_heartbeat.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_key_update.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_negotiate_algorithms.c
 LIBSPDM_SOURCES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/library/spdm_requester_lib/libspdm_req_send_receive.c
@@ -93,6 +101,7 @@ LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/include
 LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/include/hal
 LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/include
 LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub
+LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/$(LIBSPDM_VERSION)/os_stub/cryptlib_null
 LIBSPDM_INCLUDES += $(LIBSPDM_SOURCE_DIR)/nvidia
 
 # Override the default libspdm configuration with our own.

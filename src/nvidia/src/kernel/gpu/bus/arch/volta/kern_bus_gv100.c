@@ -26,6 +26,9 @@
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
+#include "gpu/fifo/kernel_fifo.h"
+#include "gpu/mmu/kern_gmmu.h"
+#include "gpu/uvm/uvm.h"
 #include "os/os.h"
 
 // @ref busMigrateBarMapping_GV100 to see how FB region is organized
@@ -385,4 +388,40 @@ kbusFlushSingle_GV100
     }
 
     return NV_OK;
+}
+
+NvU32
+kbusCalcCpuInvisibleBar2ApertureSize_GV100
+(
+    OBJGPU    *pGpu,
+    KernelBus *pKernelBus)
+{
+    NvU32       i;
+    NvU32       apertureSize = 0;
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+
+    // Return 0 from the guest in the paravirtualization case.
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
+        (IS_VIRTUAL(pGpu) && gpuIsWarBug200577889SriovHeavyEnabled(pGpu)) ||
+        pKernelGmmu == NULL)
+    {
+        return 0;
+    }
+
+    // Add size required for replayable and non-replayable MMU fault buffers.
+    for (i = 0; i < NUM_FAULT_BUFFERS; i++)
+    {
+        NvU32 faultBufferSize;
+
+        faultBufferSize = kgmmuSetAndGetDefaultFaultBufferSize_HAL(pGpu, pKernelGmmu, i, GPU_GFID_PF);
+        faultBufferSize = RM_ALIGN_UP(faultBufferSize, RM_PAGE_SIZE);
+        apertureSize += faultBufferSize;
+    }
+
+    // Add size required for fault method buffers. Each run queue has its own method buffer.
+    apertureSize += (kfifoCalcTotalSizeOfFaultMethodBuffers_HAL(pGpu, pKernelFifo, NV_FALSE));
+    apertureSize = RM_ALIGN_UP(apertureSize, RM_PAGE_SIZE);
+
+    return apertureSize;
 }

@@ -30,6 +30,7 @@
 #include "gpu/mem_mgr/mem_desc.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
+#include "platform/sli/sli.h"
 
 /*!
  * Performs initialization that is dependant on work done in gpuStateLoad() such

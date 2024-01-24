@@ -23,6 +23,7 @@
 
 #include "kernel/gpu/rc/kernel_rc.h"
 
+#include "kernel/core/locks.h"
 #include "kernel/core/system.h"
 #include "kernel/gpu/bif/kernel_bif.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
@@ -184,7 +185,7 @@ _krcInitRegistryOverrides
     {
         pKernelRc->watchdog.flags |= WATCHDOG_FLAGS_DISABLED;
     }
-    else if (gpuIsCCFeatureEnabled(pGpu) && !gpuIsCCDevToolsModeEnabled(pGpu))
+    else if (gpuIsCCFeatureEnabled(pGpu))
     {
         pKernelRc->watchdog.flags |= WATCHDOG_FLAGS_DISABLED;
     }
@@ -303,7 +304,10 @@ krcReportXid_IMPL
         // Get PID of channel creator if available, or get the current PID for
         // exception types that never have an associated channel
         //
-        if (pKernelChannel != NULL)
+        // Check for API lock since this can be called from parallel init
+        // path without API lock, and RES_GET_CLIENT requires API lock
+        //
+        if (rmapiLockIsOwner() && (pKernelChannel != NULL))
         {
             RsClient *pClient = RES_GET_CLIENT(pKernelChannel);
             RmClient *pRmClient = dynamicCast(pClient, RmClient);

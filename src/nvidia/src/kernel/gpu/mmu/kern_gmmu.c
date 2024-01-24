@@ -38,6 +38,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "vgpu/vgpu_events.h"
 #include "gpu/mem_mgr/mem_desc.h"
+#include "gpu/subdevice/subdevice.h"
 #include "os/os.h"
 #include "rmapi/rmapi.h"
 #include "gpu/gpu.h"
@@ -130,7 +131,7 @@ _kgmmuInitStaticInfo
     KernelGmmu *pKernelGmmu
 )
 {
-    NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pStaticInfo;
+    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV_STATUS status;
 
     //
@@ -144,20 +145,19 @@ _kgmmuInitStaticInfo
         NV_ASSERT_OK_OR_RETURN(kgmmuFmtFamiliesInit_HAL(pGpu, pKernelGmmu));
     }
 
-    pStaticInfo = portMemAllocNonPaged(sizeof(*pStaticInfo));
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pStaticInfo != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
-    portMemSet(pStaticInfo, 0, sizeof(*pStaticInfo));
+    pKernelGmmu->pStaticInfo = portMemAllocNonPaged(sizeof(*pKernelGmmu->pStaticInfo));
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelGmmu->pStaticInfo != NULL, NV_ERR_INSUFFICIENT_RESOURCES);
+    portMemSet(pKernelGmmu->pStaticInfo, 0, sizeof(*pKernelGmmu->pStaticInfo));
 
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-        kgmmuInitStaticInfo_HAL(pGpu, pKernelGmmu, pStaticInfo),
-        fail);
-
-    pKernelGmmu->pStaticInfo = pStaticInfo;
+        pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
+                                NV2080_CTRL_CMD_INTERNAL_GMMU_GET_STATIC_INFO,
+                                pKernelGmmu->pStaticInfo, sizeof(*pKernelGmmu->pStaticInfo)), fail);
 
 fail:
     if (status != NV_OK)
     {
-        portMemFree(pStaticInfo);
+        portMemFree(pKernelGmmu->pStaticInfo);
     }
 
     return status;
@@ -188,6 +188,18 @@ NV_STATUS kgmmuStateInitLocked_IMPL
     if (status != NV_OK)
     {
         return status;
+    }
+
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_ATS_SUPPORTED, pVSI->bAtsSupported);
+    }
+
+    // Setup Fault buffer if enabled
+    if (!pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED))
+    {
+        NV_ASSERT_OK_OR_RETURN(kgmmuFaultBufferInit_HAL(pGpu, pKernelGmmu));
     }
 
     return status;
@@ -326,6 +338,8 @@ NV_STATUS kgmmuStatePostLoad_IMPL
         return status;
     }
 
+    NV_ASSERT_OK_OR_RETURN(kgmmuInitCeMmuFaultIdRange_HAL(pGpu, pKernelGmmu));
+
     return status;
 }
 
@@ -400,6 +414,81 @@ kgmmuStateDestroy_IMPL(OBJGPU *pGpu, KernelGmmu *pKernelGmmu)
         memdescDestroy(pKernelGmmu->pWarPageDirectory0);
         pKernelGmmu->pWarPageDirectory0 = NULL;
     }
+
+    // Only if faultBuffer is enabled
+    if (!pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED))
+    {
+        (void)kgmmuFaultBufferDestroy_HAL(pGpu, pKernelGmmu);
+    }
+}
+
+NV_STATUS
+kgmmuStateLoad_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32       flags
+)
+{
+    NV_STATUS status = NV_OK;
+
+    // Only if faultBuffer is enabled
+    if (!pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED))
+    {
+        status = kgmmuFaultBufferLoad_HAL(pGpu, pKernelGmmu,
+                                          NON_REPLAYABLE_FAULT_BUFFER, GPU_GFID_PF);
+        NV_ASSERT_OK_OR_RETURN(status);
+
+        //
+        // Note1: We check both enablement of replayable fault buffer as well
+        // as PM codepath because replayable fault buffer is client controlled
+        // and it may be or may not be enabled at the time of S3 entry / exit.
+        // Also, the state of the replayable fault buffer needs to be
+        // disabled / enabled during S3 entry / exit since the client is
+        // unaware of its state being lost during S3 entry.
+        //
+        if ((pKernelGmmu->getProperty(pKernelGmmu,
+                        PDB_PROP_KGMMU_REPLAYABLE_FAULT_BUFFER_IN_USE)) &&
+                        (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH)))
+        {
+            status = kgmmuFaultBufferLoad_HAL(pGpu, pKernelGmmu,
+                                              REPLAYABLE_FAULT_BUFFER, GPU_GFID_PF);
+        }
+        return status;
+    }
+
+    return NV_OK;
+}
+
+NV_STATUS
+kgmmuStateUnload_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32       flags
+)
+{
+    NV_STATUS status = NV_OK;
+
+    // Only if faultBuffer is enabled
+    if (!pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED))
+    {
+        status = kgmmuFaultBufferUnload_HAL(pGpu, pKernelGmmu,
+                                            NON_REPLAYABLE_FAULT_BUFFER, GPU_GFID_PF);
+        NV_ASSERT_OK_OR_RETURN(status);
+
+        // See Note1:
+        if ((pKernelGmmu->getProperty(pKernelGmmu,
+                        PDB_PROP_KGMMU_REPLAYABLE_FAULT_BUFFER_IN_USE)) &&
+                        (pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_PM_CODEPATH)))
+        {
+            status = kgmmuFaultBufferUnload_HAL(pGpu, pKernelGmmu,
+                                                REPLAYABLE_FAULT_BUFFER, GPU_GFID_PF);
+        }
+        return status;
+    }
+
+    return NV_OK;
 }
 
 /*!
@@ -608,31 +697,6 @@ kgmmuGetStaticInfo_IMPL
     NV_ASSERT_OR_ELSE(pKernelGmmu != NULL, return NULL);
 
     return pKernelGmmu->pStaticInfo;
-}
-
-/*!
- * @brief Initializes static info data from the Physical side.
- *
- * @param      pGpu
- * @param      pKernelGmmu
- * @param[out] pStaticInfo pointer to the static info init on Physical driver.
- */
-NV_STATUS
-kgmmuInitStaticInfo_KERNEL
-(
-    OBJGPU *pGpu,
-    KernelGmmu *pKernelGmmu,
-    NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pStaticInfo
-)
-{
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV_STATUS status;
-
-    status = pRmApi->Control(pRmApi, pGpu->hInternalClient, pGpu->hInternalSubdevice,
-                                NV2080_CTRL_CMD_INTERNAL_GMMU_GET_STATIC_INFO,
-                                pStaticInfo, sizeof(*pStaticInfo));
-
-    return status;
 }
 
 /*!
@@ -1205,6 +1269,21 @@ kgmmuFaultBufferReplayableAllocate_IMPL
             return status;
         }
     }
+    else
+    {
+        status = kgmmuFaultBufferLoad_HAL(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER, GPU_GFID_PF);
+
+        if (status != NV_OK)
+        {
+            kgmmuFaultBufferFree(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER);
+            return status;
+        }
+
+        // for non-gsp builds, set the pdb property here.
+        pKernelGmmu->setProperty(pKernelGmmu,
+                                 PDB_PROP_KGMMU_REPLAYABLE_FAULT_BUFFER_IN_USE,
+                                 NV_TRUE);
+    }
 
     pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hFaultBufferClient = hClient;
     pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hFaultBufferObject = hObject;
@@ -1251,6 +1330,23 @@ kgmmuFaultBufferReplayableDestroy_IMPL
             NV_PRINTF(LEVEL_ERROR,
                       "Unregistering Replayable Fault buffer failed (status=0x%08x), proceeding...\n",
                       status);
+        }
+    }
+    else
+    {
+        status = kgmmuFaultBufferUnload_HAL(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER, GPU_GFID_PF);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Unloading Replayable Fault buffer failed (status=0x%08x), proceeding...\n",
+                      status);
+        }
+        else
+        {
+            // for non-gsp builds, reset the pdb property here.
+            pKernelGmmu->setProperty(pKernelGmmu,
+                                     PDB_PROP_KGMMU_REPLAYABLE_FAULT_BUFFER_IN_USE,
+                                     NV_FALSE);
         }
     }
 
@@ -1960,8 +2056,9 @@ kgmmuInstBlkInit_IMPL
     NvU32     dirBaseHiData;
     NvU32     dirBaseLoOffset;
     NvU32     dirBaseLoData;
-    NvU32     atsOffset;
-    NvU32     atsData;
+    NvU32     atsOffset = 0;
+    NvU32     atsData = 0;
+    NvU32     pasid;
     NvU32     magicValueOffset;
     NvU32     magicValueData;
     NV_STATUS status = NV_OK;
@@ -1977,16 +2074,25 @@ kgmmuInstBlkInit_IMPL
         pVAS, pInstBlkParams, subctxId,
         &dirBaseLoOffset, &dirBaseLoData, &dirBaseHiOffset, &dirBaseHiData));
 
+    //
+    // Enable ATS in instance block only when both ATS is enabled in the
+    // vaspace and a valid PASID is provisioned through
+    // NV0080_CTRL_CMD_DMA_SET_PAGE_DIRECTORY.
+    //
     if ((pVAS != NULL) && vaspaceIsAtsEnabled(pVAS))
     {
-        // Coherent link ATS parameters are only set on the new VMM path.
-        status = kgmmuInstBlkAtsGet_HAL(pKernelGmmu, pVAS, subctxId, &atsOffset, &atsData);
-        NV_ASSERT_OR_RETURN((status == NV_OK), status);
-    }
-    else
-    {
-        atsOffset = 0;
-        atsData = 0;
+        if ((status = vaspaceGetPasid(pVAS, &pasid)) == NV_OK)
+        {
+            // Coherent link ATS parameters are only set on the new VMM path.
+            status = kgmmuInstBlkAtsGet_HAL(pKernelGmmu, pVAS, subctxId,
+                                            &atsOffset, &atsData);
+            NV_ASSERT_OR_RETURN((status == NV_OK), status);
+        }
+        else
+        {
+            // Proceed with ATS disabled in instance block if PASID is not yet provisioned
+            NV_ASSERT_OR_RETURN((status == NV_ERR_NOT_READY), status);
+        }
     }
 
     status = kgmmuInstBlkMagicValueGet_HAL(pKernelGmmu, &magicValueOffset, &magicValueData);
@@ -2156,6 +2262,57 @@ kgmmuRegisterIntrService_IMPL
         NV_ASSERT(pRecords[engineIdx].pInterruptService == NULL);
         pRecords[engineIdx].pInterruptService = staticCast(pKernelGmmu, IntrService);
     }
+
+    if (!IS_GSP_CLIENT(pGpu))
+    {
+        engineIdx = MC_ENGINE_IDX_GMMU;
+        NV_ASSERT(pRecords[engineIdx].pInterruptService == NULL);
+        pRecords[engineIdx].pInterruptService = staticCast(pKernelGmmu, IntrService);
+
+        NV_ASSERT(pRecords[engineIdx].pNotificationService == NULL);
+        pRecords[engineIdx].bFifoWaiveNotify = NV_FALSE;
+        pRecords[engineIdx].pNotificationService = staticCast(pKernelGmmu, IntrService);
+
+        static NvU16 physicalEngineIdxList[] = {
+            MC_ENGINE_IDX_NON_REPLAYABLE_FAULT,
+            MC_ENGINE_IDX_NON_REPLAYABLE_FAULT_ERROR,
+            MC_ENGINE_IDX_INFO_FAULT
+        };
+
+        for (NvU32 tableIdx = 0; tableIdx < NV_ARRAY_ELEMENTS(physicalEngineIdxList); tableIdx++)
+        {
+            engineIdx = physicalEngineIdxList[tableIdx];
+            NV_ASSERT(pRecords[engineIdx].pInterruptService == NULL);
+            pRecords[engineIdx].pInterruptService = staticCast(pKernelGmmu, IntrService);
+        }
+    }
+}
+
+/**
+ * @brief Clears the stall interrupt leaf vector and return whether to call ServiceInterrupt.
+ * @details Normally there's no need to override this function as its default is used by almost all handlers,
+ *          but MC_ENGINE_IDX_NON_REPLAYABLE_FAULT is cleared in the top half.
+ *
+ * @returns NV_TRUE indicating that the interrupt should be handled.
+ */
+NvBool
+kgmmuClearInterrupt_IMPL
+(
+    OBJGPU                             *pGpu,
+    KernelGmmu                         *pKernelGmmu,
+    IntrServiceClearInterruptArguments *pParams)
+{
+    NV_ASSERT_OR_RETURN(pParams != NULL, 0);
+    if (pParams->engineIdx == MC_ENGINE_IDX_NON_REPLAYABLE_FAULT)
+    {
+        // Skip clearing the interrupt; just return success.
+        return NV_TRUE;
+    }
+    else
+    {
+        // Fallthrough to default handler, which will clear the interrupt.
+        return intrservClearInterrupt_IMPL(pGpu, staticCast(pKernelGmmu, IntrService), pParams);
+    }
 }
 
 /**
@@ -2178,6 +2335,50 @@ kgmmuServiceInterrupt_IMPL
 
     switch (pParams->engineIdx)
     {
+        case MC_ENGINE_IDX_GMMU:
+        {
+            return kgmmuService_HAL(pGpu, pKernelGmmu);
+        }
+        case MC_ENGINE_IDX_NON_REPLAYABLE_FAULT:
+        {
+
+            //
+            // This interrupt was already cleared in the top half and "serviced"
+            // in the top half since copy from HW fault buffer always happens
+            // in the top half. This servicing is merely copying from the SW
+            // fault buffer, so doesn't need interrupt clearing. Also, we will
+            // only copy from the SW fault buffer if the fatalFaultIntrPending
+            // cache tells us that there is something to copy. Else, we'll just
+            // return early and rely on another interrupt to fire that will
+            // eventually update this state. In the top half, we will
+            // unconditionally write GET back, which will force HW to send us a
+            // new pulse as long as GET != PUT and we'd be eventually guaranteed
+            // to copy something into the SW fault buffer.
+            //
+            if (portAtomicCompareAndSwapS32(&pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].fatalFaultIntrPending, 0, 1))
+            {
+                status = kgmmuServiceNonReplayableFault_HAL(pGpu, pKernelGmmu);
+                if (status != NV_OK)
+                {
+                    NV_ASSERT_OK_FAILED(
+                        "Failed to service non-replayable MMU fault error",
+                        status);
+                }
+            }
+
+            break;
+        }
+        case MC_ENGINE_IDX_NON_REPLAYABLE_FAULT_ERROR:
+        {
+            status = kgmmuReportFaultBufferOverflow_HAL(pGpu, pKernelGmmu);
+            if (status != NV_OK)
+            {
+                NV_ASSERT_OK_FAILED(
+                    "Failed to report non-replayable MMU fault buffer overflow error",
+                    status);
+            }
+            break;
+        }
         case MC_ENGINE_IDX_REPLAYABLE_FAULT:
         {
             NV_STATUS status = kgmmuServiceReplayableFault_HAL(pGpu, pKernelGmmu);
@@ -2214,6 +2415,15 @@ kgmmuServiceInterrupt_IMPL
         {
             NV_PRINTF(LEVEL_ERROR, "Unexpected replayable interrupt routed to RM. Verify UVM took ownership.\n");
             status = NV_ERR_INVALID_STATE;
+            break;
+        }
+        case MC_ENGINE_IDX_INFO_FAULT:
+        {
+            status = kgmmuServicePriFaults_HAL(pGpu, pKernelGmmu);
+            if (status != NV_OK)
+            {
+                NV_ASSERT_OK_FAILED("Failed to service PRI fault error", status);
+            }
             break;
         }
         default:
@@ -2473,10 +2683,6 @@ kgmmuGetShadowFaultBufferCslContext_IMPL
         return NULL;
     }
 
-    NV_ASSERT_OR_RETURN(
-        pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED),
-        NULL);
-
     switch (type)
     {
         case NON_REPLAYABLE_FAULT_BUFFER:
@@ -2488,4 +2694,466 @@ kgmmuGetShadowFaultBufferCslContext_IMPL
     }
 
     return NULL;
+}
+
+NV_STATUS
+kgmmuFaultBufferMap_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32       index,
+    NvU32       gfid
+)
+{
+    MEMORY_DESCRIPTOR      *pMemDesc;
+    struct HW_FAULT_BUFFER *pFaultBuffer;
+    MemoryManager          *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+
+    NvU64       vaddr;
+    NV_STATUS   status = NV_OK;
+
+    // Return early if fault buffer is disabled
+    if (pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED))
+        return NV_OK;
+
+    NV_ASSERT_OR_RETURN((index < NUM_FAULT_BUFFERS), NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(!IS_GSP_CLIENT(pGpu), NV_ERR_INVALID_STATE);
+
+    pFaultBuffer = &pKernelGmmu->mmuFaultBuffer[gfid].hwFaultBuffers[index];
+    pMemDesc = pFaultBuffer->pFaultBufferMemDesc;
+
+    memmgrSetMemDescPageSize_HAL(pGpu, pMemoryManager, pMemDesc, AT_GPU, RM_ATTR_PAGE_SIZE_4KB);
+
+    {
+        status = kbusMapCpuInvisibleBar2Aperture_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu), pMemDesc,
+                                                     &vaddr, pMemDesc->Size, 0, gfid);
+        if (status != NV_OK)
+        {
+            return status;
+        }
+
+        NV_ASSERT(pFaultBuffer->bar2FaultBufferAddr == 0);
+        pFaultBuffer->bar2FaultBufferAddr = vaddr;
+    }
+
+    if (IS_GFID_PF(gfid))
+    {
+        if (pMemDesc->_addressSpace == ADDR_FBMEM && !RMCFG_FEATURE_PLATFORM_GSP)
+        {
+            //
+            // For Mods and testing, buffer can be allocated in FB. In such cases map it on BAR2 as
+            // only RM will be the owner of this buffer. BAR1 mappings need code-refactoring as BAR1 vaSpace is
+            // allocated lazily
+            //
+            pFaultBuffer->kernelVaddr = NV_PTR_TO_NvP64(kbusMapRmAperture_HAL(pGpu, pMemDesc));
+            if (!pFaultBuffer->kernelVaddr)
+            {
+                NV_ASSERT(0);
+                return NV_ERR_INVALID_ADDRESS;
+            }
+        }
+        else
+        {
+            if (memdescGetContiguity(pMemDesc, AT_GPU))
+            {
+                status = memdescMap(pMemDesc, 0, pMemDesc->Size, NV_TRUE, NV_PROTECT_READ_WRITE,
+                                    &pFaultBuffer->kernelVaddr, &pFaultBuffer->hCpuFaultBuffer);
+                if (status != NV_OK)
+                {
+                    return status;
+                }
+            }
+            else
+            {
+                NvU32 i, j;
+                NvU32 numPages = NV_ROUNDUP(pMemDesc->Size, RM_PAGE_SIZE) / RM_PAGE_SIZE;
+                GMMU_FAULT_BUFFER_PAGE *pBufferPage;
+
+                pFaultBuffer->pBufferPages = portMemAllocNonPaged(numPages * sizeof(GMMU_FAULT_BUFFER_PAGE));
+                if (pFaultBuffer->pBufferPages == NULL)
+                {
+                    return NV_ERR_NO_MEMORY;
+                }
+
+                for (i = 0; i < numPages; i++)
+                {
+                    pBufferPage = &pFaultBuffer->pBufferPages[i];
+
+                    status = memdescMap(pMemDesc, i * RM_PAGE_SIZE, RM_PAGE_SIZE, 1, NV_PROTECT_READ_WRITE,
+                                        &pBufferPage->pAddress, &pBufferPage->pPriv);
+                    if (status != NV_OK)
+                    {
+                        break;
+                    }
+                }
+
+                if (status != NV_OK)
+                {
+                    for (j = 0; j < i; j++)
+                    {
+                        pBufferPage = &pFaultBuffer->pBufferPages[j];
+
+                        memdescUnmap(pMemDesc, NV_TRUE, osGetCurrentProcess(),
+                                     pBufferPage->pAddress, pBufferPage->pPriv);
+                    }
+
+                    portMemFree(pFaultBuffer->pBufferPages);
+
+                    return status;
+                }
+            }
+        }
+
+        if (memdescGetContiguity(pMemDesc, AT_GPU))
+        {
+            portMemSet(NvP64_VALUE(pFaultBuffer->kernelVaddr), 0, (NvLength)pMemDesc->Size);
+        }
+        else
+        {
+            NvU32 i;
+            for (i = 0; i * RM_PAGE_SIZE < pMemDesc->Size; i++)
+            {
+                GMMU_FAULT_BUFFER_PAGE *page = &pFaultBuffer->pBufferPages[i];
+                portMemSet(NvP64_VALUE(page->pAddress), 0, RM_PAGE_SIZE);
+            }
+        }
+    }
+
+    return status;
+}
+
+NV_STATUS
+kgmmuFaultBufferUnmap_IMPL
+(
+    OBJGPU               *pGpu,
+    KernelGmmu           *pKernelGmmu,
+    NvU32                 index,
+    NvU32                 gfid
+)
+{
+    struct HW_FAULT_BUFFER *pFaultBuffer;
+
+    NV_ASSERT_OR_RETURN((index < NUM_FAULT_BUFFERS), NV_ERR_INVALID_ARGUMENT);
+
+    // Return early if fault buffer is disabled
+    if (pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED))
+        return NV_OK;
+
+    pFaultBuffer = &pKernelGmmu->mmuFaultBuffer[gfid].hwFaultBuffers[index];
+
+    if (pFaultBuffer == NULL)
+    {
+        return NV_OK;
+    }
+
+    if (pFaultBuffer->pFaultBufferMemDesc != NULL)
+    {
+        if (IS_GFID_PF(gfid))
+        {
+            // kbusUnmapRmAperture cannot handle discontiguous allocations on GSP-RM
+            if (pFaultBuffer->pFaultBufferMemDesc->_addressSpace == ADDR_FBMEM &&
+                !RMCFG_FEATURE_PLATFORM_GSP)
+            {
+                kbusUnmapRmAperture_HAL(pGpu,
+                                        pFaultBuffer->pFaultBufferMemDesc,
+                                        (NvU8 **)&pFaultBuffer->kernelVaddr,
+                                        NV_TRUE);
+            }
+            else
+            {
+                if (memdescGetContiguity(pFaultBuffer->pFaultBufferMemDesc, AT_GPU))
+                {
+                    memdescUnmap(pFaultBuffer->pFaultBufferMemDesc, NV_TRUE, osGetCurrentProcess(),
+                                 pFaultBuffer->kernelVaddr, pFaultBuffer->hCpuFaultBuffer);
+                }
+                else
+                {
+                    if (pFaultBuffer->pBufferPages != NULL)
+                    {
+                        NvU32 i;
+                        NvU32 numPages = NV_ROUNDUP(pFaultBuffer->pFaultBufferMemDesc->Size, RM_PAGE_SIZE) / RM_PAGE_SIZE;
+
+                        for (i = 0; i < numPages; i++)
+                        {
+                            GMMU_FAULT_BUFFER_PAGE *pBufferPage;
+
+                            pBufferPage = &pFaultBuffer->pBufferPages[i];
+
+                            memdescUnmap(pFaultBuffer->pFaultBufferMemDesc, NV_TRUE, osGetCurrentProcess(),
+                                         pBufferPage->pAddress, pBufferPage->pPriv);
+                        }
+
+                        portMemFree(pFaultBuffer->pBufferPages);
+                    }
+                }
+            }
+        }
+
+        {
+            kbusUnmapCpuInvisibleBar2Aperture_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu),
+                pFaultBuffer->pFaultBufferMemDesc, pFaultBuffer->bar2FaultBufferAddr, gfid);
+        }
+    }
+
+    pFaultBuffer->pBufferPages = NULL;
+    pFaultBuffer->kernelVaddr = NvP64_NULL;
+    pFaultBuffer->bar2FaultBufferAddr = 0;
+    return NV_OK;
+}
+
+NV_STATUS
+kgmmuServiceVfPriFaults_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU32       faultType
+)
+{
+    NV_STATUS status = NV_OK;
+    NV2080_CTRL_CMD_GPU_HANDLE_VF_PRI_FAULT_PARAMS params;
+
+    NV_ASSERT_OR_RETURN(IS_VIRTUAL_WITH_SRIOV(pGpu), NV_ERR_INVALID_ARGUMENT);
+
+    if (faultType == NV2080_CTRL_CMD_GPU_HANDLE_VF_PRI_FAULT_TYPE_INVALID)
+        return NV_ERR_INVALID_PARAMETER;
+
+    portMemSet(&params, 0, sizeof(params));
+    params.faultType = faultType;
+
+    NV_RM_RPC_CONTROL(pGpu, pGpu->hDefaultClientShare, pGpu->hDefaultClientShareSubDevice,
+                      NV2080_CTRL_CMD_GPU_HANDLE_VF_PRI_FAULT, &params, sizeof(params), status);
+
+    return status;
+}
+
+NV_STATUS
+kgmmuFaultCancelTargeted_VF
+(
+    OBJGPU                 *pGpu,
+    KernelGmmu             *pKernelGmmu,
+    GMMU_FAULT_CANCEL_INFO *pCancelInfo
+)
+{
+    TLB_INVALIDATE_PARAMS params;
+
+    // Clear struct before use.
+    portMemSet(&params, 0, sizeof(TLB_INVALIDATE_PARAMS));
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &params.timeout, 0);
+
+    params.gfid = GPU_GFID_PF;
+
+    // Bug 2029506 fix will remove kgmmuFaultCancelIssueInvalidate call here
+    return kgmmuFaultCancelIssueInvalidate_HAL(pGpu, pKernelGmmu, pCancelInfo,
+                                               &params, NV_FALSE);
+}
+
+NvU32
+kgmmuGetFaultBufferReservedFbSpaceSize_IMPL
+(
+    OBJGPU                 *pGpu,
+    KernelGmmu             *pKernelGmmu
+)
+{
+    NvU32 reservedBytes = 0;
+    NvU32 faultBufferAddrSpace;
+    NvU32 faultBufferSize;
+    NvU32 i;
+    NV_STATUS status;
+
+    if (pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED))
+        return 0;
+
+    for (i = 0; i < NUM_FAULT_BUFFERS; i++)
+    {
+        status = kgmmuFaultBufferGetAddressSpace(pGpu, pKernelGmmu, i,
+                                                 &faultBufferAddrSpace, NULL);
+        NV_ASSERT(status == NV_OK);
+        if (status != NV_OK || faultBufferAddrSpace != ADDR_FBMEM)
+        {
+            continue;
+        }
+
+        faultBufferSize = kgmmuSetAndGetDefaultFaultBufferSize_HAL(pGpu, pKernelGmmu, i, GPU_GFID_PF);
+        reservedBytes += RM_PAGE_ALIGN_UP(faultBufferSize);
+    }
+
+    return reservedBytes;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGmmuGetStaticInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_GMMU_GET_STATIC_INFO_PARAMS *pParams
+)
+{
+    OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+    pParams->replayableFaultBufferSize = kgmmuSetAndGetDefaultFaultBufferSize_HAL(pGpu, pKernelGmmu,
+                                                                                      REPLAYABLE_FAULT_BUFFER,
+                                                                                      GPU_GFID_PF);
+    pParams->nonReplayableFaultBufferSize = kgmmuSetAndGetDefaultFaultBufferSize_HAL(pGpu, pKernelGmmu,
+                                                                                         NON_REPLAYABLE_FAULT_BUFFER,
+                                                                                         GPU_GFID_PF);
+
+    if (gpuIsCCFeatureEnabled(pGpu) && gpuIsGspOwnedFaultBuffersEnabled(pGpu))
+    {
+        NvU32 maxNumPacketsReplayable = pParams->replayableFaultBufferSize / sizeof(struct GMMU_FAULT_PACKET);
+        NvU32 maxNumPacketsNonReplayable = pParams->nonReplayableFaultBufferSize / sizeof(struct GMMU_FAULT_PACKET);
+
+        pParams->replayableShadowFaultBufferMetadataSize    = sizeof(struct GMMU_FAULT_PACKET_METADATA) * maxNumPacketsReplayable;
+        pParams->nonReplayableShadowFaultBufferMetadataSize = sizeof(struct GMMU_FAULT_PACKET_METADATA) * maxNumPacketsNonReplayable;
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_kgmmuFaultBufferDescribe
+(
+    OBJGPU               *pGpu,
+    KernelGmmu           *pKernelGmmu,
+    NvU32                 index,
+    NvU64                *pFaultBufferPages,
+    NvU32                 faultBufferSize
+)
+{
+    NV_STATUS status;
+    MEMORY_DESCRIPTOR *pMemDesc = NULL;
+    struct HW_FAULT_BUFFER *pFaultBuffer;
+    NvU32 faultBufferAddrSpace = ADDR_UNKNOWN;
+
+    NV_ASSERT_OR_RETURN((index < NUM_FAULT_BUFFERS), NV_ERR_INVALID_ARGUMENT);
+
+    status = kgmmuFaultBufferCreateMemDesc(pGpu, pKernelGmmu, index, faultBufferSize,
+                                           (MEMDESC_FLAGS_GUEST_ALLOCATED |
+                                            MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM),
+                                           &pMemDesc);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    pFaultBuffer = &pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hwFaultBuffers[index];
+
+    pFaultBuffer->faultBufferSize = faultBufferSize;
+    pFaultBuffer->pFaultBufferMemDesc = NULL;
+
+    {
+        NvBool bIsContiguous = memdescGetContiguity(pMemDesc, AT_GPU);
+
+        if (bIsContiguous)
+        {
+            status = kgmmuFaultBufferGetAddressSpace(pGpu, pKernelGmmu, index, &faultBufferAddrSpace, NULL);
+            if (status != NV_OK)
+            {
+                memdescDestroy(pMemDesc);
+                return status;
+            }
+
+            memdescDescribe(pMemDesc, faultBufferAddrSpace,
+                            pFaultBufferPages[0], faultBufferSize);
+        }
+        else
+        {
+            memdescFillPages(pMemDesc, 0, pFaultBufferPages,
+                             RM_PAGE_ALIGN_UP(faultBufferSize)/RM_PAGE_SIZE,
+                             RM_PAGE_SIZE);
+        }
+    }
+
+    pFaultBuffer->pFaultBufferMemDesc = pMemDesc;
+
+    return NV_OK;
+}
+
+NV_STATUS
+kgmmuFaultBufferReplayableSetup_IMPL
+(
+    OBJGPU               *pGpu,
+    KernelGmmu           *pKernelGmmu,
+    NvHandle              hClient,
+    NvHandle              hObject,
+    NvU32                 faultBufferSize,
+    NvU64                *pFaultBufferPages
+)
+{
+    NV_STATUS status;
+    struct HW_FAULT_BUFFER *pFaultBuffer;
+
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu) ||
+        pKernelGmmu->getProperty(pKernelGmmu, PDB_PROP_KGMMU_FAULT_BUFFER_DISABLED))
+    {
+        return NV_OK;
+    }
+
+    pFaultBuffer = &pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hwFaultBuffers[REPLAYABLE_FAULT_BUFFER];
+    if (pFaultBuffer->pFaultBufferMemDesc != NULL)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    status = _kgmmuFaultBufferDescribe(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER,
+                                       pFaultBufferPages, faultBufferSize);
+
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    status = kgmmuFaultBufferLoad_HAL(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER, GPU_GFID_PF);
+    if (status != NV_OK)
+    {
+        kgmmuFaultBufferUnregister(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER);
+        return status;
+    }
+
+    pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hFaultBufferClient = hClient;
+    pKernelGmmu->mmuFaultBuffer[GPU_GFID_PF].hFaultBufferObject = hObject;
+
+    pKernelGmmu->setProperty(pKernelGmmu,
+                             PDB_PROP_KGMMU_REPLAYABLE_FAULT_BUFFER_IN_USE,
+                             NV_TRUE);
+
+    return NV_OK;
+}
+
+NV_STATUS
+subdeviceCtrlCmdInternalGmmuRegisterFaultBuffer_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_GMMU_REGISTER_FAULT_BUFFER_PARAMS *pParams
+)
+{
+    OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+    NV_PRINTF(LEVEL_INFO, "GMMU_REGISTER_FAULT_BUFFER\n");
+    return kgmmuFaultBufferReplayableSetup(pGpu, pKernelGmmu,
+                                           pParams->hClient,
+                                           pParams->hObject,
+                                           pParams->faultBufferSize,
+                                           pParams->faultBufferPteArray);
+}
+
+NV_STATUS
+subdeviceCtrlCmdInternalGmmuUnregisterFaultBuffer_IMPL
+(
+    Subdevice *pSubdevice
+)
+{
+    OBJGPU     *pGpu        = GPU_RES_GET_GPU(pSubdevice);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+    NV_STATUS status;
+
+    NV_PRINTF(LEVEL_INFO, "GMMU_UNREGISTER_FAULT_BUFFER\n");
+    status = kgmmuFaultBufferReplayableDestroy(pGpu, pKernelGmmu);
+    if (status == NV_OK)
+    {
+        pKernelGmmu->setProperty(pKernelGmmu,
+                                 PDB_PROP_KGMMU_REPLAYABLE_FAULT_BUFFER_IN_USE,
+                                 NV_FALSE);
+    }
+    return status;
 }

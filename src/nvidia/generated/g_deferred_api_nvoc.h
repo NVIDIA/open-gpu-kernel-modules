@@ -57,11 +57,16 @@ typedef struct _def_deferred_api_info
 /*!
  * RM internal class representing NV50_DEFERRED_API_CLASS
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_DEFERRED_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct DeferredApiObject {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -92,7 +97,6 @@ struct DeferredApiObject {
     NV_STATUS (*__defapiInternalControlForward__)(struct DeferredApiObject *, NvU32, void *, NvU32);
     NV_STATUS (*__defapiUnmapFrom__)(struct DeferredApiObject *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__defapiControl_Epilogue__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__defapiControlLookup__)(struct DeferredApiObject *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__defapiGetInternalObjectHandle__)(struct DeferredApiObject *);
     NV_STATUS (*__defapiControl__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__defapiUnmap__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -102,6 +106,7 @@ struct DeferredApiObject {
     NV_STATUS (*__defapiUnregisterEvent__)(struct DeferredApiObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__defapiControlSerialization_Prologue__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__defapiCanCopy__)(struct DeferredApiObject *);
+    NvBool (*__defapiIsPartialUnmapSupported__)(struct DeferredApiObject *);
     void (*__defapiPreDestruct__)(struct DeferredApiObject *);
     NV_STATUS (*__defapiIsDuplicate__)(struct DeferredApiObject *, NvHandle, NvBool *);
     void (*__defapiControlSerialization_Epilogue__)(struct DeferredApiObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -159,7 +164,6 @@ NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject**, Dynamic*, NvU3
 #define defapiInternalControlForward(pGpuResource, command, pParams, size) defapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define defapiUnmapFrom(pResource, pParams) defapiUnmapFrom_DISPATCH(pResource, pParams)
 #define defapiControl_Epilogue(pResource, pCallContext, pParams) defapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define defapiControlLookup(pResource, pParams, ppEntry) defapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define defapiGetInternalObjectHandle(pGpuResource) defapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define defapiControl(pGpuResource, pCallContext, pParams) defapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define defapiUnmap(pGpuResource, pCallContext, pCpuMapping) defapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -169,6 +173,7 @@ NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject**, Dynamic*, NvU3
 #define defapiUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) defapiUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define defapiControlSerialization_Prologue(pResource, pCallContext, pParams) defapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define defapiCanCopy(pResource) defapiCanCopy_DISPATCH(pResource)
+#define defapiIsPartialUnmapSupported(pResource) defapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define defapiPreDestruct(pResource) defapiPreDestruct_DISPATCH(pResource)
 #define defapiIsDuplicate(pResource, hMemory, pDuplicate) defapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define defapiControlSerialization_Epilogue(pResource, pCallContext, pParams) defapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -258,10 +263,6 @@ static inline void defapiControl_Epilogue_DISPATCH(struct DeferredApiObject *pRe
     pResource->__defapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS defapiControlLookup_DISPATCH(struct DeferredApiObject *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__defapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle defapiGetInternalObjectHandle_DISPATCH(struct DeferredApiObject *pGpuResource) {
     return pGpuResource->__defapiGetInternalObjectHandle__(pGpuResource);
 }
@@ -296,6 +297,10 @@ static inline NV_STATUS defapiControlSerialization_Prologue_DISPATCH(struct Defe
 
 static inline NvBool defapiCanCopy_DISPATCH(struct DeferredApiObject *pResource) {
     return pResource->__defapiCanCopy__(pResource);
+}
+
+static inline NvBool defapiIsPartialUnmapSupported_DISPATCH(struct DeferredApiObject *pResource) {
+    return pResource->__defapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void defapiPreDestruct_DISPATCH(struct DeferredApiObject *pResource) {

@@ -24,7 +24,7 @@
 #define LIBOS_PRINTF_ARG_H_
 
 #include "nvtypes.h"
-#if !defined(NVRM) && !defined(PMU_RTOS) && !defined(NVSYM_STANDALONE)
+#if !defined(NVRM) && !defined(PMU_RTOS) && !defined(LIBOS_LOG_OFFLINE_DECODER)
 #include "libos-config.h"
 #endif
 

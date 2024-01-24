@@ -23,9 +23,6 @@
 
 #define NVOC_KERNEL_SM_DEBUGGER_SESSION_H_PRIVATE_ACCESS_ALLOWED
 
-// FIXME XXX
-#define NVOC_KERNEL_GRAPHICS_OBJECT_H_PRIVATE_ACCESS_ALLOWED
-
 #include "kernel/os/os.h"
 #include "kernel/core/locks.h"
 #include "kernel/gpu/gr/kernel_sm_debugger_session.h"

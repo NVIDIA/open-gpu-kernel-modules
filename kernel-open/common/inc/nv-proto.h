@@ -88,4 +88,7 @@ int           nv_linux_add_device_locked(nv_linux_state_t *);
 void          nv_linux_remove_device_locked(nv_linux_state_t *);
 NvBool        nv_acpi_power_resource_method_present(struct pci_dev *);
 
+int           nv_linux_init_open_q(nv_linux_state_t *);
+void          nv_linux_stop_open_q(nv_linux_state_t *);
+
 #endif /* _NV_PROTO_H_ */

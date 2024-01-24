@@ -98,7 +98,7 @@ memmgrGetMaxContextSize_GV100
     NvU64 size = memmgrGetMaxContextSize_GP100(pGpu, pMemoryManager);
 
     // In Volta, the GR context buffer size increased by about 847 KB (doubled from Pascal)
-    if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM)
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS)
     {
         //
         // We are increasing the reserved mem size by 10 MB.

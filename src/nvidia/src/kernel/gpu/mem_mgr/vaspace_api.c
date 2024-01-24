@@ -41,7 +41,8 @@
 #include "vgpu/rpc.h"
 
 /* ------------------ static and helper functions prototypes------------------*/
-static NvU32 translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *translatedFlags);
+static NvU32 translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *translatedFlags,
+                                               NvBool bKernelClient, NvU32 gfid);
 static NvU32 translatePageSizeToVASpaceFlags(NV_VASPACE_ALLOCATION_PARAMETERS *pNvVASpaceAllocParams);
 static NV_STATUS _vaspaceapiManagePageLevelsForSplitVaSpace(OBJGPU *pGpu, Device *pDevice, NvU32 gpuMask, NvU32 flags, VASPACEAPI_MANAGE_PAGE_LEVELS_ACTION action);
 
@@ -80,6 +81,7 @@ vaspaceapiConstruct_IMPL
     KernelMIGManager                 *pKernelMIGManager     = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     NvU64                             originalVaBase;
     NvU64                             originalVaSize;
+    NvU32                             gfid                  = 0;
 
     if (RS_IS_COPY_CTOR(pParams))
     {
@@ -96,6 +98,9 @@ vaspaceapiConstruct_IMPL
         return status;
     }
 
+    if (gpuIsSriovEnabled(pGpu))
+	    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+
     pNvVASpaceAllocParams = pParams->pAllocParams;
     allocFlags            = pNvVASpaceAllocParams->flags;
 
@@ -104,7 +109,10 @@ vaspaceapiConstruct_IMPL
     originalVaSize = pNvVASpaceAllocParams->vaSize;
 
     // Translate & validate flags
-    NV_CHECK_OK_OR_RETURN(LEVEL_WARNING, translateAllocFlagsToVASpaceFlags(allocFlags, &flags));
+    NV_CHECK_OK_OR_RETURN(LEVEL_WARNING,
+                          translateAllocFlagsToVASpaceFlags(allocFlags, &flags,
+                                                            (pCallContext->secInfo.privLevel >=
+                                                             RS_PRIV_LEVEL_KERNEL), gfid));
 
     //
     // Make sure this GPU is not already locked by this thread
@@ -306,7 +314,8 @@ vaspaceapiConstruct_IMPL
             memmgrIsPmaInitialized(pMemoryManager) &&
             memmgrAreClientPageTablesPmaManaged(pMemoryManager) &&
             !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_EXTERNALLY_OWNED) &&
-            !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_FLA))
+            !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_FLA) &&
+            !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_PTETABLE_HEAP_MANAGED))
         {
             flags |= VASPACE_FLAGS_PTETABLE_PMA_MANAGED;
         }
@@ -539,7 +548,8 @@ skip_destroy:
  * @param[in] allocFlags  Client handle
  * @param[out] translatedFlags  The translated internal flags.
  **/
-static NV_STATUS translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *translatedFlags)
+static NV_STATUS translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *translatedFlags,
+                                                   NvBool bKernelClient, NvU32 gfid)
 {
     NV_STATUS status = NV_OK;
     NvU32     flags  = 0;
@@ -605,11 +615,21 @@ static NV_STATUS translateAllocFlagsToVASpaceFlags(NvU32 allocFlags, NvU32 *tran
             (flags & VASPACE_FLAGS_SET_MIRRORED)),
         NV_ERR_INVALID_ARGUMENT);
 
-    // MODs environment requires ATS to be enabled but RM to continue to own
-    // page table management
+    //
+    // MODS environment requires ATS to be enabled but RM to continue to own
+    // page table management with PASID coming from the MODS OS layer.
+    //
+    // For production driver, PASID comes from UVM via NV0080_CTRL_DMA_SET_PAGE_DIRECTORY
+    // and so only VASPACE_FLAGS_IS_EXTERNALLY_OWNED or VASPACE_FLAGS_SHARED_MANAGEMENT is
+    // supported which is where NV0080_CTRL_DMA_SET_PAGE_DIRECTORY happens.
+    // ATS on VASPACE_FLAGS_SHARED_MANAGEMENT is allowed only when it is from
+    // kernel client(UVM) or for VF context (where vaspace is allocated in the host for a
+    // kernel client created vaspace within the VF's VM).
+    //
     NV_CHECK_OR_RETURN(LEVEL_WARNING,
         !((flags & VASPACE_FLAGS_ENABLE_ATS) &&
-            !(flags & VASPACE_FLAGS_IS_EXTERNALLY_OWNED)),
+            !((flags & VASPACE_FLAGS_IS_EXTERNALLY_OWNED) ||
+              ((flags & VASPACE_FLAGS_SHARED_MANAGEMENT) && (bKernelClient || IS_GFID_VF(gfid))))),
         NV_ERR_INVALID_ARGUMENT);
     //
     // 1766112: Prevent channels in fault-capable VAS from running unless bound
@@ -721,7 +741,7 @@ _vaspaceapiManagePageLevelsForSplitVaSpace
             }
             else if (action == VASPACEAPI_MANAGE_PAGE_LEVELS_TRIM)
             {
-                rmMemPoolTrim(pMemPool, 0, flags);
+                rmMemPoolTrim(pMemPool, 1, flags);
             }
         }
         FOR_EACH_GPU_IN_MASK_UC_END

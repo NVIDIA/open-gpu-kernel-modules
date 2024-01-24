@@ -28,8 +28,11 @@
 #include "gpu/mem_mgr/mem_utils.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/nvlink/kernel_nvlink.h"
+#include "nverror.h"
 
+#include "published/ampere/ga100/dev_fault.h"
 #include "published/ampere/ga100/dev_vm.h"
+
 
 /*!
  * @brief   Sets the Invalidation scope field in the register
@@ -342,4 +345,102 @@ failed:
         }
     }
     return status;
+}
+
+/*!
+ * @brief Get the engine ID associated with the max CE
+ *
+ * @param[in] pGpu         GPU object
+ * @param[in] pKernelGmmu  KernelGmmu object
+ *
+ * return engine ID of the max CE
+ */
+NvU32
+kgmmuGetMaxCeEngineId_GA100
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu
+)
+{
+    return NV_PFAULT_MMU_ENG_ID_CE9;
+}
+
+/**
+ * @brief   Determine if the fault is P2P unbound Instance Fault
+ *
+ * @param[in]     pKernelGmmu     KernelGmmu pointer
+ * @param[in]     faultType       NvU32 identifier for Fault
+ * @param[in]     faultClientId   NvU32 identifier for Client Id
+ *
+ * @returns  True, if it satisfies the following conditions
+ *           -- FLA engine is not bound
+             -- Destination side GFID mismatch in P2P/FLA incoming NvLink packets
+ * False, otherwise
+ */
+NvBool
+kgmmuIsP2PUnboundInstFault_GA100
+(
+    KernelGmmu *pKernelGmmu,
+    NvU32       faultType,
+    NvU32       faultClientId
+)
+{
+    if ((faultType ==  NV_PFAULT_FAULT_TYPE_UNBOUND_INST_BLOCK) &&
+       ((faultClientId >= NV_PFAULT_CLIENT_HUB_PTP_X0 && faultClientId <= NV_PFAULT_CLIENT_HUB_PTP_X5)))
+    {
+        return NV_TRUE;
+    }
+
+    return NV_FALSE;
+}
+
+/**
+ * @brief handles an engine or PBDMA MMU fault
+ *
+ * "engine" is defined as an engine that is downstream of host (graphics, ce,
+ * etc...).
+ *
+ * @param[in] pGpu                   OBJGPU pointer
+ * @param[in] pKernelGmmu            KernelGmmu pointer
+ * @param[in] pParsedFaultEntry      Parsed Fault entry
+ * @param[in] pMmuExceptionData      FIFO exception packet used
+ *                                   for printing fault info.
+ *
+ * @returns
+ */
+NV_STATUS
+kgmmuServiceMmuFault_GA100
+(
+    POBJGPU                  pGpu,
+    KernelGmmu              *pKernelGmmu,
+    NvP64                    pParsedFaultInfo,
+    FIFO_MMU_EXCEPTION_DATA *pMmuExceptionData
+)
+{
+    MMU_FAULT_BUFFER_ENTRY *pParsedFaultEntry = KERNEL_POINTER_FROM_NvP64(MMU_FAULT_BUFFER_ENTRY *, pParsedFaultInfo);
+
+    //  If FLA fault do not reset channel
+    if (pParsedFaultEntry->mmuFaultEngineId == NV_PFAULT_MMU_ENG_ID_FLA)
+    {
+        if (pKernelGmmu->bReportFlaTranslationXid)
+        {
+            nvErrorLog_va((void *)pGpu,
+                DESTINATION_FLA_TRANSLATION_ERROR,
+                "FLA Fault: inst:0x%x dev:0x%x subdev:0x%x, faulted @ 0x%x_%08x. Fault is of type %s %s",
+                gpuGetInstance(pGpu),
+                gpuGetDeviceInstance(pGpu),
+                pGpu->subdeviceInstance,
+                pMmuExceptionData->addrHi,
+                pMmuExceptionData->addrLo,
+                kgmmuGetFaultTypeString_HAL(pKernelGmmu, pMmuExceptionData->faultType),
+                kfifoGetFaultAccessTypeString_HAL(pGpu, GPU_GET_KERNEL_FIFO(pGpu),
+                    pMmuExceptionData->accessType));
+        }
+
+        return NV_OK;
+    }
+    else
+    {
+        return kgmmuServiceMmuFault_GV100(pGpu, pKernelGmmu, pParsedFaultInfo, pMmuExceptionData);
+    }
 }

@@ -47,6 +47,7 @@ extern "C" {
 #include "nvoc/prelude.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "virtualization/common_vgpu_mgr.h"
+#include "gpu_mgr/gpu_mgr.h"
 
 struct PhysMemSubAlloc;
 
@@ -119,6 +120,7 @@ typedef struct KERNEL_HOST_VGPU_DEVICE
     struct KERNEL_VGPU_GUEST        *vgpuGuest;
     NvU32                            gfid;
     NvU32                            swizzId;
+    NvU16                            placementId;
     NvU32                            numPluginChannels;
     NvU32                            chidOffset[RM_ENGINE_TYPE_LAST];
     NvU32                            channelCount[RM_ENGINE_TYPE_LAST]; /*Number of channels available to the VF*/
@@ -153,6 +155,10 @@ typedef struct KERNEL_VGPU_GUEST
 
 MAKE_LIST(KERNEL_VGPU_GUEST_LIST, KERNEL_VGPU_GUEST);
 
+#define NV_VGPU_MAX_FB_SIZE_GB 512
+
+MAKE_BITVECTOR(PLACEMENT_REGION_BIT_VECTOR, NV_VGPU_MAX_FB_SIZE_GB);
+
 /* pGPU information */
 typedef struct
 {
@@ -166,11 +172,19 @@ typedef struct
     NvBool                           isAttached;
     // Per VF per engine ChidOffset. Used for reserving guest channels per engine
     NvU32                            chidOffset[VGPU_MAX_GFID][RM_ENGINE_TYPE_LAST];
+    NvU16                            creatablePlacementIds[MAX_VGPU_TYPES_PER_PGPU][MAX_VGPU_DEVICES_PER_PGPU];
+    NvU32                            supportedVmmuOffsets[MAX_VGPU_TYPES_PER_PGPU][MAX_VGPU_DEVICES_PER_PGPU];
+    NvU64                            gspHeapOffsets[MAX_VGPU_TYPES_PER_PGPU][MAX_VGPU_DEVICES_PER_PGPU];
+    NvU32                            guestVmmuCount[MAX_VGPU_TYPES_PER_PGPU];
+    NvU16                            placementRegionSize;
+    PLACEMENT_REGION_BIT_VECTOR      usedPlacementRegionMap;
     VGPU_CONFIG_EVENT_INFO_NODE_LIST listVgpuConfigEventsHead;
     NvBool                           sriovEnabled;
+    NvBool                           heterogeneousTimesliceSizesSupported;
     NvU32                            numCreatedVgpu;                     // Used only on KVM
     vgpu_vf_pci_info                 vfPciInfo[MAX_VF_COUNT_PER_GPU];    // Used only on KVM
     NvU64                            createdVfMask;                      // Used only on KVM
+    NvBool                           miniQuarterEnabled;                 // Used only on ESXi
 
     /*!
      * SwizzId Map. HW currently uses only 14 swizzIds. Every bit position
@@ -200,11 +214,16 @@ typedef struct REQUEST_VGPU_INFO_NODE
 
 MAKE_LIST(REQUEST_VGPU_INFO_NODE_LIST, REQUEST_VGPU_INFO_NODE);
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_VGPU_MGR_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelVgpuMgr {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -264,6 +283,14 @@ NV_STATUS
 kvgpumgrGetVgpuTypeInfo(NvU32 vgpuTypeId, VGPU_TYPE **vgpuType);
 
 NV_STATUS
+kvgpumgrSetSupportedPlacementIds(struct OBJGPU *pGpu);
+
+NV_STATUS
+kvgpumgrUpdateHeterogeneousInfo(struct OBJGPU *pGpu, NvU32 vgpuTypeId, NvU16 *placementId,
+                                NvU64 *guestFbLength, NvU64 *guestFbOffset,
+                                NvU64 *gspHeapOffset);
+
+NV_STATUS
 kvgpumgrPgpuAddVgpuType(struct OBJGPU *pGpu, NvBool discardVgpuTypes, NVA081_CTRL_VGPU_INFO *pVgpuInfo);
 
 NV_STATUS
@@ -290,6 +317,7 @@ kvgpumgrGuestRegister(struct OBJGPU *pGpu,
                       NvU32 swizzId,
                       NvU32 vgpuDeviceInstanceId,
                       NvBool bDisableDefaultSmcExecPartRestore,
+                      NvU16 placementId,
                       KERNEL_HOST_VGPU_DEVICE **ppKernelHostVgpuDevice);
 
 NV_STATUS
@@ -299,7 +327,7 @@ NV_STATUS
 kvgpumgrGetMaxInstanceOfVgpu(NvU32 vgpuTypeId, NvU32 *maxInstanceVgpu);
 
 NV_STATUS
-kvgpumgrCheckVgpuTypeCreatable(KERNEL_PHYS_GPU_INFO *pPhysGpuInfo, VGPU_TYPE *vgpuTypeInfo);
+kvgpumgrCheckVgpuTypeCreatable(struct OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPhysGpuInfo, VGPU_TYPE *vgpuTypeInfo);
 
 NV_STATUS
 kvgpumgrEnumerateVgpuPerPgpu(struct OBJGPU *pGpu, NV2080_CTRL_VGPU_MGR_INTERNAL_ENUMERATE_VGPU_PER_PGPU_PARAMS *pParams);
@@ -312,6 +340,10 @@ kvgpumgrGetSwizzId(struct OBJGPU *pGpu,
                    KERNEL_PHYS_GPU_INFO *pPhysGpuInfo,
                    NvU32 partitionFlag,
                    NvU32 *swizzId);
+
+NV_STATUS
+kvgpumgrHeterogeneousGetChidOffset(NvU32 vgpuTypeId, NvU16 placementId,
+                                   NvU32 numChannels, NvU64 *pChidOffset);
 
 NV_STATUS
 kvgpumgrValidateSwizzId(struct OBJGPU *pGpu,
@@ -345,6 +377,9 @@ kvgpumgrGetHostVgpuDeviceFromVgpuUuid(NvU32 gpuPciId, NvU8 *vgpuUuid,
 
 NV_STATUS
 kvgpumgrGetCreatableVgpuTypes(struct OBJGPU *pGpu, struct KernelVgpuMgr *pKernelVgpuMgr, NvU32 pgpuIndex, NvU32* numVgpuTypes, NvU32* vgpuTypes);
+
+NvU64
+kvgpumgrGetEccAndPrReservedFb(struct OBJGPU *pGpu);
 
 NvU32
 kvgpumgrGetPgpuDevIdEncoding(struct OBJGPU *pGpu, NvU8 *pgpuString, NvU32 strSize);

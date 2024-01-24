@@ -33,6 +33,7 @@
 #include "core/locks.h"
 #include "gpu/mem_mgr/vaspace_api.h"
 #include "rmapi/rs_utils.h"
+#include "platform/sli/sli.h"
 
 #define SUBCTXID_EHEAP_OWNER NvU32_BUILD('n','v','r','m')
 
@@ -369,7 +370,7 @@ kctxshareInitCommon_IMPL
     NvU32               heapFlag              = 0;
     NvU64               offset                = 0;
     NvU64               size                  = 1;
-    PEMEMBLOCK          pBlock;
+    EMEMBLOCK          *pBlock;
     KernelChannelGroup *pKernelChannelGroup;
 
     NV_ASSERT_OR_RETURN(pKernelChannelGroupApi != NULL, NV_ERR_INVALID_STATE);
@@ -543,7 +544,7 @@ kctxshareDestroyCommon_IMPL
             continue;
         }
 
-        PEMEMBLOCK pBlock = pKernelChannelGroup->pSubctxIdHeap->eheapGetBlock(
+        EMEMBLOCK *pBlock = pKernelChannelGroup->pSubctxIdHeap->eheapGetBlock(
             pKernelChannelGroup->pSubctxIdHeap,
             i,
             NV_FALSE);
@@ -597,7 +598,7 @@ kctxshareDestruct_IMPL
     //
     if(pKernelCtxShare->pKernelChannelGroup != NULL)
     {
-        PEMEMBLOCK pBlock =
+        EMEMBLOCK *pBlock =
             pKernelCtxShare->pKernelChannelGroup->pSubctxIdHeap->eheapGetBlock(
                 pKernelCtxShare->pKernelChannelGroup->pSubctxIdHeap,
                 pKernelCtxShare->subctxId,

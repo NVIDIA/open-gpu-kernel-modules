@@ -38,6 +38,7 @@
 #include "rmapi/rs_utils.h"
 #include "mem_mgr/mem.h"
 #include "gpu/mem_mgr/virt_mem_allocator_common.h"
+#include "gpu/gsp/gsp_trace_rats_macro.h"
 
 //
 // EVENT RM SubDevice Controls
@@ -305,5 +306,38 @@ subdeviceCtrlCmdEventVideoBindEvtbuf_IMPL
                                pParams->bAllUsers,
                                pParams->levelOfDetail,
                                pParams->eventFilter);
+    return status;
+}
+
+
+NV_STATUS
+subdeviceCtrlCmdEventGspTraceRatsBindEvtbuf_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS *pParams
+)
+{
+    NV_STATUS status = NV_ERR_NOT_SUPPORTED;
+#if KERNEL_GSP_TRACING_RATS_ENABLED
+    RsClient *pClient = RES_GET_CLIENT(pSubdevice);
+    RsResourceRef *pEventBufferRef = NULL;
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvHandle hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    NvHandle hNotifier = RES_GET_HANDLE(pSubdevice);
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    NV_ASSERT_OK_OR_RETURN(serverutilGetResourceRefWithType(hClient,
+                                                            pParams->hEventBuffer,
+                                                            classId(EventBuffer),
+                                                            &pEventBufferRef));
+    status = gspTraceAddBindpoint(pGpu,
+                               pClient,
+                               pEventBufferRef,
+                               hNotifier,
+                               pParams->tracepointMask,
+                               pParams->gspLoggingBufferSize,
+                               pParams->gspLoggingBufferWatermark);
+#endif
     return status;
 }

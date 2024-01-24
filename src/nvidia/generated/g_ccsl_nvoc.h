@@ -47,11 +47,16 @@ extern "C" {
  *      CCSL module header.                                                  *
  *                                                                           *
  ****************************************************************************/
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CCSL_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct Ccsl {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Ccsl *__nvoc_pbase_Ccsl;
@@ -97,6 +102,12 @@ NV_STATUS ccslContextInitViaKeyId_KERNEL(struct ConfidentialCompute *pConfComput
 #define ccslContextInitViaKeyId(pConfCompute, ppCtx, globalKeyId) ccslContextInitViaKeyId_KERNEL(pConfCompute, ppCtx, globalKeyId)
 #define ccslContextInitViaKeyId_HAL(pConfCompute, ppCtx, globalKeyId) ccslContextInitViaKeyId(pConfCompute, ppCtx, globalKeyId)
 
+NV_STATUS ccslContextUpdate_KERNEL(pCcslContext ctx);
+
+
+#define ccslContextUpdate(ctx) ccslContextUpdate_KERNEL(ctx)
+#define ccslContextUpdate_HAL(ctx) ccslContextUpdate(ctx)
+
 NV_STATUS ccslRotateIv_IMPL(pCcslContext ctx, NvU8 direction);
 
 
@@ -138,6 +149,12 @@ NV_STATUS ccslIncrementIv_IMPL(pCcslContext pCtx, NvU8 direction, NvU64 incremen
 
 #define ccslIncrementIv(pCtx, direction, increment, iv) ccslIncrementIv_IMPL(pCtx, direction, increment, iv)
 #define ccslIncrementIv_HAL(pCtx, direction, increment, iv) ccslIncrementIv(pCtx, direction, increment, iv)
+
+NV_STATUS ccslLogDeviceEncryption_IMPL(pCcslContext pCtx, NvU32 bufferSize);
+
+
+#define ccslLogDeviceEncryption(pCtx, bufferSize) ccslLogDeviceEncryption_IMPL(pCtx, bufferSize)
+#define ccslLogDeviceEncryption_HAL(pCtx, bufferSize) ccslLogDeviceEncryption(pCtx, bufferSize)
 
 void ccslContextClear_IMPL(pCcslContext ctx);
 

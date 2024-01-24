@@ -43,7 +43,6 @@ CFLAGS += -I $(SRC_COMMON)/inc
 
 CFLAGS += -I $(SRC_COMMON)/uproc/os/libos-v2.0.0/include
 CFLAGS += -I $(SRC_COMMON)/uproc/os/common/include
-CFLAGS += -I $(SRC_COMMON)/uproc/os/libos-v2.0.0/debug
 CFLAGS += -I $(SRC_COMMON)/inc/swref
 CFLAGS += -I $(SRC_COMMON)/inc/swref/published
 
@@ -92,6 +91,13 @@ ifeq ($(TARGET_ARCH),aarch64)
   CFLAGS += -march=armv8-a
   CFLAGS += -mstrict-align
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mno-outline-atomics)
+endif
+
+ifeq ($(TARGET_ARCH),riscv64)
+  CFLAGS += -march=rv64imac_zicsr_zifencei
+  CFLAGS += -mabi=lp64
+  CFLAGS += -mcmodel=medany
+  CFLAGS += -mno-relax
 endif
 
 CFLAGS += -fno-pic

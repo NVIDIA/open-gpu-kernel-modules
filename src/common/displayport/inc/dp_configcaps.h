@@ -229,15 +229,15 @@ namespace DisplayPort
         //  Physical layer feature set
         //
         virtual NvU64    getMaxLinkRate() = 0;                                // Maximum byte-block in Hz
-        virtual unsigned getMaxLaneCount() = 0;                               // DPCD offset 2
+        virtual unsigned getMaxLaneCount() = 0;                               // DPCD offset 0x0002h
         virtual unsigned getMaxLaneCountSupportedAtLinkRate(LinkRate linkRate) = 0;
         virtual bool     getEnhancedFraming() = 0;
         virtual bool     getSupportsNoHandshakeTraining() = 0;
         virtual bool     getMsaTimingparIgnored() = 0;
-        virtual bool     getDownstreamPort(NvU8 *portType) = 0;               // DPCD offset 5
-        virtual bool     getSupportsMultistream() = 0;                        // DPCD offset 21h
-        virtual bool     getNoLinkTraining() = 0;                             // DPCD offset 330h
-        virtual unsigned getPhyRepeaterCount() = 0;                           // DPCD offset F0002h
+        virtual bool     getDownstreamPort(NvU8 *portType) = 0;               // DPCD offset 0x0005h
+        virtual bool     getSupportsMultistream() = 0;                        // DPCD offset 0x0021h
+        virtual bool     getNoLinkTraining() = 0;                             // DPCD offset 0x0330h
+        virtual unsigned getPhyRepeaterCount() = 0;                           // DPCD offset 0xF0002h
     };
 
     class OUI
@@ -306,7 +306,7 @@ namespace DisplayPort
         virtual bool getSDPExtnForColorimetry() = 0;
         virtual bool getRootAsyncSDPSupported() = 0;
 
-        bool  isAtLeastVersion(unsigned major, unsigned minor)
+        bool isAtLeastVersion(unsigned major, unsigned minor)
         {
             if (getRevisionMajor() > major)
                 return true;
@@ -317,7 +317,7 @@ namespace DisplayPort
             return getRevisionMinor() >= minor;
         }
 
-        bool  isVersion(unsigned major, unsigned minor)
+        bool isVersion(unsigned major, unsigned minor)
         {
             if ((getRevisionMajor() == major) &&
                 (getRevisionMinor() == minor))
@@ -326,7 +326,7 @@ namespace DisplayPort
             return false;
         }
 
-        bool  lttprIsAtLeastVersion(unsigned major, unsigned minor)
+        bool lttprIsAtLeastVersion(unsigned major, unsigned minor)
         {
             if (lttprGetRevisionMajor() > major)
                 return true;
@@ -337,7 +337,7 @@ namespace DisplayPort
             return lttprGetRevisionMinor() >= minor;
         }
 
-        bool  lttprIsVersion(unsigned major, unsigned minor)
+        bool lttprIsVersion(unsigned major, unsigned minor)
         {
             if ((lttprGetRevisionMajor() == major) &&
                 (lttprGetRevisionMinor() == minor))

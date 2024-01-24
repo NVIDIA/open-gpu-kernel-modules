@@ -32,6 +32,7 @@
 #include "deprecated/rmapi_deprecated.h"
 #include "gpu/mem_mgr/mem_utils.h"
 #include "core/system.h"
+#include "ctrl/ctrl0000/ctrl0000gpu.h"
 
 #include "gpu/mem_sys/kern_mem_sys.h"
 
@@ -222,18 +223,24 @@ sysmemConstruct_IMPL
 
     if (FLD_TEST_DRF(OS32, _ATTR2, _FIXED_NUMA_NODE_ID, _YES, pAllocData->attr2))
     {
-        //
-        // TODO: Add validation of NUMA Node ID. Bug: 3802992
-        // Invalid ID criteria:
-        // * NUMA is not supported on this platform
-        // * NUMA Node ID is of GPU
-        // * When memory is protected, if requested in unprotected memory
-        //
-        // Allow kernel to validate the following:
-        // * NUMA Node ID is not in range of [0,MAX_NUMANODES)
-        // * NUMA Node has no memory present
-        // * NUMA Node has no free memory
-        //
+
+        if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY))
+        {
+            NV_PRINTF(LEVEL_ERROR, "Cannot specify NUMA node in unprotected memory.\n");
+            memdescDestroy(pMemDesc);
+            rmStatus = NV_ERR_INVALID_ARGUMENT;
+            goto failed;
+        }
+
+        if ((pGpu->cpuNumaNodeId != NV0000_CTRL_NO_NUMA_NODE) && 
+            (pAllocData->numaNode != pGpu->cpuNumaNodeId))
+        {
+            NV_PRINTF(LEVEL_ERROR, "NUMA node mismatch. Requested node: %u CPU node: %u\n",
+                      pAllocData->numaNode, pGpu->cpuNumaNodeId);
+            memdescDestroy(pMemDesc);
+            rmStatus = NV_ERR_INVALID_ARGUMENT;
+            goto failed;
+        }
 
         memdescSetNumaNode(pMemDesc, pAllocData->numaNode);
         //

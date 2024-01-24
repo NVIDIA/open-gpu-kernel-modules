@@ -179,6 +179,30 @@ typedef struct NV0000_CTRL_CLIENT_OBJECTS_ARE_DUPLICATES_PARAMS {
     NvBool   bDuplicates;     /* [out] - Returns true if duplicates     */
 } NV0000_CTRL_CLIENT_OBJECTS_ARE_DUPLICATES_PARAMS;
 
+/*
+ * NV0000_CTRL_CMD_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL:
+ *
+ * Subscribes to the first accessible or provided channel.
+ * Subscription is valid throughout the lifetime of a client.
+ *
+ * devDescriptor [OPAQUE IN]
+ *   devDescriptor is an IMEX file descriptor for UNIX RM clients, but a void
+ *   pointer for windows RM clients. It is transparent to RM clients i.e. RM's
+ *   user-mode shim populates this field on behalf of clients.
+ *
+ * channel [IN/OUT]
+ *   Channel number to which the client is subscribed
+ *   If -1 is passed, RM picks the first accessible channel.
+ */
+#define NV0000_CTRL_CMD_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL (0xd08) /* finn: Evaluated from "(FINN_NV01_ROOT_CLIENT_INTERFACE_ID << 8) | NV0000_CTRL_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL_PARAMS_MESSAGE_ID" */
+
+#define NV0000_CTRL_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL_PARAMS_MESSAGE_ID (0x8U)
+
+typedef struct NV0000_CTRL_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 devDescriptor, 8);
+    NvU32 channel;
+} NV0000_CTRL_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL_PARAMS;
+
 
 
 /* _ctrl0000client_h_ */

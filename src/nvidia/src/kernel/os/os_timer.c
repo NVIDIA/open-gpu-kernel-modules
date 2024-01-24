@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2002-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2002-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -109,7 +109,7 @@ osDestroy1HzCallbacks
  * @return  NV_ERR_INVALID_REQUEST  The callback has not been added
  */
 NV_STATUS
-osSchedule1SecondCallback
+osSchedule1HzCallback
 (
     OBJGPU     *pGpu,
     OS1HZPROC   callback,
@@ -161,7 +161,7 @@ osSchedule1SecondCallback
  * @param[in]       pData       Unique identifier for the callback
  */
 void
-osRemove1SecondRepeatingCallback
+osRemove1HzCallback
 (
     OBJGPU     *pGpu,
     OS1HZPROC   callback,

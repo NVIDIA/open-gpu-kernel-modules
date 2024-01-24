@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -98,39 +98,29 @@ typedef enum
 
 // This helper needs to stay in sync with the one in uvm_pmm_gpu.c
 // It is duplicated because we do not want to expose it as an API.
-static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_parent_gpu_t *parent_gpu, uvm_pmm_gpu_memory_type_t type)
+static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_pmm_gpu_memory_type_t type)
 {
-    if (uvm_conf_computing_mode_enabled_parent(parent_gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return type;
 
     // Enforce the contract that when the Confidential Computing feature is
     // disabled, all user types are alike, as well as all kernel types,
     // respectively. See uvm_pmm_gpu_memory_type_t.
-    switch (type) {
-        case UVM_PMM_GPU_MEMORY_TYPE_USER: // Alias UVM_PMM_GPU_MEMORY_TYPE_USER_PROTECTED
-        case UVM_PMM_GPU_MEMORY_TYPE_USER_UNPROTECTED:
-            return UVM_PMM_GPU_MEMORY_TYPE_USER;
-        case UVM_PMM_GPU_MEMORY_TYPE_KERNEL: // Alias UVM_PMM_GPU_MEMORY_TYPE_KERNEL_PROTECTED
-        case UVM_PMM_GPU_MEMORY_TYPE_KERNEL_UNPROTECTED:
-            return UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
-        default:
-            UVM_ASSERT(0);
-    }
+    if (uvm_pmm_gpu_memory_type_is_user(type))
+        return UVM_PMM_GPU_MEMORY_TYPE_USER;
 
-    return type;
+    return UVM_PMM_GPU_MEMORY_TYPE_KERNEL;
 }
 
 // Verify that the input chunks are in the correct state following alloc
-static NV_STATUS check_chunks(uvm_pmm_gpu_t *pmm,
-                              uvm_gpu_chunk_t **chunks,
+static NV_STATUS check_chunks(uvm_gpu_chunk_t **chunks,
                               size_t num_chunks,
                               uvm_chunk_size_t chunk_size,
                               uvm_pmm_gpu_memory_type_t mem_type)
 {
-    uvm_gpu_t *gpu = uvm_pmm_to_gpu(pmm);
     size_t i;
 
-    mem_type = pmm_squash_memory_type(gpu->parent, mem_type);
+    mem_type = pmm_squash_memory_type(mem_type);
     for (i = 0; i < num_chunks; i++) {
         TEST_CHECK_RET(chunks[i]);
         TEST_CHECK_RET(chunks[i]->suballoc == NULL);
@@ -187,7 +177,7 @@ static NV_STATUS chunk_alloc_check_common(uvm_pmm_gpu_t *pmm,
     if (check_status != NV_OK)
         return check_status;
 
-    return check_chunks(pmm, chunks, num_chunks, chunk_size, mem_type);
+    return check_chunks(chunks, num_chunks, chunk_size, mem_type);
 }
 
 static NV_STATUS chunk_alloc_check(uvm_pmm_gpu_t *pmm,
@@ -324,10 +314,10 @@ static NV_STATUS gpu_mem_check(uvm_gpu_t *gpu,
 
     // TODO: Bug 3839176: [UVM][HCC][uvm_test] Update tests that assume GPU
     //                     engines can directly access sysmem
-    // Skip this test for now. To enable this test under SEV,
+    // Skip this test for now. To enable this test in Confidential Computing,
     // The GPU->CPU CE copy needs to be updated so it uses encryption when
     // CC is enabled.
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
     UVM_ASSERT(verif_mem->size >= size);
     memset(verif_cpu_addr, 0, size);
@@ -561,7 +551,8 @@ static NV_STATUS basic_test(uvm_va_space_t *va_space, uvm_gpu_t *gpu,
         // In SR-IOV heavy, virtual mappings will be created for each chunk
         // this test allocates before accessing it on the GPU. But currently
         // it is not allowed to map a kernel chunk, so skip those.
-        if (uvm_gpu_is_virt_mode_sriov_heavy(gpu) && uvm_pmm_gpu_memory_type_is_kernel(test_state.type))
+        if (uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent) &&
+            uvm_pmm_gpu_memory_type_is_kernel(test_state.type))
             continue;
 
         chunk_sizes = gpu->pmm.chunk_sizes[test_state.type];
@@ -791,7 +782,8 @@ static NV_STATUS split_test(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
         // In SR-IOV heavy, virtual mappings will be created for each chunk
         // this test allocates before accessing it on the GPU. But currently
         // it is not allowed to map a kernel chunk, so skip those.
-        if (uvm_gpu_is_virt_mode_sriov_heavy(gpu) && uvm_pmm_gpu_memory_type_is_kernel(type))
+        if (uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent) &&
+            uvm_pmm_gpu_memory_type_is_kernel(type))
             continue;
 
         // Test every available parent size except the smallest, which obviously
@@ -922,7 +914,6 @@ NV_STATUS __test_pmm_async_alloc_type(uvm_va_space_t *va_space,
     uvm_tracker_t tracker = UVM_TRACKER_INIT();
     uvm_push_t push;
     NvU32 i;
-    uvm_global_processor_mask_t global_mask;
 
     chunks = uvm_kvmalloc_zero(num_chunks * sizeof(chunks[0]));
     if (!chunks)
@@ -936,9 +927,7 @@ NV_STATUS __test_pmm_async_alloc_type(uvm_va_space_t *va_space,
     if (status != NV_OK)
         goto out;
 
-    uvm_va_space_global_gpus(va_space, &global_mask);
-
-    status = uvm_mem_map_kernel(dummy_buffer, &global_mask);
+    status = uvm_mem_map_kernel(dummy_buffer, &va_space->registered_gpus);
     if (status != NV_OK)
         goto out;
 
@@ -1222,8 +1211,6 @@ static NV_STATUS test_indirect_peers(uvm_gpu_t *owning_gpu, uvm_gpu_t *accessing
     chunks = uvm_kvmalloc_zero(num_chunks * sizeof(chunks[0]));
     if (!chunks)
         return NV_ERR_NO_MEMORY;
-
-    UVM_ASSERT(!g_uvm_global.sev_enabled);
 
     TEST_NV_CHECK_GOTO(uvm_mem_alloc_sysmem_and_map_cpu_kernel(UVM_CHUNK_SIZE_MAX, current->mm, &verif_mem), out);
     TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(verif_mem, owning_gpu), out);

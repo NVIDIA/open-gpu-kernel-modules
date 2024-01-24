@@ -261,22 +261,24 @@ s_vbiosPatchInterfaceData
 }
 
 /*!
- * Excecute a given FWSEC cmd and wait for completion.
+ * Prepare to execute a given FWSEC cmd.
  *
  * @param[in]   pGpu           OBJGPU pointer
  * @param[in]   pKernelGsp     KernelGsp pointer
  * @param[in]   pFwsecUcode    KernelGspFlcnUcode structure of FWSEC ucode
  * @param[in]   cmd            FWSEC cmd (FRTS or SB)
  * @param[in]   frtsOffset     (if cmd is FRTS) desired FB offset of FRTS data
+ * @param[out]  pPreparedCmd   Prepared command state to pass to kgspExecuteFwsec_TU102
  */
 static NV_STATUS
-s_executeFwsec_TU102
+s_prepareForFwsec_TU102
 (
     OBJGPU *pGpu,
     KernelGsp *pKernelGsp,
     KernelGspFlcnUcode *pFwsecUcode,
     const NvU32 cmd,
-    const NvU64 frtsOffset
+    const NvU64 frtsOffset,
+    KernelGspPreparedFwsecCmd *pPreparedCmd
 )
 {
     NV_STATUS status;
@@ -291,6 +293,7 @@ s_executeFwsec_TU102
     NV_ASSERT_OR_RETURN(IS_GSP_CLIENT(pGpu), NV_ERR_NOT_SUPPORTED);
 
     NV_ASSERT_OR_RETURN(pFwsecUcode != NULL, NV_ERR_INVALID_ARGUMENT);
+    NV_ASSERT_OR_RETURN(pPreparedCmd != NULL, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((cmd != FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS) ||
                         (frtsOffset > 0), NV_ERR_INVALID_ARGUMENT);
 
@@ -300,6 +303,10 @@ s_executeFwsec_TU102
         NV_ASSERT(0);
         return NV_ERR_INVALID_ARGUMENT;
     }
+
+    pPreparedCmd->pFwsecUcode = pFwsecUcode;
+    pPreparedCmd->cmd = cmd;
+    pPreparedCmd->frtsOffset = frtsOffset;
 
     readVbiosDesc.version = 1;
     readVbiosDesc.size = sizeof(readVbiosDesc);
@@ -434,16 +441,49 @@ s_executeFwsec_TU102
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    status = kgspExecuteHsFalcon_HAL(pGpu, pKernelGsp, pFwsecUcode,
+out:
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "(note: VBIOS version %s)\n", pKernelGsp->vbiosVersionStr);
+    }
+
+    return status;
+}
+
+/*!
+ * Execute a given FWSEC cmd and wait for completion.
+ * KernelGspPreparedFwsecCmd should be set by s_prepareForFwsec_TU102 and
+ * not filled in manually
+ *
+ * @param[in]   pGpu           OBJGPU pointer
+ * @param[in]   pKernelGsp     KernelGsp pointer
+ * @param[in]   pPreparedCmd   Prepared command state from s_prepareForFwsec_TU102
+ */
+NV_STATUS
+kgspExecuteFwsec_TU102
+(
+    OBJGPU *pGpu,
+    KernelGsp *pKernelGsp,
+    KernelGspPreparedFwsecCmd *pPreparedCmd
+)
+{
+    NV_STATUS status;
+
+    NV_ASSERT_OR_RETURN(!IS_VIRTUAL(pGpu), NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(IS_GSP_CLIENT(pGpu), NV_ERR_NOT_SUPPORTED);
+
+    NV_ASSERT_OR_RETURN(pPreparedCmd != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    status = kgspExecuteHsFalcon_HAL(pGpu, pKernelGsp, pPreparedCmd->pFwsecUcode,
                                      staticCast(pKernelGsp, KernelFalcon), NULL, NULL);
 
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC cmd 0x%x: status 0x%x\n", cmd, status);
+        NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC cmd 0x%x: status 0x%x\n", pPreparedCmd->cmd, status);
         goto out;
     }
 
-    if (cmd == FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS)
+    if (pPreparedCmd->cmd == FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS)
     {
         NvU32 data;
         NvU32 frtsErrCode;
@@ -471,7 +511,7 @@ s_executeFwsec_TU102
 
         data = GPU_REG_RD32(pGpu, NV_PFB_PRI_MMU_WPR2_ADDR_LO);
         wpr2LoVal = DRF_VAL(_PFB, _PRI_MMU_WPR2_ADDR_LO, _VAL, data);
-        expectedLoVal = (NvU32) (frtsOffset >> NV_PFB_PRI_MMU_WPR2_ADDR_LO_ALIGNMENT);
+        expectedLoVal = (NvU32) (pPreparedCmd->frtsOffset >> NV_PFB_PRI_MMU_WPR2_ADDR_LO_ALIGNMENT);
         if (wpr2LoVal != expectedLoVal)
         {
             NV_PRINTF(LEVEL_ERROR,
@@ -522,41 +562,47 @@ out:
 }
 
 /*!
- * Excecute FWSEC for FRTS and wait for completion.
+ * Prepare to execute FWSEC FRTS ucode to setup FRTS
  *
  * @param[in]   pGpu           OBJGPU pointer
  * @param[in]   pKernelGsp     KernelGsp pointer
  * @param[in]   pFwsecUcode    KernelGspFlcnUcode structure of FWSEC ucode
  * @param[in]   frtsOffset     Desired offset in FB of FRTS data and WPR2
+ * @param[out]  pPreparedCmd   Prepared command state to pass to kgspExecuteFwsec_TU102
  */
 NV_STATUS
-kgspExecuteFwsecFrts_TU102
+kgspPrepareForFwsecFrts_TU102
 (
     OBJGPU *pGpu,
     KernelGsp *pKernelGsp,
     KernelGspFlcnUcode *pFwsecUcode,
-    const NvU64 frtsOffset
+    const NvU64 frtsOffset,
+    KernelGspPreparedFwsecCmd *pPreparedCmd
 )
 {
-    return s_executeFwsec_TU102(pGpu, pKernelGsp, pFwsecUcode,
-                                FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS, frtsOffset);
+    return s_prepareForFwsec_TU102(pGpu, pKernelGsp, pFwsecUcode,
+                                   FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_FRTS,
+                                   frtsOffset, pPreparedCmd);
 }
 
 /*!
- * Excecute FWSEC's SB command and wait for completion.
+ * Prepare to execute FWSEC SB ucode to setup FRTS
  *
  * @param[in]   pGpu           OBJGPU pointer
  * @param[in]   pKernelGsp     KernelGsp pointer
  * @param[in]   pFwsecUcode    KernelGspFlcnUcode structure of FWSEC ucode
+ * @param[out]  pPreparedCmd   Prepared command state to pass to kgspExecuteFwsec_TU102
  */
 NV_STATUS
-kgspExecuteFwsecSb_TU102
+kgspPrepareForFwsecSb_TU102
 (
     OBJGPU *pGpu,
     KernelGsp *pKernelGsp,
-    KernelGspFlcnUcode *pFwsecUcode
+    KernelGspFlcnUcode *pFwsecUcode,
+    KernelGspPreparedFwsecCmd *pPreparedCmd
 )
 {
-    return s_executeFwsec_TU102(pGpu, pKernelGsp, pFwsecUcode,
-                                FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_SB, 0);
+    return s_prepareForFwsec_TU102(pGpu, pKernelGsp, pFwsecUcode,
+                                   FALCON_APPLICATION_INTERFACE_DMEM_MAPPER_V3_CMD_SB,
+                                   0, pPreparedCmd);
 }

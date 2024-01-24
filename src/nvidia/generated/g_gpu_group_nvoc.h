@@ -116,24 +116,17 @@ typedef struct _def_vid_link_node
     NvU32 ChildDrPort;
 } SLILINKNODE;
 
-typedef struct OBJGPUGRP *POBJGPUGRP;
-
-#ifndef __NVOC_CLASS_OBJGPUGRP_TYPEDEF__
-#define __NVOC_CLASS_OBJGPUGRP_TYPEDEF__
-typedef struct OBJGPUGRP OBJGPUGRP;
-#endif /* __NVOC_CLASS_OBJGPUGRP_TYPEDEF__ */
-
-#ifndef __nvoc_class_id_OBJGPUGRP
-#define __nvoc_class_id_OBJGPUGRP 0xe40531
-#endif /* __nvoc_class_id_OBJGPUGRP */
 
 
-
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_GPU_GROUP_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJGPUGRP {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;

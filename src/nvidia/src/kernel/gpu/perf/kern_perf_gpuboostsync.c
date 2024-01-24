@@ -21,10 +21,12 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "gpu/device/device.h"
 #include "gpu/perf/kern_perf.h"
 #include "core/locks.h"
 #include "vgpu/rpc.h"
 #include "nvRmReg.h"
+#include "platform/sli/sli.h"
 
 /* ------------------------ Macros ----------------------------------------- */
 /* ------------------------ Public Class Interfaces ------------------------ */

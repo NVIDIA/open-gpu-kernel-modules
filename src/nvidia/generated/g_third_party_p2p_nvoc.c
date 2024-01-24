@@ -119,21 +119,26 @@ void __nvoc_init_P2PTokenShare(P2PTokenShare *pThis) {
     __nvoc_init_funcTable_P2PTokenShare(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_P2PTokenShare(P2PTokenShare **ppThis, Dynamic *pParent, NvU32 createFlags) {
+NV_STATUS __nvoc_objCreate_P2PTokenShare(P2PTokenShare **ppThis, Dynamic *pParent, NvU32 createFlags)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     P2PTokenShare *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(P2PTokenShare), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(P2PTokenShare));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_P2PTokenShare);
 
     pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -148,16 +153,25 @@ NV_STATUS __nvoc_objCreate_P2PTokenShare(P2PTokenShare **ppThis, Dynamic *pParen
     status = __nvoc_ctor_P2PTokenShare(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_P2PTokenShare_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_P2PTokenShare_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_RsShared.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(P2PTokenShare));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;
@@ -301,10 +315,6 @@ static void __nvoc_thunk_RmResource_thirdpartyp2pControl_Epilogue(struct ThirdPa
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ThirdPartyP2P_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_thirdpartyp2pControlLookup(struct ThirdPartyP2P *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ThirdPartyP2P_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_thirdpartyp2pGetInternalObjectHandle(struct ThirdPartyP2P *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ThirdPartyP2P_GpuResource.offset));
 }
@@ -335,6 +345,10 @@ static NV_STATUS __nvoc_thunk_RmResource_thirdpartyp2pControlSerialization_Prolo
 
 static NvBool __nvoc_thunk_RsResource_thirdpartyp2pCanCopy(struct ThirdPartyP2P *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ThirdPartyP2P_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_thirdpartyp2pIsPartialUnmapSupported(struct ThirdPartyP2P *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ThirdPartyP2P_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_thirdpartyp2pPreDestruct(struct ThirdPartyP2P *pResource) {
@@ -522,8 +536,6 @@ static void __nvoc_init_funcTable_ThirdPartyP2P_1(ThirdPartyP2P *pThis) {
 
     pThis->__thirdpartyp2pControl_Epilogue__ = &__nvoc_thunk_RmResource_thirdpartyp2pControl_Epilogue;
 
-    pThis->__thirdpartyp2pControlLookup__ = &__nvoc_thunk_RsResource_thirdpartyp2pControlLookup;
-
     pThis->__thirdpartyp2pGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_thirdpartyp2pGetInternalObjectHandle;
 
     pThis->__thirdpartyp2pControl__ = &__nvoc_thunk_GpuResource_thirdpartyp2pControl;
@@ -539,6 +551,8 @@ static void __nvoc_init_funcTable_ThirdPartyP2P_1(ThirdPartyP2P *pThis) {
     pThis->__thirdpartyp2pControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_thirdpartyp2pControlSerialization_Prologue;
 
     pThis->__thirdpartyp2pCanCopy__ = &__nvoc_thunk_RsResource_thirdpartyp2pCanCopy;
+
+    pThis->__thirdpartyp2pIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_thirdpartyp2pIsPartialUnmapSupported;
 
     pThis->__thirdpartyp2pPreDestruct__ = &__nvoc_thunk_RsResource_thirdpartyp2pPreDestruct;
 
@@ -567,21 +581,26 @@ void __nvoc_init_ThirdPartyP2P(ThirdPartyP2P *pThis) {
     __nvoc_init_funcTable_ThirdPartyP2P(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_ThirdPartyP2P(ThirdPartyP2P **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_ThirdPartyP2P(ThirdPartyP2P **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     ThirdPartyP2P *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(ThirdPartyP2P), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(ThirdPartyP2P));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ThirdPartyP2P);
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -596,16 +615,25 @@ NV_STATUS __nvoc_objCreate_ThirdPartyP2P(ThirdPartyP2P **ppThis, Dynamic *pParen
     status = __nvoc_ctor_ThirdPartyP2P(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_ThirdPartyP2P_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_ThirdPartyP2P_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(ThirdPartyP2P));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

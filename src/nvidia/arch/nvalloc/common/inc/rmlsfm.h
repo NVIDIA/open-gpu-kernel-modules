@@ -192,7 +192,11 @@
  * to uniquely identify it.
  * @note this macro should be updated as needed whenever LSF_FALCON_ID* defines are added. See Bug: 3833461
  */
-#define LSF_FALCON_USES_INSTANCE(falconId)  ((falconId == LSF_FALCON_ID_NVDEC_RISCV_EB) || (falconId == LSF_FALCON_ID_NVJPG) || (falconId == LSF_FALCON_ID_NVJPG_RISCV_EB) || (falconId == LSF_FALCON_ID_NVENC_RISCV_EB))
+#define LSF_FALCON_USES_INSTANCE(falconId)  ((falconId == LSF_FALCON_ID_NVDEC_RISCV_EB) ||  \
+                                             (falconId == LSF_FALCON_ID_NVJPG)          ||  \
+                                             (falconId == LSF_FALCON_ID_NVJPG_RISCV_EB) ||  \
+                                             (falconId == LSF_FALCON_ID_NVENC_RISCV_EB) ||  \
+                                             (falconId == LSF_FALCON_ID_OFA_RISCV_EB))
 
 /*!
  * Size in entries of the ucode descriptor's dependency map.

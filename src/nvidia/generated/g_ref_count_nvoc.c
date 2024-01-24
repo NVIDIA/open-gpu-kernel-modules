@@ -109,21 +109,26 @@ void __nvoc_init_OBJREFCNT(OBJREFCNT *pThis) {
     __nvoc_init_funcTable_OBJREFCNT(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_OBJREFCNT(OBJREFCNT **ppThis, Dynamic *pParent, NvU32 createFlags, Dynamic * arg_pParent, NvU32 arg_tag, RefcntStateChangeCallback * arg_pStateChangeCallback, RefcntResetCallback * arg_pResetCallback) {
+NV_STATUS __nvoc_objCreate_OBJREFCNT(OBJREFCNT **ppThis, Dynamic *pParent, NvU32 createFlags, Dynamic * arg_pParent, NvU32 arg_tag, RefcntStateChangeCallback * arg_pStateChangeCallback, RefcntResetCallback * arg_pResetCallback)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     OBJREFCNT *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(OBJREFCNT), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(OBJREFCNT));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_OBJREFCNT);
 
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -138,16 +143,25 @@ NV_STATUS __nvoc_objCreate_OBJREFCNT(OBJREFCNT **ppThis, Dynamic *pParent, NvU32
     status = __nvoc_ctor_OBJREFCNT(pThis, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback);
     if (status != NV_OK) goto __nvoc_objCreate_OBJREFCNT_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_OBJREFCNT_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(OBJREFCNT));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

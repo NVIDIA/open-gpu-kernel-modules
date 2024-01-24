@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2019 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -131,19 +131,19 @@ typedef struct
 NV_STATUS uvm_isr_top_half_entry(const NvProcessorUuid *gpu_uuid);
 
 // Initialize ISR handling state
-NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu);
+NV_STATUS uvm_parent_gpu_init_isr(uvm_parent_gpu_t *parent_gpu);
 
 // Flush any currently scheduled bottom halves.  This is called during GPU
 // removal.
-void uvm_gpu_flush_bottom_halves(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_flush_bottom_halves(uvm_parent_gpu_t *parent_gpu);
 
 // Prevent new bottom halves from being scheduled. This is called during parent
 // GPU removal.
-void uvm_gpu_disable_isr(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_disable_isr(uvm_parent_gpu_t *parent_gpu);
 
 // Destroy ISR handling state and return interrupt ownership to RM. This is
 // called during parent GPU removal
-void uvm_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu);
 
 // Take parent_gpu->isr.replayable_faults.service_lock from a non-top/bottom
 // half thread.  This will also disable replayable page fault interrupts (if
@@ -151,46 +151,46 @@ void uvm_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu);
 // would cause an interrupt storm if we didn't disable them first.
 //
 // At least one GPU under the parent must have been previously retained.
-void uvm_gpu_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu);
 
 // Unlock parent_gpu->isr.replayable_faults.service_lock. This call may
 // re-enable replayable page fault interrupts.  Unlike
-// uvm_gpu_replayable_faults_isr_lock(), which should only called from
+// uvm_parent_gpu_replayable_faults_isr_lock(), which should only called from
 // non-top/bottom half threads, this can be called by any thread.
-void uvm_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu);
 
 // Lock/unlock routines for non-replayable faults. These do not need to prevent
 // interrupt storms since the GPU fault buffers for non-replayable faults are
-// managed by RM.  Unlike uvm_gpu_replayable_faults_isr_lock, no GPUs under
-// the parent need to have been previously retained.
-void uvm_gpu_non_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu);
-void uvm_gpu_non_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu);
+// managed by RM.  Unlike uvm_parent_gpu_replayable_faults_isr_lock, no GPUs
+// under the parent need to have been previously retained.
+void uvm_parent_gpu_non_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_non_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu);
 
-// See uvm_gpu_replayable_faults_isr_lock/unlock
-void uvm_gpu_access_counters_isr_lock(uvm_parent_gpu_t *parent_gpu);
-void uvm_gpu_access_counters_isr_unlock(uvm_parent_gpu_t *parent_gpu);
+// See uvm_parent_gpu_replayable_faults_isr_lock/unlock
+void uvm_parent_gpu_access_counters_isr_lock(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_access_counters_isr_unlock(uvm_parent_gpu_t *parent_gpu);
 
 // Increments the reference count tracking whether access counter interrupts
 // should be disabled. The caller is guaranteed that access counter interrupts
 // are disabled upon return. Interrupts might already be disabled prior to
 // making this call. Each call is ref-counted, so this must be paired with a
-// call to uvm_gpu_access_counters_intr_enable().
+// call to uvm_parent_gpu_access_counters_intr_enable().
 //
 // parent_gpu->isr.interrupts_lock must be held to call this function.
-void uvm_gpu_access_counters_intr_disable(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_access_counters_intr_disable(uvm_parent_gpu_t *parent_gpu);
 
 // Decrements the reference count tracking whether access counter interrupts
 // should be disabled. Only once the count reaches 0 are the HW interrupts
 // actually enabled, so this call does not guarantee that the interrupts have
 // been re-enabled upon return.
 //
-// uvm_gpu_access_counters_intr_disable() must have been called prior to calling
-// this function.
+// uvm_parent_gpu_access_counters_intr_disable() must have been called prior to
+// calling this function.
 //
 // NOTE: For pulse-based interrupts, the caller is responsible for re-arming
 // the interrupt.
 //
 // parent_gpu->isr.interrupts_lock must be held to call this function.
-void uvm_gpu_access_counters_intr_enable(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_access_counters_intr_enable(uvm_parent_gpu_t *parent_gpu);
 
 #endif // __UVM_GPU_ISR_H__

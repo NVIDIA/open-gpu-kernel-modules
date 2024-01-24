@@ -46,6 +46,8 @@
 #include <nv_ref.h>               // NV_PMC_BOOT_1_VGPU
 #include "nvdevid.h"
 
+#include "g_vgpu_chip_flags.h"    // vGPU device names
+
 #define NV_VFIO_PCI_BAR0_REGION_INDEX 0
 #define NV_VFIO_PCI_BAR1_REGION_INDEX 1
 #define NV_VFIO_PCI_BAR2_REGION_INDEX 2
@@ -61,16 +63,6 @@ void hypervisorSetHypervVgpuSupported_IMPL(OBJHYPERVISOR *pHypervisor)
 NvBool hypervisorIsVgxHyper_IMPL(void)
 {
     return os_is_vgx_hyper();
-}
-
-NvBool hypervisorIsAC_IMPL(void)
-{
-    return NV_FALSE;
-}
-
-void hypervisorSetACSupported_IMPL(OBJHYPERVISOR *pHypervisor)
-{
-    pHypervisor->bIsACSupported = NV_TRUE;
 }
 
 NV_STATUS hypervisorInjectInterrupt_IMPL
@@ -208,7 +200,7 @@ static NV_STATUS get_available_instances(
 
                 if (!(pKernelVgpuMgr->pgpuInfo[pgpuIndex].createdVfMask & NVBIT64(fnId)))
                 {
-                    if (kvgpumgrCheckVgpuTypeCreatable(&pKernelVgpuMgr->pgpuInfo[pgpuIndex], vgpuTypeInfo) == NV_OK)
+                    if (kvgpumgrCheckVgpuTypeCreatable(pGpu, &pKernelVgpuMgr->pgpuInfo[pgpuIndex], vgpuTypeInfo) == NV_OK)
                         *avail_instances = 1;
                 }
             }
@@ -216,7 +208,7 @@ static NV_STATUS get_available_instances(
     }
     else
     {
-        if (kvgpumgrCheckVgpuTypeCreatable(&pKernelVgpuMgr->pgpuInfo[pgpuIndex], vgpuTypeInfo) == NV_OK)
+        if (kvgpumgrCheckVgpuTypeCreatable(pGpu, &pKernelVgpuMgr->pgpuInfo[pgpuIndex], vgpuTypeInfo) == NV_OK)
             *avail_instances = vgpuTypeInfo->maxInstance - pKernelVgpuMgr->pgpuInfo[pgpuIndex].numCreatedVgpu;
     }
 
@@ -620,6 +612,16 @@ NV_STATUS NV_API_CALL nv_vgpu_get_bar_info(
             if (status == NV_OK && value)
                 bOverrideBar1Size = NV_TRUE;
         }
+      
+        if (gpuIsVfResizableBAR1Supported(pGpu))
+        {
+            if ((*size > pGpu->sriovState.vfBarSize[1]) ||
+                (!portStringCompare("Compute", (const char *)vgpuTypeInfo->vgpuClass, 7)))
+            {
+                *size = pGpu->sriovState.vfBarSize[1];
+            }
+        } 
+
         if (bOverrideBar1Size) {
             NvU64 bar1SizeInBytes, guestBar1;
             NvU64 gpuBar1LowerLimit = 256 * 1024 * 1024; // bar1 lower limit for override_bar1_length parameter
@@ -856,8 +858,17 @@ NV_STATUS  NV_API_CALL  nv_vgpu_get_sparse_mmap(
                                                           numAreas, NULL, NULL);
                 if (rmStatus == NV_OK)
                 {
-                    os_alloc_mem((void **)&vfRegionOffsets, sizeof(NvU64) * (*numAreas));
-                    os_alloc_mem((void **)&vfRegionSizes, sizeof (NvU64) * (*numAreas));
+                    rmStatus = os_alloc_mem((void **)&vfRegionOffsets, sizeof(NvU64) * (*numAreas));
+                    if (rmStatus != NV_OK)
+                        goto cleanup;
+
+                    rmStatus = os_alloc_mem((void **)&vfRegionSizes, sizeof (NvU64) * (*numAreas));
+                    if (rmStatus != NV_OK)
+                    {
+                        os_free_mem(vfRegionOffsets);
+                        goto cleanup;
+                    }
+
                     if (vfRegionOffsets && vfRegionSizes)
                     {
                         rmStatus = kbifGetVFSparseMmapRegions_HAL(pGpu, pKernelBif, pKernelHostVgpuDevice, os_page_size,
@@ -866,6 +877,11 @@ NV_STATUS  NV_API_CALL  nv_vgpu_get_sparse_mmap(
                         {
                             *offsets = vfRegionOffsets;
                             *sizes   = vfRegionSizes;
+                        }
+                        else
+                        {
+                            os_free_mem(vfRegionOffsets);
+                            os_free_mem(vfRegionSizes);
                         }
                     }
                     else
@@ -916,8 +932,16 @@ NV_STATUS  NV_API_CALL  nv_vgpu_get_sparse_mmap(
                 {
                     NvU32 i = 0;
                     NvU64 *tmpOffset, *tmpSize;
-                    os_alloc_mem((void **)offsets, sizeof(NvU64) * (*numAreas));
-                    os_alloc_mem((void **)sizes, sizeof (NvU64) * (*numAreas));
+                    rmStatus = os_alloc_mem((void **)offsets, sizeof(NvU64) * (*numAreas));
+                    if (rmStatus != NV_OK)
+                        goto cleanup;
+
+                    rmStatus = os_alloc_mem((void **)sizes, sizeof (NvU64) * (*numAreas));
+                    if (rmStatus != NV_OK)
+                    {
+                        os_free_mem(*offsets);
+                        goto cleanup;
+                    }
 
                     tmpOffset = *offsets;
                     tmpSize   = *sizes;
@@ -1141,7 +1165,6 @@ NV_STATUS osIsVfioPciCorePresent(void)
     return os_call_vgpu_vfio((void *) &vgpu_info, CMD_VFIO_PCI_CORE_PRESENT);
 }
 
-
 void initVGXSpecificRegistry(OBJGPU *pGpu)
 {
     NvU32 data32;
@@ -1165,12 +1188,14 @@ void initVGXSpecificRegistry(OBJGPU *pGpu)
 
 NV_STATUS rm_is_vgpu_supported_device(
     OS_GPU_INFO *pOsGpuInfo,
-    NvU32       pmc_boot_1
+    NvU32       pmc_boot_1,
+    NvU32       pmc_boot_42
 )
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
     OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
     NvBool is_sriov_enabled = FLD_TEST_DRF(_PMC, _BOOT_1, _VGPU, _VF, pmc_boot_1);
+    NvU32     i;
 
     // if not running in vGPU mode (guest VM) return NV_OK
     if (!(pHypervisor && pHypervisor->bIsHVMGuest &&
@@ -1180,5 +1205,28 @@ NV_STATUS rm_is_vgpu_supported_device(
         return NV_OK;
     }
 
-    return NV_OK;
+    if (!is_sriov_enabled)
+    {
+        return NV_OK;
+    }
+
+    if (os_is_grid_supported() && !gpumgrIsVgxRmFirmwareCapableChip(pmc_boot_42))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (os_is_grid_supported())
+    {
+        for (i = 0; i < NV_ARRAY_ELEMENTS(sVgpuUsmTypes); i++)
+        {
+            if (pOsGpuInfo->pci_info.device_id == sVgpuUsmTypes[i].ulDevID &&
+                    pOsGpuInfo->subsystem_vendor == sVgpuUsmTypes[i].ulSubSystemVendorID &&
+                    pOsGpuInfo->subsystem_id == sVgpuUsmTypes[i].ulSubID)
+            {
+                return NV_OK;
+            }
+        }
+    }
+
+    return NV_ERR_NOT_SUPPORTED;
 }

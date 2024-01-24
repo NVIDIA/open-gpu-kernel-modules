@@ -57,12 +57,15 @@ else
       -e 's/armv[0-7]\w\+/arm/' \
       -e 's/aarch64/arm64/' \
       -e 's/ppc64le/powerpc/' \
+      -e 's/riscv64/riscv/' \
     )
   endif
 
   NV_KERNEL_MODULES ?= $(wildcard nvidia nvidia-uvm nvidia-vgpu-vfio nvidia-modeset nvidia-drm nvidia-peermem)
   NV_KERNEL_MODULES := $(filter-out $(NV_EXCLUDE_KERNEL_MODULES), \
                                     $(NV_KERNEL_MODULES))
+  INSTALL_MOD_DIR ?= kernel/drivers/video
+
   NV_VERBOSE ?=
   SPECTRE_V2_RETPOLINE ?= 0
 
@@ -74,7 +77,7 @@ else
   KBUILD_PARAMS += NV_KERNEL_SOURCES=$(KERNEL_SOURCES)
   KBUILD_PARAMS += NV_KERNEL_OUTPUT=$(KERNEL_OUTPUT)
   KBUILD_PARAMS += NV_KERNEL_MODULES="$(NV_KERNEL_MODULES)"
-  KBUILD_PARAMS += INSTALL_MOD_DIR=kernel/drivers/video
+  KBUILD_PARAMS += INSTALL_MOD_DIR="$(INSTALL_MOD_DIR)"
   KBUILD_PARAMS += NV_SPECTRE_V2=$(SPECTRE_V2_RETPOLINE)
 
   .PHONY: modules module clean clean_conftest modules_install

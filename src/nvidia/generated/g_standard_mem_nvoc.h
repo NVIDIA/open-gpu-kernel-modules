@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,11 +55,16 @@ typedef struct MemoryManager MemoryManager;
 /*!
  * Allocator for normal virtual, video and system memory
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_STANDARD_MEM_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct StandardMemory {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Memory __nvoc_base_Memory;
@@ -81,13 +86,13 @@ struct StandardMemory {
     NvBool (*__stdmemIsGpuMapAllowed__)(struct StandardMemory *, struct OBJGPU *);
     NV_STATUS (*__stdmemUnmapFrom__)(struct StandardMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__stdmemControl_Epilogue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__stdmemControlLookup__)(struct StandardMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__stdmemControl__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__stdmemUnmap__)(struct StandardMemory *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__stdmemGetMemInterMapParams__)(struct StandardMemory *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__stdmemGetMemoryMappingDescriptor__)(struct StandardMemory *, MEMORY_DESCRIPTOR **);
     NV_STATUS (*__stdmemControlFilter__)(struct StandardMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__stdmemControlSerialization_Prologue__)(struct StandardMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__stdmemIsPartialUnmapSupported__)(struct StandardMemory *);
     NV_STATUS (*__stdmemIsReady__)(struct StandardMemory *, NvBool);
     NV_STATUS (*__stdmemCheckCopyPermissions__)(struct StandardMemory *, struct OBJGPU *, struct Device *);
     void (*__stdmemPreDestruct__)(struct StandardMemory *);
@@ -137,13 +142,13 @@ NV_STATUS __nvoc_objCreate_StandardMemory(StandardMemory**, Dynamic*, NvU32, CAL
 #define stdmemIsGpuMapAllowed(pMemory, pGpu) stdmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define stdmemUnmapFrom(pResource, pParams) stdmemUnmapFrom_DISPATCH(pResource, pParams)
 #define stdmemControl_Epilogue(pResource, pCallContext, pParams) stdmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define stdmemControlLookup(pResource, pParams, ppEntry) stdmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define stdmemControl(pMemory, pCallContext, pParams) stdmemControl_DISPATCH(pMemory, pCallContext, pParams)
 #define stdmemUnmap(pMemory, pCallContext, pCpuMapping) stdmemUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define stdmemGetMemInterMapParams(pMemory, pParams) stdmemGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define stdmemGetMemoryMappingDescriptor(pMemory, ppMemDesc) stdmemGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define stdmemControlFilter(pResource, pCallContext, pParams) stdmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define stdmemControlSerialization_Prologue(pResource, pCallContext, pParams) stdmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define stdmemIsPartialUnmapSupported(pResource) stdmemIsPartialUnmapSupported_DISPATCH(pResource)
 #define stdmemIsReady(pMemory, bCopyConstructorContext) stdmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define stdmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) stdmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define stdmemPreDestruct(pResource) stdmemPreDestruct_DISPATCH(pResource)
@@ -215,10 +220,6 @@ static inline void stdmemControl_Epilogue_DISPATCH(struct StandardMemory *pResou
     pResource->__stdmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS stdmemControlLookup_DISPATCH(struct StandardMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__stdmemControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS stdmemControl_DISPATCH(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pMemory->__stdmemControl__(pMemory, pCallContext, pParams);
 }
@@ -241,6 +242,10 @@ static inline NV_STATUS stdmemControlFilter_DISPATCH(struct StandardMemory *pRes
 
 static inline NV_STATUS stdmemControlSerialization_Prologue_DISPATCH(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__stdmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool stdmemIsPartialUnmapSupported_DISPATCH(struct StandardMemory *pResource) {
+    return pResource->__stdmemIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS stdmemIsReady_DISPATCH(struct StandardMemory *pMemory, NvBool bCopyConstructorContext) {

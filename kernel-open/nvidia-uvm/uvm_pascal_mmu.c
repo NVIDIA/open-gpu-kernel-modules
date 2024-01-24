@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2020 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -33,6 +33,7 @@
 
 #include "uvm_types.h"
 #include "uvm_forward_decl.h"
+#include "nv_uvm_interface.h"
 #include "uvm_global.h"
 #include "uvm_gpu.h"
 #include "uvm_mmu.h"
@@ -140,10 +141,17 @@ static NvU64 small_half_pde_pascal(uvm_mmu_page_table_alloc_t *phys_alloc)
     return pde_bits;
 }
 
-static void make_pde_pascal(void *entry, uvm_mmu_page_table_alloc_t **phys_allocs, NvU32 depth)
+static void make_pde_pascal(void *entry,
+                            uvm_mmu_page_table_alloc_t **phys_allocs,
+                            uvm_page_directory_t *dir,
+                            NvU32 child_index)
 {
-    NvU32 entry_count = entries_per_index_pascal(depth);
+    NvU32 entry_count;
     NvU64 *entry_bits = (NvU64 *)entry;
+
+    UVM_ASSERT(dir);
+
+    entry_count = entries_per_index_pascal(dir->depth);
 
     if (entry_count == 1) {
         *entry_bits = single_pde_pascal(*phys_allocs);
@@ -152,7 +160,8 @@ static void make_pde_pascal(void *entry, uvm_mmu_page_table_alloc_t **phys_alloc
         entry_bits[MMU_BIG] = big_half_pde_pascal(phys_allocs[MMU_BIG]);
         entry_bits[MMU_SMALL] = small_half_pde_pascal(phys_allocs[MMU_SMALL]);
 
-        // This entry applies to the whole dual PDE but is stored in the lower bits
+        // This entry applies to the whole dual PDE but is stored in the lower
+        // bits.
         entry_bits[MMU_BIG] |= HWCONST64(_MMU_VER2, DUAL_PDE, IS_PDE, TRUE);
     }
     else {
@@ -365,28 +374,44 @@ uvm_mmu_mode_hal_t *uvm_hal_mmu_mode_pascal(NvU32 big_page_size)
     return &pascal_mmu_mode_hal;
 }
 
+static void mmu_set_prefetch_faults(uvm_parent_gpu_t *parent_gpu, bool enable)
+{
+    volatile NvU32 *prefetch_ctrl = parent_gpu->fault_buffer_info.rm_info.replayable.pPrefetchCtrl;
+
+    // A null prefetch control mapping indicates that UVM should toggle the
+    // register's value using the RM API, instead of performing a direct access.
+    if (prefetch_ctrl == NULL) {
+        NV_STATUS status;
+
+        // Access to the register is currently blocked only in Confidential
+        // Computing.
+        UVM_ASSERT(g_uvm_global.conf_computing_enabled);
+        status = nvUvmInterfaceTogglePrefetchFaults(&parent_gpu->fault_buffer_info.rm_info, (NvBool)enable);
+
+        UVM_ASSERT(status == NV_OK);
+    }
+    else {
+        NvU32 prefetch_ctrl_value = UVM_GPU_READ_ONCE(*prefetch_ctrl);
+
+        if (enable)
+            prefetch_ctrl_value = WRITE_HWCONST(prefetch_ctrl_value, _PFB_PRI_MMU_PAGE, FAULT_CTRL, PRF_FILTER, SEND_ALL);
+        else
+            prefetch_ctrl_value = WRITE_HWCONST(prefetch_ctrl_value, _PFB_PRI_MMU_PAGE, FAULT_CTRL, PRF_FILTER, SEND_NONE);
+
+        UVM_GPU_WRITE_ONCE(*prefetch_ctrl, prefetch_ctrl_value);
+    }
+}
+
 void uvm_hal_pascal_mmu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu)
 {
-    volatile NvU32 *prefetch_control;
-    NvU32 prefetch_control_value;
+    UVM_ASSERT(parent_gpu->prefetch_fault_supported);
 
-    prefetch_control = parent_gpu->fault_buffer_info.rm_info.replayable.pPrefetchCtrl;
-
-    prefetch_control_value = UVM_GPU_READ_ONCE(*prefetch_control);
-    prefetch_control_value = WRITE_HWCONST(prefetch_control_value, _PFB_PRI_MMU_PAGE, FAULT_CTRL, PRF_FILTER, SEND_ALL);
-    UVM_GPU_WRITE_ONCE(*prefetch_control, prefetch_control_value);
+    mmu_set_prefetch_faults(parent_gpu, true);
 }
 
 void uvm_hal_pascal_mmu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu)
 {
-    volatile NvU32 *prefetch_control;
-    NvU32 prefetch_control_value;
-
-    prefetch_control = parent_gpu->fault_buffer_info.rm_info.replayable.pPrefetchCtrl;
-
-    prefetch_control_value = UVM_GPU_READ_ONCE(*prefetch_control);
-    prefetch_control_value = WRITE_HWCONST(prefetch_control_value, _PFB_PRI_MMU_PAGE, FAULT_CTRL, PRF_FILTER, SEND_NONE);
-    UVM_GPU_WRITE_ONCE(*prefetch_control, prefetch_control_value);
+    mmu_set_prefetch_faults(parent_gpu, false);
 }
 
 NvU16 uvm_hal_pascal_mmu_client_id_to_utlb_id(NvU16 client_id)

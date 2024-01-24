@@ -145,11 +145,16 @@ typedef struct KGRAPHICS_FECS_TRACE_INFO KGRAPHICS_FECS_TRACE_INFO;
  * interfaces which do not manage the underlying Graphics hardware can be
  * managed by this object.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_GRAPHICS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelGraphics {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -168,8 +173,10 @@ struct KernelGraphics {
     NV_STATUS (*__kgraphicsStatePostLoad__)(OBJGPU *, struct KernelGraphics *, NvU32);
     void (*__kgraphicsRegisterIntrService__)(OBJGPU *, struct KernelGraphics *, IntrServiceRecord *);
     NV_STATUS (*__kgraphicsServiceNotificationInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceServiceNotificationInterruptArguments *);
+    NV_STATUS (*__kgraphicsLoadStaticInfo__)(OBJGPU *, struct KernelGraphics *, NvU32);
     NvBool (*__kgraphicsClearInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceClearInterruptArguments *);
     NvU32 (*__kgraphicsServiceInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceServiceInterruptArguments *);
+    NvBool (*__kgraphicsIsUnrestrictedAccessMapSupported__)(OBJGPU *, struct KernelGraphics *);
     NV_STATUS (*__kgraphicsStatePreLoad__)(POBJGPU, struct KernelGraphics *, NvU32);
     NV_STATUS (*__kgraphicsStatePostUnload__)(POBJGPU, struct KernelGraphics *, NvU32);
     NV_STATUS (*__kgraphicsStateInitUnlocked__)(POBJGPU, struct KernelGraphics *);
@@ -188,12 +195,11 @@ struct KernelGraphics {
     NvU32 PRIVATE_FIELD(instance);
     KGRAPHICS_PRIVATE_DATA *PRIVATE_FIELD(pPrivate);
     NvBool PRIVATE_FIELD(bCollectingDeferredStaticData);
-    NvBool PRIVATE_FIELD(bBug4162646War);
     KGRAPHICS_FECS_TRACE_INFO *PRIVATE_FIELD(pFecsTraceInfo);
     struct KGRAPHICS_GLOBAL_CTX_BUFFERS_INFO PRIVATE_FIELD(globalCtxBuffersInfo);
     struct CTX_BUF_POOL_INFO *PRIVATE_FIELD(pCtxBufPool);
-    CTX_BUF_INFO PRIVATE_FIELD(maxCtxBufSize)[9];
-    GR_BUFFER_ATTR PRIVATE_FIELD(ctxAttr)[9];
+    CTX_BUF_INFO PRIVATE_FIELD(maxCtxBufSize)[10];
+    GR_BUFFER_ATTR PRIVATE_FIELD(ctxAttr)[10];
 };
 
 struct KernelGraphics_PRIVATE {
@@ -214,8 +220,10 @@ struct KernelGraphics_PRIVATE {
     NV_STATUS (*__kgraphicsStatePostLoad__)(OBJGPU *, struct KernelGraphics *, NvU32);
     void (*__kgraphicsRegisterIntrService__)(OBJGPU *, struct KernelGraphics *, IntrServiceRecord *);
     NV_STATUS (*__kgraphicsServiceNotificationInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceServiceNotificationInterruptArguments *);
+    NV_STATUS (*__kgraphicsLoadStaticInfo__)(OBJGPU *, struct KernelGraphics *, NvU32);
     NvBool (*__kgraphicsClearInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceClearInterruptArguments *);
     NvU32 (*__kgraphicsServiceInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceServiceInterruptArguments *);
+    NvBool (*__kgraphicsIsUnrestrictedAccessMapSupported__)(OBJGPU *, struct KernelGraphics *);
     NV_STATUS (*__kgraphicsStatePreLoad__)(POBJGPU, struct KernelGraphics *, NvU32);
     NV_STATUS (*__kgraphicsStatePostUnload__)(POBJGPU, struct KernelGraphics *, NvU32);
     NV_STATUS (*__kgraphicsStateInitUnlocked__)(POBJGPU, struct KernelGraphics *);
@@ -234,12 +242,11 @@ struct KernelGraphics_PRIVATE {
     NvU32 instance;
     KGRAPHICS_PRIVATE_DATA *pPrivate;
     NvBool bCollectingDeferredStaticData;
-    NvBool bBug4162646War;
     KGRAPHICS_FECS_TRACE_INFO *pFecsTraceInfo;
     struct KGRAPHICS_GLOBAL_CTX_BUFFERS_INFO globalCtxBuffersInfo;
     struct CTX_BUF_POOL_INFO *pCtxBufPool;
-    CTX_BUF_INFO maxCtxBufSize[9];
-    GR_BUFFER_ATTR ctxAttr[9];
+    CTX_BUF_INFO maxCtxBufSize[10];
+    GR_BUFFER_ATTR ctxAttr[10];
 };
 
 #ifndef __NVOC_CLASS_KernelGraphics_TYPEDEF__
@@ -282,10 +289,14 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics**, Dynamic*, NvU32);
 #define kgraphicsStatePostLoad(arg0, arg1, flags) kgraphicsStatePostLoad_DISPATCH(arg0, arg1, flags)
 #define kgraphicsRegisterIntrService(arg0, arg1, arg2) kgraphicsRegisterIntrService_DISPATCH(arg0, arg1, arg2)
 #define kgraphicsServiceNotificationInterrupt(arg0, arg1, arg2) kgraphicsServiceNotificationInterrupt_DISPATCH(arg0, arg1, arg2)
+#define kgraphicsLoadStaticInfo(arg0, arg1, swizzId) kgraphicsLoadStaticInfo_DISPATCH(arg0, arg1, swizzId)
+#define kgraphicsLoadStaticInfo_HAL(arg0, arg1, swizzId) kgraphicsLoadStaticInfo_DISPATCH(arg0, arg1, swizzId)
 #define kgraphicsClearInterrupt(arg0, arg1, arg2) kgraphicsClearInterrupt_DISPATCH(arg0, arg1, arg2)
 #define kgraphicsClearInterrupt_HAL(arg0, arg1, arg2) kgraphicsClearInterrupt_DISPATCH(arg0, arg1, arg2)
 #define kgraphicsServiceInterrupt(arg0, arg1, arg2) kgraphicsServiceInterrupt_DISPATCH(arg0, arg1, arg2)
 #define kgraphicsServiceInterrupt_HAL(arg0, arg1, arg2) kgraphicsServiceInterrupt_DISPATCH(arg0, arg1, arg2)
+#define kgraphicsIsUnrestrictedAccessMapSupported(arg0, arg1) kgraphicsIsUnrestrictedAccessMapSupported_DISPATCH(arg0, arg1)
+#define kgraphicsIsUnrestrictedAccessMapSupported_HAL(arg0, arg1) kgraphicsIsUnrestrictedAccessMapSupported_DISPATCH(arg0, arg1)
 #define kgraphicsStatePreLoad(pGpu, pEngstate, arg0) kgraphicsStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kgraphicsStatePostUnload(pGpu, pEngstate, arg0) kgraphicsStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kgraphicsStateInitUnlocked(pGpu, pEngstate) kgraphicsStateInitUnlocked_DISPATCH(pGpu, pEngstate)
@@ -350,20 +361,6 @@ static inline NV_STATUS kgraphicsAllocGlobalCtxBuffers(OBJGPU *arg0, struct Kern
 
 #define kgraphicsAllocGlobalCtxBuffers_HAL(arg0, arg1, gfid) kgraphicsAllocGlobalCtxBuffers(arg0, arg1, gfid)
 
-NV_STATUS kgraphicsLoadStaticInfo_KERNEL(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId);
-
-
-#ifdef __nvoc_kernel_graphics_h_disabled
-static inline NV_STATUS kgraphicsLoadStaticInfo(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_graphics_h_disabled
-#define kgraphicsLoadStaticInfo(arg0, arg1, swizzId) kgraphicsLoadStaticInfo_KERNEL(arg0, arg1, swizzId)
-#endif //__nvoc_kernel_graphics_h_disabled
-
-#define kgraphicsLoadStaticInfo_HAL(arg0, arg1, swizzId) kgraphicsLoadStaticInfo(arg0, arg1, swizzId)
-
 static inline void kgraphicsNonstallIntrCheckAndClear_b3696a(OBJGPU *arg0, struct KernelGraphics *arg1, struct THREAD_STATE_NODE *arg2) {
     return;
 }
@@ -391,20 +388,6 @@ static inline void kgraphicsInitFecsRegistryOverrides(OBJGPU *arg0, struct Kerne
 #endif //__nvoc_kernel_graphics_h_disabled
 
 #define kgraphicsInitFecsRegistryOverrides_HAL(arg0, arg1) kgraphicsInitFecsRegistryOverrides(arg0, arg1)
-
-NvBool kgraphicsIsUnrestrictedAccessMapSupported_PF(OBJGPU *arg0, struct KernelGraphics *arg1);
-
-
-#ifdef __nvoc_kernel_graphics_h_disabled
-static inline NvBool kgraphicsIsUnrestrictedAccessMapSupported(OBJGPU *arg0, struct KernelGraphics *arg1) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGraphics was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_kernel_graphics_h_disabled
-#define kgraphicsIsUnrestrictedAccessMapSupported(arg0, arg1) kgraphicsIsUnrestrictedAccessMapSupported_PF(arg0, arg1)
-#endif //__nvoc_kernel_graphics_h_disabled
-
-#define kgraphicsIsUnrestrictedAccessMapSupported_HAL(arg0, arg1) kgraphicsIsUnrestrictedAccessMapSupported(arg0, arg1)
 
 NV_STATUS kgraphicsConstructEngine_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, ENGDESCRIPTOR arg2);
 
@@ -454,9 +437,9 @@ static inline NV_STATUS kgraphicsStatePostLoad_DISPATCH(OBJGPU *arg0, struct Ker
     return arg1->__kgraphicsStatePostLoad__(arg0, arg1, flags);
 }
 
-void kgraphicsRegisterIntrService_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[168]);
+void kgraphicsRegisterIntrService_IMPL(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[171]);
 
-static inline void kgraphicsRegisterIntrService_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[168]) {
+static inline void kgraphicsRegisterIntrService_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceRecord arg2[171]) {
     arg1->__kgraphicsRegisterIntrService__(arg0, arg1, arg2);
 }
 
@@ -464,6 +447,14 @@ NV_STATUS kgraphicsServiceNotificationInterrupt_IMPL(OBJGPU *arg0, struct Kernel
 
 static inline NV_STATUS kgraphicsServiceNotificationInterrupt_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceServiceNotificationInterruptArguments *arg2) {
     return arg1->__kgraphicsServiceNotificationInterrupt__(arg0, arg1, arg2);
+}
+
+NV_STATUS kgraphicsLoadStaticInfo_VGPUSTUB(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId);
+
+NV_STATUS kgraphicsLoadStaticInfo_KERNEL(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId);
+
+static inline NV_STATUS kgraphicsLoadStaticInfo_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId) {
+    return arg1->__kgraphicsLoadStaticInfo__(arg0, arg1, swizzId);
 }
 
 NvBool kgraphicsClearInterrupt_GP100(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceClearInterruptArguments *arg2);
@@ -476,6 +467,16 @@ NvU32 kgraphicsServiceInterrupt_GP100(OBJGPU *arg0, struct KernelGraphics *arg1,
 
 static inline NvU32 kgraphicsServiceInterrupt_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, IntrServiceServiceInterruptArguments *arg2) {
     return arg1->__kgraphicsServiceInterrupt__(arg0, arg1, arg2);
+}
+
+static inline NvBool kgraphicsIsUnrestrictedAccessMapSupported_491d52(OBJGPU *arg0, struct KernelGraphics *arg1) {
+    return ((NvBool)(0 != 0));
+}
+
+NvBool kgraphicsIsUnrestrictedAccessMapSupported_PF(OBJGPU *arg0, struct KernelGraphics *arg1);
+
+static inline NvBool kgraphicsIsUnrestrictedAccessMapSupported_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1) {
+    return arg1->__kgraphicsIsUnrestrictedAccessMapSupported__(arg0, arg1);
 }
 
 static inline NV_STATUS kgraphicsStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelGraphics *pEngstate, NvU32 arg0) {

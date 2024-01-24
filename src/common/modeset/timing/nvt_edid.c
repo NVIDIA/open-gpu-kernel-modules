@@ -1076,6 +1076,7 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
 
                 if (p861Info->revision >= NVT_CTA861_REV_H)
                 {
+                    if (p861Info->total_vfdb         != 0)  parseCta861VideoFormatDataBlock(p861Info, pInfo);
                     if (p861Info->total_did_type7db  != 0)  parseCta861DIDType7VideoTimingDataBlock(p861Info, pInfo);
                     if (p861Info->total_did_type8db  != 0)  parseCta861DIDType8VideoTimingDataBlock(p861Info, pInfo);
                     if (p861Info->total_did_type10db != 0)  parseCta861DIDType10VideoTimingDataBlock(p861Info, pInfo);
@@ -1105,9 +1106,14 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
                             pInfo->ext_displayid20.interface_features.yuv420_min_pclk = 0;
                         }
 
-                        if (!pInfo->ext861.basic_caps)
+                        if (pInfo->ext861.revision == 0 && pInfo->ext_displayid20.valid_data_blocks.interface_feature_present)
                         {
-                            pInfo->ext861.basic_caps = pInfo->ext_displayid20.basic_caps;
+                            pInfo->ext861.revision = NVT_CEA861_REV_B;
+                        }
+
+                        if (pInfo->ext_displayid20.valid_data_blocks.interface_feature_present)
+                        {
+                            pInfo->ext861.basic_caps |= pInfo->ext_displayid20.basic_caps;
                         }
                     }
                 }
@@ -1161,7 +1167,7 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
     }
 
     // check for cvt timings - in display range limits or cvt 3-byte LDD, only for EDID1.4 and above
-    if (pInfo->version > 0x0103)
+    if (pInfo->version > NVT_EDID_VER_1_3)
     {
         parseEdidCvtTiming(pInfo);
     }
@@ -1436,7 +1442,7 @@ NVT_STATUS NvTiming_Get18ByteLongDescriptorIndex(NVT_EDID_INFO *pEdidInfo, NvU8 
 
 // get the edid timing
 CODE_SEGMENT(PAGE_DD_CODE)
-NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT_EDID_INFO *pEdidInfo, NVT_TIMING *pT, NvU32 rrx1k)
+NVT_STATUS NvTiming_GetEdidTimingExWithPclk(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT_EDID_INFO *pEdidInfo, NVT_TIMING *pT, NvU32 rrx1k, NvU32 pclk)
 {
     NvU8 kth = 0;
     NvU32 i, j;
@@ -1449,7 +1455,7 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
     if (pEdidInfo == NULL || pEdidInfo->total_timings == 0 || pT == 0)
         return NVT_STATUS_ERR;
 
-    if (width == 0 || height == 0 || rr == 0) // rrx1k is optional, can be 0.
+    if (width == 0 || height == 0 || rr == 0 ) // rrx1k and pclk are optional, can be 0.
         return NVT_STATUS_ERR;
 
     pEdidTiming = pEdidInfo->timing;
@@ -1473,7 +1479,7 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
 
     if (pEdidInfo->ext861.total_svr > 1)
     {
-        kth = getHighestPrioritySVRIdx(pEdidInfo->ext861.svr_vfpdb[0]);
+        kth = getHighestPrioritySVRIdx(&pEdidInfo->ext861);
     }
 
     for (i = 0; i < pEdidInfo->total_timings; i++)
@@ -1492,7 +1498,7 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
             ((rrx1k == 0) || (rrx1k == pEdidTiming[i].etc.rrx1k)) &&
             !!(flag & NVT_PVT_INTERLACED_MASK) == !!pEdidTiming[i].interlaced)
         {
-            if (map0 >= pEdidInfo->total_timings)
+            if (map0 >= pEdidInfo->total_timings || pEdidTiming[i].pclk == pclk)
             {
                 // make sure we take the priority as "detailed>standard>established". (The array timing[] always have the detailed timings in the front and then the standard and established.)
                 map0 = i;
@@ -1904,6 +1910,12 @@ NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 f
     }
 
     return NVT_STATUS_SUCCESS;
+}
+
+CODE_SEGMENT(PAGE_DD_CODE)
+NVT_STATUS NvTiming_GetEdidTimingEx(NvU32 width, NvU32 height, NvU32 rr, NvU32 flag, NVT_EDID_INFO *pEdidInfo, NVT_TIMING *pT, NvU32 rrx1k)
+{
+    return NvTiming_GetEdidTimingExWithPclk(width, height, rr, flag, pEdidInfo, pT, rrx1k, 0);
 }
 
 // get the edid timing
@@ -2814,28 +2826,35 @@ NvBool assignNextAvailableTiming(NVT_EDID_INFO *pInfo,
 }
 
 /**
- * @brief Return the first high priority nth index based on the different SVR
+ * @brief Return the nth highest priority index based on the different SVR
  * @param svr Short Video Reference
  */
 CODE_SEGMENT(PAGE_DD_CODE)
-NvU8 getHighestPrioritySVRIdx(NvU8 svr)
+NvU8 getHighestPrioritySVRIdx(const NVT_EDID_CEA861_INFO *pExt861)
 {
-    // In general sink shall define the first one timing sequence
+    // In general, sink shall define the first one timing sequence
     NvU8 kth = 1;
+    NvU8 i = 0;
 
-    // Reserved
-    if (svr == 0 || svr == 128 || (svr >= 176 && svr <= 192) || svr == 255)
-        return 0;
-
-    if (svr >= 129 && svr <= 144)      return svr - 128;  // Interpret as the Kth 18-byte DTD in both base0 and CTA block (for N = 1 to 16)
-    else if (svr >= 145 && svr <= 160) return svr - 144;  // Interpret as the Nth 20-byte DTD or 6- or 7-byte CVT-based descriptor. (for N = 1 to 16)
-    else if (svr >= 161 && svr <= 175) return svr - 160;  // Interpret as the video format indicated by the first VFD of the first VFDB with Frame Rates of Rate Index N (for N = 1 to 15)
-    else if (svr == 254)               return kth;        // Interpret as the timing format indicated by the first code of the first T8VTDB (for N = 1)
-    else // assign corresponding CTA format's timing from pre-defined CE timing table, EIA861B
+    for (i = 0; i < pExt861->total_svr; i++)
     {
-        // ( SVR >= 1 and SVR <= 127) and (SVR >= 193 and SVR <= 253) needs to handle it by client
-        return svr;
+        NvU8 svr = pExt861->svr_vfpdb[i];
+
+        // Reserved
+        if (svr == 0 || svr == 128 || (svr >= 176 && svr <= 192) || svr == 255)
+            continue;
+
+        if (svr >= 129 && svr <= 144)      return svr - 128;  // Interpret as the Kth 18-byte DTD in both base0 and CTA block (for N = 1 to 16)
+        else if (svr >= 145 && svr <= 160) return svr - 144;  // Interpret as the Nth 20-byte DTD or 6- or 7-byte CVT-based descriptor. (for N = 1 to 16)
+        else if (svr >= 161 && svr <= 175) return svr - 160;  // Interpret as the video format indicated by the first VFD of the first VFDB with Frame Rates of Rate Index N (for N = 1 to 15)
+        else if (svr == 254)               return kth;        // Interpret as the timing format indicated by the first code of the first T8VTDB (for N = 1)
+        else // assign corresponding CTA format's timing from pre-defined CE timing table, EIA861B
+        {
+            // ( SVR >= 1 and SVR <= 127) and (SVR >= 193 and SVR <= 253) needs to handle it by client
+            return svr;
+        }
     }
+
     return 0;
 }
 

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -42,11 +42,16 @@ extern "C" {
 #include "gpu/gpu_halspec.h"
 #include "nvoc/utility.h"
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_PROFILER_V1_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct Profiler {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -73,7 +78,6 @@ struct Profiler {
     NV_STATUS (*__profilerInternalControlForward__)(struct Profiler *, NvU32, void *, NvU32);
     NV_STATUS (*__profilerUnmapFrom__)(struct Profiler *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__profilerControl_Epilogue__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__profilerControlLookup__)(struct Profiler *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__profilerGetInternalObjectHandle__)(struct Profiler *);
     NV_STATUS (*__profilerUnmap__)(struct Profiler *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__profilerGetMemInterMapParams__)(struct Profiler *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -81,6 +85,7 @@ struct Profiler {
     NV_STATUS (*__profilerControlFilter__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__profilerControlSerialization_Prologue__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__profilerCanCopy__)(struct Profiler *);
+    NvBool (*__profilerIsPartialUnmapSupported__)(struct Profiler *);
     void (*__profilerPreDestruct__)(struct Profiler *);
     NV_STATUS (*__profilerIsDuplicate__)(struct Profiler *, NvHandle, NvBool *);
     void (*__profilerControlSerialization_Epilogue__)(struct Profiler *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -133,7 +138,6 @@ NV_STATUS __nvoc_objCreate_Profiler(Profiler**, Dynamic*, NvU32, struct CALL_CON
 #define profilerInternalControlForward(pGpuResource, command, pParams, size) profilerInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define profilerUnmapFrom(pResource, pParams) profilerUnmapFrom_DISPATCH(pResource, pParams)
 #define profilerControl_Epilogue(pResource, pCallContext, pParams) profilerControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define profilerControlLookup(pResource, pParams, ppEntry) profilerControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define profilerGetInternalObjectHandle(pGpuResource) profilerGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define profilerUnmap(pGpuResource, pCallContext, pCpuMapping) profilerUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define profilerGetMemInterMapParams(pRmResource, pParams) profilerGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -141,6 +145,7 @@ NV_STATUS __nvoc_objCreate_Profiler(Profiler**, Dynamic*, NvU32, struct CALL_CON
 #define profilerControlFilter(pResource, pCallContext, pParams) profilerControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define profilerControlSerialization_Prologue(pResource, pCallContext, pParams) profilerControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define profilerCanCopy(pResource) profilerCanCopy_DISPATCH(pResource)
+#define profilerIsPartialUnmapSupported(pResource) profilerIsPartialUnmapSupported_DISPATCH(pResource)
 #define profilerPreDestruct(pResource) profilerPreDestruct_DISPATCH(pResource)
 #define profilerIsDuplicate(pResource, hMemory, pDuplicate) profilerIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define profilerControlSerialization_Epilogue(pResource, pCallContext, pParams) profilerControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -278,10 +283,6 @@ static inline void profilerControl_Epilogue_DISPATCH(struct Profiler *pResource,
     pResource->__profilerControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS profilerControlLookup_DISPATCH(struct Profiler *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__profilerControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle profilerGetInternalObjectHandle_DISPATCH(struct Profiler *pGpuResource) {
     return pGpuResource->__profilerGetInternalObjectHandle__(pGpuResource);
 }
@@ -308,6 +309,10 @@ static inline NV_STATUS profilerControlSerialization_Prologue_DISPATCH(struct Pr
 
 static inline NvBool profilerCanCopy_DISPATCH(struct Profiler *pResource) {
     return pResource->__profilerCanCopy__(pResource);
+}
+
+static inline NvBool profilerIsPartialUnmapSupported_DISPATCH(struct Profiler *pResource) {
+    return pResource->__profilerIsPartialUnmapSupported__(pResource);
 }
 
 static inline void profilerPreDestruct_DISPATCH(struct Profiler *pResource) {

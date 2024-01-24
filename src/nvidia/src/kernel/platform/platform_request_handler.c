@@ -25,6 +25,7 @@
 #include "nvRmReg.h"
 #include "objtmr.h"
 #include "platform/platform_request_handler.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "core/locks.h"
 #include "diagnostics/tracer.h"
 #include "gps.h"

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -300,6 +300,11 @@ void vgpuDevWriteReg032(
     NV_ASSERT_OK(kbifGetPciConfigSpacePriMirror_HAL(pGpu, GPU_GET_KERNEL_BIF(pGpu),
                                                     &configSpaceMirrorBase, &configSpaceMirrorSize));
 
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+    {
+        configSpaceSize = configSpaceMirrorSize;
+    }
+    else
     {
         configSpaceSize = NV_CONFIG_PCI_NV_12;
     }
@@ -371,6 +376,11 @@ NvU32 vgpuDevReadReg032(
     NV_ASSERT_OK(kbifGetPciConfigSpacePriMirror_HAL(pGpu, GPU_GET_KERNEL_BIF(pGpu),
                                                     &configSpaceMirrorBase, &configSpaceMirrorSize));
 
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu))
+    {
+        configSpaceSize = configSpaceMirrorSize;
+    }
+    else
     {
         configSpaceSize = NV_CONFIG_PCI_NV_12;
     }

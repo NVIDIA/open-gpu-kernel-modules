@@ -52,11 +52,16 @@ MAKE_LIST(GF100_TIMED_SEM_ENTRY_LIST, GF100_TIMED_SEM_ENTRY);
 /*!
  * RM internal class representing GF100_TIMED_SEMAPHORE_SW
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_TIMED_SEMA_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct TimedSemaSwObject {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -86,7 +91,6 @@ struct TimedSemaSwObject {
     NV_STATUS (*__tsemaInternalControlForward__)(struct TimedSemaSwObject *, NvU32, void *, NvU32);
     NV_STATUS (*__tsemaUnmapFrom__)(struct TimedSemaSwObject *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__tsemaControl_Epilogue__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__tsemaControlLookup__)(struct TimedSemaSwObject *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__tsemaGetInternalObjectHandle__)(struct TimedSemaSwObject *);
     NV_STATUS (*__tsemaControl__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__tsemaUnmap__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -97,6 +101,7 @@ struct TimedSemaSwObject {
     NV_STATUS (*__tsemaUnregisterEvent__)(struct TimedSemaSwObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__tsemaControlSerialization_Prologue__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__tsemaCanCopy__)(struct TimedSemaSwObject *);
+    NvBool (*__tsemaIsPartialUnmapSupported__)(struct TimedSemaSwObject *);
     void (*__tsemaPreDestruct__)(struct TimedSemaSwObject *);
     NV_STATUS (*__tsemaIsDuplicate__)(struct TimedSemaSwObject *, NvHandle, NvBool *);
     void (*__tsemaControlSerialization_Epilogue__)(struct TimedSemaSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -164,7 +169,6 @@ NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU3
 #define tsemaInternalControlForward(pGpuResource, command, pParams, size) tsemaInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define tsemaUnmapFrom(pResource, pParams) tsemaUnmapFrom_DISPATCH(pResource, pParams)
 #define tsemaControl_Epilogue(pResource, pCallContext, pParams) tsemaControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define tsemaControlLookup(pResource, pParams, ppEntry) tsemaControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define tsemaGetInternalObjectHandle(pGpuResource) tsemaGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define tsemaControl(pGpuResource, pCallContext, pParams) tsemaControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define tsemaUnmap(pGpuResource, pCallContext, pCpuMapping) tsemaUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -175,6 +179,7 @@ NV_STATUS __nvoc_objCreate_TimedSemaSwObject(TimedSemaSwObject**, Dynamic*, NvU3
 #define tsemaUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) tsemaUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define tsemaControlSerialization_Prologue(pResource, pCallContext, pParams) tsemaControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define tsemaCanCopy(pResource) tsemaCanCopy_DISPATCH(pResource)
+#define tsemaIsPartialUnmapSupported(pResource) tsemaIsPartialUnmapSupported_DISPATCH(pResource)
 #define tsemaPreDestruct(pResource) tsemaPreDestruct_DISPATCH(pResource)
 #define tsemaIsDuplicate(pResource, hMemory, pDuplicate) tsemaIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define tsemaControlSerialization_Epilogue(pResource, pCallContext, pParams) tsemaControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -264,10 +269,6 @@ static inline void tsemaControl_Epilogue_DISPATCH(struct TimedSemaSwObject *pRes
     pResource->__tsemaControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS tsemaControlLookup_DISPATCH(struct TimedSemaSwObject *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__tsemaControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle tsemaGetInternalObjectHandle_DISPATCH(struct TimedSemaSwObject *pGpuResource) {
     return pGpuResource->__tsemaGetInternalObjectHandle__(pGpuResource);
 }
@@ -306,6 +307,10 @@ static inline NV_STATUS tsemaControlSerialization_Prologue_DISPATCH(struct Timed
 
 static inline NvBool tsemaCanCopy_DISPATCH(struct TimedSemaSwObject *pResource) {
     return pResource->__tsemaCanCopy__(pResource);
+}
+
+static inline NvBool tsemaIsPartialUnmapSupported_DISPATCH(struct TimedSemaSwObject *pResource) {
+    return pResource->__tsemaIsPartialUnmapSupported__(pResource);
 }
 
 static inline void tsemaPreDestruct_DISPATCH(struct TimedSemaSwObject *pResource) {

@@ -405,6 +405,16 @@ nvswitch_translate_hw_error
     {
         return NVSWITCH_ERR_HW_SOE;
     }
+    else if ((type >= NVSWITCH_ERR_HW_CCI) &&
+             (type < NVSWITCH_ERR_HW_CCI_LAST))
+    {
+        return NVSWITCH_ERR_HW_CCI;
+    }
+    else if ((type >= NVSWITCH_ERR_HW_OSFP_THERM) &&
+             (type < NVSWITCH_ERR_HW_OSFP_THERM_LAST))
+    {
+        return NVSWITCH_ERR_HW_OSFP_THERM;
+    }
     else if ((type >= NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE) &&
              (type < NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_LAST))
     {

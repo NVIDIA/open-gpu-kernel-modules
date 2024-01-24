@@ -236,8 +236,8 @@ static NV_STATUS _osVerifyInterrupts(
     while (!interrupt_triggered)
     {
 #if defined(NV_UNIX) && !defined(NV_MODS)
-        osDelay(50);
-        Bailout += 50 * 1000;
+        osDelayNs(5 * 1000);
+        Bailout += 5;
 #else
         OBJTMR *pTmr = GPU_GET_TIMER(pGpu);
         tmrDelay(pTmr, 5 * 1000);

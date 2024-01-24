@@ -35,6 +35,7 @@
 #include "gpu/subdevice/subdevice_diag.h"
 #include "ctrl/ctrl0080/ctrl0080fb.h"
 #include "core/locks.h"
+#include "platform/sli/sli.h"
 #include "rmapi/rs_utils.h"
 #include "rmapi/mapping_list.h"
 #include "platform/chipset/chipset.h"
@@ -119,7 +120,7 @@ memmgrGetDeviceCaps
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _DISABLE_PLC_GLOBALLY);
     }
 
-    if (pMemorySystemConfig->bDisablePlcForCertainOffsetsBug3046774)
+    if (pKernelMemorySystem->bDisablePlcForCertainOffsetsBug3046774)
     {
         RMCTRL_SET_CAP(tempCaps, NV0080_CTRL_FB_CAPS, _PLC_BUG_3046774);
     }
@@ -247,6 +248,44 @@ deviceCtrlCmdFbGetCapsV2_IMPL
     rmStatus = memmgrGetFbCaps(pGpu, pFbCaps);
 
     return rmStatus;
+}
+
+//
+// deviceCtrlCmdSetDefaultVidmemPhysicality
+//
+// Lock Requirements:
+//      Assert that API lock held on entry
+//
+NV_STATUS
+deviceCtrlCmdSetDefaultVidmemPhysicality_IMPL
+(
+    Device *pDevice,
+    NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS *pParams
+)
+{
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
+    NvU32 override;
+
+    switch (pParams->value)
+    {
+        case NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_DEFAULT:
+            override = NVOS32_ATTR_PHYSICALITY_DEFAULT;
+            break;
+        case NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_CONTIGUOUS:
+            override = NVOS32_ATTR_PHYSICALITY_CONTIGUOUS;
+            break;
+        case NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_NONCONTIGUOUS:
+            override = NVOS32_ATTR_PHYSICALITY_NONCONTIGUOUS;
+            break;
+        case NV0080_CTRL_FB_DEFAULT_VIDMEM_PHYSICALITY_ALLOW_NONCONTIGUOUS:
+            override = NVOS32_ATTR_PHYSICALITY_ALLOW_NONCONTIGUOUS;
+            break;
+        default:
+            return NV_ERR_INVALID_ARGUMENT;
+    }
+    pDevice->defaultVidmemPhysicalityOverride = override;
+
+    return NV_OK;
 }
 
 //

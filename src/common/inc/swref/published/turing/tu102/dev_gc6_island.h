@@ -24,6 +24,7 @@
 #ifndef __tu102_dev_gc6_island_h__
 #define __tu102_dev_gc6_island_h__
 
+#define NV_PGC6                                                                          0x118fff:0x118000 /* RW--D */
 #define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK                                     0x00118128 /* RW-4R */
 #define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK_READ_PROTECTION                            3:0 /* RWIVF */
 #define NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK_READ_PROTECTION_LEVEL0                     0:0 /*       */

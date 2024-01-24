@@ -176,10 +176,6 @@ static void __nvoc_thunk_RmResource_uvmswControl_Epilogue(struct UvmSwObject *pR
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_uvmswControlLookup(struct UvmSwObject *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_uvmswGetInternalObjectHandle(struct UvmSwObject *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_UvmSwObject_GpuResource.offset));
 }
@@ -218,6 +214,10 @@ static NV_STATUS __nvoc_thunk_RmResource_uvmswControlSerialization_Prologue(stru
 
 static NvBool __nvoc_thunk_RsResource_uvmswCanCopy(struct UvmSwObject *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_uvmswIsPartialUnmapSupported(struct UvmSwObject *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_UvmSwObject_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_uvmswPreDestruct(struct UvmSwObject *pResource) {
@@ -328,8 +328,6 @@ static void __nvoc_init_funcTable_UvmSwObject_1(UvmSwObject *pThis, RmHalspecOwn
 
     pThis->__uvmswControl_Epilogue__ = &__nvoc_thunk_RmResource_uvmswControl_Epilogue;
 
-    pThis->__uvmswControlLookup__ = &__nvoc_thunk_RsResource_uvmswControlLookup;
-
     pThis->__uvmswGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_uvmswGetInternalObjectHandle;
 
     pThis->__uvmswControl__ = &__nvoc_thunk_GpuResource_uvmswControl;
@@ -349,6 +347,8 @@ static void __nvoc_init_funcTable_UvmSwObject_1(UvmSwObject *pThis, RmHalspecOwn
     pThis->__uvmswControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_uvmswControlSerialization_Prologue;
 
     pThis->__uvmswCanCopy__ = &__nvoc_thunk_RsResource_uvmswCanCopy;
+
+    pThis->__uvmswIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_uvmswIsPartialUnmapSupported;
 
     pThis->__uvmswPreDestruct__ = &__nvoc_thunk_RsResource_uvmswPreDestruct;
 
@@ -384,23 +384,31 @@ void __nvoc_init_UvmSwObject(UvmSwObject *pThis, RmHalspecOwner *pRmhalspecowner
     __nvoc_init_funcTable_UvmSwObject(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     UvmSwObject *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(UvmSwObject), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(UvmSwObject));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_UvmSwObject);
 
     pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -418,16 +426,25 @@ NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject **ppThis, Dynamic *pParent, N
     status = __nvoc_ctor_UvmSwObject(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_UvmSwObject_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_UvmSwObject_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(UvmSwObject));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

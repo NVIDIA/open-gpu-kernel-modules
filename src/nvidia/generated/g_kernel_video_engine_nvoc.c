@@ -104,6 +104,26 @@ static void __nvoc_init_funcTable_KernelVideoEngine_1(KernelVideoEngine *pThis, 
     PORT_UNREFERENCED_VARIABLE(pRmhalspecowner);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal);
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
+
+    // Hal function -- kvidengInitLogging
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kvidengInitLogging__ = &kvidengInitLogging_46f6a7;
+    }
+    else
+    {
+        pThis->__kvidengInitLogging__ = &kvidengInitLogging_KERNEL;
+    }
+
+    // Hal function -- kvidengFreeLogging
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kvidengFreeLogging__ = &kvidengFreeLogging_b3696a;
+    }
+    else
+    {
+        pThis->__kvidengFreeLogging__ = &kvidengFreeLogging_KERNEL;
+    }
 }
 
 void __nvoc_init_funcTable_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRmhalspecowner) {
@@ -118,23 +138,31 @@ void __nvoc_init_KernelVideoEngine(KernelVideoEngine *pThis, RmHalspecOwner *pRm
     __nvoc_init_funcTable_KernelVideoEngine(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic *pParent, NvU32 createFlags, struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc) {
+NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic *pParent, NvU32 createFlags, struct OBJGPU * arg_pGpu, ENGDESCRIPTOR arg_physEngDesc)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     KernelVideoEngine *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelVideoEngine), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(KernelVideoEngine));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelVideoEngine);
 
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_Object);
@@ -152,16 +180,25 @@ NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine **ppThis, Dynamic
     status = __nvoc_ctor_KernelVideoEngine(pThis, pRmhalspecowner, arg_pGpu, arg_physEngDesc);
     if (status != NV_OK) goto __nvoc_objCreate_KernelVideoEngine_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_KernelVideoEngine_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(KernelVideoEngine));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

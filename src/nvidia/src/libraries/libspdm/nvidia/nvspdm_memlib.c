@@ -45,12 +45,11 @@
  * @param  length    The number of bytes to set.
  * @param  value     The value with which to fill length bytes of buffer.
  *
- * @return buffer.
  *
  **/
-void *libspdm_set_mem(void *buffer, size_t length, uint8_t value)
+void libspdm_set_mem(void *buffer, size_t length, uint8_t value)
 {
-	return portMemSet(buffer, value, length);
+    portMemSet(buffer, value, length);
 }
 
 
@@ -87,11 +86,9 @@ void *libspdm_set_mem(void *buffer, size_t length, uint8_t value)
  * @param    src_buf   Source buffer to copy from.
  * @param    src_len   The number of bytes to copy from the source buffer.
  *
- * @return   0 on success. non-zero on error.
- *
  **/
-int libspdm_copy_mem(void *dst_buf, size_t dst_len,
-                     const void *src_buf, size_t src_len)
+void libspdm_copy_mem(void *dst_buf, size_t dst_len,
+                      const void *src_buf, size_t src_len)
 {
     volatile void *pRet = NULL;
 
@@ -99,21 +96,20 @@ int libspdm_copy_mem(void *dst_buf, size_t dst_len,
      * Do not zero "dst" in this case. */
     if (dst_buf == NULL || dst_len > (SIZE_MAX >> 1)) {
         LIBSPDM_ASSERT(0);
-        return -1;
+        return;
     }
 
     /* Gaurd against invalid source. Zero "dst" in this case. */
     if (src_buf == NULL) {
         LIBSPDM_ASSERT(0);
-        return -1;
+        return;
     }
 
     /* Guard against invalid lengths. Zero "dst" in these cases. */
     if (src_len > dst_len ||
         src_len > (SIZE_MAX >> 1)) {
-
         LIBSPDM_ASSERT(0);
-        return -1;
+        return;
     }
 
     pRet = portMemCopy(dst_buf, dst_len, src_buf, src_len);
@@ -121,10 +117,10 @@ int libspdm_copy_mem(void *dst_buf, size_t dst_len,
     if (pRet == NULL)
     {
         LIBSPDM_ASSERT(0);
-        return -1;
+        return;
     }
 
-    return 0;
+    return;
 }
 
 /**
@@ -138,10 +134,8 @@ int libspdm_copy_mem(void *dst_buf, size_t dst_len,
  * @param  buffer      The pointer to the target buffer to fill with zeros.
  * @param  length      The number of bytes in buffer to fill with zeros.
  *
- * @return buffer.
- *
  **/
-void *libspdm_zero_mem(void *buffer, size_t length)
+void libspdm_zero_mem(void *buffer, size_t length)
 {
-    return portMemSet(buffer, 0, length);
+    portMemSet(buffer, 0, length);
 }

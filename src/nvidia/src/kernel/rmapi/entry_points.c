@@ -470,7 +470,7 @@ static void _nv04UnmapMemoryDma
     XlateUserModeArgsToSecInfo(bUserModeArgs, NV_FALSE, &secInfo);
 
     pArgs->status = pRmApi->UnmapWithSecInfo(pRmApi, pArgs->hClient, pArgs->hDevice, pArgs->hDma,
-                                             pArgs->hMemory, pArgs->flags, pArgs->dmaOffset, &secInfo);
+                                             pArgs->flags, pArgs->dmaOffset, pArgs->size, &secInfo);
 } // end of Nv04UnmapMemoryDma()
 
 static void _nv04UnmapMemoryDmaWithSecInfo
@@ -483,7 +483,7 @@ static void _nv04UnmapMemoryDmaWithSecInfo
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL);
 
     pArgs->status = pRmApi->UnmapWithSecInfo(pRmApi, pArgs->hClient, pArgs->hDevice, pArgs->hDma,
-                                             pArgs->hMemory, pArgs->flags, pArgs->dmaOffset, &secInfo);
+                                             pArgs->flags, pArgs->dmaOffset, pArgs->size, &secInfo);
 }
 
 /*

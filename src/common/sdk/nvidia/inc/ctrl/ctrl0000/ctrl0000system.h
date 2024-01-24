@@ -202,8 +202,8 @@ typedef struct NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_PARAMS {
  *     Vendor defined Model and Extended Model combined
  *   stepping
  *     Silicon stepping
- *   bSEVEnabled
- *     Secure Encrypted Virtualization enabled/disabled state
+ *   bCCEnabled
+ *     Confidentail compute enabled/disabled state
  *
  * Possible status values returned are:
  *   NV_OK
@@ -227,7 +227,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS {
     NvU32  model;                              /* Vendor defined Model and Extended Model combined   */
     NvU8   stepping;                           /* Silicon stepping      */
     NvU32  coresOnDie;                         /* cpu cores per die     */
-    NvBool bSEVEnabled;                        /* SEV enabled on cpu    */
+    NvBool bCCEnabled;                        /* CC enabled on cpu    */
 } NV0000_CTRL_SYSTEM_GET_CPU_INFO_PARAMS;
 
 // Macros for CPU family information
@@ -419,28 +419,6 @@ typedef struct NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS {
 
 
 /*
- * NV0000_CTRL_CMD_SYSTEM_SET_MEMORY_SIZE
- *
- * This command is used to set the system memory size in pages.
- *
- *   memorySize
- *     This parameter specifies the system memory size in pages.  All values
- *     are considered legal.
- *
- * 
- * Possible status values returned are:
- *   NV_OK
- *   NV_ERR_INVALID_PARAM_STRUCT
- */
-#define NV0000_CTRL_CMD_SYSTEM_SET_MEMORY_SIZE                                         (0x107U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS_MESSAGE_ID" */
-
-#define NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS_MESSAGE_ID (0x7U)
-
-typedef struct NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS {
-    NvU32 memorySize;
-} NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS;
-
-/*
  * NV0000_CTRL_CMD_SYSTEM_GET_LOCK_TIMES
  *
  * This command is used to retrieve the measured times spent holding and waiting for
@@ -467,7 +445,7 @@ typedef struct NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS {
  *   NV_ERR_NOT_SUPPORTED
  */
 
-#define NV0000_CTRL_CMD_SYSTEM_GET_LOCK_TIMES (0x109U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS_MESSAGE_ID" */
+#define NV0000_CTRL_CMD_SYSTEM_GET_LOCK_TIMES                                          (0x109U) /* finn: Evaluated from "(FINN_NV01_ROOT_SYSTEM_INTERFACE_ID << 8) | NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS_MESSAGE_ID" */
 
 #define NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS_MESSAGE_ID (0x9U)
 
@@ -1092,6 +1070,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS {
     NvU32 p2pOptimalWriteCEs;
     NvU8  p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE];
     NV_DECLARE_ALIGNED(NvP64 busPeerIds, 8);
+    NV_DECLARE_ALIGNED(NvP64 busEgmPeerIds, 8);
 } NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS;
 
 /* valid p2pCaps values */
@@ -1225,6 +1204,11 @@ typedef struct NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS {
  *        busPeerIds[X * gpuCount + Y] maps from index X to index Y in
  *        the gpuIds[] table. For invalid or non-existent peer busPeerIds[]
  *        has the value NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INVALID_PEER.
+ *    [out] busEgmPeerIds
+ *        EGM Peer ID matrix. It is a one-dimentional array.
+ *        busEgmPeerIds[X * gpuCount + Y] maps from index X to index Y in
+ *        the gpuIds[] table. For invalid or non-existent peer busEgmPeerIds[]
+ *        has the value NV0000_CTRL_SYSTEM_GET_P2P_CAPS_INVALID_PEER.
  * 
  * Possible status values returned are:
  *   NV_OK
@@ -1246,6 +1230,7 @@ typedef struct NV0000_CTRL_SYSTEM_GET_P2P_CAPS_V2_PARAMS {
     NvU32 p2pOptimalWriteCEs;
     NvU8  p2pCapsStatus[NV0000_CTRL_P2P_CAPS_INDEX_TABLE_SIZE];
     NvU32 busPeerIds[NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS_SQUARED];
+    NvU32 busEgmPeerIds[NV0000_CTRL_SYSTEM_MAX_ATTACHED_GPUS_SQUARED];
 } NV0000_CTRL_SYSTEM_GET_P2P_CAPS_V2_PARAMS;
 
 /*
@@ -2178,8 +2163,6 @@ typedef struct NV0000_CTRL_CMD_SYSTEM_NVPCF_GET_POWER_MODE_INFO_PARAMS {
 #define CONTROLLER_FILTER_TYPE_MOVING_MAX                          1U
 
 /* Valid NVPCF subfunction case */
-#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_SUPPORTED_CASE       0U
-#define NVPCF0100_CTRL_CONFIG_DSM_1X_FUNC_GET_DYNAMIC_CASE         1U
 #define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_SUPPORTED_CASE       2U
 #define NVPCF0100_CTRL_CONFIG_DSM_2X_FUNC_GET_DYNAMIC_CASE         3U
 

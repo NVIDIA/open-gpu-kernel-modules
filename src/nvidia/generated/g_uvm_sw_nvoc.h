@@ -40,11 +40,16 @@ extern "C" {
 /*!
  * RM internal class representing GP100_UVM_SW
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_UVM_SW_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct UvmSwObject {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -71,7 +76,6 @@ struct UvmSwObject {
     NV_STATUS (*__uvmswInternalControlForward__)(struct UvmSwObject *, NvU32, void *, NvU32);
     NV_STATUS (*__uvmswUnmapFrom__)(struct UvmSwObject *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__uvmswControl_Epilogue__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__uvmswControlLookup__)(struct UvmSwObject *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__uvmswGetInternalObjectHandle__)(struct UvmSwObject *);
     NV_STATUS (*__uvmswControl__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__uvmswUnmap__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -82,6 +86,7 @@ struct UvmSwObject {
     NV_STATUS (*__uvmswUnregisterEvent__)(struct UvmSwObject *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__uvmswControlSerialization_Prologue__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__uvmswCanCopy__)(struct UvmSwObject *);
+    NvBool (*__uvmswIsPartialUnmapSupported__)(struct UvmSwObject *);
     void (*__uvmswPreDestruct__)(struct UvmSwObject *);
     NV_STATUS (*__uvmswIsDuplicate__)(struct UvmSwObject *, NvHandle, NvBool *);
     void (*__uvmswControlSerialization_Epilogue__)(struct UvmSwObject *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -139,7 +144,6 @@ NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject**, Dynamic*, NvU32, struct CA
 #define uvmswInternalControlForward(pGpuResource, command, pParams, size) uvmswInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define uvmswUnmapFrom(pResource, pParams) uvmswUnmapFrom_DISPATCH(pResource, pParams)
 #define uvmswControl_Epilogue(pResource, pCallContext, pParams) uvmswControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define uvmswControlLookup(pResource, pParams, ppEntry) uvmswControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define uvmswGetInternalObjectHandle(pGpuResource) uvmswGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define uvmswControl(pGpuResource, pCallContext, pParams) uvmswControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define uvmswUnmap(pGpuResource, pCallContext, pCpuMapping) uvmswUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -150,6 +154,7 @@ NV_STATUS __nvoc_objCreate_UvmSwObject(UvmSwObject**, Dynamic*, NvU32, struct CA
 #define uvmswUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) uvmswUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define uvmswControlSerialization_Prologue(pResource, pCallContext, pParams) uvmswControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define uvmswCanCopy(pResource) uvmswCanCopy_DISPATCH(pResource)
+#define uvmswIsPartialUnmapSupported(pResource) uvmswIsPartialUnmapSupported_DISPATCH(pResource)
 #define uvmswPreDestruct(pResource) uvmswPreDestruct_DISPATCH(pResource)
 #define uvmswIsDuplicate(pResource, hMemory, pDuplicate) uvmswIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define uvmswControlSerialization_Epilogue(pResource, pCallContext, pParams) uvmswControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -217,10 +222,6 @@ static inline void uvmswControl_Epilogue_DISPATCH(struct UvmSwObject *pResource,
     pResource->__uvmswControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS uvmswControlLookup_DISPATCH(struct UvmSwObject *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__uvmswControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle uvmswGetInternalObjectHandle_DISPATCH(struct UvmSwObject *pGpuResource) {
     return pGpuResource->__uvmswGetInternalObjectHandle__(pGpuResource);
 }
@@ -259,6 +260,10 @@ static inline NV_STATUS uvmswControlSerialization_Prologue_DISPATCH(struct UvmSw
 
 static inline NvBool uvmswCanCopy_DISPATCH(struct UvmSwObject *pResource) {
     return pResource->__uvmswCanCopy__(pResource);
+}
+
+static inline NvBool uvmswIsPartialUnmapSupported_DISPATCH(struct UvmSwObject *pResource) {
+    return pResource->__uvmswIsPartialUnmapSupported__(pResource);
 }
 
 static inline void uvmswPreDestruct_DISPATCH(struct UvmSwObject *pResource) {

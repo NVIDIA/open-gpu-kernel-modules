@@ -397,9 +397,9 @@ rmapiUnmap
     NvHandle  hClient,
     NvHandle  hDevice,
     NvHandle  hMemCtx,
-    NvHandle  hMemory,
     NvU32     flags,
-    NvU64     dmaOffset
+    NvU64     dmaOffset,
+    NvU64     size
 );
 
 NV_STATUS
@@ -409,9 +409,9 @@ rmapiUnmapWithSecInfo
     NvHandle           hClient,
     NvHandle           hDevice,
     NvHandle           hMemCtx,
-    NvHandle           hMemory,
     NvU32              flags,
     NvU64              dmaOffset,
+    NvU64              size,
     API_SECURITY_INFO *pSecInfo
 );
 
@@ -422,9 +422,9 @@ rmapiUnmapWithSecInfoTls
     NvHandle           hClient,
     NvHandle           hDevice,
     NvHandle           hMemCtx,
-    NvHandle           hMemory,
     NvU32              flags,
     NvU64              dmaOffset,
+    NvU64              size,
     API_SECURITY_INFO *pSecInfo
 );
 

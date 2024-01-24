@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -68,4 +68,52 @@ typedef struct NV0073_CTRL_CMD_DSC_CAP_PARAMS {
     NvU32  maxNumHztSlices;
     NvU32  lineBufferBitDepth;
 } NV0073_CTRL_CMD_DSC_CAP_PARAMS;
+
+/*
+ * NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD
+ *
+ *   subDeviceInstance
+ *     This parameter specifies the subdevice instance within the
+ *     NV04_DISPLAY_COMMON parent device to which the operation should be
+ *     directed. This parameter must specify a value between zero and the
+ *     total number of subdevices within the parent device.  This parameter
+ *     should be set to zero for default behavior
+ *   cmd
+ *     This parameter is an input to this command.
+ *     Here are the current defined fields:
+ *       NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_CMD_POWER
+ *         Set to specify what operation to run.
+ *           NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_CMD_POWER_UP
+ *             Request to power up pad.
+ *           NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_CMD_POWER_DOWN
+ *             Request to power down the pad.
+ *   linkBw
+ *     This parameter is used to pass in the link bandwidth required to run the
+ *     power up sequence. Refer enum DM_FRL_LINK_RATE_GBPS for valid values.
+ *   laneCount
+ *     This parameter is used to pass the lanecount.
+ *   sorIndex
+ *     This parameter is used to pass the SOR index.
+ *   padlinkIndex
+ *     This parameter is used to pass the padlink index for primary link.
+ *     Please refer enum DFPPADLINK for valid index values for Link A~F.
+ */
+
+#define NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD (0x730502U) /* finn: Evaluated from "(FINN_NV04_DISPLAY_COMMON_COMMON_INTERFACE_ID << 8) | NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS_MESSAGE_ID" */
+
+#define NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS {
+    NvU32 subDeviceInstance;
+    NvU32 cmd;
+    NvU32 linkBw;
+    NvU32 laneCount;
+    NvU32 sorIndex;
+    NvU32 padlinkIndex;
+} NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_PARAMS;
+
+#define NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_CMD_POWER                        0:0
+#define NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_CMD_POWER_UP   (0x00000000U)
+#define NV0073_CTRL_CMD_FRL_CONFIG_MACRO_PAD_CMD_POWER_DOWN (0x00000001U)
+
 /* _ctrl0073common_h_ */

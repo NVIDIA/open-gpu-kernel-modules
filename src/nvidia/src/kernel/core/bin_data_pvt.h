@@ -45,7 +45,6 @@
 // public module directory
 //
 
-
 //
 // Private data structure for binary data management
 //

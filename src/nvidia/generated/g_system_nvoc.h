@@ -47,6 +47,8 @@ extern "C" {
 #include "os/capability.h"
 #include "containers/btree.h"
 
+#include "containers/multimap.h"
+
 #define SYS_GET_INSTANCE()        (g_pSys)
 #define SYS_GET_GPUMGR(p)         ((p)->pGpuMgr)
 #define SYS_GET_GSYNCMGR(p)       ((p)->pGsyncMgr)
@@ -342,11 +344,23 @@ typedef struct
     NvU32  genRegsMiscIoAdr;
 } SYS_VGA_POST_STATE;
 
+typedef struct
+{
+    void *pData;
+} SysMemExportCacheEntry;
+
+MAKE_MULTIMAP(SYS_MEM_EXPORT_CACHE, SysMemExportCacheEntry);
+
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_SYSTEM_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJSYS {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -400,11 +414,17 @@ struct OBJSYS {
     NvU32 binMask;
     PNODE pMemFilterList;
     NvBool PDB_PROP_SYS_IS_QSYNC_FW_REVISION_CHECK_DISABLED;
+    NvBool PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED;
     NvU64 rmInstanceId;
     NvU32 currentCid;
     NvBool bUseDeferredClientListFree;
     NvU32 clientListDeferredFreeLimit;
     OS_RM_CAPS *pOsRmCaps;
+    SYS_MEM_EXPORT_CACHE sysMemExportCache;
+    PORT_RWLOCK *pSysMemExportModuleLock;
+    volatile NvU64 sysExportObjectCounter;
+    NvHandle hSysMemExportClient;
+    NvBool bSysUuidBasedMemExportSupport;
     struct OBJGPUMGR *pGpuMgr;
     struct OBJGSYNCMGR *pGsyncMgr;
     struct OBJVGPUMGR *pVgpuMgr;
@@ -450,6 +470,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS;
 #define PDB_PROP_SYS_REGISTRY_OVERRIDES_INITIALIZED_BASE_NAME PDB_PROP_SYS_REGISTRY_OVERRIDES_INITIALIZED
 #define PDB_PROP_SYS_IS_EFI_INIT_BASE_CAST
 #define PDB_PROP_SYS_IS_EFI_INIT_BASE_NAME PDB_PROP_SYS_IS_EFI_INIT
+#define PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED_BASE_CAST
+#define PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED_BASE_NAME PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED
 #define PDB_PROP_SYS_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS_BASE_CAST
 #define PDB_PROP_SYS_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS_BASE_NAME PDB_PROP_SYS_INITIALIZE_SYSTEM_MEMORY_ALLOCATIONS
 #define PDB_PROP_SYS_POWER_BATTERY_BASE_CAST

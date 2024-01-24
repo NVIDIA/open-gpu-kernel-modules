@@ -571,6 +571,11 @@ nvswitch_init_lpwr_regs_lr10
         return;
     }
 
+    if (nvswitch_is_link_in_reset(device, link))
+    {
+        return;
+    }
+
     if (device->regkeys.enable_pm == NV_SWITCH_REGKEY_ENABLE_PM_NO)
     {
         return;
@@ -686,6 +691,15 @@ nvswitch_init_lpwr_regs_lr10
                     tempRegVal);
 }
 
+void
+nvswitch_program_l1_scratch_reg_lr10
+(
+    nvswitch_device *device,
+    NvU32 linkNumber
+)
+{
+    // Not Implemented for LR10
+}
 
 void
 nvswitch_init_buffer_ready_lr10
@@ -2635,3 +2649,36 @@ nvswitch_link_termination_setup_lr10
 
     return NVL_SUCCESS;
 }
+
+NvlStatus
+nvswitch_ctrl_get_link_l1_capability_lr10
+(
+    nvswitch_device *device,
+    NvU32 linkNum,
+    NvBool *isL1Capable
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_ctrl_get_link_l1_threshold_lr10
+(
+    nvswitch_device *device,
+    NvU32 linkNum,
+    NvU32 *lpThreshold
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+
+NvlStatus
+nvswitch_ctrl_set_link_l1_threshold_lr10
+(
+    nvlink_link *link,
+    NvU32 lpEntryThreshold
+)
+{
+    return -NVL_ERR_NOT_SUPPORTED;
+}
+

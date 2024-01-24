@@ -270,8 +270,7 @@ static NV_STATUS _rmAllocGetHeapSize
     NvU64              *pHeapSize
 )
 {
-    NV2080_CTRL_FB_GET_INFO_PARAMS  fbInfoParams = {0};
-    NV2080_CTRL_FB_INFO             fbInfoEntries[1] = {{0}};
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS  fbInfoParams = {0};
     NV_STATUS                       status;
     NvHandle                        hSubDevice;
     NvBool                          bMustFreeSubDevice;
@@ -283,17 +282,14 @@ static NV_STATUS _rmAllocGetHeapSize
         return status;
 
     fbInfoParams.fbInfoListSize = 1;
-    fbInfoParams.fbInfoList = NV_PTR_TO_NvP64(&fbInfoEntries);
-
-    fbInfoEntries[0].index = NV2080_CTRL_FB_INFO_INDEX_TOTAL_RAM_SIZE;
+    fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_TOTAL_RAM_SIZE;
 
     status = pContext->RmControl(pContext, hClient, hSubDevice,
-                                 NV2080_CTRL_CMD_FB_GET_INFO,
+                                 NV2080_CTRL_CMD_FB_GET_INFO_V2,
                                  &fbInfoParams,
                                  sizeof(fbInfoParams));
 
-
-    *pHeapSize = ((NvU64)fbInfoEntries[0].data << 10);
+    *pHeapSize = ((NvU64)fbInfoParams.fbInfoList[0].data << 10);
 
     if (bMustFreeSubDevice)
     {

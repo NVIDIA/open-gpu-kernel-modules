@@ -27,5 +27,6 @@
 #include <linux/pci.h>
 
 extern struct pci_device_id nv_pci_table[];
+extern struct pci_device_id nv_module_device_table[4];
 
 #endif /* _NV_PCI_TABLE_H_ */

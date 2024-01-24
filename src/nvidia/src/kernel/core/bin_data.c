@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -327,6 +327,71 @@ bindataArchiveGetStorage(
     return NULL;
 }
 
+void bindataInitialize(void)
+{
+}
+
+void bindataDestroy(void)
+{
+}
+
+/*!
+ * Enable zero copy of bindata. If executed on GSP and if the bindata section is uncompressed,
+ * populate ppData with the location in the elf file.
+ * Otherwise, allocate buffers in heap and copy the bindata.
+ * Assumes pBinstorage and ppData are valid
+ *
+ * @param[out]  ppData             pointer to elf section/allocated buffer
+ * @param[in]   pBinStorage        Pointer to Bindata Storage
+ *
+ * @return      NV_OK                if operation is successful
+ *              NV_ERR_NO_MEMORY     if buffer allocation fails
+ */
+NV_STATUS bindataStorageAcquireData(
+    const BINDATA_STORAGE *pBinStorage,
+    const void **ppData
+)
+{
+    NV_STATUS status = NV_OK;
+
+    {
+        NvU32 bufferSize = bindataGetBufferSize(pBinStorage);
+        *ppData = portMemAllocNonPaged(bufferSize);
+
+        if (*ppData == NULL)
+        {
+            NV_PRINTF(LEVEL_ERROR, "bindata memory alloc failed\n");
+            return NV_ERR_NO_MEMORY;
+        }
+
+        status = bindataWriteToBuffer(pBinStorage, (NvU8 *)*ppData, bufferSize);
+
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                    "bindataWriteToBuffer failed. Freeing alloced memory, return code %u\n", status);
+            portMemFree((void*)*ppData);
+            *ppData = NULL;
+            return status;
+        }
+    }
+    return status;
+}
+
+/*!
+ * Skip calling free on unallocated bindata zero copy pointers
+ * calls free in non gsp cases
+ * @param[in]   pData  Pointer to be freed
+ *
+ */
+void bindataStorageReleaseData(
+    void *pData
+)
+{
+    {
+        portMemFree(pData);
+    }
+}
 
 // File Overriding Feature is only enabled under MODS
 

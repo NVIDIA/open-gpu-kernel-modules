@@ -28,14 +28,19 @@
 
 #include "os/os.h"
 #include "core/hal.h"
-#include "core/info_block.h"
 #include "core/locks.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "gpu/ce/kernel_ce.h"
+#include "platform/sli/sli.h"
+#include "gpu/gpu_fabric_probe.h"
+#include "compute/imex_session_api.h"
+#include "compute/fabric.h"
+#include "mem_mgr/mem_multicast_fabric.h"
 
 /*!
  * @brief Is NVLINK topology forced? NVLink topology is considered
@@ -608,66 +613,29 @@ fail:
     return status;
 }
 
-/*!
- * @brief Clients to register their callback functions for inband data
- *
- * @param[in] pGpu           OBJGPU pointer
- * @param[in] pKernelNvlink  KernelNvlink pointer
- * @param[in] params         callback functions
- */
-NV_STATUS
-knvlinkRegisterInbandCallback_IMPL
-(
-    OBJGPU *pGpu,
-    KernelNvlink *pKernelNvlink,
-    NVLINK_INBAND_MSG_CALLBACK *params
-)
+const static NVLINK_INBAND_MSG_CALLBACK nvlink_inband_callbacks[] =
 {
-    if (params->messageType >= NVLINK_INBAND_MSG_TYPE_MAX)
     {
-        NV_PRINTF(LEVEL_ERROR, "Wrong msgType. Not registering\n");
-        return NV_ERR_INVALID_PARAMETER;
-    }
+        .messageType = NVLINK_INBAND_MSG_TYPE_GPU_PROBE_RSP,
+        .pCallback = gpuFabricProbeReceiveKernelCallback,
+        .wqItemFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                       OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW
+    },
 
-    if (pKernelNvlink->inbandCallback[params->messageType].pCallback != NULL)
     {
-        NV_PRINTF(LEVEL_ERROR, "Callback has been already registered"
-                                         "for msgType %d\n", params->messageType);
-        return NV_ERR_IN_USE;
-    }
+        .messageType = NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP,
+        .pCallback = memorymulticastfabricTeamSetupResponseCallback,
+        .wqItemFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                       OS_QUEUE_WORKITEM_FLAGS_LOCK_GPUS_RW
+    },
 
-    pKernelNvlink->inbandCallback[params->messageType].pCallback = params->pCallback;
-    pKernelNvlink->inbandCallback[params->messageType].wqItemFlags = params->wqItemFlags;
-
-    return NV_OK;
-}
-
-/*!
- * @brief Clients to unregister their callback functions for inband data
- *
- * @param[in] pGpu           OBJGPU pointer
- * @param[in] pKernelNvlink  KernelNvlink pointer
- * @param[in] msgType        Inband Message type
- */
-NV_STATUS
-knvlinkUnregisterInbandCallback_IMPL
-(
-    OBJGPU *pGpu,
-    KernelNvlink *pKernelNvlink,
-    NvU16 msgType
-)
-{
-    if (msgType >= NVLINK_INBAND_MSG_TYPE_MAX)
     {
-        NV_PRINTF(LEVEL_ERROR, "Wrong msgType. Not unregistering\n");
-        return NV_ERR_INVALID_PARAMETER;
+        .messageType = NVLINK_INBAND_MSG_TYPE_GPU_PROBE_UPDATE_REQ,
+        .pCallback = gpuFabricProbeReceiveUpdateKernelCallback,
+        .wqItemFlags = OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                       OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW
     }
-
-    pKernelNvlink->inbandCallback[msgType].pCallback = NULL;
-    pKernelNvlink->inbandCallback[msgType].wqItemFlags = 0;
-
-    return NV_OK;
-}
+};
 
 void
 knvlinkInbandMsgCallbackDispatcher_WORKITEM
@@ -676,29 +644,26 @@ knvlinkInbandMsgCallbackDispatcher_WORKITEM
     void *pData
 )
 {
-    OBJGPU *pGpu    = NULL;
     nvlink_inband_msg_header_t *pHeader;
-    KernelNvlink *pKernelNvlink;
     NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pMessage = pData;
-    NvU8 *pRsvd = NULL;
+    NvU8 i;
+    const NVLINK_INBAND_MSG_CALLBACK *pCb = NULL;
 
-    pGpu =  gpumgrGetGpu(gpuInstance);
-    if (pGpu == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Invalid GPU\n");
-        return;
-    }
-
-    pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-    if (pKernelNvlink == NULL)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Invalid NVLink state\n");
-        return;
-    }
+    // Dispatcher may not be called under GPU lock, so don't access pGpu.
 
     pHeader = (nvlink_inband_msg_header_t *)pMessage->data;
 
-    if (pKernelNvlink->inbandCallback[pHeader->type].pCallback == NULL)
+    for (i = 0; i < NV_ARRAY_ELEMENTS(nvlink_inband_callbacks); i++)
+    {
+        if ((nvlink_inband_callbacks[i].messageType == pHeader->type) &&
+            (nvlink_inband_callbacks[i].pCallback != NULL))
+        {
+            pCb = &nvlink_inband_callbacks[i];
+            break;
+        }
+    }
+
+    if (pCb == NULL)
     {
         NV_PRINTF(LEVEL_ERROR,
                   "No Callback Registered for type %d. Dropping the msg\n", 
@@ -706,12 +671,18 @@ knvlinkInbandMsgCallbackDispatcher_WORKITEM
         return;
     }
 
-    // Assert reserved in msgHdr are zero
-    pRsvd = &pHeader->reserved[0];
-    NV_ASSERT((pRsvd[0] == 0) && portMemCmp(pRsvd, pRsvd + 1,
-              sizeof(pHeader->reserved) - 1) == 0);
+#if defined(DEBUG) || defined(DEVELOP)
+    {
+        NvU8 *pRsvd = NULL;
 
-    (void)pKernelNvlink->inbandCallback[pHeader->type].pCallback(gpuInstance, pData);
+        // Assert reserved in msgHdr are zero
+        pRsvd = &pHeader->reserved[0];
+        NV_ASSERT((pRsvd[0] == 0) && portMemCmp(pRsvd, pRsvd + 1,
+                  sizeof(pHeader->reserved) - 1) == 0);
+    }
+#endif
+
+    (void)pCb->pCallback(gpuInstance, NULL, pData);
 }
 
 NV_STATUS
@@ -725,8 +696,9 @@ knvlinkInbandMsgCallbackDispatcher_IMPL
 {
     NV_STATUS status;
     nvlink_inband_msg_header_t *pHeader;
-    NVLINK_INBAND_MSG_CALLBACK *pParams;
     NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pData = NULL;
+    const NVLINK_INBAND_MSG_CALLBACK *pCb = NULL;
+    NvU8 i;
 
     pHeader = (nvlink_inband_msg_header_t *)pMessage;
 
@@ -736,10 +708,21 @@ knvlinkInbandMsgCallbackDispatcher_IMPL
         return NV_ERR_INVALID_REQUEST;
     }
 
-    pParams = &pKernelNvlink->inbandCallback[pHeader->type];
-    if (pParams->pCallback == NULL)
+    for (i = 0; i < NV_ARRAY_ELEMENTS(nvlink_inband_callbacks); i++)
     {
-        NV_PRINTF(LEVEL_ERROR, "Callback not registered for the message type %d\n", pHeader->type);
+        if ((nvlink_inband_callbacks[i].messageType == pHeader->type) &&
+            (nvlink_inband_callbacks[i].pCallback != NULL))
+        {
+            pCb = &nvlink_inband_callbacks[i];
+            break;
+        }
+    }
+
+    if (pCb == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "No Callback Registered for type %d. Dropping the msg\n",
+                  pHeader->type);
         return NV_ERR_INVALID_REQUEST;
     }
 
@@ -754,7 +737,7 @@ knvlinkInbandMsgCallbackDispatcher_IMPL
     portMemCopy(pData->data, pData->dataSize, pMessage, dataSize);
 
     status = osQueueWorkItemWithFlags(pGpu, knvlinkInbandMsgCallbackDispatcher_WORKITEM, pData,
-                                      pParams->wqItemFlags);
+                                      pCb->wqItemFlags);
      if (status != NV_OK)
      {
         portMemFree(pData);
@@ -1248,7 +1231,7 @@ knvlinkSetPowerFeatures_IMPL
         case NVLINK_VERSION_22:
         {
             // NVLink L2 is supported only on MODS and Windows LDDM
-            if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM || RMCFG_FEATURE_MODS_FEATURES)
+            if (RMCFG_FEATURE_PLATFORM_WINDOWS || RMCFG_FEATURE_MODS_FEATURES)
             {
                 pKernelNvlink->setProperty(pKernelNvlink, PDB_PROP_KNVLINK_L2_POWER_STATE_ENABLED,
                                            (pKernelNvlink->bDisableL2Mode ? NV_FALSE : NV_TRUE));
@@ -2056,6 +2039,34 @@ knvlinkProcessInitDisabledLinks_IMPL
     pKernelNvlink->initDisabledLinksMask = params.initDisabledLinksMask;
 
     return NV_OK;
+}
+
+void
+knvlinkFatalErrorRecovery_WORKITEM
+(
+    NvU32 gpuInstance,
+    void  *pArgs
+)
+{
+    OBJGPU *pGpu = gpumgrGetGpu(gpuInstance);
+    rcAndDisableOutstandingClientsWithImportedMemory(pGpu, NV_FABRIC_INVALID_NODE_ID);
+}
+
+NV_STATUS
+knvlinkFatalErrorRecovery_IMPL
+(
+    OBJGPU *pGpu,
+    KernelNvlink *pKernelNvlink
+)
+{
+    NV_STATUS status;
+
+    status = osQueueWorkItemWithFlags(pGpu, knvlinkFatalErrorRecovery_WORKITEM, NULL,
+                                      (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
+                                        OS_QUEUE_WORKITEM_FLAGS_LOCK_API_RW |
+                                        OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW));
+
+     return status;
 }
 
 // Grab GPU locks before RPCing into GSP-RM for NVLink RPCs

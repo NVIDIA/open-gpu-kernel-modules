@@ -150,6 +150,41 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
     // used by the migratable ops function.
     //
     bUseMigratableOps = (pOpSmIds != NULL);
+    //
+    // If in a VM, do RPC to the host that has hw access.
+    //
+    // In case of SRIOV, vGPU guest UMD such as CUDA driver read/write
+    // PF registers through this RMCtrl. Since, it is a PF register the
+    // validation is to be performed by host RM only. Hence, we need to
+    // call RPC early and skip any validation check in Guest RM.
+    //
+    if (IS_VIRTUAL(pGpu))
+    {
+        //
+        // If this function is being used by a MIGRATABLE call,
+        // we route the GSP call to normal DMA controller
+        //
+        if (bUseMigratableOps)
+        {
+            NV_RM_RPC_CONTROL(pGpu,
+                  pRmCtrlParams->hClient,
+                  pRmCtrlParams->hObject,
+                  pRmCtrlParams->cmd,
+                  pRmCtrlParams->pParams,
+                  pRmCtrlParams->paramsSize,
+                  status);
+        }
+        else
+        {
+            NV_RM_RPC_GPU_EXEC_REG_OPS(pGpu,
+                                       pRmCtrlParams->hClient,
+                                       pRmCtrlParams->hObject,
+                                       pRmCtrlParams->pParams,
+                                       pRegOps,
+                                       status);
+        }
+        return status;
+    }
 
     // init once, only in monolithic-rm or the cpu-rm, or gsp-rm if the call
     // is from the gsp plugin
@@ -173,13 +208,14 @@ subdeviceCtrlCmdGpuExecRegOps_cmn
         //
         if (bUseMigratableOps)
         {
-            NV_RM_RPC_CONTROL(pGpu,
-                  pRmCtrlParams->hClient,
-                  pRmCtrlParams->hObject,
-                  pRmCtrlParams->cmd,
-                  pRmCtrlParams->pParams,
-                  pRmCtrlParams->paramsSize,
-                  status);
+            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+            status = pRmApi->Control(pRmApi,
+                                     pRmCtrlParams->hClient,
+                                     pRmCtrlParams->hObject,
+                                     pRmCtrlParams->cmd,
+                                     pRmCtrlParams->pParams,
+                                     pRmCtrlParams->paramsSize);
         }
         else
         {

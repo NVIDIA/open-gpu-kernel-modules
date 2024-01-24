@@ -272,11 +272,16 @@ typedef struct KernelSMDebuggerSession KernelSMDebuggerSession;
 
 
 // NVOC only expand macros inside a class. Use the stub class
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_RESOURCE_FWD_DECLS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RmClientResource;
 
 #ifndef __NVOC_CLASS_RmClientResource_TYPEDEF__
@@ -287,6 +292,17 @@ typedef struct RmClientResource RmClientResource;
 #ifndef __nvoc_class_id_RmClientResource
 #define __nvoc_class_id_RmClientResource 0x37a701
 #endif /* __nvoc_class_id_RmClientResource */
+
+struct ImexSessionApi;
+
+#ifndef __NVOC_CLASS_ImexSessionApi_TYPEDEF__
+#define __NVOC_CLASS_ImexSessionApi_TYPEDEF__
+typedef struct ImexSessionApi ImexSessionApi;
+#endif /* __NVOC_CLASS_ImexSessionApi_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_ImexSessionApi
+#define __nvoc_class_id_ImexSessionApi 0xb4748b
+#endif /* __nvoc_class_id_ImexSessionApi */
 
 struct GpuManagementApi;
 
@@ -397,6 +413,17 @@ typedef struct PerfBuffer PerfBuffer;
 #ifndef __nvoc_class_id_PerfBuffer
 #define __nvoc_class_id_PerfBuffer 0x4bc43b
 #endif /* __nvoc_class_id_PerfBuffer */
+
+struct VgpuApi;
+
+#ifndef __NVOC_CLASS_VgpuApi_TYPEDEF__
+#define __NVOC_CLASS_VgpuApi_TYPEDEF__
+typedef struct VgpuApi VgpuApi;
+#endif /* __NVOC_CLASS_VgpuApi_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_VgpuApi
+#define __nvoc_class_id_VgpuApi 0x7774f5
+#endif /* __nvoc_class_id_VgpuApi */
 
 struct Hdacodec;
 
@@ -651,6 +678,28 @@ typedef struct FlaMemory FlaMemory;
 #define __nvoc_class_id_FlaMemory 0xe61ee1
 #endif /* __nvoc_class_id_FlaMemory */
 
+struct MemoryExport;
+
+#ifndef __NVOC_CLASS_MemoryExport_TYPEDEF__
+#define __NVOC_CLASS_MemoryExport_TYPEDEF__
+typedef struct MemoryExport MemoryExport;
+#endif /* __NVOC_CLASS_MemoryExport_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_MemoryExport
+#define __nvoc_class_id_MemoryExport 0xe7ac53
+#endif /* __nvoc_class_id_MemoryExport */
+
+struct MemoryFabricImportV2;
+
+#ifndef __NVOC_CLASS_MemoryFabricImportV2_TYPEDEF__
+#define __NVOC_CLASS_MemoryFabricImportV2_TYPEDEF__
+typedef struct MemoryFabricImportV2 MemoryFabricImportV2;
+#endif /* __NVOC_CLASS_MemoryFabricImportV2_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_MemoryFabricImportV2
+#define __nvoc_class_id_MemoryFabricImportV2 0xf96871
+#endif /* __nvoc_class_id_MemoryFabricImportV2 */
+
 struct MemoryFabric;
 
 #ifndef __NVOC_CLASS_MemoryFabric_TYPEDEF__
@@ -661,6 +710,17 @@ typedef struct MemoryFabric MemoryFabric;
 #ifndef __nvoc_class_id_MemoryFabric
 #define __nvoc_class_id_MemoryFabric 0x127499
 #endif /* __nvoc_class_id_MemoryFabric */
+
+struct MemoryFabricImportedRef;
+
+#ifndef __NVOC_CLASS_MemoryFabricImportedRef_TYPEDEF__
+#define __NVOC_CLASS_MemoryFabricImportedRef_TYPEDEF__
+typedef struct MemoryFabricImportedRef MemoryFabricImportedRef;
+#endif /* __NVOC_CLASS_MemoryFabricImportedRef_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_MemoryFabricImportedRef
+#define __nvoc_class_id_MemoryFabricImportedRef 0x189bad
+#endif /* __nvoc_class_id_MemoryFabricImportedRef */
 
 struct VaSpaceApi;
 
@@ -683,6 +743,28 @@ typedef struct MemoryMulticastFabric MemoryMulticastFabric;
 #ifndef __nvoc_class_id_MemoryMulticastFabric
 #define __nvoc_class_id_MemoryMulticastFabric 0x130210
 #endif /* __nvoc_class_id_MemoryMulticastFabric */
+
+struct NvencSession;
+
+#ifndef __NVOC_CLASS_NvencSession_TYPEDEF__
+#define __NVOC_CLASS_NvencSession_TYPEDEF__
+typedef struct NvencSession NvencSession;
+#endif /* __NVOC_CLASS_NvencSession_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_NvencSession
+#define __nvoc_class_id_NvencSession 0x3434af
+#endif /* __nvoc_class_id_NvencSession */
+
+struct NvfbcSession;
+
+#ifndef __NVOC_CLASS_NvfbcSession_TYPEDEF__
+#define __NVOC_CLASS_NvfbcSession_TYPEDEF__
+typedef struct NvfbcSession NvfbcSession;
+#endif /* __NVOC_CLASS_NvfbcSession_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_NvfbcSession
+#define __nvoc_class_id_NvfbcSession 0xcbde75
+#endif /* __nvoc_class_id_NvfbcSession */
 
 struct VgpuConfigApi;
 
@@ -1133,6 +1215,7 @@ struct NVOCFwdDeclHack {
     struct RmClientResource *PRIVATE_FIELD(RmClientResource_NV01_ROOT_CLIENT);
     struct MpsApi *PRIVATE_FIELD(MpsApi_MPS_COMPUTE);
     struct FmSessionApi *PRIVATE_FIELD(FmSessionApi_FABRIC_MANAGER_SESSION);
+    struct ImexSessionApi *PRIVATE_FIELD(ImexSessionApi_NV_IMEX_SESSION);
     struct GpuManagementApi *PRIVATE_FIELD(GpuManagementApi_NV0020_GPU_MANAGEMENT);
     struct EventBuffer *PRIVATE_FIELD(EventBuffer_NV_EVENT_BUFFER);
     struct SemaphoreSurface *PRIVATE_FIELD(SemaphoreSurface_NV_SEMAPHORE_SURFACE);
@@ -1144,6 +1227,7 @@ struct NVOCFwdDeclHack {
     struct Profiler *PRIVATE_FIELD(Profiler_GF100_PROFILER);
     struct ProfilerDev *PRIVATE_FIELD(ProfilerDev_MAXWELL_PROFILER_DEVICE);
     struct PerfBuffer *PRIVATE_FIELD(PerfBuffer_G84_PERFBUFFER);
+    struct VgpuApi *PRIVATE_FIELD(VgpuApi_KEPLER_DEVICE_VGPU);
     struct Hdacodec *PRIVATE_FIELD(Hdacodec_GF100_HDACODEC);
     struct KernelChannel *PRIVATE_FIELD(KernelChannel_GF100_CHANNEL_GPFIFO);
     struct KernelChannel *PRIVATE_FIELD(KernelChannel_KEPLER_CHANNEL_GPFIFO_A);
@@ -1177,9 +1261,14 @@ struct NVOCFwdDeclHack {
     struct MemoryList *PRIVATE_FIELD(MemoryList_NV01_MEMORY_LIST_FBMEM);
     struct MemoryList *PRIVATE_FIELD(MemoryList_NV01_MEMORY_LIST_OBJECT);
     struct FlaMemory *PRIVATE_FIELD(FlaMemory_NV01_MEMORY_FLA);
+    struct MemoryExport *PRIVATE_FIELD(MemoryExport_NV_MEMORY_EXPORT);
+    struct MemoryFabricImportV2 *PRIVATE_FIELD(MemoryFabricImportV2_NV_MEMORY_FABRIC_IMPORT_V2);
     struct MemoryFabric *PRIVATE_FIELD(MemoryFabric_NV_MEMORY_FABRIC);
+    struct MemoryFabricImportedRef *PRIVATE_FIELD(MemoryFabricImportedRef_NV_MEMORY_FABRIC_IMPORTED_REF);
     struct VaSpaceApi *PRIVATE_FIELD(VaSpaceApi_FERMI_VASPACE_A);
     struct MemoryMulticastFabric *PRIVATE_FIELD(MemoryMulticastFabric_NV_MEMORY_MULTICAST_FABRIC);
+    struct NvencSession *PRIVATE_FIELD(NvencSession_NVENC_SW_SESSION);
+    struct NvfbcSession *PRIVATE_FIELD(NvfbcSession_NVFBC_SW_SESSION);
     struct VgpuConfigApi *PRIVATE_FIELD(VgpuConfigApi_NVA081_VGPU_CONFIG);
     struct KernelHostVgpuDeviceApi *PRIVATE_FIELD(KernelHostVgpuDeviceApi_NVA084_KERNEL_HOST_VGPU_DEVICE);
     struct ThirdPartyP2P *PRIVATE_FIELD(ThirdPartyP2P_NV50_THIRD_PARTY_P2P);

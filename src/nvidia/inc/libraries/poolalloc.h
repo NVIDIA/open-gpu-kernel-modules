@@ -83,10 +83,11 @@ MAKE_LIST(PoolPageHandleList, POOLALLOC_HANDLE);
 /*!
  * @brief Callback function to upstream allocators for allocating new pages
  *
- * This function only allocate 1 page at a time right now
+ * This function can allocate multiple pages at a time
  *
  * @param[in]   ctxPtr      Provides context to upstream allocator
- * @param[in]   pageSize    Not really needed. For debugging only
+ * @param[in]   pageSize    Size of page to ask for from upstream
+ * @param[in]   numPages    Number of pages to allocate
  * @param[out]  pPage       The output page handle from upstream
  *
  * @return NV_OK            if successfully allocated NvF32 totalTest, doneTest, failTest; the page
@@ -96,7 +97,7 @@ MAKE_LIST(PoolPageHandleList, POOLALLOC_HANDLE);
  *
  */
 typedef NV_STATUS (*allocCallback_t)(void *ctxPtr, NvU64 pageSize,
-                   POOLALLOC_HANDLE *pPage);
+                   NvU64 numPages, POOLALLOC_HANDLE *pPage);
 
 /*!
  * @brief Callback function to upstream allocators for freeing unused pages

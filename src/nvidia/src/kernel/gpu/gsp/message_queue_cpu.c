@@ -512,7 +512,6 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     NvU8      *pNextElement     = NULL;
     int        nRet;
     NvU32      i;
-    NvU32      nRetries;
     RMTIMEOUT  timeout;
     NV_STATUS  nvStatus         = NV_OK;
     NvU32      uElementSize     = GSP_MSG_QUEUE_ELEMENT_HDR_SIZE +
@@ -535,12 +534,14 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     pCQE->elemCount = GSP_MSG_QUEUE_BYTES_TO_ELEMENTS(uElementSize);
     pCQE->checkSum  = 0;
 
-    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENCRYPT_ENABLED))
+    if (gpuIsCCFeatureEnabled(pGpu))
     {
+        ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+
         // Use sequence number as AAD.
         portMemCopy((NvU8*)pCQE->aadBuffer, sizeof(pCQE->aadBuffer), (NvU8 *)&pCQE->seqNum, sizeof(pCQE->seqNum));
 
+        // We need to encrypt the full queue elements to obscure the data.
         nvStatus = ccslEncrypt(pCC->pRpcCcslCtx,
                                (pCQE->elemCount * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN) - GSP_MSG_QUEUE_ELEMENT_HDR_SIZE,
                                pSrc + GSP_MSG_QUEUE_ELEMENT_HDR_SIZE, 
@@ -549,15 +550,26 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
                                pSrc + GSP_MSG_QUEUE_ELEMENT_HDR_SIZE, 
                                pCQE->authTagBuffer);
 
-        if(nvStatus != NV_OK)
+        if (nvStatus != NV_OK)
         {
+            // Do not re-try if encryption fails.
             NV_PRINTF(LEVEL_ERROR, "Encryption failed with status = 0x%x.\n", nvStatus);
-            // Do not re-try if decryption failed.
+            if (nvStatus == NV_ERR_INSUFFICIENT_RESOURCES)
+            {
+                // We hit potential IV overflow, this is fatal.
+                NV_PRINTF(LEVEL_ERROR, "Fatal error detected in RPC encrypt: IV overflow!\n");
+                confComputeSetErrorState(pGpu, pCC);
+            }
             return nvStatus;
         }
-    }
 
-    pCQE->checkSum  = _checkSum32(pSrc, pCQE->elemCount * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN);
+        // Now that encryption covers elements completely, include them in checksum.
+        pCQE->checkSum = _checkSum32(pSrc, pCQE->elemCount * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN);
+    }
+    else
+    {
+        pCQE->checkSum = _checkSum32(pSrc, uElementSize);
+    }
 
     for (i = 0; i < pCQE->elemCount; i++)
     {
@@ -569,8 +581,8 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         // Set a timeout of 1 sec
         gpuSetTimeout(pGpu, 1000000, &timeout, timeoutFlags);
 
-        // Wait for space to put the next element. Retry for up to 10 ms.
-        for (nRetries = 0; ; nRetries++)
+        // Wait for space to put the next element.
+        while (NV_TRUE)
         {
             // Must get the buffers one at a time, since they could wrap.
             pNextElement = (NvU8 *)msgqTxGetWriteBuffer(pMQI->hQueue, i);
@@ -589,7 +601,9 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         if (pNextElement == NULL)
         {
             pMQI->txBufferFull++;
-            NV_PRINTF_COND(pMQI->txBufferFull == 1, LEVEL_ERROR, LEVEL_INFO, "buffer is full\n");
+            NV_PRINTF_COND(pMQI->txBufferFull == 1, LEVEL_ERROR, LEVEL_INFO,
+                           "buffer is full (waiting for %d free elements, got %d)\n",
+                           pCQE->elemCount, i);
             nvStatus = NV_ERR_BUSY_RETRY;
             goto done;
         }
@@ -701,7 +715,17 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
             continue;
 
         // Retry if checksum fails.
-        if (_checkSum32(pMQI->pCmdQueueElement, (nElements * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN)) != 0)
+        if (gpuIsCCFeatureEnabled(pGpu))
+        {
+            // In Confidential Compute scenario, checksum includes complete element range.
+            if (_checkSum32(pMQI->pCmdQueueElement, (nElements * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN)) != 0)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Bad checksum.\n");
+                nvStatus = NV_ERR_INVALID_DATA;
+                continue;
+            }
+        } else
+        if (_checkSum32(pMQI->pCmdQueueElement, uElementSize) != 0)
         {
             NV_PRINTF(LEVEL_ERROR, "Bad checksum.\n");
             nvStatus = NV_ERR_INVALID_DATA;
@@ -754,9 +778,9 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         }
     }
 
-    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
-    if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENCRYPT_READY))
+    if (gpuIsCCFeatureEnabled(pGpu))
     {
+        ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
         nvStatus = ccslDecrypt(pCC->pRpcCcslCtx,
                                (nElements * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN) - GSP_MSG_QUEUE_ELEMENT_HDR_SIZE,
                                ((NvU8*)pMQI->pCmdQueueElement) + GSP_MSG_QUEUE_ELEMENT_HDR_SIZE, 
@@ -766,10 +790,11 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
                                ((NvU8*)pMQI->pCmdQueueElement) + GSP_MSG_QUEUE_ELEMENT_HDR_SIZE, 
                                ((NvU8*)pMQI->pCmdQueueElement->authTagBuffer));
 
-        if(nvStatus != NV_OK)
+        if (nvStatus != NV_OK)
         {
-            NV_PRINTF(LEVEL_ERROR, "Decryption failed with status = 0x%x.\n", nvStatus);
-            // Do not re-try if decryption failed.
+            // Do not re-try if decryption failed. Decryption failure is considered fatal.
+            NV_PRINTF(LEVEL_ERROR, "Fatal error detected in RPC decrypt: 0x%x!\n", nvStatus);
+            confComputeSetErrorState(pGpu, pCC);
             return nvStatus;
         }
     }

@@ -22,6 +22,7 @@
  */
 
 #include "rmapi/rmapi.h"
+#include "rmapi/rmapi_specific.h"
 #include "rmapi/client.h"
 #include "entry_points.h"
 #include "core/locks.h"
@@ -32,13 +33,13 @@
 #include "gpu/disp/disp_channel.h"
 #include "nvsecurityinfo.h"
 #include "virtualization/hypervisor/hypervisor.h"
+#include "gpu_mgr/gpu_mgr.h"
+#include "platform/sli/sli.h"
 
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 
 #include "gpu/device/device.h"
-
-#include "class/cl0005.h" // NV01_EVENT
-#include "class/clc574.h" // UVM_CHANNEL_RETAINER
+#include "class/cl0080.h"
 
 #include "class/cl83de.h" // GT200_DEBUGGER
 #include "gpu/gr/kernel_sm_debugger_session.h"
@@ -213,35 +214,6 @@ serverAllocApiCopyOut
     PORT_FREE(g_resServ.pAllocator, pParamCopy);
 
     return status;
-}
-
-NvHandle
-serverAllocLookupSecondClient
-(
-    NvU32    externalClassId,
-    void     *pAllocParams
-)
-{
-    if (pAllocParams != NULL)
-    {
-        switch (externalClassId)
-        {
-            case GT200_DEBUGGER:
-            {
-                return ((NV83DE_ALLOC_PARAMETERS *) pAllocParams)->hAppClient;
-                break;
-            }
-            case UVM_CHANNEL_RETAINER:
-            {
-                return ((NV_UVM_CHANNEL_RETAINER_ALLOC_PARAMS *) pAllocParams)->hClient;
-                break;
-            }
-            default:
-                break;
-        }
-    }
-
-    return NV01_NULL_OBJECT;
 }
 
 NV_STATUS
@@ -575,46 +547,6 @@ _rmAlloc
 
 }
 
-static
-NV_STATUS
-_fixupAllocParams
-(
-    RS_RESOURCE_DESC **ppResDesc,
-    RS_RES_ALLOC_PARAMS_INTERNAL *pRmAllocParams
-)
-{
-    RS_RESOURCE_DESC *pResDesc = *ppResDesc;
-
-    if ((pResDesc->pClassInfo != NULL) && (pResDesc->pClassInfo->classId == classId(Event)))
-    {
-        NV0005_ALLOC_PARAMETERS *pNv0005Params = pRmAllocParams->pAllocParams;
-
-        //
-        // This field isn't filled out consistently by clients. Some clients specify NV01_EVENT as the class
-        // and then override it using the subclass in the event parameters, while other clients specify the
-        // same subclass in both the RmAllocParams and event params. NV01_EVENT isn't a valid class to allocate
-        // so overwrite it with the subclass from the event params.
-        //
-        if (pRmAllocParams->externalClassId == NV01_EVENT)
-            pRmAllocParams->externalClassId = pNv0005Params->hClass;
-
-        pNv0005Params->hSrcResource = pRmAllocParams->hParent;
-
-        // No support for event and src resource that reside under different clients
-        if (pNv0005Params->hParentClient != pRmAllocParams->hClient)
-            pRmAllocParams->hParent = pRmAllocParams->hClient;
-
-        // class id may have changed so refresh the resource descriptor, but make sure it is still an Event
-        pResDesc = RsResInfoByExternalClassId(pRmAllocParams->externalClassId);
-        if (pResDesc == NULL || pResDesc->pClassInfo == NULL || pResDesc->pClassInfo->classId != classId(Event))
-            return NV_ERR_INVALID_CLASS;
-
-        *ppResDesc = pResDesc;
-    }
-
-    return NV_OK;
-}
-
 static NV_STATUS
 _serverAlloc_ValidateVgpu
 (
@@ -628,7 +560,7 @@ _serverAlloc_ValidateVgpu
     //
     // Get any GPU to check environmental properties
     // Assume: In multi-vGPU systems, no mix and matching SRIOV and non-SRIOV GPUs.
-    // Assume: This POBJGPU will only used to read system properties.
+    // Assume: This OBJGPU will only used to read system properties.
     //
     OBJGPU *pGpu = gpumgrGetSomeGpu();
 
@@ -756,7 +688,7 @@ serverAllocResourceUnderLock
         return NV_ERR_INVALID_CLASS;
     }
 
-    NV_ASSERT_OK_OR_RETURN(_fixupAllocParams(&pResDesc, pRmAllocParams));
+    NV_ASSERT_OK_OR_RETURN(rmapiFixupAllocParams(&pResDesc, pRmAllocParams));
     rmapiResourceDescToLegacyFlags(pResDesc, &pLockInfo->flags, NULL);
 
     status = _serverAllocValidatePrivilege(pServer, pResDesc, pRmAllocParams);
@@ -957,7 +889,8 @@ serverAllocResourceUnderLock
             callContext.pLockInfo = pRmAllocParams->pLockInfo;
             callContext.secInfo = *pRmAllocParams->pSecInfo;
 
-            resservSwapTlsCallContext(&pOldContext, &callContext);
+            NV_ASSERT_OK_OR_GOTO(status,
+                resservSwapTlsCallContext(&pOldContext, &callContext), done);
             NV_RM_RPC_ALLOC_OBJECT(pGpu,
                                    pRmAllocParams->hClient,
                                    pRmAllocParams->hParent,
@@ -966,7 +899,7 @@ serverAllocResourceUnderLock
                                    pRmAllocParams->pAllocParams,
                                    pRmAllocParams->paramsSize,
                                    status);
-            resservRestoreTlsCallContext(pOldContext);
+            NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 
             if (status != NV_OK)
                 goto done;
@@ -1030,6 +963,49 @@ serverFreeResourceRpcUnderLock
     NV_RM_RPC_FREE(pGpu, pResourceRef->pClient->hClient,
                    pResourceRef->pParentRef->hResource,
                    pResourceRef->hResource, status);
+
+    NvBool clientInUse = NV_FALSE;
+    if ( IS_VIRTUAL(pGpu) && (pResourceRef->externalClassId == GT200_DEBUGGER))
+    {
+        RS_ITERATOR             it;
+
+        it = clientRefIter(pResourceRef->pClient, NULL, classId(Device), RS_ITERATE_CHILDREN, NV_TRUE);
+        while (clientRefIterNext(it.pClient, &it))
+        {
+            Device *pDeviceTest = dynamicCast(it.pResourceRef->pResource, Device);
+            // In VGPU-GSP mode each plugin only handles it's own GPU,
+            // so we need to check if Device has the same OBJGPU.
+            if (pDeviceTest != NULL && (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) || GPU_RES_GET_GPU(pDeviceTest) == pGpu))
+            {
+                clientInUse = NV_TRUE;
+                break;
+            }
+        }
+
+        it = clientRefIter(pResourceRef->pClient, NULL, classId(KernelSMDebuggerSession), RS_ITERATE_CHILDREN, NV_TRUE);
+        while (clientRefIterNext(it.pClient, &it))
+        {
+            KernelSMDebuggerSession *pKernelSMDebuggerSession = dynamicCast(it.pResourceRef->pResource, KernelSMDebuggerSession);
+            if ((dynamicCast(pResourceRef->pResource, KernelSMDebuggerSession) != pKernelSMDebuggerSession) && pKernelSMDebuggerSession != NULL &&
+                (!IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) || GPU_RES_GET_GPU(pKernelSMDebuggerSession) == pGpu))
+            {
+                clientInUse = NV_TRUE;
+                break;
+            }
+        }
+        // If neither any devices nor KernelSMDebuggerSession are in use, free up the client on host.
+        if (!clientInUse)
+        {
+            //
+            // vGPU:
+            //
+            // Since vGPU does all real hardware management in the
+            // host, if we are in guest OS (where IS_VIRTUAL(pGpu) is true),
+            // do an RPC to the host to do the hardware update.
+            //
+            NV_RM_RPC_FREE(pGpu, pResourceRef->pClient->hClient, NV01_NULL_OBJECT, pResourceRef->pClient->hClient, status);
+        }
+    }
 
 rpc_done:
     return status;
@@ -1217,8 +1193,11 @@ rmapiAllocWithSecInfo
 
     if (pSecInfo->paramLocation == PARAM_LOCATION_KERNEL)
     {
-        hSecondClient = serverAllocLookupSecondClient(hClass,
-            NvP64_VALUE(pAllocParams));
+        status = serverAllocLookupSecondClient(hClass,
+                                               NvP64_VALUE(pAllocParams),
+                                               &hSecondClient);
+        if (status != NV_OK)
+            goto done;
     }
 
     portMemSet(pLockInfo, 0, sizeof(*pLockInfo));
@@ -1351,6 +1330,25 @@ resservResourceFactory
         if (pParentGpuResource != NULL)
         {
             pGpu = GPU_RES_GET_GPU(pParentGpuResource);
+        }
+    }
+
+    if (pResDesc->internalClassId == classId(Device))
+    {
+        if (pParams == NULL || pParams->pAllocParams == NULL)
+            return NV_ERR_INVALID_ARGUMENT;
+
+        NV0080_ALLOC_PARAMETERS *pNv0080AllocParams = pParams->pAllocParams;
+        NvU32 deviceInst = pNv0080AllocParams->deviceId;
+
+        if (deviceInst >= NV_MAX_DEVICES)
+            return NV_ERR_INVALID_ARGUMENT;
+
+        NvU32 gpuInst = gpumgrGetPrimaryForDevice(deviceInst);
+
+        if ((pGpu = gpumgrGetGpu(gpuInst)) == NULL)
+        {
+            return NV_ERR_INVALID_STATE;
         }
     }
 

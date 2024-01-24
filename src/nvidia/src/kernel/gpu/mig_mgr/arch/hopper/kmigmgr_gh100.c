@@ -24,7 +24,6 @@
 #define NVOC_KERNEL_MIG_MANAGER_H_PRIVATE_ACCESS_ALLOWED
 
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
-#include "kernel/gpu/mem_mgr/heap.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_fifo.h"
 
@@ -94,16 +93,21 @@ kmigmgrIsGPUInstanceCombinationValid_GH100
 {
     NvU32 memSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG, _MEMORY_SIZE, gpuInstanceFlag);
     NvU32 computeSizeFlag = DRF_VAL(2080_CTRL_GPU, _PARTITION_FLAG, _COMPUTE_SIZE, gpuInstanceFlag);
+    NvU32 smallestComputeSizeFlag;
 
     if (!kmigmgrIsGPUInstanceFlagValid_HAL(pGpu, pKernelMIGManager, gpuInstanceFlag))
     {
         return NV_FALSE;
     }
 
+    NV_CHECK_OR_RETURN(LEVEL_ERROR,
+        kmigmgrGetSmallestGpuInstanceSize(pGpu, pKernelMIGManager, &smallestComputeSizeFlag) == NV_OK,
+        NV_FALSE);
+
     // JPG_OFA profile is only available on the smallest partition
     if (FLD_TEST_REF(NV2080_CTRL_GPU_PARTITION_FLAG_REQ_DEC_JPG_OFA, _ENABLE, gpuInstanceFlag))
     {
-        if (computeSizeFlag != NV2080_CTRL_GPU_PARTITION_FLAG_COMPUTE_SIZE_EIGHTH)
+        if (computeSizeFlag != smallestComputeSizeFlag)
         {
             return NV_FALSE;
         }

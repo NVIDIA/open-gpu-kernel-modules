@@ -83,7 +83,7 @@ serverSerializeCtrlDown
         {
             NV_PRINTF(LEVEL_ERROR,
                       "Serialization failed for cmd 0x%06x with status %s (0x%02x)\n",
-                      cmd, nvAssertStatusToString(status), status);
+                      cmd, nvstatusToString(status), status);
             portMemFree(pCallContext->pSerializedParams);
             pCallContext->pSerializedParams = NULL;
             return status;
@@ -162,7 +162,7 @@ serverDeserializeCtrlDown
         {
             NV_PRINTF(LEVEL_ERROR,
                       "Deserialization failed for cmd 0x%06x with status %s (0x%02x)\n",
-                      cmd, nvAssertStatusToString(status), status);
+                      cmd, nvstatusToString(status), status);
             portMemFree(pCallContext->pDeserializedParams);
             pCallContext->pDeserializedParams = NULL;
             return status;
@@ -240,7 +240,7 @@ serverSerializeCtrlUp
         {
             NV_PRINTF(LEVEL_ERROR,
                       "Serialization failed for cmd 0x%06x with status %s (0x%02x)\n",
-                      cmd, nvAssertStatusToString(status), status);
+                      cmd, nvstatusToString(status), status);
             return status;
         }
 
@@ -317,7 +317,7 @@ serverDeserializeCtrlUp
         {
             NV_PRINTF(LEVEL_ERROR,
                           "Deserialization failed for cmd 0x%06x with status %s (0x%02x)\n",
-                          cmd, nvAssertStatusToString(status), status);
+                          cmd, nvstatusToString(status), status);
             return status;
         }
 
@@ -376,7 +376,7 @@ serverSerializeAllocDown
         {
             NV_PRINTF(LEVEL_ERROR,
                       "Serialization failed for classId 0x%06x with status %s (0x%02x)\n",
-                      classId, nvAssertStatusToString(status), status);
+                      classId, nvstatusToString(status), status);
             portMemFree(pCallContext->pSerializedParams);
             pCallContext->pSerializedParams = NULL;
             return status;
@@ -445,7 +445,7 @@ serverDeserializeAllocDown
         {
             NV_PRINTF(LEVEL_ERROR,
                       "Deserialization failed for classId 0x%06x with status %s (0x%02x)\n",
-                      classId, nvAssertStatusToString(status), status);
+                      classId, nvstatusToString(status), status);
             portMemFree(pCallContext->pDeserializedParams);
             pCallContext->pDeserializedParams = NULL;
             return status;
@@ -513,7 +513,7 @@ serverSerializeAllocUp
         {
             NV_PRINTF(LEVEL_ERROR,
                       "Serialization failed for classId 0x%06x with status %s (0x%02x)\n",
-                      classId, nvAssertStatusToString(status), status);
+                      classId, nvstatusToString(status), status);
             return status;
         }
 
@@ -578,7 +578,7 @@ serverDeserializeAllocUp
         {
             NV_PRINTF(LEVEL_ERROR,
                           "Deserialization failed for classId 0x%06x with status %s (0x%02x)\n",
-                          classId, nvAssertStatusToString(status), status);
+                          classId, nvstatusToString(status), status);
             return status;
         }
 

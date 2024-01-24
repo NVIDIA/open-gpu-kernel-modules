@@ -81,6 +81,8 @@ typedef struct COMPR_INFO COMPR_INFO;
 
 //
 // Address space identifiers.
+// Note: This should match the NV2080_CTRL_GR_CTX_BUFFER_INFO_APERTURE_* defines
+//       in ctrl2080gr.h
 //
 typedef NvU32      NV_ADDRESS_SPACE;
 #define ADDR_UNKNOWN    0         // Address space is unknown
@@ -355,12 +357,12 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_141       = 174U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_142       = 175U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_143       = 176U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_NOTIFY_OP_SURFACE = 177U,
 
     //
     // Unused tags from here, for any new use-case it's required 
     // to replace the below tags with known verbose strings
     //
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_144       = 177U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_145       = 178U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_146       = 179U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_147       = 180U,
@@ -1416,6 +1418,7 @@ void memdescSetName(OBJGPU*, MEMORY_DESCRIPTOR *pMemDesc, const char *name, cons
 // when it is freed.
 //
 #define MEMDESC_FLAGS_RESTORE_PTE_KIND_ON_FREE      NVBIT64(49)
+
 
 #endif // _MEMDESC_H_
 

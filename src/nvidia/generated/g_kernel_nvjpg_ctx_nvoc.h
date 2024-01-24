@@ -41,11 +41,16 @@ ENGDESCRIPTOR nvjpgGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClas
 /*!
  * RM internal class representing NVXXXX_VIDEO_NVJPG
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_NVJPG_CTX_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct NvjpgContext {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -71,7 +76,6 @@ struct NvjpgContext {
     NV_STATUS (*__nvjpgctxInternalControlForward__)(struct NvjpgContext *, NvU32, void *, NvU32);
     NV_STATUS (*__nvjpgctxUnmapFrom__)(struct NvjpgContext *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__nvjpgctxControl_Epilogue__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__nvjpgctxControlLookup__)(struct NvjpgContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__nvjpgctxGetSwMethods__)(struct NvjpgContext *, const METHOD **, NvU32 *);
     NvHandle (*__nvjpgctxGetInternalObjectHandle__)(struct NvjpgContext *);
     NV_STATUS (*__nvjpgctxControl__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -83,6 +87,7 @@ struct NvjpgContext {
     NV_STATUS (*__nvjpgctxUnregisterEvent__)(struct NvjpgContext *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__nvjpgctxControlSerialization_Prologue__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__nvjpgctxCanCopy__)(struct NvjpgContext *);
+    NvBool (*__nvjpgctxIsPartialUnmapSupported__)(struct NvjpgContext *);
     void (*__nvjpgctxPreDestruct__)(struct NvjpgContext *);
     NV_STATUS (*__nvjpgctxIsDuplicate__)(struct NvjpgContext *, NvHandle, NvBool *);
     void (*__nvjpgctxControlSerialization_Epilogue__)(struct NvjpgContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -133,7 +138,6 @@ NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, struct 
 #define nvjpgctxInternalControlForward(pGpuResource, command, pParams, size) nvjpgctxInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define nvjpgctxUnmapFrom(pResource, pParams) nvjpgctxUnmapFrom_DISPATCH(pResource, pParams)
 #define nvjpgctxControl_Epilogue(pResource, pCallContext, pParams) nvjpgctxControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define nvjpgctxControlLookup(pResource, pParams, ppEntry) nvjpgctxControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define nvjpgctxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) nvjpgctxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
 #define nvjpgctxGetInternalObjectHandle(pGpuResource) nvjpgctxGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define nvjpgctxControl(pGpuResource, pCallContext, pParams) nvjpgctxControl_DISPATCH(pGpuResource, pCallContext, pParams)
@@ -145,6 +149,7 @@ NV_STATUS __nvoc_objCreate_NvjpgContext(NvjpgContext**, Dynamic*, NvU32, struct 
 #define nvjpgctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) nvjpgctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define nvjpgctxControlSerialization_Prologue(pResource, pCallContext, pParams) nvjpgctxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define nvjpgctxCanCopy(pResource) nvjpgctxCanCopy_DISPATCH(pResource)
+#define nvjpgctxIsPartialUnmapSupported(pResource) nvjpgctxIsPartialUnmapSupported_DISPATCH(pResource)
 #define nvjpgctxPreDestruct(pResource) nvjpgctxPreDestruct_DISPATCH(pResource)
 #define nvjpgctxIsDuplicate(pResource, hMemory, pDuplicate) nvjpgctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define nvjpgctxControlSerialization_Epilogue(pResource, pCallContext, pParams) nvjpgctxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -231,10 +236,6 @@ static inline void nvjpgctxControl_Epilogue_DISPATCH(struct NvjpgContext *pResou
     pResource->__nvjpgctxControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS nvjpgctxControlLookup_DISPATCH(struct NvjpgContext *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__nvjpgctxControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS nvjpgctxGetSwMethods_DISPATCH(struct NvjpgContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__nvjpgctxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
@@ -277,6 +278,10 @@ static inline NV_STATUS nvjpgctxControlSerialization_Prologue_DISPATCH(struct Nv
 
 static inline NvBool nvjpgctxCanCopy_DISPATCH(struct NvjpgContext *pResource) {
     return pResource->__nvjpgctxCanCopy__(pResource);
+}
+
+static inline NvBool nvjpgctxIsPartialUnmapSupported_DISPATCH(struct NvjpgContext *pResource) {
+    return pResource->__nvjpgctxIsPartialUnmapSupported__(pResource);
 }
 
 static inline void nvjpgctxPreDestruct_DISPATCH(struct NvjpgContext *pResource) {

@@ -42,11 +42,16 @@ extern "C" {
  * Describes a range of typeless virtual memory memory.  Used as
  * a target space for RmMapMemoryDma.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_VIRT_MEM_RANGE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct VirtualMemoryRange {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct VirtualMemory __nvoc_base_VirtualMemory;
@@ -69,7 +74,6 @@ struct VirtualMemoryRange {
     NvBool (*__vmrangeIsGpuMapAllowed__)(struct VirtualMemoryRange *, struct OBJGPU *);
     NV_STATUS (*__vmrangeUnmapFrom__)(struct VirtualMemoryRange *, struct RS_RES_UNMAP_FROM_PARAMS *);
     void (*__vmrangeControl_Epilogue__)(struct VirtualMemoryRange *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__vmrangeControlLookup__)(struct VirtualMemoryRange *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__vmrangeControl__)(struct VirtualMemoryRange *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vmrangeUnmap__)(struct VirtualMemoryRange *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__vmrangeGetMemInterMapParams__)(struct VirtualMemoryRange *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -77,6 +81,7 @@ struct VirtualMemoryRange {
     NV_STATUS (*__vmrangeControlFilter__)(struct VirtualMemoryRange *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__vmrangeControlSerialization_Prologue__)(struct VirtualMemoryRange *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__vmrangeCanCopy__)(struct VirtualMemoryRange *);
+    NvBool (*__vmrangeIsPartialUnmapSupported__)(struct VirtualMemoryRange *);
     NV_STATUS (*__vmrangeIsReady__)(struct VirtualMemoryRange *, NvBool);
     NV_STATUS (*__vmrangeCheckCopyPermissions__)(struct VirtualMemoryRange *, struct OBJGPU *, struct Device *);
     void (*__vmrangePreDestruct__)(struct VirtualMemoryRange *);
@@ -125,7 +130,6 @@ NV_STATUS __nvoc_objCreate_VirtualMemoryRange(VirtualMemoryRange**, Dynamic*, Nv
 #define vmrangeIsGpuMapAllowed(pMemory, pGpu) vmrangeIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define vmrangeUnmapFrom(pVirtualMemory, pParams) vmrangeUnmapFrom_DISPATCH(pVirtualMemory, pParams)
 #define vmrangeControl_Epilogue(pResource, pCallContext, pParams) vmrangeControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define vmrangeControlLookup(pResource, pParams, ppEntry) vmrangeControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define vmrangeControl(pMemory, pCallContext, pParams) vmrangeControl_DISPATCH(pMemory, pCallContext, pParams)
 #define vmrangeUnmap(pMemory, pCallContext, pCpuMapping) vmrangeUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define vmrangeGetMemInterMapParams(pMemory, pParams) vmrangeGetMemInterMapParams_DISPATCH(pMemory, pParams)
@@ -133,6 +137,7 @@ NV_STATUS __nvoc_objCreate_VirtualMemoryRange(VirtualMemoryRange**, Dynamic*, Nv
 #define vmrangeControlFilter(pResource, pCallContext, pParams) vmrangeControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define vmrangeControlSerialization_Prologue(pResource, pCallContext, pParams) vmrangeControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define vmrangeCanCopy(pStandardMemory) vmrangeCanCopy_DISPATCH(pStandardMemory)
+#define vmrangeIsPartialUnmapSupported(pVirtualMemory) vmrangeIsPartialUnmapSupported_DISPATCH(pVirtualMemory)
 #define vmrangeIsReady(pMemory, bCopyConstructorContext) vmrangeIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define vmrangeCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) vmrangeCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define vmrangePreDestruct(pResource) vmrangePreDestruct_DISPATCH(pResource)
@@ -184,10 +189,6 @@ static inline void vmrangeControl_Epilogue_DISPATCH(struct VirtualMemoryRange *p
     pResource->__vmrangeControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS vmrangeControlLookup_DISPATCH(struct VirtualMemoryRange *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__vmrangeControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS vmrangeControl_DISPATCH(struct VirtualMemoryRange *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pMemory->__vmrangeControl__(pMemory, pCallContext, pParams);
 }
@@ -214,6 +215,10 @@ static inline NV_STATUS vmrangeControlSerialization_Prologue_DISPATCH(struct Vir
 
 static inline NvBool vmrangeCanCopy_DISPATCH(struct VirtualMemoryRange *pStandardMemory) {
     return pStandardMemory->__vmrangeCanCopy__(pStandardMemory);
+}
+
+static inline NvBool vmrangeIsPartialUnmapSupported_DISPATCH(struct VirtualMemoryRange *pVirtualMemory) {
+    return pVirtualMemory->__vmrangeIsPartialUnmapSupported__(pVirtualMemory);
 }
 
 static inline NV_STATUS vmrangeIsReady_DISPATCH(struct VirtualMemoryRange *pMemory, NvBool bCopyConstructorContext) {

@@ -98,6 +98,13 @@ ifeq ($(TARGET_ARCH),aarch64)
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mno-outline-atomics)
 endif
 
+ifeq ($(TARGET_ARCH),riscv64)
+  CFLAGS += -march=rv64imac_zicsr_zifencei
+  CFLAGS += -mabi=lp64
+  CFLAGS += -mcmodel=medany
+  CFLAGS += -mno-relax
+endif
+
 CFLAGS += -fno-pic
 CFLAGS += -fno-common
 CFLAGS += -fomit-frame-pointer

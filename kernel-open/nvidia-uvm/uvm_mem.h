@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2020 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -147,10 +147,10 @@ typedef struct
 typedef struct
 {
     // Mask of processors the memory is virtually mapped on
-    uvm_global_processor_mask_t mapped_on;
+    uvm_processor_mask_t mapped_on;
 
     // Page table ranges for all GPUs
-    uvm_page_table_range_vec_t *range_vecs[UVM_GLOBAL_ID_MAX_GPUS];
+    uvm_page_table_range_vec_t *range_vecs[UVM_ID_MAX_GPUS];
 
     uvm_va_space_t *va_space;
 
@@ -185,13 +185,13 @@ struct uvm_mem_struct
             // GPU can physical access the memory
             //
             // TODO: Bug 3723779: Share DMA mappings within a single parent GPU
-            uvm_global_processor_mask_t mapped_on_phys;
+            uvm_processor_mask_t mapped_on_phys;
 
             struct page **pages;
             void **va;
 
             // Per GPU IOMMU mappings of the pages
-            NvU64 *dma_addrs[UVM_GLOBAL_ID_MAX_GPUS];
+            NvU64 *dma_addrs[UVM_ID_MAX_GPUS];
         } sysmem;
     };
 
@@ -210,10 +210,10 @@ struct uvm_mem_struct
     struct
     {
         // Mask of processors the memory is virtually mapped on
-        uvm_global_processor_mask_t mapped_on;
+        uvm_processor_mask_t mapped_on;
 
         // Page table ranges for all GPUs
-        uvm_page_table_range_vec_t *range_vecs[UVM_GLOBAL_ID_MAX_GPUS];
+        uvm_page_table_range_vec_t *range_vecs[UVM_ID_MAX_GPUS];
 
         // Range allocation for the GPU VA
         uvm_range_allocation_t range_alloc;
@@ -441,6 +441,6 @@ static NV_STATUS uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(NvU64 size,
 }
 
 // Helper to map an allocation on the specified processors in the UVM VA space.
-NV_STATUS uvm_mem_map_kernel(uvm_mem_t *mem, const uvm_global_processor_mask_t *mask);
+NV_STATUS uvm_mem_map_kernel(uvm_mem_t *mem, const uvm_processor_mask_t *mask);
 
 #endif // __UVM_MEM_H__

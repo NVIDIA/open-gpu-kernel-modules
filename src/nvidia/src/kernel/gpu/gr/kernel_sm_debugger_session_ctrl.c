@@ -188,7 +188,7 @@ _nv8deCtrlCmdReadWriteSurface
         end4kPage = (NvOffset_LO32(virtAddr + bufSize - 1) >> 12) & 0x1FFFF;
 
         curSize = RM_PAGE_SIZE - pageStartOffset;
-        virtAddr &= ~RM_PAGE_MASK;
+        virtAddr -= pageStartOffset;
 
         for (cur4kPage = start4kPage; cur4kPage <= end4kPage; ++cur4kPage)
         {
@@ -220,7 +220,7 @@ _nv8deCtrlCmdReadWriteSurface
             if (traceArg.aperture == ADDR_SYSMEM)
             {
                 NvP64 physAddr = NV_PTR_TO_NvP64(traceArg.pa);
-                NvU64 limit = (NvU64)(curSize - 1);
+                NvU64 limit = RM_PAGE_SIZE - 1;
 
                 NvU32 os02Flags = DRF_DEF(OS02, _FLAGS, _LOCATION,      _PCI)           |
                                   DRF_DEF(OS02, _FLAGS, _MAPPING,       _NO_MAP)        |
@@ -241,11 +241,11 @@ _nv8deCtrlCmdReadWriteSurface
             else if (traceArg.aperture == ADDR_FBMEM)
             {
                 NV_ASSERT_OK_OR_ELSE(status,
-                    memdescCreate(&pMemDesc, pGpu, curSize, 0, NV_TRUE,
+                    memdescCreate(&pMemDesc, pGpu, RM_PAGE_SIZE, 0, NV_TRUE,
                                   traceArg.aperture, NV_MEMORY_UNCACHED,
                                   MEMDESC_FLAGS_NONE),
                     portMemFree(pKernBuffer); return status; );
-                memdescDescribe(pMemDesc, traceArg.aperture, traceArg.pa, curSize);
+                memdescDescribe(pMemDesc, traceArg.aperture, traceArg.pa, RM_PAGE_SIZE);
             }
 
             surf.pMemDesc = pMemDesc;
@@ -569,6 +569,13 @@ _nv83deCtrlCmdDebugAccessMemory
         flags = FLD_SET_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, flags);
     }
 
+    // Allow the mapping to happen successfully on HCC devtools mode
+    if (kbusIsBarAccessBlocked(GPU_GET_KERNEL_BUS(pTargetGpu)) &&
+        gpuIsCCDevToolsModeEnabled(pTargetGpu))
+    {
+        flags = FLD_SET_DRF(OS33, _FLAGS, _ALLOW_MAPPING_ON_HCC, _YES, flags);
+    }
+
     // Map memory into the internal smdbg client
     rmStatus = _nv83deMapMemoryIntoGrdbgClient(pTargetGpu,
                                                pKernelSMDebuggerSession,
@@ -708,7 +715,6 @@ NV_STATUS ksmdbgssnCtrlCmdDebugExecRegOps_IMPL
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pKernelSMDebuggerSession);
-    NV_STATUS status = NV_OK;
     NvBool isClientGspPlugin = NV_FALSE;
 
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
@@ -722,17 +728,16 @@ NV_STATUS ksmdbgssnCtrlCmdDebugExecRegOps_IMPL
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+        CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+        RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-        return status;
+        return pRmApi->Control(pRmApi,
+                               pRmCtrlParams->hClient,
+                               pRmCtrlParams->hObject,
+                               pRmCtrlParams->cmd,
+                               pRmCtrlParams->pParams,
+                               pRmCtrlParams->paramsSize);
     }
 
     return NV_ERR_NOT_SUPPORTED;

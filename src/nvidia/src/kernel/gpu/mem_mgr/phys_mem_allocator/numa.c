@@ -651,7 +651,7 @@ NV_STATUS pmaNumaAllocate
                     status = NV_ERR_NO_MEMORY;
                     break;
                 }
-                pPma->pMapInfo->pmaMapChangeStateAttribEx(pMap, frameOffset, allocOption, MAP_MASK);
+                pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, frameOffset, allocOption, MAP_MASK);
             }
             if (status != NV_OK)
                 break;
@@ -743,14 +743,14 @@ void pmaNumaFreeInternal
                 //
                 if (currentStatus & STATE_UNPIN)
                 {
-                    pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + j),
-                                                              ATTRIB_NUMA_REUSE, ATTRIB_NUMA_REUSE);
+                    pPma->pMapInfo->pmaMapChangeStateAttrib(pPma->pRegions[regId], (frameNum + j),
+                                                            ATTRIB_NUMA_REUSE, ATTRIB_NUMA_REUSE);
                 }
                 continue;
             }
             sysPagePhysAddr = sysPhysAddr + (j << PMA_PAGE_SHIFT);
             osAllocReleasePage(sysPagePhysAddr, 1 << (PMA_PAGE_SHIFT - osPageShift));
-            pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + j), newStatus, ~ATTRIB_EVICTING);
+            pPma->pMapInfo->pmaMapChangeStateAttrib(pPma->pRegions[regId], (frameNum + j), newStatus, ~ATTRIB_EVICTING);
         }
     }
 }

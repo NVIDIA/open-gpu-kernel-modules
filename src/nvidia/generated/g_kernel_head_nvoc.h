@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,11 +47,16 @@ extern "C" {
 /* ------------------------ Types definitions ------------------------------ */
 /* ------------------------ Macros & Defines ------------------------------- */
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_HEAD_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct __nvoc_inner_struc_KernelHead_1__ {
     struct {
         NvU32 Total;
@@ -61,7 +66,9 @@ struct __nvoc_inner_struc_KernelHead_1__ {
     struct {
         VBLANKCALLBACK *pListLL;
         VBLANKCALLBACK *pListNL;
+        VBLANKCALLBACK CheckVblankCount;
     } Callback;
+    NvU32 VblankCountTimeout;
     NvU32 IntrState;
 };
 
@@ -327,6 +334,16 @@ static inline void kheadDeleteVblankCallback(struct OBJGPU *pGpu, struct KernelH
 }
 #else //__nvoc_kernel_head_h_disabled
 #define kheadDeleteVblankCallback(pGpu, pKernelHead, arg0) kheadDeleteVblankCallback_IMPL(pGpu, pKernelHead, arg0)
+#endif //__nvoc_kernel_head_h_disabled
+
+void kheadPauseVblankCbNotifications_IMPL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, VBLANKCALLBACK *arg0);
+
+#ifdef __nvoc_kernel_head_h_disabled
+static inline void kheadPauseVblankCbNotifications(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, VBLANKCALLBACK *arg0) {
+    NV_ASSERT_FAILED_PRECOMP("KernelHead was disabled!");
+}
+#else //__nvoc_kernel_head_h_disabled
+#define kheadPauseVblankCbNotifications(pGpu, pKernelHead, arg0) kheadPauseVblankCbNotifications_IMPL(pGpu, pKernelHead, arg0)
 #endif //__nvoc_kernel_head_h_disabled
 
 NvU32 kheadCheckVblankCallbacksQueued_IMPL(struct OBJGPU *pGpu, struct KernelHead *pKernelHead, NvU32 arg0, NvU32 *arg1);

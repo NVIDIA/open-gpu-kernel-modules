@@ -512,10 +512,9 @@ nvswitch_soe_disable_nport_fatal_interrupts_ls10
     NVSWITCH_TIMEOUT timeout;
     RM_SOE_CORE_CMD_NPORT_FATAL_INTR *pNportIntrDisable;
     NVSWITCH_GET_BIOS_INFO_PARAMS p = { 0 };
-    NvlStatus stat;
 
-    stat = device->hal.nvswitch_ctrl_get_bios_info(device, &p);
-    if ((stat != NVL_SUCCESS) || ((p.version & SOE_VBIOS_VERSION_MASK) < 
+    status = device->hal.nvswitch_ctrl_get_bios_info(device, &p);
+    if ((status != NVL_SUCCESS) || ((p.version & SOE_VBIOS_VERSION_MASK) < 
             SOE_VBIOS_REVLOCK_DISABLE_NPORT_FATAL_INTR))
     {
         NVSWITCH_PRINT(device, ERROR,
@@ -696,6 +695,40 @@ nvswitch_soe_register_event_callbacks_ls10
         return -NVL_ERR_INVALID_STATE;
     }
 
+    // Register CCI callback funcion
+    status = flcnQueueEventRegister(
+                device, pFlcn,
+                RM_SOE_UNIT_CCI,
+                NULL,
+                nvswitch_cci_soe_callback_ls10,
+                NULL,
+                &pSoe->cciEvtDesc);
+
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to register CCI event handler.\n",
+            __FUNCTION__);
+        return -NVL_ERR_INVALID_STATE;
+    }
+
+    // Register Heartbeat callback funcion
+    status = flcnQueueEventRegister(
+                device, pFlcn,
+                RM_SOE_UNIT_HEARTBEAT,
+                NULL,
+                nvswitch_heartbeat_soe_callback_ls10,
+                NULL,
+                &pSoe->heartbeatEvtDesc);
+
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to register Heartbeat event handler.\n",
+            __FUNCTION__);
+        return -NVL_ERR_INVALID_STATE;
+    }
+
     return NVL_SUCCESS;
 }
 
@@ -716,6 +749,25 @@ nvswitch_soe_unregister_events_ls10
     {
         NVSWITCH_PRINT(device, ERROR,
             "%s: Failed to un-register thermal event handler.\n",
+            __FUNCTION__);
+    }
+    // un-register thermal callback funcion
+    status = flcnQueueEventUnregister(device, pFlcn,
+                                      pSoe->cciEvtDesc);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to un-register cci event handler.\n",
+            __FUNCTION__);
+    }
+
+    // un-register heartbeat callback funcion
+    status = flcnQueueEventUnregister(device, pFlcn,
+                                      pSoe->heartbeatEvtDesc);
+    if (status != NV_OK)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to un-register heartbeat event handler.\n",
             __FUNCTION__);
     }
 }

@@ -31,8 +31,8 @@ extern "C" {
 
 #include "g_objgpumon_nvoc.h"
 
-#ifndef _OBJGPUMON_H_
-#define _OBJGPUMON_H_
+#ifndef OBJGPUMON_H
+#define OBJGPUMON_H
 
 /****************** Resource Manager Defines and Structures *****************\
 *                                                                            *
@@ -46,13 +46,17 @@ extern "C" {
 
 #include "ctrl/ctrl2080/ctrl2080perf.h"
 
-typedef struct OBJGPUMON *POBJGPUMON;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_OBJGPUMON_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJGPUMON {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -202,7 +206,7 @@ static inline NV_STATUS gpumonGetPerfmonUtilSamples(struct OBJGPU *pGpu, struct 
 #undef PRIVATE_FIELD
 
 
-#endif //_OBJGPUMON_H_
+#endif //OBJGPUMON_H
 
 #ifdef __cplusplus
 } // extern "C"

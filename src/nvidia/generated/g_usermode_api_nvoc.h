@@ -44,11 +44,16 @@ extern "C" {
  * because GpuResource can only map regmem, whereas for HOPPER+, we will need to map sysmem with an
  * effective address space of fbmem if the user requests the GMMU/BAR1 mapping for the VF pages.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_USERMODE_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct UserModeApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Memory __nvoc_base_Memory;
@@ -71,12 +76,12 @@ struct UserModeApi {
     NvBool (*__usrmodeIsGpuMapAllowed__)(struct UserModeApi *, struct OBJGPU *);
     NV_STATUS (*__usrmodeUnmapFrom__)(struct UserModeApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__usrmodeControl_Epilogue__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__usrmodeControlLookup__)(struct UserModeApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__usrmodeControl__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__usrmodeUnmap__)(struct UserModeApi *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__usrmodeGetMemoryMappingDescriptor__)(struct UserModeApi *, MEMORY_DESCRIPTOR **);
     NV_STATUS (*__usrmodeControlFilter__)(struct UserModeApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__usrmodeControlSerialization_Prologue__)(struct UserModeApi *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__usrmodeIsPartialUnmapSupported__)(struct UserModeApi *);
     NV_STATUS (*__usrmodeIsReady__)(struct UserModeApi *, NvBool);
     NV_STATUS (*__usrmodeCheckCopyPermissions__)(struct UserModeApi *, struct OBJGPU *, struct Device *);
     void (*__usrmodePreDestruct__)(struct UserModeApi *);
@@ -129,12 +134,12 @@ NV_STATUS __nvoc_objCreate_UserModeApi(UserModeApi**, Dynamic*, NvU32, CALL_CONT
 #define usrmodeIsGpuMapAllowed(pMemory, pGpu) usrmodeIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define usrmodeUnmapFrom(pResource, pParams) usrmodeUnmapFrom_DISPATCH(pResource, pParams)
 #define usrmodeControl_Epilogue(pResource, pCallContext, pParams) usrmodeControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define usrmodeControlLookup(pResource, pParams, ppEntry) usrmodeControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define usrmodeControl(pMemory, pCallContext, pParams) usrmodeControl_DISPATCH(pMemory, pCallContext, pParams)
 #define usrmodeUnmap(pMemory, pCallContext, pCpuMapping) usrmodeUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define usrmodeGetMemoryMappingDescriptor(pMemory, ppMemDesc) usrmodeGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define usrmodeControlFilter(pResource, pCallContext, pParams) usrmodeControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define usrmodeControlSerialization_Prologue(pResource, pCallContext, pParams) usrmodeControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define usrmodeIsPartialUnmapSupported(pResource) usrmodeIsPartialUnmapSupported_DISPATCH(pResource)
 #define usrmodeIsReady(pMemory, bCopyConstructorContext) usrmodeIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define usrmodeCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) usrmodeCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define usrmodePreDestruct(pResource) usrmodePreDestruct_DISPATCH(pResource)
@@ -198,10 +203,6 @@ static inline void usrmodeControl_Epilogue_DISPATCH(struct UserModeApi *pResourc
     pResource->__usrmodeControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS usrmodeControlLookup_DISPATCH(struct UserModeApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__usrmodeControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS usrmodeControl_DISPATCH(struct UserModeApi *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pMemory->__usrmodeControl__(pMemory, pCallContext, pParams);
 }
@@ -220,6 +221,10 @@ static inline NV_STATUS usrmodeControlFilter_DISPATCH(struct UserModeApi *pResou
 
 static inline NV_STATUS usrmodeControlSerialization_Prologue_DISPATCH(struct UserModeApi *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__usrmodeControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool usrmodeIsPartialUnmapSupported_DISPATCH(struct UserModeApi *pResource) {
+    return pResource->__usrmodeIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS usrmodeIsReady_DISPATCH(struct UserModeApi *pMemory, NvBool bCopyConstructorContext) {

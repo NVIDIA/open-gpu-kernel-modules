@@ -113,7 +113,7 @@ void uvm_hal_volta_ce_memcopy(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_a
     NvU32 launch_dma_src_dst_type;
     NvU32 launch_dma_plc_mode;
     NvU32 flush_value = HWCONST(C3B5, LAUNCH_DMA, FLUSH_ENABLE, FALSE);
-    NvU32 copy_type_value = gpu->parent->ce_hal->memcopy_copy_type(push, dst, src);
+    NvU32 copy_type_value = gpu->parent->ce_hal->memcopy_copy_type(dst, src);
 
     UVM_ASSERT_MSG(gpu->parent->ce_hal->memcopy_is_valid(push, dst, src),
                    "Memcopy validation failed in channel %s, GPU %s.\n",

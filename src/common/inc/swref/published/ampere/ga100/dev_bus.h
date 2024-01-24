@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,5 +28,17 @@
 #define NV_PBUS_SW_SCRATCH__SIZE_1                                64 /*       */
 #define NV_PBUS_SW_SCRATCH_FIELD                                31:0 /* RWIVF */
 #define NV_PBUS_SW_SCRATCH_FIELD_INIT                     0x00000000 /* RWI-V */
+#define NV_PBUS_BAR1_BLOCK                               0x00001704 /* RW-4R */
+#define NV_PBUS_BAR1_BLOCK_MAP                                 29:0 /*       */
+#define NV_PBUS_BAR1_BLOCK_PTR                                 27:0 /* RWIUF */
+#define NV_PBUS_BAR1_BLOCK_PTR_0                         0x00000000 /* RWI-V */
+#define NV_PBUS_BAR1_BLOCK_TARGET                             29:28 /* RWIUF */
+#define NV_PBUS_BAR1_BLOCK_TARGET_VID_MEM                0x00000000 /* RWI-V */
+#define NV_PBUS_BAR1_BLOCK_TARGET_SYS_MEM_COHERENT       0x00000002 /* RW--V */
+#define NV_PBUS_BAR1_BLOCK_TARGET_SYS_MEM_NONCOHERENT    0x00000003 /* RW--V */
+#define NV_PBUS_BAR1_BLOCK_MODE                               31:31 /* RWIUF */
+#define NV_PBUS_BAR1_BLOCK_MODE_PHYSICAL                 0x00000000 /* RWI-V */
+#define NV_PBUS_BAR1_BLOCK_MODE_VIRTUAL                  0x00000001 /* RW--V */
+#define NV_PBUS_BAR1_BLOCK_PTR_SHIFT                             12 /*       */
 
 #endif // ga100_dev_nv_bus_h

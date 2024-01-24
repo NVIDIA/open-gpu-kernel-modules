@@ -278,7 +278,7 @@ pmaSetBlockStateAttribUnderPmaLock
 
     for (i = 0; i < numFrames; i++)
     {
-        pPma->pMapInfo->pmaMapChangeStateAttribEx(pMap, (baseFrame + i), pmaState, pmaStateWriteMask);
+        pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, (baseFrame + i), pmaState, pmaStateWriteMask);
     }
 }
 
@@ -419,8 +419,8 @@ _pmaCleanupNumaReusePages
             if (currentStatus & ATTRIB_NUMA_REUSE)
             {
                 osAllocReleasePage(sysPagePhysAddr, 1 << (PMA_PAGE_SHIFT - osPageShift));
-                pPma->pMapInfo->pmaMapChangeStateAttribEx(pPma->pRegions[regId], (frameNum + i),
-                                                          STATE_FREE, (STATE_MASK | ATTRIB_NUMA_REUSE));
+                pPma->pMapInfo->pmaMapChangeStateAttrib(pPma->pRegions[regId], (frameNum + i),
+                                                        STATE_FREE, (STATE_MASK | ATTRIB_NUMA_REUSE));
             }
         }
 

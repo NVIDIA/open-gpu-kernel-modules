@@ -919,6 +919,9 @@ static NV_FORCEINLINE void *NV_NVUPTR_TO_PTR(NvUPtr address)
 //
 #define NV_BIT_SET_128(b, lo, hi)              { nvAssert( (b) < 128 ); if ( (b) < 64 ) (lo) |= NVBIT64(b); else (hi) |= NVBIT64( b & 0x3F ); }
 
+// Get the number of elements the specified fixed-size array
+#define NV_ARRAY_ELEMENTS(x)                   ((sizeof(x)/sizeof((x)[0])))
+
 #ifdef __cplusplus
 }
 #endif //__cplusplus

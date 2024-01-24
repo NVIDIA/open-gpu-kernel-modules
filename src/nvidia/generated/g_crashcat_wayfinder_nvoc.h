@@ -68,11 +68,16 @@ struct CrashCatWayfinderHal {
 typedef struct CrashCatWayfinderHal CrashCatWayfinderHal;
 void __nvoc_init_halspec_CrashCatWayfinderHal(CrashCatWayfinderHal*, NV_CRASHCAT_WAYFINDER_VERSION);
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CRASHCAT_WAYFINDER_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct __nvoc_inner_struc_CrashCatWayfinder_1__ {
     NvCrashCatWayfinderL0_V1 wfl0;
     NvCrashCatWayfinderL1_V1 wfl1;

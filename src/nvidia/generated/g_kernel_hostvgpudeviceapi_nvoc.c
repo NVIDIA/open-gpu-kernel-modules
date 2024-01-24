@@ -119,21 +119,26 @@ void __nvoc_init_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr *pThis) {
     __nvoc_init_funcTable_KernelHostVgpuDeviceShr(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr **ppThis, Dynamic *pParent, NvU32 createFlags) {
+NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr **ppThis, Dynamic *pParent, NvU32 createFlags)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     KernelHostVgpuDeviceShr *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelHostVgpuDeviceShr), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(KernelHostVgpuDeviceShr));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelHostVgpuDeviceShr);
 
     pThis->__nvoc_base_RsShared.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -148,16 +153,25 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceShr(KernelHostVgpuDeviceShr **ppT
     status = __nvoc_ctor_KernelHostVgpuDeviceShr(pThis);
     if (status != NV_OK) goto __nvoc_objCreate_KernelHostVgpuDeviceShr_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_KernelHostVgpuDeviceShr_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_RsShared.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(KernelHostVgpuDeviceShr));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;
@@ -331,10 +345,6 @@ static void __nvoc_thunk_RmResource_kernelhostvgpudeviceapiControl_Epilogue(stru
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_kernelhostvgpudeviceapiControlLookup(struct KernelHostVgpuDeviceApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_kernelhostvgpudeviceapiGetInternalObjectHandle(struct KernelHostVgpuDeviceApi *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_GpuResource.offset));
 }
@@ -365,6 +375,10 @@ static NV_STATUS __nvoc_thunk_Notifier_kernelhostvgpudeviceapiUnregisterEvent(st
 
 static NV_STATUS __nvoc_thunk_RmResource_kernelhostvgpudeviceapiControlSerialization_Prologue(struct KernelHostVgpuDeviceApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RmResource.offset), pCallContext, pParams);
+}
+
+static NvBool __nvoc_thunk_RsResource_kernelhostvgpudeviceapiIsPartialUnmapSupported(struct KernelHostVgpuDeviceApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelHostVgpuDeviceApi_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_kernelhostvgpudeviceapiPreDestruct(struct KernelHostVgpuDeviceApi *pResource) {
@@ -536,12 +550,27 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_KernelHo
         /*func=*/       "kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition"
 #endif
     },
+    {               /*  [9] */
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*pFunc=*/      (void (*)(void)) NULL,
+#else
+        /*pFunc=*/      (void (*)(void)) kernelhostvgpudeviceapiCtrlCmdFreeStates_IMPL,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+        /*flags=*/      0x10u,
+        /*accessRight=*/0x0u,
+        /*methodId=*/   0xa084010cu,
+        /*paramSize=*/  sizeof(NVA084_CTRL_KERNEL_HOST_VGPU_DEVICE_FREE_STATES_PARAMS),
+        /*pClassInfo=*/ &(__nvoc_class_def_KernelHostVgpuDeviceApi.classInfo),
+#if NV_PRINTF_STRINGS_ALLOWED
+        /*func=*/       "kernelhostvgpudeviceapiCtrlCmdFreeStates"
+#endif
+    },
 
 };
 
 const struct NVOC_EXPORT_INFO __nvoc_export_info_KernelHostVgpuDeviceApi = 
 {
-    /*numEntries=*/     9,
+    /*numEntries=*/     10,
     /*pExportEntries=*/ __nvoc_exported_method_def_KernelHostVgpuDeviceApi
 };
 
@@ -623,6 +652,10 @@ static void __nvoc_init_funcTable_KernelHostVgpuDeviceApi_1(KernelHostVgpuDevice
     pThis->__kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition__ = &kernelhostvgpudeviceapiCtrlCmdRestoreDefaultExecPartition_IMPL;
 #endif
 
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x10u)
+    pThis->__kernelhostvgpudeviceapiCtrlCmdFreeStates__ = &kernelhostvgpudeviceapiCtrlCmdFreeStates_IMPL;
+#endif
+
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__resCanCopy__ = &__nvoc_thunk_KernelHostVgpuDeviceApi_resCanCopy;
 
     pThis->__kernelhostvgpudeviceapiShareCallback__ = &__nvoc_thunk_GpuResource_kernelhostvgpudeviceapiShareCallback;
@@ -651,8 +684,6 @@ static void __nvoc_init_funcTable_KernelHostVgpuDeviceApi_1(KernelHostVgpuDevice
 
     pThis->__kernelhostvgpudeviceapiControl_Epilogue__ = &__nvoc_thunk_RmResource_kernelhostvgpudeviceapiControl_Epilogue;
 
-    pThis->__kernelhostvgpudeviceapiControlLookup__ = &__nvoc_thunk_RsResource_kernelhostvgpudeviceapiControlLookup;
-
     pThis->__kernelhostvgpudeviceapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_kernelhostvgpudeviceapiGetInternalObjectHandle;
 
     pThis->__kernelhostvgpudeviceapiControl__ = &__nvoc_thunk_GpuResource_kernelhostvgpudeviceapiControl;
@@ -668,6 +699,8 @@ static void __nvoc_init_funcTable_KernelHostVgpuDeviceApi_1(KernelHostVgpuDevice
     pThis->__kernelhostvgpudeviceapiUnregisterEvent__ = &__nvoc_thunk_Notifier_kernelhostvgpudeviceapiUnregisterEvent;
 
     pThis->__kernelhostvgpudeviceapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_kernelhostvgpudeviceapiControlSerialization_Prologue;
+
+    pThis->__kernelhostvgpudeviceapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_kernelhostvgpudeviceapiIsPartialUnmapSupported;
 
     pThis->__kernelhostvgpudeviceapiPreDestruct__ = &__nvoc_thunk_RsResource_kernelhostvgpudeviceapiPreDestruct;
 
@@ -704,21 +737,26 @@ void __nvoc_init_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi *pThis) {
     __nvoc_init_funcTable_KernelHostVgpuDeviceApi(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     KernelHostVgpuDeviceApi *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelHostVgpuDeviceApi), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(KernelHostVgpuDeviceApi));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelHostVgpuDeviceApi);
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -733,16 +771,25 @@ NV_STATUS __nvoc_objCreate_KernelHostVgpuDeviceApi(KernelHostVgpuDeviceApi **ppT
     status = __nvoc_ctor_KernelHostVgpuDeviceApi(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_KernelHostVgpuDeviceApi_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_KernelHostVgpuDeviceApi_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(KernelHostVgpuDeviceApi));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

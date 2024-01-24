@@ -163,10 +163,6 @@ static void __nvoc_thunk_RmResource_chandesControl_Epilogue(struct ChannelDescen
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_chandesControlLookup(struct ChannelDescendant *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_chandesGetInternalObjectHandle(struct ChannelDescendant *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_ChannelDescendant_GpuResource.offset));
 }
@@ -201,6 +197,10 @@ static NV_STATUS __nvoc_thunk_RmResource_chandesControlSerialization_Prologue(st
 
 static NvBool __nvoc_thunk_RsResource_chandesCanCopy(struct ChannelDescendant *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_chandesIsPartialUnmapSupported(struct ChannelDescendant *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ChannelDescendant_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_chandesPreDestruct(struct ChannelDescendant *pResource) {
@@ -319,8 +319,6 @@ static void __nvoc_init_funcTable_ChannelDescendant_1(ChannelDescendant *pThis, 
 
     pThis->__chandesControl_Epilogue__ = &__nvoc_thunk_RmResource_chandesControl_Epilogue;
 
-    pThis->__chandesControlLookup__ = &__nvoc_thunk_RsResource_chandesControlLookup;
-
     pThis->__chandesGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_chandesGetInternalObjectHandle;
 
     pThis->__chandesControl__ = &__nvoc_thunk_GpuResource_chandesControl;
@@ -338,6 +336,8 @@ static void __nvoc_init_funcTable_ChannelDescendant_1(ChannelDescendant *pThis, 
     pThis->__chandesControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_chandesControlSerialization_Prologue;
 
     pThis->__chandesCanCopy__ = &__nvoc_thunk_RsResource_chandesCanCopy;
+
+    pThis->__chandesIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_chandesIsPartialUnmapSupported;
 
     pThis->__chandesPreDestruct__ = &__nvoc_thunk_RsResource_chandesPreDestruct;
 
@@ -374,23 +374,31 @@ void __nvoc_init_ChannelDescendant(ChannelDescendant *pThis, RmHalspecOwner *pRm
     __nvoc_init_funcTable_ChannelDescendant(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams, PARAM_TO_ENGDESC_FUNCTION * arg_pParamToEngDescFn) {
+NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams, PARAM_TO_ENGDESC_FUNCTION * arg_pParamToEngDescFn)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     ChannelDescendant *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(ChannelDescendant), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(ChannelDescendant));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ChannelDescendant);
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -408,16 +416,25 @@ NV_STATUS __nvoc_objCreate_ChannelDescendant(ChannelDescendant **ppThis, Dynamic
     status = __nvoc_ctor_ChannelDescendant(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams, arg_pParamToEngDescFn);
     if (status != NV_OK) goto __nvoc_objCreate_ChannelDescendant_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_ChannelDescendant_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(ChannelDescendant));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

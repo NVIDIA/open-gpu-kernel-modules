@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,21 @@ typedef struct NV0080_CTRL_PERF_SLI_GPU_BOOST_SYNC_CONTROL_PARAMS {
 typedef struct NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS {
     NvBool bCudaLimit;
 } NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS;
+
+
+/*
+ * This command sets the control information pertaining to Cuda limit.
+ *
+ *  bCudaLimit
+ *      When set to TRUE, clocks will be limited based on Cuda.
+ *
+ * Possible status values returned are:
+ *  NV_OK
+ *  NV_ERR_INVALID_ARGUMENT
+ *  NV_ERR_INVALID_REQUEST
+ *  NV_ERR_INVALID_STATE
+ */
+#define NV0080_CTRL_CMD_PERF_CUDA_LIMIT_SET_CONTROL (0x801909) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_PERF_INTERFACE_ID << 8) | NV0080_CTRL_PERF_CUDA_LIMIT_CONTROL_PARAMS_MESSAGE_ID" */
 
 
 

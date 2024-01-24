@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2015-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2015-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #ifndef _NVOC_PRELUDE_H_
 #define _NVOC_PRELUDE_H_
 
+#include "nvtypes.h"
 #include "utils/nvmacro.h"
 
 /* Calls the macro named in the first parameter with the rest of the given arguments. Written

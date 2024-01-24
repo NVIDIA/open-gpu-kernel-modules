@@ -33,6 +33,7 @@
 #include "gpu/device/device.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_desc.h"
+#include "gpu/video/kernel_video_engine.h"
 #include "mem_mgr/gpu_vaspace.h"
 #include "mem_mgr/ctx_buf_pool.h"
 #include "rmapi/rmapi.h"
@@ -66,11 +67,17 @@ KernelFalcon *kflcnGetKernelFalconForEngine_IMPL(OBJGPU *pGpu, ENGDESCRIPTOR phy
     switch (physEngDesc)
     {
         // this list is mirrored in subdeviceCtrlCmdInternalGetConstructedFalconInfo_IMPL
-        case ENG_SEC2:     return staticCast(GPU_GET_KERNEL_SEC2(pGpu), KernelFalcon);
+        case ENG_SEC2:
+        {
+            KernelFalcon *pKernelSec2 = staticCast(GPU_GET_KERNEL_SEC2(pGpu), KernelFalcon);
+            if (pKernelSec2 != NULL)
+                return pKernelSec2;
+            break; // If KernelSec2 does not exist on this chip, fall back to GKF list
+        }
         case ENG_GSP:      return staticCast(GPU_GET_KERNEL_GSP(pGpu), KernelFalcon);
-        default:
-            return staticCast(gpuGetGenericKernelFalconForEngine(pGpu, physEngDesc), KernelFalcon);
     }
+
+    return staticCast(gpuGetGenericKernelFalconForEngine(pGpu, physEngDesc), KernelFalcon);
 }
 
 
@@ -349,10 +356,7 @@ void gkflcnRegisterIntrService_IMPL(OBJGPU *pGpu, GenericKernelFalcon *pGenericK
 
     NV_PRINTF(LEVEL_INFO, "physEngDesc 0x%x\n", pKernelFalcon->physEngDesc);
 
-    if (!IS_NVDEC(pKernelFalcon->physEngDesc) &&
-        !IS_OFA(pKernelFalcon->physEngDesc) &&
-        !IS_NVJPEG(pKernelFalcon->physEngDesc) &&
-        !IS_MSENC(pKernelFalcon->physEngDesc))
+    if (!IS_VIDEO_ENGINE(pKernelFalcon->physEngDesc) && pKernelFalcon->physEngDesc != ENG_SEC2)
         return;
 
     // Register to handle nonstalling interrupts of the corresponding physical falcon in kernel rm
@@ -364,7 +368,18 @@ void gkflcnRegisterIntrService_IMPL(OBJGPU *pGpu, GenericKernelFalcon *pGenericK
             ENGINE_INFO_TYPE_ENG_DESC, pKernelFalcon->physEngDesc,
             ENGINE_INFO_TYPE_MC, &mcIdx);
 
-        NV_ASSERT_OR_RETURN_VOID(status == NV_OK);
+        if (IS_VIRTUAL(pGpu) && (status == NV_ERR_OBJECT_NOT_FOUND))
+        {
+            //
+            // In vGPU MIG, the GI does not own all possible engine instances,
+            // so engine list search returns NV_ERR_OBJECT_NOT_FOUND.
+            //
+            return;
+        }
+        else
+        {
+            NV_ASSERT_OR_RETURN_VOID(status == NV_OK);
+        }
 
         NV_PRINTF(LEVEL_INFO, "Registering 0x%x/0x%x to handle nonstall intr\n", pKernelFalcon->physEngDesc, mcIdx);
 
@@ -404,6 +419,10 @@ NV_STATUS gkflcnServiceNotificationInterrupt_IMPL(OBJGPU *pGpu, GenericKernelFal
     {
         NvU32 msencIdx = idxMc - MC_ENGINE_IDX_NVENCn(0);
         rmEngineType = RM_ENGINE_TYPE_NVENC(msencIdx);
+    }
+    else if (idxMc == MC_ENGINE_IDX_SEC2)
+    {
+        rmEngineType = RM_ENGINE_TYPE_SEC2;
     }
 
     NV_ASSERT_OR_RETURN(rmEngineType != RM_ENGINE_TYPE_NULL, NV_ERR_INVALID_STATE);

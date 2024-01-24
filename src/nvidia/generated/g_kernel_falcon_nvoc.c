@@ -181,102 +181,266 @@ static void __nvoc_init_funcTable_KernelFalcon_1(KernelFalcon *pThis, RmHalspecO
     PORT_UNREFERENCED_VARIABLE(rmVariantHal_HalVarIdx);
 
     // Hal function -- kflcnRegRead
-    pThis->__kflcnRegRead__ = &kflcnRegRead_TU102;
-
-    // Hal function -- kflcnRegWrite
-    pThis->__kflcnRegWrite__ = &kflcnRegWrite_TU102;
-
-    // Hal function -- kflcnIsRiscvActive
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kflcnIsRiscvActive__ = &kflcnIsRiscvActive_TU102;
+        pThis->__kflcnRegRead__ = &kflcnRegRead_474d46;
     }
     else
     {
-        pThis->__kflcnIsRiscvActive__ = &kflcnIsRiscvActive_GA10X;
+        pThis->__kflcnRegRead__ = &kflcnRegRead_TU102;
+    }
+
+    // Hal function -- kflcnRegWrite
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnRegWrite__ = &kflcnRegWrite_f2d351;
+    }
+    else
+    {
+        pThis->__kflcnRegWrite__ = &kflcnRegWrite_TU102;
+    }
+
+    // Hal function -- kflcnRiscvRegRead
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnRiscvRegRead__ = &kflcnRiscvRegRead_474d46;
+    }
+    else
+    {
+        pThis->__kflcnRiscvRegRead__ = &kflcnRiscvRegRead_TU102;
+    }
+
+    // Hal function -- kflcnRiscvRegWrite
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnRiscvRegWrite__ = &kflcnRiscvRegWrite_f2d351;
+    }
+    else
+    {
+        pThis->__kflcnRiscvRegWrite__ = &kflcnRiscvRegWrite_TU102;
+    }
+
+    // Hal function -- kflcnIsRiscvCpuEnabled
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnIsRiscvCpuEnabled__ = &kflcnIsRiscvCpuEnabled_108313;
+    }
+    else
+    {
+        pThis->__kflcnIsRiscvCpuEnabled__ = &kflcnIsRiscvCpuEnabled_TU102;
+    }
+
+    // Hal function -- kflcnIsRiscvActive
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnIsRiscvActive__ = &kflcnIsRiscvActive_108313;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+        {
+            pThis->__kflcnIsRiscvActive__ = &kflcnIsRiscvActive_TU102;
+        }
+        else
+        {
+            pThis->__kflcnIsRiscvActive__ = &kflcnIsRiscvActive_GA10X;
+        }
     }
 
     // Hal function -- kflcnRiscvProgramBcr
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
         pThis->__kflcnRiscvProgramBcr__ = &kflcnRiscvProgramBcr_f2d351;
     }
     else
     {
-        pThis->__kflcnRiscvProgramBcr__ = &kflcnRiscvProgramBcr_GA102;
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+        {
+            pThis->__kflcnRiscvProgramBcr__ = &kflcnRiscvProgramBcr_f2d351;
+        }
+        else
+        {
+            pThis->__kflcnRiscvProgramBcr__ = &kflcnRiscvProgramBcr_GA102;
+        }
     }
 
     // Hal function -- kflcnSwitchToFalcon
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kflcnSwitchToFalcon__ = &kflcnSwitchToFalcon_b3696a;
+        pThis->__kflcnSwitchToFalcon__ = &kflcnSwitchToFalcon_f2d351;
     }
     else
     {
-        pThis->__kflcnSwitchToFalcon__ = &kflcnSwitchToFalcon_GA10X;
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+        {
+            pThis->__kflcnSwitchToFalcon__ = &kflcnSwitchToFalcon_b3696a;
+        }
+        else
+        {
+            pThis->__kflcnSwitchToFalcon__ = &kflcnSwitchToFalcon_GA10X;
+        }
     }
 
     pThis->__kflcnResetHw__ = NULL;
 
-    // Hal function -- kflcnPreResetWait
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+    // Hal function -- kflcnReset
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kflcnPreResetWait__ = &kflcnPreResetWait_GA10X;
+        pThis->__kflcnReset__ = &kflcnReset_f2d351;
     }
-    // default
     else
     {
-        pThis->__kflcnPreResetWait__ = &kflcnPreResetWait_56cd7a;
+        pThis->__kflcnReset__ = &kflcnReset_TU102;
+    }
+
+    // Hal function -- kflcnResetIntoRiscv
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnResetIntoRiscv__ = &kflcnResetIntoRiscv_f2d351;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+        {
+            pThis->__kflcnResetIntoRiscv__ = &kflcnResetIntoRiscv_TU102;
+        }
+        else
+        {
+            pThis->__kflcnResetIntoRiscv__ = &kflcnResetIntoRiscv_GA102;
+        }
+    }
+
+    // Hal function -- kflcnStartCpu
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnStartCpu__ = &kflcnStartCpu_f2d351;
+    }
+    else
+    {
+        pThis->__kflcnStartCpu__ = &kflcnStartCpu_TU102;
+    }
+
+    // Hal function -- kflcnDisableCtxReq
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnDisableCtxReq__ = &kflcnDisableCtxReq_f2d351;
+    }
+    else
+    {
+        pThis->__kflcnDisableCtxReq__ = &kflcnDisableCtxReq_TU102;
+    }
+
+    // Hal function -- kflcnPreResetWait
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnPreResetWait__ = &kflcnPreResetWait_5baef9;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0f800UL) )) /* ChipHal: GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
+        {
+            pThis->__kflcnPreResetWait__ = &kflcnPreResetWait_GA10X;
+        }
+        // default
+        else
+        {
+            pThis->__kflcnPreResetWait__ = &kflcnPreResetWait_56cd7a;
+        }
     }
 
     // Hal function -- kflcnWaitForResetToFinish
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kflcnWaitForResetToFinish__ = &kflcnWaitForResetToFinish_TU102;
+        pThis->__kflcnWaitForResetToFinish__ = &kflcnWaitForResetToFinish_5baef9;
     }
     else
     {
-        pThis->__kflcnWaitForResetToFinish__ = &kflcnWaitForResetToFinish_GA102;
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+        {
+            pThis->__kflcnWaitForResetToFinish__ = &kflcnWaitForResetToFinish_TU102;
+        }
+        else
+        {
+            pThis->__kflcnWaitForResetToFinish__ = &kflcnWaitForResetToFinish_GA102;
+        }
+    }
+
+    // Hal function -- kflcnWaitForHalt
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__kflcnWaitForHalt__ = &kflcnWaitForHalt_5baef9;
+    }
+    else
+    {
+        pThis->__kflcnWaitForHalt__ = &kflcnWaitForHalt_TU102;
     }
 
     // Hal function -- kflcnReadIntrStatus
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kflcnReadIntrStatus__ = &kflcnReadIntrStatus_TU102;
+        pThis->__kflcnReadIntrStatus__ = &kflcnReadIntrStatus_474d46;
     }
     else
     {
-        pThis->__kflcnReadIntrStatus__ = &kflcnReadIntrStatus_GA102;
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000007e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 */ 
+        {
+            pThis->__kflcnReadIntrStatus__ = &kflcnReadIntrStatus_TU102;
+        }
+        else
+        {
+            pThis->__kflcnReadIntrStatus__ = &kflcnReadIntrStatus_GA102;
+        }
     }
 
     // Hal function -- kflcnIntrRetrigger
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kflcnIntrRetrigger__ = &kflcnIntrRetrigger_b3696a;
+        pThis->__kflcnIntrRetrigger__ = &kflcnIntrRetrigger_f2d351;
     }
     else
     {
-        pThis->__kflcnIntrRetrigger__ = &kflcnIntrRetrigger_GA100;
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+        {
+            pThis->__kflcnIntrRetrigger__ = &kflcnIntrRetrigger_b3696a;
+        }
+        else
+        {
+            pThis->__kflcnIntrRetrigger__ = &kflcnIntrRetrigger_GA100;
+        }
     }
 
     // Hal function -- kflcnMaskImemAddr
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kflcnMaskImemAddr__ = &kflcnMaskImemAddr_TU102;
+        pThis->__kflcnMaskImemAddr__ = &kflcnMaskImemAddr_474d46;
     }
     else
     {
-        pThis->__kflcnMaskImemAddr__ = &kflcnMaskImemAddr_GA100;
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+        {
+            pThis->__kflcnMaskImemAddr__ = &kflcnMaskImemAddr_TU102;
+        }
+        else
+        {
+            pThis->__kflcnMaskImemAddr__ = &kflcnMaskImemAddr_GA100;
+        }
     }
 
     // Hal function -- kflcnMaskDmemAddr
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
     {
-        pThis->__kflcnMaskDmemAddr__ = &kflcnMaskDmemAddr_TU102;
+        pThis->__kflcnMaskDmemAddr__ = &kflcnMaskDmemAddr_474d46;
     }
     else
     {
-        pThis->__kflcnMaskDmemAddr__ = &kflcnMaskDmemAddr_GA100;
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+        {
+            pThis->__kflcnMaskDmemAddr__ = &kflcnMaskDmemAddr_TU102;
+        }
+        else
+        {
+            pThis->__kflcnMaskDmemAddr__ = &kflcnMaskDmemAddr_GA100;
+        }
     }
 
     pThis->__nvoc_base_KernelCrashCatEngine.__kcrashcatEngineRegRead__ = &__nvoc_thunk_KernelFalcon_kcrashcatEngineRegRead;
@@ -413,7 +577,7 @@ static NV_STATUS __nvoc_thunk_GenericKernelFalcon_kflcnResetHw(struct OBJGPU *pG
     return gkflcnResetHw(pGpu, (struct GenericKernelFalcon *)(((unsigned char *)pGenKernFlcn) - __nvoc_rtti_GenericKernelFalcon_KernelFalcon.offset));
 }
 
-static void __nvoc_thunk_GenericKernelFalcon_intrservRegisterIntrService(struct OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[168]) {
+static void __nvoc_thunk_GenericKernelFalcon_intrservRegisterIntrService(struct OBJGPU *arg0, struct IntrService *arg1, IntrServiceRecord arg2[171]) {
     gkflcnRegisterIntrService(arg0, (struct GenericKernelFalcon *)(((unsigned char *)arg1) - __nvoc_rtti_GenericKernelFalcon_IntrService.offset), arg2);
 }
 
@@ -608,23 +772,31 @@ void __nvoc_init_GenericKernelFalcon(GenericKernelFalcon *pThis, RmHalspecOwner 
     __nvoc_init_funcTable_GenericKernelFalcon(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon **ppThis, Dynamic *pParent, NvU32 createFlags, struct OBJGPU * arg_pGpu, KernelFalconEngineConfig * arg_pFalconConfig) {
+NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon **ppThis, Dynamic *pParent, NvU32 createFlags, struct OBJGPU * arg_pGpu, KernelFalconEngineConfig * arg_pFalconConfig)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     GenericKernelFalcon *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(GenericKernelFalcon), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(GenericKernelFalcon));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_GenericKernelFalcon);
 
     pThis->__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_Object);
@@ -642,16 +814,25 @@ NV_STATUS __nvoc_objCreate_GenericKernelFalcon(GenericKernelFalcon **ppThis, Dyn
     status = __nvoc_ctor_GenericKernelFalcon(pThis, pRmhalspecowner, arg_pGpu, arg_pFalconConfig);
     if (status != NV_OK) goto __nvoc_objCreate_GenericKernelFalcon_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_GenericKernelFalcon_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(GenericKernelFalcon));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

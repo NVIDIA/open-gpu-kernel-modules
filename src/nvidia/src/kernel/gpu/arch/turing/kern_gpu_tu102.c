@@ -22,9 +22,18 @@
  */
 #include "gpu/gpu.h"
 #include "gpu/gpu_child_class_defs.h"
+#include "gpu/bif/kernel_bif.h"
+#include "gpu/mem_sys/kern_mem_sys.h"
+#include "gpu/bus/kern_bus.h"
+#include "gpu/bif/kernel_bif.h"
+#include "gpu/mem_mgr/rm_page_size.h"
+#include "jt.h"
+
 #include "published/turing/tu102/dev_vm.h"
 #include "published/turing/tu102/hwproject.h"
-#include "jt.h"
+#include "published/turing/tu102/dev_nv_xve.h"
+#include "published/turing/tu102/dev_gc6_island.h"
+#include "published/turing/tu102/dev_gc6_island_addendum.h"
 
 /*!
  * @brief Returns SR-IOV capabilities
@@ -63,6 +72,7 @@ gpuGetSriovCaps_TU102
     pParams->bEmulateVFBar0TlbInvalidationRegister = pGpu->getProperty(pGpu, PDB_PROP_GPU_BUG_3007008_EMULATE_VF_MMU_TLB_INVALIDATE);
     pParams->bClientRmAllocatedCtxBuffer           = gpuIsClientRmAllocatedCtxBufferEnabled(pGpu);
     pParams->bNonPowerOf2ChannelCountSupported     = gpuIsNonPowerOf2ChannelCountSupported(pGpu);
+    pParams->bVfResizableBAR1Supported             = gpuIsVfResizableBAR1Supported(pGpu);
 
     return NV_OK;
 }
@@ -133,6 +143,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU102[] =
     GPU_CHILD_PRESENT(KernelFifo, 1),
     GPU_CHILD_PRESENT(KernelGmmu, 1),
     GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
     GPU_CHILD_PRESENT(KernelMc, 1),
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelNvlink, 1),
@@ -163,6 +174,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU104[] =
     GPU_CHILD_PRESENT(KernelFifo, 1),
     GPU_CHILD_PRESENT(KernelGmmu, 1),
     GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
     GPU_CHILD_PRESENT(KernelMc, 1),
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelNvlink, 1),
@@ -193,6 +205,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_TU106[] =
     GPU_CHILD_PRESENT(KernelFifo, 1),
     GPU_CHILD_PRESENT(KernelGmmu, 1),
     GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
     GPU_CHILD_PRESENT(KernelMc, 1),
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelNvlink, 1),
@@ -257,4 +270,308 @@ gpuJtVersionSanityCheck_TU102
 
 gpuJtVersionSanityCheck_TU102_EXIT:
     return status;
+}
+
+/*!
+ * @brief: Return base offset of register group
+ *
+ * @param[in]  pGpu          OBJGPU pointer
+ *             regBase       NvU32 value for requested register group
+ * @param[out] offset        NvU32 pointer to return base offset
+ *
+ * @returns NV_OK if the register group is found.
+ */
+NV_STATUS
+gpuGetRegBaseOffset_TU102(OBJGPU *pGpu, NvU32 regBase, NvU32 *pOffset)
+{
+    switch (regBase)
+    {
+        case NV_REG_BASE_USERMODE:
+        {
+            //
+            // Baremetal from Turing will not use the NV_USERMODE_*
+            // as - "NV_USERMODE is going away long term, and
+            // doesn't support any of the new remap
+            // type features". Since we would need the new features
+            // such as worksubmission doorbell register interrupting GSP,
+            // we will start using the physical registers through NV_VIRTUAL_FUNCTION
+            // even on host.
+            //
+            *pOffset = GPU_GET_VREG_OFFSET(pGpu, DRF_BASE(NV_VIRTUAL_FUNCTION));
+
+            return NV_OK;
+        }
+        default:
+        {
+
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+}
+
+/*!
+ * @brief Check if register being accessed is within guest BAR0 space.
+ *
+ * @param[in] pGpu   OBJGPU pointer
+ * @param[in] addr   Address being validated
+ */
+NV_STATUS
+gpuSanityCheckVirtRegAccess_TU102
+(
+    OBJGPU *pGpu,
+    NvU32   addr
+)
+{
+    // Not applicable in PV mode
+    if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
+    {
+        return NV_OK;
+    }
+
+    if ((addr >= DEVICE_BASE(NV_PCFG)) &&
+        (addr < DEVICE_BASE(NV_PCFG) + PCIE_CONFIG_SPACE_SIZE))
+    {
+        return NV_OK;
+    }
+
+    // Check if address in NV_VIRTUAL_FUNCTION range, if not error out.
+    if ((addr < DRF_EXTENT(NV_VIRTUAL_FUNCTION_PRIV)) ||
+        ((addr >= DRF_BASE(NV_VIRTUAL_FUNCTION)) && (addr < DRF_EXTENT(NV_VIRTUAL_FUNCTION))))
+    {
+        return NV_OK;
+    }
+
+    return NV_ERR_INVALID_ADDRESS;
+}
+
+/*
+ * @brief Function that checks if ECC error occurred by reading various count
+ * registers/interrupt registers. This function is not floorsweeping-aware so
+ * PRI errors are ignored
+ */
+void
+gpuCheckEccCounts_TU102
+(
+    OBJGPU *pGpu
+)
+{
+    NvU32 dramCount = 0;
+    NvU32 ltcCount = 0;
+    NvU32 mmuCount = 0;
+    NvU32 pcieCount = 0;
+
+    kmemsysGetEccCounts_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu), &dramCount, &ltcCount);
+    mmuCount += kgmmuGetEccCounts_HAL(pGpu, GPU_GET_KERNEL_GMMU(pGpu));
+    pcieCount += kbifGetEccCounts_HAL(pGpu, GPU_GET_KERNEL_BIF(pGpu));
+    pcieCount += kbusGetEccCounts_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu));
+
+    // If counts > 0 or if poison interrupt pending, ECC error has occurred.
+    if (((dramCount + ltcCount + mmuCount + pcieCount) != 0) || gpuCheckIfFbhubPoisonIntrPending_HAL(pGpu))
+    {
+        nvErrorLog_va((void *)pGpu, UNRECOVERABLE_ECC_ERROR_ESCAPE,
+                      "An uncorrectable ECC error detected "
+                      "(possible firmware handling failure) "
+                      "DRAM:%d, LTC:%d, MMU:%d, PCIE:%d", dramCount, ltcCount, mmuCount, pcieCount);
+    }
+}
+
+/*
+ * @brief  Function that clears ECC error count registers.
+ */
+NV_STATUS
+gpuClearEccCounts_TU102
+(
+    OBJGPU *pGpu
+)
+{
+    NV_STATUS status = NV_OK;
+
+    gpuClearFbhubPoisonIntrForBug2924523_HAL(pGpu);
+
+    kmemsysClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+
+    kgmmuClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_GMMU(pGpu));
+
+    kbusClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu));
+
+    status = kbifClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_BIF(pGpu));
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    return NV_OK;
+}
+
+//
+// This function checks for GFW boot completion status by reading
+// NV_AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT_PROGRESS_COMPLETED bits and
+// return true if GFW boot has completed.
+//
+// Either pGpu or pgc6VirtAddr should be not null.
+// This function needs to be called in early init code-path where OBJGPU
+// has not created. For that case, the NV_PGC6 base address will be mapped
+// and pgc6VirtAddr will contain the virtual address for NV_PGC6.
+// If pgc6VirtAddr is not null, then read the register with MEM_RD32,
+// otherwise use the GPU_REG_RD32.
+//
+// The current GFW boot progress value will be returned in gfwBootProgressVal.
+//
+static NvBool
+_gpuIsGfwBootCompleted_TU102
+(
+    OBJGPU  *pGpu,
+    NvU8    *pgc6VirtAddr,
+    NvU32   *gfwBootProgressVal
+)
+{
+    NvU32 regVal;
+
+    if (pgc6VirtAddr != NULL)
+    {
+        regVal = MEM_RD32(pgc6VirtAddr +
+                          (NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK -
+                           DEVICE_BASE(NV_PGC6)));
+    }
+    else
+    {
+        regVal = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK);
+    }
+
+    //
+    // Before reading the actual GFW_BOOT status register,
+    // we want to check that FWSEC has lowered its PLM first.
+    // If not then obviously it has not completed.
+    //
+    if (!FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK,
+                      _READ_PROTECTION_LEVEL0, _ENABLE, regVal))
+    {
+        *gfwBootProgressVal = 0x0;
+        return NV_FALSE;
+    }
+
+    if (pgc6VirtAddr != NULL)
+    {
+        regVal = MEM_RD32(pgc6VirtAddr +
+                          (NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT -
+                           DEVICE_BASE(NV_PGC6)));
+    }
+    else
+    {
+        regVal = GPU_REG_RD32(pGpu, NV_PGC6_AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT);
+    }
+
+    *gfwBootProgressVal = DRF_VAL(_PGC6, _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
+                                  _PROGRESS, regVal);
+
+    return FLD_TEST_DRF(_PGC6, _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
+                        _PROGRESS, _COMPLETED, regVal);
+}
+
+#define FWSECLIC_PROG_START_TIMEOUT             50000    // 50ms
+#define FWSECLIC_PROG_COMPLETE_TIMEOUT          2000000  // 2s
+#define GPU_GFW_BOOT_COMPLETION_TIMEOUT_US      (FWSECLIC_PROG_START_TIMEOUT + \
+                                                 FWSECLIC_PROG_COMPLETE_TIMEOUT)
+NV_STATUS
+gpuWaitForGfwBootComplete_TU102
+(
+    OBJGPU    *pGpu
+)
+{
+    NvU32     timeoutUs = GPU_GFW_BOOT_COMPLETION_TIMEOUT_US;
+    NvU32     gfwBootProgressVal = 0;
+    RMTIMEOUT timeout;
+    NV_STATUS status = NV_OK;
+
+    // Use the OS timer since the GPU timer is not ready yet
+    gpuSetTimeout(pGpu, gpuScaleTimeout(pGpu, timeoutUs), &timeout,
+                  GPU_TIMEOUT_FLAGS_OSTIMER);
+
+    while (status == NV_OK)
+    {
+        if (_gpuIsGfwBootCompleted_TU102(pGpu, NULL, &gfwBootProgressVal))
+        {
+            return NV_OK;
+        }
+
+        status = gpuCheckTimeout(pGpu, &timeout);
+    }
+
+    NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: (progress 0x%x)\n",
+              gfwBootProgressVal);
+    return status;
+}
+
+//
+// Workaround for Bug 3809777.
+//
+// This function is not created through HAL infrastructure. It needs to be
+// called when OBJGPU is not created. HAL infrastructure can’t be used for
+// this case, so it has been added manually. It will be invoked directly by
+// gpumgrIsDeviceMsixAllowed() after checking the GPU architecture.
+//
+// When driver is running inside guest in pass-through mode, check if MSI-X
+// is enabled by reading NV_XVE_PRIV_MISC_1_CYA_HIDE_MSIX_CAP. The devinit
+// can disable MSI-X capability, if configured. The hypervisor issues reset
+// before launching VM. After reset, the MSI-X capability will be visible
+// for some duration and then devinit hides the MSI-X capability. This
+// devinit will run in the background. During this time, the hypervisor can
+// assume that MSI-X capability is present in the GPU and configure the guest
+// GPU PCIe device instance with MSI-X capability. When GPU tries to use the
+// MSI-X interrupts later, then interrupt won’t be triggered. To identify
+// this case, wait for GPU devinit completion and check if MSI-X capability
+// is not hidden.
+//
+NvBool gpuIsMsixAllowed_TU102
+(
+    RmPhysAddr bar0BaseAddr
+)
+{
+    NvU8    *vAddr;
+    NvU32    regVal;
+    NvU32    timeUs = 0;
+    NvU32    gfwBootProgressVal = 0;
+    NvBool   bGfwBootCompleted = NV_FALSE;
+
+    ct_assert(DRF_SIZE(NV_PGC6) <= RM_PAGE_SIZE);
+    vAddr = osMapKernelSpace(bar0BaseAddr + DEVICE_BASE(NV_PGC6),
+                             RM_PAGE_SIZE, NV_MEMORY_UNCACHED,
+                             NV_PROTECT_READABLE);
+    if (vAddr == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    while (timeUs < GPU_GFW_BOOT_COMPLETION_TIMEOUT_US)
+    {
+        bGfwBootCompleted = _gpuIsGfwBootCompleted_TU102(NULL, vAddr, &gfwBootProgressVal);
+        if (bGfwBootCompleted)
+        {
+            break;
+        }
+
+        osDelayUs(1000);
+        timeUs += 1000;
+    }
+
+    osUnmapKernelSpace(vAddr, RM_PAGE_SIZE);
+    if (!bGfwBootCompleted)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: (progress 0x%x)\n",
+                  gfwBootProgressVal);
+        return NV_FALSE;
+    }
+
+    vAddr = osMapKernelSpace(bar0BaseAddr + DEVICE_BASE(NV_PCFG) +
+                             NV_XVE_PRIV_MISC_1, 4, NV_MEMORY_UNCACHED,
+                             NV_PROTECT_READABLE);
+    if (vAddr == NULL)
+    {
+        return NV_FALSE;
+    }
+
+    regVal = MEM_RD32(vAddr);
+    osUnmapKernelSpace(vAddr, 4);
+
+    return FLD_TEST_DRF(_XVE, _PRIV_MISC_1, _CYA_HIDE_MSIX_CAP, _FALSE, regVal);
 }

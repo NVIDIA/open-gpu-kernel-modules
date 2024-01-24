@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -118,11 +118,16 @@ typedef enum
     MCTP_PACKET_STATE_SINGLE_PACKET
 } MCTP_PACKET_STATE;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERN_FSP_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelFsp {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -130,6 +135,7 @@ struct KernelFsp {
     struct OBJENGSTATE *__nvoc_pbase_OBJENGSTATE;
     struct KernelFsp *__nvoc_pbase_KernelFsp;
     NV_STATUS (*__kfspConstructEngine__)(struct OBJGPU *, struct KernelFsp *, ENGDESCRIPTOR);
+    void (*__kfspCleanupBootState__)(struct OBJGPU *, struct KernelFsp *);
     void (*__kfspStateDestroy__)(struct OBJGPU *, struct KernelFsp *);
     void (*__kfspSecureReset__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspSendPacket__)(struct OBJGPU *, struct KernelFsp *, NvU8 *, NvU32);
@@ -139,7 +145,9 @@ struct KernelFsp {
     NvBool (*__kfspIsMsgQueueEmpty__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspPollForResponse__)(struct OBJGPU *, struct KernelFsp *);
     NvBool (*__kfspGspFmcIsEnforced__)(struct OBJGPU *, struct KernelFsp *);
+    NV_STATUS (*__kfspPrepareBootCommands__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspSendBootCommands__)(struct OBJGPU *, struct KernelFsp *);
+    NV_STATUS (*__kfspPrepareAndSendBootCommands__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspWaitForSecureBoot__)(struct OBJGPU *, struct KernelFsp *);
     NvU32 (*__kfspGetRmChannelSize__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspConfigEmemc__)(struct OBJGPU *, struct KernelFsp *, NvU32, NvBool, NvBool);
@@ -162,6 +170,8 @@ struct KernelFsp {
     NvBool (*__kfspCheckGspSecureScratch__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspWaitForGspTargetMaskReleased__)(struct OBJGPU *, struct KernelFsp *);
     NvBool (*__kfspRequiresBug3957833WAR__)(struct OBJGPU *, struct KernelFsp *);
+    NV_STATUS (*__kfspFrtsSysmemLocationProgram__)(struct OBJGPU *, struct KernelFsp *);
+    void (*__kfspFrtsSysmemLocationClear__)(struct OBJGPU *, struct KernelFsp *);
     NV_STATUS (*__kfspStateLoad__)(POBJGPU, struct KernelFsp *, NvU32);
     NV_STATUS (*__kfspStateUnload__)(POBJGPU, struct KernelFsp *, NvU32);
     NV_STATUS (*__kfspStateInitLocked__)(POBJGPU, struct KernelFsp *);
@@ -228,6 +238,7 @@ NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelFsp((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 #define kfspConstructEngine(pGpu, pKernelFsp, arg0) kfspConstructEngine_DISPATCH(pGpu, pKernelFsp, arg0)
+#define kfspCleanupBootState(pGpu, pKernelFsp) kfspCleanupBootState_DISPATCH(pGpu, pKernelFsp)
 #define kfspStateDestroy(pGpu, pKernelFsp) kfspStateDestroy_DISPATCH(pGpu, pKernelFsp)
 #define kfspSecureReset(pGpu, pKernelFsp) kfspSecureReset_DISPATCH(pGpu, pKernelFsp)
 #define kfspSendPacket(pGpu, pKernelFsp, pPacket, packetSize) kfspSendPacket_DISPATCH(pGpu, pKernelFsp, pPacket, packetSize)
@@ -238,8 +249,12 @@ NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
 #define kfspPollForResponse(pGpu, pKernelFsp) kfspPollForResponse_DISPATCH(pGpu, pKernelFsp)
 #define kfspGspFmcIsEnforced(pGpu, pKernelFsp) kfspGspFmcIsEnforced_DISPATCH(pGpu, pKernelFsp)
 #define kfspGspFmcIsEnforced_HAL(pGpu, pKernelFsp) kfspGspFmcIsEnforced_DISPATCH(pGpu, pKernelFsp)
+#define kfspPrepareBootCommands(pGpu, pKernelFsp) kfspPrepareBootCommands_DISPATCH(pGpu, pKernelFsp)
+#define kfspPrepareBootCommands_HAL(pGpu, pKernelFsp) kfspPrepareBootCommands_DISPATCH(pGpu, pKernelFsp)
 #define kfspSendBootCommands(pGpu, pKernelFsp) kfspSendBootCommands_DISPATCH(pGpu, pKernelFsp)
 #define kfspSendBootCommands_HAL(pGpu, pKernelFsp) kfspSendBootCommands_DISPATCH(pGpu, pKernelFsp)
+#define kfspPrepareAndSendBootCommands(pGpu, pKernelFsp) kfspPrepareAndSendBootCommands_DISPATCH(pGpu, pKernelFsp)
+#define kfspPrepareAndSendBootCommands_HAL(pGpu, pKernelFsp) kfspPrepareAndSendBootCommands_DISPATCH(pGpu, pKernelFsp)
 #define kfspWaitForSecureBoot(pGpu, pKernelFsp) kfspWaitForSecureBoot_DISPATCH(pGpu, pKernelFsp)
 #define kfspWaitForSecureBoot_HAL(pGpu, pKernelFsp) kfspWaitForSecureBoot_DISPATCH(pGpu, pKernelFsp)
 #define kfspGetRmChannelSize(pGpu, pKernelFsp) kfspGetRmChannelSize_DISPATCH(pGpu, pKernelFsp)
@@ -284,6 +299,10 @@ NV_STATUS __nvoc_objCreate_KernelFsp(KernelFsp**, Dynamic*, NvU32);
 #define kfspWaitForGspTargetMaskReleased_HAL(pGpu, pKernelFsp) kfspWaitForGspTargetMaskReleased_DISPATCH(pGpu, pKernelFsp)
 #define kfspRequiresBug3957833WAR(pGpu, pKernelFsp) kfspRequiresBug3957833WAR_DISPATCH(pGpu, pKernelFsp)
 #define kfspRequiresBug3957833WAR_HAL(pGpu, pKernelFsp) kfspRequiresBug3957833WAR_DISPATCH(pGpu, pKernelFsp)
+#define kfspFrtsSysmemLocationProgram(pGpu, pKernelFsp) kfspFrtsSysmemLocationProgram_DISPATCH(pGpu, pKernelFsp)
+#define kfspFrtsSysmemLocationProgram_HAL(pGpu, pKernelFsp) kfspFrtsSysmemLocationProgram_DISPATCH(pGpu, pKernelFsp)
+#define kfspFrtsSysmemLocationClear(pGpu, pKernelFsp) kfspFrtsSysmemLocationClear_DISPATCH(pGpu, pKernelFsp)
+#define kfspFrtsSysmemLocationClear_HAL(pGpu, pKernelFsp) kfspFrtsSysmemLocationClear_DISPATCH(pGpu, pKernelFsp)
 #define kfspStateLoad(pGpu, pEngstate, arg0) kfspStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kfspStateUnload(pGpu, pEngstate, arg0) kfspStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kfspStateInitLocked(pGpu, pEngstate) kfspStateInitLocked_DISPATCH(pGpu, pEngstate)
@@ -300,6 +319,12 @@ NV_STATUS kfspConstructEngine_IMPL(struct OBJGPU *pGpu, struct KernelFsp *pKerne
 
 static inline NV_STATUS kfspConstructEngine_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp, ENGDESCRIPTOR arg0) {
     return pKernelFsp->__kfspConstructEngine__(pGpu, pKernelFsp, arg0);
+}
+
+void kfspCleanupBootState_IMPL(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+static inline void kfspCleanupBootState_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    pKernelFsp->__kfspCleanupBootState__(pGpu, pKernelFsp);
 }
 
 void kfspStateDestroy_IMPL(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
@@ -360,6 +385,16 @@ static inline NvBool kfspGspFmcIsEnforced_DISPATCH(struct OBJGPU *pGpu, struct K
     return pKernelFsp->__kfspGspFmcIsEnforced__(pGpu, pKernelFsp);
 }
 
+NV_STATUS kfspPrepareBootCommands_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+static inline NV_STATUS kfspPrepareBootCommands_ac1694(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kfspPrepareBootCommands_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return pKernelFsp->__kfspPrepareBootCommands__(pGpu, pKernelFsp);
+}
+
 NV_STATUS kfspSendBootCommands_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
 
 static inline NV_STATUS kfspSendBootCommands_ac1694(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
@@ -368,6 +403,16 @@ static inline NV_STATUS kfspSendBootCommands_ac1694(struct OBJGPU *pGpu, struct 
 
 static inline NV_STATUS kfspSendBootCommands_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
     return pKernelFsp->__kfspSendBootCommands__(pGpu, pKernelFsp);
+}
+
+NV_STATUS kfspPrepareAndSendBootCommands_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+static inline NV_STATUS kfspPrepareAndSendBootCommands_ac1694(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return NV_OK;
+}
+
+static inline NV_STATUS kfspPrepareAndSendBootCommands_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return pKernelFsp->__kfspPrepareAndSendBootCommands__(pGpu, pKernelFsp);
 }
 
 NV_STATUS kfspWaitForSecureBoot_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
@@ -588,6 +633,26 @@ static inline NvBool kfspRequiresBug3957833WAR_491d52(struct OBJGPU *pGpu, struc
 
 static inline NvBool kfspRequiresBug3957833WAR_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
     return pKernelFsp->__kfspRequiresBug3957833WAR__(pGpu, pKernelFsp);
+}
+
+NV_STATUS kfspFrtsSysmemLocationProgram_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+static inline NV_STATUS kfspFrtsSysmemLocationProgram_395e98(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+static inline NV_STATUS kfspFrtsSysmemLocationProgram_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return pKernelFsp->__kfspFrtsSysmemLocationProgram__(pGpu, pKernelFsp);
+}
+
+void kfspFrtsSysmemLocationClear_GH100(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp);
+
+static inline void kfspFrtsSysmemLocationClear_d44104(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    return;
+}
+
+static inline void kfspFrtsSysmemLocationClear_DISPATCH(struct OBJGPU *pGpu, struct KernelFsp *pKernelFsp) {
+    pKernelFsp->__kfspFrtsSysmemLocationClear__(pGpu, pKernelFsp);
 }
 
 static inline NV_STATUS kfspStateLoad_DISPATCH(POBJGPU pGpu, struct KernelFsp *pEngstate, NvU32 arg0) {

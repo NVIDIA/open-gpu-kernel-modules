@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,7 +32,8 @@
 #include "gpu/gpu_resource.h"
 #include "gpu/gpu.h"
 #include "core/locks.h"
-
+#include "vgpu/rpc.h"
+#include "rmapi/rmapi_utils.h"
 
 NV_STATUS
 binapiConstruct_IMPL
@@ -64,9 +65,10 @@ binapiControl_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
     OBJGPU *pGpu = GPU_RES_GET_GPU(pResource);
     GPU_MASK gpuMaskRelease = 0;
+    RM_API *pRmApi;
 
     // check if CMD is NULL, return early
     if (RMCTRL_IS_NULL_CMD(pParams->cmd))
@@ -75,23 +77,51 @@ binapiControl_IMPL
     if (pGpu == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
-    NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
-                           GPU_LOCK_GRP_SUBDEVICE,
-                           GPUS_LOCK_FLAGS_NONE,
-                           RM_LOCK_MODULES_RPC,
-                           &gpuMaskRelease));
-
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    status = pRmApi->Control(pRmApi,
-                             pParams->hClient,
-                             pParams->hObject,
-                             pParams->cmd,
-                             pParams->pParams,
-                             pParams->paramsSize);
-    if (gpuMaskRelease != 0)
+    if (IS_VIRTUAL(pGpu))
     {
-        rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+        {
+            NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                                         GPU_LOCK_GRP_SUBDEVICE,
+                                                         GPUS_LOCK_FLAGS_NONE,
+                                                         RM_LOCK_MODULES_RPC,
+                                                         &gpuMaskRelease));
+
+            NV_RM_RPC_API_CONTROL(pGpu,
+                                  pParams->hClient,
+                                  pParams->hObject,
+                                  pParams->cmd,
+                                  pParams->pParams,
+                                  pParams->paramsSize,
+                                  status);
+
+            if (gpuMaskRelease != 0)
+            {
+                rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+            }
+        }
     }
+    else if (IS_GSP_CLIENT(pGpu))
+    {
+        NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance,
+                                                     GPU_LOCK_GRP_SUBDEVICE,
+                                                     GPUS_LOCK_FLAGS_NONE,
+                                                     RM_LOCK_MODULES_RPC,
+                                                     &gpuMaskRelease));
+
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        status = pRmApi->Control(pRmApi,
+                                 pParams->hClient,
+                                 pParams->hObject,
+                                 pParams->cmd,
+                                 pParams->pParams,
+                                 pParams->paramsSize);
+
+        if (gpuMaskRelease != 0)
+        {
+            rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+        }
+    }
+
     return status;
 }
 
@@ -103,18 +133,29 @@ binapiprivControl_IMPL
     RS_RES_CONTROL_PARAMS_INTERNAL *pParams
 )
 {
+    NV_STATUS status = NV_OK;
+
     // check if CMD is NULL, return early
     if (RMCTRL_IS_NULL_CMD(pParams->cmd))
         return NV_OK;
+    {
+        if (pParams->secInfo.privLevel >= RS_PRIV_LEVEL_USER_ROOT)
+        {
+            status = NV_OK;
+        }
+        else
+        {
+            status = NV_ERR_INSUFFICIENT_PERMISSIONS;
+        }
+    }
 
-    // Add check if privileged client
-    if (pParams->secInfo.privLevel >= RS_PRIV_LEVEL_USER_ROOT)
+    if (status == NV_OK)
     {
         return binapiControl_IMPL(staticCast(pResource, BinaryApi), pCallContext, pParams);
     }
     else
     {
-        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+        return status;
     }
 }
 

@@ -28,6 +28,7 @@
 #include "regkey_nvswitch.h"
 #include "ls10/ls10.h"
 #include "nvswitch/ls10/dev_nvldl_ip_addendum.h"
+#include "cci/cci_nvswitch.h"
 
 #include "nvswitch/ls10/dev_nvldl_ip.h"
 #include "nvswitch/ls10/dev_nvlipt_lnk_ip.h"
@@ -99,53 +100,51 @@ _nvswitch_configure_reserved_throughput_counters
 }
 
 void
+nvswitch_program_l1_scratch_reg_ls10
+(
+    nvswitch_device *device,
+    NvU32 linkNumber
+)
+{
+    NvU32 scrRegVal;
+    NvU32 tempRegVal;
+
+    // Read L1 register and store initial/VBIOS L1 Threshold Value in Scratch register
+    tempRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD);
+ 
+    scrRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _SCRATCH_WARM);
+
+    // Update the scratch register value only if it has not been written to before
+    if (scrRegVal == NV_NVLIPT_LNK_SCRATCH_WARM_DATA_INIT)
+    {
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLIPT_LNK, _NVLIPT_LNK, _SCRATCH_WARM, tempRegVal);
+    }
+}
+
+#define BUG_3797211_LS10_VBIOS_VERSION     0x9610410000
+
+void
 nvswitch_init_lpwr_regs_ls10
 (
     nvlink_link *link
 )
 {
-    nvswitch_device *device = link->dev->pDevInfo;
-    // NVSWITCH_BIOS_NVLINK_CONFIG *bios_config;
-    NvU32 linkNum = link->linkNumber;
-    NvU32 tempRegVal, lpEntryThreshold;
-    NvU8  softwareDesired;
-    NvBool bLpEnable;
+    NvlStatus status;
+    nvswitch_device *device;
 
-    if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
+    if (link == NULL)
     {
         return;
     }
 
-    if (device->regkeys.enable_pm == NV_SWITCH_REGKEY_ENABLE_PM_NO)
+    device = link->dev->pDevInfo;
+
+    status = nvswitch_ctrl_set_link_l1_threshold_ls10(link, device->regkeys.lp_threshold);
+    if (status != NVL_SUCCESS)
     {
-        return;
+        NVSWITCH_PRINT(device, ERROR, "%s: Failed to set L1 Threshold\n",
+                       __FUNCTION__);
     }
-
-    // bios_config = nvswitch_get_bios_nvlink_config(device);
-
-    // IC Enter Threshold
-    if (device->regkeys.lp_threshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
-    {
-        //
-        // Do nothing since VBIOS sets the default L1 threshold.
-        // Refer Bug 3797211 for more info.
-        //
-    }
-    else
-    {
-        lpEntryThreshold = device->regkeys.lp_threshold;
-    tempRegVal = 0;
-    tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_L1_ENTER_THRESHOLD, _THRESHOLD, lpEntryThreshold, tempRegVal);
-    NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD, tempRegVal);
-    }
-
-    //LP Entry Enable
-    bLpEnable = NV_TRUE;
-    softwareDesired = (bLpEnable) ? 0x1 : 0x0;
-
-    tempRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_CTRL);
-    tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_CTRL, _L1_SOFTWARE_DESIRED, softwareDesired, tempRegVal);
-    NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_CTRL, tempRegVal);
 }
 
 void
@@ -572,6 +571,15 @@ nvswitch_corelib_get_tl_link_mode_ls10
 
     link_state = DRF_VAL(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE,
             val);
+
+    if (cciIsLinkManaged(device, link->linkNumber))
+    {
+        if (link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_STATUS_CURRENTLINKSTATE_RESET)
+        {
+            *mode = NVLINK_LINKSTATE_RESET;
+            return NVL_SUCCESS;
+        }
+    }
 
     switch(link_state)
     {
@@ -1434,6 +1442,7 @@ nvswitch_load_link_disable_settings_ls10
 
     if (FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, _DISABLE, regVal))
     {
+        NVSWITCH_ASSERT(!cciIsLinkManaged(device, link->linkNumber));
         
         // Set link to invalid and unregister from corelib
         device->link[link->linkNumber].valid = NV_FALSE;
@@ -1543,6 +1552,12 @@ nvswitch_reset_and_train_link_ls10
 
     nvswitch_execute_unilateral_link_shutdown_ls10(link);
     nvswitch_corelib_clear_link_state_ls10(link);
+
+    // If link is CCI managed then return early
+    if (cciIsLinkManaged(device, link->linkNumber))
+    {
+        return NVL_SUCCESS;
+    }
 
     //
     // When a link faults there could be a race between the driver requesting
@@ -1738,6 +1753,176 @@ nvswitch_request_tl_link_state_ls10
     return status;
 }
 
+// Initialize optical links for pre-training
+NvlStatus
+nvswitch_cci_initialization_sequence_ls10
+(
+    nvswitch_device *device,
+    NvU32 linkNumber
+)
+{
+    NvlStatus    status;
+    nvlink_link link;
+    nvlink_device dev;
+
+    link.linkNumber = linkNumber;
+    link.dev = &dev;
+    link.dev->pDevInfo = device;
+
+    // Perform INITPHASE1
+    status = nvswitch_minion_send_command(device, linkNumber,
+                        NV_MINION_NVLINK_DL_CMD_COMMAND_INITPHASE1, 0);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s : NV_MINION_NVLINK_DL_CMD_COMMAND_INITPHASE1 failed on link %d.\n",
+            __FUNCTION__, linkNumber);
+        return status;
+    }
+
+    // SET RX detect
+    status = nvswitch_minion_send_command(device, linkNumber,
+                        NV_MINION_NVLINK_DL_CMD_COMMAND_TURING_RXDET, 0);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+              "%s: Set RXDET failed for link %d.\n",
+              __FUNCTION__, linkNumber);
+        return status;
+    }
+
+    // Enable Common mode on Tx
+    status = _nvswitch_init_dl_pll(&link);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Failed to enable common mode for link %d.\n",
+            __FUNCTION__, linkNumber);
+        return status;
+    }
+
+    status = nvswitch_minion_send_command(device, linkNumber,
+                        NV_MINION_NVLINK_DL_CMD_COMMAND_INITPHASE5A, 0);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+                 "%s : NV_MINION_NVLINK_DL_CMD_COMMAND_INITPHASE5A failed on link %d.\n",
+                __FUNCTION__, linkNumber);
+        return status;
+    }
+
+    return NVL_SUCCESS;
+}
+
+NvlStatus
+nvswitch_cci_deinitialization_sequence_ls10
+(
+    nvswitch_device *device,
+    NvU32 linkNumber
+)
+{
+    NvlStatus    status;
+    nvlink_link link;
+    nvlink_device dev;
+
+    link.linkNumber = linkNumber;
+    link.dev = &dev;
+    link.dev->pDevInfo = device;
+
+    // Perform ABORTRXDET
+    status = nvswitch_minion_send_command(device, linkNumber,
+                        NV_MINION_NVLINK_DL_CMD_COMMAND_ABORTRXDET, 0);
+    if (status != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s : NV_MINION_NVLINK_DL_CMD_COMMAND_ABORTRXDET failed on link %d.\n",
+            __FUNCTION__, linkNumber);
+        return status;
+    }
+
+    return NVL_SUCCESS;
+}
+
+NvlStatus
+nvswitch_cci_enable_iobist_ls10
+(
+    nvswitch_device *device,
+    NvU32 linkNumber,
+    NvBool bEnable
+)
+{
+    NvU32 val;
+
+    if (bEnable)
+    {
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIG);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIG, _CFGCLKGATEEN, _ENABLE, val);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIG, _PRBSALT, _PAM4, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIG,  val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_4);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_4, _MASK_SKIP_OUT, _INIT, val);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_4, _MASK_COM_OUT, _INIT, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_4,  val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_2);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_2, _SKIP_SYMBOL_0, _SYMBOL, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_2,  val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_3);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_3, _SKIP_SYMBOL_1, _SYMBOL, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_3,  val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_0);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_0, _COM_SYMBOL_0, _SYMBOL, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_0,  val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_1);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_1, _COM_SYMBOL_1, _SYMBOL, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_1,  val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_4);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_4, _SEND_DATA_OUT, _INIT, val);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_4, _RESET_WORD_CNT_OUT, _COUNT, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _SKIPCOMINSERTERGEN_4,  val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIGREG);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIGREG, _TX_BIST_EN_IN, _ENABLE, val);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIGREG, _DISABLE_WIRED_ENABLE_IN, _ENABLE, val);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIGREG, _IO_BIST_MODE_IN, _ENABLE, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIGREG, val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIG);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIG, _DPG_PRBSSEEDLD, _ENABLE, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIG,  val);
+
+        nvswitch_os_sleep(5);
+
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIG, _DPG_PRBSSEEDLD, _INIT, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIG,  val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIG);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIG, _STARTTEST, _ENABLE, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIG,  val);
+    }
+    else
+    {
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIG);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIG, _STARTTEST, _INIT, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIG,  val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIGREG);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIGREG, _DISABLE_WIRED_ENABLE_IN, _INIT, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIGREG, val);
+
+        val = NVSWITCH_LINK_RD32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIGREG);
+        val = FLD_SET_DRF(_NVLDL_TXIOBIST, _CONFIGREG, _TX_BIST_EN_IN, _INIT, val);
+        NVSWITCH_LINK_WR32_LS10(device, linkNumber, NVLDL, _NVLDL_TXIOBIST, _CONFIGREG, val);
+    }
+
+    return NVL_SUCCESS;
+}
+
 NvBool
 nvswitch_does_link_need_termination_enabled_ls10
 (
@@ -1759,3 +1944,116 @@ nvswitch_link_termination_setup_ls10
     // Not supported for LS10
     return -NVL_ERR_NOT_SUPPORTED;
 }
+
+NvlStatus
+nvswitch_ctrl_get_link_l1_capability_ls10
+(
+    nvswitch_device *device,
+    NvU32 linkNum,
+    NvBool *isL1Capable
+)
+{
+    NvU32 regData;
+    NvBool bL1Capable;
+
+    regData = NVSWITCH_LINK_RD32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _CTRL_SYSTEM_LINK_AN1_CTRL);
+    bL1Capable = FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_SYSTEM_LINK_AN1_CTRL, _PWRM_L1_ENABLE, _ENABLE, regData);
+
+    regData = NVSWITCH_LINK_RD32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _CTRL_CAP_LOCAL_LINK_AN1);
+    bL1Capable &= FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_CAP_LOCAL_LINK_AN1, _PWRM_L1_SUPPORT, _SUPPORTED, regData);
+
+    *isL1Capable = bL1Capable;
+
+    return NVL_SUCCESS;
+}
+
+NvlStatus
+nvswitch_ctrl_get_link_l1_threshold_ls10
+(
+    nvswitch_device *device,
+    NvU32 linkNum,
+    NvU32 *lpThreshold
+)
+{
+    NvU32 regData; 
+
+    regData = NVSWITCH_LINK_RD32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK, _PWRM_L1_ENTER_THRESHOLD);
+    *lpThreshold = DRF_VAL(_NVLIPT, _LNK_PWRM_L1_ENTER_THRESHOLD, _THRESHOLD, regData);
+
+    return NVL_SUCCESS;
+}
+
+NvlStatus
+nvswitch_ctrl_set_link_l1_threshold_ls10
+(
+    nvlink_link *link,
+    NvU32 lpEntryThreshold
+)
+{
+    nvswitch_device *device = link->dev->pDevInfo;
+    NvU32 linkNum = link->linkNumber;
+    NvU32 tempRegVal, lpThreshold;
+    NvU8  softwareDesired;
+    NvU64 biosVersion;
+
+    if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    if (device->regkeys.enable_pm == NV_SWITCH_REGKEY_ENABLE_PM_NO)
+    {
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    if (nvswitch_lib_get_bios_version(device, &biosVersion) != NVL_SUCCESS)
+    {
+        NVSWITCH_PRINT(device, WARN, "%s Get VBIOS version failed.\n",
+                       __FUNCTION__);
+        biosVersion = 0;
+    }
+
+    if (device->regkeys.lp_threshold != NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT)
+    {
+         lpThreshold = device->regkeys.lp_threshold;
+    }
+    else if ((lpEntryThreshold == NVSWITCH_SET_NVLINK_L1_THRESHOLD_DEFAULT) ||
+             (lpEntryThreshold == NV_SWITCH_REGKEY_SET_LP_THRESHOLD_DEFAULT))
+    {
+        if (biosVersion >= BUG_3797211_LS10_VBIOS_VERSION)
+        {
+            //
+            // Read the default L1 Threshold programmed by the
+            // VBIOS (version 96.10.41.00.00 and above).
+            //
+            lpThreshold = NVSWITCH_LINK_RD32_LS10(device, linkNum, NVLIPT_LNK,
+                                                  _NVLIPT_LNK, _SCRATCH_WARM);
+        }
+        else
+        {
+            lpThreshold = 1;
+        }
+    }
+    else
+    {
+        lpThreshold = lpEntryThreshold;
+    }
+
+    tempRegVal = 0;
+    tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_L1_ENTER_THRESHOLD,
+                                 _THRESHOLD, lpThreshold, tempRegVal);
+    NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK,
+                            _PWRM_L1_ENTER_THRESHOLD, tempRegVal);
+
+    //LP Entry Enable
+    softwareDesired = NV_NVLIPT_LNK_PWRM_CTRL_L1_SOFTWARE_DESIRED_L1;
+    tempRegVal = NVSWITCH_LINK_RD32_LS10(device, linkNum, NVLIPT_LNK,
+                                         _NVLIPT_LNK, _PWRM_CTRL);
+    tempRegVal = FLD_SET_DRF_NUM(_NVLIPT, _LNK_PWRM_CTRL, _L1_SOFTWARE_DESIRED,
+                                 softwareDesired, tempRegVal);
+    NVSWITCH_LINK_WR32_LS10(device, linkNum, NVLIPT_LNK, _NVLIPT_LNK,
+                            _PWRM_CTRL, tempRegVal);
+
+    return NVL_SUCCESS;
+}
+

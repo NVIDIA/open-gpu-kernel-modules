@@ -41,11 +41,16 @@ ENGDESCRIPTOR ofaGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClassI
 /*!
  * RM internal class representing NVXXXX_VIDEO_OFA
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_OFA_CTX_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OfaContext {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -71,7 +76,6 @@ struct OfaContext {
     NV_STATUS (*__ofactxInternalControlForward__)(struct OfaContext *, NvU32, void *, NvU32);
     NV_STATUS (*__ofactxUnmapFrom__)(struct OfaContext *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__ofactxControl_Epilogue__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__ofactxControlLookup__)(struct OfaContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__ofactxGetSwMethods__)(struct OfaContext *, const METHOD **, NvU32 *);
     NvHandle (*__ofactxGetInternalObjectHandle__)(struct OfaContext *);
     NV_STATUS (*__ofactxControl__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -83,6 +87,7 @@ struct OfaContext {
     NV_STATUS (*__ofactxUnregisterEvent__)(struct OfaContext *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__ofactxControlSerialization_Prologue__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__ofactxCanCopy__)(struct OfaContext *);
+    NvBool (*__ofactxIsPartialUnmapSupported__)(struct OfaContext *);
     void (*__ofactxPreDestruct__)(struct OfaContext *);
     NV_STATUS (*__ofactxIsDuplicate__)(struct OfaContext *, NvHandle, NvBool *);
     void (*__ofactxControlSerialization_Epilogue__)(struct OfaContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -133,7 +138,6 @@ NV_STATUS __nvoc_objCreate_OfaContext(OfaContext**, Dynamic*, NvU32, struct CALL
 #define ofactxInternalControlForward(pGpuResource, command, pParams, size) ofactxInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define ofactxUnmapFrom(pResource, pParams) ofactxUnmapFrom_DISPATCH(pResource, pParams)
 #define ofactxControl_Epilogue(pResource, pCallContext, pParams) ofactxControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define ofactxControlLookup(pResource, pParams, ppEntry) ofactxControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define ofactxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) ofactxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
 #define ofactxGetInternalObjectHandle(pGpuResource) ofactxGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define ofactxControl(pGpuResource, pCallContext, pParams) ofactxControl_DISPATCH(pGpuResource, pCallContext, pParams)
@@ -145,6 +149,7 @@ NV_STATUS __nvoc_objCreate_OfaContext(OfaContext**, Dynamic*, NvU32, struct CALL
 #define ofactxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ofactxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define ofactxControlSerialization_Prologue(pResource, pCallContext, pParams) ofactxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ofactxCanCopy(pResource) ofactxCanCopy_DISPATCH(pResource)
+#define ofactxIsPartialUnmapSupported(pResource) ofactxIsPartialUnmapSupported_DISPATCH(pResource)
 #define ofactxPreDestruct(pResource) ofactxPreDestruct_DISPATCH(pResource)
 #define ofactxIsDuplicate(pResource, hMemory, pDuplicate) ofactxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define ofactxControlSerialization_Epilogue(pResource, pCallContext, pParams) ofactxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -231,10 +236,6 @@ static inline void ofactxControl_Epilogue_DISPATCH(struct OfaContext *pResource,
     pResource->__ofactxControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS ofactxControlLookup_DISPATCH(struct OfaContext *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__ofactxControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS ofactxGetSwMethods_DISPATCH(struct OfaContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__ofactxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
@@ -277,6 +278,10 @@ static inline NV_STATUS ofactxControlSerialization_Prologue_DISPATCH(struct OfaC
 
 static inline NvBool ofactxCanCopy_DISPATCH(struct OfaContext *pResource) {
     return pResource->__ofactxCanCopy__(pResource);
+}
+
+static inline NvBool ofactxIsPartialUnmapSupported_DISPATCH(struct OfaContext *pResource) {
+    return pResource->__ofactxIsPartialUnmapSupported__(pResource);
 }
 
 static inline void ofactxPreDestruct_DISPATCH(struct OfaContext *pResource) {

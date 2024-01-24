@@ -116,6 +116,8 @@ static uvm_gpu_address_t get_address(uvm_parent_gpu_t *parent_gpu, NvU32 *access
     }
     else {
         uvm_aperture_t aperture = get_access_counter_aperture(access_counter_entry);
+
+        UVM_ASSERT(parent_gpu->access_counters_can_use_physical_addresses);
         UVM_ASSERT_MSG(addr_type_value == NVC365_NOTIFY_BUF_ENTRY_ADDR_TYPE_GPA,
                        "Invalid address type%u\n", addr_type_value);
 

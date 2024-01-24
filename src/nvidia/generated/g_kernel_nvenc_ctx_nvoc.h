@@ -41,11 +41,16 @@ ENGDESCRIPTOR msencGetEngineDescFromAllocParams(OBJGPU *pGpu, NvU32 externalClas
 /*!
  * RM internal class representing NVXXXX_VIDEO_ENCODER
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_NVENC_CTX_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct MsencContext {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -71,7 +76,6 @@ struct MsencContext {
     NV_STATUS (*__msencctxInternalControlForward__)(struct MsencContext *, NvU32, void *, NvU32);
     NV_STATUS (*__msencctxUnmapFrom__)(struct MsencContext *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__msencctxControl_Epilogue__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__msencctxControlLookup__)(struct MsencContext *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__msencctxGetSwMethods__)(struct MsencContext *, const METHOD **, NvU32 *);
     NvHandle (*__msencctxGetInternalObjectHandle__)(struct MsencContext *);
     NV_STATUS (*__msencctxControl__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -83,6 +87,7 @@ struct MsencContext {
     NV_STATUS (*__msencctxUnregisterEvent__)(struct MsencContext *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__msencctxControlSerialization_Prologue__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__msencctxCanCopy__)(struct MsencContext *);
+    NvBool (*__msencctxIsPartialUnmapSupported__)(struct MsencContext *);
     void (*__msencctxPreDestruct__)(struct MsencContext *);
     NV_STATUS (*__msencctxIsDuplicate__)(struct MsencContext *, NvHandle, NvBool *);
     void (*__msencctxControlSerialization_Epilogue__)(struct MsencContext *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -133,7 +138,6 @@ NV_STATUS __nvoc_objCreate_MsencContext(MsencContext**, Dynamic*, NvU32, struct 
 #define msencctxInternalControlForward(pGpuResource, command, pParams, size) msencctxInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define msencctxUnmapFrom(pResource, pParams) msencctxUnmapFrom_DISPATCH(pResource, pParams)
 #define msencctxControl_Epilogue(pResource, pCallContext, pParams) msencctxControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define msencctxControlLookup(pResource, pParams, ppEntry) msencctxControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define msencctxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) msencctxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
 #define msencctxGetInternalObjectHandle(pGpuResource) msencctxGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define msencctxControl(pGpuResource, pCallContext, pParams) msencctxControl_DISPATCH(pGpuResource, pCallContext, pParams)
@@ -145,6 +149,7 @@ NV_STATUS __nvoc_objCreate_MsencContext(MsencContext**, Dynamic*, NvU32, struct 
 #define msencctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) msencctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define msencctxControlSerialization_Prologue(pResource, pCallContext, pParams) msencctxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define msencctxCanCopy(pResource) msencctxCanCopy_DISPATCH(pResource)
+#define msencctxIsPartialUnmapSupported(pResource) msencctxIsPartialUnmapSupported_DISPATCH(pResource)
 #define msencctxPreDestruct(pResource) msencctxPreDestruct_DISPATCH(pResource)
 #define msencctxIsDuplicate(pResource, hMemory, pDuplicate) msencctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define msencctxControlSerialization_Epilogue(pResource, pCallContext, pParams) msencctxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -231,10 +236,6 @@ static inline void msencctxControl_Epilogue_DISPATCH(struct MsencContext *pResou
     pResource->__msencctxControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS msencctxControlLookup_DISPATCH(struct MsencContext *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__msencctxControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS msencctxGetSwMethods_DISPATCH(struct MsencContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__msencctxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
@@ -277,6 +278,10 @@ static inline NV_STATUS msencctxControlSerialization_Prologue_DISPATCH(struct Ms
 
 static inline NvBool msencctxCanCopy_DISPATCH(struct MsencContext *pResource) {
     return pResource->__msencctxCanCopy__(pResource);
+}
+
+static inline NvBool msencctxIsPartialUnmapSupported_DISPATCH(struct MsencContext *pResource) {
+    return pResource->__msencctxIsPartialUnmapSupported__(pResource);
 }
 
 static inline void msencctxPreDestruct_DISPATCH(struct MsencContext *pResource) {

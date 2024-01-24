@@ -15,14 +15,14 @@
     IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
     FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
     THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN hint OF CONTRACT, TORT OR OTHERWISE, ARISING
+    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
     DEALINGS IN THE SOFTWARE.
 
 *******************************************************************************/
 
 #include "uvm_api.h"
-#include "uvm_conf_computing.h"
+#include "uvm_global.h"
 #include "uvm_perf_events.h"
 #include "uvm_perf_module.h"
 #include "uvm_perf_thrashing.h"
@@ -263,7 +263,6 @@ static unsigned uvm_perf_thrashing_pin_threshold = UVM_PERF_THRASHING_PIN_THRESH
 // detection/prevention parameters
 #define UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT 500
 #define UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT_EMULATION (UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT * 800)
-#define UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT_HCC (UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT * 10)
 
 // Lapse of time in microseconds that determines if two consecutive events on
 // the same page can be considered thrashing
@@ -1951,30 +1950,14 @@ void uvm_perf_thrashing_unload(uvm_va_space_t *va_space)
     }
 }
 
-NV_STATUS uvm_perf_thrashing_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
+void uvm_perf_thrashing_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
 {
+    va_space_thrashing_info_t *va_space_thrashing = va_space_thrashing_info_get(va_space);
+
     // If a simulated GPU is registered, re-initialize thrashing parameters in
     // case they need to be adjusted.
-    bool params_need_readjusting = g_uvm_global.num_simulated_devices > 0;
-
-    // Likewise, when the Confidential Computing feature is enabled, the DMA
-    // path is slower due to cryptographic operations & other associated
-    // overhead. Enforce a larger window to allow the thrashing mitigation
-    // mechanisms to work properly.
-    params_need_readjusting = params_need_readjusting || uvm_conf_computing_mode_enabled(gpu);
-
-    if (params_need_readjusting) {
-        va_space_thrashing_info_t *va_space_thrashing = va_space_thrashing_info_get(va_space);
-
-        if (!va_space_thrashing->params.test_overrides) {
-            if (uvm_conf_computing_mode_enabled(gpu))
-                g_uvm_perf_thrashing_lapse_usec = UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT_HCC;
-
-            va_space_thrashing_info_init_params(va_space_thrashing);
-        }
-    }
-
-    return NV_OK;
+    if ((g_uvm_global.num_simulated_devices > 0) && !va_space_thrashing->params.test_overrides)
+        va_space_thrashing_info_init_params(va_space_thrashing);
 }
 
 NV_STATUS uvm_perf_thrashing_init(void)
@@ -1999,7 +1982,15 @@ NV_STATUS uvm_perf_thrashing_init(void)
                                          UVM_PERF_THRASHING_PIN_THRESHOLD_DEFAULT,
                                          UVM_PERF_THRASHING_PIN_THRESHOLD_MAX);
 
-    INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_thrashing_lapse_usec, UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT);
+
+
+    // In Confidential Computing, the DMA path is slower due to cryptographic
+    // operations & other associated overhead. Enforce a larger window to allow
+    // the thrashing mitigation mechanisms to work properly.
+    if (g_uvm_global.conf_computing_enabled)
+        INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_thrashing_lapse_usec, UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT * 10);
+    else
+        INIT_THRASHING_PARAMETER_NONZERO(uvm_perf_thrashing_lapse_usec, UVM_PERF_THRASHING_LAPSE_USEC_DEFAULT);
 
     INIT_THRASHING_PARAMETER_NONZERO_MAX(uvm_perf_thrashing_nap,
                                          UVM_PERF_THRASHING_NAP_DEFAULT,

@@ -135,11 +135,16 @@ struct IOVAMAPPING
 /*!
  * Virtual address space for a system's IOMMU translation.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_IO_VASPACE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJIOVASPACE {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJVASPACE __nvoc_base_OBJVASPACE;
@@ -162,7 +167,7 @@ struct OBJIOVASPACE {
     NV_STATUS (*__iovaspaceGetPteInfo__)(struct OBJIOVASPACE *, struct OBJGPU *, NV0080_CTRL_DMA_GET_PTE_INFO_PARAMS *, RmPhysAddr *);
     PMEMORY_DESCRIPTOR (*__iovaspaceGetPageDirBase__)(struct OBJIOVASPACE *, struct OBJGPU *);
     PMEMORY_DESCRIPTOR (*__iovaspaceGetKernelPageDirBase__)(struct OBJIOVASPACE *, struct OBJGPU *);
-    NvU64 (*__iovaspaceGetMapPageSize__)(struct OBJIOVASPACE *, struct OBJGPU *, EMEMBLOCK *);
+    NvU64 (*__iovaspaceGetMapPageSize__)(struct OBJIOVASPACE *, struct OBJGPU *, struct EMEMBLOCK *);
     struct OBJEHEAP *(*__iovaspaceGetHeap__)(struct OBJIOVASPACE *);
     NvBool (*__iovaspaceIsFaultCapable__)(struct OBJIOVASPACE *);
     void (*__iovaspaceUnmap__)(struct OBJIOVASPACE *, struct OBJGPU *, const NvU64, const NvU64);
@@ -315,7 +320,7 @@ static inline PMEMORY_DESCRIPTOR iovaspaceGetKernelPageDirBase_DISPATCH(struct O
     return pVAS->__iovaspaceGetKernelPageDirBase__(pVAS, pGpu);
 }
 
-static inline NvU64 iovaspaceGetMapPageSize_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
+static inline NvU64 iovaspaceGetMapPageSize_DISPATCH(struct OBJIOVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
     return pVAS->__iovaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 

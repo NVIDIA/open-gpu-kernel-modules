@@ -81,11 +81,11 @@ NV_STATUS uvm_perf_heuristics_load(uvm_va_space_t *va_space)
     return NV_OK;
 }
 
-NV_STATUS uvm_perf_heuristics_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
+void uvm_perf_heuristics_register_gpu(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
 {
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
-    return uvm_perf_thrashing_register_gpu(va_space, gpu);
+    uvm_perf_thrashing_register_gpu(va_space, gpu);
 }
 
 void uvm_perf_heuristics_stop(uvm_va_space_t *va_space)

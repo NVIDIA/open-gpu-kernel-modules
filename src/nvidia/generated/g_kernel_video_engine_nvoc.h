@@ -71,19 +71,31 @@ typedef struct
      */
     PORT_CRYPTO_PRNG      *pVideoLogPrng;
 #endif
+
+    /*!
+     * Variable holding the regeky value
+     */
+    NvU32 eventTraceRegkeyData;
 } VIDEO_TRACE_INFO;
 
 // Basic implementation of KernelVideoEngine that can be instantiated.
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_VIDEO_ENGINE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelVideoEngine {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
     struct Object *__nvoc_pbase_Object;
     struct KernelVideoEngine *__nvoc_pbase_KernelVideoEngine;
+    NV_STATUS (*__kvidengInitLogging__)(struct OBJGPU *, struct KernelVideoEngine *);
+    void (*__kvidengFreeLogging__)(struct OBJGPU *, struct KernelVideoEngine *);
     ENGDESCRIPTOR physEngDesc;
     VIDEO_TRACE_INFO videoTraceInfo;
     NvBool bVideoTraceEnabled;
@@ -117,6 +129,10 @@ NV_STATUS __nvoc_objCreate_KernelVideoEngine(KernelVideoEngine**, Dynamic*, NvU3
 #define __objCreate_KernelVideoEngine(ppNewObj, pParent, createFlags, arg_pGpu, arg_physEngDesc) \
     __nvoc_objCreate_KernelVideoEngine((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pGpu, arg_physEngDesc)
 
+#define kvidengInitLogging(pGpu, pKernelVideoEngine) kvidengInitLogging_DISPATCH(pGpu, pKernelVideoEngine)
+#define kvidengInitLogging_HAL(pGpu, pKernelVideoEngine) kvidengInitLogging_DISPATCH(pGpu, pKernelVideoEngine)
+#define kvidengFreeLogging(pGpu, pKernelVideoEngine) kvidengFreeLogging_DISPATCH(pGpu, pKernelVideoEngine)
+#define kvidengFreeLogging_HAL(pGpu, pKernelVideoEngine) kvidengFreeLogging_DISPATCH(pGpu, pKernelVideoEngine)
 NvBool kvidengIsVideoTraceLogSupported_IMPL(struct OBJGPU *pGpu);
 
 
@@ -125,30 +141,23 @@ NvBool kvidengIsVideoTraceLogSupported_IMPL(struct OBJGPU *pGpu);
 
 NV_STATUS kvidengInitLogging_KERNEL(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine);
 
-
-#ifdef __nvoc_kernel_video_engine_h_disabled
-static inline NV_STATUS kvidengInitLogging(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine) {
-    NV_ASSERT_FAILED_PRECOMP("KernelVideoEngine was disabled!");
+static inline NV_STATUS kvidengInitLogging_46f6a7(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine) {
     return NV_ERR_NOT_SUPPORTED;
 }
-#else //__nvoc_kernel_video_engine_h_disabled
-#define kvidengInitLogging(pGpu, pKernelVideoEngine) kvidengInitLogging_KERNEL(pGpu, pKernelVideoEngine)
-#endif //__nvoc_kernel_video_engine_h_disabled
 
-#define kvidengInitLogging_HAL(pGpu, pKernelVideoEngine) kvidengInitLogging(pGpu, pKernelVideoEngine)
+static inline NV_STATUS kvidengInitLogging_DISPATCH(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine) {
+    return pKernelVideoEngine->__kvidengInitLogging__(pGpu, pKernelVideoEngine);
+}
 
 void kvidengFreeLogging_KERNEL(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine);
 
-
-#ifdef __nvoc_kernel_video_engine_h_disabled
-static inline void kvidengFreeLogging(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine) {
-    NV_ASSERT_FAILED_PRECOMP("KernelVideoEngine was disabled!");
+static inline void kvidengFreeLogging_b3696a(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine) {
+    return;
 }
-#else //__nvoc_kernel_video_engine_h_disabled
-#define kvidengFreeLogging(pGpu, pKernelVideoEngine) kvidengFreeLogging_KERNEL(pGpu, pKernelVideoEngine)
-#endif //__nvoc_kernel_video_engine_h_disabled
 
-#define kvidengFreeLogging_HAL(pGpu, pKernelVideoEngine) kvidengFreeLogging(pGpu, pKernelVideoEngine)
+static inline void kvidengFreeLogging_DISPATCH(struct OBJGPU *pGpu, struct KernelVideoEngine *pKernelVideoEngine) {
+    pKernelVideoEngine->__kvidengFreeLogging__(pGpu, pKernelVideoEngine);
+}
 
 NV_STATUS kvidengRingbufferMakeSpace_IMPL(struct OBJGPU *pGpu, NvU32 oldReadPtr, NvU32 size, VIDEO_TRACE_RING_BUFFER *pTraceBuffer);
 

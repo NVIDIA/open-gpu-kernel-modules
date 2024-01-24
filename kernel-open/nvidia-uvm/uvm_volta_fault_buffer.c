@@ -76,7 +76,7 @@ void uvm_hal_volta_fault_buffer_write_get(uvm_parent_gpu_t *parent_gpu, NvU32 in
     // the HW replayable fault buffer, because UVM does not write to the actual
     // GET register; GSP-RM is responsible for clearing the bits in the real
     // GET register.
-    if (!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return;
 
     // Clear the GETPTR_CORRUPTED and OVERFLOW bits.
@@ -253,7 +253,7 @@ static UvmFaultMetadataPacket *get_fault_buffer_entry_metadata(uvm_parent_gpu_t 
     UvmFaultMetadataPacket *fault_entry_metadata;
 
     UVM_ASSERT(index < parent_gpu->fault_buffer_info.replayable.max_faults);
-    UVM_ASSERT(!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu));
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
     fault_entry_metadata = parent_gpu->fault_buffer_info.rm_info.replayable.bufferMetadata;
     UVM_ASSERT(fault_entry_metadata != NULL);
@@ -354,7 +354,7 @@ NV_STATUS uvm_hal_volta_fault_buffer_parse_replayable_entry(uvm_parent_gpu_t *pa
 
     // When Confidential Computing is enabled, faults are encrypted by RM, so
     // they need to be decrypted before they can be parsed
-    if (!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu)) {
+    if (g_uvm_global.conf_computing_enabled) {
         NV_STATUS status;
         UvmFaultMetadataPacket *fault_entry_metadata = get_fault_buffer_entry_metadata(parent_gpu, index);
 

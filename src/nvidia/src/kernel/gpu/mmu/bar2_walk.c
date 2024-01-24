@@ -566,6 +566,7 @@ _bar2WalkCBLevelAlloc
     {
             NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
                       KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
+                      KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu) ||
                       kbusIsBarAccessBlocked(pKernelBus));
             pdeBase = pKernelBus->bar2[gfid].pdeBase;
             pteBase = pKernelBus->bar2[gfid].pteBase;
@@ -648,6 +649,7 @@ _bar2WalkCBLevelAlloc
             {
                 NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
                           KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
+                          KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu) ||
                           kbusIsBarAccessBlocked(pKernelBus));
                 pKernelBus->bar2[gfid].pdeBase = memdescGetPhysAddr(pMemDesc, AT_GPU, 0);
                 pKernelBus->bar2[gfid].pPDEMemDesc = pMemDesc;
@@ -733,6 +735,7 @@ _bar2WalkCBLevelAlloc
             {
                 NV_ASSERT(pKernelBus->bar2[gfid].bBootstrap || IS_GFID_VF(gfid) ||
                           KBUS_BAR0_PRAMIN_DISABLED(pGpu) ||
+                          KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu) ||
                           kbusIsBarAccessBlocked(pKernelBus));
                 pKernelBus->bar2[gfid].pteBase = memdescGetPhysAddr(pMemDesc,
                                                                     AT_GPU, 0);

@@ -1,24 +1,25 @@
-/*******************************************************************************
-    Copyright (c) 2019-2022 NVidia Corporation
-
-    Permission is hereby granted, free of charge, to any person obtaining a copy
-    of this software and associated documentation files (the "Software"), to
-    deal in the Software without restriction, including without limitation the
-    rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-    sell copies of the Software, and to permit persons to whom the Software is
-    furnished to do so, subject to the following conditions:
-
-        The above copyright notice and this permission notice shall be
-        included in all copies or substantial portions of the Software.
-
-    THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-    IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-    FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
-    THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-    LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-    FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-    DEALINGS IN THE SOFTWARE.
-*******************************************************************************/
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: MIT
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
+ * DEALINGS IN THE SOFTWARE.
+ */
 
 #include "nvlink.h"
 #include "nvlink_export.h"
@@ -434,6 +435,12 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
         if (conns[i] == NULL)
             continue;
 
+        if (conns[i]->end0->bCciManaged || 
+            conns[i]->end1->bCciManaged)
+        {
+            continue;
+        }
+
         // Disable Power Management before moving link out of Active
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_PM,
@@ -462,6 +469,12 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
     {
         if (conns[i] == NULL)
             continue;
+
+        if (conns[i]->end0->bCciManaged || 
+            conns[i]->end1->bCciManaged)
+        {
+            continue;
+        }
 
         // Wait for the end0 to go to SWCFG
         status = nvlink_core_poll_link_state(conns[i]->end0,
@@ -520,6 +533,12 @@ nvlink_core_powerdown_intranode_conns_from_active_to_off
     {
         if (conns[i] == NULL)
             continue;
+
+        if (conns[i]->end0->bCciManaged || 
+            conns[i]->end1->bCciManaged)
+        {
+            continue;
+        }
 
         // Wait for sublinks to go to SAFE
         if(conns[i]->end0->inSWCFG == NV_TRUE)
@@ -674,6 +693,12 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
         if (conns[i] == NULL)
             continue;
 
+        if (conns[i]->end0->bCciManaged || 
+            conns[i]->end1->bCciManaged)
+        {
+            continue;
+        }
+
         // Disable Power Management before moving link out of Active
         conns[i]->end0->link_handlers->set_dl_link_mode(conns[i]->end0,
                                                         NVLINK_LINKSTATE_DISABLE_PM,
@@ -704,6 +729,12 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
     {
         if (conns[i] == NULL)
             continue;
+
+        if (conns[i]->end0->bCciManaged || 
+            conns[i]->end1->bCciManaged)
+        {
+            continue;
+        }
 
         // Wait for the end0 to go to SWCFG
         status = nvlink_core_poll_link_state(conns[i]->end0,
@@ -750,6 +781,12 @@ nvlink_core_powerdown_intranode_conns_from_active_to_swcfg
     {
         if (conns[i] == NULL)
             continue;
+
+        if (conns[i]->end0->bCciManaged || 
+            conns[i]->end1->bCciManaged)
+        {
+            continue;
+        }
 
         status = nvlink_core_poll_sublink_state(conns[i]->end0,
                                                 NVLINK_SUBLINK_STATE_TX_SAFE,
@@ -842,6 +879,12 @@ nvlink_core_reset_intranode_conns
         if (conns[i] == NULL)
             continue;
         
+        if (conns[i]->end0->bCciManaged || 
+            conns[i]->end1->bCciManaged)
+        {
+            continue;
+        }
+
         //
         // Reset both ends of this connection.
         // This path should enable/init those link endpoints as well.

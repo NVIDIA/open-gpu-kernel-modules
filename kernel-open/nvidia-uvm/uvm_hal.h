@@ -292,9 +292,9 @@ typedef NvU32 (*uvm_hal_ce_plc_mode_t)(void);
 NvU32 uvm_hal_maxwell_ce_plc_mode(void);
 NvU32 uvm_hal_ampere_ce_plc_mode_c7b5(void);
 
-typedef NvU32 (*uvm_hal_ce_memcopy_type_t)(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
-NvU32 uvm_hal_maxwell_ce_memcopy_copy_type(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
-NvU32 uvm_hal_hopper_ce_memcopy_copy_type(uvm_push_t *push, uvm_gpu_address_t dst, uvm_gpu_address_t src);
+typedef NvU32 (*uvm_hal_ce_memcopy_type_t)(uvm_gpu_address_t dst, uvm_gpu_address_t src);
+NvU32 uvm_hal_maxwell_ce_memcopy_copy_type(uvm_gpu_address_t dst, uvm_gpu_address_t src);
+NvU32 uvm_hal_hopper_ce_memcopy_copy_type(uvm_gpu_address_t dst, uvm_gpu_address_t src);
 
 // CE method validation
 typedef bool (*uvm_hal_ce_method_is_valid)(uvm_push_t *push, NvU32 method_address, NvU32 method_data);

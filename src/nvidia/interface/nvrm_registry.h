@@ -447,6 +447,15 @@
 #define NV_REG_STR_RM_INST_LOC_4_FECS_EVENT_BUF_NCOH          NV_REG_STR_RM_INST_LOC_NCOH
 #define NV_REG_STR_RM_INST_LOC_4_FECS_EVENT_BUF_VID           NV_REG_STR_RM_INST_LOC_VID
 
+//
+// Overrides for the GFXP SETUP buffer
+//
+#define NV_REG_STR_RM_INST_LOC_4_GFXP_SETUP_BUFFER            25:24           // GFXP SETUP buffer
+#define NV_REG_STR_RM_INST_LOC_4_GFXP_SETUP_BUFFER_DEFAULT    NV_REG_STR_RM_INST_LOC_DEFAULT
+#define NV_REG_STR_RM_INST_LOC_4_GFXP_SETUP_BUFFER_COH        NV_REG_STR_RM_INST_LOC_COH
+#define NV_REG_STR_RM_INST_LOC_4_GFXP_SETUP_BUFFER_NCOH       NV_REG_STR_RM_INST_LOC_NCOH
+#define NV_REG_STR_RM_INST_LOC_4_GFXP_SETUP_BUFFER_VID        NV_REG_STR_RM_INST_LOC_VID
+
 #define NV_REG_STR_RM_GSP_STATUS_QUEUE_SIZE         "RmGspStatusQueueSize"
 // TYPE DWORD
 // Set the GSP status queue size in KB (for GSP to CPU RPC status and event communication)
@@ -707,6 +716,23 @@
 #define NV_REG_STR_RM_L2_CLEAN_FB_PULL_DISABLED                           (0x00000001)
 #define NV_REG_STR_RM_L2_CLEAN_FB_PULL_DEFAULT                            (0x00000000)
 
+//
+// Type: DWORD
+// This regkey overrides BL8, 16, and 24 kinds to only be of GENERIC_MEMORY or 
+// GENERIC_MEMORY_COMPRESSIBLE kinds.
+// 0 - No override 
+// > 0 - Override memkind to GMK
+//       bit 0: override BL8 type
+//       bit 1: override BL16 type
+//       bit 2: override BL24 type
+// ex. 0x00001000 means override all types
+#define NV_REG_STR_RM_OVERRIDE_TO_GMK               "RMOverrideToGMK"
+#define NV_REG_STR_RM_OVERRIDE_TO_GMK_DISABLED      (0x00000000)
+#define NV_REG_STR_RM_OVERRIDE_TO_GMK_BL8           (0x00000001)
+#define NV_REG_STR_RM_OVERRIDE_TO_GMK_BL16          (0x00000002)
+#define NV_REG_STR_RM_OVERRIDE_TO_GMK_BL24          (0x00000004)
+#define NV_REG_STR_RM_OVERRIDE_TO_GMK_ALL           (0x00000007)
+
 // Enable backtrace dumping at assertion failure.
 // If physical RM or RCDB is unavailable, then this regkey controls the behaviour of backtrace
 // printing.
@@ -826,15 +852,6 @@
 
 //
 // Type DWORD
-// Controls enable of Address Tree memory tracking instead of regmap
-// for the PMA memory manager.
-//
-#define NV_REG_STR_RM_ENABLE_ADDRTREE       "RMEnableAddrtree"
-#define NV_REG_STR_RM_ENABLE_ADDRTREE_YES   (0x00000001)
-#define NV_REG_STR_RM_ENABLE_ADDRTREE_NO    (0x00000000)
-
-//
-// Type DWORD
 // Disable global CeUtils instance creation after fifo scheduling enablement
 //
 #define NV_REG_STR_DISABLE_GLOBAL_CE_UTILS             "RmDisableGlobalCeUtils"
@@ -893,7 +910,36 @@
 // Encoding: Boolean
 // If set, allow MapMemoryDma calls to be made on channel objects
 
+#define NV_REG_STR_SECONDARY_BUS_RESET_ENABLED          "RMSecBusResetEnable"
+// Type DWORD
+// Encoding boolean
+// Default FALSE
+
+#define NV_REG_STR_FORCE_PCIE_CONFIG_SAVE               "RMForcePcieConfigSave"
+// Type DWORD
+// Encoding boolean
+// Default FALSE
+
+#define NV_REG_STR_RM_PCIE_FLR_DEVINIT_TIMEOUT_SCALE             "RMPcieFlrDevinitTimeout"
+#define NV_REG_STR_RM_PCIE_FLR_DEVINIT_TIMEOUT_SCALE_MIN_ALLOWED  1
+#define NV_REG_STR_RM_PCIE_FLR_DEVINIT_TIMEOUT_SCALE_MAX_ALLOWED  4
+// Type DWORD
+// Regkey to change FLR devinit timeout value. Increase in scale value increases
+// the timeout value and vice versa.
+// Scale value has to be greater than 0 since flr devinit timeout can't be 0
+// Scale value for now is limited to 4 which translates to maximum of
+// 3.6seconds(900ms*4) timeout value.
 //
+
+#define NV_REG_STR_RM_PCIE_FLR_POLICY                  "RMPcieFLRPolicy"
+#define NV_REG_STR_RM_PCIE_FLR_POLICY_DEFAULT          0
+#define NV_REG_STR_RM_PCIE_FLR_POLICY_FORCE_DISABLE    1
+// Type DWORD
+// Regkey to force disable Function Level Reset
+// Note that we don't want to provision for force enabling FLR since as per current design -
+// For Pre-Turing boards, FLR will be strictly disabled since it's not supported in HW
+// Default policy could be different for different boards though
+
 // Type DWORD
 // Encoding Numeric Value
 // Overrides chipset-based P2P configurations.
@@ -1166,17 +1212,15 @@
 //
 // 0    - Disables Video event trace usage (default)
 // > 0  - Enable video event trace and define sizes for different buffers
-//        bit 0  - 15: sizes of the hardware staging buffer in 4K pages
 //        bit 16 - 30: sizes of the event buffer in 4K pages
 //        bit 31 - 31: Enable always logging:
 //                     By default, video engines only log video events when there is
 //                     at least one eventbuffer bound and enabled. If this flag is set,
 //                     video engines will always log events even without a consumer. This
 //                     is helpful for debugging purposes.
-//        Example: 0x01000008 means a 32K staging buffer and a 1M event buffer.
+//        Example: 0x01000000 means 1MB event buffer.
 #define NV_REG_STR_RM_VIDEO_EVENT_TRACE                                 "RmVideoEventTrace"
 #define NV_REG_STR_RM_VIDEO_EVENT_TRACE_DISABLED                        (0x00000000)
-#define NV_REG_STR_RM_VIDEO_EVENT_TRACE_STAGING_BUFFER_SIZE_IN_4k       15:0
 #define NV_REG_STR_RM_VIDEO_EVENT_TRACE_EVENT_BUFFER_SIZE_IN_4k         30:16
 #define NV_REG_STR_RM_VIDEO_EVENT_TRACE_ALWAYS_LOG                      31:31
 #define NV_REG_STR_RM_VIDEO_EVENT_TRACE_ALWAYS_LOG_DISABLED             0x00000000
@@ -1699,6 +1743,19 @@
 //                          between every consecutive probe retries until success.
 //
 
+#define NV_REG_STR_RM_UUID_BASED_MEMORY_SHARING "RmUuidBasedMemorySharing"
+// Type DWORD
+// Enable UUID-based memory sharing (import/export)
+//
+// 0 - Default
+// 0 - Disabled
+// 1 - Enabled
+//
+// The security framework to support multi-tenancy when using UUID-based memory
+// sharing is not yet implemented. Thus, the users are advised to enable
+// this regkey only in single-tenant or controlled/trusted environments.
+//
+
 // Enable plugin logs in ftrace buffer.
 // 0 - Default
 // 0 - Disabled
@@ -2063,6 +2120,18 @@
 #define NV_REG_STR_RM_MIG_BOOT_CONFIGURATION_FEATURE_FLAGS_AUTO_UPDATE_ENABLED   0x1
 
 //
+// Type: DWORD
+//
+// If the midpath spinning feature of the GPU lock is enabled.
+//
+// 0 (default) - Midpath Spinning disabled
+// 1 - Midpath spinning enabled
+//
+#define NV_REG_STR_RM_GPU_LOCK_MIDPATH                "RMGpuLockMidpath"
+#define NV_REG_STR_RM_GPU_LOCK_MIDPATH_DISABLED       0x00000000
+#define NV_REG_STR_RM_GPU_LOCK_MIDPATH_ENABLED        0x00000001
+
+//
 // This regkey controls the GPU load failure test.
 // Supported only on DEBUG, DEVELOP, or RELEASE drivers built with the parameter INSTRUMENT_RM=true
 // This is an input/output registry key.
@@ -2086,5 +2155,113 @@
 #define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE_LOAD         0x00000003
 #define NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE_POSTLOAD     0x00000004
 #define NV_REG_STR_GPU_LOAD_FAILURE_TEST_ENGINEINDEX        31:5
+
+//
+// Type: DWORD
+// Encoding:
+// 0 - Disable MIG auto online mode on driver load
+// 1 - Enable MIG auto online mode on driver load
+//
+#define NV_REG_STR_RM_SET_MIG_AUTO_ONLINE_MODE              "RMSetMIGAutoOnlineMode"
+#define NV_REG_STR_RM_SET_MIG_AUTO_ONLINE_MODE_DISABLED     0
+#define NV_REG_STR_RM_SET_MIG_AUTO_ONLINE_MODE_ENABLED      1
+
+//
+// Type: DWORD
+// Encoding:
+// 0 - Disable multi gpu mode
+// 1 - Enable protected pcie
+//
+#define NV_REG_STR_RM_CC_MULTI_GPU_MODE                     "RmCCMultiGpuMode"
+#define NV_REG_STR_RM_CC_MULTI_GPU_MODE_NONE                0x00000000
+#define NV_REG_STR_RM_CC_MULTI_GPU_MODE_PROTECTED_PCIE      0x00000001
+
+// This regkey allows RM to access CPR vidmem over BARs when HCC devtools mode is ON
+#define NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC               "RmForceBarAccessOnHcc"
+#define NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC_NO            0x00000000
+#define NV_REG_STR_RM_FORCE_BAR_ACCESS_ON_HCC_YES           0x00000001
+
+//
+// TYPE DWORD
+// This regkey allows to change the state of NVENC sessions stats reporting.
+// Note : Currently only used and works for Grid.
+// 0 - Disable NVENC session stats reporting.
+// 1 - Enable NVENC session stats reporting.
+//
+#define NV_REG_STR_RM_NVENC_SESSION_STATS_REPORTING_STATE                  "EncSessionStatsReportingState"
+#define NV_REG_STR_RM_NVENC_SESSION_STATS_REPORTING_STATE_DISABLED         0x00000000
+#define NV_REG_STR_RM_NVENC_SESSION_STATS_REPORTING_STATE_ENABLED          0x00000001
+
+// TYPE DWORD
+// Set to provide ECC state in guest
+// Used for vGPU
+// The value default is set if ECC is enabled in USM profile.
+//
+#define NV_REG_STR_RM_GUEST_ECC_STATE                               "RMGuestECCState"
+#define NV_REG_STR_RM_GUEST_ECC_STATE_DISABLED                             0x00000000
+#define NV_REG_STR_RM_GUEST_ECC_STATE_ENABLED                              0x00000001
+#define NV_REG_STR_RM_GUEST_ECC_STATE_DEFAULT                              0x00000001
+
+//
+// Type DWORD
+// This regkey force-disables write-combine iomap allocations, used for chipsets where
+// write-combine is broken.
+//
+#define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC             "RmForceDisableIomapWC"
+#define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_YES         0x00000001
+#define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_NO          0x00000000
+#define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_DEFAULT     NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_NO
+
+//
+// Type: Dword
+// This regkey toggles whether to release API lock during initialization to
+// allow multiple GPUS to initialize in parallel
+// 0 - API lock will not be released
+// 1 - API lock will be released
+// 2 - API lock release determined by platform (default)
+//
+#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING              "RmRelaxedGspInitLocking"
+#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DISABLE      0x00000000
+#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_ENABLE       0x00000001
+#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT      0x00000002
+
+//
+// Regkey to configure Per VM RunList.
+// Type Dword
+//  BIT 0:0 - Overall PVMRL enable/disable.
+//   0 - Disable / Default - 1 HW runlist per engine.
+//   1 - Enable            - 1 SW runlist per VM for some engines.
+//  BIT 1:1 - Adaptive Round Robin Scheduler
+//   0 - Enable / Default - Use Adaptive Round Robin Scheduler
+//   1 - Disable          - Use Legacy PVMRL
+//  BIT 7:4 - PVMRL scheduler to run.
+//   0 - equal share / Default - equal share amongst running vGPUs.
+//   1 - fixed share           - fixed share of the physical GPU.
+//  BIT 21:12 - PVMRL Scheduling frequency.
+//   0 - Default timeslice.
+//   F - Timeslice = 1000 / F.
+//  BIT 23:16 - PVMRL timeslice in ms (Milli-seconds).
+//   0 - Default timeslice.
+//   T - Timeslice of T ms.
+//  BIT 31:24 - ARR Average Factor
+//   0 - Default Average Factor
+//   F - Average Factor = F
+//
+#define NV_REG_STR_RM_PVMRL                                       "RmPVMRL"
+#define NV_REG_STR_RM_PVMRL_ENABLE                                0:0
+#define NV_REG_STR_RM_PVMRL_ENABLE_DEFAULT                        0x00000000
+#define NV_REG_STR_RM_PVMRL_ENABLE_NO                             0x00000000
+#define NV_REG_STR_RM_PVMRL_ENABLE_YES                            0x00000001
+#define NV_REG_STR_RM_PVMRL_ARR_DISABLE                           1:1
+#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_DEFAULT                   0x00000000
+#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_NO                        0x00000000
+#define NV_REG_STR_RM_PVMRL_ARR_DISABLE_YES                       0x00000001
+#define NV_REG_STR_RM_PVMRL_SCHED_POLICY                          7:4
+#define NV_REG_STR_RM_PVMRL_SCHED_POLICY_DEFAULT                  0x00000000
+#define NV_REG_STR_RM_PVMRL_SCHED_POLICY_VGPU_EQUAL_SHARE         0x00000000
+#define NV_REG_STR_RM_PVMRL_SCHED_POLICY_VGPU_FIXED_SHARE         0x00000001
+#define NV_REG_STR_RM_PVMRL_FREQUENCY                             21:12
+#define NV_REG_STR_RM_PVMRL_TIMESLICE                             23:16
+#define NV_REG_STR_RM_PVMRL_AVERAGE_FACTOR                        31:24
 
 #endif // NVRM_REGISTRY_H

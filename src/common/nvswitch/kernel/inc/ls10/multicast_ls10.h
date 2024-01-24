@@ -42,10 +42,11 @@
 //
 // Debug and trace print toggles
 // To enable tracing, define NVSWITCH_MC_TRACE
+// To enable extensive debug messages uncomment the below define NVSWITCH_MC_DEBUG
 //
-#if defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
-#define NVSWITCH_MC_DEBUG                       1
-#endif
+// #if defined(DEVELOP) || defined(DEBUG) || defined(NV_MODS)
+// #define NVSWITCH_MC_DEBUG                       1
+// #endif
 
 typedef struct {
     NvU32 column;

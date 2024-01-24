@@ -163,10 +163,6 @@ static void __nvoc_thunk_RmResource_dispchnControl_Epilogue(struct DispChannel *
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnControlLookup(struct DispChannel *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_dispchnGetInternalObjectHandle(struct DispChannel *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannel_GpuResource.offset));
 }
@@ -201,6 +197,10 @@ static NV_STATUS __nvoc_thunk_RmResource_dispchnControlSerialization_Prologue(st
 
 static NvBool __nvoc_thunk_RsResource_dispchnCanCopy(struct DispChannel *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_dispchnIsPartialUnmapSupported(struct DispChannel *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannel_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_dispchnPreDestruct(struct DispChannel *pResource) {
@@ -305,8 +305,6 @@ static void __nvoc_init_funcTable_DispChannel_1(DispChannel *pThis) {
 
     pThis->__dispchnControl_Epilogue__ = &__nvoc_thunk_RmResource_dispchnControl_Epilogue;
 
-    pThis->__dispchnControlLookup__ = &__nvoc_thunk_RsResource_dispchnControlLookup;
-
     pThis->__dispchnGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dispchnGetInternalObjectHandle;
 
     pThis->__dispchnControl__ = &__nvoc_thunk_GpuResource_dispchnControl;
@@ -324,6 +322,8 @@ static void __nvoc_init_funcTable_DispChannel_1(DispChannel *pThis) {
     pThis->__dispchnControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispchnControlSerialization_Prologue;
 
     pThis->__dispchnCanCopy__ = &__nvoc_thunk_RsResource_dispchnCanCopy;
+
+    pThis->__dispchnIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_dispchnIsPartialUnmapSupported;
 
     pThis->__dispchnPreDestruct__ = &__nvoc_thunk_RsResource_dispchnPreDestruct;
 
@@ -360,21 +360,26 @@ void __nvoc_init_DispChannel(DispChannel *pThis) {
     __nvoc_init_funcTable_DispChannel(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams, NvU32 arg_isDma) {
+NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams, NvU32 arg_isDma)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     DispChannel *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DispChannel), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(DispChannel));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispChannel);
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -389,16 +394,25 @@ NV_STATUS __nvoc_objCreate_DispChannel(DispChannel **ppThis, Dynamic *pParent, N
     status = __nvoc_ctor_DispChannel(pThis, arg_pCallContext, arg_pParams, arg_isDma);
     if (status != NV_OK) goto __nvoc_objCreate_DispChannel_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_DispChannel_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(DispChannel));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;
@@ -580,10 +594,6 @@ static void __nvoc_thunk_RmResource_dispchnpioControl_Epilogue(struct DispChanne
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchnpioControlLookup(struct DispChannelPio *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_dispchnpioGetInternalObjectHandle(struct DispChannelPio *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelPio_GpuResource.offset));
 }
@@ -618,6 +628,10 @@ static NV_STATUS __nvoc_thunk_RmResource_dispchnpioControlSerialization_Prologue
 
 static NvBool __nvoc_thunk_RsResource_dispchnpioCanCopy(struct DispChannelPio *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_dispchnpioIsPartialUnmapSupported(struct DispChannelPio *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelPio_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_dispchnpioPreDestruct(struct DispChannelPio *pResource) {
@@ -712,8 +726,6 @@ static void __nvoc_init_funcTable_DispChannelPio_1(DispChannelPio *pThis) {
 
     pThis->__dispchnpioControl_Epilogue__ = &__nvoc_thunk_RmResource_dispchnpioControl_Epilogue;
 
-    pThis->__dispchnpioControlLookup__ = &__nvoc_thunk_RsResource_dispchnpioControlLookup;
-
     pThis->__dispchnpioGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dispchnpioGetInternalObjectHandle;
 
     pThis->__dispchnpioControl__ = &__nvoc_thunk_GpuResource_dispchnpioControl;
@@ -731,6 +743,8 @@ static void __nvoc_init_funcTable_DispChannelPio_1(DispChannelPio *pThis) {
     pThis->__dispchnpioControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispchnpioControlSerialization_Prologue;
 
     pThis->__dispchnpioCanCopy__ = &__nvoc_thunk_RsResource_dispchnpioCanCopy;
+
+    pThis->__dispchnpioIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_dispchnpioIsPartialUnmapSupported;
 
     pThis->__dispchnpioPreDestruct__ = &__nvoc_thunk_RsResource_dispchnpioPreDestruct;
 
@@ -766,21 +780,26 @@ void __nvoc_init_DispChannelPio(DispChannelPio *pThis) {
     __nvoc_init_funcTable_DispChannelPio(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     DispChannelPio *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DispChannelPio), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(DispChannelPio));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispChannelPio);
 
     pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -795,16 +814,25 @@ NV_STATUS __nvoc_objCreate_DispChannelPio(DispChannelPio **ppThis, Dynamic *pPar
     status = __nvoc_ctor_DispChannelPio(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_DispChannelPio_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_DispChannelPio_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(DispChannelPio));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;
@@ -985,10 +1013,6 @@ static void __nvoc_thunk_RmResource_dispchndmaControl_Epilogue(struct DispChanne
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_dispchndmaControlLookup(struct DispChannelDma *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_dispchndmaGetInternalObjectHandle(struct DispChannelDma *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DispChannelDma_GpuResource.offset));
 }
@@ -1023,6 +1047,10 @@ static NV_STATUS __nvoc_thunk_RmResource_dispchndmaControlSerialization_Prologue
 
 static NvBool __nvoc_thunk_RsResource_dispchndmaCanCopy(struct DispChannelDma *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_dispchndmaIsPartialUnmapSupported(struct DispChannelDma *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DispChannelDma_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_dispchndmaPreDestruct(struct DispChannelDma *pResource) {
@@ -1117,8 +1145,6 @@ static void __nvoc_init_funcTable_DispChannelDma_1(DispChannelDma *pThis) {
 
     pThis->__dispchndmaControl_Epilogue__ = &__nvoc_thunk_RmResource_dispchndmaControl_Epilogue;
 
-    pThis->__dispchndmaControlLookup__ = &__nvoc_thunk_RsResource_dispchndmaControlLookup;
-
     pThis->__dispchndmaGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_dispchndmaGetInternalObjectHandle;
 
     pThis->__dispchndmaControl__ = &__nvoc_thunk_GpuResource_dispchndmaControl;
@@ -1136,6 +1162,8 @@ static void __nvoc_init_funcTable_DispChannelDma_1(DispChannelDma *pThis) {
     pThis->__dispchndmaControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_dispchndmaControlSerialization_Prologue;
 
     pThis->__dispchndmaCanCopy__ = &__nvoc_thunk_RsResource_dispchndmaCanCopy;
+
+    pThis->__dispchndmaIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_dispchndmaIsPartialUnmapSupported;
 
     pThis->__dispchndmaPreDestruct__ = &__nvoc_thunk_RsResource_dispchndmaPreDestruct;
 
@@ -1171,21 +1199,26 @@ void __nvoc_init_DispChannelDma(DispChannelDma *pThis) {
     __nvoc_init_funcTable_DispChannelDma(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     DispChannelDma *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DispChannelDma), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(DispChannelDma));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DispChannelDma);
 
     pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -1200,16 +1233,25 @@ NV_STATUS __nvoc_objCreate_DispChannelDma(DispChannelDma **ppThis, Dynamic *pPar
     status = __nvoc_ctor_DispChannelDma(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_DispChannelDma_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_DispChannelDma_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_DispChannel.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(DispChannelDma));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

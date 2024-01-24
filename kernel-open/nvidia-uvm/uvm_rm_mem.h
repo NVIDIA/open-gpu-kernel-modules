@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -42,11 +42,11 @@ struct uvm_rm_mem_struct
     uvm_rm_mem_type_t type;
 
     // Mask of processors the memory is mapped on
-    uvm_global_processor_mask_t mapped_on;
+    uvm_processor_mask_t mapped_on;
 
     // VA of the memory on the UVM internal address space of each processor. If
     // the memory has not been mapped on a given processor, the VA is zero.
-    NvU64 vas[UVM_GLOBAL_ID_MAX_PROCESSORS];
+    NvU64 vas[UVM_ID_MAX_PROCESSORS];
 
     // VA of the memory in the proxy address space of each processor. If
     // the memory has not been mapped on a given processor, the VA is zero.

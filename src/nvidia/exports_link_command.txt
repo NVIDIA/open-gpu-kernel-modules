@@ -23,6 +23,7 @@
 --undefined=rm_isr
 --undefined=rm_isr_bh
 --undefined=rm_isr_bh_unlocked
+--undefined=rm_is_msix_allowed
 --undefined=rm_perform_version_check
 --undefined=rm_power_management
 --undefined=rm_stop_user_channels
@@ -48,6 +49,7 @@
 --undefined=rm_parse_option_string
 --undefined=rm_remove_spaces
 --undefined=rm_string_token
+--undefined=rm_get_adapter_status_external
 --undefined=rm_disable_gpu_state_persistence
 --undefined=pNVRM_ID
 --undefined=rm_p2p_get_pages
@@ -89,6 +91,7 @@
 --undefined=rm_gpu_ops_has_pending_non_replayable_faults
 --undefined=rm_gpu_ops_get_non_replayable_faults
 --undefined=rm_gpu_ops_flush_replayable_fault_buffer
+--undefined=rm_gpu_ops_toggle_prefetch_faults
 --undefined=rm_gpu_ops_init_access_cntr_info
 --undefined=rm_gpu_ops_destroy_access_cntr_info
 --undefined=rm_gpu_ops_enable_access_cntr
@@ -97,7 +100,6 @@
 --undefined=rm_gpu_ops_pma_alloc_pages
 --undefined=rm_gpu_ops_pma_free_pages
 --undefined=rm_gpu_ops_pma_pin_pages
---undefined=rm_gpu_ops_pma_unpin_pages
 --undefined=rm_gpu_ops_pma_register_callbacks
 --undefined=rm_gpu_ops_pma_unregister_callbacks
 --undefined=rm_gpu_ops_dup_address_space
@@ -127,10 +129,12 @@
 --undefined=rm_gpu_ops_ccsl_encrypt_with_iv
 --undefined=rm_gpu_ops_ccsl_context_init
 --undefined=rm_gpu_ops_ccsl_context_clear
+--undefined=rm_gpu_ops_ccsl_context_update
 --undefined=rm_gpu_ops_ccsl_rotate_iv
 --undefined=rm_gpu_ops_ccsl_decrypt
 --undefined=rm_gpu_ops_ccsl_query_message_pool
 --undefined=rm_gpu_ops_ccsl_increment_iv
+--undefined=rm_gpu_ops_ccsl_log_device_encryption
 --undefined=rm_log_gpu_crash
 --undefined=rm_kernel_rmapi_op
 --undefined=nv_get_hypervisor_type

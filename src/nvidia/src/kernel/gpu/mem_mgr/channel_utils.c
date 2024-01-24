@@ -741,12 +741,6 @@ channelFillSec2Pb
 
     portMemCopy((void*)pBufScrub, SHA_256_HASH_SIZE_BYTE, (const void*)&hmacDigest[0], SHA_256_HASH_SIZE_BYTE);
 
-    if (methodIdx > SEC2_WL_METHOD_ARRAY_SIZE)
-    {
-        status = NV_ERR_INVALID_ARGUMENT;
-        goto cleanup;
-    }
-
     for (NvU32 i = 0; i < methodIdx; i++)
     {
         NV_PUSH_INC_1U(RM_SUBCHANNEL, pMethods[i*2 + 0], pMethods[i*2 + 1]);
@@ -773,12 +767,6 @@ channelFillSec2Pb
         ccslSign(pCcslCtx, hmacBufferSizeBytes, (NvU8 *)pMethods, hmacDigest);
 
         portMemCopy((void*)pBufSema, SHA_256_HASH_SIZE_BYTE, (const void*)&hmacDigest[0], SHA_256_HASH_SIZE_BYTE);
-
-        if (methodIdx > SEC2_WL_METHOD_ARRAY_SIZE)
-        {
-            status = NV_ERR_INVALID_ARGUMENT;
-            goto cleanup;
-        }
 
         for (NvU32 i = 0; i < methodIdx; i++)
         {

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2022 NVIDIA Corporation
+    Copyright (c) 2018-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -74,7 +74,7 @@ static NV_STATUS migrate_vma_page_copy_address(struct page *page,
     }
     else {
         // Sysmem/Indirect Peer
-        NV_STATUS status = uvm_gpu_map_cpu_page(copying_gpu->parent, page, &state->dma.addrs[page_index]);
+        NV_STATUS status = uvm_parent_gpu_map_cpu_page(copying_gpu->parent, page, &state->dma.addrs[page_index]);
 
         if (status != NV_OK)
             return status;
@@ -636,7 +636,7 @@ void uvm_migrate_vma_finalize_and_map(struct migrate_vma *args, migrate_vma_stat
     if (state->dma.num_pages > 0) {
 
         for_each_set_bit(i, state->dma.page_mask, state->num_pages)
-            uvm_gpu_unmap_cpu_page(state->dma.addrs_gpus[i]->parent, state->dma.addrs[i]);
+            uvm_parent_gpu_unmap_cpu_page(state->dma.addrs_gpus[i]->parent, state->dma.addrs[i]);
     }
 
     UVM_ASSERT(!bitmap_intersects(state->populate_pages_mask, state->allocation_failed_mask, state->num_pages));
@@ -836,6 +836,17 @@ static NV_STATUS migrate_pageable_vma_region(struct vm_area_struct *vma,
     return NV_OK;
 }
 
+NV_STATUS uvm_test_skip_migrate_vma(UVM_TEST_SKIP_MIGRATE_VMA_PARAMS *params, struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+
+    uvm_va_space_down_write(va_space);
+    va_space->test.skip_migrate_vma = params->skip;
+    uvm_va_space_up_write(va_space);
+
+    return NV_OK;
+}
+
 static NV_STATUS migrate_pageable_vma(struct vm_area_struct *vma,
                                       unsigned long start,
                                       unsigned long outer,
@@ -857,6 +868,9 @@ static NV_STATUS migrate_pageable_vma(struct vm_area_struct *vma,
     // Adjust to input range boundaries
     start = max(start, vma->vm_start);
     outer = min(outer, vma->vm_end);
+
+    if (va_space->test.skip_migrate_vma)
+        return NV_WARN_NOTHING_TO_DO;
 
     // TODO: Bug 2419180: support file-backed pages in migrate_vma, when
     //       support for it is added to the Linux kernel
@@ -920,7 +934,9 @@ static NV_STATUS migrate_pageable(migrate_vma_state_t *state)
             bool touch = uvm_migrate_args->touch;
             uvm_populate_permissions_t populate_permissions = uvm_migrate_args->populate_permissions;
 
-            UVM_ASSERT(!vma_is_anonymous(vma) || uvm_processor_mask_empty(&va_space->registered_gpus));
+            UVM_ASSERT(va_space->test.skip_migrate_vma ||
+                       !vma_is_anonymous(vma) ||
+                       uvm_processor_mask_empty(&va_space->registered_gpus));
 
             // We can't use migrate_vma to move the pages as desired. Normally
             // this fallback path is supposed to populate the memory then inform
@@ -971,22 +987,13 @@ NV_STATUS uvm_migrate_pageable(uvm_migrate_args_t *uvm_migrate_args)
     NV_STATUS status;
     uvm_va_space_t *va_space = uvm_migrate_args->va_space;
     uvm_processor_id_t dst_id = uvm_migrate_args->dst_id;
-    int dst_node_id = uvm_migrate_args->dst_node_id;
 
     UVM_ASSERT(PAGE_ALIGNED(uvm_migrate_args->start));
     UVM_ASSERT(PAGE_ALIGNED(uvm_migrate_args->length));
     uvm_assert_mmap_lock_locked(uvm_migrate_args->mm);
 
     if (UVM_ID_IS_CPU(dst_id)) {
-        // We only check that dst_node_id is a valid node in the system and it
-        // doesn't correspond to a GPU node. This is fine because
-        // alloc_pages_node will clamp the allocation to
-        // cpuset_current_mems_allowed when uvm_migrate_pageable is called from
-        // process context (uvm_migrate) when dst_id is CPU. UVM bottom half
-        // calls uvm_migrate_pageable with CPU dst_id only when the VMA memory
-        // policy is set to dst_node_id and dst_node_id is not NUMA_NO_NODE.
-        if (!nv_numa_node_has_memory(dst_node_id) ||
-            uvm_va_space_find_gpu_with_memory_node_id(va_space, dst_node_id) != NULL)
+        if (uvm_migrate_args->dst_node_id == -1)
             return NV_ERR_INVALID_ARGUMENT;
     }
     else {

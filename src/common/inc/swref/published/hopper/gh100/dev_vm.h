@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-23 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -65,4 +65,46 @@
 #define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR_VALUE                            31:0 /* RWIVF */
 #define NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR_VALUE_INIT                 0x00000000 /* R-I-V */
 #define NV_VIRTUAL_FUNCTION_PRIV_MMU_PAGE_FAULT_CTRL                           0x00003070 /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR                                                0x00000F60   /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_MAP                                                 31:10   /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_BAR1_PENDING                                          0:0   /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_BAR1_PENDING_EMPTY                             0x00000000   /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_BAR1_PENDING_BUSY                              0x00000001   /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_BAR1_OUTSTANDING                                      1:1   /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_BAR1_OUTSTANDING_FALSE                         0x00000000   /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_BAR1_OUTSTANDING_TRUE                          0x00000001   /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_MODE                                                  9:9   /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_MODE_PHYSICAL                                  0x00000000   /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_MODE_VIRTUAL                                   0x00000001   /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_TARGET                                              11:10   /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_TARGET_VID_MEM                                 0x00000000   /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_TARGET_SYS_MEM_COHERENT                        0x00000002   /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_TARGET_SYS_MEM_NONCOHERENT                     0x00000003   /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_PTR                                                 31:12   /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_LOW_ADDR_PTR_0                                          0x00000000   /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_HIGH_ADDR                                               0x00000F64   /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_HIGH_ADDR_PTR                                                 31:0   /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_HIGH_ADDR_PTR_0                                         0x00000000   /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR1_BLOCK_PTR_SHIFT                                                       12   /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR                                                0x00000F70   /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_MAP                                                 31:10   /*       */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_BAR2_PENDING                                          0:0   /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_BAR2_PENDING_EMPTY                             0x00000000   /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_BAR2_PENDING_BUSY                              0x00000001   /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_BAR2_OUTSTANDING                                      1:1   /* R-IUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_BAR2_OUTSTANDING_FALSE                         0x00000000   /* R-I-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_BAR2_OUTSTANDING_TRUE                          0x00000001   /* R---V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_MODE                                                  9:9   /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_MODE_PHYSICAL                                  0x00000000   /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_MODE_VIRTUAL                                   0x00000001   /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_TARGET                                              11:10   /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_TARGET_VID_MEM                                 0x00000000   /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_TARGET_SYS_MEM_COHERENT                        0x00000002   /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_TARGET_SYS_MEM_NONCOHERENT                     0x00000003   /* RW--V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_PTR                                                 31:12   /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_LOW_ADDR_PTR_0                                          0x00000000   /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_HIGH_ADDR                                               0x00000F74   /* RW-4R */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_HIGH_ADDR_PTR                 (52-33):0   /* RWIUF */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_HIGH_ADDR_PTR_0                                         0x00000000   /* RWI-V */
+#define NV_VIRTUAL_FUNCTION_PRIV_FUNC_BAR2_BLOCK_PTR_SHIFT                                                       12   /*       */
 #endif // __gh100_dev_vm_h__

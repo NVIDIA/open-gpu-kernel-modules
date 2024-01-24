@@ -24,6 +24,7 @@
 
 /* ------------------------ Includes ---------------------------------------- */
 #include "gpu/bif/kernel_bif.h"
+#include "gpu/fifo/kernel_fifo.h"
 #include "published/ampere/ga100/dev_nv_xve_addendum.h"
 #include "published/ampere/ga100/dev_nv_xve.h"
 #include "published/ampere/ga100/dev_boot.h"
@@ -330,3 +331,77 @@ kbifStoreBarRegOffsets_GA100
         currOffset        = currOffset + 4;
     }
 }
+
+
+/*!
+ * @brief  Get the NV_PMC_ENABLE bit of the valid Engines to reset.
+ *
+ * @param[in]  pGpu       The GPU object
+ * @param[in]  pKernelBif KernelBif object pointer
+ * 
+ * @return All valid engines in NV_PMC_ENABLE.
+ */
+NvU32
+kbifGetValidEnginesToReset_GA100
+(
+    OBJGPU    *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    return (DRF_DEF(_PMC, _ENABLE, _PDISP,   _ENABLED) |
+            DRF_DEF(_PMC, _ENABLE, _PERFMON, _ENABLED));
+}
+
+
+/*!
+ * @brief  Get the NV_PMC_DEVICE_ENABLE bit of the valid Engines to reset. Gets this
+ * data by reading the device info table and returns engines with valid reset_id.
+ *
+ * @param[in]  pGpu       The GPU object
+ * @param[in]  pKernelBif KernelBif object pointer
+ *
+ * @return All valid engines in NV_PMC_DEVICE_ENABLE.
+ */
+NvU32
+kbifGetValidDeviceEnginesToReset_GA100
+(
+    OBJGPU *pGpu,
+    KernelBif *pKernelBif
+)
+{
+    KernelFifo *pKernelFifo = GPU_GET_KERNEL_FIFO(pGpu);
+    const NvU32 numEngines = kfifoGetNumEngines_HAL(pGpu, pKernelFifo);
+    NV_STATUS status;
+    NvU32 engineID;
+    NvU32 regVal = 0;
+    NvU32 resetIdx;
+
+    //
+    // If hardware increases the size of this register in future chips, we would
+    // need to catch this and fork another HAL.
+    //
+    if ((sizeof(NvU32) * NV_PMC_DEVICE_ENABLE__SIZE_1) > sizeof(NvU32))
+    {
+        NV_ASSERT_FAILED("Assert for Mcheck to catch increase in register size. Fork this HAL");
+    }
+
+    for (engineID = 0; engineID < numEngines; engineID++)
+    {
+        status = kfifoEngineInfoXlate_HAL(pGpu, pKernelFifo, ENGINE_INFO_TYPE_INVALID,
+                    engineID, ENGINE_INFO_TYPE_RESET, &resetIdx);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "Unable to get Reset index for engine ID (%u)\n",
+                      engineID);
+            continue;
+        }
+
+        // We got the resetIdx. Lets set the bit in NV_PMC_DEVICE_ENABLE.
+        regVal = FLD_IDX_SET_DRF(_PMC, _DEVICE_ENABLE, _STATUS_BIT, resetIdx, _ENABLE, regVal);
+    }
+
+    return regVal;
+}
+
+

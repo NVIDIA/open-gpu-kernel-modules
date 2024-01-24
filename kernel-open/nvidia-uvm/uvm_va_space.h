@@ -159,8 +159,13 @@ struct uvm_va_space_struct
     // processor mask.
     uvm_gpu_t *registered_gpus_table[UVM_ID_MAX_GPUS];
 
-    // Mask of processors registered with the va space that support replayable faults
+    // Mask of processors registered with the va space that support replayable
+    // faults.
     uvm_processor_mask_t faultable_processors;
+
+    // This is a count of non fault capable processors with a GPU VA space
+    // registered.
+    NvU32 num_non_faultable_gpu_va_spaces;
 
     // Semaphore protecting the state of the va space
     uvm_rw_semaphore_t lock;
@@ -342,6 +347,7 @@ struct uvm_va_space_struct
     struct
     {
         bool  page_prefetch_enabled;
+        bool  skip_migrate_vma;
 
         atomic_t migrate_vma_allocation_fail_nth;
 
@@ -353,6 +359,10 @@ struct uvm_va_space_struct
         atomic64_t destroy_gpu_va_space_delay_us;
 
         atomic64_t split_invalidate_delay_us;
+
+        bool force_cpu_to_cpu_copy_with_ce;
+
+        bool allow_allocation_from_movable;
     } test;
 
     // Queue item for deferred f_ops->release() handling
@@ -368,7 +378,7 @@ static uvm_gpu_t *uvm_va_space_get_gpu(uvm_va_space_t *va_space, uvm_gpu_id_t gp
     gpu = va_space->registered_gpus_table[uvm_id_gpu_index(gpu_id)];
 
     UVM_ASSERT(gpu);
-    UVM_ASSERT(uvm_gpu_get(gpu->global_id) == gpu);
+    UVM_ASSERT(uvm_gpu_get(gpu->id) == gpu);
 
     return gpu;
 }
@@ -593,22 +603,10 @@ static uvm_gpu_va_space_state_t uvm_gpu_va_space_state(uvm_gpu_va_space_t *gpu_v
     return gpu_va_space->state;
 }
 
-static uvm_gpu_va_space_t *uvm_gpu_va_space_get_by_parent_gpu(uvm_va_space_t *va_space, uvm_parent_gpu_t *parent_gpu)
-{
-    uvm_gpu_va_space_t *gpu_va_space;
-
-    uvm_assert_rwsem_locked(&va_space->lock);
-
-    if (!parent_gpu || !uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, parent_gpu->id))
-        return NULL;
-
-    gpu_va_space = va_space->gpu_va_spaces[uvm_id_gpu_index(parent_gpu->id)];
-    UVM_ASSERT(uvm_gpu_va_space_state(gpu_va_space) == UVM_GPU_VA_SPACE_STATE_ACTIVE);
-    UVM_ASSERT(gpu_va_space->va_space == va_space);
-    UVM_ASSERT(gpu_va_space->gpu->parent == parent_gpu);
-
-    return gpu_va_space;
-}
+// Return the GPU VA space for the given physical GPU.
+// Locking: the va_space lock must be held.
+uvm_gpu_va_space_t *uvm_gpu_va_space_get_by_parent_gpu(uvm_va_space_t *va_space,
+                                                       uvm_parent_gpu_t *parent_gpu);
 
 static uvm_gpu_va_space_t *uvm_gpu_va_space_get(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
 {
@@ -712,23 +710,6 @@ static uvm_gpu_t *uvm_processor_mask_find_next_va_space_gpu(const uvm_processor_
 #define for_each_va_space_gpu(gpu, va_space) \
     for_each_va_space_gpu_in_mask(gpu, va_space, &(va_space)->registered_gpus)
 
-static void uvm_va_space_global_gpus_in_mask(uvm_va_space_t *va_space,
-                                             uvm_global_processor_mask_t *global_mask,
-                                             const uvm_processor_mask_t *mask)
-{
-    uvm_gpu_t *gpu;
-
-    uvm_global_processor_mask_zero(global_mask);
-
-    for_each_va_space_gpu_in_mask(gpu, va_space, mask)
-        uvm_global_processor_mask_set(global_mask, gpu->global_id);
-}
-
-static void uvm_va_space_global_gpus(uvm_va_space_t *va_space, uvm_global_processor_mask_t *global_mask)
-{
-    uvm_va_space_global_gpus_in_mask(va_space, global_mask, &va_space->registered_gpus);
-}
-
 // Return the processor in the candidates mask that is "closest" to src, or
 // UVM_ID_MAX_PROCESSORS if candidates is empty. The order is:
 // - src itself
@@ -827,6 +808,10 @@ NV_STATUS uvm_test_get_pageable_mem_access_type(UVM_TEST_GET_PAGEABLE_MEM_ACCESS
 NV_STATUS uvm_test_enable_nvlink_peer_access(UVM_TEST_ENABLE_NVLINK_PEER_ACCESS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_disable_nvlink_peer_access(UVM_TEST_DISABLE_NVLINK_PEER_ACCESS_PARAMS *params, struct file *filp);
 NV_STATUS uvm_test_destroy_gpu_va_space_delay(UVM_TEST_DESTROY_GPU_VA_SPACE_DELAY_PARAMS *params, struct file *filp);
+NV_STATUS uvm_test_force_cpu_to_cpu_copy_with_ce(UVM_TEST_FORCE_CPU_TO_CPU_COPY_WITH_CE_PARAMS *params,
+                                                 struct file *filp);
+NV_STATUS uvm_test_va_space_allow_movable_allocations(UVM_TEST_VA_SPACE_ALLOW_MOVABLE_ALLOCATIONS_PARAMS *params,
+                                                      struct file *filp);
 
 // Handle a CPU fault in the given VA space for a managed allocation,
 // performing any operations necessary to establish a coherent CPU mapping

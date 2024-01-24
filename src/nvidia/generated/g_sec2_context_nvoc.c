@@ -172,10 +172,6 @@ static void __nvoc_thunk_RmResource_sec2ctxControl_Epilogue(struct Sec2Context *
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_Sec2Context_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_sec2ctxControlLookup(struct Sec2Context *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Sec2Context_RsResource.offset), pParams, ppEntry);
-}
-
 static NV_STATUS __nvoc_thunk_ChannelDescendant_sec2ctxGetSwMethods(struct Sec2Context *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_Sec2Context_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
@@ -218,6 +214,10 @@ static NV_STATUS __nvoc_thunk_RmResource_sec2ctxControlSerialization_Prologue(st
 
 static NvBool __nvoc_thunk_RsResource_sec2ctxCanCopy(struct Sec2Context *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Sec2Context_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_sec2ctxIsPartialUnmapSupported(struct Sec2Context *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_Sec2Context_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_sec2ctxPreDestruct(struct Sec2Context *pResource) {
@@ -323,8 +323,6 @@ static void __nvoc_init_funcTable_Sec2Context_1(Sec2Context *pThis, RmHalspecOwn
 
     pThis->__sec2ctxControl_Epilogue__ = &__nvoc_thunk_RmResource_sec2ctxControl_Epilogue;
 
-    pThis->__sec2ctxControlLookup__ = &__nvoc_thunk_RsResource_sec2ctxControlLookup;
-
     pThis->__sec2ctxGetSwMethods__ = &__nvoc_thunk_ChannelDescendant_sec2ctxGetSwMethods;
 
     pThis->__sec2ctxGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_sec2ctxGetInternalObjectHandle;
@@ -346,6 +344,8 @@ static void __nvoc_init_funcTable_Sec2Context_1(Sec2Context *pThis, RmHalspecOwn
     pThis->__sec2ctxControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_sec2ctxControlSerialization_Prologue;
 
     pThis->__sec2ctxCanCopy__ = &__nvoc_thunk_RsResource_sec2ctxCanCopy;
+
+    pThis->__sec2ctxIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_sec2ctxIsPartialUnmapSupported;
 
     pThis->__sec2ctxPreDestruct__ = &__nvoc_thunk_RsResource_sec2ctxPreDestruct;
 
@@ -381,23 +381,31 @@ void __nvoc_init_Sec2Context(Sec2Context *pThis, RmHalspecOwner *pRmhalspecowner
     __nvoc_init_funcTable_Sec2Context(pThis, pRmhalspecowner);
 }
 
-NV_STATUS __nvoc_objCreate_Sec2Context(Sec2Context **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_Sec2Context(Sec2Context **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     Sec2Context *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(Sec2Context), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(Sec2Context));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_Sec2Context);
 
     pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -415,16 +423,25 @@ NV_STATUS __nvoc_objCreate_Sec2Context(Sec2Context **ppThis, Dynamic *pParent, N
     status = __nvoc_ctor_Sec2Context(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_Sec2Context_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_Sec2Context_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(Sec2Context));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

@@ -42,7 +42,6 @@ extern "C" {
 \***************************************************************************/
 
 #include "core/core.h"
-#include "core/info_block.h"
 
 //
 // HAL Info Block Id:
@@ -78,11 +77,16 @@ typedef struct OBJHAL OBJHAL;
 #endif /* __nvoc_class_id_OBJHAL */
 
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_HAL_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJHAL {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;

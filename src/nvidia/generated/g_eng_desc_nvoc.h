@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -548,6 +548,18 @@ typedef struct OBJDPU OBJDPU;
 #endif /* __nvoc_class_id_OBJDPU */
 
 
+struct OBJDIP;
+
+#ifndef __NVOC_CLASS_OBJDIP_TYPEDEF__
+#define __NVOC_CLASS_OBJDIP_TYPEDEF__
+typedef struct OBJDIP OBJDIP;
+#endif /* __NVOC_CLASS_OBJDIP_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_OBJDIP
+#define __nvoc_class_id_OBJDIP 0x1cc271
+#endif /* __nvoc_class_id_OBJDIP */
+
+
 struct Fan;
 
 #ifndef __NVOC_CLASS_Fan_TYPEDEF__
@@ -716,16 +728,16 @@ typedef struct OBJVGA OBJVGA;
 #endif /* __nvoc_class_id_OBJVGA */
 
 
-struct OBJSTEREO;
+struct Stereo;
 
-#ifndef __NVOC_CLASS_OBJSTEREO_TYPEDEF__
-#define __NVOC_CLASS_OBJSTEREO_TYPEDEF__
-typedef struct OBJSTEREO OBJSTEREO;
-#endif /* __NVOC_CLASS_OBJSTEREO_TYPEDEF__ */
+#ifndef __NVOC_CLASS_Stereo_TYPEDEF__
+#define __NVOC_CLASS_Stereo_TYPEDEF__
+typedef struct Stereo Stereo;
+#endif /* __NVOC_CLASS_Stereo_TYPEDEF__ */
 
-#ifndef __nvoc_class_id_OBJSTEREO
-#define __nvoc_class_id_OBJSTEREO 0x9fd931
-#endif /* __nvoc_class_id_OBJSTEREO */
+#ifndef __nvoc_class_id_Stereo
+#define __nvoc_class_id_Stereo 0xbbc45d
+#endif /* __nvoc_class_id_Stereo */
 
 
 struct OBJOR;
@@ -1026,6 +1038,18 @@ typedef struct Nvlink Nvlink;
 #ifndef __nvoc_class_id_Nvlink
 #define __nvoc_class_id_Nvlink 0x790a3c
 #endif /* __nvoc_class_id_Nvlink */
+
+
+struct KernelHwpm;
+
+#ifndef __NVOC_CLASS_KernelHwpm_TYPEDEF__
+#define __NVOC_CLASS_KernelHwpm_TYPEDEF__
+typedef struct KernelHwpm KernelHwpm;
+#endif /* __NVOC_CLASS_KernelHwpm_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_KernelHwpm
+#define __nvoc_class_id_KernelHwpm 0xc8c00f
+#endif /* __nvoc_class_id_KernelHwpm */
 
 
 struct OBJHWPM;
@@ -1402,6 +1426,7 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_KERNEL_DISPLAY       MKENGDESC(classId(KernelDisplay),       0)
 #define ENG_DISP                 MKENGDESC(classId(OBJDISP),             0)
 #define ENG_DPU                  MKENGDESC(classId(OBJDPU),              0)
+#define ENG_DIP                  MKENGDESC(classId(OBJDIP),              0)
 #define ENG_FAN                  MKENGDESC(classId(Fan),                 0)
 #define ENG_INST                 MKENGDESC(classId(DisplayInstanceMemory), 0)
 #define ENG_KERNEL_HEAD          MKENGDESC(classId(KernelHead),          0)
@@ -1416,7 +1441,7 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_PIOR                 MKENGDESC(classId(OBJPIOR),             0)
 #define ENG_HEAD                 MKENGDESC(classId(OBJHEAD),             0)
 #define ENG_VGA                  MKENGDESC(classId(OBJVGA),              0)
-#define ENG_STEREO               MKENGDESC(classId(OBJSTEREO),           0)
+#define ENG_STEREO               MKENGDESC(classId(Stereo),           0)
 #define ENG_OR                   MKENGDESC(classId(OBJOR),               0)
 #define ENG_BSP                  MKENGDESC(classId(OBJBSP),              0)
 #define ENG_CIPHER               MKENGDESC(classId(OBJCIPHER),           0)
@@ -1442,6 +1467,7 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_GPULOG               MKENGDESC(classId(OBJGPULOG),           0)
 #define ENG_NVLINK               MKENGDESC(classId(Nvlink),              0)
 #define ENG_HWPM                 MKENGDESC(classId(OBJHWPM),             0)
+#define ENG_KERNEL_HWPM          MKENGDESC(classId(KernelHwpm),          0)
 #define ENG_GPUMON               MKENGDESC(classId(OBJGPUMON),           0)
 #define ENG_GRIDDISPLAYLESS      MKENGDESC(classId(OBJGRIDDISPLAYLESS),  0)
 #define ENG_VMMU                 MKENGDESC(classId(OBJVMMU),             0)
@@ -1462,6 +1488,8 @@ typedef struct KernelCcu KernelCcu;
 #define ENG_KERNEL_GMMU          MKENGDESC(classId(KernelGmmu),          0)
 #define ENG_CONF_COMPUTE         MKENGDESC(classId(ConfidentialCompute), 0)
 #define ENG_KERNEL_CCU           MKENGDESC(classId(KernelCcu),           0)
+
+// Indexed GSPLITE Engine Tag Reference
 
 // Indexed CE engine tag reference
 #define ENG_CE(x)                MKENGDESC(classId(OBJCE),               x)

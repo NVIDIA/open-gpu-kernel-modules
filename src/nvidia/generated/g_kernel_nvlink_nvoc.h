@@ -192,7 +192,7 @@ typedef struct _def_knvlink_link
 typedef struct NVLINK_INBAND_CALLBACK
 {
     NvU32 messageType;
-    NV_STATUS (*pCallback)(NvU32 gpuInstance,
+    NV_STATUS (*pCallback)(NvU32 gpuInstance, NvU64 *pNotifyGfIdMask,
                       NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pMessage);
     NvU32 wqItemFlags;
 } NVLINK_INBAND_MSG_CALLBACK;
@@ -210,11 +210,16 @@ MAKE_LIST(FaultUpList, NVLINK_ID);
  * any interfaces which do not manage the underlying Nvlink hardware
  * can be managed by this object.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelNvlink {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -306,7 +311,6 @@ struct KernelNvlink {
     NvU32 PRIVATE_FIELD(sysmemLinkMask);
     NvU32 PRIVATE_FIELD(peerLinkMasks)[32];
     NvU32 PRIVATE_FIELD(forcedSysmemDeviceType);
-    NVLINK_INBAND_MSG_CALLBACK PRIVATE_FIELD(inbandCallback)[6];
     nvlink_device *PRIVATE_FIELD(pNvlinkDev);
     NvU32 PRIVATE_FIELD(deviceLockRefcount);
     char *PRIVATE_FIELD(driverName);
@@ -419,7 +423,6 @@ struct KernelNvlink_PRIVATE {
     NvU32 sysmemLinkMask;
     NvU32 peerLinkMasks[32];
     NvU32 forcedSysmemDeviceType;
-    NVLINK_INBAND_MSG_CALLBACK inbandCallback[6];
     nvlink_device *pNvlinkDev;
     NvU32 deviceLockRefcount;
     char *driverName;
@@ -844,34 +847,6 @@ static inline NV_STATUS knvlinkCoreUpdateDeviceUUID(struct OBJGPU *pGpu, struct 
 
 #define knvlinkCoreUpdateDeviceUUID_HAL(pGpu, pKernelNvlink) knvlinkCoreUpdateDeviceUUID(pGpu, pKernelNvlink)
 
-NV_STATUS knvlinkRegisterInbandCallback_IMPL(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NVLINK_INBAND_MSG_CALLBACK *params);
-
-
-#ifdef __nvoc_kernel_nvlink_h_disabled
-static inline NV_STATUS knvlinkRegisterInbandCallback(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NVLINK_INBAND_MSG_CALLBACK *params) {
-    NV_ASSERT_FAILED_PRECOMP("KernelNvlink was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_nvlink_h_disabled
-#define knvlinkRegisterInbandCallback(pGpu, pKernelNvlink, params) knvlinkRegisterInbandCallback_IMPL(pGpu, pKernelNvlink, params)
-#endif //__nvoc_kernel_nvlink_h_disabled
-
-#define knvlinkRegisterInbandCallback_HAL(pGpu, pKernelNvlink, params) knvlinkRegisterInbandCallback(pGpu, pKernelNvlink, params)
-
-NV_STATUS knvlinkUnregisterInbandCallback_IMPL(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NvU16 msgType);
-
-
-#ifdef __nvoc_kernel_nvlink_h_disabled
-static inline NV_STATUS knvlinkUnregisterInbandCallback(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NvU16 msgType) {
-    NV_ASSERT_FAILED_PRECOMP("KernelNvlink was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_nvlink_h_disabled
-#define knvlinkUnregisterInbandCallback(pGpu, pKernelNvlink, msgType) knvlinkUnregisterInbandCallback_IMPL(pGpu, pKernelNvlink, msgType)
-#endif //__nvoc_kernel_nvlink_h_disabled
-
-#define knvlinkUnregisterInbandCallback_HAL(pGpu, pKernelNvlink, msgType) knvlinkUnregisterInbandCallback(pGpu, pKernelNvlink, msgType)
-
 NV_STATUS knvlinkCoreGetRemoteDeviceInfo_IMPL(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink);
 
 
@@ -1151,6 +1126,20 @@ static inline NV_STATUS knvlinkInbandMsgCallbackDispatcher(struct OBJGPU *pGpu, 
 #endif //__nvoc_kernel_nvlink_h_disabled
 
 #define knvlinkInbandMsgCallbackDispatcher_HAL(pGpu, pKernelNvLink, dataSize, pMessage) knvlinkInbandMsgCallbackDispatcher(pGpu, pKernelNvLink, dataSize, pMessage)
+
+NV_STATUS knvlinkFatalErrorRecovery_IMPL(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvLink);
+
+
+#ifdef __nvoc_kernel_nvlink_h_disabled
+static inline NV_STATUS knvlinkFatalErrorRecovery(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvLink) {
+    NV_ASSERT_FAILED_PRECOMP("KernelNvlink was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_kernel_nvlink_h_disabled
+#define knvlinkFatalErrorRecovery(pGpu, pKernelNvLink) knvlinkFatalErrorRecovery_IMPL(pGpu, pKernelNvLink)
+#endif //__nvoc_kernel_nvlink_h_disabled
+
+#define knvlinkFatalErrorRecovery_HAL(pGpu, pKernelNvLink) knvlinkFatalErrorRecovery(pGpu, pKernelNvLink)
 
 NV_STATUS knvlinkSendInbandData_IMPL(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink, NV2080_CTRL_NVLINK_INBAND_SEND_DATA_PARAMS *pParams);
 
@@ -1809,6 +1798,11 @@ static inline NvU32 knvlinkGetIPVersion(struct OBJGPU *pGpu, struct KernelNvlink
     return pKernelNvlink_PRIVATE->ipVerNvlink;
 }
 
+static inline NvU32 knvlinkGetMinionControl(struct OBJGPU *pGpu, struct KernelNvlink *pKernelNvlink) {
+    struct KernelNvlink_PRIVATE *pKernelNvlink_PRIVATE = (struct KernelNvlink_PRIVATE *)pKernelNvlink;
+    return pKernelNvlink_PRIVATE->minionControl;
+}
+
 void knvlinkDestruct_IMPL(struct KernelNvlink *arg0);
 
 #define __nvoc_knvlinkDestruct(arg0) knvlinkDestruct_IMPL(arg0)
@@ -1878,6 +1872,8 @@ NvlStatus knvlinkCoreGetRxSublinkDetectCallback      (nvlink_link *link);
 void      knvlinkCoreTrainingCompleteCallback        (nvlink_link *link);
 void      knvlinkCoreGetUphyLoadCallback             (nvlink_link *link, NvBool *bUnlocked);
 NvlStatus knvlinkCoreAliTrainingCallback             (nvlink_link *link);
+
+NvlStatus knvlinkCoreGetCciLinkModeCallback          (nvlink_link *link, NvU64 *mode);
 
 #endif
 

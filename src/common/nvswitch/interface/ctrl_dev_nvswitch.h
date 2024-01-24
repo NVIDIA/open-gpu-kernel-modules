@@ -830,6 +830,7 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_HOST_THERMAL_SHUTDOWN                              = 10006,
     NVSWITCH_ERR_HW_HOST_IO_FAILURE                                    = 10007,
     NVSWITCH_ERR_HW_HOST_FIRMWARE_INITIALIZATION_FAILURE               = 10008,
+    NVSWITCH_ERR_HW_HOST_FIRMWARE_RECOVERY_MODE                        = 10009,
     NVSWITCH_ERR_HW_HOST_LAST,
 
 
@@ -1262,24 +1263,44 @@ typedef enum nvswitch_err_type
     NVSWITCH_ERR_HW_SOE_WATCHDOG                                       = 26008,
     NVSWITCH_ERR_HW_SOE_LAST, /* Note: Must be last */
 
+    /* CCI errors */
+    NVSWITCH_ERR_HW_CCI                                                = 27000,
+    NVSWITCH_ERR_HW_CCI_RESET                                          = 27001,
+    NVSWITCH_ERR_HW_CCI_INIT                                           = 27002,
+    NVSWITCH_ERR_HW_CCI_TIMEOUT                                        = 27003,
+    NVSWITCH_ERR_HW_CCI_SHUTDOWN                                       = 27004,
+    NVSWITCH_ERR_HW_CCI_MODULE                                         = 27005,
+    NVSWITCH_ERR_HW_CCI_MODULE_BOOT                                    = 27006,
+    NVSWITCH_ERR_HW_CCI_MODULE_RECOVERY                                = 27007,
+    NVSWITCH_ERR_HW_CCI_LAST, /* Note: Must be last */
+
+    /* OSFP Therm Errors */
+    NVSWITCH_ERR_HW_OSFP_THERM                                         = 28000,
+    NVSWITCH_ERR_HW_OSFP_THERM_WARN_ACTIVATED                          = 28001,
+    NVSWITCH_ERR_HW_OSFP_THERM_WARN_DEACTIVATED                        = 28002,
+    NVSWITCH_ERR_HW_OSFP_THERM_OVERT_ACTIVATED                         = 28003,
+    NVSWITCH_ERR_HW_OSFP_THERM_OVERT_DEACTIVATED                       = 28004,
+    NVSWITCH_ERR_HW_OSFP_THERM_HEARTBEAT_SHUTDOWN                      = 28005,
+    NVSWITCH_ERR_HW_OSFP_THERM_LAST, /* Note: Must be last */
+
     /* NPORT: Multicast Tstate errors */
-    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE                              = 28000,
-    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_LIMIT_ERR        = 28001,
-    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_DBE_ERR          = 28002,
-    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_LIMIT_ERR     = 28003,
-    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_DBE_ERR       = 28004,
-    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_BUF_OVERWRITE_ERR = 28005,
-    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_MCTO_ERR          = 28006,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE                              = 29000,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_LIMIT_ERR        = 29001,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_TAGPOOL_ECC_DBE_ERR          = 29002,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_LIMIT_ERR     = 29003,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_ECC_DBE_ERR       = 29004,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_BUF_OVERWRITE_ERR = 29005,
+    NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_CRUMBSTORE_MCTO_ERR          = 29006,
     NVSWITCH_ERR_HW_NPORT_MULTICASTTSTATE_LAST, /* Note: Must be last */
 
     /* NPORT: Reduction Tstate errors */
-    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE                              = 29000,
-    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_LIMIT_ERR        = 29001,
-    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_DBE_ERR          = 29002,
-    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_LIMIT_ERR     = 29003,
-    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_DBE_ERR       = 29004,
-    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_BUF_OVERWRITE_ERR = 29005,
-    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_RTO_ERR           = 29006,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE                              = 30000,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_LIMIT_ERR        = 30001,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_TAGPOOL_ECC_DBE_ERR          = 30002,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_LIMIT_ERR     = 30003,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_ECC_DBE_ERR       = 30004,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_BUF_OVERWRITE_ERR = 30005,
+    NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_CRUMBSTORE_RTO_ERR           = 30006,
     NVSWITCH_ERR_HW_NPORT_REDUCTIONTSTATE_LAST, /* Note: Must be last */
 
     /* Please update nvswitch_translate_hw_errors with a newly added error class. */
@@ -2755,6 +2776,242 @@ typedef struct nvswitch_get_nvlink_ecc_errors
     NVSWITCH_LINK_ECC_ERROR   errorLink[NVSWITCH_NVLINK_MAX_LINKS];
 } NVSWITCH_GET_NVLINK_ECC_ERRORS_PARAMS;
 
+/*
+ * CTRL_NVSWITCH_CCI_CMIS_PRESENCE
+ *
+ * Control to get module presence bitmasks
+ *
+ * Parameters:
+ *    cagesMask [OUT]
+ *      Bitmask representing the CMIS module cages present 
+ *      (associated with) the selected ASIC device
+ *    modulesMask [OUT]  
+ *      Bitmask representing the CMIS modules currently present 
+ *      (plugged in) on the selected ASIC device
+ */
+
+typedef struct nvswitch_cci_cmis_presence_params
+{
+    NvU32 cagesMask;
+    NvU32 modulesMask;
+    NvU32 reserved0;
+    NvU32 reserved1;
+    NvU32 reserved2;
+    NvU32 reserved3;
+} NVSWITCH_CCI_CMIS_PRESENCE_PARAMS;
+
+#define NVSWITCH_CCI_CMIS_NVLINK_MAPPING_ENCODED_VALUE(i)           (7 + (i<<3)):(i<<3)
+#define NVSWITCH_CCI_CMIS_NVLINK_MAPPING_ENCODED_VALUE_LINK_ID      5:0
+#define NVSWITCH_CCI_CMIS_NVLINK_MAPPING_GET_OSFP_LANE_MASK(laneMask, linkId, eVal)                   \
+    do {                                                                                              \
+        NvU8 _byte, _lane;                                                                            \
+                                                                                                      \
+        laneMask = 0;                                                                                 \
+        for (_lane = 0; _lane < 8; _lane++)                                                           \
+        {                                                                                             \
+            _byte = REF_VAL64(NVSWITCH_CCI_CMIS_NVLINK_MAPPING_ENCODED_VALUE(_lane), eVal);           \
+            if (REF_VAL64(NVSWITCH_CCI_CMIS_NVLINK_MAPPING_ENCODED_VALUE_LINK_ID, _byte) == linkId)   \
+            {                                                                                         \
+                laneMask |= NVBIT(_lane);                                                             \
+            }                                                                                         \
+        }                                                                                             \
+    } while (0);
+
+/*
+ * CTRL_NVSWITCH_CCI_CMIS_NVLINK_MAPPING
+ *
+ * Control to get cage to NVLink link mappings
+ *
+ * Provided macros should be used to extract fields from
+ * encoded value.
+ *
+ * Parameters:
+ *    cageIndex [IN]
+ *      Target cage index (>=0 and <= 31) on the 
+ *      selected ASIC device.
+ *    linkMask [OUT]
+ *      Mask of Nvlinks mapped to the given cage
+ *    encodedValue [OUT]  
+ *      Value that encodes the following:
+ *      -Link Ids to OSFP lane number
+ */
+ 
+typedef struct nvswitch_cci_cmis_nvlink_mapping_params
+{
+    NvU8 cageIndex;
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);    
+    NV_DECLARE_ALIGNED(NvU64 encodedValue, 8);
+    NvU32 reserved0;
+    NvU32 reserved1;
+    NvU32 reserved2;
+    NvU32 reserved3;
+} NVSWITCH_CCI_CMIS_NVLINK_MAPPING_PARAMS;
+
+#define NVSWITCH_CCI_CMIS_MEMORY_ACCESS_BUF_SIZE (128)
+
+/*
+ * CTRL_NVSWITCH_CCI_CMIS_MEMORY_ACCESS_READ
+ *
+ * Control for direct memory accesses to cages
+ *
+ * Parameters:
+ *    cageIndex [IN]
+ *      Target cage index (>=0 and <= 31) on the 
+ *      selected ASIC device
+ *    bank [IN]
+ *      Target bank in module (if address >= 0x80)
+ *    page [IN]
+ *      Target page in module (if address >= 0x80)
+ *    address [IN]
+ *      Target byte address (offset) in module
+ *    count [IN]
+ *      Number of bytes to read (>=0 and <= 0x7F)
+ *    bSequenceLock [IN] 
+ *      Allows clients to own the module for
+ *      CMIS read/write sequences. This must
+ *      be set to TRUE for all accesses within 
+ *      the sequence. Setting it to FALSE will
+ *      release the lock. The lock will expire
+ *      and be released if the module is left idle 
+ *      for greater than 10 seconds.
+ *    data[] [OUT]  
+ *      128 byte data buffer
+ */
+
+typedef struct nvswitch_cci_cmis_memory_access_read_params
+{
+    NvU8 cageIndex;
+    NvU8 bank;
+    NvU8 page;
+    NvU8 address;
+    NvU8 count;
+    NvU8 data[NVSWITCH_CCI_CMIS_MEMORY_ACCESS_BUF_SIZE];
+    NvBool bSequenceLock;
+    NvU8  reserved0[3];
+    NvU32 reserved1;
+    NvU32 reserved2;
+    NvU32 reserved3;
+} NVSWITCH_CCI_CMIS_MEMORY_ACCESS_READ_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_CCI_CMIS_MEMORY_ACCESS_WRITE
+ *
+ * Control for direct memory accesses to cages
+ *
+ * Parameters:
+ *    cageIndex [IN]
+ *      Target cage index (>=0 and <= 31) on the 
+ *      selected ASIC device
+ *    bank [IN]
+ *      Target bank in module (if address >= 0x80)
+ *    page [IN]
+ *      Target page in module (if address >= 0x80)
+ *    address [IN]
+ *      Target byte address (offset) in module
+ *    count [IN]
+ *      Number of bytes to write (>=0 and <= 0x7F)
+ *    bSequenceLock [IN] 
+ *      Allows clients to own the module for
+ *      CMIS read/write sequences. This must
+ *      be set to TRUE for all accesses within 
+ *      the sequence. Setting it to FALSE will
+ *      release the lock. The lock will expire
+ *      and be released if the module is left idle 
+ *      for greater than 10 seconds.
+ *    data[] [IN]  
+ *      128 byte data buffer
+ */
+
+typedef struct nvswitch_cci_cmis_memory_access_write_params
+{
+    NvU8 cageIndex;
+    NvU8 bank;
+    NvU8 page;
+    NvU8 address;
+    NvU8 count;
+    NvU8 data[NVSWITCH_CCI_CMIS_MEMORY_ACCESS_BUF_SIZE];
+    NvBool bSequenceLock;
+    NvU8  reserved0[3];
+    NvU32 reserved1;
+    NvU32 reserved2;
+    NvU32 reserved3;    
+} NVSWITCH_CCI_CMIS_MEMORY_ACCESS_WRITE_PARAMS;
+
+#define NVSWITCH_CCI_CMIS_CAGE_BEZEL_MARKING_LEN    31
+
+/*
+ * CTRL_NVSWITCH_CCI_CMIS_CAGE_BEZEL_MARKING
+ *
+ * Control to get bezel information for a cage.
+ *
+ * Parameters:
+ *    cageIndex [IN]
+ *      Target cage index (>=0 and <= 31) on the 
+ *      selected ASIC device.
+ *    bezelMarking [OUT]
+ *              
+ */
+
+typedef struct nvswitch_cci_cmis_cage_bezel_marking_params
+{
+    NvU8 cageIndex;
+    char bezelMarking[NVSWITCH_CCI_CMIS_CAGE_BEZEL_MARKING_LEN + 1];
+    NvU32 reserved0;
+    NvU32 reserved1;
+    NvU32 reserved2;
+    NvU32 reserved3;
+} NVSWITCH_CCI_CMIS_CAGE_BEZEL_MARKING_PARAMS;
+
+#define NVSWITCH_CCI_XVCR_LANES     0x8
+
+/*
+ *
+ * Structure to store cci grading values
+ *
+ *
+ * This API is not supported on SV10.
+ *
+ * Parameters:
+ *   tx_init
+ *     TX-Input Initial Tuning grading.
+ *   rx_init
+ *     RX-Input Initial Tuning grading.
+ *   tx_maint
+ *     TX-Input Maintenance grading.
+ *   rx_maint
+ *     RX-Input Maintenance grading.
+ */
+typedef struct nvswitch_cci_grading_values
+{
+    NvU8  tx_init[NVSWITCH_CCI_XVCR_LANES];
+    NvU8  rx_init[NVSWITCH_CCI_XVCR_LANES];
+    NvU8  tx_maint[NVSWITCH_CCI_XVCR_LANES];
+    NvU8  rx_maint[NVSWITCH_CCI_XVCR_LANES];
+} NVSWITCH_CCI_GRADING_VALUES;
+
+/*
+ * CTRL_NVSWITCH_CCI_GET_GRADING_VALUES
+ *
+ * Control to get cci xvcr grading values
+ *
+ *
+ * This API is not supported on SV10.
+ *
+ * Parameters:
+ *   link [IN]
+ *     Link number
+ *   laneMask [OUT]
+ *     Lane mask of valid indexes in the grading data
+ *   grading [OUT]
+ *     xvcr grading values
+ */
+typedef struct nvswitch_cci_get_grading_values_params
+{
+    NvU32 linkId;
+    NvU8  laneMask;
+    NVSWITCH_CCI_GRADING_VALUES grading;
+} NVSWITCH_CCI_GET_GRADING_VALUES_PARAMS;
+
 #define NVSWITCH_NVLINK_MAX_CORRECTABLE_ERROR_DAYS      5
 #define NVSWITCH_NVLINK_MAX_CORRECTABLE_ERROR_MONTHS    3
 
@@ -3466,7 +3723,7 @@ typedef struct
     NVSWITCH_NVLINK_ERR_INFO linkErrInfo[NVSWITCH_NVLINK_MAX_LINKS];
 } NVSWITCH_NVLINK_GET_ERR_INFO_PARAMS;
 
-#define NVSWITCH_INBAND_DATA_SIZE 4096
+#define NVSWITCH_INBAND_DATA_SIZE 5120
 
 /*
  * CTRL_NVSWITCH_INBAND_SEND_DATA
@@ -3640,6 +3897,10 @@ typedef enum
 {
     NVSWITCH_I2C_DEVICE_UNKNOWN             = 0,
 
+    // OSFP Devices
+    NVSWITCH_I2C_DEVICE_CMIS4_MODULE       = 0xB0,
+    NVSWITCH_I2C_DEVICE_CMIS4_MUX_PCA9847  = 0xB1,
+
     NVSWITCH_I2C_DEVICE_SKIP                = 0xFF
 
 } NVSWITCH_I2C_DEVICE_TYPE;
@@ -3801,6 +4062,11 @@ typedef enum
     NVSWITCH_I2C_ACQUIRER_UNKNOWN,
     NVSWITCH_I2C_ACQUIRER_IOCTL,          // e.g. MODS                  
     NVSWITCH_I2C_ACQUIRER_EXTERNAL,       // e.g. Linux Direct
+    NVSWITCH_I2C_ACQUIRER_CCI_INITIALIZE, // CCI Init/Startup
+    NVSWITCH_I2C_ACQUIRER_CCI_TRAIN,      // Cable training
+    NVSWITCH_I2C_ACQUIRER_CCI_UX,         // User interface e.g. LEDs
+    NVSWITCH_I2C_ACQUIRER_CCI_SERVICE,    // e.g. ISR
+    NVSWITCH_I2C_ACQUIRER_CCI_SMBPBI,     // OOB path
 
 } NVSWITCH_I2C_ACQUIRER;
 
@@ -3882,6 +4148,162 @@ typedef struct nvswitch_minion_ali_debug_registers
 } NVSWITCH_MINION_ALI_DEBUG_REGISTERS;
 
 /*
+ * CTRL_NVSWITCH_CCI_GET_PORTS_CPLD_INFO
+ *
+ * Retrieve information about the Ports CPLD
+ * 
+ * Parameters:
+ *
+ *  versionMajor[OUT]
+ *      Major number of CPLD version
+ *  versionMinor[OUT]
+ *      Minor number of CPLD version    
+ */
+typedef struct nvswitch_cci_get_ports_cpld_info_params
+{
+    NvU8 versionMajor;
+    NvU8 versionMinor;
+} NVSWITCH_CCI_GET_PORTS_CPLD_INFO_PARAMS;
+
+#define NVSWITCH_CCI_FW_FLAGS_PRESENT        0:0
+#define NVSWITCH_CCI_FW_FLAGS_PRESENT_NO       0
+#define NVSWITCH_CCI_FW_FLAGS_PRESENT_YES      1
+#define NVSWITCH_CCI_FW_FLAGS_ACTIVE         1:1
+#define NVSWITCH_CCI_FW_FLAGS_ACTIVE_NO        0
+#define NVSWITCH_CCI_FW_FLAGS_ACTIVE_YES       1
+#define NVSWITCH_CCI_FW_FLAGS_COMMITED       2:2
+#define NVSWITCH_CCI_FW_FLAGS_COMMITED_NO      0
+#define NVSWITCH_CCI_FW_FLAGS_COMMITED_YES     1
+#define NVSWITCH_CCI_FW_FLAGS_EMPTY          3:3
+#define NVSWITCH_CCI_FW_FLAGS_EMPTY_NO         0
+#define NVSWITCH_CCI_FW_FLAGS_EMPTY_YES        1
+
+#define NVSWITCH_CCI_FW_IMAGE_A         0x0
+#define NVSWITCH_CCI_FW_IMAGE_B         0x1
+#define NVSWITCH_CCI_FW_IMAGE_FACTORY   0x2
+#define NVSWITCH_CCI_FW_IMAGE_COUNT     0x3
+
+/*
+ * Structure to store FW revision parameters
+ *
+ * Parameters:
+ *   status
+ *     FW status flags
+ *   image
+ *     Firmware Image A/B/Factory.
+ *   major
+ *     FW major revision.
+ *   minor
+ *     FW minor revision.
+ *   build
+ *     FW build number.
+ */
+typedef struct nvswitch_cci_get_fw_revisions
+{
+    NvU8 flags;
+    NvU8 major;
+    NvU8 minor;
+    NvU16 build;
+} NVSWITCH_CCI_GET_FW_REVISIONS;
+
+/*
+ * CTRL_NVSWITCH_CCI_GET_FW_REVISIONS
+ *
+ * Control to get cci firmware revisions of the transreciever.
+ *
+ * This API is not supported on SV10.
+ *
+ * Parameters:
+ *   link [IN]
+ *     Link number
+ *   revisions [OUT]
+ *     Stores the CCI FW revision params
+ */
+typedef struct nvswitch_cci_get_fw_revision_params
+{
+    NvU32 linkId;
+    NVSWITCH_CCI_GET_FW_REVISIONS revisions[NVSWITCH_CCI_FW_IMAGE_COUNT];
+} NVSWITCH_CCI_GET_FW_REVISION_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_CCI_SET_LOCATE_LED
+ *
+ * Control to turn on/off the LOCATE LED on a module cage.
+ * This command will override the current LED state. 
+ *
+ * Parameters:
+ *   cageIndex [IN]
+ *      Target cage index (>=0 and <= 31) on the 
+ *      selected ASIC device.
+ *   portNum [IN]
+ *      Target port (0 or 1) on the seleted
+ *      cage.
+ *   bSetLocateOn [IN]
+ *      Turn on/off LED. NV_TRUE == ON, NV_FALSE == OFF
+ */
+typedef struct nvswitch_cci_set_locate_led_params
+{
+    NvU8 cageIndex;
+    NvU8 portNum;
+    NvBool bSetLocateOn;
+} NVSWITCH_CCI_SET_LOCATE_LED_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_GET_SOE_HEARTBEAT
+ *
+ * Retrieve SOE Heartbeat status
+ * 
+ * Parameters:
+ *
+ *  timestampNs[OUT]
+ *      PTIMER timestamp of the SOE Heartbeat GPIO reading
+ *  gpioVal[OUT]
+ *      Current SOE Heartbeat GPIO value
+ */
+typedef struct nvswitch_get_soe_heartbeat_params
+{
+    NvU64 timestampNs;
+    NvU32 gpioVal;
+} NVSWITCH_GET_SOE_HEARTBEAT_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_SET_CONTINUOUS_ALI
+ *
+ * Enable/disable continuous ALI for all CCI managed links.
+ * This also enables/disables hot plug. 
+ *
+ * Continuous ALI is enabled by default.
+ *
+ * Parameters:
+ *    bEnable [IN]
+ */
+
+typedef struct 
+{
+    NvBool  bEnable;
+} NVSWITCH_SET_CONTINUOUS_ALI_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_REQUEST_ALI
+ *
+ * Request link training for links specified in the mask.
+ *  NVswitch must be in non-continuous ALI mode. Reset
+ *  and drain will always be performed along with ALI. ALI 
+ *  requests for links that are currently being trained will be 
+ *  dropped. This is an asynchronous request.
+ *
+ * Parameters:
+ *    linkMaskTrain [IN]
+ */
+
+typedef struct 
+{
+    // TODO: not used, remove later
+    NvU64  linkMaskForcedResetAndDrain;
+    NvU64  linkMaskTrain;
+} NVSWITCH_REQUEST_ALI_PARAMS;
+
+/*
  * CTRL_NVSWITCH_REGISTER_READ/WRITE
  *
  * This provides direct access to the MMIO space.
@@ -3955,6 +4377,87 @@ typedef struct
     NV_DECLARE_ALIGNED(NvU64 link_mask, 8);
     NVSWITCH_NVLINK_ERROR_THRESHOLD_VALUES errorThreshold[NVSWITCH_NVLINK_MAX_LINKS];
 } NVSWITCH_GET_NVLINK_ERROR_THRESHOLD_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_GET_NVLINK_L1_CAPABILITY
+ *
+ * Control to query NvLink L1 Threshold capability.
+ *
+ * Parameters:
+ *    linkMask [IN]
+ *      A valid link mask for which we need to get the L1 Threshold
+ *
+ *    l1Capable [OUT]
+ *      An array of links that are capable of supporting L1 Thresholds
+ */
+typedef struct
+{
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
+    NvBool l1Capable[NVSWITCH_NVLINK_MAX_LINKS];
+} NVSWITCH_GET_NVLINK_L1_CAPABILITY_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_GET_NVLINK_L1_THRESHOLD
+ *
+ * Control to query NvLink L1 Thresholds.
+ *
+ * Parameters:
+ *    linkMask [IN]
+ *      A valid link mask for which we need to get the L1 Threshold
+ *
+ *    l1Threshold [OUT]
+ *      L1 Threshold values in units of 100us
+ */
+typedef struct
+{
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
+    NvU32 l1Threshold[NVSWITCH_NVLINK_MAX_LINKS];
+} NVSWITCH_GET_NVLINK_L1_THRESHOLD_PARAMS;
+
+#define NVSWITCH_SET_NVLINK_L1_THRESHOLD_MIN     0x1
+#define NVSWITCH_SET_NVLINK_L1_THRESHOLD_MAX     0x1fff
+#define NVSWITCH_SET_NVLINK_L1_THRESHOLD_DEFAULT 0xffffffff
+
+/*
+ * CTRL_NVSWITCH_SET_NVLINK_L1_THRESHOLD
+ *
+ * Control to set NvLink L1 Thresholds.
+ *
+ * Parameters:
+ *    linkMask [IN]
+ *      A valid link mask for which we need to get the L1 Threshold
+ *
+ *    l1Threshold [IN]
+ *      L1 Threshold values in units of 100us
+ */
+typedef struct
+{
+    NV_DECLARE_ALIGNED(NvU64 linkMask, 8);
+    NvU32 l1Threshold[NVSWITCH_NVLINK_MAX_LINKS];
+} NVSWITCH_SET_NVLINK_L1_THRESHOLD_PARAMS;
+
+/*
+ * CTRL_NVSWITCH_FSPRPC_GET_CAPS
+ *
+ * Control to query FSP capabilities
+ *
+ * Parameters:
+ *    commandNvdmType [OUT]
+ *      NVDM type of the command RPC
+ *    responseNvdmType [OUT]
+ *      NVDM type of the RPC response
+ *    errorCode [OUT]
+ *      Error code of the RPC
+ *    pRspPayload [OUT]
+ *      Payload of the response
+ */
+typedef struct
+{
+    NvU32 commandNvdmType;
+    NvU32 responseNvdmType;
+    NvU32 errorCode;
+    NvU8* pRspPayload;
+} NVSWITCH_FSPRPC_GET_CAPS_PARAMS;
 
 #define REGISTER_RW_ENGINE_RAW                       0x00
 
@@ -4061,12 +4564,12 @@ typedef struct
 #define CTRL_NVSWITCH_SET_RESIDENCY_BINS                    0x34
 #define CTRL_NVSWITCH_GET_RESIDENCY_BINS                    0x35
 #define CTRL_NVSWITCH_GET_RB_STALL_BUSY                     0x36
-#define CTRL_NVSWITCH_RESERVED_0                            0x37
-#define CTRL_NVSWITCH_RESERVED_1                            0x38
-#define CTRL_NVSWITCH_RESERVED_2                            0x39
-#define CTRL_NVSWITCH_RESERVED_3                            0x3A
-#define CTRL_NVSWITCH_RESERVED_4                            0x3B
-#define CTRL_NVSWITCH_RESERVED_5                            0x3C
+#define CTRL_NVSWITCH_CCI_CMIS_PRESENCE                     0x37
+#define CTRL_NVSWITCH_CCI_CMIS_NVLINK_MAPPING               0x38
+#define CTRL_NVSWITCH_CCI_CMIS_MEMORY_ACCESS_READ           0x39
+#define CTRL_NVSWITCH_CCI_CMIS_MEMORY_ACCESS_WRITE          0x3A
+#define CTRL_NVSWITCH_CCI_CMIS_CAGE_BEZEL_MARKING           0x3B
+#define CTRL_NVSWITCH_CCI_GET_GRADING_VALUES                0x3C
 #define CTRL_NVSWITCH_GET_MULTICAST_ID_ERROR_VECTOR         0x3D
 #define CTRL_NVSWITCH_CLEAR_MULTICAST_ID_ERROR_VECTOR       0x3E
 #define CTRL_NVSWITCH_INBAND_SEND_DATA                      0x43
@@ -4076,9 +4579,9 @@ typedef struct
 #define CTRL_NVSWITCH_GET_SW_INFO                           0x47
 #define CTRL_NVSWITCH_RESERVED_6                            0x48
 #define CTRL_NVSWITCH_RESERVED_7                            0x49
-#define CTRL_NVSWITCH_RESERVED_8                            0x4A
-#define CTRL_NVSWITCH_RESERVED_9                            0x4B
-#define CTRL_NVSWITCH_RESERVED_10                           0x4C
+#define CTRL_NVSWITCH_CCI_GET_PORTS_CPLD_INFO               0x4A
+#define CTRL_NVSWITCH_CCI_GET_FW_REVISIONS                  0x4B
+#define CTRL_NVSWITCH_CCI_SET_LOCATE_LED                    0x4C
 #define CTRL_NVSWITCH_REGISTER_READ                         0x4D
 #define CTRL_NVSWITCH_REGISTER_WRITE                        0x4E
 #define CTRL_NVSWITCH_GET_INFOROM_VERSION                   0x4F
@@ -4087,7 +4590,7 @@ typedef struct
 #define CTRL_NVSWITCH_SET_NVLINK_ERROR_THRESHOLD            0x52
 #define CTRL_NVSWITCH_GET_NVLINK_ERROR_THRESHOLD            0x53
 #define CTRL_NVSWITCH_GET_VOLTAGE                           0x54
-#define CTRL_NVSWITCH_RESERVED_11                           0x55
+#define CTRL_NVSWITCH_GET_SOE_HEARTBEAT                     0x55
 #define CTRL_NVSWITCH_GET_BOARD_PART_NUMBER                 0x56
 #define CTRL_NVSWITCH_GET_POWER                             0x57
 #define CTRL_NVSWITCH_GET_PORT_EVENTS                       0x58
@@ -4095,6 +4598,12 @@ typedef struct
 #define CTRL_NVSWITCH_GET_TIME_INFO                         0x60
 #define CTRL_NVSWITCH_GET_TEMP_DATA                         0x61
 #define CTRL_NVSWITCH_GET_TEMP_SAMPLES                      0x62
+#define CTRL_NVSWITCH_SET_CONTINUOUS_ALI                    0x63
+#define CTRL_NVSWITCH_REQUEST_ALI                           0x64
+#define CTRL_NVSWITCH_GET_NVLINK_L1_CAPABILITY              0x65
+#define CTRL_NVSWITCH_GET_NVLINK_L1_THRESHOLD               0x66
+#define CTRL_NVSWITCH_SET_NVLINK_L1_THRESHOLD               0x67
+#define CTRL_NVSWITCH_FSPRPC_GET_CAPS                       0x68
 
 #ifdef __cplusplus
 }

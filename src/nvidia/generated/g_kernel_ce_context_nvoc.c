@@ -172,10 +172,6 @@ static void __nvoc_thunk_RmResource_kcectxControl_Epilogue(struct KernelCeContex
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_kcectxControlLookup(struct KernelCeContext *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset), pParams, ppEntry);
-}
-
 static NV_STATUS __nvoc_thunk_ChannelDescendant_kcectxGetSwMethods(struct KernelCeContext *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return chandesGetSwMethods((struct ChannelDescendant *)(((unsigned char *)pChannelDescendant) + __nvoc_rtti_KernelCeContext_ChannelDescendant.offset), ppMethods, pNumMethods);
 }
@@ -218,6 +214,10 @@ static NV_STATUS __nvoc_thunk_RmResource_kcectxControlSerialization_Prologue(str
 
 static NvBool __nvoc_thunk_RsResource_kcectxCanCopy(struct KernelCeContext *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_kcectxIsPartialUnmapSupported(struct KernelCeContext *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_KernelCeContext_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_kcectxPreDestruct(struct KernelCeContext *pResource) {
@@ -313,8 +313,6 @@ static void __nvoc_init_funcTable_KernelCeContext_1(KernelCeContext *pThis) {
 
     pThis->__kcectxControl_Epilogue__ = &__nvoc_thunk_RmResource_kcectxControl_Epilogue;
 
-    pThis->__kcectxControlLookup__ = &__nvoc_thunk_RsResource_kcectxControlLookup;
-
     pThis->__kcectxGetSwMethods__ = &__nvoc_thunk_ChannelDescendant_kcectxGetSwMethods;
 
     pThis->__kcectxGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_kcectxGetInternalObjectHandle;
@@ -336,6 +334,8 @@ static void __nvoc_init_funcTable_KernelCeContext_1(KernelCeContext *pThis) {
     pThis->__kcectxControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_kcectxControlSerialization_Prologue;
 
     pThis->__kcectxCanCopy__ = &__nvoc_thunk_RsResource_kcectxCanCopy;
+
+    pThis->__kcectxIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_kcectxIsPartialUnmapSupported;
 
     pThis->__kcectxPreDestruct__ = &__nvoc_thunk_RsResource_kcectxPreDestruct;
 
@@ -371,23 +371,31 @@ void __nvoc_init_KernelCeContext(KernelCeContext *pThis, RmHalspecOwner *pRmhals
     __nvoc_init_funcTable_KernelCeContext(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_KernelCeContext(KernelCeContext **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_KernelCeContext(KernelCeContext **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     KernelCeContext *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(KernelCeContext), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(KernelCeContext));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_KernelCeContext);
 
     pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -405,16 +413,25 @@ NV_STATUS __nvoc_objCreate_KernelCeContext(KernelCeContext **ppThis, Dynamic *pP
     status = __nvoc_ctor_KernelCeContext(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_KernelCeContext_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_KernelCeContext_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(KernelCeContext));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

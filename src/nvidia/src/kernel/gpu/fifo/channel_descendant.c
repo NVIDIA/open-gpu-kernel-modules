@@ -29,6 +29,7 @@
 #include "kernel/gpu/fifo/channel_descendant.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
+#include "platform/sli/sli.h"
 
 NV_STATUS
 chandesConstruct_IMPL
@@ -60,7 +61,7 @@ chandesConstruct_IMPL
     NV_ASSERT_OR_RETURN(pKernelChannel != NULL, NV_ERR_INVALID_OBJECT_PARENT);
 
     // Bad class creation can happen when GPU is in low power because class DB is invalid
-    NV_ASSERT(gpuIsGpuFullPower(pGpu));
+    NV_ASSERT(IS_VIRTUAL(pGpu) || gpuIsGpuFullPower(pGpu));
 
     NV_ASSERT(rmapiLockIsOwner() && rmGpuLockIsOwner());
 

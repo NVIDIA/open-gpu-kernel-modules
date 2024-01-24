@@ -26,39 +26,53 @@
 
 void uvm_hal_maxwell_enable_access_counter_notifications_unsupported(uvm_parent_gpu_t *parent_gpu)
 {
-    UVM_ASSERT_MSG(false, "enable_access_counter_notifications is not supported on GPU: %s.\n", parent_gpu->name);
+    UVM_ASSERT_MSG(false,
+                   "enable_access_counter_notifications is not supported on GPU: %s.\n",
+                   uvm_parent_gpu_name(parent_gpu));
 }
 
 void uvm_hal_maxwell_disable_access_counter_notifications_unsupported(uvm_parent_gpu_t *parent_gpu)
 {
-    UVM_ASSERT_MSG(false, "disable_access_counter_notifications is not supported on GPU: %s.\n", parent_gpu->name);
+    UVM_ASSERT_MSG(false,
+                   "disable_access_counter_notifications is not supported on GPU: %s.\n",
+                   uvm_parent_gpu_name(parent_gpu));
 }
 
 void uvm_hal_maxwell_clear_access_counter_notifications_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 get)
 {
-    UVM_ASSERT_MSG(false, "clear_access_counter_notifications is not supported on GPU: %s.\n", parent_gpu->name);
+    UVM_ASSERT_MSG(false,
+                   "clear_access_counter_notifications is not supported on GPU: %s.\n",
+                   uvm_parent_gpu_name(parent_gpu));
 }
 
 NvU32 uvm_hal_maxwell_access_counter_buffer_entry_size_unsupported(uvm_parent_gpu_t *parent_gpu)
 {
-    UVM_ASSERT_MSG(false, "access_counter_buffer_entry_size is not supported on GPU: %s.\n", parent_gpu->name);
+    UVM_ASSERT_MSG(false,
+                   "access_counter_buffer_entry_size is not supported on GPU: %s.\n",
+                   uvm_parent_gpu_name(parent_gpu));
     return 0;
 }
 
 bool uvm_hal_maxwell_access_counter_buffer_entry_is_valid_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index)
 {
-    UVM_ASSERT_MSG(false, "access_counter_buffer_entry_is_valid is not supported on GPU: %s.\n", parent_gpu->name);
+    UVM_ASSERT_MSG(false,
+                   "access_counter_buffer_entry_is_valid is not supported on GPU: %s.\n",
+                   uvm_parent_gpu_name(parent_gpu));
     return false;
 }
 
 void uvm_hal_maxwell_access_counter_buffer_entry_clear_valid_unsupported(uvm_parent_gpu_t *parent_gpu, NvU32 index)
 {
-    UVM_ASSERT_MSG(false, "access_counter_buffer_entry_clear_valid is not supported on GPU: %s.\n", parent_gpu->name);
+    UVM_ASSERT_MSG(false,
+                   "access_counter_buffer_entry_clear_valid is not supported on GPU: %s.\n",
+                   uvm_parent_gpu_name(parent_gpu));
 }
 
 void uvm_hal_maxwell_access_counter_buffer_parse_entry_unsupported(uvm_parent_gpu_t *parent_gpu,
                                                                    NvU32 index,
                                                                    uvm_access_counter_buffer_entry_t *buffer_entry)
 {
-    UVM_ASSERT_MSG(false, "access_counter_buffer_parse_entry is not supported on GPU: %s.\n", parent_gpu->name);
+    UVM_ASSERT_MSG(false,
+                   "access_counter_buffer_parse_entry is not supported on GPU: %s.\n",
+                   uvm_parent_gpu_name(parent_gpu));
 }

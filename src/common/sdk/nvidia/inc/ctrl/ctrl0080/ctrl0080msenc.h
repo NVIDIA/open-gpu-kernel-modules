@@ -68,6 +68,23 @@ typedef struct NV0080_CTRL_MSENC_GET_CAPS_PARAMS {
 
 
 /* size in bytes of MSENC caps table */
-#define NV0080_CTRL_MSENC_CAPS_TBL_SIZE 4
+#define NV0080_CTRL_MSENC_CAPS_TBL_SIZE   4
+
+/*
+ * NV0080_CTRL_CMD_MSENC_GET_CAPS_V2
+ *
+ * This command is a version of NV0080_CTRL_CMD_MSENC_GET_CAPS with caps passed inline in capsTbl.
+ *
+ * For consistency with other video caps controls, it adds `instanceId` parameter. Currently it is
+ * ignored.
+ */
+#define NV0080_CTRL_CMD_MSENC_GET_CAPS_V2 (0x801b02) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_MSENC_INTERFACE_ID << 8) | NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS_MESSAGE_ID" */
+
+#define NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS {
+    NvU8  capsTbl[NV0080_CTRL_MSENC_CAPS_TBL_SIZE];
+    NvU32 instanceId; // ignored
+} NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS;
 
 /* _ctrl0080msenc_h_ */

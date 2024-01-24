@@ -44,6 +44,7 @@
 #include "gpu/subdevice/subdevice.h"
 #include "rmapi/rs_utils.h"
 #include "rmapi/mapping_list.h"
+#include "platform/sli/sli.h"
 
 #include "gpu/bus/kern_bus.h"
 

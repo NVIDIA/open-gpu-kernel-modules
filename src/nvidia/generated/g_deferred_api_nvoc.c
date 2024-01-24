@@ -180,10 +180,6 @@ static void __nvoc_thunk_RmResource_defapiControl_Epilogue(struct DeferredApiObj
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_defapiControlLookup(struct DeferredApiObject *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_defapiGetInternalObjectHandle(struct DeferredApiObject *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_DeferredApiObject_GpuResource.offset));
 }
@@ -218,6 +214,10 @@ static NV_STATUS __nvoc_thunk_RmResource_defapiControlSerialization_Prologue(str
 
 static NvBool __nvoc_thunk_RsResource_defapiCanCopy(struct DeferredApiObject *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_defapiIsPartialUnmapSupported(struct DeferredApiObject *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_DeferredApiObject_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_defapiPreDestruct(struct DeferredApiObject *pResource) {
@@ -270,12 +270,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Deferred
 #endif
     },
     {               /*  [1] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) defapiCtrlCmdRemoveApi_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400210u)
+        /*flags=*/      0x400210u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800102u,
         /*paramSize=*/  sizeof(NV5080_CTRL_REMOVE_API_PARAMS),
@@ -285,12 +285,12 @@ static const struct NVOC_EXPORTED_METHOD_DEF __nvoc_exported_method_def_Deferred
 #endif
     },
     {               /*  [2] */
-#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400210u)
         /*pFunc=*/      (void (*)(void)) NULL,
 #else
         /*pFunc=*/      (void (*)(void)) defapiCtrlCmdDeferredApiV2_IMPL,
-#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
-        /*flags=*/      0x210u,
+#endif // NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400210u)
+        /*flags=*/      0x400210u,
         /*accessRight=*/0x0u,
         /*methodId=*/   0x50800103u,
         /*paramSize=*/  sizeof(NV5080_CTRL_DEFERRED_API_V2_PARAMS),
@@ -349,11 +349,11 @@ static void __nvoc_init_funcTable_DeferredApiObject_1(DeferredApiObject *pThis) 
     pThis->__defapiCtrlCmdDeferredApi__ = &defapiCtrlCmdDeferredApi_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400210u)
     pThis->__defapiCtrlCmdDeferredApiV2__ = &defapiCtrlCmdDeferredApiV2_IMPL;
 #endif
 
-#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x210u)
+#if !NVOC_EXPORTED_METHOD_DISABLED_BY_FLAG(0x400210u)
     pThis->__defapiCtrlCmdRemoveApi__ = &defapiCtrlCmdRemoveApi_IMPL;
 #endif
 
@@ -387,8 +387,6 @@ static void __nvoc_init_funcTable_DeferredApiObject_1(DeferredApiObject *pThis) 
 
     pThis->__defapiControl_Epilogue__ = &__nvoc_thunk_RmResource_defapiControl_Epilogue;
 
-    pThis->__defapiControlLookup__ = &__nvoc_thunk_RsResource_defapiControlLookup;
-
     pThis->__defapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_defapiGetInternalObjectHandle;
 
     pThis->__defapiControl__ = &__nvoc_thunk_GpuResource_defapiControl;
@@ -406,6 +404,8 @@ static void __nvoc_init_funcTable_DeferredApiObject_1(DeferredApiObject *pThis) 
     pThis->__defapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_defapiControlSerialization_Prologue;
 
     pThis->__defapiCanCopy__ = &__nvoc_thunk_RsResource_defapiCanCopy;
+
+    pThis->__defapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_defapiIsPartialUnmapSupported;
 
     pThis->__defapiPreDestruct__ = &__nvoc_thunk_RsResource_defapiPreDestruct;
 
@@ -441,23 +441,31 @@ void __nvoc_init_DeferredApiObject(DeferredApiObject *pThis, RmHalspecOwner *pRm
     __nvoc_init_funcTable_DeferredApiObject(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     DeferredApiObject *pThis;
     RmHalspecOwner *pRmhalspecowner;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(DeferredApiObject), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(DeferredApiObject));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_DeferredApiObject);
 
     pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
-    if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
+    // pParent must be a valid object that derives from a halspec owner class.
+    NV_ASSERT_OR_RETURN(pParent != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    // Link the child into the parent unless flagged not to do so.
+    if (!(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
         objAddChild(pParentObj, &pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
@@ -475,16 +483,25 @@ NV_STATUS __nvoc_objCreate_DeferredApiObject(DeferredApiObject **ppThis, Dynamic
     status = __nvoc_ctor_DeferredApiObject(pThis, pRmhalspecowner, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_DeferredApiObject_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_DeferredApiObject_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_ChannelDescendant.__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(DeferredApiObject));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

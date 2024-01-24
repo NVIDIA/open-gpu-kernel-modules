@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2021 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -40,4 +40,7 @@
 #define NV_PMC_ENABLE_DEVICE__SIZE_1                             32 /*       */
 #define NV_PMC_ENABLE_DEVICE_DISABLE                     0x00000000 /*       */
 #define NV_PMC_ENABLE_DEVICE_ENABLE                      0x00000001 /*       */
+#define NV_PMC_ENABLE_PDISP                                   30:30 /* RWIVF */
+#define NV_PMC_ENABLE_PDISP_DISABLED                     0x00000000 /* RW--V */
+#define NV_PMC_ENABLE_PDISP_ENABLED                      0x00000001 /* RWI-V */
 #endif // __gm107_dev_boot_h__

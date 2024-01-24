@@ -24,6 +24,7 @@
 #include "core/core.h"
 #include "platform/chipset/chipset.h"
 #include "mem_mgr/vaspace.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/bus/p2p_api.h"

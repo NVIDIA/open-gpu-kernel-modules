@@ -122,6 +122,12 @@ static const uvm_va_policy_node_t *uvm_va_policy_node_from_policy(const uvm_va_p
     return container_of(policy, uvm_va_policy_node_t, policy);
 }
 
+// Compare the preferred location and preferred nid from the policy
+// with the input processor and CPU node ID.
+// For GPUs, only the processors are compared. For the CPU, the
+// NUMA node IDs are also compared.
+bool uvm_va_policy_preferred_location_equal(const uvm_va_policy_t *policy, uvm_processor_id_t proc, int cpu_node_id);
+
 #if UVM_IS_CONFIG_HMM()
 
 // Module load/exit
@@ -171,6 +177,7 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
                                   uvm_va_policy_type_t which,
                                   bool is_default,
                                   uvm_processor_id_t processor_id,
+                                  int cpu_node_id,
                                   uvm_read_duplication_policy_t new_policy);
 
 // This is an optimized version of uvm_va_policy_set_range() where the caller
@@ -182,6 +189,7 @@ NV_STATUS uvm_va_policy_set_range(uvm_va_block_t *va_block,
 const uvm_va_policy_t *uvm_va_policy_set_preferred_location(uvm_va_block_t *va_block,
                                                             uvm_va_block_region_t region,
                                                             uvm_processor_id_t processor_id,
+                                                            int cpu_node_id,
                                                             const uvm_va_policy_t *old_policy);
 
 // Iterators for specific VA policy ranges.

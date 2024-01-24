@@ -29,6 +29,7 @@
 #include "virtualization/kernel_vgpu_mgr.h"
 #include "rmapi/rs_utils.h"
 #include "rmapi/client.h"
+#include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 
 #include "kernel/core/locks.h"
@@ -330,6 +331,15 @@ _kfifoChidMgrAllocChidHeaps
                                                           RM_PAGE_SIZE / userdBar1Size);
 
         // Disable USERD allocation isolation for guest if disabled from vmioplugin
+        if (IS_VIRTUAL(pGpu))
+        {
+            VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+            if (pVSI != NULL)
+            {
+                subProcessIsolation = pVSI->subProcessIsolation;
+            }
+        }
+        else
         {
             // In this case subProcessIsolation is always 0
             if (IS_GSP_CLIENT(pGpu))
@@ -823,11 +833,11 @@ kfifoChidMgrAllocChid_IMPL
 
     if (ChID < numChannels)
     {
-        PEMEMBLOCK pFifoDataBlock = pChidMgr->pFifoDataHeap->eheapGetBlock(
+        EMEMBLOCK *pFifoDataBlock = pChidMgr->pFifoDataHeap->eheapGetBlock(
             pChidMgr->pFifoDataHeap,
             ChID,
             NV_FALSE);
-        PEMEMBLOCK pIsolationIdBlock = pChidMgr->pGlobalChIDHeap->eheapGetBlock(
+        EMEMBLOCK *pIsolationIdBlock = pChidMgr->pGlobalChIDHeap->eheapGetBlock(
             pChidMgr->pGlobalChIDHeap,
             ChID,
             NV_FALSE);
@@ -868,7 +878,7 @@ kfifoChidMgrRetainChid_IMPL
 )
 {
     NvU32       gfid;
-    PEMEMBLOCK  pFifoDataBlock = NULL;
+    EMEMBLOCK  *pFifoDataBlock = NULL;
 
     NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
 
@@ -876,7 +886,7 @@ kfifoChidMgrRetainChid_IMPL
     {
         NV_ASSERT_OR_RETURN(pChidMgr->ppVirtualChIDHeap[gfid] != NULL,
                             NV_ERR_INVALID_STATE);
-        PEMEMBLOCK  pVirtChIdBlock = pChidMgr->ppVirtualChIDHeap[gfid]->eheapGetBlock(
+        EMEMBLOCK  *pVirtChIdBlock = pChidMgr->ppVirtualChIDHeap[gfid]->eheapGetBlock(
             pChidMgr->ppVirtualChIDHeap[gfid],
             ChID,
             NV_FALSE);
@@ -887,7 +897,7 @@ kfifoChidMgrRetainChid_IMPL
     else
     {
         NV_ASSERT_OR_RETURN(pChidMgr->pGlobalChIDHeap != NULL, NV_ERR_INVALID_STATE);
-        PEMEMBLOCK  pChIdBlock = pChidMgr->pGlobalChIDHeap->eheapGetBlock(
+        EMEMBLOCK  *pChIdBlock = pChidMgr->pGlobalChIDHeap->eheapGetBlock(
             pChidMgr->pGlobalChIDHeap,
             ChID,
             NV_FALSE);
@@ -1015,6 +1025,7 @@ kfifoChidMgrReserveSystemChids_IMPL
     NvU32             flags,
     NvU32             gfid,
     NvU32            *pChidOffset,
+    NvU64             offset,
     NvU32            *pChannelCount,
     Device           *pMigDevice,
     NvU32             engineFifoListNumEntries,
@@ -1023,9 +1034,8 @@ kfifoChidMgrReserveSystemChids_IMPL
 {
     NV_STATUS         status              = NV_OK;
     NvU64             chSize;
-    NvU64             offset              = 0;
     PFIFO_ISOLATIONID pIsolationID        = NULL;
-    PEMEMBLOCK        pIsolationIdBlock;
+    EMEMBLOCK        *pIsolationIdBlock;
     NvU32             userdBar1Size;
 
     if (IS_VIRTUAL(pGpu))
@@ -1238,6 +1248,23 @@ kfifoRunlistQueryNumChannels_KERNEL
 {
     NvU32 numChannels = 0;
     NvU32 status;
+
+    // For vgpu, read numChannels from VGPU_STATIC_INFO
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI;
+        pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+        if (pVSI)
+        {
+            numChannels = pVSI->vgpuStaticProperties.channelCount;
+        }
+        else
+        {
+            DBG_BREAKPOINT();
+            return 0;
+        }
+    }
 
     // Do internal control call and set numChannels
     if (IS_GSP_CLIENT(pGpu))
@@ -2755,6 +2782,16 @@ void kfifoGetDeviceCaps_IMPL
     return;
 }
 
+/**
+ * @brief Get the start offset of USERD BAR1 map region
+ */
+NvU64
+kfifoGetUserdBar1MapStartOffset_VF(OBJGPU *pGpu, KernelFifo *pKernelFifo)
+{
+
+    return 0;
+}
+
 /*!
  * @brief Add handlers for scheduling enable and/or disable.
  *
@@ -3397,7 +3434,7 @@ kfifoGetGuestEngineLookupTable_IMPL
     // To trap NV2080_ENGINE_TYPE expansions.
     // Please update the table guestEngineLookupTable if this assertion is triggered.
     //
-    ct_assert(NV2080_ENGINE_TYPE_LAST == 0x0000003f);
+    ct_assert(NV2080_ENGINE_TYPE_LAST == 0x00000040);
 
     *pEngLookupTblSize = NV_ARRAY_ELEMENTS(guestEngineLookupTable);
 
@@ -3434,4 +3471,97 @@ kfifoGetMaxSecureChannels_KERNEL
     pKernelFifo->maxCeSecureChannels = numSecureChannelsParams.maxCeSecureChannels;
 
     return NV_OK;
+}
+
+/**
+ * @brief Checking if the engine ID belongs to a PBDMA or not
+ * @param[in] pGpu
+ * @param[in] pKernelFifo
+ * @param[in] engineId
+ *
+ * @return TRUE if engine ID belongs to a PBDMA
+ */
+NvBool
+kfifoIsMmuFaultEngineIdPbdma_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32       engineId
+)
+{
+    const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
+
+    NV_ASSERT_OR_RETURN(pEngineInfo != NULL, NV_FALSE);
+    return bitVectorTest(&pEngineInfo->validEngineIdsForPbdmas, engineId);
+}
+
+/**
+ * @brief Function to get PBDMA ID from the given MMU falut ID
+  *
+ * @param[in] pGpu
+ * @param[in] pKernelFifo
+ * @param[in] mmuFaultId
+ * @param[out] pPbdmaId
+ */
+NV_STATUS
+kfifoGetPbdmaIdFromMmuFaultId_IMPL
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32       mmuFaultId,
+    NvU32      *pPbdmaId
+)
+{
+    const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
+    NvU32 pbdmaFaultIdStart;
+
+    NV_ASSERT_OR_RETURN(pEngineInfo != NULL, NV_ERR_INVALID_STATE);
+
+    //
+    // HW guarantees mmu fault engine ids used for PBDMAs will be assigned in sequential order
+    // "PBDMA of MMU_ENGINE_ID = MMU_ENGINE_ID - BASE_PBDMA_FAULT_ID" relation holds for all assignments
+    // This is helping SW to derive the pbdma id using base pbdma fault id and mmu fault engine id
+    //
+    pbdmaFaultIdStart = bitVectorCountTrailingZeros(&pEngineInfo->validEngineIdsForPbdmas);
+    *pPbdmaId = mmuFaultId - pbdmaFaultIdStart;
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Function to get RM engine type from the given pbdma falut id
+ *
+ * @param[in]  pGpu
+ * @param[in]  pKernelFifo
+ * @param[in]  pbdmaFaultId
+ * @param[out] pRmEngineType
+ *
+ * @returns NV_OK when engine type found for given pbdma falut id
+ */
+NV_STATUS
+kfifoGetEngineTypeFromPbdmaFaultId_IMPL
+(
+    OBJGPU          *pGpu,
+    KernelFifo      *pKernelFifo,
+    NvU32            pbdmaFaultId,
+    RM_ENGINE_TYPE  *pRmEngineType
+)
+{
+    const ENGINE_INFO *pEngineInfo = kfifoGetEngineInfo(pKernelFifo);
+    NvU32 i, j;
+
+    for (i = 0; i < pEngineInfo->engineInfoListSize; i++)
+    {
+        for (j = 0; j < pEngineInfo->engineInfoList[i].numPbdmas; j++)
+        {
+            if (pbdmaFaultId == pEngineInfo->engineInfoList[i].pbdmaFaultIds[j])
+            {
+                *pRmEngineType = pEngineInfo->engineInfoList[i].engineData[ENGINE_INFO_TYPE_RM_ENGINE_TYPE];
+                return NV_OK;
+            }
+        }
+    }
+
+    *pRmEngineType = RM_ENGINE_TYPE_NULL;
+    return NV_ERR_OBJECT_NOT_FOUND;
 }

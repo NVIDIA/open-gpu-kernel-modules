@@ -697,6 +697,14 @@ number of Downstream ports will be limited to 32.
 #define NV_DPCD_ADJUST_REQ_POST_CURSOR2_LANE6                            5:4  /* R-XUF */
 #define NV_DPCD_ADJUST_REQ_POST_CURSOR2_LANE7                            7:6  /* R-XUF */
 
+#define NV_DPCD_EDP_LINK_CONFIG_STATUS                          (0x0000020c)  /* RWXUR */
+#define NV_DPCD_EDP_LINK_CONFIG_STATUS_SET                               0:0  /* R-XUF */
+#define NV_DPCD_EDP_LINK_CONFIG_STATUS_SET_LINK_BW              (0x00000000)  /* R-XUV */
+#define NV_DPCD_EDP_LINK_CONFIG_STATUS_SET_LINK_RATE            (0x00000001)  /* R-XUV */
+#define NV_DPCD_EDP_LINK_CONFIG_STATUS_VALID                             1:1  /* R-XUF */
+#define NV_DPCD_EDP_LINK_CONFIG_STATUS_VALID_NO                 (0x00000000)  /* R-XUV */
+#define NV_DPCD_EDP_LINK_CONFIG_STATUS_VALID_YES                (0x00000001)  /* R-XUV */
+
 // 0020Fh: RESERVED. Read all 0s
 
 #define NV_DPCD_SYMBOL_ERROR_COUNT_LANEX_BYTE0(i)          (0x00000210+(i)*2) /* R--1A */

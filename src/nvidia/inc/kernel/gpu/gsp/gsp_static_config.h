@@ -27,8 +27,7 @@
 //
 // This header describes the set of static GPU configuration information
 // that is collected during GSP RM init and made available to the
-// CPU RM (aka GSP client) via the NV_RM_RPC_GET_STATIC_INFO() and
-// NV_RM_RPC_GET_GSP_STATIC_INFO() calls.
+// CPU RM (aka GSP client) via NV_RM_RPC_GET_GSP_STATIC_INFO() call.
 
 #include "ctrl/ctrl0080/ctrl0080gpu.h"
 #include "ctrl/ctrl0080/ctrl0080gr.h"
@@ -78,7 +77,6 @@ typedef struct GspStaticConfigInfo_t
     NV2080_CTRL_GPU_GET_FERMI_ZCULL_INFO_PARAMS zcullInfo[MAX_GPC_COUNT];
     NV2080_CTRL_BIOS_GET_SKU_INFO_PARAMS SKUInfo;
     NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS fbRegionInfoParams;
-    COMPUTE_BRANDING_TYPE computeBranding;
 
     NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS sriovCaps;
     NvU32 sriovMaxGfid;
@@ -155,6 +153,7 @@ typedef struct GspSystemInfo
     NvU64 gpuPhysInstAddr;
     NvU64 nvDomainBusDeviceFunc;
     NvU64 simAccessBufPhysAddr;
+    NvU64 notifyOpSharedSurfacePhysAddr;
     NvU64 pcieAtomicsOpMask;
     NvU64 consoleMemSize;
     NvU64 maxUserVa;
@@ -171,6 +170,7 @@ typedef struct GspSystemInfo
     NvBool bUpstreamL1Unsupported;
     NvBool bUpstreamL1PorSupported;
     NvBool bUpstreamL1PorMobileOnly;
+    NvBool bSystemHasMux;
     NvU8   upstreamAddressValid;
     BUSINFO FHBBusInfo;
     BUSINFO chipsetIDInfo;
@@ -179,6 +179,7 @@ typedef struct GspSystemInfo
     NvBool bIsPassthru;
     NvU64 sysTimerOffsetNs;
     GSP_VF_INFO gspVFInfo;
+    NvBool isGridBuild;
 } GspSystemInfo;
 
 

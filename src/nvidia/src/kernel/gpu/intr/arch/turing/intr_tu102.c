@@ -38,35 +38,6 @@
 #include "published/turing/tu102/dev_ctrl.h"
 #include "published/turing/tu102/dev_vm.h"
 #include "published/turing/tu102/dev_vm_addendum.h"
-/*!
- * @brief Get the base interrupt vector to use when indexing engine nonstall
- *        interrupts
- *
- * @param[in]   pGpu    OBJGPU pointer
- * @param[in]   pIntr   Intr pointer
- *
- * @returns  the base interrupt vector for engine nonstall interrupts
- */
-NvU32
-intrGetNonStallBaseVector_TU102
-(
-    OBJGPU     *pGpu,
-    Intr       *pIntr
-)
-{
-    NvU32 base = 0;
-
-    if (!IS_VIRTUAL(pGpu))
-    {
-        base = GPU_REG_RD32(pGpu, NV_CTRL_LEGACY_ENGINE_NONSTALL_INTR_BASE_VECTORID);
-    }
-    else
-    {
-        NV_STATUS status = NV_OK;
-        NV_RM_RPC_VGPU_PF_REG_READ32(pGpu, NV_CTRL_LEGACY_ENGINE_NONSTALL_INTR_BASE_VECTORID, &base, status);
-    }
-    return base;
-}
 
 //
 // Static interface functions
@@ -208,32 +179,6 @@ intrCacheIntrFields_TU102
 {
     NV_STATUS status = NV_OK;
 
-    {
-        NV2080_INTR_CATEGORY_SUBTREE_MAP uvmShared;
-        NV_ASSERT_OK_OR_RETURN(
-            intrGetSubtreeRange(pIntr,
-                                NV2080_INTR_CATEGORY_UVM_SHARED,
-                                &uvmShared));
-        //
-        // Assert to make sure we have only one client shared subtree.
-        // The below code assumes that.
-        //
-        NV_ASSERT_OR_RETURN(uvmShared.subtreeStart == uvmShared.subtreeEnd,
-                            NV_ERR_INVALID_STATE);
-
-        // Now cache the leaf enable mask for the subtree shared with the client
-        NvU32 leafEnHi = intrReadRegLeafEnSet_HAL(pGpu, pIntr,
-            NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(uvmShared.subtreeStart),
-            NULL);
-        NvU32 leafEnLo = intrReadRegLeafEnSet_HAL(pGpu, pIntr,
-            NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(uvmShared.subtreeStart),
-            NULL);
-
-        pIntr->uvmSharedCpuLeafEn = ((NvU64)(leafEnHi) << 32) | leafEnLo;
-        pIntr->uvmSharedCpuLeafEnDisableMask =
-            intrGetUvmSharedLeafEnDisableMask_HAL(pGpu, pIntr);
-    }
-
     //
     // Cache the CPU_INTR_TOP_EN mask to clear when disabling stall
     // interrupts (other interrupts are either not disabled or disabled
@@ -244,7 +189,8 @@ intrCacheIntrFields_TU102
     OBJDISP *pDisp = GPU_GET_DISP(pGpu);
 
     // Cache client owned, shared interrupt, and display vectors for ease of use later
-    pIntr->accessCntrIntrVector      = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_ACCESS_CNTR,      NV_FALSE);
+    pIntr->accessCntrIntrVector      = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_ACCESS_CNTR, NV_FALSE);
+
     if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu))
     {
         pIntr->replayableFaultIntrVector = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_REPLAYABLE_FAULT, NV_FALSE);
@@ -253,9 +199,10 @@ intrCacheIntrFields_TU102
     {
         pIntr->replayableFaultIntrVector = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_REPLAYABLE_FAULT_CPU, NV_FALSE);
     }
+
     if (pDisp != NULL)
     {
-        pIntr->displayIntrVector     = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_DISP,             NV_FALSE);
+        pIntr->displayIntrVector     = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_DISP, NV_FALSE);
     }
     else
     {
@@ -304,6 +251,32 @@ intrCacheIntrFields_TU102
             status = NV_ERR_GENERIC;
             goto exit;
         }
+    }
+
+    {
+        NV2080_INTR_CATEGORY_SUBTREE_MAP uvmShared;
+        NV_ASSERT_OK_OR_RETURN(
+            intrGetSubtreeRange(pIntr,
+                                NV2080_INTR_CATEGORY_UVM_SHARED,
+                                &uvmShared));
+        //
+        // Assert to make sure we have only one client shared subtree.
+        // The below code assumes that.
+        //
+        NV_ASSERT_OR_RETURN(uvmShared.subtreeStart == uvmShared.subtreeEnd,
+                            NV_ERR_INVALID_STATE);
+
+        // Now cache the leaf enable mask for the subtree shared with the client
+        NvU32 leafEnHi = intrReadRegLeafEnSet_HAL(pGpu, pIntr,
+            NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_START(uvmShared.subtreeStart),
+            NULL);
+        NvU32 leafEnLo = intrReadRegLeafEnSet_HAL(pGpu, pIntr,
+            NV_CTRL_INTR_SUBTREE_TO_LEAF_IDX_END(uvmShared.subtreeStart),
+            NULL);
+
+        pIntr->uvmSharedCpuLeafEn = ((NvU64)(leafEnHi) << 32) | leafEnLo;
+        pIntr->uvmSharedCpuLeafEnDisableMask =
+            intrGetUvmSharedLeafEnDisableMask_HAL(pGpu, pIntr);
     }
 
 exit:
@@ -961,6 +934,35 @@ intrCheckAndServiceNonReplayableFault_TU102
 )
 {
     NV_STATUS status = NV_OK;
+    MC_ENGINE_BITVECTOR intrPending;
+
+    intrGetPendingStall_HAL(pGpu, pIntr, &intrPending, pThreadState);
+
+    if (bitVectorTest(&intrPending, MC_ENGINE_IDX_NON_REPLAYABLE_FAULT))
+    {
+        KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
+
+        //
+        // This interrupt was already cleared in the top half and "serviced" in
+        // the top half since copy from HW fault buffer always happens in the
+        // top half. This servicing is merely copying from the SW fault buffer,
+        // so doesn't need interrupt clearing. Also, we will only copy from the
+        // SW fault buffer if the fatalFaultIntrPending cache tells us that
+        // there is something to copy. Else, we'll just return early and rely
+        // on another interrupt to fire that will eventually update this state.
+        // In the top half, we will unconditionally write GET back, which will
+        // force HW to send us a new pulse as long as GET != PUT and we'd be
+        // eventually guaranteed to copy something into the SW fault buffer.
+        //
+        if (portAtomicCompareAndSwapS32(kgmmuGetFatalFaultIntrPendingState(pKernelGmmu, GPU_GFID_PF), 0, 1))
+        {
+            status = kgmmuServiceNonReplayableFault_HAL(pGpu, pKernelGmmu);
+            if (status != NV_OK)
+            {
+                NV_ASSERT_OK_FAILED("Failed to service MMU non-replayable fault", status);
+            }
+        }
+    }
     return status;
 }
 
@@ -1297,7 +1299,7 @@ intrGetIntrTopNonStallMask_TU102
     Intr   *pIntr
 )
 {
-    // TODO Bug 3823562 Remove these asserts
+    // TODO Bug 3823562 Remove these asserts
     // Compile-time assert against the highest set bit that will be returned
     #define NV_CPU_INTR_NOSTALL_SUBTREE_HIGHEST NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_SUBTREE(0)
 

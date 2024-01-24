@@ -49,11 +49,16 @@ typedef struct _def_client_system_event_info CLI_SYSTEM_EVENT_INFO, *PCLI_SYSTEM
  * This ref-counted object is shared by all clients that were registered under
  * the same user and is used to identify clients from the same user.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CLIENT_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct UserInfo {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RsShared __nvoc_base_RsShared;
@@ -109,11 +114,16 @@ void userinfoDestruct_IMPL(struct UserInfo *pUserInfo);
 #define RMAPI_CLIENT_DEBUGGER_STATE_COMPUTE_ACTIVE               0x00000001
 #define RMAPI_CLIENT_DEBUGGER_STATE_DEBUG_ACTIVE                 0x00000002
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CLIENT_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RmClient {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RsClient __nvoc_base_RsClient;
@@ -123,7 +133,7 @@ struct RmClient {
     NV_STATUS (*__rmclientValidate__)(struct RmClient *, const API_SECURITY_INFO *);
     NV_STATUS (*__rmclientFreeResource__)(struct RmClient *, struct RsServer *, struct RS_RES_FREE_PARAMS_INTERNAL *);
     NV_STATUS (*__rmclientInterMap__)(struct RmClient *, struct RsResourceRef *, struct RsResourceRef *, struct RS_INTER_MAP_PARAMS *);
-    void (*__rmclientInterUnmap__)(struct RmClient *, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);
+    NV_STATUS (*__rmclientInterUnmap__)(struct RmClient *, struct RsResourceRef *, struct RS_INTER_UNMAP_PARAMS *);
     NV_STATUS (*__rmclientPostProcessPendingFreeList__)(struct RmClient *, struct RsResourceRef **);
     RS_PRIV_LEVEL (*__rmclientGetCachedPrivilege__)(struct RmClient *);
     NvBool (*__rmclientIsAdmin__)(struct RmClient *, RS_PRIV_LEVEL);
@@ -206,10 +216,10 @@ static inline NV_STATUS rmclientInterMap_DISPATCH(struct RmClient *pClient, stru
     return pClient->__rmclientInterMap__(pClient, pMapperRef, pMappableRef, pParams);
 }
 
-void rmclientInterUnmap_IMPL(struct RmClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams);
+NV_STATUS rmclientInterUnmap_IMPL(struct RmClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams);
 
-static inline void rmclientInterUnmap_DISPATCH(struct RmClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams) {
-    pClient->__rmclientInterUnmap__(pClient, pMapperRef, pParams);
+static inline NV_STATUS rmclientInterUnmap_DISPATCH(struct RmClient *pClient, struct RsResourceRef *pMapperRef, struct RS_INTER_UNMAP_PARAMS *pParams) {
+    return pClient->__rmclientInterUnmap__(pClient, pMapperRef, pParams);
 }
 
 NV_STATUS rmclientPostProcessPendingFreeList_IMPL(struct RmClient *pClient, struct RsResourceRef **ppFirstLowPriRef);

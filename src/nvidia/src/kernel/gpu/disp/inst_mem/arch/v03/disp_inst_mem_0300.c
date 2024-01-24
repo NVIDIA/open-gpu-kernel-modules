@@ -30,6 +30,7 @@
 
 #define RM_STRICT_CONFIG_EMIT_DISP_ENGINE_DEFINITIONS     0
 
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/disp/inst_mem/disp_inst_mem.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/context_dma.h"

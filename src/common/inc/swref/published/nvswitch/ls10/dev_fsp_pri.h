@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,4 +30,21 @@
 #define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2__DEVICE_MAP                                                0x00000016 /*       */
 #define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2_VAL                                                        31:0           /* RWIVF */
 #define NV_PFSP_FALCON_COMMON_SCRATCH_GROUP_2_VAL_INIT                                                   0x00000000     /* RWI-V */
+
+#define NV_PFSP_QUEUE_HEAD(i)                                                                            (0x008F2c00+(i)*8) /* RW-4A */
+#define NV_PFSP_QUEUE_TAIL(i)                                                                            (0x008F2c04+(i)*8) /* RW-4A */
+
+#define NV_PFSP_MSGQ_HEAD(i)                                                                             (0x008F2c80+(i)*8) /* RW-4A */
+#define NV_PFSP_MSGQ_TAIL(i)                                                                             (0x008F2c84+(i)*8) /* RW-4A */
+
+#define NV_PFSP_EMEMC(i)                                                                                 (0x008F2ac0+(i)*8) /* RW-4A */
+#define NV_PFSP_EMEMC_OFFS                                                                               7:2            /* RWIVF */
+#define NV_PFSP_EMEMC_BLK                                                                                15:8           /* RWIVF */
+#define NV_PFSP_EMEMC_AINCW                                                                              24:24          /* RWIVF */
+#define NV_PFSP_EMEMC_AINCW_TRUE                                                                         0x00000001     /* RW--V */
+#define NV_PFSP_EMEMC_AINCR                                                                              25:25          /* RWIVF */
+#define NV_PFSP_EMEMC_AINCR_TRUE                                                                         0x00000001     /* RW--V */
+
+#define NV_PFSP_EMEMD(i)                                                                                 (0x008F2ac4+(i)*8) /* RW-4A */
+
 #endif // __ls10_dev_fsp_pri_h__

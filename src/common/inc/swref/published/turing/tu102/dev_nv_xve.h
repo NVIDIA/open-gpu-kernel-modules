@@ -24,6 +24,10 @@
 #ifndef __tu102_dev_nv_xve_h__
 #define __tu102_dev_nv_xve_h__
 #define NV_PCFG                                              0x00088FFF:0x00088000 /* RW--D */
+#define NV_XVE_ID                                                       0x00000000 /* R--4R */
+#define NV_XVE_ID_VENDOR                                                      15:0 /* C--VF */
+#define NV_XVE_ID_VENDOR_NVIDIA                                         0x000010DE /* C---V */
+#define NV_XVE_SW_RESET                                                 0x00000718 /* RW-4R */
 #define NV_XVE_DEVICE_CAPABILITY                                        0x0000007C /* R--4R */
 #define NV_XVE_DEVICE_CAPABILITY_FUNCTION_LEVEL_RESET                        28:28 /* R-XVF */
 #define NV_XVE_DEVICE_CAPABILITY_FUNCTION_LEVEL_RESET_NOT_SUPPORTED     0x00000000 /* R---V */
@@ -35,6 +39,10 @@
 #define NV_XVE_MSIX_CAP_HDR_ENABLE                                           31:31 /* RWIVF */
 #define NV_XVE_MSIX_CAP_HDR_ENABLE_ENABLED                              0x00000001 /* RW--V */
 #define NV_XVE_MSIX_CAP_HDR_ENABLE_DISABLED                             0x00000000 /* RWI-V */
+#define NV_XVE_PRIV_MISC_1                                              0x0000041C /* RW-4R */
+#define NV_XVE_PRIV_MISC_1_CYA_HIDE_MSIX_CAP                                 29:29 /* RWCVF */
+#define NV_XVE_PRIV_MISC_1_CYA_HIDE_MSIX_CAP_TRUE                       0x00000001 /* RW--V */
+#define NV_XVE_PRIV_MISC_1_CYA_HIDE_MSIX_CAP_FALSE                      0x00000000 /* RWC-V */
 #define NV_XVE_SRIOV_CAP_HDR3                                           0x00000BD8 /* R--4R */
 #define NV_XVE_SRIOV_CAP_HDR3_TOTAL_VFS                                      31:16 /* R-EVF */
 #define NV_XVE_SRIOV_CAP_HDR5                                           0x00000BE0 /* R--4R */

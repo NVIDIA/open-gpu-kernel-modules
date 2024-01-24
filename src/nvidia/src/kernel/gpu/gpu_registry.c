@@ -135,6 +135,13 @@ gpuInitRegistryOverrides_KERNEL
     {
         pGpu->bVgpuGspPluginOffloadEnabled = NV_TRUE;
     }
+    // Do not enable VGPU-GSP plugin offload on guest for MODS, MODS doesn't support GSP
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu) && !gpuIsWarBug200577889SriovHeavyEnabled(pGpu))
+    {
+        {
+            pGpu->bVgpuGspPluginOffloadEnabled = pGpu->getProperty(pGpu, PDB_PROP_GPU_VGPU_OFFLOAD_CAPABLE);
+        }
+    }
 
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_CLIENT_RM_ALLOCATED_CTX_BUFFER, &data32) == NV_OK)
     {

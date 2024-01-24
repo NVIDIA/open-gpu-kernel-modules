@@ -43,6 +43,7 @@ extern "C" {
 
 #include "gpu/gpu.h"
 #include "gpu/eng_state.h"
+#include "gpu_mgr/gpu_mgr.h" // GPUMGR_MAX_GPU_INSTANCES
 #include "rmapi/rmapi.h"
 #include "objtmr.h"
 #include "ctrl/ctrlcbca.h"
@@ -102,11 +103,16 @@ typedef struct
     SHARED_BUFFER_MAP_INFO *pKernelMapInfo;     // Shared buffer kernel map info
 } CCU_SHRBUF;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_CCU_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelCcu {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -165,7 +171,6 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu**, Dynamic*, NvU32);
     __nvoc_objCreate_KernelCcu((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
 #define kccuConstructEngine(pGpu, pKernelCcu, engDesc) kccuConstructEngine_DISPATCH(pGpu, pKernelCcu, engDesc)
-#define kccuConstructEngine_HAL(pGpu, pKernelCcu, engDesc) kccuConstructEngine_DISPATCH(pGpu, pKernelCcu, engDesc)
 #define kccuStateLoad(arg0, arg1, flags) kccuStateLoad_DISPATCH(arg0, arg1, flags)
 #define kccuStateUnload(arg0, arg1, flags) kccuStateUnload_DISPATCH(arg0, arg1, flags)
 #define kccuMigShrBufHandler(arg0, arg1, bMigEnabled) kccuMigShrBufHandler_DISPATCH(arg0, arg1, bMigEnabled)
@@ -181,10 +186,6 @@ NV_STATUS __nvoc_objCreate_KernelCcu(KernelCcu**, Dynamic*, NvU32);
 #define kccuStatePreInitUnlocked(pGpu, pEngstate) kccuStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kccuStatePostLoad(pGpu, pEngstate, arg0) kccuStatePostLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kccuIsPresent(pGpu, pEngstate) kccuIsPresent_DISPATCH(pGpu, pEngstate)
-void kccuDestruct_IMPL(struct KernelCcu *arg0);
-
-
-#define __nvoc_kccuDestruct(arg0) kccuDestruct_IMPL(arg0)
 NV_STATUS kccuConstructEngine_IMPL(OBJGPU *pGpu, struct KernelCcu *pKernelCcu, ENGDESCRIPTOR engDesc);
 
 static inline NV_STATUS kccuConstructEngine_DISPATCH(OBJGPU *pGpu, struct KernelCcu *pKernelCcu, ENGDESCRIPTOR engDesc) {

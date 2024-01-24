@@ -29,6 +29,7 @@
   * (b) are ACPI feature related
   */
 
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/disp/disp_objs.h"
 #include "mxm_spec.h"
 #include "nvacpitypes.h"
@@ -784,6 +785,284 @@ done:
 
     // release client's input buffer
     portMemFree(pInOutData);
+
+    return status;
+}
+
+static NV_STATUS _dispDfpSwitchExternalMux
+(
+    OBJGPU *pGpu,
+    NvU32  displayId,
+    NvBool bSwitchItoD
+)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    OBJPFM *pPfm = SYS_GET_PFM(pSys);
+    NvU32   muxState = 0, acpiId = 0;
+    NV_STATUS status = NV_ERR_GENERIC;
+
+    acpiId = pfmFindAcpiId(pPfm, pGpu, displayId);
+    if (acpiId != 0)
+    {
+        // Set the _MXDS acpi method input argument
+        muxState = FLD_SET_REF_NUM(MXDS_METHOD_MUX_OP, MXDS_METHOD_MUX_OP_SET, muxState);
+        if (bSwitchItoD)
+        {
+            muxState = FLD_SET_REF_NUM(MXDS_METHOD_MUX_SET_MODE, MXDS_METHOD_MUX_SET_MODE_DGPU, muxState);
+        }
+        else
+        {
+            muxState = FLD_SET_REF_NUM(MXDS_METHOD_MUX_SET_MODE, MXDS_METHOD_MUX_SET_MODE_IGPU, muxState);
+        }
+
+        status = osCallACPI_MXDS(pGpu, acpiId, &muxState);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "osCallACPI_MXDS failed 0x%x\n", status);
+        }
+    }
+
+    return status;
+}
+
+static NV_STATUS _dispValidateDDSMuxSupport
+(
+    OBJGPU *pGpu,
+    NvU32   displayId,
+    NvBool *pIsEmbeddedDisplayPort
+)
+{
+    KernelDisplay *pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+
+    // Make sure there is one and only one display ID set
+    if (!ONEBITSET(displayId))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (!pKernelDisplay->pStaticInfo->bExternalMuxSupported &&
+        !pKernelDisplay->pStaticInfo->bInternalMuxSupported)
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    if (pKernelDisplay->pStaticInfo->embeddedDisplayPortMask & displayId)
+    {
+        *pIsEmbeddedDisplayPort = NV_TRUE;
+    }
+    
+    return NV_OK;
+}
+
+/*!
+ * @brief Control call to switch dynamic display MUX between integrated
+ *       and discrete GPU
+ *
+ * @Parameter pDispCommon [In]
+ * @Parameter pParams     [In, Out]
+ *
+ * @return
+ *   NV_OK
+ *     The request successfully completed.
+ *   NV_ERR_NOT_SUPPORTED
+ *     The Feature is not supported.
+ *   NV_ERR_INVALID_ARGUMENT
+ *     Invalid argument is passed.
+ *
+ */
+NV_STATUS
+dispcmnCtrlCmdDfpSwitchDispMux_IMPL
+(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_CMD_DFP_SWITCH_DISP_MUX_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu                     = DISPAPI_GET_GPU(pDispCommon);
+    KernelDisplay *pKernelDisplay    = NULL;
+    NvBool bSwitchItoD               = NV_TRUE;
+    NvBool bEmbeddedDisplayPort      = NV_FALSE;
+    RM_API *pRmApi                   = NULL;
+    NV_STATUS status                 = NV_OK;
+
+    // Get the right pGpu from subdevice instance given by client
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pParams->subDeviceInstance);
+    if ((status != NV_OK) || (pGpu == NULL))
+    {
+        return status;
+    }
+
+    status = _dispValidateDDSMuxSupport(pGpu, pParams->displayId, &bEmbeddedDisplayPort);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid arguments 0x%x\n", status);
+        return status;
+    }
+
+    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+
+    if (FLD_TEST_DRF(0073_CTRL_DFP, _DISP_MUX, _SWITCH, _DGPU_TO_IGPU, pParams->flags))
+    {
+        bSwitchItoD = NV_FALSE;
+    }
+
+    // Check if current displayId belongs to external mux
+    if (pKernelDisplay->pStaticInfo->bExternalMuxSupported && !bEmbeddedDisplayPort)
+    {
+        status = _dispDfpSwitchExternalMux(pGpu, pParams->displayId, bSwitchItoD);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "external mux switch failed 0x%x\n", status);
+        }
+    }
+    else
+    {
+        // switch internal mux
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        status = pRmApi->Control(pRmApi, RES_GET_CLIENT_HANDLE(pDispCommon), 
+                                 RES_GET_HANDLE(pDispCommon),
+                                 NV0073_CTRL_CMD_INTERNAL_DFP_SWITCH_DISP_MUX,
+                                 pParams, sizeof(*pParams));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "internal mux switch failed 0x%x\n", status);
+        }
+    }
+
+    return status;
+}
+
+static NV_STATUS _dispDfpGetExternalMuxStatus
+(
+    OBJGPU *pGpu,
+    NvU32  *pMuxStatus,
+    NvU32   displayId
+)
+{
+    OBJSYS *pSys      = SYS_GET_INSTANCE();
+    OBJPFM *pPfm      = SYS_GET_PFM(pSys);
+    NvU32 acpiId      = 0;
+    NvU32 muxState    = 0;
+    NvU32 mode        = 0;
+    NvU32 acpiidIndex = 0;
+    NV_STATUS status  = NV_OK;
+
+    acpiId = pfmFindAcpiId(pPfm, pGpu, displayId);
+    if (acpiId == 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "acpiId not found for displayId 0x%x\n", displayId);
+        return NV_ERR_GENERIC;
+    }
+
+    // get mux state
+    status = osCallACPI_MXDS(pGpu, acpiId, &muxState);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "ACPI call to get mux state failed.\n");
+        return status;
+    }
+
+    // get mux mode
+    status = NV_ERR_GENERIC;
+    for (acpiidIndex = 0; acpiidIndex < pGpu->acpiMethodData.muxMethodData.tableLen; acpiidIndex++)
+    {
+        if (pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable[acpiidIndex].acpiId == acpiId)
+        {
+            mode = pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable[acpiidIndex].mode;
+            status = pGpu->acpiMethodData.muxMethodData.acpiIdMuxModeTable[acpiidIndex].status;
+            break;
+        }
+    }
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "ACPI lookup to get mux mode failed.\n");
+        return status;
+    }
+
+    *pMuxStatus = FLD_SET_DRF_NUM(0073_CTRL_DFP, _DISP_MUX, _STATE,
+                                         muxState, *pMuxStatus);
+
+    *pMuxStatus = FLD_SET_DRF_NUM(0073_CTRL_DFP, _DISP_MUX, _MODE,
+                                         mode, *pMuxStatus);
+
+    return status;
+}
+
+/*!
+ * @brief Control call to query display MUX status
+ *
+ * @Parameter pDispCommon [In]
+ * @Parameter pParams     [In, Out]
+ *
+ * @return
+ *   NV_OK
+ *     The request successfully completed.
+ *   NV_ERR_NOT_SUPPORTED
+ *     The Feature is not supported.
+ *   NV_ERR_INVALID_ARGUMENT
+ *     Invalid argument is passed.
+ *
+ */
+NV_STATUS
+dispcmnCtrlCmdDfpGetDispMuxStatus_IMPL
+(
+    DispCommon *pDispCommon,
+    NV0073_CTRL_CMD_DFP_GET_DISP_MUX_STATUS_PARAMS *pParams
+)
+{
+    OBJGPU        *pGpu;
+    KernelDisplay *pKernelDisplay    = NULL;
+    NV_STATUS      status   = NV_OK;
+    NvBool         bEmbeddedDisplayPort = NV_FALSE;
+    RM_API         *pRmApi  = NULL;
+
+    // Get the right pGpu from subdevice instance given by client
+    status = dispapiSetUnicastAndSynchronize_HAL(
+                               staticCast(pDispCommon, DisplayApi),
+                               DISPAPI_GET_GPUGRP(pDispCommon),
+                               &pGpu,
+                               NULL,
+                               pParams->subDeviceInstance);
+    if (status != NV_OK || pGpu == NULL)
+    {
+        return status;
+    }
+
+    status = _dispValidateDDSMuxSupport(pGpu, pParams->displayId, &bEmbeddedDisplayPort);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid arguments 0x%x\n", status);
+        return status;
+    }
+
+    pKernelDisplay = GPU_GET_KERNEL_DISPLAY(pGpu);
+
+    // Check if current displayId belongs to external mux
+    if (pKernelDisplay->pStaticInfo->bExternalMuxSupported && !bEmbeddedDisplayPort)
+    {
+        status = _dispDfpGetExternalMuxStatus(pGpu, &pParams->muxStatus, pParams->displayId);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to get external mux status\n");
+        }
+    }
+    else
+    {
+        // get internal mux status
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        status = pRmApi->Control(pRmApi, RES_GET_CLIENT_HANDLE(pDispCommon), 
+                                 RES_GET_HANDLE(pDispCommon),
+                                 NV0073_CTRL_CMD_INTERNAL_DFP_GET_DISP_MUX_STATUS,
+                                 pParams, sizeof(*pParams));
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "failed to get internal mux status\n");
+        }
+    }
 
     return status;
 }

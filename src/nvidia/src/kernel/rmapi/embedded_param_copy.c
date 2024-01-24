@@ -50,6 +50,7 @@
 #include "ctrl/ctrl208f/ctrl208fgpu.h"
 #include "ctrl/ctrl402c.h"
 #include "ctrl/ctrl0073.h"
+#include "ctrl/ctrla0bc.h"
 #include "ctrl/ctrlb06f.h"
 #include "ctrl/ctrl83de.h"
 #ifdef USE_AMAPLIB
@@ -212,8 +213,7 @@ static NV_STATUS i2cTransactionCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlPara
  */
 NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCtrlParams)
 {
-    NV_STATUS status        = NV_OK;
-    NV_STATUS statusCleanUp = NV_OK;
+    NV_STATUS status = NV_OK;
     void* pParams = pRmCtrlParams->pParams;
     NvU32 paramsCnt = 1;
     NvU32 i, j = 0;
@@ -226,6 +226,19 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
 
     switch (pRmCtrlParams->cmd)
     {
+        case NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO:
+        {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS);
+
+            RMAPI_PARAM_COPY_INIT(paramCopies[0],
+                            ((NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS*)pParams)->sessionInfoTbl,
+                            ((NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS*)pParams)->sessionInfoTbl,
+                            ((NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_PARAMS*)pParams)->sessionInfoTblEntry,
+                            sizeof(NV2080_CTRL_NVENC_SW_SESSION_INFO));
+            paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
+
+            break;
+        }
         case NV2080_CTRL_CMD_GPU_GET_ENGINES:
         {
             CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV2080_CTRL_GPU_GET_ENGINES_PARAMS);
@@ -452,6 +465,17 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_ZERO_BUFFER;
 
+            break;
+        }
+        case NVA0BC_CTRL_CMD_NVENC_SW_SESSION_UPDATE_INFO:
+        {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS);
+
+            RMAPI_PARAM_COPY_INIT(paramCopies[0],
+                            ((NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS*)pParams)->timestampBuffer,
+                            ((NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS*)pParams)->timestampBuffer,
+                            ((NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS*)pParams)->timestampBufferSize,
+                            sizeof(NVA0BC_CTRL_NVENC_TIMESTAMP));
             break;
         }
         case NV83DE_CTRL_CMD_DEBUG_READ_MEMORY:
@@ -754,11 +778,11 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
         for (j = 0; j <= i; j++)
         {
             paramCopies[j].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYOUT;
-            statusCleanUp = rmapiParamsRelease(&paramCopies[j]);
+            rmapiParamsRelease(&paramCopies[j]);
         }
     }
 
-    return (status == NV_OK) ? statusCleanUp : status;
+    return status;
 }
 
 NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCtrlParams)
@@ -976,6 +1000,14 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
 
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0080_CTRL_FIFO_GET_CAPS_PARAMS*)pParams)->capsTbl = paramCopies[0].pUserParams;
+            break;
+        }
+        case NVA0BC_CTRL_CMD_NVENC_SW_SESSION_UPDATE_INFO:
+        {
+            CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS);
+
+            status = rmapiParamsRelease(&paramCopies[0]);
+            ((NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS*)pParams)->timestampBuffer = paramCopies[0].pUserParams;
             break;
         }
         case NV402C_CTRL_CMD_I2C_INDEXED:

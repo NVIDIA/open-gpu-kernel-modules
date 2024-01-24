@@ -22,6 +22,7 @@
  */
 
 #include "core/core.h"
+#include "platform/sli/sli.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_desc.h"
@@ -51,7 +52,7 @@ memmgrGetMaxContextSize_GM200
     // spaces.
     //
 
-    if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM)
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS)
     {
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_EXTERNAL_HEAP_CONTROL))
         {
@@ -104,5 +105,9 @@ memmgrGetMaxContextSize_GM200
             size = 0;
         }
     }
+
+    // Reserve enough memory for CeUtils 
+    size += (7*1024*1024);
+
     return size;
 }

@@ -46,6 +46,7 @@ typedef struct
     NV_DECLARE_ALIGNED(NvU32 lineNumber, 8);
     NvU8 argumentCount; //! Count of arguments not including format string.
     NvU8 printLevel;
+    NvU8 specialType;
 } libosLogMetadata;
 
 /**
@@ -291,22 +292,29 @@ void LibosLogTokens(const libosLogMetadata * metadata, const LibosPrintfArgument
 /*!
  *  Cast remaining log arguments to integers for storage
  */
-#define LIBOS_LOG_INTERNAL(dispatcher, level, ...)                                                             \
+#define LIBOS_LOG_INTERNAL_SPECIAL(dispatcher, level, special, ...)                                            \
     do                                                                                                         \
     {                                                                                                          \
         static const LIBOS_SECTION_LOGGING_CONST char libos_pvt_format[]   = {LIBOS_MACRO_FIRST(__VA_ARGS__)}; \
         static const LIBOS_SECTION_LOGGING_CONST char libos_pvt_file[]     = {__FILE__};                       \
-        if (0)                                                                                                 \
-            LIBOS_CHECK_PRINTF_FMT(__VA_ARGS__);                                                               \
         LIBOS_LOGGING_AUX_METADATA_DUMP;                                                                       \
         static const LIBOS_SECTION_LOGGING_METADATA libosLogMetadata libos_pvt_meta = {                        \
             .filename      = &libos_pvt_file[0],                                                               \
             .format        = &libos_pvt_format[0],                                                             \
             .lineNumber    = __LINE__,                                                                         \
             .argumentCount = LIBOS_MACRO_GET_COUNT(__VA_ARGS__) - 1,                                           \
-            .printLevel    = level};                                                                           \
+            .printLevel    = level,                                                                            \
+            .specialType   = special};                                                                         \
         const NvU64 tokens[] = {APPLY_REMAINDER(__VA_ARGS__)(NvU64) & libos_pvt_meta};                         \
         dispatcher(sizeof(tokens) / sizeof(*tokens), &tokens[0]);                                              \
+    } while (0)
+
+#define LIBOS_LOG_INTERNAL(dispatcher, level, ...)                                                             \
+    do                                                                                                         \
+    {                                                                                                          \
+        if (0)                                                                                                 \
+            LIBOS_CHECK_PRINTF_FMT(__VA_ARGS__);                                                               \
+        LIBOS_LOG_INTERNAL_SPECIAL(dispatcher, level, 0 /* specialType */, __VA_ARGS__);                       \
     } while (0)
 
 /*!

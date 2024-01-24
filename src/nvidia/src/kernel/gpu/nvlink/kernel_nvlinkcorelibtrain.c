@@ -25,10 +25,11 @@
 
 #include "os/os.h"
 #include "core/hal.h"
-#include "core/info_block.h"
 #include "core/locks.h"
 #include "core/thread_state.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
+#include "platform/sli/sli.h"
 
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
@@ -1680,7 +1681,7 @@ _knvlinkActivateDiscoveredP2pConn
     {
         pGpu1 = gpumgrGetGpu(gpuInst);
 
-        if (pGpu1 &&
+        if (pGpu1 && (gpuIsStateLoaded(pGpu1) || gpuIsStateLoading(pGpu1)) &&
             // Just rely on PCIe DBDF values for detecting the remote
             (pKernelNvlink0->nvlinkLinks[linkId].remoteEndInfo.domain   == gpuGetDomain(pGpu1)) &&
             (pKernelNvlink0->nvlinkLinks[linkId].remoteEndInfo.bus      == gpuGetBus(pGpu1))    &&
@@ -2267,6 +2268,11 @@ _knvlinkUpdateSwitchLinkMasks
             continue;
         }
 
+        if (!(gpuIsStateLoaded(pGpu1) || gpuIsStateLoading(pGpu1)))
+        {
+            continue;
+        }
+
         pKernelNvlink1 = GPU_GET_KERNEL_NVLINK(pGpu1);
 
         if (!pKernelNvlink1)
@@ -2337,6 +2343,11 @@ _knvlinkUpdateSwitchLinkMasksGpuDegraded
 
         // No support for SLI P2P on nvswitch systems.
         if (IsSLIEnabled(pGpu1))
+        {
+            continue;
+        }
+
+        if (!(gpuIsStateLoaded(pGpu1) || gpuIsStateLoading(pGpu1)))
         {
             continue;
         }

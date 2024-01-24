@@ -74,6 +74,7 @@
 #endif
 
 #include <linux/pci.h>
+#include <linux/workqueue.h>
 
 /*
  * Commit fcd70cd36b9b ("drm: Split out drm_probe_helper.h")
@@ -405,6 +406,27 @@ static int nv_drm_create_properties(struct nv_drm_device *nv_dev)
     return 0;
 }
 
+#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+/*
+ * We can't just call drm_kms_helper_hotplug_event directly because
+ * fbdev_generic may attempt to set a mode from inside the hotplug event
+ * handler. Because kapi event handling runs on nvkms_kthread_q, this blocks
+ * other event processing including the flip completion notifier expected by
+ * nv_drm_atomic_commit.
+ *
+ * Defer hotplug event handling to a work item so that nvkms_kthread_q can
+ * continue processing events while a DRM modeset is in progress.
+ */
+static void nv_drm_handle_hotplug_event(struct work_struct *work)
+{
+    struct delayed_work *dwork = to_delayed_work(work);
+    struct nv_drm_device *nv_dev =
+        container_of(dwork, struct nv_drm_device, hotplug_event_work);
+
+    drm_kms_helper_hotplug_event(nv_dev->dev);
+}
+#endif
+
 static int nv_drm_load(struct drm_device *dev, unsigned long flags)
 {
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
@@ -540,6 +562,7 @@ static int nv_drm_load(struct drm_device *dev, unsigned long flags)
 
     /* Enable event handling */
 
+    INIT_DELAYED_WORK(&nv_dev->hotplug_event_work, nv_drm_handle_hotplug_event);
     atomic_set(&nv_dev->enable_event_handling, true);
 
     init_waitqueue_head(&nv_dev->flip_event_wq);
@@ -567,6 +590,7 @@ static void __nv_drm_unload(struct drm_device *dev)
         return;
     }
 
+    cancel_delayed_work_sync(&nv_dev->hotplug_event_work);
     mutex_lock(&nv_dev->lock);
 
     WARN_ON(nv_dev->subOwnershipGranted);
@@ -1523,9 +1547,21 @@ static const struct drm_ioctl_desc nv_drm_ioctls[] = {
                       DRM_RENDER_ALLOW|DRM_UNLOCKED),
 #endif
 
+    /*
+     * DRM_UNLOCKED is implicit for all non-legacy DRM driver IOCTLs since Linux
+     * v4.10 commit fa5386459f06 "drm: Used DRM_LEGACY for all legacy functions"
+     * (Linux v4.4 commit ea487835e887 "drm: Enforce unlocked ioctl operation
+     * for kms driver ioctls" previously did it only for drivers that set the
+     * DRM_MODESET flag), so this will race with SET_CLIENT_CAP. Linux v4.11
+     * commit dcf727ab5d17 "drm: setclientcap doesn't need the drm BKL" also
+     * removed locking from SET_CLIENT_CAP so there is no use attempting to lock
+     * manually. The latter commit acknowledges that this can expose userspace
+     * to inconsistent behavior when racing with itself, but accepts that risk.
+     */
     DRM_IOCTL_DEF_DRV(NVIDIA_GET_CLIENT_CAPABILITY,
                       nv_drm_get_client_capability_ioctl,
                       0),
+
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     DRM_IOCTL_DEF_DRV(NVIDIA_GET_CRTC_CRC32,
                       nv_drm_get_crtc_crc32_ioctl,
@@ -1647,7 +1683,7 @@ static struct drm_driver nv_drm_driver = {
  * kernel supports atomic modeset and the 'modeset' kernel module
  * parameter is true.
  */
-static void nv_drm_update_drm_driver_features(void)
+void nv_drm_update_drm_driver_features(void)
 {
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
 
@@ -1673,7 +1709,7 @@ static void nv_drm_update_drm_driver_features(void)
 /*
  * Helper function for allocate/register DRM device for given NVIDIA GPU ID.
  */
-static void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
+void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
 {
     struct nv_drm_device *nv_dev = NULL;
     struct drm_device *dev = NULL;
@@ -1711,8 +1747,15 @@ static void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
     dev->dev_private = nv_dev;
     nv_dev->dev = dev;
 
+    bool bus_is_pci =
+#if defined(NV_LINUX)
+        device->bus == &pci_bus_type;
+#elif defined(NV_BSD)
+        devclass_find("pci");
+#endif
+
 #if defined(NV_DRM_DEVICE_HAS_PDEV)
-    if (device->bus == &pci_bus_type) {
+    if (bus_is_pci) {
         dev->pdev = to_pci_dev(device);
     }
 #endif
@@ -1733,7 +1776,7 @@ static void nv_drm_register_drm_device(const nv_gpu_info_t *gpu_info)
             goto failed_grab_ownership;
         }
 
-        if (device->bus == &pci_bus_type) {
+        if (bus_is_pci) {
             struct pci_dev *pdev = to_pci_dev(device);
 
 #if defined(NV_DRM_APERTURE_REMOVE_CONFLICTING_PCI_FRAMEBUFFERS_HAS_DRIVER_ARG)
@@ -1773,6 +1816,7 @@ failed_drm_alloc:
 /*
  * Enumerate NVIDIA GPUs and allocate/register DRM device for each of them.
  */
+#if defined(NV_LINUX)
 int nv_drm_probe_devices(void)
 {
     nv_gpu_info_t *gpu_info = NULL;
@@ -1815,6 +1859,7 @@ done:
 
     return ret;
 }
+#endif
 
 /*
  * Unregister all NVIDIA DRM devices.
@@ -1838,6 +1883,53 @@ void nv_drm_remove_devices(void)
 
         dev_list = next;
     }
+}
+
+/*
+ * Handle system suspend and resume.
+ *
+ * Normally, a DRM driver would use drm_mode_config_helper_suspend() to save the
+ * current state on suspend and drm_mode_config_helper_resume() to restore it
+ * after resume. This works for upstream drivers because user-mode tasks are
+ * frozen before the suspend hook is called.
+ *
+ * In the case of nvidia-drm, the suspend hook is also called when 'suspend' is
+ * written to /proc/driver/nvidia/suspend, before user-mode tasks are frozen.
+ * However, we don't actually need to save and restore the display state because
+ * the driver requires a VT switch to an unused VT before suspending and a
+ * switch back to the application (or fbdev console) on resume. The DRM client
+ * (or fbdev helper functions) will restore the appropriate mode on resume.
+ *
+ */
+void nv_drm_suspend_resume(NvBool suspend)
+{
+#if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
+    struct nv_drm_device *nv_dev = dev_list;
+
+    /*
+     * NVKMS shuts down all heads on suspend. Update DRM state accordingly.
+     */
+    for (nv_dev = dev_list; nv_dev; nv_dev = nv_dev->next) {
+        struct drm_device *dev = nv_dev->dev;
+
+        if (!drm_core_check_feature(dev, DRIVER_MODESET)) {
+            continue;
+        }
+
+        if (suspend) {
+            drm_kms_helper_poll_disable(dev);
+#if defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
+            drm_fb_helper_set_suspend_unlocked(dev->fb_helper, 1);
+#endif
+            drm_mode_config_reset(dev);
+        } else {
+#if defined(NV_DRM_FBDEV_GENERIC_AVAILABLE)
+            drm_fb_helper_set_suspend_unlocked(dev->fb_helper, 0);
+#endif
+            drm_kms_helper_poll_enable(dev);
+        }
+    }
+#endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
 }
 
 #endif /* NV_DRM_AVAILABLE */

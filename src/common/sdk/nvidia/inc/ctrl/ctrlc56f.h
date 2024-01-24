@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -163,11 +163,26 @@ typedef struct NVC56F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS {
 } NVC56F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS;
 
 /*
+ * NVC56F_CTRL_CMD_GET_KMB_STAT_ADDR
+ *
+ *    This struct defines the addresses to log encryption statistics
+ *    amountEncryptedAddr       
+ *         Amount of bytes encrypted
+ *    numberEncryptedAddr       
+ *         Number of times data was encrypted.
+ */
+typedef struct NVC56F_CTRL_CMD_GET_KMB_STAT_ADDR {
+    NV_DECLARE_ALIGNED(NvP64 amountEncryptedAddr, 8);
+    NV_DECLARE_ALIGNED(NvP64 numberEncryptedAddr, 8);
+} NVC56F_CTRL_CMD_GET_KMB_STAT_ADDR;
+
+/*
  * NVC56F_CTRL_CMD_GET_KMB
  *
  *    This command returns the Key Material Bundle (KMB) for the current channel.
- *
- *    kmb [OUT]           The KMB for the channel.
+ *  
+ *    kmb     [OUT]            The KMB for the channel.
+ *    hMemory [IN]             Memory handle to the encryption statistics buffer for the channel.
  *
  *    Possible status values returned are:
  *     NV_OK
@@ -180,7 +195,8 @@ typedef struct NVC56F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS {
 #define NVC56F_CTRL_CMD_GET_KMB_PARAMS_MESSAGE_ID (0xBU)
 
 typedef struct NVC56F_CTRL_CMD_GET_KMB_PARAMS {
-    CC_KMB kmb;
+    CC_KMB   kmb;
+    NvHandle hMemory;
 } NVC56F_CTRL_CMD_GET_KMB_PARAMS;
 
 /*
@@ -205,6 +221,60 @@ typedef struct NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS {
     ROTATE_IV_TYPE rotateIvType;
     CC_KMB         updatedKmb;
 } NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS;
+
+/*
+ * NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY
+ *
+ *    This command sets the CC security policy.
+ *    It can only be set before GpuReadyState is set.
+ *    Is ignored after GpuReadyState is set.
+ *
+ *    attackerAdvantage [IN]
+ *
+ *    Possible status values returned are:
+ *     NV_OK
+ *     NV_ERR_INVALID_OBJECT_HANDLE
+ *     NV_ERR_INVALID_STATE
+ *     NV_ERR_INVALID_ARGUMENT
+ *     NV_ERR_NOT_SUPPORTED
+ */
+
+/* 
+ *    The minimum and maximum values for attackerAdvantage.
+ *    The probability of an attacker successfully guessing the contents of an encrypted packet go up ("attacker advantage"). 
+ */
+#define SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MIN (50)
+#define SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MAX (75)
+
+#define NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY   (0xc56f010d) /* finn: Evaluated from "(FINN_AMPERE_CHANNEL_GPFIFO_A_GPFIFO_INTERFACE_ID << 8) | NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS_MESSAGE_ID" */
+
+#define NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS_MESSAGE_ID (0xDU)
+
+typedef struct NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 attackerAdvantage, 8);
+} NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS;
+
+/*
+ * NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY
+ *
+ *    This command get the CC security policy.
+ *
+ *    attackerAdvantage [OUT]   
+ *
+ *    Possible status values returned are:
+ *     NV_OK
+ *     NV_ERR_INVALID_OBJECT_HANDLE
+ *     NV_ERR_INVALID_ARGUMENT
+ *     NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY (0xc56f010e) /* finn: Evaluated from "(FINN_AMPERE_CHANNEL_GPFIFO_A_GPFIFO_INTERFACE_ID << 8) | NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS_MESSAGE_ID" */
+
+#define NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS_MESSAGE_ID (0xEU)
+
+typedef struct NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 attackerAdvantage, 8);
+} NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS;
 
 
 

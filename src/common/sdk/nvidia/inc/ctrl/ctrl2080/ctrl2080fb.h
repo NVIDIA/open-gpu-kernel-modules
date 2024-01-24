@@ -35,6 +35,7 @@
 /* NV20_SUBDEVICE_XX fb control commands and parameters */
 
 #include "nvlimits.h"
+#include "nvcfg_sdk.h"
 
 /*
  * NV2080_CTRL_FB_INFO
@@ -360,6 +361,8 @@ typedef NVXXXX_CTRL_XXX_INFO NV2080_CTRL_FB_INFO;
 #define NV2080_CTRL_FB_INFO_RAM_TYPE_LPDDR5                        (0x00000013U) /* LPDDR (Low Power SDDR) used on T23x and later.*/
 #define NV2080_CTRL_FB_INFO_RAM_TYPE_HBM3                          (0x00000014U) /* HBM3 (High Bandwidth Memory) v3 */
 
+
+
 /* valid RAM LOCATION types */
 #define NV2080_CTRL_FB_INFO_RAM_LOCATION_GPU_DEDICATED             (0x00000000U)
 #define NV2080_CTRL_FB_INFO_RAM_LOCATION_SYS_SHARED                (0x00000001U)
@@ -519,8 +522,60 @@ typedef struct NV2080_CTRL_FB_GET_CALIBRATION_LOCK_FAILED_PARAMS {
 } NV2080_CTRL_FB_GET_CALIBRATION_LOCK_FAILED_PARAMS;
 
 /* valid flags parameter values */
-#define NV2080_CTRL_CMD_FB_GET_CAL_FLAG_NONE         (0x00000000U)
-#define NV2080_CTRL_CMD_FB_GET_CAL_FLAG_RESET        (0x00000001U)
+#define NV2080_CTRL_CMD_FB_GET_CAL_FLAG_NONE    (0x00000000U)
+#define NV2080_CTRL_CMD_FB_GET_CAL_FLAG_RESET   (0x00000001U)
+
+/*
+ * NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL
+ *
+ * If supported by hardware and the OS, this command implements a streamlined version of
+ * NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE which can be called at high IRQL and Bypass the
+ * RM Lock.
+ *
+ * Requires the following NVOS54_PARAMETERS to be set for raised IRQ / Lock Bypass operation:
+ *   NVOS54_FLAGS_IRQL_RAISED
+ *   NVOS54_FLAGS_LOCK_BYPASS
+ *
+ *   flags
+ *     Contains flags to control various aspects of the flush.  Valid values
+ *     are defined in NV2080_CTRL_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS*.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_NOT_SUPPORTED
+ *   NV_ERR_INVALID_STATE
+ *   NV_ERR_INVALID_ARGUMENT
+ *
+ * See Also:
+ *   NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE
+ *     This is the more generalized version which is not intended to be called at raised IRQ level
+ *   NV0080_CTRL_CMD_DMA_FLUSH
+ *     Performs flush operations in broadcast for the GPU cache and other hardware
+ *     engines.  Use this call if you want to flush all GPU caches in a
+ *     broadcast device.
+ *    NV0041_CTRL_CMD_SURFACE_FLUSH_GPU_CACHE
+ *     Flushes memory associated with a single allocation if the hardware
+ *     supports it.  Use this call if you want to flush a single allocation and
+ *     you have a memory object describing the physical memory.
+ */
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL (0x2080130dU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_PARAMS_MESSAGE_ID (0xDU)
+
+typedef struct NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_PARAMS {
+    NvU32 flags;
+} NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_PARAMS;
+
+/* valid fields and values for flags */
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS_WRITE_BACK         0:0
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS_WRITE_BACK_NO  (0x00000000U)
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS_WRITE_BACK_YES (0x00000001U)
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS_INVALIDATE         1:1
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS_INVALIDATE_NO  (0x00000000U)
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS_INVALIDATE_YES (0x00000001U)
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS_FB_FLUSH           2:2
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS_FB_FLUSH_NO    (0x00000000U)
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE_IRQL_FLAGS_FB_FLUSH_YES   (0x00000001U)
 
 /*
  * NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE
@@ -565,9 +620,9 @@ typedef struct NV2080_CTRL_FB_GET_CALIBRATION_LOCK_FAILED_PARAMS {
  *     supports it.  Use this call if you want to flush a single allocation and
  *     you have a memory object describing the physical memory.
  */
-#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE           (0x2080130eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_CMD_FB_FLUSH_GPU_CACHE                           (0x2080130eU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_FB_INTERFACE_ID << 8) | NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_FB_FLUSH_GPU_CACHE_MAX_ADDRESSES 500U
+#define NV2080_CTRL_FB_FLUSH_GPU_CACHE_MAX_ADDRESSES                 500U
 
 #define NV2080_CTRL_FB_FLUSH_GPU_CACHE_PARAMS_MESSAGE_ID (0xEU)
 
@@ -2294,6 +2349,34 @@ typedef struct NV2080_CTRL_FB_FS_INFO_PROFILER_MON_FBPA_SUBP_MASK_PARAMS {
     NV_DECLARE_ALIGNED(NvU64 fbpaSubpEnMask, 8);
 } NV2080_CTRL_FB_FS_INFO_PROFILER_MON_FBPA_SUBP_MASK_PARAMS;
 
+/*!
+ * Structure holding the in/out params for NV2080_CTRL_SYSL2_FS_INFO_SYSLTC_MASK.
+ */
+typedef struct NV2080_CTRL_SYSL2_FS_INFO_SYSLTC_MASK_PARAMS {
+    /*!
+     * [IN]: physical/local sys Id.
+     */
+    NvU32 sysIdx;
+    /*!
+     * [OUT]: physical/local sysltc mask.
+     */
+    NvU32 sysl2LtcEnMask;
+} NV2080_CTRL_SYSL2_FS_INFO_SYSLTC_MASK_PARAMS;
+
+/*!
+ * Structure holding the in/out params for NV2080_CTRL_FB_FS_INFO_PAC_MASK.
+ */
+typedef struct NV2080_CTRL_FB_FS_INFO_PAC_MASK_PARAMS {
+    /*!
+     * [IN]: physical/local FB partition index.
+     */
+    NvU32 fbpIndex;
+    /*!
+     * [OUT]: physical/local PAC mask.
+     */
+    NvU32 pacEnMask;
+} NV2080_CTRL_FB_FS_INFO_PAC_MASK_PARAMS;
+
 // Possible values for queryType
 #define NV2080_CTRL_FB_FS_INFO_INVALID_QUERY               0x0U
 #define NV2080_CTRL_FB_FS_INFO_FBP_MASK                    0x1U
@@ -2308,6 +2391,8 @@ typedef struct NV2080_CTRL_FB_FS_INFO_PROFILER_MON_FBPA_SUBP_MASK_PARAMS {
 #define NV2080_CTRL_FB_FS_INFO_FBPA_SUBP_MASK              0xAU
 #define NV2080_CTRL_FB_FS_INFO_PROFILER_MON_FBPA_SUBP_MASK 0xBU
 #define NV2080_CTRL_FB_FS_INFO_FBP_LOGICAL_MAP             0xCU
+#define NV2080_CTRL_SYSL2_FS_INFO_SYSLTC_MASK              0xDU
+#define NV2080_CTRL_FB_FS_INFO_PAC_MASK                    0xEU
 
 typedef struct NV2080_CTRL_FB_FS_INFO_QUERY {
     NvU16 queryType;
@@ -2327,6 +2412,8 @@ typedef struct NV2080_CTRL_FB_FS_INFO_QUERY {
         NV_DECLARE_ALIGNED(NV2080_CTRL_FB_FS_INFO_PROFILER_MON_FBPA_SUBP_MASK_PARAMS dmFbpaSubp, 8);
         NV2080_CTRL_FB_FS_INFO_FBPA_SUBP_MASK_PARAMS         fbpaSubp;
         NV2080_CTRL_FB_FS_INFO_FBP_LOGICAL_MAP_PARAMS        fbpLogicalMap;
+        NV2080_CTRL_SYSL2_FS_INFO_SYSLTC_MASK_PARAMS         sysl2Ltc;
+        NV2080_CTRL_FB_FS_INFO_PAC_MASK_PARAMS               pac;
     } queryParams;
 } NV2080_CTRL_FB_FS_INFO_QUERY;
 

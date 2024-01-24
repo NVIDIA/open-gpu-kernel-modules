@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2016-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2016-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -126,6 +126,7 @@ enum {
     TLS_ENTRY_ID_RESSERV_1,
     TLS_ENTRY_ID_CURRENT_GPU_INSTANCE,
     TLS_ENTRY_ID_PRIORITY,
+    TLS_ENTRY_ID_GPUMGR_EXPANDED_GPU_VISIBILITY,
     TLS_ENTRY_ID_DYNAMIC, // dynamic allocations start here
     TLS_ENTRY_ID_TAG_START = 0x100000 // Custom tags start here
 };

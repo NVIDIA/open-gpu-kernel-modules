@@ -31,6 +31,7 @@
 #include "rmapi/rmapi_utils.h"
 #include "class/cl402c.h" // NV40_I2C
 #include "kernel/gpu/i2c/i2c_api.h"
+#include "platform/sli/sli.h"
 /*
  * statics
  */
@@ -5385,13 +5386,7 @@ isFirmwareRevMismatch
     DAC_EXTERNAL_DEVICE_REVS currentRev
 )
 {
-    if (IsKEPLER(pGpu))
-    {
-        return ((currentRev < NV_P2060_MIN_REV) ||
-                (currentRev == DAC_EXTERNAL_DEVICE_REV_5) ||
-                (currentRev == DAC_EXTERNAL_DEVICE_REV_6));
-    }
-    else if (IsMAXWELL(pGpu))
+    if (IsMAXWELL(pGpu))
     {
         return (currentRev < NV_P2060_MIN_REV);
     }

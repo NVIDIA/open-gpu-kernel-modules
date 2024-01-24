@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2009-2019 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2009-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -240,12 +240,33 @@ NV_STATUS nvlogPrintUpdate(void);
  */
 NV_STATUS nvlogPrintDestroy(void);
 
+//
+// NvLog ETW functions
+//
+
 /**
  * @brief Global NvLog ETW capture state function
  *
  * @return NV_OK on success
  */
 NV_STATUS nvlogETWCaptureState(void);
+
+/**
+ * @brief Pushes all buffer tags to ETW
+ */
+void nvlogETWPushTags(void);
+
+/**
+ * @brief Pushes an nvlog buffer header to ETW
+ */
+void nvlogETWPushBufferHeader(NVLOG_BUFFER *pBuffer);
+
+/**
+ * @brief Pushes an nvlog entry to ETW
+ *
+ * @return NV_TRUE on success
+ */
+NvBool nvlogETWPush(NVLOG_BUFFER *pBuffer, NvU8 *pData, NvU32 dataSize);
 
 //
 // Global initialization macros

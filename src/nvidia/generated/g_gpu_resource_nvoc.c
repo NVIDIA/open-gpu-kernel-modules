@@ -124,10 +124,6 @@ static void __nvoc_thunk_RsResource_gpuresAddAdditionalDependants(struct RsClien
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), pReference);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_gpuresUnmapFrom(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), pParams);
-}
-
 static NV_STATUS __nvoc_thunk_RmResource_gpuresControlSerialization_Prologue(struct GpuResource *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RmResource.offset), pCallContext, pParams);
 }
@@ -138,6 +134,10 @@ static NV_STATUS __nvoc_thunk_RmResource_gpuresControl_Prologue(struct GpuResour
 
 static NvBool __nvoc_thunk_RsResource_gpuresCanCopy(struct GpuResource *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_gpuresIsPartialUnmapSupported(struct GpuResource *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_gpuresPreDestruct(struct GpuResource *pResource) {
@@ -160,8 +160,8 @@ static void __nvoc_thunk_RmResource_gpuresControl_Epilogue(struct GpuResource *p
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_gpuresControlLookup(struct GpuResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), pParams, ppEntry);
+static NV_STATUS __nvoc_thunk_RsResource_gpuresUnmapFrom(struct GpuResource *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return resUnmapFrom((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_GpuResource_RsResource.offset), pParams);
 }
 
 static NvBool __nvoc_thunk_RmResource_gpuresAccessCallback(struct GpuResource *pResource, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight) {
@@ -242,13 +242,13 @@ static void __nvoc_init_funcTable_GpuResource_1(GpuResource *pThis) {
 
     pThis->__gpuresAddAdditionalDependants__ = &__nvoc_thunk_RsResource_gpuresAddAdditionalDependants;
 
-    pThis->__gpuresUnmapFrom__ = &__nvoc_thunk_RsResource_gpuresUnmapFrom;
-
     pThis->__gpuresControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_gpuresControlSerialization_Prologue;
 
     pThis->__gpuresControl_Prologue__ = &__nvoc_thunk_RmResource_gpuresControl_Prologue;
 
     pThis->__gpuresCanCopy__ = &__nvoc_thunk_RsResource_gpuresCanCopy;
+
+    pThis->__gpuresIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_gpuresIsPartialUnmapSupported;
 
     pThis->__gpuresPreDestruct__ = &__nvoc_thunk_RsResource_gpuresPreDestruct;
 
@@ -260,7 +260,7 @@ static void __nvoc_init_funcTable_GpuResource_1(GpuResource *pThis) {
 
     pThis->__gpuresControl_Epilogue__ = &__nvoc_thunk_RmResource_gpuresControl_Epilogue;
 
-    pThis->__gpuresControlLookup__ = &__nvoc_thunk_RsResource_gpuresControlLookup;
+    pThis->__gpuresUnmapFrom__ = &__nvoc_thunk_RsResource_gpuresUnmapFrom;
 
     pThis->__gpuresAccessCallback__ = &__nvoc_thunk_RmResource_gpuresAccessCallback;
 }
@@ -280,21 +280,26 @@ void __nvoc_init_GpuResource(GpuResource *pThis) {
     __nvoc_init_funcTable_GpuResource(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_GpuResource(GpuResource **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_GpuResource(GpuResource **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     GpuResource *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(GpuResource), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(GpuResource));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_GpuResource);
 
     pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -309,16 +314,25 @@ NV_STATUS __nvoc_objCreate_GpuResource(GpuResource **ppThis, Dynamic *pParent, N
     status = __nvoc_ctor_GpuResource(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_GpuResource_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_GpuResource_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(GpuResource));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

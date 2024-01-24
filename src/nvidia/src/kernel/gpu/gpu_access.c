@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -22,9 +22,11 @@
  */
 
 #include "kernel/gpu/gpu.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "kernel/diagnostics/journal.h"
 
 #include "core/thread_state.h"
+#include "platform/sli/sli.h"
 #include "nv_ref.h"
 
 // Following enums are duplicated in 'apps/nvbucket/oca/ocarm.h'.
@@ -1533,6 +1535,9 @@ gpuSanityCheckRegisterAccess_IMPL
 
     if ((status = gpuSanityCheckVirtRegAccess_HAL(pGpu, addr)) != NV_OK)
     {
+        NV_PRINTF(LEVEL_ERROR, "Invalid register access on VF, addr: 0x%x\n", addr);
+        osAssertFailed();
+
         // Return 0 to match with HW behavior
         retVal = 0;
         goto done;

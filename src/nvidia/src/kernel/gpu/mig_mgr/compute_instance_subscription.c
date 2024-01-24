@@ -34,7 +34,6 @@
 #include "gpu/gpu.h"
 #include "core/system.h"
 #include "os/os.h"
-#include "gpu/subdevice/subdevice.h"
 
 #include "kernel/gpu/mig_mgr/gpu_instance_subscription.h"
 #include "kernel/gpu/mig_mgr/compute_instance_subscription.h"

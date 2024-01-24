@@ -13,9 +13,17 @@
 #include "g_rpc_hal.h"
 
 
+                                               // RPC:CTRL_FIFO_SETUP_VF_ZOMBIE_SUBCTX_PDB
+RpcCtrlFifoSetupVfZombieSubctxPdb   rpcCtrlFifoSetupVfZombieSubctxPdb_v1A_23;
+RpcCtrlFifoSetupVfZombieSubctxPdb   rpcCtrlFifoSetupVfZombieSubctxPdb_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
                                                // RPC:VGPU_PF_REG_READ32
 RpcVgpuPfRegRead32                 rpcVgpuPfRegRead32_v15_00;
 RpcVgpuPfRegRead32                 rpcVgpuPfRegRead32_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_BUS_UNSET_P2P_MAPPING
+RpcCtrlBusUnsetP2pMapping          rpcCtrlBusUnsetP2pMapping_v21_03;
+RpcCtrlBusUnsetP2pMapping          rpcCtrlBusUnsetP2pMapping_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:DUMP_PROTOBUF_COMPONENT
 RpcDumpProtobufComponent           rpcDumpProtobufComponent_v18_12;
@@ -29,16 +37,91 @@ RpcEccNotifierWriteAck             rpcEccNotifierWriteAck_STUB;  // TU10X, GA100
 RpcAllocMemory                     rpcAllocMemory_v13_01;
 RpcAllocMemory                     rpcAllocMemory_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
+                                               // RPC:CTRL_DBG_READ_SINGLE_SM_ERROR_STATE
+RpcCtrlDbgReadSingleSmErrorState   rpcCtrlDbgReadSingleSmErrorState_v21_06;
+RpcCtrlDbgReadSingleSmErrorState   rpcCtrlDbgReadSingleSmErrorState_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:DISABLE_CHANNELS
+RpcDisableChannels                 rpcDisableChannels_v1E_0B;
+RpcDisableChannels                 rpcDisableChannels_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
                                                // RPC:GPU_EXEC_REG_OPS
 RpcGpuExecRegOps                   rpcGpuExecRegOps_v12_01;
 RpcGpuExecRegOps                   rpcGpuExecRegOps_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
-                                               // RPC:RMFS_INIT
-RpcRmfsInit                        rpcRmfsInit_v15_00;
-RpcRmfsInit                        rpcRmfsInit_STUB;         // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+                                               // RPC:CTRL_GPU_PROMOTE_CTX
+RpcCtrlGpuPromoteCtx               rpcCtrlGpuPromoteCtx_v1A_20;
+RpcCtrlGpuPromoteCtx               rpcCtrlGpuPromoteCtx_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_SET_NEXT_STOP_TRIGGER_TYPE
+RpcCtrlDbgSetNextStopTriggerType   rpcCtrlDbgSetNextStopTriggerType_v1A_10;
+RpcCtrlDbgSetNextStopTriggerType   rpcCtrlDbgSetNextStopTriggerType_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:ALLOC_SHARE_DEVICE
+RpcAllocShareDevice                rpcAllocShareDevice_v03_00;
+RpcAllocShareDevice                rpcAllocShareDevice_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_PREEMPT
+RpcCtrlPreempt                     rpcCtrlPreempt_v1A_0A;
+RpcCtrlPreempt                     rpcCtrlPreempt_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GPU_INITIALIZE_CTX
+RpcCtrlGpuInitializeCtx            rpcCtrlGpuInitializeCtx_v1A_0E;
+RpcCtrlGpuInitializeCtx            rpcCtrlGpuInitializeCtx_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_RESERVE_PM_AREA_SMPC
+RpcCtrlReservePmAreaSmpc           rpcCtrlReservePmAreaSmpc_v1A_0F;
+RpcCtrlReservePmAreaSmpc           rpcCtrlReservePmAreaSmpc_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GPU_MIGRATABLE_OPS
+RpcCtrlGpuMigratableOps            rpcCtrlGpuMigratableOps_v21_07;
+RpcCtrlGpuMigratableOps            rpcCtrlGpuMigratableOps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_SET_MODE_ERRBAR_DEBUG
+RpcCtrlDbgSetModeErrbarDebug       rpcCtrlDbgSetModeErrbarDebug_v1A_10;
+RpcCtrlDbgSetModeErrbarDebug       rpcCtrlDbgSetModeErrbarDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_PMA_STREAM_UPDATE_GET_PUT
+RpcCtrlPmaStreamUpdateGetPut       rpcCtrlPmaStreamUpdateGetPut_v1A_14;
+RpcCtrlPmaStreamUpdateGetPut       rpcCtrlPmaStreamUpdateGetPut_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_FABRIC_MEMORY_DESCRIBE
+RpcCtrlFabricMemoryDescribe        rpcCtrlFabricMemoryDescribe_v1E_0C;
+RpcCtrlFabricMemoryDescribe        rpcCtrlFabricMemoryDescribe_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:ALLOC_CHANNEL_DMA
+RpcAllocChannelDma                 rpcAllocChannelDma_v1F_04;
+RpcAllocChannelDma                 rpcAllocChannelDma_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_SET_ZBC_DEPTH_CLEAR
+RpcCtrlSetZbcDepthClear            rpcCtrlSetZbcDepthClear_v1A_09;
+RpcCtrlSetZbcDepthClear            rpcCtrlSetZbcDepthClear_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_RESET_ISOLATED_CHANNEL
+RpcCtrlResetIsolatedChannel        rpcCtrlResetIsolatedChannel_v1A_09;
+RpcCtrlResetIsolatedChannel        rpcCtrlResetIsolatedChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DMA_SET_DEFAULT_VASPACE
+RpcCtrlDmaSetDefaultVaspace        rpcCtrlDmaSetDefaultVaspace_v1A_0E;
+RpcCtrlDmaSetDefaultVaspace        rpcCtrlDmaSetDefaultVaspace_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:ALLOC_SUBDEVICE
+RpcAllocSubdevice                  rpcAllocSubdevice_v08_01;
+RpcAllocSubdevice                  rpcAllocSubdevice_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:FREE
+RpcFree                            rpcFree_v03_00;
+RpcFree                            rpcFree_STUB;             // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:DMA_CONTROL
+RpcDmaControl                      rpcDmaControl_v24_05;
+RpcDmaControl                      rpcDmaControl_STUB;       // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_CLEAR_SINGLE_SM_ERROR_STATE
+RpcCtrlDbgClearSingleSmErrorState   rpcCtrlDbgClearSingleSmErrorState_v1A_10;
+RpcCtrlDbgClearSingleSmErrorState   rpcCtrlDbgClearSingleSmErrorState_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:UNSET_PAGE_DIRECTORY
-RpcUnsetPageDirectory              rpcUnsetPageDirectory_v03_00;
 RpcUnsetPageDirectory              rpcUnsetPageDirectory_v1E_05;
 RpcUnsetPageDirectory              rpcUnsetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
@@ -46,54 +129,403 @@ RpcUnsetPageDirectory              rpcUnsetPageDirectory_STUB;  // TU10X, GA100,
 RpcGetGspStaticInfo                rpcGetGspStaticInfo_v14_00;
 RpcGetGspStaticInfo                rpcGetGspStaticInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
+                                               // RPC:SAVE_HIBERNATION_DATA
+RpcSaveHibernationData             rpcSaveHibernationData_v1E_0E;
+RpcSaveHibernationData             rpcSaveHibernationData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:DUP_OBJECT
+RpcDupObject                       rpcDupObject_v03_00;
+RpcDupObject                       rpcDupObject_STUB;        // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
                                                // RPC:GSP_SET_SYSTEM_INFO
 RpcGspSetSystemInfo                rpcGspSetSystemInfo_v17_00;
 RpcGspSetSystemInfo                rpcGspSetSystemInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
-                                               // RPC:RMFS_CLEANUP
-RpcRmfsCleanup                     rpcRmfsCleanup_v15_00;
-RpcRmfsCleanup                     rpcRmfsCleanup_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+                                               // RPC:CTRL_PM_AREA_PC_SAMPLER
+RpcCtrlPmAreaPcSampler             rpcCtrlPmAreaPcSampler_v21_0B;
+RpcCtrlPmAreaPcSampler             rpcCtrlPmAreaPcSampler_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_SET_EXCEPTION_MASK
+RpcCtrlDbgSetExceptionMask         rpcCtrlDbgSetExceptionMask_v1A_0C;
+RpcCtrlDbgSetExceptionMask         rpcCtrlDbgSetExceptionMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_VASPACE_COPY_SERVER_RESERVED_PDES
+RpcCtrlVaspaceCopyServerReservedPdes   rpcCtrlVaspaceCopyServerReservedPdes_v1E_04;
+RpcCtrlVaspaceCopyServerReservedPdes   rpcCtrlVaspaceCopyServerReservedPdes_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GR_CTXSW_PREEMPTION_BIND
+RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_v1A_0E;
+RpcCtrlGrCtxswPreemptionBind       rpcCtrlGrCtxswPreemptionBind_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_ALLOC_PMA_STREAM
+RpcCtrlAllocPmaStream              rpcCtrlAllocPmaStream_v1A_14;
+RpcCtrlAllocPmaStream              rpcCtrlAllocPmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_RESERVE_HWPM_LEGACY
+RpcCtrlReserveHwpmLegacy           rpcCtrlReserveHwpmLegacy_v1A_0F;
+RpcCtrlReserveHwpmLegacy           rpcCtrlReserveHwpmLegacy_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_INTERNAL_QUIESCE_PMA_CHANNEL
+RpcCtrlInternalQuiescePmaChannel   rpcCtrlInternalQuiescePmaChannel_v1C_08;
+RpcCtrlInternalQuiescePmaChannel   rpcCtrlInternalQuiescePmaChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_PERF_RATED_TDP_GET_STATUS
+RpcCtrlPerfRatedTdpGetStatus       rpcCtrlPerfRatedTdpGetStatus_v1A_1F;
+RpcCtrlPerfRatedTdpGetStatus       rpcCtrlPerfRatedTdpGetStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_BUS_SET_P2P_MAPPING
+RpcCtrlBusSetP2pMapping            rpcCtrlBusSetP2pMapping_v21_03;
+RpcCtrlBusSetP2pMapping            rpcCtrlBusSetP2pMapping_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GPU_GET_INFO_V2
+RpcCtrlGpuGetInfoV2                rpcCtrlGpuGetInfoV2_v25_11;
+RpcCtrlGpuGetInfoV2                rpcCtrlGpuGetInfoV2_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GET_HS_CREDITS
+RpcCtrlGetHsCredits                rpcCtrlGetHsCredits_v21_08;
+RpcCtrlGetHsCredits                rpcCtrlGetHsCredits_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GR_SET_CTXSW_PREEMPTION_MODE
+RpcCtrlGrSetCtxswPreemptionMode    rpcCtrlGrSetCtxswPreemptionMode_v1A_0E;
+RpcCtrlGrSetCtxswPreemptionMode    rpcCtrlGrSetCtxswPreemptionMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_B0CC_EXEC_REG_OPS
+RpcCtrlB0ccExecRegOps              rpcCtrlB0ccExecRegOps_v1A_0F;
+RpcCtrlB0ccExecRegOps              rpcCtrlB0ccExecRegOps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GRMGR_GET_GR_FS_INFO
+RpcCtrlGrmgrGetGrFsInfo            rpcCtrlGrmgrGetGrFsInfo_v1A_1D;
+RpcCtrlGrmgrGetGrFsInfo            rpcCtrlGrmgrGetGrFsInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GET_ZBC_CLEAR_TABLE
+RpcCtrlGetZbcClearTable            rpcCtrlGetZbcClearTable_v1A_09;
+RpcCtrlGetZbcClearTable            rpcCtrlGetZbcClearTable_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CLEANUP_SURFACE
+RpcCleanupSurface                  rpcCleanupSurface_v03_00;
+RpcCleanupSurface                  rpcCleanupSurface_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_SET_TIMESLICE
+RpcCtrlSetTimeslice                rpcCtrlSetTimeslice_v1A_0A;
+RpcCtrlSetTimeslice                rpcCtrlSetTimeslice_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GPU_QUERY_ECC_STATUS
+RpcCtrlGpuQueryEccStatus           rpcCtrlGpuQueryEccStatus_v24_06;
+RpcCtrlGpuQueryEccStatus           rpcCtrlGpuQueryEccStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_GET_MODE_MMU_DEBUG
+RpcCtrlDbgGetModeMmuDebug          rpcCtrlDbgGetModeMmuDebug_v25_04;
+RpcCtrlDbgGetModeMmuDebug          rpcCtrlDbgGetModeMmuDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_CLEAR_ALL_SM_ERROR_STATES
+RpcCtrlDbgClearAllSmErrorStates    rpcCtrlDbgClearAllSmErrorStates_v1A_0C;
+RpcCtrlDbgClearAllSmErrorStates    rpcCtrlDbgClearAllSmErrorStates_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:VGPU_GSP_RING_DOORBELL
+RpcVgpuGspRingDoorbell             rpcVgpuGspRingDoorbell_GA102;  // GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+RpcVgpuGspRingDoorbell             rpcVgpuGspRingDoorbell_STUB;  // TU10X, GA100
+
+                                               // RPC:CTRL_GR_SET_TPC_PARTITION_MODE
+RpcCtrlGrSetTpcPartitionMode       rpcCtrlGrSetTpcPartitionMode_v1C_04;
+RpcCtrlGrSetTpcPartitionMode       rpcCtrlGrSetTpcPartitionMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GET_TOTAL_HS_CREDITS
+RpcCtrlGetTotalHsCredits           rpcCtrlGetTotalHsCredits_v21_08;
+RpcCtrlGetTotalHsCredits           rpcCtrlGetTotalHsCredits_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_INTERNAL_PROMOTE_FAULT_METHOD_BUFFERS
+RpcCtrlInternalPromoteFaultMethodBuffers   rpcCtrlInternalPromoteFaultMethodBuffers_v1E_07;
+RpcCtrlInternalPromoteFaultMethodBuffers   rpcCtrlInternalPromoteFaultMethodBuffers_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_FB_GET_INFO_V2
+RpcCtrlFbGetInfoV2                 rpcCtrlFbGetInfoV2_v25_0A;
+RpcCtrlFbGetInfoV2                 rpcCtrlFbGetInfoV2_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:VGPU_GSP_WRITE_SCRATCH_REGISTER
+RpcVgpuGspWriteScratchRegister     rpcVgpuGspWriteScratchRegister_GA102;  // GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+RpcVgpuGspWriteScratchRegister     rpcVgpuGspWriteScratchRegister_STUB;  // TU10X, GA100
 
                                                // RPC:SET_PAGE_DIRECTORY
-RpcSetPageDirectory                rpcSetPageDirectory_v03_00;
 RpcSetPageDirectory                rpcSetPageDirectory_v1E_05;
 RpcSetPageDirectory                rpcSetPageDirectory_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
+                                               // RPC:CTRL_GET_P2P_CAPS_V2
+RpcCtrlGetP2pCapsV2                rpcCtrlGetP2pCapsV2_v1F_0D;
+RpcCtrlGetP2pCapsV2                rpcCtrlGetP2pCapsV2_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_NVLINK_GET_INBAND_RECEIVED_DATA
+RpcCtrlNvlinkGetInbandReceivedData   rpcCtrlNvlinkGetInbandReceivedData_v25_0C;
+RpcCtrlNvlinkGetInbandReceivedData   rpcCtrlNvlinkGetInbandReceivedData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GET_CE_PCE_MASK
+RpcCtrlGetCePceMask                rpcCtrlGetCePceMask_v1A_0E;
+RpcCtrlGetCePceMask                rpcCtrlGetCePceMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GET_NVLINK_PEER_ID_MASK
+RpcCtrlGetNvlinkPeerIdMask         rpcCtrlGetNvlinkPeerIdMask_v1A_0E;
+RpcCtrlGetNvlinkPeerIdMask         rpcCtrlGetNvlinkPeerIdMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GPU_EVICT_CTX
+RpcCtrlGpuEvictCtx                 rpcCtrlGpuEvictCtx_v1A_1C;
+RpcCtrlGpuEvictCtx                 rpcCtrlGpuEvictCtx_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GET_MMU_DEBUG_MODE
+RpcCtrlGetMmuDebugMode             rpcCtrlGetMmuDebugMode_v1E_06;
+RpcCtrlGetMmuDebugMode             rpcCtrlGetMmuDebugMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:INVALIDATE_TLB
+RpcInvalidateTlb                   rpcInvalidateTlb_v23_03;
+RpcInvalidateTlb                   rpcInvalidateTlb_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_SET_SINGLE_SM_SINGLE_STEP
+RpcCtrlDbgSetSingleSmSingleStep    rpcCtrlDbgSetSingleSmSingleStep_v1C_02;
+RpcCtrlDbgSetSingleSmSingleStep    rpcCtrlDbgSetSingleSmSingleStep_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
                                                // RPC:UNLOADING_GUEST_DRIVER
-RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_v03_00;
 RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_v1F_07;
 RpcUnloadingGuestDriver            rpcUnloadingGuestDriver_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:GET_ENGINE_UTILIZATION_WRAPPER
+RpcGetEngineUtilizationWrapper     rpcGetEngineUtilizationWrapper_GM204;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:GET_CONSOLIDATED_GR_STATIC_INFO
+RpcGetConsolidatedGrStaticInfo     rpcGetConsolidatedGrStaticInfo_v1B_04;
+RpcGetConsolidatedGrStaticInfo     rpcGetConsolidatedGrStaticInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:SWITCH_TO_VGA
+RpcSwitchToVga                     rpcSwitchToVga_v03_00;
+RpcSwitchToVga                     rpcSwitchToVga_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_RESET_CHANNEL
+RpcCtrlResetChannel                rpcCtrlResetChannel_v1A_09;
+RpcCtrlResetChannel                rpcCtrlResetChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GPFIFO_SCHEDULE
+RpcCtrlGpfifoSchedule              rpcCtrlGpfifoSchedule_v1A_0A;
+RpcCtrlGpfifoSchedule              rpcCtrlGpfifoSchedule_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:SET_REGISTRY
 RpcSetRegistry                     rpcSetRegistry_v17_00;
 RpcSetRegistry                     rpcSetRegistry_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
-                                               // RPC:RMFS_CLOSE_QUEUE
-RpcRmfsCloseQueue                  rpcRmfsCloseQueue_v15_00;
-RpcRmfsCloseQueue                  rpcRmfsCloseQueue_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+                                               // RPC:CTRL_GET_NVLINK_STATUS
+RpcCtrlGetNvlinkStatus             rpcCtrlGetNvlinkStatus_v23_04;
+RpcCtrlGetNvlinkStatus             rpcCtrlGetNvlinkStatus_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
-                                               // RPC:GET_STATIC_INFO
-RpcGetStaticInfo                   rpcGetStaticInfo_v17_05;
-RpcGetStaticInfo                   rpcGetStaticInfo_v18_03;
-RpcGetStaticInfo                   rpcGetStaticInfo_v18_04;
-RpcGetStaticInfo                   rpcGetStaticInfo_v18_0E;
-RpcGetStaticInfo                   rpcGetStaticInfo_v18_10;
-RpcGetStaticInfo                   rpcGetStaticInfo_v18_11;
-RpcGetStaticInfo                   rpcGetStaticInfo_v18_13;
-RpcGetStaticInfo                   rpcGetStaticInfo_v18_16;
-RpcGetStaticInfo                   rpcGetStaticInfo_v19_00;
-RpcGetStaticInfo                   rpcGetStaticInfo_v1A_00;
-RpcGetStaticInfo                   rpcGetStaticInfo_v1A_05;
-RpcGetStaticInfo                   rpcGetStaticInfo_v20_01;
-RpcGetStaticInfo                   rpcGetStaticInfo_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+                                               // RPC:GET_STATIC_DATA
+RpcGetStaticData                   rpcGetStaticData_v25_0E;
+RpcGetStaticData                   rpcGetStaticData_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GR_GET_TPC_PARTITION_MODE
+RpcCtrlGrGetTpcPartitionMode       rpcCtrlGrGetTpcPartitionMode_v1C_04;
+RpcCtrlGrGetTpcPartitionMode       rpcCtrlGrGetTpcPartitionMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_STOP_CHANNEL
+RpcCtrlStopChannel                 rpcCtrlStopChannel_v1A_1E;
+RpcCtrlStopChannel                 rpcCtrlStopChannel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:SET_SURFACE_PROPERTIES
+RpcSetSurfaceProperties            rpcSetSurfaceProperties_v07_07;
+RpcSetSurfaceProperties            rpcSetSurfaceProperties_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GPFIFO_SET_WORK_SUBMIT_TOKEN_NOTIF_INDEX
+RpcCtrlGpfifoSetWorkSubmitTokenNotifIndex   rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_v1F_0A;
+RpcCtrlGpfifoSetWorkSubmitTokenNotifIndex   rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_TIMER_SET_GR_TICK_FREQ
+RpcCtrlTimerSetGrTickFreq          rpcCtrlTimerSetGrTickFreq_v1A_1F;
+RpcCtrlTimerSetGrTickFreq          rpcCtrlTimerSetGrTickFreq_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:ALLOC_EVENT
+RpcAllocEvent                      rpcAllocEvent_v03_00;
+RpcAllocEvent                      rpcAllocEvent_STUB;       // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GR_PC_SAMPLING_MODE
+RpcCtrlGrPcSamplingMode            rpcCtrlGrPcSamplingMode_v1A_1F;
+RpcCtrlGrPcSamplingMode            rpcCtrlGrPcSamplingMode_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_MC_SERVICE_INTERRUPTS
+RpcCtrlMcServiceInterrupts         rpcCtrlMcServiceInterrupts_v1A_0E;
+RpcCtrlMcServiceInterrupts         rpcCtrlMcServiceInterrupts_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_READ_ALL_SM_ERROR_STATES
+RpcCtrlDbgReadAllSmErrorStates     rpcCtrlDbgReadAllSmErrorStates_v21_06;
+RpcCtrlDbgReadAllSmErrorStates     rpcCtrlDbgReadAllSmErrorStates_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_SET_ZBC_COLOR_CLEAR
+RpcCtrlSetZbcColorClear            rpcCtrlSetZbcColorClear_v1A_09;
+RpcCtrlSetZbcColorClear            rpcCtrlSetZbcColorClear_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:GET_ENCODER_CAPACITY
+RpcGetEncoderCapacity              rpcGetEncoderCapacity_v07_00;
+RpcGetEncoderCapacity              rpcGetEncoderCapacity_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GET_P2P_CAPS
+RpcCtrlGetP2pCaps                  rpcCtrlGetP2pCaps_v1F_0D;
+RpcCtrlGetP2pCaps                  rpcCtrlGetP2pCaps_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:PERF_GET_LEVEL_INFO
+RpcPerfGetLevelInfo                rpcPerfGetLevelInfo_v03_00;
+RpcPerfGetLevelInfo                rpcPerfGetLevelInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:ALLOC_OBJECT
+RpcAllocObject                     rpcAllocObject_v25_08;
+RpcAllocObject                     rpcAllocObject_STUB;      // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GPU_HANDLE_VF_PRI_FAULT
+RpcCtrlGpuHandleVfPriFault         rpcCtrlGpuHandleVfPriFault_v1A_09;
+RpcCtrlGpuHandleVfPriFault         rpcCtrlGpuHandleVfPriFault_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:RM_API_CONTROL
+RpcRmApiControl                    rpcRmApiControl_v25_0D;
+RpcRmApiControl                    rpcRmApiControl_v25_0F;
+RpcRmApiControl                    rpcRmApiControl_v25_10;
+RpcRmApiControl                    rpcRmApiControl_v25_14;
+RpcRmApiControl                    rpcRmApiControl_v25_15;
+RpcRmApiControl                    rpcRmApiControl_v25_16;
+RpcRmApiControl                    rpcRmApiControl_v25_17;
+RpcRmApiControl                    rpcRmApiControl_v25_18;
+RpcRmApiControl                    rpcRmApiControl_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_FABRIC_MEM_STATS
+RpcCtrlFabricMemStats              rpcCtrlFabricMemStats_v1E_0C;
+RpcCtrlFabricMemStats              rpcCtrlFabricMemStats_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GR_CTXSW_ZCULL_BIND
+RpcCtrlGrCtxswZcullBind            rpcCtrlGrCtxswZcullBind_v1A_0E;
+RpcCtrlGrCtxswZcullBind            rpcCtrlGrCtxswZcullBind_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_INTERNAL_MEMSYS_SET_ZBC_REFERENCED
+RpcCtrlInternalMemsysSetZbcReferenced   rpcCtrlInternalMemsysSetZbcReferenced_v1F_05;
+RpcCtrlInternalMemsysSetZbcReferenced   rpcCtrlInternalMemsysSetZbcReferenced_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_PERF_RATED_TDP_SET_CONTROL
+RpcCtrlPerfRatedTdpSetControl      rpcCtrlPerfRatedTdpSetControl_v1A_1F;
+RpcCtrlPerfRatedTdpSetControl      rpcCtrlPerfRatedTdpSetControl_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_EXEC_PARTITIONS_CREATE
+RpcCtrlExecPartitionsCreate        rpcCtrlExecPartitionsCreate_v24_05;
+RpcCtrlExecPartitionsCreate        rpcCtrlExecPartitionsCreate_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GPFIFO_GET_WORK_SUBMIT_TOKEN
+RpcCtrlGpfifoGetWorkSubmitToken    rpcCtrlGpfifoGetWorkSubmitToken_v1F_0A;
+RpcCtrlGpfifoGetWorkSubmitToken    rpcCtrlGpfifoGetWorkSubmitToken_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:IDLE_CHANNELS
 RpcIdleChannels                    rpcIdleChannels_v03_00;
 RpcIdleChannels                    rpcIdleChannels_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
+                                               // RPC:CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE
+RpcCtrlCmdInternalGpuStartFabricProbe   rpcCtrlCmdInternalGpuStartFabricProbe_v25_09;
+RpcCtrlCmdInternalGpuStartFabricProbe   rpcCtrlCmdInternalGpuStartFabricProbe_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:GET_BRAND_CAPS
+RpcGetBrandCaps                    rpcGetBrandCaps_v25_12;
+RpcGetBrandCaps                    rpcGetBrandCaps_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:RESTORE_HIBERNATION_DATA
+RpcRestoreHibernationData          rpcRestoreHibernationData_v1E_0E;
+RpcRestoreHibernationData          rpcRestoreHibernationData_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_FLA_SETUP_INSTANCE_MEM_BLOCK
+RpcCtrlFlaSetupInstanceMemBlock    rpcCtrlFlaSetupInstanceMemBlock_v21_05;
+RpcCtrlFlaSetupInstanceMemBlock    rpcCtrlFlaSetupInstanceMemBlock_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM
+RpcCtrlInternalSriovPromotePmaStream   rpcCtrlInternalSriovPromotePmaStream_v1C_0C;
+RpcCtrlInternalSriovPromotePmaStream   rpcCtrlInternalSriovPromotePmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_FB_GET_FS_INFO
+RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_v24_00;
+RpcCtrlFbGetFsInfo                 rpcCtrlFbGetFsInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_SET_CHANNEL_INTERLEAVE_LEVEL
+RpcCtrlSetChannelInterleaveLevel   rpcCtrlSetChannelInterleaveLevel_v1A_0A;
+RpcCtrlSetChannelInterleaveLevel   rpcCtrlSetChannelInterleaveLevel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_RESUME_CONTEXT
+RpcCtrlDbgResumeContext            rpcCtrlDbgResumeContext_v1A_10;
+RpcCtrlDbgResumeContext            rpcCtrlDbgResumeContext_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:ALLOC_ROOT
+RpcAllocRoot                       rpcAllocRoot_v07_00;
+RpcAllocRoot                       rpcAllocRoot_STUB;        // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_FIFO_DISABLE_CHANNELS
+RpcCtrlFifoDisableChannels         rpcCtrlFifoDisableChannels_v1A_0A;
+RpcCtrlFifoDisableChannels         rpcCtrlFifoDisableChannels_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_SET_HS_CREDITS
+RpcCtrlSetHsCredits                rpcCtrlSetHsCredits_v21_08;
+RpcCtrlSetHsCredits                rpcCtrlSetHsCredits_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:GET_ENGINE_UTILIZATION
+RpcGetEngineUtilization            rpcGetEngineUtilization_v1F_0E;
+RpcGetEngineUtilization            rpcGetEngineUtilization_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GET_ZBC_CLEAR_TABLE_ENTRY
+RpcCtrlGetZbcClearTableEntry       rpcCtrlGetZbcClearTableEntry_v1A_0E;
+RpcCtrlGetZbcClearTableEntry       rpcCtrlGetZbcClearTableEntry_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_NVENC_SW_SESSION_UPDATE_INFO
+RpcCtrlNvencSwSessionUpdateInfo    rpcCtrlNvencSwSessionUpdateInfo_v1A_09;
+RpcCtrlNvencSwSessionUpdateInfo    rpcCtrlNvencSwSessionUpdateInfo_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_SUSPEND_CONTEXT
+RpcCtrlDbgSuspendContext           rpcCtrlDbgSuspendContext_v1A_10;
+RpcCtrlDbgSuspendContext           rpcCtrlDbgSuspendContext_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_GET_P2P_CAPS_MATRIX
+RpcCtrlGetP2pCapsMatrix            rpcCtrlGetP2pCapsMatrix_v1A_0E;
+RpcCtrlGetP2pCapsMatrix            rpcCtrlGetP2pCapsMatrix_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_EXEC_REG_OPS
+RpcCtrlDbgExecRegOps               rpcCtrlDbgExecRegOps_v1A_10;
+RpcCtrlDbgExecRegOps               rpcCtrlDbgExecRegOps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_FREE_PMA_STREAM
+RpcCtrlFreePmaStream               rpcCtrlFreePmaStream_v1A_1F;
+RpcCtrlFreePmaStream               rpcCtrlFreePmaStream_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_SET_TSG_INTERLEAVE_LEVEL
+RpcCtrlSetTsgInterleaveLevel       rpcCtrlSetTsgInterleaveLevel_v1A_0A;
+RpcCtrlSetTsgInterleaveLevel       rpcCtrlSetTsgInterleaveLevel_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_MASTER_GET_VIRTUAL_FUNCTION_ERROR_CONT_INTR_MASK
+RpcCtrlMasterGetVirtualFunctionErrorContIntrMask   rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_v1F_0D;
+RpcCtrlMasterGetVirtualFunctionErrorContIntrMask   rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:LOG
+RpcLog                             rpcLog_v03_00;
+RpcLog                             rpcLog_STUB;              // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_EXEC_PARTITIONS_DELETE
+RpcCtrlExecPartitionsDelete        rpcCtrlExecPartitionsDelete_v1F_0A;
+RpcCtrlExecPartitionsDelete        rpcCtrlExecPartitionsDelete_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_PERF_BOOST
+RpcCtrlPerfBoost                   rpcCtrlPerfBoost_v1A_09;
+RpcCtrlPerfBoost                   rpcCtrlPerfBoost_STUB;    // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_DBG_SET_MODE_MMU_DEBUG
+RpcCtrlDbgSetModeMmuDebug          rpcCtrlDbgSetModeMmuDebug_v1A_10;
+RpcCtrlDbgSetModeMmuDebug          rpcCtrlDbgSetModeMmuDebug_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_FIFO_SET_CHANNEL_PROPERTIES
+RpcCtrlFifoSetChannelProperties    rpcCtrlFifoSetChannelProperties_v1A_16;
+RpcCtrlFifoSetChannelProperties    rpcCtrlFifoSetChannelProperties_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_SUBDEVICE_GET_P2P_CAPS
+RpcCtrlSubdeviceGetP2pCaps         rpcCtrlSubdeviceGetP2pCaps_v21_02;
+RpcCtrlSubdeviceGetP2pCaps         rpcCtrlSubdeviceGetP2pCaps_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
                                                // RPC:UPDATE_BAR_PDE
 RpcUpdateBarPde                    rpcUpdateBarPde_v15_00;
 RpcUpdateBarPde                    rpcUpdateBarPde_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
+                                               // RPC:CTRL_BIND_PM_RESOURCES
+RpcCtrlBindPmResources             rpcCtrlBindPmResources_v1A_0F;
+RpcCtrlBindPmResources             rpcCtrlBindPmResources_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:MAP_MEMORY_DMA
 RpcMapMemoryDma                    rpcMapMemoryDma_v03_00;
@@ -103,9 +535,9 @@ RpcMapMemoryDma                    rpcMapMemoryDma_STUB;     // TU10X, GA100, GA
 RpcUnmapMemoryDma                  rpcUnmapMemoryDma_v03_00;
 RpcUnmapMemoryDma                  rpcUnmapMemoryDma_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
-                                               // RPC:RMFS_TEST
-RpcRmfsTest                        rpcRmfsTest_v15_00;
-RpcRmfsTest                        rpcRmfsTest_STUB;         // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+                                               // RPC:SET_GUEST_SYSTEM_INFO_EXT
+RpcSetGuestSystemInfoExt           rpcSetGuestSystemInfoExt_v15_02;
+RpcSetGuestSystemInfoExt           rpcSetGuestSystemInfoExt_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
 
 
@@ -282,23 +714,6 @@ static void rpc_iGrp_ipVersions_Install_v09_0B(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v09_0C(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v12_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
@@ -435,346 +850,6 @@ static void rpc_iGrp_ipVersions_Install_v17_00(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v17_04(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v17_05(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_03(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_04(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_05(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_06(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_07(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_08(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_09(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_0A(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_0B(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_0C(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_0D(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_0E(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_0F(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_10(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_11(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v18_12(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
@@ -792,228 +867,7 @@ static void rpc_iGrp_ipVersions_Install_v18_12(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_13(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_14(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_15(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v18_16(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v19_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v19_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_03(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_04(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1A_05(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_06(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_07(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -1081,41 +935,7 @@ static void rpc_iGrp_ipVersions_Install_v1A_0A(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_0B(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1A_0C(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_0D(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -1183,58 +1003,7 @@ static void rpc_iGrp_ipVersions_Install_v1A_10(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_12(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_13(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1A_14(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_15(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -1268,58 +1037,7 @@ static void rpc_iGrp_ipVersions_Install_v1A_16(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_17(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_18(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1A_1A(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_1B(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -1421,75 +1139,7 @@ static void rpc_iGrp_ipVersions_Install_v1A_20(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_21(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_22(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1A_23(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1A_24(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1B_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -1574,41 +1224,7 @@ static void rpc_iGrp_ipVersions_Install_v1C_05(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1C_07(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1C_08(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1C_09(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -1676,23 +1292,6 @@ static void rpc_iGrp_ipVersions_Install_v1C_0C(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1D_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1D_05(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
@@ -1711,23 +1310,6 @@ static void rpc_iGrp_ipVersions_Install_v1D_05(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 
 // No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1D_06(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1E_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -1812,23 +1394,6 @@ static void rpc_iGrp_ipVersions_Install_v1E_07(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1E_08(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1E_0A(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
@@ -1880,58 +1445,7 @@ static void rpc_iGrp_ipVersions_Install_v1E_0C(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1E_0D(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1E_0E(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1F_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1F_03(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -1983,23 +1497,6 @@ static void rpc_iGrp_ipVersions_Install_v1F_05(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 
 // No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v1F_07(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1F_08(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -2101,75 +1598,7 @@ static void rpc_iGrp_ipVersions_Install_v1F_0E(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v1F_0F(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v20_00(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v20_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v20_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v20_03(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -2204,23 +1633,6 @@ static void rpc_iGrp_ipVersions_Install_v21_02(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 
 // No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v21_03(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v21_04(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -2305,75 +1717,7 @@ static void rpc_iGrp_ipVersions_Install_v21_08(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v21_09(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v21_0A(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v21_0B(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v22_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v23_02(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -2458,23 +1802,6 @@ static void rpc_iGrp_ipVersions_Install_v24_00(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v24_01(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
-{
-#if 0
-
-    POBJGPU pGpu = pInfo->pGpu;
-    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
-    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
-
-    // avoid possible unused warnings
-    pGpu += 0;
-    pRpcHal += 0;
-
-
-#endif // 
-}
-
-// No enabled chips use this variant provider
 static void rpc_iGrp_ipVersions_Install_v24_05(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
@@ -2509,7 +1836,262 @@ static void rpc_iGrp_ipVersions_Install_v24_06(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 }
 
 // No enabled chips use this variant provider
-static void rpc_iGrp_ipVersions_Install_v24_0A(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+static void rpc_iGrp_ipVersions_Install_v25_04(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_08(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_09(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_0A(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_0C(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_0D(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_0E(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_0F(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_10(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_11(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_12(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_14(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_15(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_16(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_17(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_18(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
 {
 #if 0
 
@@ -2541,100 +2123,407 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     pRpcHal += 0;
 
     // fixup per-interface overrides?
+    if (IsIPVersionInRange(pRpc, 0x1A230000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFifoSetupVfZombieSubctxPdb = rpcCtrlFifoSetupVfZombieSubctxPdb_v1A_23;
     if (IsIPVersionInRange(pRpc, 0x15000000, 0xFFFFFFFF))
        pRpcHal->rpcVgpuPfRegRead32 = rpcVgpuPfRegRead32_v15_00;
+    if (IsIPVersionInRange(pRpc, 0x21030000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlBusUnsetP2pMapping = rpcCtrlBusUnsetP2pMapping_v21_03;
     if (IsIPVersionInRange(pRpc, 0x18120000, 0xFFFFFFFF))
        pRpcHal->rpcDumpProtobufComponent = rpcDumpProtobufComponent_v18_12;
     if (IsIPVersionInRange(pRpc, 0x23050000, 0xFFFFFFFF))
        pRpcHal->rpcEccNotifierWriteAck = rpcEccNotifierWriteAck_v23_05;
     if (IsIPVersionInRange(pRpc, 0x13010000, 0xFFFFFFFF))
        pRpcHal->rpcAllocMemory = rpcAllocMemory_v13_01;
+    if (IsIPVersionInRange(pRpc, 0x21060000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgReadSingleSmErrorState = rpcCtrlDbgReadSingleSmErrorState_v21_06;
+    if (IsIPVersionInRange(pRpc, 0x1E0B0000, 0xFFFFFFFF))
+       pRpcHal->rpcDisableChannels = rpcDisableChannels_v1E_0B;
     if (IsIPVersionInRange(pRpc, 0x12010000, 0xFFFFFFFF))
        pRpcHal->rpcGpuExecRegOps = rpcGpuExecRegOps_v12_01;
-    if (IsIPVersionInRange(pRpc, 0x15000000, 0xFFFFFFFF))
-       pRpcHal->rpcRmfsInit = rpcRmfsInit_v15_00;
-    if (IsIPVersionInRange(pRpc, 0x03000000, 0x1E04FFFF))
-       pRpcHal->rpcUnsetPageDirectory = rpcUnsetPageDirectory_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x1A200000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpuPromoteCtx = rpcCtrlGpuPromoteCtx_v1A_20;
+    if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgSetNextStopTriggerType = rpcCtrlDbgSetNextStopTriggerType_v1A_10;
+    if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
+       pRpcHal->rpcAllocShareDevice = rpcAllocShareDevice_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlPreempt = rpcCtrlPreempt_v1A_0A;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpuInitializeCtx = rpcCtrlGpuInitializeCtx_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x1A0F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlReservePmAreaSmpc = rpcCtrlReservePmAreaSmpc_v1A_0F;
+    if (IsIPVersionInRange(pRpc, 0x21070000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpuMigratableOps = rpcCtrlGpuMigratableOps_v21_07;
+    if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgSetModeErrbarDebug = rpcCtrlDbgSetModeErrbarDebug_v1A_10;
+    if (IsIPVersionInRange(pRpc, 0x1A140000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlPmaStreamUpdateGetPut = rpcCtrlPmaStreamUpdateGetPut_v1A_14;
+    if (IsIPVersionInRange(pRpc, 0x1E0C0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFabricMemoryDescribe = rpcCtrlFabricMemoryDescribe_v1E_0C;
+    if (IsIPVersionInRange(pRpc, 0x1F040000, 0xFFFFFFFF))
+       pRpcHal->rpcAllocChannelDma = rpcAllocChannelDma_v1F_04;
+    if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlSetZbcDepthClear = rpcCtrlSetZbcDepthClear_v1A_09;
+    if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlResetIsolatedChannel = rpcCtrlResetIsolatedChannel_v1A_09;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDmaSetDefaultVaspace = rpcCtrlDmaSetDefaultVaspace_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x08010000, 0xFFFFFFFF))
+       pRpcHal->rpcAllocSubdevice = rpcAllocSubdevice_v08_01;
+    if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
+       pRpcHal->rpcFree = rpcFree_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x24050000, 0xFFFFFFFF))
+       pRpcHal->rpcDmaControl = rpcDmaControl_v24_05;
+    if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgClearSingleSmErrorState = rpcCtrlDbgClearSingleSmErrorState_v1A_10;
     if (IsIPVersionInRange(pRpc, 0x1E050000, 0xFFFFFFFF))
        pRpcHal->rpcUnsetPageDirectory = rpcUnsetPageDirectory_v1E_05;
     if (IsIPVersionInRange(pRpc, 0x14000000, 0xFFFFFFFF))
        pRpcHal->rpcGetGspStaticInfo = rpcGetGspStaticInfo_v14_00;
+    if (IsIPVersionInRange(pRpc, 0x1E0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcSaveHibernationData = rpcSaveHibernationData_v1E_0E;
+    if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
+       pRpcHal->rpcDupObject = rpcDupObject_v03_00;
     if (IsIPVersionInRange(pRpc, 0x17000000, 0xFFFFFFFF))
        pRpcHal->rpcGspSetSystemInfo = rpcGspSetSystemInfo_v17_00;
-    if (IsIPVersionInRange(pRpc, 0x15000000, 0xFFFFFFFF))
-       pRpcHal->rpcRmfsCleanup = rpcRmfsCleanup_v15_00;
-    if (IsIPVersionInRange(pRpc, 0x03000000, 0x1E04FFFF))
-       pRpcHal->rpcSetPageDirectory = rpcSetPageDirectory_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x210B0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlPmAreaPcSampler = rpcCtrlPmAreaPcSampler_v21_0B;
+    if (IsIPVersionInRange(pRpc, 0x1A0C0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgSetExceptionMask = rpcCtrlDbgSetExceptionMask_v1A_0C;
+    if (IsIPVersionInRange(pRpc, 0x1E040000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlVaspaceCopyServerReservedPdes = rpcCtrlVaspaceCopyServerReservedPdes_v1E_04;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGrCtxswPreemptionBind = rpcCtrlGrCtxswPreemptionBind_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x1A140000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlAllocPmaStream = rpcCtrlAllocPmaStream_v1A_14;
+    if (IsIPVersionInRange(pRpc, 0x1A0F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlReserveHwpmLegacy = rpcCtrlReserveHwpmLegacy_v1A_0F;
+    if (IsIPVersionInRange(pRpc, 0x1C080000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlInternalQuiescePmaChannel = rpcCtrlInternalQuiescePmaChannel_v1C_08;
+    if (IsIPVersionInRange(pRpc, 0x1A1F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlPerfRatedTdpGetStatus = rpcCtrlPerfRatedTdpGetStatus_v1A_1F;
+    if (IsIPVersionInRange(pRpc, 0x21030000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlBusSetP2pMapping = rpcCtrlBusSetP2pMapping_v21_03;
+    if (IsIPVersionInRange(pRpc, 0x25110000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpuGetInfoV2 = rpcCtrlGpuGetInfoV2_v25_11;
+    if (IsIPVersionInRange(pRpc, 0x21080000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetHsCredits = rpcCtrlGetHsCredits_v21_08;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGrSetCtxswPreemptionMode = rpcCtrlGrSetCtxswPreemptionMode_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x1A0F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlB0ccExecRegOps = rpcCtrlB0ccExecRegOps_v1A_0F;
+    if (IsIPVersionInRange(pRpc, 0x1A1D0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGrmgrGetGrFsInfo = rpcCtrlGrmgrGetGrFsInfo_v1A_1D;
+    if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetZbcClearTable = rpcCtrlGetZbcClearTable_v1A_09;
+    if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
+       pRpcHal->rpcCleanupSurface = rpcCleanupSurface_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlSetTimeslice = rpcCtrlSetTimeslice_v1A_0A;
+    if (IsIPVersionInRange(pRpc, 0x24060000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpuQueryEccStatus = rpcCtrlGpuQueryEccStatus_v24_06;
+    if (IsIPVersionInRange(pRpc, 0x25040000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgGetModeMmuDebug = rpcCtrlDbgGetModeMmuDebug_v25_04;
+    if (IsIPVersionInRange(pRpc, 0x1A0C0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgClearAllSmErrorStates = rpcCtrlDbgClearAllSmErrorStates_v1A_0C;
+    if (IsIPVersionInRange(pRpc, 0x1C040000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGrSetTpcPartitionMode = rpcCtrlGrSetTpcPartitionMode_v1C_04;
+    if (IsIPVersionInRange(pRpc, 0x21080000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetTotalHsCredits = rpcCtrlGetTotalHsCredits_v21_08;
+    if (IsIPVersionInRange(pRpc, 0x1E070000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlInternalPromoteFaultMethodBuffers = rpcCtrlInternalPromoteFaultMethodBuffers_v1E_07;
+    if (IsIPVersionInRange(pRpc, 0x250A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFbGetInfoV2 = rpcCtrlFbGetInfoV2_v25_0A;
     if (IsIPVersionInRange(pRpc, 0x1E050000, 0xFFFFFFFF))
        pRpcHal->rpcSetPageDirectory = rpcSetPageDirectory_v1E_05;
-    if (IsIPVersionInRange(pRpc, 0x03000000, 0x1F06FFFF))
-       pRpcHal->rpcUnloadingGuestDriver = rpcUnloadingGuestDriver_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x1F0D0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetP2pCapsV2 = rpcCtrlGetP2pCapsV2_v1F_0D;
+    if (IsIPVersionInRange(pRpc, 0x250C0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlNvlinkGetInbandReceivedData = rpcCtrlNvlinkGetInbandReceivedData_v25_0C;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetCePceMask = rpcCtrlGetCePceMask_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetNvlinkPeerIdMask = rpcCtrlGetNvlinkPeerIdMask_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x1A1C0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpuEvictCtx = rpcCtrlGpuEvictCtx_v1A_1C;
+    if (IsIPVersionInRange(pRpc, 0x1E060000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetMmuDebugMode = rpcCtrlGetMmuDebugMode_v1E_06;
+    if (IsIPVersionInRange(pRpc, 0x23030000, 0xFFFFFFFF))
+       pRpcHal->rpcInvalidateTlb = rpcInvalidateTlb_v23_03;
+    if (IsIPVersionInRange(pRpc, 0x1C020000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgSetSingleSmSingleStep = rpcCtrlDbgSetSingleSmSingleStep_v1C_02;
     if (IsIPVersionInRange(pRpc, 0x1F070000, 0xFFFFFFFF))
        pRpcHal->rpcUnloadingGuestDriver = rpcUnloadingGuestDriver_v1F_07;
+    if (IsIPVersionInRange(pRpc, 0x1B040000, 0xFFFFFFFF))
+       pRpcHal->rpcGetConsolidatedGrStaticInfo = rpcGetConsolidatedGrStaticInfo_v1B_04;
+    if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
+       pRpcHal->rpcSwitchToVga = rpcSwitchToVga_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlResetChannel = rpcCtrlResetChannel_v1A_09;
+    if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpfifoSchedule = rpcCtrlGpfifoSchedule_v1A_0A;
     if (IsIPVersionInRange(pRpc, 0x17000000, 0xFFFFFFFF))
        pRpcHal->rpcSetRegistry = rpcSetRegistry_v17_00;
-    if (IsIPVersionInRange(pRpc, 0x15000000, 0xFFFFFFFF))
-       pRpcHal->rpcRmfsCloseQueue = rpcRmfsCloseQueue_v15_00;
-    if (IsIPVersionInRange(pRpc, 0x17050000, 0x1802FFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v17_05;
-    if (IsIPVersionInRange(pRpc, 0x18030000, 0x1803FFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v18_03;
-    if (IsIPVersionInRange(pRpc, 0x18040000, 0x180DFFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v18_04;
-    if (IsIPVersionInRange(pRpc, 0x180E0000, 0x180FFFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v18_0E;
-    if (IsIPVersionInRange(pRpc, 0x18100000, 0x1810FFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v18_10;
-    if (IsIPVersionInRange(pRpc, 0x18110000, 0x1812FFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v18_11;
-    if (IsIPVersionInRange(pRpc, 0x18130000, 0x1815FFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v18_13;
-    if (IsIPVersionInRange(pRpc, 0x18160000, 0x18FFFFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v18_16;
-    if (IsIPVersionInRange(pRpc, 0x19000000, 0x19FFFFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v19_00;
-    if (IsIPVersionInRange(pRpc, 0x1A000000, 0x1A04FFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v1A_00;
-    if (IsIPVersionInRange(pRpc, 0x1A050000, 0x2000FFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v1A_05;
-    if (IsIPVersionInRange(pRpc, 0x20010000, 0xFFFFFFFF))
-       pRpcHal->rpcGetStaticInfo = rpcGetStaticInfo_v20_01;
+    if (IsIPVersionInRange(pRpc, 0x23040000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetNvlinkStatus = rpcCtrlGetNvlinkStatus_v23_04;
+    if (IsIPVersionInRange(pRpc, 0x250E0000, 0xFFFFFFFF))
+       pRpcHal->rpcGetStaticData = rpcGetStaticData_v25_0E;
+    if (IsIPVersionInRange(pRpc, 0x1C040000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGrGetTpcPartitionMode = rpcCtrlGrGetTpcPartitionMode_v1C_04;
+    if (IsIPVersionInRange(pRpc, 0x1A1E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlStopChannel = rpcCtrlStopChannel_v1A_1E;
+    if (IsIPVersionInRange(pRpc, 0x07070000, 0xFFFFFFFF))
+       pRpcHal->rpcSetSurfaceProperties = rpcSetSurfaceProperties_v07_07;
+    if (IsIPVersionInRange(pRpc, 0x1F0A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex = rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_v1F_0A;
+    if (IsIPVersionInRange(pRpc, 0x1A1F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlTimerSetGrTickFreq = rpcCtrlTimerSetGrTickFreq_v1A_1F;
+    if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
+       pRpcHal->rpcAllocEvent = rpcAllocEvent_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x1A1F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGrPcSamplingMode = rpcCtrlGrPcSamplingMode_v1A_1F;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlMcServiceInterrupts = rpcCtrlMcServiceInterrupts_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x21060000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgReadAllSmErrorStates = rpcCtrlDbgReadAllSmErrorStates_v21_06;
+    if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlSetZbcColorClear = rpcCtrlSetZbcColorClear_v1A_09;
+    if (IsIPVersionInRange(pRpc, 0x07000000, 0xFFFFFFFF))
+       pRpcHal->rpcGetEncoderCapacity = rpcGetEncoderCapacity_v07_00;
+    if (IsIPVersionInRange(pRpc, 0x1F0D0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetP2pCaps = rpcCtrlGetP2pCaps_v1F_0D;
+    if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
+       pRpcHal->rpcPerfGetLevelInfo = rpcPerfGetLevelInfo_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x25080000, 0xFFFFFFFF))
+       pRpcHal->rpcAllocObject = rpcAllocObject_v25_08;
+    if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpuHandleVfPriFault = rpcCtrlGpuHandleVfPriFault_v1A_09;
+    if (IsIPVersionInRange(pRpc, 0x250D0000, 0x250EFFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_0D;
+    if (IsIPVersionInRange(pRpc, 0x250F0000, 0x250FFFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_0F;
+    if (IsIPVersionInRange(pRpc, 0x25100000, 0x2513FFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_10;
+    if (IsIPVersionInRange(pRpc, 0x25140000, 0x2514FFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_14;
+    if (IsIPVersionInRange(pRpc, 0x25150000, 0x2515FFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_15;
+    if (IsIPVersionInRange(pRpc, 0x25160000, 0x2516FFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_16;
+    if (IsIPVersionInRange(pRpc, 0x25170000, 0x2517FFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_17;
+    if (IsIPVersionInRange(pRpc, 0x25180000, 0xFFFFFFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_18;
+    if (IsIPVersionInRange(pRpc, 0x1E0C0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFabricMemStats = rpcCtrlFabricMemStats_v1E_0C;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGrCtxswZcullBind = rpcCtrlGrCtxswZcullBind_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x1F050000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlInternalMemsysSetZbcReferenced = rpcCtrlInternalMemsysSetZbcReferenced_v1F_05;
+    if (IsIPVersionInRange(pRpc, 0x1A1F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlPerfRatedTdpSetControl = rpcCtrlPerfRatedTdpSetControl_v1A_1F;
+    if (IsIPVersionInRange(pRpc, 0x24050000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlExecPartitionsCreate = rpcCtrlExecPartitionsCreate_v24_05;
+    if (IsIPVersionInRange(pRpc, 0x1F0A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGpfifoGetWorkSubmitToken = rpcCtrlGpfifoGetWorkSubmitToken_v1F_0A;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
        pRpcHal->rpcIdleChannels = rpcIdleChannels_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x25090000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlCmdInternalGpuStartFabricProbe = rpcCtrlCmdInternalGpuStartFabricProbe_v25_09;
+    if (IsIPVersionInRange(pRpc, 0x25120000, 0xFFFFFFFF))
+       pRpcHal->rpcGetBrandCaps = rpcGetBrandCaps_v25_12;
+    if (IsIPVersionInRange(pRpc, 0x1E0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcRestoreHibernationData = rpcRestoreHibernationData_v1E_0E;
+    if (IsIPVersionInRange(pRpc, 0x21050000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFlaSetupInstanceMemBlock = rpcCtrlFlaSetupInstanceMemBlock_v21_05;
+    if (IsIPVersionInRange(pRpc, 0x1C0C0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlInternalSriovPromotePmaStream = rpcCtrlInternalSriovPromotePmaStream_v1C_0C;
+    if (IsIPVersionInRange(pRpc, 0x24000000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFbGetFsInfo = rpcCtrlFbGetFsInfo_v24_00;
+    if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlSetChannelInterleaveLevel = rpcCtrlSetChannelInterleaveLevel_v1A_0A;
+    if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgResumeContext = rpcCtrlDbgResumeContext_v1A_10;
+    if (IsIPVersionInRange(pRpc, 0x07000000, 0xFFFFFFFF))
+       pRpcHal->rpcAllocRoot = rpcAllocRoot_v07_00;
+    if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFifoDisableChannels = rpcCtrlFifoDisableChannels_v1A_0A;
+    if (IsIPVersionInRange(pRpc, 0x21080000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlSetHsCredits = rpcCtrlSetHsCredits_v21_08;
+    if (IsIPVersionInRange(pRpc, 0x1F0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcGetEngineUtilization = rpcGetEngineUtilization_v1F_0E;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetZbcClearTableEntry = rpcCtrlGetZbcClearTableEntry_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlNvencSwSessionUpdateInfo = rpcCtrlNvencSwSessionUpdateInfo_v1A_09;
+    if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgSuspendContext = rpcCtrlDbgSuspendContext_v1A_10;
+    if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlGetP2pCapsMatrix = rpcCtrlGetP2pCapsMatrix_v1A_0E;
+    if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgExecRegOps = rpcCtrlDbgExecRegOps_v1A_10;
+    if (IsIPVersionInRange(pRpc, 0x1A1F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFreePmaStream = rpcCtrlFreePmaStream_v1A_1F;
+    if (IsIPVersionInRange(pRpc, 0x1A0A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlSetTsgInterleaveLevel = rpcCtrlSetTsgInterleaveLevel_v1A_0A;
+    if (IsIPVersionInRange(pRpc, 0x1F0D0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlMasterGetVirtualFunctionErrorContIntrMask = rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_v1F_0D;
+    if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
+       pRpcHal->rpcLog = rpcLog_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x1F0A0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlExecPartitionsDelete = rpcCtrlExecPartitionsDelete_v1F_0A;
+    if (IsIPVersionInRange(pRpc, 0x1A090000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlPerfBoost = rpcCtrlPerfBoost_v1A_09;
+    if (IsIPVersionInRange(pRpc, 0x1A100000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlDbgSetModeMmuDebug = rpcCtrlDbgSetModeMmuDebug_v1A_10;
+    if (IsIPVersionInRange(pRpc, 0x1A160000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlFifoSetChannelProperties = rpcCtrlFifoSetChannelProperties_v1A_16;
+    if (IsIPVersionInRange(pRpc, 0x21020000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlSubdeviceGetP2pCaps = rpcCtrlSubdeviceGetP2pCaps_v21_02;
     if (IsIPVersionInRange(pRpc, 0x15000000, 0xFFFFFFFF))
        pRpcHal->rpcUpdateBarPde = rpcUpdateBarPde_v15_00;
+    if (IsIPVersionInRange(pRpc, 0x1A0F0000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlBindPmResources = rpcCtrlBindPmResources_v1A_0F;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
        pRpcHal->rpcMapMemoryDma = rpcMapMemoryDma_v03_00;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
        pRpcHal->rpcUnmapMemoryDma = rpcUnmapMemoryDma_v03_00;
-    if (IsIPVersionInRange(pRpc, 0x15000000, 0xFFFFFFFF))
-       pRpcHal->rpcRmfsTest = rpcRmfsTest_v15_00;
+    if (IsIPVersionInRange(pRpc, 0x15020000, 0xFFFFFFFF))
+       pRpcHal->rpcSetGuestSystemInfoExt = rpcSetGuestSystemInfoExt_v15_02;
 
     // Verify each 'dynamically set' interface was actually set
 
 #define _RPC_HAL_VERIFY_INTERFACE(_pHalFn) \
            NV_ASSERT_OR_RETURN_PRECOMP(_pHalFn != (void *) iGrp_ipVersions_UNASSIGNED, NV_ERR_NOT_SUPPORTED)
 
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFifoSetupVfZombieSubctxPdb);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcVgpuPfRegRead32);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlBusUnsetP2pMapping);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcDumpProtobufComponent);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcEccNotifierWriteAck);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcAllocMemory);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgReadSingleSmErrorState);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcDisableChannels);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGpuExecRegOps);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRmfsInit);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuPromoteCtx);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetNextStopTriggerType);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcAllocShareDevice);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPreempt);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuInitializeCtx);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlReservePmAreaSmpc);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuMigratableOps);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetModeErrbarDebug);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPmaStreamUpdateGetPut);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFabricMemoryDescribe);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcAllocChannelDma);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSetZbcDepthClear);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlResetIsolatedChannel);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDmaSetDefaultVaspace);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcAllocSubdevice);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcFree);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcDmaControl);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgClearSingleSmErrorState);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcUnsetPageDirectory);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetGspStaticInfo);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSaveHibernationData);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcDupObject);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGspSetSystemInfo);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRmfsCleanup);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPmAreaPcSampler);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetExceptionMask);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlVaspaceCopyServerReservedPdes);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrCtxswPreemptionBind);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlAllocPmaStream);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlReserveHwpmLegacy);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlInternalQuiescePmaChannel);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPerfRatedTdpGetStatus);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlBusSetP2pMapping);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuGetInfoV2);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetHsCredits);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrSetCtxswPreemptionMode);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlB0ccExecRegOps);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrmgrGetGrFsInfo);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetZbcClearTable);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCleanupSurface);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSetTimeslice);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuQueryEccStatus);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgGetModeMmuDebug);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgClearAllSmErrorStates);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrSetTpcPartitionMode);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetTotalHsCredits);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlInternalPromoteFaultMethodBuffers);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFbGetInfoV2);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSetPageDirectory);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetP2pCapsV2);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlNvlinkGetInbandReceivedData);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetCePceMask);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetNvlinkPeerIdMask);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuEvictCtx);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetMmuDebugMode);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcInvalidateTlb);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetSingleSmSingleStep);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcUnloadingGuestDriver);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetConsolidatedGrStaticInfo);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSwitchToVga);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlResetChannel);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpfifoSchedule);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSetRegistry);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRmfsCloseQueue);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetStaticInfo);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetNvlinkStatus);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetStaticData);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrGetTpcPartitionMode);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlStopChannel);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSetSurfaceProperties);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlTimerSetGrTickFreq);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcAllocEvent);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrPcSamplingMode);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlMcServiceInterrupts);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgReadAllSmErrorStates);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSetZbcColorClear);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetEncoderCapacity);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetP2pCaps);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcPerfGetLevelInfo);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcAllocObject);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpuHandleVfPriFault);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRmApiControl);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFabricMemStats);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGrCtxswZcullBind);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlInternalMemsysSetZbcReferenced);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPerfRatedTdpSetControl);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlExecPartitionsCreate);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGpfifoGetWorkSubmitToken);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcIdleChannels);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlCmdInternalGpuStartFabricProbe);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetBrandCaps);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRestoreHibernationData);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFlaSetupInstanceMemBlock);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlInternalSriovPromotePmaStream);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFbGetFsInfo);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSetChannelInterleaveLevel);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgResumeContext);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcAllocRoot);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFifoDisableChannels);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSetHsCredits);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcGetEngineUtilization);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetZbcClearTableEntry);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlNvencSwSessionUpdateInfo);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSuspendContext);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlGetP2pCapsMatrix);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgExecRegOps);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFreePmaStream);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSetTsgInterleaveLevel);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlMasterGetVirtualFunctionErrorContIntrMask);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcLog);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlExecPartitionsDelete);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlPerfBoost);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlDbgSetModeMmuDebug);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlFifoSetChannelProperties);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSubdeviceGetP2pCaps);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcUpdateBarPde);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlBindPmResources);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcMapMemoryDma);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcUnmapMemoryDma);
-    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcRmfsTest);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSetGuestSystemInfoExt);
 
 #undef _RPC_HAL_VERIFY_INTERFACE
 
@@ -2671,9 +2560,6 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v09_0B[] = {
         { 0x090B0000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v09_0C[] = {
-        { 0x090C0000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v12_01[] = {
         { 0x12010000, 0xFFFFFFFF, },          // 
     };
@@ -2698,110 +2584,11 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v17_00[] = {
         { 0x17000000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v17_04[] = {
-        { 0x17040000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v17_05[] = {
-        { 0x17050000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_00[] = {
-        { 0x18000000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_01[] = {
-        { 0x18010000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_02[] = {
-        { 0x18020000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_03[] = {
-        { 0x18030000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_04[] = {
-        { 0x18040000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_05[] = {
-        { 0x18050000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_06[] = {
-        { 0x18060000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_07[] = {
-        { 0x18070000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_08[] = {
-        { 0x18080000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_09[] = {
-        { 0x18090000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_0A[] = {
-        { 0x180A0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_0B[] = {
-        { 0x180B0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_0C[] = {
-        { 0x180C0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_0D[] = {
-        { 0x180D0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_0E[] = {
-        { 0x180E0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_0F[] = {
-        { 0x180F0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_10[] = {
-        { 0x18100000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_11[] = {
-        { 0x18110000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_12[] = {
         { 0x18120000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_13[] = {
-        { 0x18130000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_14[] = {
-        { 0x18140000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_15[] = {
-        { 0x18150000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v18_16[] = {
-        { 0x18160000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v19_00[] = {
-        { 0x19000000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v19_01[] = {
-        { 0x19010000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_00[] = {
-        { 0x1A000000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_01[] = {
-        { 0x1A010000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_02[] = {
-        { 0x1A020000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_03[] = {
-        { 0x1A030000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_04[] = {
-        { 0x1A040000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_05[] = {
         { 0x1A050000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_06[] = {
-        { 0x1A060000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_07[] = {
-        { 0x1A070000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_08[] = {
         { 0x1A080000, 0xFFFFFFFF, },          // 
@@ -2812,14 +2599,8 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_0A[] = {
         { 0x1A0A0000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_0B[] = {
-        { 0x1A0B0000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_0C[] = {
         { 0x1A0C0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_0D[] = {
-        { 0x1A0D0000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_0E[] = {
         { 0x1A0E0000, 0xFFFFFFFF, },          // 
@@ -2830,32 +2611,14 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_10[] = {
         { 0x1A100000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_12[] = {
-        { 0x1A120000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_13[] = {
-        { 0x1A130000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_14[] = {
         { 0x1A140000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_15[] = {
-        { 0x1A150000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_16[] = {
         { 0x1A160000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_17[] = {
-        { 0x1A170000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_18[] = {
-        { 0x1A180000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_1A[] = {
         { 0x1A1A0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_1B[] = {
-        { 0x1A1B0000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_1C[] = {
         { 0x1A1C0000, 0xFFFFFFFF, },          // 
@@ -2872,20 +2635,8 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_20[] = {
         { 0x1A200000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_21[] = {
-        { 0x1A210000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_22[] = {
-        { 0x1A220000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_23[] = {
         { 0x1A230000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1A_24[] = {
-        { 0x1A240000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1B_02[] = {
-        { 0x1B020000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1B_04[] = {
         { 0x1B040000, 0xFFFFFFFF, },          // 
@@ -2899,14 +2650,8 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1C_05[] = {
         { 0x1C050000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1C_07[] = {
-        { 0x1C070000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1C_08[] = {
         { 0x1C080000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1C_09[] = {
-        { 0x1C090000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1C_0A[] = {
         { 0x1C0A0000, 0xFFFFFFFF, },          // 
@@ -2917,17 +2662,11 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1C_0C[] = {
         { 0x1C0C0000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1D_02[] = {
-        { 0x1D020000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1D_05[] = {
         { 0x1D050000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1D_06[] = {
         { 0x1D060000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_01[] = {
-        { 0x1E010000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_04[] = {
         { 0x1E040000, 0xFFFFFFFF, },          // 
@@ -2941,9 +2680,6 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_07[] = {
         { 0x1E070000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_08[] = {
-        { 0x1E080000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_0A[] = {
         { 0x1E0A0000, 0xFFFFFFFF, },          // 
     };
@@ -2953,17 +2689,8 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_0C[] = {
         { 0x1E0C0000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_0D[] = {
-        { 0x1E0D0000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1E_0E[] = {
         { 0x1E0E0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_00[] = {
-        { 0x1F000000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_03[] = {
-        { 0x1F030000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_04[] = {
         { 0x1F040000, 0xFFFFFFFF, },          // 
@@ -2973,9 +2700,6 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_07[] = {
         { 0x1F070000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_08[] = {
-        { 0x1F080000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_0A[] = {
         { 0x1F0A0000, 0xFFFFFFFF, },          // 
@@ -2992,29 +2716,14 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_0E[] = {
         { 0x1F0E0000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v1F_0F[] = {
-        { 0x1F0F0000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v20_00[] = {
         { 0x20000000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v20_01[] = {
-        { 0x20010000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v20_02[] = {
-        { 0x20020000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v20_03[] = {
-        { 0x20030000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_02[] = {
         { 0x21020000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_03[] = {
         { 0x21030000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_04[] = {
-        { 0x21040000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_05[] = {
         { 0x21050000, 0xFFFFFFFF, },          // 
@@ -3028,20 +2737,8 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_08[] = {
         { 0x21080000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_09[] = {
-        { 0x21090000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_0A[] = {
-        { 0x210A0000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v21_0B[] = {
         { 0x210B0000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v22_01[] = {
-        { 0x22010000, 0xFFFFFFFF, },          // 
-    };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v23_02[] = {
-        { 0x23020000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v23_03[] = {
         { 0x23030000, 0xFFFFFFFF, },          // 
@@ -3055,17 +2752,59 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v24_00[] = {
         { 0x24000000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v24_01[] = {
-        { 0x24010000, 0xFFFFFFFF, },          // 
-    };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v24_05[] = {
         { 0x24050000, 0xFFFFFFFF, },          // 
     };
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v24_06[] = {
         { 0x24060000, 0xFFFFFFFF, },          // 
     };
-    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v24_0A[] = {
-        { 0x240A0000, 0xFFFFFFFF, },          // 
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_04[] = {
+        { 0x25040000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_08[] = {
+        { 0x25080000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_09[] = {
+        { 0x25090000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_0A[] = {
+        { 0x250A0000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_0C[] = {
+        { 0x250C0000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_0D[] = {
+        { 0x250D0000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_0E[] = {
+        { 0x250E0000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_0F[] = {
+        { 0x250F0000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_10[] = {
+        { 0x25100000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_11[] = {
+        { 0x25110000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_12[] = {
+        { 0x25120000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_14[] = {
+        { 0x25140000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_15[] = {
+        { 0x25150000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_16[] = {
+        { 0x25160000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_17[] = {
+        { 0x25170000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_18[] = {
+        { 0x25180000, 0xFFFFFFFF, },          // 
     };
 
 #define _RPC_HAL_IGRP_ENTRY_INIT(v) \
@@ -3081,7 +2820,6 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v08_01),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v09_08),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v09_0B),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v09_0C),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v12_01),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v13_01),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v14_00),               // 
@@ -3090,129 +2828,80 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v15_00),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v15_02),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v17_00),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v17_04),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v17_05),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_00),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_01),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_02),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_03),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_04),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_05),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_06),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_07),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_08),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_09),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_0A),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_0B),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_0C),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_0D),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_0E),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_0F),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_10),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_11),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v18_12),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_13),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_14),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_15),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v18_16),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v19_00),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v19_01),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_00),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_01),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_02),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_03),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_04),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_05),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_06),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_07),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_08),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_09),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_0A),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_0B),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_0C),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_0D),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_0E),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_0F),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_10),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_12),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_13),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_14),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_15),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_16),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_17),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_18),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_1A),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_1B),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_1C),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_1D),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_1E),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_1F),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_20),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_21),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_22),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1A_23),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1A_24),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1B_02),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1B_04),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1C_02),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1C_04),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1C_05),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1C_07),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1C_08),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1C_09),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1C_0A),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1C_0B),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1C_0C),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1D_02),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1D_05),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1D_06),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1E_01),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_04),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_05),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_06),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_07),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1E_08),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_0A),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_0B),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_0C),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1E_0D),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1E_0E),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1F_00),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1F_03),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_04),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_05),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_07),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1F_08),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_0A),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_0B),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_0C),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_0D),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v1F_0E),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v1F_0F),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v20_00),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v20_01),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v20_02),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v20_03),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v21_02),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v21_03),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v21_04),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v21_05),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v21_06),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v21_07),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v21_08),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v21_09),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v21_0A),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v21_0B),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v22_01),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v23_02),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v23_03),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v23_04),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v23_05),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v24_00),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v24_01),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v24_05),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v24_06),               // 
-        _RPC_HAL_IGRP_ENTRY_INIT(v24_0A),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_04),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_08),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_09),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_0A),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_0C),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_0D),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_0E),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_0F),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_10),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_11),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_12),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_14),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_15),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_16),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_17),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_18),               // 
     };
 
 #undef _RPC_HAL_IGRP_ENTRY_INIT
@@ -3237,26 +2926,136 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
     // TU102's RPC hal interface function pointer block
     static const RPC_HAL_IFACES rpcHalIfacesInitStruct_TU102 =
     {
+        rpcCtrlFifoSetupVfZombieSubctxPdb_STUB,   // rpcCtrlFifoSetupVfZombieSubctxPdb
         rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
+        rpcCtrlBusUnsetP2pMapping_STUB,          // rpcCtrlBusUnsetP2pMapping
         rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
         rpcEccNotifierWriteAck_STUB,             // rpcEccNotifierWriteAck
         rpcAllocMemory_STUB,                     // rpcAllocMemory
+        rpcCtrlDbgReadSingleSmErrorState_STUB,   // rpcCtrlDbgReadSingleSmErrorState
+        rpcDisableChannels_STUB,                 // rpcDisableChannels
         rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
-        rpcRmfsInit_STUB,                        // rpcRmfsInit
+        rpcCtrlGpuPromoteCtx_STUB,               // rpcCtrlGpuPromoteCtx
+        rpcCtrlDbgSetNextStopTriggerType_STUB,   // rpcCtrlDbgSetNextStopTriggerType
+        rpcAllocShareDevice_STUB,                // rpcAllocShareDevice
+        rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
+        rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
+        rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
+        rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
+        rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
+        rpcCtrlFabricMemoryDescribe_STUB,        // rpcCtrlFabricMemoryDescribe
+        rpcAllocChannelDma_STUB,                 // rpcAllocChannelDma
+        rpcCtrlSetZbcDepthClear_STUB,            // rpcCtrlSetZbcDepthClear
+        rpcCtrlResetIsolatedChannel_STUB,        // rpcCtrlResetIsolatedChannel
+        rpcCtrlDmaSetDefaultVaspace_STUB,        // rpcCtrlDmaSetDefaultVaspace
+        rpcAllocSubdevice_STUB,                  // rpcAllocSubdevice
+        rpcFree_STUB,                            // rpcFree
+        rpcDmaControl_STUB,                      // rpcDmaControl
+        rpcCtrlDbgClearSingleSmErrorState_STUB,   // rpcCtrlDbgClearSingleSmErrorState
         rpcUnsetPageDirectory_STUB,              // rpcUnsetPageDirectory
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
+        rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
+        rpcDupObject_STUB,                       // rpcDupObject
         rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
-        rpcRmfsCleanup_STUB,                     // rpcRmfsCleanup
+        rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
+        rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
+        rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
+        rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
+        rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
+        rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
+        rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits
+        rpcCtrlGrSetCtxswPreemptionMode_STUB,    // rpcCtrlGrSetCtxswPreemptionMode
+        rpcCtrlB0ccExecRegOps_STUB,              // rpcCtrlB0ccExecRegOps
+        rpcCtrlGrmgrGetGrFsInfo_STUB,            // rpcCtrlGrmgrGetGrFsInfo
+        rpcCtrlGetZbcClearTable_STUB,            // rpcCtrlGetZbcClearTable
+        rpcCleanupSurface_STUB,                  // rpcCleanupSurface
+        rpcCtrlSetTimeslice_STUB,                // rpcCtrlSetTimeslice
+        rpcCtrlGpuQueryEccStatus_STUB,           // rpcCtrlGpuQueryEccStatus
+        rpcCtrlDbgGetModeMmuDebug_STUB,          // rpcCtrlDbgGetModeMmuDebug
+        rpcCtrlDbgClearAllSmErrorStates_STUB,    // rpcCtrlDbgClearAllSmErrorStates
+        rpcVgpuGspRingDoorbell_STUB,             // rpcVgpuGspRingDoorbell
+        rpcCtrlGrSetTpcPartitionMode_STUB,       // rpcCtrlGrSetTpcPartitionMode
+        rpcCtrlGetTotalHsCredits_STUB,           // rpcCtrlGetTotalHsCredits
+        rpcCtrlInternalPromoteFaultMethodBuffers_STUB,   // rpcCtrlInternalPromoteFaultMethodBuffers
+        rpcCtrlFbGetInfoV2_STUB,                 // rpcCtrlFbGetInfoV2
+        rpcVgpuGspWriteScratchRegister_STUB,     // rpcVgpuGspWriteScratchRegister
         rpcSetPageDirectory_STUB,                // rpcSetPageDirectory
+        rpcCtrlGetP2pCapsV2_STUB,                // rpcCtrlGetP2pCapsV2
+        rpcCtrlNvlinkGetInbandReceivedData_STUB,   // rpcCtrlNvlinkGetInbandReceivedData
+        rpcCtrlGetCePceMask_STUB,                // rpcCtrlGetCePceMask
+        rpcCtrlGetNvlinkPeerIdMask_STUB,         // rpcCtrlGetNvlinkPeerIdMask
+        rpcCtrlGpuEvictCtx_STUB,                 // rpcCtrlGpuEvictCtx
+        rpcCtrlGetMmuDebugMode_STUB,             // rpcCtrlGetMmuDebugMode
+        rpcInvalidateTlb_STUB,                   // rpcInvalidateTlb
+        rpcCtrlDbgSetSingleSmSingleStep_STUB,    // rpcCtrlDbgSetSingleSmSingleStep
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
+        rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
+        rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcSwitchToVga_STUB,                     // rpcSwitchToVga
+        rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
+        rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
         rpcSetRegistry_STUB,                     // rpcSetRegistry
-        rpcRmfsCloseQueue_STUB,                  // rpcRmfsCloseQueue
-        rpcGetStaticInfo_STUB,                   // rpcGetStaticInfo
+        rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
+        rpcGetStaticData_STUB,                   // rpcGetStaticData
+        rpcCtrlGrGetTpcPartitionMode_STUB,       // rpcCtrlGrGetTpcPartitionMode
+        rpcCtrlStopChannel_STUB,                 // rpcCtrlStopChannel
+        rpcSetSurfaceProperties_STUB,            // rpcSetSurfaceProperties
+        rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB,   // rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex
+        rpcCtrlTimerSetGrTickFreq_STUB,          // rpcCtrlTimerSetGrTickFreq
+        rpcAllocEvent_STUB,                      // rpcAllocEvent
+        rpcCtrlGrPcSamplingMode_STUB,            // rpcCtrlGrPcSamplingMode
+        rpcCtrlMcServiceInterrupts_STUB,         // rpcCtrlMcServiceInterrupts
+        rpcCtrlDbgReadAllSmErrorStates_STUB,     // rpcCtrlDbgReadAllSmErrorStates
+        rpcCtrlSetZbcColorClear_STUB,            // rpcCtrlSetZbcColorClear
+        rpcGetEncoderCapacity_STUB,              // rpcGetEncoderCapacity
+        rpcCtrlGetP2pCaps_STUB,                  // rpcCtrlGetP2pCaps
+        rpcPerfGetLevelInfo_STUB,                // rpcPerfGetLevelInfo
+        rpcAllocObject_STUB,                     // rpcAllocObject
+        rpcCtrlGpuHandleVfPriFault_STUB,         // rpcCtrlGpuHandleVfPriFault
+        rpcRmApiControl_STUB,                    // rpcRmApiControl
+        rpcCtrlFabricMemStats_STUB,              // rpcCtrlFabricMemStats
+        rpcCtrlGrCtxswZcullBind_STUB,            // rpcCtrlGrCtxswZcullBind
+        rpcCtrlInternalMemsysSetZbcReferenced_STUB,   // rpcCtrlInternalMemsysSetZbcReferenced
+        rpcCtrlPerfRatedTdpSetControl_STUB,      // rpcCtrlPerfRatedTdpSetControl
+        rpcCtrlExecPartitionsCreate_STUB,        // rpcCtrlExecPartitionsCreate
+        rpcCtrlGpfifoGetWorkSubmitToken_STUB,    // rpcCtrlGpfifoGetWorkSubmitToken
         rpcIdleChannels_STUB,                    // rpcIdleChannels
+        rpcCtrlCmdInternalGpuStartFabricProbe_STUB,   // rpcCtrlCmdInternalGpuStartFabricProbe
+        rpcGetBrandCaps_STUB,                    // rpcGetBrandCaps
+        rpcRestoreHibernationData_STUB,          // rpcRestoreHibernationData
+        rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
+        rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
+        rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
+        rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
+        rpcAllocRoot_STUB,                       // rpcAllocRoot
+        rpcCtrlFifoDisableChannels_STUB,         // rpcCtrlFifoDisableChannels
+        rpcCtrlSetHsCredits_STUB,                // rpcCtrlSetHsCredits
+        rpcGetEngineUtilization_STUB,            // rpcGetEngineUtilization
+        rpcCtrlGetZbcClearTableEntry_STUB,       // rpcCtrlGetZbcClearTableEntry
+        rpcCtrlNvencSwSessionUpdateInfo_STUB,    // rpcCtrlNvencSwSessionUpdateInfo
+        rpcCtrlDbgSuspendContext_STUB,           // rpcCtrlDbgSuspendContext
+        rpcCtrlGetP2pCapsMatrix_STUB,            // rpcCtrlGetP2pCapsMatrix
+        rpcCtrlDbgExecRegOps_STUB,               // rpcCtrlDbgExecRegOps
+        rpcCtrlFreePmaStream_STUB,               // rpcCtrlFreePmaStream
+        rpcCtrlSetTsgInterleaveLevel_STUB,       // rpcCtrlSetTsgInterleaveLevel
+        rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_STUB,   // rpcCtrlMasterGetVirtualFunctionErrorContIntrMask
+        rpcLog_STUB,                             // rpcLog
+        rpcCtrlExecPartitionsDelete_STUB,        // rpcCtrlExecPartitionsDelete
+        rpcCtrlPerfBoost_STUB,                   // rpcCtrlPerfBoost
+        rpcCtrlDbgSetModeMmuDebug_STUB,          // rpcCtrlDbgSetModeMmuDebug
+        rpcCtrlFifoSetChannelProperties_STUB,    // rpcCtrlFifoSetChannelProperties
+        rpcCtrlSubdeviceGetP2pCaps_STUB,         // rpcCtrlSubdeviceGetP2pCaps
         rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
+        rpcCtrlBindPmResources_STUB,             // rpcCtrlBindPmResources
         rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
         rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
-        rpcRmfsTest_STUB,                        // rpcRmfsTest
+        rpcSetGuestSystemInfoExt_STUB,           // rpcSetGuestSystemInfoExt
         rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo
 
     };  // rpcHalIfacesInitStruct_TU102
@@ -3311,26 +3110,136 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
     // GA100's RPC hal interface function pointer block
     static const RPC_HAL_IFACES rpcHalIfacesInitStruct_GA100 =
     {
+        rpcCtrlFifoSetupVfZombieSubctxPdb_STUB,   // rpcCtrlFifoSetupVfZombieSubctxPdb
         rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
+        rpcCtrlBusUnsetP2pMapping_STUB,          // rpcCtrlBusUnsetP2pMapping
         rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
         rpcEccNotifierWriteAck_STUB,             // rpcEccNotifierWriteAck
         rpcAllocMemory_STUB,                     // rpcAllocMemory
+        rpcCtrlDbgReadSingleSmErrorState_STUB,   // rpcCtrlDbgReadSingleSmErrorState
+        rpcDisableChannels_STUB,                 // rpcDisableChannels
         rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
-        rpcRmfsInit_STUB,                        // rpcRmfsInit
+        rpcCtrlGpuPromoteCtx_STUB,               // rpcCtrlGpuPromoteCtx
+        rpcCtrlDbgSetNextStopTriggerType_STUB,   // rpcCtrlDbgSetNextStopTriggerType
+        rpcAllocShareDevice_STUB,                // rpcAllocShareDevice
+        rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
+        rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
+        rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
+        rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
+        rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
+        rpcCtrlFabricMemoryDescribe_STUB,        // rpcCtrlFabricMemoryDescribe
+        rpcAllocChannelDma_STUB,                 // rpcAllocChannelDma
+        rpcCtrlSetZbcDepthClear_STUB,            // rpcCtrlSetZbcDepthClear
+        rpcCtrlResetIsolatedChannel_STUB,        // rpcCtrlResetIsolatedChannel
+        rpcCtrlDmaSetDefaultVaspace_STUB,        // rpcCtrlDmaSetDefaultVaspace
+        rpcAllocSubdevice_STUB,                  // rpcAllocSubdevice
+        rpcFree_STUB,                            // rpcFree
+        rpcDmaControl_STUB,                      // rpcDmaControl
+        rpcCtrlDbgClearSingleSmErrorState_STUB,   // rpcCtrlDbgClearSingleSmErrorState
         rpcUnsetPageDirectory_STUB,              // rpcUnsetPageDirectory
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
+        rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
+        rpcDupObject_STUB,                       // rpcDupObject
         rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
-        rpcRmfsCleanup_STUB,                     // rpcRmfsCleanup
+        rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
+        rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
+        rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
+        rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
+        rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
+        rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
+        rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits
+        rpcCtrlGrSetCtxswPreemptionMode_STUB,    // rpcCtrlGrSetCtxswPreemptionMode
+        rpcCtrlB0ccExecRegOps_STUB,              // rpcCtrlB0ccExecRegOps
+        rpcCtrlGrmgrGetGrFsInfo_STUB,            // rpcCtrlGrmgrGetGrFsInfo
+        rpcCtrlGetZbcClearTable_STUB,            // rpcCtrlGetZbcClearTable
+        rpcCleanupSurface_STUB,                  // rpcCleanupSurface
+        rpcCtrlSetTimeslice_STUB,                // rpcCtrlSetTimeslice
+        rpcCtrlGpuQueryEccStatus_STUB,           // rpcCtrlGpuQueryEccStatus
+        rpcCtrlDbgGetModeMmuDebug_STUB,          // rpcCtrlDbgGetModeMmuDebug
+        rpcCtrlDbgClearAllSmErrorStates_STUB,    // rpcCtrlDbgClearAllSmErrorStates
+        rpcVgpuGspRingDoorbell_STUB,             // rpcVgpuGspRingDoorbell
+        rpcCtrlGrSetTpcPartitionMode_STUB,       // rpcCtrlGrSetTpcPartitionMode
+        rpcCtrlGetTotalHsCredits_STUB,           // rpcCtrlGetTotalHsCredits
+        rpcCtrlInternalPromoteFaultMethodBuffers_STUB,   // rpcCtrlInternalPromoteFaultMethodBuffers
+        rpcCtrlFbGetInfoV2_STUB,                 // rpcCtrlFbGetInfoV2
+        rpcVgpuGspWriteScratchRegister_STUB,     // rpcVgpuGspWriteScratchRegister
         rpcSetPageDirectory_STUB,                // rpcSetPageDirectory
+        rpcCtrlGetP2pCapsV2_STUB,                // rpcCtrlGetP2pCapsV2
+        rpcCtrlNvlinkGetInbandReceivedData_STUB,   // rpcCtrlNvlinkGetInbandReceivedData
+        rpcCtrlGetCePceMask_STUB,                // rpcCtrlGetCePceMask
+        rpcCtrlGetNvlinkPeerIdMask_STUB,         // rpcCtrlGetNvlinkPeerIdMask
+        rpcCtrlGpuEvictCtx_STUB,                 // rpcCtrlGpuEvictCtx
+        rpcCtrlGetMmuDebugMode_STUB,             // rpcCtrlGetMmuDebugMode
+        rpcInvalidateTlb_STUB,                   // rpcInvalidateTlb
+        rpcCtrlDbgSetSingleSmSingleStep_STUB,    // rpcCtrlDbgSetSingleSmSingleStep
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
+        rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
+        rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcSwitchToVga_STUB,                     // rpcSwitchToVga
+        rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
+        rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
         rpcSetRegistry_STUB,                     // rpcSetRegistry
-        rpcRmfsCloseQueue_STUB,                  // rpcRmfsCloseQueue
-        rpcGetStaticInfo_STUB,                   // rpcGetStaticInfo
+        rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
+        rpcGetStaticData_STUB,                   // rpcGetStaticData
+        rpcCtrlGrGetTpcPartitionMode_STUB,       // rpcCtrlGrGetTpcPartitionMode
+        rpcCtrlStopChannel_STUB,                 // rpcCtrlStopChannel
+        rpcSetSurfaceProperties_STUB,            // rpcSetSurfaceProperties
+        rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB,   // rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex
+        rpcCtrlTimerSetGrTickFreq_STUB,          // rpcCtrlTimerSetGrTickFreq
+        rpcAllocEvent_STUB,                      // rpcAllocEvent
+        rpcCtrlGrPcSamplingMode_STUB,            // rpcCtrlGrPcSamplingMode
+        rpcCtrlMcServiceInterrupts_STUB,         // rpcCtrlMcServiceInterrupts
+        rpcCtrlDbgReadAllSmErrorStates_STUB,     // rpcCtrlDbgReadAllSmErrorStates
+        rpcCtrlSetZbcColorClear_STUB,            // rpcCtrlSetZbcColorClear
+        rpcGetEncoderCapacity_STUB,              // rpcGetEncoderCapacity
+        rpcCtrlGetP2pCaps_STUB,                  // rpcCtrlGetP2pCaps
+        rpcPerfGetLevelInfo_STUB,                // rpcPerfGetLevelInfo
+        rpcAllocObject_STUB,                     // rpcAllocObject
+        rpcCtrlGpuHandleVfPriFault_STUB,         // rpcCtrlGpuHandleVfPriFault
+        rpcRmApiControl_STUB,                    // rpcRmApiControl
+        rpcCtrlFabricMemStats_STUB,              // rpcCtrlFabricMemStats
+        rpcCtrlGrCtxswZcullBind_STUB,            // rpcCtrlGrCtxswZcullBind
+        rpcCtrlInternalMemsysSetZbcReferenced_STUB,   // rpcCtrlInternalMemsysSetZbcReferenced
+        rpcCtrlPerfRatedTdpSetControl_STUB,      // rpcCtrlPerfRatedTdpSetControl
+        rpcCtrlExecPartitionsCreate_STUB,        // rpcCtrlExecPartitionsCreate
+        rpcCtrlGpfifoGetWorkSubmitToken_STUB,    // rpcCtrlGpfifoGetWorkSubmitToken
         rpcIdleChannels_STUB,                    // rpcIdleChannels
+        rpcCtrlCmdInternalGpuStartFabricProbe_STUB,   // rpcCtrlCmdInternalGpuStartFabricProbe
+        rpcGetBrandCaps_STUB,                    // rpcGetBrandCaps
+        rpcRestoreHibernationData_STUB,          // rpcRestoreHibernationData
+        rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
+        rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
+        rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
+        rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
+        rpcAllocRoot_STUB,                       // rpcAllocRoot
+        rpcCtrlFifoDisableChannels_STUB,         // rpcCtrlFifoDisableChannels
+        rpcCtrlSetHsCredits_STUB,                // rpcCtrlSetHsCredits
+        rpcGetEngineUtilization_STUB,            // rpcGetEngineUtilization
+        rpcCtrlGetZbcClearTableEntry_STUB,       // rpcCtrlGetZbcClearTableEntry
+        rpcCtrlNvencSwSessionUpdateInfo_STUB,    // rpcCtrlNvencSwSessionUpdateInfo
+        rpcCtrlDbgSuspendContext_STUB,           // rpcCtrlDbgSuspendContext
+        rpcCtrlGetP2pCapsMatrix_STUB,            // rpcCtrlGetP2pCapsMatrix
+        rpcCtrlDbgExecRegOps_STUB,               // rpcCtrlDbgExecRegOps
+        rpcCtrlFreePmaStream_STUB,               // rpcCtrlFreePmaStream
+        rpcCtrlSetTsgInterleaveLevel_STUB,       // rpcCtrlSetTsgInterleaveLevel
+        rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_STUB,   // rpcCtrlMasterGetVirtualFunctionErrorContIntrMask
+        rpcLog_STUB,                             // rpcLog
+        rpcCtrlExecPartitionsDelete_STUB,        // rpcCtrlExecPartitionsDelete
+        rpcCtrlPerfBoost_STUB,                   // rpcCtrlPerfBoost
+        rpcCtrlDbgSetModeMmuDebug_STUB,          // rpcCtrlDbgSetModeMmuDebug
+        rpcCtrlFifoSetChannelProperties_STUB,    // rpcCtrlFifoSetChannelProperties
+        rpcCtrlSubdeviceGetP2pCaps_STUB,         // rpcCtrlSubdeviceGetP2pCaps
         rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
+        rpcCtrlBindPmResources_STUB,             // rpcCtrlBindPmResources
         rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
         rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
-        rpcRmfsTest_STUB,                        // rpcRmfsTest
+        rpcSetGuestSystemInfoExt_STUB,           // rpcSetGuestSystemInfoExt
         rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo
 
     };  // rpcHalIfacesInitStruct_GA100
@@ -3347,6 +3256,8 @@ static void rpcHalIfacesSetup_GA102(RPC_HAL_IFACES *pRpcHal)
 {
     rpcHalIfacesSetup_GA100(pRpcHal);   // GA102 interfaces almost identical to GA100
 
+    pRpcHal->rpcVgpuGspRingDoorbell       = rpcVgpuGspRingDoorbell_GA102;
+    pRpcHal->rpcVgpuGspWriteScratchRegister = rpcVgpuGspWriteScratchRegister_GA102;
 }
 
 #endif  // GA10X or GA102
@@ -3395,26 +3306,136 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
     // AD102's RPC hal interface function pointer block
     static const RPC_HAL_IFACES rpcHalIfacesInitStruct_AD102 =
     {
+        rpcCtrlFifoSetupVfZombieSubctxPdb_STUB,   // rpcCtrlFifoSetupVfZombieSubctxPdb
         rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
+        rpcCtrlBusUnsetP2pMapping_STUB,          // rpcCtrlBusUnsetP2pMapping
         rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
         rpcEccNotifierWriteAck_STUB,             // rpcEccNotifierWriteAck
         rpcAllocMemory_STUB,                     // rpcAllocMemory
+        rpcCtrlDbgReadSingleSmErrorState_STUB,   // rpcCtrlDbgReadSingleSmErrorState
+        rpcDisableChannels_STUB,                 // rpcDisableChannels
         rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
-        rpcRmfsInit_STUB,                        // rpcRmfsInit
+        rpcCtrlGpuPromoteCtx_STUB,               // rpcCtrlGpuPromoteCtx
+        rpcCtrlDbgSetNextStopTriggerType_STUB,   // rpcCtrlDbgSetNextStopTriggerType
+        rpcAllocShareDevice_STUB,                // rpcAllocShareDevice
+        rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
+        rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
+        rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
+        rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
+        rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
+        rpcCtrlFabricMemoryDescribe_STUB,        // rpcCtrlFabricMemoryDescribe
+        rpcAllocChannelDma_STUB,                 // rpcAllocChannelDma
+        rpcCtrlSetZbcDepthClear_STUB,            // rpcCtrlSetZbcDepthClear
+        rpcCtrlResetIsolatedChannel_STUB,        // rpcCtrlResetIsolatedChannel
+        rpcCtrlDmaSetDefaultVaspace_STUB,        // rpcCtrlDmaSetDefaultVaspace
+        rpcAllocSubdevice_STUB,                  // rpcAllocSubdevice
+        rpcFree_STUB,                            // rpcFree
+        rpcDmaControl_STUB,                      // rpcDmaControl
+        rpcCtrlDbgClearSingleSmErrorState_STUB,   // rpcCtrlDbgClearSingleSmErrorState
         rpcUnsetPageDirectory_STUB,              // rpcUnsetPageDirectory
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
+        rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
+        rpcDupObject_STUB,                       // rpcDupObject
         rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
-        rpcRmfsCleanup_STUB,                     // rpcRmfsCleanup
+        rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
+        rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
+        rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
+        rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
+        rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
+        rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
+        rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits
+        rpcCtrlGrSetCtxswPreemptionMode_STUB,    // rpcCtrlGrSetCtxswPreemptionMode
+        rpcCtrlB0ccExecRegOps_STUB,              // rpcCtrlB0ccExecRegOps
+        rpcCtrlGrmgrGetGrFsInfo_STUB,            // rpcCtrlGrmgrGetGrFsInfo
+        rpcCtrlGetZbcClearTable_STUB,            // rpcCtrlGetZbcClearTable
+        rpcCleanupSurface_STUB,                  // rpcCleanupSurface
+        rpcCtrlSetTimeslice_STUB,                // rpcCtrlSetTimeslice
+        rpcCtrlGpuQueryEccStatus_STUB,           // rpcCtrlGpuQueryEccStatus
+        rpcCtrlDbgGetModeMmuDebug_STUB,          // rpcCtrlDbgGetModeMmuDebug
+        rpcCtrlDbgClearAllSmErrorStates_STUB,    // rpcCtrlDbgClearAllSmErrorStates
+        rpcVgpuGspRingDoorbell_GA102,            // rpcVgpuGspRingDoorbell
+        rpcCtrlGrSetTpcPartitionMode_STUB,       // rpcCtrlGrSetTpcPartitionMode
+        rpcCtrlGetTotalHsCredits_STUB,           // rpcCtrlGetTotalHsCredits
+        rpcCtrlInternalPromoteFaultMethodBuffers_STUB,   // rpcCtrlInternalPromoteFaultMethodBuffers
+        rpcCtrlFbGetInfoV2_STUB,                 // rpcCtrlFbGetInfoV2
+        rpcVgpuGspWriteScratchRegister_GA102,    // rpcVgpuGspWriteScratchRegister
         rpcSetPageDirectory_STUB,                // rpcSetPageDirectory
+        rpcCtrlGetP2pCapsV2_STUB,                // rpcCtrlGetP2pCapsV2
+        rpcCtrlNvlinkGetInbandReceivedData_STUB,   // rpcCtrlNvlinkGetInbandReceivedData
+        rpcCtrlGetCePceMask_STUB,                // rpcCtrlGetCePceMask
+        rpcCtrlGetNvlinkPeerIdMask_STUB,         // rpcCtrlGetNvlinkPeerIdMask
+        rpcCtrlGpuEvictCtx_STUB,                 // rpcCtrlGpuEvictCtx
+        rpcCtrlGetMmuDebugMode_STUB,             // rpcCtrlGetMmuDebugMode
+        rpcInvalidateTlb_STUB,                   // rpcInvalidateTlb
+        rpcCtrlDbgSetSingleSmSingleStep_STUB,    // rpcCtrlDbgSetSingleSmSingleStep
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
+        rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
+        rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcSwitchToVga_STUB,                     // rpcSwitchToVga
+        rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
+        rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
         rpcSetRegistry_STUB,                     // rpcSetRegistry
-        rpcRmfsCloseQueue_STUB,                  // rpcRmfsCloseQueue
-        rpcGetStaticInfo_STUB,                   // rpcGetStaticInfo
+        rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
+        rpcGetStaticData_STUB,                   // rpcGetStaticData
+        rpcCtrlGrGetTpcPartitionMode_STUB,       // rpcCtrlGrGetTpcPartitionMode
+        rpcCtrlStopChannel_STUB,                 // rpcCtrlStopChannel
+        rpcSetSurfaceProperties_STUB,            // rpcSetSurfaceProperties
+        rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB,   // rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex
+        rpcCtrlTimerSetGrTickFreq_STUB,          // rpcCtrlTimerSetGrTickFreq
+        rpcAllocEvent_STUB,                      // rpcAllocEvent
+        rpcCtrlGrPcSamplingMode_STUB,            // rpcCtrlGrPcSamplingMode
+        rpcCtrlMcServiceInterrupts_STUB,         // rpcCtrlMcServiceInterrupts
+        rpcCtrlDbgReadAllSmErrorStates_STUB,     // rpcCtrlDbgReadAllSmErrorStates
+        rpcCtrlSetZbcColorClear_STUB,            // rpcCtrlSetZbcColorClear
+        rpcGetEncoderCapacity_STUB,              // rpcGetEncoderCapacity
+        rpcCtrlGetP2pCaps_STUB,                  // rpcCtrlGetP2pCaps
+        rpcPerfGetLevelInfo_STUB,                // rpcPerfGetLevelInfo
+        rpcAllocObject_STUB,                     // rpcAllocObject
+        rpcCtrlGpuHandleVfPriFault_STUB,         // rpcCtrlGpuHandleVfPriFault
+        rpcRmApiControl_STUB,                    // rpcRmApiControl
+        rpcCtrlFabricMemStats_STUB,              // rpcCtrlFabricMemStats
+        rpcCtrlGrCtxswZcullBind_STUB,            // rpcCtrlGrCtxswZcullBind
+        rpcCtrlInternalMemsysSetZbcReferenced_STUB,   // rpcCtrlInternalMemsysSetZbcReferenced
+        rpcCtrlPerfRatedTdpSetControl_STUB,      // rpcCtrlPerfRatedTdpSetControl
+        rpcCtrlExecPartitionsCreate_STUB,        // rpcCtrlExecPartitionsCreate
+        rpcCtrlGpfifoGetWorkSubmitToken_STUB,    // rpcCtrlGpfifoGetWorkSubmitToken
         rpcIdleChannels_STUB,                    // rpcIdleChannels
+        rpcCtrlCmdInternalGpuStartFabricProbe_STUB,   // rpcCtrlCmdInternalGpuStartFabricProbe
+        rpcGetBrandCaps_STUB,                    // rpcGetBrandCaps
+        rpcRestoreHibernationData_STUB,          // rpcRestoreHibernationData
+        rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
+        rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
+        rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
+        rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
+        rpcAllocRoot_STUB,                       // rpcAllocRoot
+        rpcCtrlFifoDisableChannels_STUB,         // rpcCtrlFifoDisableChannels
+        rpcCtrlSetHsCredits_STUB,                // rpcCtrlSetHsCredits
+        rpcGetEngineUtilization_STUB,            // rpcGetEngineUtilization
+        rpcCtrlGetZbcClearTableEntry_STUB,       // rpcCtrlGetZbcClearTableEntry
+        rpcCtrlNvencSwSessionUpdateInfo_STUB,    // rpcCtrlNvencSwSessionUpdateInfo
+        rpcCtrlDbgSuspendContext_STUB,           // rpcCtrlDbgSuspendContext
+        rpcCtrlGetP2pCapsMatrix_STUB,            // rpcCtrlGetP2pCapsMatrix
+        rpcCtrlDbgExecRegOps_STUB,               // rpcCtrlDbgExecRegOps
+        rpcCtrlFreePmaStream_STUB,               // rpcCtrlFreePmaStream
+        rpcCtrlSetTsgInterleaveLevel_STUB,       // rpcCtrlSetTsgInterleaveLevel
+        rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_STUB,   // rpcCtrlMasterGetVirtualFunctionErrorContIntrMask
+        rpcLog_STUB,                             // rpcLog
+        rpcCtrlExecPartitionsDelete_STUB,        // rpcCtrlExecPartitionsDelete
+        rpcCtrlPerfBoost_STUB,                   // rpcCtrlPerfBoost
+        rpcCtrlDbgSetModeMmuDebug_STUB,          // rpcCtrlDbgSetModeMmuDebug
+        rpcCtrlFifoSetChannelProperties_STUB,    // rpcCtrlFifoSetChannelProperties
+        rpcCtrlSubdeviceGetP2pCaps_STUB,         // rpcCtrlSubdeviceGetP2pCaps
         rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
+        rpcCtrlBindPmResources_STUB,             // rpcCtrlBindPmResources
         rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
         rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
-        rpcRmfsTest_STUB,                        // rpcRmfsTest
+        rpcSetGuestSystemInfoExt_STUB,           // rpcSetGuestSystemInfoExt
         rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo
 
     };  // rpcHalIfacesInitStruct_AD102
@@ -3469,26 +3490,136 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
     // GH100's RPC hal interface function pointer block
     static const RPC_HAL_IFACES rpcHalIfacesInitStruct_GH100 =
     {
+        rpcCtrlFifoSetupVfZombieSubctxPdb_STUB,   // rpcCtrlFifoSetupVfZombieSubctxPdb
         rpcVgpuPfRegRead32_STUB,                 // rpcVgpuPfRegRead32
+        rpcCtrlBusUnsetP2pMapping_STUB,          // rpcCtrlBusUnsetP2pMapping
         rpcDumpProtobufComponent_STUB,           // rpcDumpProtobufComponent
         rpcEccNotifierWriteAck_STUB,             // rpcEccNotifierWriteAck
         rpcAllocMemory_STUB,                     // rpcAllocMemory
+        rpcCtrlDbgReadSingleSmErrorState_STUB,   // rpcCtrlDbgReadSingleSmErrorState
+        rpcDisableChannels_STUB,                 // rpcDisableChannels
         rpcGpuExecRegOps_STUB,                   // rpcGpuExecRegOps
-        rpcRmfsInit_STUB,                        // rpcRmfsInit
+        rpcCtrlGpuPromoteCtx_STUB,               // rpcCtrlGpuPromoteCtx
+        rpcCtrlDbgSetNextStopTriggerType_STUB,   // rpcCtrlDbgSetNextStopTriggerType
+        rpcAllocShareDevice_STUB,                // rpcAllocShareDevice
+        rpcCtrlPreempt_STUB,                     // rpcCtrlPreempt
+        rpcCtrlGpuInitializeCtx_STUB,            // rpcCtrlGpuInitializeCtx
+        rpcCtrlReservePmAreaSmpc_STUB,           // rpcCtrlReservePmAreaSmpc
+        rpcCtrlGpuMigratableOps_STUB,            // rpcCtrlGpuMigratableOps
+        rpcCtrlDbgSetModeErrbarDebug_STUB,       // rpcCtrlDbgSetModeErrbarDebug
+        rpcCtrlPmaStreamUpdateGetPut_STUB,       // rpcCtrlPmaStreamUpdateGetPut
+        rpcCtrlFabricMemoryDescribe_STUB,        // rpcCtrlFabricMemoryDescribe
+        rpcAllocChannelDma_STUB,                 // rpcAllocChannelDma
+        rpcCtrlSetZbcDepthClear_STUB,            // rpcCtrlSetZbcDepthClear
+        rpcCtrlResetIsolatedChannel_STUB,        // rpcCtrlResetIsolatedChannel
+        rpcCtrlDmaSetDefaultVaspace_STUB,        // rpcCtrlDmaSetDefaultVaspace
+        rpcAllocSubdevice_STUB,                  // rpcAllocSubdevice
+        rpcFree_STUB,                            // rpcFree
+        rpcDmaControl_STUB,                      // rpcDmaControl
+        rpcCtrlDbgClearSingleSmErrorState_STUB,   // rpcCtrlDbgClearSingleSmErrorState
         rpcUnsetPageDirectory_STUB,              // rpcUnsetPageDirectory
         rpcGetGspStaticInfo_STUB,                // rpcGetGspStaticInfo
+        rpcSaveHibernationData_STUB,             // rpcSaveHibernationData
+        rpcDupObject_STUB,                       // rpcDupObject
         rpcGspSetSystemInfo_STUB,                // rpcGspSetSystemInfo
-        rpcRmfsCleanup_STUB,                     // rpcRmfsCleanup
+        rpcCtrlPmAreaPcSampler_STUB,             // rpcCtrlPmAreaPcSampler
+        rpcCtrlDbgSetExceptionMask_STUB,         // rpcCtrlDbgSetExceptionMask
+        rpcCtrlVaspaceCopyServerReservedPdes_STUB,   // rpcCtrlVaspaceCopyServerReservedPdes
+        rpcCtrlGrCtxswPreemptionBind_STUB,       // rpcCtrlGrCtxswPreemptionBind
+        rpcCtrlAllocPmaStream_STUB,              // rpcCtrlAllocPmaStream
+        rpcCtrlReserveHwpmLegacy_STUB,           // rpcCtrlReserveHwpmLegacy
+        rpcCtrlInternalQuiescePmaChannel_STUB,   // rpcCtrlInternalQuiescePmaChannel
+        rpcCtrlPerfRatedTdpGetStatus_STUB,       // rpcCtrlPerfRatedTdpGetStatus
+        rpcCtrlBusSetP2pMapping_STUB,            // rpcCtrlBusSetP2pMapping
+        rpcCtrlGpuGetInfoV2_STUB,                // rpcCtrlGpuGetInfoV2
+        rpcCtrlGetHsCredits_STUB,                // rpcCtrlGetHsCredits
+        rpcCtrlGrSetCtxswPreemptionMode_STUB,    // rpcCtrlGrSetCtxswPreemptionMode
+        rpcCtrlB0ccExecRegOps_STUB,              // rpcCtrlB0ccExecRegOps
+        rpcCtrlGrmgrGetGrFsInfo_STUB,            // rpcCtrlGrmgrGetGrFsInfo
+        rpcCtrlGetZbcClearTable_STUB,            // rpcCtrlGetZbcClearTable
+        rpcCleanupSurface_STUB,                  // rpcCleanupSurface
+        rpcCtrlSetTimeslice_STUB,                // rpcCtrlSetTimeslice
+        rpcCtrlGpuQueryEccStatus_STUB,           // rpcCtrlGpuQueryEccStatus
+        rpcCtrlDbgGetModeMmuDebug_STUB,          // rpcCtrlDbgGetModeMmuDebug
+        rpcCtrlDbgClearAllSmErrorStates_STUB,    // rpcCtrlDbgClearAllSmErrorStates
+        rpcVgpuGspRingDoorbell_GA102,            // rpcVgpuGspRingDoorbell
+        rpcCtrlGrSetTpcPartitionMode_STUB,       // rpcCtrlGrSetTpcPartitionMode
+        rpcCtrlGetTotalHsCredits_STUB,           // rpcCtrlGetTotalHsCredits
+        rpcCtrlInternalPromoteFaultMethodBuffers_STUB,   // rpcCtrlInternalPromoteFaultMethodBuffers
+        rpcCtrlFbGetInfoV2_STUB,                 // rpcCtrlFbGetInfoV2
+        rpcVgpuGspWriteScratchRegister_GA102,    // rpcVgpuGspWriteScratchRegister
         rpcSetPageDirectory_STUB,                // rpcSetPageDirectory
+        rpcCtrlGetP2pCapsV2_STUB,                // rpcCtrlGetP2pCapsV2
+        rpcCtrlNvlinkGetInbandReceivedData_STUB,   // rpcCtrlNvlinkGetInbandReceivedData
+        rpcCtrlGetCePceMask_STUB,                // rpcCtrlGetCePceMask
+        rpcCtrlGetNvlinkPeerIdMask_STUB,         // rpcCtrlGetNvlinkPeerIdMask
+        rpcCtrlGpuEvictCtx_STUB,                 // rpcCtrlGpuEvictCtx
+        rpcCtrlGetMmuDebugMode_STUB,             // rpcCtrlGetMmuDebugMode
+        rpcInvalidateTlb_STUB,                   // rpcInvalidateTlb
+        rpcCtrlDbgSetSingleSmSingleStep_STUB,    // rpcCtrlDbgSetSingleSmSingleStep
         rpcUnloadingGuestDriver_STUB,            // rpcUnloadingGuestDriver
+        rpcGetEngineUtilizationWrapper_GM204,    // rpcGetEngineUtilizationWrapper
+        rpcGetConsolidatedGrStaticInfo_STUB,     // rpcGetConsolidatedGrStaticInfo
+        rpcSwitchToVga_STUB,                     // rpcSwitchToVga
+        rpcCtrlResetChannel_STUB,                // rpcCtrlResetChannel
+        rpcCtrlGpfifoSchedule_STUB,              // rpcCtrlGpfifoSchedule
         rpcSetRegistry_STUB,                     // rpcSetRegistry
-        rpcRmfsCloseQueue_STUB,                  // rpcRmfsCloseQueue
-        rpcGetStaticInfo_STUB,                   // rpcGetStaticInfo
+        rpcCtrlGetNvlinkStatus_STUB,             // rpcCtrlGetNvlinkStatus
+        rpcGetStaticData_STUB,                   // rpcGetStaticData
+        rpcCtrlGrGetTpcPartitionMode_STUB,       // rpcCtrlGrGetTpcPartitionMode
+        rpcCtrlStopChannel_STUB,                 // rpcCtrlStopChannel
+        rpcSetSurfaceProperties_STUB,            // rpcSetSurfaceProperties
+        rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex_STUB,   // rpcCtrlGpfifoSetWorkSubmitTokenNotifIndex
+        rpcCtrlTimerSetGrTickFreq_STUB,          // rpcCtrlTimerSetGrTickFreq
+        rpcAllocEvent_STUB,                      // rpcAllocEvent
+        rpcCtrlGrPcSamplingMode_STUB,            // rpcCtrlGrPcSamplingMode
+        rpcCtrlMcServiceInterrupts_STUB,         // rpcCtrlMcServiceInterrupts
+        rpcCtrlDbgReadAllSmErrorStates_STUB,     // rpcCtrlDbgReadAllSmErrorStates
+        rpcCtrlSetZbcColorClear_STUB,            // rpcCtrlSetZbcColorClear
+        rpcGetEncoderCapacity_STUB,              // rpcGetEncoderCapacity
+        rpcCtrlGetP2pCaps_STUB,                  // rpcCtrlGetP2pCaps
+        rpcPerfGetLevelInfo_STUB,                // rpcPerfGetLevelInfo
+        rpcAllocObject_STUB,                     // rpcAllocObject
+        rpcCtrlGpuHandleVfPriFault_STUB,         // rpcCtrlGpuHandleVfPriFault
+        rpcRmApiControl_STUB,                    // rpcRmApiControl
+        rpcCtrlFabricMemStats_STUB,              // rpcCtrlFabricMemStats
+        rpcCtrlGrCtxswZcullBind_STUB,            // rpcCtrlGrCtxswZcullBind
+        rpcCtrlInternalMemsysSetZbcReferenced_STUB,   // rpcCtrlInternalMemsysSetZbcReferenced
+        rpcCtrlPerfRatedTdpSetControl_STUB,      // rpcCtrlPerfRatedTdpSetControl
+        rpcCtrlExecPartitionsCreate_STUB,        // rpcCtrlExecPartitionsCreate
+        rpcCtrlGpfifoGetWorkSubmitToken_STUB,    // rpcCtrlGpfifoGetWorkSubmitToken
         rpcIdleChannels_STUB,                    // rpcIdleChannels
+        rpcCtrlCmdInternalGpuStartFabricProbe_STUB,   // rpcCtrlCmdInternalGpuStartFabricProbe
+        rpcGetBrandCaps_STUB,                    // rpcGetBrandCaps
+        rpcRestoreHibernationData_STUB,          // rpcRestoreHibernationData
+        rpcCtrlFlaSetupInstanceMemBlock_STUB,    // rpcCtrlFlaSetupInstanceMemBlock
+        rpcCtrlInternalSriovPromotePmaStream_STUB,   // rpcCtrlInternalSriovPromotePmaStream
+        rpcCtrlFbGetFsInfo_STUB,                 // rpcCtrlFbGetFsInfo
+        rpcCtrlSetChannelInterleaveLevel_STUB,   // rpcCtrlSetChannelInterleaveLevel
+        rpcCtrlDbgResumeContext_STUB,            // rpcCtrlDbgResumeContext
+        rpcAllocRoot_STUB,                       // rpcAllocRoot
+        rpcCtrlFifoDisableChannels_STUB,         // rpcCtrlFifoDisableChannels
+        rpcCtrlSetHsCredits_STUB,                // rpcCtrlSetHsCredits
+        rpcGetEngineUtilization_STUB,            // rpcGetEngineUtilization
+        rpcCtrlGetZbcClearTableEntry_STUB,       // rpcCtrlGetZbcClearTableEntry
+        rpcCtrlNvencSwSessionUpdateInfo_STUB,    // rpcCtrlNvencSwSessionUpdateInfo
+        rpcCtrlDbgSuspendContext_STUB,           // rpcCtrlDbgSuspendContext
+        rpcCtrlGetP2pCapsMatrix_STUB,            // rpcCtrlGetP2pCapsMatrix
+        rpcCtrlDbgExecRegOps_STUB,               // rpcCtrlDbgExecRegOps
+        rpcCtrlFreePmaStream_STUB,               // rpcCtrlFreePmaStream
+        rpcCtrlSetTsgInterleaveLevel_STUB,       // rpcCtrlSetTsgInterleaveLevel
+        rpcCtrlMasterGetVirtualFunctionErrorContIntrMask_STUB,   // rpcCtrlMasterGetVirtualFunctionErrorContIntrMask
+        rpcLog_STUB,                             // rpcLog
+        rpcCtrlExecPartitionsDelete_STUB,        // rpcCtrlExecPartitionsDelete
+        rpcCtrlPerfBoost_STUB,                   // rpcCtrlPerfBoost
+        rpcCtrlDbgSetModeMmuDebug_STUB,          // rpcCtrlDbgSetModeMmuDebug
+        rpcCtrlFifoSetChannelProperties_STUB,    // rpcCtrlFifoSetChannelProperties
+        rpcCtrlSubdeviceGetP2pCaps_STUB,         // rpcCtrlSubdeviceGetP2pCaps
         rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
+        rpcCtrlBindPmResources_STUB,             // rpcCtrlBindPmResources
         rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
         rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
-        rpcRmfsTest_STUB,                        // rpcRmfsTest
+        rpcSetGuestSystemInfoExt_STUB,           // rpcSetGuestSystemInfoExt
         rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo
 
     };  // rpcHalIfacesInitStruct_GH100

@@ -42,11 +42,16 @@ extern "C" {
  * RM internal class representing NVXXXX_TSEC. Class is used for channel work
  * submission.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_SEC2_CONTEXT_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct Sec2Context {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct ChannelDescendant __nvoc_base_ChannelDescendant;
@@ -72,7 +77,6 @@ struct Sec2Context {
     NV_STATUS (*__sec2ctxInternalControlForward__)(struct Sec2Context *, NvU32, void *, NvU32);
     NV_STATUS (*__sec2ctxUnmapFrom__)(struct Sec2Context *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__sec2ctxControl_Epilogue__)(struct Sec2Context *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__sec2ctxControlLookup__)(struct Sec2Context *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__sec2ctxGetSwMethods__)(struct Sec2Context *, const METHOD **, NvU32 *);
     NvHandle (*__sec2ctxGetInternalObjectHandle__)(struct Sec2Context *);
     NV_STATUS (*__sec2ctxControl__)(struct Sec2Context *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -84,6 +88,7 @@ struct Sec2Context {
     NV_STATUS (*__sec2ctxUnregisterEvent__)(struct Sec2Context *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__sec2ctxControlSerialization_Prologue__)(struct Sec2Context *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__sec2ctxCanCopy__)(struct Sec2Context *);
+    NvBool (*__sec2ctxIsPartialUnmapSupported__)(struct Sec2Context *);
     void (*__sec2ctxPreDestruct__)(struct Sec2Context *);
     NV_STATUS (*__sec2ctxIsDuplicate__)(struct Sec2Context *, NvHandle, NvBool *);
     void (*__sec2ctxControlSerialization_Epilogue__)(struct Sec2Context *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -134,7 +139,6 @@ NV_STATUS __nvoc_objCreate_Sec2Context(Sec2Context**, Dynamic*, NvU32, struct CA
 #define sec2ctxInternalControlForward(pGpuResource, command, pParams, size) sec2ctxInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define sec2ctxUnmapFrom(pResource, pParams) sec2ctxUnmapFrom_DISPATCH(pResource, pParams)
 #define sec2ctxControl_Epilogue(pResource, pCallContext, pParams) sec2ctxControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define sec2ctxControlLookup(pResource, pParams, ppEntry) sec2ctxControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define sec2ctxGetSwMethods(pChannelDescendant, ppMethods, pNumMethods) sec2ctxGetSwMethods_DISPATCH(pChannelDescendant, ppMethods, pNumMethods)
 #define sec2ctxGetInternalObjectHandle(pGpuResource) sec2ctxGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define sec2ctxControl(pGpuResource, pCallContext, pParams) sec2ctxControl_DISPATCH(pGpuResource, pCallContext, pParams)
@@ -146,6 +150,7 @@ NV_STATUS __nvoc_objCreate_Sec2Context(Sec2Context**, Dynamic*, NvU32, struct CA
 #define sec2ctxUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) sec2ctxUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define sec2ctxControlSerialization_Prologue(pResource, pCallContext, pParams) sec2ctxControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define sec2ctxCanCopy(pResource) sec2ctxCanCopy_DISPATCH(pResource)
+#define sec2ctxIsPartialUnmapSupported(pResource) sec2ctxIsPartialUnmapSupported_DISPATCH(pResource)
 #define sec2ctxPreDestruct(pResource) sec2ctxPreDestruct_DISPATCH(pResource)
 #define sec2ctxIsDuplicate(pResource, hMemory, pDuplicate) sec2ctxIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define sec2ctxControlSerialization_Epilogue(pResource, pCallContext, pParams) sec2ctxControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -232,10 +237,6 @@ static inline void sec2ctxControl_Epilogue_DISPATCH(struct Sec2Context *pResourc
     pResource->__sec2ctxControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS sec2ctxControlLookup_DISPATCH(struct Sec2Context *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__sec2ctxControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS sec2ctxGetSwMethods_DISPATCH(struct Sec2Context *pChannelDescendant, const METHOD **ppMethods, NvU32 *pNumMethods) {
     return pChannelDescendant->__sec2ctxGetSwMethods__(pChannelDescendant, ppMethods, pNumMethods);
 }
@@ -278,6 +279,10 @@ static inline NV_STATUS sec2ctxControlSerialization_Prologue_DISPATCH(struct Sec
 
 static inline NvBool sec2ctxCanCopy_DISPATCH(struct Sec2Context *pResource) {
     return pResource->__sec2ctxCanCopy__(pResource);
+}
+
+static inline NvBool sec2ctxIsPartialUnmapSupported_DISPATCH(struct Sec2Context *pResource) {
+    return pResource->__sec2ctxIsPartialUnmapSupported__(pResource);
 }
 
 static inline void sec2ctxPreDestruct_DISPATCH(struct Sec2Context *pResource) {

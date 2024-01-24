@@ -106,6 +106,15 @@ writeKmbToContext
     }
 }
 
+static NvBool
+isChannel
+(
+    pCcslContext pCtx
+)
+{
+    return (pCtx->msgCounterSize == CSL_MSG_CTR_32) ? NV_TRUE : NV_FALSE;
+}
+
 NV_STATUS
 ccslIncrementCounter_IMPL
 (
@@ -115,6 +124,11 @@ ccslIncrementCounter_IMPL
 )
 {
     NvU32 msgCounterLo = NvU32_BUILD(ctr[3], ctr[2], ctr[1], ctr[0]);
+
+    if (pCtx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     switch (pCtx->msgCounterSize)
     {
@@ -126,6 +140,7 @@ ccslIncrementCounter_IMPL
 
             if (msgCounterLo > (NV_U32_MAX - increment))
             {
+                NV_PRINTF(LEVEL_ERROR, "CCSL Error! IV overflow detected!\n");
                 return NV_ERR_INSUFFICIENT_RESOURCES;
             }
 
@@ -139,6 +154,7 @@ ccslIncrementCounter_IMPL
 
             if (msgCounterLo > (NV_U64_MAX - increment))
             {
+                NV_PRINTF(LEVEL_ERROR, "CCSL Error! IV overflow detected!\n");
                 return NV_ERR_INSUFFICIENT_RESOURCES;
             }
 
@@ -181,7 +197,7 @@ ccslContextInitViaChannel_IMPL
 
     if (ppCtx == NULL)
     {
-        return NV_ERR_INVALID_PARAMETER;
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
     pCcslContext pCtx = portMemAllocNonPaged(sizeof(*pCtx));
@@ -264,7 +280,7 @@ ccslContextInitViaKeyId_KERNEL
 
     if (ppCtx == NULL)
     {
-        return NV_ERR_INVALID_PARAMETER;
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
     pCcslContext pCtx = portMemAllocNonPaged(sizeof(*pCtx));
@@ -316,20 +332,38 @@ ccslContextClear_IMPL
 }
 
 NV_STATUS
+ccslContextUpdate_KERNEL(pCcslContext pCtx)
+{
+    return NV_ERR_NOT_SUPPORTED;
+}
+
+NV_STATUS
 ccslRotateIv_IMPL
 (
     pCcslContext pCtx,
     NvU8         direction
 )
 {
-    OBJGPU *pGpu;
-    NvU32   gpuMask;
-    NvU32   gpuInstance = 0;
-    RM_API *pRmApi      = NULL;
+    OBJGPU   *pGpu;
+    NvU32     gpuMask;
+    NvU32     gpuInstance = 0;
+    RM_API   *pRmApi      = NULL;
+    NV_STATUS status = NV_OK;
+    NvU32     gpuMaskRelease;
+
+    if (pCtx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS rotateIvParams;
 
     if ((direction != CCSL_DIR_HOST_TO_DEVICE) && (direction != CCSL_DIR_DEVICE_TO_HOST))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    if (!isChannel(pCtx))
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
@@ -348,20 +382,50 @@ ccslRotateIv_IMPL
     (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
     while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
     {
+        gpuMaskRelease = 0;
         if (IS_GSP_CLIENT(pGpu))
         {
-            pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
+            //
+            // Attempt to acquire GPU lock. If unsuccessful then return error to UVM and it can
+            // try later. This is needed as UVM may need to rotate a channel's IV while
+            // RM is already holding a GPU lock.
+            //
+            status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
+                GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_RPC, &gpuMaskRelease);
+
+            if (status == NV_OK)
+            {
+                pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+            }
+            else if (status == NV_ERR_STATE_IN_USE)
+            {
+                return status;
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_INFO, "Converting %s to NV_ERR_GENERIC.\n",
+                          nvstatusToString(status));
+                return NV_ERR_GENERIC;
+            }
         }
         else
         {
             pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
         }
-        NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
-                                               pCtx->hClient,
-                                               pCtx->hChannel,
-                                               NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV,
-                                               &rotateIvParams,
-                                               sizeof(rotateIvParams)));
+
+        NV_ASSERT_OK_OR_GOTO(status,
+                             pRmApi->Control(pRmApi,
+                                             pCtx->hClient,
+                                             pCtx->hChannel,
+                                             NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV,
+                                             &rotateIvParams,
+                                             sizeof(rotateIvParams)),
+                             failed);
+
+        if (IS_GSP_CLIENT(pGpu))
+        {
+            rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+        }
     }
 
     switch (direction)
@@ -392,6 +456,14 @@ ccslRotateIv_IMPL
     }
 
     return NV_OK;
+
+failed:
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
+    }
+
+    return status;
 }
 
 NV_STATUS
@@ -407,6 +479,11 @@ ccslEncryptWithIv_IMPL
     NvU8         *authTagBuffer
 )
 {
+    if (pCtx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     NvU8   iv[CC_AES_256_GCM_IV_SIZE_BYTES] = {0};
     size_t outputBufferSize                 = bufferSize;
 
@@ -447,8 +524,18 @@ ccslEncrypt_KERNEL
     NvU8         *authTagBuffer
 )
 {
+    if (pCtx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     NvU8   iv[CC_AES_256_GCM_IV_SIZE_BYTES] = {0};
     size_t outputBufferSize                 = bufferSize;
+
+    if (bufferSize == 0)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     if (ccslIncrementCounter(pCtx, pCtx->ivOut, 1) != NV_OK)
     {
@@ -485,6 +572,11 @@ ccslDecrypt_KERNEL
     NvU8 const   *authTagBuffer
 )
 {
+    if (pCtx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     NvU8   iv[CC_AES_256_GCM_IV_SIZE_BYTES] = {0};
     size_t outputBufferSize = bufferSize;
 
@@ -541,6 +633,7 @@ static NV_STATUS ccslIncrementCounter192(NvU8 *ctr)
     }
     if (overflow)
     {
+        NV_PRINTF(LEVEL_ERROR, "CCSL Error! IV overflow detected!\n");
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
 
@@ -562,11 +655,16 @@ ccslSign_IMPL
     NvU8         *authTagBuffer
 )
 {
+    if (pCtx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     void *hmac_ctx;
 
-    if (bufferSize == 0)
+    if ((bufferSize == 0) || !isChannel(pCtx))
     {
-        return NV_ERR_INVALID_PARAMETER;
+        return NV_ERR_INVALID_ARGUMENT;
     }
 
     if (ccslIncrementCounter192(pCtx->nonce) != NV_OK)
@@ -644,6 +742,11 @@ ccslQueryMessagePool_IMPL
     NvU64 limit;
     NvU64 messageCounter;
 
+    if (pCtx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
     switch (direction)
     {
         case CCSL_DIR_HOST_TO_DEVICE:
@@ -672,6 +775,11 @@ ccslIncrementIv_IMPL
 {
     NV_STATUS status;
     void *ivPtr;
+
+    if (pCtx == NULL)
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
 
     switch (direction)
     {
@@ -708,4 +816,14 @@ ccslIncrementIv_IMPL
     }
 
     return NV_OK;
+}
+
+NV_STATUS
+ccslLogDeviceEncryption_IMPL
+(
+    pCcslContext pCtx,
+    NvU32        bufferSize
+)
+{
+    return NV_ERR_NOT_SUPPORTED;
 }

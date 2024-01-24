@@ -250,7 +250,21 @@ subdeviceCtrlCmdFlaGetRange_IMPL
     NV2080_CTRL_FLA_GET_RANGE_PARAMS *pParams
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    OBJGPU       *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    KernelBus    *pKernelBus    = GPU_GET_KERNEL_BUS(pGpu);
+    NvBool        bIsConntectedToNvswitch;
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    {
+        KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+        NV_CHECK_OR_RETURN(LEVEL_ERROR, pKernelNvlink != NULL, NV_ERR_NOT_SUPPORTED);
+        bIsConntectedToNvswitch = knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink);
+    }
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, kbusIsFlaSupported(pKernelBus), NV_ERR_NOT_SUPPORTED);
+
+    return kbusGetFlaRange_HAL(pGpu, pKernelBus, &pParams->base, &pParams->size, bIsConntectedToNvswitch);
 }
 
 NV_STATUS

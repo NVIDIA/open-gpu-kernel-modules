@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,14 +36,16 @@ extern "C" {
 
 #    define LIBOS_LOG_MAX_LOGS      5   // Max logs per GPU
 
-#else // NVRM
-#    include <stdio.h>
+#elif defined(LIBOS_LOG_OFFLINE_DECODER)
+#    include "nvlog_decoder.h"
 
 #    define LIBOS_LOG_DECODE_ENABLE 1
 #    define LIBOS_LOG_TO_NVLOG      0
 
 #    define LIBOS_LOG_MAX_LOGS    160   // Max logs for all GPUs for offline decoder
 
+#else
+#    error "Need to define either NVRM or LIBOS_LOG_OFFLINE_DECODER."
 #endif // NVRM
 
 #define LIBOS_LOG_ENABLE          (LIBOS_LOG_TO_NVLOG || LIBOS_LOG_DECODE_ENABLE)
@@ -97,6 +99,8 @@ typedef struct
     NvU8 data[0];
 } LIBOS_LOG_NVLOG_BUFFER;
 
+#define LIBOS_LOG_NVLOG_BUFFER_SIZE(dataSize) (NV_OFFSETOF(LIBOS_LOG_NVLOG_BUFFER, data) + (dataSize))
+
 struct LIBOS_LOG_DECODE_LOG
 {
     volatile NvU64 *physicLogBuffer;
@@ -147,20 +151,15 @@ typedef struct
     NvBool bDecodeStrShdr;
 #endif // LIBOS_LOG_DECODE_ENABLE
 
-#if defined(NVSYM_STANDALONE) && !defined(PROTODMP_BUILD)
-    FILE *fout; // nvlog_decoder outputs to FILE descriptors
-#elif defined(NVWATCH)
-    char *dest; // nvwatch dumps data into a string
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+    LogPrinter *pLogPrinter;
 #endif
 
 } LIBOS_LOG_DECODE;
 
-#if defined(NVSYM_STANDALONE) && !defined(PROTODMP_BUILD)
-void libosLogCreate(LIBOS_LOG_DECODE *logDecode, FILE *fout);
-void libosLogCreateEx(LIBOS_LOG_DECODE *logDecode, const char *pSourceName, FILE *fout);
-#elif defined(NVWATCH)
-void libosLogCreate(LIBOS_LOG_DECODE *logDecode, char *dest);
-void libosLogCreateEx(LIBOS_LOG_DECODE *logDecode, const char *pSourceName, char *dest);
+#if defined(LIBOS_LOG_OFFLINE_DECODER)
+void libosLogCreate(LIBOS_LOG_DECODE *logDecode, LogPrinter *pLogPrinter);
+void libosLogCreateEx(LIBOS_LOG_DECODE *logDecode, const char *pSourceName, LogPrinter *pLogPrinter);
 #else
 void libosLogCreate(LIBOS_LOG_DECODE *logDecode);
 void libosLogCreateEx(LIBOS_LOG_DECODE *logDecode, const char *pSourceName);
@@ -181,7 +180,7 @@ void libosLogInitEx(
     NvBool bDecodeStrFmt, NvU64 elfSize);
 #endif // LIBOS_LOG_DECODE_ENABLE
 
-void libosLogSymbolicateAddress(LIBOS_LOG_DECODE *logDecode, char *decodedLine, NvLength decodedLineSize, NvUPtr addr);
+NvBool libosLogSymbolicateAddress(LIBOS_LOG_DECODE *logDecode, char *decodedLine, NvLength decodedLineSize, NvUPtr addr);
 
 void libosLogDestroy(LIBOS_LOG_DECODE *logDecode);
 

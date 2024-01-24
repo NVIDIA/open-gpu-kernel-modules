@@ -25,13 +25,23 @@
 #include "nvcfg_sdk.h"
 
 // DSC Pass Through related DPCD. New bits in DPCD 0x0060h defined in DPCD2.0.
-#define NV_DPCD20_DSC_SUPPORT_PASS_THROUGH_SUPPORT                                       1:1 /* R-XUF */
-#define NV_DPCD20_DSC_SUPPORT_PASS_THROUGH_SUPPORT_NO                           (0x00000000) /* R-XUV */
-#define NV_DPCD20_DSC_SUPPORT_PASS_THROUGH_SUPPORT_YES                          (0x00000001) /* R-XUV */
+#define NV_DPCD20_DSC_SUPPORT_PASS_THROUGH                                       1:1 /* R-XUF */
+#define NV_DPCD20_DSC_SUPPORT_PASS_THROUGH_NO                           (0x00000000) /* R-XUV */
+#define NV_DPCD20_DSC_SUPPORT_PASS_THROUGH_YES                          (0x00000001) /* R-XUV */
 // DSC Pass Through related DPCD. New bits in DPCD 0x0160h defined in DPCD2.0.
 #define NV_DPCD20_DSC_ENABLE_PASS_THROUGH                                                1:1 /* R-XUF */
 #define NV_DPCD20_DSC_ENABLE_PASS_THROUGH_NO                                    (0x00000000) /* R-XUV */
 #define NV_DPCD20_DSC_ENABLE_PASS_THROUGH_YES                                   (0x00000001) /* R-XUV */
+
+// DSC Dynamic PPS related DPCD. New bits in DPCD 0x0060h defined in DPCD2.0.
+#define NV_DPCD20_DSC_SUPPORT_DYNAMIC_PPS_COMPRESSED_TO_COMPRESSED                       2:2
+#define NV_DPCD20_DSC_SUPPORT_DYNAMIC_PPS_COMPRESSED_TO_COMPRESSED_NO           (0x00000000)
+#define NV_DPCD20_DSC_SUPPORT_DYNAMIC_PPS_COMPRESSED_TO_COMPRESSED_YES          (0x00000001)
+
+// DSC Dynamic PPS related DPCD. New bits in DPCD 0x0060h defined in DPCD2.0.
+#define NV_DPCD20_DSC_SUPPORT_DYNAMIC_PPS_UNCOMPRESSED_TO_FROM_COMPRESSED                3:3
+#define NV_DPCD20_DSC_SUPPORT_DYNAMIC_PPS_UNCOMPRESSED_TO_FROM_COMPRESSED_NO    (0x00000000)
+#define NV_DPCD20_DSC_SUPPORT_DYNAMIC_PPS_UNCOMPRESSED_TO_FROM_COMPRESSED_YES   (0x00000001)
 
 // PANEL REPLAY RELATED DPCD
 #define NV_DPCD20_PANEL_REPLAY_CAPABILITY                                         (0x000000B0)

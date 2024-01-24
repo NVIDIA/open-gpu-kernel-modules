@@ -777,11 +777,15 @@ hdmiQueryFRLConfigC671(NVHDMIPKT_CLASS                         *pThis,
 
     calcBppMinMax(pSrcCaps, pSinkCaps, pVidTransInfo, &bppMinX16, &bppMaxX16);
     bCanUseDSC = evaluateIsDSCPossible(pThis, pSrcCaps, pSinkCaps, pVidTransInfo, &frlParams);
+    const NvU32 numHeadsDrivingSink = pVidTransInfo->bDualHeadMode ? 2 : 1;
 
     // Input validation
+    // Note, maxNumHztSlices src cap is per head. account for total number of heads driving the sink
     if ((pClientCtrl->forceFRLRate    && (pClientCtrl->frlRate > pSinkCaps->linkMaxFRLRate)) ||
         (pClientCtrl->enableDSC       && !bCanUseDSC) ||
-        (pClientCtrl->forceSliceCount && (pClientCtrl->sliceCount > (NvU32)(NV_MIN(pSrcCaps->dscCaps.maxNumHztSlices, pSinkCaps->pHdmiForumInfo->dsc_MaxSlices)))) ||
+        (pClientCtrl->forceSliceCount && (pClientCtrl->sliceCount > 
+                                          (NvU32)(NV_MIN(pSrcCaps->dscCaps.maxNumHztSlices * numHeadsDrivingSink,
+                                                         pSinkCaps->pHdmiForumInfo->dsc_MaxSlices)))) ||
         (pClientCtrl->forceSliceWidth && (pClientCtrl->sliceWidth > NV_MIN(pSrcCaps->dscCaps.maxWidthPerSlice, MAX_RECONSTRUCTED_HACTIVE_PIXELS))) ||
         (pClientCtrl->forceBppx16     && ((pClientCtrl->bitsPerPixelX16 < bppMinX16) || (pClientCtrl->bitsPerPixelX16 > bppMaxX16)))  ||
         (pClientCtrl->forceBppx16     && !pSinkCaps->pHdmiForumInfo->dsc_All_bpp))
@@ -1171,20 +1175,18 @@ frlQuery_Success:
         DSC_GENERATE_PPS_OPAQUE_WORKAREA *pDscScratchBuffer = NULL;
         pDscScratchBuffer = (DSC_GENERATE_PPS_OPAQUE_WORKAREA*)pThis->callback.malloc(pThis->cbHandle, 
                                                                       sizeof(DSC_GENERATE_PPS_OPAQUE_WORKAREA));
-
         if ((DSC_GeneratePPS(&dscInfo,
                              &dscModesetInfo,
                              &warData,
                              availableLinkBw,
+                             pDscScratchBuffer,
                              pFRLConfig->dscInfo.pps,
-                             &bitsPerPixelX16,
-                             pDscScratchBuffer)) != NVT_STATUS_SUCCESS)
+                             &bitsPerPixelX16)) != NVT_STATUS_SUCCESS)
         {
             NvHdmiPkt_Print(pThis, "ERROR - DSC PPS calculation failed.");
             NvHdmiPkt_Assert(0);
             result = NVHDMIPKT_FAIL;
         }
-
         if (pDscScratchBuffer != NULL)
         {
             pThis->callback.free(pThis->cbHandle, pDscScratchBuffer);

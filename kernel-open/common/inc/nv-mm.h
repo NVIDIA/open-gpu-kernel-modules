@@ -44,12 +44,18 @@ typedef int vm_fault_t;
 
 #include <linux/mm.h>
 #include <linux/sched.h>
-#if defined(NV_PIN_USER_PAGES_PRESENT)
+
+/*
+ * FreeBSD's pin_user_pages's conftest breaks since pin_user_pages is an inline
+ * function. Because it simply maps to get_user_pages, we can just replace
+ * NV_PIN_USER_PAGES with NV_GET_USER_PAGES on FreeBSD
+ */
+#if defined(NV_PIN_USER_PAGES_PRESENT) && !defined(NV_BSD)
     #if defined(NV_PIN_USER_PAGES_HAS_ARGS_VMAS)
-        #define NV_PIN_USER_PAGES pin_user_pages
+        #define NV_PIN_USER_PAGES(start, nr_pages, gup_flags, pages) \
+            pin_user_pages(start, nr_pages, gup_flags, pages, NULL)
     #else
-        #define NV_PIN_USER_PAGES(start, nr_pages, gup_flags, pages, vmas) \
-            pin_user_pages(start, nr_pages, gup_flags, pages)
+        #define NV_PIN_USER_PAGES pin_user_pages
     #endif // NV_PIN_USER_PAGES_HAS_ARGS_VMAS
     #define NV_UNPIN_USER_PAGE unpin_user_page
 #else
@@ -80,29 +86,28 @@ typedef int vm_fault_t;
  */
 
 #if defined(NV_GET_USER_PAGES_HAS_ARGS_FLAGS)
-    #define NV_GET_USER_PAGES(start, nr_pages, flags, pages, vmas) \
-        get_user_pages(start, nr_pages, flags, pages)
-#elif defined(NV_GET_USER_PAGES_HAS_ARGS_FLAGS_VMAS)
     #define NV_GET_USER_PAGES get_user_pages
+#elif defined(NV_GET_USER_PAGES_HAS_ARGS_FLAGS_VMAS)
+    #define NV_GET_USER_PAGES(start, nr_pages, flags, pages) \
+        get_user_pages(start, nr_pages, flags, pages, NULL)
 #elif defined(NV_GET_USER_PAGES_HAS_ARGS_TSK_FLAGS_VMAS)
-    #define NV_GET_USER_PAGES(start, nr_pages, flags, pages, vmas) \
-        get_user_pages(current, current->mm, start, nr_pages, flags, pages, vmas)
+    #define NV_GET_USER_PAGES(start, nr_pages, flags, pages) \
+        get_user_pages(current, current->mm, start, nr_pages, flags, pages, NULL)
 #else
     static inline long NV_GET_USER_PAGES(unsigned long start,
                                          unsigned long nr_pages,
                                          unsigned int flags,
-                                         struct page **pages,
-                                         struct vm_area_struct **vmas)
+                                         struct page **pages)
     {
         int write = flags & FOLL_WRITE;
         int force = flags & FOLL_FORCE;
 
     #if defined(NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE_VMAS)
-        return get_user_pages(start, nr_pages, write, force, pages, vmas);
+        return get_user_pages(start, nr_pages, write, force, pages, NULL);
     #else
         // NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE_VMAS
         return get_user_pages(current, current->mm, start, nr_pages, write,
-                              force, pages, vmas);
+                              force, pages, NULL);
     #endif // NV_GET_USER_PAGES_HAS_ARGS_WRITE_FORCE_VMAS
     }
 #endif // NV_GET_USER_PAGES_HAS_ARGS_FLAGS
@@ -124,13 +129,13 @@ typedef int vm_fault_t;
 
 #if defined(NV_PIN_USER_PAGES_REMOTE_PRESENT)
     #if defined(NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK_VMAS)
-        #define NV_PIN_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
-            pin_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, vmas, locked)
+        #define NV_PIN_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, locked) \
+            pin_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, NULL, locked)
     #elif defined(NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_VMAS)
-        #define NV_PIN_USER_PAGES_REMOTE pin_user_pages_remote
+        #define NV_PIN_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, locked) \
+            pin_user_pages_remote(mm, start, nr_pages, flags, pages, NULL, locked)
     #else
-        #define NV_PIN_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
-            pin_user_pages_remote(mm, start, nr_pages, flags, pages, locked)
+        #define NV_PIN_USER_PAGES_REMOTE pin_user_pages_remote
     #endif // NV_PIN_USER_PAGES_REMOTE_HAS_ARGS_TSK_VMAS
 #else
     #define NV_PIN_USER_PAGES_REMOTE NV_GET_USER_PAGES_REMOTE
@@ -166,19 +171,19 @@ typedef int vm_fault_t;
 
 #if defined(NV_GET_USER_PAGES_REMOTE_PRESENT)
     #if defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED)
-        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
-            get_user_pages_remote(mm, start, nr_pages, flags, pages, locked)
-
-    #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED_VMAS)
         #define NV_GET_USER_PAGES_REMOTE get_user_pages_remote
 
+    #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED_VMAS)
+        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, locked) \
+            get_user_pages_remote(mm, start, nr_pages, flags, pages, NULL, locked)
+
     #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS_LOCKED_VMAS)
-        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
-            get_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, vmas, locked)
+        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, locked) \
+            get_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, NULL, locked)
 
     #elif defined(NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_FLAGS_VMAS)
-        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
-            get_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, vmas)
+        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, locked) \
+            get_user_pages_remote(NULL, mm, start, nr_pages, flags, pages, NULL)
 
     #else
         // NV_GET_USER_PAGES_REMOTE_HAS_ARGS_TSK_WRITE_FORCE_VMAS
@@ -187,14 +192,13 @@ typedef int vm_fault_t;
                                                     unsigned long nr_pages,
                                                     unsigned int flags,
                                                     struct page **pages,
-                                                    struct vm_area_struct **vmas,
                                                     int *locked)
         {
             int write = flags & FOLL_WRITE;
             int force = flags & FOLL_FORCE;
 
             return get_user_pages_remote(NULL, mm, start, nr_pages, write, force,
-                                         pages, vmas);
+                                         pages, NULL);
         }
     #endif // NV_GET_USER_PAGES_REMOTE_HAS_ARGS_FLAGS_LOCKED
 #else
@@ -204,18 +208,17 @@ typedef int vm_fault_t;
                                                     unsigned long nr_pages,
                                                     unsigned int flags,
                                                     struct page **pages,
-                                                    struct vm_area_struct **vmas,
                                                     int *locked)
         {
             int write = flags & FOLL_WRITE;
             int force = flags & FOLL_FORCE;
 
-            return get_user_pages(NULL, mm, start, nr_pages, write, force, pages, vmas);
+            return get_user_pages(NULL, mm, start, nr_pages, write, force, pages, NULL);
         }
 
     #else
-        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, vmas, locked) \
-            get_user_pages(NULL, mm, start, nr_pages, flags, pages, vmas)
+        #define NV_GET_USER_PAGES_REMOTE(mm, start, nr_pages, flags, pages, locked) \
+            get_user_pages(NULL, mm, start, nr_pages, flags, pages, NULL)
     #endif // NV_GET_USER_PAGES_HAS_ARGS_TSK_WRITE_FORCE_VMAS
 #endif // NV_GET_USER_PAGES_REMOTE_PRESENT
 

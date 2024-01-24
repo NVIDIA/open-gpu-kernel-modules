@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -1053,7 +1053,7 @@ NV_STATUS uvm_test_register_unload_state_buffer(UVM_TEST_REGISTER_UNLOAD_STATE_B
     // are not used because unload_state_buf may be a managed memory pointer and
     // therefore a locking assertion from the CPU fault handler could be fired.
     nv_mmap_read_lock(current->mm);
-    ret = NV_PIN_USER_PAGES(params->unload_state_buf, 1, FOLL_WRITE, &page, NULL);
+    ret = NV_PIN_USER_PAGES(params->unload_state_buf, 1, FOLL_WRITE, &page);
     nv_mmap_read_unlock(current->mm);
 
     if (ret < 0)

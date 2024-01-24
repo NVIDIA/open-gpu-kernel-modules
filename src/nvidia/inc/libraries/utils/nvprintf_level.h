@@ -21,8 +21,8 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#ifndef NV_UTILS_PRINTF_LEVEL_H
-#define NV_UTILS_PRINTF_LEVEL_H
+#ifndef NVPRINTF_LEVEL_H
+#define NVPRINTF_LEVEL_H
 
 /// @defgroup NV_PRINTF_LEVELS Printf verbosity levels
 /// @{
@@ -54,4 +54,11 @@
 #define NV_PRINTF_LEVEL_ENABLED(level)  ((level) >= NV_PRINTF_LEVEL)
 #endif
 
-#endif
+// Values for NV_LOG_SPECIAL to specify how log entries are encoded.
+#define RM_GSP_LOG_SPECIAL_NONE 0x0
+#define RM_GSP_LOG_SPECIAL_ASSERT_FAILED 0x1
+#define RM_GSP_LOG_SPECIAL_ASSERT_OK_FAILED 0x2
+#define RM_GSP_LOG_SPECIAL_CHECK_FAILED 0x3
+#define RM_GSP_LOG_SPECIAL_CHECK_OK_FAILED 0x4
+
+#endif // NVPRINTF_LEVEL_H

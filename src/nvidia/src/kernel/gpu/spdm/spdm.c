@@ -33,6 +33,12 @@
 #include "spdm/rmspdmvendordef.h"
 #include "gpu/gpu.h"
 #include "gpu/gpu_resource.h"
+#include "nvspdm_rmconfig.h"
+#include "gpu/mem_mgr/mem_mgr.h"
+#include "platform/sli/sli.h"
+#include "rmapi/client_resource.h"
+#include "gpu/bus/kern_bus.h"
+#include "os/os.h"
 
 //
 // Libspdm only supported on certain builds,
@@ -42,7 +48,7 @@
 
 /* ------------------------ Static Function Prototypes --------------------- */
 static void _spdmClearContext(Spdm *pSpdm);
-libspdm_return_t _spdmAcquireTransportBuffer(void *context, size_t *max_msg_size, void **msg_buf_ptr);
+libspdm_return_t _spdmAcquireTransportBuffer(void *context, void **msg_buf_ptr);
 void _spdmReleaseTransportBuffer(void *context, const void *msg_buf_ptr);
 bool _spdmVerifyCertChain(void *spdm_context, uint8_t slot_id, size_t cert_chain_size,
                           const void *cert_chain, const void **trust_anchor, size_t *trust_anchor_size);
@@ -57,8 +63,6 @@ _spdmClearContext
     Spdm *pSpdm
 )
 {
-    NvU32 index = 0;
-
     if (pSpdm == NULL)
     {
         return;
@@ -71,18 +75,6 @@ _spdmClearContext
     //
     if (pSpdm->pLibspdmContext != NULL)
     {
-
-        libspdm_reset_message_b(pSpdm->pLibspdmContext);
-        libspdm_reset_message_c(pSpdm->pLibspdmContext);
-        libspdm_reset_message_mut_b(pSpdm->pLibspdmContext);
-        libspdm_reset_message_mut_c(pSpdm->pLibspdmContext);
-
-        libspdm_reset_message_m(pSpdm->pLibspdmContext, NULL);
-        for (index = 0; index < LIBSPDM_MAX_SESSION_COUNT; index++)
-        {
-            libspdm_reset_message_m(pSpdm->pLibspdmContext,  &(((libspdm_context_t *)pSpdm->pLibspdmContext)->session_info[index]));
-        }
-
         libspdm_deinit_context(pSpdm->pLibspdmContext);
         libspdm_reset_context(pSpdm->pLibspdmContext);
         portMemSet((NvU8 *)pSpdm->pLibspdmContext, 0, pSpdm->libspdmContextSize);
@@ -93,27 +85,34 @@ _spdmClearContext
         portMemSet((NvU8 *)pSpdm->pLibspdmScratch, 0, pSpdm->libspdmScratchSize);
     }
 
+    // memdescFree and memdescDestroy handle NULL gracefully.
+    memdescFree(pSpdm->pPayloadBufferMemDesc);
+    memdescDestroy(pSpdm->pPayloadBufferMemDesc);
+
+    pSpdm->pPayloadBufferMemDesc  = NULL;
+    pSpdm->payloadBufferSize      = 0;
+
     // portMemFree handles NULL pointers gracefully.
     portMemFree(pSpdm->pLibspdmContext);
     portMemFree(pSpdm->pLibspdmScratch);
     portMemFree(pSpdm->pAttestationCertChain);
     portMemFree(pSpdm->pDeviceIOContext);
-    portMemFree(pSpdm->pLastExchange);
+    portMemFree(pSpdm->pMsgLog);
 
     pSpdm->pLibspdmContext          = NULL;
     pSpdm->pLibspdmScratch          = NULL;
     pSpdm->pAttestationCertChain    = NULL;
     pSpdm->pDeviceIOContext         = NULL;
-    pSpdm->pLastExchange            = NULL;
+    pSpdm->pMsgLog                  = NULL;
 
     pSpdm->libspdmContextSize       = 0;
     pSpdm->libspdmScratchSize       = 0;
     pSpdm->attestationCertChainSize = 0;
-    pSpdm->lastExchangeSize         = 0;
+    pSpdm->msgLogMaxSize            = 0;
 
-    pSpdm->guestId                  = 0;
     pSpdm->sessionId                = INVALID_SESSION_ID;
-    pSpdm->endpointId               = 0;
+    pSpdm->bSessionEstablished      = NV_FALSE;
+    pSpdm->bUsePolling              = NV_FALSE;
 }
 
 /*
@@ -123,22 +122,19 @@ libspdm_return_t
 _spdmAcquireTransportBuffer
 (
     void     *context,
-    size_t   *max_msg_size,
     void   **msg_buf_ptr
 )
 {
-    if (context == NULL || max_msg_size == NULL || msg_buf_ptr == NULL)
+    if (context == NULL || msg_buf_ptr == NULL)
     {
         return LIBSPDM_STATUS_INVALID_PARAMETER;
     }
 
-    *msg_buf_ptr = portMemAllocNonPaged(LIBSPDM_MAX_MESSAGE_BUFFER_SIZE);
+    *msg_buf_ptr = portMemAllocNonPaged(NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES);
     if (*msg_buf_ptr == NULL)
     {
         return LIBSPDM_STATUS_BUFFER_FULL;
     }
-
-    *max_msg_size = LIBSPDM_MAX_MESSAGE_BUFFER_SIZE;
 
     return LIBSPDM_STATUS_SUCCESS;
 }
@@ -187,18 +183,23 @@ spdmConstruct_IMPL
     pSpdm->pLibspdmScratch          = NULL;
     pSpdm->pAttestationCertChain    = NULL;
     pSpdm->pDeviceIOContext         = NULL;
-    pSpdm->pLastExchange            = NULL;
+    pSpdm->pMsgLog                  = NULL;
 
     pSpdm->libspdmContextSize       = 0;
     pSpdm->libspdmScratchSize       = 0;
     pSpdm->attestationCertChainSize = 0;
-    pSpdm->lastExchangeSize         = 0;
+    pSpdm->msgLogMaxSize            = 0;
 
-    pSpdm->guestId                  = 0;
     pSpdm->sessionId                = INVALID_SESSION_ID;
-    pSpdm->endpointId               = 0;
-
+    pSpdm->bSessionEstablished      = NV_FALSE;
+    pSpdm->bUsePolling              = NV_FALSE;
     pSpdm->bExportSecretCleared     = NV_FALSE;
+
+    pSpdm->pPayloadBufferMemDesc    = NULL;
+    pSpdm->payloadBufferSize        = 0;
+
+    pSpdm->pHeartbeatEvent          = NULL;
+    pSpdm->heartbeatPeriodSec       = 0;
 
     return NV_OK;
 }
@@ -213,6 +214,60 @@ spdmDestruct_IMPL
 )
 {
     _spdmClearContext(pSpdm);
+}
+
+NV_STATUS
+spdmSetupCommunicationBuffers_IMPL
+(
+    OBJGPU *pGpu,
+    Spdm   *pSpdm
+)
+{
+    MemoryManager    *pMemoryManager = NULL;
+    TRANSFER_SURFACE  surf           = {0};
+    NV_STATUS         status         = NV_OK;
+
+    // Create memory descriptor for payload buffer
+    status = memdescCreate(&pSpdm->pPayloadBufferMemDesc, pGpu, NV_SPDM_SYSMEM_SURFACE_SIZE_PAGE_ALIGNED,
+                           NV_SPDM_SYSMEM_SURFACE_ALIGNMENT_IN_BYTES, NV_TRUE, ADDR_SYSMEM,
+                           NV_MEMORY_CACHED, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY);
+    if (status != NV_OK || pSpdm->pPayloadBufferMemDesc == NULL)
+    {
+        status = NV_ERR_INSUFFICIENT_RESOURCES;
+        goto ErrorExit;
+    }
+
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_82, pSpdm->pPayloadBufferMemDesc);
+    if (status != NV_OK)
+    {
+        goto ErrorExit;
+    }
+
+    // We over-allocate since we must allocate page-aligned. Set size only to what we will use.
+    pSpdm->payloadBufferSize = NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES;
+
+    // Scrub surface
+    SLI_LOOP_START(SLI_LOOP_FLAGS_BC_ONLY)
+    pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    surf.offset    = 0;
+
+    surf.pMemDesc = pSpdm->pPayloadBufferMemDesc;
+    status = memmgrMemSet(pMemoryManager, &surf, 0, pSpdm->payloadBufferSize, TRANSFER_FLAGS_NONE);
+    if (status != NV_OK)
+    {
+        SLI_LOOP_GOTO(ErrorExit);
+    }
+
+    SLI_LOOP_END
+
+ErrorExit:
+
+    if (status != NV_OK)
+    {
+        _spdmClearContext(pSpdm);
+    }
+
+    return status;
 }
 
 NV_STATUS
@@ -232,6 +287,14 @@ spdmContextInit_IMPL
     uint16_t                 dheGroup;
     uint16_t                 aeadSuite;
     uint16_t                 keySched;
+    uint32_t                 maxSessionCount;
+    uint8_t                  maxRetries;
+
+#if LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP
+    uint16_t                 reqAsymAlgo;
+    NvU8                    *pEncapCertChain;
+    NvU32                    encapCertChainSize;
+#endif
 
     if (pGpu == NULL || pSpdm == NULL)
     {
@@ -251,29 +314,28 @@ spdmContextInit_IMPL
     portMemSet(pSpdm->pLibspdmContext, 0, pSpdm->libspdmContextSize);
     libspdm_init_context(pSpdm->pLibspdmContext);
 
-    // Allocate scratch space required for libspdm processing.
-    pSpdm->libspdmScratchSize = libspdm_get_sizeof_required_scratch_buffer(pSpdm->pLibspdmContext);
-    pSpdm->pLibspdmScratch    = portMemAllocNonPaged(pSpdm->libspdmScratchSize);
-
-    if (pSpdm->libspdmScratchSize == 0 || pSpdm->pLibspdmScratch == NULL)
-    {
-        status = NV_ERR_NO_MEMORY;
-        goto ErrorExit;
-    }
-
-    portMemSet(pSpdm->pLibspdmScratch, 0, pSpdm->libspdmScratchSize);
-    libspdm_set_scratch_buffer(pSpdm->pLibspdmContext, pSpdm->pLibspdmScratch,
-                               pSpdm->libspdmScratchSize);
 
     // Allocate message transcript recording buffer.
-    pSpdm->pLastExchange    = portMemAllocNonPaged(SPDM_MAX_EXCHANGE_BUFFER_SIZE);
-    pSpdm->lastExchangeSize = 0;
+    pSpdm->pMsgLog       = portMemAllocNonPaged(NV_SPDM_MAX_TRANSCRIPT_BUFFER_SIZE);
+    pSpdm->msgLogMaxSize = NV_SPDM_MAX_TRANSCRIPT_BUFFER_SIZE;
 
-    if (pSpdm->pLastExchange == NULL)
+    if (pSpdm->pMsgLog == NULL)
     {
-        status = NV_ERR_NO_MEMORY;
+        pSpdm->msgLogMaxSize = 0;
+        status               = NV_ERR_NO_MEMORY;
         goto ErrorExit;
     }
+
+#if LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP
+    // Get requester cert chain for mutual authentication process.
+    status = spdmGetReqEncapCertificates_HAL(pGpu, pSpdm, &pEncapCertChain, &encapCertChainSize);
+
+    if (status != NV_OK)
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        goto ErrorExit;
+    }
+#endif
 
     //
     // Eventually, owner of Spdm object may want to set their own
@@ -283,20 +345,32 @@ spdmContextInit_IMPL
     parameter.location = LIBSPDM_DATA_LOCATION_LOCAL;
 
     // Requester will not check Responder's timing, set to maximum value.
-    ctExponent = SPDM_CAPABILITIES_CT_EXPONENT_MAX;
+    ctExponent = LIBSPDM_MAX_CT_EXPONENT;
     CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_CAPABILITY_CT_EXPONENT,
                                        &parameter, &ctExponent, sizeof(ctExponent)));
 
+#if LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP
+    capFlags = SPDM_GET_CAPABILITIES_REQUEST_FLAGS_CERT_CAP     |
+               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_ENCRYPT_CAP  |
+               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_MAC_CAP      |
+               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_KEY_EX_CAP   |
+               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_KEY_UPD_CAP  |
+               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_ENCAP_CAP    |
+               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_MUT_AUTH_CAP |
+               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_HBEAT_CAP;
+#else
     capFlags = SPDM_GET_CAPABILITIES_REQUEST_FLAGS_CERT_CAP    |
                SPDM_GET_CAPABILITIES_REQUEST_FLAGS_ENCRYPT_CAP |
                SPDM_GET_CAPABILITIES_REQUEST_FLAGS_MAC_CAP     |
                SPDM_GET_CAPABILITIES_REQUEST_FLAGS_KEY_EX_CAP  |
-               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_KEY_UPD_CAP;
+               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_KEY_UPD_CAP |
+               SPDM_GET_CAPABILITIES_REQUEST_FLAGS_HBEAT_CAP;
+#endif
     CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext,
                                        LIBSPDM_DATA_CAPABILITY_FLAGS, &parameter,
                                        &capFlags, sizeof(capFlags)));
 
-    measSpec = SPDM_MEASUREMENT_BLOCK_HEADER_SPECIFICATION_DMTF;
+    measSpec = SPDM_MEASUREMENT_SPECIFICATION_DMTF;
     CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext,
                                        LIBSPDM_DATA_MEASUREMENT_SPEC, &parameter,
                                        &measSpec, sizeof(measSpec)));
@@ -323,7 +397,38 @@ spdmContextInit_IMPL
     CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_KEY_SCHEDULE,
                                        &parameter, &keySched, sizeof(keySched)));
 
-    pSpdm->guestId = 0x01;
+#if LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP
+    reqAsymAlgo = SPDM_ALGORITHMS_BASE_ASYM_ALGO_TPM_ALG_RSAPSS_3072;
+    CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_REQ_BASE_ASYM_ALG,
+                                       &parameter, &reqAsymAlgo,
+                                       sizeof(reqAsymAlgo)));
+
+    //
+    // Set certification for encapsulated command process.
+    // Specify certificate location, passing slot number as well.
+    //
+    parameter.additional_data[0] = SPDM_CERT_DEFAULT_SLOT_ID;
+    CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_LOCAL_PUBLIC_CERT_CHAIN,
+                                       &parameter, pEncapCertChain,
+                                       encapCertChainSize));
+#endif
+
+    // Ensure that we set only DHE sessions as allowed, not PSK sessions.
+    maxSessionCount = 1;
+    CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_MAX_DHE_SESSION_COUNT,
+                                       &parameter, &maxSessionCount, sizeof(maxSessionCount)));
+
+    maxSessionCount = 0;
+    CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_MAX_PSK_SESSION_COUNT,
+                                       &parameter, &maxSessionCount, sizeof(maxSessionCount)));
+
+
+    // We don't allow SPDM message retries.
+    maxRetries = 0;
+    CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_REQUEST_RETRY_TIMES,
+                                       &parameter, &maxRetries, sizeof(maxRetries)));
+
+    libspdm_init_msg_log(pSpdm->pLibspdmContext, pSpdm->pMsgLog, pSpdm->msgLogMaxSize);
 
     //
     // Perform any device-specific initialization. spdmDeviceInit is also
@@ -336,14 +441,35 @@ spdmContextInit_IMPL
     }
 
     libspdm_register_device_buffer_func(pSpdm->pLibspdmContext,
+        NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES, NV_SPDM_SYSMEM_SURFACE_SIZE_IN_BYTES,
         _spdmAcquireTransportBuffer, _spdmReleaseTransportBuffer,
         _spdmAcquireTransportBuffer, _spdmReleaseTransportBuffer);
+
+    //
+    // Allocate scratch space required for libspdm processing.
+    // We need to wait for transport layer initialization (i.e. after device init)
+    // in order to properly calculate the required scratch size.
+    //
+    pSpdm->libspdmScratchSize = libspdm_get_sizeof_required_scratch_buffer(pSpdm->pLibspdmContext);
+    pSpdm->pLibspdmScratch    = portMemAllocNonPaged(pSpdm->libspdmScratchSize);
+    if (pSpdm->libspdmScratchSize == 0 || pSpdm->pLibspdmScratch == NULL)
+    {
+        status = NV_ERR_NO_MEMORY;
+        goto ErrorExit;
+    }
+
+    portMemSet(pSpdm->pLibspdmScratch, 0, pSpdm->libspdmScratchSize);
+    libspdm_set_scratch_buffer(pSpdm->pLibspdmContext, pSpdm->pLibspdmScratch,
+                               pSpdm->libspdmScratchSize);
 
     //
     // Verifier is responsible for verifying the certificate chain. To avoid concerns
     // with libspdm compatibility, override certificate validation function with stub.
     //
     libspdm_register_verify_spdm_cert_chain_func(pSpdm->pLibspdmContext, _spdmVerifyCertChain);
+
+    // Initialize session message count to zero.
+    pSpdm->sessionMsgCount = 0;
 
 ErrorExit:
 
@@ -364,7 +490,7 @@ spdmContextDeinit_IMPL
     NvBool  bForceClear
 )
 {
-    NV_STATUS status = NV_OK;
+    NV_STATUS  status = NV_OK;
 
     if (pGpu == NULL || pSpdm == NULL)
     {
@@ -377,6 +503,13 @@ spdmContextDeinit_IMPL
         _spdmClearContext(pSpdm);
         return NV_OK;
     }
+
+    //
+    // Make sure to unregister heartbeats in case we didn't
+    // hit normal teardown path. Best effort attempt.
+    //
+    status = spdmUnregisterFromHeartbeats(pGpu, pSpdm);
+    NV_ASSERT_OK(status);
 
     //
     // End the session by deinitializing the Responder.
@@ -452,23 +585,35 @@ spdmStart_IMPL
     //
     if (spdmDeviceSecuredSessionSupported_HAL(pGpu, pSpdm) == NV_OK)
     {
+        NvU8 heartbeatPeriodInSec = 0;
+
         NV_PRINTF(LEVEL_INFO, "SPDM: Attempting to establish SPDM session.\n");
-        CHECK_SPDM_STATUS(libspdm_start_session(pSpdm->pLibspdmContext, NV_FALSE,
+        CHECK_SPDM_STATUS(libspdm_start_session(pSpdm->pLibspdmContext, NV_FALSE, NULL, 0,
                                                 SPDM_KEY_EXCHANGE_REQUEST_NO_MEASUREMENT_SUMMARY_HASH,
-                                                SPDM_CERT_DEFAULT_SLOT_ID, 0, &pSpdm->sessionId, NULL, NULL));
-
-
+                                                SPDM_CERT_DEFAULT_SLOT_ID, 0, &pSpdm->sessionId,
+                                                &heartbeatPeriodInSec, NULL));
         if (!nvspdm_check_and_clear_libspdm_assert())
         {
             NV_PRINTF(LEVEL_ERROR, "SPDM: libspdm_start_session() assert hit !!!.\n");
-            status =  NV_ERR_GENERIC;
+            status = NV_ERR_GENERIC;
             goto ErrorExit;
         }
-        else
+        else if (heartbeatPeriodInSec != SPDM_DEFAULT_HEARTBEAT_PERIOD_IN_SEC)
         {
-            NV_PRINTF(LEVEL_INFO, "SPDM: Session establishment successful: sessionId 0x%x.\n",
-                                   pSpdm->sessionId);
+            //
+            // Do a basic check to make sure the SPDM heartbeat period agreed between
+            // Requester and Responder is expected, even if it is overridden via regkey.
+            //
+            NV_PRINTF(LEVEL_ERROR, "SPDM: Responder returned unexpected heartbeat 0x%x\n",
+                      heartbeatPeriodInSec);
+            status = NV_ERR_NOT_SUPPORTED;
+            goto ErrorExit;
         }
+
+        NV_PRINTF(LEVEL_INFO, "SPDM: Session establishment successful: sessionId 0x%x.\n",
+                  pSpdm->sessionId);
+        pSpdm->bSessionEstablished = NV_TRUE;
+        pSpdm->bUsePolling         = NV_FALSE;
     }
 
 ErrorExit:
@@ -479,7 +624,8 @@ ErrorExit:
     //
     if (status != NV_OK)
     {
-        pSpdm->sessionId = INVALID_SESSION_ID;
+        pSpdm->sessionId           = INVALID_SESSION_ID;
+        pSpdm->bSessionEstablished = NV_FALSE;
         NV_PRINTF(LEVEL_ERROR, "SPDM: Session establishment failed!\n");
         DBG_BREAKPOINT();
     }
@@ -506,8 +652,7 @@ spdmRetrieveExportSecret_IMPL
     }
 
     // Ensure we are in valid state. Note that export master secret can only be retrieved once.
-    if (pSpdm->pLibspdmContext == NULL || pSpdm->sessionId == INVALID_SESSION_ID ||
-        pSpdm->bExportSecretCleared)
+    if (pSpdm->pLibspdmContext == NULL || !pSpdm->bSessionEstablished || pSpdm->bExportSecretCleared)
     {
         return NV_ERR_NOT_READY;
     }
@@ -535,4 +680,3 @@ spdmRetrieveExportSecret_IMPL
 
     return NV_OK;
 }
-

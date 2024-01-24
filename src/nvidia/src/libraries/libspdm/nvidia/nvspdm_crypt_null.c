@@ -51,4 +51,47 @@ bool libspdm_ec_get_private_key_from_pem(const uint8_t *pem_data, size_t pem_siz
     return false;
 }
 
+bool libspdm_ec_get_public_key_from_der(const uint8_t *der_data,
+                                        size_t der_size,
+                                        void **ec_context)
+{
+    LIBSPDM_ASSERT(false);
+    return false;
+}
+
+void libspdm_rsa_free
+(
+    void *rsa_context
+)
+{
+}
+
+bool libspdm_rsa_pss_verify(void *rsa_context, size_t hash_nid,
+                            const uint8_t *message_hash, size_t hash_size,
+                            const uint8_t *signature, size_t sig_size)
+{
+    return false;
+}
+
+bool libspdm_rsa_pss_sign(void *rsa_context, size_t hash_nid,
+                          const uint8_t *message_hash, size_t hash_size,
+                          uint8_t *signature, size_t *sig_size)
+{
+    return false;
+}
+
+bool libspdm_rsa_get_public_key_from_der(const uint8_t *der_data,
+                                         size_t der_size,
+                                         void **rsa_context)
+{
+    return true;
+}
+
+void *libspdm_rsa_new
+(
+    void
+)
+{
+    return NULL;
+}
 

@@ -81,6 +81,7 @@
 
 #include <gpu/mem_mgr/mem_mgr.h>
 #include <gpu/kern_gpu_power.h>
+#include <gpu_mgr/gpu_mgr.h>
 #include <core/locks.h>
 #include "kernel/gpu/intr/intr.h"
 
@@ -1129,8 +1130,8 @@ os_ref_dynamic_power(
         {
         default:
         case NV_DYNAMIC_POWER_STATE_IN_USE:
-            NV_PRINTF(LEVEL_ERROR, "NVRM: %s: Unexpected dynamic power state 0x%x\n",
-                      __FUNCTION__, old_state);
+            NV_PRINTF(LEVEL_ERROR, "Unexpected dynamic power state 0x%x\n",
+                      old_state);
             /* fallthrough */
         case NV_DYNAMIC_POWER_STATE_IDLE_INDICATED:
             status = nv_indicate_not_idle(nv);
@@ -1482,8 +1483,8 @@ static void timerCallbackForIdlePreConditions(
                 NV_ASSERT(0);
                 /* fallthrough */
             case NV_DYNAMIC_POWER_STATE_IDLE_INDICATED:
-                NV_PRINTF(LEVEL_ERROR, "NVRM: %s: unexpected dynamic power state 0x%x\n",
-                          __FUNCTION__, nvp->dynamic_power.state);
+                NV_PRINTF(LEVEL_ERROR, "unexpected dynamic power state 0x%x\n",
+                          nvp->dynamic_power.state);
                 /* fallthrough */
             case NV_DYNAMIC_POWER_STATE_IN_USE:
                 break;
@@ -1740,7 +1741,7 @@ static NV_STATUS CreateDynamicPowerCallbacks(
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "NVRM: Error creating dynamic power precondition check callback\n");
+                  "Error creating dynamic power precondition check callback\n");
         nvp->dynamic_power.idle_precondition_check_event = NvP64_NULL;
         nvp->dynamic_power.indicate_idle_event = NvP64_NULL;
         nvp->dynamic_power.remove_idle_holdoff = NvP64_NULL;
@@ -1760,7 +1761,7 @@ static NV_STATUS CreateDynamicPowerCallbacks(
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "NVRM: Error creating callback to indicate GPU idle\n");
+                  "Error creating callback to indicate GPU idle\n");
         nvp->dynamic_power.idle_precondition_check_event = NvP64_NULL;
         nvp->dynamic_power.indicate_idle_event = NvP64_NULL;
         nvp->dynamic_power.remove_idle_holdoff = NvP64_NULL;
@@ -1780,7 +1781,7 @@ static NV_STATUS CreateDynamicPowerCallbacks(
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "NVRM: Error creating callback to decrease kernel refcount\n");
+                  "Error creating callback to decrease kernel refcount\n");
         nvp->dynamic_power.idle_precondition_check_event = NvP64_NULL;
         nvp->dynamic_power.indicate_idle_event = NvP64_NULL;
         nvp->dynamic_power.remove_idle_holdoff = NvP64_NULL;
@@ -1831,7 +1832,7 @@ static void RmScheduleCallbackForIdlePreConditionsUnderGpuLock(
         }
         else
         {
-            NV_PRINTF(LEVEL_ERROR, "NVRM: Error scheduling precondition callback\n");
+            NV_PRINTF(LEVEL_ERROR, "Error scheduling precondition callback\n");
         }
     }
 }
@@ -1893,7 +1894,7 @@ static void RmScheduleCallbackToIndicateIdle(
         status = tmrCtrlCmdEventSchedule(pGpu, &scheduleEventParams);
 
         if (status != NV_OK)
-            NV_PRINTF(LEVEL_ERROR, "NVRM: Error scheduling indicate idle callback\n");
+            NV_PRINTF(LEVEL_ERROR, "Error scheduling indicate idle callback\n");
     }
 }
 
@@ -1928,7 +1929,7 @@ static void RmScheduleCallbackToRemoveIdleHoldoff(
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "NVRM: Error scheduling kernel refcount decrement callback\n");
+                      "Error scheduling kernel refcount decrement callback\n");
         }
         else
         {
@@ -1956,7 +1957,7 @@ static NvBool RmCheckRtd3GcxSupport(
 
     if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_UNIX_DYNAMIC_POWER_SUPPORTED))
     {
-        NV_PRINTF(LEVEL_NOTICE, "NVRM: RTD3/GC6 is not supported for this arch\n");
+        NV_PRINTF(LEVEL_NOTICE, "RTD3/GC6 is not supported for this arch\n");
         return NV_FALSE;
     }
 
@@ -1974,7 +1975,7 @@ static NvBool RmCheckRtd3GcxSupport(
     if (!bGC6Support && !bGCOFFSupport)
     {
         NV_PRINTF(LEVEL_NOTICE,
-                  "NVRM: Disabling RTD3. [GC6 support=%d GCOFF support=%d]\n",
+                  "Disabling RTD3. [GC6 support=%d GCOFF support=%d]\n",
                   bGC6Support, bGCOFFSupport);
         return NV_FALSE;
     }
@@ -1986,7 +1987,7 @@ static NvBool RmCheckRtd3GcxSupport(
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR,
-                  "NVRM: Failed to get Virtualization mode, status=0x%x\n",
+                  "Failed to get Virtualization mode, status=0x%x\n",
                   status);
         return NV_FALSE;
     }
@@ -1994,7 +1995,7 @@ static NvBool RmCheckRtd3GcxSupport(
     if ((virtModeParams.virtualizationMode != NV0080_CTRL_GPU_VIRTUALIZATION_MODE_NONE) &&
         (virtModeParams.virtualizationMode != NV0080_CTRL_GPU_VIRTUALIZATION_MODE_NMOS))
     {
-        NV_PRINTF(LEVEL_NOTICE, "NVRM: RTD3/GC6 is not supported on VM\n");
+        NV_PRINTF(LEVEL_NOTICE, "RTD3/GC6 is not supported on VM\n");
         return NV_FALSE;
     }
 
@@ -2025,7 +2026,7 @@ void RmInitDeferredDynamicPowerManagement(
             {
                  nvp->dynamic_power.mode = NV_DYNAMIC_PM_NEVER;
                  nvp->dynamic_power.b_fine_not_supported = NV_TRUE;
-                 NV_PRINTF(LEVEL_NOTICE, "NVRM: RTD3/GC6 is not supported\n");
+                 NV_PRINTF(LEVEL_NOTICE, "RTD3/GC6 is not supported\n");
                  goto unlock;
             }
             osAddGpuDynPwrSupported(gpuGetInstance(pGpu));
@@ -2047,7 +2048,7 @@ unlock:
     }
 
     if (status != NV_OK)
-       NV_PRINTF(LEVEL_ERROR, "NVRM: Failed to register for dynamic power callbacks\n");
+       NV_PRINTF(LEVEL_ERROR, "Failed to register for dynamic power callbacks\n");
 }
 
 /*!
@@ -2262,7 +2263,7 @@ NV_STATUS RmGcxPowerManagement(
         // GC6 3.0 is possible without AML override but due to changes required
         // for GCOFF-1.0 in SBIOS & HW, AML override is needed for GC6-3.0 also.
         //
-        NV_PRINTF(LEVEL_INFO,"NVRM: AML overrides present in Desktop");
+        NV_PRINTF(LEVEL_INFO,"AML overrides present in Desktop");
     }
 
     nv->d0_state_in_suspend = NV_FALSE;
@@ -2382,9 +2383,8 @@ NV_STATUS RmGcxPowerManagement(
             {
                 status = NV_ERR_NOT_SUPPORTED;
                 NV_PRINTF(LEVEL_ERROR,
-                          "NVRM: %s: System suspend failed with current system suspend configuration. "
-                          "Please change the system suspend configuration to s2idle in /sys/power/mem_sleep.\n",
-                          __FUNCTION__);
+                          "System suspend failed with current system suspend configuration. "
+                          "Please change the system suspend configuration to s2idle in /sys/power/mem_sleep.\n");
             }
         }
     }
@@ -2625,8 +2625,7 @@ void RmHandleDisplayChange(
         }
         else
             NV_PRINTF(LEVEL_ERROR,
-                      "NVRM: %s: Failed to increment dynamic power refcount\n",
-                      __FUNCTION__);
+                      "Failed to increment dynamic power refcount\n");
     }
 }
 
@@ -2727,8 +2726,7 @@ static void RmQueueIdleSustainedWorkitem(
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_WARNING,
-                      "NVRM: %s: Failed to queue RmHandleIdleSustained() workitem.\n",
-                      __FUNCTION__);
+                      "Failed to queue RmHandleIdleSustained() workitem.\n");
             RmScheduleCallbackForIdlePreConditionsUnderGpuLock(pGpu);
             return;
         }

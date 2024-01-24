@@ -332,13 +332,7 @@ static void InsertProgressTracker(NvPushChannelPtr p, NvU32 putOffset,
              DRF_DEF(C36F, _SEM_EXECUTE, _RELEASE_WFI, _DIS));
 
         __nvPushStart(p, progressTracker, 0, NVC36F_SEM_ADDR_LO, 5, _INC_METHOD);
-        /*
-         * NVC36F_SEM_ADDR_{LO,HI} is backwards from most 64-bit
-         * addresses spread over two methods, so we cannot use
-         * __nvPushSetMethodDataSegmentU64().
-         */
-        __nvPushSetMethodDataSegment(segment, NvU64_LO32(p->progressSemaphore.gpuVA));
-        __nvPushSetMethodDataSegment(segment, NvU64_HI32(p->progressSemaphore.gpuVA));
+        __nvPushSetMethodDataSegmentU64LE(segment, p->progressSemaphore.gpuVA);
         __nvPushSetMethodDataSegment(segment, payload);
         __nvPushSetMethodDataSegment(segment, 0);
         __nvPushSetMethodDataSegment(segment, semaphoreOperation);
@@ -638,11 +632,16 @@ NvBool __nvPushTestPushBuffer(NvPushChannelPtr p)
     /*
      * Immediately after allocating the pushbuffer, push a channel NOP and
      * babysit the channel until it's consumed as a quick sanity check.
+     
+     * Note we use a full long timeout (10 seconds) when performing this
+     * sanity test.  In normal operation, idling will happen very quickly.
+     * However, when the GPU is under heavy load in stress tests, it can
+     * take much longer to idle the channel.
      */
     WriteGetOffset(p, 0);
 
     ret = IdleChannel(p, FALSE /* progressTrackerWFI */,
-                      NV_PUSH_NOTIFIER_SHORT_TIMEOUT);
+                      NV_PUSH_NOTIFIER_LONG_TIMEOUT);
 
     if (!ret) {
         nvPushImportLogError(p->pDevice, "Failed to initialize DMA.");
@@ -1047,10 +1046,8 @@ static void VoltaReleaseTimelineSemaphore(
     NvU64 val)
 {
     nvPushMethod(p, 0, NVC36F_SEM_ADDR_LO, 5);
-    nvPushSetMethodData(p, NvU64_LO32(gpuAddress));
-    nvPushSetMethodData(p, NvU64_HI32(gpuAddress)); // NVC36F_SEM_ADDR_HI
-    nvPushSetMethodData(p, NvU64_LO32(val));        // NVC36F_SEM_PAYLOAD_LO
-    nvPushSetMethodData(p, NvU64_HI32(val));        // NVC36F_SEM_PAYLOAD_HI
+    nvPushSetMethodDataU64LE(p, gpuAddress);        // NVC36F_SEM_ADDR_LO/HI
+    nvPushSetMethodDataU64LE(p, val);               // NVC36F_SEM_PAYLOAD_LO/HI
     nvPushSetMethodData(p,                          // NVC36F_SEM_EXECUTE
         DRF_DEF(C36F, _SEM_EXECUTE, _OPERATION, _RELEASE) |
         DRF_DEF(C36F, _SEM_EXECUTE, _RELEASE_WFI, _EN) |
@@ -1067,10 +1064,8 @@ static void VoltaAcquireTimelineSemaphore(
     NvU64 val)
 {
     nvPushMethod(p, 0, NVC36F_SEM_ADDR_LO, 5);
-    nvPushSetMethodData(p, NvU64_LO32(gpuAddress));
-    nvPushSetMethodData(p, NvU64_HI32(gpuAddress)); // NVC36F_SEM_ADDR_HI
-    nvPushSetMethodData(p, NvU64_LO32(val));        // NVC36F_SEM_PAYLOAD_LO
-    nvPushSetMethodData(p, NvU64_HI32(val));        // NVC36F_SEM_PAYLOAD_HI
+    nvPushSetMethodDataU64LE(p, gpuAddress);        // NVC36F_SEM_ADDR_LO/HI
+    nvPushSetMethodDataU64LE(p, val);               // NVC36F_SEM_PAYLOAD_LO/HI
     nvPushSetMethodData(p,                          // NVC36F_SEM_EXECUTE
         DRF_DEF(C36F, _SEM_EXECUTE, _OPERATION, _ACQ_STRICT_GEQ) |
         DRF_DEF(C36F, _SEM_EXECUTE, _ACQUIRE_SWITCH_TSG, _EN) |

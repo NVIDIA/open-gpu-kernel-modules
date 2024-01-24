@@ -151,6 +151,7 @@ typedef struct _NVDeferredRequestFifoRec *NVDeferredRequestFifoPtr;
 typedef struct _NVSwapGroupRec *NVSwapGroupPtr;
 typedef struct _NVEvoModesetUpdateState NVEvoModesetUpdateState;
 typedef struct _NVLockGroup NVLockGroup;
+typedef struct _NVVblankSemControl *NVVblankSemControlPtr;
 
 /*
  * _NVHs*EvoRec are defined in nvkms-headsurface-priv.h; they are intentionally
@@ -882,7 +883,6 @@ typedef struct {
     NvBool supportsHDMI20                  :1;
     NvBool inputLutAppliesToBase           :1;
     NvU8   validNIsoFormatMask;
-    NvU8   genericPageKind;
     NvU32  maxPitchValue;
     int    maxWidthInBytes;
     int    maxWidthInPixels;
@@ -1128,6 +1128,12 @@ typedef struct _NVEvoDevRec {
      */
     NvBool              isHeadSurfaceSupported : 1;
 
+    /*
+     * vblank Sem Control requires support in resman; that support is not
+     * currently available on Tegra.
+     */
+    NvBool              supportsVblankSemControl : 1;
+
     nvkms_timer_handle_t *postFlipIMPTimer;
     nvkms_timer_handle_t *consoleRestoreTimer;
 
@@ -1265,29 +1271,6 @@ typedef struct _NVEvoDevRec {
         NvU32 numLayers;
     } apiHead[NVKMS_MAX_HEADS_PER_DISP];
 } NVDevEvoRec;
-
-static inline NvBool nvEvoIsConsoleActive(const NVDevEvoRec *pDevEvo)
-{
-    /*
-     * If (pDevEvo->modesetOwner == NULL) that means either the vbios
-     * console or the NVKMS console might be active.
-     */
-    if (pDevEvo->modesetOwner == NULL) {
-        return TRUE;
-    }
-
-    /*
-     * If (pDevEvo->modesetOwner != NULL) but
-     * pDevEvo->modesetOwnerChanged is TRUE, that means the modeset
-     * ownership is grabbed by the external client but it hasn't
-     * performed any modeset and the console is still active.
-     */
-    if ((pDevEvo->modesetOwner != NULL) && pDevEvo->modesetOwnerChanged) {
-        return TRUE;
-    }
-
-    return FALSE;
-}
 
 /*
  * The NVHwModeTimingsEvo structure stores all the values necessary to
@@ -2535,6 +2518,8 @@ typedef struct _NVFrameLockEvo {
     enum NvKmsFrameLockAttributeMulDivModeValue mulDivMode;
     NvBool testMode;
 
+    NVUnixRmHandleAllocatorRec handleAllocator;
+
 } NVFrameLockEvoRec;
 
 /*!
@@ -3184,6 +3169,13 @@ static inline void nvAssignHwHeadsMaskApiHeadState(
     pApiHeadState->attributes.numberOfHardwareHeadsUsed =
         nvPopCount32(hwHeadsMask);
 }
+
+typedef struct _NVVblankSemControl {
+    NvU32 dispIndex;
+    NvU32 hwHead;
+    NvU64 surfaceOffset;
+    NVSurfaceEvoRec *pSurfaceEvo;
+} NVVblankSemControl;
 
 #ifdef __cplusplus
 };

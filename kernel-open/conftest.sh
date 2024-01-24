@@ -14,6 +14,13 @@ OUTPUT=$4
 XEN_PRESENT=1
 PREEMPT_RT_PRESENT=0
 
+# We also use conftest.sh on FreeBSD to check for which symbols are provided
+# by the linux kernel programming interface (linuxkpi) when compiling nvidia-drm.ko
+OS_FREEBSD=0
+if [ "$OS" = "FreeBSD" ] ; then
+    OS_FREEBSD=1
+fi
+
 # VGX_BUILD parameter defined only for VGX builds (vGPU Host driver)
 # VGX_KVM_BUILD parameter defined only vGPU builds on KVM hypervisor
 # GRID_BUILD parameter defined only for GRID builds (GRID Guest driver)
@@ -205,11 +212,6 @@ CONFTEST_PREAMBLE="#include \"conftest/headers.h\"
     #if defined(NV_LINUX_KCONFIG_H_PRESENT)
     #include <linux/kconfig.h>
     #endif
-    #if defined(NV_GENERATED_AUTOCONF_H_PRESENT)
-    #include <generated/autoconf.h>
-    #else
-    #include <linux/autoconf.h>
-    #endif
     #if defined(CONFIG_XEN) && \
         defined(CONFIG_XEN_INTERFACE_VERSION) &&  !defined(__XEN_INTERFACE_VERSION__)
     #define __XEN_INTERFACE_VERSION__ CONFIG_XEN_INTERFACE_VERSION
@@ -221,6 +223,17 @@ CONFTEST_PREAMBLE="#include \"conftest/headers.h\"
     #define KASAN_SHADOW_SCALE_SHIFT 3
     #endif
     #endif"
+
+# FreeBSD's Linux compatibility does not have autoconf.h defined
+# anywhere yet, only add this part on Linux
+if [ ${OS_FREEBSD} -ne 1 ] ; then
+    CONFTEST_PREAMBLE="${CONFTEST_PREAMBLE}
+        #if defined(NV_GENERATED_AUTOCONF_H_PRESENT)
+        #include <generated/autoconf.h>
+        #else
+        #include <linux/autoconf.h>
+        #endif"
+fi
 
 test_configuration_option() {
     #
@@ -308,16 +321,57 @@ compile_check_conftest() {
     fi
 }
 
-export_symbol_present_conftest() {
-    #
-    # Check Module.symvers to see whether the given symbol is present.
-    #
+check_symbol_exists() {
+    # Check that the given symbol is available
 
     SYMBOL="$1"
     TAB='	'
 
-    if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_SYMBOL\(_GPL\)\?\s*\$" \
-               "$OUTPUT/Module.symvers" >/dev/null 2>&1; then
+    if [ ${OS_FREEBSD} -ne 1 ] ; then
+        # Linux:
+        # ------
+        #
+        # Check Module.symvers to see whether the given symbol is present.
+        #
+        if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_SYMBOL.*\$" \
+                   "$OUTPUT/Module.symvers" >/dev/null 2>&1; then
+            return 0
+        fi
+    else
+        # FreeBSD:
+        # ------
+        #
+        # Check if any of the linuxkpi or drm kernel module files contain
+        # references to this symbol.
+
+        # Get the /boot/kernel/ and /boot/modules paths, convert the list to a
+        # space separated list instead of semicolon separated so we can iterate
+        # over it.
+        if [ -z "${CONFTEST_BSD_KMODPATHS}" ] ; then
+            KMODPATHS=`sysctl -n kern.module_path | sed -e "s/;/ /g"`
+        else
+            KMODPATHS="${CONFTEST_BSD_KMODPATHS}"
+        fi
+
+        for KMOD in linuxkpi.ko linuxkpi_gplv2.ko drm.ko dmabuf.ko ; do
+            for KMODPATH in $KMODPATHS; do
+                if [ -e "$KMODPATH/$KMOD" ] ; then
+                    if nm "$KMODPATH/$KMOD" | grep "$SYMBOL" >/dev/null 2>&1 ; then
+                        return 0
+                    fi
+                fi
+            done
+        done
+    fi
+
+    return 1
+}
+
+export_symbol_present_conftest() {
+
+    SYMBOL="$1"
+
+    if check_symbol_exists $SYMBOL; then
         echo "#define NV_IS_EXPORT_SYMBOL_PRESENT_$SYMBOL 1" |
             append_conftest "symbols"
     else
@@ -1206,6 +1260,36 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_VFIO_DEVICE_OPS_HAS_BIND_IOMMUFD" "" "types"
         ;;
 
+        vfio_device_ops_has_detach_ioas)
+            #
+            # Determine if 'vfio_device_ops' struct has 'detach_ioas' field.
+            #
+            # Added by commit 9048c7341c4df9cae04c154a8b0f556dbe913358 ("vfio-iommufd: Add detach_ioas
+            # support for physical VFIO devices
+            #
+            CODE="
+            #include <linux/pci.h>
+            #include <linux/vfio.h>
+            int conftest_vfio_device_ops_has_detach_ioas(void) {
+                return offsetof(struct vfio_device_ops, detach_ioas);
+            }"
+
+            compile_check_conftest "$CODE" "NV_VFIO_DEVICE_OPS_HAS_DETACH_IOAS" "" "types"
+        ;;
+
+        pfn_address_space)
+            #
+            # Determine if 'struct pfn_address_space' structure is present or not.
+            #
+            CODE="
+            #include <linux/memory-failure.h>
+            void conftest_pfn_address_space() {
+                struct pfn_address_space pfn_address_space;
+            }"
+
+            compile_check_conftest "$CODE" "NV_PFN_ADDRESS_SPACE_STRUCT_PRESENT" "" "types"
+        ;;
+
         pci_irq_vector_helpers)
             #
             # Determine if pci_alloc_irq_vectors(), pci_free_irq_vectors()
@@ -1343,7 +1427,7 @@ compile_test() {
             #include <drm/drm_drv.h>
             #endif
 
-            #if !defined(CONFIG_DRM) && !defined(CONFIG_DRM_MODULE)
+            #if !defined(CONFIG_DRM) && !defined(CONFIG_DRM_MODULE) && !defined(__FreeBSD__)
             #error DRM not enabled
             #endif
 
@@ -1807,7 +1891,7 @@ compile_test() {
             #include <drm/drmP.h>
             #endif
             #include <drm/drm_atomic.h>
-            #if !defined(CONFIG_DRM) && !defined(CONFIG_DRM_MODULE)
+            #if !defined(CONFIG_DRM) && !defined(CONFIG_DRM_MODULE) && !defined(__FreeBSD__)
             #error DRM not enabled
             #endif
             void conftest_drm_atomic_modeset_available(void) {
@@ -5203,10 +5287,16 @@ compile_test() {
             # Added by commit 7b7b27214bba ("mm/memory_hotplug: introduce
             # add_memory_driver_managed()") in v5.8.
             #
+            # Before commit 3a0aaefe4134 ("mm/memory_hotplug: guard more
+            # declarations by CONFIG_MEMORY_HOTPLUG") in v5.10, the
+            # add_memory_driver_managed() was not guarded.
+            #
             CODE="
             #include <linux/memory_hotplug.h>
             void conftest_add_memory_driver_managed() {
+            #if defined(CONFIG_MEMORY_HOTPLUG)
                 add_memory_driver_managed();
+            #endif
             }"
 
             compile_check_conftest "$CODE" "NV_ADD_MEMORY_DRIVER_MANAGED_PRESENT" "" "functions"
@@ -5669,22 +5759,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_GPIO_TO_IRQ_PRESENT" "" "functions"
         ;;
 
-        migrate_vma_setup)
-            #
-            # Determine if migrate_vma_setup() function is present
-            #
-            # Added by commit a7d1f22bb74f ("mm: turn migrate_vma upside
-            # down") in v5.4.
-            #
-            CODE="
-            #include <linux/migrate.h>
-            int conftest_migrate_vma_setup(void) {
-                migrate_vma_setup();
-            }"
-
-            compile_check_conftest "$CODE" "NV_MIGRATE_VMA_SETUP_PRESENT" "" "functions"
-        ;;
-
         migrate_vma_added_flags)
             #
             # Determine if migrate_vma structure has flags
@@ -5793,6 +5867,24 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_MM_PASID_DROP_PRESENT" "" "functions"
+        ;;
+
+        iommu_is_dma_domain)
+            #
+            # Determine if iommu_is_dma_domain() function is present
+            # this also assumes that iommu_get_domain_for_dev() function is
+            # present.
+            #
+            # Added by commit bf3aed4660c6 ("iommu: Introduce explicit type
+            # for non-strict DMA domains") in v5.15
+            #
+            CODE="
+            #include <linux/iommu.h>
+            void conftest_iommu_is_dma_domain(void) {
+                iommu_is_dma_domain();
+            }"
+
+            compile_check_conftest "$CODE" "NV_IOMMU_IS_DMA_DOMAIN_PRESENT" "" "functions"
         ;;
 
         drm_crtc_state_has_no_vblank)
@@ -6483,6 +6575,21 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_FIND_NEXT_BIT_WRAP_PRESENT" "" "functions"
         ;;
 
+        crypto_tfm_ctx_aligned)
+            # Determine if 'crypto_tfm_ctx_aligned' is defined.
+            #
+            # Removed by commit 25c74a39e0f6 ("crypto: hmac - remove unnecessary
+            # alignment logic") in v6.7.
+            #
+            CODE="
+            #include <crypto/algapi.h>
+            void conftest_crypto_tfm_ctx_aligned(void) {
+                  (void)crypto_tfm_ctx_aligned();
+            }"
+
+            compile_check_conftest "$CODE" "NV_CRYPTO_TFM_CTX_ALIGNED_PRESENT" "" "functions"
+        ;;
+
         crypto)
             #
             # Determine if we support various crypto functions.
@@ -6604,9 +6711,9 @@ compile_test() {
             # 'supported_colorspaces' argument.
             #
             # The 'u32 supported_colorspaces' argument was added to
-            # drm_mode_create_dp_colorspace_property() by linux-next commit
+            # drm_mode_create_dp_colorspace_property() by commit
             # c265f340eaa8 ("drm/connector: Allow drivers to pass list of
-            # supported colorspaces").
+            # supported colorspaces") in v6.5.
             #
             # To test if drm_mode_create_dp_colorspace_property() has the
             # 'supported_colorspaces' argument, declare a function prototype
@@ -6632,6 +6739,27 @@ compile_test() {
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_MODE_CREATE_DP_COLORSPACE_PROPERTY_HAS_SUPPORTED_COLORSPACES_ARG" "" "types"
+        ;;
+
+        drm_unlocked_ioctl_flag_present)
+            # Determine if DRM_UNLOCKED IOCTL flag is present.
+            #
+            # DRM_UNLOCKED was removed by commit 2798ffcc1d6a ("drm: Remove
+            # locking for legacy ioctls and DRM_UNLOCKED") in Linux
+            # next-20231208.
+            #
+            # DRM_UNLOCKED definition was moved from drmP.h to drm_ioctl.h by
+            # commit 2640981f3600 ("drm: document drm_ioctl.[hc]") in v4.12.
+            CODE="
+            #if defined(NV_DRM_DRM_IOCTL_H_PRESENT)
+            #include <drm/drm_ioctl.h>
+            #endif
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
+            #endif
+            int flags = DRM_UNLOCKED;"
+
+            compile_check_conftest "$CODE" "NV_DRM_UNLOCKED_IOCTL_FLAG_PRESENT" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for
@@ -6935,10 +7063,12 @@ case "$5" in
         #
         VERBOSE=$6
         iommu=CONFIG_VFIO_IOMMU_TYPE1
+        iommufd_vfio_container=CONFIG_IOMMUFD_VFIO_CONTAINER
         mdev=CONFIG_VFIO_MDEV
         kvm=CONFIG_KVM_VFIO
         vfio_pci_core=CONFIG_VFIO_PCI_CORE
         VFIO_IOMMU_PRESENT=0
+        VFIO_IOMMUFD_VFIO_CONTAINER_PRESENT=0
         VFIO_MDEV_PRESENT=0
         KVM_PRESENT=0
         VFIO_PCI_CORE_PRESENT=0
@@ -6946,6 +7076,10 @@ case "$5" in
         if [ -n "$VGX_KVM_BUILD" ]; then
             if (test_configuration_option ${iommu} || test_configuration_option ${iommu}_MODULE); then
                 VFIO_IOMMU_PRESENT=1
+            fi
+
+            if (test_configuration_option ${iommufd_vfio_container} || test_configuration_option ${iommufd_vfio_container}_MODULE); then
+                VFIO_IOMMUFD_VFIO_CONTAINER_PRESENT=1
             fi
 
             if (test_configuration_option ${mdev} || test_configuration_option ${mdev}_MODULE); then
@@ -6960,34 +7094,21 @@ case "$5" in
                 VFIO_PCI_CORE_PRESENT=1
             fi
 
-            # When this sanity check is run via nvidia-installer, it sets ARCH as aarch64.
-            # But, when it is run via Kbuild, ARCH is set as arm64
-            if [ "$ARCH" = "aarch64" ]; then
-                ARCH="arm64"
-            fi
-
-            if [ "$VFIO_IOMMU_PRESENT" != "0" ] && [ "$KVM_PRESENT" != "0" ] ; then
-
-                # On x86_64, vGPU requires MDEV framework to be present.
-                # On aarch64, vGPU requires MDEV or vfio-pci-core framework to be present.
-                if ([ "$ARCH" = "arm64" ] && ([ "$VFIO_MDEV_PRESENT" != "0" ] || [ "$VFIO_PCI_CORE_PRESENT" != "0" ])) ||
-                   ([ "$ARCH" = "x86_64" ] && [ "$VFIO_MDEV_PRESENT" != "0" ];) then
+            if ([ "$VFIO_IOMMU_PRESENT" != "0" ] || [ "$VFIO_IOMMUFD_VFIO_CONTAINER_PRESENT" != "0" ])&& [ "$KVM_PRESENT" != "0" ] ; then
+                # vGPU requires either MDEV or vfio-pci-core framework to be present.
+                if [ "$VFIO_MDEV_PRESENT" != "0" ] || [ "$VFIO_PCI_CORE_PRESENT" != "0" ]; then
                     exit 0
                 fi
             fi
 
             echo "Below CONFIG options are missing on the kernel for installing";
             echo "NVIDIA vGPU driver on KVM host";
-            if [ "$VFIO_IOMMU_PRESENT" = "0" ]; then
-                echo "CONFIG_VFIO_IOMMU_TYPE1";
+            if [ "$VFIO_IOMMU_PRESENT" = "0" ] && [ "$VFIO_IOMMUFD_VFIO_CONTAINER_PRESENT" = "0" ]; then
+                echo "either CONFIG_VFIO_IOMMU_TYPE1 or CONFIG_IOMMUFD_VFIO_CONTAINER";
             fi
 
-            if [ "$ARCH" = "arm64" ] && [ "$VFIO_MDEV_PRESENT" = "0" ] && [ "$VFIO_PCI_CORE_PRESENT" = "0" ]; then
+            if [ "$VFIO_MDEV_PRESENT" = "0" ] && [ "$VFIO_PCI_CORE_PRESENT" = "0" ]; then
                 echo "either CONFIG_VFIO_MDEV or CONFIG_VFIO_PCI_CORE";
-            fi
-
-            if [ "$ARCH" = "x86_64" ] && [ "$VFIO_MDEV_PRESENT" = "0" ]; then
-                echo "CONFIG_VFIO_MDEV";
             fi
 
             if [ "$KVM_PRESENT" = "0" ]; then

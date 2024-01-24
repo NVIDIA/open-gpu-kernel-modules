@@ -26,7 +26,6 @@
  */
 
 #include "gpu/falcon/kernel_falcon.h"
-#include "gpu/mc/kernel_mc.h"
 #include "os/os.h"
 
 #include "published/turing/tu102/dev_riscv_pri.h"
@@ -150,7 +149,8 @@ kflcnIsRiscvActive_TU102
 }
 
 /*!
- *  Perform a reset of the Falcon.
+ * Reset falcon using secure reset.
+ * This leaves the falcon in falcon mode after reset.
  */
 void
 kflcnReset_TU102
@@ -159,80 +159,29 @@ kflcnReset_TU102
     KernelFalcon *pKernelFlcn
 )
 {
-    kflcnEnable_HAL(pGpu, pKernelFlcn, NV_FALSE);
-    kflcnEnable_HAL(pGpu, pKernelFlcn, NV_TRUE);
+    NV_ASSERT_OR_RETURN_VOID(kflcnPreResetWait_HAL(pGpu, pKernelFlcn) == NV_OK);
+    NV_ASSERT_OK(kflcnResetHw(pGpu, pKernelFlcn));
+    kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn);
+    kflcnSwitchToFalcon_HAL(pGpu, pKernelFlcn);
+    kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_RM,
+                      pGpu->chipId0);
 }
 
 /*!
- * Does a reset of the Falcon using secure reset and switches to Falcon mode.
+ * Reset falcon using secure reset, ready to run riscv.
  */
 void
-kflcnSecureReset_TU102
+kflcnResetIntoRiscv_TU102
 (
     OBJGPU *pGpu,
     KernelFalcon *pKernelFlcn
 )
 {
-    NV_ASSERT_OR_RETURN_VOID(kflcnPreResetWait_HAL(pGpu, pKernelFlcn) == NV_OK);
-    NV_ASSERT_OK(kflcnResetHw(pGpu, pKernelFlcn));
-
-    kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn);
-
-    kflcnSwitchToFalcon_HAL(pGpu, pKernelFlcn);
-}
-
-/*!
- * Enable or disable the Falcon to FALCON mode.
- */
-void
-kflcnEnable_TU102
-(
-    OBJGPU *pGpu,
-    KernelFalcon *pKernelFlcn,
-    NvBool bEnable
-)
-{
-    KernelMc *pKernelMc = GPU_GET_KERNEL_MC(pGpu);
-
-    if (!bEnable)
-    {
-        // Disable in PMC if engine is present in PMC
-        if (pKernelFlcn->pmcEnableMask > 0)
-        {
-            kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, pKernelFlcn->pmcEnableMask,
-                                     NV_FALSE, pKernelFlcn->bIsPmcDeviceEngine);
-            // Read back to create enough of a delay
-            kmcReadPmcEnableReg_HAL(pGpu, pKernelMc, pKernelFlcn->bIsPmcDeviceEngine);
-            kmcReadPmcEnableReg_HAL(pGpu, pKernelMc, pKernelFlcn->bIsPmcDeviceEngine);
-        }
-        else
-        {
-            kflcnSecureReset_HAL(pGpu, pKernelFlcn);
-        }
-    }
-    else
-    {
-        // Enable in PMC if engine is present in PMC
-        if (pKernelFlcn->pmcEnableMask > 0)
-        {
-            kmcWritePmcEnableReg_HAL(pGpu, pKernelMc, pKernelFlcn->pmcEnableMask,
-                                     NV_TRUE, pKernelFlcn->bIsPmcDeviceEngine);
-            // Read back to create enough of a delay
-            kmcReadPmcEnableReg_HAL(pGpu, pKernelMc, pKernelFlcn->bIsPmcDeviceEngine);
-            kmcReadPmcEnableReg_HAL(pGpu, pKernelMc, pKernelFlcn->bIsPmcDeviceEngine);
-        }
-        else
-        {
-            kflcnSecureReset_HAL(pGpu, pKernelFlcn);
-        }
-
-        kflcnSwitchToFalcon_HAL(pGpu, pKernelFlcn);
-
-        kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn);
-
-        kflcnRegWrite_HAL(pGpu, pKernelFlcn, NV_PFALCON_FALCON_RM,
-                          pGpu->chipId0);
-    }
+    //
+    // Turing and GA100 do not have an explicit core switch,
+    // the core will be ready to run riscv after reset.
+    //
+    kflcnReset_TU102(pGpu, pKernelFlcn);
 }
 
 /*!

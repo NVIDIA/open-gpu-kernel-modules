@@ -144,6 +144,9 @@ namespace DisplayPort
         // Check if we should skip power down eDP when head detached.
         virtual bool skipPowerdownEdpPanelWhenHeadDetach() = 0;
 
+        // Check if we should skip reading PCON Caps in MST case.
+        virtual bool isMSTPCONCapsReadDisabled() = 0;
+
         // Get GPU DSC capabilities
         virtual void getDscCaps(bool *pbDscSupported = NULL,
                                 unsigned *pEncoderColorFormatMask = NULL,
@@ -242,7 +245,7 @@ namespace DisplayPort
         virtual NvU32 getRootDisplayId() = 0;
         virtual NvU32 allocDisplayId() = 0;
         virtual bool freeDisplayId(NvU32 displayId) = 0;
-        virtual void queryGPUCapability() = 0;
+        virtual bool queryGPUCapability() {return false;}
         virtual bool queryAndUpdateDfpParams() = 0;
         virtual bool getEdpPowerData(bool *panelPowerOn, bool *bDPCDPowerStateD0) = 0;
         virtual bool vrrRunEnablementStage(unsigned stage, NvU32 *status) = 0;

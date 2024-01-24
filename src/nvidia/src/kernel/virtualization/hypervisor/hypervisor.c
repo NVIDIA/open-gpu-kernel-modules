@@ -26,6 +26,7 @@
  * @brief Hypervisor interface for RM
  */
 
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "os/os.h"

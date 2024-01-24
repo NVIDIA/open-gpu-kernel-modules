@@ -798,17 +798,14 @@ gisubscriptionCtrlCmdExecPartitionsExport_IMPL
     {
         CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-        NV_STATUS status = NV_OK;
+        RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
-
-        return status;
+        return pRmApi->Control(pRmApi,
+                               pRmCtrlParams->hClient,
+                               pRmCtrlParams->hObject,
+                               pRmCtrlParams->cmd,
+                               pRmCtrlParams->pParams,
+                               pRmCtrlParams->paramsSize);
     }
 
     if (pParams->id >= NV_ARRAY_ELEMENTS(pGPUInstance->MIGComputeInstance))
@@ -876,14 +873,14 @@ gisubscriptionCtrlCmdExecPartitionsImport_IMPL
     {
         CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+        RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
+        status = pRmApi->Control(pRmApi,
+                                 pRmCtrlParams->hClient,
+                                 pRmCtrlParams->hObject,
+                                 pRmCtrlParams->cmd,
+                                 pRmCtrlParams->pParams,
+                                 pRmCtrlParams->paramsSize);
 
         if (status != NV_OK)
             return status;
@@ -1207,6 +1204,27 @@ gisubscriptionCtrlCmdExecPartitionsGetProfileCapacity_IMPL
         pParams->profileCount        = veidSlotCount;
         pParams->availableSpansCount = availableSpanCount;
     }
+
+    return NV_OK;
+}
+
+NV_STATUS
+gisubscriptionCtrlCmdGetUuid_IMPL
+(
+    GPUInstanceSubscription *pGPUInstanceSubscription,
+    NVC637_CTRL_GET_UUID_PARAMS *pParams
+)
+{
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, !pGPUInstanceSubscription->bDeviceProfiling,
+                       NV_ERR_NOT_SUPPORTED);
+
+    portMemCopy(pParams->uuid, sizeof(pParams->uuid), 
+                pGPUInstanceSubscription->pKernelMIGGpuInstance->uuid.uuid,
+                sizeof(pGPUInstanceSubscription->pKernelMIGGpuInstance->uuid.uuid));
+
+    nvGetSmcUuidString((void*)pParams->uuid, pParams->uuidStr);
+    pParams->uuidStr[1] = 'G';
+    pParams->uuidStr[2] = 'I';
 
     return NV_OK;
 }

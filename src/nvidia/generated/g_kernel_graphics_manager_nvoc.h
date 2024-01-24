@@ -54,16 +54,23 @@ typedef struct GRMGR_LEGACY_KGRAPHICS_STATIC_INFO
     NvBool bInitialized;
 } GRMGR_LEGACY_KGRAPHICS_STATIC_INFO;
 
+typedef struct KGRMGR_FECS_GLOBAL_TRACE_INFO KGRMGR_FECS_GLOBAL_TRACE_INFO;
+typedef struct KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO;
 
 /*!
  * KernelGraphicsManager provides means to access KernelGraphics engine with specified index.
  * It also houses information at a higher level or that is common between KernelGraphics engines.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_GRAPHICS_MANAGER_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelGraphicsManager {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;
@@ -86,9 +93,10 @@ struct KernelGraphicsManager {
     NV_STATUS (*__kgrmgrStatePostLoad__)(POBJGPU, struct KernelGraphicsManager *, NvU32);
     NvBool (*__kgrmgrIsPresent__)(POBJGPU, struct KernelGraphicsManager *);
     GRMGR_LEGACY_KGRAPHICS_STATIC_INFO PRIVATE_FIELD(legacyKgraphicsStaticInfo);
-    NvU32 PRIVATE_FIELD(fecsCallbackScheduled);
     NvU64 PRIVATE_FIELD(veidInUseMask);
     NvU64 PRIVATE_FIELD(grIdxVeidMask)[8];
+    KGRMGR_FECS_GLOBAL_TRACE_INFO *PRIVATE_FIELD(pFecsGlobalTraceInfo);
+    KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO *PRIVATE_FIELD(pFecsVgpuGlobalTraceInfo);
     CTX_BUF_INFO PRIVATE_FIELD(globalCtxBufInfo)[10];
 };
 
@@ -114,9 +122,10 @@ struct KernelGraphicsManager_PRIVATE {
     NV_STATUS (*__kgrmgrStatePostLoad__)(POBJGPU, struct KernelGraphicsManager *, NvU32);
     NvBool (*__kgrmgrIsPresent__)(POBJGPU, struct KernelGraphicsManager *);
     GRMGR_LEGACY_KGRAPHICS_STATIC_INFO legacyKgraphicsStaticInfo;
-    NvU32 fecsCallbackScheduled;
     NvU64 veidInUseMask;
     NvU64 grIdxVeidMask[8];
+    KGRMGR_FECS_GLOBAL_TRACE_INFO *pFecsGlobalTraceInfo;
+    KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO *pFecsVgpuGlobalTraceInfo;
     CTX_BUF_INFO globalCtxBufInfo[10];
 };
 
@@ -257,6 +266,16 @@ static inline NvU64 kgrmgrGetVeidInUseMask(OBJGPU *pGpu, struct KernelGraphicsMa
 static inline void kgrmgrSetVeidInUseMask(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager, NvU64 mask) {
     struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
     pKernelGraphicsManager_PRIVATE->veidInUseMask = mask;
+}
+
+static inline KGRMGR_FECS_GLOBAL_TRACE_INFO *kgrmgrGetFecsGlobalTraceInfo(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager) {
+    struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
+    return pKernelGraphicsManager_PRIVATE->pFecsGlobalTraceInfo;
+}
+
+static inline KGRMGR_FECS_VGPU_GLOBAL_TRACE_INFO *kgrmgrGetFecsVgpuGlobalTraceInfo(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager) {
+    struct KernelGraphicsManager_PRIVATE *pKernelGraphicsManager_PRIVATE = (struct KernelGraphicsManager_PRIVATE *)pKernelGraphicsManager;
+    return pKernelGraphicsManager_PRIVATE->pFecsVgpuGlobalTraceInfo;
 }
 
 void kgrmgrGetGrObjectType_IMPL(NvU32 classNum, NvU32 *pObjectType);
@@ -470,27 +489,6 @@ static inline NV_STATUS kgrmgrCheckVeidsRequest(OBJGPU *arg0, struct KernelGraph
 }
 #else //__nvoc_kernel_graphics_manager_h_disabled
 #define kgrmgrCheckVeidsRequest(arg0, arg1, pInUseMask, veidCount, pSpanStart, arg2) kgrmgrCheckVeidsRequest_IMPL(arg0, arg1, pInUseMask, veidCount, pSpanStart, arg2)
-#endif //__nvoc_kernel_graphics_manager_h_disabled
-
-NvBool kgrmgrSignalFecsCallbackScheduled_IMPL(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager);
-
-#ifdef __nvoc_kernel_graphics_manager_h_disabled
-static inline NvBool kgrmgrSignalFecsCallbackScheduled(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_kernel_graphics_manager_h_disabled
-#define kgrmgrSignalFecsCallbackScheduled(pGpu, pKernelGraphicsManager) kgrmgrSignalFecsCallbackScheduled_IMPL(pGpu, pKernelGraphicsManager)
-#endif //__nvoc_kernel_graphics_manager_h_disabled
-
-void kgrmgrClearFecsCallbackScheduled_IMPL(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager);
-
-#ifdef __nvoc_kernel_graphics_manager_h_disabled
-static inline void kgrmgrClearFecsCallbackScheduled(OBJGPU *pGpu, struct KernelGraphicsManager *pKernelGraphicsManager) {
-    NV_ASSERT_FAILED_PRECOMP("KernelGraphicsManager was disabled!");
-}
-#else //__nvoc_kernel_graphics_manager_h_disabled
-#define kgrmgrClearFecsCallbackScheduled(pGpu, pKernelGraphicsManager) kgrmgrClearFecsCallbackScheduled_IMPL(pGpu, pKernelGraphicsManager)
 #endif //__nvoc_kernel_graphics_manager_h_disabled
 
 #undef PRIVATE_FIELD

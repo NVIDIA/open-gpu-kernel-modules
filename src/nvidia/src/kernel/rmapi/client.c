@@ -30,7 +30,6 @@
 #include "rmapi/resource_fwd_decls.h"
 #include "core/locks.h"
 #include "core/system.h"
-#include "gpu/device/device.h"
 #include "resource_desc.h"
 #include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
@@ -315,13 +314,12 @@ rmclientInterMap_IMPL
     mapToParams.hMemoryDevice    = pPrivate->hMemoryDevice;
     mapToParams.gpuMask          = pPrivate->gpuMask;
     mapToParams.bSubdeviceHandleProvided = pPrivate->bSubdeviceHandleProvided;
-    mapToParams.bDmaMapNeeded    = pPrivate->bDmaMapNeeded;
     mapToParams.bFlaMapping      = pPrivate->bFlaMapping;
 
     return resMapTo(pMapperRef->pResource, &mapToParams);
 }
 
-void
+NV_STATUS
 rmclientInterUnmap_IMPL
 (
     RmClient *pClient,
@@ -339,13 +337,14 @@ rmclientInterUnmap_IMPL
     unmapFromParams.hMemory   = pParams->hMappable;
     unmapFromParams.flags     = pParams->flags;
     unmapFromParams.dmaOffset = pParams->dmaOffset;
+    unmapFromParams.size      = pParams->size;
 
     unmapFromParams.pGpu             = pPrivate->pGpu;
     unmapFromParams.hBroadcastDevice = pPrivate->hBroadcastDevice;
     unmapFromParams.gpuMask          = pPrivate->gpuMask;
     unmapFromParams.bSubdeviceHandleProvided = pPrivate->bSubdeviceHandleProvided;
 
-    resUnmapFrom(pMapperRef->pResource, &unmapFromParams);
+    return resUnmapFrom(pMapperRef->pResource, &unmapFromParams);
 }
 
 RS_PRIV_LEVEL
@@ -798,6 +797,11 @@ static NvBool _rmclientIsCapable
         case NV_RM_CAP_EXT_FABRIC_MGMT:
         {
             internalClassId = classId(FmSessionApi);
+            break;
+        }
+        case NV_RM_CAP_SYS_FABRIC_IMEX_MGMT:
+        {
+            internalClassId = classId(ImexSessionApi);
             break;
         }
         case NV_RM_CAP_SYS_SMC_MONITOR:

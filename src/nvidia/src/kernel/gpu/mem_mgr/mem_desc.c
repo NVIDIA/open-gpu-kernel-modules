@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,6 +37,8 @@
 #include "mem_mgr/io_vaspace.h"
 #include "mem_mgr/virt_mem_mgr.h"
 #include "core/system.h"
+#include "vgpu/vgpu_util.h"
+#include "platform/sli/sli.h"
 
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 
@@ -146,6 +148,8 @@ static NV_STATUS _memdescSetSubAllocatorFlag
 
         if (pHeap == NULL)
             pHeap = memmgrGetDeviceSuballocator(GPU_GET_MEMORY_MANAGER(pGpu), bForceSubheap);
+
+        NV_ASSERT_OR_RETURN(pHeap != NULL, NV_ERR_INVALID_STATE);
 
         if (pHeap->heapType == HEAP_TYPE_PHYS_MEM_SUBALLOCATOR)
         {
@@ -713,16 +717,14 @@ _memdescAllocVprRegion
  *  @brief Allocate and populate the EGM array based off of the already
  *         populated _pteArray of the memdesc
  *
- *  @param[in] pMemDesc         Memory descriptor to allocate EGM array in
- *  @param[in] pMemoryManager   Memory manager for EGM base addr
+ *  @param[in] pMemDesc Memory descriptor to allocate EGM array in
  *
  *  @returns NV_OK on successful allocation. NV_ERR if not.
  */
 static NV_INLINE NV_STATUS
 _memdescAllocEgmArray
 (
-    MEMORY_DESCRIPTOR *pMemDesc,
-    MemoryManager     *pMemoryManager
+    MEMORY_DESCRIPTOR *pMemDesc
 )
 {
     //
@@ -731,6 +733,16 @@ _memdescAllocEgmArray
     //
     NvU64 i;
     NvU64 pageCount = pMemDesc->PageCount + 1;
+
+    //
+    // Get the root memory descriptor's memory manager to be able to get the
+    // EGM base of that GPU, instead of the mapping GPU in the case of this
+    // array being used in a submemdesc. The submemdesc should always have the
+    // mapping of the root since it's a submemdesc derived from the root, and
+    // not based on the mapping GPU.
+    //
+    MEMORY_DESCRIPTOR *pRootMemDesc   = memdescGetRootMemDesc(pMemDesc, NULL);
+    MemoryManager     *pMemoryManager = GPU_GET_MEMORY_MANAGER(pRootMemDesc->pGpu);
 
     if (pMemDesc->_flags & MEMDESC_FLAGS_PHYSICALLY_CONTIGUOUS)
     {
@@ -796,8 +808,7 @@ _memdescAllocInternal
             if (memdescIsEgm(pMemDesc))
             {
                 NV_ASSERT_OK_OR_GOTO(status,
-                                     _memdescAllocEgmArray(pMemDesc,
-                                        GPU_GET_MEMORY_MANAGER(pGpu)),
+                                     _memdescAllocEgmArray(pMemDesc),
                                      done);
             }
 
@@ -876,8 +887,6 @@ _memdescAllocInternal
                 MEMORY_ALLOCATION_REQUEST allocRequest = {0};
                 NV_MEMORY_ALLOCATION_PARAMS allocData = {0};
                 MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-                const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
-                    kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
                 NvU64 requestedSize = pMemDesc->Size;
 
                 allocRequest.pUserParams = &allocData;
@@ -896,7 +905,7 @@ _memdescAllocInternal
                 allocData.flags = NVOS32_ALLOC_FLAGS_ALIGNMENT_FORCE;
 
                 // remove the "grows_down" flag when bReservedMemAtBottom is set so as to move RM memory to the bottom.
-                if (pMemorySystemConfig != NULL && !pMemorySystemConfig->bReservedMemAtBottom)
+                if (!pMemoryManager->bReservedMemAtBottom)
                 {
                     allocData.flags |= NVOS32_ALLOC_FLAGS_FORCE_MEM_GROWS_DOWN;
                 }
@@ -1361,6 +1370,19 @@ memdescAlloc
         gpumgrSetBcEnabledStatus(pGpu, bcState);
     }
 
+    if ((status == NV_OK) &&
+        IS_VIRTUAL_WITH_SRIOV(pGpu) &&
+        !gpuIsWarBug200577889SriovHeavyEnabled(pGpu) &&
+        (pMemDesc->_addressSpace == ADDR_SYSMEM) &&
+        !(pMemDesc->_flags & MEMDESC_FLAGS_CPU_ONLY))
+    {
+        status = vgpuUpdateSysmemPfnBitMap(pGpu, pMemDesc, NV_TRUE);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_INFO, "Failed to update sysmem PFN bitmap, error 0x%x\n", status);
+        }
+    }
+
     return status;
 
 subdeviceAlloc_failed:
@@ -1626,6 +1648,20 @@ memdescFree
              * For sysmem not allocated by RM but only registered to it, we
              * would need to update the shared sysmem pfn bitmap here
              */
+            if (pMemDesc->pGpu && IS_VIRTUAL_WITH_SRIOV(pMemDesc->pGpu) &&
+                !gpuIsWarBug200577889SriovHeavyEnabled(pMemDesc->pGpu) &&
+                !(pMemDesc->_flags & MEMDESC_FLAGS_CPU_ONLY))
+            {
+                if (memdescGetFlag(pMemDesc, MEMDESC_FLAGS_EXT_PAGE_ARRAY_MEM) &&
+                    (pMemDesc->_addressSpace == ADDR_SYSMEM))
+                {
+                    NV_STATUS status = vgpuUpdateSysmemPfnBitMap(pMemDesc->pGpu, pMemDesc, NV_FALSE);
+                    if (status != NV_OK)
+                    {
+                        NV_PRINTF(LEVEL_INFO, "Failed to update sysmem PFN bitmap\n");
+                    }
+                }
+            }
             return;
         }
         pMemDesc->Allocated--;
@@ -1646,6 +1682,16 @@ memdescFree
 
         if (pMemDesc->_addressSpace == ADDR_SYSMEM)
         {
+            if (pMemDesc->pGpu && IS_VIRTUAL_WITH_SRIOV(pMemDesc->pGpu) &&
+                !gpuIsWarBug200577889SriovHeavyEnabled(pMemDesc->pGpu) &&
+                !(pMemDesc->_flags & MEMDESC_FLAGS_CPU_ONLY))
+            {
+                NV_STATUS status = vgpuUpdateSysmemPfnBitMap(pMemDesc->pGpu, pMemDesc, NV_FALSE);
+                if (status != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_INFO, "Failed to update sysmem PFN bitmap\n");
+                }
+            }
             // The memdesc is being freed so destroy all of its IOMMU mappings.
             _memdescFreeIommuMappings(pMemDesc);
         }
@@ -2003,6 +2049,7 @@ memdescUnmap
     switch (pMemDesc->_addressSpace)
     {
         case ADDR_SYSMEM:
+        case ADDR_EGM:
         {
             osUnmapSystemMemory(pMemDesc, Kernel, ProcessId, Address, Priv);
             break;
@@ -2670,8 +2717,7 @@ memdescCreateSubMem
         if (memdescIsEgm(pMemDesc))
         {
             NV_ASSERT_OK_OR_GOTO(status,
-                                 _memdescAllocEgmArray(pMemDescNew,
-                                                        GPU_GET_MEMORY_MANAGER(pGpu)),
+                                 _memdescAllocEgmArray(pMemDescNew),
                                  fail);
         }
     }
@@ -2718,8 +2764,7 @@ memdescCreateSubMem
             if (memdescIsEgm(pMemDesc))
             {
                 NV_ASSERT_OK_OR_GOTO(status,
-                                     _memdescAllocEgmArray(pMemDescNew,
-                                                            GPU_GET_MEMORY_MANAGER(pGpu)),
+                                     _memdescAllocEgmArray(pMemDescNew),
                                      fail);
             }
         }
@@ -4618,7 +4663,14 @@ memdescOverridePhysicalAddressWidthWindowsWAR
     NvU32 addressWidth
 )
 {
-    return;
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS)
+    {
+        if (addressWidth < gpuGetPhysAddrWidth_HAL(pGpu, ADDR_SYSMEM))
+        {
+            pMemDesc->_flags |= MEMDESC_FLAGS_OVERRIDE_SYSTEM_ADDRESS_LIMIT;
+            pMemDesc->_overridenAddressWidth = addressWidth;
+        }
+    }
 }
 
 /*!
@@ -4980,15 +5032,28 @@ memdescIsEgm
     MEMORY_DESCRIPTOR *pMemDesc
 )
 {
-    NV_ADDRESS_SPACE  addrSpace = memdescGetAddressSpace(pMemDesc);
-    MemoryManager    *pMemoryManager;
+    NV_ADDRESS_SPACE   addrSpace;
+    MEMORY_DESCRIPTOR *pRootMemDesc;
+    MemoryManager     *pMemoryManager;
 
+    //
+    // If memdesc is not device owned, we can't tell if local EGM is enabled
+    // due to lack of memory manager.
+    //
     if (pMemDesc->pGpu == NULL)
     {
         return NV_FALSE;
     }
 
-    pMemoryManager = GPU_GET_MEMORY_MANAGER(pMemDesc->pGpu);
+    addrSpace = memdescGetAddressSpace(pMemDesc);
+    pRootMemDesc = memdescGetRootMemDesc(pMemDesc, NULL);
+
+    if ((pRootMemDesc == NULL) || (pRootMemDesc->pGpu == NULL))
+    {
+        return NV_FALSE;
+    }
+
+    pMemoryManager = GPU_GET_MEMORY_MANAGER(pRootMemDesc->pGpu);
     if (pMemoryManager == NULL)
     {
         return NV_FALSE;
@@ -4997,7 +5062,7 @@ memdescIsEgm
     if ((addrSpace == ADDR_EGM) ||
         (memmgrIsLocalEgmEnabled(pMemoryManager) &&
          (addrSpace == ADDR_SYSMEM) &&
-         (memdescGetNumaNode(pMemDesc) != NV0000_CTRL_NO_NUMA_NODE)))
+         (memdescGetNumaNode(pMemDesc) == pMemoryManager->localEgmNodeId)))
     {
         return NV_TRUE;
     }

@@ -24,6 +24,8 @@
 #ifndef __gh100_dev_xtl_ep_pcfg_gpu_h__
 #define __gh100_dev_xtl_ep_pcfg_gpu_h__
 #define NV_EP_PCFG_GPU_ID                                                                                      0x00000000           /* R--4R */
+#define NV_EP_PCFG_GPU_ID_VENDOR                                                                               15:0                 /* R-EVF */
+#define NV_EP_PCFG_GPU_ID_VENDOR_NVIDIA                                                                        0x000010DE           /* R-E-V */
 #define NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS                                                                     0x00000004           /* RW-4R */
 #define NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS_CMD_IO_SPACE                                                        0:0                  /* RWIVF */
 #define NV_EP_PCFG_GPU_CTRL_CMD_AND_STATUS_CMD_IO_SPACE_ENABLE                                                 0x00000001           /* RW--V */
@@ -114,4 +116,5 @@
 #define NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_FAULT_WDG                                                                14:14                /* R-CVF */
 #define NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_FAULT_BOOTFSM                                                            15:15                /* R-CVF */
 #define NV_EP_PCFG_GPU_VSEC_DEBUG_SEC_IFF_POS                                                                  22:16                /* R-CVF */
+#define NV_EP_PCFG_GPU_L1_PM_SS_CONTROL_1_REGISTER                                                             0x00000298           /* RW-4R */
 #endif // __gh100_dev_xtl_ep_pcfg_gpu_h__

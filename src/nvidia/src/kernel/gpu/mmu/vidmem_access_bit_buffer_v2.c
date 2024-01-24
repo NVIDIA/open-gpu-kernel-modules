@@ -24,7 +24,6 @@
 #include "core/core.h"
 #include "os/os.h"
 #include "gpu/mmu/vidmem_access_bit_buffer.h"
-#include "gpu/device/device.h"
 #include "gpu/gpu.h"
 
 NV_STATUS

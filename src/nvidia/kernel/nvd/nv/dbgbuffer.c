@@ -23,7 +23,6 @@
 
 #include "os/os.h"
 #include "dbgbuffer.h"
-#include "gpu/subdevice/subdevice.h"
 #include "rmapi/client.h"
 
 NV_STATUS

@@ -516,7 +516,6 @@ NV_STATUS nv_alloc_system_pages(
 
     // Order should be zero except for EGM allocations.
     unsigned int alloc_page_size = PAGE_SIZE << at->order;
-    unsigned int alloc_page_shift = BIT_IDX_32(alloc_page_size);
     unsigned int alloc_num_pages = NV_CEIL(at->num_pages * PAGE_SIZE, alloc_page_size);
 
     unsigned int sub_page_idx;
@@ -644,8 +643,6 @@ void nv_free_system_pages(
 
     // Order should be zero except for EGM allocations.
     unsigned int alloc_page_size = PAGE_SIZE << at->order;
-    unsigned int alloc_page_shift = BIT_IDX_32(alloc_page_size);
-    unsigned int alloc_num_pages = NV_CEIL(at->num_pages * PAGE_SIZE, alloc_page_size);
     unsigned int os_pages_in_page = alloc_page_size / PAGE_SIZE;
 
     nv_printf(NV_DBG_MEMINFO,

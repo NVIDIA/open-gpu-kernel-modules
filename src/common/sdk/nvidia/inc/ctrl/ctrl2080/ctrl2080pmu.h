@@ -1,4 +1,3 @@
-
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
@@ -24,14 +23,14 @@
 
 #pragma once
 
+#include <nvtypes.h>
+
 //
 // This file was generated with FINN, an NVIDIA coding tool.
 // Source file:      ctrl/ctrl2080/ctrl2080pmu.finn
 //
 
 
-
-#include "nvtypes.h"
 
 /*!
  * @file

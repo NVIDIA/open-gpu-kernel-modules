@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -32,6 +32,7 @@
 
 #include "nvRmReg.h"
 
+#include "published/volta/gv100/dev_fault.h"
 #include "published/volta/gv100/dev_ram.h"
 
 #include "ctrl/ctrlc36f.h"
@@ -235,7 +236,7 @@ kfifoGetSubctxType_GV100
     NV_ASSERT(pKernelChannel->subctxId != FIFO_PDB_IDX_BASE);
 
     KernelChannelGroup *pKernelChannelGroup = pKernelChannel->pKernelChannelGroupApi->pKernelChannelGroup;
-    PEMEMBLOCK pBlock = pKernelChannelGroup->pSubctxIdHeap->eheapGetBlock(
+    EMEMBLOCK *pBlock = pKernelChannelGroup->pSubctxIdHeap->eheapGetBlock(
         pKernelChannelGroup->pSubctxIdHeap,
         pKernelChannel->subctxId,
         NV_FALSE);
@@ -369,4 +370,44 @@ kfifoConstructUsermodeMemdescs_GV100
     memdescSetFlag(pKernelFifo->pRegVF, MEMDESC_FLAGS_SKIP_REGMEM_PRIV_CHECK, NV_TRUE);
 
     return NV_OK;
+}
+
+/**
+ * @brief Converts a MMU access type type (NV_PFAULT_ACCESS_TYPE_*) into a string.
+ *
+ * @param pGpu
+ * @param pKernelFifo
+ * @param faultId
+ * @returns a string (always non-null)
+ */
+const char*
+kfifoGetFaultAccessTypeString_GV100
+(
+    OBJGPU     *pGpu,
+    KernelFifo *pKernelFifo,
+    NvU32       accessType
+)
+{
+    switch (accessType)
+    {
+        case NV_PFAULT_ACCESS_TYPE_VIRT_READ:
+            return "ACCESS_TYPE_VIRT_READ";
+        case NV_PFAULT_ACCESS_TYPE_VIRT_WRITE:
+            return "ACCESS_TYPE_VIRT_WRITE";
+        case NV_PFAULT_ACCESS_TYPE_VIRT_ATOMIC_STRONG:
+        case NV_PFAULT_ACCESS_TYPE_VIRT_ATOMIC_WEAK:
+            return "ACCESS_TYPE_VIRT_ATOMIC";
+        case NV_PFAULT_ACCESS_TYPE_VIRT_PREFETCH:
+            return "ACCESS_TYPE_VIRT_PREFETCH";
+        case NV_PFAULT_ACCESS_TYPE_PHYS_READ:
+            return "ACCESS_TYPE_PHYS_READ";
+        case NV_PFAULT_ACCESS_TYPE_PHYS_WRITE:
+            return "ACCESS_TYPE_PHYS_WRITE";
+        case NV_PFAULT_ACCESS_TYPE_PHYS_ATOMIC:
+            return "ACCESS_TYPE_PHYS_ATOMIC";
+        case NV_PFAULT_ACCESS_TYPE_PHYS_PREFETCH:
+            return "ACCESS_TYPE_PHYS_PREFETCH";
+        default:
+            return "UNRECOGNIZED_ACCESS_TYPE";
+    }
 }

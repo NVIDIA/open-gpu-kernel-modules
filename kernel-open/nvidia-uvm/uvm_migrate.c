@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2022 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -33,6 +33,7 @@
 #include "uvm_tracker.h"
 #include "uvm_api.h"
 #include "uvm_channel.h"
+#include "uvm_processors.h"
 #include "uvm_push.h"
 #include "uvm_hal.h"
 #include "uvm_tools.h"
@@ -565,6 +566,8 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
     va_range_last = NULL;
     uvm_for_each_va_range_in_contig_from(va_range, va_space, first_va_range, end) {
         uvm_range_group_range_iter_t iter;
+        uvm_va_policy_t *policy = uvm_va_range_get_policy(va_range);
+
         va_range_last = va_range;
 
         // Only managed ranges can be migrated
@@ -584,11 +587,11 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
             if (!iter.migratable) {
                 // Only return NV_WARN_MORE_PROCESSING_REQUIRED if the pages aren't
                 // already resident at dest_id.
-                if (!uvm_id_equal(uvm_va_range_get_policy(va_range)->preferred_location, dest_id))
+                if (!uvm_va_policy_preferred_location_equal(policy, dest_id, va_block_context->make_resident.dest_nid))
                     skipped_migrate = true;
             }
             else if (uvm_processor_mask_test(&va_range->uvm_lite_gpus, dest_id) &&
-                     !uvm_id_equal(dest_id, uvm_va_range_get_policy(va_range)->preferred_location)) {
+                     !uvm_id_equal(dest_id, policy->preferred_location)) {
                 // Don't migrate to a non-faultable GPU that is in UVM-Lite mode,
                 // unless it's the preferred location
                 status = NV_ERR_INVALID_DEVICE;
@@ -627,6 +630,7 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
                              NvU64 base,
                              NvU64 length,
                              uvm_processor_id_t dest_id,
+                             int dest_nid,
                              NvU32 migrate_flags,
                              uvm_va_range_t *first_va_range,
                              uvm_tracker_t *out_tracker)
@@ -653,6 +657,8 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
     va_block_context = uvm_va_block_context_alloc(mm);
     if (!va_block_context)
         return NV_ERR_NO_MEMORY;
+
+    va_block_context->make_resident.dest_nid = dest_nid;
 
     // We perform two passes (unless the migration only covers a single VA
     // block or UVM_MIGRATE_FLAG_SKIP_CPU_MAP is passed). This helps in the
@@ -742,7 +748,7 @@ static NV_STATUS semaphore_release_from_gpu(uvm_gpu_t *gpu,
     // In SR-IOV heavy, the user semaphore release is functionally forbidden
     // from being pushed to a UVM_CHANNEL_TYPE_MEMOPS channel, because it is not
     // a page tree operation.
-    if (uvm_gpu_is_virt_mode_sriov_heavy(gpu))
+    if (uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent))
         channel_type = UVM_CHANNEL_TYPE_GPU_INTERNAL;
     else
         channel_type = UVM_CHANNEL_TYPE_MEMOPS;
@@ -820,7 +826,7 @@ static NV_STATUS semaphore_release(NvU64 semaphore_address,
         //
         // Note that the GPU selected for the release may not be the same device
         // that prevented the tracker from being complete.
-        gpu = uvm_global_processor_mask_find_first_gpu(&semaphore_pool->mem->kernel.mapped_on);
+        gpu = uvm_processor_mask_find_first_gpu(&semaphore_pool->mem->kernel.mapped_on);
 
         UVM_ASSERT(gpu != NULL);
     }
@@ -873,6 +879,7 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
     NV_STATUS status = NV_OK;
     bool flush_events = false;
     const bool synchronous = !(params->flags & UVM_MIGRATE_FLAG_ASYNC);
+    int cpu_numa_node = (int)params->cpuNumaNode;
 
     // We temporarily allow 0 length in the IOCTL parameters as a signal to
     // only release the semaphore. This is because user-space is in charge of
@@ -937,6 +944,24 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
             goto done;
         }
     }
+    else {
+        // If cpu_numa_node is not -1, we only check that it is a valid node in
+        // the system, it has memory, and it doesn't correspond to a GPU node.
+        //
+        // For pageable memory, this is fine because alloc_pages_node will clamp
+        // the allocation to cpuset_current_mems_allowed when uvm_migrate
+        //_pageable is called from process context (uvm_migrate) when dst_id is
+        // CPU. UVM bottom half calls uvm_migrate_pageable with CPU dst_id only
+        // when the VMA memory policy is set to dst_node_id and dst_node_id is
+        // not NUMA_NO_NODE.
+        if (cpu_numa_node != -1 &&
+            (!nv_numa_node_has_memory(cpu_numa_node) ||
+             !node_isset(cpu_numa_node, node_possible_map) ||
+             uvm_va_space_find_gpu_with_memory_node_id(va_space, cpu_numa_node))) {
+            status = NV_ERR_INVALID_ARGUMENT;
+            goto done;
+        }
+    }
 
     UVM_ASSERT(status == NV_OK);
 
@@ -946,6 +971,7 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
 
     if (params->length > 0) {
         uvm_api_range_type_t type;
+        uvm_processor_id_t dest_id = dest_gpu ? dest_gpu->id : UVM_ID_CPU;
 
         type = uvm_api_range_type_check(va_space, mm, params->base, params->length);
         if (type == UVM_API_RANGE_TYPE_INVALID) {
@@ -960,8 +986,8 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
                 .mm                             = mm,
                 .start                          = params->base,
                 .length                         = params->length,
-                .dst_id                         = (dest_gpu ? dest_gpu->id : UVM_ID_CPU),
-                .dst_node_id                    = (int)params->cpuNumaNode,
+                .dst_id                         = dest_id,
+                .dst_node_id                    = cpu_numa_node,
                 .populate_permissions           = UVM_POPULATE_PERMISSIONS_INHERIT,
                 .touch                          = false,
                 .skip_mapped                    = false,
@@ -977,11 +1003,10 @@ NV_STATUS uvm_api_migrate(UVM_MIGRATE_PARAMS *params, struct file *filp)
                                  mm,
                                  params->base,
                                  params->length,
-                                 (dest_gpu ? dest_gpu->id : UVM_ID_CPU),
+                                 dest_id,
+                                 (UVM_ID_IS_CPU(dest_id) ? cpu_numa_node : NUMA_NO_NODE),
                                  params->flags,
-                                 uvm_va_space_iter_first(va_space,
-                                                         params->base,
-                                                         params->base),
+                                 uvm_va_space_iter_first(va_space, params->base, params->base),
                                  tracker_ptr);
         }
     }
@@ -1093,6 +1118,7 @@ NV_STATUS uvm_api_migrate_range_group(UVM_MIGRATE_RANGE_GROUP_PARAMS *params, st
                                  start,
                                  length,
                                  dest_id,
+                                 NUMA_NO_NODE,
                                  migrate_flags,
                                  first_va_range,
                                  &local_tracker);

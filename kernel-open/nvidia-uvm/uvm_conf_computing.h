@@ -60,12 +60,8 @@
 // UVM_METHOD_SIZE * 2 * 10 = 80.
 #define UVM_CONF_COMPUTING_SIGN_BUF_MAX_SIZE 80
 
-// All GPUs derive confidential computing status from their parent.
-// By current policy all parent GPUs have identical confidential
-// computing status.
-NV_STATUS uvm_conf_computing_init_parent_gpu(const uvm_parent_gpu_t *parent);
-bool uvm_conf_computing_mode_enabled_parent(const uvm_parent_gpu_t *parent);
-bool uvm_conf_computing_mode_enabled(const uvm_gpu_t *gpu);
+void uvm_conf_computing_check_parent_gpu(const uvm_parent_gpu_t *parent);
+
 bool uvm_conf_computing_mode_is_hcc(const uvm_gpu_t *gpu);
 
 typedef struct
@@ -201,4 +197,21 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
 //
 // Locking: this function must be invoked while holding the replayable ISR lock.
 void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu, NvU64 increment);
+
+// Query the number of remaining messages before IV needs to be rotated.
+void uvm_conf_computing_query_message_pools(uvm_channel_t *channel,
+                                            NvU64 *remaining_encryptions,
+                                            NvU64 *remaining_decryptions);
+
+// Check if there are more than uvm_conf_computing_channel_iv_rotation_limit
+// messages available in the channel and try to rotate if not.
+NV_STATUS uvm_conf_computing_maybe_rotate_channel_ivs(uvm_channel_t *channel);
+
+// Check if there are more than uvm_conf_computing_channel_iv_rotation_limit
+// messages available in the channel and rotate if not.
+NV_STATUS uvm_conf_computing_maybe_rotate_channel_ivs_retry_busy(uvm_channel_t *channel);
+
+// Check if there are fewer than 'limit' messages available in either direction
+// and rotate if not.
+NV_STATUS uvm_conf_computing_rotate_channel_ivs_below_limit(uvm_channel_t *channel, NvU64 limit, bool retry_if_busy);
 #endif // __UVM_CONF_COMPUTING_H__

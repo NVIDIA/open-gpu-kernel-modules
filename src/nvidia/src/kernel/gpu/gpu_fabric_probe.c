@@ -37,6 +37,10 @@
 #include "kernel/mem_mgr/fabric_vaspace.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"
 
+#include "compute/fabric.h"
+#include "class/cl00f1.h"
+#include "vgpu/rpc.h"
+
 // Structure to hold gpu probe information
 typedef struct GPU_FABRIC_PROBE_INFO_KERNEL
 {
@@ -263,6 +267,12 @@ gpuFabricProbeGetNumProbeReqs
     LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(
                            gpuGetInstance(pGpuFabricProbeInfoKernel->pGpu)));
 
+    if (IS_VIRTUAL(pGpu))
+    {
+        *numProbes = 1;
+        return NV_OK;
+    }
+
     NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
           pRmApi->Control(pRmApi,
                           pGpu->hInternalClient,
@@ -289,7 +299,27 @@ gpuFabricProbeGetFabricCliqueId
 
     NV_CHECK_OR_RETURN(LEVEL_SILENT, status == NV_OK, status);
 
-    *pFabricCliqueId = pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.cliqueId;
+    *pFabricCliqueId =
+        pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.cliqueId;
+
+    return NV_OK;
+}
+
+NV_STATUS
+gpuFabricProbeGetFabricHealthStatus
+(
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
+    NvU32 *pFabricHealthStatusMask
+)
+{
+    NV_STATUS status;
+
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
+
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, status == NV_OK, status);
+
+    *pFabricHealthStatusMask =
+        pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.fabricHealthMask;
 
     return NV_OK;
 }
@@ -390,16 +420,45 @@ _gpuFabricProbeSetupFlaRange
             gpuFabricProbeGetFlaAddressRange(pGpuFabricProbeInfoKernel,
                                              &flaSize) == NV_OK);
 
+        if (IS_VIRTUAL(pGpu))
+        {
+            fabricvaspaceClearUCRange(dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE));
+        }
+
         NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
             fabricvaspaceInitUCRange(dynamicCast(pGpu->pFabricVAS, FABRIC_VASPACE),
                                      pGpu, flaBaseAddress, flaSize) == NV_OK);
     }
 }
 
-static NV_STATUS
-_gpuFabricProbeReceiveKernel
+static void
+_gpuFabricProbeSendCliqueIdChangeEvent
+(
+    OBJGPU *pGpu,
+    NvU32 cliqueId
+)
+{
+    NV_STATUS status;
+    Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
+    NV00F1_CTRL_FABRIC_EVENT event;
+    event.id = fabricGenerateEventId_IMPL(pFabric);
+    event.type = NV00F1_CTRL_FABRIC_EVENT_TYPE_CLIQUE_ID_CHANGE;
+    event.imexChannel = 0;
+    event.data.cliqueIdChange.gpuId = pGpu->gpuId;
+    event.data.cliqueIdChange.cliqueId = cliqueId;
+    status = fabricPostEventsV2(pFabric, &event, 1);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GPU%u Notifying cliqueId change failed\n",
+              gpuGetInstance(pGpu));
+    }
+}
+
+NV_STATUS
+gpuFabricProbeReceiveKernelCallback
 (
     NvU32 gpuInstance,
+    NvU64 *pNotifyGfidMask,
     NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pInbandRcvParams
 )
 {
@@ -453,6 +512,59 @@ _gpuFabricProbeReceiveKernel
 
     _gpuFabricProbeSetupGpaRange(pGpu, pGpuFabricProbeInfoKernel);
     _gpuFabricProbeSetupFlaRange(pGpu, pGpuFabricProbeInfoKernel);
+
+    return NV_OK;
+}
+
+NV_STATUS
+gpuFabricProbeReceiveUpdateKernelCallback
+(
+    NvU32 gpuInstance,
+    NvU64 *pNotifyGfidMask,
+    NV2080_CTRL_NVLINK_INBAND_RECEIVED_DATA_PARAMS *pInbandRcvParams
+)
+{
+    OBJGPU *pGpu;
+    NvU32 gpuMaskUnused;
+    nvlink_inband_gpu_probe_update_req_msg_t *pProbeUpdateReqMsg;
+    nvlink_inband_gpu_probe_rsp_msg_t *pProbeRespMsg;
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel;
+    NV_STATUS status;
+
+    if ((pGpu = gpumgrGetGpu(gpuInstance)) == NULL)
+    {
+        NV_ASSERT_FAILED("Invalid GPU instance");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pGpu->pGpuFabricProbeInfoKernel != NULL, NV_OK);
+
+    NV_ASSERT(rmGpuGroupLockIsOwner(gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
+                                    &gpuMaskUnused));
+
+    NV_ASSERT(pInbandRcvParams != NULL);
+
+    pGpuFabricProbeInfoKernel = pGpu->pGpuFabricProbeInfoKernel;
+
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, status == NV_OK, status);
+
+    pProbeRespMsg = &pGpuFabricProbeInfoKernel->probeResponseMsg;
+
+    pProbeUpdateReqMsg = \
+        (nvlink_inband_gpu_probe_update_req_msg_t *)&pInbandRcvParams->data[0];
+
+    pProbeRespMsg->probeRsp.fabricHealthMask =
+        pProbeUpdateReqMsg->probeUpdate.fabricHealthMask;
+
+    if (pProbeRespMsg->probeRsp.cliqueId !=
+            pProbeUpdateReqMsg->probeUpdate.cliqueId)
+    {
+        pProbeRespMsg->probeRsp.cliqueId =
+            pProbeUpdateReqMsg->probeUpdate.cliqueId;
+        _gpuFabricProbeSendCliqueIdChangeEvent(pGpu,
+                                               pProbeRespMsg->probeRsp.cliqueId);
+    }
 
     return NV_OK;
 }
@@ -524,10 +636,8 @@ gpuFabricProbeStart
     GPU_FABRIC_PROBE_INFO_KERNEL **ppGpuFabricProbeInfoKernel
 )
 {
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
     GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel;
-    NVLINK_INBAND_MSG_CALLBACK inbandMsgCbParams;
-    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS params = { 0 };
 
@@ -539,7 +649,8 @@ gpuFabricProbeStart
         return NV_OK;
     }
 
-    *ppGpuFabricProbeInfoKernel = portMemAllocNonPaged(sizeof(*pGpuFabricProbeInfoKernel));
+    *ppGpuFabricProbeInfoKernel =
+                portMemAllocNonPaged(sizeof(*pGpuFabricProbeInfoKernel));
     NV_ASSERT_OR_RETURN(*ppGpuFabricProbeInfoKernel != NULL, NV_ERR_NO_MEMORY);
 
     pGpuFabricProbeInfoKernel = *ppGpuFabricProbeInfoKernel;
@@ -547,33 +658,31 @@ gpuFabricProbeStart
     portMemSet(pGpuFabricProbeInfoKernel, 0, sizeof(*pGpuFabricProbeInfoKernel));
 
     pGpuFabricProbeInfoKernel->pGpu = pGpu;
-
-    // Register the receive callback
-    inbandMsgCbParams.messageType = NVLINK_INBAND_MSG_TYPE_GPU_PROBE_RSP;
-    inbandMsgCbParams.pCallback = _gpuFabricProbeReceiveKernel;
-    inbandMsgCbParams.wqItemFlags = (OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA |
-                            OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_SUBDEVICE_RW);
-    status = knvlinkRegisterInbandCallback(pGpu,
-                                           pKernelNvlink,
-                                           &inbandMsgCbParams);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "GPU%u Registering Inband Cb failed\n",
-                  gpuGetInstance(pGpu));
-        goto fail;
-    }
-
     pGpuFabricProbeInfoKernel->bwMode = gpumgrGetGpuNvlinkBwMode();
     params.bwMode = pGpuFabricProbeInfoKernel->bwMode;
 
-    // Send IOCTL to start probe
-    NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-            pRmApi->Control(pRmApi,
-                            pGpu->hInternalClient,
-                            pGpu->hInternalSubdevice,
-                            NV2080_CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE,
-                            &params, sizeof(params)),
-            fail);
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        NV_RM_RPC_CONTROL(pGpu, NV01_NULL_OBJECT, NV01_NULL_OBJECT,
+                           NV2080_CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE,
+                           &params, sizeof(params),
+                           status);
+
+        if (status != NV_OK)
+            goto fail;
+    }
+    else
+    {
+        // Send IOCTL to start probe
+        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                pRmApi->Control(pRmApi,
+                                pGpu->hInternalClient,
+                                pGpu->hInternalSubdevice,
+                                NV2080_CTRL_CMD_INTERNAL_GPU_START_FABRIC_PROBE,
+                                &params, sizeof(params)),
+                fail);
+    }
 
     return NV_OK;
 
@@ -591,7 +700,6 @@ gpuFabricProbeStop
 )
 {
     OBJGPU *pGpu;
-    KernelNvlink *pKernelNvlink;
     RM_API *pRmApi;
 
     if (pGpuFabricProbeInfoKernel == NULL)
@@ -603,20 +711,24 @@ gpuFabricProbeStop
 
     NV_ASSERT_OR_RETURN_VOID(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
-    pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
-    NV_ASSERT(pKernelNvlink != NULL);
+    if (!IS_VIRTUAL(pGpu))
+    {
+        //
+        // On VGPU, we have to stop the probe for guest driver unload as well as for guest clean/forced shutdown/reboot.
+        // An RPC from this point will not be triggered for forced shutdown/reboot.
+        // vmioplugin already has callbacks for guest driver unload, guest shutdown and guest reboot.
+        // Hence it is simpler to handle the probe stop directly from these callbacks in plugin instead of a separate
+        // RPC for this RM control.
+        //
 
-    // Unregister the receive callback
-    NV_ASSERT_OK(knvlinkUnregisterInbandCallback(pGpu, pKernelNvlink,
-                 NVLINK_INBAND_MSG_TYPE_GPU_PROBE_RSP));
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-    pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
-    NV_ASSERT_OK(pRmApi->Control(pRmApi,
-                                 pGpu->hInternalClient,
-                                 pGpu->hInternalSubdevice,
-                                 NV2080_CTRL_CMD_INTERNAL_GPU_STOP_FABRIC_PROBE,
-                                 NULL, 0));
+        NV_ASSERT_OK(pRmApi->Control(pRmApi,
+                                    pGpu->hInternalClient,
+                                    pGpu->hInternalSubdevice,
+                                    NV2080_CTRL_CMD_INTERNAL_GPU_STOP_FABRIC_PROBE,
+                                    NULL, 0));
+    }
 
     portMemFree(pGpuFabricProbeInfoKernel);
     pGpu->pGpuFabricProbeInfoKernel = NULL;
@@ -635,7 +747,7 @@ gpuFabricProbeIsSupported
         return NV_FALSE;
     }
 
-    if (GPU_GET_KERNEL_NVLINK(pGpu) == NULL)
+    if (!IS_VIRTUAL(pGpu) && (GPU_GET_KERNEL_NVLINK(pGpu) == NULL))
     {
         return NV_FALSE;
     }

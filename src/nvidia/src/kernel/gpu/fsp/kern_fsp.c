@@ -136,15 +136,13 @@ kfspStateInitUnlocked_IMPL
 }
 
 /*!
- * @brief Destroy FSP state
+ * @brief Clean up objects used when sending GSP-FMC and FRTS info to FSP
  *
  * @param[in]  pGpu        GPU object pointer
  * @param[in]  pKernelFsp  FSP object pointer
- *
- * @return 'NV_OK' if the FSP state was successfully destroyed
  */
 void
-kfspStateDestroy_IMPL
+kfspCleanupBootState_IMPL
 (
     OBJGPU    *pGpu,
     KernelFsp *pKernelFsp
@@ -155,19 +153,13 @@ kfspStateDestroy_IMPL
 
     if (pKernelFsp->pSysmemFrtsMemdesc != NULL)
     {
+        kfspFrtsSysmemLocationClear_HAL(pGpu, pKernelFsp);
         memdescUnmap(pKernelFsp->pSysmemFrtsMemdesc, NV_TRUE, 0,
             memdescGetKernelMapping(pKernelFsp->pSysmemFrtsMemdesc),
             memdescGetKernelMappingPriv(pKernelFsp->pSysmemFrtsMemdesc));
         memdescFree(pKernelFsp->pSysmemFrtsMemdesc);
         memdescDestroy(pKernelFsp->pSysmemFrtsMemdesc);
         pKernelFsp->pSysmemFrtsMemdesc = NULL;
-    }
-
-    if (pKernelFsp->pVidmemFrtsMemdesc != NULL)
-    {
-        memdescFree(pKernelFsp->pVidmemFrtsMemdesc);
-        memdescDestroy(pKernelFsp->pVidmemFrtsMemdesc);
-        pKernelFsp->pVidmemFrtsMemdesc = NULL;
     }
 
     if (pKernelFsp->pGspFmcMemdesc != NULL)
@@ -187,12 +179,33 @@ kfspStateDestroy_IMPL
 }
 
 /*!
+ * @brief Destroy FSP state
+ *
+ * @param[in]  pGpu        GPU object pointer
+ * @param[in]  pKernelFsp  FSP object pointer
+ */
+void
+kfspStateDestroy_IMPL
+(
+    OBJGPU    *pGpu,
+    KernelFsp *pKernelFsp
+)
+{
+    kfspCleanupBootState(pGpu, pKernelFsp);
+
+    if (pKernelFsp->pVidmemFrtsMemdesc != NULL)
+    {
+        memdescFree(pKernelFsp->pVidmemFrtsMemdesc);
+        memdescDestroy(pKernelFsp->pVidmemFrtsMemdesc);
+        pKernelFsp->pVidmemFrtsMemdesc = NULL;
+    }
+}
+
+/*!
  * @brief Override default behaviour of reset
  *
  * @param[in]  pGpu       GPU object pointer
  * @param[in]  pKernelFsp FSP object pointer
- *
- * @return
  */
 void
 kfspSecureReset_IMPL

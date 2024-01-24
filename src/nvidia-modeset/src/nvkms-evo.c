@@ -1837,8 +1837,11 @@ static NvBool ProhibitLockIfNecessary(NVDispEvoRec *pDispEvo)
 
 
 /*
+ * Prohibit locking if necessary for the active configuration.
+ *
  * Set up rasterlock between heads on a single GPU, if certain conditions are met:
  * - Locking is not prohibited due to the active configuration
+ * - Opportunistic display sync is not disabled via kernel module parameter
  * - All active heads have identical mode timings
  *
  * Set pDispEvo->pRasterLockPossible to indicate whether rasterlock is possible
@@ -1866,7 +1869,12 @@ static void FinishModesetOneDisp(
     pDispEvo->rasterLockPossible = FALSE;
 
     if (ProhibitLockIfNecessary(pDispEvo)) {
-        /* If locking is prohibited, do not attempt to lock heads. */
+        /* If all locking is prohibited, do not attempt rasterlock. */
+        return;
+    }
+
+    if (!nvkms_opportunistic_display_sync()) {
+        /* If opportunistic display sync is disabled, do not attempt rasterlock. */
         return;
     }
 
@@ -6663,35 +6671,41 @@ static NvBool GetDfpProtocol(const NVDpyEvoRec *pDpyEvo,
         if (nvDpyIsHdmiEvo(pDpyEvo) &&
             /* If we don't require boot clocks... */
             ((overrides & NVKMS_MODE_VALIDATION_REQUIRE_BOOT_CLOCKS) == 0) &&
-            /* If FRL is supported, use it for 10 BPC if needed. */
-            ((nvHdmiDpySupportsFrl(pDpyEvo) &&
-              nvDpyIsHdmiDepth30Evo(pDpyEvo) &&
+            /* If FRL is supported... */
+            nvHdmiDpySupportsFrl(pDpyEvo) &&
+            /* Use FRL for 10 BPC if needed. */
+            ((nvDpyIsHdmiDepth30Evo(pDpyEvo) &&
               nvHdmiTimingsNeedFrl(pDpyEvo, pTimings, HDMI_BPC10)) ||
-            /* Fall back to 8 BPC, use FRL if needed. */
+            /* Use FRL for 8 BPC if needed. */
              nvHdmiTimingsNeedFrl(pDpyEvo, pTimings, HDMI_BPC8))) {
-
-            /* If FRL is needed for 8 BPC, but not supported, fail. */
-            if (!nvHdmiDpySupportsFrl(pDpyEvo)) {
-                return FALSE;
-            }
 
             nvAssert(nvDpyIsHdmiEvo(pDpyEvo));
             nvAssert(rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A ||
                      rmProtocol == NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B);
             timingsProtocol = NVKMS_PROTOCOL_SOR_HDMI_FRL;
         } else {
+            /* If HDMI FRL is needed for 8 BPC, but not supported, fail. */
+            if (nvDpyIsHdmiEvo(pDpyEvo) &&
+                nvHdmiTimingsNeedFrl(pDpyEvo, pTimings, HDMI_BPC8) &&
+                ((overrides & NVKMS_MODE_VALIDATION_NO_MAX_PCLK_CHECK) == 0)) {
+                nvAssert(!nvHdmiDpySupportsFrl(pDpyEvo));
+                return FALSE;
+            }
+
             switch (rmProtocol) {
             default:
                 nvAssert(!"unrecognized SOR RM protocol");
                 return FALSE;
             case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_A:
-                if (nvDpyRequiresDualLinkEvo(pDpyEvo, pTimings)) {
+                if (nvDpyRequiresDualLinkEvo(pDpyEvo, pTimings) &&
+                    ((overrides & NVKMS_MODE_VALIDATION_NO_MAX_PCLK_CHECK) == 0)) {
                     return FALSE;
                 }
                 timingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_A;
                 break;
             case NV0073_CTRL_SPECIFIC_OR_PROTOCOL_SOR_SINGLE_TMDS_B:
-                if (nvDpyRequiresDualLinkEvo(pDpyEvo, pTimings)) {
+                if (nvDpyRequiresDualLinkEvo(pDpyEvo, pTimings) &&
+                    ((overrides & NVKMS_MODE_VALIDATION_NO_MAX_PCLK_CHECK) == 0)) {
                     return FALSE;
                 }
                 timingsProtocol = NVKMS_PROTOCOL_SOR_SINGLE_TMDS_B;
@@ -6874,13 +6888,15 @@ NvBool nvDowngradeColorSpaceAndBpc(
 
 NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
                            NVHwModeTimingsEvoPtr pTimings,
+                           enum NvKmsDpyAttributeCurrentColorSpaceValue *pColorSpace,
+                           enum NvKmsDpyAttributeColorBpcValue *pColorBpc,
                            const NvBool b2Heads1Or,
                            NVDscInfoEvoRec *pDscInfo,
                            const struct NvKmsModeValidationParams *pParams)
 {
     NVConnectorEvoPtr pConnectorEvo = pDpyEvo->pConnectorEvo;
-    enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace;
-    enum NvKmsDpyAttributeColorBpcValue colorBpc;
+    enum NvKmsDpyAttributeCurrentColorSpaceValue colorSpace = *pColorSpace;
+    enum NvKmsDpyAttributeColorBpcValue colorBpc = *pColorBpc;
     enum NvKmsDpyAttributeColorRangeValue colorRange;
     const NVColorFormatInfoRec supportedColorFormats =
         nvGetColorFormatInfo(pDpyEvo);
@@ -6893,14 +6909,6 @@ NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
     if ((pParams->overrides &
          NVKMS_MODE_VALIDATION_NO_DISPLAYPORT_BANDWIDTH_CHECK) != 0) {
         return TRUE;
-    }
-
-    if (pTimings->yuv420Mode != NV_YUV420_MODE_NONE) {
-        colorSpace = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_YCbCr420;
-        colorBpc = NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_BPC_8;
-    } else if (!nvGetDefaultColorSpace(&supportedColorFormats, &colorSpace,
-                                       &colorBpc)) {
-        return FALSE;
     }
 
     if (colorSpace != NV_KMS_DPY_ATTRIBUTE_CURRENT_COLOR_SPACE_RGB) {
@@ -6928,6 +6936,8 @@ NvBool nvDPValidateModeEvo(NVDpyEvoPtr pDpyEvo,
         return FALSE;
     }
 
+    *pColorSpace = colorSpace;
+    *pColorBpc = colorBpc;
     return TRUE;
 }
 
@@ -9405,6 +9415,7 @@ void nvEvoEnableMergeModePreModeset(NVDispEvoRec *pDispEvo,
             pHC->serverLock = NV_EVO_RASTER_LOCK;
             pHC->serverLockPin = NV_EVO_LOCK_PIN_INTERNAL(primaryHead);
             pHC->setLockOffsetX = TRUE;
+            pHC->crashLockUnstallMode = FALSE;
         } else {
             pHC->clientLock = NV_EVO_RASTER_LOCK;
             pHC->clientLockPin = NV_EVO_LOCK_PIN_INTERNAL(primaryHead);
@@ -9415,11 +9426,10 @@ void nvEvoEnableMergeModePreModeset(NVDispEvoRec *pDispEvo,
             } else {
                 pHC->clientLockoutWindow = 2;
             }
+            pHC->crashLockUnstallMode =
+                (pTimings->vrr.type != NVKMS_DPY_VRR_TYPE_NONE);
         }
 
-        if (pTimings->vrr.type != NVKMS_DPY_VRR_TYPE_NONE) {
-            pHC->crashLockUnstallMode = TRUE;
-        }
         pHC->stereoLocked = FALSE;
 
         EvoUpdateHeadParams(pDispEvo, head, pUpdateState);
@@ -9584,3 +9594,42 @@ NvBool nvEvoUse2Heads1OR(const NVDpyEvoRec *pDpyEvo,
      * maximum pixel clock support by a head. */
     return (pTimings->pixelClock > pHeadCaps->maxPClkKHz);
 }
+
+NvBool nvIsLockGroupFlipLocked(const NVLockGroup *pLockGroup)
+{
+    return pLockGroup->flipLockEnabled;
+}
+
+NvBool nvEvoIsConsoleActive(const NVDevEvoRec *pDevEvo)
+{
+    /*
+     * The actual console state can be known only after allocation of core
+     * channel, if core channel is not allocated yet then assume that console
+     * is active.
+     */
+    if (pDevEvo->core == NULL) {
+        return TRUE;
+    }
+
+    /*
+     * If (pDevEvo->modesetOwner == NULL) that means either the vbios
+     * console or the NVKMS console might be active.
+     *
+     * If (pDevEvo->modesetOwner != NULL) but
+     * pDevEvo->modesetOwnerChanged is TRUE, that means the modeset
+     * ownership is grabbed by the external client but it hasn't
+     * performed any modeset and the console is still active.
+     */
+    if ((pDevEvo->modesetOwner == NULL) || pDevEvo->modesetOwnerChanged) {
+        NvU32 sd;
+        const NVDispEvoRec *pDispEvo;
+        FOR_ALL_EVO_DISPLAYS(pDispEvo, sd, pDevEvo) {
+            if (nvGetActiveHeadMask(pDispEvo) != 0x0) {
+                return TRUE;
+            }
+        }
+    }
+
+    return FALSE;
+}
+

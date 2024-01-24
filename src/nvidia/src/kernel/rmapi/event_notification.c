@@ -29,6 +29,7 @@
 ****************************************************************************/
 
 #include "core/core.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "class/cl0000.h"
@@ -38,6 +39,7 @@
 #include "rmapi/rs_utils.h"
 #include "mem_mgr/mem.h"
 #include "kernel/gpu/gpu_engine_type.h"
+#include "platform/sli/sli.h"
 
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 

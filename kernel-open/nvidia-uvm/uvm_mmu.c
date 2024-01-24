@@ -24,6 +24,7 @@
 #include "uvm_common.h"
 #include "uvm_types.h"
 #include "uvm_forward_decl.h"
+#include "uvm_global.h"
 #include "uvm_gpu.h"
 #include "uvm_mmu.h"
 #include "uvm_hal.h"
@@ -55,7 +56,7 @@
                                                                                                                             \
     if (manager == NULL)                                                                                                    \
         status = uvm_push_begin_fake((tree)->gpu, (push));                                                                  \
-    else if (uvm_gpu_is_virt_mode_sriov_heavy((tree)->gpu))                                                                 \
+    else if (uvm_parent_gpu_is_virt_mode_sriov_heavy((tree)->gpu->parent))                                                  \
         status = uvm_push_begin_acquire(manager, UVM_CHANNEL_TYPE_MEMOPS, (tracker), (push), (format), ##__VA_ARGS__);      \
     else                                                                                                                    \
         status = uvm_push_begin_acquire(manager, UVM_CHANNEL_TYPE_GPU_INTERNAL, (tracker), (push), (format), ##__VA_ARGS__);\
@@ -133,7 +134,7 @@ static NV_STATUS phys_mem_allocate_sysmem(uvm_page_tree_t *tree, NvLength size, 
 
     // Check for fake GPUs from the unit test
     if (tree->gpu->parent->pci_dev)
-        status = uvm_gpu_map_cpu_pages(tree->gpu->parent, out->handle.page, UVM_PAGE_ALIGN_UP(size), &dma_addr);
+        status = uvm_parent_gpu_map_cpu_pages(tree->gpu->parent, out->handle.page, UVM_PAGE_ALIGN_UP(size), &dma_addr);
     else
         dma_addr = page_to_phys(out->handle.page);
 
@@ -218,7 +219,7 @@ static void phys_mem_deallocate_sysmem(uvm_page_tree_t *tree, uvm_mmu_page_table
 
     UVM_ASSERT(ptr->addr.aperture == UVM_APERTURE_SYS);
     if (tree->gpu->parent->pci_dev)
-        uvm_gpu_unmap_cpu_pages(tree->gpu->parent, ptr->addr.address, UVM_PAGE_ALIGN_UP(ptr->size));
+        uvm_parent_gpu_unmap_cpu_pages(tree->gpu->parent, ptr->addr.address, UVM_PAGE_ALIGN_UP(ptr->size));
     __free_pages(ptr->handle.page, get_order(ptr->size));
 }
 
@@ -323,37 +324,156 @@ static void uvm_mmu_page_table_cpu_memset_16(uvm_gpu_t *gpu,
     uvm_mmu_page_table_cpu_unmap(gpu, phys_alloc);
 }
 
+static void pde_fill_cpu(uvm_page_tree_t *tree,
+                         uvm_page_directory_t *directory,
+                         NvU32 start_index,
+                         NvU32 pde_count,
+                         uvm_mmu_page_table_alloc_t **phys_addr)
+{
+    NvU64 pde_data[2], entry_size;
+    NvU32 i;
+
+    UVM_ASSERT(uvm_mmu_use_cpu(tree));
+
+    entry_size = tree->hal->entry_size(directory->depth);
+    UVM_ASSERT(sizeof(pde_data) >= entry_size);
+
+    for (i = 0; i < pde_count; i++) {
+        tree->hal->make_pde(pde_data, phys_addr, directory, start_index + i);
+
+        if (entry_size == sizeof(pde_data[0]))
+            uvm_mmu_page_table_cpu_memset_8(tree->gpu, &directory->phys_alloc, start_index + i, pde_data[0], 1);
+        else
+            uvm_mmu_page_table_cpu_memset_16(tree->gpu, &directory->phys_alloc, start_index + i, pde_data, 1);
+    }
+}
+
+static void pde_fill_gpu(uvm_page_tree_t *tree,
+                         uvm_page_directory_t *directory,
+                         NvU32 start_index,
+                         NvU32 pde_count,
+                         uvm_mmu_page_table_alloc_t **phys_addr,
+                         uvm_push_t *push)
+{
+    NvU64 pde_data[2], entry_size;
+    uvm_gpu_address_t pde_entry_addr = uvm_mmu_gpu_address(tree->gpu, directory->phys_alloc.addr);
+    NvU32 max_inline_entries;
+    uvm_push_flag_t push_membar_flag = UVM_PUSH_FLAG_COUNT;
+    uvm_gpu_address_t inline_data_addr;
+    uvm_push_inline_data_t inline_data;
+    NvU32 entry_count, i, j;
+
+    UVM_ASSERT(!uvm_mmu_use_cpu(tree));
+
+    entry_size = tree->hal->entry_size(directory->depth);
+    UVM_ASSERT(sizeof(pde_data) >= entry_size);
+
+    max_inline_entries = UVM_PUSH_INLINE_DATA_MAX_SIZE / entry_size;
+
+    if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE))
+        push_membar_flag = UVM_PUSH_FLAG_NEXT_MEMBAR_NONE;
+    else if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU))
+        push_membar_flag = UVM_PUSH_FLAG_NEXT_MEMBAR_GPU;
+
+    pde_entry_addr.address += start_index * entry_size;
+
+    for (i = 0; i < pde_count;) {
+        // All but the first memory operation can be pipelined. We respect the
+        // caller's pipelining settings for the first push.
+        if (i != 0)
+            uvm_push_set_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
+
+        entry_count = min(pde_count - i, max_inline_entries);
+
+        // No membar is needed until the last memory operation. Otherwise,
+        // use caller's membar flag.
+        if ((i + entry_count) < pde_count)
+            uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
+        else if (push_membar_flag != UVM_PUSH_FLAG_COUNT)
+            uvm_push_set_flag(push, push_membar_flag);
+
+        uvm_push_inline_data_begin(push, &inline_data);
+        for (j = 0; j < entry_count; j++) {
+            tree->hal->make_pde(pde_data, phys_addr, directory, start_index + i + j);
+            uvm_push_inline_data_add(&inline_data, pde_data, entry_size);
+        }
+        inline_data_addr = uvm_push_inline_data_end(&inline_data);
+
+        tree->gpu->parent->ce_hal->memcopy(push, pde_entry_addr, inline_data_addr, entry_count * entry_size);
+
+        i += entry_count;
+        pde_entry_addr.address += entry_size * entry_count;
+    }
+}
+
+// pde_fill() populates pde_count PDE entries (starting at start_index) with
+// the same mapping, i.e., with the same physical address (phys_addr).
+// pde_fill() is optimized for pde_count == 1, which is the common case.
+static void pde_fill(uvm_page_tree_t *tree,
+                     uvm_page_directory_t *directory,
+                     NvU32 start_index,
+                     NvU32 pde_count,
+                     uvm_mmu_page_table_alloc_t **phys_addr,
+                     uvm_push_t *push)
+{
+    UVM_ASSERT(start_index + pde_count <= uvm_mmu_page_tree_entries(tree, directory->depth, UVM_PAGE_SIZE_AGNOSTIC));
+
+    if (push)
+        pde_fill_gpu(tree, directory, start_index, pde_count, phys_addr, push);
+    else
+        pde_fill_cpu(tree, directory, start_index, pde_count, phys_addr);
+}
+
 static void phys_mem_init(uvm_page_tree_t *tree, NvU32 page_size, uvm_page_directory_t *dir, uvm_push_t *push)
 {
-    NvU64 clear_bits[2];
-    uvm_mmu_mode_hal_t *hal = tree->hal;
+    NvU32 entries_count = uvm_mmu_page_tree_entries(tree, dir->depth, page_size);
+    NvU8 max_pde_depth = tree->hal->page_table_depth(UVM_PAGE_SIZE_AGNOSTIC) - 1;
 
-    if (dir->depth == tree->hal->page_table_depth(page_size)) {
-        *clear_bits = 0; // Invalid PTE
-    }
-    else {
-        // passing in NULL for the phys_allocs will mark the child entries as invalid
-        uvm_mmu_page_table_alloc_t *phys_allocs[2] = {NULL, NULL};
-        hal->make_pde(clear_bits, phys_allocs, dir->depth);
+    // Passing in NULL for the phys_allocs will mark the child entries as
+    // invalid.
+    uvm_mmu_page_table_alloc_t *phys_allocs[2] = {NULL, NULL};
 
-        // Make sure that using only clear_bits[0] will work
-        UVM_ASSERT(hal->entry_size(dir->depth) == sizeof(clear_bits[0]) || clear_bits[0] == clear_bits[1]);
-    }
+    // Init with an invalid PTE or clean PDE. Only Maxwell PDEs can have more
+    // than 512 entries. In this case, we initialize them all with the same
+    // clean PDE. ATS systems may require clean PDEs with
+    // ATS_ALLOWED/ATS_NOT_ALLOWED bit settings based on the mapping VA.
+    // We only clean_bits to 0 at the lowest page table level (PTE table), i.e.,
+    // when depth is greater than the max_pde_depth.
+    if ((dir->depth > max_pde_depth) || (entries_count > 512 && !g_uvm_global.ats.enabled)) {
+        NvU64 clear_bits[2];
 
-    // initialize the memory to a reasonable value
-    if (push) {
-        tree->gpu->parent->ce_hal->memset_8(push,
-                                            uvm_mmu_gpu_address(tree->gpu, dir->phys_alloc.addr),
+        // If it is not a PTE, make a clean PDE.
+        if (dir->depth != tree->hal->page_table_depth(page_size)) {
+            // make_pde() child index is zero/ignored, since it is only used in
+            // PDEs on ATS-enabled systems where pde_fill() is preferred.
+            tree->hal->make_pde(clear_bits, phys_allocs, dir, 0);
+
+            // Make sure that using only clear_bits[0] will work.
+            UVM_ASSERT(tree->hal->entry_size(dir->depth) == sizeof(clear_bits[0]) || clear_bits[0] == clear_bits[1]);
+        }
+        else {
+            *clear_bits = 0;
+        }
+
+        // Initialize the memory to a reasonable value.
+        if (push) {
+            tree->gpu->parent->ce_hal->memset_8(push,
+                                                uvm_mmu_gpu_address(tree->gpu, dir->phys_alloc.addr),
+                                                *clear_bits,
+                                                dir->phys_alloc.size);
+        }
+        else {
+            uvm_mmu_page_table_cpu_memset_8(tree->gpu,
+                                            &dir->phys_alloc,
+                                            0,
                                             *clear_bits,
-                                            dir->phys_alloc.size);
+                                            dir->phys_alloc.size / sizeof(*clear_bits));
+        }
     }
     else {
-        uvm_mmu_page_table_cpu_memset_8(tree->gpu,
-                                        &dir->phys_alloc,
-                                        0,
-                                        *clear_bits,
-                                        dir->phys_alloc.size / sizeof(*clear_bits));
+        pde_fill(tree, dir, 0, entries_count, phys_allocs, push);
     }
+
 }
 
 static uvm_page_directory_t *allocate_directory(uvm_page_tree_t *tree,
@@ -367,8 +487,10 @@ static uvm_page_directory_t *allocate_directory(uvm_page_tree_t *tree,
     NvLength phys_alloc_size = hal->allocation_size(depth, page_size);
     uvm_page_directory_t *dir;
 
-    // The page tree doesn't cache PTEs so space is not allocated for entries that are always PTEs.
-    // 2M PTEs may later become PDEs so pass UVM_PAGE_SIZE_AGNOSTIC, not page_size.
+    // The page tree doesn't cache PTEs so space is not allocated for entries
+    // that are always PTEs.
+    // 2M PTEs may later become PDEs so pass UVM_PAGE_SIZE_AGNOSTIC, not
+    // page_size.
     if (depth == hal->page_table_depth(UVM_PAGE_SIZE_AGNOSTIC))
         entry_count = 0;
     else
@@ -409,108 +531,6 @@ static inline NvU32 index_to_entry(uvm_mmu_mode_hal_t *hal, NvU32 entry_index, N
     return hal->entries_per_index(depth) * entry_index + hal->entry_offset(depth, page_size);
 }
 
-static void pde_fill_cpu(uvm_page_tree_t *tree,
-                         NvU32 depth,
-                         uvm_mmu_page_table_alloc_t *directory,
-                         NvU32 start_index,
-                         NvU32 pde_count,
-                         uvm_mmu_page_table_alloc_t **phys_addr)
-{
-    NvU64 pde_data[2], entry_size;
-
-    UVM_ASSERT(uvm_mmu_use_cpu(tree));
-    entry_size = tree->hal->entry_size(depth);
-    UVM_ASSERT(sizeof(pde_data) >= entry_size);
-
-    tree->hal->make_pde(pde_data, phys_addr, depth);
-
-    if (entry_size == sizeof(pde_data[0]))
-        uvm_mmu_page_table_cpu_memset_8(tree->gpu, directory, start_index, pde_data[0], pde_count);
-    else
-        uvm_mmu_page_table_cpu_memset_16(tree->gpu, directory, start_index, pde_data, pde_count);
-}
-
-static void pde_fill_gpu(uvm_page_tree_t *tree,
-                         NvU32 depth,
-                         uvm_mmu_page_table_alloc_t *directory,
-                         NvU32 start_index,
-                         NvU32 pde_count,
-                         uvm_mmu_page_table_alloc_t **phys_addr,
-                         uvm_push_t *push)
-{
-    NvU64 pde_data[2], entry_size;
-    uvm_gpu_address_t pde_entry_addr = uvm_mmu_gpu_address(tree->gpu, directory->addr);
-
-    UVM_ASSERT(!uvm_mmu_use_cpu(tree));
-
-    entry_size = tree->hal->entry_size(depth);
-    UVM_ASSERT(sizeof(pde_data) >= entry_size);
-
-    tree->hal->make_pde(pde_data, phys_addr, depth);
-    pde_entry_addr.address += start_index * entry_size;
-
-    if (entry_size == sizeof(pde_data[0])) {
-        tree->gpu->parent->ce_hal->memset_8(push, pde_entry_addr, pde_data[0], sizeof(pde_data[0]) * pde_count);
-    }
-    else {
-        NvU32 max_inline_entries = UVM_PUSH_INLINE_DATA_MAX_SIZE / sizeof(pde_data);
-        uvm_gpu_address_t inline_data_addr;
-        uvm_push_inline_data_t inline_data;
-        uvm_push_flag_t push_membar_flag = UVM_PUSH_FLAG_COUNT;
-        NvU32 i;
-
-        if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE))
-            push_membar_flag = UVM_PUSH_FLAG_NEXT_MEMBAR_NONE;
-        else if (uvm_push_get_and_reset_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU))
-            push_membar_flag = UVM_PUSH_FLAG_NEXT_MEMBAR_GPU;
-
-        for (i = 0; i < pde_count;) {
-            NvU32 j;
-            NvU32 entry_count = min(pde_count - i, max_inline_entries);
-
-            uvm_push_inline_data_begin(push, &inline_data);
-            for (j = 0; j < entry_count; j++)
-                uvm_push_inline_data_add(&inline_data, pde_data, sizeof(pde_data));
-            inline_data_addr = uvm_push_inline_data_end(&inline_data);
-
-            // All but the first memcopy can be pipelined. We respect the
-            // caller's pipelining settings for the first push.
-            if (i != 0)
-                uvm_push_set_flag(push, UVM_PUSH_FLAG_CE_NEXT_PIPELINED);
-
-            // No membar is needed until the last copy. Otherwise, use
-            // caller's membar flag.
-            if (i + entry_count < pde_count)
-                uvm_push_set_flag(push, UVM_PUSH_FLAG_NEXT_MEMBAR_NONE);
-            else if (push_membar_flag != UVM_PUSH_FLAG_COUNT)
-                uvm_push_set_flag(push, push_membar_flag);
-
-            tree->gpu->parent->ce_hal->memcopy(push, pde_entry_addr, inline_data_addr, entry_count * sizeof(pde_data));
-
-            i += entry_count;
-            pde_entry_addr.address += sizeof(pde_data) * entry_count;
-        }
-    }
-}
-
-// pde_fill() populates pde_count PDE entries (starting at start_index) with
-// the same mapping, i.e., with the same physical address (phys_addr).
-static void pde_fill(uvm_page_tree_t *tree,
-                     NvU32 depth,
-                     uvm_mmu_page_table_alloc_t *directory,
-                     NvU32 start_index,
-                     NvU32 pde_count,
-                     uvm_mmu_page_table_alloc_t **phys_addr,
-                     uvm_push_t *push)
-{
-    UVM_ASSERT(start_index + pde_count <= uvm_mmu_page_tree_entries(tree, depth, UVM_PAGE_SIZE_AGNOSTIC));
-
-    if (push)
-        pde_fill_gpu(tree, depth, directory, start_index, pde_count, phys_addr, push);
-    else
-        pde_fill_cpu(tree, depth, directory, start_index, pde_count, phys_addr);
-}
-
 static uvm_page_directory_t *host_pde_write(uvm_page_directory_t *dir,
                                             uvm_page_directory_t *parent,
                                             NvU32 index_in_parent)
@@ -540,7 +560,7 @@ static void pde_write(uvm_page_tree_t *tree,
             phys_allocs[i] = &entry->phys_alloc;
     }
 
-    pde_fill(tree, dir->depth, &dir->phys_alloc, entry_index, 1, phys_allocs, push);
+    pde_fill(tree, dir, entry_index, 1, phys_allocs, push);
 }
 
 static void host_pde_clear(uvm_page_tree_t *tree, uvm_page_directory_t *dir, NvU32 entry_index, NvU32 page_size)
@@ -800,7 +820,6 @@ static void free_unused_directories(uvm_page_tree_t *tree,
             }
         }
     }
-
 }
 
 static NV_STATUS allocate_page_table(uvm_page_tree_t *tree, NvU32 page_size, uvm_mmu_page_table_alloc_t *out)
@@ -811,10 +830,93 @@ static NV_STATUS allocate_page_table(uvm_page_tree_t *tree, NvU32 page_size, uvm
     return phys_mem_allocate(tree, alloc_size, tree->location, UVM_PMM_ALLOC_FLAGS_EVICT, out);
 }
 
+static bool page_tree_ats_init_required(uvm_page_tree_t *tree)
+{
+    // We have full control of the kernel page tables mappings, no ATS address
+    // aliases is expected.
+    if (tree->type == UVM_PAGE_TREE_TYPE_KERNEL)
+        return false;
+
+    // Enable uvm_page_tree_init() from the page_tree test.
+    if (uvm_enable_builtin_tests && tree->gpu_va_space == NULL)
+        return false;
+
+    if (!tree->gpu_va_space->ats.enabled)
+        return false;
+
+    return tree->gpu->parent->no_ats_range_required;
+}
+
+static NV_STATUS page_tree_ats_init(uvm_page_tree_t *tree)
+{
+    NV_STATUS status;
+    NvU64 min_va_upper, max_va_lower;
+    NvU32 page_size;
+
+    if (!page_tree_ats_init_required(tree))
+        return NV_OK;
+
+    page_size = uvm_mmu_biggest_page_size(tree);
+
+    uvm_cpu_get_unaddressable_range(&max_va_lower, &min_va_upper);
+
+    // Potential violation of the UVM internal get/put_ptes contract. get_ptes()
+    // creates and initializes enough PTEs to populate all PDEs covering the
+    // no_ats_ranges. We store the no_ats_ranges in the tree, so they can be
+    // put_ptes()'ed on deinit(). It doesn't preclude the range to be used by a
+    // future get_ptes(), since we don't write to the PTEs (range->table) from
+    // the tree->no_ats_ranges.
+    //
+    // Lower half
+    status = uvm_page_tree_get_ptes(tree,
+                                    page_size,
+                                    max_va_lower,
+                                    page_size,
+                                    UVM_PMM_ALLOC_FLAGS_EVICT,
+                                    &tree->no_ats_ranges[0]);
+    if (status != NV_OK)
+        return status;
+
+    UVM_ASSERT(tree->no_ats_ranges[0].entry_count == 1);
+
+    if (uvm_platform_uses_canonical_form_address()) {
+        // Upper half
+        status = uvm_page_tree_get_ptes(tree,
+                                        page_size,
+                                        min_va_upper - page_size,
+                                        page_size,
+                                        UVM_PMM_ALLOC_FLAGS_EVICT,
+                                        &tree->no_ats_ranges[1]);
+        if (status != NV_OK)
+            return status;
+
+        UVM_ASSERT(tree->no_ats_ranges[1].entry_count == 1);
+    }
+
+    return NV_OK;
+}
+
+static void page_tree_ats_deinit(uvm_page_tree_t *tree)
+{
+    size_t i;
+
+    if (page_tree_ats_init_required(tree)) {
+        for (i = 0; i < ARRAY_SIZE(tree->no_ats_ranges); i++) {
+            if (tree->no_ats_ranges[i].entry_count)
+                uvm_page_tree_put_ptes(tree, &tree->no_ats_ranges[i]);
+        }
+
+        memset(tree->no_ats_ranges, 0, sizeof(tree->no_ats_ranges));
+    }
+}
+
 static void map_remap_deinit(uvm_page_tree_t *tree)
 {
-    if (tree->map_remap.pde0.size)
-        phys_mem_deallocate(tree, &tree->map_remap.pde0);
+    if (tree->map_remap.pde0) {
+        phys_mem_deallocate(tree, &tree->map_remap.pde0->phys_alloc);
+        uvm_kvfree(tree->map_remap.pde0);
+        tree->map_remap.pde0 = NULL;
+    }
 
     if (tree->map_remap.ptes_invalid_4k.size)
         phys_mem_deallocate(tree, &tree->map_remap.ptes_invalid_4k);
@@ -839,10 +941,16 @@ static NV_STATUS map_remap_init(uvm_page_tree_t *tree)
     // PDE1-depth(512M) PTE. We first map it to the pde0 directory, then we
     // return the PTE for the get_ptes()'s caller.
     if (tree->hal->page_sizes() & UVM_PAGE_SIZE_512M) {
-        status = allocate_page_table(tree, UVM_PAGE_SIZE_2M, &tree->map_remap.pde0);
-        if (status != NV_OK)
+        tree->map_remap.pde0 = allocate_directory(tree,
+                                                  UVM_PAGE_SIZE_2M,
+                                                  tree->hal->page_table_depth(UVM_PAGE_SIZE_2M),
+                                                  UVM_PMM_ALLOC_FLAGS_EVICT);
+        if (tree->map_remap.pde0 == NULL) {
+            status = NV_ERR_NO_MEMORY;
             goto error;
+        }
     }
+
     status = page_tree_begin_acquire(tree, &tree->tracker, &push, "map remap init");
     if (status != NV_OK)
         goto error;
@@ -864,22 +972,23 @@ static NV_STATUS map_remap_init(uvm_page_tree_t *tree)
         uvm_mmu_page_table_alloc_t *phys_allocs[2] = {NULL, NULL};
         NvU32 depth = tree->hal->page_table_depth(UVM_PAGE_SIZE_4K) - 1;
         size_t index_4k = tree->hal->entry_offset(depth, UVM_PAGE_SIZE_4K);
-
-        // pde0 depth equals UVM_PAGE_SIZE_2M.
-        NvU32 pde0_depth = tree->hal->page_table_depth(UVM_PAGE_SIZE_2M);
-        NvU32 pde0_entries = tree->map_remap.pde0.size / tree->hal->entry_size(pde0_depth);
+        NvU32 pde0_entries = tree->map_remap.pde0->phys_alloc.size / tree->hal->entry_size(tree->map_remap.pde0->depth);
 
         // The big-page entry is NULL which makes it an invalid entry.
         phys_allocs[index_4k] = &tree->map_remap.ptes_invalid_4k;
 
         // By default CE operations include a MEMBAR_SYS. MEMBAR_GPU is
         // sufficient when pde0 is allocated in VIDMEM.
-        if (tree->map_remap.pde0.addr.aperture == UVM_APERTURE_VID)
+        if (tree->map_remap.pde0->phys_alloc.addr.aperture == UVM_APERTURE_VID)
             uvm_push_set_flag(&push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
 
+        // This is an orphan directory, make_pde() requires a directory to
+        // compute the VA. The UVM depth map_remap() operates on is not in the
+        // range make_pde() must operate. We only need to supply the fields used
+        // by make_pde() to not access invalid memory addresses.
+
         pde_fill(tree,
-                 pde0_depth,
-                 &tree->map_remap.pde0,
+                 tree->map_remap.pde0,
                  0,
                  pde0_entries,
                  (uvm_mmu_page_table_alloc_t **)&phys_allocs,
@@ -906,11 +1015,10 @@ error:
 // --------------|-------------------------||----------------|----------------
 //    vidmem     |           -             ||    vidmem      |      false
 //    sysmem     |           -             ||    sysmem      |      false
-//    default    |        <not set>        ||    vidmem      |      true (1)
+//    default    |        <not set>        ||    vidmem      |      true
 //    default    |         vidmem          ||    vidmem      |      false
 //    default    |         sysmem          ||    sysmem      |      false
 //
-// (1) When SEV mode is enabled, the fallback path is disabled.
 //
 // In SR-IOV heavy the the page tree must be in vidmem, to prevent guest drivers
 // from updating GPU page tables without hypervisor knowledge.
@@ -926,28 +1034,27 @@ error:
 //
 static void page_tree_set_location(uvm_page_tree_t *tree, uvm_aperture_t location)
 {
-    bool should_location_be_vidmem;
     UVM_ASSERT(tree->gpu != NULL);
     UVM_ASSERT_MSG((location == UVM_APERTURE_VID) ||
                    (location == UVM_APERTURE_SYS) ||
                    (location == UVM_APERTURE_DEFAULT),
                    "Invalid location %s (%d)\n", uvm_aperture_string(location), (int)location);
 
-    should_location_be_vidmem = uvm_gpu_is_virt_mode_sriov_heavy(tree->gpu)
-                                || uvm_conf_computing_mode_enabled(tree->gpu);
-
     // The page tree of a "fake" GPU used during page tree testing can be in
-    // sysmem even if should_location_be_vidmem is true. A fake GPU can be
-    // identified by having no channel manager.
-    if ((tree->gpu->channel_manager != NULL) && should_location_be_vidmem)
-        UVM_ASSERT(location == UVM_APERTURE_VID);
+    // sysmem in scenarios where a "real" GPU must be in vidmem. Fake GPUs can
+    // be identified by having no channel manager.
+    if (tree->gpu->channel_manager != NULL) {
+
+        if (uvm_parent_gpu_is_virt_mode_sriov_heavy(tree->gpu->parent))
+            UVM_ASSERT(location == UVM_APERTURE_VID);
+        else if (g_uvm_global.conf_computing_enabled)
+            UVM_ASSERT(location == UVM_APERTURE_VID);
+    }
 
     if (location == UVM_APERTURE_DEFAULT) {
         if (page_table_aperture == UVM_APERTURE_DEFAULT) {
             tree->location = UVM_APERTURE_VID;
-
-            // See the comment (1) above.
-            tree->location_sys_fallback = !g_uvm_global.sev_enabled;
+            tree->location_sys_fallback = true;
         }
         else {
             tree->location = page_table_aperture;
@@ -1008,11 +1115,22 @@ NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
         return status;
 
     phys_mem_init(tree, UVM_PAGE_SIZE_AGNOSTIC, tree->root, &push);
-    return page_tree_end_and_wait(tree, &push);
+
+    status = page_tree_end_and_wait(tree, &push);
+    if (status != NV_OK)
+        return status;
+
+    status = page_tree_ats_init(tree);
+    if (status != NV_OK)
+        return status;
+
+    return NV_OK;
 }
 
 void uvm_page_tree_deinit(uvm_page_tree_t *tree)
 {
+    page_tree_ats_deinit(tree);
+
     UVM_ASSERT(tree->root->ref_count == 0);
 
     // Take the tree lock only to avoid assertions. It is not required for
@@ -1251,7 +1369,6 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
         UVM_ASSERT(uvm_gpu_can_address_kernel(tree->gpu, start, size));
 
     while (true) {
-
         // index of the entry, for the first byte of the range, within its
         // containing directory
         NvU32 start_index;
@@ -1283,7 +1400,8 @@ static NV_STATUS try_get_ptes(uvm_page_tree_t *tree,
                 if (dir_cache[dir->depth] == NULL) {
                     *cur_depth = dir->depth;
 
-                    // Undo the changes to the tree so that the dir cache remains private to the thread
+                    // Undo the changes to the tree so that the dir cache
+                    // remains private to the thread.
                     for (i = 0; i < used_count; i++)
                         host_pde_clear(tree, dirs_used[i]->host_parent, dirs_used[i]->index_in_parent, page_size);
 
@@ -1334,10 +1452,9 @@ static NV_STATUS map_remap(uvm_page_tree_t *tree, NvU64 start, NvLength size, uv
     if (uvm_page_table_range_aperture(range) == UVM_APERTURE_VID)
         uvm_push_set_flag(&push, UVM_PUSH_FLAG_NEXT_MEMBAR_GPU);
 
-    phys_alloc[0] = &tree->map_remap.pde0;
+    phys_alloc[0] = &tree->map_remap.pde0->phys_alloc;
     pde_fill(tree,
-             range->table->depth,
-             &range->table->phys_alloc,
+             range->table,
              range->start_index,
              range->entry_count,
              (uvm_mmu_page_table_alloc_t **)&phys_alloc,
@@ -1382,7 +1499,8 @@ NV_STATUS uvm_page_tree_get_ptes_async(uvm_page_tree_t *tree,
                                   dir_cache)) == NV_ERR_MORE_PROCESSING_REQUIRED) {
         uvm_mutex_unlock(&tree->lock);
 
-        // try_get_ptes never needs depth 0, so store a directory at its parent's depth
+        // try_get_ptes never needs depth 0, so store a directory at its
+        // parent's depth.
         // TODO: Bug 1766655: Allocate everything below cur_depth instead of
         //       retrying for every level.
         dir_cache[cur_depth] = allocate_directory(tree, page_size, cur_depth + 1, pmm_flags);
@@ -1665,8 +1783,12 @@ NV_STATUS uvm_page_table_range_vec_init(uvm_page_tree_t *tree,
                                               range);
         if (status != NV_OK) {
             UVM_ERR_PRINT("Failed to get PTEs for subrange %zd [0x%llx, 0x%llx) size 0x%llx, part of [0x%llx, 0x%llx)\n",
-                    i, range_start, range_start + range_size, range_size,
-                    start, size);
+                          i,
+                          range_start,
+                          range_start + range_size,
+                          range_size,
+                          start,
+                          size);
             goto out;
         }
     }
@@ -2151,19 +2273,19 @@ static void destroy_identity_mapping(uvm_gpu_identity_mapping_t *mapping)
     mapping->range_vec = NULL;
 }
 
-bool uvm_mmu_gpu_needs_static_vidmem_mapping(uvm_gpu_t *gpu)
+bool uvm_mmu_parent_gpu_needs_static_vidmem_mapping(uvm_parent_gpu_t *parent_gpu)
 {
-    return !gpu->parent->ce_phys_vidmem_write_supported;
+    return !parent_gpu->ce_phys_vidmem_write_supported;
 }
 
-bool uvm_mmu_gpu_needs_dynamic_vidmem_mapping(uvm_gpu_t *gpu)
+bool uvm_mmu_parent_gpu_needs_dynamic_vidmem_mapping(uvm_parent_gpu_t *parent_gpu)
 {
-    return uvm_gpu_is_virt_mode_sriov_heavy(gpu);
+    return uvm_parent_gpu_is_virt_mode_sriov_heavy(parent_gpu);
 }
 
-bool uvm_mmu_gpu_needs_dynamic_sysmem_mapping(uvm_gpu_t *gpu)
+bool uvm_mmu_parent_gpu_needs_dynamic_sysmem_mapping(uvm_parent_gpu_t *parent_gpu)
 {
-    return uvm_gpu_is_virt_mode_sriov_heavy(gpu);
+    return uvm_parent_gpu_is_virt_mode_sriov_heavy(parent_gpu);
 }
 
 NV_STATUS create_static_vidmem_mapping(uvm_gpu_t *gpu)
@@ -2174,10 +2296,10 @@ NV_STATUS create_static_vidmem_mapping(uvm_gpu_t *gpu)
     NvU64 phys_offset = 0;
     uvm_gpu_identity_mapping_t *flat_mapping = &gpu->static_flat_mapping;
 
-    if (!uvm_mmu_gpu_needs_static_vidmem_mapping(gpu))
+    if (!uvm_mmu_parent_gpu_needs_static_vidmem_mapping(gpu->parent))
         return NV_OK;
 
-    UVM_ASSERT(!uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu));
+    UVM_ASSERT(!uvm_mmu_parent_gpu_needs_dynamic_vidmem_mapping(gpu->parent));
 
     page_size = uvm_mmu_biggest_page_size(&gpu->address_space_tree);
     size = UVM_ALIGN_UP(gpu->mem_info.max_allocatable_address + 1, page_size);
@@ -2199,7 +2321,7 @@ NV_STATUS create_static_vidmem_mapping(uvm_gpu_t *gpu)
 
 static void destroy_static_vidmem_mapping(uvm_gpu_t *gpu)
 {
-    if (!uvm_mmu_gpu_needs_static_vidmem_mapping(gpu))
+    if (!uvm_mmu_parent_gpu_needs_static_vidmem_mapping(gpu->parent))
         return;
 
     destroy_identity_mapping(&gpu->static_flat_mapping);
@@ -2324,7 +2446,7 @@ static void destroy_dynamic_vidmem_mapping(uvm_gpu_t *gpu)
 {
     size_t i;
 
-    if (!uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu))
+    if (!uvm_mmu_parent_gpu_needs_dynamic_vidmem_mapping(gpu->parent))
         return;
 
     if (gpu->root_chunk_mappings.array == NULL)
@@ -2348,10 +2470,10 @@ static NV_STATUS create_dynamic_vidmem_mapping(uvm_gpu_t *gpu)
     NV_STATUS status;
     size_t count;
 
-    if (!uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu))
+    if (!uvm_mmu_parent_gpu_needs_dynamic_vidmem_mapping(gpu->parent))
         return NV_OK;
 
-    UVM_ASSERT(!uvm_mmu_gpu_needs_static_vidmem_mapping(gpu));
+    UVM_ASSERT(!uvm_mmu_parent_gpu_needs_static_vidmem_mapping(gpu->parent));
     BUILD_BUG_ON(UVM_PAGE_SIZE_2M != UVM_CHUNK_SIZE_MAX);
     UVM_ASSERT(uvm_mmu_page_size_supported(&gpu->address_space_tree, UVM_PAGE_SIZE_2M));
     UVM_ASSERT(gpu->pmm.initialized);
@@ -2497,7 +2619,7 @@ NV_STATUS uvm_mmu_chunk_map(uvm_gpu_chunk_t *chunk)
     NV_STATUS status = NV_OK;
     uvm_gpu_t *gpu = uvm_gpu_chunk_get_gpu(chunk);
 
-    if (!uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu))
+    if (!uvm_mmu_parent_gpu_needs_dynamic_vidmem_mapping(gpu->parent))
         return NV_OK;
 
     chunk_size = uvm_gpu_chunk_get_size(chunk);
@@ -2550,7 +2672,7 @@ void uvm_mmu_chunk_unmap(uvm_gpu_chunk_t *chunk, uvm_tracker_t *tracker)
         return;
 
     gpu = uvm_gpu_chunk_get_gpu(chunk);
-    if (!uvm_mmu_gpu_needs_dynamic_vidmem_mapping(gpu))
+    if (!uvm_mmu_parent_gpu_needs_dynamic_vidmem_mapping(gpu->parent))
         return;
 
     if (tracker != NULL)
@@ -2614,7 +2736,7 @@ static void destroy_dynamic_sysmem_mapping(uvm_gpu_t *gpu)
 {
     size_t i;
 
-    if (!uvm_mmu_gpu_needs_dynamic_sysmem_mapping(gpu))
+    if (!uvm_mmu_parent_gpu_needs_dynamic_sysmem_mapping(gpu->parent))
         return;
 
     if (gpu->sysmem_mappings.array == NULL)
@@ -2636,7 +2758,7 @@ static NV_STATUS create_dynamic_sysmem_mapping(uvm_gpu_t *gpu)
     NvU64 mapping_size;
     NvU64 flat_sysmem_va_size;
 
-    if (!uvm_mmu_gpu_needs_dynamic_sysmem_mapping(gpu))
+    if (!uvm_mmu_parent_gpu_needs_dynamic_sysmem_mapping(gpu->parent))
         return NV_OK;
 
     UVM_ASSERT(gpu->parent->flat_sysmem_va_base != 0);
@@ -2692,7 +2814,7 @@ NV_STATUS uvm_mmu_sysmem_map(uvm_gpu_t *gpu, NvU64 pa, NvU64 size)
 {
     NvU64 curr_pa;
 
-    if (!uvm_mmu_gpu_needs_dynamic_sysmem_mapping(gpu))
+    if (!uvm_mmu_parent_gpu_needs_dynamic_sysmem_mapping(gpu->parent))
         return NV_OK;
 
     curr_pa = UVM_ALIGN_DOWN(pa, gpu->sysmem_mappings.mapping_size);
@@ -2704,7 +2826,7 @@ NV_STATUS uvm_mmu_sysmem_map(uvm_gpu_t *gpu, NvU64 pa, NvU64 size)
         sysmem_mapping_lock(gpu, sysmem_mapping);
 
         if (sysmem_mapping->range_vec == NULL) {
-            uvm_gpu_address_t virtual_address = uvm_gpu_address_virtual_from_sysmem_phys(gpu, curr_pa);
+            uvm_gpu_address_t virtual_address = uvm_parent_gpu_address_virtual_from_sysmem_phys(gpu->parent, curr_pa);
             NvU64 phys_offset = curr_pa;
             NvU32 page_size = uvm_mmu_biggest_page_size(&gpu->address_space_tree);
             uvm_pmm_alloc_flags_t pmm_flags;

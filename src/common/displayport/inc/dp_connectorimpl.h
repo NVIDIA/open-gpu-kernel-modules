@@ -194,7 +194,9 @@ namespace DisplayPort
         unsigned compoundQueryLocalLinkPBN;
         bool compoundQueryForceEnableFEC;
 
-        unsigned freeSlots, maximumSlots;
+        unsigned freeSlots;
+        unsigned maximumSlots;
+        int firstFreeSlot;
 
         // Multistream messaging
         MessageManager *    messageManager;
@@ -346,12 +348,22 @@ namespace DisplayPort
         //
         bool        bPowerDownPhyBeforeD3;
 
+        //
+        // Reset the MSTM_CTRL registers on branch device irrespective of
+        // IRQ VECTOR register having stale message. Certain branch devices
+        // need to reset the topology before issuing new discovery commands
+        // as there can be case where previous is still in process and a
+        // possibility that clearPendingMessage() might not be able to catch
+        // the stale messages from previous discovery.
+        //
+        bool        bForceClearPendingMsg;
+
+
         Group *perHeadAttachedGroup[NV_MAX_HEADS];
         NvU32 inTransitionHeadMask;
 
         void sharedInit();
         ConnectorImpl(MainLink * main, AuxBus * auxBus, Timer * timer, Connector::EventSink * sink);
-
         void setPolicyModesetOrderMitigation(bool enabled);
         void setPolicyForceLTAtNAB(bool enabled);
         void setPolicyAssessLinkSafely(bool enabled);
@@ -599,6 +611,8 @@ namespace DisplayPort
 
         bool beforeAddStreamMST(GroupImpl * group, bool force = false, bool forFlushMode = false);
 
+        virtual bool checkIsModePossibleMST(GroupImpl * group);
+
         bool deleteAllVirtualChannels();
         void clearTimeslices();
         bool allocateTimeslice(GroupImpl * targetGroup);
@@ -664,7 +678,7 @@ namespace DisplayPort
         virtual bool writePsrEvtIndicator(vesaPsrEventIndicator psrErr);
         virtual bool readPsrEvtIndicator(vesaPsrEventIndicator *psrErr);
         virtual bool readPsrState(vesaPsrState *psrState);
-        virtual bool updatePsrLinkState(bool bTrainLink);
+        virtual bool updatePsrLinkState(bool bTurnOnLink);
 
         virtual bool readPrSinkDebugInfo(panelReplaySinkDebugInfo *prDbgInfo);
 

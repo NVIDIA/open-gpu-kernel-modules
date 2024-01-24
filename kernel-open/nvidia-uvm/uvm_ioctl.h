@@ -633,6 +633,7 @@ typedef struct
     NvU64           requestedBase      NV_ALIGN_BYTES(8); // IN
     NvU64           length             NV_ALIGN_BYTES(8); // IN
     NvProcessorUuid preferredLocation;                    // IN
+    NvS32           preferredCpuNumaNode;                 // IN
     NV_STATUS       rmStatus;                             // OUT
 } UVM_SET_PREFERRED_LOCATION_PARAMS;
 
@@ -766,8 +767,19 @@ typedef struct
 #define UVM_MIGRATE_FLAGS_ALL                   (UVM_MIGRATE_FLAG_ASYNC | \
                                                  UVM_MIGRATE_FLAGS_TEST_ALL)
 
-// For pageable migrations, cpuNumaNode is used as the destination NUMA node if
-// destinationUuid is the CPU.
+// If NV_ERR_INVALID_ARGUMENT is returned it is because cpuMemoryNode is not
+// valid and the destination processor is the CPU. cpuMemoryNode is considered
+// invalid if:
+//      * it is less than -1,
+//      * it is equal to or larger than the maximum number of nodes, or
+//      * it corresponds to a registered GPU.
+//      * it is not in the node_possible_map set of nodes,
+//      * it does not have onlined memory
+//
+// For pageable migrations:
+//
+// In addition to the above, in the case of pageable memory, the
+// cpuMemoryNode is considered invalid if it's -1.
 //
 // If NV_WARN_NOTHING_TO_DO is returned, user-space is responsible for
 // completing the migration of the VA range described by userSpaceStart and
@@ -775,6 +787,7 @@ typedef struct
 //
 // If NV_ERR_MORE_PROCESSING_REQUIRED is returned, user-space is responsible
 // for re-trying with a different cpuNumaNode, starting at userSpaceStart.
+//
 #define UVM_MIGRATE                                                   UVM_IOCTL_BASE(51)
 typedef struct
 {
@@ -784,7 +797,7 @@ typedef struct
     NvU32           flags;                                // IN
     NvU64           semaphoreAddress   NV_ALIGN_BYTES(8); // IN
     NvU32           semaphorePayload;                     // IN
-    NvU32           cpuNumaNode;                          // IN
+    NvS32           cpuNumaNode;                          // IN
     NvU64           userSpaceStart     NV_ALIGN_BYTES(8); // OUT
     NvU64           userSpaceLength    NV_ALIGN_BYTES(8); // OUT
     NV_STATUS       rmStatus;                             // OUT

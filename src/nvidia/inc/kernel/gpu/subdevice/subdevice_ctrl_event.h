@@ -55,3 +55,7 @@
     NV_STATUS subdeviceCtrlCmdEventVideoBindEvtbuf(Subdevice *pSubdevice,
                                 NV2080_CTRL_EVENT_VIDEO_BIND_EVTBUF_PARAMS *pBindParams);
 
+    RMCTRL_EXPORT(NV2080_CTRL_CMD_EVENT_RATS_GSP_TRACE_BIND_EVTBUF,
+                  RMCTRL_FLAGS(PRIVILEGED))
+    NV_STATUS subdeviceCtrlCmdEventGspTraceRatsBindEvtbuf(Subdevice *pSubdevice,
+                                NV2080_CTRL_EVENT_RATS_GSP_TRACE_BIND_EVTBUF_PARAMS *pBindParams);

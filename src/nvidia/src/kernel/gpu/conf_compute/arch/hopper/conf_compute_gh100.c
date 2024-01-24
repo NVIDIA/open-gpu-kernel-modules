@@ -93,6 +93,11 @@ confComputeDeriveSecrets_GH100(ConfidentialCompute *pConfCompute,
     OBJGPU *pGpu = ENG_GET_GPU(pConfCompute);
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
+    if (!IS_GSP_CLIENT(pGpu))
+    {
+        return NV_OK;
+    }
+
     switch (engine)
     {
         case MC_ENGINE_IDX_GSP:

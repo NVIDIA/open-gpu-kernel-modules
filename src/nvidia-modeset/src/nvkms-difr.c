@@ -95,6 +95,7 @@
 #include "nvkms-rm.h"
 #include "nvkms-rmapi.h"
 #include "nvkms-utils.h"
+#include "nvkms-evo.h"
 
 #include "nvidia-push-init.h"
 #include "nvidia-push-methods.h"
@@ -275,11 +276,23 @@ NvU32 nvDIFRPrefetchSurfaces(NVDIFRStateEvoPtr pDifr, size_t l2CacheSize)
     NvU32 status;
 
     /*
-     * If DIFR is disabled it's because we know we were or will be flipping, or
-     * if console is active then the scanout surfaces will get updated by the
-     * OS console driver without any knowledge of NVKMS.
+     * If the console is active then the scanout surfaces will get updated by
+     * the OS console driver without any knowledge of NVKMS, DIFR should not be
+     * enabled in that case.
      */
-    if (pDifr->hwDisabled || nvEvoIsConsoleActive(pDevEvo)) {
+    if (nvEvoIsConsoleActive(pDevEvo)) {
+        /*
+         * NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_INSUFFICIENT_L2_SIZE: Despite
+         * what the name suggests this will actually tell RM (and further PMU)
+         * to disable DIFR until the next modeset.
+         */
+        return NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_INSUFFICIENT_L2_SIZE;
+    }
+
+    /*
+     * If DIFR is disabled it's because we know we were or will be flipping.
+     */
+    if (pDifr->hwDisabled) {
         return NV2080_CTRL_LPWR_DIFR_PREFETCH_FAIL_OS_FLIPS_ENABLED;
     }
 
@@ -845,8 +858,17 @@ static void IdleTimerProc(void *dataPtr, NvU32 dataU32)
     pDifr->idleTimer = NULL;
 
     if (now - pDifr->lastFlipTime >= idlePeriod) {
-        /* Enough time has passed with no new flips, enable DIFR. */
-        SetDisabledState(pDifr, FALSE);
+        /*
+         * Enough time has passed with no new flips, enable DIFR if the console
+         * is not active. If the console is active then the scanout surfaces
+         * will get updated by the OS console driver without any knowledge of
+         * NVKMS, DIFR can not be enabled in that case; the idle timer will get
+         * scheduled by nvDIFRNotifyFlip() on next modeset/flip, till then DIFR
+         * will remain disabled.
+         */
+        if (!nvEvoIsConsoleActive(pDifr->pDevEvo)) {
+            SetDisabledState(pDifr, FALSE);
+        }
     } else {
         /* New flips have happened since the original, reset idle timer. */
         EnsureIdleTimer(pDifr);

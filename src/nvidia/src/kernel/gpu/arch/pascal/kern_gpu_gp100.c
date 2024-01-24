@@ -22,6 +22,7 @@
  */
 
 #include "core/core.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/eng_desc.h"
 #include "gpu/gpu_child_class_defs.h"

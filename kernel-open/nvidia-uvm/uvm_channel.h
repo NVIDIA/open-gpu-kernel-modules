@@ -497,6 +497,10 @@ static bool uvm_channel_is_lcic(uvm_channel_t *channel)
     return uvm_channel_pool_is_lcic(channel->pool);
 }
 
+uvm_channel_t *uvm_channel_lcic_get_paired_wlc(uvm_channel_t *lcic_channel);
+
+uvm_channel_t *uvm_channel_wlc_get_paired_lcic(uvm_channel_t *wlc_channel);
+
 static bool uvm_channel_pool_is_proxy(uvm_channel_pool_t *pool)
 {
     UVM_ASSERT(uvm_pool_type_is_valid(pool->pool_type));
@@ -603,6 +607,11 @@ bool uvm_channel_is_value_completed(uvm_channel_t *channel, NvU64 value);
 // Update and get the latest completed value by the channel
 NvU64 uvm_channel_update_completed_value(uvm_channel_t *channel);
 
+// Wait for the channel to idle
+// It waits for anything that is running, but doesn't prevent new work from
+// beginning.
+NV_STATUS uvm_channel_wait(uvm_channel_t *channel);
+
 // Select and reserve a channel with the specified type for a push
 NV_STATUS uvm_channel_reserve_type(uvm_channel_manager_t *manager,
                                    uvm_channel_type_t type,
@@ -616,6 +625,9 @@ NV_STATUS uvm_channel_reserve_gpu_to_gpu(uvm_channel_manager_t *channel_manager,
 
 // Reserve a specific channel for a push or for a control GPFIFO entry.
 NV_STATUS uvm_channel_reserve(uvm_channel_t *channel, NvU32 num_gpfifo_entries);
+
+// Release reservation on a specific channel
+void uvm_channel_release(uvm_channel_t *channel, NvU32 num_gpfifo_entries);
 
 // Set optimal CE for P2P transfers between manager->gpu and peer
 void uvm_channel_manager_set_p2p_ce(uvm_channel_manager_t *manager, uvm_gpu_t *peer, NvU32 optimal_ce);
@@ -647,6 +659,8 @@ const char *uvm_channel_pool_type_to_string(uvm_channel_pool_type_t channel_pool
 NvU32 uvm_channel_get_available_gpfifo_entries(uvm_channel_t *channel);
 
 void uvm_channel_print_pending_pushes(uvm_channel_t *channel);
+
+bool uvm_channel_is_locked_for_push(uvm_channel_t *channel);
 
 static uvm_gpu_t *uvm_channel_get_gpu(uvm_channel_t *channel)
 {

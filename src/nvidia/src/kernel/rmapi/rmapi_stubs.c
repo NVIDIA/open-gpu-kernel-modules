@@ -142,14 +142,14 @@ static NV_STATUS _rmapiMapWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, NvH
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiUnmap_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                       NvU32 flags, NvU64 dmaOffset)
+static NV_STATUS _rmapiUnmap_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx,
+                       NvU32 flags, NvU64 dmaOffset, NvU64 size)
 {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static NV_STATUS _rmapiUnmapWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                                  NvU32 flags, NvU64 dmaOffset, API_SECURITY_INFO *pSecInfo)
+static NV_STATUS _rmapiUnmapWithSecInfo_STUB(RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx,
+                                  NvU32 flags, NvU64 dmaOffset, NvU64 size, API_SECURITY_INFO *pSecInfo)
 {
     return NV_ERR_NOT_SUPPORTED;
 }

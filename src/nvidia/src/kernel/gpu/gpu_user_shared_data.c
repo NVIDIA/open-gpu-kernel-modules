@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,7 +23,6 @@
 
 #include "gpu/gpu_user_shared_data.h"
 #include "gpu/gpu.h"
-#include "gpu/device/device.h"
 #include "os/os.h"
 #include "rmapi/client.h"
 #include "rmapi/rmapi.h"
@@ -56,6 +55,13 @@ gpushareddataConstruct_IMPL
     {
         return NV_ERR_NOT_SUPPORTED;
     }
+
+    //
+    // RUSD polling temporarily disabled on non-GSP due to collisions with VSYNC interrupt
+    // on high refresh rate monitors. See Bug 4432698.
+    //
+    if (!IS_GSP_CLIENT(pGpu) && (pAllocParams->polledDataMask != 0U))
+        return NV_ERR_NOT_SUPPORTED;
 
     if (RS_IS_COPY_CTOR(pParams))
     {

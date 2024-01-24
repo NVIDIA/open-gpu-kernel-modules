@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -52,7 +52,7 @@ subdeviceCtrlCmdKPerfBoost_IMPL
 
     NV_CHECK_OR_RETURN(LEVEL_INFO, (pKernelPerf != NULL), NV_ERR_NOT_SUPPORTED);
 
-    status = kperfBoostSet_HAL(pKernelPerf, pSubdevice, pBoostParams);
+    status = kperfBoostSet(pKernelPerf, pSubdevice, pBoostParams);
     return status;
 }
 
@@ -60,7 +60,7 @@ subdeviceCtrlCmdKPerfBoost_IMPL
  * @copydoc kperfBoostSet
  */
 NV_STATUS
-kperfBoostSet_3x
+kperfBoostSet_IMPL
 (
     KernelPerf *pKernelPerf,
     Subdevice  *pSubdevice,

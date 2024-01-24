@@ -64,6 +64,7 @@ static nv_cap_table_entry_t g_nv_cap_mig_table[] =
 
 static nv_cap_table_entry_t g_nv_cap_sys_table[] =
 {
+    {"/driver/nvidia/capabilities/fabric-imex-mgmt"}
 };
 
 #define NV_CAP_MIG_CI_ENTRIES(_gi)  \

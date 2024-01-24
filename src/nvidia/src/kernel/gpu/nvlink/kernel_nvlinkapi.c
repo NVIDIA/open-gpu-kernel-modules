@@ -25,7 +25,6 @@
 
 #include "os/os.h"
 #include "core/hal.h"
-#include "core/info_block.h"
 #include "core/locks.h"
 #include "gpu/gpu.h"
 #include "gpu/subdevice/subdevice.h"

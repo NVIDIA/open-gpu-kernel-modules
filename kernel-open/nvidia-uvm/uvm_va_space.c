@@ -283,7 +283,7 @@ static void unregister_gpu(uvm_va_space_t *va_space,
                            uvm_gpu_t *gpu,
                            struct mm_struct *mm,
                            struct list_head *deferred_free_list,
-                           uvm_global_processor_mask_t *peers_to_release)
+                           uvm_processor_mask_t *peers_to_release)
 {
     uvm_gpu_t *peer_gpu;
     uvm_va_range_t *va_range;
@@ -292,7 +292,7 @@ static void unregister_gpu(uvm_va_space_t *va_space,
     uvm_assert_rwsem_locked_write(&va_space->lock);
 
     if (peers_to_release)
-        uvm_global_processor_mask_zero(peers_to_release);
+        uvm_processor_mask_zero(peers_to_release);
 
     // If a GPU VA Space was explicitly registered, but not explicitly
     // unregistered, unregister it and add all of its objects to the free list.
@@ -320,7 +320,7 @@ static void unregister_gpu(uvm_va_space_t *va_space,
             // brought up and torn down automatically within add_gpu and
             // remove_gpu.
             if (peers_to_release && g_uvm_global.peers[peer_table_index].link_type == UVM_GPU_LINK_PCIE)
-                uvm_global_processor_mask_set(peers_to_release, peer_gpu->global_id);
+                uvm_processor_mask_set(peers_to_release, peer_gpu->id);
         }
     }
 
@@ -419,8 +419,7 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
     uvm_va_range_t *va_range, *va_range_next;
     uvm_gpu_t *gpu;
     uvm_gpu_id_t gpu_id;
-    uvm_global_gpu_id_t global_gpu_id;
-    uvm_global_processor_mask_t retained_gpus;
+    uvm_processor_mask_t retained_gpus;
     LIST_HEAD(deferred_free_list);
 
     // Remove the VA space from the global list before we start tearing things
@@ -448,7 +447,7 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
     // registered GPUs in the VA space, so those faults will be canceled.
     uvm_va_space_down_write(va_space);
 
-    uvm_va_space_global_gpus(va_space, &retained_gpus);
+    uvm_processor_mask_copy(&retained_gpus, &va_space->registered_gpus);
 
     bitmap_copy(va_space->enabled_peers_teardown, va_space->enabled_peers, UVM_MAX_UNIQUE_GPU_PAIRS);
 
@@ -500,7 +499,7 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
 
     nv_kthread_q_flush(&g_uvm_global.global_q);
 
-    for_each_global_gpu_in_mask(gpu, &retained_gpus) {
+    for_each_gpu_in_mask(gpu, &retained_gpus) {
         if (!gpu->parent->isr.replayable_faults.handling) {
             UVM_ASSERT(!gpu->parent->isr.non_replayable_faults.handling);
             continue;
@@ -545,16 +544,16 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
     uvm_mutex_lock(&g_uvm_global.global_lock);
 
     // Release the GPUs and their peer counts. Do not use
-    // for_each_global_gpu_in_mask for the outer loop as it reads the GPU
+    // for_each_gpu_in_mask for the outer loop as it reads the GPU
     // state, which might get destroyed.
-    for_each_global_gpu_id_in_mask(global_gpu_id, &retained_gpus) {
+    for_each_gpu_id_in_mask(gpu_id, &retained_gpus) {
         uvm_gpu_t *peer_gpu;
 
-        gpu = uvm_gpu_get(global_gpu_id);
+        gpu = uvm_gpu_get(gpu_id);
 
-        uvm_global_processor_mask_clear(&retained_gpus, global_gpu_id);
+        uvm_processor_mask_clear(&retained_gpus, gpu_id);
 
-        for_each_global_gpu_in_mask(peer_gpu, &retained_gpus) {
+        for_each_gpu_in_mask(peer_gpu, &retained_gpus) {
             NvU32 peer_table_index = uvm_gpu_peer_table_index(gpu->id, peer_gpu->id);
             if (test_bit(peer_table_index, va_space->enabled_peers_teardown)) {
                 uvm_gpu_peer_t *peer_caps = &g_uvm_global.peers[peer_table_index];
@@ -605,7 +604,7 @@ uvm_gpu_t *uvm_va_space_get_gpu_by_uuid(uvm_va_space_t *va_space, const NvProces
     uvm_gpu_t *gpu;
 
     for_each_va_space_gpu(gpu, va_space) {
-        if (uvm_processor_uuid_eq(uvm_gpu_uuid(gpu), gpu_uuid))
+        if (uvm_uuid_eq(uvm_gpu_uuid(gpu), gpu_uuid))
             return gpu;
     }
 
@@ -641,24 +640,25 @@ uvm_gpu_t *uvm_va_space_retain_gpu_by_uuid(uvm_va_space_t *va_space, const NvPro
 
 bool uvm_va_space_can_read_duplicate(uvm_va_space_t *va_space, uvm_gpu_t *changing_gpu)
 {
-    uvm_processor_mask_t changing_gpu_mask;
-    uvm_processor_mask_t non_faultable_gpus;
-    uvm_processor_mask_t registered_gpu_va_spaces;
+    NvU32 count = va_space->num_non_faultable_gpu_va_spaces;
 
-    uvm_processor_mask_zero(&changing_gpu_mask);
+    if (changing_gpu && !uvm_processor_mask_test(&va_space->faultable_processors, changing_gpu->id)) {
+        if (uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, changing_gpu->id)) {
+            // A non-faultable GPU is getting removed.
+            UVM_ASSERT(count > 0);
+            --count;
+        }
+        else {
+            // A non-faultable GPU is getting added.
+            ++count;
+        }
+    }
 
-    if (changing_gpu)
-        uvm_processor_mask_set(&changing_gpu_mask, changing_gpu->id);
-
-    // flip the bit of the changing GPU to represent the state change in progress
-    uvm_processor_mask_xor(&registered_gpu_va_spaces, &changing_gpu_mask, &va_space->registered_gpu_va_spaces);
-
-    // Can't enable read-duplication if any non-fault-capable GPUs have GPU VA spaces registered
-    return !uvm_processor_mask_andnot(&non_faultable_gpus, &registered_gpu_va_spaces, &va_space->faultable_processors);
+    return count == 0;
 }
 
-// Note that the "VA space" in the function name refers to a UVM per-process VA space.
-// (This is different from a per-GPU VA space.)
+// Note that the "VA space" in the function name refers to a UVM per-process
+// VA space. (This is different from a per-GPU VA space.)
 NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
                                     const NvProcessorUuid *gpu_uuid,
                                     const uvm_rm_user_object_t *user_rm_device,
@@ -711,7 +711,7 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
         goto done;
     }
 
-    if (uvm_conf_computing_mode_enabled(gpu)) {
+    if (g_uvm_global.conf_computing_enabled) {
         NvU32 gpu_index = uvm_id_gpu_index(gpu->id);
         status = uvm_conf_computing_dma_buffer_alloc(&gpu->conf_computing.dma_buffer_pool,
                                                      &va_space->gpu_unregister_dma_buffer[gpu_index],
@@ -789,9 +789,7 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
     if (status != NV_OK)
         goto cleanup;
 
-    status = uvm_perf_heuristics_register_gpu(va_space, gpu);
-    if (status != NV_OK)
-        goto cleanup;
+    uvm_perf_heuristics_register_gpu(va_space, gpu);
 
     uvm_for_each_va_range(va_range, va_space) {
         status = uvm_va_range_register_gpu(va_range, gpu);
@@ -839,8 +837,8 @@ NV_STATUS uvm_va_space_unregister_gpu(uvm_va_space_t *va_space, const NvProcesso
     uvm_gpu_t *gpu;
     uvm_gpu_va_space_t *gpu_va_space;
     struct mm_struct *mm;
-    uvm_global_gpu_id_t peer_gpu_id;
-    uvm_global_processor_mask_t peers_to_release;
+    uvm_gpu_id_t peer_gpu_id;
+    uvm_processor_mask_t peers_to_release;
     LIST_HEAD(deferred_free_list);
 
     // Stopping channels requires holding the VA space lock in read mode, so do
@@ -920,9 +918,9 @@ NV_STATUS uvm_va_space_unregister_gpu(uvm_va_space_t *va_space, const NvProcesso
     // Release the VA space's GPU and peer counts
     uvm_mutex_lock(&g_uvm_global.global_lock);
 
-    // Do not use for_each_global_gpu_in_mask as it reads the peer GPU state,
+    // Do not use for_each_gpu_in_mask as it reads the peer GPU state,
     // which might get destroyed when we release the peer entry.
-    for_each_global_gpu_id_in_mask(peer_gpu_id, &peers_to_release) {
+    for_each_gpu_id_in_mask(peer_gpu_id, &peers_to_release) {
         uvm_gpu_t *peer_gpu = uvm_gpu_get(peer_gpu_id);
         UVM_ASSERT(uvm_gpu_peer_caps(gpu, peer_gpu)->link_type == UVM_GPU_LINK_PCIE);
         uvm_gpu_release_pcie_peer_access(gpu, peer_gpu);
@@ -1080,7 +1078,7 @@ static NV_STATUS retain_pcie_peers_from_uuids(uvm_va_space_t *va_space,
     *gpu0 = uvm_va_space_get_gpu_by_uuid(va_space, gpu_uuid_1);
     *gpu1 = uvm_va_space_get_gpu_by_uuid(va_space, gpu_uuid_2);
 
-    if (*gpu0 && *gpu1 && !uvm_id_equal((*gpu0)->id, (*gpu1)->id))
+    if (*gpu0 && *gpu1 && !uvm_parent_id_equal((*gpu0)->parent->id, (*gpu1)->parent->id))
         status = uvm_gpu_retain_pcie_peer_access(*gpu0, *gpu1);
     else
         status = NV_ERR_INVALID_DEVICE;
@@ -1336,7 +1334,7 @@ static NV_STATUS create_gpu_va_space(uvm_gpu_t *gpu,
                                 gpu_va_space,
                                 UVM_PAGE_TREE_TYPE_USER,
                                 gpu_address_space_info.bigPageSize,
-                                uvm_gpu_page_tree_init_location(gpu),
+                                uvm_get_page_tree_location(gpu->parent),
                                 &gpu_va_space->page_tables);
     if (status != NV_OK) {
         UVM_ERR_PRINT("Initializing the page tree failed: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
@@ -1362,6 +1360,9 @@ static void add_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space)
 
     UVM_ASSERT(va_space);
     uvm_assert_rwsem_locked_write(&va_space->lock);
+
+    if (!uvm_processor_mask_test(&va_space->faultable_processors, gpu->id))
+        va_space->num_non_faultable_gpu_va_spaces++;
 
     uvm_processor_mask_set(&va_space->registered_gpu_va_spaces, gpu->id);
     va_space->gpu_va_spaces[uvm_id_gpu_index(gpu->id)] = gpu_va_space;
@@ -1511,6 +1512,49 @@ error_gpu_release:
     return status;
 }
 
+static NvU32 find_gpu_va_space_index(uvm_va_space_t *va_space,
+                                     uvm_parent_gpu_t *parent_gpu)
+{
+    uvm_gpu_id_t gpu_id;
+    NvU32 index = UVM_ID_MAX_PROCESSORS;
+
+    // TODO: Bug 4351121: this conversion from parent ID to gpu ID depends on
+    // the fact that only one partition is registered per va_space per physical
+    // GPU. This code will need to change when multiple MIG instances are
+    // supported.
+    for_each_sub_processor_id_in_parent_gpu(gpu_id, parent_gpu->id) {
+        if (uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, gpu_id)) {
+            UVM_ASSERT(index == UVM_ID_MAX_PROCESSORS);
+            index = uvm_id_gpu_index(gpu_id);
+        }
+    }
+
+    return index;
+}
+
+uvm_gpu_va_space_t *uvm_gpu_va_space_get_by_parent_gpu(uvm_va_space_t *va_space,
+                                                       uvm_parent_gpu_t *parent_gpu)
+{
+    uvm_gpu_va_space_t *gpu_va_space;
+    NvU32 gpu_index;
+
+    uvm_assert_rwsem_locked(&va_space->lock);
+
+    if (!parent_gpu)
+        return NULL;
+
+    gpu_index = find_gpu_va_space_index(va_space, parent_gpu);
+    if (gpu_index == UVM_ID_MAX_PROCESSORS)
+        return NULL;
+
+    gpu_va_space = va_space->gpu_va_spaces[gpu_index];
+    UVM_ASSERT(uvm_gpu_va_space_state(gpu_va_space) == UVM_GPU_VA_SPACE_STATE_ACTIVE);
+    UVM_ASSERT(gpu_va_space->va_space == va_space);
+    UVM_ASSERT(gpu_va_space->gpu->parent == parent_gpu);
+
+    return gpu_va_space;
+}
+
 // The caller must have stopped all channels under this gpu_va_space before
 // calling this function.
 static void remove_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space,
@@ -1520,6 +1564,7 @@ static void remove_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space,
     uvm_va_space_t *va_space;
     uvm_va_range_t *va_range;
     uvm_va_range_t *va_range_next;
+    uvm_gpu_t *gpu;
 
     if (!gpu_va_space || uvm_gpu_va_space_state(gpu_va_space) != UVM_GPU_VA_SPACE_STATE_ACTIVE)
         return;
@@ -1550,8 +1595,15 @@ static void remove_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space,
     // space to be destroyed.
     atomic_inc(&va_space->gpu_va_space_deferred_free.num_pending);
 
-    uvm_processor_mask_clear(&va_space->registered_gpu_va_spaces, gpu_va_space->gpu->id);
-    va_space->gpu_va_spaces[uvm_id_gpu_index(gpu_va_space->gpu->id)] = NULL;
+    gpu = gpu_va_space->gpu;
+
+    if (!uvm_processor_mask_test(&va_space->faultable_processors, gpu->id)) {
+        UVM_ASSERT(va_space->num_non_faultable_gpu_va_spaces);
+        va_space->num_non_faultable_gpu_va_spaces--;
+    }
+
+    uvm_processor_mask_clear(&va_space->registered_gpu_va_spaces, gpu->id);
+    va_space->gpu_va_spaces[uvm_id_gpu_index(gpu->id)] = NULL;
     gpu_va_space->state = UVM_GPU_VA_SPACE_STATE_DEAD;
 }
 
@@ -2069,6 +2121,25 @@ NV_STATUS uvm_test_destroy_gpu_va_space_delay(UVM_TEST_DESTROY_GPU_VA_SPACE_DELA
     return NV_OK;
 }
 
+NV_STATUS uvm_test_force_cpu_to_cpu_copy_with_ce(UVM_TEST_FORCE_CPU_TO_CPU_COPY_WITH_CE_PARAMS *params,
+                                                 struct file *filp)
+
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+
+    va_space->test.force_cpu_to_cpu_copy_with_ce = params->force_copy_with_ce;
+    return NV_OK;
+}
+
+NV_STATUS uvm_test_va_space_allow_movable_allocations(UVM_TEST_VA_SPACE_ALLOW_MOVABLE_ALLOCATIONS_PARAMS *params,
+                                                      struct file *filp)
+{
+    uvm_va_space_t *va_space = uvm_va_space_get(filp);
+
+    va_space->test.allow_allocation_from_movable = params->allow_movable;
+    return NV_OK;
+}
+
 // List of fault service contexts for CPU faults
 static LIST_HEAD(g_cpu_service_block_context_list);
 
@@ -2166,7 +2237,7 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
     bool major_fault = false;
     bool is_remote_mm = false;
     uvm_service_block_context_t *service_context;
-    uvm_global_processor_mask_t gpus_to_check_for_ecc;
+    uvm_processor_mask_t *gpus_to_check_for_ecc;
 
     if (status != NV_OK)
         goto convert_error;
@@ -2299,20 +2370,17 @@ static vm_fault_t uvm_va_space_cpu_fault(uvm_va_space_t *va_space,
     }
 
     tools_enabled = va_space->tools.enabled;
+    gpus_to_check_for_ecc = &service_context->cpu_fault.gpus_to_check_for_ecc;
 
-    if (status == NV_OK && !is_remote_mm) {
-        uvm_va_space_global_gpus_in_mask(va_space,
-                                         &gpus_to_check_for_ecc,
-                                         &service_context->cpu_fault.gpus_to_check_for_ecc);
-        uvm_global_mask_retain(&gpus_to_check_for_ecc);
-    }
+    if (status == NV_OK && !is_remote_mm)
+        uvm_global_gpu_retain(gpus_to_check_for_ecc);
 
     uvm_va_space_up_read(va_space);
     uvm_record_unlock_mmap_lock_read(vma->vm_mm);
 
     if (status == NV_OK && !is_remote_mm) {
-        status = uvm_global_mask_check_ecc_error(&gpus_to_check_for_ecc);
-        uvm_global_mask_release(&gpus_to_check_for_ecc);
+        status = uvm_global_gpu_check_ecc_error(gpus_to_check_for_ecc);
+        uvm_global_gpu_release(gpus_to_check_for_ecc);
     }
 
     if (tools_enabled)

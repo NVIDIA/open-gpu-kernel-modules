@@ -24,6 +24,7 @@
 #include "gpu/mem_mgr/sem_surf.h"
 #include "os/os.h" // NV_MEMORY_NONCONTIGUOUS, osEventNotification
 #include "gpu/device/device.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/gpu.h"
@@ -63,16 +64,20 @@ _semsurfUnregisterCallback
 )
 {
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NvU32 i;
 
-    if ((pShared->hClient != NV01_NULL_OBJECT) &&
-        (pShared->hEvent != NV01_NULL_OBJECT))
+    if ((pShared->hClient != NV01_NULL_OBJECT) && (pShared->phEvents != NULL))
     {
-        pRmApi->Free(pRmApi,
-                     pShared->hClient,
-                     pShared->hEvent);
+        for (i = 0; i < pShared->numEvents; i++)
+        {
+            pRmApi->Free(pRmApi,
+                         pShared->hClient,
+                         pShared->phEvents[i]);
+        }
     }
 
-    pShared->hEvent     = NV01_NULL_OBJECT;
+    portMemFree(pShared->phEvents);
+    pShared->phEvents = NULL;
 }
 
 static NvU64
@@ -323,7 +328,7 @@ _semsurfEventCallback
 
     NV_PRINTF(LEVEL_INFO, "SemMem(0x%08x, 0x%08x): Got a callback\n", pShared->hClient, pShared->hSemaphoreMem);
     NV_PRINTF(LEVEL_INFO, "  hEvent: 0x%08x surf event: 0x%08x, data 0x%08x, status 0x%08x\n",
-              hEvent, pShared->hEvent, data, status);
+              hEvent, hEvent, data, status);
 
     while (valuesChanged)
     {
@@ -538,28 +543,105 @@ _semsurfRegisterCallback
     SEM_SHARED_DATA *pShared = pSemSurf->pShared;
     NV0005_ALLOC_PARAMETERS nv0005AllocParams;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    static const NvU32 eventNotifiers[] =
+    {
+        NV2080_NOTIFIERS_GR0, // NV2080_NOTIFIERS_GRAPHICS
+        NV2080_NOTIFIERS_GR1,
+        NV2080_NOTIFIERS_GR2,
+        NV2080_NOTIFIERS_GR3,
+        NV2080_NOTIFIERS_GR4,
+        NV2080_NOTIFIERS_GR5,
+        NV2080_NOTIFIERS_GR6,
+        NV2080_NOTIFIERS_GR7,
+        NV2080_NOTIFIERS_PPP,
+        NV2080_NOTIFIERS_VLD,
+        NV2080_NOTIFIERS_NVDEC0,
+        NV2080_NOTIFIERS_NVDEC1,
+        NV2080_NOTIFIERS_NVDEC2,
+        NV2080_NOTIFIERS_NVDEC3,
+        NV2080_NOTIFIERS_NVDEC4,
+        NV2080_NOTIFIERS_NVDEC5,
+        NV2080_NOTIFIERS_NVDEC6,
+        NV2080_NOTIFIERS_NVDEC7,
+        NV2080_NOTIFIERS_PDEC,
+        NV2080_NOTIFIERS_CE0,
+        NV2080_NOTIFIERS_CE1,
+        NV2080_NOTIFIERS_CE2,
+        NV2080_NOTIFIERS_CE3,
+        NV2080_NOTIFIERS_CE4,
+        NV2080_NOTIFIERS_CE5,
+        NV2080_NOTIFIERS_CE6,
+        NV2080_NOTIFIERS_CE7,
+        NV2080_NOTIFIERS_CE8,
+        NV2080_NOTIFIERS_CE9,
+        NV2080_NOTIFIERS_MSENC,
+        NV2080_NOTIFIERS_NVENC0,
+        NV2080_NOTIFIERS_NVENC1,
+        NV2080_NOTIFIERS_NVENC2,
+        NV2080_NOTIFIERS_SEC2,
+        NV2080_NOTIFIERS_NVJPEG0, // NV2080_NOTIFIERS_NVJPG
+        NV2080_NOTIFIERS_NVJPEG1,
+        NV2080_NOTIFIERS_NVJPEG2,
+        NV2080_NOTIFIERS_NVJPEG3,
+        NV2080_NOTIFIERS_NVJPEG4,
+        NV2080_NOTIFIERS_NVJPEG5,
+        NV2080_NOTIFIERS_NVJPEG6,
+        NV2080_NOTIFIERS_NVJPEG7,
+        NV2080_NOTIFIERS_OFA0, // NV2080_NOTIFIERS_OFA
+        NV2080_NOTIFIERS_FIFO_EVENT_MTHD,
+    };
+    NV_STATUS status = NV_OK;
+    NvU32 i;
+    NvU32 j;
 
+    pShared->numEvents = NV_ARRAY_ELEMENTS(eventNotifiers);
+    pShared->phEvents = portMemAllocNonPaged(pShared->numEvents *
+                                             sizeof(*pShared->phEvents));
+
+    NV_ASSERT_OR_RETURN(pShared->phEvents != NULL, NV_ERR_NO_MEMORY);
+
+    portMemSet(pShared->phEvents, 0, sizeof(*pShared->phEvents) * pShared->numEvents);
     pShared->callback.func = _semsurfEventCallback;
     pShared->callback.arg = pShared;
 
     portMemSet(&nv0005AllocParams, 0, sizeof(nv0005AllocParams));
     nv0005AllocParams.hParentClient = pShared->hClient;
     nv0005AllocParams.hClass        = NV01_EVENT_KERNEL_CALLBACK_EX;
-    nv0005AllocParams.notifyIndex   = NV2080_NOTIFIERS_FIFO_EVENT_MTHD |
-        NV01_EVENT_NONSTALL_INTR |
-        NV01_EVENT_WITHOUT_EVENT_DATA |
-        NV01_EVENT_SUBDEVICE_SPECIFIC |
-        DRF_NUM(0005, _NOTIFY_INDEX, _SUBDEVICE,
-                gpumgrGetSubDeviceInstanceFromGpu(GPU_RES_GET_GPU(pSemSurf)));
     nv0005AllocParams.data          = NV_PTR_TO_NvP64(&pShared->callback);
+    for (i = 0; i < pShared->numEvents; i++)
+    {
+        nv0005AllocParams.notifyIndex = eventNotifiers[i] |
+            NV01_EVENT_NONSTALL_INTR |
+            NV01_EVENT_WITHOUT_EVENT_DATA |
+            NV01_EVENT_SUBDEVICE_SPECIFIC |
+            DRF_NUM(0005, _NOTIFY_INDEX, _SUBDEVICE,
+                    gpumgrGetSubDeviceInstanceFromGpu(GPU_RES_GET_GPU(pSemSurf)));
 
-    return pRmApi->Alloc(pRmApi,
-                         pShared->hClient,
-                         pShared->hSubDevice,
-                         &pShared->hEvent,
-                         NV01_EVENT_KERNEL_CALLBACK_EX,
-                         &nv0005AllocParams,
-                         sizeof(nv0005AllocParams));
+        status = pRmApi->Alloc(pRmApi,
+                               pShared->hClient,
+                               pShared->hSubDevice,
+                               &pShared->phEvents[i],
+                               NV01_EVENT_KERNEL_CALLBACK_EX,
+                               &nv0005AllocParams,
+                               sizeof(nv0005AllocParams));
+
+        NV_ASSERT_OR_GOTO(status == NV_OK, eventAllocFailed);
+    }
+
+    return status;
+
+eventAllocFailed:
+    for (j = 0; j < i; j++)
+    {
+        pRmApi->Free(pRmApi,
+                     pShared->hClient,
+                     pShared->phEvents[j]);
+    }
+
+    portMemFree(pShared->phEvents);
+    pShared->phEvents = NULL;
+
+    return status;
 }
 
 static NV_STATUS
@@ -650,9 +732,7 @@ _semsurfValidateIndex
     NvU64 index
 )
 {
-    const NvU64 slotSize = pShared->layout.size;
-
-    if (((index * slotSize) + slotSize) <= pShared->pSemaphoreMem->pMemDesc->Size)
+    if (index < pShared->slotCount)
         return NV_TRUE;
     else
         return NV_FALSE;
@@ -745,6 +825,8 @@ semsurfConstruct_IMPL
                          0),
         ctorFailed);
 
+    pShared->slotCount = pShared->pSemaphoreMem->pMemDesc->Size / pShared->layout.size;
+
     pShared->pSem = KERNEL_POINTER_FROM_NvP64(NvU8 *, pShared->semKernAddr);
 
     if (!pShared->bIs64Bit)
@@ -772,6 +854,9 @@ semsurfConstruct_IMPL
                                  &pShared->maxSubmittedKernAddr,
                                  0),
                 ctorFailed);
+
+            pShared->slotCount =
+                NV_MIN(pShared->slotCount, pShared->pMaxSubmittedMem->pMemDesc->Size / pShared->layout.size);
 
             pShared->pMaxSubmitted =
                 KERNEL_POINTER_FROM_NvP64(NvU8 *, pShared->maxSubmittedKernAddr);
@@ -1159,6 +1244,9 @@ _semsurfAddWaiter
         return NV_ERR_INVALID_STATE;
     }
 
+    NV_PRINTF(LEVEL_INFO, "SemMem(0x%08x, 0x%08x): Entering spinlock\n",
+              pSemSurf->pShared->hClient,
+              pSemSurf->pShared->hSemaphoreMem);
     portSyncSpinlockAcquire(pSemSurf->pShared->pSpinlock);
 
     pIndexListeners = mapFind(&pSemSurf->pShared->listenerMap, index);
@@ -1379,14 +1467,16 @@ _semsurfAddWaiter
     }
 
     portSyncSpinlockRelease(pSemSurf->pShared->pSpinlock);
+    NV_PRINTF(LEVEL_INFO, "SemMem(0x%08x, 0x%08x): Exited spinlock\n",
+              pSemSurf->pShared->hClient, pSemSurf->pShared->hSemaphoreMem);
 
     NV_PRINTF(LEVEL_INFO,
               "SemSurf(0x%08x, 0x%08x): "
               "Registered semaphore surface value listener at index %"
               NvU64_fmtu ", value %" NvU64_fmtu " current value %" NvU64_fmtu
-              " post-wait value %" NvU64_fmtu " notification: %" NvU64_fmtx "\n",
+              " post-wait value %" NvU64_fmtu " notification: " NvP64_fmt "\n",
               hClient, hSemaphoreSurf, index, waitValue, semValue, newValue,
-              (NvU64)notificationHandle);
+              notificationHandle);
 
     return rmStatus;
 
@@ -1412,6 +1502,8 @@ failureUnlock:
     }
 
     portSyncSpinlockRelease(pSemSurf->pShared->pSpinlock);
+    NV_PRINTF(LEVEL_INFO, "SemMem(0x%08x, 0x%08x): Exited spinlock\n",
+              pSemSurf->pShared->hClient, pSemSurf->pShared->hSemaphoreMem);
 
     // There's no point of going through the trouble of notifying the waiter in
     // this case, but it is worth immediately running the auto-update code here
@@ -1638,4 +1730,25 @@ semsurfCtrlCmdUnregisterWaiter_IMPL
                                  bKernel);
 
     return rmStatus;
+}
+
+NvU64
+semsurfGetValue_IMPL
+(
+    SemaphoreSurface *pSemSurf,
+    NvU64 index
+)
+{
+    NV_ASSERT_OR_RETURN(_semsurfValidateIndex(pSemSurf->pShared, index), 0);
+    return _semsurfGetValue(pSemSurf->pShared, index);
+}
+
+NvBool
+semsurfValidateIndex_IMPL
+(
+    SemaphoreSurface *pSemSurf,
+    NvU64 index
+)
+{
+    return _semsurfValidateIndex(pSemSurf->pShared, index);
 }

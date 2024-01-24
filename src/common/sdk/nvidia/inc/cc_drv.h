@@ -55,6 +55,17 @@ typedef enum ROTATE_IV_TYPE {
     ROTATE_IV_ALL_VALID = 3, // Rotate the IV for all valid bundles in the KMB
 } ROTATE_IV_TYPE;
 
+// Status value written into NvNotification.Info16
+typedef enum KEY_ROTATION_STATUS {
+    KEY_ROTATION_STATUS_IDLE = 0,             // Key rotation complete/not in progress
+    KEY_ROTATION_STATUS_PENDING = 1,          // RM is waiting for clients to report their channels are idle for key rotation
+    KEY_ROTATION_STATUS_IN_PROGRESS = 2,      // Key rotation is in progress
+    KEY_ROTATION_STATUS_FAILED_TIMEOUT = 3,   // Key rotation timeout failure, RM will RC non-idle channels
+    KEY_ROTATION_STATUS_FAILED_THRESHOLD = 4, // Key rotation failed because upper threshold was crossed, RM will RC non-idle channels
+    KEY_ROTATION_STATUS_FAILED_ROTATION = 5,  // Internal RM failure while rotating keys for a certain channel, RM will RC the channel.
+    KEY_ROTATION_STATUS_MAX_COUNT = 6,
+} KEY_ROTATION_STATUS;
+
 typedef struct CC_AES_CRYPTOBUNDLE {
     NvU32 iv[CC_AES_256_GCM_IV_SIZE_DWORD];
     NvU32 key[CC_AES_256_GCM_KEY_SIZE_DWORD];
@@ -78,4 +89,12 @@ typedef struct CC_KMB {
     NvBool bIsWorkLaunch;                        // False if decryption parameters are valid
 } CC_KMB;
 typedef struct CC_KMB *PCC_KMB;
+
+typedef struct CC_CRYPTOBUNDLE_STATS {
+    NV_DECLARE_ALIGNED(NvU64 numEncryptionsH2D, 8);
+    NV_DECLARE_ALIGNED(NvU64 numEncryptionsD2H, 8);
+    NV_DECLARE_ALIGNED(NvU64 bytesEncryptedH2D, 8);
+    NV_DECLARE_ALIGNED(NvU64 bytesDecryptedD2H, 8);
+} CC_CRYPTOBUNDLE_STATS;
+typedef struct CC_CRYPTOBUNDLE_STATS *PCC_CRYPTOBUNDLE_STATS;
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 
 #include "gpu/mem_mgr/fermi_dma.h"
 
+#include "published/pascal/gp100/dev_fb.h"
 #include "published/pascal/gp100/dev_ram.h"
 #include "published/pascal/gp100/dev_fault.h"
 
@@ -230,4 +231,91 @@ kgmmuGetFaultTypeString_GP100(KernelGmmu *pGmmu, NvU32 faultType)
         default:
             return "UNRECOGNIZED_FAULT";
     }
+}
+
+NV_STATUS
+kgmmuFaultCancelIssueInvalidate_GP100
+(
+    OBJGPU                 *pGpu,
+    KernelGmmu             *pKernelGmmu,
+    GMMU_FAULT_CANCEL_INFO *pCancelInfo,
+    TLB_INVALIDATE_PARAMS  *pParams,
+    NvBool                  bGlobal
+)
+{
+    NvU32 data32 = 0;
+    data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _ALL_VA,
+        NV_PFB_PRI_MMU_INVALIDATE_ALL_VA_TRUE, data32);
+
+    data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _ALL_PDB,
+        NV_PFB_PRI_MMU_INVALIDATE_ALL_PDB_TRUE, data32);
+
+    data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _HUBTLB_ONLY,
+        NV_PFB_PRI_MMU_INVALIDATE_HUBTLB_ONLY_FALSE, data32);
+
+    data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _SYS_MEMBAR,
+        NV_PFB_PRI_MMU_INVALIDATE_SYS_MEMBAR_FALSE, data32);
+
+    data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _ACK,
+        NV_PFB_PRI_MMU_INVALIDATE_ACK_NONE_REQUIRED, data32);
+
+    data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _CACHE_LEVEL,
+        NV_PFB_PRI_MMU_INVALIDATE_CACHE_LEVEL_ALL, data32);
+
+    data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _TRIGGER,
+        NV_PFB_PRI_MMU_INVALIDATE_TRIGGER_TRUE, data32);
+
+    if (bGlobal)
+    {
+        data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _REPLAY,
+            NV_PFB_PRI_MMU_INVALIDATE_REPLAY_CANCEL_GLOBAL, data32);
+    }
+    else
+    {
+        data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _REPLAY,
+            NV_PFB_PRI_MMU_INVALIDATE_REPLAY_CANCEL_TARGETED, data32);
+
+        data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _CANCEL_CLIENT_ID,
+            pCancelInfo->clientId, data32);
+
+        data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _CANCEL_GPC_ID,
+            pCancelInfo->gpcId, data32);
+
+        data32 = FLD_SET_DRF_NUM(_PFB, _PRI_MMU_INVALIDATE, _CANCEL_CLIENT_TYPE,
+            NV_PFB_PRI_MMU_INVALIDATE_CANCEL_CLIENT_TYPE_GPC, data32);
+    }
+
+    pParams->regVal = data32;
+
+    NV_ASSERT_OK_OR_RETURN(kgmmuCheckPendingInvalidates_HAL(pGpu, pKernelGmmu, &pParams->timeout, pParams->gfid));
+
+    NV_ASSERT_OK_OR_RETURN(kgmmuCommitTlbInvalidate_HAL(pGpu, pKernelGmmu, pParams));
+
+    return NV_OK;
+}
+
+/*!
+ * On Pascal+, the big page size is 64KB. The function checks and captures
+ * incorrect registry overriding.
+ *
+ * @param[in] pGpu
+ * @param[in] pGmmu
+ *
+ */
+NV_STATUS
+kgmmuCheckAndDecideBigPageSize_GP100
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu
+)
+{
+    NvU64 bigPageSizeOverride = kgmmuGetBigPageSizeOverride(pKernelGmmu);
+
+    if (bigPageSizeOverride)
+    {
+        // Pascal+ does not support 128kB page size
+        NV_ASSERT_OR_RETURN(bigPageSizeOverride == RM_PAGE_SIZE_64K, NV_ERR_NOT_SUPPORTED);
+    }
+
+    return NV_OK;
 }

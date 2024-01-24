@@ -39,6 +39,7 @@
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/disp/kern_disp.h"
+#include "disp/nvfbc_session.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/mc/kernel_mc.h"
@@ -53,6 +54,7 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 
 #include "gpu/mem_sys/kern_mem_sys.h"
+#include "gpu/nvenc/nvencsession.h"
 
 #include "kernel/gpu/fifo/kernel_fifo.h"
 #include "rmapi/resource_fwd_decls.h"
@@ -62,17 +64,17 @@
 
 
 
+// bit to set when telling physical to fill in an info entry
+#define INDEX_FORWARD_TO_PHYSICAL 0x80000000
+
 static NV_STATUS
 getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, NvBool bCanAccessHw)
 {
-    OBJGPU *pGpu         = GPU_RES_GET_GPU(pSubdevice);
-    NV_STATUS status     = NV_OK;
-    NvU32 i              = 0;
-    NvU32 data           = 0;
-    NvBool bGspForward = NV_FALSE;
-
-    // bit to set when telling GSP to fill in an info entry
-    const NvU32 indexForwardToGsp = 0x80000000;
+    OBJGPU *pGpu            = GPU_RES_GET_GPU(pSubdevice);
+    NV_STATUS status        = NV_OK;
+    NvU32 i                 = 0;
+    NvU32 data              = 0;
+    NvBool bPhysicalForward = NV_FALSE;
 
     if ((pParams->gpuInfoListSize > NV2080_CTRL_GPU_INFO_MAX_LIST_SIZE) ||
         (pParams->gpuInfoListSize == 0))
@@ -189,9 +191,18 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
 
                 if (IS_VIRTUAL(pGpu))
                 {
+                    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+
+                    if ((pKernelMIGManager == NULL) || !kmigmgrIsMIGSupported(pGpu, pKernelMIGManager))
+                    {
+                        data = NV2080_CTRL_GPU_INFO_GPU_SMC_MODE_UNSUPPORTED;
+                        break;
+                    }
+
                     data = IS_MIG_ENABLED(pGpu) ?
                         NV2080_CTRL_GPU_INFO_GPU_SMC_MODE_ENABLED :
                         NV2080_CTRL_GPU_INFO_GPU_SMC_MODE_DISABLED;
+
                     break;
                 }
 
@@ -263,7 +274,27 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             }
             case NV2080_CTRL_GPU_INFO_INDEX_NVENC_STATS_REPORTING_STATE:
             {
-                data = NV2080_CTRL_GPU_INFO_NVENC_STATS_REPORTING_STATE_NOT_SUPPORTED;
+                if (IS_VIRTUAL(pGpu))
+                {
+                    // On vGPU, if encoding is supported then we need to keep the NvEnc stats reporting state enabled
+                    // all the time so that NvEnc UMD keeps pushing the raw timestamp data.
+                    // This is to handle the migration case where on source host the NvEnc stats reporting was disabled,
+                    // but on target host the NvEnc stats reporting is enabled. If UMD doesn't keep pushing raw data
+                    // even if stats reporting was disabled on source host, we won't be able to report NvEnc stats on
+                    // target host data reporting is enabled.
+                    if (pGpu->encSessionStatsReportingState == NV2080_CTRL_GPU_INFO_NVENC_STATS_REPORTING_STATE_NOT_SUPPORTED)
+                    {
+                        data = NV2080_CTRL_GPU_INFO_NVENC_STATS_REPORTING_STATE_NOT_SUPPORTED;
+                    }
+                    else
+                    {
+                        data = NV2080_CTRL_GPU_INFO_NVENC_STATS_REPORTING_STATE_ENABLED;
+                    }
+                }
+                else
+                {
+                    data = pGpu->encSessionStatsReportingState;
+                }
                 break;
             }
             case NV2080_CTRL_GPU_INFO_INDEX_4K_PAGE_ISOLATION_REQUIRED:
@@ -304,6 +335,21 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             }
             case NV2080_CTRL_GPU_INFO_INDEX_GPU_PROFILING_CAPABILITY:
             {
+                if (IS_VIRTUAL(pGpu))
+                {
+                    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+                    if (pVSI)
+                    {
+                        data = pVSI->vgpuStaticProperties.bProfilingTracingEnabled ?
+                               NV2080_CTRL_GPU_INFO_INDEX_GPU_PROFILING_CAPABILITY_ENABLED :
+                               NV2080_CTRL_GPU_INFO_INDEX_GPU_PROFILING_CAPABILITY_DISABLED;
+                    }
+                    else
+                    {
+                        data = NV2080_CTRL_GPU_INFO_INDEX_GPU_PROFILING_CAPABILITY_DISABLED;
+                    }
+                }
+                else
                 {
                     // Always return ENABLED for Baremetal/Host
                     data = NV2080_CTRL_GPU_INFO_INDEX_GPU_PROFILING_CAPABILITY_ENABLED;
@@ -312,6 +358,21 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             }
             case NV2080_CTRL_GPU_INFO_INDEX_GPU_DEBUGGING_CAPABILITY:
             {
+                if (IS_VIRTUAL(pGpu))
+                {
+                    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+                    if (pVSI)
+                    {
+                        data = pVSI->vgpuStaticProperties.bDebuggingEnabled ?
+                               NV2080_CTRL_GPU_INFO_INDEX_GPU_DEBUGGING_CAPABILITY_ENABLED :
+                               NV2080_CTRL_GPU_INFO_INDEX_GPU_DEBUGGING_CAPABILITY_DISABLED;
+                    }
+                    else
+                    {
+                        data = NV2080_CTRL_GPU_INFO_INDEX_GPU_DEBUGGING_CAPABILITY_DISABLED;
+                    }
+                }
+                else
                 {
                     // Always return ENABLED for Baremetal/Host
                     data = NV2080_CTRL_GPU_INFO_INDEX_GPU_DEBUGGING_CAPABILITY_ENABLED;
@@ -384,11 +445,11 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             }
             default:
             {
-                // Only forward to GSP if we're in the HW-access-enabled control
-                if (IS_GSP_CLIENT(pGpu) && bCanAccessHw)
+                // Only forward to physical if we're in the HW-access-enabled control
+                if ((IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu)) && bCanAccessHw)
                 {
-                    pParams->gpuInfoList[i].index |= indexForwardToGsp;
-                    bGspForward = NV_TRUE;
+                    pParams->gpuInfoList[i].index |= INDEX_FORWARD_TO_PHYSICAL;
+                    bPhysicalForward = NV_TRUE;
                 }
                 else
                 {
@@ -399,23 +460,28 @@ getGpuInfos(Subdevice *pSubdevice, NV2080_CTRL_GPU_GET_INFO_V2_PARAMS *pParams, 
             }
         }
 
+        if (status != NV_OK)
+        {
+            break;
+        }
+
         // save off data value
         pParams->gpuInfoList[i].data = data;
     }
 
-    if (IS_GSP_CLIENT(pGpu) && bGspForward && (status == NV_OK))
+    if ((IS_GSP_CLIENT(pGpu) || IS_VIRTUAL(pGpu)) && bPhysicalForward && (status == NV_OK))
     {
-        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-
-        return pRmApi->Control(pRmApi,
-                               RES_GET_CLIENT_HANDLE(pSubdevice),
-                               RES_GET_HANDLE(pSubdevice),
-                               NV2080_CTRL_CMD_GPU_GET_INFO_V2,
-                               pParams, sizeof(*pParams));
+        NV_RM_RPC_CONTROL(pGpu,
+                          RES_GET_CLIENT_HANDLE(pSubdevice),
+                          RES_GET_HANDLE(pSubdevice),
+                          NV2080_CTRL_CMD_GPU_GET_INFO_V2,
+                          pParams, sizeof(*pParams), status);
     }
 
     return status;
 }
+
+#undef INDEX_FORWARD_TO_PHYSICAL
 
 NV_STATUS
 subdeviceCtrlCmdGpuGetInfoV2_IMPL
@@ -727,6 +793,8 @@ subdeviceCtrlCmdGpuGetEncoderCapacity_IMPL
 {
     NV_STATUS rmStatus = NV_OK;
     OBJGPU *pGpu    =   GPU_RES_GET_GPU(pSubdevice);
+    NvHandle  hClient = RES_GET_CLIENT_HANDLE(pSubdevice);
+    NvHandle  hObject = RES_GET_HANDLE(pSubdevice);
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
 
@@ -745,6 +813,19 @@ subdeviceCtrlCmdGpuGetEncoderCapacity_IMPL
 
     pEncoderCapacityParams->encoderCapacity = NV_ENC_CAPACITY_MAX_VALUE;
 
+    //
+    // vGPU: Since vGPU does all real hardware management
+    // in the host, there is nothing to do at this point in
+    // the guest OS (where IS_VIRTUAL(pGpu) is true).
+    //
+    if (IS_VIRTUAL(pGpu)) // Otherwise default for vGPU host/baremetal/NMOS/GSP_CLIENT
+    {
+        NV_RM_RPC_GET_ENCODER_CAPACITY(pGpu,
+                                       hClient,
+                                       hObject,
+                                       &pEncoderCapacityParams->encoderCapacity,
+                                       rmStatus);
+    }
     return rmStatus;
 }
 
@@ -761,9 +842,57 @@ subdeviceCtrlCmdGpuGetNvencSwSessionStats_IMPL
     NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_STATS_PARAMS *pParams
 )
 {
-    pParams->encoderSessionCount = 0;
-    pParams->averageEncodeFps = 0;
-    pParams->averageEncodeLatency = 0;
+
+    NvU32                     averageEncodeFps = 0, averageEncodeLatency = 0;
+    OBJGPU                   *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvencSession             *pNvencSession = NULL;
+    PNVENC_SESSION_LIST_ITEM  pNvencSessionListItem = NULL;
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    //
+    // For GSP vGPU host, get the data from GSP RM for CPU RM and it's client
+    //
+    if (IS_GSP_CLIENT(pGpu) && IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu))
+    {
+        CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
+        RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
+        RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
+
+        return pRmApi->Control(pRmApi,
+                               pRmCtrlParams->hClient,
+                               pRmCtrlParams->hObject,
+                               pRmCtrlParams->cmd,
+                               pRmCtrlParams->pParams,
+                               pRmCtrlParams->paramsSize);
+    }
+
+    if (listCount(&(pGpu->nvencSessionList)) == 0)
+    {
+        pParams->encoderSessionCount = 0;
+        pParams->averageEncodeFps = 0;
+        pParams->averageEncodeLatency = 0;
+        return NV_OK;
+    }
+
+    pParams->encoderSessionCount = listCount(&(pGpu->nvencSessionList));
+
+    for (pNvencSessionListItem = listHead(&(pGpu->nvencSessionList));
+         pNvencSessionListItem != NULL;
+         pNvencSessionListItem = listNext(&(pGpu->nvencSessionList), pNvencSessionListItem))
+    {
+        if (pNvencSessionListItem->sessionPtr)
+        {
+            pNvencSession = pNvencSessionListItem->sessionPtr;
+
+            averageEncodeFps      += pNvencSession->nvencSessionEntry.averageEncodeFps;
+            averageEncodeLatency  += pNvencSession->nvencSessionEntry.averageEncodeLatency;
+        }
+    }
+
+    // average FPS and latency over all active sessions on this GPU.
+    pParams->averageEncodeFps = averageEncodeFps / listCount(&(pGpu->nvencSessionList));
+    pParams->averageEncodeLatency = averageEncodeLatency / listCount(&(pGpu->nvencSessionList));
 
     return NV_OK;
 }
@@ -777,6 +906,51 @@ _subdeviceCtrlCmdGpuGetNvencSwSessionInfo
     NvU32                               *entryCount
 )
 {
+
+    NvencSession                *pNvencSession = NULL;
+    PNVENC_SESSION_LIST_ITEM    pNvencSessionListItem = NULL;
+    NvU32                       i = 0;
+    NV2080_CTRL_NVENC_SW_SESSION_INFO   *pSession;
+
+    NV_ASSERT_OR_RETURN(sessionInfoTblEntry ==
+                        NV2080_CTRL_GPU_NVENC_SESSION_INFO_MAX_COPYOUT_ENTRIES,
+                        NV_ERR_INVALID_ARGUMENT);
+
+    portMemSet(pSessionInfo, 0, sizeof(NV2080_CTRL_NVENC_SW_SESSION_INFO) * sessionInfoTblEntry);
+
+    for (pNvencSessionListItem = listHead(&(pGpu->nvencSessionList));
+         pNvencSessionListItem != NULL;
+         pNvencSessionListItem = listNext(&(pGpu->nvencSessionList), pNvencSessionListItem))
+    {
+        if (pNvencSessionListItem->sessionPtr)
+        {
+            pNvencSession = pNvencSessionListItem->sessionPtr;
+            pSession = &pSessionInfo[i];
+
+            pSession->sessionId              = pNvencSession->nvencSessionEntry.sessionId;
+            pSession->processId              = pNvencSession->nvencSessionEntry.processId;
+            pSession->subProcessId           = pNvencSession->nvencSessionEntry.subProcessId;
+            pSession->codecType              = pNvencSession->nvencSessionEntry.codecType;
+            pSession->hResolution            = pNvencSession->nvencSessionEntry.hResolution;
+            pSession->vResolution            = pNvencSession->nvencSessionEntry.vResolution;
+            pSession->averageEncodeFps       = pNvencSession->nvencSessionEntry.averageEncodeFps;
+            pSession->averageEncodeLatency   = pNvencSession->nvencSessionEntry.averageEncodeLatency;
+
+            i++;
+
+            if (i == NV2080_CTRL_GPU_NVENC_SESSION_INFO_MAX_COPYOUT_ENTRIES)
+            {
+                // Stop copying beyond max size otherwise we might corrupt other kernel data
+                break;
+            }
+        }
+    }
+
+    //
+    // Copy the data only if sessionInfoTbl entry is equals or greater
+    // than current active sessions i.e. listCount(&(pGpu->nvencSessionList))
+    //
+    *entryCount = i;
 
     return NV_OK;
 }
@@ -796,7 +970,29 @@ subdeviceCtrlCmdGpuGetNvencSwSessionInfo_IMPL
 )
 {
     NV_STATUS               status = NV_OK;
-    pParams->sessionInfoTblEntry = 0;
+    NV2080_CTRL_NVENC_SW_SESSION_INFO  *pSessionInfo = NvP64_VALUE(pParams->sessionInfoTbl);
+    OBJGPU                  *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvU32                   entryCount = 0;
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    if ((!IS_VIRTUAL(pGpu)) && (pGpu->encSessionStatsReportingState != NV2080_CTRL_GPU_INFO_NVENC_STATS_REPORTING_STATE_ENABLED))
+    {
+        pParams->sessionInfoTblEntry = 0;
+        return status;
+    }
+
+    if (pParams->sessionInfoTbl == NvP64_NULL || listCount(&(pGpu->nvencSessionList)) == 0)
+    {
+        pParams->sessionInfoTblEntry = listCount(&(pGpu->nvencSessionList));
+        return status;
+    }
+
+    status = _subdeviceCtrlCmdGpuGetNvencSwSessionInfo(pGpu, pParams->sessionInfoTblEntry, pSessionInfo, &entryCount);
+    if (status != NV_OK)
+        return status;
+
+    pParams->sessionInfoTblEntry = entryCount;
 
     return status;
 }
@@ -809,7 +1005,29 @@ subdeviceCtrlCmdGpuGetNvencSwSessionInfoV2_IMPL
 )
 {
     NV_STATUS               status = NV_OK;
-    pParams->sessionInfoTblEntry = 0;
+    NV2080_CTRL_NVENC_SW_SESSION_INFO  *pSessionInfo = pParams->sessionInfoTbl;
+    OBJGPU                  *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvU32                   entryCount = 0;
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    if ((!IS_VIRTUAL(pGpu)) && (pGpu->encSessionStatsReportingState != NV2080_CTRL_GPU_INFO_NVENC_STATS_REPORTING_STATE_ENABLED))
+    {
+        pParams->sessionInfoTblEntry = 0;
+        return status;
+    }
+
+    if (pParams->sessionInfoTblEntry == 0 || listCount(&(pGpu->nvencSessionList)) == 0)
+    {
+        pParams->sessionInfoTblEntry = listCount(&(pGpu->nvencSessionList));
+        return status;
+    }
+
+    status = _subdeviceCtrlCmdGpuGetNvencSwSessionInfo(pGpu, pParams->sessionInfoTblEntry, pSessionInfo, &entryCount);
+    if (status != NV_OK)
+        return status;
+
+    pParams->sessionInfoTblEntry = entryCount;
 
     return status;
 }
@@ -827,9 +1045,42 @@ subdeviceCtrlCmdGpuGetNvfbcSwSessionStats_IMPL
     NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_STATS_PARAMS *pParams
 )
 {
-    pParams->sessionCount   = 0;
-    pParams->averageFPS     = 0;
-    pParams->averageLatency = 0;
+
+    NvU32                    averageFPS = 0, averageLatency = 0, localSessionCount = 0;
+    OBJGPU                  *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvfbcSession            *pNvfbcSession = NULL;
+    PNVFBC_SESSION_LIST_ITEM pNvfbcSessionListItem = NULL;
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    if (listCount(&(pGpu->nvfbcSessionList)) == 0)
+    {
+        pParams->sessionCount   = 0;
+        pParams->averageFPS     = 0;
+        pParams->averageLatency = 0;
+        return NV_OK;
+    }
+
+    for (pNvfbcSessionListItem = listHead(&(pGpu->nvfbcSessionList));
+         pNvfbcSessionListItem != NULL;
+         pNvfbcSessionListItem = listNext(&(pGpu->nvfbcSessionList), pNvfbcSessionListItem))
+    {
+        if (pNvfbcSessionListItem->sessionPtr)
+        {
+            pNvfbcSession  = pNvfbcSessionListItem->sessionPtr;
+
+            averageFPS     += pNvfbcSession->nvfbcSessionEntry.averageFPS;
+            averageLatency += pNvfbcSession->nvfbcSessionEntry.averageLatency;
+
+            localSessionCount++;
+        }
+    }
+
+    // average FPS and latency over all active sessions on this GPU.
+    pParams->averageFPS     = localSessionCount == 0 ? 0 : (averageFPS     / localSessionCount);
+    pParams->averageLatency = localSessionCount == 0 ? 0 : (averageLatency / localSessionCount);
+
+    pParams->sessionCount   = localSessionCount;
 
     return NV_OK;
 }
@@ -848,7 +1099,68 @@ subdeviceCtrlCmdGpuGetNvfbcSwSessionInfo_IMPL
     NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_INFO_PARAMS *pParams
 )
 {
-    pParams->sessionInfoCount = 0;
+
+    NV2080_CTRL_NVFBC_SW_SESSION_INFO *pSession, *pSessionInfo = pParams->sessionInfoTbl;
+    OBJGPU                  *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvU32                    i = 0;
+    NvfbcSession            *pNvfbcSession = NULL;
+    PNVFBC_SESSION_LIST_ITEM pNvfbcSessionListItem = NULL;
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    portMemSet(pParams, 0, sizeof(NV2080_CTRL_GPU_GET_NVFBC_SW_SESSION_INFO_PARAMS));
+
+    for (pNvfbcSessionListItem = listHead(&(pGpu->nvfbcSessionList));
+         pNvfbcSessionListItem != NULL;
+         pNvfbcSessionListItem = listNext(&(pGpu->nvfbcSessionList), pNvfbcSessionListItem))
+    {
+        if (pNvfbcSessionListItem->sessionPtr)
+        {
+            pNvfbcSession = pNvfbcSessionListItem->sessionPtr;
+            pSession = &pSessionInfo[i];
+
+            pSession->processId      = pNvfbcSession->nvfbcSessionEntry.processId;
+            pSession->vgpuInstanceId = pNvfbcSession->nvfbcSessionEntry.vgpuInstanceId;
+            pSession->sessionId      = pNvfbcSession->nvfbcSessionEntry.sessionId;
+            pSession->displayOrdinal = pNvfbcSession->nvfbcSessionEntry.displayOrdinal;
+            pSession->sessionType    = pNvfbcSession->nvfbcSessionEntry.sessionType;
+            pSession->sessionFlags   = pNvfbcSession->nvfbcSessionEntry.sessionFlags;
+            pSession->hMaxResolution = pNvfbcSession->nvfbcSessionEntry.hMaxResolution;
+            pSession->vMaxResolution = pNvfbcSession->nvfbcSessionEntry.vMaxResolution;
+
+            // All the following fields are dynamic fields.
+            // We will return these as 0 if these are stale values.
+            if (nvfbcIsSessionDataStale(pNvfbcSession->nvfbcSessionEntry.lastUpdateTimeStamp))
+            {
+                pSession->hResolution    = 0;
+                pSession->vResolution    = 0;
+                pSession->averageFPS     = 0;
+                pSession->averageLatency = 0;
+            }
+            else
+            {
+                pSession->hResolution    = pNvfbcSession->nvfbcSessionEntry.hResolution;
+                pSession->vResolution    = pNvfbcSession->nvfbcSessionEntry.vResolution;
+                pSession->averageFPS     = pNvfbcSession->nvfbcSessionEntry.averageFPS;
+                pSession->averageLatency = pNvfbcSession->nvfbcSessionEntry.averageLatency;
+            }
+
+            i++;
+
+            if (i == NV2080_GPU_NVFBC_MAX_SESSION_COUNT)
+            {
+                NV_ASSERT(0);
+                NV_PRINTF(LEVEL_ERROR,
+                          "more entries in pGpu->nvencSessionList than "
+                          "NV2080_CTRL_GPU_NVENC_SESSION_INFO_MAX_COPYOUT_ENTRIES\n");
+
+                // Stop copying beyond max size otherwise we might corrupt other kernel data.
+                break;
+            }
+        }
+    }
+
+    pParams->sessionInfoCount = i;
 
     return NV_OK;
 }
@@ -1526,27 +1838,33 @@ subdeviceCtrlCmdGpuSetComputeModeRules_IMPL
 
     if (IS_GSP_CLIENT(pGpu))
     {
-        CALL_CONTEXT *pCallContext = resservGetTlsCallContext();
+        CALL_CONTEXT *pCallContext  = resservGetTlsCallContext();
         RmCtrlParams *pRmCtrlParams = pCallContext->pControlParams;
-        NV_STATUS status = NV_OK;
-
-        NV_RM_RPC_CONTROL(pGpu,
-                          pRmCtrlParams->hClient,
-                          pRmCtrlParams->hObject,
-                          pRmCtrlParams->cmd,
-                          pRmCtrlParams->pParams,
-                          pRmCtrlParams->paramsSize,
-                          status);
+        RM_API       *pRmApi        = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
         //
         // Client RM still needs to set its value and update the registry,
         // so don't return unless there was an error.
         //
-        NV_ASSERT_OK_OR_RETURN(status);
+        NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
+                                               pRmCtrlParams->hClient,
+                                               pRmCtrlParams->hObject,
+                                               pRmCtrlParams->cmd,
+                                               pRmCtrlParams->pParams,
+                                               pRmCtrlParams->paramsSize));
     }
 
     //TODO Bug 2718406  will extend compute mode support for MIG
     if (IS_MIG_ENABLED(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    // Setting compute mode for cuda non supported vGPU profiles
+    // is not supported.
+    // Exclude GSP environment for that rule.
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    if (pVSI && !IS_GSP_CLIENT(pGpu) && pVSI->vgpuConfig.cudaEnabled == 0)
     {
         return NV_ERR_NOT_SUPPORTED;
     }
@@ -1601,6 +1919,17 @@ subdeviceCtrlCmdGpuQueryComputeModeRules_IMPL
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner());
 
+    //
+    // vGPU specific check to assign compute mode as 'Prohibited'
+    // for cuda non supported vGPU profiles.
+    // Exclude GSP environment for that rule.
+    //
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    if ((pVSI != NULL) && !IS_GSP_CLIENT(pGpu) && (pVSI->vgpuConfig.cudaEnabled == 0))
+    {
+        pQueryRulesParams->rules = NV2080_CTRL_GPU_COMPUTE_MODE_RULES_COMPUTE_PROHIBITED;
+    }
+    else
     {
         pQueryRulesParams->rules = pGpu->computeModeRules;
     }
@@ -2058,6 +2387,15 @@ subdeviceCtrlCmdGpuGetMaxSupportedPageSize_IMPL
     // Default to minimal page size (4k)
     pParams->maxSupportedPageSize = RM_PAGE_SIZE;
 
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+        pParams->maxSupportedPageSize = pVSI->maxSupportedPageSize;
+
+        return status;
+    }
+
     KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
 
     if (kgmmuIsPageSize512mbSupported(pKernelGmmu))
@@ -2477,14 +2815,13 @@ subdeviceCtrlCmdGpuGetGfid_IMPL
  *     NV_ERR_IN_USE            If MAX_NUM_P2P_GFIDS have already been enabled for P2P
  */
 NV_STATUS
-subdeviceCtrlCmdUpdateGfidP2pCapability_IMPL
+gpuUpdateGfidP2pCapability
 (
-    Subdevice                                               *pSubdevice,
+    OBJGPU                                                  *pGpu,
     NV2080_CTRL_CMD_GPU_UPDATE_GFID_P2P_CAPABILITY_PARAMS   *pParams
 )
 {
     OBJSYS *pSys = SYS_GET_INSTANCE();
-    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
     PSRIOV_P2P_INFO pP2PInfo = pGpu->sriovState.pP2PInfo;
     NvBool  bSetP2PAccess = NV_FALSE;
     NvU32   idx;
@@ -2554,6 +2891,15 @@ subdeviceCtrlCmdUpdateGfidP2pCapability_IMPL
     return NV_OK;
 }
 
+NV_STATUS
+subdeviceCtrlCmdUpdateGfidP2pCapability_IMPL
+(
+    Subdevice                                               *pSubdevice,
+    NV2080_CTRL_CMD_GPU_UPDATE_GFID_P2P_CAPABILITY_PARAMS   *pParams
+)
+{
+    return gpuUpdateGfidP2pCapability(GPU_RES_GET_GPU(pSubdevice), pParams);
+}
 /*
  * Set the EGM fabric base address
  */
@@ -2671,6 +3017,10 @@ _convertGpuFabricProbeInfoCaps
             case NVLINK_INBAND_FM_CAPS_MC_TEAM_SETUP_V2:
             {
                 fabricCaps |= NV2080_CTRL_GPU_FABRIC_PROBE_CAP_MC_SUPPORTED;
+#ifdef NV2080_CTRL_GPU_FABRIC_PROBE_CAP_MC_MUTLINODE_SUPPORTED
+                fabricCaps |=
+                    NV2080_CTRL_GPU_FABRIC_PROBE_CAP_MC_MUTLINODE_SUPPORTED;
+#endif
                 break;
             }
             default:
@@ -2696,13 +3046,23 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
     NvU64 numProbeReqs = 0;
     NvU64 fmCaps = 0;
     NvUuid *pClusterUuid = (NvUuid*) pParams->clusterUuid;
+    NvU32 mask = 0, healthMask = 0;
 
     LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() &&
                            rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
-    if (pGpu->pGpuFabricProbeInfoKernel == NULL)
+    // Probe is not supported - Ex - Direct connected etc.
+    if (!gpuFabricProbeIsSupported(pGpu))
     {
         pParams->state = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_UNSUPPORTED;
+        return NV_OK;
+    }
+
+    // Probe is not supported - Ex - GPU is degraded etc.
+    if (pGpu->pGpuFabricProbeInfoKernel == NULL)
+    {
+        pParams->state = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE;
+        pParams->status = NV_ERR_NOT_SUPPORTED; // Due to degradation etc.
         return NV_OK;
     }
 
@@ -2718,31 +3078,217 @@ subdeviceCtrlCmdGetGpuFabricProbeInfo_IMPL
                      NV2080_CTRL_GPU_FABRIC_PROBE_STATE_NOT_STARTED :
                      NV2080_CTRL_GPU_FABRIC_PROBE_STATE_IN_PROGRESS;
 
-    if (gpuFabricProbeIsReceived(pGpu->pGpuFabricProbeInfoKernel))
+    if (!gpuFabricProbeIsReceived(pGpu->pGpuFabricProbeInfoKernel))
     {
-        pParams->state  = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE;
-        pParams->status = gpuFabricProbeGetFmStatus(pGpu->pGpuFabricProbeInfoKernel);
-        if (pParams->status != NV_OK)
+        return NV_OK;
+    }
+
+    pParams->state  = NV2080_CTRL_GPU_FABRIC_PROBE_STATE_COMPLETE;
+    pParams->status = gpuFabricProbeGetFmStatus(pGpu->pGpuFabricProbeInfoKernel);
+    if (pParams->status != NV_OK)
+    {
+        // Nothing needs to be done as probe response status is not success
+        return NV_OK;
+    }
+
+    ct_assert(NV2080_GPU_FABRIC_CLUSTER_UUID_LEN == NV_UUID_LEN);
+
+    status = gpuFabricProbeGetClusterUuid(pGpu->pGpuFabricProbeInfoKernel, pClusterUuid);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    status = gpuFabricProbeGetFabricPartitionId(pGpu->pGpuFabricProbeInfoKernel,
+                                                &pParams->fabricPartitionId);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    status = gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    pParams->fabricCaps = _convertGpuFabricProbeInfoCaps(fmCaps);
+
+    status = gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
+                                             &pParams->fabricCliqueId);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    status = gpuFabricProbeGetFabricHealthStatus(pGpu->pGpuFabricProbeInfoKernel,
+                                                 &mask);
+    NV_ASSERT_OK_OR_RETURN(status);
+
+    if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _DEGRADED_BW, _TRUE, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _DEGRADED_BW, _TRUE, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _DEGRADED_BW,
+                          _FALSE, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _DEGRADED_BW, _FALSE, healthMask);
+    }
+    else if (FLD_TEST_DRF(LINK, _INBAND_FABRIC_HEALTH_MASK, _DEGRADED_BW,
+                          _NOT_SUPPORTED, mask))
+    {
+        healthMask |= FLD_SET_DRF(2080, _CTRL_GPU_FABRIC_HEALTH_MASK,
+                                  _DEGRADED_BW, _NOT_SUPPORTED, healthMask);
+    }
+
+    pParams->fabricHealthMask = healthMask;
+
+    return NV_OK;
+}
+
+/*!
+ * @brief   This command is used to determine which GSP features are
+ *          supported on this GPU.
+ *
+ * @param[in]     pSubdevice
+ * @param[in,out] pGspFeaturesParams
+ *
+ * @return  Returns NV_STATUS
+ *          NV_OK                     Success
+ */
+NV_STATUS
+subdeviceCtrlCmdGspGetFeatures_KERNEL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GSP_GET_FEATURES_PARAMS *pGspFeaturesParams
+)
+{
+    pGspFeaturesParams->bValid = NV_FALSE;
+    return NV_OK;
+}
+
+//
+// Lock Requirements:
+//      Assert that API lock and GPUs lock held on entry
+//
+NV_STATUS
+subdeviceCtrlCmdGpuGetNameString_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_GET_NAME_STRING_PARAMS *pNameStringParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    return gpuGetNameString(pGpu,
+                            pNameStringParams->gpuNameStringFlags,
+                            (void *)&pNameStringParams->gpuNameString);
+}
+
+//
+// subdeviceCtrlCmdGpuGetShortNameString
+//
+// Lock Requirements:
+//      Assert that API lock and GPUs lock held on entry
+//
+NV_STATUS
+subdeviceCtrlCmdGpuGetShortNameString_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_GET_SHORT_NAME_STRING_PARAMS *pShortNameStringParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    return gpuGetShortNameString(pGpu, (void *)&pShortNameStringParams->gpuShortNameString);
+}
+
+//
+// subdeviceCtrlCmdGpuGetGidInfo
+//
+// Lock Requirements:
+//      Assert that API lock held on entry
+//
+NV_STATUS
+subdeviceCtrlCmdGpuGetGidInfo_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_GET_GID_INFO_PARAMS *pGidInfoParams
+)
+{
+    NV_STATUS rmStatus = NV_OK;
+    OBJGPU   *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    NvU8     *pGidString;
+    NvU32     flags = pGidInfoParams->flags;
+    NvU32     gidStrlen;
+
+    rmStatus = gpuGetGidInfo(pGpu, &pGidString, &gidStrlen, flags);
+    if (rmStatus == NV_OK)
+    {
+        if (sizeof(pGidInfoParams->data) >= gidStrlen)
         {
-            // Nothing needs to be done as probe response status is not success
-            return NV_OK;
+            portMemCopy(pGidInfoParams->data, gidStrlen, pGidString, gidStrlen);
+            pGidInfoParams->length = gidStrlen;
+        }
+        else
+        {
+            rmStatus = NV_ERR_INSUFFICIENT_RESOURCES;
         }
 
-        ct_assert(NV2080_GPU_FABRIC_CLUSTER_UUID_LEN == NV_UUID_LEN);
-
-        NV_ASSERT_OK(gpuFabricProbeGetClusterUuid(pGpu->pGpuFabricProbeInfoKernel,
-                    pClusterUuid));
-
-        NV_ASSERT_OK(gpuFabricProbeGetFabricPartitionId(pGpu->pGpuFabricProbeInfoKernel,
-                     &pParams->fabricPartitionId));
-
-        NV_ASSERT_OK(gpuFabricProbeGetFabricCliqueId(pGpu->pGpuFabricProbeInfoKernel,
-                     &pParams->fabricCliqueId));
-
-        NV_ASSERT_OK(gpuFabricProbeGetfmCaps(pGpu->pGpuFabricProbeInfoKernel, &fmCaps));
-
-        pParams->fabricCaps = _convertGpuFabricProbeInfoCaps(fmCaps);
+        portMemFree(pGidString);
     }
+
+    return rmStatus;
+}
+
+// Control call to report a nonreplayable fault from UVM
+NV_STATUS
+subdeviceCtrlCmdGpuReportNonReplayableFault_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_REPORT_NON_REPLAYABLE_FAULT_PARAMS *pParams
+)
+{
+    NV_STATUS          status       = NV_OK;
+    OBJGPU            *pGpu         = GPU_RES_GET_GPU(pSubdevice);
+    KernelGmmu        *pKernelGmmu  = GPU_GET_KERNEL_GMMU(pGpu);
+    GMMU_FAULT_PACKET *pFaultPacket = (GMMU_FAULT_PACKET *)(NvUPtr)&pParams->faultPacket.data;
+
+    ct_assert(sizeof(GMMU_FAULT_PACKET) == NV2080_CTRL_GPU_FAULT_PACKET_SIZE);
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    status = kgmmuHandleNonReplayableFaultPacket_HAL(pGpu, pKernelGmmu, pFaultPacket);
+
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGpuGetChipDetails_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_GPU_GET_CHIP_DETAILS_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+
+    return gpuGetChipDetails(pGpu, pParams);
+}
+
+/*!
+ * @brief   This Command is used to report if the specified logo illumination attribute
+ *          is supported
+ *
+ * @param[in,out]   pConfigParams
+ *                  attribute:  The attribute whose support is to be determined.
+ *                  bSupported: indicator if the specified attribute is supported.
+ *
+ * @return  Returns NV_STATUS
+ *          NV_OK                     Success
+ *
+ */
+NV_STATUS
+subdeviceCtrlCmdGpuQueryIllumSupport_VF
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_CMD_GPU_QUERY_ILLUM_SUPPORT_PARAMS *pConfigParams
+)
+{
+    pConfigParams->bSupported = NV_FALSE;
 
     return NV_OK;
 }

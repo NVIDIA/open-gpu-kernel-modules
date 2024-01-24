@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -59,12 +59,9 @@ intrClearStallSWIntr_TU102
     Intr *pIntr
 )
 {
-    NvU32 leafReg = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
-    NvU32 leafBit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
-    NvU32 clearSwIntr = NVBIT(leafBit);
 
-    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF(leafReg),
-                  clearSwIntr);
+    intrClearLeafVector_HAL(pGpu, pIntr, NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT, NULL);
+
     return NV_OK;
 }
 
@@ -78,13 +75,11 @@ intrEnableStallSWIntr_TU102
     Intr *pIntr
 )
 {
-    NvU32 leafReg = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
-    NvU32 leafBit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
     NvU32 subtree = NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
     NvU32 topIdx = NV_CTRL_INTR_SUBTREE_TO_TOP_IDX(subtree);
     NvU32 topBit = NV_CTRL_INTR_SUBTREE_TO_TOP_BIT(subtree);
 
-    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_SET(leafReg), NVBIT(leafBit));
+    intrEnableLeaf_HAL(pGpu, pIntr, NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
     GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_SET(topIdx), NVBIT(topBit));
 }
 
@@ -101,13 +96,11 @@ intrDisableStallSWIntr_TU102
     Intr *pIntr
 )
 {
-    NvU32 leafReg = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
-    NvU32 leafBit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
     NvU32 subtree = NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
     NvU32 topIdx = NV_CTRL_INTR_SUBTREE_TO_TOP_IDX(subtree);
     NvU32 topBit = NV_CTRL_INTR_SUBTREE_TO_TOP_BIT(subtree);
 
-    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_LEAF_EN_CLEAR(leafReg), NVBIT(leafBit));
+    intrDisableLeaf_HAL(pGpu, pIntr, NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
     GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_CPU_INTR_TOP_EN_CLEAR(topIdx), NVBIT(topBit));
 }
 
@@ -131,20 +124,13 @@ intrGetStallInterruptMode_TU102
     NvBool   *pPending
 )
 {
-    NvU32 reg = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_REG(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
-    NvU32 bit = NV_CTRL_INTR_GPU_VECTOR_TO_LEAF_BIT(NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT);
-    NvU32 swPending = 0;
-
     *pIntrmode = INTERRUPT_TYPE_SOFTWARE; // value put in to match with legacy
+
     if (IS_VIRTUAL_WITHOUT_SRIOV(pGpu))
     {
-        if (vgpuShmIsSwPending(pGpu, &swPending) == NV_OK)
-            *pPending = swPending;
-        else
             *pPending = NV_FALSE;
         return;
     }
 
-    swPending = intrReadRegLeaf_HAL(pGpu, pIntr, reg, NULL);
-    *pPending = (swPending & NVBIT(bit)) ? NV_TRUE : NV_FALSE;
+    *pPending = intrIsVectorPending_HAL(pGpu, pIntr, NV_CTRL_CPU_DOORBELL_VECTORID_VALUE_CONSTANT, NULL);
 }

@@ -162,7 +162,15 @@ typedef union
     // stale. Do not rely on them in the callbacks.
     struct
     {
-        uvm_push_t *push;
+        // CPU-to-CPU migrations do not use a push. Instead, such migrations
+        // need to record the migration start time, which for other migrations
+        // is recorded by the push.
+        union
+        {
+            uvm_push_t *push;
+            NvU64 cpu_start_timestamp;
+        };
+
         uvm_va_block_t *block;
 
         // ID of the destination processor of the migration
@@ -170,6 +178,11 @@ typedef union
 
         // ID of the source processor of the migration
         uvm_processor_id_t src;
+
+        // For CPU-to-CPU migrations, these two fields indicate the source
+        // and destination NUMA node IDs.
+        NvU16 dst_nid;
+        NvU16 src_nid;
 
         // Start address of the memory range being migrated
         NvU64 address;
@@ -300,6 +313,40 @@ static inline void uvm_perf_event_notify_migration(uvm_perf_va_space_events_t *v
                     .make_resident_context = make_resident_context,
                 }
         };
+
+    uvm_perf_event_notify(va_space_events, UVM_PERF_EVENT_MIGRATION, &event_data);
+}
+
+static inline void uvm_perf_event_notify_migration_cpu(uvm_perf_va_space_events_t *va_space_events,
+                                                       uvm_va_block_t *va_block,
+                                                       int dst_nid,
+                                                       int src_nid,
+                                                       NvU64 address,
+                                                       NvU64 bytes,
+                                                       NvU64 begin_timestamp,
+                                                       uvm_va_block_transfer_mode_t transfer_mode,
+                                                       uvm_make_resident_cause_t cause,
+                                                       uvm_make_resident_context_t *make_resident_context)
+{
+    uvm_perf_event_data_t event_data =
+        {
+            .migration =
+                {
+                    .cpu_start_timestamp   = begin_timestamp,
+                    .block                 = va_block,
+                    .dst                   = UVM_ID_CPU,
+                    .src                   = UVM_ID_CPU,
+                    .src_nid               = (NvU16)src_nid,
+                    .dst_nid               = (NvU16)dst_nid,
+                    .address               = address,
+                    .bytes                 = bytes,
+                    .transfer_mode         = transfer_mode,
+                    .cause                 = cause,
+                    .make_resident_context = make_resident_context,
+                }
+        };
+
+    BUILD_BUG_ON(MAX_NUMNODES > (NvU16)-1);
 
     uvm_perf_event_notify(va_space_events, UVM_PERF_EVENT_MIGRATION, &event_data);
 }

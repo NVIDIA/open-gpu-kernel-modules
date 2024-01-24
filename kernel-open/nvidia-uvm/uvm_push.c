@@ -244,6 +244,9 @@ NV_STATUS __uvm_push_begin_acquire_with_info(uvm_channel_manager_t *manager,
     status = push_begin_acquire_with_info(channel, tracker, push, filename, function, line, format, args);
     va_end(args);
 
+    if (status != NV_OK)
+        uvm_channel_release(channel, 1);
+
     return status;
 }
 
@@ -266,6 +269,9 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
     va_start(args, format);
     status = push_begin_acquire_with_info(channel, tracker, push, filename, function, line, format, args);
     va_end(args);
+
+    if (status != NV_OK)
+        uvm_channel_release(channel, 1);
 
     return status;
 }

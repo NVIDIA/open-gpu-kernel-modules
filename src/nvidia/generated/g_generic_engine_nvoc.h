@@ -43,11 +43,16 @@ extern "C" {
  * GF100_SUBDEVICE_GRAPHICS and GF100_SUBDEVICE_FB). Classes are primarily used
  * for exposing BAR0 mappings and controls.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_GENERIC_ENGINE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct GenericEngineApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -73,7 +78,6 @@ struct GenericEngineApi {
     NV_STATUS (*__genapiInternalControlForward__)(struct GenericEngineApi *, NvU32, void *, NvU32);
     NV_STATUS (*__genapiUnmapFrom__)(struct GenericEngineApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__genapiControl_Epilogue__)(struct GenericEngineApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__genapiControlLookup__)(struct GenericEngineApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__genapiGetInternalObjectHandle__)(struct GenericEngineApi *);
     NV_STATUS (*__genapiUnmap__)(struct GenericEngineApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
     NV_STATUS (*__genapiGetMemInterMapParams__)(struct GenericEngineApi *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -81,6 +85,7 @@ struct GenericEngineApi {
     NV_STATUS (*__genapiControlFilter__)(struct GenericEngineApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__genapiControlSerialization_Prologue__)(struct GenericEngineApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__genapiCanCopy__)(struct GenericEngineApi *);
+    NvBool (*__genapiIsPartialUnmapSupported__)(struct GenericEngineApi *);
     void (*__genapiPreDestruct__)(struct GenericEngineApi *);
     NV_STATUS (*__genapiIsDuplicate__)(struct GenericEngineApi *, NvHandle, NvBool *);
     void (*__genapiControlSerialization_Epilogue__)(struct GenericEngineApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -131,7 +136,6 @@ NV_STATUS __nvoc_objCreate_GenericEngineApi(GenericEngineApi**, Dynamic*, NvU32,
 #define genapiInternalControlForward(pGpuResource, command, pParams, size) genapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define genapiUnmapFrom(pResource, pParams) genapiUnmapFrom_DISPATCH(pResource, pParams)
 #define genapiControl_Epilogue(pResource, pCallContext, pParams) genapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define genapiControlLookup(pResource, pParams, ppEntry) genapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define genapiGetInternalObjectHandle(pGpuResource) genapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define genapiUnmap(pGpuResource, pCallContext, pCpuMapping) genapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
 #define genapiGetMemInterMapParams(pRmResource, pParams) genapiGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -139,6 +143,7 @@ NV_STATUS __nvoc_objCreate_GenericEngineApi(GenericEngineApi**, Dynamic*, NvU32,
 #define genapiControlFilter(pResource, pCallContext, pParams) genapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define genapiControlSerialization_Prologue(pResource, pCallContext, pParams) genapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define genapiCanCopy(pResource) genapiCanCopy_DISPATCH(pResource)
+#define genapiIsPartialUnmapSupported(pResource) genapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define genapiPreDestruct(pResource) genapiPreDestruct_DISPATCH(pResource)
 #define genapiIsDuplicate(pResource, hMemory, pDuplicate) genapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define genapiControlSerialization_Epilogue(pResource, pCallContext, pParams) genapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -219,10 +224,6 @@ static inline void genapiControl_Epilogue_DISPATCH(struct GenericEngineApi *pRes
     pResource->__genapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS genapiControlLookup_DISPATCH(struct GenericEngineApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__genapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle genapiGetInternalObjectHandle_DISPATCH(struct GenericEngineApi *pGpuResource) {
     return pGpuResource->__genapiGetInternalObjectHandle__(pGpuResource);
 }
@@ -249,6 +250,10 @@ static inline NV_STATUS genapiControlSerialization_Prologue_DISPATCH(struct Gene
 
 static inline NvBool genapiCanCopy_DISPATCH(struct GenericEngineApi *pResource) {
     return pResource->__genapiCanCopy__(pResource);
+}
+
+static inline NvBool genapiIsPartialUnmapSupported_DISPATCH(struct GenericEngineApi *pResource) {
+    return pResource->__genapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void genapiPreDestruct_DISPATCH(struct GenericEngineApi *pResource) {

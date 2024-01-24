@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2002-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2002-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,9 +34,12 @@
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/virt_mem_allocator.h"
 #include "vgpu/rpc.h"
+#include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/subdevice/subdevice_diag.h"
+#include "platform/sli/sli.h"
 
+#include "ctrl/ctrl0080/ctrl0080host.h"
 #include "ctrl/ctrl2080/ctrl2080bus.h"
 #include "ctrl/ctrl208f/ctrl208fbus.h"
 
@@ -339,6 +342,12 @@ getBusInfos(OBJGPU *pGpu, NV2080_CTRL_BUS_INFO *pBusInfos, NvU32 busInfoListSize
             }
             case NV2080_CTRL_BUS_INFO_INDEX_PCIE_GPU_LINK_CAPS:
             {
+                if (kbifIsPciBusFamily(pKernelBif) && IS_VIRTUAL(pGpu))
+                {
+                    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+                    pBusInfos[i].data = pVSI->pcieGpuLinkCaps;
+                    break;
+                }
             }
             case NV2080_CTRL_BUS_INFO_INDEX_PCIE_ROOT_LINK_CAPS:
             case NV2080_CTRL_BUS_INFO_INDEX_PCIE_UPSTREAM_LINK_CAPS:

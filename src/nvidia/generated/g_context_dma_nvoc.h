@@ -70,11 +70,16 @@ typedef struct Memory Memory;
 /*!
  * RM internal class representing NV01_CONTEXT_DMA
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CONTEXT_DMA_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct ContextDma {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RmResource __nvoc_base_RmResource;
@@ -101,7 +106,6 @@ struct ContextDma {
     void (*__ctxdmaAddAdditionalDependants__)(struct RsClient *, struct ContextDma *, RsResourceRef *);
     NV_STATUS (*__ctxdmaControl_Prologue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__ctxdmaControl_Epilogue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__ctxdmaControlLookup__)(struct ContextDma *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__ctxdmaControl__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__ctxdmaUnmap__)(struct ContextDma *, struct CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__ctxdmaGetMemInterMapParams__)(struct ContextDma *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -110,6 +114,7 @@ struct ContextDma {
     NV_STATUS (*__ctxdmaUnregisterEvent__)(struct ContextDma *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__ctxdmaControlSerialization_Prologue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__ctxdmaCanCopy__)(struct ContextDma *);
+    NvBool (*__ctxdmaIsPartialUnmapSupported__)(struct ContextDma *);
     void (*__ctxdmaPreDestruct__)(struct ContextDma *);
     NV_STATUS (*__ctxdmaIsDuplicate__)(struct ContextDma *, NvHandle, NvBool *);
     void (*__ctxdmaControlSerialization_Epilogue__)(struct ContextDma *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -180,7 +185,6 @@ NV_STATUS __nvoc_objCreate_ContextDma(ContextDma**, Dynamic*, NvU32, struct CALL
 #define ctxdmaAddAdditionalDependants(pClient, pResource, pReference) ctxdmaAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
 #define ctxdmaControl_Prologue(pResource, pCallContext, pParams) ctxdmaControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ctxdmaControl_Epilogue(pResource, pCallContext, pParams) ctxdmaControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define ctxdmaControlLookup(pResource, pParams, ppEntry) ctxdmaControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define ctxdmaControl(pResource, pCallContext, pParams) ctxdmaControl_DISPATCH(pResource, pCallContext, pParams)
 #define ctxdmaUnmap(pResource, pCallContext, pCpuMapping) ctxdmaUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
 #define ctxdmaGetMemInterMapParams(pRmResource, pParams) ctxdmaGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -189,6 +193,7 @@ NV_STATUS __nvoc_objCreate_ContextDma(ContextDma**, Dynamic*, NvU32, struct CALL
 #define ctxdmaUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) ctxdmaUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define ctxdmaControlSerialization_Prologue(pResource, pCallContext, pParams) ctxdmaControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define ctxdmaCanCopy(pResource) ctxdmaCanCopy_DISPATCH(pResource)
+#define ctxdmaIsPartialUnmapSupported(pResource) ctxdmaIsPartialUnmapSupported_DISPATCH(pResource)
 #define ctxdmaPreDestruct(pResource) ctxdmaPreDestruct_DISPATCH(pResource)
 #define ctxdmaIsDuplicate(pResource, hMemory, pDuplicate) ctxdmaIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define ctxdmaControlSerialization_Epilogue(pResource, pCallContext, pParams) ctxdmaControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -270,10 +275,6 @@ static inline void ctxdmaControl_Epilogue_DISPATCH(struct ContextDma *pResource,
     pResource->__ctxdmaControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS ctxdmaControlLookup_DISPATCH(struct ContextDma *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__ctxdmaControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS ctxdmaControl_DISPATCH(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__ctxdmaControl__(pResource, pCallContext, pParams);
 }
@@ -304,6 +305,10 @@ static inline NV_STATUS ctxdmaControlSerialization_Prologue_DISPATCH(struct Cont
 
 static inline NvBool ctxdmaCanCopy_DISPATCH(struct ContextDma *pResource) {
     return pResource->__ctxdmaCanCopy__(pResource);
+}
+
+static inline NvBool ctxdmaIsPartialUnmapSupported_DISPATCH(struct ContextDma *pResource) {
+    return pResource->__ctxdmaIsPartialUnmapSupported__(pResource);
 }
 
 static inline void ctxdmaPreDestruct_DISPATCH(struct ContextDma *pResource) {

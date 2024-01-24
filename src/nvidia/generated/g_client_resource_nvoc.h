@@ -57,11 +57,16 @@ extern "C" {
 #include "ctrl/ctrl0000/ctrl0000unix.h"
 #endif
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_CLIENT_RESOURCE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RmClientResource {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RsClientResource __nvoc_base_RsClientResource;
@@ -83,7 +88,6 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdSystemGetBuildVersionV2__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_BUILD_VERSION_V2_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemExecuteAcpiMethod__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_EXECUTE_ACPI_METHOD_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetChipsetInfo__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS *);
-    NV_STATUS (*__cliresCtrlCmdSystemSetMemorySize__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetLockTimes__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetClassList__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_CLASSLIST_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemNotifyEvent__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_NOTIFY_EVENT_PARAMS *);
@@ -101,6 +105,7 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdSystemGpsCallAcpi__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_CALL_ACPI_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetPerfSensorCounters__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetExtendedPerfSensorCounters__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdSystemGetVgxSystemInfo__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetGpusPowerStatus__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_GPUS_POWER_STATUS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetPrivilegedStatus__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_PRIVILEGED_STATUS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdSystemGetFabricStatus__)(struct RmClientResource *, NV0000_CTRL_SYSTEM_GET_FABRIC_STATUS_PARAMS *);
@@ -121,6 +126,7 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdClientShareObject__)(struct RmClientResource *, NV0000_CTRL_CLIENT_SHARE_OBJECT_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdClientGetChildHandle__)(struct RmClientResource *, NV0000_CTRL_CMD_CLIENT_GET_CHILD_HANDLE_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdObjectsAreDuplicates__)(struct RmClientResource *, NV0000_CTRL_CLIENT_OBJECTS_ARE_DUPLICATES_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdClientSubscribeToImexChannel__)(struct RmClientResource *, NV0000_CTRL_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetAttachedIds__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_ATTACHED_IDS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetIdInfo__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_ID_INFO_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetIdInfoV2__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_ID_INFO_V2_PARAMS *);
@@ -129,6 +135,8 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdGpuGetActiveDeviceIds__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_ACTIVE_DEVICE_IDS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetProbedIds__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_PROBED_IDS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuAttachIds__)(struct RmClientResource *, NV0000_CTRL_GPU_ATTACH_IDS_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdGpuAsyncAttachId__)(struct RmClientResource *, NV0000_CTRL_GPU_ASYNC_ATTACH_ID_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdGpuWaitAttachId__)(struct RmClientResource *, NV0000_CTRL_GPU_WAIT_ATTACH_ID_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuDetachIds__)(struct RmClientResource *, NV0000_CTRL_GPU_DETACH_IDS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetSvmSize__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_SVM_SIZE_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGpuGetPciInfo__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_PCI_INFO_PARAMS *);
@@ -146,6 +154,8 @@ struct RmClientResource {
     NV_STATUS (*__cliresCtrlCmdGpuGetVideoLinks__)(struct RmClientResource *, NV0000_CTRL_GPU_GET_VIDEO_LINKS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGsyncGetAttachedIds__)(struct RmClientResource *, NV0000_CTRL_GSYNC_GET_ATTACHED_IDS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdGsyncGetIdInfo__)(struct RmClientResource *, NV0000_CTRL_GSYNC_GET_ID_INFO_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdDiagProfileRpc__)(struct RmClientResource *, NV0000_CTRL_DIAG_PROFILE_RPC_PARAMS *);
+    NV_STATUS (*__cliresCtrlCmdDiagDumpRpc__)(struct RmClientResource *, NV0000_CTRL_DIAG_DUMP_RPC_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdEventSetNotification__)(struct RmClientResource *, NV0000_CTRL_EVENT_SET_NOTIFICATION_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdEventGetSystemEventStatus__)(struct RmClientResource *, NV0000_CTRL_GET_SYSTEM_EVENT_STATUS_PARAMS *);
     NV_STATUS (*__cliresCtrlCmdOsUnixExportObjectToFd__)(struct RmClientResource *, NV0000_CTRL_OS_UNIX_EXPORT_OBJECT_TO_FD_PARAMS *);
@@ -189,13 +199,13 @@ struct RmClientResource {
     NV_STATUS (*__cliresUnregisterEvent__)(struct RmClientResource *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__cliresControlSerialization_Prologue__)(struct RmClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__cliresCanCopy__)(struct RmClientResource *);
+    NvBool (*__cliresIsPartialUnmapSupported__)(struct RmClientResource *);
     void (*__cliresPreDestruct__)(struct RmClientResource *);
     NV_STATUS (*__cliresUnmapFrom__)(struct RmClientResource *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__cliresIsDuplicate__)(struct RmClientResource *, NvHandle, NvBool *);
     void (*__cliresControlSerialization_Epilogue__)(struct RmClientResource *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     PEVENTNOTIFICATION *(*__cliresGetNotificationListPtr__)(struct RmClientResource *);
     struct NotifShare *(*__cliresGetNotificationShare__)(struct RmClientResource *);
-    NV_STATUS (*__cliresControlLookup__)(struct RmClientResource *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__cliresMap__)(struct RmClientResource *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NV_STATUS (*__cliresGetOrAllocNotifShare__)(struct RmClientResource *, NvHandle, NvHandle, struct NotifShare **);
 };
@@ -237,7 +247,6 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdSystemGetBuildVersionV2(pRmCliRes, pParams) cliresCtrlCmdSystemGetBuildVersionV2_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemExecuteAcpiMethod(pRmCliRes, pAcpiMethodParams) cliresCtrlCmdSystemExecuteAcpiMethod_DISPATCH(pRmCliRes, pAcpiMethodParams)
 #define cliresCtrlCmdSystemGetChipsetInfo(pRmCliRes, pChipsetInfo) cliresCtrlCmdSystemGetChipsetInfo_DISPATCH(pRmCliRes, pChipsetInfo)
-#define cliresCtrlCmdSystemSetMemorySize(pRmCliRes, pParams) cliresCtrlCmdSystemSetMemorySize_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetLockTimes(pRmCliRes, pParams) cliresCtrlCmdSystemGetLockTimes_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetClassList(pRmCliRes, pParams) cliresCtrlCmdSystemGetClassList_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemNotifyEvent(pRmCliRes, pParams) cliresCtrlCmdSystemNotifyEvent_DISPATCH(pRmCliRes, pParams)
@@ -255,6 +264,7 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdSystemGpsCallAcpi(pRmCliRes, pParams) cliresCtrlCmdSystemGpsCallAcpi_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetPerfSensorCounters(pRmCliRes, pParams) cliresCtrlCmdSystemGetPerfSensorCounters_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetExtendedPerfSensorCounters(pRmCliRes, pParams) cliresCtrlCmdSystemGetExtendedPerfSensorCounters_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdSystemGetVgxSystemInfo(pRmCliRes, pParams) cliresCtrlCmdSystemGetVgxSystemInfo_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetGpusPowerStatus(pRmCliRes, pGpusPowerStatus) cliresCtrlCmdSystemGetGpusPowerStatus_DISPATCH(pRmCliRes, pGpusPowerStatus)
 #define cliresCtrlCmdSystemGetPrivilegedStatus(pRmCliRes, pParams) cliresCtrlCmdSystemGetPrivilegedStatus_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdSystemGetFabricStatus(pRmCliRes, pParams) cliresCtrlCmdSystemGetFabricStatus_DISPATCH(pRmCliRes, pParams)
@@ -275,6 +285,7 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdClientShareObject(pRmCliRes, pParams) cliresCtrlCmdClientShareObject_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdClientGetChildHandle(pRmCliRes, pParams) cliresCtrlCmdClientGetChildHandle_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdObjectsAreDuplicates(pRmCliRes, pParams) cliresCtrlCmdObjectsAreDuplicates_DISPATCH(pRmCliRes, pParams)
+#define cliresCtrlCmdClientSubscribeToImexChannel(pRmCliRes, pParams) cliresCtrlCmdClientSubscribeToImexChannel_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdGpuGetAttachedIds(pRmCliRes, pGpuAttachedIds) cliresCtrlCmdGpuGetAttachedIds_DISPATCH(pRmCliRes, pGpuAttachedIds)
 #define cliresCtrlCmdGpuGetIdInfo(pRmCliRes, pGpuIdInfoParams) cliresCtrlCmdGpuGetIdInfo_DISPATCH(pRmCliRes, pGpuIdInfoParams)
 #define cliresCtrlCmdGpuGetIdInfoV2(pRmCliRes, pGpuIdInfoParams) cliresCtrlCmdGpuGetIdInfoV2_DISPATCH(pRmCliRes, pGpuIdInfoParams)
@@ -283,6 +294,8 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdGpuGetActiveDeviceIds(pRmCliRes, pActiveDeviceIdsParams) cliresCtrlCmdGpuGetActiveDeviceIds_DISPATCH(pRmCliRes, pActiveDeviceIdsParams)
 #define cliresCtrlCmdGpuGetProbedIds(pRmCliRes, pGpuProbedIds) cliresCtrlCmdGpuGetProbedIds_DISPATCH(pRmCliRes, pGpuProbedIds)
 #define cliresCtrlCmdGpuAttachIds(pRmCliRes, pGpuAttachIds) cliresCtrlCmdGpuAttachIds_DISPATCH(pRmCliRes, pGpuAttachIds)
+#define cliresCtrlCmdGpuAsyncAttachId(pRmCliRes, pAsyncAttachIdParams) cliresCtrlCmdGpuAsyncAttachId_DISPATCH(pRmCliRes, pAsyncAttachIdParams)
+#define cliresCtrlCmdGpuWaitAttachId(pRmCliRes, pWaitAttachIdParams) cliresCtrlCmdGpuWaitAttachId_DISPATCH(pRmCliRes, pWaitAttachIdParams)
 #define cliresCtrlCmdGpuDetachIds(pRmCliRes, pGpuDetachIds) cliresCtrlCmdGpuDetachIds_DISPATCH(pRmCliRes, pGpuDetachIds)
 #define cliresCtrlCmdGpuGetSvmSize(pRmCliRes, pSvmSizeGetParams) cliresCtrlCmdGpuGetSvmSize_DISPATCH(pRmCliRes, pSvmSizeGetParams)
 #define cliresCtrlCmdGpuGetPciInfo(pRmCliRes, pPciInfoParams) cliresCtrlCmdGpuGetPciInfo_DISPATCH(pRmCliRes, pPciInfoParams)
@@ -300,6 +313,8 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresCtrlCmdGpuGetVideoLinks(pRmCliRes, pParams) cliresCtrlCmdGpuGetVideoLinks_DISPATCH(pRmCliRes, pParams)
 #define cliresCtrlCmdGsyncGetAttachedIds(pRmCliRes, pGsyncAttachedIds) cliresCtrlCmdGsyncGetAttachedIds_DISPATCH(pRmCliRes, pGsyncAttachedIds)
 #define cliresCtrlCmdGsyncGetIdInfo(pRmCliRes, pGsyncIdInfoParams) cliresCtrlCmdGsyncGetIdInfo_DISPATCH(pRmCliRes, pGsyncIdInfoParams)
+#define cliresCtrlCmdDiagProfileRpc(pRmCliRes, pRpcProfileParams) cliresCtrlCmdDiagProfileRpc_DISPATCH(pRmCliRes, pRpcProfileParams)
+#define cliresCtrlCmdDiagDumpRpc(pRmCliRes, pRpcDumpParams) cliresCtrlCmdDiagDumpRpc_DISPATCH(pRmCliRes, pRpcDumpParams)
 #define cliresCtrlCmdEventSetNotification(pRmCliRes, pEventSetNotificationParams) cliresCtrlCmdEventSetNotification_DISPATCH(pRmCliRes, pEventSetNotificationParams)
 #define cliresCtrlCmdEventGetSystemEventStatus(pRmCliRes, pSystemEventStatusParams) cliresCtrlCmdEventGetSystemEventStatus_DISPATCH(pRmCliRes, pSystemEventStatusParams)
 #define cliresCtrlCmdOsUnixExportObjectToFd(pRmCliRes, pParams) cliresCtrlCmdOsUnixExportObjectToFd_DISPATCH(pRmCliRes, pParams)
@@ -343,13 +358,13 @@ NV_STATUS __nvoc_objCreate_RmClientResource(RmClientResource**, Dynamic*, NvU32,
 #define cliresUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) cliresUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define cliresControlSerialization_Prologue(pResource, pCallContext, pParams) cliresControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define cliresCanCopy(pResource) cliresCanCopy_DISPATCH(pResource)
+#define cliresIsPartialUnmapSupported(pResource) cliresIsPartialUnmapSupported_DISPATCH(pResource)
 #define cliresPreDestruct(pResource) cliresPreDestruct_DISPATCH(pResource)
 #define cliresUnmapFrom(pResource, pParams) cliresUnmapFrom_DISPATCH(pResource, pParams)
 #define cliresIsDuplicate(pResource, hMemory, pDuplicate) cliresIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define cliresControlSerialization_Epilogue(pResource, pCallContext, pParams) cliresControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define cliresGetNotificationListPtr(pNotifier) cliresGetNotificationListPtr_DISPATCH(pNotifier)
 #define cliresGetNotificationShare(pNotifier) cliresGetNotificationShare_DISPATCH(pNotifier)
-#define cliresControlLookup(pResource, pParams, ppEntry) cliresControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define cliresMap(pResource, pCallContext, pParams, pCpuMapping) cliresMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define cliresGetOrAllocNotifShare(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare) cliresGetOrAllocNotifShare_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, ppNotifShare)
 NvBool cliresAccessCallback_IMPL(struct RmClientResource *pRmCliRes, struct RsClient *pInvokingClient, void *pAllocParams, RsAccessRight accessRight);
@@ -404,12 +419,6 @@ NV_STATUS cliresCtrlCmdSystemGetChipsetInfo_IMPL(struct RmClientResource *pRmCli
 
 static inline NV_STATUS cliresCtrlCmdSystemGetChipsetInfo_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_CHIPSET_INFO_PARAMS *pChipsetInfo) {
     return pRmCliRes->__cliresCtrlCmdSystemGetChipsetInfo__(pRmCliRes, pChipsetInfo);
-}
-
-NV_STATUS cliresCtrlCmdSystemSetMemorySize_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS *pParams);
-
-static inline NV_STATUS cliresCtrlCmdSystemSetMemorySize_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_SET_MEMORY_SIZE_PARAMS *pParams) {
-    return pRmCliRes->__cliresCtrlCmdSystemSetMemorySize__(pRmCliRes, pParams);
 }
 
 NV_STATUS cliresCtrlCmdSystemGetLockTimes_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_LOCK_TIMES_PARAMS *pParams);
@@ -512,6 +521,12 @@ NV_STATUS cliresCtrlCmdSystemGetExtendedPerfSensorCounters_IMPL(struct RmClientR
 
 static inline NV_STATUS cliresCtrlCmdSystemGetExtendedPerfSensorCounters_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GPS_GET_PERF_SENSOR_COUNTERS_PARAMS *pParams) {
     return pRmCliRes->__cliresCtrlCmdSystemGetExtendedPerfSensorCounters__(pRmCliRes, pParams);
+}
+
+NV_STATUS cliresCtrlCmdSystemGetVgxSystemInfo_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdSystemGetVgxSystemInfo_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_VGX_SYSTEM_INFO_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdSystemGetVgxSystemInfo__(pRmCliRes, pParams);
 }
 
 NV_STATUS cliresCtrlCmdSystemGetGpusPowerStatus_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_SYSTEM_GET_GPUS_POWER_STATUS_PARAMS *pGpusPowerStatus);
@@ -634,6 +649,12 @@ static inline NV_STATUS cliresCtrlCmdObjectsAreDuplicates_DISPATCH(struct RmClie
     return pRmCliRes->__cliresCtrlCmdObjectsAreDuplicates__(pRmCliRes, pParams);
 }
 
+NV_STATUS cliresCtrlCmdClientSubscribeToImexChannel_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL_PARAMS *pParams);
+
+static inline NV_STATUS cliresCtrlCmdClientSubscribeToImexChannel_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL_PARAMS *pParams) {
+    return pRmCliRes->__cliresCtrlCmdClientSubscribeToImexChannel__(pRmCliRes, pParams);
+}
+
 NV_STATUS cliresCtrlCmdGpuGetAttachedIds_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_ATTACHED_IDS_PARAMS *pGpuAttachedIds);
 
 static inline NV_STATUS cliresCtrlCmdGpuGetAttachedIds_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_GET_ATTACHED_IDS_PARAMS *pGpuAttachedIds) {
@@ -680,6 +701,18 @@ NV_STATUS cliresCtrlCmdGpuAttachIds_IMPL(struct RmClientResource *pRmCliRes, NV0
 
 static inline NV_STATUS cliresCtrlCmdGpuAttachIds_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_ATTACH_IDS_PARAMS *pGpuAttachIds) {
     return pRmCliRes->__cliresCtrlCmdGpuAttachIds__(pRmCliRes, pGpuAttachIds);
+}
+
+NV_STATUS cliresCtrlCmdGpuAsyncAttachId_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_ASYNC_ATTACH_ID_PARAMS *pAsyncAttachIdParams);
+
+static inline NV_STATUS cliresCtrlCmdGpuAsyncAttachId_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_ASYNC_ATTACH_ID_PARAMS *pAsyncAttachIdParams) {
+    return pRmCliRes->__cliresCtrlCmdGpuAsyncAttachId__(pRmCliRes, pAsyncAttachIdParams);
+}
+
+NV_STATUS cliresCtrlCmdGpuWaitAttachId_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_WAIT_ATTACH_ID_PARAMS *pWaitAttachIdParams);
+
+static inline NV_STATUS cliresCtrlCmdGpuWaitAttachId_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_WAIT_ATTACH_ID_PARAMS *pWaitAttachIdParams) {
+    return pRmCliRes->__cliresCtrlCmdGpuWaitAttachId__(pRmCliRes, pWaitAttachIdParams);
 }
 
 NV_STATUS cliresCtrlCmdGpuDetachIds_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_GPU_DETACH_IDS_PARAMS *pGpuDetachIds);
@@ -782,6 +815,18 @@ NV_STATUS cliresCtrlCmdGsyncGetIdInfo_IMPL(struct RmClientResource *pRmCliRes, N
 
 static inline NV_STATUS cliresCtrlCmdGsyncGetIdInfo_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_GSYNC_GET_ID_INFO_PARAMS *pGsyncIdInfoParams) {
     return pRmCliRes->__cliresCtrlCmdGsyncGetIdInfo__(pRmCliRes, pGsyncIdInfoParams);
+}
+
+NV_STATUS cliresCtrlCmdDiagProfileRpc_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_DIAG_PROFILE_RPC_PARAMS *pRpcProfileParams);
+
+static inline NV_STATUS cliresCtrlCmdDiagProfileRpc_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_DIAG_PROFILE_RPC_PARAMS *pRpcProfileParams) {
+    return pRmCliRes->__cliresCtrlCmdDiagProfileRpc__(pRmCliRes, pRpcProfileParams);
+}
+
+NV_STATUS cliresCtrlCmdDiagDumpRpc_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_DIAG_DUMP_RPC_PARAMS *pRpcDumpParams);
+
+static inline NV_STATUS cliresCtrlCmdDiagDumpRpc_DISPATCH(struct RmClientResource *pRmCliRes, NV0000_CTRL_DIAG_DUMP_RPC_PARAMS *pRpcDumpParams) {
+    return pRmCliRes->__cliresCtrlCmdDiagDumpRpc__(pRmCliRes, pRpcDumpParams);
 }
 
 NV_STATUS cliresCtrlCmdEventSetNotification_IMPL(struct RmClientResource *pRmCliRes, NV0000_CTRL_EVENT_SET_NOTIFICATION_PARAMS *pEventSetNotificationParams);
@@ -1022,6 +1067,10 @@ static inline NvBool cliresCanCopy_DISPATCH(struct RmClientResource *pResource) 
     return pResource->__cliresCanCopy__(pResource);
 }
 
+static inline NvBool cliresIsPartialUnmapSupported_DISPATCH(struct RmClientResource *pResource) {
+    return pResource->__cliresIsPartialUnmapSupported__(pResource);
+}
+
 static inline void cliresPreDestruct_DISPATCH(struct RmClientResource *pResource) {
     pResource->__cliresPreDestruct__(pResource);
 }
@@ -1044,10 +1093,6 @@ static inline PEVENTNOTIFICATION *cliresGetNotificationListPtr_DISPATCH(struct R
 
 static inline struct NotifShare *cliresGetNotificationShare_DISPATCH(struct RmClientResource *pNotifier) {
     return pNotifier->__cliresGetNotificationShare__(pNotifier);
-}
-
-static inline NV_STATUS cliresControlLookup_DISPATCH(struct RmClientResource *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__cliresControlLookup__(pResource, pParams, ppEntry);
 }
 
 static inline NV_STATUS cliresMap_DISPATCH(struct RmClientResource *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {
@@ -1073,7 +1118,8 @@ NV_STATUS CliGetSystemP2pCaps(NvU32 *gpuIds,
                               NvU32 *p2pOptimalReadCEs,
                               NvU32 *p2pOptimalWriteCEs,
                               NvU8 *p2pCapsStatus,
-                              NvU32 *pBusPeerIds);
+                              NvU32 *pBusPeerIds,
+                              NvU32 *pBusEgmPeerIds);
 
 #endif
 

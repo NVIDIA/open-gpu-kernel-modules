@@ -28,6 +28,8 @@
 #include "vgpu/vgpu_events.h"
 #include "nv_sriov_defines.h"
 #include "kernel/gpu/intr/intr.h"
+#include "kernel/gpu/gsp/kernel_gsp.h"
+#include "kernel/gpu/conf_compute/ccsl.h"
 
 #include "mmu/gmmu_fmt.h"
 #include "published/hopper/gh100/dev_mmu.h"
@@ -425,8 +427,6 @@ kgmmuGetFaultRegisterMappings_GH100
         *pFaultBufferGet = (NvU32*) &(pFaultBufSharedMem->swGetIndex);
         *pFaultBufferPut = NvP64_PLUS_OFFSET(bar0Mapping,
                      GPU_GET_VREG_OFFSET(pGpu, NV_VIRTUAL_FUNCTION_PRIV_ACCESS_COUNTER_NOTIFY_BUFFER_HI));
-        *pPrefetchCtrl = NvP64_PLUS_OFFSET(bar0Mapping,
-                     GPU_GET_VREG_OFFSET(pGpu, NV_VIRTUAL_FUNCTION_PRIV_MMU_PAGE_FAULT_CTRL));
     }
     else if (index == NON_REPLAYABLE_FAULT_BUFFER)
     {
@@ -472,8 +472,7 @@ kgmmuFaultBufferAllocSharedMemory_GH100
 
     //
     // On systems with SEV enabled, the fault buffer flush sequence memory should be allocated
-    // in unprotected sysmem as GSP will be writing to this location to let the guest
-    // know a flush has finished.
+    // in unprotected sysmem as GSP will be reading this location to check whether the Replayable buffer is full.
     //
     flags |= MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY;
 
@@ -562,43 +561,41 @@ kgmmuIssueReplayableFaultBufferFlush_GH100
     KernelGmmu *pKernelGmmu
 )
 {
-    GMMU_CLIENT_SHADOW_FAULT_BUFFER *pClientShadowFaultBuffer;
-    FAULT_BUFFER_SHARED_MEMORY *pFaultBufSharedMem;
-    NvU32 gfid;
-    volatile NvU32 *pFlushSeqAddr;
-    NvU32 replayableFlushSeqValue;
-    NV_STATUS status;
-    RMTIMEOUT timeout;
+    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
 
     if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu) || !IS_GSP_CLIENT(pGpu))
     {
-        return NV_OK;
+        return NV_ERR_NOT_SUPPORTED;
     }
 
-    NV_ASSERT_OK_OR_RETURN(vgpuGetCallingContextGfid(pGpu, &gfid));
+    return kgspIssueNotifyOp_HAL(pGpu, pKernelGsp, GSP_NOTIFY_OP_FLUSH_REPLAYABLE_FAULT_BUFFER_OPCODE, NULL, 0);
+}
 
-    pClientShadowFaultBuffer = &pKernelGmmu->mmuFaultBuffer[gfid].clientShadowFaultBuffer[REPLAYABLE_FAULT_BUFFER];
-    pFaultBufSharedMem = KERNEL_POINTER_FROM_NvP64(FAULT_BUFFER_SHARED_MEMORY *,
-                                                   pClientShadowFaultBuffer->pFaultBufferSharedMemoryAddress);
-    pFlushSeqAddr = (NvU32*) &(pFaultBufSharedMem->flushBufferSeqNum);
-    replayableFlushSeqValue = *pFlushSeqAddr;
+/*
+ * @brief The GSP client can use this function to toggle the prefetch ctrl register state.
+ * The write of the register will be performed by GSP.
+ *
+ * @param[in]  pGpu         OBJGPU pointer
+ * @param[in]  pKernelGmmu  KernelGmmu pointer
+ * @param[in]  bEnable      Enable/Disable fault on prefetch.
+ */
+NV_STATUS
+kgmmuToggleFaultOnPrefetch_GH100
+(
+    OBJGPU *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvBool bEnable
+)
+{
+    KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+    NvU32 arg = !!bEnable;
 
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-    GPU_VREG_WR32(pGpu, NV_VIRTUAL_FUNCTION_PRIV_DOORBELL, NV_DOORBELL_NOTIFY_LEAF_SERVICE_REPLAYABLE_FAULT_FLUSH_HANDLE);
-
-    while (replayableFlushSeqValue + 1 != *pFlushSeqAddr)
+    if (!IS_GSP_CLIENT(pGpu))
     {
-        status = gpuCheckTimeout(pGpu, &timeout);
-
-        if (status != NV_OK)
-        {
-            NV_PRINTF(LEVEL_ERROR, "gpuCheckTimeout failed, status = 0x%x\n", status);
-            return status;
-        }
-        osSpinLoop();
+        return NV_ERR_NOT_SUPPORTED;
     }
 
-    return NV_OK;
+    return kgspIssueNotifyOp_HAL(pGpu, pKernelGsp, GSP_NOTIFY_OP_TOGGLE_FAULT_ON_PREFETCH_OPCODE, &arg, 1 /* argc */);
 }
 
 /*
@@ -631,4 +628,360 @@ kgmmuReadShadowBufPutIndex_GH100
         val = DRF_VAL(_VIRTUAL_FUNCTION_PRIV, _NON_REPLAYABLE_FAULT_SHADOW_BUFFER_PUT, _PTR, val);
     }
     return val;
+}
+
+/*!
+ * @brief Check if the given engineID is BAR1
+ *
+ * @param[in] pKernelGmmu  KernelGmmu object
+ * @param[in] engineID     Engine ID
+ *
+ * @return True if BAR1
+ */
+NvBool
+kgmmuIsFaultEngineBar1_GH100
+(
+    KernelGmmu *pKernelGmmu,
+    NvU32       engineID
+)
+{
+    return (engineID == NV_PFAULT_MMU_ENG_ID_BAR1);
+}
+
+/*!
+ * @brief Check if the given engineID is BAR2
+ *
+ * @param[in] pKernelGmmu  KernelGmmu object
+ * @param[in] engineID     Engine ID
+ *
+ * @return True if BAR2
+ */
+NvBool
+kgmmuIsFaultEngineBar2_GH100
+(
+    KernelGmmu *pKernelGmmu,
+    NvU32       engineID
+)
+{
+    return (engineID == NV_PFAULT_MMU_ENG_ID_BAR2);
+}
+
+/*!
+ * @brief Check if the given engineID is PHYSICAL
+ *
+ * @param[in] pKernelGmmu  KernelGmmu object
+ * @param[in] engineID     Engine ID
+ *
+ * @return True if PHYSICAL
+ */
+NvBool
+kgmmuIsFaultEnginePhysical_GH100
+(
+    KernelGmmu *pKernelGmmu,
+    NvU32       engineID
+)
+{
+    return (engineID == NV_PFAULT_MMU_ENG_ID_PHYSICAL);
+}
+
+NvU32
+kgmmuReadClientShadowBufPutIndex_GH100
+(
+    OBJGPU            *pGpu,
+    KernelGmmu        *pKernelGmmu,
+    NvU32              gfid,
+    FAULT_BUFFER_TYPE  type
+)
+{
+    return 0;
+}
+
+void
+kgmmuWriteClientShadowBufPutIndex_GH100
+(
+    OBJGPU            *pGpu,
+    KernelGmmu        *pKernelGmmu,
+    NvU32              gfid,
+    FAULT_BUFFER_TYPE  type,
+    NvU32              putIndex
+)
+{
+}
+
+/*
+ * @brief Copies a single fault packet from the replayable/non-replayable
+ *        HW fault buffer to the corresponding client shadow buffer
+ *
+ * @param[in]  pFaultBuffer        Pointer to GMMU_FAULT_BUFFER
+ * @param[in]  type                Replayable/Non-replayable fault type
+ * @param[in]  getIndex            Get pointer of the HW fault buffer
+ * @param[in]  shadowBufPutIndex   Put pointer of the shadow buffer
+ * @param[in]  maxBufferEntries    Maximum possible entries in the HW buffer
+ * @param[in]  pThreadState        Pointer to THREAD_STATE_NODE
+ * @param[out] pFaultsCopied       Number of fault packets copied by the function
+ *
+ * @returns NV_STATUS
+ */
+NV_STATUS
+kgmmuCopyFaultPacketToClientShadowBuffer_GH100
+(
+    OBJGPU                   *pGpu,
+    KernelGmmu               *pKernelGmmu,
+    struct GMMU_FAULT_BUFFER *pFaultBuffer,
+    FAULT_BUFFER_TYPE         type,
+    NvU32                     getIndex,
+    NvU32                     shadowBufPutIndex,
+    NvU32                     maxBufferEntries,
+    THREAD_STATE_NODE        *pThreadState,
+    NvU32                    *pFaultsCopied
+)
+{
+    struct HW_FAULT_BUFFER *pHwFaultBuffer = NULL;
+    GMMU_CLIENT_SHADOW_FAULT_BUFFER *pClientShadowFaultBuf = NULL;
+    GMMU_FAULT_PACKET faultPacket;
+    NvU32 faultPacketsPerPage;
+    NvU32 faultPacketPageIndex;
+    NvU32 faultPacketPageOffset;
+    void *pSrc;
+    NvU8 *pDst;
+    NV_STATUS status;
+    NvU8 *pDstMetadata;
+    NvU32 metadataStartIndex;
+    NvU32 metadataPerPage;
+    NvU32 metadataPageIndex;
+    NvU32 metadataPageOffset;
+    NvU8  validBit = 1;
+    void *pCslCtx = NULL;
+
+    if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu))
+    {
+        return kgmmuCopyFaultPacketToClientShadowBuffer_GV100(pGpu, pKernelGmmu,
+                                                              pFaultBuffer,
+                                                              type,
+                                                              getIndex,
+                                                              shadowBufPutIndex,
+                                                              maxBufferEntries,
+                                                              pThreadState,
+                                                              pFaultsCopied);
+    }
+
+    *pFaultsCopied = 0;
+
+    pHwFaultBuffer = &pFaultBuffer->hwFaultBuffers[type];
+    pClientShadowFaultBuf = pFaultBuffer->pClientShadowFaultBuffer[type];
+
+    // Read the fault packet from HW buffer
+    pSrc = kgmmuFaultBufferGetFault_HAL(pGpu, pKernelGmmu, pHwFaultBuffer, getIndex);
+    portMemCopy(&faultPacket, sizeof(GMMU_FAULT_PACKET), pSrc, sizeof(GMMU_FAULT_PACKET));
+
+    //
+    // The following is the sequence to be followed for replayable faults
+    // as per production design when Hopper CC is enabled
+    //
+    if (type == REPLAYABLE_FAULT_BUFFER)
+    {
+        NvU32 nextGetIndex;
+
+        kgmmuFaultBufferClearPackets_HAL(pGpu, pKernelGmmu, pHwFaultBuffer, getIndex, 1);
+
+        //
+        // Ensure all writes to the current entry are completed before updating the
+        // GET pointer.
+        //
+        portAtomicMemoryFenceStore();
+
+        nextGetIndex = (getIndex + 1) % maxBufferEntries;
+
+        // Update cached GET to a valid value.
+        pHwFaultBuffer->cachedGetIndex = nextGetIndex;
+
+        // Increment the GET pointer to enable HW to write new fault packets
+        kgmmuWriteFaultBufferGetPtr_HAL(pGpu, pKernelGmmu, type, pHwFaultBuffer->cachedGetIndex, pThreadState);
+
+        // Check if there is space in the shadow buffer
+        if (kgmmuIsReplayableShadowFaultBufferFull_HAL(pGpu, pKernelGmmu,
+                                                       pClientShadowFaultBuf,
+                                                       shadowBufPutIndex,
+                                                       maxBufferEntries))
+        {
+            // The design allows the SW Repalyable shadow fault buffer to overflow.
+            return NV_OK;
+        }
+    }
+
+    faultPacketsPerPage = RM_PAGE_SIZE / sizeof(GMMU_FAULT_PACKET);
+    faultPacketPageIndex = shadowBufPutIndex / faultPacketsPerPage;
+    faultPacketPageOffset = shadowBufPutIndex % faultPacketsPerPage;
+
+    pDst = KERNEL_POINTER_FROM_NvP64(NvU8 *,
+               pClientShadowFaultBuf->pBufferPages[faultPacketPageIndex].pAddress);
+    pDst += (faultPacketPageOffset * sizeof(GMMU_FAULT_PACKET));
+
+    //
+    // Metadata is packed at the end of the buffer.
+    // Calculate the page index and offset at which RM needs to fill the metadata
+    // and copy it over.
+    //
+    metadataStartIndex = pClientShadowFaultBuf->metadataStartIndex;
+    metadataPerPage = RM_PAGE_SIZE / sizeof(GMMU_FAULT_PACKET_METADATA);
+    metadataPageIndex = shadowBufPutIndex / metadataPerPage;
+    metadataPageOffset = shadowBufPutIndex % faultPacketsPerPage;
+
+    pDstMetadata = KERNEL_POINTER_FROM_NvP64(NvU8 *,
+                   pClientShadowFaultBuf->pBufferPages[metadataStartIndex + metadataPageIndex].pAddress);
+    pDstMetadata += (metadataPageOffset * sizeof(GMMU_FAULT_PACKET_METADATA));
+
+    // Sanity check client reset the Valid bit.
+    if (pDstMetadata[GMMU_FAULT_PACKET_METADATA_VALID_IDX] != 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Plaintext valid bit not reset by client.\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    pCslCtx = kgmmuGetShadowFaultBufferCslContext(pGpu, pKernelGmmu, type);
+    if (pCslCtx == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "CSL context for type 0x%x unexpectedtly NULL\n", type);
+        return NV_ERR_INVALID_STATE;
+    }
+
+    status = ccslEncrypt(pCslCtx,
+                         sizeof(GMMU_FAULT_PACKET),
+                         (NvU8*) &faultPacket,
+                         &validBit,
+                         GMMU_FAULT_PACKET_METADATA_VALID_SIZE,
+                         pDst,
+                         &pDstMetadata[GMMU_FAULT_PACKET_METADATA_AUTHTAG_IDX]);
+    if (status != NV_OK)
+    {
+        if (status == NV_ERR_INSUFFICIENT_RESOURCES)
+        {
+            // IV overflow is considered fatal.
+            NV_PRINTF(LEVEL_ERROR, "Fatal error detected in fault buffer packet encryption: IV overflow!\n");
+            confComputeSetErrorState(pGpu, GPU_GET_CONF_COMPUTE(pGpu));
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "Error detected in fault buffer packet encryption: 0x%x\n", status);
+        }
+        return status;
+    }
+
+    //
+    // Ensure that the encrypted packet and authTag have reached point of coherence
+    // before writing the plaintext valid bit.
+    //
+    portAtomicMemoryFenceStore();
+
+    // Write the valid bit and increment the number of faults copied.
+    portMemCopy((void*)&pDstMetadata[GMMU_FAULT_PACKET_METADATA_VALID_IDX],
+                GMMU_FAULT_PACKET_METADATA_VALID_SIZE,
+                &validBit,
+                GMMU_FAULT_PACKET_METADATA_VALID_SIZE);
+
+    *pFaultsCopied = 1;
+
+    return NV_OK;
+}
+
+/*
+ * @brief Checks if the client shadow buffer has space
+ *
+ * @param[in]  pClientShadowFaultBuf  Pointer to the shadow buffer
+ * @param[in]  shadowBufPutIndex      Put index inside shadow buffer
+ * @param[in]  maxBufferEntries       Maximum possible entries in the HW buffer
+ *
+ * @returns NV_TRUE/NV_FALSE
+ */
+NvBool
+kgmmuIsReplayableShadowFaultBufferFull_GH100
+(
+    OBJGPU                          *pGpu,
+    KernelGmmu                      *pKernelGmmu,
+    GMMU_CLIENT_SHADOW_FAULT_BUFFER *pClientShadowFaultBuf,
+    NvU32                            shadowBufPutIndex,
+    NvU32                            maxBufferEntries
+)
+{
+    FAULT_BUFFER_SHARED_MEMORY *pFaultBufSharedMem;
+
+    pFaultBufSharedMem =
+        KERNEL_POINTER_FROM_NvP64(FAULT_BUFFER_SHARED_MEMORY *,
+                        pClientShadowFaultBuf->pFaultBufferSharedMemoryAddress);
+
+    return (pFaultBufSharedMem->swGetIndex ==
+            ((shadowBufPutIndex + 1) % maxBufferEntries)) ? NV_TRUE : NV_FALSE;
+}
+
+/*!
+ * @brief Get the engine ID associated with the min CE
+ *
+ * @param[in] pKenrelGmmu  KernelGmmu object
+ *
+ * return engine ID of the min CE
+ */
+NvU32
+kgmmuGetMinCeEngineId_GH100
+(
+    KernelGmmu *pKernelGmmu
+)
+{
+    return NV_PFAULT_MMU_ENG_ID_CE0;
+}
+
+/*!
+ * @brief Get the engine ID associated with the max CE
+ *
+ * @param[in] pGpu         OBJGPU object
+ * @param[in] pKenrelGmmu  KernelGmmu object
+ *
+ * return engine ID of the max CE
+ */
+NvU32
+kgmmuGetMaxCeEngineId_GH100
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu
+)
+{
+    return NV_PFAULT_MMU_ENG_ID_CE9;
+}
+
+/**
+  * @brief  Sign extend a fault address to a supported width as per UVM requirements
+  */
+void
+kgmmuSignExtendFaultAddress_GH100
+(
+    OBJGPU     *pGpu,
+    KernelGmmu *pKernelGmmu,
+    NvU64      *pMmuFaultAddress
+)
+{
+    NvU32 cpuAddrShift   = osGetCpuVaAddrShift();
+    NvU32 gpuVaAddrShift = portUtilCountTrailingZeros64(pKernelGmmu->maxVASize);
+
+    // Sign extend VA to ensure it's in canonical form if required
+    if (gpuVaAddrShift >= cpuAddrShift)
+    {
+        switch (pGpu->busInfo.oorArch)
+        {
+            case OOR_ARCH_X86_64:
+            case OOR_ARCH_ARM:
+            case OOR_ARCH_AARCH64:
+                *pMmuFaultAddress = (NvU64)(((NvS64)*pMmuFaultAddress << (64 - 57)) >>
+                                            (64 - 57));
+                break;
+            case OOR_ARCH_PPC64LE:
+                break;
+            case OOR_ARCH_NONE:
+                NV_ASSERT_FAILED("Invalid oor address mode type.");
+                break;
+        }
+    }
+    else
+    {
+        NV_PRINTF(LEVEL_ERROR, "UVM has not defined what to do here, doing nothing\n");
+        NV_ASSERT(0);
+    }
 }

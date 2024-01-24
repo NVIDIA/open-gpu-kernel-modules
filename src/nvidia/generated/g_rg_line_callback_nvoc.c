@@ -137,10 +137,6 @@ static void __nvoc_thunk_RmResource_rglcbControl_Epilogue(struct RgLineCallback 
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_rglcbControlLookup(struct RgLineCallback *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_rglcbGetInternalObjectHandle(struct RgLineCallback *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_RgLineCallback_GpuResource.offset));
 }
@@ -171,6 +167,10 @@ static NV_STATUS __nvoc_thunk_RmResource_rglcbControlSerialization_Prologue(stru
 
 static NvBool __nvoc_thunk_RsResource_rglcbCanCopy(struct RgLineCallback *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_rglcbIsPartialUnmapSupported(struct RgLineCallback *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_RgLineCallback_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_rglcbPreDestruct(struct RgLineCallback *pResource) {
@@ -254,8 +254,6 @@ static void __nvoc_init_funcTable_RgLineCallback_1(RgLineCallback *pThis) {
 
     pThis->__rglcbControl_Epilogue__ = &__nvoc_thunk_RmResource_rglcbControl_Epilogue;
 
-    pThis->__rglcbControlLookup__ = &__nvoc_thunk_RsResource_rglcbControlLookup;
-
     pThis->__rglcbGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_rglcbGetInternalObjectHandle;
 
     pThis->__rglcbControl__ = &__nvoc_thunk_GpuResource_rglcbControl;
@@ -271,6 +269,8 @@ static void __nvoc_init_funcTable_RgLineCallback_1(RgLineCallback *pThis) {
     pThis->__rglcbControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_rglcbControlSerialization_Prologue;
 
     pThis->__rglcbCanCopy__ = &__nvoc_thunk_RsResource_rglcbCanCopy;
+
+    pThis->__rglcbIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_rglcbIsPartialUnmapSupported;
 
     pThis->__rglcbPreDestruct__ = &__nvoc_thunk_RsResource_rglcbPreDestruct;
 
@@ -299,21 +299,26 @@ void __nvoc_init_RgLineCallback(RgLineCallback *pThis) {
     __nvoc_init_funcTable_RgLineCallback(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     RgLineCallback *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(RgLineCallback), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(RgLineCallback));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_RgLineCallback);
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -328,16 +333,25 @@ NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback **ppThis, Dynamic *pPar
     status = __nvoc_ctor_RgLineCallback(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_RgLineCallback_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_RgLineCallback_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(RgLineCallback));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

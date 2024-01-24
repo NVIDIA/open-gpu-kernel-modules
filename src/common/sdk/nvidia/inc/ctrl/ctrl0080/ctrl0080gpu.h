@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -468,6 +468,9 @@ typedef struct NV0080_CTRL_GPU_GET_VGX_CAPS_PARAMS {
  *   bNonPowerOf2ChannelCountSupported
  *     Flag for whether non power of 2 VF channels are supported.
  *
+ *   bVfResizableBAR1Supported
+ *     Flag for whether Resizable VF BAR1 capability is supported.
+ *
 * Possible status values returned are:
  *   NV_OK
  *   NV_ERR_NOT_SUPPORTED
@@ -494,11 +497,12 @@ typedef struct NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS {
     NvBool bEmulateVFBar0TlbInvalidationRegister;
     NvBool bClientRmAllocatedCtxBuffer;
     NvBool bNonPowerOf2ChannelCountSupported;
+    NvBool bVfResizableBAR1Supported;
 } NV0080_CTRL_GPU_GET_SRIOV_CAPS_PARAMS;
 
 
 // Update this macro if new HW exceeds GPU Classlist MAX_SIZE
-#define NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE   160
+#define NV0080_CTRL_GPU_CLASSLIST_MAX_SIZE   174
 
 #define NV0080_CTRL_CMD_GPU_GET_CLASSLIST_V2 (0x800292) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_GPU_INTERFACE_ID << 8) | NV0080_CTRL_GPU_GET_CLASSLIST_V2_PARAMS_MESSAGE_ID" */
 
@@ -550,32 +554,32 @@ typedef struct NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS {
 
 /*
  * These are the per-VF BAR1 sizes that we support in MB.
- * They are used with the NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE control call and
- * should match the NV_XVE_BAR1_CONFIG_SIZE register defines.
  */
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_64M       64
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_128M      128
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_256M      256
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_512M      512
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_1G        1024
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_2G        2048
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_4G        4096
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_8G        8192
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_16G       16384
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_32G       32768
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_64G       65536
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_128G      131072
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_64M       (1 << 6)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_128M      (1 << 7)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_256M      (1 << 8)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_512M      (1 << 9)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_1G        (1 << 10)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_2G        (1 << 11)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_4G        (1 << 12)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_8G        (1 << 13)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_16G       (1 << 14)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_32G       (1 << 15)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_64G       (1 << 16)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_128G      (1 << 17)
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_256G      (1 << 18)
 #define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_MIN       NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_64M
-#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_MAX       NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_128G
+#define NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_MAX       NV0080_CTRL_GPU_VGPU_VF_BAR1_SIZE_256G
 
-#define NV0080_CTRL_GPU_VGPU_NUM_VFS_INVALID        NV_U32_MAX
+#define NV0080_CTRL_GPU_VGPU_NUM_VFS_INVALID        0x0
 
 /*
  * NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE
  *
  * @brief Resize BAR1 per-VF on the given GPU
- *   vfBar1SizeMB[in]   size of per-VF BAR1 size in MB
- *   numVfs[out]        number of VFs that can be created given the new BAR1 size
+ *   vfBar1SizeMB[in]   Requested VF BAR1 size in MB
+ *   numVfs[out]        Number of VFs that can be created
+ *                      given the requested BAR1 size
  */
 #define NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE (0x800296) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_GPU_INTERFACE_ID << 8) | NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE_PARAMS_MESSAGE_ID" */
 
@@ -585,5 +589,61 @@ typedef struct NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE_PARAMS {
     NvU32 vfBar1SizeMB;
     NvU32 numVfs;
 } NV0080_CTRL_GPU_SET_VGPU_VF_BAR1_SIZE_PARAMS;
+
+/*
+ * NV0080_CTRL_CMD_GPU_SET_VGPU_HETEROGENEOUS_MODE
+ *
+ * This command set a value indicating vGPU heterogeneous mode.
+ * vGPU heterogeneous mode on a GPU can only be set when the command
+ * is running in a vGPU host device.
+ *
+ *   bHeterogeneousMode
+ *     This parameter set the vGPU heterogeneous mode of the device.
+ *     Possible values are:
+ *       NV_TRUE
+ *         This value indicates that the device will be associated with vGPU heterogeneous mode.
+ *       NV_FALSE
+ *         This value indicates that the device will be removed from vGPU heterogeneous mode.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ *   NV_ERR_IN_USE
+ *   NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV0080_CTRL_CMD_GPU_SET_VGPU_HETEROGENEOUS_MODE (0x800297) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_GPU_INTERFACE_ID << 8) | NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS_MESSAGE_ID" */
+
+#define NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS_MESSAGE_ID (0x97U)
+
+typedef struct NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS {
+    NvBool bHeterogeneousMode;
+} NV0080_CTRL_GPU_SET_VGPU_HETEROGENEOUS_MODE_PARAMS;
+
+/**
+ * NV0080_CTRL_CMD_GPU_GET_VGPU_HETEROGENEOUS_MODE
+ *
+ * This command returns a value indicating vGPU heterogeneous mode of
+ * the GPU.
+ *
+ *   bHeterogeneousMode
+ *     This parameter returns the vGPU heterogeneous mode of the device.
+ *     Possible values are:
+ *       NV_TRUE
+ *         This value indicates that the device is associated with vGPU heterogeneous mode.
+ *       NV_FALSE
+ *         This value indicates that the device is not in vGPU heterogeneous mode.
+ *
+ * Possible status values returned are:
+ *   NV_OK
+ *   NV_ERR_INVALID_ARGUMENT
+ */
+#define NV0080_CTRL_CMD_GPU_GET_VGPU_HETEROGENEOUS_MODE (0x800298) /* finn: Evaluated from "(FINN_NV01_DEVICE_0_GPU_INTERFACE_ID << 8) | NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS_MESSAGE_ID" */
+
+#define NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS_MESSAGE_ID (0x98U)
+
+typedef struct NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS {
+    NvBool bHeterogeneousMode;
+} NV0080_CTRL_GPU_GET_VGPU_HETEROGENEOUS_MODE_PARAMS;
 
 /* _ctrl0080gpu_h_ */

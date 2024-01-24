@@ -368,8 +368,7 @@ static NvBool GpuIdInDevEvo(NVDevEvoPtr pDevEvo, NvU32 gpuId)
 /*!
  * Free the pFrameLock object.
  */
-static void FreeFrameLockEvo(NVDevEvoPtr pDevEvo,
-                             NVFrameLockEvoPtr pFrameLockEvo)
+static void FreeFrameLockEvo(NVFrameLockEvoPtr pFrameLockEvo)
 {
     if (pFrameLockEvo == NULL) {
         return;
@@ -380,12 +379,14 @@ static void FreeFrameLockEvo(NVDevEvoPtr pDevEvo,
                     nvEvoGlobal.clientHandle,
                     pFrameLockEvo->device);
 
-        nvFreeUnixRmHandle(&pDevEvo->handleAllocator,
+        nvFreeUnixRmHandle(&pFrameLockEvo->handleAllocator,
                            pFrameLockEvo->device);
         pFrameLockEvo->device = 0;
     }
 
     nvAssert(pFrameLockEvo->nGpuIds == 0);
+
+    nvTearDownUnixRmHandleAllocator(&pFrameLockEvo->handleAllocator);
 
     nvListDel(&pFrameLockEvo->frameLockListEntry);
 
@@ -395,14 +396,16 @@ static void FreeFrameLockEvo(NVDevEvoPtr pDevEvo,
 /*!
  * Allocate and initialize a new pFrameLock object.
  */
-static NVFrameLockEvoPtr AllocFrameLockEvo(NVDevEvoPtr pDevEvo,
-                                           int instance, NvU32 gsyncId)
+static NVFrameLockEvoPtr AllocFrameLockEvo(int instance, NvU32 gsyncId,
+                                           NvBool *pBadFirmware)
 {
     NV30F1_ALLOC_PARAMETERS gsyncAllocParams = { 0 };
     NV30F1_CTRL_GSYNC_GET_CAPS_PARAMS gsyncGetCapsParams = { 0 };
     NVFrameLockEvoPtr pFrameLockEvo;
 
     nvAssert(FindFrameLock(gsyncId) == NULL);
+
+    *pBadFirmware = FALSE;
 
     pFrameLockEvo = nvCalloc(1, sizeof(NVFrameLockEvoRec));
 
@@ -412,7 +415,16 @@ static NVFrameLockEvoPtr AllocFrameLockEvo(NVDevEvoPtr pDevEvo,
 
     nvListInit(&pFrameLockEvo->frameLockListEntry);
 
-    pFrameLockEvo->device = nvGenerateUnixRmHandle(&pDevEvo->handleAllocator);
+    if (!nvInitUnixRmHandleAllocator(
+            &pFrameLockEvo->handleAllocator,
+            nvEvoGlobal.clientHandle,
+            NVKMS_RM_HANDLE_SPACE_FRAMELOCK(instance))) {
+        nvEvoLog(EVO_LOG_ERROR, "Failed to initialize framelock handles");
+        goto fail;
+    }
+
+    pFrameLockEvo->device =
+        nvGenerateUnixRmHandle(&pFrameLockEvo->handleAllocator);
 
     gsyncAllocParams.gsyncInstance = instance;
 
@@ -456,13 +468,8 @@ static NVFrameLockEvoPtr AllocFrameLockEvo(NVDevEvoPtr pDevEvo,
     /* Check if the Quadro Sync card has a firmware
      * version compatible with the GPUs connected to it.
      */
-    pDevEvo->badFramelockFirmware = gsyncGetCapsParams.isFirmwareRevMismatch;
     if (gsyncGetCapsParams.isFirmwareRevMismatch) {
-        nvEvoLogDev(pDevEvo, EVO_LOG_ERROR, "The firmware on this Quadro Sync "
-                    "card is not compatible with the GPUs connected to it."
-                    "  Please visit "
-                    "<https://www.nvidia.com/object/quadro-sync.html> "
-                    "for instructions on installing the correct firmware.");
+        *pBadFirmware = TRUE;
         goto fail;
     }
 
@@ -514,7 +521,7 @@ static NVFrameLockEvoPtr AllocFrameLockEvo(NVDevEvoPtr pDevEvo,
 
 fail:
 
-    FreeFrameLockEvo(pDevEvo, pFrameLockEvo);
+    FreeFrameLockEvo(pFrameLockEvo);
     return NULL;
 }
 
@@ -617,8 +624,8 @@ void nvAllocFrameLocksEvo(NVDevEvoPtr pDevEvo)
     }
 
     for (i = 0; i < ARRAY_LEN(attachedGsyncParams.gsyncIds); i++) {
-
         NVFrameLockEvoPtr pFrameLockEvo;
+        NvBool badFirmware = FALSE;
 
         if (attachedGsyncParams.gsyncIds[i] == NV0000_CTRL_GSYNC_INVALID_ID) {
             continue;
@@ -627,11 +634,20 @@ void nvAllocFrameLocksEvo(NVDevEvoPtr pDevEvo)
         pFrameLockEvo = FindFrameLock(attachedGsyncParams.gsyncIds[i]);
 
         if (pFrameLockEvo == NULL) {
-            pFrameLockEvo = AllocFrameLockEvo(pDevEvo, i,
-                                              attachedGsyncParams.gsyncIds[i]);
+            pFrameLockEvo = AllocFrameLockEvo(i,
+                                              attachedGsyncParams.gsyncIds[i],
+                                              &badFirmware);
         }
 
         if (pFrameLockEvo == NULL) {
+            if (badFirmware) {
+                nvEvoLogDev(pDevEvo, EVO_LOG_ERROR,
+                    "The firmware on this Quadro Sync card is not compatible "
+                    "with the GPUs connected to it.  Please visit "
+                    "<https://www.nvidia.com/object/quadro-sync.html> "
+                    "for instructions on installing the correct firmware.");
+                pDevEvo->badFramelockFirmware = TRUE;
+            }
             continue;
         }
 
@@ -654,7 +670,7 @@ void nvFreeFrameLocksEvo(NVDevEvoPtr pDevEvo)
         UnBindFrameLockFromDevEvo(pFrameLockEvo, pDevEvo);
 
         if (pFrameLockEvo->nGpuIds == 0) {
-            FreeFrameLockEvo(pDevEvo, pFrameLockEvo);
+            FreeFrameLockEvo(pFrameLockEvo);
         }
     }
 }
@@ -2006,11 +2022,6 @@ static const struct {
     },
     [NV_KMS_DISP_ATTRIBUTE_FRAMELOCK_SET_SWAP_BARRIER] = {
         .set  = SetSwapBarrier,
-        .get  = NULL,
-        .type = NV_KMS_ATTRIBUTE_TYPE_BOOLEAN,
-    },
-    [NV_KMS_DISP_ATTRIBUTE_ALLOW_FLIPLOCK] = {
-        .set  = nvAllowFlipLockEvo,
         .get  = NULL,
         .type = NV_KMS_ATTRIBUTE_TYPE_BOOLEAN,
     },

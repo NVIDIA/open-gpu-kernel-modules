@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -118,7 +118,7 @@
  * codes above 0xFF000000 and below 0xFF100000 must match one-for-one
  * the vmiop_error_t codes in vmioplugin.h, with 0xFF000000 added.
  */
-#define NV_VGPU_MSG_RESULT__VMIOP             0xFF000007:0xFF000000 /* RW--D */
+#define NV_VGPU_MSG_RESULT__VMIOP             0xFF00000a:0xFF000000 /* RW--D */
 #define NV_VGPU_MSG_RESULT_VMIOP_INVAL                   0xFF000001 /* RW--V */
 #define NV_VGPU_MSG_RESULT_VMIOP_RESOURCE                0xFF000002 /* RW--V */
 #define NV_VGPU_MSG_RESULT_VMIOP_RANGE                   0xFF000003 /* RW--V */
@@ -126,8 +126,11 @@
 #define NV_VGPU_MSG_RESULT_VMIOP_NOT_FOUND               0xFF000005 /* RW--V */
 #define NV_VGPU_MSG_RESULT_VMIOP_NO_ADDRESS_SPACE        0xFF000006 /* RW--V */
 #define NV_VGPU_MSG_RESULT_VMIOP_TIMEOUT                 0xFF000007 /* RW--V */
+#define NV_VGPU_MSG_RESULT_VMIOP_NOT_ALLOWED_IN_CALLBACK 0xFF000008 /* RW--V */
+#define NV_VGPU_MSG_RESULT_VMIOP_ECC_MISMATCH            0xFF000009 /* RW--V */
+#define NV_VGPU_MSG_RESULT_VMIOP_NOT_SUPPORTED           0xFF00000a /* RW--V */
 /* RPC-specific error codes */
-#define NV_VGPU_MSG_RESULT__RPC               0xFF100007:0xFF100000 /* RW--D */
+#define NV_VGPU_MSG_RESULT__RPC               0xFF100009:0xFF100000 /* RW--D */
 #define NV_VGPU_MSG_RESULT_RPC_UNKNOWN_FUNCTION          0xFF100001 /* RW--V */
 #define NV_VGPU_MSG_RESULT_RPC_INVALID_MESSAGE_FORMAT    0xFF100002 /* RW--V */
 #define NV_VGPU_MSG_RESULT_RPC_HANDLE_NOT_FOUND          0xFF100003 /* RW--V */
@@ -136,6 +139,10 @@
 #define NV_VGPU_MSG_RESULT_RPC_UNKNOWN_VMIOP_ERROR       0xFF100006 /* RW--V */
 #define NV_VGPU_MSG_RESULT_RPC_RESERVED_HANDLE           0xFF100007 /* RW--V */
 #define NV_VGPU_MSG_RESULT_RPC_CUDA_PROFILING_DISABLED   0xFF100008 /* RW--V */
+// This error code is used by plugin to notify the guest the that API control
+// is recognized but not supported. It used by the guest to avoid printing
+// error message about a failed API control.
+#define NV_VGPU_MSG_RESULT_RPC_API_CONTROL_NOT_SUPPORTED 0xFF100009 /* RW--V */
 /* RPC-specific code in result for incomplete request */
 #define NV_VGPU_MSG_RESULT_RPC_PENDING                   0xFFFFFFFF /* RW--V */
 /* shared union field */
@@ -170,6 +177,38 @@
 #define NV_VGPU_LOG_LEVEL_STATUS                         0x00000003 /* RW--V */
 #define NV_VGPU_LOG_LEVEL_DEBUG                          0x00000004 /* RW--V */
 
+typedef enum
+{
+    RPC_GR_BUFFER_TYPE_GRAPHICS                 = 0,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_ZCULL           = 1,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_GRAPHICS_PM     = 2,
+    RPC_GR_BUFFER_TYPE_COMPUTE_PREEMPT          = 3,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_PATCH           = 4,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_BUNDLE_CB       = 5,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_PAGEPOOL_GLOBAL = 6,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_ATTRIBUTE_CB    = 7,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_RTV_CB_GLOBAL   = 8,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_GFXP_POOL       = 9,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_GFXP_CTRL_BLK   = 10,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_FECS_EVENT      = 11,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_PRIV_ACCESS_MAP = 12,
+    RPC_GR_BUFFER_TYPE_GRAPHICS_MAX             = 13,
+} RPC_GR_BUFFER_TYPE;
+
+/*
+ * Maximum entries that can be sent in a single pass of RPC.
+ */
+#define VGPU_RPC_GET_P2P_CAPS_V2_MAX_GPUS_SQUARED_PER_RPC               512
+
+/* Fetching NV2080_CTRL_GR_MAX_CTX_BUFFER_COUNT in single RPC mesaage
+ * causes RPC buffer to overflow. To accommodate, we will have to convert
+ * current RPC to multipass. But currently, RM allocates only
+ * (3 + GR_GLOBALCTX_BUFFER_COUNT) < 32 buffers and they accommodate in single
+ * RPC message size. Hence, not converting current RPC to multipass.
+ * and limiting the max buffer count per RPC to 32.
+ */
+#define GR_MAX_RPC_CTX_BUFFER_COUNT   32
+
 /*
  * Enums specifying the BAR number that we are going to update its PDE
  */
@@ -179,33 +218,6 @@ typedef enum
     NV_RPC_UPDATE_PDE_BAR_2,
     NV_RPC_UPDATE_PDE_BAR_INVALID,
 } NV_RPC_UPDATE_PDE_BAR_TYPE;
-
-/*
- * UVM method stream guest pages operation
- */
-typedef enum
-{
-    NV_RPC_GUEST_PAGE_MAP,
-    NV_RPC_GUEST_PAGE_UNMAP,
-} NV_RPC_GUEST_PAGE_OPERATION;
-
-/*
- * UVM method stream guest page size
- */
-typedef enum
-{
-    NV_RPC_GUEST_PAGE_SIZE_4K,
-    NV_RPC_GUEST_PAGE_SIZE_UNSUPPORTED,
-} NV_RPC_GUEST_PAGE_SIZE;
-
-/*
- * UVM paging channel VASPACE operation
- */
-typedef enum
-{
-    UVM_PAGING_CHANNEL_VASPACE_ALLOC,
-    UVM_PAGING_CHANNEL_VASPACE_FREE,
-} UVM_PAGING_CHANNEL_VASPACE_OPERATION;
 
 typedef struct VIRTUAL_DISPLAY_GET_MAX_RESOLUTION_PARAMS 
 {
@@ -220,13 +232,6 @@ typedef struct VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS
     NvU32 maxNumHeads;
 } VIRTUAL_DISPLAY_GET_NUM_HEADS_PARAMS;
 
-
-/*
- * Maximum guest pages that can be mapped for UVM method stream
- */
-#define UVM_METHOD_STREAM_MAX_GUEST_PAGES_v1C_05   500
-
-#define PMA_SCRUBBER_SHARED_BUFFER_MAX_GUEST_PAGES_v1F_0C 500
 
 /*
  *  Maximum number of SMs that can be read in one RPC call to get error states

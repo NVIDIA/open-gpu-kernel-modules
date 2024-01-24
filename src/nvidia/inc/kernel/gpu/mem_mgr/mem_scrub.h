@@ -127,9 +127,6 @@ NV_STATUS scrubberConstruct(struct OBJGPU *pGpu, struct Heap *pHeap);
  *
  */
 
-NV_STATUS vgpuAllocGuestPmaScrubberSharedBuffer(struct OBJGPU *pGpu, OBJMEMSCRUB *pScrubber);
-void vgpuFreeGuestPmaScrubberSharedBuffer(struct OBJGPU *pGpu, OBJMEMSCRUB *pScrubber);
-
 void scrubberDestruct(struct OBJGPU *pGpu, struct Heap *pHeap, OBJMEMSCRUB *pMemscrub);
 
 

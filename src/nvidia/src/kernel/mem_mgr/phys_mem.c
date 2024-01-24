@@ -32,7 +32,6 @@
 #include "gpu/mem_mgr/heap.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/bus/kern_bus.h"
-#include "gpu/device/device.h"
 #include "rmapi/client.h"
 #include "virtualization/hypervisor/hypervisor.h"
 

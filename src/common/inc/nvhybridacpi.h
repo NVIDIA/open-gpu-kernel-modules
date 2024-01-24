@@ -68,6 +68,39 @@ extern "C"
 #define NVHG_ERROR_UNSUPPORTED  0x80000002  // FunctionCode or SubFunctionCode not supported by this system
 #define NVHG_ERROR_PARM_INVALID 0x80000003  // Parameter is invalid (i.e. start page beyond end of buffer)
 
+// ****************************************************
+// For MXDS Display Output Mux Control Method
+// ****************************************************
+#define MXDS_METHOD_GET_MUX_STATE                                           0x00000000
+#define MXDS_METHOD_SET_DISP_MUX_TO_THISGPU                                 0x00000001
+#define MXDS_METHOD_SET_BACKLIGHT_MUX_TO_THISGPU                            0x00000002
+#define MXDS_METHOD_SET_DISP_AND_BACKLIGHT_MUX_TO_THISGPU                   0x00000003
+
+// return buffer definitions
+#define MXDS_METHOD_MUX_STATE_NOT_MUXED                                     0x00000000
+#define MXDS_METHOD_MUX_STATE_IS_MUXED                                      0x00000001
+
+// 
+// ACPI _MXDS (Switch DispMux state) specific defines
+// These defines are as per the ACPI spec from Bug 2297713
+//
+#define MXDS_METHOD_MUX_OP                                                         3:0
+#define MXDS_METHOD_MUX_OP_GET                                              0x00000000
+#define MXDS_METHOD_MUX_OP_SET                                              0x00000001
+#define MXDS_METHOD_MUX_SET_MODE                                                   4:4
+#define MXDS_METHOD_MUX_SET_MODE_IGPU                                       0x00000000
+#define MXDS_METHOD_MUX_SET_MODE_DGPU                                       0x00000001
+
+// 
+// ACPI _LRST (LCD VDD force reset) specific defines
+// These defines are as per the ACPI spec from NVIDIA
+// DDS Partner Guidelines For Notebook (OEM Doc)
+//
+#define LRST_METHOD_FORCE_RESET_OP                                                 2:0
+#define LRST_METHOD_FORCE_RESET_OP_GET                                      0x00000000
+#define LRST_METHOD_FORCE_RESET_OP_SET_LOW                                  0x00000001
+#define LRST_METHOD_FORCE_RESET_OP_SET_HIGH                                 0x00000002
+
 #if defined(__cplusplus)
 } // extern "C"
 #endif // defined(__cplusplus)

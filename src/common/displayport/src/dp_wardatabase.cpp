@@ -561,7 +561,7 @@ void Edid::applyEdidWorkArounds(NvU32 warFlag, const DpMonitorDenylistData *pDen
 
         // NCP
         case 0x7038:
-            if ((ProductID == 0x005F))
+            if (ProductID == 0x005F)
             {
                 this->WARFlags.bIgnoreDscCap = true;
                 DP_LOG(("DP-WAR> NCP panels incorrectly exposing DSC capability. Ignoring it."));

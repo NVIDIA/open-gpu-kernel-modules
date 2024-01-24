@@ -21,11 +21,15 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
-#include "os/os.h"
+#include "kernel/gpu/device/device.h"
 #include "kernel/gpu/falcon/kernel_falcon.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/nvjpg/kernel_nvjpg_ctx.h"
+#include "os/os.h"
+#include "vgpu/sdk-structures.h"
+
+#include "ctrl/ctrl0080/ctrl0080nvjpg.h"
 
 NV_STATUS
 nvjpgctxConstructHal_KERNEL
@@ -39,6 +43,9 @@ nvjpgctxConstructHal_KERNEL
     OBJGPU            *pGpu = GPU_RES_GET_GPU(pChannelDescendant);
     KernelFalcon      *pKernelFalcon = kflcnGetKernelFalconForEngine(pGpu, pChannelDescendant->resourceDesc.engDesc);
     KernelChannel     *pKernelChannel = pChannelDescendant->pKernelChannel;
+
+    if (pKernelFalcon == NULL)
+        return NV_ERR_INVALID_STATE;
 
     NV_PRINTF(LEVEL_INFO, "nvjpgctxConstruct for 0x%x\n", pChannelDescendant->resourceDesc.engDesc);
 
@@ -58,4 +65,19 @@ void nvjpgctxDestructHal_KERNEL
     NV_PRINTF(LEVEL_INFO, "nvjpgctxDestruct for 0x%x\n", pChannelDescendant->resourceDesc.engDesc);
 
     NV_ASSERT_OK(kflcnFreeContext(pGpu, pKernelFalcon, pKernelChannel, RES_GET_EXT_CLASS_ID(pChannelDescendant)));
+}
+
+NV_STATUS deviceCtrlCmdNvjpgGetCapsV2_VF
+(
+    Device *pDevice,
+    NV0080_CTRL_NVJPG_GET_CAPS_V2_PARAMS *pNvjpgCapsParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
+
+    portMemCopy(pNvjpgCapsParams->capsTbl, sizeof(pNvjpgCapsParams->capsTbl),
+                pVSI->jpegCaps, sizeof(pVSI->jpegCaps));
+    return NV_OK;
 }

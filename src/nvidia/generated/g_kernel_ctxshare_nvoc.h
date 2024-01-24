@@ -79,11 +79,16 @@ typedef struct KernelCtxShareApi KernelCtxShareApi;
  * Instances of this class are ref-counted and will be kept alive until
  * all subcontext copies have been freed by the resource server.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_CTXSHARE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelCtxShare {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RsShared __nvoc_base_RsShared;
@@ -124,13 +129,13 @@ NV_STATUS __nvoc_objCreate_KernelCtxShare(KernelCtxShare**, Dynamic*, NvU32);
 #define __objCreate_KernelCtxShare(ppNewObj, pParent, createFlags) \
     __nvoc_objCreate_KernelCtxShare((ppNewObj), staticCast((pParent), Dynamic), (createFlags))
 
-static inline NV_STATUS kctxshareInit_56cd7a(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, PEMEMBLOCK pBlock) {
+static inline NV_STATUS kctxshareInit_56cd7a(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, struct EMEMBLOCK *pBlock) {
     return NV_OK;
 }
 
 
 #ifdef __nvoc_kernel_ctxshare_h_disabled
-static inline NV_STATUS kctxshareInit(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, PEMEMBLOCK pBlock) {
+static inline NV_STATUS kctxshareInit(struct KernelCtxShare *pKernelCtxShare, struct KernelCtxShareApi *pKernelCtxShareApi, struct OBJGPU *pGpu, struct OBJVASPACE *pVAS, struct KernelChannelGroupApi *pKernelChannelGroupApi, NvU64 offset, struct EMEMBLOCK *pBlock) {
     NV_ASSERT_FAILED_PRECOMP("KernelCtxShare was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -187,11 +192,16 @@ void kctxshareDestruct_IMPL(struct KernelCtxShare *pKernelCtxShare);
 #undef PRIVATE_FIELD
 
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_CTXSHARE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelCtxShareApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -216,7 +226,6 @@ struct KernelCtxShareApi {
     NV_STATUS (*__kctxshareapiInternalControlForward__)(struct KernelCtxShareApi *, NvU32, void *, NvU32);
     NV_STATUS (*__kctxshareapiUnmapFrom__)(struct KernelCtxShareApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__kctxshareapiControl_Epilogue__)(struct KernelCtxShareApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__kctxshareapiControlLookup__)(struct KernelCtxShareApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__kctxshareapiGetInternalObjectHandle__)(struct KernelCtxShareApi *);
     NV_STATUS (*__kctxshareapiControl__)(struct KernelCtxShareApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kctxshareapiUnmap__)(struct KernelCtxShareApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -224,6 +233,7 @@ struct KernelCtxShareApi {
     NV_STATUS (*__kctxshareapiGetMemoryMappingDescriptor__)(struct KernelCtxShareApi *, struct MEMORY_DESCRIPTOR **);
     NV_STATUS (*__kctxshareapiControlFilter__)(struct KernelCtxShareApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__kctxshareapiControlSerialization_Prologue__)(struct KernelCtxShareApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__kctxshareapiIsPartialUnmapSupported__)(struct KernelCtxShareApi *);
     void (*__kctxshareapiPreDestruct__)(struct KernelCtxShareApi *);
     NV_STATUS (*__kctxshareapiIsDuplicate__)(struct KernelCtxShareApi *, NvHandle, NvBool *);
     void (*__kctxshareapiControlSerialization_Epilogue__)(struct KernelCtxShareApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -276,7 +286,6 @@ NV_STATUS __nvoc_objCreate_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU3
 #define kctxshareapiInternalControlForward(pGpuResource, command, pParams, size) kctxshareapiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define kctxshareapiUnmapFrom(pResource, pParams) kctxshareapiUnmapFrom_DISPATCH(pResource, pParams)
 #define kctxshareapiControl_Epilogue(pResource, pCallContext, pParams) kctxshareapiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define kctxshareapiControlLookup(pResource, pParams, ppEntry) kctxshareapiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define kctxshareapiGetInternalObjectHandle(pGpuResource) kctxshareapiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define kctxshareapiControl(pGpuResource, pCallContext, pParams) kctxshareapiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define kctxshareapiUnmap(pGpuResource, pCallContext, pCpuMapping) kctxshareapiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -284,6 +293,7 @@ NV_STATUS __nvoc_objCreate_KernelCtxShareApi(KernelCtxShareApi**, Dynamic*, NvU3
 #define kctxshareapiGetMemoryMappingDescriptor(pRmResource, ppMemDesc) kctxshareapiGetMemoryMappingDescriptor_DISPATCH(pRmResource, ppMemDesc)
 #define kctxshareapiControlFilter(pResource, pCallContext, pParams) kctxshareapiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define kctxshareapiControlSerialization_Prologue(pResource, pCallContext, pParams) kctxshareapiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define kctxshareapiIsPartialUnmapSupported(pResource) kctxshareapiIsPartialUnmapSupported_DISPATCH(pResource)
 #define kctxshareapiPreDestruct(pResource) kctxshareapiPreDestruct_DISPATCH(pResource)
 #define kctxshareapiIsDuplicate(pResource, hMemory, pDuplicate) kctxshareapiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define kctxshareapiControlSerialization_Epilogue(pResource, pCallContext, pParams) kctxshareapiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -357,10 +367,6 @@ static inline void kctxshareapiControl_Epilogue_DISPATCH(struct KernelCtxShareAp
     pResource->__kctxshareapiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS kctxshareapiControlLookup_DISPATCH(struct KernelCtxShareApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__kctxshareapiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle kctxshareapiGetInternalObjectHandle_DISPATCH(struct KernelCtxShareApi *pGpuResource) {
     return pGpuResource->__kctxshareapiGetInternalObjectHandle__(pGpuResource);
 }
@@ -387,6 +393,10 @@ static inline NV_STATUS kctxshareapiControlFilter_DISPATCH(struct KernelCtxShare
 
 static inline NV_STATUS kctxshareapiControlSerialization_Prologue_DISPATCH(struct KernelCtxShareApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__kctxshareapiControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool kctxshareapiIsPartialUnmapSupported_DISPATCH(struct KernelCtxShareApi *pResource) {
+    return pResource->__kctxshareapiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void kctxshareapiPreDestruct_DISPATCH(struct KernelCtxShareApi *pResource) {

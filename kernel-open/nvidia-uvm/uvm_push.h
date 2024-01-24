@@ -334,6 +334,14 @@ static void uvm_push_set_flag(uvm_push_t *push, uvm_push_flag_t flag)
     __set_bit(flag, push->flags);
 }
 
+// Check if a push flag is set
+static bool uvm_push_test_flag(uvm_push_t *push, uvm_push_flag_t flag)
+{
+    UVM_ASSERT_MSG(flag < UVM_PUSH_FLAG_COUNT, "flag %u\n", (unsigned)flag);
+
+    return test_bit(flag, push->flags);
+}
+
 // Get and reset (if set) a push flag
 static bool uvm_push_get_and_reset_flag(uvm_push_t *push, uvm_push_flag_t flag)
 {

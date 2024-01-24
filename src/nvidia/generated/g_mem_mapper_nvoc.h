@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -41,6 +41,7 @@ extern "C" {
 
 #include "class/cl00fe.h"
 #include "ctrl/ctrl00fe.h"
+#include "ctrl/ctrl2080/ctrl2080fb.h"
 
 struct Subdevice;
 
@@ -66,15 +67,52 @@ typedef struct OBJGPU OBJGPU;
 #endif /* __nvoc_class_id_OBJGPU */
 
 
+struct SemaphoreSurface;
+
+#ifndef __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
+#define __NVOC_CLASS_SemaphoreSurface_TYPEDEF__
+typedef struct SemaphoreSurface SemaphoreSurface;
+#endif /* __NVOC_CLASS_SemaphoreSurface_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_SemaphoreSurface
+#define __nvoc_class_id_SemaphoreSurface 0xeabc69
+#endif /* __nvoc_class_id_SemaphoreSurface */
+
+
+struct MemoryMapper;
+
+#ifndef __NVOC_CLASS_MemoryMapper_TYPEDEF__
+#define __NVOC_CLASS_MemoryMapper_TYPEDEF__
+typedef struct MemoryMapper MemoryMapper;
+#endif /* __NVOC_CLASS_MemoryMapper_TYPEDEF__ */
+
+#ifndef __nvoc_class_id_MemoryMapper
+#define __nvoc_class_id_MemoryMapper 0xb8e4a2
+#endif /* __nvoc_class_id_MemoryMapper */
+
+
+
+// MemoryMapper can't wait for workers to finish in destructor due to locking constraints
+// Instead set pMemoryMapper to NULL and leave the params structure until all workers are done
+typedef struct
+{
+    struct MemoryMapper *pMemoryMapper;
+    NvU32         numRefs;
+} MemoryMapperWorkerParams;
 
 /*!
  * MemoryMapper provides paging operations channel interface to userspace clients.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_MEM_MAPPER_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct MemoryMapper {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -84,7 +122,7 @@ struct MemoryMapper {
     struct RmResource *__nvoc_pbase_RmResource;
     struct GpuResource *__nvoc_pbase_GpuResource;
     struct MemoryMapper *__nvoc_pbase_MemoryMapper;
-    NV_STATUS (*__memmapperCtrlCmdSubmitPagingOperations__)(struct MemoryMapper *, NV00FE_CTRL_SUBMIT_PAGING_OPERATIONS_PARAMS *);
+    NV_STATUS (*__memmapperCtrlCmdSubmitOperations__)(struct MemoryMapper *, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *);
     NvBool (*__memmapperShareCallback__)(struct MemoryMapper *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__memmapperCheckMemInterUnmap__)(struct MemoryMapper *, NvBool);
     NV_STATUS (*__memmapperMapTo__)(struct MemoryMapper *, RS_RES_MAP_TO_PARAMS *);
@@ -96,7 +134,6 @@ struct MemoryMapper {
     NV_STATUS (*__memmapperInternalControlForward__)(struct MemoryMapper *, NvU32, void *, NvU32);
     NV_STATUS (*__memmapperUnmapFrom__)(struct MemoryMapper *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__memmapperControl_Epilogue__)(struct MemoryMapper *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__memmapperControlLookup__)(struct MemoryMapper *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__memmapperGetInternalObjectHandle__)(struct MemoryMapper *);
     NV_STATUS (*__memmapperControl__)(struct MemoryMapper *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memmapperUnmap__)(struct MemoryMapper *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -105,12 +142,22 @@ struct MemoryMapper {
     NV_STATUS (*__memmapperControlFilter__)(struct MemoryMapper *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memmapperControlSerialization_Prologue__)(struct MemoryMapper *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__memmapperCanCopy__)(struct MemoryMapper *);
+    NvBool (*__memmapperIsPartialUnmapSupported__)(struct MemoryMapper *);
     void (*__memmapperPreDestruct__)(struct MemoryMapper *);
     NV_STATUS (*__memmapperIsDuplicate__)(struct MemoryMapper *, NvHandle, NvBool *);
     void (*__memmapperControlSerialization_Epilogue__)(struct MemoryMapper *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memmapperMap__)(struct MemoryMapper *, struct CALL_CONTEXT *, struct RS_CPU_MAP_PARAMS *, struct RsCpuMapping *);
     NvBool (*__memmapperAccessCallback__)(struct MemoryMapper *, struct RsClient *, void *, RsAccessRight);
-    struct Subdevice *pSubDevice;
+    struct Subdevice *pSubdevice;
+    NV00FE_CTRL_OPERATION *pOperationQueue;
+    NvU32 operationQueuePut;
+    NvU32 operationQueueGet;
+    NvU32 operationQueueLen;
+    NvHandle hInternalSemaphoreSurface;
+    NVOS10_EVENT_KERNEL_CALLBACK_EX semaphoreCallback;
+    MemoryMapperWorkerParams *pWorkerParams;
+    struct SemaphoreSurface *pSemSurf;
+    NvBool bError;
 };
 
 #ifndef __NVOC_CLASS_MemoryMapper_TYPEDEF__
@@ -141,7 +188,7 @@ NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper**, Dynamic*, NvU32, struct 
 #define __objCreate_MemoryMapper(ppNewObj, pParent, createFlags, arg_pCallContext, arg_pParams) \
     __nvoc_objCreate_MemoryMapper((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pCallContext, arg_pParams)
 
-#define memmapperCtrlCmdSubmitPagingOperations(pMemoryMapper, pParams) memmapperCtrlCmdSubmitPagingOperations_DISPATCH(pMemoryMapper, pParams)
+#define memmapperCtrlCmdSubmitOperations(pMemoryMapper, pParams) memmapperCtrlCmdSubmitOperations_DISPATCH(pMemoryMapper, pParams)
 #define memmapperShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) memmapperShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define memmapperCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) memmapperCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define memmapperMapTo(pResource, pParams) memmapperMapTo_DISPATCH(pResource, pParams)
@@ -153,7 +200,6 @@ NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper**, Dynamic*, NvU32, struct 
 #define memmapperInternalControlForward(pGpuResource, command, pParams, size) memmapperInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define memmapperUnmapFrom(pResource, pParams) memmapperUnmapFrom_DISPATCH(pResource, pParams)
 #define memmapperControl_Epilogue(pResource, pCallContext, pParams) memmapperControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define memmapperControlLookup(pResource, pParams, ppEntry) memmapperControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define memmapperGetInternalObjectHandle(pGpuResource) memmapperGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define memmapperControl(pGpuResource, pCallContext, pParams) memmapperControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define memmapperUnmap(pGpuResource, pCallContext, pCpuMapping) memmapperUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -162,15 +208,16 @@ NV_STATUS __nvoc_objCreate_MemoryMapper(MemoryMapper**, Dynamic*, NvU32, struct 
 #define memmapperControlFilter(pResource, pCallContext, pParams) memmapperControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define memmapperControlSerialization_Prologue(pResource, pCallContext, pParams) memmapperControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define memmapperCanCopy(pResource) memmapperCanCopy_DISPATCH(pResource)
+#define memmapperIsPartialUnmapSupported(pResource) memmapperIsPartialUnmapSupported_DISPATCH(pResource)
 #define memmapperPreDestruct(pResource) memmapperPreDestruct_DISPATCH(pResource)
 #define memmapperIsDuplicate(pResource, hMemory, pDuplicate) memmapperIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define memmapperControlSerialization_Epilogue(pResource, pCallContext, pParams) memmapperControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define memmapperMap(pGpuResource, pCallContext, pParams, pCpuMapping) memmapperMap_DISPATCH(pGpuResource, pCallContext, pParams, pCpuMapping)
 #define memmapperAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) memmapperAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
-NV_STATUS memmapperCtrlCmdSubmitPagingOperations_IMPL(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_PAGING_OPERATIONS_PARAMS *pParams);
+NV_STATUS memmapperCtrlCmdSubmitOperations_IMPL(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *pParams);
 
-static inline NV_STATUS memmapperCtrlCmdSubmitPagingOperations_DISPATCH(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_PAGING_OPERATIONS_PARAMS *pParams) {
-    return pMemoryMapper->__memmapperCtrlCmdSubmitPagingOperations__(pMemoryMapper, pParams);
+static inline NV_STATUS memmapperCtrlCmdSubmitOperations_DISPATCH(struct MemoryMapper *pMemoryMapper, NV00FE_CTRL_SUBMIT_OPERATIONS_PARAMS *pParams) {
+    return pMemoryMapper->__memmapperCtrlCmdSubmitOperations__(pMemoryMapper, pParams);
 }
 
 static inline NvBool memmapperShareCallback_DISPATCH(struct MemoryMapper *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -217,10 +264,6 @@ static inline void memmapperControl_Epilogue_DISPATCH(struct MemoryMapper *pReso
     pResource->__memmapperControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS memmapperControlLookup_DISPATCH(struct MemoryMapper *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__memmapperControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle memmapperGetInternalObjectHandle_DISPATCH(struct MemoryMapper *pGpuResource) {
     return pGpuResource->__memmapperGetInternalObjectHandle__(pGpuResource);
 }
@@ -253,6 +296,10 @@ static inline NvBool memmapperCanCopy_DISPATCH(struct MemoryMapper *pResource) {
     return pResource->__memmapperCanCopy__(pResource);
 }
 
+static inline NvBool memmapperIsPartialUnmapSupported_DISPATCH(struct MemoryMapper *pResource) {
+    return pResource->__memmapperIsPartialUnmapSupported__(pResource);
+}
+
 static inline void memmapperPreDestruct_DISPATCH(struct MemoryMapper *pResource) {
     pResource->__memmapperPreDestruct__(pResource);
 }
@@ -276,6 +323,9 @@ static inline NvBool memmapperAccessCallback_DISPATCH(struct MemoryMapper *pReso
 NV_STATUS memmapperConstruct_IMPL(struct MemoryMapper *arg_pMemoryMapper, struct CALL_CONTEXT *arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL *arg_pParams);
 
 #define __nvoc_memmapperConstruct(arg_pMemoryMapper, arg_pCallContext, arg_pParams) memmapperConstruct_IMPL(arg_pMemoryMapper, arg_pCallContext, arg_pParams)
+void memmapperDestruct_IMPL(struct MemoryMapper *pMemoryMapper);
+
+#define __nvoc_memmapperDestruct(pMemoryMapper) memmapperDestruct_IMPL(pMemoryMapper)
 #undef PRIVATE_FIELD
 
 

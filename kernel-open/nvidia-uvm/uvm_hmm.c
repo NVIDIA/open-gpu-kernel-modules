@@ -112,7 +112,20 @@ typedef struct
 
 bool uvm_hmm_is_enabled_system_wide(void)
 {
-    return !uvm_disable_hmm && !g_uvm_global.ats.enabled && uvm_va_space_mm_enabled_system();
+    if (uvm_disable_hmm)
+        return false;
+
+    if (g_uvm_global.ats.enabled)
+        return false;
+
+    // Confidential Computing and HMM impose mutually exclusive constraints. In
+    // Confidential Computing the GPU can only access pages resident in vidmem,
+    // but in HMM pages may be required to be resident in sysmem: file backed
+    // VMAs, huge pages, etc.
+    if (g_uvm_global.conf_computing_enabled)
+        return false;
+
+    return uvm_va_space_mm_enabled_system();
 }
 
 bool uvm_hmm_is_enabled(uvm_va_space_t *va_space)
@@ -132,8 +145,9 @@ static uvm_va_block_t *hmm_va_block_from_node(uvm_range_tree_node_t *node)
 // Copies the contents of the source device-private page to the
 // destination CPU page. This will invalidate mappings, so cannot be
 // called while holding any va_block locks.
-static NV_STATUS uvm_hmm_copy_devmem_page(struct page *dst_page, struct page *src_page, uvm_tracker_t *tracker)
+static void hmm_copy_devmem_page(struct page *dst_page, struct page *src_page)
 {
+    uvm_tracker_t tracker = UVM_TRACKER_INIT();
     uvm_gpu_phys_address_t src_addr;
     uvm_gpu_phys_address_t dst_addr;
     uvm_gpu_chunk_t *gpu_chunk;
@@ -152,9 +166,9 @@ static NV_STATUS uvm_hmm_copy_devmem_page(struct page *dst_page, struct page *sr
     gpu = uvm_gpu_chunk_get_gpu(gpu_chunk);
     status = uvm_mmu_chunk_map(gpu_chunk);
     if (status != NV_OK)
-        return status;
+        goto out_zero;
 
-    status = uvm_gpu_map_cpu_pages(gpu->parent, dst_page, PAGE_SIZE, &dma_addr);
+    status = uvm_parent_gpu_map_cpu_pages(gpu->parent, dst_page, PAGE_SIZE, &dma_addr);
     if (status != NV_OK)
         goto out_unmap_gpu;
 
@@ -162,7 +176,7 @@ static NV_STATUS uvm_hmm_copy_devmem_page(struct page *dst_page, struct page *sr
     src_addr = uvm_gpu_phys_address(UVM_APERTURE_VID, gpu_chunk->address);
     status = uvm_push_begin_acquire(gpu->channel_manager,
                                     UVM_CHANNEL_TYPE_GPU_TO_CPU,
-                                    tracker,
+                                    &tracker,
                                     &push,
                                     "Copy for remote process fault");
     if (status != NV_OK)
@@ -173,15 +187,23 @@ static NV_STATUS uvm_hmm_copy_devmem_page(struct page *dst_page, struct page *sr
                                  uvm_gpu_address_copy(gpu, src_addr),
                                  PAGE_SIZE);
     uvm_push_end(&push);
-    status = uvm_tracker_add_push_safe(tracker, &push);
+    status = uvm_tracker_add_push_safe(&tracker, &push);
+    if (status == NV_OK)
+        uvm_tracker_wait_deinit(&tracker);
 
 out_unmap_cpu:
-    uvm_gpu_unmap_cpu_pages(gpu->parent, dma_addr, PAGE_SIZE);
+    uvm_parent_gpu_unmap_cpu_pages(gpu->parent, dma_addr, PAGE_SIZE);
 
 out_unmap_gpu:
     uvm_mmu_chunk_unmap(gpu_chunk, NULL);
 
-    return status;
+out_zero:
+    // We can't fail eviction because we need to free the device-private pages
+    // so the GPU can be unregistered. So the best we can do is warn on any
+    // failures and zero the uninitialised page. This could result in data loss
+    // in the application but failures are not expected.
+    if (WARN_ON(status != NV_OK))
+        memzero_page(dst_page, 0, PAGE_SIZE);
 }
 
 static NV_STATUS uvm_hmm_pmm_gpu_evict_pfn(unsigned long pfn)
@@ -197,7 +219,6 @@ static NV_STATUS uvm_hmm_pmm_gpu_evict_pfn(unsigned long pfn)
         return errno_to_nv_status(ret);
 
     if (src_pfn & MIGRATE_PFN_MIGRATE) {
-        uvm_tracker_t tracker = UVM_TRACKER_INIT();
 
         dst_page = alloc_page(GFP_HIGHUSER_MOVABLE);
         if (!dst_page) {
@@ -206,12 +227,9 @@ static NV_STATUS uvm_hmm_pmm_gpu_evict_pfn(unsigned long pfn)
         }
 
         lock_page(dst_page);
-        if (WARN_ON(uvm_hmm_copy_devmem_page(dst_page, migrate_pfn_to_page(src_pfn), &tracker) != NV_OK))
-            memzero_page(dst_page, 0, PAGE_SIZE);
-
+        hmm_copy_devmem_page(dst_page, migrate_pfn_to_page(src_pfn));
         dst_pfn = migrate_pfn(page_to_pfn(dst_page));
         migrate_device_pages(&src_pfn, &dst_pfn, 1);
-        uvm_tracker_wait_deinit(&tracker);
     }
 
 out:
@@ -674,12 +692,6 @@ bool uvm_hmm_check_context_vma_is_valid(uvm_va_block_t *va_block,
     return true;
 }
 
-void uvm_hmm_service_context_init(uvm_service_block_context_t *service_context)
-{
-    // TODO: Bug 4050579: Remove this when swap cached pages can be migrated.
-    service_context->block_context->hmm.swap_cached = false;
-}
-
 NV_STATUS uvm_hmm_migrate_begin(uvm_va_block_t *va_block)
 {
     if (uvm_mutex_trylock(&va_block->hmm.migrate_lock))
@@ -1072,6 +1084,7 @@ done:
 static NV_STATUS hmm_set_preferred_location_locked(uvm_va_block_t *va_block,
                                                    uvm_va_block_context_t *va_block_context,
                                                    uvm_processor_id_t preferred_location,
+                                                   int preferred_cpu_nid,
                                                    NvU64 addr,
                                                    NvU64 end,
                                                    uvm_tracker_t *out_tracker)
@@ -1085,10 +1098,10 @@ static NV_STATUS hmm_set_preferred_location_locked(uvm_va_block_t *va_block,
 
     // Note that we can't just call uvm_va_policy_set_range() for the whole
     // range [addr end] because we need to examine the old value of
-    // policy->preferred_location before setting it. Thus we iterate over
-    // the existing policy nodes.
+    // policy->preferred_location and policy->preferred_nid before setting it.
+    // Thus we iterate over the existing policy nodes.
     uvm_for_each_va_policy_in(old_policy, va_block, addr, end, node, region) {
-        if (uvm_id_equal(old_policy->preferred_location, preferred_location))
+        if (uvm_va_policy_preferred_location_equal(old_policy, preferred_location, preferred_cpu_nid))
             continue;
 
         // If the old preferred location is a valid processor ID, remote
@@ -1100,7 +1113,11 @@ static NV_STATUS hmm_set_preferred_location_locked(uvm_va_block_t *va_block,
             uvm_processor_mask_test(&old_policy->accessed_by, old_policy->preferred_location))
             uvm_processor_mask_set(&set_accessed_by_processors, old_policy->preferred_location);
 
-        if (!uvm_va_policy_set_preferred_location(va_block, region, preferred_location, old_policy))
+        if (!uvm_va_policy_set_preferred_location(va_block,
+                                                  region,
+                                                  preferred_location,
+                                                  preferred_cpu_nid,
+                                                  old_policy))
             return NV_ERR_NO_MEMORY;
 
         // Establish new remote mappings if the old preferred location had
@@ -1134,6 +1151,7 @@ static NV_STATUS hmm_set_preferred_location_locked(uvm_va_block_t *va_block,
 
 NV_STATUS uvm_hmm_set_preferred_location(uvm_va_space_t *va_space,
                                          uvm_processor_id_t preferred_location,
+                                         int preferred_cpu_nid,
                                          NvU64 base,
                                          NvU64 last_address,
                                          uvm_tracker_t *out_tracker)
@@ -1170,6 +1188,7 @@ NV_STATUS uvm_hmm_set_preferred_location(uvm_va_space_t *va_space,
         status = hmm_set_preferred_location_locked(va_block,
                                                    va_block_context,
                                                    preferred_location,
+                                                   preferred_cpu_nid,
                                                    addr,
                                                    end,
                                                    out_tracker);
@@ -1259,6 +1278,7 @@ NV_STATUS uvm_hmm_set_accessed_by(uvm_va_space_t *va_space,
                                          UVM_VA_POLICY_ACCESSED_BY,
                                          !set_bit,
                                          processor_id,
+                                         NUMA_NO_NODE,
                                          UVM_READ_DUPLICATION_MAX);
 
         if (status == NV_OK && set_bit) {
@@ -1968,28 +1988,74 @@ static void fill_dst_pfns(uvm_va_block_t *va_block,
     }
 }
 
-static NV_STATUS alloc_and_copy_to_cpu(uvm_va_block_t *va_block,
-                                       struct vm_area_struct *vma,
-                                       const unsigned long *src_pfns,
-                                       unsigned long *dst_pfns,
-                                       uvm_va_block_region_t region,
-                                       uvm_page_mask_t *page_mask,
-                                       uvm_page_mask_t *same_devmem_page_mask,
-                                       uvm_processor_id_t processor_id,
-                                       uvm_service_block_context_t *service_context)
+static NV_STATUS alloc_page_on_cpu(uvm_va_block_t *va_block,
+                                   uvm_page_index_t page_index,
+                                   const unsigned long *src_pfns,
+                                   unsigned long *dst_pfns,
+                                   uvm_page_mask_t *same_devmem_page_mask,
+                                   uvm_va_block_context_t *block_context)
+{
+    NV_STATUS status;
+    struct page *src_page;
+    struct page *dst_page;
+
+    // This is the page that will be copied to system memory.
+    src_page = migrate_pfn_to_page(src_pfns[page_index]);
+
+    if (src_page) {
+        // mremap may have caused us to lose the gpu_chunk associated with
+        // this va_block/page_index so make sure we have the correct chunk.
+        if (is_device_private_page(src_page))
+            gpu_chunk_add(va_block, page_index, src_page);
+
+        if (uvm_page_mask_test(&va_block->cpu.allocated, page_index)) {
+            lock_block_cpu_page(va_block, page_index, src_page, dst_pfns, same_devmem_page_mask);
+            return NV_OK;
+        }
+    }
+
+    UVM_ASSERT(!uvm_processor_mask_test(&va_block->resident, UVM_ID_CPU) ||
+                !uvm_va_block_cpu_is_page_resident_on(va_block, NUMA_NO_NODE, page_index));
+
+    status = uvm_va_block_populate_page_cpu(va_block, page_index, block_context);
+    if (status != NV_OK)
+        return status;
+
+    // TODO: Bug 3368756: add support for transparent huge pages
+    // Support for large CPU pages means the page_index may need fixing
+    dst_page = migrate_pfn_to_page(block_context->hmm.dst_pfns[page_index]);
+
+    // Note that we don't call get_page(dst_page) since alloc_page_vma()
+    // returns with a page reference count of one and we are passing
+    // ownership to Linux. Also, uvm_va_block_cpu_page_populate() recorded
+    // the page as "mirrored" so that migrate_vma_finalize() and
+    // hmm_va_block_cpu_page_unpopulate() don't double free the page.
+    lock_page(dst_page);
+    dst_pfns[page_index] = migrate_pfn(page_to_pfn(dst_page));
+
+    return NV_OK;
+}
+
+// Allocates pages on the CPU to handle migration due to a page fault
+static NV_STATUS fault_alloc_on_cpu(uvm_va_block_t *va_block,
+                                    const unsigned long *src_pfns,
+                                    unsigned long *dst_pfns,
+                                    uvm_va_block_region_t region,
+                                    uvm_page_mask_t *page_mask,
+                                    uvm_page_mask_t *same_devmem_page_mask,
+                                    uvm_processor_id_t fault_processor_id,
+                                    uvm_service_block_context_t *service_context)
 {
     uvm_page_index_t page_index;
     NV_STATUS status = NV_OK;
 
-    for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
-        struct page *src_page;
-        struct page *dst_page;
-        gfp_t gfp;
+    UVM_ASSERT(service_context);
 
+    for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
         if (!(src_pfns[page_index] & MIGRATE_PFN_MIGRATE)) {
             // Device exclusive PTEs are not selected but we still want to
             // process the page so record it as such.
-            if (service_context && !UVM_ID_IS_CPU(processor_id) &&
+            if (!UVM_ID_IS_CPU(fault_processor_id) &&
                 service_context->access_type[page_index] == UVM_FAULT_ACCESS_TYPE_ATOMIC_STRONG) {
                 uvm_page_mask_set(same_devmem_page_mask, page_index);
                 continue;
@@ -2004,74 +2070,20 @@ static NV_STATUS alloc_and_copy_to_cpu(uvm_va_block_t *va_block,
             goto clr_mask;
         }
 
-        // This is the page that will be copied to system memory.
-        src_page = migrate_pfn_to_page(src_pfns[page_index]);
-
-        if (src_page) {
-            // mremap may have caused us to loose the gpu_chunk associated with
-            // this va_block/page_index so make sure we have the correct chunk.
-            if (is_device_private_page(src_page))
-                gpu_chunk_add(va_block, page_index, src_page);
-
-            if (uvm_page_mask_test(&va_block->cpu.allocated, page_index)) {
-                lock_block_cpu_page(va_block, page_index, src_page, dst_pfns, same_devmem_page_mask);
-                continue;
-            }
-        }
-
-        UVM_ASSERT(!uvm_processor_mask_test(&va_block->resident, UVM_ID_CPU) ||
-                   !uvm_va_block_cpu_is_page_resident_on(va_block, NUMA_NO_NODE, page_index));
-
-        // Allocate a user system memory page for the destination.
-        // This is the typical case since Linux will free the source page when
-        // migrating to device private memory.
-        // If there is no source page, it means the page is pte_none() or the
-        // zero page. This case "shouldn't happen" because we asked
-        // migrate_vma_setup() only for device private pages but
-        // migrate_vma_collect_hole() doesn't check the
-        // MIGRATE_VMA_SELECT_SYSTEM flag.
-        gfp = GFP_HIGHUSER_MOVABLE;
-        if (!src_page)
-            gfp |= __GFP_ZERO;
-
-        dst_page = alloc_page_vma(gfp,
-                                  vma,
-                                  va_block->start + (page_index << PAGE_SHIFT));
-        if (!dst_page) {
-            // Ignore errors if the page is only for prefetching.
-            if (service_context &&
-                service_context->access_type[page_index] == UVM_FAULT_ACCESS_TYPE_PREFETCH)
-                goto clr_mask;
-            UVM_ERR_PRINT("cannot allocate page %u (addr 0x%llx)\n",
-                          page_index, va_block->start + (page_index << PAGE_SHIFT));
-            status = NV_ERR_NO_MEMORY;
-            break;
-        }
-
-        status = hmm_va_block_cpu_page_populate(va_block, page_index, dst_page);
+        status = alloc_page_on_cpu(va_block, page_index, src_pfns, dst_pfns, same_devmem_page_mask, service_context->block_context);
         if (status != NV_OK) {
-            __free_page(dst_page);
             // Ignore errors if the page is only for prefetching.
             if (service_context &&
                 service_context->access_type[page_index] == UVM_FAULT_ACCESS_TYPE_PREFETCH)
                 goto clr_mask;
             break;
         }
-
-        // Note that we don't call get_page(dst_page) since alloc_page_vma()
-        // returns with a page reference count of one and we are passing
-        // ownership to Linux. Also, uvm_va_block_cpu_page_populate() recorded
-        // the page as "mirrored" so that migrate_vma_finalize() and
-        // hmm_va_block_cpu_page_unpopulate() don't double free the page.
-        lock_page(dst_page);
-        dst_pfns[page_index] = migrate_pfn(page_to_pfn(dst_page));
         continue;
 
     clr_mask:
         // TODO: Bug 3900774: clean up murky mess of mask clearing.
         uvm_page_mask_clear(page_mask, page_index);
-        if (service_context)
-            clear_service_context_masks(service_context, UVM_ID_CPU, page_index);
+        clear_service_context_masks(service_context, UVM_ID_CPU, page_index);
     }
 
     if (status != NV_OK)
@@ -2082,6 +2094,40 @@ static NV_STATUS alloc_and_copy_to_cpu(uvm_va_block_t *va_block,
     return status;
 }
 
+// Allocates pages on the CPU for explicit migration calls.
+static NV_STATUS migrate_alloc_on_cpu(uvm_va_block_t *va_block,
+                                      const unsigned long *src_pfns,
+                                      unsigned long *dst_pfns,
+                                      uvm_va_block_region_t region,
+                                      uvm_page_mask_t *page_mask,
+                                      uvm_page_mask_t *same_devmem_page_mask,
+                                      uvm_va_block_context_t *block_context)
+{
+    uvm_page_index_t page_index;
+    NV_STATUS status = NV_OK;
+
+    for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
+        if (!(src_pfns[page_index] & MIGRATE_PFN_MIGRATE)) {
+            // We have previously found a page that is CPU resident which can't
+            // be migrated (probably a shared mapping) so make sure we establish
+            // a remote mapping for it.
+            if (uvm_page_mask_test(same_devmem_page_mask, page_index))
+                continue;
+
+            uvm_page_mask_clear(page_mask, page_index);
+            continue;
+        }
+
+        status = alloc_page_on_cpu(va_block, page_index, src_pfns, dst_pfns, same_devmem_page_mask, block_context);
+    }
+
+    if (status != NV_OK)
+        clean_up_non_migrating_pages(va_block, src_pfns, dst_pfns, region, page_mask);
+    else if (uvm_page_mask_empty(page_mask))
+        return NV_WARN_MORE_PROCESSING_REQUIRED;
+
+    return status;
+}
 static NV_STATUS uvm_hmm_devmem_fault_alloc_and_copy(uvm_hmm_devmem_fault_context_t *devmem_fault_context)
 {
     uvm_processor_id_t processor_id;
@@ -2107,15 +2153,14 @@ static NV_STATUS uvm_hmm_devmem_fault_alloc_and_copy(uvm_hmm_devmem_fault_contex
     page_mask = &devmem_fault_context->page_mask;
     uvm_page_mask_copy(page_mask, &service_context->per_processor_masks[UVM_ID_CPU_VALUE].new_residency);
 
-    status = alloc_and_copy_to_cpu(va_block,
-                                   service_context->block_context->hmm.vma,
-                                   src_pfns,
-                                   dst_pfns,
-                                   service_context->region,
-                                   page_mask,
-                                   same_devmem_page_mask,
-                                   processor_id,
-                                   service_context);
+    status = fault_alloc_on_cpu(va_block,
+                                src_pfns,
+                                dst_pfns,
+                                service_context->region,
+                                page_mask,
+                                same_devmem_page_mask,
+                                processor_id,
+                                service_context);
     if (status != NV_OK)
         return status;
 
@@ -2640,12 +2685,8 @@ static NV_STATUS dmamap_src_sysmem_pages(uvm_va_block_t *va_block,
             if (PageSwapCache(src_page)) {
                 // TODO: Bug 4050579: Remove this when swap cached pages can be
                 // migrated.
-                if (service_context) {
-                    service_context->block_context->hmm.swap_cached = true;
-                    break;
-                }
-
-                goto clr_mask;
+                status = NV_WARN_MISMATCHED_TARGET;
+                break;
             }
 
             // If the page is already allocated, it is most likely a mirrored
@@ -2699,8 +2740,7 @@ static NV_STATUS dmamap_src_sysmem_pages(uvm_va_block_t *va_block,
             clear_service_context_masks(service_context, dest_id, page_index);
     }
 
-    if (uvm_page_mask_empty(page_mask) ||
-        (service_context && service_context->block_context->hmm.swap_cached))
+    if (uvm_page_mask_empty(page_mask))
         status = NV_WARN_MORE_PROCESSING_REQUIRED;
 
     if (status != NV_OK)
@@ -2945,15 +2985,13 @@ static NV_STATUS uvm_hmm_migrate_alloc_and_copy(struct vm_area_struct *vma,
     uvm_assert_mutex_locked(&va_block->lock);
 
     if (UVM_ID_IS_CPU(dest_id)) {
-        status = alloc_and_copy_to_cpu(va_block,
-                                       vma,
-                                       src_pfns,
-                                       dst_pfns,
-                                       region,
-                                       page_mask,
-                                       &uvm_hmm_migrate_event->same_devmem_page_mask,
-                                       UVM_ID_INVALID,
-                                       NULL);
+        status = migrate_alloc_on_cpu(va_block,
+                                      src_pfns,
+                                      dst_pfns,
+                                      region,
+                                      page_mask,
+                                      &uvm_hmm_migrate_event->same_devmem_page_mask,
+                                      va_block_context);
     }
     else {
         status = dmamap_src_sysmem_pages(va_block,
@@ -3154,7 +3192,7 @@ NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
 
     migrate_vma_finalize(args);
 
-    if (status == NV_WARN_NOTHING_TO_DO)
+    if (status == NV_WARN_NOTHING_TO_DO || status == NV_WARN_MISMATCHED_TARGET)
         status = NV_OK;
 
     return status;
@@ -3288,15 +3326,13 @@ static NV_STATUS hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
         // TODO: Bug 3660922: Need to handle read duplication at some point.
         UVM_ASSERT(uvm_page_mask_region_empty(cpu_resident_mask, region));
 
-        status = alloc_and_copy_to_cpu(va_block,
-                                       NULL,
-                                       src_pfns,
-                                       dst_pfns,
-                                       region,
-                                       page_mask,
-                                       NULL,
-                                       UVM_ID_INVALID,
-                                       NULL);
+        status = migrate_alloc_on_cpu(va_block,
+                                      src_pfns,
+                                      dst_pfns,
+                                      region,
+                                      page_mask,
+                                      NULL,
+                                      va_block_context);
         if (status != NV_OK)
             goto err;
 
@@ -3392,7 +3428,6 @@ NV_STATUS uvm_hmm_remote_cpu_fault(struct vm_fault *vmf)
     unsigned long dst_pfn;
     struct migrate_vma args;
     struct page *src_page = vmf->page;
-    uvm_tracker_t tracker = UVM_TRACKER_INIT();
     int ret;
 
     args.vma = vmf->vma;
@@ -3421,9 +3456,7 @@ NV_STATUS uvm_hmm_remote_cpu_fault(struct vm_fault *vmf)
         lock_page(dst_page);
         dst_pfn = migrate_pfn(page_to_pfn(dst_page));
 
-        status = uvm_hmm_copy_devmem_page(dst_page, src_page, &tracker);
-        if (status == NV_OK)
-            status = uvm_tracker_wait_deinit(&tracker);
+        hmm_copy_devmem_page(dst_page, src_page);
     }
 
     migrate_vma_pages(&args);
@@ -3591,6 +3624,7 @@ NV_STATUS uvm_hmm_va_range_info(uvm_va_space_t *va_space,
     params->va_range_end = ULONG_MAX;
     params->read_duplication = UVM_TEST_READ_DUPLICATION_UNSET;
     memset(&params->preferred_location, 0, sizeof(params->preferred_location));
+    params->preferred_cpu_nid = NUMA_NO_NODE;
     params->accessed_by_count = 0;
     params->managed.vma_start = 0;
     params->managed.vma_end = 0;
@@ -3633,8 +3667,10 @@ NV_STATUS uvm_hmm_va_range_info(uvm_va_space_t *va_space,
 
         params->read_duplication = node->policy.read_duplication;
 
-        if (!UVM_ID_IS_INVALID(node->policy.preferred_location))
+        if (!UVM_ID_IS_INVALID(node->policy.preferred_location)) {
             uvm_va_space_processor_uuid(va_space, &params->preferred_location, node->policy.preferred_location);
+            params->preferred_cpu_nid = node->policy.preferred_nid;
+        }
 
         for_each_id_in_mask(processor_id, &node->policy.accessed_by)
             uvm_va_space_processor_uuid(va_space, &params->accessed_by[params->accessed_by_count++], processor_id);
@@ -3652,22 +3688,16 @@ NV_STATUS uvm_hmm_va_range_info(uvm_va_space_t *va_space,
 // TODO: Bug 3660968: Remove this hack as soon as HMM migration is implemented
 // for VMAs other than anonymous private memory.
 bool uvm_hmm_must_use_sysmem(uvm_va_block_t *va_block,
-                             uvm_va_block_context_t *va_block_context)
+                             struct vm_area_struct *vma)
 {
-    struct vm_area_struct *vma = va_block_context->hmm.vma;
-
     uvm_assert_mutex_locked(&va_block->lock);
 
     if (!uvm_va_block_is_hmm(va_block))
         return false;
 
     UVM_ASSERT(vma);
-    UVM_ASSERT(va_block_context->mm == vma->vm_mm);
-    uvm_assert_mmap_lock_locked(va_block_context->mm);
-
-    // TODO: Bug 4050579: Remove this when swap cached pages can be migrated.
-    if (va_block_context->hmm.swap_cached)
-        return true;
+    UVM_ASSERT(va_block->hmm.va_space->va_space_mm.mm == vma->vm_mm);
+    uvm_assert_mmap_lock_locked(vma->vm_mm);
 
     // migrate_vma_setup() can't migrate VM_SPECIAL so we have to force GPU
     // remote mapping.

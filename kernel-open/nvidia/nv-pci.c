@@ -280,6 +280,78 @@ resize:
 #endif /* NV_PCI_REBAR_GET_POSSIBLE_SIZES_PRESENT */
 }
 
+#if defined(NV_DEVICE_PROPERTY_READ_U64_PRESENT) && \
+    defined(CONFIG_ACPI_NUMA) && \
+    NV_IS_EXPORT_SYMBOL_PRESENT_pxm_to_node
+/*
+ * Parse the SRAT table to look for numa node associated with the GPU.
+ *
+ * find_gpu_numa_nodes_in_srat() is strongly associated with
+ * nv_init_coherent_link_info(). Hence matching the conditions wrapping.
+ */
+static NvU32 find_gpu_numa_nodes_in_srat(nv_linux_state_t *nvl)
+{
+    NvU32 gi_dbdf, dev_dbdf, pxm_count = 0;
+    struct acpi_table_header *table_header;
+    struct acpi_subtable_header *subtable_header;
+    unsigned long table_end, subtable_header_length;
+    struct acpi_srat_generic_affinity *gi;
+    NvU32 numa_node = NUMA_NO_NODE;
+
+    if (acpi_get_table(ACPI_SIG_SRAT, 0, &table_header)) {
+        nv_printf(NV_DBG_INFO, "NVRM: Failed to parse the SRAT table.\n");
+        return 0;
+    }
+
+    table_end = (unsigned long)table_header + table_header->length;
+    subtable_header = (struct acpi_subtable_header *)
+            ((unsigned long)table_header + sizeof(struct acpi_table_srat));
+    subtable_header_length = subtable_header->length;
+
+    dev_dbdf = NV_PCI_DOMAIN_NUMBER(nvl->pci_dev) << 16 |
+               NV_PCI_BUS_NUMBER(nvl->pci_dev) << 8 |
+               NV_PCI_DEVFN(nvl->pci_dev);
+
+    /*
+     * On baremetal and passthrough, there could be upto 8 generic initiators.
+     * This is not a hack as a device can have any number of initiators hardware
+     * supports.
+     */
+    while (subtable_header_length &&
+           (((unsigned long)subtable_header) + subtable_header_length < table_end)) {
+
+        if (subtable_header->type == ACPI_SRAT_TYPE_GENERIC_AFFINITY) {
+            gi = (struct acpi_srat_generic_affinity *) subtable_header;
+            gi_dbdf = *((NvU16 *)(&gi->device_handle[0])) << 16 |
+                      *((NvU16 *)(&gi->device_handle[2]));
+
+            if (gi_dbdf == dev_dbdf) {
+                numa_node = pxm_to_node(gi->proximity_domain);
+                if (numa_node < MAX_NUMNODES) {
+                    pxm_count++;
+                    set_bit(numa_node, nvl->coherent_link_info.free_node_bitmap);
+                }
+                else {
+                    /* We shouldn't be here. This is a mis-configuration. */
+                    nv_printf(NV_DBG_INFO, "NVRM: Invalid node-id found.\n");
+                    pxm_count = 0;
+                    goto exit;
+                }
+            }
+        }
+
+        subtable_header = (struct acpi_subtable_header *)
+                          ((unsigned long) subtable_header + subtable_header_length);
+        subtable_header_length = subtable_header->length;
+    }
+
+exit:
+    acpi_put_table(table_header);
+    return pxm_count;
+}
+
+#endif
+
 static void
 nv_init_coherent_link_info
 (
@@ -294,16 +366,28 @@ nv_init_coherent_link_info
     NvU64 pxm_start = 0;
     NvU64 pxm_count = 0;
     NvU32 pxm;
+    NvU32 gi_found = 0, node;
 
     if (!NVCPU_IS_AARCH64)
         return;
 
-    if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-start", &pxm_start) != 0)
+    if (!dev_is_pci(nvl->dev))
+        return;
+
+    gi_found = find_gpu_numa_nodes_in_srat(nvl);
+    if (!gi_found &&
+        (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-start", &pxm_start) != 0 ||
+         device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-count", &pxm_count) != 0))
         goto failed;
-    if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-pxm-count", &pxm_count) != 0)
-        goto failed;
-    if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-base-pa", &pa) != 0)
+
+    if (device_property_read_u64(nvl->dev, "nvidia,gpu-mem-base-pa", &pa) == 0)
     {
+        nvl->coherent_link_info.gpu_mem_pa = pa;
+    }
+    else
+    {
+        unsigned int gpu_bar1_offset, gpu_bar2_offset;
+
         /*
          * This implies that the DSD key for PXM start and count is present
          * while the one for Physical Address (PA) is absent.
@@ -316,26 +400,78 @@ nv_init_coherent_link_info
         
         /*
          * For the virtualization usecase on SHH, the coherent GPU memory
-         * PA is exposed as BAR1 to the VM and the nvidia,gpu-mem-base-pa
-         * is not present. Set the GPU memory PA to the BAR1 start address.
+         * PA is exposed as BAR2 to the VM and the "nvidia,gpu-mem-base-pa"
+         * is not present. Set the GPU memory PA to the BAR2 start address.
+         *
+         * In the case of passthrough, reserved memory portion of the coherent
+         * GPU memory is exposed as BAR1
          */
-        pa = nv->fb->cpu_address;
+
+        /*
+         * Hopper+ uses 64-bit BARs, so GPU BAR2 should be at BAR4/5 and
+         * GPU BAR1 is at BAR2/3
+         */
+        gpu_bar1_offset = 2;
+        gpu_bar2_offset = 4;
+
+        /*
+        * cannot use nv->bars[] here as it is not populated correctly if BAR1 is
+        * not present but BAR2 is, even though PCIe spec allows it. Not fixing
+        * nv->bars[] since this is not a valid scenario with the actual HW and
+        * possible only with this host emulated BAR scenario.
+        */
+        if (!((NV_PCI_RESOURCE_VALID(nvl->pci_dev, gpu_bar2_offset)) &&
+            (NV_PCI_RESOURCE_FLAGS(nvl->pci_dev, gpu_bar2_offset) & PCI_BASE_ADDRESS_SPACE)
+            == PCI_BASE_ADDRESS_SPACE_MEMORY))
+        {
+            // BAR2 contains the cacheable part of the coherent FB region and must have.
+            goto failed;
+        }
+        nvl->coherent_link_info.gpu_mem_pa =
+            NV_PCI_RESOURCE_START(nvl->pci_dev, gpu_bar2_offset);
+
+        if ((NV_PCI_RESOURCE_VALID(nvl->pci_dev, gpu_bar1_offset)) &&
+            (NV_PCI_RESOURCE_FLAGS(nvl->pci_dev, gpu_bar1_offset) & PCI_BASE_ADDRESS_SPACE)
+            == PCI_BASE_ADDRESS_SPACE_MEMORY)
+        {
+            // Present only in passthrough case
+            nvl->coherent_link_info.rsvd_mem_pa = NV_PCI_RESOURCE_START(nvl->pci_dev, gpu_bar1_offset);
+        }
+
+        //
+        // Unset nv->bars[] as the BARs in the virtualization case are used
+        // only to convey the coherent GPU memory information and doesn't
+        // contain the traditional GPU BAR1/BAR2. This is to ensure the
+        // coherent FB addresses don't inadvertently pass the IS_FB_OFFSET
+        // or IS_IMEM_OFFSET checks.
+        //
+        memset(&nv->bars[1], 0, sizeof(nv->bars[1]));
+        memset(&nv->bars[2], 0, sizeof(nv->bars[2]));
     }
 
+
     NV_DEV_PRINTF(NV_DBG_INFO, nv, "DSD properties: \n");
-    NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU memory PA: 0x%lx \n", pa);
-    NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU memory PXM start: %u \n", pxm_start);
-    NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU memory PXM count: %u \n", pxm_count);
+    NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU memory PA: 0x%lx \n",
+                  nvl->coherent_link_info.gpu_mem_pa);
+    NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tGPU reserved memory PA: 0x%lx \n",
+                  nvl->coherent_link_info.rsvd_mem_pa);
 
-    nvl->coherent_link_info.gpu_mem_pa = pa;
-
-    for (pxm = pxm_start; pxm < (pxm_start + pxm_count); pxm++)
+    if (!gi_found)
     {
-        NvU32 node = pxm_to_node(pxm);
-        if (node != NUMA_NO_NODE)
+        for (pxm = pxm_start; pxm < (pxm_start + pxm_count); pxm++)
         {
-            set_bit(node, nvl->coherent_link_info.free_node_bitmap);
+            node = pxm_to_node(pxm);
+            if (node != NUMA_NO_NODE)
+            {
+                set_bit(node, nvl->coherent_link_info.free_node_bitmap);
+            }
         }
+    }
+
+    for (node = 0; (node = find_next_bit(nvl->coherent_link_info.free_node_bitmap,
+                             MAX_NUMNODES, node)) != MAX_NUMNODES; node++)
+    {
+        NV_DEV_PRINTF(NV_DBG_INFO, nv, "\tNVRM: GPU memory NUMA node: %u\n", node);
     }
 
     if (NVreg_EnableUserNUMAManagement && !os_is_vgx_hyper())
@@ -696,6 +832,14 @@ next_bar:
         goto err_zero_dev;
     }
 
+    nv->cpu_numa_node_id = dev_to_node(nvl->dev);
+
+    if (nv_linux_init_open_q(nvl) != 0)
+    {
+        NV_DEV_PRINTF(NV_DBG_ERRORS, nv, "nv_linux_init_open_q() failed!\n");
+        goto err_zero_dev;
+    }
+
     nv_printf(NV_DBG_INFO,
               "NVRM: PCI:%04x:%02x:%02x.%x (%04x:%04x): BAR0 @ 0x%llx (%lluMB)\n",
               nv->pci_info.domain, nv->pci_info.bus, nv->pci_info.slot,
@@ -720,7 +864,7 @@ next_bar:
     if (nv_linux_add_device_locked(nvl) != 0)
     {
         UNLOCK_NV_LINUX_DEVICES();
-        goto err_zero_dev;
+        goto err_add_device;
     }
 
     UNLOCK_NV_LINUX_DEVICES();
@@ -772,6 +916,8 @@ err_vgpu_kvm:
     LOCK_NV_LINUX_DEVICES();
     nv_linux_remove_device_locked(nvl);
     UNLOCK_NV_LINUX_DEVICES();
+err_add_device:
+    nv_linux_stop_open_q(nvl);
 err_zero_dev:
     rm_free_private_state(sp, nv);
 err_not_supported:
@@ -820,14 +966,22 @@ nv_pci_remove(struct pci_dev *pci_dev)
         return;
     }
 
-    LOCK_NV_LINUX_DEVICES();
     nvl = pci_get_drvdata(pci_dev);
     if (!nvl || (nvl->pci_dev != pci_dev))
     {
-        goto done;
+        nv_kmem_cache_free_stack(sp);
+        return;
     }
 
     nv = NV_STATE_PTR(nvl);
+
+    /*
+     * Flush and stop open_q before proceeding with removal to ensure nvl
+     * outlives all enqueued work items.
+     */
+    nv_linux_stop_open_q(nvl);
+
+    LOCK_NV_LINUX_DEVICES();
     down(&nvl->ldata_lock);
 
     /*
@@ -1067,6 +1221,21 @@ NvU8 nv_find_pci_capability(struct pci_dev *pci_dev, NvU8 capability)
     return 0;
 }
 
+static void check_for_bound_driver(struct pci_dev *pci_dev)
+{
+    if (pci_dev->dev.driver)
+    {
+        const char *driver_name = pci_dev->dev.driver->name;
+
+        nv_printf(NV_DBG_WARNINGS, "NVRM: GPU %04x:%02x:%02x.%x is already "
+            "bound to %s.\n",
+            NV_PCI_DOMAIN_NUMBER(pci_dev), NV_PCI_BUS_NUMBER(pci_dev),
+            NV_PCI_SLOT_NUMBER(pci_dev), PCI_FUNC(pci_dev->devfn),
+            driver_name ? driver_name : "another driver"
+        );
+    }
+}
+
 /* make sure the pci_driver called probe for all of our devices.
  * we've seen cases where rivafb claims the device first and our driver
  * doesn't get called.
@@ -1094,6 +1263,7 @@ nv_pci_count_devices(void)
                 pci_dev->subsystem_device,
                 NV_TRUE /* print_legacy_warning */))
         {
+            check_for_bound_driver(pci_dev);
             count++;
         }
         pci_dev = pci_get_class(PCI_CLASS_DISPLAY_VGA << 8, pci_dev);
@@ -1111,6 +1281,7 @@ nv_pci_count_devices(void)
                 pci_dev->subsystem_device,
                 NV_TRUE /* print_legacy_warning */))
         {
+            check_for_bound_driver(pci_dev);
             count++;
         }
         pci_dev = pci_get_class(PCI_CLASS_DISPLAY_3D << 8, pci_dev);

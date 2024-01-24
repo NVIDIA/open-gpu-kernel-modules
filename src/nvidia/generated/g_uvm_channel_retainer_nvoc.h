@@ -54,11 +54,16 @@ typedef struct OBJGPU OBJGPU;
 
 
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_UVM_CHANNEL_RETAINER_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct UvmChannelRetainer {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -79,7 +84,6 @@ struct UvmChannelRetainer {
     NV_STATUS (*__uvmchanrtnrInternalControlForward__)(struct UvmChannelRetainer *, NvU32, void *, NvU32);
     NV_STATUS (*__uvmchanrtnrUnmapFrom__)(struct UvmChannelRetainer *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__uvmchanrtnrControl_Epilogue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__uvmchanrtnrControlLookup__)(struct UvmChannelRetainer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__uvmchanrtnrGetInternalObjectHandle__)(struct UvmChannelRetainer *);
     NV_STATUS (*__uvmchanrtnrControl__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__uvmchanrtnrUnmap__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -88,6 +92,7 @@ struct UvmChannelRetainer {
     NV_STATUS (*__uvmchanrtnrControlFilter__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__uvmchanrtnrControlSerialization_Prologue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__uvmchanrtnrCanCopy__)(struct UvmChannelRetainer *);
+    NvBool (*__uvmchanrtnrIsPartialUnmapSupported__)(struct UvmChannelRetainer *);
     void (*__uvmchanrtnrPreDestruct__)(struct UvmChannelRetainer *);
     NV_STATUS (*__uvmchanrtnrIsDuplicate__)(struct UvmChannelRetainer *, NvHandle, NvBool *);
     void (*__uvmchanrtnrControlSerialization_Epilogue__)(struct UvmChannelRetainer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -137,7 +142,6 @@ NV_STATUS __nvoc_objCreate_UvmChannelRetainer(UvmChannelRetainer**, Dynamic*, Nv
 #define uvmchanrtnrInternalControlForward(pGpuResource, command, pParams, size) uvmchanrtnrInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define uvmchanrtnrUnmapFrom(pResource, pParams) uvmchanrtnrUnmapFrom_DISPATCH(pResource, pParams)
 #define uvmchanrtnrControl_Epilogue(pResource, pCallContext, pParams) uvmchanrtnrControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define uvmchanrtnrControlLookup(pResource, pParams, ppEntry) uvmchanrtnrControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define uvmchanrtnrGetInternalObjectHandle(pGpuResource) uvmchanrtnrGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define uvmchanrtnrControl(pGpuResource, pCallContext, pParams) uvmchanrtnrControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define uvmchanrtnrUnmap(pGpuResource, pCallContext, pCpuMapping) uvmchanrtnrUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -146,6 +150,7 @@ NV_STATUS __nvoc_objCreate_UvmChannelRetainer(UvmChannelRetainer**, Dynamic*, Nv
 #define uvmchanrtnrControlFilter(pResource, pCallContext, pParams) uvmchanrtnrControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define uvmchanrtnrControlSerialization_Prologue(pResource, pCallContext, pParams) uvmchanrtnrControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define uvmchanrtnrCanCopy(pResource) uvmchanrtnrCanCopy_DISPATCH(pResource)
+#define uvmchanrtnrIsPartialUnmapSupported(pResource) uvmchanrtnrIsPartialUnmapSupported_DISPATCH(pResource)
 #define uvmchanrtnrPreDestruct(pResource) uvmchanrtnrPreDestruct_DISPATCH(pResource)
 #define uvmchanrtnrIsDuplicate(pResource, hMemory, pDuplicate) uvmchanrtnrIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define uvmchanrtnrControlSerialization_Epilogue(pResource, pCallContext, pParams) uvmchanrtnrControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -209,10 +214,6 @@ static inline void uvmchanrtnrControl_Epilogue_DISPATCH(struct UvmChannelRetaine
     pResource->__uvmchanrtnrControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS uvmchanrtnrControlLookup_DISPATCH(struct UvmChannelRetainer *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__uvmchanrtnrControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle uvmchanrtnrGetInternalObjectHandle_DISPATCH(struct UvmChannelRetainer *pGpuResource) {
     return pGpuResource->__uvmchanrtnrGetInternalObjectHandle__(pGpuResource);
 }
@@ -243,6 +244,10 @@ static inline NV_STATUS uvmchanrtnrControlSerialization_Prologue_DISPATCH(struct
 
 static inline NvBool uvmchanrtnrCanCopy_DISPATCH(struct UvmChannelRetainer *pResource) {
     return pResource->__uvmchanrtnrCanCopy__(pResource);
+}
+
+static inline NvBool uvmchanrtnrIsPartialUnmapSupported_DISPATCH(struct UvmChannelRetainer *pResource) {
+    return pResource->__uvmchanrtnrIsPartialUnmapSupported__(pResource);
 }
 
 static inline void uvmchanrtnrPreDestruct_DISPATCH(struct UvmChannelRetainer *pResource) {

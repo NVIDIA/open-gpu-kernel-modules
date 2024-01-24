@@ -41,11 +41,16 @@ extern "C" {
  *
  * Linear view for all video memory (similar to /dev/mem).
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_PHYS_MEM_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct PhysicalMemory {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Memory __nvoc_base_Memory;
@@ -67,13 +72,13 @@ struct PhysicalMemory {
     NvBool (*__physmemIsGpuMapAllowed__)(struct PhysicalMemory *, struct OBJGPU *);
     NV_STATUS (*__physmemUnmapFrom__)(struct PhysicalMemory *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__physmemControl_Epilogue__)(struct PhysicalMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__physmemControlLookup__)(struct PhysicalMemory *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NV_STATUS (*__physmemControl__)(struct PhysicalMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__physmemUnmap__)(struct PhysicalMemory *, CALL_CONTEXT *, RsCpuMapping *);
     NV_STATUS (*__physmemGetMemInterMapParams__)(struct PhysicalMemory *, RMRES_MEM_INTER_MAP_PARAMS *);
     NV_STATUS (*__physmemGetMemoryMappingDescriptor__)(struct PhysicalMemory *, MEMORY_DESCRIPTOR **);
     NV_STATUS (*__physmemControlFilter__)(struct PhysicalMemory *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__physmemControlSerialization_Prologue__)(struct PhysicalMemory *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
+    NvBool (*__physmemIsPartialUnmapSupported__)(struct PhysicalMemory *);
     NV_STATUS (*__physmemIsReady__)(struct PhysicalMemory *, NvBool);
     NV_STATUS (*__physmemCheckCopyPermissions__)(struct PhysicalMemory *, struct OBJGPU *, struct Device *);
     void (*__physmemPreDestruct__)(struct PhysicalMemory *);
@@ -123,13 +128,13 @@ NV_STATUS __nvoc_objCreate_PhysicalMemory(PhysicalMemory**, Dynamic*, NvU32, CAL
 #define physmemIsGpuMapAllowed(pMemory, pGpu) physmemIsGpuMapAllowed_DISPATCH(pMemory, pGpu)
 #define physmemUnmapFrom(pResource, pParams) physmemUnmapFrom_DISPATCH(pResource, pParams)
 #define physmemControl_Epilogue(pResource, pCallContext, pParams) physmemControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define physmemControlLookup(pResource, pParams, ppEntry) physmemControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define physmemControl(pMemory, pCallContext, pParams) physmemControl_DISPATCH(pMemory, pCallContext, pParams)
 #define physmemUnmap(pMemory, pCallContext, pCpuMapping) physmemUnmap_DISPATCH(pMemory, pCallContext, pCpuMapping)
 #define physmemGetMemInterMapParams(pMemory, pParams) physmemGetMemInterMapParams_DISPATCH(pMemory, pParams)
 #define physmemGetMemoryMappingDescriptor(pMemory, ppMemDesc) physmemGetMemoryMappingDescriptor_DISPATCH(pMemory, ppMemDesc)
 #define physmemControlFilter(pResource, pCallContext, pParams) physmemControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define physmemControlSerialization_Prologue(pResource, pCallContext, pParams) physmemControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
+#define physmemIsPartialUnmapSupported(pResource) physmemIsPartialUnmapSupported_DISPATCH(pResource)
 #define physmemIsReady(pMemory, bCopyConstructorContext) physmemIsReady_DISPATCH(pMemory, bCopyConstructorContext)
 #define physmemCheckCopyPermissions(pMemory, pDstGpu, pDstDevice) physmemCheckCopyPermissions_DISPATCH(pMemory, pDstGpu, pDstDevice)
 #define physmemPreDestruct(pResource) physmemPreDestruct_DISPATCH(pResource)
@@ -187,10 +192,6 @@ static inline void physmemControl_Epilogue_DISPATCH(struct PhysicalMemory *pReso
     pResource->__physmemControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS physmemControlLookup_DISPATCH(struct PhysicalMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__physmemControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NV_STATUS physmemControl_DISPATCH(struct PhysicalMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pMemory->__physmemControl__(pMemory, pCallContext, pParams);
 }
@@ -213,6 +214,10 @@ static inline NV_STATUS physmemControlFilter_DISPATCH(struct PhysicalMemory *pRe
 
 static inline NV_STATUS physmemControlSerialization_Prologue_DISPATCH(struct PhysicalMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__physmemControlSerialization_Prologue__(pResource, pCallContext, pParams);
+}
+
+static inline NvBool physmemIsPartialUnmapSupported_DISPATCH(struct PhysicalMemory *pResource) {
+    return pResource->__physmemIsPartialUnmapSupported__(pResource);
 }
 
 static inline NV_STATUS physmemIsReady_DISPATCH(struct PhysicalMemory *pMemory, NvBool bCopyConstructorContext) {

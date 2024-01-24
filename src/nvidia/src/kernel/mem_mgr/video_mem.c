@@ -32,9 +32,11 @@
 #include "core/locks.h"
 #include "kernel/gpu/rc/kernel_rc.h"
 #include "diagnostics/gpu_acct.h"
+#include "gpu/device/device.h"
 #include "Nvcm.h"
 #include "gpu/bus/third_party_p2p.h"
 #include "gpu/bus/kern_bus.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
 
@@ -159,11 +161,6 @@ _vidmemPmaAllocate
                                 pAllocData->attr);
     }
 
-    // LOCK: acquire device lock
-    status = rmDeviceGpuLocksAcquire(pGpu, GPUS_LOCK_FLAGS_NONE,
-                                     RM_LOCK_MODULES_MEM_PMA);
-    NV_ASSERT_OR_RETURN(status == NV_OK, status);
-
     NV_PRINTF(LEVEL_INFO, "PMA input\n");
     NV_PRINTF(LEVEL_INFO, "          Owner: 0x%x\n", pAllocData->owner);
     NV_PRINTF(LEVEL_INFO, "        hMemory: 0x%x\n", pAllocRequest->hMemory);
@@ -208,15 +205,10 @@ _vidmemPmaAllocate
     // Bug:2451834, gpuCheckPageRetirementSupport should not be called outside
     // RM lock.
     //
-    if (pGpu->getProperty(pGpu, PDB_PROP_GPU_ALLOW_PAGE_RETIREMENT) &&
-           gpuCheckPageRetirementSupport_HAL(pGpu) &&
-           FLD_TEST_DRF(OS32, _ATTR2, _BLACKLIST, _OFF, pAllocData->attr2))
+    if (FLD_TEST_DRF(OS32, _ATTR2, _BLACKLIST, _OFF, pAllocData->attr2))
     {
         allocOptions.flags |= PMA_ALLOCATE_TURN_BLACKLIST_OFF;
     }
-
-    // UNLOCK: release device lock
-    rmDeviceGpuLocksRelease(pGpu, GPUS_LOCK_FLAGS_NONE, NULL);
 
     NV_ASSERT_OR_RETURN(NV_OK == status, status);
 
@@ -567,6 +559,14 @@ vidmemConstruct_IMPL
         bUpdatePteKind = NV_TRUE;
     }
 
+    if (FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY, _DEFAULT, pAllocData->attr))
+    {
+        pAllocData->attr =
+            FLD_SET_DRF_NUM(OS32, _ATTR, _PHYSICALITY,
+                            pDevice->defaultVidmemPhysicalityOverride,
+                            pAllocData->attr);
+    }
+
     NV_CHECK_OK_OR_RETURN(LEVEL_WARNING, stdmemValidateParams(pGpu, hClient, pAllocData));
     NV_CHECK_OR_RETURN(LEVEL_WARNING,
                        DRF_VAL(OS32, _ATTR, _LOCATION, pAllocData->attr) == NVOS32_ATTR_LOCATION_VIDMEM &&
@@ -583,6 +583,9 @@ vidmemConstruct_IMPL
     bSubheap = FLD_TEST_DRF(OS32, _ATTR2, _ALLOCATE_FROM_SUBHEAP, _YES, pAllocData->attr2);
     pHeap = vidmemGetHeap(pGpu, pDevice, bSubheap, bRsvdHeap);
     NV_CHECK_OR_RETURN(LEVEL_INFO, pHeap != NULL, NV_ERR_INVALID_STATE);
+
+    attr  = pAllocData->attr;
+    attr2 = pAllocData->attr2;
 
     if (gpuIsCCorApmFeatureEnabled(pGpu) &&
         !FLD_TEST_DRF(OS32, _ATTR2, _MEMORY_PROTECTION, _UNPROTECTED, pAllocData->attr2))
@@ -626,7 +629,7 @@ vidmemConstruct_IMPL
 
     // Scrub-on-free is not supported by heap. Make sure clients don't get unscrubbed allocations
     NV_CHECK_OR_RETURN(LEVEL_WARNING,
-        !memmgrIsScrubOnFreeEnabled(pMemoryManager) || bIsPmaAlloc || bSubheap,
+        !memmgrIsScrubOnFreeEnabled(pMemoryManager) || bIsPmaAlloc || bSubheap || bRsvdHeap,
         NV_ERR_INVALID_STATE);
 
     // Get the allocation from PMA if enabled.
@@ -902,6 +905,13 @@ vidmemConstruct_IMPL
     //
     // XXX: This is a hack for now. No Hw resources are assumed to be used in the call.
     // The host is only requested to make an alias to the allocated heap.
+
+    //
+    // Heap alloc may allocate non-contiguous pages when it is not able to
+    // find contiguous pages. Replace this field before passing to RPC.
+    //
+    attr = (pAllocData->attr &  DRF_SHIFTMASK(NVOS32_ATTR_PHYSICALITY)) |
+           (attr             & ~DRF_SHIFTMASK(NVOS32_ATTR_PHYSICALITY));
 
     if (!IS_GSP_CLIENT(pGpu))
     {
@@ -1293,6 +1303,11 @@ vidmemAllocResources
         }
 
         bAllocedMemory = NV_TRUE;
+
+        if (pVidHeapAlloc->flags & NVOS32_ALLOC_FLAGS_PERSISTENT_VIDMEM)
+        {
+            memdescSetFlag(pMemDesc, MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND, NV_TRUE);
+        }
     }
 
     if (!bIsPmaOwned && (pVidHeapAlloc->type != NVOS32_TYPE_PMA))

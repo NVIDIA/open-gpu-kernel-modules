@@ -60,6 +60,7 @@ NV_STATUS nvGpuOpsDeviceDestroy(struct gpuDevice *device);
 NV_STATUS nvGpuOpsAddressSpaceCreate(struct gpuDevice *device,
                                      NvU64 vaBase,
                                      NvU64 vaSize,
+                                     NvBool enableAts,
                                      gpuAddressSpaceHandle *vaSpace,
                                      UvmGpuAddressSpaceInfo *vaSpaceInfo);
 
@@ -92,11 +93,6 @@ NV_STATUS nvGpuOpsPmaPinPages(void *pPma,
                               NvLength pageCount,
                               NvU64 pageSize,
                               NvU32 flags);
-
-NV_STATUS nvGpuOpsPmaUnpinPages(void *pPma,
-                                NvU64 *pPages,
-                                NvLength pageCount,
-                                NvU64 pageSize);
 
 NV_STATUS nvGpuOpsTsgAllocate(gpuAddressSpaceHandle vaSpace,
                               const gpuTsgAllocParams *params,
@@ -285,11 +281,14 @@ NV_STATUS nvGpuOpsPagingChannelPushStream(UvmGpuPagingChannel *channel,
 
 NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(struct gpuDevice *device);
 
+NV_STATUS nvGpuOpsTogglePrefetchFaults(gpuFaultInfo *pFaultInfo, NvBool bEnable);
+
 // Interface used for CCSL
 
 NV_STATUS nvGpuOpsCcslContextInit(struct ccslContext_t **ctx,
                                   gpuChannelHandle channel);
 NV_STATUS nvGpuOpsCcslContextClear(struct ccslContext_t *ctx);
+NV_STATUS nvGpuOpsCcslContextUpdate(struct ccslContext_t *ctx);
 NV_STATUS nvGpuOpsCcslRotateIv(struct ccslContext_t *ctx,
                                NvU8 direction);
 NV_STATUS nvGpuOpsCcslEncrypt(struct ccslContext_t *ctx,
@@ -322,5 +321,7 @@ NV_STATUS nvGpuOpsIncrementIv(struct ccslContext_t *ctx,
                               NvU8 direction,
                               NvU64 increment,
                               NvU8 *iv);
+NV_STATUS nvGpuOpsLogDeviceEncryption(struct ccslContext_t *ctx,
+                                      NvU32 bufferSize);
 
 #endif /* _NV_GPU_OPS_H_*/

@@ -145,6 +145,7 @@ struct NvKmsPerOpenDisp {
     struct NvKmsPerOpenConnector connector[NVKMS_MAX_CONNECTORS_PER_DISP];
     NVEvoApiHandlesRec           vblankSyncObjectHandles[NVKMS_MAX_HEADS_PER_DISP];
     NVEvoApiHandlesRec           vblankCallbackHandles[NVKMS_MAX_HEADS_PER_DISP];
+    NVEvoApiHandlesRec           vblankSemControlHandles;
 };
 
 struct NvKmsPerOpenDev {
@@ -697,6 +698,8 @@ static void ClearPerOpenDisp(
         nvEvoDestroyApiHandles(&pOpenDisp->vblankCallbackHandles[i]);
     }
 
+    nvEvoDestroyApiHandles(&pOpenDisp->vblankSemControlHandles);
+
     nvEvoDestroyApiHandle(&pOpenDev->dispHandles, pOpenDisp->nvKmsApiHandle);
 
     nvkms_memset(pOpenDisp, 0, sizeof(*pOpenDisp));
@@ -762,13 +765,22 @@ static NvBool InitPerOpenDisp(
 
     /* Initialize the vblankCallbackHandles for each head.
      *
-     * The limit of VBLANK_SYNC_OBJECTS_PER_HEAD doesn't really apply here, but
-     * we need something. */
+     * The initial value of VBLANK_SYNC_OBJECTS_PER_HEAD doesn't really apply
+     * here, but we need something. */
     for (NvU32 i = 0; i < NVKMS_MAX_HEADS_PER_DISP; i++) {
         if (!nvEvoInitApiHandles(&pOpenDisp->vblankCallbackHandles[i],
                                  NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
             goto fail;
         }
+    }
+
+    /* Initialize the vblankSemControlHandles.
+     *
+     * The initial value of VBLANK_SYNC_OBJECTS_PER_HEAD doesn't really apply
+     * here, but we need something. */
+    if (!nvEvoInitApiHandles(&pOpenDisp->vblankSemControlHandles,
+                             NVKMS_MAX_VBLANK_SYNC_OBJECTS_PER_HEAD)) {
+        goto fail;
     }
 
     if (!AllocPerOpenFrameLock(pOpen, pOpenDisp)) {
@@ -1444,7 +1456,6 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
     pParams->reply.maxWidthInPixels  = pDevEvo->caps.maxWidthInPixels;
     pParams->reply.maxHeightInPixels = pDevEvo->caps.maxHeight;
     pParams->reply.cursorCompositionCaps = pDevEvo->caps.cursorCompositionCaps;
-    pParams->reply.genericPageKind   = pDevEvo->caps.genericPageKind;
 
     pParams->reply.maxCursorSize     = pDevEvo->cursorHal->caps.maxSize;
 
@@ -1469,6 +1480,8 @@ static NvBool AllocDevice(struct NvKmsPerOpen *pOpen,
 
     pParams->reply.supportsVblankSyncObjects =
         pDevEvo->hal->caps.supportsVblankSyncObjects;
+
+    pParams->reply.supportsVblankSemControl = pDevEvo->supportsVblankSemControl;
 
     pParams->reply.status = NVKMS_ALLOC_DEVICE_STATUS_SUCCESS;
 
@@ -1554,11 +1567,45 @@ static void DisableRemainingVblankSyncObjects(struct NvKmsPerOpen *pOpen,
     }
 }
 
+static void DisableRemainingVblankSemControls(
+    struct NvKmsPerOpen *pOpen,
+    struct NvKmsPerOpenDev *pOpenDev)
+{
+    struct NvKmsPerOpenDisp *pOpenDisp;
+    NvKmsGenericHandle dispHandle;
+    NVDevEvoPtr pDevEvo = pOpenDev->pDevEvo;
+
+    nvAssert(pOpen->type == NvKmsPerOpenTypeIoctl);
+
+    FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDev->dispHandles,
+                                        pOpenDisp,
+                                        dispHandle) {
+
+        NVVblankSemControl *pVblankSemControl;
+        NvKmsGenericHandle vblankSemControlHandle;
+
+        FOR_ALL_POINTERS_IN_EVO_API_HANDLES(&pOpenDisp->vblankSemControlHandles,
+                                            pVblankSemControl,
+                                            vblankSemControlHandle) {
+            NvBool ret =
+                nvEvoDisableVblankSemControl(pDevEvo, pVblankSemControl);
+
+            if (!ret) {
+                nvAssert(!"implicit disable of vblank sem control failed.");
+            }
+            nvEvoDestroyApiHandle(&pOpenDisp->vblankSemControlHandles,
+                                  vblankSemControlHandle);
+        }
+    }
+}
+
 static void FreeDeviceReference(struct NvKmsPerOpen *pOpen,
                                 struct NvKmsPerOpenDev *pOpenDev)
 {
     /* Disable all client-owned vblank sync objects that still exist. */
     DisableRemainingVblankSyncObjects(pOpen, pOpenDev);
+
+    DisableRemainingVblankSemControls(pOpen, pOpenDev);
 
     FreeSwapGroups(pOpenDev);
 
@@ -4667,6 +4714,150 @@ static NvBool SetFlipLockGroup(
     return nvSetFlipLockGroup(pDevEvo, pRequest);
 }
 
+static NvBool EnableVblankSemControl(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    struct NvKmsEnableVblankSemControlParams *pParams = pParamsVoid;
+    struct NvKmsPerOpenDev *pOpenDev;
+    struct NvKmsPerOpenDisp *pOpenDisp;
+    NVDevEvoPtr pDevEvo;
+    NVDispEvoRec *pDispEvo;
+    NVSurfaceEvoPtr pSurfaceEvo;
+    NVVblankSemControl *pVblankSemControl;
+    NvKmsVblankSemControlHandle vblankSemControlHandle;
+    NvU32 hwHead;
+
+    if (!GetPerOpenDevAndDisp(pOpen,
+                              pParams->request.deviceHandle,
+                              pParams->request.dispHandle,
+                              &pOpenDev,
+                              &pOpenDisp)) {
+        return FALSE;
+    }
+
+    pDevEvo = pOpenDev->pDevEvo;
+    pDispEvo = pOpenDisp->pDispEvo;
+
+    pSurfaceEvo =
+        nvEvoGetSurfaceFromHandleNoDispHWAccessOk(
+            pDevEvo,
+            &pOpenDev->surfaceHandles,
+            pParams->request.surfaceHandle);
+
+    if (pSurfaceEvo == NULL) {
+        return FALSE;
+    }
+
+    hwHead = nvGetPrimaryHwHead(pDispEvo, pParams->request.head);
+
+    if (hwHead == NV_INVALID_HEAD) {
+        return FALSE;
+    }
+
+    pVblankSemControl = nvEvoEnableVblankSemControl(
+                            pDevEvo,
+                            pDispEvo,
+                            hwHead,
+                            pSurfaceEvo,
+                            pParams->request.surfaceOffset);
+
+    if (pVblankSemControl == NULL) {
+        return FALSE;
+    }
+
+    vblankSemControlHandle =
+        nvEvoCreateApiHandle(&pOpenDisp->vblankSemControlHandles,
+                             pVblankSemControl);
+
+    if (vblankSemControlHandle == 0) {
+        (void)nvEvoDisableVblankSemControl(pDevEvo, pVblankSemControl);
+        return FALSE;
+    }
+
+    pParams->reply.vblankSemControlHandle = vblankSemControlHandle;
+
+    return TRUE;
+}
+
+static NvBool DisableVblankSemControl(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    const struct NvKmsDisableVblankSemControlParams *pParams = pParamsVoid;
+    struct NvKmsPerOpenDev *pOpenDev;
+    struct NvKmsPerOpenDisp *pOpenDisp;
+    NVDevEvoPtr pDevEvo;
+    NVVblankSemControl *pVblankSemControl;
+    NvBool ret;
+
+    if (!GetPerOpenDevAndDisp(pOpen,
+                              pParams->request.deviceHandle,
+                              pParams->request.dispHandle,
+                              &pOpenDev,
+                              &pOpenDisp)) {
+        return FALSE;
+    }
+
+    pDevEvo = pOpenDev->pDevEvo;
+
+    pVblankSemControl =
+        nvEvoGetPointerFromApiHandle(&pOpenDisp->vblankSemControlHandles,
+                                     pParams->request.vblankSemControlHandle);
+    if (pVblankSemControl == NULL) {
+        return FALSE;
+    }
+
+    ret = nvEvoDisableVblankSemControl(pDevEvo, pVblankSemControl);
+
+    if (ret) {
+        nvEvoDestroyApiHandle(&pOpenDisp->vblankSemControlHandles,
+                              pParams->request.vblankSemControlHandle);
+    }
+
+    return ret;
+}
+
+static NvBool AccelVblankSemControls(
+    struct NvKmsPerOpen *pOpen,
+    void *pParamsVoid)
+{
+    const struct NvKmsAccelVblankSemControlsParams *pParams = pParamsVoid;
+    struct NvKmsPerOpenDev *pOpenDev;
+    struct NvKmsPerOpenDisp *pOpenDisp;
+    NVDevEvoPtr pDevEvo;
+    const NVDispEvoRec *pDispEvo;
+    NvU32 apiHead, hwHeadMask = 0;
+
+    if (!GetPerOpenDevAndDisp(pOpen,
+                              pParams->request.deviceHandle,
+                              pParams->request.dispHandle,
+                              &pOpenDev,
+                              &pOpenDisp)) {
+        return FALSE;
+    }
+
+    if (!nvKmsOpenDevHasSubOwnerPermissionOrBetter(pOpenDev)) {
+        return FALSE;
+    }
+
+    pDevEvo = pOpenDev->pDevEvo;
+    pDispEvo = pOpenDisp->pDispEvo;
+
+    FOR_ALL_HEADS(apiHead, pParams->request.headMask) {
+        NvU32 hwHead = nvGetPrimaryHwHead(pDispEvo, apiHead);
+
+        if (hwHead != NV_INVALID_HEAD) {
+            hwHeadMask |= NVBIT(hwHead);
+        }
+    }
+
+    return nvEvoAccelVblankSemControls(
+                pDevEvo,
+                pDispEvo->displayOwner,
+                hwHeadMask);
+}
+
 /*!
  * Perform the ioctl operation requested by the client.
  *
@@ -4789,6 +4980,9 @@ NvBool nvKmsIoctl(
         ENTRY(NVKMS_IOCTL_DISABLE_VBLANK_SYNC_OBJECT, DisableVblankSyncObject),
         ENTRY(NVKMS_IOCTL_NOTIFY_VBLANK, NotifyVblank),
         ENTRY(NVKMS_IOCTL_SET_FLIPLOCK_GROUP, SetFlipLockGroup),
+        ENTRY(NVKMS_IOCTL_ENABLE_VBLANK_SEM_CONTROL, EnableVblankSemControl),
+        ENTRY(NVKMS_IOCTL_DISABLE_VBLANK_SEM_CONTROL, DisableVblankSemControl),
+        ENTRY(NVKMS_IOCTL_ACCEL_VBLANK_SEM_CONTROLS, AccelVblankSemControls),
     };
 
     struct NvKmsPerOpen *pOpen = pOpenVoid;
@@ -5702,11 +5896,21 @@ ProcFsPrintHeads(
         outString(data, buffer);
 
         FOR_ALL_EVO_DISPLAYS(pDispEvo, dispIndex, pDevEvo) {
+            const NVLockGroup *pLockGroup = pDispEvo->pLockGroup;
 
             nvInitInfoString(&infoString, buffer, size);
             nvEvoLogInfoString(&infoString,
                     " pDispEvo (dispIndex:%02d)      : %p",
                     dispIndex, pDispEvo);
+            if (pLockGroup != NULL) {
+                const NvBool flipLocked = nvIsLockGroupFlipLocked(pLockGroup);
+                nvEvoLogInfoString(&infoString,
+                        "  pLockGroup                    : %p",
+                        pLockGroup);
+                nvEvoLogInfoString(&infoString,
+                        "   flipLock                     : %s",
+                        flipLocked ? "yes" : "no");
+            }
             outString(data, buffer);
 
             if (pDevEvo->coreInitMethodsPending) {

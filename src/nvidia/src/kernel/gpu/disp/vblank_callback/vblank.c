@@ -262,6 +262,45 @@ kheadAddVblankCallback_IMPL
 }
 
 void
+kheadPauseVblankCbNotifications_IMPL
+(
+    OBJGPU         *pGpu,
+    KernelHead     *pKernelHead,
+    VBLANKCALLBACK *pCallback
+)
+{
+    VBLANKCALLBACK  *pList   = NULL;
+    NvBool           bShouldDisable = NV_TRUE;
+
+    // Cache the requested queue and its current vblank count
+    if (pCallback->Flags & VBLANK_CALLBACK_FLAG_LOW_LATENCY)
+    {
+        pList = pKernelHead->Vblank.Callback.pListLL;
+    }
+    else
+    {
+        pList = pKernelHead->Vblank.Callback.pListNL;
+    }
+
+
+    VBLANKCALLBACK *pPrev = pList;
+
+    while (pPrev)
+    {
+        if (pPrev->bIsVblankNotifyEnable  == NV_TRUE)
+        {
+            bShouldDisable = NV_FALSE;
+            break;
+        }
+        pPrev = pPrev->Next;
+    }
+
+    if(bShouldDisable)
+    {
+        kheadWriteVblankIntrState(pGpu, pKernelHead, NV_HEAD_VBLANK_INTR_AVAILABLE);
+    }
+}
+void
 kheadDeleteVblankCallback_IMPL
 (
     OBJGPU         *pGpu,

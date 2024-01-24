@@ -31,7 +31,6 @@
 
 #include "core/core.h"
 #include "nvlimits.h"
-#include "gpu_mgr/gpu_mgr.h"
 
 #define IsDeviceDestroyed(p) (gpuGetDeviceInstance(p) == NV_MAX_DEVICES)
 

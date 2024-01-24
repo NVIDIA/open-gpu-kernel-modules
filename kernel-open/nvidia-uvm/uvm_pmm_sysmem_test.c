@@ -42,8 +42,6 @@ static uvm_reverse_map_t g_sysmem_translations[PAGES_PER_UVM_VA_BLOCK];
 // address ranges
 static uvm_pmm_sysmem_mappings_t g_reverse_map;
 
-static uvm_gpu_t *g_volta_plus_gpu;
-
 // Check that the DMA addresses in the range defined by
 // [base_dma_addr:base_dma_addr + uvm_va_block_size(va_block)] and page_mask
 // are registered in the reverse map, using one call per entry. The returned
@@ -515,25 +513,25 @@ static NV_STATUS test_pmm_sysmem_reverse_map_remove_on_eviction(uvm_va_space_t *
 static NV_STATUS test_pmm_sysmem_reverse_map(uvm_va_space_t *va_space, NvU64 addr1, NvU64 addr2)
 {
     NV_STATUS status = NV_OK;
+    uvm_gpu_t *volta_gpu = NULL;
     uvm_gpu_t *gpu;
 
-    g_volta_plus_gpu = NULL;
-
-    // Find a GPU with support for access counters, since it is required to add
-    // or remove entries to the reverse map.
+    // Find a GPU with support for access counters with physical address
+    // notifications, since it is required to add or remove entries to the
+    // reverse map.
     for_each_va_space_gpu(gpu, va_space) {
-        if (gpu->parent->access_counters_supported) {
+        if (gpu->parent->access_counters_can_use_physical_addresses) {
             // Initialize the reverse map.
             status = uvm_pmm_sysmem_mappings_init(gpu, &g_reverse_map);
             if (status != NV_OK)
                 return status;
 
-            g_volta_plus_gpu = gpu;
+            volta_gpu = gpu;
             break;
         }
     }
 
-    if (!g_volta_plus_gpu)
+    if (!volta_gpu)
         return NV_ERR_INVALID_DEVICE;
 
     status = test_pmm_sysmem_reverse_map_single_whole(va_space, addr1);
@@ -628,7 +626,7 @@ static NV_STATUS test_cpu_chunk_mapping_access(uvm_cpu_chunk_t *chunk, uvm_gpu_t
     TEST_NV_CHECK_RET(cpu_chunk_map_on_cpu(chunk, (void **)&cpu_addr));
     memset(cpu_addr, 0, chunk_size);
 
-    dma_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu->parent);
+    dma_addr = uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent);
     gpu_addr = uvm_gpu_address_copy(gpu, uvm_gpu_phys_address(UVM_APERTURE_SYS, dma_addr));
 
     TEST_NV_CHECK_GOTO(uvm_push_begin_acquire(gpu->channel_manager,
@@ -734,22 +732,22 @@ static NV_STATUS test_cpu_chunk_mapping_basic_verify(uvm_gpu_t *gpu,
     //   - gpu_mappings.dma_addrs_mask should be 0.
     //   - no GPU mapping address.
     TEST_CHECK_GOTO(phys_chunk->gpu_mappings.max_entries == 1, done);
-    TEST_CHECK_GOTO(uvm_processor_mask_get_gpu_count(&phys_chunk->gpu_mappings.dma_addrs_mask) == 0, done);
-    TEST_CHECK_GOTO(uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu->parent) == 0, done);
+    TEST_CHECK_GOTO(uvm_parent_processor_mask_get_gpu_count(&phys_chunk->gpu_mappings.dma_addrs_mask) == 0, done);
+    TEST_CHECK_GOTO(uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent) == 0, done);
     TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu), done);
 
     // Test basic access.
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu), done);
 
     // Test double map is harmless.
-    dma_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu->parent);
+    dma_addr = uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent);
     TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu), done);
-    TEST_CHECK_GOTO(uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu->parent) == dma_addr, done);
+    TEST_CHECK_GOTO(uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent) == dma_addr, done);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu), done);
 
     // Test unmap, remap.
-    uvm_cpu_chunk_unmap_gpu_phys(chunk, gpu->parent);
-    TEST_CHECK_GOTO(uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu->parent) == 0, done);
+    uvm_cpu_chunk_unmap_parent_gpu_phys(chunk, gpu->parent);
+    TEST_CHECK_GOTO(uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent) == 0, done);
     TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu), done);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu), done);
 
@@ -785,8 +783,8 @@ static NV_STATUS test_cpu_chunk_mapping_array(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1, 
     TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu2), done);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu1), done);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu2), done);
-    dma_addr_gpu1 = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu1->parent);
-    uvm_cpu_chunk_unmap_gpu_phys(chunk, gpu2->parent);
+    dma_addr_gpu1 = uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu1->parent);
+    uvm_cpu_chunk_unmap_parent_gpu_phys(chunk, gpu2->parent);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu1), done);
     TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu0), done);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu0), done);
@@ -800,7 +798,7 @@ static NV_STATUS test_cpu_chunk_mapping_array(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1, 
     // GPU1. It's true that we may get a false negative if both addresses
     // happened to alias and we had a bug in how the addresses are shifted in
     // the dense array, but that's better than intermittent failure.
-    TEST_CHECK_GOTO(uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu1->parent) == dma_addr_gpu1, done);
+    TEST_CHECK_GOTO(uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu1->parent) == dma_addr_gpu1, done);
 
 done:
     uvm_cpu_chunk_free(chunk);
@@ -830,7 +828,7 @@ static NV_STATUS do_test_cpu_chunk_split_and_merge(uvm_cpu_chunk_t *chunk, uvm_g
 
     TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(chunk, gpu), done_free);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(chunk, gpu), done_free);
-    uvm_cpu_chunk_unmap_gpu_phys(chunk, gpu->parent);
+    uvm_cpu_chunk_unmap_parent_gpu_phys(chunk, gpu->parent);
 
     TEST_NV_CHECK_GOTO(uvm_cpu_chunk_split(chunk, split_chunks), done_free);
     TEST_CHECK_GOTO(nv_kref_read(&chunk->refcount) == num_split_chunks, done);
@@ -853,7 +851,7 @@ static NV_STATUS do_test_cpu_chunk_split_and_merge(uvm_cpu_chunk_t *chunk, uvm_g
     TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(merged_chunk, gpu), done_free);
 
     // Test that GPU mappings are transferred after a split
-    phys_dma_addr = uvm_cpu_chunk_get_gpu_phys_addr(chunk, gpu->parent);
+    phys_dma_addr = uvm_cpu_chunk_get_parent_gpu_phys_addr(chunk, gpu->parent);
 
     TEST_NV_CHECK_GOTO(uvm_cpu_chunk_split(chunk, split_chunks), done_free);
 
@@ -861,9 +859,9 @@ static NV_STATUS do_test_cpu_chunk_split_and_merge(uvm_cpu_chunk_t *chunk, uvm_g
         NvU64 dma_addr;
 
         TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_access(split_chunks[i], gpu), done);
-        dma_addr = uvm_cpu_chunk_get_gpu_phys_addr(split_chunks[i], gpu->parent);
+        dma_addr = uvm_cpu_chunk_get_parent_gpu_phys_addr(split_chunks[i], gpu->parent);
         TEST_CHECK_GOTO(dma_addr == phys_dma_addr + (i * split_size), done);
-        uvm_cpu_chunk_unmap_gpu_phys(split_chunks[i], gpu->parent);
+        uvm_cpu_chunk_unmap_parent_gpu_phys(split_chunks[i], gpu->parent);
     }
 
     // Test that mapping one logical chunk does not affect others.
@@ -873,7 +871,7 @@ static NV_STATUS do_test_cpu_chunk_split_and_merge(uvm_cpu_chunk_t *chunk, uvm_g
 
     for (i = 0; i < num_split_chunks; i++) {
         if (i != map_chunk)
-            TEST_CHECK_GOTO(uvm_cpu_chunk_get_gpu_phys_addr(split_chunks[i], gpu->parent) == 0, done);
+            TEST_CHECK_GOTO(uvm_cpu_chunk_get_parent_gpu_phys_addr(split_chunks[i], gpu->parent) == 0, done);
     }
 
     if (split_size > PAGE_SIZE) {
@@ -1101,9 +1099,9 @@ NV_STATUS do_test_cpu_chunk_free(uvm_cpu_chunk_t *chunk, uvm_va_space_t *va_spac
     chunk = NULL;
 
     // Map every other chunk.
-    // The call to uvm_cpu_chunk_unmap_gpu_phys() is here in case this is part
-    // of a double split (see below). In that case, the parent chunk would be
-    // either mapped or unmapped.
+    // The call to uvm_cpu_chunk_unmap_parent_gpu_phys() is here in case this
+    // is part of a double split (see below). In that case, the parent chunk
+    // would be either mapped or unmapped.
     //
     // If it is mapped, we have to unmap the subchunks in
     // order for the mapping check below to succeed. If it is unmapped, the
@@ -1113,7 +1111,7 @@ NV_STATUS do_test_cpu_chunk_free(uvm_cpu_chunk_t *chunk, uvm_va_space_t *va_spac
             if (i & (1 << uvm_id_gpu_index(gpu->id)))
                 TEST_NV_CHECK_GOTO(uvm_cpu_chunk_map_gpu(split_chunks[i], gpu), done);
             else
-                uvm_cpu_chunk_unmap_gpu_phys(split_chunks[i], gpu->parent);
+                uvm_cpu_chunk_unmap_parent_gpu_phys(split_chunks[i], gpu->parent);
         }
     }
 
@@ -1149,9 +1147,9 @@ NV_STATUS do_test_cpu_chunk_free(uvm_cpu_chunk_t *chunk, uvm_va_space_t *va_spac
             TEST_CHECK_GOTO(uvm_cpu_chunk_get_size(split_chunks[j]) == split_size, done);
             for_each_va_space_gpu_in_mask(gpu, va_space, test_gpus) {
                 if (j & (1 << uvm_id_gpu_index(gpu->id)))
-                    TEST_CHECK_GOTO(uvm_cpu_chunk_get_gpu_phys_addr(split_chunks[j], gpu->parent), done);
+                    TEST_CHECK_GOTO(uvm_cpu_chunk_get_parent_gpu_phys_addr(split_chunks[j], gpu->parent), done);
                 else
-                    TEST_CHECK_GOTO(!uvm_cpu_chunk_get_gpu_phys_addr(split_chunks[j], gpu->parent), done);
+                    TEST_CHECK_GOTO(!uvm_cpu_chunk_get_parent_gpu_phys_addr(split_chunks[j], gpu->parent), done);
             }
         }
     }

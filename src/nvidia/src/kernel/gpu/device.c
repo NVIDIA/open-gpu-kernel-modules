@@ -34,8 +34,10 @@
 #include "resserv/rs_server.h"
 #include "resserv/rs_client.h"
 #include "resserv/rs_resource.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/device/device.h"
 #include "gpu/subdevice/subdevice.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl0080.h"
 #include "core/locks.h"
@@ -391,6 +393,26 @@ _deviceInit
     pDevice->vaMode = vaMode;
 
     gpuresSetGpu(pGpuResource, pGpu, NV_TRUE);
+
+    //
+    // In case of a SR-IOV enabled guest we create a default client inside
+    // the guest whose handle can be used for VAS sharing. Setting hClientShare
+    // to 0 on baremetal causes any VA alloc made under this device to use the
+    // global vaspace. We do not support use of the global vaspace inside guest.
+    // The legacy paravirtualization config also makes use of a default client.
+    // But, in the legacy case, the client is created by the plugin and not guest
+    // RM . On SR-IOV, vaspace management has been pushed inside the guest. So,
+    // having a vaspace only on the plugin side won't help since RmMapMemoryDma
+    // calls will no longer be RPCed to host RM.
+    //
+    if (IS_VIRTUAL_WITH_SRIOV(pGpu) &&
+        gpuIsSplitVasManagementServerClientRmEnabled(pGpu))
+    {
+        if (hClientShare == NV01_NULL_OBJECT)
+        {
+            hClientShare = pGpu->hDefaultClientShare;
+        }
+    }
 
     status = deviceSetClientShare(pDevice, hClientShare, vaSize,
                                   vaStartInternal, vaLimitInternal, allocFlags);

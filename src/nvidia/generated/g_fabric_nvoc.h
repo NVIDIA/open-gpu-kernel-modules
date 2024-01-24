@@ -48,6 +48,13 @@ extern "C" {
 #include "class/cl000f.h"
 #include "ctrl/ctrl000f.h"
 
+#include "core/thread_state.h"
+#include "rmapi/event.h"
+#include "rmapi/resource.h"
+#include "containers/list.h"
+#include "nvCpuUuid.h"
+#include "ctrl/ctrl00f1.h"
+
 
 
 // ****************************************************************************
@@ -68,6 +75,13 @@ typedef struct
 
 MAKE_MULTIMAP(FabricCache, FabricCacheEntry);
 
+#define NV_FABRIC_INVALID_NODE_ID ((NvU16) 0xFFFF)
+
+MAKE_LIST(FabricEventListV2, NV00F1_CTRL_FABRIC_EVENT);
+
+// Callbacks
+void fabricWakeUpThreadCallback(void *pData);
+
 #include "nvlink_inband_msg.h"
 
 void fabricMulticastWaitOnTeamCleanupCallback(void *pCbData);
@@ -75,19 +89,35 @@ void fabricMulticastWaitOnTeamCleanupCallback(void *pCbData);
 //
 // The Fabric object is used to encapsulate the NVLink fabric
 //
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_FABRIC_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct Fabric {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
     struct Object *__nvoc_pbase_Object;
     struct Fabric *__nvoc_pbase_Fabric;
-    NvU32 flags;
-    PORT_MUTEX *pMulticastFabricOpsMutex;
-    FabricCache fabricMulticastCache;
+    PORT_RWLOCK *pFabricImportModuleLock;
+    PORT_RWLOCK *pMulticastFabricModuleLock;
+    NvU32 PRIVATE_FIELD(flags);
+    FabricEventListV2 PRIVATE_FIELD(fabricEventListV2);
+    PORT_RWLOCK *PRIVATE_FIELD(pListLock);
+    FabricCache PRIVATE_FIELD(importCache);
+    PORT_RWLOCK *PRIVATE_FIELD(pImportCacheLock);
+    FabricCache PRIVATE_FIELD(unimportCache);
+    PORT_RWLOCK *PRIVATE_FIELD(pUnimportCacheLock);
+    NvP64 PRIVATE_FIELD(pOsImexEvent);
+    NvU16 PRIVATE_FIELD(nodeId);
+    volatile NvU64 PRIVATE_FIELD(eventId);
+    FabricCache PRIVATE_FIELD(fabricMulticastCache);
+    PORT_RWLOCK *PRIVATE_FIELD(pMulticastFabriCacheLock);
 };
 
 #ifndef __NVOC_CLASS_Fabric_TYPEDEF__
@@ -145,88 +175,259 @@ static inline NvU32 fabricGetFmSessionFlags(struct Fabric *pFabric) {
 #define fabricGetFmSessionFlags(pFabric) fabricGetFmSessionFlags_IMPL(pFabric)
 #endif //__nvoc_fabric_h_disabled
 
-void fabricMulticastFabricOpsMutexAcquire_IMPL(struct Fabric *pFabric);
+NV_STATUS fabricSetImexEvent_IMPL(struct Fabric *pFabric, NvP64 pOsEvent);
 
 #ifdef __nvoc_fabric_h_disabled
-static inline void fabricMulticastFabricOpsMutexAcquire(struct Fabric *pFabric) {
-    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
-}
-#else //__nvoc_fabric_h_disabled
-#define fabricMulticastFabricOpsMutexAcquire(pFabric) fabricMulticastFabricOpsMutexAcquire_IMPL(pFabric)
-#endif //__nvoc_fabric_h_disabled
-
-void fabricMulticastFabricOpsMutexRelease_IMPL(struct Fabric *pFabric);
-
-#ifdef __nvoc_fabric_h_disabled
-static inline void fabricMulticastFabricOpsMutexRelease(struct Fabric *pFabric) {
-    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
-}
-#else //__nvoc_fabric_h_disabled
-#define fabricMulticastFabricOpsMutexRelease(pFabric) fabricMulticastFabricOpsMutexRelease_IMPL(pFabric)
-#endif //__nvoc_fabric_h_disabled
-
-NV_STATUS fabricMulticastSetupCacheInsertUnderLock_IMPL(struct Fabric *pFabric, NvU64 requesId, void *pData);
-
-#ifdef __nvoc_fabric_h_disabled
-static inline NV_STATUS fabricMulticastSetupCacheInsertUnderLock(struct Fabric *pFabric, NvU64 requesId, void *pData) {
+static inline NV_STATUS fabricSetImexEvent(struct Fabric *pFabric, NvP64 pOsEvent) {
     NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_fabric_h_disabled
-#define fabricMulticastSetupCacheInsertUnderLock(pFabric, requesId, pData) fabricMulticastSetupCacheInsertUnderLock_IMPL(pFabric, requesId, pData)
+#define fabricSetImexEvent(pFabric, pOsEvent) fabricSetImexEvent_IMPL(pFabric, pOsEvent)
 #endif //__nvoc_fabric_h_disabled
 
-void fabricMulticastSetupCacheDeleteUnderLock_IMPL(struct Fabric *pFabric, NvU64 requesId);
+NvP64 fabricGetImexEvent_IMPL(struct Fabric *pFabric);
 
 #ifdef __nvoc_fabric_h_disabled
-static inline void fabricMulticastSetupCacheDeleteUnderLock(struct Fabric *pFabric, NvU64 requesId) {
+static inline NvP64 fabricGetImexEvent(struct Fabric *pFabric) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return 0;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricGetImexEvent(pFabric) fabricGetImexEvent_IMPL(pFabric)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricSetNodeId_IMPL(struct Fabric *pFabric, NvU16 nodeId);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricSetNodeId(struct Fabric *pFabric, NvU16 nodeId) {
     NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
 }
 #else //__nvoc_fabric_h_disabled
-#define fabricMulticastSetupCacheDeleteUnderLock(pFabric, requesId) fabricMulticastSetupCacheDeleteUnderLock_IMPL(pFabric, requesId)
+#define fabricSetNodeId(pFabric, nodeId) fabricSetNodeId_IMPL(pFabric, nodeId)
 #endif //__nvoc_fabric_h_disabled
 
-void *fabricMulticastSetupCacheGetUnderLock_IMPL(struct Fabric *pFabric, NvU64 requestId);
+NvU16 fabricGetNodeId_IMPL(struct Fabric *pFabric);
 
 #ifdef __nvoc_fabric_h_disabled
-static inline void *fabricMulticastSetupCacheGetUnderLock(struct Fabric *pFabric, NvU64 requestId) {
+static inline NvU16 fabricGetNodeId(struct Fabric *pFabric) {
     NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
-    return NULL;
+    return 0;
 }
 #else //__nvoc_fabric_h_disabled
-#define fabricMulticastSetupCacheGetUnderLock(pFabric, requestId) fabricMulticastSetupCacheGetUnderLock_IMPL(pFabric, requestId)
+#define fabricGetNodeId(pFabric) fabricGetNodeId_IMPL(pFabric)
 #endif //__nvoc_fabric_h_disabled
 
-NV_STATUS fabricMulticastCleanupCacheInsertUnderLock_IMPL(struct Fabric *pFabric, NvU64 requesId, void *pData);
+NV_STATUS fabricPostEventsV2_IMPL(struct Fabric *pFabric, NV00F1_CTRL_FABRIC_EVENT *pEvents, NvU32 numEvents);
 
 #ifdef __nvoc_fabric_h_disabled
-static inline NV_STATUS fabricMulticastCleanupCacheInsertUnderLock(struct Fabric *pFabric, NvU64 requesId, void *pData) {
+static inline NV_STATUS fabricPostEventsV2(struct Fabric *pFabric, NV00F1_CTRL_FABRIC_EVENT *pEvents, NvU32 numEvents) {
     NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
 #else //__nvoc_fabric_h_disabled
-#define fabricMulticastCleanupCacheInsertUnderLock(pFabric, requesId, pData) fabricMulticastCleanupCacheInsertUnderLock_IMPL(pFabric, requesId, pData)
+#define fabricPostEventsV2(pFabric, pEvents, numEvents) fabricPostEventsV2_IMPL(pFabric, pEvents, numEvents)
 #endif //__nvoc_fabric_h_disabled
 
-void fabricMulticastCleanupCacheDeleteUnderLock_IMPL(struct Fabric *pFabric, NvU64 requesId);
+NvBool fabricExtractEventsV2_IMPL(struct Fabric *pFabric, NV00F1_CTRL_FABRIC_EVENT *pEventArray, NvU32 *pNumEvents);
 
 #ifdef __nvoc_fabric_h_disabled
-static inline void fabricMulticastCleanupCacheDeleteUnderLock(struct Fabric *pFabric, NvU64 requesId) {
+static inline NvBool fabricExtractEventsV2(struct Fabric *pFabric, NV00F1_CTRL_FABRIC_EVENT *pEventArray, NvU32 *pNumEvents) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricExtractEventsV2(pFabric, pEventArray, pNumEvents) fabricExtractEventsV2_IMPL(pFabric, pEventArray, pNumEvents)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricFlushUnhandledEvents_IMPL(struct Fabric *pFabric);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricFlushUnhandledEvents(struct Fabric *pFabric) {
     NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
 }
 #else //__nvoc_fabric_h_disabled
-#define fabricMulticastCleanupCacheDeleteUnderLock(pFabric, requesId) fabricMulticastCleanupCacheDeleteUnderLock_IMPL(pFabric, requesId)
+#define fabricFlushUnhandledEvents(pFabric) fabricFlushUnhandledEvents_IMPL(pFabric)
 #endif //__nvoc_fabric_h_disabled
 
-void *fabricMulticastCleanupCacheGetUnderLock_IMPL(struct Fabric *pFabric, NvU64 requestId);
+NvU64 fabricGenerateEventId_IMPL(struct Fabric *pFabric);
 
 #ifdef __nvoc_fabric_h_disabled
-static inline void *fabricMulticastCleanupCacheGetUnderLock(struct Fabric *pFabric, NvU64 requestId) {
+static inline NvU64 fabricGenerateEventId(struct Fabric *pFabric) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return 0;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricGenerateEventId(pFabric) fabricGenerateEventId_IMPL(pFabric)
+#endif //__nvoc_fabric_h_disabled
+
+NV_STATUS fabricImportCacheInsert_IMPL(struct Fabric *pFabric, const NvUuid *pExportUuid, NvU64 key, void *pData);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline NV_STATUS fabricImportCacheInsert(struct Fabric *pFabric, const NvUuid *pExportUuid, NvU64 key, void *pData) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricImportCacheInsert(pFabric, pExportUuid, key, pData) fabricImportCacheInsert_IMPL(pFabric, pExportUuid, key, pData)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricImportCacheDelete_IMPL(struct Fabric *pFabric, const NvUuid *pExportUuid, NvU64 key);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricImportCacheDelete(struct Fabric *pFabric, const NvUuid *pExportUuid, NvU64 key) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricImportCacheDelete(pFabric, pExportUuid, key) fabricImportCacheDelete_IMPL(pFabric, pExportUuid, key)
+#endif //__nvoc_fabric_h_disabled
+
+void *fabricImportCacheGet_IMPL(struct Fabric *pFabric, const NvUuid *pExportUuid, NvU64 key);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void *fabricImportCacheGet(struct Fabric *pFabric, const NvUuid *pExportUuid, NvU64 key) {
     NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
     return NULL;
 }
 #else //__nvoc_fabric_h_disabled
-#define fabricMulticastCleanupCacheGetUnderLock(pFabric, requestId) fabricMulticastCleanupCacheGetUnderLock_IMPL(pFabric, requestId)
+#define fabricImportCacheGet(pFabric, pExportUuid, key) fabricImportCacheGet_IMPL(pFabric, pExportUuid, key)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricImportCacheClear_IMPL(struct Fabric *pFabric);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricImportCacheClear(struct Fabric *pFabric) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricImportCacheClear(pFabric) fabricImportCacheClear_IMPL(pFabric)
+#endif //__nvoc_fabric_h_disabled
+
+NV_STATUS fabricUnimportCacheInsert_IMPL(struct Fabric *pFabric, NvU64 unimportEventId, void *pData);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline NV_STATUS fabricUnimportCacheInsert(struct Fabric *pFabric, NvU64 unimportEventId, void *pData) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricUnimportCacheInsert(pFabric, unimportEventId, pData) fabricUnimportCacheInsert_IMPL(pFabric, unimportEventId, pData)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricUnimportCacheDelete_IMPL(struct Fabric *pFabric, NvU64 unimportEventId);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricUnimportCacheDelete(struct Fabric *pFabric, NvU64 unimportEventId) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricUnimportCacheDelete(pFabric, unimportEventId) fabricUnimportCacheDelete_IMPL(pFabric, unimportEventId)
+#endif //__nvoc_fabric_h_disabled
+
+void *fabricUnimportCacheGet_IMPL(struct Fabric *pFabric, NvU64 unimportEventId);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void *fabricUnimportCacheGet(struct Fabric *pFabric, NvU64 unimportEventId) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NULL;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricUnimportCacheGet(pFabric, unimportEventId) fabricUnimportCacheGet_IMPL(pFabric, unimportEventId)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricUnimportCacheIterateAll_IMPL(struct Fabric *pFabric, void (*pCb)(void *));
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricUnimportCacheIterateAll(struct Fabric *pFabric, void (*pCb)(void *)) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricUnimportCacheIterateAll(pFabric, pCb) fabricUnimportCacheIterateAll_IMPL(pFabric, pCb)
+#endif //__nvoc_fabric_h_disabled
+
+NvBool fabricUnimportCacheInvokeCallback_IMPL(struct Fabric *pFabric, NvU64 unimportEventId, void (*pCb)(void *));
+
+#ifdef __nvoc_fabric_h_disabled
+static inline NvBool fabricUnimportCacheInvokeCallback(struct Fabric *pFabric, NvU64 unimportEventId, void (*pCb)(void *)) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricUnimportCacheInvokeCallback(pFabric, unimportEventId, pCb) fabricUnimportCacheInvokeCallback_IMPL(pFabric, unimportEventId, pCb)
+#endif //__nvoc_fabric_h_disabled
+
+NV_STATUS fabricMulticastSetupCacheInsert_IMPL(struct Fabric *pFabric, NvU64 requesId, void *pData);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline NV_STATUS fabricMulticastSetupCacheInsert(struct Fabric *pFabric, NvU64 requesId, void *pData) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricMulticastSetupCacheInsert(pFabric, requesId, pData) fabricMulticastSetupCacheInsert_IMPL(pFabric, requesId, pData)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricMulticastSetupCacheDelete_IMPL(struct Fabric *pFabric, NvU64 requesId);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricMulticastSetupCacheDelete(struct Fabric *pFabric, NvU64 requesId) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricMulticastSetupCacheDelete(pFabric, requesId) fabricMulticastSetupCacheDelete_IMPL(pFabric, requesId)
+#endif //__nvoc_fabric_h_disabled
+
+void *fabricMulticastSetupCacheGet_IMPL(struct Fabric *pFabric, NvU64 requestId);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void *fabricMulticastSetupCacheGet(struct Fabric *pFabric, NvU64 requestId) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NULL;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricMulticastSetupCacheGet(pFabric, requestId) fabricMulticastSetupCacheGet_IMPL(pFabric, requestId)
+#endif //__nvoc_fabric_h_disabled
+
+NV_STATUS fabricMulticastCleanupCacheInsert_IMPL(struct Fabric *pFabric, NvU64 requesId, void *pData);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline NV_STATUS fabricMulticastCleanupCacheInsert(struct Fabric *pFabric, NvU64 requesId, void *pData) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricMulticastCleanupCacheInsert(pFabric, requesId, pData) fabricMulticastCleanupCacheInsert_IMPL(pFabric, requesId, pData)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricMulticastCleanupCacheDelete_IMPL(struct Fabric *pFabric, NvU64 requesId);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricMulticastCleanupCacheDelete(struct Fabric *pFabric, NvU64 requesId) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricMulticastCleanupCacheDelete(pFabric, requesId) fabricMulticastCleanupCacheDelete_IMPL(pFabric, requesId)
+#endif //__nvoc_fabric_h_disabled
+
+void *fabricMulticastCleanupCacheGet_IMPL(struct Fabric *pFabric, NvU64 requestId);
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void *fabricMulticastCleanupCacheGet(struct Fabric *pFabric, NvU64 requestId) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+    return NULL;
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricMulticastCleanupCacheGet(pFabric, requestId) fabricMulticastCleanupCacheGet_IMPL(pFabric, requestId)
+#endif //__nvoc_fabric_h_disabled
+
+void fabricMulticastCleanupCacheInvokeCallback_IMPL(struct Fabric *pFabric, NvU64 requestId, void (*pCb)(void *));
+
+#ifdef __nvoc_fabric_h_disabled
+static inline void fabricMulticastCleanupCacheInvokeCallback(struct Fabric *pFabric, NvU64 requestId, void (*pCb)(void *)) {
+    NV_ASSERT_FAILED_PRECOMP("Fabric was disabled!");
+}
+#else //__nvoc_fabric_h_disabled
+#define fabricMulticastCleanupCacheInvokeCallback(pFabric, requestId, pCb) fabricMulticastCleanupCacheInvokeCallback_IMPL(pFabric, requestId, pCb)
 #endif //__nvoc_fabric_h_disabled
 
 #undef PRIVATE_FIELD

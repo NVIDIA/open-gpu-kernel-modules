@@ -59,7 +59,7 @@ typedef struct OBJDISP *POBJDISP;
 //
 #define __dynamicCast_OBJGPIO(pObj) NULL
 #define __dynamicCast_OBJRPC(pObj) ((POBJRPC)__nvoc_dynamicCast(staticCast((pObj), Dynamic), classInfo(OBJRPC)))
-#define __dynamicCast_OBJRPCSTRUCTURECOPY(pObj) NULL
+#define __dynamicCast_OBJRPCSTRUCTURECOPY(pObj) ((POBJRPCSTRUCTURECOPY)__nvoc_dynamicCast(staticCast((pObj), Dynamic), classInfo(OBJRPCSTRUCTURECOPY)))
 
 
 

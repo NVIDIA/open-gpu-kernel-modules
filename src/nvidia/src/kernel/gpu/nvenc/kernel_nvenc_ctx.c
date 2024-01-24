@@ -21,11 +21,14 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "gpu/falcon/kernel_falcon.h"
 #include "gpu/nvenc/kernel_nvenc_ctx.h"
 #include "kernel/gpu/device/device.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "os/os.h"
-#include "gpu/falcon/kernel_falcon.h"
+#include "vgpu/sdk-structures.h"
+
+#include "ctrl/ctrl0080/ctrl0080msenc.h"
 
 NV_STATUS
 msencctxConstructHal_KERNEL
@@ -39,6 +42,9 @@ msencctxConstructHal_KERNEL
     OBJGPU            *pGpu = GPU_RES_GET_GPU(pChannelDescendant);
     KernelFalcon      *pKernelFalcon = kflcnGetKernelFalconForEngine(pGpu, pChannelDescendant->resourceDesc.engDesc);
     KernelChannel     *pKernelChannel = pChannelDescendant->pKernelChannel;
+
+    if (pKernelFalcon == NULL)
+        return NV_ERR_INVALID_STATE;
 
     NV_PRINTF(LEVEL_INFO, "msencctxConstruct for 0x%x\n", pChannelDescendant->resourceDesc.engDesc);
 
@@ -60,45 +66,17 @@ void msencctxDestructHal_KERNEL
     NV_ASSERT_OK(kflcnFreeContext(pGpu, pKernelFalcon, pKernelChannel, RES_GET_EXT_CLASS_ID(pChannelDescendant)));
 }
 
-//
-// Query subdevice caps, and return caps for nvenc0
-// This version does not support SLI
-//
-NV_STATUS
-deviceCtrlCmdMsencGetCaps_IMPL
+NV_STATUS deviceCtrlCmdMsencGetCapsV2_VF
 (
     Device *pDevice,
-    NV0080_CTRL_MSENC_GET_CAPS_PARAMS *pMsencCapsParams
+    NV0080_CTRL_MSENC_GET_CAPS_V2_PARAMS *pMsencCapsParams
 )
 {
     OBJGPU *pGpu = GPU_RES_GET_GPU(pDevice);
-    NV2080_CTRL_INTERNAL_MSENC_GET_CAPS_PARAMS params;
+    VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+    NV_ASSERT_OR_RETURN(pVSI != NULL, NV_ERR_INVALID_STATE);
 
-    // sanity check array size
-    if (pMsencCapsParams->capsTblSize != NV0080_CTRL_MSENC_CAPS_TBL_SIZE)
-    {
-        NV_PRINTF(LEVEL_ERROR, "size mismatch: client 0x%x rm 0x%x\n",
-                  pMsencCapsParams->capsTblSize,
-                  NV0080_CTRL_MSENC_CAPS_TBL_SIZE);
-        return NV_ERR_INVALID_ARGUMENT;
-    }
-
-    ct_assert(NV0080_CTRL_MSENC_CAPS_TBL_SIZE ==
-        sizeof(params.caps[0].capsTbl) / sizeof(*params.caps[0].capsTbl));
-
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
-                            pGpu->hInternalClient,
-                            pGpu->hInternalSubdevice,
-                            NV2080_CTRL_CMD_INTERNAL_MSENC_GET_CAPS,
-                            &params,
-                            sizeof(params)));
-
-    NV_ASSERT_OR_RETURN(params.valid[0], NV_ERR_INVALID_STATE);
-    portMemCopy(pMsencCapsParams->capsTbl,
-        NV0080_CTRL_MSENC_CAPS_TBL_SIZE,
-        &params.caps[0].capsTbl,
-        sizeof(params.caps[0].capsTbl));
-
+    portMemCopy(pMsencCapsParams, sizeof(*pMsencCapsParams), &pVSI->nvencCaps,
+        sizeof(pVSI->nvencCaps));
     return NV_OK;
 }

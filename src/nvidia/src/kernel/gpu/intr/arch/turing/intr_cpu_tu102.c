@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,7 +34,7 @@
 //
 
 NvU32
-intrReadRegLeafEnSet_TU102
+intrReadRegLeafEnSet_CPU_TU102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -48,7 +48,7 @@ intrReadRegLeafEnSet_TU102
 }
 
 NvU32
-intrReadRegLeaf_TU102
+intrReadRegLeaf_CPU_TU102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -62,7 +62,7 @@ intrReadRegLeaf_TU102
 }
 
 NvU32
-intrReadRegTopEnSet_TU102
+intrReadRegTopEnSet_CPU_TU102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -82,7 +82,7 @@ intrReadRegTopEnSet_TU102
 }
 
 NvU32
-intrReadRegTop_TU102
+intrReadRegTop_CPU_TU102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -102,7 +102,7 @@ intrReadRegTop_TU102
 }
 
 void
-intrWriteRegLeafEnSet_TU102
+intrWriteRegLeafEnSet_CPU_TU102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -118,7 +118,7 @@ intrWriteRegLeafEnSet_TU102
 }
 
 void
-intrWriteRegLeafEnClear_TU102
+intrWriteRegLeafEnClear_CPU_TU102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -134,7 +134,7 @@ intrWriteRegLeafEnClear_TU102
 }
 
 void
-intrWriteRegLeaf_TU102
+intrWriteRegLeaf_CPU_TU102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -150,7 +150,7 @@ intrWriteRegLeaf_TU102
 }
 
 void
-intrWriteRegTopEnSet_TU102
+intrWriteRegTopEnSet_CPU_TU102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,
@@ -172,7 +172,7 @@ intrWriteRegTopEnSet_TU102
 }
 
 void
-intrWriteRegTopEnClear_TU102
+intrWriteRegTopEnClear_CPU_TU102
 (
     OBJGPU             *pGpu,
     Intr               *pIntr,

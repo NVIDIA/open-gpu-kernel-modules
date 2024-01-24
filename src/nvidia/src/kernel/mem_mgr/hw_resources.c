@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -25,6 +25,7 @@
 #include "mem_mgr_internal.h"
 #include "mem_mgr/hw_resources.h"
 #include "gpu/mem_mgr/mem_desc.h"
+#include "vgpu/vgpu_util.h"
 #include "mem_mgr/mem.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/heap.h"
@@ -32,7 +33,6 @@
 #include "rmapi/client.h"
 #include "mmu/gmmu_fmt.h"
 #include "gpu/device/device.h"
-#include "gpu/subdevice/subdevice.h"
 
 #include "class/cl0041.h" // NV04_MEMORY
 #include "class/cl003e.h" // NV01_MEMORY_SYSTEM
@@ -133,6 +133,22 @@ hwresConstruct_IMPL
                 memdescSetHwResId(pMemory->pMemDesc, pAllocRequest->hwResId);
 
                 pMemory->osDeviceHandle = pAllocData->osDeviceHandle;
+
+                if (IS_VIRTUAL(pGpu) && vgpuIsGuestManagedHwAlloc(pGpu))
+                {
+                    pAllocData->compPageShift   = pMemorySystemConfig->comprPageShift;
+                    pAllocData->compressedKind  = pAllocData->kind;
+
+                    if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, pAllocData->kind))
+                    {
+                        pAllocData->uncompressedKind = memmgrGetUncompressedKind_HAL(pGpu, pMemoryManager,
+                                                                                     pAllocData->kind, NV_FALSE);
+                    }
+                    else
+                    {
+                        pAllocData->uncompressedKind = pAllocData->kind;
+                    }
+                }
 
                 if (!IS_VIRTUAL(pGpu) && !IS_GSP_CLIENT(pGpu))
                 {

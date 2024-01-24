@@ -242,17 +242,27 @@ memMap_IMPL
         }
     }
 
-    if ((pGpu != NULL) && (pMemoryInfo->Flags & NVOS32_ALLOC_FLAGS_PROTECTED))
+    if ((pGpu != NULL) && gpuIsCCFeatureEnabled(pGpu) &&
+        (pMemoryInfo->Flags & NVOS32_ALLOC_FLAGS_PROTECTED))
     {
         ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
         //
         // If neither BAR1 nor PCIE as a whole is trusted, fail the mapping
         // for allocations in CPR region. Mapping should still succeed for
         // allocations in non-CPR region
+        // Deny BAR1 access to CPU-RM by default irrespective of prod or devtools
+        // mode. Some mappings made by CPU-RM may be allowed to go thorough in
+        // devtools mode.
+        // However, allow the mapping to go through on platforms where GSP-DMA
+        // is not present e.g. MODS. User may have also set a regkey to force
+        // BAR accesses.
         //
-        if ((pCC != NULL) && !pCC->ccStaticInfo.bIsBar1Trusted &&
-            !pCC->ccStaticInfo.bIsPcieTrusted)
+        if (((pCC != NULL) && !pCC->ccStaticInfo.bIsBar1Trusted &&
+            !pCC->ccStaticInfo.bIsPcieTrusted) ||
+            (IS_GSP_CLIENT(pGpu) && pMapParams->bKernel && !pKernelBus->bForceBarAccessOnHcc &&
+             FLD_TEST_DRF(OS33, _FLAGS, _ALLOW_MAPPING_ON_HCC, _NO, pMapParams->flags)))
         {
+            NV_PRINTF(LEVEL_ERROR, "BAR1 mapping to CPR vidmem not supported\n");
             NV_ASSERT(0);
             return NV_ERR_NOT_SUPPORTED;
         }
@@ -482,7 +492,7 @@ memMap_IMPL
                 pMemDesc = memdescGetMemDescFromGpu(pMemDesc, pGpu);
 
                 // WAR for Bug 3564398, need to allocate doorbell for windows differently
-                if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM &&
+                if (RMCFG_FEATURE_PLATFORM_WINDOWS &&
                     memdescGetFlag(pMemDesc, MEMDESC_FLAGS_MAP_SYSCOH_OVER_BAR1))
                 {
                     busMapFbFlags |= BUS_MAP_FB_FLAGS_MAP_DOWNWARDS;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2015 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -447,7 +447,7 @@ NV_STATUS NV_API_CALL nv_dma_map_sgt(
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    if (page_count > os_get_num_phys_pages())
+    if (page_count > NV_NUM_PHYSPAGES)
     {
         NV_DMA_DEV_PRINTF(NV_DBG_ERRORS, dma_dev,
                 "DMA mapping request too large!\n");
@@ -509,7 +509,7 @@ NV_STATUS NV_API_CALL nv_dma_unmap_sgt(
     return NV_OK;
 }
 
-NV_STATUS NV_API_CALL nv_dma_map_pages(
+static NV_STATUS NV_API_CALL nv_dma_map_pages(
     nv_dma_device_t *dma_dev,
     NvU64            page_count,
     NvU64           *va_array,
@@ -530,7 +530,7 @@ NV_STATUS NV_API_CALL nv_dma_map_pages(
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    if (page_count > os_get_num_phys_pages())
+    if (page_count > NV_NUM_PHYSPAGES)
     {
         NV_DMA_DEV_PRINTF(NV_DBG_ERRORS, dma_dev,
                 "DMA mapping request too large!\n");
@@ -582,7 +582,7 @@ NV_STATUS NV_API_CALL nv_dma_map_pages(
     return status;
 }
 
-NV_STATUS NV_API_CALL nv_dma_unmap_pages(
+static NV_STATUS NV_API_CALL nv_dma_unmap_pages(
     nv_dma_device_t *dma_dev,
     NvU64            page_count,
     NvU64           *va_array,
@@ -602,7 +602,7 @@ NV_STATUS NV_API_CALL nv_dma_unmap_pages(
 
     dma_map = *priv;
 
-    if (page_count > os_get_num_phys_pages())
+    if (page_count > NV_NUM_PHYSPAGES)
     {
         NV_DMA_DEV_PRINTF(NV_DBG_ERRORS, dma_dev,
                 "DMA unmapping request too large!\n");
@@ -1100,7 +1100,6 @@ NV_STATUS NV_API_CALL nv_dma_import_dma_buf
     nv_dma_device_t *dma_dev,
     struct dma_buf *dma_buf,
     NvU32 *size,
-    void **user_pages,
     struct sg_table **sgt,
     nv_dma_buf_t **import_priv
 )
@@ -1113,7 +1112,6 @@ NV_STATUS NV_API_CALL nv_dma_import_from_fd
     nv_dma_device_t *dma_dev,
     NvS32 fd,
     NvU32 *size,
-    void **user_pages,
     struct sg_table **sgt,
     nv_dma_buf_t **import_priv
 )
@@ -1123,7 +1121,6 @@ NV_STATUS NV_API_CALL nv_dma_import_from_fd
 
 void NV_API_CALL nv_dma_release_dma_buf
 (
-    void *user_pages,
     nv_dma_buf_t *import_priv
 )
 {

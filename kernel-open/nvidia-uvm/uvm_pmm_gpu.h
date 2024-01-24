@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -271,7 +271,7 @@ struct uvm_gpu_chunk_struct
         // This allows determining what PMM owns the chunk. Users of this field
         // must only use it if the owning GPU is retained.
         // TODO: Bug 2008200: Enforce single PMM instance per GPU
-        NvU32 gpu_global_index : order_base_2(UVM_GLOBAL_ID_MAX_PROCESSORS);
+        NvU32 gpu_index : order_base_2(UVM_ID_MAX_PROCESSORS);
     };
 
     // List entry.

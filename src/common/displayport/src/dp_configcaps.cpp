@@ -115,6 +115,8 @@ struct DPCDHALImpl : DPCDHAL
         // DPCD Offset 0119h [0] - If we grant the extendedSleepWakeTimeoutRequest
         bool      bExtendedSleepWakeTimeoutGranted;
 
+        bool      bFECSupported;
+
         // DPCD Offset F0002h - Number of Physical Repeaters present (after mapping) between Source and Sink
         unsigned  phyRepeaterCount;
         // DPCD offset 700 - EDP_DPCD_REV
@@ -126,6 +128,10 @@ struct DPCDHALImpl : DPCDHAL
             LinkRate  maxLinkRate;                              // DPCD offset F0001h
             unsigned  maxLaneCount;                             // DPCD offset F0004h
             unsigned  phyRepeaterExtendedWakeTimeoutMs;         // DPCD offset F0005h
+            // The array to keep track of FEC capability of each LTTPR
+            bool      bFECSupportedRepeater[NV_DPCD14_PHY_REPEATER_CNT_MAX];
+            // If all the LTTPRs supports FEC
+            bool      bFECSupported;
         } repeaterCaps;
 
         PCONCaps pconCaps;
@@ -280,6 +286,11 @@ struct DPCDHALImpl : DPCDHAL
         NvU8 byte = 0;
         AuxRetry::status status;
         unsigned retries = 16;
+
+        NvU8 lttprIdx = 0;
+
+        caps.phyRepeaterCount = 0;
+
         // Burst read from 0x00 to 0x0F.
 
         //
@@ -530,6 +541,24 @@ struct DPCDHALImpl : DPCDHAL
                                      _PHY_REPEATER_EXTENDED_WAKE_TIMEOUT,
                                      _REQ, buffer[0x5]) * 10;
 
+                        for (lttprIdx = 0; lttprIdx < caps.phyRepeaterCount; lttprIdx++)
+                        {
+                            caps.repeaterCaps.bFECSupported = true;
+                            if (AuxRetry::ack ==
+                                    bus.read(NV_DPCD14_PHY_REPEATER_FEC_CAP_0(lttprIdx), &byte, 1))
+                            {
+                                caps.repeaterCaps.bFECSupportedRepeater[lttprIdx] =
+                                                  FLD_TEST_DRF(_DPCD14,
+                                                               _PHY_REPEATER_FEC_CAP_0,
+                                                               _FEC_CAPABLE,
+                                                               _YES,
+                                                               byte);
+
+                                // bFECSupported is only true if all LTTPR supports FEC.
+                                caps.repeaterCaps.bFECSupported &=
+                                                  caps.repeaterCaps.bFECSupportedRepeater[lttprIdx];
+                            }
+                        }
                     }
                     else
                     {

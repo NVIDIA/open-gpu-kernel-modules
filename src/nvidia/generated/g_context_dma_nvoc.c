@@ -142,10 +142,6 @@ static void __nvoc_thunk_RmResource_ctxdmaControl_Epilogue(struct ContextDma *pR
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_ctxdmaControlLookup(struct ContextDma *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pParams, ppEntry);
-}
-
 static NV_STATUS __nvoc_thunk_RsResource_ctxdmaControl(struct ContextDma *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return resControl((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset), pCallContext, pParams);
 }
@@ -176,6 +172,10 @@ static NV_STATUS __nvoc_thunk_RmResource_ctxdmaControlSerialization_Prologue(str
 
 static NvBool __nvoc_thunk_RsResource_ctxdmaCanCopy(struct ContextDma *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_ctxdmaIsPartialUnmapSupported(struct ContextDma *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_ContextDma_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_ctxdmaPreDestruct(struct ContextDma *pResource) {
@@ -346,8 +346,6 @@ static void __nvoc_init_funcTable_ContextDma_1(ContextDma *pThis) {
 
     pThis->__ctxdmaControl_Epilogue__ = &__nvoc_thunk_RmResource_ctxdmaControl_Epilogue;
 
-    pThis->__ctxdmaControlLookup__ = &__nvoc_thunk_RsResource_ctxdmaControlLookup;
-
     pThis->__ctxdmaControl__ = &__nvoc_thunk_RsResource_ctxdmaControl;
 
     pThis->__ctxdmaUnmap__ = &__nvoc_thunk_RsResource_ctxdmaUnmap;
@@ -363,6 +361,8 @@ static void __nvoc_init_funcTable_ContextDma_1(ContextDma *pThis) {
     pThis->__ctxdmaControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_ctxdmaControlSerialization_Prologue;
 
     pThis->__ctxdmaCanCopy__ = &__nvoc_thunk_RsResource_ctxdmaCanCopy;
+
+    pThis->__ctxdmaIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_ctxdmaIsPartialUnmapSupported;
 
     pThis->__ctxdmaPreDestruct__ = &__nvoc_thunk_RsResource_ctxdmaPreDestruct;
 
@@ -398,21 +398,26 @@ void __nvoc_init_ContextDma(ContextDma *pThis) {
     __nvoc_init_funcTable_ContextDma(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_ContextDma(ContextDma **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_ContextDma(ContextDma **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     ContextDma *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(ContextDma), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(ContextDma));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_ContextDma);
 
     pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -427,16 +432,25 @@ NV_STATUS __nvoc_objCreate_ContextDma(ContextDma **ppThis, Dynamic *pParent, NvU
     status = __nvoc_ctor_ContextDma(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_ContextDma_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_ContextDma_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(ContextDma));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

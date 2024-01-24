@@ -56,7 +56,7 @@ static NV_STATUS test_non_pipelined(uvm_gpu_t *gpu)
 
     // TODO: Bug 3839176: the test is waived on Confidential Computing because
     // it assumes that GPU can access system memory without using encryption.
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, CE_TEST_MEM_SIZE, 0, &host_mem);
@@ -176,7 +176,7 @@ static NV_STATUS test_membar(uvm_gpu_t *gpu)
 
     // TODO: Bug 3839176: the test is waived on Confidential Computing because
     // it assumes that GPU can access system memory without using encryption.
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     status = uvm_rm_mem_alloc_and_map_cpu(gpu, UVM_RM_MEM_TYPE_SYS, sizeof(NvU32), 0, &host_mem);
@@ -411,10 +411,11 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
     size_t i, j, k, s;
     uvm_mem_alloc_params_t mem_params = {0};
 
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         TEST_NV_CHECK_GOTO(uvm_mem_alloc_sysmem_dma_and_map_cpu_kernel(size, gpu, current->mm, &verif_mem), done);
     else
         TEST_NV_CHECK_GOTO(uvm_mem_alloc_sysmem_and_map_cpu_kernel(size, current->mm, &verif_mem), done);
+
     TEST_NV_CHECK_GOTO(uvm_mem_map_gpu_kernel(verif_mem, gpu), done);
 
     gpu_verif_addr = uvm_mem_gpu_address_virtual_kernel(verif_mem, gpu);
@@ -436,7 +437,7 @@ static NV_STATUS test_memcpy_and_memset(uvm_gpu_t *gpu)
     TEST_NV_CHECK_GOTO(uvm_rm_mem_alloc(gpu, UVM_RM_MEM_TYPE_SYS, size, 0, &sys_rm_mem), done);
     gpu_addresses[0] = uvm_rm_mem_get_gpu_va(sys_rm_mem, gpu, is_proxy_va_space);
 
-    if (uvm_conf_computing_mode_enabled(gpu)) {
+    if (g_uvm_global.conf_computing_enabled) {
         for (i = 0; i < iterations; ++i) {
             for (s = 0; s < ARRAY_SIZE(element_sizes); s++) {
                 TEST_NV_CHECK_GOTO(test_memcpy_and_memset_inner(gpu,
@@ -559,7 +560,7 @@ static NV_STATUS test_semaphore_reduction_inc(uvm_gpu_t *gpu)
 
     // TODO: Bug 3839176: the test is waived on Confidential Computing because
     // it assumes that GPU can access system memory without using encryption.
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     status = test_semaphore_alloc_sem(gpu, size, &mem);
@@ -611,7 +612,7 @@ static NV_STATUS test_semaphore_release(uvm_gpu_t *gpu)
 
     // TODO: Bug 3839176: the test is waived on Confidential Computing because
     // it assumes that GPU can access system memory without using encryption.
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     status = test_semaphore_alloc_sem(gpu, size, &mem);
@@ -665,7 +666,7 @@ static NV_STATUS test_semaphore_timestamp(uvm_gpu_t *gpu)
 
     // TODO: Bug 3839176: the test is waived on Confidential Computing because
     // it assumes that GPU can access system memory without using encryption.
-    if (uvm_conf_computing_mode_enabled(gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     status = test_semaphore_alloc_sem(gpu, size, &mem);
@@ -1153,7 +1154,7 @@ static NV_STATUS test_encryption_decryption(uvm_gpu_t *gpu,
     } small_sizes[] = {{1, 1}, {3, 1}, {8, 1}, {2, 2}, {8, 4}, {UVM_PAGE_SIZE_4K - 8, 8}, {UVM_PAGE_SIZE_4K + 8, 8}};
 
     // Only Confidential Computing uses CE encryption/decryption
-    if (!uvm_conf_computing_mode_enabled(gpu))
+    if (!g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     // Use a size, and copy size, that are not a multiple of common page sizes.

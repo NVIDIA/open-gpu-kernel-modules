@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2019 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -185,7 +185,7 @@ static NV_STATUS test_alloc(uvm_va_space_t *va_space)
 
             // In SR-IOV heavy, there should be a mapping in the proxy VA space
             // too.
-            if (uvm_gpu_uses_proxy_channel_pool(gpu)) {
+            if (uvm_parent_gpu_needs_proxy_channel_pool(gpu->parent)) {
                 gpu_va = uvm_gpu_semaphore_get_gpu_proxy_va(&semaphores[i], gpu);
                 TEST_CHECK_GOTO(gpu_va != 0, done);
             }

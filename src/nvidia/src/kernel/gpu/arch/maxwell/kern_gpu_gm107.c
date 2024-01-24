@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 #include "gpu/gpu_child_class_defs.h"
 #include "gpu_mgr/gpu_mgr_sli.h"
@@ -30,6 +31,7 @@
 #include "published/maxwell/gm107/dev_nv_xve.h"
 #include "published/maxwell/gm107/dev_nv_xve1.h"
 #include "published/maxwell/gm107/dev_fuse.h"
+#include "published/maxwell/gm107/dev_pri_ringstation_sys.h"
 
 /*!
  * @brief Returns SR-IOV capabilities
@@ -258,20 +260,6 @@ gpuWriteFunctionConfigRegEx_GM107
     return NV_OK;
 }
 
-void
-gpuReadDeviceId_GM107
-(
-    OBJGPU *pGpu,
-    NvU32  *devId,
-    NvU32  *ssId
-)
-{
-    if (devId == NULL || ssId == NULL) return;
-
-    *devId = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_ID);
-    *ssId  = GPU_REG_RD32(pGpu, DEVICE_BASE(NV_PCFG) + NV_XVE_SUBSYSTEM);
-}
-
 /*!
  * @brief Perform gpu-dependent error handling for error during register read sanity check
  *
@@ -377,6 +365,7 @@ gpuGetIdInfo_GM107(OBJGPU *pGpu)
 static const GPUCHILDORDER
 gpuChildOrderList_GM200[] =
 {
+    {classId(OBJVBIOS),           GCO_ALL},
     {classId(ConfidentialCompute),      GCO_ALL},
     {classId(Pxuc),               GCO_ALL},
     {classId(OBJBIF),             GCO_ALL},
@@ -464,6 +453,7 @@ gpuChildOrderList_GM200[] =
     {classId(OBJGPULOG),          GCO_LIST_INIT | GCO_LIST_LOAD},
     {classId(OBJGPUMON),          GCO_ALL},
     {classId(OBJGPULOG),          GCO_LIST_UNLOAD | GCO_LIST_DESTROY},
+    {classId(KernelHwpm),         GCO_ALL},
     {classId(OBJHWPM),            GCO_ALL},
     {classId(OBJSWENG),           GCO_ALL},
     {classId(OBJGRIDDISPLAYLESS), GCO_ALL},
@@ -509,6 +499,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GM200[] =
     GPU_CHILD_PRESENT(KernelFifo, 1),
     GPU_CHILD_PRESENT(KernelGmmu, 1),
     GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
     GPU_CHILD_PRESENT(KernelMc, 1),
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelPerf, 1),
@@ -633,4 +624,43 @@ gpuDetectSliLinkFromGpus_GK104
             }
         }
     }
+}
+
+/*!
+ * @brief Get error that arises during sanity check on a register read value
+ *
+ * @param[in]       pGpu             GPU object pointer
+ * @param[in]       value            Register value
+ * @param[out]      pErrorString     Error string pointer
+ *
+ * @return void
+ */
+void
+gpuGetSanityCheckRegReadError_GM107
+(
+    OBJGPU *pGpu,
+    NvU32 value,
+    const char **pErrorString
+)
+{
+#define PRI_ERROR(err)                                    \
+if (DRF_VAL(_PPRIV, _SYS_PRI_ERROR, _CODE, value) == err) \
+{                                                         \
+    *pErrorString = #err;                                 \
+}
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_HOST_FECS_ERR);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_HOST_PRI_TIMEOUT);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_HOST_FB_ACK_TIMEOUT);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_TIMEOUT);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_DECODE);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_RESET);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_FLOORSWEEP);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_STUCK_ACK);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_0_EXPECTED_ACK);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_FENCE_ERROR);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_SUBID_ERROR);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_ORPHAN);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_DEAD_RING);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_TRAP);
+    PRI_ERROR(NV_PPRIV_SYS_PRI_ERROR_CODE_FECS_PRI_CLIENT_ERR);
 }

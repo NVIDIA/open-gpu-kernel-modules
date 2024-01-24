@@ -295,14 +295,10 @@ eventBufferIsNotifyThresholdMet(EVENT_BUFFER_PRODUCER_INFO* info)
     RECORD_BUFFER_INFO* pRecInfo = &info->recordBuffer;
     NV_EVENT_BUFFER_HEADER* pHeader = pRecInfo->pHeader;
 
-    if (!info->isKeepNewest)
+    if (((pRecInfo->totalRecordCount - pHeader->recordCount) <= pRecInfo->notificationThreshold) ||
+        (pVarInfo->remainingSize <= pVarInfo->notificationThreshold))
     {
-        if (((pRecInfo->totalRecordCount - pHeader->recordCount) <= pRecInfo->notificationThreshold) ||
-            (pVarInfo->remainingSize <= pVarInfo->notificationThreshold))
-        {
-            return NV_TRUE;
-        }
+        return NV_TRUE;
     }
     return NV_FALSE;
 }
-

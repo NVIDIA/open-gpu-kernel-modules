@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -84,6 +84,24 @@ typedef struct GSP_RM_PARAMS
 } GSP_RM_PARAMS;
 
 /*!
+ * @brief GSP-SPDM Parameters
+ *
+ * Parameters required to set up a communication mechanism between Kernel-RM
+ * and SPDM partition inside GSP.
+ */
+typedef struct GSP_SPDM_PARAMS
+{
+    // Physical Memory Aperture through which all addresses are accessed
+    GSP_DMA_TARGET target;
+
+    // Physical offset in the memory aperture where SPDM payload is stored
+    NvU64 payloadBufferOffset;
+
+    // Size of the above payload buffer
+    NvU32 payloadBufferSize;
+} GSP_SPDM_PARAMS;
+
+/*!
  * @brief GSP-CC Microcode Parameters for Boot Partitions
  */
 typedef struct GSP_FMC_BOOT_PARAMS
@@ -91,6 +109,7 @@ typedef struct GSP_FMC_BOOT_PARAMS
     GSP_FMC_INIT_PARAMS         initParams;
     GSP_ACR_BOOT_GSP_RM_PARAMS  bootGspRmParams;
     GSP_RM_PARAMS               gspRmParams;
+    GSP_SPDM_PARAMS             gspSpdmParams;
 } GSP_FMC_BOOT_PARAMS;
 
 #endif // GSPIFPUB_H

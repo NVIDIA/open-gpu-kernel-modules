@@ -28,6 +28,7 @@
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/mem_desc.h"
+#include "platform/sli/sli.h"
 
 #include "class/cl906f.h"
 

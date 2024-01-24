@@ -148,6 +148,7 @@ typedef struct NV2080_CTRL_FLCN_GET_ENGINE_ARCH_PARAMS {
 #define NV2080_CTRL_FLCN_GET_ENGINE_ARCH_DEFAULT                         0x0
 #define NV2080_CTRL_FLCN_GET_ENGINE_ARCH_FALCON                          0x1
 #define NV2080_CTRL_FLCN_GET_ENGINE_ARCH_RISCV                           0x2
+#define NV2080_CTRL_FLCN_GET_ENGINE_ARCH_RISCV_EB                        0x3
 /*!@}*/
 
 

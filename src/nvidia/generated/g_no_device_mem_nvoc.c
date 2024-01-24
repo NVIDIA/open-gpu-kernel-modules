@@ -137,10 +137,6 @@ static void __nvoc_thunk_RmResource_nodevicememControl_Epilogue(struct NoDeviceM
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_NoDeviceMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_nodevicememControlLookup(struct NoDeviceMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NoDeviceMemory_RsResource.offset), pParams, ppEntry);
-}
-
 static NV_STATUS __nvoc_thunk_Memory_nodevicememControl(struct NoDeviceMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_NoDeviceMemory_Memory.offset), pCallContext, pParams);
 }
@@ -167,6 +163,10 @@ static NV_STATUS __nvoc_thunk_RmResource_nodevicememControlSerialization_Prologu
 
 static NvBool __nvoc_thunk_RsResource_nodevicememCanCopy(struct NoDeviceMemory *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NoDeviceMemory_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_nodevicememIsPartialUnmapSupported(struct NoDeviceMemory *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_NoDeviceMemory_RsResource.offset));
 }
 
 static NV_STATUS __nvoc_thunk_Memory_nodevicememIsReady(struct NoDeviceMemory *pMemory, NvBool bCopyConstructorContext) {
@@ -260,8 +260,6 @@ static void __nvoc_init_funcTable_NoDeviceMemory_1(NoDeviceMemory *pThis) {
 
     pThis->__nodevicememControl_Epilogue__ = &__nvoc_thunk_RmResource_nodevicememControl_Epilogue;
 
-    pThis->__nodevicememControlLookup__ = &__nvoc_thunk_RsResource_nodevicememControlLookup;
-
     pThis->__nodevicememControl__ = &__nvoc_thunk_Memory_nodevicememControl;
 
     pThis->__nodevicememUnmap__ = &__nvoc_thunk_Memory_nodevicememUnmap;
@@ -275,6 +273,8 @@ static void __nvoc_init_funcTable_NoDeviceMemory_1(NoDeviceMemory *pThis) {
     pThis->__nodevicememControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_nodevicememControlSerialization_Prologue;
 
     pThis->__nodevicememCanCopy__ = &__nvoc_thunk_RsResource_nodevicememCanCopy;
+
+    pThis->__nodevicememIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_nodevicememIsPartialUnmapSupported;
 
     pThis->__nodevicememIsReady__ = &__nvoc_thunk_Memory_nodevicememIsReady;
 
@@ -307,21 +307,26 @@ void __nvoc_init_NoDeviceMemory(NoDeviceMemory *pThis) {
     __nvoc_init_funcTable_NoDeviceMemory(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_NoDeviceMemory(NoDeviceMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_NoDeviceMemory(NoDeviceMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     NoDeviceMemory *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(NoDeviceMemory), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(NoDeviceMemory));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_NoDeviceMemory);
 
     pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -336,16 +341,25 @@ NV_STATUS __nvoc_objCreate_NoDeviceMemory(NoDeviceMemory **ppThis, Dynamic *pPar
     status = __nvoc_ctor_NoDeviceMemory(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_NoDeviceMemory_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_NoDeviceMemory_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(NoDeviceMemory));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

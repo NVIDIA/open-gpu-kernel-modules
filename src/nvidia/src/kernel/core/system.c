@@ -56,6 +56,7 @@
 #include "power/gpu_boost_mgr.h"
 #include "compute/fabric.h"
 #include "gpu_mgr/gpu_db.h"
+#include "core/bin_data.h"
 
 // local static functions
 static NV_STATUS    _sysCreateOs(OBJSYS *);
@@ -92,6 +93,81 @@ static sysChildObject sysChildObjects[] =
     { NV_OFFSETOF(OBJSYS, pFabric),         classInfo(Fabric),          NV_TRUE },
     { NV_OFFSETOF(OBJSYS, pGpuDb),          classInfo(GpuDb),           NV_TRUE },
 };
+
+static void
+_sysDestroyMemExportCache(OBJSYS *pSys)
+{
+    if (pSys->pSysMemExportModuleLock != NULL)
+    {
+        portSyncRwLockDestroy(pSys->pSysMemExportModuleLock);
+        pSys->pSysMemExportModuleLock = NULL;
+    }
+
+    NV_ASSERT(multimapCountItems(&pSys->sysMemExportCache) == 0);
+
+    multimapDestroy(&pSys->sysMemExportCache);
+}
+
+static NV_STATUS
+_sysInitMemExportCache(OBJSYS *pSys)
+{
+    multimapInit(&pSys->sysMemExportCache, portMemAllocatorGetGlobalNonPaged());
+
+    pSys->pSysMemExportModuleLock =
+                    portSyncRwLockCreate(portMemAllocatorGetGlobalNonPaged());
+    if (pSys->pSysMemExportModuleLock == NULL)
+    {
+        _sysDestroyMemExportCache(pSys);
+        return NV_ERR_NO_MEMORY;
+    }
+
+    return NV_OK;
+}
+
+static void
+_sysDestroyMemExportClient(OBJSYS *pSys)
+{
+    RM_API *pRmApi;
+
+    if (pSys->hSysMemExportClient == 0)
+        return;
+
+    // Acquire lock to keep rmapiGetInterface() happy.
+    NV_ASSERT(rmapiLockAcquire(API_LOCK_FLAGS_NONE,
+                               RM_LOCK_MODULES_DESTROY) == NV_OK);
+
+    pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    NV_ASSERT(pRmApi->Free(pRmApi, pSys->hSysMemExportClient,
+                           pSys->hSysMemExportClient) == NV_OK);
+
+    rmapiLockRelease();
+
+    pSys->hSysMemExportClient = 0;
+}
+
+static NV_STATUS
+_sysInitMemExportClient(OBJSYS *pSys)
+{
+    RM_API *pRmApi;
+    NV_STATUS status;
+
+    // Acquire lock to keep rmapiGetInterface() happy.
+    status = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT);
+    if (status != NV_OK)
+        return status;
+
+    pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+
+    status = pRmApi->AllocWithHandle(pRmApi, NV01_NULL_OBJECT,
+                                     NV01_NULL_OBJECT, NV01_NULL_OBJECT,
+                                     NV01_ROOT, &pSys->hSysMemExportClient,
+                                     sizeof(pSys->hSysMemExportClient));
+
+    rmapiLockRelease();
+
+    return status;
+}
 
 NV_STATUS
 sysConstruct_IMPL(OBJSYS *pSys)
@@ -150,9 +226,21 @@ sysConstruct_IMPL(OBJSYS *pSys)
     if (status != NV_OK)
         goto failed;
 
+    status = _sysInitMemExportCache(pSys);
+    if (status != NV_OK)
+        goto failed;
+
+    status = _sysInitMemExportClient(pSys);
+    if (status != NV_OK)
+        goto failed;
+
+    bindataInitialize();
+
     return NV_OK;
 
 failed:
+
+    _sysDestroyMemExportCache(pSys);
 
     _sysDeleteChildObjects(pSys);
 
@@ -169,6 +257,9 @@ failed:
 void
 sysDestruct_IMPL(OBJSYS *pSys)
 {
+    _sysDestroyMemExportCache(pSys);
+
+    _sysDestroyMemExportClient(pSys);
 
     //
     // Any of these operations might fail but go ahead and
@@ -193,6 +284,7 @@ sysDestruct_IMPL(OBJSYS *pSys)
     RMTRACE_DESTROY();
     RMTRACE_DESTROY_NEW();
 
+    bindataDestroy();
 }
 
 //
@@ -348,6 +440,11 @@ _sysRegistryOverrideResourceServer
         pSys->clientListDeferredFreeLimit = data32;
     }
 
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_UUID_BASED_MEMORY_SHARING,
+                            &data32) == NV_OK)
+    {
+        pSys->bSysUuidBasedMemExportSupport = !!data32;
+    }
 }
 
 static void
@@ -691,6 +788,11 @@ sysInitRegistryOverrides_IMPL
                             &data32) == NV_OK)
     {
         pSys->setProperty(pSys, PDB_PROP_SYS_ROUTE_TO_PHYSICAL_LOCK_BYPASS, !!data32);
+    }
+
+    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GPU_LOCK_MIDPATH, &data32) == NV_OK)
+    {
+        pSys->setProperty(pSys, PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED, !!data32);
     }
 
     gpumgrSetGpuNvlinkBwModeFromRegistry(pGpu);

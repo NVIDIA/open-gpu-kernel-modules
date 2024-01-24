@@ -24,6 +24,8 @@
 #ifndef _SOECORE_H_
 #define _SOECORE_H_
 
+
+
 #define SOE_CORE_BIOS_SIZE_LS10                0x100000          // 1 MB
 
 /*!
@@ -42,62 +44,87 @@ enum
     /*!
      * Read the BIOS Size
      */
-    RM_SOE_CORE_CMD_READ_BIOS_SIZE,
+    RM_SOE_CORE_CMD_READ_BIOS_SIZE = 0x0,
 
     /*!
      * Read the BIOS
      */
-    RM_SOE_CORE_CMD_READ_BIOS,
+    RM_SOE_CORE_CMD_READ_BIOS = 0x1,
 
     /*!
      * Run DMA self-test
      */
-    RM_SOE_CORE_CMD_DMA_SELFTEST,
+    RM_SOE_CORE_CMD_DMA_SELFTEST = 0x2,
 
     /*!
      * Perform I2C transaction
      */
-    RM_SOE_CORE_CMD_I2C_ACCESS,
+    RM_SOE_CORE_CMD_I2C_ACCESS = 0x3,
 
     /*!
      * Issue NPORT Reset
      */
-    RM_SOE_CORE_CMD_ISSUE_NPORT_RESET,
+    RM_SOE_CORE_CMD_ISSUE_NPORT_RESET = 0x4,
 
     /*!
      * Restore NPORT state
      */
-    RM_SOE_CORE_CMD_RESTORE_NPORT_STATE,
+    RM_SOE_CORE_CMD_RESTORE_NPORT_STATE = 0x5,
 
     /*!
      * Set NPORT TPROD state
      */
-    RM_SOE_CORE_CMD_SET_NPORT_TPROD_STATE,
+    RM_SOE_CORE_CMD_SET_NPORT_TPROD_STATE = 0x6,
 
     /*!
      * Read VRs
      */
-    RM_SOE_CORE_CMD_GET_VOLTAGE_VALUES,
+    RM_SOE_CORE_CMD_GET_VOLTAGE_VALUES = 0x7,
 
     /*!
      * Init PLM2 protected registers
      */
-    RM_SOE_CORE_CMD_INIT_L2_STATE,
+    RM_SOE_CORE_CMD_INIT_L2_STATE = 0x8,
 
     /*!
      * Read Power
      */
-    RM_SOE_CORE_CMD_GET_POWER_VALUES,
+    RM_SOE_CORE_CMD_GET_POWER_VALUES = 0x9,
 
     /*!
      * Set NPORT interrupts
      */
-    RM_SOE_CORE_CMD_SET_NPORT_INTRS,
+    RM_SOE_CORE_CMD_SET_NPORT_INTRS = 0xA,
+
+    /*!
+     * Set Module LP mode
+     */
+    RM_SOE_CORE_CMD_SET_MODULE_LP_MODE = 0xB,
+
+    /*!
+     * Read from Ports CPLD
+     */
+    RM_SOE_CORE_CMD_READ_PORTS_CPLD = 0xC,
+
+    /*!
+     * Write to Ports CPLD
+     */
+    RM_SOE_CORE_CMD_WRITE_PORTS_CPLD = 0xD,
+
+    /*!
+    * Perform a module onboard phase on behalf of the driver
+    */
+    RM_SOE_CORE_CMD_PERFORM_MODULE_ONBOARD_PHASE = 0xE,
 
     /*!
      * Disable NPORT fatal interrupt
      */
-    RM_SOE_CORE_CMD_DISABLE_NPORT_FATAL_INTR,
+    RM_SOE_CORE_CMD_DISABLE_NPORT_FATAL_INTR = 0xF,
+
+    /*
+     * Issue Ingress stop
+     */
+    RM_SOE_CORE_CMD_ISSUE_INGRESS_STOP = 0x10,
 };
 
 // Timeout for SOE reset callback function
@@ -184,6 +211,41 @@ typedef struct
 typedef struct
 {
     NvU8   cmdType;
+    NvU8   moduleId;
+    NvBool bAssert; 
+} RM_SOE_CORE_CMD_SET_LP_MODE;
+
+typedef struct
+{
+    NvU8   cmdType;
+    NvU8   reg;
+} RM_SOE_CORE_CMD_READ_CPLD;
+
+typedef struct
+{
+    NvU8   cmdType;
+    NvU8   reg;
+    NvU8   dataIn;
+} RM_SOE_CORE_CMD_WRITE_CPLD;
+
+typedef struct
+{
+    NvU8   cmdType;
+    NvU8   moduleId; 
+    NvU8   onboardPhase;
+    NvU8   onboardSubPhase;
+    struct {
+        NvBool rxDetEnable;
+        NvU8   reserved0;
+        NvU8   reserved1;
+        NvU8   reserved2;
+    } attributes;    
+    RM_FLCN_U64  linkMask; 
+} RM_SOE_CORE_CMD_PERFORM_ONBOARD_PHASE;
+
+typedef struct
+{
+    NvU8   cmdType;
     NvU32  nport;
     NvU32  nportIntrEnable;
     NvU8   nportIntrType;
@@ -217,6 +279,10 @@ typedef union
     RM_SOE_CORE_CMD_L2_STATE l2State;
     RM_SOE_CORE_CMD_GET_POWER getPower;
     RM_SOE_CORE_CMD_NPORT_INTRS nportIntrs;
+    RM_SOE_CORE_CMD_SET_LP_MODE setLpMode;
+    RM_SOE_CORE_CMD_READ_CPLD readCpld;
+    RM_SOE_CORE_CMD_WRITE_CPLD writeCpld;
+    RM_SOE_CORE_CMD_PERFORM_ONBOARD_PHASE performOnboardPhase;
     RM_SOE_CORE_CMD_NPORT_FATAL_INTR nportDisableIntr;
 } RM_SOE_CORE_CMD;
 
@@ -238,10 +304,39 @@ typedef struct
     NvU32  hvdd_w;
 } RM_SOE_CORE_MSG_GET_POWER;
 
+typedef struct
+{
+    NvU8   msgType;
+    NvU8   flcnStatus;
+} RM_SOE_CORE_MSG_SET_LP_MODE;
+
+typedef struct
+{
+    NvU8   msgType;
+    NvU8   flcnStatus;
+    NvU8   dataOut;
+} RM_SOE_CORE_MSG_READ_CPLD;
+
+typedef struct
+{
+    NvU8   msgType;
+    NvU8   flcnStatus;
+} RM_SOE_CORE_MSG_WRITE_CPLD;
+
+typedef struct
+{
+    NvU8   msgType;
+    NvU8   flcnStatus;
+} RM_SOE_CORE_MSG_PERFORM_ONBOARD_PHASE;
+
 typedef union
 {
     NvU8 msgType;
     RM_SOE_CORE_MSG_GET_VOLTAGE getVoltage;
     RM_SOE_CORE_MSG_GET_POWER getPower;
+    RM_SOE_CORE_MSG_SET_LP_MODE setLpMode;
+    RM_SOE_CORE_MSG_READ_CPLD readCpld;
+    RM_SOE_CORE_MSG_WRITE_CPLD writeCpld;
+    RM_SOE_CORE_MSG_PERFORM_ONBOARD_PHASE performOnboardPhase;
 } RM_SOE_CORE_MSG;
 #endif  // _SOECORE_H_

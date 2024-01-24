@@ -748,7 +748,7 @@ typedef struct NV2080_CTRL_GPU_GET_ENGINES_PARAMS {
 #define NV2080_CTRL_CMD_GPU_GET_ENGINES_V2 (0x20800170U) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_ENGINES_V2_PARAMS_MESSAGE_ID" */
 
 /* Must match NV2080_ENGINE_TYPE_LAST from cl2080.h */
-#define NV2080_GPU_MAX_ENGINES_LIST_SIZE   0x3FU
+#define NV2080_GPU_MAX_ENGINES_LIST_SIZE   0x40U
 
 #define NV2080_CTRL_GPU_GET_ENGINES_V2_PARAMS_MESSAGE_ID (0x70U)
 
@@ -2518,6 +2518,8 @@ typedef struct NV2080_CTRL_GPU_PARTITION_SPAN {
     NV_DECLARE_ALIGNED(NvU64 hi, 8);
 } NV2080_CTRL_GPU_PARTITION_SPAN;
 
+#define NV_GI_UUID_LEN 16U
+
 /*
  * NV2080_CTRL_GPU_SET_PARTITION_INFO
  *
@@ -2537,6 +2539,9 @@ typedef struct NV2080_CTRL_GPU_PARTITION_SPAN {
  *   swizzId[IN/OUT]
  *      - PartitionID associated with a newly created partition. Input in case
  *        of partition invalidation.
+ *
+ *   uuid[OUT]
+ *      - Uuid of a newly created partition.
  *
  *   partitionFlag[IN]
  *      - Flags to determine if GPU is requested to be partitioned in FULL,
@@ -2566,6 +2571,7 @@ typedef struct NV2080_CTRL_GPU_PARTITION_SPAN {
  */
 typedef struct NV2080_CTRL_GPU_SET_PARTITION_INFO {
     NvU32  swizzId;
+    NvU8   uuid[NV_GI_UUID_LEN];
     NvU32  partitionFlag;
     NvBool bValid;
     NV_DECLARE_ALIGNED(NV2080_CTRL_GPU_PARTITION_SPAN placement, 8);
@@ -3824,7 +3830,7 @@ typedef struct NV2080_CTRL_GPU_SET_EGM_GPA_FABRIC_BASE_ADDR_PARAMS {
  */
 #define NV2080_CTRL_CMD_GPU_GET_ENGINE_LOAD_TIMES (0x2080019bU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_ENGINE_LOAD_TIMES_PARAMS_MESSAGE_ID" */
 
-#define NV2080_CTRL_GPU_MAX_ENGINE_OBJECTS        0xC0U
+#define NV2080_CTRL_GPU_MAX_ENGINE_OBJECTS        0xC8U
 
 #define NV2080_CTRL_GPU_GET_ENGINE_LOAD_TIMES_PARAMS_MESSAGE_ID (0x9BU)
 
@@ -4038,7 +4044,14 @@ typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
 
 #define NV2080_CTRL_GPU_FABRIC_PROBE_CAP_MC_SUPPORTED           NVBIT64(0)
 
+#define NV2080_CTRL_GPU_FABRIC_PROBE_CAP_MC_MUTLINODE_SUPPORTED NVBIT64(1)
 
+
+
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW 1:0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_NOT_SUPPORTED 0
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_TRUE          1
+#define NV2080_CTRL_GPU_FABRIC_HEALTH_MASK_DEGRADED_BW_FALSE         2
 
 /*!
  * NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS
@@ -4068,7 +4081,9 @@ typedef struct NV2080_CTRL_GPU_GET_COMPUTE_PROFILES_PARAMS {
  *        Possible values are
  *            NV2080_CTRL_GPU_FABRIC_PROBE_CAP_*
  *  fabricCliqueId[OUT]
- *      - Unique ID of a set of GPUs within a fabric partition that can perform P2P 
+ *      - Unique ID of a set of GPUs within a fabric partition that can perform P2P
+ *  fabricHealthMask[OUT]
+ *      - Mask where bits indicate different status about the health of the fabric
  */
 #define NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID (0xA3U)
 
@@ -4079,6 +4094,7 @@ typedef struct NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS {
     NvU16     fabricPartitionId;
     NV_DECLARE_ALIGNED(NvU64 fabricCaps, 8);
     NvU32     fabricCliqueId;
+    NvU32     fabricHealthMask;
 } NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS;
 
 #define NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO (0x208001a3) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_CMD_GET_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID" */
@@ -4283,5 +4299,40 @@ typedef struct NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS {
 } NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS;
 
 #define NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2 (0x208001afU) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_NVENC_SW_SESSION_INFO_V2_PARAMS_MESSAGE_ID" */
+
+typedef struct NV2080_CTRL_GPU_CONSTRUCTED_FALCON_INFO {
+    NvU32 engDesc;
+    NvU32 ctxAttr;
+    NvU32 ctxBufferSize;
+    NvU32 addrSpaceList;
+    NvU32 registerBase;
+} NV2080_CTRL_GPU_CONSTRUCTED_FALCON_INFO;
+#define NV2080_CTRL_GPU_MAX_CONSTRUCTED_FALCONS         0x40
+
+#define NV2080_CTRL_CMD_GPU_GET_CONSTRUCTED_FALCON_INFO (0x208001b0) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS_MESSAGE_ID (0xB0U)
+
+typedef struct NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS {
+    NvU32                                   numConstructedFalcons;
+    NV2080_CTRL_GPU_CONSTRUCTED_FALCON_INFO constructedFalconsTable[NV2080_CTRL_GPU_MAX_CONSTRUCTED_FALCONS];
+} NV2080_CTRL_GPU_GET_CONSTRUCTED_FALCON_INFO_PARAMS;
+
+/*
+ * NV2080_CTRL_GPU_GET_FIPS_STATUS
+ *
+ * @brief get FIPS status (enabled/disabled) from GSP-RM
+ *
+ *
+ * @return NV_OK on success
+ * @return NV_ERR_ otherwise
+ */
+#define NV2080_CTRL_GPU_GET_FIPS_STATUS_PARAMS_MESSAGE_ID (0xe4U)
+
+typedef struct NV2080_CTRL_GPU_GET_FIPS_STATUS_PARAMS {
+    NvBool bFipsEnabled;
+} NV2080_CTRL_GPU_GET_FIPS_STATUS_PARAMS;
+#define NV2080_CTRL_GPU_GET_FIPS_STATUS (0x208001e4) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_GPU_INTERFACE_ID << 8) | NV2080_CTRL_GPU_GET_FIPS_STATUS_PARAMS_MESSAGE_ID" */
+
 
 /* _ctrl2080gpu_h_ */

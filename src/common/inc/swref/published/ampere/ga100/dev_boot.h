@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,6 +33,12 @@
 #define NV_PMC_ENABLE_NVDEC                                   15:15 /*       */
 #define NV_PMC_ENABLE_NVDEC_DISABLED                     0x00000000 /*       */
 #define NV_PMC_ENABLE_NVDEC_ENABLED                      0x00000001 /*       */
+#define NV_PMC_ENABLE_PERFMON                                 28:28 /* RWIVF */
+#define NV_PMC_ENABLE_PERFMON_DISABLED                   0x00000000 /* RWI-V */
+#define NV_PMC_ENABLE_PERFMON_ENABLED                    0x00000001 /* RW--V */
+#define NV_PMC_ENABLE_PDISP                                   30:30 /* RWIVF */
+#define NV_PMC_ENABLE_PDISP_DISABLED                     0x00000000 /* RW--V */
+#define NV_PMC_ENABLE_PDISP_ENABLED                      0x00000001 /* RWI-V */
 #define NV_PMC_DEVICE_ENABLE(i)                                 (0x000000600+(i)*4) /* RW-4A */
 #define NV_PMC_DEVICE_ENABLE__SIZE_1              1 /*       */
 #define NV_PMC_DEVICE_ENABLE__PRIV_LEVEL_MASK  0x00000084 /*       */

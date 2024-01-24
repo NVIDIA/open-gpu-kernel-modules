@@ -120,6 +120,7 @@
 #include "mem_mgr/vaspace.h"
 #include "mem_mgr/fabric_vaspace.h"
 #include "mem_mgr/virt_mem_mgr.h"
+#include "platform/sli/sli.h"
 
 #include "mem_mgr/fla_mem.h"
 
@@ -206,6 +207,7 @@ dmaAllocMapping_GM107
 {
     NV_STATUS           status            = NV_OK;
     MemoryManager      *pMemoryManager    = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     KernelMIGManager   *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
     OBJEHEAP           *pVASpaceHeap      = NULL;
     KernelGmmu         *pKernelGmmu       = GPU_GET_KERNEL_GMMU(pGpu);
@@ -216,7 +218,7 @@ dmaAllocMapping_GM107
     NvU32               gfid;
     NvBool              bCallingContextPlugin;
     const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
-        kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+        kmemsysGetStaticConfig(pGpu, pKernelMemorySystem);
     OBJGVASPACE        *pGVAS             = NULL;
 
     struct
@@ -266,6 +268,7 @@ dmaAllocMapping_GM107
         NvU32              pageArrayGranularity;
         NvU8               pageShift;
         NvU64              physPageSize;
+        NvU64              pageArrayFlags;
     } *pLocals = portMemAllocNonPaged(sizeof(*pLocals));
     // Heap Allocate to avoid stack overflow
 
@@ -491,7 +494,7 @@ dmaAllocMapping_GM107
 
     // Disable PLC Compression for FLA->PA Mapping because of the HW Bug: 3046774
     if (pMemorySystemConfig->bUseRawModeComptaglineAllocation &&
-        pMemorySystemConfig->bDisablePlcForCertainOffsetsBug3046774)
+        pKernelMemorySystem->bDisablePlcForCertainOffsetsBug3046774)
     {
         MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
@@ -885,7 +888,9 @@ dmaAllocMapping_GM107
 
         // Commit the mapping update
         pLocals->pPteArray = memdescGetPteArray(pLocals->pTempMemDesc, addressTranslation);
-        dmaPageArrayInit(&pLocals->pageArray, pLocals->pPteArray, pLocals->pteCount);
+
+        dmaPageArrayInitWithFlags(&pLocals->pageArray, pLocals->pPteArray, pLocals->pteCount,
+                                  pLocals->pageArrayFlags);
 
         // Get pLocals->aperture
         if (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FBMEM)
@@ -1043,9 +1048,13 @@ dmaAllocMapping_GM107
         // Fabric memory descriptors are pre-encoded with the fabric base address
         // use NVLINK_INVALID_FABRIC_ADDR to avoid encoding twice
         //
+        // Skip fabric base address for Local EGM as it uses peer aperture but
+        // doesn't require fabric address
+        //
         if (pLocals->bFlaImport ||
             (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FABRIC_MC) ||
-            (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FABRIC_V2))
+            (memdescGetAddressSpace(pLocals->pTempMemDesc) == ADDR_FABRIC_V2) ||
+            (memdescIsEgm(pLocals->pTempMemDesc) && (pGpu == pLocals->pSrcGpu)))
         {
             pLocals->fabricAddr = NVLINK_INVALID_FABRIC_ADDR;
         }
@@ -1525,7 +1534,7 @@ _gmmuWalkCBMapNextEntries_Direct
                         kmemsysGetStaticConfig(pGpu, pKernelMemorySystem);
 
                     if (pMemorySystemConfig->bUseRawModeComptaglineAllocation &&
-                        pMemorySystemConfig->bDisablePlcForCertainOffsetsBug3046774 &&
+                        pKernelMemorySystem->bDisablePlcForCertainOffsetsBug3046774 &&
                         !memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_DISALLOW_PLC, pIter->comprInfo.kind) &&
                         !kmemsysIsPagePLCable_HAL(pGpu, pKernelMemorySystem, (pIter->surfaceOffset + pIter->currIdx * pTarget->pageArrayGranularity), pageSize))
                     {
@@ -1903,7 +1912,7 @@ dmaUpdateVASpace_GF100
             kindNoCompression = kind;
         }
 
-        if (!RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM &&
+        if (!RMCFG_FEATURE_PLATFORM_WINDOWS &&
             memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, pComprInfo->kind) &&
             ((vAddr & (alignSize-1)) != 0) &&
             !(flags & DMA_UPDATE_VASPACE_FLAGS_UNALIGNED_COMP))

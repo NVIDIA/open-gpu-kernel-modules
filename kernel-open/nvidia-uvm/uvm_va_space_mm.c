@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2022 NVIDIA Corporation
+    Copyright (c) 2018-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -415,7 +415,10 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
     uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
     uvm_gpu_va_space_t *gpu_va_space;
     uvm_gpu_t *gpu;
-    uvm_global_processor_mask_t gpus_to_flush;
+    // TODO: Bug 4351121: retained_gpus should be pre-allocated, not on the
+    // stack.
+    uvm_processor_mask_t retained_gpus;
+    uvm_parent_processor_mask_t flushed_parent_gpus;
     LIST_HEAD(deferred_free_list);
 
     uvm_va_space_down_write(va_space);
@@ -441,17 +444,20 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
     // puts them on the deferred free list, so only one thread will do this.
     uvm_va_space_down_write(va_space);
     uvm_va_space_detach_all_user_channels(va_space, &deferred_free_list);
-    uvm_va_space_global_gpus_in_mask(va_space, &gpus_to_flush, &va_space->faultable_processors);
-    uvm_global_mask_retain(&gpus_to_flush);
+    uvm_processor_mask_and(&retained_gpus, &va_space->registered_gpus, &va_space->faultable_processors);
+    uvm_global_gpu_retain(&retained_gpus);
     uvm_va_space_up_write(va_space);
 
-    // Flush the fault buffer on all GPUs. This will avoid spurious
-    // cancels of stale pending translated faults after we set
-    // UVM_VA_SPACE_MM_STATE_RELEASED later.
-    for_each_global_gpu_in_mask(gpu, &gpus_to_flush)
-        uvm_gpu_fault_buffer_flush(gpu);
+    // Flush the fault buffer on all registered faultable GPUs.
+    // This will avoid spurious cancels of stale pending translated
+    // faults after we set UVM_VA_SPACE_MM_STATE_RELEASED later.
+    uvm_parent_processor_mask_zero(&flushed_parent_gpus);
+    for_each_gpu_in_mask(gpu, &retained_gpus) {
+        if (!uvm_parent_processor_mask_test_and_set(&flushed_parent_gpus, gpu->parent->id))
+            uvm_gpu_fault_buffer_flush(gpu);
+    }
 
-    uvm_global_mask_release(&gpus_to_flush);
+    uvm_global_gpu_release(&retained_gpus);
 
     // Call nvUvmInterfaceUnsetPageDirectory. This has no effect on non-MPS.
     // Under MPS this guarantees that no new GPU accesses will be made using
@@ -513,7 +519,7 @@ static NV_STATUS mm_read64(struct mm_struct *mm, NvU64 addr, NvU64 *val)
     UVM_ASSERT(IS_ALIGNED(addr, sizeof(*val)));
 
     uvm_down_read_mmap_lock(mm);
-    ret = NV_PIN_USER_PAGES_REMOTE(mm, (unsigned long)addr, 1, 0, &page, NULL, NULL);
+    ret = NV_PIN_USER_PAGES_REMOTE(mm, (unsigned long)addr, 1, 0, &page, NULL);
     uvm_up_read_mmap_lock(mm);
 
     if (ret < 0)

@@ -83,16 +83,21 @@ typedef struct OBJREFCNT OBJREFCNT;
 //  kind of class still requires a non-trivial amount of boilerplate to wire
 //  up).
 //
-typedef NV_STATUS RefcntStateChangeCallback(POBJREFCNT, Dynamic *,
+typedef NV_STATUS RefcntStateChangeCallback(struct OBJREFCNT *, Dynamic *,
                                             REFCNT_STATE, REFCNT_STATE);
 
-typedef void RefcntResetCallback(POBJREFCNT, Dynamic *, NvU64);
+typedef void RefcntResetCallback(struct OBJREFCNT *, Dynamic *, NvU64);
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_REF_COUNT_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJREFCNT {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -138,16 +143,16 @@ NV_STATUS __nvoc_objCreate_OBJREFCNT(OBJREFCNT**, Dynamic*, NvU32, Dynamic * arg
 #define __objCreate_OBJREFCNT(ppNewObj, pParent, createFlags, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback) \
     __nvoc_objCreate_OBJREFCNT((ppNewObj), staticCast((pParent), Dynamic), (createFlags), arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback)
 
-NV_STATUS refcntConstruct_IMPL(POBJREFCNT arg_pRefcnt, Dynamic *arg_pParent, NvU32 arg_tag, RefcntStateChangeCallback *arg_pStateChangeCallback, RefcntResetCallback *arg_pResetCallback);
+NV_STATUS refcntConstruct_IMPL(struct OBJREFCNT *arg_pRefcnt, Dynamic *arg_pParent, NvU32 arg_tag, RefcntStateChangeCallback *arg_pStateChangeCallback, RefcntResetCallback *arg_pResetCallback);
 
 #define __nvoc_refcntConstruct(arg_pRefcnt, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback) refcntConstruct_IMPL(arg_pRefcnt, arg_pParent, arg_tag, arg_pStateChangeCallback, arg_pResetCallback)
-void refcntDestruct_IMPL(POBJREFCNT pRefcnt);
+void refcntDestruct_IMPL(struct OBJREFCNT *pRefcnt);
 
 #define __nvoc_refcntDestruct(pRefcnt) refcntDestruct_IMPL(pRefcnt)
-NV_STATUS refcntRequestReference_IMPL(POBJREFCNT pRefcnt, NvU64 arg0, NvU32 arg1, NvBool arg2);
+NV_STATUS refcntRequestReference_IMPL(struct OBJREFCNT *pRefcnt, NvU64 arg0, NvU32 arg1, NvBool arg2);
 
 #ifdef __nvoc_ref_count_h_disabled
-static inline NV_STATUS refcntRequestReference(POBJREFCNT pRefcnt, NvU64 arg0, NvU32 arg1, NvBool arg2) {
+static inline NV_STATUS refcntRequestReference(struct OBJREFCNT *pRefcnt, NvU64 arg0, NvU32 arg1, NvBool arg2) {
     NV_ASSERT_FAILED_PRECOMP("OBJREFCNT was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -155,10 +160,10 @@ static inline NV_STATUS refcntRequestReference(POBJREFCNT pRefcnt, NvU64 arg0, N
 #define refcntRequestReference(pRefcnt, arg0, arg1, arg2) refcntRequestReference_IMPL(pRefcnt, arg0, arg1, arg2)
 #endif //__nvoc_ref_count_h_disabled
 
-NV_STATUS refcntReleaseReferences_IMPL(POBJREFCNT pRefcnt, NvU64 arg0, NvBool arg1);
+NV_STATUS refcntReleaseReferences_IMPL(struct OBJREFCNT *pRefcnt, NvU64 arg0, NvBool arg1);
 
 #ifdef __nvoc_ref_count_h_disabled
-static inline NV_STATUS refcntReleaseReferences(POBJREFCNT pRefcnt, NvU64 arg0, NvBool arg1) {
+static inline NV_STATUS refcntReleaseReferences(struct OBJREFCNT *pRefcnt, NvU64 arg0, NvBool arg1) {
     NV_ASSERT_FAILED_PRECOMP("OBJREFCNT was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }
@@ -166,10 +171,10 @@ static inline NV_STATUS refcntReleaseReferences(POBJREFCNT pRefcnt, NvU64 arg0, 
 #define refcntReleaseReferences(pRefcnt, arg0, arg1) refcntReleaseReferences_IMPL(pRefcnt, arg0, arg1)
 #endif //__nvoc_ref_count_h_disabled
 
-NV_STATUS refcntReset_IMPL(POBJREFCNT pRefcnt, NvBool arg0);
+NV_STATUS refcntReset_IMPL(struct OBJREFCNT *pRefcnt, NvBool arg0);
 
 #ifdef __nvoc_ref_count_h_disabled
-static inline NV_STATUS refcntReset(POBJREFCNT pRefcnt, NvBool arg0) {
+static inline NV_STATUS refcntReset(struct OBJREFCNT *pRefcnt, NvBool arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJREFCNT was disabled!");
     return NV_ERR_NOT_SUPPORTED;
 }

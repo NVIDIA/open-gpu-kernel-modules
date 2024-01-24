@@ -37,6 +37,7 @@
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/disp/kern_disp.h"
 #include "gpu/mem_mgr/mem_desc.h"
+#include "gpu/mem_mgr/heap.h"
 #include "platform/sli/sli.h"
 #include "nvpcie.h"
 #include "nvhybridacpi.h"
@@ -52,7 +53,26 @@
 #include "ctrl/ctrl0000/ctrl0000gpu.h"
 #include "nvlimits.h"
 
-static NV_STATUS gpumgrStateInitialized(void);
+//
+// gpumgrAreGpusInitialized
+//
+// Returns NV_TRUE if all GPUS in the given mask have been initialized.
+//
+NvBool gpumgrAreGpusInitialized(NvU32 gpuMask)
+{
+    NvU32 idx1 = 0;
+    OBJGPU *pGpu;
+
+    while ( (pGpu = gpumgrGetNextGpu(gpuMask, &idx1)) != NULL )
+    {
+        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_STATE_INITIALIZED))
+        {
+            return NV_FALSE;
+        }
+    }
+
+    return NV_TRUE;
+}
 
 void
 gpumgrDetectSliLinkFromGpus
@@ -82,7 +102,7 @@ gpumgrDetectSliLinkFromGpus
     *pSliLinkTestDone = *pSliLinkOutputMask = *pSliLinkEndsMask = 0;
 
     // Bail out early if all GPU'S haven't been loaded.
-    if (gpumgrStateInitialized() != NV_OK)
+    if (!gpumgrAreGpusInitialized(gpuMask))
     {
         NV_PRINTF(LEVEL_WARNING,
                   "All GPUs do not have state initialized\n");
@@ -238,40 +258,6 @@ gpumgrDetectSliLinkFromGpus
     *pVidLinkCount = vidLinkCount;
 }
 
-
-//
-// Return a status indicating whether all GPU's have been initialized via StateInit().
-//
-static NV_STATUS gpumgrStateInitialized(void)
-{
-    OBJGPU    *pGpu           = NULL;
-    NvU32      gpuMask        = 0;
-    NvU32      gpuCount       = 0;
-    NvU32      gpuIndex       = 0;
-    NV_STATUS  status         = NV_OK;
-
-    gpumgrGetGpuAttachInfo(&gpuCount, &gpuMask);
-
-    pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
-    if (pGpu == NULL)
-    {
-        return NV_ERR_INVALID_POINTER;
-    }
-
-    do
-    {
-        if (!pGpu->getProperty(pGpu, PDB_PROP_GPU_STATE_INITIALIZED))
-        {
-            status = NV_ERR_INVALID_STATE;
-        }
-
-        pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);
-
-    } while (pGpu);
-
-    return (status);
-}
-
 /*!
  * @brief Updates the GPU routing information for the
  *          2 specified GPUs using the 2 Pinset Indices specified.
@@ -400,7 +386,7 @@ gpumgrDetectHighSpeedVideoBridges(NvU32 linkOutputMask)
         pKernelDisp = GPU_GET_KERNEL_DISPLAY(pGpu);
 
         if (
-            (pKernelDisp == NULL))
+            pKernelDisp == NULL)
         {
             NV_ASSERT(pKernelDisp != NULL); // This should not happen
             continue;

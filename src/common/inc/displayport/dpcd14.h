@@ -43,9 +43,9 @@
 #define NV_DPCD14_TRAINING_AUX_RD_INTERVAL_EXTENDED_RX_CAP_YES                      (0x00000001) /* R-XUV */
 
 #define NV_DPCD14_DSC_SUPPORT                                                       (0x00000060) /* R-XUR */
-#define NV_DPCD14_DSC_SUPPORT_DSC_SUPPORT                                                    0:0 /* R-XUF */
-#define NV_DPCD14_DSC_SUPPORT_DSC_SUPPORT_NO                                        (0x00000000) /* R-XUV */
-#define NV_DPCD14_DSC_SUPPORT_DSC_SUPPORT_YES                                       (0x00000001) /* R-XUV */
+#define NV_DPCD14_DSC_SUPPORT_DECOMPRESSION                                                  0:0 /* R-XUF */
+#define NV_DPCD14_DSC_SUPPORT_DECOMPRESSION_NO                                      (0x00000000) /* R-XUV */
+#define NV_DPCD14_DSC_SUPPORT_DECOMPRESSION_YES                                     (0x00000001) /* R-XUV */
 
 #define NV_DPCD14_DSC_ALGORITHM_REVISION                                            (0x00000061) /* R-XUR */
 #define NV_DPCD14_DSC_ALGORITHM_REVISION_MAJOR                                               3:0 /* R-XUF */
@@ -190,9 +190,9 @@
 #define NV_DPCD14_DSC_BITS_PER_PIXEL_INCREMENT_SUPPORTED_1                          (0x00000004) /* R-XUV */
 
 #define NV_DPCD14_DSC_ENABLE                                                        (0x00000160) /* R-XUR */
-#define NV_DPCD14_DSC_ENABLE_SINK                                                            0:0 /* R-XUF */
-#define NV_DPCD14_DSC_ENABLE_SINK_NO                                                (0x00000000) /* R-XUV */
-#define NV_DPCD14_DSC_ENABLE_SINK_YES                                               (0x00000001) /* R-XUV */
+#define NV_DPCD14_DSC_ENABLE_DECOMPRESSION                                                   0:0 /* R-XUF */
+#define NV_DPCD14_DSC_ENABLE_DECOMPRESSION_NO                                       (0x00000000) /* R-XUV */
+#define NV_DPCD14_DSC_ENABLE_DECOMPRESSION_YES                                      (0x00000001) /* R-XUV */
 
 #define NV_DPCD14_FEC_CAPABILITY                                                    (0x00000090) /* R-XUR */
 #define NV_DPCD14_FEC_CAPABILITY_FEC_CAPABLE                                                 0:0 /* R-XUF */
@@ -213,7 +213,9 @@
 #define NV_DPCD14_FEC_CAPABILITY_PARITY_ERROR_COUNT_CAPABLE                                  5:5 /* R-XUF */
 #define NV_DPCD14_FEC_CAPABILITY_PARITY_ERROR_COUNT_CAPABLE_NO                      (0x00000000) /* R-XUV */
 #define NV_DPCD14_FEC_CAPABILITY_PARITY_ERROR_COUNT_CAPABLE_YES                     (0x00000001) /* R-XUV */
-// Bit 6 : RESERVED. Read 0
+#define NV_DPCD14_FEC_CAPABILITY_FEC_RUNNING_INDICATOR_SUPPORT                               6:6 /* R-XUF */
+#define NV_DPCD14_FEC_CAPABILITY_FEC_RUNNING_INDICATOR_SUPPORT_NO                   (0x00000000) /* R-XUV */
+#define NV_DPCD14_FEC_CAPABILITY_FEC_RUNNING_INDICATOR_SUPPORT_YES                  (0x00000001) /* R-XUV */
 #define NV_DPCD14_FEC_CAPABILITY_FEC_ERROR_REPORTING_POLICY_SUPPORTED                        7:7 /* R-XUF */
 #define NV_DPCD14_FEC_CAPABILITY_FEC_ERROR_REPORTING_POLICY_SUPPORTED_NO            (0x00000000) /* R-XUV */
 #define NV_DPCD14_FEC_CAPABILITY_FEC_ERROR_REPORTING_POLICY_SUPPORTED_YES           (0x00000001) /* R-XUV */
@@ -629,36 +631,6 @@
 #define NV_DPCD14_PHY_REPEATER_EXTENDED_WAKE_TIMEOUT_REQ                   6:0  /* R-XUF */
 #define NV_DPCD14_PHY_REPEATER_EXTENDED_WAKE_TIMEOUT_GRANT                 7:7  /* RWXUF */
 
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE                             (0x000F0008) /* R-XUR */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR(i)                        (i):(i)  /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_NO                    (0x00000000) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_YES                   (0x00000001) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_0                             0:0  /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_0_NO                  (0x00000000) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_0_YES                 (0x00000001) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_1                             1:1  /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_1_NO                  (0x00000000) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_1_YES                 (0x00000001) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_2                             2:2  /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_2_NO                  (0x00000000) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_2_YES                 (0x00000001) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_3                             3:3  /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_3_NO                  (0x00000000) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_3_YES                 (0x00000001) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_4                             4:4  /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_4_NO                  (0x00000000) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_4_YES                 (0x00000001) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_5                             5:5  /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_5_NO                  (0x00000000) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_5_YES                 (0x00000001) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_6                             6:6  /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_6_NO                  (0x00000000) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_6_YES                 (0x00000001) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_7                             7:7  /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_7_NO                  (0x00000000) /* R-XUF */
-#define NV_DPCD14_PHY_REPEATER_EQ_DONE_LTTPR_7_YES                 (0x00000001) /* R-XUF */
-
-
 #define NV_DPCD14_PHY_REPEATER_START(i)                            (0x000F0010+(i)*0x50)  /* RW-1A */
 #define NV_DPCD14_PHY_REPEATER_START__SIZE                                            8   /* R---S */
 // Following defines are offsets
@@ -688,6 +660,56 @@
 #define NV_DPCD14_LANE_ALIGN_STATUS_UPDATED_PHY_REPEATER           (0x00000022) /* R-XUR */
 #define NV_DPCD14_ADJUST_REQUEST_LANE0_1_PHY_REPEATER              (0x00000023) /* R-XUR */
 #define NV_DPCD14_ADJUST_REQUEST_LANE2_3_PHY_REPEATER              (0x00000024) /* R-XUR */
+
+#define NV_DPCD14_PHY_REPEATER_FEC__SIZE                   NV_DPCD14_PHY_REPEATER_CNT_MAX  /* R---S */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS(i)                            (0x000F0290+(i)*8) /* R--1A */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS_FEC_DECODE_EN_DETECTED                      0:0  /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS_FEC_DECODE_EN_DETECTED_NO           (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS_FEC_DECODE_EN_DETECTED_YES          (0x00000001) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS_FEC_DECODE_DIS_DETECTED                     1:1  /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS_FEC_DECODE_DIS_DETECTED_NO          (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS_FEC_DECODE_DIS_DETECTED_YES         (0x00000001) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS_FEC_RUNNING_INDICATOR                       2:2  /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS_FEC_RUNNING_INDICATOR_NO            (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_STATUS_FEC_RUNNING_INDICATOR_YES           (0x00000001) /* R-XUV */
+
+#define NV_DPCD14_PHY_REPEATER_FEC_ERR_COUNT(i)                                    (0x000F0291+(i)*8) /* R--2A */
+#define NV_DPCD14_PHY_REPEATER_FEC_ERR_COUNT_LOW_BYTE(i)    (NV_DPCD14_PHY_REPEATER_FEC_ERR_COUNT(i))
+#define NV_DPCD14_PHY_REPEATER_FEC_ERR_COUNT_HIGH_BYTE(i)                        ((0x000F0292+(i)*8)) /* R-XUR */
+#define NV_DPCD14_PHY_REPEATER_FEC_ERR_COUNT_VALID                                               7:7  /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_ERR_COUNT_VALID_NO                                    (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_ERR_COUNT_VALID_YES                                   (0x00000001) /* R-XUV */
+
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0(i)                                           (0x000F0294+(i)*8) /* R--1A */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_FEC_CAPABLE                                                 0:0 /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_FEC_CAPABLE_NO                                     (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_FEC_CAPABLE_YES                                    (0x00000001) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_UNCORRECTED_BLOCK_ERROR_COUNT_CAPABLE                       1:1 /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_UNCORRECTED_BLOCK_ERROR_COUNT_CAPABLE_NO           (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_UNCORRECTED_BLOCK_ERROR_COUNT_CAPABLE_YES          (0x00000001) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_CORRECTED_BLOCK_ERROR_COUNT_CAPABLE                         2:2 /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0CORRECTED_BLOCK_ERROR_COUNT_CAPABLE_NO             (0x00000000)  /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_CORRECTED_BLOCK_ERROR_COUNT_CAPABLE_YES            (0x00000001) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_BIT_ERROR_COUNT_CAPABLE                                     3:3 /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_BIT_ERROR_COUNT_CAPABLE_NO                         (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_BIT_ERROR_COUNT_CAPABLE_YES                        (0x00000001) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_PARITY_BLOCK_ERROR_COUNT_CAPABLE                            4:4 /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_PARITY_BLOCK_ERROR_COUNT_CAPABLE_NO                (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_PARITY_BLOCK_ERROR_COUNT_CAPABLE_YES               (0x00000001) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_PARITY_ERROR_COUNT_CAPABLE                                  5:5 /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_PARITY_ERROR_COUNT_CAPABLE_NO                      (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_PARITY_ERROR_COUNT_CAPABLE_YES                     (0x00000001) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_FEC_RUNNING_INDICATOR_SUPPORT                               6:6 /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_FEC_RUNNING_INDICATOR_SUPPORT_NO                   (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_FEC_RUNNING_INDICATOR_SUPPORT_YES                  (0x00000001) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_FEC_ERROR_REPORTING_POLICY_SUPPORTED                        7:7 /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_FEC_ERROR_REPORTING_POLICY_SUPPORTED_NO            (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_0_FEC_ERROR_REPORTING_POLICY_SUPPORTED_YES           (0x00000001) /* R-XUV */
+
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_1(i)                                           (0x000F0295+(i)*8) /* R--1A */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_1_AGGREGATE_ERR_COUNT_CAPABLE                                 0:0 /* R-XUF */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_1_AGGREGATE_ERR_COUNT_CAPABLE_CAPABLE_N              (0x00000000) /* R-XUV */
+#define NV_DPCD14_PHY_REPEATER_FEC_CAP_1_AGGREGATE_ERR_COUNT_CAPABLE_CAPABLE_YES            (0x00000001) /* R-XUV */
 
 // BRANCH SPECIFIC DSC CAPS
 #define NV_DPCD14_BRANCH_DSC_OVERALL_THROUGHPUT_MODE_0                            (0x000000A0)

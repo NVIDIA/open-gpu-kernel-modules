@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2021 NVIDIA Corporation
+    Copyright (c) 2017-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -188,6 +188,14 @@ typedef enum
 
     // Account for the chunk in the cgroup context.
     UVM_CPU_CHUNK_ALLOC_FLAGS_ACCOUNT = (1 << 1),
+
+    // Be strict about NUMA locality of the allocation.
+    // Attempt the allocation only on the requested NUMA
+    // node.
+    UVM_CPU_CHUNK_ALLOC_FLAGS_STRICT = (1 << 2),
+
+    // Allow chunk allocations from ZONE_MOVABLE.
+    UVM_CPU_CHUNK_ALLOC_FLAGS_ALLOW_MOVABLE = (1 << 3),
 } uvm_cpu_chunk_alloc_flags_t;
 
 typedef enum
@@ -260,7 +268,7 @@ typedef struct
             uvm_cpu_phys_mapping_t *dynamic_entries;
         };
 
-        // Miximum number of physical mapping entries available.
+        // Maximum number of physical mapping entries available.
         // The initial value is 1 since the static_entry is always
         // available.
         // When using the dynamic_entries, it holds the size of the
@@ -269,10 +277,10 @@ typedef struct
         // is the number of set bits in dma_addrs_mask.
         size_t max_entries;
 
-        // The set of GPU ID's that have an active physical mapping.
+        // The set of GPU parent ID's that have an active physical mapping.
         // Since physical mappings are shared by all GPUs under a
         // parent GPU, this mask only needs to track uvm_parent_gpu_t.
-        uvm_processor_mask_t dma_addrs_mask;
+        uvm_parent_processor_mask_t dma_addrs_mask;
     } gpu_mappings;
 
     // A dynamically allocated bitmap (one per PAGE_SIZE page) used
@@ -296,7 +304,7 @@ typedef struct
 
     // Pointer to the parent chunk (which could also be a logical chunk).
     uvm_cpu_chunk_t *parent;
-    uvm_processor_mask_t mapped_gpus;
+    uvm_parent_processor_mask_t mapped_gpus;
 } uvm_cpu_logical_chunk_t;
 
 // Return the set of allowed CPU chunk allocation sizes.
@@ -403,24 +411,21 @@ void uvm_cpu_chunk_free(uvm_cpu_chunk_t *chunk);
 // referenced using its physical address. There needs to be a kernel virtual
 // mapping created.
 //
-// This helper function creates a DMA mapping on the GPU (see
-// uvm_cpu_chunk_map_gpu()) and if necessary a kernel virtual mapping for the
-// chunk. The virtual mapping persists until GPU deinitialization, such that no
-// unmap functionality is exposed. For more details see uvm_mmu_sysmem_map().
-//
-// Note that unlike uvm_cpu_chunk_map_gpu(), this helper requires the GPU
-// object instead of the parent GPU object.
+// This helper function creates a DMA mapping on the GPU and if necessary,
+// a kernel virtual mapping for the chunk. The virtual mapping persists until
+// GPU deinitialization, such that no unmap functionality is exposed.
+// For more details see uvm_mmu_sysmem_map().
 NV_STATUS uvm_cpu_chunk_map_gpu(uvm_cpu_chunk_t *chunk, uvm_gpu_t *gpu);
 
 // Destroy a CPU chunk's DMA mapping for the parent GPU.
-// If chunk is a logical chunk, this call may not necessary destroy the DMA
+// If chunk is a logical chunk, this call may not necessarily destroy the DMA
 // mapping of the parent physical chunk since all logical chunks share the
 // parent's DMA mapping.
-void uvm_cpu_chunk_unmap_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu);
+void uvm_cpu_chunk_unmap_parent_gpu_phys(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu);
 
 // Get the CPU chunk's DMA mapping address for the specified GPU ID.
 // If there is no mapping for the GPU, 0 is returned.
-NvU64 uvm_cpu_chunk_get_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu);
+NvU64 uvm_cpu_chunk_get_parent_gpu_phys_addr(uvm_cpu_chunk_t *chunk, uvm_parent_gpu_t *parent_gpu);
 
 // Split a CPU chunk into a set of CPU chunks of the next size down from the set
 // of enabled CPU chunk sizes.

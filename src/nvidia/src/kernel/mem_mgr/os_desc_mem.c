@@ -27,11 +27,11 @@
 #include "rmapi/mapping_list.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "os/os.h"
-#include "gpu/device/device.h"
 #include "vgpu/rpc.h"
 #include "mem_mgr/mem.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "deprecated/rmapi_deprecated.h"
+#include "vgpu/vgpu_util.h"
 
 #include "class/cl0071.h" // NV01_MEMORY_SYSTEM_OS_DESCRIPTOR
 
@@ -171,6 +171,17 @@ osdescConstruct_IMPL
             if (status == NV_OK)
                 pMemory->bRpcAlloc = NV_TRUE;
 
+            if (IS_VIRTUAL_WITH_SRIOV(pGpu) &&
+                !gpuIsWarBug200577889SriovHeavyEnabled(pGpu) &&
+                (pMemDesc->_addressSpace == ADDR_SYSMEM) &&
+                !(pMemDesc->_flags & MEMDESC_FLAGS_CPU_ONLY))
+            {
+                status = vgpuUpdateSysmemPfnBitMap(pGpu, pMemDesc, NV_TRUE);
+                if (status != NV_OK)
+                {
+                    NV_PRINTF(LEVEL_INFO, "Failed to update sysmem PFN bitmap\n");
+                }
+            }
         }
     }
 

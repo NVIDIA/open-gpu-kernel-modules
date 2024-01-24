@@ -380,11 +380,16 @@ void  gpuRegWr32Uc_dumpinfo(const char *func, const char *addrStr, const char *v
 #define FLD_SF_IDX_DEF(s,f,c,i,l) (((l) & ~SF_SHIFTMASK(NV ## s ## f(i))) | SF_IDX_DEF(s,f,c,i))
 #define FLD_SF_IDX_NUM(s,f,n,i,l) (((l) & ~SF_SHIFTMASK(NV ## s ## f(i))) | SF_IDX_NUM(s,f,n,i))
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_GPU_ACCESS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct IoAperture {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -514,11 +519,16 @@ NV_STATUS ioaprtConstruct_IMPL(struct IoAperture *arg_pAperture, struct IoApertu
 // In-place construct wrapper
 NV_STATUS ioaprtInit(struct IoAperture *pAperture, struct IoAperture *pParentAperture, NvU32 offset, NvU32 length);
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_GPU_ACCESS_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct SwBcAperture {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;

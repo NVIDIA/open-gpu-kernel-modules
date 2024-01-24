@@ -221,7 +221,11 @@ extern "C" {
 #define NV2080_NOTIFIERS_RESERVED180                               (180)
 #define NV2080_NOTIFIERS_AUX_POWER_EVENT                           (181)
 #define NV2080_NOTIFIERS_AUX_POWER_STATE_CHANGE                    (182)
-#define NV2080_NOTIFIERS_MAXCOUNT                                  (183)
+#define NV2080_NOTIFIERS_RESERVED_183                              (183) // Unused
+#define NV2080_NOTIFIERS_GSP_PERF_TRACE                            (184)
+#define NV2080_NOTIFIERS_INBAND_RESPONSE                           (185)
+#define NV2080_NOTIFIERS_RESERVED_186                              (186) // Unused
+#define NV2080_NOTIFIERS_MAXCOUNT                                  (187)
 
 // Indexed GR notifier reference
 #define NV2080_NOTIFIERS_GR(x)         ((x == 0) ? (NV2080_NOTIFIERS_GR0) : (NV2080_NOTIFIERS_GR1 + (x - 1)))
@@ -330,7 +334,8 @@ extern "C" {
 #define NV2080_ENGINE_TYPE_RESERVED3c                 (0x0000003c)
 #define NV2080_ENGINE_TYPE_RESERVED3d                 (0x0000003d)
 #define NV2080_ENGINE_TYPE_RESERVED3e                 (0x0000003e)
-#define NV2080_ENGINE_TYPE_LAST                       (0x0000003f)
+#define NV2080_ENGINE_TYPE_RESERVED3f                 (0x0000003f)
+#define NV2080_ENGINE_TYPE_LAST                       (0x00000040)
 #define NV2080_ENGINE_TYPE_ALLENGINES                 (0xffffffff)
 
 //
@@ -507,7 +512,7 @@ typedef struct Nv2080HdmiFrlRequestNotificationRec {
     NvU32 displayId;
 } Nv2080HdmiFrlRequestNotification;
 
-/* 
+/*
  * Platform Power Mode event information
  */
 typedef struct _NV2080_PLATFORM_POWER_MODE_CHANGE_STATUS {
@@ -516,8 +521,8 @@ typedef struct _NV2080_PLATFORM_POWER_MODE_CHANGE_STATUS {
     NvU8 eventReason;
 } NV2080_PLATFORM_POWER_MODE_CHANGE_STATUS;
 
-#define NV2080_PLATFORM_POWER_MODE_CHANGE_INFO_INDEX                         7:0            
-#define NV2080_PLATFORM_POWER_MODE_CHANGE_INFO_MASK                          15:8            
+#define NV2080_PLATFORM_POWER_MODE_CHANGE_INFO_INDEX                         7:0
+#define NV2080_PLATFORM_POWER_MODE_CHANGE_INFO_MASK                          15:8
 #define NV2080_PLATFORM_POWER_MODE_CHANGE_INFO_REASON                        23:16
 
 /*

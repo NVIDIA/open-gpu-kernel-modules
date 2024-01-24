@@ -41,11 +41,16 @@ extern "C" {
 /*!
  * RM internal class representing NV40_I2C (child of SubDevice)
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_I2C_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct I2cApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -71,7 +76,6 @@ struct I2cApi {
     NV_STATUS (*__i2capiInternalControlForward__)(struct I2cApi *, NvU32, void *, NvU32);
     NV_STATUS (*__i2capiUnmapFrom__)(struct I2cApi *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__i2capiControl_Epilogue__)(struct I2cApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__i2capiControlLookup__)(struct I2cApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__i2capiGetInternalObjectHandle__)(struct I2cApi *);
     NV_STATUS (*__i2capiControl__)(struct I2cApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__i2capiUnmap__)(struct I2cApi *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -80,6 +84,7 @@ struct I2cApi {
     NV_STATUS (*__i2capiControlFilter__)(struct I2cApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__i2capiControlSerialization_Prologue__)(struct I2cApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__i2capiCanCopy__)(struct I2cApi *);
+    NvBool (*__i2capiIsPartialUnmapSupported__)(struct I2cApi *);
     void (*__i2capiPreDestruct__)(struct I2cApi *);
     NV_STATUS (*__i2capiIsDuplicate__)(struct I2cApi *, NvHandle, NvBool *);
     void (*__i2capiControlSerialization_Epilogue__)(struct I2cApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -131,7 +136,6 @@ NV_STATUS __nvoc_objCreate_I2cApi(I2cApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define i2capiInternalControlForward(pGpuResource, command, pParams, size) i2capiInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define i2capiUnmapFrom(pResource, pParams) i2capiUnmapFrom_DISPATCH(pResource, pParams)
 #define i2capiControl_Epilogue(pResource, pCallContext, pParams) i2capiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define i2capiControlLookup(pResource, pParams, ppEntry) i2capiControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define i2capiGetInternalObjectHandle(pGpuResource) i2capiGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define i2capiControl(pGpuResource, pCallContext, pParams) i2capiControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define i2capiUnmap(pGpuResource, pCallContext, pCpuMapping) i2capiUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -140,6 +144,7 @@ NV_STATUS __nvoc_objCreate_I2cApi(I2cApi**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define i2capiControlFilter(pResource, pCallContext, pParams) i2capiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define i2capiControlSerialization_Prologue(pResource, pCallContext, pParams) i2capiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define i2capiCanCopy(pResource) i2capiCanCopy_DISPATCH(pResource)
+#define i2capiIsPartialUnmapSupported(pResource) i2capiIsPartialUnmapSupported_DISPATCH(pResource)
 #define i2capiPreDestruct(pResource) i2capiPreDestruct_DISPATCH(pResource)
 #define i2capiIsDuplicate(pResource, hMemory, pDuplicate) i2capiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define i2capiControlSerialization_Epilogue(pResource, pCallContext, pParams) i2capiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -219,10 +224,6 @@ static inline void i2capiControl_Epilogue_DISPATCH(struct I2cApi *pResource, str
     pResource->__i2capiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS i2capiControlLookup_DISPATCH(struct I2cApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__i2capiControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle i2capiGetInternalObjectHandle_DISPATCH(struct I2cApi *pGpuResource) {
     return pGpuResource->__i2capiGetInternalObjectHandle__(pGpuResource);
 }
@@ -253,6 +254,10 @@ static inline NV_STATUS i2capiControlSerialization_Prologue_DISPATCH(struct I2cA
 
 static inline NvBool i2capiCanCopy_DISPATCH(struct I2cApi *pResource) {
     return pResource->__i2capiCanCopy__(pResource);
+}
+
+static inline NvBool i2capiIsPartialUnmapSupported_DISPATCH(struct I2cApi *pResource) {
+    return pResource->__i2capiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void i2capiPreDestruct_DISPATCH(struct I2cApi *pResource) {

@@ -25,14 +25,13 @@
 #include "gpu/gpu.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
-#include "gpu/mem_mgr/heap.h"
 #include "gpu/mem_mgr/mem_desc.h"
+#include "platform/sli/sli.h"
 
 #include "nvRmReg.h"
 
 #include "kernel/gpu/intr/intr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
-#include "gpu/subdevice/subdevice.h"
 #include "vgpu/vgpu_events.h"
 #include "nvdevid.h"
 
@@ -82,6 +81,15 @@ memmgrAllocDetermineAlignment_GA100
     NvU64          hwAlignment
 )
 {
+    const MEMORY_SYSTEM_STATIC_CONFIG    *pMemorySystemConfig =
+        kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+
+    // set the alignment to 256K if property is enabled and its a compressed surface
+    if (pMemorySystemConfig->bUseOneToFourComptagLineAllocation &&
+        !FLD_TEST_DRF(OS32, _ATTR, _COMPR, _NONE, retAttr))
+    {
+        hwAlignment = pMemorySystemConfig->comprPageSize - 1;
+    }
 
     return memmgrAllocDetermineAlignment_GM107(pGpu, pMemoryManager, pMemSize, pAlign, alignPad,
                                                allocFlags, retAttr, retAttr2, hwAlignment);
@@ -275,7 +283,7 @@ memmgrGetMaxContextSize_GA100
     // of GR buffers. Since GR buffers are not allocated inside guest RM
     // we are skipping reservation there
     //
-    if (RMCFG_FEATURE_PLATFORM_WINDOWS_LDDM &&
+    if (RMCFG_FEATURE_PLATFORM_WINDOWS &&
         pGpu->getProperty(pGpu, PDB_PROP_GPU_IN_TCC_MODE))
     {
         size += 32 * 1024 * 1024;
@@ -493,22 +501,15 @@ memmgrInsertUnprotectedRegionAtBottomOfFb_GA100
 }
 
 NvBool
-memmgrIsApertureSupportedByFla_GA100
+memmgrIsMemDescSupportedByFla_GA100
 (
     OBJGPU *pGpu,
     MemoryManager *pMemoryManager,
-    NV_ADDRESS_SPACE aperture
+    MEMORY_DESCRIPTOR *pMemDesc
 )
 {
-    //
-    // TODO: Bug 3802992: ADDR_EGM will be removed once the new design as part
-    // of bug 3802992 is implemented wherein EGM would be represented using
-    // ADDR_SYSMEM itself.
-    //
-    if ((aperture == ADDR_FBMEM)
-         || (aperture == ADDR_EGM) ||
-         ((aperture == ADDR_SYSMEM) &&
-          memmgrIsLocalEgmEnabled(pMemoryManager))
+    if ((memdescGetAddressSpace(pMemDesc) == ADDR_FBMEM)
+         || memdescIsEgm(pMemDesc)
        )
     {
         return NV_TRUE;

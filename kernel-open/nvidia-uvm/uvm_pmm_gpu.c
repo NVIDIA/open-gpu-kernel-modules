@@ -172,7 +172,6 @@
 #include "uvm_va_block.h"
 #include "uvm_test.h"
 #include "uvm_linux.h"
-#include "uvm_conf_computing.h"
 
 static int uvm_global_oversubscription = 1;
 module_param(uvm_global_oversubscription, int, S_IRUGO);
@@ -221,7 +220,7 @@ struct uvm_pmm_gpu_chunk_suballoc_struct
     // Array of all child subchunks
     // TODO: Bug 1765461: Can the array be inlined? It could save the parent
     //       pointer.
-    uvm_gpu_chunk_t *subchunks[0];
+    uvm_gpu_chunk_t *subchunks[];
 };
 
 typedef enum
@@ -345,7 +344,7 @@ static void root_chunk_unlock(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chunk_t *root_chu
 // have an opt-out.
 static bool gpu_supports_pma_eviction(uvm_gpu_t *gpu)
 {
-    return uvm_global_oversubscription && uvm_gpu_supports_eviction(gpu);
+    return uvm_global_oversubscription && uvm_parent_gpu_supports_eviction(gpu->parent);
 }
 
 uvm_gpu_t *uvm_pmm_to_gpu(uvm_pmm_gpu_t *pmm)
@@ -492,7 +491,7 @@ static bool chunk_is_in_eviction(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 
 uvm_gpu_t *uvm_gpu_chunk_get_gpu(const uvm_gpu_chunk_t *chunk)
 {
-    uvm_gpu_t *gpu = uvm_gpu_get(uvm_global_gpu_id_from_index(chunk->gpu_global_index));
+    uvm_gpu_t *gpu = uvm_gpu_get(uvm_gpu_id_from_index(chunk->gpu_index));
     UVM_ASSERT(gpu);
 
     return gpu;
@@ -533,9 +532,9 @@ void uvm_pmm_gpu_sync(uvm_pmm_gpu_t *pmm)
     }
 }
 
-static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_parent_gpu_t *parent_gpu, uvm_pmm_gpu_memory_type_t type)
+static uvm_pmm_gpu_memory_type_t pmm_squash_memory_type(uvm_pmm_gpu_memory_type_t type)
 {
-    if (uvm_conf_computing_mode_enabled_parent(parent_gpu))
+    if (g_uvm_global.conf_computing_enabled)
         return type;
 
     // Enforce the contract that when the Confidential Computing feature is
@@ -571,7 +570,7 @@ NV_STATUS uvm_pmm_gpu_alloc(uvm_pmm_gpu_t *pmm,
         uvm_assert_lockable_order(UVM_LOCK_ORDER_VA_BLOCK);
     }
 
-    mem_type = pmm_squash_memory_type(gpu->parent, mem_type);
+    mem_type = pmm_squash_memory_type(mem_type);
     for (i = 0; i < num_chunks; i++) {
         uvm_gpu_root_chunk_t *root_chunk;
 
@@ -1218,7 +1217,7 @@ static void root_chunk_unmap_indirect_peer(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chun
     if (status != NV_OK)
         UVM_ASSERT(uvm_global_get_status() != NV_OK);
 
-    uvm_gpu_unmap_cpu_pages(other_gpu->parent, indirect_peer->dma_addrs[index], UVM_CHUNK_SIZE_MAX);
+    uvm_parent_gpu_unmap_cpu_pages(other_gpu->parent, indirect_peer->dma_addrs[index], UVM_CHUNK_SIZE_MAX);
     uvm_processor_mask_clear(&root_chunk->indirect_peers_mapped, other_gpu->id);
     new_count = atomic64_dec_return(&indirect_peer->map_count);
     UVM_ASSERT(new_count >= 0);
@@ -1233,7 +1232,7 @@ static void root_chunk_unmap_indirect_peers(uvm_pmm_gpu_t *pmm, uvm_gpu_root_chu
     // partitioning is enabled and, therefore, we can obtain the uvm_gpu_t
     // object directly from the uvm_parent_gpu_t object's id.
     for_each_gpu_id_in_mask(other_gpu_id, &root_chunk->indirect_peers_mapped) {
-        uvm_gpu_t *other_gpu = uvm_gpu_get_by_processor_id(other_gpu_id);
+        uvm_gpu_t *other_gpu = uvm_gpu_get(other_gpu_id);
         root_chunk_unmap_indirect_peer(pmm, root_chunk, other_gpu);
     }
 }
@@ -1348,10 +1347,10 @@ NV_STATUS uvm_pmm_gpu_indirect_peer_map(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chu
     root_chunk_lock(pmm, root_chunk);
 
     if (!uvm_processor_mask_test(&root_chunk->indirect_peers_mapped, accessing_gpu->id)) {
-        status = uvm_gpu_map_cpu_pages(accessing_gpu->parent,
-                                       uvm_gpu_chunk_to_page(pmm, &root_chunk->chunk),
-                                       UVM_CHUNK_SIZE_MAX,
-                                       &indirect_peer->dma_addrs[index]);
+        status = uvm_parent_gpu_map_cpu_pages(accessing_gpu->parent,
+                                              uvm_gpu_chunk_to_page(pmm, &root_chunk->chunk),
+                                              UVM_CHUNK_SIZE_MAX,
+                                              &indirect_peer->dma_addrs[index]);
         if (status == NV_OK) {
             uvm_processor_mask_set(&root_chunk->indirect_peers_mapped, accessing_gpu->id);
             atomic64_inc(&indirect_peer->map_count);
@@ -1763,7 +1762,7 @@ static NV_STATUS pick_and_evict_root_chunk(uvm_pmm_gpu_t *pmm,
     uvm_gpu_chunk_t *chunk;
     uvm_gpu_root_chunk_t *root_chunk;
 
-    UVM_ASSERT(uvm_gpu_supports_eviction(gpu));
+    UVM_ASSERT(uvm_parent_gpu_supports_eviction(gpu->parent));
 
     uvm_assert_mutex_locked(&pmm->lock);
 
@@ -1926,7 +1925,7 @@ static NV_STATUS alloc_or_evict_root_chunk(uvm_pmm_gpu_t *pmm,
 
     status = alloc_root_chunk(pmm, type, flags, &chunk);
     if (status != NV_OK) {
-        if ((flags & UVM_PMM_ALLOC_FLAGS_EVICT) && uvm_gpu_supports_eviction(gpu))
+        if ((flags & UVM_PMM_ALLOC_FLAGS_EVICT) && uvm_parent_gpu_supports_eviction(gpu->parent))
             status = pick_and_evict_root_chunk_retry(pmm, type, PMM_CONTEXT_DEFAULT, chunk_out);
 
         return status;
@@ -1948,7 +1947,7 @@ static NV_STATUS alloc_or_evict_root_chunk_unlocked(uvm_pmm_gpu_t *pmm,
 
     status = alloc_root_chunk(pmm, type, flags, &chunk);
     if (status != NV_OK) {
-        if ((flags & UVM_PMM_ALLOC_FLAGS_EVICT) && uvm_gpu_supports_eviction(gpu)) {
+        if ((flags & UVM_PMM_ALLOC_FLAGS_EVICT) && uvm_parent_gpu_supports_eviction(gpu->parent)) {
             uvm_mutex_lock(&pmm->lock);
             status = pick_and_evict_root_chunk_retry(pmm, type, PMM_CONTEXT_DEFAULT, chunk_out);
             uvm_mutex_unlock(&pmm->lock);
@@ -2183,9 +2182,9 @@ NV_STATUS alloc_root_chunk(uvm_pmm_gpu_t *pmm,
     if (gpu->mem_info.numa.enabled)
         flags |= UVM_PMM_ALLOC_FLAGS_DONT_BATCH;
 
-    // When the confidential computing feature is enabled, allocate GPU memory
+    // When the Confidential Computing feature is enabled, allocate GPU memory
     // in the protected region, unless specified otherwise.
-    if (uvm_conf_computing_mode_enabled(gpu) && memory_type_is_protected(type))
+    if (g_uvm_global.conf_computing_enabled && memory_type_is_protected(type))
         options.flags |= UVM_PMA_ALLOCATE_PROTECTED_REGION;
 
     if (!gpu->parent->rm_info.isSimulated &&
@@ -2363,7 +2362,7 @@ NV_STATUS split_gpu_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
         }
         suballoc->subchunks[i] = subchunk;
 
-        subchunk->gpu_global_index = chunk->gpu_global_index;
+        subchunk->gpu_index = chunk->gpu_index;
         subchunk->address = chunk->address + i * subchunk_size;
         subchunk->type = chunk->type;
         uvm_gpu_chunk_set_size(subchunk, subchunk_size);
@@ -2438,14 +2437,12 @@ static bool check_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 
     UVM_ASSERT(chunk_size & chunk_sizes);
     UVM_ASSERT(IS_ALIGNED(chunk->address, chunk_size));
-    UVM_ASSERT(uvm_global_id_equal(uvm_global_gpu_id_from_index(chunk->gpu_global_index), gpu->global_id));
+    UVM_ASSERT(uvm_id_equal(uvm_gpu_id_from_index(chunk->gpu_index), gpu->id));
 
 
     // See pmm_squash_memory_type().
-    if (!uvm_conf_computing_mode_enabled(gpu)) {
-        UVM_ASSERT(chunk->type == UVM_PMM_GPU_MEMORY_TYPE_USER ||
-                   chunk->type == UVM_PMM_GPU_MEMORY_TYPE_KERNEL);
-    }
+    if (!g_uvm_global.conf_computing_enabled)
+        UVM_ASSERT((chunk->type == UVM_PMM_GPU_MEMORY_TYPE_USER) || (chunk->type == UVM_PMM_GPU_MEMORY_TYPE_KERNEL));
 
     if (chunk->state == UVM_PMM_GPU_CHUNK_STATE_IS_SPLIT)
         UVM_ASSERT(chunk_size > uvm_chunk_find_first_size(chunk_sizes));
@@ -2477,7 +2474,7 @@ static bool check_chunk(uvm_pmm_gpu_t *pmm, uvm_gpu_chunk_t *chunk)
 
         // See root_chunk_unmap_indirect_peers for the usage of uvm_gpu_get
         for_each_gpu_id_in_mask(other_gpu_id, &root_chunk->indirect_peers_mapped) {
-            uvm_gpu_t *other_gpu = uvm_gpu_get_by_processor_id(other_gpu_id);
+            uvm_gpu_t *other_gpu = uvm_gpu_get(other_gpu_id);
             NvU64 peer_addr = uvm_pmm_gpu_indirect_peer_addr(pmm, chunk, other_gpu);
             uvm_reverse_map_t reverse_map;
             size_t num_mappings;
@@ -2781,7 +2778,7 @@ static NV_STATUS uvm_pmm_gpu_pma_evict_pages(void *void_pmm,
 
     // Currently, when the Confidential Computing feature is enabled, the
     // entirety of vidmem is protected.
-    if (uvm_conf_computing_mode_enabled(uvm_pmm_to_gpu(pmm)) && (mem_type != UVM_PMA_GPU_MEMORY_TYPE_PROTECTED))
+    if (g_uvm_global.conf_computing_enabled && (mem_type != UVM_PMA_GPU_MEMORY_TYPE_PROTECTED))
         return NV_ERR_INVALID_ARGUMENT;
 
     while (num_pages_left_to_evict > 0) {
@@ -3650,7 +3647,7 @@ NV_STATUS uvm_pmm_gpu_init(uvm_pmm_gpu_t *pmm)
         uvm_gpu_chunk_t *chunk = &pmm->root_chunks.array[i].chunk;
 
         INIT_LIST_HEAD(&chunk->list);
-        chunk->gpu_global_index = uvm_global_id_gpu_index(gpu->global_id);
+        chunk->gpu_index = uvm_id_gpu_index(gpu->id);
         chunk->state = UVM_PMM_GPU_CHUNK_STATE_PMA_OWNED;
         uvm_gpu_chunk_set_size(chunk, UVM_CHUNK_SIZE_MAX);
         chunk->address = i * UVM_CHUNK_SIZE_MAX;
@@ -3779,7 +3776,7 @@ NV_STATUS uvm_test_evict_chunk(UVM_TEST_EVICT_CHUNK_PARAMS *params, struct file 
     uvm_va_space_down_read(va_space);
 
     gpu = uvm_va_space_get_gpu_by_uuid(va_space, &params->gpu_uuid);
-    if (!gpu || !uvm_gpu_supports_eviction(gpu)) {
+    if (!gpu || !uvm_parent_gpu_supports_eviction(gpu->parent)) {
         uvm_va_space_up_read(va_space);
         uvm_va_space_mm_or_current_release_unlock(va_space, mm);
         return NV_ERR_INVALID_DEVICE;

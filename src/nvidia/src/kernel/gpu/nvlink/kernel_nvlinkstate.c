@@ -23,9 +23,6 @@
 
 #define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 
-// FIXME XXX
-#define NVOC_KERNEL_IOCTRL_H_PRIVATE_ACCESS_ALLOWED
-
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/nvlink/kernel_ioctrl.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
@@ -135,13 +132,15 @@ _knvlinkFilterIoctrls
             continue;
         }
 
-        pKernelIoctrl->localDiscoveredLinks &=
-                 KIOCTRL_LINK_GLOBAL_TO_LOCAL_MASK(pKernelNvlink->discoveredLinks);
+        NvU32 localDiscoveredLinks = kioctrlGetLocalDiscoveredLinks(pGpu, pKernelIoctrl);
+
+        localDiscoveredLinks &=
+            kioctrlGetGlobalToLocalMask(pGpu, pKernelIoctrl, pKernelNvlink->discoveredLinks);
 
         // No need to handle the IOCTRL if no links are being enabled
-        if (pKernelIoctrl->localDiscoveredLinks == 0x0)
+        if (localDiscoveredLinks == 0x0)
         {
-            pKernelNvlink->ioctrlMask &= ~(NVBIT(pKernelIoctrl->PublicId));
+            pKernelNvlink->ioctrlMask &= ~(NVBIT(kioctrlGetPublicId(pGpu, pKernelIoctrl)));
         }
     }
     FOR_EACH_INDEX_IN_MASK_END;
@@ -253,8 +252,8 @@ knvlinkIsPresent_IMPL
 {
     NV_STATUS status = NV_OK;
 
-    // Mark NVLINK as absent when HCC is enabled
-    if (gpuIsCCFeatureEnabled(pGpu))
+    // Mark NVLINK as absent when HCC SPT is enabled
+    if (gpuIsCCFeatureEnabled(pGpu) && !gpuIsCCMultiGpuProtectedPcieModeEnabled(pGpu))
         return NV_FALSE;
 
     // On GSP clients, retrieve all device discovery info from GSP through RPC
@@ -770,7 +769,10 @@ knvlinkStatePostLoad_IMPL
                 gpuInstance = 0;
                 while ((pRemoteGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
                 {
-                    knvlinkTrainP2pLinksToActive(pGpu, pRemoteGpu, pKernelNvlink);
+                    if (gpuIsStateLoaded(pRemoteGpu) || gpuIsStateLoading(pRemoteGpu))
+                    {
+                        knvlinkTrainP2pLinksToActive(pGpu, pRemoteGpu, pKernelNvlink);
+                    }
                 }
             }
         }

@@ -221,7 +221,6 @@ typedef struct
 #define NV_RM_PAGE_MASK     (NV_RM_PAGE_SIZE - 1)
 
 #define NV_RM_TO_OS_PAGE_SHIFT      (os_page_shift - NV_RM_PAGE_SHIFT)
-#define NV_RM_PAGES_PER_OS_PAGE     (1U << NV_RM_TO_OS_PAGE_SHIFT)
 #define NV_RM_PAGES_TO_OS_PAGES(count) \
     ((((NvUPtr)(count)) >> NV_RM_TO_OS_PAGE_SHIFT) + \
      ((((count) & ((1 << NV_RM_TO_OS_PAGE_SHIFT) - 1)) != 0) ? 1 : 0))
@@ -467,12 +466,6 @@ typedef struct nv_state_t
         NvHandle hDisp;
     } rmapi;
 
-    /* Bool to check if ISO iommu enabled */
-    NvBool iso_iommu_present;
-
-    /* Bool to check if NISO iommu enabled */
-    NvBool niso_iommu_present;
-
     /* Bool to check if dma-buf is supported */
     NvBool dma_buf_supported;
 
@@ -484,6 +477,22 @@ typedef struct nv_state_t
 
     /* Bool to check if the GPU has a coherent sysmem link */
     NvBool coherent;
+
+    /*
+     * NUMA node ID of the CPU to which the GPU is attached.
+     * Holds NUMA_NO_NODE on platforms that don't support NUMA configuration.
+     */
+    NvS32 cpu_numa_node_id;
+
+    struct {
+        /* Bool to check if ISO iommu enabled */
+        NvBool iso_iommu_present;
+        /* Bool to check if NISO iommu enabled */
+        NvBool niso_iommu_present;
+        /* Display SMMU Stream IDs */
+        NvU32 dispIsoStreamId;
+        NvU32 dispNisoStreamId;
+    } iommus;
 } nv_state_t;
 
 // These define need to be in sync with defines in system.h
@@ -613,10 +622,10 @@ typedef enum
         (((nv)->flags & NV_FLAG_IN_SURPRISE_REMOVAL) != 0)
 
 #define NV_SOC_IS_ISO_IOMMU_PRESENT(nv)     \
-        ((nv)->iso_iommu_present)
+        ((nv)->iommus.iso_iommu_present)
 
 #define NV_SOC_IS_NISO_IOMMU_PRESENT(nv)     \
-        ((nv)->niso_iommu_present)
+        ((nv)->iommus.niso_iommu_present)
 /*
  * GPU add/remove events
  */
@@ -779,8 +788,6 @@ NV_STATUS NV_API_CALL   nv_register_phys_pages   (nv_state_t *, NvU64 *, NvU64, 
 void      NV_API_CALL   nv_unregister_phys_pages (nv_state_t *, void *);
 
 NV_STATUS  NV_API_CALL  nv_dma_map_sgt           (nv_dma_device_t *, NvU64, NvU64 *, NvU32, void **);
-NV_STATUS  NV_API_CALL  nv_dma_map_pages         (nv_dma_device_t *, NvU64, NvU64 *, NvBool, NvU32, void **);
-NV_STATUS  NV_API_CALL  nv_dma_unmap_pages       (nv_dma_device_t *, NvU64, NvU64 *, void **);
 
 NV_STATUS  NV_API_CALL  nv_dma_map_alloc         (nv_dma_device_t *, NvU64, NvU64 *, NvBool, void **);
 NV_STATUS  NV_API_CALL  nv_dma_unmap_alloc       (nv_dma_device_t *, NvU64, NvU64 *, void **);
@@ -830,7 +837,7 @@ void       NV_API_CALL  nv_put_firmware(const void *);
 nv_file_private_t* NV_API_CALL nv_get_file_private(NvS32, NvBool, void **);
 void               NV_API_CALL nv_put_file_private(void *);
 
-NV_STATUS NV_API_CALL nv_get_device_memory_config(nv_state_t *, NvU64 *, NvU64 *, NvU32 *, NvS32 *);
+NV_STATUS NV_API_CALL nv_get_device_memory_config(nv_state_t *, NvU64 *, NvU64 *, NvU64 *, NvU32 *, NvS32 *);
 NV_STATUS NV_API_CALL nv_get_egm_info(nv_state_t *, NvU64 *, NvU64 *, NvS32 *);
 
 NV_STATUS NV_API_CALL nv_get_ibmnpu_genreg_info(nv_state_t *, NvU64 *, NvU64 *, void**);
@@ -877,9 +884,9 @@ struct drm_gem_object;
 
 NV_STATUS NV_API_CALL nv_dma_import_sgt  (nv_dma_device_t *, struct sg_table *, struct drm_gem_object *);
 void NV_API_CALL nv_dma_release_sgt(struct sg_table *, struct drm_gem_object *);
-NV_STATUS NV_API_CALL nv_dma_import_dma_buf      (nv_dma_device_t *, struct dma_buf *, NvU32 *, void **, struct sg_table **, nv_dma_buf_t **);
-NV_STATUS NV_API_CALL nv_dma_import_from_fd      (nv_dma_device_t *, NvS32, NvU32 *, void **, struct sg_table **, nv_dma_buf_t **);
-void      NV_API_CALL nv_dma_release_dma_buf     (void *, nv_dma_buf_t *);
+NV_STATUS NV_API_CALL nv_dma_import_dma_buf      (nv_dma_device_t *, struct dma_buf *, NvU32 *, struct sg_table **, nv_dma_buf_t **);
+NV_STATUS NV_API_CALL nv_dma_import_from_fd      (nv_dma_device_t *, NvS32, NvU32 *, struct sg_table **, nv_dma_buf_t **);
+void      NV_API_CALL nv_dma_release_dma_buf     (nv_dma_buf_t *);
 
 void      NV_API_CALL nv_schedule_uvm_isr        (nv_state_t *);
 
@@ -894,6 +901,8 @@ typedef void (*nvTegraDceClientIpcCallback)(NvU32, NvU32, NvU32, void *, void *)
 
 NV_STATUS NV_API_CALL nv_get_num_phys_pages      (void *, NvU32 *);
 NV_STATUS NV_API_CALL nv_get_phys_pages          (void *, void *, NvU32 *);
+
+void      NV_API_CALL nv_get_disp_smmu_stream_ids (nv_state_t *, NvU32 *, NvU32 *);
 
 /*
  * ---------------------------------------------------------------------------
@@ -921,6 +930,7 @@ NV_STATUS  NV_API_CALL  rm_ioctl                 (nvidia_stack_t *, nv_state_t *
 NvBool     NV_API_CALL  rm_isr                   (nvidia_stack_t *, nv_state_t *, NvU32 *);
 void       NV_API_CALL  rm_isr_bh                (nvidia_stack_t *, nv_state_t *);
 void       NV_API_CALL  rm_isr_bh_unlocked       (nvidia_stack_t *, nv_state_t *);
+NvBool     NV_API_CALL  rm_is_msix_allowed       (nvidia_stack_t *, nv_state_t *);
 NV_STATUS  NV_API_CALL  rm_power_management      (nvidia_stack_t *, nv_state_t *, nv_pm_action_t);
 NV_STATUS  NV_API_CALL  rm_stop_user_channels    (nvidia_stack_t *, nv_state_t *);
 NV_STATUS  NV_API_CALL  rm_restart_user_channels (nvidia_stack_t *, nv_state_t *);
@@ -940,6 +950,7 @@ void       NV_API_CALL  rm_parse_option_string   (nvidia_stack_t *, const char *
 char*      NV_API_CALL  rm_remove_spaces         (const char *);
 char*      NV_API_CALL  rm_string_token          (char **, const char);
 void       NV_API_CALL  rm_vgpu_vfio_set_driver_vm(nvidia_stack_t *, NvBool);
+NV_STATUS  NV_API_CALL  rm_get_adapter_status_external(nvidia_stack_t *, nv_state_t *);
 
 NV_STATUS  NV_API_CALL  rm_run_rc_callback       (nvidia_stack_t *, nv_state_t *);
 void       NV_API_CALL  rm_execute_work_item     (nvidia_stack_t *, void *);

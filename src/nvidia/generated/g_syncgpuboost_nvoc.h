@@ -39,11 +39,16 @@ extern "C" {
 #include "rmapi/resource.h"
 #include "class/cl0060.h"
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_SYNCGPUBOOST_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct SyncGpuBoost {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RmResource __nvoc_base_RmResource;
@@ -60,17 +65,17 @@ struct SyncGpuBoost {
     NvU32 (*__syncgpuboostGetRefCount__)(struct SyncGpuBoost *);
     NV_STATUS (*__syncgpuboostControlFilter__)(struct SyncGpuBoost *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__syncgpuboostAddAdditionalDependants__)(struct RsClient *, struct SyncGpuBoost *, RsResourceRef *);
-    NV_STATUS (*__syncgpuboostUnmapFrom__)(struct SyncGpuBoost *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__syncgpuboostControlSerialization_Prologue__)(struct SyncGpuBoost *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__syncgpuboostControl_Prologue__)(struct SyncGpuBoost *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__syncgpuboostCanCopy__)(struct SyncGpuBoost *);
     NV_STATUS (*__syncgpuboostUnmap__)(struct SyncGpuBoost *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NvBool (*__syncgpuboostIsPartialUnmapSupported__)(struct SyncGpuBoost *);
     void (*__syncgpuboostPreDestruct__)(struct SyncGpuBoost *);
     NV_STATUS (*__syncgpuboostMapTo__)(struct SyncGpuBoost *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__syncgpuboostIsDuplicate__)(struct SyncGpuBoost *, NvHandle, NvBool *);
     void (*__syncgpuboostControlSerialization_Epilogue__)(struct SyncGpuBoost *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__syncgpuboostControl_Epilogue__)(struct SyncGpuBoost *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__syncgpuboostControlLookup__)(struct SyncGpuBoost *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NV_STATUS (*__syncgpuboostUnmapFrom__)(struct SyncGpuBoost *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__syncgpuboostMap__)(struct SyncGpuBoost *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__syncgpuboostAccessCallback__)(struct SyncGpuBoost *, struct RsClient *, void *, RsAccessRight);
     NvU32 gpuBoostGroupId;
@@ -112,17 +117,17 @@ NV_STATUS __nvoc_objCreate_SyncGpuBoost(SyncGpuBoost**, Dynamic*, NvU32, struct 
 #define syncgpuboostGetRefCount(pResource) syncgpuboostGetRefCount_DISPATCH(pResource)
 #define syncgpuboostControlFilter(pResource, pCallContext, pParams) syncgpuboostControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define syncgpuboostAddAdditionalDependants(pClient, pResource, pReference) syncgpuboostAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define syncgpuboostUnmapFrom(pResource, pParams) syncgpuboostUnmapFrom_DISPATCH(pResource, pParams)
 #define syncgpuboostControlSerialization_Prologue(pResource, pCallContext, pParams) syncgpuboostControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define syncgpuboostControl_Prologue(pResource, pCallContext, pParams) syncgpuboostControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define syncgpuboostCanCopy(pResource) syncgpuboostCanCopy_DISPATCH(pResource)
 #define syncgpuboostUnmap(pResource, pCallContext, pCpuMapping) syncgpuboostUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define syncgpuboostIsPartialUnmapSupported(pResource) syncgpuboostIsPartialUnmapSupported_DISPATCH(pResource)
 #define syncgpuboostPreDestruct(pResource) syncgpuboostPreDestruct_DISPATCH(pResource)
 #define syncgpuboostMapTo(pResource, pParams) syncgpuboostMapTo_DISPATCH(pResource, pParams)
 #define syncgpuboostIsDuplicate(pResource, hMemory, pDuplicate) syncgpuboostIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define syncgpuboostControlSerialization_Epilogue(pResource, pCallContext, pParams) syncgpuboostControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define syncgpuboostControl_Epilogue(pResource, pCallContext, pParams) syncgpuboostControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define syncgpuboostControlLookup(pResource, pParams, ppEntry) syncgpuboostControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define syncgpuboostUnmapFrom(pResource, pParams) syncgpuboostUnmapFrom_DISPATCH(pResource, pParams)
 #define syncgpuboostMap(pResource, pCallContext, pParams, pCpuMapping) syncgpuboostMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define syncgpuboostAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) syncgpuboostAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 static inline NvBool syncgpuboostShareCallback_DISPATCH(struct SyncGpuBoost *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -157,10 +162,6 @@ static inline void syncgpuboostAddAdditionalDependants_DISPATCH(struct RsClient 
     pResource->__syncgpuboostAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NV_STATUS syncgpuboostUnmapFrom_DISPATCH(struct SyncGpuBoost *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__syncgpuboostUnmapFrom__(pResource, pParams);
-}
-
 static inline NV_STATUS syncgpuboostControlSerialization_Prologue_DISPATCH(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__syncgpuboostControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
@@ -175,6 +176,10 @@ static inline NvBool syncgpuboostCanCopy_DISPATCH(struct SyncGpuBoost *pResource
 
 static inline NV_STATUS syncgpuboostUnmap_DISPATCH(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return pResource->__syncgpuboostUnmap__(pResource, pCallContext, pCpuMapping);
+}
+
+static inline NvBool syncgpuboostIsPartialUnmapSupported_DISPATCH(struct SyncGpuBoost *pResource) {
+    return pResource->__syncgpuboostIsPartialUnmapSupported__(pResource);
 }
 
 static inline void syncgpuboostPreDestruct_DISPATCH(struct SyncGpuBoost *pResource) {
@@ -197,8 +202,8 @@ static inline void syncgpuboostControl_Epilogue_DISPATCH(struct SyncGpuBoost *pR
     pResource->__syncgpuboostControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS syncgpuboostControlLookup_DISPATCH(struct SyncGpuBoost *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__syncgpuboostControlLookup__(pResource, pParams, ppEntry);
+static inline NV_STATUS syncgpuboostUnmapFrom_DISPATCH(struct SyncGpuBoost *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__syncgpuboostUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS syncgpuboostMap_DISPATCH(struct SyncGpuBoost *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

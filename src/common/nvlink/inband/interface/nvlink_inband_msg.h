@@ -37,7 +37,7 @@
  * - Avoid conditional fields in the structs.
  * - Avoid nested and complex structs. Keep them simple and flat for ease of encoding and decoding.
  * - Avoid embedded pointers. Flexible arrays at the end of the struct are allowed.
- * - Always use the packed struct to typecast inband messages. More details: 
+ * - Always use the packed struct to typecast inband messages. More details:
  * - Always have reserved flags or fields to CYA given the stable ABI conditions.
  */
 
@@ -50,17 +50,22 @@
 #include "nvstatus.h"
 #include "nvstatuscodes.h"
 
-#define NVLINK_INBAND_MAX_MSG_SIZE     4096
+#define NVLINK_INBAND_MAX_MSG_SIZE     5120
 #define NVLINK_INBAND_MSG_MAGIC_ID_FM  0xadbc
 
 /* Nvlink Inband messages types */
-#define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_REQ         0
-#define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_RSP         1
-#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REQ     2
-#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP     3
-#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_RELEASE_REQ   4
-#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REQ_V2  5
-#define NVLINK_INBAND_MSG_TYPE_MAX                   6
+#define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_REQ             0
+#define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_RSP             1
+#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REQ         2
+#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP         3
+#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_RELEASE_REQ       4
+#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REQ_V2      5
+#define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_UPDATE_REQ      6
+#define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_REPLAY_REQ      7
+#define NVLINK_INBAND_MSG_TYPE_GPU_PROBE_REPLAY_RSP      NVLINK_INBAND_MSG_TYPE_GPU_PROBE_RSP
+#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REPLAY_REQ  8
+#define NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_REPLAY_RSP  NVLINK_INBAND_MSG_TYPE_MC_TEAM_SETUP_RSP
+#define NVLINK_INBAND_MSG_TYPE_MAX                       9
 
 /* Nvlink Inband message packet header */
 typedef struct
@@ -74,6 +79,7 @@ typedef struct
 } nvlink_inband_msg_header_t;
 
 #define NVLINK_INBAND_GPU_PROBE_CAPS_SRIOV_ENABLED NVBIT(0)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_PROBE_UPDATE  NVBIT(1)
 
 /* Add more caps as need in the future */
 
@@ -109,6 +115,11 @@ typedef struct
 #define NVLINK_INBAND_FM_CAPS_BW_MODE_3QUARTER   NVBIT64(4)
 #define NVLINK_INBAND_FM_CAPS_MC_TEAM_SETUP_V2   NVBIT64(5)
 
+#define NVLINK_INBAND_FABRIC_HEALTH_MASK_DEGRADED_BW 1:0
+#define NVLINK_INBAND_FABRIC_HEALTH_MASK_DEGRADED_BW_NOT_SUPPORTED 0
+#define NVLINK_INBAND_FABRIC_HEALTH_MASK_DEGRADED_BW_TRUE          1
+#define NVLINK_INBAND_FABRIC_HEALTH_MASK_DEGRADED_BW_FALSE         2
+
 typedef struct
 {
     NvU64  gpuHandle;             /* Unique handle assigned by initialization entity for this GPU */
@@ -122,7 +133,8 @@ typedef struct
     NvU64  flaAddressRange;       /* GPU FLA address range */
     NvU32  linkMaskToBeReduced;   /* bit mask of unused NVLink ports for P2P */
     NvU32  cliqueId;              /* Fabric Clique Id */
-    NvU8   reserved[24];          /* For future use. Must be initialized to zero */
+    NvU32  fabricHealthMask;      /* Mask containing bits indicating various fabric health parameters */
+    NvU8   reserved[20];          /* For future use. Must be initialized to zero */
 } nvlink_inband_gpu_probe_rsp_t;
 
 typedef struct
@@ -130,6 +142,20 @@ typedef struct
     nvlink_inband_msg_header_t           msgHdr;
     nvlink_inband_gpu_probe_rsp_t        probeRsp;
 } nvlink_inband_gpu_probe_rsp_msg_t;
+
+typedef struct
+{
+    NvU64  gpuHandle;             /* Unique handle assigned by initialization entity for this GPU */
+    NvU32  cliqueId;              /* Fabric Clique Id*/
+    NvU32  fabricHealthMask;      /* Mask containing bits indicating various fabric health parameters */
+    NvU8   reserved[32];          /* For future use. Must be initialized to zero */
+} nvlink_inband_gpu_probe_update_req_t;
+
+typedef struct
+{
+    nvlink_inband_msg_header_t               msgHdr;
+    nvlink_inband_gpu_probe_update_req_t     probeUpdate;
+} nvlink_inband_gpu_probe_update_req_msg_t;
 
 typedef struct
 {
@@ -202,6 +228,58 @@ typedef struct
     nvlink_inband_msg_header_t           msgHdr;
     nvlink_inband_mc_team_release_req_t  mcTeamReleaseReq;
 } nvlink_inband_mc_team_release_req_msg_t;
+
+typedef struct
+{
+    /* Fields to be replayed */
+    NvU64  gpuHandle;            /* Unique handle that was provided by FM pre-migration. */
+
+    /* Other fields from the request */
+    NvU64  pciInfo;              /* Encoded as Domain(63:32):Bus(15:8):Device(0:7). (debug only) */
+    NvU8   moduleId;             /* GPIO based physical/module ID of the GPU. (debug only) */
+    NvUuid gpuUuid;              /* UUID of the GPU. (debug only) */
+    NvU64  discoveredLinkMask;   /* GPU's discovered NVLink mask info. (debug only) */
+    NvU64  enabledLinkMask;      /* GPU's currently enabled NvLink mask info. (debug only) */
+
+    NvU32  gpuCapMask;           /* GPU capabilities, one of NVLINK_INBAND_GPU_PROBE_CAPS */
+    NvU8   bwMode;               /* NVLink bandwidth mode, one of NVLINK_INBAND_BW_MODE */
+    NvU8   reserved[31];         /* For future use. Must be initialized to zero */
+} nvlink_inband_gpu_probe_replay_req_t;
+
+typedef struct
+{
+    nvlink_inband_msg_header_t           msgHdr;
+    nvlink_inband_gpu_probe_replay_req_t probeReplayReq;
+} nvlink_inband_gpu_probe_replay_req_msg_t;
+
+typedef nvlink_inband_gpu_probe_rsp_t nvlink_inband_gpu_probe_replay_rsp_t;
+typedef nvlink_inband_gpu_probe_rsp_msg_t nvlink_inband_gpu_probe_replay_rsp_msg_t;
+
+typedef struct
+{
+    /* Fields to be replayed */
+    NvU64 mcTeamHandle;          /* Unique handle assigned for this Multicast team */
+    NvU64 mcAddressBase;         /* FLA starting address assigned for the Multicast slot */
+    NvU64 mcAddressSize;         /* Size of FLA assigned to the Multicast slot */
+
+    /* Other fields from the request */
+    NvU64 mcAllocSize;           /* Multicast allocation size requested */
+    NvU32 flags;                 /* For future use. Must be initialized to zero */
+    NvU8  reserved[8];           /* For future use. Must be initialized to zero */
+    NvU16 numGpuHandles;         /* Number of GPUs in this team */
+    NvU16 numKeys;               /* Number of keys (a.k.a request ID) used by FM to send response */
+    NvU64 gpuHandlesAndKeys[];   /* Array of probed handles and keys, should be last */
+} nvlink_inband_mc_team_setup_replay_req_t;
+
+
+typedef struct
+{
+    nvlink_inband_msg_header_t               msgHdr;
+    nvlink_inband_mc_team_setup_replay_req_t mcTeamSetupReplayReq;
+} nvlink_inband_mc_team_setup_replay_req_msg_t;
+
+typedef nvlink_inband_mc_team_setup_rsp_t nvlink_inband_mc_team_setup_replay_rsp_t;
+typedef nvlink_inband_mc_team_setup_rsp_msg_t nvlink_inband_mc_team_setup_replay_rsp_msg_t;
 
 #pragma pack(pop)
 

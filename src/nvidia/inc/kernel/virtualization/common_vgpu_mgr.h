@@ -58,6 +58,11 @@ typedef struct
     NvU8        vgpuClass[VGPU_STRING_BUFFER_SIZE];
     NvU8        license[NV_GRID_LICENSE_INFO_MAX_LENGTH];
     NvU8        licensedProductName[NV_GRID_LICENSE_INFO_MAX_LENGTH];
+    NvU32       placementSize;
+    NvU16       supportedPlacementIds[MAX_VGPU_DEVICES_PER_PGPU];
+    NvU32       supportedChidOffsets[MAX_VGPU_DEVICES_PER_PGPU];
+    NvU32       channelCount;
+    NvU32       placementCount;
     NvU32       maxInstance;
     NvU32       numHeads;
     NvU32       maxResolutionX;
@@ -98,6 +103,7 @@ vgpuMgrReserveSystemChannelIDs(OBJGPU *pGpu,
                                NvU32 *pChannelCount,
                                Device *pMigDevice,
                                NvU32 numChannels,
+                               NvU16 placementId,
                                NvU32 engineFifoListNumEntries,
                                FIFO_ENGINE_LIST *engineFifoList);
 

@@ -157,6 +157,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "CRS",    _VENDOR_NAME_ENTRY("Cisco")                             },
     { "CSE",    _VENDOR_NAME_ENTRY("Compu Shack")                       },
     { "CSI",    _VENDOR_NAME_ENTRY("Cabletron")                         },
+    { "CSO",    _VENDOR_NAME_ENTRY("California institute of Technology")},
     { "CSS",    _VENDOR_NAME_ENTRY("CSS Laboratories")                  },
     { "CSW",    _VENDOR_NAME_ENTRY("China Star Optoelectronics Technology Co., Ltd") },
     { "CTN",    _VENDOR_NAME_ENTRY("Computone")                         },
@@ -294,6 +295,7 @@ static const PNPVendorId PNPVendorIds[] =
     { "ITK",    _VENDOR_NAME_ENTRY("NTI Group")                         },
     { "IVK",    _VENDOR_NAME_ENTRY("Iiyama")                            },
     { "IVM",    _VENDOR_NAME_ENTRY("Idek Iiyama")                       },
+    { "IVO",    _VENDOR_NAME_ENTRY("InfoVision OptoElectronics Co., Ltd")},
     { "IVR",    _VENDOR_NAME_ENTRY("Inlife-Handnet Co., Ltd.")          },
     { "IWR",    _VENDOR_NAME_ENTRY("Icuiti Corporation")                },
 

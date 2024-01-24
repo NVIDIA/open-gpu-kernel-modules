@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -57,7 +57,7 @@ intrGetUvmSharedLeafEnDisableMask_GA100
 )
 {
     NvU32 intrVectorNonReplayableFault;
-    NvU32 intrVectorTimerSwrl = NV_INTR_VECTOR_INVALID;
+    NvU32 intrVectorTimerSwrl;
     NvU64 mask = 0;
     NV2080_INTR_CATEGORY_SUBTREE_MAP uvmShared;
 
@@ -69,13 +69,9 @@ intrGetUvmSharedLeafEnDisableMask_GA100
     }
 
     intrVectorNonReplayableFault = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_NON_REPLAYABLE_FAULT, NV_FALSE);
+    intrVectorTimerSwrl = NV_INTR_VECTOR_INVALID;
 
-    if (!IS_VIRTUAL(pGpu))
-    {
-        intrVectorTimerSwrl = intrGetVectorFromEngineId(pGpu, pIntr, MC_ENGINE_IDX_TMR_SWRL, NV_FALSE);
-    }
-
-    if (intrVectorNonReplayableFault != NV_INTR_VECTOR_INVALID && intrVectorTimerSwrl != NV_INTR_VECTOR_INVALID)
+    if ((intrVectorNonReplayableFault != NV_INTR_VECTOR_INVALID) && (intrVectorTimerSwrl != NV_INTR_VECTOR_INVALID))
     {
         // Ascertain that they're in the same subtree and same leaf
         NV_ASSERT(NV_CTRL_INTR_GPU_VECTOR_TO_SUBTREE(intrVectorNonReplayableFault) ==

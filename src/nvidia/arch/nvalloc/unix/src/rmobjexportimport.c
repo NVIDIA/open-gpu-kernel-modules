@@ -48,7 +48,6 @@
 #include "rmobjexportimport.h"
 #include "nvlimits.h"
 #include "gpu/device/device.h"
-#include "gpu/subdevice/subdevice.h"
 #include "gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/mig_mgr/gpu_instance_subscription.h"
 
@@ -331,8 +330,8 @@ NV_STATUS RmExportObject(NvHandle hSrcClient, NvHandle hSrcObject,
     NV_STATUS          status;
     RM_API            *pRmApi = rmapiGetInterface(RMAPI_API_LOCK_INTERNAL);
     MIG_INSTANCE_REF   ref = kmigmgrMakeNoMIGReference();
-    NvU64              deviceMapIdx;
-    RmObjExportDevice *pObjExportDevice;
+    NvU64              deviceMapIdx = 0;
+    RmObjExportDevice *pObjExportDevice = NULL;
     RsResourceRef     *pSrcResourceRef;
     RsResourceRef     *pDeviceRef;
 

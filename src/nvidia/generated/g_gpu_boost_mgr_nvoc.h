@@ -89,18 +89,22 @@ typedef struct SYNC_GPU_BOOST_GROUP
     NvBool bBridgeless;
 } SYNC_GPU_BOOST_GROUP;
 
-typedef struct OBJGPUBOOSTMGR *POBJGPUBOOSTMGR;
 
 /*!
  * This is the Sync Gpu Boost Manager for RM. It keeps track of the
  * Sync Gpu Boost Groups defined for the system and provides various methods related
  * to their management.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_GPU_BOOST_MGR_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJGPUBOOSTMGR {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;

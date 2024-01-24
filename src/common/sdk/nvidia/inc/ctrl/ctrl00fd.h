@@ -202,6 +202,53 @@ typedef struct NV00FD_CTRL_DETACH_MEM_PARAMS {
     NvU32    flags;
 } NV00FD_CTRL_DETACH_MEM_PARAMS;
 
+/*
+ * NV00FD_CTRL_CMD_ATTACH_REMOTE_GPU
+ *
+ * Attaches a remote GPU to the Multicast FLA object. This control call is
+ * restricted to the privileged clients like IMEX daemon.
+ *
+ *  gpuFabricProbeHandle [IN]
+ *    Fabric probe handle of the remote GPU
+ *
+ *  key [IN]
+ *    Key is used by the GFM in the MCFLA team response as an ID to allow the
+ *    RM to correlate it with the MCFLA team request.
+ *
+ *  cliqueId [IN]
+ *    Clique ID of the remote GPU being attached.
+ *
+ *  nodeId [IN]
+ *    nodeID from which the remote GPU is being attached.
+ */
+#define NV00FD_CTRL_CMD_ATTACH_REMOTE_GPU (0xfd0106) /* finn: Evaluated from "(FINN_NV_MEMORY_MULTICAST_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS_MESSAGE_ID" */
+
+#define NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS_MESSAGE_ID (0x6U)
+
+typedef struct NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 gpuFabricProbeHandle, 8);
+    NV_DECLARE_ALIGNED(NvU64 key, 8);
+    NvU32 cliqueId;
+    NvU16 nodeId;
+} NV00FD_CTRL_ATTACH_REMOTE_GPU_PARAMS;
+
+/*
+ * NV00FD_CTRL_CMD_SET_FAILURE
+ *
+ * Marks the MCLFA object allocation with a failure. This control call is
+ * restricted to the privileged client like IMEX daemon.
+ *
+ *  status [IN]
+ *    Failure status, shouldn't be NV_OK.
+ */
+#define NV00FD_CTRL_CMD_SET_FAILURE (0xfd0107) /* finn: Evaluated from "(FINN_NV_MEMORY_MULTICAST_FABRIC_FABRIC_INTERFACE_ID << 8) | NV00FD_CTRL_SET_FAILURE_PARAMS_MESSAGE_ID" */
+
+#define NV00FD_CTRL_SET_FAILURE_PARAMS_MESSAGE_ID (0x7U)
+
+typedef struct NV00FD_CTRL_SET_FAILURE_PARAMS {
+    NV_STATUS status;
+} NV00FD_CTRL_SET_FAILURE_PARAMS;
+
 
 
 /* _ctrl00fd_h_ */

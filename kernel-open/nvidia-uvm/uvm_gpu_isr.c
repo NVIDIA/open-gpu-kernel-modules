@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2021 NVIDIA Corporation
+    Copyright (c) 2016-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -67,21 +67,21 @@ static void access_counters_isr_bottom_half_entry(void *args);
 // interrupts should be disabled. The caller is guaranteed that replayable page
 // faults are disabled upon return. Interrupts might already be disabled prior
 // to making this call. Each call is ref-counted, so this must be paired with a
-// call to uvm_gpu_replayable_faults_intr_enable().
+// call to uvm_parent_gpu_replayable_faults_intr_enable().
 //
 // parent_gpu->isr.interrupts_lock must be held to call this function.
-static void uvm_gpu_replayable_faults_intr_disable(uvm_parent_gpu_t *parent_gpu);
+static void uvm_parent_gpu_replayable_faults_intr_disable(uvm_parent_gpu_t *parent_gpu);
 
 // Decrements the reference count tracking whether replayable page fault
 // interrupts should be disabled. Only once the count reaches 0 are the HW
 // interrupts actually enabled, so this call does not guarantee that the
 // interrupts have been re-enabled upon return.
 //
-// uvm_gpu_replayable_faults_intr_disable() must have been called prior to
-// calling this function.
+// uvm_parent_gpu_replayable_faults_intr_disable() must have been called prior
+// to calling this function.
 //
 // parent_gpu->isr.interrupts_lock must be held to call this function.
-static void uvm_gpu_replayable_faults_intr_enable(uvm_parent_gpu_t *parent_gpu);
+static void uvm_parent_gpu_replayable_faults_intr_enable(uvm_parent_gpu_t *parent_gpu);
 
 static unsigned schedule_replayable_faults_handler(uvm_parent_gpu_t *parent_gpu)
 {
@@ -108,7 +108,7 @@ static unsigned schedule_replayable_faults_handler(uvm_parent_gpu_t *parent_gpu)
     nv_kref_get(&parent_gpu->gpu_kref);
 
     // Interrupts need to be disabled here to avoid an interrupt storm
-    uvm_gpu_replayable_faults_intr_disable(parent_gpu);
+    uvm_parent_gpu_replayable_faults_intr_disable(parent_gpu);
 
     // Schedule a bottom half, but do *not* release the GPU ISR lock. The bottom
     // half releases the GPU ISR lock as part of its cleanup.
@@ -175,7 +175,7 @@ static unsigned schedule_access_counters_handler(uvm_parent_gpu_t *parent_gpu)
     nv_kref_get(&parent_gpu->gpu_kref);
 
     // Interrupts need to be disabled to avoid an interrupt storm
-    uvm_gpu_access_counters_intr_disable(parent_gpu);
+    uvm_parent_gpu_access_counters_intr_disable(parent_gpu);
 
     nv_kthread_q_schedule_q_item(&parent_gpu->isr.bottom_half_q,
                                  &parent_gpu->isr.access_counters.bottom_half_q_item);
@@ -288,7 +288,7 @@ static NV_STATUS init_queue_on_node(nv_kthread_q_t *queue, const char *name, int
     return errno_to_nv_status(nv_kthread_q_init(queue, name));
 }
 
-NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
+NV_STATUS uvm_parent_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status = NV_OK;
     char kthread_name[TASK_COMM_LEN + 1];
@@ -299,7 +299,7 @@ NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
         if (status != NV_OK) {
             UVM_ERR_PRINT("Failed to initialize GPU fault buffer: %s, GPU: %s\n",
                           nvstatusToString(status),
-                          parent_gpu->name);
+                          uvm_parent_gpu_name(parent_gpu));
             return status;
         }
 
@@ -320,12 +320,12 @@ NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
 
         parent_gpu->isr.replayable_faults.handling = true;
 
-        snprintf(kthread_name, sizeof(kthread_name), "UVM GPU%u BH", uvm_id_value(parent_gpu->id));
+        snprintf(kthread_name, sizeof(kthread_name), "UVM GPU%u BH", uvm_parent_id_value(parent_gpu->id));
         status = init_queue_on_node(&parent_gpu->isr.bottom_half_q, kthread_name, parent_gpu->closest_cpu_numa_node);
         if (status != NV_OK) {
             UVM_ERR_PRINT("Failed in nv_kthread_q_init for bottom_half_q: %s, GPU %s\n",
                           nvstatusToString(status),
-                          parent_gpu->name);
+                          uvm_parent_gpu_name(parent_gpu));
             return status;
         }
 
@@ -348,14 +348,14 @@ NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
 
             parent_gpu->isr.non_replayable_faults.handling = true;
 
-            snprintf(kthread_name, sizeof(kthread_name), "UVM GPU%u KC", uvm_id_value(parent_gpu->id));
+            snprintf(kthread_name, sizeof(kthread_name), "UVM GPU%u KC", uvm_parent_id_value(parent_gpu->id));
             status = init_queue_on_node(&parent_gpu->isr.kill_channel_q,
                                         kthread_name,
                                         parent_gpu->closest_cpu_numa_node);
             if (status != NV_OK) {
                 UVM_ERR_PRINT("Failed in nv_kthread_q_init for kill_channel_q: %s, GPU %s\n",
                               nvstatusToString(status),
-                              parent_gpu->name);
+                              uvm_parent_gpu_name(parent_gpu));
                 return status;
             }
         }
@@ -365,7 +365,7 @@ NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
             if (status != NV_OK) {
                 UVM_ERR_PRINT("Failed to initialize GPU access counters: %s, GPU: %s\n",
                               nvstatusToString(status),
-                              parent_gpu->name);
+                              uvm_parent_gpu_name(parent_gpu));
                 return status;
             }
 
@@ -393,13 +393,13 @@ NV_STATUS uvm_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
     return NV_OK;
 }
 
-void uvm_gpu_flush_bottom_halves(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_flush_bottom_halves(uvm_parent_gpu_t *parent_gpu)
 {
     nv_kthread_q_flush(&parent_gpu->isr.bottom_half_q);
     nv_kthread_q_flush(&parent_gpu->isr.kill_channel_q);
 }
 
-void uvm_gpu_disable_isr(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_disable_isr(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(parent_gpu->isr.access_counters.handling_ref_count == 0);
 
@@ -408,7 +408,7 @@ void uvm_gpu_disable_isr(uvm_parent_gpu_t *parent_gpu)
     // any more bottom halves.
     uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
 
-    uvm_gpu_replayable_faults_intr_disable(parent_gpu);
+    uvm_parent_gpu_replayable_faults_intr_disable(parent_gpu);
 
     parent_gpu->isr.replayable_faults.was_handling = parent_gpu->isr.replayable_faults.handling;
     parent_gpu->isr.non_replayable_faults.was_handling = parent_gpu->isr.non_replayable_faults.handling;
@@ -428,7 +428,7 @@ void uvm_gpu_disable_isr(uvm_parent_gpu_t *parent_gpu)
     nv_kthread_q_stop(&parent_gpu->isr.kill_channel_q);
 }
 
-void uvm_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_va_block_context_t *block_context;
 
@@ -436,22 +436,23 @@ void uvm_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
     if (parent_gpu->isr.replayable_faults.was_handling) {
         // No user threads could have anything left on
         // replayable_faults.disable_intr_ref_count since they must retain the
-        // GPU across uvm_gpu_replayable_faults_isr_lock/
-        // uvm_gpu_replayable_faults_isr_unlock. This means the
+        // GPU across uvm_parent_gpu_replayable_faults_isr_lock/
+        // uvm_parent_gpu_replayable_faults_isr_unlock. This means the
         // uvm_gpu_replayable_faults_disable_intr above could only have raced
         // with bottom halves.
         //
         // If we cleared replayable_faults.handling before the bottom half got
-        // to its uvm_gpu_replayable_faults_isr_unlock, when it eventually
-        // reached uvm_gpu_replayable_faults_isr_unlock it would have skipped
-        // the disable, leaving us with extra ref counts here.
+        // to its uvm_parent_gpu_replayable_faults_isr_unlock, when it
+        // eventually reached uvm_parent_gpu_replayable_faults_isr_unlock it
+        // would have skipped the disable, leaving us with extra ref counts
+        // here.
         //
         // In any case we're guaranteed that replayable faults interrupts are
         // disabled and can't get re-enabled, so we can safely ignore the ref
         // count value and just clean things up.
         UVM_ASSERT_MSG(parent_gpu->isr.replayable_faults.disable_intr_ref_count > 0,
                        "%s replayable_faults.disable_intr_ref_count: %llu\n",
-                       parent_gpu->name,
+                       uvm_parent_gpu_name(parent_gpu),
                        parent_gpu->isr.replayable_faults.disable_intr_ref_count);
 
         uvm_gpu_fault_buffer_deinit(parent_gpu);
@@ -480,7 +481,6 @@ void uvm_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
 
 static uvm_gpu_t *find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu)
 {
-    uvm_global_gpu_id_t global_gpu_id = uvm_global_gpu_id_from_gpu_id(parent_gpu->id);
     uvm_gpu_t *gpu;
 
     // When SMC is enabled, there's no longer a 1:1 relationship between the
@@ -495,10 +495,10 @@ static uvm_gpu_t *find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu)
 
         uvm_spin_lock_irqsave(&g_uvm_global.gpu_table_lock);
 
-        sub_processor_index = find_first_bit(parent_gpu->valid_gpus, UVM_ID_MAX_SUB_PROCESSORS);
+        sub_processor_index = find_first_bit(parent_gpu->valid_gpus, UVM_PARENT_ID_MAX_SUB_PROCESSORS);
 
-        if (sub_processor_index < UVM_ID_MAX_SUB_PROCESSORS) {
-            gpu = uvm_gpu_get(uvm_global_id_from_value(uvm_global_id_value(global_gpu_id) + sub_processor_index));
+        if (sub_processor_index < UVM_PARENT_ID_MAX_SUB_PROCESSORS) {
+            gpu = parent_gpu->gpus[sub_processor_index];
             UVM_ASSERT(gpu != NULL);
         }
         else {
@@ -508,7 +508,7 @@ static uvm_gpu_t *find_first_valid_gpu(uvm_parent_gpu_t *parent_gpu)
         uvm_spin_unlock_irqrestore(&g_uvm_global.gpu_table_lock);
     }
     else {
-        gpu = uvm_gpu_get(global_gpu_id);
+        gpu = parent_gpu->gpus[0];
         UVM_ASSERT(gpu != NULL);
     }
 
@@ -547,12 +547,12 @@ static void replayable_faults_isr_bottom_half(void *args)
 
     uvm_gpu_service_replayable_faults(gpu);
 
-    uvm_gpu_replayable_faults_isr_unlock(parent_gpu);
+    uvm_parent_gpu_replayable_faults_isr_unlock(parent_gpu);
 
 put_kref:
     // It is OK to drop a reference on the parent GPU if a bottom half has
-    // been retriggered within uvm_gpu_replayable_faults_isr_unlock, because the
-    // rescheduling added an additional reference.
+    // been retriggered within uvm_parent_gpu_replayable_faults_isr_unlock,
+    // because the rescheduling added an additional reference.
     uvm_parent_gpu_kref_put(parent_gpu);
 }
 
@@ -573,7 +573,7 @@ static void non_replayable_faults_isr_bottom_half(void *args)
 
     UVM_ASSERT(parent_gpu->non_replayable_faults_supported);
 
-    uvm_gpu_non_replayable_faults_isr_lock(parent_gpu);
+    uvm_parent_gpu_non_replayable_faults_isr_lock(parent_gpu);
 
     // Multiple bottom halves for non-replayable faults can be running
     // concurrently, but only one can enter this section for a given GPU
@@ -586,7 +586,7 @@ static void non_replayable_faults_isr_bottom_half(void *args)
 
     uvm_gpu_service_non_replayable_fault_buffer(gpu);
 
-    uvm_gpu_non_replayable_faults_isr_unlock(parent_gpu);
+    uvm_parent_gpu_non_replayable_faults_isr_unlock(parent_gpu);
 
 put_kref:
     uvm_parent_gpu_kref_put(parent_gpu);
@@ -622,7 +622,7 @@ static void access_counters_isr_bottom_half(void *args)
 
     uvm_gpu_service_access_counters(gpu);
 
-    uvm_gpu_access_counters_isr_unlock(parent_gpu);
+    uvm_parent_gpu_access_counters_isr_unlock(parent_gpu);
 
 put_kref:
     uvm_parent_gpu_kref_put(parent_gpu);
@@ -651,7 +651,7 @@ static void replayable_faults_retrigger_bottom_half(uvm_parent_gpu_t *parent_gpu
     //
     //   (1) UVM didn't process all the entries up to cached PUT
     //
-    //   (2) UVM did process all the entries up to cached PUT, but GPS-RM
+    //   (2) UVM did process all the entries up to cached PUT, but GSP-RM
     //       added new entries such that cached PUT is out-of-date
     //
     // In both cases, re-enablement of interrupts would have caused the
@@ -663,7 +663,7 @@ static void replayable_faults_retrigger_bottom_half(uvm_parent_gpu_t *parent_gpu
     // While in the typical case the retriggering happens within a replayable
     // fault bottom half, it can also happen within a non-interrupt path such as
     // uvm_gpu_fault_buffer_flush.
-    if (uvm_conf_computing_mode_enabled_parent(parent_gpu))
+    if (g_uvm_global.conf_computing_enabled)
         retrigger = true;
 
     if (!retrigger)
@@ -678,7 +678,7 @@ static void replayable_faults_retrigger_bottom_half(uvm_parent_gpu_t *parent_gpu
     uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
 }
 
-void uvm_gpu_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(nv_kref_read(&parent_gpu->gpu_kref) > 0);
 
@@ -687,7 +687,7 @@ void uvm_gpu_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu)
     // Bump the disable ref count. This guarantees that the bottom half or
     // another thread trying to take the replayable_faults.service_lock won't
     // inadvertently re-enable interrupts during this locking sequence.
-    uvm_gpu_replayable_faults_intr_disable(parent_gpu);
+    uvm_parent_gpu_replayable_faults_intr_disable(parent_gpu);
 
     uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
 
@@ -696,7 +696,7 @@ void uvm_gpu_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu)
     uvm_down(&parent_gpu->isr.replayable_faults.service_lock);
 }
 
-void uvm_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(nv_kref_read(&parent_gpu->gpu_kref) > 0);
 
@@ -733,9 +733,10 @@ void uvm_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
         // Note that if we're in the bottom half and the GPU was removed before
         // we checked replayable_faults.handling, we won't drop our interrupt
         // disable ref count from the corresponding top-half call to
-        // uvm_gpu_replayable_faults_intr_disable. That's ok because remove_gpu
-        // ignores the refcount after waiting for the bottom half to finish.
-        uvm_gpu_replayable_faults_intr_enable(parent_gpu);
+        // uvm_parent_gpu_replayable_faults_intr_disable. That's ok because
+        // remove_gpu ignores the refcount after waiting for the bottom half to
+        // finish.
+        uvm_parent_gpu_replayable_faults_intr_enable(parent_gpu);
 
         // Rearm pulse interrupts. This guarantees that the state of the pending
         // interrupt is current and the top level rearm performed by RM is only
@@ -762,42 +763,42 @@ void uvm_gpu_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
     replayable_faults_retrigger_bottom_half(parent_gpu);
 }
 
-void uvm_gpu_non_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_non_replayable_faults_isr_lock(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(nv_kref_read(&parent_gpu->gpu_kref) > 0);
 
     uvm_down(&parent_gpu->isr.non_replayable_faults.service_lock);
 }
 
-void uvm_gpu_non_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_non_replayable_faults_isr_unlock(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(nv_kref_read(&parent_gpu->gpu_kref) > 0);
 
     uvm_up(&parent_gpu->isr.non_replayable_faults.service_lock);
 }
 
-void uvm_gpu_access_counters_isr_lock(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_access_counters_isr_lock(uvm_parent_gpu_t *parent_gpu)
 {
-    // See comments in uvm_gpu_replayable_faults_isr_lock
+    // See comments in uvm_parent_gpu_replayable_faults_isr_lock
 
     uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
 
-    uvm_gpu_access_counters_intr_disable(parent_gpu);
+    uvm_parent_gpu_access_counters_intr_disable(parent_gpu);
 
     uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
 
     uvm_down(&parent_gpu->isr.access_counters.service_lock);
 }
 
-void uvm_gpu_access_counters_isr_unlock(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_access_counters_isr_unlock(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(nv_kref_read(&parent_gpu->gpu_kref) > 0);
 
-    // See comments in uvm_gpu_replayable_faults_isr_unlock
+    // See comments in uvm_parent_gpu_replayable_faults_isr_unlock
 
     uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
 
-    uvm_gpu_access_counters_intr_enable(parent_gpu);
+    uvm_parent_gpu_access_counters_intr_enable(parent_gpu);
 
     if (parent_gpu->isr.access_counters.handling_ref_count > 0) {
         parent_gpu->access_counter_buffer_hal->clear_access_counter_notifications(parent_gpu,
@@ -811,7 +812,7 @@ void uvm_gpu_access_counters_isr_unlock(uvm_parent_gpu_t *parent_gpu)
     uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
 }
 
-static void uvm_gpu_replayable_faults_intr_disable(uvm_parent_gpu_t *parent_gpu)
+static void uvm_parent_gpu_replayable_faults_intr_disable(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
 
@@ -821,7 +822,7 @@ static void uvm_gpu_replayable_faults_intr_disable(uvm_parent_gpu_t *parent_gpu)
     ++parent_gpu->isr.replayable_faults.disable_intr_ref_count;
 }
 
-static void uvm_gpu_replayable_faults_intr_enable(uvm_parent_gpu_t *parent_gpu)
+static void uvm_parent_gpu_replayable_faults_intr_enable(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
     UVM_ASSERT(parent_gpu->isr.replayable_faults.disable_intr_ref_count > 0);
@@ -831,7 +832,7 @@ static void uvm_gpu_replayable_faults_intr_enable(uvm_parent_gpu_t *parent_gpu)
         parent_gpu->fault_buffer_hal->enable_replayable_faults(parent_gpu);
 }
 
-void uvm_gpu_access_counters_intr_disable(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_access_counters_intr_disable(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
 
@@ -848,7 +849,7 @@ void uvm_gpu_access_counters_intr_disable(uvm_parent_gpu_t *parent_gpu)
     ++parent_gpu->isr.access_counters.disable_intr_ref_count;
 }
 
-void uvm_gpu_access_counters_intr_enable(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_access_counters_intr_enable(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_assert_spinlock_locked(&parent_gpu->isr.interrupts_lock);
     UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.access_counters.service_lock));

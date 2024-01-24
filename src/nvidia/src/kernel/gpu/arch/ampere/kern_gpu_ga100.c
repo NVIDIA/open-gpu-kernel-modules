@@ -24,11 +24,61 @@
 #include "gpu/gpu.h"
 #include "gpu/gpu_child_class_defs.h"
 #include "kernel/gpu/intr/intr.h"
+#include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "published/ampere/ga100/dev_fb.h"
 #include "published/ampere/ga100/dev_vm.h"
 #include "published/ampere/ga100/dev_fuse.h"
 #include "virtualization/hypervisor/hypervisor.h"
+
+// Error containment error id string description.
+const char *ppErrContErrorIdStr[] = NV_ERROR_CONT_ERR_ID_STRING_PUBLIC;
+
+// Error containment table
+NV_ERROR_CONT_STATE_TABLE g_errContStateTable[] = NV_ERROR_CONT_STATE_TABLE_SETTINGS;
+
+/*!
+ * @brief Get index of specified errorCode in the Error Containment state table
+ *
+ * @param[in] pGpu              OBJGPU pointer
+ * @param[in] errorCode         Error Containment error code
+ * @param[in] pTableIndex       Index of specified errorCode in the Error Containment State table
+ *
+ * @returns NV_STATUS
+ */
+static NV_STATUS _gpuGetErrorContStateTableIndex_GA100(OBJGPU              *pGpu,
+                                                       NV_ERROR_CONT_ERR_ID errorCode,
+                                                       NvU32                *pTableIndex);
+
+/*!
+ * @brief Send NV2080_NOTIFIER*
+ *
+ * @param[in]  pGpu                   OBJGPU pointer
+ * @param[in]  errorCode              Error Containment error code
+ * @param[in]  loc                    Location, SubLocation information
+ * @param[in]  nv2080Notifier         NV2080_NOTIFIER*
+ *
+ * @returns NV_STATUS
+ */
+static NV_STATUS _gpuNotifySubDeviceEventNotifier_GA100(OBJGPU                 *pGpu,
+                                                        NV_ERROR_CONT_ERR_ID    errorCode,
+                                                        NV_ERROR_CONT_LOCATION  loc,
+                                                        NvU32                   nv2080Notifier);
+
+/*!
+ * @brief Generate error log for corresponding error containment error code.
+ *
+ * @param[in]  pGpu                   OBJGPU pointer
+ * @param[in]  errorCode              Error Containment error code
+ * @param[in]  loc                    Location, SubLocation information
+ * @param[in]  pErrorContSmcSetting   Error containment SMC Disable / Enable settings
+ *
+ * @returns NV_STATUS
+ */
+static NV_STATUS _gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
+                                            NV_ERROR_CONT_ERR_ID              errorCode,
+                                            NV_ERROR_CONT_LOCATION            loc,
+                                            NV_ERROR_CONT_SMC_DIS_EN_SETTING *pErrorContSmcSetting);
 
 /*!
  * @brief Read fuse for display supported status.
@@ -158,6 +208,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GA100[] =
     GPU_CHILD_PRESENT(KernelFifo, 1),
     GPU_CHILD_PRESENT(KernelGmmu, 1),
     GPU_CHILD_PRESENT(KernelGraphics, 8),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
     GPU_CHILD_PRESENT(KernelMc, 1),
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelNvlink, 1),
@@ -208,6 +259,7 @@ static const GPUCHILDPRESENT gpuChildrenPresent_GA102[] =
     GPU_CHILD_PRESENT(KernelFifo, 1),
     GPU_CHILD_PRESENT(KernelGmmu, 1),
     GPU_CHILD_PRESENT(KernelGraphics, 1),
+    GPU_CHILD_PRESENT(KernelHwpm, 1),
     GPU_CHILD_PRESENT(KernelMc, 1),
     GPU_CHILD_PRESENT(SwIntr, 1),
     GPU_CHILD_PRESENT(KernelNvlink, 1),
@@ -225,3 +277,390 @@ gpuGetChildrenPresent_GA102(OBJGPU *pGpu, NvU32 *pNumEntries)
     return gpuChildrenPresent_GA102;
 }
 
+/*! @brief Returns if a P2P object is allocated in SRIOV mode.
+ *
+ *  @param[in]   pGpu     OBJGPU pointer
+ *
+ *  @returns for baremetal, this should just return NV_TRUE
+             for SRIOV, return the SRIOV Info
+ */
+NvBool
+gpuCheckIsP2PAllocated_GA100
+(
+    OBJGPU *pGpu
+)
+{
+    if (!IS_VIRTUAL(pGpu) && !gpuIsSriovEnabled(pGpu))
+        return NV_TRUE;
+
+    return pGpu->sriovState.bP2PAllocated;
+}
+
+/*!
+ * @brief Get index of specified errorCode in the Error Containment state table
+ *
+ * @param[in] pGpu              OBJGPU pointer
+ * @param[in] errorCode         Error Containment error code
+ * @param[in] pTableIndex       Index of specified errorCode in the Error Containment state table
+ *
+ * @returns NV_STATUS
+ */
+static
+NV_STATUS
+_gpuGetErrorContStateTableIndex_GA100
+(
+    OBJGPU              *pGpu,
+    NV_ERROR_CONT_ERR_ID errorCode,
+    NvU32                *pTableIndex
+)
+{
+    NvU32 index;
+    NvU32 tableSize = NV_ARRAY_ELEMENTS(g_errContStateTable);
+
+    NV_ASSERT_OR_RETURN(pTableIndex != NULL, NV_ERR_INVALID_ARGUMENT);
+
+    for (index = 0; index < tableSize; index++)
+    {
+        if (errorCode == g_errContStateTable[index].errorCode)
+        {
+            *pTableIndex = index;
+            return NV_OK;
+        }
+    }
+
+    return NV_ERR_INVALID_ARGUMENT;
+}
+
+/*!
+ * @brief Send NV2080_NOTIFIER*
+ *
+ * @param[in]  pGpu                   OBJGPU pointer
+ * @param[in]  errorCode              Error Containment error code
+ * @param[in]  loc                    Location, SubLocation information
+ * @param[in]  nv2080Notifier         NV2080_NOTIFIER*
+ *
+ * @returns NV_STATUS
+ */
+static
+NV_STATUS
+_gpuNotifySubDeviceEventNotifier_GA100
+(
+    OBJGPU                 *pGpu,
+    NV_ERROR_CONT_ERR_ID    errorCode,
+    NV_ERROR_CONT_LOCATION  loc,
+    NvU32                   nv2080Notifier
+)
+{
+    NvV16 info16 = 0;
+    NvV32 info32 = 0;
+    RM_ENGINE_TYPE localRmEngineType = 0;
+
+    // Return if no notifier needs to be sent for this errorCode.
+    if (nv2080Notifier == NO_NV2080_NOTIFIER)
+    {
+        return NV_OK;
+    }
+
+    switch (errorCode)
+    {
+        // Intentional fall-through
+        case NV_ERROR_CONT_ERR_ID_E01_FB_ECC_DED:
+        case NV_ERROR_CONT_ERR_ID_E02_FB_ECC_DED_IN_CBC_STORE:
+        case NV_ERROR_CONT_ERR_ID_E09_FBHUB_POISON:
+        case NV_ERROR_CONT_ERR_ID_E20_XALEP_POISON:
+            info16 = FB_MEMORY_ERROR;
+            break;
+
+        // Intentional fall-through
+        case NV_ERROR_CONT_ERR_ID_E05_LTC_ECC_DSTG:
+        case NV_ERROR_CONT_ERR_ID_E06_LTC_UNSUPPORTED_CLIENT_POISON:
+        case NV_ERROR_CONT_ERR_ID_E07_LTC_ECC_TSTG:
+        case NV_ERROR_CONT_ERR_ID_E08_LTC_ECC_RSTG:
+            info16 = LTC_ERROR;
+            break;
+
+        case NV_ERROR_CONT_ERR_ID_E10_SM_POISON:
+        case NV_ERROR_CONT_ERR_ID_E16_GCC_POISON:
+        case NV_ERROR_CONT_ERR_ID_E17_CTXSW_POISON:
+            info16 = ROBUST_CHANNEL_GR_EXCEPTION;
+            break;
+
+        // Intentional fall-through
+        case NV_ERROR_CONT_ERR_ID_E12A_CE_POISON_IN_USER_CHANNEL:
+        case NV_ERROR_CONT_ERR_ID_E12B_CE_POISON_IN_KERNEL_CHANNEL:
+            NV_ASSERT_OR_RETURN(loc.locType == NV_ERROR_CONT_LOCATION_TYPE_ENGINE, NV_ERR_INVALID_ARGUMENT);
+            //
+            // If SMC is enabled, RM need to notify partition local engineId. Convert
+            // global ID to partition local if client has filled proper engineIDs
+            //
+            localRmEngineType = loc.locInfo.engineLoc.rmEngineId;
+            if (IS_MIG_IN_USE(pGpu) &&
+                RM_ENGINE_TYPE_IS_VALID(loc.locInfo.engineLoc.rmEngineId))
+            {
+                KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+                MIG_INSTANCE_REF ref;
+
+                NV_ASSERT_OK_OR_RETURN(kmigmgrGetInstanceRefFromDevice(pGpu,
+                                                                       pKernelMIGManager,
+                                                                       loc.locInfo.engineLoc.pDevice,
+                                                                       &ref));
+
+                if (!kmigmgrIsEngineInInstance(pGpu, pKernelMIGManager, loc.locInfo.engineLoc.rmEngineId, ref))
+                {
+                    // Notifier is requested for an unsupported engine
+                    NV_PRINTF(LEVEL_ERROR,
+                              "Notifier requested for an unsupported rm engine id (0x%x)\n",
+                              loc.locInfo.engineLoc.rmEngineId);
+                    return NV_ERR_INVALID_ARGUMENT;
+                }
+
+                // Override the engine type with the local engine idx
+                NV_ASSERT_OK_OR_RETURN(kmigmgrGetGlobalToLocalEngineType(pGpu,
+                                                                         pKernelMIGManager,
+                                                                         ref,
+                                                                         loc.locInfo.engineLoc.rmEngineId,
+                                                                         &localRmEngineType));
+            }
+
+            info16 = ROBUST_CHANNEL_CE_ERROR(NV2080_ENGINE_TYPE_COPY_IDX(localRmEngineType));
+            break;
+
+        case NV_ERROR_CONT_ERR_ID_E13_MMU_POISON:
+            info16 = ROBUST_CHANNEL_FIFO_ERROR_MMU_ERR_FLT;
+            break;
+    }
+
+    gpuNotifySubDeviceEvent(pGpu,
+                            nv2080Notifier,
+                            NULL,
+                            0,
+                            info32,         // Unused
+                            info16);
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Generate error log for corresponding error containment error code.
+ *
+ * Format / example :
+ *    1) Contained Error with SMC Partition attribution (Error attributable to SMC Partition or process in SMC partition):
+ *    2) Contained Error with no SMC partitioning  (Error attributable to process on GPU):
+ *    3) Uncontaned Error
+ *
+ * >> NVRM: Xid (PCI:0000:01:00 GPU-I:05): 94, pid=7194, Contained: CE User Channel (0x9). RST: No, D-RST: No
+ * >> NVRM: Xid (PCI:0000:01:00): 94, pid=7062, Contained: CE User Channel (0x9). RST: No, D-RST: No
+ * >> NVRM: Xid (PCI:0000:01:00): 95, pid=7062, Uncontained: LTC TAG (0x2,0x1). RST: Yes, D-RST: No
+ *
+ * @param[in]  pGpu                   OBJGPU pointer
+ * @param[in]  errorCode              Error Containment error code
+ * @param[in]  loc                    Location, SubLocation information
+ * @param[in]  pErrorContSmcSetting   Error containment SMC Disable / Enable settings
+ *
+ * @returns NV_STATUS
+ */
+static
+NV_STATUS
+_gpuGenerateErrorLog_GA100(OBJGPU                           *pGpu,
+                           NV_ERROR_CONT_ERR_ID              errorCode,
+                           NV_ERROR_CONT_LOCATION            loc,
+                           NV_ERROR_CONT_SMC_DIS_EN_SETTING *pErrorContSmcSetting)
+{
+    RM_ENGINE_TYPE localRmEngineType;
+    NvU32 rcErrorCode = pErrorContSmcSetting->rcErrorCode;
+
+    NV_ASSERT_OR_RETURN((pErrorContSmcSetting != NULL), NV_ERR_INVALID_ARGUMENT);
+
+    switch (loc.locType)
+    {
+        case NV_ERROR_CONT_LOCATION_TYPE_DRAM:
+            nvErrorLog_va((void *)pGpu,
+                          rcErrorCode,
+                          "%s: %s (0x%x,0x%x). physAddr: 0x%08llx RST: %s, D-RST: %s",
+                          rcErrorCode == ROBUST_CHANNEL_CONTAINED_ERROR ?
+                              ROBUST_CHANNEL_CONTAINED_ERROR_STR :
+                              ROBUST_CHANNEL_UNCONTAINED_ERROR_STR,
+                          ppErrContErrorIdStr[errorCode],
+                          loc.locInfo.dramLoc.partition,
+                          loc.locInfo.dramLoc.subPartition,
+                          loc.locInfo.dramLoc.physicalAddress,
+                          pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
+                          pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
+            break;
+
+        case NV_ERROR_CONT_LOCATION_TYPE_LTC:
+            nvErrorLog_va((void *)pGpu,
+                          rcErrorCode,
+                          "%s: %s (0x%x,0x%x). RST: %s, D-RST: %s",
+                          rcErrorCode == ROBUST_CHANNEL_CONTAINED_ERROR ?
+                              ROBUST_CHANNEL_CONTAINED_ERROR_STR :
+                              ROBUST_CHANNEL_UNCONTAINED_ERROR_STR,
+                          ppErrContErrorIdStr[errorCode],
+                          loc.locInfo.ltcLoc.partition,
+                          loc.locInfo.ltcLoc.slice,
+                          pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
+                          pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
+            break;
+
+        case NV_ERROR_CONT_LOCATION_TYPE_ENGINE:
+            NV_ASSERT_OR_RETURN(loc.locType == NV_ERROR_CONT_LOCATION_TYPE_ENGINE, NV_ERR_INVALID_ARGUMENT);
+            //
+            // If SMC is enabled, RM need to notify partition local engineId. Convert
+            // global ID to partition local if client has filled proper engineIDs
+            //
+            localRmEngineType = loc.locInfo.engineLoc.rmEngineId;
+            if (IS_MIG_IN_USE(pGpu) &&
+                RM_ENGINE_TYPE_IS_VALID(loc.locInfo.engineLoc.rmEngineId))
+            {
+                KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+                MIG_INSTANCE_REF ref;
+                NV_ASSERT_OK_OR_RETURN(kmigmgrGetMIGReferenceFromEngineType(pGpu,
+                                                                            pKernelMIGManager,
+                                                                            loc.locInfo.engineLoc.rmEngineId,
+                                                                            &ref));
+                // Override the engine type with the local engine idx
+                NV_ASSERT_OK_OR_RETURN(kmigmgrGetGlobalToLocalEngineType(pGpu,
+                                                                         pKernelMIGManager,
+                                                                         ref,
+                                                                         loc.locInfo.engineLoc.rmEngineId,
+                                                                         &localRmEngineType));
+            }
+
+            nvErrorLog_va((void *)pGpu,
+                          rcErrorCode,
+                          "%s: %s (0x%x). RST: %s, D-RST: %s",
+                          rcErrorCode == ROBUST_CHANNEL_CONTAINED_ERROR ?
+                              ROBUST_CHANNEL_CONTAINED_ERROR_STR :
+                              ROBUST_CHANNEL_UNCONTAINED_ERROR_STR,
+                          ppErrContErrorIdStr[errorCode],
+                          gpuGetNv2080EngineType(localRmEngineType),
+                          pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
+                          pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
+            break;
+
+        case NV_ERROR_CONT_LOCATION_TYPE_NONE:
+            nvErrorLog_va((void *)pGpu,
+                          rcErrorCode,
+                          "%s: %s. RST: %s, D-RST: %s",
+                          rcErrorCode == ROBUST_CHANNEL_CONTAINED_ERROR ?
+                              ROBUST_CHANNEL_CONTAINED_ERROR_STR :
+                              ROBUST_CHANNEL_UNCONTAINED_ERROR_STR,
+                          ppErrContErrorIdStr[errorCode],
+                          pErrorContSmcSetting->bGpuResetReqd ? "Yes" : "No",
+                          pErrorContSmcSetting->bGpuDrainAndResetReqd ? "Yes" : "No");
+            break;
+    }
+
+    return NV_OK;
+}
+
+/*!
+ * @brief Determine Error Containment RC code, print Xid, send NV2080_NOTIFIER*,
+ * mark device for reset or mark device for drain and reset as indicated in
+ * error containment state table (refer gpu/error_cont.h).
+ *
+ * @param[in]  pGpu              OBJGPU pointer
+ * @param[in]  errorCode         Error Containment error code
+ * @param[in]  loc               Location, SubLocation information
+ * @param[out] pRcErrorCode      RC Error code
+ *
+ * @returns NV_STATUS
+ */
+NV_STATUS
+gpuUpdateErrorContainmentState_GA100
+(
+    OBJGPU                 *pGpu,
+    NV_ERROR_CONT_ERR_ID    errorCode,
+    NV_ERROR_CONT_LOCATION  loc,
+    NvU32                  *pRcErrorCode
+)
+{
+    NvU32 tableIndex = 0;
+    NvBool bIsSmcEnabled = NV_FALSE;
+    NvU32 smcDisEnSettingIndex = 0;
+    NvU32 rcErrorCode = 0;
+    KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
+    NV_ERROR_CONT_SMC_DIS_EN_SETTING *pErrorContSmcSetting = NULL;
+
+    if (!gpuIsGlobalPoisonFuseEnabled(pGpu))
+    {
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    NV_ASSERT_OK_OR_RETURN(_gpuGetErrorContStateTableIndex_GA100(pGpu, errorCode, &tableIndex));
+
+    // Check if MIG GPU partitioning is enabled
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        bIsSmcEnabled = NV_TRUE;
+    }
+
+    // MIG Memory partitioning config entry index.
+    if (pKernelMIGManager != NULL && kmigmgrIsMIGMemPartitioningEnabled(pGpu, pKernelMIGManager))
+    {
+        smcDisEnSettingIndex = 1;
+    }
+
+    pErrorContSmcSetting = &(g_errContStateTable[tableIndex].smcDisEnSetting[smcDisEnSettingIndex]);
+
+    rcErrorCode = pErrorContSmcSetting->rcErrorCode;
+
+    // Pass RC Error code if user requested it.
+    if (pRcErrorCode != NULL)
+    {
+        *pRcErrorCode = rcErrorCode;
+    }
+
+    // Update partition attribution for this exception only if SMC is enabled.
+    if (pErrorContSmcSetting->bPrintSmcPartitionInfo && bIsSmcEnabled)
+    {
+        // Fall through on error.
+        gpuSetPartitionErrorAttribution_HAL(pGpu,
+                                            errorCode,
+                                            loc,
+                                            rcErrorCode);
+    }
+
+    // Print Xid only if Ampere Error Containment XIDs printing is enabled and rcErrorCode is valid
+    if (gpuIsAmpereErrorContainmentXidEnabled(pGpu) && rcErrorCode != NO_XID)
+    {
+        NV_ASSERT_OK_OR_RETURN(_gpuGenerateErrorLog_GA100(pGpu,
+                                                          errorCode,
+                                                          loc,
+                                                          pErrorContSmcSetting));
+    }
+
+    // Send NV2080_NOTIFIER*
+    if (pErrorContSmcSetting->nv2080Notifier != NO_NV2080_NOTIFIER)
+    {
+        NV_ASSERT_OK(_gpuNotifySubDeviceEventNotifier_GA100(pGpu,
+                                                            errorCode,
+                                                            loc,
+                                                            pErrorContSmcSetting->nv2080Notifier));
+    }
+
+    // Set the scratch bit to indicate the GPU needs to be reset.
+    if ((pErrorContSmcSetting->bGpuResetReqd) &&
+        (gpuMarkDeviceForReset(pGpu) != NV_OK))
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to mark GPU for pending reset");
+    }
+
+    // Set the scratch bit to indicate the GPU needs to be reset.
+    if (pErrorContSmcSetting->bGpuDrainAndResetReqd &&
+        gpuMarkDeviceForDrainAndReset(pGpu) != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Failed to mark GPU for pending drain and reset");
+    }
+
+    return NV_OK;
+}
+
+NvBool
+gpuCheckIfFbhubPoisonIntrPending_GA100
+(
+    OBJGPU *pGpu
+)
+{
+    return intrIsVectorPending_HAL(pGpu, GPU_GET_INTR(pGpu), NV_PFB_FBHUB_POISON_INTR_VECTOR_HW_INIT, NULL);
+}

@@ -28,6 +28,7 @@
 #include "kernel/gpu/bif/kernel_bif.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/gpu.h"
+#include "virtualization/hypervisor/hypervisor.h"
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
 #include "platform/chipset/chipset.h"
@@ -96,7 +97,7 @@ p2pGetCaps
     // The classes like NV50_P2P, NV50_THIRD_PARTY_P2P depends on direct P2P
     // connectivity, hence the check.
     //
-    if (!((connectivity == P2P_CONNECTIVITY_PCIE) ||
+    if (!((connectivity == P2P_CONNECTIVITY_PCIE_PROPRIETARY) ||
           (connectivity == P2P_CONNECTIVITY_PCIE_BAR1) ||
           (connectivity == P2P_CONNECTIVITY_NVLINK) ||
           (connectivity == P2P_CONNECTIVITY_C2C)))
@@ -345,6 +346,7 @@ _kp2pCapsGetStatusOverPcie
     NvU8 gpuP2PWriteCapsStatus = NV0000_P2P_CAPS_STATUS_OK;
     NvU32 lockedGpuMask = 0;
     NV_STATUS status = NV_OK;
+    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
 
     // Check if any overrides are enabled.
     if (_kp2pCapsCheckStatusOverridesForPcie(gpuMask, pP2PWriteCapStatus,
@@ -360,6 +362,16 @@ _kp2pCapsGetStatusOverPcie
         {
             return NV_OK;
         }
+    }
+
+    // Check for hypervisor oriented PCIe P2P overrides
+    if (pHypervisor &&
+        pHypervisor->bDetected &&
+        hypervisorPcieP2pDetection(pHypervisor, gpuMask))
+    {
+        *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+        *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+        goto done;
     }
 
     // PCI-E topology checks
@@ -760,7 +772,7 @@ p2pGetCapsStatus
             NvU8 bar1P2PWriteCapStatus = *pP2PWriteCapStatus;
             NvU8 bar1P2PReadCapStatus = *pP2PReadCapStatus;
 
-            *pConnectivity = P2P_CONNECTIVITY_PCIE;
+            *pConnectivity = P2P_CONNECTIVITY_PCIE_PROPRIETARY;
 
             if (_kp2pCapsGetStatusOverPcieBar1(gpuMask, &bar1P2PWriteCapStatus,
                     &bar1P2PReadCapStatus, bCommonSwitchFound) == NV_OK)

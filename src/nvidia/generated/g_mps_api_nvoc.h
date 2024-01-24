@@ -57,11 +57,16 @@ extern "C" {
 //
 // A client which has allocated MpsApi object is identified as MPS process.
 //
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_MPS_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct MpsApi {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct RmResource __nvoc_base_RmResource;
@@ -78,17 +83,17 @@ struct MpsApi {
     NvU32 (*__mpsApiGetRefCount__)(struct MpsApi *);
     NV_STATUS (*__mpsApiControlFilter__)(struct MpsApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__mpsApiAddAdditionalDependants__)(struct RsClient *, struct MpsApi *, RsResourceRef *);
-    NV_STATUS (*__mpsApiUnmapFrom__)(struct MpsApi *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__mpsApiControlSerialization_Prologue__)(struct MpsApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__mpsApiControl_Prologue__)(struct MpsApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__mpsApiCanCopy__)(struct MpsApi *);
     NV_STATUS (*__mpsApiUnmap__)(struct MpsApi *, struct CALL_CONTEXT *, RsCpuMapping *);
+    NvBool (*__mpsApiIsPartialUnmapSupported__)(struct MpsApi *);
     void (*__mpsApiPreDestruct__)(struct MpsApi *);
     NV_STATUS (*__mpsApiMapTo__)(struct MpsApi *, RS_RES_MAP_TO_PARAMS *);
     NV_STATUS (*__mpsApiIsDuplicate__)(struct MpsApi *, NvHandle, NvBool *);
     void (*__mpsApiControlSerialization_Epilogue__)(struct MpsApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     void (*__mpsApiControl_Epilogue__)(struct MpsApi *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__mpsApiControlLookup__)(struct MpsApi *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
+    NV_STATUS (*__mpsApiUnmapFrom__)(struct MpsApi *, RS_RES_UNMAP_FROM_PARAMS *);
     NV_STATUS (*__mpsApiMap__)(struct MpsApi *, struct CALL_CONTEXT *, RS_CPU_MAP_PARAMS *, RsCpuMapping *);
     NvBool (*__mpsApiAccessCallback__)(struct MpsApi *, struct RsClient *, void *, RsAccessRight);
 };
@@ -129,17 +134,17 @@ NV_STATUS __nvoc_objCreate_MpsApi(MpsApi**, Dynamic*, NvU32, CALL_CONTEXT * arg_
 #define mpsApiGetRefCount(pResource) mpsApiGetRefCount_DISPATCH(pResource)
 #define mpsApiControlFilter(pResource, pCallContext, pParams) mpsApiControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define mpsApiAddAdditionalDependants(pClient, pResource, pReference) mpsApiAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
-#define mpsApiUnmapFrom(pResource, pParams) mpsApiUnmapFrom_DISPATCH(pResource, pParams)
 #define mpsApiControlSerialization_Prologue(pResource, pCallContext, pParams) mpsApiControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define mpsApiControl_Prologue(pResource, pCallContext, pParams) mpsApiControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define mpsApiCanCopy(pResource) mpsApiCanCopy_DISPATCH(pResource)
 #define mpsApiUnmap(pResource, pCallContext, pCpuMapping) mpsApiUnmap_DISPATCH(pResource, pCallContext, pCpuMapping)
+#define mpsApiIsPartialUnmapSupported(pResource) mpsApiIsPartialUnmapSupported_DISPATCH(pResource)
 #define mpsApiPreDestruct(pResource) mpsApiPreDestruct_DISPATCH(pResource)
 #define mpsApiMapTo(pResource, pParams) mpsApiMapTo_DISPATCH(pResource, pParams)
 #define mpsApiIsDuplicate(pResource, hMemory, pDuplicate) mpsApiIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define mpsApiControlSerialization_Epilogue(pResource, pCallContext, pParams) mpsApiControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define mpsApiControl_Epilogue(pResource, pCallContext, pParams) mpsApiControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define mpsApiControlLookup(pResource, pParams, ppEntry) mpsApiControlLookup_DISPATCH(pResource, pParams, ppEntry)
+#define mpsApiUnmapFrom(pResource, pParams) mpsApiUnmapFrom_DISPATCH(pResource, pParams)
 #define mpsApiMap(pResource, pCallContext, pParams, pCpuMapping) mpsApiMap_DISPATCH(pResource, pCallContext, pParams, pCpuMapping)
 #define mpsApiAccessCallback(pResource, pInvokingClient, pAllocParams, accessRight) mpsApiAccessCallback_DISPATCH(pResource, pInvokingClient, pAllocParams, accessRight)
 static inline NvBool mpsApiShareCallback_DISPATCH(struct MpsApi *pResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {
@@ -174,10 +179,6 @@ static inline void mpsApiAddAdditionalDependants_DISPATCH(struct RsClient *pClie
     pResource->__mpsApiAddAdditionalDependants__(pClient, pResource, pReference);
 }
 
-static inline NV_STATUS mpsApiUnmapFrom_DISPATCH(struct MpsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
-    return pResource->__mpsApiUnmapFrom__(pResource, pParams);
-}
-
 static inline NV_STATUS mpsApiControlSerialization_Prologue_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pResource->__mpsApiControlSerialization_Prologue__(pResource, pCallContext, pParams);
 }
@@ -192,6 +193,10 @@ static inline NvBool mpsApiCanCopy_DISPATCH(struct MpsApi *pResource) {
 
 static inline NV_STATUS mpsApiUnmap_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RsCpuMapping *pCpuMapping) {
     return pResource->__mpsApiUnmap__(pResource, pCallContext, pCpuMapping);
+}
+
+static inline NvBool mpsApiIsPartialUnmapSupported_DISPATCH(struct MpsApi *pResource) {
+    return pResource->__mpsApiIsPartialUnmapSupported__(pResource);
 }
 
 static inline void mpsApiPreDestruct_DISPATCH(struct MpsApi *pResource) {
@@ -214,8 +219,8 @@ static inline void mpsApiControl_Epilogue_DISPATCH(struct MpsApi *pResource, str
     pResource->__mpsApiControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS mpsApiControlLookup_DISPATCH(struct MpsApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__mpsApiControlLookup__(pResource, pParams, ppEntry);
+static inline NV_STATUS mpsApiUnmapFrom_DISPATCH(struct MpsApi *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
+    return pResource->__mpsApiUnmapFrom__(pResource, pParams);
 }
 
 static inline NV_STATUS mpsApiMap_DISPATCH(struct MpsApi *pResource, struct CALL_CONTEXT *pCallContext, RS_CPU_MAP_PARAMS *pParams, RsCpuMapping *pCpuMapping) {

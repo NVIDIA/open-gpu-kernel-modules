@@ -899,8 +899,11 @@ kbusMapBar2Aperture_VBAR2
     //
     // Fail the mapping when BAR2 access to CPR vidmem is blocked (for HCC)
     // It is however legal to allow non-CPR vidmem to be mapped to BAR2
+    // Certain mapping requests which arrive with a specific flag set are allowed
+    // to go through only in HCC devtools mode.
     //
     if (kbusIsBarAccessBlocked(pKernelBus) &&
+       (!gpuIsCCDevToolsModeEnabled(pGpu) || !(flags & TRANSFER_FLAGS_PREFER_PROCESSOR)) &&
        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY))
     {
         os_dump_stack();
@@ -1020,8 +1023,11 @@ kbusUnmapBar2ApertureWithFlags_VBAR2
     //
     // Fail the mapping when BAR2 access to CPR vidmem is blocked (for HCC)
     // It is however legal to allow non-CPR vidmem to be mapped to BAR2
+    // Certain mapping requests which arrive with a specific flag set are allowed
+    // to go through only in HCC devtools mode.
     //
     if (kbusIsBarAccessBlocked(pKernelBus) &&
+       (!gpuIsCCDevToolsModeEnabled(pGpu) || !(flags & TRANSFER_FLAGS_PREFER_PROCESSOR)) &&
        !memdescGetFlag(pMemDesc, MEMDESC_FLAGS_ALLOC_IN_UNPROTECTED_MEMORY))
     {
         NV_ASSERT(0);
@@ -1207,3 +1213,46 @@ void kbusUnmapCpuInvisibleBar2Aperture_VBAR2
     pVASpaceHiddenHeap->eheapFree(pVASpaceHiddenHeap, vAddr);
 }
 
+/*
+ * @brief This function simply rewrites the PTEs for an already
+ *        existing mapping cached in the usedMapList.
+ *
+ * This is currently used for updating the PTEs in the BAR2 page
+ * tables at the top of FB after bootstrapping is done. The PTEs
+ * for this mapping may be already existing in the page tables at
+ * the bottom of FB. But those PTEs will be discarded once migration
+ * to the page tables at the top of FB is done. So, before switching
+ * to the new page tables, we should be rewrite the PTEs so that the
+ * cached mapping does not become invalid. The *only* use case currently
+ * is the CPU pointer to the new page tables at the top of FB.
+ *
+ * @param[in] pGpu        OBJGPU pointer
+ * @param[in] pKernelBus  KernelBus pointer
+ * @param[in] pMemDesc    MEMORY_DESCRIPTOR pointer.
+ *
+ * @return NV_OK if operation is OK
+ *         Error otherwise.
+ */
+NV_STATUS
+kbusRewritePTEsForExistingMapping_VBAR2
+(
+    OBJGPU            *pGpu,
+    KernelBus         *pKernelBus,
+    PMEMORY_DESCRIPTOR pMemDesc
+)
+{
+    VirtualBar2MapListIter it;
+
+    it = listIterAll(&pKernelBus->virtualBar2[GPU_GFID_PF].usedMapList);
+    while (listIterNext(&it))
+    {
+        VirtualBar2MapEntry *pMap = it.pValue;
+
+        if (pMap->pMemDesc == pMemDesc)
+        {
+            return kbusUpdateRmAperture_HAL(pGpu, pKernelBus, pMemDesc, pMap->vAddr,
+                                            pMemDesc->Size, 0);
+        }
+    }
+    return NV_ERR_INVALID_OPERATION;
+}

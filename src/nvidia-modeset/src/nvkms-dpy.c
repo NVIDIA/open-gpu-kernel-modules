@@ -71,7 +71,7 @@ static NvBool ValidateEdid                (const NVDpyEvoRec *pDpyEvo,
                                            const NvBool ignoreEdidChecksum);
 static void LogEdid                       (NVDpyEvoPtr pDpyEvo,
                                            NVEvoInfoStringPtr pInfoString);
-static void ClearEdid                     (NVDpyEvoPtr pDpyEvo);
+static void ClearEdid                     (NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm);
 static void ClearCustomEdid               (const NVDpyEvoRec *pDpyEvo);
 static void WriteEdidToResman             (const NVDpyEvoRec *pDpyEvo,
                                            const NVEdidRec *pEdid);
@@ -90,14 +90,14 @@ static void AssignDpyEvoName              (NVDpyEvoPtr pDpyEvo);
 static NvBool IsConnectorTMDS             (NVConnectorEvoPtr);
 
 
-static void DpyDisconnectEvo(NVDpyEvoPtr pDpyEvo)
+static void DpyDisconnectEvo(NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm)
 {
     NVDispEvoPtr pDispEvo = pDpyEvo->pDispEvo;
 
     pDispEvo->connectedDisplays =
         nvDpyIdListMinusDpyId(pDispEvo->connectedDisplays, pDpyEvo->id);
 
-    ClearEdid(pDpyEvo);
+    ClearEdid(pDpyEvo, bSendHdmiCapsToRm);
 }
 
 static NvBool DpyConnectEvo(
@@ -353,6 +353,7 @@ static void ApplyNewEdid(
     NVDpyEvoPtr pDpyEvo,
     const NVEdidRec *pEdid,
     const NVParsedEdidEvoRec *pParsedEdid,
+    const NvBool bSendHdmiCapsToRm,
     NVEvoInfoStringPtr pInfoString)
 {
     if (pDpyEvo->edid.buffer != NULL) {
@@ -394,7 +395,9 @@ static void ApplyNewEdid(
         DpyAssignColorSpaceCaps(pDpyEvo, pInfoString);
     }
 
-    nvUpdateHdmiCaps(pDpyEvo);
+    if (bSendHdmiCapsToRm) {
+        nvSendHdmiCapsToRm(pDpyEvo);
+    }
 
     nvDpyProbeMaxPixelClock(pDpyEvo);
 
@@ -656,7 +659,8 @@ static void ReadAndApplyEdidEvo(
          * worrying that this request has different parameters (like CustomEdid
          * or mode validation overrides).
          */
-        ApplyNewEdid(pDpyEvo, &edid, pParsedEdid, &infoString);
+        ApplyNewEdid(pDpyEvo, &edid, pParsedEdid, TRUE /* bSendHdmiCapsToRm */,
+                     &infoString);
     } else {
         nvFree(edid.buffer);
     }
@@ -1917,14 +1921,15 @@ static void LogEdid(NVDpyEvoPtr pDpyEvo, NVEvoInfoStringPtr pInfoString)
  * structure.
  */
 
-static void ClearEdid(NVDpyEvoPtr pDpyEvo)
+static void ClearEdid(NVDpyEvoPtr pDpyEvo, const NvBool bSendHdmiCapsToRm)
 {
     NVEdidRec edid = { };
     NVEvoInfoStringRec infoString;
     nvInitInfoString(&infoString, NULL, 0);
 
     if (EdidHasChanged(pDpyEvo, &edid, NULL)) {
-        ApplyNewEdid(pDpyEvo, &edid, NULL, &infoString);
+        ApplyNewEdid(pDpyEvo, &edid, NULL,
+                     bSendHdmiCapsToRm, &infoString);
     }
 }
 
@@ -2358,7 +2363,7 @@ void nvFreeDpyEvo(NVDispEvoPtr pDispEvo, NVDpyEvoPtr pDpyEvo)
 {
     nvCancelSDRTransitionTimer(pDpyEvo);
 
-    DpyDisconnectEvo(pDpyEvo);
+    DpyDisconnectEvo(pDpyEvo, FALSE /* bSendHdmiCapsToRm */);
 
     // Let the DP library host implementation handle deleting a pDpy as if the
     // library had notified it of a lost device.
@@ -2952,7 +2957,7 @@ NvBool nvDpyGetDynamicData(
             return FALSE;
         }
     } else {
-        DpyDisconnectEvo(pDpyEvo);
+        DpyDisconnectEvo(pDpyEvo, TRUE /* bSendHdmiCapsToRm */);
     }
 
     if (nvConnectorUsesDPLib(pConnectorEvo)) {

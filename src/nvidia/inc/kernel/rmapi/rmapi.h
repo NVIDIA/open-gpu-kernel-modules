@@ -229,12 +229,12 @@ struct _RM_API
                                 NvU64 offset, NvU64 length, NvU32 flags, NvU64 *pDmaOffset, API_SECURITY_INFO *pSecInfo);
 
     // Unmap dma memory with default security attributes
-    NV_STATUS (*Unmap)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                       NvU32 flags, NvU64 dmaOffset);
+    NV_STATUS (*Unmap)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx,
+                       NvU32 flags, NvU64 dmaOffset, NvU64 size);
 
     // Unmap dma memory
-    NV_STATUS (*UnmapWithSecInfo)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx, NvHandle hMemory,
-                                  NvU32 flags, NvU64 dmaOffset, API_SECURITY_INFO *pSecInfo);
+    NV_STATUS (*UnmapWithSecInfo)(struct _RM_API *pRmApi, NvHandle hClient, NvHandle hDevice, NvHandle hMemCtx,
+                                  NvU32 flags, NvU64 dmaOffset, NvU64 size, API_SECURITY_INFO *pSecInfo);
 
     API_SECURITY_INFO  defaultSecInfo;
     NvBool             bHasDefaultSecInfo;

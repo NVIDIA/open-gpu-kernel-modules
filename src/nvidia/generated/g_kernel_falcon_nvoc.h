@@ -75,11 +75,16 @@ typedef struct KernelFalconEngineConfig {
 /*!
  * Base class for booting Falcon cores (including RISC-V)
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_FALCON_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct KernelFalcon {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct KernelCrashCatEngine __nvoc_base_KernelCrashCatEngine;
@@ -88,12 +93,20 @@ struct KernelFalcon {
     struct KernelFalcon *__nvoc_pbase_KernelFalcon;
     NvU32 (*__kflcnRegRead__)(struct OBJGPU *, struct KernelFalcon *, NvU32);
     void (*__kflcnRegWrite__)(struct OBJGPU *, struct KernelFalcon *, NvU32, NvU32);
+    NvU32 (*__kflcnRiscvRegRead__)(struct OBJGPU *, struct KernelFalcon *, NvU32);
+    void (*__kflcnRiscvRegWrite__)(struct OBJGPU *, struct KernelFalcon *, NvU32, NvU32);
+    NvBool (*__kflcnIsRiscvCpuEnabled__)(struct OBJGPU *, struct KernelFalcon *);
     NvBool (*__kflcnIsRiscvActive__)(struct OBJGPU *, struct KernelFalcon *);
     void (*__kflcnRiscvProgramBcr__)(struct OBJGPU *, struct KernelFalcon *, NvBool);
     void (*__kflcnSwitchToFalcon__)(struct OBJGPU *, struct KernelFalcon *);
     NV_STATUS (*__kflcnResetHw__)(struct OBJGPU *, struct KernelFalcon *);
+    void (*__kflcnReset__)(struct OBJGPU *, struct KernelFalcon *);
+    void (*__kflcnResetIntoRiscv__)(struct OBJGPU *, struct KernelFalcon *);
+    void (*__kflcnStartCpu__)(struct OBJGPU *, struct KernelFalcon *);
+    void (*__kflcnDisableCtxReq__)(struct OBJGPU *, struct KernelFalcon *);
     NV_STATUS (*__kflcnPreResetWait__)(struct OBJGPU *, struct KernelFalcon *);
     NV_STATUS (*__kflcnWaitForResetToFinish__)(struct OBJGPU *, struct KernelFalcon *);
+    NV_STATUS (*__kflcnWaitForHalt__)(struct OBJGPU *, struct KernelFalcon *, NvU32, NvU32);
     NvU32 (*__kflcnReadIntrStatus__)(struct OBJGPU *, struct KernelFalcon *);
     void (*__kflcnIntrRetrigger__)(struct OBJGPU *, struct KernelFalcon *);
     NvU32 (*__kflcnMaskImemAddr__)(struct OBJGPU *, struct KernelFalcon *, NvU32);
@@ -154,6 +167,12 @@ NV_STATUS __nvoc_objCreate_KernelFalcon(KernelFalcon**, Dynamic*, NvU32);
 #define kflcnRegRead_HAL(pGpu, pKernelFlcn, offset) kflcnRegRead_DISPATCH(pGpu, pKernelFlcn, offset)
 #define kflcnRegWrite(pGpu, pKernelFlcn, offset, data) kflcnRegWrite_DISPATCH(pGpu, pKernelFlcn, offset, data)
 #define kflcnRegWrite_HAL(pGpu, pKernelFlcn, offset, data) kflcnRegWrite_DISPATCH(pGpu, pKernelFlcn, offset, data)
+#define kflcnRiscvRegRead(pGpu, pKernelFlcn, offset) kflcnRiscvRegRead_DISPATCH(pGpu, pKernelFlcn, offset)
+#define kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, offset) kflcnRiscvRegRead_DISPATCH(pGpu, pKernelFlcn, offset)
+#define kflcnRiscvRegWrite(pGpu, pKernelFlcn, offset, data) kflcnRiscvRegWrite_DISPATCH(pGpu, pKernelFlcn, offset, data)
+#define kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, offset, data) kflcnRiscvRegWrite_DISPATCH(pGpu, pKernelFlcn, offset, data)
+#define kflcnIsRiscvCpuEnabled(pGpu, pKernelFlcn) kflcnIsRiscvCpuEnabled_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnIsRiscvCpuEnabled_HAL(pGpu, pKernelFlcn) kflcnIsRiscvCpuEnabled_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnIsRiscvActive(pGpu, pKernelFlcn) kflcnIsRiscvActive_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnIsRiscvActive_HAL(pGpu, pKernelFlcn) kflcnIsRiscvActive_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnRiscvProgramBcr(pGpu, pKernelFlcn, bBRFetch) kflcnRiscvProgramBcr_DISPATCH(pGpu, pKernelFlcn, bBRFetch)
@@ -161,10 +180,20 @@ NV_STATUS __nvoc_objCreate_KernelFalcon(KernelFalcon**, Dynamic*, NvU32);
 #define kflcnSwitchToFalcon(pGpu, pKernelFlcn) kflcnSwitchToFalcon_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnSwitchToFalcon_HAL(pGpu, pKernelFlcn) kflcnSwitchToFalcon_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnResetHw(pGpu, pKernelFlcn) kflcnResetHw_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnReset(pGpu, pKernelFlcn) kflcnReset_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnReset_HAL(pGpu, pKernelFlcn) kflcnReset_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnResetIntoRiscv(pGpu, pKernelFlcn) kflcnResetIntoRiscv_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnResetIntoRiscv_HAL(pGpu, pKernelFlcn) kflcnResetIntoRiscv_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnStartCpu(pGpu, pKernelFlcn) kflcnStartCpu_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnStartCpu_HAL(pGpu, pKernelFlcn) kflcnStartCpu_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnDisableCtxReq(pGpu, pKernelFlcn) kflcnDisableCtxReq_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnDisableCtxReq_HAL(pGpu, pKernelFlcn) kflcnDisableCtxReq_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnPreResetWait(pGpu, pKernelFlcn) kflcnPreResetWait_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnPreResetWait_HAL(pGpu, pKernelFlcn) kflcnPreResetWait_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnWaitForResetToFinish(pGpu, pKernelFlcn) kflcnWaitForResetToFinish_DISPATCH(pGpu, pKernelFlcn)
 #define kflcnWaitForResetToFinish_HAL(pGpu, pKernelFlcn) kflcnWaitForResetToFinish_DISPATCH(pGpu, pKernelFlcn)
+#define kflcnWaitForHalt(pGpu, pKernelFlcn, timeoutUs, flags) kflcnWaitForHalt_DISPATCH(pGpu, pKernelFlcn, timeoutUs, flags)
+#define kflcnWaitForHalt_HAL(pGpu, pKernelFlcn, timeoutUs, flags) kflcnWaitForHalt_DISPATCH(pGpu, pKernelFlcn, timeoutUs, flags)
 #define kflcnReadIntrStatus(pGpu, pKerneFlcn) kflcnReadIntrStatus_DISPATCH(pGpu, pKerneFlcn)
 #define kflcnReadIntrStatus_HAL(pGpu, pKerneFlcn) kflcnReadIntrStatus_DISPATCH(pGpu, pKerneFlcn)
 #define kflcnIntrRetrigger(pGpu, pKernelFlcn) kflcnIntrRetrigger_DISPATCH(pGpu, pKernelFlcn)
@@ -185,127 +214,11 @@ NV_STATUS __nvoc_objCreate_KernelFalcon(KernelFalcon**, Dynamic*, NvU32);
 #define kflcnMapBufferDescriptor(arg0, pBufDesc) kflcnMapBufferDescriptor_DISPATCH(arg0, pBufDesc)
 #define kflcnUnmapBufferDescriptor(arg0, pBufDesc) kflcnUnmapBufferDescriptor_DISPATCH(arg0, pBufDesc)
 #define kflcnReadDmem(arg0, offset, size, pBuf) kflcnReadDmem_DISPATCH(arg0, offset, size, pBuf)
-NvU32 kflcnRiscvRegRead_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset);
-
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline NvU32 kflcnRiscvRegRead(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-    return 0;
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnRiscvRegRead(pGpu, pKernelFlcn, offset) kflcnRiscvRegRead_TU102(pGpu, pKernelFlcn, offset)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define kflcnRiscvRegRead_HAL(pGpu, pKernelFlcn, offset) kflcnRiscvRegRead(pGpu, pKernelFlcn, offset)
-
-void kflcnRiscvRegWrite_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset, NvU32 data);
-
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline void kflcnRiscvRegWrite(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset, NvU32 data) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnRiscvRegWrite(pGpu, pKernelFlcn, offset, data) kflcnRiscvRegWrite_TU102(pGpu, pKernelFlcn, offset, data)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define kflcnRiscvRegWrite_HAL(pGpu, pKernelFlcn, offset, data) kflcnRiscvRegWrite(pGpu, pKernelFlcn, offset, data)
-
-NvBool kflcnIsRiscvCpuEnabled_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
-
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline NvBool kflcnIsRiscvCpuEnabled(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-    return NV_FALSE;
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnIsRiscvCpuEnabled(pGpu, pKernelFlcn) kflcnIsRiscvCpuEnabled_TU102(pGpu, pKernelFlcn)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define kflcnIsRiscvCpuEnabled_HAL(pGpu, pKernelFlcn) kflcnIsRiscvCpuEnabled(pGpu, pKernelFlcn)
-
-void kflcnReset_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
-
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline void kflcnReset(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnReset(pGpu, pKernelFlcn) kflcnReset_TU102(pGpu, pKernelFlcn)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define kflcnReset_HAL(pGpu, pKernelFlcn) kflcnReset(pGpu, pKernelFlcn)
-
-void kflcnSecureReset_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
-
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline void kflcnSecureReset(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnSecureReset(pGpu, pKernelFlcn) kflcnSecureReset_TU102(pGpu, pKernelFlcn)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define kflcnSecureReset_HAL(pGpu, pKernelFlcn) kflcnSecureReset(pGpu, pKernelFlcn)
-
-void kflcnEnable_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvBool bEnable);
-
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline void kflcnEnable(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvBool bEnable) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnEnable(pGpu, pKernelFlcn, bEnable) kflcnEnable_TU102(pGpu, pKernelFlcn, bEnable)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define kflcnEnable_HAL(pGpu, pKernelFlcn, bEnable) kflcnEnable(pGpu, pKernelFlcn, bEnable)
-
-void kflcnStartCpu_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
-
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline void kflcnStartCpu(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnStartCpu(pGpu, pKernelFlcn) kflcnStartCpu_TU102(pGpu, pKernelFlcn)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define kflcnStartCpu_HAL(pGpu, pKernelFlcn) kflcnStartCpu(pGpu, pKernelFlcn)
-
-void kflcnDisableCtxReq_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
-
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline void kflcnDisableCtxReq(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnDisableCtxReq(pGpu, pKernelFlcn) kflcnDisableCtxReq_TU102(pGpu, pKernelFlcn)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define kflcnDisableCtxReq_HAL(pGpu, pKernelFlcn) kflcnDisableCtxReq(pGpu, pKernelFlcn)
-
-NV_STATUS kflcnWaitForHalt_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 timeoutUs, NvU32 flags);
-
-
-#ifdef __nvoc_kernel_falcon_h_disabled
-static inline NV_STATUS kflcnWaitForHalt(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 timeoutUs, NvU32 flags) {
-    NV_ASSERT_FAILED_PRECOMP("KernelFalcon was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_falcon_h_disabled
-#define kflcnWaitForHalt(pGpu, pKernelFlcn, timeoutUs, flags) kflcnWaitForHalt_TU102(pGpu, pKernelFlcn, timeoutUs, flags)
-#endif //__nvoc_kernel_falcon_h_disabled
-
-#define kflcnWaitForHalt_HAL(pGpu, pKernelFlcn, timeoutUs, flags) kflcnWaitForHalt(pGpu, pKernelFlcn, timeoutUs, flags)
-
 NvU32 kflcnRegRead_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset);
+
+static inline NvU32 kflcnRegRead_474d46(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
 
 static inline NvU32 kflcnRegRead_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset) {
     return pKernelFlcn->__kflcnRegRead__(pGpu, pKernelFlcn, offset);
@@ -313,13 +226,51 @@ static inline NvU32 kflcnRegRead_DISPATCH(struct OBJGPU *pGpu, struct KernelFalc
 
 void kflcnRegWrite_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset, NvU32 data);
 
+static inline void kflcnRegWrite_f2d351(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset, NvU32 data) {
+    NV_ASSERT_PRECOMP(0);
+}
+
 static inline void kflcnRegWrite_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset, NvU32 data) {
     pKernelFlcn->__kflcnRegWrite__(pGpu, pKernelFlcn, offset, data);
+}
+
+NvU32 kflcnRiscvRegRead_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset);
+
+static inline NvU32 kflcnRiscvRegRead_474d46(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+static inline NvU32 kflcnRiscvRegRead_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset) {
+    return pKernelFlcn->__kflcnRiscvRegRead__(pGpu, pKernelFlcn, offset);
+}
+
+void kflcnRiscvRegWrite_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset, NvU32 data);
+
+static inline void kflcnRiscvRegWrite_f2d351(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset, NvU32 data) {
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void kflcnRiscvRegWrite_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 offset, NvU32 data) {
+    pKernelFlcn->__kflcnRiscvRegWrite__(pGpu, pKernelFlcn, offset, data);
+}
+
+NvBool kflcnIsRiscvCpuEnabled_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
+
+static inline NvBool kflcnIsRiscvCpuEnabled_108313(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, ((NvBool)(0 != 0)));
+}
+
+static inline NvBool kflcnIsRiscvCpuEnabled_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    return pKernelFlcn->__kflcnIsRiscvCpuEnabled__(pGpu, pKernelFlcn);
 }
 
 NvBool kflcnIsRiscvActive_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
 
 NvBool kflcnIsRiscvActive_GA10X(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
+
+static inline NvBool kflcnIsRiscvActive_108313(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, ((NvBool)(0 != 0)));
+}
 
 static inline NvBool kflcnIsRiscvActive_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
     return pKernelFlcn->__kflcnIsRiscvActive__(pGpu, pKernelFlcn);
@@ -341,6 +292,10 @@ static inline void kflcnSwitchToFalcon_b3696a(struct OBJGPU *pGpu, struct Kernel
     return;
 }
 
+static inline void kflcnSwitchToFalcon_f2d351(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_PRECOMP(0);
+}
+
 static inline void kflcnSwitchToFalcon_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
     pKernelFlcn->__kflcnSwitchToFalcon__(pGpu, pKernelFlcn);
 }
@@ -349,10 +304,56 @@ static inline NV_STATUS kflcnResetHw_DISPATCH(struct OBJGPU *pGpu, struct Kernel
     return pKernelFlcn->__kflcnResetHw__(pGpu, pKernelFlcn);
 }
 
+void kflcnReset_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
+
+static inline void kflcnReset_f2d351(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void kflcnReset_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    pKernelFlcn->__kflcnReset__(pGpu, pKernelFlcn);
+}
+
+void kflcnResetIntoRiscv_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
+
+void kflcnResetIntoRiscv_GA102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
+
+static inline void kflcnResetIntoRiscv_f2d351(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void kflcnResetIntoRiscv_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    pKernelFlcn->__kflcnResetIntoRiscv__(pGpu, pKernelFlcn);
+}
+
+void kflcnStartCpu_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
+
+static inline void kflcnStartCpu_f2d351(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void kflcnStartCpu_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    pKernelFlcn->__kflcnStartCpu__(pGpu, pKernelFlcn);
+}
+
+void kflcnDisableCtxReq_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
+
+static inline void kflcnDisableCtxReq_f2d351(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_PRECOMP(0);
+}
+
+static inline void kflcnDisableCtxReq_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    pKernelFlcn->__kflcnDisableCtxReq__(pGpu, pKernelFlcn);
+}
+
 NV_STATUS kflcnPreResetWait_GA10X(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
 
 static inline NV_STATUS kflcnPreResetWait_56cd7a(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
     return NV_OK;
+}
+
+static inline NV_STATUS kflcnPreResetWait_5baef9(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
 }
 
 static inline NV_STATUS kflcnPreResetWait_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
@@ -363,13 +364,31 @@ NV_STATUS kflcnWaitForResetToFinish_GA102(struct OBJGPU *pGpu, struct KernelFalc
 
 NV_STATUS kflcnWaitForResetToFinish_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn);
 
+static inline NV_STATUS kflcnWaitForResetToFinish_5baef9(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
 static inline NV_STATUS kflcnWaitForResetToFinish_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
     return pKernelFlcn->__kflcnWaitForResetToFinish__(pGpu, pKernelFlcn);
+}
+
+NV_STATUS kflcnWaitForHalt_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 timeoutUs, NvU32 flags);
+
+static inline NV_STATUS kflcnWaitForHalt_5baef9(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 timeoutUs, NvU32 flags) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, NV_ERR_NOT_SUPPORTED);
+}
+
+static inline NV_STATUS kflcnWaitForHalt_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 timeoutUs, NvU32 flags) {
+    return pKernelFlcn->__kflcnWaitForHalt__(pGpu, pKernelFlcn, timeoutUs, flags);
 }
 
 NvU32 kflcnReadIntrStatus_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKerneFlcn);
 
 NvU32 kflcnReadIntrStatus_GA102(struct OBJGPU *pGpu, struct KernelFalcon *pKerneFlcn);
+
+static inline NvU32 kflcnReadIntrStatus_474d46(struct OBJGPU *pGpu, struct KernelFalcon *pKerneFlcn) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
 
 static inline NvU32 kflcnReadIntrStatus_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKerneFlcn) {
     return pKerneFlcn->__kflcnReadIntrStatus__(pGpu, pKerneFlcn);
@@ -381,6 +400,10 @@ static inline void kflcnIntrRetrigger_b3696a(struct OBJGPU *pGpu, struct KernelF
     return;
 }
 
+static inline void kflcnIntrRetrigger_f2d351(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
+    NV_ASSERT_PRECOMP(0);
+}
+
 static inline void kflcnIntrRetrigger_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn) {
     pKernelFlcn->__kflcnIntrRetrigger__(pGpu, pKernelFlcn);
 }
@@ -389,6 +412,10 @@ NvU32 kflcnMaskImemAddr_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelF
 
 NvU32 kflcnMaskImemAddr_GA100(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 addr);
 
+static inline NvU32 kflcnMaskImemAddr_474d46(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 addr) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
 static inline NvU32 kflcnMaskImemAddr_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 addr) {
     return pKernelFlcn->__kflcnMaskImemAddr__(pGpu, pKernelFlcn, addr);
 }
@@ -396,6 +423,10 @@ static inline NvU32 kflcnMaskImemAddr_DISPATCH(struct OBJGPU *pGpu, struct Kerne
 NvU32 kflcnMaskDmemAddr_TU102(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 addr);
 
 NvU32 kflcnMaskDmemAddr_GA100(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 addr);
+
+static inline NvU32 kflcnMaskDmemAddr_474d46(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 addr) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
 
 static inline NvU32 kflcnMaskDmemAddr_DISPATCH(struct OBJGPU *pGpu, struct KernelFalcon *pKernelFlcn, NvU32 addr) {
     return pKernelFlcn->__kflcnMaskDmemAddr__(pGpu, pKernelFlcn, addr);
@@ -488,11 +519,16 @@ struct KernelFalcon *kflcnGetKernelFalconForEngine_IMPL(struct OBJGPU *pGpu, ENG
 
 
 // Basic implementation of KernelFalcon that can be instantiated.
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_KERNEL_FALCON_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct GenericKernelFalcon {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct KernelFalcon __nvoc_base_KernelFalcon;
@@ -580,9 +616,9 @@ static inline NV_STATUS gkflcnResetHw_DISPATCH(struct OBJGPU *pGpu, struct Gener
     return pGenKernFlcn->__gkflcnResetHw__(pGpu, pGenKernFlcn);
 }
 
-void gkflcnRegisterIntrService_IMPL(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[168]);
+void gkflcnRegisterIntrService_IMPL(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[171]);
 
-static inline void gkflcnRegisterIntrService_DISPATCH(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[168]) {
+static inline void gkflcnRegisterIntrService_DISPATCH(struct OBJGPU *arg0, struct GenericKernelFalcon *arg1, IntrServiceRecord arg2[171]) {
     arg1->__gkflcnRegisterIntrService__(arg0, arg1, arg2);
 }
 

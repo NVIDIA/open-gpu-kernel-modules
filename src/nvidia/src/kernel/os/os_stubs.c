@@ -122,16 +122,6 @@ NV_STATUS osCallACPI_BCL(OBJGPU *pGpu, NvU32 acpiId, NvU32 *pOut, NvU16 *size)
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS osCallACPI_ON(OBJGPU *pGpu, NvU32 uAcpiId)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
-NV_STATUS osCallACPI_OFF(OBJGPU *pGpu, NvU32 uAcpiId)
-{
-    return NV_ERR_NOT_SUPPORTED;
-}
-
 NV_STATUS osCallACPI_OPTM_GPUON(OBJGPU *pGpu)
 {
     return NV_ERR_NOT_SUPPORTED;
@@ -428,6 +418,28 @@ NvBool
 osTegraSocGetHdcpEnabled(OS_GPU_INFO *pOsGpuInfo)
 {
     return NV_TRUE;
+}
+
+NvBool
+osTegraSocIsSimNetlistNet07
+(
+    OS_GPU_INFO *pOsGpuInfo
+)
+{
+    return NV_FALSE;
+}
+
+void
+osTegraGetDispSMMUStreamIds
+(
+    OS_GPU_INFO *pOsGpuInfo,
+    NvU32       *dispIsoStreamId,
+    NvU32       *dispNisoStreamId
+)
+{
+    /* NV_U32_MAX is used to indicate that the platform does not support SMMU */
+    *dispIsoStreamId = NV_U32_MAX;
+    *dispNisoStreamId = NV_U32_MAX;
 }
 #endif
 

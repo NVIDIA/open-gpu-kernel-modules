@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2007-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2007-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -119,6 +119,9 @@ typedef struct NV906F_CTRL_GET_CLASS_ENGINEID_PARAMS {
  * resetReason
  *   Specifies reason to reset a channel.
  *
+ * bIsRcPending
+ *   Specifies if an RC is pending on the channel
+ *
  * Possible status values returned are:
  *   NV_OK
  */
@@ -138,9 +141,10 @@ typedef struct NV906F_CTRL_GET_CLASS_ENGINEID_PARAMS {
 #define NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS_MESSAGE_ID (0x2U)
 
 typedef struct NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS {
-    NvU32 engineID;
-    NvU32 subdeviceInstance;
-    NvU32 resetReason;
+    NvU32  engineID;
+    NvU32  subdeviceInstance;
+    NvU32  resetReason;
+    NvBool bIsRcPending;
 } NV906F_CTRL_CMD_RESET_CHANNEL_PARAMS;
 
 /*

@@ -110,6 +110,7 @@ CHMOD                 ?= chmod
 OBJCOPY               ?= objcopy
 XZ                    ?= xz
 WHOAMI                ?= whoami
+PKG_CONFIG            ?= pkg-config
 
 ifndef HOSTNAME
   HOSTNAME             = $(shell hostname)
@@ -136,11 +137,16 @@ ifeq ($(TARGET_OS),SunOS)
 endif
 
 ifndef TARGET_ARCH
-  TARGET_ARCH         := $(shell uname -m)
+  ifneq ($(TARGET_OS),SunOS)
+    TARGET_ARCH       := $(shell uname -m)
+  else
+    TARGET_ARCH       := $(shell isainfo -n)
+  endif
   TARGET_ARCH         := $(subst i386,x86,$(TARGET_ARCH))
   TARGET_ARCH         := $(subst i486,x86,$(TARGET_ARCH))
   TARGET_ARCH         := $(subst i586,x86,$(TARGET_ARCH))
   TARGET_ARCH         := $(subst i686,x86,$(TARGET_ARCH))
+  TARGET_ARCH         := $(subst amd64,x86_64,$(TARGET_ARCH))
 endif
 
 ifeq ($(TARGET_ARCH),x86)
@@ -195,9 +201,6 @@ NV_KEEP_UNSTRIPPED_BINARIES ?=
 NV_QUIET_COMMAND_REMOVED_TARGET_PREFIX ?=
 
 NV_GENERATED_HEADERS ?=
-
-PCIACCESS_CFLAGS      ?=
-PCIACCESS_LDFLAGS     ?=
 
 ##############################################################################
 # This makefile uses the $(eval) builtin function, which was added in
@@ -404,8 +407,6 @@ BUILD_OBJECT_LIST_WITH_DIR = \
 BUILD_OBJECT_LIST = \
   $(call BUILD_OBJECT_LIST_WITH_DIR,$(1),$(OUTPUTDIR))
 
-$(call BUILD_OBJECT_LIST,nvpci-utils.c): CFLAGS += $(PCIACCESS_CFLAGS)
-
 ##############################################################################
 # function to generate a list of dependency files from their
 # corresponding source files using the specified path. The _WITH_DIR
@@ -595,4 +596,13 @@ define READ_ONLY_OBJECT_FROM_FILE_RULE
 	$$(call quiet_cmd,OBJCOPY) \
 	    --rename-section .data=.rodata,contents,alloc,load,data,readonly \
 	    $$@
+endef
+
+define BINARY_DATA_HEADER_RULE
+  $$(OUTPUTDIR)/$(notdir $(1)).h:
+	$(at_if_quiet)$(MKDIR) $$(OUTPUTDIR)
+	$(at_if_quiet){ \
+	  $$(PRINTF) "extern const char _binary_$(subst -,_,$(subst .,_,$(notdir $(1))))_start[];\n"; \
+	  $$(PRINTF) "extern const char _binary_$(subst -,_,$(subst .,_,$(notdir $(1))))_end[];\n"; \
+	} > $$@
 endef

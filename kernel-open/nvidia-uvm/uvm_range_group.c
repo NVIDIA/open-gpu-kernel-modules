@@ -183,6 +183,10 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
     NV_STATUS tracker_status;
     uvm_gpu_id_t gpu_id;
     uvm_processor_mask_t map_mask;
+    uvm_va_policy_t *policy = uvm_va_range_get_policy(va_range);
+
+    // Set the migration CPU NUMA node from the policy.
+    va_block_context->make_resident.dest_nid = policy->preferred_nid;
 
     // Unmapping UVM_ID_CPU is guaranteed to never fail
     status = uvm_va_block_unmap(va_block, va_block_context, UVM_ID_CPU, region, NULL, NULL);
@@ -192,7 +196,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
         status = uvm_va_block_make_resident_read_duplicate(va_block,
                                                            va_block_retry,
                                                            va_block_context,
-                                                           uvm_va_range_get_policy(va_range)->preferred_location,
+                                                           policy->preferred_location,
                                                            region,
                                                            NULL,
                                                            NULL,
@@ -202,7 +206,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
         status = uvm_va_block_make_resident(va_block,
                                             va_block_retry,
                                             va_block_context,
-                                            uvm_va_range_get_policy(va_range)->preferred_location,
+                                            policy->preferred_location,
                                             region,
                                             NULL,
                                             NULL,
@@ -226,7 +230,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
     // 2- Map faultable SetAccessedBy GPUs.
     uvm_processor_mask_and(&map_mask,
                            &uvm_va_range_get_policy(va_range)->accessed_by,
-                           &va_range->va_space->can_access[uvm_id_value(uvm_va_range_get_policy(va_range)->preferred_location)]);
+                           &va_range->va_space->can_access[uvm_id_value(policy->preferred_location)]);
     uvm_processor_mask_andnot(&map_mask, &map_mask, &va_range->uvm_lite_gpus);
 
     for_each_gpu_id_in_mask(gpu_id, &map_mask) {

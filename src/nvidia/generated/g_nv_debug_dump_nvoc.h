@@ -35,7 +35,6 @@ extern "C" {
 
 #include "gpu/eng_state.h"
 #include "gpu/mem_mgr/mem_desc.h"
-#include "core/info_block.h"
 
 #include "nvdump.h"
 
@@ -152,11 +151,16 @@ typedef struct _def_nvd_engine_callback {
     struct _def_nvd_engine_callback *pNext;    // Next Engine
 } NVD_ENGINE_CALLBACK;
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_NV_DEBUG_DUMP_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct NvDebugDump {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct OBJENGSTATE __nvoc_base_OBJENGSTATE;

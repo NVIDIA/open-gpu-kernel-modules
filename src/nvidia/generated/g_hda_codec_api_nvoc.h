@@ -40,11 +40,16 @@ extern "C" {
 #include "ctrl/ctrl90ec.h"
 #include "gpu/gpu_resource.h"
 
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_HDA_CODEC_API_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct Hdacodec {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -65,7 +70,6 @@ struct Hdacodec {
     NV_STATUS (*__hdacodecInternalControlForward__)(struct Hdacodec *, NvU32, void *, NvU32);
     NV_STATUS (*__hdacodecUnmapFrom__)(struct Hdacodec *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__hdacodecControl_Epilogue__)(struct Hdacodec *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__hdacodecControlLookup__)(struct Hdacodec *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__hdacodecGetInternalObjectHandle__)(struct Hdacodec *);
     NV_STATUS (*__hdacodecControl__)(struct Hdacodec *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__hdacodecUnmap__)(struct Hdacodec *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -74,6 +78,7 @@ struct Hdacodec {
     NV_STATUS (*__hdacodecControlFilter__)(struct Hdacodec *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__hdacodecControlSerialization_Prologue__)(struct Hdacodec *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__hdacodecCanCopy__)(struct Hdacodec *);
+    NvBool (*__hdacodecIsPartialUnmapSupported__)(struct Hdacodec *);
     void (*__hdacodecPreDestruct__)(struct Hdacodec *);
     NV_STATUS (*__hdacodecIsDuplicate__)(struct Hdacodec *, NvHandle, NvBool *);
     void (*__hdacodecControlSerialization_Epilogue__)(struct Hdacodec *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -120,7 +125,6 @@ NV_STATUS __nvoc_objCreate_Hdacodec(Hdacodec**, Dynamic*, NvU32, struct CALL_CON
 #define hdacodecInternalControlForward(pGpuResource, command, pParams, size) hdacodecInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define hdacodecUnmapFrom(pResource, pParams) hdacodecUnmapFrom_DISPATCH(pResource, pParams)
 #define hdacodecControl_Epilogue(pResource, pCallContext, pParams) hdacodecControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define hdacodecControlLookup(pResource, pParams, ppEntry) hdacodecControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define hdacodecGetInternalObjectHandle(pGpuResource) hdacodecGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define hdacodecControl(pGpuResource, pCallContext, pParams) hdacodecControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define hdacodecUnmap(pGpuResource, pCallContext, pCpuMapping) hdacodecUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -129,6 +133,7 @@ NV_STATUS __nvoc_objCreate_Hdacodec(Hdacodec**, Dynamic*, NvU32, struct CALL_CON
 #define hdacodecControlFilter(pResource, pCallContext, pParams) hdacodecControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define hdacodecControlSerialization_Prologue(pResource, pCallContext, pParams) hdacodecControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define hdacodecCanCopy(pResource) hdacodecCanCopy_DISPATCH(pResource)
+#define hdacodecIsPartialUnmapSupported(pResource) hdacodecIsPartialUnmapSupported_DISPATCH(pResource)
 #define hdacodecPreDestruct(pResource) hdacodecPreDestruct_DISPATCH(pResource)
 #define hdacodecIsDuplicate(pResource, hMemory, pDuplicate) hdacodecIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define hdacodecControlSerialization_Epilogue(pResource, pCallContext, pParams) hdacodecControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -178,10 +183,6 @@ static inline void hdacodecControl_Epilogue_DISPATCH(struct Hdacodec *pResource,
     pResource->__hdacodecControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS hdacodecControlLookup_DISPATCH(struct Hdacodec *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__hdacodecControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle hdacodecGetInternalObjectHandle_DISPATCH(struct Hdacodec *pGpuResource) {
     return pGpuResource->__hdacodecGetInternalObjectHandle__(pGpuResource);
 }
@@ -212,6 +213,10 @@ static inline NV_STATUS hdacodecControlSerialization_Prologue_DISPATCH(struct Hd
 
 static inline NvBool hdacodecCanCopy_DISPATCH(struct Hdacodec *pResource) {
     return pResource->__hdacodecCanCopy__(pResource);
+}
+
+static inline NvBool hdacodecIsPartialUnmapSupported_DISPATCH(struct Hdacodec *pResource) {
+    return pResource->__hdacodecIsPartialUnmapSupported__(pResource);
 }
 
 static inline void hdacodecPreDestruct_DISPATCH(struct Hdacodec *pResource) {

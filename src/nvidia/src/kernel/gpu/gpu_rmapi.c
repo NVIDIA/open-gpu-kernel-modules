@@ -36,7 +36,6 @@
 #include "rmapi/client.h"
 #include "rmapi/resource_fwd_decls.h"
 #include "core/thread_state.h"
-#include "virtualization/hypervisor/hypervisor.h"
 #include "virtualization/kernel_hostvgpudeviceapi.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
@@ -894,14 +893,12 @@ _gpuCollectMemInfo
         //    NVOS32_TYPE_UNUSED.
         if ((pResourceRef->externalClassId == NV01_MEMORY_LOCAL_USER ||
                 pResourceRef->externalClassId == NV01_MEMORY_LIST_FBMEM ||
-                pResourceRef->externalClassId == NV01_MEMORY_LIST_OBJECT ||
-                pResourceRef->externalClassId == NV01_MEMORY_HW_RESOURCES) &&
+                pResourceRef->externalClassId == NV01_MEMORY_LIST_OBJECT ) &&
             (pMemory->categoryClassId == NV01_MEMORY_LOCAL_USER) &&
             (bGlobalInfo || (pMemory->pHeap == pTargetedHeap)) &&
             (RES_GET_HANDLE(pMemory->pDevice) == hDevice) &&
             (pMemory->pMemDesc != NULL) &&
-            ((!bIsGuestProcess && (!memdescGetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_LIST_MEMORY))
-             && !(hypervisorIsVgxHyper() && (pResourceRef->externalClassId == NV01_MEMORY_HW_RESOURCES))) ||
+            ((!bIsGuestProcess && (!memdescGetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_LIST_MEMORY))) ||
              (bIsGuestProcess && (memdescGetFlag(pMemory->pMemDesc, MEMDESC_FLAGS_GUEST_ALLOCATED)) && (pMemory->Type != NVOS32_TYPE_UNUSED))))
         {
             NvBool bIsMemProtected = NV_FALSE;
@@ -1014,17 +1011,17 @@ gpuFindClientInfoWithPidIterator_IMPL
                         continue;
                     }
 
-                    gpuInstanceId = clientRef.pKernelMIGGpuInstance->swizzId;
-                    if (clientRef.pMIGComputeInstance != NULL)
-                    {
-                        computeInstanceId = clientRef.pMIGComputeInstance->id;
-                    }
-
                     // Check instance subscription against requested instance reference
                     if (!bGlobalInfo &&
                         !kmigmgrAreMIGReferencesSame(pRef, &clientRef))
                     {
                         continue;
+                    }
+
+                    gpuInstanceId = clientRef.pKernelMIGGpuInstance->swizzId;
+                    if (clientRef.pMIGComputeInstance != NULL)
+                    {
+                        computeInstanceId = clientRef.pMIGComputeInstance->id;
                     }
 
                     if (kmigmgrIsMIGReferenceValid(pRef))

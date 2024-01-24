@@ -57,6 +57,9 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
     NV_STATUS  status = NV_OK;
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
+    NV_ASSERT_OR_RETURN(!IS_VIRTUAL(pGpu) || !IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu),
+        NV_ERR_NOT_SUPPORTED);
+
     // This is a no-op in CPU-RM
     NV_ASSERT_OK_OR_GOTO(status, gpuPowerManagementEnterPreUnloadPhysical(pGpu), done);
 
@@ -79,7 +82,7 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
         }
 
         KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
-
+        KernelGspPreparedFwsecCmd preparedCmd;
 
         NV_RM_RPC_UNLOADING_GUEST_DRIVER(pGpu, status, NV_TRUE, IS_GPU_GC6_STATE_ENTERING(pGpu), newLevel);
         if (status != NV_OK)
@@ -100,7 +103,14 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
             }
 
             // Invoke FWSEC-SB to load back PreOsApps.
-            status = kgspExecuteFwsecSb_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode);
+            status = kgspPrepareForFwsecSb_HAL(pGpu, pKernelGsp, pKernelGsp->pFwsecUcode, &preparedCmd);
+            if (status != NV_OK)
+            {
+                NV_PRINTF(LEVEL_ERROR, "failed to prepare for FWSEC-SB for PreOsApps\n");
+                goto done;
+            }
+
+            status = kgspExecuteFwsec_HAL(pGpu, pKernelGsp, &preparedCmd);
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR, "failed to execute FWSEC-SB for PreOsApps\n");
@@ -109,10 +119,8 @@ gpuPowerManagementEnter(OBJGPU *pGpu, NvU32 newLevel, NvU32 flags)
 
             kpmuFreeLibosLoggingStructures(pGpu, GPU_GET_KERNEL_PMU(pGpu));
 
-            {
-                NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                                    kgspSavePowerMgmtState_HAL(pGpu, pKernelGsp), done);
-            }
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                                kgspSavePowerMgmtState_HAL(pGpu, pKernelGsp), done);
         }
         else
         {
@@ -192,11 +200,8 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
 
         if (!IS_GPU_GC6_STATE_EXITING(pGpu))
         {
-            // Not called when kgspShouldBootWithBooter_HAL() is called and returns NV_FALSE
-            {
-                NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                                    kgspRestorePowerMgmtState_HAL(pGpu, pKernelGsp), done);
-            }
+            NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
+                                kgspRestorePowerMgmtState_HAL(pGpu, pKernelGsp), done);
 
             status = kpmuInitLibosLoggingStructures(pGpu, GPU_GET_KERNEL_PMU(pGpu));
             if (status != NV_OK)
@@ -230,7 +235,7 @@ gpuPowerManagementResume(OBJGPU *pGpu, NvU32 oldLevel, NvU32 flags)
         {
             pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_BOOT_COMMAND_OK, NV_FALSE);
 
-            status = kfspSendBootCommands_HAL(pGpu, pKernelFsp);
+            status = kfspPrepareAndSendBootCommands_HAL(pGpu, pKernelFsp);
             if (status != NV_OK)
             {
                 NV_PRINTF(LEVEL_ERROR, "FSP boot command failed during resume.\n");

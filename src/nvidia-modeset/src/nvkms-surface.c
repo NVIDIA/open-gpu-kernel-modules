@@ -1225,3 +1225,111 @@ void nvEvoUnregisterDeferredRequestFifo(
 
     nvFree(pDeferredRequestFifo);
 }
+
+static NvBool UpdateVblankSemControl(
+    NVDevEvoRec *pDevEvo,
+    NVVblankSemControl *pVblankSemControl,
+    NvBool enable)
+{
+    NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_PARAMS params = { };
+
+    params.subDeviceInstance = pVblankSemControl->dispIndex;
+    params.head = pVblankSemControl->hwHead;
+    params.hMemory = pVblankSemControl->pSurfaceEvo->planes[0].rmHandle;
+    params.memoryOffset = pVblankSemControl->surfaceOffset;
+    params.bEnable = enable;
+
+    return nvRmApiControl(nvEvoGlobal.clientHandle,
+                          pDevEvo->displayCommonHandle,
+                          NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL,
+                          &params, sizeof(params)) == NVOS_STATUS_SUCCESS;
+}
+
+NVVblankSemControl *nvEvoEnableVblankSemControl(
+    NVDevEvoRec *pDevEvo,
+    NVDispEvoRec *pDispEvo,
+    NvU32 hwHead,
+    NVSurfaceEvoRec *pSurfaceEvo,
+    NvU64 surfaceOffset)
+{
+    NVVblankSemControl *pVblankSemControl;
+
+    if (!pDevEvo->supportsVblankSemControl) {
+        return NULL;
+    }
+
+    /*
+     * We cannot enable VblankSemControl if the requested offset within the
+     * surface is too large.
+     */
+    if (A_plus_B_greater_than_C_U64(
+            surfaceOffset,
+            sizeof(NV0073_CTRL_CMD_SYSTEM_VBLANK_SEM_CONTROL_DATA),
+            pSurfaceEvo->planes[0].rmObjectSizeInBytes)) {
+        return NULL;
+    }
+
+    if (nvEvoSurfaceRefCntsTooLarge(pSurfaceEvo)) {
+        return NULL;
+    }
+
+    pVblankSemControl = nvCalloc(1, sizeof(*pVblankSemControl));
+
+    if (pVblankSemControl == NULL) {
+        return NULL;
+    }
+
+    pVblankSemControl->hwHead = hwHead;
+    pVblankSemControl->dispIndex = pDispEvo->displayOwner;
+    pVblankSemControl->surfaceOffset = surfaceOffset;
+    pVblankSemControl->pSurfaceEvo = pSurfaceEvo;
+
+    if (UpdateVblankSemControl(pDevEvo,
+                               pVblankSemControl,
+                               TRUE /* enable */)) {
+        nvEvoIncrementSurfaceRefCnts(pSurfaceEvo);
+        return pVblankSemControl;
+    } else {
+        nvFree(pVblankSemControl);
+        return NULL;
+    }
+}
+
+NvBool nvEvoDisableVblankSemControl(
+    NVDevEvoRec *pDevEvo,
+    NVVblankSemControl *pVblankSemControl)
+{
+    if (!pDevEvo->supportsVblankSemControl) {
+        return FALSE;
+    }
+
+    if (UpdateVblankSemControl(pDevEvo,
+                               pVblankSemControl,
+                               FALSE /* enable */)) {
+        nvEvoDecrementSurfaceRefCnts(pDevEvo, pVblankSemControl->pSurfaceEvo);
+        nvFree(pVblankSemControl);
+        return TRUE;
+    } else {
+        return FALSE;
+    }
+}
+
+NvBool nvEvoAccelVblankSemControls(
+    NVDevEvoPtr pDevEvo,
+    NvU32 dispIndex,
+    NvU32 hwHeadMask)
+{
+    NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS_PARAMS params = { };
+
+    if (!pDevEvo->supportsVblankSemControl) {
+        return FALSE;
+    }
+
+    params.subDeviceInstance = dispIndex;
+    params.headMask = hwHeadMask;
+
+    return nvRmApiControl(nvEvoGlobal.clientHandle,
+                          pDevEvo->displayCommonHandle,
+                          NV0073_CTRL_CMD_SYSTEM_ACCEL_VBLANK_SEM_CONTROLS,
+                          &params, sizeof(params)) == NVOS_STATUS_SUCCESS;
+}

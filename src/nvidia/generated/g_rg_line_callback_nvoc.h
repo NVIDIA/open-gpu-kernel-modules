@@ -53,11 +53,16 @@ typedef struct DispCommon DispCommon;
 /*!
  * RM internal class representing NV0092_RG_LINE_CALLBACK
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_RG_LINE_CALLBACK_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct RgLineCallback {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -78,7 +83,6 @@ struct RgLineCallback {
     NV_STATUS (*__rglcbInternalControlForward__)(struct RgLineCallback *, NvU32, void *, NvU32);
     NV_STATUS (*__rglcbUnmapFrom__)(struct RgLineCallback *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__rglcbControl_Epilogue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__rglcbControlLookup__)(struct RgLineCallback *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__rglcbGetInternalObjectHandle__)(struct RgLineCallback *);
     NV_STATUS (*__rglcbControl__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__rglcbUnmap__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RsCpuMapping *);
@@ -87,6 +91,7 @@ struct RgLineCallback {
     NV_STATUS (*__rglcbControlFilter__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__rglcbControlSerialization_Prologue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__rglcbCanCopy__)(struct RgLineCallback *);
+    NvBool (*__rglcbIsPartialUnmapSupported__)(struct RgLineCallback *);
     void (*__rglcbPreDestruct__)(struct RgLineCallback *);
     NV_STATUS (*__rglcbIsDuplicate__)(struct RgLineCallback *, NvHandle, NvBool *);
     void (*__rglcbControlSerialization_Epilogue__)(struct RgLineCallback *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -140,7 +145,6 @@ NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback**, Dynamic*, NvU32, str
 #define rglcbInternalControlForward(pGpuResource, command, pParams, size) rglcbInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define rglcbUnmapFrom(pResource, pParams) rglcbUnmapFrom_DISPATCH(pResource, pParams)
 #define rglcbControl_Epilogue(pResource, pCallContext, pParams) rglcbControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define rglcbControlLookup(pResource, pParams, ppEntry) rglcbControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define rglcbGetInternalObjectHandle(pGpuResource) rglcbGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define rglcbControl(pGpuResource, pCallContext, pParams) rglcbControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define rglcbUnmap(pGpuResource, pCallContext, pCpuMapping) rglcbUnmap_DISPATCH(pGpuResource, pCallContext, pCpuMapping)
@@ -149,6 +153,7 @@ NV_STATUS __nvoc_objCreate_RgLineCallback(RgLineCallback**, Dynamic*, NvU32, str
 #define rglcbControlFilter(pResource, pCallContext, pParams) rglcbControlFilter_DISPATCH(pResource, pCallContext, pParams)
 #define rglcbControlSerialization_Prologue(pResource, pCallContext, pParams) rglcbControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define rglcbCanCopy(pResource) rglcbCanCopy_DISPATCH(pResource)
+#define rglcbIsPartialUnmapSupported(pResource) rglcbIsPartialUnmapSupported_DISPATCH(pResource)
 #define rglcbPreDestruct(pResource) rglcbPreDestruct_DISPATCH(pResource)
 #define rglcbIsDuplicate(pResource, hMemory, pDuplicate) rglcbIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define rglcbControlSerialization_Epilogue(pResource, pCallContext, pParams) rglcbControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -198,10 +203,6 @@ static inline void rglcbControl_Epilogue_DISPATCH(struct RgLineCallback *pResour
     pResource->__rglcbControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS rglcbControlLookup_DISPATCH(struct RgLineCallback *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__rglcbControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle rglcbGetInternalObjectHandle_DISPATCH(struct RgLineCallback *pGpuResource) {
     return pGpuResource->__rglcbGetInternalObjectHandle__(pGpuResource);
 }
@@ -232,6 +233,10 @@ static inline NV_STATUS rglcbControlSerialization_Prologue_DISPATCH(struct RgLin
 
 static inline NvBool rglcbCanCopy_DISPATCH(struct RgLineCallback *pResource) {
     return pResource->__rglcbCanCopy__(pResource);
+}
+
+static inline NvBool rglcbIsPartialUnmapSupported_DISPATCH(struct RgLineCallback *pResource) {
+    return pResource->__rglcbIsPartialUnmapSupported__(pResource);
 }
 
 static inline void rglcbPreDestruct_DISPATCH(struct RgLineCallback *pResource) {

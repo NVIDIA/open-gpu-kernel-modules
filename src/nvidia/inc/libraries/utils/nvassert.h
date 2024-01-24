@@ -114,8 +114,6 @@ void __coverity_panic__(void);
 #endif // defined(__COVERITY__)
 #endif // !defined(COVERITY_ASSERT_FAIL)
 
-const char *nvAssertStatusToString(NV_STATUS nvStatusIn);
-
 /*
  * NV_ASSERT_FAILED, NV_ASSERT_OK_FAILED, NV_CHECK_FAILED, and NV_CHECK_OK_FAILED
  * These macros are defined in three flavors:
@@ -146,8 +144,8 @@ void nvAssertOkFailed(NvU32 status);
 
 #define NV_ASSERT_FAILED(exprStr)                                              \
     do {                                                                       \
-        static const LIBOS_SECTION_LOGGING char exprStrArg[] = {exprStr};      \
-        NV_PRINTF(LEVEL_ERROR, "Assertion failed: %s\n", exprStrArg);          \
+        NV_LOG_SPECIAL(LEVEL_ERROR, RM_GSP_LOG_SPECIAL_ASSERT_FAILED,          \
+                       exprStr "\n");                                          \
         nvAssertFailed();                                                      \
         COVERITY_ASSERT_FAIL();                                                \
         PORT_BREAKPOINT();                                                     \
@@ -155,9 +153,8 @@ void nvAssertOkFailed(NvU32 status);
 
 #define NV_ASSERT_OK_FAILED(exprStr, status)                                   \
     do {                                                                       \
-        static const LIBOS_SECTION_LOGGING char exprStrArg[] = {exprStr};      \
-        NV_PRINTF(LEVEL_ERROR, "Assertion failed: %s (0x%08X) returned from %s\n", \
-            nvAssertStatusToString(status), status, exprStrArg);               \
+        NV_LOG_SPECIAL(LEVEL_ERROR, RM_GSP_LOG_SPECIAL_ASSERT_OK_FAILED,       \
+                       exprStr "\n", status);                                  \
         nvAssertOkFailed(status);                                              \
         COVERITY_ASSERT_FAIL();                                                \
         PORT_BREAKPOINT();                                                     \
@@ -165,15 +162,14 @@ void nvAssertOkFailed(NvU32 status);
 
 #define NV_CHECK_FAILED(level, exprStr)                                        \
    do {                                                                        \
-        static const LIBOS_SECTION_LOGGING char exprStrArg[] = {exprStr};      \
-        NV_PRINTF(level, "Check failed: %s\n", exprStrArg);                    \
+        NV_LOG_SPECIAL(level, RM_GSP_LOG_SPECIAL_CHECK_FAILED,                 \
+                       exprStr "\n");                                          \
     } while(0)                                                                 \
 
 #define NV_CHECK_OK_FAILED(level, exprStr, status)                             \
     do {                                                                       \
-        static const LIBOS_SECTION_LOGGING char exprStrArg[] = {exprStr};      \
-        NV_PRINTF(level, "Check failed: %s (0x%08X) returned from %s\n",       \
-            nvAssertStatusToString(status), status, exprStrArg);               \
+        NV_LOG_SPECIAL(level, RM_GSP_LOG_SPECIAL_CHECK_OK_FAILED,              \
+                       exprStr "\n", status);                                  \
     } while (0)
 
 #else // defined(GSP_PLUGIN_BUILD) || (defined(NVRM) && NVOS_IS_LIBOS)

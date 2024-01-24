@@ -25,6 +25,7 @@
 #include "intr_nvswitch.h"
 #include "regkey_nvswitch.h"
 #include "soe/soe_nvswitch.h"
+#include "cci/cci_nvswitch.h"
 
 #include "ls10/ls10.h"
 #include "ls10/minion_ls10.h"
@@ -1264,12 +1265,12 @@ _nvswitch_service_route_fatal_ls10
         if (nvswitch_is_soe_supported(device))
         {
             nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
-                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_ROUTE_INTERRUPT);
+                report.raw_enable & ~pending, RM_SOE_CORE_NPORT_ROUTE_INTERRUPT);
         }
         else
         {
             NVSWITCH_ENG_WR32(device, NPORT, , link, _ROUTE, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
         }
     }
 
@@ -1478,7 +1479,7 @@ _nvswitch_service_route_nonfatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_ENG_WR32(device, NPORT, , link, _ROUTE, _ERR_NON_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -1743,12 +1744,12 @@ _nvswitch_service_ingress_fatal_ls10
         if (nvswitch_is_soe_supported(device))
         {
             nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
-                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_INGRESS_INTERRUPT);
+                report.raw_enable & ~pending, RM_SOE_CORE_NPORT_INGRESS_INTERRUPT);
         }
         else
         {
             NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
         }
     }
 
@@ -2046,7 +2047,7 @@ _nvswitch_service_ingress_nonfatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_NON_FATAL_REPORT_EN_0,
-            report.raw_enable ^ pending);
+            report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -2189,7 +2190,7 @@ _nvswitch_service_ingress_nonfatal_ls10_err_status_1:
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_ENG_WR32(device, NPORT, , link, _INGRESS, _ERR_NON_FATAL_REPORT_EN_1,
-            report.raw_enable ^ pending);
+            report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -2329,7 +2330,7 @@ _nvswitch_service_tstate_nonfatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_NON_FATAL_REPORT_EN_0,
-            report.raw_enable ^ pending);
+            report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -2519,12 +2520,12 @@ _nvswitch_service_tstate_fatal_ls10
         if (nvswitch_is_soe_supported(device))
         {
             nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
-                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_TSTATE_INTERRUPT);
+                report.raw_enable & ~pending, RM_SOE_CORE_NPORT_TSTATE_INTERRUPT);
         }
         else
         {
             NVSWITCH_ENG_WR32(device, NPORT, , link, _TSTATE, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
         }
     }
 
@@ -2653,7 +2654,7 @@ _nvswitch_service_egress_nonfatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_NON_FATAL_REPORT_EN_0,
-            report.raw_enable ^ pending);
+            report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -2898,7 +2899,7 @@ _nvswitch_service_egress_nonfatal_ls10_err_status_1:
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_NON_FATAL_REPORT_EN_1,
-            report.raw_enable ^ pending);
+            report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -3175,12 +3176,12 @@ _nvswitch_service_egress_fatal_ls10
         if (nvswitch_is_soe_supported(device))
         {
             nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
-                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_EGRESS_0_INTERRUPT);
+                report.raw_enable & ~pending, RM_SOE_CORE_NPORT_EGRESS_0_INTERRUPT);
         }
         else
         {
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
         }
     }
 
@@ -3306,12 +3307,12 @@ _nvswitch_service_egress_fatal_ls10_err_status_1:
         if (nvswitch_is_soe_supported(device))
         {
             nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
-                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_EGRESS_1_INTERRUPT);
+                report.raw_enable & ~pending, RM_SOE_CORE_NPORT_EGRESS_1_INTERRUPT);
         }
         else
         {
             NVSWITCH_ENG_WR32(device, NPORT, , link, _EGRESS, _ERR_FATAL_REPORT_EN_1,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
         }
     }
 
@@ -3410,7 +3411,7 @@ _nvswitch_service_sourcetrack_nonfatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_ENG_WR32(device, NPORT, , link, _SOURCETRACK, _ERR_NON_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -3538,12 +3539,12 @@ _nvswitch_service_sourcetrack_fatal_ls10
         if (nvswitch_is_soe_supported(device))
         {
             nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
-                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_SOURCETRACK_INTERRUPT);
+                report.raw_enable & ~pending, RM_SOE_CORE_NPORT_SOURCETRACK_INTERRUPT);
         }
         else
         {
             NVSWITCH_ENG_WR32(device, NPORT, , link, _SOURCETRACK, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
         }
     }
 
@@ -3690,7 +3691,7 @@ _nvswitch_service_multicast_nonfatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_NON_FATAL_REPORT_EN_0,
-            report.raw_enable ^ pending);
+            report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -3830,12 +3831,12 @@ _nvswitch_service_multicast_fatal_ls10
         if (nvswitch_is_soe_supported(device))
         {
             nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
-                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_MULTICAST_INTERRUPT);
+                report.raw_enable & ~pending, RM_SOE_CORE_NPORT_MULTICAST_INTERRUPT);
         }
         else
         {
             NVSWITCH_ENG_WR32(device, NPORT, , link, _MULTICASTTSTATE, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
         }
     }
 
@@ -3976,7 +3977,7 @@ _nvswitch_service_reduction_nonfatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_NON_FATAL_REPORT_EN_0,
-            report.raw_enable ^ pending);
+            report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -4131,12 +4132,12 @@ _nvswitch_service_reduction_fatal_ls10
         if (nvswitch_is_soe_supported(device))
         {
             nvswitch_soe_disable_nport_fatal_interrupts_ls10(device, link, 
-                report.raw_enable ^ pending, RM_SOE_CORE_NPORT_REDUCTION_INTERRUPT);
+                report.raw_enable & ~pending, RM_SOE_CORE_NPORT_REDUCTION_INTERRUPT);
         }
         else
         {
             NVSWITCH_ENG_WR32(device, NPORT, , link, _REDUCTIONTSTATE, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
         }
     }
 
@@ -4534,7 +4535,7 @@ _nvswitch_service_nvltlc_tx_sys_fatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_SYS, _ERR_STATUS_0, pending);
@@ -4654,7 +4655,7 @@ _nvswitch_service_nvltlc_rx_sys_fatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_SYS, _ERR_STATUS_0, pending);
@@ -4755,7 +4756,7 @@ _nvswitch_service_nvltlc_tx_lnk_fatal_0_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -4942,7 +4943,7 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_0_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -5045,7 +5046,7 @@ _nvswitch_service_nvltlc_rx_lnk_fatal_1_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_LINK_WR32_LS10(device, link, NVLTLC, _NVLTLC_RX_LNK, _ERR_FATAL_REPORT_EN_1,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -5208,7 +5209,7 @@ _nvswitch_service_nvlipt_common_fatal_ls10
             (device->link[link].fatal_error_occurred))
         {
             NVSWITCH_ENG_WR32(device, NVLIPT, , instance, _NVLIPT_COMMON, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
             break;
         }
     }
@@ -5331,7 +5332,7 @@ _nvswitch_service_nxbar_tile_ls10
     // Disable interrupts that have occurred after fatal error.
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
     NVSWITCH_TILE_WR32(device, tile, _NXBAR_TILE, _ERR_FATAL_INTR_EN,
-                            report.raw_enable ^ pending);
+                            report.raw_enable & ~pending);
 
     NVSWITCH_TILE_WR32(device, link, _NXBAR_TILE, _ERR_STATUS, pending);
 
@@ -5435,7 +5436,7 @@ _nvswitch_service_nxbar_tileout_ls10
     // Disable interrupts that have occurred after fatal error.
     // This helps prevent an interrupt storm if HW keeps triggering unnecessary stream of interrupts.
     NVSWITCH_TILEOUT_WR32(device, tileout, _NXBAR_TILEOUT, _ERR_FATAL_INTR_EN,
-                            report.raw_enable ^ pending);
+                            report.raw_enable & ~pending);
 
     NVSWITCH_TILEOUT_WR32(device, tileout, _NXBAR_TILEOUT, _ERR_STATUS, pending);
 
@@ -5837,6 +5838,12 @@ _nvswitch_deferred_link_state_check_ls10
     pErrorReportParams = NULL;
     chip_device->deferredLinkErrors[link].state.bLinkStateCallBackEnabled = NV_FALSE;
     bRedeferLinkStateCheck = NV_FALSE;
+
+    // Ask CCI if link state check should be futher deferred 
+    if (cciIsLinkManaged(device, link) && !cciReportLinkErrors(device, link))
+    {
+        bRedeferLinkStateCheck = NV_TRUE;
+    }
 
     // Link came up after last retrain
     if (lastLinkUpTime >= lastRetrainTime)
@@ -6310,7 +6317,7 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_0_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_LINK_WR32(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_0,
-            report.raw_enable ^ pending);
+            report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -6532,7 +6539,7 @@ _nvswitch_service_nvltlc_tx_lnk_nonfatal_1_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_LINK_WR32(device, link, NVLTLC, _NVLTLC_TX_LNK, _ERR_NON_FATAL_REPORT_EN_1,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     if (report.raw_first & report.mask)
@@ -7103,7 +7110,7 @@ _nvswitch_service_nvlipt_lnk_fatal_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_LINK_WR32(device, link, NVLIPT_LNK, _NVLIPT_LNK, _ERR_FATAL_REPORT_EN_0,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     // clear interrupts
@@ -7768,16 +7775,29 @@ nvswitch_service_nvldl_fatal_link_ls10
             NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify PORT_DOWN event\n",
                          __FUNCTION__);
         }
-            dlDeferredIntrLinkMask |= bit;
+        dlDeferredIntrLinkMask |= bit;
 
+        //
+        // Disable LTSSM FAULT DOWN, NPG, and NVLW interrupts to avoid interrupt storm. The interrupts 
+        //  will be re-enabled in reset and drain
+        //
+        report.raw_enable = FLD_SET_DRF(_NVLDL_TOP, _INTR_STALL_EN, _LTSSM_FAULT_DOWN, _DISABLE, report.raw_enable);
+        NVSWITCH_LINK_WR32(device, link, NVLDL, _NVLDL_TOP, _INTR_STALL_EN, report.raw_enable);
+        nvswitch_link_disable_interrupts_ls10(device, link);
+
+        if (device->bModeContinuousALI)
+        {
             //
             // Since reset and drain will reset the link, including clearing
             // pending interrupts, skip the clear write below. There are cases
             // where link clocks will not be on after reset and drain so there
             // maybe PRI errors on writing to the register
             //
-        {
-            bRequireResetAndDrain = NV_TRUE;
+            // CCI will perform reset and drain
+            if (!cciIsLinkManaged(device, link))
+            {
+                bRequireResetAndDrain = NV_TRUE;
+            }
         }
         nvswitch_clear_flags(&unhandled, bit);
     }
@@ -7792,25 +7812,41 @@ nvswitch_service_nvldl_fatal_link_ls10
             NVSWITCH_PRINT(device, ERROR, "%s: Failed to notify PORT_DOWN event\n",
                          __FUNCTION__);
         }
-            dlDeferredIntrLinkMask |= bit;
+        dlDeferredIntrLinkMask |= bit;
 
+        //
+        // Disable LTSSM FAULT UP, NPG, and NVLW link interrupts to avoid interrupt storm. The interrupts
+        //  will be re-enabled in reset and drain
+        //
+        report.raw_enable = FLD_SET_DRF(_NVLDL_TOP, _INTR_STALL_EN, _LTSSM_FAULT_UP, _DISABLE, report.raw_enable);
+        NVSWITCH_LINK_WR32(device, link, NVLDL, _NVLDL_TOP, _INTR_STALL_EN, report.raw_enable);
+        nvswitch_link_disable_interrupts_ls10(device, link);
+        
+        if (device->bModeContinuousALI)
+        {
             //
             // Since reset and drain will reset the link, including clearing
             // pending interrupts, skip the clear write below. There are cases
             // where link clocks will not be on after reset and drain so there
             // maybe PRI errors on writing to the register
             //
-        {
-            bRequireResetAndDrain = NV_TRUE;
+            // CCI will perform reset and drain
+            if (!cciIsLinkManaged(device, link))
+            {
+                bRequireResetAndDrain = NV_TRUE;
+            }
         }
         nvswitch_clear_flags(&unhandled, bit);
     }
 
     if (bRequireResetAndDrain)
     {
-        chip_device->deferredLinkErrors[link].data.fatalIntrMask.dl |= dlDeferredIntrLinkMask;
-        device->hal.nvswitch_reset_and_drain_links(device, NVBIT64(link));
-        chip_device->deferredLinkErrors[link].state.lastRetrainTime = nvswitch_os_get_platform_time();
+        device->hal.nvswitch_reset_and_drain_links(device, NVBIT64(link), NV_FALSE);
+    }
+
+    chip_device->deferredLinkErrors[link].data.fatalIntrMask.dl |= dlDeferredIntrLinkMask;
+    if (dlDeferredIntrLinkMask)
+    {
         nvswitch_create_deferred_link_state_check_task_ls10(device, nvlipt_instance, link);
     }
 
@@ -7820,7 +7856,7 @@ nvswitch_service_nvldl_fatal_link_ls10
     if (device->link[link].fatal_error_occurred)
     {
         NVSWITCH_LINK_WR32(device, link, NVLDL, _NVLDL_TOP, _INTR_STALL_EN,
-                report.raw_enable ^ pending);
+                report.raw_enable & ~pending);
     }
 
     if (!bRequireResetAndDrain)

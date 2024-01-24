@@ -58,9 +58,13 @@
 #include <class/cl84a0.h>               // NV01_MEMORY_LIST_SYSTEM
 #include <class/cl84a0.h>               // NV01_MEMORY_LIST_FBMEM
 #include <class/cl84a0.h>               // NV01_MEMORY_LIST_OBJECT
+#include <class/cl00f1.h>               // NV_IMEX_SESSION
 #include <class/cl00f3.h>               // NV01_MEMORY_FLA
+#include <class/cl00e0.h>               // NV_MEMORY_EXPORT
 #include <class/cl0050.h>               // NV_CE_UTILS
 #include <class/cl00f8.h>               // NV_MEMORY_FABRIC
+#include <class/cl00f9.h>               // NV_MEMORY_FABRIC_IMPORT_V2
+#include <class/cl00fb.h>               // NV_MEMORY_FABRIC_IMPORTED_REF
 #include <class/cl00fc.h>               // FABRIC_VASPACE_A
 #include <class/cl00fd.h>               // NV_MEMORY_MULTICAST_FABRIC
 #include <class/cl00f2.h>               // IO_VASPACE_A
@@ -175,11 +179,14 @@
 #include <class/cl00de.h>               // RM_USER_SHARED_DATA
 #include <class/cl83de.h>               // GT200_DEBUGGER
 #include <class/cl402c.h>               // NV40_I2C
+#include <class/cla080.h>               // KEPLER_DEVICE_VGPU
 #include <class/cla081.h>               // NVA081_VGPU_CONFIG
 #include <class/cla084.h>               // NVA084_KERNEL_HOST_VGPU_DEVICE
 #include <class/cl0060.h>               // NV0060_SYNC_GPU_BOOST
 #include <class/clc076.h>               // GP100_UVM_SW
+#include <class/cla0bc.h>               // NVENC_SW_SESSION
 #include <class/cl90cd.h>               // NV_EVENT_BUFFER
+#include <class/cla0bd.h>               // NVFBC_SW_SESSION
 #include <class/clcb33.h>               // NV_CONFIDENTIAL_COMPUTE
 #include <class/clcbca.h>               // NV_COUNTER_COLLECTION_UNIT
 #include <class/cl00da.h>               // NV_SEMAPHORE_SURFACE
@@ -327,8 +334,16 @@
 #define NV01_MEMORY_LIST_OBJECT                  (0x00000083)
 #endif
 
+#ifndef NV_IMEX_SESSION
+#define NV_IMEX_SESSION                          (0x000000f1)
+#endif
+
 #ifndef NV01_MEMORY_FLA
 #define NV01_MEMORY_FLA                          (0x000000f3)
+#endif
+
+#ifndef NV_MEMORY_EXPORT
+#define NV_MEMORY_EXPORT                         (0x000000e0)
 #endif
 
 #ifndef NV_CE_UTILS
@@ -337,6 +352,14 @@
 
 #ifndef NV_MEMORY_FABRIC
 #define NV_MEMORY_FABRIC                         (0x000000f8)
+#endif
+
+#ifndef NV_MEMORY_FABRIC_IMPORT_V2
+#define NV_MEMORY_FABRIC_IMPORT_V2               (0x000000f9)
+#endif
+
+#ifndef NV_MEMORY_FABRIC_IMPORTED_REF
+#define NV_MEMORY_FABRIC_IMPORTED_REF            (0x000000fb)
 #endif
 
 #ifndef FABRIC_VASPACE_A
@@ -822,6 +845,10 @@
 #define NV40_I2C                                 (0x0000402c)
 #endif
 
+#ifndef KEPLER_DEVICE_VGPU
+#define KEPLER_DEVICE_VGPU                       (0x0000a080)
+#endif
+
 #ifndef NVA081_VGPU_CONFIG
 #define NVA081_VGPU_CONFIG                       (0x0000a081)
 #endif
@@ -838,8 +865,16 @@
 #define GP100_UVM_SW                             (0x0000c076)
 #endif
 
+#ifndef NVENC_SW_SESSION
+#define NVENC_SW_SESSION                         (0x0000a0bc)
+#endif
+
 #ifndef NV_EVENT_BUFFER
 #define NV_EVENT_BUFFER                          (0x000090cd)
+#endif
+
+#ifndef NVFBC_SW_SESSION
+#define NVFBC_SW_SESSION                         (0x0000a0bd)
 #endif
 
 #ifndef NV_CONFIDENTIAL_COMPUTE

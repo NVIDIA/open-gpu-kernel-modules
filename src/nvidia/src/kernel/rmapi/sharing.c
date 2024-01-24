@@ -28,9 +28,6 @@
 #include "resource_desc.h"
 #include "class/cl0071.h"
 
-#include "gpu/device/device.h"
-#include "gpu/subdevice/subdevice.h"
-
 static NV_STATUS
 _RmDupObject
 (

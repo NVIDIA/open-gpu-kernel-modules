@@ -25,6 +25,7 @@
 
 #include "kernel/gpu/gr/kernel_graphics_manager.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
+#include "kernel/gpu/gr/fecs_event_list.h"
 
 #include "kernel/gpu/device/device.h"
 #include "kernel/gpu/fifo/kernel_channel_group_api.h"
@@ -171,6 +172,8 @@ kgrmgrIsCtxBufSupported_IMPL
         case GR_CTX_BUFFER_PAGEPOOL:
             // fall-through
         case GR_CTX_BUFFER_RTV_CB:
+            // fall-through
+        case GR_CTX_BUFFER_SETUP:
             bSupported = NV_FALSE;
             break;
 
@@ -311,6 +314,8 @@ kgrmgrConstructEngine_IMPL
 {
     _kgrmgrInitRegistryOverrides(pGpu, pKernelGraphicsManager);
 
+    fecsGlobalLoggingInit(pGpu, pKernelGraphicsManager, &pKernelGraphicsManager->pFecsGlobalTraceInfo);
+
     return NV_OK;
 }
 
@@ -320,8 +325,12 @@ kgrmgrDestruct_IMPL
     KernelGraphicsManager *pKernelGraphicsManager
 )
 {
+    OBJGPU *pGpu = ENG_GET_GPU(pKernelGraphicsManager);
+
+    fecsGlobalLoggingTeardown(pGpu, pKernelGraphicsManager);
+
     portMemSet(&pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks, 0,
-               sizeof(pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks));
+           sizeof(pKernelGraphicsManager->legacyKgraphicsStaticInfo.floorsweepingMasks));
     portMemFree(pKernelGraphicsManager->legacyKgraphicsStaticInfo.pPpcMasks);
     pKernelGraphicsManager->legacyKgraphicsStaticInfo.pPpcMasks = NULL;
     portMemFree(pKernelGraphicsManager->legacyKgraphicsStaticInfo.pGrInfo);
@@ -1084,30 +1093,4 @@ kgrmgrCheckVeidsRequest_IMPL
     *pSpanStart = (veidStart - pKernelMIGGPUInstance->resourceAllocation.veidOffset) / veidStepSize;
     *pInUseMask |= veidMask;
     return NV_OK;
-}
-
-/*!
- * @brief Atomically set fecs callback scheduled, return NV_TRUE if wasn't scheduled
- */
-NvBool
-kgrmgrSignalFecsCallbackScheduled_IMPL
-(
-    OBJGPU *pGpu,
-    KernelGraphicsManager *pKernelGraphicsManager
-)
-{
-    return portAtomicCompareAndSwapU32(&pKernelGraphicsManager->fecsCallbackScheduled, 1, 0);
-}
-
-/*!
- * @brief Atomically clear fecs callback scheduled
- */
-void
-kgrmgrClearFecsCallbackScheduled_IMPL
-(
-    OBJGPU *pGpu,
-    KernelGraphicsManager *pKernelGraphicsManager
-)
-{
-    portAtomicSetU32(&pKernelGraphicsManager->fecsCallbackScheduled, 0);
 }

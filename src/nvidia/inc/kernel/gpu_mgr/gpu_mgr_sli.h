@@ -24,6 +24,7 @@
 #ifndef _RMSLIGPUMGR_H_
 #define _RMSLIGPUMGR_H_
 
+NvBool      gpumgrAreGpusInitialized(NvU32 gpuMask);
 void        gpumgrDetectSliLinkFromGpus(NvBool, NvU32, NvU32, NvU32 *, NvU32 *, NvBool *, NvU32 *, NvU32 *);
 NvBool      gpumgrDetectHighSpeedVideoBridges(NvU32 linkOutputMask);
 NvBool      gpumgrUpdateSliLinkRouting(OBJGPU *pGpuParent, OBJGPU *pGpuChild,

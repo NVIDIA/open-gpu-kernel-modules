@@ -26,6 +26,7 @@
 #include "rmapi/client_resource.h"
 
 #include "platform/sli/sli.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "resserv/rs_client.h"
 #include "resserv/rs_server.h"
 #include "resserv/rs_access_map.h"

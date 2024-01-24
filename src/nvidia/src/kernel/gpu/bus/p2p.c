@@ -170,6 +170,17 @@ NV_STATUS _createThirdPartyP2PMappingExtent
     NV_ASSERT_OR_RETURN((pMappingLength != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((pMemDesc != NULL), NV_ERR_INVALID_ARGUMENT);
 
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+        if (FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG, _PARAMS_VGPU_DEV_CAPS_GPU_DIRECT_RDMA_ENABLED,
+                      _FALSE, pVSI->vgpuConfig.vgpuDeviceCapsBits))
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
+
     *ppExtentInfo = NULL;
 
     pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
@@ -375,6 +386,17 @@ NV_STATUS RmThirdPartyP2PMappingFree
     NV_ASSERT_OR_RETURN((pSubDevice != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((pThirdPartyP2PInfo != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((pDevice != NULL), NV_ERR_INVALID_STATE);
+
+    if (IS_VIRTUAL(pGpu))
+    {
+        VGPU_STATIC_INFO *pVSI = GPU_GET_STATIC_INFO(pGpu);
+
+        if (FLD_TEST_DRF(A080, _CTRL_CMD_VGPU_GET_CONFIG, _PARAMS_VGPU_DEV_CAPS_GPU_DIRECT_RDMA_ENABLED,
+                      _FALSE, pVSI->vgpuConfig.vgpuDeviceCapsBits))
+        {
+            return NV_ERR_NOT_SUPPORTED;
+        }
+    }
 
     pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
 
@@ -622,6 +644,11 @@ NV_STATUS RmThirdPartyP2PNVLinkGetPages
     NvU32 entries = 0;
     RmPhysAddr physAddr;
     KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+
+    if (memdescGetPageSize(pMemDesc, AT_CPU) < NVRM_P2P_PAGESIZE_BIG_64K)
+    {
+        return NV_ERR_INVALID_STATE;
+    }
 
     NV_ASSERT(!(address & (NVRM_P2P_PAGESIZE_BIG_64K - 1)));
     NV_ASSERT(!(length & (NVRM_P2P_PAGESIZE_BIG_64K - 1)));

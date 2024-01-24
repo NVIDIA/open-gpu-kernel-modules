@@ -23,14 +23,11 @@
 
 #define NVOC_KERNEL_NVLINK_H_PRIVATE_ACCESS_ALLOWED
 
-// FIXME XXX
-#define NVOC_KERNEL_IOCTRL_H_PRIVATE_ACCESS_ALLOWED
-
 #include "os/os.h"
 #include "core/hal.h"
-#include "core/info_block.h"
 #include "core/locks.h"
 #include "core/thread_state.h"
+#include "gpu_mgr/gpu_mgr.h"
 #include "gpu/gpu.h"
 
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
@@ -1492,6 +1489,16 @@ knvlinkCoreTrainingCompleteCallback
     {
         NV_PRINTF(LEVEL_ERROR, "Error issuing NvLink Training Complete callback!\n");
     }
+}
+
+NvlStatus
+knvlinkCoreGetCciLinkModeCallback
+(
+    nvlink_link *link,
+    NvU64       *mode
+)
+{
+    return NVL_SUCCESS;
 }
 
 /*

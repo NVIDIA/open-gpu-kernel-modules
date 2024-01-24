@@ -31,6 +31,7 @@
 #include "kernel/virtualization/hypervisor/hypervisor.h"
 #include "kernel/core/locks.h"
 #include "lib/base_utils.h"
+#include "platform/sli/sli.h"
 
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
@@ -761,5 +762,76 @@ subdeviceCtrlCmdFifoDisableChannels_IMPL
         status = NV_ERR_NOT_SUPPORTED;
     }
 
+    return status;
+}
+
+/**
+ * @brief Disables and preempts the given channels and marks 
+ *        them disabled for key rotation. Conditionally also marks
+ *        them for re-enablement.
+ */
+NV_STATUS
+subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION_PARAMS *pDisableChannelParams
+)
+{
+    NV_STATUS       status        = NV_OK;
+    NV_STATUS       tmpStatus     = NV_OK;
+    OBJGPU         *pGpu          = GPU_RES_GET_GPU(pSubdevice);
+    CALL_CONTEXT   *pCallContext  = resservGetTlsCallContext();
+    RmCtrlParams   *pRmCtrlParams = pCallContext->pControlParams;
+    NvU32           i;
+
+    NV_CHECK_OR_RETURN(LEVEL_INFO,
+        pDisableChannelParams->numChannels <= NV_ARRAY_ELEMENTS(pDisableChannelParams->hChannelList),
+        NV_ERR_INVALID_ARGUMENT);
+    ct_assert(NV_ARRAY_ELEMENTS(pDisableChannelParams->hClientList) == \
+              NV_ARRAY_ELEMENTS(pDisableChannelParams->hChannelList));
+
+    // Send RPC to handle message on Host-RM
+    if (IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu))
+    {
+        NV_RM_RPC_CONTROL(pGpu,
+                          pRmCtrlParams->hClient,
+                          pRmCtrlParams->hObject,
+                          pRmCtrlParams->cmd,
+                          pRmCtrlParams->pParams,
+                          pRmCtrlParams->paramsSize,
+                          status);
+    }
+    // Send internal control call to actually disable channels and preempt channels
+    else
+    {
+        status = NV_ERR_NOT_SUPPORTED;
+        NV_ASSERT_OR_RETURN(status == NV_OK, status);
+    }
+
+    // Loop through all the channels and mark them disabled
+    for (i = 0; i < pDisableChannelParams->numChannels; i++)
+    {
+        RsClient              *pClient = NULL;
+        KernelChannel         *pKernelChannel = NULL;
+        tmpStatus = serverGetClientUnderLock(&g_resServ,
+                                          pDisableChannelParams->hClientList[i], &pClient);
+        if (tmpStatus != NV_OK)
+        {
+            status = tmpStatus;
+            NV_PRINTF(LEVEL_ERROR, "Failed to get client with hClient = 0x%x status = 0x%x\n", pDisableChannelParams->hClientList[i], status);
+            continue;
+        }
+        tmpStatus = CliGetKernelChannel(pClient,
+                                     pDisableChannelParams->hChannelList[i], &pKernelChannel);
+        if (tmpStatus != NV_OK)
+        {
+            status = tmpStatus;
+            NV_PRINTF(LEVEL_ERROR, "Failed to get channel with hclient = 0x%x hChannel = 0x%x status = 0x%x\n", 
+                                    pDisableChannelParams->hClientList[i], pDisableChannelParams->hChannelList[i], status);
+            continue;
+        }
+        kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_TRUE);
+        kchannelEnableAfterKeyRotation(pGpu, pKernelChannel, pDisableChannelParams->bEnableAfterKeyRotation);
+    }
     return status;
 }

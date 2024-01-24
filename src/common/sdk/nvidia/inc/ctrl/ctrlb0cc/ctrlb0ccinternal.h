@@ -48,7 +48,71 @@ typedef struct NVB0CC_CTRL_CMD_INTERNAL_ALLOC_PMA_STREAM_FINN_PARAMS {
     NV_DECLARE_ALIGNED(NVB0CC_CTRL_ALLOC_PMA_STREAM_PARAMS params, 8);
 } NVB0CC_CTRL_CMD_INTERNAL_ALLOC_PMA_STREAM_FINN_PARAMS;
 
+/*!
+ * NVB0CC_CTRL_CMD_INTERNAL_QUIESCE_PMA_CHANNEL
+ *
+ * This command is used to quiesce ongoing HWPM streamout and wait for PMA engine to
+ * become idle. After this point, no new PMA records would be generated and
+ * membytes streaming would be triggered if GR context is resident or HWPM ctxsw is disabled.
+ */
+#define NVB0CC_CTRL_CMD_INTERNAL_QUIESCE_PMA_CHANNEL (0xb0cc0201) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_INTERNAL_INTERFACE_ID << 8) | NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS_MESSAGE_ID" */
 
+#define NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS_MESSAGE_ID (0x1U)
+
+typedef struct NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS {
+    /*!
+     * [in] The PMA Channel Index associated with a given PMA stream.
+     */
+    NvU32  pmaChannelIdx;
+
+    /*!
+     * [out] Will return if membytes streaming was triggered, to decide if
+     *       we need to poll membytes value on guest to complete streamout.
+     */
+    NvBool bMembytesPollingRequired;
+} NVB0CC_CTRL_INTERNAL_QUIESCE_PMA_CHANNEL_PARAMS;
+
+/*!
+ * NVB0CC_CTRL_CMD_INTERNAL_SRIOV_PROMOTE_PMA_STREAM
+ *
+ * Currently only used in vGPU full SRIOV mode.
+ * This command is used to promote VAs and required info about the HWPM IB
+ * and PMA buffers from guest to host in full SRIOV mode.
+ */
+#define NVB0CC_CTRL_CMD_INTERNAL_SRIOV_PROMOTE_PMA_STREAM (0xb0cc0202) /* finn: Evaluated from "(FINN_MAXWELL_PROFILER_INTERNAL_INTERFACE_ID << 8) | NVB0CC_CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM_PARAMS_MESSAGE_ID" */
+
+#define NVB0CC_CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM_PARAMS_MESSAGE_ID (0x2U)
+
+typedef struct NVB0CC_CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM_PARAMS {
+    /*!
+     * [in] The PMA Channel Index associated with a given PMA stream.
+     */
+    NvU32 pmaChannelIdx;
+    /*!
+     * [in] PMA records buffer VA.
+     */
+    NV_DECLARE_ALIGNED(NvU64 pmaBufferVA, 8);
+
+    /*!
+     * [in] size of the PMA records buffer. This must be <= NVB0CC_PMA_BUFFER_SIZE_MAX.
+     */
+    NV_DECLARE_ALIGNED(NvU64 pmaBufferSize, 8);
+
+    /*!
+     * [in] Membytes buffer VA.
+     */
+    NV_DECLARE_ALIGNED(NvU64 membytesVA, 8);
+
+    /*!
+     * [in] HWPM PMA Instance Block PA
+     */
+    NV_DECLARE_ALIGNED(NvU64 hwpmIBPA, 8);
+
+    /*!
+     * [in] HWPM PMA Instance Block aperture
+     */
+    NvU8  hwpmIBAperture;
+} NVB0CC_CTRL_INTERNAL_SRIOV_PROMOTE_PMA_STREAM_PARAMS;
 
 /*!
  * NVB0CC_CTRL_CMD_INTERNAL_PERMISSIONS_INIT

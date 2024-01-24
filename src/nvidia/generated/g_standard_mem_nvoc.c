@@ -141,10 +141,6 @@ static void __nvoc_thunk_RmResource_stdmemControl_Epilogue(struct StandardMemory
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_stdmemControlLookup(struct StandardMemory *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RsResource.offset), pParams, ppEntry);
-}
-
 static NV_STATUS __nvoc_thunk_Memory_stdmemControl(struct StandardMemory *pMemory, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return memControl((struct Memory *)(((unsigned char *)pMemory) + __nvoc_rtti_StandardMemory_Memory.offset), pCallContext, pParams);
 }
@@ -167,6 +163,10 @@ static NV_STATUS __nvoc_thunk_RsResource_stdmemControlFilter(struct StandardMemo
 
 static NV_STATUS __nvoc_thunk_RmResource_stdmemControlSerialization_Prologue(struct StandardMemory *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return rmresControlSerialization_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RmResource.offset), pCallContext, pParams);
+}
+
+static NvBool __nvoc_thunk_RsResource_stdmemIsPartialUnmapSupported(struct StandardMemory *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_StandardMemory_RsResource.offset));
 }
 
 static NV_STATUS __nvoc_thunk_Memory_stdmemIsReady(struct StandardMemory *pMemory, NvBool bCopyConstructorContext) {
@@ -261,8 +261,6 @@ static void __nvoc_init_funcTable_StandardMemory_1(StandardMemory *pThis) {
 
     pThis->__stdmemControl_Epilogue__ = &__nvoc_thunk_RmResource_stdmemControl_Epilogue;
 
-    pThis->__stdmemControlLookup__ = &__nvoc_thunk_RsResource_stdmemControlLookup;
-
     pThis->__stdmemControl__ = &__nvoc_thunk_Memory_stdmemControl;
 
     pThis->__stdmemUnmap__ = &__nvoc_thunk_Memory_stdmemUnmap;
@@ -274,6 +272,8 @@ static void __nvoc_init_funcTable_StandardMemory_1(StandardMemory *pThis) {
     pThis->__stdmemControlFilter__ = &__nvoc_thunk_RsResource_stdmemControlFilter;
 
     pThis->__stdmemControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_stdmemControlSerialization_Prologue;
+
+    pThis->__stdmemIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_stdmemIsPartialUnmapSupported;
 
     pThis->__stdmemIsReady__ = &__nvoc_thunk_Memory_stdmemIsReady;
 
@@ -306,21 +306,26 @@ void __nvoc_init_StandardMemory(StandardMemory *pThis) {
     __nvoc_init_funcTable_StandardMemory(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_StandardMemory(StandardMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_StandardMemory(StandardMemory **ppThis, Dynamic *pParent, NvU32 createFlags, CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     StandardMemory *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(StandardMemory), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(StandardMemory));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_StandardMemory);
 
     pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -335,16 +340,25 @@ NV_STATUS __nvoc_objCreate_StandardMemory(StandardMemory **ppThis, Dynamic *pPar
     status = __nvoc_ctor_StandardMemory(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_StandardMemory_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_StandardMemory_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(StandardMemory));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

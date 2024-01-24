@@ -41,10 +41,12 @@
 #include "core/locks.h"
 #include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
 #include "vgpu/rpc.h"
+#include "vgpu/vgpu_util.h"
 #include "gpu/mmu/kern_gmmu.h"
 #include "virtualization/hypervisor/hypervisor.h"
 #include "gpu/device/device.h"
 #include "kernel/gpu/intr/intr.h"
+#include "platform/sli/sli.h"
 
 typedef enum
 {
@@ -3051,6 +3053,14 @@ NV_STATUS heapHwAlloc_IMPL
     //
     if ((status == NV_OK) && IS_VIRTUAL(pGpu))
     {
+        if (vgpuIsGuestManagedHwAlloc(pGpu) &&
+            (FLD_TEST_DRF(OS32, _ATTR, _COMPR, _NONE, pFbAllocInfo->pageFormat->attr)))
+        {
+            status = memmgrAllocHwResources(pGpu, pMemoryManager, pFbAllocInfo);
+            pHwAlloc->hwResource.isVgpuHostAllocated = NV_FALSE;
+            NV_ASSERT(status == NV_OK);
+        }
+        else
         {
             NV_RM_RPC_MANAGE_HW_RESOURCE_ALLOC(pGpu,
                                                hClient,
@@ -3180,6 +3190,11 @@ void heapHwFree_IMPL
 
     if (IS_VIRTUAL(pGpu))
     {
+        if (vgpuIsGuestManagedHwAlloc(pGpu) && !pMemory->pHwResource->isVgpuHostAllocated)
+        {
+            memmgrFreeHwResources(pGpu, pMemoryManager, pFbAllocInfo);
+        }
+        else
         {
             NV_STATUS rmStatus = NV_OK;
 
@@ -4191,6 +4206,7 @@ heapBlackListPages_IMPL
 )
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     PMA                 *pPma       = &pHeap->pmaObject;
     NvU32                i = 0, j = 0;
     NV_STATUS            status     = NV_OK;
@@ -4200,8 +4216,7 @@ heapBlackListPages_IMPL
     NvU32                staticBlacklistSize, dynamicBlacklistSize;
     NvU32                dynamicRmBlackListedCount;
     NvU32                staticRmBlackListedCount;
-    const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
-        kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
+    NvU16                maximumBlacklistPages = kmemsysGetMaximumBlacklistPages(pGpu, pKernelMemorySystem);
 
     if (NULL == pAddresses)
     {
@@ -4218,14 +4233,14 @@ heapBlackListPages_IMPL
     // We may not be able to allocate all pages requested, but alloc enough
     // space anyway
     //
-    pBlackList->pBlacklistChunks = portMemAllocNonPaged(sizeof(BLACKLIST_CHUNK) * pMemorySystemConfig->maximumBlacklistPages);
+    pBlackList->pBlacklistChunks = portMemAllocNonPaged(sizeof(BLACKLIST_CHUNK) * maximumBlacklistPages);
     if (NULL == pBlackList->pBlacklistChunks)
     {
         NV_PRINTF(LEVEL_ERROR, "Could not allocate memory for blackList!\n");
         return NV_ERR_NO_MEMORY;
     }
 
-    portMemSet(pBlackList->pBlacklistChunks, 0, sizeof(BLACKLIST_CHUNK) * pMemorySystemConfig->maximumBlacklistPages);
+    portMemSet(pBlackList->pBlacklistChunks, 0, sizeof(BLACKLIST_CHUNK) * maximumBlacklistPages);
 
     dynamicRmBlackListedCount = 0;
     staticRmBlackListedCount  = 0;
@@ -4401,6 +4416,7 @@ heapStorePendingBlackList_IMPL
 )
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
     NV_STATUS status = NV_OK;
     NvU64  physicalAddress;
     NvU64  pageNumber;
@@ -4449,7 +4465,7 @@ heapStorePendingBlackList_IMPL
         if (pMemoryManager->bEnableDynamicPageOfflining)
         {
             // adding a new entry to heap managed blacklist
-            if (pBlacklist->count == pMemorySystemConfig->maximumBlacklistPages)
+            if (pBlacklist->count == kmemsysGetMaximumBlacklistPages(pGpu, pKernelMemorySystem))
             {
                 NV_PRINTF(LEVEL_ERROR, "We have blacklisted maximum number of pages possible. returning error \n");
                 return NV_ERR_INSUFFICIENT_RESOURCES;
@@ -4525,18 +4541,18 @@ heapAddPageToBlackList_IMPL
     NvU32   type
 )
 {
+    KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    NvU16 maximumBlacklistPages = kmemsysGetMaximumBlacklistPages(pGpu, pKernelMemorySystem);
     NvU32 index = pHeap->blackListAddresses.count;
-    const MEMORY_SYSTEM_STATIC_CONFIG *pMemorySystemConfig =
-        kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
 
-    if (index == pMemorySystemConfig->maximumBlacklistPages)
+    if (index == maximumBlacklistPages)
     {
         return NV_ERR_INSUFFICIENT_RESOURCES;
     }
 
     if (pHeap->blackListAddresses.data == NULL)
     {
-        NvU64 listSize = sizeof(BLACKLIST_ADDRESS) * pMemorySystemConfig->maximumBlacklistPages;
+        NvU64 listSize = sizeof(BLACKLIST_ADDRESS) * maximumBlacklistPages;
 
         pHeap->blackListAddresses.data = portMemAllocNonPaged(listSize);
         if (pHeap->blackListAddresses.data == NULL)

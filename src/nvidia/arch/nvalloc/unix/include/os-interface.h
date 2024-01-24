@@ -67,7 +67,6 @@ typedef struct os_wait_queue os_wait_queue;
  * ---------------------------------------------------------------------------
  */
 
-NvU64       NV_API_CALL  os_get_num_phys_pages       (void);
 NV_STATUS   NV_API_CALL  os_alloc_mem                (void **, NvU64);
 void        NV_API_CALL  os_free_mem                 (void *);
 NV_STATUS   NV_API_CALL  os_get_current_time         (NvU32 *, NvU32 *);
@@ -105,7 +104,6 @@ void*       NV_API_CALL  os_map_kernel_space         (NvU64, NvU64, NvU32);
 void        NV_API_CALL  os_unmap_kernel_space       (void *, NvU64);
 void*       NV_API_CALL  os_map_user_space           (NvU64, NvU64, NvU32, NvU32, void **);
 void        NV_API_CALL  os_unmap_user_space         (void *, NvU64, void *);
-NV_STATUS   NV_API_CALL  os_flush_cpu_cache          (void);
 NV_STATUS   NV_API_CALL  os_flush_cpu_cache_all      (void);
 NV_STATUS   NV_API_CALL  os_flush_user_cache         (void);
 void        NV_API_CALL  os_flush_cpu_write_combine_buffer(void);
@@ -230,14 +228,12 @@ extern NvBool os_dma_buf_enabled;
  * ---------------------------------------------------------------------------
  */
 
-#define NV_DBG_INFO       0x1
-#define NV_DBG_SETUP      0x2
+#define NV_DBG_INFO       0x0
+#define NV_DBG_SETUP      0x1
+#define NV_DBG_USERERRORS 0x2
 #define NV_DBG_WARNINGS   0x3
 #define NV_DBG_ERRORS     0x4
-#define NV_DBG_HW_ERRORS  0x5
-#define NV_DBG_FATAL      0x6
 
-#define NV_DBG_FORCE_LEVEL(level) ((level) | (1 << 8))
 
 void NV_API_CALL  out_string(const char *str);
 int  NV_API_CALL  nv_printf(NvU32 debuglevel, const char *printf_format, ...);

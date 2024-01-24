@@ -374,7 +374,6 @@ _memmgrAllocFbsrReservedRanges
                             ADDR_FBMEM,
                             pKernelGsp->pWprMeta->vgaWorkspaceOffset,
                             pKernelGsp->pWprMeta->vgaWorkspaceSize);
-
         }
         // Allocate Vid Mem descriptor for RM INSTANCE memory, specific to VGA  i.e. after BAR2PTE to end.
         else
@@ -664,25 +663,19 @@ memmgrAddMemNodes_IMPL
         // content of memory descriptor, remove MEMDESC_FLAGS_LOST_ON_SUSPEND
         // flag.
         //
-        if (pAllocMemDesc != NULL)
+        if (block->owner != NVOS32_BLOCK_TYPE_FREE && pAllocMemDesc != NULL)
         {
-            //
-            // Save RM_RESERVED_REGION if it is not GSP managed FB region and
-            // - bSaveRmAllocations true or
-            // - MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND is set
+            if (memdescGetFlag(pAllocMemDesc, MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND))
+            {
+                bSaveNode = NV_TRUE;
+            }
             // TODO: Use LOST_ON_SUSPEND flag to skip GSP managed FB regions
-            //
-            if  ((block->owner == HEAP_OWNER_RM_RESERVED_REGION) &&
+            else if  ((block->owner == HEAP_OWNER_RM_RESERVED_REGION) &&
                  !memmgrIsGspOwnedMemory_HAL(pGpu, pMemoryManager, pAllocMemDesc))
             {
-                if (bSaveAllRmAllocations || memdescGetFlag(pAllocMemDesc, MEMDESC_FLAGS_PRESERVE_CONTENT_ON_SUSPEND))
+                if (bSaveAllRmAllocations)
                     bSaveNode = NV_TRUE;
             }
-            //
-            // Save RM_CHANNEL_CTX_BUFFER or RM_KERNEL_CLIENT regions if
-            // - bSaveRmAllocations true or
-            // - MEMDESC_FLAGS_PRESERVE_LOST_ON_SUSPEND is not set
-            //
             else if ((block->owner == HEAP_OWNER_RM_CHANNEL_CTX_BUFFER) || (block->owner == HEAP_OWNER_RM_KERNEL_CLIENT))
             {
                 if (bSaveAllRmAllocations || (!memdescGetFlag(pAllocMemDesc, MEMDESC_FLAGS_LOST_ON_SUSPEND)))

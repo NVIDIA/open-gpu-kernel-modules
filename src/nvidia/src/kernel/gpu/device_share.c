@@ -32,7 +32,6 @@
 #include "gpu/mem_mgr/vaspace_api.h"
 #include "rmapi/rs_utils.h"
 #include "gpu/device/device.h"
-#include "gpu/subdevice/subdevice.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 
 #include "gpu/mem_mgr/virt_mem_allocator.h"

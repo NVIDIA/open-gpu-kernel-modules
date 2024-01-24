@@ -24,6 +24,8 @@
 
 #include "gpu/gpu.h"
 #include "core/locks.h"
+#include "vgpu/rpc.h"
+#include "rmapi/rmapi_utils.h"
 
 #include "g_finn_rm_api.h"
 
@@ -99,13 +101,26 @@ NV_STATUS RmGssLegacyRpcCmd
     if (status != NV_OK)
         goto done;
 
-    RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-    status = pRmApi->Control(pRmApi,
-                             pArgs->hClient,
-                             pArgs->hObject,
-                             pArgs->cmd,
-                             pKernelParams,
-                             pArgs->paramsSize);
+    if (IS_VIRTUAL(pGpu))
+    {
+        NV_RM_RPC_API_CONTROL(pGpu,
+                              pArgs->hClient,
+                              pArgs->hObject,
+                              pArgs->cmd,
+                              pKernelParams,
+                              pArgs->paramsSize,
+                              status);
+    }
+    else
+    {
+        RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        status = pRmApi->Control(pRmApi,
+                                 pArgs->hClient,
+                                 pArgs->hObject,
+                                 pArgs->cmd,
+                                 pKernelParams,
+                                 pArgs->paramsSize);
+    }
 
 done:
     if (gpuMaskRelease != 0)

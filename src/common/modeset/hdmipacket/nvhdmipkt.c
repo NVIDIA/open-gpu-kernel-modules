@@ -243,7 +243,7 @@ NvHdmiPkt_PacketWrite(NvHdmiPkt_Handle  libHandle,
         ((infoframeType == hdmi_pktType_GamutMetadata)                  && (packetLen < sizeof(NVT_GAMUT_METADATA)))                    ||
         ((infoframeType == hdmi_pktType_ExtendedMetadata)               && (packetLen < sizeof(NVT_EXTENDED_METADATA_PACKET_INFOFRAME)))||
         ((infoframeType == hdmi_pktType_VendorSpecInfoFrame)            && (packetLen < 8))                                             ||
-        ((infoframeType == hdmi_pktType_AviInfoFrame)                   && (packetLen < sizeof(NVT_VIDEO_INFOFRAME)))                   ||
+        ((infoframeType == hdmi_pktType_AviInfoFrame)                   && (packetLen < 13))                                            ||
         ((infoframeType == hdmi_pktType_SrcProdDescInfoFrame)           && (packetLen < sizeof(NVT_SPD_INFOFRAME)))                     ||
         ((infoframeType == hdmi_pktType_DynamicRangeMasteringInfoFrame) && (packetLen < sizeof(NVT_HDR_INFOFRAME))))
         //  Unused: hdmi_pktType_AudioClkRegeneration

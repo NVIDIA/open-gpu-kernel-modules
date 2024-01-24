@@ -121,7 +121,7 @@ NV_STATUS uvm_pushbuffer_create(uvm_channel_manager_t *channel_manager, uvm_push
     if (status != NV_OK)
         goto error;
 
-    if (uvm_conf_computing_mode_enabled(gpu)) {
+    if (g_uvm_global.conf_computing_enabled) {
         UVM_ASSERT(channel_manager->conf.pushbuffer_loc == UVM_BUFFER_LOCATION_SYS);
 
         // Move the above allocation to unprotected_sysmem
@@ -136,7 +136,6 @@ NV_STATUS uvm_pushbuffer_create(uvm_channel_manager_t *channel_manager, uvm_push
             status = NV_ERR_NO_MEMORY;
             goto error;
         }
-
 
         status = uvm_rm_mem_alloc(gpu,
                                   UVM_RM_MEM_TYPE_GPU,
@@ -263,12 +262,12 @@ static char *get_base_cpu_va(uvm_pushbuffer_t *pushbuffer)
     // Confidential Computing pushes are assembled in protected sysmem
     // and safely (through encrypt/decrypt) moved to protected vidmem.
     // Or signed and moved to unprotected sysmem.
-    if (uvm_conf_computing_mode_enabled(pushbuffer->channel_manager->gpu)) {
-        // Align protected sysmem base to 4kB. This should be enough to give
-        // the same alignment behaviour for inline buffers as the other two
-        // backing memory locations.
+    //
+    // The protected sysmem base is aligned to 4kB. This is enough to give
+    // the same alignment behaviour for inline buffers as the other two
+    // backing memory locations.
+    if (g_uvm_global.conf_computing_enabled)
         return (char*)(UVM_ALIGN_UP((uintptr_t)pushbuffer->memory_protected_sysmem, UVM_PAGE_SIZE_4K));
-    }
 
     return (char *)uvm_rm_mem_get_cpu_va(pushbuffer->memory);
 }
@@ -682,7 +681,7 @@ NvU64 uvm_pushbuffer_get_gpu_va_base(uvm_pushbuffer_t *pushbuffer)
 
 NvU64 uvm_pushbuffer_get_sec2_gpu_va_base(uvm_pushbuffer_t *pushbuffer)
 {
-    UVM_ASSERT(uvm_conf_computing_mode_enabled(pushbuffer->channel_manager->gpu));
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
     return uvm_rm_mem_get_gpu_uvm_va(pushbuffer->memory_unprotected_sysmem, pushbuffer->channel_manager->gpu);
 }

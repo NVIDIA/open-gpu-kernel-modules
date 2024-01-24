@@ -272,6 +272,7 @@ typedef NvU8 FLCN_STATUS;
 #define FLCN_ERR_QUEUE_TASK_INVALID_EVENT_TYPE                             (0xE2U)
 #define FLCN_ERR_QUEUE_TASK_INVALID_UNIT_ID                                (0xE3U)
 #define FLCN_ERR_QUEUE_TASK_INVALID_CMD_TYPE                               (0xE4U)
+#define FLCN_ERR_QUEUE_TASK_SLOT_NOT_AVAILABLE                             (0xE5U)
 
 // Posted write errors
 #define FLCN_ERR_POSTED_WRITE_FAILURE                                      (0xF0U)

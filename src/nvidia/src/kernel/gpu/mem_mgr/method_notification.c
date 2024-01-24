@@ -38,6 +38,7 @@
 #include "gpu/device/device.h"
 #include "gpu/bus/kern_bus.h"
 #include "gpu/mem_mgr/mem_mgr.h"
+#include "platform/sli/sli.h"
 
 //---------------------------------------------------------------------------
 //

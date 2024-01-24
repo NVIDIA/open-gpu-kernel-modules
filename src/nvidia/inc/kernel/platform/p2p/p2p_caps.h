@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -27,7 +27,7 @@
 typedef enum
 {
     P2P_CONNECTIVITY_UNKNOWN = 0,
-    P2P_CONNECTIVITY_PCIE,
+    P2P_CONNECTIVITY_PCIE_PROPRIETARY,
     P2P_CONNECTIVITY_PCIE_BAR1,
     P2P_CONNECTIVITY_NVLINK,
     P2P_CONNECTIVITY_NVLINK_INDIRECT,

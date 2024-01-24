@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2001-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2001-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -93,4 +93,21 @@
 typedef struct NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS {
     NvU32 exceptType;
     NvU32 engineID;
-} NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS;/* _ctrl506f.h_ */
+} NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS;
+
+/*
+ * NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL
+ *
+ * This command is an internal command sent from Kernel RM to Physical RM
+ * to perform the channel reset operations in hardware on an isolated channel
+ *
+ * Please see description of NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL for more information.
+ *
+ */
+#define NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL (0x506f0106) /* finn: Evaluated from "(FINN_NV50_CHANNEL_GPFIFO_GPFIFO_INTERFACE_ID << 8) | NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS_MESSAGE_ID" */
+
+#define NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS_MESSAGE_ID (0x6U)
+
+typedef NV506F_CTRL_CMD_RESET_ISOLATED_CHANNEL_PARAMS NV506F_CTRL_CMD_INTERNAL_RESET_ISOLATED_CHANNEL_PARAMS;
+
+/* _ctrl506f.h_ */

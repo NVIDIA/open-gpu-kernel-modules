@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018-2022 NVIDIA Corporation
+    Copyright (c) 2018-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -33,7 +33,7 @@ bool uvm_hal_ampere_host_method_is_valid(uvm_push_t *push, NvU32 method_address,
 {
     uvm_gpu_t *gpu = uvm_push_get_gpu(push);
 
-    if (!uvm_gpu_is_virt_mode_sriov_heavy(gpu))
+    if (!uvm_parent_gpu_is_virt_mode_sriov_heavy(gpu->parent))
         return true;
 
     if (uvm_channel_is_privileged(push->channel)) {

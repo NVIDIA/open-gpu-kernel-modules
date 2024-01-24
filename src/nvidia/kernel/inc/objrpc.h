@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -37,10 +37,14 @@
 #include "ctrl/ctrl0080/ctrl0080fb.h" // rmcontrol params (from hal)
 #include "ctrl/ctrl0080/ctrl0080dma.h" // rmcontrol params (from hal)
 #include "gpu/gsp/message_queue.h"
+#include "libraries/utils/nvbitvector.h"
+
+#include "objrpcstructurecopy.h"
 
 
 typedef struct GSP_FIRMWARE GSP_FIRMWARE;
 typedef struct _object_vgpu OBJVGPU, *POBJVGPU;
+TYPEDEF_BITVECTOR(MC_ENGINE_BITVECTOR);
 
 #include "g_rpc_hal.h" // For RPC_HAL_IFACES
 #include "g_rpc_odb.h" // For RPC_HAL_IFACES
@@ -53,7 +57,9 @@ typedef struct _object_vgpu OBJVGPU, *POBJVGPU;
 typedef struct RpcHistoryEntry
 {
     NvU32 function;
-    NvU32 data[3];
+    NvU64 data[2];
+    NvU64 ts_start;
+    NvU64 ts_end;
 } RpcHistoryEntry;
 
 struct OBJRPC{
@@ -68,6 +74,7 @@ struct OBJRPC{
     NvU32 *message_buffer_priv;
     MEMORY_DESCRIPTOR *pMemDesc_mesg;
     NvU32  maxRpcSize;
+    NvU32  largeRpcSize;
 
     // UVM Message buffer fields
     NvU32 *message_buffer_uvm;
@@ -79,9 +86,12 @@ struct OBJRPC{
 
     RpcHistoryEntry rpcHistory[RPC_HISTORY_DEPTH];
     NvU32 rpcHistoryCurrent;
+    RpcHistoryEntry rpcEventHistory[RPC_HISTORY_DEPTH];
+    NvU32 rpcEventHistoryCurrent;
     NvU32 timeoutCount;
     NvBool bQuietPrints;
 
+    OBJRPCSTRUCTURECOPY rpcStructureCopy;
 };
 
 //
@@ -94,25 +104,35 @@ struct OBJRPC{
 #define vgpu_rpc_message_header_v  ((rpc_message_header_v*)(pRpc->message_buffer))
 #define rpc_message                (vgpu_rpc_message_header_v->rpc_message_data)
 
+static inline void _objrpcStructureCopyAssignIpVersion(struct OBJRPCSTRUCTURECOPY* pRpcStructureCopy, NvU32 ipVersion)
+{
+    pRpcStructureCopy->__nvoc_pbase_Object->ipVersion = ipVersion;
+}
+
 static inline void _objrpcAssignIpVersion(struct OBJRPC* pRpc, NvU32 ipVersion)
 {
     pRpc->__nvoc_pbase_Object->ipVersion = ipVersion;
 }
 
-// Initialize and free RPC infrastructure
-NV_STATUS initRpcInfrastructure_VGPU(OBJGPU *pGpu);
-NV_STATUS freeRpcInfrastructure_VGPU(OBJGPU *pGpu);
 OBJRPC *initRpcObject(OBJGPU *pGpu);
 void rpcSetIpVersion(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 ipVersion);
 void rpcObjIfacesSetup(OBJRPC *pRpc);
 NV_STATUS rpcWriteCommonHeader(OBJGPU *pGpu, OBJRPC *pRpc, NvU32 func, NvU32 paramLength);
 NV_STATUS rpcWriteCommonHeaderSim(OBJGPU *pGpu);
-NV_STATUS _allocRpcMemDesc(OBJGPU *pGpu, NvU64 size, NvBool bContig, NV_ADDRESS_SPACE addrSpace, MEMORY_DESCRIPTOR **ppMemDesc, void **ppMemBuffer, void **ppMemBufferPriv);
-void _freeRpcMemDesc(OBJGPU *pGpu, MEMORY_DESCRIPTOR **ppMemDesc, void **ppMemBuffer, void **ppMemBufferPriv);
 NV_STATUS vgpuGspSetupBuffers(OBJGPU *pGpu);
 void vgpuGspTeardownBuffers(OBJGPU *pGpu);
 NV_STATUS vgpuReinitializeRpcInfraOnStateLoad(OBJGPU *pGpu);
 
+// Initialize and free RPC infrastructure
+NV_STATUS initRpcInfrastructure_VGPU(OBJGPU *pGpu);
+NV_STATUS freeRpcInfrastructure_VGPU(OBJGPU *pGpu);
+
+NV_STATUS _allocRpcMemDesc(OBJGPU *pGpu, NvU64 size, NvBool bContig, NV_ADDRESS_SPACE addrSpace, NvU32 memFlags,
+                           MEMORY_DESCRIPTOR **ppMemDesc, void **ppMemBuffer, void **ppMemBufferPriv);
+void _freeRpcMemDesc(OBJGPU *pGpu, MEMORY_DESCRIPTOR **ppMemDesc, void **ppMemBuffer, void **ppMemBufferPriv);
+
+NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                               void *pParamStructPtr, NvU32 paramSize);
 //
 // OBJGPU RPC member accessors.
 // Historically, they have been defined inline by the following macros.

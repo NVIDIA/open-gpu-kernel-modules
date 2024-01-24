@@ -37,8 +37,8 @@ void rpcObjIfacesSetup(OBJRPC *pRpc)
     pRpcMethods->__rpcDestroy__               = rpcDestroy_IMPL;
     pRpcMethods->__rpcSendMessage__           = rpcSendMessage_IMPL;
     pRpcMethods->__rpcRecvPoll__              = rpcRecvPoll_IMPL;
- //     pRpcMethods->__rpcSendMessageUvm__        = rpcSendMessageUvm_IMPL; # ONLY_IF => VIRTUALIZATION
- //     pRpcMethods->__rpcRecvPollUvm__           = rpcRecvPollUvm_IMPL; # ONLY_IF => VIRTUALIZATION
+ //     pRpcMethods->__rpcSendMessageUvm__        = rpcSendMessageUvm_IMPL; # ONLY_IF => VIRTUALIZATION_LEGACY
+ //     pRpcMethods->__rpcRecvPollUvm__           = rpcRecvPollUvm_IMPL; # ONLY_IF => VIRTUALIZATION_LEGACY
 }
 
 static void

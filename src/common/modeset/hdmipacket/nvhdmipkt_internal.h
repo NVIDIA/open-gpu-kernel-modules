@@ -34,6 +34,9 @@
 #define toHdmiPktHandle(p)   ((NvHdmiPkt_Handle)(p))
 #define fromHdmiPktHandle(h) ((NVHDMIPKT_CLASS*)(h))
 
+// CTA infoframe max payload size
+#define NVHDMIPKT_CTAIF_MAX_PKT_BYTES  31 // 3 bytes header + 28 bytes data
+
 extern void initializeHdmiPktInterface0073(NVHDMIPKT_CLASS*);
 extern void initializeHdmiPktInterface9171(NVHDMIPKT_CLASS*);
 extern void initializeHdmiPktInterface9271(NVHDMIPKT_CLASS*);

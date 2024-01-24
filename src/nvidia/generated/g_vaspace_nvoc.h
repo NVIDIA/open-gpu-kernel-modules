@@ -240,11 +240,16 @@ typedef enum
 /*!
  * Abstract base class of an RM-managed virtual address space.
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_VASPACE_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct OBJVASPACE {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct Object __nvoc_base_Object;
@@ -263,7 +268,7 @@ struct OBJVASPACE {
     void (*__vaspaceUnmap__)(struct OBJVASPACE *, struct OBJGPU *, const NvU64, const NvU64);
     NV_STATUS (*__vaspaceReserveMempool__)(struct OBJVASPACE *, struct OBJGPU *, struct Device *, NvU64, NvU64, NvU32);
     struct OBJEHEAP *(*__vaspaceGetHeap__)(struct OBJVASPACE *);
-    NvU64 (*__vaspaceGetMapPageSize__)(struct OBJVASPACE *, struct OBJGPU *, EMEMBLOCK *);
+    NvU64 (*__vaspaceGetMapPageSize__)(struct OBJVASPACE *, struct OBJGPU *, struct EMEMBLOCK *);
     NvU64 (*__vaspaceGetBigPageSize__)(struct OBJVASPACE *);
     NvBool (*__vaspaceIsMirrored__)(struct OBJVASPACE *);
     NvBool (*__vaspaceIsFaultCapable__)(struct OBJVASPACE *);
@@ -427,12 +432,12 @@ static inline struct OBJEHEAP *vaspaceGetHeap_DISPATCH(struct OBJVASPACE *pVAS) 
     return pVAS->__vaspaceGetHeap__(pVAS);
 }
 
-static inline NvU64 vaspaceGetMapPageSize_07238a(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
+static inline NvU64 vaspaceGetMapPageSize_07238a(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
     NV_ASSERT_PRECOMP(((NvBool)(0 != 0)));
     return 0U;
 }
 
-static inline NvU64 vaspaceGetMapPageSize_DISPATCH(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, EMEMBLOCK *pMemBlock) {
+static inline NvU64 vaspaceGetMapPageSize_DISPATCH(struct OBJVASPACE *pVAS, struct OBJGPU *pGpu, struct EMEMBLOCK *pMemBlock) {
     return pVAS->__vaspaceGetMapPageSize__(pVAS, pGpu, pMemBlock);
 }
 

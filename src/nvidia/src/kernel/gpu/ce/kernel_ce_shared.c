@@ -90,7 +90,7 @@ NvBool ceIsCeGrce(OBJGPU *pGpu, RM_ENGINE_TYPE rmCeEngineType)
     // check if gr is in the partnerList
     for (i = 0; i < partnerParams.numPartners; i++)
     {
-        if (partnerParams.partnerList[i] == NV2080_ENGINE_TYPE_GRAPHICS)
+        if (NV2080_ENGINE_TYPE_IS_GR(partnerParams.partnerList[i]))
         {
             return NV_TRUE;
         }

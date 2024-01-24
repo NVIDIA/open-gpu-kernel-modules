@@ -22,6 +22,7 @@
 *******************************************************************************/
 #include "uvm_common.h"
 #include "uvm_ioctl.h"
+#include "uvm_global.h"
 #include "uvm_gpu.h"
 #include "uvm_hal.h"
 #include "uvm_tools.h"
@@ -285,7 +286,7 @@ static NV_STATUS map_user_pages(NvU64 user_va, NvU64 size, void **addr, struct p
         nv_mmap_read_unlock(current->mm);
         goto fail;
     }
-    ret = NV_PIN_USER_PAGES(user_va, num_pages, FOLL_WRITE, *pages, NULL);
+    ret = NV_PIN_USER_PAGES(user_va, num_pages, FOLL_WRITE, *pages);
     nv_mmap_read_unlock(current->mm);
 
     if (ret != num_pages) {
@@ -517,7 +518,7 @@ static bool counter_matches_processor(UvmCounterName counter, const NvProcessorU
     // for their preferred location as well as for the CPU device itself.
     // This check prevents double counting in the aggregate count.
     if (counter == UvmCounterNameCpuPageFaultCount)
-        return uvm_processor_uuid_eq(processor, &NV_PROCESSOR_UUID_CPU_DEFAULT);
+        return uvm_uuid_eq(processor, &NV_PROCESSOR_UUID_CPU_DEFAULT);
     return true;
 }
 
@@ -542,7 +543,7 @@ static void uvm_tools_inc_counter(uvm_va_space_t *va_space,
 
         list_for_each_entry(counters, va_space->tools.counters + counter, counter_nodes[counter]) {
             if ((counters->all_processors && counter_matches_processor(counter, processor)) ||
-                uvm_processor_uuid_eq(&counters->processor, processor)) {
+                uvm_uuid_eq(&counters->processor, processor)) {
                 atomic64_add(amount, (atomic64_t *)(counters->counters + counter));
             }
         }
@@ -747,7 +748,7 @@ static void record_gpu_fault_instance(uvm_gpu_t *gpu,
     memset(&entry, 0, sizeof(entry));
 
     info->eventType     = UvmEventTypeGpuFault;
-    info->gpuIndex      = uvm_id_value(gpu->id);
+    info->gpuIndex      = uvm_parent_id_value_from_processor_id(gpu->id);
     info->faultType     = g_hal_to_tools_fault_type_table[fault_entry->fault_type];
     info->accessType    = g_hal_to_tools_fault_access_type_table[fault_entry->fault_access_type];
     info->clientType    = g_hal_to_tools_fault_client_type_table[fault_entry->fault_source.client_type];
@@ -869,8 +870,8 @@ static void record_migration_events(void *args)
     // Initialize fields that are constant throughout the whole block
     memset(&entry, 0, sizeof(entry));
     info->eventType      = UvmEventTypeMigration;
-    info->srcIndex       = uvm_id_value(block_mig->src);
-    info->dstIndex       = uvm_id_value(block_mig->dst);
+    info->srcIndex       = uvm_parent_id_value_from_processor_id(block_mig->src);
+    info->dstIndex       = uvm_parent_id_value_from_processor_id(block_mig->dst);
     info->beginTimeStamp = block_mig->start_timestamp_cpu;
     info->endTimeStamp   = block_mig->end_timestamp_cpu;
     info->rangeGroupId   = block_mig->range_group_id;
@@ -934,7 +935,7 @@ static void record_replay_event_helper(uvm_gpu_id_t gpu_id,
 
     memset(&entry, 0, sizeof(entry));
     entry.eventData.gpuFaultReplay.eventType    = UvmEventTypeGpuFaultReplay;
-    entry.eventData.gpuFaultReplay.gpuIndex     = uvm_id_value(gpu_id);
+    entry.eventData.gpuFaultReplay.gpuIndex     = uvm_parent_id_value_from_processor_id(gpu_id);
     entry.eventData.gpuFaultReplay.batchId      = batch_id;
     entry.eventData.gpuFaultReplay.clientType   = g_hal_to_tools_fault_client_type_table[client_type];
     entry.eventData.gpuFaultReplay.timeStamp    = timestamp;
@@ -987,9 +988,11 @@ static UvmEventMigrationCause g_make_resident_to_tools_migration_cause[UVM_MAKE_
     [UVM_MAKE_RESIDENT_CAUSE_API_HINT]             = UvmEventMigrationCauseUser,
 };
 
-// This event is notified asynchronously when all the migrations pushed to the
-// same uvm_push_t object in a call to block_copy_resident_pages_between have
-// finished
+// For non-CPU-to-CPU migrations (or CPU-to-CPU copies using CEs), this event is
+// notified asynchronously when all the migrations pushed to the same uvm_push_t
+// object in a call to block_copy_resident_pages_between have finished.
+// For CPU-to-CPU copies using memcpy, this event is notified when all of the
+// page copies does by block_copy_resident_pages have finished.
 static void uvm_tools_record_migration(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
 {
     uvm_va_block_t *va_block = event_data->migration.block;
@@ -1005,23 +1008,59 @@ static void uvm_tools_record_migration(uvm_perf_event_t event_id, uvm_perf_event
     UVM_ASSERT(tools_is_migration_callback_needed(va_space));
 
     if (tools_is_event_enabled(va_space, UvmEventTypeMigration)) {
-        migration_data_t *mig;
-        uvm_push_info_t *push_info = uvm_push_info_from_push(event_data->migration.push);
-        block_migration_data_t *block_mig = (block_migration_data_t *)push_info->on_complete_data;
+        if (!UVM_ID_IS_CPU(event_data->migration.src) || !UVM_ID_IS_CPU(event_data->migration.dst)) {
+            migration_data_t *mig;
+            uvm_push_info_t *push_info = uvm_push_info_from_push(event_data->migration.push);
+            block_migration_data_t *block_mig = (block_migration_data_t *)push_info->on_complete_data;
 
-        if (push_info->on_complete != NULL) {
-            mig = kmem_cache_alloc(g_tools_migration_data_cache, NV_UVM_GFP_FLAGS);
-            if (mig == NULL)
-                goto done_unlock;
+            if (push_info->on_complete != NULL) {
+                mig = kmem_cache_alloc(g_tools_migration_data_cache, NV_UVM_GFP_FLAGS);
+                if (mig == NULL)
+                    goto done_unlock;
 
-            mig->address = event_data->migration.address;
-            mig->bytes = event_data->migration.bytes;
-            mig->end_timestamp_gpu_addr = uvm_push_timestamp(event_data->migration.push);
-            mig->cause = g_make_resident_to_tools_migration_cause[event_data->migration.cause];
+                mig->address = event_data->migration.address;
+                mig->bytes = event_data->migration.bytes;
+                mig->end_timestamp_gpu_addr = uvm_push_timestamp(event_data->migration.push);
+                mig->cause = g_make_resident_to_tools_migration_cause[event_data->migration.cause];
 
-            list_add_tail(&mig->events_node, &block_mig->events);
+                list_add_tail(&mig->events_node, &block_mig->events);
+            }
+        }
+        else {
+            UvmEventEntry entry;
+            UvmEventMigrationInfo *info = &entry.eventData.migration;
+            uvm_va_space_t *va_space = uvm_va_block_get_va_space(event_data->migration.block);
+
+            // CPU-to-CPU migration events can be added directly to the queue.
+            memset(&entry, 0, sizeof(entry));
+            info->eventType = UvmEventTypeMigration;
+            info->srcIndex = uvm_parent_id_value_from_processor_id(event_data->migration.src);
+            info->dstIndex = uvm_parent_id_value_from_processor_id(event_data->migration.dst);
+            // TODO: Bug 4232310: Add src and dst NUMA node IDS to event data.
+            //info->srcNid = event_data->migration.src_nid;
+            //info->dstNid = event_data->migration.dst_nid;
+            info->address = event_data->migration.address;
+            info->migratedBytes = event_data->migration.bytes;
+            info->beginTimeStamp = event_data->migration.cpu_start_timestamp;
+            info->endTimeStamp = NV_GETTIME();
+            info->migrationCause = event_data->migration.cause;
+            info->rangeGroupId = UVM_RANGE_GROUP_ID_NONE;
+
+            // During evictions, it is not safe to uvm_range_group_range_find() because the va_space lock is not held.
+            if (event_data->migration.cause != UVM_MAKE_RESIDENT_CAUSE_EVICTION) {
+                uvm_range_group_range_t *range = uvm_range_group_range_find(va_space, event_data->migration.address);
+                if (range != NULL)
+                    info->rangeGroupId = range->range_group->id;
+            }
+
+            uvm_tools_record_event(va_space, &entry);
         }
     }
+
+    // We don't want to increment neither UvmCounterNameBytesXferDtH nor
+    // UvmCounterNameBytesXferHtD in a CPU-to-CPU migration.
+    if (UVM_ID_IS_CPU(event_data->migration.src) && UVM_ID_IS_CPU(event_data->migration.dst))
+        goto done_unlock;
 
     // Increment counters
     if (UVM_ID_IS_CPU(event_data->migration.src) &&
@@ -1082,25 +1121,19 @@ void uvm_tools_broadcast_replay(uvm_gpu_t *gpu,
 }
 
 
-void uvm_tools_broadcast_replay_sync(uvm_gpu_t *gpu,
-                                     NvU32 batch_id,
-                                     uvm_fault_client_type_t client_type)
+void uvm_tools_broadcast_replay_sync(uvm_gpu_t *gpu, NvU32 batch_id, uvm_fault_client_type_t client_type)
 {
     UVM_ASSERT(!gpu->parent->has_clear_faulted_channel_method);
 
     if (!tools_is_event_enabled_in_any_va_space(UvmEventTypeGpuFaultReplay))
         return;
 
-    record_replay_event_helper(gpu->id,
-                               batch_id,
-                               client_type,
-                               NV_GETTIME(),
-                               gpu->parent->host_hal->get_time(gpu));
+    record_replay_event_helper(gpu->id, batch_id, client_type, NV_GETTIME(), gpu->parent->host_hal->get_time(gpu));
 }
 
 void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
                                         const uvm_access_counter_buffer_entry_t *buffer_entry,
-                                        bool on_managed)
+                                        bool on_managed_phys)
 {
     UvmEventEntry entry;
     UvmEventTestAccessCounterInfo *info = &entry.testEventData.accessCounter;
@@ -1116,9 +1149,10 @@ void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
     memset(&entry, 0, sizeof(entry));
 
     info->eventType           = UvmEventTypeTestAccessCounter;
-    info->srcIndex            = uvm_id_value(gpu->id);
+    info->srcIndex            = uvm_parent_id_value_from_processor_id(gpu->id);
     info->address             = buffer_entry->address.address;
     info->isVirtual           = buffer_entry->address.is_virtual? 1: 0;
+
     if (buffer_entry->address.is_virtual) {
         info->instancePtr         = buffer_entry->virtual_info.instance_ptr.address;
         info->instancePtrAperture = g_hal_to_tools_aperture_table[buffer_entry->virtual_info.instance_ptr.aperture];
@@ -1126,9 +1160,10 @@ void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
     }
     else {
         info->aperture            = g_hal_to_tools_aperture_table[buffer_entry->address.aperture];
+        info->physOnManaged       = on_managed_phys? 1 : 0;
     }
+
     info->isFromCpu           = buffer_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MOMC? 1: 0;
-    info->onManaged           = on_managed? 1 : 0;
     info->value               = buffer_entry->counter_value;
     info->subGranularity      = buffer_entry->sub_granularity;
     info->bank                = buffer_entry->bank;
@@ -1248,7 +1283,7 @@ void uvm_tools_record_read_duplicate(uvm_va_block_t *va_block,
 
             uvm_va_block_page_resident_processors(va_block, page_index, &resident_processors);
             for_each_id_in_mask(id, &resident_processors)
-                info_read_duplicate->processors |= (1 << uvm_id_value(id));
+                info_read_duplicate->processors |= (1 << uvm_parent_id_value_from_processor_id(id));
 
             uvm_tools_record_event(va_space, &entry);
         }
@@ -1274,7 +1309,7 @@ void uvm_tools_record_read_duplicate_invalidate(uvm_va_block_t *va_block,
         memset(&entry, 0, sizeof(entry));
 
         info->eventType     = UvmEventTypeReadDuplicateInvalidate;
-        info->residentIndex = uvm_id_value(dst);
+        info->residentIndex = uvm_parent_id_value_from_processor_id(dst);
         info->size          = PAGE_SIZE;
         info->timeStamp     = NV_GETTIME();
 
@@ -1373,7 +1408,7 @@ void uvm_tools_record_gpu_fatal_fault(uvm_gpu_id_t gpu_id,
         memset(&entry, 0, sizeof(entry));
 
         info->eventType      = UvmEventTypeFatalFault;
-        info->processorIndex = uvm_id_value(gpu_id);
+        info->processorIndex = uvm_parent_id_value_from_processor_id(gpu_id);
         info->timeStamp      = NV_GETTIME();
         info->address        = buffer_entry->fault_address;
         info->accessType     = g_hal_to_tools_fault_access_type_table[buffer_entry->fault_access_type];
@@ -1401,6 +1436,7 @@ void uvm_tools_record_thrashing(uvm_va_space_t *va_space,
 
     uvm_down_read(&va_space->tools.lock);
     if (tools_is_event_enabled(va_space, UvmEventTypeThrashingDetected)) {
+        uvm_processor_id_t id;
         UvmEventEntry entry;
         UvmEventThrashingDetectedInfo *info = &entry.eventData.thrashing;
         memset(&entry, 0, sizeof(entry));
@@ -1409,7 +1445,10 @@ void uvm_tools_record_thrashing(uvm_va_space_t *va_space,
         info->address   = address;
         info->size      = region_size;
         info->timeStamp = NV_GETTIME();
-        bitmap_copy((long unsigned *)&info->processors, processors->bitmap, UVM_ID_MAX_PROCESSORS);
+
+        for_each_id_in_mask(id, processors)
+            __set_bit(uvm_parent_id_value_from_processor_id(id),
+                      (unsigned long *)&info->processors);
 
         uvm_tools_record_event(va_space, &entry);
     }
@@ -1434,7 +1473,7 @@ void uvm_tools_record_throttling_start(uvm_va_space_t *va_space, NvU64 address, 
         memset(&entry, 0, sizeof(entry));
 
         info->eventType      = UvmEventTypeThrottlingStart;
-        info->processorIndex = uvm_id_value(processor);
+        info->processorIndex = uvm_parent_id_value_from_processor_id(processor);
         info->address        = address;
         info->timeStamp      = NV_GETTIME();
 
@@ -1461,7 +1500,7 @@ void uvm_tools_record_throttling_end(uvm_va_space_t *va_space, NvU64 address, uv
         memset(&entry, 0, sizeof(entry));
 
         info->eventType      = UvmEventTypeThrottlingEnd;
-        info->processorIndex = uvm_id_value(processor);
+        info->processorIndex = uvm_parent_id_value_from_processor_id(processor);
         info->address        = address;
         info->timeStamp      = NV_GETTIME();
 
@@ -1480,8 +1519,8 @@ static void record_map_remote_events(void *args)
     memset(&entry, 0, sizeof(entry));
 
     entry.eventData.mapRemote.eventType      = UvmEventTypeMapRemote;
-    entry.eventData.mapRemote.srcIndex       = uvm_id_value(block_map_remote->src);
-    entry.eventData.mapRemote.dstIndex       = uvm_id_value(block_map_remote->dst);
+    entry.eventData.mapRemote.srcIndex       = uvm_parent_id_value_from_processor_id(block_map_remote->src);
+    entry.eventData.mapRemote.dstIndex       = uvm_parent_id_value_from_processor_id(block_map_remote->dst);
     entry.eventData.mapRemote.mapRemoteCause = block_map_remote->cause;
     entry.eventData.mapRemote.timeStamp      = block_map_remote->timestamp;
 
@@ -1553,8 +1592,8 @@ void uvm_tools_record_map_remote(uvm_va_block_t *va_block,
         memset(&entry, 0, sizeof(entry));
 
         entry.eventData.mapRemote.eventType      = UvmEventTypeMapRemote;
-        entry.eventData.mapRemote.srcIndex       = uvm_id_value(processor);
-        entry.eventData.mapRemote.dstIndex       = uvm_id_value(residency);
+        entry.eventData.mapRemote.srcIndex       = uvm_parent_id_value_from_processor_id(processor);
+        entry.eventData.mapRemote.dstIndex       = uvm_parent_id_value_from_processor_id(residency);
         entry.eventData.mapRemote.mapRemoteCause = cause;
         entry.eventData.mapRemote.timeStamp      = NV_GETTIME();
         entry.eventData.mapRemote.address        = address;
@@ -2015,22 +2054,15 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
     NV_STATUS status;
     uvm_mem_t *stage_mem = NULL;
     void *stage_addr;
-    uvm_global_processor_mask_t *retained_global_gpus = NULL;
-    uvm_global_processor_mask_t *global_gpus = NULL;
+    uvm_processor_mask_t *retained_gpus = NULL;
     uvm_va_block_context_t *block_context = NULL;
     struct mm_struct *mm = NULL;
 
-    retained_global_gpus = uvm_kvmalloc(sizeof(*retained_global_gpus));
-    if (retained_global_gpus == NULL)
+    retained_gpus = uvm_processor_mask_cache_alloc();
+    if (!retained_gpus)
         return NV_ERR_NO_MEMORY;
 
-    uvm_global_processor_mask_zero(retained_global_gpus);
-
-    global_gpus = uvm_kvmalloc(sizeof(*global_gpus));
-    if (global_gpus == NULL) {
-        status = NV_ERR_NO_MEMORY;
-        goto exit;
-    }
+    uvm_processor_mask_zero(retained_gpus);
 
     mm = uvm_va_space_mm_or_current_retain(va_space);
 
@@ -2055,6 +2087,7 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
         NvU64 bytes_left = size - *bytes;
         NvU64 page_offset = target_va_start & (PAGE_SIZE - 1);
         NvU64 bytes_now = min(bytes_left, (NvU64)(PAGE_SIZE - page_offset));
+        bool map_stage_mem_on_gpus = true;
 
         if (is_write) {
             NvU64 remaining = nv_copy_from_user(stage_addr, user_va_start, bytes_now);
@@ -2077,34 +2110,34 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
         if (status != NV_OK)
             goto unlock_and_exit;
 
-        uvm_va_space_global_gpus(va_space, global_gpus);
+        // When CC is enabled, the staging memory cannot be mapped on the GPU
+        // (it is protected sysmem), but it is still used to store the
+        // unencrypted version of the page contents when the page is resident
+        // on vidmem.
+        if (g_uvm_global.conf_computing_enabled)
+            map_stage_mem_on_gpus = false;
 
-        for_each_global_gpu_in_mask(gpu, global_gpus) {
+        if (map_stage_mem_on_gpus) {
+            for_each_gpu_in_mask(gpu, &va_space->registered_gpus) {
+                if (uvm_processor_mask_test_and_set(retained_gpus, gpu->id))
+                    continue;
 
-            // When CC is enabled, the staging memory cannot be mapped on the
-            // GPU (it is protected sysmem), but it is still used to store the
-            // unencrypted version of the page contents when the page is
-            // resident on vidmem.
-            if (uvm_conf_computing_mode_enabled(gpu)) {
-                UVM_ASSERT(uvm_global_processor_mask_empty(retained_global_gpus));
+                // The retention of each GPU ensures that the staging memory is
+                // freed before the unregistration of any of the GPUs is mapped
+                // on. Each GPU is retained once.
+                uvm_gpu_retain(gpu);
 
-                break;
+                // Accessing the VA block may result in copying data between the
+                // CPU and a GPU. Conservatively add virtual mappings to all the
+                // GPUs (even if those mappings may never be used) as tools
+                // read/write is not on a performance critical path.
+                status = uvm_mem_map_gpu_kernel(stage_mem, gpu);
+                if (status != NV_OK)
+                    goto unlock_and_exit;
             }
-            if (uvm_global_processor_mask_test_and_set(retained_global_gpus, gpu->global_id))
-                continue;
-
-            // The retention of each GPU ensures that the staging memory is
-            // freed before the unregistration of any of the GPUs is mapped on.
-            // Each GPU is retained once.
-            uvm_gpu_retain(gpu);
-
-            // Accessing the VA block may result in copying data between the CPU
-            // and a GPU. Conservatively add virtual mappings to all the GPUs
-            // (even if those mappings may never be used) as tools read/write is
-            // not on a performance critical path.
-            status = uvm_mem_map_gpu_kernel(stage_mem, gpu);
-            if (status != NV_OK)
-                goto unlock_and_exit;
+        }
+        else {
+            UVM_ASSERT(uvm_processor_mask_empty(retained_gpus));
         }
 
         // Make sure a CPU resident page has an up to date struct page pointer.
@@ -2119,7 +2152,7 @@ static NV_STATUS tools_access_process_memory(uvm_va_space_t *va_space,
         // For simplicity, check for ECC errors on all GPUs registered in the VA
         // space
         if (status == NV_OK)
-            status = uvm_global_mask_check_ecc_error(global_gpus);
+            status = uvm_global_gpu_check_ecc_error(&va_space->registered_gpus);
 
         uvm_va_space_up_read_rm(va_space);
         if (mm)
@@ -2162,12 +2195,11 @@ exit:
 
     uvm_mem_free(stage_mem);
 
-    uvm_global_mask_release(retained_global_gpus);
+    uvm_global_gpu_release(retained_gpus);
 
     uvm_va_space_mm_or_current_release(va_space, mm);
 
-    uvm_kvfree(global_gpus);
-    uvm_kvfree(retained_global_gpus);
+    uvm_processor_mask_cache_free(retained_gpus);
 
     return status;
 }
@@ -2228,24 +2260,42 @@ NV_STATUS uvm_api_tools_get_processor_uuid_table(UVM_TOOLS_GET_PROCESSOR_UUID_TA
     NvProcessorUuid *uuids;
     NvU64 remaining;
     uvm_gpu_t *gpu;
+    NvU32 count = params->count;
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
 
-    uuids = uvm_kvmalloc_zero(sizeof(NvProcessorUuid) * UVM_ID_MAX_PROCESSORS);
+    // Prior to Multi-MIG support, params->count was always zero meaning the
+    // input array was size UVM_MAX_PROCESSORS or 33 at that time.
+    if (count == 0)
+        count = 33;
+    else if (count > UVM_ID_MAX_PROCESSORS)
+        count = UVM_ID_MAX_PROCESSORS;
+
+    uuids = uvm_kvmalloc_zero(sizeof(NvProcessorUuid) * count);
     if (uuids == NULL)
         return NV_ERR_NO_MEMORY;
 
-    uvm_processor_uuid_copy(&uuids[UVM_ID_CPU_VALUE], &NV_PROCESSOR_UUID_CPU_DEFAULT);
+    uvm_uuid_copy(&uuids[UVM_ID_CPU_VALUE], &NV_PROCESSOR_UUID_CPU_DEFAULT);
     params->count = 1;
 
     uvm_va_space_down_read(va_space);
     for_each_va_space_gpu(gpu, va_space) {
-        uvm_processor_uuid_copy(&uuids[uvm_id_value(gpu->id)], uvm_gpu_uuid(gpu));
-        if (uvm_id_value(gpu->id) + 1 > params->count)
-            params->count = uvm_id_value(gpu->id) + 1;
+        NvU32 id_value;
+        const NvProcessorUuid *uuid;
+
+        id_value = uvm_parent_id_value(gpu->parent->id);
+        uuid = &gpu->parent->uuid;
+
+        if (id_value < count)
+            uvm_uuid_copy(&uuids[id_value], uuid);
+
+        // Return the actual count even if the UUID isn't returned due to
+        // limited input array size.
+        if (id_value + 1 > params->count)
+            params->count = id_value + 1;
     }
     uvm_va_space_up_read(va_space);
 
-    remaining = nv_copy_to_user((void *)params->tablePtr, uuids, sizeof(NvProcessorUuid) * params->count);
+    remaining = nv_copy_to_user((void *)params->tablePtr, uuids, sizeof(NvProcessorUuid) * count);
     uvm_kvfree(uuids);
 
     if (remaining != 0)
@@ -2279,8 +2329,8 @@ NV_STATUS uvm_test_tools_flush_replay_events(UVM_TEST_TOOLS_FLUSH_REPLAY_EVENTS_
 
     // Wait for register-based fault clears to queue the replay event
     if (!gpu->parent->has_clear_faulted_channel_method) {
-        uvm_gpu_non_replayable_faults_isr_lock(gpu->parent);
-        uvm_gpu_non_replayable_faults_isr_unlock(gpu->parent);
+        uvm_parent_gpu_non_replayable_faults_isr_lock(gpu->parent);
+        uvm_parent_gpu_non_replayable_faults_isr_unlock(gpu->parent);
     }
 
     // Wait for pending fault replay methods to complete (replayable faults on

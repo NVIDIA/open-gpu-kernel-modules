@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -946,7 +946,7 @@ NV_STATUS rmapiControlCacheGet
 )
 {
     NV_STATUS status = NV_OK;
-    NvU32 flags = 0;
+    NvU32 flags;
 
     if (RmapiControlCache.mode == NV0000_CTRL_SYSTEM_RMCTRL_CACHE_MODE_CTRL_MODE_VERIFY_ONLY)
         return NV_ERR_OBJECT_NOT_FOUND;
@@ -984,7 +984,7 @@ NV_STATUS rmapiControlCacheSet
 )
 {
     NV_STATUS status = NV_OK;
-    NvU32 flags = 0;
+    NvU32 flags;
 
     status = rmapiutilGetControlInfo(cmd, &flags, NULL);
     if (status != NV_OK)

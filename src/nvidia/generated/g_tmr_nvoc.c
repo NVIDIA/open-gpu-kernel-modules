@@ -163,10 +163,6 @@ static void __nvoc_thunk_RmResource_tmrapiControl_Epilogue(struct TimerApi *pRes
     rmresControl_Epilogue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RmResource.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_RsResource_tmrapiControlLookup(struct TimerApi *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return resControlLookup((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset), pParams, ppEntry);
-}
-
 static NvHandle __nvoc_thunk_GpuResource_tmrapiGetInternalObjectHandle(struct TimerApi *pGpuResource) {
     return gpuresGetInternalObjectHandle((struct GpuResource *)(((unsigned char *)pGpuResource) + __nvoc_rtti_TimerApi_GpuResource.offset));
 }
@@ -201,6 +197,10 @@ static NV_STATUS __nvoc_thunk_RmResource_tmrapiControlSerialization_Prologue(str
 
 static NvBool __nvoc_thunk_RsResource_tmrapiCanCopy(struct TimerApi *pResource) {
     return resCanCopy((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
+}
+
+static NvBool __nvoc_thunk_RsResource_tmrapiIsPartialUnmapSupported(struct TimerApi *pResource) {
+    return resIsPartialUnmapSupported((struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_TimerApi_RsResource.offset));
 }
 
 static void __nvoc_thunk_RsResource_tmrapiPreDestruct(struct TimerApi *pResource) {
@@ -333,8 +333,6 @@ static void __nvoc_init_funcTable_TimerApi_1(TimerApi *pThis) {
 
     pThis->__tmrapiControl_Epilogue__ = &__nvoc_thunk_RmResource_tmrapiControl_Epilogue;
 
-    pThis->__tmrapiControlLookup__ = &__nvoc_thunk_RsResource_tmrapiControlLookup;
-
     pThis->__tmrapiGetInternalObjectHandle__ = &__nvoc_thunk_GpuResource_tmrapiGetInternalObjectHandle;
 
     pThis->__tmrapiControl__ = &__nvoc_thunk_GpuResource_tmrapiControl;
@@ -352,6 +350,8 @@ static void __nvoc_init_funcTable_TimerApi_1(TimerApi *pThis) {
     pThis->__tmrapiControlSerialization_Prologue__ = &__nvoc_thunk_RmResource_tmrapiControlSerialization_Prologue;
 
     pThis->__tmrapiCanCopy__ = &__nvoc_thunk_RsResource_tmrapiCanCopy;
+
+    pThis->__tmrapiIsPartialUnmapSupported__ = &__nvoc_thunk_RsResource_tmrapiIsPartialUnmapSupported;
 
     pThis->__tmrapiPreDestruct__ = &__nvoc_thunk_RsResource_tmrapiPreDestruct;
 
@@ -388,21 +388,26 @@ void __nvoc_init_TimerApi(TimerApi *pThis) {
     __nvoc_init_funcTable_TimerApi(pThis);
 }
 
-NV_STATUS __nvoc_objCreate_TimerApi(TimerApi **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams) {
+NV_STATUS __nvoc_objCreate_TimerApi(TimerApi **ppThis, Dynamic *pParent, NvU32 createFlags, struct CALL_CONTEXT * arg_pCallContext, struct RS_RES_ALLOC_PARAMS_INTERNAL * arg_pParams)
+{
     NV_STATUS status;
-    Object *pParentObj;
+    Object *pParentObj = NULL;
     TimerApi *pThis;
 
+    // Assign `pThis`, allocating memory unless suppressed by flag.
     status = __nvoc_handleObjCreateMemAlloc(createFlags, sizeof(TimerApi), (void**)&pThis, (void**)ppThis);
     if (status != NV_OK)
         return status;
 
+    // Zero is the initial value for everything.
     portMemSet(pThis, 0, sizeof(TimerApi));
 
+    // Initialize runtime type information.
     __nvoc_initRtti(staticCast(pThis, Dynamic), &__nvoc_class_def_TimerApi);
 
     pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object.createFlags = createFlags;
 
+    // Link the child into the parent if there is one unless flagged not to do so.
     if (pParent != NULL && !(createFlags & NVOC_OBJ_CREATE_FLAGS_PARENT_HALSPEC_ONLY))
     {
         pParentObj = dynamicCast(pParent, Object);
@@ -417,16 +422,25 @@ NV_STATUS __nvoc_objCreate_TimerApi(TimerApi **ppThis, Dynamic *pParent, NvU32 c
     status = __nvoc_ctor_TimerApi(pThis, arg_pCallContext, arg_pParams);
     if (status != NV_OK) goto __nvoc_objCreate_TimerApi_cleanup;
 
+    // Assignment has no effect if NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT is set.
     *ppThis = pThis;
 
     return NV_OK;
 
 __nvoc_objCreate_TimerApi_cleanup:
-    // do not call destructors here since the constructor already called them
+
+    // Unlink the child from the parent if it was linked above.
+    if (pParentObj != NULL)
+        objRemoveChild(pParentObj, &pThis->__nvoc_base_GpuResource.__nvoc_base_RmResource.__nvoc_base_RsResource.__nvoc_base_Object);
+
+    // Do not call destructors here since the constructor already called them.
     if (createFlags & NVOC_OBJ_CREATE_FLAGS_IN_PLACE_CONSTRUCT)
         portMemSet(pThis, 0, sizeof(TimerApi));
     else
+    {
         portMemFree(pThis);
+        *ppThis = NULL;
+    }
 
     // coverity[leaked_storage:FALSE]
     return status;

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2021 NVIDIA Corporation
+    Copyright (c) 2021-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -33,20 +33,32 @@
 #include "nv_uvm_interface.h"
 #include "uvm_va_block.h"
 
+// The maximum number of secure operations per push is:
+// UVM_MAX_PUSH_SIZE / min(CE encryption size, CE decryption size)
+// + 1 (tracking semaphore) =  128 * 1024 / 56 + 1 = 2342
+#define UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_MIN 2342lu
+
+// Channels use 32-bit counters so the value after rotation is 0xffffffff.
+// setting the limit to this value (or higher) will result in rotation
+// on every check. However, pre-emptive rotation when submitting control
+// GPFIFO entries relies on the fact that multiple successive checks after
+// rotation do not trigger more rotations if there was no IV used in between.
+#define UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_MAX 0xfffffffelu
+
+// Attempt rotation when two billion IVs are left. IV rotation call can fail if
+// the necessary locks are not available, so multiple attempts may be need for
+// IV rotation to succeed.
+#define UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_DEFAULT (1lu << 31)
+
+// Start rotating after 500 encryption/decryptions when running tests.
+#define UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_TESTS ((1lu << 32) - 500lu)
+static ulong uvm_conf_computing_channel_iv_rotation_limit = UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_DEFAULT;
+
+module_param(uvm_conf_computing_channel_iv_rotation_limit, ulong, S_IRUGO);
 
 static UvmGpuConfComputeMode uvm_conf_computing_get_mode(const uvm_parent_gpu_t *parent)
 {
     return parent->rm_info.gpuConfComputeCaps.mode;
-}
-
-bool uvm_conf_computing_mode_enabled_parent(const uvm_parent_gpu_t *parent)
-{
-    return uvm_conf_computing_get_mode(parent) != UVM_GPU_CONF_COMPUTE_MODE_NONE;
-}
-
-bool uvm_conf_computing_mode_enabled(const uvm_gpu_t *gpu)
-{
-    return uvm_conf_computing_mode_enabled_parent(gpu->parent);
 }
 
 bool uvm_conf_computing_mode_is_hcc(const uvm_gpu_t *gpu)
@@ -54,23 +66,22 @@ bool uvm_conf_computing_mode_is_hcc(const uvm_gpu_t *gpu)
     return uvm_conf_computing_get_mode(gpu->parent) == UVM_GPU_CONF_COMPUTE_MODE_HCC;
 }
 
-NV_STATUS uvm_conf_computing_init_parent_gpu(const uvm_parent_gpu_t *parent)
+void uvm_conf_computing_check_parent_gpu(const uvm_parent_gpu_t *parent)
 {
-    UvmGpuConfComputeMode cc, sys_cc;
-    uvm_gpu_t *first;
+    uvm_parent_gpu_t *other_parent;
+    UvmGpuConfComputeMode parent_mode = uvm_conf_computing_get_mode(parent);
 
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
-    // TODO: Bug 2844714: since we have no routine to traverse parent GPUs,
-    // find first child GPU and get its parent.
-    first = uvm_global_processor_mask_find_first_gpu(&g_uvm_global.retained_gpus);
-    if (!first)
-        return NV_OK;
+    // The Confidential Computing state of the GPU should match that of the
+    // system.
+    UVM_ASSERT((parent_mode != UVM_GPU_CONF_COMPUTE_MODE_NONE) == g_uvm_global.conf_computing_enabled);
 
-    sys_cc = uvm_conf_computing_get_mode(first->parent);
-    cc = uvm_conf_computing_get_mode(parent);
-
-    return cc == sys_cc ? NV_OK : NV_ERR_NOT_SUPPORTED;
+    // All GPUs derive Confidential Computing status from their parent. By
+    // current policy all parent GPUs have identical Confidential Computing
+    // status.
+    for_each_parent_gpu(other_parent)
+        UVM_ASSERT(parent_mode == uvm_conf_computing_get_mode(other_parent));
 }
 
 static void dma_buffer_destroy_locked(uvm_conf_computing_dma_buffer_pool_t *dma_buffer_pool,
@@ -184,15 +195,11 @@ static void dma_buffer_pool_add(uvm_conf_computing_dma_buffer_pool_t *dma_buffer
 static NV_STATUS conf_computing_dma_buffer_pool_init(uvm_conf_computing_dma_buffer_pool_t *dma_buffer_pool)
 {
     size_t i;
-    uvm_gpu_t *gpu;
     size_t num_dma_buffers = 32;
     NV_STATUS status = NV_OK;
 
     UVM_ASSERT(dma_buffer_pool->num_dma_buffers == 0);
-
-    gpu = dma_buffer_pool_to_gpu(dma_buffer_pool);
-
-    UVM_ASSERT(uvm_conf_computing_mode_enabled(gpu));
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
     INIT_LIST_HEAD(&dma_buffer_pool->free_dma_buffers);
     uvm_mutex_init(&dma_buffer_pool->lock, UVM_LOCK_ORDER_CONF_COMPUTING_DMA_BUFFER_POOL);
@@ -349,7 +356,7 @@ NV_STATUS uvm_conf_computing_gpu_init(uvm_gpu_t *gpu)
 {
     NV_STATUS status;
 
-    if (!uvm_conf_computing_mode_enabled(gpu))
+    if (!g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
     status = conf_computing_dma_buffer_pool_init(&gpu->conf_computing.dma_buffer_pool);
@@ -359,6 +366,20 @@ NV_STATUS uvm_conf_computing_gpu_init(uvm_gpu_t *gpu)
     status = dummy_iv_mem_init(gpu);
     if (status != NV_OK)
         goto error;
+
+    if (uvm_enable_builtin_tests && uvm_conf_computing_channel_iv_rotation_limit == UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_DEFAULT)
+        uvm_conf_computing_channel_iv_rotation_limit = UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_TESTS;
+
+    if (uvm_conf_computing_channel_iv_rotation_limit < UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_MIN ||
+        uvm_conf_computing_channel_iv_rotation_limit > UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_MAX) {
+        UVM_ERR_PRINT("Value of uvm_conf_computing_channel_iv_rotation_limit: %lu is outside of the safe "
+                      "range: <%lu, %lu>. Using the default value instead (%lu)\n",
+                      uvm_conf_computing_channel_iv_rotation_limit,
+                      UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_MIN,
+                      UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_MAX,
+                      UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_DEFAULT);
+        uvm_conf_computing_channel_iv_rotation_limit = UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_DEFAULT;
+    }
 
     return NV_OK;
 
@@ -381,9 +402,8 @@ void uvm_conf_computing_log_gpu_encryption(uvm_channel_t *channel, UvmCslIv *iv)
     status = nvUvmInterfaceCslIncrementIv(&channel->csl.ctx, UVM_CSL_OPERATION_DECRYPT, 1, iv);
     uvm_mutex_unlock(&channel->csl.ctx_lock);
 
-    // TODO: Bug 4014720: If nvUvmInterfaceCslIncrementIv returns with
-    // NV_ERR_INSUFFICIENT_RESOURCES then the IV needs to be rotated via
-    // nvUvmInterfaceCslRotateIv.
+    // IV rotation is done preemptively as needed, so the above
+    // call cannot return failure.
     UVM_ASSERT(status == NV_OK);
 }
 
@@ -395,9 +415,8 @@ void uvm_conf_computing_acquire_encryption_iv(uvm_channel_t *channel, UvmCslIv *
     status = nvUvmInterfaceCslIncrementIv(&channel->csl.ctx, UVM_CSL_OPERATION_ENCRYPT, 1, iv);
     uvm_mutex_unlock(&channel->csl.ctx_lock);
 
-    // TODO: Bug 4014720: If nvUvmInterfaceCslIncrementIv returns with
-    // NV_ERR_INSUFFICIENT_RESOURCES then the IV needs to be rotated via
-    // nvUvmInterfaceCslRotateIv.
+    // IV rotation is done preemptively as needed, so the above
+    // call cannot return failure.
     UVM_ASSERT(status == NV_OK);
 }
 
@@ -421,8 +440,8 @@ void uvm_conf_computing_cpu_encrypt(uvm_channel_t *channel,
                                       (NvU8 *) auth_tag_buffer);
     uvm_mutex_unlock(&channel->csl.ctx_lock);
 
-    // nvUvmInterfaceCslEncrypt fails when a 64-bit encryption counter
-    // overflows. This is not supposed to happen on CC.
+    // IV rotation is done preemptively as needed, so the above
+    // call cannot return failure.
     UVM_ASSERT(status == NV_OK);
 }
 
@@ -434,6 +453,16 @@ NV_STATUS uvm_conf_computing_cpu_decrypt(uvm_channel_t *channel,
                                          const void *auth_tag_buffer)
 {
     NV_STATUS status;
+
+    // The CSL context associated with a channel can be used by multiple
+    // threads. The IV sequence is thus guaranteed only while the channel is
+    // "locked for push". The channel/push lock is released in
+    // "uvm_channel_end_push", and at that time the GPU encryption operations
+    // have not executed, yet. Therefore the caller has to use
+    // "uvm_conf_computing_log_gpu_encryption" to explicitly store IVs needed
+    // to perform CPU decryption and pass those IVs to this function after the
+    // push that did the encryption completes.
+    UVM_ASSERT(src_iv);
 
     uvm_mutex_lock(&channel->csl.ctx_lock);
     status = nvUvmInterfaceCslDecrypt(&channel->csl.ctx,
@@ -463,7 +492,7 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
     // decryption is invoked as part of fault servicing.
     UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.replayable_faults.service_lock));
 
-    UVM_ASSERT(!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu));
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
     status = nvUvmInterfaceCslDecrypt(&parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx,
                                       parent_gpu->fault_buffer_hal->entry_size(parent_gpu),
@@ -475,7 +504,9 @@ NV_STATUS uvm_conf_computing_fault_decrypt(uvm_parent_gpu_t *parent_gpu,
                                       (const NvU8 *) auth_tag_buffer);
 
     if (status != NV_OK)
-        UVM_ERR_PRINT("nvUvmInterfaceCslDecrypt() failed: %s, GPU %s\n", nvstatusToString(status), parent_gpu->name);
+        UVM_ERR_PRINT("nvUvmInterfaceCslDecrypt() failed: %s, GPU %s\n",
+                      nvstatusToString(status),
+                      uvm_parent_gpu_name(parent_gpu));
 
     return status;
 }
@@ -487,7 +518,7 @@ void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu,
     // See comment in uvm_conf_computing_fault_decrypt
     UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.replayable_faults.service_lock));
 
-    UVM_ASSERT(!uvm_parent_gpu_replayable_fault_buffer_is_uvm_owned(parent_gpu));
+    UVM_ASSERT(g_uvm_global.conf_computing_enabled);
 
     status = nvUvmInterfaceCslIncrementIv(&parent_gpu->fault_buffer_info.rm_info.replayable.cslCtx,
                                           UVM_CSL_OPERATION_DECRYPT,
@@ -495,4 +526,102 @@ void uvm_conf_computing_fault_increment_decrypt_iv(uvm_parent_gpu_t *parent_gpu,
                                           NULL);
 
     UVM_ASSERT(status == NV_OK);
+}
+
+void uvm_conf_computing_query_message_pools(uvm_channel_t *channel,
+                                            NvU64 *remaining_encryptions,
+                                            NvU64 *remaining_decryptions)
+{
+    NV_STATUS status;
+
+    UVM_ASSERT(channel);
+    UVM_ASSERT(remaining_encryptions);
+    UVM_ASSERT(remaining_decryptions);
+
+    uvm_mutex_lock(&channel->csl.ctx_lock);
+    status = nvUvmInterfaceCslQueryMessagePool(&channel->csl.ctx, UVM_CSL_OPERATION_ENCRYPT, remaining_encryptions);
+    UVM_ASSERT(status == NV_OK);
+    UVM_ASSERT(*remaining_encryptions <= NV_U32_MAX);
+
+    status = nvUvmInterfaceCslQueryMessagePool(&channel->csl.ctx, UVM_CSL_OPERATION_DECRYPT, remaining_decryptions);
+    UVM_ASSERT(status == NV_OK);
+    UVM_ASSERT(*remaining_decryptions <= NV_U32_MAX);
+
+    // LCIC channels never use CPU encrypt/GPU decrypt
+    if (uvm_channel_is_lcic(channel))
+        UVM_ASSERT(*remaining_encryptions == NV_U32_MAX);
+
+    uvm_mutex_unlock(&channel->csl.ctx_lock);
+}
+
+static NV_STATUS uvm_conf_computing_rotate_channel_ivs_below_limit_internal(uvm_channel_t *channel, NvU64 limit)
+{
+    NV_STATUS status = NV_OK;
+    NvU64 remaining_encryptions, remaining_decryptions;
+    bool rotate_encryption_iv, rotate_decryption_iv;
+
+    UVM_ASSERT(uvm_channel_is_locked_for_push(channel) ||
+               (uvm_channel_is_lcic(channel) && uvm_channel_manager_is_wlc_ready(channel->pool->manager)));
+
+    uvm_conf_computing_query_message_pools(channel, &remaining_encryptions, &remaining_decryptions);
+
+    // Ignore decryption limit for SEC2, only CE channels support
+    // GPU encrypt/CPU decrypt. However, RM reports _some_ decrementing
+    // value for SEC2 decryption counter.
+    rotate_decryption_iv = (remaining_decryptions <= limit) && uvm_channel_is_ce(channel);
+    rotate_encryption_iv = remaining_encryptions <= limit;
+
+    if (!rotate_encryption_iv && !rotate_decryption_iv)
+        return NV_OK;
+
+    // Wait for all in-flight pushes. The caller needs to guarantee that there
+    // are no concurrent pushes created, e.g. by only calling rotate after
+    // a channel is locked_for_push.
+    status = uvm_channel_wait(channel);
+    if (status != NV_OK)
+        return status;
+
+    uvm_mutex_lock(&channel->csl.ctx_lock);
+
+    if (rotate_encryption_iv)
+        status = nvUvmInterfaceCslRotateIv(&channel->csl.ctx, UVM_CSL_OPERATION_ENCRYPT);
+
+    if (status == NV_OK && rotate_decryption_iv)
+        status = nvUvmInterfaceCslRotateIv(&channel->csl.ctx, UVM_CSL_OPERATION_DECRYPT);
+
+    uvm_mutex_unlock(&channel->csl.ctx_lock);
+
+    // Change the error to out of resources if the available IVs are running
+    // too low
+    if (status == NV_ERR_STATE_IN_USE &&
+        (remaining_encryptions < UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_MIN ||
+         remaining_decryptions < UVM_CONF_COMPUTING_IV_REMAINING_LIMIT_MIN))
+        return NV_ERR_INSUFFICIENT_RESOURCES;
+
+    return status;
+}
+
+NV_STATUS uvm_conf_computing_rotate_channel_ivs_below_limit(uvm_channel_t *channel, NvU64 limit, bool retry_if_busy)
+{
+    NV_STATUS status;
+
+    do {
+        status = uvm_conf_computing_rotate_channel_ivs_below_limit_internal(channel, limit);
+    } while (retry_if_busy && status == NV_ERR_STATE_IN_USE);
+
+    // Hide "busy" error. The rotation will be retried at the next opportunity.
+    if (!retry_if_busy && status == NV_ERR_STATE_IN_USE)
+        status = NV_OK;
+
+    return status;
+}
+
+NV_STATUS uvm_conf_computing_maybe_rotate_channel_ivs(uvm_channel_t *channel)
+{
+    return uvm_conf_computing_rotate_channel_ivs_below_limit(channel, uvm_conf_computing_channel_iv_rotation_limit, false);
+}
+
+NV_STATUS uvm_conf_computing_maybe_rotate_channel_ivs_retry_busy(uvm_channel_t *channel)
+{
+    return uvm_conf_computing_rotate_channel_ivs_below_limit(channel, uvm_conf_computing_channel_iv_rotation_limit, true);
 }

@@ -42,11 +42,16 @@ extern "C" {
 /*!
  * RM internal class representing ACCESS_COUNTER_NOTIFY_BUFFER
  */
+
+// Private field names are wrapped in PRIVATE_FIELD, which does nothing for
+// the matching C source file, but causes diagnostics to be issued if another
+// source file references the field.
 #ifdef NVOC_ACCESS_CNTR_BUFFER_H_PRIVATE_ACCESS_ALLOWED
 #define PRIVATE_FIELD(x) x
 #else
 #define PRIVATE_FIELD(x) NVOC_PRIVATE_FIELD(x)
 #endif
+
 struct AccessCounterBuffer {
     const struct NVOC_RTTI *__nvoc_rtti;
     struct GpuResource __nvoc_base_GpuResource;
@@ -84,7 +89,6 @@ struct AccessCounterBuffer {
     NV_STATUS (*__accesscntrInternalControlForward__)(struct AccessCounterBuffer *, NvU32, void *, NvU32);
     NV_STATUS (*__accesscntrUnmapFrom__)(struct AccessCounterBuffer *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__accesscntrControl_Epilogue__)(struct AccessCounterBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__accesscntrControlLookup__)(struct AccessCounterBuffer *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
     NvHandle (*__accesscntrGetInternalObjectHandle__)(struct AccessCounterBuffer *);
     NV_STATUS (*__accesscntrControl__)(struct AccessCounterBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__accesscntrGetMemInterMapParams__)(struct AccessCounterBuffer *, RMRES_MEM_INTER_MAP_PARAMS *);
@@ -93,6 +97,7 @@ struct AccessCounterBuffer {
     NV_STATUS (*__accesscntrUnregisterEvent__)(struct AccessCounterBuffer *, NvHandle, NvHandle, NvHandle, NvHandle);
     NV_STATUS (*__accesscntrControlSerialization_Prologue__)(struct AccessCounterBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__accesscntrCanCopy__)(struct AccessCounterBuffer *);
+    NvBool (*__accesscntrIsPartialUnmapSupported__)(struct AccessCounterBuffer *);
     void (*__accesscntrPreDestruct__)(struct AccessCounterBuffer *);
     NV_STATUS (*__accesscntrIsDuplicate__)(struct AccessCounterBuffer *, NvHandle, NvBool *);
     void (*__accesscntrControlSerialization_Epilogue__)(struct AccessCounterBuffer *, struct CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
@@ -156,7 +161,6 @@ NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer**, Dynamic*, 
 #define accesscntrInternalControlForward(pGpuResource, command, pParams, size) accesscntrInternalControlForward_DISPATCH(pGpuResource, command, pParams, size)
 #define accesscntrUnmapFrom(pResource, pParams) accesscntrUnmapFrom_DISPATCH(pResource, pParams)
 #define accesscntrControl_Epilogue(pResource, pCallContext, pParams) accesscntrControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
-#define accesscntrControlLookup(pResource, pParams, ppEntry) accesscntrControlLookup_DISPATCH(pResource, pParams, ppEntry)
 #define accesscntrGetInternalObjectHandle(pGpuResource) accesscntrGetInternalObjectHandle_DISPATCH(pGpuResource)
 #define accesscntrControl(pGpuResource, pCallContext, pParams) accesscntrControl_DISPATCH(pGpuResource, pCallContext, pParams)
 #define accesscntrGetMemInterMapParams(pRmResource, pParams) accesscntrGetMemInterMapParams_DISPATCH(pRmResource, pParams)
@@ -165,6 +169,7 @@ NV_STATUS __nvoc_objCreate_AccessCounterBuffer(AccessCounterBuffer**, Dynamic*, 
 #define accesscntrUnregisterEvent(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent) accesscntrUnregisterEvent_DISPATCH(pNotifier, hNotifierClient, hNotifierResource, hEventClient, hEvent)
 #define accesscntrControlSerialization_Prologue(pResource, pCallContext, pParams) accesscntrControlSerialization_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define accesscntrCanCopy(pResource) accesscntrCanCopy_DISPATCH(pResource)
+#define accesscntrIsPartialUnmapSupported(pResource) accesscntrIsPartialUnmapSupported_DISPATCH(pResource)
 #define accesscntrPreDestruct(pResource) accesscntrPreDestruct_DISPATCH(pResource)
 #define accesscntrIsDuplicate(pResource, hMemory, pDuplicate) accesscntrIsDuplicate_DISPATCH(pResource, hMemory, pDuplicate)
 #define accesscntrControlSerialization_Epilogue(pResource, pCallContext, pParams) accesscntrControlSerialization_Epilogue_DISPATCH(pResource, pCallContext, pParams)
@@ -297,10 +302,6 @@ static inline void accesscntrControl_Epilogue_DISPATCH(struct AccessCounterBuffe
     pResource->__accesscntrControl_Epilogue__(pResource, pCallContext, pParams);
 }
 
-static inline NV_STATUS accesscntrControlLookup_DISPATCH(struct AccessCounterBuffer *pResource, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams, const struct NVOC_EXPORTED_METHOD_DEF **ppEntry) {
-    return pResource->__accesscntrControlLookup__(pResource, pParams, ppEntry);
-}
-
 static inline NvHandle accesscntrGetInternalObjectHandle_DISPATCH(struct AccessCounterBuffer *pGpuResource) {
     return pGpuResource->__accesscntrGetInternalObjectHandle__(pGpuResource);
 }
@@ -331,6 +332,10 @@ static inline NV_STATUS accesscntrControlSerialization_Prologue_DISPATCH(struct 
 
 static inline NvBool accesscntrCanCopy_DISPATCH(struct AccessCounterBuffer *pResource) {
     return pResource->__accesscntrCanCopy__(pResource);
+}
+
+static inline NvBool accesscntrIsPartialUnmapSupported_DISPATCH(struct AccessCounterBuffer *pResource) {
+    return pResource->__accesscntrIsPartialUnmapSupported__(pResource);
 }
 
 static inline void accesscntrPreDestruct_DISPATCH(struct AccessCounterBuffer *pResource) {
