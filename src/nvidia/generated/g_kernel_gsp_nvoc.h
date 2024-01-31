@@ -296,6 +296,7 @@ struct KernelGsp {
     NV_STATUS (*__kgspFreeVgpuPartitionLogging__)(struct OBJGPU *, struct KernelGsp *, NvU32);
     const char *(*__kgspGetSignatureSectionNamePrefix__)(struct OBJGPU *, struct KernelGsp *);
     NV_STATUS (*__kgspSetupGspFmcArgs__)(struct OBJGPU *, struct KernelGsp *, GSP_FIRMWARE *);
+    void (*__kgspReadEmem__)(struct KernelGsp *, NvU64, NvU64, void *);
     NvBool (*__kgspConfigured__)(struct KernelGsp *);
     NvU32 (*__kgspPriRead__)(struct KernelGsp *, NvU32);
     void (*__kgspRegWrite__)(struct OBJGPU *, struct KernelGsp *, NvU32, NvU32);
@@ -308,7 +309,6 @@ struct KernelGsp {
     void (*__kgspSyncBufferDescriptor__)(struct KernelGsp *, CrashCatBufferDescriptor *, NvU32, NvU32);
     NvU32 (*__kgspRegRead__)(struct OBJGPU *, struct KernelGsp *, NvU32);
     NvBool (*__kgspIsPresent__)(POBJGPU, struct KernelGsp *);
-    void (*__kgspReadEmem__)(struct KernelGsp *, NvU64, NvU64, void *);
     NV_STATUS (*__kgspStateLoad__)(POBJGPU, struct KernelGsp *, NvU32);
     const NvU32 *(*__kgspGetScratchOffsets__)(struct KernelGsp *, NV_CRASHCAT_SCRATCH_GROUP_ID);
     void (*__kgspUnload__)(struct KernelGsp *);
@@ -381,6 +381,7 @@ struct KernelGsp {
     NvBool bScrubberUcodeSupported;
     NvU32 fwHeapParamBaseSize;
     NvU32 fwHeapParamOsCarveoutSize;
+    NvU8 ememPort;
 };
 
 #ifndef __NVOC_CLASS_KernelGsp_TYPEDEF__
@@ -488,6 +489,8 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 #define kgspGetSignatureSectionNamePrefix_HAL(pGpu, pKernelGsp) kgspGetSignatureSectionNamePrefix_DISPATCH(pGpu, pKernelGsp)
 #define kgspSetupGspFmcArgs(pGpu, pKernelGsp, pGspFw) kgspSetupGspFmcArgs_DISPATCH(pGpu, pKernelGsp, pGspFw)
 #define kgspSetupGspFmcArgs_HAL(pGpu, pKernelGsp, pGspFw) kgspSetupGspFmcArgs_DISPATCH(pGpu, pKernelGsp, pGspFw)
+#define kgspReadEmem(pKernelGsp, offset, size, pBuf) kgspReadEmem_DISPATCH(pKernelGsp, offset, size, pBuf)
+#define kgspReadEmem_HAL(pKernelGsp, offset, size, pBuf) kgspReadEmem_DISPATCH(pKernelGsp, offset, size, pBuf)
 #define kgspConfigured(arg0) kgspConfigured_DISPATCH(arg0)
 #define kgspPriRead(arg0, offset) kgspPriRead_DISPATCH(arg0, offset)
 #define kgspRegWrite(pGpu, pKernelFlcn, offset, data) kgspRegWrite_DISPATCH(pGpu, pKernelFlcn, offset, data)
@@ -500,7 +503,6 @@ NV_STATUS __nvoc_objCreate_KernelGsp(KernelGsp**, Dynamic*, NvU32);
 #define kgspSyncBufferDescriptor(arg0, pBufDesc, offset, size) kgspSyncBufferDescriptor_DISPATCH(arg0, pBufDesc, offset, size)
 #define kgspRegRead(pGpu, pKernelFlcn, offset) kgspRegRead_DISPATCH(pGpu, pKernelFlcn, offset)
 #define kgspIsPresent(pGpu, pEngstate) kgspIsPresent_DISPATCH(pGpu, pEngstate)
-#define kgspReadEmem(arg0, offset, size, pBuf) kgspReadEmem_DISPATCH(arg0, offset, size, pBuf)
 #define kgspStateLoad(pGpu, pEngstate, arg0) kgspStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kgspGetScratchOffsets(arg0, scratchGroupId) kgspGetScratchOffsets_DISPATCH(arg0, scratchGroupId)
 #define kgspUnload(arg0) kgspUnload_DISPATCH(arg0)
@@ -1018,6 +1020,12 @@ static inline NV_STATUS kgspSetupGspFmcArgs_DISPATCH(struct OBJGPU *pGpu, struct
     return pKernelGsp->__kgspSetupGspFmcArgs__(pGpu, pKernelGsp, pGspFw);
 }
 
+void kgspReadEmem_TU102(struct KernelGsp *pKernelGsp, NvU64 offset, NvU64 size, void *pBuf);
+
+static inline void kgspReadEmem_DISPATCH(struct KernelGsp *pKernelGsp, NvU64 offset, NvU64 size, void *pBuf) {
+    pKernelGsp->__kgspReadEmem__(pKernelGsp, offset, size, pBuf);
+}
+
 static inline NvBool kgspConfigured_DISPATCH(struct KernelGsp *arg0) {
     return arg0->__kgspConfigured__(arg0);
 }
@@ -1064,10 +1072,6 @@ static inline NvU32 kgspRegRead_DISPATCH(struct OBJGPU *pGpu, struct KernelGsp *
 
 static inline NvBool kgspIsPresent_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate) {
     return pEngstate->__kgspIsPresent__(pGpu, pEngstate);
-}
-
-static inline void kgspReadEmem_DISPATCH(struct KernelGsp *arg0, NvU64 offset, NvU64 size, void *pBuf) {
-    arg0->__kgspReadEmem__(arg0, offset, size, pBuf);
 }
 
 static inline NV_STATUS kgspStateLoad_DISPATCH(POBJGPU pGpu, struct KernelGsp *pEngstate, NvU32 arg0) {
@@ -1338,6 +1342,8 @@ NV_STATUS rpcRmApiFree_GSP(RM_API *pRmApi, NvHandle hClient, NvHandle hObject);
 void kgspFreeVbiosImg(KernelGspVbiosImg *pVbiosImg);
 /* Free a KernelGspFlcnUcode structure */
 void kgspFreeFlcnUcode(KernelGspFlcnUcode *pFlcnUcode);
+
+void kgspLogRpcDebugInfo(struct OBJGPU *pGpu, OBJRPC *pRpc, NvU32 errorNum, NvBool bPollingForRpcResponse);
 
 #endif // KERNEL_GSP_H
 

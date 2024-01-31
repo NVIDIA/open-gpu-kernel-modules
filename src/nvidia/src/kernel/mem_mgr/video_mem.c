@@ -562,6 +562,14 @@ vidmemConstruct_IMPL
         goto done;
     }
 
+    if (FLD_TEST_DRF(OS32, _ATTR, _PHYSICALITY, _DEFAULT, pAllocData->attr))
+    {
+        pAllocData->attr =
+            FLD_SET_DRF_NUM(OS32, _ATTR, _PHYSICALITY,
+                            pDevice->defaultVidmemPhysicalityOverride,
+                            pAllocData->attr);
+    }
+
     NV_CHECK_OK_OR_RETURN(LEVEL_WARNING, stdmemValidateParams(pGpu, hClient, pAllocData));
     NV_CHECK_OR_RETURN(LEVEL_WARNING,
                        DRF_VAL(OS32, _ATTR, _LOCATION, pAllocData->attr) == NVOS32_ATTR_LOCATION_VIDMEM &&

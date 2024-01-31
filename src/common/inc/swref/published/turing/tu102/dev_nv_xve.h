@@ -28,6 +28,10 @@
 #define NV_XVE_MSIX_CAP_HDR_ENABLE                                  31:31 /* RWIVF */
 #define NV_XVE_MSIX_CAP_HDR_ENABLE_ENABLED                     0x00000001 /* RW--V */
 #define NV_XVE_MSIX_CAP_HDR_ENABLE_DISABLED                    0x00000000 /* RWI-V */
+#define NV_XVE_PRIV_MISC_1                                     0x0000041C /* RW-4R */
+#define NV_XVE_PRIV_MISC_1_CYA_HIDE_MSIX_CAP                        29:29 /* RWCVF */
+#define NV_XVE_PRIV_MISC_1_CYA_HIDE_MSIX_CAP_TRUE              0x00000001 /* RW--V */
+#define NV_XVE_PRIV_MISC_1_CYA_HIDE_MSIX_CAP_FALSE             0x00000000 /* RWC-V */
 #define NV_XVE_SRIOV_CAP_HDR3                                  0x00000BD8 /* R--4R */
 #define NV_XVE_SRIOV_CAP_HDR3_TOTAL_VFS                             31:16 /* R-EVF */
 #define NV_XVE_SRIOV_CAP_HDR5                                  0x00000BE0 /* R--4R */

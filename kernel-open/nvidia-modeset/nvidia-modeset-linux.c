@@ -68,6 +68,9 @@ module_param_named(output_rounding_fix, output_rounding_fix, bool, 0400);
 static bool disable_vrr_memclk_switch = false;
 module_param_named(disable_vrr_memclk_switch, disable_vrr_memclk_switch, bool, 0400);
 
+static bool opportunistic_display_sync = true;
+module_param_named(opportunistic_display_sync, opportunistic_display_sync, bool, 0400);
+
 /* These parameters are used for fault injection tests.  Normally the defaults
  * should be used. */
 MODULE_PARM_DESC(fail_malloc, "Fail the Nth call to nvkms_alloc");
@@ -97,6 +100,11 @@ NvBool nvkms_output_rounding_fix(void)
 NvBool nvkms_disable_vrr_memclk_switch(void)
 {
     return disable_vrr_memclk_switch;
+}
+
+NvBool nvkms_opportunistic_display_sync(void)
+{
+    return opportunistic_display_sync;
 }
 
 #define NVKMS_SYNCPT_STUBS_NEEDED
@@ -200,9 +208,23 @@ static inline int nvkms_read_trylock_pm_lock(void)
 
 static inline void nvkms_read_lock_pm_lock(void)
 {
-    while (!down_read_trylock(&nvkms_pm_lock)) {
-        try_to_freeze();
-        cond_resched();
+    if ((current->flags & PF_NOFREEZE)) {
+        /*
+         * Non-freezable tasks (i.e. kthreads in this case) don't have to worry
+         * about being frozen during system suspend, but do need to block so
+         * that the CPU can go idle during s2idle. Do a normal uninterruptible
+         * blocking wait for the PM lock.
+         */
+        down_read(&nvkms_pm_lock);
+    } else {
+        /*
+         * For freezable tasks, make sure we give the kernel an opportunity to
+         * freeze if taking the PM lock fails.
+         */
+        while (!down_read_trylock(&nvkms_pm_lock)) {
+            try_to_freeze();
+            cond_resched();
+        }
     }
 }
 

@@ -21,3 +21,6 @@
  * DEALINGS IN THE SOFTWARE.
  */
 #define NV_CHIP_EXTENDED_SYSTEM_PHYSICAL_ADDRESS_BITS              52
+#define NV_XPL_BASE_ADDRESS                    540672
+#define NV_XTL_BASE_ADDRESS                    593920
+#define NV_FBPA_PRI_STRIDE                      16384

@@ -1221,6 +1221,29 @@ typedef struct _NVEvoDevRec {
     } apiHead[NVKMS_MAX_HEADS_PER_DISP];
 } NVDevEvoRec;
 
+static inline NvBool nvEvoIsConsoleActive(const NVDevEvoRec *pDevEvo)
+{
+    /*
+     * If (pDevEvo->modesetOwner == NULL) that means either the vbios
+     * console or the NVKMS console might be active.
+     */
+    if (pDevEvo->modesetOwner == NULL) {
+        return TRUE;
+    }
+
+    /*
+     * If (pDevEvo->modesetOwner != NULL) but
+     * pDevEvo->modesetOwnerChanged is TRUE, that means the modeset
+     * ownership is grabbed by the external client but it hasn't
+     * performed any modeset and the console is still active.
+     */
+    if ((pDevEvo->modesetOwner != NULL) && pDevEvo->modesetOwnerChanged) {
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
 /*
  * The NVHwModeTimingsEvo structure stores all the values necessary to
  * perform a modeset with EVO

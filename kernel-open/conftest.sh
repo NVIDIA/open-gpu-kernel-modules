@@ -316,7 +316,7 @@ export_symbol_present_conftest() {
     SYMBOL="$1"
     TAB='	'
 
-    if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_SYMBOL.*\$" \
+    if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_SYMBOL\(_GPL\)\?\s*\$" \
                "$OUTPUT/Module.symvers" >/dev/null 2>&1; then
         echo "#define NV_IS_EXPORT_SYMBOL_PRESENT_$SYMBOL 1" |
             append_conftest "symbols"
@@ -337,7 +337,7 @@ export_symbol_gpl_conftest() {
     SYMBOL="$1"
     TAB='	'
 
-    if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_\(UNUSED_\)*SYMBOL_GPL\$" \
+    if grep -e "${TAB}${SYMBOL}${TAB}.*${TAB}EXPORT_\(UNUSED_\)*SYMBOL_GPL\s*\$" \
                "$OUTPUT/Module.symvers" >/dev/null 2>&1; then
         echo "#define NV_IS_EXPORT_SYMBOL_GPL_$SYMBOL 1" |
             append_conftest "symbols"
@@ -4468,6 +4468,24 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE" "" "types"
         ;;
 
+        mmu_notifier_ops_arch_invalidate_secondary_tlbs)
+            #
+            # Determine if the mmu_notifier_ops struct has the
+            # 'arch_invalidate_secondary_tlbs' member.
+            #
+            # struct mmu_notifier_ops.invalidate_range was renamed to
+            # arch_invalidate_secondary_tlbs by commit 1af5a8109904
+            # ("mmu_notifiers: rename invalidate_range notifier") due to be
+            # added in v6.6
+           CODE="
+            #include <linux/mmu_notifier.h>
+            int conftest_mmu_notifier_ops_arch_invalidate_secondary_tlbs(void) {
+                return offsetof(struct mmu_notifier_ops, arch_invalidate_secondary_tlbs);
+            }"
+
+            compile_check_conftest "$CODE" "NV_MMU_NOTIFIER_OPS_HAS_ARCH_INVALIDATE_SECONDARY_TLBS" "" "types"
+        ;;
+
         drm_format_num_planes)
             #
             # Determine if drm_format_num_planes() function is present.
@@ -5636,23 +5654,6 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_GPIO_TO_IRQ_PRESENT" "" "functions"
         ;;
 
-        migrate_vma_setup)
-            #
-            # Determine if migrate_vma_setup() function is present
-            #
-            # migrate_vma_setup() function was added by commit
-            # a7d1f22bb74f32cf3cd93f52776007e161f1a738 ("mm: turn migrate_vma
-            # upside down) in v5.4.
-            # (2019-08-20).
-            CODE="
-            #include <linux/migrate.h>
-            int conftest_migrate_vma_setup(void) {
-                migrate_vma_setup();
-            }"
-
-            compile_check_conftest "$CODE" "NV_MIGRATE_VMA_SETUP_PRESENT" "" "functions"
-        ;;
-
         migrate_vma_added_flags)
             #
             # Determine if migrate_vma structure has flags
@@ -5743,23 +5744,25 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_IOASID_GET_PRESENT" "" "functions"
         ;;
 
-        mm_pasid_set)
+        mm_pasid_drop)
             #
-            # Determine if mm_pasid_set() function is present
+            # Determine if mm_pasid_drop() function is present
             #
-            # mm_pasid_set() function was added by commit
-            # 701fac40384f07197b106136012804c3cae0b3de (iommu/sva: Assign a
-            # PASID to mm on PASID allocation and free it on mm exit) in v5.18.
-            # (2022-02-15).
+            # Added by commit 701fac40384f ("iommu/sva: Assign a PASID to mm
+            # on PASID allocation and free it on mm exit") in v5.18.
+            # Moved to linux/iommu.h in commit cd3891158a77 ("iommu/sva: Move
+            # PASID helpers to sva code") in v6.4.
+            #
             CODE="
             #if defined(NV_LINUX_SCHED_MM_H_PRESENT)
             #include <linux/sched/mm.h>
             #endif
-            void conftest_mm_pasid_set(void) {
-                mm_pasid_set();
+            #include <linux/iommu.h>
+            void conftest_mm_pasid_drop(void) {
+                mm_pasid_drop();
             }"
 
-            compile_check_conftest "$CODE" "NV_MM_PASID_SET_PRESENT" "" "functions"
+            compile_check_conftest "$CODE" "NV_MM_PASID_DROP_PRESENT" "" "functions"
         ;;
 
         drm_crtc_state_has_no_vblank)
@@ -6279,6 +6282,21 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMORY_FAILURE_MF_SW_SIMULATED_DEFINED" "" "types"
         ;;
 
+        crypto_tfm_ctx_aligned)
+            # Determine if 'crypto_tfm_ctx_aligned' is defined.
+            #
+            # Removed by commit 25c74a39e0f6 ("crypto: hmac - remove unnecessary
+            # alignment logic") in v6.7.
+            #
+            CODE="
+            #include <crypto/algapi.h>
+            void conftest_crypto_tfm_ctx_aligned(void) {
+                  (void)crypto_tfm_ctx_aligned();
+            }"
+
+            compile_check_conftest "$CODE" "NV_CRYPTO_TFM_CTX_ALIGNED_PRESENT" "" "functions"
+        ;;
+
         crypto)
             #
             # Determine if we support various crypto functions.
@@ -6341,6 +6359,22 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_MEMPOLICY_HAS_HOME_NODE" "" "types"
         ;;
 
+        mpol_preferred_many_present)
+            #
+            # Determine if MPOL_PREFERRED_MANY enum is present or not
+            #
+            # Added by commit b27abaccf8e8b ("mm/mempolicy: add
+            # MPOL_PREFERRED_MANY for multiple preferred nodes") in
+            # v5.15
+            #
+            CODE="
+            #include <linux/mempolicy.h>
+            int mpol_preferred_many = MPOL_PREFERRED_MANY;
+            "
+
+            compile_check_conftest "$CODE" "NV_MPOL_PREFERRED_MANY_PRESENT" "" "types"
+        ;;
+
         mmu_interval_notifier)
             #
             # Determine if mmu_interval_notifier struct is present or not
@@ -6354,6 +6388,21 @@ compile_test() {
             "
 
             compile_check_conftest "$CODE" "NV_MMU_INTERVAL_NOTIFIER" "" "types"
+        ;;
+
+        drm_unlocked_ioctl_flag_present)
+            # Determine if DRM_UNLOCKED IOCTL flag is present.
+            #
+            # DRM_UNLOCKED was removed by commit 2798ffcc1d6a ("drm: Remove
+            # locking for legacy ioctls and DRM_UNLOCKED") in Linux
+            # next-20231208.
+            CODE="
+            #if defined(NV_DRM_DRM_IOCTL_H_PRESENT)
+            #include <drm/drm_ioctl.h>
+            #endif
+            int flags = DRM_UNLOCKED;"
+
+            compile_check_conftest "$CODE" "NV_DRM_UNLOCKED_IOCTL_FLAG_PRESENT" "" "types"
         ;;
 
         # When adding a new conftest entry, please use the correct format for
@@ -6680,18 +6729,9 @@ case "$5" in
                 VFIO_PCI_CORE_PRESENT=1
             fi
 
-            # When this sanity check is run via nvidia-installer, it sets ARCH as aarch64.
-            # But, when it is run via Kbuild, ARCH is set as arm64
-            if [ "$ARCH" = "aarch64" ]; then
-                ARCH="arm64"
-            fi
-
             if [ "$VFIO_IOMMU_PRESENT" != "0" ] && [ "$KVM_PRESENT" != "0" ] ; then
-
-                # On x86_64, vGPU requires MDEV framework to be present.
-                # On aarch64, vGPU requires MDEV or vfio-pci-core framework to be present.
-                if ([ "$ARCH" = "arm64" ] && ([ "$VFIO_MDEV_PRESENT" != "0" ] || [ "$VFIO_PCI_CORE_PRESENT" != "0" ])) ||
-                   ([ "$ARCH" = "x86_64" ] && [ "$VFIO_MDEV_PRESENT" != "0" ];) then
+                # vGPU requires either MDEV or vfio-pci-core framework to be present.
+                if [ "$VFIO_MDEV_PRESENT" != "0" ] || [ "$VFIO_PCI_CORE_PRESENT" != "0" ]; then
                     exit 0
                 fi
             fi
@@ -6702,12 +6742,8 @@ case "$5" in
                 echo "CONFIG_VFIO_IOMMU_TYPE1";
             fi
 
-            if [ "$ARCH" = "arm64" ] && [ "$VFIO_MDEV_PRESENT" = "0" ] && [ "$VFIO_PCI_CORE_PRESENT" = "0" ]; then
+            if [ "$VFIO_MDEV_PRESENT" = "0" ] && [ "$VFIO_PCI_CORE_PRESENT" = "0" ]; then
                 echo "either CONFIG_VFIO_MDEV or CONFIG_VFIO_PCI_CORE";
-            fi
-
-            if [ "$ARCH" = "x86_64" ] && [ "$VFIO_MDEV_PRESENT" = "0" ]; then
-                echo "CONFIG_VFIO_MDEV";
             fi
 
             if [ "$KVM_PRESENT" = "0" ]; then

@@ -92,6 +92,8 @@ struct ProfilerBase {
     NV_STATUS (*__profilerBaseCtrlCmdReleaseHes__)(struct ProfilerBase *, NVB0CC_CTRL_RELEASE_HES_PARAMS *);
     NV_STATUS (*__profilerBaseCtrlCmdRequestCgControls__)(struct ProfilerBase *, NVB0CC_CTRL_POWER_REQUEST_FEATURES_PARAMS *);
     NV_STATUS (*__profilerBaseCtrlCmdReleaseCgControls__)(struct ProfilerBase *, NVB0CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *);
+    NV_STATUS (*__profilerBaseCtrlCmdDisableDynamicMMABoost__)(struct ProfilerBase *, NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS *);
+    NV_STATUS (*__profilerBaseCtrlCmdGetDynamicMMABoostStatus__)(struct ProfilerBase *, NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS *);
     NvBool (*__profilerBaseShareCallback__)(struct ProfilerBase *, struct RsClient *, struct RsResourceRef *, RS_SHARE_POLICY *);
     NV_STATUS (*__profilerBaseCheckMemInterUnmap__)(struct ProfilerBase *, NvBool);
     NV_STATUS (*__profilerBaseMapTo__)(struct ProfilerBase *, RS_RES_MAP_TO_PARAMS *);
@@ -180,6 +182,8 @@ NV_STATUS __nvoc_objCreate_ProfilerBase(ProfilerBase**, Dynamic*, NvU32, struct 
 #define profilerBaseCtrlCmdReleaseHes(pProfiler, pParams) profilerBaseCtrlCmdReleaseHes_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdRequestCgControls(pProfiler, pParams) profilerBaseCtrlCmdRequestCgControls_DISPATCH(pProfiler, pParams)
 #define profilerBaseCtrlCmdReleaseCgControls(pProfiler, pParams) profilerBaseCtrlCmdReleaseCgControls_DISPATCH(pProfiler, pParams)
+#define profilerBaseCtrlCmdDisableDynamicMMABoost(pProfiler, pParams) profilerBaseCtrlCmdDisableDynamicMMABoost_DISPATCH(pProfiler, pParams)
+#define profilerBaseCtrlCmdGetDynamicMMABoostStatus(pProfiler, pParams) profilerBaseCtrlCmdGetDynamicMMABoostStatus_DISPATCH(pProfiler, pParams)
 #define profilerBaseShareCallback(pGpuResource, pInvokingClient, pParentRef, pSharePolicy) profilerBaseShareCallback_DISPATCH(pGpuResource, pInvokingClient, pParentRef, pSharePolicy)
 #define profilerBaseCheckMemInterUnmap(pRmResource, bSubdeviceHandleProvided) profilerBaseCheckMemInterUnmap_DISPATCH(pRmResource, bSubdeviceHandleProvided)
 #define profilerBaseMapTo(pResource, pParams) profilerBaseMapTo_DISPATCH(pResource, pParams)
@@ -390,6 +394,18 @@ NV_STATUS profilerBaseCtrlCmdReleaseCgControls_IMPL(struct ProfilerBase *pProfil
 
 static inline NV_STATUS profilerBaseCtrlCmdReleaseCgControls_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_POWER_RELEASE_FEATURES_PARAMS *pParams) {
     return pProfiler->__profilerBaseCtrlCmdReleaseCgControls__(pProfiler, pParams);
+}
+
+NV_STATUS profilerBaseCtrlCmdDisableDynamicMMABoost_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS *pParams);
+
+static inline NV_STATUS profilerBaseCtrlCmdDisableDynamicMMABoost_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_DISABLE_DYNAMIC_MMA_BOOST_PARAMS *pParams) {
+    return pProfiler->__profilerBaseCtrlCmdDisableDynamicMMABoost__(pProfiler, pParams);
+}
+
+NV_STATUS profilerBaseCtrlCmdGetDynamicMMABoostStatus_IMPL(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS *pParams);
+
+static inline NV_STATUS profilerBaseCtrlCmdGetDynamicMMABoostStatus_DISPATCH(struct ProfilerBase *pProfiler, NVB0CC_CTRL_GET_DYNAMIC_MMA_BOOST_STATUS_PARAMS *pParams) {
+    return pProfiler->__profilerBaseCtrlCmdGetDynamicMMABoostStatus__(pProfiler, pParams);
 }
 
 static inline NvBool profilerBaseShareCallback_DISPATCH(struct ProfilerBase *pGpuResource, struct RsClient *pInvokingClient, struct RsResourceRef *pParentRef, RS_SHARE_POLICY *pSharePolicy) {

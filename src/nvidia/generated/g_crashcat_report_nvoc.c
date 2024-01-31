@@ -125,23 +125,31 @@ static void __nvoc_init_funcTable_CrashCatReport_1(CrashCatReport *pThis) {
     PORT_UNREFERENCED_VARIABLE(reportHal_HalVarIdx);
 
     // Hal function -- crashcatReportLogReporter
-    if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* CrashCatReportHal: V1_GENERIC */ 
-    {
-        pThis->__crashcatReportLogReporter__ = &crashcatReportLogReporter_V1_GENERIC;
-    }
-    else
+    if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* CrashCatReportHal: V1_LIBOS2 */ 
     {
         pThis->__crashcatReportLogReporter__ = &crashcatReportLogReporter_V1_LIBOS2;
     }
-
-    // Hal function -- crashcatReportLogSource
-    if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* CrashCatReportHal: V1_GENERIC */ 
+    else if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000004UL) )) /* CrashCatReportHal: V1_LIBOS3 */ 
     {
-        pThis->__crashcatReportLogSource__ = &crashcatReportLogSource_V1_GENERIC;
+        pThis->__crashcatReportLogReporter__ = &crashcatReportLogReporter_V1_LIBOS3;
     }
     else
     {
+        pThis->__crashcatReportLogReporter__ = &crashcatReportLogReporter_V1_GENERIC;
+    }
+
+    // Hal function -- crashcatReportLogSource
+    if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000002UL) )) /* CrashCatReportHal: V1_LIBOS2 */ 
+    {
         pThis->__crashcatReportLogSource__ = &crashcatReportLogSource_V1_LIBOS2;
+    }
+    else if (( ((reportHal_HalVarIdx >> 5) == 0UL) && ((1UL << (reportHal_HalVarIdx & 0x1f)) & 0x00000004UL) )) /* CrashCatReportHal: V1_LIBOS3 */ 
+    {
+        pThis->__crashcatReportLogSource__ = &crashcatReportLogSource_V1_LIBOS3;
+    }
+    else
+    {
+        pThis->__crashcatReportLogSource__ = &crashcatReportLogSource_V1_GENERIC;
     }
 }
 

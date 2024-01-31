@@ -1184,6 +1184,7 @@ struct NVOCFwdDeclHack {
     struct KernelHostVgpuDeviceApi *PRIVATE_FIELD(KernelHostVgpuDeviceApi_NVA084_KERNEL_HOST_VGPU_DEVICE);
     struct ThirdPartyP2P *PRIVATE_FIELD(ThirdPartyP2P_NV50_THIRD_PARTY_P2P);
     struct GenericEngineApi *PRIVATE_FIELD(GenericEngineApi_GF100_SUBDEVICE_MASTER);
+    struct GenericEngineApi *PRIVATE_FIELD(GenericEngineApi_GF100_SUBDEVICE_INFOROM);
     struct TimerApi *PRIVATE_FIELD(TimerApi_NV01_TIMER);
     struct I2cApi *PRIVATE_FIELD(I2cApi_NV40_I2C);
     struct DiagApi *PRIVATE_FIELD(DiagApi_NV20_SUBDEVICE_DIAG);

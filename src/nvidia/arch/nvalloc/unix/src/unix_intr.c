@@ -706,3 +706,27 @@ NV_STATUS rm_gpu_handle_mmu_faults(
     return status;
 }
 
+NvBool NV_API_CALL rm_is_msix_allowed(
+    nvidia_stack_t *sp,
+    nv_state_t     *nv
+)
+{
+    nv_priv_t           *pNvp = NV_GET_NV_PRIV(nv);
+    THREAD_STATE_NODE    threadState;
+    void                *fp;
+    NvBool               ret = NV_FALSE;
+
+    NV_ENTER_RM_RUNTIME(sp,fp);
+    threadStateInit(&threadState, THREAD_STATE_FLAGS_NONE);
+
+    if (rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT) == NV_OK)
+    {
+        ret = gpumgrIsDeviceMsixAllowed(nv->regs->cpu_address,
+                                        pNvp->pmc_boot_1, pNvp->pmc_boot_42);
+        rmapiLockRelease();
+    }
+
+    threadStateFree(&threadState, THREAD_STATE_FLAGS_NONE);
+    NV_EXIT_RM_RUNTIME(sp,fp);
+    return ret;
+}

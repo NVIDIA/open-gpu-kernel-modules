@@ -1312,9 +1312,21 @@ static const struct drm_ioctl_desc nv_drm_ioctls[] = {
                       DRM_RENDER_ALLOW|DRM_UNLOCKED),
 #endif
 
+    /*
+     * DRM_UNLOCKED is implicit for all non-legacy DRM driver IOCTLs since Linux
+     * v4.10 commit fa5386459f06 "drm: Used DRM_LEGACY for all legacy functions"
+     * (Linux v4.4 commit ea487835e887 "drm: Enforce unlocked ioctl operation
+     * for kms driver ioctls" previously did it only for drivers that set the
+     * DRM_MODESET flag), so this will race with SET_CLIENT_CAP. Linux v4.11
+     * commit dcf727ab5d17 "drm: setclientcap doesn't need the drm BKL" also
+     * removed locking from SET_CLIENT_CAP so there is no use attempting to lock
+     * manually. The latter commit acknowledges that this can expose userspace
+     * to inconsistent behavior when racing with itself, but accepts that risk.
+     */
     DRM_IOCTL_DEF_DRV(NVIDIA_GET_CLIENT_CAPABILITY,
                       nv_drm_get_client_capability_ioctl,
                       0),
+
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
     DRM_IOCTL_DEF_DRV(NVIDIA_GET_CRTC_CRC32,
                       nv_drm_get_crtc_crc32_ioctl,

@@ -28,6 +28,11 @@
 
 #include "nv-time.h"
 
+#include <linux/mmzone.h>
+#include <linux/numa.h>
+
+#include <linux/pid.h>
+
 extern char *NVreg_TemporaryFilePath;
 
 #define MAX_ERROR_STRING 512
@@ -1242,9 +1247,12 @@ void NV_API_CALL os_get_screen_info(
      * SYSFB_SIMPLEFB registers a dummy framebuffer which does not contain the
      * information required by os_get_screen_info(), therefore you need to
      * fall back onto the screen_info structure.
+     *
+     * After commit b8466fe82b79 ("efi: move screen_info into efi init code")
+     * in v6.7, 'screen_info' is exported as GPL licensed symbol for ARM64.
      */
 
-#if NV_IS_EXPORT_SYMBOL_PRESENT_screen_info
+#if NV_CHECK_EXPORT_SYMBOL(screen_info)
     /*
      * If there is not a framebuffer console, return 0 size.
      *
@@ -2122,6 +2130,43 @@ void NV_API_CALL os_nv_cap_close_fd
     nv_cap_close_fd(fd);
 }
 
+/*
+ * Reads the total memory and free memory of a NUMA node from the kernel.
+ */
+NV_STATUS NV_API_CALL os_get_numa_node_memory_usage
+(
+    NvS32 node_id,
+    NvU64 *free_memory_bytes,
+    NvU64 *total_memory_bytes
+)
+{
+    struct pglist_data *pgdat;
+    struct zone *zone;
+    NvU32 zone_id;
+
+    if (node_id >= MAX_NUMNODES)
+    {
+        nv_printf(NV_DBG_ERRORS, "Invalid NUMA node ID\n");
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pgdat = NODE_DATA(node_id);
+
+    *free_memory_bytes = 0;
+    *total_memory_bytes = 0;
+
+    for (zone_id = 0; zone_id < MAX_NR_ZONES; zone_id++)
+    {
+        zone = &(pgdat->node_zones[zone_id]);
+        if (!populated_zone(zone))
+            continue;
+        *free_memory_bytes += (zone_page_state_snapshot(zone, NR_FREE_PAGES) * PAGE_SIZE);
+        *total_memory_bytes += (zone->present_pages * PAGE_SIZE);
+    }
+
+    return NV_OK;
+}
+
 typedef struct os_numa_gpu_mem_hotplug_notifier_s
 {
     NvU64 start_pa;
@@ -2371,5 +2416,30 @@ NV_STATUS NV_API_CALL os_offline_page_at_address
               address);
     return NV_ERR_NOT_SUPPORTED;
 #endif
+}
+
+void* NV_API_CALL os_get_pid_info(void)
+{
+    return get_task_pid(current, PIDTYPE_PID);
+}
+
+void NV_API_CALL os_put_pid_info(void *pid_info)
+{
+    if (pid_info != NULL)
+        put_pid(pid_info);
+}
+
+NV_STATUS NV_API_CALL os_find_ns_pid(void *pid_info, NvU32 *ns_pid)
+{
+    if ((pid_info == NULL) || (ns_pid == NULL))
+        return NV_ERR_INVALID_ARGUMENT;
+
+    *ns_pid = pid_vnr((struct pid *)pid_info);
+
+    // The call returns 0 if the PID is not found in the current ns
+    if (*ns_pid == 0)
+        return NV_ERR_OBJECT_NOT_FOUND;
+
+    return NV_OK;
 }
 

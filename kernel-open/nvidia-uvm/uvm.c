@@ -571,7 +571,6 @@ static void uvm_vm_open_managed_entry(struct vm_area_struct *vma)
 static void uvm_vm_close_managed(struct vm_area_struct *vma)
 {
     uvm_va_space_t *va_space = uvm_va_space_get(vma->vm_file);
-    uvm_processor_id_t gpu_id;
     bool make_zombie = false;
 
     if (current->mm != NULL)
@@ -606,12 +605,6 @@ static void uvm_vm_close_managed(struct vm_area_struct *vma)
 
     uvm_destroy_vma_managed(vma, make_zombie);
 
-    // Notify GPU address spaces that the fault buffer needs to be flushed to
-    // avoid finding stale entries that can be attributed to new VA ranges
-    // reallocated at the same address.
-    for_each_gpu_id_in_mask(gpu_id, &va_space->registered_gpu_va_spaces) {
-        uvm_processor_mask_set_atomic(&va_space->needs_fault_buffer_flush, gpu_id);
-    }
     uvm_va_space_up_write(va_space);
 
     if (current->mm != NULL)

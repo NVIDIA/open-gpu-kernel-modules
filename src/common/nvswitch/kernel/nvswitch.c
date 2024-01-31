@@ -30,6 +30,7 @@
 #include "flcn/haldefs_flcnable_nvswitch.h"
 #include "flcn/flcn_nvswitch.h"
 #include "soe/soe_nvswitch.h"
+#include "soe/soeififr.h"
 #include "nvVer.h"
 #include "nvlink_inband_msg.h"
 
@@ -1345,7 +1346,6 @@ nvswitch_lib_initialize_device
     NvU8 link_num;
     nvlink_link *link = NULL;
     NvBool is_blacklisted_by_os = NV_FALSE;
-    NvU64 mode;
 
     if (!NVSWITCH_IS_DEVICE_ACCESSIBLE(device))
     {
@@ -1508,18 +1508,19 @@ nvswitch_lib_initialize_device
 
         nvswitch_reset_persistent_link_hw_state(device, link_num);
 
-        if(_nvswitch_corelib_get_dl_link_mode(link, &mode) != NVL_SUCCESS)
-        {
-            NVSWITCH_PRINT(device, ERROR, "%s: nvlipt_lnk_status: Failed to check link mode! LinkId %d\n",
-                        __FUNCTION__, link_num);
-        }
-        else if(mode == NVLINK_LINKSTATE_FAULT)
-        {
-            NVSWITCH_PRINT(device, INFO, "%s: retraining LinkId %d\n",
-                        __FUNCTION__, link_num);
-            nvswitch_reset_and_train_link(device, link);
-        }
+        //
+        // During Nvswitch initialization, the default L1 thresholds are programmed by the
+        // BIOS from the BIOS tables. Save these L1 Threshold Values in scratch registers
+        // for use when resetting the thresholds to default.
+        //
+        nvswitch_program_l1_scratch_reg(device, link_num);
 
+        //
+        // WAR : Initializing the L1 threshold registers at this point as a WAR for
+        // Bug 3963639 where it was discussed that the L1 threshold register should have 
+        // the default value for all available links and not just for active links.
+        //
+        nvswitch_init_lpwr_regs(link);
     }
 
     retval = nvswitch_set_training_mode(device);
@@ -1623,6 +1624,10 @@ nvswitch_lib_post_init_device
 )
 {
     NvlStatus retval;
+    NvlStatus status;
+    NvU32     link_num;
+    NvU64     mode;
+    nvlink_link *link;
 
     if (!NVSWITCH_IS_DEVICE_INITIALIZED(device))
     {
@@ -1634,7 +1639,7 @@ nvswitch_lib_post_init_device
     {
         return retval;
     }
-    
+
     if (nvswitch_is_bios_supported(device))
     {
         retval = nvswitch_bios_get_image(device);
@@ -1668,6 +1673,41 @@ nvswitch_lib_post_init_device
     if (IS_RTLSIM(device) || IS_EMULATION(device) || IS_FMODEL(device))
     {
         (void)nvswitch_launch_ALI(device);
+    }
+
+    //
+    // There is an edge case where a hypervisor may not send same number
+    // of reset to switch and GPUs, so try to re-train links in fault
+    // if possible
+    //
+    for (link_num=0; link_num < nvswitch_get_num_links(device); link_num++)
+    {
+        // Sanity check
+        if (!nvswitch_is_link_valid(device, link_num))
+        {
+            continue;
+        }
+
+        status = nvlink_lib_get_link(device->nvlink_device, link_num, &link);
+        if (status != NVL_SUCCESS)
+        {
+            NVSWITCH_PRINT(device, ERROR, "%s: Failed to get link for LinkId %d\n",
+                        __FUNCTION__, link_num);
+            continue;
+        }
+
+        // If the link is in fault then re-train
+        if(_nvswitch_corelib_get_dl_link_mode(link, &mode) != NVL_SUCCESS)
+        {
+            NVSWITCH_PRINT(device, ERROR, "%s: nvlipt_lnk_status: Failed to check link mode! LinkId %d\n",
+                        __FUNCTION__, link_num);
+        }
+        else if(mode == NVLINK_LINKSTATE_FAULT)
+        {
+            NVSWITCH_PRINT(device, INFO, "%s: retraining LinkId %d\n",
+                        __FUNCTION__, link_num);
+            nvswitch_reset_and_train_link(device, link);
+        }
     }
 
     return NVL_SUCCESS;
@@ -3437,6 +3477,46 @@ _nvswitch_ctrl_get_inforom_bbx_sxid
 }
 
 static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_sys_info
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_SYS_INFO_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_SYS_INFO, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_time_info
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TIME_INFO_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TIME_INFO, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_temp_data
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TEMP_DATA_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TEMP_DATA, (void *)params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_inforom_bbx_temp_samples
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TEMP_SAMPLES_PARAMS *params
+)
+{
+    return nvswitch_inforom_bbx_get_data(device, RM_SOE_IFR_BBX_GET_TEMP_SAMPLES, (void *)params);
+}
+
+static NvlStatus
 _nvswitch_ctrl_get_nvlink_lp_counters
 (
     nvswitch_device *device,
@@ -4617,6 +4697,25 @@ nvswitch_init_lpwr_regs
    device->hal.nvswitch_init_lpwr_regs(link);
 }
 
+void
+nvswitch_program_l1_scratch_reg
+(
+    nvswitch_device *device,
+    NvU32 linkNumber
+)
+{
+   device->hal.nvswitch_program_l1_scratch_reg(device, linkNumber);
+}
+
+NvlStatus
+nvswitch_check_io_sanity
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_check_io_sanity(device);
+}
+
 NvlStatus
 nvswitch_launch_ALI
 (
@@ -5132,6 +5231,26 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_GET_POWER,
                 _nvswitch_ctrl_therm_read_power,
                 NVSWITCH_GET_POWER_PARAMS);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_SYS_INFO,
+                _nvswitch_ctrl_get_inforom_bbx_sys_info,
+                NVSWITCH_GET_SYS_INFO_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TIME_INFO,
+                _nvswitch_ctrl_get_inforom_bbx_time_info,
+                NVSWITCH_GET_TIME_INFO_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TEMP_DATA,
+                _nvswitch_ctrl_get_inforom_bbx_temp_data,
+                NVSWITCH_GET_TEMP_DATA_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TEMP_SAMPLES,
+                _nvswitch_ctrl_get_inforom_bbx_temp_samples,
+                NVSWITCH_GET_TEMP_SAMPLES_PARAMS,
+                osPrivate, flags);
 
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "unknown ioctl %x\n", cmd);

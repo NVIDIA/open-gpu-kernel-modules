@@ -2,7 +2,7 @@
 
 ## Release 535 Entries
 
-### [535.54.03] 2023-06-14
+### [535.43.24] 2024-01-31
 
 ### [535.43.23] 2024-01-24
 
@@ -30,6 +30,7 @@
 
 #### Fixed
 
+- Fixed building main against current centos stream 8 fails, [#550](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/550) by @airlied
 - Fixed console restore with traditional VGA consoles.
 
 #### Added
@@ -57,6 +58,14 @@
 - Support for power management features like Suspend, Hibernate and Resume.
 
 ## Release 525 Entries
+
+### [525.147.05] 2023-10-31
+
+#### Fixed
+
+- Fix nvidia_p2p_get_pages(): Fix double-free in register-callback error path, [#557](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/557) by @BrendanCunningham
+
+### [525.125.06] 2023-06-26
 
 ### [525.116.04] 2023-05-09
 

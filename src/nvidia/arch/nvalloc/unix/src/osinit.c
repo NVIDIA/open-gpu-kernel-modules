@@ -1160,6 +1160,7 @@ NvBool RmInitPrivateState(
     nv_priv_t *nvp;
     NvU32 gpuId;
     NvU32 pmc_boot_0 = 0;
+    NvU32 pmc_boot_1 = 0;
     NvU32 pmc_boot_42 = 0;
 
     NV_SET_NV_PRIV(pNv, NULL);
@@ -1177,6 +1178,7 @@ NvBool RmInitPrivateState(
         }
 
         pmc_boot_0 = NV_PRIV_REG_RD32(pNv->regs->map_u, NV_PMC_BOOT_0);
+        pmc_boot_1 = NV_PRIV_REG_RD32(pNv->regs->map_u, NV_PMC_BOOT_1);
         pmc_boot_42 = NV_PRIV_REG_RD32(pNv->regs->map_u, NV_PMC_BOOT_42);
 
         os_unmap_kernel_space(pNv->regs->map_u, os_page_size);
@@ -1216,6 +1218,7 @@ NvBool RmInitPrivateState(
     os_mem_set(nvp, 0, sizeof(*nvp));
     nvp->status = NV_ERR_INVALID_STATE;
     nvp->pmc_boot_0 = pmc_boot_0;
+    nvp->pmc_boot_1 = pmc_boot_1;
     nvp->pmc_boot_42 = pmc_boot_42;
     NV_SET_NV_PRIV(pNv, nvp);
 
@@ -1234,7 +1237,7 @@ void RmClearPrivateState(
     nv_i2c_adapter_entry_t i2c_adapters[MAX_I2C_ADAPTERS];
     nv_dynamic_power_t dynamicPowerCopy;
     NvU32 x = 0;
-    NvU32 pmc_boot_0, pmc_boot_42;
+    NvU32 pmc_boot_0, pmc_boot_1, pmc_boot_42;
 
     //
     // Do not clear private state after GPU resets, it is used while
@@ -1252,6 +1255,7 @@ void RmClearPrivateState(
     pRegistryCopy = nvp->pRegistry;
     dynamicPowerCopy = nvp->dynamic_power;
     pmc_boot_0 = nvp->pmc_boot_0;
+    pmc_boot_1 = nvp->pmc_boot_1;
     pmc_boot_42 = nvp->pmc_boot_42;
 
     for (x = 0; x < MAX_I2C_ADAPTERS; x++)
@@ -1267,6 +1271,7 @@ void RmClearPrivateState(
     nvp->pRegistry = pRegistryCopy;
     nvp->dynamic_power = dynamicPowerCopy;
     nvp->pmc_boot_0 = pmc_boot_0;
+    nvp->pmc_boot_1 = pmc_boot_1;
     nvp->pmc_boot_42 = pmc_boot_42;
 
     for (x = 0; x < MAX_I2C_ADAPTERS; x++)

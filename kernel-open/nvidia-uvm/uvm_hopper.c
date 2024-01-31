@@ -103,5 +103,7 @@ void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->map_remap_larger_page_promotion = false;
 
     parent_gpu->plc_supported = true;
+
+    parent_gpu->no_ats_range_required = true;
 }
 

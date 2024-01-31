@@ -128,8 +128,9 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 // present if we see the callback.
 //
 // The callback was added in commit 0f0a327fa12cd55de5e7f8c05a70ac3d047f405e,
-// v3.19 (2014-11-13).
-    #if defined(NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE)
+// v3.19 (2014-11-13) and renamed in commit 1af5a8109904.
+    #if defined(NV_MMU_NOTIFIER_OPS_HAS_INVALIDATE_RANGE) || \
+        defined(NV_MMU_NOTIFIER_OPS_HAS_ARCH_INVALIDATE_SECONDARY_TLBS)
         #define UVM_CAN_USE_MMU_NOTIFIERS() 1
     #else
         #define UVM_CAN_USE_MMU_NOTIFIERS() 0
@@ -151,10 +152,6 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
 #endif
 #if !defined(VM_MIXEDMAP)
 #define VM_MIXEDMAP    0x00000000
-#endif
-
-#if !defined(MPOL_PREFERRED_MANY)
-#define MPOL_PREFERRED_MANY    5
 #endif
 
 //

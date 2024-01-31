@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2020 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -167,6 +167,14 @@ nvswitch_bbx_get_sxid_lr10
 (
     nvswitch_device *device,
     NVSWITCH_GET_SXIDS_PARAMS * params
+);
+
+NvlStatus
+nvswitch_bbx_get_data_lr10
+(
+    nvswitch_device *device,
+    NvU8 dataType,
+    void *params
 );
 
 #endif //_INFOROM_LR10_H_

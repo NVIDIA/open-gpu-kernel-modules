@@ -358,6 +358,7 @@ typedef struct
      */
     NvU64 s0ix_gcoff_max_fb_size;
 
+    NvU32 pmc_boot_1;
     NvU32 pmc_boot_42;
 } nv_priv_t;
 

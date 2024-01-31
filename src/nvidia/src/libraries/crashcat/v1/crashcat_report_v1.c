@@ -45,7 +45,8 @@ static NV_INLINE NvCrashCatPacketHeader_V1 crashcatReadPacketHeader(void *pHdr)
 
 void crashcatReportDestruct_V1(CrashCatReport *pReport)
 {
-    portMemFree(pReport->v1.pRiscv64Trace);
+    portMemFree(pReport->v1.pRiscv64StackTrace);
+    portMemFree(pReport->v1.pRiscv64PcTrace);
     portMemFree(pReport->v1.pIo32State);
 }
 
@@ -242,20 +243,54 @@ void *crashcatReportExtractRiscv64Trace_V1
     if (!crashcatPacketHeaderValid(hdr) ||
         (crashcatPacketHeaderFormatVersion(hdr) != NV_CRASHCAT_PACKET_FORMAT_VERSION_1))
     {
-        NV_PRINTF(LEVEL_WARNING, "Invalid V1 stack trace header 0x%" NvU64_fmtx "\n", hdr);
+        NV_PRINTF(LEVEL_WARNING, "Invalid V1 trace packet header 0x%" NvU64_fmtx "\n", hdr);
         return pReportBytes;
     }
 
-    // Allocate the buffer for the stack trace
+    // Allocate the buffer for the trace
     const NvU32 payloadSize = crashcatPacketHeaderPayloadSize(hdr);
     const NvLength sizeBytes = sizeof(NvCrashCatRiscv64Trace_V1) + payloadSize;
     NV_CHECK_OR_RETURN(LEVEL_ERROR, payloadSize > 0, pReportBytes);
 
-    pReport->v1.pRiscv64Trace = portMemAllocNonPaged(sizeBytes);
-    NV_CHECK_OR_RETURN(LEVEL_ERROR, pReport->v1.pRiscv64Trace != NULL, pReportBytes);
+    NvCrashCatRiscv64Trace_V1 *pRiscv64Trace = portMemAllocNonPaged(sizeBytes);
+    NV_CHECK_OR_RETURN(LEVEL_ERROR, pRiscv64Trace != NULL, pReportBytes);
 
-    portMemCopy(pReport->v1.pRiscv64Trace, sizeBytes, pReportBytes, sizeBytes);
-    pReport->validTags |= NVBIT(NV_CRASHCAT_PACKET_TYPE_RISCV64_TRACE);
+    portMemCopy(pRiscv64Trace, sizeBytes, pReportBytes, sizeBytes);
+
+    //
+    // We support both stack and PC traces in one report. They share a tag bit (will be set if
+    // either are present).
+    //
+    switch (crashcatRiscv64TraceV1Type(pRiscv64Trace))
+    {
+        case NV_CRASHCAT_TRACE_TYPE_STACK:
+            if (pReport->v1.pRiscv64StackTrace != NULL)
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                    "Only one stack trace packet is supported, discarding the old one\n");
+                portMemFree(pReport->v1.pRiscv64StackTrace);
+            }
+
+            pReport->v1.pRiscv64StackTrace = pRiscv64Trace;
+            pReport->validTags |= NVBIT(NV_CRASHCAT_PACKET_TYPE_RISCV64_TRACE);
+            break;
+        case NV_CRASHCAT_TRACE_TYPE_NVRVTB:
+            if (pReport->v1.pRiscv64PcTrace != NULL)
+            {
+                NV_PRINTF(LEVEL_WARNING,
+                    "Only one PC trace packet is supported, discarding the old one\n");
+                portMemFree(pReport->v1.pRiscv64PcTrace);
+            }
+
+            pReport->v1.pRiscv64PcTrace = pRiscv64Trace;
+            pReport->validTags |= NVBIT(NV_CRASHCAT_PACKET_TYPE_RISCV64_TRACE);
+            break;
+        default:
+            NV_PRINTF(LEVEL_WARNING, "Unknown CrashCat trace type (0x%x), discarding\n",
+                      crashcatRiscv64TraceV1Type(pRiscv64Trace));
+            portMemFree(pRiscv64Trace);
+            break;
+    }
 
     return (void *)((NvUPtr)pReportBytes + sizeBytes);
 }
@@ -392,9 +427,12 @@ static NV_INLINE const char *crashcatRiscv64TraceTypeToString_V1(NV_CRASHCAT_TRA
     }
 }
 
-void crashcatReportLogRiscv64Trace_V1(CrashCatReport *pReport)
+static void crashcatReportLogRiscv64Trace_V1
+(
+    CrashCatReport *pReport,
+    NvCrashCatRiscv64Trace_V1 *pTraceV1
+)
 {
-    NvCrashCatRiscv64Trace_V1 *pTraceV1 = pReport->v1.pRiscv64Trace;
     NvU16 entries = crashcatPacketHeaderPayloadSize(pTraceV1->header) >> 3;
     NV_CRASHCAT_TRACE_TYPE traceType = crashcatRiscv64TraceV1Type(pTraceV1);
 
@@ -402,8 +440,59 @@ void crashcatReportLogRiscv64Trace_V1(CrashCatReport *pReport)
     CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport, "%s Trace:",
         crashcatRiscv64TraceTypeToString_V1(traceType));
 
-    for (NvU16 i = 0; i < entries; i++)
-        CRASHCAT_REPORT_LOG_DATA(pReport, "0x%" NvU64_fmtx, pTraceV1->addr[i]);
+    if (traceType == NV_CRASHCAT_TRACE_TYPE_NVRVTB)
+    {
+        // PC traces are too long with each entry on its own line
+        const NvU8 ENTRIES_PER_LINE = 5;
+        NvU16 idx;
+        for (idx = 0; idx < (entries / ENTRIES_PER_LINE) * ENTRIES_PER_LINE;
+             idx += ENTRIES_PER_LINE)
+        {
+            CRASHCAT_REPORT_LOG_DATA(pReport,
+                "0x%016" NvU64_fmtx "  0x%016" NvU64_fmtx "  0x%016" NvU64_fmtx "  "
+                "0x%016" NvU64_fmtx "  0x%016" NvU64_fmtx,
+                pTraceV1->addr[idx + 0], pTraceV1->addr[idx + 1], pTraceV1->addr[idx + 2],
+                pTraceV1->addr[idx + 3], pTraceV1->addr[idx + 4]);
+        }
+
+        switch (entries - idx)
+        {
+            case 4:
+                CRASHCAT_REPORT_LOG_DATA(pReport,
+                    "0x%016" NvU64_fmtx "  0x%016" NvU64_fmtx "  0x%016" NvU64_fmtx "  "
+                    "0x%016" NvU64_fmtx,
+                    pTraceV1->addr[idx + 0], pTraceV1->addr[idx + 1], pTraceV1->addr[idx + 2],
+                    pTraceV1->addr[idx + 3]);
+                break;
+            case 3:
+                CRASHCAT_REPORT_LOG_DATA(pReport,
+                    "0x%016" NvU64_fmtx "  0x%016" NvU64_fmtx "  0x%016" NvU64_fmtx,
+                    pTraceV1->addr[idx + 0], pTraceV1->addr[idx + 1], pTraceV1->addr[idx + 2]);
+                break;
+            case 2:
+                CRASHCAT_REPORT_LOG_DATA(pReport, "0x%016" NvU64_fmtx "  0x%016" NvU64_fmtx,
+                    pTraceV1->addr[idx + 0], pTraceV1->addr[idx + 1]);
+                break;
+            case 1:
+                CRASHCAT_REPORT_LOG_DATA(pReport, "0x%016" NvU64_fmtx, pTraceV1->addr[idx + 0]);
+                break;
+            default:
+                break;
+        }
+    }
+    else
+    {
+        for (NvU16 idx = 0; idx < entries; idx++)
+            CRASHCAT_REPORT_LOG_DATA(pReport, "0x%016" NvU64_fmtx, pTraceV1->addr[idx]);
+    }
+}
+
+void crashcatReportLogRiscv64Traces_V1(CrashCatReport *pReport)
+{
+    if (pReport->v1.pRiscv64StackTrace != NULL)
+        crashcatReportLogRiscv64Trace_V1(pReport, pReport->v1.pRiscv64StackTrace);
+    if (pReport->v1.pRiscv64PcTrace != NULL)
+        crashcatReportLogRiscv64Trace_V1(pReport, pReport->v1.pRiscv64PcTrace);
 }
 
 static NV_INLINE const char *crashcatIo32ApertureToString_V1(NV_CRASHCAT_IO_APERTURE aperture)

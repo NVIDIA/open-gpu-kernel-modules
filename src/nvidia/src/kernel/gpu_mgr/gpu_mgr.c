@@ -3893,3 +3893,41 @@ NvBool gpumgrIsSafeToReadGpuInfo(void)
     //
     return rmapiLockIsOwner() || (rmGpuLocksGetOwnedMask() != 0);
 }
+
+//
+// Workaround for Bug 3809777. This is a HW bug happening in Ampere and
+// Ada GPU's. For these GPU's, after device reset, CRS (Configuration Request
+// Retry Status) is being released without waiting for GFW boot completion.
+// MSI-X capability in the config space may be inconsistent when GFW boot
+// is in progress, so this function checks if MSI-X is allowed.
+// For Hopper and above, the CRS will be released after
+// GFW boot completion, so the WAR is not needed.
+// The bug will be exposed only when GPU is running inside guest in
+// pass-through mode.
+//
+NvBool gpumgrIsDeviceMsixAllowed
+(
+    RmPhysAddr  bar0BaseAddr,
+    NvU32       pmcBoot1,
+    NvU32       pmcBoot42
+)
+{
+    OBJSYS          *pSys = SYS_GET_INSTANCE();
+    OBJHYPERVISOR   *pHypervisor = SYS_GET_HYPERVISOR(pSys);
+    NvU32            chipArch;
+
+    if ((hypervisorGetHypervisorType(pHypervisor) == OS_HYPERVISOR_UNKNOWN) ||
+        !FLD_TEST_DRF(_PMC, _BOOT_1, _VGPU, _REAL, pmcBoot1))
+    {
+        return NV_TRUE;
+    }
+
+    chipArch = DRF_VAL(_PMC, _BOOT_42, _ARCHITECTURE, pmcBoot42);
+    if ((chipArch != NV_PMC_BOOT_42_ARCHITECTURE_AD100) &&
+        (chipArch != NV_PMC_BOOT_42_ARCHITECTURE_GA100))
+    {
+        return NV_TRUE;
+    }
+
+    return gpuIsMsixAllowed_TU102(bar0BaseAddr);
+}

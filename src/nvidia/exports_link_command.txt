@@ -23,6 +23,7 @@
 --undefined=rm_isr
 --undefined=rm_isr_bh
 --undefined=rm_isr_bh_unlocked
+--undefined=rm_is_msix_allowed
 --undefined=rm_perform_version_check
 --undefined=rm_power_management
 --undefined=rm_stop_user_channels

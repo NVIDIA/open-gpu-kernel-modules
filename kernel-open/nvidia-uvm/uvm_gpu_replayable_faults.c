@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2022 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -362,7 +362,8 @@ static NV_STATUS push_cancel_on_gpu(uvm_gpu_t *gpu,
                                         "Cancel targeting instance_ptr {0x%llx:%s}\n",
                                         instance_ptr.address,
                                         uvm_aperture_string(instance_ptr.aperture));
-    } else {
+    }
+    else {
         status = uvm_push_begin_acquire(gpu->channel_manager,
                                         UVM_CHANNEL_TYPE_MEMOPS,
                                         &replayable_faults->replay_tracker,
@@ -697,9 +698,6 @@ static inline int cmp_access_type(uvm_fault_access_type_t a, uvm_fault_access_ty
 
 typedef enum
 {
-    // Fetch a batch of faults from the buffer.
-    FAULT_FETCH_MODE_BATCH_ALL,
-
     // Fetch a batch of faults from the buffer. Stop at the first entry that is
     // not ready yet
     FAULT_FETCH_MODE_BATCH_READY,
@@ -857,9 +855,7 @@ static NV_STATUS fetch_fault_buffer_entries(uvm_gpu_t *gpu,
         // written out of order
         UVM_SPIN_WHILE(!gpu->parent->fault_buffer_hal->entry_is_valid(gpu->parent, get), &spin) {
             // We have some entry to work on. Let's do the rest later.
-            if (fetch_mode != FAULT_FETCH_MODE_ALL &&
-                fetch_mode != FAULT_FETCH_MODE_BATCH_ALL &&
-                fault_index > 0)
+            if (fetch_mode == FAULT_FETCH_MODE_BATCH_READY && fault_index > 0)
                 goto done;
         }
 
@@ -888,6 +884,7 @@ static NV_STATUS fetch_fault_buffer_entries(uvm_gpu_t *gpu,
 
         current_entry->va_space = NULL;
         current_entry->filtered = false;
+        current_entry->replayable.cancel_va_mode = UVM_FAULT_CANCEL_VA_MODE_ALL;
 
         if (current_entry->fault_source.utlb_id > batch_context->max_utlb_id) {
             UVM_ASSERT(current_entry->fault_source.utlb_id < replayable_faults->utlb_count);
@@ -1184,7 +1181,11 @@ static void mark_fault_fatal(uvm_fault_service_batch_context_t *batch_context,
     fault_entry->replayable.cancel_va_mode = cancel_va_mode;
 
     utlb->has_fatal_faults = true;
-    batch_context->has_fatal_faults = true;
+
+    if (!batch_context->fatal_va_space) {
+        UVM_ASSERT(fault_entry->va_space);
+        batch_context->fatal_va_space = fault_entry->va_space;
+    }
 }
 
 static void fault_entry_duplicate_flags(uvm_fault_service_batch_context_t *batch_context,
@@ -1378,7 +1379,10 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_t *gpu,
         UVM_ASSERT(current_entry->fault_access_type ==
                    uvm_fault_access_type_mask_highest(current_entry->access_type_mask));
 
-        current_entry->is_fatal            = false;
+        // Unserviceable faults were already skipped by the caller. There are no
+        // unserviceable fault types that could be in the same VA block as a
+        // serviceable fault.
+        UVM_ASSERT(!current_entry->is_fatal);
         current_entry->is_throttled        = false;
         current_entry->is_invalid_prefetch = false;
 
@@ -1512,7 +1516,7 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_t *gpu,
 
     ++block_context->num_retries;
 
-    if (status == NV_OK && batch_context->has_fatal_faults)
+    if (status == NV_OK && batch_context->fatal_va_space)
         status = uvm_va_block_set_cancel(va_block, &block_context->block_context, gpu);
 
     return status;
@@ -1676,7 +1680,8 @@ static NV_STATUS service_fault_batch_ats_sub_vma(uvm_gpu_va_space_t *gpu_va_spac
         if (access_type <= UVM_FAULT_ACCESS_TYPE_READ) {
             cancel_va_mode = UVM_FAULT_CANCEL_VA_MODE_ALL;
         }
-        else if (access_type >= UVM_FAULT_ACCESS_TYPE_WRITE) {
+	else {
+            UVM_ASSERT(access_type >= UVM_FAULT_ACCESS_TYPE_WRITE);
             if (uvm_fault_access_type_mask_test(current_entry->access_type_mask, UVM_FAULT_ACCESS_TYPE_READ) &&
                 !uvm_page_mask_test(reads_serviced_mask, page_index))
                 cancel_va_mode = UVM_FAULT_CANCEL_VA_MODE_ALL;
@@ -1734,6 +1739,10 @@ static NV_STATUS service_fault_batch_ats_sub(uvm_gpu_va_space_t *gpu_va_space,
         NvU64 fault_address = current_entry->fault_address;
         uvm_fault_access_type_t access_type = current_entry->fault_access_type;
         bool is_duplicate = check_fault_entry_duplicate(current_entry, previous_entry);
+
+        // ATS faults can't be unserviceable, since unserviceable faults require
+        // GMMU PTEs.
+        UVM_ASSERT(!current_entry->is_fatal);
 
         i++;
 
@@ -1934,14 +1943,198 @@ static NV_STATUS service_fault_batch_dispatch(uvm_va_space_t *va_space,
     return status;
 }
 
+// Called when a fault in the batch has been marked fatal. Flush the buffer
+// under the VA and mmap locks to remove any potential stale fatal faults, then
+// service all new faults for just that VA space and cancel those which are
+// fatal. Faults in other VA spaces are replayed when done and will be processed
+// when normal fault servicing resumes.
+static NV_STATUS service_fault_batch_for_cancel(uvm_gpu_t *gpu, uvm_fault_service_batch_context_t *batch_context)
+{
+    NV_STATUS status = NV_OK;
+    NvU32 i;
+    uvm_va_space_t *va_space = batch_context->fatal_va_space;
+    uvm_gpu_va_space_t *gpu_va_space = NULL;
+    struct mm_struct *mm;
+    uvm_replayable_fault_buffer_info_t *replayable_faults = &gpu->parent->fault_buffer_info.replayable;
+    uvm_service_block_context_t *service_context = &gpu->parent->fault_buffer_info.replayable.block_service_context;
+    uvm_va_block_context_t *va_block_context = &service_context->block_context;
+
+    UVM_ASSERT(gpu->parent->replayable_faults_supported);
+    UVM_ASSERT(va_space);
+
+    // Perform the flush and re-fetch while holding the mmap_lock and the
+    // VA space lock. This avoids stale faults because it prevents any vma
+    // modifications (mmap, munmap, mprotect) from happening between the time HW
+    // takes the fault and we cancel it.
+    mm = uvm_va_space_mm_retain_lock(va_space);
+    va_block_context->mm = mm;
+    uvm_va_space_down_read(va_space);
+
+    // We saw fatal faults in this VA space before. Flush while holding
+    // mmap_lock to make sure those faults come back (aren't stale).
+    //
+    // We need to wait until all old fault messages have arrived before
+    // flushing, hence UVM_GPU_BUFFER_FLUSH_MODE_WAIT_UPDATE_PUT.
+    status = fault_buffer_flush_locked(gpu,
+                                       UVM_GPU_BUFFER_FLUSH_MODE_WAIT_UPDATE_PUT,
+                                       UVM_FAULT_REPLAY_TYPE_START,
+                                       batch_context);
+    if (status != NV_OK)
+        goto done;
+
+    // Wait for the flush's replay to finish to give the legitimate faults a
+    // chance to show up in the buffer again.
+    status = uvm_tracker_wait(&replayable_faults->replay_tracker);
+    if (status != NV_OK)
+        goto done;
+
+    // We expect all replayed faults to have arrived in the buffer so we can re-
+    // service them. The replay-and-wait sequence above will ensure they're all
+    // in the HW buffer. When GSP owns the HW buffer, we also have to wait for
+    // GSP to copy all available faults from the HW buffer into the shadow
+    // buffer.
+    //
+    // TODO: Bug 2533557: This flush does not actually guarantee that GSP will
+    //       copy over all faults.
+    status = hw_fault_buffer_flush_locked(gpu->parent);
+    if (status != NV_OK)
+        goto done;
+
+    // If there is no GPU VA space for the GPU, ignore all faults in the VA
+    // space. This can happen if the GPU VA space has been destroyed since we
+    // unlocked the VA space in service_fault_batch. That means the fatal faults
+    // are stale, because unregistering the GPU VA space requires preempting the
+    // context and detaching all channels in that VA space. Restart fault
+    // servicing from the top.
+    gpu_va_space = uvm_gpu_va_space_get_by_parent_gpu(va_space, gpu->parent);
+    if (!gpu_va_space)
+        goto done;
+
+    // Re-parse the new faults
+    batch_context->num_invalid_prefetch_faults = 0;
+    batch_context->num_duplicate_faults        = 0;
+    batch_context->num_replays                 = 0;
+    batch_context->fatal_va_space              = NULL;
+    batch_context->has_throttled_faults        = false;
+
+    status = fetch_fault_buffer_entries(gpu, batch_context, FAULT_FETCH_MODE_ALL);
+    if (status != NV_OK)
+        goto done;
+
+    // No more faults left. Either the previously-seen fatal entry was stale, or
+    // RM killed the context underneath us.
+    if (batch_context->num_cached_faults == 0)
+        goto done;
+
+    ++batch_context->batch_id;
+
+    status = preprocess_fault_batch(gpu, batch_context);
+    if (status != NV_OK) {
+        if (status == NV_WARN_MORE_PROCESSING_REQUIRED) {
+            // Another flush happened due to stale faults or a context-fatal
+            // error. The previously-seen fatal fault might not exist anymore,
+            // so restart fault servicing from the top.
+            status = NV_OK;
+        }
+
+        goto done;
+    }
+
+    // Search for the target VA space
+    for (i = 0; i < batch_context->num_coalesced_faults; i++) {
+        uvm_fault_buffer_entry_t *current_entry = batch_context->ordered_fault_cache[i];
+        UVM_ASSERT(current_entry->va_space);
+        if (current_entry->va_space == va_space)
+            break;
+    }
+
+    while (i < batch_context->num_coalesced_faults) {
+        uvm_fault_buffer_entry_t *current_entry = batch_context->ordered_fault_cache[i];
+
+        if (current_entry->va_space != va_space)
+            break;
+
+        // service_fault_batch_dispatch() doesn't expect unserviceable faults.
+        // Just cancel them directly.
+        if (current_entry->is_fatal) {
+            status = cancel_fault_precise_va(gpu, current_entry, UVM_FAULT_CANCEL_VA_MODE_ALL);
+            if (status != NV_OK)
+                break;
+
+            ++i;
+        }
+        else {
+            uvm_ats_fault_invalidate_t *ats_invalidate = &gpu->parent->fault_buffer_info.replayable.ats_invalidate;
+            NvU32 block_faults;
+
+            ats_invalidate->tlb_batch_pending = false;
+            uvm_hmm_service_context_init(service_context);
+
+            // Service all the faults that we can. We only really need to search
+            // for fatal faults, but attempting to service all is the easiest
+            // way to do that.
+            status = service_fault_batch_dispatch(va_space, gpu_va_space, batch_context, i, &block_faults, false);
+            if (status != NV_OK) {
+                // TODO: Bug 3900733: clean up locking in service_fault_batch().
+                // We need to drop lock and retry. That means flushing and
+                // starting over.
+                if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
+                    status = NV_OK;
+
+                break;
+            }
+
+            // Invalidate TLBs before cancel to ensure that fatal faults don't
+            // get stuck in HW behind non-fatal faults to the same line.
+            status = uvm_ats_invalidate_tlbs(gpu_va_space, ats_invalidate, &batch_context->tracker);
+            if (status != NV_OK)
+                break;
+
+            while (block_faults-- > 0) {
+                current_entry = batch_context->ordered_fault_cache[i];
+                if (current_entry->is_fatal) {
+                    status = cancel_fault_precise_va(gpu, current_entry, current_entry->replayable.cancel_va_mode);
+                    if (status != NV_OK)
+                        break;
+                }
+
+                ++i;
+            }
+        }
+    }
+
+done:
+    uvm_va_space_up_read(va_space);
+    uvm_va_space_mm_release_unlock(va_space, mm);
+
+    if (status == NV_OK) {
+        // There are two reasons to flush the fault buffer here.
+        //
+        // 1) Functional. We need to replay both the serviced non-fatal faults
+        //    and the skipped faults in other VA spaces. The former need to be
+        //    restarted and the latter need to be replayed so the normal fault
+        //    service mechanism can fetch and process them.
+        //
+        // 2) Performance. After cancelling the fatal faults, a flush removes
+        //    any potential duplicated fault that may have been added while
+        //    processing the faults in this batch. This flush also avoids doing
+        //    unnecessary processing after the fatal faults have been cancelled,
+        //    so all the rest are unlikely to remain after a replay because the
+        //    context is probably in the process of dying.
+        status = fault_buffer_flush_locked(gpu,
+                                           UVM_GPU_BUFFER_FLUSH_MODE_UPDATE_PUT,
+                                           UVM_FAULT_REPLAY_TYPE_START,
+                                           batch_context);
+    }
+
+    return status;
+}
 // Scan the ordered view of faults and group them by different va_blocks
 // (managed faults) and service faults for each va_block, in batch.
 // Service non-managed faults one at a time as they are encountered during the
 // scan.
 //
-// This function returns NV_WARN_MORE_PROCESSING_REQUIRED if the fault buffer
-// was flushed because the needs_fault_buffer_flush flag was set on some GPU VA
-// space
+// Fatal faults are marked for later processing by the caller.
 static NV_STATUS service_fault_batch(uvm_gpu_t *gpu,
                                      fault_service_mode_t service_mode,
                                      uvm_fault_service_batch_context_t *batch_context)
@@ -1960,7 +2153,7 @@ static NV_STATUS service_fault_batch(uvm_gpu_t *gpu,
 
     UVM_ASSERT(gpu->parent->replayable_faults_supported);
 
-    ats_invalidate->write_faults_in_batch = false;
+    ats_invalidate->tlb_batch_pending = false;
     uvm_hmm_service_context_init(service_context);
 
     for (i = 0; i < batch_context->num_coalesced_faults;) {
@@ -1995,38 +2188,25 @@ static NV_STATUS service_fault_batch(uvm_gpu_t *gpu,
             va_block_context->mm = mm;
 
             uvm_va_space_down_read(va_space);
-
             gpu_va_space = uvm_gpu_va_space_get_by_parent_gpu(va_space, gpu->parent);
-            if (uvm_processor_mask_test_and_clear_atomic(&va_space->needs_fault_buffer_flush, gpu->id)) {
-                status = fault_buffer_flush_locked(gpu,
-                                                   UVM_GPU_BUFFER_FLUSH_MODE_WAIT_UPDATE_PUT,
-                                                   UVM_FAULT_REPLAY_TYPE_START,
-                                                   batch_context);
-                if (status == NV_OK)
-                    status = NV_WARN_MORE_PROCESSING_REQUIRED;
-
-                break;
-            }
-
-            // The case where there is no valid GPU VA space for the GPU in this
-            // VA space is handled next
         }
 
         // Some faults could be already fatal if they cannot be handled by
         // the UVM driver
         if (current_entry->is_fatal) {
             ++i;
-            batch_context->has_fatal_faults = true;
+            if (!batch_context->fatal_va_space)
+                batch_context->fatal_va_space = va_space;
+
             utlb->has_fatal_faults = true;
             UVM_ASSERT(utlb->num_pending_faults > 0);
             continue;
         }
 
-        if (!uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, gpu->parent->id)) {
+        if (!gpu_va_space) {
             // If there is no GPU VA space for the GPU, ignore the fault. This
             // can happen if a GPU VA space is destroyed without explicitly
-            // freeing all memory ranges (destroying the VA range triggers a
-            // flush of the fault buffer) and there are stale entries in the
+            // freeing all memory ranges and there are stale entries in the
             // buffer that got fixed by the servicing in a previous batch.
             ++i;
             continue;
@@ -2044,15 +2224,17 @@ static NV_STATUS service_fault_batch(uvm_gpu_t *gpu,
             uvm_va_space_mm_release_unlock(va_space, mm);
             mm = NULL;
             va_space = NULL;
+            status = NV_OK;
             continue;
         }
+
         if (status != NV_OK)
             goto fail;
 
         i += block_faults;
 
         // Don't issue replays in cancel mode
-        if (replay_per_va_block && !batch_context->has_fatal_faults) {
+        if (replay_per_va_block && !batch_context->fatal_va_space) {
             status = push_replay_on_gpu(gpu, UVM_FAULT_REPLAY_TYPE_START, batch_context);
             if (status != NV_OK)
                 goto fail;
@@ -2064,8 +2246,6 @@ static NV_STATUS service_fault_batch(uvm_gpu_t *gpu,
         }
     }
 
-    // Only clobber status if invalidate_status != NV_OK, since status may also
-    // contain NV_WARN_MORE_PROCESSING_REQUIRED.
     if (va_space != NULL) {
         NV_STATUS invalidate_status = uvm_ats_invalidate_tlbs(gpu_va_space, ats_invalidate, &batch_context->tracker);
         if (invalidate_status != NV_OK)
@@ -2273,77 +2453,48 @@ static NvU32 is_fatal_fault_in_buffer(uvm_fault_service_batch_context_t *batch_c
     return false;
 }
 
-typedef enum
-{
-    // Only cancel faults flagged as fatal
-    FAULT_CANCEL_MODE_FATAL,
-
-    // Cancel all faults in the batch unconditionally
-    FAULT_CANCEL_MODE_ALL,
-} fault_cancel_mode_t;
-
-// Cancel faults in the given fault service batch context. The function provides
-// two different modes depending on the value of cancel_mode:
-// - If cancel_mode == FAULT_CANCEL_MODE_FATAL, only faults flagged as fatal
-// will be cancelled. In this case, the reason reported to tools is the one
-// contained in the fault entry itself.
-// - If cancel_mode == FAULT_CANCEL_MODE_ALL, all faults will be cancelled
-// unconditionally. In this case, the reason reported to tools for non-fatal
-// faults is the one passed to this function.
-static NV_STATUS cancel_faults_precise_va(uvm_gpu_t *gpu,
-                                          uvm_fault_service_batch_context_t *batch_context,
-                                          fault_cancel_mode_t cancel_mode,
-                                          UvmEventFatalReason reason)
+// Cancel all faults in the given fault service batch context, even those not
+// marked as fatal.
+static NV_STATUS cancel_faults_all(uvm_gpu_t *gpu,
+                                   uvm_fault_service_batch_context_t *batch_context,
+                                   UvmEventFatalReason reason)
 {
     NV_STATUS status = NV_OK;
     NV_STATUS fault_status;
-    uvm_va_space_t *va_space = NULL;
-    NvU32 i;
+    NvU32 i = 0;
 
     UVM_ASSERT(gpu->parent->fault_cancel_va_supported);
-    if (cancel_mode == FAULT_CANCEL_MODE_ALL)
-        UVM_ASSERT(reason != UvmEventFatalReasonInvalid);
+    UVM_ASSERT(reason != UvmEventFatalReasonInvalid);
 
-    for (i = 0; i < batch_context->num_coalesced_faults; ++i) {
+    while (i < batch_context->num_coalesced_faults && status == NV_OK) {
         uvm_fault_buffer_entry_t *current_entry = batch_context->ordered_fault_cache[i];
+        uvm_va_space_t *va_space = current_entry->va_space;
+        bool skip_va_space;
 
-        UVM_ASSERT(current_entry->va_space);
+        UVM_ASSERT(va_space);
 
-        if (current_entry->va_space != va_space) {
-            // Fault on a different va_space, drop the lock of the old one...
-            if (va_space != NULL)
-                uvm_va_space_up_read(va_space);
+        uvm_va_space_down_read(va_space);
 
-            va_space = current_entry->va_space;
+        // If there is no GPU VA space for the GPU, ignore all faults in
+        // that VA space. This can happen if the GPU VA space has been
+        // destroyed since we unlocked the VA space in service_fault_batch.
+        // Ignoring the fault avoids targetting a PDB that might have been
+        // reused by another process.
+        skip_va_space = !uvm_gpu_va_space_get_by_parent_gpu(va_space, gpu->parent);
 
-            // ... and take the lock of the new one
-            uvm_va_space_down_read(va_space);
+        for (;
+             i < batch_context->num_coalesced_faults && current_entry->va_space == va_space;
+             current_entry = batch_context->ordered_fault_cache[++i]) {
+            uvm_fault_cancel_va_mode_t cancel_va_mode;
 
-            // We don't need to check whether a buffer flush is required
-            // (due to VA range destruction).
-            // - For cancel_mode == FAULT_CANCEL_MODE_FATAL, once a fault is
-            // flagged as fatal we need to cancel it, even if its VA range no
-            // longer exists.
-            // - For cancel_mode == FAULT_CANCEL_MODE_ALL we don't care about
-            // any of this, we just want to trigger RC in RM.
-        }
+            if (skip_va_space)
+                continue;
 
-        if (!uvm_processor_mask_test(&va_space->registered_gpu_va_spaces, gpu->parent->id)) {
-            // If there is no GPU VA space for the GPU, ignore the fault.
-            // This can happen if the GPU VA did not exist in
-            // service_fault_batch(), or it was destroyed since then.
-            // This is to avoid targetting a PDB that might have been reused
-            // by another process.
-            continue;
-        }
-
-        // Cancel the fault
-        if (cancel_mode == FAULT_CANCEL_MODE_ALL || current_entry->is_fatal) {
-            uvm_fault_cancel_va_mode_t cancel_va_mode = current_entry->replayable.cancel_va_mode;
-
-            // If cancelling unconditionally and the fault was not fatal,
-            // set the cancel reason passed to this function
-            if (!current_entry->is_fatal) {
+            if (current_entry->is_fatal) {
+                UVM_ASSERT(current_entry->fatal_reason != UvmEventFatalReasonInvalid);
+                cancel_va_mode = current_entry->replayable.cancel_va_mode;
+            }
+            else {
                 current_entry->fatal_reason = reason;
                 cancel_va_mode = UVM_FAULT_CANCEL_VA_MODE_ALL;
             }
@@ -2352,17 +2503,13 @@ static NV_STATUS cancel_faults_precise_va(uvm_gpu_t *gpu,
             if (status != NV_OK)
                 break;
         }
+
+        uvm_va_space_up_read(va_space);
     }
 
-    if (va_space != NULL)
-        uvm_va_space_up_read(va_space);
-
-    // After cancelling the fatal faults, the fault buffer is flushed to remove
-    // any potential duplicated fault that may have been added while processing
-    // the faults in this batch. This flush also avoids doing unnecessary
-    // processing after the fatal faults have been cancelled, so all the rest
-    // are unlikely to remain after a replay because the context is probably in
-    // the process of dying.
+    // Because each cancel itself triggers a replay, there may be a large number
+    // of new duplicated faults in the buffer after cancelling all the known
+    // ones. Flushing the buffer discards them to avoid unnecessary processing.
     fault_status = fault_buffer_flush_locked(gpu,
                                              UVM_GPU_BUFFER_FLUSH_MODE_UPDATE_PUT,
                                              UVM_FAULT_REPLAY_TYPE_START,
@@ -2410,12 +2557,12 @@ static void cancel_fault_batch(uvm_gpu_t *gpu,
                                uvm_fault_service_batch_context_t *batch_context,
                                UvmEventFatalReason reason)
 {
-    if (gpu->parent->fault_cancel_va_supported) {
-        cancel_faults_precise_va(gpu, batch_context, FAULT_CANCEL_MODE_ALL, reason);
-        return;
-    }
-
-    cancel_fault_batch_tlb(gpu, batch_context, reason);
+    // Return code is ignored since we're on a global error path and wouldn't be
+    // able to recover anyway.
+    if (gpu->parent->fault_cancel_va_supported)
+        cancel_faults_all(gpu, batch_context, reason);
+    else
+        cancel_fault_batch_tlb(gpu, batch_context, reason);
 }
 
 
@@ -2502,7 +2649,7 @@ static NV_STATUS cancel_faults_precise_tlb(uvm_gpu_t *gpu, uvm_fault_service_bat
 
         batch_context->num_invalid_prefetch_faults = 0;
         batch_context->num_replays                 = 0;
-        batch_context->has_fatal_faults            = false;
+        batch_context->fatal_va_space              = NULL;
         batch_context->has_throttled_faults        = false;
 
         // 5) Fetch all faults from buffer
@@ -2549,9 +2696,6 @@ static NV_STATUS cancel_faults_precise_tlb(uvm_gpu_t *gpu, uvm_fault_service_bat
         // 8) Service all non-fatal faults and mark all non-serviceable faults
         // as fatal
         status = service_fault_batch(gpu, FAULT_SERVICE_MODE_CANCEL, batch_context);
-        if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
-            continue;
-
         UVM_ASSERT(batch_context->num_replays == 0);
         if (status == NV_ERR_NO_MEMORY)
             continue;
@@ -2559,7 +2703,7 @@ static NV_STATUS cancel_faults_precise_tlb(uvm_gpu_t *gpu, uvm_fault_service_bat
             break;
 
         // No more fatal faults left, we are done
-        if (!batch_context->has_fatal_faults)
+        if (!batch_context->fatal_va_space)
             break;
 
         // 9) Search for uTLBs that contain fatal faults and meet the
@@ -2581,13 +2725,9 @@ static NV_STATUS cancel_faults_precise_tlb(uvm_gpu_t *gpu, uvm_fault_service_bat
 
 static NV_STATUS cancel_faults_precise(uvm_gpu_t *gpu, uvm_fault_service_batch_context_t *batch_context)
 {
-    UVM_ASSERT(batch_context->has_fatal_faults);
-    if (gpu->parent->fault_cancel_va_supported) {
-        return cancel_faults_precise_va(gpu,
-                                        batch_context,
-                                        FAULT_CANCEL_MODE_FATAL,
-                                        UvmEventFatalReasonInvalid);
-    }
+    UVM_ASSERT(batch_context->fatal_va_space);
+    if (gpu->parent->fault_cancel_va_supported)
+        return service_fault_batch_for_cancel(gpu, batch_context);
 
     return cancel_faults_precise_tlb(gpu, batch_context);
 }
@@ -2643,7 +2783,7 @@ void uvm_gpu_service_replayable_faults(uvm_gpu_t *gpu)
         batch_context->num_invalid_prefetch_faults = 0;
         batch_context->num_duplicate_faults        = 0;
         batch_context->num_replays                 = 0;
-        batch_context->has_fatal_faults            = false;
+        batch_context->fatal_va_space              = NULL;
         batch_context->has_throttled_faults        = false;
 
         status = fetch_fault_buffer_entries(gpu, batch_context, FAULT_FETCH_MODE_BATCH_READY);
@@ -2671,9 +2811,6 @@ void uvm_gpu_service_replayable_faults(uvm_gpu_t *gpu)
         // was flushed
         num_replays += batch_context->num_replays;
 
-        if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
-            continue;
-
         enable_disable_prefetch_faults(gpu->parent, batch_context);
 
         if (status != NV_OK) {
@@ -2687,10 +2824,17 @@ void uvm_gpu_service_replayable_faults(uvm_gpu_t *gpu)
             break;
         }
 
-        if (batch_context->has_fatal_faults) {
+        if (batch_context->fatal_va_space) {
             status = uvm_tracker_wait(&batch_context->tracker);
-            if (status == NV_OK)
+            if (status == NV_OK) {
                 status = cancel_faults_precise(gpu, batch_context);
+                if (status == NV_OK) {
+                    // Cancel handling should've issued at least one replay
+                    UVM_ASSERT(batch_context->num_replays > 0);
+                    ++num_batches;
+                    continue;
+                }
+            }
 
             break;
         }

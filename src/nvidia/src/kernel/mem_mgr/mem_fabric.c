@@ -93,6 +93,7 @@ _memoryfabricValidatePhysMem
     MEMORY_DESCRIPTOR *pPhysMemDesc;
     NvU64 physPageSize;
     NV_STATUS status;
+    Memory *pMemory;
 
     if (hPhysMem == 0)
     {
@@ -110,7 +111,19 @@ _memoryfabricValidatePhysMem
         return status;
     }
 
-    pPhysMemDesc = (dynamicCast(pPhysmemRef->pResource, Memory))->pMemDesc;
+    pMemory = dynamicCast(pPhysmemRef->pResource, Memory);
+    if (pMemory == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid memory handle\n");
+        return NV_ERR_INVALID_OBJECT_HANDLE;
+    }
+
+    pPhysMemDesc = pMemory->pMemDesc;
+    if (pPhysMemDesc == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Invalid memory handle\n");
+        return NV_ERR_INVALID_OBJECT_HANDLE;
+    }
 
     if ((pOwnerGpu != pPhysMemDesc->pGpu) ||
         !memmgrIsApertureSupportedByFla_HAL(pOwnerGpu, pMemoryManager,
@@ -748,7 +761,7 @@ memoryfabricConstruct_IMPL
         NV0041_CTRL_GET_SURFACE_INFO_PARAMS surfaceInfoParam = {0};
 
         surfaceInfo[0].index = NV0041_CTRL_SURFACE_INFO_INDEX_ADDR_SPACE_TYPE;
-        surfaceInfo[1].index = NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE;
+        surfaceInfo[1].index = NV0041_CTRL_SURFACE_INFO_INDEX_ATTRS;
         surfaceInfoParam.surfaceInfoListSize = 2;
         surfaceInfoParam.surfaceInfoList = NvP64_VALUE(&surfaceInfo);
 
@@ -765,7 +778,14 @@ memoryfabricConstruct_IMPL
         }
 
         pMemdescData->physAttrs.addressSpace = surfaceInfo[0].data;
-        pMemdescData->physAttrs.compressionCoverage = surfaceInfo[1].data;
+        //
+        // TODO: Bug 4322867: use NV0041_CTRL_SURFACE_INFO_ATTRS_COMPR
+        // instead of NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE.
+        // NV0041_CTRL_SURFACE_INFO_INDEX_COMPR_COVERAGE is buggy and
+        // will be removed soon.
+        //
+        pMemdescData->physAttrs.compressionCoverage =
+            (surfaceInfo[1].data & NV0041_CTRL_SURFACE_INFO_ATTRS_COMPR) ?  0x1 : 0x0;
 
         mapFlags |= bReadOnly ? FABRIC_VASPACE_MAP_FLAGS_READ_ONLY : 0;
 

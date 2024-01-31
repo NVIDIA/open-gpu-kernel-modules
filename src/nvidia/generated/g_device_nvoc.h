@@ -109,6 +109,7 @@ struct Device {
     NV_STATUS (*__deviceCtrlCmdFbGetCompbitStoreInfo__)(struct Device *, NV0080_CTRL_FB_GET_COMPBIT_STORE_INFO_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFbGetCaps__)(struct Device *, NV0080_CTRL_FB_GET_CAPS_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFbGetCapsV2__)(struct Device *, NV0080_CTRL_FB_GET_CAPS_V2_PARAMS *);
+    NV_STATUS (*__deviceCtrlCmdSetDefaultVidmemPhysicality__)(struct Device *, NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFifoGetCaps__)(struct Device *, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFifoGetCapsV2__)(struct Device *, NV0080_CTRL_FIFO_GET_CAPS_V2_PARAMS *);
     NV_STATUS (*__deviceCtrlCmdFifoStartSelectedChannels__)(struct Device *, NV0080_CTRL_FIFO_START_SELECTED_CHANNELS_PARAMS *);
@@ -182,6 +183,7 @@ struct Device {
     NvU64 vaLimitInternal;
     NvU64 vaSize;
     NvU32 vaMode;
+    NvU32 defaultVidmemPhysicalityOverride;
     struct KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice;
 };
 
@@ -241,6 +243,7 @@ NV_STATUS __nvoc_objCreate_Device(Device**, Dynamic*, NvU32, struct CALL_CONTEXT
 #define deviceCtrlCmdFbGetCompbitStoreInfo(pDevice, pCompbitStoreParams) deviceCtrlCmdFbGetCompbitStoreInfo_DISPATCH(pDevice, pCompbitStoreParams)
 #define deviceCtrlCmdFbGetCaps(pDevice, pFbCapsParams) deviceCtrlCmdFbGetCaps_DISPATCH(pDevice, pFbCapsParams)
 #define deviceCtrlCmdFbGetCapsV2(pDevice, pFbCapsParams) deviceCtrlCmdFbGetCapsV2_DISPATCH(pDevice, pFbCapsParams)
+#define deviceCtrlCmdSetDefaultVidmemPhysicality(pDevice, pParams) deviceCtrlCmdSetDefaultVidmemPhysicality_DISPATCH(pDevice, pParams)
 #define deviceCtrlCmdFifoGetCaps(pDevice, pFifoCapsParams) deviceCtrlCmdFifoGetCaps_DISPATCH(pDevice, pFifoCapsParams)
 #define deviceCtrlCmdFifoGetCapsV2(pDevice, pFifoCapsParams) deviceCtrlCmdFifoGetCapsV2_DISPATCH(pDevice, pFifoCapsParams)
 #define deviceCtrlCmdFifoStartSelectedChannels(pDevice, pStartSel) deviceCtrlCmdFifoStartSelectedChannels_DISPATCH(pDevice, pStartSel)
@@ -463,6 +466,12 @@ NV_STATUS deviceCtrlCmdFbGetCapsV2_IMPL(struct Device *pDevice, NV0080_CTRL_FB_G
 
 static inline NV_STATUS deviceCtrlCmdFbGetCapsV2_DISPATCH(struct Device *pDevice, NV0080_CTRL_FB_GET_CAPS_V2_PARAMS *pFbCapsParams) {
     return pDevice->__deviceCtrlCmdFbGetCapsV2__(pDevice, pFbCapsParams);
+}
+
+NV_STATUS deviceCtrlCmdSetDefaultVidmemPhysicality_IMPL(struct Device *pDevice, NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS *pParams);
+
+static inline NV_STATUS deviceCtrlCmdSetDefaultVidmemPhysicality_DISPATCH(struct Device *pDevice, NV0080_CTRL_FB_SET_DEFAULT_VIDMEM_PHYSICALITY_PARAMS *pParams) {
+    return pDevice->__deviceCtrlCmdSetDefaultVidmemPhysicality__(pDevice, pParams);
 }
 
 NV_STATUS deviceCtrlCmdFifoGetCaps_IMPL(struct Device *pDevice, NV0080_CTRL_FIFO_GET_CAPS_PARAMS *pFifoCapsParams);

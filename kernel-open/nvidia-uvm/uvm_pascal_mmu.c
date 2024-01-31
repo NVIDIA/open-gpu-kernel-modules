@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2020 NVIDIA Corporation
+    Copyright (c) 2015-2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -140,10 +140,17 @@ static NvU64 small_half_pde_pascal(uvm_mmu_page_table_alloc_t *phys_alloc)
     return pde_bits;
 }
 
-static void make_pde_pascal(void *entry, uvm_mmu_page_table_alloc_t **phys_allocs, NvU32 depth)
+static void make_pde_pascal(void *entry,
+                            uvm_mmu_page_table_alloc_t **phys_allocs,
+                            uvm_page_directory_t *dir,
+                            NvU32 child_index)
 {
-    NvU32 entry_count = entries_per_index_pascal(depth);
+    NvU32 entry_count;
     NvU64 *entry_bits = (NvU64 *)entry;
+
+    UVM_ASSERT(dir);
+
+    entry_count = entries_per_index_pascal(dir->depth);
 
     if (entry_count == 1) {
         *entry_bits = single_pde_pascal(*phys_allocs);
@@ -152,7 +159,8 @@ static void make_pde_pascal(void *entry, uvm_mmu_page_table_alloc_t **phys_alloc
         entry_bits[MMU_BIG] = big_half_pde_pascal(phys_allocs[MMU_BIG]);
         entry_bits[MMU_SMALL] = small_half_pde_pascal(phys_allocs[MMU_SMALL]);
 
-        // This entry applies to the whole dual PDE but is stored in the lower bits
+        // This entry applies to the whole dual PDE but is stored in the lower
+        // bits.
         entry_bits[MMU_BIG] |= HWCONST64(_MMU_VER2, DUAL_PDE, IS_PDE, TRUE);
     }
     else {

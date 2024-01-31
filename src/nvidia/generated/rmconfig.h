@@ -412,6 +412,7 @@
 #define RMCFG_CLASS_MAXWELL_PROFILER              1  // Base Profiler Class
 #define RMCFG_CLASS_MAXWELL_PROFILER_DEVICE       1  // Device level Profiler Client Support
 #define RMCFG_CLASS_GF100_SUBDEVICE_MASTER        1
+#define RMCFG_CLASS_GF100_SUBDEVICE_INFOROM       1  // Inforom interface
 #define RMCFG_CLASS_GF100_ZBC_CLEAR               1
 #define RMCFG_CLASS_GF100_DISP_SW                 1
 #define RMCFG_CLASS_GF100_TIMED_SEMAPHORE_SW      1

@@ -531,6 +531,7 @@ kmemsysGetMIGGPUInstanceMemInfo_IMPL
     NvU64 vmmuSegmentSize;
     NvU64 startAddr;
     NvU64 endAddr;
+    NvU64 partitionSize;
 
     NV_ASSERT_OR_RETURN(pAddrRange != NULL, NV_ERR_INVALID_ARGUMENT);
     *pAddrRange = NV_RANGE_EMPTY;
@@ -556,10 +557,73 @@ kmemsysGetMIGGPUInstanceMemInfo_IMPL
     NV_ASSERT_OR_RETURN((vmmuSegmentSize != 0), NV_ERR_INVALID_STATE);
 
     startAddr = pKernelMemorySystem->gpuInstanceMemConfig[swizzId].startingVmmuSegment * vmmuSegmentSize;
-    endAddr = startAddr + (pKernelMemorySystem->gpuInstanceMemConfig[swizzId].memSizeInVmmuSegment * vmmuSegmentSize) - 1;
+    partitionSize = pKernelMemorySystem->gpuInstanceMemConfig[swizzId].memSizeInVmmuSegment * vmmuSegmentSize;
+
+    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        NvU64 memblockSize;
+        NvU64 alignedStartAddr;
+
+        NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
+
+        //
+        // Align the partition start address and size to memblock size
+        // Some FB memory is wasted here if it is not already aligned.
+        //
+        alignedStartAddr = NV_ALIGN_UP64(startAddr, memblockSize);
+
+        if(pKernelMemorySystem->bNumaMigPartitionSizeEnumerated)
+        {
+            partitionSize = pKernelMemorySystem->numaMigPartitionSize[swizzId];
+        }
+        else
+        {
+            partitionSize -= (alignedStartAddr - startAddr);
+        }
+
+        partitionSize = NV_ALIGN_DOWN64(partitionSize, memblockSize);
+        startAddr = alignedStartAddr;
+    }
+
+    endAddr = startAddr + partitionSize - 1;
+
     *pAddrRange = rangeMake(startAddr, endAddr);
 
     return NV_OK;
+}
+
+/**
+ * @brief Modifies numaMigPartitionSize array such that memory size of
+          all the mig partitions with swizzId between startSwizzId and
+          endSwizzId is assigned the minimum value among all partition's
+          memory size.
+ *
+ * @param[IN]      pKernelMemorySystem
+ * @param[IN]      startSwizzId
+ * @param[IN]      endSwizzId
+ *
+ */
+static void
+_kmemsysSetNumaMigPartitionSizeSubArrayToMinimumValue
+(
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU64 startSwizzId,
+    NvU64 endSwizzId
+)
+{
+    NvU64 minPartitionSize = pKernelMemorySystem->numaMigPartitionSize[startSwizzId];
+    NvU64 index;
+
+    for (index = startSwizzId; index <= endSwizzId; index++)
+    {
+        if(pKernelMemorySystem->numaMigPartitionSize[index] < minPartitionSize)
+            minPartitionSize = pKernelMemorySystem->numaMigPartitionSize[index];
+    }
+
+    for (index = startSwizzId; index <= endSwizzId; index++)
+    {
+        pKernelMemorySystem->numaMigPartitionSize[index] = minPartitionSize;
+    }
 }
 
 /*!
@@ -615,6 +679,30 @@ kmemsysPopulateMIGGPUInstanceMemConfig_KERNEL
             kmemsysSwizzIdToVmmuSegmentsRange_HAL(pGpu, pKernelMemorySystem, swizzId, vmmuSegmentSize, totalVmmuSegments));
     }
 
+    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        NV_RANGE addrRange = NV_RANGE_EMPTY;
+        NvU32 memSize;
+
+        for(swizzId = 0; swizzId < KMIGMGR_MAX_GPU_SWIZZID; swizzId++)
+        {
+            kmemsysGetMIGGPUInstanceMemInfo(pGpu, pKernelMemorySystem, swizzId, &addrRange);
+            pKernelMemorySystem->numaMigPartitionSize[swizzId] = addrRange.hi - addrRange.lo + 1;
+        }
+
+        //
+        // In GH180 for all the swizzId's for a given memory profile (FULL, HALF, QUARTER 
+        // and EIGHTH partitions) might not be same. Modify numaMigPartitionSize array
+        // for the partition size to be constant for a given profile. BUG 4284299.
+        //
+        for (memSize = NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE_FULL; memSize < NV2080_CTRL_GPU_PARTITION_FLAG_MEMORY_SIZE__SIZE; memSize++)
+        {
+            NV_RANGE swizzRange = kmigmgrMemSizeFlagToSwizzIdRange(pGpu, pKernelMIGManager, 
+                                      DRF_NUM(2080_CTRL_GPU, _PARTITION_FLAG, _MEMORY_SIZE, memSize));
+            _kmemsysSetNumaMigPartitionSizeSubArrayToMinimumValue(pKernelMemorySystem, swizzRange.lo, swizzRange.hi);
+        }
+        pKernelMemorySystem->bNumaMigPartitionSizeEnumerated = NV_TRUE;
+    }
     return NV_OK;
 }
 

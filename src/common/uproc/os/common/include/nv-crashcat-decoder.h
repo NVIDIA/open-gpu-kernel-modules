@@ -95,7 +95,7 @@ NV_CRASHCAT_PACKET_FORMAT_VERSION crashcatPacketHeaderFormatVersion(NvCrashCatPa
 static NV_INLINE
 NvLength crashcatPacketHeaderPayloadSize(NvCrashCatPacketHeader hdr)
 {
-    NvU8 unitShift;
+    NvU8 unitShift = 0;
     NV_CRASHCAT_MEM_UNIT_SIZE unitSize =
         (NV_CRASHCAT_MEM_UNIT_SIZE)DRF_VAL64(_CRASHCAT, _PACKET_HEADER, _PAYLOAD_UNIT_SIZE, hdr);
     switch (unitSize)
@@ -104,7 +104,6 @@ NvLength crashcatPacketHeaderPayloadSize(NvCrashCatPacketHeader hdr)
         case NV_CRASHCAT_MEM_UNIT_SIZE_1KB:  unitShift = 10; break;
         case NV_CRASHCAT_MEM_UNIT_SIZE_4KB:  unitShift = 12; break;
         case NV_CRASHCAT_MEM_UNIT_SIZE_64KB: unitShift = 16; break;
-        default: return 0;
     }
 
     // Increment size, since the size in the header is size - 1 (payload of 0 size is not encodable)

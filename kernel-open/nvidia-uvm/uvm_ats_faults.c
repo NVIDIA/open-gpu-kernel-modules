@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2018 NVIDIA Corporation
+    Copyright (c) 2023 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -107,10 +107,10 @@ static NV_STATUS service_ats_faults(uvm_gpu_va_space_t *gpu_va_space,
     return status;
 }
 
-static void flush_tlb_write_faults(uvm_gpu_va_space_t *gpu_va_space,
-                                   NvU64 addr,
-                                   size_t size,
-                                   uvm_fault_client_type_t client_type)
+static void flush_tlb_va_region(uvm_gpu_va_space_t *gpu_va_space,
+                                NvU64 addr,
+                                size_t size,
+                                uvm_fault_client_type_t client_type)
 {
     uvm_ats_fault_invalidate_t *ats_invalidate;
 
@@ -119,12 +119,12 @@ static void flush_tlb_write_faults(uvm_gpu_va_space_t *gpu_va_space,
     else
         ats_invalidate = &gpu_va_space->gpu->parent->fault_buffer_info.non_replayable.ats_invalidate;
 
-    if (!ats_invalidate->write_faults_in_batch) {
-        uvm_tlb_batch_begin(&gpu_va_space->page_tables, &ats_invalidate->write_faults_tlb_batch);
-        ats_invalidate->write_faults_in_batch = true;
+    if (!ats_invalidate->tlb_batch_pending) {
+        uvm_tlb_batch_begin(&gpu_va_space->page_tables, &ats_invalidate->tlb_batch);
+        ats_invalidate->tlb_batch_pending = true;
     }
 
-    uvm_tlb_batch_invalidate(&ats_invalidate->write_faults_tlb_batch, addr, size, PAGE_SIZE, UVM_MEMBAR_NONE);
+    uvm_tlb_batch_invalidate(&ats_invalidate->tlb_batch, addr, size, PAGE_SIZE, UVM_MEMBAR_NONE);
 }
 
 static void ats_batch_select_residency(uvm_gpu_va_space_t *gpu_va_space,
@@ -149,7 +149,11 @@ static void ats_batch_select_residency(uvm_gpu_va_space_t *gpu_va_space,
 
     mode = vma_policy->mode;
 
-    if ((mode == MPOL_BIND) || (mode == MPOL_PREFERRED_MANY) || (mode == MPOL_PREFERRED)) {
+    if ((mode == MPOL_BIND)
+#if defined(NV_MPOL_PREFERRED_MANY_PRESENT)
+         || (mode == MPOL_PREFERRED_MANY)
+#endif
+         || (mode == MPOL_PREFERRED)) {
         int home_node = NUMA_NO_NODE;
 
 #if defined(NV_MEMPOLICY_HAS_HOME_NODE)
@@ -467,6 +471,10 @@ NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
             uvm_page_mask_and(write_fault_mask, write_fault_mask, read_fault_mask);
         else
             uvm_page_mask_zero(write_fault_mask);
+
+        // There are no pending faults beyond write faults to RO region.
+        if (uvm_page_mask_empty(read_fault_mask))
+            return status;
     }
 
     ats_batch_select_residency(gpu_va_space, vma, ats_context);
@@ -489,6 +497,7 @@ NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
 
         if (vma->vm_flags & VM_WRITE) {
             uvm_page_mask_region_fill(faults_serviced_mask, subregion);
+            uvm_ats_smmu_invalidate_tlbs(gpu_va_space, start, length);
 
             // The Linux kernel never invalidates TLB entries on mapping
             // permission upgrade. This is a problem if the GPU has cached
@@ -499,7 +508,7 @@ NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
             // infinite loop because we just forward the fault to the Linux
             // kernel and it will see that the permissions in the page table are
             // correct. Therefore, we flush TLB entries on ATS write faults.
-            flush_tlb_write_faults(gpu_va_space, start, length, client_type);
+            flush_tlb_va_region(gpu_va_space, start, length, client_type);
         }
         else {
             uvm_page_mask_region_fill(reads_serviced_mask, subregion);
@@ -522,6 +531,15 @@ NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
             return status;
 
         uvm_page_mask_region_fill(faults_serviced_mask, subregion);
+
+        // Similarly to permission upgrade scenario, discussed above, GPU
+        // will not re-fetch the entry if the PTE is invalid and page size
+        // is 4K. To avoid infinite faulting loop, invalidate TLB for every
+        // new translation written explicitly like in the case of permission
+        // upgrade.
+        if (PAGE_SIZE == UVM_PAGE_SIZE_4K)
+            flush_tlb_va_region(gpu_va_space, start, length, client_type);
+
     }
 
     return status;
@@ -556,7 +574,7 @@ NV_STATUS uvm_ats_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space,
     NV_STATUS status;
     uvm_push_t push;
 
-    if (!ats_invalidate->write_faults_in_batch)
+    if (!ats_invalidate->tlb_batch_pending)
         return NV_OK;
 
     UVM_ASSERT(gpu_va_space);
@@ -568,7 +586,7 @@ NV_STATUS uvm_ats_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space,
                             "Invalidate ATS entries");
 
     if (status == NV_OK) {
-        uvm_tlb_batch_end(&ats_invalidate->write_faults_tlb_batch, &push, UVM_MEMBAR_NONE);
+        uvm_tlb_batch_end(&ats_invalidate->tlb_batch, &push, UVM_MEMBAR_NONE);
         uvm_push_end(&push);
 
         // Add this push to the GPU's tracker so that fault replays/clears can
@@ -576,8 +594,7 @@ NV_STATUS uvm_ats_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space,
         status = uvm_tracker_add_push_safe(out_tracker, &push);
     }
 
-    ats_invalidate->write_faults_in_batch = false;
+    ats_invalidate->tlb_batch_pending = false;
 
     return status;
 }
-

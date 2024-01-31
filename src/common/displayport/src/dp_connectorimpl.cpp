@@ -1360,7 +1360,7 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                         if (dev->pconCaps.maxHdmiLinkBandwidthGbps != 0)
                         {
                             NvU64 requiredBW = (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
-                            NvU64 availableBw = (NvU64)(dev->pconCaps.maxHdmiLinkBandwidthGbps * 1000000000);
+                            NvU64 availableBw = (NvU64)(dev->pconCaps.maxHdmiLinkBandwidthGbps * (NvU64)1000000000);
                             if (requiredBW > availableBw)
                             {
                                 compoundQueryResult = false;
@@ -1375,10 +1375,10 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                         else if (dev->pconCaps.maxTmdsClkRate != 0)
                         {
                             NvU64 maxTmdsClkRateU64 = (NvU64)(dev->pconCaps.maxTmdsClkRate);
-                            NvU64 requireBw =  (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
+                            NvU64 requiredBw =  (NvU64)(modesetParams.modesetInfo.pixelClockHz * modesetParams.modesetInfo.depth);
                             if (modesetParams.colorFormat == dpColorFormat_YCbCr420)
                             {
-                                if (maxTmdsClkRateU64 < ((requireBw/24)/2))
+                                if (maxTmdsClkRateU64 < ((requiredBw/24)/2))
                                 {
                                     compoundQueryResult = false;
                                     return false;
@@ -1386,7 +1386,7 @@ bool ConnectorImpl::compoundQueryAttach(Group * target,
                             }
                             else
                             {
-                                if (maxTmdsClkRateU64 < (requireBw/24))
+                                if (maxTmdsClkRateU64 < (requiredBw/24))
                                 {
                                     compoundQueryResult = false;
                                     return false;
@@ -4740,7 +4740,7 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
 {
     LinkTrainingType preferredTrainingType = trainType;
     bool result;
-    bool bEnableFecOnSor;
+
     //
     //  Validate link config against caps
     //
@@ -4832,16 +4832,7 @@ bool ConnectorImpl::train(const LinkConfiguration & lConfig, bool force,
         result = postLTAdjustment(activeLinkConfig, force);
     }
 
-    bEnableFecOnSor = lConfig.bEnableFEC;
-
-    if (main->isEDP())
-    {
-        DeviceImpl * nativeDev = findDeviceInList(Address());
-        if (nativeDev && nativeDev->bIsPreviouslyFakedMuxDevice)
-            bEnableFecOnSor = activeLinkConfig.bEnableFEC;
-    }
-
-    if((lConfig.lanes != 0) && result && bEnableFecOnSor)
+    if((lConfig.lanes != 0) && result && activeLinkConfig.bEnableFEC)
     {
         //
         // Extended latency from link-train end to FEC enable pattern
@@ -6057,7 +6048,7 @@ void ConnectorImpl::notifyLongPulseInternal(bool statusConnected)
                 if (this->bReassessMaxLink)
                 {
                     //
-                    // If the highest assessed LC is not equal to 
+                    // If the highest assessed LC is not equal to
                     // max possible link config, re-assess link
                     //
                     NvU8 retries = 0U;

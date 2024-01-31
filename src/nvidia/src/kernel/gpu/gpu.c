@@ -618,7 +618,7 @@ static NV_STATUS _gpuRmApiControl
         callCtx.pControlParams = &rmCtrlParams;
         callCtx.pLockInfo      = rmCtrlParams.pLockInfo;
 
-        resservSwapTlsCallContext(&oldCtx, &callCtx);
+        NV_ASSERT_OK_OR_RETURN(resservSwapTlsCallContext(&oldCtx, &callCtx));
 
         if (pEntry->paramSize == 0)
         {
@@ -629,7 +629,7 @@ static NV_STATUS _gpuRmApiControl
             status = ((NV_STATUS(*)(void*,void*))pEntry->pFunc)(pGpu->pCachedSubdevice, pParams);
         }
 
-        resservRestoreTlsCallContext(oldCtx);
+        NV_ASSERT_OK(resservRestoreTlsCallContext(oldCtx));
     }
     else
     {
@@ -1411,6 +1411,15 @@ gpuDestruct_IMPL
     memdescFree(pGpu->userSharedData.pMemDesc);
     memdescDestroy(pGpu->userSharedData.pMemDesc);
 
+    //
+    // If device instance is unassigned, we haven't initialized far enough to
+    // do any accounting with it
+    //
+    if (gpuGetDeviceInstance(pGpu) != NV_MAX_DEVICES)
+    {
+        rmapiReportLeakedDevices(gpuGetGpuMask(pGpu));
+    }
+
     // Free children in reverse order from construction
     for (typeNum = GPU_NUM_CHILD_TYPES - 1; typeNum >= 0; typeNum--)
     {
@@ -1429,15 +1438,6 @@ gpuDestruct_IMPL
             objDelete(*pChildPtr);
             *pChildPtr = NULL;
         }
-    }
-
-    //
-    // If device instance is unassigned, we haven't initialized far enough to
-    // do any accounting with it
-    //
-    if (gpuGetDeviceInstance(pGpu) != NV_MAX_DEVICES)
-    {
-        rmapiReportLeakedDevices(gpuGetGpuMask(pGpu));
     }
 
     _gpuFreeEngineOrderList(pGpu);
@@ -4936,17 +4936,27 @@ gpuReadBusConfigCycle_IMPL
     NvU32   *pData
 )
 {
-    NvU32 domain   = gpuGetDomain(pGpu);
-    NvU8  bus      = gpuGetBus(pGpu);
-    NvU8  device   = gpuGetDevice(pGpu);
-    NvU8  function = 0;
+    NvU32  domain              = gpuGetDomain(pGpu);
+    NvU8   bus                 = gpuGetBus(pGpu);
+    NvU8   device              = gpuGetDevice(pGpu);
+    NvU8   function            = 0;
+    NvBool bIsCCFeatureEnabled = NV_FALSE;
 
-    if (pGpu->hPci == NULL)
+    bIsCCFeatureEnabled = gpuIsCCFeatureEnabled(pGpu);
+
+    if (IS_PASSTHRU(pGpu) && !bIsCCFeatureEnabled)
     {
-        pGpu->hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+        gpuReadVgpuConfigReg_HAL(pGpu, index, pData);
     }
+    else
+    {
+        if (pGpu->hPci == NULL)
+        {
+            pGpu->hPci = osPciInitHandle(domain, bus, device, function, NULL, NULL);
+        }
 
-    *pData = osPciReadDword(pGpu->hPci, index);
+        *pData = osPciReadDword(pGpu->hPci, index);
+    }
 
     return NV_OK;
 }

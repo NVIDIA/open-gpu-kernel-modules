@@ -105,10 +105,6 @@ static NV_STATUS __nvoc_thunk_MemoryMulticastFabric_memControl(struct Memory *pM
     return memorymulticastfabricControl((struct MemoryMulticastFabric *)(((unsigned char *)pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pCallContext, pParams);
 }
 
-static NV_STATUS __nvoc_thunk_MemoryMulticastFabric_rmresControl_Prologue(struct RmResource *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return memorymulticastfabricControl_Prologue((struct MemoryMulticastFabric *)(((unsigned char *)pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_RmResource.offset), pCallContext, pParams);
-}
-
 static NvBool __nvoc_thunk_MemoryMulticastFabric_memIsGpuMapAllowed(struct Memory *pMemoryMulticastFabric, struct OBJGPU *pGpu) {
     return memorymulticastfabricIsGpuMapAllowed((struct MemoryMulticastFabric *)(((unsigned char *)pMemoryMulticastFabric) - __nvoc_rtti_MemoryMulticastFabric_Memory.offset), pGpu);
 }
@@ -135,6 +131,10 @@ static NvU32 __nvoc_thunk_RsResource_memorymulticastfabricGetRefCount(struct Mem
 
 static void __nvoc_thunk_RsResource_memorymulticastfabricAddAdditionalDependants(struct RsClient *pClient, struct MemoryMulticastFabric *pResource, RsResourceRef *pReference) {
     resAddAdditionalDependants(pClient, (struct RsResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMulticastFabric_RsResource.offset), pReference);
+}
+
+static NV_STATUS __nvoc_thunk_RmResource_memorymulticastfabricControl_Prologue(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return rmresControl_Prologue((struct RmResource *)(((unsigned char *)pResource) + __nvoc_rtti_MemoryMulticastFabric_RmResource.offset), pCallContext, pParams);
 }
 
 static NV_STATUS __nvoc_thunk_RsResource_memorymulticastfabricUnmapFrom(struct MemoryMulticastFabric *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {
@@ -324,8 +324,6 @@ static void __nvoc_init_funcTable_MemoryMulticastFabric_1(MemoryMulticastFabric 
 
     pThis->__memorymulticastfabricControl__ = &memorymulticastfabricControl_IMPL;
 
-    pThis->__memorymulticastfabricControl_Prologue__ = &memorymulticastfabricControl_Prologue_IMPL;
-
     pThis->__memorymulticastfabricIsGpuMapAllowed__ = &memorymulticastfabricIsGpuMapAllowed_IMPL;
 
     pThis->__memorymulticastfabricGetMapAddrSpace__ = &memorymulticastfabricGetMapAddrSpace_IMPL;
@@ -356,8 +354,6 @@ static void __nvoc_init_funcTable_MemoryMulticastFabric_1(MemoryMulticastFabric 
 
     pThis->__nvoc_base_Memory.__memControl__ = &__nvoc_thunk_MemoryMulticastFabric_memControl;
 
-    pThis->__nvoc_base_Memory.__nvoc_base_RmResource.__rmresControl_Prologue__ = &__nvoc_thunk_MemoryMulticastFabric_rmresControl_Prologue;
-
     pThis->__nvoc_base_Memory.__memIsGpuMapAllowed__ = &__nvoc_thunk_MemoryMulticastFabric_memIsGpuMapAllowed;
 
     pThis->__nvoc_base_Memory.__memGetMapAddrSpace__ = &__nvoc_thunk_MemoryMulticastFabric_memGetMapAddrSpace;
@@ -371,6 +367,8 @@ static void __nvoc_init_funcTable_MemoryMulticastFabric_1(MemoryMulticastFabric 
     pThis->__memorymulticastfabricGetRefCount__ = &__nvoc_thunk_RsResource_memorymulticastfabricGetRefCount;
 
     pThis->__memorymulticastfabricAddAdditionalDependants__ = &__nvoc_thunk_RsResource_memorymulticastfabricAddAdditionalDependants;
+
+    pThis->__memorymulticastfabricControl_Prologue__ = &__nvoc_thunk_RmResource_memorymulticastfabricControl_Prologue;
 
     pThis->__memorymulticastfabricUnmapFrom__ = &__nvoc_thunk_RsResource_memorymulticastfabricUnmapFrom;
 

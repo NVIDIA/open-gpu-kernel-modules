@@ -207,9 +207,13 @@ enum os_pci_req_atomics_type {
     OS_INTF_PCIE_REQ_ATOMICS_128BIT
 };
 NV_STATUS   NV_API_CALL  os_enable_pci_req_atomics   (void *, enum os_pci_req_atomics_type);
+NV_STATUS   NV_API_CALL  os_get_numa_node_memory_usage (NvS32, NvU64 *, NvU64 *);
 NV_STATUS   NV_API_CALL  os_numa_add_gpu_memory      (void *, NvU64, NvU64, NvU32 *);
 NV_STATUS   NV_API_CALL  os_numa_remove_gpu_memory   (void *, NvU64, NvU64, NvU32); 
 NV_STATUS   NV_API_CALL  os_offline_page_at_address(NvU64 address);
+void*       NV_API_CALL  os_get_pid_info(void);
+void        NV_API_CALL  os_put_pid_info(void *pid_info);
+NV_STATUS   NV_API_CALL  os_find_ns_pid(void *pid_info, NvU32 *ns_pid);
 
 extern NvU32 os_page_size;
 extern NvU64 os_page_mask;

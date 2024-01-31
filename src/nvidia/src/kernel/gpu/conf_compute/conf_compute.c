@@ -51,6 +51,9 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
                                 ConfidentialCompute     *pConfCompute,
                                 ENGDESCRIPTOR           engDesc)
 {
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    NvU32 data = 0;
+    NvBool bForceEnableCC = 0;
     pConfCompute->pSpdm = NULL;
     portMemSet(&pConfCompute->ccStaticInfo, 0, sizeof(pConfCompute->ccStaticInfo));
     pConfCompute->gspProxyRegkeys = 0;
@@ -74,6 +77,20 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
 
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED))
     {
+        bForceEnableCC = (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONFIDENTIAL_COMPUTE, &data) == NV_OK) &&
+         FLD_TEST_DRF(_REG_STR, _RM_CONFIDENTIAL_COMPUTE, _ENABLED, _YES, data);
+
+        if (!RMCFG_FEATURE_PLATFORM_GSP && !RMCFG_FEATURE_PLATFORM_MODS && !bForceEnableCC)
+        {
+            if (!(sysGetStaticConfig(pSys)->bOsCCEnabled))
+            {
+                NV_PRINTF(LEVEL_ERROR, "CPU does not support confidential compute.\n");
+                NV_ASSERT(0);
+                pConfCompute->setProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED, NV_FALSE);
+                return NV_ERR_INVALID_OPERATION;
+            }
+        }
+
         NV_CHECK_OR_RETURN(LEVEL_ERROR, confComputeIsGpuCcCapable_HAL(pGpu, pConfCompute), NV_ERR_INVALID_OPERATION);
 
         if (pGpu->getProperty(pGpu, PDB_PROP_GPU_APM_FEATURE_CAPABLE))
@@ -92,7 +109,7 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
         }
         else
         {
-            NV_PRINTF(LEVEL_ERROR, "GPU does not support confidential compute");
+            NV_PRINTF(LEVEL_ERROR, "GPU does not support confidential compute.\n");
             NV_ASSERT(0);
             return NV_ERR_INVALID_OPERATION;
         }

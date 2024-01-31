@@ -30,6 +30,7 @@
 #include "gpu/mem_mgr/mem_desc.h"
 
 #include "published/ampere/ga100/dev_fb.h"
+#include "published/ampere/ga100/hwproject.h"
 
 /*!
  * @brief Write the sysmemFlushBuffer val into the NV_PFB_NISO_FLUSH_SYSMEM_ADDR register
@@ -439,4 +440,14 @@ kmemsysIsPagePLCable_GA100
     default:
         return NV_TRUE;
     }
+}
+
+NvU32
+kmemsysGetMaxFbpas_GA100
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    return NV_SCAL_LITTER_NUM_FBPAS;
 }

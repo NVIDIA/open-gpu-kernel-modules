@@ -1000,7 +1000,7 @@ NV_STATUS uvm_va_block_check_logical_permissions(uvm_va_block_t *va_block,
                                                  uvm_va_block_context_t *va_block_context,
                                                  uvm_processor_id_t processor_id,
                                                  uvm_page_index_t page_index,
-                                                 uvm_fault_type_t access_type,
+                                                 uvm_fault_access_type_t access_type,
                                                  bool allow_migration);
 
 // API for access privilege revocation
@@ -2071,6 +2071,14 @@ void uvm_va_block_unmap_cpu_chunk_on_gpus(uvm_va_block_t *va_block,
 // Remove any CPU chunks in the given region.
 // Locking: The va_block lock must be held.
 void uvm_va_block_remove_cpu_chunks(uvm_va_block_t *va_block, uvm_va_block_region_t region);
+
+// Get the size of the physical allocation backing the page at page_index on the
+// specified processor in the block. Returns 0 if the address is not resident on
+// the specified processor.
+// Locking: The va_block lock must be held.
+NvU32 uvm_va_block_get_physical_size(uvm_va_block_t *block,
+                                     uvm_processor_id_t processor,
+                                     uvm_page_index_t page_index);
 
 // Get CPU page size or 0 if it is not mapped
 NvU32 uvm_va_block_page_size_cpu(uvm_va_block_t *va_block,

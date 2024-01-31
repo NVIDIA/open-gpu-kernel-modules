@@ -1224,12 +1224,11 @@ static int nv_start_device(nv_state_t *nv, nvidia_stack_t *sp)
             rm_read_registry_dword(sp, nv, NV_REG_ENABLE_MSI, &msi_config);
             if (msi_config == 1)
             {
-                if (pci_find_capability(nvl->pci_dev, PCI_CAP_ID_MSIX))
+                if (nvl->pci_dev->msix_cap && rm_is_msix_allowed(sp, nv))
                 {
                     nv_init_msix(nv);
                 }
-                if (pci_find_capability(nvl->pci_dev, PCI_CAP_ID_MSI) &&
-                    !(nv->flags & NV_FLAG_USES_MSIX))
+                if (nvl->pci_dev->msi_cap && !(nv->flags & NV_FLAG_USES_MSIX))
                 {
                     nv_init_msi(nv);
                 }

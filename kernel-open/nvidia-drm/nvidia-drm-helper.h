@@ -583,6 +583,19 @@ static inline int nv_drm_format_num_planes(uint32_t format)
 #endif /* defined(NV_DRM_FORMAT_MODIFIERS_PRESENT) */
 
 /*
+ * DRM_UNLOCKED was removed with linux-next commit 2798ffcc1d6a ("drm: Remove
+ * locking for legacy ioctls and DRM_UNLOCKED"), but it was previously made
+ * implicit for all non-legacy DRM driver IOCTLs since Linux v4.10 commit
+ * fa5386459f06 "drm: Used DRM_LEGACY for all legacy functions" (Linux v4.4
+ * commit ea487835e887 "drm: Enforce unlocked ioctl operation for kms driver
+ * ioctls" previously did it only for drivers that set the DRM_MODESET flag), so
+ * it was effectively a no-op anyway.
+ */
+#if !defined(NV_DRM_UNLOCKED_IOCTL_FLAG_PRESENT)
+#define DRM_UNLOCKED 0
+#endif
+
+/*
  * drm_vma_offset_exact_lookup_locked() were added
  * by kernel commit 2225cfe46bcc which was Signed-off-by:
  *      Daniel Vetter <daniel.vetter@intel.com>

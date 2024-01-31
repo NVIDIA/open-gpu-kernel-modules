@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -46,6 +46,9 @@ typedef enum _MINION_STATUS
     MINION_ALARM_BUSY                                   = 80,
 } MINION_STATUS;
 
+  #define LINKSTATUS_RESET                      0x0
+  #define LINKSTATUS_UNINIT                     0x1
+  #define LINKSTATUS_LANESHUTDOWN               0x13
   #define LINKSTATUS_EMERGENCY_SHUTDOWN         0x29
-  #define LINKSTATUS_INITPHASE1                 0x24
+  #define LINKSTATUS_ACTIVE_PENDING             0x25
 #endif // _MINION_NVLINK_DEFINES_PUBLIC_H_

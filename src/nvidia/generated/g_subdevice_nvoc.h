@@ -747,6 +747,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdBusGetUphyDlnCfgSpace(pSubdevice, pParams) subdeviceCtrlCmdBusGetUphyDlnCfgSpace_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBusGetEomStatus(pSubdevice, pParams) subdeviceCtrlCmdBusGetEomStatus_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBusGetPcieReqAtomicsCaps(pSubdevice, pParams) subdeviceCtrlCmdBusGetPcieReqAtomicsCaps_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdBusGetPcieReqAtomicsCaps_HAL(pSubdevice, pParams) subdeviceCtrlCmdBusGetPcieReqAtomicsCaps_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBusGetPcieSupportedGpuAtomics(pSubdevice, pParams) subdeviceCtrlCmdBusGetPcieSupportedGpuAtomics_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBusGetC2CInfo(pSubdevice, pParams) subdeviceCtrlCmdBusGetC2CInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdBusGetC2CErrorInfo(pSubdevice, pParams) subdeviceCtrlCmdBusGetC2CErrorInfo_DISPATCH(pSubdevice, pParams)
@@ -1487,7 +1488,10 @@ static inline NV_STATUS subdeviceCtrlCmdBusGetEomStatus_DISPATCH(struct Subdevic
     return pSubdevice->__subdeviceCtrlCmdBusGetEomStatus__(pSubdevice, pParams);
 }
 
-NV_STATUS subdeviceCtrlCmdBusGetPcieReqAtomicsCaps_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS *pParams);
+static inline NV_STATUS subdeviceCtrlCmdBusGetPcieReqAtomicsCaps_92bfc3(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS *pParams) {
+    NV_ASSERT_PRECOMP(0);
+    return NV_ERR_NOT_SUPPORTED;
+}
 
 static inline NV_STATUS subdeviceCtrlCmdBusGetPcieReqAtomicsCaps_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_BUS_GET_PCIE_REQ_ATOMICS_CAPS_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdBusGetPcieReqAtomicsCaps__(pSubdevice, pParams);

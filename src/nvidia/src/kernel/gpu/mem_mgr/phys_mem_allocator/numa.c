@@ -363,7 +363,7 @@ static NV_STATUS _pmaNumaAllocatePages
         osAllocAcquirePage(sysPhysAddr + (1 << osPageShift), (pageSize >> osPageShift) - 1);
     }
 
-    if (bScrubOnAlloc)
+    if (bScrubOnAlloc && (i > 0))
     {
         PSCRUB_NODE pPmaScrubList = NULL;
         NvU64 count;
@@ -608,7 +608,7 @@ NV_STATUS pmaNumaAllocate
                     status = NV_ERR_NO_MEMORY;
                     break;
                 }
-                pPma->pMapInfo->pmaMapChangeStateAttrib(pMap, frameOffset, allocOption, NV_TRUE);
+                pPma->pMapInfo->pmaMapChangeStateAttribEx(pMap, frameOffset, allocOption, MAP_MASK);
             }
             if (status != NV_OK)
                 break;

@@ -222,6 +222,11 @@ struct KernelMemorySystem {
     void (*__kmemsysNumaRemoveAllMemory__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysSetupAllAtsPeers__)(OBJGPU *, struct KernelMemorySystem *);
     void (*__kmemsysRemoveAllAtsPeers__)(OBJGPU *, struct KernelMemorySystem *);
+    NvU32 (*__kmemsysGetMaxFbpas__)(OBJGPU *, struct KernelMemorySystem *);
+    NvU32 (*__kmemsysGetEccDedCountSize__)(OBJGPU *, struct KernelMemorySystem *);
+    NvU32 (*__kmemsysGetEccDedCountRegAddr__)(OBJGPU *, struct KernelMemorySystem *, NvU32, NvU32);
+    void (*__kmemsysGetEccCounts__)(OBJGPU *, struct KernelMemorySystem *, NvU32 *, NvU32 *);
+    void (*__kmemsysClearEccCounts__)(OBJGPU *, struct KernelMemorySystem *);
     NV_STATUS (*__kmemsysStateLoad__)(POBJGPU, struct KernelMemorySystem *, NvU32);
     NV_STATUS (*__kmemsysStateUnload__)(POBJGPU, struct KernelMemorySystem *, NvU32);
     NV_STATUS (*__kmemsysStatePostUnload__)(POBJGPU, struct KernelMemorySystem *, NvU32);
@@ -247,6 +252,8 @@ struct KernelMemorySystem {
     NvU64 coherentCpuFbEnd;
     NvU64 numaOnlineBase;
     NvU64 numaOnlineSize;
+    NvU64 numaMigPartitionSize[15];
+    NvBool bNumaMigPartitionSizeEnumerated;
 };
 
 #ifndef __NVOC_CLASS_KernelMemorySystem_TYPEDEF__
@@ -323,6 +330,16 @@ NV_STATUS __nvoc_objCreate_KernelMemorySystem(KernelMemorySystem**, Dynamic*, Nv
 #define kmemsysSetupAllAtsPeers_HAL(pGpu, pKernelMemorySystem) kmemsysSetupAllAtsPeers_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysRemoveAllAtsPeers(pGpu, pKernelMemorySystem) kmemsysRemoveAllAtsPeers_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysRemoveAllAtsPeers_HAL(pGpu, pKernelMemorySystem) kmemsysRemoveAllAtsPeers_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysGetMaxFbpas(pGpu, pKernelMemorySystem) kmemsysGetMaxFbpas_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysGetMaxFbpas_HAL(pGpu, pKernelMemorySystem) kmemsysGetMaxFbpas_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysGetEccDedCountSize(pGpu, pKernelMemorySystem) kmemsysGetEccDedCountSize_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysGetEccDedCountSize_HAL(pGpu, pKernelMemorySystem) kmemsysGetEccDedCountSize_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysGetEccDedCountRegAddr(pGpu, pKernelMemorySystem, fbpa, subp) kmemsysGetEccDedCountRegAddr_DISPATCH(pGpu, pKernelMemorySystem, fbpa, subp)
+#define kmemsysGetEccDedCountRegAddr_HAL(pGpu, pKernelMemorySystem, fbpa, subp) kmemsysGetEccDedCountRegAddr_DISPATCH(pGpu, pKernelMemorySystem, fbpa, subp)
+#define kmemsysGetEccCounts(pGpu, pKernelMemorySystem, arg0, arg1) kmemsysGetEccCounts_DISPATCH(pGpu, pKernelMemorySystem, arg0, arg1)
+#define kmemsysGetEccCounts_HAL(pGpu, pKernelMemorySystem, arg0, arg1) kmemsysGetEccCounts_DISPATCH(pGpu, pKernelMemorySystem, arg0, arg1)
+#define kmemsysClearEccCounts(pGpu, pKernelMemorySystem) kmemsysClearEccCounts_DISPATCH(pGpu, pKernelMemorySystem)
+#define kmemsysClearEccCounts_HAL(pGpu, pKernelMemorySystem) kmemsysClearEccCounts_DISPATCH(pGpu, pKernelMemorySystem)
 #define kmemsysStateLoad(pGpu, pEngstate, arg0) kmemsysStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kmemsysStateUnload(pGpu, pEngstate, arg0) kmemsysStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kmemsysStatePostUnload(pGpu, pEngstate, arg0) kmemsysStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
@@ -731,6 +748,62 @@ void kmemsysRemoveAllAtsPeers_GV100(OBJGPU *pGpu, struct KernelMemorySystem *pKe
 
 static inline void kmemsysRemoveAllAtsPeers_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
     pKernelMemorySystem->__kmemsysRemoveAllAtsPeers__(pGpu, pKernelMemorySystem);
+}
+
+NvU32 kmemsysGetMaxFbpas_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+NvU32 kmemsysGetMaxFbpas_GA100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+static inline NvU32 kmemsysGetMaxFbpas_4a4dee(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return 0;
+}
+
+static inline NvU32 kmemsysGetMaxFbpas_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return pKernelMemorySystem->__kmemsysGetMaxFbpas__(pGpu, pKernelMemorySystem);
+}
+
+NvU32 kmemsysGetEccDedCountSize_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+NvU32 kmemsysGetEccDedCountSize_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+static inline NvU32 kmemsysGetEccDedCountSize_4a4dee(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return 0;
+}
+
+static inline NvU32 kmemsysGetEccDedCountSize_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return pKernelMemorySystem->__kmemsysGetEccDedCountSize__(pGpu, pKernelMemorySystem);
+}
+
+NvU32 kmemsysGetEccDedCountRegAddr_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 fbpa, NvU32 subp);
+
+NvU32 kmemsysGetEccDedCountRegAddr_GH100(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 fbpa, NvU32 subp);
+
+static inline NvU32 kmemsysGetEccDedCountRegAddr_4a4dee(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 fbpa, NvU32 subp) {
+    return 0;
+}
+
+static inline NvU32 kmemsysGetEccDedCountRegAddr_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 fbpa, NvU32 subp) {
+    return pKernelMemorySystem->__kmemsysGetEccDedCountRegAddr__(pGpu, pKernelMemorySystem, fbpa, subp);
+}
+
+void kmemsysGetEccCounts_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 *arg0, NvU32 *arg1);
+
+static inline void kmemsysGetEccCounts_b3696a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 *arg0, NvU32 *arg1) {
+    return;
+}
+
+static inline void kmemsysGetEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem, NvU32 *arg0, NvU32 *arg1) {
+    pKernelMemorySystem->__kmemsysGetEccCounts__(pGpu, pKernelMemorySystem, arg0, arg1);
+}
+
+void kmemsysClearEccCounts_TU102(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem);
+
+static inline void kmemsysClearEccCounts_b3696a(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    return;
+}
+
+static inline void kmemsysClearEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelMemorySystem *pKernelMemorySystem) {
+    pKernelMemorySystem->__kmemsysClearEccCounts__(pGpu, pKernelMemorySystem);
 }
 
 static inline NV_STATUS kmemsysStateLoad_DISPATCH(POBJGPU pGpu, struct KernelMemorySystem *pEngstate, NvU32 arg0) {

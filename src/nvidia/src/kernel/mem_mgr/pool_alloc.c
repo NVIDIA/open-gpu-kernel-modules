@@ -209,17 +209,14 @@ allocUpstreamTopPool
 {
     PMA_ALLOCATION_OPTIONS      allocOptions = {0};
     RM_POOL_ALLOC_MEM_RESERVE_INFO *pMemReserveInfo;
-    NvU64 i;
-    NvU64 *pPageStore = portMemAllocNonPaged(sizeof(NvU64) * numPages);
-    NV_STATUS status = NV_OK;
+    NvU64 i, pageBegin;
+    NV_STATUS status;
 
     NV_ASSERT_OR_RETURN(NULL != pCtx, NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN(NULL != pPage, NV_ERR_INVALID_ARGUMENT);
-    NV_ASSERT_OR_RETURN(NULL != pPageStore, NV_ERR_NO_MEMORY);
 
     pMemReserveInfo = (RM_POOL_ALLOC_MEM_RESERVE_INFO *)pCtx;
-    allocOptions.flags = PMA_ALLOCATE_PINNED | PMA_ALLOCATE_PERSISTENT | PMA_ALLOCATE_FORCE_ALIGNMENT;
-    allocOptions.alignment = PMA_CHUNK_SIZE_64K;
+    allocOptions.flags = PMA_ALLOCATE_PINNED | PMA_ALLOCATE_PERSISTENT;
 
     if (pMemReserveInfo->bSkipScrub)
     {
@@ -230,24 +227,56 @@ allocUpstreamTopPool
     {
         allocOptions.flags |= PMA_ALLOCATE_PROTECTED_REGION;
     }
-        
-    NV_ASSERT_OK_OR_GOTO(status,
-        pmaAllocatePages(pMemReserveInfo->pPma,
-            numPages,
-            pageSize,
-            &allocOptions,
-            pPageStore),
-        free_mem);
+
+    //
+    // Some tests fail page table and directory allocation when close to all FB is allocated if we allocate contiguously.
+    // For now, we're special-casing this supported pageSize and allocating the 64K pages discontigously.
+    // TODO: Unify the codepaths so that all pages allocated discontiguously (not currently supported by PMA)
+    //
+    if (pageSize == PMA_CHUNK_SIZE_64K)
+    {
+        NvU64 *pPageStore = portMemAllocNonPaged(sizeof(NvU64) * numPages);
+        NV_STATUS status = NV_OK;
+        NV_ASSERT_OK_OR_GOTO(status,
+            pmaAllocatePages(pMemReserveInfo->pPma,
+                numPages,
+                pageSize,
+                &allocOptions,
+                pPageStore),
+            free_mem);
+
+        for (i = 0; i < numPages; i++)
+        {
+            pPage[i].address = pPageStore[i];
+            pPage[i].pMetadata = NULL;
+        }
+free_mem:
+        portMemFree(pPageStore);
+        return status;
+    }
+
+    allocOptions.flags |= PMA_ALLOCATE_CONTIGUOUS;
 
     for (i = 0; i < numPages; i++)
     {
-        pPage[i].address = pPageStore[i];
+        NV_ASSERT_OK_OR_GOTO(status, pmaAllocatePages(pMemReserveInfo->pPma,
+            pageSize / PMA_CHUNK_SIZE_64K,
+            PMA_CHUNK_SIZE_64K,
+            &allocOptions,
+            &pageBegin), err);
+        pPage[i].address = pageBegin;
         pPage[i].pMetadata = NULL;
     }
-free_mem:
-    portMemFree(pPageStore);
-    return status;
 
+    return NV_OK;
+err:
+    for (;i > 0; i--)
+    {
+        NvU32 flags = pMemReserveInfo->bSkipScrub ? PMA_FREE_SKIP_SCRUB : 0;
+        pmaFreePages(pMemReserveInfo->pPma, &pPage[i - 1].address, 1,
+            pageSize, flags);
+    }
+    return status;
 }
 
 /*!

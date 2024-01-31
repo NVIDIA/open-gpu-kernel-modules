@@ -57,14 +57,16 @@
 
 typedef struct
 {
-    // Number of faults from this uTLB that have been fetched but have not been serviced yet
+    // Number of faults from this uTLB that have been fetched but have not been
+    // serviced yet.
     NvU32 num_pending_faults;
 
     // Whether the uTLB contains fatal faults
     bool has_fatal_faults;
 
-    // We have issued a replay of type START_ACK_ALL while containing fatal faults. This puts
-    // the uTLB in lockdown mode and no new translations are accepted
+    // We have issued a replay of type START_ACK_ALL while containing fatal
+    // faults. This puts the uTLB in lockdown mode and no new translations are
+    // accepted.
     bool in_lockdown;
 
     // We have issued a cancel on this uTLB
@@ -126,8 +128,8 @@ struct uvm_service_block_context_struct
         struct list_head service_context_list;
 
         // A mask of GPUs that need to be checked for ECC errors before the CPU
-        // fault handler returns, but after the VA space lock has been unlocked to
-        // avoid the RM/UVM VA space lock deadlocks.
+        // fault handler returns, but after the VA space lock has been unlocked
+        // to avoid the RM/UVM VA space lock deadlocks.
         uvm_processor_mask_t gpus_to_check_for_ecc;
 
         // This is set to throttle page fault thrashing.
@@ -160,9 +162,9 @@ struct uvm_service_block_context_struct
 
     struct
     {
-        // Per-processor mask with the pages that will be resident after servicing.
-        // We need one mask per processor because we may coalesce faults that
-        // trigger migrations to different processors.
+        // Per-processor mask with the pages that will be resident after
+        // servicing. We need one mask per processor because we may coalesce
+        // faults that trigger migrations to different processors.
         uvm_page_mask_t new_residency;
     } per_processor_masks[UVM_ID_MAX_PROCESSORS];
 
@@ -263,7 +265,10 @@ struct uvm_fault_service_batch_context_struct
 
     NvU32 num_coalesced_faults;
 
-    bool has_fatal_faults;
+    // One of the VA spaces in this batch which had fatal faults. If NULL, no
+    // faults were fatal. More than one VA space could have fatal faults, but we
+    // pick one to be the target of the cancel sequence.
+    uvm_va_space_t *fatal_va_space;
 
     bool has_throttled_faults;
 
@@ -291,11 +296,8 @@ struct uvm_fault_service_batch_context_struct
 
 struct uvm_ats_fault_invalidate_struct
 {
-    // Whether the TLB batch contains any information
-    bool            write_faults_in_batch;
-
-    // Batch of TLB entries to be invalidated
-    uvm_tlb_batch_t write_faults_tlb_batch;
+    bool            tlb_batch_pending;
+    uvm_tlb_batch_t tlb_batch;
 };
 
 typedef struct
@@ -440,20 +442,9 @@ struct uvm_access_counter_service_batch_context_struct
         NvU32                             num_notifications;
 
         // Boolean used to avoid sorting the fault batch by instance_ptr if we
-        // determine at fetch time that all the access counter notifications in the
-        // batch report the same instance_ptr
+        // determine at fetch time that all the access counter notifications in
+        // the batch report the same instance_ptr
         bool is_single_instance_ptr;
-
-        // Scratch space, used to generate artificial physically addressed notifications.
-        // Virtual address notifications are always aligned to 64k. This means up to 16
-        // different physical locations could have been accessed to trigger one notification.
-        // The sub-granularity mask can correspond to any of them.
-        struct
-        {
-            uvm_processor_id_t resident_processors[16];
-            uvm_gpu_phys_address_t phys_addresses[16];
-            uvm_access_counter_buffer_entry_t phys_entry;
-        } scratch;
     } virt;
 
     struct
@@ -464,8 +455,8 @@ struct uvm_access_counter_service_batch_context_struct
         NvU32                              num_notifications;
 
         // Boolean used to avoid sorting the fault batch by aperture if we
-        // determine at fetch time that all the access counter notifications in the
-        // batch report the same aperture
+        // determine at fetch time that all the access counter notifications in
+        // the batch report the same aperture
         bool                              is_single_aperture;
     } phys;
 
@@ -661,8 +652,8 @@ struct uvm_gpu_struct
     struct
     {
         // Big page size used by the internal UVM VA space
-        // Notably it may be different than the big page size used by a user's VA
-        // space in general.
+        // Notably it may be different than the big page size used by a user's
+        // VA space in general.
         NvU32 internal_size;
     } big_page;
 
@@ -688,8 +679,8 @@ struct uvm_gpu_struct
         // lazily-populated array of peer GPUs, indexed by the peer's GPU index
         uvm_gpu_t *peer_gpus[UVM_ID_MAX_GPUS];
 
-        // Leaf spinlock used to synchronize access to the peer_gpus table so that
-        // it can be safely accessed from the access counters bottom half
+        // Leaf spinlock used to synchronize access to the peer_gpus table so
+        // that it can be safely accessed from the access counters bottom half
         uvm_spinlock_t peer_gpus_lock;
     } peer_info;
 
@@ -980,6 +971,10 @@ struct uvm_parent_gpu_struct
 
     bool plc_supported;
 
+    // If true, page_tree initialization pre-populates no_ats_ranges. It only
+    // affects ATS systems.
+    bool no_ats_range_required;
+
     // Parameters used by the TLB batching API
     struct
     {
@@ -1051,14 +1046,16 @@ struct uvm_parent_gpu_struct
     // Interrupt handling state and locks
     uvm_isr_info_t isr;
 
-    // Fault buffer info. This is only valid if supports_replayable_faults is set to true
+    // Fault buffer info. This is only valid if supports_replayable_faults is
+    // set to true.
     uvm_fault_buffer_info_t fault_buffer_info;
 
     // PMM lazy free processing queue.
     // TODO: Bug 3881835: revisit whether to use nv_kthread_q_t or workqueue.
     nv_kthread_q_t lazy_free_q;
 
-    // Access counter buffer info. This is only valid if supports_access_counters is set to true
+    // Access counter buffer info. This is only valid if
+    // supports_access_counters is set to true.
     uvm_access_counter_buffer_info_t access_counter_buffer_info;
 
     // Number of uTLBs per GPC. This information is only valid on Pascal+ GPUs.
@@ -1108,7 +1105,7 @@ struct uvm_parent_gpu_struct
     uvm_rb_tree_t instance_ptr_table;
     uvm_spinlock_t instance_ptr_table_lock;
 
-    // This is set to true if the GPU belongs to an SLI group. Else, set to false.
+    // This is set to true if the GPU belongs to an SLI group.
     bool sli_enabled;
 
     struct
@@ -1135,8 +1132,8 @@ struct uvm_parent_gpu_struct
     // environment, rather than using the peer-id field of the PTE (which can
     // only address 8 gpus), all gpus are assigned a 47-bit physical address
     // space by the fabric manager. Any physical address access to these
-    // physical address spaces are routed through the switch to the corresponding
-    // peer.
+    // physical address spaces are routed through the switch to the
+    // corresponding peer.
     struct
     {
         bool is_nvswitch_connected;
@@ -1162,6 +1159,16 @@ struct uvm_parent_gpu_struct
         NvU64 memory_window_start;
         NvU64 memory_window_end;
     } system_bus;
+
+    // WAR to issue ATS TLB invalidation commands ourselves.
+    struct
+    {
+        uvm_mutex_t smmu_lock;
+        struct page *smmu_cmdq;
+        void __iomem *smmu_cmdqv_base;
+        unsigned long smmu_prod;
+        unsigned long smmu_cons;
+    } smmu_war;
 };
 
 static const char *uvm_gpu_name(uvm_gpu_t *gpu)
@@ -1351,7 +1358,8 @@ void uvm_gpu_release_pcie_peer_access(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1);
 // They must not be the same gpu.
 uvm_aperture_t uvm_gpu_peer_aperture(uvm_gpu_t *local_gpu, uvm_gpu_t *remote_gpu);
 
-// Get the processor id accessible by the given GPU for the given physical address
+// Get the processor id accessible by the given GPU for the given physical
+// address.
 uvm_processor_id_t uvm_gpu_get_processor_id_by_address(uvm_gpu_t *gpu, uvm_gpu_phys_address_t addr);
 
 // Get the P2P capabilities between the gpus with the given indexes
@@ -1448,9 +1456,9 @@ NV_STATUS uvm_gpu_check_ecc_error(uvm_gpu_t *gpu);
 
 // Check for ECC errors without calling into RM
 //
-// Calling into RM is problematic in many places, this check is always safe to do.
-// Returns NV_WARN_MORE_PROCESSING_REQUIRED if there might be an ECC error and
-// it's required to call uvm_gpu_check_ecc_error() to be sure.
+// Calling into RM is problematic in many places, this check is always safe to
+// do. Returns NV_WARN_MORE_PROCESSING_REQUIRED if there might be an ECC error
+// and it's required to call uvm_gpu_check_ecc_error() to be sure.
 NV_STATUS uvm_gpu_check_ecc_error_no_rm(uvm_gpu_t *gpu);
 
 // Map size bytes of contiguous sysmem on the GPU for physical access
@@ -1507,6 +1515,8 @@ bool uvm_gpu_can_address(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
 // The GPU must be initialized before calling this function.
 bool uvm_gpu_can_address_kernel(uvm_gpu_t *gpu, NvU64 addr, NvU64 size);
 
+bool uvm_platform_uses_canonical_form_address(void);
+
 // Returns addr's canonical form for host systems that use canonical form
 // addresses.
 NvU64 uvm_parent_gpu_canonical_address(uvm_parent_gpu_t *parent_gpu, NvU64 addr);
@@ -1553,8 +1563,9 @@ uvm_aperture_t uvm_gpu_page_tree_init_location(const uvm_gpu_t *gpu);
 // Debug print of GPU properties
 void uvm_gpu_print(uvm_gpu_t *gpu);
 
-// Add the given instance pointer -> user_channel mapping to this GPU. The bottom
-// half GPU page fault handler uses this to look up the VA space for GPU faults.
+// Add the given instance pointer -> user_channel mapping to this GPU. The
+// bottom half GPU page fault handler uses this to look up the VA space for GPU
+// faults.
 NV_STATUS uvm_gpu_add_user_channel(uvm_gpu_t *gpu, uvm_user_channel_t *user_channel);
 void uvm_gpu_remove_user_channel(uvm_gpu_t *gpu, uvm_user_channel_t *user_channel);
 

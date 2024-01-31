@@ -404,36 +404,33 @@ static NV_STATUS setNumaPrivData
     NV_STATUS rmStatus = NV_OK;
     void *pAllocPrivate = NULL;
     NvU64 *addrArray = NULL;
-    NvU64 numOsPages = pMemDesc->PageCount;
+    NvU64 numPages = pMemDesc->PageCount;
+    NvU64 i;
 
-    addrArray = pMemDesc->_pteArray;
+    addrArray = portMemAllocNonPaged(numPages * sizeof(NvU64));
+    if (addrArray == NULL)
+    {
+        return NV_ERR_NO_MEMORY;
+    }
+
+    portMemCopy((void*)addrArray,
+                (numPages * sizeof(NvU64)),
+                (void*)memdescGetPteArray(pMemDesc, AT_CPU),
+                (numPages * sizeof(NvU64)));
 
     if (NV_RM_PAGE_SIZE < os_page_size)
     {
-        NvU64 numPages;
-        NvU64 i;
-
-        numPages = pMemDesc->PageCount;
-        addrArray = portMemAllocNonPaged(numPages * sizeof(NvU64));
-        if (addrArray == NULL)
-        {
-            return NV_ERR_NO_MEMORY;
-        }
-
-        portMemCopy((void*)addrArray,
-                    (numPages * sizeof(NvU64)), (void*)pMemDesc->_pteArray,
-                    (numPages * sizeof(NvU64)));
         RmDeflateRmToOsPageArray(addrArray, numPages);
-        numOsPages = NV_RM_PAGES_TO_OS_PAGES(numPages);
-
-        for (i = 0; i < numOsPages; i++)
-        {
-            // Update GPA to system physical address
-            addrArray[i] += pKernelMemorySystem->coherentCpuFbBase;
-        }
+        numPages = NV_RM_PAGES_TO_OS_PAGES(numPages);
     }
 
-    rmStatus = nv_register_phys_pages(nv, addrArray, numOsPages, NV_MEMORY_CACHED, &pAllocPrivate);
+    for (i = 0; i < numPages; i++)
+    {
+        // Update GPA to system physical address
+        addrArray[i] += pKernelMemorySystem->coherentCpuFbBase;
+    }
+
+    rmStatus = nv_register_phys_pages(nv, addrArray, numPages, NV_MEMORY_CACHED, &pAllocPrivate);
     if (rmStatus != NV_OK)
     {
         goto errors;
@@ -442,10 +439,7 @@ static NV_STATUS setNumaPrivData
     memdescSetMemData(pMemDesc, pAllocPrivate, NULL);
 
 errors:
-    if (NV_RM_PAGE_SIZE < os_page_size)
-    {
-        portMemFree(addrArray);
-    }
+    portMemFree(addrArray);
 
     return rmStatus;
 }
@@ -682,6 +676,21 @@ NV_STATUS osGetCurrentThread(OS_THREAD_HANDLE *pThreadId)
     }
 
     return rmStatus;
+}
+
+void* osGetPidInfo(void)
+{
+    return os_get_pid_info();
+}
+
+void osPutPidInfo(void *pOsPidInfo)
+{
+    os_put_pid_info(pOsPidInfo);
+}
+
+NV_STATUS osFindNsPid(void *pOsPidInfo, NvU32 *pNsPid)
+{
+    return os_find_ns_pid(pOsPidInfo, pNsPid);
 }
 
 NV_STATUS osAttachToProcess(void** ppProcessInfo, NvU32 ProcessId)
@@ -5369,6 +5378,28 @@ osReleaseGpuOsInfo
 )
 {
     nv_put_file_private(pOsInfo);
+}
+
+/*!
+ * @brief Get free, total memory of a NUMA node by NUMA node ID from kernel.
+ *
+ * @param[in]      numaId              NUMA node ID.
+ * @param[out]     free_memory_bytes   free memory in bytes.
+ * @param[out]     total_memory_bytes  total memory in bytes.
+ *
+ */
+void
+osGetNumaMemoryUsage
+(
+    NvS32 numaId,
+    NvU64 *free_memory_bytes,
+    NvU64 *total_memory_bytes
+)
+{
+    NV_STATUS status = os_get_numa_node_memory_usage(numaId,
+                                                     free_memory_bytes,
+                                                     total_memory_bytes);
+    NV_ASSERT(status == NV_OK);
 }
 
 /*!

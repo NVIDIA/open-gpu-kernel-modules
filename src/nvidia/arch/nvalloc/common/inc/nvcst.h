@@ -89,6 +89,7 @@ CHIPSET_SETUP_FUNC(Amazon_Gravitron2_setupFunc)
 CHIPSET_SETUP_FUNC(Fujitsu_A64FX_setupFunc)
 CHIPSET_SETUP_FUNC(Ampere_Altra_setupFunc)
 CHIPSET_SETUP_FUNC(Arm_NeoverseN1_setupFunc)
+CHIPSET_SETUP_FUNC(Ampere_AmpereOne_setupFunc)
 CHIPSET_SETUP_FUNC(Nvidia_T210_setupFunc)
 CHIPSET_SETUP_FUNC(Nvidia_T194_setupFunc)
 CHIPSET_SETUP_FUNC(Nvidia_TH500_setupFunc)
@@ -186,6 +187,7 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_INTEL,       0x7A82, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x7A84, CS_INTEL_7A82,      "Intel-AlderLake",      Intel_7A82_setupFunc},
     {PCI_VENDOR_ID_INTEL,       0x1B81, CS_INTEL_1B81,      "Intel-SapphireRapids", NULL},
+    {PCI_VENDOR_ID_INTEL,       0x7A8A, CS_INTEL_1B81,      "Intel-SapphireRapids", NULL},
     {PCI_VENDOR_ID_INTEL,       0x18DC, CS_INTEL_18DC,      "Intel-IceLake",        NULL},
     {PCI_VENDOR_ID_INTEL,       0x7A04, CS_INTEL_7A04,      "Intel-RaptorLake",     Intel_7A04_setupFunc},
 
@@ -264,6 +266,14 @@ CSINFO chipsetInfo[] =
     {PCI_VENDOR_ID_HYGON,       0x790E, CS_HYGON_C86,      "Hygon-C86-7151",   NULL},
     {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN96XX, "Marvell Octeon CN96xx", ARMV8_generic_setupFunc},
     {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN98XX, "Marvell Octeon CN98xx", ARMV8_generic_setupFunc},
+    {PCI_VENDOR_ID_AMPERE,      0xE200, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
+    {PCI_VENDOR_ID_AMPERE,      0xE201, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
+    {PCI_VENDOR_ID_AMPERE,      0xE202, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
+    {PCI_VENDOR_ID_AMPERE,      0xE203, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
+    {PCI_VENDOR_ID_AMPERE,      0xE204, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
+    {PCI_VENDOR_ID_AMPERE,      0xE205, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
+    {PCI_VENDOR_ID_AMPERE,      0xE206, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
+    {PCI_VENDOR_ID_AMPERE,      0xE207, CS_AMPERE_AMPEREONE, "Ampere AmpereOne", Ampere_AmpereOne_setupFunc},
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -362,6 +372,14 @@ ARMCSALLOWLISTINFO armChipsetAllowListInfo[] =
     {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN96XX}, // Marvell OCTEON CN96xx
     {PCI_VENDOR_ID_MARVELL,     0xA02D, CS_MARVELL_OCTEON_CN98XX}, // Marvell OCTEON CN98xx
     {PCI_VENDOR_ID_ALIBABA,     0x8000, CS_ALIBABA_YITIAN},      // Alibaba Yitian
+    {PCI_VENDOR_ID_AMPERE,      0xE200, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
+    {PCI_VENDOR_ID_AMPERE,      0xE201, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
+    {PCI_VENDOR_ID_AMPERE,      0xE202, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
+    {PCI_VENDOR_ID_AMPERE,      0xE203, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
+    {PCI_VENDOR_ID_AMPERE,      0xE204, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
+    {PCI_VENDOR_ID_AMPERE,      0xE205, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
+    {PCI_VENDOR_ID_AMPERE,      0xE206, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
+    {PCI_VENDOR_ID_AMPERE,      0xE207, CS_AMPERE_AMPEREONE},   // Ampere AmpereOne
 
     // last element must have chipset CS_UNKNOWN (zero)
     {0,                         0,      CS_UNKNOWN}

@@ -99,6 +99,7 @@ typedef struct {
 NvBool nvkms_output_rounding_fix(void);
 
 NvBool nvkms_disable_vrr_memclk_switch(void);
+NvBool nvkms_opportunistic_display_sync(void);
 
 void   nvkms_call_rm    (void *ops);
 void*  nvkms_alloc      (size_t size,

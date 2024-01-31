@@ -69,7 +69,11 @@ void crashcatReportLogReporter_V1_GENERIC(CrashCatReport *pReport)
     NvCrashCatNvriscvUcodeId ucodeId = crashcatReportV1ReporterUcodeId(pReportV1);
     NV_CRASHCAT_RISCV_MODE riscvMode = crashcatReportV1ReporterMode(pReportV1);
 
-    crashcatEnginePrintf(pReport->pEngine, NV_FALSE,
+    //
+    // Though this is technically not a separate packet, we use the CRASHCAT_REPORT_LOG_PACKET_TYPE
+    // macro to get the correct prefix/indentation for the reporter information.
+    //
+    CRASHCAT_REPORT_LOG_PACKET_TYPE(pReport,
         "Reported by partition:%u ucode:%u [%c-mode] version:%u @ %u",
         partition, ucodeId, crashcatReportModeToChar_GENERIC(riscvMode),
         crashcatReportV1ReporterVersion(pReportV1),

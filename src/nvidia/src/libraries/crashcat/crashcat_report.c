@@ -72,7 +72,7 @@ void crashcatReportLog_IMPL(CrashCatReport *pReport)
                 crashcatReportLogRiscv64GprState_HAL(pReport);
                 break;
             case NV_CRASHCAT_PACKET_TYPE_RISCV64_TRACE:
-                crashcatReportLogRiscv64Trace_HAL(pReport);
+                crashcatReportLogRiscv64Traces_HAL(pReport);
                 break;
             case NV_CRASHCAT_PACKET_TYPE_IO32_STATE:
                 crashcatReportLogIo32State_HAL(pReport);

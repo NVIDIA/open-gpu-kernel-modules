@@ -755,6 +755,7 @@ SRCS += src/libraries/crashcat/v1/crashcat_report_v1.c
 SRCS += src/libraries/crashcat/v1/crashcat_wayfinder_v1.c
 SRCS += src/libraries/crashcat/v1/impl/crashcat_report_v1_generic.c
 SRCS += src/libraries/crashcat/v1/impl/crashcat_report_v1_libos2.c
+SRCS += src/libraries/crashcat/v1/impl/crashcat_report_v1_libos3.c
 SRCS += src/libraries/eventbuffer/eventbufferproducer.c
 SRCS += src/libraries/fnv_hash/fnv_hash.c
 SRCS += src/libraries/ioaccess/ioaccess.c

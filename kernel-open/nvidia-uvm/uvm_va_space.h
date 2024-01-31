@@ -253,17 +253,6 @@ struct uvm_va_space_struct
     // corrupting state.
     uvm_processor_mask_t gpu_unregister_in_progress;
 
-    // On VMA destruction, the fault buffer needs to be flushed for all the GPUs
-    // registered in the VA space to avoid leaving stale entries of the VA range
-    // that is going to be destroyed. Otherwise, these fault entries can be
-    // attributed to new VA ranges reallocated at the same addresses. However,
-    // uvm_vm_close is called with mm->mmap_lock taken and we cannot take the
-    // ISR lock. Therefore, we use a flag to notify the GPU fault handler that
-    // the fault buffer needs to be flushed, before servicing the faults that
-    // belong to the va_space. The bits are set and cleared atomically so no
-    // va_space lock is required.
-    uvm_processor_mask_t needs_fault_buffer_flush;
-
     // Mask of processors that are participating in system-wide atomics
     uvm_processor_mask_t system_wide_atomics_enabled_processors;
 
@@ -353,6 +342,7 @@ struct uvm_va_space_struct
     struct
     {
         bool  page_prefetch_enabled;
+        bool  skip_migrate_vma;
 
         atomic_t migrate_vma_allocation_fail_nth;
 

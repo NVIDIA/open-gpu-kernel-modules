@@ -113,6 +113,7 @@ struct KernelCE {
     NV_STATUS (*__kceStateUnload__)(OBJGPU *, struct KernelCE *, NvU32);
     void (*__kceRegisterIntrService__)(OBJGPU *, struct KernelCE *, IntrServiceRecord *);
     NV_STATUS (*__kceServiceNotificationInterrupt__)(OBJGPU *, struct KernelCE *, IntrServiceServiceNotificationInterruptArguments *);
+    NV_STATUS (*__kceGetP2PCes__)(struct KernelCE *, OBJGPU *, NvU32, NvU32 *);
     NV_STATUS (*__kceGetNvlinkAutoConfigCeValues__)(OBJGPU *, struct KernelCE *, NvU32 *, NvU32 *, NvU32 *);
     NvBool (*__kceGetNvlinkMaxTopoForTable__)(OBJGPU *, struct KernelCE *, struct NVLINK_TOPOLOGY_PARAMS *, void *, NvU32, NvU32 *);
     NvBool (*__kceIsCurrentMaxTopology__)(OBJGPU *, struct KernelCE *, struct NVLINK_TOPOLOGY_PARAMS *, NvU32 *, NvU32 *);
@@ -190,6 +191,8 @@ NV_STATUS __nvoc_objCreate_KernelCE(KernelCE**, Dynamic*, NvU32);
 #define kceStateUnload_HAL(pGpu, pKCe, flags) kceStateUnload_DISPATCH(pGpu, pKCe, flags)
 #define kceRegisterIntrService(arg0, arg1, arg2) kceRegisterIntrService_DISPATCH(arg0, arg1, arg2)
 #define kceServiceNotificationInterrupt(arg0, arg1, arg2) kceServiceNotificationInterrupt_DISPATCH(arg0, arg1, arg2)
+#define kceGetP2PCes(arg0, pGpu, gpuMask, nvlinkP2PCeMask) kceGetP2PCes_DISPATCH(arg0, pGpu, gpuMask, nvlinkP2PCeMask)
+#define kceGetP2PCes_HAL(arg0, pGpu, gpuMask, nvlinkP2PCeMask) kceGetP2PCes_DISPATCH(arg0, pGpu, gpuMask, nvlinkP2PCeMask)
 #define kceGetNvlinkAutoConfigCeValues(pGpu, pKCe, arg0, arg1, arg2) kceGetNvlinkAutoConfigCeValues_DISPATCH(pGpu, pKCe, arg0, arg1, arg2)
 #define kceGetNvlinkAutoConfigCeValues_HAL(pGpu, pKCe, arg0, arg1, arg2) kceGetNvlinkAutoConfigCeValues_DISPATCH(pGpu, pKCe, arg0, arg1, arg2)
 #define kceGetNvlinkMaxTopoForTable(pGpu, pKCe, arg0, arg1, arg2, arg3) kceGetNvlinkMaxTopoForTable_DISPATCH(pGpu, pKCe, arg0, arg1, arg2, arg3)
@@ -305,20 +308,6 @@ static inline NvBool kceIsCeNvlinkP2P(OBJGPU *pGpu, struct KernelCE *pKCe) {
 
 #define kceIsCeNvlinkP2P_HAL(pGpu, pKCe) kceIsCeNvlinkP2P(pGpu, pKCe)
 
-NV_STATUS kceGetP2PCes_GV100(struct KernelCE *arg0, OBJGPU *pGpu, NvU32 gpuMask, NvU32 *nvlinkP2PCeMask);
-
-
-#ifdef __nvoc_kernel_ce_h_disabled
-static inline NV_STATUS kceGetP2PCes(struct KernelCE *arg0, OBJGPU *pGpu, NvU32 gpuMask, NvU32 *nvlinkP2PCeMask) {
-    NV_ASSERT_FAILED_PRECOMP("KernelCE was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
-}
-#else //__nvoc_kernel_ce_h_disabled
-#define kceGetP2PCes(arg0, pGpu, gpuMask, nvlinkP2PCeMask) kceGetP2PCes_GV100(arg0, pGpu, gpuMask, nvlinkP2PCeMask)
-#endif //__nvoc_kernel_ce_h_disabled
-
-#define kceGetP2PCes_HAL(arg0, pGpu, gpuMask, nvlinkP2PCeMask) kceGetP2PCes(arg0, pGpu, gpuMask, nvlinkP2PCeMask)
-
 void kceGetSysmemRWLCEs_GV100(struct KernelCE *arg0, NvU32 *rd, NvU32 *wr);
 
 
@@ -395,6 +384,14 @@ NV_STATUS kceServiceNotificationInterrupt_IMPL(OBJGPU *arg0, struct KernelCE *ar
 
 static inline NV_STATUS kceServiceNotificationInterrupt_DISPATCH(OBJGPU *arg0, struct KernelCE *arg1, IntrServiceServiceNotificationInterruptArguments *arg2) {
     return arg1->__kceServiceNotificationInterrupt__(arg0, arg1, arg2);
+}
+
+NV_STATUS kceGetP2PCes_GV100(struct KernelCE *arg0, OBJGPU *pGpu, NvU32 gpuMask, NvU32 *nvlinkP2PCeMask);
+
+NV_STATUS kceGetP2PCes_GH100(struct KernelCE *arg0, OBJGPU *pGpu, NvU32 gpuMask, NvU32 *nvlinkP2PCeMask);
+
+static inline NV_STATUS kceGetP2PCes_DISPATCH(struct KernelCE *arg0, OBJGPU *pGpu, NvU32 gpuMask, NvU32 *nvlinkP2PCeMask) {
+    return arg0->__kceGetP2PCes__(arg0, pGpu, gpuMask, nvlinkP2PCeMask);
 }
 
 NV_STATUS kceGetNvlinkAutoConfigCeValues_TU102(OBJGPU *pGpu, struct KernelCE *pKCe, NvU32 *arg0, NvU32 *arg1, NvU32 *arg2);

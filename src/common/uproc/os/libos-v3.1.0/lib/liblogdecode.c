@@ -477,10 +477,10 @@ static int libos_printf_a(
 #    if defined(NVRM)
         if (logDecode->curLineBufPtr == logDecode->lineBuffer)
         {
-            // Prefix every line with NVRM GPUn Ucode-task: filename(lineNumber):
+            // Prefix every line with NVRM: GPUn Ucode-task: filename(lineNumber):
             snprintf(
                 logDecode->curLineBufPtr, LIBOS_LOG_LINE_BUFFER_SIZE - 1,
-                "NVRM GPU%u %s-%s: %s(%u): ", pRec->log->gpuInstance,
+                NV_PRINTF_ADD_PREFIX("GPU%u %s-%s: %s(%u): "), pRec->log->gpuInstance,
                 logDecode->sourceName, pRec->log->taskPrefix, filename, pRec->meta->lineNumber);
             logDecode->curLineBufPtr += portStringLength(logDecode->curLineBufPtr);
         }

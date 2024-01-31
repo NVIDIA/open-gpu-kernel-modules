@@ -481,19 +481,6 @@ memmgrStateLoad_IMPL
         memmgrScrubInit_HAL(pGpu, pMemoryManager);
     }
 
-    if (osNumaOnliningEnabled(pGpu->pOsGpuInfo))
-    {
-        //
-        // NUMA onlined memory size should not exceed memory size assigned to PMA.
-        // TODO : Currently in selfhosted and P9+GV100 systems numaOnlined size is less
-        // than PMA Memory Size. Ideally both of them should be identical. Bug 4051320.
-        //
-        NvU64 pmaTotalMemorySize;
-        NvU64 numaOnlineSize = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu)->numaOnlineSize;
-        pmaGetTotalMemory(&GPU_GET_HEAP(pGpu)->pmaObject, &pmaTotalMemorySize);
-        NV_ASSERT_OR_RETURN(pmaTotalMemorySize >= numaOnlineSize, NV_ERR_INVALID_STATE);
-    }
-
     // Dump FB regions
     memmgrDumpFbRegions(pGpu, pMemoryManager);
 
@@ -1965,6 +1952,7 @@ memmgrSetPartitionableMem_IMPL
     {
         PMA_REGION_DESCRIPTOR *pFirstPmaRegionDesc = NULL;
         NvU32 numPmaRegions;
+        NvU32 pmaConfig = PMA_QUERY_NUMA_ONLINED;
 
         NV_ASSERT_OK_OR_RETURN(pmaGetRegionInfo(&pHeap->pmaObject,
             &numPmaRegions, &pFirstPmaRegionDesc));
@@ -1972,6 +1960,8 @@ memmgrSetPartitionableMem_IMPL
         base = pFirstPmaRegionDesc->base;
         pmaGetFreeMemory(&pHeap->pmaObject, &freeMem);
         pmaGetTotalMemory(&pHeap->pmaObject, &size);
+
+        NV_ASSERT_OK(pmaQueryConfigs(&pHeap->pmaObject, &pmaConfig));
 
         //
         // MIG won't be used alongside APM and hence the check below is of no use
@@ -1983,8 +1973,11 @@ memmgrSetPartitionableMem_IMPL
         // channels are required to be in CPR vidmem. This changes the calculation below
         // We can ignore this for the non-MIG case.
         //
-        if (!gpuIsCCorApmFeatureEnabled(pGpu) ||
-            IS_MIG_ENABLED(pGpu))
+        // When FB memory is onlined as NUMA node, kernel can directly alloc FB memory
+        // and hence free memory can not be expected to be same as total memory.
+        //
+        if ((!gpuIsCCorApmFeatureEnabled(pGpu) || IS_MIG_ENABLED(pGpu)) &&
+            !(pmaConfig & PMA_QUERY_NUMA_ONLINED))
         {
             //
             // PMA should be completely free at this point, otherwise we risk
@@ -2289,17 +2282,6 @@ memmgrAllocMIGGPUInstanceMemory_PF
             NvS32 numaNodeId;
             NvU64 partitionBaseAddr = pAddrRange->lo;
             NvU64 partitionSize = rangeLength(*pAddrRange);
-            NvU64 unalignedPartitionBaseAddr = partitionBaseAddr;
-            NvU64 memblockSize = 0;
-
-            NV_ASSERT_OK_OR_RETURN(osNumaMemblockSize(&memblockSize));
-            //
-            // Align the partition base and size to memblock size
-            // Some FB memory is wasted here if it is not already aligned.
-            //
-            partitionBaseAddr = NV_ALIGN_UP64(unalignedPartitionBaseAddr, memblockSize);
-            partitionSize -= (partitionBaseAddr - unalignedPartitionBaseAddr);
-            partitionSize = NV_ALIGN_DOWN64(partitionSize, memblockSize);
 
             if (kmigmgrGetSwizzIdInUseMask(pGpu, pKernelMIGManager) == 0x0)
             {
@@ -2873,6 +2855,7 @@ memmgrPmaRegisterRegions_IMPL
     NvU32 blPageIndex;
     NvU32 blackListCount;
     NvU64 base, size;
+    NvU64 pmaTotalMemorySize = 0;
     NV_STATUS status = NV_OK;
     const MEMORY_SYSTEM_STATIC_CONFIG *pMemsysConfig = 
                kmemsysGetStaticConfig(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
@@ -2965,6 +2948,7 @@ memmgrPmaRegisterRegions_IMPL
             }
         }
 
+        pmaTotalMemorySize += (pmaRegion.limit - pmaRegion.base + 1);
         NV_PRINTF(LEVEL_INFO,
                   "Register FB region %llx..%llx of size %llx with PMA\n",
                   pmaRegion.base, pmaRegion.limit,
@@ -2990,6 +2974,18 @@ memmgrPmaRegisterRegions_IMPL
         pmaRegionIdx++;
     }
 
+    if (gpuIsSelfHosted(pGpu) && osNumaOnliningEnabled(pGpu->pOsGpuInfo))
+    {
+        //
+        // NUMA onlined memory size should not exceed memory size assigned to PMA.
+        // TODO : Currently in selfhosted and P9+GV100 systems numaOnlined size is less
+        // than PMA Memory Size. Ideally both of them should be identical. Bug 4051320.
+        //
+        NvU64 numaTotalSize = 0;
+        NvU64 numaFreeSize = 0;
+        osGetNumaMemoryUsage(pPma->numaNodeId, &numaFreeSize, &numaTotalSize);
+        NV_ASSERT_OR_RETURN(pmaTotalMemorySize >= numaTotalSize, NV_ERR_INVALID_STATE);
+    }
     //
     // bug #200354346, make sure the RM reserved region(s) are
     // scrubbed during the region creation itself. Top Down scrubber,

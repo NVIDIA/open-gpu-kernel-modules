@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -23,15 +23,23 @@
 
 #include "core/core.h"
 #include "gpu/gpu.h"
+#include "nvtypes.h"
 #include "os/os.h"
 #include "kernel/gpu/mem_sys/kern_mem_sys.h"
 #include "gpu/mem_mgr/mem_desc.h"
 #include "gpu/bus/kern_bus.h"
+#include "kernel/gpu/intr/intr.h"
+#include "nverror.h"
 
 #include "published/hopper/gh100/dev_fb.h"
+#include "published/hopper/gh100/dev_fbpa.h"
 #include "published/hopper/gh100/dev_vm.h"
 #include "published/hopper/gh100/pri_nv_xal_ep.h"
 #include "published/hopper/gh100/dev_nv_xal_addendum.h"
+#include "published/hopper/gh100/dev_nv_xpl.h"
+#include "published/hopper/gh100/dev_xtl_ep_pri.h"
+#include "published/hopper/gh100/hwproject.h"
+#include "published/ampere/ga100/dev_fb.h"
 
 NV_STATUS
 kmemsysDoCacheOp_GH100
@@ -565,4 +573,25 @@ kmemsysSwizzIdToVmmuSegmentsRange_GH100
         kmemsysInitMIGGPUInstanceMemConfigForSwizzId(pGpu, pKernelMemorySystem, swizzId, startingVmmuSegment, memSizeInVmmuSegment));
 
     return NV_OK;
+}
+NvU32
+kmemsysGetEccDedCountSize_GH100
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem
+)
+{
+    return NV_PFB_FBPA_0_ECC_DED_COUNT__SIZE_1;
+}
+
+NvU32
+kmemsysGetEccDedCountRegAddr_GH100
+(
+    OBJGPU             *pGpu,
+    KernelMemorySystem *pKernelMemorySystem,
+    NvU32               fbpa,
+    NvU32               subp
+)
+{
+    return NV_PFB_FBPA_0_ECC_DED_COUNT(fbpa) + (subp * NV_FBPA_PRI_STRIDE);
 }

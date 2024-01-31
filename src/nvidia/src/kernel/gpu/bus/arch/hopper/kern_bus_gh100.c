@@ -2608,3 +2608,36 @@ kbusGetEgmPeerId_GH100
 
     return BUS_INVALID_PEER;
 }
+
+NvU32
+kbusGetEccCounts_GH100
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    NvU32 regVal;
+    NvU32 count = 0;
+
+    // PCIE RE ORDER
+    regVal = GPU_REG_RD32(pGpu, NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT);
+    count += DRF_VAL(_XAL_EP, _REORDER_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    // PCIE P2PREQ
+    regVal = GPU_REG_RD32(pGpu, NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT);
+    count += DRF_VAL(_XAL_EP, _P2PREQ_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
+
+    return count;
+}
+
+void
+kbusClearEccCounts_GH100
+(
+    OBJGPU *pGpu,
+    KernelBus *pKernelBus
+)
+{
+    // Reset XAL-EP counts
+    GPU_REG_WR32(pGpu, NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT, 0);
+    GPU_REG_WR32(pGpu, NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT, 0);
+}

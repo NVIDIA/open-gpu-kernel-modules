@@ -50,6 +50,8 @@
 
 #include "kernel/gpu/intr/engine_idx.h"
 
+#include "gpu/external_device/external_device.h"
+
 #include "ctrl/ctrl2080.h"
 
 #include "class/cl5070.h"
@@ -490,6 +492,8 @@ void
 kdispStateDestroy_IMPL(OBJGPU *pGpu,
                        KernelDisplay *pKernelDisplay)
 {
+    extdevDestroy(pGpu);
+
     if (pKernelDisplay->pInst != NULL)
     {
         instmemStateDestroy(pGpu, pKernelDisplay->pInst);

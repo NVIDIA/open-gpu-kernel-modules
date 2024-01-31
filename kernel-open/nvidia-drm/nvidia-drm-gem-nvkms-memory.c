@@ -243,6 +243,15 @@ static int __nv_drm_nvkms_gem_obj_init(
     NvU64 *pages = NULL;
     NvU32 numPages = 0;
 
+    if ((size % PAGE_SIZE) != 0) {
+        NV_DRM_DEV_LOG_ERR(
+            nv_dev,
+            "NvKmsKapiMemory 0x%p size should be in a multiple of page size to "
+            "create a gem object",
+            pMemory);
+        return -EINVAL;
+    }
+
     nv_nvkms_memory->pPhysicalAddress = NULL;
     nv_nvkms_memory->pWriteCombinedIORemapAddress = NULL;
     nv_nvkms_memory->physically_mapped = false;

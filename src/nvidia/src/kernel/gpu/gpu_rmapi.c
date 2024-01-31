@@ -647,6 +647,20 @@ _gpuiIsPidSavedAlready
     return NV_FALSE;
 }
 
+static NV_STATUS
+_gpuConvertPid
+(
+    RmClient *pClient,
+    NvU32    *pNsPid
+)
+{
+    if (pClient->pOsPidInfo != NULL)
+        return osFindNsPid(pClient->pOsPidInfo, pNsPid);
+
+    *pNsPid = pClient->ProcID;
+    return NV_OK;
+}
+
 //
 // Searches through clients to find processes with clients that have
 // allocated an ElementType of class, defined by elementID. The return values
@@ -673,6 +687,7 @@ gpuGetProcWithObject_IMPL
     RmClient      *pClient;
     RsClient      *pRsClient;
     RsResourceRef *pResourceRef;
+    NV_STATUS     status;
 
     NV_ASSERT_OR_RETURN((pPidArray != NULL), NV_ERR_INVALID_ARGUMENT);
     NV_ASSERT_OR_RETURN((pPidArrayCount != NULL), NV_ERR_INVALID_ARGUMENT);
@@ -782,8 +797,15 @@ gpuGetProcWithObject_IMPL
             }
             if (elementInClient)
             {
-                pPidArray[pidcount] = pClient->ProcID;
-                pidcount++;
+                status = _gpuConvertPid(pClient, &pPidArray[pidcount]);
+                if (status == NV_OK)
+                {
+                    pidcount++;
+                }
+                else if (status != NV_ERR_OBJECT_NOT_FOUND)
+                {
+                    return status;
+                }
 
                 if (pidcount == NV2080_CTRL_GPU_GET_PIDS_MAX_COUNT)
                 {

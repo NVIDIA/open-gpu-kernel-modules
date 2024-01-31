@@ -788,18 +788,14 @@ kgspHealthCheck_TU102
         {
             bHealthy = NV_FALSE;
 
-            pKernelGsp->bFatalError = NV_TRUE;
-
             NV_PRINTF(LEVEL_ERROR,
                 "****************************** GSP-CrashCat Report *******************************\n");
             crashcatReportLog(pReport);
-            NV_PRINTF(LEVEL_ERROR,
-                "**********************************************************************************\n");
 
             objDelete(pReport);
         }
 
-        return bHealthy;
+        goto exit_health_check;
     }
 
     NvU32 mb0 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(0));
@@ -812,9 +808,8 @@ kgspHealthCheck_TU102
     {
         NvU32 mb1 = GPU_REG_RD32(pGpu, NV_PGSP_MAILBOX(1));
         NvU32 skipped = DRF_VAL(_GSP, _ERROR, _SKIPPED, mb0);
-        bHealthy = NV_FALSE;
 
-        pKernelGsp->bFatalError = NV_TRUE;
+        bHealthy = NV_FALSE;
 
         // Clear the mailbox
         GPU_REG_WR32(pGpu, NV_PGSP_MAILBOX(0), 0);
@@ -822,14 +817,8 @@ kgspHealthCheck_TU102
         NV_PRINTF(LEVEL_ERROR,
                   "********************************* GSP Failure **********************************\n");
 
-        nvErrorLog_va((void*)pGpu, GSP_ERROR,
-                      "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x.  The GPU likely needs to be reset.",
-                      DRF_VAL(_GSP, _ERROR, _TASK, mb0),
-                      DRF_VAL(_GSP, _ERROR, _CODE, mb0),
-                      DRF_VAL(_GSP, _ERROR, _REASON, mb0),
-                      mb1);
-        NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR, NV_PRINTF_ADD_PREFIX
-                     ("GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x"),
+        NV_ERROR_LOG(pGpu, GSP_ERROR,
+                     "GSP Error: Task %d raised error code 0x%x for reason 0x%x at 0x%x.  The GPU likely needs to be reset.",
                      DRF_VAL(_GSP, _ERROR, _TASK, mb0),
                      DRF_VAL(_GSP, _ERROR, _CODE, mb0),
                      DRF_VAL(_GSP, _ERROR, _REASON, mb0),
@@ -840,11 +829,21 @@ kgspHealthCheck_TU102
         {
             NV_PRINTF(LEVEL_ERROR, "%d more errors skipped\n", skipped);
         }
-
-        NV_PRINTF(LEVEL_ERROR,
-                  "********************************************************************************\n");
     }
 
+exit_health_check:
+    if (!bHealthy)
+    {
+        pKernelGsp->bFatalError = NV_TRUE;
+
+        if (pKernelGsp->pRpc)
+            kgspLogRpcDebugInfo(pGpu, pKernelGsp->pRpc, GSP_ERROR, pKernelGsp->bPollingForRpcResponse);
+
+        gpuCheckEccCounts_HAL(pGpu);
+
+        NV_PRINTF(LEVEL_ERROR,
+                  "**********************************************************************************\n");
+    }
     return bHealthy;
 }
 
@@ -957,9 +956,6 @@ kgspIsWpr2Up_TU102
     return (wpr2HiVal != 0);
 }
 
-#define FWSECLIC_PROG_START_TIMEOUT     50000    // 50ms
-#define FWSECLIC_PROG_COMPLETE_TIMEOUT  2000000  // 2s
-
 NV_STATUS
 kgspWaitForGfwBootOk_TU102
 (
@@ -967,50 +963,15 @@ kgspWaitForGfwBootOk_TU102
     KernelGsp *pKernelGsp
 )
 {
-    NvU32 timeoutUs = FWSECLIC_PROG_START_TIMEOUT + FWSECLIC_PROG_COMPLETE_TIMEOUT;
-    RMTIMEOUT timeout;
     NV_STATUS status = NV_OK;
 
-    // Use the OS timer since the GPU timer is not ready yet
-    gpuSetTimeout(pGpu, gpuScaleTimeout(pGpu, timeoutUs), &timeout,
-                  GPU_TIMEOUT_FLAGS_OSTIMER);
-
-    while (status == NV_OK)
+    status = gpuWaitForGfwBootComplete_HAL(pGpu);
+    if (status != NV_OK)
     {
-        //
-        // Before reading the actual GFW_BOOT status register,
-        // we want to check that FWSEC has lowered its PLM first.
-        // If not then obviously it has not completed.
-        //
-        if (GPU_FLD_TEST_DRF_DEF(pGpu,
-                _PGC6,
-                _AON_SECURE_SCRATCH_GROUP_05_PRIV_LEVEL_MASK,
-                _READ_PROTECTION_LEVEL0,
-                _ENABLE)
-            )
-        {
-            if (GPU_FLD_TEST_DRF_DEF(pGpu,
-                    _PGC6,
-                    _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
-                    _PROGRESS,
-                    _COMPLETED)
-                )
-            {
-                return NV_OK;
-            }
-        }
-
-        status = gpuCheckTimeout(pGpu, &timeout);
+        NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW boot complete: 0x%x VBIOS version %s\n",
+                  status, pKernelGsp->vbiosVersionStr);
+        NV_PRINTF(LEVEL_ERROR, "(the GPU may be in a bad state and may need to be reset)\n");
     }
-
-    // The wait failed if we reach here (as above loop returns upon success).
-    NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: 0x%x (progress 0x%x, VBIOS version %s)\n",
-              status, GPU_REG_RD_DRF(pGpu,
-                        _PGC6,
-                        _AON_SECURE_SCRATCH_GROUP_05_0_GFW_BOOT,
-                        _PROGRESS),
-              pKernelGsp->vbiosVersionStr);
-    NV_PRINTF(LEVEL_ERROR, "(the GPU may be in a bad state and may need to be reset)\n");
 
     return status;
 }
@@ -1135,4 +1096,37 @@ kgspRestorePowerMgmtState_TU102
 exit_cleanup:
     kgspFreeSuspendResumeData_HAL(pGpu, pKernelGsp);
     return nvStatus;
+}
+
+void
+kgspReadEmem_TU102
+(
+    KernelGsp *pKernelGsp,
+    NvU64      offset,
+    NvU64      size,
+    void      *pBuf
+)
+{
+    NvU32 ememMask = DRF_SHIFTMASK(NV_PGSP_EMEMC_OFFS) | DRF_SHIFTMASK(NV_PGSP_EMEMC_BLK);
+    OBJGPU *pGpu = ENG_GET_GPU(pKernelGsp);
+    NvU32 limit = size - NVBIT(DRF_SHIFT(NV_PGSP_EMEMC_OFFS));
+    NvU32 *pBuffer = pBuf;
+
+    portMemSet(pBuf, 0, size);
+
+#if defined(DEBUG) || defined(DEVELOP)
+    NV_ASSERT_OR_RETURN_VOID((offset & ~ememMask) == 0);
+    NV_ASSERT_OR_RETURN_VOID(limit <= ememMask);
+    NV_ASSERT_OR_RETURN_VOID(offset + limit <= ememMask);
+#else
+    NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, (offset & ~ememMask) == 0);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, limit <= ememMask);
+    NV_CHECK_OR_RETURN_VOID(LEVEL_SILENT, offset + limit <= ememMask);
+#endif
+
+    GPU_REG_WR32(pGpu, NV_PGSP_EMEMC(pKernelGsp->ememPort),
+                 offset | DRF_DEF(_PGSP, _EMEMC, _AINCR, _TRUE));
+
+    for (NvU32 idx = 0; idx < size / sizeof(NvU32); idx++)
+        pBuffer[idx] = GPU_REG_RD32(pGpu, NV_PGSP_EMEMD(pKernelGsp->ememPort));
 }

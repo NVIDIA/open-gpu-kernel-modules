@@ -274,7 +274,9 @@ serverControlApiCopyIn
 
     rmStatus = embeddedParamCopyIn(pEmbeddedParamCopies, pRmCtrlParams);
     if (rmStatus != NV_OK)
+    {
         return rmStatus;
+    }
     pCookie->bFreeEmbeddedCopy = NV_TRUE;
 
     return NV_OK;
@@ -487,8 +489,9 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
     }
 
     // error check parameters
-    if (((paramsSize != 0) && (pUserParams == (NvP64) 0))   ||
-        ((paramsSize == 0) && (pUserParams != (NvP64) 0)))
+    if (((paramsSize != 0) && (pUserParams == (NvP64) 0)) ||
+        ((paramsSize == 0) && (pUserParams != (NvP64) 0))
+        )
     {
         NV_PRINTF(LEVEL_WARNING, "bad params: ptr " NvP64_fmt " size: 0x%x\n",
                   pUserParams, paramsSize);
@@ -519,6 +522,7 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
     }
 
     getCtrlInfoStatus = rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight);
+
     if (getCtrlInfoStatus == NV_OK)
     {
         //
@@ -1013,7 +1017,7 @@ _rmapiControlWithSecInfoTlsIRQL
     NV_STATUS           status;
     THREAD_STATE_NODE   threadState;
 
-    NvU8                stackAllocator[TLS_ISR_ALLOCATOR_SIZE];
+    NvU8                stackAllocator[2*TLS_ISR_ALLOCATOR_SIZE];
     PORT_MEM_ALLOCATOR* pIsrAllocator = portMemAllocatorCreateOnExistingBlock(stackAllocator, sizeof(stackAllocator));
     tlsIsrInit(pIsrAllocator);
 

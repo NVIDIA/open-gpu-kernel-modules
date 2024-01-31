@@ -32,22 +32,37 @@
 // For ATS support on aarch64, arm_smmu_sva_bind() is needed for
 // iommu_sva_bind_device() calls. Unfortunately, arm_smmu_sva_bind() is not
 // conftest-able. We instead look for the presence of ioasid_get() or
-// mm_pasid_set(). ioasid_get() was added in the same patch series as
-// arm_smmu_sva_bind() and removed in v6.0. mm_pasid_set() was added in the
+// mm_pasid_drop(). ioasid_get() was added in the same patch series as
+// arm_smmu_sva_bind() and removed in v6.0. mm_pasid_drop() was added in the
 // same patch as the removal of ioasid_get(). We assume the presence of
-// arm_smmu_sva_bind() if ioasid_get(v5.11 - v5.17) or mm_pasid_set(v5.18+) is
+// arm_smmu_sva_bind() if ioasid_get(v5.11 - v5.17) or mm_pasid_drop(v5.18+) is
 // present.
 //
 // arm_smmu_sva_bind() was added with commit
 // 32784a9562fb0518b12e9797ee2aec52214adf6f and ioasid_get() was added with
 // commit cb4789b0d19ff231ce9f73376a023341300aed96 (11/23/2020). Commit
 // 701fac40384f07197b106136012804c3cae0b3de (02/15/2022) removed ioasid_get()
-// and added mm_pasid_set().
-    #if UVM_CAN_USE_MMU_NOTIFIERS() && (defined(NV_IOASID_GET_PRESENT) || defined(NV_MM_PASID_SET_PRESENT))
-        #define UVM_ATS_SVA_SUPPORTED() 1
+// and added mm_pasid_drop().
+    #if UVM_CAN_USE_MMU_NOTIFIERS() && (defined(NV_IOASID_GET_PRESENT) || defined(NV_MM_PASID_DROP_PRESENT))
+        #if defined(CONFIG_IOMMU_SVA)
+            #define UVM_ATS_SVA_SUPPORTED() 1
+        #else
+            #define UVM_ATS_SVA_SUPPORTED() 0
+        #endif
     #else
         #define UVM_ATS_SVA_SUPPORTED() 0
     #endif
+
+// If NV_ARCH_INVALIDATE_SECONDARY_TLBS is defined it means the upstream fix is
+// in place so no need for the WAR from Bug 4130089: [GH180][r535] WAR for
+// kernel not issuing SMMU TLB invalidates on read-only
+#if defined(NV_ARCH_INVALIDATE_SECONDARY_TLBS)
+    #define UVM_ATS_SMMU_WAR_REQUIRED() 0
+#elif NVCPU_IS_AARCH64
+    #define UVM_ATS_SMMU_WAR_REQUIRED() 1
+#else
+    #define UVM_ATS_SMMU_WAR_REQUIRED() 0
+#endif
 
 typedef struct
 {
@@ -77,6 +92,17 @@ typedef struct
 
     // LOCKING: None
     void uvm_ats_sva_unregister_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space);
+
+    // Fix for Bug 4130089: [GH180][r535] WAR for kernel not issuing SMMU
+    // TLB invalidates on read-only to read-write upgrades
+    #if UVM_ATS_SMMU_WAR_REQUIRED()
+        void uvm_ats_smmu_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space, NvU64 addr, size_t size);
+    #else
+        static void uvm_ats_smmu_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space, NvU64 addr, size_t size)
+        {
+
+        }
+    #endif
 #else
     static NV_STATUS uvm_ats_sva_add_gpu(uvm_parent_gpu_t *parent_gpu)
     {
@@ -104,6 +130,11 @@ typedef struct
     }
 
     static void uvm_ats_sva_unregister_gpu_va_space(uvm_gpu_va_space_t *gpu_va_space)
+    {
+
+    }
+
+    static void uvm_ats_smmu_invalidate_tlbs(uvm_gpu_va_space_t *gpu_va_space, NvU64 addr, size_t size)
     {
 
     }

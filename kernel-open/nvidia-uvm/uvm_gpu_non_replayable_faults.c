@@ -235,17 +235,27 @@ static NV_STATUS fetch_non_replayable_fault_buffer_entries(uvm_parent_gpu_t *par
     return NV_OK;
 }
 
-// In SRIOV, the UVM (guest) driver does not have access to the privileged
-// registers used to clear the faulted bit. Instead, UVM requests host RM to do
-// the clearing on its behalf, using a SW method.
 static bool use_clear_faulted_channel_sw_method(uvm_gpu_t *gpu)
 {
-    if (uvm_gpu_is_virt_mode_sriov(gpu)) {
-        UVM_ASSERT(gpu->parent->has_clear_faulted_channel_sw_method);
-        return true;
-    }
+    // If true, UVM uses a SW method to request RM to do the clearing on its
+    // behalf.
+    bool use_sw_method = false;
 
-    return false;
+    // In SRIOV, the UVM (guest) driver does not have access to the privileged
+    // registers used to clear the faulted bit.
+    if (uvm_gpu_is_virt_mode_sriov(gpu))
+        use_sw_method = true;
+
+    // In Confidential Computing access to the privileged registers is blocked,
+    // in order to prevent interference between guests, or between the
+    // (untrusted) host and the guests.
+    if (g_uvm_global.conf_computing_enabled)
+        use_sw_method = true;
+
+    if (use_sw_method)
+        UVM_ASSERT(gpu->parent->has_clear_faulted_channel_sw_method);
+
+    return use_sw_method;
 }
 
 static NV_STATUS clear_faulted_method_on_gpu(uvm_gpu_t *gpu,
@@ -570,7 +580,7 @@ static NV_STATUS service_non_managed_fault(uvm_gpu_va_space_t *gpu_va_space,
 
         ats_context->client_type = UVM_FAULT_CLIENT_TYPE_HUB;
 
-        ats_invalidate->write_faults_in_batch = false;
+        ats_invalidate->tlb_batch_pending = false;
 
         va_range_next = uvm_va_space_iter_first(gpu_va_space->va_space, fault_entry->fault_address, ~0ULL);
 

@@ -1579,7 +1579,7 @@ intrServiceStallList_IMPL
         }
     }
 
-    resservSwapTlsCallContext(&pOldContext, NULL);
+    NV_ASSERT_OK_OR_ELSE(status, resservSwapTlsCallContext(&pOldContext, NULL), return);
 
     // prevent the isr from coming in
     _intrEnterCriticalSection(pGpu, pIntr, &intrMaskCtx);
@@ -1608,7 +1608,7 @@ done:
     // allow the isr to come in.
     _intrExitCriticalSection(pGpu, pIntr, &intrMaskCtx);
 
-    resservRestoreTlsCallContext(pOldContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldContext));
 }
 
 

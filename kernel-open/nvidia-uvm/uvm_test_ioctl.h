@@ -28,6 +28,13 @@
 #include "uvm_ioctl.h"
 #include "nv_uvm_types.h"
 
+#define UVM_TEST_SKIP_MIGRATE_VMA                        UVM_TEST_IOCTL_BASE(103)
+typedef struct
+{
+    NvBool skip;                                         // In
+    NV_STATUS rmStatus;                                  // Out
+} UVM_TEST_SKIP_MIGRATE_VMA_PARAMS;
+
 #ifdef __cplusplus
 extern "C" {
 #endif

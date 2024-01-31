@@ -1069,23 +1069,11 @@ void nvHsConfigInitSwapGroup(
             NVHsChannelConfig *pChannelConfig = &pHsConfigOneHead->channelConfig;
 
             /*
-             * If (pDevEvo->modesetOwner == NULL) that means either the vbios
-             * console or the NVKMS console might be active, the console
-             * surface may not be set up to be the source of headSurface
-             * operations, and NVKMS may be unloaded, so we can't have the
-             * display rely on headSurface.
+             * The console surface may not be set up to be the source of
+             * headSurface operations, and NVKMS may be unloaded, so we can't
+             * have the display rely on headSurface.
              */
-            if (pDevEvo->modesetOwner == NULL) {
-                continue;
-            }
-
-            /*
-             * If (pDevEvo->modesetOwner != NULL) but
-             * pDevEvo->modesetOwnerChanged is TRUE, that means the modeset
-             * ownership is grabbed by the external client but it hasn't
-             * performed any modeset and the console is still active.
-             */
-            if ((pDevEvo->modesetOwner != NULL) && pDevEvo->modesetOwnerChanged) {
+            if (nvEvoIsConsoleActive(pDevEvo)) {
                 continue;
             }
 
@@ -1837,16 +1825,21 @@ static void HsConfigInitFlipQueue(
 }
 
 static void HsConfigUpdateSurfaceRefCount(
+    NVDevEvoPtr pDevEvo,
     const NVHsChannelConfig *pChannelConfig,
     NvBool increase)
 {
-    HsChangeSurfaceFlipRefCount(pChannelConfig->warpMesh.pSurface, increase);
+    HsChangeSurfaceFlipRefCount(
+        pDevEvo, pChannelConfig->warpMesh.pSurface, increase);
 
-    HsChangeSurfaceFlipRefCount(pChannelConfig->pBlendTexSurface, increase);
+    HsChangeSurfaceFlipRefCount(
+        pDevEvo, pChannelConfig->pBlendTexSurface, increase);
 
-    HsChangeSurfaceFlipRefCount(pChannelConfig->pOffsetTexSurface, increase);
+    HsChangeSurfaceFlipRefCount(
+        pDevEvo, pChannelConfig->pOffsetTexSurface, increase);
 
-    HsChangeSurfaceFlipRefCount(pChannelConfig->cursor.pSurfaceEvo, increase);
+    HsChangeSurfaceFlipRefCount(
+        pDevEvo, pChannelConfig->cursor.pSurfaceEvo, increase);
 }
 
 /*!
@@ -2258,6 +2251,7 @@ void nvHsConfigStart(
              */
             if (pHsConfigOneHead->pHsChannel != NULL) {
                 HsConfigUpdateSurfaceRefCount(
+                    pDevEvo,
                     &pHsConfigOneHead->channelConfig,
                     TRUE /* increase */);
             }
@@ -2268,6 +2262,7 @@ void nvHsConfigStart(
              */
             if (pDispEvo->pHsChannel[apiHead] != NULL) {
                 HsConfigUpdateSurfaceRefCount(
+                    pDevEvo,
                     &pDispEvo->pHsChannel[apiHead]->config,
                     FALSE /* increase */);
             }

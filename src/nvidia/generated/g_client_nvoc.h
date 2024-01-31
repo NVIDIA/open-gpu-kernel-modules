@@ -140,6 +140,7 @@ struct RmClient {
     NvU32 Flags;
     NvU32 ClientDebuggerState;
     void *pOSInfo;
+    void *pOsPidInfo;
     char name[100];
     CLI_SYSTEM_EVENT_INFO CliSysEventInfo;
     PSECURITY_TOKEN pSecurityToken;

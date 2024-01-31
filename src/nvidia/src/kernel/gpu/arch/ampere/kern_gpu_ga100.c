@@ -237,3 +237,11 @@ gpuGetChildrenPresent_GA102(OBJGPU *pGpu, NvU32 *pNumEntries)
     return gpuChildrenPresent_GA102;
 }
 
+NvBool
+gpuCheckIfFbhubPoisonIntrPending_GA100
+(
+    OBJGPU *pGpu
+)
+{
+    return intrIsVectorPending_HAL(pGpu, GPU_GET_INTR(pGpu), NV_PFB_FBHUB_POISON_INTR_VECTOR_HW_INIT, NULL);
+}

@@ -158,6 +158,7 @@
     _op(NvlStatus, nvswitch_bbx_unload, (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_bbx_load, (nvswitch_device *device, NvU64 time_ns, NvU8 osType, NvU32 osVersion), _arch)  \
     _op(NvlStatus, nvswitch_bbx_get_sxid, (nvswitch_device *device, NVSWITCH_GET_SXIDS_PARAMS * params), _arch)  \
+    _op(NvlStatus, nvswitch_bbx_get_data, (nvswitch_device *device, NvU8 dataType, void * params), _arch)  \
     _op(NvlStatus, nvswitch_smbpbi_alloc,           (nvswitch_device *device), _arch)  \
     _op(NvlStatus, nvswitch_smbpbi_post_init_hal,   (nvswitch_device *device), _arch)  \
     _op(void,      nvswitch_smbpbi_destroy_hal,     (nvswitch_device *device), _arch)  \
@@ -213,6 +214,7 @@
     _op(void,      nvswitch_reset_persistent_link_hw_state, (nvswitch_device *device, NvU32 linkNumber), _arch)\
     _op(void,      nvswitch_store_topology_information, (nvswitch_device *device, nvlink_link *link), _arch) \
     _op(void,      nvswitch_init_lpwr_regs, (nvlink_link *link), _arch) \
+    _op(void,      nvswitch_program_l1_scratch_reg, (nvswitch_device *device, NvU32 linkNumber), _arch) \
     _op(NvlStatus, nvswitch_set_training_mode, (nvswitch_device *device), _arch) \
     _op(NvU32,     nvswitch_get_sublink_width, (nvswitch_device *device, NvU32 linkNumber), _arch) \
     _op(NvBool,    nvswitch_i2c_is_device_access_allowed, (nvswitch_device *device, NvU32 port, NvU8 addr, NvBool bIsRead), _arch) \
@@ -234,6 +236,7 @@
     _op(NvlStatus, nvswitch_ctrl_therm_read_power, (nvswitch_device *device, NVSWITCH_GET_POWER_PARAMS *info), _arch) \
     _op(NvBool,    nvswitch_does_link_need_termination_enabled, (nvswitch_device *device, nvlink_link *link), _arch) \
     _op(NvlStatus, nvswitch_link_termination_setup, (nvswitch_device *device, nvlink_link *link), _arch) \
+    _op(NvlStatus, nvswitch_check_io_sanity, (nvswitch_device *device), _arch) \
 
 #define NVSWITCH_HAL_FUNCTION_LIST_LS10(_op, _arch) \
     _op(NvlStatus, nvswitch_launch_ALI, (nvswitch_device *device), _arch) \

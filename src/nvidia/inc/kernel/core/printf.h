@@ -301,6 +301,15 @@ void nvDbgDumpBufferBytes(void *pBuffer, NvU32 length);
 #define DBG_VAL_PTR(p)
 #endif
 
+#define NV_ERROR_LOG(pGpu, num, fmt, ...)                               \
+    nvErrorLog_va((void*)pGpu, num, fmt, ##__VA_ARGS__);                \
+    NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
+                 NV_PRINTF_ADD_PREFIX("Xid %d: " fmt), num, ##__VA_ARGS__)
+
+#define NV_ERROR_LOG_DATA(pGpu, num, fmt, ...)                          \
+    portDbgPrintf(NV_PRINTF_ADD_PREFIX(fmt), ##__VA_ARGS__);            \
+    NVLOG_PRINTF(NV_PRINTF_MODULE, NVLOG_ROUTE_RM, LEVEL_ERROR,         \
+                 NV_PRINTF_ADD_PREFIX(fmt), ##__VA_ARGS__)
 
 void nvErrorLog(void *pVoid, NvU32 num, const char *pFormat, va_list arglist);
 void nvErrorLog_va(void * pGpu, NvU32 num, const char * pFormat, ...);

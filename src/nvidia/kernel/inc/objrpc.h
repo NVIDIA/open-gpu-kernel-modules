@@ -53,7 +53,9 @@ typedef struct _object_vgpu OBJVGPU, *POBJVGPU;
 typedef struct RpcHistoryEntry
 {
     NvU32 function;
-    NvU32 data[3];
+    NvU64 data[2];
+    NvU64 ts_start;
+    NvU64 ts_end;
 } RpcHistoryEntry;
 
 struct OBJRPC{
@@ -79,6 +81,8 @@ struct OBJRPC{
 
     RpcHistoryEntry rpcHistory[RPC_HISTORY_DEPTH];
     NvU32 rpcHistoryCurrent;
+    RpcHistoryEntry rpcEventHistory[RPC_HISTORY_DEPTH];
+    NvU32 rpcEventHistoryCurrent;
     NvU32 timeoutCount;
     NvBool bQuietPrints;
 

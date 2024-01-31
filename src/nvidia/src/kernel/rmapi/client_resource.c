@@ -4148,9 +4148,10 @@ cliresCtrlCmdClientShareObject_IMPL
     callContext.pResourceRef = pObjectRef;
     callContext.secInfo = pCallContext->secInfo;
 
-    resservSwapTlsCallContext(&pOldCallContext, &callContext);
+    NV_ASSERT_OK_OR_RETURN(resservSwapTlsCallContext(&pOldCallContext, &callContext));
+
     status = clientShareResource(pClient, pObjectRef, pSharePolicy, &callContext);
-    resservRestoreTlsCallContext(pOldCallContext);
+    NV_ASSERT_OK(resservRestoreTlsCallContext(pOldCallContext));
     if (status != NV_OK)
         return status;
 

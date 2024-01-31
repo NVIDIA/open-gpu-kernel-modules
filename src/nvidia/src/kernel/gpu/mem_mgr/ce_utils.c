@@ -36,6 +36,7 @@
 #include "gpu/mem_mgr/ce_utils.h"
 #include "gpu/subdevice/subdevice.h"
 #include "kernel/gpu/mem_mgr/ce_utils_sizes.h"
+#include "vgpu/rpc_headers.h"
 
 #include "class/clb0b5.h" // MAXWELL_DMA_COPY_A
 #include "class/clc0b5.h" // PASCAL_DMA_COPY_A
@@ -91,8 +92,21 @@ ceutilsConstruct_IMPL
     status = serverGetClientUnderLock(&g_resServ, pChannel->hClient, &pChannel->pRsClient);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
 
-    status = clientSetHandleGenerator(staticCast(pClient, RsClient), 1U, ~0U - 1U);
-    NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
+    if (IS_VIRTUAL(pGpu))
+    {
+        NV_ASSERT_OK_OR_GOTO(
+            status,
+            clientSetHandleGenerator(staticCast(pClient, RsClient), RS_UNIQUE_HANDLE_BASE,
+                                     RS_UNIQUE_HANDLE_RANGE/2 - VGPU_RESERVED_HANDLE_RANGE),
+            free_client);
+    }
+    else
+    {
+        NV_ASSERT_OK_OR_GOTO(
+            status,
+            clientSetHandleGenerator(staticCast(pClient, RsClient), 1U, ~0U - 1U),
+            free_client);
+    }
 
     pChannel->bClientAllocated = NV_TRUE;
     pChannel->pGpu = pGpu;

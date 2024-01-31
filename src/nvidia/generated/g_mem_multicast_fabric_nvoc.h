@@ -158,7 +158,6 @@ struct MemoryMulticastFabric {
     NV_STATUS (*__memorymulticastfabricCopyConstruct__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_ALLOC_PARAMS_INTERNAL *);
     NV_STATUS (*__memorymulticastfabricIsReady__)(struct MemoryMulticastFabric *, NvBool);
     NV_STATUS (*__memorymulticastfabricControl__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
-    NV_STATUS (*__memorymulticastfabricControl_Prologue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NvBool (*__memorymulticastfabricIsGpuMapAllowed__)(struct MemoryMulticastFabric *, struct OBJGPU *);
     NV_STATUS (*__memorymulticastfabricGetMapAddrSpace__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, NvU32, NV_ADDRESS_SPACE *);
     NV_STATUS (*__memorymulticastfabricCtrlGetInfo__)(struct MemoryMulticastFabric *, NV00FD_CTRL_GET_INFO_PARAMS *);
@@ -171,6 +170,7 @@ struct MemoryMulticastFabric {
     NV_STATUS (*__memorymulticastfabricMapTo__)(struct MemoryMulticastFabric *, RS_RES_MAP_TO_PARAMS *);
     NvU32 (*__memorymulticastfabricGetRefCount__)(struct MemoryMulticastFabric *);
     void (*__memorymulticastfabricAddAdditionalDependants__)(struct RsClient *, struct MemoryMulticastFabric *, RsResourceRef *);
+    NV_STATUS (*__memorymulticastfabricControl_Prologue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memorymulticastfabricUnmapFrom__)(struct MemoryMulticastFabric *, RS_RES_UNMAP_FROM_PARAMS *);
     void (*__memorymulticastfabricControl_Epilogue__)(struct MemoryMulticastFabric *, CALL_CONTEXT *, struct RS_RES_CONTROL_PARAMS_INTERNAL *);
     NV_STATUS (*__memorymulticastfabricControlLookup__)(struct MemoryMulticastFabric *, struct RS_RES_CONTROL_PARAMS_INTERNAL *, const struct NVOC_EXPORTED_METHOD_DEF **);
@@ -220,7 +220,6 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
 #define memorymulticastfabricCopyConstruct(pMemoryMulticastFabric, pCallContext, pParams) memorymulticastfabricCopyConstruct_DISPATCH(pMemoryMulticastFabric, pCallContext, pParams)
 #define memorymulticastfabricIsReady(pMemoryMulticastFabric, bCopyConstructorContext) memorymulticastfabricIsReady_DISPATCH(pMemoryMulticastFabric, bCopyConstructorContext)
 #define memorymulticastfabricControl(pMemoryMulticastFabric, pCallContext, pParams) memorymulticastfabricControl_DISPATCH(pMemoryMulticastFabric, pCallContext, pParams)
-#define memorymulticastfabricControl_Prologue(pMemoryMulticastFabric, pCallContext, pParams) memorymulticastfabricControl_Prologue_DISPATCH(pMemoryMulticastFabric, pCallContext, pParams)
 #define memorymulticastfabricIsGpuMapAllowed(pMemoryMulticastFabric, pGpu) memorymulticastfabricIsGpuMapAllowed_DISPATCH(pMemoryMulticastFabric, pGpu)
 #define memorymulticastfabricGetMapAddrSpace(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace) memorymulticastfabricGetMapAddrSpace_DISPATCH(pMemoryMulticastFabric, pCallContext, mapFlags, pAddrSpace)
 #define memorymulticastfabricCtrlGetInfo(pMemoryMulticastFabric, pParams) memorymulticastfabricCtrlGetInfo_DISPATCH(pMemoryMulticastFabric, pParams)
@@ -233,6 +232,7 @@ NV_STATUS __nvoc_objCreate_MemoryMulticastFabric(MemoryMulticastFabric**, Dynami
 #define memorymulticastfabricMapTo(pResource, pParams) memorymulticastfabricMapTo_DISPATCH(pResource, pParams)
 #define memorymulticastfabricGetRefCount(pResource) memorymulticastfabricGetRefCount_DISPATCH(pResource)
 #define memorymulticastfabricAddAdditionalDependants(pClient, pResource, pReference) memorymulticastfabricAddAdditionalDependants_DISPATCH(pClient, pResource, pReference)
+#define memorymulticastfabricControl_Prologue(pResource, pCallContext, pParams) memorymulticastfabricControl_Prologue_DISPATCH(pResource, pCallContext, pParams)
 #define memorymulticastfabricUnmapFrom(pResource, pParams) memorymulticastfabricUnmapFrom_DISPATCH(pResource, pParams)
 #define memorymulticastfabricControl_Epilogue(pResource, pCallContext, pParams) memorymulticastfabricControl_Epilogue_DISPATCH(pResource, pCallContext, pParams)
 #define memorymulticastfabricControlLookup(pResource, pParams, ppEntry) memorymulticastfabricControlLookup_DISPATCH(pResource, pParams, ppEntry)
@@ -269,12 +269,6 @@ NV_STATUS memorymulticastfabricControl_IMPL(struct MemoryMulticastFabric *pMemor
 
 static inline NV_STATUS memorymulticastfabricControl_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
     return pMemoryMulticastFabric->__memorymulticastfabricControl__(pMemoryMulticastFabric, pCallContext, pParams);
-}
-
-NV_STATUS memorymulticastfabricControl_Prologue_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams);
-
-static inline NV_STATUS memorymulticastfabricControl_Prologue_DISPATCH(struct MemoryMulticastFabric *pMemoryMulticastFabric, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
-    return pMemoryMulticastFabric->__memorymulticastfabricControl_Prologue__(pMemoryMulticastFabric, pCallContext, pParams);
 }
 
 NvBool memorymulticastfabricIsGpuMapAllowed_IMPL(struct MemoryMulticastFabric *pMemoryMulticastFabric, struct OBJGPU *pGpu);
@@ -337,6 +331,10 @@ static inline NvU32 memorymulticastfabricGetRefCount_DISPATCH(struct MemoryMulti
 
 static inline void memorymulticastfabricAddAdditionalDependants_DISPATCH(struct RsClient *pClient, struct MemoryMulticastFabric *pResource, RsResourceRef *pReference) {
     pResource->__memorymulticastfabricAddAdditionalDependants__(pClient, pResource, pReference);
+}
+
+static inline NV_STATUS memorymulticastfabricControl_Prologue_DISPATCH(struct MemoryMulticastFabric *pResource, CALL_CONTEXT *pCallContext, struct RS_RES_CONTROL_PARAMS_INTERNAL *pParams) {
+    return pResource->__memorymulticastfabricControl_Prologue__(pResource, pCallContext, pParams);
 }
 
 static inline NV_STATUS memorymulticastfabricUnmapFrom_DISPATCH(struct MemoryMulticastFabric *pResource, RS_RES_UNMAP_FROM_PARAMS *pParams) {

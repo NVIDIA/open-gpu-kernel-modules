@@ -28,6 +28,7 @@
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
 #include "kernel/gpu/falcon/kernel_falcon.h"
+#include "kernel/gpu/rc/kernel_rc.h"
 
 #include "kernel/gpu/conf_compute/conf_compute.h"
 
@@ -242,13 +243,28 @@ kchangrpapiConstruct_IMPL
 
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
-        NV_ASSERT_OK_OR_GOTO(rmStatus,
-            ctxBufPoolInit(pGpu, pHeap, &pKernelChannelGroup->pCtxBufPool),
-            failed);
+        NvHandle hRcWatchdog;
 
-        NV_ASSERT_OK_OR_GOTO(rmStatus,
-            ctxBufPoolInit(pGpu, pHeap, &pKernelChannelGroup->pChannelBufPool),
-            failed);
+        //
+        // WAR for 4217716 - Force allocations made on behalf of watchdog client to
+        // RM reserved heap. This avoids a constant memory allocation from appearing
+        // due to the ctxBufPool reservation out of PMA.
+        //
+        rmStatus = krcWatchdogGetClientHandle(GPU_GET_KERNEL_RC(pGpu), &hRcWatchdog);
+        if ((rmStatus != NV_OK) || (pParams->hClient != hRcWatchdog))
+        {
+            NV_ASSERT_OK_OR_GOTO(rmStatus,
+                ctxBufPoolInit(pGpu, pHeap, &pKernelChannelGroup->pCtxBufPool),
+                failed);
+
+            NV_ASSERT_OK_OR_GOTO(rmStatus,
+                ctxBufPoolInit(pGpu, pHeap, &pKernelChannelGroup->pChannelBufPool),
+                failed);
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_INFO, "Skipping ctxBufPoolInit for RC watchdog\n");
+        }
     }
 
     NV_ASSERT_OK_OR_GOTO(rmStatus,
