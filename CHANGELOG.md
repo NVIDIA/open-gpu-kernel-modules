@@ -2,7 +2,13 @@
 
 ## Release 535 Entries
 
+### [535.43.25] 2024-02-02
+
 ### [535.43.24] 2024-01-31
+
+#### Fixed
+
+- Fixed building main against current centos stream 8 fails, [#550](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/550) by @airlied
 
 ### [535.43.23] 2024-01-24
 
@@ -30,7 +36,6 @@
 
 #### Fixed
 
-- Fixed building main against current centos stream 8 fails, [#550](https://github.com/NVIDIA/open-gpu-kernel-modules/issues/550) by @airlied
 - Fixed console restore with traditional VGA consoles.
 
 #### Added
