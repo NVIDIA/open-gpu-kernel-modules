@@ -958,6 +958,7 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x2571, 0x1611, 0x10de, "NVIDIA RTX A2000 12GB" },
     { 0x2571, 0x1611, 0x17aa, "NVIDIA RTX A2000 12GB" },
     { 0x2582, 0x0000, 0x0000, "NVIDIA GeForce RTX 3050" },
+    { 0x2584, 0x0000, 0x0000, "NVIDIA GeForce RTX 3050" },
     { 0x25A0, 0x0000, 0x0000, "NVIDIA GeForce RTX 3050 Ti Laptop GPU" },
     { 0x25A0, 0x8928, 0x103c, "NVIDIA GeForce RTX 3050Ti Laptop GPU" },
     { 0x25A0, 0x89f9, 0x103c, "NVIDIA GeForce RTX 3050Ti Laptop GPU" },
