@@ -541,6 +541,7 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         // Use sequence number as AAD.
         portMemCopy((NvU8*)pCQE->aadBuffer, sizeof(pCQE->aadBuffer), (NvU8 *)&pCQE->seqNum, sizeof(pCQE->seqNum));
 
+        // We need to encrypt the full queue elements to obscure the data.
         nvStatus = ccslEncrypt(pCC->pRpcCcslCtx,
                                (pCQE->elemCount * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN) - GSP_MSG_QUEUE_ELEMENT_HDR_SIZE,
                                pSrc + GSP_MSG_QUEUE_ELEMENT_HDR_SIZE, 
@@ -555,9 +556,14 @@ NV_STATUS GspMsgQueueSendCommand(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
             // Do not re-try if decryption failed.
             return nvStatus;
         }
-    }
 
-    pCQE->checkSum  = _checkSum32(pSrc, pCQE->elemCount * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN);
+        // Now that encryption covers elements completely, include them in checksum.
+        pCQE->checkSum = _checkSum32(pSrc, pCQE->elemCount * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN);
+    }
+    else
+    {
+        pCQE->checkSum = _checkSum32(pSrc, uElementSize);
+    }
 
     for (i = 0; i < pCQE->elemCount; i++)
     {
@@ -657,6 +663,7 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
     NvU32       uElementSize = 0;
     NvU32       seqMismatchDiff = NV_U32_MAX;
     NV_STATUS   nvStatus     = NV_OK;
+    ConfidentialCompute *pCC = NULL;
 
     for (nRetries = 0; nRetries < nMaxRetries; nRetries++)
     {
@@ -703,7 +710,18 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
             continue;
 
         // Retry if checksum fails.
-        if (_checkSum32(pMQI->pCmdQueueElement, (nElements * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN)) != 0)
+        pCC = GPU_GET_CONF_COMPUTE(pGpu);
+        if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENCRYPT_READY))
+        {
+            // In Confidential Compute scenario, checksum includes complete element range.
+            if (_checkSum32(pMQI->pCmdQueueElement, (nElements * GSP_MSG_QUEUE_ELEMENT_SIZE_MIN)) != 0)
+            {
+                NV_PRINTF(LEVEL_ERROR, "Bad checksum.\n");
+                nvStatus = NV_ERR_INVALID_DATA;
+                continue;
+            }
+        } else
+        if (_checkSum32(pMQI->pCmdQueueElement, uElementSize) != 0)
         {
             NV_PRINTF(LEVEL_ERROR, "Bad checksum.\n");
             nvStatus = NV_ERR_INVALID_DATA;
@@ -756,7 +774,7 @@ NV_STATUS GspMsgQueueReceiveStatus(MESSAGE_QUEUE_INFO *pMQI, OBJGPU *pGpu)
         }
     }
 
-    ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
+    pCC = GPU_GET_CONF_COMPUTE(pGpu);
     if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_ENCRYPT_READY))
     {
         nvStatus = ccslDecrypt(pCC->pRpcCcslCtx,

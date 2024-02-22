@@ -365,6 +365,7 @@ struct KernelGsp {
     NvU64 logElfDataSize;
     PORT_MUTEX *pNvlogFlushMtx;
     NvBool bLibosLogsPollingEnabled;
+    NvU8 bootAttempts;
     NvBool bInInit;
     NvBool bInLockdown;
     NvBool bPollingForRpcResponse;
@@ -1208,6 +1209,17 @@ static inline NvU64 kgspGetFwHeapSize(struct OBJGPU *pGpu, struct KernelGsp *pKe
 }
 #else //__nvoc_kernel_gsp_h_disabled
 #define kgspGetFwHeapSize(pGpu, pKernelGsp, posteriorFbSize) kgspGetFwHeapSize_IMPL(pGpu, pKernelGsp, posteriorFbSize)
+#endif //__nvoc_kernel_gsp_h_disabled
+
+NvU64 kgspGetWprEndMargin_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
+
+#ifdef __nvoc_kernel_gsp_h_disabled
+static inline NvU64 kgspGetWprEndMargin(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
+    return 0;
+}
+#else //__nvoc_kernel_gsp_h_disabled
+#define kgspGetWprEndMargin(pGpu, pKernelGsp) kgspGetWprEndMargin_IMPL(pGpu, pKernelGsp)
 #endif //__nvoc_kernel_gsp_h_disabled
 
 void kgspSetupLibosInitArgs_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);

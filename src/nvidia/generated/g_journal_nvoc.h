@@ -346,25 +346,26 @@ static inline void rcdbDestroyRingBuffer(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE
 #define rcdbDestroyRingBuffer(pRcdb, type) rcdbDestroyRingBuffer_IMPL(pRcdb, type)
 #endif //__nvoc_journal_h_disabled
 
-void rcdbAddRecToRingBuffer_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord);
+RmRCCommonJournal_RECORD *rcdbAddRecToRingBuffer_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord);
 
 #ifdef __nvoc_journal_h_disabled
-static inline void rcdbAddRecToRingBuffer(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord) {
+static inline RmRCCommonJournal_RECORD *rcdbAddRecToRingBuffer(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type, NvU32 recordSize, NvU8 *pRecord) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
+    return NULL;
 }
 #else //__nvoc_journal_h_disabled
 #define rcdbAddRecToRingBuffer(pGpu, pRcdb, type, recordSize, pRecord) rcdbAddRecToRingBuffer_IMPL(pGpu, pRcdb, type, recordSize, pRecord)
 #endif //__nvoc_journal_h_disabled
 
-NvU32 rcdbGetOcaRecordSize_IMPL(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type);
+NvU32 rcdbGetOcaRecordSizeWithHeader_IMPL(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type);
 
 #ifdef __nvoc_journal_h_disabled
-static inline NvU32 rcdbGetOcaRecordSize(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type) {
+static inline NvU32 rcdbGetOcaRecordSizeWithHeader(struct OBJRCDB *pRcdb, RMCD_RECORD_TYPE type) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
     return 0;
 }
 #else //__nvoc_journal_h_disabled
-#define rcdbGetOcaRecordSize(pRcdb, type) rcdbGetOcaRecordSize_IMPL(pRcdb, type)
+#define rcdbGetOcaRecordSizeWithHeader(pRcdb, type) rcdbGetOcaRecordSizeWithHeader_IMPL(pRcdb, type)
 #endif //__nvoc_journal_h_disabled
 
 NvU32 rcdbDumpJournal_IMPL(struct OBJRCDB *pRcdb, struct OBJGPU *pGpu, PRB_ENCODER *pPrbEnc, NVD_STATE *pNvDumpState, const PRB_FIELD_DESC *pFieldDesc);
@@ -433,15 +434,26 @@ static inline NV_STATUS rcdbGetRcDiagRecBoundaries(struct OBJRCDB *pRcdb, NvU16 
 #define rcdbGetRcDiagRecBoundaries(pRcdb, arg0, arg1, arg2, arg3) rcdbGetRcDiagRecBoundaries_IMPL(pRcdb, arg0, arg1, arg2, arg3)
 #endif //__nvoc_journal_h_disabled
 
-NV_STATUS rcdbAddRcDiagRec_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0);
+RmRCCommonJournal_RECORD *rcdbAddRcDiagRec_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0);
 
 #ifdef __nvoc_journal_h_disabled
-static inline NV_STATUS rcdbAddRcDiagRec(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0) {
+static inline RmRCCommonJournal_RECORD *rcdbAddRcDiagRec(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRcDiag_RECORD *arg0) {
     NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
-    return NV_ERR_NOT_SUPPORTED;
+    return NULL;
 }
 #else //__nvoc_journal_h_disabled
 #define rcdbAddRcDiagRec(pGpu, pRcdb, arg0) rcdbAddRcDiagRec_IMPL(pGpu, pRcdb, arg0)
+#endif //__nvoc_journal_h_disabled
+
+RmRCCommonJournal_RECORD *rcdbAddRcDiagRecFromGsp_IMPL(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRCCommonJournal_RECORD *arg0, RmRcDiag_RECORD *arg1);
+
+#ifdef __nvoc_journal_h_disabled
+static inline RmRCCommonJournal_RECORD *rcdbAddRcDiagRecFromGsp(struct OBJGPU *pGpu, struct OBJRCDB *pRcdb, RmRCCommonJournal_RECORD *arg0, RmRcDiag_RECORD *arg1) {
+    NV_ASSERT_FAILED_PRECOMP("OBJRCDB was disabled!");
+    return NULL;
+}
+#else //__nvoc_journal_h_disabled
+#define rcdbAddRcDiagRecFromGsp(pGpu, pRcdb, arg0, arg1) rcdbAddRcDiagRecFromGsp_IMPL(pGpu, pRcdb, arg0, arg1)
 #endif //__nvoc_journal_h_disabled
 
 NV_STATUS rcdbGetRcDiagRec_IMPL(struct OBJRCDB *pRcdb, NvU16 arg0, RmRCCommonJournal_RECORD **arg1, NvU32 arg2, NvU32 arg3);

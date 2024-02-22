@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2021 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -577,12 +577,9 @@ int nvidia_mmap_helper(
             //
             // This path is similar to the sysmem mapping code.
             // TODO: Refactor is needed as part of bug#2001704.
-            // Use pfn_valid to determine whether the physical address has
-            // backing struct page. This is used to isolate P8 from P9.
             //
             if ((nv_get_numa_status(nvl) == NV_NUMA_STATUS_ONLINE) &&
-                !IS_REG_OFFSET(nv, access_start, access_len) &&
-                (pfn_valid(PFN_DOWN(mmap_start))))
+                !IS_REG_OFFSET(nv, access_start, access_len))
             {
                 ret = nvidia_mmap_numa(vma, mmap_context);
                 if (ret)

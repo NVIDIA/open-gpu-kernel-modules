@@ -275,6 +275,9 @@ serverControlApiCopyIn
     rmStatus = embeddedParamCopyIn(pEmbeddedParamCopies, pRmCtrlParams);
     if (rmStatus != NV_OK)
     {
+        rmapiParamsRelease(pParamCopy);
+        pRmCtrlParams->pParams = NvP64_VALUE(pUserParams);
+        pCookie->bFreeParamCopy = NV_FALSE;
         return rmStatus;
     }
     pCookie->bFreeEmbeddedCopy = NV_TRUE;
@@ -401,6 +404,7 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
     RS_LOCK_INFO        lockInfo = {0};
     NvU32 ctrlFlags = 0;
     NvU32 ctrlAccessRight = 0;
+    NvU32 ctrlParamsSize = 0;
     NV_STATUS getCtrlInfoStatus;
 
     RMTRACE_RMAPI(_RMCTRL_ENTRY, cmd);
@@ -488,13 +492,17 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
         }
     }
 
+    getCtrlInfoStatus = rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight, &ctrlParamsSize);
+
     // error check parameters
     if (((paramsSize != 0) && (pUserParams == (NvP64) 0)) ||
         ((paramsSize == 0) && (pUserParams != (NvP64) 0))
+        || ((getCtrlInfoStatus == NV_OK) && (paramsSize != ctrlParamsSize))
         )
     {
-        NV_PRINTF(LEVEL_WARNING, "bad params: ptr " NvP64_fmt " size: 0x%x\n",
-                  pUserParams, paramsSize);
+        NV_PRINTF(LEVEL_WARNING,
+                  "bad params: cmd:0x%x ptr " NvP64_fmt " size: 0x%x expect size: 0x%x\n",
+                  cmd, pUserParams, paramsSize, ctrlParamsSize);
         rmStatus = NV_ERR_INVALID_ARGUMENT;
         goto done;
     }
@@ -520,8 +528,6 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
         lockInfo.state |= RM_LOCK_STATES_API_LOCK_ACQUIRED;
         lockInfo.flags |= RM_LOCK_FLAGS_NO_API_LOCK;
     }
-
-    getCtrlInfoStatus = rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight);
 
     if (getCtrlInfoStatus == NV_OK)
     {
@@ -600,9 +606,20 @@ _rmapiRmControl(NvHandle hClient, NvHandle hObject, NvU32 cmd, NvP64 pUserParams
             {
                 rmCtrlParams.pCookie->apiCopyFlags |= RMCTRL_API_COPY_FLAGS_FORCE_SKIP_COPYOUT_ON_ERROR;
 
-                serverControlApiCopyIn(&g_resServ, &rmCtrlParams, rmCtrlParams.pCookie);
-                rmStatus = rmapiControlCacheGet(hClient, hObject, cmd, rmCtrlParams.pParams, paramsSize);
-                serverControlApiCopyOut(&g_resServ, &rmCtrlParams, rmCtrlParams.pCookie, rmStatus);
+                rmStatus = serverControlApiCopyIn(&g_resServ, &rmCtrlParams,
+                                                  rmCtrlParams.pCookie);
+                if (rmStatus == NV_OK)
+                {
+                    rmStatus = rmapiControlCacheGet(hClient, hObject, cmd,
+                                                    rmCtrlParams.pParams,
+                                                    paramsSize);
+
+                    // rmStatus is passed in for error handling
+                    rmStatus = serverControlApiCopyOut(&g_resServ,
+                                                       &rmCtrlParams,
+                                                       rmCtrlParams.pCookie,
+                                                       rmStatus);
+                }
 
                 if (rmStatus == NV_OK)
                 {
@@ -848,7 +865,7 @@ serverControlLookupLockFlags
     NvU32 controlFlags = pRmCtrlExecuteCookie->ctrlFlags;
     if (controlFlags == 0 && !RMCFG_FEATURE_PLATFORM_GSP && areAllGpusInOffloadMode)
     {
-        NV_STATUS status = rmapiutilGetControlInfo(pRmCtrlParams->cmd, &controlFlags, NULL);
+        NV_STATUS status = rmapiutilGetControlInfo(pRmCtrlParams->cmd, &controlFlags, NULL, NULL);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_INFO,

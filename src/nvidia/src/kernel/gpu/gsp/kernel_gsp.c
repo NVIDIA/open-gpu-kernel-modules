@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,6 +28,7 @@
 #include "kernel/core/thread_state.h"
 #include "kernel/core/locks.h"
 #include "kernel/diagnostics/gpu_acct.h"
+#include "kernel/diagnostics/journal.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
 #include "kernel/gpu/intr/engine_idx.h"
 #include "kernel/gpu/mem_mgr/heap.h"
@@ -505,6 +506,64 @@ _kgspRpcRCTriggered
     NV_CHECK_OR_RETURN(LEVEL_ERROR,
                        pKernelChannel != NULL,
                        NV_ERR_INVALID_CHANNEL);
+
+    // Add the RcDiag records we received from GSP-RM to our system wide journal
+    {
+        OBJSYS   *pSys = SYS_GET_INSTANCE();
+        Journal  *pRcDB = SYS_GET_RCDB(pSys);
+        RmClient *pClient;
+
+        NvU32 recordSize = rcdbGetOcaRecordSizeWithHeader(pRcDB, RmRcDiagReport);
+        NvU32 rcDiagRecStart = pRcDB->RcErrRptNextIdx;
+        NvU32 rcDiagRecEnd;
+        NvU32 processId = 0;
+        NvU32 owner = RCDB_RCDIAG_DEFAULT_OWNER;
+
+        pClient = dynamicCast(RES_GET_CLIENT(pKernelChannel), RmClient);
+        NV_ASSERT(pClient != NULL);
+        if (pClient != NULL)
+            processId = pClient->ProcID;
+
+        for (NvU32 i = 0; i < rpc_params->rcJournalBufferSize / recordSize; i++)
+        {
+            RmRCCommonJournal_RECORD *pCommonRecord =
+                (RmRCCommonJournal_RECORD *)((NvU8*)&rpc_params->rcJournalBuffer + i * recordSize);
+            RmRcDiag_RECORD *pRcDiagRecord =
+                (RmRcDiag_RECORD *)&pCommonRecord[1];
+
+#if defined(DEBUG)
+            NV_PRINTF(LEVEL_INFO, "%d: GPUTag=0x%x CPUTag=0x%llx timestamp=0x%llx stateMask=0x%llx\n",
+                      i, pCommonRecord->GPUTag, pCommonRecord->CPUTag, pCommonRecord->timeStamp,
+                      pCommonRecord->stateMask);
+            NV_PRINTF(LEVEL_INFO, "   idx=%d timeStamp=0x%x type=0x%x flags=0x%x count=%d owner=0x%x processId=0x%x\n",
+                      pRcDiagRecord->idx, pRcDiagRecord->timeStamp, pRcDiagRecord->type, pRcDiagRecord->flags,
+                      pRcDiagRecord->count, pRcDiagRecord->owner, processId);
+            for (NvU32 j = 0; j < pRcDiagRecord->count; j++)
+            {
+                NV_PRINTF(LEVEL_INFO, "     %d: offset=0x08%x tag=0x08%x value=0x08%x attribute=0x08%x\n",
+                          j, pRcDiagRecord->data[j].offset, pRcDiagRecord->data[j].tag,
+                          pRcDiagRecord->data[j].value, pRcDiagRecord->data[j].attribute);
+            }
+#endif
+            if (rcdbAddRcDiagRecFromGsp(pGpu, pRcDB, pCommonRecord, pRcDiagRecord) == NULL)
+            {
+                NV_PRINTF(LEVEL_WARNING, "Lost RC diagnostic record coming from GPU%d GSP: type=0x%x stateMask=0x%llx\n",
+                          gpuGetInstance(pGpu), pRcDiagRecord->type, pCommonRecord->stateMask);
+            }
+        }
+
+        rcDiagRecEnd = pRcDB->RcErrRptNextIdx - 1;
+
+        // Update records to have the correct PID associated with the channel
+        if (rcDiagRecStart != rcDiagRecEnd)
+        {
+            rcdbUpdateRcDiagRecContext(pRcDB,
+                                       rcDiagRecStart,
+                                       rcDiagRecEnd,
+                                       processId,
+                                       owner);
+        }
+    }
 
     // With CC enabled, CPU-RM needs to write error notifiers
     if (gpuIsCCFeatureEnabled(pGpu))
@@ -2489,6 +2548,51 @@ _kgspVbiosVersionToStr(NvU64 vbiosVersionCombined, char *pVbiosVersionStr, NvU32
                   (vbiosVersionCombined) & 0xff);
 }
 
+static NV_STATUS
+_kgspPrepareScrubberImageIfNeeded(OBJGPU *pGpu, KernelGsp *pKernelGsp)
+{
+    // Prepare Scrubber ucode image if pre-scrubbed memory is insufficient
+    NvU64 neededSize = pKernelGsp->pWprMeta->fbSize - pKernelGsp->pWprMeta->gspFwRsvdStart;
+    NvU64 prescrubbedSize = kgspGetPrescrubbedTopFbSize(pGpu, pKernelGsp);
+    NV_PRINTF(LEVEL_INFO, "pre-scrubbed memory: 0x%llx bytes, needed: 0x%llx bytes\n",
+              prescrubbedSize, neededSize);
+
+    if (neededSize > prescrubbedSize)
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kgspAllocateScrubberUcodeImage(pGpu, pKernelGsp, &pKernelGsp->pScrubberUcode));
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_kgspBootGspRm(OBJGPU *pGpu, KernelGsp *pKernelGsp, GSP_FIRMWARE *pGspFw)
+{
+    NV_STATUS status;
+
+    // Fail early if WPR2 is up
+    if (kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
+    {
+        NV_PRINTF(LEVEL_ERROR, "unexpected WPR2 already up, cannot proceed with booting GSP\n");
+        NV_PRINTF(LEVEL_ERROR, "(the GPU is likely in a bad state and may need to be reset)\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    // Calculate FB layout (requires knowing FB size which depends on GFW_BOOT)
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgspCalculateFbLayout_HAL(pGpu, pKernelGsp, pGspFw));
+
+    // If the new FB layout requires a scrubber ucode to scrub additional space, prepare it now
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kgspPrepareScrubberImageIfNeeded(pGpu, pKernelGsp));
+
+    // Proceed with GSP boot - if it fails, check for ECC errors
+    status = kgspBootstrapRiscvOSEarly_HAL(pGpu, pKernelGsp, pGspFw);
+    if ((status != NV_OK) && gpuCheckEccCounts_HAL(pGpu))
+        status = NV_ERR_ECC_ERROR;
+
+    pKernelGsp->bootAttempts++;
+
+    return status;
+}
+
 /*!
  * Initialize GSP-RM
  *
@@ -2527,9 +2631,6 @@ kgspInitRm_IMPL
         rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
                               GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT, &gpusLockedMask),
         done);
-
-    // Set the GPU time to the wall-clock time before loading GSP ucode.
-    tmrSetCurrentTime_HAL(pGpu, pTmr);
 
     /*
      * For GSP-RM boot, we must trigger FRTS (if it exists for the chip)
@@ -2573,11 +2674,7 @@ kgspInitRm_IMPL
         }
         else if (status == NV_ERR_NOT_SUPPORTED)
         {
-            //
             // Extracting VBIOS image from ROM is not supported.
-            // Sanity check we don't depend on it for FRTS, and proceed without FWSEC.
-            //
-            NV_ASSERT_OR_GOTO(kgspGetFrtsSize(pGpu, pKernelGsp) == 0, done);
             status = NV_OK;
         }
         else
@@ -2656,61 +2753,41 @@ kgspInitRm_IMPL
     threadStateResetTimeout(pGpu);
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, kgspWaitForGfwBootOk_HAL(pGpu, pKernelGsp), done);
 
-    // Fail early if WPR2 is up
-    if (kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
-    {
-        NV_PRINTF(LEVEL_ERROR, "unexpected WPR2 already up, cannot proceed with booting gsp\n");
-        NV_PRINTF(LEVEL_ERROR, "(the GPU is likely in a bad state and may need to be reset)\n");
-        status = NV_ERR_INVALID_STATE;
-        goto done;
-    }
+    //
+    // Set the GPU time to the wall-clock time after GFW boot is complete
+    // (to avoid PLM collisions) but before loading GSP-RM ucode (which
+    // consumes the updated GPU time).
+    //
+    tmrSetCurrentTime_HAL(pGpu, pTmr);
 
-    // Calculate FB layout (requires knowing FB size which depends on GFW_BOOT)
-    status = kgspCalculateFbLayout_HAL(pGpu, pKernelGsp, pGspFw);
+    //
+    // Bring up ucode with RM offload task.
+    // If an ECC error occurs which results in the failure of the bootstrap, try again.
+    // Subsequent attempts will shift the GSP region of FB in an attempt to avoid the
+    // unstable memory.
+    //
+    const NvU8 MAX_GSP_BOOT_ATTEMPTS = 4;
+    do
+    {
+        // Reset the thread state timeout after failed attempts to prevent premature timeouts.
+        if (status != NV_OK)
+            threadStateResetTimeout(pGpu);
+
+        //
+        // _kgspBootGspRm() will return NV_ERR_ECC_ERROR if any unhandled ECC errors are
+        // detected during a failed GSP boot attempt. Depending on where and when the
+        // error occurred, we may not be able to try again, in which case a different
+        // error code will be returned.
+        //
+        status = _kgspBootGspRm(pGpu, pKernelGsp, pGspFw);
+    } while ((status == NV_ERR_ECC_ERROR) && (pKernelGsp->bootAttempts < MAX_GSP_BOOT_ATTEMPTS));
+
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "Error calculating FB layout\n");
-        goto done;
-    }
-
-    // Prepare Scrubber ucode image if pre-scrubbed memory is insufficient
-    if (pKernelGsp->pScrubberUcode == NULL)
-    {
-        NvU64 neededSize = pKernelGsp->pWprMeta->fbSize - pKernelGsp->pWprMeta->gspFwRsvdStart;
-        NvU64 prescrubbedSize = kgspGetPrescrubbedTopFbSize(pGpu, pKernelGsp);
-
-        if (neededSize > prescrubbedSize)
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "allocating Scrubber ucode as pre-scrubbed memory (0x%llx bytes) is insufficient (0x%llx bytes needed)\n",
-                      prescrubbedSize, neededSize);
-
-            status = kgspAllocateScrubberUcodeImage(pGpu, pKernelGsp,
-                                                    &pKernelGsp->pScrubberUcode);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "failed to allocate Scrubber ucode: 0x%x\n", status);
-                goto done;
-            }
-        }
-        else
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "skipping allocating Scrubber ucode as pre-scrubbed memory (0x%llx bytes) is sufficient (0x%llx bytes needed)\n",
-                      prescrubbedSize, neededSize);
-        }
-    }
-
-    // bring up ucode with RM offload task
-    status = kgspBootstrapRiscvOSEarly_HAL(pGpu, pKernelGsp, pGspFw);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "cannot bootstrap riscv/gsp: 0x%x\n", status);
-
         //
         // Ignore return value - a crash report may have already been consumed,
         // this is just here as a last attempt to report boot issues that might
-        // escaped prior checks.
+        // have escaped prior checks.
         //
         (void)kgspHealthCheck_HAL(pGpu, pKernelGsp);
         goto done;
@@ -4030,4 +4107,59 @@ kgspGetFwHeapSize_IMPL
     }
 
     return _kgspCalculateFwHeapSize(pGpu, pKernelGsp, maxScrubbedHeapSizeMB);
+}
+
+NvU64 kgspGetWprEndMargin_IMPL(OBJGPU *pGpu, KernelGsp *pKernelGsp)
+{
+    NvU64 wprEndMargin;
+    NvU32 marginOverride = 0;
+    GspFwWprMeta *pWprMeta = pKernelGsp->pWprMeta;
+
+    (void)osReadRegistryDword(pGpu, NV_REG_STR_RM_GSP_WPR_END_MARGIN, &marginOverride);
+
+    wprEndMargin = ((NvU64)DRF_VAL(_REG, _RM_GSP_WPR_END_MARGIN, _MB, marginOverride)) << 20;
+    if (wprEndMargin == 0)
+    {
+        // Calculate the default margin size based on the WPR size
+        const GspFwWprMeta *pWprMeta = pKernelGsp->pWprMeta;
+
+        //
+        // This needs to be called after pWprMeta->sizeOfRadix3Elf has been initialized,
+        // in order to estimate the default WPR size.
+        //
+        NV_ASSERT(pWprMeta->sizeOfRadix3Elf > 0);
+
+        //
+        // If the bounds are encoded in GspFwWprMeta from a prior attempt, use them.
+        // Otherwise, estimate the WPR size by the sizes of the elements in the layout
+        //
+        if (pWprMeta->gspFwWprEnd > pWprMeta->nonWprHeapOffset)
+        {
+            wprEndMargin = pWprMeta->gspFwWprEnd - pWprMeta->nonWprHeapOffset;
+        }
+        else
+        {
+            wprEndMargin += kgspGetFrtsSize_HAL(pGpu, pKernelGsp);
+            wprEndMargin += pKernelGsp->gspRmBootUcodeSize;
+            wprEndMargin += pWprMeta->sizeOfRadix3Elf;
+            wprEndMargin += kgspGetFwHeapSize(pGpu, pKernelGsp, 0);
+            wprEndMargin += kgspGetNonWprHeapSize(pGpu, pKernelGsp);
+        }
+
+        if (pKernelGsp->bootAttempts > 0)
+            wprEndMargin *= pKernelGsp->bootAttempts;
+    }
+
+    if (FLD_TEST_DRF(_REG, _RM_GSP_WPR_END_MARGIN, _APPLY, _ALWAYS, marginOverride) ||
+        (pKernelGsp->bootAttempts > 0))
+    {
+        NV_PRINTF(LEVEL_WARNING, "Adding margin of 0x%llx bytes after the end of WPR2\n",
+                  wprEndMargin);
+        pWprMeta->flags |= GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT;
+        return wprEndMargin;
+    }
+
+    // Normal boot path
+    pWprMeta->flags &= ~GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT;
+    return 0;
 }

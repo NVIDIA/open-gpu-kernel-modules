@@ -4315,7 +4315,6 @@ cliresCtrlCmdNvdGetRcerrRpt_IMPL
     NvU32     gpuAttachCount = 0;
     NvU32     gpuIdx         = 0;
     OBJGPU   *pGpu           = NULL;
-    NvU32     processId      = osGetCurrentProcess();
 
     NV_ASSERT_OK_OR_RETURN(gpumgrGetGpuAttachInfo(&gpuAttachCount, &gpuMask));
 
@@ -4330,7 +4329,7 @@ cliresCtrlCmdNvdGetRcerrRpt_IMPL
     pParams->flags     = 0;
     if (!RMCFG_FEATURE_PLATFORM_GSP)
     {
-        pParams->processId = processId;
+        pParams->processId = osGetCurrentProcess();
     }
 
     if ((status = krcCliresCtrlNvdGetRcerrRptCheckPermissions_HAL(
@@ -4341,75 +4340,66 @@ cliresCtrlCmdNvdGetRcerrRpt_IMPL
         return status;
     }
 
-    if (IS_GSP_CLIENT(pGpu))
     {
-        NV0000_CTRL_CMD_NVD_GET_RCERR_RPT_PARAMS *pLocalParams =
-            portMemAllocNonPaged(sizeof *pLocalParams);
+        Journal                  *pRcDB = SYS_GET_RCDB(SYS_GET_INSTANCE());
+        RmRCCommonJournal_RECORD *pCommon;
 
-        NV_CHECK_OR_RETURN(LEVEL_INFO, pLocalParams != NULL, NV_ERR_NO_MEMORY);
-
-        //
-        // Pre-GSP, RcDiagRec from all GPUs were stored in kernel sysmem in a
-        // single RING_BUFFER_LOG.
-        //
-        // With GSP, each GPU its own separate RING_BUFFER_LOG. We need to
-        // search in all of them.
-        //
-        // However, we will always return only the first matching record in all
-        // cases (similar to pre-GSP behavior)
-        //
-        for (; pGpu != NULL ; pGpu = gpumgrGetNextGpu(gpuMask, &gpuIdx))
+        status = rcdbGetRcDiagRecBoundaries(pRcDB,
+                                            &pParams->startIdx,
+                                            &pParams->endIdx,
+                                            pParams->owner,
+                                            pParams->processId);
+        if (status != NV_OK)
         {
-            RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
-            portMemSet(pLocalParams, 0, sizeof(*pLocalParams));
-            pLocalParams->reqIdx    = pParams->reqIdx;
-            pLocalParams->owner     = pParams->owner;
-            pLocalParams->processId = pParams->processId;
+            return status;
+        }
 
-            status = pRmApi->Control(pRmApi,
-                                     RES_GET_CLIENT_HANDLE(pRmCliRes),
-                                     RES_GET_HANDLE(pRmCliRes),
-                                     NV0000_CTRL_CMD_NVD_GET_RCERR_RPT,
-                                     pLocalParams,
-                                     sizeof *pLocalParams);
-            if (status == NV_OK &&
-                (pLocalParams->flags &
-                 NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_DATA_VALID))
+        pParams->flags |= NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_RANGE_VALID;
+
+        {
+            NV_STATUS localStatus = rcdbGetRcDiagRec(pRcDB,
+                                                     pParams->reqIdx,
+                                                     &pCommon,
+                                                     pParams->owner,
+                                                     pParams->processId);
+            switch (localStatus)
             {
-                //
-                // Each RING_BUFFER_LOG can contain MAX_RCDB_RCDIAG_WRAP_BUFF
-                // RmRcDiag_RECORD. We will multiply indices returned to the
-                // client by this value so the GPU can be uniquely identified
-                // (in addition to GPUTag) from
-                // NV0000_CTRL_CMD_NVD_GET_RCERR_RPT_PARAMS.rptIdx
-                //
-                // Note that this will result in clients receivinga rptIdx value
-                // larger than MAX_RCDB_RCDIAG_WRAP_BUFF.
-                //
-                NvU16 indexOffset = gpuIdx * MAX_RCDB_RCDIAG_WRAP_BUFF;
-
-                *pParams = *pLocalParams;
-                pParams->startIdx += indexOffset;
-                pParams->endIdx   += indexOffset;
-                pParams->rptIdx   += indexOffset;
-
-                break;
-            }
-
-            if (status == NV_ERR_BUSY_RETRY)
-            {
-                //
-                // To avoid the case where we silently fail to find a record
-                // because we skipped over to the next Gpu on getting a
-                // BUSY_RETRY on one of the Gpus (which might have contained the
-                // record).
-                //
-                break;
+                case NV_OK:
+                    break;
+                case NV_ERR_BUSY_RETRY:
+                    return localStatus;
+                default:
+                    return status;
             }
         }
 
-        portMemFree(pLocalParams);
-        pLocalParams = NULL;
+        if (pCommon != NULL)
+        {
+            NvU32            i       = 0;
+            RmRcDiag_RECORD *pRecord = (RmRcDiag_RECORD *)&pCommon[1];
+
+            pParams->GPUTag   = pCommon->GPUTag;
+            pParams->rptIdx   = pRecord->idx;
+            pParams->rptTime  = pRecord->timeStamp;
+            pParams->rptType  = pRecord->type;
+            pParams->rptCount = pRecord->count;
+            pParams->flags |= pRecord->flags;
+
+            for (i = 0; i < pRecord->count; ++i)
+            {
+                pParams->report[i].tag       = pRecord->data[i].tag;
+                pParams->report[i].value     = pRecord->data[i].value;
+                pParams->report[i].attribute = pRecord->data[i].attribute;
+            }
+            for (; i < NV0000_CTRL_CMD_NVD_RCERR_RPT_MAX_ENTRIES; ++i)
+            {
+                pParams->report[i].tag =
+                    NV0000_CTRL_CMD_NVD_RCERR_RPT_REG_EMPTY;
+                pParams->report[i].value     = 0;
+                pParams->report[i].attribute = 0;
+            }
+            pParams->flags |= NV0000_CTRL_CMD_NVD_RCERR_RPT_FLAGS_DATA_VALID;
+        }
     }
 
     return status;

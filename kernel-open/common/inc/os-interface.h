@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -162,10 +162,9 @@ NvBool      NV_API_CALL  os_is_vgx_hyper             (void);
 NV_STATUS   NV_API_CALL  os_inject_vgx_msi           (NvU16, NvU64, NvU32);
 NvBool      NV_API_CALL  os_is_grid_supported        (void);
 NvU32       NV_API_CALL  os_get_grid_csp_support     (void);
-void        NV_API_CALL  os_get_screen_info          (NvU64 *, NvU16 *, NvU16 *, NvU16 *, NvU16 *, NvU64, NvU64);
 void        NV_API_CALL  os_bug_check                (NvU32, const char *);
 NV_STATUS   NV_API_CALL  os_lock_user_pages          (void *, NvU64, void **, NvU32);
-NV_STATUS   NV_API_CALL  os_lookup_user_io_memory    (void *, NvU64, NvU64 **, void**);
+NV_STATUS   NV_API_CALL  os_lookup_user_io_memory    (void *, NvU64, NvU64 **);
 NV_STATUS   NV_API_CALL  os_unlock_user_pages        (NvU64, void *);
 NV_STATUS   NV_API_CALL  os_match_mmap_offset        (void *, NvU64, NvU64 *);
 NV_STATUS   NV_API_CALL  os_get_euid                 (NvU32 *);

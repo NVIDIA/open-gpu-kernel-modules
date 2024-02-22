@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -466,6 +466,8 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdFlcnGetCtxBufferInfo__)(struct Subdevice *, NV2080_CTRL_FLCN_GET_CTX_BUFFER_INFO_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdFlcnGetCtxBufferSize__)(struct Subdevice *, NV2080_CTRL_FLCN_GET_CTX_BUFFER_SIZE_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdEccGetClientExposedCounters__)(struct Subdevice *, NV2080_CTRL_ECC_GET_CLIENT_EXPOSED_COUNTERS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdEccGetEciCounters__)(struct Subdevice *, NV2080_CTRL_ECC_GET_ECI_COUNTERS_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdEccGetVolatileCounts__)(struct Subdevice *, NV2080_CTRL_ECC_GET_VOLATILE_COUNTS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuQueryEccConfiguration__)(struct Subdevice *, NV2080_CTRL_GPU_QUERY_ECC_CONFIGURATION_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuSetEccConfiguration__)(struct Subdevice *, NV2080_CTRL_GPU_SET_ECC_CONFIGURATION_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdGpuResetEccErrorStatus__)(struct Subdevice *, NV2080_CTRL_GPU_RESET_ECC_ERROR_STATUS_PARAMS *);
@@ -675,6 +677,7 @@ struct Subdevice {
     NvBool bSchedPolicySet;
     NvBool bGcoffDisallowed;
     NvBool bUpdateTGP;
+    NvBool bVFRefCntIncRequested;
 };
 
 #ifndef __NVOC_CLASS_Subdevice_TYPEDEF__
@@ -1061,6 +1064,8 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdFlcnGetCtxBufferInfo(pSubdevice, pParams) subdeviceCtrlCmdFlcnGetCtxBufferInfo_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdFlcnGetCtxBufferSize(pSubdevice, pParams) subdeviceCtrlCmdFlcnGetCtxBufferSize_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdEccGetClientExposedCounters(pSubdevice, pParams) subdeviceCtrlCmdEccGetClientExposedCounters_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdEccGetEciCounters(pSubdevice, pParams) subdeviceCtrlCmdEccGetEciCounters_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdEccGetVolatileCounts(pSubdevice, pParams) subdeviceCtrlCmdEccGetVolatileCounts_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdGpuQueryEccConfiguration(pSubdevice, pConfig) subdeviceCtrlCmdGpuQueryEccConfiguration_DISPATCH(pSubdevice, pConfig)
 #define subdeviceCtrlCmdGpuSetEccConfiguration(pSubdevice, pConfig) subdeviceCtrlCmdGpuSetEccConfiguration_DISPATCH(pSubdevice, pConfig)
 #define subdeviceCtrlCmdGpuResetEccErrorStatus(pSubdevice, pParams) subdeviceCtrlCmdGpuResetEccErrorStatus_DISPATCH(pSubdevice, pParams)
@@ -3349,6 +3354,18 @@ static inline NV_STATUS subdeviceCtrlCmdEccGetClientExposedCounters_DISPATCH(str
     return pSubdevice->__subdeviceCtrlCmdEccGetClientExposedCounters__(pSubdevice, pParams);
 }
 
+NV_STATUS subdeviceCtrlCmdEccGetEciCounters_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_ECC_GET_ECI_COUNTERS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdEccGetEciCounters_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_ECC_GET_ECI_COUNTERS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdEccGetEciCounters__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdEccGetVolatileCounts_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_ECC_GET_VOLATILE_COUNTS_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdEccGetVolatileCounts_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_ECC_GET_VOLATILE_COUNTS_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdEccGetVolatileCounts__(pSubdevice, pParams);
+}
+
 NV_STATUS subdeviceCtrlCmdGpuQueryEccConfiguration_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_QUERY_ECC_CONFIGURATION_PARAMS *pConfig);
 
 static inline NV_STATUS subdeviceCtrlCmdGpuQueryEccConfiguration_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_GPU_QUERY_ECC_CONFIGURATION_PARAMS *pConfig) {
@@ -4394,6 +4411,10 @@ static inline NV_STATUS subdeviceReleaseVideoStreams(struct Subdevice *pSubdevic
 }
 
 static inline void subdeviceRestoreLockedClock(struct Subdevice *pSubdevice, struct CALL_CONTEXT *pCallContext) {
+    return;
+}
+
+static inline void subdeviceRestoreVF(struct Subdevice *pSubdevice, struct CALL_CONTEXT *pCallContext) {
     return;
 }
 

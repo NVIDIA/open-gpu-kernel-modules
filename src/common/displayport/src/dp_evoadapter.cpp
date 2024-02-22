@@ -95,7 +95,8 @@ const struct
     {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
     {NV_DP_CHECK_FEC_FOR_DDS_DSC_PANEL,             &dpRegkeyDatabase.bCheckFECForDynamicMuxDSCPanel,  DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_REASSESS_MAX_LINK,                &dpRegkeyDatabase.bReassessMaxLink,                DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_REASSESS_MAX_LINK,                &dpRegkeyDatabase.bReassessMaxLink,                DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,      &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,        DP_REG_VAL_BOOL}
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :
@@ -894,6 +895,7 @@ void EvoMainLink::applyRegkeyOverrides()
     _applyLinkBwOverrideWarRegVal        = dpRegkeyDatabase.bLinkBwOverrideWarApplied;
     _enableMSAOverrideOverMST            = dpRegkeyDatabase.bMsaOverMstEnabled;
     _enableFecCheckForDDS                = dpRegkeyDatabase.bCheckFECForDynamicMuxDSCPanel;
+    _isMSTPCONCapsReadDisabled           = dpRegkeyDatabase.bMSTPCONCapsReadDisabled;
 }
 
 NvU32 EvoMainLink::getRegkeyValue(const char *key)
@@ -1510,6 +1512,10 @@ bool EvoMainLink::skipPowerdownEdpPanelWhenHeadDetach()
     return _skipPowerdownEDPPanelWhenHeadDetach;
 }
 
+bool EvoMainLink::isMSTPCONCapsReadDisabled()
+{
+    return _isMSTPCONCapsReadDisabled;
+}
 
 bool EvoMainLink::isActive()
 {

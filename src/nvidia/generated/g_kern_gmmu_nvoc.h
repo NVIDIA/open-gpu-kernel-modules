@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+3* SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -357,7 +357,6 @@ struct KernelGmmu {
     NvU32 (*__kgmmuGetGraphicsEngineId__)(struct KernelGmmu *);
     NvU32 (*__kgmmuReadShadowBufPutIndex__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
     NvU32 (*__kgmmuGetEccCounts__)(OBJGPU *, struct KernelGmmu *);
-    void (*__kgmmuClearEccCounts__)(OBJGPU *, struct KernelGmmu *);
     NV_STATUS (*__kgmmuStateLoad__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuStateUnload__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelGmmu *, IntrServiceServiceNotificationInterruptArguments *);
@@ -436,7 +435,6 @@ struct KernelGmmu_PRIVATE {
     NvU32 (*__kgmmuGetGraphicsEngineId__)(struct KernelGmmu *);
     NvU32 (*__kgmmuReadShadowBufPutIndex__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
     NvU32 (*__kgmmuGetEccCounts__)(OBJGPU *, struct KernelGmmu *);
-    void (*__kgmmuClearEccCounts__)(OBJGPU *, struct KernelGmmu *);
     NV_STATUS (*__kgmmuStateLoad__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuStateUnload__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuServiceNotificationInterrupt__)(struct OBJGPU *, struct KernelGmmu *, IntrServiceServiceNotificationInterruptArguments *);
@@ -567,8 +565,6 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu**, Dynamic*, NvU32);
 #define kgmmuReadShadowBufPutIndex_HAL(pGpu, pKernelGmmu, type) kgmmuReadShadowBufPutIndex_DISPATCH(pGpu, pKernelGmmu, type)
 #define kgmmuGetEccCounts(pGpu, pKernelGmmu) kgmmuGetEccCounts_DISPATCH(pGpu, pKernelGmmu)
 #define kgmmuGetEccCounts_HAL(pGpu, pKernelGmmu) kgmmuGetEccCounts_DISPATCH(pGpu, pKernelGmmu)
-#define kgmmuClearEccCounts(pGpu, pKernelGmmu) kgmmuClearEccCounts_DISPATCH(pGpu, pKernelGmmu)
-#define kgmmuClearEccCounts_HAL(pGpu, pKernelGmmu) kgmmuClearEccCounts_DISPATCH(pGpu, pKernelGmmu)
 #define kgmmuStateLoad(pGpu, pEngstate, arg0) kgmmuStateLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kgmmuStateUnload(pGpu, pEngstate, arg0) kgmmuStateUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kgmmuServiceNotificationInterrupt(pGpu, pIntrService, pParams) kgmmuServiceNotificationInterrupt_DISPATCH(pGpu, pIntrService, pParams)
@@ -1321,16 +1317,6 @@ static inline NvU32 kgmmuGetEccCounts_4a4dee(OBJGPU *pGpu, struct KernelGmmu *pK
 
 static inline NvU32 kgmmuGetEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
     return pKernelGmmu->__kgmmuGetEccCounts__(pGpu, pKernelGmmu);
-}
-
-void kgmmuClearEccCounts_TU102(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
-
-static inline void kgmmuClearEccCounts_b3696a(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
-    return;
-}
-
-static inline void kgmmuClearEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
-    pKernelGmmu->__kgmmuClearEccCounts__(pGpu, pKernelGmmu);
 }
 
 static inline NV_STATUS kgmmuStateLoad_DISPATCH(POBJGPU pGpu, struct KernelGmmu *pEngstate, NvU32 arg0) {

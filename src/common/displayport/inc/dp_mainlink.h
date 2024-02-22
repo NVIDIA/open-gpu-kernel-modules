@@ -144,6 +144,9 @@ namespace DisplayPort
         // Check if we should skip power down eDP when head detached.
         virtual bool skipPowerdownEdpPanelWhenHeadDetach() = 0;
 
+        // Check if we should skip reading PCON Caps in MST case.
+        virtual bool isMSTPCONCapsReadDisabled() = 0;
+
         // Get GPU DSC capabilities
         virtual void getDscCaps(bool *pbDscSupported = NULL,
                                 unsigned *pEncoderColorFormatMask = NULL,

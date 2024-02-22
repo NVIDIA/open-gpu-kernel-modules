@@ -77,6 +77,10 @@
 //
 #define NV_DP_DSC_MST_CAP_BUG_3143315                  "DP_DSC_MST_CAP_BUG_3143315"
 
+//
+// Bug 4388987 : This regkey will disable reading PCON caps for MST.
+//
+#define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED       "DP_BUG_4388987_WAR"
 
 //
 // Data Base used to store all the regkey values.
@@ -112,6 +116,7 @@ struct DP_REGKEY_DATABASE
     bool  bPowerDownPhyBeforeD3;
     bool  bCheckFECForDynamicMuxDSCPanel;
     bool  bReassessMaxLink;
+    bool  bMSTPCONCapsReadDisabled;
 };
 
 #endif //INCLUDED_DP_REGKEYDATABASE_H

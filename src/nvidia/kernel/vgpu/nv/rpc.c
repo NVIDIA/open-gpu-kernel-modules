@@ -1587,7 +1587,7 @@ NV_STATUS rpcRmApiControl_GSP
                 GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE, RM_LOCK_MODULES_RPC, &gpuMaskRelease));
     }
 
-    rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight);
+    rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight, NULL);
     bCacheable = rmapiControlIsCacheable(ctrlFlags, ctrlAccessRight, NV_TRUE);
 
     pCallContext = resservGetTlsCallContext();

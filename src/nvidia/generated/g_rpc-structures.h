@@ -298,6 +298,8 @@ typedef struct rpc_rc_triggered_v17_02
     NvU32      exceptType;
     NvU32      scope;
     NvU16      partitionAttributionId;
+    NvU32      rcJournalBufferSize;
+    NvU8       rcJournalBuffer[];
 } rpc_rc_triggered_v17_02;
 
 typedef rpc_rc_triggered_v17_02 rpc_rc_triggered_v;
@@ -1809,6 +1811,21 @@ static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rc_triggered_v17_02[] = {
         .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, partitionAttributionId),
         #if (defined(DEBUG) || defined(DEVELOP))
         .name                 = "partitionAttributionId"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, rcJournalBufferSize),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rcJournalBufferSize"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU8_array,
+        .offset               = NV_OFFSETOF(rpc_rc_triggered_v17_02, rcJournalBuffer),
+        .array_length         = 0,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rcJournalBuffer"
         #endif
     },
     {

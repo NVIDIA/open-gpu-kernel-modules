@@ -174,7 +174,8 @@ knvlinkCoreGetRemoteDeviceInfo_IMPL
                     //
                     if (!conn_info.bConnected &&
                         (bNvswitchProxyPresent ||
-                        GPU_IS_NVSWITCH_DETECTED(pGpu)))
+                        (!pSys->getProperty(pSys, PDB_PROP_SYS_NVSWITCH_IS_PRESENT) &&
+                            GPU_IS_NVSWITCH_DETECTED(pGpu))))
                     {
                         conn_info.bConnected  = NV_TRUE;
                         conn_info.deviceType  = NVLINK_DEVICE_TYPE_NVSWITCH;

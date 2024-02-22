@@ -31,6 +31,7 @@
 #include "kernel/gpu/bif/kernel_bif.h"
 #include "gpu/subdevice/subdevice.h"
 #include "gpu/gpu.h"
+#include "virtualization/hypervisor/hypervisor.h"
 #include "vgpu/rpc.h"
 #include "vgpu/vgpu_events.h"
 #include "platform/chipset/chipset.h"
@@ -348,6 +349,7 @@ _kp2pCapsGetStatusOverPcie
     NvU8 gpuP2PWriteCapsStatus = NV0000_P2P_CAPS_STATUS_OK;
     NvU32 lockedGpuMask = 0;
     NV_STATUS status = NV_OK;
+    OBJHYPERVISOR *pHypervisor = SYS_GET_HYPERVISOR(pSys);
 
     // Check if any overrides are enabled.
     if (_kp2pCapsCheckStatusOverridesForPcie(gpuMask, pP2PWriteCapStatus,
@@ -363,6 +365,16 @@ _kp2pCapsGetStatusOverPcie
         {
             return NV_OK;
         }
+    }
+
+    // Check for hypervisor oriented PCIe P2P overrides
+    if (pHypervisor &&
+        pHypervisor->bDetected &&
+        hypervisorPcieP2pDetection(pHypervisor, gpuMask))
+    {
+        *pP2PReadCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+        *pP2PWriteCapStatus = NV0000_P2P_CAPS_STATUS_OK;
+        goto done;
     }
 
     // PCI-E topology checks

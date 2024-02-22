@@ -494,17 +494,6 @@ static void __nvoc_init_funcTable_KernelBif_1(KernelBif *pThis, RmHalspecOwner *
         pThis->__kbifGetEccCounts__ = &kbifGetEccCounts_4a4dee;
     }
 
-    // Hal function -- kbifClearEccCounts
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-    {
-        pThis->__kbifClearEccCounts__ = &kbifClearEccCounts_GH100;
-    }
-    // default
-    else
-    {
-        pThis->__kbifClearEccCounts__ = &kbifClearEccCounts_56cd7a;
-    }
-
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelBif_engstateConstructEngine;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStateInitLocked__ = &__nvoc_thunk_KernelBif_engstateStateInitLocked;

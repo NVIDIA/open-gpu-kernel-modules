@@ -88,7 +88,7 @@ static NvBool rcdProbeAllGpusPresent(NvU64 ip);
 static volatile NvS32 probeGpuRecursion = 0;
 #endif
 #endif
-static NvU32 _rcdbGetOcaRecordSizeWithHeader(Journal *pRcDB, RMCD_RECORD_TYPE type);
+static NvU32 _rcdbGetOcaRecordSize(Journal *pRcDB, RMCD_RECORD_TYPE type);
 static volatile NvS32 concurrentRingBufferAccess = 0;
 static volatile NvS32 assertListRecursion = 0;
 static void rcdbFindRingBufferForType(Journal *pRcDB, RMCD_RECORD_TYPE recType, RING_BUFFER_LOG **ppRingBuffer);
@@ -678,7 +678,7 @@ rcdbGetRcDiagRecBoundaries_IMPL
         for (i = 0; i < pRingBuffer->numEntries; ++i)
         {
             // get a pointer to the record from the buffer.
-            pCommon = (RmRCCommonJournal_RECORD *)(((NvU8 *)pRingBuffer->pBuffer) + (_rcdbGetOcaRecordSizeWithHeader(pRcDB, RmRcDiagReport) * ((logicalStartIdx + i) % pRingBuffer->maxEntries)));
+            pCommon = (RmRCCommonJournal_RECORD *)(((NvU8 *)pRingBuffer->pBuffer) + (rcdbGetOcaRecordSizeWithHeader(pRcDB, RmRcDiagReport) * ((logicalStartIdx + i) % pRingBuffer->maxEntries)));
             pRecord = (RmRcDiag_RECORD*) &(pCommon[1]);
 
             // check to see if the record qualifies
@@ -745,7 +745,7 @@ rcdbGetRcDiagRecBoundaries_IMPL
     return status;
 }
 
-NV_STATUS
+RmRCCommonJournal_RECORD *
 rcdbAddRcDiagRec_IMPL
 (
     OBJGPU  *pGpu,
@@ -753,6 +753,7 @@ rcdbAddRcDiagRec_IMPL
     RmRcDiag_RECORD       *pRmDiagWrapBuffRec
 )
 {
+    RmRCCommonJournal_RECORD *pCommon;
     NvU32   usec;
 
     // Create Records, then write it.
@@ -767,11 +768,32 @@ rcdbAddRcDiagRec_IMPL
     }
     osGetCurrentTime(&(pRmDiagWrapBuffRec->timeStamp), &usec);
 
-    rcdbAddRecToRingBuffer(pGpu, pRcDB, RmRcDiagReport,
-        sizeof(RmRcDiag_RECORD), (NvU8 *) pRmDiagWrapBuffRec);
+    pCommon = rcdbAddRecToRingBuffer(pGpu, pRcDB, RmRcDiagReport,
+                                     sizeof(RmRcDiag_RECORD), (NvU8 *)pRmDiagWrapBuffRec);
 
     pRcDB->RcErrRptRecordsDropped |= pRcDB->RcErrRptNextIdx >= MAX_RCDB_RCDIAG_WRAP_BUFF;
-    return NV_OK;
+    return pCommon;
+}
+
+RmRCCommonJournal_RECORD *
+rcdbAddRcDiagRecFromGsp_IMPL
+(
+    OBJGPU  *pGpu,
+    Journal *pRcDB,
+    RmRCCommonJournal_RECORD   *pCommonGsp,
+    RmRcDiag_RECORD            *pRmDiagGsp
+)
+{
+    RmRCCommonJournal_RECORD   *pCommonCpu;
+
+    pCommonCpu = rcdbAddRcDiagRec(pGpu, pRcDB, pRmDiagGsp);
+    if (pCommonCpu)
+    {
+        NV_ASSERT(pCommonCpu->GPUTag == pCommonGsp->GPUTag);
+        pCommonCpu->stateMask |= pCommonGsp->stateMask;
+    }
+
+    return pCommonCpu;
 }
 
 NV_STATUS
@@ -811,7 +833,7 @@ _rcdbInternalGetRcDiagRec
         i %= pRingBuffer->maxEntries;
 
         // get a pointer to the record from the buffer.
-        pCommon = (RmRCCommonJournal_RECORD *)(((NvU8 *)pRingBuffer->pBuffer) + (_rcdbGetOcaRecordSizeWithHeader(pRcDB, RmRcDiagReport) * i));
+        pCommon = (RmRCCommonJournal_RECORD *)(((NvU8 *)pRingBuffer->pBuffer) + (rcdbGetOcaRecordSizeWithHeader(pRcDB, RmRcDiagReport) * i));
         pRecord = (RmRcDiag_RECORD*) &(pCommon[1]);
 
         // verify we have the record that was requested.
@@ -841,6 +863,7 @@ _rcdbInternalGetRcDiagRec
 exit:
     return status;
 }
+
 NV_STATUS
 rcdbGetRcDiagRec_IMPL
 (
@@ -851,18 +874,22 @@ rcdbGetRcDiagRec_IMPL
     NvU32                       processId
 )
 {
-    NV_STATUS                   status = NV_ERR_INVALID_INDEX;
+    NV_STATUS                   status;
 
     if (ppRmDiagWrapBuffRec == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }
-    // assume we will fail.
+
     *ppRmDiagWrapBuffRec = NULL;
 
     if (portAtomicIncrementS32(&concurrentRingBufferAccess) == 1)
     {
         status = _rcdbInternalGetRcDiagRec(pRcDB, reqIdx, ppRmDiagWrapBuffRec, owner, processId);
+    }
+    else
+    {
+        status = NV_ERR_BUSY_RETRY;
     }
     portAtomicDecrementS32(&concurrentRingBufferAccess);
     return status;
@@ -1857,7 +1884,7 @@ rcdbInsertRingBufferToList(
     NvU32 recordSize;
     NvU32 i;
 
-    recordSize = _rcdbGetOcaRecordSizeWithHeader(pRcDB, pRingBuffer->entryType);
+    recordSize = rcdbGetOcaRecordSizeWithHeader(pRcDB, pRingBuffer->entryType);
 
     //
     // Order does not matter here because the record will be inserted into the
@@ -1889,7 +1916,7 @@ rcdbInsertRingBufferCollectionToList(
         NvU32 recSize = pCurrentBuffer->bufferSize;
 
         NV_ASSERT(pCurrentBuffer->maxEntries *
-                  _rcdbGetOcaRecordSizeWithHeader(pRcDB, pCurrentBuffer->entryType) ==
+                  rcdbGetOcaRecordSizeWithHeader(pRcDB, pCurrentBuffer->entryType) ==
                   pCurrentBuffer->bufferSize);
 
         if (recSize > 0)
@@ -2473,7 +2500,7 @@ rcdbCreateRingBuffer_IMPL
 
     rcdbFindRingBufferForType(pRcDB, type, &pRingBuffer);
 
-    entrySize = _rcdbGetOcaRecordSizeWithHeader(pRcDB, type);
+    entrySize = rcdbGetOcaRecordSizeWithHeader(pRcDB, type);
     if (entrySize == 0)
     {
         NV_ASSERT(entrySize != 0);
@@ -2646,7 +2673,7 @@ rcdbDestroyRingBuffer_IMPL
 **      it is assumed the caller has successfully acquired the concurrentRingBufferAccess lock.
 **      failure to do so can result in concurrency issues.
 */
-RmRCCommonJournal_RECORD*
+RmRCCommonJournal_RECORD *
 _rcdbAllocRecFromRingBuffer
 (
     OBJGPU             *pGpu,
@@ -2675,10 +2702,10 @@ _rcdbAllocRecFromRingBuffer
     newItemIndex = (pRingBuffer->numEntries + pRingBuffer->headIndex) % pRingBuffer->maxEntries;
 
     // prepend the rmJournalCommon record to record.
-    pCommon = (RmRCCommonJournal_RECORD*)(pRingBuffer->pBuffer + (_rcdbGetOcaRecordSizeWithHeader(pRcDB, type) * newItemIndex));
+    pCommon = (RmRCCommonJournal_RECORD*)(pRingBuffer->pBuffer + (rcdbGetOcaRecordSizeWithHeader(pRcDB, type) * newItemIndex));
     pCommon->Header.cRecordGroup = RmGroup;
     pCommon->Header.cRecordType = type;
-    pCommon->Header.wRecordSize = (NvU16)_rcdbGetOcaRecordSizeWithHeader(pRcDB, type);
+    pCommon->Header.wRecordSize = (NvU16)rcdbGetOcaRecordSizeWithHeader(pRcDB, type);
     rcdbSetCommonJournalRecord(pGpu, pCommon);
 
     // Increment the number of entries or advance the head index.
@@ -2710,7 +2737,7 @@ _rcdbAllocRecFromRingBuffer
 **
 **  notes:
 */
-void
+RmRCCommonJournal_RECORD *
 rcdbAddRecToRingBuffer_IMPL
 (
     OBJGPU             *pGpu,
@@ -2720,10 +2747,9 @@ rcdbAddRecToRingBuffer_IMPL
     NvU8               *pRecord
 )
 {
-    RmRCCommonJournal_RECORD
-                       *pCommon;
+    RmRCCommonJournal_RECORD *pCommon = NULL;
 
-    NV_ASSERT(recordSize == rcdbGetOcaRecordSize(pRcDB, type));
+    NV_ASSERT(recordSize == _rcdbGetOcaRecordSize(pRcDB, type));
 
     if (portAtomicIncrementS32(&concurrentRingBufferAccess) == 1)
     {
@@ -2735,10 +2761,11 @@ rcdbAddRecToRingBuffer_IMPL
         }
     }
     portAtomicDecrementS32(&concurrentRingBufferAccess);
+
+    return pCommon;
 }
 
-// Non-hal function to return the sizes of records that are not chip dependent.
-NvU32 rcdbGetOcaRecordSize_IMPL(Journal *pRcDB, RMCD_RECORD_TYPE type)
+static NvU32 _rcdbGetOcaRecordSize(Journal *pRcDB, RMCD_RECORD_TYPE type)
 {
     switch(type)
     {
@@ -2752,11 +2779,12 @@ NvU32 rcdbGetOcaRecordSize_IMPL(Journal *pRcDB, RMCD_RECORD_TYPE type)
             return 0;
     }
 }
-static NvU32 _rcdbGetOcaRecordSizeWithHeader(Journal *pRcDB, RMCD_RECORD_TYPE type)
+
+NvU32 rcdbGetOcaRecordSizeWithHeader_IMPL(Journal *pRcDB, RMCD_RECORD_TYPE type)
 {
     NvU32 recSz;
 
-    recSz = rcdbGetOcaRecordSize(pRcDB, type);
+    recSz = _rcdbGetOcaRecordSize(pRcDB, type);
     if (0 < recSz)
     {
         recSz += sizeof(RmRCCommonJournal_RECORD);
@@ -2770,7 +2798,6 @@ static NvU32 _rcdbGetOcaRecordSizeWithHeader(Journal *pRcDB, RMCD_RECORD_TYPE ty
     //
     return NV_ALIGN_UP(recSz, 8);
 }
-
 
 NV_STATUS
 rcdbAddRmGpuDump
@@ -3377,7 +3404,7 @@ _rcdbGetNocatJournalRecord
     idx %= pRingBuffer->numEntries;
 
     // get a pointer to the common record & the record from the buffer.
-    pCommon = (RmRCCommonJournal_RECORD*)(((NvU8*)pRingBuffer->pBuffer) + (_rcdbGetOcaRecordSizeWithHeader(pRcdb, RmNocatReport) * idx));
+    pCommon = (RmRCCommonJournal_RECORD*)(((NvU8*)pRingBuffer->pBuffer) + (rcdbGetOcaRecordSizeWithHeader(pRcdb, RmNocatReport) * idx));
 
     // get a pointer to the data that follows the common header, that is the record data.
     pNocatEntry = (RM_NOCAT_JOURNAL_ENTRY*)(((NvU8*)pCommon) + sizeof(RmRCCommonJournal_RECORD));

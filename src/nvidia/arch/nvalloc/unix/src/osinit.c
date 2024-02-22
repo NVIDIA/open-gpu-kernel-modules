@@ -900,14 +900,12 @@ RmInitNvDevice(
         return;
     }
 
-    os_disable_console_access();
 
     status->rmStatus = gpumgrStateInitGpu(pGpu);
     if (status->rmStatus != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "*** Cannot initialize the device\n");
         RM_SET_ERROR(*status, RM_INIT_GPU_STATE_INIT_FAILED);
-        os_enable_console_access();
         return;
     }
     nvp->flags |= NV_INIT_FLAG_GPU_STATE;
@@ -937,12 +935,9 @@ RmInitNvDevice(
         NV_PRINTF(LEVEL_ERROR,
                   "*** Cannot load state into the device\n");
         RM_SET_ERROR(*status, RM_INIT_GPU_LOAD_FAILED);
-        os_enable_console_access();
         return;
     }
     nvp->flags |= NV_INIT_FLAG_GPU_STATE_LOAD;
-
-    os_enable_console_access();
 
     status->rmStatus = gpuPerformUniversalValidation_HAL(pGpu);
     if (status->rmStatus != NV_OK)
@@ -1542,6 +1537,7 @@ NvBool RmInitAdapter(
     KernelDisplay  *pKernelDisplay;
     const void     *gspFwHandle = NULL;
     const void     *gspFwLogHandle = NULL;
+    NvBool          consoleDisabled = NV_FALSE;
 
     GSP_FIRMWARE    gspFw = {0};
     PORT_UNREFERENCED_VARIABLE(gspFw);
@@ -1651,6 +1647,16 @@ NvBool RmInitAdapter(
     RmInitAcpiMethods(pOS, pSys, pGpu);
 
     //
+    // For GPU driving console, disable console access here, to ensure no console
+    // writes through BAR1 can interfere with physical RM's setup of BAR1
+    //
+    if (rm_get_uefi_console_status(nv))
+    {
+        os_disable_console_access();
+        consoleDisabled = NV_TRUE;
+    }
+
+    //
     // If GSP fw RM support is enabled then start the GSP microcode
     // (including the task running the full instance of the RM) and
     // exchange the necessary initial RPC messages before continuing
@@ -1723,6 +1729,12 @@ NvBool RmInitAdapter(
                 break;
         }
         goto shutdown;
+    }
+
+    if (consoleDisabled)
+    {
+        os_enable_console_access();
+        consoleDisabled = NV_FALSE;
     }
 
     // LOCK: acquire GPUs lock
@@ -1919,6 +1931,11 @@ NvBool RmInitAdapter(
 
  shutdown:
     nv->flags &= ~NV_FLAG_IN_RECOVERY;
+
+    if (consoleDisabled)
+    {
+        os_enable_console_access();
+    }
 
     // call ShutdownAdapter to undo anything we've done above
     RmShutdownAdapter(nv);

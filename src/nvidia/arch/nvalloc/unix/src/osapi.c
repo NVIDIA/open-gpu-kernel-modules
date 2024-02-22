@@ -5131,16 +5131,11 @@ NvBool rm_get_uefi_console_status(
     NvU64 fbBaseAddress = 0;
     NvBool bConsoleDevice = NV_FALSE;
 
-    // os_get_screen_info() will return dimensions and an address for
-    // any fbdev driver (e.g., efifb, vesafb, etc).  To find if this is a
-    // UEFI console check the fbBaseAddress: if it was set up by the EFI GOP
-    // driver, it will point into BAR1 (FB); if it was set up by the VBIOS,
-    // it will point to BAR2 + 16MB.
-    os_get_screen_info(&fbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch,
-                       nv->bars[NV_GPU_BAR_INDEX_FB].cpu_address,
-                       nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address + 0x1000000);
-
-    fbSize = fbHeight * fbPitch;
+    //
+    // nv_get_screen_info() will return dimensions and an address for
+    // any fbdev driver (e.g., efifb, vesafb, etc).
+    //
+    nv_get_screen_info(nv, &fbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch, &fbSize);
 
     bConsoleDevice = (fbSize != 0);
 
@@ -5157,16 +5152,11 @@ NvU64 rm_get_uefi_console_size(
 
     fbSize = fbWidth = fbHeight = fbDepth = fbPitch = 0;
 
-    // os_get_screen_info() will return dimensions and an address for
-    // any fbdev driver (e.g., efifb, vesafb, etc).  To find if this is a
-    // UEFI console check the fbBaseAddress: if it was set up by the EFI GOP
-    // driver, it will point into BAR1 (FB); if it was set up by the VBIOS,
-    // it will point to BAR2 + 16MB.
-    os_get_screen_info(pFbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch,
-                       nv->bars[NV_GPU_BAR_INDEX_FB].cpu_address,
-                       nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address + 0x1000000);
-
-    fbSize = fbHeight * fbPitch;
+    //
+    // nv_get_screen_info() will return dimensions and an address for
+    // any fbdev driver (e.g., efifb, vesafb, etc).
+    //
+    nv_get_screen_info(nv, pFbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch, &fbSize);
 
     return fbSize;
 }

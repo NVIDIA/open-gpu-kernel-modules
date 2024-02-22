@@ -426,13 +426,13 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
     }
 
     // Hal function -- kmemsysGetMaxFbpas
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000020UL) )) /* ChipHal: TU102 */ 
-    {
-        pThis->__kmemsysGetMaxFbpas__ = &kmemsysGetMaxFbpas_TU102;
-    }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000400UL) )) /* ChipHal: GA100 | GH100 */ 
     {
         pThis->__kmemsysGetMaxFbpas__ = &kmemsysGetMaxFbpas_GA100;
+    }
+    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x000003e0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 */ 
+    {
+        pThis->__kmemsysGetMaxFbpas__ = &kmemsysGetMaxFbpas_TU102;
     }
     // default
     else
@@ -445,14 +445,9 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
     {
         pThis->__kmemsysGetEccDedCountSize__ = &kmemsysGetEccDedCountSize_GH100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000420UL) )) /* ChipHal: TU102 | GA100 */ 
-    {
-        pThis->__kmemsysGetEccDedCountSize__ = &kmemsysGetEccDedCountSize_TU102;
-    }
-    // default
     else
     {
-        pThis->__kmemsysGetEccDedCountSize__ = &kmemsysGetEccDedCountSize_4a4dee;
+        pThis->__kmemsysGetEccDedCountSize__ = &kmemsysGetEccDedCountSize_TU102;
     }
 
     // Hal function -- kmemsysGetEccDedCountRegAddr
@@ -460,36 +455,9 @@ static void __nvoc_init_funcTable_KernelMemorySystem_1(KernelMemorySystem *pThis
     {
         pThis->__kmemsysGetEccDedCountRegAddr__ = &kmemsysGetEccDedCountRegAddr_GH100;
     }
-    else if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x00000420UL) )) /* ChipHal: TU102 | GA100 */ 
+    else
     {
         pThis->__kmemsysGetEccDedCountRegAddr__ = &kmemsysGetEccDedCountRegAddr_TU102;
-    }
-    // default
-    else
-    {
-        pThis->__kmemsysGetEccDedCountRegAddr__ = &kmemsysGetEccDedCountRegAddr_4a4dee;
-    }
-
-    // Hal function -- kmemsysGetEccCounts
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000420UL) )) /* ChipHal: TU102 | GA100 | GH100 */ 
-    {
-        pThis->__kmemsysGetEccCounts__ = &kmemsysGetEccCounts_TU102;
-    }
-    // default
-    else
-    {
-        pThis->__kmemsysGetEccCounts__ = &kmemsysGetEccCounts_b3696a;
-    }
-
-    // Hal function -- kmemsysClearEccCounts
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000420UL) )) /* ChipHal: TU102 | GA100 | GH100 */ 
-    {
-        pThis->__kmemsysClearEccCounts__ = &kmemsysClearEccCounts_TU102;
-    }
-    // default
-    else
-    {
-        pThis->__kmemsysClearEccCounts__ = &kmemsysClearEccCounts_b3696a;
     }
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelMemorySystem_engstateConstructEngine;

@@ -336,7 +336,7 @@ NV_STATUS deviceCtrlCmdOsUnixVTGetFBInfo_IMPL
 
             if ((memmgrGetReservedConsoleMemDesc(pGpu, pMemoryManager) != NULL) && bContinue)
             {
-                NvU64 baseAddr;
+                NvU64 baseAddr, size;
 
                 // There should only be one.
                 NV_ASSERT(pParams->width == 0);
@@ -344,11 +344,9 @@ NV_STATUS deviceCtrlCmdOsUnixVTGetFBInfo_IMPL
                 pParams->subDeviceInstance = gpumgrGetSubDeviceInstanceFromGpu(pGpu);
 
                 // Console is either mapped to BAR1 or BAR2 + 16 MB
-                os_get_screen_info(&baseAddr, &pParams->width,
+                nv_get_screen_info(nv, &baseAddr, &pParams->width,
                                    &pParams->height, &pParams->depth,
-                                   &pParams->pitch,
-                                   nv->bars[NV_GPU_BAR_INDEX_FB].cpu_address,
-                                   nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address + 0x1000000);
+                                   &pParams->pitch, &size);
 
                 if (baseAddr != 0)
                 {

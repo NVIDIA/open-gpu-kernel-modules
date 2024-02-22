@@ -682,8 +682,11 @@ create:
         //
         else if (newDev->parent && (newDev->parent)->isVirtualPeerDevice())
         {
-            newDev->parent->getPCONCaps(&(newDev->pconCaps));
-            newDev->connectorType = newDev->parent->getConnectorType();
+            if (!main->isMSTPCONCapsReadDisabled())
+            {
+                newDev->parent->getPCONCaps(&(newDev->pconCaps));
+                newDev->connectorType = newDev->parent->getConnectorType();
+            }
         }
     }
 

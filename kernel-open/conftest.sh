@@ -5213,10 +5213,16 @@ compile_test() {
             # Added by commit 7b7b27214bba ("mm/memory_hotplug: introduce
             # add_memory_driver_managed()") in v5.8-rc1 (2020-06-05)
             #
+            # Before commit 3a0aaefe4134 ("mm/memory_hotplug: guard more
+            # declarations by CONFIG_MEMORY_HOTPLUG") in v5.10, the
+            # add_memory_driver_managed() was not guarded.
+            #
             CODE="
             #include <linux/memory_hotplug.h>
             void conftest_add_memory_driver_managed() {
+            #if defined(CONFIG_MEMORY_HOTPLUG)
                 add_memory_driver_managed();
+            #endif
             }"
 
             compile_check_conftest "$CODE" "NV_ADD_MEMORY_DRIVER_MANAGED_PRESENT" "" "functions"
@@ -6396,9 +6402,15 @@ compile_test() {
             # DRM_UNLOCKED was removed by commit 2798ffcc1d6a ("drm: Remove
             # locking for legacy ioctls and DRM_UNLOCKED") in Linux
             # next-20231208.
+            #
+            # DRM_UNLOCKED definition was moved from drmP.h to drm_ioctl.h by
+            # commit 2640981f3600 ("drm: document drm_ioctl.[hc]") in v4.12.
             CODE="
             #if defined(NV_DRM_DRM_IOCTL_H_PRESENT)
             #include <drm/drm_ioctl.h>
+            #endif
+            #if defined(NV_DRM_DRMP_H_PRESENT)
+            #include <drm/drmP.h>
             #endif
             int flags = DRM_UNLOCKED;"
 

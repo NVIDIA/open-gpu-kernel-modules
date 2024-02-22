@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -194,6 +194,9 @@ subdeviceDestruct_IMPL
     }
 
     subdeviceRestoreLockedClock(pSubdevice, pCallContext);
+
+    // Decrement the reference count for VF if previously incremented.
+    subdeviceRestoreVF(pSubdevice, pCallContext);
 
     // Restore GR tick frequency to default.
     subdeviceRestoreGrTickFreq(pSubdevice, pCallContext);

@@ -744,28 +744,6 @@ static void __nvoc_init_funcTable_OBJGPU_1(OBJGPU *pThis) {
         pThis->__gpuIsCtxBufAllocInPmaSupported__ = &gpuIsCtxBufAllocInPmaSupported_491d52;
     }
 
-    // Hal function -- gpuCheckEccCounts
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000420UL) )) /* ChipHal: TU102 | GA100 | GH100 */ 
-    {
-        pThis->__gpuCheckEccCounts__ = &gpuCheckEccCounts_TU102;
-    }
-    // default
-    else
-    {
-        pThis->__gpuCheckEccCounts__ = &gpuCheckEccCounts_d44104;
-    }
-
-    // Hal function -- gpuClearEccCounts
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000420UL) )) /* ChipHal: TU102 | GA100 | GH100 */ 
-    {
-        pThis->__gpuClearEccCounts__ = &gpuClearEccCounts_TU102;
-    }
-    // default
-    else
-    {
-        pThis->__gpuClearEccCounts__ = &gpuClearEccCounts_ac1694;
-    }
-
     // Hal function -- gpuWaitForGfwBootComplete
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x01f0ffe0UL) )) /* ChipHal: TU102 | TU104 | TU106 | TU116 | TU117 | GA100 | GA102 | GA103 | GA104 | GA106 | GA107 | AD102 | AD103 | AD104 | AD106 | AD107 */ 
     {

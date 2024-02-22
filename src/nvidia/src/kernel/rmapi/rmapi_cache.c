@@ -147,7 +147,7 @@ NvBool rmapiCmdIsCacheable(NvU32 cmd, NvBool bAllowInternal)
     NvU32 flags;
     NvU32 accessRight;
 
-    if (rmapiutilGetControlInfo(cmd, &flags, &accessRight) != NV_OK)
+    if (rmapiutilGetControlInfo(cmd, &flags, &accessRight, NULL) != NV_OK)
         return NV_FALSE;
 
     return rmapiControlIsCacheable(flags, accessRight, bAllowInternal);
@@ -947,13 +947,18 @@ NV_STATUS rmapiControlCacheGet
 {
     NV_STATUS status = NV_OK;
     NvU32 flags = 0;
+    NvU32 ctrlParamsSize;
 
     if (RmapiControlCache.mode == NV0000_CTRL_SYSTEM_RMCTRL_CACHE_MODE_CTRL_MODE_VERIFY_ONLY)
         return NV_ERR_OBJECT_NOT_FOUND;
 
-    status = rmapiutilGetControlInfo(cmd, &flags, NULL);
+    status = rmapiutilGetControlInfo(cmd, &flags, NULL, &ctrlParamsSize);
     if (status != NV_OK)
         goto done;
+
+    NV_CHECK_OR_ELSE(LEVEL_ERROR,
+                     (params != NULL && paramsSize == ctrlParamsSize),
+                     status = NV_ERR_INVALID_PARAMETER; goto done);
 
     switch ((flags & RMCTRL_FLAGS_CACHEABLE_ANY))
     {
@@ -985,10 +990,15 @@ NV_STATUS rmapiControlCacheSet
 {
     NV_STATUS status = NV_OK;
     NvU32 flags = 0;
+    NvU32 ctrlParamsSize;
 
-    status = rmapiutilGetControlInfo(cmd, &flags, NULL);
+    status = rmapiutilGetControlInfo(cmd, &flags, NULL, &ctrlParamsSize);
     if (status != NV_OK)
         goto done;
+
+    NV_CHECK_OR_ELSE(LEVEL_ERROR,
+                     (params != NULL && paramsSize == ctrlParamsSize),
+                     status = NV_ERR_INVALID_PARAMETER; goto done);
 
     switch ((flags & RMCTRL_FLAGS_CACHEABLE_ANY))
     {

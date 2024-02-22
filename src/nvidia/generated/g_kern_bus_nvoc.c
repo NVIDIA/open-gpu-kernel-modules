@@ -903,17 +903,6 @@ static void __nvoc_init_funcTable_KernelBus_1(KernelBus *pThis, RmHalspecOwner *
         pThis->__kbusGetEccCounts__ = &kbusGetEccCounts_4a4dee;
     }
 
-    // Hal function -- kbusClearEccCounts
-    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
-    {
-        pThis->__kbusClearEccCounts__ = &kbusClearEccCounts_GH100;
-    }
-    // default
-    else
-    {
-        pThis->__kbusClearEccCounts__ = &kbusClearEccCounts_b3696a;
-    }
-
     pThis->__nvoc_base_OBJENGSTATE.__engstateConstructEngine__ = &__nvoc_thunk_KernelBus_engstateConstructEngine;
 
     pThis->__nvoc_base_OBJENGSTATE.__engstateStatePreInitLocked__ = &__nvoc_thunk_KernelBus_engstateStatePreInitLocked;
