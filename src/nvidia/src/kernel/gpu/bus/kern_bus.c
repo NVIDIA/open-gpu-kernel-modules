@@ -1393,3 +1393,52 @@ NvU64 kbusGetVfBar0SizeBytes_IMPL
     // Bar 0 size for VF is always 16MB
     return 16llu << 20;
 }
+
+/**
+ * @brief Update BAR1 size and availability in RUSD
+ *
+ * @param[in] pGpu
+ */
+NV_STATUS
+kbusUpdateRusdStatistics_IMPL
+(
+    OBJGPU *pGpu
+)
+{
+    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+    OBJVASPACE *pBar1VAS;
+    OBJEHEAP *pVASHeap;
+    NV00DE_SHARED_DATA *pSharedData;
+    NvU64 bar1Size = 0;
+    NvU64 bar1AvailSize = 0;
+    NV_RANGE bar1VARange = NV_RANGE_EMPTY;
+    NvBool bZeroRusd = KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu);
+
+    bZeroRusd = bZeroRusd || IS_MIG_ENABLED(pGpu);
+
+    if (!bZeroRusd)
+    {
+        pBar1VAS = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
+        NV_ASSERT_OR_RETURN(pBar1VAS != NULL, NV_ERR_INVALID_STATE);
+        pVASHeap = vaspaceGetHeap(pBar1VAS);
+        bar1VARange = rangeMake(vaspaceGetVaStart(pBar1VAS), vaspaceGetVaLimit(pBar1VAS));
+
+        bar1Size = (NvU32)(rangeLength(bar1VARange) / 1024);
+
+        if (pVASHeap != NULL)
+        {
+            NvU64 freeSize = 0;
+
+            pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, NULL, NULL, &freeSize);
+            bar1AvailSize = (NvU32)(freeSize / 1024);
+        }
+    }
+
+    // Minimize critical section, write data once we have it.
+    pSharedData = gpushareddataWriteStart(pGpu);
+    pSharedData->bar1Size = bar1Size;
+    pSharedData->bar1AvailSize = bar1AvailSize;
+    gpushareddataWriteFinish(pGpu);
+
+    return NV_OK;
+}

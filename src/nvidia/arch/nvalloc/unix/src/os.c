@@ -4829,6 +4829,39 @@ osRmCapInitDescriptor
 }
 
 /*
+ * @brief Checks if IMEX channel support is present.
+ */
+NvBool
+osImexChannelIsSupported(void)
+{
+    return os_imex_channel_is_supported;
+}
+
+/*
+ * @brief Returns IMEX channel count.
+ */
+NvS32
+osImexChannelCount
+(
+    void
+)
+{
+    return os_imex_channel_count();
+}
+
+/*
+ * @brief Returns IMEX channel number.
+ *
+ * @param[in] descriptor   OS specific descriptor to query channel number.
+ *
+ */
+NvS32
+osImexChannelGet(NvU64 descriptor)
+{
+    return os_imex_channel_get(descriptor);
+}
+
+/*
  * @brief Generates random bytes which can be used as a universally unique
  *        identifier.
  *

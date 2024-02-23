@@ -743,8 +743,9 @@ memUnmap_IMPL
         //
     }
     // System Memory case
-    else if ((pGpu == NULL) || ((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM) &&
-                                 FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, pCpuMapping->flags)))
+    else if ((pGpu == NULL) || (((memdescGetAddressSpace(pMemDesc) == ADDR_SYSMEM)
+                                 || (memdescGetAddressSpace(pMemDesc) == ADDR_EGM)
+                                ) && FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, pCpuMapping->flags)))
     {
         if (FLD_TEST_DRF(OS33, _FLAGS, _MAPPING, _DIRECT, pCpuMapping->flags))
         {

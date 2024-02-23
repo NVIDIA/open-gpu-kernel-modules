@@ -618,9 +618,10 @@ struct uvm_gpu_struct
     // The gpu's GI uuid if SMC is enabled; otherwise, a copy of parent->uuid.
     NvProcessorUuid uuid;
 
-    // Nice printable name in the format: ID: 999: UVM-GPU-<parent_uuid>.
+    // Nice printable name in the format:
+    // ID: 999: GPU-<parent_uuid> UVM-GI-<gi_uuid>.
     // UVM_GPU_UUID_TEXT_BUFFER_LENGTH includes the null character.
-    char name[9 + UVM_GPU_UUID_TEXT_BUFFER_LENGTH];
+    char name[9 + 2 * UVM_GPU_UUID_TEXT_BUFFER_LENGTH];
 
     // Refcount of the gpu, i.e. how many times it has been retained. This is
     // roughly a count of how many times it has been registered with a VA space,
@@ -655,6 +656,10 @@ struct uvm_gpu_struct
         // Max (inclusive) physical address of this GPU's memory that the driver
         // can allocate through PMM (PMA).
         NvU64 max_allocatable_address;
+
+        // Max supported vidmem page size may be smaller than the max GMMU page
+        // size, because of the vMMU supported page sizes.
+        NvU64 max_vidmem_page_size;
 
         struct
         {
@@ -843,6 +848,9 @@ struct uvm_gpu_struct
         struct proc_dir_entry *dir;
 
         struct proc_dir_entry *dir_symlink;
+
+        // The GPU instance UUID symlink if SMC is enabled.
+        struct proc_dir_entry *gpu_instance_uuid_symlink;
 
         struct proc_dir_entry *info_file;
 
@@ -1210,11 +1218,6 @@ static const char *uvm_gpu_name(uvm_gpu_t *gpu)
     return gpu->name;
 }
 
-static const NvProcessorUuid *uvm_gpu_uuid(uvm_gpu_t *gpu)
-{
-    return &gpu->parent->uuid;
-}
-
 static uvmGpuDeviceHandle uvm_gpu_device_handle(uvm_gpu_t *gpu)
 {
     if (gpu->parent->smc.enabled)
@@ -1232,6 +1235,9 @@ struct uvm_gpu_peer_struct
     //   va_space.enabled_peers bitmap is set.
     //
     // - The global lock is held.
+    //
+    // - While the global lock was held in the past, the two GPUs were detected
+    //   to be SMC peers and were both retained.
     //
     // - While the global lock was held in the past, the two GPUs were detected
     //   to be NVLINK peers and were both retained.
@@ -1319,17 +1325,17 @@ static uvm_gpu_phys_address_t uvm_gpu_page_to_phys_address(uvm_gpu_t *gpu, struc
 // Note that there is a uvm_gpu_get() function defined in uvm_global.h to break
 // a circular dep between global and gpu modules.
 
-// Get a uvm_gpu_t by UUID.  This returns NULL if the GPU is not present.  This
-// is the general purpose call that should be used normally.
-// That is, unless a uvm_gpu_t for a specific SMC partition needs to be
-// retrieved, in which case uvm_gpu_get_by_parent_and_swizz_id() must be used
-// instead.
+// Get a uvm_gpu_t by UUID (physical GPU UUID if SMC is not enabled, otherwise
+// GPU instance UUID).
+// This returns NULL if the GPU is not present.
+// This is the general purpose call that should be used normally.
 //
 // LOCKING: requires the global lock to be held
 uvm_gpu_t *uvm_gpu_get_by_uuid(const NvProcessorUuid *gpu_uuid);
 
-// Get a uvm_parent_gpu_t by UUID.  Like uvm_gpu_get_by_uuid(), this function
-// returns NULL if the GPU has not been registered.
+// Get a uvm_parent_gpu_t by UUID (physical GPU UUID).
+// Like uvm_gpu_get_by_uuid(), this function returns NULL if the GPU has not
+// been registered.
 //
 // LOCKING: requires the global lock to be held
 uvm_parent_gpu_t *uvm_parent_gpu_get_by_uuid(const NvProcessorUuid *gpu_uuid);
@@ -1339,13 +1345,6 @@ uvm_parent_gpu_t *uvm_parent_gpu_get_by_uuid(const NvProcessorUuid *gpu_uuid);
 // function, and is only intended for use by the top-half ISR, or other very
 // limited cases.
 uvm_parent_gpu_t *uvm_parent_gpu_get_by_uuid_locked(const NvProcessorUuid *gpu_uuid);
-
-// Get the uvm_gpu_t for a partition by parent and swizzId. This returns NULL if
-// the partition hasn't been registered. This call needs to be used instead of
-// uvm_gpu_get_by_uuid() when a specific partition is targeted.
-//
-// LOCKING: requires the global lock to be held
-uvm_gpu_t *uvm_gpu_get_by_parent_and_swizz_id(uvm_parent_gpu_t *parent_gpu, NvU32 swizz_id);
 
 // Retain a gpu by uuid
 // Returns the retained uvm_gpu_t in gpu_out on success

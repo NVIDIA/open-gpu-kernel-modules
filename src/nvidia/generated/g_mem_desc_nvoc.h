@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -248,7 +248,7 @@ typedef enum
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_32        = 65U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_33        = 66U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_34        = 67U,
-    NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_35        = 68U,
+    NV_FB_ALLOC_RM_INTERNAL_OWNER_RUSD_BUFFER           = 68U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_36        = 69U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_37        = 70U,
     NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_38        = 71U,

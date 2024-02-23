@@ -74,7 +74,9 @@ typedef struct
 } uvm_perf_thrashing_hint_t;
 
 // Obtain a hint to prevent thrashing on the page with given address
-uvm_perf_thrashing_hint_t uvm_perf_thrashing_get_hint(uvm_va_block_t *va_block, NvU64 address,
+uvm_perf_thrashing_hint_t uvm_perf_thrashing_get_hint(uvm_va_block_t *va_block,
+                                                      uvm_va_block_context_t *va_block_context,
+                                                      NvU64 address,
                                                       uvm_processor_id_t requester);
 
 // Obtain a pointer to a mask with the processors that are thrashing on the

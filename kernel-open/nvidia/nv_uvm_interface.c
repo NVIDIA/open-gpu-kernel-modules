@@ -985,24 +985,30 @@ NV_STATUS nvUvmInterfaceGetNonReplayableFaults(UvmGpuFaultInfo *pFaultInfo,
 }
 EXPORT_SYMBOL(nvUvmInterfaceGetNonReplayableFaults);
 
-NV_STATUS nvUvmInterfaceFlushReplayableFaultBuffer(uvmGpuDeviceHandle device)
+NV_STATUS nvUvmInterfaceFlushReplayableFaultBuffer(UvmGpuFaultInfo *pFaultInfo,
+                                                   NvBool bCopyAndFlush)
 {
     nvidia_stack_t *sp = nvUvmGetSafeStack();
     NV_STATUS status;
 
-    status = rm_gpu_ops_flush_replayable_fault_buffer(sp, (gpuDeviceHandle)device);
+    status = rm_gpu_ops_flush_replayable_fault_buffer(sp,
+                                                      pFaultInfo,
+                                                      bCopyAndFlush);
 
     nvUvmFreeSafeStack(sp);
     return status;
 }
 EXPORT_SYMBOL(nvUvmInterfaceFlushReplayableFaultBuffer);
 
-NV_STATUS nvUvmInterfaceTogglePrefetchFaults(UvmGpuFaultInfo *pFaultInfo, NvBool bEnable)
+NV_STATUS nvUvmInterfaceTogglePrefetchFaults(UvmGpuFaultInfo *pFaultInfo,
+                                             NvBool bEnable)
 {
     nvidia_stack_t *sp = nvUvmGetSafeStack();
     NV_STATUS status;
 
-    status = rm_gpu_ops_toggle_prefetch_faults(sp, pFaultInfo, bEnable);
+    status = rm_gpu_ops_toggle_prefetch_faults(sp,
+                                               pFaultInfo,
+                                               bEnable);
 
     nvUvmFreeSafeStack(sp);
     return status;

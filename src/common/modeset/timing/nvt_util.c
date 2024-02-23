@@ -235,7 +235,7 @@ NvU16 NvTiming_CalcRR(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal)
 
         if (totalPixelsIn2Fields != 0)
         {
-            rr = (NvU16)axb_div_c(pclk * 2, 10000, totalPixelsIn2Fields);
+            rr = (NvU16)axb_div_c_64((NvU64)pclk * 2, (NvU64)10000, (NvU64)totalPixelsIn2Fields);
         }
     }
     else
@@ -244,7 +244,7 @@ NvU16 NvTiming_CalcRR(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTotal)
 
         if (totalPixels != 0)
         {
-            rr = (NvU16)axb_div_c(pclk, 10000, totalPixels);
+            rr = (NvU16)axb_div_c_64((NvU64)pclk, (NvU64)10000, (NvU64)totalPixels);
         }
     }
     return rr;
@@ -261,7 +261,7 @@ NvU32 NvTiming_CalcRRx1k(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTota
 
         if (totalPixelsIn2Fields != 0)
         {
-            rrx1k = (NvU32)axb_div_c(pclk * 2, 10000000, totalPixelsIn2Fields);
+            rrx1k = (NvU32)axb_div_c_64((NvU64)pclk * 2, (NvU64)10000000, (NvU64)totalPixelsIn2Fields);
         }
     }
     else
@@ -270,7 +270,7 @@ NvU32 NvTiming_CalcRRx1k(NvU32 pclk, NvU16 interlaced, NvU16 HTotal, NvU16 VTota
 
         if (totalPixels != 0)
         {
-            rrx1k = (NvU32)axb_div_c(pclk, 10000000, totalPixels);
+            rrx1k = (NvU32)axb_div_c_64((NvU64)pclk, (NvU64)10000000, (NvU64)totalPixels);
         }
     }
  

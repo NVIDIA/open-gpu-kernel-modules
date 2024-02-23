@@ -135,6 +135,8 @@ kgspAllocBootArgs_TU102
     pKernelGsp->pWprMeta = (GspFwWprMeta *)NvP64_VALUE(pVa);
     pKernelGsp->pWprMetaMappingPriv = pPriv;
 
+    portMemSet(pKernelGsp->pWprMeta, 0, sizeof(*pKernelGsp->pWprMeta));
+
     //
     // Setup libos arguments memory
     //
@@ -162,6 +164,8 @@ kgspAllocBootArgs_TU102
     pKernelGsp->pLibosInitArgumentsCached = (LibosMemoryRegionInitArgument *)NvP64_VALUE(pVa);
     pKernelGsp->pLibosInitArgumentsMappingPriv = pPriv;
 
+    portMemSet(pKernelGsp->pLibosInitArgumentsCached, 0, LIBOS_INIT_ARGUMENTS_SIZE);
+
     // Setup bootloader arguments memory.
     NV_ASSERT(sizeof(GSP_ARGUMENTS_CACHED) <= 0x1000);
 
@@ -186,6 +190,8 @@ kgspAllocBootArgs_TU102
 
     pKernelGsp->pGspArgumentsCached = (GSP_ARGUMENTS_CACHED *)NvP64_VALUE(pVa);
     pKernelGsp->pGspArgumentsMappingPriv = pPriv;
+
+    portMemSet(pKernelGsp->pGspArgumentsCached, 0, sizeof(*pKernelGsp->pGspArgumentsCached));
 
     return nvStatus;
 
@@ -503,7 +509,7 @@ kgspGetGspRmBootUcodeStorage_TU102
 }
 
 /*!
- * Calculate the FB layout. Also, copy GSP FW booter image to FB.
+ * Calculate the FB layout.
  *
  * Firmware scrubs the last 256mb of FB, no memory outside of this region
  * may be used until the FW RM has scrubbed the remainder of memory.
@@ -527,8 +533,9 @@ kgspGetGspRmBootUcodeStorage_TU102
  *   | GSP FW (non-WPR) HEAP    |
  *   ---------------------------- <- nonWprHeapOffset, gspFwRsvdStart
  *
- *  gspFwHeapOffset** contains the RM/Libos Heap. First 16 Mb are for Libos heap
- *  rest is for GSP-RM
+ *  gspFwHeapOffset** contains the entire WPR heap region, which can be subdivided
+ *  for various GSP FW components.
+ *
  * @param       pGpu          GPU object pointer
  * @param       pKernelGsp    KernelGsp object pointer
  * @param       pGspFw        Pointer to GSP-RM fw image.
@@ -558,8 +565,6 @@ kgspCalculateFbLayout_TU102
     NV_ASSERT_OR_RETURN(pKernelGsp->pGspRmBootUcodeImage != NULL, NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pKernelGsp->gspRmBootUcodeSize != 0, NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pRiscvDesc != NULL, NV_ERR_INVALID_STATE);
-
-    portMemSet(pWprMeta, 0, sizeof *pWprMeta);
 
     NV_ASSERT_OK_OR_RETURN(kmemsysGetUsableFbSize_HAL(pGpu, pKernelMemorySystem, &pWprMeta->fbSize));
 
@@ -594,8 +599,11 @@ kgspCalculateFbLayout_TU102
     else
         vbiosReservedOffset = pWprMeta->vgaWorkspaceOffset;
 
-    // End of WPR region (128KB aligned)
-    pWprMeta->gspFwWprEnd = NV_ALIGN_DOWN64(vbiosReservedOffset, 0x20000);
+    // Set the size of the GSP FW ahead of kgspGetWprEndMargin()
+    pWprMeta->sizeOfRadix3Elf = pGspFw->imageSize;
+
+    // End of WPR region (128KB aligned), shifted for any WPR end margin
+    pWprMeta->gspFwWprEnd = NV_ALIGN_DOWN64(vbiosReservedOffset - kgspGetWprEndMargin(pGpu, pKernelGsp), 0x20000);
 
     pWprMeta->frtsSize = kgspGetFrtsSize(pGpu, pKernelGsp);
     pWprMeta->frtsOffset = pWprMeta->gspFwWprEnd - pWprMeta->frtsSize;
@@ -603,9 +611,6 @@ kgspCalculateFbLayout_TU102
     // Offset of boot binary image (4K aligned)
     pWprMeta->sizeOfBootloader = pKernelGsp->gspRmBootUcodeSize;
     pWprMeta->bootBinOffset = NV_ALIGN_DOWN64(pWprMeta->frtsOffset - pWprMeta->sizeOfBootloader, 0x1000);
-
-    // Compute GSP firmware image size
-    pWprMeta->sizeOfRadix3Elf = pGspFw->imageSize;
 
     //
     // Compute the start of the ELF.  Align to 64K to avoid issues with

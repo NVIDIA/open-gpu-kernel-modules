@@ -30,7 +30,7 @@
 #include <linux/mempolicy.h>
 #include <linux/mmu_notifier.h>
 
-#if UVM_ATS_PREFETCH_SUPPORTED()
+#if UVM_HMM_RANGE_FAULT_SUPPORTED()
 #include <linux/hmm.h>
 #endif
 
@@ -246,7 +246,7 @@ static uvm_va_block_region_t uvm_ats_region_from_vma(struct vm_area_struct *vma,
     return uvm_ats_region_from_start_end(start, end);
 }
 
-#if UVM_ATS_PREFETCH_SUPPORTED()
+#if UVM_HMM_RANGE_FAULT_SUPPORTED()
 
 static bool uvm_ats_invalidate_notifier(struct mmu_interval_notifier *mni, unsigned long cur_seq)
 {
@@ -284,12 +284,12 @@ static NV_STATUS ats_compute_residency_mask(uvm_gpu_va_space_t *gpu_va_space,
                                             uvm_ats_fault_context_t *ats_context)
 {
     NV_STATUS status = NV_OK;
+    uvm_page_mask_t *residency_mask = &ats_context->prefetch_state.residency_mask;
 
-#if UVM_ATS_PREFETCH_SUPPORTED()
+#if UVM_HMM_RANGE_FAULT_SUPPORTED()
     int ret;
     NvU64 start;
     NvU64 end;
-    uvm_page_mask_t *residency_mask = &ats_context->prefetch_state.residency_mask;
     struct hmm_range range;
     uvm_page_index_t page_index;
     uvm_va_block_region_t vma_region;
@@ -370,6 +370,8 @@ static NV_STATUS ats_compute_residency_mask(uvm_gpu_va_space_t *gpu_va_space,
 
     mmu_interval_notifier_remove(range.notifier);
 
+#else
+    uvm_page_mask_zero(residency_mask);
 #endif
 
     return status;
@@ -403,19 +405,22 @@ static NV_STATUS ats_compute_prefetch(uvm_gpu_va_space_t *gpu_va_space,
                                       uvm_ats_service_type_t service_type,
                                       uvm_ats_fault_context_t *ats_context)
 {
-    NV_STATUS status = NV_OK;
+    NV_STATUS status;
     uvm_page_mask_t *accessed_mask = &ats_context->accessed_mask;
     uvm_page_mask_t *prefetch_mask = &ats_context->prefetch_state.prefetch_pages_mask;
     uvm_va_block_region_t max_prefetch_region = uvm_ats_region_from_vma(vma, base);
+
+    // Residency mask needs to be computed even if prefetching is disabled since
+    // the residency information is also needed by access counters servicing in
+    // uvm_ats_service_access_counters()
+    status = ats_compute_residency_mask(gpu_va_space, vma, base, ats_context);
+    if (status != NV_OK)
+        return status;
 
     if (!uvm_perf_prefetch_enabled(gpu_va_space->va_space))
         return status;
 
     if (uvm_page_mask_empty(accessed_mask))
-        return status;
-
-    status = ats_compute_residency_mask(gpu_va_space, vma, base, ats_context);
-    if (status != NV_OK)
         return status;
 
     // Prefetch the entire region if none of the pages are resident on any node
@@ -637,7 +642,17 @@ NV_STATUS uvm_ats_service_access_counters(uvm_gpu_va_space_t *gpu_va_space,
 
     ats_batch_select_residency(gpu_va_space, vma, ats_context);
 
+    // Ignoring the return value of ats_compute_prefetch is ok since prefetching
+    // is just an optimization and servicing access counter migrations is still
+    // worthwhile even without any prefetching added. So, let servicing continue
+    // instead of returning early even if the prefetch computation fails.
     ats_compute_prefetch(gpu_va_space, vma, base, service_type, ats_context);
+
+    // Remove pages which are already resident at the intended destination from
+    // the accessed_mask.
+    uvm_page_mask_andnot(&ats_context->accessed_mask,
+                         &ats_context->accessed_mask,
+                         &ats_context->prefetch_state.residency_mask);
 
     for_each_va_block_subregion_in_mask(subregion, &ats_context->accessed_mask, region) {
         NV_STATUS status;

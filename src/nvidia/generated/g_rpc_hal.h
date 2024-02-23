@@ -209,6 +209,7 @@ typedef NV_STATUS      RpcUpdateBarPde(POBJGPU, POBJRPC, NV_RPC_UPDATE_PDE_BAR_T
 typedef NV_STATUS      RpcCtrlBindPmResources(POBJGPU, POBJRPC, NvHandle, NvHandle);
 typedef NV_STATUS      RpcMapMemoryDma(POBJGPU, POBJRPC, NvHandle, NvHandle, NvHandle,
                                     NvHandle, NvU64, NvU64, NvU32, NvU64*);
+typedef NV_STATUS      RpcCtrlSetVgpuFbUsage(POBJGPU, POBJRPC, void*);
 typedef NV_STATUS      RpcUnmapMemoryDma(POBJGPU, POBJRPC, NvHandle, NvHandle, NvHandle, NvHandle, NvU32, NvU64);
 typedef NV_STATUS      RpcSetGuestSystemInfoExt(POBJGPU, POBJRPC);
 typedef NV_STATUS      Rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *);
@@ -347,6 +348,7 @@ typedef struct RPC_HAL_IFACES {
     RpcUpdateBarPde             *rpcUpdateBarPde;             /* Update the value of BAR1/BAR2 PDE */
     RpcCtrlBindPmResources      *rpcCtrlBindPmResources;      /* CTRL_BIND_PM_RESOURCES */
     RpcMapMemoryDma             *rpcMapMemoryDma;             /* MAP_MEMORY_DMA */
+    RpcCtrlSetVgpuFbUsage       *rpcCtrlSetVgpuFbUsage;       /* CTRL_SET_VGPU_FB_USAGE */
     RpcUnmapMemoryDma           *rpcUnmapMemoryDma;           /* UNMAP_MEMORY_DMA */
     RpcSetGuestSystemInfoExt    *rpcSetGuestSystemInfoExt;    /* SET_GUEST_SYSTEM_INFO_EXT */
     Rpc_iGrp_ipVersions_getInfo  *rpc_iGrp_ipVersions_getInfo; /* Return lookup table of hal interface ptrs based on IP_VERSION */
@@ -614,6 +616,8 @@ typedef struct RPC_HAL_IFACES {
         (_pRpc)->_hal.rpcCtrlBindPmResources(_pGpu, _pRpc, _arg0, _arg1)
 #define rpcMapMemoryDma_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _arg5, _arg6, _pArg7)  \
         (_pRpc)->_hal.rpcMapMemoryDma(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _arg5, _arg6, _pArg7)
+#define rpcCtrlSetVgpuFbUsage_HAL(_pGpu, _pRpc, _pArg0)  \
+        (_pRpc)->_hal.rpcCtrlSetVgpuFbUsage(_pGpu, _pRpc, _pArg0)
 #define rpcUnmapMemoryDma_HAL(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _arg5)  \
         (_pRpc)->_hal.rpcUnmapMemoryDma(_pGpu, _pRpc, _arg0, _arg1, _arg2, _arg3, _arg4, _arg5)
 #define rpcSetGuestSystemInfoExt_HAL(_pGpu, _pRpc)  \

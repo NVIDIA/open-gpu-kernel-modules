@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -43,6 +43,24 @@
 // The documentation at the beginning of uvm_gpu_non_replayable_faults.c
 // provides some background for understanding replayable faults, non-replayable
 // faults, and how UVM services each fault type.
+
+// The HW fault buffer flush mode instructs RM on how to flush the hardware
+// replayable fault buffer; it is only used in Confidential Computing.
+//
+// Unless HW_FAULT_BUFFER_FLUSH_MODE_MOVE is functionally required (because UVM
+// needs to inspect the faults currently present in the HW fault buffer) it is
+// recommended to use HW_FAULT_BUFFER_FLUSH_MODE_DISCARD for performance
+// reasons.
+typedef enum
+{
+    // Flush the HW fault buffer, discarding all the resulting faults. UVM never
+    // gets to see these faults.
+    HW_FAULT_BUFFER_FLUSH_MODE_DISCARD,
+
+    // Flush the HW fault buffer, and move all the resulting faults to the SW
+    // fault ("shadow") buffer.
+    HW_FAULT_BUFFER_FLUSH_MODE_MOVE,
+} hw_fault_buffer_flush_mode_t;
 
 #define UVM_PERF_REENABLE_PREFETCH_FAULTS_LAPSE_MSEC_DEFAULT 1000
 
@@ -226,7 +244,7 @@ static void fault_buffer_deinit_replayable_faults(uvm_parent_gpu_t *parent_gpu)
     batch_context->utlbs               = NULL;
 }
 
-NV_STATUS uvm_gpu_fault_buffer_init(uvm_parent_gpu_t *parent_gpu)
+NV_STATUS uvm_parent_gpu_fault_buffer_init(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status = NV_OK;
 
@@ -253,7 +271,7 @@ NV_STATUS uvm_gpu_fault_buffer_init(uvm_parent_gpu_t *parent_gpu)
         goto fail;
 
     if (parent_gpu->non_replayable_faults_supported) {
-        status = uvm_gpu_fault_buffer_init_non_replayable_faults(parent_gpu);
+        status = uvm_parent_gpu_fault_buffer_init_non_replayable_faults(parent_gpu);
         if (status != NV_OK)
             goto fail;
     }
@@ -261,28 +279,28 @@ NV_STATUS uvm_gpu_fault_buffer_init(uvm_parent_gpu_t *parent_gpu)
     return NV_OK;
 
 fail:
-    uvm_gpu_fault_buffer_deinit(parent_gpu);
+    uvm_parent_gpu_fault_buffer_deinit(parent_gpu);
 
     return status;
 }
 
 // Reinitialize state relevant to replayable fault handling after returning
 // from a power management cycle.
-void uvm_gpu_fault_buffer_resume(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_fault_buffer_resume(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(parent_gpu->replayable_faults_supported);
 
     fault_buffer_reinit_replayable_faults(parent_gpu);
 }
 
-void uvm_gpu_fault_buffer_deinit(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_fault_buffer_deinit(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status = NV_OK;
 
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
     if (parent_gpu->non_replayable_faults_supported)
-        uvm_gpu_fault_buffer_deinit_non_replayable_faults(parent_gpu);
+        uvm_parent_gpu_fault_buffer_deinit_non_replayable_faults(parent_gpu);
 
     fault_buffer_deinit_replayable_faults(parent_gpu);
 
@@ -297,7 +315,7 @@ void uvm_gpu_fault_buffer_deinit(uvm_parent_gpu_t *parent_gpu)
     }
 }
 
-bool uvm_gpu_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu)
+bool uvm_parent_gpu_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_replayable_fault_buffer_info_t *replayable_faults = &parent_gpu->fault_buffer_info.replayable;
 
@@ -533,25 +551,26 @@ static void write_get(uvm_parent_gpu_t *parent_gpu, NvU32 get)
     parent_gpu->fault_buffer_hal->write_get(parent_gpu, get);
 }
 
-static NV_STATUS hw_fault_buffer_flush_locked(uvm_parent_gpu_t *parent_gpu)
+// In Confidential Computing GSP-RM owns the HW replayable fault buffer.
+// Flushing the fault buffer implies flushing both the HW buffer (using a RM
+// API), and the SW buffer accessible by UVM ("shadow" buffer).
+//
+// The HW buffer needs to be flushed first. This is because, once that flush
+// completes, any faults that were present in the HW buffer have been moved to
+// the shadow buffer, or have been discarded by RM.
+static NV_STATUS hw_fault_buffer_flush_locked(uvm_parent_gpu_t *parent_gpu, hw_fault_buffer_flush_mode_t flush_mode)
 {
-    NV_STATUS status = NV_OK;
+    NV_STATUS status;
+    NvBool is_flush_mode_move;
 
-    // When Confidential Computing is enabled, GSP-RM owns the HW replayable
-    // fault buffer. Flushing the fault buffer implies flushing both the HW
-    // buffer (using a RM API), and the SW buffer accessible by UVM ("shadow"
-    // buffer).
-    //
-    // The HW buffer needs to be flushed first. This is because, once that
-    // flush completes, any faults that were present in the HW buffer when
-    // fault_buffer_flush_locked is called, are now either flushed from the HW
-    // buffer, or are present in the shadow buffer and are about to be discarded
-    // too.
+    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.replayable_faults.service_lock));
+    UVM_ASSERT((flush_mode == HW_FAULT_BUFFER_FLUSH_MODE_MOVE) || (flush_mode == HW_FAULT_BUFFER_FLUSH_MODE_DISCARD));
+
     if (!g_uvm_global.conf_computing_enabled)
         return NV_OK;
 
-    // Flush the HW replayable buffer owned by GSP-RM.
-    status = nvUvmInterfaceFlushReplayableFaultBuffer(parent_gpu->rm_device);
+    is_flush_mode_move = (NvBool) (flush_mode == HW_FAULT_BUFFER_FLUSH_MODE_MOVE);
+    status = nvUvmInterfaceFlushReplayableFaultBuffer(&parent_gpu->fault_buffer_info.rm_info, is_flush_mode_move);
 
     UVM_ASSERT(status == NV_OK);
 
@@ -595,10 +614,9 @@ static NV_STATUS fault_buffer_flush_locked(uvm_gpu_t *gpu,
 
     // Read PUT pointer from the GPU if requested
     if (flush_mode == UVM_GPU_BUFFER_FLUSH_MODE_UPDATE_PUT || flush_mode == UVM_GPU_BUFFER_FLUSH_MODE_WAIT_UPDATE_PUT) {
-        status = hw_fault_buffer_flush_locked(parent_gpu);
+        status = hw_fault_buffer_flush_locked(parent_gpu, HW_FAULT_BUFFER_FLUSH_MODE_DISCARD);
         if (status != NV_OK)
             return status;
-
         replayable_faults->cached_put = parent_gpu->fault_buffer_hal->read_put(parent_gpu);
     }
 
@@ -1435,7 +1453,10 @@ static NV_STATUS service_fault_batch_block_locked(uvm_gpu_t *gpu,
                                                 uvm_fault_access_type_to_prot(service_access_type)))
             continue;
 
-        thrashing_hint = uvm_perf_thrashing_get_hint(va_block, current_entry->fault_address, gpu->id);
+        thrashing_hint = uvm_perf_thrashing_get_hint(va_block,
+                                                     block_context->block_context,
+                                                     current_entry->fault_address,
+                                                     gpu->id);
         if (thrashing_hint.type == UVM_PERF_THRASHING_HINT_TYPE_THROTTLE) {
             // Throttling is implemented by sleeping in the fault handler on
             // the CPU and by continuing to process faults on other pages on
@@ -1981,7 +2002,7 @@ static NV_STATUS service_fault_batch_for_cancel(uvm_gpu_t *gpu, uvm_fault_servic
     // in the HW buffer. When GSP owns the HW buffer, we also have to wait for
     // GSP to copy all available faults from the HW buffer into the shadow
     // buffer.
-    status = hw_fault_buffer_flush_locked(gpu->parent);
+    status = hw_fault_buffer_flush_locked(gpu->parent, HW_FAULT_BUFFER_FLUSH_MODE_MOVE);
     if (status != NV_OK)
         goto done;
 
@@ -2738,14 +2759,14 @@ static void enable_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu, uvm_fau
          (uvm_enable_builtin_tests &&
           parent_gpu->rm_info.isSimulated &&
           batch_context->num_invalid_prefetch_faults > 5))) {
-        uvm_gpu_disable_prefetch_faults(parent_gpu);
+        uvm_parent_gpu_disable_prefetch_faults(parent_gpu);
     }
     else if (!parent_gpu->fault_buffer_info.prefetch_faults_enabled) {
         NvU64 lapse = NV_GETTIME() - parent_gpu->fault_buffer_info.disable_prefetch_faults_timestamp;
 
         // Reenable prefetch faults after some time
         if (lapse > ((NvU64)uvm_perf_reenable_prefetch_faults_lapse_msec * (1000 * 1000)))
-            uvm_gpu_enable_prefetch_faults(parent_gpu);
+            uvm_parent_gpu_enable_prefetch_faults(parent_gpu);
     }
 }
 
@@ -2872,7 +2893,7 @@ void uvm_gpu_service_replayable_faults(uvm_gpu_t *gpu)
         UVM_DBG_PRINT("Error servicing replayable faults on GPU: %s\n", uvm_gpu_name(gpu));
 }
 
-void uvm_gpu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(parent_gpu->isr.replayable_faults.handling);
     UVM_ASSERT(parent_gpu->prefetch_fault_supported);
@@ -2883,7 +2904,7 @@ void uvm_gpu_enable_prefetch_faults(uvm_parent_gpu_t *parent_gpu)
     }
 }
 
-void uvm_gpu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_disable_prefetch_faults(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(parent_gpu->isr.replayable_faults.handling);
     UVM_ASSERT(parent_gpu->prefetch_fault_supported);
@@ -2940,7 +2961,7 @@ NV_STATUS uvm_test_drain_replayable_faults(UVM_TEST_DRAIN_REPLAYABLE_FAULTS_PARA
 
     do {
         uvm_parent_gpu_replayable_faults_isr_lock(gpu->parent);
-        pending = uvm_gpu_replayable_faults_pending(gpu->parent);
+        pending = uvm_parent_gpu_replayable_faults_pending(gpu->parent);
         uvm_parent_gpu_replayable_faults_isr_unlock(gpu->parent);
 
         if (!pending)

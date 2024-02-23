@@ -1,5 +1,5 @@
 /*
-* SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+* SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 * SPDX-License-Identifier: MIT
 *
 * Permission is hereby granted, free of charge, to any person obtaining a
@@ -53,6 +53,7 @@
     (defined(CONFIG_CRYPTO_HMAC) || defined(CONFIG_CRYPTO_HMAC_MODULE)) && \
     (defined(CONFIG_CRYPTO_ECDH) || defined(CONFIG_CRYPTO_ECDH_MODULE)) && \
     (defined(CONFIG_CRYPTO_ECDSA) || defined(CONFIG_CRYPTO_ECDSA_MODULE)) && \
+    (defined(CONFIG_CRYPTO_RSA) || defined(CONFIG_CRYPTO_RSA_MODULE)) && \
     (defined(CONFIG_X509_CERTIFICATE_PARSER) || defined(CONFIG_X509_CERTIFICATE_PARSER_MODULE))
 #define NV_CONFIG_CRYPTO_PRESENT 1
 #endif
@@ -151,4 +152,17 @@ bool lkca_ec_compute_key(void *ec_context, const uint8_t *peer_public,
 bool lkca_ecdsa_verify(void *ec_context, size_t hash_nid,
                        const uint8_t *message_hash, size_t hash_size,
                        const uint8_t *signature, size_t sig_size);
+
+bool lkca_rsa_verify(void *rsa_context, size_t hash_nid,
+                     const uint8_t *message_hash, size_t hash_size,
+                     const uint8_t *signature, size_t sig_size);
+
+bool lkca_rsa_pkcs1_sign(void *rsa_context, size_t hash_nid,
+                         const uint8_t *message_hash, size_t hash_size,
+                         uint8_t *signature, size_t *sig_size);
+
+bool lkca_rsa_pss_sign(void *rsa_context, size_t hash_nid,
+                       const uint8_t *message_hash, size_t hash_size,
+                       uint8_t *signature, size_t *sig_size);
+
 #endif

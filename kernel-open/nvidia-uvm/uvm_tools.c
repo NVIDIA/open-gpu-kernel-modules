@@ -57,12 +57,20 @@ typedef struct
     struct list_head queue_nodes[UvmEventNumTypesAll];
 
     struct page **queue_buffer_pages;
-    UvmEventEntry *queue;
+    union
+    {
+        UvmEventEntry_V1 *queue_v1;
+        UvmEventEntry_V2 *queue_v2;
+    };
     NvU32 queue_buffer_count;
     NvU32 notification_threshold;
 
     struct page **control_buffer_pages;
-    UvmToolsEventControlData *control;
+    union
+    {
+        UvmToolsEventControlData_V1 *control_v1;
+        UvmToolsEventControlData_V2 *control_v2;
+    };
 
     wait_queue_head_t wait_queue;
     bool is_wakeup_get_valid;
@@ -84,6 +92,7 @@ typedef struct
 // private_data for /dev/nvidia-uvm-tools
 typedef struct
 {
+    NvU32 version;
     bool is_queue;
     struct file *uvm_file;
     union
@@ -389,6 +398,16 @@ static void destroy_event_tracker(uvm_tools_event_tracker_t *event_tracker)
 
         if (event_tracker->is_queue) {
             uvm_tools_queue_t *queue = &event_tracker->queue;
+            NvU64 buffer_size, control_size;
+
+            if (event_tracker->version == UvmToolsEventQueueVersion_V1) {
+                buffer_size = queue->queue_buffer_count * sizeof(UvmEventEntry_V1);
+                control_size = sizeof(UvmToolsEventControlData_V1);
+            }
+            else {
+                buffer_size = queue->queue_buffer_count * sizeof(UvmEventEntry_V2);
+                control_size = sizeof(UvmToolsEventControlData_V2);
+            }
 
             remove_event_tracker(va_space,
                                  queue->queue_nodes,
@@ -396,16 +415,16 @@ static void destroy_event_tracker(uvm_tools_event_tracker_t *event_tracker)
                                  queue->subscribed_queues,
                                  &queue->subscribed_queues);
 
-            if (queue->queue != NULL) {
+            if (queue->queue_v2 != NULL) {
                 unmap_user_pages(queue->queue_buffer_pages,
-                                 queue->queue,
-                                 queue->queue_buffer_count * sizeof(UvmEventEntry));
+                                 queue->queue_v2,
+                                 buffer_size);
             }
 
-            if (queue->control != NULL) {
+            if (queue->control_v2 != NULL) {
                 unmap_user_pages(queue->control_buffer_pages,
-                                 queue->control,
-                                 sizeof(UvmToolsEventControlData));
+                                 queue->control_v2,
+                                 control_size);
             }
         }
         else {
@@ -437,9 +456,9 @@ static void destroy_event_tracker(uvm_tools_event_tracker_t *event_tracker)
     kmem_cache_free(g_tools_event_tracker_cache, event_tracker);
 }
 
-static void enqueue_event(const UvmEventEntry *entry, uvm_tools_queue_t *queue)
+static void enqueue_event_v1(const UvmEventEntry_V1 *entry, uvm_tools_queue_t *queue)
 {
-    UvmToolsEventControlData *ctrl = queue->control;
+    UvmToolsEventControlData_V1 *ctrl = queue->control_v1;
     uvm_tools_queue_snapshot_t sn;
     NvU32 queue_size = queue->queue_buffer_count;
     NvU32 queue_mask = queue_size - 1;
@@ -466,7 +485,60 @@ static void enqueue_event(const UvmEventEntry *entry, uvm_tools_queue_t *queue)
         goto unlock;
     }
 
-    memcpy(queue->queue + sn.put_behind, entry, sizeof(*entry));
+    memcpy(queue->queue_v1 + sn.put_behind, entry, sizeof(*entry));
+
+    sn.put_behind = sn.put_ahead;
+
+    // put_ahead and put_behind will always be the same outside of queue->lock
+    // this allows the user-space consumer to choose either a 2 or 4 pointer
+    // synchronization approach.
+    atomic_set((atomic_t *)&ctrl->put_ahead, sn.put_behind);
+    atomic_set((atomic_t *)&ctrl->put_behind, sn.put_behind);
+
+    sn.get_ahead = atomic_read((atomic_t *)&ctrl->get_ahead);
+
+    // if the queue needs to be woken up, only signal if we haven't signaled
+    // before for this value of get_ahead.
+    if (queue_needs_wakeup(queue, &sn) && !(queue->is_wakeup_get_valid && queue->wakeup_get == sn.get_ahead)) {
+        queue->is_wakeup_get_valid = true;
+        queue->wakeup_get = sn.get_ahead;
+        wake_up_all(&queue->wait_queue);
+    }
+
+unlock:
+    uvm_spin_unlock(&queue->lock);
+}
+
+static void enqueue_event_v2(const UvmEventEntry_V2 *entry, uvm_tools_queue_t *queue)
+{
+    UvmToolsEventControlData_V2 *ctrl = queue->control_v2;
+    uvm_tools_queue_snapshot_t sn;
+    NvU32 queue_size = queue->queue_buffer_count;
+    NvU32 queue_mask = queue_size - 1;
+
+    // Prevent processor speculation prior to accessing user-mapped memory to
+    // avoid leaking information from side-channel attacks. There are many
+    // possible paths leading to this point and it would be difficult and error-
+    // prone to audit all of them to determine whether user mode could guide
+    // this access to kernel memory under speculative execution, so to be on the
+    // safe side we'll just always block speculation.
+    nv_speculation_barrier();
+
+    uvm_spin_lock(&queue->lock);
+
+    // ctrl is mapped into user space with read and write permissions,
+    // so its values cannot be trusted.
+    sn.get_behind = atomic_read((atomic_t *)&ctrl->get_behind) & queue_mask;
+    sn.put_behind = atomic_read((atomic_t *)&ctrl->put_behind) & queue_mask;
+    sn.put_ahead = (sn.put_behind + 1) & queue_mask;
+
+    // one free element means that the queue is full
+    if (((queue_size + sn.get_behind - sn.put_behind) & queue_mask) == 1) {
+        atomic64_inc((atomic64_t *)&ctrl->dropped + entry->eventData.eventType);
+        goto unlock;
+    }
+
+    memcpy(queue->queue_v2 + sn.put_behind, entry, sizeof(*entry));
 
     sn.put_behind = sn.put_ahead;
     // put_ahead and put_behind will always be the same outside of queue->lock
@@ -486,7 +558,7 @@ unlock:
     uvm_spin_unlock(&queue->lock);
 }
 
-static void uvm_tools_record_event(uvm_va_space_t *va_space, const UvmEventEntry *entry)
+static void uvm_tools_record_event_v1(uvm_va_space_t *va_space, const UvmEventEntry_V1 *entry)
 {
     NvU8 eventType = entry->eventData.eventType;
     uvm_tools_queue_t *queue;
@@ -495,27 +567,28 @@ static void uvm_tools_record_event(uvm_va_space_t *va_space, const UvmEventEntry
 
     uvm_assert_rwsem_locked(&va_space->tools.lock);
 
-    list_for_each_entry(queue, va_space->tools.queues + eventType, queue_nodes[eventType])
-        enqueue_event(entry, queue);
+    list_for_each_entry(queue, va_space->tools.queues_v1 + eventType, queue_nodes[eventType])
+        enqueue_event_v1(entry, queue);
 }
 
-static void uvm_tools_broadcast_event(const UvmEventEntry *entry)
+static void uvm_tools_record_event_v2(uvm_va_space_t *va_space, const UvmEventEntry_V2 *entry)
 {
-    uvm_va_space_t *va_space;
+    NvU8 eventType = entry->eventData.eventType;
+    uvm_tools_queue_t *queue;
 
-    uvm_down_read(&g_tools_va_space_list_lock);
-    list_for_each_entry(va_space, &g_tools_va_space_list, tools.node) {
-        uvm_down_read(&va_space->tools.lock);
-        uvm_tools_record_event(va_space, entry);
-        uvm_up_read(&va_space->tools.lock);
-    }
-    uvm_up_read(&g_tools_va_space_list_lock);
+    UVM_ASSERT(eventType < UvmEventNumTypesAll);
+
+    uvm_assert_rwsem_locked(&va_space->tools.lock);
+
+    list_for_each_entry(queue, va_space->tools.queues_v2 + eventType, queue_nodes[eventType])
+        enqueue_event_v2(entry, queue);
 }
 
 static bool counter_matches_processor(UvmCounterName counter, const NvProcessorUuid *processor)
 {
-    // For compatibility with older counters, CPU faults for memory with a preferred location are reported
-    // for their preferred location as well as for the CPU device itself.
+    // For compatibility with older counters, CPU faults for memory with a
+    // preferred location are reported for their preferred location as well as
+    // for the CPU device itself.
     // This check prevents double counting in the aggregate count.
     if (counter == UvmCounterNameCpuPageFaultCount)
         return uvm_uuid_eq(processor, &NV_PROCESSOR_UUID_CPU_DEFAULT);
@@ -558,12 +631,28 @@ static bool tools_is_counter_enabled(uvm_va_space_t *va_space, UvmCounterName co
     return !list_empty(va_space->tools.counters + counter);
 }
 
+static bool tools_is_event_enabled_version(uvm_va_space_t *va_space,
+                                           UvmEventType event,
+                                           UvmToolsEventQueueVersion version)
+{
+    uvm_assert_rwsem_locked(&va_space->tools.lock);
+
+    UVM_ASSERT(event < UvmEventNumTypesAll);
+
+    if (version == UvmToolsEventQueueVersion_V1)
+        return !list_empty(va_space->tools.queues_v1 + event);
+    else
+        return !list_empty(va_space->tools.queues_v2 + event);
+}
+
 static bool tools_is_event_enabled(uvm_va_space_t *va_space, UvmEventType event)
 {
     uvm_assert_rwsem_locked(&va_space->tools.lock);
 
     UVM_ASSERT(event < UvmEventNumTypesAll);
-    return !list_empty(va_space->tools.queues + event);
+
+    return !list_empty(va_space->tools.queues_v1 + event) ||
+           !list_empty(va_space->tools.queues_v2 + event);
 }
 
 static bool tools_is_event_enabled_in_any_va_space(UvmEventType event)
@@ -662,7 +751,7 @@ static unsigned uvm_tools_poll(struct file *filp, poll_table *wait)
     int flags = 0;
     uvm_tools_queue_snapshot_t sn;
     uvm_tools_event_tracker_t *event_tracker;
-    UvmToolsEventControlData *ctrl;
+    UvmToolsEventControlData_V2 *ctrl;
 
     if (uvm_global_get_status() != NV_OK)
         return POLLERR;
@@ -674,7 +763,7 @@ static unsigned uvm_tools_poll(struct file *filp, poll_table *wait)
     uvm_spin_lock(&event_tracker->queue.lock);
 
     event_tracker->queue.is_wakeup_get_valid = false;
-    ctrl = event_tracker->queue.control;
+    ctrl = event_tracker->queue.control_v2;
     sn.get_ahead = atomic_read((atomic_t *)&ctrl->get_ahead);
     sn.put_behind = atomic_read((atomic_t *)&ctrl->put_behind);
 
@@ -743,26 +832,50 @@ static void record_gpu_fault_instance(uvm_gpu_t *gpu,
                                       NvU64 batch_id,
                                       NvU64 timestamp)
 {
-    UvmEventEntry entry;
-    UvmEventGpuFaultInfo *info = &entry.eventData.gpuFault;
-    memset(&entry, 0, sizeof(entry));
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeGpuFault, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventGpuFaultInfo_V1 *info = &entry.eventData.gpuFault;
+        memset(&entry, 0, sizeof(entry));
 
-    info->eventType     = UvmEventTypeGpuFault;
-    info->gpuIndex      = uvm_parent_id_value_from_processor_id(gpu->id);
-    info->faultType     = g_hal_to_tools_fault_type_table[fault_entry->fault_type];
-    info->accessType    = g_hal_to_tools_fault_access_type_table[fault_entry->fault_access_type];
-    info->clientType    = g_hal_to_tools_fault_client_type_table[fault_entry->fault_source.client_type];
-    if (fault_entry->is_replayable)
-        info->gpcId     = fault_entry->fault_source.gpc_id;
-    else
-        info->channelId = fault_entry->fault_source.channel_id;
-    info->clientId      = fault_entry->fault_source.client_id;
-    info->address       = fault_entry->fault_address;
-    info->timeStamp     = timestamp;
-    info->timeStampGpu  = fault_entry->timestamp;
-    info->batchId       = batch_id;
+        info->eventType     = UvmEventTypeGpuFault;
+        info->gpuIndex      = uvm_parent_id_value_from_processor_id(gpu->id);
+        info->faultType     = g_hal_to_tools_fault_type_table[fault_entry->fault_type];
+        info->accessType    = g_hal_to_tools_fault_access_type_table[fault_entry->fault_access_type];
+        info->clientType    = g_hal_to_tools_fault_client_type_table[fault_entry->fault_source.client_type];
+        if (fault_entry->is_replayable)
+            info->gpcId     = fault_entry->fault_source.gpc_id;
+        else
+            info->channelId = fault_entry->fault_source.channel_id;
+        info->clientId      = fault_entry->fault_source.client_id;
+        info->address       = fault_entry->fault_address;
+        info->timeStamp     = timestamp;
+        info->timeStampGpu  = fault_entry->timestamp;
+        info->batchId       = batch_id;
 
-    uvm_tools_record_event(va_space, &entry);
+        uvm_tools_record_event_v1(va_space, &entry);
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeGpuFault, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventGpuFaultInfo_V2 *info = &entry.eventData.gpuFault;
+        memset(&entry, 0, sizeof(entry));
+
+        info->eventType     = UvmEventTypeGpuFault;
+        info->gpuIndex      = uvm_id_value(gpu->id);
+        info->faultType     = g_hal_to_tools_fault_type_table[fault_entry->fault_type];
+        info->accessType    = g_hal_to_tools_fault_access_type_table[fault_entry->fault_access_type];
+        info->clientType    = g_hal_to_tools_fault_client_type_table[fault_entry->fault_source.client_type];
+        if (fault_entry->is_replayable)
+            info->gpcId     = fault_entry->fault_source.gpc_id;
+        else
+            info->channelId = fault_entry->fault_source.channel_id;
+        info->clientId      = fault_entry->fault_source.client_id;
+        info->address       = fault_entry->fault_address;
+        info->timeStamp     = timestamp;
+        info->timeStampGpu  = fault_entry->timestamp;
+        info->batchId       = batch_id;
+
+        uvm_tools_record_event_v2(va_space, &entry);
+    }
 }
 
 static void uvm_tools_record_fault(uvm_perf_event_t event_id, uvm_perf_event_data_t *event_data)
@@ -780,9 +893,9 @@ static void uvm_tools_record_fault(uvm_perf_event_t event_id, uvm_perf_event_dat
     UVM_ASSERT(tools_is_fault_callback_needed(va_space));
 
     if (UVM_ID_IS_CPU(event_data->fault.proc_id)) {
-        if (tools_is_event_enabled(va_space, UvmEventTypeCpuFault)) {
-            UvmEventEntry entry;
-            UvmEventCpuFaultInfo *info = &entry.eventData.cpuFault;
+        if (tools_is_event_enabled_version(va_space, UvmEventTypeCpuFault, UvmToolsEventQueueVersion_V1)) {
+            UvmEventEntry_V1 entry;
+            UvmEventCpuFaultInfo_V1 *info = &entry.eventData.cpuFault;
             memset(&entry, 0, sizeof(entry));
 
             info->eventType = UvmEventTypeCpuFault;
@@ -798,7 +911,27 @@ static void uvm_tools_record_fault(uvm_perf_event_t event_id, uvm_perf_event_dat
             info->threadId = uvm_get_stale_thread_id();
             info->pc = event_data->fault.cpu.pc;
 
-            uvm_tools_record_event(va_space, &entry);
+            uvm_tools_record_event_v1(va_space, &entry);
+        }
+        if (tools_is_event_enabled_version(va_space, UvmEventTypeCpuFault, UvmToolsEventQueueVersion_V2)) {
+            UvmEventEntry_V2 entry;
+            UvmEventCpuFaultInfo_V2 *info = &entry.eventData.cpuFault;
+            memset(&entry, 0, sizeof(entry));
+
+            info->eventType = UvmEventTypeCpuFault;
+            if (event_data->fault.cpu.is_write)
+                info->accessType = UvmEventMemoryAccessTypeWrite;
+            else
+                info->accessType = UvmEventMemoryAccessTypeRead;
+
+            info->address = event_data->fault.cpu.fault_va;
+            info->timeStamp = NV_GETTIME();
+            // assume that current owns va_space
+            info->pid = uvm_get_stale_process_id();
+            info->threadId = uvm_get_stale_thread_id();
+            info->pc = event_data->fault.cpu.pc;
+
+            uvm_tools_record_event_v2(va_space, &entry);
         }
         if (tools_is_counter_enabled(va_space, UvmCounterNameCpuPageFaultCount)) {
             uvm_processor_id_t preferred_location;
@@ -814,7 +947,7 @@ static void uvm_tools_record_fault(uvm_perf_event_t event_id, uvm_perf_event_dat
             preferred_location = event_data->fault.preferred_location;
             if (UVM_ID_IS_GPU(preferred_location)) {
                 uvm_gpu_t *gpu = uvm_va_space_get_gpu(va_space, preferred_location);
-                uvm_tools_inc_counter(va_space, UvmCounterNameCpuPageFaultCount, 1, uvm_gpu_uuid(gpu));
+                uvm_tools_inc_counter(va_space, UvmCounterNameCpuPageFaultCount, 1, &gpu->uuid);
             }
         }
     }
@@ -834,7 +967,7 @@ static void uvm_tools_record_fault(uvm_perf_event_t event_id, uvm_perf_event_dat
         }
 
         if (tools_is_counter_enabled(va_space, UvmCounterNameGpuPageFaultCount))
-            uvm_tools_inc_counter(va_space, UvmCounterNameGpuPageFaultCount, 1, uvm_gpu_uuid(gpu));
+            uvm_tools_inc_counter(va_space, UvmCounterNameGpuPageFaultCount, 1, &gpu->uuid);
     }
     uvm_up_read(&va_space->tools.lock);
 }
@@ -855,41 +988,71 @@ static void remove_pending_event_for_channel(uvm_channel_t *channel)
         list_del_init(&channel->tools.channel_list_node);
 }
 
-
 static void record_migration_events(void *args)
 {
     block_migration_data_t *block_mig = (block_migration_data_t *)args;
     migration_data_t *mig;
     migration_data_t *next;
-    UvmEventEntry entry;
-    UvmEventMigrationInfo *info = &entry.eventData.migration;
     uvm_va_space_t *va_space = block_mig->va_space;
 
     NvU64 gpu_timestamp = block_mig->start_timestamp_gpu;
 
-    // Initialize fields that are constant throughout the whole block
-    memset(&entry, 0, sizeof(entry));
-    info->eventType      = UvmEventTypeMigration;
-    info->srcIndex       = uvm_parent_id_value_from_processor_id(block_mig->src);
-    info->dstIndex       = uvm_parent_id_value_from_processor_id(block_mig->dst);
-    info->beginTimeStamp = block_mig->start_timestamp_cpu;
-    info->endTimeStamp   = block_mig->end_timestamp_cpu;
-    info->rangeGroupId   = block_mig->range_group_id;
-
     uvm_down_read(&va_space->tools.lock);
-    list_for_each_entry_safe(mig, next, &block_mig->events, events_node) {
-        UVM_ASSERT(mig->bytes > 0);
-        list_del(&mig->events_node);
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeMigration, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventMigrationInfo_V1 *info = &entry.eventData.migration;
 
-        info->address           = mig->address;
-        info->migratedBytes     = mig->bytes;
-        info->beginTimeStampGpu = gpu_timestamp;
-        info->endTimeStampGpu   = mig->end_timestamp_gpu;
-        info->migrationCause    = mig->cause;
-        gpu_timestamp = mig->end_timestamp_gpu;
-        kmem_cache_free(g_tools_migration_data_cache, mig);
+        // Initialize fields that are constant throughout the whole block
+        memset(&entry, 0, sizeof(entry));
+        info->eventType      = UvmEventTypeMigration;
+        info->srcIndex       = uvm_parent_id_value_from_processor_id(block_mig->src);
+        info->dstIndex       = uvm_parent_id_value_from_processor_id(block_mig->dst);
+        info->beginTimeStamp = block_mig->start_timestamp_cpu;
+        info->endTimeStamp   = block_mig->end_timestamp_cpu;
+        info->rangeGroupId   = block_mig->range_group_id;
 
-        uvm_tools_record_event(va_space, &entry);
+        list_for_each_entry_safe(mig, next, &block_mig->events, events_node) {
+            UVM_ASSERT(mig->bytes > 0);
+            list_del(&mig->events_node);
+
+            info->address           = mig->address;
+            info->migratedBytes     = mig->bytes;
+            info->beginTimeStampGpu = gpu_timestamp;
+            info->endTimeStampGpu   = mig->end_timestamp_gpu;
+            info->migrationCause    = mig->cause;
+            gpu_timestamp = mig->end_timestamp_gpu;
+            kmem_cache_free(g_tools_migration_data_cache, mig);
+
+            uvm_tools_record_event_v1(va_space, &entry);
+        }
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeMigration, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventMigrationInfo_V2 *info = &entry.eventData.migration;
+
+        // Initialize fields that are constant throughout the whole block
+        memset(&entry, 0, sizeof(entry));
+        info->eventType      = UvmEventTypeMigration;
+        info->srcIndex       = uvm_id_value(block_mig->src);
+        info->dstIndex       = uvm_id_value(block_mig->dst);
+        info->beginTimeStamp = block_mig->start_timestamp_cpu;
+        info->endTimeStamp   = block_mig->end_timestamp_cpu;
+        info->rangeGroupId   = block_mig->range_group_id;
+
+        list_for_each_entry_safe(mig, next, &block_mig->events, events_node) {
+            UVM_ASSERT(mig->bytes > 0);
+            list_del(&mig->events_node);
+
+            info->address           = mig->address;
+            info->migratedBytes     = mig->bytes;
+            info->beginTimeStampGpu = gpu_timestamp;
+            info->endTimeStampGpu   = mig->end_timestamp_gpu;
+            info->migrationCause    = mig->cause;
+            gpu_timestamp = mig->end_timestamp_gpu;
+            kmem_cache_free(g_tools_migration_data_cache, mig);
+
+            uvm_tools_record_event_v2(va_space, &entry);
+        }
     }
     uvm_up_read(&va_space->tools.lock);
 
@@ -925,34 +1088,76 @@ static void on_block_migration_complete(void *ptr)
     uvm_spin_unlock(&g_tools_channel_list_lock);
 }
 
-static void record_replay_event_helper(uvm_gpu_id_t gpu_id,
+static void record_replay_event_helper(uvm_va_space_t *va_space,
+                                       uvm_gpu_id_t gpu_id,
                                        NvU32 batch_id,
                                        uvm_fault_client_type_t client_type,
                                        NvU64 timestamp,
                                        NvU64 timestamp_gpu)
 {
-    UvmEventEntry entry;
+    uvm_down_read(&va_space->tools.lock);
 
-    memset(&entry, 0, sizeof(entry));
-    entry.eventData.gpuFaultReplay.eventType    = UvmEventTypeGpuFaultReplay;
-    entry.eventData.gpuFaultReplay.gpuIndex     = uvm_parent_id_value_from_processor_id(gpu_id);
-    entry.eventData.gpuFaultReplay.batchId      = batch_id;
-    entry.eventData.gpuFaultReplay.clientType   = g_hal_to_tools_fault_client_type_table[client_type];
-    entry.eventData.gpuFaultReplay.timeStamp    = timestamp;
-    entry.eventData.gpuFaultReplay.timeStampGpu = timestamp_gpu;
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeGpuFaultReplay, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
 
-    uvm_tools_broadcast_event(&entry);
+        memset(&entry, 0, sizeof(entry));
+        entry.eventData.gpuFaultReplay.eventType    = UvmEventTypeGpuFaultReplay;
+        entry.eventData.gpuFaultReplay.gpuIndex     = uvm_parent_id_value_from_processor_id(gpu_id);
+        entry.eventData.gpuFaultReplay.batchId      = batch_id;
+        entry.eventData.gpuFaultReplay.clientType   = g_hal_to_tools_fault_client_type_table[client_type];
+        entry.eventData.gpuFaultReplay.timeStamp    = timestamp;
+        entry.eventData.gpuFaultReplay.timeStampGpu = timestamp_gpu;
+
+        uvm_tools_record_event_v1(va_space, &entry);
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeGpuFaultReplay, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+
+        memset(&entry, 0, sizeof(entry));
+        entry.eventData.gpuFaultReplay.eventType    = UvmEventTypeGpuFaultReplay;
+        entry.eventData.gpuFaultReplay.gpuIndex     = uvm_id_value(gpu_id);
+        entry.eventData.gpuFaultReplay.batchId      = batch_id;
+        entry.eventData.gpuFaultReplay.clientType   = g_hal_to_tools_fault_client_type_table[client_type];
+        entry.eventData.gpuFaultReplay.timeStamp    = timestamp;
+        entry.eventData.gpuFaultReplay.timeStampGpu = timestamp_gpu;
+
+        uvm_tools_record_event_v2(va_space, &entry);
+    }
+
+    uvm_up_read(&va_space->tools.lock);
+}
+
+static void record_replay_event_broadcast(uvm_gpu_id_t gpu_id,
+                                          NvU32 batch_id,
+                                          uvm_fault_client_type_t client_type,
+                                          NvU64 timestamp,
+                                          NvU64 timestamp_gpu)
+{
+    uvm_va_space_t *va_space;
+
+    uvm_down_read(&g_tools_va_space_list_lock);
+
+    list_for_each_entry(va_space, &g_tools_va_space_list, tools.node) {
+        record_replay_event_helper(va_space,
+                                   gpu_id,
+                                   batch_id,
+                                   client_type,
+                                   timestamp,
+                                   timestamp_gpu);
+    }
+
+    uvm_up_read(&g_tools_va_space_list_lock);
 }
 
 static void record_replay_events(void *args)
 {
     replay_data_t *replay = (replay_data_t *)args;
 
-    record_replay_event_helper(replay->gpu_id,
-                               replay->batch_id,
-                               replay->client_type,
-                               replay->timestamp,
-                               replay->timestamp_gpu);
+    record_replay_event_broadcast(replay->gpu_id,
+                                  replay->batch_id,
+                                  replay->client_type,
+                                  replay->timestamp,
+                                  replay->timestamp_gpu);
 
     kmem_cache_free(g_tools_replay_data_cache, replay);
 }
@@ -987,6 +1192,65 @@ static UvmEventMigrationCause g_make_resident_to_tools_migration_cause[UVM_MAKE_
     [UVM_MAKE_RESIDENT_CAUSE_API_SET_RANGE_GROUP]  = UvmEventMigrationCauseCoherence,
     [UVM_MAKE_RESIDENT_CAUSE_API_HINT]             = UvmEventMigrationCauseUser,
 };
+
+static void uvm_tools_record_migration_cpu_to_cpu(uvm_va_space_t *va_space,
+                                                  uvm_perf_event_data_t *event_data)
+{
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeMigration, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventMigrationInfo_V1 *info = &entry.eventData.migration;
+
+        // CPU-to-CPU migration events can be added directly to the queue.
+        memset(&entry, 0, sizeof(entry));
+        info->eventType = UvmEventTypeMigration;
+        info->srcIndex = uvm_parent_id_value_from_processor_id(event_data->migration.src);
+        info->dstIndex = uvm_parent_id_value_from_processor_id(event_data->migration.dst);
+        info->address = event_data->migration.address;
+        info->migratedBytes = event_data->migration.bytes;
+        info->beginTimeStamp = event_data->migration.cpu_start_timestamp;
+        info->endTimeStamp = NV_GETTIME();
+        info->migrationCause = event_data->migration.cause;
+        info->rangeGroupId = UVM_RANGE_GROUP_ID_NONE;
+
+        // During evictions, it is not safe to uvm_range_group_range_find()
+        // because the va_space lock is not held.
+        if (event_data->migration.cause != UVM_MAKE_RESIDENT_CAUSE_EVICTION) {
+            uvm_range_group_range_t *range = uvm_range_group_range_find(va_space, event_data->migration.address);
+            if (range != NULL)
+                info->rangeGroupId = range->range_group->id;
+        }
+
+        uvm_tools_record_event_v1(va_space, &entry);
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeMigration, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventMigrationInfo_V2 *info = &entry.eventData.migration;
+
+        // CPU-to-CPU migration events can be added directly to the queue.
+        memset(&entry, 0, sizeof(entry));
+        info->eventType = UvmEventTypeMigration;
+        info->srcIndex = uvm_id_value(event_data->migration.src);
+        info->dstIndex = uvm_id_value(event_data->migration.dst);
+        info->srcNid = event_data->migration.src_nid;
+        info->dstNid = event_data->migration.dst_nid;
+        info->address = event_data->migration.address;
+        info->migratedBytes = event_data->migration.bytes;
+        info->beginTimeStamp = event_data->migration.cpu_start_timestamp;
+        info->endTimeStamp = NV_GETTIME();
+        info->migrationCause = event_data->migration.cause;
+        info->rangeGroupId = UVM_RANGE_GROUP_ID_NONE;
+
+        // During evictions, it is not safe to uvm_range_group_range_find()
+        // because the va_space lock is not held.
+        if (event_data->migration.cause != UVM_MAKE_RESIDENT_CAUSE_EVICTION) {
+            uvm_range_group_range_t *range = uvm_range_group_range_find(va_space, event_data->migration.address);
+            if (range != NULL)
+                info->rangeGroupId = range->range_group->id;
+        }
+
+        uvm_tools_record_event_v2(va_space, &entry);
+    }
+}
 
 // For non-CPU-to-CPU migrations (or CPU-to-CPU copies using CEs), this event is
 // notified asynchronously when all the migrations pushed to the same uvm_push_t
@@ -1027,33 +1291,7 @@ static void uvm_tools_record_migration(uvm_perf_event_t event_id, uvm_perf_event
             }
         }
         else {
-            UvmEventEntry entry;
-            UvmEventMigrationInfo *info = &entry.eventData.migration;
-            uvm_va_space_t *va_space = uvm_va_block_get_va_space(event_data->migration.block);
-
-            // CPU-to-CPU migration events can be added directly to the queue.
-            memset(&entry, 0, sizeof(entry));
-            info->eventType = UvmEventTypeMigration;
-            info->srcIndex = uvm_parent_id_value_from_processor_id(event_data->migration.src);
-            info->dstIndex = uvm_parent_id_value_from_processor_id(event_data->migration.dst);
-            // TODO: Bug 4232310: Add src and dst NUMA node IDS to event data.
-            //info->srcNid = event_data->migration.src_nid;
-            //info->dstNid = event_data->migration.dst_nid;
-            info->address = event_data->migration.address;
-            info->migratedBytes = event_data->migration.bytes;
-            info->beginTimeStamp = event_data->migration.cpu_start_timestamp;
-            info->endTimeStamp = NV_GETTIME();
-            info->migrationCause = event_data->migration.cause;
-            info->rangeGroupId = UVM_RANGE_GROUP_ID_NONE;
-
-            // During evictions, it is not safe to uvm_range_group_range_find() because the va_space lock is not held.
-            if (event_data->migration.cause != UVM_MAKE_RESIDENT_CAUSE_EVICTION) {
-                uvm_range_group_range_t *range = uvm_range_group_range_find(va_space, event_data->migration.address);
-                if (range != NULL)
-                    info->rangeGroupId = range->range_group->id;
-            }
-
-            uvm_tools_record_event(va_space, &entry);
+            uvm_tools_record_migration_cpu_to_cpu(va_space, event_data);
         }
     }
 
@@ -1069,7 +1307,7 @@ static void uvm_tools_record_migration(uvm_perf_event_t event_id, uvm_perf_event
         uvm_tools_inc_counter(va_space,
                               UvmCounterNameBytesXferHtD,
                               event_data->migration.bytes,
-                              uvm_gpu_uuid(gpu));
+                              &gpu->uuid);
     }
     if (UVM_ID_IS_CPU(event_data->migration.dst) &&
         tools_is_counter_enabled(va_space, UvmCounterNameBytesXferDtH)) {
@@ -1077,7 +1315,7 @@ static void uvm_tools_record_migration(uvm_perf_event_t event_id, uvm_perf_event
         uvm_tools_inc_counter(va_space,
                               UvmCounterNameBytesXferDtH,
                               event_data->migration.bytes,
-                              uvm_gpu_uuid(gpu));
+                              &gpu->uuid);
     }
 
 done_unlock:
@@ -1120,7 +1358,6 @@ void uvm_tools_broadcast_replay(uvm_gpu_t *gpu,
     uvm_spin_unlock(&g_tools_channel_list_lock);
 }
 
-
 void uvm_tools_broadcast_replay_sync(uvm_gpu_t *gpu, NvU32 batch_id, uvm_fault_client_type_t client_type)
 {
     UVM_ASSERT(!gpu->parent->has_clear_faulted_channel_method);
@@ -1128,60 +1365,104 @@ void uvm_tools_broadcast_replay_sync(uvm_gpu_t *gpu, NvU32 batch_id, uvm_fault_c
     if (!tools_is_event_enabled_in_any_va_space(UvmEventTypeGpuFaultReplay))
         return;
 
-    record_replay_event_helper(gpu->id, batch_id, client_type, NV_GETTIME(), gpu->parent->host_hal->get_time(gpu));
+    record_replay_event_broadcast(gpu->id,
+                                  batch_id,
+                                  client_type,
+                                  NV_GETTIME(),
+                                  gpu->parent->host_hal->get_time(gpu));
+}
+
+void uvm_tools_record_access_counter(uvm_va_space_t *va_space,
+                                     uvm_gpu_id_t gpu_id,
+                                     const uvm_access_counter_buffer_entry_t *buffer_entry,
+                                     bool on_managed_phys)
+{
+    uvm_down_read(&va_space->tools.lock);
+
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeTestAccessCounter, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventTestAccessCounterInfo_V1 *info = &entry.testEventData.accessCounter;
+
+        memset(&entry, 0, sizeof(entry));
+
+        info->eventType           = UvmEventTypeTestAccessCounter;
+        info->srcIndex            = uvm_parent_id_value_from_processor_id(gpu_id);
+        info->address             = buffer_entry->address.address;
+        info->isVirtual           = buffer_entry->address.is_virtual? 1: 0;
+        if (buffer_entry->address.is_virtual) {
+            info->instancePtr         = buffer_entry->virtual_info.instance_ptr.address;
+            info->instancePtrAperture = g_hal_to_tools_aperture_table[buffer_entry->virtual_info.instance_ptr.aperture];
+            info->veId                = buffer_entry->virtual_info.ve_id;
+        }
+        else {
+            info->aperture            = g_hal_to_tools_aperture_table[buffer_entry->address.aperture];
+        }
+        info->isFromCpu           = buffer_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MOMC? 1: 0;
+        info->physOnManaged       = on_managed_phys? 1 : 0;
+        info->value               = buffer_entry->counter_value;
+        info->subGranularity      = buffer_entry->sub_granularity;
+        info->bank                = buffer_entry->bank;
+        info->tag                 = buffer_entry->tag;
+
+        uvm_tools_record_event_v1(va_space, &entry);
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeTestAccessCounter, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventTestAccessCounterInfo_V2 *info = &entry.testEventData.accessCounter;
+
+        memset(&entry, 0, sizeof(entry));
+
+        info->eventType           = UvmEventTypeTestAccessCounter;
+        info->srcIndex            = uvm_id_value(gpu_id);
+        info->address             = buffer_entry->address.address;
+        info->isVirtual           = buffer_entry->address.is_virtual? 1: 0;
+        if (buffer_entry->address.is_virtual) {
+            info->instancePtr         = buffer_entry->virtual_info.instance_ptr.address;
+            info->instancePtrAperture = g_hal_to_tools_aperture_table[buffer_entry->virtual_info.instance_ptr.aperture];
+            info->veId                = buffer_entry->virtual_info.ve_id;
+        }
+        else {
+            info->aperture            = g_hal_to_tools_aperture_table[buffer_entry->address.aperture];
+        }
+        info->isFromCpu           = buffer_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MOMC? 1: 0;
+        info->physOnManaged       = on_managed_phys? 1 : 0;
+        info->value               = buffer_entry->counter_value;
+        info->subGranularity      = buffer_entry->sub_granularity;
+        info->bank                = buffer_entry->bank;
+        info->tag                 = buffer_entry->tag;
+
+        uvm_tools_record_event_v2(va_space, &entry);
+    }
+
+    uvm_up_read(&va_space->tools.lock);
 }
 
 void uvm_tools_broadcast_access_counter(uvm_gpu_t *gpu,
                                         const uvm_access_counter_buffer_entry_t *buffer_entry,
                                         bool on_managed_phys)
 {
-    UvmEventEntry entry;
-    UvmEventTestAccessCounterInfo *info = &entry.testEventData.accessCounter;
+    uvm_va_space_t *va_space;
 
-    // Perform delayed notification only if some VA space has signed up for
-    // UvmEventTypeAccessCounter
-    if (!tools_is_event_enabled_in_any_va_space(UvmEventTypeTestAccessCounter))
-        return;
-
-    if (!buffer_entry->address.is_virtual)
-        UVM_ASSERT(UVM_ID_IS_VALID(buffer_entry->physical_info.resident_id));
-
-    memset(&entry, 0, sizeof(entry));
-
-    info->eventType           = UvmEventTypeTestAccessCounter;
-    info->srcIndex            = uvm_parent_id_value_from_processor_id(gpu->id);
-    info->address             = buffer_entry->address.address;
-    info->isVirtual           = buffer_entry->address.is_virtual? 1: 0;
-
-    if (buffer_entry->address.is_virtual) {
-        info->instancePtr         = buffer_entry->virtual_info.instance_ptr.address;
-        info->instancePtrAperture = g_hal_to_tools_aperture_table[buffer_entry->virtual_info.instance_ptr.aperture];
-        info->veId                = buffer_entry->virtual_info.ve_id;
+    uvm_down_read(&g_tools_va_space_list_lock);
+    list_for_each_entry(va_space, &g_tools_va_space_list, tools.node) {
+        uvm_tools_record_access_counter(va_space,
+                                        gpu->id,
+                                        buffer_entry,
+                                        on_managed_phys);
     }
-    else {
-        info->aperture            = g_hal_to_tools_aperture_table[buffer_entry->address.aperture];
-        info->physOnManaged       = on_managed_phys? 1 : 0;
-    }
-
-    info->isFromCpu           = buffer_entry->counter_type == UVM_ACCESS_COUNTER_TYPE_MOMC? 1: 0;
-    info->value               = buffer_entry->counter_value;
-    info->subGranularity      = buffer_entry->sub_granularity;
-    info->bank                = buffer_entry->bank;
-    info->tag                 = buffer_entry->tag;
-
-    uvm_tools_broadcast_event(&entry);
+    uvm_up_read(&g_tools_va_space_list_lock);
 }
 
 void uvm_tools_test_hmm_split_invalidate(uvm_va_space_t *va_space)
 {
-    UvmEventEntry entry;
+    UvmEventEntry_V2 entry;
 
     if (!va_space->tools.enabled)
         return;
 
     entry.testEventData.splitInvalidate.eventType = UvmEventTypeTestHmmSplitInvalidate;
     uvm_down_read(&va_space->tools.lock);
-    uvm_tools_record_event(va_space, &entry);
+    uvm_tools_record_event_v2(va_space, &entry);
     uvm_up_read(&va_space->tools.lock);
 }
 
@@ -1263,11 +1544,11 @@ void uvm_tools_record_read_duplicate(uvm_va_block_t *va_block,
         return;
 
     uvm_down_read(&va_space->tools.lock);
-    if (tools_is_event_enabled(va_space, UvmEventTypeReadDuplicate)) {
-        // Read-duplication events
-        UvmEventEntry entry;
-        UvmEventReadDuplicateInfo *info_read_duplicate = &entry.eventData.readDuplicate;
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeReadDuplicate, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventReadDuplicateInfo_V1 *info_read_duplicate = &entry.eventData.readDuplicate;
         uvm_page_index_t page_index;
+
         memset(&entry, 0, sizeof(entry));
 
         info_read_duplicate->eventType = UvmEventTypeReadDuplicate;
@@ -1275,17 +1556,44 @@ void uvm_tools_record_read_duplicate(uvm_va_block_t *va_block,
         info_read_duplicate->timeStamp = NV_GETTIME();
 
         for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
-            uvm_processor_id_t id;
             uvm_processor_mask_t resident_processors;
+            uvm_processor_id_t id;
 
-            info_read_duplicate->address    = uvm_va_block_cpu_page_address(va_block, page_index);
+            info_read_duplicate->address = uvm_va_block_cpu_page_address(va_block, page_index);
             info_read_duplicate->processors = 0;
 
             uvm_va_block_page_resident_processors(va_block, page_index, &resident_processors);
             for_each_id_in_mask(id, &resident_processors)
-                info_read_duplicate->processors |= (1 << uvm_parent_id_value_from_processor_id(id));
+                __set_bit(uvm_parent_id_value_from_processor_id(id),
+                          (unsigned long *)&info_read_duplicate->processors);
 
-            uvm_tools_record_event(va_space, &entry);
+            uvm_tools_record_event_v1(va_space, &entry);
+        }
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeReadDuplicate, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventReadDuplicateInfo_V2 *info_read_duplicate = &entry.eventData.readDuplicate;
+        uvm_page_index_t page_index;
+
+        memset(&entry, 0, sizeof(entry));
+
+        info_read_duplicate->eventType = UvmEventTypeReadDuplicate;
+        info_read_duplicate->size      = PAGE_SIZE;
+        info_read_duplicate->timeStamp = NV_GETTIME();
+
+        for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
+            uvm_processor_mask_t resident_processors;
+            uvm_processor_id_t id;
+
+            info_read_duplicate->address = uvm_va_block_cpu_page_address(va_block, page_index);
+            memset(info_read_duplicate->processors, 0, sizeof(info_read_duplicate->processors));
+
+            uvm_va_block_page_resident_processors(va_block, page_index, &resident_processors);
+            for_each_id_in_mask(id, &resident_processors)
+                __set_bit(uvm_id_value(id),
+                          (unsigned long *)info_read_duplicate->processors);
+
+            uvm_tools_record_event_v2(va_space, &entry);
         }
     }
     uvm_up_read(&va_space->tools.lock);
@@ -1302,10 +1610,11 @@ void uvm_tools_record_read_duplicate_invalidate(uvm_va_block_t *va_block,
         return;
 
     uvm_down_read(&va_space->tools.lock);
-    if (tools_is_event_enabled(va_space, UvmEventTypeReadDuplicateInvalidate)) {
-        UvmEventEntry entry;
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeReadDuplicateInvalidate, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
         uvm_page_index_t page_index;
-        UvmEventReadDuplicateInvalidateInfo *info = &entry.eventData.readDuplicateInvalidate;
+        UvmEventReadDuplicateInvalidateInfo_V1 *info = &entry.eventData.readDuplicateInvalidate;
+
         memset(&entry, 0, sizeof(entry));
 
         info->eventType     = UvmEventTypeReadDuplicateInvalidate;
@@ -1317,7 +1626,26 @@ void uvm_tools_record_read_duplicate_invalidate(uvm_va_block_t *va_block,
             UVM_ASSERT(uvm_page_mask_test(&va_block->read_duplicated_pages, page_index));
 
             info->address = uvm_va_block_cpu_page_address(va_block, page_index);
-            uvm_tools_record_event(va_space, &entry);
+            uvm_tools_record_event_v1(va_space, &entry);
+        }
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeReadDuplicateInvalidate, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        uvm_page_index_t page_index;
+        UvmEventReadDuplicateInvalidateInfo_V2 *info = &entry.eventData.readDuplicateInvalidate;
+
+        memset(&entry, 0, sizeof(entry));
+
+        info->eventType     = UvmEventTypeReadDuplicateInvalidate;
+        info->residentIndex = uvm_id_value(dst);
+        info->size          = PAGE_SIZE;
+        info->timeStamp     = NV_GETTIME();
+
+        for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
+            UVM_ASSERT(uvm_page_mask_test(&va_block->read_duplicated_pages, page_index));
+
+            info->address = uvm_va_block_cpu_page_address(va_block, page_index);
+            uvm_tools_record_event_v2(va_space, &entry);
         }
     }
     uvm_up_read(&va_space->tools.lock);
@@ -1373,9 +1701,10 @@ void uvm_tools_record_cpu_fatal_fault(uvm_va_space_t *va_space,
         return;
 
     uvm_down_read(&va_space->tools.lock);
-    if (tools_is_event_enabled(va_space, UvmEventTypeFatalFault)) {
-        UvmEventEntry entry;
-        UvmEventFatalFaultInfo *info = &entry.eventData.fatalFault;
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeFatalFault, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventFatalFaultInfo_V1 *info = &entry.eventData.fatalFault;
+
         memset(&entry, 0, sizeof(entry));
 
         info->eventType      = UvmEventTypeFatalFault;
@@ -1386,7 +1715,23 @@ void uvm_tools_record_cpu_fatal_fault(uvm_va_space_t *va_space,
         // info->faultType is not valid for cpu faults
         info->reason         = reason;
 
-        uvm_tools_record_event(va_space, &entry);
+        uvm_tools_record_event_v1(va_space, &entry);
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeFatalFault, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventFatalFaultInfo_V2 *info = &entry.eventData.fatalFault;
+
+        memset(&entry, 0, sizeof(entry));
+
+        info->eventType      = UvmEventTypeFatalFault;
+        info->processorIndex = UVM_ID_CPU_VALUE;
+        info->timeStamp      = NV_GETTIME();
+        info->address        = address;
+        info->accessType     = is_write? UvmEventMemoryAccessTypeWrite: UvmEventMemoryAccessTypeRead;
+        // info->faultType is not valid for cpu faults
+        info->reason         = reason;
+
+        uvm_tools_record_event_v2(va_space, &entry);
     }
     uvm_up_read(&va_space->tools.lock);
 }
@@ -1402,9 +1747,10 @@ void uvm_tools_record_gpu_fatal_fault(uvm_gpu_id_t gpu_id,
         return;
 
     uvm_down_read(&va_space->tools.lock);
-    if (tools_is_event_enabled(va_space, UvmEventTypeFatalFault)) {
-        UvmEventEntry entry;
-        UvmEventFatalFaultInfo *info = &entry.eventData.fatalFault;
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeFatalFault, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventFatalFaultInfo_V1 *info = &entry.eventData.fatalFault;
+
         memset(&entry, 0, sizeof(entry));
 
         info->eventType      = UvmEventTypeFatalFault;
@@ -1415,7 +1761,23 @@ void uvm_tools_record_gpu_fatal_fault(uvm_gpu_id_t gpu_id,
         info->faultType      = g_hal_to_tools_fault_type_table[buffer_entry->fault_type];
         info->reason         = reason;
 
-        uvm_tools_record_event(va_space, &entry);
+        uvm_tools_record_event_v1(va_space, &entry);
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeFatalFault, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventFatalFaultInfo_V2 *info = &entry.eventData.fatalFault;
+
+        memset(&entry, 0, sizeof(entry));
+
+        info->eventType      = UvmEventTypeFatalFault;
+        info->processorIndex = uvm_id_value(gpu_id);
+        info->timeStamp      = NV_GETTIME();
+        info->address        = buffer_entry->fault_address;
+        info->accessType     = g_hal_to_tools_fault_access_type_table[buffer_entry->fault_access_type];
+        info->faultType      = g_hal_to_tools_fault_type_table[buffer_entry->fault_type];
+        info->reason         = reason;
+
+        uvm_tools_record_event_v2(va_space, &entry);
     }
     uvm_up_read(&va_space->tools.lock);
 }
@@ -1435,10 +1797,11 @@ void uvm_tools_record_thrashing(uvm_va_space_t *va_space,
         return;
 
     uvm_down_read(&va_space->tools.lock);
-    if (tools_is_event_enabled(va_space, UvmEventTypeThrashingDetected)) {
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeThrashingDetected, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventThrashingDetectedInfo_V1 *info = &entry.eventData.thrashing;
         uvm_processor_id_t id;
-        UvmEventEntry entry;
-        UvmEventThrashingDetectedInfo *info = &entry.eventData.thrashing;
+
         memset(&entry, 0, sizeof(entry));
 
         info->eventType = UvmEventTypeThrashingDetected;
@@ -1450,7 +1813,23 @@ void uvm_tools_record_thrashing(uvm_va_space_t *va_space,
             __set_bit(uvm_parent_id_value_from_processor_id(id),
                       (unsigned long *)&info->processors);
 
-        uvm_tools_record_event(va_space, &entry);
+        uvm_tools_record_event_v1(va_space, &entry);
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeThrashingDetected, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventThrashingDetectedInfo_V2 *info = &entry.eventData.thrashing;
+
+        memset(&entry, 0, sizeof(entry));
+
+        info->eventType = UvmEventTypeThrashingDetected;
+        info->address   = address;
+        info->size      = region_size;
+        info->timeStamp = NV_GETTIME();
+
+        BUILD_BUG_ON(UVM_MAX_PROCESSORS_V2 < UVM_ID_MAX_PROCESSORS);
+        bitmap_copy((long unsigned *)&info->processors, processors->bitmap, UVM_ID_MAX_PROCESSORS);
+
+        uvm_tools_record_event_v2(va_space, &entry);
     }
     uvm_up_read(&va_space->tools.lock);
 }
@@ -1467,9 +1846,10 @@ void uvm_tools_record_throttling_start(uvm_va_space_t *va_space, NvU64 address, 
         return;
 
     uvm_down_read(&va_space->tools.lock);
-    if (tools_is_event_enabled(va_space, UvmEventTypeThrottlingStart)) {
-        UvmEventEntry entry;
-        UvmEventThrottlingStartInfo *info = &entry.eventData.throttlingStart;
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeThrottlingStart, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventThrottlingStartInfo_V1 *info = &entry.eventData.throttlingStart;
+
         memset(&entry, 0, sizeof(entry));
 
         info->eventType      = UvmEventTypeThrottlingStart;
@@ -1477,7 +1857,20 @@ void uvm_tools_record_throttling_start(uvm_va_space_t *va_space, NvU64 address, 
         info->address        = address;
         info->timeStamp      = NV_GETTIME();
 
-        uvm_tools_record_event(va_space, &entry);
+        uvm_tools_record_event_v1(va_space, &entry);
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeThrottlingStart, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventThrottlingStartInfo_V2 *info = &entry.eventData.throttlingStart;
+
+        memset(&entry, 0, sizeof(entry));
+
+        info->eventType      = UvmEventTypeThrottlingStart;
+        info->processorIndex = uvm_id_value(processor);
+        info->address        = address;
+        info->timeStamp      = NV_GETTIME();
+
+        uvm_tools_record_event_v2(va_space, &entry);
     }
     uvm_up_read(&va_space->tools.lock);
 }
@@ -1494,9 +1887,10 @@ void uvm_tools_record_throttling_end(uvm_va_space_t *va_space, NvU64 address, uv
         return;
 
     uvm_down_read(&va_space->tools.lock);
-    if (tools_is_event_enabled(va_space, UvmEventTypeThrottlingEnd)) {
-        UvmEventEntry entry;
-        UvmEventThrottlingEndInfo *info = &entry.eventData.throttlingEnd;
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeThrottlingEnd, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
+        UvmEventThrottlingEndInfo_V1 *info = &entry.eventData.throttlingEnd;
+
         memset(&entry, 0, sizeof(entry));
 
         info->eventType      = UvmEventTypeThrottlingEnd;
@@ -1504,7 +1898,20 @@ void uvm_tools_record_throttling_end(uvm_va_space_t *va_space, NvU64 address, uv
         info->address        = address;
         info->timeStamp      = NV_GETTIME();
 
-        uvm_tools_record_event(va_space, &entry);
+        uvm_tools_record_event_v1(va_space, &entry);
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeThrottlingEnd, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+        UvmEventThrottlingEndInfo_V2 *info = &entry.eventData.throttlingEnd;
+
+        memset(&entry, 0, sizeof(entry));
+
+        info->eventType      = UvmEventTypeThrottlingEnd;
+        info->processorIndex = uvm_id_value(processor);
+        info->address        = address;
+        info->timeStamp      = NV_GETTIME();
+
+        uvm_tools_record_event_v2(va_space, &entry);
     }
     uvm_up_read(&va_space->tools.lock);
 }
@@ -1513,27 +1920,52 @@ static void record_map_remote_events(void *args)
 {
     block_map_remote_data_t *block_map_remote = (block_map_remote_data_t *)args;
     map_remote_data_t *map_remote, *next;
-    UvmEventEntry entry;
     uvm_va_space_t *va_space = block_map_remote->va_space;
 
-    memset(&entry, 0, sizeof(entry));
-
-    entry.eventData.mapRemote.eventType      = UvmEventTypeMapRemote;
-    entry.eventData.mapRemote.srcIndex       = uvm_parent_id_value_from_processor_id(block_map_remote->src);
-    entry.eventData.mapRemote.dstIndex       = uvm_parent_id_value_from_processor_id(block_map_remote->dst);
-    entry.eventData.mapRemote.mapRemoteCause = block_map_remote->cause;
-    entry.eventData.mapRemote.timeStamp      = block_map_remote->timestamp;
-
     uvm_down_read(&va_space->tools.lock);
-    list_for_each_entry_safe(map_remote, next, &block_map_remote->events, events_node) {
-        list_del(&map_remote->events_node);
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeMapRemote, UvmToolsEventQueueVersion_V1)) {
+        UvmEventEntry_V1 entry;
 
-        entry.eventData.mapRemote.address      = map_remote->address;
-        entry.eventData.mapRemote.size         = map_remote->size;
-        entry.eventData.mapRemote.timeStampGpu = map_remote->timestamp_gpu;
-        kmem_cache_free(g_tools_map_remote_data_cache, map_remote);
+        memset(&entry, 0, sizeof(entry));
 
-        uvm_tools_record_event(va_space, &entry);
+        entry.eventData.mapRemote.eventType      = UvmEventTypeMapRemote;
+        entry.eventData.mapRemote.srcIndex       = uvm_parent_id_value_from_processor_id(block_map_remote->src);
+        entry.eventData.mapRemote.dstIndex       = uvm_parent_id_value_from_processor_id(block_map_remote->dst);
+        entry.eventData.mapRemote.mapRemoteCause = block_map_remote->cause;
+        entry.eventData.mapRemote.timeStamp      = block_map_remote->timestamp;
+
+        list_for_each_entry_safe(map_remote, next, &block_map_remote->events, events_node) {
+            list_del(&map_remote->events_node);
+
+            entry.eventData.mapRemote.address      = map_remote->address;
+            entry.eventData.mapRemote.size         = map_remote->size;
+            entry.eventData.mapRemote.timeStampGpu = map_remote->timestamp_gpu;
+            kmem_cache_free(g_tools_map_remote_data_cache, map_remote);
+
+            uvm_tools_record_event_v1(va_space, &entry);
+        }
+    }
+    if (tools_is_event_enabled_version(va_space, UvmEventTypeMapRemote, UvmToolsEventQueueVersion_V2)) {
+        UvmEventEntry_V2 entry;
+
+        memset(&entry, 0, sizeof(entry));
+
+        entry.eventData.mapRemote.eventType      = UvmEventTypeMapRemote;
+        entry.eventData.mapRemote.srcIndex       = uvm_id_value(block_map_remote->src);
+        entry.eventData.mapRemote.dstIndex       = uvm_id_value(block_map_remote->dst);
+        entry.eventData.mapRemote.mapRemoteCause = block_map_remote->cause;
+        entry.eventData.mapRemote.timeStamp      = block_map_remote->timestamp;
+
+        list_for_each_entry_safe(map_remote, next, &block_map_remote->events, events_node) {
+            list_del(&map_remote->events_node);
+
+            entry.eventData.mapRemote.address      = map_remote->address;
+            entry.eventData.mapRemote.size         = map_remote->size;
+            entry.eventData.mapRemote.timeStampGpu = map_remote->timestamp_gpu;
+            kmem_cache_free(g_tools_map_remote_data_cache, map_remote);
+
+            uvm_tools_record_event_v2(va_space, &entry);
+        }
     }
     uvm_up_read(&va_space->tools.lock);
 
@@ -1584,27 +2016,46 @@ void uvm_tools_record_map_remote(uvm_va_block_t *va_block,
         return;
 
     uvm_down_read(&va_space->tools.lock);
-    if (!tools_is_event_enabled(va_space, UvmEventTypeMapRemote))
-        goto done;
 
     if (UVM_ID_IS_CPU(processor)) {
-        UvmEventEntry entry;
-        memset(&entry, 0, sizeof(entry));
+        if (tools_is_event_enabled_version(va_space, UvmEventTypeMapRemote, UvmToolsEventQueueVersion_V1)) {
+            UvmEventEntry_V1 entry;
 
-        entry.eventData.mapRemote.eventType      = UvmEventTypeMapRemote;
-        entry.eventData.mapRemote.srcIndex       = uvm_parent_id_value_from_processor_id(processor);
-        entry.eventData.mapRemote.dstIndex       = uvm_parent_id_value_from_processor_id(residency);
-        entry.eventData.mapRemote.mapRemoteCause = cause;
-        entry.eventData.mapRemote.timeStamp      = NV_GETTIME();
-        entry.eventData.mapRemote.address        = address;
-        entry.eventData.mapRemote.size           = region_size;
-        entry.eventData.mapRemote.timeStampGpu   = 0;
+            memset(&entry, 0, sizeof(entry));
 
-        UVM_ASSERT(entry.eventData.mapRemote.mapRemoteCause != UvmEventMapRemoteCauseInvalid);
+            entry.eventData.mapRemote.eventType      = UvmEventTypeMapRemote;
+            entry.eventData.mapRemote.srcIndex       = uvm_parent_id_value_from_processor_id(processor);
+            entry.eventData.mapRemote.dstIndex       = uvm_parent_id_value_from_processor_id(residency);
+            entry.eventData.mapRemote.mapRemoteCause = cause;
+            entry.eventData.mapRemote.timeStamp      = NV_GETTIME();
+            entry.eventData.mapRemote.address        = address;
+            entry.eventData.mapRemote.size           = region_size;
+            entry.eventData.mapRemote.timeStampGpu   = 0;
 
-        uvm_tools_record_event(va_space, &entry);
+            UVM_ASSERT(entry.eventData.mapRemote.mapRemoteCause != UvmEventMapRemoteCauseInvalid);
+
+            uvm_tools_record_event_v1(va_space, &entry);
+        }
+        if (tools_is_event_enabled_version(va_space, UvmEventTypeMapRemote, UvmToolsEventQueueVersion_V2)) {
+            UvmEventEntry_V2 entry;
+
+            memset(&entry, 0, sizeof(entry));
+
+            entry.eventData.mapRemote.eventType      = UvmEventTypeMapRemote;
+            entry.eventData.mapRemote.srcIndex       = uvm_id_value(processor);
+            entry.eventData.mapRemote.dstIndex       = uvm_id_value(residency);
+            entry.eventData.mapRemote.mapRemoteCause = cause;
+            entry.eventData.mapRemote.timeStamp      = NV_GETTIME();
+            entry.eventData.mapRemote.address        = address;
+            entry.eventData.mapRemote.size           = region_size;
+            entry.eventData.mapRemote.timeStampGpu   = 0;
+
+            UVM_ASSERT(entry.eventData.mapRemote.mapRemoteCause != UvmEventMapRemoteCauseInvalid);
+
+            uvm_tools_record_event_v2(va_space, &entry);
+        }
     }
-    else {
+    else if (tools_is_event_enabled(va_space, UvmEventTypeMapRemote)) {
         uvm_push_info_t *push_info = uvm_push_info_from_push(push);
         block_map_remote_data_t *block_map_remote;
         map_remote_data_t *map_remote;
@@ -1657,9 +2108,15 @@ NV_STATUS uvm_api_tools_init_event_tracker(UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS *
     NV_STATUS status = NV_OK;
     uvm_tools_event_tracker_t *event_tracker;
 
+    if (params->requestedVersion != UvmToolsEventQueueVersion_V1 &&
+        params->requestedVersion != UvmToolsEventQueueVersion_V2)
+        return NV_ERR_INVALID_ARGUMENT;
+
     event_tracker = nv_kmem_cache_zalloc(g_tools_event_tracker_cache, NV_UVM_GFP_FLAGS);
     if (event_tracker == NULL)
         return NV_ERR_NO_MEMORY;
+
+    event_tracker->version = params->requestedVersion;
 
     event_tracker->uvm_file = fget(params->uvmFd);
     if (event_tracker->uvm_file == NULL) {
@@ -1686,6 +2143,8 @@ NV_STATUS uvm_api_tools_init_event_tracker(UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS *
     event_tracker->is_queue = params->queueBufferSize != 0;
     if (event_tracker->is_queue) {
         uvm_tools_queue_t *queue = &event_tracker->queue;
+        NvU64 buffer_size, control_size;
+
         uvm_spin_lock_init(&queue->lock, UVM_LOCK_ORDER_LEAF);
         init_waitqueue_head(&queue->wait_queue);
 
@@ -1703,16 +2162,25 @@ NV_STATUS uvm_api_tools_init_event_tracker(UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS *
             goto fail;
         }
 
+        if (event_tracker->version == UvmToolsEventQueueVersion_V1) {
+            buffer_size = queue->queue_buffer_count * sizeof(UvmEventEntry_V1);
+            control_size = sizeof(UvmToolsEventControlData_V1);
+        }
+        else {
+            buffer_size = queue->queue_buffer_count * sizeof(UvmEventEntry_V2);
+            control_size = sizeof(UvmToolsEventControlData_V2);
+        }
+
         status = map_user_pages(params->queueBuffer,
-                                queue->queue_buffer_count * sizeof(UvmEventEntry),
-                                (void **)&queue->queue,
+                                buffer_size,
+                                (void **)&queue->queue_v2,
                                 &queue->queue_buffer_pages);
         if (status != NV_OK)
             goto fail;
 
         status = map_user_pages(params->controlBuffer,
-                                sizeof(UvmToolsEventControlData),
-                                (void **)&queue->control,
+                                control_size,
+                                (void **)&queue->control_v2,
                                 &queue->control_buffer_pages);
 
         if (status != NV_OK)
@@ -1735,6 +2203,8 @@ NV_STATUS uvm_api_tools_init_event_tracker(UVM_TOOLS_INIT_EVENT_TRACKER_PARAMS *
         goto fail;
     }
 
+    params->grantedVersion = params->requestedVersion;
+
     return NV_OK;
 
 fail:
@@ -1744,7 +2214,6 @@ fail:
 
 NV_STATUS uvm_api_tools_set_notification_threshold(UVM_TOOLS_SET_NOTIFICATION_THRESHOLD_PARAMS *params, struct file *filp)
 {
-    UvmToolsEventControlData *ctrl;
     uvm_tools_queue_snapshot_t sn;
     uvm_tools_event_tracker_t *event_tracker = tools_event_tracker(filp);
 
@@ -1755,9 +2224,18 @@ NV_STATUS uvm_api_tools_set_notification_threshold(UVM_TOOLS_SET_NOTIFICATION_TH
 
     event_tracker->queue.notification_threshold = params->notificationThreshold;
 
-    ctrl = event_tracker->queue.control;
-    sn.put_behind = atomic_read((atomic_t *)&ctrl->put_behind);
-    sn.get_ahead = atomic_read((atomic_t *)&ctrl->get_ahead);
+    if (event_tracker->version == UvmToolsEventQueueVersion_V1) {
+        UvmToolsEventControlData_V1 *ctrl = event_tracker->queue.control_v1;
+
+        sn.put_behind = atomic_read((atomic_t *)&ctrl->put_behind);
+        sn.get_ahead = atomic_read((atomic_t *)&ctrl->get_ahead);
+    }
+    else {
+        UvmToolsEventControlData_V2 *ctrl = event_tracker->queue.control_v2;
+
+        sn.put_behind = atomic_read((atomic_t *)&ctrl->put_behind);
+        sn.get_ahead = atomic_read((atomic_t *)&ctrl->get_ahead);
+    }
 
     if (queue_needs_wakeup(&event_tracker->queue, &sn))
         wake_up_all(&event_tracker->queue.wait_queue);
@@ -1863,9 +2341,9 @@ static bool mask_contains_invalid_events(NvU64 event_flags)
     BUILD_BUG_ON(UvmEventTestTypesFirst > UvmEventTestTypesLast);
     BUILD_BUG_ON(UvmEventTestTypesLast >= UvmEventNumTypesAll);
 
-    // Make sure that no test event ever changes the size of UvmEventEntry
-    BUILD_BUG_ON(sizeof(((UvmEventEntry *)NULL)->testEventData) >
-                 sizeof(((UvmEventEntry *)NULL)->eventData));
+    // Make sure that no test event ever changes the size of UvmEventEntry_V2
+    BUILD_BUG_ON(sizeof(((UvmEventEntry_V2 *)NULL)->testEventData) >
+                 sizeof(((UvmEventEntry_V2 *)NULL)->eventData));
     BUILD_BUG_ON(UvmEventNumTypesAll > EVENT_FLAGS_BITS);
 
     if (!bitmap_andnot(helper_mask, event_mask, valid_events_mask, EVENT_FLAGS_BITS))
@@ -1901,7 +2379,8 @@ NV_STATUS uvm_api_tools_event_queue_enable_events(UVM_TOOLS_EVENT_QUEUE_ENABLE_E
                          UvmEventNumTypesAll,
                          params->eventTypeFlags,
                          &event_tracker->queue.subscribed_queues,
-                         va_space->tools.queues,
+                         event_tracker->version == UvmToolsEventQueueVersion_V1 ?
+                             va_space->tools.queues_v1 : va_space->tools.queues_v2,
                          &inserted_lists);
 
     // perform any necessary registration
@@ -2039,7 +2518,7 @@ static NV_STATUS tools_access_va_block(uvm_va_block_t *va_block,
     else {
         return UVM_VA_BLOCK_LOCK_RETRY(va_block,
                                        NULL,
-                                       uvm_va_block_read_to_cpu(va_block, stage_mem, target_va, size));
+                                       uvm_va_block_read_to_cpu(va_block, block_context, stage_mem, target_va, size));
 
     }
 }
@@ -2229,12 +2708,19 @@ NV_STATUS uvm_test_inject_tools_event(UVM_TEST_INJECT_TOOLS_EVENT_PARAMS *params
     NvU32 i;
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
 
-    if (params->entry.eventData.eventType >= UvmEventNumTypesAll)
+    if (params->version != UvmToolsEventQueueVersion_V1 && params->version != UvmToolsEventQueueVersion_V2)
+        return NV_ERR_INVALID_ARGUMENT;
+
+    if (params->entry_v1.eventData.eventType >= UvmEventNumTypesAll)
         return NV_ERR_INVALID_ARGUMENT;
 
     uvm_down_read(&va_space->tools.lock);
-    for (i = 0; i < params->count; i++)
-        uvm_tools_record_event(va_space, &params->entry);
+    for (i = 0; i < params->count; i++) {
+        if (params->version == UvmToolsEventQueueVersion_V1)
+            uvm_tools_record_event_v1(va_space, &params->entry_v1);
+        else
+            uvm_tools_record_event_v2(va_space, &params->entry_v2);
+    }
     uvm_up_read(&va_space->tools.lock);
     return NV_OK;
 }
@@ -2262,13 +2748,23 @@ NV_STATUS uvm_api_tools_get_processor_uuid_table(UVM_TOOLS_GET_PROCESSOR_UUID_TA
     uvm_gpu_t *gpu;
     NvU32 count = params->count;
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
+    NvU32 version = UvmToolsEventQueueVersion_V2;
 
     // Prior to Multi-MIG support, params->count was always zero meaning the
-    // input array was size UVM_MAX_PROCESSORS or 33 at that time.
-    if (count == 0)
-        count = 33;
-    else if (count > UVM_ID_MAX_PROCESSORS)
+    // input array was size UVM_MAX_PROCESSORS_V1 or 33 at that time.
+    if (count == 0 && params->tablePtr) {
+        version = UvmToolsEventQueueVersion_V1;
+        count = UVM_MAX_PROCESSORS_V1;
+    }
+    else if (count == 0 || count > UVM_ID_MAX_PROCESSORS) {
+        // Note that we don't rely on the external API definition
+        // UVM_MAX_PROCESSORS since the kernel determines the array size needed
+        // and reports the number of processors found to the caller.
         count = UVM_ID_MAX_PROCESSORS;
+    }
+
+    // Return which version of the table is being returned.
+    params->version = version;
 
     uuids = uvm_kvmalloc_zero(sizeof(NvProcessorUuid) * count);
     if (uuids == NULL)
@@ -2282,8 +2778,16 @@ NV_STATUS uvm_api_tools_get_processor_uuid_table(UVM_TOOLS_GET_PROCESSOR_UUID_TA
         NvU32 id_value;
         const NvProcessorUuid *uuid;
 
-        id_value = uvm_parent_id_value(gpu->parent->id);
-        uuid = &gpu->parent->uuid;
+        // Version 1 only supports processors 0..32 and uses the parent
+        // GPU UUID.
+        if (version == UvmToolsEventQueueVersion_V1) {
+            id_value = uvm_parent_id_value(gpu->parent->id);
+            uuid = &gpu->parent->uuid;
+        }
+        else {
+            id_value = uvm_id_value(gpu->id);
+            uuid = &gpu->uuid;
+        }
 
         if (id_value < count)
             uvm_uuid_copy(&uuids[id_value], uuid);
@@ -2295,7 +2799,10 @@ NV_STATUS uvm_api_tools_get_processor_uuid_table(UVM_TOOLS_GET_PROCESSOR_UUID_TA
     }
     uvm_va_space_up_read(va_space);
 
-    remaining = nv_copy_to_user((void *)params->tablePtr, uuids, sizeof(NvProcessorUuid) * count);
+    if (params->tablePtr)
+        remaining = nv_copy_to_user((void *)params->tablePtr, uuids, sizeof(NvProcessorUuid) * count);
+    else
+        remaining = 0;
     uvm_kvfree(uuids);
 
     if (remaining != 0)

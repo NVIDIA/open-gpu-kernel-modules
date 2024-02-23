@@ -279,9 +279,11 @@ NV_STATUS nvGpuOpsPagingChannelPushStream(UvmGpuPagingChannel *channel,
                                           char *methodStream,
                                           NvU32 methodStreamSize);
 
-NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(struct gpuDevice *device);
+NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(gpuFaultInfo *pFaultInfo,
+                                             NvBool bCopyAndFlush);
 
-NV_STATUS nvGpuOpsTogglePrefetchFaults(gpuFaultInfo *pFaultInfo, NvBool bEnable);
+NV_STATUS nvGpuOpsTogglePrefetchFaults(gpuFaultInfo *pFaultInfo,
+                                       NvBool bEnable);
 
 // Interface used for CCSL
 

@@ -569,11 +569,12 @@ vgpuconfigapiCtrlCmdVgpuConfigGetSupportedVgpuTypes_IMPL
     pPgpuInfo = &pKernelVgpuMgr->pgpuInfo[pgpuIndex];
 
     pParams->vgpuConfigState = pPgpuInfo->vgpuConfigState;
-    pParams->numVgpuTypes = pPgpuInfo->numVgpuTypes;
+
     for (i = 0; i < pPgpuInfo->numVgpuTypes; i++)
     {
         pParams->vgpuTypes[i] = pPgpuInfo->vgpuTypes[i]->vgpuTypeId;
     }
+    pParams->numVgpuTypes = pPgpuInfo->numVgpuTypes;
 
     return rmStatus;
 }
@@ -813,7 +814,56 @@ vgpuconfigapiCtrlCmdVgpuConfigSetCapability_IMPL
             pPhysGpuInfo->miniQuarterEnabled = pSetCapabilityParams->state;
             break;
         }
+        case NVA081_CTRL_VGPU_CAPABILITY_COMPUTE_MEDIA_ENGINE_GPU:
+        {
+            pPhysGpuInfo->computeMediaEngineEnabled = pSetCapabilityParams->state;
+            break;
+        }
+        default:
+        {
+            rmStatus = NV_ERR_INVALID_ARGUMENT;
+            break;
+        }
+    }
 
+    return rmStatus;
+}
+
+NV_STATUS
+vgpuconfigapiCtrlCmdVgpuConfigGetCapability_IMPL
+(
+    VgpuConfigApi *pVgpuConfigApi,
+    NVA081_CTRL_VGPU_GET_CAPABILITY_PARAMS *pGetCapabilityParams
+)
+{
+    OBJGPU *pGpu                         = GPU_RES_GET_GPU(pVgpuConfigApi);
+    OBJSYS *pSys                         = SYS_GET_INSTANCE();
+    KernelVgpuMgr *pKernelVgpuMgr        = SYS_GET_KERNEL_VGPUMGR(pSys);
+    KERNEL_PHYS_GPU_INFO *pPhysGpuInfo;
+    NvU32 index;
+    NV_STATUS rmStatus = NV_OK;
+
+    NV_PRINTF(LEVEL_INFO, "%s\n", __FUNCTION__);
+
+    if (kvgpumgrGetPgpuIndex(pKernelVgpuMgr, pGpu->gpuId, &index) != NV_OK)
+    {
+         return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
+    pPhysGpuInfo = &(pKernelVgpuMgr->pgpuInfo[index]);
+
+    switch (pGetCapabilityParams->capability)
+    {
+        case NVA081_CTRL_VGPU_CAPABILITY_MINI_QUARTER_GPU:
+        {
+            pGetCapabilityParams->state = pPhysGpuInfo->miniQuarterEnabled;
+            break;
+        }
+        case NVA081_CTRL_VGPU_CAPABILITY_COMPUTE_MEDIA_ENGINE_GPU:
+        {
+            pGetCapabilityParams->state = pPhysGpuInfo->computeMediaEngineEnabled;
+            break;
+        }
         default:
         {
             rmStatus = NV_ERR_INVALID_ARGUMENT;

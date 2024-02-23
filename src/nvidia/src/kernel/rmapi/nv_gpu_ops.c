@@ -1569,6 +1569,7 @@ static NV_STATUS queryFbInfo(struct gpuDevice *device)
     NV_STATUS nvStatus = NV_OK;
     NV2080_CTRL_FB_GET_INFO_V2_PARAMS fbInfoParams;
     NV2080_CTRL_CMD_FB_GET_FB_REGION_INFO_PARAMS *fbRegionInfoParams;
+    NV2080_CTRL_GPU_GET_MAX_SUPPORTED_PAGE_SIZE_PARAMS gpuMaxSupportedPageSizeParams;
     RM_API *pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
     NvU32 i;
 
@@ -1578,6 +1579,7 @@ static NV_STATUS queryFbInfo(struct gpuDevice *device)
 
     portMemSet(fbRegionInfoParams, 0, sizeof(*fbRegionInfoParams));
     portMemSet(&fbInfoParams, 0, sizeof(fbInfoParams));
+    portMemSet(&gpuMaxSupportedPageSizeParams, 0, sizeof(gpuMaxSupportedPageSizeParams));
 
     // Set up the list of parameters we are looking to extract
     fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE;
@@ -1604,9 +1606,19 @@ static NV_STATUS queryFbInfo(struct gpuDevice *device)
     if (nvStatus != NV_OK)
         goto out;
 
-    device->fbInfo.heapSize         = fbInfoParams.fbInfoList[0].data;
-    device->fbInfo.reservedHeapSize = fbInfoParams.fbInfoList[1].data;
-    device->fbInfo.bZeroFb          = (NvBool)fbInfoParams.fbInfoList[2].data;
+    nvStatus = pRmApi->Control(pRmApi,
+                               device->session->handle,
+                               device->subhandle,
+                               NV2080_CTRL_CMD_GPU_GET_MAX_SUPPORTED_PAGE_SIZE,
+                               &gpuMaxSupportedPageSizeParams,
+                               sizeof(gpuMaxSupportedPageSizeParams));
+    if (nvStatus != NV_OK)
+        goto out;
+
+    device->fbInfo.heapSize          = fbInfoParams.fbInfoList[0].data;
+    device->fbInfo.reservedHeapSize  = fbInfoParams.fbInfoList[1].data;
+    device->fbInfo.bZeroFb           = (NvBool)fbInfoParams.fbInfoList[2].data;
+    device->fbInfo.maxVidmemPageSize = gpuMaxSupportedPageSizeParams.maxSupportedPageSize;
 
     device->fbInfo.maxAllocatableAddress = 0;
 
@@ -8241,29 +8253,17 @@ NV_STATUS nvGpuOpsGetNonReplayableFaults(gpuFaultInfo *pFaultInfo,
     return status;
 }
 
-NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(struct gpuDevice *device)
+NV_STATUS nvGpuOpsFlushReplayableFaultBuffer(gpuFaultInfo *pFaultInfo, NvBool bCopyAndFlush)
 {
-    NV_STATUS   status;
-    NvHandle    hClient = device->session->handle;
-    RsClient   *pClient;
-    Device     *pDevice;
     OBJGPU     *pGpu;
-    KernelGmmu *pKernelGmmu;
 
-    status = serverGetClientUnderLock(&g_resServ, hClient, &pClient);
-    if (status != NV_OK)
+    if (pFaultInfo->pDevice == NULL)
         return NV_ERR_INVALID_ARGUMENT;
 
-    status = deviceGetByHandle(pClient, device->handle, &pDevice);
-    if (status != NV_OK)
-        return NV_ERR_INVALID_ARGUMENT;
+    pGpu = GPU_RES_GET_GPU(pFaultInfo->pDevice);
+    KernelGmmu *pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
 
-    GPU_RES_SET_THREAD_BC_STATE(pDevice);
-
-    pGpu = GPU_RES_GET_GPU(pDevice);
-    pKernelGmmu = GPU_GET_KERNEL_GMMU(pGpu);
-
-    return kgmmuIssueReplayableFaultBufferFlush_HAL(pGpu, pKernelGmmu);
+    return kgmmuIssueReplayableFaultBufferFlush_HAL(pGpu, pKernelGmmu, bCopyAndFlush);
 }
 
 NV_STATUS nvGpuOpsTogglePrefetchFaults(gpuFaultInfo *pFaultInfo,

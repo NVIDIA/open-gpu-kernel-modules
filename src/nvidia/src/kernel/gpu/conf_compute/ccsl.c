@@ -167,6 +167,24 @@ ccslIncrementCounter_IMPL
     return NV_OK;
 }
 
+static OBJGPU *getGpuViaChannelHandle(NvHandle hClient, NvHandle hChannel)
+{
+    RsClient      *pChannelClient;
+    KernelChannel *pKernelChannel;
+
+    if (serverGetClientUnderLock(&g_resServ, hClient, &pChannelClient) != NV_OK)
+    {
+        return NULL;
+    }
+
+    if (CliGetKernelChannel(pChannelClient, hChannel, &pKernelChannel) != NV_OK)
+    {
+        return NULL;
+    }
+
+    return GPU_RES_GET_GPU(pKernelChannel);
+}
+
 NV_STATUS
 ccslContextInitViaChannel_IMPL
 (
@@ -175,21 +193,17 @@ ccslContextInitViaChannel_IMPL
     NvHandle      hChannel
 )
 {
-    CC_KMB *kmb;
-
-    OBJSYS    *pSys        = SYS_GET_INSTANCE();
-    OBJGPUMGR *pGpuMgr     = SYS_GET_GPUMGR(pSys);
+    CC_KMB    *kmb;
+    OBJSYS    *pSys    = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
     OBJGPU    *pGpu;
-    NvU32      gpuMask;
-    NvU32      gpuInstance = 0;
-    RM_API    *pRmApi      = NULL;
+    RM_API    *pRmApi  = NULL;
     NV_STATUS  status;
 
     NVC56F_CTRL_CMD_GET_KMB_PARAMS getKmbParams;
 
     NV_PRINTF(LEVEL_INFO, "Initializing CCSL context via channel.\n");
 
-    // This function must be redesigned for multi-gpu
     if(!pGpuMgr->ccCaps.bHccFeatureCapable)
     {
         return NV_ERR_NOT_SUPPORTED;
@@ -198,6 +212,12 @@ ccslContextInitViaChannel_IMPL
     if (ppCtx == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    pGpu = getGpuViaChannelHandle(hClient, hChannel);
+    if (pGpu == NULL)
+    {
+        return NV_ERR_INVALID_CHANNEL;
     }
 
     pCcslContext pCtx = portMemAllocNonPaged(sizeof(*pCtx));
@@ -216,43 +236,38 @@ ccslContextInitViaChannel_IMPL
     pCtx->hClient = hClient;
     pCtx->hChannel = hChannel;
 
-    (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
-
-    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    if (IS_GSP_CLIENT(pGpu))
     {
-        if (IS_GSP_CLIENT(pGpu))
+        if (rmGpuLockIsOwner())
         {
-            if (rmGpuLockIsOwner())
-            {
-                pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-            }
-            else
-            {
-                pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
-            }
+            pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
         }
         else
         {
-            pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+            pRmApi = rmapiGetInterface(RMAPI_EXTERNAL_KERNEL);
         }
-        portMemSet(&getKmbParams, 0, sizeof(getKmbParams));
-
-        status = pRmApi->Control(pRmApi, hClient, hChannel,
-                                 NVC56F_CTRL_CMD_GET_KMB, &getKmbParams,
-                                 sizeof(getKmbParams));
-        if (status != NV_OK)
-        {
-            libspdm_aead_free(pCtx->openrmCtx);
-            portMemFree(pCtx);
-            return status;
-        }
-
-        pCtx->msgCounterSize = CSL_MSG_CTR_32;
-
-        kmb = &getKmbParams.kmb;
-
-        writeKmbToContext(pCtx, kmb);
     }
+    else
+    {
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    }
+    portMemSet(&getKmbParams, 0, sizeof(getKmbParams));
+
+    status = pRmApi->Control(pRmApi, hClient, hChannel,
+                             NVC56F_CTRL_CMD_GET_KMB, &getKmbParams,
+                             sizeof(getKmbParams));
+    if (status != NV_OK)
+    {
+        libspdm_aead_free(pCtx->openrmCtx);
+        portMemFree(pCtx);
+        return status;
+    }
+
+    pCtx->msgCounterSize = CSL_MSG_CTR_32;
+
+    kmb = &getKmbParams.kmb;
+
+    writeKmbToContext(pCtx, kmb);
 
     return NV_OK;
 }
@@ -345,9 +360,7 @@ ccslRotateIv_IMPL
 )
 {
     OBJGPU   *pGpu;
-    NvU32     gpuMask;
-    NvU32     gpuInstance = 0;
-    RM_API   *pRmApi      = NULL;
+    RM_API   *pRmApi = NULL;
     NV_STATUS status = NV_OK;
     NvU32     gpuMaskRelease;
 
@@ -379,53 +392,56 @@ ccslRotateIv_IMPL
         rotateIvParams.rotateIvType = ROTATE_IV_DECRYPT;
     }
 
-    (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
-    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
-    {
-        gpuMaskRelease = 0;
-        if (IS_GSP_CLIENT(pGpu))
-        {
-            //
-            // Attempt to acquire GPU lock. If unsuccessful then return error to UVM and it can
-            // try later. This is needed as UVM may need to rotate a channel's IV while
-            // RM is already holding a GPU lock.
-            //
-            status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
-                GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_RPC, &gpuMaskRelease);
+    pGpu = getGpuViaChannelHandle(pCtx->hClient, pCtx->hChannel);
 
-            if (status == NV_OK)
-            {
-                pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
-            }
-            else if (status == NV_ERR_STATE_IN_USE)
-            {
-                return status;
-            }
-            else
-            {
-                NV_PRINTF(LEVEL_INFO, "Converting %s to NV_ERR_GENERIC.\n",
-                          nvstatusToString(status));
-                return NV_ERR_GENERIC;
-            }
+    if (pGpu == NULL)
+    {
+        return NV_ERR_INVALID_CHANNEL;
+    }
+
+    gpuMaskRelease = 0;
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        //
+        // Attempt to acquire GPU lock. If unsuccessful then return error to UVM and it can
+        // try later. This is needed as UVM may need to rotate a channel's IV while
+        // RM is already holding a GPU lock.
+        //
+        status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
+            GPU_LOCK_FLAGS_COND_ACQUIRE, RM_LOCK_MODULES_RPC, &gpuMaskRelease);
+
+        if (status == NV_OK)
+        {
+            pRmApi = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+        }
+        else if (status == NV_ERR_STATE_IN_USE)
+        {
+            return status;
         }
         else
         {
-            pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+            NV_PRINTF(LEVEL_INFO, "Converting %s to NV_ERR_GENERIC.\n",
+                      nvstatusToString(status));
+            return NV_ERR_GENERIC;
         }
+    }
+    else
+    {
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    }
 
-        NV_ASSERT_OK_OR_GOTO(status,
-                             pRmApi->Control(pRmApi,
-                                             pCtx->hClient,
-                                             pCtx->hChannel,
-                                             NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV,
-                                             &rotateIvParams,
-                                             sizeof(rotateIvParams)),
-                             failed);
+    NV_ASSERT_OK_OR_GOTO(status,
+                         pRmApi->Control(pRmApi,
+                                         pCtx->hClient,
+                                         pCtx->hChannel,
+                                         NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV,
+                                         &rotateIvParams,
+                                         sizeof(rotateIvParams)),
+                         failed);
 
-        if (IS_GSP_CLIENT(pGpu))
-        {
-            rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
-        }
+    if (IS_GSP_CLIENT(pGpu))
+    {
+        rmGpuGroupLockRelease(gpuMaskRelease, GPUS_LOCK_FLAGS_NONE);
     }
 
     switch (direction)

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -86,11 +86,13 @@ static void init_tools_data(uvm_va_space_t *va_space)
 
     for (i = 0; i < ARRAY_SIZE(va_space->tools.counters); i++)
         INIT_LIST_HEAD(va_space->tools.counters + i);
-    for (i = 0; i < ARRAY_SIZE(va_space->tools.queues); i++)
-        INIT_LIST_HEAD(va_space->tools.queues + i);
+    for (i = 0; i < ARRAY_SIZE(va_space->tools.queues_v1); i++)
+        INIT_LIST_HEAD(va_space->tools.queues_v1 + i);
+    for (i = 0; i < ARRAY_SIZE(va_space->tools.queues_v2); i++)
+        INIT_LIST_HEAD(va_space->tools.queues_v2 + i);
 }
 
-static NV_STATUS register_gpu_nvlink_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
+static NV_STATUS register_gpu_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu)
 {
     uvm_gpu_t *other_gpu;
 
@@ -104,7 +106,7 @@ static NV_STATUS register_gpu_nvlink_peers(uvm_va_space_t *va_space, uvm_gpu_t *
 
         peer_caps = uvm_gpu_peer_caps(gpu, other_gpu);
 
-        if (peer_caps->link_type >= UVM_GPU_LINK_NVLINK_1) {
+        if (peer_caps->link_type >= UVM_GPU_LINK_NVLINK_1 || gpu->parent == other_gpu->parent) {
             NV_STATUS status = enable_peers(va_space, gpu, other_gpu);
             if (status != NV_OK)
                 return status;
@@ -324,10 +326,16 @@ static void unregister_gpu(uvm_va_space_t *va_space,
         }
     }
 
-    if (gpu->parent->isr.replayable_faults.handling)
+    if (gpu->parent->isr.replayable_faults.handling) {
+        UVM_ASSERT(uvm_processor_mask_test(&va_space->faultable_processors, gpu->id));
         uvm_processor_mask_clear(&va_space->faultable_processors, gpu->id);
-
-    uvm_processor_mask_clear(&va_space->system_wide_atomics_enabled_processors, gpu->id);
+        UVM_ASSERT(uvm_processor_mask_test(&va_space->system_wide_atomics_enabled_processors, gpu->id));
+        uvm_processor_mask_clear(&va_space->system_wide_atomics_enabled_processors, gpu->id);
+    }
+    else {
+        UVM_ASSERT(uvm_processor_mask_test(&va_space->non_faultable_processors, gpu->id));
+        uvm_processor_mask_clear(&va_space->non_faultable_processors, gpu->id);
+    }
 
     processor_mask_array_clear(va_space->can_access, gpu->id, gpu->id);
     processor_mask_array_clear(va_space->can_access, gpu->id, UVM_ID_CPU);
@@ -514,7 +522,7 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
             nv_kthread_q_flush(&gpu->parent->isr.kill_channel_q);
 
         if (gpu->parent->access_counters_supported)
-            uvm_gpu_access_counters_disable(gpu, va_space);
+            uvm_parent_gpu_access_counters_disable(gpu->parent, va_space);
     }
 
     // Check that all CPU/GPU affinity masks are empty
@@ -604,7 +612,7 @@ uvm_gpu_t *uvm_va_space_get_gpu_by_uuid(uvm_va_space_t *va_space, const NvProces
     uvm_gpu_t *gpu;
 
     for_each_va_space_gpu(gpu, va_space) {
-        if (uvm_uuid_eq(uvm_gpu_uuid(gpu), gpu_uuid))
+        if (uvm_uuid_eq(&gpu->uuid, gpu_uuid))
             return gpu;
     }
 
@@ -663,7 +671,8 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
                                     const NvProcessorUuid *gpu_uuid,
                                     const uvm_rm_user_object_t *user_rm_device,
                                     NvBool *numa_enabled,
-                                    NvS32 *numa_node_id)
+                                    NvS32 *numa_node_id,
+                                    NvProcessorUuid *uuid_out)
 {
     NV_STATUS status;
     uvm_va_range_t *va_range;
@@ -675,13 +684,15 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
     if (status != NV_OK)
         return status;
 
+    uvm_uuid_copy(uuid_out, &gpu->uuid);
+
     // Enabling access counters requires taking the ISR lock, so it is done
     // without holding the (deeper order) VA space lock. Enabling the counters
     // after dropping the VA space lock would create a window of time in which
     // another thread could see the GPU as registered, but access counters would
     // be disabled. Therefore, the counters are enabled before taking the VA
     // space lock.
-    if (uvm_gpu_access_counters_required(gpu->parent)) {
+    if (uvm_parent_gpu_access_counters_required(gpu->parent)) {
         status = uvm_gpu_access_counters_enable(gpu, va_space);
         if (status != NV_OK) {
             uvm_gpu_release(gpu);
@@ -726,9 +737,16 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
     va_space->registered_gpus_table[uvm_id_gpu_index(gpu->id)] = gpu;
 
     if (gpu->parent->isr.replayable_faults.handling) {
+        UVM_ASSERT(!uvm_processor_mask_test(&va_space->faultable_processors, gpu->id));
         uvm_processor_mask_set(&va_space->faultable_processors, gpu->id);
+
+        UVM_ASSERT(!uvm_processor_mask_test(&va_space->system_wide_atomics_enabled_processors, gpu->id));
         // System-wide atomics are enabled by default
         uvm_processor_mask_set(&va_space->system_wide_atomics_enabled_processors, gpu->id);
+    }
+    else {
+        UVM_ASSERT(!uvm_processor_mask_test(&va_space->non_faultable_processors, gpu->id));
+        uvm_processor_mask_set(&va_space->non_faultable_processors, gpu->id);
     }
 
     // All GPUs have native atomics on their own memory
@@ -785,7 +803,7 @@ NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
         }
     }
 
-    status = register_gpu_nvlink_peers(va_space, gpu);
+    status = register_gpu_peers(va_space, gpu);
     if (status != NV_OK)
         goto cleanup;
 
@@ -822,9 +840,9 @@ done:
     if (status != NV_OK) {
         // There is no risk of disabling access counters on a previously
         // registered GPU: the enablement step would have failed before even
-        // discovering that the GPU is already registed.
-        if (uvm_gpu_access_counters_required(gpu->parent))
-            uvm_gpu_access_counters_disable(gpu, va_space);
+        // discovering that the GPU is already registered.
+        if (uvm_parent_gpu_access_counters_required(gpu->parent))
+            uvm_parent_gpu_access_counters_disable(gpu->parent, va_space);
 
         uvm_gpu_release(gpu);
     }
@@ -876,15 +894,16 @@ NV_STATUS uvm_va_space_unregister_gpu(uvm_va_space_t *va_space, const NvProcesso
     // it from the VA space until we're done.
     uvm_va_space_up_read_rm(va_space);
 
-    // If uvm_gpu_access_counters_required(gpu->parent) is true, a concurrent
-    // registration could enable access counters after they are disabled here.
+    // If uvm_parent_gpu_access_counters_required(gpu->parent) is true, a
+    // concurrent registration could enable access counters after they are
+    // disabled here.
     // The concurrent registration will fail later on if it acquires the VA
     // space lock before the unregistration does (because the GPU is still
     // registered) and undo the access counters enablement, or succeed if it
     // acquires the VA space lock after the unregistration does. Both outcomes
     // result on valid states.
     if (gpu->parent->access_counters_supported)
-        uvm_gpu_access_counters_disable(gpu, va_space);
+        uvm_parent_gpu_access_counters_disable(gpu->parent, va_space);
 
     // mmap_lock is needed to establish CPU mappings to any pages evicted from
     // the GPU if accessed by CPU is set for them.
@@ -1040,6 +1059,10 @@ static NV_STATUS enable_peers(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu
             processor_mask_array_set(va_space->indirect_peers, gpu1->id, gpu0->id);
         }
     }
+    else if (gpu0->parent == gpu1->parent) {
+        processor_mask_array_set(va_space->has_native_atomics, gpu0->id, gpu1->id);
+        processor_mask_array_set(va_space->has_native_atomics, gpu1->id, gpu0->id);
+    }
 
     UVM_ASSERT(va_space_check_processors_masks(va_space));
     __set_bit(table_index, va_space->enabled_peers);
@@ -1091,6 +1114,7 @@ static NV_STATUS retain_pcie_peers_from_uuids(uvm_va_space_t *va_space,
 static bool uvm_va_space_pcie_peer_enabled(uvm_va_space_t *va_space, uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 {
     return !processor_mask_array_test(va_space->has_nvlink, gpu0->id, gpu1->id) &&
+           gpu0->parent != gpu1->parent &&
            uvm_va_space_peer_enabled(va_space, gpu0, gpu1);
 }
 

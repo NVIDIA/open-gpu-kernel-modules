@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2016-2023 NVIDIA Corporation
+    Copyright (c) 2016-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -100,7 +100,7 @@ static unsigned schedule_replayable_faults_handler(uvm_parent_gpu_t *parent_gpu)
     if (down_trylock(&parent_gpu->isr.replayable_faults.service_lock.sem) != 0)
         return 0;
 
-    if (!uvm_gpu_replayable_faults_pending(parent_gpu)) {
+    if (!uvm_parent_gpu_replayable_faults_pending(parent_gpu)) {
         up(&parent_gpu->isr.replayable_faults.service_lock.sem);
         return 0;
     }
@@ -137,7 +137,7 @@ static unsigned schedule_non_replayable_faults_handler(uvm_parent_gpu_t *parent_
     // interrupts will be triggered by the gpu and faults may stay
     // unserviced. Therefore, if there is a fault in the queue, we schedule
     // a bottom half unconditionally.
-    if (!uvm_gpu_non_replayable_faults_pending(parent_gpu))
+    if (!uvm_parent_gpu_non_replayable_faults_pending(parent_gpu))
         return 0;
 
     nv_kref_get(&parent_gpu->gpu_kref);
@@ -167,7 +167,7 @@ static unsigned schedule_access_counters_handler(uvm_parent_gpu_t *parent_gpu)
     if (down_trylock(&parent_gpu->isr.access_counters.service_lock.sem) != 0)
         return 0;
 
-    if (!uvm_gpu_access_counters_pending(parent_gpu)) {
+    if (!uvm_parent_gpu_access_counters_pending(parent_gpu)) {
         up(&parent_gpu->isr.access_counters.service_lock.sem);
         return 0;
     }
@@ -295,7 +295,7 @@ NV_STATUS uvm_parent_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
     uvm_va_block_context_t *block_context;
 
     if (parent_gpu->replayable_faults_supported) {
-        status = uvm_gpu_fault_buffer_init(parent_gpu);
+        status = uvm_parent_gpu_fault_buffer_init(parent_gpu);
         if (status != NV_OK) {
             UVM_ERR_PRINT("Failed to initialize GPU fault buffer: %s, GPU: %s\n",
                           nvstatusToString(status),
@@ -361,7 +361,7 @@ NV_STATUS uvm_parent_gpu_init_isr(uvm_parent_gpu_t *parent_gpu)
         }
 
         if (parent_gpu->access_counters_supported) {
-            status = uvm_gpu_init_access_counters(parent_gpu);
+            status = uvm_parent_gpu_init_access_counters(parent_gpu);
             if (status != NV_OK) {
                 UVM_ERR_PRINT("Failed to initialize GPU access counters: %s, GPU: %s\n",
                               nvstatusToString(status),
@@ -423,7 +423,7 @@ void uvm_parent_gpu_disable_isr(uvm_parent_gpu_t *parent_gpu)
     // bottom half never take the global lock, since we're holding it here.
     //
     // Note that it's safe to call nv_kthread_q_stop() even if
-    // nv_kthread_q_init() failed in uvm_gpu_init_isr().
+    // nv_kthread_q_init() failed in uvm_parent_gpu_init_isr().
     nv_kthread_q_stop(&parent_gpu->isr.bottom_half_q);
     nv_kthread_q_stop(&parent_gpu->isr.kill_channel_q);
 }
@@ -438,8 +438,8 @@ void uvm_parent_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
         // replayable_faults.disable_intr_ref_count since they must retain the
         // GPU across uvm_parent_gpu_replayable_faults_isr_lock/
         // uvm_parent_gpu_replayable_faults_isr_unlock. This means the
-        // uvm_gpu_replayable_faults_disable_intr above could only have raced
-        // with bottom halves.
+        // uvm_parent_gpu_replayable_faults_disable_intr above could only have
+        // raced with bottom halves.
         //
         // If we cleared replayable_faults.handling before the bottom half got
         // to its uvm_parent_gpu_replayable_faults_isr_unlock, when it
@@ -455,13 +455,13 @@ void uvm_parent_gpu_deinit_isr(uvm_parent_gpu_t *parent_gpu)
                        uvm_parent_gpu_name(parent_gpu),
                        parent_gpu->isr.replayable_faults.disable_intr_ref_count);
 
-        uvm_gpu_fault_buffer_deinit(parent_gpu);
+        uvm_parent_gpu_fault_buffer_deinit(parent_gpu);
     }
 
     if (parent_gpu->access_counters_supported) {
         // It is safe to deinitialize access counters even if they have not been
         // successfully initialized.
-        uvm_gpu_deinit_access_counters(parent_gpu);
+        uvm_parent_gpu_deinit_access_counters(parent_gpu);
         block_context =
             parent_gpu->access_counter_buffer_info.batch_service_context.block_service_context.block_context;
         uvm_va_block_context_free(block_context);

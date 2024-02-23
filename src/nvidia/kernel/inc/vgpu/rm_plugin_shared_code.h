@@ -103,6 +103,26 @@ typedef NV_STATUS return_t;
 #ifdef BUILD_COMMON_RPCS
 
 static
+return_t deserialize_NVA080_CTRL_SET_FB_USAGE_PARAMS_v07_02(NVA080_CTRL_SET_FB_USAGE_PARAMS *pParams,
+                                                            NvU8 *buffer,
+                                                            NvU32 bufferSize,
+                                                            NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NVA080_CTRL_SET_FB_USAGE_PARAMS_v07_02 *src = (void*)(buffer);
+    NVA080_CTRL_SET_FB_USAGE_PARAMS       *dest = pParams;
+
+    if (src && dest)
+    {
+        dest->fbUsed = src->fbUsed;
+    }
+    else
+        return FAILURE_T;
+#endif
+    return SUCCESS_T;
+}
+
+static
 return_t deserialize_NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS_v06_01(NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *pParams,
                                                                             NvU8 *buffer,
                                                                             NvU32 bufferSize,
@@ -561,6 +581,7 @@ return_t deserialize_NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS_v1E_04
 
 #ifdef BUILD_COMMON_RPCS
 
+#ifndef UMED_BUILD
 static
 return_t deserialize_GET_BRAND_CAPS_v25_12(NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *pParams,
                                            NvU8 *buffer,
@@ -580,6 +601,7 @@ return_t deserialize_GET_BRAND_CAPS_v25_12(NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS
 
     return SUCCESS_T;
 }
+#endif // UMED_BUILD
 
 static
 return_t deserialize_NV2080_CTRL_MC_SERVICE_INTERRUPTS_PARAMS_v15_01(NV2080_CTRL_MC_SERVICE_INTERRUPTS_PARAMS *pParams,
@@ -1806,6 +1828,7 @@ return_t deserialize_NV2080_CTRL_FB_GET_FS_INFO_PARAMS_v24_00(NV2080_CTRL_FB_GET
 }
 
 #ifdef VMIOP_BUILD
+#ifndef UMED_BUILD
 
 static
 return_t deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_DEPRECATED_RPC_PARAMS_v24_06(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS *pParams,
@@ -1847,6 +1870,7 @@ return_t deserialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_DEPRECATED_RPC_PARAMS_v24_
     return SUCCESS_T;
 }
 
+#endif // !UMED_BUILD
 #endif // VMIOP_BUILD
 
 return_t deserialize_NVA06F_CTRL_STOP_CHANNEL_PARAMS_v1A_1E(
@@ -2698,6 +2722,26 @@ return_t deserialize_NV83DE_CTRL_DEBUG_GET_MODE_MMU_DEBUG_PARAMS_v25_04(NV83DE_C
 #ifdef BUILD_COMMON_RPCS
 
 static
+return_t serialize_NVA080_CTRL_SET_FB_USAGE_PARAMS_v07_02(NVA080_CTRL_SET_FB_USAGE_PARAMS *pParams,
+                                                          NvU8 *buffer,
+                                                          NvU32 bufferSize,
+                                                          NvU32 *offset)
+{
+#ifdef COPY_INPUT_PARAMETERS
+    NVA080_CTRL_SET_FB_USAGE_PARAMS         *src = pParams;
+    NVA080_CTRL_SET_FB_USAGE_PARAMS_v07_02 *dest = (void*)(buffer);
+
+    if (src && dest)
+    {
+        dest->fbUsed = src->fbUsed;
+    }
+    else
+        return FAILURE_T;
+#endif
+    return SUCCESS_T;
+}
+
+static
 return_t serialize_NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS_v06_01(NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS *pParams,
                                                                           NvU8 *buffer,
                                                                           NvU32 bufferSize,
@@ -3154,6 +3198,7 @@ return_t serialize_NV90F1_CTRL_VASPACE_COPY_SERVER_RESERVED_PDES_PARAMS_v1E_04(N
 
 #ifdef BUILD_COMMON_RPCS
 
+#ifndef UMED_BUILD
 static
 return_t serialize_GET_BRAND_CAPS_v25_12(NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *pParams,
                                          NvU8 *buffer, 
@@ -3173,6 +3218,7 @@ return_t serialize_GET_BRAND_CAPS_v25_12(NV0080_CTRL_GPU_GET_BRAND_CAPS_PARAMS *
 
     return SUCCESS_T;
 }
+#endif // UMED_BUILD
 
 static
 return_t serialize_NV2080_CTRL_MC_SERVICE_INTERRUPTS_PARAMS_v15_01(NV2080_CTRL_MC_SERVICE_INTERRUPTS_PARAMS *pParams,
@@ -4441,6 +4487,7 @@ return_t serialize_NV2080_CTRL_FB_GET_FS_INFO_PARAMS_v24_00(NV2080_CTRL_FB_GET_F
 }
 
 #ifdef VMIOP_BUILD
+#ifndef UMED_BUILD
 
 static
 return_t serialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_DEPRECATED_RPC_PARAMS_v24_06(NV2080_CTRL_GPU_QUERY_ECC_STATUS_PARAMS *pParams,
@@ -4482,6 +4529,7 @@ return_t serialize_NV2080_CTRL_GPU_QUERY_ECC_STATUS_DEPRECATED_RPC_PARAMS_v24_06
     return SUCCESS_T;
 }
 
+#endif // !UMED_BUILD
 #endif // VMIOP_BUILD
 
 return_t serialize_NVA06F_CTRL_STOP_CHANNEL_PARAMS_v1A_1E(

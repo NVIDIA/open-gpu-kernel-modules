@@ -60,7 +60,8 @@ NvBool rmapiutilIsExternalClassIdInternalOnly(NvU32 externalClassId);
 // Return the flags and access right associated with this RM control command
 //
 
-NV_STATUS rmapiutilGetControlInfo(NvU32 cmd, NvU32 *pFlags, NvU32 *pAccessRight);
+NV_STATUS rmapiutilGetControlInfo(NvU32 cmd, NvU32 *pFlags,
+                                  NvU32 *pAccessRight, NvU32 *pParamsSize);
 
 NvBool rmapiutilSkipErrorMessageForUnsupportedVgpuGuestControl(NvU32 cmd);
 

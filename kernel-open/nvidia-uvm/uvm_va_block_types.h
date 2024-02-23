@@ -175,6 +175,14 @@ typedef struct
     // Scratch node mask. This follows the same rules as scratch_page_mask;
     nodemask_t scratch_node_mask;
 
+    // Available as scratch space for the internal APIs. This is like a caller-
+    // save register: it shouldn't be used across function calls which also take
+    // this va_block_context.
+    uvm_processor_mask_t scratch_processor_mask;
+
+    // Temporary mask in block_add_eviction_mappings().
+    uvm_processor_mask_t map_processors_eviction;
+
     // State used by uvm_va_block_make_resident
     struct uvm_make_resident_context_struct
     {
@@ -233,6 +241,16 @@ typedef struct
         // are removed as the operation progresses.
         uvm_page_mask_t revoke_running_page_mask;
 
+        // Mask used by block_gpu_split_2m and block_gpu_split_big to track
+        // splitting of big PTEs but they are never called concurrently. This
+        // mask can be used concurrently with other page masks.
+        uvm_page_mask_t big_split_page_mask;
+
+        // Mask used by block_unmap_gpu to track non_uvm_lite_gpus which have
+        // this block mapped. This mask can be used concurrently with other page
+        // masks.
+        uvm_processor_mask_t non_uvm_lite_gpus;
+
         uvm_page_mask_t page_mask;
         uvm_page_mask_t filtered_page_mask;
         uvm_page_mask_t migratable_mask;
@@ -276,6 +294,10 @@ typedef struct
         struct vm_area_struct *vma;
 
 #if UVM_IS_CONFIG_HMM()
+
+        // Temporary mask used in uvm_hmm_block_add_eviction_mappings().
+        uvm_processor_mask_t map_processors_eviction;
+
         // Used for migrate_vma_*() to migrate pages to/from GPU/CPU.
         struct migrate_vma migrate_vma_args;
 #endif

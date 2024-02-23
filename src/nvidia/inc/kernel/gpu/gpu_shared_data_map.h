@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -38,7 +38,6 @@ typedef struct RusdQueryCache RUSD_QUERY_CACHE;
 typedef struct GpuSharedDataMap {
     MEMORY_DESCRIPTOR *pMemDesc;
     NvP64 pMapBuffer;
-    NvP64 pMapBufferPriv;
     NvU64 lastPolledDataMask;
     NvU32 processId;
 
@@ -62,9 +61,6 @@ NV00DE_SHARED_DATA * gpushareddataWriteStart(OBJGPU *pGpu);
 
 // Finish data write, pushes data cached by above into mapped data
 void gpushareddataWriteFinish(OBJGPU *pGpu);
-
-// Unmap and free memory in GpuSharedDataMap
-void gpushareddataDestroy(OBJGPU *pGpu);
 
 #endif /* GPU_SHARED_DATA_MAP_H */
 

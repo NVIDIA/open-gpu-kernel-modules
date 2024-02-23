@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -612,6 +612,9 @@ static NvU64 uvm_mmu_pde_coverage(uvm_page_tree_t *tree, NvU32 page_size)
     return uvm_mmu_page_tree_entries(tree, depth, page_size) * page_size;
 }
 
+// Page sizes supported by the GPU. Use uvm_mmu_biggest_page_size() to retrieve
+// the largest page size supported in a given system, which considers the GMMU
+// and vMMU page sizes and segment sizes.
 static bool uvm_mmu_page_size_supported(uvm_page_tree_t *tree, NvU32 page_size)
 {
     UVM_ASSERT_MSG(is_power_of_2(page_size), "0x%x\n", page_size);
@@ -640,11 +643,6 @@ static NvU32 uvm_mmu_biggest_page_size_up_to(uvm_page_tree_t *tree, NvU32 max_pa
     UVM_ASSERT_MSG(uvm_mmu_page_size_supported(tree, page_size), "page_size 0x%x", page_size);
 
     return page_size;
-}
-
-static NvU32 uvm_mmu_biggest_page_size(uvm_page_tree_t *tree)
-{
-    return 1 << __fls(tree->hal->page_sizes());
 }
 
 static NvU32 uvm_mmu_pte_size(uvm_page_tree_t *tree, NvU32 page_size)

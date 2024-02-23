@@ -1,5 +1,5 @@
 ﻿/*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -34,8 +34,12 @@
 //
 #define LIBSPDM_CHECK_MACRO                       1
 
+//
 // Enable FIPS 140-3 mode.
-#define LIBSPDM_FIPS_MODE                         1
+// TODO: Because chips_a doesn't get the latest mbedtls yet, if we enable LIBSPDM_FIPS_MODE, we'll hit
+//       compiler error. Need to disable this flag until mbedtls get update.
+//
+#define LIBSPDM_FIPS_MODE                         0
 
 //
 // We want debug asserts enabled, but we don't care about debug prints or the debug blocks.

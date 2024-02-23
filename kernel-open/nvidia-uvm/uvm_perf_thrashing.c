@@ -1442,6 +1442,7 @@ static bool preferred_location_is_thrashing(uvm_processor_id_t preferred_locatio
 
 static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thrashing_info_t *va_space_thrashing,
                                                                   uvm_va_block_t *va_block,
+                                                                  uvm_va_block_context_t *va_block_context,
                                                                   uvm_page_index_t page_index,
                                                                   page_thrashing_info_t *page_thrashing,
                                                                   uvm_processor_id_t requester)
@@ -1460,7 +1461,7 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
 
     hint.type = UVM_PERF_THRASHING_HINT_TYPE_NONE;
 
-    closest_resident_id = uvm_va_block_page_get_closest_resident(va_block, page_index, requester);
+    closest_resident_id = uvm_va_block_page_get_closest_resident(va_block, va_block_context, page_index, requester);
     if (uvm_va_block_is_hmm(va_block)) {
         // HMM pages always start out resident on the CPU but may not be
         // recorded in the va_block state because hmm_range_fault() or
@@ -1601,6 +1602,7 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
 //   that case we keep the page pinned while applying the same algorithm as in
 //   Phase1.
 uvm_perf_thrashing_hint_t uvm_perf_thrashing_get_hint(uvm_va_block_t *va_block,
+                                                      uvm_va_block_context_t *va_block_context,
                                                       NvU64 address,
                                                       uvm_processor_id_t requester)
 {
@@ -1713,6 +1715,7 @@ uvm_perf_thrashing_hint_t uvm_perf_thrashing_get_hint(uvm_va_block_t *va_block,
     else {
         hint = get_hint_for_migration_thrashing(va_space_thrashing,
                                                 va_block,
+                                                va_block_context,
                                                 page_index,
                                                 page_thrashing,
                                                 requester);

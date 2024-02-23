@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -87,59 +87,10 @@ static NV_STATUS get_io_ptes(struct vm_area_struct *vma,
     return NV_OK;
 }
 
-/*!
- * @brief Pins user IO pages that have been mapped to the user processes virtual
- *        address space with remap_pfn_range.
- *
- * @param[in]     vma VMA that contains the virtual address range given by the
- *                    start and the page count.
- * @param[in]     start Beginning of the virtual address range of the IO pages.
- * @param[in]     page_count Number of pages to pin from start.
- * @param[in,out] page_array Storage array for pointers to the pinned pages.
- *                           Must be large enough to contain at least page_count
- *                           pointers.
- *
- * @return NV_OK if the pages were pinned successfully, error otherwise.
- */
-static NV_STATUS get_io_pages(struct vm_area_struct *vma,
-                              NvUPtr start,
-                              NvU64 page_count,
-                              struct page **page_array)
-{
-    NV_STATUS rmStatus = NV_OK;
-    NvU64 i, pinned = 0;
-    unsigned long pfn;
-
-    for (i = 0; i < page_count; i++)
-    {
-        if ((nv_follow_pfn(vma, (start + (i * PAGE_SIZE)), &pfn) < 0) ||
-            (!pfn_valid(pfn)))
-        {
-            rmStatus = NV_ERR_INVALID_ADDRESS;
-            break;
-        }
-
-        // Page-backed memory mapped to userspace with remap_pfn_range
-        page_array[i] = pfn_to_page(pfn);
-        get_page(page_array[i]);
-        pinned++;
-    }
-
-    if (pinned < page_count)
-    {
-        for (i = 0; i < pinned; i++)
-            put_page(page_array[i]);
-        rmStatus = NV_ERR_INVALID_ADDRESS;
-    }
-
-    return rmStatus;
-}
-
 NV_STATUS NV_API_CALL os_lookup_user_io_memory(
     void   *address,
     NvU64   page_count,
-    NvU64 **pte_array,
-    void  **page_array
+    NvU64 **pte_array
 )
 {
     NV_STATUS rmStatus;
@@ -187,18 +138,9 @@ NV_STATUS NV_API_CALL os_lookup_user_io_memory(
         goto done;
     }
 
-    if (pfn_valid(pfn))
-    {
-        rmStatus = get_io_pages(vma, start, page_count, (struct page **)result_array);
-        if (rmStatus == NV_OK)
-            *page_array = (void *)result_array;
-    }
-    else
-    {
-        rmStatus = get_io_ptes(vma, start, page_count, (NvU64 **)result_array);
-        if (rmStatus == NV_OK)
-            *pte_array = (NvU64 *)result_array;
-    }
+    rmStatus = get_io_ptes(vma, start, page_count, (NvU64 **)result_array);
+    if (rmStatus == NV_OK)
+        *pte_array = (NvU64 *)result_array;
 
 done:
     nv_mmap_read_unlock(mm);

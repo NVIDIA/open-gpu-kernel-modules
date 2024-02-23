@@ -184,6 +184,8 @@ typedef struct mem_multicast_fabric_descriptor
     // Map of attached remote GPU info
     MemMulticastFabricRemoteGpuInfoMap remoteGpuInfoMap;
 
+    NvS32 imexChannel;
+
     //
     // The lock protects MEM_MULTICAST_FABRIC_DESCRIPTOR, the MCFLA descriptor.
     //
@@ -224,12 +226,13 @@ _memMulticastFabricInitAttachEvent
     NvU16                        exportNodeId,
     NvU16                        index,
     NvUuid                      *pExportUuid,
+    NvS32                        imexChannel,
     NV00F1_CTRL_FABRIC_EVENT    *pEvent
 )
 {
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
 
-    pEvent->imexChannel = 0;
+    pEvent->imexChannel = imexChannel;
     pEvent->type = NV00F1_CTRL_FABRIC_EVENT_TYPE_REMOTE_GPU_ATTACH;
     pEvent->id = fabricGenerateEventId(pFabric);
 
@@ -247,12 +250,13 @@ _memMulticastFabricInitUnimportEvent
 (
     NvU64                        attachEventId,
     NvU16                        exportNodeId,
+    NvS32                        imexChannel,
     NV00F1_CTRL_FABRIC_EVENT    *pEvent
 )
 {
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
 
-    pEvent->imexChannel = 0;
+    pEvent->imexChannel = imexChannel;
     pEvent->type = NV00F1_CTRL_FABRIC_EVENT_TYPE_MEM_UNIMPORT;
     pEvent->id = fabricGenerateEventId(pFabric);
     pEvent->data.unimport.exportNodeId  = exportNodeId;
@@ -372,6 +376,7 @@ _memMulticastFabricDescriptorAlloc
     multimapInit(&pMulticastFabricDesc->remoteGpuInfoMap,
                  portMemAllocatorGetGlobalNonPaged());
     pMulticastFabricDesc->exportNodeId = NV_FABRIC_INVALID_NODE_ID;
+    pMulticastFabricDesc->imexChannel = -1;
 
     pMulticastFabricDesc->pLock =
         portSyncRwLockCreate(portMemAllocatorGetGlobalNonPaged());
@@ -563,8 +568,11 @@ _memMulticastFabricGpuInfoRemove
             Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
             NV00F1_CTRL_FABRIC_EVENT unimportEvent;
 
+            NV_ASSERT(pMulticastFabricDesc->imexChannel != -1);
+
             _memMulticastFabricInitUnimportEvent(pNode->attachEventId,
                                     pMulticastFabricDesc->exportNodeId,
+                                    pMulticastFabricDesc->imexChannel,
                                     &unimportEvent);
 
             NV_CHECK(LEVEL_WARNING,
@@ -1140,7 +1148,8 @@ MEM_MULTICAST_FABRIC_DESCRIPTOR*
 _memMulticastFabricDescriptorAllocUsingExpPacket
 (
     MemoryMulticastFabric        *pMemoryMulticastFabric,
-    NV00FD_ALLOCATION_PARAMETERS *pAllocParams
+    NV00FD_ALLOCATION_PARAMETERS *pAllocParams,
+    NvS32                         imexChannel
 )
 {
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
@@ -1243,6 +1252,7 @@ _memMulticastFabricDescriptorAllocUsingExpPacket
     pMulticastFabricDesc->expUuid = expUuid;
     pMulticastFabricDesc->cacheKey = cacheKey;
     pMulticastFabricDesc->index = pAllocParams->index;
+    pMulticastFabricDesc->imexChannel = imexChannel;
 
     // insert into cache once ready...
     status = fabricImportCacheInsert(pFabric, &expUuid, cacheKey,
@@ -1273,24 +1283,27 @@ _memMulticastFabricConstruct
     MEM_MULTICAST_FABRIC_DESCRIPTOR *pMulticastFabricDesc;
     NV_STATUS status = NV_OK;
 
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pMemoryMulticastFabric), RmClient);
+
     if (!_memMulticastFabricIsPrime(pAllocParams->allocFlags))
     {
+        if (pRmClient->imexChannel == -1)
+            return NV_ERR_INSUFFICIENT_PERMISSIONS;
+
         NV_EXPORT_MEM_PACKET *pExportPacket = &pAllocParams->expPacket;
 
         // If this a single-node UUID?
         if (memoryExportGetNodeId(pExportPacket) == NV_FABRIC_INVALID_NODE_ID)
             return NV_ERR_NOT_SUPPORTED;
 
-        pMulticastFabricDesc =
-            _memMulticastFabricDescriptorAllocUsingExpPacket(
+        pMulticastFabricDesc = _memMulticastFabricDescriptorAllocUsingExpPacket(
                                                 pMemoryMulticastFabric,
-                                                pAllocParams);
+                                                pAllocParams, pRmClient->imexChannel);
     }
     else
     {
-        pMulticastFabricDesc =
-            _memMulticastFabricDescriptorAlloc(pMemoryMulticastFabric,
-                                               pAllocParams);
+        pMulticastFabricDesc = _memMulticastFabricDescriptorAlloc(pMemoryMulticastFabric,
+                                                                  pAllocParams);
     }
 
     if (pMulticastFabricDesc == NULL)
@@ -1303,6 +1316,18 @@ _memMulticastFabricConstruct
     //
 
     portSyncRwLockAcquireWrite(pMulticastFabricDesc->pLock);
+
+    //
+    // For imported (non-prime) descriptor, make sure the pre-existing (cached)
+    // descriptors can be accessed only if the client is subscribed to the
+    // right IMEX channel.
+    //
+    if (!_memMulticastFabricIsPrime(pAllocParams->allocFlags) &&
+        (pMulticastFabricDesc->imexChannel != pRmClient->imexChannel))
+    {
+        status = NV_ERR_INSUFFICIENT_PERMISSIONS;
+        goto fail;
+    }
 
     status = _memMulticastFabricDescriptorEnqueueWait(pParams->hClient,
                                                       pMulticastFabricDesc,
@@ -1844,12 +1869,20 @@ _memorymulticastfabricCtrlAttachGpu
             goto fail;
         }
 
+        if (pMulticastFabricDesc->imexChannel == -1)
+        {
+            NV_PRINTF(LEVEL_ERROR, "IMEX channel subscription is not available\n");
+            status = NV_ERR_INVALID_STATE;
+            goto fail;
+        }
+
         _memMulticastFabricInitAttachEvent(pNode->gpuProbeHandle,
                                            pMulticastFabricDesc->inbandReqId,
                                            pNode->cliqueId,
                                            pMulticastFabricDesc->exportNodeId,
                                            pMulticastFabricDesc->index,
                                            &pMulticastFabricDesc->expUuid,
+                                           pMulticastFabricDesc->imexChannel,
                                            &event);
 
         pNode->attachEventId = event.id;

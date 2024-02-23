@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2013-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2013-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -187,7 +187,6 @@ struct KernelBif {
     NvU32 (*__kbifGetValidEnginesToReset__)(struct OBJGPU *, struct KernelBif *);
     NvU32 (*__kbifGetValidDeviceEnginesToReset__)(struct OBJGPU *, struct KernelBif *);
     NvU32 (*__kbifGetEccCounts__)(struct OBJGPU *, struct KernelBif *);
-    NV_STATUS (*__kbifClearEccCounts__)(struct OBJGPU *, struct KernelBif *);
     NV_STATUS (*__kbifStatePreLoad__)(POBJGPU, struct KernelBif *, NvU32);
     NV_STATUS (*__kbifStatePostUnload__)(POBJGPU, struct KernelBif *, NvU32);
     void (*__kbifStateDestroy__)(POBJGPU, struct KernelBif *);
@@ -418,8 +417,6 @@ NV_STATUS __nvoc_objCreate_KernelBif(KernelBif**, Dynamic*, NvU32);
 #define kbifGetValidDeviceEnginesToReset_HAL(pGpu, pKernelBif) kbifGetValidDeviceEnginesToReset_DISPATCH(pGpu, pKernelBif)
 #define kbifGetEccCounts(pGpu, pKernelBif) kbifGetEccCounts_DISPATCH(pGpu, pKernelBif)
 #define kbifGetEccCounts_HAL(pGpu, pKernelBif) kbifGetEccCounts_DISPATCH(pGpu, pKernelBif)
-#define kbifClearEccCounts(pGpu, pKernelBif) kbifClearEccCounts_DISPATCH(pGpu, pKernelBif)
-#define kbifClearEccCounts_HAL(pGpu, pKernelBif) kbifClearEccCounts_DISPATCH(pGpu, pKernelBif)
 #define kbifStatePreLoad(pGpu, pEngstate, arg0) kbifStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kbifStatePostUnload(pGpu, pEngstate, arg0) kbifStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kbifStateDestroy(pGpu, pEngstate) kbifStateDestroy_DISPATCH(pGpu, pEngstate)
@@ -986,16 +983,6 @@ static inline NvU32 kbifGetEccCounts_4a4dee(struct OBJGPU *pGpu, struct KernelBi
 
 static inline NvU32 kbifGetEccCounts_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
     return pKernelBif->__kbifGetEccCounts__(pGpu, pKernelBif);
-}
-
-NV_STATUS kbifClearEccCounts_GH100(struct OBJGPU *pGpu, struct KernelBif *pKernelBif);
-
-static inline NV_STATUS kbifClearEccCounts_56cd7a(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
-    return NV_OK;
-}
-
-static inline NV_STATUS kbifClearEccCounts_DISPATCH(struct OBJGPU *pGpu, struct KernelBif *pKernelBif) {
-    return pKernelBif->__kbifClearEccCounts__(pGpu, pKernelBif);
 }
 
 static inline NV_STATUS kbifStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelBif *pEngstate, NvU32 arg0) {

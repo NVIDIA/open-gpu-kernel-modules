@@ -25,6 +25,8 @@
 #include "uvm_processors.h"
 
 static struct kmem_cache *g_uvm_processor_mask_cache __read_mostly;
+const uvm_processor_mask_t g_uvm_processor_mask_cpu = { .bitmap = { 1 << UVM_PARENT_ID_CPU_VALUE }};
+const uvm_processor_mask_t g_uvm_processor_mask_empty = { };
 
 NV_STATUS uvm_processor_mask_cache_init(void)
 {

@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -314,7 +314,7 @@ static NV_STATUS uvm_suspend(void)
         // interrupts in the bottom half in the future, the bottom half flush
         // below will no longer be able to guarantee that all outstanding
         // notifications have been handled.
-        uvm_gpu_access_counters_set_ignore(gpu, true);
+        uvm_parent_gpu_access_counters_set_ignore(gpu->parent, true);
 
         uvm_parent_gpu_set_isr_suspended(gpu->parent, true);
 
@@ -373,13 +373,13 @@ static NV_STATUS uvm_resume(void)
 
         // Bring the fault buffer software state back in sync with the
         // hardware state.
-        uvm_gpu_fault_buffer_resume(gpu->parent);
+        uvm_parent_gpu_fault_buffer_resume(gpu->parent);
 
         uvm_parent_gpu_set_isr_suspended(gpu->parent, false);
 
         // Reenable access counter interrupt processing unless notifications
         // have been set to be suppressed.
-        uvm_gpu_access_counters_set_ignore(gpu, false);
+        uvm_parent_gpu_access_counters_set_ignore(gpu->parent, false);
     }
 
     uvm_up_write(&g_uvm_global.pm.lock);

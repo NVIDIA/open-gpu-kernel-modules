@@ -41,15 +41,11 @@
 static NV_STATUS uvm_test_get_gpu_ref_count(UVM_TEST_GET_GPU_REF_COUNT_PARAMS *params, struct file *filp)
 {
     NvU64 retained_count = 0;
-    uvm_parent_gpu_t *parent_gpu;
     uvm_gpu_t *gpu = NULL;
 
     uvm_mutex_lock(&g_uvm_global.global_lock);
 
-    parent_gpu = uvm_parent_gpu_get_by_uuid(&params->gpu_uuid);
-    if (parent_gpu)
-        gpu = uvm_gpu_get_by_parent_and_swizz_id(parent_gpu, params->swizz_id);
-
+    gpu = uvm_gpu_get_by_uuid(&params->gpu_uuid);
     if (gpu != NULL)
         retained_count = uvm_gpu_retained_count(gpu);
 

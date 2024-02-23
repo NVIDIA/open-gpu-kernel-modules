@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2017-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2017-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -120,10 +120,11 @@ _kmemsysReadRegAndMaskPriError
     NvU32 regVal;
 
     regVal = osGpuReadReg032(pGpu, regAddr);
-    if ((regVal & GPU_READ_PRI_ERROR_MASK) == GPU_READ_PRI_ERROR_CODE)
-    {
+    if (regVal == GPU_REG_VALUE_INVALID)
         return 0;
-    }
+
+    if ((regVal & GPU_READ_PRI_ERROR_MASK) == GPU_READ_PRI_ERROR_CODE)
+        return 0;
 
     return regVal;
 }
@@ -162,28 +163,6 @@ kmemsysGetEccCounts_TU102
             regVal = _kmemsysReadRegAndMaskPriError(pGpu, NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT +
                     (i * NV_LTC_PRI_STRIDE) + (j * NV_LTS_PRI_STRIDE));
             *ltcCount += DRF_VAL(_PLTCG_LTC0_LTS0, _L2_CACHE_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
-        }
-    }
-}
-
-void
-kmemsysClearEccCounts_TU102
-(
-    OBJGPU *pGpu,
-    KernelMemorySystem *pKernelMemorySystem
-)
-{
-    NvU32 maxFbpas = kmemsysGetMaxFbpas_HAL(pGpu, pKernelMemorySystem);
-    NvU32 dedCountSize = kmemsysGetEccDedCountSize_HAL(pGpu, pKernelMemorySystem);
-    NvU32 fbpaDedCountRegAddr = 0;
-
-    for (NvU32 i = 0; i < maxFbpas; i++)
-    {
-        for (NvU32 j = 0; j < dedCountSize; j++)
-        {
-            fbpaDedCountRegAddr = kmemsysGetEccDedCountRegAddr_HAL(pGpu, pKernelMemorySystem, i, j);
-            osGpuWriteReg032(pGpu, fbpaDedCountRegAddr, 0);
-            osGpuWriteReg032(pGpu, NV_PLTCG_LTC0_LTS0_L2_CACHE_ECC_UNCORRECTED_ERR_COUNT + (i * NV_LTC_PRI_STRIDE) + (j * NV_LTS_PRI_STRIDE), 0);
         }
     }
 }

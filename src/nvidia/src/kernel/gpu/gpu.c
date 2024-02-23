@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1474,10 +1474,6 @@ gpuDestruct_IMPL
     if (hypervisorIsVgxHyper() ||
         pGpu->getProperty(pGpu, PDB_PROP_GPU_ACCOUNTING_ON))
     {
-        GpuAccounting *pGpuAcct = SYS_GET_GPUACCT(SYS_GET_INSTANCE());
-        NV0000_CTRL_GPUACCT_SET_ACCOUNTING_STATE_PARAMS params;
-        NV_STATUS status;
-
         /*
          * On VGX host, users are not allowed to disable accounting. But we still
          * need to do that while cleaning up (destroy timer part of this cleanup)
@@ -1489,26 +1485,14 @@ gpuDestruct_IMPL
          * that execution goes forward in gpuacctDisableAccounting_IMPL() and
          * timer gets destroyed properly.
          */
-        pGpu->setProperty(pGpu, PDB_PROP_GPU_ACCOUNTING_ON, NV_FALSE);
 
-        params.gpuId = pGpu->gpuId;
-        params.pid = 0;
-        params.newState = NV0000_CTRL_GPU_ACCOUNTING_STATE_DISABLED;
-
-        status = gpuacctDisableAccounting(pGpuAcct, pGpu->gpuInstance, &params);
-
+        NV_STATUS status = gpuDisableAccounting(pGpu, NV_TRUE);
         if (status != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                      "gpuacctDisableAccounting failed with error %d on GPU ID %d\n",
+                      "gpuDisableAccounting failed with error %d on GPU ID %d\n",
                       status, pGpu->gpuId);
         }
-    }
-
-    // Free GPU shared data
-    if (pGpu->userSharedData.pMemDesc != NULL)
-    {
-        gpushareddataDestroy(pGpu);
     }
 
     //
@@ -2575,26 +2559,18 @@ gpuStateLoad_IMPL
 {
     NvBool bVgpuOnGspEnabled = IS_VGPU_GSP_PLUGIN_OFFLOAD_ENABLED(pGpu) && RMCFG_FEATURE_PLATFORM_GSP;
     if ((hypervisorIsVgxHyper() || bVgpuOnGspEnabled) &&
-        !pGpu->getProperty(pGpu, PDB_PROP_GPU_ACCOUNTING_ON))
+        !pGpu->getProperty(pGpu, PDB_PROP_GPU_ACCOUNTING_ON) &&
+        !IS_MIG_ENABLED(pGpu))
     {
-        OBJSYS *pSys = SYS_GET_INSTANCE();
-        GpuAccounting *pGpuAcct = SYS_GET_GPUACCT(pSys);
-        NV0000_CTRL_GPUACCT_SET_ACCOUNTING_STATE_PARAMS params;
-        NV_STATUS gpuacctStatus;
-
         // If VGX host, enable per process accounting by default.
-        params.gpuId = pGpu->gpuId;
-        params.pid = 0;
-        params.newState = NV0000_CTRL_GPU_ACCOUNTING_STATE_ENABLED;
-
-        gpuacctStatus = gpuacctEnableAccounting(pGpuAcct, pGpu->gpuInstance, &params);
+        NV_STATUS gpuacctStatus = gpuEnableAccounting(pGpu);
 
         // Don't return this error since GPU accounting is just a reporting feature, we don't
         // want to halt execution as a result of it failing
         if (gpuacctStatus != NV_OK)
         {
             NV_PRINTF(LEVEL_ERROR,
-                    "gpuacctEnableAccounting failed with error %d on GPU ID %d\n",
+                    "gpuEnableAccounting failed with error %d on GPU ID %d\n",
                     gpuacctStatus, pGpu->gpuId);
         }
     }
@@ -2610,6 +2586,48 @@ gpuStateLoad_IMPL
 
 gpuStateLoad_exit:
     return rmStatus;
+}
+
+NV_STATUS gpuEnableAccounting_IMPL(OBJGPU *pGpu)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    GpuAccounting *pGpuAcct = SYS_GET_GPUACCT(pSys);
+    NV0000_CTRL_GPUACCT_SET_ACCOUNTING_STATE_PARAMS params;
+
+    params.gpuId = pGpu->gpuId;
+    params.pid = 0;
+    params.newState = NV0000_CTRL_GPU_ACCOUNTING_STATE_ENABLED;
+
+    return gpuacctEnableAccounting(pGpuAcct, pGpu->gpuInstance, &params);
+}
+
+NV_STATUS gpuDisableAccounting_IMPL(OBJGPU *pGpu, NvBool bForce)
+{
+    OBJSYS *pSys = SYS_GET_INSTANCE();
+    GpuAccounting *pGpuAcct = SYS_GET_GPUACCT(pSys);
+    NV0000_CTRL_GPUACCT_SET_ACCOUNTING_STATE_PARAMS params;
+
+    params.gpuId = pGpu->gpuId;
+    params.pid = 0;
+    params.newState = NV0000_CTRL_GPU_ACCOUNTING_STATE_DISABLED;
+
+    /*
+     * On VGX host, users are not allowed to disable accounting. But we still
+     * need to do that while cleaning up (destroy timer part of this cleanup)
+     * in gpuDestruct_IMPL() path. If PDB_PROP_GPU_ACCOUNTING_ON is NV_TRUE and
+     * we call gpuacctDisableAccounting_IMPL() in gpuDestruct_IMPL() path,
+     * it throws not supported error. To bypass the not supported case in
+     * the gpuacctDisableAccounting_IMPL(), we are setting
+     * PDB_PROP_GPU_ACCOUNTING_ON to NV_FALSE here in gpuDestruct_IMPL(), so
+     * that execution goes forward in gpuacctDisableAccounting_IMPL() and
+     * timer gets destroyed properly.
+     */
+    if (bForce)
+    {
+        pGpu->setProperty(pGpu, PDB_PROP_GPU_ACCOUNTING_ON, NV_FALSE);
+    }
+
+    return gpuacctDisableAccounting(pGpuAcct, pGpu->gpuInstance, &params);
 }
 
 static NV_STATUS

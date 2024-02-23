@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -223,7 +223,8 @@ typedef struct
 
 #define GSP_FW_HEAP_FREE_LIST_MAGIC 0x4845415046524545ULL
 
-#define GSP_FW_FLAGS                    8:0
-#define GSP_FW_FLAGS_CLOCK_BOOST        NVBIT(0)
+#define GSP_FW_FLAGS                            8:0
+#define GSP_FW_FLAGS_CLOCK_BOOST                NVBIT(0)
+#define GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT    NVBIT(1)
 
 #endif // GSP_FW_WPR_META_H_

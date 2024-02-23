@@ -1052,12 +1052,6 @@ kfspSafeToSendBootCommands
         return NV_WARN_NOTHING_TO_DO;
     }
 
-    if (pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_BOOT_COMMAND_OK))
-    {
-        NV_PRINTF(LEVEL_ERROR, "Cannot send FSP boot commands multiple times.\n");
-        return NV_ERR_NOT_SUPPORTED;
-    }
-
     // Enforce GSP-FMC can only be booted by FSP on silicon.
     if (IS_SILICON(pGpu) &&
         kfspGspFmcIsEnforced_HAL(pGpu, pKernelFsp) &&
@@ -1182,10 +1176,28 @@ kfspPrepareBootCommands_GH100
         //
 
         // Offset from end of FB to be used by FSP
-        NvU32 FRTS_OFFSET_FROM_END =
+        NvU64 frtsOffsetFromEnd =
             memmgrGetFBEndReserveSizeEstimate_HAL(pGpu, GPU_GET_MEMORY_MANAGER(pGpu));
 
-        pKernelFsp->pCotPayload->frtsVidmemOffset = FRTS_OFFSET_FROM_END;
+        //
+        // Layout: 0|| ....... | FRTS | rsvd est ||END
+        // frtsOffsetFromEnd =        ^ ........ ^
+        //
+        KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+
+        //
+        // In the boot retry path, we may need to apply an extra margin the end of memory.
+        // This is done to avoid memory with an ECC error that caused the first boot
+        // attempt failure. This value will be 0 during normal boot.
+        //
+        // Align the margin size to 2MB, as there's potentially an undocumented alignment
+        // requirement (the previous value should already be 2MB-aligned) and the extra
+        // padding won't hurt.
+        //
+        if (pKernelGsp != NULL)
+            frtsOffsetFromEnd += NV_ALIGN_UP64(kgspGetWprEndMargin(pGpu, pKernelGsp), 0x200000U);
+
+        pKernelFsp->pCotPayload->frtsVidmemOffset = frtsOffsetFromEnd;
         pKernelFsp->pCotPayload->frtsVidmemSize = frtsSize;
     }
 
@@ -1237,7 +1249,7 @@ kfspSendBootCommands_GH100
     NV_ASSERT_OR_RETURN(pKernelFsp->pCotPayload != NULL, NV_ERR_INVALID_STATE);
 
     status = kfspSendAndReadMessage(pGpu, pKernelFsp, (NvU8 *)pKernelFsp->pCotPayload,
-                            sizeof(NVDM_PAYLOAD_COT), NVDM_TYPE_COT, NULL, 0);
+                                    sizeof(NVDM_PAYLOAD_COT), NVDM_TYPE_COT, NULL, 0);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Sent following content to FSP: \n");

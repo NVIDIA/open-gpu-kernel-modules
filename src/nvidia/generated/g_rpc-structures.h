@@ -56,7 +56,16 @@ typedef struct rpc_set_guest_system_info_ext_v15_02
     NvU16      device;
 } rpc_set_guest_system_info_ext_v15_02;
 
-typedef rpc_set_guest_system_info_ext_v15_02 rpc_set_guest_system_info_ext_v;
+typedef struct rpc_set_guest_system_info_ext_v25_1B
+{
+    char       guestDriverBranch[0x100];
+    NvU32      domain;
+    NvU16      bus;
+    NvU16      device;
+    NvU32      gridBuildCsp;
+} rpc_set_guest_system_info_ext_v25_1B;
+
+typedef rpc_set_guest_system_info_ext_v25_1B rpc_set_guest_system_info_ext_v;
 
 typedef struct rpc_alloc_root_v07_00
 {
@@ -224,7 +233,19 @@ typedef struct rpc_rm_api_control_v25_18
     NvP64      rm_api_params NV_ALIGN_BYTES(8);
 } rpc_rm_api_control_v25_18;
 
-typedef rpc_rm_api_control_v25_18 rpc_rm_api_control_v;
+typedef struct rpc_rm_api_control_v25_19
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_19;
+
+typedef struct rpc_rm_api_control_v25_1A
+{
+    NVOS54_PARAMETERS_v03_00 params;
+    NvP64      rm_api_params NV_ALIGN_BYTES(8);
+} rpc_rm_api_control_v25_1A;
+
+typedef rpc_rm_api_control_v25_1A rpc_rm_api_control_v;
 
 typedef struct rpc_alloc_share_device_v03_00
 {
@@ -360,6 +381,13 @@ typedef struct rpc_vgpu_pf_reg_read32_v15_00
 } rpc_vgpu_pf_reg_read32_v15_00;
 
 typedef rpc_vgpu_pf_reg_read32_v15_00 rpc_vgpu_pf_reg_read32_v;
+
+typedef struct rpc_ctrl_set_vgpu_fb_usage_v1A_08
+{
+    NVA080_CTRL_SET_FB_USAGE_PARAMS_v07_02 setFbUsage;
+} rpc_ctrl_set_vgpu_fb_usage_v1A_08;
+
+typedef rpc_ctrl_set_vgpu_fb_usage_v1A_08 rpc_ctrl_set_vgpu_fb_usage_v;
 
 typedef struct rpc_ctrl_nvenc_sw_session_update_info_v1A_09
 {
@@ -1604,6 +1632,58 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_guest_system_info_v03_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_set_guest_system_info_ext_v25_1B
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_guest_system_info_ext_v25_1B[] = {
+    {
+        .vtype                = vtype_char_array,
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_ext_v25_1B, guestDriverBranch),
+        .array_length         = 0x100,
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "guestDriverBranch"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_ext_v25_1B, domain),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "domain"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU16,
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_ext_v25_1B, bus),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "bus"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU16,
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_ext_v25_1B, device),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "device"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvU32,
+        .offset               = NV_OFFSETOF(rpc_set_guest_system_info_ext_v25_1B, gridBuildCsp),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "gridBuildCsp"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_set_guest_system_info_ext_v25_1B = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_set_guest_system_info_ext",
+    #endif
+    .header_length = sizeof(rpc_set_guest_system_info_ext_v25_1B),
+    .fdesc = vmiopd_fdesc_t_rpc_set_guest_system_info_ext_v25_1B
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_set_guest_system_info_ext_v15_02
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_set_guest_system_info_ext_v15_02[] = {
     {
@@ -2168,6 +2248,36 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_alloc_event_v03_00 = {
 };
 #endif
 
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_19
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_19[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_19, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_19, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_19 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_19),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_19
+};
+#endif
+
 #ifndef SKIP_PRINT_rpc_rm_api_control_v25_0F
 static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_0F[] = {
     {
@@ -2375,6 +2485,36 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_18 = {
     #endif
     .header_length = sizeof(rpc_rm_api_control_v25_18),
     .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_18
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_1A
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_rm_api_control_v25_1A[] = {
+    {
+        .vtype                = vtype_NVOS54_PARAMETERS_v03_00,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_1A, params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "params"
+        #endif
+    },
+    {
+        .vtype                = vtype_NvP64,
+        .offset               = NV_OFFSETOF(rpc_rm_api_control_v25_1A, rm_api_params),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "rm_api_params"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_rm_api_control_v25_1A = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_rm_api_control",
+    #endif
+    .header_length = sizeof(rpc_rm_api_control_v25_1A),
+    .fdesc = vmiopd_fdesc_t_rpc_rm_api_control_v25_1A
 };
 #endif
 
@@ -2979,6 +3119,29 @@ static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_vgpu_pf_reg_read32_v15_00 = {
     #endif
     .header_length = sizeof(rpc_vgpu_pf_reg_read32_v15_00),
     .fdesc = vmiopd_fdesc_t_rpc_vgpu_pf_reg_read32_v15_00
+};
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_vgpu_fb_usage_v1A_08
+static vmiopd_fdesc_t vmiopd_fdesc_t_rpc_ctrl_set_vgpu_fb_usage_v1A_08[] = {
+    {
+        .vtype                = vtype_NVA080_CTRL_SET_FB_USAGE_PARAMS_v07_02,
+        .offset               = NV_OFFSETOF(rpc_ctrl_set_vgpu_fb_usage_v1A_08, setFbUsage),
+        #if (defined(DEBUG) || defined(DEVELOP))
+        .name                 = "setFbUsage"
+        #endif
+    },
+    {
+        .vtype        = vt_end
+    }
+};
+
+static vmiopd_mdesc_t vmiopd_mdesc_t_rpc_ctrl_set_vgpu_fb_usage_v1A_08 = {
+    #if (defined(DEBUG) || defined(DEVELOP))
+    .name = "rpc_ctrl_set_vgpu_fb_usage",
+    #endif
+    .header_length = sizeof(rpc_ctrl_set_vgpu_fb_usage_v1A_08),
+    .fdesc = vmiopd_fdesc_t_rpc_ctrl_set_vgpu_fb_usage_v1A_08
 };
 #endif
 
@@ -7708,6 +7871,13 @@ vmiopd_mdesc_t *rpcdebugSetGuestSystemInfo_v03_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_set_guest_system_info_ext_v25_1B
+vmiopd_mdesc_t *rpcdebugSetGuestSystemInfoExt_v25_1B(void)
+{
+    return &vmiopd_mdesc_t_rpc_set_guest_system_info_ext_v25_1B;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_set_guest_system_info_ext_v15_02
 vmiopd_mdesc_t *rpcdebugSetGuestSystemInfoExt_v15_02(void)
 {
@@ -7799,6 +7969,13 @@ vmiopd_mdesc_t *rpcdebugAllocEvent_v03_00(void)
 }
 #endif
 
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_19
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_19(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_19;
+}
+#endif
+
 #ifndef SKIP_PRINT_rpc_rm_api_control_v25_0F
 vmiopd_mdesc_t *rpcdebugRmApiControl_v25_0F(void)
 {
@@ -7845,6 +8022,13 @@ vmiopd_mdesc_t *rpcdebugRmApiControl_v25_17(void)
 vmiopd_mdesc_t *rpcdebugRmApiControl_v25_18(void)
 {
     return &vmiopd_mdesc_t_rpc_rm_api_control_v25_18;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_rm_api_control_v25_1A
+vmiopd_mdesc_t *rpcdebugRmApiControl_v25_1A(void)
+{
+    return &vmiopd_mdesc_t_rpc_rm_api_control_v25_1A;
 }
 #endif
 
@@ -7964,6 +8148,13 @@ vmiopd_mdesc_t *rpcdebugGetEncoderCapacity_v07_00(void)
 vmiopd_mdesc_t *rpcdebugVgpuPfRegRead32_v15_00(void)
 {
     return &vmiopd_mdesc_t_rpc_vgpu_pf_reg_read32_v15_00;
+}
+#endif
+
+#ifndef SKIP_PRINT_rpc_ctrl_set_vgpu_fb_usage_v1A_08
+vmiopd_mdesc_t *rpcdebugCtrlSetVgpuFbUsage_v1A_08(void)
+{
+    return &vmiopd_mdesc_t_rpc_ctrl_set_vgpu_fb_usage_v1A_08;
 }
 #endif
 
@@ -8878,6 +9069,7 @@ vmiopd_mdesc_t *rpcdebugCtrlNvlinkGetInbandReceivedData_v25_0C(void)
 typedef union rpc_generic_union {
     rpc_set_guest_system_info_v03_00 set_guest_system_info_v03_00;
     rpc_set_guest_system_info_v set_guest_system_info_v;
+    rpc_set_guest_system_info_ext_v25_1B set_guest_system_info_ext_v25_1B;
     rpc_set_guest_system_info_ext_v15_02 set_guest_system_info_ext_v15_02;
     rpc_set_guest_system_info_ext_v set_guest_system_info_ext_v;
     rpc_alloc_root_v07_00 alloc_root_v07_00;
@@ -8904,6 +9096,7 @@ typedef union rpc_generic_union {
     rpc_idle_channels_v idle_channels_v;
     rpc_alloc_event_v03_00 alloc_event_v03_00;
     rpc_alloc_event_v alloc_event_v;
+    rpc_rm_api_control_v25_19 rm_api_control_v25_19;
     rpc_rm_api_control_v25_0F rm_api_control_v25_0F;
     rpc_rm_api_control_v25_16 rm_api_control_v25_16;
     rpc_rm_api_control_v25_10 rm_api_control_v25_10;
@@ -8911,6 +9104,7 @@ typedef union rpc_generic_union {
     rpc_rm_api_control_v25_0D rm_api_control_v25_0D;
     rpc_rm_api_control_v25_17 rm_api_control_v25_17;
     rpc_rm_api_control_v25_18 rm_api_control_v25_18;
+    rpc_rm_api_control_v25_1A rm_api_control_v25_1A;
     rpc_rm_api_control_v25_14 rm_api_control_v25_14;
     rpc_rm_api_control_v rm_api_control_v;
     rpc_alloc_share_device_v03_00 alloc_share_device_v03_00;
@@ -8943,6 +9137,8 @@ typedef union rpc_generic_union {
     rpc_get_encoder_capacity_v get_encoder_capacity_v;
     rpc_vgpu_pf_reg_read32_v15_00 vgpu_pf_reg_read32_v15_00;
     rpc_vgpu_pf_reg_read32_v vgpu_pf_reg_read32_v;
+    rpc_ctrl_set_vgpu_fb_usage_v1A_08 ctrl_set_vgpu_fb_usage_v1A_08;
+    rpc_ctrl_set_vgpu_fb_usage_v ctrl_set_vgpu_fb_usage_v;
     rpc_ctrl_nvenc_sw_session_update_info_v1A_09 ctrl_nvenc_sw_session_update_info_v1A_09;
     rpc_ctrl_nvenc_sw_session_update_info_v ctrl_nvenc_sw_session_update_info_v;
     rpc_ctrl_reset_channel_v1A_09 ctrl_reset_channel_v1A_09;

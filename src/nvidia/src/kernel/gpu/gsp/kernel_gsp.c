@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2019-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2019-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1307,7 +1307,9 @@ _kgspProcessRpcEvent
             case NV_VGPU_MSG_EVENT_GSP_RUN_CPU_SEQUENCER:
             case NV_VGPU_MSG_EVENT_UCODE_LIBOS_PRINT:
             case NV_VGPU_MSG_EVENT_GSP_LOCKDOWN_NOTICE:
+            case NV_VGPU_MSG_EVENT_GSP_POST_NOCAT_RECORD:
             case NV_VGPU_MSG_EVENT_GSP_INIT_DONE:
+            case NV_VGPU_MSG_EVENT_OS_ERROR_LOG:
                 break;
             default:
                 NV_PRINTF(LEVEL_ERROR, "Attempted to process RPC event from GPU%d: 0x%x (%s) during bootup without API lock\n",
@@ -2569,7 +2571,7 @@ _kgspAllocNotifyOpSharedSurface(OBJGPU *pGpu, KernelGsp *pKernelGsp)
                       flags),
         error_cleanup);
 
-        memdescTagAlloc(nvStatus, 
+        memdescTagAlloc(nvStatus,
                 NV_FB_ALLOC_RM_INTERNAL_OWNER_GSP_NOTIFY_OP_SURFACE, pKernelGsp->pNotifyOpSurfMemDesc);
         NV_ASSERT_OK_OR_GOTO(nvStatus, nvStatus, error_cleanup);
 
@@ -2704,6 +2706,22 @@ _kgspVbiosVersionToStr(NvU64 vbiosVersionCombined, char *pVbiosVersionStr, NvU32
                   (vbiosVersionCombined) & 0xff);
 }
 
+static NV_STATUS
+_kgspPrepareScrubberImageIfNeeded(OBJGPU *pGpu, KernelGsp *pKernelGsp)
+{
+    // Prepare Scrubber ucode image if pre-scrubbed memory is insufficient
+    NvU64 neededSize = pKernelGsp->pWprMeta->fbSize - pKernelGsp->pWprMeta->gspFwRsvdStart;
+    NvU64 prescrubbedSize = kgspGetPrescrubbedTopFbSize(pGpu, pKernelGsp);
+    NV_PRINTF(LEVEL_INFO, "pre-scrubbed memory: 0x%llx bytes, needed: 0x%llx bytes\n",
+              prescrubbedSize, neededSize);
+
+    if (neededSize > prescrubbedSize)
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+            kgspAllocateScrubberUcodeImage(pGpu, pKernelGsp, &pKernelGsp->pScrubberUcode));
+
+    return NV_OK;
+}
+
 /*!
  * Prepare and place RPCs in message queue that GSP-RM will process
  * in early boot before OBJGPU is created.
@@ -2793,6 +2811,83 @@ _kgspShouldRelaxGspInitLocking
     return NV_FALSE;
 }
 
+static NV_STATUS
+_kgspBootReacquireLocks(OBJGPU *pGpu, KernelGsp *pKernelGsp, GPU_MASK *pGpusLockedMask)
+{
+    //
+    // To follow lock order constraints, GPU lock needs to be released before acquiring API lock
+    // As this path doesn't go through resource server, no client locks should be held at this point.
+    // Note: we must not hold any client locks when re-acquiring the API per lock ordering
+    //
+    rmGpuGroupLockRelease(*pGpusLockedMask, GPUS_LOCK_FLAGS_NONE);
+    *pGpusLockedMask = 0;
+
+    //
+    // rmapiLockAcquire should never fail on Linux if the API lock and GPU locks are not held.
+    // Failure to acquire the API lock means the cleanup sequence will skipped since it is
+    // unsafe without the lock.
+    //
+    NV_ASSERT_OK_OR_RETURN(rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT));
+
+    //
+    // This should never fail on Linux due to locks in the Unix layer.
+    // This will need to be revisited when parallel init is enabled on other platforms.
+    //
+    NV_ASSERT_OR_RETURN(gpumgrIsGpuPointerAttached(pGpu), NV_ERR_INVALID_DEVICE);
+
+    // Reqcquire the GPU lock released above.
+    NV_ASSERT_OK_OR_RETURN(rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
+                                                 GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT,
+                                                 pGpusLockedMask));
+
+    return NV_OK;
+}
+
+static NV_STATUS
+_kgspBootGspRm(OBJGPU *pGpu, KernelGsp *pKernelGsp, GSP_FIRMWARE *pGspFw, GPU_MASK *pGpusLockedMask)
+{
+    NV_STATUS status;
+
+    // Fail early if WPR2 is up
+    if (kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
+    {
+        NV_PRINTF(LEVEL_ERROR, "unexpected WPR2 already up, cannot proceed with booting GSP\n");
+        NV_PRINTF(LEVEL_ERROR, "(the GPU is likely in a bad state and may need to be reset)\n");
+        return NV_ERR_INVALID_STATE;
+    }
+
+    // Calculate FB layout (requires knowing FB size which depends on GFW_BOOT)
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgspCalculateFbLayout_HAL(pGpu, pKernelGsp, pGspFw));
+
+    // If the new FB layout requires a scrubber ucode to scrub additional space, prepare it now
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, _kgspPrepareScrubberImageIfNeeded(pGpu, pKernelGsp));
+
+    // Setup arguments for bootstrapping GSP
+    NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kgspPrepareForBootstrap_HAL(pGpu, pKernelGsp, pGspFw));
+
+    // Release the API lock if relaxed locking for parallel init is enabled
+    NvBool bRelaxedLocking = _kgspShouldRelaxGspInitLocking(pGpu);
+    if (bRelaxedLocking)
+        rmapiLockRelease();
+
+    // Proceed with GSP boot - if it fails, check for ECC errors
+    status = kgspBootstrap_HAL(pGpu, pKernelGsp, pGspFw);
+    if ((status != NV_OK) && gpuCheckEccCounts_HAL(pGpu))
+        status = NV_ERR_ECC_ERROR;
+
+    pKernelGsp->bootAttempts++;
+
+    //
+    // The caller will check that both the API lock and the GPU lock will be held upon return from
+    // this function, regardless of whether GSP bootstrap succeeded.
+    //
+    if (bRelaxedLocking)
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
+                              _kgspBootReacquireLocks(pGpu, pKernelGsp, pGpusLockedMask));
+
+    return status;
+}
+
 /*!
  * Initialize GSP-RM
  *
@@ -2831,9 +2926,6 @@ kgspInitRm_IMPL
         rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
                               GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT, &gpusLockedMask),
         done);
-
-    // Set the GPU time to the wall-clock time before loading GSP ucode.
-    tmrSetCurrentTime_HAL(pGpu, pTmr);
 
     /*
      * For GSP-RM boot, we must trigger FRTS (if it exists for the chip)
@@ -2877,11 +2969,7 @@ kgspInitRm_IMPL
         }
         else if (status == NV_ERR_NOT_SUPPORTED)
         {
-            //
             // Extracting VBIOS image from ROM is not supported.
-            // Sanity check we don't depend on it for FRTS, and proceed without FWSEC.
-            //
-            NV_ASSERT_OR_GOTO(kgspGetFrtsSize(pGpu, pKernelGsp) == 0, done);
             status = NV_OK;
         }
         else
@@ -2964,50 +3052,12 @@ kgspInitRm_IMPL
     threadStateResetTimeout(pGpu);
     NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR, kgspWaitForGfwBootOk_HAL(pGpu, pKernelGsp), done);
 
-    // Fail early if WPR2 is up
-    if (kgspIsWpr2Up_HAL(pGpu, pKernelGsp))
-    {
-        NV_PRINTF(LEVEL_ERROR, "unexpected WPR2 already up, cannot proceed with booting gsp\n");
-        NV_PRINTF(LEVEL_ERROR, "(the GPU is likely in a bad state and may need to be reset)\n");
-        status = NV_ERR_INVALID_STATE;
-        goto done;
-    }
-
-    // Calculate FB layout (requires knowing FB size which depends on GFW_BOOT)
-    status = kgspCalculateFbLayout_HAL(pGpu, pKernelGsp, pGspFw);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Error calculating FB layout\n");
-        goto done;
-    }
-
-    // Prepare Scrubber ucode image if pre-scrubbed memory is insufficient
-    if (pKernelGsp->pScrubberUcode == NULL)
-    {
-        NvU64 neededSize = pKernelGsp->pWprMeta->fbSize - pKernelGsp->pWprMeta->gspFwRsvdStart;
-        NvU64 prescrubbedSize = kgspGetPrescrubbedTopFbSize(pGpu, pKernelGsp);
-
-        if (neededSize > prescrubbedSize)
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "allocating Scrubber ucode as pre-scrubbed memory (0x%llx bytes) is insufficient (0x%llx bytes needed)\n",
-                      prescrubbedSize, neededSize);
-
-            status = kgspAllocateScrubberUcodeImage(pGpu, pKernelGsp,
-                                                    &pKernelGsp->pScrubberUcode);
-            if (status != NV_OK)
-            {
-                NV_PRINTF(LEVEL_ERROR, "failed to allocate Scrubber ucode: 0x%x\n", status);
-                goto done;
-            }
-        }
-        else
-        {
-            NV_PRINTF(LEVEL_INFO,
-                      "skipping allocating Scrubber ucode as pre-scrubbed memory (0x%llx bytes) is sufficient (0x%llx bytes needed)\n",
-                      prescrubbedSize, neededSize);
-        }
-    }
+    //
+    // Set the GPU time to the wall-clock time after GFW boot is complete
+    // (to avoid PLM collisions) but before loading GSP-RM ucode (which
+    // consumes the updated GPU time).
+    //
+    tmrSetCurrentTime_HAL(pGpu, pTmr);
 
     // Initialize libos init args list
     kgspSetupLibosInitArgs(pGpu, pKernelGsp);
@@ -3018,7 +3068,7 @@ kgspInitRm_IMPL
     //
     // If ConfCompute is enabled, all RPC traffic must be encrypted. Since we
     // can't encrypt until GSP boots and session is established, we must send
-    // these messages later (kgspBootstrapRiscvOSEarly_HAL) in CC.
+    // these messages later (kgspBootstrap_HAL) in CC.
     //
     ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
     if (pCC == NULL || !pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
@@ -3034,73 +3084,42 @@ kgspInitRm_IMPL
         }
     }
 
-    // bring up ucode with RM offload task
-    status = kgspPrepareForBootstrap_HAL(pGpu, pKernelGsp, pGspFw);
-    if (status == NV_OK)
+    //
+    // Bring up ucode with RM offload task.
+    // If an ECC error occurs which results in the failure of the bootstrap, try again.
+    // Subsequent attempts will shift the GSP region of FB in an attempt to avoid the
+    // unstable memory.
+    //
+    const NvU8 MAX_GSP_BOOT_ATTEMPTS = 4;
+    do
     {
-        NV_STATUS statusBootstrap;
-        NvBool bReleaseApiLock = _kgspShouldRelaxGspInitLocking(pGpu);
-        if (bReleaseApiLock)
-        {
-            rmapiLockRelease();
-        }
-
-        statusBootstrap = kgspBootstrap_HAL(pGpu, pKernelGsp, pGspFw);
+        // Reset the thread state timeout after failed attempts to prevent premature timeouts.
+        if (status != NV_OK)
+            threadStateResetTimeout(pGpu);
 
         //
-        // Reacquire locks even if GSP boot fails
+        // _kgspBootGspRm() will return NV_ERR_ECC_ERROR if any unhandled ECC errors are
+        // detected during a failed GSP boot attempt. Depending on where and when the
+        // error occurred, we may not be able to try again, in which case a different
+        // error code will be returned.
         //
-        // As this path doesn't go through resource server, no client locks should be held at this point.
-        // Note: we must not hold any client locks when re-acquiring the API per lock ordering
+        status = _kgspBootGspRm(pGpu, pKernelGsp, pGspFw, &gpusLockedMask);
+
         //
-        if (bReleaseApiLock)
-        {
-            // To follow lock order constraints, GPU lock needs to be released before acquiring API lock
-            rmGpuGroupLockRelease(gpusLockedMask, GPUS_LOCK_FLAGS_NONE);
-            gpusLockedMask = 0;
-
-            status = rmapiLockAcquire(API_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT);
-            if (status != NV_OK)
-            {
-                //
-                // rmapiLockAcquire should never fail on Linux if the API lock and GPU locks are not held.
-                // Failure to acquire the API lock means the cleanup sequence will skipped since it is
-                // unsafe without the lock.
-                //
-                NV_ASSERT_FAILED("Failed to reacquire API lock!");
-                return NV_ERR_INVALID_LOCK_STATE;
-            }
-
-            if (!gpumgrIsGpuPointerAttached(pGpu))
-            {
-                //
-                // This should never happen on Linux due to locks in the Unix layer.
-                // This will need to be revisited when parallel init is enabled on
-                // other platforms.
-                //
-                NV_ASSERT(0);
-                status = NV_ERR_INVALID_DEVICE;
-                goto done;
-            }
-
-            status = rmGpuGroupLockAcquire(pGpu->gpuInstance, GPU_LOCK_GRP_SUBDEVICE,
-                                           GPUS_LOCK_FLAGS_NONE, RM_LOCK_MODULES_INIT,
-                                           &gpusLockedMask);
-            if (status != NV_OK)
-            {
-                gpusLockedMask = 0;
-                NV_ASSERT_FAILED("Failed to reacquire GPU lock!");
-                goto done;
-            }
-        }
-
-        status = statusBootstrap;
-    }
+        // _kgspBootGspRm() may temporarily release locks to facilitate parallel GSP bootstrap on
+        // other GPUs. It is responsible for reacquiring them in the proper order. If there is a
+        // failure to reacquire locks, it is unsafe to continue, regardless of the initialization
+        // status - so we return immediately here, rather attempting cleanup.
+        //
+        // Note: _kgspBootGspRm() is structured such that gpusLockedMask will always be 0 (no GPU
+        //       locks held) if the API lock is not held upon return.
+        //
+        NV_ASSERT_OR_RETURN(rmapiLockIsOwner() && (gpusLockedMask != 0),
+                            NV_ERR_INVALID_LOCK_STATE);
+    } while ((status == NV_ERR_ECC_ERROR) && (pKernelGsp->bootAttempts < MAX_GSP_BOOT_ATTEMPTS));
 
     if (status != NV_OK)
     {
-        NV_PRINTF(LEVEL_ERROR, "cannot bootstrap riscv/gsp: 0x%x\n", status);
-
         if (status == NV_ERR_INSUFFICIENT_POWER)
         {
             OBJSYS *pSys = SYS_GET_INSTANCE();
@@ -3112,7 +3131,7 @@ kgspInitRm_IMPL
         //
         // Ignore return value - a crash report may have already been consumed,
         // this is just here as a last attempt to report boot issues that might
-        // escaped prior checks.
+        // have escaped prior checks.
         //
         (void)kgspHealthCheck_HAL(pGpu, pKernelGsp);
         goto done;
@@ -4459,4 +4478,59 @@ kgspGetFwHeapSize_IMPL
     }
 
     return _kgspCalculateFwHeapSize(pGpu, pKernelGsp, maxScrubbedHeapSizeMB);
+}
+
+NvU64 kgspGetWprEndMargin_IMPL(OBJGPU *pGpu, KernelGsp *pKernelGsp)
+{
+    NvU64 wprEndMargin;
+    NvU32 marginOverride = 0;
+    GspFwWprMeta *pWprMeta = pKernelGsp->pWprMeta;
+
+    (void)osReadRegistryDword(pGpu, NV_REG_STR_RM_GSP_WPR_END_MARGIN, &marginOverride);
+
+    wprEndMargin = ((NvU64)DRF_VAL(_REG, _RM_GSP_WPR_END_MARGIN, _MB, marginOverride)) << 20;
+    if (wprEndMargin == 0)
+    {
+        // Calculate the default margin size based on the WPR size
+        const GspFwWprMeta *pWprMeta = pKernelGsp->pWprMeta;
+
+        //
+        // This needs to be called after pWprMeta->sizeOfRadix3Elf has been initialized,
+        // in order to estimate the default WPR size.
+        //
+        NV_ASSERT(pWprMeta->sizeOfRadix3Elf > 0);
+
+        //
+        // If the bounds are encoded in GspFwWprMeta from a prior attempt, use them.
+        // Otherwise, estimate the WPR size by the sizes of the elements in the layout
+        //
+        if (pWprMeta->gspFwWprEnd > pWprMeta->nonWprHeapOffset)
+        {
+            wprEndMargin = pWprMeta->gspFwWprEnd - pWprMeta->nonWprHeapOffset;
+        }
+        else
+        {
+            wprEndMargin += kgspGetFrtsSize_HAL(pGpu, pKernelGsp);
+            wprEndMargin += pKernelGsp->gspRmBootUcodeSize;
+            wprEndMargin += pWprMeta->sizeOfRadix3Elf;
+            wprEndMargin += kgspGetFwHeapSize(pGpu, pKernelGsp, 0);
+            wprEndMargin += kgspGetNonWprHeapSize(pGpu, pKernelGsp);
+        }
+
+        if (pKernelGsp->bootAttempts > 0)
+            wprEndMargin *= pKernelGsp->bootAttempts;
+    }
+
+    if (FLD_TEST_DRF(_REG, _RM_GSP_WPR_END_MARGIN, _APPLY, _ALWAYS, marginOverride) ||
+        (pKernelGsp->bootAttempts > 0))
+    {
+        NV_PRINTF(LEVEL_WARNING, "Adding margin of 0x%llx bytes after the end of WPR2\n",
+                  wprEndMargin);
+        pWprMeta->flags |= GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT;
+        return wprEndMargin;
+    }
+
+    // Normal boot path
+    pWprMeta->flags &= ~GSP_FW_FLAGS_RECOVERY_MARGIN_PRESENT;
+    return 0;
 }

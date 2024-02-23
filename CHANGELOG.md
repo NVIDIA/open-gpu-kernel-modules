@@ -2,6 +2,12 @@
 
 ## Release 550 Entries
 
+### [550.54.14] 2024-02-23
+
+#### Added
+
+- Added vGPU Host and vGPU Guest support. For vGPU Host, please refer to the README.vgpu packaged in the vGPU Host Package for more details.
+
 ### [550.40.07] 2024-01-24
 
 #### Fixed

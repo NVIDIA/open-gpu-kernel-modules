@@ -2153,6 +2153,7 @@ static NV_STATUS RmCreateMmapContextLocked(
     RsClient *pClient = staticCast(pRmClient, RsClient);
     KernelMemorySystem *pKernelMemorySystem = NULL;
     NvBool bCoherentAtsCpuOffset = NV_FALSE;
+    NvBool bSriovHostCoherentFbOffset = NV_FALSE;
     nv_state_t *pNv = NULL;
     NvU64 addr = (NvU64)address;
     NvU32 prot = 0;
@@ -2200,6 +2201,8 @@ static NV_STATUS RmCreateMmapContextLocked(
         pNv = NV_GET_NV_STATE(pGpu);
         pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
         bCoherentAtsCpuOffset = IS_COHERENT_CPU_ATS_OFFSET(pKernelMemorySystem, addr, size);
+        bSriovHostCoherentFbOffset = os_is_vgx_hyper() &&
+            IS_COHERENT_FB_OFFSET(pKernelMemorySystem, addr, size);
     }
 
     //
@@ -2210,7 +2213,7 @@ static NV_STATUS RmCreateMmapContextLocked(
     if ((pNv == NULL) ||
         (!IS_REG_OFFSET(pNv, addr, size) &&
          !IS_FB_OFFSET(pNv, addr, size) &&
-         !bCoherentAtsCpuOffset &&
+         !(bCoherentAtsCpuOffset || bSriovHostCoherentFbOffset) &&
          !IS_IMEM_OFFSET(pNv, addr, size)))
     {
         pNv = nv_get_ctl_state();
@@ -2237,6 +2240,38 @@ static NV_STATUS RmCreateMmapContextLocked(
             status = RmGetMmapPteArray(pKernelMemorySystem, pClient, hMemory, nvuap);
             if (status != NV_OK)
             {
+                goto done;
+            }
+        }
+        else if (bSriovHostCoherentFbOffset)
+        {
+            status = RmGetMmapPteArray(pKernelMemorySystem, pClient, hMemory, nvuap);
+            if (status != NV_OK)
+            {
+                goto done;
+            }
+
+            //
+            // nvuap->page_array(allocated in RmGetMmapPteArray) is not assigned
+            // to nvamc->page_array if onlining status is false(which is the case with
+            // bSriovHostCoherentFbOffset) and so doesn't get freed if not done here.
+            // The call to RmGetMmapPteArray is for getting the contig and num
+            // pages of the allocation.
+            //
+            os_free_mem(nvuap->page_array);
+            nvuap->page_array = NULL;
+
+            //
+            // This path is taken in the case of self-hosted SRIOV host where
+            // the coherent GPU memory is not onlined but the CPU mapping to
+            // the coherent GPU memory is done via C2C(instead of BAR1) and so
+            // only contig can be supported for now.
+            //
+            if (!nvuap->contig && (nvuap->num_pages > 1))
+            {
+                NV_PRINTF(LEVEL_ERROR, "Mapping of Non-contig allocation for "
+                          "not onlined coherent GPU memory not supported\n");
+                status = NV_ERR_NOT_SUPPORTED;
                 goto done;
             }
         }
@@ -5377,16 +5412,11 @@ NvBool rm_get_uefi_console_status(
     NvU64 fbBaseAddress = 0;
     NvBool bConsoleDevice = NV_FALSE;
 
-    // os_get_screen_info() will return dimensions and an address for
-    // any fbdev driver (e.g., efifb, vesafb, etc).  To find if this is a
-    // UEFI console check the fbBaseAddress: if it was set up by the EFI GOP
-    // driver, it will point into BAR1 (FB); if it was set up by the VBIOS,
-    // it will point to BAR2 + 16MB.
-    os_get_screen_info(&fbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch,
-                       nv->bars[NV_GPU_BAR_INDEX_FB].cpu_address,
-                       nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address + 0x1000000);
-
-    fbSize = (NvU64)fbHeight * (NvU64)fbPitch;
+    //
+    // nv_get_screen_info() will return dimensions and an address for
+    // any fbdev driver (e.g., efifb, vesafb, etc).
+    //
+    nv_get_screen_info(nv, &fbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch, &fbSize);
 
     bConsoleDevice = (fbSize != 0);
 
@@ -5403,16 +5433,11 @@ NvU64 rm_get_uefi_console_size(
 
     fbSize = fbWidth = fbHeight = fbDepth = fbPitch = 0;
 
-    // os_get_screen_info() will return dimensions and an address for
-    // any fbdev driver (e.g., efifb, vesafb, etc).  To find if this is a
-    // UEFI console check the fbBaseAddress: if it was set up by the EFI GOP
-    // driver, it will point into BAR1 (FB); if it was set up by the VBIOS,
-    // it will point to BAR2 + 16MB.
-    os_get_screen_info(pFbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch,
-                       nv->bars[NV_GPU_BAR_INDEX_FB].cpu_address,
-                       nv->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address + 0x1000000);
-
-    fbSize = (NvU64)fbHeight * (NvU64)fbPitch;
+    //
+    // nv_get_screen_info() will return dimensions and an address for
+    // any fbdev driver (e.g., efifb, vesafb, etc).
+    //
+    nv_get_screen_info(nv, pFbBaseAddress, &fbWidth, &fbHeight, &fbDepth, &fbPitch, &fbSize);
 
     return fbSize;
 }

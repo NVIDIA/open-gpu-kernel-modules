@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -328,9 +328,11 @@ spdmContextInit_IMPL
 
 #if LIBSPDM_ENABLE_CAPABILITY_MUT_AUTH_CAP
     // Get requester cert chain for mutual authentication process.
+    pEncapCertChain = NULL;
+    encapCertChainSize = 0;
     status = spdmGetReqEncapCertificates_HAL(pGpu, pSpdm, &pEncapCertChain, &encapCertChainSize);
 
-    if (status != NV_OK)
+    if (status != NV_OK || pEncapCertChain == NULL || encapCertChainSize == 0)
     {
         status = NV_ERR_NOT_SUPPORTED;
         goto ErrorExit;

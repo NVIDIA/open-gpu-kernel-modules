@@ -622,7 +622,7 @@ NV_STATUS NV_API_CALL rm_gpu_copy_mmu_faults(
 
         // Copies all valid packets in RM's and client's shadow buffer
         status  = kgmmuCopyMmuFaults_HAL(pGpu, pKernelGmmu, &threadState, faultsCopied,
-                                         NON_REPLAYABLE_FAULT_BUFFER);
+                                         NON_REPLAYABLE_FAULT_BUFFER, NV_FALSE);
 
         threadStateFreeISRAndDeferredIntHandler(&threadState, pGpu, THREAD_STATE_FLAGS_IS_ISR);
         tlsIsrDestroy(pIsrAllocator);
@@ -659,7 +659,7 @@ static NV_STATUS _rm_gpu_copy_mmu_faults_unlocked(
 
     // Copies all valid packets in RM's and client's shadow buffer
     return kgmmuCopyMmuFaults_HAL(pGpu, pKernelGmmu, pThreadState, pFaultsCopied,
-                                  NON_REPLAYABLE_FAULT_BUFFER);
+                                  NON_REPLAYABLE_FAULT_BUFFER, NV_FALSE);
 
     return NV_OK;
 }

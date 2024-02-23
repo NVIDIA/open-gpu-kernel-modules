@@ -1012,11 +1012,11 @@ static void _teardownGspMessageBuffer(OBJGPU *pGpu, OBJVGPU *pVGpu)
                     (void**)&pVGpu->gspMessageBuf.pPriv);
 }
 
-static NvU64 vgpuGspMakeBufferAddress(VGPU_MEM_INFO *pMemInfo)
+static NvU64 vgpuGspMakeBufferAddress(VGPU_MEM_INFO *pMemInfo, NvU64 gpfn)
 {
     NV_ADDRESS_SPACE addressSpace = memdescGetAddressSpace(pMemInfo->pMemDesc);
     NvU64 gspBufferAddr = REF_DEF64(VGPU_GSP_BUF_ADDR_V1_VALIDITY, _VALID) |
-                          REF_NUM64(VGPU_GSP_BUF_ADDR_V1_PFN, pMemInfo->pfn);
+                          REF_NUM64(VGPU_GSP_BUF_ADDR_V1_PFN, gpfn);
     NvU64 size          = memdescGetSize(pMemInfo->pMemDesc);
 
     switch (addressSpace)
@@ -1142,10 +1142,10 @@ static NV_STATUS _vgpuGspSetupCommunicationWithPlugin(OBJGPU *pGpu, OBJVGPU *pVG
     pVGpu->sequence_gsp_request = pVGpu->gspResponseBuf->v1.responseId;
 
     pVGpu->gspCtrlBuf->v1.version             = VGPU_GSP_CTRL_BUF_V2_VERSION;
-    pVGpu->gspCtrlBuf->v1.responseBuf.addr    = vgpuGspMakeBufferAddress(&pVGpu->gspResponseBufInfo);
-    pVGpu->gspCtrlBuf->v1.msgBuf.addr         = vgpuGspMakeBufferAddress(&pVGpu->gspMessageBuf);
-    pVGpu->gspCtrlBuf->v1.sharedMem.addr      = vgpuGspMakeBufferAddress(&pVGpu->sharedMemory);
-    pVGpu->gspCtrlBuf->v1.eventBuf.addr       = vgpuGspMakeBufferAddress(&pVGpu->eventRing.mem);
+    pVGpu->gspCtrlBuf->v1.responseBuf.addr    = vgpuGspMakeBufferAddress(&pVGpu->gspResponseBufInfo, pVGpu->gspResponseBufInfo.pfn);
+    pVGpu->gspCtrlBuf->v1.msgBuf.addr         = vgpuGspMakeBufferAddress(&pVGpu->gspMessageBuf, pVGpu->gspMessageBuf.pfn);
+    pVGpu->gspCtrlBuf->v1.sharedMem.addr      = vgpuGspMakeBufferAddress(&pVGpu->sharedMemory, pVGpu->sharedMemory.pfn);
+    pVGpu->gspCtrlBuf->v1.eventBuf.addr       = vgpuGspMakeBufferAddress(&pVGpu->eventRing.mem, pVGpu->eventRing.mem.pfn);
 
     //
     // Save the BAR2 offsets for the buffers located in FBMEM
@@ -1230,9 +1230,34 @@ static NV_STATUS _vgpuGspSetupCommunicationWithPlugin(OBJGPU *pGpu, OBJVGPU *pVG
                                                       vgpuSysmemPfnInfo.sysmemPfnRing_pfn);
     }
 
-    addrCtrlBuf = vgpuGspMakeBufferAddress(&pVGpu->gspCtrlBufInfo);
+    addrCtrlBuf = vgpuGspMakeBufferAddress(&pVGpu->gspCtrlBufInfo, pVGpu->gspCtrlBufInfo.pfn);
 
     NV_PRINTF(LEVEL_INFO, "RPC: BAR2 Physical            0x%x\n",   pVGpu->bIsBar2Physical ? 1 : 0);
+
+    status = _vgpuGspSendSetupRequest(pGpu, addrCtrlBuf);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Communication setup with GSP plugin failed 0x%x\n", status);
+    }
+    else if (pGpu->getProperty(pGpu, PDB_PROP_GPU_COHERENT_CPU_MAPPING))
+    {
+        // To map control and response buffers at CPU side, need GPFN values for sysmem buffers
+        NvU64 gfn = 0;
+        OBJRPC *pRpc = GPU_GET_RPC(pGpu);
+
+        NV_PRINTF(LEVEL_INFO, "RPC: Response buf addr IOVA   0x%llx\n", pVGpu->gspCtrlBuf->v1.responseBuf.addr);
+
+        gfn = memdescGetPte(pVGpu->gspResponseBufInfo.pMemDesc, AT_CPU, 0) >> RM_PAGE_SHIFT;
+        pVGpu->gspCtrlBuf->v1.responseBuf.addr    = vgpuGspMakeBufferAddress(&pVGpu->gspResponseBufInfo, gfn);
+
+        NV_PRINTF(LEVEL_INFO, "RPC: Control  buf addr IOVA   0x%llx\n", addrCtrlBuf);
+
+        gfn = memdescGetPte(pVGpu->gspCtrlBufInfo.pMemDesc, AT_CPU, 0) >> RM_PAGE_SHIFT;
+        addrCtrlBuf = vgpuGspMakeBufferAddress(&pVGpu->gspCtrlBufInfo, gfn);
+
+        rpcVgpuGspWriteScratchRegister_HAL(pRpc, pGpu, addrCtrlBuf);
+    }
+
     NV_PRINTF(LEVEL_INFO, "RPC: Control  buf addr        0x%llx\n", addrCtrlBuf);
     NV_PRINTF(LEVEL_INFO, "RPC: Response buf addr        0x%llx\n", pVGpu->gspCtrlBuf->v1.responseBuf.addr);
     NV_PRINTF(LEVEL_INFO, "RPC: Message  buf addr        0x%llx\n", pVGpu->gspCtrlBuf->v1.msgBuf.addr);
@@ -1241,10 +1266,6 @@ static NV_STATUS _vgpuGspSetupCommunicationWithPlugin(OBJGPU *pGpu, OBJVGPU *pVG
     NV_PRINTF(LEVEL_INFO, "RPC: Shared   buf BAR2 offset 0x%llx\n", pVGpu->gspCtrlBuf->v1.sharedMem.bar2Offset);
     NV_PRINTF(LEVEL_INFO, "RPC: Event    buf addr        0x%llx\n", pVGpu->gspCtrlBuf->v1.eventBuf.addr);
     NV_PRINTF(LEVEL_INFO, "RPC: Event    buf BAR2 offset 0x%llx\n", pVGpu->gspCtrlBuf->v1.eventBuf.bar2Offset);
-
-    status = _vgpuGspSendSetupRequest(pGpu, addrCtrlBuf);
-    if (status != NV_OK)
-        NV_PRINTF(LEVEL_ERROR, "Communication setup with GSP plugin failed 0x%x\n", status);
 
     return status;
 }
@@ -3957,6 +3978,9 @@ NV_STATUS rpcDmaControl_wrapper(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, Nv
         case NV0080_CTRL_CMD_FIFO_IDLE_CHANNELS:
             return NV_ERR_NOT_SUPPORTED;
 
+        case NVA080_CTRL_CMD_SET_FB_USAGE:
+            return rpcCtrlSetVgpuFbUsage_HAL(pGpu, pRpc, pParamStructPtr);
+
         case NVA0BC_CTRL_CMD_NVENC_SW_SESSION_UPDATE_INFO:
             return rpcCtrlNvencSwSessionUpdateInfo_HAL(pGpu, pRpc, hClient, hObject, pParamStructPtr);
 
@@ -4811,6 +4835,18 @@ NV_STATUS rpcRmApiControl_v25_18(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, N
     return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
 }
 
+NV_STATUS rpcRmApiControl_v25_19(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                                 void *pParamStructPtr, NvU32 paramSize)
+{
+    return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
+}
+
+NV_STATUS rpcRmApiControl_v25_1A(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
+                                 void *pParamStructPtr, NvU32 paramSize)
+{
+    return rpcRmApiControl_wrapper(pGpu, pRpc, hClient, hObject, cmd, pParamStructPtr, paramSize);
+}
+
 NV_STATUS rpcGetBrandCaps_v25_12(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, NvHandle hObject, NvU32 cmd,
                                  void *pParamStructPtr, NvU32 paramSize)
 {
@@ -4837,6 +4873,68 @@ NV_STATUS rpcGetBrandCaps_v25_12(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hClient, N
     }
 
     status = deserialize_GET_BRAND_CAPS_v25_12(pParams, (NvU8 *)rpc_params, 0, NULL);
+    return status;
+}
+
+static NvBool
+isFbUsageUpdateRequired(NvU64 fbUsed, OBJGPU *pGpu)
+{
+    NvU32 sec, usec;
+    OBJVGPU *pVgpu = GPU_GET_VGPU(pGpu);
+
+    if (!pVgpu)
+    {
+        return NV_FALSE;
+    }
+
+    //Should not RPC if fb usage is not changed.
+    if (fbUsed == pVgpu->last_fb_used_value)
+    {
+        return NV_FALSE;
+    }
+
+    // Should not RPC more than once per second.
+    if ((osGetCurrentTime(&sec, &usec) != NV_OK) ||
+        ((((sec * 1000000) + usec) - pVgpu->last_fb_update_timestamp) < 1000000))
+    {
+        return NV_FALSE;
+    }
+
+    pVgpu->last_fb_update_timestamp = (sec * 1000000) + usec;
+    pVgpu->last_fb_used_value       = fbUsed;
+
+    return NV_TRUE;
+}
+
+NV_STATUS rpcCtrlSetVgpuFbUsage_v1A_08(OBJGPU *pGpu, OBJRPC *pRpc, void *pParamStructPtr)
+{
+    NV_STATUS status;
+    NVA080_CTRL_SET_FB_USAGE_PARAMS *pParams = (NVA080_CTRL_SET_FB_USAGE_PARAMS *)pParamStructPtr;
+    NVA080_CTRL_SET_FB_USAGE_PARAMS_v07_02  *rpc_fb_params = &rpc_message->ctrl_set_vgpu_fb_usage_v1A_08.setFbUsage;
+
+    if (!isFbUsageUpdateRequired(pParams->fbUsed, pGpu))
+        return NV_OK;
+
+    status = rpcWriteCommonHeader(pGpu,
+                                  pRpc,
+                                  NV_VGPU_MSG_FUNCTION_CTRL_SET_VGPU_FB_USAGE,
+                                  sizeof(rpc_ctrl_set_vgpu_fb_usage_v1A_08));
+    if (status != NV_OK)
+        return status;
+
+    status = serialize_NVA080_CTRL_SET_FB_USAGE_PARAMS_v07_02(pParams,
+                                                              (NvU8 *) rpc_fb_params,
+                                                              0, NULL);
+    if (status != NV_OK)
+        return status;
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+    if (status != NV_OK)
+        return status;
+
+    status = deserialize_NVA080_CTRL_SET_FB_USAGE_PARAMS_v07_02(pParams,
+                                                                (NvU8 *) rpc_fb_params,
+                                                                0, NULL);
     return status;
 }
 
@@ -7512,6 +7610,37 @@ NV_STATUS rpcSetGuestSystemInfoExt_v15_02(OBJGPU *pGpu, OBJRPC *pRpc)
     return status;
 }
 
+NV_STATUS rpcSetGuestSystemInfoExt_v25_1B(OBJGPU *pGpu, OBJRPC *pRpc)
+{
+    NV_STATUS status = NV_OK;
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_SET_GUEST_SYSTEM_INFO_EXT,
+                       sizeof(rpc_set_guest_system_info_ext_v25_1B));
+    if (status != NV_OK)
+        return status;
+
+    if (sizeof(STRINGIZE(NV_BUILD_BRANCH)) < NV0000_CTRL_CMD_SYSTEM_GET_VGX_SYSTEM_INFO_BUFFER_SIZE)
+    {
+        portStringCopy(rpc_message->set_guest_system_info_ext_v25_1B.guestDriverBranch,
+                       sizeof(rpc_message->set_guest_system_info_ext_v25_1B.guestDriverBranch),
+                       (const char*)STRINGIZE(NV_BUILD_BRANCH), sizeof(STRINGIZE(NV_BUILD_BRANCH)));
+    }
+    else
+    {
+        return NV_ERR_BUFFER_TOO_SMALL;
+    }
+
+    rpc_message->set_guest_system_info_ext_v25_1B.domain = gpuGetDomain(pGpu);
+    rpc_message->set_guest_system_info_ext_v25_1B.bus    = gpuGetBus(pGpu);
+    rpc_message->set_guest_system_info_ext_v25_1B.device = gpuGetDevice(pGpu);
+
+    rpc_message->set_guest_system_info_ext_v25_1B.gridBuildCsp = osGetGridCspSupport();
+
+    status = _issueRpcAndWait(pGpu, pRpc);
+
+    return status;
+}
+
 NV_STATUS RmRpcPerfGetCurrentPstate(OBJGPU *pGpu,
                                     NV2080_CTRL_PERF_GET_CURRENT_PSTATE_PARAMS *pParamStructPtr)
 {
@@ -7595,7 +7724,70 @@ NV_STATUS rpcSetSurfaceProperties_v07_07(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hC
                NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES *pParams, NvBool bSkipCompare)
 {
     NV_STATUS status = NV_OK;
-    status = NV_ERR_NOT_SUPPORTED;
+    OBJVGPU *pVgpu = GPU_GET_VGPU(pGpu);
+
+    NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES_v07_07 *rpc_params = &rpc_message->set_surface_properties_v07_07.params;
+
+    /* return if vnc support is disabled */
+    if (pVgpu && !pVgpu->bVncSupported)
+        return status;
+
+    if (!pParams->isPrimary)
+        return status;
+
+    if (pVgpu)
+    {
+        if (!pVgpu->bVncConnected)
+            goto done;
+
+        /* return if last surface information matches with current */
+        if (!bSkipCompare && !portMemCmp((void *)pParams,
+                                    (void *)&(pVgpu->last_surface_info.last_surface),
+                                    sizeof (NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES)))
+        {
+            return status;
+        }
+    }
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_SET_SURFACE_PROPERTIES,
+                       sizeof(rpc_set_surface_properties_v07_07));
+    if (status != NV_OK)
+        return status;
+
+    rpc_message->set_surface_properties_v07_07.hClient = hClient;
+
+    rpc_params->headIndex          = pParams->headIndex;
+    rpc_params->isPrimary          = pParams->isPrimary;
+    rpc_params->offset             = pParams->offset;
+    rpc_params->surfaceType        = pParams->surfaceType;
+    rpc_params->surfaceBlockHeight = pParams->surfaceBlockHeight;
+    rpc_params->surfacePitch       = pParams->surfacePitch;
+    rpc_params->surfaceFormat      = pParams->surfaceFormat;
+    rpc_params->surfaceWidth       = pParams->surfaceWidth;
+    rpc_params->surfaceHeight      = pParams->surfaceHeight;
+    rpc_params->rectX              = pParams->rectX;
+    rpc_params->rectY              = pParams->rectY;
+    rpc_params->rectWidth          = pParams->rectWidth;
+    rpc_params->rectHeight         = pParams->rectHeight;
+    rpc_params->surfaceSize        = pParams->surfaceSize;
+    rpc_params->surfaceKind        = pParams->surfaceKind;
+    rpc_params->hHwResDevice       = pParams->hHwResDevice;
+    rpc_params->hHwResHandle       = pParams->hHwResHandle;
+    rpc_params->effectiveFbPageSize = pParams->effectiveFbPageSize;
+
+    if (status == NV_OK)
+    {
+        status = _issueRpcAndWait(pGpu, pRpc);
+    }
+
+done:
+    /* store last surface information */
+    if (pVgpu && (status == NV_OK) && !bSkipCompare)
+    {
+        pVgpu->last_surface_info.hClient = hClient;
+        portMemCopy((void *)&(pVgpu->last_surface_info.last_surface), sizeof (NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES),
+                    (void *) pParams, sizeof (NVA080_CTRL_VGPU_DISPLAY_SET_SURFACE_PROPERTIES));
+    }
 
     return status;
 }
@@ -7603,7 +7795,33 @@ NV_STATUS rpcSetSurfaceProperties_v07_07(OBJGPU *pGpu, OBJRPC *pRpc, NvHandle hC
 NV_STATUS rpcCleanupSurface_v03_00(OBJGPU *pGpu, OBJRPC *pRpc, NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS *pParams)
 {
     NV_STATUS status = NV_OK;
-    status = NV_ERR_NOT_SUPPORTED;
+    OBJVGPU *pVgpu = GPU_GET_VGPU(pGpu);
+
+    NVA080_CTRL_VGPU_DISPLAY_CLEANUP_SURFACE_PARAMS_v03_00 *rpc_params = &rpc_message->cleanup_surface_v03_00.params;
+
+    /* return if vnc support is disabled */
+    if (pVgpu && !pVgpu->bVncSupported)
+        return status;
+
+    if (pVgpu && (pVgpu->last_surface_info.last_surface.headIndex == pParams->headIndex))
+    {
+        /* remove last surface information */
+        portMemSet((void *)&(pVgpu->last_surface_info), 0, sizeof (pVgpu->last_surface_info));
+    }
+    else
+        return status;
+
+    status = rpcWriteCommonHeader(pGpu, pRpc, NV_VGPU_MSG_FUNCTION_CLEANUP_SURFACE, sizeof(rpc_cleanup_surface_v03_00));
+    if (status != NV_OK)
+        return status;
+
+    rpc_params->headIndex       = pParams->headIndex;
+    rpc_params->blankingEnabled = pParams->blankingEnabled;
+
+    if (status == NV_OK)
+    {
+        status = _issueRpcAndWait(pGpu, pRpc);
+    }
 
     return status;
 }
@@ -8696,6 +8914,7 @@ NV_STATUS rpcGspSetSystemInfo_v17_00
 #if defined(NV_UNIX) && !RMCFG_FEATURE_MODS_FEATURES
         rpcInfo->isGridBuild = os_is_grid_supported();
 #endif
+        rpcInfo->gridBuildCsp = osGetGridCspSupport();
 
         status = _issueRpcAsync(pGpu, pRpc);
     }
@@ -8823,8 +9042,57 @@ NV_STATUS rpcDumpProtobufComponent_v18_12
 
 static NV_STATUS updateHostVgpuFbUsage(OBJGPU *pGpu, NvHandle hClient, NvHandle hDevice, NvHandle hSubdevice)
 {
+    NVA080_CTRL_SET_FB_USAGE_PARAMS     fbUsageParams;
+    NV2080_CTRL_FB_GET_INFO_V2_PARAMS   fbInfoParams;
+    NvU64 fbUsed        = 0;
+    NV_STATUS status    = NV_OK;
+    RM_API  *pRmApi     = rmapiGetInterface(RMAPI_GPU_LOCK_INTERNAL);
+    NvU64   fbFree, fbTotal;
 
-    return NV_OK;
+    portMemSet(&fbInfoParams, 0, sizeof(fbInfoParams));
+
+    fbInfoParams.fbInfoListSize = 3;
+    fbInfoParams.fbInfoList[0].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_FREE;
+    fbInfoParams.fbInfoList[1].index = NV2080_CTRL_FB_INFO_INDEX_HEAP_SIZE;
+    fbInfoParams.fbInfoList[2].index = NV2080_CTRL_FB_INFO_INDEX_FB_TAX_SIZE_KB;
+
+    status = pRmApi->Control(pRmApi,
+                             hClient,
+                             hSubdevice,
+                             NV2080_CTRL_CMD_FB_GET_INFO_V2,
+                             &fbInfoParams,
+                             sizeof(fbInfoParams));
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NVRM_RPC: Get FB usage info failed : %x\n",
+                  status);
+        return status;
+    }
+
+    fbFree  = ((NvU64)fbInfoParams.fbInfoList[0].data << 10);
+    fbTotal = ((NvU64)fbInfoParams.fbInfoList[1].data << 10);
+    fbTotal += ((NvU64)fbInfoParams.fbInfoList[2].data << 10);
+    fbUsed  = fbTotal - fbFree;
+
+    portMemSet(&fbUsageParams, 0, sizeof(fbUsageParams));
+    fbUsageParams.fbUsed = fbUsed;
+
+    NV_RM_RPC_CONTROL(pGpu,
+                      hClient,
+                      hDevice,
+                      NVA080_CTRL_CMD_SET_FB_USAGE,
+                      &fbUsageParams,
+                      sizeof(fbUsageParams),
+                      status);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "NVRM_RPC: Host vGPU FB usage update failed : %x\n",
+                  status);
+    }
+    return status;
 }
 
 #if NV_PRINTF_STRINGS_ALLOWED
@@ -8889,7 +9157,7 @@ NV_STATUS rpcRmApiControl_GSP
                 GPU_LOCK_FLAGS_SAFE_LOCK_UPGRADE, RM_LOCK_MODULES_RPC, &gpuMaskRelease));
     }
 
-    (void) rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight);
+    (void) rmapiutilGetControlInfo(cmd, &ctrlFlags, &ctrlAccessRight, NULL);
     bCacheable = rmapiControlIsCacheable(ctrlFlags, ctrlAccessRight, NV_TRUE);
 
     pCallContext = resservGetTlsCallContext();

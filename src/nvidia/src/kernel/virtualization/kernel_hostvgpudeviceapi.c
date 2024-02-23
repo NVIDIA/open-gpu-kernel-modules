@@ -372,6 +372,8 @@ void
 destroyKernelHostVgpuDeviceShare(OBJGPU *pGpu, KernelHostVgpuDeviceShr* pShare)
 {
 
+    NV_CHECK_OR_RETURN_VOID(LEVEL_NOTICE, pShare != NULL);
+    
     KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice = pShare->pDevice;
     RsShared *pShared = staticCast(pShare, RsShared);
     NvS32 refCount;

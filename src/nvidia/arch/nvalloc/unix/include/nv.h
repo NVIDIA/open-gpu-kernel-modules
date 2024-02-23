@@ -621,6 +621,14 @@ typedef enum
 #define NV_IS_DEVICE_IN_SURPRISE_REMOVAL(nv)    \
         (((nv)->flags & NV_FLAG_IN_SURPRISE_REMOVAL) != 0)
 
+/*
+ * For console setup by EFI GOP, the base address is BAR1.
+ * For console setup by VBIOS, the base address is BAR2 + 16MB.
+ */
+#define NV_IS_CONSOLE_MAPPED(nv, addr)  \
+        (((addr) == (nv)->bars[NV_GPU_BAR_INDEX_FB].cpu_address) || \
+         ((addr) == ((nv)->bars[NV_GPU_BAR_INDEX_IMEM].cpu_address + 0x1000000)))
+
 #define NV_SOC_IS_ISO_IOMMU_PRESENT(nv)     \
         ((nv)->iommus.iso_iommu_present)
 
@@ -878,6 +886,8 @@ NvBool    NV_API_CALL nv_match_gpu_os_info(nv_state_t *, void *);
 NvU32     NV_API_CALL nv_get_os_type(void);
 
 void      NV_API_CALL nv_get_updated_emu_seg(NvU32 *start, NvU32 *end);
+void      NV_API_CALL nv_get_screen_info(nv_state_t *, NvU64 *, NvU32 *, NvU32 *, NvU32 *, NvU32 *, NvU64 *);
+
 struct dma_buf;
 typedef struct nv_dma_buf nv_dma_buf_t;
 struct drm_gem_object;

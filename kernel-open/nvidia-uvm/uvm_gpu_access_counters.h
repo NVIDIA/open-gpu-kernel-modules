@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017 NVIDIA Corporation
+    Copyright (c) 2017-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -27,13 +27,13 @@
 #include "uvm_forward_decl.h"
 #include "uvm_test_ioctl.h"
 
-NV_STATUS uvm_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu);
-void uvm_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu);
-bool uvm_gpu_access_counters_pending(uvm_parent_gpu_t *parent_gpu);
+NV_STATUS uvm_parent_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu);
+void uvm_parent_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu);
+bool uvm_parent_gpu_access_counters_pending(uvm_parent_gpu_t *parent_gpu);
 
 void uvm_gpu_service_access_counters(uvm_gpu_t *gpu);
 
-void uvm_gpu_access_counter_buffer_flush(uvm_gpu_t *gpu);
+void uvm_parent_gpu_access_counter_buffer_flush(uvm_parent_gpu_t *parent_gpu);
 
 // Ignore or unignore access counters notifications. Ignoring means that the
 // bottom half is a no-op which just leaves notifications in the HW buffer
@@ -46,7 +46,7 @@ void uvm_gpu_access_counter_buffer_flush(uvm_gpu_t *gpu);
 //
 // When uningoring, the interrupt conditions will be re-evaluated to trigger
 // processing of buffered notifications, if any exist.
-void uvm_gpu_access_counters_set_ignore(uvm_gpu_t *gpu, bool do_ignore);
+void uvm_parent_gpu_access_counters_set_ignore(uvm_parent_gpu_t *parent_gpu, bool do_ignore);
 
 // Return whether the VA space has access counter migrations enabled. The
 // caller must ensure that the VA space cannot go away.
@@ -63,7 +63,7 @@ void uvm_perf_access_counters_unload(uvm_va_space_t *va_space);
 
 // Check whether access counters should be enabled when the given GPU is
 // registered on any VA space.
-bool uvm_gpu_access_counters_required(const uvm_parent_gpu_t *parent_gpu);
+bool uvm_parent_gpu_access_counters_required(const uvm_parent_gpu_t *parent_gpu);
 
 // Functions used to enable/disable access counters on a GPU in the given VA
 // space.
@@ -72,12 +72,12 @@ bool uvm_gpu_access_counters_required(const uvm_parent_gpu_t *parent_gpu);
 // counters are currently enabled. The hardware notifications and interrupts on
 // the GPU are enabled the first time any VA space invokes
 // uvm_gpu_access_counters_enable, and disabled when the last VA space invokes
-// uvm_gpu_access_counters_disable
+// uvm_parent_gpu_access_counters_disable().
 //
 // Locking: the VA space lock must not be held by the caller since these
 // functions may take the access counters ISR lock.
 NV_STATUS uvm_gpu_access_counters_enable(uvm_gpu_t *gpu, uvm_va_space_t *va_space);
-void uvm_gpu_access_counters_disable(uvm_gpu_t *gpu, uvm_va_space_t *va_space);
+void uvm_parent_gpu_access_counters_disable(uvm_parent_gpu_t *parent_gpu, uvm_va_space_t *va_space);
 
 NV_STATUS uvm_test_access_counters_enabled_by_default(UVM_TEST_ACCESS_COUNTERS_ENABLED_BY_DEFAULT_PARAMS *params,
                                                       struct file *filp);

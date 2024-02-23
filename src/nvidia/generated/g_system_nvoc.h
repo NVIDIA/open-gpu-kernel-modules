@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -415,6 +415,7 @@ struct OBJSYS {
     PNODE pMemFilterList;
     NvBool PDB_PROP_SYS_IS_QSYNC_FW_REVISION_CHECK_DISABLED;
     NvBool PDB_PROP_SYS_GPU_LOCK_MIDPATH_ENABLED;
+    NvBool PDB_PROP_SYS_DESTRUCTING;
     NvU64 rmInstanceId;
     NvU32 currentCid;
     NvBool bUseDeferredClientListFree;
@@ -424,7 +425,6 @@ struct OBJSYS {
     PORT_RWLOCK *pSysMemExportModuleLock;
     volatile NvU64 sysExportObjectCounter;
     NvHandle hSysMemExportClient;
-    NvBool bSysUuidBasedMemExportSupport;
     struct OBJGPUMGR *pGpuMgr;
     struct OBJGSYNCMGR *pGsyncMgr;
     struct OBJVGPUMGR *pVgpuMgr;
@@ -484,6 +484,8 @@ extern const struct NVOC_CLASS_DEF __nvoc_class_def_OBJSYS;
 #define PDB_PROP_SYS_NVIF_INIT_DONE_BASE_NAME PDB_PROP_SYS_NVIF_INIT_DONE
 #define PDB_PROP_SYS_VALIDATE_CLIENT_HANDLE_STRICT_BASE_CAST
 #define PDB_PROP_SYS_VALIDATE_CLIENT_HANDLE_STRICT_BASE_NAME PDB_PROP_SYS_VALIDATE_CLIENT_HANDLE_STRICT
+#define PDB_PROP_SYS_DESTRUCTING_BASE_CAST
+#define PDB_PROP_SYS_DESTRUCTING_BASE_NAME PDB_PROP_SYS_DESTRUCTING
 #define PDB_PROP_SYS_VALIDATE_KERNEL_BUFFERS_BASE_CAST
 #define PDB_PROP_SYS_VALIDATE_KERNEL_BUFFERS_BASE_NAME PDB_PROP_SYS_VALIDATE_KERNEL_BUFFERS
 #define PDB_PROP_SYS_PRIMARY_VBIOS_STATE_SAVED_BASE_CAST

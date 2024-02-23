@@ -83,6 +83,7 @@ rmclientConstruct_IMPL
     pClient->pUserInfo       = NULL;
     pClient->pSecurityToken  = NULL;
     pClient->pOSInfo         = pSecInfo->clientOSInfo;
+    pClient->imexChannel     = -1;
 
     pClient->cachedPrivilege = pSecInfo->privLevel;
 

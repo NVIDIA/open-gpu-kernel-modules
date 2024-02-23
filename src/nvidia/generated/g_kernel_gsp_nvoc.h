@@ -234,17 +234,19 @@ typedef struct GSP_FIRMWARE
 /*!
  * GSP Notify op infra. Used by UVM in HCC mode.
  */
-#define GSP_NOTIFY_OP_RESERVED_OPCODE                         0
+#define GSP_NOTIFY_OP_RESERVED_OPCODE                                 0
 // Request fault buffer flush.
-#define GSP_NOTIFY_OP_FLUSH_REPLAYABLE_FAULT_BUFFER_OPCODE    1
+#define GSP_NOTIFY_OP_FLUSH_REPLAYABLE_FAULT_BUFFER_OPCODE            1
+#define GSP_NOTIFY_OP_FLUSH_REPLAYABLE_FAULT_BUFFER_VALID_ARGC        1
+#define GSP_NOTIFY_OP_FLUSH_REPLAYABLE_FAULT_BUFFER_FLUSH_MODE_ARGIDX 0
 // Fault on prefetch toggle.
-#define GSP_NOTIFY_OP_TOGGLE_FAULT_ON_PREFETCH_OPCODE         2
-#define GSP_NOTIFY_OP_TOGGLE_FAULT_ON_PREFETCH_VALID_ARGC     1
-#define GSP_NOTIFY_OP_TOGGLE_FAULT_ON_PREFETCH_EN_ARGIDX      0
+#define GSP_NOTIFY_OP_TOGGLE_FAULT_ON_PREFETCH_OPCODE                 2
+#define GSP_NOTIFY_OP_TOGGLE_FAULT_ON_PREFETCH_VALID_ARGC             1
+#define GSP_NOTIFY_OP_TOGGLE_FAULT_ON_PREFETCH_EN_ARGIDX              0
 // Always keep this as the last defined value
-#define GSP_NOTIFY_OP_OPCODE_MAX                              3
-#define GSP_NOTIFY_OP_NO_ARGUMENTS                            0
-#define GSP_NOTIFY_OP_MAX_ARGUMENT_COUNT                      1
+#define GSP_NOTIFY_OP_OPCODE_MAX                                      3
+#define GSP_NOTIFY_OP_NO_ARGUMENTS                                    0
+#define GSP_NOTIFY_OP_MAX_ARGUMENT_COUNT                              1
 typedef struct NotifyOpSharedSurface
 {
     NvU32 inUse;                                    // 0 - signals free, 1 - signals busy
@@ -434,6 +436,7 @@ struct KernelGsp {
     NvU64 logElfDataSize;
     PORT_MUTEX *pNvlogFlushMtx;
     NvBool bLibosLogsPollingEnabled;
+    NvU8 bootAttempts;
     NvBool bInInit;
     NvBool bInLockdown;
     NvBool bPollingForRpcResponse;
@@ -1420,6 +1423,17 @@ static inline NvU64 kgspGetFwHeapSize(struct OBJGPU *pGpu, struct KernelGsp *pKe
 }
 #else //__nvoc_kernel_gsp_h_disabled
 #define kgspGetFwHeapSize(pGpu, pKernelGsp, posteriorFbSize) kgspGetFwHeapSize_IMPL(pGpu, pKernelGsp, posteriorFbSize)
+#endif //__nvoc_kernel_gsp_h_disabled
+
+NvU64 kgspGetWprEndMargin_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);
+
+#ifdef __nvoc_kernel_gsp_h_disabled
+static inline NvU64 kgspGetWprEndMargin(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp) {
+    NV_ASSERT_FAILED_PRECOMP("KernelGsp was disabled!");
+    return 0;
+}
+#else //__nvoc_kernel_gsp_h_disabled
+#define kgspGetWprEndMargin(pGpu, pKernelGsp) kgspGetWprEndMargin_IMPL(pGpu, pKernelGsp)
 #endif //__nvoc_kernel_gsp_h_disabled
 
 void kgspSetupLibosInitArgs_IMPL(struct OBJGPU *pGpu, struct KernelGsp *pKernelGsp);

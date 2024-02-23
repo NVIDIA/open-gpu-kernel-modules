@@ -302,8 +302,6 @@ kgspCalculateFbLayout_GH100
     NV_ASSERT_OR_RETURN(pKernelGsp->gspRmBootUcodeSize != 0, NV_ERR_INVALID_STATE);
     NV_ASSERT_OR_RETURN(pRiscvDesc != NULL, NV_ERR_INVALID_STATE);
 
-    portMemSet(pWprMeta, 0, sizeof *pWprMeta);
-
     //
     // We send this to FSP as the size to reserve above FRTS.
     // The actual offset gets filled in by ACR ucode when it sets up WPR2.
@@ -445,40 +443,57 @@ kgspSetupGspFmcArgs_GH100
 }
 
 /*!
- * Determine if lockdown is released.
+ * Determine if PRIV lockdown is released or the FMC has encountered an error.
  */
 static NvBool
-_kgspIsLockdownReleased
+_kgspLockdownReleasedOrFmcError
 (
     OBJGPU  *pGpu,
     void    *pVoid
 )
 {
     KernelGsp *pKernelGsp = reinterpretCast(pVoid, KernelGsp *);
-    NvU32 reg;
+    KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
+    NvU32 hwcfg2, mailbox0;
 
-    reg = kflcnRegRead_HAL(pGpu, staticCast(pKernelGsp, KernelFalcon), NV_PFALCON_FALCON_HWCFG2);
+    //
+    // If lockdown has not been released, check NV_PGSP_FALCON_MAILBOX0, where the GSP-FMC
+    // (namely ACR) logs error codes during boot. GSP-FMC reported errors are always fatal,
+    // so there's no reason to continue polling for lockdown release.
+    //
+    mailbox0 = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0);
+    hwcfg2 = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_HWCFG2);
 
-    return FLD_TEST_DRF(_PFALCON, _FALCON_HWCFG2, _RISCV_BR_PRIV_LOCKDOWN,
-                        _UNLOCK, reg);
+    return (FLD_TEST_DRF(_PFALCON, _FALCON_HWCFG2, _RISCV_BR_PRIV_LOCKDOWN, _UNLOCK, hwcfg2) ||
+            (mailbox0 != 0));
 }
 
 /*!
- * Determine if SPDM partition has booted.
+ * Determine if SPDM partition has booted or the FMC has encountered an error.
  */
 static NvBool
-_kgspHasSpdmBooted
+_kgspSpdmBootedOrFmcError
 (
     OBJGPU  *pGpu,
     void    *pVoid
 )
 {
-    NvU32         spdmBootStatus = 0;
-    KernelFalcon *pKernelFalcon  = (KernelFalcon *)pVoid;
+    //
+    // The GSP-FMC (namely ACR) logs error codes to NV_PGSP_FALCON_MAILBOX0 during boot.
+    // During normal boot, the mailboxes should be 0 (cleared by the GSP-FMC ucode at the
+    // start), so consider any non-zero value here a reason to stop polling.
+    //
+    return (kflcnRegRead_HAL(pGpu, (KernelFalcon *)pVoid, NV_PFALCON_FALCON_MAILBOX0) != 0);
+}
 
-    spdmBootStatus = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0);
-
-    return (spdmBootStatus == NV_SPDM_PARTITION_BOOT_SUCCESS);
+static NvBool
+_kgspFalconMailbox0Cleared
+(
+    OBJGPU  *pGpu,
+    void    *pVoid
+)
+{
+    return (kflcnRegRead_HAL(pGpu, (KernelFalcon *)pVoid, NV_PFALCON_FALCON_MAILBOX0) == 0);
 }
 
 /*!
@@ -500,10 +515,23 @@ _kgspEstablishSpdmSession
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
 
     // Ensure SPDM Responder has booted before attempting to establish session.
-    status = gpuTimeoutCondWait(pGpu, _kgspHasSpdmBooted, (void *)pKernelFalcon, NULL);
+    status = gpuTimeoutCondWait(pGpu, _kgspSpdmBootedOrFmcError, pKernelFalcon, NULL);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Timeout waiting for SPDM Responder to initialize!\n");
+        goto exit;
+    }
+
+    //
+    // Check if the terminating condition of the above wait was that SPDM has booted, or
+    // if the FMC produced an error code in the mailbox.
+    //
+    NvU32 mailbox0 = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0);
+    if (mailbox0 != NV_SPDM_PARTITION_BOOT_SUCCESS)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GSP-FMC reported an error prior to SPDM boot: 0x%x\n",
+                  mailbox0);
+        status = NV_ERR_NOT_READY;
         goto exit;
     }
 
@@ -527,6 +555,18 @@ _kgspEstablishSpdmSession
 
     // Tell SPDM that it can continue with boot
     kflcnRegWrite_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0, NV_SPDM_REQUESTER_SECRETS_DERIVED);
+
+    //
+    // Wait for SPDM to restore the original mailbox value, which should have been 0 prior
+    // to SPDM boot starting. This is needed because the subsequent lockdown release check
+    // will also consider any non-zero value in mailbox0 to indicate an FMC error code.
+    //
+    status = gpuTimeoutCondWait(pGpu, _kgspFalconMailbox0Cleared, (void *)pKernelFalcon, NULL);
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Timeout waiting for SPDM to proceed with boot!\n");
+        goto exit;
+    }
 
 exit:
     if (status != NV_OK)
@@ -655,20 +695,12 @@ kgspPrepareForBootstrap_GH100
 )
 {
     KernelFsp *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
-    NV_STATUS  status     = NV_OK;
 
     // Only for GSP client builds
     if (!IS_GSP_CLIENT(pGpu))
     {
         NV_PRINTF(LEVEL_ERROR, "IS_GSP_CLIENT is not set.\n");
         return NV_ERR_NOT_SUPPORTED;
-    }
-
-    // Clear ECC errors before attempting to load GSP
-    status = gpuClearEccCounts_HAL(pGpu);
-    if (status != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "Issue clearing ECC counts! Status:0x%x\n", status);
     }
 
     // Setup the descriptors that GSP-FMC needs to boot GSP-RM
@@ -680,10 +712,6 @@ kgspPrepareForBootstrap_GH100
         pKernelFsp->setProperty(pKernelFsp, PDB_PROP_KFSP_GSP_MODE_GSPRM, NV_TRUE);
         NV_CHECK_OK_OR_RETURN(LEVEL_ERROR,
             kfspPrepareBootCommands_HAL(pGpu, pKernelFsp));
-    }
-    else
-    {
-        _kgspBootstrapGspFmc_GH100(pGpu, pKernelGsp);
     }
 
     return NV_OK;
@@ -719,13 +747,17 @@ kgspBootstrap_GH100
     KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
     KernelFsp    *pKernelFsp = GPU_GET_KERNEL_FSP(pGpu);
     NV_STATUS     status = NV_OK;
+    NvU32         mailbox0;
     ConfidentialCompute *pCC = GPU_GET_CONF_COMPUTE(pGpu);
 
     if (pKernelFsp != NULL && !pKernelFsp->getProperty(pKernelFsp, PDB_PROP_KFSP_DISABLE_GSPFMC))
     {
         NV_PRINTF(LEVEL_NOTICE, "Starting to boot GSP via FSP.\n");
-        NV_CHECK_OK_OR_GOTO(status, LEVEL_ERROR,
-                kfspSendBootCommands_HAL(pGpu, pKernelFsp), exit);
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, kfspSendBootCommands_HAL(pGpu, pKernelFsp));
+    }
+    else
+    {
+        _kgspBootstrapGspFmc_GH100(pGpu, pKernelGsp);
     }
 
     // Wait for target mask to be released.
@@ -744,7 +776,7 @@ kgspBootstrap_GH100
                 kfspDumpDebugState_HAL(pGpu, pKernelFsp);
             }
 
-            goto exit;
+            return status;
         }
     }
 
@@ -756,21 +788,12 @@ kgspBootstrap_GH100
     //
     if (pCC != NULL && pCC->getProperty(pCC, PDB_PROP_CONFCOMPUTE_CC_FEATURE_ENABLED))
     {
-        if (!rmapiLockIsOwner())
-        {
-            NV_ASSERT(0);
-            status = NV_ERR_INVALID_LOCK_STATE;
-            goto exit;
-        }
-        status = _kgspEstablishSpdmSession(pGpu, pKernelGsp, pCC);
-        if (status != NV_OK)
-        {
-            goto exit;
-        }
+        NV_ASSERT_OR_RETURN(rmapiLockIsOwner(), NV_ERR_INVALID_LOCK_STATE);
+        NV_ASSERT_OK_OR_RETURN(_kgspEstablishSpdmSession(pGpu, pKernelGsp, pCC));
     }
 
-    // Wait for lockdown to be released.
-    status = gpuTimeoutCondWait(pGpu, _kgspIsLockdownReleased, pKernelGsp, NULL);
+    // Wait for lockdown to be released or the FMC to report an error
+    status = gpuTimeoutCondWait(pGpu, _kgspLockdownReleasedOrFmcError, pKernelGsp, NULL);
     if (status != NV_OK)
     {
         NV_PRINTF(LEVEL_ERROR, "Timeout waiting for lockdown release. It's also "
@@ -786,7 +809,13 @@ kgspBootstrap_GH100
                   kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0));
         NV_PRINTF(LEVEL_ERROR, "NV_PGSP_FALCON_MAILBOX1 = 0x%x\n",
                   kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX1));
-        goto exit;
+        return status;
+    }
+    else if ((mailbox0 = kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_MAILBOX0)) != 0)
+    {
+        NV_PRINTF(LEVEL_ERROR, "GSP-FMC reported an error while attempting to boot GSP: 0x%x\n",
+                  mailbox0);
+        return NV_ERR_NOT_READY;
     }
 
     // Start polling for libos logs now that lockdown is released
@@ -804,33 +833,17 @@ kgspBootstrap_GH100
     else
     {
         NV_ASSERT_FAILED("Failed to boot GSP");
-        status = NV_ERR_NOT_READY;
-        goto exit;
+        return NV_ERR_NOT_READY;
     }
 
     NV_PRINTF(LEVEL_INFO, "Waiting for GSP fw RM to be ready...\n");
 
     // Link the status queue.
-    NV_ASSERT_OK_OR_GOTO(status, GspStatusQueueInit(pGpu, &pKernelGsp->pRpc->pMessageQueueInfo),
-                          exit);
+    NV_ASSERT_OK_OR_RETURN(GspStatusQueueInit(pGpu, &pKernelGsp->pRpc->pMessageQueueInfo));
 
-    NV_ASSERT_OK_OR_GOTO(status, kgspWaitForRmInitDone(pGpu, pKernelGsp),
-                          exit);
+    NV_ASSERT_OK_OR_RETURN(kgspWaitForRmInitDone(pGpu, pKernelGsp));
 
     NV_PRINTF(LEVEL_INFO, "GSP FW RM ready.\n");
-
-exit:
-    // If GSP fails to boot, check if there's any DED error.
-    if (status != NV_OK)
-    {
-        if (pKernelFsp != NULL)
-        {
-            kfspCleanupBootState(pGpu, pKernelFsp);
-        }
-
-        gpuCheckEccCounts_HAL(pGpu);
-    }
-    NV_ASSERT(status == NV_OK);
 
     return status;
 }

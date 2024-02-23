@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2004-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2004-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -973,8 +973,6 @@ struct OBJGPU {
     NvBool (*__gpuIsDevModeEnabledInHw__)(struct OBJGPU *);
     NvBool (*__gpuIsCtxBufAllocInPmaSupported__)(struct OBJGPU *);
     NV_STATUS (*__gpuUpdateErrorContainmentState__)(struct OBJGPU *, NV_ERROR_CONT_ERR_ID, NV_ERROR_CONT_LOCATION, NvU32 *);
-    void (*__gpuCheckEccCounts__)(struct OBJGPU *);
-    NV_STATUS (*__gpuClearEccCounts__)(struct OBJGPU *);
     NV_STATUS (*__gpuWaitForGfwBootComplete__)(struct OBJGPU *);
     NvBool (*__gpuGetIsCmpSku__)(struct OBJGPU *);
     NvBool PDB_PROP_GPU_HIGH_SPEED_BRIDGE_CONNECTED;
@@ -1236,6 +1234,7 @@ struct OBJGPU {
     NvBool bStateUnloading;
     NvBool bStateLoaded;
     NvBool bFullyConstructed;
+    NvBool bRecoveryMarginPresent;
     NvBool bBf3WarBug4040336Enabled;
     NvBool bUnifiedMemorySpaceEnabled;
     NvBool bSriovEnabled;
@@ -1633,10 +1632,6 @@ NV_STATUS __nvoc_objCreate_OBJGPU(OBJGPU**, Dynamic*, NvU32,
 #define gpuIsCtxBufAllocInPmaSupported_HAL(pGpu) gpuIsCtxBufAllocInPmaSupported_DISPATCH(pGpu)
 #define gpuUpdateErrorContainmentState(pGpu, arg0, arg1, arg2) gpuUpdateErrorContainmentState_DISPATCH(pGpu, arg0, arg1, arg2)
 #define gpuUpdateErrorContainmentState_HAL(pGpu, arg0, arg1, arg2) gpuUpdateErrorContainmentState_DISPATCH(pGpu, arg0, arg1, arg2)
-#define gpuCheckEccCounts(pGpu) gpuCheckEccCounts_DISPATCH(pGpu)
-#define gpuCheckEccCounts_HAL(pGpu) gpuCheckEccCounts_DISPATCH(pGpu)
-#define gpuClearEccCounts(pGpu) gpuClearEccCounts_DISPATCH(pGpu)
-#define gpuClearEccCounts_HAL(pGpu) gpuClearEccCounts_DISPATCH(pGpu)
 #define gpuWaitForGfwBootComplete(pGpu) gpuWaitForGfwBootComplete_DISPATCH(pGpu)
 #define gpuWaitForGfwBootComplete_HAL(pGpu) gpuWaitForGfwBootComplete_DISPATCH(pGpu)
 #define gpuGetIsCmpSku(pGpu) gpuGetIsCmpSku_DISPATCH(pGpu)
@@ -2557,6 +2552,34 @@ static inline NV_STATUS gpuSetPartitionErrorAttribution(struct OBJGPU *pGpu, NV_
 
 #define gpuSetPartitionErrorAttribution_HAL(pGpu, arg0, arg1, arg2) gpuSetPartitionErrorAttribution(pGpu, arg0, arg1, arg2)
 
+NV_STATUS gpuCreateRusdMemory_IMPL(struct OBJGPU *pGpu);
+
+
+#ifdef __nvoc_gpu_h_disabled
+static inline NV_STATUS gpuCreateRusdMemory(struct OBJGPU *pGpu) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_gpu_h_disabled
+#define gpuCreateRusdMemory(pGpu) gpuCreateRusdMemory_IMPL(pGpu)
+#endif //__nvoc_gpu_h_disabled
+
+#define gpuCreateRusdMemory_HAL(pGpu) gpuCreateRusdMemory(pGpu)
+
+NvBool gpuCheckEccCounts_TU102(struct OBJGPU *pGpu);
+
+
+#ifdef __nvoc_gpu_h_disabled
+static inline NvBool gpuCheckEccCounts(struct OBJGPU *pGpu) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_gpu_h_disabled
+#define gpuCheckEccCounts(pGpu) gpuCheckEccCounts_TU102(pGpu)
+#endif //__nvoc_gpu_h_disabled
+
+#define gpuCheckEccCounts_HAL(pGpu) gpuCheckEccCounts(pGpu)
+
 NV_STATUS gpuConstructDeviceInfoTable_FWCLIENT(struct OBJGPU *pGpu);
 
 NV_STATUS gpuConstructDeviceInfoTable_VGPUSTUB(struct OBJGPU *pGpu);
@@ -3145,26 +3168,6 @@ static inline NV_STATUS gpuUpdateErrorContainmentState_f91eed(struct OBJGPU *pGp
 
 static inline NV_STATUS gpuUpdateErrorContainmentState_DISPATCH(struct OBJGPU *pGpu, NV_ERROR_CONT_ERR_ID arg0, NV_ERROR_CONT_LOCATION arg1, NvU32 *arg2) {
     return pGpu->__gpuUpdateErrorContainmentState__(pGpu, arg0, arg1, arg2);
-}
-
-static inline void gpuCheckEccCounts_d44104(struct OBJGPU *pGpu) {
-    return;
-}
-
-void gpuCheckEccCounts_TU102(struct OBJGPU *pGpu);
-
-static inline void gpuCheckEccCounts_DISPATCH(struct OBJGPU *pGpu) {
-    pGpu->__gpuCheckEccCounts__(pGpu);
-}
-
-static inline NV_STATUS gpuClearEccCounts_ac1694(struct OBJGPU *pGpu) {
-    return NV_OK;
-}
-
-NV_STATUS gpuClearEccCounts_TU102(struct OBJGPU *pGpu);
-
-static inline NV_STATUS gpuClearEccCounts_DISPATCH(struct OBJGPU *pGpu) {
-    return pGpu->__gpuClearEccCounts__(pGpu);
 }
 
 NV_STATUS gpuWaitForGfwBootComplete_TU102(struct OBJGPU *pGpu);
@@ -4458,16 +4461,6 @@ static inline NV_STATUS gpuSanityCheckRegisterAccess(struct OBJGPU *pGpu, NvU32 
 #define gpuSanityCheckRegisterAccess(pGpu, addr, pRetVal) gpuSanityCheckRegisterAccess_IMPL(pGpu, addr, pRetVal)
 #endif //__nvoc_gpu_h_disabled
 
-void gpuUpdateUserSharedData_IMPL(struct OBJGPU *pGpu);
-
-#ifdef __nvoc_gpu_h_disabled
-static inline void gpuUpdateUserSharedData(struct OBJGPU *pGpu) {
-    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
-}
-#else //__nvoc_gpu_h_disabled
-#define gpuUpdateUserSharedData(pGpu) gpuUpdateUserSharedData_IMPL(pGpu)
-#endif //__nvoc_gpu_h_disabled
-
 NV_STATUS gpuValidateRegOffset_IMPL(struct OBJGPU *pGpu, NvU32 arg0);
 
 #ifdef __nvoc_gpu_h_disabled
@@ -4521,6 +4514,38 @@ static inline NV_STATUS gpuGc6Exit(struct OBJGPU *pGpu, NV2080_CTRL_GC6_EXIT_PAR
 }
 #else //__nvoc_gpu_h_disabled
 #define gpuGc6Exit(pGpu, arg0) gpuGc6Exit_IMPL(pGpu, arg0)
+#endif //__nvoc_gpu_h_disabled
+
+void gpuDestroyRusdMemory_IMPL(struct OBJGPU *pGpu);
+
+#ifdef __nvoc_gpu_h_disabled
+static inline void gpuDestroyRusdMemory(struct OBJGPU *pGpu) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+}
+#else //__nvoc_gpu_h_disabled
+#define gpuDestroyRusdMemory(pGpu) gpuDestroyRusdMemory_IMPL(pGpu)
+#endif //__nvoc_gpu_h_disabled
+
+NV_STATUS gpuEnableAccounting_IMPL(struct OBJGPU *arg0);
+
+#ifdef __nvoc_gpu_h_disabled
+static inline NV_STATUS gpuEnableAccounting(struct OBJGPU *arg0) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_gpu_h_disabled
+#define gpuEnableAccounting(arg0) gpuEnableAccounting_IMPL(arg0)
+#endif //__nvoc_gpu_h_disabled
+
+NV_STATUS gpuDisableAccounting_IMPL(struct OBJGPU *arg0, NvBool bForce);
+
+#ifdef __nvoc_gpu_h_disabled
+static inline NV_STATUS gpuDisableAccounting(struct OBJGPU *arg0, NvBool bForce) {
+    NV_ASSERT_FAILED_PRECOMP("OBJGPU was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_gpu_h_disabled
+#define gpuDisableAccounting(arg0, bForce) gpuDisableAccounting_IMPL(arg0, bForce)
 #endif //__nvoc_gpu_h_disabled
 
 #undef PRIVATE_FIELD

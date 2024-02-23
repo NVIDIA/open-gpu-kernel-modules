@@ -56,7 +56,10 @@ subdeviceCtrlCmdGpuQueryEccConfiguration_VF
     OBJVGPU    *pVGpu    = GPU_GET_VGPU(pGpu);
     NvU32       eccState = 0;
 
-    NV_ASSERT_OR_RETURN((pVGpu != NULL) && pVGpu->bECCSupported, NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(pVGpu != NULL, NV_ERR_INVALID_STATE);
+
+    if (!pVGpu->bECCSupported)
+        return NV_ERR_NOT_SUPPORTED;
 
     if (osReadRegistryDword(pGpu, NV_REG_STR_RM_GUEST_ECC_STATE, &eccState) == NV_OK)
     {
@@ -85,7 +88,10 @@ subdeviceCtrlCmdGpuSetEccConfiguration_VF
     OBJVGPU    *pVGpu    = GPU_GET_VGPU(pGpu);
     NvU32       eccState;
 
-    NV_ASSERT_OR_RETURN((pVGpu != NULL) && pVGpu->bECCSupported, NV_ERR_NOT_SUPPORTED);
+    NV_ASSERT_OR_RETURN(pVGpu != NULL, NV_ERR_INVALID_STATE);
+
+    if (!pVGpu->bECCSupported)
+        return NV_ERR_NOT_SUPPORTED;
 
     eccState = !!pConfig->newConfiguration;
 

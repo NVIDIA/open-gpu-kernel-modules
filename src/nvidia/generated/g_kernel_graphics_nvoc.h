@@ -177,6 +177,10 @@ struct KernelGraphics {
     NvBool (*__kgraphicsClearInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceClearInterruptArguments *);
     NvU32 (*__kgraphicsServiceInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceServiceInterruptArguments *);
     NvBool (*__kgraphicsIsUnrestrictedAccessMapSupported__)(OBJGPU *, struct KernelGraphics *);
+    NvU32 (*__kgraphicsGetFecsTraceRdOffset__)(OBJGPU *, struct KernelGraphics *);
+    void (*__kgraphicsSetFecsTraceRdOffset__)(OBJGPU *, struct KernelGraphics *, NvU32);
+    void (*__kgraphicsSetFecsTraceWrOffset__)(OBJGPU *, struct KernelGraphics *, NvU32);
+    void (*__kgraphicsSetFecsTraceHwEnable__)(OBJGPU *, struct KernelGraphics *, NvBool);
     NV_STATUS (*__kgraphicsStatePreLoad__)(POBJGPU, struct KernelGraphics *, NvU32);
     NV_STATUS (*__kgraphicsStatePostUnload__)(POBJGPU, struct KernelGraphics *, NvU32);
     NV_STATUS (*__kgraphicsStateInitUnlocked__)(POBJGPU, struct KernelGraphics *);
@@ -184,6 +188,8 @@ struct KernelGraphics {
     NV_STATUS (*__kgraphicsStatePreInitLocked__)(POBJGPU, struct KernelGraphics *);
     NV_STATUS (*__kgraphicsStatePreInitUnlocked__)(POBJGPU, struct KernelGraphics *);
     NvBool PRIVATE_FIELD(bCtxswLoggingSupported);
+    NvBool PRIVATE_FIELD(bCtxswLoggingEnabled);
+    NvBool PRIVATE_FIELD(bUsePriFecsMailbox);
     NvBool PRIVATE_FIELD(bIntrDrivenCtxswLoggingEnabled);
     NvBool PRIVATE_FIELD(bBottomHalfCtxswLoggingEnabled);
     NvBool PRIVATE_FIELD(bDeferContextInit);
@@ -224,6 +230,10 @@ struct KernelGraphics_PRIVATE {
     NvBool (*__kgraphicsClearInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceClearInterruptArguments *);
     NvU32 (*__kgraphicsServiceInterrupt__)(OBJGPU *, struct KernelGraphics *, IntrServiceServiceInterruptArguments *);
     NvBool (*__kgraphicsIsUnrestrictedAccessMapSupported__)(OBJGPU *, struct KernelGraphics *);
+    NvU32 (*__kgraphicsGetFecsTraceRdOffset__)(OBJGPU *, struct KernelGraphics *);
+    void (*__kgraphicsSetFecsTraceRdOffset__)(OBJGPU *, struct KernelGraphics *, NvU32);
+    void (*__kgraphicsSetFecsTraceWrOffset__)(OBJGPU *, struct KernelGraphics *, NvU32);
+    void (*__kgraphicsSetFecsTraceHwEnable__)(OBJGPU *, struct KernelGraphics *, NvBool);
     NV_STATUS (*__kgraphicsStatePreLoad__)(POBJGPU, struct KernelGraphics *, NvU32);
     NV_STATUS (*__kgraphicsStatePostUnload__)(POBJGPU, struct KernelGraphics *, NvU32);
     NV_STATUS (*__kgraphicsStateInitUnlocked__)(POBJGPU, struct KernelGraphics *);
@@ -231,6 +241,8 @@ struct KernelGraphics_PRIVATE {
     NV_STATUS (*__kgraphicsStatePreInitLocked__)(POBJGPU, struct KernelGraphics *);
     NV_STATUS (*__kgraphicsStatePreInitUnlocked__)(POBJGPU, struct KernelGraphics *);
     NvBool bCtxswLoggingSupported;
+    NvBool bCtxswLoggingEnabled;
+    NvBool bUsePriFecsMailbox;
     NvBool bIntrDrivenCtxswLoggingEnabled;
     NvBool bBottomHalfCtxswLoggingEnabled;
     NvBool bDeferContextInit;
@@ -297,6 +309,14 @@ NV_STATUS __nvoc_objCreate_KernelGraphics(KernelGraphics**, Dynamic*, NvU32);
 #define kgraphicsServiceInterrupt_HAL(arg0, arg1, arg2) kgraphicsServiceInterrupt_DISPATCH(arg0, arg1, arg2)
 #define kgraphicsIsUnrestrictedAccessMapSupported(arg0, arg1) kgraphicsIsUnrestrictedAccessMapSupported_DISPATCH(arg0, arg1)
 #define kgraphicsIsUnrestrictedAccessMapSupported_HAL(arg0, arg1) kgraphicsIsUnrestrictedAccessMapSupported_DISPATCH(arg0, arg1)
+#define kgraphicsGetFecsTraceRdOffset(arg0, arg1) kgraphicsGetFecsTraceRdOffset_DISPATCH(arg0, arg1)
+#define kgraphicsGetFecsTraceRdOffset_HAL(arg0, arg1) kgraphicsGetFecsTraceRdOffset_DISPATCH(arg0, arg1)
+#define kgraphicsSetFecsTraceRdOffset(arg0, arg1, rdOffset) kgraphicsSetFecsTraceRdOffset_DISPATCH(arg0, arg1, rdOffset)
+#define kgraphicsSetFecsTraceRdOffset_HAL(arg0, arg1, rdOffset) kgraphicsSetFecsTraceRdOffset_DISPATCH(arg0, arg1, rdOffset)
+#define kgraphicsSetFecsTraceWrOffset(arg0, arg1, wrOffset) kgraphicsSetFecsTraceWrOffset_DISPATCH(arg0, arg1, wrOffset)
+#define kgraphicsSetFecsTraceWrOffset_HAL(arg0, arg1, wrOffset) kgraphicsSetFecsTraceWrOffset_DISPATCH(arg0, arg1, wrOffset)
+#define kgraphicsSetFecsTraceHwEnable(arg0, arg1, bEnable) kgraphicsSetFecsTraceHwEnable_DISPATCH(arg0, arg1, bEnable)
+#define kgraphicsSetFecsTraceHwEnable_HAL(arg0, arg1, bEnable) kgraphicsSetFecsTraceHwEnable_DISPATCH(arg0, arg1, bEnable)
 #define kgraphicsStatePreLoad(pGpu, pEngstate, arg0) kgraphicsStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kgraphicsStatePostUnload(pGpu, pEngstate, arg0) kgraphicsStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kgraphicsStateInitUnlocked(pGpu, pEngstate) kgraphicsStateInitUnlocked_DISPATCH(pGpu, pEngstate)
@@ -449,7 +469,7 @@ static inline NV_STATUS kgraphicsServiceNotificationInterrupt_DISPATCH(OBJGPU *a
     return arg1->__kgraphicsServiceNotificationInterrupt__(arg0, arg1, arg2);
 }
 
-NV_STATUS kgraphicsLoadStaticInfo_VGPUSTUB(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId);
+NV_STATUS kgraphicsLoadStaticInfo_VF(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId);
 
 NV_STATUS kgraphicsLoadStaticInfo_KERNEL(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 swizzId);
 
@@ -477,6 +497,46 @@ NvBool kgraphicsIsUnrestrictedAccessMapSupported_PF(OBJGPU *arg0, struct KernelG
 
 static inline NvBool kgraphicsIsUnrestrictedAccessMapSupported_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1) {
     return arg1->__kgraphicsIsUnrestrictedAccessMapSupported__(arg0, arg1);
+}
+
+static inline NvU32 kgraphicsGetFecsTraceRdOffset_474d46(OBJGPU *arg0, struct KernelGraphics *arg1) {
+    NV_ASSERT_OR_RETURN_PRECOMP(0, 0);
+}
+
+NvU32 kgraphicsGetFecsTraceRdOffset_GA100(OBJGPU *arg0, struct KernelGraphics *arg1);
+
+static inline NvU32 kgraphicsGetFecsTraceRdOffset_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1) {
+    return arg1->__kgraphicsGetFecsTraceRdOffset__(arg0, arg1);
+}
+
+static inline void kgraphicsSetFecsTraceRdOffset_d44104(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 rdOffset) {
+    return;
+}
+
+void kgraphicsSetFecsTraceRdOffset_GA100(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 rdOffset);
+
+static inline void kgraphicsSetFecsTraceRdOffset_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 rdOffset) {
+    arg1->__kgraphicsSetFecsTraceRdOffset__(arg0, arg1, rdOffset);
+}
+
+static inline void kgraphicsSetFecsTraceWrOffset_d44104(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 wrOffset) {
+    return;
+}
+
+void kgraphicsSetFecsTraceWrOffset_GA100(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 wrOffset);
+
+static inline void kgraphicsSetFecsTraceWrOffset_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, NvU32 wrOffset) {
+    arg1->__kgraphicsSetFecsTraceWrOffset__(arg0, arg1, wrOffset);
+}
+
+static inline void kgraphicsSetFecsTraceHwEnable_d44104(OBJGPU *arg0, struct KernelGraphics *arg1, NvBool bEnable) {
+    return;
+}
+
+void kgraphicsSetFecsTraceHwEnable_GA100(OBJGPU *arg0, struct KernelGraphics *arg1, NvBool bEnable);
+
+static inline void kgraphicsSetFecsTraceHwEnable_DISPATCH(OBJGPU *arg0, struct KernelGraphics *arg1, NvBool bEnable) {
+    arg1->__kgraphicsSetFecsTraceHwEnable__(arg0, arg1, bEnable);
 }
 
 static inline NV_STATUS kgraphicsStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelGraphics *pEngstate, NvU32 arg0) {
@@ -521,6 +581,16 @@ static inline NvBool kgraphicsIsCtxswLoggingSupported(OBJGPU *pGpu, struct Kerne
 static inline void kgraphicsSetCtxswLoggingSupported(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bProp) {
     struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
     pKernelGraphics_PRIVATE->bCtxswLoggingSupported = bProp;
+}
+
+static inline NvBool kgraphicsIsCtxswLoggingEnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    return pKernelGraphics_PRIVATE->bCtxswLoggingEnabled;
+}
+
+static inline void kgraphicsSetCtxswLoggingEnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics, NvBool bProp) {
+    struct KernelGraphics_PRIVATE *pKernelGraphics_PRIVATE = (struct KernelGraphics_PRIVATE *)pKernelGraphics;
+    pKernelGraphics_PRIVATE->bCtxswLoggingEnabled = bProp;
 }
 
 static inline NvBool kgraphicsIsIntrDrivenCtxswLoggingEnabled(OBJGPU *pGpu, struct KernelGraphics *pKernelGraphics) {

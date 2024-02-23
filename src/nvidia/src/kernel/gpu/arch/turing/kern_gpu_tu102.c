@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -28,12 +28,15 @@
 #include "gpu/bif/kernel_bif.h"
 #include "gpu/mem_mgr/rm_page_size.h"
 #include "jt.h"
+#include "gpu/falcon/kernel_falcon.h"
+#include "gpu/gsp/kernel_gsp.h"
 
 #include "published/turing/tu102/dev_vm.h"
 #include "published/turing/tu102/hwproject.h"
 #include "published/turing/tu102/dev_nv_xve.h"
 #include "published/turing/tu102/dev_gc6_island.h"
 #include "published/turing/tu102/dev_gc6_island_addendum.h"
+#include "published/turing/tu102/dev_falcon_v4.h"
 
 /*!
  * @brief Returns SR-IOV capabilities
@@ -349,7 +352,7 @@ gpuSanityCheckVirtRegAccess_TU102
  * registers/interrupt registers. This function is not floorsweeping-aware so
  * PRI errors are ignored
  */
-void
+NvBool
 gpuCheckEccCounts_TU102
 (
     OBJGPU *pGpu
@@ -372,35 +375,10 @@ gpuCheckEccCounts_TU102
                       "An uncorrectable ECC error detected "
                       "(possible firmware handling failure) "
                       "DRAM:%d, LTC:%d, MMU:%d, PCIE:%d", dramCount, ltcCount, mmuCount, pcieCount);
-    }
-}
-
-/*
- * @brief  Function that clears ECC error count registers.
- */
-NV_STATUS
-gpuClearEccCounts_TU102
-(
-    OBJGPU *pGpu
-)
-{
-    NV_STATUS status = NV_OK;
-
-    gpuClearFbhubPoisonIntrForBug2924523_HAL(pGpu);
-
-    kmemsysClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu));
-
-    kgmmuClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_GMMU(pGpu));
-
-    kbusClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_BUS(pGpu));
-
-    status = kbifClearEccCounts_HAL(pGpu, GPU_GET_KERNEL_BIF(pGpu));
-    if (status != NV_OK)
-    {
-        return status;
+        return NV_TRUE;
     }
 
-    return NV_OK;
+    return NV_FALSE;
 }
 
 //
@@ -482,6 +460,8 @@ gpuWaitForGfwBootComplete_TU102
     NvU32     gfwBootProgressVal = 0;
     RMTIMEOUT timeout;
     NV_STATUS status = NV_OK;
+    KernelGsp    *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+    KernelFalcon *pKernelFalcon = staticCast(pKernelGsp, KernelFalcon);
 
     // Use the OS timer since the GPU timer is not ready yet
     gpuSetTimeout(pGpu, gpuScaleTimeout(pGpu, timeoutUs), &timeout,
@@ -491,14 +471,37 @@ gpuWaitForGfwBootComplete_TU102
     {
         if (_gpuIsGfwBootCompleted_TU102(pGpu, NULL, &gfwBootProgressVal))
         {
+            status = NV_OK;
+            break;
+        }
+
+        status = gpuCheckTimeout(pGpu, &timeout);
+    }
+
+    if (status != NV_OK)
+    {
+        NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: (progress 0x%x)\n",
+                  gfwBootProgressVal);
+        return status;
+    }
+
+    //
+    // GFW runs on GSP, so wait for GSP to halt as well
+    // OS timer need to be used here, hence not using wrapper kflcnWaitForHalt_HAL
+    //
+    while (status == NV_OK)
+    {
+        if (FLD_TEST_DRF(_PFALCON, _FALCON, _CPUCTL_HALTED, _TRUE,
+                         kflcnRegRead_HAL(pGpu, pKernelFalcon, NV_PFALCON_FALCON_CPUCTL)))
+        {
             return NV_OK;
         }
 
         status = gpuCheckTimeout(pGpu, &timeout);
     }
 
-    NV_PRINTF(LEVEL_ERROR, "failed to wait for GFW_BOOT: (progress 0x%x)\n",
-              gfwBootProgressVal);
+    NV_PRINTF(LEVEL_ERROR, "GSP failed to halt after GFW completion\n");
+
     return status;
 }
 

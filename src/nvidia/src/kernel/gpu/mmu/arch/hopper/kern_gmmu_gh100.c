@@ -558,17 +558,22 @@ NV_STATUS
 kgmmuIssueReplayableFaultBufferFlush_GH100
 (
     OBJGPU *pGpu,
-    KernelGmmu *pKernelGmmu
+    KernelGmmu *pKernelGmmu,
+    NvBool bCopyAndFlush
 )
 {
     KernelGsp *pKernelGsp = GPU_GET_KERNEL_GSP(pGpu);
+    NvU32 arg = !!bCopyAndFlush;
 
     if (!gpuIsCCFeatureEnabled(pGpu) || !gpuIsGspOwnedFaultBuffersEnabled(pGpu) || !IS_GSP_CLIENT(pGpu))
     {
         return NV_ERR_NOT_SUPPORTED;
     }
 
-    return kgspIssueNotifyOp_HAL(pGpu, pKernelGsp, GSP_NOTIFY_OP_FLUSH_REPLAYABLE_FAULT_BUFFER_OPCODE, NULL, 0);
+    return kgspIssueNotifyOp_HAL(pGpu, pKernelGsp,
+                                 GSP_NOTIFY_OP_FLUSH_REPLAYABLE_FAULT_BUFFER_OPCODE,
+                                 &arg,
+                                 GSP_NOTIFY_OP_FLUSH_REPLAYABLE_FAULT_BUFFER_VALID_ARGC);
 }
 
 /*

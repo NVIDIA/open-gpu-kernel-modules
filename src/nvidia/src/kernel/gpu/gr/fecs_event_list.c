@@ -832,11 +832,15 @@ _fecsTimerCallback
     KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
     KGRMGR_FECS_GLOBAL_TRACE_INFO *pFecsGlobalTraceInfo = kgrmgrGetFecsGlobalTraceInfo(pGpu, pKernelGraphicsManager);
     NvU32 i;
+    NvU32 numIter = GPU_MAX_GRS;
+
+    if (!IS_MIG_IN_USE(pGpu))
+        numIter = 1;
 
     NV_ASSERT_OR_RETURN(pFecsGlobalTraceInfo != NULL, NV_ERR_INVALID_STATE);
 
     // If any Kgraphics have events, schedule work item
-    for (i = 0; i < GPU_MAX_GRS; i++)
+    for (i = 0; i < numIter; i++)
     {
         KernelGraphics *pKernelGraphics = GPU_GET_KERNEL_GRAPHICS(pGpu, i);
 
@@ -935,6 +939,9 @@ nvEventBufferFecsCallback
     NvU8                     numIterations = (pArgs == NULL)
                                              ? KGRMGR_MAX_GR
                                              : 1;
+
+    if (!IS_MIG_IN_USE(pGpu))
+        numIterations = 1;
 
     NV_ASSERT_OR_RETURN_VOID(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
 

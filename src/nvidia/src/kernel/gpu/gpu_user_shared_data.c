@@ -23,6 +23,7 @@
 
 #include "gpu/gpu_user_shared_data.h"
 #include "gpu/gpu.h"
+#include "gpu/mem_mgr/mem_mgr.h"
 #include "os/os.h"
 #include "rmapi/client.h"
 #include "rmapi/rmapi.h"
@@ -32,8 +33,10 @@
 
 #include "gpu/mig_mgr/kernel_mig_manager.h"
 
-static NV_STATUS _gpushareddataInitGsp(GpuUserSharedData *pData, NvBool bInit);
+static NV_STATUS _gpushareddataInitGsp(OBJGPU *pGpu);
 static NV_STATUS _gpushareddataRequestDataPoll(GpuUserSharedData *pData, NvU64 polledDataMask);
+static inline void _gpushareddataUpdateSeqOpen(NV00DE_SHARED_DATA *pSharedData);
+static inline void _gpushareddataUpdateSeqClose(NV00DE_SHARED_DATA *pSharedData);
 
 NV_STATUS
 gpushareddataConstruct_IMPL
@@ -43,7 +46,6 @@ gpushareddataConstruct_IMPL
     RS_RES_ALLOC_PARAMS_INTERNAL *pParams
 )
 {
-    NV_STATUS            status   = NV_OK;
     Memory              *pMemory  = staticCast(pData, Memory);
     OBJGPU              *pGpu     = pMemory->pGpu; // pGpu is initialized in the Memory class constructor
     MEMORY_DESCRIPTOR  **ppMemDesc = &(pGpu->userSharedData.pMemDesc);
@@ -52,9 +54,7 @@ gpushareddataConstruct_IMPL
     NV_ASSERT_OR_RETURN(!RMCFG_FEATURE_PLATFORM_GSP, NV_ERR_NOT_SUPPORTED);
 
     if (IS_VIRTUAL(pGpu))
-    {
         return NV_ERR_NOT_SUPPORTED;
-    }
 
     //
     // RUSD polling temporarily disabled on non-GSP due to collisions with VSYNC interrupt
@@ -64,45 +64,10 @@ gpushareddataConstruct_IMPL
         return NV_ERR_NOT_SUPPORTED;
 
     if (RS_IS_COPY_CTOR(pParams))
-    {
         return NV_OK;
-    }
 
     if (*ppMemDesc == NULL)
-    {
-        OBJSYS    *pSys = SYS_GET_INSTANCE();
-
-        // RUSD is not yet supported when CPU CC is enabled. See bug 4148522.
-        if ((sysGetStaticConfig(pSys))->bOsCCEnabled)
-            return NV_ERR_NOT_SUPPORTED;
-
-        // Create a kernel-side mapping for writing the data if one is not already present
-        NV_ASSERT_OK_OR_RETURN(memdescCreate(ppMemDesc, pGpu, sizeof(NV00DE_SHARED_DATA), 0, NV_TRUE,
-                               ADDR_SYSMEM, NV_MEMORY_CACHED, MEMDESC_FLAGS_USER_READ_ONLY));
-
-        memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_UNNAMED_TAG_35, 
-                    (*ppMemDesc));
-        NV_ASSERT_OK_OR_GOTO(status, status, err);
-
-
-        NV_ASSERT_OK_OR_GOTO(status,
-            memdescMap(*ppMemDesc, 0, (*ppMemDesc)->Size,
-                        NV_TRUE, NV_PROTECT_READ_WRITE,
-                        &pGpu->userSharedData.pMapBuffer,
-                        &pGpu->userSharedData.pMapBufferPriv),
-                        err);
-
-        portMemSet(pGpu->userSharedData.pMapBuffer, 0, sizeof(NV00DE_SHARED_DATA));
-
-        // Initial write from cached data
-        gpuUpdateUserSharedData(pGpu);
-
-        if (IS_GSP_CLIENT(pGpu))
-        {
-           // Init system memdesc on GSP
-           _gpushareddataInitGsp(pData, NV_TRUE);
-        }
-    }
+        return NV_ERR_NOT_SUPPORTED;
 
     if (pAllocParams->polledDataMask != 0U)
     {
@@ -115,12 +80,6 @@ gpushareddataConstruct_IMPL
     memdescAddRef(pGpu->userSharedData.pMemDesc);
 
     return NV_OK;
-
-err: // Only for global memdesc construct fail cleanup
-    memdescFree(*ppMemDesc);
-    memdescDestroy(*ppMemDesc);
-    *ppMemDesc = NULL;
-    return status;
 }
 
 void
@@ -140,19 +99,39 @@ gpushareddataDestruct_IMPL(GpuUserSharedData *pData)
 
     memdescRemoveRef(pGpu->userSharedData.pMemDesc);
     memDestructCommon(pMemory);
-
-    if (pGpu->userSharedData.pMemDesc->RefCount <= 1)
-    {
-        NV_ASSERT(pGpu->userSharedData.pMemDesc->RefCount == 1);
-
-        if (IS_GSP_CLIENT(pGpu))
-        {
-           _gpushareddataInitGsp(pData, NV_FALSE);
-        }
-
-        gpushareddataDestroy(pGpu);
-    }
 }
+
+static inline void
+_gpushareddataUpdateSeqOpen
+(
+    NV00DE_SHARED_DATA *pSharedData
+)
+{
+    portAtomicExAddU64(&pSharedData->seq, RUSD_SEQ_BASE0);
+    portAtomicMemoryFenceStore();
+}
+
+static inline void
+_gpushareddataUpdateSeqClose
+(
+    NV00DE_SHARED_DATA *pSharedData
+)
+{
+    NvU64 curVal, coeff1;
+    portAtomicMemoryFenceStore();
+    curVal = portAtomicExAddU64(&pSharedData->seq, RUSD_SEQ_BASE1);
+    coeff1 = RUSD_SEQ_COEFF1(curVal);
+
+    // Debug assert to ensure we're not in an invalid state
+    NV_ASSERT(coeff1 <= RUSD_SEQ_COEFF0(curVal));
+
+    if ((coeff1 % RUSD_SEQ_WRAP_VAL) == 0)
+    {
+        portAtomicExSubU64(&pSharedData->seq, RUSD_SEQ_WRAP_VAL * (RUSD_SEQ_BASE1 + RUSD_SEQ_BASE0));
+    }
+    portAtomicMemoryFenceStore();
+}
+
 
 NvBool
 gpushareddataCanCopy_IMPL(GpuUserSharedData *pData)
@@ -162,57 +141,38 @@ gpushareddataCanCopy_IMPL(GpuUserSharedData *pData)
 
 NV00DE_SHARED_DATA * gpushareddataWriteStart(OBJGPU *pGpu)
 {
-    return &pGpu->userSharedData.data;
+    NV00DE_SHARED_DATA *pSharedData = (NV00DE_SHARED_DATA *) pGpu->userSharedData.pMapBuffer;
+    if (pSharedData == NULL)
+    {
+        pSharedData = &pGpu->userSharedData.data;
+    }
+    
+    _gpushareddataUpdateSeqOpen(pSharedData);
+
+    return pSharedData;
 }
 
 void gpushareddataWriteFinish(OBJGPU *pGpu)
 {
-    gpuUpdateUserSharedData(pGpu);
-}
-
-void gpuUpdateUserSharedData_IMPL(OBJGPU *pGpu)
-{
-    NV00DE_SHARED_DATA *pSharedData = (NV00DE_SHARED_DATA*)(pGpu->userSharedData.pMapBuffer);
-    const NvU32 data_offset = sizeof(pSharedData->seq);
-    const NvU32 data_size = NV_OFFSETOF(NV00DE_SHARED_DATA, clkPublicDomainInfos) - data_offset;
-
+    NV00DE_SHARED_DATA *pSharedData = (NV00DE_SHARED_DATA *) pGpu->userSharedData.pMapBuffer;
     if (pSharedData == NULL)
-        return;
-
-    portAtomicIncrementU32(&pSharedData->seq);
-    portAtomicMemoryFenceStore();
-
-    // Push cached data to mapped buffer
-    if (IS_MIG_ENABLED(pGpu))
     {
-        // Global Bar1 data is inaccurate if MIG is enabled, invalidate
-        portMemSet((NvU8*)pSharedData + data_offset, 0, data_size);
+        pSharedData = &pGpu->userSharedData.data;
     }
-    else
-    {
-        portMemCopy((NvU8*)pSharedData + data_offset, data_size,
-                    (NvU8*)&pGpu->userSharedData.data + data_offset, data_size);
-    }
-
-    portAtomicMemoryFenceStore();
-    portAtomicIncrementU32(&pSharedData->seq);
+    
+    _gpushareddataUpdateSeqClose(pSharedData);
 }
 
 static NV_STATUS
 _gpushareddataInitGsp
 (
-    GpuUserSharedData *pData,
-    NvBool bInit
+    OBJGPU *pGpu
 )
 {
     NV2080_CTRL_INTERNAL_INIT_USER_SHARED_DATA_PARAMS params = { 0 };
-    OBJGPU *pGpu = staticCast(pData, Memory)->pGpu;
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
-    if (bInit)
-        params.physAddr = memdescGetPhysAddr(pGpu->userSharedData.pMemDesc, AT_GPU, 0);
-    else
-        params.physAddr = 0ULL;
+    params.physAddr = memdescGetPhysAddr(pGpu->userSharedData.pMemDesc, AT_GPU, 0);
 
     // Link up Memdesc on GSP-side
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi, pGpu->hInternalClient,
@@ -222,22 +182,68 @@ _gpushareddataInitGsp
     return NV_OK;
 }
 
+NV_STATUS
+gpuCreateRusdMemory_IMPL
+(
+    OBJGPU *pGpu
+)
+{
+    NV_STATUS            status   = NV_OK;
+    MEMORY_DESCRIPTOR  **ppMemDesc = &(pGpu->userSharedData.pMemDesc);
+
+    // RUSD is not yet supported when CPU CC is enabled. See bug 4148522.
+    if ((sysGetStaticConfig(SYS_GET_INSTANCE()))->bOsCCEnabled)
+        return NV_OK;
+
+    // Create a kernel-side mapping for writing RUSD data
+    NV_ASSERT_OK_OR_RETURN(memdescCreate(ppMemDesc, pGpu, sizeof(NV00DE_SHARED_DATA), 0, NV_TRUE,
+                           ADDR_SYSMEM, NV_MEMORY_CACHED, MEMDESC_FLAGS_USER_READ_ONLY));
+
+    memdescTagAlloc(status, NV_FB_ALLOC_RM_INTERNAL_OWNER_RUSD_BUFFER, (*ppMemDesc));
+    NV_ASSERT_OK_OR_GOTO(status, status, err);
+
+    pGpu->userSharedData.pMapBuffer = memdescMapInternal(pGpu, *ppMemDesc, TRANSFER_FLAGS_NONE);
+    if (pGpu->userSharedData.pMapBuffer == NULL)
+    {
+        status = NV_ERR_MEMORY_ERROR;
+        goto err;
+    }
+
+    portMemSet(pGpu->userSharedData.pMapBuffer, 0, sizeof(NV00DE_SHARED_DATA));
+
+    if (IS_GSP_CLIENT(pGpu))
+    {
+       // Init system memdesc on GSP
+       _gpushareddataInitGsp(pGpu);
+    }
+
+    return NV_OK;
+
+err: // Only for global memdesc construct fail cleanup
+    memdescFree(*ppMemDesc);
+    memdescDestroy(*ppMemDesc);
+    *ppMemDesc = NULL;
+    return status;
+}
+
 void
-gpushareddataDestroy
+gpuDestroyRusdMemory_IMPL
 (
     OBJGPU *pGpu
 )
 {
     GpuSharedDataMap *pData = &pGpu->userSharedData;
 
-    memdescUnmap(pData->pMemDesc, NV_TRUE, 0,
-                 pData->pMapBuffer,
-                 pData->pMapBufferPriv);
+    if (pData->pMemDesc == NULL)
+        return;
+
+    NV_ASSERT(pGpu->userSharedData.pMemDesc->RefCount == 1);
+
+    memdescUnmapInternal(pGpu, pData->pMemDesc, TRANSFER_FLAGS_NONE);
     memdescFree(pData->pMemDesc);
     memdescDestroy(pData->pMemDesc);
     pData->pMemDesc = NULL;
     pData->pMapBuffer = NULL;
-    pData->pMapBufferPriv = NULL;
 }
 
 static NV_STATUS

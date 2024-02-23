@@ -428,7 +428,6 @@ struct KernelBus {
     void (*__kbusTeardownCoherentCpuMapping__)(struct OBJGPU *, struct KernelBus *, NvBool);
     NV_STATUS (*__kbusBar1InstBlkBind__)(struct OBJGPU *, struct KernelBus *);
     NvU32 (*__kbusGetEccCounts__)(struct OBJGPU *, struct KernelBus *);
-    void (*__kbusClearEccCounts__)(struct OBJGPU *, struct KernelBus *);
     NV_STATUS (*__kbusStateInitUnlocked__)(POBJGPU, struct KernelBus *);
     void (*__kbusInitMissing__)(POBJGPU, struct KernelBus *);
     NV_STATUS (*__kbusStatePreInitUnlocked__)(POBJGPU, struct KernelBus *);
@@ -730,8 +729,6 @@ NV_STATUS __nvoc_objCreate_KernelBus(KernelBus**, Dynamic*, NvU32);
 #define kbusBar1InstBlkBind_HAL(pGpu, pKernelBus) kbusBar1InstBlkBind_DISPATCH(pGpu, pKernelBus)
 #define kbusGetEccCounts(pGpu, pKernelBus) kbusGetEccCounts_DISPATCH(pGpu, pKernelBus)
 #define kbusGetEccCounts_HAL(pGpu, pKernelBus) kbusGetEccCounts_DISPATCH(pGpu, pKernelBus)
-#define kbusClearEccCounts(pGpu, pKernelBus) kbusClearEccCounts_DISPATCH(pGpu, pKernelBus)
-#define kbusClearEccCounts_HAL(pGpu, pKernelBus) kbusClearEccCounts_DISPATCH(pGpu, pKernelBus)
 #define kbusStateInitUnlocked(pGpu, pEngstate) kbusStateInitUnlocked_DISPATCH(pGpu, pEngstate)
 #define kbusInitMissing(pGpu, pEngstate) kbusInitMissing_DISPATCH(pGpu, pEngstate)
 #define kbusStatePreInitUnlocked(pGpu, pEngstate) kbusStatePreInitUnlocked_DISPATCH(pGpu, pEngstate)
@@ -2531,16 +2528,6 @@ static inline NvU32 kbusGetEccCounts_DISPATCH(struct OBJGPU *pGpu, struct Kernel
     return pKernelBus->__kbusGetEccCounts__(pGpu, pKernelBus);
 }
 
-void kbusClearEccCounts_GH100(struct OBJGPU *pGpu, struct KernelBus *pKernelBus);
-
-static inline void kbusClearEccCounts_b3696a(struct OBJGPU *pGpu, struct KernelBus *pKernelBus) {
-    return;
-}
-
-static inline void kbusClearEccCounts_DISPATCH(struct OBJGPU *pGpu, struct KernelBus *pKernelBus) {
-    pKernelBus->__kbusClearEccCounts__(pGpu, pKernelBus);
-}
-
 static inline NV_STATUS kbusStateInitUnlocked_DISPATCH(POBJGPU pGpu, struct KernelBus *pEngstate) {
     return pEngstate->__kbusStateInitUnlocked__(pGpu, pEngstate);
 }
@@ -2623,6 +2610,10 @@ static inline NvBool kbusIsReadCpuPointerToFlushEnabled(struct KernelBus *pKerne
 
 static inline NvBool kbusIsBarAccessBlocked(struct KernelBus *pKernelBus) {
     return pKernelBus->bBarAccessBlocked;
+}
+
+static inline void kbusSetFlaSupported(struct KernelBus *pKernelBus, NvBool bSupported) {
+    pKernelBus->bFlaSupported = bSupported;
 }
 
 void kbusDestruct_IMPL(struct KernelBus *pKernelBus);
@@ -2719,6 +2710,9 @@ static inline NV_STATUS kbusIsGpuP2pAlive(struct OBJGPU *pGpu, struct KernelBus 
 #define kbusIsGpuP2pAlive(pGpu, pKernelBus) kbusIsGpuP2pAlive_IMPL(pGpu, pKernelBus)
 #endif //__nvoc_kern_bus_h_disabled
 
+NV_STATUS kbusUpdateRusdStatistics_IMPL(struct OBJGPU *pGpu);
+
+#define kbusUpdateRusdStatistics(pGpu) kbusUpdateRusdStatistics_IMPL(pGpu)
 void kbusDetermineBar1Force64KBMapping_IMPL(struct KernelBus *pKernelBus);
 
 #ifdef __nvoc_kern_bus_h_disabled

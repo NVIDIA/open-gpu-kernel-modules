@@ -1165,6 +1165,11 @@ NV_STATUS osIsVfioPciCorePresent(void)
     return os_call_vgpu_vfio((void *) &vgpu_info, CMD_VFIO_PCI_CORE_PRESENT);
 }
 
+NvU32 osGetGridCspSupport(void)
+{
+    return os_get_grid_csp_support();
+}
+
 void initVGXSpecificRegistry(OBJGPU *pGpu)
 {
     NvU32 data32;

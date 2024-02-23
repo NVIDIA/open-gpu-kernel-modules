@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2023 NVIDIA Corporation
+    Copyright (c) 2017-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -33,7 +33,7 @@
 #include "uvm_va_space_mm.h"
 #include "uvm_pmm_sysmem.h"
 #include "uvm_perf_module.h"
-#include "uvm_ats_ibm.h"
+#include "uvm_ats.h"
 #include "uvm_ats_faults.h"
 
 #define UVM_PERF_ACCESS_COUNTER_BATCH_COUNT_MIN     1
@@ -99,7 +99,8 @@ MODULE_PARM_DESC(uvm_perf_access_counter_threshold,
                  "Number of remote accesses on a region required to trigger a notification."
                  "Valid values: [1, 65535]");
 
-static void access_counter_buffer_flush_locked(uvm_gpu_t *gpu, uvm_gpu_buffer_flush_mode_t flush_mode);
+static void access_counter_buffer_flush_locked(uvm_parent_gpu_t *parent_gpu,
+                                               uvm_gpu_buffer_flush_mode_t flush_mode);
 
 static uvm_perf_module_event_callback_desc_t g_callbacks_access_counters[] = {};
 
@@ -126,7 +127,7 @@ static va_space_access_counters_info_t *va_space_access_counters_info_get(uvm_va
 
 // Whether access counter migrations are enabled or not. The policy is as
 // follows:
-// - MIMC migrations are disabled by default on all systems except P9.
+// - MIMC migrations are disabled by default on all non-ATS systems.
 // - MOMC migrations are disabled by default on all systems
 // - Users can override this policy by specifying on/off
 static bool is_migration_enabled(uvm_access_counter_type_t type)
@@ -149,7 +150,7 @@ static bool is_migration_enabled(uvm_access_counter_type_t type)
     if (type == UVM_ACCESS_COUNTER_TYPE_MOMC)
         return false;
 
-    if (UVM_ATS_IBM_SUPPORTED())
+    if (UVM_ATS_SUPPORTED())
         return g_uvm_global.ats.supported;
 
     return false;
@@ -281,7 +282,7 @@ get_config_for_type(const uvm_access_counter_buffer_info_t *access_counters, uvm
                                                          &(access_counters)->current_config.momc;
 }
 
-bool uvm_gpu_access_counters_pending(uvm_parent_gpu_t *parent_gpu)
+bool uvm_parent_gpu_access_counters_pending(uvm_parent_gpu_t *parent_gpu)
 {
     UVM_ASSERT(parent_gpu->access_counters_supported);
 
@@ -340,7 +341,7 @@ static void init_access_counter_types_config(const UvmGpuAccessCntrConfig *confi
     UVM_ASSERT(counter_type_config->sub_granularity_regions_per_translation <= UVM_SUB_GRANULARITY_REGIONS);
 }
 
-NV_STATUS uvm_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu)
+NV_STATUS uvm_parent_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status = NV_OK;
     uvm_access_counter_buffer_info_t *access_counters = &parent_gpu->access_counter_buffer_info;
@@ -444,12 +445,12 @@ NV_STATUS uvm_gpu_init_access_counters(uvm_parent_gpu_t *parent_gpu)
     return NV_OK;
 
 fail:
-    uvm_gpu_deinit_access_counters(parent_gpu);
+    uvm_parent_gpu_deinit_access_counters(parent_gpu);
 
     return status;
 }
 
-void uvm_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_access_counter_buffer_info_t *access_counters = &parent_gpu->access_counter_buffer_info;
     uvm_access_counter_service_batch_context_t *batch_context = &access_counters->batch_service_context;
@@ -475,7 +476,7 @@ void uvm_gpu_deinit_access_counters(uvm_parent_gpu_t *parent_gpu)
     batch_context->phys.translations = NULL;
 }
 
-bool uvm_gpu_access_counters_required(const uvm_parent_gpu_t *parent_gpu)
+bool uvm_parent_gpu_access_counters_required(const uvm_parent_gpu_t *parent_gpu)
 {
     if (!parent_gpu->access_counters_supported)
         return false;
@@ -518,7 +519,7 @@ static NV_STATUS access_counters_take_ownership(uvm_gpu_t *gpu, UvmGpuAccessCntr
     // taken control of the notify buffer since the GPU was initialized. Then
     // flush old notifications. This will update the cached_put pointer.
     access_counters->cached_get = UVM_GPU_READ_ONCE(*access_counters->rm_info.pAccessCntrBufferGet);
-    access_counter_buffer_flush_locked(gpu, UVM_GPU_BUFFER_FLUSH_MODE_UPDATE_PUT);
+    access_counter_buffer_flush_locked(gpu->parent, UVM_GPU_BUFFER_FLUSH_MODE_UPDATE_PUT);
 
     access_counters->current_config.threshold = config->threshold;
 
@@ -537,20 +538,20 @@ error:
 
 // If ownership is yielded as part of reconfiguration, the access counters
 // handling refcount may not be 0
-static void access_counters_yield_ownership(uvm_gpu_t *gpu)
+static void access_counters_yield_ownership(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status;
-    uvm_access_counter_buffer_info_t *access_counters = &gpu->parent->access_counter_buffer_info;
+    uvm_access_counter_buffer_info_t *access_counters = &parent_gpu->access_counter_buffer_info;
 
-    UVM_ASSERT(gpu->parent->access_counters_supported);
-    UVM_ASSERT(uvm_sem_is_locked(&gpu->parent->isr.access_counters.service_lock));
+    UVM_ASSERT(parent_gpu->access_counters_supported);
+    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.access_counters.service_lock));
 
     // Wait for any pending clear operation befor releasing ownership
     status = uvm_tracker_wait(&access_counters->clear_tracker);
     if (status != NV_OK)
         UVM_ASSERT(status == uvm_global_get_status());
 
-    status = uvm_rm_locked_call(nvUvmInterfaceDisableAccessCntr(gpu->parent->rm_device,
+    status = uvm_rm_locked_call(nvUvmInterfaceDisableAccessCntr(parent_gpu->rm_device,
                                                                 &access_counters->rm_info));
     UVM_ASSERT(status == NV_OK);
 }
@@ -579,14 +580,14 @@ static NV_STATUS gpu_access_counters_enable(uvm_gpu_t *gpu, UvmGpuAccessCntrConf
 
 // Decrement the refcount of access counter enablement. If this is the last
 // reference, disable the HW feature.
-static void gpu_access_counters_disable(uvm_gpu_t *gpu)
+static void parent_gpu_access_counters_disable(uvm_parent_gpu_t *parent_gpu)
 {
-    UVM_ASSERT(uvm_sem_is_locked(&gpu->parent->isr.access_counters.service_lock));
-    UVM_ASSERT(gpu->parent->access_counters_supported);
-    UVM_ASSERT(gpu->parent->isr.access_counters.handling_ref_count > 0);
+    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.access_counters.service_lock));
+    UVM_ASSERT(parent_gpu->access_counters_supported);
+    UVM_ASSERT(parent_gpu->isr.access_counters.handling_ref_count > 0);
 
-    if (--gpu->parent->isr.access_counters.handling_ref_count == 0)
-        access_counters_yield_ownership(gpu);
+    if (--parent_gpu->isr.access_counters.handling_ref_count == 0)
+        access_counters_yield_ownership(parent_gpu);
 }
 
 // Invoked during registration of the GPU in the VA space
@@ -598,7 +599,7 @@ NV_STATUS uvm_gpu_access_counters_enable(uvm_gpu_t *gpu, uvm_va_space_t *va_spac
 
     uvm_parent_gpu_access_counters_isr_lock(gpu->parent);
 
-    if (uvm_processor_mask_test(&va_space->access_counters_enabled_processors, gpu->id)) {
+    if (uvm_parent_processor_mask_test(&va_space->access_counters_enabled_processors, gpu->parent->id)) {
         status = NV_ERR_INVALID_DEVICE;
     }
     else {
@@ -616,7 +617,7 @@ NV_STATUS uvm_gpu_access_counters_enable(uvm_gpu_t *gpu, uvm_va_space_t *va_spac
         // modified to protect from concurrent enablement of access counters in
         // another GPU
         if (status == NV_OK)
-            uvm_processor_mask_set_atomic(&va_space->access_counters_enabled_processors, gpu->id);
+            uvm_parent_processor_mask_set_atomic(&va_space->access_counters_enabled_processors, gpu->parent->id);
     }
 
     // If this is the first reference taken on access counters, dropping the
@@ -626,22 +627,24 @@ NV_STATUS uvm_gpu_access_counters_enable(uvm_gpu_t *gpu, uvm_va_space_t *va_spac
     return status;
 }
 
-void uvm_gpu_access_counters_disable(uvm_gpu_t *gpu, uvm_va_space_t *va_space)
+void uvm_parent_gpu_access_counters_disable(uvm_parent_gpu_t *parent_gpu,
+                                            uvm_va_space_t *va_space)
 {
-    UVM_ASSERT(gpu->parent->access_counters_supported);
+    UVM_ASSERT(parent_gpu->access_counters_supported);
 
-    uvm_parent_gpu_access_counters_isr_lock(gpu->parent);
+    uvm_parent_gpu_access_counters_isr_lock(parent_gpu);
 
-    if (uvm_processor_mask_test_and_clear_atomic(&va_space->access_counters_enabled_processors, gpu->id)) {
-        gpu_access_counters_disable(gpu);
+    if (uvm_parent_processor_mask_test_and_clear_atomic(&va_space->access_counters_enabled_processors,
+                                                        parent_gpu->id)) {
+        parent_gpu_access_counters_disable(parent_gpu);
 
         // If this is VA space reconfigured access counters, clear the
         // ownership to allow for other processes to invoke the reconfiguration
-        if (gpu->parent->access_counter_buffer_info.reconfiguration_owner == va_space)
-            gpu->parent->access_counter_buffer_info.reconfiguration_owner = NULL;
+        if (parent_gpu->access_counter_buffer_info.reconfiguration_owner == va_space)
+            parent_gpu->access_counter_buffer_info.reconfiguration_owner = NULL;
     }
 
-    uvm_parent_gpu_access_counters_isr_unlock(gpu->parent);
+    uvm_parent_gpu_access_counters_isr_unlock(parent_gpu);
 }
 
 static void write_get(uvm_parent_gpu_t *parent_gpu, NvU32 get)
@@ -660,15 +663,16 @@ static void write_get(uvm_parent_gpu_t *parent_gpu, NvU32 get)
     UVM_GPU_WRITE_ONCE(*access_counters->rm_info.pAccessCntrBufferGet, get);
 }
 
-static void access_counter_buffer_flush_locked(uvm_gpu_t *gpu, uvm_gpu_buffer_flush_mode_t flush_mode)
+static void access_counter_buffer_flush_locked(uvm_parent_gpu_t *parent_gpu,
+                                               uvm_gpu_buffer_flush_mode_t flush_mode)
 {
     NvU32 get;
     NvU32 put;
     uvm_spin_loop_t spin;
-    uvm_access_counter_buffer_info_t *access_counters = &gpu->parent->access_counter_buffer_info;
+    uvm_access_counter_buffer_info_t *access_counters = &parent_gpu->access_counter_buffer_info;
 
-    UVM_ASSERT(uvm_sem_is_locked(&gpu->parent->isr.access_counters.service_lock));
-    UVM_ASSERT(gpu->parent->access_counters_supported);
+    UVM_ASSERT(uvm_sem_is_locked(&parent_gpu->isr.access_counters.service_lock));
+    UVM_ASSERT(parent_gpu->access_counters_supported);
 
     // Read PUT pointer from the GPU if requested
     UVM_ASSERT(flush_mode != UVM_GPU_BUFFER_FLUSH_MODE_WAIT_UPDATE_PUT);
@@ -680,28 +684,28 @@ static void access_counter_buffer_flush_locked(uvm_gpu_t *gpu, uvm_gpu_buffer_fl
 
     while (get != put) {
         // Wait until valid bit is set
-        UVM_SPIN_WHILE(!gpu->parent->access_counter_buffer_hal->entry_is_valid(gpu->parent, get), &spin);
+        UVM_SPIN_WHILE(!parent_gpu->access_counter_buffer_hal->entry_is_valid(parent_gpu, get), &spin);
 
-        gpu->parent->access_counter_buffer_hal->entry_clear_valid(gpu->parent, get);
+        parent_gpu->access_counter_buffer_hal->entry_clear_valid(parent_gpu, get);
         ++get;
         if (get == access_counters->max_notifications)
             get = 0;
     }
 
-    write_get(gpu->parent, get);
+    write_get(parent_gpu, get);
 }
 
-void uvm_gpu_access_counter_buffer_flush(uvm_gpu_t *gpu)
+void uvm_parent_gpu_access_counter_buffer_flush(uvm_parent_gpu_t *parent_gpu)
 {
-    UVM_ASSERT(gpu->parent->access_counters_supported);
+    UVM_ASSERT(parent_gpu->access_counters_supported);
 
     // Disables access counter interrupts and notification servicing
-    uvm_parent_gpu_access_counters_isr_lock(gpu->parent);
+    uvm_parent_gpu_access_counters_isr_lock(parent_gpu);
 
-    if (gpu->parent->isr.access_counters.handling_ref_count > 0)
-        access_counter_buffer_flush_locked(gpu, UVM_GPU_BUFFER_FLUSH_MODE_UPDATE_PUT);
+    if (parent_gpu->isr.access_counters.handling_ref_count > 0)
+        access_counter_buffer_flush_locked(parent_gpu, UVM_GPU_BUFFER_FLUSH_MODE_UPDATE_PUT);
 
-    uvm_parent_gpu_access_counters_isr_unlock(gpu->parent);
+    uvm_parent_gpu_access_counters_isr_unlock(parent_gpu);
 }
 
 static inline int cmp_access_counter_instance_ptr(const uvm_access_counter_buffer_entry_t *a,
@@ -1027,7 +1031,7 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
         if (!iter.migratable)
             continue;
 
-        thrashing_hint = uvm_perf_thrashing_get_hint(va_block, address, processor);
+        thrashing_hint = uvm_perf_thrashing_get_hint(va_block, service_context->block_context, address, processor);
         if (thrashing_hint.type == UVM_PERF_THRASHING_HINT_TYPE_THROTTLE) {
             // If the page is throttling, ignore the access counter
             // notification
@@ -1212,7 +1216,8 @@ static NV_STATUS service_phys_single_va_block(uvm_gpu_t *gpu,
 
         service_context->operation = UVM_SERVICE_OPERATION_ACCESS_COUNTERS;
         service_context->num_retries = 0;
-        service_context->block_context->mm = mm;
+
+        uvm_va_block_context_init(service_context->block_context, mm);
 
         if (uvm_va_block_is_hmm(va_block))
             uvm_hmm_migrate_begin_wait(va_block);
@@ -1221,7 +1226,8 @@ static NV_STATUS service_phys_single_va_block(uvm_gpu_t *gpu,
 
         reverse_mappings_to_va_block_page_mask(va_block, reverse_mappings, num_reverse_mappings, accessed_pages);
 
-        status = UVM_VA_BLOCK_RETRY_LOCKED(va_block, &va_block_retry,
+        status = UVM_VA_BLOCK_RETRY_LOCKED(va_block,
+                                           &va_block_retry,
                                            service_va_block_locked(processor,
                                                                    va_block,
                                                                    &va_block_retry,
@@ -1506,8 +1512,6 @@ static NV_STATUS service_notification_va_block_helper(struct mm_struct *mm,
     service_context->operation = UVM_SERVICE_OPERATION_ACCESS_COUNTERS;
     service_context->num_retries = 0;
 
-    uvm_va_block_context_init(service_context->block_context, mm);
-
     return UVM_VA_BLOCK_RETRY_LOCKED(va_block,
                                      &va_block_retry,
                                      service_va_block_locked(processor,
@@ -1519,6 +1523,7 @@ static NV_STATUS service_notification_va_block_helper(struct mm_struct *mm,
 
 static void expand_notification_block(uvm_gpu_va_space_t *gpu_va_space,
                                       uvm_va_block_t *va_block,
+                                      uvm_va_block_context_t *va_block_context,
                                       uvm_page_mask_t *accessed_pages,
                                       const uvm_access_counter_buffer_entry_t *current_entry)
 {
@@ -1546,7 +1551,7 @@ static void expand_notification_block(uvm_gpu_va_space_t *gpu_va_space,
 
     page_index = uvm_va_block_cpu_page_index(va_block, addr);
 
-    resident_id = uvm_va_block_page_get_closest_resident(va_block, page_index, gpu->id);
+    resident_id = uvm_va_block_page_get_closest_resident(va_block, va_block_context, page_index, gpu->id);
 
     // resident_id might be invalid or might already be the same as the GPU
     // which received the notification if the memory was already migrated before
@@ -1602,6 +1607,7 @@ static NV_STATUS service_virt_notifications_in_block(uvm_gpu_va_space_t *gpu_va_
     uvm_va_space_t *va_space = gpu_va_space->va_space;
     uvm_page_mask_t *accessed_pages = &batch_context->accessed_pages;
     uvm_access_counter_buffer_entry_t **notifications = batch_context->virt.notifications;
+    uvm_service_block_context_t *service_context = &batch_context->block_service_context;
 
     UVM_ASSERT(va_block);
     UVM_ASSERT(index < batch_context->virt.num_notifications);
@@ -1610,16 +1616,24 @@ static NV_STATUS service_virt_notifications_in_block(uvm_gpu_va_space_t *gpu_va_
 
     uvm_page_mask_zero(accessed_pages);
 
+    uvm_va_block_context_init(service_context->block_context, mm);
+
     uvm_mutex_lock(&va_block->lock);
 
     for (i = index; i < batch_context->virt.num_notifications; i++) {
         uvm_access_counter_buffer_entry_t *current_entry = notifications[i];
         NvU64 address = current_entry->address.address;
 
-        if ((current_entry->virtual_info.va_space == va_space) && (address <= va_block->end))
-            expand_notification_block(gpu_va_space, va_block, accessed_pages, current_entry);
-        else
+        if ((current_entry->virtual_info.va_space == va_space) && (address <= va_block->end)) {
+            expand_notification_block(gpu_va_space,
+                                      va_block,
+                                      batch_context->block_service_context.block_context,
+                                      accessed_pages,
+                                      current_entry);
+        }
+        else {
             break;
+        }
     }
 
     *out_index = i;
@@ -1698,6 +1712,9 @@ static NV_STATUS service_virt_notification_ats(uvm_gpu_va_space_t *gpu_va_space,
     // Atleast one notification should have been processed.
     UVM_ASSERT(index < *out_index);
 
+    // TODO: Bug 2113632: [UVM] Don't clear access counters when the preferred
+    //                    location is set
+    // If no pages were actually migrated, don't clear the access counters.
     status = uvm_ats_service_access_counters(gpu_va_space, vma, base, ats_context);
     if (status != NV_OK)
         flags &= ~UVM_ACCESS_COUNTER_ACTION_CLEAR;
@@ -1985,7 +2002,7 @@ NV_STATUS uvm_test_access_counters_enabled_by_default(UVM_TEST_ACCESS_COUNTERS_E
     if (!gpu)
         return NV_ERR_INVALID_DEVICE;
 
-    params->enabled = uvm_gpu_access_counters_required(gpu->parent);
+    params->enabled = uvm_parent_gpu_access_counters_required(gpu->parent);
 
     uvm_gpu_release(gpu);
 
@@ -2050,11 +2067,11 @@ NV_STATUS uvm_test_reconfigure_access_counters(UVM_TEST_RECONFIGURE_ACCESS_COUNT
         goto exit_isr_unlock;
     }
 
-    if (!uvm_processor_mask_test(&va_space->access_counters_enabled_processors, gpu->id)) {
+    if (!uvm_parent_processor_mask_test(&va_space->access_counters_enabled_processors, gpu->parent->id)) {
         status = gpu_access_counters_enable(gpu, &config);
 
         if (status == NV_OK)
-            uvm_processor_mask_set_atomic(&va_space->access_counters_enabled_processors, gpu->id);
+            uvm_parent_processor_mask_set_atomic(&va_space->access_counters_enabled_processors, gpu->parent->id);
         else
             goto exit_isr_unlock;
     }
@@ -2066,7 +2083,7 @@ NV_STATUS uvm_test_reconfigure_access_counters(UVM_TEST_RECONFIGURE_ACCESS_COUNT
     // enabled in at least gpu. This inconsistent state is not visible to other
     // threads or VA spaces because of the ISR lock, and it is immediately
     // rectified by retaking ownership.
-    access_counters_yield_ownership(gpu);
+    access_counters_yield_ownership(gpu->parent);
     status = access_counters_take_ownership(gpu, &config);
 
     // Retaking ownership failed, so RM owns the interrupt.
@@ -2080,8 +2097,8 @@ NV_STATUS uvm_test_reconfigure_access_counters(UVM_TEST_RECONFIGURE_ACCESS_COUNT
                            "Access counters interrupt still owned by RM, other VA spaces may experience failures");
         }
 
-        uvm_processor_mask_clear_atomic(&va_space->access_counters_enabled_processors, gpu->id);
-        gpu_access_counters_disable(gpu);
+        uvm_parent_processor_mask_clear_atomic(&va_space->access_counters_enabled_processors, gpu->parent->id);
+        parent_gpu_access_counters_disable(gpu->parent);
         goto exit_isr_unlock;
     }
 
@@ -2167,42 +2184,42 @@ exit_release_gpu:
     return status;
 }
 
-void uvm_gpu_access_counters_set_ignore(uvm_gpu_t *gpu, bool do_ignore)
+void uvm_parent_gpu_access_counters_set_ignore(uvm_parent_gpu_t *parent_gpu, bool do_ignore)
 {
     bool change_intr_state = false;
 
-    if (!gpu->parent->access_counters_supported)
+    if (!parent_gpu->access_counters_supported)
         return;
 
-    uvm_parent_gpu_access_counters_isr_lock(gpu->parent);
+    uvm_parent_gpu_access_counters_isr_lock(parent_gpu);
 
     if (do_ignore) {
-        if (gpu->parent->access_counter_buffer_info.notifications_ignored_count++ == 0)
+        if (parent_gpu->access_counter_buffer_info.notifications_ignored_count++ == 0)
             change_intr_state = true;
     }
     else {
-        UVM_ASSERT(gpu->parent->access_counter_buffer_info.notifications_ignored_count >= 1);
-        if (--gpu->parent->access_counter_buffer_info.notifications_ignored_count == 0)
+        UVM_ASSERT(parent_gpu->access_counter_buffer_info.notifications_ignored_count >= 1);
+        if (--parent_gpu->access_counter_buffer_info.notifications_ignored_count == 0)
             change_intr_state = true;
     }
 
     if (change_intr_state) {
         // We need to avoid an interrupt storm while ignoring notifications. We
         // just disable the interrupt.
-        uvm_spin_lock_irqsave(&gpu->parent->isr.interrupts_lock);
+        uvm_spin_lock_irqsave(&parent_gpu->isr.interrupts_lock);
 
         if (do_ignore)
-            uvm_parent_gpu_access_counters_intr_disable(gpu->parent);
+            uvm_parent_gpu_access_counters_intr_disable(parent_gpu);
         else
-            uvm_parent_gpu_access_counters_intr_enable(gpu->parent);
+            uvm_parent_gpu_access_counters_intr_enable(parent_gpu);
 
-        uvm_spin_unlock_irqrestore(&gpu->parent->isr.interrupts_lock);
+        uvm_spin_unlock_irqrestore(&parent_gpu->isr.interrupts_lock);
 
         if (!do_ignore)
-            access_counter_buffer_flush_locked(gpu, UVM_GPU_BUFFER_FLUSH_MODE_CACHED_PUT);
+            access_counter_buffer_flush_locked(parent_gpu, UVM_GPU_BUFFER_FLUSH_MODE_CACHED_PUT);
     }
 
-    uvm_parent_gpu_access_counters_isr_unlock(gpu->parent);
+    uvm_parent_gpu_access_counters_isr_unlock(parent_gpu);
 }
 
 NV_STATUS uvm_test_set_ignore_access_counters(UVM_TEST_SET_IGNORE_ACCESS_COUNTERS_PARAMS *params, struct file *filp)
@@ -2216,7 +2233,7 @@ NV_STATUS uvm_test_set_ignore_access_counters(UVM_TEST_SET_IGNORE_ACCESS_COUNTER
         return NV_ERR_INVALID_DEVICE;
 
     if (gpu->parent->access_counters_supported)
-        uvm_gpu_access_counters_set_ignore(gpu, params->ignore);
+        uvm_parent_gpu_access_counters_set_ignore(gpu->parent, params->ignore);
     else
         status = NV_ERR_NOT_SUPPORTED;
 

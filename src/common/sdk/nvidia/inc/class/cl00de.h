@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,7 +36,36 @@ extern "C" {
 #define RUSD_TIMESTAMP_WRITE_IN_PROGRESS (NV_U64_MAX)
 #define RUSD_TIMESTAMP_INVALID           0
 
-#define RUSD_SEQ_DATA_VALID(x) ((((NvU32)(x)) & 0x1U) == 0)
+// seq = c_0 * b_0 + c_1 * (b_0 - 1)  where c_0 == open_count and c_1 == close_count
+// When they are equal, data is valid, otherwise data is being written.
+// b_0 == 1 mod (b_0 - 1) and b_0 - 1 == (-1) mod b_0
+// So, c_0 == seq mod (b_0 - 1) and c_1 == (-1 * seq) mod b_0
+// c_1 cannot be calculated quite so naively because negative modulos aren't fun, so we
+// instead do c_1 == (b_0 - (seq mod b_0)) mod b_0
+//
+#define RUSD_SEQ_BASE_SHIFT 20llu
+#define RUSD_SEQ_BASE0 (1llu << RUSD_SEQ_BASE_SHIFT)
+#define RUSD_SEQ_BASE1 (RUSD_SEQ_BASE0 - 1llu)
+#define RUSD_SEQ_COEFF1(x) ((RUSD_SEQ_BASE0 - ((x) % RUSD_SEQ_BASE0)) % RUSD_SEQ_BASE0)
+#define RUSD_SEQ_COEFF0(x) ((x) % RUSD_SEQ_BASE1)
+#define RUSD_SEQ_WRAP_SHIFT 18llu
+#define RUSD_SEQ_WRAP_VAL (1llu << RUSD_SEQ_WRAP_SHIFT)
+#define RUSD_SEQ_DATA_VALID(x) (RUSD_SEQ_COEFF0(x) == RUSD_SEQ_COEFF1(x))
+
+//
+// Helper macros to check seq before reading RUSD.
+// No dowhile wrap as it is using continue/break
+//
+#define RUSD_SEQ_CHECK1(SHARED_DATA)    \
+    NvU64 seq = (SHARED_DATA)->seq;     \
+    portAtomicMemoryFenceLoad();        \
+    if (!RUSD_SEQ_DATA_VALID(seq))      \
+         continue;
+
+#define RUSD_SEQ_CHECK2(SHARED_DATA)    \
+    portAtomicMemoryFenceLoad();        \
+    if (seq == (SHARED_DATA)->seq)      \
+         break;
 
 enum {
     RUSD_CLK_PUBLIC_DOMAIN_GRAPHICS = 0,
@@ -166,10 +195,12 @@ typedef struct RUSD_INST_POWER_USAGE {
 } RUSD_INST_POWER_USAGE;
 
 typedef struct NV00DE_SHARED_DATA {
-    volatile NvU32 seq;
+    volatile NvU64 seq;
 
     NvU32 bar1Size;
     NvU32 bar1AvailSize;
+    NvU64 totalPmaMemory;
+    NvU64 freePmaMemory;
 
     // GSP polling data section
     NV_DECLARE_ALIGNED(RUSD_CLK_PUBLIC_DOMAIN_INFOS clkPublicDomainInfos, 8);

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -21,6 +21,7 @@
  * DEALINGS IN THE SOFTWARE.
  */
 
+#include "gpu/gpu_user_shared_data.h"
 #include "gpu/mem_mgr/mem_mgr.h"
 #include "gpu/mem_mgr/heap.h"
 #include "gpu/mem_sys/kern_mem_sys.h"
@@ -63,6 +64,7 @@ static NV_STATUS _memmgrInitMIGMemoryPartitionHeap(OBJGPU *pGpu, MemoryManager *
 static NV_STATUS _memmgrAllocInternalClientObjects(OBJGPU *pGpu,
                                                    MemoryManager *pMemoryManager);
 static void _memmgrFreeInternalClientObjects(MemoryManager *pMemoryManager);
+static void _memmgrInitRUSDHeapSize(OBJGPU *pGpu, MemoryManager *pMemoryManager);
 
 #define MEMUTILS_CHANNEL_GPFIFO_SIZE                  (NV906F_GP_ENTRY__SIZE * MEMUTILS_NUM_GPFIFIO_ENTRIES)
 
@@ -536,6 +538,17 @@ memmgrStateInitLocked_IMPL
         }
     }
 
+    status = gpuCreateRusdMemory_HAL(pGpu);
+    if (status != NV_OK)
+    {
+        return status;
+    }
+
+    if (memmgrIsPmaInitialized(pMemoryManager))
+    {
+        _memmgrInitRUSDHeapSize(pGpu, pMemoryManager);
+    }
+
     status = _memmgrAllocInternalClientObjects(pGpu, pMemoryManager);
     if (status != NV_OK)
     {
@@ -714,6 +727,8 @@ memmgrStateDestroy_IMPL
     NvU32 i;
 
     _memmgrFreeInternalClientObjects(pMemoryManager);
+
+    gpuDestroyRusdMemory(pGpu);
 
     // Destroys the SW state of the page level pools
     memmgrPageLevelPoolsDestroy(pGpu, pMemoryManager);
@@ -2900,6 +2915,48 @@ memmgrPageLevelPoolsGetInfo_IMPL
     return NV_OK;
 }
 
+static inline void
+_memmgrPmaStatsUpdateCb
+(
+    void *pCtx,
+    NvU64 freeFrames
+)
+{
+    OBJGPU *pGpu = (OBJGPU *) pCtx;
+    NV00DE_SHARED_DATA *pSharedData;
+
+    NV_ASSERT_OR_RETURN_VOID(pGpu != NULL);
+
+    pSharedData = gpushareddataWriteStart(pGpu);
+
+    pSharedData->freePmaMemory = freeFrames << PMA_PAGE_SHIFT;
+
+    gpushareddataWriteFinish(pGpu);
+}
+
+static void
+_memmgrInitRUSDHeapSize
+(
+    OBJGPU *pGpu,
+    MemoryManager *pMemoryManager
+)
+{
+    NV00DE_SHARED_DATA  *pSharedData;
+    KernelMemorySystem  *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
+    NvU64                bytesTotal = 0;
+    PMA                 *pPma;
+
+    NV_ASSERT_OR_RETURN_VOID(memmgrIsPmaInitialized(pMemoryManager));
+
+    pPma = &pMemoryManager->pHeap->pmaObject;
+    pmaGetTotalMemory(pPma, &bytesTotal);
+    bytesTotal -= ((NvU64)pKernelMemorySystem->fbOverrideStartKb << 10);
+
+    pSharedData = gpushareddataWriteStart(pGpu);
+    pSharedData->totalPmaMemory = bytesTotal;
+    gpushareddataWriteFinish(pGpu);
+}
+
 /*!
  * @brief Initialize the PMA object
  *
@@ -2959,6 +3016,8 @@ memmgrPmaInitialize_IMPL
         NV_PRINTF(LEVEL_ERROR, "Failed to initialize PMA!\n");
         return status;
     }
+
+    pmaRegisterUpdateStatsCb(pPma, _memmgrPmaStatsUpdateCb, pGpu);
 
     if (bNumaEnabled)
     {

@@ -800,6 +800,10 @@ NV_STATUS osRmCapRegisterSmcExecutionPartition(
                         NvU32        execPartitionId);
 NV_STATUS osRmCapRegisterSys(OS_RM_CAPS **ppOsRmCaps);
 
+NvBool osImexChannelIsSupported(void);
+NvS32 osImexChannelGet(NvU64 descriptor);
+NvS32 osImexChannelCount(void);
+
 NV_STATUS osGetRandomBytes(NvU8 *pBytes, NvU16 numBytes);
 
 NV_STATUS osAllocWaitQueue(OS_WAIT_QUEUE **ppWq);
@@ -812,6 +816,8 @@ NvU32 osGetDynamicPowerSupportMask(void);
 
 void osUnrefGpuAccessNeeded(OS_GPU_INFO *pOsGpuInfo);
 NV_STATUS osRefGpuAccessNeeded(OS_GPU_INFO *pOsGpuInfo);
+
+NvU32 osGetGridCspSupport(void);
 
 NV_STATUS osIovaMap(PIOVAMAPPING pIovaMapping);
 void osIovaUnmap(PIOVAMAPPING pIovaMapping);

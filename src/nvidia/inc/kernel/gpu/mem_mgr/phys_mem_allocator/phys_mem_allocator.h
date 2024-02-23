@@ -164,6 +164,11 @@ typedef enum
 } MEMORY_PROTECTION;
 
 /*!
+ * @brief Callback to update stats in RUSD
+ */
+typedef void (*pmaUpdateStatsCb_t)(void *pCtx, NvU64 freeFrames);
+
+/*!
  * @brief Callbacks to UVM for eviction
  */
 typedef NV_STATUS (*pmaEvictPagesCb_t)(void *ctxPtr, NvU64 pageSize, NvU64 *pPages,
@@ -255,6 +260,10 @@ struct _PMA
     PMA_BLACKLIST_CHUNK    *pBlacklistChunks;                   // Tracking for blacklist pages
     NvU32                   blacklistCount;                     // Number of blacklist pages
     NvBool                  bClientManagedBlacklist;            // Blacklisted pages in PMA that will be taken over by Client
+
+    // RUSD Callback
+    pmaUpdateStatsCb_t      pStatsUpdateCb;                     // RUSD update free pages
+    void                   *pStatsUpdateCtx;                    // Context for RUSD update
 };
 
 /*!
@@ -574,6 +583,22 @@ NV_STATUS pmaScrubComplete(PMA *pPma);
  *          Callbacks already registered.
  */
 NV_STATUS pmaRegisterEvictionCb(PMA *pPma, pmaEvictPagesCb_t evictPagesCb, pmaEvictRangeCb_t evictRangeCb, void *ctxPtr);
+
+/*!
+ * Register the stats update callback.
+ *
+ * Register callback to call when number of free pages changes. Currently only used for RUSD.
+ *
+ * @param[in] pma
+ *      PMA object
+ *
+ * @param[in] pUpdateCb
+ *      The callback to call when updating free page count
+ *
+ * @param[in] ctxPtr
+ *      The callback context pointer to be passed back on callback
+ */
+void pmaRegisterUpdateStatsCb(PMA *pPma, pmaUpdateStatsCb_t pUpdateCb, void *ctxPtr);
 
 
 /*!

@@ -180,6 +180,7 @@ typedef struct GspSystemInfo
     NvU64 sysTimerOffsetNs;
     GSP_VF_INFO gspVFInfo;
     NvBool isGridBuild;
+    NvU32 gridBuildCsp;
 } GspSystemInfo;
 
 

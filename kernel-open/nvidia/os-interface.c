@@ -25,6 +25,7 @@
 
 #include "os-interface.h"
 #include "nv-linux.h"
+#include "nv-caps-imex.h"
 
 #include "nv-time.h"
 
@@ -58,6 +59,8 @@ NvBool os_dma_buf_enabled = NV_TRUE;
 #else
 NvBool os_dma_buf_enabled = NV_FALSE;
 #endif // CONFIG_DMA_SHARED_BUFFER
+
+NvBool os_imex_channel_is_supported = NV_TRUE;
 
 void NV_API_CALL os_disable_console_access(void)
 {
@@ -1231,90 +1234,6 @@ NvBool NV_API_CALL os_is_efi_enabled(void)
     return efi_enabled(EFI_BOOT);
 }
 
-void NV_API_CALL os_get_screen_info(
-    NvU64 *pPhysicalAddress,
-    NvU32 *pFbWidth,
-    NvU32 *pFbHeight,
-    NvU32 *pFbDepth,
-    NvU32 *pFbPitch,
-    NvU64 consoleBar1Address,
-    NvU64 consoleBar2Address
-)
-{
-    *pPhysicalAddress = 0;
-    *pFbWidth = *pFbHeight = *pFbDepth = *pFbPitch = 0;
-
-#if defined(CONFIG_FB) && defined(NV_NUM_REGISTERED_FB_PRESENT)
-    if (num_registered_fb > 0)
-    {
-        int i;
-
-        for (i = 0; i < num_registered_fb; i++)
-        {
-            if (!registered_fb[i])
-                continue;
-
-            /* Make sure base address is mapped to GPU BAR */
-            if ((registered_fb[i]->fix.smem_start == consoleBar1Address) ||
-                (registered_fb[i]->fix.smem_start == consoleBar2Address))
-            {
-                *pPhysicalAddress = registered_fb[i]->fix.smem_start;
-                *pFbWidth = registered_fb[i]->var.xres;
-                *pFbHeight = registered_fb[i]->var.yres;
-                *pFbDepth = registered_fb[i]->var.bits_per_pixel;
-                *pFbPitch = registered_fb[i]->fix.line_length;
-                return;
-            }
-        }
-    }
-#endif
-
-    /*
-     * If the screen info is not found in the registered FBs then fallback
-     * to the screen_info structure.
-     *
-     * The SYSFB_SIMPLEFB option, if enabled, marks VGA/VBE/EFI framebuffers as
-     * generic framebuffers so the new generic system-framebuffer drivers can
-     * be used instead. DRM_SIMPLEDRM drives the generic system-framebuffers
-     * device created by SYSFB_SIMPLEFB.
-     *
-     * SYSFB_SIMPLEFB registers a dummy framebuffer which does not contain the
-     * information required by os_get_screen_info(), therefore you need to
-     * fall back onto the screen_info structure.
-     *
-     * After commit b8466fe82b79 ("efi: move screen_info into efi init code")
-     * in v6.7, 'screen_info' is exported as GPL licensed symbol for ARM64.
-     */
-
-#if NV_CHECK_EXPORT_SYMBOL(screen_info)
-    /*
-     * If there is not a framebuffer console, return 0 size.
-     *
-     * orig_video_isVGA is set to 1 during early Linux kernel
-     * initialization, and then will be set to a value, such as
-     * VIDEO_TYPE_VLFB or VIDEO_TYPE_EFI if an fbdev console is used.
-     */
-    if (screen_info.orig_video_isVGA > 1)
-    {
-        NvU64 physAddr = screen_info.lfb_base;
-#if defined(VIDEO_CAPABILITY_64BIT_BASE)
-        physAddr |= (NvU64)screen_info.ext_lfb_base << 32;
-#endif
-
-        /* Make sure base address is mapped to GPU BAR */
-        if ((physAddr == consoleBar1Address) ||
-            (physAddr == consoleBar2Address))
-        {
-            *pPhysicalAddress = physAddr;
-            *pFbWidth = screen_info.lfb_width;
-            *pFbHeight = screen_info.lfb_height;
-            *pFbDepth = screen_info.lfb_depth;
-            *pFbPitch = screen_info.lfb_linelength;
-        }
-    }
-#endif
-}
-
 void NV_API_CALL os_dump_stack(void)
 {
     dump_stack();
@@ -2180,6 +2099,22 @@ void NV_API_CALL os_nv_cap_close_fd
 )
 {
     nv_cap_close_fd(fd);
+}
+
+NvS32 NV_API_CALL os_imex_channel_count
+(
+    void
+)
+{
+    return nv_caps_imex_channel_count();
+}
+
+NvS32 NV_API_CALL os_imex_channel_get
+(
+    NvU64 descriptor
+)
+{
+    return nv_caps_imex_channel_get((int)descriptor);
 }
 
 /*

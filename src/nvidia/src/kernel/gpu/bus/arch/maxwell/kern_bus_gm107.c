@@ -61,8 +61,6 @@ static void _kbusLinkP2P_GM107(OBJGPU *, KernelBus *);
 
 static NvU32 _kbusGetSizeOfBar2PageDir_GM107(NvU64 vaBase, NvU64 vaLimit, NvU64 vaPerEntry, NvU32 entrySize);
 
-static NV_STATUS _kbusUpdateDebugStatistics(OBJGPU *pGpu);
-
 NV_STATUS _kbusMapAperture_GM107(OBJGPU *, KernelBus *, PMEMORY_DESCRIPTOR, OBJVASPACE *, NvU64, NvU64 *,
                                  NvU64 *, NvU32 mapFlags, Device *pDevice);
 NV_STATUS _kbusUnmapAperture_GM107(OBJGPU *, KernelBus *, OBJVASPACE *, PMEMORY_DESCRIPTOR, NvU64);
@@ -695,7 +693,7 @@ kbusStatePostLoad_GM107
         _kbusLinkP2P_GM107(pGpu, pKernelBus);
     }
 
-    _kbusUpdateDebugStatistics(pGpu);
+    kbusUpdateRusdStatistics(pGpu);
 
     return status;
 }
@@ -2722,45 +2720,6 @@ OBJVASPACE *kbusGetBar1VASpace_GM107(OBJGPU *pGpu, KernelBus *pKernelBus)
     return pKernelBus->bar1[gfid].pVAS;
 }
 
-static NV_STATUS
-_kbusUpdateDebugStatistics(OBJGPU *pGpu)
-{
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
-    OBJVASPACE *pBar1VAS;
-    OBJEHEAP *pVASHeap;
-    NV00DE_SHARED_DATA *pSharedData = gpushareddataWriteStart(pGpu);
-    NV_RANGE bar1VARange = NV_RANGE_EMPTY;
-
-    if (!KBUS_CPU_VISIBLE_BAR12_DISABLED(pGpu))
-    {
-        pBar1VAS = kbusGetBar1VASpace_HAL(pGpu, pKernelBus);
-        NV_ASSERT_OR_RETURN(pBar1VAS != NULL, NV_ERR_INVALID_STATE);
-        pVASHeap = vaspaceGetHeap(pBar1VAS);
-        bar1VARange = rangeMake(vaspaceGetVaStart(pBar1VAS), vaspaceGetVaLimit(pBar1VAS));
-
-        pSharedData->bar1Size = (NvU32)(rangeLength(bar1VARange) / 1024);
-        pSharedData->bar1AvailSize = 0;
-
-        if (pVASHeap != NULL)
-        {
-            NvU64 freeSize = 0;
-
-            pVASHeap->eheapInfoForRange(pVASHeap, bar1VARange, NULL, NULL, NULL, &freeSize);
-            pSharedData->bar1AvailSize = (NvU32)(freeSize / 1024);
-        }
-    }
-    else
-    {
-        // When coherent C2C path is enabled, BAR1 is disabled
-        pSharedData->bar1Size = 0;
-        pSharedData->bar1AvailSize = 0;
-    }
-
-    gpushareddataWriteFinish(pGpu);
-
-    return NV_OK;
-}
-
 NV_STATUS
 kbusMapFbAperture_GM107
 (
@@ -2846,7 +2805,7 @@ kbusMapFbAperture_GM107
 
     if (rmStatus == NV_OK)
     {
-        _kbusUpdateDebugStatistics(pGpu);
+        kbusUpdateRusdStatistics(pGpu);
         return rmStatus;
     }
 
@@ -2932,7 +2891,7 @@ kbusUnmapFbAperture_GM107
     }
     SLI_LOOP_END
 
-    _kbusUpdateDebugStatistics(pGpu);
+    kbusUpdateRusdStatistics(pGpu);
 
     if (rmStatus == NV_OK)
     {

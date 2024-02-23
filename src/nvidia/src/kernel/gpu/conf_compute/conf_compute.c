@@ -88,6 +88,20 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
         return status;
     }
 
+    if ((sysGetStaticConfig(pSys)->bOsCCEnabled) && !gpuIsCCEnabledInHw_HAL(pGpu))
+    {
+        if (pGpu->getProperty(pGpu, PDB_PROP_GPU_CC_FEATURE_CAPABLE))
+        {
+            NV_PRINTF(LEVEL_ERROR, "GPU confidential compute capability is not enabled.\n");
+        }
+        else
+        {
+            NV_PRINTF(LEVEL_ERROR, "GPU does not support confidential compute.\n");
+        }
+
+        NV_ASSERT_OR_RETURN(0, NV_ERR_INVALID_REQUEST);
+    }
+
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_ENABLED))
     {
         bForceEnableCC = (osReadRegistryDword(pGpu, NV_REG_STR_RM_CONFIDENTIAL_COMPUTE, &data) == NV_OK) &&

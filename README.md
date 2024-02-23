@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 550.40.07.
+version 550.54.14.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-550.40.07 driver release.  This can be achieved by installing
+550.54.14 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -188,7 +188,10 @@ encountered specific to them.
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/550.40.07/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/550.54.14/README/kernel_open.html
+
+For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
+Package for more details.
 
 In the below table, if three IDs are listed, the first is the PCI Device 
 ID, the second is the PCI Subsystem Vendor ID, and the third is the PCI
@@ -650,7 +653,9 @@ Subsystem Device ID.
 | NVIDIA T400 4GB                                 | 1FF2 103C 1613 |
 | NVIDIA T400 4GB                                 | 1FF2 103C 8A80 |
 | NVIDIA T400 4GB                                 | 1FF2 10DE 1613 |
+| NVIDIA T400E                                    | 1FF2 10DE 18FF |
 | NVIDIA T400 4GB                                 | 1FF2 17AA 1613 |
+| NVIDIA T400E                                    | 1FF2 17AA 18FF |
 | Quadro T1000                                    | 1FF9           |
 | NVIDIA A100-SXM4-40GB                           | 20B0           |
 | NVIDIA A100-PG509-200                           | 20B0 10DE 1450 |
@@ -746,12 +751,15 @@ Subsystem Device ID.
 | NVIDIA H800 PCIe                                | 2322 10DE 17A4 |
 | NVIDIA H800                                     | 2324 10DE 17A6 |
 | NVIDIA H800                                     | 2324 10DE 17A8 |
+| NVIDIA H20                                      | 2329 10DE 198B |
+| NVIDIA H20                                      | 2329 10DE 198C |
 | NVIDIA H100 80GB HBM3                           | 2330 10DE 16C0 |
 | NVIDIA H100 80GB HBM3                           | 2330 10DE 16C1 |
 | NVIDIA H100 PCIe                                | 2331 10DE 1626 |
 | NVIDIA H100                                     | 2339 10DE 17FC |
 | NVIDIA H800 NVL                                 | 233A 10DE 183A |
 | NVIDIA GH200 120GB                              | 2342 10DE 16EB |
+| NVIDIA GH200 120GB                              | 2342 10DE 1805 |
 | NVIDIA GH200 480GB                              | 2342 10DE 1809 |
 | NVIDIA GeForce RTX 3060 Ti                      | 2414           |
 | NVIDIA GeForce RTX 3080 Ti Laptop GPU           | 2420           |
@@ -805,6 +813,7 @@ Subsystem Device ID.
 | NVIDIA RTX A2000 12GB                           | 2571 10DE 1611 |
 | NVIDIA RTX A2000 12GB                           | 2571 17AA 1611 |
 | NVIDIA GeForce RTX 3050                         | 2582           |
+| NVIDIA GeForce RTX 3050                         | 2584           |
 | NVIDIA GeForce RTX 3050 Ti Laptop GPU           | 25A0           |
 | NVIDIA GeForce RTX 3050Ti Laptop GPU            | 25A0 103C 8928 |
 | NVIDIA GeForce RTX 3050Ti Laptop GPU            | 25A0 103C 89F9 |
@@ -846,6 +855,7 @@ Subsystem Device ID.
 | NVIDIA RTX 5000 Ada Generation                  | 26B2 103C 17FA |
 | NVIDIA RTX 5000 Ada Generation                  | 26B2 10DE 17FA |
 | NVIDIA RTX 5000 Ada Generation                  | 26B2 17AA 17FA |
+| NVIDIA RTX 5880 Ada Generation                  | 26B3 1028 1934 |
 | NVIDIA RTX 5880 Ada Generation                  | 26B3 103C 1934 |
 | NVIDIA RTX 5880 Ada Generation                  | 26B3 10DE 1934 |
 | NVIDIA RTX 5880 Ada Generation                  | 26B3 17AA 1934 |
@@ -854,6 +864,7 @@ Subsystem Device ID.
 | NVIDIA L40S                                     | 26B9 10DE 1851 |
 | NVIDIA L40S                                     | 26B9 10DE 18CF |
 | NVIDIA L20                                      | 26BA 10DE 1957 |
+| NVIDIA GeForce RTX 4080 SUPER                   | 2702           |
 | NVIDIA GeForce RTX 4080                         | 2704           |
 | NVIDIA GeForce RTX 4070 Ti SUPER                | 2705           |
 | NVIDIA GeForce RTX 4090 Laptop GPU              | 2717           |
@@ -891,6 +902,10 @@ Subsystem Device ID.
 | NVIDIA GeForce RTX 4060                         | 2882           |
 | NVIDIA GeForce RTX 4060 Laptop GPU              | 28A0           |
 | NVIDIA GeForce RTX 4050 Laptop GPU              | 28A1           |
+| NVIDIA RTX 2000 Ada Generation                  | 28B0 1028 1870 |
+| NVIDIA RTX 2000 Ada Generation                  | 28B0 103C 1870 |
+| NVIDIA RTX 2000 Ada Generation                  | 28B0 10DE 1870 |
+| NVIDIA RTX 2000 Ada Generation                  | 28B0 17AA 1870 |
 | NVIDIA RTX 2000 Ada Generation Laptop GPU       | 28B8           |
 | NVIDIA GeForce RTX 4060 Laptop GPU              | 28E0           |
 | NVIDIA GeForce RTX 4050 Laptop GPU              | 28E1           |

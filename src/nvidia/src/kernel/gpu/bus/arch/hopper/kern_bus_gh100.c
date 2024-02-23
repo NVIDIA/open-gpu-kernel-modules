@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -2852,16 +2852,4 @@ kbusGetEccCounts_GH100
     count += DRF_VAL(_XAL_EP, _P2PREQ_ECC, _UNCORRECTED_ERR_COUNT_UNIQUE, regVal);
 
     return count;
-}
-
-void
-kbusClearEccCounts_GH100
-(
-    OBJGPU *pGpu,
-    KernelBus *pKernelBus
-)
-{
-    // Reset XAL-EP counts
-    GPU_REG_WR32(pGpu, NV_XAL_EP_REORDER_ECC_UNCORRECTED_ERR_COUNT, 0);
-    GPU_REG_WR32(pGpu, NV_XAL_EP_P2PREQ_ECC_UNCORRECTED_ERR_COUNT, 0);
 }

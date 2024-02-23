@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -892,7 +892,7 @@ spdmGetReqEncapCertificates_GH100
     NvU32  *pEncapCertChainSize
 )
 {
-    if (pEncapCertChain == NULL || pEncapCertChainSize == NULL)
+    if (*pEncapCertChain != NULL || pEncapCertChainSize == NULL)
     {
         return NV_ERR_INVALID_ARGUMENT;
     }

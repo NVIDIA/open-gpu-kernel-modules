@@ -582,13 +582,14 @@ NV_STATUS  NV_API_CALL  rm_gpu_ops_get_non_replayable_faults(nvidia_stack_t *sp,
     return rmStatus;
 }
 
-NV_STATUS  NV_API_CALL  rm_gpu_ops_flush_replayable_fault_buffer(nvidia_stack_t *sp,
-                                                                 gpuDeviceHandle device)
+NV_STATUS  NV_API_CALL rm_gpu_ops_flush_replayable_fault_buffer(nvidia_stack_t *sp,
+                                                                gpuFaultInfo *pFaultInfo,
+                                                                NvBool bCopyAndFlush)
 {
     NV_STATUS rmStatus;
     void *fp;
     NV_ENTER_RM_RUNTIME(sp,fp);
-    rmStatus = nvGpuOpsFlushReplayableFaultBuffer(device);
+    rmStatus = nvGpuOpsFlushReplayableFaultBuffer(pFaultInfo, bCopyAndFlush);
     NV_EXIT_RM_RUNTIME(sp,fp);
     return rmStatus;
 }

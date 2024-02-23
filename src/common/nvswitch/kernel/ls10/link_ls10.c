@@ -42,6 +42,11 @@
 #include "nvswitch/ls10/dev_minion_ip_addendum.h" 
 #include "ls10/minion_nvlink_defines_public_ls10.h"
 
+#define NV_NVLINK_TLREQ_TIMEOUT_ACTIVE     10000
+#define NV_NVLINK_TLREQ_TIMEOUT_SHUTDOWN   10
+#define NV_NVLINK_TLREQ_TIMEOUT_RESET      4
+#define NV_NVLINK_TLREQ_TIMEOUT_L2         5
+
 static void
 _nvswitch_configure_reserved_throughput_counters
 (
@@ -143,9 +148,9 @@ nvswitch_init_lpwr_regs_ls10
     if (status != NVL_SUCCESS)
     {
         NVSWITCH_PRINT(device, ERROR, "%s: Failed to set L1 Threshold\n",
-                       __FUNCTION__);
+                        __FUNCTION__);
     }
-}
+        }
 
 void
 nvswitch_corelib_training_complete_ls10
@@ -1433,7 +1438,7 @@ nvswitch_load_link_disable_settings_ls10
     nvswitch_device *device,
     nvlink_link *link
 )
-{   
+{
     NvU32 regVal;
 
     // Read state from NVLIPT HW
@@ -1443,7 +1448,7 @@ nvswitch_load_link_disable_settings_ls10
     if (FLD_TEST_DRF(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, _DISABLE, regVal))
     {
         NVSWITCH_ASSERT(!cciIsLinkManaged(device, link->linkNumber));
-        
+
         // Set link to invalid and unregister from corelib
         device->link[link->linkNumber].valid = NV_FALSE;
         nvlink_lib_unregister_link(link);
@@ -1589,7 +1594,7 @@ nvswitch_reset_and_train_link_ls10
                 link_intr_subcode = DRF_VAL(_NVLSTAT, _MN00, _LINK_INTR_SUBCODE, stat_data);
 
                 if ((link_state == NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_STATUS_MINION_REQUEST_FAIL) &&
-                (link_intr_subcode == MINION_ALARM_BUSY))
+                    (link_intr_subcode == MINION_ALARM_BUSY))
                 {
 
                     status = nvswitch_request_tl_link_state_ls10(link,
@@ -1683,6 +1688,39 @@ nvswitch_are_link_clocks_on_ls10
     return NV_TRUE;
 }
 
+static
+NvlStatus
+_nvswitch_tl_request_get_timeout_value_ls10
+(
+    nvswitch_device *device,
+    NvU32  tlLinkState,
+    NvU32  *timeoutVal
+)
+{
+    switch (tlLinkState)
+    {
+        case NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_ACTIVE:
+            *timeoutVal = NV_NVLINK_TLREQ_TIMEOUT_ACTIVE;
+            break;
+        case NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_RESET:
+            *timeoutVal = NV_NVLINK_TLREQ_TIMEOUT_RESET;
+            break;
+        case NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_SHUTDOWN:
+            *timeoutVal = NV_NVLINK_TLREQ_TIMEOUT_SHUTDOWN;
+            break;
+        case NV_NVLIPT_LNK_CTRL_LINK_STATE_REQUEST_REQUEST_L2:
+            *timeoutVal = NV_NVLINK_TLREQ_TIMEOUT_L2;
+            break;
+        default:
+            NVSWITCH_PRINT(device, ERROR,
+                "%s: Invalid tlLinkState %d provided!\n",
+                        __FUNCTION__, tlLinkState);
+            return NVL_BAD_ARGS;
+    }
+
+    return NVL_SUCCESS;
+}
+
 NvlStatus
 nvswitch_request_tl_link_state_ls10
 (
@@ -1696,6 +1734,9 @@ nvswitch_request_tl_link_state_ls10
     NvU32 linkStatus;
     NvU32 lnkErrStatus;
     NvU32 bit;
+    NvU32            timeoutVal;
+    NVSWITCH_TIMEOUT timeout;
+    NvBool           keepPolling;
 
     if (!NVSWITCH_IS_LINK_ENG_VALID_LS10(device, NVLIPT_LNK, link->linkNumber))
     {
@@ -1729,16 +1770,42 @@ nvswitch_request_tl_link_state_ls10
 
     if (bSync)
     {
-        // Wait for the TL link state register to complete
-        status = nvswitch_wait_for_tl_request_ready_lr10(link);
+
+        // setup timeouts for the TL request
+        status = _nvswitch_tl_request_get_timeout_value_ls10(device, tlLinkState, &timeoutVal);
         if (status != NVL_SUCCESS)
         {
-            return status;
+            return NVL_ERR_INVALID_STATE;
         }
+
+        nvswitch_timeout_create(NVSWITCH_INTERVAL_1MSEC_IN_NS * timeoutVal, &timeout);
+        status = NVL_MORE_PROCESSING_REQUIRED;
+
+        do
+        {
+            keepPolling = (nvswitch_timeout_check(&timeout)) ? NV_FALSE : NV_TRUE;
 
         // Check for state requested
         linkStatus  = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
                 NVLIPT_LNK , _NVLIPT_LNK , _CTRL_LINK_STATE_STATUS);
+
+            if (DRF_VAL(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, linkStatus) ==
+                        tlLinkState)
+            {
+                status = NVL_SUCCESS;
+                break;
+            }
+
+            nvswitch_os_sleep(1);
+        }
+        while(keepPolling);
+
+        // Do one final check if the polling loop didn't see the target linkState
+        if (status == NVL_MORE_PROCESSING_REQUIRED)
+        {
+            // Check for state requested
+            linkStatus  = NVSWITCH_LINK_RD32_LS10(device, link->linkNumber,
+                    NVLIPT_LNK , _NVLIPT_LNK , _CTRL_LINK_STATE_STATUS);
 
         if (DRF_VAL(_NVLIPT_LNK, _CTRL_LINK_STATE_STATUS, _CURRENTLINKSTATE, linkStatus) !=
                     tlLinkState)
@@ -1748,6 +1815,8 @@ nvswitch_request_tl_link_state_ls10
                 __FUNCTION__, tlLinkState, link->linkNumber);
             return -NVL_ERR_GENERIC;
         }
+    }
+
     }
 
     return status;

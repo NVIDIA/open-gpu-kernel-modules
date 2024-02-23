@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -3039,10 +3039,16 @@ rcdProbeAllGpusPresent(
     NvU64   ip
 )
 {
+    OBJSYS *pSys = SYS_GET_INSTANCE();
     NvBool  bFoundLostGpu = NV_FALSE;
     OBJGPU *pGpu;
     NvU32   gpuMask;
     NvU32   gpuIndex = 0;
+
+    if (pSys->getProperty(pSys, PDB_PROP_SYS_DESTRUCTING))
+    {
+        return NV_FALSE;
+    }
 
     gpumgrGetGpuAttachInfo(NULL, &gpuMask);
     pGpu = gpumgrGetNextGpu(gpuMask, &gpuIndex);

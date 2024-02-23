@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -55,6 +55,7 @@
 #include "nv-kthread-q.h"
 #include "nv-pat.h"
 #include "nv-dmabuf.h"
+#include "nv-caps-imex.h"
 
 #if !defined(CONFIG_RETPOLINE)
 #include "nv-retpoline.h"
@@ -825,11 +826,18 @@ static int __init nvidia_init_module(void)
         goto procfs_exit;
     }
 
+    rc = nv_caps_imex_init();
+    if (rc < 0)
+    {
+        nv_printf(NV_DBG_ERRORS, "NVRM: failed to initialize IMEX channels.\n");
+        goto caps_root_exit;
+    }
+
     rc = nv_module_init(&sp);
     if (rc < 0)
     {
         nv_printf(NV_DBG_ERRORS, "NVRM: failed to initialize module.\n");
-        goto caps_root_exit;
+        goto caps_imex_exit;
     }
 
     count = nvos_count_devices();
@@ -941,6 +949,9 @@ drivers_exit:
 module_exit:
     nv_module_exit(sp);
 
+caps_imex_exit:
+    nv_caps_imex_exit();
+
 caps_root_exit:
     nv_caps_root_exit();
 
@@ -966,6 +977,8 @@ static void __exit nvidia_exit_module(void)
     nv_drivers_exit();
 
     nv_module_exit(sp);
+
+    nv_caps_imex_exit();
 
     nv_caps_root_exit();
 
@@ -2040,7 +2053,7 @@ nvidia_close_callback(
 {
     nv_linux_state_t *nvl;
     nv_state_t *nv;
-    nvidia_stack_t *sp;
+    nvidia_stack_t *sp = nvlfp->sp;
     NvBool bRemove = NV_FALSE;
 
     nvl = nvlfp->nvptr;
@@ -2052,12 +2065,11 @@ nvidia_close_callback(
          */
 
         nv_free_file_private(nvlfp);
-        nv_kmem_cache_free_stack(nvlfp->sp);
+        nv_kmem_cache_free_stack(sp);
         return;
     }
 
     nv = NV_STATE_PTR(nvl);
-    sp = nvlfp->sp;
 
     rm_cleanup_file_private(sp, nv, &nvlfp->nvfp);
 
@@ -6048,6 +6060,131 @@ failed:
 
     NV_DEV_PRINTF(NV_DBG_INFO, nv, "Cannot get EGM info\n");
     return NV_ERR_NOT_SUPPORTED;
+}
+
+void NV_API_CALL nv_get_screen_info(
+    nv_state_t  *nv,
+    NvU64       *pPhysicalAddress,
+    NvU32       *pFbWidth,
+    NvU32       *pFbHeight,
+    NvU32       *pFbDepth,
+    NvU32       *pFbPitch,
+    NvU64       *pFbSize
+)
+{
+    *pPhysicalAddress = 0;
+    *pFbWidth = *pFbHeight = *pFbDepth = *pFbPitch = *pFbSize = 0;
+
+#if defined(CONFIG_FB) && defined(NV_NUM_REGISTERED_FB_PRESENT)
+    if (num_registered_fb > 0)
+    {
+        int i;
+
+        for (i = 0; i < num_registered_fb; i++)
+        {
+            if (!registered_fb[i])
+                continue;
+
+            /* Make sure base address is mapped to GPU BAR */
+            if (NV_IS_CONSOLE_MAPPED(nv, registered_fb[i]->fix.smem_start))
+            {
+                *pPhysicalAddress = registered_fb[i]->fix.smem_start;
+                *pFbWidth = registered_fb[i]->var.xres;
+                *pFbHeight = registered_fb[i]->var.yres;
+                *pFbDepth = registered_fb[i]->var.bits_per_pixel;
+                *pFbPitch = registered_fb[i]->fix.line_length;
+                *pFbSize = (NvU64)(*pFbHeight) * (NvU64)(*pFbPitch);
+                return;
+            }
+        }
+    }
+#endif
+
+    /*
+     * If the screen info is not found in the registered FBs then fallback
+     * to the screen_info structure.
+     *
+     * The SYSFB_SIMPLEFB option, if enabled, marks VGA/VBE/EFI framebuffers as
+     * generic framebuffers so the new generic system-framebuffer drivers can
+     * be used instead. DRM_SIMPLEDRM drives the generic system-framebuffers
+     * device created by SYSFB_SIMPLEFB.
+     *
+     * SYSFB_SIMPLEFB registers a dummy framebuffer which does not contain the
+     * information required by nv_get_screen_info(), therefore you need to
+     * fall back onto the screen_info structure.
+     *
+     * After commit b8466fe82b79 ("efi: move screen_info into efi init code")
+     * in v6.7, 'screen_info' is exported as GPL licensed symbol for ARM64.
+     */
+
+#if NV_CHECK_EXPORT_SYMBOL(screen_info)
+    /*
+     * If there is not a framebuffer console, return 0 size.
+     *
+     * orig_video_isVGA is set to 1 during early Linux kernel
+     * initialization, and then will be set to a value, such as
+     * VIDEO_TYPE_VLFB or VIDEO_TYPE_EFI if an fbdev console is used.
+     */
+    if (screen_info.orig_video_isVGA > 1)
+    {
+        NvU64 physAddr = screen_info.lfb_base;
+#if defined(VIDEO_CAPABILITY_64BIT_BASE)
+        physAddr |= (NvU64)screen_info.ext_lfb_base << 32;
+#endif
+
+        /* Make sure base address is mapped to GPU BAR */
+        if (NV_IS_CONSOLE_MAPPED(nv, physAddr))
+        {
+            *pPhysicalAddress = physAddr;
+            *pFbWidth = screen_info.lfb_width;
+            *pFbHeight = screen_info.lfb_height;
+            *pFbDepth = screen_info.lfb_depth;
+            *pFbPitch = screen_info.lfb_linelength;
+            *pFbSize = (NvU64)(*pFbHeight) * (NvU64)(*pFbPitch);
+        }
+    }
+#else
+    {
+        nv_linux_state_t *nvl = NV_GET_NVL_FROM_NV_STATE(nv);
+        struct pci_dev *pci_dev = nvl->pci_dev;
+        int i;
+
+        if (pci_dev == NULL)
+            return;
+
+        BUILD_BUG_ON(NV_GPU_BAR_INDEX_IMEM != NV_GPU_BAR_INDEX_FB + 1);
+        for (i = NV_GPU_BAR_INDEX_FB; i <= NV_GPU_BAR_INDEX_IMEM; i++)
+        {
+            int bar_index = nv_bar_index_to_os_bar_index(pci_dev, i);
+            struct resource *gpu_bar_res = &pci_dev->resource[bar_index];
+            struct resource *res = gpu_bar_res->child;
+
+            /*
+             * Console resource will become child resource of pci-dev resource.
+             * Check if child resource start address matches with expected
+             * console start address.
+             */
+            if ((res != NULL) &&
+                NV_IS_CONSOLE_MAPPED(nv, res->start))
+            {
+                NvU32 res_name_len = strlen(res->name);
+
+                /*
+                 * The resource name ends with 'fb' (efifb, vesafb, etc.).
+                 * For simple-framebuffer, the resource name is 'BOOTFB'.
+                 * Confirm if the resources name either ends with 'fb' or 'FB'.
+                 */
+                if ((res_name_len > 2) &&
+                    !strcasecmp((res->name + res_name_len - 2), "fb"))
+                {
+                    *pPhysicalAddress = res->start;
+                    *pFbSize = resource_size(res);
+                    return;
+                }
+            }
+        }
+    }
+#endif
 }
 
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -1617,41 +1617,3 @@ kbifGetEccCounts_GH100
     return count;
 }
 
-NV_STATUS
-kbifClearEccCounts_GH100
-(
-    OBJGPU *pGpu,
-    KernelBif *pKernelBif
-)
-{
-    NV_STATUS status = NV_OK;
-    RMTIMEOUT timeout;
-    NvU32 regVal;
-
-    // Reset XTL-EP status registers
-    GPU_REG_WR32(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_DED_ERROR_STATUS, ~0);
-    GPU_REG_WR32(pGpu, NV_XTL_BASE_ADDRESS + NV_XTL_EP_PRI_RAM_ERROR_INTR_STATUS, ~0);
-
-    // Reset XPL-EP error counters
-    regVal = DRF_DEF(_XPL, _DL_ERR_RESET, _RBUF_UNCORR_ERR_COUNT, _PENDING) |
-             DRF_DEF(_XPL, _DL_ERR_RESET, _SEQ_LUT_UNCORR_ERR_COUNT, _PENDING);
-    GPU_REG_WR32(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_RESET, regVal);
-
-    // Wait for the error counter reset to complete
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, 0);
-    for (;;)
-    {
-        status = gpuCheckTimeout(pGpu, &timeout);
-
-        regVal = GPU_REG_RD32(pGpu, NV_XPL_BASE_ADDRESS + NV_XPL_DL_ERR_RESET);
-
-        if (FLD_TEST_DRF(_XPL, _DL_ERR_RESET, _RBUF_UNCORR_ERR_COUNT, _DONE, regVal) &&
-            FLD_TEST_DRF(_XPL, _DL_ERR_RESET, _SEQ_LUT_UNCORR_ERR_COUNT, _DONE, regVal))
-            break;
-
-        if (status != NV_OK)
-            return status;
-    }
-
-    return NV_OK;
-}

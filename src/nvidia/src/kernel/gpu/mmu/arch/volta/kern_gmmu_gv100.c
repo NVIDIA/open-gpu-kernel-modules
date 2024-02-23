@@ -648,7 +648,7 @@ _kgmmuFaultEntryRmServiceable_GV100
     NvBool                  bClientBufEnabled,
     NvBool                 *bRmServiceable,
     NvBool                 *bFaultValid,
-    FAULT_BUFFER_TYPE       type
+    NvBool                  bPollForValidBit
 )
 {
     NvU32 faultEntry;
@@ -670,7 +670,14 @@ _kgmmuFaultEntryRmServiceable_GV100
     //
     NV_ASSERT(mwValid == mwUvmHandledNonFatal);
 
-    if (type == REPLAYABLE_FAULT_BUFFER)
+    //
+    // The caller specified that all packets between HW GET and HW PUT
+    // need to be copied to the shadow buffer. RM will not optimize
+    // the copy by skipping packets that are not marked valid and
+    // rely on HW triggering a reentry to the top-half to service
+    // the remaining faults.
+    //
+    if (bPollForValidBit == NV_TRUE)
     {
         RMTIMEOUT timeout;
         NV_STATUS status;
@@ -879,7 +886,8 @@ kgmmuCopyMmuFaults_GV100
      KernelGmmu        *pKernelGmmu,
      THREAD_STATE_NODE *pThreadState,
      NvU32             *entriesCopied,
-     FAULT_BUFFER_TYPE  type
+     FAULT_BUFFER_TYPE  type,
+     NvBool             bPollForValidBit
 )
 {
     NV_STATUS rmStatus = NV_OK;
@@ -975,6 +983,12 @@ kgmmuCopyMmuFaults_GV100
 
     nextGetIndex = curGetIndex = pHwFaultBuffer->cachedGetIndex;
 
+    if (bPollForValidBit == NV_TRUE)
+    {
+        kgmmuReadFaultBufferPutPtr_HAL(pGpu, pKernelGmmu, type,
+                                       &hwBufferPut, pThreadState);
+    }
+
     if (type == NON_REPLAYABLE_FAULT_BUFFER)
     {
         // Clear non replayable fault pulse interrupt
@@ -984,8 +998,6 @@ kgmmuCopyMmuFaults_GV100
     {
         // Clear replayable fault pulse interrupt
         kgmmuClearReplayableFaultIntr_HAL(pGpu, pKernelGmmu, pThreadState);
-        kgmmuReadFaultBufferPutPtr_HAL(pGpu, pKernelGmmu, REPLAYABLE_FAULT_BUFFER,
-                                       &hwBufferPut, pThreadState);
     }
 
     //
@@ -996,7 +1008,7 @@ kgmmuCopyMmuFaults_GV100
     {
         _kgmmuFaultEntryRmServiceable_GV100(pGpu, pKernelGmmu, pKernelFifo,
                                             pHwFaultBuffer, nextGetIndex, hwBufferPut, (pClientShadowFaultBuf != NULL),
-                                            &bRmServiceable, &bFaultValid, type);
+                                            &bRmServiceable, &bFaultValid, bPollForValidBit);
 
         if (!bFaultValid)
             break;

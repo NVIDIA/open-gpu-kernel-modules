@@ -839,6 +839,45 @@
 #define __NV_ENABLE_NONBLOCKING_OPEN EnableNonblockingOpen
 #define NV_ENABLE_NONBLOCKING_OPEN NV_REG_STRING(__NV_ENABLE_NONBLOCKING_OPEN)
 
+/*
+ * Option: NVreg_ImexChannelCount
+ *
+ * Description:
+ *
+ * This option allows users to specify the number of IMEX (import/export)
+ * channels. Within an IMEX domain, the channels allow sharing memory
+ * securely in a multi-user environment using the CUDA driver's fabric handle
+ * based APIs.
+ *
+ * An IMEX domain is either an OS instance or a group of securely
+ * connected OS instances using the NVIDIA IMEX daemon. The option must
+ * be set to the same value on each OS instance within the IMEX domain.
+ *
+ * An IMEX channel is a logical entity that is represented by a /dev node.
+ * The IMEX channels are global resources within the IMEX domain. When
+ * exporter and importer CUDA processes have been granted access to the
+ * same IMEX channel, they can securely share memory.
+ *
+ * Note that the NVIDIA driver will not attempt to create the /dev nodes. Thus,
+ * the related CUDA APIs will fail with an insufficient permission error until
+ * the /dev nodes are set up. The creation of these /dev nodes,
+ * /dev/nvidia-caps-imex-channels/channelN, must be handled by the
+ * administrator, where N is the minor number. The major number can be
+ * queried from /proc/devices.
+ *
+ * nvidia-modprobe CLI support is available to set up the /dev nodes.
+ * NVreg_ModifyDeviceFiles, NVreg_DeviceFileGID, NVreg_DeviceFileUID
+ * and NVreg_DeviceFileMode will be honored by nvidia-modprobe.
+ *
+ * Possible values:
+ *  0 - Disable IMEX using CUDA driver's fabric handles.
+ *  N - N IMEX channels will be enabled in the driver to facilitate N
+ *      concurrent users. Default value is 2048 channels, and the current
+ *      maximum value is 20-bit, same as Linux dev_t's minor number limit.
+ */
+#define __NV_IMEX_CHANNEL_COUNT ImexChannelCount
+#define NV_REG_IMEX_CHANNEL_COUNT NV_REG_STRING(__NV_IMEX_CHANNEL_COUNT)
+
 #if defined(NV_DEFINE_REGISTRY_KEY_TABLE)
 
 /*
@@ -887,6 +926,7 @@ NV_DEFINE_REG_STRING_ENTRY(__NV_TEMPORARY_FILE_PATH, NULL);
 NV_DEFINE_REG_STRING_ENTRY(__NV_EXCLUDED_GPUS, NULL);
 NV_DEFINE_REG_ENTRY(__NV_DMA_REMAP_PEER_MMIO, NV_DMA_REMAP_PEER_MMIO_ENABLE);
 NV_DEFINE_REG_STRING_ENTRY(__NV_RM_NVLINK_BW, NULL);
+NV_DEFINE_REG_ENTRY_GLOBAL(__NV_IMEX_CHANNEL_COUNT, 2048);
 
 /*
  *----------------registry database definition----------------------
@@ -933,6 +973,7 @@ nv_parm_t nv_parms[] = {
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_ENABLE_DBG_BREAKPOINT),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_OPENRM_ENABLE_UNSUPPORTED_GPUS),
     NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_DMA_REMAP_PEER_MMIO),
+    NV_DEFINE_PARAMS_TABLE_ENTRY(__NV_IMEX_CHANNEL_COUNT),
     {NULL, NULL}
 };
 

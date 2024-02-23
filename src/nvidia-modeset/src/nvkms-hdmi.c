@@ -2397,17 +2397,19 @@ NvBool nvHdmiFrlQueryConfig(
     NvU8 *pHdmiFrlBpc,
     NVDscInfoEvoRec *pDscInfo)
 {
-    // Try first with 10 BPC
-    if (nvHdmiFrlQueryConfigOneBpc(pDpyEvo,
-                                   pModeTimings,
-                                   pHwTimings,
-                                   b2Heads1Or,
-                                   pValidationParams,
-                                   HDMI_BPC10,
-                                   pConfig,
-                                   pHdmiFrlBpc,
-                                   pDscInfo)) {
-        return TRUE;
+    if (nvDpyIsHdmiDepth30Evo(pDpyEvo)) {
+        // Try first with 10 BPC
+        if (nvHdmiFrlQueryConfigOneBpc(pDpyEvo,
+                                       pModeTimings,
+                                       pHwTimings,
+                                       b2Heads1Or,
+                                       pValidationParams,
+                                       HDMI_BPC10,
+                                       pConfig,
+                                       pHdmiFrlBpc,
+                                       pDscInfo)) {
+            return TRUE;
+        }
     }
 
     // Try again with 8 BPC

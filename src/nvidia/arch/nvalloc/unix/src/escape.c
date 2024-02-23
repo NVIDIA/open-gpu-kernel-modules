@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -167,25 +167,11 @@ static void RmCreateOsDescriptor(NVOS32_PARAMETERS *pApi, API_SECURITY_INFO secI
     }
     else if (rmStatus == NV_ERR_INVALID_ADDRESS)
     {
-        rmStatus = os_lookup_user_io_memory(pDescriptor, pageCount,
-                &pPteArray, &pPageArray);
+        rmStatus = os_lookup_user_io_memory(pDescriptor, pageCount, &pPteArray);
         if (rmStatus == NV_OK)
         {
-            if (pPageArray != NULL)
-            {
-                pApi->data.AllocOsDesc.descriptor = (NvP64)(NvUPtr)pPageArray;
-                pApi->data.AllocOsDesc.descriptorType = NVOS32_DESCRIPTOR_TYPE_OS_PAGE_ARRAY;
-            }
-            else if (pPteArray != NULL)
-            {
-                pApi->data.AllocOsDesc.descriptor = (NvP64)(NvUPtr)pPteArray;
-                pApi->data.AllocOsDesc.descriptorType = NVOS32_DESCRIPTOR_TYPE_OS_IO_MEMORY;
-            }
-            else
-            {
-                NV_ASSERT_FAILED("unknown memory import type");
-                rmStatus = NV_ERR_NOT_SUPPORTED;
-            }
+            pApi->data.AllocOsDesc.descriptor = (NvP64)(NvUPtr)pPteArray;
+            pApi->data.AllocOsDesc.descriptorType = NVOS32_DESCRIPTOR_TYPE_OS_IO_MEMORY;
         }
     }
     if (rmStatus != NV_OK)

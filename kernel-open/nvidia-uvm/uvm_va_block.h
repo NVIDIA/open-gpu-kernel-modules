@@ -706,11 +706,6 @@ void uvm_va_block_context_free(uvm_va_block_context_t *va_block_context);
 // mm is used to initialize the value of va_block_context->mm. NULL is allowed.
 void uvm_va_block_context_init(uvm_va_block_context_t *va_block_context, struct mm_struct *mm);
 
-// Return the preferred NUMA node ID for the block's policy.
-// If the preferred node ID is NUMA_NO_NODE, the current NUMA node ID
-// is returned.
-int uvm_va_block_context_get_node(uvm_va_block_context_t *va_block_context);
-
 // TODO: Bug 1766480: Using only page masks instead of a combination of regions
 //       and page masks could simplify the below APIs and their implementations
 //       at the cost of having to scan the whole mask for small regions.
@@ -1546,7 +1541,11 @@ NV_STATUS uvm_va_block_write_from_cpu(uvm_va_block_t *va_block,
 // The [src, src + size) range has to fit within a single PAGE_SIZE page.
 //
 // LOCKING: The caller must hold the va_block lock
-NV_STATUS uvm_va_block_read_to_cpu(uvm_va_block_t *va_block, uvm_mem_t *dst, NvU64 src, size_t size);
+NV_STATUS uvm_va_block_read_to_cpu(uvm_va_block_t *va_block,
+                                   uvm_va_block_context_t *va_block_context,
+                                   uvm_mem_t *dst,
+                                   NvU64 src,
+                                   size_t size);
 
 // Initialize va block retry tracking
 void uvm_va_block_retry_init(uvm_va_block_retry_t *uvm_va_block_retry);
@@ -2090,11 +2089,14 @@ void uvm_va_block_page_resident_processors(uvm_va_block_t *va_block,
 
 // Count how many processors have a copy of the given page resident in their
 // memory.
-NvU32 uvm_va_block_page_resident_processors_count(uvm_va_block_t *va_block, uvm_page_index_t page_index);
+NvU32 uvm_va_block_page_resident_processors_count(uvm_va_block_t *va_block,
+                                                  uvm_va_block_context_t *va_block_context,
+                                                  uvm_page_index_t page_index);
 
 // Get the processor with a resident copy of a page closest to the given
 // processor.
 uvm_processor_id_t uvm_va_block_page_get_closest_resident(uvm_va_block_t *va_block,
+                                                          uvm_va_block_context_t *va_block_context,
                                                           uvm_page_index_t page_index,
                                                           uvm_processor_id_t processor);
 
@@ -2126,6 +2128,11 @@ void uvm_cpu_chunk_remove_from_block(uvm_va_block_t *va_block, int nid, uvm_page
 uvm_cpu_chunk_t *uvm_cpu_chunk_get_chunk_for_page(uvm_va_block_t *va_block,
                                                   int nid,
                                                   uvm_page_index_t page_index);
+
+// Return the CPU chunk for the given page_index from the first available NUMA
+// node from the va_block. Should only be called for HMM va_blocks.
+// Locking: The va_block lock must be held.
+uvm_cpu_chunk_t *uvm_cpu_chunk_get_any_chunk_for_page(uvm_va_block_t *va_block, uvm_page_index_t page_index);
 
 // Return the struct page * from the chunk corresponding to the given page_index
 // Locking: The va_block lock must be held.
@@ -2241,6 +2248,7 @@ uvm_processor_id_t uvm_va_block_select_residency(uvm_va_block_t *va_block,
 // Return the maximum mapping protection for processor_id that will not require
 // any permision revocation on the rest of processors.
 uvm_prot_t uvm_va_block_page_compute_highest_permission(uvm_va_block_t *va_block,
+                                                        uvm_va_block_context_t *va_block_context,
                                                         uvm_processor_id_t processor_id,
                                                         uvm_page_index_t page_index);
 

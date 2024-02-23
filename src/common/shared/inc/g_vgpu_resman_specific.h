@@ -18,9 +18,9 @@ static inline void _get_chip_id_for_alias_pgpu(NvU32 *dev_id, NvU32 *subdev_id)
         { 0x20B9, 0x157F, 0x20B7, 0x1532 },
         { 0x20FD, 0x17F8, 0x20F5, 0x0 },
         { 0x2324, 0x17A8, 0x2324, 0x17A6 },
+        { 0x2329, 0x198C, 0x2329, 0x198B },
         { 0x2330, 0x16C0, 0x2330, 0x16C1 },
         { 0x2336, 0x16C2, 0x2330, 0x16C1 },
-        { 0x2342, 0x1809, 0x2342, 0x1805 },
     };
 
     for (NvU32 i = 0; i < (sizeof(vgpu_aliases) / sizeof(struct vgpu_alias_details)); ++i) {
@@ -136,6 +136,13 @@ static const struct {
     {0x232410DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 1280}, // NVIDIA H800XM-3-40C
     {0x232410DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 1281}, // NVIDIA H800XM-4-40C
     {0x232410DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 1282}, // NVIDIA H800XM-7-80C
+    {0x232910DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _REQ_DEC_JPG_OFA, _ENABLE), 1397}, // NVIDIA H20-1-12CME
+    {0x232910DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU                                                                     , 1398}, // NVIDIA H20-1-12C
+    {0x232910DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_QUARTER_GPU                                                                 , 1399}, // NVIDIA H20-1-24C
+    {0x232910DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_QUARTER_GPU                                                                      , 1400}, // NVIDIA H20-2-24C
+    {0x232910DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 1401}, // NVIDIA H20-3-48C
+    {0x232910DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 1402}, // NVIDIA H20-4-48C
+    {0x232910DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 1403}, // NVIDIA H20-7-96C
     {0x233010DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _REQ_DEC_JPG_OFA, _ENABLE), 1130}, // NVIDIA H100XM-1-10CME
     {0x233610DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _REQ_DEC_JPG_OFA, _ENABLE), 1130}, // NVIDIA H100XM-1-10CME
     {0x233010DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU                                                                     , 1131}, // NVIDIA H100XM-1-10C
@@ -178,13 +185,13 @@ static const struct {
     {0x233A10DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 1079}, // NVIDIA H800L-3-47C
     {0x233A10DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 1080}, // NVIDIA H800L-4-47C
     {0x233A10DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 1081}, // NVIDIA H800L-7-94C
-    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _REQ_DEC_JPG_OFA, _ENABLE), 1196}, // NVIDIA H100GL-1-12CME
-    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU                                                                     , 1197}, // NVIDIA H100GL-1-12C
-    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_QUARTER_GPU                                                                 , 1198}, // NVIDIA H100GL-1-24C
-    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_QUARTER_GPU                                                                      , 1199}, // NVIDIA H100GL-2-24C
-    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 1200}, // NVIDIA H100GL-3-48C
-    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 1201}, // NVIDIA H100GL-4-48C
-    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 1202}, // NVIDIA H100GL-7-96C
+    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU | DRF_DEF(2080, _CTRL_GPU_PARTITION_FLAG, _REQ_DEC_JPG_OFA, _ENABLE), 1196}, // NVIDIA GH200-1-12CME
+    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_EIGHTHED_GPU                                                                     , 1197}, // NVIDIA GH200-1-12C
+    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_QUARTER_GPU                                                                 , 1198}, // NVIDIA GH200-1-24C
+    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_QUARTER_GPU                                                                      , 1199}, // NVIDIA GH200-2-24C
+    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_MINI_HALF_GPU                                                                    , 1200}, // NVIDIA GH200-3-48C
+    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_ONE_HALF_GPU                                                                         , 1201}, // NVIDIA GH200-4-48C
+    {0x234210DE, NV2080_CTRL_GPU_PARTITION_FLAG_FULL_GPU                                                                             , 1202}, // NVIDIA GH200-7-96C
 
 };
 #endif // GENERATE_vgpuSmcTypeIdMappings

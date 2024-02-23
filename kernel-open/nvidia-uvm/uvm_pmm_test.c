@@ -1082,6 +1082,7 @@ static NV_STATUS test_pmm_reverse_map_many_blocks(uvm_gpu_t *gpu, uvm_va_space_t
 {
     uvm_va_range_t *va_range;
     uvm_va_block_t *va_block = NULL;
+    uvm_va_block_context_t *va_block_context = NULL;
     NvU32 num_blocks;
     NvU32 index = 0;
     uvm_gpu_phys_address_t phys_addr = {0};
@@ -1099,15 +1100,20 @@ static NV_STATUS test_pmm_reverse_map_many_blocks(uvm_gpu_t *gpu, uvm_va_space_t
     }
     TEST_CHECK_RET(va_block);
 
+    va_block_context = uvm_va_block_context_alloc(NULL);
+    TEST_CHECK_RET(va_block_context);
+
     uvm_mutex_lock(&va_block->lock);
 
-    is_resident = uvm_id_equal(uvm_va_block_page_get_closest_resident(va_block, 0, gpu->id), gpu->id);
+    is_resident = uvm_id_equal(uvm_va_block_page_get_closest_resident(va_block, va_block_context, 0, gpu->id), gpu->id);
     if (is_resident) {
         phys_addr = uvm_va_block_gpu_phys_page_address(va_block, 0, gpu);
         phys_addr.address = UVM_ALIGN_DOWN(phys_addr.address, UVM_VA_BLOCK_SIZE);
     }
 
     uvm_mutex_unlock(&va_block->lock);
+
+    uvm_va_block_context_free(va_block_context);
 
     TEST_CHECK_RET(is_resident);
 

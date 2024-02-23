@@ -522,6 +522,9 @@ UVM_PROCESSOR_MASK(uvm_processor_mask_t,              \
                    uvm_processor_id_t,                \
                    uvm_id_from_value)
 
+extern const uvm_processor_mask_t g_uvm_processor_mask_cpu;
+extern const uvm_processor_mask_t g_uvm_processor_mask_empty;
+
 // Like uvm_processor_mask_subset() but ignores the CPU in the subset mask.
 // Returns whether the GPUs in subset are a subset of the GPUs in mask.
 bool uvm_processor_mask_gpu_subset(const uvm_processor_mask_t *subset,
@@ -566,6 +569,10 @@ void uvm_parent_gpus_from_processor_mask(uvm_parent_processor_mask_t *parent_mas
          UVM_ID_IS_VALID(i) && \
          (uvm_id_value(i) < uvm_id_value(uvm_gpu_id_from_parent_gpu_id(id)) + UVM_PARENT_ID_MAX_SUB_PROCESSORS); \
          i = uvm_gpu_id_next(i))
+
+// Helper to iterate over all sub processor indexes.
+#define for_each_sub_processor_index(i) \
+    for (i = 0; i < UVM_PARENT_ID_MAX_SUB_PROCESSORS; i++)
 
 // Helper to iterate over all valid processor ids.
 #define for_each_id(i) for (i = UVM_ID_CPU; UVM_ID_IS_VALID(i); i = uvm_id_next(i))

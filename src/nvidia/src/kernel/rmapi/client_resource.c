@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -812,7 +812,7 @@ cliresCtrlCmdSystemGetFeatures_IMPL
             _IS_EFI_INIT, _TRUE, featuresMask);
     }
 
-    if (pSys->bSysUuidBasedMemExportSupport)
+    if (osImexChannelIsSupported() && (osImexChannelCount() != 0))
     {
         featuresMask = FLD_SET_DRF(0000, _CTRL_SYSTEM_GET_FEATURES,
             _UUID_BASED_MEM_SHARING, _TRUE, featuresMask);
@@ -4827,11 +4827,27 @@ cliresCtrlCmdClientSubscribeToImexChannel_IMPL
     NV0000_CTRL_CLIENT_SUBSCRIBE_TO_IMEX_CHANNEL_PARAMS *pParams
 )
 {
-    //
-    // TODO: Implement channel validation. For now, return success to keep
-    // userspace happy.
-    //
-    pParams->channel = 0;
+    RsClient *pClient = RES_GET_CLIENT(pRmCliRes);
+    RmClient *pRmClient = dynamicCast(pClient, RmClient);
+    NvS32 channel;
+
+    if (!osImexChannelIsSupported() || (osImexChannelCount() == 0))
+        return NV_ERR_NOT_SUPPORTED;
+
+    channel = osImexChannelGet(pParams->devDescriptor);
+    if (channel < 0)
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
+
+    // Same subscription
+    if (pRmClient->imexChannel == channel)
+        return NV_OK;
+
+    // For now, only one channel subscription is allowed per client.
+    if (pRmClient->imexChannel != -1)
+        return NV_ERR_STATE_IN_USE;
+
+    pRmClient->imexChannel = channel;
+    pParams->channel = channel;
 
     return NV_OK;
 }

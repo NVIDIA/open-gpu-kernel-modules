@@ -114,6 +114,16 @@ static inline const struct cpumask *uvm_cpumask_of_node(int node)
         #define UVM_IS_CONFIG_HMM() 0
     #endif
 
+// ATS prefetcher uses hmm_range_fault() to query residency information.
+// hmm_range_fault() needs CONFIG_HMM_MIRROR. To detect racing CPU invalidates
+// of memory regions while hmm_range_fault() is being called, MMU interval
+// notifiers are needed.
+    #if defined(CONFIG_HMM_MIRROR) && defined(NV_MMU_INTERVAL_NOTIFIER)
+        #define UVM_HMM_RANGE_FAULT_SUPPORTED() 1
+    #else
+        #define UVM_HMM_RANGE_FAULT_SUPPORTED() 0
+    #endif
+
 // Various issues prevent us from using mmu_notifiers in older kernels. These
 // include:
 //  - ->release being called under RCU instead of SRCU: fixed by commit

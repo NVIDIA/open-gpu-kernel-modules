@@ -700,8 +700,10 @@ typedef struct UvmGpuInfo_tag
     // local EGM properties
     // NV_TRUE if EGM is enabled
     NvBool   egmEnabled;
+
     // Peer ID to reach local EGM when EGM is enabled
     NvU8     egmPeerId;
+
     // EGM base address to offset in the GMMU PTE entry for EGM mappings
     NvU64    egmBaseAddr;
 } UvmGpuInfo;
@@ -712,9 +714,10 @@ typedef struct UvmGpuFbInfo_tag
     // RM regions that are not registered with PMA either.
     NvU64 maxAllocatableAddress;
 
-    NvU32 heapSize;         // RAM in KB available for user allocations
-    NvU32 reservedHeapSize; // RAM in KB reserved for internal RM allocation
-    NvBool bZeroFb;         // Zero FB mode enabled.
+    NvU32 heapSize;          // RAM in KB available for user allocations
+    NvU32 reservedHeapSize;  // RAM in KB reserved for internal RM allocation
+    NvBool bZeroFb;          // Zero FB mode enabled.
+    NvU64 maxVidmemPageSize; // Largest GPU page size to access vidmem.
 } UvmGpuFbInfo;
 
 typedef struct UvmGpuEccInfo_tag

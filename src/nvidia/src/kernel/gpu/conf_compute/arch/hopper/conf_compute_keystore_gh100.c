@@ -339,7 +339,7 @@ confComputeKeyStoreRetrieveViaKeyId_GH100
                 else
                 {
                     portMemCopy(keyMaterialBundle->decryptBundle.iv, sizeof(keyMaterialBundle->decryptBundle.iv),
-                                (*pKeyStore)[slotNumber].cryptBundle.iv, CC_AES_256_GCM_IV_SIZE_BYTES);
+                                (*pKeyStore)[slotNumber + 1].cryptBundle.iv, CC_AES_256_GCM_IV_SIZE_BYTES);
                 }
                 keyMaterialBundle->bIsWorkLaunch = NV_FALSE;
                 break;
@@ -351,7 +351,7 @@ confComputeKeyStoreRetrieveViaKeyId_GH100
                 else
                 {
                     portMemCopy(keyMaterialBundle->hmacBundle.nonce, sizeof(keyMaterialBundle->hmacBundle.nonce),
-                                (*pKeyStore)[slotNumber].hmacBundle.nonce, CC_HMAC_NONCE_SIZE_BYTES);
+                                (*pKeyStore)[slotNumber + 1].hmacBundle.nonce, CC_HMAC_NONCE_SIZE_BYTES);
                 }
                 keyMaterialBundle->bIsWorkLaunch = NV_TRUE;
                 break;

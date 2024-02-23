@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1997-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1997-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -718,9 +718,9 @@
 
 //
 // Type: DWORD
-// This regkey overrides BL8, 16, and 24 kinds to only be of GENERIC_MEMORY or 
+// This regkey overrides BL8, 16, and 24 kinds to only be of GENERIC_MEMORY or
 // GENERIC_MEMORY_COMPRESSIBLE kinds.
-// 0 - No override 
+// 0 - No override
 // > 0 - Override memkind to GMK
 //       bit 0: override BL8 type
 //       bit 1: override BL16 type
@@ -971,7 +971,7 @@
 // will fail in such a case.
 //
 // TYPE_DEFAULT let RM to choose a P2P type. The priority is:
-//              C2C > NVLINK > mailbox P2P > BAR1P2P 
+//              C2C > NVLINK > mailbox P2P > BAR1P2P
 //
 // TYPE_C2C to use C2C P2P if it supports
 // TYPE_NVLINK to use NVLINK P2P, including INDIRECT_NVLINK_P2P if it supports
@@ -1743,19 +1743,6 @@
 //                          between every consecutive probe retries until success.
 //
 
-#define NV_REG_STR_RM_UUID_BASED_MEMORY_SHARING "RmUuidBasedMemorySharing"
-// Type DWORD
-// Enable UUID-based memory sharing (import/export)
-//
-// 0 - Default
-// 0 - Disabled
-// 1 - Enabled
-//
-// The security framework to support multi-tenancy when using UUID-based memory
-// sharing is not yet implemented. Thus, the users are advised to enable
-// this regkey only in single-tenant or controlled/trusted environments.
-//
-
 // Enable plugin logs in ftrace buffer.
 // 0 - Default
 // 0 - Disabled
@@ -2004,7 +1991,7 @@
 // and could benefit from the lesser reserved GPU memory. Other use cases may
 // exhibit an even more pathological/stressful resource allocation pattern,
 // which can be enabled (up to a limit) with this regkey.
-// 
+//
 // However, NVIDIA does not support setting this registry key, and will require
 // that any bugs observed with it set be reproducible with the default setting
 // as well.
@@ -2029,7 +2016,7 @@
 // WAR for BlueField3: Bug 4040336
 // BF3's PCI MMIO bus address 0x800000000000 is too high for Ampere to address.
 // Due to this, BF3's bus address is now moved to < 4GB. So, the CPU PA is no longer
-// the same as the bus address and this regkey adjusts the CPU PA passed in to the 
+// the same as the bus address and this regkey adjusts the CPU PA passed in to the
 // correct bus address.
 //
 #define NV_REG_STR_RM_DMA_ADJUST_PEER_MMIO_BF3 "RmDmaAdjustPeerMmioBF3"
@@ -2135,10 +2122,10 @@
 // This regkey controls the GPU load failure test.
 // Supported only on DEBUG, DEVELOP, or RELEASE drivers built with the parameter INSTRUMENT_RM=true
 // This is an input/output registry key.
-// NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_START: input - start the text at the specified stage and engine index. 
+// NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_START: input - start the text at the specified stage and engine index.
 //   Typically when the test starts, it is with NV_REG_STR_GPU_LOAD_FAILURE_TEST_STAGE_PREINIT + ENGINEINDEX = 0
 // NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_RUNNING: output - the test is running.
-//   The next stage and engine index are specified 
+//   The next stage and engine index are specified
 //   The test executable just needs to change NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_NEXT to _START for the next step
 // NV_REG_STR_GPU_LOAD_FAILURE_TEST_STATUS_FINISHED: output - there is no morre stages and engines to test
 //
@@ -2213,19 +2200,6 @@
 #define NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_DEFAULT     NV_REG_STR_RM_FORCE_DISABLE_IOMAP_WC_NO
 
 //
-// Type: Dword
-// This regkey toggles whether to release API lock during initialization to
-// allow multiple GPUS to initialize in parallel
-// 0 - API lock will not be released
-// 1 - API lock will be released
-// 2 - API lock release determined by platform (default)
-//
-#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING              "RmRelaxedGspInitLocking"
-#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DISABLE      0x00000000
-#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_ENABLE       0x00000001
-#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT      0x00000002
-
-//
 // Regkey to configure Per VM RunList.
 // Type Dword
 //  BIT 0:0 - Overall PVMRL enable/disable.
@@ -2263,5 +2237,45 @@
 #define NV_REG_STR_RM_PVMRL_FREQUENCY                             21:12
 #define NV_REG_STR_RM_PVMRL_TIMESLICE                             23:16
 #define NV_REG_STR_RM_PVMRL_AVERAGE_FACTOR                        31:24
+
+//
+// TYPE DWORD
+// This regkey will increase the margin after the end of WPR2 when booting GSP-RM.
+//
+// This margin can be used to help GSP firmware boot in the presence of ECC
+// errors which might affect the default GSP firmware image location in the GPU
+// framebuffer. If GPU firmware is able to successfully boot with this registry
+// key enabled, it should scan the margin area to attempt to handle ECC errors in
+// the region, so that the region can be safely used in a subsequent boot.
+//
+// NV_REG_RM_GSP_WPR_END_MARGIN_MB
+// Possible values:
+//  0  - (Default) use the default calculated GSP WPR size
+//  1+ - size of the end margin in megabytes
+//
+// NV_REG_RM_GSP_WPR_END_MARGIN_APPLY
+// Possible values:
+//  _ON_RETRY (0) - (Default) only increase the margin to the requested size
+//                  when retrying GSP firmware boot after a failed boot attempt
+//  _ALWAYS   (1) - increase the margin to the requested size for all GSP
+//                  firmware boot attempts, including the first
+//
+#define NV_REG_STR_RM_GSP_WPR_END_MARGIN                    "RmGspWprEndMargin"
+#define NV_REG_RM_GSP_WPR_END_MARGIN_MB                     30:0
+#define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY                  31:31
+#define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY_ON_RETRY         0x00000000
+#define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY_ALWAYS           0x00000001
+//
+// Type: Dword
+// This regkey toggles whether to release API lock during initialization to
+// allow multiple GPUS to initialize in parallel
+// 0 - API lock will not be released
+// 1 - API lock will be released
+// 2 - API lock release determined by platform (default)
+//
+#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING              "RmRelaxedGspInitLocking"
+#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DISABLE      0x00000000
+#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_ENABLE       0x00000001
+#define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT      0x00000002
 
 #endif // NVRM_REGISTRY_H

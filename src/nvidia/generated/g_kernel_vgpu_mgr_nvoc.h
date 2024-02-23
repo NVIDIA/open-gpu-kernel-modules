@@ -184,7 +184,8 @@ typedef struct
     NvU32                            numCreatedVgpu;                     // Used only on KVM
     vgpu_vf_pci_info                 vfPciInfo[MAX_VF_COUNT_PER_GPU];    // Used only on KVM
     NvU64                            createdVfMask;                      // Used only on KVM
-    NvBool                           miniQuarterEnabled;                 // Used only on ESXi
+    NvBool                           miniQuarterEnabled;                 // Used only on ESXi (vGPU profile)
+    NvBool                           computeMediaEngineEnabled;          // Used only on ESXi (vGPU profile)
 
     /*!
      * SwizzId Map. HW currently uses only 14 swizzIds. Every bit position

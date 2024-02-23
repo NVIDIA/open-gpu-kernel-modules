@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -47,6 +47,7 @@
 #include "core/thread_state.h"
 #include "mem_mgr/mem_export.h"
 #include "resserv/rs_resource.h"
+#include "rmapi/client.h"
 #include "compute/fabric.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mig_mgr/kernel_mig_manager.h"
@@ -88,6 +89,8 @@ typedef struct mem_export_info
 
     NvU64           refCount;
     MEM_EXPORT_UUID uuid;
+
+    NvS32 imexChannel;
 
     struct
     {
@@ -137,8 +140,10 @@ _memoryexportDup
     SysMemExportCacheEntry *pEntry;
     MEM_EXPORT_INFO *pExportInfo;
     MEM_EXPORT_UUID uuid;
-
-    // TODO: Perform checks to make sure the client is allowed to dup.
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pMemoryExport), RmClient);
+    NV_STATUS status = NV_OK;
+    NvBool bImexDaemon;
+    NvS32 imexChannel = pAllocParams->imexChannel;
 
     ct_assert(sizeof(NV_EXPORT_MEM_PACKET) == NV_MEM_EXPORT_PACKET_LEN);
     ct_assert(sizeof(MEM_EXPORT_UUID) == NV_MEM_EXPORT_UUID_LEN);
@@ -164,17 +169,34 @@ _memoryexportDup
 
     portSyncRwLockAcquireWrite(pExportInfo->pLock);
 
-    *pAllocParams = pExportInfo->cachedParams;
+    //
+    // If the client is IMEX daemon, we need to trust the channel
+    // provided by it.
+    //
+    bImexDaemon = rmclientIsCapable(pRmClient, NV_RM_CAP_SYS_FABRIC_IMEX_MGMT);
 
-    pExportInfo->refCount++;
+    if (bImexDaemon && (pExportInfo->imexChannel != imexChannel))
+    {
+        status = NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+    else if (!bImexDaemon && (pExportInfo->imexChannel != pRmClient->imexChannel))
+    {
+        status = NV_ERR_INSUFFICIENT_PERMISSIONS;
+    }
+    else
+    {
+        *pAllocParams = pExportInfo->cachedParams;
+
+        pExportInfo->refCount++;
+
+        pMemoryExport->pExportInfo = pExportInfo;
+    }
 
     portSyncRwLockReleaseWrite(pExportInfo->pLock);
 
     portSyncRwLockReleaseRead(pSys->pSysMemExportModuleLock);
 
-    pMemoryExport->pExportInfo = pExportInfo;
-
-    return NV_OK;
+    return status;
 }
 
 static void
@@ -205,9 +227,10 @@ _memoryexportConstruct
     NV_STATUS status;
     SysMemExportCacheEntry *pEntry;
     SYS_MEM_EXPORT_CACHESubmap *pSubmap = NULL;
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pMemoryExport), RmClient);
 
-    if (!pSys->bSysUuidBasedMemExportSupport)
-        return NV_ERR_NOT_SUPPORTED;
+    if (pRmClient->imexChannel == -1)
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
 
     if (pAllocParams->numMaxHandles == 0)
         return NV_ERR_INVALID_ARGUMENT;
@@ -220,6 +243,8 @@ _memoryexportConstruct
         return NV_ERR_NO_MEMORY;
 
     portMemSet(pExportInfo, 0, size);
+
+    pExportInfo->imexChannel = pRmClient->imexChannel;
 
     _memoryexportGenerateUuid(&pExportInfo->uuid);
 

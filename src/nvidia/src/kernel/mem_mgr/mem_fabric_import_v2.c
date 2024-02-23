@@ -44,6 +44,7 @@
 #include "core/system.h"
 #include "compute/fabric.h"
 #include "rmapi/resource.h"
+#include "rmapi/client.h"
 #include "mem_mgr/mem_fabric_import_v2.h"
 #include "mem_mgr/mem_export.h"
 #include "gpu/mem_mgr/mem_desc.h"
@@ -97,6 +98,8 @@ typedef struct mem_fabric_import_descriptor
     // Set when unimported.
     NvBool bUnimported;
 
+    NvS32 imexChannel;
+
     //
     // The lock protects MEM_FABRIC_IMPORT_DESCRIPTOR.
     //
@@ -145,12 +148,13 @@ _initImportFabricEvent
     NvUuid                      *pExportUuid,
     NvU16                        index,
     NvU64                        id,
+    NvS32                        imexChannel,
     NV00F1_CTRL_FABRIC_EVENT    *pEvent
 )
 {
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
 
-    pEvent->imexChannel = 0;
+    pEvent->imexChannel = imexChannel;
     pEvent->type = NV00F1_CTRL_FABRIC_EVENT_TYPE_MEM_IMPORT;
     pEvent->id = fabricGenerateEventId_IMPL(pFabric);
     pEvent->data.import.exportNodeId = exportNodeId;
@@ -165,12 +169,13 @@ _initUnimportFabricEvent
 (
     NvU64                        importEventId,
     NvU16                        exportNodeId,
+    NvS32                        imexChannel,
     NV00F1_CTRL_FABRIC_EVENT    *pEvent
 )
 {
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
 
-    pEvent->imexChannel = 0;
+    pEvent->imexChannel = imexChannel;
     pEvent->type = NV00F1_CTRL_FABRIC_EVENT_TYPE_MEM_UNIMPORT;
     pEvent->id = fabricGenerateEventId_IMPL(pFabric);
     pEvent->data.unimport.exportNodeId  = exportNodeId;
@@ -251,6 +256,7 @@ _importDescriptorPutAndLockReleaseWrite
         {
             _initUnimportFabricEvent(pFabricImportDesc->importEventId,
                                      pFabricImportDesc->exportNodeId,
+                                     pFabricImportDesc->imexChannel,
                                      &unimportEvent);
             NV_CHECK(LEVEL_WARNING,
                      fabricPostEventsV2(pFabric, &unimportEvent, 1) == NV_OK);
@@ -488,7 +494,8 @@ _importDescriptorAlloc
     NvU8   *pUuid,
     NvU16   exportNodeId,
     NvU16   index,
-    NvU64   id
+    NvU64   id,
+    NvS32   imexChannel
 )
 {
     Fabric *pFabric = SYS_GET_FABRIC(SYS_GET_INSTANCE());
@@ -542,6 +549,7 @@ _importDescriptorAlloc
     pFabricImportDesc->uuid = uuid;
     pFabricImportDesc->id = id;
     pFabricImportDesc->key = key;
+    pFabricImportDesc->imexChannel = imexChannel;
 
     listInit(&pFabricImportDesc->waitingImportersList,
              portMemAllocatorGetGlobalNonPaged());
@@ -585,6 +593,10 @@ _memoryfabricimportv2Construct
     NvU16 exportNodeId = memoryExportGetNodeId(pExportPacket);
     NvU8 *pUuid = pExportPacket->uuid;
     NV00F1_CTRL_FABRIC_EVENT importEvent;
+    RmClient *pRmClient = dynamicCast(RES_GET_CLIENT(pMemoryFabricImportV2), RmClient);
+
+    if (pRmClient->imexChannel == -1)
+        return NV_ERR_INSUFFICIENT_PERMISSIONS;
 
     // If this a single-node UUID?
     if (exportNodeId == NV_FABRIC_INVALID_NODE_ID)
@@ -600,7 +612,8 @@ _memoryfabricimportv2Construct
     pFabricImportDesc = _importDescriptorAlloc(pUuid,
                                                exportNodeId,
                                                pAllocParams->index,
-                                               pAllocParams->id);
+                                               pAllocParams->id,
+                                               pRmClient->imexChannel);
     if (pFabricImportDesc == NULL)
         return NV_ERR_NO_MEMORY;
 
@@ -619,12 +632,22 @@ _memoryfabricimportv2Construct
     if (status != NV_OK)
         goto fail;
 
+    //
+    // Validate that the client is allowed to use pre-existing (cached)
+    // imported memory.
+    //
+    if (pFabricImportDesc->imexChannel != pRmClient->imexChannel)
+    {
+        status = NV_ERR_INSUFFICIENT_PERMISSIONS;
+        goto fail;
+    }
+
     if (pFabricImportDesc->refCount > 1)
         goto unlock;
 
     _initImportFabricEvent(exportNodeId, &pFabricImportDesc->uuid,
                            pAllocParams->index, pAllocParams->id,
-                           &importEvent);
+                           pRmClient->imexChannel, &importEvent);
 
     pFabricImportDesc->importEventId = importEvent.id;
 

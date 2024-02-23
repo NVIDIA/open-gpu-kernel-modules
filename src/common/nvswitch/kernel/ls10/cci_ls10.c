@@ -1638,6 +1638,9 @@ nvswitch_cci_module_access_cmd_ls10
             // Mark as faulty
             device->pCci->isFaulty[osfp] = NV_TRUE;
 
+            NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_CCI_MODULE,
+                           "Module %d access error\n", osfp);
+
             return -NVL_IO_ERROR;
         }
 

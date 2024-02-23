@@ -96,5 +96,6 @@ NV_HEADER_PRESENCE_TESTS = \
   soc/tegra/bpmp.h \
   linux/sync_file.h \
   linux/cc_platform.h \
-  asm/cpufeature.h
+  asm/cpufeature.h \
+  linux/mpi.h
 

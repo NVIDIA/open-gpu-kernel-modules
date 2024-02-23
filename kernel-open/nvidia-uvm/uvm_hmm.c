@@ -1306,7 +1306,7 @@ void uvm_hmm_block_add_eviction_mappings(uvm_va_space_t *va_space,
     uvm_tracker_t local_tracker = UVM_TRACKER_INIT();
     uvm_va_policy_node_t *node;
     uvm_va_block_region_t region;
-    uvm_processor_mask_t map_processors;
+    uvm_processor_mask_t *map_processors = &block_context->hmm.map_processors_eviction;
     uvm_processor_id_t id;
     NV_STATUS tracker_status;
     NV_STATUS status = NV_OK;
@@ -1333,9 +1333,9 @@ void uvm_hmm_block_add_eviction_mappings(uvm_va_space_t *va_space,
 
             // Exclude the processors that have been already mapped due to
             // AccessedBy.
-            uvm_processor_mask_andnot(&map_processors, &va_block->evicted_gpus, &node->policy.accessed_by);
+            uvm_processor_mask_andnot(map_processors, &va_block->evicted_gpus, &node->policy.accessed_by);
 
-            for_each_gpu_id_in_mask(id, &map_processors) {
+            for_each_gpu_id_in_mask(id, map_processors) {
                 uvm_gpu_t *gpu = uvm_va_space_get_gpu(va_space, id);
                 uvm_va_block_gpu_state_t *gpu_state;
 
@@ -1866,7 +1866,7 @@ static void lock_block_cpu_page(uvm_va_block_t *va_block,
                                 unsigned long *dst_pfns,
                                 uvm_page_mask_t *same_devmem_page_mask)
 {
-    uvm_cpu_chunk_t *chunk = uvm_cpu_chunk_get_chunk_for_page(va_block, page_to_nid(src_page), page_index);
+    uvm_cpu_chunk_t *chunk = uvm_cpu_chunk_get_any_chunk_for_page(va_block, page_index);
     uvm_va_block_region_t chunk_region;
     struct page *dst_page;
 
@@ -2708,7 +2708,9 @@ static NV_STATUS dmamap_src_sysmem_pages(uvm_va_block_t *va_block,
                 // Since there is a CPU resident page, there shouldn't be one
                 // anywhere else. TODO: Bug 3660922: Need to handle read
                 // duplication at some point.
-                UVM_ASSERT(!uvm_va_block_page_resident_processors_count(va_block, page_index));
+                UVM_ASSERT(!uvm_va_block_page_resident_processors_count(va_block,
+                                                                        service_context->block_context,
+                                                                        page_index));
 
                 // migrate_vma_setup() was able to isolate and lock the page;
                 // therefore, it is CPU resident and not mapped.
@@ -2725,8 +2727,9 @@ static NV_STATUS dmamap_src_sysmem_pages(uvm_va_block_t *va_block,
             // used for GPU to GPU copies. It can't be an evicted page because
             // migrate_vma_setup() would have found a source page.
             if (uvm_page_mask_test(&va_block->cpu.allocated, page_index)) {
-                UVM_ASSERT(!uvm_va_block_page_resident_processors_count(va_block, page_index));
-
+                UVM_ASSERT(!uvm_va_block_page_resident_processors_count(va_block,
+                                                                        service_context->block_context,
+                                                                        page_index));
                 hmm_va_block_cpu_page_unpopulate(va_block, page_index, NULL);
             }
         }

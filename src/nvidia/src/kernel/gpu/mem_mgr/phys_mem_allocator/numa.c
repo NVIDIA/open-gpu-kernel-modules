@@ -657,6 +657,8 @@ NV_STATUS pmaNumaAllocate
                 break;
         }
 
+        pPma->pStatsUpdateCb(pPma->pStatsUpdateCtx, pPma->pmaStats.numFreeFrames);
+
         if (status == NV_OK)
         {
             allocationOptions->numPagesAllocated = (NvLength)finalAllocatedCount;
@@ -753,6 +755,8 @@ void pmaNumaFreeInternal
             pPma->pMapInfo->pmaMapChangeStateAttrib(pPma->pRegions[regId], (frameNum + j), newStatus, ~ATTRIB_EVICTING);
         }
     }
+
+    pPma->pStatsUpdateCb(pPma->pStatsUpdateCtx, pPma->pmaStats.numFreeFrames);
 }
 
 void pmaNumaSetReclaimSkipThreshold(PMA *pPma, NvU32 skipReclaimPercent)

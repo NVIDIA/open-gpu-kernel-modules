@@ -1408,8 +1408,6 @@ uvm_gpu_address_t uvm_pmm_gpu_peer_copy_address(uvm_pmm_gpu_t *pmm,
     uvm_gpu_peer_t *peer_caps = uvm_gpu_peer_caps(accessing_gpu, gpu);
     uvm_gpu_identity_mapping_t *gpu_peer_mapping;
 
-    UVM_ASSERT(peer_caps->link_type != UVM_GPU_LINK_INVALID);
-
     if (peer_caps->is_indirect_peer ||
         (accessing_gpu->parent->peer_copy_mode == UVM_GPU_PEER_COPY_MODE_PHYSICAL)) {
         // Indirect peers are accessed as sysmem addresses, so they don't need

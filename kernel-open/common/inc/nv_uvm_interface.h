@@ -956,12 +956,20 @@ NV_STATUS nvUvmInterfaceGetNonReplayableFaults(UvmGpuFaultInfo *pFaultInfo,
     - This function should not be called when interrupts are disabled.
 
     Arguments:
-        device[IN]        - Device handle associated with the gpu
+        pFaultInfo[IN]        - information provided by RM for fault handling.
+                                used for obtaining the device handle without locks.
+        bCopyAndFlush[IN]     - Instructs RM to perform the flush in the Copy+Flush mode.
+                                In this mode, RM will perform a copy of the packets from
+                                the HW buffer to UVM's SW buffer as part of performing
+                                the flush. This mode gives UVM the opportunity to observe
+                                the packets contained within the HW buffer at the time
+                                of issuing the call.
 
     Error codes:
       NV_ERR_INVALID_ARGUMENT
 */
-NV_STATUS nvUvmInterfaceFlushReplayableFaultBuffer(uvmGpuDeviceHandle device);
+NV_STATUS nvUvmInterfaceFlushReplayableFaultBuffer(UvmGpuFaultInfo *pFaultInfo,
+                                                   NvBool bCopyAndFlush);
 
 /*******************************************************************************
     nvUvmInterfaceTogglePrefetchFaults
@@ -982,7 +990,8 @@ NV_STATUS nvUvmInterfaceFlushReplayableFaultBuffer(uvmGpuDeviceHandle device);
     Error codes:
       NV_ERR_INVALID_ARGUMENT
 */
-NV_STATUS nvUvmInterfaceTogglePrefetchFaults(UvmGpuFaultInfo *pFaultInfo, NvBool bEnable);
+NV_STATUS nvUvmInterfaceTogglePrefetchFaults(UvmGpuFaultInfo *pFaultInfo,
+                                             NvBool bEnable);
 
 /*******************************************************************************
     nvUvmInterfaceInitAccessCntrInfo

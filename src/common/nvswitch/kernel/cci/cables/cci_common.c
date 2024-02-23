@@ -222,8 +222,7 @@ _cci_module_cable_detect
             }
             default:
             {
-                NVSWITCH_ASSERT(0);
-                break;
+                return -NVL_ERR_NOT_SUPPORTED;
             }
         }
        
@@ -348,8 +347,9 @@ _cci_module_identify
         // Mark as faulty
         device->pCci->isFaulty[moduleId] = NV_TRUE;
 
-        NVSWITCH_PRINT(device, ERROR,
-            "%s: Module HW check failed. Module %d\n", __FUNCTION__, moduleId);
+        NVSWITCH_PRINT_SXID(device, NVSWITCH_ERR_HW_CCI_MODULE,
+                           "Module %d faulty\n", moduleId);
+
         return -NVL_ERR_GENERIC;
     } 
 
@@ -612,6 +612,9 @@ _cci_module_identify_async
     NvlStatus retval;
     PCCI pCci = device->pCci;
     CCI_MODULE_ONBOARD_STATE nextState;
+    CCI_MODULE_STATE *pOnboardState;
+
+    pOnboardState = &device->pCci->moduleState[moduleId];
 
     nvswitch_os_memset(&nextState, 0, sizeof(CCI_MODULE_ONBOARD_STATE));
 
@@ -637,8 +640,9 @@ _cci_module_identify_async
             }
             default:
             {
-                // Not expected
-                NVSWITCH_ASSERT(0);
+                // Invalid cable type
+                pOnboardState->onboardError.bOnboardFailure = NV_TRUE;
+                pOnboardState->onboardError.failedOnboardState = pOnboardState->currOnboardState;
                 nextState.onboardPhase = CCI_ONBOARD_PHASE_CHECK_CONDITION;
                 break;
             }
@@ -646,6 +650,8 @@ _cci_module_identify_async
     }
     else
     {
+        pOnboardState->onboardError.bOnboardFailure = NV_TRUE;
+        pOnboardState->onboardError.failedOnboardState = pOnboardState->currOnboardState;
         nextState.onboardPhase = CCI_ONBOARD_PHASE_CHECK_CONDITION;
     }
 

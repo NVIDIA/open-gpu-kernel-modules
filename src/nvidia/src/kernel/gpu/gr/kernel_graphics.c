@@ -24,6 +24,7 @@
 #define NVOC_KERNEL_GRAPHICS_H_PRIVATE_ACCESS_ALLOWED
 
 
+#include "rmconfig.h"
 
 #include "kernel/gpu/gr/kernel_graphics_manager.h"
 #include "kernel/gpu/gr/kernel_graphics.h"
@@ -752,7 +753,7 @@ cleanup:
 }
 
 NV_STATUS
-kgraphicsLoadStaticInfo_VGPUSTUB
+kgraphicsLoadStaticInfo_VF
 (
     OBJGPU *pGpu,
     KernelGraphics *pKernelGraphics,
@@ -3977,4 +3978,140 @@ subdeviceCtrlCmdKGrGetGfxGpcAndTpcInfo_IMPL
     pParams->numGfxTpc = pKernelGraphicsStaticInfo->floorsweepingMasks.numGfxTpc;
 
     return NV_OK;
+}
+
+#define KGR_DO_WITH_GR(pGpu, pKernelGraphics, body) do                                            \
+    {                                                                                             \
+        (body);                                                                                   \
+    } while (0);
+
+NV_STATUS
+subdeviceCtrlCmdGrInternalSetFecsTraceHwEnable_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_HW_ENABLE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+    NV_STATUS status = NV_OK;
+    KernelGraphics *pKernelGraphics;
+
+    LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+
+    NV_CHECK_OK_OR_RETURN(
+        LEVEL_ERROR,
+        kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice,
+                                     &pParams->grRouteInfo, &pKernelGraphics));
+
+    KGR_DO_WITH_GR(pGpu, pKernelGraphics,
+                   kgraphicsSetFecsTraceHwEnable_HAL(pGpu, pKernelGraphics, pParams->bEnable));
+    pKernelGraphics->bCtxswLoggingEnabled = pParams->bEnable;
+
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGrInternalGetFecsTraceHwEnable_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_GR_GET_FECS_TRACE_HW_ENABLE_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+    NV_STATUS status = NV_OK;
+    KernelGraphics *pKernelGraphics;
+
+    LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+
+    NV_CHECK_OK_OR_RETURN(
+        LEVEL_ERROR,
+        kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &pParams->grRouteInfo,
+                                     &pKernelGraphics));
+
+    KGR_DO_WITH_GR(pGpu, pKernelGraphics,
+                   pParams->bEnable = kgraphicsIsCtxswLoggingEnabled(pGpu, pKernelGraphics));
+
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGrInternalSetFecsTraceRdOffset_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_RD_OFFSET_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+    NV_STATUS status = NV_OK;
+    KernelGraphics *pKernelGraphics;
+
+    LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+
+    NV_CHECK_OK_OR_RETURN(
+        LEVEL_ERROR,
+        kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &pParams->grRouteInfo,
+                                     &pKernelGraphics));
+
+    KGR_DO_WITH_GR(pGpu, pKernelGraphics,
+                   kgraphicsSetFecsTraceRdOffset_HAL(pGpu, pKernelGraphics, pParams->offset));
+
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGrInternalGetFecsTraceRdOffset_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_GR_GET_FECS_TRACE_RD_OFFSET_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+    NV_STATUS status = NV_OK;
+    KernelGraphics *pKernelGraphics;
+
+    LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+
+    NV_CHECK_OK_OR_RETURN(
+        LEVEL_ERROR,
+        kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &pParams->grRouteInfo,
+                                     &pKernelGraphics));
+
+    KGR_DO_WITH_GR(pGpu, pKernelGraphics,
+                   pParams->offset = kgraphicsGetFecsTraceRdOffset_HAL(pGpu, pKernelGraphics));
+
+    return status;
+}
+
+NV_STATUS
+subdeviceCtrlCmdGrInternalSetFecsTraceWrOffset_IMPL
+(
+    Subdevice *pSubdevice,
+    NV2080_CTRL_INTERNAL_GR_SET_FECS_TRACE_WR_OFFSET_PARAMS *pParams
+)
+{
+    OBJGPU *pGpu = GPU_RES_GET_GPU(pSubdevice);
+    KernelGraphicsManager *pKernelGraphicsManager = GPU_GET_KERNEL_GRAPHICS_MANAGER(pGpu);
+    Device *pDevice = GPU_RES_GET_DEVICE(pSubdevice);
+    NV_STATUS status = NV_OK;
+    KernelGraphics *pKernelGraphics;
+
+    LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(pGpu->gpuInstance));
+
+    NV_CHECK_OK_OR_RETURN(
+        LEVEL_ERROR,
+        kgrmgrCtrlRouteKGRWithDevice(pGpu, pKernelGraphicsManager, pDevice, &pParams->grRouteInfo,
+                                     &pKernelGraphics));
+
+    KGR_DO_WITH_GR(pGpu, pKernelGraphics,
+                   kgraphicsSetFecsTraceWrOffset_HAL(pGpu, pKernelGraphics, pParams->offset));
+
+    return status;
 }

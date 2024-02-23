@@ -86,7 +86,7 @@ static NV_STATUS block_migrate_map_mapped_pages(uvm_va_block_t *va_block,
 
     // Only map those pages that are not already mapped on destination
     for_each_va_block_unset_page_in_region_mask(page_index, pages_mapped_on_destination, region) {
-        prot = uvm_va_block_page_compute_highest_permission(va_block, dest_id, page_index);
+        prot = uvm_va_block_page_compute_highest_permission(va_block, va_block_context, dest_id, page_index);
         if (prot == UVM_PROT_NONE)
             continue;
 

@@ -1799,7 +1799,7 @@ NV_STATUS uvm_api_alloc_semaphore_pool(UVM_ALLOC_SEMAPHORE_POOL_PARAMS *params, 
 
     if (uvm_api_range_invalid(params->base, params->length))
         return NV_ERR_INVALID_ADDRESS;
-    if (params->gpuAttributesCount > UVM_MAX_GPUS)
+    if (params->gpuAttributesCount > UVM_MAX_GPUS_V2)
         return NV_ERR_INVALID_ARGUMENT;
 
     if (g_uvm_global.conf_computing_enabled && params->gpuAttributesCount == 0)

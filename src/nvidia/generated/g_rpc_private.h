@@ -385,6 +385,8 @@ RpcRmApiControl                    rpcRmApiControl_v25_15;
 RpcRmApiControl                    rpcRmApiControl_v25_16;
 RpcRmApiControl                    rpcRmApiControl_v25_17;
 RpcRmApiControl                    rpcRmApiControl_v25_18;
+RpcRmApiControl                    rpcRmApiControl_v25_19;
+RpcRmApiControl                    rpcRmApiControl_v25_1A;
 RpcRmApiControl                    rpcRmApiControl_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:CTRL_FABRIC_MEM_STATS
@@ -531,12 +533,17 @@ RpcCtrlBindPmResources             rpcCtrlBindPmResources_STUB;  // TU10X, GA100
 RpcMapMemoryDma                    rpcMapMemoryDma_v03_00;
 RpcMapMemoryDma                    rpcMapMemoryDma_STUB;     // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
+                                               // RPC:CTRL_SET_VGPU_FB_USAGE
+RpcCtrlSetVgpuFbUsage              rpcCtrlSetVgpuFbUsage_v1A_08;
+RpcCtrlSetVgpuFbUsage              rpcCtrlSetVgpuFbUsage_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
+
                                                // RPC:UNMAP_MEMORY_DMA
 RpcUnmapMemoryDma                  rpcUnmapMemoryDma_v03_00;
 RpcUnmapMemoryDma                  rpcUnmapMemoryDma_STUB;   // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
                                                // RPC:SET_GUEST_SYSTEM_INFO_EXT
 RpcSetGuestSystemInfoExt           rpcSetGuestSystemInfoExt_v15_02;
+RpcSetGuestSystemInfoExt           rpcSetGuestSystemInfoExt_v25_1B;
 RpcSetGuestSystemInfoExt           rpcSetGuestSystemInfoExt_STUB;  // TU10X, GA100, GA102, GA103, GA104, GA106, GA107, AD102, AD103, AD104, AD106, AD107, GH10X
 
 
@@ -2107,6 +2114,57 @@ static void rpc_iGrp_ipVersions_Install_v25_18(IGRP_IP_VERSIONS_TABLE_INFO *pInf
 #endif // 
 }
 
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_19(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_1A(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
+// No enabled chips use this variant provider
+static void rpc_iGrp_ipVersions_Install_v25_1B(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
+{
+#if 0
+
+    POBJGPU pGpu = pInfo->pGpu;
+    OBJRPC *pRpc = (OBJRPC *) pInfo->pDynamic;
+    RPC_HAL_IFACES *pRpcHal = &pRpc->_hal;
+
+    // avoid possible unused warnings
+    pGpu += 0;
+    pRpcHal += 0;
+
+
+#endif // 
+}
+
 
 
 
@@ -2313,8 +2371,12 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_16;
     if (IsIPVersionInRange(pRpc, 0x25170000, 0x2517FFFF))
        pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_17;
-    if (IsIPVersionInRange(pRpc, 0x25180000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpc, 0x25180000, 0x2518FFFF))
        pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_18;
+    if (IsIPVersionInRange(pRpc, 0x25190000, 0x2519FFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_19;
+    if (IsIPVersionInRange(pRpc, 0x251A0000, 0xFFFFFFFF))
+       pRpcHal->rpcRmApiControl = rpcRmApiControl_v25_1A;
     if (IsIPVersionInRange(pRpc, 0x1E0C0000, 0xFFFFFFFF))
        pRpcHal->rpcCtrlFabricMemStats = rpcCtrlFabricMemStats_v1E_0C;
     if (IsIPVersionInRange(pRpc, 0x1A0E0000, 0xFFFFFFFF))
@@ -2387,10 +2449,14 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
        pRpcHal->rpcCtrlBindPmResources = rpcCtrlBindPmResources_v1A_0F;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
        pRpcHal->rpcMapMemoryDma = rpcMapMemoryDma_v03_00;
+    if (IsIPVersionInRange(pRpc, 0x1A080000, 0xFFFFFFFF))
+       pRpcHal->rpcCtrlSetVgpuFbUsage = rpcCtrlSetVgpuFbUsage_v1A_08;
     if (IsIPVersionInRange(pRpc, 0x03000000, 0xFFFFFFFF))
        pRpcHal->rpcUnmapMemoryDma = rpcUnmapMemoryDma_v03_00;
-    if (IsIPVersionInRange(pRpc, 0x15020000, 0xFFFFFFFF))
+    if (IsIPVersionInRange(pRpc, 0x15020000, 0x251AFFFF))
        pRpcHal->rpcSetGuestSystemInfoExt = rpcSetGuestSystemInfoExt_v15_02;
+    if (IsIPVersionInRange(pRpc, 0x251B0000, 0xFFFFFFFF))
+       pRpcHal->rpcSetGuestSystemInfoExt = rpcSetGuestSystemInfoExt_v25_1B;
 
     // Verify each 'dynamically set' interface was actually set
 
@@ -2522,6 +2588,7 @@ static NV_STATUS rpc_iGrp_ipVersions_Wrapup(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcUpdateBarPde);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlBindPmResources);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcMapMemoryDma);
+    _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcCtrlSetVgpuFbUsage);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcUnmapMemoryDma);
     _RPC_HAL_VERIFY_INTERFACE(pRpcHal->rpcSetGuestSystemInfoExt);
 
@@ -2806,6 +2873,15 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
     static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_18[] = {
         { 0x25180000, 0xFFFFFFFF, },          // 
     };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_19[] = {
+        { 0x25190000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_1A[] = {
+        { 0x251A0000, 0xFFFFFFFF, },          // 
+    };
+    static const IGRP_IP_VERSION_RANGE  RPC_IGRP_IP_VERSIONS_RANGES_v25_1B[] = {
+        { 0x251B0000, 0xFFFFFFFF, },          // 
+    };
 
 #define _RPC_HAL_IGRP_ENTRY_INIT(v) \
     { RPC_IGRP_IP_VERSIONS_RANGES_##v, NV_ARRAY_ELEMENTS(RPC_IGRP_IP_VERSIONS_RANGES_##v), rpc_iGrp_ipVersions_Install_##v, }
@@ -2902,6 +2978,9 @@ static NV_STATUS rpc_iGrp_ipVersions_getInfo(IGRP_IP_VERSIONS_TABLE_INFO *pInfo)
         _RPC_HAL_IGRP_ENTRY_INIT(v25_16),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v25_17),               // 
         _RPC_HAL_IGRP_ENTRY_INIT(v25_18),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_19),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_1A),               // 
+        _RPC_HAL_IGRP_ENTRY_INIT(v25_1B),               // 
     };
 
 #undef _RPC_HAL_IGRP_ENTRY_INIT
@@ -3054,6 +3133,7 @@ static void rpcHalIfacesSetup_TU102(RPC_HAL_IFACES *pRpcHal)
         rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
         rpcCtrlBindPmResources_STUB,             // rpcCtrlBindPmResources
         rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
+        rpcCtrlSetVgpuFbUsage_STUB,              // rpcCtrlSetVgpuFbUsage
         rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
         rpcSetGuestSystemInfoExt_STUB,           // rpcSetGuestSystemInfoExt
         rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo
@@ -3238,6 +3318,7 @@ static void rpcHalIfacesSetup_GA100(RPC_HAL_IFACES *pRpcHal)
         rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
         rpcCtrlBindPmResources_STUB,             // rpcCtrlBindPmResources
         rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
+        rpcCtrlSetVgpuFbUsage_STUB,              // rpcCtrlSetVgpuFbUsage
         rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
         rpcSetGuestSystemInfoExt_STUB,           // rpcSetGuestSystemInfoExt
         rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo
@@ -3434,6 +3515,7 @@ static void rpcHalIfacesSetup_AD102(RPC_HAL_IFACES *pRpcHal)
         rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
         rpcCtrlBindPmResources_STUB,             // rpcCtrlBindPmResources
         rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
+        rpcCtrlSetVgpuFbUsage_STUB,              // rpcCtrlSetVgpuFbUsage
         rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
         rpcSetGuestSystemInfoExt_STUB,           // rpcSetGuestSystemInfoExt
         rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo
@@ -3618,6 +3700,7 @@ static void rpcHalIfacesSetup_GH100(RPC_HAL_IFACES *pRpcHal)
         rpcUpdateBarPde_STUB,                    // rpcUpdateBarPde
         rpcCtrlBindPmResources_STUB,             // rpcCtrlBindPmResources
         rpcMapMemoryDma_STUB,                    // rpcMapMemoryDma
+        rpcCtrlSetVgpuFbUsage_STUB,              // rpcCtrlSetVgpuFbUsage
         rpcUnmapMemoryDma_STUB,                  // rpcUnmapMemoryDma
         rpcSetGuestSystemInfoExt_STUB,           // rpcSetGuestSystemInfoExt
         rpc_iGrp_ipVersions_getInfo,             // rpc_iGrp_ipVersions_getInfo

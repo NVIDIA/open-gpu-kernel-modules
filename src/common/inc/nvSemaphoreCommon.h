@@ -94,8 +94,9 @@ static inline void NvTimeSemFermiSetMaxSubmitted(
     NvTimeSemFermiSetMaxSubmittedVal(&report->timer, value);
 }
 
-static inline NvU64 NvTimeSemFermiGetPayload(
-    NvReportSemaphore32 *report)
+static inline NvU64 NvTimeSemFermiGetPayloadVal(
+    volatile void *payloadPtr,
+    volatile void *maxSubmittedPtr)
 {
     // The ordering of the two operations below is critical.  Other threads
     // may be submitting GPU work that modifies the semaphore value, or
@@ -129,11 +130,11 @@ static inline NvU64 NvTimeSemFermiGetPayload(
     // adjust the max submitted value back down if a wrap occurs between these
     // two operations, but has no way to bump the max submitted value up if a
     // wrap occurs with the opposite ordering.
-    NvU64 current = report->payload;
+    NvU64 current = *(volatile NvU32*)payloadPtr;
     // Use an atomic exchange to ensure the 64-bit read is atomic even on 32-bit
     // CPUs.
     NvU64 submitted = (NvU64)
-        __NVatomicCompareExchange64((volatile NvS64 *)&report->timer, 0ll, 0ll);
+        __NVatomicCompareExchange64((volatile NvS64 *)maxSubmittedPtr, 0ll, 0ll);
 
     nvAssert(!(current & 0xFFFFFFFF00000000ull));
 
@@ -152,6 +153,12 @@ static inline NvU64 NvTimeSemFermiGetPayload(
     return current;
 }
 
+static inline NvU64 NvTimeSemFermiGetPayload(
+    NvReportSemaphore32 *report)
+{
+    return NvTimeSemFermiGetPayloadVal(&report->payload, &report->timer);
+}
+
 static inline void NvTimeSemFermiSetPayload(
     NvReportSemaphore32 *report,
     const NvU64 payload)
@@ -167,12 +174,19 @@ static inline void NvTimeSemFermiSetPayload(
  * Volta and up.
  */
 
+static inline NvU64 NvTimeSemVoltaGetPayloadVal(
+    volatile void *payloadPtr)
+{
+    nvAssert(payloadPtr);
+    return (NvU64)
+        __NVatomicCompareExchange64((volatile NvS64 *)payloadPtr,
+                                    0, 0);
+}
+
 static inline NvU64 NvTimeSemVoltaGetPayload(
     NvReportSemaphore64 *report)
 {
-    return (NvU64)
-        __NVatomicCompareExchange64((volatile NvS64 *)&report->reportValue,
-                                    0, 0);
+    return NvTimeSemVoltaGetPayloadVal(&report->reportValue);
 }
 
 static inline void NvTimeSemVoltaSetPayload(

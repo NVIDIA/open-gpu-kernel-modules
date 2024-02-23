@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -59,6 +59,7 @@ MODULE_PARM_DESC(uvm_peer_copy, "Choose the addressing mode for peer copying, op
 
 static void remove_gpu(uvm_gpu_t *gpu);
 static void disable_peer_access(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1);
+static NV_STATUS discover_smc_peers(uvm_gpu_t *gpu);
 static NV_STATUS discover_nvlink_peers(uvm_gpu_t *gpu);
 static void destroy_nvlink_peers(uvm_gpu_t *gpu);
 
@@ -240,6 +241,8 @@ static NV_STATUS get_gpu_fb_info(uvm_gpu_t *gpu)
         gpu->mem_info.size = ((NvU64)fb_info.heapSize + fb_info.reservedHeapSize) * 1024;
         gpu->mem_info.max_allocatable_address = fb_info.maxAllocatableAddress;
     }
+
+    gpu->mem_info.max_vidmem_page_size = fb_info.maxVidmemPageSize;
 
     return NV_OK;
 }
@@ -843,11 +846,11 @@ static NV_STATUS init_procfs_dirs(uvm_gpu_t *gpu)
     if (!uvm_procfs_is_enabled())
         return NV_OK;
 
-    format_uuid_to_buffer(uuid_text_buffer, sizeof(uuid_text_buffer), uvm_gpu_uuid(gpu));
+    format_uuid_to_buffer(uuid_text_buffer, sizeof(uuid_text_buffer), &gpu->parent->uuid);
 
     gpu_base_dir_entry = uvm_procfs_get_gpu_base_dir();
 
-    // Create UVM-GPU-${UUID}/${sub_processor_index} directory
+    // Create UVM-GPU-${physical-UUID}/${sub_processor_index} directory
     snprintf(gpu_dir_name, sizeof(gpu_dir_name), "%u", uvm_id_sub_processor_index(gpu->id));
 
     gpu->procfs.dir = NV_CREATE_PROC_DIR(gpu_dir_name, gpu->parent->procfs.dir);
@@ -855,7 +858,7 @@ static NV_STATUS init_procfs_dirs(uvm_gpu_t *gpu)
         return NV_ERR_OPERATING_SYSTEM;
 
     // Create symlink from ${gpu_id} to
-    // gpus/UVM-GPU-${UUID}/${sub_processor_index}
+    // UVM-GPU-${physical-UUID}/${sub_processor_index}
     snprintf(symlink_name, sizeof(symlink_name), "%u", uvm_id_value(gpu->id));
     snprintf(gpu_dir_name,
              sizeof(gpu_dir_name),
@@ -866,6 +869,16 @@ static NV_STATUS init_procfs_dirs(uvm_gpu_t *gpu)
     gpu->procfs.dir_symlink = proc_symlink(symlink_name, gpu_base_dir_entry, gpu_dir_name);
     if (gpu->procfs.dir_symlink == NULL)
         return NV_ERR_OPERATING_SYSTEM;
+
+    if (gpu->parent->smc.enabled) {
+        // Create symlink from UVM-GPU-${GI-UUID} to
+        // UVM-GPU-${physical-UUID}/${sub_processor_index}
+        format_uuid_to_buffer(uuid_text_buffer, sizeof(uuid_text_buffer), &gpu->uuid);
+
+        gpu->procfs.gpu_instance_uuid_symlink = proc_symlink(uuid_text_buffer, gpu_base_dir_entry, gpu_dir_name);
+        if (gpu->procfs.gpu_instance_uuid_symlink == NULL)
+            return NV_ERR_OPERATING_SYSTEM;
+    }
 
     // GPU peer files are debug only
     if (!uvm_procfs_is_debug_enabled())
@@ -882,6 +895,7 @@ static NV_STATUS init_procfs_dirs(uvm_gpu_t *gpu)
 static void deinit_procfs_dirs(uvm_gpu_t *gpu)
 {
     proc_remove(gpu->procfs.dir_peers);
+    proc_remove(gpu->procfs.gpu_instance_uuid_symlink);
     proc_remove(gpu->procfs.dir_symlink);
     proc_remove(gpu->procfs.dir);
 }
@@ -1038,6 +1052,7 @@ static NV_STATUS configure_address_space(uvm_gpu_t *gpu)
     NvU32 num_entries;
     NvU64 va_size;
     NvU64 va_per_entry;
+    uvm_mmu_page_table_alloc_t *tree_alloc;
 
     status = uvm_page_tree_init(gpu,
                                 NULL,
@@ -1059,20 +1074,30 @@ static NV_STATUS configure_address_space(uvm_gpu_t *gpu)
     // Make sure that RM's part of the VA is aligned to the VA covered by a
     // single top level PDE.
     UVM_ASSERT_MSG(gpu->parent->rm_va_base % va_per_entry == 0,
-                   "va_base 0x%llx va_per_entry 0x%llx\n", gpu->parent->rm_va_base, va_per_entry);
+                   "va_base 0x%llx va_per_entry 0x%llx\n",
+                   gpu->parent->rm_va_base,
+                   va_per_entry);
     UVM_ASSERT_MSG(gpu->parent->rm_va_size % va_per_entry == 0,
-                   "va_size 0x%llx va_per_entry 0x%llx\n", gpu->parent->rm_va_size, va_per_entry);
+                   "va_size 0x%llx va_per_entry 0x%llx\n",
+                   gpu->parent->rm_va_size,
+                   va_per_entry);
 
+    UVM_ASSERT(uvm_mmu_page_size_supported(&gpu->address_space_tree, gpu->big_page.internal_size));
+    UVM_ASSERT(uvm_mmu_page_size_supported(&gpu->address_space_tree, gpu->mem_info.max_vidmem_page_size));
+
+    tree_alloc = uvm_page_tree_pdb(&gpu->address_space_tree);
     status = uvm_rm_locked_call(nvUvmInterfaceSetPageDirectory(gpu->rm_address_space,
-            uvm_page_tree_pdb(&gpu->address_space_tree)->addr.address, num_entries,
-            uvm_page_tree_pdb(&gpu->address_space_tree)->addr.aperture == UVM_APERTURE_VID,
-            gpu_get_internal_pasid(gpu)));
+                                                               tree_alloc->addr.address,
+                                                               num_entries,
+                                                               tree_alloc->addr.aperture == UVM_APERTURE_VID,
+                                                               gpu_get_internal_pasid(gpu)));
     if (status != NV_OK) {
         UVM_ERR_PRINT("nvUvmInterfaceSetPageDirectory() failed: %s, GPU %s\n",
                       nvstatusToString(status),
                       uvm_gpu_name(gpu));
         return status;
     }
+
     gpu->rm_address_space_moved_to_page_tree = true;
 
     return NV_OK;
@@ -1212,6 +1237,8 @@ static NV_STATUS init_parent_gpu(uvm_parent_gpu_t *parent_gpu,
 
 static NV_STATUS init_gpu(uvm_gpu_t *gpu, const UvmGpuInfo *gpu_info)
 {
+    char uuid_buffer[UVM_GPU_UUID_TEXT_BUFFER_LENGTH];
+    size_t len;
     NV_STATUS status;
 
     if (gpu->parent->smc.enabled) {
@@ -1228,6 +1255,20 @@ static NV_STATUS init_gpu(uvm_gpu_t *gpu, const UvmGpuInfo *gpu_info)
 
     uvm_uuid_copy(&gpu->uuid, &gpu_info->uuid);
     gpu->smc.swizz_id = gpu_info->smcSwizzId;
+
+    format_uuid_to_buffer(uuid_buffer, sizeof(uuid_buffer), &gpu->parent->uuid);
+    snprintf(gpu->name,
+             sizeof(gpu->name),
+             "ID %u: %s",
+             uvm_id_value(gpu->id),
+             uuid_buffer + 4);
+
+    format_uuid_to_buffer(uuid_buffer, sizeof(uuid_buffer), &gpu->uuid);
+    len = strlen(gpu->name);
+    snprintf(gpu->name + len,
+             sizeof(gpu->name) - len,
+             " UVM-GI-%s",
+             uuid_buffer + 8);
 
     // Initialize the per-GPU procfs dirs as early as possible so that other
     // parts of the driver can add files in them as part of their per-GPU init.
@@ -1338,7 +1379,6 @@ static NV_STATUS add_gpu(const NvProcessorUuid *gpu_uuid,
                          uvm_parent_gpu_t *parent_gpu,
                          uvm_gpu_t **gpu_out)
 {
-    char uuid_buffer[UVM_GPU_UUID_TEXT_BUFFER_LENGTH];
     NV_STATUS status;
     bool alloc_parent = (parent_gpu == NULL);
     uvm_gpu_t *gpu = NULL;
@@ -1363,13 +1403,6 @@ static NV_STATUS add_gpu(const NvProcessorUuid *gpu_uuid,
 
     if (alloc_parent)
         fill_parent_gpu_info(parent_gpu, gpu_info);
-
-    format_uuid_to_buffer(uuid_buffer, sizeof(uuid_buffer), &parent_gpu->uuid);
-    snprintf(gpu->name,
-             sizeof(gpu->name),
-             "ID %u: %s",
-             uvm_id_value(gpu->id),
-             uuid_buffer);
 
     // After this point all error clean up should be handled by remove_gpu()
 
@@ -1432,13 +1465,25 @@ static NV_STATUS add_gpu(const NvProcessorUuid *gpu_uuid,
 
     uvm_spin_unlock_irqrestore(&g_uvm_global.gpu_table_lock);
 
-    if (alloc_parent) {
+    if (gpu->parent->smc.enabled) {
+        status = discover_smc_peers(gpu);
+        if (status != NV_OK) {
+            // Nobody can have retained the GPU yet, since we still hold the
+            // global lock.
+            UVM_ASSERT(uvm_gpu_retained_count(gpu) == 1);
+            atomic64_set(&gpu->retained_count, 0);
+            goto error;
+        }
+    }
+    else if (alloc_parent) {
         status = discover_nvlink_peers(gpu);
         if (status != NV_OK) {
-            UVM_ERR_PRINT("Failed to discover NVLINK peers: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
+            UVM_ERR_PRINT("Failed to discover NVLINK peers: %s, GPU %s\n",
+                          nvstatusToString(status),
+                          uvm_gpu_name(gpu));
 
-            // Nobody can have retained the GPU yet, since we still hold the global
-            // lock.
+            // Nobody can have retained the GPU yet, since we still hold the
+            // global lock.
             UVM_ASSERT(uvm_gpu_retained_count(gpu) == 1);
             atomic64_set(&gpu->retained_count, 0);
             goto error;
@@ -1686,7 +1731,7 @@ static void uvm_parent_gpu_destroy(nv_kref_t *nv_kref)
 
     nv_kthread_q_stop(&parent_gpu->lazy_free_q);
 
-    for (sub_processor_index = 0; sub_processor_index < UVM_PARENT_ID_MAX_SUB_PROCESSORS; sub_processor_index++)
+    for_each_sub_processor_index(sub_processor_index)
         UVM_ASSERT(!parent_gpu->gpus[sub_processor_index]);
 
     uvm_kvfree(parent_gpu);
@@ -1915,32 +1960,25 @@ uvm_parent_gpu_t *uvm_parent_gpu_get_by_uuid(const NvProcessorUuid *gpu_uuid)
     return uvm_parent_gpu_get_by_uuid_locked(gpu_uuid);
 }
 
-static uvm_gpu_t *gpu_get_by_uuid_locked(const NvProcessorUuid *gpu_uuid)
+uvm_gpu_t *uvm_gpu_get_by_uuid(const NvProcessorUuid *gpu_uuid)
 {
     uvm_gpu_id_t gpu_id;
+
+    uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
     for_each_gpu_id(gpu_id) {
         uvm_gpu_t *gpu = uvm_gpu_get(gpu_id);
 
         if (gpu) {
-            if (uvm_uuid_eq(uvm_gpu_uuid(gpu), gpu_uuid)) {
-                UVM_ASSERT(!gpu->parent->smc.enabled);
+            if (uvm_uuid_eq(&gpu->uuid, gpu_uuid))
                 return gpu;
-            }
         }
     }
 
     return NULL;
 }
 
-uvm_gpu_t *uvm_gpu_get_by_uuid(const NvProcessorUuid *gpu_uuid)
-{
-    uvm_assert_mutex_locked(&g_uvm_global.global_lock);
-
-    return gpu_get_by_uuid_locked(gpu_uuid);
-}
-
-uvm_gpu_t *uvm_gpu_get_by_parent_and_swizz_id(uvm_parent_gpu_t *parent_gpu, NvU32 swizz_id)
+static uvm_gpu_t *uvm_gpu_get_by_parent_and_swizz_id(uvm_parent_gpu_t *parent_gpu, NvU32 swizz_id)
 {
     uvm_gpu_t *gpu;
 
@@ -1998,7 +2036,7 @@ static NV_STATUS gpu_retain_by_uuid_locked(const NvProcessorUuid *gpu_uuid,
 
     if (parent_gpu != NULL) {
         // If the UUID has been seen before, and if SMC is enabled, then check
-        // if this specific partition has been seen previously.  The UUID-based
+        // if this specific partition has been seen previously. The UUID-based
         // look-up above may have succeeded for a different partition with the
         // same parent GPU.
         if (gpu_info->smcEnabled) {
@@ -2287,12 +2325,30 @@ static NV_STATUS init_procfs_peer_cap_files(uvm_gpu_t *local, uvm_gpu_t *remote,
         return NV_ERR_OPERATING_SYSTEM;
 
     // Create a symlink from UVM GPU UUID (UVM-GPU-...) to the UVM GPU ID gpuB
-    format_uuid_to_buffer(symlink_name, sizeof(symlink_name), uvm_gpu_uuid(remote));
+    format_uuid_to_buffer(symlink_name, sizeof(symlink_name), &remote->uuid);
     peer_caps->procfs.peer_symlink_file[local_idx] = proc_symlink(symlink_name,
                                                                   local->procfs.dir_peers,
                                                                   gpu_dir_name);
     if (peer_caps->procfs.peer_symlink_file[local_idx] == NULL)
         return NV_ERR_OPERATING_SYSTEM;
+
+    return NV_OK;
+}
+
+static NV_STATUS init_procfs_peer_files(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
+{
+    NV_STATUS status;
+
+    if (!uvm_procfs_is_debug_enabled())
+        return NV_OK;
+
+    status = init_procfs_peer_cap_files(gpu0, gpu1, 0);
+    if (status != NV_OK)
+        return status;
+
+    status = init_procfs_peer_cap_files(gpu1, gpu0, 1);
+    if (status != NV_OK)
+        return status;
 
     return NV_OK;
 }
@@ -2377,16 +2433,41 @@ static NV_STATUS init_peer_access(uvm_gpu_t *gpu0,
         uvm_spin_unlock(&gpu1->peer_info.peer_gpus_lock);
     }
 
-    if (!uvm_procfs_is_debug_enabled())
-        return NV_OK;
+    return init_procfs_peer_files(gpu0, gpu1);
+}
 
-    status = init_procfs_peer_cap_files(gpu0, gpu1, 0);
-    if (status != NV_OK)
-        return status;
+static NV_STATUS discover_smc_peers(uvm_gpu_t *gpu)
+{
+    NvU32 sub_processor_index;
+    uvm_gpu_t *other_gpu;
+    NV_STATUS status;
 
-    status = init_procfs_peer_cap_files(gpu1, gpu0, 1);
-    if (status != NV_OK)
-        return status;
+    UVM_ASSERT(gpu);
+    uvm_assert_mutex_locked(&g_uvm_global.global_lock);
+    UVM_ASSERT(gpu->parent->smc.enabled);
+
+    for_each_sub_processor_index(sub_processor_index) {
+        uvm_gpu_peer_t *peer_caps;
+
+        other_gpu = gpu->parent->gpus[sub_processor_index];
+        if (!other_gpu || other_gpu == gpu)
+            continue;
+
+        peer_caps = uvm_gpu_peer_caps(gpu, other_gpu);
+        if (peer_caps->ref_count == 1)
+            continue;
+
+        UVM_ASSERT(peer_caps->ref_count == 0);
+
+        memset(peer_caps, 0, sizeof(*peer_caps));
+        peer_caps->ref_count = 1;
+
+        status = init_procfs_peer_files(gpu, other_gpu);
+        if (status != NV_OK) {
+            peer_caps->ref_count = 0;
+            return status;
+        }
+    }
 
     return NV_OK;
 }
@@ -2489,9 +2570,7 @@ static NV_STATUS discover_nvlink_peers(uvm_gpu_t *gpu)
 
     UVM_ASSERT(gpu);
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
-
-    if (gpu->parent->smc.enabled)
-        return NV_OK;
+    UVM_ASSERT(!gpu->parent->smc.enabled);
 
     for_each_gpu(other_gpu) {
         UvmGpuP2PCapsParams p2p_caps_params;
@@ -2592,10 +2671,6 @@ static void disable_peer_access(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
     UVM_ASSERT(gpu0);
     UVM_ASSERT(gpu1);
 
-    // P2P is not supported under SMC partitioning
-    UVM_ASSERT(!gpu0->parent->smc.enabled);
-    UVM_ASSERT(!gpu1->parent->smc.enabled);
-
     uvm_assert_mutex_locked(&g_uvm_global.global_lock);
 
     peer_caps = uvm_gpu_peer_caps(gpu0, gpu1);
@@ -2638,9 +2713,9 @@ static void disable_peer_access(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
     // IDs queried from the peer table above which are about to be removed from
     // the global table.
     if (gpu0->parent->access_counters_supported)
-        uvm_gpu_access_counter_buffer_flush(gpu0);
+        uvm_parent_gpu_access_counter_buffer_flush(gpu0->parent);
     if (gpu1->parent->access_counters_supported)
-        uvm_gpu_access_counter_buffer_flush(gpu1);
+        uvm_parent_gpu_access_counter_buffer_flush(gpu1->parent);
 
     memset(peer_caps, 0, sizeof(*peer_caps));
 }
@@ -2668,11 +2743,16 @@ void uvm_gpu_release_pcie_peer_access(uvm_gpu_t *gpu0, uvm_gpu_t *gpu1)
 static uvm_aperture_t uvm_gpu_peer_caps_aperture(uvm_gpu_peer_t *peer_caps, uvm_gpu_t *local_gpu, uvm_gpu_t *remote_gpu)
 {
     size_t peer_index;
-    UVM_ASSERT(peer_caps->link_type != UVM_GPU_LINK_INVALID);
 
     // Indirect peers are accessed as sysmem addresses
     if (peer_caps->is_indirect_peer)
         return UVM_APERTURE_SYS;
+
+    // MIG instances in the same physical GPU have vidmem addresses
+    if (local_gpu->parent == remote_gpu->parent)
+        return UVM_APERTURE_VID;
+
+    UVM_ASSERT(peer_caps->link_type != UVM_GPU_LINK_INVALID);
 
     if (uvm_id_value(local_gpu->id) < uvm_id_value(remote_gpu->id))
         peer_index = 0;
@@ -3285,12 +3365,19 @@ NV_STATUS uvm_api_register_gpu(UVM_REGISTER_GPU_PARAMS *params, struct file *fil
         .user_client   = params->hClient,
         .user_object   = params->hSmcPartRef,
     };
+    NvProcessorUuid gpu_instance_uuid;
+    NV_STATUS status;
 
-    return uvm_va_space_register_gpu(va_space,
-                                     &params->gpu_uuid,
-                                     &user_rm_va_space,
-                                     &params->numaEnabled,
-                                     &params->numaNodeId);
+    status = uvm_va_space_register_gpu(va_space,
+                                       &params->gpu_uuid,
+                                       &user_rm_va_space,
+                                       &params->numaEnabled,
+                                       &params->numaNodeId,
+                                       &gpu_instance_uuid);
+    if (status == NV_OK)
+        uvm_uuid_copy(&params->gpu_uuid, &gpu_instance_uuid);
+
+    return status;
 }
 
 NV_STATUS uvm_api_unregister_gpu(UVM_UNREGISTER_GPU_PARAMS *params, struct file *filp)
@@ -3363,10 +3450,10 @@ NV_STATUS uvm_test_set_prefetch_filtering(UVM_TEST_SET_PREFETCH_FILTERING_PARAMS
 
     switch (params->filtering_mode) {
         case UVM_TEST_PREFETCH_FILTERING_MODE_FILTER_ALL:
-            uvm_gpu_disable_prefetch_faults(gpu->parent);
+            uvm_parent_gpu_disable_prefetch_faults(gpu->parent);
             break;
         case UVM_TEST_PREFETCH_FILTERING_MODE_FILTER_NONE:
-            uvm_gpu_enable_prefetch_faults(gpu->parent);
+            uvm_parent_gpu_enable_prefetch_faults(gpu->parent);
             break;
         default:
             status = NV_ERR_INVALID_ARGUMENT;

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -257,8 +257,10 @@ failed:
 void
 sysDestruct_IMPL(OBJSYS *pSys)
 {
-    _sysDestroyMemExportCache(pSys);
 
+    pSys->setProperty(pSys, PDB_PROP_SYS_DESTRUCTING, NV_TRUE);
+
+    _sysDestroyMemExportCache(pSys);
     _sysDestroyMemExportClient(pSys);
 
     //
@@ -438,12 +440,6 @@ _sysRegistryOverrideResourceServer
                             &data32) == NV_OK)
     {
         pSys->clientListDeferredFreeLimit = data32;
-    }
-
-    if (osReadRegistryDword(pGpu, NV_REG_STR_RM_UUID_BASED_MEMORY_SHARING,
-                            &data32) == NV_OK)
-    {
-        pSys->bSysUuidBasedMemExportSupport = !!data32;
     }
 }
 

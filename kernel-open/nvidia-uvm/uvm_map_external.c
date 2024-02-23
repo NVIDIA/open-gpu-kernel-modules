@@ -633,8 +633,7 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
                                           uvm_gpu_t *mapping_gpu,
                                           const UvmGpuMemoryInfo *mem_info)
 {
-    uvm_gpu_t *owning_gpu = NULL;
-    uvm_gpu_t *gpu;
+    uvm_gpu_t *owning_gpu;
 
     if (mem_info->egm)
         UVM_ASSERT(mem_info->sysmem);
@@ -653,16 +652,7 @@ static NV_STATUS set_ext_gpu_map_location(uvm_ext_gpu_map_t *ext_gpu_map,
     // registered.
     // This also checks for if EGM owning GPU is registered.
 
-    // TODO: Bug 4351121: RM will return the GI UUID, but
-    // uvm_va_space_get_gpu_by_uuid() currently matches on physical GPU UUIDs.
-    // Match on GI UUID until the UVM user level API has been updated to use
-    // the GI UUID.
-    for_each_va_space_gpu(gpu, va_space) {
-        if (uvm_uuid_eq(&gpu->uuid, &mem_info->uuid)) {
-            owning_gpu = gpu;
-            break;
-        }
-    }
+    owning_gpu = uvm_va_space_get_gpu_by_uuid(va_space, &mem_info->uuid);
     if (!owning_gpu)
         return NV_ERR_INVALID_DEVICE;
 
@@ -954,6 +944,12 @@ static NV_STATUS uvm_map_external_allocation_on_gpu(uvm_va_range_t *va_range,
         goto error;
     }
 
+    // Check for the maximum page size for the mapping of vidmem allocations,
+    // the vMMU segment size may limit the range of page sizes.
+    if (!ext_gpu_map->is_sysmem && (ext_gpu_map->gpu == ext_gpu_map->owning_gpu) &&
+        (mapping_page_size > mapping_gpu->mem_info.max_vidmem_page_size))
+        mapping_page_size = mapping_gpu->mem_info.max_vidmem_page_size;
+
     mem_info.pageSize = mapping_page_size;
 
     status = uvm_va_range_map_rm_allocation(va_range, mapping_gpu, &mem_info, map_rm_params, ext_gpu_map, out_tracker);
@@ -989,7 +985,7 @@ static NV_STATUS uvm_map_external_allocation(uvm_va_space_t *va_space, UVM_MAP_E
     if (uvm_api_range_invalid_4k(params->base, params->length))
         return NV_ERR_INVALID_ADDRESS;
 
-    if (params->gpuAttributesCount == 0 || params->gpuAttributesCount > UVM_MAX_GPUS)
+    if (params->gpuAttributesCount == 0 || params->gpuAttributesCount > UVM_MAX_GPUS_V2)
         return NV_ERR_INVALID_ARGUMENT;
 
     uvm_va_space_down_read_rm(va_space);

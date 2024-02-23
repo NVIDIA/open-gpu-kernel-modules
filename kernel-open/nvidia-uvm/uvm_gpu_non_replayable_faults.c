@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2017-2023 NVIDIA Corporation
+    Copyright (c) 2017-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -116,8 +116,8 @@
 
 
 // There is no error handling in this function. The caller is in charge of
-// calling uvm_gpu_fault_buffer_deinit_non_replayable_faults on failure.
-NV_STATUS uvm_gpu_fault_buffer_init_non_replayable_faults(uvm_parent_gpu_t *parent_gpu)
+// calling uvm_parent_gpu_fault_buffer_deinit_non_replayable_faults on failure.
+NV_STATUS uvm_parent_gpu_fault_buffer_init_non_replayable_faults(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &parent_gpu->fault_buffer_info.non_replayable;
 
@@ -145,7 +145,7 @@ NV_STATUS uvm_gpu_fault_buffer_init_non_replayable_faults(uvm_parent_gpu_t *pare
     return NV_OK;
 }
 
-void uvm_gpu_fault_buffer_deinit_non_replayable_faults(uvm_parent_gpu_t *parent_gpu)
+void uvm_parent_gpu_fault_buffer_deinit_non_replayable_faults(uvm_parent_gpu_t *parent_gpu)
 {
     uvm_non_replayable_fault_buffer_info_t *non_replayable_faults = &parent_gpu->fault_buffer_info.non_replayable;
 
@@ -163,7 +163,7 @@ void uvm_gpu_fault_buffer_deinit_non_replayable_faults(uvm_parent_gpu_t *parent_
     non_replayable_faults->fault_cache        = NULL;
 }
 
-bool uvm_gpu_non_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu)
+bool uvm_parent_gpu_non_replayable_faults_pending(uvm_parent_gpu_t *parent_gpu)
 {
     NV_STATUS status;
     NvBool has_pending_faults;

@@ -7727,11 +7727,11 @@ nvswitch_ctrl_get_err_info_lr10
         }
 
         // TODO NVidia TL not supported
-        NVSWITCH_PRINT(device, WARN,
+        NVSWITCH_PRINT(device, NOISY,
             "%s WARNING: Nvidia %s register %s does not exist!\n",
             __FUNCTION__, "NVLTL", "NV_NVLTL_TL_ERRLOG_REG");
 
-        NVSWITCH_PRINT(device, WARN,
+        NVSWITCH_PRINT(device, NOISY,
             "%s WARNING: Nvidia %s register %s does not exist!\n",
             __FUNCTION__, "NVLTL", "NV_NVLTL_TL_INTEN_REG");
 

@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+3* SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -405,7 +405,7 @@ struct KernelGmmu {
     NV_STATUS (*__kgmmuTranslatePdePcfFromSw__)(struct KernelGmmu *, NvU32, NvU32 *);
     NV_STATUS (*__kgmmuTranslatePdePcfFromHw__)(struct KernelGmmu *, NvU32, GMMU_APERTURE, NvU32 *);
     NV_STATUS (*__kgmmuGetFaultRegisterMappings__)(OBJGPU *, struct KernelGmmu *, NvU32, NvP64 *, NvP64 *, NvP64 *, NvP64 *, NvP64 *, NvP64 *, NvU32 *, NvP64 *);
-    NV_STATUS (*__kgmmuIssueReplayableFaultBufferFlush__)(OBJGPU *, struct KernelGmmu *);
+    NV_STATUS (*__kgmmuIssueReplayableFaultBufferFlush__)(OBJGPU *, struct KernelGmmu *, NvBool);
     NV_STATUS (*__kgmmuToggleFaultOnPrefetch__)(OBJGPU *, struct KernelGmmu *, NvBool);
     NV_STATUS (*__kgmmuFaultBufferAllocSharedMemory__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
     void (*__kgmmuFaultBufferFreeSharedMemory__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
@@ -415,7 +415,7 @@ struct KernelGmmu {
     NvBool (*__kgmmuIsFaultEngineBar1__)(struct KernelGmmu *, NvU32);
     NvBool (*__kgmmuIsFaultEngineBar2__)(struct KernelGmmu *, NvU32);
     NvBool (*__kgmmuIsFaultEnginePhysical__)(struct KernelGmmu *, NvU32);
-    NV_STATUS (*__kgmmuCopyMmuFaults__)(OBJGPU *, struct KernelGmmu *, struct THREAD_STATE_NODE *, NvU32 *, FAULT_BUFFER_TYPE);
+    NV_STATUS (*__kgmmuCopyMmuFaults__)(OBJGPU *, struct KernelGmmu *, struct THREAD_STATE_NODE *, NvU32 *, FAULT_BUFFER_TYPE, NvBool);
     NV_STATUS (*__kgmmuParseFaultPacket__)(OBJGPU *, struct KernelGmmu *, NvP64, NvP64);
     void (*__kgmmuFaultBufferClearPackets__)(OBJGPU *, struct KernelGmmu *, struct HW_FAULT_BUFFER *, NvU32, NvU32);
     GMMU_FAULT_PACKET *(*__kgmmuFaultBufferGetFault__)(OBJGPU *, struct KernelGmmu *, struct HW_FAULT_BUFFER *, NvU32);
@@ -456,7 +456,6 @@ struct KernelGmmu {
     NV_STATUS (*__kgmmuServiceMmuFault__)(OBJGPU *, struct KernelGmmu *, NvP64, FIFO_MMU_EXCEPTION_DATA *);
     NV_STATUS (*__kgmmuServiceUnboundInstBlockFault__)(OBJGPU *, struct KernelGmmu *, NvP64, FIFO_MMU_EXCEPTION_DATA *);
     NvU32 (*__kgmmuGetEccCounts__)(OBJGPU *, struct KernelGmmu *);
-    void (*__kgmmuClearEccCounts__)(OBJGPU *, struct KernelGmmu *);
     NV_STATUS (*__kgmmuStatePreLoad__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuStatePostUnload__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuStateInitUnlocked__)(POBJGPU, struct KernelGmmu *);
@@ -534,7 +533,7 @@ struct KernelGmmu_PRIVATE {
     NV_STATUS (*__kgmmuTranslatePdePcfFromSw__)(struct KernelGmmu *, NvU32, NvU32 *);
     NV_STATUS (*__kgmmuTranslatePdePcfFromHw__)(struct KernelGmmu *, NvU32, GMMU_APERTURE, NvU32 *);
     NV_STATUS (*__kgmmuGetFaultRegisterMappings__)(OBJGPU *, struct KernelGmmu *, NvU32, NvP64 *, NvP64 *, NvP64 *, NvP64 *, NvP64 *, NvP64 *, NvU32 *, NvP64 *);
-    NV_STATUS (*__kgmmuIssueReplayableFaultBufferFlush__)(OBJGPU *, struct KernelGmmu *);
+    NV_STATUS (*__kgmmuIssueReplayableFaultBufferFlush__)(OBJGPU *, struct KernelGmmu *, NvBool);
     NV_STATUS (*__kgmmuToggleFaultOnPrefetch__)(OBJGPU *, struct KernelGmmu *, NvBool);
     NV_STATUS (*__kgmmuFaultBufferAllocSharedMemory__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
     void (*__kgmmuFaultBufferFreeSharedMemory__)(OBJGPU *, struct KernelGmmu *, FAULT_BUFFER_TYPE);
@@ -544,7 +543,7 @@ struct KernelGmmu_PRIVATE {
     NvBool (*__kgmmuIsFaultEngineBar1__)(struct KernelGmmu *, NvU32);
     NvBool (*__kgmmuIsFaultEngineBar2__)(struct KernelGmmu *, NvU32);
     NvBool (*__kgmmuIsFaultEnginePhysical__)(struct KernelGmmu *, NvU32);
-    NV_STATUS (*__kgmmuCopyMmuFaults__)(OBJGPU *, struct KernelGmmu *, struct THREAD_STATE_NODE *, NvU32 *, FAULT_BUFFER_TYPE);
+    NV_STATUS (*__kgmmuCopyMmuFaults__)(OBJGPU *, struct KernelGmmu *, struct THREAD_STATE_NODE *, NvU32 *, FAULT_BUFFER_TYPE, NvBool);
     NV_STATUS (*__kgmmuParseFaultPacket__)(OBJGPU *, struct KernelGmmu *, NvP64, NvP64);
     void (*__kgmmuFaultBufferClearPackets__)(OBJGPU *, struct KernelGmmu *, struct HW_FAULT_BUFFER *, NvU32, NvU32);
     GMMU_FAULT_PACKET *(*__kgmmuFaultBufferGetFault__)(OBJGPU *, struct KernelGmmu *, struct HW_FAULT_BUFFER *, NvU32);
@@ -585,7 +584,6 @@ struct KernelGmmu_PRIVATE {
     NV_STATUS (*__kgmmuServiceMmuFault__)(OBJGPU *, struct KernelGmmu *, NvP64, FIFO_MMU_EXCEPTION_DATA *);
     NV_STATUS (*__kgmmuServiceUnboundInstBlockFault__)(OBJGPU *, struct KernelGmmu *, NvP64, FIFO_MMU_EXCEPTION_DATA *);
     NvU32 (*__kgmmuGetEccCounts__)(OBJGPU *, struct KernelGmmu *);
-    void (*__kgmmuClearEccCounts__)(OBJGPU *, struct KernelGmmu *);
     NV_STATUS (*__kgmmuStatePreLoad__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuStatePostUnload__)(POBJGPU, struct KernelGmmu *, NvU32);
     NV_STATUS (*__kgmmuStateInitUnlocked__)(POBJGPU, struct KernelGmmu *);
@@ -712,8 +710,8 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu**, Dynamic*, NvU32);
 #define kgmmuTranslatePdePcfFromHw_HAL(pKernelGmmu, arg0, arg1, arg2) kgmmuTranslatePdePcfFromHw_DISPATCH(pKernelGmmu, arg0, arg1, arg2)
 #define kgmmuGetFaultRegisterMappings(pGpu, pKernelGmmu, index, pFaultBufferGet, pFaultBufferPut, pFaultBufferInfo, faultIntr, faultIntrSet, faultIntrClear, faultMask, pPrefetchCtrl) kgmmuGetFaultRegisterMappings_DISPATCH(pGpu, pKernelGmmu, index, pFaultBufferGet, pFaultBufferPut, pFaultBufferInfo, faultIntr, faultIntrSet, faultIntrClear, faultMask, pPrefetchCtrl)
 #define kgmmuGetFaultRegisterMappings_HAL(pGpu, pKernelGmmu, index, pFaultBufferGet, pFaultBufferPut, pFaultBufferInfo, faultIntr, faultIntrSet, faultIntrClear, faultMask, pPrefetchCtrl) kgmmuGetFaultRegisterMappings_DISPATCH(pGpu, pKernelGmmu, index, pFaultBufferGet, pFaultBufferPut, pFaultBufferInfo, faultIntr, faultIntrSet, faultIntrClear, faultMask, pPrefetchCtrl)
-#define kgmmuIssueReplayableFaultBufferFlush(pGpu, pKernelGmmu) kgmmuIssueReplayableFaultBufferFlush_DISPATCH(pGpu, pKernelGmmu)
-#define kgmmuIssueReplayableFaultBufferFlush_HAL(pGpu, pKernelGmmu) kgmmuIssueReplayableFaultBufferFlush_DISPATCH(pGpu, pKernelGmmu)
+#define kgmmuIssueReplayableFaultBufferFlush(pGpu, pKernelGmmu, bCopyAndFlush) kgmmuIssueReplayableFaultBufferFlush_DISPATCH(pGpu, pKernelGmmu, bCopyAndFlush)
+#define kgmmuIssueReplayableFaultBufferFlush_HAL(pGpu, pKernelGmmu, bCopyAndFlush) kgmmuIssueReplayableFaultBufferFlush_DISPATCH(pGpu, pKernelGmmu, bCopyAndFlush)
 #define kgmmuToggleFaultOnPrefetch(pGpu, pKernelGmmu, bEnable) kgmmuToggleFaultOnPrefetch_DISPATCH(pGpu, pKernelGmmu, bEnable)
 #define kgmmuToggleFaultOnPrefetch_HAL(pGpu, pKernelGmmu, bEnable) kgmmuToggleFaultOnPrefetch_DISPATCH(pGpu, pKernelGmmu, bEnable)
 #define kgmmuFaultBufferAllocSharedMemory(pGpu, pKernelGmmu, arg0) kgmmuFaultBufferAllocSharedMemory_DISPATCH(pGpu, pKernelGmmu, arg0)
@@ -732,8 +730,8 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu**, Dynamic*, NvU32);
 #define kgmmuIsFaultEngineBar2_HAL(pKernelGmmu, arg0) kgmmuIsFaultEngineBar2_DISPATCH(pKernelGmmu, arg0)
 #define kgmmuIsFaultEnginePhysical(pKernelGmmu, arg0) kgmmuIsFaultEnginePhysical_DISPATCH(pKernelGmmu, arg0)
 #define kgmmuIsFaultEnginePhysical_HAL(pKernelGmmu, arg0) kgmmuIsFaultEnginePhysical_DISPATCH(pKernelGmmu, arg0)
-#define kgmmuCopyMmuFaults(pGpu, pKernelGmmu, pThreadState, entriesCopied, type) kgmmuCopyMmuFaults_DISPATCH(pGpu, pKernelGmmu, pThreadState, entriesCopied, type)
-#define kgmmuCopyMmuFaults_HAL(pGpu, pKernelGmmu, pThreadState, entriesCopied, type) kgmmuCopyMmuFaults_DISPATCH(pGpu, pKernelGmmu, pThreadState, entriesCopied, type)
+#define kgmmuCopyMmuFaults(pGpu, pKernelGmmu, pThreadState, entriesCopied, type, bPollForValidBit) kgmmuCopyMmuFaults_DISPATCH(pGpu, pKernelGmmu, pThreadState, entriesCopied, type, bPollForValidBit)
+#define kgmmuCopyMmuFaults_HAL(pGpu, pKernelGmmu, pThreadState, entriesCopied, type, bPollForValidBit) kgmmuCopyMmuFaults_DISPATCH(pGpu, pKernelGmmu, pThreadState, entriesCopied, type, bPollForValidBit)
 #define kgmmuParseFaultPacket(pGpu, pKernelGmmu, pFaultPacket, pParsedFaultEntry) kgmmuParseFaultPacket_DISPATCH(pGpu, pKernelGmmu, pFaultPacket, pParsedFaultEntry)
 #define kgmmuParseFaultPacket_HAL(pGpu, pKernelGmmu, pFaultPacket, pParsedFaultEntry) kgmmuParseFaultPacket_DISPATCH(pGpu, pKernelGmmu, pFaultPacket, pParsedFaultEntry)
 #define kgmmuFaultBufferClearPackets(pGpu, pKernelGmmu, pFaultBuffer, beginIdx, numFaultPackets) kgmmuFaultBufferClearPackets_DISPATCH(pGpu, pKernelGmmu, pFaultBuffer, beginIdx, numFaultPackets)
@@ -814,8 +812,6 @@ NV_STATUS __nvoc_objCreate_KernelGmmu(KernelGmmu**, Dynamic*, NvU32);
 #define kgmmuServiceUnboundInstBlockFault_HAL(pGpu, pKernelGmmu, arg0, arg1) kgmmuServiceUnboundInstBlockFault_DISPATCH(pGpu, pKernelGmmu, arg0, arg1)
 #define kgmmuGetEccCounts(pGpu, pKernelGmmu) kgmmuGetEccCounts_DISPATCH(pGpu, pKernelGmmu)
 #define kgmmuGetEccCounts_HAL(pGpu, pKernelGmmu) kgmmuGetEccCounts_DISPATCH(pGpu, pKernelGmmu)
-#define kgmmuClearEccCounts(pGpu, pKernelGmmu) kgmmuClearEccCounts_DISPATCH(pGpu, pKernelGmmu)
-#define kgmmuClearEccCounts_HAL(pGpu, pKernelGmmu) kgmmuClearEccCounts_DISPATCH(pGpu, pKernelGmmu)
 #define kgmmuStatePreLoad(pGpu, pEngstate, arg0) kgmmuStatePreLoad_DISPATCH(pGpu, pEngstate, arg0)
 #define kgmmuStatePostUnload(pGpu, pEngstate, arg0) kgmmuStatePostUnload_DISPATCH(pGpu, pEngstate, arg0)
 #define kgmmuStateInitUnlocked(pGpu, pEngstate) kgmmuStateInitUnlocked_DISPATCH(pGpu, pEngstate)
@@ -1672,14 +1668,14 @@ static inline NV_STATUS kgmmuGetFaultRegisterMappings_DISPATCH(OBJGPU *pGpu, str
     return pKernelGmmu->__kgmmuGetFaultRegisterMappings__(pGpu, pKernelGmmu, index, pFaultBufferGet, pFaultBufferPut, pFaultBufferInfo, faultIntr, faultIntrSet, faultIntrClear, faultMask, pPrefetchCtrl);
 }
 
-NV_STATUS kgmmuIssueReplayableFaultBufferFlush_GH100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
+NV_STATUS kgmmuIssueReplayableFaultBufferFlush_GH100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvBool bCopyAndFlush);
 
-static inline NV_STATUS kgmmuIssueReplayableFaultBufferFlush_46f6a7(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
+static inline NV_STATUS kgmmuIssueReplayableFaultBufferFlush_46f6a7(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvBool bCopyAndFlush) {
     return NV_ERR_NOT_SUPPORTED;
 }
 
-static inline NV_STATUS kgmmuIssueReplayableFaultBufferFlush_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
-    return pKernelGmmu->__kgmmuIssueReplayableFaultBufferFlush__(pGpu, pKernelGmmu);
+static inline NV_STATUS kgmmuIssueReplayableFaultBufferFlush_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvBool bCopyAndFlush) {
+    return pKernelGmmu->__kgmmuIssueReplayableFaultBufferFlush__(pGpu, pKernelGmmu, bCopyAndFlush);
 }
 
 NV_STATUS kgmmuToggleFaultOnPrefetch_GH100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvBool bEnable);
@@ -1764,15 +1760,15 @@ static inline NvBool kgmmuIsFaultEnginePhysical_DISPATCH(struct KernelGmmu *pKer
     return pKernelGmmu->__kgmmuIsFaultEnginePhysical__(pKernelGmmu, arg0);
 }
 
-static inline NV_STATUS kgmmuCopyMmuFaults_92bfc3(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *pThreadState, NvU32 *entriesCopied, FAULT_BUFFER_TYPE type) {
+static inline NV_STATUS kgmmuCopyMmuFaults_92bfc3(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *pThreadState, NvU32 *entriesCopied, FAULT_BUFFER_TYPE type, NvBool bPollForValidBit) {
     NV_ASSERT_PRECOMP(0);
     return NV_ERR_NOT_SUPPORTED;
 }
 
-NV_STATUS kgmmuCopyMmuFaults_GV100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *pThreadState, NvU32 *entriesCopied, FAULT_BUFFER_TYPE type);
+NV_STATUS kgmmuCopyMmuFaults_GV100(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *pThreadState, NvU32 *entriesCopied, FAULT_BUFFER_TYPE type, NvBool bPollForValidBit);
 
-static inline NV_STATUS kgmmuCopyMmuFaults_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *pThreadState, NvU32 *entriesCopied, FAULT_BUFFER_TYPE type) {
-    return pKernelGmmu->__kgmmuCopyMmuFaults__(pGpu, pKernelGmmu, pThreadState, entriesCopied, type);
+static inline NV_STATUS kgmmuCopyMmuFaults_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, struct THREAD_STATE_NODE *pThreadState, NvU32 *entriesCopied, FAULT_BUFFER_TYPE type, NvBool bPollForValidBit) {
+    return pKernelGmmu->__kgmmuCopyMmuFaults__(pGpu, pKernelGmmu, pThreadState, entriesCopied, type, bPollForValidBit);
 }
 
 static inline NV_STATUS kgmmuParseFaultPacket_92bfc3(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu, NvP64 pFaultPacket, NvP64 pParsedFaultEntry) {
@@ -2235,16 +2231,6 @@ static inline NvU32 kgmmuGetEccCounts_4a4dee(OBJGPU *pGpu, struct KernelGmmu *pK
 
 static inline NvU32 kgmmuGetEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
     return pKernelGmmu->__kgmmuGetEccCounts__(pGpu, pKernelGmmu);
-}
-
-void kgmmuClearEccCounts_TU102(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu);
-
-static inline void kgmmuClearEccCounts_b3696a(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
-    return;
-}
-
-static inline void kgmmuClearEccCounts_DISPATCH(OBJGPU *pGpu, struct KernelGmmu *pKernelGmmu) {
-    pKernelGmmu->__kgmmuClearEccCounts__(pGpu, pKernelGmmu);
 }
 
 static inline NV_STATUS kgmmuStatePreLoad_DISPATCH(POBJGPU pGpu, struct KernelGmmu *pEngstate, NvU32 arg0) {

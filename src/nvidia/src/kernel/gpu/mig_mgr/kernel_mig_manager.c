@@ -35,6 +35,7 @@
 #include "kernel/gpu/ce/kernel_ce.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
 #include "kernel/gpu/mmu/kern_gmmu.h"
+#include "kernel/gpu/bus/kern_bus.h"
 #include "kernel/gpu/mem_mgr/heap.h"
 #include "kernel/gpu/nvlink/kernel_nvlink.h"
 #include "kernel/gpu/gpu_engine_type.h"
@@ -3568,10 +3569,11 @@ kmigmgrSetPartitioningMode_IMPL
         //
         KernelMemorySystem *pKernelMemorySystem = GPU_GET_KERNEL_MEMORY_SYSTEM(pGpu);
         NV_ASSERT_OK_OR_RETURN(kmemsysPopulateMIGGPUInstanceMemConfig_HAL(pGpu, pKernelMemorySystem));
+
+        NV_ASSERT_OK(gpuDisableAccounting(pGpu, NV_TRUE));
     }
 
-    // Trigger RUSD data update when MIG state changes
-    gpushareddataWriteFinish(pGpu);
+    kbusUpdateRusdStatistics(pGpu);
 
     if (pKccu)
     {

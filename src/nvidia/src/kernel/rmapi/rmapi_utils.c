@@ -157,7 +157,8 @@ rmapiutilGetControlInfo
 (
     NvU32 cmd,
     NvU32 *pFlags,
-    NvU32 *pAccessRight
+    NvU32 *pAccessRight,
+    NvU32 *pParamsSize
 )
 {
     RS_RESOURCE_DESC *pResourceDesc = RsResInfoByExternalClassId(DRF_VAL(XXXX, _CTRL_CMD, _CLASS, cmd));
@@ -177,6 +178,9 @@ rmapiutilGetControlInfo
 
                 if (pAccessRight != NULL)
                     *pAccessRight = pMethodDef->accessRight;
+
+                if (pParamsSize != NULL)
+                    *pParamsSize = pMethodDef->paramSize;
 
                 return NV_OK;
             }

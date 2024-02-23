@@ -5550,6 +5550,29 @@ _nvswitch_emit_link_errors_nvldl_fatal_link_ls10
 }
 
 static void
+_nvswitch_dump_minion_ali_debug_registers_ls10
+(
+    nvswitch_device *device,
+    NvU32 link
+)
+{
+    NVSWITCH_MINION_ALI_DEBUG_REGISTERS params;
+    nvlink_link *nvlink = nvswitch_get_link(device, link);
+
+    if ((nvlink != NULL) &&
+        (nvswitch_minion_get_ali_debug_registers_ls10(device, nvlink, &params) == NVL_SUCCESS))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+            "%s: Minion error on link #%d!:\n"
+                "Minion DLSTAT MN00 = 0x%x\n"
+                "Minion DLSTAT UC01 = 0x%x\n"
+                "Minion DLSTAT UC01 = 0x%x\n",
+            __FUNCTION__, link,
+            params.dlstatMn00, params.dlstatUc01, params.dlstatLinkIntr);
+    }
+}
+
+static void
 _nvswitch_emit_link_errors_minion_fatal_ls10
 (
     nvswitch_device *device,
@@ -5611,6 +5634,8 @@ _nvswitch_emit_link_errors_minion_fatal_ls10
     enabledLinks &= ~bit;
     regData = DRF_NUM(_MINION, _MINION_INTR_STALL_EN, _LINK, enabledLinks);
     NVSWITCH_MINION_LINK_WR32_LS10(device, link, _MINION, _MINION_INTR_STALL_EN, regData);
+
+    _nvswitch_dump_minion_ali_debug_registers_ls10(device, link);
 }
 
 static void
@@ -5647,8 +5672,8 @@ _nvswitch_emit_link_errors_minion_nonfatal_ls10
     switch(DRF_VAL(_MINION, _NVLINK_LINK_INTR, _CODE, regData))
     {
         case NV_MINION_NVLINK_LINK_INTR_CODE_DLREQ:
-                NVSWITCH_REPORT_NONFATAL(_HW_MINION_NONFATAL, "Minion Link DLREQ interrupt");
-                break;
+            NVSWITCH_REPORT_NONFATAL(_HW_MINION_NONFATAL, "Minion Link DLREQ interrupt");
+            break;
         case NV_MINION_NVLINK_LINK_INTR_CODE_PMDISABLED:
             NVSWITCH_REPORT_NONFATAL(_HW_MINION_NONFATAL, "Minion Link PMDISABLED interrupt");
             break;
@@ -5660,6 +5685,7 @@ _nvswitch_emit_link_errors_minion_nonfatal_ls10
             break;
     }
 
+    _nvswitch_dump_minion_ali_debug_registers_ls10(device, link);
 }
 
 static void

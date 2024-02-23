@@ -163,6 +163,10 @@ struct uvm_va_space_struct
     // faults.
     uvm_processor_mask_t faultable_processors;
 
+    // Mask of processors registered with the va space that don't support
+    // faulting.
+    uvm_processor_mask_t non_faultable_processors;
+
     // This is a count of non fault capable processors with a GPU VA space
     // registered.
     NvU32 num_non_faultable_gpu_va_spaces;
@@ -261,8 +265,8 @@ struct uvm_va_space_struct
     // Mask of processors that are participating in system-wide atomics
     uvm_processor_mask_t system_wide_atomics_enabled_processors;
 
-    // Mask of GPUs where access counters are enabled on this VA space
-    uvm_processor_mask_t access_counters_enabled_processors;
+    // Mask of physical GPUs where access counters are enabled on this VA space
+    uvm_parent_processor_mask_t access_counters_enabled_processors;
 
     // Array with information regarding CPU/GPU NUMA affinity. There is one
     // entry per CPU NUMA node. Entries in the array are populated sequentially
@@ -308,7 +312,8 @@ struct uvm_va_space_struct
 
         // Lists of counters listening for events on this VA space
         struct list_head counters[UVM_TOTAL_COUNTERS];
-        struct list_head queues[UvmEventNumTypesAll];
+        struct list_head queues_v1[UvmEventNumTypesAll];
+        struct list_head queues_v2[UvmEventNumTypesAll];
 
         // Node for this va_space in global subscribers list
         struct list_head node;
@@ -399,7 +404,7 @@ static void uvm_va_space_processor_uuid(uvm_va_space_t *va_space, NvProcessorUui
     else {
         uvm_gpu_t *gpu = uvm_va_space_get_gpu(va_space, id);
         UVM_ASSERT(gpu);
-        memcpy(uuid, uvm_gpu_uuid(gpu), sizeof(*uuid));
+        memcpy(uuid, &gpu->uuid, sizeof(*uuid));
     }
 }
 
@@ -472,9 +477,9 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space);
         uvm_mutex_unlock(&(__va_space)->serialize_writers_lock);        \
     } while (0)
 
-// Get a registered gpu by uuid. This restricts the search for GPUs, to those that
-// have been registered with a va_space. This returns NULL if the GPU is not present, or not
-// registered with the va_space.
+// Get a registered gpu by uuid. This restricts the search for GPUs, to those
+// that have been registered with a va_space. This returns NULL if the GPU is
+// not present, or not registered with the va_space.
 //
 // LOCKING: The VA space lock must be held.
 uvm_gpu_t *uvm_va_space_get_gpu_by_uuid(uvm_va_space_t *va_space, const NvProcessorUuid *gpu_uuid);
@@ -501,13 +506,19 @@ bool uvm_va_space_can_read_duplicate(uvm_va_space_t *va_space, uvm_gpu_t *changi
 // Register a gpu in the va space
 // Note that each gpu can be only registered once in a va space
 //
+// The input gpu_uuid is for the phyisical GPU. The user_rm_va_space argument
+// identifies the SMC partition if provided and SMC is enabled.
+//
 // This call returns whether the GPU memory is a NUMA node in the kernel and the
 // corresponding node id.
+// It also returns the GI UUID (if gpu_uuid is a SMC partition) or a copy of
+// gpu_uuid if the GPU is not SMC capable or SMC is not enabled.
 NV_STATUS uvm_va_space_register_gpu(uvm_va_space_t *va_space,
                                     const NvProcessorUuid *gpu_uuid,
                                     const uvm_rm_user_object_t *user_rm_va_space,
                                     NvBool *numa_enabled,
-                                    NvS32 *numa_node_id);
+                                    NvS32 *numa_node_id,
+                                    NvProcessorUuid *uuid_out);
 
 // Unregister a gpu from the va space
 NV_STATUS uvm_va_space_unregister_gpu(uvm_va_space_t *va_space, const NvProcessorUuid *gpu_uuid);

@@ -991,7 +991,7 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
     pInfo->cc_white_y |= (p->Chromaticity[1] & NVT_PVT_EDID_CC_WHITE_Y1_Y0_MASK) >> NVT_PVT_EDID_CC_WHITE_Y1_Y0_SHIFT;
 
     // copy established timings
-    pInfo->established_timings_1_2  = (NvU16)p->bEstablishedTimings1 << 8;    
+    pInfo->established_timings_1_2  = (NvU16)p->bEstablishedTimings1 << 8;
     pInfo->established_timings_1_2 |= (NvU16)p->bEstablishedTimings2;
 
     // copy manuf reserved timings
@@ -1039,7 +1039,7 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
                 p861Info = (k == 0) ? &pInfo->ext861 : &pInfo->ext861_2;
 
                 get861ExtInfo(pExt, sizeof(EDIDV1STRUC), p861Info);
-                
+
                 // HF EEODB is present in edid v1.3 and v1.4 does not need this.Also, it is always present in the 1st CTA extension block.
                 if (j == 1 && pInfo->version == NVT_EDID_VER_1_3)
                 {
@@ -1106,11 +1106,6 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
                             pInfo->ext_displayid20.interface_features.yuv420_min_pclk = 0;
                         }
 
-                        if (pInfo->ext861.revision == 0 && pInfo->ext_displayid20.valid_data_blocks.interface_feature_present)
-                        {
-                            pInfo->ext861.revision = NVT_CEA861_REV_B;
-                        }
-
                         if (pInfo->ext_displayid20.valid_data_blocks.interface_feature_present)
                         {
                             pInfo->ext861.basic_caps |= pInfo->ext_displayid20.basic_caps;
@@ -1157,7 +1152,7 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
         }
     }
 
-    // Copy all the timings(could include type 7/8/9/10) from displayid20->timings[] to pEdidInfo->timings[] 
+    // Copy all the timings(could include type 7/8/9/10) from displayid20->timings[] to pEdidInfo->timings[]
     for (i = 0; i < pInfo->ext_displayid20.total_timings; i++)
     {
         if (!assignNextAvailableTiming(pInfo, &(pInfo->ext_displayid20.timing[i])))
@@ -1215,7 +1210,7 @@ NVT_STATUS NV_STDCALL NvTiming_ParseEDIDInfo(NvU8 *pEdid, NvU32 length, NVT_EDID
 
 CODE_SEGMENT(PAGE_DD_CODE)
 void updateColorFormatAndBpcTiming(NVT_EDID_INFO *pInfo)
-{    
+{
     NvU32 i, j, data;
 
     for (i = 0; i < pInfo->total_timings; i++)
@@ -1226,8 +1221,8 @@ void updateColorFormatAndBpcTiming(NVT_EDID_INFO *pInfo)
         case NVT_TYPE_HDMI_STEREO:
         case NVT_TYPE_HDMI_EXT:
             // VTB timing use the base EDID (block 0) to determine the color format support
-        case NVT_TYPE_EDID_VTB_EXT:     
-        case NVT_TYPE_EDID_VTB_EXT_STD: 
+        case NVT_TYPE_EDID_VTB_EXT:
+        case NVT_TYPE_EDID_VTB_EXT_STD:
         case NVT_TYPE_EDID_VTB_EXT_DTD:
         case NVT_TYPE_EDID_VTB_EXT_CVT:
             // pInfo->u.feature_ver_1_3.color_type provides mono, rgb, rgy, undefined
@@ -1245,7 +1240,7 @@ void updateColorFormatAndBpcTiming(NVT_EDID_INFO *pInfo)
             }
             updateBpcForTiming(pInfo, i);
             break;
-        default: 
+        default:
             // * the displayID_v1.3/v2.0 EDID extension need to follow the EDID bpc definition.
             // * all other default to base edid
             updateBpcForTiming(pInfo, i);
@@ -1319,7 +1314,7 @@ NvBool isMatchedStandardTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT)
 
     for (j = 0; j < pInfo->total_timings; j++)
     {
-        if (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[j].etc.status) == NVT_TYPE_EDID_STD && 
+        if (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[j].etc.status) == NVT_TYPE_EDID_STD &&
             NvTiming_IsTimingRelaxedEqual(&pInfo->timing[j], pT))
         {
             return NV_TRUE;
@@ -1335,7 +1330,7 @@ NvBool isMatchedEstablishedTiming(NVT_EDID_INFO *pInfo, NVT_TIMING *pT)
 
     for (j = 0; j < pInfo->total_timings; j++)
     {
-        if (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[j].etc.status) == NVT_TYPE_EDID_EST && 
+        if (NVT_GET_TIMING_STATUS_TYPE(pInfo->timing[j].etc.status) == NVT_TYPE_EDID_EST &&
             NvTiming_IsTimingRelaxedEqual(&pInfo->timing[j], pT))
         {
             return NV_TRUE;
@@ -1405,7 +1400,7 @@ void updateBpcForTiming(NVT_EDID_INFO *pInfo, NvU32 index)
             }
         }
         else if ((pInfo->input.u.digital.video_interface == NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_A_SUPPORTED ||
-                  pInfo->input.u.digital.video_interface == NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_B_SUPPORTED || 
+                  pInfo->input.u.digital.video_interface == NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_HDMI_B_SUPPORTED ||
                   pInfo->input.u.digital.video_interface == NVT_EDID_DIGITAL_VIDEO_INTERFACE_STANDARD_UNDEFINED) &&
                  p861Info->revision >= NVT_CEA861_REV_A)
         {
@@ -1462,7 +1457,7 @@ NVT_STATUS NvTiming_GetEdidTimingExWithPclk(NvU32 width, NvU32 height, NvU32 rr,
 
     // the timing mapping index :
     //
-    // native_cta              - the "native resoluiotn of the sink" in the CTA861.6 A Source shall override any other native video resolution indicators 
+    // native_cta              - the "native resoluiotn of the sink" in the CTA861.6 A Source shall override any other native video resolution indicators
     //                           if the Source supports NVRDB and the NVRDB was found in the E-EDID
     // preferred_cta           - the "prefer SVD" in CTA-861-F (i.e. A Sink that prefers a Video Format that is not listed as an SVD in Video Data Block, but instead listed in YCBCR 4:2:0 VDB)
     // preferred_displayid_dtd - the "prefer detailed timing of DispalyID" extension
@@ -1546,7 +1541,7 @@ NVT_STATUS NvTiming_GetEdidTimingExWithPclk(NvU32 width, NvU32 height, NvU32 rr,
         if (native_cta == pEdidInfo->total_timings && NVT_NATIVE_TIMING_IS_CTA(pEdidTiming[i].etc.flag))
         {
             native_cta = i;
-        } 
+        }
 
         if (preferred_cta == pEdidInfo->total_timings && NVT_PREFERRED_TIMING_IS_CTA(pEdidTiming[i].etc.flag))
         {
@@ -2063,10 +2058,10 @@ NVT_STATUS NvTiming_GetEDIDBasedASPRTiming( NvU16 width, NvU16 height, NvU16 rr,
  *
  * @brief check EDID raw data is valid or not, and it will return the err flags if it existed
  * @param pEdid  : this is a pointer to EDID data
- * @param length : read length of EDID 
+ * @param length : read length of EDID
  * @param bIsTrongValidation : true - added more check
  *                             false- only header and checksum and size check
- * 
+ *
  */
 CODE_SEGMENT(PAGE_DD_CODE)
 NvU32 NvTiming_EDIDValidationMask(NvU8 *pEdid, NvU32 length, NvBool bIsStrongValidation)
@@ -2086,12 +2081,12 @@ NvU32 NvTiming_EDIDValidationMask(NvU8 *pEdid, NvU32 length, NvBool bIsStrongVal
         return ret;
     }
 
-    // check the EDID version and signature    
+    // check the EDID version and signature
     if (getEdidVersion(pEdid, &version) != NVT_STATUS_SUCCESS)
     {
         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_VERSION);
         return ret;
-    } 
+    }
 
     // check block 0 checksum value
     if (!isChecksumValid(pEdid))
@@ -2239,11 +2234,11 @@ NvU32 NvTiming_EDIDValidationMask(NvU8 *pEdid, NvU32 length, NvBool bIsStrongVal
 
 /**
  *
- * @brief sanity check EDID binary frequently used data block is valid or not, 
+ * @brief sanity check EDID binary frequently used data block is valid or not,
  *        and it will return error checkpoint flag if it existed
  * @param pEdid  : this is a pointer to EDID raw data
  * @param length : read length of EDID
- * 
+ *
  */
 CODE_SEGMENT(PAGE_DD_CODE)
 NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
@@ -2255,7 +2250,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
     DETAILEDTIMINGDESCRIPTOR            *pDTD;
     // For CTA861
     NvU8                                ctaDTD_Offset;
-    NvU8                                *pData_collection;    
+    NvU8                                *pData_collection;
     NvU32                               ctaBlockTag, ctaPayload, vic;
     // For DisplayID
     DIDEXTENSION                        *pDisplayid;
@@ -2283,7 +2278,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
     {
         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_VERSION);
     }
- 
+
     // 18bytes in DTD or Display Descriptor check
     for (i = 0; i < NVT_EDID_MAX_LONG_DISPLAY_DESCRIPTOR; i++)
     {
@@ -2313,7 +2308,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
             }
         }
         else
-        {        
+        {
             pLdd = (EDID_LONG_DISPLAY_DESCRIPTOR *)&p->DetailedTimingDesc[i];
 
             // This block is a display descriptor, validate
@@ -2327,7 +2322,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                 NvU8    max_v_rate_offset, min_v_rate_offset, max_h_rate_offset, min_h_rate_offset;
 
                 // add 255Hz offsets as needed before doing the check, use descriptor->rsvd2
-                nvt_assert(!(pLdd->rsvd2 & 0xF0));                    
+                nvt_assert(!(pLdd->rsvd2 & 0xF0));
 
                 max_v_rate_offset = pLdd->rsvd2 & NVT_PVT_EDID_RANGE_OFFSET_VER_MAX ? NVT_PVT_EDID_RANGE_OFFSET_AMOUNT : 0;
                 min_v_rate_offset = pLdd->rsvd2 & NVT_PVT_EDID_RANGE_OFFSET_VER_MIN ? NVT_PVT_EDID_RANGE_OFFSET_AMOUNT : 0;
@@ -2340,19 +2335,19 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                     pRangeLimit->maxHRate == 0)
                 {
                     ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_RANGE_LIMIT);
-                }                    
+                }
             }
         }
     }
 
     // extension and size check
     if ((NvU32)(p->bExtensionFlag + 1) * sizeof(EDIDV1STRUC) > length)
-    {   
+    {
         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXTENSION_COUNT);
     }
 
-    // we shall not trust any extension blocks with wrong input EDID size 
-    if (NVT_IS_EDID_VALIDATION_FLAGS(ret, NVT_EDID_VALIDATION_ERR_SIZE) || 
+    // we shall not trust any extension blocks with wrong input EDID size
+    if (NVT_IS_EDID_VALIDATION_FLAGS(ret, NVT_EDID_VALIDATION_ERR_SIZE) ||
         NVT_IS_EDID_VALIDATION_FLAGS(ret, NVT_EDID_VALIDATION_ERR_EXTENSION_COUNT))
         return ret;
 
@@ -2384,7 +2379,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                 // validate SVD block
                 ctaBlockTag = NVT_CEA861_GET_SHORT_DESCRIPTOR_TAG(((EIA861EXTENSION *)pExt)->data[0]);
                 pData_collection = ((EIA861EXTENSION *)pExt)->data;
-                
+
                 while ((ctaDTD_Offset - 4) > 0 && pData_collection != &pExt[ctaDTD_Offset] &&
                         ctaBlockTag > NVT_CEA861_TAG_RSVD && ctaBlockTag <= NVT_CEA861_TAG_EXTENDED_FLAG)
                 {
@@ -2451,7 +2446,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DTD);
                     else
                     {
-                        // check the max image size and 
+                        // check the max image size and
                         if (p->bMaxHorizImageSize != 0 && p->bMaxVertImageSize != 0)
                         {
                             NvU16 hDTDImageSize =  (pDTD->bDTHorizVertImage & 0xF0) << 4 | pDTD->bDTHorizontalImage;
@@ -2466,7 +2461,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
 
                 if(!isChecksumValid(pExt))
                     ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_CTA_CHECKSUM);
-            break;                
+            break;
             case NVT_EDID_EXTENSION_DISPLAYID:
                 pDisplayid = ((DIDEXTENSION *)pExt);
                 if (pDisplayid->ext_count != 0)
@@ -2483,10 +2478,10 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                 {
                     if ((pDisplayid->struct_version & 0xFF) == 0x21)
                         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID_VERSION);
-                    
+
                     did2ExtCount++;
 
-                    if (pDisplayid->use_case == 0 && did2ExtCount == 1) 
+                    if (pDisplayid->use_case == 0 && did2ExtCount == 1)
                         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID2_USE_CASE);
 
                     // check the DisplayId2 valid timing
@@ -2506,7 +2501,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                                 ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID2_TYPE7);
 
                             if (pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_RANGE_LIMITS)
-                                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_RANGE_LIMIT);                                
+                                ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_RANGE_LIMIT);
 
                             if (pDID2Header->type == DISPLAYID_2_0_BLOCK_TYPE_ADAPTIVE_SYNC)
                                 ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID2_ADAPTIVE_SYNC);
@@ -2527,9 +2522,9 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                     }
 
                     // if the first tag failed, ignore all the tags afterward then
-                    if (!bAllZero && 
-                        (pDID2Header->type < DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY || 
-                        (pDID2Header->type > DISPLAYID_2_0_BLOCK_TYPE_BRIGHTNESS_LUMINANCE_RANGE   && 
+                    if (!bAllZero &&
+                        (pDID2Header->type < DISPLAYID_2_0_BLOCK_TYPE_PRODUCT_IDENTITY ||
+                        (pDID2Header->type > DISPLAYID_2_0_BLOCK_TYPE_BRIGHTNESS_LUMINANCE_RANGE   &&
                         pDID2Header->type != DISPLAYID_2_0_BLOCK_TYPE_VENDOR_SPEC                  &&
                         pDID2Header->type != DISPLAYID_2_0_BLOCK_TYPE_CTA_DATA))       &&
                         (pData_collection - pExt < (int)sizeof(DIDEXTENSION)))
@@ -2537,7 +2532,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID2_TAG);
                         continue;
                     }
-                } 
+                }
                 else if ((pDisplayid->struct_version & 0xFF) == 0x12 || (pDisplayid->struct_version & 0xFF) == 0x13)
                 {
                     if ((pDisplayid->struct_version & 0xFF) == 0x13)
@@ -2559,7 +2554,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
 
                             if (pHeader->type == NVT_DISPLAYID_BLOCK_TYPE_RANGE_LIMITS)
                                 ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_RANGE_LIMIT);
-                            
+
                             // add more data blocks tag here to evaluate
                         }
                         pData_collection += block_length;
@@ -2580,7 +2575,7 @@ NvU32 NvTiming_EDIDStrongValidationMask(NvU8 *pEdid, NvU32 length)
                     if (!bAllZero                                             &&
                         pHeader->type > NVT_DISPLAYID_BLOCK_TYPE_TILEDDISPLAY &&
                         pHeader->type != NVT_DISPLAYID_BLOCK_TYPE_CTA_DATA    &&
-                        pHeader->type != NVT_DISPLAYID_BLOCK_TYPE_VENDOR_SPEC &&                          
+                        pHeader->type != NVT_DISPLAYID_BLOCK_TYPE_VENDOR_SPEC &&
                         (pData_collection - pExt < (int)sizeof(DIDEXTENSION)))
                     {
                         ret |= NVT_EDID_VALIDATION_ERR_MASK(NVT_EDID_VALIDATION_ERR_EXT_DID13_TAG);
@@ -2939,7 +2934,7 @@ NvU32 NvTiming_CalculateCommonEDIDCRC32(NvU8* pEDIDBuffer, NvU32 edidVersion)
 
         // Wipe out the Serial Number, Week of Manufacture, and Year of Manufacture or Model Year
         NVMISC_MEMSET(CommonEDIDBuffer + 0x0C, 0, 6);
-        
+
         // Wipe out the checksums
         CommonEDIDBuffer[CommonEDIDBuffer[1]+5/*mandatory bytes*/-1] = 0;
         CommonEDIDBuffer[0xFF] = 0;
@@ -2954,7 +2949,7 @@ NvU32 NvTiming_CalculateCommonEDIDCRC32(NvU8* pEDIDBuffer, NvU32 edidVersion)
         // displayId2 standalone uses 256 length sections
         commonEDIDBufferSize = 256;
     }
-    else 
+    else
     {
         // Wipe out the Serial Number, Week of Manufacture, and Year of Manufacture or Model Year
         NVMISC_MEMSET(CommonEDIDBuffer + 0x0C, 0, 6);

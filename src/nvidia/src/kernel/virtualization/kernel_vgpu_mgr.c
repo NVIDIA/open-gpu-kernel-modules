@@ -267,7 +267,8 @@ kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32
 
     if (IS_MIG_ENABLED(pGpu))
     {
-        if (IS_MIG_IN_USE(pGpu)) {
+        if (IS_MIG_IN_USE(pGpu))
+        {
             KernelMIGManager *pKernelMIGManager = GPU_GET_KERNEL_MIG_MANAGER(pGpu);
             NvU64 swizzIdInUseMask = 0;
             NvU32 id;
@@ -287,7 +288,6 @@ kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32
                 // Do not consider vGPU type as creatable if swizzId is already in use
                 if (!(mask & pgpuInfo->assignedSwizzIdMask))
                 {
-
                     // Find the vGPU type corresponding to the partitionFlag,
                     NV_ASSERT_OK_OR_RETURN(
                             _kvgpumgrGetVgpuTypeIdFromPartitionFlag(pGpu->idInfo.PCIDeviceID,
@@ -306,9 +306,9 @@ kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32
                             }
                         }
 
+                        // vgpuTypeId not included in vgputypes array yet, include it.
                         if (j == i)
                         {
-                            // vgpuTypeId not included in vgputypes array yet, include it.
                             vgpuTypes[i] = vgpuTypeId;
                             i++;
                         }
@@ -327,7 +327,6 @@ kvgpumgrGetCreatableVgpuTypes(OBJGPU *pGpu, KernelVgpuMgr *pKernelVgpuMgr, NvU32
     else
     {
         *numVgpuTypes = 0;
-
         for (i = 0; i < pgpuInfo->numVgpuTypes; i++)
         {
             // Consider only non-MIG (gpuInstanceSize == 0) profiles

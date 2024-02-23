@@ -1,5 +1,5 @@
 /*******************************************************************************
-    Copyright (c) 2015-2023 NVIDIA Corporation
+    Copyright (c) 2015-2024 NVIDIA Corporation
 
     Permission is hereby granted, free of charge, to any person obtaining a copy
     of this software and associated documentation files (the "Software"), to
@@ -147,6 +147,26 @@ static NV_STATUS phys_mem_allocate_sysmem(uvm_page_tree_t *tree, NvLength size, 
     out->size = size;
 
     return NV_OK;
+}
+
+// The aperture may filter the biggest page size:
+// - UVM_APERTURE_VID       biggest page size on vidmem mappings
+// - UVM_APERTURE_SYS       biggest page size on sysmem mappings
+// - UVM_APERTURE_PEER_0-7  biggest page size on peer mappings
+static NvU32 mmu_biggest_page_size(uvm_page_tree_t *tree, uvm_aperture_t aperture)
+{
+    UVM_ASSERT(aperture < UVM_APERTURE_DEFAULT);
+
+    // There may be scenarios where the GMMU must use a subset of the supported
+    // page sizes, e.g., to comply with the vMMU supported page sizes due to
+    // segmentation sizes.
+    if (aperture == UVM_APERTURE_VID) {
+        UVM_ASSERT(tree->gpu->mem_info.max_vidmem_page_size <= NV_U32_MAX);
+        return (NvU32) tree->gpu->mem_info.max_vidmem_page_size;
+    }
+    else {
+        return 1 << __fls(tree->hal->page_sizes());
+    }
 }
 
 static NV_STATUS phys_mem_allocate_vidmem(uvm_page_tree_t *tree,
@@ -856,7 +876,7 @@ static NV_STATUS page_tree_ats_init(uvm_page_tree_t *tree)
     if (!page_tree_ats_init_required(tree))
         return NV_OK;
 
-    page_size = uvm_mmu_biggest_page_size(tree);
+    page_size = mmu_biggest_page_size(tree, UVM_APERTURE_VID);
 
     uvm_cpu_get_unaddressable_range(&max_va_lower, &min_va_upper);
 
@@ -1089,6 +1109,8 @@ NV_STATUS uvm_page_tree_init(uvm_gpu_t *gpu,
     tree->type = type;
     tree->gpu_va_space = gpu_va_space;
     tree->big_page_size = big_page_size;
+
+    UVM_ASSERT(gpu->mem_info.max_vidmem_page_size & tree->hal->page_sizes());
 
     page_tree_set_location(tree, location);
 
@@ -2301,7 +2323,7 @@ NV_STATUS create_static_vidmem_mapping(uvm_gpu_t *gpu)
 
     UVM_ASSERT(!uvm_mmu_parent_gpu_needs_dynamic_vidmem_mapping(gpu->parent));
 
-    page_size = uvm_mmu_biggest_page_size(&gpu->address_space_tree);
+    page_size = mmu_biggest_page_size(&gpu->address_space_tree, UVM_APERTURE_VID);
     size = UVM_ALIGN_UP(gpu->mem_info.max_allocatable_address + 1, page_size);
 
     UVM_ASSERT(page_size);
@@ -2338,9 +2360,9 @@ NV_STATUS uvm_mmu_create_peer_identity_mappings(uvm_gpu_t *gpu, uvm_gpu_t *peer)
     if (gpu->parent->peer_copy_mode != UVM_GPU_PEER_COPY_MODE_VIRTUAL || peer->mem_info.size == 0)
         return NV_OK;
 
-    page_size = uvm_mmu_biggest_page_size(&gpu->address_space_tree);
-    size = UVM_ALIGN_UP(peer->mem_info.max_allocatable_address + 1, page_size);
     aperture = uvm_gpu_peer_aperture(gpu, peer);
+    page_size = mmu_biggest_page_size(&gpu->address_space_tree, aperture);
+    size = UVM_ALIGN_UP(peer->mem_info.max_allocatable_address + 1, page_size);
     peer_mapping = uvm_gpu_get_peer_mapping(gpu, peer->id);
     phys_offset = 0ULL;
 
@@ -2783,7 +2805,7 @@ static NV_STATUS create_dynamic_sysmem_mapping(uvm_gpu_t *gpu)
     // sysmem mappings with 128K entries.
     UVM_ASSERT(is_power_of_2(mapping_size));
     UVM_ASSERT(mapping_size >= UVM_SIZE_1GB);
-    UVM_ASSERT(mapping_size >= uvm_mmu_biggest_page_size(&gpu->address_space_tree));
+    UVM_ASSERT(mapping_size >= mmu_biggest_page_size(&gpu->address_space_tree, UVM_APERTURE_SYS));
     UVM_ASSERT(mapping_size <= flat_sysmem_va_size);
 
     flat_sysmem_va_size = UVM_ALIGN_UP(flat_sysmem_va_size, mapping_size);
@@ -2828,7 +2850,7 @@ NV_STATUS uvm_mmu_sysmem_map(uvm_gpu_t *gpu, NvU64 pa, NvU64 size)
         if (sysmem_mapping->range_vec == NULL) {
             uvm_gpu_address_t virtual_address = uvm_parent_gpu_address_virtual_from_sysmem_phys(gpu->parent, curr_pa);
             NvU64 phys_offset = curr_pa;
-            NvU32 page_size = uvm_mmu_biggest_page_size(&gpu->address_space_tree);
+            NvU32 page_size = mmu_biggest_page_size(&gpu->address_space_tree, UVM_APERTURE_SYS);
             uvm_pmm_alloc_flags_t pmm_flags;
 
             // No eviction is requested when allocating the page tree storage,

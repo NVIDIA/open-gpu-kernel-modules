@@ -512,11 +512,12 @@ kchannelFreeHwID_GM107
                                            kchannelGetRunlistId(pKernelChannel));
     EMEMBLOCK  *pFifoDataBlock;
 
+    NV_ASSERT_OR_RETURN(pChidMgr != NULL, NV_ERR_OBJECT_NOT_FOUND);
     pFifoDataBlock = pChidMgr->pFifoDataHeap->eheapGetBlock(
         pChidMgr->pFifoDataHeap,
         pKernelChannel->ChID,
         NV_FALSE);
-    NV_ASSERT_OR_RETURN(pFifoDataBlock, NV_ERR_OBJECT_NOT_FOUND);
+    NV_ASSERT_OR_RETURN(pFifoDataBlock != NULL, NV_ERR_OBJECT_NOT_FOUND);
     NV_ASSERT(pFifoDataBlock->pData == pKernelChannel);
 
     status = kfifoChidMgrFreeChid(pGpu, pKernelFifo, pChidMgr, pKernelChannel->ChID);

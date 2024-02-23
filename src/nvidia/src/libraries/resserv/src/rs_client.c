@@ -798,7 +798,7 @@ clientFreeResource_IMPL
     pResource = pResourceRef->pResource;
     pParentRef = pResourceRef->pParentRef;
 
-    if (!pParams->bInvalidateOnly && pResourceRef->bInvalidated)
+    if (pResourceRef->bInvalidated)
         goto done;
 
     portMemSet(&callContext, 0, sizeof(callContext));
