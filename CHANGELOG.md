@@ -2,7 +2,7 @@
 
 ## Release 550 Entries
 
-### [550.54.14] 2024-02-23
+### [550.40.53] 2024-02-28
 
 #### Added
 
@@ -13,10 +13,7 @@
 #### Fixed
 
 - Set INSTALL_MOD_DIR only if it's not defined, [#570](https://github.com/NVIDIA/open-gpu-kernel-modules/pull/570) by @keelung-yang
-
 ## Release 545 Entries
-
-### [545.29.06] 2023-11-22
 
 #### Fixed
 
