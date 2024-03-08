@@ -1,7 +1,7 @@
 # NVIDIA Linux Open GPU Kernel Module Source
 
 This is the source release of the NVIDIA Linux open GPU kernel modules,
-version 550.40.53.
+version 550.40.55.
 
 
 ## How to Build
@@ -17,7 +17,7 @@ as root:
 
 Note that the kernel modules built here must be used with GSP
 firmware and user-space NVIDIA GPU driver components from a corresponding
-550.40.53 driver release.  This can be achieved by installing
+550.40.55 driver release.  This can be achieved by installing
 the NVIDIA GPU driver from the .run file using the `--no-kernel-modules`
 option.  E.g.,
 
@@ -188,7 +188,7 @@ encountered specific to them.
 For details on feature support and limitations, see the NVIDIA GPU driver
 end user README here:
 
-https://us.download.nvidia.com/XFree86/Linux-x86_64/550.40.53/README/kernel_open.html
+https://us.download.nvidia.com/XFree86/Linux-x86_64/550.40.55/README/kernel_open.html
 
 For vGPU support, please refer to the README.vgpu packaged in the vGPU Host
 Package for more details.
@@ -653,6 +653,7 @@ Subsystem Device ID.
 | NVIDIA T400 4GB                                 | 1FF2 103C 1613 |
 | NVIDIA T400 4GB                                 | 1FF2 103C 8A80 |
 | NVIDIA T400 4GB                                 | 1FF2 10DE 1613 |
+| NVIDIA T400E                                    | 1FF2 10DE 18FF |
 | NVIDIA T400 4GB                                 | 1FF2 17AA 1613 |
 | NVIDIA T400E                                    | 1FF2 17AA 18FF |
 | Quadro T1000                                    | 1FF9           |
@@ -812,6 +813,7 @@ Subsystem Device ID.
 | NVIDIA RTX A2000 12GB                           | 2571 10DE 1611 |
 | NVIDIA RTX A2000 12GB                           | 2571 17AA 1611 |
 | NVIDIA GeForce RTX 3050                         | 2582           |
+| NVIDIA GeForce RTX 3050                         | 2584           |
 | NVIDIA GeForce RTX 3050 Ti Laptop GPU           | 25A0           |
 | NVIDIA GeForce RTX 3050Ti Laptop GPU            | 25A0 103C 8928 |
 | NVIDIA GeForce RTX 3050Ti Laptop GPU            | 25A0 103C 89F9 |
@@ -905,6 +907,9 @@ Subsystem Device ID.
 | NVIDIA RTX 2000 Ada Generation                  | 28B0 10DE 1870 |
 | NVIDIA RTX 2000 Ada Generation                  | 28B0 17AA 1870 |
 | NVIDIA RTX 2000 Ada Generation Laptop GPU       | 28B8           |
+| NVIDIA RTX 1000 Ada Generation Laptop GPU       | 28B9           |
+| NVIDIA RTX 500 Ada Generation Laptop GPU        | 28BA           |
+| NVIDIA RTX 500 Ada Generation Laptop GPU        | 28BB           |
 | NVIDIA GeForce RTX 4060 Laptop GPU              | 28E0           |
 | NVIDIA GeForce RTX 4050 Laptop GPU              | 28E1           |
 | NVIDIA RTX 2000 Ada Generation Embedded GPU     | 28F8           |

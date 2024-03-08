@@ -606,7 +606,8 @@ _memoryexportVerifyMem
     if (pGpu == NULL)
         return NV_OK;
 
-    if (pKernelMIGGpuInstance != NULL)
+    // MIG is about vidmem partitioning, so limit the check.
+    if ((pKernelMIGGpuInstance != NULL) && (addrSpace == ADDR_FBMEM))
     {
         if ((pKernelMIGGpuInstance->pMemoryPartitionHeap != pSrcMemory->pHeap))
             return NV_ERR_INVALID_OBJECT_PARENT;

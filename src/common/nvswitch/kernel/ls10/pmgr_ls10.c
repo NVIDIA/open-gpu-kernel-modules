@@ -32,6 +32,7 @@
 #include "export_nvswitch.h"
 #include "soe/soe_nvswitch.h"
 #include "soe/soeifcore.h"
+#include "boards_nvswitch.h"
 
 #include "nvswitch/ls10/dev_pmgr.h"
 
@@ -176,6 +177,16 @@ static const NVSWITCH_GPIO_INFO nvswitch_gpio_pin_Default[] =
 
 static const NvU32 nvswitch_gpio_pin_Default_size = NV_ARRAY_ELEMENTS(nvswitch_gpio_pin_Default);
 
+static const NVSWITCH_GPIO_INFO nvswitch_gpio_pin_4300[] =
+{
+    NVSWITCH_DESCRIBE_GPIO_PIN( 0, _INSTANCE_ID0,   0, IN),          // Instance ID bit 0
+    NVSWITCH_DESCRIBE_GPIO_PIN( 1, _INSTANCE_ID1,   0, IN),          // Instance ID bit 1
+    NVSWITCH_DESCRIBE_GPIO_PIN( 2, _INSTANCE_ID2,   0, IN),          // Instance ID bit 2
+    NVSWITCH_DESCRIBE_GPIO_PIN( 6, _INSTANCE_ID3,   0, IN),          // Instance ID bit 3
+    NVSWITCH_DESCRIBE_GPIO_PIN( 7, _INSTANCE_ID4,   0, IN),          // Instance ID bit 4
+};
+static const NvU32 nvswitch_gpio_pin_4300_size = NV_ARRAY_ELEMENTS(nvswitch_gpio_pin_4300);
+
 //
 // Initialize the software state of the switch I2C & GPIO interface
 // Temporarily forcing default GPIO values.
@@ -191,6 +202,8 @@ nvswitch_init_pmgr_devices_ls10
 {
     ls10_device *chip_device = NVSWITCH_GET_CHIP_DEVICE_LS10(device);
     PNVSWITCH_OBJI2C pI2c = device->pI2c;
+    NvlStatus retval;
+    NvU16 boardId;
 
     if (IS_FMODEL(device) || IS_EMULATION(device) || IS_RTLSIM(device))
     {
@@ -200,8 +213,18 @@ nvswitch_init_pmgr_devices_ls10
     }
     else
     {
-        chip_device->gpio_pin = nvswitch_gpio_pin_Default;
-        chip_device->gpio_pin_size = nvswitch_gpio_pin_Default_size;
+        retval = nvswitch_get_board_id(device, &boardId);
+        if (retval == NVL_SUCCESS &&
+            boardId == NVSWITCH_BOARD_LS10_4300_0000_895)
+        {
+            chip_device->gpio_pin = nvswitch_gpio_pin_4300;
+            chip_device->gpio_pin_size = nvswitch_gpio_pin_4300_size;
+        }
+        else
+        {
+            chip_device->gpio_pin = nvswitch_gpio_pin_Default;
+            chip_device->gpio_pin_size = nvswitch_gpio_pin_Default_size;
+        }
     }
 
     pI2c->device_list = NULL;

@@ -894,9 +894,9 @@ _nvswitch_collect_error_info_ls10
             {
                 data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_ROUTE_HDR;
                 NVSWITCH_PRINT(device, INFO,
-                    "ROUTE: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
-                    data->data[i-8], data->data[i-7], data->data[i-6], data->data[i-5],
-                    data->data[i-4], data->data[i-3], data->data[i-2], data->data[i-1]);
+                    "ROUTE: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
+                    data->data[i-7], data->data[i-6], data->data[i-5], data->data[i-4],
+                    data->data[i-3], data->data[i-2], data->data[i-1]);
             }
         }
     }
@@ -940,9 +940,9 @@ _nvswitch_collect_error_info_ls10
             {
                 data->flags |= NVSWITCH_RAW_ERROR_LOG_DATA_FLAG_INGRESS_HDR;
                 NVSWITCH_PRINT(device, INFO,
-                    "INGRESS: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
-                    data->data[i-7], data->data[i-6], data->data[i-5], data->data[i-4],
-                    data->data[i-3], data->data[i-2], data->data[i-1]);
+                    "INGRESS: HEADER: 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x, 0x%08x,\n",
+                    data->data[i-6], data->data[i-5], data->data[i-4], data->data[i-3],
+                    data->data[i-2], data->data[i-1]);
             }
         }
     }

@@ -56,7 +56,11 @@
 #include "nv-lock.h"
 #include "nv-chardev-numbers.h"
 
-#if !defined(CONFIG_RETPOLINE)
+/*
+ * Commit aefb2f2e619b ("x86/bugs: Rename CONFIG_RETPOLINE =>
+ * CONFIG_MITIGATION_RETPOLINE) in v6.8 renamed CONFIG_RETPOLINE.
+ */
+#if !defined(CONFIG_RETPOLINE) && !defined(CONFIG_MITIGATION_RETPOLINE)
 #include "nv-retpoline.h"
 #endif
 
@@ -499,8 +503,9 @@ nvkms_event_queue_changed(nvkms_per_open_handle_t *pOpenKernel,
 
 static void nvkms_suspend(NvU32 gpuId)
 {
+    nvKmsKapiSuspendResume(NV_TRUE /* suspend */);
+
     if (gpuId == 0) {
-        nvKmsKapiSuspendResume(NV_TRUE /* suspend */);
         nvkms_write_lock_pm_lock();
     }
 
@@ -517,8 +522,9 @@ static void nvkms_resume(NvU32 gpuId)
 
     if (gpuId == 0) {
         nvkms_write_unlock_pm_lock();
-        nvKmsKapiSuspendResume(NV_FALSE /* suspend */);
     }
+
+    nvKmsKapiSuspendResume(NV_FALSE /* suspend */);
 }
 
 

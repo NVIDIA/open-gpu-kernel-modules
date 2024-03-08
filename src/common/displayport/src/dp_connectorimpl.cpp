@@ -174,6 +174,7 @@ void ConnectorImpl::applyRegkeyOverrides(const DP_REGKEY_DATABASE& dpRegkeyDatab
     this->bDscMstCapBug3143315          = dpRegkeyDatabase.bDscMstCapBug3143315;
     this->bPowerDownPhyBeforeD3         = dpRegkeyDatabase.bPowerDownPhyBeforeD3;
     this->bReassessMaxLink              = dpRegkeyDatabase.bReassessMaxLink;
+    this->bForceDscOnSink               = dpRegkeyDatabase.bForceDscOnSink;
 }
 
 void ConnectorImpl::setPolicyModesetOrderMitigation(bool enabled)
@@ -3129,7 +3130,7 @@ bool ConnectorImpl::notifyAttachBegin(Group *                target,       // Gr
 
     // if LT is successful, see if panel supports DSC and if so, set DSC enabled/disabled
     // according to the mode requested.
-    if(bLinkTrainingStatus)
+    if(bLinkTrainingStatus || bForceDscOnSink)
     {
         for (Device * dev = target->enumDevices(0); dev; dev = target->enumDevices(dev))
         {
@@ -4631,6 +4632,11 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
                 }
             }
 
+            //
+            // There is no point in fallback here since we are link training  
+            // to loweset link config that can support the mode.
+            //
+            lowestSelected.policy.setSkipFallBack(true);
             bLinkTrainingSuccessful = train(lowestSelected, false);
             //
             // If LT failed, check if skipLT was marked. If so, clear the flag and
@@ -4648,16 +4654,37 @@ bool ConnectorImpl::trainLinkOptimized(LinkConfiguration lConfig)
             }
             if (!bLinkTrainingSuccessful)
             {
-                // Try fall back to max link config and if that fails try original assessed link configuration
+                // If optimized link config fails, try max link config with fallback. 
                 if (!train(getMaxLinkConfig(), false))
                 {
+                    //
+                    // Note here that if highest link config fails and a lower  
+                    // link config passes, link training will be returned as 
+                    // failure but activeLinkConfig will be set to that passing config.
+                    // 
                     if (!willLinkSupportModeSST(activeLinkConfig, groupAttached->lastModesetInfo))
                     {
+                        //
+                        // If none of the link configs pass LT or a fall back link config passed LT 
+                        // but cannot support the mode, then we will force the optimized link config
+                        // on the link and mark LT as fail.
+                        //
                         train(lowestSelected, true);
-
-                        // Mark link training as failed since we forced it
                         bLinkTrainingSuccessful = false;
                     }
+                    else
+                    {
+                        //
+                        // If a fallback link config pass LT and can support 
+                        // the mode, mark LT as pass.
+                        //
+                        bLinkTrainingSuccessful = true;
+                    }
+                }
+                else
+                {
+                    // If LT passes at max link config, mark LT as pass.
+                    bLinkTrainingSuccessful = true;
                 }
             }
         }

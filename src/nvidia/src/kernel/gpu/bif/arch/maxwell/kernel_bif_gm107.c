@@ -585,6 +585,13 @@ kbifRestorePcieConfigRegisters_GM107
     NvU64     timeStampStart;
     NvU64     timeStampEnd;
 
+    if (pKernelBif->xveRegmapRef[0].bufBootConfigSpace == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "Config space buffer is NULL!\n");
+        NV_ASSERT(0);
+        return NV_ERR_OBJECT_NOT_FOUND;
+    }
+
     // Restore pcie config space for function 0
     status = _kbifRestorePcieConfigRegisters_GM107(pGpu, pKernelBif,
                                                    &pKernelBif->xveRegmapRef[0]);

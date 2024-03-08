@@ -3096,6 +3096,22 @@ compile_test() {
 
         ;;
 
+        foll_longterm_present)
+            #
+            # Determine if FOLL_LONGTERM enum is present or not
+            #
+            # Added by commit 932f4a630a69 ("mm/gup: replace
+            # get_user_pages_longterm() with FOLL_LONGTERM") in
+            # v5.2
+            #
+            CODE="
+            #include <linux/mm.h>
+            int foll_longterm = FOLL_LONGTERM;
+            "
+
+            compile_check_conftest "$CODE" "NV_FOLL_LONGTERM_PRESENT" "" "types"
+        ;;
+
         vfio_pin_pages_has_vfio_device_arg)
             #
             # Determine if vfio_pin_pages() kABI accepts "struct vfio_device *"

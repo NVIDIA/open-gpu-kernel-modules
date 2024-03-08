@@ -74,7 +74,7 @@ NV_STATUS hypervisorInjectInterrupt_IMPL
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
 
     if (pVgpuNsIntr->pVgpuVfioRef)
-        status = osVgpuInjectInterrupt(pVgpuNsIntr->pVgpuVfioRef);
+        return NV_ERR_NOT_SUPPORTED;
     else
     {
         if (pVgpuNsIntr->guestMSIAddr && pVgpuNsIntr->guestMSIData)

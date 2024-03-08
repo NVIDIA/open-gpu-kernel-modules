@@ -1396,15 +1396,9 @@ NvU32 kvgpumgrGetPgpuSubdevIdEncoding(OBJGPU *pGpu, NvU8 *pgpuString,
         return NV_U32_MAX;
     }
 
-    switch (chipID)
-    {
-        default:
-            // The encoding of the subdevice ID is its value converted to string
-            bytes = NvU32ToAsciiStr(subID, SUBDEVID_ENCODED_VALUE_SIZE,
+    // The encoding of the subdevice ID is its value converted to string
+    bytes = NvU32ToAsciiStr(subID, SUBDEVID_ENCODED_VALUE_SIZE,
                                     pgpuString, NV_FALSE);
-            break;
-    }
-
     return bytes;
 }
 

@@ -1903,8 +1903,33 @@ void nv_drm_remove_devices(void)
  */
 void nv_drm_suspend_resume(NvBool suspend)
 {
+    static DEFINE_MUTEX(nv_drm_suspend_mutex);
+    static NvU32 nv_drm_suspend_count = 0;
+    struct nv_drm_device *nv_dev;
+
+    mutex_lock(&nv_drm_suspend_mutex);
+
+    /*
+     * Count the number of times the driver is asked to suspend. Suspend all DRM
+     * devices on the first suspend call and resume them on the last resume
+     * call.  This is necessary because the kernel may call nvkms_suspend()
+     * simultaneously for each GPU, but NVKMS itself also suspends all GPUs on
+     * the first call.
+     */
+    if (suspend) {
+        if (nv_drm_suspend_count++ > 0) {
+            goto done;
+        }
+    } else {
+        BUG_ON(nv_drm_suspend_count == 0);
+
+        if (--nv_drm_suspend_count > 0) {
+            goto done;
+        }
+    }
+
 #if defined(NV_DRM_ATOMIC_MODESET_AVAILABLE)
-    struct nv_drm_device *nv_dev = dev_list;
+    nv_dev = dev_list;
 
     /*
      * NVKMS shuts down all heads on suspend. Update DRM state accordingly.
@@ -1930,6 +1955,9 @@ void nv_drm_suspend_resume(NvBool suspend)
         }
     }
 #endif /* NV_DRM_ATOMIC_MODESET_AVAILABLE */
+
+done:
+    mutex_unlock(&nv_drm_suspend_mutex);
 }
 
 #endif /* NV_DRM_AVAILABLE */
