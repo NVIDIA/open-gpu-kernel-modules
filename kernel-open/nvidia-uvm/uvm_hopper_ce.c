@@ -480,7 +480,6 @@ static NvU64 encrypt_iv_address(uvm_push_t *push, uvm_gpu_address_t dst)
     return iv_address;
 }
 
-// TODO: Bug 3842953: adapt CE encrypt/decrypt for p2p encrypted transfers
 void uvm_hal_hopper_ce_encrypt(uvm_push_t *push,
                                uvm_gpu_address_t dst,
                                uvm_gpu_address_t src,
@@ -530,7 +529,6 @@ void uvm_hal_hopper_ce_encrypt(uvm_push_t *push,
     encrypt_or_decrypt(push, dst, src, size);
 }
 
-// TODO: Bug 3842953: adapt CE encrypt/decrypt for p2p encrypted transfers
 void uvm_hal_hopper_ce_decrypt(uvm_push_t *push,
                                uvm_gpu_address_t dst,
                                uvm_gpu_address_t src,

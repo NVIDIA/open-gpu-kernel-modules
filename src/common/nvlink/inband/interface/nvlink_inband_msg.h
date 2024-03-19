@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -80,6 +80,7 @@ typedef struct
 
 #define NVLINK_INBAND_GPU_PROBE_CAPS_SRIOV_ENABLED NVBIT(0)
 #define NVLINK_INBAND_GPU_PROBE_CAPS_PROBE_UPDATE  NVBIT(1)
+#define NVLINK_INBAND_GPU_PROBE_CAPS_EGM_SUPPORT   NVBIT(2)
 
 /* Add more caps as need in the future */
 

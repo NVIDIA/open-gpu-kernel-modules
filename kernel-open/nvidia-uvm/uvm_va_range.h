@@ -252,6 +252,10 @@ typedef struct
     // range because each GPU is able to map a completely different set of
     // allocations to the same VA range.
     uvm_ext_gpu_range_tree_t gpu_ranges[UVM_ID_MAX_GPUS];
+
+    // Dynamically allocated page mask allocated in
+    // uvm_va_range_create_external() and used and freed in uvm_free().
+    uvm_processor_mask_t *retained_mask;
 } uvm_va_range_external_t;
 
 // va_range state when va_range.type == UVM_VA_RANGE_TYPE_CHANNEL. This

@@ -208,14 +208,13 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
                                                         const char *format, ...);
 
 // Internal helper for uvm_push_begin_on_reserved channel
-__attribute__ ((format(printf, 7, 8)))
-NV_STATUS __uvm_push_begin_acquire_on_reserved_channel_with_info(uvm_channel_t *channel,
-                                                                 uvm_tracker_t *tracker,
-                                                                 uvm_push_t *push,
-                                                                 const char *filename,
-                                                                 const char *function,
-                                                                 int line,
-                                                                 const char *format, ...);
+__attribute__ ((format(printf, 6, 7)))
+NV_STATUS __uvm_push_begin_on_reserved_channel_with_info(uvm_channel_t *channel,
+                                                         uvm_push_t *push,
+                                                         const char *filename,
+                                                         const char *function,
+                                                         int line,
+                                                         const char *format, ...);
 // Begin a push on a channel of channel_type type
 // Picks the first available channel. If all channels of the given type are
 // busy, spin waits for one to become available.
@@ -269,8 +268,8 @@ NV_STATUS __uvm_push_begin_acquire_on_reserved_channel_with_info(uvm_channel_t *
 //
 // Locking: on success acquires the concurrent push semaphore until
 //          uvm_push_end()
-#define uvm_push_begin_on_reserved_channel(channel, push, format, ...)              \
-    __uvm_push_begin_acquire_on_reserved_channel_with_info((channel), NULL, (push), \
+#define uvm_push_begin_on_reserved_channel(channel, push, format, ...) \
+    __uvm_push_begin_on_reserved_channel_with_info((channel), (push),  \
         __FILE__, __FUNCTION__, __LINE__, (format), ##__VA_ARGS__)
 
 // Same as uvm_push_begin_on_channel except it also acquires the input tracker
@@ -324,6 +323,11 @@ static void uvm_push_get_tracker_entry(uvm_push_t *push, uvm_tracker_entry_t *en
 // Subsequently pushed GPU work will not start before all the work tracked by
 // tracker is complete.
 // Notably a NULL tracker is handled the same way as an empty tracker.
+//
+// If dependencies across GPUs are not allowed in the current configuration
+// (see uvm_push_allow_dependencies_across_gpus), the caller is responsible for
+// ensuring that the input tracker does not contain dependencies on GPUs other
+// than the one associated with the push.
 void uvm_push_acquire_tracker(uvm_push_t *push, uvm_tracker_t *tracker);
 
 // Set a push flag
@@ -479,5 +483,9 @@ static uvm_push_info_t *uvm_push_info_from_push(uvm_push_t *push)
 
     return &channel->push_infos[push->push_info_index];
 }
+
+// Returns true if a push is allowed to depend on pushes on other GPUs: work
+// dependencies across GPUs are permitted.
+bool uvm_push_allow_dependencies_across_gpus(void);
 
 #endif // __UVM_PUSH_H__

@@ -409,4 +409,10 @@ NV_STATUS uvm_service_block_context_init(void);
 // Release fault service contexts if any exist.
 void uvm_service_block_context_exit(void);
 
+// Allocate a service block context
+uvm_service_block_context_t *uvm_service_block_context_alloc(struct mm_struct *mm);
+
+// Free a servic block context
+void uvm_service_block_context_free(uvm_service_block_context_t *service_context);
+
 #endif // __UVM_GLOBAL_H__

@@ -62,7 +62,7 @@ static NvlStatus _nvswitch_ctrl_inband_flush_data(nvswitch_device *device, NVSWI
 #define NVSWITCH_DEV_CMD_DISPATCH_RESERVED(cmd)                                  \
     case cmd:                                                                    \
     {                                                                            \
-        retval = -NVL_ERR_NOT_IMPLEMENTED;                                       \
+        retval = -NVL_ERR_NOT_SUPPORTED;                                         \
         break;                                                                   \
     }                                                                            \
 

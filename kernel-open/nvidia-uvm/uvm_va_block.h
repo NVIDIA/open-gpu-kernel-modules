@@ -1504,17 +1504,19 @@ uvm_gpu_chunk_t *uvm_va_block_lookup_gpu_chunk(uvm_va_block_t *va_block, uvm_gpu
 // The caller needs to handle allocation-retry. va_block_retry can be NULL if
 // the destination is the CPU.
 //
-// va_block_context must not be NULL and policy for the region must match. See
-// the comments for uvm_va_block_check_policy_is_valid().  If va_block is a HMM
-// block, va_block_context->hmm.vma must be valid.  See the comments for
+// service_context and service_context->block_context must not be NULL and
+// policy for the region must match. See the comments for
+// uvm_va_block_check_policy_is_valid().  If va_block is a HMM block,
+// service->block_context->hmm.vma must be valid.  See the comments for
 // uvm_hmm_check_context_vma_is_valid() in uvm_hmm.h.
 //
-// LOCKING: The caller must hold the va_block lock. If va_block_context->mm !=
-//          NULL, va_block_context->mm->mmap_lock must be held in at least
-//          read mode.
+// LOCKING: The caller must hold the va_block lock. If
+//          service_context->va_block_context->mm != NULL,
+//          service_context->va_block_context->mm->mmap_lock must be held in at
+//          least read mode.
 NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                       uvm_va_block_retry_t *va_block_retry,
-                                      uvm_va_block_context_t *va_block_context,
+                                      uvm_service_block_context_t *service_context,
                                       uvm_va_block_region_t region,
                                       uvm_processor_id_t dest_id,
                                       uvm_migrate_mode_t mode,

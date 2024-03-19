@@ -348,6 +348,9 @@ namespace DisplayPort
         //
         bool        bPowerDownPhyBeforeD3;
 
+        // Force DSC on sink irrespective of LT status
+        bool        bForceDscOnSink;
+
         //
         // Reset the MSTM_CTRL registers on branch device irrespective of
         // IRQ VECTOR register having stale message. Certain branch devices

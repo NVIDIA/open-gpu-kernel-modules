@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2012-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2012-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -159,6 +159,7 @@ nvencsessionConstruct_IMPL
         (listCount(&(pGpu->nvencSessionList)) == 1))
     {
         // Register 1Hz timer callback for this GPU.
+        pGpu->bNvEncSessionDataProcessingWorkItemPending = NV_FALSE;
         status = osSchedule1HzCallback(pGpu,
                                        _gpuNvEncSessionDataProcessingCallback,
                                        NULL,
@@ -379,8 +380,7 @@ _gpuNvEncSessionProcessBuffer(POBJGPU pGpu, NvencSession *pNvencSession)
     portMemFree(pLocalSessionInfoBuffer);
 }
 
-static void
-_gpuNvEncSessionDataProcessingCallback(POBJGPU pGpu, void *data)
+static void _gpuNvEncSessionDataProcessing(OBJGPU *pGpu)
 {
     PNVENC_SESSION_LIST_ITEM  pNvencSessionListItem;
     PNVENC_SESSION_LIST_ITEM  pNvencSessionListItemNext;
@@ -413,6 +413,49 @@ _gpuNvEncSessionDataProcessingCallback(POBJGPU pGpu, void *data)
                                   sizeof(NVA0BC_CTRL_NVENC_SW_SESSION_UPDATE_INFO_PARAMS),
                                   status);
             }
+        }
+    }
+}
+
+static void _gpuNvEncSessionDataProcessingWorkItem(NvU32 gpuInstance, void *pArgs)
+{
+    OBJGPU *pGpu;
+
+    pGpu = gpumgrGetGpu(gpuInstance);
+    if (pGpu == NULL)
+    {
+        NV_PRINTF(LEVEL_ERROR, "NVENC Sessions GPU instance is invalid\n");
+        return;
+    }
+
+    _gpuNvEncSessionDataProcessing(pGpu);
+    pGpu->bNvEncSessionDataProcessingWorkItemPending = NV_FALSE;
+}
+
+static void
+_gpuNvEncSessionDataProcessingCallback(POBJGPU pGpu, void *data)
+{
+    NV_STATUS   status;
+
+    if (!pGpu->bNvEncSessionDataProcessingWorkItemPending)
+    {
+        status = osQueueWorkItemWithFlags(pGpu,
+                                          _gpuNvEncSessionDataProcessingWorkItem,
+                                          NULL,
+                                          OS_QUEUE_WORKITEM_FLAGS_LOCK_SEMA
+                                          | OS_QUEUE_WORKITEM_FLAGS_LOCK_GPU_GROUP_DEVICE_RW);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "NVENC session queuing async callback failed, status=%x\n",
+                      status);
+
+            // Call directly to do NVENC session data processing
+            _gpuNvEncSessionDataProcessing(pGpu);
+        }
+        else
+        {
+            pGpu->bNvEncSessionDataProcessingWorkItemPending = NV_TRUE;
         }
     }
 }

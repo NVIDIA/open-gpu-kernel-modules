@@ -1087,12 +1087,12 @@ static NV_STATUS service_va_block_locked(uvm_processor_id_t processor,
     // pages to be serviced
     if (page_count > 0) {
         uvm_processor_id_t id;
-        uvm_processor_mask_t update_processors;
+        uvm_processor_mask_t *update_processors = &service_context->update_processors;
 
-        uvm_processor_mask_and(&update_processors, &va_block->resident, &service_context->resident_processors);
+        uvm_processor_mask_and(update_processors, &va_block->resident, &service_context->resident_processors);
 
         // Remove pages that are already resident in the destination processors
-        for_each_id_in_mask(id, &update_processors) {
+        for_each_id_in_mask(id, update_processors) {
             bool migrate_pages;
             uvm_page_mask_t *residency_mask = uvm_va_block_resident_mask_get(va_block, id, NUMA_NO_NODE);
             UVM_ASSERT(residency_mask);

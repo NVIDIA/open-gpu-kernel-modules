@@ -94,7 +94,8 @@ const struct
     {NV_DP_DSC_MST_CAP_BUG_3143315,                 &dpRegkeyDatabase.bDscMstCapBug3143315,            DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_POWER_DOWN_PHY,                   &dpRegkeyDatabase.bPowerDownPhyBeforeD3,           DP_REG_VAL_BOOL},
     {NV_DP_REGKEY_REASSESS_MAX_LINK,                &dpRegkeyDatabase.bReassessMaxLink,                DP_REG_VAL_BOOL},
-    {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,      &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,        DP_REG_VAL_BOOL}
+    {NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED,      &dpRegkeyDatabase.bMSTPCONCapsReadDisabled,        DP_REG_VAL_BOOL},
+    {NV_DP_REGKEY_FORCE_DSC_ON_SINK,                &dpRegkeyDatabase.bForceDscOnSink,                 DP_REG_VAL_BOOL},
 };
 
 EvoMainLink::EvoMainLink(EvoInterface * provider, Timer * timer) :

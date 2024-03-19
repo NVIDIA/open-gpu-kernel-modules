@@ -214,13 +214,14 @@ static NV_STATUS block_migrate_add_mappings(uvm_va_block_t *va_block,
 
 NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                       uvm_va_block_retry_t *va_block_retry,
-                                      uvm_va_block_context_t *va_block_context,
+                                      uvm_service_block_context_t *service_context,
                                       uvm_va_block_region_t region,
                                       uvm_processor_id_t dest_id,
                                       uvm_migrate_mode_t mode,
                                       uvm_tracker_t *out_tracker)
 {
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
+    uvm_va_block_context_t *va_block_context = service_context->block_context;
     NV_STATUS status, tracker_status = NV_OK;
 
     uvm_assert_mutex_locked(&va_block->lock);
@@ -229,7 +230,7 @@ NV_STATUS uvm_va_block_migrate_locked(uvm_va_block_t *va_block,
     if (uvm_va_block_is_hmm(va_block)) {
         status = uvm_hmm_va_block_migrate_locked(va_block,
                                                  va_block_retry,
-                                                 va_block_context,
+                                                 service_context,
                                                  dest_id,
                                                  region,
                                                  UVM_MAKE_RESIDENT_CAUSE_API_MIGRATE);
@@ -438,7 +439,7 @@ static void preunmap_multi_block(uvm_va_range_t *va_range,
 }
 
 static NV_STATUS uvm_va_range_migrate_multi_block(uvm_va_range_t *va_range,
-                                                  uvm_va_block_context_t *va_block_context,
+                                                  uvm_service_block_context_t *service_context,
                                                   NvU64 start,
                                                   NvU64 end,
                                                   uvm_processor_id_t dest_id,
@@ -470,10 +471,11 @@ static NV_STATUS uvm_va_range_migrate_multi_block(uvm_va_range_t *va_range,
                                                     max(start, va_block->start),
                                                     min(end, va_block->end));
 
-        status = UVM_VA_BLOCK_LOCK_RETRY(va_block, &va_block_retry,
+        status = UVM_VA_BLOCK_LOCK_RETRY(va_block,
+                                         &va_block_retry,
                                          uvm_va_block_migrate_locked(va_block,
                                                                      &va_block_retry,
-                                                                     va_block_context,
+                                                                     service_context,
                                                                      region,
                                                                      dest_id,
                                                                      mode,
@@ -486,7 +488,7 @@ static NV_STATUS uvm_va_range_migrate_multi_block(uvm_va_range_t *va_range,
 }
 
 static NV_STATUS uvm_va_range_migrate(uvm_va_range_t *va_range,
-                                      uvm_va_block_context_t *va_block_context,
+                                      uvm_service_block_context_t *service_context,
                                       NvU64 start,
                                       NvU64 end,
                                       uvm_processor_id_t dest_id,
@@ -510,7 +512,7 @@ static NV_STATUS uvm_va_range_migrate(uvm_va_range_t *va_range,
             preunmap_range_end = min(preunmap_range_end - 1, end);
 
             preunmap_multi_block(va_range,
-                                 va_block_context,
+                                 service_context->block_context,
                                  preunmap_range_start,
                                  preunmap_range_end,
                                  dest_id);
@@ -520,7 +522,7 @@ static NV_STATUS uvm_va_range_migrate(uvm_va_range_t *va_range,
         }
 
         status = uvm_va_range_migrate_multi_block(va_range,
-                                                  va_block_context,
+                                                  service_context,
                                                   preunmap_range_start,
                                                   preunmap_range_end,
                                                   dest_id,
@@ -536,7 +538,7 @@ static NV_STATUS uvm_va_range_migrate(uvm_va_range_t *va_range,
 }
 
 static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
-                                    uvm_va_block_context_t *va_block_context,
+                                    uvm_service_block_context_t *service_context,
                                     uvm_va_range_t *first_va_range,
                                     NvU64 base,
                                     NvU64 length,
@@ -552,13 +554,7 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
 
     if (!first_va_range) {
         // For HMM, we iterate over va_blocks since there is no va_range.
-        return uvm_hmm_migrate_ranges(va_space,
-                                      va_block_context,
-                                      base,
-                                      length,
-                                      dest_id,
-                                      mode,
-                                      out_tracker);
+        return uvm_hmm_migrate_ranges(va_space, service_context, base, length, dest_id, mode, out_tracker);
     }
 
     UVM_ASSERT(first_va_range == uvm_va_space_iter_first(va_space, base, base));
@@ -587,7 +583,9 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
             if (!iter.migratable) {
                 // Only return NV_WARN_MORE_PROCESSING_REQUIRED if the pages aren't
                 // already resident at dest_id.
-                if (!uvm_va_policy_preferred_location_equal(policy, dest_id, va_block_context->make_resident.dest_nid))
+                if (!uvm_va_policy_preferred_location_equal(policy,
+                                                            dest_id,
+                                                            service_context->block_context->make_resident.dest_nid))
                     skipped_migrate = true;
             }
             else if (uvm_processor_mask_test(&va_range->uvm_lite_gpus, dest_id) &&
@@ -599,7 +597,7 @@ static NV_STATUS uvm_migrate_ranges(uvm_va_space_t *va_space,
             }
             else {
                 status = uvm_va_range_migrate(va_range,
-                                              va_block_context,
+                                              service_context,
                                               iter.start,
                                               iter.end,
                                               dest_id,
@@ -636,7 +634,7 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
                              uvm_tracker_t *out_tracker)
 {
     NV_STATUS status = NV_OK;
-    uvm_va_block_context_t *va_block_context;
+    uvm_service_block_context_t *service_context;
     bool do_mappings;
     bool do_two_passes;
     bool is_single_block;
@@ -654,11 +652,11 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
     else if (!first_va_range)
         return NV_ERR_INVALID_ADDRESS;
 
-    va_block_context = uvm_va_block_context_alloc(mm);
-    if (!va_block_context)
+    service_context = uvm_service_block_context_alloc(mm);
+    if (!service_context)
         return NV_ERR_NO_MEMORY;
 
-    va_block_context->make_resident.dest_nid = dest_nid;
+    service_context->block_context->make_resident.dest_nid = dest_nid;
 
     // We perform two passes (unless the migration only covers a single VA
     // block or UVM_MIGRATE_FLAG_SKIP_CPU_MAP is passed). This helps in the
@@ -688,7 +686,7 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
         should_do_cpu_preunmap = migration_should_do_cpu_preunmap(va_space, UVM_MIGRATE_PASS_FIRST, is_single_block);
 
         status = uvm_migrate_ranges(va_space,
-                                    va_block_context,
+                                    service_context,
                                     first_va_range,
                                     base,
                                     length,
@@ -706,7 +704,7 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
         should_do_cpu_preunmap = migration_should_do_cpu_preunmap(va_space, pass, is_single_block);
 
         status = uvm_migrate_ranges(va_space,
-                                    va_block_context,
+                                    service_context,
                                     first_va_range,
                                     base,
                                     length,
@@ -716,7 +714,7 @@ static NV_STATUS uvm_migrate(uvm_va_space_t *va_space,
                                     out_tracker);
     }
 
-    uvm_va_block_context_free(va_block_context);
+    uvm_service_block_context_free(service_context);
 
     return status;
 }

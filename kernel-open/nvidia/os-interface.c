@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1999-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1999-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -2201,6 +2201,8 @@ static int os_numa_verify_gpu_memory_zone(struct notifier_block *nb,
     return NOTIFY_OK;
 }
 
+#define ADD_REMOVE_GPU_MEMORY_NUM_SEGMENTS 4
+
 NV_STATUS NV_API_CALL os_numa_add_gpu_memory
 (
     void *handle,
@@ -2214,7 +2216,12 @@ NV_STATUS NV_API_CALL os_numa_add_gpu_memory
     nv_linux_state_t *nvl = pci_get_drvdata(handle);
     nv_state_t *nv = NV_STATE_PTR(nvl);
     NvU64 base = offset + nvl->coherent_link_info.gpu_mem_pa;
-    int ret;
+    int ret = 0;
+    NvU64 memblock_size;
+    NvU64 size_remaining;
+    NvU64 calculated_segment_size;
+    NvU64 segment_size;
+    NvU64 segment_base;
     os_numa_gpu_mem_hotplug_notifier_t notifier =
     {
         .start_pa = base,
@@ -2247,11 +2254,49 @@ NV_STATUS NV_API_CALL os_numa_add_gpu_memory
         goto failed;
     }
 
+    //
+    // Adding all memory at once can take a long time. Split up memory into segments
+    // with schedule() in between to prevent soft lockups. Memory segments for
+    // add_memory_driver_managed() need to be aligned to memblock size.
+    //
+    // If there are any issues splitting into segments, then add all memory at once.
+    //
+    if (os_numa_memblock_size(&memblock_size) == NV_OK)
+    {
+        calculated_segment_size = NV_ALIGN_UP(size / ADD_REMOVE_GPU_MEMORY_NUM_SEGMENTS, memblock_size);
+    }
+    else
+    {
+        // Don't split into segments, add all memory at once
+        calculated_segment_size = size;
+    }
+
+    segment_size = calculated_segment_size;
+    segment_base = base;
+    size_remaining = size;
+
+    while ((size_remaining > 0) &&
+           (ret == 0))
+    {
+        if (segment_size > size_remaining)
+        {
+            segment_size = size_remaining;
+        }
+
 #ifdef NV_ADD_MEMORY_DRIVER_MANAGED_HAS_MHP_FLAGS_ARG
-    ret = add_memory_driver_managed(node, base, size, "System RAM (NVIDIA)", MHP_NONE);
+        ret = add_memory_driver_managed(node, segment_base, segment_size, "System RAM (NVIDIA)", MHP_NONE);
 #else
-    ret = add_memory_driver_managed(node, base, size, "System RAM (NVIDIA)");
+        ret = add_memory_driver_managed(node, segment_base, segment_size, "System RAM (NVIDIA)");
 #endif
+        nv_printf(NV_DBG_SETUP, "NVRM: add_memory_driver_managed() returns: %d for segment_base: 0x%llx, segment_size: 0x%llx\n",
+                  ret, segment_base, segment_size);
+
+        segment_base += segment_size;
+        size_remaining -= segment_size;
+
+        // Yield CPU to prevent soft lockups
+        schedule();
+    }
     unregister_memory_notifier(&notifier.memory_notifier);
 
     if (ret == 0)
@@ -2265,14 +2310,33 @@ NV_STATUS NV_API_CALL os_numa_add_gpu_memory
             zone_end_pfn(zone) != end_pfn)
         {
             nv_printf(NV_DBG_ERRORS, "NVRM: GPU memory zone movable auto onlining failed!\n");
+
 #ifdef NV_OFFLINE_AND_REMOVE_MEMORY_PRESENT
-#ifdef NV_REMOVE_MEMORY_HAS_NID_ARG
-            if (offline_and_remove_memory(node, base, size) != 0)
-#else
-            if (offline_and_remove_memory(base, size) != 0)
-#endif
+            // Since zone movable auto onlining failed, need to remove the added memory.
+            segment_size = calculated_segment_size;
+            segment_base = base;
+            size_remaining = size;
+
+            while (size_remaining > 0)
             {
-                nv_printf(NV_DBG_ERRORS, "NVRM: offline_and_remove_memory failed\n");
+                if (segment_size > size_remaining)
+                {
+                    segment_size = size_remaining;
+                }
+
+#ifdef NV_REMOVE_MEMORY_HAS_NID_ARG
+                ret = offline_and_remove_memory(node, segment_base, segment_size);
+#else
+                ret = offline_and_remove_memory(segment_base, segment_size);
+#endif
+                nv_printf(NV_DBG_SETUP, "NVRM: offline_and_remove_memory() returns: %d for segment_base: 0x%llx, segment_size: 0x%llx\n",
+                          ret, segment_base, segment_size);
+
+                segment_base += segment_size;
+                size_remaining -= segment_size;
+
+                // Yield CPU to prevent soft lockups
+                schedule();
             }
 #endif
             goto failed;
@@ -2321,6 +2385,77 @@ failed:
     return NV_ERR_OPERATING_SYSTEM;
 #endif
     return NV_ERR_NOT_SUPPORTED;
+}
+
+
+typedef struct {
+    NvU64 base;
+    NvU64 size;
+    NvU32 nodeId;
+    int ret;
+} remove_numa_memory_info_t;
+
+static void offline_numa_memory_callback
+(
+    void *args
+)
+{
+#ifdef NV_OFFLINE_AND_REMOVE_MEMORY_PRESENT
+    remove_numa_memory_info_t *pNumaInfo = (remove_numa_memory_info_t *)args;
+    int ret = 0;
+    NvU64 memblock_size;
+    NvU64 size_remaining;
+    NvU64 calculated_segment_size;
+    NvU64 segment_size;
+    NvU64 segment_base;
+
+    //
+    // Removing all memory at once can take a long time. Split up memory into segments
+    // with schedule() in between to prevent soft lockups. Memory segments for
+    // offline_and_remove_memory() need to be aligned to memblock size.
+    //
+    // If there are any issues splitting into segments, then remove all memory at once.
+    //
+    if (os_numa_memblock_size(&memblock_size) == NV_OK)
+    {
+        calculated_segment_size = NV_ALIGN_UP(pNumaInfo->size / ADD_REMOVE_GPU_MEMORY_NUM_SEGMENTS, memblock_size);
+    }
+    else
+    {
+        // Don't split into segments, remove all memory at once
+        calculated_segment_size = pNumaInfo->size;
+    }
+
+    segment_size = calculated_segment_size;
+    segment_base = pNumaInfo->base;
+    size_remaining = pNumaInfo->size;
+
+    while (size_remaining > 0)
+    {
+        if (segment_size > size_remaining)
+        {
+            segment_size = size_remaining;
+        }
+
+#ifdef NV_REMOVE_MEMORY_HAS_NID_ARG
+        ret = offline_and_remove_memory(pNumaInfo->nodeId,
+                                        segment_base,
+                                        segment_size);
+#else
+        ret = offline_and_remove_memory(segment_base,
+                                        segment_size);
+#endif
+        nv_printf(NV_DBG_SETUP, "NVRM: offline_and_remove_memory() returns: %d for segment_base: 0x%llx, segment_size: 0x%llx\n",
+                  ret, segment_base, segment_size);
+        pNumaInfo->ret |= ret;
+
+        segment_base += segment_size;
+        size_remaining -= segment_size;
+
+        // Yield CPU to prevent soft lockups
+        schedule();
+    }
+#endif
 }
 
 NV_STATUS NV_API_CALL os_numa_remove_gpu_memory

@@ -287,16 +287,17 @@ typedef struct
                                               uvm_va_block_retry_t *va_block_retry,
                                               uvm_service_block_context_t *service_context);
 
-    // This is called to migrate a region within a HMM va_block.
-    // va_block_context must not be NULL and va_block_context->hmm.vma
-    // must be valid.
+    // This is called to migrate a region within a HMM va_block. service_context
+    // must not be NULL, service_context->va_block_context must not be NULL and
+    // service_context->va_block_context->hmm.vma must be valid.
+    //
     // Special return values (besides things like NV_ERR_NO_MEMORY):
     // NV_WARN_MORE_PROCESSING_REQUIRED indicates that one or more pages could
     // not be migrated and that a retry might succeed after unlocking the
     // va_block lock, va_space lock, and mmap lock.
     NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                               uvm_va_block_retry_t *va_block_retry,
-                                              uvm_va_block_context_t *va_block_context,
+                                              uvm_service_block_context_t *service_context,
                                               uvm_processor_id_t dest_id,
                                               uvm_va_block_region_t region,
                                               uvm_make_resident_cause_t cause);
@@ -304,13 +305,14 @@ typedef struct
     // This is called to migrate an address range of HMM allocations via
     // UvmMigrate().
     //
-    // va_block_context must not be NULL. The caller is not required to set
-    // va_block_context->hmm.vma.
+    // service_context and service_context->va_block_context must not be NULL.
+    // The caller is not required to set
+    // service_context->va_block_context->hmm.vma.
     //
     // Locking: the va_space->va_space_mm.mm mmap_lock must be locked and
     // the va_space read lock must be held.
     NV_STATUS uvm_hmm_migrate_ranges(uvm_va_space_t *va_space,
-                                     uvm_va_block_context_t *va_block_context,
+                                     uvm_service_block_context_t *service_context,
                                      NvU64 base,
                                      NvU64 length,
                                      uvm_processor_id_t dest_id,
@@ -329,27 +331,31 @@ typedef struct
                                                 uvm_gpu_chunk_t *gpu_chunk,
                                                 uvm_va_block_region_t chunk_region);
 
-    // Migrate pages to system memory for the given page mask.
-    // Note that the mmap lock is not held and there is no MM retained.
-    // This must be called after uvm_hmm_va_block_evict_chunk_prep() has
-    // initialized va_block_context->hmm.src_pfns[] for the source GPU physical
-    // PFNs being migrated. Note that the input mask 'pages_to_evict' can be
-    // modified. If any of the evicted pages has the accessed by policy set,
-    // then record that by setting out_accessed_by_set.
+    // Migrate pages to system memory for the given page mask. Note that the
+    // mmap lock is not held and there is no MM retained. This must be called
+    // after uvm_hmm_va_block_evict_chunk_prep() has initialized
+    // service_context->va_block_context->hmm.src_pfns[] for the source GPU
+    // physical PFNs being migrated. Note that the input mask 'pages_to_evict'
+    // can be modified. If any of the evicted pages has the accessed by policy
+    // set, then record that by setting out_accessed_by_set.
+    // The caller is not required to set
+    // service_context->va_block_context->hmm.vma, it will be cleared in
+    // uvm_hmm_va_block_evict_chunks().
     // Locking: the va_block lock must be locked.
     NV_STATUS uvm_hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
-                                            uvm_va_block_context_t *va_block_context,
+                                            uvm_service_block_context_t *service_context,
                                             const uvm_page_mask_t *pages_to_evict,
                                             uvm_va_block_region_t region,
                                             bool *out_accessed_by_set);
 
-    // Migrate pages from the given GPU to system memory for the given page
-    // mask and region. va_block_context must not be NULL.
-    // Note that the mmap lock is not held and there is no MM retained.
+    // Migrate pages from the given GPU to system memory for the given page mask
+    // and region. uvm_service_block_context_t and
+    // uvm_service_block_context_t->va_block_context must not be NULL. Note that
+    // the mmap lock is not held and there is no MM retained.
     // Locking: the va_block lock must be locked.
     NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
                                                     uvm_gpu_t *gpu,
-                                                    uvm_va_block_context_t *va_block_context,
+                                                    uvm_service_block_context_t *service_context,
                                                     const uvm_page_mask_t *pages_to_evict,
                                                     uvm_va_block_region_t region);
 
@@ -572,7 +578,7 @@ typedef struct
 
     static NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                                      uvm_va_block_retry_t *va_block_retry,
-                                                     uvm_va_block_context_t *va_block_context,
+                                                     uvm_service_block_context_t *service_context,
                                                      uvm_processor_id_t dest_id,
                                                      uvm_va_block_region_t region,
                                                      uvm_make_resident_cause_t cause)
@@ -581,7 +587,7 @@ typedef struct
     }
 
     static NV_STATUS uvm_hmm_migrate_ranges(uvm_va_space_t *va_space,
-                                            uvm_va_block_context_t *va_block_context,
+                                            uvm_service_block_context_t *service_context,
                                             NvU64 base,
                                             NvU64 length,
                                             uvm_processor_id_t dest_id,
@@ -606,7 +612,7 @@ typedef struct
     }
 
     static NV_STATUS uvm_hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
-                                                   uvm_va_block_context_t *va_block_context,
+                                                   uvm_service_block_context_t *service_context,
                                                    const uvm_page_mask_t *pages_to_evict,
                                                    uvm_va_block_region_t region,
                                                    bool *out_accessed_by_set)
@@ -616,7 +622,7 @@ typedef struct
 
     static NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
                                                            uvm_gpu_t *gpu,
-                                                           uvm_va_block_context_t *va_block_context,
+                                                           uvm_service_block_context_t *service_context,
                                                            const uvm_page_mask_t *pages_to_evict,
                                                            uvm_va_block_region_t region)
     {

@@ -970,7 +970,7 @@ static NV_STATUS uvm_map_external_allocation(uvm_va_space_t *va_space, UVM_MAP_E
 {
     uvm_va_range_t *va_range = NULL;
     uvm_gpu_t *mapping_gpu;
-    uvm_processor_mask_t mapped_gpus;
+    uvm_processor_mask_t *mapped_gpus;
     NV_STATUS status = NV_OK;
     size_t i;
     uvm_map_rm_params_t map_rm_params;
@@ -988,6 +988,10 @@ static NV_STATUS uvm_map_external_allocation(uvm_va_space_t *va_space, UVM_MAP_E
     if (params->gpuAttributesCount == 0 || params->gpuAttributesCount > UVM_MAX_GPUS_V2)
         return NV_ERR_INVALID_ARGUMENT;
 
+    mapped_gpus = uvm_processor_mask_cache_alloc();
+    if (!mapped_gpus)
+        return NV_ERR_NO_MEMORY;
+
     uvm_va_space_down_read_rm(va_space);
     va_range = uvm_va_range_find(va_space, params->base);
 
@@ -995,10 +999,11 @@ static NV_STATUS uvm_map_external_allocation(uvm_va_space_t *va_space, UVM_MAP_E
         va_range->type != UVM_VA_RANGE_TYPE_EXTERNAL ||
         va_range->node.end < params->base + params->length - 1) {
         uvm_va_space_up_read_rm(va_space);
+        uvm_processor_mask_cache_free(mapped_gpus);
         return NV_ERR_INVALID_ADDRESS;
     }
 
-    uvm_processor_mask_zero(&mapped_gpus);
+    uvm_processor_mask_zero(mapped_gpus);
     for (i = 0; i < params->gpuAttributesCount; i++) {
         if (uvm_api_mapping_type_invalid(params->perGpuAttributes[i].gpuMappingType) ||
             uvm_api_caching_type_invalid(params->perGpuAttributes[i].gpuCachingType) ||
@@ -1034,7 +1039,7 @@ static NV_STATUS uvm_map_external_allocation(uvm_va_space_t *va_space, UVM_MAP_E
         if (status != NV_OK)
             goto error;
 
-        uvm_processor_mask_set(&mapped_gpus, mapping_gpu->id);
+        uvm_processor_mask_set(mapped_gpus, mapping_gpu->id);
     }
 
     // Wait for outstanding page table operations to finish across all GPUs. We
@@ -1043,6 +1048,8 @@ static NV_STATUS uvm_map_external_allocation(uvm_va_space_t *va_space, UVM_MAP_E
     status = uvm_tracker_wait_deinit(&tracker);
 
     uvm_va_space_up_read_rm(va_space);
+    uvm_processor_mask_cache_free(mapped_gpus);
+
     return status;
 
 error:
@@ -1051,7 +1058,7 @@ error:
     (void)uvm_tracker_wait_deinit(&tracker);
 
     // Tear down only those mappings we created during this call
-    for_each_va_space_gpu_in_mask(mapping_gpu, va_space, &mapped_gpus) {
+    for_each_va_space_gpu_in_mask(mapping_gpu, va_space, mapped_gpus) {
         uvm_ext_gpu_range_tree_t *range_tree = uvm_ext_gpu_range_tree(va_range, mapping_gpu);
         uvm_ext_gpu_map_t *ext_map, *ext_map_next;
 
@@ -1067,6 +1074,7 @@ error:
     }
 
     uvm_va_space_up_read_rm(va_space);
+    uvm_processor_mask_cache_free(mapped_gpus);
 
     return status;
 }
@@ -1356,9 +1364,7 @@ static NV_STATUS uvm_free(uvm_va_space_t *va_space, NvU64 base, NvU64 length)
 {
     uvm_va_range_t *va_range;
     NV_STATUS status = NV_OK;
-    // TODO: Bug 4351121: retained_mask should be pre-allocated, not on the
-    // stack.
-    uvm_processor_mask_t retained_mask;
+    uvm_processor_mask_t *retained_mask = NULL;
     LIST_HEAD(deferred_free_list);
 
     if (uvm_api_range_invalid_4k(base, length))
@@ -1391,17 +1397,25 @@ static NV_STATUS uvm_free(uvm_va_space_t *va_space, NvU64 base, NvU64 length)
     }
 
     if (va_range->type == UVM_VA_RANGE_TYPE_EXTERNAL) {
+        retained_mask = va_range->external.retained_mask;
+
+        // Set the retained_mask to NULL to prevent
+        // uvm_va_range_destroy_external() from freeing the mask.
+        va_range->external.retained_mask = NULL;
+
+        UVM_ASSERT(retained_mask);
+
         // External ranges may have deferred free work, so the GPUs may have to
         // be retained. Construct the mask of all the GPUs that need to be
         // retained.
-        uvm_processor_mask_and(&retained_mask, &va_range->external.mapped_gpus, &va_space->registered_gpus);
+        uvm_processor_mask_and(retained_mask, &va_range->external.mapped_gpus, &va_space->registered_gpus);
     }
 
     uvm_va_range_destroy(va_range, &deferred_free_list);
 
     // If there is deferred work, retain the required GPUs.
     if (!list_empty(&deferred_free_list))
-        uvm_global_gpu_retain(&retained_mask);
+        uvm_global_gpu_retain(retained_mask);
 
 out:
     uvm_va_space_up_write(va_space);
@@ -1409,8 +1423,12 @@ out:
     if (!list_empty(&deferred_free_list)) {
         UVM_ASSERT(status == NV_OK);
         uvm_deferred_free_object_list(&deferred_free_list);
-        uvm_global_gpu_release(&retained_mask);
+        uvm_global_gpu_release(retained_mask);
     }
+
+    // Free the mask allocated in uvm_va_range_create_external() since
+    // uvm_va_range_destroy() won't free this mask.
+    uvm_processor_mask_cache_free(retained_mask);
 
     return status;
 }

@@ -691,12 +691,16 @@ static NV_STATUS stress_test_all_gpus_in_va(uvm_va_space_t *va_space,
             if (uvm_test_rng_range_32(&rng, 0, 1) == 0) {
                 NvU32 random_stream_index = uvm_test_rng_range_32(&rng, 0, num_streams - 1);
                 uvm_test_stream_t *random_stream = &streams[random_stream_index];
-                uvm_push_acquire_tracker(&stream->push, &random_stream->tracker);
-                snapshot_counter(&stream->push,
-                                 random_stream->counter_mem,
-                                 stream->other_stream_counter_snapshots_mem,
-                                 i,
-                                 random_stream->queued_counter_repeat);
+
+                if ((random_stream->push.gpu == gpu) || uvm_push_allow_dependencies_across_gpus()) {
+                    uvm_push_acquire_tracker(&stream->push, &random_stream->tracker);
+
+                    snapshot_counter(&stream->push,
+                                     random_stream->counter_mem,
+                                     stream->other_stream_counter_snapshots_mem,
+                                     i,
+                                     random_stream->queued_counter_repeat);
+                }
             }
 
             uvm_push_end(&stream->push);

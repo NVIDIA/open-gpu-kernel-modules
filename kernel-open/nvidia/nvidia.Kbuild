@@ -250,6 +250,7 @@ NV_CONFTEST_TYPE_COMPILE_TESTS += num_registered_fb
 NV_CONFTEST_TYPE_COMPILE_TESTS += pci_driver_has_driver_managed_dma
 NV_CONFTEST_TYPE_COMPILE_TESTS += vm_area_struct_has_const_vm_flags
 NV_CONFTEST_TYPE_COMPILE_TESTS += memory_failure_has_trapno_arg
+NV_CONFTEST_TYPE_COMPILE_TESTS += foll_longterm_present
 
 NV_CONFTEST_GENERIC_COMPILE_TESTS += dom0_kernel_present
 NV_CONFTEST_GENERIC_COMPILE_TESTS += nvidia_vgpu_kvm_build

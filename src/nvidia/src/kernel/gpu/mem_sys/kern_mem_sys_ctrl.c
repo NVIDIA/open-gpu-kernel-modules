@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -475,11 +475,14 @@ _kmemsysGetFbInfos
                         // It will be zero unless VGA display memory is reserved
                         if (pKernelMemorySystem->fbOverrideStartKb != 0)
                         {
+                            status = NV_OK;
                             data = NvU64_LO32(pKernelMemorySystem->fbOverrideStartKb);
-                            NV_ASSERT(((NvU64) data << 10ULL) == pKernelMemorySystem->fbOverrideStartKb);
+                            NV_ASSERT_OR_ELSE((NvU64) data == pKernelMemorySystem->fbOverrideStartKb,
+                                              status = NV_ERR_INVALID_DATA);
+                            
                         }
-					    else
-				    	{
+                        else
+                        {
                             //
                             // Returns start of heap in kbytes. This is zero unless
                             // VGA display memory is reserved.

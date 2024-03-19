@@ -167,6 +167,10 @@ typedef struct
     // block APIs.
     uvm_page_mask_t caller_page_mask;
 
+    // Available as scratch space for the caller. Not used by any of the VA
+    // block APIs.
+    uvm_processor_mask_t caller_processor_mask;
+
     // Available as scratch space for the internal APIs. This is like a caller-
     // save register: it shouldn't be used across function calls which also take
     // this block_context.
@@ -180,8 +184,14 @@ typedef struct
     // this va_block_context.
     uvm_processor_mask_t scratch_processor_mask;
 
-    // Temporary mask in block_add_eviction_mappings().
+    // Temporary mask used in block_add_eviction_mappings().
     uvm_processor_mask_t map_processors_eviction;
+
+    // Temporary mask used in uvm_perf_thrashing_unmap_remote_pinned_pages_all.
+    uvm_processor_mask_t unmap_processors_mask;
+
+    // Temporary mask used in thrashing_processors_have_fast_access().
+    uvm_processor_mask_t fast_access_mask;
 
     // State used by uvm_va_block_make_resident
     struct uvm_make_resident_context_struct

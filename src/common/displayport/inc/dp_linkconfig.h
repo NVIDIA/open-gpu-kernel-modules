@@ -294,8 +294,8 @@ namespace DisplayPort
             else
             {
                 // if FEC is not enabled, link overhead comprises only of
-                // 0.05% downspread.
-                return rate - 5 * rate/ 1000;
+                // 0.6% downspread.
+                return rate - 6 * rate/ 1000;
 
             }
         }

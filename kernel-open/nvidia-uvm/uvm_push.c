@@ -25,6 +25,7 @@
 #include "uvm_forward_decl.h"
 #include "uvm_push.h"
 #include "uvm_channel.h"
+#include "uvm_global.h"
 #include "uvm_hal.h"
 #include "uvm_kvmalloc.h"
 #include "uvm_linux.h"
@@ -55,6 +56,13 @@ static uvm_push_acquire_info_t *push_acquire_info_from_push(uvm_push_t *push)
     return &channel->push_acquire_infos[push->push_info_index];
 }
 
+bool uvm_push_allow_dependencies_across_gpus(void)
+{
+    // In Confidential Computing a GPU semaphore release cannot be waited on
+    // (acquired by) any other GPU, due to a mix of HW and SW constraints.
+    return !g_uvm_global.conf_computing_enabled;
+}
+
 // Acquire a single tracker entry. Subsequently pushed GPU work will not start
 // before the work tracked by tracker entry is complete.
 static void push_acquire_tracker_entry(uvm_push_t *push,
@@ -77,9 +85,14 @@ static void push_acquire_tracker_entry(uvm_push_t *push,
     if (channel == entry_channel)
         return;
 
-    semaphore_va = uvm_channel_tracking_semaphore_get_gpu_va_in_channel(entry_channel, channel);
     gpu = uvm_channel_get_gpu(channel);
 
+    // If dependencies across GPUs are disallowed, the caller is required to
+    // previously wait on such dependencies.
+    if (gpu != uvm_tracker_entry_gpu(tracker_entry))
+        UVM_ASSERT(uvm_push_allow_dependencies_across_gpus());
+
+    semaphore_va = uvm_channel_tracking_semaphore_get_gpu_va_in_channel(entry_channel, channel);
     gpu->parent->host_hal->semaphore_acquire(push, semaphore_va, (NvU32)tracker_entry->value);
 
     if (push_acquire_info) {
@@ -188,6 +201,17 @@ static void push_fill_info(uvm_push_t *push,
         push_set_description(push, format, args);
 }
 
+static NV_STATUS wait_for_other_gpus_if_needed(uvm_tracker_t *tracker, uvm_gpu_t *gpu)
+{
+    if (tracker == NULL)
+        return NV_OK;
+
+    if (uvm_push_allow_dependencies_across_gpus())
+        return NV_OK;
+
+    return uvm_tracker_wait_for_other_gpus(tracker, gpu);
+}
+
 static NV_STATUS push_begin_acquire_with_info(uvm_channel_t *channel,
                                               uvm_tracker_t *tracker,
                                               uvm_push_t *push,
@@ -234,6 +258,10 @@ NV_STATUS __uvm_push_begin_acquire_with_info(uvm_channel_manager_t *manager,
         UVM_ASSERT(dst_gpu != manager->gpu);
     }
 
+    status = wait_for_other_gpus_if_needed(tracker, manager->gpu);
+    if (status != NV_OK)
+        return status;
+
     status = push_reserve_channel(manager, type, dst_gpu, &channel);
     if (status != NV_OK)
         return status;
@@ -262,6 +290,10 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
     va_list args;
     NV_STATUS status;
 
+    status = wait_for_other_gpus_if_needed(tracker, uvm_channel_get_gpu(channel));
+    if (status != NV_OK)
+        return status;
+
     status = uvm_channel_reserve(channel, 1);
     if (status != NV_OK)
         return status;
@@ -276,20 +308,19 @@ NV_STATUS __uvm_push_begin_acquire_on_channel_with_info(uvm_channel_t *channel,
     return status;
 }
 
-__attribute__ ((format(printf, 7, 8)))
-NV_STATUS __uvm_push_begin_acquire_on_reserved_channel_with_info(uvm_channel_t *channel,
-                                                                 uvm_tracker_t *tracker,
-                                                                 uvm_push_t *push,
-                                                                 const char *filename,
-                                                                 const char *function,
-                                                                 int line,
-                                                                 const char *format, ...)
+__attribute__ ((format(printf, 6, 7)))
+NV_STATUS __uvm_push_begin_on_reserved_channel_with_info(uvm_channel_t *channel,
+                                                         uvm_push_t *push,
+                                                         const char *filename,
+                                                         const char *function,
+                                                         int line,
+                                                         const char *format, ...)
 {
     va_list args;
     NV_STATUS status;
 
     va_start(args, format);
-    status = push_begin_acquire_with_info(channel, tracker, push, filename, function, line, format, args);
+    status = push_begin_acquire_with_info(channel, NULL, push, filename, function, line, format, args);
     va_end(args);
 
     return status;
@@ -308,6 +339,7 @@ bool uvm_push_info_is_tracking_acquires(void)
 void uvm_push_end(uvm_push_t *push)
 {
     uvm_push_flag_t flag;
+
     uvm_channel_end_push(push);
 
     flag = find_first_bit(push->flags, UVM_PUSH_FLAG_COUNT);
@@ -319,6 +351,7 @@ void uvm_push_end(uvm_push_t *push)
 NV_STATUS uvm_push_wait(uvm_push_t *push)
 {
     uvm_tracker_entry_t entry;
+
     uvm_push_get_tracker_entry(push, &entry);
 
     return uvm_tracker_wait_for_entry(&entry);

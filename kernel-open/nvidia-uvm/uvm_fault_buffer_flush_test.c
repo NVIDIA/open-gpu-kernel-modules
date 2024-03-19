@@ -51,8 +51,10 @@ NV_STATUS uvm_test_fault_buffer_flush(UVM_TEST_FAULT_BUFFER_FLUSH_PARAMS *params
 
     uvm_va_space_up_read(va_space);
 
-    if (uvm_processor_mask_empty(retained_gpus))
-        return NV_ERR_INVALID_DEVICE;
+    if (uvm_processor_mask_empty(retained_gpus)) {
+        status = NV_ERR_INVALID_DEVICE;
+        goto out;
+    }
 
     for (i = 0; i < params->iterations; i++) {
         if (fatal_signal_pending(current)) {

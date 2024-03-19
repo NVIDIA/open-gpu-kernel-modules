@@ -2357,6 +2357,8 @@ NV_STATUS uvm_mmu_create_peer_identity_mappings(uvm_gpu_t *gpu, uvm_gpu_t *peer)
     NvU64 phys_offset;
     uvm_gpu_identity_mapping_t *peer_mapping;
 
+    UVM_ASSERT(gpu->parent->peer_copy_mode < UVM_GPU_PEER_COPY_MODE_COUNT);
+
     if (gpu->parent->peer_copy_mode != UVM_GPU_PEER_COPY_MODE_VIRTUAL || peer->mem_info.size == 0)
         return NV_OK;
 

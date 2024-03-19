@@ -200,7 +200,15 @@ NV_STATUS uvm_tracker_add_tracker(uvm_tracker_t *dst, uvm_tracker_t *src)
     NV_STATUS status;
     uvm_tracker_entry_t *src_entry;
 
+    UVM_ASSERT(dst != NULL);
+
+    if (src == NULL)
+        return NV_OK;
+
     if (src == dst)
+        return NV_OK;
+
+    if (uvm_tracker_is_empty(src))
         return NV_OK;
 
     status = uvm_tracker_reserve(dst, src->size);
@@ -209,9 +217,9 @@ NV_STATUS uvm_tracker_add_tracker(uvm_tracker_t *dst, uvm_tracker_t *src)
         uvm_tracker_remove_completed(src);
         status = reserve_for_entries_from_tracker(dst, src);
     }
-    if (status != NV_OK) {
+
+    if (status != NV_OK)
         return status;
-    }
 
     for_each_tracker_entry(src_entry, src) {
         status = uvm_tracker_add_entry(dst, src_entry);

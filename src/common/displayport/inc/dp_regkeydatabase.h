@@ -80,6 +80,11 @@
 #define NV_DP_REGKEY_MST_PCON_CAPS_READ_DISABLED       "DP_BUG_4388987_WAR"
 
 //
+// Bug 4459839 : This regkey will enable DSC irrespective of LT status.
+//
+#define NV_DP_REGKEY_FORCE_DSC_ON_SINK                 "DP_FORCE_DSC_ON_SINK"
+
+//
 // Data Base used to store all the regkey values.
 // The actual data base is declared statically in dp_evoadapter.cpp.
 // All entries set to 0 before initialized by the first EvoMainLink constructor.
@@ -113,6 +118,7 @@ struct DP_REGKEY_DATABASE
     bool  bPowerDownPhyBeforeD3;
     bool  bReassessMaxLink;
     bool  bMSTPCONCapsReadDisabled;
+    bool  bForceDscOnSink;
 };
 
 #endif //INCLUDED_DP_REGKEYDATABASE_H

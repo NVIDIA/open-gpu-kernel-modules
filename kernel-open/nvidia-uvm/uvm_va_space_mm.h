@@ -83,6 +83,11 @@ struct uvm_va_space_mm_struct
     // Wait queue for threads waiting for retainers to finish (retained_count
     // going to 0 when not alive).
     wait_queue_head_t last_retainer_wait_queue;
+
+    // Available as scratch space for the internal APIs. This is like a caller-
+    // save register: it shouldn't be used across function calls which also take
+    // this va_space_mm.
+    uvm_processor_mask_t scratch_processor_mask;
 };
 
 static bool uvm_va_space_mm_alive(struct uvm_va_space_mm_struct *va_space_mm)

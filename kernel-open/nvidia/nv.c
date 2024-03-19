@@ -57,7 +57,11 @@
 #include "nv-dmabuf.h"
 #include "nv-caps-imex.h"
 
-#if !defined(CONFIG_RETPOLINE)
+/*
+ * Commit aefb2f2e619b ("x86/bugs: Rename CONFIG_RETPOLINE =>
+ * CONFIG_MITIGATION_RETPOLINE) in v6.8 renamed CONFIG_RETPOLINE.
+ */
+#if !defined(CONFIG_RETPOLINE) && !defined(CONFIG_MITIGATION_RETPOLINE)
 #include "nv-retpoline.h"
 #endif
 

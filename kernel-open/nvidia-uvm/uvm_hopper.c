@@ -27,6 +27,24 @@
 #include "uvm_mem.h"
 #include "uvm_hopper_fault_buffer.h"
 
+static uvm_gpu_peer_copy_mode_t hopper_peer_copy_mode(uvm_parent_gpu_t *parent_gpu)
+{
+    // In Confidential Computing the Copy Engine supports encrypted copies
+    // between peers. But in Hopper these transfers require significant
+    // software support (ex: unprotected vidmem), so in practice they are not
+    // allowed.
+    if (g_uvm_global.conf_computing_enabled)
+        return UVM_GPU_PEER_COPY_MODE_UNSUPPORTED;
+
+    // TODO: Bug 4174553: In some Grace Hopper setups, physical peer copies
+    // result on errors. Force peer copies to use virtual addressing until the
+    // issue is clarified.
+    if (uvm_parent_gpu_is_coherent(parent_gpu))
+        return UVM_GPU_PEER_COPY_MODE_VIRTUAL;
+
+    return g_uvm_global.peer_copy_mode;
+}
+
 void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
 {
     parent_gpu->tlb_batch.va_invalidate_supported = true;
@@ -58,14 +76,10 @@ void uvm_hal_hopper_arch_init_properties(uvm_parent_gpu_t *parent_gpu)
     parent_gpu->flat_vidmem_va_base = (64 * UVM_SIZE_1PB) + (32 * UVM_SIZE_1TB);
 
     // Physical CE writes to vidmem are non-coherent with respect to the CPU on
-    // GH180.
+    // Grace Hopper.
     parent_gpu->ce_phys_vidmem_write_supported = !uvm_parent_gpu_is_coherent(parent_gpu);
 
-    // TODO: Bug 4174553: [HGX-SkinnyJoe][GH180] channel errors discussion/debug
-    //                    portion for the uvm tests became nonresponsive after
-    //                    some time and then failed even after reboot
-    parent_gpu->peer_copy_mode = uvm_parent_gpu_is_coherent(parent_gpu) ?
-                                                           UVM_GPU_PEER_COPY_MODE_VIRTUAL : g_uvm_global.peer_copy_mode;
+    parent_gpu->peer_copy_mode = hopper_peer_copy_mode(parent_gpu);
 
     // All GR context buffers may be mapped to 57b wide VAs. All "compute" units
     // accessing GR context buffers support the 57-bit VA range.

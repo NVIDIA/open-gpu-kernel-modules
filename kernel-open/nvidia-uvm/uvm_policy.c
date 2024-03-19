@@ -720,7 +720,6 @@ static NV_STATUS va_block_unset_read_duplication_locked(uvm_va_block_t *va_block
     uvm_page_mask_t *break_read_duplication_pages = &va_block_context->caller_page_mask;
     const uvm_va_policy_t *policy = uvm_va_range_get_policy(va_block->va_range);
     uvm_processor_id_t preferred_location = policy->preferred_location;
-    uvm_processor_mask_t accessed_by = policy->accessed_by;
 
     uvm_assert_mutex_locked(&va_block->lock);
 
@@ -779,7 +778,7 @@ static NV_STATUS va_block_unset_read_duplication_locked(uvm_va_block_t *va_block
     }
 
     // 2- Re-establish SetAccessedBy mappings
-    for_each_id_in_mask(processor_id, &accessed_by) {
+    for_each_id_in_mask(processor_id, &policy->accessed_by) {
         status = uvm_va_block_set_accessed_by_locked(va_block,
                                                      va_block_context,
                                                      processor_id,

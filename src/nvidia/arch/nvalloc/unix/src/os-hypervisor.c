@@ -74,7 +74,7 @@ NV_STATUS hypervisorInjectInterrupt_IMPL
     NV_STATUS status = NV_ERR_NOT_SUPPORTED;
 
     if (pVgpuNsIntr->pVgpuVfioRef)
-        status = osVgpuInjectInterrupt(pVgpuNsIntr->pVgpuVfioRef);
+        return NV_ERR_NOT_SUPPORTED;
     else
     {
         if (pVgpuNsIntr->guestMSIAddr && pVgpuNsIntr->guestMSIData)
@@ -142,14 +142,22 @@ static NV_STATUS get_available_instances(
 
                 swizzIdInUseMask = kmigmgrGetSwizzIdInUseMask(pGpu, pKernelMIGManager);
 
+                if (!vgpuTypeInfo->gpuInstanceSize)
+                {
+                    // Query for a non MIG vgpuType
+                    NV_PRINTF(LEVEL_INFO, "%s Query for a non MIG vGPU type \n",
+                              __FUNCTION__);
+                    rmStatus = NV_OK;
+                    goto exit;
+                }
+
                 rmStatus = kvgpumgrGetPartitionFlag(vgpuTypeInfo->vgpuTypeId,
                                                    &partitionFlag);
                 if (rmStatus != NV_OK)
                 {
                     // Query for a non MIG vgpuType
-                    NV_PRINTF(LEVEL_ERROR, "%s Query for a non MIG vGPU type \n",
+                    NV_PRINTF(LEVEL_ERROR, "%s failed to get partition flags.\n",
                               __FUNCTION__);
-                    rmStatus = NV_OK;
                     goto exit;
                 }
 
@@ -192,7 +200,7 @@ static NV_STATUS get_available_instances(
                 if (vgpuTypeInfo->gpuInstanceSize)
                 {
                     // Query for a MIG vgpuType
-                    NV_PRINTF(LEVEL_ERROR, "%s Query for a MIG vGPU type \n",
+                    NV_PRINTF(LEVEL_INFO, "%s Query for a MIG vGPU type \n",
                               __FUNCTION__);
                     rmStatus = NV_OK;
                     goto exit;

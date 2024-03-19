@@ -103,4 +103,24 @@ typedef struct MESSAGE_QUEUE_COLLECTION
 #define GSP_MSG_QUEUE_HEADER_SIZE                                   RM_PAGE_SIZE
 #define GSP_MSG_QUEUE_HEADER_ALIGN                                             4   // 2 ^ 4 = 16
 
+/*!
+ * Calculate 32-bit checksum
+ *
+ * This routine assumes that the data is padded out with zeros to the next
+ * 8-byte alignment, and it is OK to read past the end to the 8-byte alignment.
+ */
+static NV_INLINE NvU32 _checkSum32(void *pData, NvU32 uLen)
+{
+    NvU64 *p        = (NvU64 *)pData;
+    NvU64 *pEnd     = (NvU64 *)((NvUPtr)pData + uLen);
+    NvU64  checkSum = 0;
+
+    NV_ASSERT_CHECKED(uLen > 0);
+
+    while (p < pEnd)
+        checkSum ^= *p++;
+
+    return NvU64_HI32(checkSum) ^ NvU64_LO32(checkSum);
+}
+
 #endif // _MESSAGE_QUEUE_PRIV_H_

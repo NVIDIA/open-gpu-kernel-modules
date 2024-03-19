@@ -1538,12 +1538,18 @@ void uvm_tools_record_read_duplicate(uvm_va_block_t *va_block,
                                      uvm_va_block_region_t region,
                                      const uvm_page_mask_t *page_mask)
 {
+    uvm_processor_mask_t *resident_processors;
     uvm_va_space_t *va_space = uvm_va_block_get_va_space(va_block);
 
     if (!va_space->tools.enabled)
         return;
 
+    resident_processors = uvm_processor_mask_cache_alloc();
+    if (!resident_processors)
+        return;
+
     uvm_down_read(&va_space->tools.lock);
+
     if (tools_is_event_enabled_version(va_space, UvmEventTypeReadDuplicate, UvmToolsEventQueueVersion_V1)) {
         UvmEventEntry_V1 entry;
         UvmEventReadDuplicateInfo_V1 *info_read_duplicate = &entry.eventData.readDuplicate;
@@ -1556,20 +1562,20 @@ void uvm_tools_record_read_duplicate(uvm_va_block_t *va_block,
         info_read_duplicate->timeStamp = NV_GETTIME();
 
         for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
-            uvm_processor_mask_t resident_processors;
             uvm_processor_id_t id;
 
             info_read_duplicate->address = uvm_va_block_cpu_page_address(va_block, page_index);
             info_read_duplicate->processors = 0;
 
-            uvm_va_block_page_resident_processors(va_block, page_index, &resident_processors);
-            for_each_id_in_mask(id, &resident_processors)
-                __set_bit(uvm_parent_id_value_from_processor_id(id),
-                          (unsigned long *)&info_read_duplicate->processors);
+            uvm_va_block_page_resident_processors(va_block, page_index, resident_processors);
+
+            for_each_id_in_mask(id, resident_processors)
+                __set_bit(uvm_parent_id_value_from_processor_id(id), (unsigned long *)&info_read_duplicate->processors);
 
             uvm_tools_record_event_v1(va_space, &entry);
         }
     }
+
     if (tools_is_event_enabled_version(va_space, UvmEventTypeReadDuplicate, UvmToolsEventQueueVersion_V2)) {
         UvmEventEntry_V2 entry;
         UvmEventReadDuplicateInfo_V2 *info_read_duplicate = &entry.eventData.readDuplicate;
@@ -1582,21 +1588,23 @@ void uvm_tools_record_read_duplicate(uvm_va_block_t *va_block,
         info_read_duplicate->timeStamp = NV_GETTIME();
 
         for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
-            uvm_processor_mask_t resident_processors;
             uvm_processor_id_t id;
 
             info_read_duplicate->address = uvm_va_block_cpu_page_address(va_block, page_index);
             memset(info_read_duplicate->processors, 0, sizeof(info_read_duplicate->processors));
 
-            uvm_va_block_page_resident_processors(va_block, page_index, &resident_processors);
-            for_each_id_in_mask(id, &resident_processors)
-                __set_bit(uvm_id_value(id),
-                          (unsigned long *)info_read_duplicate->processors);
+            uvm_va_block_page_resident_processors(va_block, page_index, resident_processors);
+
+            for_each_id_in_mask(id, resident_processors)
+                __set_bit(uvm_id_value(id), (unsigned long *)info_read_duplicate->processors);
 
             uvm_tools_record_event_v2(va_space, &entry);
         }
     }
+
     uvm_up_read(&va_space->tools.lock);
+
+    uvm_processor_mask_cache_free(resident_processors);
 }
 
 void uvm_tools_record_read_duplicate_invalidate(uvm_va_block_t *va_block,
