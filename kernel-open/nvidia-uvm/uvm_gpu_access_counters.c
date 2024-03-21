@@ -33,7 +33,8 @@
 #include "uvm_va_space_mm.h"
 #include "uvm_pmm_sysmem.h"
 #include "uvm_perf_module.h"
-#include "uvm_ats_ibm.h"
+#include "uvm_ats.h"
+#include "uvm_ats_faults.h"
 
 #define UVM_PERF_ACCESS_COUNTER_BATCH_COUNT_MIN     1
 #define UVM_PERF_ACCESS_COUNTER_BATCH_COUNT_DEFAULT 256
@@ -125,7 +126,7 @@ static va_space_access_counters_info_t *va_space_access_counters_info_get(uvm_va
 
 // Whether access counter migrations are enabled or not. The policy is as
 // follows:
-// - MIMC migrations are disabled by default on all systems except P9.
+// - MIMC migrations are disabled by default on all non-ATS systems.
 // - MOMC migrations are disabled by default on all systems
 // - Users can override this policy by specifying on/off
 static bool is_migration_enabled(uvm_access_counter_type_t type)
@@ -148,7 +149,7 @@ static bool is_migration_enabled(uvm_access_counter_type_t type)
     if (type == UVM_ACCESS_COUNTER_TYPE_MOMC)
         return false;
 
-    if (UVM_ATS_IBM_SUPPORTED())
+    if (UVM_ATS_SUPPORTED())
         return g_uvm_global.ats.supported;
 
     return false;
@@ -1507,8 +1508,7 @@ static NV_STATUS service_notification_va_block_helper(struct mm_struct *mm,
                                                              accessed_pages));
 }
 
-static void expand_notification_block(struct mm_struct *mm,
-                                      uvm_gpu_va_space_t *gpu_va_space,
+static void expand_notification_block(uvm_gpu_va_space_t *gpu_va_space,
                                       uvm_va_block_t *va_block,
                                       uvm_page_mask_t *accessed_pages,
                                       const uvm_access_counter_buffer_entry_t *current_entry)
@@ -1543,7 +1543,7 @@ static void expand_notification_block(struct mm_struct *mm,
     // which received the notification if the memory was already migrated before
     // acquiring the locks either during the servicing of previous notifications
     // or during faults or because of explicit migrations or if the VA range was
-    // freed after receving the notification. Return NV_OK in such cases.
+    // freed after receiving the notification. Return NV_OK in such cases.
     if (!UVM_ID_IS_VALID(resident_id) || uvm_id_equal(resident_id, gpu->id))
         return;
 
@@ -1578,14 +1578,14 @@ static void expand_notification_block(struct mm_struct *mm,
     }
 }
 
-static NV_STATUS service_virt_notifications_in_block(struct mm_struct *mm,
-                                                     uvm_gpu_va_space_t *gpu_va_space,
+static NV_STATUS service_virt_notifications_in_block(uvm_gpu_va_space_t *gpu_va_space,
+                                                     struct mm_struct *mm,
                                                      uvm_va_block_t *va_block,
                                                      uvm_access_counter_service_batch_context_t *batch_context,
                                                      NvU32 index,
                                                      NvU32 *out_index)
 {
-    NvU32 i = index;
+    NvU32 i;
     NvU32 flags = 0;
     NV_STATUS status = NV_OK;
     NV_STATUS flags_status;
@@ -1595,7 +1595,7 @@ static NV_STATUS service_virt_notifications_in_block(struct mm_struct *mm,
     uvm_access_counter_buffer_entry_t **notifications = batch_context->virt.notifications;
 
     UVM_ASSERT(va_block);
-    UVM_ASSERT(i < batch_context->virt.num_notifications);
+    UVM_ASSERT(index < batch_context->virt.num_notifications);
 
     uvm_assert_rwsem_locked(&va_space->lock);
 
@@ -1603,27 +1603,24 @@ static NV_STATUS service_virt_notifications_in_block(struct mm_struct *mm,
 
     uvm_mutex_lock(&va_block->lock);
 
-    while (i < batch_context->virt.num_notifications) {
+    for (i = index; i < batch_context->virt.num_notifications; i++) {
         uvm_access_counter_buffer_entry_t *current_entry = notifications[i];
         NvU64 address = current_entry->address.address;
 
-        if ((current_entry->virtual_info.va_space != va_space) || (address > va_block->end)) {
-            *out_index = i;
+        if ((current_entry->virtual_info.va_space == va_space) && (address <= va_block->end))
+            expand_notification_block(gpu_va_space, va_block, accessed_pages, current_entry);
+        else
             break;
-        }
-
-        expand_notification_block(mm, gpu_va_space, va_block, accessed_pages, current_entry);
-
-        i++;
-        *out_index = i;
     }
+
+    *out_index = i;
+
+    // Atleast one notification should have been processed.
+    UVM_ASSERT(index < *out_index);
 
     status = service_notification_va_block_helper(mm, va_block, gpu->id, batch_context);
 
     uvm_mutex_unlock(&va_block->lock);
-
-    // Atleast one notification should have been processed.
-    UVM_ASSERT(index < *out_index);
 
     if (status == NV_OK)
         flags |= UVM_ACCESS_COUNTER_ACTION_CLEAR;
@@ -1636,62 +1633,154 @@ static NV_STATUS service_virt_notifications_in_block(struct mm_struct *mm,
     return status;
 }
 
-static NV_STATUS service_virt_notifications_batch(struct mm_struct *mm,
-                                                  uvm_gpu_va_space_t *gpu_va_space,
+static NV_STATUS service_virt_notification_ats(uvm_gpu_va_space_t *gpu_va_space,
+                                               struct mm_struct *mm,
+                                               uvm_access_counter_service_batch_context_t *batch_context,
+                                               NvU32 index,
+                                               NvU32 *out_index)
+{
+
+    NvU32 i;
+    NvU64 base;
+    NvU64 end;
+    NvU64 address;
+    NvU32 flags = UVM_ACCESS_COUNTER_ACTION_CLEAR;
+    NV_STATUS status = NV_OK;
+    NV_STATUS flags_status;
+    struct vm_area_struct *vma = NULL;
+    uvm_gpu_t *gpu = gpu_va_space->gpu;
+    uvm_va_space_t *va_space = gpu_va_space->va_space;
+    uvm_ats_fault_context_t *ats_context = &batch_context->ats_context;
+    uvm_access_counter_buffer_entry_t **notifications = batch_context->virt.notifications;
+
+    UVM_ASSERT(index < batch_context->virt.num_notifications);
+
+    uvm_assert_mmap_lock_locked(mm);
+    uvm_assert_rwsem_locked(&va_space->lock);
+
+    address = notifications[index]->address.address;
+
+    vma = find_vma_intersection(mm, address, address + 1);
+    if (!vma) {
+        // Clear the notification entry to continue receiving access counter
+        // notifications when a new VMA is allocated in this range.
+        status = notify_tools_and_process_flags(gpu, &notifications[index], 1, flags);
+        *out_index = index + 1;
+        return status;
+    }
+
+    base = UVM_VA_BLOCK_ALIGN_DOWN(address);
+    end = min(base + UVM_VA_BLOCK_SIZE, (NvU64)vma->vm_end);
+
+    uvm_page_mask_zero(&ats_context->accessed_mask);
+
+    for (i = index; i < batch_context->virt.num_notifications; i++) {
+        uvm_access_counter_buffer_entry_t *current_entry = notifications[i];
+        address = current_entry->address.address;
+
+        if ((current_entry->virtual_info.va_space == va_space) && (address < end))
+            uvm_page_mask_set(&ats_context->accessed_mask, (address - base) / PAGE_SIZE);
+        else
+            break;
+    }
+
+    *out_index = i;
+
+    // Atleast one notification should have been processed.
+    UVM_ASSERT(index < *out_index);
+
+    // TODO: Bug 2113632: [UVM] Don't clear access counters when the preferred
+    //                    location is set
+    // If no pages were actually migrated, don't clear the access counters.
+    status = uvm_ats_service_access_counters(gpu_va_space, vma, base, ats_context);
+    if (status != NV_OK)
+        flags &= ~UVM_ACCESS_COUNTER_ACTION_CLEAR;
+
+    flags_status = notify_tools_and_process_flags(gpu, &notifications[index], *out_index - index, flags);
+    if ((status == NV_OK) && (flags_status != NV_OK))
+        status = flags_status;
+
+    return status;
+}
+
+static NV_STATUS service_virt_notifications_batch(uvm_gpu_va_space_t *gpu_va_space,
+                                                  struct mm_struct *mm,
                                                   uvm_access_counter_service_batch_context_t *batch_context,
                                                   NvU32 index,
                                                   NvU32 *out_index)
 {
     NV_STATUS status;
-    uvm_va_block_t *va_block;
+    uvm_va_range_t *va_range;
     uvm_va_space_t *va_space = gpu_va_space->va_space;
     uvm_access_counter_buffer_entry_t *current_entry = batch_context->virt.notifications[index];
     NvU64 address = current_entry->address.address;
 
     UVM_ASSERT(va_space);
 
+    if (mm)
+        uvm_assert_mmap_lock_locked(mm);
+
     uvm_assert_rwsem_locked(&va_space->lock);
 
     // Virtual address notifications are always 64K aligned
     UVM_ASSERT(IS_ALIGNED(address, UVM_PAGE_SIZE_64K));
 
-    // TODO: Bug 4309292: [UVM][HMM] Re-enable access counter HMM block
-    //                    migrations for virtual notifications on configs with
-    //                    4KB page size
-    status = uvm_va_block_find(va_space, address, &va_block);
-    if ((status == NV_OK) && !uvm_va_block_is_hmm(va_block)) {
+    va_range = uvm_va_range_find(va_space, address);
+    if (va_range) {
+        // Avoid clearing the entry by default.
+        NvU32 flags = 0;
+        uvm_va_block_t *va_block = NULL;
 
-        UVM_ASSERT(va_block);
+        if (va_range->type == UVM_VA_RANGE_TYPE_MANAGED) {
+            size_t index = uvm_va_range_block_index(va_range, address);
 
-        status = service_virt_notifications_in_block(mm, gpu_va_space, va_block, batch_context, index, out_index);
+            va_block = uvm_va_range_block(va_range, index);
+
+            // If the va_range is a managed range, the notification belongs to a
+            // recently freed va_range if va_block is NULL. If va_block is not
+            // NULL, service_virt_notifications_in_block will process flags.
+            // Clear the notification entry to continue receiving notifications
+            // when a new va_range is allocated in that region.
+            flags = UVM_ACCESS_COUNTER_ACTION_CLEAR;
+        }
+
+        if (va_block) {
+            status = service_virt_notifications_in_block(gpu_va_space, mm, va_block, batch_context, index, out_index);
+        }
+        else {
+            status = notify_tools_and_process_flags(gpu_va_space->gpu, batch_context->virt.notifications, 1, flags);
+            *out_index = index + 1;
+        }
+    }
+    else if (uvm_ats_can_service_faults(gpu_va_space, mm)) {
+        status = service_virt_notification_ats(gpu_va_space, mm, batch_context, index, out_index);
     }
     else {
-        NvU32 flags = 0;
+        NvU32 flags;
+        uvm_va_block_t *va_block = NULL;
+
+        status = uvm_hmm_va_block_find(va_space, address, &va_block);
+
+        // TODO: Bug 4309292: [UVM][HMM] Re-enable access counter HMM block
+        //                    migrations for virtual notifications
+        //
+        // - If the va_block is HMM, don't clear the notification since HMM
+        // migrations are currently disabled.
+        //
+        // - If the va_block isn't HMM, the notification belongs to a recently
+        // freed va_range. Clear the notification entry to continue receiving
+        // notifications when a new va_range is allocated in this region.
+        flags = va_block ? 0 : UVM_ACCESS_COUNTER_ACTION_CLEAR;
 
         UVM_ASSERT((status == NV_ERR_OBJECT_NOT_FOUND) ||
                    (status == NV_ERR_INVALID_ADDRESS)  ||
                    uvm_va_block_is_hmm(va_block));
 
-        // NV_ERR_OBJECT_NOT_FOUND is returned if the VA range is valid but no
-        // VA block has been allocated yet. This can happen if there are stale
-        // notifications in the batch. A new VA range may have been allocated in
-        // that range. So, clear the notification entry to continue getting
-        // notifications for the new VA range.
-        if (status == NV_ERR_OBJECT_NOT_FOUND)
-            flags |= UVM_ACCESS_COUNTER_ACTION_CLEAR;
+        // Clobber status to continue processing the rest of the notifications
+        // in the batch.
+        status = notify_tools_and_process_flags(gpu_va_space->gpu, batch_context->virt.notifications, 1, flags);
 
-        // NV_ERR_INVALID_ADDRESS is returned if the corresponding VA range
-        // doesn't exist or it's not a managed range. Access counter migrations
-        // are not currently supported on such ranges.
-        //
-        // TODO: Bug 1990466: [uvm] Use access counters to trigger migrations
-        // When support for SAM migrations is addded, clear the notification
-        // entry if the VA range doesn't exist in order to receive notifications
-        // when a new VA range is allocated in that region.
-        status = notify_tools_and_process_flags(gpu_va_space->gpu, &batch_context->virt.notifications[index], 1, flags);
         *out_index = index + 1;
-
-        status = NV_OK;
     }
 
     return status;
@@ -1745,7 +1834,7 @@ static NV_STATUS service_virt_notifications(uvm_gpu_t *gpu,
         }
 
         if (va_space && gpu_va_space && uvm_va_space_has_access_counter_migrations(va_space)) {
-            status = service_virt_notifications_batch(mm, gpu_va_space, batch_context, i, &i);
+            status = service_virt_notifications_batch(gpu_va_space, mm, batch_context, i, &i);
         }
         else {
             status = notify_tools_and_process_flags(gpu, &batch_context->virt.notifications[i], 1, 0);

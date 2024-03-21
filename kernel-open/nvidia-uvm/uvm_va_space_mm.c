@@ -280,7 +280,9 @@ NV_STATUS uvm_va_space_mm_register(uvm_va_space_t *va_space)
         }
     }
 
-    if ((UVM_IS_CONFIG_HMM() || UVM_ATS_PREFETCH_SUPPORTED()) && uvm_va_space_pageable_mem_access_supported(va_space)) {
+    if ((UVM_IS_CONFIG_HMM() || UVM_HMM_RANGE_FAULT_SUPPORTED()) &&
+        uvm_va_space_pageable_mem_access_supported(va_space)) {
+
         #if UVM_CAN_USE_MMU_NOTIFIERS()
             // Initialize MMU interval notifiers for this process. This allows
             // mmu_interval_notifier_insert() to be called without holding the

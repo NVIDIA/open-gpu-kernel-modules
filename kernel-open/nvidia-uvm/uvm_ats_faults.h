@@ -42,10 +42,30 @@
 // corresponding bit in read_fault_mask. These returned masks are only valid if
 // the return status is NV_OK. Status other than NV_OK indicate system global
 // fault servicing failures.
+//
+// LOCKING: The caller must retain and hold the mmap_lock and hold the va_space
+// lock.
 NV_STATUS uvm_ats_service_faults(uvm_gpu_va_space_t *gpu_va_space,
                                  struct vm_area_struct *vma,
                                  NvU64 base,
                                  uvm_ats_fault_context_t *ats_context);
+
+// Service access counter notifications on ATS regions in the range (base, base
+// + UVM_VA_BLOCK_SIZE) for individual pages in the range requested by page_mask
+// set in ats_context->accessed_mask. base must be aligned to UVM_VA_BLOCK_SIZE.
+// The caller is responsible for ensuring that the addresses in the
+// accessed_mask is completely covered by the VMA. The caller is also
+// responsible for handling any errors returned by this function.
+//
+// Returns NV_OK if servicing was successful. Any other error indicates an error
+// while servicing the range.
+//
+// LOCKING: The caller must retain and hold the mmap_lock and hold the va_space
+// lock.
+NV_STATUS uvm_ats_service_access_counters(uvm_gpu_va_space_t *gpu_va_space,
+                                          struct vm_area_struct *vma,
+                                          NvU64 base,
+                                          uvm_ats_fault_context_t *ats_context);
 
 // Return whether there are any VA ranges (and thus GMMU mappings) within the
 // UVM_GMMU_ATS_GRANULARITY-aligned region containing address.

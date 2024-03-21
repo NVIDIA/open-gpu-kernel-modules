@@ -203,7 +203,7 @@ NvBool nvDpyIsHdmiEvo(const NVDpyEvoRec *pDpyEvo)
 /*!
  * Updates the display's HDMI 2.0 capabilities to the RM.
  */
-void nvUpdateHdmiCaps(NVDpyEvoPtr pDpyEvo)
+void nvSendHdmiCapsToRm(NVDpyEvoPtr pDpyEvo)
 {
     NV0073_CTRL_SPECIFIC_SET_HDMI_SINK_CAPS_PARAMS params = { 0 };
     NVParsedEdidEvoPtr pParsedEdid = &pDpyEvo->parsedEdid;
@@ -221,7 +221,7 @@ void nvUpdateHdmiCaps(NVDpyEvoPtr pDpyEvo)
     params.caps = 0;
 
     /*
-     * nvUpdateHdmiCaps() gets called on dpy's connect/disconnect events
+     * nvSendHdmiCapsToRm() gets called on dpy's connect/disconnect events
      * to set/clear capabilities, clear capabilities if parsed edid
      * is not valid.
      */

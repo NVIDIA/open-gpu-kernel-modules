@@ -181,23 +181,28 @@ struct uvm_service_block_context_struct
 typedef struct
 {
     // Mask of read faulted pages in a UVM_VA_BLOCK_SIZE aligned region of a SAM
-    // VMA. Used for batching ATS faults in a vma.
+    // VMA. Used for batching ATS faults in a vma. This is unused for access
+    // counter service requests.
     uvm_page_mask_t read_fault_mask;
 
     // Mask of write faulted pages in a UVM_VA_BLOCK_SIZE aligned region of a
-    // SAM VMA. Used for batching ATS faults in a vma.
+    // SAM VMA. Used for batching ATS faults in a vma. This is unused for access
+    // counter service requests.
     uvm_page_mask_t write_fault_mask;
 
     // Mask of successfully serviced pages in a UVM_VA_BLOCK_SIZE aligned region
-    // of a SAM VMA. Used to return ATS fault status.
+    // of a SAM VMA. Used to return ATS fault status. This is unused for access
+    // counter service requests.
     uvm_page_mask_t faults_serviced_mask;
 
     // Mask of successfully serviced read faults on pages in write_fault_mask.
+    // This is unused for access counter service requests.
     uvm_page_mask_t reads_serviced_mask;
 
-    // Mask of all faulted pages in a UVM_VA_BLOCK_SIZE aligned region of a
-    // SAM VMA. This is used as input to the prefetcher.
-    uvm_page_mask_t faulted_mask;
+    // Mask of all accessed pages in a UVM_VA_BLOCK_SIZE aligned region of a SAM
+    // VMA. This is used as input for access counter service requests and output
+    // of fault service requests.
+    uvm_page_mask_t accessed_mask;
 
     // Client type of the service requestor.
     uvm_fault_client_type_t client_type;
@@ -465,6 +470,9 @@ struct uvm_access_counter_service_batch_context_struct
 
     // Structure used to coalesce access counter servicing in a VA block
     uvm_service_block_context_t block_service_context;
+
+    // Structure used to service access counter migrations in an ATS block.
+    uvm_ats_fault_context_t ats_context;
 
     // Unique id (per-GPU) generated for tools events recording
     NvU32 batch_id;

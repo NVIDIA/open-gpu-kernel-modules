@@ -8602,6 +8602,7 @@ void nvEvoEnableMergeModePreModeset(NVDispEvoRec *pDispEvo,
             pHC->serverLock = NV_EVO_RASTER_LOCK;
             pHC->serverLockPin = NV_EVO_LOCK_PIN_INTERNAL(primaryHead);
             pHC->setLockOffsetX = TRUE;
+            pHC->crashLockUnstallMode = FALSE;
         } else {
             pHC->clientLock = NV_EVO_RASTER_LOCK;
             pHC->clientLockPin = NV_EVO_LOCK_PIN_INTERNAL(primaryHead);
@@ -8612,11 +8613,10 @@ void nvEvoEnableMergeModePreModeset(NVDispEvoRec *pDispEvo,
             } else {
                 pHC->clientLockoutWindow = 2;
             }
+            pHC->crashLockUnstallMode =
+                (pTimings->vrr.type != NVKMS_DPY_VRR_TYPE_NONE);
         }
 
-        if (pTimings->vrr.type != NVKMS_DPY_VRR_TYPE_NONE) {
-            pHC->crashLockUnstallMode = TRUE;
-        }
         pHC->stereoLocked = FALSE;
 
         EvoUpdateHeadParams(pDispEvo, head, pUpdateState);

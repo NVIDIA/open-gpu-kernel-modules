@@ -1587,6 +1587,7 @@ memdescFree
         }
 
         if (pMemDesc->_addressSpace != ADDR_FBMEM &&
+            pMemDesc->_addressSpace != ADDR_EGM &&
             pMemDesc->_addressSpace != ADDR_SYSMEM)
         {
             return;
@@ -1991,6 +1992,7 @@ memdescUnmap
     switch (pMemDesc->_addressSpace)
     {
         case ADDR_SYSMEM:
+        case ADDR_EGM:
         {
             osUnmapSystemMemory(pMemDesc, Kernel, ProcessId, Address, Priv);
             break;

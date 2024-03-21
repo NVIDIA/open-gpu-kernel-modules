@@ -6639,12 +6639,19 @@ static void EvoSetStallLockC3(NVDispEvoPtr pDispEvo, const int head,
     NVEvoChannelPtr pChannel = pDevEvo->core;
     NVEvoSubDevPtr pEvoSubDev = &pDevEvo->gpus[pDispEvo->displayOwner];
     NVEvoHeadControlPtr pHC = &pEvoSubDev->headControl[head];
+    NvU32 data = 0x0;
 
     nvUpdateUpdateState(pDevEvo, updateState, pChannel);
 
+    if (pHC->crashLockUnstallMode) {
+        data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _UNSTALL_MODE, _CRASH_LOCK);
+    } else {
+        data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _UNSTALL_MODE, _LINE_LOCK);
+    }
+
     if (enable) {
-        NvU32 data = DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _ENABLE, _TRUE) |
-                     DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _MODE, _ONE_SHOT);
+        data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _ENABLE, _TRUE) |
+                DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _MODE, _ONE_SHOT);
 
         if (!pHC->useStallLockPin) {
             data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _LOCK_PIN, _LOCK_PIN_NONE);
@@ -6657,20 +6664,12 @@ static void EvoSetStallLockC3(NVDispEvoPtr pDispEvo, const int head,
             data |= DRF_NUM(C37D, _HEAD_SET_STALL_LOCK, _LOCK_PIN,
                             NVC37D_HEAD_SET_STALL_LOCK_LOCK_PIN_LOCK_PIN(pin));
         }
-
-        if (pHC->crashLockUnstallMode) {
-            data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _UNSTALL_MODE, _CRASH_LOCK);
-        } else {
-            data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _UNSTALL_MODE, _LINE_LOCK);
-        }
-
-        nvDmaSetStartEvoMethod(pChannel, NVC37D_HEAD_SET_STALL_LOCK(head), 1);
-        nvDmaSetEvoMethodData(pChannel, data);
     } else {
-        nvDmaSetStartEvoMethod(pChannel, NVC37D_HEAD_SET_STALL_LOCK(head), 1);
-        nvDmaSetEvoMethodData(pChannel,
-            DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _ENABLE, _FALSE));
+        data |= DRF_DEF(C37D, _HEAD_SET_STALL_LOCK, _ENABLE, _FALSE);
     }
+
+    nvDmaSetStartEvoMethod(pChannel, NVC37D_HEAD_SET_STALL_LOCK(head), 1);
+    nvDmaSetEvoMethodData(pChannel, data);
 }
 
 static NvBool GetChannelState(NVDevEvoPtr pDevEvo,

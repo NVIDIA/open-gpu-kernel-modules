@@ -38,7 +38,7 @@ void nvUpdateHdmiInfoFrames(const NVDispEvoRec *pDispEvo,
 
 void nvDpyUpdateHdmiPreModesetEvo(NVDpyEvoPtr pDpyEvo);
 void nvDpyUpdateHdmiVRRCaps(NVDpyEvoPtr pDpyEvo);
-void nvUpdateHdmiCaps(NVDpyEvoPtr pDpyEvo);
+void nvSendHdmiCapsToRm(NVDpyEvoPtr pDpyEvo);
 
 void nvLogEdidCea861InfoEvo(NVDpyEvoPtr pDpyEvo,
                             NVEvoInfoStringPtr pInfoString);

@@ -1632,23 +1632,23 @@ static NV_STATUS service_fault_batch_ats_sub_vma(uvm_gpu_va_space_t *gpu_va_spac
     const uvm_page_mask_t *write_fault_mask = &ats_context->write_fault_mask;
     const uvm_page_mask_t *reads_serviced_mask = &ats_context->reads_serviced_mask;
     uvm_page_mask_t *faults_serviced_mask = &ats_context->faults_serviced_mask;
-    uvm_page_mask_t *faulted_mask = &ats_context->faulted_mask;
+    uvm_page_mask_t *accessed_mask = &ats_context->accessed_mask;
 
     UVM_ASSERT(vma);
 
     ats_context->client_type = UVM_FAULT_CLIENT_TYPE_GPC;
 
-    uvm_page_mask_or(faulted_mask, write_fault_mask, read_fault_mask);
+    uvm_page_mask_or(accessed_mask, write_fault_mask, read_fault_mask);
 
     status = uvm_ats_service_faults(gpu_va_space, vma, base, &batch_context->ats_context);
 
     // Remove prefetched pages from the serviced mask since fault servicing
     // failures belonging to prefetch pages need to be ignored.
-    uvm_page_mask_and(faults_serviced_mask, faults_serviced_mask, faulted_mask);
+    uvm_page_mask_and(faults_serviced_mask, faults_serviced_mask, accessed_mask);
 
-    UVM_ASSERT(uvm_page_mask_subset(faults_serviced_mask, faulted_mask));
+    UVM_ASSERT(uvm_page_mask_subset(faults_serviced_mask, accessed_mask));
 
-    if ((status != NV_OK) || uvm_page_mask_equal(faults_serviced_mask, faulted_mask)) {
+    if ((status != NV_OK) || uvm_page_mask_equal(faults_serviced_mask, accessed_mask)) {
         (*block_faults) += (fault_index_end - fault_index_start);
         return status;
     }

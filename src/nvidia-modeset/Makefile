@@ -95,6 +95,7 @@ endif
 ifeq ($(TARGET_ARCH),aarch64)
   CFLAGS += -mgeneral-regs-only
   CFLAGS += -march=armv8-a
+  CFLAGS += -ffixed-x18
   CONDITIONAL_CFLAGS += $(call TEST_CC_ARG, -mno-outline-atomics)
 endif
 

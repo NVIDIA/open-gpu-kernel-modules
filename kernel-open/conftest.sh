@@ -3032,6 +3032,22 @@ compile_test() {
 
         ;;
 
+        foll_longterm_present)
+            #
+            # Determine if FOLL_LONGTERM enum is present or not
+            #
+            # Added by commit 932f4a630a69 ("mm/gup: replace
+            # get_user_pages_longterm() with FOLL_LONGTERM") in
+            # v5.2
+            #
+            CODE="
+            #include <linux/mm.h>
+            int foll_longterm = FOLL_LONGTERM;
+            "
+
+            compile_check_conftest "$CODE" "NV_FOLL_LONGTERM_PRESENT" "" "types"
+        ;;
+
         vfio_pin_pages_has_vfio_device_arg)
             #
             # Determine if vfio_pin_pages() kABI accepts "struct vfio_device *"
@@ -5081,11 +5097,15 @@ compile_test() {
             # vmap ops and convert GEM backends") update
             # drm_gem_object_funcs::vmap to take 'map' argument.
             #
+            # Note that the 'map' argument type is changed from 'struct dma_buf_map'
+            # to 'struct iosys_map' by commit 7938f4218168 ("dma-buf-map: Rename
+            # to iosys-map) in v5.18.
+            #
             CODE="
             #include <drm/drm_gem.h>
             int conftest_drm_gem_object_vmap_has_map_arg(
-                    struct drm_gem_object *obj, struct dma_buf_map *map) {
-                return obj->funcs->vmap(obj, map);
+                    struct drm_gem_object *obj) {
+                return obj->funcs->vmap(obj, NULL);
             }"
 
             compile_check_conftest "$CODE" "NV_DRM_GEM_OBJECT_VMAP_HAS_MAP_ARG" "" "types"
