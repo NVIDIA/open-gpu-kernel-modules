@@ -966,6 +966,7 @@ gpuFindClientInfoWithPidIterator_IMPL
     Heap       *pHeap               = GPU_GET_HEAP(pGpu);
     NvU32       computeInstanceId   = PARTITIONID_INVALID;
     NvU32       gpuInstanceId       = PARTITIONID_INVALID;
+    NvU32       nspid;
 
     NV_ASSERT_OR_RETURN(RMCFG_FEATURE_KERNEL_RM, NV_ERR_NOT_SUPPORTED);
     NV_ASSERT_OR_RETURN((pid != 0), NV_ERR_INVALID_ARGUMENT);
@@ -979,8 +980,11 @@ gpuFindClientInfoWithPidIterator_IMPL
         pClient = *ppClient;
         pRsClient = staticCast(pClient, RsClient);
 
-        if (((subPid == 0) && (pClient->ProcID == pid)) ||
-            ((subPid != 0) && (pClient->ProcID == pid)  && (pClient->SubProcessID == subPid)))
+        if(_gpuConvertPid(pClient, &nspid) != NV_OK)
+            nspid = pClient->ProcID;
+
+        if (((subPid == 0) && (nspid == pid)) ||
+            ((subPid != 0) && (nspid == pid)  && (pClient->SubProcessID == subPid)))
         {
             RS_PRIV_LEVEL privLevel = rmclientGetCachedPrivilege(pClient);
             RS_ITERATOR it;
