@@ -1609,7 +1609,6 @@ void getEdidHDM1_4bVsdbTiming(NVT_EDID_INFO *pInfo)
 CODE_SEGMENT(PAGE_DD_CODE)
 NVT_STATUS get861ExtInfo(NvU8 *p, NvU32 size, NVT_EDID_CEA861_INFO *p861info)
 {
-
     NvU32 dtd_offset;
     // sanity check
     if (p == NULL || size < sizeof(EDIDV1STRUC))
@@ -1725,8 +1724,8 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                     if (payload >= 1)
                     {
                         ext_tag = p[i]; 
-                        if      (ext_tag == NVT_CEA861_EXT_TAG_VIDEO_CAP && payload < 2)               return NVT_STATUS_ERR;
-                        else if (ext_tag == NVT_CEA861_EXT_TAG_COLORIMETRY && payload < 3)             return NVT_STATUS_ERR;
+                        if      (ext_tag == NVT_CEA861_EXT_TAG_VIDEO_CAP && (payload != 2))            return NVT_STATUS_ERR;
+                        else if (ext_tag == NVT_CEA861_EXT_TAG_COLORIMETRY && payload != 3)            return NVT_STATUS_ERR;
                         else if (ext_tag == NVT_CEA861_EXT_TAG_VIDEO_FORMAT_PREFERENCE && payload < 2) return NVT_STATUS_ERR;
                         else if (ext_tag == NVT_CEA861_EXT_TAG_YCBCR420_VIDEO && payload < 2)          return NVT_STATUS_ERR;
                         else if (ext_tag == NVT_CEA861_EXT_TAG_YCBCR420_CAP && payload < 1)            return NVT_STATUS_ERR;
@@ -1856,19 +1855,22 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
         }
         else if (tag == NVT_CTA861_TAG_VIDEO_FORMAT)
         {
-            p861info->vfdb[vfd_index].info.vfd_len =  p[i] & 0x03;
-            p861info->vfdb[vfd_index].info.ntsc    = (p[i] & 0x40) >> 6;
-            p861info->vfdb[vfd_index].info.y420    = (p[i] & 0x80) >> 7;
-            p861info->vfdb[vfd_index].total_vfd    = (NvU8)(payload - 1) / (p861info->vfdb[vfd_index].info.vfd_len + 1);
-
-            i++; payload--;
-
-            for (j = 0; j < payload; j++, i++)
+            if (payload > 0)
             {
-                p861info->vfdb[vfd_index].video_format_desc[j] = p[i];
-            }      
+                p861info->vfdb[vfd_index].info.vfd_len =  p[i] & 0x03;
+                p861info->vfdb[vfd_index].info.ntsc    = (p[i] & 0x40) >> 6;
+                p861info->vfdb[vfd_index].info.y420    = (p[i] & 0x80) >> 7;
+                p861info->vfdb[vfd_index].total_vfd    = (NvU8)(payload - 1) / (p861info->vfdb[vfd_index].info.vfd_len + 1);
 
-            p861info->total_vfdb = ++vfd_index;
+                i++; payload--;
+
+                for (j = 0; (j < payload) && (p861info->vfdb[vfd_index].total_vfd != 0); j++, i++)
+                {
+                    p861info->vfdb[vfd_index].video_format_desc[j] = p[i];
+                }
+
+                p861info->total_vfdb = ++vfd_index;
+            }
         }
         else if (tag == NVT_CEA861_TAG_EXTENDED_FLAG)
         {
@@ -1879,14 +1881,14 @@ NVT_STATUS parseCta861DataBlockInfo(NvU8 *p,
                 {
                     p861info->video_capability = p[i + 1] & NVT_CEA861_VIDEO_CAPABILITY_MASK;
                     p861info->valid.VCDB = 1;
-                    i += 2;
+                    i += payload;
                 }
                 else if (ext_tag == NVT_CEA861_EXT_TAG_COLORIMETRY && payload >= 3)
                 {
                     p861info->colorimetry.byte1 = p[i + 1] & NVT_CEA861_COLORIMETRY_MASK;
                     p861info->colorimetry.byte2 = p[i + 2] & NVT_CEA861_GAMUT_METADATA_MASK;
                     p861info->valid.colorimetry = 1;
-                    i += 3;
+                    i += payload;
                 }
                 else if (ext_tag == NVT_CEA861_EXT_TAG_VIDEO_FORMAT_PREFERENCE && payload >= 2)
                 {

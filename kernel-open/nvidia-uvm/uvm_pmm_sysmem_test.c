@@ -1207,35 +1207,38 @@ static NV_STATUS test_cpu_chunk_numa_alloc(uvm_va_space_t *va_space)
 NV_STATUS uvm_test_cpu_chunk_api(UVM_TEST_CPU_CHUNK_API_PARAMS *params, struct file *filp)
 {
     uvm_va_space_t *va_space = uvm_va_space_get(filp);
-    uvm_processor_mask_t test_gpus;
+    uvm_processor_mask_t *test_gpus;
     uvm_gpu_t *gpu;
     NV_STATUS status = NV_OK;
 
-    uvm_va_space_down_read(va_space);
-    uvm_processor_mask_and(&test_gpus,
-                           &va_space->registered_gpus,
-                           &va_space->accessible_from[uvm_id_value(UVM_ID_CPU)]);
+    test_gpus = uvm_processor_mask_cache_alloc();
+    if (!test_gpus)
+        return NV_ERR_NO_MEMORY;
 
-    for_each_va_space_gpu_in_mask(gpu, va_space, &test_gpus) {
+    uvm_va_space_down_read(va_space);
+    uvm_processor_mask_and(test_gpus, &va_space->registered_gpus, &va_space->accessible_from[uvm_id_value(UVM_ID_CPU)]);
+
+    for_each_va_space_gpu_in_mask(gpu, va_space, test_gpus) {
         TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_basic(gpu, UVM_CPU_CHUNK_ALLOC_FLAGS_NONE), done);
         TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_basic(gpu, UVM_CPU_CHUNK_ALLOC_FLAGS_ZERO), done);
         TEST_NV_CHECK_GOTO(test_cpu_chunk_split_and_merge(gpu), done);
         TEST_NV_CHECK_GOTO(test_cpu_chunk_dirty(gpu), done);
     }
 
-    TEST_NV_CHECK_GOTO(test_cpu_chunk_free(va_space, &test_gpus), done);
+    TEST_NV_CHECK_GOTO(test_cpu_chunk_free(va_space, test_gpus), done);
     TEST_NV_CHECK_GOTO(test_cpu_chunk_numa_alloc(va_space), done);
 
-    if (uvm_processor_mask_get_gpu_count(&test_gpus) >= 3) {
+    if (uvm_processor_mask_get_gpu_count(test_gpus) >= 3) {
         uvm_gpu_t *gpu2, *gpu3;
 
-        gpu = uvm_processor_mask_find_first_va_space_gpu(&test_gpus, va_space);
-        gpu2 = uvm_processor_mask_find_next_va_space_gpu(&test_gpus, va_space, gpu);
-        gpu3 = uvm_processor_mask_find_next_va_space_gpu(&test_gpus, va_space, gpu2);
+        gpu = uvm_processor_mask_find_first_va_space_gpu(test_gpus, va_space);
+        gpu2 = uvm_processor_mask_find_next_va_space_gpu(test_gpus, va_space, gpu);
+        gpu3 = uvm_processor_mask_find_next_va_space_gpu(test_gpus, va_space, gpu2);
         TEST_NV_CHECK_GOTO(test_cpu_chunk_mapping_array(gpu, gpu2, gpu3), done);
     }
 
 done:
     uvm_va_space_up_read(va_space);
+    uvm_processor_mask_cache_free(test_gpus);
     return status;
 }

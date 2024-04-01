@@ -417,9 +417,7 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
     uvm_va_space_mm_t *va_space_mm = &va_space->va_space_mm;
     uvm_gpu_va_space_t *gpu_va_space;
     uvm_gpu_t *gpu;
-    // TODO: Bug 4351121: retained_gpus should be pre-allocated, not on the
-    // stack.
-    uvm_processor_mask_t retained_gpus;
+    uvm_processor_mask_t *retained_gpus = &va_space_mm->scratch_processor_mask;
     uvm_parent_processor_mask_t flushed_parent_gpus;
     LIST_HEAD(deferred_free_list);
 
@@ -443,32 +441,34 @@ static void uvm_va_space_mm_shutdown(uvm_va_space_t *va_space)
 
     // Detach all channels to prevent pending untranslated faults from getting
     // to this VA space. This also removes those channels from the VA space and
-    // puts them on the deferred free list, so only one thread will do this.
+    // puts them on the deferred free list.
     uvm_va_space_down_write(va_space);
     uvm_va_space_detach_all_user_channels(va_space, &deferred_free_list);
-    uvm_processor_mask_and(&retained_gpus, &va_space->registered_gpus, &va_space->faultable_processors);
-    uvm_global_gpu_retain(&retained_gpus);
+    uvm_processor_mask_and(retained_gpus, &va_space->registered_gpus, &va_space->faultable_processors);
+    uvm_global_gpu_retain(retained_gpus);
     uvm_va_space_up_write(va_space);
+
+    // It's ok to use retained_gpus outside the lock since there can only be one
+    // thread executing in uvm_va_space_mm_shutdown at a time.
 
     // Flush the fault buffer on all registered faultable GPUs.
     // This will avoid spurious cancels of stale pending translated
     // faults after we set UVM_VA_SPACE_MM_STATE_RELEASED later.
     uvm_parent_processor_mask_zero(&flushed_parent_gpus);
-    for_each_gpu_in_mask(gpu, &retained_gpus) {
+    for_each_gpu_in_mask(gpu, retained_gpus) {
         if (!uvm_parent_processor_mask_test_and_set(&flushed_parent_gpus, gpu->parent->id))
             uvm_gpu_fault_buffer_flush(gpu);
     }
 
-    uvm_global_gpu_release(&retained_gpus);
+    uvm_global_gpu_release(retained_gpus);
 
     // Call nvUvmInterfaceUnsetPageDirectory. This has no effect on non-MPS.
     // Under MPS this guarantees that no new GPU accesses will be made using
     // this mm.
     //
-    // We need only one thread to make this call, but two threads in here could
-    // race for it, or we could have one thread in here and one in
-    // destroy_gpu_va_space. Serialize these by starting in write mode then
-    // downgrading to read.
+    // We need only one thread to make this call, but we could have one thread
+    // in here and one in destroy_gpu_va_space. Serialize these by starting in
+    // write mode then downgrading to read.
     uvm_va_space_down_write(va_space);
     uvm_va_space_downgrade_write_rm(va_space);
     for_each_gpu_va_space(gpu_va_space, va_space)

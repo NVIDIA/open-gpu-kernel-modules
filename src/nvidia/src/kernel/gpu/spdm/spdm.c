@@ -432,6 +432,11 @@ spdmContextInit_IMPL
 
     libspdm_init_msg_log(pSpdm->pLibspdmContext, pSpdm->pMsgLog, pSpdm->msgLogMaxSize);
 
+
+    // Store SPDM object pointer to libspdm context
+    CHECK_SPDM_STATUS(libspdm_set_data(pSpdm->pLibspdmContext, LIBSPDM_DATA_APP_CONTEXT_DATA,
+                                       NULL, (void *)&pSpdm, sizeof(void *)));
+
     //
     // Perform any device-specific initialization. spdmDeviceInit is also
     // responsible for registering transport layer functions with libspdm.

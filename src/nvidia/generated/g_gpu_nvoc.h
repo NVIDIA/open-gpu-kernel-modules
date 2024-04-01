@@ -1255,6 +1255,7 @@ struct OBJGPU {
     TMR_EVENT *pVideoTimerEvent;
     NVENC_SESSION_LIST nvencSessionList;
     NvU32 encSessionStatsReportingState;
+    NvBool bNvEncSessionDataProcessingWorkItemPending;
     NVFBC_SESSION_LIST nvfbcSessionList;
     struct OBJVASPACE *pFabricVAS;
     NvBool bPipelinedPteMemEnabled;

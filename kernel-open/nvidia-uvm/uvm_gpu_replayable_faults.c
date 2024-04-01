@@ -357,12 +357,18 @@ static NV_STATUS push_cancel_on_gpu(uvm_gpu_t *gpu,
 {
     NV_STATUS status;
     uvm_push_t push;
-    uvm_replayable_fault_buffer_info_t *replayable_faults = &gpu->parent->fault_buffer_info.replayable;
+    uvm_tracker_t *replay_tracker = &gpu->parent->fault_buffer_info.replayable.replay_tracker;
+
+    UVM_ASSERT(tracker != NULL);
+
+    status = uvm_tracker_add_tracker_safe(tracker, replay_tracker);
+    if (status != NV_OK)
+        return status;
 
     if (global_cancel) {
         status = uvm_push_begin_acquire(gpu->channel_manager,
                                         UVM_CHANNEL_TYPE_MEMOPS,
-                                        &replayable_faults->replay_tracker,
+                                        tracker,
                                         &push,
                                         "Cancel targeting instance_ptr {0x%llx:%s}\n",
                                         instance_ptr.address,
@@ -371,7 +377,7 @@ static NV_STATUS push_cancel_on_gpu(uvm_gpu_t *gpu,
     else {
         status = uvm_push_begin_acquire(gpu->channel_manager,
                                         UVM_CHANNEL_TYPE_MEMOPS,
-                                        &replayable_faults->replay_tracker,
+                                        tracker,
                                         &push,
                                         "Cancel targeting instance_ptr {0x%llx:%s} gpc %u client %u\n",
                                         instance_ptr.address,
@@ -382,17 +388,15 @@ static NV_STATUS push_cancel_on_gpu(uvm_gpu_t *gpu,
 
     UVM_ASSERT(status == NV_OK);
     if (status != NV_OK) {
-        UVM_ERR_PRINT("Failed to create push and acquire replay tracker before pushing cancel: %s, GPU %s\n",
+        UVM_ERR_PRINT("Failed to create push and acquire trackers before pushing cancel: %s, GPU %s\n",
                       nvstatusToString(status),
                       uvm_gpu_name(gpu));
         return status;
     }
 
-    uvm_push_acquire_tracker(&push, tracker);
-
     if (global_cancel)
         gpu->parent->host_hal->cancel_faults_global(&push, instance_ptr);
-     else
+    else
         gpu->parent->host_hal->cancel_faults_targeted(&push, instance_ptr, gpc_id, client_id);
 
     // We don't need to put the cancel in the GPU replay tracker since we wait
@@ -403,7 +407,9 @@ static NV_STATUS push_cancel_on_gpu(uvm_gpu_t *gpu,
     if (status != NV_OK)
         UVM_ERR_PRINT("Failed to wait for pushed cancel: %s, GPU %s\n", nvstatusToString(status), uvm_gpu_name(gpu));
 
-    uvm_tracker_clear(&replayable_faults->replay_tracker);
+    // The cancellation is complete, so the input trackers must be complete too.
+    uvm_tracker_clear(tracker);
+    uvm_tracker_clear(replay_tracker);
 
     return status;
 }

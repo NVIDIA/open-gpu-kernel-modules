@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -108,6 +108,9 @@ struct Spdm {
     NvU32 sessionMsgCount;
     PTMR_EVENT pHeartbeatEvent;
     NvU32 heartbeatPeriodSec;
+    NvU8 *pTransportBuffer;
+    NvU32 transportBufferSize;
+    NvU32 pendingResponseSize;
 };
 
 #ifndef __NVOC_CLASS_Spdm_TYPEDEF__

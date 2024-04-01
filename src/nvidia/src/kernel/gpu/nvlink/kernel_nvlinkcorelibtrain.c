@@ -1034,6 +1034,7 @@ knvlinkCoreShutdownDeviceLinks_IMPL
     OBJSYS      *pSys  = SYS_GET_INSTANCE();
     NvU32        count = 0;
     NvU32        linkId;
+    NvlStatus    status = NV_OK;
 
     // Skip link shutdown where fabric manager is present, for nvlink version bellow 4.0
     if ((pKernelNvlink->ipVerNvlink < NVLINK_VERSION_40 &&
@@ -1096,13 +1097,23 @@ knvlinkCoreShutdownDeviceLinks_IMPL
     // Trigger laneshutdown through core lib if shutdown is supported
     if (pKernelNvlink->getProperty(pKernelNvlink, PDB_PROP_KNVLINK_LANE_SHUTDOWN_ENABLED) && (count > 0))
     {
-        if (nvlink_lib_powerdown_links_from_active_to_off(
-                        pLinks, count, NVLINK_STATE_CHANGE_SYNC))
+        status = nvlink_lib_powerdown_links_from_active_to_off(
+                        pLinks, count, NVLINK_STATE_CHANGE_SYNC);
+        if (status != NVL_SUCCESS)
         {
-            NV_PRINTF(LEVEL_ERROR, "Unable to turn off links for the GPU%d\n",
+            if (status == NVL_NOT_FOUND)
+            {
+                // Bug 4419022
+                NV_PRINTF(LEVEL_ERROR, "Need to shutdown all links unilaterally for GPU%d\n",
+                      pGpu->gpuInstance);
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR, "Unable to turn off links for the GPU%d\n",
                       pGpu->gpuInstance);
 
-            return NV_ERR_INVALID_STATE;
+                return NV_ERR_INVALID_STATE;
+            }
         }
     }
 

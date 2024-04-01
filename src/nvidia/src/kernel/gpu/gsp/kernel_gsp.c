@@ -846,6 +846,14 @@ _kgspRpcEventIsGpuDegradedCallback
     OBJRPC  *pRpc
 )
 {
+    RPC_PARAMS(nvlink_is_gpu_degraded, _v17_00);
+    KernelNvlink *pKernelNvlink = GPU_GET_KERNEL_NVLINK(pGpu);
+    NV2080_CTRL_NVLINK_IS_GPU_DEGRADED_PARAMS_v17_00 *dest = &rpc_params->params;
+
+    if(dest->bIsGpuDegraded)
+    {
+        knvlinkSetDegradedMode(pGpu, pKernelNvlink, dest->linkId);
+    }
 }
 
 static void

@@ -222,6 +222,7 @@ NV_STATUS uvm_va_range_create_external(uvm_va_space_t *va_space,
 {
     NV_STATUS status;
     uvm_va_range_t *va_range = NULL;
+    uvm_processor_mask_t *retained_mask = NULL;
     NvU32 i;
 
     status = uvm_va_range_alloc_reclaim(va_space,
@@ -232,6 +233,16 @@ NV_STATUS uvm_va_range_create_external(uvm_va_space_t *va_space,
                                         &va_range);
     if (status != NV_OK)
         return status;
+
+    UVM_ASSERT(!va_range->external.retained_mask);
+
+    retained_mask = uvm_processor_mask_cache_alloc();
+    if (!retained_mask) {
+        status = NV_ERR_NO_MEMORY;
+        goto error;
+    }
+
+    va_range->external.retained_mask = retained_mask;
 
     for (i = 0; i < ARRAY_SIZE(va_range->external.gpu_ranges); i++) {
         uvm_mutex_init(&va_range->external.gpu_ranges[i].lock, UVM_LOCK_ORDER_EXT_RANGE_TREE);
@@ -249,6 +260,7 @@ NV_STATUS uvm_va_range_create_external(uvm_va_space_t *va_space,
 
 error:
     uvm_va_range_destroy(va_range, NULL);
+
     return status;
 }
 
@@ -437,6 +449,8 @@ static void uvm_va_range_destroy_managed(uvm_va_range_t *va_range)
 static void uvm_va_range_destroy_external(uvm_va_range_t *va_range, struct list_head *deferred_free_list)
 {
     uvm_gpu_t *gpu;
+
+    uvm_processor_mask_cache_free(va_range->external.retained_mask);
 
     if (uvm_processor_mask_empty(&va_range->external.mapped_gpus))
         return;
@@ -1318,7 +1332,6 @@ static NV_STATUS range_unmap_mask(uvm_va_range_t *va_range,
     if (uvm_processor_mask_empty(mask))
         return NV_OK;
 
-
     for_each_va_block_in_va_range(va_range, block) {
         NV_STATUS status;
         uvm_va_block_region_t region = uvm_va_block_region_from_block(block);
@@ -1338,14 +1351,19 @@ static NV_STATUS range_unmap_mask(uvm_va_range_t *va_range,
 
 static NV_STATUS range_unmap(uvm_va_range_t *va_range, uvm_processor_id_t processor, uvm_tracker_t *out_tracker)
 {
-    uvm_processor_mask_t mask;
+    uvm_processor_mask_t *mask;
+    uvm_va_space_t *va_space = va_range->va_space;
+
+    uvm_assert_rwsem_locked_write(&va_space->lock);
+
+    mask = &va_space->unmap_mask;
 
     UVM_ASSERT_MSG(va_range->type == UVM_VA_RANGE_TYPE_MANAGED, "type 0x%x\n", va_range->type);
 
-    uvm_processor_mask_zero(&mask);
-    uvm_processor_mask_set(&mask, processor);
+    uvm_processor_mask_zero(mask);
+    uvm_processor_mask_set(mask, processor);
 
-    return range_unmap_mask(va_range, &mask, out_tracker);
+    return range_unmap_mask(va_range, mask, out_tracker);
 }
 
 static NV_STATUS range_map_uvm_lite_gpus(uvm_va_range_t *va_range, uvm_tracker_t *out_tracker)
@@ -1434,10 +1452,10 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_t *va_range,
                                               struct mm_struct *mm,
                                               uvm_tracker_t *out_tracker)
 {
-    NV_STATUS status;
-    uvm_processor_mask_t all_uvm_lite_gpus;
-    uvm_processor_mask_t new_uvm_lite_gpus;
-    uvm_processor_mask_t set_accessed_by_processors;
+    NV_STATUS status = NV_OK;
+    uvm_processor_mask_t *all_uvm_lite_gpus = NULL;
+    uvm_processor_mask_t *new_uvm_lite_gpus = NULL;
+    uvm_processor_mask_t *set_accessed_by_processors = NULL;
     uvm_range_group_range_iter_t iter;
     uvm_range_group_range_t *rgr = NULL;
     uvm_va_space_t *va_space = va_range->va_space;
@@ -1448,9 +1466,27 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_t *va_range,
     uvm_assert_rwsem_locked_write(&va_space->lock);
     UVM_ASSERT(va_range->type == UVM_VA_RANGE_TYPE_MANAGED);
 
+    all_uvm_lite_gpus = uvm_processor_mask_cache_alloc();
+    if (!all_uvm_lite_gpus) {
+        status = NV_ERR_NO_MEMORY;
+        goto out;
+    }
+
+    new_uvm_lite_gpus = uvm_processor_mask_cache_alloc();
+    if (!new_uvm_lite_gpus) {
+        status = NV_ERR_NO_MEMORY;
+        goto out;
+    }
+
+    set_accessed_by_processors = uvm_processor_mask_cache_alloc();
+    if (!set_accessed_by_processors) {
+        status = NV_ERR_NO_MEMORY;
+        goto out;
+    }
+
     va_range_policy = uvm_va_range_get_policy(va_range);
     if (uvm_va_policy_preferred_location_equal(va_range_policy, preferred_location, preferred_cpu_nid))
-        return NV_OK;
+        goto out;
 
     // Mark all range group ranges within this VA range as migrated since the preferred location has changed.
     uvm_range_group_for_each_range_in(rgr, va_space, va_range->node.start, va_range->node.end) {
@@ -1463,14 +1499,15 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_t *va_range,
     // Calculate the new UVM-Lite GPUs mask, but don't update va_range state so
     // that we can keep block_page_check_mappings() happy while updating the
     // mappings.
-    calc_uvm_lite_gpus_mask(va_space, preferred_location, &va_range_policy->accessed_by, &new_uvm_lite_gpus);
+    calc_uvm_lite_gpus_mask(va_space, preferred_location, &va_range_policy->accessed_by, new_uvm_lite_gpus);
 
     // If the range contains non-migratable range groups, check that new UVM-Lite GPUs
     // can all map the new preferred location.
     if (!uvm_range_group_all_migratable(va_space, va_range->node.start, va_range->node.end) &&
         UVM_ID_IS_VALID(preferred_location) &&
-        !uvm_processor_mask_subset(&new_uvm_lite_gpus, &va_space->accessible_from[uvm_id_value(preferred_location)])) {
-        return NV_ERR_INVALID_DEVICE;
+        !uvm_processor_mask_subset(new_uvm_lite_gpus, &va_space->accessible_from[uvm_id_value(preferred_location)])) {
+        status = NV_ERR_INVALID_DEVICE;
+        goto out;
     }
 
     if (UVM_ID_IS_INVALID(preferred_location)) {
@@ -1479,7 +1516,7 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_t *va_range,
                 // Clear the range group assocation for any unmigratable ranges if there is no preferred location
                 status = uvm_range_group_assign_range(va_space, NULL, iter.start, iter.end);
                 if (status != NV_OK)
-                    return status;
+                    goto out;
             }
         }
     }
@@ -1489,33 +1526,33 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_t *va_range,
     //    have stale mappings to the old preferred location.
     //  - GPUs that will continue to be UVM-Lite GPUs or are new UVM-Lite GPUs
     //    need to be unmapped so that the new preferred location can be mapped.
-    uvm_processor_mask_or(&all_uvm_lite_gpus, &va_range->uvm_lite_gpus, &new_uvm_lite_gpus);
-    status = range_unmap_mask(va_range, &all_uvm_lite_gpus, out_tracker);
+    uvm_processor_mask_or(all_uvm_lite_gpus, &va_range->uvm_lite_gpus, new_uvm_lite_gpus);
+    status = range_unmap_mask(va_range, all_uvm_lite_gpus, out_tracker);
     if (status != NV_OK)
-        return status;
+        goto out;
 
     // GPUs that stop being UVM-Lite, but are in the accessed_by mask need to
     // have any possible mappings established.
-    uvm_processor_mask_andnot(&set_accessed_by_processors, &va_range->uvm_lite_gpus, &new_uvm_lite_gpus);
+    uvm_processor_mask_andnot(set_accessed_by_processors, &va_range->uvm_lite_gpus, new_uvm_lite_gpus);
 
     // A GPU which had been in UVM-Lite mode before must still be in UVM-Lite
     // mode if it is the new preferred location. Otherwise we'd have to be more
     // careful below to not establish remote mappings to the new preferred
     // location.
     if (UVM_ID_IS_GPU(preferred_location))
-        UVM_ASSERT(!uvm_processor_mask_test(&set_accessed_by_processors, preferred_location));
+        UVM_ASSERT(!uvm_processor_mask_test(set_accessed_by_processors, preferred_location));
 
     // The old preferred location should establish new remote mappings if it has
     // accessed-by set.
     if (UVM_ID_IS_VALID(va_range_policy->preferred_location))
-        uvm_processor_mask_set(&set_accessed_by_processors, va_range_policy->preferred_location);
+        uvm_processor_mask_set(set_accessed_by_processors, va_range_policy->preferred_location);
 
-    uvm_processor_mask_and(&set_accessed_by_processors, &set_accessed_by_processors, &va_range_policy->accessed_by);
+    uvm_processor_mask_and(set_accessed_by_processors, set_accessed_by_processors, &va_range_policy->accessed_by);
 
     // Now update the va_range state
     va_range_policy->preferred_location = preferred_location;
     va_range_policy->preferred_nid = preferred_cpu_nid;
-    uvm_processor_mask_copy(&va_range->uvm_lite_gpus, &new_uvm_lite_gpus);
+    uvm_processor_mask_copy(&va_range->uvm_lite_gpus, new_uvm_lite_gpus);
 
     va_block_context = uvm_va_space_block_context(va_space, mm);
 
@@ -1523,10 +1560,10 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_t *va_range,
         uvm_processor_id_t id;
         uvm_va_block_region_t region = uvm_va_block_region_from_block(va_block);
 
-        for_each_id_in_mask(id, &set_accessed_by_processors) {
+        for_each_id_in_mask(id, set_accessed_by_processors) {
             status = uvm_va_block_set_accessed_by(va_block, va_block_context, id);
             if (status != NV_OK)
-                return status;
+                goto out;
         }
 
         // Also, mark CPU pages as dirty and remove remote mappings from the new
@@ -1549,13 +1586,20 @@ NV_STATUS uvm_va_range_set_preferred_location(uvm_va_range_t *va_range,
         uvm_mutex_unlock(&va_block->lock);
 
         if (status != NV_OK)
-            return status;
+            goto out;
     }
 
     // And lastly map all of the current UVM-Lite GPUs to the resident pages on
     // the new preferred location. Anything that's not resident right now will
     // get mapped on the next PreventMigration().
-    return range_map_uvm_lite_gpus(va_range, out_tracker);
+    status = range_map_uvm_lite_gpus(va_range, out_tracker);
+
+out:
+    uvm_processor_mask_cache_free(set_accessed_by_processors);
+    uvm_processor_mask_cache_free(new_uvm_lite_gpus);
+    uvm_processor_mask_cache_free(all_uvm_lite_gpus);
+
+    return status;
 }
 
 NV_STATUS uvm_va_range_set_accessed_by(uvm_va_range_t *va_range,
@@ -1563,50 +1607,60 @@ NV_STATUS uvm_va_range_set_accessed_by(uvm_va_range_t *va_range,
                                        struct mm_struct *mm,
                                        uvm_tracker_t *out_tracker)
 {
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
     uvm_va_block_t *va_block;
-    uvm_processor_mask_t new_uvm_lite_gpus;
     uvm_va_space_t *va_space = va_range->va_space;
     uvm_va_policy_t *policy = uvm_va_range_get_policy(va_range);
-    uvm_va_block_context_t *va_block_context;
+    uvm_va_block_context_t *va_block_context = uvm_va_space_block_context(va_space, mm);
+    uvm_processor_mask_t *new_uvm_lite_gpus;
+
+    // va_block_context->scratch_processor_mask cannot be used since
+    // range_unmap() calls uvm_va_space_block_context(), which re-
+    // initializes the VA block context structure.
+    new_uvm_lite_gpus = uvm_processor_mask_cache_alloc();
+    if (!new_uvm_lite_gpus)
+        return NV_ERR_NO_MEMORY;
 
     // If the range belongs to a non-migratable range group and that processor_id is a non-faultable GPU,
     // check it can map the preferred location
     if (!uvm_range_group_all_migratable(va_space, va_range->node.start, va_range->node.end) &&
         UVM_ID_IS_GPU(processor_id) &&
         !uvm_processor_mask_test(&va_space->faultable_processors, processor_id) &&
-        !uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(policy->preferred_location)], processor_id))
-        return NV_ERR_INVALID_DEVICE;
+        !uvm_processor_mask_test(&va_space->accessible_from[uvm_id_value(policy->preferred_location)], processor_id)) {
+        status = NV_ERR_INVALID_DEVICE;
+        goto out;
+    }
 
     uvm_processor_mask_set(&policy->accessed_by, processor_id);
 
     // If a GPU is already a UVM-Lite GPU then there is nothing else to do.
     if (uvm_processor_mask_test(&va_range->uvm_lite_gpus, processor_id))
-        return NV_OK;
+        goto out;
 
     // Calculate the new UVM-Lite GPUs mask, but don't update it in the va range
     // yet so that we can keep block_page_check_mappings() happy while updating
     // the mappings.
-    calc_uvm_lite_gpus_mask(va_space, policy->preferred_location, &policy->accessed_by, &new_uvm_lite_gpus);
+    calc_uvm_lite_gpus_mask(va_space, policy->preferred_location, &policy->accessed_by, new_uvm_lite_gpus);
 
-    if (uvm_processor_mask_test(&new_uvm_lite_gpus, processor_id)) {
+    if (uvm_processor_mask_test(new_uvm_lite_gpus, processor_id)) {
         // GPUs that become UVM-Lite GPUs need to unmap everything so that they
         // can map the preferred location.
         status = range_unmap(va_range, processor_id, out_tracker);
         if (status != NV_OK)
-            return status;
+            goto out;
     }
 
-    uvm_processor_mask_copy(&va_range->uvm_lite_gpus, &new_uvm_lite_gpus);
-    va_block_context = uvm_va_space_block_context(va_space, mm);
+    uvm_processor_mask_copy(&va_range->uvm_lite_gpus, new_uvm_lite_gpus);
 
     for_each_va_block_in_va_range(va_range, va_block) {
         status = uvm_va_block_set_accessed_by(va_block, va_block_context, processor_id);
         if (status != NV_OK)
-            return status;
+            goto out;
     }
 
-    return NV_OK;
+out:
+    uvm_processor_mask_cache_free(new_uvm_lite_gpus);
+    return status;
 }
 
 void uvm_va_range_unset_accessed_by(uvm_va_range_t *va_range,

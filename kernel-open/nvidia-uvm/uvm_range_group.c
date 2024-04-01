@@ -182,7 +182,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
     NV_STATUS status;
     NV_STATUS tracker_status;
     uvm_gpu_id_t gpu_id;
-    uvm_processor_mask_t map_mask;
+    uvm_processor_mask_t *map_mask = &va_block_context->caller_processor_mask;
     uvm_va_policy_t *policy = uvm_va_range_get_policy(va_range);
 
     // Set the migration CPU NUMA node from the policy.
@@ -212,6 +212,7 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
                                             NULL,
                                             UVM_MAKE_RESIDENT_CAUSE_API_SET_RANGE_GROUP);
     }
+
     if (status != NV_OK)
         return status;
 
@@ -228,12 +229,12 @@ static NV_STATUS uvm_range_group_va_range_migrate_block_locked(uvm_va_range_t *v
         goto out;
 
     // 2- Map faultable SetAccessedBy GPUs.
-    uvm_processor_mask_and(&map_mask,
+    uvm_processor_mask_and(map_mask,
                            &uvm_va_range_get_policy(va_range)->accessed_by,
                            &va_range->va_space->can_access[uvm_id_value(policy->preferred_location)]);
-    uvm_processor_mask_andnot(&map_mask, &map_mask, &va_range->uvm_lite_gpus);
+    uvm_processor_mask_andnot(map_mask, map_mask, &va_range->uvm_lite_gpus);
 
-    for_each_gpu_id_in_mask(gpu_id, &map_mask) {
+    for_each_gpu_id_in_mask(gpu_id, map_mask) {
         status = uvm_va_block_add_mappings(va_block,
                                            va_block_context,
                                            gpu_id,

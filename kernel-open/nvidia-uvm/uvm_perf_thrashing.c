@@ -901,6 +901,7 @@ static pinned_page_t *find_pinned_page(block_thrashing_info_t *block_thrashing, 
 //
 static NV_STATUS thrashing_pin_page(va_space_thrashing_info_t *va_space_thrashing,
                                     uvm_va_block_t *va_block,
+                                    uvm_va_block_context_t *va_block_context,
                                     block_thrashing_info_t *block_thrashing,
                                     page_thrashing_info_t *page_thrashing,
                                     uvm_page_index_t page_index,
@@ -908,17 +909,17 @@ static NV_STATUS thrashing_pin_page(va_space_thrashing_info_t *va_space_thrashin
                                     uvm_processor_id_t residency,
                                     uvm_processor_id_t requester)
 {
-    uvm_processor_mask_t current_residency;
+    uvm_processor_mask_t *current_residency = &va_block_context->scratch_processor_mask;
 
     uvm_assert_mutex_locked(&va_block->lock);
     UVM_ASSERT(!uvm_processor_mask_test(&page_thrashing->throttled_processors, requester));
 
-    uvm_va_block_page_resident_processors(va_block, page_index, &current_residency);
+    uvm_va_block_page_resident_processors(va_block, page_index, current_residency);
 
     // If we are pinning the page for the first time or we are pinning it on a
     // different location that the current location, reset the throttling state
     // to make sure that we flush any pending ThrottlingEnd events.
-    if (!page_thrashing->pinned || !uvm_processor_mask_test(&current_residency, residency))
+    if (!page_thrashing->pinned || !uvm_processor_mask_test(current_residency, residency))
         thrashing_throttling_reset_page(va_block, block_thrashing, page_thrashing, page_index);
 
     if (!page_thrashing->pinned) {
@@ -1120,8 +1121,7 @@ static NV_STATUS unmap_remote_pinned_pages(uvm_va_block_t *va_block,
                 continue;
         }
         else {
-            uvm_page_mask_copy(&va_block_context->caller_page_mask,
-                               &block_thrashing->pinned_pages.mask);
+            uvm_page_mask_copy(&va_block_context->caller_page_mask, &block_thrashing->pinned_pages.mask);
         }
 
         status = uvm_va_block_unmap(va_block,
@@ -1148,7 +1148,7 @@ NV_STATUS uvm_perf_thrashing_unmap_remote_pinned_pages_all(uvm_va_block_t *va_bl
                                                            uvm_va_block_region_t region)
 {
     block_thrashing_info_t *block_thrashing;
-    uvm_processor_mask_t unmap_processors;
+    uvm_processor_mask_t *unmap_processors = &va_block_context->unmap_processors_mask;
     const uvm_va_policy_t *policy = uvm_va_policy_get_region(va_block, region);
 
     uvm_assert_mutex_locked(&va_block->lock);
@@ -1162,9 +1162,9 @@ NV_STATUS uvm_perf_thrashing_unmap_remote_pinned_pages_all(uvm_va_block_t *va_bl
 
     // Unmap all mapped processors (that are not SetAccessedBy) with
     // no copy of the page
-    uvm_processor_mask_andnot(&unmap_processors, &va_block->mapped, &policy->accessed_by);
+    uvm_processor_mask_andnot(unmap_processors, &va_block->mapped, &policy->accessed_by);
 
-    return unmap_remote_pinned_pages(va_block, va_block_context, block_thrashing, region, &unmap_processors);
+    return unmap_remote_pinned_pages(va_block, va_block_context, block_thrashing, region, unmap_processors);
 }
 
 // Check that we are not migrating pages away from its pinned location and
@@ -1391,22 +1391,23 @@ static bool thrashing_processors_can_access(uvm_va_space_t *va_space,
 }
 
 static bool thrashing_processors_have_fast_access_to(uvm_va_space_t *va_space,
+                                                     uvm_va_block_context_t *va_block_context,
                                                      page_thrashing_info_t *page_thrashing,
                                                      uvm_processor_id_t to)
 {
-    uvm_processor_mask_t fast_to;
+    uvm_processor_mask_t *fast_to = &va_block_context->fast_access_mask;
 
     if (UVM_ID_IS_INVALID(to))
         return false;
 
     // Combine NVLINK and native atomics mask since we could have PCIe
     // atomics in the future
-    uvm_processor_mask_and(&fast_to,
+    uvm_processor_mask_and(fast_to,
                            &va_space->has_nvlink[uvm_id_value(to)],
                            &va_space->has_native_atomics[uvm_id_value(to)]);
-    uvm_processor_mask_set(&fast_to, to);
+    uvm_processor_mask_set(fast_to, to);
 
-    return uvm_processor_mask_subset(&page_thrashing->processors, &fast_to);
+    return uvm_processor_mask_subset(&page_thrashing->processors, fast_to);
 }
 
 static void thrashing_processors_common_locations(uvm_va_space_t *va_space,
@@ -1488,7 +1489,7 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
         hint.pin.residency = preferred_location;
     }
     else if (!preferred_location_is_thrashing(preferred_location, page_thrashing) &&
-             thrashing_processors_have_fast_access_to(va_space, page_thrashing, closest_resident_id)) {
+             thrashing_processors_have_fast_access_to(va_space, va_block_context, page_thrashing, closest_resident_id)){
         // This is a fast path for those scenarios in which all thrashing
         // processors have fast (NVLINK + native atomics) access to the current
         // residency. This is skipped if the preferred location is thrashing and
@@ -1545,15 +1546,15 @@ static uvm_perf_thrashing_hint_t get_hint_for_migration_thrashing(va_space_thras
                 hint.pin.residency = requester;
             }
             else {
-                uvm_processor_mask_t common_locations;
+                uvm_processor_mask_t *common_locations = &va_block_context->scratch_processor_mask;
 
-                thrashing_processors_common_locations(va_space, page_thrashing, &common_locations);
-                if (uvm_processor_mask_empty(&common_locations)) {
+                thrashing_processors_common_locations(va_space, page_thrashing, common_locations);
+                if (uvm_processor_mask_empty(common_locations)) {
                     hint.pin.residency = requester;
                 }
                 else {
                     // Find the common location that is closest to the requester
-                    hint.pin.residency = uvm_processor_mask_find_closest_id(va_space, &common_locations, requester);
+                    hint.pin.residency = uvm_processor_mask_find_closest_id(va_space, common_locations, requester);
                 }
             }
         }
@@ -1725,6 +1726,7 @@ done:
     if (hint.type == UVM_PERF_THRASHING_HINT_TYPE_PIN) {
         NV_STATUS status = thrashing_pin_page(va_space_thrashing,
                                               va_block,
+                                              va_block_context,
                                               block_thrashing,
                                               page_thrashing,
                                               page_index,

@@ -92,7 +92,7 @@ typedef struct
 {
     uvm_va_block_t *va_block;
     uvm_va_block_retry_t *va_block_retry;
-    uvm_va_block_context_t *va_block_context;
+    uvm_service_block_context_t *service_context;
     uvm_va_block_region_t region;
     uvm_processor_id_t dest_id;
     uvm_make_resident_cause_t cause;
@@ -713,7 +713,7 @@ void uvm_hmm_migrate_finish(uvm_va_block_t *va_block)
 // Migrate the given range [start end] within a va_block to dest_id.
 static NV_STATUS hmm_migrate_range(uvm_va_block_t *va_block,
                                    uvm_va_block_retry_t *va_block_retry,
-                                   uvm_va_block_context_t *va_block_context,
+                                   uvm_service_block_context_t *service_context,
                                    uvm_processor_id_t dest_id,
                                    NvU64 start,
                                    NvU64 end,
@@ -737,7 +737,7 @@ static NV_STATUS hmm_migrate_range(uvm_va_block_t *va_block,
                                            va_block_retry,
                                            uvm_va_block_migrate_locked(va_block,
                                                                        va_block_retry,
-                                                                       va_block_context,
+                                                                       service_context,
                                                                        region,
                                                                        dest_id,
                                                                        mode,
@@ -916,14 +916,14 @@ static NV_STATUS split_block_if_needed(uvm_va_block_t *va_block,
                                        NvU64 end,
                                        uvm_va_block_t **out_va_block)
 {
-    uvm_va_block_context_t *va_block_context;
+    uvm_service_block_context_t *service_context;
     uvm_va_space_t *va_space;
     struct mm_struct *mm;
     struct vm_area_struct *vma;
     uvm_va_block_region_t region;
     NvU64 addr, from, to;
     uvm_va_block_t *new;
-    NV_STATUS status;
+    NV_STATUS status = NV_OK;
 
     if (va_block->start < start) {
         status = hmm_split_block(va_block, start - 1, &new);
@@ -942,15 +942,18 @@ static NV_STATUS split_block_if_needed(uvm_va_block_t *va_block,
         // Keep the right part, the left part will be deleted.
     }
 
-    *out_va_block = va_block;
-
     // Migrate any GPU data to sysmem before destroying the HMM va_block.
     // We do this because the new va_range might be for a UVM external
     // allocation which could be converting an address range that was first
     // operated on by UVM-HMM and the exteral allocation should see that data.
     va_space = va_block->hmm.va_space;
     mm = va_space->va_space_mm.mm;
-    va_block_context = uvm_va_space_block_context(va_space, mm);
+
+    service_context = uvm_service_block_context_alloc(mm);
+    if (!service_context)
+        return NV_ERR_NO_MEMORY;
+
+    *out_va_block = va_block;
 
     for (addr = va_block->start; addr < va_block->end; addr = to + 1) {
         vma = find_vma_intersection(mm, addr, va_block->end);
@@ -964,21 +967,23 @@ static NV_STATUS split_block_if_needed(uvm_va_block_t *va_block,
         if (!uvm_hmm_vma_is_valid(vma, from, false))
             continue;
 
-        va_block_context->hmm.vma = vma;
+        service_context->block_context->hmm.vma = vma;
 
         status = hmm_migrate_range(va_block,
                                    NULL,
-                                   va_block_context,
+                                   service_context,
                                    UVM_ID_CPU,
                                    from,
                                    to,
                                    UVM_MIGRATE_MODE_MAKE_RESIDENT_AND_MAP,
                                    NULL);
         if (status != NV_OK)
-            return status;
+            break;
     }
 
-    return NV_OK;
+    uvm_service_block_context_free(service_context);
+
+    return status;
 }
 
 // Normally, the HMM va_block is destroyed when the va_space is destroyed
@@ -1089,12 +1094,17 @@ static NV_STATUS hmm_set_preferred_location_locked(uvm_va_block_t *va_block,
                                                    NvU64 end,
                                                    uvm_tracker_t *out_tracker)
 {
-    uvm_processor_mask_t set_accessed_by_processors;
+    uvm_processor_mask_t *set_accessed_by_processors;
     const uvm_va_policy_t *old_policy;
     uvm_va_policy_node_t *node;
     uvm_va_block_region_t region;
     uvm_processor_id_t id;
-    NV_STATUS status, tracker_status;
+    NV_STATUS status = NV_OK;
+    NV_STATUS tracker_status;
+
+    set_accessed_by_processors = uvm_processor_mask_cache_alloc();
+    if (!set_accessed_by_processors)
+        return NV_ERR_NO_MEMORY;
 
     // Note that we can't just call uvm_va_policy_set_range() for the whole
     // range [addr end] because we need to examine the old value of
@@ -1107,25 +1117,27 @@ static NV_STATUS hmm_set_preferred_location_locked(uvm_va_block_t *va_block,
         // If the old preferred location is a valid processor ID, remote
         // mappings should be established to the new preferred location if
         // accessed-by is set.
-        uvm_processor_mask_zero(&set_accessed_by_processors);
+        uvm_processor_mask_zero(set_accessed_by_processors);
 
         if (UVM_ID_IS_VALID(old_policy->preferred_location) &&
             uvm_processor_mask_test(&old_policy->accessed_by, old_policy->preferred_location))
-            uvm_processor_mask_set(&set_accessed_by_processors, old_policy->preferred_location);
+            uvm_processor_mask_set(set_accessed_by_processors, old_policy->preferred_location);
 
         if (!uvm_va_policy_set_preferred_location(va_block,
                                                   region,
                                                   preferred_location,
                                                   preferred_cpu_nid,
-                                                  old_policy))
-            return NV_ERR_NO_MEMORY;
+                                                  old_policy)) {
+            status = NV_ERR_NO_MEMORY;
+            break;
+        }
 
         // Establish new remote mappings if the old preferred location had
         // accessed-by set.
-        for_each_id_in_mask(id, &set_accessed_by_processors) {
+        for_each_id_in_mask(id, set_accessed_by_processors) {
             status = uvm_va_block_set_accessed_by_locked(va_block, va_block_context, id, region, out_tracker);
             if (status != NV_OK)
-                return status;
+                break;
         }
 
         // Even though the UVM_VA_BLOCK_RETRY_LOCKED() may unlock and relock
@@ -1143,10 +1155,11 @@ static NV_STATUS hmm_set_preferred_location_locked(uvm_va_block_t *va_block,
             status = tracker_status;
 
         if (status != NV_OK)
-            return status;
+            break;
     }
 
-    return NV_OK;
+    uvm_processor_mask_cache_free(set_accessed_by_processors);
+    return status;
 }
 
 NV_STATUS uvm_hmm_set_preferred_location(uvm_va_space_t *va_space,
@@ -2128,6 +2141,7 @@ static NV_STATUS migrate_alloc_on_cpu(uvm_va_block_t *va_block,
 
     return status;
 }
+
 static NV_STATUS uvm_hmm_devmem_fault_alloc_and_copy(uvm_hmm_devmem_fault_context_t *devmem_fault_context)
 {
     uvm_processor_id_t processor_id;
@@ -2400,6 +2414,7 @@ static NV_STATUS hmm_block_atomic_fault_locked(uvm_processor_id_t processor_id,
 {
     uvm_va_block_region_t region = service_context->region;
     struct page **pages = service_context->block_context->hmm.pages;
+    struct vm_area_struct *vma = service_context->block_context->hmm.vma;
     int npages;
     uvm_page_index_t page_index;
     uvm_make_resident_cause_t cause;
@@ -2417,12 +2432,9 @@ static NV_STATUS hmm_block_atomic_fault_locked(uvm_processor_id_t processor_id,
         else
             cause = UVM_MAKE_RESIDENT_CAUSE_ACCESS_COUNTER;
 
-        status = uvm_hmm_va_block_migrate_locked(va_block,
-                                                 va_block_retry,
-                                                 service_context->block_context,
-                                                 UVM_ID_CPU,
-                                                 region,
-                                                 cause);
+        UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block, vma, region));
+
+        status = uvm_hmm_va_block_migrate_locked(va_block, va_block_retry, service_context, UVM_ID_CPU, region, cause);
         if (status != NV_OK)
             goto done;
 
@@ -2439,7 +2451,7 @@ static NV_STATUS hmm_block_atomic_fault_locked(uvm_processor_id_t processor_id,
     // mmap() files so we check for that here and report a fatal fault.
     // Otherwise with the current Linux 6.1 make_device_exclusive_range(),
     // it doesn't make the page exclusive and we end up in an endless loop.
-    if (service_context->block_context->hmm.vma->vm_flags & (VM_SHARED | VM_HUGETLB)) {
+    if (vma->vm_flags & (VM_SHARED | VM_HUGETLB)) {
         status = NV_ERR_NOT_SUPPORTED;
         goto done;
     }
@@ -2661,6 +2673,8 @@ static NV_STATUS dmamap_src_sysmem_pages(uvm_va_block_t *va_block,
 {
     uvm_page_index_t page_index;
     NV_STATUS status = NV_OK;
+
+    UVM_ASSERT(service_context);
 
     for_each_va_block_page_in_region_mask(page_index, page_mask, region) {
         struct page *src_page;
@@ -2966,7 +2980,7 @@ static NV_STATUS uvm_hmm_migrate_alloc_and_copy(struct vm_area_struct *vma,
 {
     uvm_va_block_t *va_block;
     uvm_va_block_retry_t *va_block_retry;
-    uvm_va_block_context_t *va_block_context;
+    uvm_service_block_context_t *service_context;
     const unsigned long *src_pfns;
     unsigned long *dst_pfns;
     uvm_va_block_region_t region;
@@ -2976,9 +2990,9 @@ static NV_STATUS uvm_hmm_migrate_alloc_and_copy(struct vm_area_struct *vma,
 
     va_block = uvm_hmm_migrate_event->va_block;
     va_block_retry = uvm_hmm_migrate_event->va_block_retry;
-    va_block_context = uvm_hmm_migrate_event->va_block_context;
-    src_pfns = va_block_context->hmm.src_pfns;
-    dst_pfns = va_block_context->hmm.dst_pfns;
+    service_context = uvm_hmm_migrate_event->service_context;
+    src_pfns = service_context->block_context->hmm.src_pfns;
+    dst_pfns = service_context->block_context->hmm.dst_pfns;
     region = uvm_hmm_migrate_event->region;
     dest_id = uvm_hmm_migrate_event->dest_id;
     page_mask = &uvm_hmm_migrate_event->page_mask;
@@ -2994,7 +3008,7 @@ static NV_STATUS uvm_hmm_migrate_alloc_and_copy(struct vm_area_struct *vma,
                                       region,
                                       page_mask,
                                       &uvm_hmm_migrate_event->same_devmem_page_mask,
-                                      va_block_context);
+                                      service_context->block_context);
     }
     else {
         status = dmamap_src_sysmem_pages(va_block,
@@ -3004,14 +3018,15 @@ static NV_STATUS uvm_hmm_migrate_alloc_and_copy(struct vm_area_struct *vma,
                                          region,
                                          page_mask,
                                          dest_id,
-                                         NULL);
+                                         service_context);
     }
+
     if (status != NV_OK)
         return status;
 
     status = uvm_va_block_make_resident_copy(va_block,
                                              va_block_retry,
-                                             va_block_context,
+                                             service_context->block_context,
                                              dest_id,
                                              region,
                                              page_mask,
@@ -3050,7 +3065,7 @@ static NV_STATUS uvm_hmm_migrate_finalize(uvm_hmm_migrate_event_t *uvm_hmm_migra
 
     va_block = uvm_hmm_migrate_event->va_block;
     va_block_retry = uvm_hmm_migrate_event->va_block_retry;
-    va_block_context = uvm_hmm_migrate_event->va_block_context;
+    va_block_context = uvm_hmm_migrate_event->service_context->block_context;
     region = uvm_hmm_migrate_event->region;
     dest_id = uvm_hmm_migrate_event->dest_id;
     page_mask = &uvm_hmm_migrate_event->page_mask;
@@ -3090,12 +3105,13 @@ static NV_STATUS uvm_hmm_migrate_finalize(uvm_hmm_migrate_event_t *uvm_hmm_migra
 // TODO: Bug 3900785: investigate ways to implement async migration.
 NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
                                           uvm_va_block_retry_t *va_block_retry,
-                                          uvm_va_block_context_t *va_block_context,
+                                          uvm_service_block_context_t *service_context,
                                           uvm_processor_id_t dest_id,
                                           uvm_va_block_region_t region,
                                           uvm_make_resident_cause_t cause)
 {
     uvm_hmm_migrate_event_t uvm_hmm_migrate_event;
+    uvm_va_block_context_t *va_block_context = service_context->block_context;
     struct vm_area_struct *vma = va_block_context->hmm.vma;
     NvU64 start;
     NvU64 end;
@@ -3106,6 +3122,7 @@ NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
     UVM_ASSERT(vma);
     UVM_ASSERT(va_block_context->mm == vma->vm_mm);
     uvm_assert_mmap_lock_locked(va_block_context->mm);
+    UVM_ASSERT(uvm_hmm_check_context_vma_is_valid(va_block, vma, region));
     uvm_assert_rwsem_locked(&va_block->hmm.va_space->lock);
     uvm_assert_mutex_locked(&va_block->hmm.migrate_lock);
     uvm_assert_mutex_locked(&va_block->lock);
@@ -3116,7 +3133,7 @@ NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
 
     uvm_hmm_migrate_event.va_block = va_block;
     uvm_hmm_migrate_event.va_block_retry = va_block_retry;
-    uvm_hmm_migrate_event.va_block_context = va_block_context;
+    uvm_hmm_migrate_event.service_context = service_context;
     uvm_hmm_migrate_event.region = region;
     uvm_hmm_migrate_event.dest_id = dest_id;
     uvm_hmm_migrate_event.cause = cause;
@@ -3202,7 +3219,7 @@ NV_STATUS uvm_hmm_va_block_migrate_locked(uvm_va_block_t *va_block,
 }
 
 NV_STATUS uvm_hmm_migrate_ranges(uvm_va_space_t *va_space,
-                                 uvm_va_block_context_t *va_block_context,
+                                 uvm_service_block_context_t *service_context,
                                  NvU64 base,
                                  NvU64 length,
                                  uvm_processor_id_t dest_id,
@@ -3214,11 +3231,12 @@ NV_STATUS uvm_hmm_migrate_ranges(uvm_va_space_t *va_space,
     uvm_va_block_retry_t va_block_retry;
     NvU64 addr, end, last_address;
     NV_STATUS status = NV_OK;
+    uvm_va_block_context_t *block_context = service_context->block_context;
 
     if (!uvm_hmm_is_enabled(va_space))
         return NV_ERR_INVALID_ADDRESS;
 
-    mm = va_block_context->mm;
+    mm = block_context->mm;
     UVM_ASSERT(mm == va_space->va_space_mm.mm);
     uvm_assert_mmap_lock_locked(mm);
     uvm_assert_rwsem_locked(&va_space->lock);
@@ -3228,7 +3246,7 @@ NV_STATUS uvm_hmm_migrate_ranges(uvm_va_space_t *va_space,
     for (addr = base; addr < last_address; addr = end + 1) {
         struct vm_area_struct *vma;
 
-        status = hmm_va_block_find_create(va_space, addr, false, &va_block_context->hmm.vma, &va_block);
+        status = hmm_va_block_find_create(va_space, addr, false, &block_context->hmm.vma, &va_block);
         if (status != NV_OK)
             return status;
 
@@ -3236,18 +3254,11 @@ NV_STATUS uvm_hmm_migrate_ranges(uvm_va_space_t *va_space,
         if (end > last_address)
             end = last_address;
 
-        vma = va_block_context->hmm.vma;
+        vma = block_context->hmm.vma;
         if (end > vma->vm_end - 1)
             end = vma->vm_end - 1;
 
-        status = hmm_migrate_range(va_block,
-                                   &va_block_retry,
-                                   va_block_context,
-                                   dest_id,
-                                   addr,
-                                   end,
-                                   mode,
-                                   out_tracker);
+        status = hmm_migrate_range(va_block, &va_block_retry, service_context, dest_id, addr, end, mode, out_tracker);
         if (status != NV_OK)
             break;
     }
@@ -3283,12 +3294,13 @@ NV_STATUS uvm_hmm_va_block_evict_chunk_prep(uvm_va_block_t *va_block,
 // Note that the caller must initialize va_block_context->hmm.src_pfns by
 // calling uvm_hmm_va_block_evict_chunk_prep() before calling this.
 static NV_STATUS hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
-                                           uvm_va_block_context_t *va_block_context,
+                                           uvm_service_block_context_t *service_context,
                                            const uvm_page_mask_t *pages_to_evict,
                                            uvm_va_block_region_t region,
                                            uvm_make_resident_cause_t cause,
                                            bool *out_accessed_by_set)
 {
+    uvm_va_block_context_t *va_block_context = service_context->block_context;
     NvU64 start = uvm_va_block_region_start(va_block, region);
     NvU64 end = uvm_va_block_region_end(va_block, region);
     unsigned long *src_pfns = va_block_context->hmm.src_pfns;
@@ -3296,7 +3308,7 @@ static NV_STATUS hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
     uvm_hmm_migrate_event_t uvm_hmm_migrate_event = {
         .va_block = va_block,
         .va_block_retry = NULL,
-        .va_block_context = va_block_context,
+        .service_context = service_context,
         .region = region,
         .dest_id = UVM_ID_CPU,
         .cause = cause,
@@ -3329,13 +3341,7 @@ static NV_STATUS hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
         // TODO: Bug 3660922: Need to handle read duplication at some point.
         UVM_ASSERT(uvm_page_mask_region_empty(cpu_resident_mask, region));
 
-        status = migrate_alloc_on_cpu(va_block,
-                                      src_pfns,
-                                      dst_pfns,
-                                      region,
-                                      page_mask,
-                                      NULL,
-                                      va_block_context);
+        status = migrate_alloc_on_cpu(va_block, src_pfns, dst_pfns, region, page_mask, NULL, va_block_context);
         if (status != NV_OK)
             goto err;
 
@@ -3369,13 +3375,13 @@ err:
 }
 
 NV_STATUS uvm_hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
-                                        uvm_va_block_context_t *va_block_context,
+                                        uvm_service_block_context_t *service_context,
                                         const uvm_page_mask_t *pages_to_evict,
                                         uvm_va_block_region_t region,
                                         bool *out_accessed_by_set)
 {
     return hmm_va_block_evict_chunks(va_block,
-                                     va_block_context,
+                                     service_context,
                                      pages_to_evict,
                                      region,
                                      UVM_MAKE_RESIDENT_CAUSE_EVICTION,
@@ -3384,11 +3390,12 @@ NV_STATUS uvm_hmm_va_block_evict_chunks(uvm_va_block_t *va_block,
 
 NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
                                                 uvm_gpu_t *gpu,
-                                                uvm_va_block_context_t *va_block_context,
+                                                uvm_service_block_context_t *service_context,
                                                 const uvm_page_mask_t *pages_to_evict,
                                                 uvm_va_block_region_t region)
 {
-    unsigned long *src_pfns = va_block_context->hmm.src_pfns;
+    uvm_va_block_context_t *block_context = service_context->block_context;
+    unsigned long *src_pfns = block_context->hmm.src_pfns;
     uvm_va_block_gpu_state_t *gpu_state;
     uvm_page_index_t page_index;
     uvm_gpu_chunk_t *gpu_chunk;
@@ -3401,7 +3408,7 @@ NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
     UVM_ASSERT(gpu_state->chunks);
 
     // Fill in the src_pfns[] with the ZONE_DEVICE private PFNs of the GPU.
-    memset(src_pfns, 0, sizeof(va_block_context->hmm.src_pfns));
+    memset(src_pfns, 0, sizeof(block_context->hmm.src_pfns));
 
     // TODO: Bug 3368756: add support for large GPU pages.
     for_each_va_block_page_in_region_mask(page_index, pages_to_evict, region) {
@@ -3409,7 +3416,7 @@ NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
                                                   gpu,
                                                   uvm_va_block_cpu_page_address(va_block, page_index));
         status = uvm_hmm_va_block_evict_chunk_prep(va_block,
-                                                   va_block_context,
+                                                   block_context,
                                                    gpu_chunk,
                                                    uvm_va_block_region_for_page(page_index));
         if (status != NV_OK)
@@ -3417,7 +3424,7 @@ NV_STATUS uvm_hmm_va_block_evict_pages_from_gpu(uvm_va_block_t *va_block,
     }
 
     return hmm_va_block_evict_chunks(va_block,
-                                     va_block_context,
+                                     service_context,
                                      pages_to_evict,
                                      region,
                                      UVM_MAKE_RESIDENT_CAUSE_API_MIGRATE,

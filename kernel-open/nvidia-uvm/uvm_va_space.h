@@ -230,9 +230,11 @@ struct uvm_va_space_struct
     uvm_processor_mask_t accessible_from[UVM_ID_MAX_PROCESSORS];
 
     // Pre-computed masks that contain, for each processor memory, a mask with
-    // the processors that can directly copy to and from its memory. This is
-    // almost the same as accessible_from masks, but also requires peer identity
-    // mappings to be supported for peer access.
+    // the processors that can directly copy to and from its memory, using the
+    // Copy Engine. These masks are usually the same as accessible_from masks.
+    //
+    // In certain configurations, peer identity mappings must be created to
+    // enable CE copies between peers.
     uvm_processor_mask_t can_copy_from[UVM_ID_MAX_PROCESSORS];
 
     // Pre-computed masks that contain, for each processor, a mask of processors
@@ -264,6 +266,22 @@ struct uvm_va_space_struct
 
     // Mask of processors that are participating in system-wide atomics
     uvm_processor_mask_t system_wide_atomics_enabled_processors;
+
+    // Temporary copy of registered_gpus used to avoid allocation during VA
+    // space destroy.
+    uvm_processor_mask_t registered_gpus_teardown;
+
+    // Allocated in uvm_va_space_register_gpu(), used and free'd in
+    // uvm_va_space_unregister_gpu().
+    uvm_processor_mask_t *peers_to_release[UVM_ID_MAX_PROCESSORS];
+
+    // Mask of processors to unmap. Used in range_unmap().
+    uvm_processor_mask_t unmap_mask;
+
+    // Available as scratch space for the internal APIs. This is like a caller-
+    // save register: it shouldn't be used across function calls which also take
+    // this va_space.
+    uvm_processor_mask_t scratch_processor_mask;
 
     // Mask of physical GPUs where access counters are enabled on this VA space
     uvm_parent_processor_mask_t access_counters_enabled_processors;
@@ -348,6 +366,20 @@ struct uvm_va_space_struct
         // HMM information about this VA space.
         uvm_hmm_va_space_t hmm;
     };
+
+    struct
+    {
+        // Temporary mask used to calculate closest_processors in
+        // uvm_processor_mask_find_closest_id.
+        uvm_processor_mask_t mask;
+
+        // Temporary mask to hold direct_peers in
+        // uvm_processor_mask_find_closest_id.
+        uvm_processor_mask_t direct_peers;
+
+        // Protects the mask and direct_peers above.
+        uvm_mutex_t mask_mutex;
+    } closest_processors;
 
     struct
     {

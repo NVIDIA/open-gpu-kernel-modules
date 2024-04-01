@@ -160,6 +160,10 @@ struct uvm_service_block_context_struct
     // Pages whose permissions need to be revoked from other processors
     uvm_page_mask_t revocation_mask;
 
+    // Temporary mask used in service_va_block_locked() in
+    // uvm_gpu_access_counters.c.
+    uvm_processor_mask_t update_processors;
+
     struct
     {
         // Per-processor mask with the pages that will be resident after
@@ -593,16 +597,21 @@ typedef enum
     UVM_GPU_LINK_MAX
 } uvm_gpu_link_type_t;
 
-// UVM does not support P2P copies on pre-Pascal GPUs. Pascal+ GPUs only
-// support virtual addresses in P2P copies. Therefore, a peer identity mapping
-// needs to be created.
-// Ampere+ GPUs support physical peer copies, too, so identity mappings are not
-// needed
 typedef enum
 {
+    // Peer copies can be disallowed for a variety of reasons. For example,
+    // P2P transfers are disabled in pre-Pascal GPUs because there is no
+    // compelling use case for direct peer migrations.
     UVM_GPU_PEER_COPY_MODE_UNSUPPORTED,
+
+    // Pascal+ GPUs support virtual addresses in P2P copies. Virtual peer copies
+    // require the creation of peer identity mappings.
     UVM_GPU_PEER_COPY_MODE_VIRTUAL,
+
+    // Ampere+ GPUs support virtual and physical peer copies. Physical peer
+    // copies do not depend on peer identity mappings.
     UVM_GPU_PEER_COPY_MODE_PHYSICAL,
+
     UVM_GPU_PEER_COPY_MODE_COUNT
 } uvm_gpu_peer_copy_mode_t;
 

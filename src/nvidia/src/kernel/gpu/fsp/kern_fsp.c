@@ -259,32 +259,50 @@ kfspPollForQueueEmpty_IMPL
     KernelFsp *pKernelFsp
 )
 {
+    NV_STATUS status = NV_OK;
     RMTIMEOUT timeout;
 
-    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout, GPU_TIMEOUT_FLAGS_OSTIMER | GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
+    gpuSetTimeout(pGpu, GPU_TIMEOUT_DEFAULT, &timeout,
+        GPU_TIMEOUT_FLAGS_OSTIMER |
+        GPU_TIMEOUT_FLAGS_BYPASS_THREAD_STATE);
 
     while (!kfspIsQueueEmpty(pGpu, pKernelFsp))
     {
         //
-        // For now we assume that any response from FSP before RM message send is complete
-        // indicates an error and we should abort.
+        // For now we assume that any response from FSP before RM message
+        // send is complete indicates an error and we should abort.
+        //
+        // Ongoing dicussion on usefullness of this check. Bug to be filed.
         //
         if (!kfspIsMsgQueueEmpty(pGpu, pKernelFsp))
         {
             kfspReadMessage(pGpu, pKernelFsp, NULL, 0);
-            NV_PRINTF(LEVEL_ERROR, "Received error message from FSP while waiting for CMDQ to be empty.\n");
-            return NV_ERR_GENERIC;
+            NV_PRINTF(LEVEL_ERROR,
+                "Received error message from FSP while waiting for CMDQ to be empty.\n");
+            status = NV_ERR_GENERIC;
+            break;
         }
 
-        if (gpuCheckTimeout(pGpu, &timeout) == NV_ERR_TIMEOUT)
-        {
-            NV_PRINTF(LEVEL_ERROR, "Timed out waiting for FSP command queue to be empty.\n");
-            return NV_ERR_TIMEOUT;
-        }
         osSpinLoop();
+
+        status = gpuCheckTimeout(pGpu, &timeout);
+        if (status != NV_OK)
+        {
+            if ((status == NV_ERR_TIMEOUT) &&
+                kfspIsQueueEmpty(pGpu, pKernelFsp))
+            {
+                status = NV_OK;
+            }
+            else
+            {
+                NV_PRINTF(LEVEL_ERROR,
+                    "Timed out waiting for FSP command queue to be empty.\n");
+            }
+            break;
+        }
     }
 
-    return NV_OK;
+    return status;
 }
 
 /*!

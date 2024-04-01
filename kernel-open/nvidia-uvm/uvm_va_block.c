@@ -9341,35 +9341,43 @@ void uvm_va_block_unmap_preferred_location_uvm_lite(uvm_va_block_t *va_block, uv
 //
 // Notably the caller needs to support allocation-retry as
 // uvm_va_block_migrate_locked() requires that.
-static NV_STATUS block_evict_pages_from_gpu(uvm_va_block_t *va_block,
-                                            uvm_va_block_context_t *va_block_context,
-                                            uvm_gpu_t *gpu)
+static NV_STATUS block_evict_pages_from_gpu(uvm_va_block_t *va_block, uvm_gpu_t *gpu, struct mm_struct *mm)
 {
     NV_STATUS status = NV_OK;
     const uvm_page_mask_t *resident = uvm_va_block_resident_mask_get(va_block, gpu->id, NUMA_NO_NODE);
     uvm_va_block_region_t region = uvm_va_block_region_from_block(va_block);
     uvm_va_block_region_t subregion;
+    uvm_service_block_context_t *service_context;
+
+    service_context = uvm_service_block_context_alloc(mm);
+    if (!service_context)
+        return NV_ERR_NO_MEMORY;
 
     // Move all subregions resident on the GPU to the CPU
     for_each_va_block_subregion_in_mask(subregion, resident, region) {
         if (uvm_va_block_is_hmm(va_block)) {
-            status = uvm_hmm_va_block_evict_pages_from_gpu(va_block, gpu, va_block_context, resident, subregion);
+            status = uvm_hmm_va_block_evict_pages_from_gpu(va_block, gpu, service_context, resident, subregion);
         }
         else {
             status = uvm_va_block_migrate_locked(va_block,
                                                  NULL,
-                                                 va_block_context,
+                                                 service_context,
                                                  subregion,
                                                  UVM_ID_CPU,
                                                  UVM_MIGRATE_MODE_MAKE_RESIDENT_AND_MAP,
                                                  NULL);
         }
+
         if (status != NV_OK)
-            return status;
+            break;
     }
 
-    UVM_ASSERT(!uvm_processor_mask_test(&va_block->resident, gpu->id));
-    return NV_OK;
+    if (status == NV_OK)
+        UVM_ASSERT(!uvm_processor_mask_test(&va_block->resident, gpu->id));
+
+    uvm_service_block_context_free(service_context);
+
+    return status;
 }
 
 void uvm_va_block_unregister_gpu_locked(uvm_va_block_t *va_block, uvm_gpu_t *gpu, struct mm_struct *mm)
@@ -9393,7 +9401,7 @@ void uvm_va_block_unregister_gpu_locked(uvm_va_block_t *va_block, uvm_gpu_t *gpu
     // we don't rely on any state of the block across the call.
     // TODO: Bug 4494289: Prevent setting the global error on allocation
     // failures.
-    status = UVM_VA_BLOCK_RETRY_LOCKED(va_block, NULL, block_evict_pages_from_gpu(va_block, va_block_context, gpu));
+    status = UVM_VA_BLOCK_RETRY_LOCKED(va_block, NULL, block_evict_pages_from_gpu(va_block, gpu, mm));
     if (status != NV_OK) {
         UVM_ERR_PRINT("Failed to evict GPU pages on GPU unregister: %s, GPU %s\n",
                       nvstatusToString(status),
@@ -12981,6 +12989,7 @@ NV_STATUS uvm_va_block_evict_chunks(uvm_va_block_t *va_block,
     uvm_va_block_region_t chunk_region;
     size_t num_gpu_chunks = block_num_gpu_chunks(va_block, gpu);
     size_t chunks_to_evict = 0;
+    uvm_service_block_context_t *service_context;
     uvm_va_block_context_t *block_context;
     uvm_page_mask_t *pages_to_evict;
     uvm_va_block_test_t *va_block_test = uvm_va_block_get_test(va_block);
@@ -13008,12 +13017,16 @@ NV_STATUS uvm_va_block_evict_chunks(uvm_va_block_t *va_block,
     // allocations. If mappings need to be created,
     // block_add_eviction_mappings() will be scheduled below.
     mm = uvm_va_space_mm_retain(va_space);
-    block_context = uvm_va_block_context_alloc(mm);
-    if (!block_context) {
+
+    service_context = uvm_service_block_context_alloc(mm);
+    if (!service_context) {
         if (mm)
             uvm_va_space_mm_release(va_space);
+
         return NV_ERR_NO_MEMORY;
     }
+
+    block_context = service_context->block_context;
 
     pages_to_evict = &block_context->caller_page_mask;
     uvm_page_mask_zero(pages_to_evict);
@@ -13051,7 +13064,7 @@ NV_STATUS uvm_va_block_evict_chunks(uvm_va_block_t *va_block,
 
     if (uvm_va_block_is_hmm(va_block)) {
         status = uvm_hmm_va_block_evict_chunks(va_block,
-                                               block_context,
+                                               service_context,
                                                pages_to_evict,
                                                uvm_va_block_region_from_block(va_block),
                                                &accessed_by_set);
@@ -13168,7 +13181,8 @@ NV_STATUS uvm_va_block_evict_chunks(uvm_va_block_t *va_block,
     }
 
 out:
-    uvm_va_block_context_free(block_context);
+    uvm_service_block_context_free(service_context);
+
     if (mm)
         uvm_va_space_mm_release(va_space);
 
