@@ -424,6 +424,8 @@ kvgpumgrGetHostVgpuDeviceFromGfid(NvU32 gpuPciId, NvU32 gfid,
 NV_STATUS
 kvgpuMgrRestoreSmcExecPart(struct OBJGPU *pGpu,KERNEL_HOST_VGPU_DEVICE *pKernelHostVgpuDevice,
                            KERNEL_MIG_GPU_INSTANCE *pKernelMIGGpuInstance);
+NV_STATUS
+kvgpumgrSetVgpuType(struct OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPhysGpuInfo, NvU32 vgpuTypeId);
 
 #endif // __kernel_vgpu_mgr_h__
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -75,7 +75,7 @@ DeviceImpl::~DeviceImpl()
 }
 
 
-DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent)
+DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * parent, bool bSkipFakeDeviceDpcdAccess)
     : parent(parent),
       hal(hal),
       activeGroup(0),
@@ -95,7 +95,8 @@ DeviceImpl::DeviceImpl(DPCDHAL * hal, ConnectorImpl * connector, DeviceImpl * pa
       bIgnoreMsaCapCached(false),
       bSdpExtCapable(Indeterminate),
       bAsyncSDPCapable(Indeterminate),
-      bDscPassThroughColorFormatWar(false)
+      bDscPassThroughColorFormatWar(false),
+      bSkipFakeDeviceDpcdAccess(bSkipFakeDeviceDpcdAccess)
 {
     bandwidth.enum_path.dataValid = false;
     shadow.plugged = false;
@@ -375,6 +376,12 @@ AuxBus::status DeviceImpl::getDpcdData(unsigned offset, NvU8 * buffer,
                                        unsigned * sizeCompleted,
                                        unsigned  * pNakReason)
 {
+    if (this->bSkipFakeDeviceDpcdAccess && isFakedMuxDevice())
+    {
+        DP_LOG(("Device is faked, returning nack\n"));
+        return AuxBus::nack;
+    }
+
     if (!buffer || !sizeCompleted)
     {
         // default param may be NULL
@@ -403,6 +410,12 @@ AuxBus::status DeviceImpl::setDpcdData(unsigned offset, NvU8 * buffer,
                                        unsigned * sizeCompleted,
                                        unsigned  * pNakReason)
 {
+    if (this->bSkipFakeDeviceDpcdAccess && isFakedMuxDevice())
+    {
+        DP_LOG(("Device is faked, returning nack\n"));
+        return AuxBus::nack;
+    }
+
     if (!buffer || !sizeCompleted)
     {
         // default param may be NULL

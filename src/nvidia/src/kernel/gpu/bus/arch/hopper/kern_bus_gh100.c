@@ -2501,6 +2501,17 @@ kbusGetEgmPeerId_GH100
         return BUS_INVALID_PEER;
     }
 
+    //
+    // For Nvswitch connected systems, AAS (Alternate Address Space) is set by Nvswitch itself
+    // based on the EGM fabric address range and so there is no need for a separate peer id
+    // in the Nvswitch case.
+    //
+    if (GPU_IS_NVSWITCH_DETECTED(pLocalGpu))
+    {
+        LOWESTBITIDX_32(peerMask);
+        return peerMask;
+    }
+
     FOR_EACH_INDEX_IN_MASK(32, peerId, peerMask)
     {
         if (pLocalKernelBus->p2p.bEgmPeer[peerId])

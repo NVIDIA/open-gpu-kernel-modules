@@ -1939,6 +1939,87 @@
 #define NV_REG_STR_RM_CONF_COMPUTE_SPDM_POLICY_ENABLED_NO                 0x00000000
 #define NV_REG_STR_RM_CONF_COMPUTE_SPDM_POLICY_ENABLED_YES                0x00000001
 
+//
+// Enable/disable dummy key rotation in Confidential Compute. 
+// This is a temp reg key that will be removed once all RM clients
+// support key rotation by default.
+//
+// 0 - Feature disabled
+// 1 - Feature enabled
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION                    "RmConfComputeDummyKeyRotation"
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_ENABLED            0:0
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_ENABLED_NO         0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_ENABLED_YES        0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_SEC2_KEYS          1:1
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_SEC2_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_SEC2_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE2_KEYS          2:2
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE2_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE2_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE3_KEYS          3:3
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE3_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE3_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE4_KEYS          4:4
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE4_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE4_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE5_KEYS          5:5
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE5_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE5_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE6_KEYS          6:6
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE6_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE6_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE7_KEYS          7:7
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE7_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE7_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE8_KEYS          8:8
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE8_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE8_KEYS_YES      0x00000001
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE9_KEYS          9:9
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE9_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LCE9_KEYS_YES      0x00000001
+
+// if all kernel keys should be considered for key rotation
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_KERNEL_KEYS        10:10
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_KERNEL_KEYS_NO     0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_KERNEL_KEYS_YES    0x00000001
+
+// if all user keys should be considered for key rotation
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_USER_KEYS          11:11
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_USER_KEYS_NO       0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_USER_KEYS_YES      0x00000001
+
+//
+// Set period for "keep-alive" heartbeat message sent between SPDM Requester and Responder.
+// This will sent a keep-alive message every period to GPU. GPU will set timeout to 2 * period.
+// If GPU doesn't receive message within 2 * period, it is fatal error and GPU will require reset.
+// Minimum period is 4 seconds, maximum period is 255 seconds. Setting period to 0 will disable heartbeat.
+//
+// 0 - Disable feature (no heartbeat sending)
+// x - Period value in seconds
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT                             "RmConfComputeHeartbeatPeriod"
+#define NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT_PERIOD_SECONDS              31:0
+#define NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT_PERIOD_SECONDS_DISABLE      0x00000000
+#define NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT_PERIOD_SECONDS_MIN          0x00000004
+#define NV_REG_STR_RM_CONF_COMPUTE_HEARTBEAT_PERIOD_SECONDS_MAX          0x000000FF
+
+//
+// Set lower threshold for dummy key rotation. 
+// This is a temp reg key that will be removed once all RM clients
+// support prod key rotation.
+// Value is in seconds.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_LOWER_THRESHOLD     "RmDummyKeyRotationLowerThreshold"
+
+//
+// Set upper threshold for dummy key rotation. 
+// This is a temp reg key that will be removed once all RM clients
+// support prod key rotation.
+// Value is in seconds.
+//
+#define NV_REG_STR_RM_CONF_COMPUTE_DUMMY_KEY_ROTATION_UPPER_THRESHOLD     "RmDummyKeyRotationUpperThreshold"
+
 // TYPE Dword
 // Encoding boolean
 // Regkey based solution to serialize VBlank Aggressive Handling in Top Half using spinlock
@@ -2278,4 +2359,12 @@
 #define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_ENABLE       0x00000001
 #define NV_REG_STR_RM_RELAXED_GSP_INIT_LOCKING_DEFAULT      0x00000002
 
+//
+// Type: Dword
+// This regkey overrides the state of the GR scrubber channel and determines
+// whether it should be created or not.
+//
+#define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL             "RmForceGrScrubberChannel"
+#define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_DISABLE     0x00000000
+#define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_ENABLE      0x00000001
 #endif // NVRM_REGISTRY_H

@@ -148,7 +148,10 @@
 // no trace output
 #define _MMUXLATEVADDR_FLAG_XLATE_ONLY          _MMUXLATEVADDR_FLAG_VALIDATE_TERSELY
 
-static NV_STATUS _dmaGetFabricAddress(OBJGPU *pGpu, NvU32 aperture, NvU32 kind, NvU64 *fabricAddr);
+static NV_STATUS _dmaGetFabricAddress(OBJGPU *pGpu, NvU32 aperture, NvU32 kind,
+                                        NvU64 *fabricAddr);
+static NV_STATUS _dmaGetFabricEgmAddress(OBJGPU *pGpu, NvU32 aperture, NvU32 kind,
+                                        NvU64 *fabricEgmAddr);
 
 static NV_STATUS
 _dmaApplyWarForBug2720120
@@ -1060,7 +1063,18 @@ dmaAllocMapping_GM107
         }
         else
         {
-            status = _dmaGetFabricAddress(pLocals->pSrcGpu, pLocals->aperture,  pLocals->kind, &pLocals->fabricAddr);
+            // Get EGM fabric address for Remote EGM
+            if (memdescIsEgm(pLocals->pTempMemDesc))
+            {
+                status = _dmaGetFabricEgmAddress(pLocals->pSrcGpu, pLocals->aperture,
+                                                pLocals->kind, &pLocals->fabricAddr);
+            }
+            else
+            {
+                status = _dmaGetFabricAddress(pLocals->pSrcGpu, pLocals->aperture,
+                                                pLocals->kind, &pLocals->fabricAddr);
+            }
+
             if (status != NV_OK)
             {
                 DBG_BREAKPOINT();
@@ -1666,8 +1680,51 @@ static NV_STATUS _dmaGetFabricAddress
     // Fabric address should be available for NVSwitch connected GPUs,
     // otherwise it is a NOP.
     //
-    *fabricAddr =  knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink);
+    *fabricAddr = knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink);
     if (*fabricAddr == NVLINK_INVALID_FABRIC_ADDR)
+    {
+        return NV_OK;
+    }
+
+    if (memmgrIsKind_HAL(pMemoryManager, FB_IS_KIND_COMPRESSIBLE, kind))
+    {
+        NV_PRINTF(LEVEL_ERROR,
+                  "Nvswitch systems don't support compression.\n");
+        return NV_ERR_NOT_SUPPORTED;
+    }
+
+    return NV_OK;
+}
+
+static NV_STATUS _dmaGetFabricEgmAddress
+(
+    OBJGPU         *pGpu,
+    NvU32           aperture,
+    NvU32           kind,
+    NvU64           *fabricEgmAddr
+)
+{
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
+    KernelNvlink  *pKernelNvlink  = GPU_GET_KERNEL_NVLINK(pGpu);
+
+    *fabricEgmAddr = NVLINK_INVALID_FABRIC_ADDR;
+
+    if (pKernelNvlink == NULL)
+    {
+        return NV_OK;
+    }
+
+    if (aperture != NV_MMU_PTE_APERTURE_PEER_MEMORY)
+    {
+        return NV_OK;
+    }
+
+    //
+    // Fabric address should be available for NVSwitch connected GPUs,
+    // otherwise it is a NOP.
+    //
+    *fabricEgmAddr = knvlinkGetUniqueFabricEgmBaseAddress(pGpu, pKernelNvlink);
+    if (*fabricEgmAddr == NVLINK_INVALID_FABRIC_ADDR)
     {
         return NV_OK;
     }

@@ -469,6 +469,9 @@ struct nvswitch_device
 
     // To be removed once newer vbios is on TOT.
     NvBool  bIsNvlinkVbiosTableVersion2;
+
+    // Trusted NVLink Mode
+    NVSWITCH_DEVICE_TNVL_MODE tnvl_mode;
 };
 
 #define NVSWITCH_IS_DEVICE_VALID(device) \

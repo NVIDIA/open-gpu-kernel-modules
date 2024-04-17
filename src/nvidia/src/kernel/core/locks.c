@@ -628,7 +628,7 @@ rmGpuLockFree(NvU32 gpuInst)
 // Disable GPUs Interrupts thus blocking the ISR from
 // entering.
 //
-static void _gpuLocksAcquireDisableInterrupts(NvU32 gpuInst, NvU32 flags)
+static void _gpuLocksAcquireDisableInterrupts(NvU32 gpuInst, NvBool bInIsr)
 {
     OBJGPU *pGpu = gpumgrGetGpu(gpuInst);
 
@@ -653,7 +653,6 @@ static void _gpuLocksAcquireDisableInterrupts(NvU32 gpuInst, NvU32 flags)
     if (osLockShouldToggleInterrupts(pGpu))
     {
         Intr *pIntr = GPU_GET_INTR(pGpu);
-        NvBool isIsr = !!(flags & GPU_LOCK_FLAGS_COND_ACQUIRE);
         NvBool bBcEnabled = gpumgrGetBcEnabledStatus(pGpu);
 
         // Always disable intrs for cond code
@@ -667,10 +666,10 @@ static void _gpuLocksAcquireDisableInterrupts(NvU32 gpuInst, NvU32 flags)
             tmrRmCallbackIntrDisable(pTmr, pGpu);
         }
 
-        osDisableInterrupts(pGpu, isIsr);
+        osDisableInterrupts(pGpu, bInIsr);
 
         if ((pIntr != NULL) && pIntr->getProperty(pIntr, PDB_PROP_INTR_USE_INTR_MASK_FOR_LOCKING) &&
-             (isIsr == NV_FALSE) )
+             (bInIsr == NV_FALSE) )
         {
             NvU64 oldIrql;
             NvU32 intrMaskFlags;
@@ -722,7 +721,7 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     NvU32     gpuMaskLocked = 0;
     GPULOCK   *pAllocLock = &rmGpuLockInfo.gpuAllocLock;
     GPULOCK   *pGpuLock;
-    NvBool    bHighIrql, bCondAcquireCheck;
+    NvBool    bHighIrql, bInIsr, bCondAcquireCheck;
     NvU32     maxLockableGpuInst;
     NvU64     threadId = portThreadGetCurrentThreadId();
     NvU64     priority = 0;
@@ -734,6 +733,7 @@ _rmGpuLocksAcquire(NvU32 gpuMask, NvU32 flags, NvU32 module, void *ra, NvU32 *pG
     NvU32     loopCount;
 
     bHighIrql = (portSyncExSafeToSleep() == NV_FALSE);
+    bInIsr = portUtilIsInterruptContext();
     bCondAcquireCheck = ((flags & GPU_LOCK_FLAGS_COND_ACQUIRE) != 0);
 
     if (pGpuLockedMask)
@@ -1084,7 +1084,7 @@ per_gpu_lock_acquired:
         if (gpuInst != GPU_INST_ALLOC_LOCK)
         {
             // now disable interrupts
-            _gpuLocksAcquireDisableInterrupts(gpuInst, flags);
+            _gpuLocksAcquireDisableInterrupts(gpuInst, bInIsr);
 
             // mark this one as locked
             gpuMaskLocked |= NVBIT(gpuInst);

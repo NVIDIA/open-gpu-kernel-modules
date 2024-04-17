@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2020-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2020-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -31,6 +31,7 @@
 //
 
 #include "nvimpshared.h"
+#include "cc_drv.h"
 #include "ctrl/ctrl2080/ctrl2080base.h"
 
 #include "ctrl/ctrl2080/ctrl2080gpu.h"
@@ -861,6 +862,19 @@ typedef struct NV2080_CTRL_INTERNAL_MIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE_PARAMS
 typedef NV2080_CTRL_INTERNAL_MIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE_PARAMS NV2080_CTRL_INTERNAL_KMIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE_PARAMS;
 
 #define NV2080_CTRL_CMD_INTERNAL_MIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE (0x20800a43) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_MIGMGR_PROMOTE_GPU_INSTANCE_MEM_RANGE_PARAMS_MESSAGE_ID" */
+
+
+
+#define NV2080_CTRL_INTERNAL_GR_INIT_BUG4208224_WAR_PARAMS_MESSAGE_ID (0x45U)
+
+typedef struct NV2080_CTRL_INTERNAL_GR_INIT_BUG4208224_WAR_PARAMS {
+    NvBool bTeardown;
+} NV2080_CTRL_INTERNAL_GR_INIT_BUG4208224_WAR_PARAMS;
+
+#define NV2080_CTRL_CMD_INTERNAL_KGR_INIT_BUG4208224_WAR (0x20800a46) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS_MESSAGE_ID" */
+#define NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS_MESSAGE_ID (0x46U)
+
+typedef NV2080_CTRL_INTERNAL_GR_INIT_BUG4208224_WAR_PARAMS NV2080_CTRL_INTERNAL_KGR_INIT_BUG4208224_WAR_PARAMS;
 
 typedef struct NV2080_CTRL_INTERNAL_STATIC_GR_PDB_PROPERTIES {
     NvBool bPerSubCtxheaderSupported;
@@ -3620,11 +3634,15 @@ typedef struct NV2080_CTRL_CMD_INTERNAL_GET_GPU_FABRIC_PROBE_INFO_PARAMS {
  *
  *  bwMode[IN]
  *      - Nvlink Bandwidth mode
+ *
+ *  bLocalEgmEnabled[IN]
+ *      - EGM Enablement Status that needs to be set in GSP-RM
  */
 #define NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS_MESSAGE_ID (0xF5U)
 
 typedef struct NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS {
-    NvU8 bwMode;
+    NvU8   bwMode;
+    NvBool bLocalEgmEnabled;
 } NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS;
 
 /*!
@@ -3756,6 +3774,50 @@ typedef struct NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS {
     NvU32                                    engineId;
     NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK ivMaskSet[NV2080_CTRL_INTERNAL_CONF_COMPUTE_IVMASK_LCE_COUNT];
 } NV2080_CTRL_INTERNAL_CONF_COMPUTE_DERIVE_LCE_KEYS_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ROTATE_KEYS
+ *
+ * This command handles key rotation for a given H2D key (and corresponding D2H key)
+ * by deriving new key on GSP and updating the key on relevant SEC2 or LCE.
+ * It also updates IVs for all channels using the key and conditionally re-enables them
+ * and notifies clients of key rotation status at the end.
+ *
+ *      globalH2DKey : [IN]
+ *          global h2d key to be rotated
+ *      updatedEncryptIVMask: [OUT]
+ *          Encrypt IV mask post IV key rotation for a given engine's kernel channel
+ *      updatedDecryptIVMask: [OUT]
+ *          Decrypt IV mask post IV key rotation for a given engine's kernel channel
+ */
+#define NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_ROTATE_KEYS (0x20800ae5) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS_MESSAGE_ID (0xE5U)
+
+typedef struct NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS {
+    NvU32 globalH2DKey;
+    NvU32 updatedEncryptIVMask[CC_AES_256_GCM_IV_SIZE_DWORD];
+    NvU32 updatedDecryptIVMask[CC_AES_256_GCM_IV_SIZE_DWORD];
+} NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS;
+
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION
+ *
+ * This command RCs all channels that use the given key and have not reported 
+ * idle via NV2080_CTRL_CMD_FIFO_DISABLE_CHANNELS_FOR_KEY_ROTATION yet.
+ * RM needs to RC such channels before going ahead with key rotation.
+ *
+ *      globalH2DKey : [IN]
+ *          global h2d key whose channels will be RCed
+ */
+#define NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION (0x20800ae6) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS_MESSAGE_ID (0xE6U)
+
+typedef struct NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS {
+    NvU32 exceptionType;
+    NvU32 globalH2DKey;
+} NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS;
 
 /*!
  * NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE

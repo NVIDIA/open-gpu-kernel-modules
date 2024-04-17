@@ -164,6 +164,8 @@ void __nvoc_init_dataField_ConfidentialCompute(ConfidentialCompute *pThis, RmHal
     pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_GPUS_READY_CHECK_ENABLED, ((NvBool)(0 == 0)));
     pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_SPDM_ENABLED, ((NvBool)(0 != 0)));
     pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_MULTI_GPU_PROTECTED_PCIE_MODE_ENABLED, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED, ((NvBool)(0 != 0)));
+    pThis->setProperty(pThis, PDB_PROP_CONFCOMPUTE_DUMMY_KEY_ROTATION_ENABLED, ((NvBool)(0 != 0)));
 }
 
 NV_STATUS __nvoc_ctor_OBJENGSTATE(OBJENGSTATE* );
@@ -276,6 +278,17 @@ static void __nvoc_init_funcTable_ConfidentialCompute_1(ConfidentialCompute *pTh
         pThis->__confComputeDeriveSecrets__ = &confComputeDeriveSecrets_46f6a7;
     }
 
+    // Hal function -- confComputeUpdateSecrets
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__confComputeUpdateSecrets__ = &confComputeUpdateSecrets_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__confComputeUpdateSecrets__ = &confComputeUpdateSecrets_46f6a7;
+    }
+
     // Hal function -- confComputeIsSpdmEnabled
     if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
     {
@@ -285,6 +298,93 @@ static void __nvoc_init_funcTable_ConfidentialCompute_1(ConfidentialCompute *pTh
     else
     {
         pThis->__confComputeIsSpdmEnabled__ = &confComputeIsSpdmEnabled_491d52;
+    }
+
+    // Hal function -- confComputeGetEngineIdFromKeySpace
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__confComputeGetEngineIdFromKeySpace__ = &confComputeGetEngineIdFromKeySpace_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__confComputeGetEngineIdFromKeySpace__ = &confComputeGetEngineIdFromKeySpace_78ac8b;
+    }
+
+    // Hal function -- confComputeGlobalKeyIsKernelPriv
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__confComputeGlobalKeyIsKernelPriv__ = &confComputeGlobalKeyIsKernelPriv_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__confComputeGlobalKeyIsKernelPriv__ = &confComputeGlobalKeyIsKernelPriv_491d52;
+    }
+
+    // Hal function -- confComputeGetKeyPairByChannel
+    if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+    {
+        pThis->__confComputeGetKeyPairByChannel__ = &confComputeGetKeyPairByChannel_GH100;
+    }
+    // default
+    else
+    {
+        pThis->__confComputeGetKeyPairByChannel__ = &confComputeGetKeyPairByChannel_46f6a7;
+    }
+
+    // Hal function -- confComputeTriggerKeyRotation
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__confComputeTriggerKeyRotation__ = &confComputeTriggerKeyRotation_46f6a7;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+        {
+            pThis->__confComputeTriggerKeyRotation__ = &confComputeTriggerKeyRotation_GH100;
+        }
+        // default
+        else
+        {
+            pThis->__confComputeTriggerKeyRotation__ = &confComputeTriggerKeyRotation_56cd7a;
+        }
+    }
+
+    // Hal function -- confComputeEnableKeyRotationCallback
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__confComputeEnableKeyRotationCallback__ = &confComputeEnableKeyRotationCallback_56cd7a;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+        {
+            pThis->__confComputeEnableKeyRotationCallback__ = &confComputeEnableKeyRotationCallback_GH100;
+        }
+        // default
+        else
+        {
+            pThis->__confComputeEnableKeyRotationCallback__ = &confComputeEnableKeyRotationCallback_56cd7a;
+        }
+    }
+
+    // Hal function -- confComputeEnableKeyRotationSupport
+    if (( ((rmVariantHal_HalVarIdx >> 5) == 0UL) && ((1UL << (rmVariantHal_HalVarIdx & 0x1f)) & 0x00000001UL) )) /* RmVariantHal: VF */ 
+    {
+        pThis->__confComputeEnableKeyRotationSupport__ = &confComputeEnableKeyRotationSupport_56cd7a;
+    }
+    else
+    {
+        if (( ((chipHal_HalVarIdx >> 5) == 1UL) && ((1UL << (chipHal_HalVarIdx & 0x1f)) & 0x10000000UL) )) /* ChipHal: GH100 */ 
+        {
+            pThis->__confComputeEnableKeyRotationSupport__ = &confComputeEnableKeyRotationSupport_GH100;
+        }
+        // default
+        else
+        {
+            pThis->__confComputeEnableKeyRotationSupport__ = &confComputeEnableKeyRotationSupport_56cd7a;
+        }
     }
 
     // Hal function -- confComputeIsDebugModeEnabled

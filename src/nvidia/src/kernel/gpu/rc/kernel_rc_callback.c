@@ -369,10 +369,10 @@ krcErrorInvokeCallback_IMPL
                                &classInfo);
 
         // notify the Fifo channel based event listeners
-        kchannelNotifyGeneric(pKernelChannel,
-                              classInfo.rcNotifierIndex,
-                              &params,
-                              sizeof(params));
+        kchannelNotifyEvent(pKernelChannel,
+                            classInfo.rcNotifierIndex,
+                            0, 0, &params,
+                            sizeof(params));
     }
 
     // update RC diagnostic records with process id and owner

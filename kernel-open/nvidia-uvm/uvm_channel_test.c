@@ -340,9 +340,9 @@ static NV_STATUS uvm_test_iommu_rc_for_gpu(uvm_gpu_t *gpu)
     if (!domain || !iommu_is_dma_domain(domain))
         return NV_OK;
 
-    // Only run if ATS is enabled. Otherwise the CE doesn't get response on
-    // writing to unmapped location.
-    if (!g_uvm_global.ats.enabled)
+    // Only run if ATS is enabled with 64kB base page.
+    // Otherwise the CE doesn't get response on writing to unmapped location.
+    if (!g_uvm_global.ats.enabled || PAGE_SIZE != UVM_PAGE_SIZE_64K)
         return NV_OK;
 
     status = uvm_mem_alloc_sysmem_and_map_cpu_kernel(data_size, NULL, &sysmem);

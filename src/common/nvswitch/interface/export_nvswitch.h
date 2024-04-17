@@ -994,6 +994,22 @@ nvswitch_os_get_supported_register_events_params
     NvBool *bUserSuppliesOsData
 );
 
+/*
+ * @Brief : Is TNVL mode enabled.
+ *
+ * @Description : Returns if TNVL is enabled for the device
+ *
+ * @param[in] device        a reference to the device
+ *
+ * @returns                 NV_TRUE,  if TNVL is enabled
+ *                          NV_FALSE, if TNVL is disabled
+ */
+NvBool
+nvswitch_lib_is_tnvl_enabled
+(
+    nvswitch_device *device
+);
+
 #ifdef __cplusplus
 }
 #endif

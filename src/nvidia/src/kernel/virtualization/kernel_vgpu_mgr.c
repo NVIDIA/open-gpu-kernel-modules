@@ -162,7 +162,7 @@ kvgpumgrIsHeterogeneousVgpuSupported(void)
 }
 
 NV_STATUS
-static _kvgpumgrSetVgpuType(OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPhysGpuInfo, NvU32 vgpuTypeId)
+kvgpumgrSetVgpuType(OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPhysGpuInfo, NvU32 vgpuTypeId)
 {
     NvU32 i;
 
@@ -595,7 +595,7 @@ kvgpumgrAttachGpu(NvU32 gpuPciId)
     pPhysGpuInfo = &(pKernelVgpuMgr->pgpuInfo[index]);
 
     /* Probe call, RmInit is not done yet, so send pGpu as NULL */
-    _kvgpumgrSetVgpuType(NULL, pPhysGpuInfo, NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE);
+    kvgpumgrSetVgpuType(NULL, pPhysGpuInfo, NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE);
     pPhysGpuInfo->numActiveVgpu    = 0;
     pPhysGpuInfo->isAttached       = NV_TRUE;
     pPhysGpuInfo->numCreatedVgpu   = 0;
@@ -939,7 +939,7 @@ kvgpumgrGuestRegister(OBJGPU *pGpu,
         if (rmStatus != NV_OK)
             return rmStatus;
 
-        rmStatus = _kvgpumgrSetVgpuType(pGpu, pPhysGpuInfo, vgpuType);
+        rmStatus = kvgpumgrSetVgpuType(pGpu, pPhysGpuInfo, vgpuType);
         if (rmStatus != NV_OK)
             return rmStatus;
     }
@@ -1285,7 +1285,7 @@ done:
 
     if (pPhysGpuInfo->numActiveVgpu == 0 && pPhysGpuInfo->numCreatedVgpu == 0)
     {
-        _kvgpumgrSetVgpuType(pGpu, pPhysGpuInfo, NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE);
+        kvgpumgrSetVgpuType(pGpu, pPhysGpuInfo, NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE);
     }
 
     if (pKernelHostVgpuDevice->pRequestVgpuInfoNode != NULL)
@@ -2237,7 +2237,7 @@ kvgpumgrCreateRequestVgpu(NvU32 gpuPciId, const NvU8 *pMdevUuid,
         pRequestVgpu->swizzId = swizzId;
     }
 
-    _kvgpumgrSetVgpuType(pGpu, pPhysGpuInfo, vgpuTypeId);
+    kvgpumgrSetVgpuType(pGpu, pPhysGpuInfo, vgpuTypeId);
     pPhysGpuInfo->numCreatedVgpu++;
 
     if (gpuGetDevice(pGpu) != devfn)  /* SRIOV - VF */
@@ -2290,7 +2290,7 @@ kvgpumgrDeleteRequestVgpu(const NvU8 *pMdevUuid, NvU16 vgpuId)
             if (IS_MIG_ENABLED(pGpu))
                 _kvgpumgrClearAssignedSwizzIdMask(pGpu, pRequestVgpu->swizzId);
             else if (pKernelVgpuMgr->pgpuInfo[pgpuIndex].numCreatedVgpu == 0)
-                _kvgpumgrSetVgpuType(pGpu, &pKernelVgpuMgr->pgpuInfo[pgpuIndex], NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE);
+                kvgpumgrSetVgpuType(pGpu, &pKernelVgpuMgr->pgpuInfo[pgpuIndex], NVA081_CTRL_VGPU_CONFIG_INVALID_TYPE);
 
             pKernelVgpuMgr->pHeap->eheapFree(pKernelVgpuMgr->pHeap, vgpuId);
 
@@ -2598,34 +2598,40 @@ _kvgpumgrSetHeterogeneousResources(OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPgpuInfo
     }
 
     /*
-     * If the next recursive partition is for smaller partition which has GSP heap at
-     * of end of partition, then update vmmuSegMax to reserve one segment at the 
-     * end of smaller partition. Also, init gsp min/max value for the reserved vMMU segment
-     * at the end.
+     * If the next recursive partition is for a left smaller partition which has GSP heap at
+     * of start of partition, then update vmmuSegMin to reserve one segment at the 
+     * start of smaller partition. Also, init gsp min/max value for the reserved vMMU segment
+     * at the start.
      */
-    newVmmuSegMin = vmmuSegMin;
+    newVmmuSegMax = ((vmmuSegMin + vmmuSegMax) / 2);
     if ((isCarveOutGspHeap == NV_TRUE))
     {
         NV_ASSERT((gspHeapOffsetMin == 0));
 
-        newVmmuSegMax = ((vmmuSegMin + vmmuSegMax) / 2) - 1;
-        newGspHeapOffsetMin = newVmmuSegMax * vmmuSegSize;
+        newVmmuSegMin = vmmuSegMin + 1;
+        newGspHeapOffsetMin = vmmuSegMin * vmmuSegSize;
         newGspHeapOffsetMax = newGspHeapOffsetMin + vmmuSegSize;
     }
     else
     {
-        newVmmuSegMax = (vmmuSegMin + vmmuSegMax) / 2;
+        newVmmuSegMin = vmmuSegMin;
         newGspHeapOffsetMin = gspHeapOffsetMin;
         newGspHeapOffsetMax = (gspHeapOffsetMin + gspHeapOffsetMax) / 2;
     }
 
-    /* Recursively call to get placment ID in first half of this partition */
+    /* Recursively call to get placment ID in left half of this partition */
     _kvgpumgrSetHeterogeneousResources(pGpu, pPgpuInfo, placementIdMin,
                              (placementIdMin + placementIdMax) / 2,
                              chidMin, (chidMin + chidMax) / 2, newVmmuSegMin,
                              newVmmuSegMax, newGspHeapOffsetMin, newGspHeapOffsetMax, partitionCount * 2,
                              NV_TRUE);
 
+    /*
+     * If the next recursive partition is for a right smaller partition which has GSP heap at
+     * of end of partition, then update vmmuSegMax to reserve one segment at the 
+     * end of right partition. Also, init gsp min/max value for the reserved vMMU segment
+     * at the end.
+     */
     newVmmuSegMin = (vmmuSegMin + vmmuSegMax) / 2;
     if ((isCarveOutGspHeap == NV_TRUE))
     {
@@ -2640,7 +2646,7 @@ _kvgpumgrSetHeterogeneousResources(OBJGPU *pGpu, KERNEL_PHYS_GPU_INFO *pPgpuInfo
         newGspHeapOffsetMax = gspHeapOffsetMax;
     }
 
-    /* Recursively call to get placment ID in second half of this partition */
+    /* Recursively call to get placment ID in right half of this partition */
     _kvgpumgrSetHeterogeneousResources(pGpu, pPgpuInfo, (placementIdMin + placementIdMax) / 2,
                              placementIdMax, (chidMin + chidMax) / 2,
                              chidMax, newVmmuSegMin, newVmmuSegMax,

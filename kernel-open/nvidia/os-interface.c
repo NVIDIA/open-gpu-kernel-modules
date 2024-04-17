@@ -1061,7 +1061,15 @@ NV_STATUS NV_API_CALL os_flush_user_cache(void)
 
 void NV_API_CALL os_flush_cpu_write_combine_buffer(void)
 {
-    wmb();
+#if defined(NVCPU_X86_64)
+    asm volatile("sfence" ::: "memory");
+#elif defined(NVCPU_PPC64LE)
+    __asm__ __volatile__ ("sync" : : : "memory");
+#elif defined(NVCPU_AARCH64)
+    asm volatile("dsb st" : : : "memory");
+#else
+    mb();
+#endif
 }
 
 // override initial debug level from registry

@@ -151,6 +151,7 @@ NV_STATUS_CODE(NV_ERR_RISCV_ERROR,                     0x00000079, "Generic RISC
 NV_STATUS_CODE(NV_ERR_FABRIC_MANAGER_NOT_PRESENT,      0x0000007A, "Fabric Manager is not loaded")
 NV_STATUS_CODE(NV_ERR_ALREADY_SIGNALLED,               0x0000007B, "Semaphore Surface value already >= requested wait value")
 NV_STATUS_CODE(NV_ERR_QUEUE_TASK_SLOT_NOT_AVAILABLE,   0x0000007C, "PMU RPC error due to no queue slot available for this event")
+NV_STATUS_CODE(NV_ERR_KEY_ROTATION_IN_PROGRESS,        0x0000007D, "Operation not allowed as key rotation is in progress")
 
 // Warnings:
 NV_STATUS_CODE(NV_WARN_HOT_SWITCH,                     0x00010001, "WARNING Hot switch")

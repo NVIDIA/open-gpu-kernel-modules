@@ -631,7 +631,6 @@ NV_STATUS embeddedParamCopyIn(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmCt
                             ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->busPeerIds,
                             numEntries, sizeof(NvU32));
             paramCopies[0].flags |= RMAPI_PARAM_COPY_FLAGS_SKIP_COPYIN;
-
             break;
         }
         case NV0080_CTRL_CMD_FB_GET_CAPS:
@@ -1070,7 +1069,6 @@ NV_STATUS embeddedParamCopyOut(RMAPI_PARAM_COPY *paramCopies, RmCtrlParams *pRmC
         case NV0000_CTRL_CMD_SYSTEM_GET_P2P_CAPS:
         {
             CHECK_PARAMS_OR_RETURN(pRmCtrlParams, NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS);
-
             status = rmapiParamsRelease(&paramCopies[0]);
             ((NV0000_CTRL_SYSTEM_GET_P2P_CAPS_PARAMS*)pParams)->busPeerIds = paramCopies[0].pUserParams;
             break;

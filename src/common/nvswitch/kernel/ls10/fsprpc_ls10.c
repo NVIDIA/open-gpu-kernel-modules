@@ -28,12 +28,6 @@
 #include "fsprpc_nvswitch.h"
 #include "ls10/ls10.h"
 
-#include "fsp/fsp_emem_channels.h"
-#include "fsp/nvdm_payload_cmd_response.h"
-#include "fsp/fsp_nvdm_format.h"
-#include "fsp/fsp_mctp_format.h"
-#include "fsp/fsp_tnvl_rpc.h"
-
 #include "nvswitch/ls10/dev_fsp_pri.h"
 
 /*!
@@ -346,6 +340,7 @@ nvswitch_fsp_process_nvdm_msg_ls10
 
     switch (nvdmType)
     {
+        case NVDM_TYPE_TNVL:
         case NVDM_TYPE_FSP_RESPONSE:
             status = nvswitch_fsp_process_cmd_response(device, pBuffer, size);
             break;
@@ -606,7 +601,6 @@ nvswitch_fsprpc_get_caps_ls10
     params->responseNvdmType = responsePayload.nvdmType;
     params->commandNvdmType  = responsePayload.cmdResponse.commandNvdmType;
     params->errorCode        = responsePayload.cmdResponse.errorCode;
-    params->pRspPayload      = responsePayload.rspPayload;
 
     return NVL_SUCCESS;
 }

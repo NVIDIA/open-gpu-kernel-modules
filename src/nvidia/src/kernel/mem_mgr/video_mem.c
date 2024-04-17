@@ -127,7 +127,7 @@ _vidmemPmaAllocate
     MemoryManager               *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
     PMA                         *pPma           = &pHeap->pmaObject;
     NvU64                        size           = 0;
-    NvU32                        pageCount;
+     NvU32                        pageCount;
     NvU32                        pmaInfoSize;
     NvU64                        pageSize;
     NV_STATUS                    status;

@@ -42,6 +42,8 @@
 
 #include "ctrl/ctrl0080/ctrl0080fifo.h"
 
+#include "kernel/gpu/conf_compute/conf_compute.h"
+
 static NV_STATUS _kfifoGetCaps(OBJGPU *pGpu, NvU8 *pKfifoCaps);
 
 /*!
@@ -783,6 +785,7 @@ subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
     CALL_CONTEXT   *pCallContext  = resservGetTlsCallContext();
     RmCtrlParams   *pRmCtrlParams = pCallContext->pControlParams;
     NvU32           i;
+    KernelChannel  *pKernelChannel = NULL;
 
     NV_CHECK_OR_RETURN(LEVEL_INFO,
         pDisableChannelParams->numChannels <= NV_ARRAY_ELEMENTS(pDisableChannelParams->hChannelList),
@@ -812,7 +815,6 @@ subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
     for (i = 0; i < pDisableChannelParams->numChannels; i++)
     {
         RsClient              *pClient = NULL;
-        KernelChannel         *pKernelChannel = NULL;
         tmpStatus = serverGetClientUnderLock(&g_resServ,
                                           pDisableChannelParams->hClientList[i], &pClient);
         if (tmpStatus != NV_OK)
@@ -832,6 +834,20 @@ subdeviceCtrlCmdFifoDisableChannelsForKeyRotation_IMPL
         }
         kchannelDisableForKeyRotation(pGpu, pKernelChannel, NV_TRUE);
         kchannelEnableAfterKeyRotation(pGpu, pKernelChannel, pDisableChannelParams->bEnableAfterKeyRotation);
+    }
+
+    if ((IS_VIRTUAL(pGpu) || IS_GSP_CLIENT(pGpu)) &&
+        (pKernelChannel != NULL))
+    {
+        NvU32 h2dKey, d2hKey;
+        ConfidentialCompute *pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+        NV_ASSERT_OK_OR_RETURN(confComputeGetKeyPairByChannel_HAL(pGpu, pConfCompute, pKernelChannel, &h2dKey, &d2hKey));
+        KEY_ROTATION_STATUS state;
+        NV_ASSERT_OK_OR_RETURN(confComputeGetKeyRotationStatus(pConfCompute, h2dKey, &state));
+        if (state == KEY_ROTATION_STATUS_PENDING)
+        {
+            NV_ASSERT_OK_OR_RETURN(confComputeCheckAndScheduleKeyRotation(pGpu, pConfCompute, h2dKey, d2hKey));
+        }
     }
     return status;
 }

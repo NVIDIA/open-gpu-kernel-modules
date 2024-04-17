@@ -1000,6 +1000,8 @@ nvswitch_ctl_get_devices_v2(NVSWITCH_GET_DEVICES_V2_PARAMS *p)
                                                  &p->info[index].deviceState,
                                                  &p->info[index].deviceReason,
                                                  &p->info[index].driverState);
+
+            p->info[index].bTnvlEnabled = nvswitch_lib_is_tnvl_enabled(nvswitch_dev->lib_device);
             mutex_unlock(&nvswitch_dev->device_mutex);
         }
         index++;

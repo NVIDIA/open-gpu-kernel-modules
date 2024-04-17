@@ -24,10 +24,35 @@
 #define NVOC_KERNEL_GRAPHICS_H_PRIVATE_ACCESS_ALLOWED
 
 #include "gpu_mgr/gpu_mgr.h"
-#include "kernel/gpu/gr/kernel_graphics.h"
 #include "kernel/gpu/mem_mgr/mem_mgr.h"
+#include "kernel/gpu/gr/kernel_graphics_manager.h"
+#include "kernel/gpu/gr/kernel_graphics.h"
+#include "kernel/gpu/device/device.h"
+#include "kernel/gpu/subdevice/subdevice.h"
+#include "kernel/rmapi/rmapi_utils.h"
+#include "kernel/core/locks.h"
+#include "kernel/gpu/mem_sys/kern_mem_sys.h"
+#include "kernel/mem_mgr/gpu_vaspace.h"
+#include "kernel/gpu/mem_mgr/mem_mgr.h"
+#include "virtualization/hypervisor/hypervisor.h"
+#include "kernel/gpu/mem_mgr/heap.h"
+#include "gpu/mem_mgr/virt_mem_allocator.h"
+#include "gpu/mmu/kern_gmmu.h"
+#include "platform/sli/sli.h"
+#include "rmapi/rs_utils.h"
+#include "rmapi/client.h"
+#include "nvrm_registry.h"
+#include "gpu/mem_mgr/heap.h"
 
 #include "ctrl/ctrl0080/ctrl0080fifo.h"
+
+#include "class/cla06f.h"
+#include "class/cl90f1.h" // FERMI_VASPACE_A
+#include "class/cl003e.h" // NV01_MEMORY_SYSTEM
+#include "class/cl50a0.h" // NV50_MEMORY_VIRTUAL
+#include "class/cl0040.h" // NV01_MEMORY_LOCAL_USER
+#include "class/clc36f.h" // VOLTA_CHANNEL_GPFIFO_A
+#include "class/clc46f.h" // TURING_CHANNEL_GPFIFO_A
 
 /*!
  * @brief Allocate common local/global buffers that are required by the graphics context

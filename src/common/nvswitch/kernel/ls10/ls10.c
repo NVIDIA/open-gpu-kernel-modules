@@ -2979,6 +2979,13 @@ nvswitch_is_soe_supported_ls10
         NVSWITCH_PRINT(device, WARN, "SOE can not be disabled via regkey.\n");
     }
 
+    if (nvswitch_is_tnvl_mode_locked(device))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "SOE is not supported when TNVL mode is locked\n");
+        return NV_FALSE;
+    }
+
     return NV_TRUE;
 }
 
@@ -3024,6 +3031,13 @@ nvswitch_is_inforom_supported_ls10
         NVSWITCH_PRINT(device, INFO,
             "INFOROM is not supported on non-silicon platform\n");
         return NV_FALSE;
+    }
+
+    if (nvswitch_is_tnvl_mode_enabled(device))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "INFOROM is not supported when TNVL mode is enabled\n");
+        return NV_FALSE; 
     }
 
     if (!nvswitch_is_soe_supported(device))
@@ -3122,6 +3136,13 @@ nvswitch_is_smbpbi_supported_ls10
     if (!nvswitch_is_smbpbi_supported_lr10(device))
     {
         return NV_FALSE;
+    }
+
+    if (nvswitch_is_tnvl_mode_enabled(device))
+    {
+        NVSWITCH_PRINT(device, INFO,
+            "SMBPBI is not supported when TNVL mode is enabled\n");
+        return NV_FALSE; 
     }
 
     status = _nvswitch_get_bios_version(device, &version);

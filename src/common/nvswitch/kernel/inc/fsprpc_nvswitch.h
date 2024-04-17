@@ -24,6 +24,12 @@
 #ifndef _FSPRPC_NVSWITCH_H_
 #define _FSPRPC_NVSWITCH_H_
 
+#include "fsp/fsp_emem_channels.h"
+#include "fsp/nvdm_payload_cmd_response.h"
+#include "fsp/fsp_nvdm_format.h"
+#include "fsp/fsp_mctp_format.h"
+#include "fsp/fsp_tnvl_rpc.h"
+
 #define FSP_OK                          (0x00U)
 #define FSP_ERR_IFS_ERR_INVALID_STATE   (0x9EU)
 #define FSP_ERR_IFR_FILE_NOT_FOUND      (0x9FU)

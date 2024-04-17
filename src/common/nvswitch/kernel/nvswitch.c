@@ -992,6 +992,36 @@ _nvswitch_ctrl_fsprpc_get_caps
 }
 
 static NvlStatus
+_nvswitch_ctrl_get_attestation_certificate_chain
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS *params
+)
+{
+    return device->hal.nvswitch_tnvl_get_attestation_certificate_chain(device, params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_attestation_report
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_ATTESTATION_REPORT_PARAMS *params
+)
+{
+    return device->hal.nvswitch_tnvl_get_attestation_report(device, params);
+}
+
+static NvlStatus
+_nvswitch_ctrl_get_tnvl_status
+(
+    nvswitch_device *device,
+    NVSWITCH_GET_TNVL_STATUS_PARAMS *params
+)
+{
+    return device->hal.nvswitch_tnvl_get_status(device, params);
+}
+
+static NvlStatus
 _nvswitch_construct_soe
 (
     nvswitch_device *device
@@ -2776,6 +2806,11 @@ nvswitch_lib_register_device
     device->driver_fabric_state = NVSWITCH_DRIVER_FABRIC_STATE_STANDBY;
     device->device_fabric_state = NVSWITCH_DEVICE_FABRIC_STATE_STANDBY;
     device->device_blacklist_reason = NVSWITCH_DEVICE_BLACKLIST_REASON_NONE;
+
+    //
+    // Initialize TNVL Mode
+    //
+    device->tnvl_mode = NVSWITCH_DEVICE_TNVL_MODE_DISABLED;
 
     //
     // Initialize HAL connectivity as early as possible so that other lib
@@ -5889,6 +5924,101 @@ _nvswitch_ctrl_set_link_l1_threshold
 }
 
 NvlStatus
+nvswitch_detect_tnvl_mode
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_detect_tnvl_mode(device);
+}
+
+NvBool
+nvswitch_is_tnvl_mode_enabled
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_is_tnvl_mode_enabled(device);
+}
+
+NvBool
+nvswitch_is_tnvl_mode_locked
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_is_tnvl_mode_locked(device);
+}
+
+NvBool NV_API_CALL
+nvswitch_lib_is_tnvl_enabled
+(
+    nvswitch_device *device
+)
+{
+    return nvswitch_is_tnvl_mode_enabled(device);
+}
+
+NvlStatus
+nvswitch_tnvl_send_fsp_lock_config
+(
+    nvswitch_device *device
+)
+{
+    return device->hal.nvswitch_tnvl_send_fsp_lock_config(device);
+}
+
+static NvlStatus
+_nvswitch_ctrl_set_device_tnvl_lock
+(
+    nvswitch_device *device,
+    NVSWITCH_SET_DEVICE_TNVL_LOCK_PARAMS *p
+)
+{
+    NvlStatus status = NVL_SUCCESS;
+
+    if (!NVSWITCH_IS_DEVICE_ACCESSIBLE(device))
+    {
+        return -NVL_BAD_ARGS;
+    }
+
+    if (!nvswitch_is_tnvl_mode_enabled(device))
+    {
+        NVSWITCH_PRINT(device, ERROR,
+           "%s: TNVL is not enabled\n",
+           __FUNCTION__);
+        return -NVL_ERR_NOT_SUPPORTED;
+    }
+
+    // Return failure if FM is not yet configured
+    if (device->device_fabric_state != NVSWITCH_DEVICE_FABRIC_STATE_CONFIGURED)
+    {
+        NVSWITCH_PRINT(device, ERROR,
+           "%s: FM is not configured yet\n",
+           __FUNCTION__);
+        return -NVL_ERR_INVALID_STATE;
+    }
+
+    //
+    // Disable non-fatal and legacy interrupts
+    // Disable commands to SOE
+    //
+
+    // Send lock-config command to FSP
+    status = nvswitch_tnvl_send_fsp_lock_config(device);
+    if (status == NVL_SUCCESS)
+    {
+        device->tnvl_mode = NVSWITCH_DEVICE_TNVL_MODE_LOCKED;
+    }
+    else
+    {
+        device->tnvl_mode = NVSWITCH_DEVICE_TNVL_MODE_FAILURE;
+    }
+
+    return status;
+}
+
+NvlStatus
 nvswitch_lib_ctrl
 (
     nvswitch_device *device,
@@ -6308,7 +6438,26 @@ nvswitch_lib_ctrl
         NVSWITCH_DEV_CMD_DISPATCH(CTRL_NVSWITCH_FSPRPC_GET_CAPS,
                 _nvswitch_ctrl_fsprpc_get_caps,
                 NVSWITCH_FSPRPC_GET_CAPS_PARAMS);
-
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_SET_DEVICE_TNVL_LOCK,
+                _nvswitch_ctrl_set_device_tnvl_lock,
+                NVSWITCH_SET_DEVICE_TNVL_LOCK_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN,
+                _nvswitch_ctrl_get_attestation_certificate_chain,
+                NVSWITCH_GET_ATTESTATION_CERTIFICATE_CHAIN_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_ATTESTATION_REPORT,
+                _nvswitch_ctrl_get_attestation_report,
+                NVSWITCH_GET_ATTESTATION_REPORT_PARAMS,
+                osPrivate, flags);
+        NVSWITCH_DEV_CMD_DISPATCH_PRIVILEGED(
+                CTRL_NVSWITCH_GET_TNVL_STATUS,
+                _nvswitch_ctrl_get_tnvl_status,
+                NVSWITCH_GET_TNVL_STATUS_PARAMS,
+                osPrivate, flags);
         default:
             nvswitch_os_print(NVSWITCH_DBG_LEVEL_INFO, "unknown ioctl %x\n", cmd);
             retval = -NVL_BAD_ARGS;

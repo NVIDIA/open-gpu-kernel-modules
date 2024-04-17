@@ -270,6 +270,68 @@ _knvlinkCheckFabricCliqueId
 }
 
 /*!
+ * @brief Checks whether EGM addresses are valid for P2P
+ * when GPU is connected to NVSwitch
+ *
+ * @param[in] pGpu           OBJGPU pointer for local GPU
+ * @param[in] pKernelNvlink  KernelNvlink pointer
+ * @param[in] pPeerGpu       OBJGPU pointer for remote GPU
+ *
+ * @return  NV_TRUE if EGM addresses are valid
+ */
+static NvBool
+_knvlinkCheckNvswitchEgmAddressSanity
+(
+    OBJGPU       *pGpu,
+    KernelNvlink *pKernelNvlink,
+    OBJGPU       *pPeerGpu
+)
+{
+    NvU64 egmRangeStart = knvlinkGetUniqueFabricEgmBaseAddress(pGpu, pKernelNvlink);
+
+    if (knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
+    {
+        if (gpuIsSriovEnabled(pGpu))
+        {
+            // currently vgpu + switch doesn't support GPA addressing.
+            return NV_TRUE;
+        }
+
+        if (gpuFabricProbeIsSupported(pGpu) && gpuFabricProbeIsSupported(pPeerGpu))
+        {
+            if (!_knvlinkCheckFabricCliqueId(pGpu, pPeerGpu))
+            {
+                return NV_FALSE;
+            }
+        }
+
+        // Sanity checks for EGM address
+        if (egmRangeStart == NVLINK_INVALID_FABRIC_ADDR)
+        {
+            NV_PRINTF(LEVEL_ERROR, "GPU %d doesn't have a EGM fabric address\n",
+                      gpuGetInstance(pGpu));
+
+            return NV_FALSE;
+        }
+    }
+    else
+    {
+        // Sanity check for EGM address
+        if (egmRangeStart != NVLINK_INVALID_FABRIC_ADDR)
+        {
+            NV_PRINTF(LEVEL_ERROR,
+                      "non-NVSwitch GPU %d has a valid EGM fabric address\n",
+                      gpuGetInstance(pGpu));
+
+            return NV_FALSE;
+        }
+
+    }
+
+    return NV_TRUE;
+}
+
+/*!
  * @brief Checks whether necessary the config setup is done to
  *        support P2P over NVSwitch
  *
@@ -288,10 +350,10 @@ knvlinkCheckNvswitchP2pConfig_IMPL
 )
 {
     MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
-    NvU64          rangeStart     = knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink);
-    NvU64          rangeEnd       = rangeStart + (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
-    NvU64          peerRangeStart = knvlinkGetUniqueFabricBaseAddress(pPeerGpu,
-                                                             GPU_GET_KERNEL_NVLINK(pPeerGpu));
+    NvU64          hbmRangeStart  = knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink);
+    NvU64          hbmRangeEnd    = hbmRangeStart + (pMemoryManager->Ram.fbTotalMemSizeMb << 20);
+    NvU64          hbmPeerRangeStart = knvlinkGetUniqueFabricBaseAddress(pPeerGpu,
+                                        GPU_GET_KERNEL_NVLINK(pPeerGpu));
 
     if (knvlinkIsGpuConnectedToNvswitch(pGpu, pKernelNvlink))
     {
@@ -309,8 +371,8 @@ knvlinkCheckNvswitchP2pConfig_IMPL
             }
         }
 
-        if (knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink) ==
-            NVLINK_INVALID_FABRIC_ADDR)
+        // Sanity checks for HBM addresses
+        if (hbmRangeStart == NVLINK_INVALID_FABRIC_ADDR)
         {
             NV_PRINTF(LEVEL_ERROR, "GPU %d doesn't have a fabric address\n",
                       gpuGetInstance(pGpu));
@@ -319,7 +381,7 @@ knvlinkCheckNvswitchP2pConfig_IMPL
         }
 
         if ((pGpu != pPeerGpu) &&
-            ((peerRangeStart >= rangeStart) && (peerRangeStart < rangeEnd)))
+            ((hbmPeerRangeStart >= hbmRangeStart) && (hbmPeerRangeStart < hbmRangeEnd)))
         {
             NV_PRINTF(LEVEL_ERROR,
                       "GPU %d doesn't have a unique fabric address\n",
@@ -330,8 +392,8 @@ knvlinkCheckNvswitchP2pConfig_IMPL
     }
     else
     {
-        if (knvlinkGetUniqueFabricBaseAddress(pGpu, pKernelNvlink) !=
-            NVLINK_INVALID_FABRIC_ADDR)
+        // Sanity check for HBM address
+        if (hbmRangeStart != NVLINK_INVALID_FABRIC_ADDR)
         {
             NV_PRINTF(LEVEL_ERROR,
                       "non-NVSwitch GPU %d has a valid fabric address\n",
@@ -339,6 +401,11 @@ knvlinkCheckNvswitchP2pConfig_IMPL
 
             return NV_FALSE;
         }
+    }
+
+    if (memmgrIsLocalEgmEnabled(pMemoryManager))
+    {
+        return _knvlinkCheckNvswitchEgmAddressSanity(pGpu, pKernelNvlink, pPeerGpu);
     }
 
     return NV_TRUE;

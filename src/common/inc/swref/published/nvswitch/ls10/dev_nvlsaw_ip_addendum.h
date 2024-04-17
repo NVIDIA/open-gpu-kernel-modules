@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2003-2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2003-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -51,5 +51,10 @@
 #define NV_NVLSAW_DRIVER_ATTACH_DETACH_DRIVER_FABRIC_STATE                    16:14
 #define NV_NVLSAW_DRIVER_ATTACH_DETACH_FABRIC_MANAGER_ERROR                   23:17
 #define NV_NVLSAW_DRIVER_ATTACH_DETACH_EVENT_MESSAGE_COUNT                    31:24
+
+#define NV_NVLSAW_TNVL_MODE                NV_NVLSAW_SECURE_SCRATCH_WARM_GROUP_3(0)
+#define NV_NVLSAW_TNVL_MODE_STATUS                                              0:0
+#define NV_NVLSAW_TNVL_MODE_STATUS_DISABLED                                     0x0
+#define NV_NVLSAW_TNVL_MODE_STATUS_ENABLED                                      0x1
 
 #endif //__ls10_dev_nvlsaw_ip_addendum_h__

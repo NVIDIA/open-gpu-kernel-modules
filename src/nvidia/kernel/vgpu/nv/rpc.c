@@ -515,9 +515,6 @@ static NV_STATUS _setupGspSharedMemory(OBJGPU *pGpu, OBJVGPU *pVGpu)
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 memFlags = 0;
 
-    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
-
     if (IsGH100orBetter(pGpu) && (!kbusIsBar2Initialized(pKernelBus)))
         addressSpace = ADDR_SYSMEM;
 
@@ -874,11 +871,7 @@ NV_STATUS vgpuReinitializeRpcInfraOnStateLoad(OBJGPU *pGpu)
 static NV_STATUS _setupGspControlBuffer(OBJGPU *pGpu, OBJVGPU *pVGpu)
 {
     NV_STATUS status;
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 memFlags = 0;
-
-    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
 
     status = _allocRpcMemDesc(pGpu,
                               RM_PAGE_SIZE,
@@ -918,11 +911,7 @@ static void _teardownGspControlBuffer(OBJGPU *pGpu, OBJVGPU *pVGpu)
 static NV_STATUS _setupGspResponseBuffer(OBJGPU *pGpu, OBJVGPU *pVGpu)
 {
     NV_STATUS status;
-    KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 memFlags = 0;
-
-    if (kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
 
     status = _allocRpcMemDesc(pGpu,
                               RM_PAGE_SIZE,
@@ -974,9 +963,6 @@ static NV_STATUS _setupGspMessageBuffer(OBJGPU *pGpu, OBJVGPU *pVGpu)
     NV_ADDRESS_SPACE addressSpace = ADDR_FBMEM;
     KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
     NvU32 memFlags = 0;
-
-    if(kbusIsPhysicalBar2InitPagetableEnabled(pKernelBus))
-        memFlags = MEMDESC_FLAGS_CPU_ONLY;
 
     if (IsGH100orBetter(pGpu) && (!kbusIsBar2Initialized(pKernelBus)))
         addressSpace = ADDR_SYSMEM;
@@ -1273,6 +1259,7 @@ static NV_STATUS _vgpuGspSetupCommunicationWithPlugin(OBJGPU *pGpu, OBJVGPU *pVG
 void vgpuGspTeardownBuffers(OBJGPU *pGpu)
 {
     OBJVGPU *pVGpu = GPU_GET_VGPU(pGpu);
+    NvU32 rmStatus = NV_OK;
 
     if (!pVGpu->bGspPlugin)
     {
@@ -1283,6 +1270,15 @@ void vgpuGspTeardownBuffers(OBJGPU *pGpu)
 
     // First teardown with GSP and then teardown the buffers
     _vgpuGspTeardownCommunicationWithPlugin(pGpu, pVGpu);
+
+    if (vgpuSysmemPfnInfo.bSysmemPfnInfoInitialized)
+    {
+        rmStatus = updateSharedBufferInfoInSysmemPfnBitMap(pGpu, pVGpu, NV_FALSE);
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "RPC: Sysmem PFN bitmap update failed for shared buffer sysmem pages failed: 0x%x\n", rmStatus);
+        }
+    }
 
     _teardownGspSharedMemory(pGpu, pVGpu);
 
@@ -1360,6 +1356,16 @@ NV_STATUS vgpuGspSetupBuffers(OBJGPU *pGpu)
     {
         NV_PRINTF(LEVEL_ERROR, "RPC: GSP Setup failed: 0x%x\n", status);
         goto fail;
+    }
+
+    if (vgpuSysmemPfnInfo.bSysmemPfnInfoInitialized)
+    {
+        status = updateSharedBufferInfoInSysmemPfnBitMap(pGpu, pVGpu, NV_TRUE);
+        if (status != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "RPC: Sysmem PFN bitmap update failed for shared buffer sysmem pages failed: 0x%x\n", status);
+            goto fail;
+        }
     }
 
     // Update Guest ECC status based on Host ECC status, after establishing RPC with GSP.
@@ -1492,11 +1498,14 @@ NV_STATUS initRpcInfrastructure_VGPU(OBJGPU *pGpu)
         goto fail;
     }
 
-    rmStatus = updateSharedBufferInfoInSysmemPfnBitMap(pGpu, pVGpu, NV_TRUE);
-    if (rmStatus != NV_OK)
+    if (vgpuSysmemPfnInfo.bSysmemPfnInfoInitialized)
     {
-        NV_PRINTF(LEVEL_ERROR, "RPC: Sysmem PFN bitmap update failed for shared buffer sysmem pages failed: 0x%x\n", rmStatus);
-        goto fail;
+        rmStatus = updateSharedBufferInfoInSysmemPfnBitMap(pGpu, pVGpu, NV_TRUE);
+        if (rmStatus != NV_OK)
+        {
+            NV_PRINTF(LEVEL_ERROR, "RPC: Sysmem PFN bitmap update failed for shared buffer sysmem pages failed: 0x%x\n", rmStatus);
+            goto fail;
+        }
     }
 
     pVGpu->bVncSupported = !!(*(NvU32 *)(pVGpu->shared_memory +
@@ -1541,12 +1550,6 @@ NV_STATUS freeRpcInfrastructure_VGPU(OBJGPU *pGpu)
     if (!pVGpu->bRpcInitialized)
     {
         return NV_ERR_INVALID_STATE;
-    }
-
-    rmStatus = updateSharedBufferInfoInSysmemPfnBitMap(pGpu, pVGpu, NV_FALSE);
-    if (rmStatus != NV_OK)
-    {
-        NV_PRINTF(LEVEL_ERROR, "RPC: Sysmem PFN bitmap update failed for shared buffer sysmem pages failed: 0x%x\n", rmStatus);
     }
 
     if (pVGpu->bGspPlugin)

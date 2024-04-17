@@ -527,6 +527,15 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
     nv_kthread_q_flush(&g_uvm_global.global_q);
 
     for_each_gpu_in_mask(gpu, retained_gpus) {
+        // Free the processor masks allocated in uvm_va_space_register_gpu().
+        // The mask is also freed in uvm_va_space_unregister_gpu() but that
+        // function won't be called in uvm_release() and uvm_release_deferred()
+        // path.
+        uvm_processor_mask_cache_free(va_space->peers_to_release[uvm_id_value(gpu->id)]);
+
+        // Set the pointer to NULL to avoid accidental re-use and double free.
+        va_space->peers_to_release[uvm_id_value(gpu->id)] = NULL;
+
         if (!gpu->parent->isr.replayable_faults.handling) {
             UVM_ASSERT(!gpu->parent->isr.non_replayable_faults.handling);
             continue;
@@ -543,14 +552,6 @@ void uvm_va_space_destroy(uvm_va_space_t *va_space)
         if (gpu->parent->access_counters_supported)
             uvm_parent_gpu_access_counters_disable(gpu->parent, va_space);
 
-        // Free the processor masks allocated in uvm_va_space_register_gpu().
-        // The mask is also freed in uvm_va_space_unregister_gpu() but that
-        // function won't be called in uvm_release() and uvm_release_deferred()
-        // path.
-        uvm_processor_mask_cache_free(va_space->peers_to_release[uvm_id_value(gpu->id)]);
-
-        // Set the pointer to NULL to avoid accidental re-use and double free.
-        va_space->peers_to_release[uvm_id_value(gpu->id)] = NULL;
     }
 
     // Check that all CPU/GPU affinity masks are empty

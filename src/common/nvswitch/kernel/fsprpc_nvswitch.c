@@ -25,9 +25,6 @@
 #include "haldef_nvswitch.h"
 #include "fsprpc_nvswitch.h"
 
-#include "fsp/nvdm_payload_cmd_response.h"
-#include "fsp/fsp_nvdm_format.h"
-
 /*!
  * @brief Check if FSP RM command queue is empty
  *

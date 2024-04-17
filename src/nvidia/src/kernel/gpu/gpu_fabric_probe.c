@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 1993-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 1993-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -245,6 +245,28 @@ gpuFabricProbeGetFlaAddressRange
     return status;
 }
 
+/*
+ * This function is used to get the peer GPU EGM address from FM to RM.
+ * FM passes only the upper 32 bits of the address.
+ */
+NV_STATUS
+gpuFabricProbeGetEgmGpaAddress
+(
+    GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel,
+    NvU64 *pEgmGpaAddress
+)
+{
+    NV_STATUS status;
+
+    status = _gpuFabricProbeFullSanityCheck(pGpuFabricProbeInfoKernel);
+
+    NV_CHECK_OR_RETURN(LEVEL_SILENT, status == NV_OK, status);
+
+    *pEgmGpaAddress = (NvU64)pGpuFabricProbeInfoKernel->probeResponseMsg.probeRsp.gpaAddressEGMHi << 32ULL;
+
+    return status;
+}
+
 NV_STATUS
 gpuFabricProbeGetNumProbeReqs
 (
@@ -385,6 +407,7 @@ _gpuFabricProbeSetupGpaRange
     {
         NvU64 gpaAddress;
         NvU64 gpaAddressSize;
+        NvU64 egmGpaAddress;
 
         NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
                     gpuFabricProbeGetGpaAddress(pGpuFabricProbeInfoKernel,
@@ -397,6 +420,14 @@ _gpuFabricProbeSetupGpaRange
         NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
                     knvlinkSetUniqueFabricBaseAddress_HAL(pGpu, pKernelNvlink,
                                                         gpaAddress) == NV_OK);
+
+        NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
+                    gpuFabricProbeGetEgmGpaAddress(pGpuFabricProbeInfoKernel,
+                                                &egmGpaAddress) == NV_OK);
+
+        NV_CHECK_OR_RETURN_VOID(LEVEL_ERROR,
+                    knvlinkSetUniqueFabricEgmBaseAddress_HAL(pGpu, pKernelNvlink,
+                                                        egmGpaAddress) == NV_OK);
     }
 }
 
@@ -640,6 +671,7 @@ gpuFabricProbeStart
     GPU_FABRIC_PROBE_INFO_KERNEL *pGpuFabricProbeInfoKernel;
     RM_API *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
     NV2080_CTRL_CMD_INTERNAL_START_GPU_FABRIC_PROBE_INFO_PARAMS params = { 0 };
+    MemoryManager *pMemoryManager = GPU_GET_MEMORY_MANAGER(pGpu);
 
     LOCK_ASSERT_AND_RETURN(rmDeviceGpuLockIsOwner(gpuGetInstance(pGpu)));
 
@@ -660,7 +692,7 @@ gpuFabricProbeStart
     pGpuFabricProbeInfoKernel->pGpu = pGpu;
     pGpuFabricProbeInfoKernel->bwMode = gpumgrGetGpuNvlinkBwMode();
     params.bwMode = pGpuFabricProbeInfoKernel->bwMode;
-
+    params.bLocalEgmEnabled = pMemoryManager->bLocalEgmEnabled;
 
     if (IS_VIRTUAL(pGpu))
     {
@@ -769,7 +801,10 @@ _gpuFabricProbeInvalidate
     portAtomicSetU32(&pGpuFabricProbeInfoKernel->probeRespRcvd, 0);
 
     if (pKernelNvlink != NULL)
+    {
         knvlinkClearUniqueFabricBaseAddress_HAL(pGpu, pKernelNvlink);
+        knvlinkClearUniqueFabricEgmBaseAddress_HAL(pGpu, pKernelNvlink);
+    }
 
     if (pFabricVAS != NULL)
         fabricvaspaceClearUCRange(pFabricVAS);
