@@ -562,6 +562,7 @@ out:
 
     return rc;
 #else
+    peer_err("module compiled without IB peer memory symbols present\n");
     return -EINVAL;
 #endif
 }
