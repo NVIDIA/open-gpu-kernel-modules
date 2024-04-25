@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -221,6 +221,8 @@ sec2utilsConstruct_IMPL
     pChannel->type = SWL_SCRUBBER_CHANNEL;
     pChannel->engineType = RM_ENGINE_TYPE_SEC2;
 
+    pChannel->bSecure = NV_TRUE;
+
     // Detect if we can enable fast scrub on this channel
     NV_ASSERT_OK_OR_GOTO(status, _sec2GetClass(pGpu, &pSec2Utils->sec2Class), free_client);
     pChannel->sec2Class = pSec2Utils->sec2Class;
@@ -239,6 +241,8 @@ sec2utilsConstruct_IMPL
     pGpu->instLocOverrides  = FLD_SET_DRF(_REG_STR_RM, _INST_LOC, _USERD, _NCOH, pGpu->instLocOverrides);
 
     pChannel->engineType = NV2080_ENGINE_TYPE_SEC2;
+
+    NV_ASSERT_OK_OR_GOTO(status, channelAllocSubdevice(pGpu, pChannel), free_client);
 
     pMemoryManager->bScrubChannelSetupInProgress = NV_TRUE;
     NV_ASSERT_OK_OR_GOTO(status, memmgrMemUtilsChannelInitialize_HAL(pGpu, pMemoryManager, pChannel), free_channel);

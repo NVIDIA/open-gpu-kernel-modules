@@ -49,6 +49,7 @@
 #include "gpu/conf_compute/conf_compute.h"
 #include "gpu/gpu_fabric_probe.h"
 #include "gpu/mig_mgr/gpu_instance_subscription.h"
+#include "ctrl/ctrlc56f.h"
 
 // local static funcs
 static void   gpumgrSetAttachInfo(OBJGPU *, GPUATTACHARG *);
@@ -254,6 +255,8 @@ gpumgrConstruct_IMPL(OBJGPUMGR *pGpuMgr)
                         NV_ERR_INSUFFICIENT_RESOURCES);
 
     portMemSet(pGpuMgr->cachedMIGInfo, 0, sizeof(pGpuMgr->cachedMIGInfo));
+
+    pGpuMgr->ccAttackerAdvantage = SECURITY_POLICY_ATTACKER_ADVANTAGE_DEFAULT;
 
     return NV_OK;
 }

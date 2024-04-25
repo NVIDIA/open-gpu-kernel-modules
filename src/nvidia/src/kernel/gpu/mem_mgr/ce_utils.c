@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,6 +36,7 @@
 #include "gpu/mem_mgr/ce_utils.h"
 #include "kernel/gpu/mem_mgr/ce_utils_sizes.h"
 #include "vgpu/rpc_headers.h"
+#include "gpu/device/device.h"
 
 #include "class/clb0b5.h" // MAXWELL_DMA_COPY_A
 #include "class/clc0b5.h" // PASCAL_DMA_COPY_A
@@ -46,6 +47,50 @@
 #include "class/clc86f.h" // HOPPER_CHANNEL_GPFIFO_A
 
 #include "class/cl0080.h"
+
+static NV_STATUS _memUtilsGetCe
+(
+    OBJGPU *pGpu,
+    NvHandle hClient,
+    NvHandle hDevice,
+    NvU32 *pCeInstance
+)
+{
+    if (IS_MIG_IN_USE(pGpu))
+    {
+        RsClient *pClient;
+        Device *pDevice;
+
+        NV_ASSERT_OK_OR_RETURN(
+            serverGetClientUnderLock(&g_resServ, hClient, &pClient));
+
+        NV_ASSERT_OK_OR_RETURN(
+            deviceGetByHandle(pClient, hDevice, &pDevice));
+
+        NV_ASSERT_OK_OR_RETURN(kmigmgrGetGPUInstanceScrubberCe(pGpu, GPU_GET_KERNEL_MIG_MANAGER(pGpu), pDevice, pCeInstance));
+        return NV_OK;
+    }
+    else
+    {
+        KernelBus *pKernelBus = GPU_GET_KERNEL_BUS(pGpu);
+
+        NV_CHECK_OK_OR_RETURN(LEVEL_ERROR, gpuUpdateEngineTable(pGpu));
+
+        KernelCE  *pKCe = NULL;
+
+        KCE_ITER_ALL_BEGIN(pGpu, pKCe, 0)
+            if (kbusCheckEngine_HAL(pGpu, pKernelBus, ENG_CE(pKCe->publicID)) &&
+               !ceIsCeGrce(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)) &&
+               gpuCheckEngineTable(pGpu, RM_ENGINE_TYPE_COPY(pKCe->publicID)))
+            {
+                *pCeInstance = pKCe->publicID;
+                return NV_OK;
+            }
+        KCE_ITER_END
+    }
+
+    return NV_ERR_INSUFFICIENT_RESOURCES;
+}
 
 NV_STATUS
 ceutilsConstruct_IMPL
@@ -58,6 +103,7 @@ ceutilsConstruct_IMPL
 {
     NV_STATUS status = NV_OK;
     NvU64 allocFlags = pAllocParams->flags;
+    NvBool bForceCeId = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _FORCE_CE_ID, _TRUE, allocFlags);
     NV_ASSERT_OR_RETURN(pGpu, NV_ERR_INVALID_STATE);
 
     NvBool bMIGInUse = IS_MIG_IN_USE(pGpu);
@@ -116,15 +162,13 @@ ceutilsConstruct_IMPL
 
     pChannel->bClientAllocated = NV_TRUE;
     pChannel->pGpu = pGpu;
-
-    pChannel->deviceId = pCeUtils->hDevice;
-    pChannel->subdeviceId = pCeUtils->hSubdevice;
-
     pChannel->pKernelMIGGpuInstance = pKernelMIGGPUInstance;
 
     // We'll allocate new VAS for now. Sharing client VAS will be added later
     pChannel->hVASpaceId = NV01_NULL_OBJECT;
     pChannel->bUseVasForCeCopy = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _VIRTUAL_MODE, _TRUE, allocFlags);
+
+    pChannel->bSecure = FLD_TEST_DRF(0050_CEUTILS, _FLAGS, _CC_SECURE, _TRUE, allocFlags);
 
     // Detect if we can enable fast scrub on this channel
     status = memmgrMemUtilsGetCopyEngineClass_HAL(pGpu, pMemoryManager, &pCeUtils->hTdCopyClass);
@@ -157,6 +201,19 @@ ceutilsConstruct_IMPL
     NV_ASSERT_OR_GOTO(status == NV_OK, free_client);
 
     channelSetupChannelBufferSizes(pChannel);
+
+    NV_ASSERT_OK_OR_GOTO(status, channelAllocSubdevice(pGpu, pChannel), free_client);
+
+    if (bForceCeId)
+    {
+        pChannel->ceId = pAllocParams->forceCeId;
+    }
+    else
+    {
+        NV_ASSERT_OK_OR_GOTO(status,
+            _memUtilsGetCe(pGpu, pChannel->hClient, pChannel->deviceId, &pChannel->ceId),
+            free_client);
+    }
 
     status = memmgrMemUtilsChannelInitialize_HAL(pGpu, pMemoryManager, pChannel);
     NV_ASSERT_OR_GOTO(status == NV_OK, free_channel);
@@ -331,7 +388,7 @@ _ceutilsSubmitPushBuffer
     // Use BAR1 if CPU access is allowed, otherwise allocate and init shadow
     // buffer for DMA access
     //
-    NvU32 transferFlags = (TRANSFER_FLAGS_USE_BAR1     | 
+    NvU32 transferFlags = (TRANSFER_FLAGS_USE_BAR1     |
                            TRANSFER_FLAGS_SHADOW_ALLOC | 
                            TRANSFER_FLAGS_SHADOW_INIT_MEM);
     NV_PRINTF(LEVEL_INFO, "Actual size of copying to be pushed: %x\n", pChannelPbInfo->size);
@@ -562,6 +619,11 @@ ceutilsMemcopy_IMPL
 
     channelPbInfo.srcCpuCacheAttrib = pSrcMemDesc->_cpuCacheAttrib;
     channelPbInfo.dstCpuCacheAttrib = pDstMemDesc->_cpuCacheAttrib;
+
+    channelPbInfo.bSecureCopy = pParams->bSecureCopy;
+    channelPbInfo.bEncrypt = pParams->bEncrypt;
+    channelPbInfo.authTagAddr = pParams->authTagAddr;
+    channelPbInfo.encryptIvAddr = pParams->encryptIvAddr;
 
     srcPageGranularity = pSrcMemDesc->pageArrayGranularity;
     dstPageGranularity = pDstMemDesc->pageArrayGranularity;

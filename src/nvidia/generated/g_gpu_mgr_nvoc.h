@@ -303,6 +303,7 @@ struct OBJGPUMGR {
     GPU_HANDLE_ID gpuHandleIDList[32];
     NvU32 numGpuHandles;
     CONF_COMPUTE_CAPS ccCaps;
+    NvU64 ccAttackerAdvantage;
     pcieP2PCapsInfoList pcieP2PCapsInfoCache;
     void *pcieP2PCapsInfoLock;
 };

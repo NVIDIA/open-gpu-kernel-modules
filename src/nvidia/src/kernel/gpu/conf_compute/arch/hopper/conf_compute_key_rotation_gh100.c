@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -36,10 +36,10 @@ static void getKeyPairForKeySpace(NvU32 keySpace, NvBool bKernel, NvU32 *pGlobal
 static NV_STATUS triggerKeyRotationByKeyPair(OBJGPU *pGpu, ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
 static NV_STATUS calculateEncryptionStatsByKeyPair(OBJGPU *pGpu, ConfidentialCompute *pConfCompute, NvU32 h2dKey, NvU32 d2hKey);
 static NV_STATUS notifyKeyRotationByKeyPair(OBJGPU *pGpu, ConfidentialCompute *pConfCompute, NvU32 h2dKey);
-static NvBool confComputeIsLowerThresholdCrossed(ConfidentialCompute *pConfCompute, KEY_ROTATION_STATS_INFO *pH2DInfo,
-                                                 KEY_ROTATION_STATS_INFO *pD2HInfo);
-static NvBool confComputeIsUpperThresholdCrossed(ConfidentialCompute *pConfCompute, KEY_ROTATION_STATS_INFO *pH2DInfo,
-                                                 KEY_ROTATION_STATS_INFO *pD2HInfo);
+static NvBool isLowerThresholdCrossed(ConfidentialCompute *pConfCompute, KEY_ROTATION_STATS_INFO *pH2DInfo,
+                                      KEY_ROTATION_STATS_INFO *pD2HInfo);
+static NvBool isUpperThresholdCrossed(ConfidentialCompute *pConfCompute, KEY_ROTATION_STATS_INFO *pH2DInfo,
+                                      KEY_ROTATION_STATS_INFO *pD2HInfo);
 static NV_STATUS keyRotationTimeoutCallback(OBJGPU *pGpu, OBJTMR *pTmr, TMR_EVENT *pTmrEvent);
 
 /*!
@@ -209,7 +209,7 @@ triggerKeyRotationByKeyPair
     // If key rotation is alredy scheduled because we crossed upper threshold or hit timeout
     // then we dont need to update encryption statistics as they will be zeroed out soon.
     //
-    if ((state == KEY_ROTATION_STATUS_FAILED_THRESHOLD) || 
+    if ((state == KEY_ROTATION_STATUS_FAILED_THRESHOLD) ||
         (state == KEY_ROTATION_STATUS_FAILED_TIMEOUT))
     {
         return NV_OK;
@@ -227,15 +227,15 @@ triggerKeyRotationByKeyPair
     NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
     NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, d2hKey, &d2hIndex));
 
-    if (confComputeIsUpperThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[h2dIndex],
-                                          &pConfCompute->aggregateStats[d2hIndex]))
+    if (isUpperThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[h2dIndex],
+                                &pConfCompute->aggregateStats[d2hIndex]))
     {
         NV_PRINTF(LEVEL_ERROR, "Crossed UPPER threshold for key = 0x%x\n", h2dKey);
         NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationStatus(pConfCompute, h2dKey, KEY_ROTATION_STATUS_FAILED_THRESHOLD));
         NV_ASSERT_OK_OR_RETURN(confComputeScheduleKeyRotationWorkItem(pGpu, pConfCompute, h2dKey, d2hKey));
     }
-    else if (confComputeIsLowerThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[h2dIndex],
-                                                &pConfCompute->aggregateStats[d2hIndex]))
+    else if (isLowerThresholdCrossed(pConfCompute, &pConfCompute->aggregateStats[h2dIndex],
+                                     &pConfCompute->aggregateStats[d2hIndex]))
     {
         NV_PRINTF(LEVEL_INFO, "Crossed LOWER threshold for key = 0x%x\n", h2dKey);
         if (state == KEY_ROTATION_STATUS_IDLE)
@@ -244,7 +244,7 @@ triggerKeyRotationByKeyPair
 
             //
             // Start the timeout timer once lower threshold is crossed.
-            // 
+            //
             // If timer is not already created then create it now. Else, just schedule a callback.
             // make sure callback is canceled if we schedule the KR task (after crossing lower or upper threshold)
             // make sure all these timer events are deleted as part of RM shutdown
@@ -266,7 +266,7 @@ triggerKeyRotationByKeyPair
 
             //
             // Notify clients of pending KR
-            // We can't schedule a workitem for this since it may get scheduled too late and 
+            // We can't schedule a workitem for this since it may get scheduled too late and
             // we might have already crossed the upper threshold by then.
             //
             NV_ASSERT_OK_OR_RETURN(notifyKeyRotationByKeyPair(pGpu, pConfCompute, h2dKey));
@@ -324,7 +324,7 @@ calculateEncryptionStatsByKeyPair
         if (pEncStats == NULL)
         {
             NV_ASSERT(pEncStats != NULL);
-            NV_PRINTF(LEVEL_ERROR, "Failed to get stats for chid = 0x%x RM engineId = 0x%x\n", 
+            NV_PRINTF(LEVEL_ERROR, "Failed to get stats for chid = 0x%x RM engineId = 0x%x\n",
                 kchannelGetDebugTag(pKernelChannel), kchannelGetEngineType(pKernelChannel));
             return NV_ERR_INVALID_STATE;
         }
@@ -363,7 +363,7 @@ calculateEncryptionStatsByKeyPair
 }
 
 static NvBool
-confComputeIsUpperThresholdCrossed
+isUpperThresholdCrossed
 (
     ConfidentialCompute *pConfCompute,
     KEY_ROTATION_STATS_INFO *pH2DInfo,
@@ -376,22 +376,13 @@ confComputeIsUpperThresholdCrossed
     }
     else
     {
-        if ((pH2DInfo->totalBytesEncrypted > pConfCompute->upperThreshold.totalBytesEncrypted) ||
-            (pH2DInfo->totalEncryptOps > pConfCompute->upperThreshold.totalEncryptOps))
-        {
-            return NV_TRUE;
-        }
-        else if ((pD2HInfo->totalBytesEncrypted > pConfCompute->upperThreshold.totalBytesEncrypted) ||
-                 (pD2HInfo->totalEncryptOps > pConfCompute->upperThreshold.totalEncryptOps))
-        {
-            return NV_TRUE;
-        }
+        return (confComputeIsUpperThresholdCrossed(pConfCompute, pH2DInfo) ||
+                confComputeIsUpperThresholdCrossed(pConfCompute, pD2HInfo));
     }
-    return NV_FALSE;
 }
 
 static NvBool
-confComputeIsLowerThresholdCrossed
+isLowerThresholdCrossed
 (
     ConfidentialCompute *pConfCompute,
     KEY_ROTATION_STATS_INFO *pH2DInfo,
@@ -404,18 +395,9 @@ confComputeIsLowerThresholdCrossed
     }
     else
     {
-        if ((pH2DInfo->totalBytesEncrypted > pConfCompute->lowerThreshold.totalBytesEncrypted) ||
-            (pH2DInfo->totalEncryptOps > pConfCompute->lowerThreshold.totalEncryptOps))
-        {
-            return NV_TRUE;
-        }
-        else if ((pD2HInfo->totalBytesEncrypted > pConfCompute->lowerThreshold.totalBytesEncrypted) ||
-                 (pD2HInfo->totalEncryptOps > pConfCompute->lowerThreshold.totalEncryptOps))
-        {
-            return NV_TRUE;
-        }
+        return (confComputeIsLowerThresholdCrossed(pConfCompute, pH2DInfo) ||
+                confComputeIsLowerThresholdCrossed(pConfCompute, pD2HInfo));
     }
-    return NV_FALSE;
 }
 
 static void
@@ -495,12 +477,12 @@ notifyKeyRotationByKeyPair
 static void
 initKeyRotationRegistryOverrides
 (
-    OBJGPU *pGpu, 
+    OBJGPU *pGpu,
     ConfidentialCompute *pConfCompute
 )
 {
     //
-    // Temp CONFCOMP-984: This will be removed once all RM clients support 
+    // Temp CONFCOMP-984: This will be removed once all RM clients support
     // key rotation by default.
     //
     if (pConfCompute->getProperty(pConfCompute, PDB_PROP_CONFCOMPUTE_KEY_ROTATION_SUPPORTED))

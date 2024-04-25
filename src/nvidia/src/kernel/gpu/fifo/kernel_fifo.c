@@ -3021,56 +3021,63 @@ kfifoTriggerPostSchedulingEnableCallback_IMPL
 {
     NV_STATUS status = NV_OK;
     FifoSchedulingHandlerEntry *pEntry;
-    NvBool bRetry = NV_FALSE;
+    NvBool bFirstPass = NV_TRUE;
+    NvBool bRetry;
 
-    for (pEntry = listHead(&pKernelFifo->postSchedulingEnableHandlerList);
-         pEntry != NULL;
-         pEntry = listNext(&pKernelFifo->postSchedulingEnableHandlerList, pEntry))
+    do
     {
-        NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
-            status = NV_ERR_INVALID_STATE; break;);
+        NvBool bMadeProgress = NV_FALSE;
 
-        pEntry->bHandled = NV_FALSE;
-        status = pEntry->pCallback(pGpu, pEntry->pCallbackParam);
+        bRetry = NV_FALSE;
 
-        // Retry mechanism: Some callbacks depend on other callbacks in this list.
-        bRetry = bRetry || (status == NV_WARN_MORE_PROCESSING_REQUIRED);
+        for (pEntry = listHead(&pKernelFifo->postSchedulingEnableHandlerList);
+             pEntry != NULL;
+             pEntry = listNext(&pKernelFifo->postSchedulingEnableHandlerList, pEntry))
+        {
+            NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
+                status = NV_ERR_INVALID_STATE; break;);
 
-        if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
-            // Quash retry status
-            status = NV_OK;
-        else if (status == NV_OK)
-            // Successfully handled, no need to retry
-            pEntry->bHandled = NV_TRUE;
-        else
-            // Actual error, abort
-            break;
-    }
+            if (bFirstPass)
+            {
+                // Reset bHandled set by previous call (fore example, for dor suspend-resume)
+                pEntry->bHandled = NV_FALSE;
+            }
+            else if (pEntry->bHandled)
+            {
+                continue;
+            }
 
-    // If we hit an actual error or completed everything successfully, return early.
-    if ((status != NV_OK) || !bRetry)
-        return status;
+            status = pEntry->pCallback(pGpu, pEntry->pCallbackParam);
 
-    // Second pass, retry anything that asked nicely to be deferred
-    for (pEntry = listHead(&pKernelFifo->postSchedulingEnableHandlerList);
-         pEntry != NULL;
-         pEntry = listNext(&pKernelFifo->postSchedulingEnableHandlerList, pEntry))
-    {
-        NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
-            status = NV_ERR_INVALID_STATE; break;);
+            if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
+            {
+                // Retry mechanism: Some callbacks depend on other callbacks in this list.
+                bRetry = NV_TRUE;
+                // Quash retry status
+                status = NV_OK;
+            }
+            else if (status == NV_OK)
+            {
+                // Successfully handled, no need to retry
+                pEntry->bHandled = NV_TRUE;
+                bMadeProgress = NV_TRUE;
+            }
+            else
+            {
+                // Actual error, abort
+                NV_ASSERT(0);
+                break;
+            }
+        }
 
-        // Skip anything that was completed successfully
-        if (pEntry->bHandled)
-            continue;
+        // We are stuck in a loop, and all remaining callbacks are returning NV_WARN_MORE_PROCESSING_REQUIRED
+        NV_ASSERT_OR_RETURN(bMadeProgress || status != NV_OK, NV_ERR_INVALID_STATE);
 
-        NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-            pEntry->pCallback(pGpu, pEntry->pCallbackParam),
-            break; );
-    }
+        bFirstPass = NV_FALSE;
+    } while (bRetry && status == NV_OK);
 
     return status;
 }
-
 
 /*!
  * @brief Notify handlers that scheduling will soon be disabled.
@@ -3089,53 +3096,60 @@ kfifoTriggerPreSchedulingDisableCallback_IMPL
 {
     NV_STATUS status = NV_OK;
     FifoSchedulingHandlerEntry *pEntry;
-    NvBool bRetry = NV_FALSE;
+    NvBool bFirstPass = NV_TRUE;
+    NvBool bRetry;
 
-    // First pass
-    for (pEntry = listHead(&pKernelFifo->preSchedulingDisableHandlerList);
-         pEntry != NULL;
-         pEntry = listNext(&pKernelFifo->preSchedulingDisableHandlerList, pEntry))
+    do
     {
-        NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
-            status = NV_ERR_INVALID_STATE; break;);
+        NvBool bMadeProgress = NV_FALSE;
 
-        pEntry->bHandled = NV_FALSE;
-        status = pEntry->pCallback(pGpu, pEntry->pCallbackParam);
+        bRetry = NV_FALSE;
 
-        // Retry mechanism: Some callbacks depend on other callbacks in this list.
-        bRetry = bRetry || (status == NV_WARN_MORE_PROCESSING_REQUIRED);
+        for (pEntry = listHead(&pKernelFifo->preSchedulingDisableHandlerList);
+             pEntry != NULL;
+             pEntry = listNext(&pKernelFifo->preSchedulingDisableHandlerList, pEntry))
+        {
+            NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
+                status = NV_ERR_INVALID_STATE; break;);
 
-        if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
-            // Quash retry status
-            status = NV_OK;
-        else if (status == NV_OK)
-            // Successfully handled, no need to retry
-            pEntry->bHandled = NV_TRUE;
-        else
-            // Actual error, abort
-            break;
-    }
+            if (bFirstPass)
+            {
+                // Reset bHandled set by previous call (fore example, for dor suspend-resume)
+                pEntry->bHandled = NV_FALSE;
+            }
+            else if (pEntry->bHandled)
+            {
+                continue;
+            }
 
-    // If we hit an actual error or completed everything successfully, return early.
-    if ((status != NV_OK) || !bRetry)
-        return status;
+            status = pEntry->pCallback(pGpu, pEntry->pCallbackParam);
 
-    // Second pass, retry anything that asked nicely to be deferred
-    for (pEntry = listHead(&pKernelFifo->preSchedulingDisableHandlerList);
-         pEntry != NULL;
-         pEntry = listNext(&pKernelFifo->preSchedulingDisableHandlerList, pEntry))
-    {
-        NV_ASSERT_OR_ELSE(pEntry->pCallback != NULL,
-            status = NV_ERR_INVALID_STATE; break;);
+            if (status == NV_WARN_MORE_PROCESSING_REQUIRED)
+            {
+                // Retry mechanism: Some callbacks depend on other callbacks in this list.
+                bRetry = NV_TRUE;
+                // Quash retry status
+                status = NV_OK;
+            }
+            else if (status == NV_OK)
+            {
+                // Successfully handled, no need to retry
+                pEntry->bHandled = NV_TRUE;
+                bMadeProgress = NV_TRUE;
+            }
+            else
+            {
+                // Actual error, abort
+                NV_ASSERT(0);
+                break;
+            }
+        }
 
-        // Skip anything that was completed successfully
-        if (pEntry->bHandled)
-            continue;
+        // We are stuck in a loop, and all remaining callbacks are returning NV_WARN_MORE_PROCESSING_REQUIRED
+        NV_ASSERT_OR_RETURN(bMadeProgress || status != NV_OK, NV_ERR_INVALID_STATE);
 
-        NV_CHECK_OK_OR_ELSE(status, LEVEL_ERROR,
-            pEntry->pCallback(pGpu, pEntry->pCallbackParam),
-            break; );
-    }
+        bFirstPass = NV_FALSE;
+    } while (bRetry && status == NV_OK);
 
     return status;
 }

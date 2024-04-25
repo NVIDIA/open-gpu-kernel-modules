@@ -641,6 +641,7 @@ struct Subdevice {
     NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeRotateKeys__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_ROTATE_KEYS_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeRCChannelsForKeyRotation__)(struct Subdevice *, NV2080_CTRL_INTERNAL_CONF_COMPUTE_RC_CHANNELS_FOR_KEY_ROTATION_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeSetGpuState__)(struct Subdevice *, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS *);
+    NV_STATUS (*__subdeviceCtrlCmdInternalConfComputeSetSecurityPolicy__)(struct Subdevice *, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalInitUserSharedData__)(struct Subdevice *, NV2080_CTRL_INTERNAL_INIT_USER_SHARED_DATA_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalUserSharedDataSetDataPoll__)(struct Subdevice *, NV2080_CTRL_INTERNAL_USER_SHARED_DATA_SET_DATA_POLL_PARAMS *);
     NV_STATUS (*__subdeviceCtrlCmdInternalGspStartTrace__)(struct Subdevice *, NV2080_CTRL_CMD_INTERNAL_GSP_START_TRACE_INFO_PARAMS *);
@@ -1296,6 +1297,7 @@ NV_STATUS __nvoc_objCreate_Subdevice(Subdevice**, Dynamic*, NvU32, struct CALL_C
 #define subdeviceCtrlCmdInternalConfComputeRotateKeys(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeRotateKeys_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalConfComputeRCChannelsForKeyRotation(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeRCChannelsForKeyRotation_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalConfComputeSetGpuState(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeSetGpuState_DISPATCH(pSubdevice, pParams)
+#define subdeviceCtrlCmdInternalConfComputeSetSecurityPolicy(pSubdevice, pParams) subdeviceCtrlCmdInternalConfComputeSetSecurityPolicy_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalInitUserSharedData(pSubdevice, pParams) subdeviceCtrlCmdInternalInitUserSharedData_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalUserSharedDataSetDataPoll(pSubdevice, pParams) subdeviceCtrlCmdInternalUserSharedDataSetDataPoll_DISPATCH(pSubdevice, pParams)
 #define subdeviceCtrlCmdInternalGspStartTrace(pSubdevice, pParams) subdeviceCtrlCmdInternalGspStartTrace_DISPATCH(pSubdevice, pParams)
@@ -4585,6 +4587,12 @@ NV_STATUS subdeviceCtrlCmdInternalConfComputeSetGpuState_IMPL(struct Subdevice *
 
 static inline NV_STATUS subdeviceCtrlCmdInternalConfComputeSetGpuState_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS *pParams) {
     return pSubdevice->__subdeviceCtrlCmdInternalConfComputeSetGpuState__(pSubdevice, pParams);
+}
+
+NV_STATUS subdeviceCtrlCmdInternalConfComputeSetSecurityPolicy_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS *pParams);
+
+static inline NV_STATUS subdeviceCtrlCmdInternalConfComputeSetSecurityPolicy_DISPATCH(struct Subdevice *pSubdevice, NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS *pParams) {
+    return pSubdevice->__subdeviceCtrlCmdInternalConfComputeSetSecurityPolicy__(pSubdevice, pParams);
 }
 
 NV_STATUS subdeviceCtrlCmdInternalInitUserSharedData_IMPL(struct Subdevice *pSubdevice, NV2080_CTRL_INTERNAL_INIT_USER_SHARED_DATA_PARAMS *pParams);

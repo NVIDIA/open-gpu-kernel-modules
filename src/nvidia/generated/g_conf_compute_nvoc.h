@@ -7,7 +7,7 @@ extern "C" {
 #endif
 
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -39,6 +39,7 @@ extern "C" {
 #include "gpu/spdm/spdm.h"
 #include "ctrl/ctrl2080/ctrl2080spdm.h"
 #include "ctrl/ctrl2080/ctrl2080internal.h"
+#include "ctrl/ctrlc56f.h"
 #include "cc_drv.h"
 #include "conf_compute/cc_keystore.h"
 #include "kernel/gpu/fifo/kernel_channel.h"
@@ -154,12 +155,16 @@ struct ConfidentialCompute {
     NvU32 keyRotationEnableMask;
     KEY_ROTATION_STATS_INFO lowerThreshold;
     KEY_ROTATION_STATS_INFO upperThreshold;
+    NvU64 attackerAdvantage;
     NvU8 PRIVATE_FIELD(m_exportMasterKey)[32];
     void *PRIVATE_FIELD(m_keySlot);
     KEY_ROTATION_STATUS PRIVATE_FIELD(keyRotationState)[62];
     KEY_ROTATION_STATS_INFO PRIVATE_FIELD(aggregateStats)[62];
     KEY_ROTATION_STATS_INFO PRIVATE_FIELD(freedChannelAggregateStats)[62];
     PTMR_EVENT PRIVATE_FIELD(ppKeyRotationTimer)[62];
+    NvU64 PRIVATE_FIELD(keyRotationLimitDelta);
+    NvU64 PRIVATE_FIELD(keyRotationUpperLimit);
+    NvU64 PRIVATE_FIELD(keyRotationLowerLimit);
 };
 
 #ifndef __NVOC_CLASS_ConfidentialCompute_TYPEDEF__
@@ -711,6 +716,39 @@ static inline NV_STATUS confComputeUpdateFreedChannelStats(struct OBJGPU *pGpu, 
 #define confComputeUpdateFreedChannelStats(pGpu, pConfCompute, pKernelChannel) confComputeUpdateFreedChannelStats_IMPL(pGpu, pConfCompute, pKernelChannel)
 #endif //__nvoc_conf_compute_h_disabled
 
+NV_STATUS confComputeSetKeyRotationThreshold_IMPL(struct ConfidentialCompute *pConfCompute, NvU64 attackerAdvantage);
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NV_STATUS confComputeSetKeyRotationThreshold(struct ConfidentialCompute *pConfCompute, NvU64 attackerAdvantage) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_ERR_NOT_SUPPORTED;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeSetKeyRotationThreshold(pConfCompute, attackerAdvantage) confComputeSetKeyRotationThreshold_IMPL(pConfCompute, attackerAdvantage)
+#endif //__nvoc_conf_compute_h_disabled
+
+NvBool confComputeIsUpperThresholdCrossed_IMPL(struct ConfidentialCompute *pConfCompute, const KEY_ROTATION_STATS_INFO *pStatsInfo);
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NvBool confComputeIsUpperThresholdCrossed(struct ConfidentialCompute *pConfCompute, const KEY_ROTATION_STATS_INFO *pStatsInfo) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeIsUpperThresholdCrossed(pConfCompute, pStatsInfo) confComputeIsUpperThresholdCrossed_IMPL(pConfCompute, pStatsInfo)
+#endif //__nvoc_conf_compute_h_disabled
+
+NvBool confComputeIsLowerThresholdCrossed_IMPL(struct ConfidentialCompute *pConfCompute, const KEY_ROTATION_STATS_INFO *pStatsInfo);
+
+#ifdef __nvoc_conf_compute_h_disabled
+static inline NvBool confComputeIsLowerThresholdCrossed(struct ConfidentialCompute *pConfCompute, const KEY_ROTATION_STATS_INFO *pStatsInfo) {
+    NV_ASSERT_FAILED_PRECOMP("ConfidentialCompute was disabled!");
+    return NV_FALSE;
+}
+#else //__nvoc_conf_compute_h_disabled
+#define confComputeIsLowerThresholdCrossed(pConfCompute, pStatsInfo) confComputeIsLowerThresholdCrossed_IMPL(pConfCompute, pStatsInfo)
+#endif //__nvoc_conf_compute_h_disabled
+
 #undef PRIVATE_FIELD
 
 #ifndef NVOC_CONF_COMPUTE_H_PRIVATE_ACCESS_ALLOWED
@@ -749,6 +787,16 @@ NV_STATUS NVOC_PRIVATE_FUNCTION(confComputeKeyStoreUpdateKey)(struct Confidentia
 
 #undef confComputeKeyStoreUpdateKey_HAL
 NV_STATUS NVOC_PRIVATE_FUNCTION(confComputeKeyStoreUpdateKey_HAL)(struct ConfidentialCompute *pConfCompute, NvU32 globalKeyId);
+
+#ifndef __nvoc_conf_compute_h_disabled
+#undef confComputeIsUpperThresholdCrossed
+NvBool NVOC_PRIVATE_FUNCTION(confComputeIsUpperThresholdCrossed)(struct ConfidentialCompute *pConfCompute, const KEY_ROTATION_STATS_INFO *pStatsInfo);
+#endif //__nvoc_conf_compute_h_disabled
+
+#ifndef __nvoc_conf_compute_h_disabled
+#undef confComputeIsLowerThresholdCrossed
+NvBool NVOC_PRIVATE_FUNCTION(confComputeIsLowerThresholdCrossed)(struct ConfidentialCompute *pConfCompute, const KEY_ROTATION_STATS_INFO *pStatsInfo);
+#endif //__nvoc_conf_compute_h_disabled
 
 #endif // NVOC_CONF_COMPUTE_H_PRIVATE_ACCESS_ALLOWED
 

@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -384,7 +384,14 @@ confComputeApiCtrlCmdSystemGetSecurityPolicy_IMPL
     NV_CONF_COMPUTE_CTRL_GET_SECURITY_POLICY_PARAMS *pParams
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    pParams->attackerAdvantage = pGpuMgr->ccAttackerAdvantage;
+
+    return NV_OK;
 }
 
 NV_STATUS
@@ -394,6 +401,48 @@ confComputeApiCtrlCmdSystemSetSecurityPolicy_IMPL
     NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS *pParams
 )
 {
-    return NV_ERR_NOT_SUPPORTED;
-}
+    OBJSYS    *pSys = SYS_GET_INSTANCE();
+    OBJGPUMGR *pGpuMgr = SYS_GET_GPUMGR(pSys);
+    OBJGPU    *pGpu;
+    NvU32      gpuMask;
+    NvU32      gpuInstance = 0;
+    RM_API    *pRmApi      = NULL;
+    NV_STATUS  status = NV_OK;
+    NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS params = {0};
 
+    LOCK_ASSERT_AND_RETURN(rmapiLockIsOwner() && rmGpuLockIsOwner());
+
+    // CC security policy can only be set before GpuReadyState is set.
+    NV_ASSERT_OR_RETURN(pConfComputeApi->pCcCaps->bAcceptClientRequest == NV_FALSE, NV_ERR_INVALID_STATE);
+
+    if ((pParams->attackerAdvantage < SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MIN) ||
+        (pParams->attackerAdvantage > SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MAX))
+    {
+        return NV_ERR_INVALID_ARGUMENT;
+    }
+
+    params.attackerAdvantage = pParams->attackerAdvantage;
+    (void)gpumgrGetGpuAttachInfo(NULL, &gpuMask);
+
+    while ((pGpu = gpumgrGetNextGpu(gpuMask, &gpuInstance)) != NULL)
+    {
+        pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+        ConfidentialCompute* pConfCompute = GPU_GET_CONF_COMPUTE(pGpu);
+
+        status = pRmApi->Control(pRmApi,
+                                pGpu->hInternalClient,
+                                pGpu->hInternalSubdevice,
+                                NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY,
+                                &params,
+                                sizeof(params));
+        if (status != NV_OK)
+            return status;
+
+        NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationThreshold(pConfCompute,
+                                                                  pParams->attackerAdvantage));
+    }
+
+    pGpuMgr->ccAttackerAdvantage = pParams->attackerAdvantage;
+
+    return status;
+}

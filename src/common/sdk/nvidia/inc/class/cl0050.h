@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -30,6 +30,8 @@
 // Source file:      class/cl0050.finn
 //
 
+#include "nvcfg_sdk.h"
+
 #define NV_CE_UTILS (0x50U) /* finn: Evaluated from "NV0050_ALLOCATION_PARAMETERS_MESSAGE_ID" */
 
 #define NV0050_ALLOCATION_PARAMETERS_MESSAGE_ID (0x0050U)
@@ -37,6 +39,7 @@
 typedef struct NV0050_ALLOCATION_PARAMETERS {
     NvHandle hVaspace;
     NV_DECLARE_ALIGNED(NvU64 flags, 8);
+    NvU32    forceCeId;
 } NV0050_ALLOCATION_PARAMETERS;
 
 
@@ -54,3 +57,14 @@ typedef struct NV0050_ALLOCATION_PARAMETERS {
 #define NV0050_CEUTILS_FLAGS_FIFO_LITE               2:2
 #define NV0050_CEUTILS_FLAGS_FIFO_LITE_FALSE    (0x00000000)
 #define NV0050_CEUTILS_FLAGS_FIFO_LITE_TRUE     (0x00000001)
+
+// Force a specific CE engine to be used be setting forceCeId
+#define NV0050_CEUTILS_FLAGS_FORCE_CE_ID             4:4
+#define NV0050_CEUTILS_FLAGS_FORCE_CE_ID_FALSE  (0x00000000)
+#define NV0050_CEUTILS_FLAGS_FORCE_CE_ID_TRUE   (0x00000001)
+
+// Use a CC secure channel
+#define NV0050_CEUTILS_FLAGS_CC_SECURE             5:5
+#define NV0050_CEUTILS_FLAGS_CC_SECURE_FALSE    (0x00000000)
+#define NV0050_CEUTILS_FLAGS_CC_SECURE_TRUE     (0x00000001)
+

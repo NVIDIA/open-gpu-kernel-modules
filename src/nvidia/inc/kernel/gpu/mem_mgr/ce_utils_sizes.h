@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -33,7 +33,7 @@
 
 #define CE_MAX_BYTES_PER_LINE                 0xffffffffULL
 #define CE_METHOD_SIZE_PER_BLOCK              0x64
-#define FAST_SCRUBBER_METHOD_SIZE_PER_BLOCK   0x78
+#define FAST_SCRUBBER_METHOD_SIZE_PER_BLOCK   0x94
 
 // number of bytes per sec2 method-stream (including host methods)
 #define SEC2_METHOD_SIZE_PER_BLOCK            0x94

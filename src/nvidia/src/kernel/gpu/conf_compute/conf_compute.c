@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -49,6 +49,8 @@
  */
 static NV_STATUS _confComputeInitRegistryOverrides(OBJGPU *, ConfidentialCompute*);
 static NvU32 _confComputeGetKeyspaceSize(NvU16 keyspace);
+
+#define KEY_ROTATION_THRESHOLD_DELTA 20000000ull
 
 NV_STATUS
 confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
@@ -154,6 +156,11 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
         }
     }
     // init key rotation state
+    pConfCompute->attackerAdvantage = SECURITY_POLICY_ATTACKER_ADVANTAGE_DEFAULT;
+    pConfCompute->keyRotationLimitDelta = KEY_ROTATION_THRESHOLD_DELTA;
+    NV_ASSERT_OK_OR_RETURN(confComputeSetKeyRotationThreshold(pConfCompute,
+                                                              pConfCompute->attackerAdvantage));
+
     for (NvU32 i = 0; i < CC_KEYSPACE_TOTAL_SIZE; i++)
     {
         pConfCompute->keyRotationState[i] = KEY_ROTATION_STATUS_IDLE;
@@ -165,6 +172,7 @@ confComputeConstructEngine_IMPL(OBJGPU                  *pGpu,
     pConfCompute->keyRotationChannelRefCount = 0;
     pConfCompute->keyRotationEnableMask = 0;
     NV_ASSERT_OK_OR_RETURN(confComputeEnableKeyRotationSupport_HAL(pGpu, pConfCompute));
+
     return NV_OK;
 }
 
@@ -427,8 +435,8 @@ confComputeStatePostLoad_IMPL
     NvU32                flags
 )
 {
-    NV_STATUS status = NV_OK;
-    RM_API   *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
+    NV_STATUS  status = NV_OK;
+    RM_API    *pRmApi = GPU_GET_PHYSICAL_RMAPI(pGpu);
 
     NV_ASSERT_OK_OR_RETURN(pRmApi->Control(pRmApi,
                                     pGpu->hInternalClient,

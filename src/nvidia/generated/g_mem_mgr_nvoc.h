@@ -337,6 +337,9 @@ typedef struct OBJCHANNEL
     // Used by Partition Scrubber
     KERNEL_MIG_GPU_INSTANCE         *pKernelMIGGpuInstance;
     NvHandle                        hPartitionRef;
+
+    NvBool bSecure;
+
 } OBJCHANNEL, *POBJCHANNEL;
 
 #define NV_METHOD(SubCh, Method, Num)                        \

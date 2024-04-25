@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2021-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2021-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -207,7 +207,7 @@ performKeyRotationByKeyPair
     return NV_OK;
 }
 
-/*! 
+/*!
  * Checks if all channels corresponding to key pair
  * are disabled and schedules key rotation.
  *
@@ -253,7 +253,7 @@ confComputeCheckAndScheduleKeyRotation_IMPL
     return NV_OK;
 }
 
-/*! 
+/*!
  * schedules key rotation workitem
  *
  * @param[in]   pGpu            : OBJGPU pointer
@@ -304,7 +304,7 @@ confComputeScheduleKeyRotationWorkItem_IMPL
 }
 
 /*!
- * Sets KEY_ROTATION_STATUS for key pair corresponding to given key 
+ * Sets KEY_ROTATION_STATUS for key pair corresponding to given key
  *
  * @param[in]   pConfCompute    : conf comp pointer
  * @param[in]   globalKey       : key for which to set the status
@@ -328,7 +328,7 @@ NV_STATUS confComputeSetKeyRotationStatus_IMPL
 }
 
 /*!
- * Gets KEY_ROTATION_STATUS for given key 
+ * Gets KEY_ROTATION_STATUS for given key
  *
  * @param[in]   pConfCompute    : conf comp pointer
  * @param[in]   globalKey       : key for which to set the status
@@ -346,7 +346,7 @@ NV_STATUS confComputeGetKeyRotationStatus_IMPL
     NvU32 h2dIndex, d2hIndex;
     NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, h2dKey, &h2dIndex));
     NV_ASSERT_OK_OR_RETURN(confComputeGetKeySlotFromGlobalKeyId(pConfCompute, d2hKey, &d2hIndex));
-    NV_ASSERT_OR_RETURN(pConfCompute->keyRotationState[h2dIndex] == 
+    NV_ASSERT_OR_RETURN(pConfCompute->keyRotationState[h2dIndex] ==
                         pConfCompute->keyRotationState[d2hIndex], NV_ERR_INVALID_STATE);
     *pStatus = pConfCompute->keyRotationState[h2dIndex];
     return NV_OK;
@@ -406,7 +406,7 @@ NV_STATUS
 confComputeUpdateFreedChannelStats_IMPL
 (
     OBJGPU *pGpu,
-    ConfidentialCompute *pConfCompute, 
+    ConfidentialCompute *pConfCompute,
     KernelChannel *pKernelChannel
 )
 {
@@ -429,4 +429,76 @@ confComputeUpdateFreedChannelStats_IMPL
     pConfCompute->freedChannelAggregateStats[d2hIndex].totalBytesEncrypted += pEncStats->bytesEncryptedD2H;
     pConfCompute->freedChannelAggregateStats[d2hIndex].totalEncryptOps     += pEncStats->numEncryptionsD2H;
     return NV_OK;
+}
+
+NV_STATUS
+confComputeSetKeyRotationThreshold_IMPL(ConfidentialCompute *pConfCompute,
+                                        NvU64                attackerAdvantage)
+{
+    //
+    // Limit beyond which an encryption key cannot be used.
+    // The index is the attacker advantage as described in
+    // https://datatracker.ietf.org/doc/draft-irtf-cfrg-aead-limits/
+    // The limit is expressed in units of total amount of data encrypted
+    // (in units of 16 B) plus the number of encryption invocations.
+    //
+    const NvU32 offset = 50;
+
+    static const NvU64 keyRotationUpperThreshold[] = {
+        777472127993ull,
+        549755813887ull,
+        388736063996ull,
+        274877906943ull,
+        194368031997ull,
+        137438953471ull,
+        97184015998ull,
+        68719476735ull,
+        48592007999ull,
+        34359738367ull,
+        24296003999ull,
+        17179869183ull,
+        12148001999ull,
+        8589934591ull,
+        6074000999ull,
+        4294967295ull,
+        3037000499ull,
+        2147483647ull,
+        1518500249ull,
+        1073741823ull,
+        759250124ull,
+        536870911ull,
+        379625061ull,
+        268435455ull,
+        189812530ull,
+        134217727ull};
+
+    NV_ASSERT_OR_RETURN((attackerAdvantage >= offset) &&
+        (attackerAdvantage <= (offset + NV_ARRAY_ELEMENTS(keyRotationUpperThreshold) - 1)),
+        NV_ERR_INVALID_ARGUMENT);
+
+    pConfCompute->keyRotationUpperLimit = keyRotationUpperThreshold[attackerAdvantage - offset];
+    pConfCompute->keyRotationLowerLimit = pConfCompute->keyRotationUpperLimit -
+                                          pConfCompute->keyRotationLimitDelta;
+
+    NV_PRINTF(LEVEL_INFO, "Setting key rotation attacker advantage to %llu.\n", attackerAdvantage);
+    NV_PRINTF(LEVEL_INFO, "Key rotation lower limit is %llu and upper limit is %llu.\n",
+              pConfCompute->keyRotationLowerLimit, pConfCompute->keyRotationUpperLimit);
+
+    return NV_OK;
+}
+
+NvBool confComputeIsUpperThresholdCrossed_IMPL(ConfidentialCompute           *pConfCompute,
+                                               const KEY_ROTATION_STATS_INFO *pStatsInfo)
+{
+    const NvU64 totalEncryptWork = (pStatsInfo->totalBytesEncrypted / 16) + pStatsInfo->totalEncryptOps;
+
+    return (totalEncryptWork > pConfCompute->keyRotationUpperLimit);
+}
+
+NvBool confComputeIsLowerThresholdCrossed_IMPL(ConfidentialCompute           *pConfCompute,
+                                               const KEY_ROTATION_STATS_INFO *pStatsInfo)
+{
+    const NvU64 totalEncryptWork = (pStatsInfo->totalBytesEncrypted / 16) + pStatsInfo->totalEncryptOps;
+
+    return (totalEncryptWork > pConfCompute->keyRotationLowerLimit);
 }

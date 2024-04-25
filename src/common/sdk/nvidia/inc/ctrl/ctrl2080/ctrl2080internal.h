@@ -3839,6 +3839,34 @@ typedef struct NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS {
     NvBool bAcceptClientRequest;
 } NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_GPU_STATE_PARAMS;
 
+/*!
+ * NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY
+ *
+ *    This control call can be used to set CC security policy on GSP.
+ *    This is a internal command sent from Kernel RM to Physical RM.
+ *
+ *    attackerAdvantage [IN]
+ *      The minimum and maximum values for attackerAdvantage.
+ *      The probability of an attacker successfully guessing the contents of
+ *      an encrypted packet go up ("attacker advantage"). 
+ *
+ *    Possible status values returned are:
+ *     NV_OK
+ *     NV_ERR_INVALID_OBJECT_HANDLE
+ *     NV_ERR_INVALID_STATE
+ *     NV_ERR_INVALID_ARGUMENT
+ *     NV_ERR_NOT_SUPPORTED
+ */
+
+#define NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY (0x20800ae8) /* finn: Evaluated from "(FINN_NV20_SUBDEVICE_0_INTERNAL_INTERFACE_ID << 8) | NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS_MESSAGE_ID" */
+
+#define NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS_MESSAGE_ID (0xE8U)
+
+typedef struct NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS {
+    NV_DECLARE_ALIGNED(NvU64 attackerAdvantage, 8);
+} NV2080_CTRL_CMD_INTERNAL_CONF_COMPUTE_SET_SECURITY_POLICY_PARAMS;
+
+
 
 /*
  * NV2080_CTRL_CMD_INTERNAL_MEMMGR_MEMORY_TRANSFER_WITH_GSP

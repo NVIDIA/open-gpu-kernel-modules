@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2022-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2022-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -168,20 +168,20 @@ typedef union RM_GSP_SPDM_CMD *PRM_GSP_SPDM_CMD;
  * SPDM message structure.
  */
 typedef struct RM_GSP_SPDM_MSG {
-    NvU8   msgType;
+    NvU8  msgType;
 
     // status returned from GSP message infrastructure.
-    NvU32  status;
+    NvU32 status;
 
-    NvU32  rsvd1;
+    NvU32 rsvd1;
 
-    NvU32  rsvd2;
+    NvU32 rsvd2;
 
-    NvU32  rsvd3;
+    NvU32 rsvd3;
 
-    NvU32  rsvd4;
+    NvU32 rsvd4;
 
-    NvBool rsvd5;
+    NvU32 rsvd5;
 } RM_GSP_SPDM_MSG;
 typedef struct RM_GSP_SPDM_MSG *PRM_GSP_SPDM_MSG;
 

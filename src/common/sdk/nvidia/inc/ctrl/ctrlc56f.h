@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2018-2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2018-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -166,9 +166,9 @@ typedef struct NVC56F_CTRL_CMD_GPFIFO_GET_WORK_SUBMIT_TOKEN_PARAMS {
  * NVC56F_CTRL_CMD_GET_KMB_STAT_ADDR
  *
  *    This struct defines the addresses to log encryption statistics
- *    amountEncryptedAddr       
+ *    amountEncryptedAddr
  *         Amount of bytes encrypted
- *    numberEncryptedAddr       
+ *    numberEncryptedAddr
  *         Number of times data was encrypted.
  */
 typedef struct NVC56F_CTRL_CMD_GET_KMB_STAT_ADDR {
@@ -180,7 +180,7 @@ typedef struct NVC56F_CTRL_CMD_GET_KMB_STAT_ADDR {
  * NVC56F_CTRL_CMD_GET_KMB
  *
  *    This command returns the Key Material Bundle (KMB) for the current channel.
- *  
+ *
  *    kmb     [OUT]            The KMB for the channel.
  *    hMemory [IN]             Memory handle to the encryption statistics buffer for the channel.
  *
@@ -239,10 +239,11 @@ typedef struct NVC56F_CTRL_ROTATE_SECURE_CHANNEL_IV_PARAMS {
  *     NV_ERR_NOT_SUPPORTED
  */
 
-/* 
+/*
  *    The minimum and maximum values for attackerAdvantage.
- *    The probability of an attacker successfully guessing the contents of an encrypted packet go up ("attacker advantage"). 
+ *    The probability of an attacker successfully guessing the contents of an encrypted packet go up ("attacker advantage").
  */
+#define SECURITY_POLICY_ATTACKER_ADVANTAGE_DEFAULT (60)
 #define SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MIN (50)
 #define SET_SECURITY_POLICY_ATTACKER_ADVANTAGE_MAX (75)
 
@@ -259,7 +260,7 @@ typedef struct NV_CONF_COMPUTE_CTRL_SET_SECURITY_POLICY_PARAMS {
  *
  *    This command get the CC security policy.
  *
- *    attackerAdvantage [OUT]   
+ *    attackerAdvantage [OUT]
  *
  *    Possible status values returned are:
  *     NV_OK

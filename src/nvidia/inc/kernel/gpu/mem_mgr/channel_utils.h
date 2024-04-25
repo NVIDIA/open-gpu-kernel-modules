@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2024 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
  * SPDX-License-Identifier: MIT
  *
  * Permission is hereby granted, free of charge, to any person obtaining a
@@ -130,9 +130,16 @@ typedef struct
     NV_ADDRESS_SPACE srcAddressSpace;
     NvU32 dstCpuCacheAttrib;
     NvU32 srcCpuCacheAttrib;
+
+    NvBool bSecureCopy; // The copy encrypts/decrypts protected memory
+    NvBool bEncrypt; // encrypt/decrypt
+    NvU64 authTagAddr;
+    NvU64 encryptIvAddr;
+
 } CHANNEL_PB_INFO;
 
 NV_STATUS channelSetupIDs(OBJCHANNEL *pChannel, OBJGPU *pGpu, NvBool bUseVasForCeCopy, NvBool bMIGInUse);
+NV_STATUS channelAllocSubdevice(OBJGPU *pGpu, OBJCHANNEL *pChannel);
 void channelSetupChannelBufferSizes(OBJCHANNEL *pChannel);
 NvU32 channelReadChannelMemdesc(OBJCHANNEL *pChannel, NvU32 offset);
 
