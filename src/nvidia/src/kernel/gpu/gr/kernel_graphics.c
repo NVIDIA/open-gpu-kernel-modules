@@ -95,6 +95,12 @@ static NV_STATUS _kgraphicsMapGlobalCtxBuffer(OBJGPU *pGpu, KernelGraphics *pKer
                                        KernelGraphicsContext *, GR_GLOBALCTX_BUFFER, NvBool bIsReadOnly);
 static NV_STATUS _kgraphicsPostSchedulingEnableHandler(OBJGPU *, void *);
 
+static void
+_kgraphicsInitRegistryOverrides(OBJGPU *pGpu, KernelGraphics *pKernelGraphics)
+{
+    return;
+}
+
 NV_STATUS
 kgraphicsConstructEngine_IMPL
 (
@@ -213,6 +219,7 @@ kgraphicsConstructEngine_IMPL
 
     NV_ASSERT_OK_OR_RETURN(fecsCtxswLoggingInit(pGpu, pKernelGraphics, &pKernelGraphics->pFecsTraceInfo));
 
+    _kgraphicsInitRegistryOverrides(pGpu, pKernelGraphics);
     return NV_OK;
 }
 
@@ -349,6 +356,7 @@ kgraphicsStatePreUnload_IMPL
     NvU32 flags
 )
 {
+
     fecsBufferUnmap(pGpu, pKernelGraphics);
 
     // Release global buffers used as part of the gr context, when not in S/R

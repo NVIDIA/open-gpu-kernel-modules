@@ -326,7 +326,8 @@ vaspaceapiConstruct_IMPL
             memmgrIsPmaInitialized(pMemoryManager) &&
             memmgrAreClientPageTablesPmaManaged(pMemoryManager) &&
             !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_EXTERNALLY_OWNED) &&
-            !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_FLA))
+            !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_IS_FLA) &&
+            !(allocFlags & NV_VASPACE_ALLOCATION_FLAGS_PTETABLE_HEAP_MANAGED))
         {
             flags |= VASPACE_FLAGS_PTETABLE_PMA_MANAGED;
         }

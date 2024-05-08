@@ -797,6 +797,7 @@ static const CHIPS_RELEASED sChipsReleased[] = {
     { 0x1FF0, 0x1612, 0x17aa, "NVIDIA T1000 8GB" },
     { 0x1FF2, 0x1613, 0x1028, "NVIDIA T400 4GB" },
     { 0x1FF2, 0x1613, 0x103c, "NVIDIA T400 4GB" },
+    { 0x1FF2, 0x18ff, 0x103c, "NVIDIA T400E" },
     { 0x1FF2, 0x8a80, 0x103c, "NVIDIA T400 4GB" },
     { 0x1FF2, 0x1613, 0x10de, "NVIDIA T400 4GB" },
     { 0x1FF2, 0x1613, 0x17aa, "NVIDIA T400 4GB" },

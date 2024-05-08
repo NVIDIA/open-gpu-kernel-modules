@@ -822,7 +822,9 @@ kchannelConstruct_IMPL
         cleanup);
 
     // Set up pNotifyActions
-    _kchannelSetupNotifyActions(pKernelChannel, pResourceRef->externalClassId);
+    NV_ASSERT_OK_OR_GOTO(status,
+        _kchannelSetupNotifyActions(pKernelChannel, pResourceRef->externalClassId),
+        cleanup);
     bNotifyActionsSetup = NV_TRUE;
 
     // Initialize the userd length
@@ -4494,7 +4496,7 @@ kchannelCtrlRotateSecureChannelIv_PHYSICAL
 )
 {
     NV_STATUS status;
-    
+
     NV_PRINTF(LEVEL_INFO, "Rotating IV in GSP-RM.\n");
 
     // CPU-side encrypt IV corresponds to GPU-side decrypt IV.

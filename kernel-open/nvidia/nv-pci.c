@@ -38,6 +38,10 @@
 #include <linux/kernfs.h>
 #endif
 
+#if !defined(NV_BUS_TYPE_HAS_IOMMU_OPS)
+#include <linux/iommu.h>
+#endif
+
 static void
 nv_check_and_exclude_gpu(
     nvidia_stack_t *sp,
@@ -376,7 +380,12 @@ nv_pci_probe
             goto failed;
         }
 
+#if defined(NV_BUS_TYPE_HAS_IOMMU_OPS)
         if (pci_dev->dev.bus->iommu_ops == NULL) 
+#else
+        if ((pci_dev->dev.iommu != NULL) && (pci_dev->dev.iommu->iommu_dev != NULL) &&
+            (pci_dev->dev.iommu->iommu_dev->ops == NULL))
+#endif
         {
             nv = NV_STATE_PTR(nvl);
             if (rm_is_iommu_needed_for_sriov(sp, nv))

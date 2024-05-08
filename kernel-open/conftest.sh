@@ -1354,6 +1354,42 @@ compile_test() {
             compile_check_conftest "$CODE" "NV_VFIO_REGISTER_EMULATED_IOMMU_DEV_PRESENT" "" "functions"
         ;;
 
+        bus_type_has_iommu_ops)
+            #
+            # Determine if 'bus_type' structure has a 'iommu_ops' field.
+            #
+            # This field was removed by commit 17de3f5fdd35 (iommu: Retire bus ops)
+            # in v6.8
+            #
+            CODE="
+            #include <linux/device.h>
+
+            int conftest_bus_type_has_iommu_ops(void) {
+                return offsetof(struct bus_type, iommu_ops);
+            }"
+
+            compile_check_conftest "$CODE" "NV_BUS_TYPE_HAS_IOMMU_OPS" "" "types"
+        ;;
+
+        eventfd_signal_has_counter_arg)
+            #
+            # Determine if eventfd_signal() function has an additional 'counter' argument.
+            #
+            # This argument was removed by commit 3652117f8548 (eventfd: simplify
+            # eventfd_signal()) in v6.8
+            #
+            CODE="
+            #include <linux/eventfd.h>
+
+            void conftest_eventfd_signal_has_counter_arg(void) {
+                struct eventfd_ctx *ctx;
+
+                eventfd_signal(ctx, 1);
+            }"
+
+            compile_check_conftest "$CODE" "NV_EVENTFD_SIGNAL_HAS_COUNTER_ARG" "" "types"
+        ;;
+
         drm_available)
             # Determine if the DRM subsystem is usable
             CODE="

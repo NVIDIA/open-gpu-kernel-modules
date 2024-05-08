@@ -1957,5 +1957,13 @@
 #define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY_ON_RETRY         0x00000000
 #define NV_REG_RM_GSP_WPR_END_MARGIN_APPLY_ALWAYS           0x00000001
 
+//
+// Type: Dword
+// This regkey overrides the state of the GR scrubber channel and determines
+// whether it should be created or not.
+//
+#define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL             "RmForceGrScrubberChannel"
+#define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_DISABLE     0x00000000
+#define NV_REG_STR_RM_FORCE_GR_SCRUBBER_CHANNEL_ENABLE      0x00000001
 #endif // NVRM_REGISTRY_H
 
